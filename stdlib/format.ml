@@ -34,7 +34,7 @@ type pp_token =
 | Pp_if_newline                (* to do something only if this very
                                   line has been broken *)
 | Pp_open_tag of string        (* opening a tag name *)
-| Pp_close_tag                 (* closing a tag *)
+| Pp_close_tag                 (* closing the most recently opened tag *)
 
 and tag = string
 
@@ -53,7 +53,8 @@ and block_type =
 and tblock = Pp_tbox of int list ref  (* Tabulation box *)
 ;;
 
-(* The Queue: contains all formatting elements.
+(* The Queue:
+   contains all formatting elements.
    elements are tuples (size, token, length), where
    size is set when the size of the block is known
    len is the declared length of the token *)
@@ -79,6 +80,7 @@ type 'a queue = {
  mutable body : 'a queue_elem
 };;
 
+(* The formatter specific tag handling functions. *)
 type formatter_tag_functions = {
  mark_open_tag : tag -> string;
  mark_close_tag : tag -> string;
@@ -87,6 +89,7 @@ type formatter_tag_functions = {
 
 };;
 
+(* A formatter with all its machinery. *)
 type formatter = {
  mutable pp_scan_stack : pp_scan_elem list;
  mutable pp_format_stack : pp_format_elem list;
@@ -481,8 +484,8 @@ let pp_get_print_tags state () = state.pp_print_tags;;
 let pp_get_mark_tags state () = state.pp_mark_tags;;
 let pp_set_tags state b = pp_set_print_tags state b; pp_set_mark_tags state b;;
 
-let pp_get_formatter_tag_functions state () =
-  {mark_open_tag = state.pp_mark_open_tag;
+let pp_get_formatter_tag_functions state () = {
+   mark_open_tag = state.pp_mark_open_tag;
    mark_close_tag = state.pp_mark_close_tag;
    print_open_tag = state.pp_print_open_tag;
    print_close_tag = state.pp_print_close_tag;
@@ -614,7 +617,7 @@ let pp_set_tab state () =
 
 (**************************************************************
 
-  Procedures to control the pretty-printer
+  Procedures to control the pretty-printers
 
  **************************************************************)
 
@@ -680,6 +683,12 @@ let pp_get_all_formatter_output_functions state () =
 let pp_set_formatter_out_channel state os =
   state.pp_output_function <- output os;
   state.pp_flush_function <- (fun () -> flush os);;
+
+(**************************************************************
+
+  Creation of specific formatters
+
+ **************************************************************)
 
 let default_pp_mark_open_tag s = "<" ^ s ^ ">";;
 let default_pp_mark_close_tag s = "</" ^ s ^ ">";;
@@ -763,6 +772,12 @@ let flush_str_formatter () =
   Buffer.reset stdbuf;
   s;;
 
+(**************************************************************
+
+  Basic functions on the standard formatter
+
+ **************************************************************)
+
 let open_hbox = pp_open_hbox std_formatter
 and open_vbox = pp_open_vbox std_formatter
 and open_hvbox = pp_open_hvbox std_formatter
@@ -845,8 +860,8 @@ and set_tags =
 
 (* Trailer: giving up at character number ... *)
 let giving_up mess fmt i =
-  "fprintf: " ^ mess ^ " ``" ^ fmt ^
-  "'', giving up at character number " ^ string_of_int i ^
+  "fprintf: " ^ mess ^ " ``" ^ fmt ^ "'', \
+   giving up at character number " ^ string_of_int i ^
   (if i < String.length fmt
    then " (" ^ String.make 1 fmt.[i] ^ ")."
    else String.make 1 '.');;
@@ -866,28 +881,34 @@ let format_int_of_string fmt i s =
   try int_of_string s with
   | Failure s -> invalid_integer fmt i;;
 
-let implode_rev s0 = function
-  | [] -> s0
-  | l -> String.concat "" (List.rev (s0 :: l));;
-
 (* Getting strings out of buffers. *)
 let get_buffer_out b =
  let s = Buffer.contents b in
  Buffer.reset b;
  s;;
 
-(* ppf is supposed to be a pretty-printer that outputs in buffer b:
-   to extract contents of ppf as a string we flush ppf and get the string
-   out of b. *)
+(* [ppf] is supposed to be a pretty-printer that outputs in buffer [b]:
+   to extract contents of [ppf] as a string we flush [ppf] and get the string
+   out of [b]. *)
 let string_out b ppf =
  pp_flush_queue ppf false;
  get_buffer_out b;;
 
+(* Applies [printer] to a formatter that outputs on a fresh buffer,
+   then returns the resulting material *)
 let exstring printer arg =
  let b = Buffer.create 512 in
  let ppf = formatter_of_buffer b in
  printer ppf arg;
  string_out b ppf;;
+
+(* To turn out a character accumulator into the proper string result. *)
+let implode_rev s0 = function
+  | [] -> s0
+  | l -> String.concat "" (List.rev (s0 :: l));;
+
+(* Safe coercion from a format to a string. *)
+external string_of_format : ('a, 'b, 'c) format -> string = "%identity";;
 
 (* [fprintf_out] is the printf-like function generator: given the
    - [str] flag that tells if we are printing into a string,
@@ -898,7 +919,7 @@ let exstring printer arg =
    Regular [fprintf]-like functions of this module are obtained via partial
    applications of [fprintf_out]. *)
 let fprintf_out str out ppf format =
-  let format = (Obj.magic format : string) in
+  let format = string_of_format format in
   let limit = String.length format in
 
   let print_as = ref None in
@@ -924,47 +945,49 @@ let fprintf_out str out ppf format =
       | '%' ->
           Printf.scan_format format i cont_s cont_a cont_t
       | '@' ->
-          let j = succ i in
-          if j >= limit then invalid_format format i else
-          begin match format.[j] with
-          | '@' ->
-              pp_print_char ppf '@';
-              doprn (succ j)
+          let i = succ i in
+          if i >= limit then invalid_format format i else
+          begin match format.[i] with
           | '[' ->
-              do_pp_open_box ppf (succ j)
+              do_pp_open_box ppf (succ i)
           | ']' ->
               pp_close_box ppf ();
-              doprn (succ j)
+              doprn (succ i)
           | '{' ->
-              do_pp_open_tag ppf (succ j)
+              do_pp_open_tag ppf (succ i)
           | '}' ->
               pp_close_tag ppf ();
-              doprn (succ j)
+              doprn (succ i)
           | ' ' ->
               pp_print_space ppf ();
-              doprn (succ j)
+              doprn (succ i)
           | ',' ->
               pp_print_cut ppf ();
-              doprn (succ j)
+              doprn (succ i)
           | '?' ->
               pp_print_flush ppf ();
-              doprn (succ j)
+              doprn (succ i)
           | '.' ->
               pp_print_newline ppf ();
-              doprn (succ j)
+              doprn (succ i)
           | '\n' ->
               pp_force_newline ppf ();
-              doprn (succ j)
+              doprn (succ i)
           | ';' ->
-              do_pp_break ppf (succ j)
+              do_pp_break ppf (succ i)
           | '<' ->
-              let got_size size j =
+              let got_size size i =
                 print_as := Some size;
-                doprn (skip_gt j) in
-              get_int (succ j) got_size
-          | c -> invalid_format format j
+                doprn (skip_gt i) in
+              get_int (succ i) got_size
+          | '@' as c ->
+              pp_print_as_char c;
+              doprn (succ i)
+          | c -> invalid_format format i
           end
-      | c -> pp_print_as_char c; doprn (succ i)
+      | c ->
+         pp_print_as_char c;
+         doprn (succ i)
 
   and cont_s s i =
     pp_print_as_string s; doprn i
@@ -1055,11 +1078,11 @@ let fprintf_out str out ppf format =
    if i >= limit then begin pp_print_space ppf (); doprn i end else
    match format.[i] with
    | '<' ->
-       let rec got_nspaces nspaces j =
-         get_int j (got_offset nspaces)
-       and got_offset nspaces offset j =
+       let rec got_nspaces nspaces i =
+         get_int i (got_offset nspaces)
+       and got_offset nspaces offset i =
          pp_print_break ppf nspaces offset;
-         doprn (skip_gt j) in
+         doprn (skip_gt i) in
        get_int (succ i) got_nspaces
    | c -> pp_print_space ppf (); doprn i
 
@@ -1067,24 +1090,30 @@ let fprintf_out str out ppf format =
    if i >= limit then begin pp_open_box_gen ppf 0 Pp_box; doprn i end else
    match format.[i] with
    | '<' ->
-     let kind, j = get_box_kind (succ i) in
-     let got_size size j =
+     let kind, i = get_box_kind (succ i) in
+     let got_size size i =
        pp_open_box_gen ppf size kind;
-       doprn (skip_gt j) in
-     get_int j got_size
+       doprn (skip_gt i) in
+     get_int i got_size
    | c -> pp_open_box_gen ppf 0 Pp_box; doprn i
 
   and do_pp_open_tag ppf i =
    if i >= limit then begin pp_open_tag ppf ""; doprn i end else
    match format.[i] with
    | '<' ->
-     let got_name tag_name j =
+     let got_name tag_name i =
        pp_open_tag ppf tag_name;
-       doprn (skip_gt j) in
+       doprn (skip_gt i) in
      get_tag_name (succ i) got_name
    | c -> pp_open_tag ppf ""; doprn i in
 
   doprn 0;;
+
+(**************************************************************
+
+  Defining [fprintf] and various flavors of [fprintf].
+
+ **************************************************************)
 
 let fprintf ppf = fprintf_out false unit_out ppf;;
 let printf f = fprintf std_formatter f;;
