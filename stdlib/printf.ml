@@ -97,7 +97,12 @@ let bprintf_internal tostring buf format =
   let format = (Obj.magic format : string) in
   let rec doprn i =
     if i >= String.length format then
-      if tostring then Obj.magic (Buffer.contents buf) else Obj.magic ()
+      if tostring then begin
+        let res = Obj.magic (Buffer.contents buf) in
+        Buffer.clear buf; (* just in case [bs]printf is partially applied *)
+        res
+      end else
+        Obj.magic ()
     else begin
       let c = String.unsafe_get format i in
       if c <> '%' then begin
