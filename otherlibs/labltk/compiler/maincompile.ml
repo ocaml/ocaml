@@ -70,32 +70,28 @@ let parse_file filename =
       Parser.entry Lexer.main lexbuf
     done
   with
-    Parsing.Parse_error ->
-      close_in ic;
+  | Parsing.Parse_error ->
       prerr_error_header();
       prerr_string "Syntax error \n";
       exit 1
   | Lexer.Lexical_error s ->
-      close_in ic;
       prerr_error_header();
       prerr_string "Lexical error (";
       prerr_string s;
       prerr_string ")\n";
       exit 1
   | Duplicate_Definition (s,s') ->
-      close_in ic;
       prerr_error_header();
       prerr_string s; prerr_string " "; prerr_string s';
       prerr_string " is defined twice.\n";
       exit 1
   | Compiler_Error s ->
-      close_in ic;
       prerr_error_header();
       prerr_string "Internal error: "; prerr_string s; prerr_string "\n";
       prerr_string "Please report bug\n";
       exit 1
   | End_of_file ->
-      close_in ic
+      ()
 
 (* The hack to provoke the production of cCAMLtoTKoptions_constrs *)
 
@@ -171,7 +167,7 @@ let option_hack oc =
 
 let realname name = 
   (* module name fix for camltk *)
-  if !Flags.camltk then "c" ^ (String.capitalize name)
+  if !Flags.camltk then "c" ^ String.capitalize name
   else name
 ;;
 
@@ -375,7 +371,6 @@ module Timer = Timer;;
         output_string oc ".cmo ") module_table;
     output_string oc "\n"
   end;
-
   close_out oc
 
 let main () =
