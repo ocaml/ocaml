@@ -84,20 +84,24 @@ fi
 
 # Check for buggy versions of GCC
 
-case "$cc" in
-  gcc*)
+case "$host,$cc" in
+  i[3456]86-*-*,gcc*)
     case `$cc --version` in
-      2.7.2.1)
-        echo ""
-        echo "WARNING: you are using gcc version 2.7.2.1."
-        echo "This version of gcc is known to generate incorrect code"
-        echo "for the Objective Caml runtime system, at least on some"
-        echo "Intel x86 machines. (The symptom is a crash of boot/ocamlc when"
-        echo "compiling stdlib/pervasives.mli.)"
-        echo "You are strongly advised to use another version of gcc, such as"
-        echo "2.7.2 or 2.7.2.2, which are known to work well with Objective Caml."
-        echo ""
-        echo "Press <enter> to proceed or <interrupt> to stop."
+      2.7.2.1) cat <<'EOF'
+
+WARNING: you are using gcc version 2.7.2.1 on an Intel x86 processor.
+This version of gcc is known to generate incorrect code for the
+Objective Caml runtime system on some Intel x86 machines. (The symptom
+is a crash of boot/ocamlc when compiling stdlib/pervasives.mli.)
+In particular, the version of gcc 2.7.2.1 that comes with
+Linux RedHat 4.x / Intel is affected by this problem.
+Other Linux distributions might also be affected.
+If you are using one of these configurations, you are strongly advised
+to use another version of gcc, such as 2.7.2 or 2.7.2.2, which are
+known to work well with Objective Caml.
+
+Press <enter> to proceed or <interrupt> to stop.
+EOF
         read reply;;
     esac;;
 esac
@@ -292,14 +296,18 @@ fi
 
 if (SHELL=/bin/sh; export SHELL; ./sharpbang > /dev/null); then
   echo "#! appears to work in shell scripts"
-  if test `echo $bindir/ocamlrun | wc -c` -gt 32; then
-    echo "We won't use it, though, because the path"
-    echo "      $bindir/ocamlrun"
-    echo "is too long (more than 32 characters -- some kernels don't support this)"
-    echo "SHARPBANGSCRIPTS=false" >> Makefile
-  else
-    echo "SHARPBANGSCRIPTS=true" >> Makefile
-  fi
+  case "$host" in
+    *-*-sunos*)
+      if test `echo $bindir/ocamlrun | wc -c` -gt 32; then
+        echo "We won't use it, though, because the path"
+        echo "      $bindir/ocamlrun"
+        echo "is too long (more than 32 characters -- some kernels don't support this)"
+        echo "SHARPBANGSCRIPTS=false" >> Makefile
+      else
+        echo "SHARPBANGSCRIPTS=true" >> Makefile
+      fi;;
+    *)  echo "SHARPBANGSCRIPTS=true" >> Makefile;;
+  esac
 else
   echo "No support for #! in shell scripts"
   echo "SHARPBANGSCRIPTS=false" >> Makefile
