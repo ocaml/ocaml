@@ -21,6 +21,7 @@ value gr_point_color(vx, vy)
   XImage * im;
   int rgb;
 
+  gr_check_open();
   im = XGetImage(grdisplay, grbstore.win, x, Bcvt(y), 1, 1, (-1), ZPixmap);
   rgb = gr_rgb_pixel(XGetPixel(im, 0, 0));
   XDestroyImage(im);

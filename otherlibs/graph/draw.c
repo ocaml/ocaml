@@ -19,6 +19,7 @@ value gr_plot(vx, vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
+  gr_check_open();
   XDrawPoint(grdisplay, grwindow.win, grwindow.gc, x, Wcvt(y));
   XDrawPoint(grdisplay, grbstore.win, grbstore.gc, x, Bcvt(y));
   XFlush(grdisplay);
@@ -47,6 +48,7 @@ value gr_lineto(vx, vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
+  gr_check_open();
   XDrawLine(grdisplay, grwindow.win, grwindow.gc,
             grx, Wcvt(gry), x, Wcvt(y));
   XDrawLine(grdisplay, grbstore.win, grbstore.gc,
@@ -67,6 +69,7 @@ value gr_draw_arc_nat(vx, vy, vrx, vry, va1, va2)
   int a1 = Int_val(va1);
   int a2 = Int_val(va2);
 
+  gr_check_open();
   XDrawArc(grdisplay, grwindow.win, grwindow.gc,
            x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
   XDrawArc(grdisplay, grbstore.win, grbstore.gc,
@@ -86,6 +89,7 @@ value gr_set_line_width(vwidth)
      value vwidth;
 {
   int width = Int_val(vwidth);
+  gr_check_open();
   XSetLineAttributes(grdisplay, grwindow.gc,
                      width, LineSolid, CapRound, JoinRound);
   XSetLineAttributes(grdisplay, grbstore.gc,
