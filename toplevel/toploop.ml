@@ -115,6 +115,10 @@ let rec pr_items space env ppf = function
 
 let print_items = pr_items false
 
+(* The current typing environment for the toplevel *)
+
+let toplevel_env = ref Env.empty
+
 (* Print an exception produced by an evaluation *)
 
 let print_exception_outcome ppf = function
@@ -127,7 +131,7 @@ let print_exception_outcome ppf = function
       fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
   | exn ->
       fprintf ppf "@[Uncaught exception: %a.@."
-      print_exception (Obj.repr exn)
+              (print_value !toplevel_env (Obj.repr exn)) Predef.type_exn
 
 (* The table of toplevel directives. 
    Filled by functions from module topdirs. *)
@@ -135,8 +139,6 @@ let print_exception_outcome ppf = function
 let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
 
 (* Execute a toplevel phrase *)
-
-let toplevel_env = ref Env.empty
 
 let execute_phrase print_outcome ppf phr =
   match phr with

@@ -20,7 +20,6 @@ open Format
 module type OBJ =
   sig
     type t
-
     val obj : t -> 'a
     val is_block : t -> bool
     val tag : t -> int
@@ -28,17 +27,23 @@ module type OBJ =
     val field : t -> int -> t
   end
 
+module type EVALPATH =
+  sig
+    type value
+    val eval_path: Path.t -> value
+    exception Error
+  end
+
 module type S =
   sig
     type t
-
     val install_printer : Path.t -> Types.type_expr -> (t -> unit) -> unit
     val remove_printer : Path.t -> unit
-
-    val print_exception : formatter -> t -> unit
+    val print_untyped_exception : formatter -> t -> unit
     val print_value :
           int -> int -> (int -> t -> Types.type_expr -> bool) ->
           Env.t -> t -> formatter -> type_expr -> unit
   end
 
-module Make(O : OBJ) : (S with type t = O.t)
+module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) :
+         (S with type t = O.t)

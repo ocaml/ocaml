@@ -373,7 +373,7 @@ let transl_toplevel_item = function
       Lprim(Psetglobal id, [transl_path path])
   | Tstr_module(id, modl) ->
       Ident.make_global id;
-      Lprim(Psetglobal id, [transl_module Tcoerce_none None modl])
+      Lprim(Psetglobal id, [transl_module Tcoerce_none (Some(Pident id)) modl])
   | Tstr_modtype(id, decl) ->
       lambda_unit
   | Tstr_open path ->

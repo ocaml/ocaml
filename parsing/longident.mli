@@ -20,3 +20,4 @@ type t =
   | Lapply of t * t
 
 val flatten: t -> string list
+val parse: string -> t

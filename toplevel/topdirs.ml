@@ -27,13 +27,6 @@ open Toploop
 (* The standard error formatter *)
 let std_err = err_formatter
 
-(* Return the value referred to by a path *)
-
-let rec eval_path = function
-  | Pident id -> Symtable.get_global_value id
-  | Pdot(p, s, pos) -> Obj.field (eval_path p) pos
-  | Papply(p1, p2) -> fatal_error "Topdirs.eval_path"
-
 (* To quit *)
 
 let dir_quit () = exit 0

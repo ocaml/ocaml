@@ -23,7 +23,6 @@ open Types
 module type OBJ =
   sig
     type t
-
     val obj : t -> 'a
     val is_block : t -> bool
     val tag : t -> int
@@ -31,20 +30,25 @@ module type OBJ =
     val field : t -> int -> t
   end
 
+module type EVALPATH =
+  sig
+    type value
+    val eval_path: Path.t -> value
+    exception Error
+  end
+
 module type S =
   sig
     type t
-
     val install_printer : Path.t -> Types.type_expr -> (t -> unit) -> unit
     val remove_printer : Path.t -> unit
-
-    val print_exception : formatter -> t -> unit
+    val print_untyped_exception : formatter -> t -> unit
     val print_value :
           int -> int -> (int -> t -> Types.type_expr -> bool) ->
           Env.t -> t -> formatter -> type_expr -> unit
   end
 
-module Make(O : OBJ) = struct
+module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 
     type t = O.t
 
@@ -53,14 +57,15 @@ module Make(O : OBJ) = struct
        Here, we do a feeble attempt to print
        integer, string and float arguments... *)
 
-    let print_exception_args obj ppf start_offset =
+    let print_untyped_exception_args obj ppf start_offset =
       if O.size obj > start_offset then begin
         fprintf ppf "@[<1>(";
         for i = start_offset to O.size obj - 1 do
           if i > start_offset then fprintf ppf ",@ ";
           let arg = O.field obj i in
           if not (O.is_block arg) then
-            fprintf ppf "%i" (O.obj arg : int) (* Note: this could be a char! *)
+            fprintf ppf "%i" (O.obj arg : int)
+               (* Note: this could be a char or a constant constructor... *)
           else if O.tag arg = Obj.string_tag then
             fprintf ppf "\"%s\"" (String.escaped (O.obj arg : string))
           else if O.tag arg = Obj.double_tag then
@@ -71,15 +76,15 @@ module Make(O : OBJ) = struct
         fprintf ppf ")@]"
       end
 
-    let print_path = Printtyp.path
-
-    let print_exception ppf bucket =
+    let print_untyped_exception ppf bucket =
       let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
       if (name = "Match_failure" || name = "Assert_failure")
       && O.size bucket = 2
       && O.tag(O.field bucket 1) = 0
-      then fprintf ppf "%s%a" name (print_exception_args (O.field bucket 1)) 0
-      else fprintf ppf "%s%a" name (print_exception_args bucket) 1
+      then fprintf ppf "%s%a" name
+                       (print_untyped_exception_args (O.field bucket 1)) 0
+      else fprintf ppf "%s%a" name
+                       (print_untyped_exception_args bucket) 1
 
     (* The user-defined printers. Also used for some builtin types. *)
 
@@ -185,15 +190,13 @@ module Make(O : OBJ) = struct
               if check_depth depth obj ty then begin
                 if prio > 0
                 then
-                  fprintf ppf "@[<1>(%a)@]" (print_val_list 1 depth obj) ty_list
-                else fprintf ppf "@[%a@]" (print_val_list 1 depth obj) ty_list
+                  fprintf ppf "@[<1>(%a)@]" 
+                          (print_val_list 1 0 depth obj) ty_list
+                else fprintf ppf "@[%a@]"
+                          (print_val_list 1 0 depth obj) ty_list
               end
           | Tconstr(path, [], _) when Path.same path Predef.path_exn ->
-              if check_depth depth obj ty then begin
-                if prio > 1
-                then fprintf ppf "@[<2>(%a)@]" print_exception obj
-                else fprintf ppf "@[<1>%a@]" print_exception obj
-              end
+              print_exception prio depth ppf obj
           | Tconstr(path, [ty_arg], _) when Path.same path Predef.path_list ->
               if O.is_block obj then begin
                 if check_depth depth obj ty then begin
@@ -243,26 +246,8 @@ module Make(O : OBJ) = struct
                            try Ctype.apply env decl.type_params ty ty_list with
                              Ctype.Cannot_apply -> abstract_type)
                         constr_args in
-                    begin match ty_args with
-                    | [] ->
-                        print_constr env path ppf constr_name
-                    | [ty1] ->
-                        if check_depth depth obj ty then
-                          (if prio > 1
-                          then fprintf ppf "@[<2>(%a@ %a)@]"
-                          else fprintf ppf "@[<1>%a@ %a@]")
-                          (print_constr env path) constr_name
-                          (cautious
-                             (print_val 2 (depth - 1) (O.field obj 0) ppf))
-                          ty1;
-                    | tyl ->
-                        if check_depth depth obj ty then
-                          (if prio > 1
-                          then fprintf ppf "@[<2>(%a@ @[<1>(%a)@])@]"
-                          else fprintf ppf "@[<1>%a@ @[<1>(%a)@]@]")
-                          (print_constr env path) constr_name
-                          (print_val_list 1 depth obj) tyl;
-                    end
+                    print_constr_with_args (print_constr env path) constr_name
+                                           prio 0 depth obj ppf ty_args
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     if check_depth depth obj ty then begin
                       let rec print_fields pos ppf = function
@@ -322,14 +307,59 @@ module Make(O : OBJ) = struct
           | Tfield(_, _, _, _) | Tnil | Tlink _ ->
               fatal_error "Printval.print_value"
 
-      and print_val_list prio depth obj ppf ty_list =
+      and print_val_list prio start depth obj ppf ty_list =
         let rec print_list i = function
           |  [] -> ()
           | ty :: ty_list ->
-              if i > 0 then fprintf ppf ",@ ";
+              if i > start then fprintf ppf ",@ ";
               print_val prio (depth - 1) (O.field obj i) ppf ty;
               print_list (i + 1) ty_list in
-      cautious (print_list 0) ppf ty_list
+      cautious (print_list start) ppf ty_list
+
+      and print_constr_with_args
+             print_cstr cstr_name prio start depth obj ppf ty_args =
+        match ty_args with
+          [] ->
+            print_cstr ppf cstr_name
+        | [ty1] ->
+            if check_depth depth obj ty then
+              (if prio > 1
+              then fprintf ppf "@[<2>(%a@ %a)@]"
+              else fprintf ppf "@[<1>%a@ %a@]")
+              print_cstr cstr_name
+              (cautious
+                 (print_val 2 (depth - 1) (O.field obj start) ppf))
+              ty1;
+        | tyl ->
+            if check_depth depth obj ty then
+              (if prio > 1
+              then fprintf ppf "@[<2>(%a@ @[<1>(%a)@])@]"
+              else fprintf ppf "@[<1>%a@ @[<1>(%a)@]@]")
+              print_cstr cstr_name
+              (print_val_list 1 start depth obj) tyl;
+
+    and print_exception prio depth ppf bucket =
+      let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
+      let lid = Longident.parse name in
+      try
+        (* Attempt to recover the constructor description for the exn
+           from its name *)
+        let cstr = Env.lookup_constructor lid env in
+        let path =
+          match cstr.cstr_tag with
+            Cstr_exception p -> p | _ -> raise Not_found in
+        (* Make sure this is the right exception and not an homonym,
+           by evaluating the exception found and comparing with the identifier
+           contained in the exception bucket *)
+        if O.field bucket 0 != EVP.eval_path path then raise Not_found;
+        print_constr_with_args
+           pp_print_string name prio 1 depth bucket ppf cstr.cstr_args
+      with Not_found | EVP.Error ->
+        if check_depth depth obj ty then begin
+          if prio > 1
+          then fprintf ppf "@[<2>(%a)@]" print_untyped_exception obj
+          else fprintf ppf "@[<1>%a@]" print_untyped_exception obj
+        end
 
     in cautious (print_val 0 max_depth obj ppf) ppf ty
 

@@ -17,8 +17,10 @@
 open Types
 open Format
 
-val print_exception: formatter -> Obj.t -> unit
+val eval_path: Path.t -> Obj.t
+
 val print_value: Env.t -> Obj.t -> formatter -> type_expr -> unit
+val print_untyped_exception: formatter -> Obj.t -> unit
 
 val install_printer : Path.t -> Types.type_expr -> (Obj.t -> unit) -> unit
 val remove_printer : Path.t -> unit

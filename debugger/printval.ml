@@ -48,7 +48,27 @@ let check_depth ppf depth obj ty =
     false
   end else true
 
-module Printer = Genprintval.Make(Debugcom.Remote_value)
+module EvalPath =
+  struct
+    type value = Debugcom.Remote_value.t
+    exception Error
+    let rec eval_path = function
+      Pident id ->
+        begin try
+          Debugcom.Remote_value.global (Symtable.get_global_position id)
+        with Symtable.Error _ ->
+          raise Error
+        end
+    | Pdot(root, fieldname, pos) ->
+        let v = eval_path root in
+        if not (Debugcom.Remote_value.is_block v)
+        then raise Error
+        else Debugcom.Remote_value.field v pos
+    | Papply(p1, p2) ->
+        raise Error
+  end
+
+module Printer = Genprintval.Make(Debugcom.Remote_value)(EvalPath)
 
 let install_printer path ty ppf fn =
   Printer.install_printer path ty
@@ -64,7 +84,7 @@ let remove_printer = Printer.remove_printer
 let max_printer_depth = ref 20
 let max_printer_steps = ref 300
 
-let print_exception = Printer.print_exception
+let print_exception = Printer.print_untyped_exception
 
 let print_value max_depth env obj (ppf : Format.formatter) ty =
   Printer.print_value !max_printer_steps max_depth

@@ -82,8 +82,8 @@ let rec instrument_result env name ppf clos_typ =
             trace_res res
           with exn ->
             fprintf ppf "@[<2>%a raises@ %a@]@."
-            Printtyp.longident starred_name
-            print_exception (Obj.repr exn);
+              Printtyp.longident starred_name
+              (print_value !toplevel_env (Obj.repr exn)) Predef.type_exn;
             raise exn))
   | _ -> (fun v -> v)
 
@@ -106,8 +106,8 @@ let instrument_closure env name ppf clos_typ =
           trace_res res
         with exn ->
           fprintf ppf "@[<2>%a raises@ %a@]@."
-          Printtyp.longident name
-          print_exception (Obj.repr exn);
+            Printtyp.longident name
+            (print_value !toplevel_env (Obj.repr exn)) Predef.type_exn;
           raise exn)
   | _ -> assert false
 
