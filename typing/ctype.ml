@@ -618,9 +618,10 @@ let rec non_recursive_abbrev env ty =
     match ty.desc with
       Tconstr(p, args, abbrev) ->
         begin try
-          let ty' = repr (expand_abbrev env p args abbrev level) in
-          non_recursive_abbrev env ty'
-        with Cannot_expand -> () end
+          non_recursive_abbrev env (expand_abbrev env p args abbrev level)
+        with Cannot_expand ->
+          iter_type_expr (non_recursive_abbrev env) ty
+        end
     | Tobject (_, _) ->
         ()
     | _ ->
@@ -644,11 +645,12 @@ let occur env ty0 ty =
       | Tconstr(p, tl, abbrev) ->
           ty.level <- pivot_level - ty.level;
           begin try
-            List.iter occur_rec tl
+            iter_type_expr occur_rec ty
           with Occur -> try
-            let ty' = expand_abbrev env p tl abbrev ty.level in
-            occur_rec ty'
-          with Cannot_expand -> () end
+            occur_rec (expand_abbrev env p tl abbrev ty.level)
+          with Cannot_expand ->
+            raise Occur
+          end
       | Tobject (_, _) ->
           ()
       | _ ->
