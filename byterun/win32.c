@@ -17,7 +17,9 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
+#ifndef HAS_UI
 #include <io.h>
+#endif
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -46,6 +48,8 @@ char * searchpath(char * name)
 }
 
 /* Expansion of @responsefile and *? file patterns in the command line */
+
+#ifndef HAS_UI
 
 static int argc;
 static char ** argv;
@@ -146,6 +150,8 @@ void expand_command_line(int * argcp, char *** argvp)
   *argcp = argc;
   *argvp = argv;
 }
+
+#endif
 
 /* Wrapper around "system" for Win32.  Create a diversion file if
    command line is too long. */
