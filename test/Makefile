@@ -108,7 +108,7 @@ bytetest:
           echo $$prog; \
           if test -f Results/$$prog.runtest; then \
             sh Results/$$prog.runtest test $(CAMLRUN) $$prog.byt; \
-          elif test -f Results/$$prog.out; then \
+          else \
             $(CAMLRUN) $$prog.byt | cmp - Results/$$prog.out; \
           fi; \
         done
@@ -119,7 +119,7 @@ codetest:
           echo $$prog; \
           if test -f Results/$$prog.runtest; then \
             sh Results/$$prog.runtest test $$prog.out; \
-          elif test -f Results/$$prog.out; then \
+          else \
             $$prog.out | cmp - Results/$$prog.out; \
           fi; \
         done
