@@ -82,6 +82,9 @@ The "configure" script accepts the following options:
         ./configure -tklibs "-L/usr/local/lib -ltk8.0jp -ltcl8.0jp"
           -tkdefs "-I/usr/local/include/tcl8.0jp -I/usr/local/include/tk8.0jp"
 
+-verbose
+        Verbose output of the configuration tests. Use it if the outcome
+        of configure is not what you were expecting.
 Examples:
     ./configure -prefix /usr/bin
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
