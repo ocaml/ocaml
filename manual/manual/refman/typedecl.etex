@@ -35,6 +35,7 @@ constr-decl:
 label-decl:
           label-name ':' typexpr
         | 'mutable' label-name ':' typexpr
+;
 constraint:
     'constraint' "'" ident '=' typexpr
 ;

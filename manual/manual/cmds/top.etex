@@ -7,14 +7,18 @@ evaluate them, then prints the inferred type and result value, if
 any. The system prints a "#" (sharp) prompt before reading each
 phrase.
 
-A toplevel phrase can span several lines. It is terminated by ";;" (a
-double-semicolon). The syntax of toplevel phrases is as follows:
+Input to the toplevel can span several lines. It is terminated by ";;" (a
+double-semicolon). The toplevel input consists in one or several
+toplevel phrases, with the following syntax:
 
 \begin{syntax}
+toplevel-input:
+        { toplevel-phrase } ';;'
+;
 toplevel-phrase:
-          definition ';;'
-        | expr ';;'
-        | '#' ident directive-argument ';;'
+          definition
+        | expr
+        | '#' ident directive-argument
 ;
 definition:
           'let' ['rec'] let-binding  { 'and' let-binding }
@@ -63,8 +67,8 @@ The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
 "fep"; just run "fep -emacs ocaml" or "fep -vi ocaml".
 Another option is to use "ocaml" under Gnu Emacs, which gives the
-full editing power of Emacs (see the "camlmode" package distributed
-with Caml Light 0.7).
+full editing power of Emacs (see the subdirectory "emacs" of the
+Objective Caml distribution).
 
 At any point, the parsing, compilation or evaluation of the current
 phrase can be interrupted by pressing "ctrl-C" (or, more precisely,

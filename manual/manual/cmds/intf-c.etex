@@ -139,6 +139,8 @@ include files are provided:
 Light objects)}
 \entree{"caml/memory.h"}{miscellaneous memory-related functions (for in-place
 modification of structures, etc).}
+\entree{"caml/callback.h"}{callback from C to Caml (see
+section~\ref{s:callback-caml}).}
 \end{tableau}
 These files reside in the "caml/" subdirectory of the Caml Light
 standard library directory (usually "/usr/local/lib/caml-light").
@@ -440,10 +442,9 @@ successive calls to \var{f}.
 the pointer to a string array \var{p} (a \verb"char **").
 \end{itemize}
 
-\subsection{Raising exceptions}
+\subsection{Raising exceptions} \label{s:c-exceptions}
 
-C functions cannot easily raise arbitrary exceptions. However, two
-functions are provided to raise two standard exceptions:
+Two functions are provided to raise two standard exceptions:
 \begin{itemize}
 \item "failwith("\var{s}")", where \var{s} is a null-terminated C string (with
 type \verb"char *"), raises exception "Failure" with argument \var{s}.
@@ -452,26 +453,21 @@ string (with type \verb"char *"), raises exception "Invalid_argument"
 with argument \var{s}.
 \end{itemize}
 
-\subsection{Callbacks from C to Caml}
-
-C functions can apply Caml functional values (closures) to Caml values.
-The following functions are provided to perform the applications:
+Raising arbitrary exceptions from C is more delicate: the
+exception identifier is dynamically allocated by the Caml program, and
+therefore must be communicated to the C function using the
+registration facility described below in section~\ref{s:register-exn}.
+Once the exception identifier is recovered in C, the following
+functions actually raise the exception:
 \begin{itemize}
-\item "callback("\var{f, a}")" applies the functional value \var{f} to
-the value \var{a} and return the value returned by~\var{f}.
-\item "callback2("\var{f, a, b}")" applies the functional value \var{f}
-(which is assumed to be a curried Caml function with two arguments) to
-\var{a} and \var{b}.
-\item "callback3("\var{f, a, b, c}")" applies the functional value \var{f}
-(a curried Caml function with three arguments) to \var{a}, \var{b} and \var{c}.
+\item "raise_constant("\var{id}")" raises the exception \var{id} with
+no argument;
+\item "raise_with_arg("\var{id}", "\var{v}")" raises the exception
+\var{id} with the Caml value \var{v} as argument;
+\item "raise_with_string("\var{id}", "\var{s}")", where \var{s} is a
+null-terminated C string, raises the exception \var{id} with a copy of
+the C string \var{s} as argument.
 \end{itemize}
-If the function \var{f} does not return, but raises an exception that
-escapes the scope of the application, then this exception is
-propagated to the next enclosing Caml code, skipping over the C
-code. That is, if a Caml function \var{f} calls a C function \var{g} that
-calls back a Caml function \var{h} that raises a stray exception, then the
-execution of \var{g} is interrupted and the exception is propagated back
-into \var{f}.
 
 \section{Living in harmony with the garbage collector}
 
@@ -533,9 +529,10 @@ with the garbage collector using the "register_global_root" function.
 Registration of a global variable "v" is achieved by calling
 "register_global_root(&v)" just before a valid value is stored in "v"
 for the first time. Afterwards, the GC treats the variable "v" as a
-root value, as described above. A typical use is for storing a Caml
-closure in a C global variable so that it can be called back later
-from other C functions.
+root value, as described above.
+
+A registered global variable "v" can be un-registered by calling
+"remove_global_root(&v)".
 
 \begin{gcrule} Direct assignment to a field of a block, as in
 \begin{alltt}
@@ -604,10 +601,176 @@ It would be incorrect to perform
 "Field(r[0], 1) = tail" directly, because the allocation of "tail"
 has taken place since "r[0]" was allocated.
 
+\section{Callbacks from C to Caml} \label{s:callback}
+
+So far, we have described how to call C functions from Caml. In this
+section, we show how C functions can call Caml functions, either as
+callbacks (Caml calls C which calls Caml), or because the main program
+is written in C.
+
+\subsection{Applying Caml closures from C} \label{s:callbacks}
+
+C functions can apply Caml functional values (closures) to Caml values.
+The following functions are provided to perform the applications:
+\begin{itemize}
+\item "callback("\var{f, a}")" applies the functional value \var{f} to
+the value \var{a} and return the value returned by~\var{f}.
+\item "callback2("\var{f, a, b}")" applies the functional value \var{f}
+(which is assumed to be a curried Caml function with two arguments) to
+\var{a} and \var{b}.
+\item "callback3("\var{f, a, b, c}")" applies the functional value \var{f}
+(a curried Caml function with three arguments) to \var{a}, \var{b} and \var{c}.
+\end{itemize}
+If the function \var{f} does not return, but raises an exception that
+escapes the scope of the application, then this exception is
+propagated to the next enclosing Caml code, skipping over the C
+code. That is, if a Caml function \var{f} calls a C function \var{g} that
+calls back a Caml function \var{h} that raises a stray exception, then the
+execution of \var{g} is interrupted and the exception is propagated back
+into \var{f}.
+
+\subsection{Registering Caml closures for use in C functions}
+
+The main difficulty with the "callback" functions described above is
+obtaining a closure to the Caml function to be called. For this
+purpose, Objective Caml provides a simple registration mechanism, by
+which Caml code can register Caml functions under some global name,
+and then C code can retrieve the corresponding closure by this global
+name.
+
+On the Caml side, registration is performed by evaluating
+"Callback.register" \var{n} \var{v}. Here, \var{n} is the global name
+(an arbitrary string) and \var{v} the Caml value. For instance:
+\begin{verbatim}
+    let f x = print_string "f is applied to "; print_int n; print_newline()
+    let _ = Callback.register "test function" f
+\end{verbatim}
+
+On the C side, a pointer to the value registered under name \var{n} is
+obtained by calling "caml_named_value("\var{n}")". The returned
+pointer must then be dereferenced to recover the actual Caml value.
+If no value is registered under the name \var{n}, the null pointer is
+returned. For example, here is a C wrapper that calls the Caml function "f"
+above:
+\begin{verbatim}
+    void call_caml_f(int arg)
+    {
+        callback(*caml_named_value("test function"), Val_int(arg));
+    }
+\end{verbatim}
+
+The pointer returned by "caml_named_value" is constant and can safely
+be cached in a C variable to avoid repeated name lookups. On the other
+hand, the value pointed to can change during garbage collection and
+must always be recomputed at the point of use. Here is a more
+efficient variant of "call_caml_f" above that calls "caml_named_value"
+only once:
+\begin{verbatim}
+    void call_caml_f(int arg)
+    {
+        static value * closure_f = NULL;
+        if (closure_f == NULL) {
+            /* First time around, look up by name */
+            closure_f = caml_named_value("test function");
+        }
+        callback(*closure_f, Val_int(arg));
+    }
+\end{verbatim}
+
+\subsection{Registering Caml exceptions for use in C functions} \label{s:register-exn}
+
+The registration mechanism described above can also be used to
+communicate exception identifiers from Caml to C. The Caml code
+registers the exception by evaluating
+"Callback.register_exception" \var{n} \var{exn}, where \var{n} is an
+arbitrary name and \var{exn} is an exception value of the
+exception to register. For example:
+\begin{verbatim}
+    exception Error of string
+    let _ = Callback.register_exception "test exception" (Error "any string")
+\end{verbatim}
+The C code can then recover the exception identifier using
+"caml_named_value" and pass it as first argument to the functions
+"raise_constant", "raise_with_arg", and "raise_with_string" (described
+in section~\ref{s:c-exceptions}) to actually raise the exception. For
+example, here is a C function that raises the "Error" exception with
+the given argument:
+\begin{verbatim}
+    void raise_error(char * msg)
+    {
+        raise_with_string(*caml_named_value("test exception"), msg);
+    }
+\end{verbatim}
+
+\subsection{Main program in C} \label{s:main-c}
+
+In normal operation, a mixed Caml/C program starts by executing the
+Caml initialization code, which then can proceed to call C
+functions. We say that the main program is the Caml code. In some
+applications, it is desirable that the C code plays the role of the
+main program, calling Caml functions when needed. This can be achieved as
+follows:
+\begin{itemize}
+\item The C part of the program must provide a "main" function,
+which will override the default "main" function provided by the Caml
+runtime system. Execution will start in the user-defined "main" function
+just like for a regular C program.
+
+\item At some point, the C code must call "caml_main(argv)" to
+initialize the Caml code. The "argv" argument is a C array of strings
+(type "char **") which represents the command-line arguments, as
+passed as second argument to "main". The Caml array "Sys.argv" will
+be initialized from this parameter. For the bytecode compiler,
+"argv[0]" and "argv[1]" are also consulted to find the file containing
+the bytecode.
+
+\item The call to "caml_main" initializes the Caml runtime system,
+loads the bytecode (in the case of the bytecode compiler), and
+executes the initialization code of the Caml program. Typically, this
+initialization code registers callback functions using "Callback.register".
+Once the Caml initialization code is complete, control returns to the
+C code that called "caml_main".
+
+\item The C code can then invoke Caml functions using the callback
+mechanism (see section~\ref{s:callbacks}).
+\end{itemize}
+
+\subsection{Embedding the Caml code in the C code} \label{s:embedded-code}
+
+The bytecode compiler in custom runtime mode ("ocamlc -custom")
+normally appends the bytecode to the executable file containing the
+custom runtime. This has two consequences. First, the final linking
+step must be performed by "ocamlc". Second, the Caml runtime library
+must be able to find the name of the executable file from the
+command-line arguments. When using "caml_main(argv)" as in
+section~\ref{s:main-c}, this means that "argv[0]" or "argv[1]" must
+contain the executable file name.
+
+An alternative is to embed the bytecode in the C code. The
+"-output-obj" option to "ocamlc" is provided for this purpose.
+It causes the "ocamlc" compiler to output a C object file (".o" file)
+containing the bytecode for the Caml part of the program, as well as a
+"caml_startup" function. The C object file produced by "ocamlc
+-output-obj" can then be linked with C code using the standard C
+compiler, or stored in a C library.
+
+The "caml_startup" function must be called from the main C program in
+order to initialize the Caml runtime and execute the Caml
+initialization code. Just like "caml_main", it takes one "argv"
+parameter containing the command-line parameters. Unlike "caml_main",
+this "argv" parameter is used only to initialize "Sys.argv", but not
+for finding the name of the executable file.
+
+The native-code compiler "ocamlopt" also supports the "-output-obj"
+option, causing it to output a C object file containing the native
+code for all Caml modules on the command-line, as well as the Caml
+startup code. Initialization is performed by calling "caml_startup" as
+in the case of the bytecode compiler.
+
 \section{A complete example}
 
 This section outlines how the functions from the Unix "curses" library
-can be made available to Caml Light programs. First of all, here is
+can be made available to Objective Caml programs. First of all, here is
 the interface "curses.mli" that declares the "curses" primitives and
 data types:
 \begin{verbatim}
@@ -708,4 +871,89 @@ To compile this program, run:
 Finally, to link everything together:
 \begin{verbatim}
         ocamlc -custom -o test test.cmo curses.o -cclib -lcurses
+\end{verbatim}
+
+\section{Advanced example with callbacks}
+
+This section illustrates the callback facilities described in
+section~\ref{s:callback}. We are going to package some Caml functions
+in such a way that they can be linked with C code and called from C
+just like any C functions. The Caml functions are defined in the
+following "mod.ml" Caml source:
+
+\begin{verbatim}
+(* File mod.ml -- some ``useful'' Caml functions *)
+
+let rec fib n = if n < 2 then 1 else fib(n-1) + fib(n-2)
+
+let format_result n = Printf.sprintf "Result is: %d\n" n
+
+(* Export those two functions to C *)
+
+let _ = Callback.register "fib" fib
+let _ = Callback.register "format_result" format_result
+\end{verbatim}
+
+Here is the C stub code for calling these functions from C:
+
+\begin{verbatim}
+/* File modwrap.c -- wrappers around the Caml functions */
+
+#include <stdio.h>
+#include <string.h>
+#include <caml/mlvalues.h>
+#include <caml/callback.h>
+
+int fib(int n)
+{
+  static value * fib_closure = NULL;
+  if (fib_closure == NULL) fib_closure = caml_named_value("fib");
+  return Int_val(callback(*fib_closure, Val_int(n)));
+}
+
+char * format_result(int n)
+{
+  static value * format_result_closure = NULL;
+  if (format_result_closure == NULL)
+    format_result_closure = caml_named_value("format_result");
+  return strdup(String_val(callback(*format_result_closure, Val_int(n))));
+  /* We copy the C string returned by String_val to the C heap
+     so that it remains valid after garbage collection. */
+}
+\end{verbatim}
+
+We now compile the Caml code to a C object file and put it in a C
+library along with the stub code in "modwrap.c" and the Caml runtime system:
+\begin{verbatim}
+        ocamlc -custom -output-obj -o modcaml.o mod.ml
+        ocamlc -c modwrap.c
+        cp /usr/local/lib/ocaml/libcamlrun.a mod.a
+        ar r mod.a modcaml.o modwrap.o
+\end{verbatim}
+
+Now, we can use the two fonctions "fib" and "format_result" in any C
+program, just like regular C functions. Just remember to call
+"caml_startup" once before.
+
+\begin{verbatim}
+/* File main.c -- a sample client for the Caml functions */
+
+#include <stdio.h>
+
+int main(int argc, char ** argv)
+{
+  int result;
+
+  /* Initialize Caml code */
+  caml_startup(argv);
+  /* Do some computation */
+  result = fib(10);
+  printf("fib(10) = %s\n", format_result(result));
+  return 0;
+}
+\end{verbatim}
+
+To build the whole program, just invoke the C compiler as follows:
+\begin{verbatim}
+        cc -o prog main.c mod.a
 \end{verbatim}

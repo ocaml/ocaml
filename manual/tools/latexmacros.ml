@@ -78,6 +78,7 @@ def_macro "\\end{htmlonly}" [];
 def_macro "\\begin{options}" [Print "<p><dl>"];
 def_macro "\\end{options}" [Print "</dl>"];
 def_macro "\\var" [Print "<i>"; Print_arg; Print "</i>"];
+def_macro "\\optvar" [Print "[<i>"; Print_arg; Print "</i>]"];
 def_macro "\\nth" [Print "<i>"; Print_arg;
                    Print "</i><sub>"; Print_arg; Print "</sub>"];
 def_macro "\\nmth" [Print "<i>"; Print_arg; 
@@ -128,5 +129,6 @@ def_macro "\\fromoneto"
 def_macro "\\caml" [Print "<pre>"];
 def_macro "\\endcaml" [Print "</pre>"];
 def_macro "\\rminalltt" [Print_arg];
+def_macro "\\event" [Print "<font color=\"red\">*</font>"];
 ();;
 

@@ -1,7 +1,7 @@
-\chapter{The dbm library: access to NDBM databases}
+\chapter{The dbm library: access to {\sc NDBM} databases}
 
-The "dbm" library provides access to NDBM databases under Unix.
-NDBM databases maintain key/data associations, where both the key and
+The "dbm" library provides access to {\sc NDBM} databases under Unix.
+{\sc NDBM} databases maintain key/data associations, where both the key and
 the data are arbitrary strings. They support fairly large databases
 (several gigabytes) and can retrieve a keyed item in one or two file
 system accesses. Refer to the Unix manual pages for more information.

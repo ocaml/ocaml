@@ -93,7 +93,7 @@ while(<>) {
       $inverbatim = 1;
     }
     s/^external /val /;
-    s/ = "[^"]*"\s*$//;
+    s/ = ("[^"]*"\s*)+$//;
     next line if /^$/;
     s/^val \( ([^ )]+) \)/val (\1)/;
     {

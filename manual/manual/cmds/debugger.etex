@@ -1,43 +1,47 @@
-\chapter{The debugger (camldebug)} \label{c:debugger}
+\chapter{The debugger (ocamldebug)} \label{c:debugger}
 
-This chapter describes the Caml Light source-level replay debugger
-"camldebug".
+This chapter describes the Objective Caml source-level replay debugger
+"ocamldebug".
 
-\begin{unix} The debugger resides in the directory "contrib/debugger"
-in the distribution. It requires a Unix system that provides BSD sockets.
+\begin{unix} The debugger is available on Unix systems that provides
+BSD sockets.
 \end{unix}
 
-\begin{mac} The debugger is not available. \end{mac}
+\begin{windows} The debugger is not available. \end{windows}
 
-\begin{pc} The debugger is not available. \end{pc}
+\begin{mac} The debugger is not available. \end{mac}
 
 \section{Compiling for debugging}
 
 Before the debugger can be used, the program must be compiled and
-linked with the "-g" option: all ".zo" files that are part of the
-program should have been created with "camlc -g", and they must be
-linked together with "camlc -g".
+linked with the "-g" option: all ".cmo" and ".cma" files that are part
+of the program should have been created with "ocamlc -g", and they
+must be linked together with "ocamlc -g".
 
 Compiling with "-g" entails no penalty on the running time of
-programs: ".zo" files and bytecode executable files are bigger and
-take slightly longer to produce, but the executable files run at
-exactly the same speed as if they had been compiled without "-g". It
-is therefore perfectly acceptable to compile always in "-g" mode.
+programs: object files and bytecode executable files are bigger and
+take longer to produce, but the executable files run at
+exactly the same speed as if they had been compiled without "-g".
 
 \section{Invocation}
 
 \subsection{Starting the debugger}
 
-The Caml Light debugger is invoked by running the program
-"camldebug" with the name of the bytecode executable file as argument:
+The Objective Caml debugger is invoked by running the program
+"ocamldebug" with the name of the bytecode executable file as first
+argument:
 \begin{alltt}
-        camldebug \var{program}
+        ocamldebug [\var{options}] \var{program} [\var{arguments}]
 \end{alltt}
+The arguments following \var{program} are optional, and are passed as
+command-line arguments to the program being debugged. (See also the
+"set arguments" command.)
+
 The following command-line options are recognized:
 \begin{options}
-\item["-stdlib "\var{directory}]
-Look for the standard library files in \var{directory} instead of in
-the default directory.
+\item["-I "\var{directory}]
+Add \var{directory} to the list of directories searched for source
+files and compiled files. (See also the "directory" command.)
 
 \item["-s "\var{socket}]
 Use \var{socket} for communicating with the debugged program. See the
@@ -45,11 +49,11 @@ description of the command "set socket" (section~\ref{s:communication})
 for the format of \var{socket}.
 
 \item["-c " \var{count}]
-Set the maximum number of checkpoint to \var{count}.
+Set the maximum number of simultaneously live checkpoints to \var{count}.
 
 \item["-cd " \var{directory}]
 Run the debugger program from the working directory \var{directory},
-instead of the current directory.
+instead of the current directory. (See also the "cd" command.)
 
 \item["-emacs"]
 Tell the debugger it is executed under Emacs. (See
@@ -57,7 +61,7 @@ section~\ref{s:inf-debugger} for information on how to run the
 debugger under Emacs.)
 \end{options}
 
-\subsection{Quitting the debugger}
+\subsection{Exiting the debugger}
 
 The command "quit" exits the debugger. You can also exit the debugger
 by typing an end-of-file character (usually "ctrl-D").
@@ -88,7 +92,7 @@ If the previous command has been successful, a blank line (typing just
 
 \subsection{Getting help}
 
-The Caml Light debugger has a simple on-line help system, which gives
+The Objective Caml debugger has a simple on-line help system, which gives
 a brief description of each command and variable.
 
 \begin{options}
@@ -143,17 +147,9 @@ the source code:
 \begin{alltt}
 (f arg)\event
 \end{alltt}
-\item After receiving an argument to a function:
+\item On entrance to a function:
 \begin{alltt}
-fun x\event y\event z -> \event ...
-\end{alltt}
-If a curried function is defined by pattern-matching with several
-cases, events corresponding to the passing of arguments are displayed
-on the first case of the function, because pattern-matching has not
-yet determined which case to select:
-\begin{alltt}
-fun pat1\event pat2\event pat3 -> \event ...
-  | ...
+fun x y z -> \event ...
 \end{alltt}
 \item On each case of a pattern-matching definition (function,
 "match"\ldots"with" construct, "try"\ldots"with" construct):
@@ -179,14 +175,7 @@ for i = a to b do \event body done
 Exceptions: A function application followed by a function return is replaced
 by the compiler by a jump (tail-call optimization). In this case, no
 event is put after the function application. Also, no event is put
-after a function application when the function is a primitive function
-(written in C). Finally, several events may correspond to the same
-location in the compiled program. Then, the debugger cannot
-distinguish them, and selects one of the events to associate with the
-given code location.  The event chosen is a ``function application''
-event if there is one at that location, or otherwise the event which
-appears last in the source. This heuristic generally picks the ``most
-interesting'' event associated with the code location.
+after a function application when the function is external (written in C).
 
 \subsection{Starting the debugged program}
 
@@ -266,7 +255,8 @@ useful if you wish to recompile the program without leaving the debugger.
 A breakpoint causes the program to stop whenever a certain point in
 the program is reached. It can be set in several ways using the
 "break" command. Breakpoints are assigned numbers when set, for
-further reference.
+further reference. The most comfortable way to set breakpoints is
+through the Emacs interface (see section~\ref{s:inf-debugger}).
 
 \begin{options}
 \item["break"]
@@ -279,8 +269,8 @@ Set a breakpoint at the beginning of \var{function}. This works only
 when the functional value of the identifier \var{function} has been
 computed and assigned to the identifier. Hence this command cannot be
 used at the very beginning of the program execution, when all
-identifiers are still undefined. Moreover, C functions are not
-recognized by the debugger.
+identifiers are still undefined; use "goto" \var{time} to advance
+execution until the functional value is available.
 
 \item["break \@" \optvar{module} \var{line}]
 Set a breakpoint in module \var{module} (or in the current module if
@@ -352,56 +342,51 @@ says how many frames to go down.
 
 \section{Examining variable values}
 
-The debugger can print the current value of a program variable (either
-a global variable or a local variable relative to the selected stack
-frame). It can also print selected parts of a value by matching it
-against a pattern.
+The debugger can print the current value of simple expressions. The
+expressions can involve program variables: all the identifiers that
+are in scope at the selected program point can be accessed.
 
-Variable names can be specified either fully qualified
-(\var{Module-name}"."\var{var-name}) or unqualified
-(\var{var-name}). Unqualified names either correspond to local
-variables, or are completed into fully qualified global names
-by looking at a list of ``opened'' modules that define the same name
-(see section~\ref{s:debugger-open} for how to open modules in the debugger.)
-The completion follows the same rules as in the Caml Light language
-(see section~\ref{s:names}).
+Expressions that can be printed are a subset of Objective Caml
+expressions, as described by the following grammar:
+\begin{syntax}
+expr:
+    lowercase-ident
+  | { uppercase-ident '.' } lowercase-ident
+  | '*'
+  | '$' integer
+  | expr '.' lowercase-ident
+  | expr '.(' integer ')'
+  | expr '.[' integer ']'
+  | '!' expr
+  | '(' expr ')'
+\end{syntax}
+The first two cases refer to a value identifier, either unqualified or
+qualified by the path to the structure that define it.
+"*" refers to the result just computed (typically, the value of a
+function application), and is valid only if the selected event is an
+``after'' event (typically, a function application).
+@'$' integer@ refer to a previously printed value. The remaining four
+forms select part of an expression: respectively, a record field, an
+array element, a string element, and the current contents of a
+reference.
 
 \begin{options}
 \item["print "\var{variables}]
-Print the values of the given variables.
-\item["match "\var{variable} \var{pattern}]
-Match the value of the given variable against a pattern, and print the
-values bound to the identifiers in the pattern.
+Print the values of the given variables. "print" can be abbreviated as
+"p".
+\item["display "\var{variables}]
+Same as "print", but limit the depth of printing to 1. Useful to
+browse large data structures without printing them in full.
+"display" can be abbreviated as "d".
 \end{options}
 
-The syntax of patterns for the "match" command extends the one for
-Caml Light patterns:
-
-\begin{syntax}
-pattern:
-    ident
-  | '_'
-  | '(' pattern ')'
-  | ncconstr pattern
-  | pattern ',' pattern { ',' pattern }
-  | '{' label '=' pattern { ';' label '=' pattern } '}'
-  | '[' ']'
-  | '[' pattern { ';' pattern } ']'
-  | pattern '::' pattern
-  | '#' integer-literal pattern
-  | '>' pattern
-\end{syntax}
-
-The pattern @ident@, where @ident@ is an identifier, matches any
-value, and binds the identifier to this value. The pattern
-@'#' n pattern@ matches a list, a vector or a tuple whose @n@-th
-element matches @pattern@.
-The pattern @'>' pattern@ matches any
-constructed value whose argument matches @pattern@, regardless of the
-constructor; it is a shortcut for skipping a constructor.
-
-Example: assuming the value of "a" is "Constr{x = [1;2;3;4]}",
-the command "match a > {x = # 2 k}" prints "k = 3".
+When printing a complex expression, a name of the form "$"\var{integer}
+is automatically assigned to its value. Such names are also assigned
+to parts of the value that cannot be printed because the maximal
+printing depth is exceeded. Named values can be printed later on
+with the commands "p $"\var{integer} or "d $"\var{integer}.
+Named values are valid only as long as the program is stopped. They
+are forgotten as soon as the program resumes execution.
 
 \begin{options}
 \item["set print_depth" \var{d}]
@@ -426,8 +411,8 @@ therefore use wildcards, shell variables, and file redirections inside
 the arguments. To debug programs that read from standard input, it is
 recommended to redirect their input from a file (using
 "set arguments < input-file"), otherwise input to the program and
-input to the debugger are not properly separated.
-
+input to the debugger are not properly separated, and inputs are not
+properly replayed when running the program backwards.
 
 \subsection{How programs are loaded}
 
@@ -437,7 +422,7 @@ The "loadingmode" variable controls how the program is executed.
 \item["set loadingmode direct"]
 The program is run directly by the debugger. This is the default mode.
 \item["set loadingmode runtime"]
-The debugger execute the Caml Light runtime "camlrun" on the program.
+The debugger execute the Objective Caml runtime "camlrun" on the program.
 Rarely useful; moreover it prevents the debugging of programs compiled
 in ``custom runtime'' mode.
 \item["set loadingmode manual"]
@@ -479,27 +464,6 @@ Set the working directory for "camldebug" to \var{directory}.
 
 \item["pwd"]
 Print the working directory for "camldebug".
-\end{options}
-
-\subsection{Module management} \label{s:debugger-open}
-
-Like the Caml Light compiler, the debugger maintains a list of opened
-modules in order to resolves variable name ambiguities. The opened
-modules also affect the printing of values: whether fully qualified
-names or short names are used for constructors and record labels.
-
-When a program is executed, the debugger automatically opens the
-modules of the standard library it uses.
-
-\begin{options}
-\item["open" \var{modules}]
-Open the given modules.
-
-\item["close" \var{modules}]
-Close the given modules.
-
-\item["info modules"]
-List the modules used by the program, and the open modules.
 \end{options}
 
 \subsection{Turning reverse execution on and off}
@@ -577,6 +541,40 @@ Print a list of checkpoints.
 Print the list of events in the given module (the current module, by default).
 \end{options}
 
+\subsection{User-defined printers}
+
+Just as in the toplevel system (section~\ref{s:toplevel-directives}),
+the user can register functions for printing values of certain types.
+For technical reasons, the debugger cannot call printing functions
+that reside in the program being debugged. The code for the printing
+functions must therefore be loaded explicitly in the debugger.
+
+\begin{options}
+\item["load_printer \""\var{file-name}"\""]
+Load in the debugger the indicated ".cmo" or ".cma" object file.
+The file is loaded in an environment consisting only of
+the Objective Caml standard library plus the definitions provided by
+object files previously loaded using "load_printer". The loaded file
+does not have direct access to the modules of the program being
+debugged.
+
+\item["install_printer "\var{printer-name}]
+Register the function named \var{printer-name} (a
+value path) as a printer for objects whose types match the argument
+type of the function. That is, the debugger will call
+\var{printer-name} when it has such an object to print.
+The printing function \var{printer-name} must use the "Format" library
+module to produce its output, otherwise its output will not be
+correctly located in the values printed by the toplevel loop.
+
+The value path \var{printer-name} must refer to one of the functions
+defined by the object files loaded using "load_printer". It cannot
+reference the functions of the program being debugged.
+
+\item["remove_printer "\var{printer-name}]
+Remove the named function from the table of value printers.
+\end{options}
+
 \section{Miscellaneous commands}
 
 \begin{options}
@@ -589,3 +587,57 @@ position.
 Read debugger commands from the script \var{filename}.
 \end{options}
 
+\section{Running the debugger under Emacs} \label{s:inf-debugger}
+
+The most user-friendly way to use the debugger is to run it under Emacs.
+See the file "emacs/README" in the distribution for information on how
+to load the Emacs Lisp files for Caml support.
+
+The Caml debugger is started under Emacs by the command "M-x
+camldebug", with argument the name of the executable file
+\var{progname} to debug.  Communication with the debugger takes place
+in an Emacs buffer named  "*camldebug-"\var{progname}"*". The editing
+and history facilities of Shell mode are available for interacting
+with the debugger.
+
+In addition, Emacs displays the source files containing the current
+event (the current position in the program execution) and highlights
+the location of the event. This display is updated synchronously with
+the debugger action.
+
+The following bindings for the most common debugger commands are
+available in the "*camldebug-"\var{progname}"*" buffer:
+
+\begin{options}
+\item["C-c C-s"] (command "step"): execute the program one step forward.
+\item["C-c C-k"] (command "backstep"): execute the program one step backward.
+\item["C-c C-n"] (command "next"): execute the program one step
+forward, skipping over function calls.
+\item[Middle mouse button] (command "display"): display named value.
+"$"\var{n} under mouse cursor (support incremental browsing of large
+data structures).
+\item["C-c C-p"] (command "print"): print value of identifier at point.
+\item["C-c C-d"] (command "display"): display value of identifier at point.
+\item["C-c C-r"] (command "run"): execute the program forward to next
+breakpoint.
+\item["C-c C-v"] (command "reverse"): execute the program backward to
+latest breakpoint.
+\item["C-c C-l"] (command "last"): go back one step in the command history.
+\item["C-c C-t"] (command "backtrace"): display backtrace of function calls.
+\item["C-c C-f"] (command "finish"): run forward till the current
+function returns.
+\item["C-c <"]   (command "up"): select the stack frame below the
+current frame.
+\item["C-c >"]   (command "down"): select the stack frame above the
+current frame.
+\end{options}
+
+In all buffers in Caml editing mode, the following debugger commands
+are also available:
+
+\begin{options}
+\item["C-x C-a C-b"] (command "break"): set a breakpoint at event closest
+to point
+\item["C-x C-a C-p"] (command "print"): print value of identifier at point
+\item["C-x C-a C-d"] (command "display"): display value of identifier at point
+\end{options}

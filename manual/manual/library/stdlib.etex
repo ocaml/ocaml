@@ -60,6 +60,8 @@ Here is a short listing, by theme, of the standard library modules.
 \subsubsection{System interface:}
 \begin{tabular}{lll}
 "Arg" & p.~\pageref{s:Arg} & parsing of command line arguments \\
+"Callback" & p.~\pageref{s:Callback} & registering Caml functions to
+be called from C \\
 "Filename" & p.~\pageref{s:Filename} & operations on file names \\
 "Gc" & p.~\pageref{s:Gc} & memory management control and statistics \\
 "Printexc" & p.~\pageref{s:Printexc} & a catch-all exception handler \\
@@ -70,6 +72,7 @@ Here is a short listing, by theme, of the standard library modules.
 \begin{library}
 \input arg.tex
 \input array.tex
+\input callback.tex
 \input char.tex
 \input digest.tex
 \input filename.tex

@@ -1,5 +1,5 @@
 FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
-  depend.tex profil.tex
+  depend.tex profil.tex debugger.tex
 
 TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2
@@ -31,3 +31,10 @@ top.htex: top.etex $(TRANSF)
 
 lexyacc.htex: lexyacc.etex $(TRANSF)
 	$(TRANSF) -html < lexyacc.etex > lexyacc.htex
+
+debugger.tex: debugger.etex $(TRANSF)
+	$(TRANSF) < debugger.etex | $(TEXQUOTE) > debugger.tex
+
+debugger.htex: debugger.etex $(TRANSF)
+	$(TRANSF) -html < debugger.etex > debugger.htex
+

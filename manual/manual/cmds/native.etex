@@ -132,6 +132,16 @@ standard library directory. Directories added with "-I" are searched
 after the current directory, in the order in which they were given on
 the command line, but before the standard library directory.
 
+\item["-inline" \var{n}]
+Set aggressiveness of inlining to \var{n}, where \var{n} is a positive
+integer. Specifying "-inline 0" prevents all functions from being
+inlined, except those whose body is smaller than the call site. Thus,
+inlining causes no expansion in code size. The default aggressiveness,
+"-inline 1", allows slightly larger functions to be inlined, resulting
+in a slight expansion in code size. Higher values for the "-inline"
+option cause larger and larger functions to become candidate for
+inlining, but can result in a serious increase in code size.
+
 \item["-linkall"]
 Forces all modules contained in libraries to be linked in. If this
 flag is not given, unreferenced modules are not linked in. When
@@ -143,6 +153,15 @@ modules contained in the library.
 Specify the name of the output file produced by the linker. The
 default output name is "a.out", in keeping with the Unix tradition. If
 the "-a" option is given, specify the name of the library produced.
+If the "-output-obj" option is given, specify the name of the output
+file produced.
+
+\item["-output-obj"]
+Cause the linker to produce a C object file instead of an executable
+file. This is useful to wrap Caml code as a C library,
+callable from any C program. See chapter~\ref{c:intf-c},
+section~\ref{s:embedded-code}. The name of the output object file is
+"camlprog.o" by default; it can be set with the "-o" option.
 
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
@@ -157,14 +176,14 @@ file is built from the basename of the source file with the extension
 Keep the assembly code produced during the compilation. The assembly
 code for the source file \var{x}".ml" is saved in the file \var{x}".s".
 
-\item["-v"]
-Print the version number of the compiler.
-
 \item["-unsafe"]
 Turn bound checking off on array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
 faster, but unsafe: anything can happen if the program accesses an
 array or string outside of its bounds.
+
+\item["-v"]
+Print the version number of the compiler.
 
 \end{options}
 

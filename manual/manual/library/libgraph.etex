@@ -4,11 +4,6 @@ The "graphics" library provides a set of portable drawing primitives.
 Drawing takes place
 in a separate window that is created when "open_graph" is called.
 
-This library cannot be used in native-code programs compiled with
-"ocamlopt" (because it uses signals, which are not supported by the
-native-code compiler); it can only be used with bytecode programs
-compiled with "ocamlc".
-
 \begin{unix}
 This library is implemented under the X11 windows system. 
 Programs that use the "graphics" library must be linked as follows:
@@ -21,6 +16,27 @@ For interactive use of the "graphics" library, do:
         ocamlmktop -custom -o mytop graphics.cma -cclib -lgraphics -cclib -lX11
         ./mytop
 \end{alltt}
+Here are the graphics mode specifications supported by "open_graph" on
+the X11 implementation of this library:
+the argument to "open_graph" has the format
+"\""{\it display-name} {\it geometry\/}"\"",
+where {\it display-name} is the name of the X-windows display to
+connect to, and {\it geometry} is a standard X-windows geometry
+specification. The two components are separated by a space. Either can
+be omitted, or both. Examples:
+\begin{options}
+\item["open_graph \"foo:0\""]
+connects to the display "foo:0" and creates a window with the default geometry
+\item["open_graph \"foo:0 300x100+50-0\""]
+connects to the display "foo:0" and creates a window 300 pixels wide
+by 100 pixels tall, at location $(50,0)$
+\item["open_graph \" 300x100+50-0\""]
+connects to the default display and creates a window 300 pixels wide
+by 100 pixels tall, at location $(50,0)$
+\item["open_graph \"\""]
+connects to the default display and creates a window with the default
+geometry.
+\end{options}
 \end{unix}
 
 \begin{windows}
@@ -65,27 +81,6 @@ Drawing is clipped to the screen.
 \end{center}
 \end{latexonly}
 %
-Here are the graphics mode specifications supported by "open_graph" on
-the X11 implementation of this library:
-the argument to "open_graph" has the format
-"\""{\it display-name} {\it geometry\/}"\"",
-where {\it display-name} is the name of the X-windows display to
-connect to, and {\it geometry} is a standard X-windows geometry
-specification. The two components are separated by a space. Either can
-be omitted, or both. Examples:
-\begin{options}
-\item["open_graph \"foo:0\""]
-connects to the display "foo:0" and creates a window with the default geometry
-\item["open_graph \"foo:0 300x100+50-0\""]
-connects to the display "foo:0" and creates a window 300 pixels wide
-by 100 pixels tall, at location $(50,0)$
-\item["open_graph \" 300x100+50-0\""]
-connects to the default display and creates a window 300 pixels wide
-by 100 pixels tall, at location $(50,0)$
-\item["open_graph \"\""]
-connects to the default display and creates a window with the default
-geometry.
-\end{options}
 
 \begin{library}
 \input graphics.tex

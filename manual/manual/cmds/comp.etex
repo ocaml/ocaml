@@ -128,6 +128,11 @@ installed. Moreover, the ``custom runtime'' mode enables linking Caml
 code with user-defined C functions, as described in
 chapter~\ref{c:intf-c}.
 
+\item["-g"]
+Add debugging information while compiling and linking. This option is
+required in order to be able to debug the program with "ocamldebug"
+(see chapter~\ref{c:debugger}).
+
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (".ml"
@@ -164,6 +169,15 @@ modules contained in the library.
 Specify the name of the output file produced by the linker. The
 default output name is "a.out", in keeping with the Unix tradition. If
 the "-a" option is given, specify the name of the library produced.
+If the "-output-obj" option is given, specify the name of the output
+file produced.
+
+\item["-output-obj"]
+Cause the linker to produce a C object file instead of a bytecode
+executable file. This is useful to wrap Caml code as a C library,
+callable from any C program. See chapter~\ref{c:intf-c},
+section~\ref{s:embedded-code}. The name of the output object file is
+"camlprog.o" by default; it can be set with the "-o" option.
 
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
@@ -180,14 +194,14 @@ Compile or link multithreaded programs, in combination with the
 option actually does is select a special, thread-safe version of the
 standard library.
 
-\item["-v"]
-Print the version number of the compiler.
-
 \item["-unsafe"]
 Turn bound checking off on array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
 slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
+
+\item["-v"]
+Print the version number of the compiler.
 
 \end{options}
 
