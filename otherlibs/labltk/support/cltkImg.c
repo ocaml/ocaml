@@ -18,6 +18,7 @@
 #include <tk.h>
 #include <mlvalues.h>
 #include <memory.h>
+#include <alloc.h>
 #include "camltk.h"
 
 /*
