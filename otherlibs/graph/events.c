@@ -41,7 +41,11 @@ value gr_wait_event(eventlist)
   Window rootwin, childwin;
   int root_x, root_y, win_x, win_y;
   unsigned int modifiers;
+#ifdef POSIX_SIGNALS
+  struct sigaction sigact, oldsig;
+#else
   void (*oldsig)();
+#endif
   XEvent event;
 
   mask = 0;
@@ -82,7 +86,12 @@ value gr_wait_event(eventlist)
       gr_head++;
       if (gr_head >= SIZE_QUEUE) gr_head = 0;
     } else {
+#ifdef POSIX_SIGNALS
+      sigact.sa_handler = SIG_IGN;
+      sigaction(EVENT_SIGNAL, &sigact, &oldsig);
+#else
       oldsig = signal(EVENT_SIGNAL, SIG_IGN);
+#endif
       XSelectInput(grdisplay, grwindow.win, DEFAULT_EVENT_MASK | mask);
     again:
       XNextEvent(grdisplay, &event);
@@ -112,7 +121,11 @@ value gr_wait_event(eventlist)
         gr_handle_simple_event(&event);
         goto again;
       }
+#ifdef POSIX_SIGNALS
+      sigaction(EVENT_SIGNAL, &oldsig, NULL);
+#else
       signal(EVENT_SIGNAL, oldsig);
+#endif
       XSelectInput(grdisplay, grwindow.win, DEFAULT_EVENT_MASK);
       XFlush(grdisplay);
     }
