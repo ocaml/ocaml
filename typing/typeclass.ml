@@ -40,6 +40,7 @@ type error =
   | Unbound_val of string
   | Unbound_type_var of (unit -> unit) * Ctype.closed_class_failure
   | Make_nongen_seltype of type_expr
+  | Non_generalizable_class of (unit -> unit)
 
 exception Error of Location.t * error
 
@@ -136,6 +137,25 @@ let rec abbreviate_class_type path params cty =
   | Tcty_fun (ty, cty) ->
       Tcty_fun (ty, abbreviate_class_type path params cty)
 
+let rec closed_class_type =
+  function
+    Tcty_constr (_, params, _) ->
+      List.for_all Ctype.closed_schema params
+  | Tcty_signature sign ->
+      Ctype.closed_schema sign.cty_self
+        &&
+      Vars.fold (fun _ (_, ty) cc -> Ctype.closed_schema ty && cc)
+        sign.cty_vars
+        true
+  | Tcty_fun (ty, cty) ->
+      Ctype.closed_schema ty
+        &&
+      closed_class_type cty
+
+let closed_class cty =
+  List.for_all Ctype.closed_schema cty.cty_params
+    &&
+  closed_class_type cty.cty_type
 
                 (***********************************)
                 (*  Primitives for typing classes  *)
@@ -855,7 +875,13 @@ let final_env define_class
   | Some ty -> Ctype.generalize ty
   end;
 
-(* XXX Verifier que les parametre peuvent etre generalises... *)
+  if not (closed_class clty) then begin
+    let printer =
+      fun () -> Printtyp.class_declaration id clty
+    in
+    raise(Error(cl.pci_loc, Non_generalizable_class printer))
+  end
+
   begin match
     Ctype.closed_class clty.cty_params
       (Ctype.signature_of_class_type clty.cty_type)
@@ -1093,3 +1119,9 @@ let report_error = function
       print_cut ();
       print_string "It would escape the scope of its class";
       close_box ()
+  | Non_generalizable_class printer ->
+      open_box 0;
+      print_string "The type of this class,"; print_space();
+      printer(); print_string ","; print_space();
+      print_string "contains type variables that cannot be generalized";
+      close_box()
