@@ -339,12 +339,12 @@ elif sh hasgot -lnsl -lsocket socket socketpair bind listen accept connect; then
   echo "#define HAS_SOCKETS" >> s.h
 fi
 
-if test -f /usr/include/unistd.h; then
+if sh hasgot -i unistd.h; then
   echo "unistd.h found."
   echo "#define HAS_UNISTD" >> s.h
 fi
 
-if test -f /usr/include/dirent.h; then
+if sh hasgot -i dirent.h; then
   echo "dirent.h found."
   echo "#define HAS_DIRENT" >> s.h
 fi
@@ -374,7 +374,7 @@ if sh hasgot getpriority setpriority; then
   echo "#define HAS_GETPRIORITY" >> s.h
 fi
 
-if test -f /usr/include/utime.h && sh hasgot utime; then
+if sh hasgot -i utime.h && sh hasgot utime; then
   echo "utime() found."
   echo "#define HAS_UTIME" >> s.h
 fi
@@ -405,8 +405,8 @@ if sh hasgot select; then
   has_select=yes
 fi
 
-if test -f /usr/include/sys/select.h; then
-  echo "/usr/include/sys/select.h found."
+if sh hasgot -i sys/select.h; then
+  echo "sys/select.h found."
   echo "#define HAS_SYS_SELECT_H" >> s.h
 fi
 
@@ -425,12 +425,12 @@ if sh hasgot waitpid;  then
   echo "#define HAS_WAITPID" >> s.h
 fi
 
-if test -f /usr/include/sys/param.h && sh runtest getgroups.c; then
+if sh hasgot -i sys/param.h && sh runtest getgroups.c; then
   echo "getgroups() found."
   echo "#define HAS_GETGROUPS" >> s.h
 fi
 
-if test -f /usr/include/termios.h && 
+if sh hasgot -i termios.h && 
    sh hasgot tcgetattr tcsetattr tcsendbreak tcflush tcflow; then
   echo "POSIX termios found."
   echo "#define HAS_TERMIOS" >> s.h
@@ -459,7 +459,7 @@ if sh hasgot gethostname; then
   echo "#define HAS_GETHOSTNAME" >> s.h
 fi
 
-if test -f /usr/include/sys/utsname.h && sh hasgot uname; then
+if sh hasgot -i sys/utsname.h && sh hasgot uname; then
   echo "uname() found."
   echo "#define HAS_UNAME" >> s.h
 fi
@@ -468,6 +468,11 @@ if sh hasgot gettimeofday; then
   echo "gettimeofday() found."
   echo "#define HAS_GETTIMEOFDAY" >> s.h
   has_gettimeofday="yes"
+fi
+
+if sh hasgot mktime; then
+  echo "mktime() found."
+  echo "#define HAS_MKTIME" >> s.h
 fi
 
 # Determine the target architecture for the "num" library
@@ -552,7 +557,7 @@ fi
 
 # See if we can compile the dbm library
 
-if test -f /usr/include/ndbm.h
+if sh hasgot -i ndbm.h
 then
   echo "NDBM library found."
   otherlibraries="$otherlibraries dbm"
