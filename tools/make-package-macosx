@@ -34,6 +34,7 @@ else
   echo 'Unable to mount the disk image as "/Volumes/Objective Caml"' >&2
   exit 3
 fi
+open "/Volumes/Objective Caml"
 hdiutil detach $name
 
 hdiutil convert ocaml-rw.dmg -format UDZO -o ocaml.dmg
