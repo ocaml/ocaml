@@ -200,7 +200,8 @@ cleanboot:
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
-opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt ocamldoc.opt
+opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt \
+	camlp4optopt ocamldoc.opt
 
 # Installation
 install: installbyt installopt
@@ -241,6 +242,12 @@ installopt:
 	cd stdlib ; $(MAKEREC) installopt
 	cd ocamldoc ; $(MAKEREC) installopt
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
+	if test -f ocamlc.opt; \
+	  then cp ocamlc.opt $(BINDIR)/ocamlc.opt.exe; else :; fi
+	if test -f ocamlopt.opt; \
+	  then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt.exe; else :; fi
+	if test -f lex/ocamllex.opt; \
+	  then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt.exe; else :; fi
 
 clean:: partialclean
 
@@ -560,6 +567,8 @@ camlp4out:
 	cd camlp4/config ; \
 	(cat Makefile.tpl; \
 	 echo 'EXE=.exe'; \
+	 echo 'O=$(O)'; \
+	 echo 'A=$(A)'; \
 	 echo 'OPT='; \
 	 echo 'OTOP=../..'; \
 	 echo 'OLIBDIR=$$(OTOP)/boot'; \
@@ -569,6 +578,8 @@ camlp4out:
 	cd camlp4 ; $(MAKE)
 camlp4opt:
 	cd camlp4 ; $(MAKE) opt
+camlp4optopt:
+	cd camlp4; $(MAKE) opt.opt
 partialclean::
 	cd camlp4 ; $(MAKE) clean
 
