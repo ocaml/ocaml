@@ -375,7 +375,7 @@ void open_files(void)
       open_error(interface_file_name);
 }
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 #if macintosh
     rotatecursor_init (&have_to_interact);
@@ -391,4 +391,5 @@ void main(int argc, char **argv)
     output();
     done(0);
     /*NOTREACHED*/
+    return 0;
 }
