@@ -16,7 +16,7 @@
 
 ########## General configuration
 
-### Where to install the MPW tool binaries
+### Where to install the MPW tool binaries (must be in your command path)
 set -e BINDIR "{mpw}User Commands:"
 
 ### Where to install the standard library for MPW tools

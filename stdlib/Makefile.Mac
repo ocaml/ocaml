@@ -36,7 +36,7 @@ stdlib.cma Ä {OBJS}
 
 camlheader Ä
     begin
-      quote -n "{BINDIR}ocamlrun"; echo ' "{command}" {"Parameters"}'
+      quote -n "ocamlrun"; echo ' "{command}" {"Parameters"}'
       echo 'exit {status}'
       echo
     end > camlheader
