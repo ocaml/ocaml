@@ -517,7 +517,7 @@ and enter_modtype = enter store_modtype
 
 (* Insertion of all components of a signature *)
 
-let add_signature_component comp env =
+let add_signature_component env comp =
   match comp with
     Tsig_value(id, decl) -> add_value id decl env
   | Tsig_type(id, decl) -> add_type id decl env
@@ -525,7 +525,8 @@ let add_signature_component comp env =
   | Tsig_module(id, mty) -> add_module id mty env
   | Tsig_modtype(id, decl) -> add_modtype id decl env
 
-let add_signature = List.fold_right add_signature_component
+let add_signature sg env =
+  List.fold_left add_signature_component env sg
 
 (* Open a signature path *)
 
