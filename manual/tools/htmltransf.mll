@@ -39,14 +39,14 @@ and syntax = parse
       print_string "</code></font>";
       need_space := true;
       syntax lexbuf }
-  | '"' {
+  | '\"' {
       addspace();
       print_string "<font color=\"blue\"><code>";
       indoublequote lexbuf;
       print_string "</code></font>";
       need_space := true;
       syntax lexbuf }
-  | ['a'-'z''-'] + {
+  | ['a'-'z'] ['a'-'z' '0'-'9' '-'] * {
       addspace();
       print_string "<i>";
       print_string (lexeme lexbuf);

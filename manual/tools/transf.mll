@@ -25,11 +25,11 @@ and syntax = parse
   | '\'' {
       print_string "\\token{";
       inquote lexbuf }
-  | '"' {
+  | '\"' {
       print_string "\\token{";
       indoublequote lexbuf }
   | "epsilon" { print_string "\\emptystring"; syntax lexbuf }
-  | ['a'-'z''-'] + {
+  | ['a'-'z'] ['a'-'z' '0'-'9' '-'] * {
       print_string "\\nonterm{";
       print_string (lexeme lexbuf);
       print_string"}";
