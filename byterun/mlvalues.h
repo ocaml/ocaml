@@ -224,8 +224,14 @@ struct custom_operations;       /* defined in [custom.h] */
 /* Int32.t, Int64.t and Nativeint.t are represented as custom blocks. */
 
 #define Int32_val(v) (*((int32 *) Data_custom_val(v)))
-#define Int64_val(v) (*((int64 *) Data_custom_val(v)))
 #define Nativeint_val(v) (*((long *) Data_custom_val(v)))
+#ifndef ARCH_ALIGN_INT64
+#define Int64_val(v) (*((int64 *) Data_custom_val(v)))
+#define Store_int64_val(v,i) (*((int64 *) Data_custom_val(v)) = (i))
+#else
+extern int64 Int64_val(value v);
+extern void Store_int64_val(value v, int64 i);
+#endif
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 

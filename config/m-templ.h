@@ -63,3 +63,11 @@
    values of type ARCH_INT64_TYPE.  This is usually "ll" on 32-bit
    platforms and "l" on 64-bit platforms.
    Leave undefined if ARCH_INT64_TYPE is undefined.  */
+
+#define ARCH_ALIGN_INT64
+
+/* Define ARCH_ALIGN_INT64 if the processor requires 64-bit integers to be
+   doubleword-aligned. Leave ARCH_ALIGN_INT64 undefined if the processor
+   supports word-aligned 64-bit integers.  Leave undefined if
+   64-bit integers are not supported. */
+

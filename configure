@@ -263,14 +263,17 @@ if test $2 = 8; then
      echo "#define ARCH_INT64_TYPE long" >> m.h
      echo "#define ARCH_UINT64_TYPE unsigned long" >> m.h
      echo '#define ARCH_INT64_PRINTF_FORMAT "l"' >> m.h
+     int64_supported=true
 else
   sh ./runtest longlong.c
   case $? in
   0) echo "64-bit \"long long\" integer type found."
      echo "#define ARCH_INT64_TYPE long long" >> m.h
      echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
-     echo '#define ARCH_INT64_PRINTF_FORMAT "ll"' >> m.h;;
+     echo '#define ARCH_INT64_PRINTF_FORMAT "ll"' >> m.h
+     int64_supported=true;;
   *) echo "No suitable 64-bit integer type found, Int64.t will not be supported."
+     int64_supported=false;;
   esac
 fi
 
@@ -304,6 +307,21 @@ case $? in
      echo "this architecture has actually no alignment constraints."
      echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
 esac
+
+if $int64_supported; then
+  sh ./runtest int64align.c
+  case $? in
+    0) echo "64-bit integers can be word-aligned."
+       echo "#undef ARCH_ALIGN_INT64" >> m.h;;
+    1) echo "64-bit integers must be doubleword-aligned."
+       echo "#define ARCH_ALIGN_INT64" >> m.h;;
+    *) echo "Something went wrong during alignment determination for 64-bit integers."
+       echo "I'm going to assume this architecture has alignment constraints."
+       echo "That's a safe bet: Objective Caml will work even if"
+       echo "this architecture has actually no alignment constraints."
+       echo "#define ARCH_ALIGN_INT64" >> m.h;;
+  esac
+fi
 
 # Configure the native-code compiler
 

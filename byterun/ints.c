@@ -245,6 +245,28 @@ value int32_of_string(value s)          /* ML */
 
 #ifdef ARCH_INT64_TYPE
 
+#ifdef ARCH_ALIGN_INT64
+
+int64 Int64_val(value v)
+{
+  union { int32 i[2]; int64 j; } buffer;
+  buffer.i[0] = ((int32 *) Data_custom_val(v))[0];
+  buffer.i[1] = ((int32 *) Data_custom_val(v))[1];
+  return buffer.j;
+}
+
+void Store_int64_val(value v, int64 n)
+{
+  union { int32 i[2]; int64 j; } buffer;
+  buffer.j = n;
+  ((int32 *) Data_custom_val(v))[0] = buffer.i[0];
+  ((int32 *) Data_custom_val(v))[1] = buffer.i[1];
+}
+
+#endif
+
+#endif
+
 static int int64_compare(value v1, value v2)
 {
   int64 i1 = Int64_val(v1);
