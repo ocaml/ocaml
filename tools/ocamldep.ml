@@ -344,6 +344,7 @@ let file_dependencies source_file =
           close_box(); raise x
       end;
       close_box(); print_newline();
+      set_output Format.std_formatter;
       error_occurred := true
   end
 
