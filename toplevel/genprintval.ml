@@ -413,7 +413,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
         | Oval_ellipsis -> raise Ellipsis
         | Oval_printer f -> f ppf
 	(* DYN *)
-	| Oval_dynamic (v,t) -> fprintf ppf "<%a : %a>" 
+	| Oval_dynamic (v,t) -> fprintf ppf "dynamic (%a : %a)" 
 	      print_tree v
 	      !Printtyp.outcome_type t
         (* /DYN *)
