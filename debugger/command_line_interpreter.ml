@@ -113,16 +113,9 @@ let find_variable action alternative lexbuf =
 let find_info action alternative lexbuf =
   find_ident "info command" matching_infos action alternative lexbuf
 
-let add_breakpoint_at_event =
-  function
-    {ev_repr = Event_child pc} ->
-      new_breakpoint (any_event_at_pc !pc)
-  | ev ->
-      new_breakpoint ev
-
 let add_breakpoint_at_pc pc =
   try
-    add_breakpoint_at_event (any_event_at_pc pc)
+    new_breakpoint (any_event_at_pc pc)
   with Not_found ->
     prerr_string "Can't add breakpoint at pc ";
     prerr_int pc;
@@ -133,7 +126,7 @@ let add_breakpoint_after_pc pc =
   let rec try_add n =
     if n < 3 then begin
       try
-        add_breakpoint_at_event (any_event_at_pc (pc + n * 4))
+        new_breakpoint (any_event_at_pc (pc + n * 4))
       with Not_found ->
         try_add (n+1)
     end else begin
@@ -305,8 +298,23 @@ let instr_next lexbuf =
     next step_count;
     show_current_event ()
 
-(* XXX Etudier instruction previous et start, symetriques de next et
-   finish. *)
+let instr_start lexbuf =
+  eol lexbuf;
+  ensure_loaded ();
+  reset_named_values();
+  start ();
+  show_current_event ()
+
+let instr_previous lexbuf =
+  let step_count =
+    match opt_integer_eol Lexer.lexeme lexbuf with
+      None -> 1
+    | Some x -> x
+  in
+    ensure_loaded ();
+    reset_named_values();
+    previous step_count;
+    show_current_event ()
 
 let instr_goto lexbuf =
   let time = integer_eol Lexer.lexeme lexbuf in
@@ -520,7 +528,7 @@ let instr_break lexbuf =
       BA_none ->                                (* break *)
         (match !selected_event with
            Some ev ->
-             add_breakpoint_at_event ev
+             new_breakpoint ev
          | None ->
              prerr_endline "Can't add breakpoint at this point.";
              raise Toplevel)
@@ -549,28 +557,28 @@ let instr_break lexbuf =
         end
     | BA_pos1 (mdle, line, column) ->         (* break @ [MODULE] LINE [COL] *)
         let module_name = convert_module mdle in
-        add_breakpoint_at_event
+        new_breakpoint
           (try
+             let buffer =
+               try get_buffer module_name with Not_found ->
+                 prerr_endline ("No source file for " ^ module_name ^ ".");
+                 raise Toplevel
+             in
              match column with
                None ->
-                 event_at_pos
-                   module_name
-                   (fst (pos_of_line (get_buffer module_name) line))
+                 event_at_pos module_name (fst (pos_of_line buffer line))
              | Some col ->
-                 event_near_pos
-                   module_name
-                   (point_of_coord (get_buffer module_name) line col)
+                 event_near_pos module_name (point_of_coord buffer line col)
            with
-             Not_found ->
+             Not_found -> (* event_at_pos / event_near pos *)
                prerr_endline "Can't find any event there.";
                raise Toplevel
-           | Out_of_range ->
+           | Out_of_range -> (* pos_of_line / point_of_coord *)
                prerr_endline "Position out of range.";
                raise Toplevel)
     | BA_pos2 (mdle, position) ->             (* break @ [MODULE] # POSITION *)
         try
-          add_breakpoint_at_event
-            (event_near_pos (convert_module mdle) position)
+          new_breakpoint (event_near_pos (convert_module mdle) position)
         with
           Not_found ->
             prerr_endline "Can't find any event there."
@@ -697,8 +705,13 @@ let instr_list lexbuf =
             None when (mo <> None) || (point = -1) ->
               1
           | None ->
+              let buffer =
+                try get_buffer mdle with Not_found ->
+                 prerr_endline ("No source file for " ^ mdle ^ ".");
+                 raise Toplevel
+              in
               begin try
-                max 1 ((snd (line_of_pos (get_buffer mdle) point)) - 10)
+                max 1 ((snd (line_of_pos buffer point)) - 10)
               with Out_of_range ->
                 1
               end
@@ -803,11 +816,12 @@ let loading_mode_variable =
 (** Infos. **)
 
 let info_modules lexbuf =
-  eol lexbuf
-(********
+  eol lexbuf;
+  ensure_loaded ();
   print_endline "Used modules :";
   List.iter (function x -> print_string x; print_space()) !modules;
-  print_newline ();
+  print_flush ()
+(********
   print_endline "Opened modules :";
   if !opened_modules_names = [] then
     print_endline "(no module opened)."
@@ -852,7 +866,7 @@ let info_events lexbuf =
   let mdle = convert_module (opt_identifier_eol Lexer.lexeme lexbuf) in
     print_endline ("Module : " ^ mdle);
     print_endline "   Address  Character      Kind      Repr.";
-    Array.iter
+    List.iter
       (fun {ev_pos = pc; ev_char = char; ev_kind = kind; ev_repr = repr} ->
          Printf.printf
            "%10d %10d  %8s %10s\n"
@@ -861,7 +875,8 @@ let info_events lexbuf =
            (match kind with
                Event_before   -> "before"
              | Event_after _  -> "after"
-             | Event_function -> "function")
+             | Event_function -> "function"
+             | Event_return _ -> "return")
            (match repr with
               Event_none        -> ""
             | Event_parent _    -> "(repr)"
@@ -938,10 +953,18 @@ Argument N means do this N times (or till program stops for another reason)." };
 "go to the given time." };
      { instr_name = "finish"; instr_prio = true;
        instr_action = instr_finish; instr_repeat = true; instr_help =
-"execute until selected stack frame returns." };
+"execute until topmost stack frame returns." };
      { instr_name = "next"; instr_prio = true;
        instr_action = instr_next; instr_repeat = true; instr_help =
 "step program until it reaches the next event.\n\
+Skip over function calls.\n\
+Argument N means do this N times (or till program stops for another reason)." };
+     { instr_name = "start"; instr_prio = false;
+       instr_action = instr_start; instr_repeat = true; instr_help =
+"execute backward until the current function is exited." };
+     { instr_name = "previous"; instr_prio = true;
+       instr_action = instr_previous; instr_repeat = true; instr_help =
+"step program until it reaches the previous event.\n\
 Skip over function calls.\n\
 Argument N means do this N times (or till program stops for another reason)." };
      { instr_name = "print"; instr_prio = true;
