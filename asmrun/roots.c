@@ -120,8 +120,8 @@ static void init_frame_descriptors(void)
 
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
-char * caml_bottom_of_stack;
-unsigned long caml_last_return_address = 0;
+char * caml_bottom_of_stack = NULL; /* no stack initially */
+unsigned long caml_last_return_address = 1; /* not in Caml code initially */
 value * caml_gc_regs;
 
 /* Call [oldify] on all stack roots, C roots and global roots */
@@ -152,47 +152,49 @@ void oldify_local_roots (void)
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
   regs = caml_gc_regs;
-  while (1) {
-    /* Find the descriptor corresponding to the return address */
-    h = Hash_retaddr(retaddr);
-    while(1) {
-      d = frame_descriptors[h];
-      if (d->retaddr == retaddr) break;
-      h = (h+1) & frame_descriptors_mask;
-    }
-    if (d->frame_size >= 0) {
-      /* Scan the roots in this frame */
-      for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
-        ofs = *p;
-        if (ofs & 1) {
-          root = regs + (ofs >> 1);
-        } else {
-          root = (value *)(sp + ofs);
-        }
-        oldify(*root, root);
+  if (sp != NULL) {
+    while (1) {
+      /* Find the descriptor corresponding to the return address */
+      h = Hash_retaddr(retaddr);
+      while(1) {
+        d = frame_descriptors[h];
+        if (d->retaddr == retaddr) break;
+        h = (h+1) & frame_descriptors_mask;
       }
-      /* Move to next frame */
+      if (d->frame_size >= 0) {
+        /* Scan the roots in this frame */
+        for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
+          ofs = *p;
+          if (ofs & 1) {
+            root = regs + (ofs >> 1);
+          } else {
+            root = (value *)(sp + ofs);
+          }
+          oldify(*root, root);
+        }
+        /* Move to next frame */
 #ifndef Stack_grows_upwards
-      sp += d->frame_size;
+        sp += d->frame_size;
 #else
-      sp -= d->frame_size;
+        sp -= d->frame_size;
 #endif
-      retaddr = Saved_return_address(sp);
+        retaddr = Saved_return_address(sp);
 #ifdef Already_scanned
-      /* Stop here if the frame has already been scanned during earlier GCs  */
-      if (Already_scanned(sp, retaddr)) break;
-      /* Mark frame as already scanned */
-      Mark_scanned(sp, retaddr);
+        /* Stop here if the frame has been scanned during earlier GCs  */
+        if (Already_scanned(sp, retaddr)) break;
+        /* Mark frame as already scanned */
+        Mark_scanned(sp, retaddr);
 #endif
-    } else {
-      /* This marks the top of a stack chunk for an ML callback.
-         Skip C portion of stack and continue with next ML stack chunk. */
-      struct caml_context * next_context = Callback_link(sp);
-      sp = next_context->bottom_of_stack;
-      retaddr = next_context->last_retaddr;
-      regs = next_context->gc_regs;
-      /* A null sp means no more ML stack chunks; stop here. */
-      if (sp == NULL) break;
+      } else {
+        /* This marks the top of a stack chunk for an ML callback.
+           Skip C portion of stack and continue with next ML stack chunk. */
+        struct caml_context * next_context = Callback_link(sp);
+        sp = next_context->bottom_of_stack;
+        retaddr = next_context->last_retaddr;
+        regs = next_context->gc_regs;
+        /* A null sp means no more ML stack chunks; stop here. */
+        if (sp == NULL) break;
+      }
     }
   }
   /* Local C roots */
@@ -260,44 +262,46 @@ void do_local_roots(scanning_action f, char * bottom_of_stack,
   sp = bottom_of_stack;
   retaddr = last_retaddr;
   regs = gc_regs;
-  while (1) {
-    /* Find the descriptor corresponding to the return address */
-    h = Hash_retaddr(retaddr);
-    while(1) {
-      d = frame_descriptors[h];
-      if (d->retaddr == retaddr) break;
-      h = (h+1) & frame_descriptors_mask;
-    }
-    if (d->frame_size >= 0) {
-      /* Scan the roots in this frame */
-      for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
-        ofs = *p;
-        if (ofs & 1) {
-          root = regs + (ofs >> 1);
-        } else {
-          root = (value *)(sp + ofs);
-        }
-        f (*root, root);
+  if (sp != NULL) {
+    while (1) {
+      /* Find the descriptor corresponding to the return address */
+      h = Hash_retaddr(retaddr);
+      while(1) {
+        d = frame_descriptors[h];
+        if (d->retaddr == retaddr) break;
+        h = (h+1) & frame_descriptors_mask;
       }
-      /* Move to next frame */
+      if (d->frame_size >= 0) {
+        /* Scan the roots in this frame */
+        for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
+          ofs = *p;
+          if (ofs & 1) {
+            root = regs + (ofs >> 1);
+          } else {
+            root = (value *)(sp + ofs);
+          }
+          f (*root, root);
+        }
+        /* Move to next frame */
 #ifndef Stack_grows_upwards
-      sp += d->frame_size;
+        sp += d->frame_size;
 #else
-      sp -= d->frame_size;
+        sp -= d->frame_size;
 #endif
-      retaddr = Saved_return_address(sp);
+        retaddr = Saved_return_address(sp);
 #ifdef Mask_already_scanned
-      retaddr = Mask_already_scanned(retaddr);
+        retaddr = Mask_already_scanned(retaddr);
 #endif
-    } else {
-      /* This marks the top of a stack chunk for an ML callback.
-         Skip C portion of stack and continue with next ML stack chunk. */
-      struct caml_context * next_context = Callback_link(sp);
-      sp = next_context->bottom_of_stack;
-      retaddr = next_context->last_retaddr;
-      regs = next_context->gc_regs;
-      /* A null sp means no more ML stack chunks; stop here. */
-      if (sp == NULL) break;
+      } else {
+        /* This marks the top of a stack chunk for an ML callback.
+           Skip C portion of stack and continue with next ML stack chunk. */
+        struct caml_context * next_context = Callback_link(sp);
+        sp = next_context->bottom_of_stack;
+        retaddr = next_context->last_retaddr;
+        regs = next_context->gc_regs;
+        /* A null sp means no more ML stack chunks; stop here. */
+        if (sp == NULL) break;
+      }
     }
   }
   /* Local C roots */
