@@ -466,8 +466,23 @@ let f () = object (self:c) method private n = 1 method m = self#n end;;
 let f () = object method private n = 1 method m = {<>}#n end;;
 let f () = object (self:c) method n = 1 method m = 2 end;;
 let f () = object (_:'s) constraint 's = < n : int > method m = 1 end;;
+class c = object (_ : 's)
+  method x = 1
+  method private m =
+    object (self: 's) method x = 3 method private m = self end
+end;;
+let o = object (_ : 's)
+  method x = 1
+  method private m =
+    object (self: 's) method x = 3 method private m = self end
+end;;
 
 
-(* Not allowed! *)
+(* Unsound! *)
 fun (x : <m : 'a. 'a * <m: 'b. 'a * 'foo> > as 'foo) ->
   (x : <m : 'a. 'a * (<m:'b. 'a * <m:'c. 'c * 'bar> > as 'bar) >);;
+type 'a foo = <m: 'b. 'a * 'a foo>
+type foo' =   <m: 'a. 'a * 'a foo>
+type 'a bar = <m: 'b. 'a * <m: 'c. 'c * 'a bar> >
+type bar' =   <m: 'a. 'a * 'a bar >
+let f (x : foo') = (x : bar');;
