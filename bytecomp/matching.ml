@@ -21,14 +21,28 @@ open Types
 open Typedtree
 open Lambda
 open Parmatch
+open Printf
 
 (*  See Peyton-Jones, ``The Implementation of functional programming
     languages'', chapter 5. *)
 (*
   Bon, au commencement du monde c'etait vrai.
+  Now, see Lefessant-Maranget ``Optimizing Pattern-Matching'' ICFP'2001
+*)
+
+
+(*
+   Many functions on the various data structures ofthe algorithm :
+     - Pattern matrices.
+     - Default environments: mapping from matrices to exit numbers.
+     - Contexts:  matrices whose column are partitioned into
+       left and right.
+     - Jump sumaries: mapping from exit numbers to contexts
 *)
 
 type matrix = pattern list list
+
+let add_omega_column pss = List.map (fun ps -> omega::ps) pss
 
 type ctx = {left:pattern list ; right:pattern list}
 
@@ -100,7 +114,6 @@ let ncols = function
 
 exception NoMatch
 exception OrPat
-exception Unused
 
 let filter_matrix matcher pss =
 
@@ -129,6 +142,18 @@ let filter_matrix matcher pss =
         pretty_matrix pss ;
         fatal_error "Matching.filter_matrix" in
   filter_rec pss
+
+let make_default matcher env =
+  let rec make_rec = function
+    | [] -> []
+    | ([[]],i)::_ -> [[[]],i]
+    | (pss,i)::rem ->
+        let rem = make_rec rem in
+        match filter_matrix matcher pss with
+        | [] -> rem
+        | ([]::_) -> ([[]],i)::rem
+        | pss -> (pss,i)::rem in
+  make_rec env
 
 let ctx_matcher p =
   let p = normalize_pat p in
@@ -314,16 +339,33 @@ let rec jumps_map f env =
     (fun (i,pss) -> i,f pss)
     env
 
+(* Pattern matching before any compilation *)
+
 type pattern_matching =
   { mutable cases : (pattern list * lambda) list;
     args : (lambda * let_kind) list ;
-    default : int * (matrix * int) list}
+    default : (matrix * int) list}
 
-type pattern_matching_ext =
-  {to_match : pattern_matching ;
-  to_catch : (matrix * int * Ident.t list * pattern_matching) list}
+(* Pattern matching after application of both the or-pat rule and the
+   mixture rule *)
 
+type pm_or_compiled =
+  {body : pattern_matching ;
+   handlers : (matrix * int * Ident.t list * pattern_matching) list ;
+   or_matrix : matrix ; }
 
+type pm_half_compiled =
+  | PmOr of pm_or_compiled 
+  | PmVar of pm_var_compiled
+  | Pm of pattern_matching
+
+and pm_var_compiled =
+    {inside : pm_half_compiled ; var_arg : lambda ; }
+
+type pm_half_compiled_info =
+    {me : pm_half_compiled ;
+     matrix : matrix ;
+     top_default : (matrix * int) list ; }
 
 let pretty_cases cases =
   List.iter
@@ -334,75 +376,53 @@ let pretty_cases cases =
           prerr_string " " ;
           prerr_string (Format.flush_str_formatter ()))
         ps ;
+(*
       prerr_string " -> " ;
       Printlambda.lambda Format.str_formatter l ;
       prerr_string (Format.flush_str_formatter ()) ;
+*)
       prerr_endline "")
     cases
 
-let pretty_pm pm = pretty_cases pm.cases
-
 let pretty_def def =
+  prerr_endline "+++++ Defaults +++++" ;
   List.iter
     (fun (pss,i) ->
       Printf.fprintf stderr "Matrix for %d\n"  i ;
       pretty_matrix pss)
-    def
-
-let pretty_ext m =
-  prerr_endline "++++++++ To Match ++++++++" ;
-  pretty_pm m.to_match ;
-  begin match m.to_catch with
-  | [] ->
-      prerr_endline "++++++++ No Catch ++++++++"
-  | to_catch ->
-      prerr_endline "++++++++ To Catch ++++++++" ;
-      List.iter
-        (fun (p,i,_,pm) ->
-          Printf.fprintf stderr "Handler %d: " i ;
-          prerr_endline "" ;
-          pretty_pm pm)
-        to_catch
-  end ;
-  prerr_endline "+++++ Defaults +++++" ;
-  pretty_def (snd m.to_match.default) ;
+    def ;
   prerr_endline "+++++++++++++++++++++"
-  
 
-(* To group lines of patterns with identical keys *)
-
-let add_line patl_action pm =
-  pm.cases <- patl_action :: pm.cases; pm
-
-type cell =
-  {pm : pattern_matching ;
-  ctx : ctx list ;
-  pat : pattern}
-
-let add make_matching_fun division key patl_action args =
-  try
-    let cell = List.assoc key division in
-    cell.pm.cases <- patl_action :: cell.pm.cases;
-    division
-  with Not_found ->
-    let cell = make_matching_fun args in
-    cell.pm.cases <- [patl_action] ;
-    (key, cell) :: division
+let pretty_pm pm = pretty_cases pm.cases
 
 
+let rec pretty_precompiled = function
+  | Pm pm ->
+      prerr_endline "++++ PM ++++" ;
+      pretty_pm pm
+  | PmVar x ->
+      prerr_endline "++++ VAR ++++" ;
+      pretty_precompiled x.inside
+  | PmOr x ->
+      prerr_endline "++++ OR ++++" ;
+      pretty_pm x.body ;
+      List.iter
+        (fun (_,i,_,pm) ->
+          eprintf "++ Handler %d ++\n" i ;
+          pretty_pm pm)
+        x.handlers
 
-(* To find reasonable names for let-bound and lambda-bound idents *)
-
-let rec name_pattern default = function
-    (pat :: patl, action) :: rem ->
-      begin match pat.pat_desc with
-        Tpat_var id -> id
-      | Tpat_alias(p, id) -> id
-      | _ -> name_pattern default rem
-      end
-  | _ -> Ident.create default
+let pretty_precompiled_res first nexts =
+  pretty_precompiled first ;
+  List.iter
+    (fun (e, pmh) ->
+      eprintf "** DEFAULT %d **\n" e ;
+      pretty_precompiled pmh)
+    nexts
 
 
+
+(* A slight attempt to identify semantically equivalent lambda-expressions *)
 exception Not_simple
 
 let rec raw_rec env = function
@@ -445,12 +465,14 @@ let equal_action act1 act2 =
   with
   | Not_simple -> false
 
+(* Test for swapping two clauses *)
+
 let up_ok_action act1 act2 =
   try
     let raw1 = raw_rec [] act1
     and raw2 = raw_rec [] act2 in
     match raw1, raw2 with
-    | Lstaticraise (i1,_), Lstaticraise (i2,_) -> i1=i2
+    | Lstaticraise (i1,[]), Lstaticraise (i2,[]) -> i1=i2
     | _,_ -> raw1 = raw2
   with
   | Not_simple -> false
@@ -462,23 +484,17 @@ let up_ok (ps,act_p) l =
       not (Parmatch.compats ps qs))
     l
 
-exception Same
-
-let rec what_is_or = function
-  | {pat_desc = Tpat_or (p,_,_)} -> what_is_or p
-  | {pat_desc = (Tpat_alias (p,_))} -> what_is_or p        
-  | {pat_desc=(Tpat_var _|Tpat_any)} -> fatal_error "Matching.what_is_or"
-  | p -> p
-
 
 (*
    Simplify fonction normalize the first column of the match
-   - records are expanded so that they posses all fields
-   - or-patterns equivalent to variables are replaced by those variables
+     - records are expanded so that they posses all fields
+     - aliases are removed and replaced by bindings in actions.
+   However or-patterns are simplified differently,
+     - aliases are not removed
+     - or patterns (_|p) are changed into _
 *)
 
 exception Var of pattern
-
 
 let simplify_or p =
   let rec simpl_rec p = match p with
@@ -489,8 +505,14 @@ let simplify_or p =
         with
         | Var q -> raise (Var {p with pat_desc = Tpat_alias (q,id)})
         end
-    | {pat_desc = Tpat_or (p1,p2,_)} ->
-        {p with pat_desc = Tpat_or (simpl_rec p1, simpl_rec p2, None)}
+    | {pat_desc = Tpat_or (p1,p2,o)} ->
+        let q1 = simpl_rec p1 in
+        begin try 
+          let q2 = simpl_rec p2 in
+          {p with pat_desc = Tpat_or (q1, q2, o)}
+        with 
+        | Var q2 -> raise (Var {p with pat_desc = Tpat_or (q1, q2, o)})
+        end
     | {pat_desc = Tpat_record lbls} ->
         let all_lbls = all_record_args lbls in
         {p with pat_desc=Tpat_record all_lbls}        
@@ -500,23 +522,18 @@ let simplify_or p =
   with
   | Var p -> p
 
-
-let simplify_matching m = match m.args with
-| [] -> omega,m
-| (arg, _) :: _ ->
-    let ex_pat = ref None in
-    let record_ex_pat p = match !ex_pat with
-      | None -> ex_pat := Some p
-      | _    -> () in
-
+let rec simplify_cases args cls = match args with
+| [] -> assert false
+| (arg,_)::_ ->
     let rec simplify = function
-      | (pat :: patl, action as patl_action) :: rem ->
+      | [] -> []
+      | ((pat :: patl, action) as cl) :: rem ->
           begin match pat.pat_desc with
           | Tpat_var id ->
               (omega :: patl, bind Alias id arg action) ::
               simplify rem
           | Tpat_any ->
-              patl_action :: simplify rem
+              cl :: simplify rem
           | Tpat_alias(p, id) ->
               simplify ((p :: patl, bind Alias id arg action) :: rem)
           | Tpat_record [] ->
@@ -525,52 +542,47 @@ let simplify_matching m = match m.args with
           | Tpat_record lbls ->
               let all_lbls = all_record_args lbls in
               let full_pat = {pat with pat_desc=Tpat_record all_lbls} in
-              record_ex_pat full_pat ;
               (full_pat::patl,action)::
               simplify rem
           | Tpat_or _ ->
               let pat_simple  = simplify_or pat in
               begin match pat_simple.pat_desc with
               | Tpat_or _ ->
-                  let ex_pat = what_is_or pat_simple in
-                  record_ex_pat ex_pat ;
                   (pat_simple :: patl, action) ::
                   simplify rem
               | _ ->
                   simplify ((pat_simple::patl,action) :: rem)
               end
-          | _ ->
-              record_ex_pat pat ;
-              patl_action :: simplify rem
+          | _ -> cl :: simplify rem
           end
-      | [] -> []
-      | _  -> assert false in
-      let cases =  simplify m.cases in
-      match !ex_pat with
-      | None -> omega, {m with cases=cases}
-      | Some p -> p,{m with cases = cases}
+      | _ -> assert false in
+
+    simplify cls
 
 
+
+(* Once matchings are simplified one easily finds
+   their nature *)
 
 let rec what_is_cases cases = match cases with
 | ({pat_desc=Tpat_any} :: _, _) :: rem -> what_is_cases rem
+| (({pat_desc=(Tpat_var _|Tpat_or (_,_,_)|Tpat_alias (_,_))}::_),_)::_
+  -> assert false (* applies to simplified matchings only *)
 | (p::_,_)::_ -> p
-| _ -> omega 
+| [] -> omega 
+| _ -> assert false
 
 
 
-(* Optimize breaks *)
-let as_matrix cases =
-  get_mins le_pats (List.map (fun (ps,_) -> ps) cases)
+(* A few operation on default environments *)
+let as_matrix cases = get_mins le_pats (List.map (fun (ps,_) -> ps) cases)
 
-
-let cons_default  matrix raise_num (_,default) =
+let cons_default matrix raise_num default =
   match matrix with
-  | [] -> raise_num,default
-  | _ -> raise_num,((matrix,raise_num)::default)
+  | [] -> default
+  | _ -> (matrix,raise_num)::default
 
-let default_compat p (exit,def) =
-  exit,
+let default_compat p def =
   List.fold_right
     (fun (pss,i) r ->
       let qss =
@@ -584,6 +596,7 @@ let default_compat p (exit,def) =
       | _  -> (qss,i)::r)
     def []
 
+(* Or-pattern expansion, variables are a complication w.r.t. the article *)
 let rec extract_vars r p = match p.pat_desc with
 | Tpat_var id -> IdentSet.add id r
 | Tpat_alias (p, id) ->
@@ -623,77 +636,17 @@ let rec explode_or_pat arg patl mk_action rem vars aliases = function
         vars aliases p1
   | {pat_desc = Tpat_alias (p,id)} ->
       explode_or_pat arg patl mk_action rem vars (id::aliases) p
+  | {pat_desc = Tpat_var x} ->
+      let env = mk_alpha_env arg (x::aliases) vars in      
+      (omega::patl,mk_action (List.map snd env))::rem
   | p ->
       let env = mk_alpha_env arg aliases vars in      
       (alpha_pat env p::patl,mk_action (List.map snd env))::rem
-
-let equiv_pat p q = le_pat p q && le_pat q p
-
-let rec get_equiv p l = match l with
-  | (q::_,_) as cl::rem ->
-      if equiv_pat p q then
-        let others,rem = get_equiv p rem in
-        cl::others,rem
-      else
-        [],l
-  | _ -> [],l
 
 let pm_free_variables {cases=cases} =
   List.fold_right
     (fun (_,act) r -> IdentSet.union (free_variables act) r)
     cases IdentSet.empty
-
-let compile_or argo cl clor al def = match clor with
-| [] ->
-    {to_match = {cases=cl ; args=al ; default=def} ;
-      to_catch = []}
-| _  ->
-    let rec do_cases = function
-      | ({pat_desc=Tpat_or _} as orp::patl, action)::rem ->
-          let others,rem = get_equiv orp rem in          
-          let orpm =
-            {cases =
-              (patl, action)::
-              List.map
-                (function
-                  | (_::ps,action) -> ps,action
-                  | _ -> assert false)
-                others ;
-              args = List.tl al ;
-              default = default_compat orp def} in
-          begin match patl,action with
-          | [],Lstaticraise (_,[]) ->
-              let new_ord,new_to_catch = do_cases rem in
-              let mk_new_action _ = action in
-              explode_or_pat
-                argo [] mk_new_action new_ord [] [] orp,
-              new_to_catch
-          | _,_ ->
-          let vars =
-            IdentSet.elements
-              (IdentSet.inter
-                 (extract_vars IdentSet.empty orp)
-                 (pm_free_variables orpm)) in
-          let or_num = next_raise_count () in
-          let new_patl = Parmatch.omega_list patl in
-
-          let mk_new_action vs =
-            Lstaticraise
-              (or_num, List.map (fun v -> Lvar v) vs) in
-
-          let new_ord,new_to_catch = do_cases rem in
-          explode_or_pat
-            argo new_patl mk_new_action new_ord vars [] orp,
-          (([[orp]], or_num, vars , orpm):: new_to_catch)
-          end
-      | cl::rem ->
-          let new_ord,new_to_catch = do_cases rem in
-          cl::new_ord,new_to_catch
-      | [] -> [],[] in
-
-    let to_match,to_catch = do_cases clor in
-    {to_match = {args=al ; cases=cl@to_match ; default=def} ;
-      to_catch = to_catch}
 
 
 (* Basic grouping predicates *)
@@ -754,7 +707,19 @@ let or_ok p ps l =
       | _ -> true)
     l
 
-(* Insert or append a or-pattern in the Or matrix *)
+(* Insert or append a pattern in the Or matrix *)
+
+let equiv_pat p q = le_pat p q && le_pat q p
+
+let rec get_equiv p l = match l with
+  | (q::_,_) as cl::rem ->
+      if equiv_pat p q then
+        let others,rem = get_equiv p rem in
+        cl::others,rem
+      else
+        [],l
+  | _ -> [],l
+
 
 let insert_or_append p ps act ors no =
   let rec attempt seen = function
@@ -790,107 +755,271 @@ let insert_or_append p ps act ors no =
         (p::ps,act)::ors,no in (* success in appending *)
   attempt [] ors
 
+(* Reconstruct default information from half_compiled  pm list *)
 
-let separe argo pm =
-  let ex_pat,pm = simplify_matching pm in
-  match pm.cases with
-  | [[{pat_desc=Tpat_any}],_] ->
-      compile_or argo pm.cases [] pm.args pm.default,[]
-  | _ -> 
-      let next,nexts =
-        match ex_pat.pat_desc with
-        | Tpat_any -> compile_or argo pm.cases [] pm.args pm.default,[]
-        | _ -> 
-            let group = get_group ex_pat in
+let rec rebuild_matrix pmh = match pmh with
+  | Pm pm -> as_matrix pm.cases
+  | PmOr {or_matrix=m} -> m
+  | PmVar x -> add_omega_column  (rebuild_matrix x.inside)
 
-            let rec sep_ex yes ors no = function
-              | ((p::ps,act) as cl)::rem ->
-                  if group p then begin
-                    if up_ok cl no then
-                      if up_ok cl ors then
-                        sep_ex (cl::yes) ors no rem
-                      else if or_ok p ps ors then
-                        sep_ex yes (cl::ors) no rem
-                      else
-                        sep_ex yes ors (cl::no) rem
-                    else
-                      sep_ex yes ors (cl::no) rem
-                  end else if is_or p then begin
-                    if up_ok cl no then
-                      let ors,no = insert_or_append p ps act ors no in
-                      sep_ex yes ors no rem 
-                    else
-                      sep_ex yes ors (cl::no) rem 
-                  end else (* p is a variable *)
-                    sep_ex yes ors (cl::no) rem
-              | _ -> (* [] in fact *)
-                  cons_next (List.rev yes) (List.rev ors) (List.rev no)
-                    
-            and sep_noex yes no = function
-              | [ps,_ as cl]
-                  when List.for_all group_var ps && yes <> [] ->
-                    cons_next (List.rev yes) [] (List.rev (cl::no))
-              | ((p::_,_) as cl)::rem ->
-                  if group_var p && up_ok cl no then
-                    sep_noex (cl::yes) no rem
-                  else
-                    sep_noex yes (cl::no) rem
-              | _ -> (* [] in fact *)
-                  cons_next (List.rev yes) [] (List.rev no)
-
-            and sep_next cl rem = match cl with
-            | ((p::_),_) ->
-                if group p then
-                  sep_ex [cl] [] [] rem
-                else if is_or p then
-                  sep_ex [] [cl] [] rem
-                else
-                  sep_noex [cl] [] rem
-            | _ -> assert false
-
-            and cons_next yes yesor = function
-              | [] ->
-                  as_matrix (yes@yesor),
-                  compile_or argo yes yesor pm.args pm.default,[]
-              | cl::rem ->
-                  let matrix,next,nexts = sep_next cl rem in
-                  begin match next with
-                  (* Optimisation of jumps to jumps *)
-                  | {to_match =
-                      {cases=[ps,Lstaticraise (idef,[])]} ;
-                      to_catch=[]}
-                      when  List.for_all group_var ps ->
-                      let newdef =
-                        cons_default matrix idef next.to_match.default in
-                      as_matrix (yes@yesor),
-                      compile_or argo yes yesor pm.args newdef,
-                      (-1,next)::nexts
-                  | _ -> 
-                      let idef = next_raise_count () in
-                      let newdef =
-                        cons_default matrix idef next.to_match.default in
-                      as_matrix (yes@yesor),
-                      compile_or argo yes yesor pm.args newdef,
-                      (idef,next)::nexts
-                  end in
-            match pm.cases with
-            | ((_::_),_) as cl::rem ->
-                let _,next,nexts = sep_next cl rem in
-                next, nexts
-            | _                     ->
-                compile_or argo pm.cases [] pm.args  pm.default,[] in
-(*      
-      prerr_endline "SEPARE" ;
-      pretty_ext next ;
-      List.iter (fun (e,p) -> Printf.eprintf "** %d **\n" e ; flush stderr ; pretty_ext p) nexts ;
-*)
-      (next,nexts)
+let rec rebuild_default nexts def = match nexts with
+| [] -> def
+| (e, pmh)::rem ->
+    (add_omega_column (rebuild_matrix pmh), e)::
+    rebuild_default rem def
   
+let rebuild_nexts arg nexts k =
+  List.fold_right
+    (fun (e, pm) k -> (e, PmVar {inside=pm ; var_arg=arg})::k)
+    nexts k
 
+
+(*
+  Split a matching.
+    Splitting is first directed by or-patterns, then by
+    must test (e.g. constructors)/variable transitions.
+
+    The approach is greedy, every split function attempt to
+    raise rows as much as possible in the top matrix,
+    then splitting applies again to the remaining rows.
+
+    Some precompilation of or-patterns and
+    variable pattern occurs. Mostly this means that bindings
+    are performed now,  being replaced by let-bindings
+    in actions (cf. simplify_cases).
+
+    Additionally, if the match argument is a variable, matchings whose
+    first column is made of variables only are splitted further
+    (cf. precompile_var).
+
+*)
+
+
+let rec split_or argo cls args def =
+
+  let cls = simplify_cases args cls in
+
+  let rec do_split before ors no = function
+    | [] ->
+        cons_next
+          (List.rev before) (List.rev ors) (List.rev no)
+    | ((p::ps,act) as cl)::rem ->
+        if up_ok cl no then
+          if is_or p then
+            let ors, no = insert_or_append p ps act ors no in
+            do_split before ors no rem
+          else begin
+            if up_ok cl ors then
+              do_split (cl::before) ors no rem
+            else if or_ok p ps ors then
+              do_split before (cl::ors) no rem
+            else
+              do_split before ors (cl::no) rem
+          end
+        else
+          do_split before ors (cl::no) rem
+    | _ -> assert false
+
+  and cons_next yes yesor = function
+    | [] ->
+        precompile_or argo yes yesor args def []
+    | rem ->
+        let {me=next ; matrix=matrix ; top_default=def},nexts =
+          do_split [] [] [] rem in
+        let idef = next_raise_count () in        
+        precompile_or
+          argo yes yesor args
+          (cons_default matrix idef def)
+          ((idef,next)::nexts) in
+
+  do_split [] [] [] cls
+
+and split_constr cls args def k =
+  let ex_pat = what_is_cases cls in
+  match ex_pat.pat_desc with
+  | Tpat_any -> precompile_var args cls def k
+  | _ ->
+
+      let group = get_group ex_pat in
+
+      let rec split_ex yes no = function
+        | [] ->
+            let yes = List.rev yes and no = List.rev no in
+            begin match no with
+            | [] ->
+                {me = Pm {cases=yes ; args=args ; default=def} ;
+                  matrix = as_matrix yes ;
+                  top_default = def},
+                k
+            | cl::rem ->
+                begin match yes with
+                | [] ->
+                    (* Could not success in raising up a constr matching up *)
+                    split_noex [cl] [] rem            
+                | _ ->
+                    let {me=next ; matrix=matrix ; top_default=def}, nexts =
+                      split_noex [cl] [] rem in                
+                    let idef = next_raise_count () in
+                    let def = cons_default matrix idef def in
+                    {me = Pm {cases=yes ; args=args ; default=def} ;
+                      matrix = as_matrix yes ;
+                      top_default = def },
+                    (idef, next)::nexts
+                end
+            end
+        | (p::_,_) as cl::rem ->
+            if group p && up_ok cl no then
+              split_ex (cl::yes) no rem
+            else
+              split_ex yes (cl::no) rem
+        | _ -> assert false
+
+      and split_noex yes no = function
+        | [] ->
+            let yes = List.rev yes and no = List.rev no in
+            begin match no with
+            | [] -> precompile_var args yes def k
+            | cl::rem ->
+                let {me=next ; matrix=matrix ; top_default=def}, nexts =
+                  split_ex [cl] [] rem in
+                let idef = next_raise_count () in
+                precompile_var
+                  args yes
+                  (cons_default matrix idef def)
+                  ((idef,next)::nexts)
+            end
+        | [ps,_ as cl]
+            when List.for_all group_var ps && yes <> [] ->
+       (* This enables an extra division in some frequent case :
+          last row is made of variables only *)
+              split_noex yes (cl::no) []
+        | (p::_,_) as cl::rem ->
+            if not (group p) && up_ok cl no then
+              split_noex (cl::yes) no rem
+            else
+              split_noex yes (cl::no) rem
+        | _ -> assert false in
+
+      match cls with
+      | ((p::_,_) as cl)::rem ->
+          if group p then split_ex [cl] [] rem
+          else split_noex [cl] [] rem
+      | _ ->  assert false
+
+and precompile_var  args cls def k = match args with
+| []  -> assert false
+| _::((Lvar v as av,_) as arg)::rargs ->
+    begin match cls with
+    | [ps,_] -> (* as splitted as it can *)
+        dont_precompile_var args cls def k
+    | _ ->
+(* Precompile *)
+        let var_cls =
+          List.map
+            (fun (ps,act) -> match ps with
+            | _::ps -> ps,act | _     -> assert false)
+            cls
+        and var_def = make_default (fun _ rem -> rem) def in
+        let {me=first ; matrix=matrix}, nexts =
+          split_or (Some v) var_cls (arg::rargs) var_def in
         
+(* Compute top information *)
+        match nexts with
+        | [] -> (* If you need *)
+            dont_precompile_var args cls def k
+        | _  ->
+            let rfirst =
+              {me = PmVar {inside=first ; var_arg = av} ;
+                matrix = add_omega_column matrix ;
+                top_default = rebuild_default nexts def ; }
+            and rnexts = rebuild_nexts av nexts k in
+            rfirst, rnexts
+    end
+|  _ ->
+    dont_precompile_var args cls def k
+
+and dont_precompile_var args cls def k =
+  {me =  Pm {cases = cls ; args = args ; default = def } ;
+    matrix=as_matrix cls ;
+    top_default=def},k
+
+and precompile_or argo cls ors args def k = match ors with
+| [] -> split_constr cls args def k
+| _  ->
+    let rec do_cases = function
+      | ({pat_desc=Tpat_or _} as orp::patl, action)::rem ->
+          let others,rem = get_equiv orp rem in          
+          let orpm =
+            {cases =
+              (patl, action)::
+              List.map
+                (function
+                  | (_::ps,action) -> ps,action
+                  | _ -> assert false)
+                others ;
+              args = (match args with _::r -> r | _ -> assert false) ;
+              default = default_compat orp def} in
+          let vars =
+            IdentSet.elements
+              (IdentSet.inter
+                 (extract_vars IdentSet.empty orp)
+                 (pm_free_variables orpm)) in
+          let or_num = next_raise_count () in
+          let new_patl = Parmatch.omega_list patl in
+
+          let mk_new_action vs =
+            Lstaticraise
+              (or_num, List.map (fun v -> Lvar v) vs) in
+
+          let body,handlers = do_cases rem in
+          explode_or_pat
+            argo new_patl mk_new_action body vars [] orp,
+          (([[orp]], or_num, vars , orpm):: handlers)
+      | cl::rem ->
+          let new_ord,new_to_catch = do_cases rem in
+          cl::new_ord,new_to_catch
+      | [] -> [],[] in
+
+    let end_body, handlers = do_cases ors in
+    let matrix = as_matrix (cls@ors)
+    and body = {cases=cls@end_body ; args=args ; default=def} in
+    {me = PmOr {body=body ; handlers=handlers ; or_matrix=matrix} ;
+      matrix=matrix ;
+      top_default=def},
+    k
+
+let split_precompile argo pm =
+  let {me=next}, nexts = split_or argo pm.cases pm.args pm.default  in
+(*
+  if nexts <> [] || (match next with PmOr _ -> true | _ -> false) then begin
+    prerr_endline "** SPLIT **" ;
+    pretty_pm pm ;
+    pretty_precompiled_res  next nexts
+  end ;
+*)
+  next, nexts
+
+
 (* General divide functions *)
 
+let add_line patl_action pm = pm.cases <- patl_action :: pm.cases; pm
 
+type cell =
+  {pm : pattern_matching ;
+  ctx : ctx list ;
+  pat : pattern}
+
+let add make_matching_fun division key patl_action args =
+  try
+    let cell = List.assoc key division in
+    cell.pm.cases <- patl_action :: cell.pm.cases;
+    division
+  with Not_found ->
+    let cell = make_matching_fun args in
+    cell.pm.cases <- [patl_action] ;
+    (key, cell) :: division
+
+        
 let divide make get_key get_args ctx pm =
 
   let rec divide_rec = function
@@ -916,17 +1045,6 @@ let divide_line make_ctx make get_args pat ctx pm =
   pat=pat}
 
 
-let make_default matcher (exit,l) =
-  let rec make_rec = function
-    | [] -> []
-    | ([[]],i)::_ -> [[[]],i]
-    | (pss,i)::rem ->
-        let rem = make_rec rem in
-        match filter_matrix matcher pss with
-        | [] -> rem
-        | ([]::_) -> ([[]],i)::rem
-        | pss -> (pss,i)::rem in
-  exit,make_rec l
 
 (* Then come various functions,
    There is one set of functions per matching style
@@ -1660,18 +1778,19 @@ let mk_res get_key env last_choice idef cant_fail ctx =
     
 
 (* Aucune optimisation, reflechir apres la release *)
-let mk_failaction_neg partial ctx (_,def) = match partial with
-| Partial -> begin match def with
-  | (_,idef)::_ ->
-      Some (Lstaticraise (idef,[])),[],jumps_singleton idef ctx
-  | __ -> assert false
-end
+let mk_failaction_neg partial ctx def = match partial with
+| Partial ->
+    begin match def with
+    | (_,idef)::_ ->
+        Some (Lstaticraise (idef,[])),[],jumps_singleton idef ctx
+    | _ -> assert false
+    end
 | Total ->
     None, [], jumps_empty
       
       
 (* Conforme a l'article et plus simple qu'avant *)
-and mk_failaction_pos partial seen ctx (_,defs)  =
+and mk_failaction_pos partial seen ctx defs  =
   let rec scan_def env to_test defs = match to_test,defs with
   | ([],_)|(_,[]) ->
       List.fold_left
@@ -1799,8 +1918,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
     let fails,local_jumps =
       if sig_complete then [],jumps_empty
       else
-        mk_failaction_pos
-          partial pats ctx def in
+        mk_failaction_pos partial pats ctx def in
 
     let tag_lambda_list = fails @ tag_lambda_list in
     let (consts, nonconsts) = split_cases tag_lambda_list in
@@ -1943,6 +2061,20 @@ let rec event_branch repr lam =
   end
 
 
+(*
+   This exception is raised when the compiler cannot produce code
+   because control cannot reach the compiled clause,
+
+   Unused is raised initialy in compile_test.
+
+   compile_list (for compiling switch results) catch Unused
+
+   comp_match_handlers (for compililing splitted matches)
+   may reraise Unused
+
+  
+*)
+
 exception Unused 
 
 let compile_list compile_fun division = 
@@ -1993,7 +2125,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   do_rec lambda1 total1 to_catch
 
 
-let compile_test compile_fun partial divide combine ctx to_match to_catch =
+let compile_test compile_fun partial divide combine ctx to_match =
   let division = divide ctx to_match in
   let c_div = compile_list compile_fun division in
   match c_div with
@@ -2003,12 +2135,9 @@ let compile_test compile_fun partial divide combine ctx to_match to_catch =
      | Some l,_,total -> l,total
      end
   | _ ->
-      let lambda1,total1 = 
-        combine ctx to_match.default c_div in
-      compile_orhandlers compile_fun  lambda1 total1 ctx to_catch
+      combine ctx to_match.default c_div
 
-
-(* Attempt to avoid some useless bindinds by lowering them *)
+(* Attempt to avoid some useless bindings by lowering them *)
 
 (* Approximation of v present in lam *)
 let rec approx_present v = function
@@ -2058,11 +2187,9 @@ let bind_check str v arg lam = match str,arg with
 | Alias,_ -> lower_bind v arg lam 
 | _,_     -> bind str v arg lam
 
-let rec comp_exit ctx m =
-  match m.default with
-  | exit,(_,i)::_ ->
-      Lstaticraise (i,[]), jumps_singleton i ctx
-  | _        -> fatal_error "Matching.comp_exit"
+let rec comp_exit ctx m = match m.default with
+| (_,i)::_ -> Lstaticraise (i,[]), jumps_singleton i ctx
+| _        -> fatal_error "Matching.comp_exit"
 
         
 
@@ -2071,8 +2198,8 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs = m
   | rem ->
       let rec c_rec body total_body = function
         | [] -> body, total_body
-        (* Hum, -1 means never taken, needed for ``partial'' to be correct *)
-        | (-1,pm)::rem -> c_rec body total_body rem
+        (* Hum, -1 meant never taken
+        | (-1,pm)::rem -> c_rec body total_body rem *)
         | (i,pm)::rem -> 
             let ctx_i,total_rem = jumps_extract i total_body in
             begin match ctx_i with
@@ -2099,6 +2226,23 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs = m
    | [] -> raise Unused
    | (_,x)::xs ->  comp_match_handlers comp_fun partial ctx arg x xs
 
+(* To find reasonable names for variables *)
+
+let rec name_pattern default = function
+    (pat :: patl, action) :: rem ->
+      begin match pat.pat_desc with
+        Tpat_var id -> id
+      | Tpat_alias(p, id) -> id
+      | _ -> name_pattern default rem
+      end
+  | _ -> Ident.create default
+
+let arg_to_var arg cls = match arg with
+| Lvar v -> v,arg
+| _ ->
+    let v = name_pattern "match" cls in
+    v,Lvar v
+
 
 (*
   The main compilation function.
@@ -2122,14 +2266,9 @@ let rec compile_match repr partial ctx m = match m with
     end else
       (event_branch repr action, jumps_empty)
 | { args = (arg, str)::argl } ->
-    let v,newarg =
-      match arg with
-      | Lvar v -> v,arg
-      | _ ->
-          let v = name_pattern "match" m.cases in
-          v,Lvar v in
+    let v,newarg = arg_to_var arg m.cases in
     let first_match,rem =
-      separe (Some v)
+      split_precompile (Some v)
         { m with args = (newarg, Alias) :: argl } in
     let (lam, total) =
       comp_match_handlers
@@ -2139,6 +2278,7 @@ let rec compile_match repr partial ctx m = match m with
 
 
 (* verbose version of do_compile_matching, for debug *)
+(*
 and do_compile_matching_pr repr partial ctx arg x =
   prerr_string "COMPILE: " ;
   prerr_endline (match partial with Partial -> "Partial" | Total -> "Total") ;
@@ -2150,52 +2290,58 @@ and do_compile_matching_pr repr partial ctx arg x =
   prerr_endline "JUMPS" ;
   pretty_jumps jumps ;    
   r
+*)
 
-and do_compile_matching repr partial ctx arg
-    {to_match=to_match; to_catch=to_catch} =
-
-  let pat = what_is_cases to_match.cases in
-  match pat.pat_desc with
+and do_compile_matching repr partial ctx arg pmh = match pmh with
+| Pm pm ->
+  let pat = what_is_cases pm.cases in
+  begin match pat.pat_desc with
   | Tpat_any ->
-      assert (to_catch=[]) ;
-      compile_no_test  divide_var ctx_rshift repr partial ctx to_match to_catch
+      compile_no_test 
+        divide_var ctx_rshift repr partial ctx pm
   | Tpat_tuple patl ->
       compile_no_test
         (divide_tuple (List.length patl) (normalize_pat pat)) ctx_combine
-        repr partial ctx to_match to_catch
+        repr partial ctx pm
   | Tpat_record ((lbl,_)::_) ->
       compile_no_test
         (divide_record lbl.lbl_all (normalize_pat pat))
-        ctx_combine repr partial ctx to_match to_catch
+        ctx_combine repr partial ctx pm
   | Tpat_constant cst ->
       compile_test
         (compile_match repr partial) partial
         divide_constant
         (combine_constant arg cst partial)
-        ctx to_match to_catch
+        ctx pm
   | Tpat_construct (cstr, _) ->
       compile_test
         (compile_match repr partial) partial
         divide_constructor (combine_constructor arg pat cstr partial)
-        ctx to_match to_catch
+        ctx pm
   | Tpat_array _ ->    
       let kind = Typeopt.array_pattern_kind pat in
       compile_test (compile_match repr partial) partial
         (divide_array kind) (combine_array arg kind partial)
-        ctx to_match to_catch
+        ctx pm
   | Tpat_variant(lab, _, row) ->
       compile_test (compile_match repr partial) partial
         (divide_variant row)
         (combine_variant row arg partial)
-        ctx to_match to_catch
-  | _ ->
-      fatal_error "Matching.do_compile_matching"
+        ctx pm
+  | _ -> assert false
+  end
+| PmVar {inside=pmh ; var_arg=arg} ->
+    let lam, total =
+      do_compile_matching repr partial (ctx_lshift ctx) arg pmh in
+    lam, jumps_map ctx_rshift total
+| PmOr {body=body ; handlers=handlers} ->
+    let lam, total = compile_match repr partial ctx body in
+    compile_orhandlers (compile_match repr partial) lam total ctx handlers
 
-and compile_no_test divide up_ctx repr partial ctx to_match to_catch =
+and compile_no_test divide up_ctx repr partial ctx to_match =
   let {pm=this_match ; ctx=this_ctx } = divide ctx to_match in
   let lambda,total = compile_match repr partial this_ctx this_match in
-  let total = jumps_map up_ctx total in
-  compile_orhandlers (compile_match repr partial) lambda total ctx to_catch
+  lambda, jumps_map up_ctx total
 
 
 
@@ -2221,18 +2367,18 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
       let pm =
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
           args = [arg, Strict] ;
-          default = raise_num,[[[omega]],raise_num]} in
+          default = [[[omega]],raise_num]} in
       begin try
         let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
         check_total total lambda raise_num handler_fun
       with
-      | Unused -> handler_fun()
+      | Unused -> assert false ; handler_fun()
       end
   | Total ->
       let pm =
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
           args = [arg, Strict] ;
-          default = (-1,[])} in
+          default = []} in
       let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
       assert (jumps_is_empty total) ;
       lambda
@@ -2264,22 +2410,35 @@ let for_trywith param pat_act_list =
 let for_let loc param pat body =
   compile_matching loc None (partial_function loc) param [pat, body] Partial
 
-(* Handling of tupled functions and matches *)
+(* Handling of tupled functions and matchings *)
+
+(* Easy case since variables are available *)
+let for_tupled_function loc paraml pats_act_list partial =
+  let raise_num = next_raise_count () in
+  let omegas = [List.map (fun _ -> omega) paraml] in
+  let pm =
+    { cases = pats_act_list;
+      args = List.map (fun id -> (Lvar id, Strict)) paraml ;
+      default = [omegas,raise_num]
+    } in
+  try
+    let (lambda, total) = compile_match None partial
+        (start_ctx (List.length paraml)) pm in
+    check_total total lambda raise_num (partial_function loc)
+  with
+  | Unused -> partial_function loc ()
 
 
-let flatten_pattern size p =
-  match p.pat_desc with
-    Tpat_tuple args -> args
-  | Tpat_any -> omegas size  
-  | _ -> raise Cannot_flatten
 
-
+let flatten_pattern size p = match p.pat_desc with
+|  Tpat_tuple args -> args
+| Tpat_any -> omegas size  
+| _ -> raise Cannot_flatten
 
 let rec flatten_pat_line size p k = match p.pat_desc with
 | Tpat_any ->  omegas size::k
 | Tpat_tuple args -> args::k
-| Tpat_or (p1,p2,_) ->
-    flatten_pat_line size p1 (flatten_pat_line size p2 k)
+| Tpat_or (p1,p2,_) ->  flatten_pat_line size p1 (flatten_pat_line size p2 k)
 | _ -> fatal_error "Matching.flatten_pat_line"
 
 let flatten_cases size cases =
@@ -2296,94 +2455,93 @@ let flatten_matrix size pss =
     | _   -> fatal_error "Matching.flatten_matrix")
     pss []
 
-let flatten_def size (exit,def) =
-  exit,
+let flatten_def size def =
   List.map
     (fun (pss,i) -> flatten_matrix size pss,i)
     def
 
-let flatten_pm size al pm =
-  {args = al ; cases = flatten_cases size pm.cases ;
-  default = flatten_def size pm.default}
+let flatten_pm size args pm =
+    {args = args ; cases = flatten_cases size pm.cases ;
+     default = flatten_def size pm.default}
 
-let flatten_extended size idl ext =
-  {to_match = flatten_pm size idl ext.to_match ;
-  to_catch = 
-   List.map
-      (fun (mat,i,vars,pm) -> flatten_matrix size mat,i,vars,pm)
-      ext.to_catch}
 
-let compile_flattened repr partial ctx _ 
-    {to_match=to_match ; to_catch=to_catch} =
-  let lambda,total = compile_match repr partial ctx to_match in
-  compile_orhandlers (compile_match repr partial) lambda total ctx to_catch
+let rec flatten_precompiled size args  pmh = match pmh with
+| Pm pm -> Pm (flatten_pm size args pm)
+| PmOr {body=b ; handlers=hs ; or_matrix=m} ->
+    PmOr
+      {body=flatten_pm size args b ;
+       handlers=
+         List.map
+          (fun (mat,i,vars,pm) -> flatten_matrix size mat,i,vars,pm)
+          hs ;
+       or_matrix=flatten_matrix size m ;}
+| PmVar _ -> assert false
 
-let for_tupled_function loc paraml pats_act_list partial =
-  let raise_num = next_raise_count () in
-  let omegas = [List.map (fun _ -> omega) paraml] in
-  let pm =
-    { cases = pats_act_list;
-      args = List.map (fun id -> (Lvar id, Strict)) paraml ;
-      default = raise_num,[omegas,raise_num]
-    } in
-  try
-    let (lambda, total) = compile_match None partial
-        (start_ctx (List.length paraml)) pm in
-    check_total total lambda raise_num (partial_function loc)
-  with
-  | Unused -> partial_function loc ()
+(*
+   compiled_flattened is a ``comp_fun'' argument to comp_match_handlers.
+   Hence it needs a fourth argument, which it ignores
+*)
+
+let compile_flattened repr partial ctx _ pmh = match pmh with
+| Pm pm -> compile_match repr partial ctx pm
+| PmOr {body=b ; handlers=hs} ->
+    let lam, total = compile_match repr partial ctx b in
+    compile_orhandlers (compile_match repr partial) lam total ctx hs
+| PmVar _ -> assert false
 
 let for_multiple_match loc paraml pat_act_list partial =
   let repr = None in
-  let raise_num,pm1 = match partial with
-  | Partial ->
-      let raise_num = next_raise_count () in
-      raise_num,
-      { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-        args = [Lprim(Pmakeblock(0, Immutable), paraml), Strict] ;
-        default = raise_num,[[[omega]],raise_num] }
-  | _ ->
-      -1,
-      { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-        args = [Lprim(Pmakeblock(0, Immutable), paraml), Strict] ;
-        default = -1,[] } in
-      
-  try
-  try
-
-    let next,nexts = separe None pm1 in
-
-    let size = List.length paraml in
-    let idl = List.map (fun _ -> Ident.create "match") paraml in
-    let al =  List.map (fun id -> (Lvar id, Alias)) idl in
-    let omegas = [List.map (fun _ -> omega) idl] in
-    let flat_next = flatten_extended size al next
-    and flat_nexts =
-      List.map (fun (i,x) -> i,flatten_extended size al x) nexts in
+  let raise_num,pm1 =
+    match partial with
+    | Partial ->
+        let raise_num = next_raise_count () in
+        raise_num,
+        { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
+          args = [Lprim(Pmakeblock(0, Immutable), paraml), Strict] ;
+          default = [[[omega]],raise_num] }
+    | _ ->
+        -1,
+        { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
+          args = [Lprim(Pmakeblock(0, Immutable), paraml), Strict] ;
+          default = [] } in
   
+  try
+    try
+(* Once for checking that compilation is possible *)
+      let next, nexts = split_precompile None pm1 in
 
-    let lambda,total =
-      comp_match_handlers
-        (compile_flattened repr)
-        partial (start_ctx size) staticfail flat_next flat_nexts in
-    List.fold_right2 (bind Strict) idl paraml
-      (match partial with
+      let size = List.length paraml
+      and idl = List.map (fun _ -> Ident.create "match") paraml in
+      let args =  List.map (fun id -> Lvar id, Alias) idl in
+
+      let flat_next = flatten_precompiled size args next
+      and flat_nexts =
+        List.map
+          (fun (e,pm) ->  e,flatten_precompiled size args pm)
+          nexts in
+
+      let lam, total =
+        comp_match_handlers 
+          (compile_flattened repr)
+          partial (start_ctx size) () flat_next flat_nexts in
+      List.fold_right2 (bind Strict) idl paraml
+        (match partial with
+        | Partial ->
+            check_total total lam raise_num (partial_function loc)
+        | Total ->
+            assert (jumps_is_empty total) ;
+            lam)
+        
+
+    with Cannot_flatten ->
+      let (lambda, total) = compile_match None partial (start_ctx 1) pm1 in
+      begin match partial with
       | Partial ->
           check_total total lambda raise_num (partial_function loc)
       | Total ->
           assert (jumps_is_empty total) ;
-          lambda)
-          
-
-  with Cannot_flatten ->
-    let (lambda, total) = compile_match None partial (start_ctx 1) pm1 in
-    begin match partial with
-    | Partial ->
-        check_total total lambda raise_num (partial_function loc)
-    | Total ->
-        assert (jumps_is_empty total) ;
-        lambda
-    end
+          lambda
+      end
   with Unused ->
-    partial_function loc ()
+    assert false ; partial_function loc ()
 

@@ -5,7 +5,7 @@
 (**************************************************************)
 
 (*
-File "morematch.ml", line 21, characters 10-93:
+File "morematch.ml", line 38, characters 10-93:
 Warning: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 0
