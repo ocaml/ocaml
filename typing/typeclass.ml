@@ -579,7 +579,7 @@ and class_expr cl_num val_env met_env scl =
         {pcl_loc = scl.pcl_loc; pcl_desc =
          Pcl_fun(l, None, {ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
                  {pcl_loc = scl.pcl_loc; pcl_desc =
-                  Pcl_let(Nonrecursive, [spat, smatch], sbody)})}
+                  Pcl_let(Default, [spat, smatch], sbody)})}
       in
       class_expr cl_num val_env met_env sfun
   | Pcl_fun (l, _, spat, scl') ->

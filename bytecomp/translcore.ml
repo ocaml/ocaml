@@ -280,6 +280,39 @@ let rec name_pattern default = function
       | Tpat_alias(p, id) -> id
       | _ -> name_pattern default rem
 
+(* Push the default values under the functional abstractions *)
+
+let rec push_defaults loc bindings pat_expr_list partial =
+  match pat_expr_list with
+    [pat, ({exp_desc = Texp_function(pl,partial)} as exp)] ->
+      let pl = push_defaults exp.exp_loc bindings pl partial in
+      [pat, {exp with exp_desc = Texp_function(pl, partial)}]
+  | [pat, ({exp_desc = Texp_let
+             (Default, cases, ({exp_desc = Texp_function _} as e2))} as e1)] ->
+      push_defaults loc (cases :: bindings) [pat, e2] partial
+  | [pat, exp] ->
+      let exp =
+	List.fold_left
+	  (fun exp cases ->
+	    {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
+	  exp bindings
+      in
+      [pat, exp]
+  | (pat, exp) :: _ when bindings <> [] ->
+      let param = name_pattern "param" pat_expr_list in
+      let exp =
+        { exp with exp_loc = loc; exp_desc =
+          Texp_match
+            ({exp with exp_type = pat.pat_type; exp_desc =
+              Texp_ident (Path.Pident param,
+                          {val_type = pat.pat_type; val_kind = Val_reg})},
+             pat_expr_list, partial) }
+      in
+      push_defaults loc bindings
+        [{pat with pat_desc = Tpat_var param}, exp] Total
+  | _ ->
+      pat_expr_list
+
 (* Insertion of debugging events *)
 
 let event_before exp lam =
@@ -329,8 +362,8 @@ let rec transl_exp e =
       let ((kind, params), body) =
         event_function e
           (function repr ->
-             transl_function e.exp_loc !Clflags.native_code repr [] partial
-	      pat_expr_list)
+            let pl = push_defaults e.exp_loc [] pat_expr_list partial in
+            transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
   | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
@@ -523,14 +556,15 @@ and transl_apply lam sargs =
   in
   build_apply lam [] (List.map (may_map transl_exp) sargs)
 
-and transl_function loc untuplify_fn repr bindings partial pat_expr_list =
+and transl_function loc untuplify_fn repr partial pat_expr_list =
   match pat_expr_list with
     [pat, ({exp_desc = Texp_function(pl,partial')} as exp)] ->
       let param = name_pattern "param" pat_expr_list in
       let ((_, params), body) =
-	transl_function exp.exp_loc false repr bindings partial' pl in
+	transl_function exp.exp_loc false repr partial' pl in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
+(*
   | [({pat_desc = Tpat_var id} as pat),
      ({exp_desc = Texp_let(Nonrecursive, cases,
 			  ({exp_desc = Texp_function _} as e2))} as e1)]
@@ -556,6 +590,7 @@ and transl_function loc untuplify_fn repr bindings partial pat_expr_list =
       in
       transl_function loc untuplify_fn repr bindings Total
         [{pat with pat_desc = Tpat_var param}, exp]
+*)
   | ({pat_desc = Tpat_tuple pl}, _) :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
@@ -581,7 +616,7 @@ and transl_function loc untuplify_fn repr bindings partial pat_expr_list =
 
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with
-    Nonrecursive ->
+    Nonrecursive | Default ->
       let rec transl = function
         [] ->
           body

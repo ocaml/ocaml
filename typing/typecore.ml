@@ -1054,7 +1054,7 @@ and type_expect env sexp ty_expected =
         {pexp_loc = sexp.pexp_loc; pexp_desc =
          Pexp_function(l, None,[{ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
                                 {pexp_loc = sexp.pexp_loc; pexp_desc =
-                                 Pexp_let(Nonrecursive,[spat,smatch],sbody)}])}
+                                 Pexp_let(Default, [spat, smatch], sbody)}])}
       in
       type_expect env sfun ty_expected
   | Pexp_function (l, _, caselist) ->
@@ -1129,7 +1129,7 @@ and type_let env rec_flag spat_sexp_list =
       (fun pat (_, sexp) -> unify_pat env pat (type_approx env sexp))
       pat_list spat_sexp_list;
   let exp_env =
-    match rec_flag with Nonrecursive -> env | Recursive -> new_env in
+    match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
   let exp_list =
     List.map2
       (fun (spat, sexp) pat -> type_expect exp_env sexp pat.pat_type)

@@ -58,6 +58,7 @@ let fmt_rec_flag f x =
   match x with
   | Nonrecursive -> Format.fprintf f "Nonrec";
   | Recursive -> Format.fprintf f "Rec";
+  | Default -> Format.fprintf f "Default";
 ;;
 
 let fmt_direction_flag f x =
