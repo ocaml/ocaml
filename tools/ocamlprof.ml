@@ -73,22 +73,20 @@ let add_val_counter prof_counter =
    fprintf !outchan "(* %s%d *) " !special_id !counters.(prof_counter); 
    ()
 
-let insert_open {loc_start=st} =
+let insert_profile rewrite_exp ({pexp_loc={loc_start=st; loc_end=en}} as ex) =
   if !instr_mode then begin
     copy st;
     output_string !outchan "("
-    end
-
-and insert_profile {loc_start=st} =
+  end;
   copy st;
   !insert_action !profile_counter; 
-  incr profile_counter
-
-and insert_close {loc_end=fin} =
+  incr profile_counter;
+  rewrite_exp ex;
   if !instr_mode then begin
-    copy fin;
+    copy en;
     output_string !outchan ")"
-    end
+  end
+;;
 
 (* ************* rewrite ************* *)
 
@@ -194,14 +192,14 @@ and rewrite_exp sexp =
 
   | Pexp_while(scond, sbody) ->
     rewrite_exp scond;
-    if !instr_loops then insert_profile sbody.pexp_loc;
-    rewrite_exp sbody
+    if !instr_loops then insert_profile rewrite_exp sbody
+    else rewrite_exp sbody
 
   | Pexp_for(_, slow, shigh, _, sbody) ->
     rewrite_exp slow;
     rewrite_exp shigh;
-    if !instr_loops then insert_profile sbody.pexp_loc;
-    rewrite_exp sbody
+    if !instr_loops then insert_profile rewrite_exp sbody
+    else rewrite_exp sbody
 
   | Pexp_constraint(sarg, _, _) ->
     rewrite_exp sarg
@@ -222,12 +220,8 @@ and rewrite_exp sexp =
       List.iter (fun (_, sexp) -> rewrite_exp sexp) l
 
 and rewrite_ifbody sifbody =
-  if !instr_if then begin
-    insert_open sifbody.pexp_loc;
-    insert_profile sifbody.pexp_loc;
-    rewrite_exp sifbody;
-    insert_close sifbody.pexp_loc
-    end
+  if !instr_if then
+    insert_profile rewrite_exp sifbody
   else
     rewrite_exp sifbody
 
@@ -235,16 +229,12 @@ and rewrite_ifbody sifbody =
 and rewrite_annotate_exp_list l =
   List.iter
     (function  {pexp_desc = Pexp_when(scond, sbody)} ->
-      insert_profile scond.pexp_loc;
-      rewrite_exp scond; 
-      insert_profile sbody.pexp_loc;
-      rewrite_exp sbody
+      insert_profile rewrite_exp scond; 
+      insert_profile rewrite_exp sbody
     | {pexp_desc = Pexp_constraint(sbody, _, _)} -> (* let f x : t = e *)
-      insert_profile sbody.pexp_loc;
-      rewrite_exp sbody
+      insert_profile rewrite_exp sbody
     | sexp ->
-      insert_profile sexp.pexp_loc;
-      rewrite_exp sexp)
+      insert_profile rewrite_exp sexp)
     l
 
 and rewrite_function = function
@@ -268,8 +258,9 @@ let rewrite_class_field =
       rewrite_exp sexp
   | Pcf_meth (_, _, sexp, _) ->
       if !instr_fun then
-        insert_profile sexp.pexp_loc;
-      rewrite_exp sexp
+        insert_profile rewrite_exp sexp
+      else
+        rewrite_exp sexp
 
 let rewrite_class cl =
   List.iter rewrite_class_field cl.pcl_field
