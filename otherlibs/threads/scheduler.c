@@ -402,6 +402,7 @@ try_again:
           th->retval = RESUMED_IO;
           th->status = RUNNABLE;
           if (run_thread == NULL) run_thread = th; /* Found one. */
+          /* Wake up only one thread per fd */
           FD_CLR(Int_val(th->fd), &readfds);
           retcode--;
         }
@@ -410,6 +411,7 @@ try_again:
           th->retval = RESUMED_IO;
           th->status = RUNNABLE;
           if (run_thread == NULL) run_thread = th; /* Found one. */
+          /* Wake up only one thread per fd */
           FD_CLR(Int_val(th->fd), &readfds);
           retcode--;
         }
@@ -501,10 +503,22 @@ static value thread_wait_rw(int kind, value fd)
      (we can be called from thread-safe Pervasives before initialization),
      just return immediately. */
   if (curr_thread == NULL) return RESUMED_WAKEUP;
-  check_callback();
-  curr_thread->fd = fd;
-  curr_thread->status = kind;
-  return schedule_thread();
+  /* As a special case, if we're in a callback, don't fail but block
+     the whole process till I/O is possible */
+  if (callback_depth > 1) {
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(Int_val(fd), &fds);
+    switch(kind) {
+      case BLOCKED_READ: select(FD_SETSIZE, &fds, NULL, NULL, NULL); break;
+      case BLOCKED_WRITE: select(FD_SETSIZE, NULL, &fds, NULL, NULL); break;
+    }
+    return RESUMED_IO;
+  } else {
+    curr_thread->fd = fd;
+    curr_thread->status = kind;
+    return schedule_thread();
+  }
 }
 
 value thread_wait_read(value fd)
@@ -546,10 +560,6 @@ value thread_wait_timed_write(value arg)
 value thread_select(value arg)        /* ML */
 {
   double date;
-  /* Don't do an error if we're not initialized yet
-     (we can be called from thread-safe Pervasives before initialization),
-     just return immediately. */
-  if (curr_thread == NULL) return RESUMED_WAKEUP;
   check_callback();
   Assign(curr_thread->readfds, Field(arg, 0));
   Assign(curr_thread->writefds, Field(arg, 1));
