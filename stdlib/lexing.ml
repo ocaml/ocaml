@@ -61,18 +61,22 @@ external c_engine: lex_tables -> int -> lexbuf -> int = "lex_engine"
 external c_new_engine: lex_tables -> int -> lexbuf -> int = "new_lex_engine"
 
 let engine tbl state buf =
-  buf.lex_start_p <- buf.lex_curr_p;
   let result = c_engine tbl state buf in
-  buf.lex_curr_p <- {buf.lex_curr_p
-                     with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
+  if result >= 0 then begin
+    buf.lex_start_p <- buf.lex_curr_p;
+    buf.lex_curr_p <- {buf.lex_curr_p
+                       with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
+  end;
   result
 ;;
 
 let new_engine tbl state buf =
-  buf.lex_start_p <- buf.lex_curr_p;
   let result = c_new_engine tbl state buf in
-  buf.lex_curr_p <- {buf.lex_curr_p
-                     with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
+  if result >= 0 then begin
+    buf.lex_start_p <- buf.lex_curr_p;
+    buf.lex_curr_p <- {buf.lex_curr_p
+                       with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
+  end;
   result
 ;;
 
