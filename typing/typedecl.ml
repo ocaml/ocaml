@@ -448,6 +448,7 @@ let compute_variance_decl env decl (required, loc) =
   List.map2
     (fun (_, co, cn, ct) (c, n) ->
       if c && !cn || n && !co then raise (Error(loc, Bad_variance));
+      let ct = if decl.type_kind = Type_abstract then ct else cn in
       (!co, !cn, !ct))
     tvl required
 
