@@ -182,7 +182,15 @@ let string_of_int n =
 external int_of_string : string -> int = "int_of_string"
 
 let string_of_float f =
-  format_float "%.12g" f
+  let s = format_float "%.12g" f in
+  let l = string_length s in
+  let rec loop i =
+    if i >= l then s ^ "." else
+    if s.[i] = '.' || s.[i] = 'e' then s
+    else loop (i+1)
+  in
+  loop 0
+;;
 
 external float_of_string : string -> float = "float_of_string"
 

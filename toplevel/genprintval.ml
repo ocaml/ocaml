@@ -385,7 +385,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
       and print_simple_tree ppf =
         function
           Oval_int i -> fprintf ppf "%i" i
-        | Oval_float f -> fprintf ppf "%.12g" f
+        | Oval_float f -> fprintf ppf "%s" (string_of_float f)
         | Oval_char c -> fprintf ppf "'%s'" (Char.escaped c)
         | Oval_string s ->
             (* String.escaped may raise [Invalid_argument "String.create"]
