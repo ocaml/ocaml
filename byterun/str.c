@@ -102,17 +102,6 @@ CAMLprim value is_printable(value chr)
 {
   int c;
 
-#ifdef _WIN32
-  /* FIXME: is this necessary?  Wouldn't isprint() do what we want? */
-  static unsigned char printable_chars_iso[] = { /* 0x20-0x7E 0xA1-0xFF */
-    0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F,
-    0, 0, 0, 0, 0xFE, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
-  };
-  c = Int_val(chr);
-  return Val_bool(printable_chars_iso[c >> 3] & (1 << (c & 7)));
-#else
 #ifdef HAS_LOCALE
   static int locale_is_set = 0;
   if (! locale_is_set) {
@@ -122,7 +111,6 @@ CAMLprim value is_printable(value chr)
 #endif
   c = Int_val(chr);
   return Val_bool(isprint(c));
-#endif
 }
 
 CAMLprim value bitvect_test(value bv, value n)
