@@ -46,6 +46,15 @@ Objective Caml 1.06:
   - Reads commands from ./.ocamlinit on startup.
   - Now thread-compatible.
 
+* Typing:
+  - Occur-check now stricter (all recursions must traverse an object).
+  - A few bugs fixed.
+
+* Objects:
+  - Private methods.
+  - Objects can be compared using generic comparison functions.
+  - Fixed compilation of partial application of object constructors.
+ 
 * Standard library:
   - Filename: "is_absolute" is superseded by "is_implicit" and "is_relative".
     To adapt old programs, change "is_absolute x" to "not (is_implicit x)"
@@ -72,6 +81,9 @@ Objective Caml 1.06:
 * Debugger:
   - Revised generation of events.
   - Break on function entrance.
+  - New commands start/previous.
+  - The command loadprinter now try to recursively load required
+    modules.
   - Numerous small fixes.
 
 * External libraries:
