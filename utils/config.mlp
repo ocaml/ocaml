@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-let version = "3.00+10 (2000-08-04)"
+let version = "3.00+11 (2000-09-01)"
 
 let standard_library =
   try
