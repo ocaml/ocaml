@@ -1,5 +1,5 @@
 FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
-  depend.tex profil.tex debugger.tex browser.tex
+  depend.tex profil.tex debugger.tex browser.tex ocamldoc.tex
 
 TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2
