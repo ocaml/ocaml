@@ -67,12 +67,22 @@ let handle_lexical_error fn lexbuf =
     fn lexbuf
   with Lexical_error(msg, _, _) ->
     raise(Lexical_error(msg, line, column))
+
+let warning lexbuf msg =
+  Printf.eprintf "ocamllex warning:\nFile \"%s\", line %d, character %d: %s.\n"
+                  Sys.argv.(1) !line_num
+                  (Lexing.lexeme_start lexbuf - !line_start_pos) msg;
+  flush stderr;
+;;
+
 }
 
 let identstart = 
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255']
 let identbody = 
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let backslash_escapes =
+  ['\\' '"' '\'' 'n' 't' 'b' 'r']
 
 rule main = parse
     [' ' '\013' '\009' '\012' ] + 
@@ -100,7 +110,7 @@ rule main = parse
       Tstring(get_stored_string()) }
   | "'" [^ '\\'] "'" 
     { Tchar(Char.code(Lexing.lexeme_char lexbuf 1)) }
-  | "'" '\\' ['\\' '"' '\'' 'n' 't' 'b' 'r'] "'" 
+  | "'" '\\' backslash_escapes "'" 
     { Tchar(Char.code(char_for_backslash (Lexing.lexeme_char lexbuf 2))) }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
     { Tchar(Char.code(char_for_decimal_code lexbuf 2)) }
@@ -143,7 +153,7 @@ and action = parse
       action lexbuf }
   | "'" [^ '\\' '\''] "'" 
     { action lexbuf }
-  | "'" '\\' ['\\' '"' '\'' 'n' 't' 'b' 'r'] "'" 
+  | "'" '\\' backslash_escapes "'" 
     { action lexbuf }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
     { action lexbuf }
@@ -167,7 +177,7 @@ and string = parse
     { line_start_pos := Lexing.lexeme_end lexbuf;
       incr line_num;
       string lexbuf }
-  | '\\' ['\\' '"' '\'' 'n' 't' 'b' 'r'] 
+  | '\\' backslash_escapes
     { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
       string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] 
@@ -179,6 +189,13 @@ and string = parse
     { store_string_char '\010';
       line_start_pos := Lexing.lexeme_end lexbuf;
       incr line_num;
+      string lexbuf }
+  | '\\' _
+    { warning lexbuf
+              (Printf.sprintf "illegal backslash escape in string: `\\%c'"
+                              (Lexing.lexeme_char lexbuf 1));
+      store_string_char(Lexing.lexeme_char lexbuf 0);
+      store_string_char(Lexing.lexeme_char lexbuf 1);
       string lexbuf }
   | _ 
     { store_string_char(Lexing.lexeme_char lexbuf 0);
@@ -199,7 +216,7 @@ and comment = parse
       { comment lexbuf }
   | "'" [^ '\\' '\''] "'"
       { comment lexbuf }
-  | "'\\" ['\\' '\'' 'n' 't' 'b' 'r'] "'"
+  | "'\\" backslash_escapes "'"
       { comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
