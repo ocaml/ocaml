@@ -123,6 +123,7 @@ class text =
         match name.[i] with
           '_' -> if no_ then () else Buffer.add_char buf '_'
         | '~' -> if no_ then () else Buffer.add_char buf '~'
+	| '%' -> Buffer.add_string buf (if no_ then "percent" else "%")
         | '@' -> Buffer.add_string buf "\"@"
         | '!' -> Buffer.add_string buf "\"!" 
         | '|' -> Buffer.add_string buf "\"|"
