@@ -450,8 +450,10 @@ let build_custom_runtime prim_name exec_name =
                          (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
           (Ccomp.expand_libname "-lcamlrun")
           Config.bytecomp_c_libraries) in
-      (* C compiler doesn't clean up after itself *)
-      remove_file (Filename.chop_suffix prim_name ".c" ^ ".obj");
+      (* C compiler doesn't clean up after itself.  Note that the .obj
+         file is created in the current working directory. *)
+      remove_file
+        (Filename.chop_suffix (Filename.basename prim_name) ".c" ^ ".obj");
       retcode
   | "MacOS" ->
       let cppc = "mrc"
