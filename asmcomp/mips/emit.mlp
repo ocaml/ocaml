@@ -425,13 +425,12 @@ let emit_instr i =
         let lbl_jumptbl = new_label() in
         `	sll     $24, {emit_reg i.arg.(0)}, 2\n`;
         `	lw	$24, {emit_label lbl_jumptbl}($24)\n`;
-        `	.cpadd	$24\n`;
         liveregs i live_24;
         `	j	$24\n`;
         `	.rdata\n`;
         `{emit_label lbl_jumptbl}:\n`;
         for i = 0 to Array.length jumptbl - 1 do
-          `	.gpword	{emit_label jumptbl.(i)}\n`
+          `	.word	{emit_label jumptbl.(i)}\n`
         done;
         `	.text\n`
     | Lsetuptrap lbl ->
