@@ -16,8 +16,10 @@
 #include "alloc.h"
 #include "fail.h"
 #include "fix_code.h"
+#include "instrtrace.h"
 #include "instruct.h"
 #include "interp.h"
+#include "major_gc.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -25,7 +27,11 @@
 #include "signals.h"
 #include "stacks.h"
 #include "str.h"
-#include "instrtrace.h"
+
+#if macintosh
+#include "rotatecursor.h"
+extern int volatile have_to_interact;
+#endif
 
 /* Registers for the abstract machine:
 	pc         the code pointer
@@ -270,7 +276,7 @@ value interprete(prog, prog_size)
       Next;
     }
     Instruct(APPLY): {
-      extra_args = *pc++ - 1;
+      extra_args = *pc - 1;
       pc = Code_val(accu);
       env = accu;
       goto check_stacks;
@@ -320,7 +326,7 @@ value interprete(prog, prog_size)
 
     Instruct(APPTERM): {
       int nargs = *pc++;
-      int slotsize = *pc++;
+      int slotsize = *pc;
       value * newsp;
       int i;
       /* Slide the nargs bottom words of the current frame to the top
@@ -335,7 +341,7 @@ value interprete(prog, prog_size)
     }
     Instruct(APPTERM1): {
       value arg1 = sp[0];
-      sp = sp + *pc++ - 1;
+      sp = sp + *pc - 1;
       sp[0] = arg1;
       pc = Code_val(accu);
       env = accu;
@@ -344,7 +350,7 @@ value interprete(prog, prog_size)
     Instruct(APPTERM2): {
       value arg1 = sp[0];
       value arg2 = sp[1];
-      sp = sp + *pc++ - 2;
+      sp = sp + *pc - 2;
       sp[0] = arg1;
       sp[1] = arg2;
       pc = Code_val(accu);
@@ -356,7 +362,7 @@ value interprete(prog, prog_size)
       value arg1 = sp[0];
       value arg2 = sp[1];
       value arg3 = sp[2];
-      sp = sp + *pc++ - 3;
+      sp = sp + *pc - 3;
       sp[0] = arg1;
       sp[1] = arg2;
       sp[2] = arg3;
@@ -709,6 +715,12 @@ value interprete(prog, prog_size)
           extra_args = 0;
         }
       }
+#if macintosh
+      if (have_to_interact){
+        have_to_interact = 0;
+        rotatecursor_action (gc_phase);
+      }
+#endif
       Next;
 
 /* Calling C functions */
@@ -863,7 +875,7 @@ value interprete(prog, prog_size)
 
 #ifndef THREADED_CODE
     default:
-      fatal_error("bad opcode");
+      fatal_error_arg("Fatal error: bad opcode (%lx)\n", (char *) *(pc-1));
     }
   }
 #endif

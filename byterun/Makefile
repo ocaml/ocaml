@@ -43,7 +43,7 @@ libcamlrund.a: $(DOBJS)
 	ar rc libcamlrund.a $(DOBJS)
 
 clean:
-	rm -f ocamlrun ocamlrund *.o *.a
+	rm -f ocamlrun ocamlrund *.o lib*.a
 	rm -f primitives prims.c opnames.h jumptbl.h
 
 primitives : $(PRIMS)

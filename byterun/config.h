@@ -15,8 +15,12 @@
 #define _config_
 
 
+#if !macintosh
 #include "../config/m.h"
 #include "../config/s.h"
+#else
+#include "::config:sm-Mac.h"
+#endif
 
 /* Library dependencies */
 
@@ -34,7 +38,10 @@
 #endif
 
 /* We use threaded code interpretation if the compiler provides labels
-   as first-class values (GCC 2.x). */
+   as first-class values (GCC 2.x).
+   Macintosh 68k also uses threaded code, with the assembly-language
+   bytecode interpreter (THREADED_CODE defined in config/sm-Mac.h).
+*/
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG)
 #define THREADED_CODE

@@ -97,6 +97,7 @@ value terminfo_puts(chan, str, count)
      value str, count;
 {
   invalid_argument("Terminfo.puts");
+  return Val_unit;
 }
 
 #endif

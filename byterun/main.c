@@ -20,9 +20,18 @@
 
 extern void caml_main P((int, char **));
 
+
 #ifdef _WIN32
 extern void expand_command_line P((int *, char ***));
 #endif
+
+
+#if macintosh
+#include "rotatecursor.h"
+#include "signals.h"
+int volatile have_to_interact = 0;
+#endif
+
 
 int main(argc, argv)
      int argc;
@@ -30,6 +39,9 @@ int main(argc, argv)
 {
 #ifdef _WIN32
   expand_command_line(&argc, &argv);
+#endif
+#if macintosh
+  rotatecursor_init (&something_to_do, &have_to_interact);
 #endif
   caml_main(argc, argv);
   sys_exit(Val_int(0));

@@ -47,7 +47,7 @@ void gc_message (msg, arg)
 {
   if (verb_gc){
 #ifdef HAS_UI
-    ui_gc_message(msg, arg);
+    ui_print_stderr(msg, arg);
 #else
     fprintf (stderr, msg, arg);
     fflush (stderr);
@@ -59,7 +59,8 @@ void fatal_error (msg)
      char * msg;
 {
 #ifdef HAS_UI
-  ui_fatal_error("%s", msg);
+  ui_print_stderr("%s", msg);
+  ui_exit (2);
 #else
   fprintf (stderr, "%s", msg);
   exit(2);
@@ -70,7 +71,8 @@ void fatal_error_arg (fmt, arg)
      char * fmt, * arg;
 {
 #ifdef HAS_UI
-  ui_fatal_error(fmt, arg);
+  ui_print_stderr(fmt, arg);
+  ui_exit (2);
 #else
   fprintf (stderr, fmt, arg);
   exit(2);

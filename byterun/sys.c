@@ -18,8 +18,10 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#if !macintosh
 #include <sys/types.h>
 #include <sys/stat.h>
+#endif
 #include "config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -119,8 +121,11 @@ value sys_open(path, flags, perm) /* ML */
      value path, flags, perm;
 {
   int ret;
-  ret = open(String_val(path), convert_flag_list(flags, sys_open_flags),
-             Int_val(perm));
+  ret = open(String_val(path), convert_flag_list(flags, sys_open_flags)
+#if !macintosh
+             ,Int_val(perm)
+#endif
+			               );
   if (ret == -1) sys_error(path);
   return Val_long(ret);
 }
@@ -135,8 +140,16 @@ value sys_close(fd)             /* ML */
 value sys_file_exists(name)     /* ML */
      value name;
 {
+#if macintosh
+  int f;
+  f = open (String_val (name), O_RDONLY);
+  if (f == -1) return (Val_bool (0));
+  close (f);
+  return (Val_bool (1));
+#else
   struct stat st;
   return Val_bool(stat(String_val(name), &st) == 0);
+#endif
 }
 
 value sys_remove(name)          /* ML */
@@ -171,7 +184,7 @@ value sys_getcwd(unit)		/* ML */
   if (getcwd(buff, sizeof(buff)) == 0) sys_error(NO_ARG);
 #else
   if (getwd(buff) == 0) sys_error(NO_ARG);
-#endif
+#endif /* HAS_GETCWD */
   return copy_string(buff);
 }
 
@@ -223,40 +236,7 @@ value sys_get_config(unit)  /* ML */
 
 /* Search path function */
 
-#ifndef _WIN32
-
-#ifndef S_ISREG
-#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
-#endif
-
-char * searchpath(name)
-     char * name;
-{
-  char * fullname;
-  char * path;
-  char * p;
-  char * q;
-  struct stat st;
-
-  for (p = name; *p != 0; p++) {
-    if (*p == '/') return name;
-  }
-  path = getenv("PATH");
-  if (path == NULL) return 0;
-  fullname = stat_alloc(strlen(name) + strlen(path) + 2);
-  while(1) {
-    for (p = fullname; *path != 0 && *path != ':'; p++, path++) *p = *path;
-    if (p != fullname) *p++ = '/';
-    for (q = name; *q != 0; p++, q++) *p = *q;
-    *p = 0;
-    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
-    if (*path == 0) return 0;
-    path++;
-  }
-  return fullname;
-}
-
-#else
+#ifdef _WIN32
 
 char * searchpath(name)
      char * name;
@@ -291,4 +271,47 @@ char * searchpath(name)
   return fullname;
 }
 
+#elif macintosh
+
+/* We don't need searchpath on the Macintosh because there are no #! scripts */
+
+char *searchpath (name)
+	char *name;
+{
+	return name;
+}
+
+#else
+
+#ifndef S_ISREG
+#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
+
+char * searchpath(name)
+     char * name;
+{
+  char * fullname;
+  char * path;
+  char * p;
+  char * q;
+  struct stat st;
+
+  for (p = name; *p != 0; p++) {
+    if (*p == '/') return name;
+  }
+  path = getenv("PATH");
+  if (path == NULL) return 0;
+  fullname = stat_alloc(strlen(name) + strlen(path) + 2);
+  while(1) {
+    for (p = fullname; *path != 0 && *path != ':'; p++, path++) *p = *path;
+    if (p != fullname) *p++ = '/';
+    for (q = name; *q != 0; p++, q++) *p = *q;
+    *p = 0;
+    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
+    if (*path == 0) return 0;
+    path++;
+  }
+  return fullname;
+}
+
+#endif /* _WIN32, macintosh, ... */

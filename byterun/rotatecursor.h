@@ -2,7 +2,7 @@
 /*                                                                     */
 /*                           Objective Caml                            */
 /*                                                                     */
-/*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
+/*            Damien Doligez, projet Para, INRIA Rocquencourt          */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  Automatique.  Distributed only by permission.                      */
@@ -11,24 +11,19 @@
 
 /* $Id$ */
 
-#ifndef _signals_
-#define _signals_
+/* Cursor rotation for MPW tools (ocamlrun and ocamlyacc) */
 
-#include "misc.h"
-#include "mlvalues.h"
+#ifndef _rotatecursor_
+#define _rotatecursor_
 
-extern value signal_handlers;
-extern Volatile int pending_signal;
-extern Volatile int something_to_do;
-extern Volatile int force_major_slice;
-extern Volatile int async_signal_mode;
+/* [*p1] and [*p2] will be set to 1 when the time comes to call 
+   [ui_periodic_action].  If p1 or p2 is not used, pass it as NULL.
+*/
+void rotatecursor_init (int volatile *p1, int volatile *p2);
 
-void enter_blocking_section P((void));
-void leave_blocking_section P((void));
-void urge_major_slice P((void));
+/* [direction] is 1 to rotate the cursor clockwise, 0 to rotate
+   counterclockwise.  This function always returns 0.
+ */
+int rotatecursor_action (int direction);
 
-extern void (*enter_blocking_section_hook)();
-extern void (*leave_blocking_section_hook)();
-
-#endif /* _signals_ */
-
+#endif /* _rotatecursor_ */

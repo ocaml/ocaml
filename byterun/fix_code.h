@@ -22,7 +22,7 @@
 #include "mlvalues.h"
 
 #ifdef THREADED_CODE
-void ** instr_table;
+extern void ** instr_table;
 #endif
 
 void fixup_endianness P((code_t code, asize_t len));
@@ -30,4 +30,3 @@ void thread_code P((code_t code, asize_t len));
 
 
 #endif
-

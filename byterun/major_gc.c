@@ -281,6 +281,7 @@ asize_t round_heap_chunk_size (request)
     return ((request + Page_size - 1) >> Page_log) << Page_log;
   }else{
     raise_out_of_memory ();
+    /* not reached */ return 0;
   }
 }
 

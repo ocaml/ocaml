@@ -240,8 +240,15 @@ void caml_main(argc, argv)
 
   } else {
 
-    fatal_error_arg("Fatal error: uncaught exception %s.\n",
-                    String_val(Field(Field(exn_bucket, 0), 0)));
+    if (!strcmp (String_val(Field(Field(exn_bucket, 0), 0)), "Failure")
+        && Wosize_val (exn_bucket) >= 2
+        && Tag_val (Field (exn_bucket, 1)) == String_tag){
+      fatal_error_arg ("Fatal error: uncaught exception Failure \"%s\".\n",
+                       String_val (Field (exn_bucket, 1)));
+    }else{
+	  fatal_error_arg("Fatal error: uncaught exception %s.\n",
+					  String_val(Field(Field(exn_bucket, 0), 0)));
+    }
   }
 }
 
