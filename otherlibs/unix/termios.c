@@ -95,7 +95,6 @@ static struct {
   speed_t speed;
   int baud;
 } speedtable[] = {
-  {B0,       0},
   {B50,      50},
   {B75,      75},
   {B110,     110},
@@ -109,7 +108,17 @@ static struct {
   {B4800,    4800},
   {B9600,    9600},
   {B19200,   19200},
-  {B38400,   38400}
+  {B38400,   38400},
+#ifdef B57600
+  {B57600,   57600},
+#endif
+#ifdef B115200
+  {B115200,  115200},
+#endif
+#ifdef B230400
+  {B230400,  230400},
+#endif
+  {B0,       0}
 };
 
 #define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))
@@ -142,6 +151,7 @@ static void encode_terminal_status(value *dst)
     case Speed:
       { int which = *pc++;
         speed_t speed = 0;
+        *dst = Val_int(9600);   /* in case no speed in speedtable matches */
         switch (which) {
         case Output:
           speed = cfgetospeed(&terminal_status); break;
