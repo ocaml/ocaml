@@ -470,10 +470,8 @@ let rec type_decl kwd id decl =
   | Type_variant [] -> ()
       (* A fatal error actually, except when printing type exn... *)
   | Type_variant cstrs ->
-      print_string " =";
-      List.iter
-        (fun cstr -> print_space(); print_string "| "; constructor cstr)
-        cstrs
+      printf " ="; print_break 1 2;
+      print_list constructor (fun () -> printf "@ | ") cstrs
   | Type_record (lbl1 :: lbls as l) ->
       print_string " ="; print_space();
       print_string "{ "; label lbl1;
@@ -512,9 +510,12 @@ let exception_declaration id decl =
 (* Print a value declaration *)
 
 let value_ident id =
-  match (Ident.name id).[0] with
+  let name = Ident.name id in
+  if List.mem name ["or";"mod";"land";"lor";"lxor";"lsl";"lsr";"asr"] then
+    printf "( %s )" name
+  else match name.[0] with
     'a'..'z'|'\223'..'\246'|'\248'..'\255'|'_' -> ident id
-  | _ -> print_string "( "; ident id; print_string " )"
+  | _ -> printf "( %s )" name
 
 let value_description id decl =
   open_box 2;
