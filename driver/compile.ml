@@ -98,6 +98,11 @@ let parse_file inputfile parse_fun ast_magic =
   close_in ic;
   ast
 
+let remove_preprocessed_if_ast inputfile =
+  match !Clflags.preprocessor with
+    None -> ()
+  | Some _ -> if inputfile <> !Location.input_name then remove_file inputfile
+
 (* Compile a .mli file *)
 
 let interface ppf sourcefile =
@@ -115,7 +120,7 @@ let interface ppf sourcefile =
     Env.save_signature sg modulename (prefixname ^ ".cmi");
     remove_preprocessed inputfile
   with e ->
-    remove_preprocessed inputfile;
+    remove_preprocessed_if_ast inputfile;
     raise e
 
 (* Compile a .ml file *)
@@ -151,7 +156,7 @@ let implementation ppf sourcefile =
   with x ->
     close_out oc;
     remove_file objfile;
-    remove_preprocessed inputfile;
+    remove_preprocessed_if_ast inputfile;
     raise x
 
 let c_file name =
