@@ -84,6 +84,8 @@ and expression_desc =
   | Texp_reply of expression * Path.t
   | Texp_def of joinautomaton list * expression
   | Texp_loc of joinlocation list * expression
+  | Texp_dynamic of expression
+  | Texp_coerce of expression * Parsetree.core_type
 
 and joinlocation =
     {jloc_desc : joinident * joinautomaton list * expression ;

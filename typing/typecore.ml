@@ -1343,7 +1343,22 @@ let rec do_type_exp ctx env sexp =
         exp_type = body.exp_type;
         exp_env  = env
       } 
-  | Pexp_dynamic (_) | Pexp_coerce (_,_) -> assert false
+  | Pexp_dynamic (e) ->
+      check_expression ctx sexp;
+      let te = do_type_exp E env e in
+       {
+         exp_desc = Texp_dynamic te;
+         exp_loc = sexp.pexp_loc;
+         exp_type = instance Predef.type_dyn;
+         exp_env = env;
+       }
+  | Pexp_coerce (e,t) ->
+      check_expression ctx sexp;
+      let de = type_expect env e (instance Predef.type_dyn) in
+      { exp_desc = Texp_coerce (de, t);
+	exp_loc = sexp.pexp_loc;
+	exp_type = Typetexp.transl_simple_type env false t;
+	exp_env =env }
 (*< JOCAML *)
 
 and type_argument env sarg ty_expected =

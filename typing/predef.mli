@@ -32,6 +32,7 @@ val type_int64: type_expr
 (*> JOCAML *)
 val type_location : type_expr
 val type_process : type_expr
+val type_dyn : type_expr
 (*< JOCAML *)
 
 val path_int: Path.t
@@ -51,6 +52,7 @@ val path_int64: Path.t
 (*> JOCAML *)
 val path_process : Path.t
 val path_channel : Path.t
+val path_dyn : Path.t
 (*< JOCAML *)
 val path_match_failure: Path.t
 val path_assert_failure : Path.t

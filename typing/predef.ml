@@ -36,6 +36,7 @@ and ident_int64 = Ident.create "int64"
 and ident_channel = Ident.create "channel"
 and ident_process = Ident.create "process"
 and ident_location = Ident.create "location"
+and ident_dyn = Ident.create "dyn"
 (*< JOCAML *)
 
 let path_int = Pident ident_int
@@ -56,6 +57,7 @@ and path_int64 = Pident ident_int64
 and path_channel = Pident ident_channel
 and path_process = Pident ident_process
 and path_location = Pident ident_location
+and path_dyn = Pident ident_dyn
 (*< JOCAML *)
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
@@ -74,6 +76,7 @@ and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
 (*> JOCAML *)
 and type_process = newgenty (Tconstr(path_process, [], ref Mnil))
 and type_location = newgenty (Tconstr(path_location, [], ref Mnil))
+and type_dyn = newgenty (Tconstr(path_dyn, [], ref Mnil))
 (*< JOCAML *)
 
 let ident_match_failure = Ident.create "Match_failure"
@@ -171,6 +174,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_channel decl_channel (
   add_type ident_process decl_abstr (
   add_type ident_location decl_abstr (
+  add_type ident_dyn decl_abstr (
 (*< JOCAML *)
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
@@ -188,7 +192,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_int decl_abstr (
     empty_env)))))))))))))))))))))))))
 (*> JOCAML *)
-    )))
+    ))))
 (*< JOCAML *)
 
 let builtin_values =
