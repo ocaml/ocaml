@@ -713,10 +713,13 @@ val localtime : float -> tm
 
 val mktime : tm -> float * tm
 (** Convert a date and time, specified by the [tm] argument, into
-   a time in seconds, as returned by {!Unix.time}. Also return a normalized
-   copy of the given [tm] record, with the [tm_wday], [tm_yday],
-   and [tm_isdst] fields recomputed from the other fields.
-   The [tm] argument is interpreted in the local time zone. *)
+   a time in seconds, as returned by {!Unix.time}.  The [tm_isdst],
+   [tm_wday] and [tm_yday] fields of [tm] are ignored.  Also return a
+   normalized copy of the given [tm] record, with the [tm_wday],
+   [tm_yday], and [tm_isdst] fields recomputed from the other fields,
+   and the other fields normalized (so that, e.g., 40 October is
+   changed into 9 November).  The [tm] argument is interpreted in the
+   local time zone. *)
 
 val alarm : int -> int
 (** Schedule a [SIGALRM] signal after the given number of seconds. *)
