@@ -59,7 +59,12 @@ type out_value =
   | Oval_stuff of string
   | Oval_tuple of out_value list
   | Oval_variant of string * out_value option
+(* GENERIC (dynamic values are not longer printable...)
   | Oval_dynamic of out_value * out_type
+/GENERIC *)
+(* DYN *)
+  | Oval_dynamic of out_type
+(* /DYN *)
 
 type out_class_type =
   | Octy_constr of out_ident * out_type list
