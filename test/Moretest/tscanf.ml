@@ -789,6 +789,14 @@ let test42 () =
 
 test (test42 ());;
 
+let test50 () =
+ let s = "12.2" in
+ let ib = Scanning.from_string s in
+ bscanf ib "%[0-9].%[0-9]%s%!" (fun s1 s2 s3 ->
+   s1 = "12" && s2 = "2" && s3 = "");;
+
+test (test50 ());;
+
 (*******
 
 print_string "Test number is "; 
