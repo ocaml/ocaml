@@ -32,14 +32,14 @@ open Types
      as greatest).
    - The level of a type constructor is superior to the binding
      time of its path.
-
+   - Recursive types without limitation should be handled (even if
+     there is still an occur check.
 *)
 
 (*
    A faire
    =======
-   - Ordonner ctype.mli comme ctype.ml.
-   - Se debarasser de [Ident.identify] (utiliser plutot des substitutions).
+   - XXX Se debarasser de [Ident.identify] (utiliser plutot des substitutions).
    - Revoir affichage des types.
    - Types recursifs sans limitation.
    - Etendre la portee d'un alias [... as 'a] a tout le type englobant.
@@ -77,6 +77,8 @@ exception Subtype of
 
 exception Cannot_expand
 
+exception Recursive_abbrev
+
 (**** Type level management ****)
 
 let generic_level = (-1)
@@ -90,17 +92,22 @@ let end_def () = decr current_level
 let reset_global_level () =
   global_level := !current_level + 1
 
+(* Used to mark a type during a traversal. *)
+let lowest_level = generic_level
+let pivot_level = 2 * lowest_level - 1
+    (* pivot_level - lowest_level < lowest_level *)
+
 (**** Some type creators ****)
 
-let newgenty desc      = { desc = desc; level = generic_level }
-let newgenvar ()     = newgenty Tvar
-
 let newty desc         = { desc = desc; level = !current_level }
-let newvar ()          = { desc = Tvar; level = !current_level }
-let newobj fields      = newty (Tobject (fields, ref None))
-
+let newgenty desc      = { desc = desc; level = generic_level }
 let new_global_ty desc = { desc = desc; level = !global_level }
+
+let newvar ()          = { desc = Tvar; level = !current_level }
+let newgenvar ()       = newgenty Tvar
 let new_global_var ()  = new_global_ty Tvar
+
+let newobj fields      = newty (Tobject (fields, ref None))
 
 let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
@@ -139,10 +146,7 @@ let flatten_fields ty =
       (List.rev l, r)
 
 let build_fields =
-  List.fold_right
-    (fun (s, ty1) ty2 ->
-       {desc = Tfield(s, ty1, ty2);
-        level = ty2.level})
+  List.fold_right (fun (s, ty1) ty2 -> newty (Tfield(s, ty1, ty2)))
 
 let associate_fields fields1 fields2 =
   let rec associate p s s' =
@@ -162,7 +166,7 @@ let associate_fields fields1 fields2 =
 
 (**** Check whether an object is open ****)
 
-(* XXX Il faudra penser a eventuellement expanser l'abreviation *)
+(* +++ Il faudra penser a eventuellement expanser l'abreviation *)
 let rec opened_object ty =
   match (repr ty).desc with
     Tobject (t, _)  -> opened_object t
@@ -188,7 +192,7 @@ let close_object ty =
 
 
 (**** Object name manipulation ****)
-(* XXX Bientot obsolete *)
+(* +++ Bientot obsolete *)
 
 let rec row_variable ty =
   let ty = repr ty in
@@ -315,8 +319,8 @@ let make_nongen ty = update_level Env.empty !current_level ty
 (* Remove marks from a type. *)
 let rec unmark_type ty =
   let ty = repr ty in
-  if ty.level < -1 then begin
-    ty.level <- -10 - ty.level;
+  if ty.level < lowest_level then begin
+    ty.level <- pivot_level - ty.level;
     iter_type_expr unmark_type ty
   end
 
@@ -521,7 +525,7 @@ let expand_abbrev env path args abbrev level =
      be correct anymore, and so we flush the cache. This is safe but
      quite pessimistic: it would be enough to flush the cache at the
      ends of structures and signatures.
-     XXX Do it !
+     +++ Do it !
   *)
   if env != !previous_env then begin
     cleanup_abbrev ();
@@ -540,7 +544,7 @@ let expand_abbrev env path args abbrev level =
            generation and debugger), as a non-generic type variable
            can be instanciated afterwards to a previously undefined
            type constructor.
-           (XXX actually, it is still true for the moment, due to the
+           (+++ actually, it is still true for the moment, due to the
            strong constraint on type levels and constructor binding
            time.)
            (XXX except that moregeneral can bind variables to out of
@@ -570,7 +574,6 @@ let rec expand_head env ty =
 
 (* Recursively expand the head of a type.
    Also expand #-types. *)
-(* XXX Bricolage ! *)
 let rec full_expand env ty =
   let ty = repr (expand_head env ty) in
   match ty.desc with
@@ -605,7 +608,7 @@ let generic_abbrev env path =
 
 exception Occur
 
-(* XXX A supprimer (?) *)
+(* +++ A supprimer (?) *)
 let occur env ty0 ty =
   let visited = ref ([] : type_expr list) in
   let rec occur_rec ty =
@@ -628,7 +631,7 @@ let occur env ty0 ty =
     occur_rec ty
 
 (**** Transform error trace ****)
-(* XXX Move it to some other place ? *)
+(* +++ Move it to some other place ? *)
 
 let expand_trace env trace =
   List.fold_right
@@ -652,9 +655,9 @@ let rec filter_trace =
 let deep_occur t0 ty =
   let rec occur_rec ty =
     let ty = repr ty in
-    if ty.level >= -1 then begin
+    if ty.level >= lowest_level then begin
       if ty == t0 then raise Occur;
-      ty.level <- -10 - ty.level;
+      ty.level <- pivot_level - ty.level;
       iter_type_expr occur_rec ty
     end
   in
@@ -777,7 +780,7 @@ and unify3 env t1 t1' t2 t2' =
           Some (_, va::_) when (repr va).desc = Tvar -> ()
         | _                                          -> nm2 := !nm1
         end
-    | (Tfield _, Tfield _) ->
+    | (Tfield _, Tfield _) ->           (* Actually unused *)
         unify_fields env t1 t2
     | (Tnil, Tnil) ->
         ()
@@ -906,80 +909,91 @@ let rec filter_method env name ty =
                         (*  Matching between type schemes  *)
                         (***********************************)
 
+(*
+   Levels:
+       !current_level     : generic variables from the pattern
+       !current_level - 1 : generic variables from the subject
 
-(* XXX Remplacer -10 par une variable *)
-(* Check that no generic variable occur in the type. *)
-let moregen_occur ty =
+   A generic variable from the subject cannot be instantiated, and its
+   level must remain unchanged.  A generic variable from the pattern
+   can be instantiated to anything.
+
+   Usually, the subject is given by the user, and the pattern is
+   unimportant. So, no need to propagate abbreviations.
+*)
+
+(*
+   Update the level of [ty]. Check that the levels of generic variables
+   from the subject are not lowered.
+*)
+let moregen_occur env level ty =
   let rec occur_rec ty =
     let ty = repr ty in
-    if ty.level >= -1 then begin
-      if (ty.desc = Tvar) && (ty.level = !current_level) then raise Occur;
-      ty.level <- -10 - ty.level;
+    if ty.level >= !current_level - 1 then begin
+      if (ty.desc = Tvar) && (ty.level = !current_level - 1) then
+        raise Occur;
+      ty.level <- pivot_level - ty.level;
       iter_type_expr occur_rec ty
     end
   in
-  try
-    occur_rec ty; unmark_type ty
-  with Occur ->
-    unmark_type ty; raise (Unify [])
+  if level < !current_level - 1 then begin
+    begin try
+      occur_rec ty; unmark_type ty
+    with Occur ->
+      unmark_type ty; raise (Unify [])
+    end;
+    update_level env level ty
+  end
 
-(* XXX On veut que le motif reste inchange *)
-(*     Le motif n'est pas necessairement completement polymorphe *)
-(* XXX Undo complet en cas d'erreur ? *)
 let rec moregen env t1 t2 =
   if t1 == t2 then () else
   let t1 = repr t1 in
   let t2 = repr t2 in
   if t1 == t2 then () else
-  let d1 = t1.desc in
+  let d2 = ref t2.desc in
+  moregen_occur env t1.level t2;
+  (* Ensure termination *)
+  t2.desc <- Tlink t1;
   try
-    begin match (t1.desc, t2.desc) with
-      (Tvar, _) ->
-        if t1.level = generic_level then raise (Unify []);
-        (* t1 has level = !current_level iff it is generic
-           in the original type scheme. In this case, it can be freely
-           instantiated. Otherwise, t1 is not generic
-           and cannot be instantiated by a type that contains
-           generic variables. *)
-        if t1.level < !current_level then begin
-          let t2' = instance t2 in
-          moregen_occur t2';
-          update_level env t1.level t2';
-          t1.desc <- Tlink t2'
-        end else
-          t1.desc <- Tlink t2
+    begin match (t1.desc, !d2) with
+      (Tvar, _) when t1.level <> !current_level - 1 ->
+        t2.desc <- !d2;
+        moregen_occur env t1.level t2;
+        t1.desc <- Tlink t2
+    | (_, Tvar) when t2.level <> !current_level - 1 ->
+        moregen_occur env t2.level t1;
+        d2 := Tlink t1
     | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
         moregen env t1 t2; moregen env u1 u2
     | (Ttuple tl1, Ttuple tl2) ->
         moregen_list env tl1 tl2
+    | (Tconstr(p1, tl1, abbrev1), Tconstr(p2, tl2, abbrev2))
+          when Path.same p1 p2 ->
+        begin try
+          moregen_list env tl1 tl2;
+        with Unify _ ->
+        try
+          moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
+        with Cannot_expand ->
+        t2.desc <- !d2;
+        try
+          moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
+        with Cannot_expand ->
+          raise (Unify [])
+        end
     | (Tconstr(p1, tl1, abbrev1), Tconstr(p2, tl2, abbrev2)) ->
-        if Path.same p1 p2 then begin
-          try
-            t1.desc <- Tlink t2;
-            moregen_list env tl1 tl2;
-            t1.desc <- d1
-          with Unify lst ->
-          t1.desc <- d1;
-          try
-            moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-          with Cannot_expand ->
-          try
-            moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
-          with Cannot_expand ->
-            raise (Unify lst)
-        end else begin
-          try
-            moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-          with Cannot_expand ->
-          try
-            moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
-          with Cannot_expand ->
-            raise (Unify [])
+        begin try
+          moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
+        with Cannot_expand ->
+        try
+          moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
+        with Cannot_expand ->
+          raise (Unify [])
         end
     | (Tobject(f1, _), Tobject(f2, _)) ->
-        t1.desc <- Tlink t2;
         moregen_fields env f1 f2
     | (Tconstr(p1, tl1, abbrev1), _) ->
+        t2.desc <- !d2;
         begin try
           moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
         with Cannot_expand ->
@@ -991,11 +1005,17 @@ let rec moregen env t1 t2 =
         with Cannot_expand ->
           raise (Unify [])
         end
+    | (Tfield _, Tfield _) ->           (* Actually unused *)
+        t2.desc <- !d2;
+        moregen_fields env t1 t2
+    | (Tnil, Tnil) ->
+        ()
     | (_, _) ->
         raise (Unify [])
-    end
+    end;
+    t2.desc <- !d2
   with exn ->
-    t1.desc <- d1;
+    t2.desc <- !d2;
     raise exn
 
 and moregen_list env tl1 tl2 =
@@ -1007,30 +1027,24 @@ and moregen_fields env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  (* Combiner avec [moregen]... *)
-  if miss1 <> [] then raise (Unify []);
-  begin match rest1.desc with
-    Tvar ->
-      if rest1.level = generic_level then raise (Unify []);
-      let fi = build_fields miss2 rest2 in
-      (* XXX ??? *)
-      if rest1.level < !current_level then moregen_occur fi
-  | Tnil ->
-      if miss2 <> [] then raise (Unify []);
-      if rest2.desc <> Tnil then raise (Unify [])
-  | _ ->
-      fatal_error "moregen_fields"
-  end;
+  let va = newvar () in
+  moregen env (build_fields miss1 va) rest2;
+  moregen env rest1 (build_fields miss2 va);
   List.iter (fun (t1, t2) -> moregen env t1 t2) pairs
 
 let moregeneral env sch1 sch2 =
-  begin_def();
+  begin_def ();
+  let ty2 = instance sch2 in
+  begin_def ();
+  let ty1 = instance sch1 in
   try
-    moregen env (instance sch1) sch2;
-    end_def();
+    moregen env ty1 ty2;
+    end_def ();
+    end_def ();
     true
   with Unify _ ->
-    end_def();
+    end_def ();
+    end_def ();
     false
 
 
@@ -1256,27 +1270,12 @@ and subtype_fields env trace ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  (* XXX A verifier... *)
   [(trace, rest1, build_fields miss2 (newvar ()))]
-(*
-  begin match rest1.desc with
-    Tvar   -> [(trace, rest1, build_fields miss2 (newvar ()))]
-  | Tnil   -> if miss2 = [] then [] else subtype_error env trace
-  | _      -> fatal_error "Ctype.subtype_fields (1)"
-  end
-*)
     @
   begin match rest2.desc with
     Tnil   -> []
   | _      -> [(trace, build_fields miss1 rest1, rest2)]
   end
-(*
-  begin match rest2.desc with
-    Tvar   -> [(trace, build_fields miss1 (rest1), rest2)]
-  | Tnil   -> []
-  | _      -> fatal_error "Ctype.subtype_fields (2)"
-  end
-*)
     @
   (List.fold_left
      (fun cstrs (t1, t2) -> cstrs @ (subtype_rec env ((t1, t2)::trace) t1 t2))
@@ -1382,35 +1381,37 @@ let nondep_class_type env id decl =
                               (******************************)
 
 
-(* XXX A supprimer... (occur-check) *)
-exception Recursive_abbrev
+(* +++ A supprimer... (occur-check) *)
 
-let rec non_recursive_abbrev env path constrs ty =
+let marked_types = ref []
+
+let rec non_recursive_abbrev env path ty =
   let ty = repr ty in
-  match ty.desc with
-    Tarrow (ty1, ty2) ->
-      non_recursive_abbrev env path constrs ty1;
-      non_recursive_abbrev env path constrs ty2
-  | Ttuple tl ->
-      List.iter (non_recursive_abbrev env path constrs) tl
-  | Tconstr(p, args, abbrev) ->
-      if Path.same path p then
+  if ty.level >= lowest_level then begin
+    let level = ty.level in
+    ty.level <- pivot_level - level;
+    match ty.desc with
+      Tconstr(p, _, _) when Path.same path p ->
         raise Recursive_abbrev
-      else begin
+    | Tconstr(p, args, abbrev) ->
         begin try
-          let ty' = expand_abbrev env p args abbrev ty.level in
-          if List.memq ty' constrs then () else
-            non_recursive_abbrev env path (ty'::constrs) ty'
-        with Cannot_expand ->
-          ()
-        end
-      end
-  | _ (* Tvar | Tobject (_, _) | Tfield (_, _, _) | Tnil *) ->
-      ()
+          let ty' = repr (expand_abbrev env p args abbrev level) in
+          if ty'.level >= lowest_level then begin
+            marked_types := ty' :: !marked_types;
+            non_recursive_abbrev env path ty'
+          end
+        with Cannot_expand -> () end
+    | Tobject (_, _) ->
+        ()
+    | _ ->
+        iter_type_expr (non_recursive_abbrev env path) ty
+  end
 
 let correct_abbrev env ident params ty =
-  let path = Path.Pident ident in
-  non_recursive_abbrev env path [] ty
+  marked_types := [ty];
+  non_recursive_abbrev env (Path.Pident ident) ty;
+  List.iter unmark_type !marked_types;
+  marked_types := []
 
 
                     (**************************************)
@@ -1423,12 +1424,12 @@ exception Failed of closed_schema_result
 
 let rec closed_schema_rec fullgen row ty =
   let ty = repr ty in
-  if ty.level >= -1 then begin
+  if ty.level >= lowest_level then begin
     let level = ty.level in
     if fullgen then
-      ty.level <- -10 - generic_level   (* Generalize type *)
+      ty.level <- pivot_level - generic_level   (* Generalize type *)
     else
-      ty.level <- -10 - level;
+      ty.level <- pivot_level - level;
     match ty.desc with
       Tvar when level != generic_level ->
         raise (Failed (if row then Row_var ty else Var ty))
@@ -1495,7 +1496,6 @@ let unroll_abbrev id tl ty =
       ty
   | _ ->
       let ty' = {desc = ty.desc; level = ty.level} in
-(*      let ty' = {desc = ty.desc; level = generic_level} in *)
       ty.desc <- Tlink {desc = Tconstr (Path.Pident id, tl, ref Mnil);
                         level = ty.level};
       ty'
