@@ -78,11 +78,12 @@ val foreground: color
 external plot : x:int -> y:int -> unit = "gr_plot"
         (* Plot the given point with the current drawing color. *)
 external point_color : x:int -> y:int -> color = "gr_point_color"
-        (* Return the color of the given point. *)
+        (* Return the color of the given point in the backing store
+           (see "Double buffering" below). *)
 external moveto : x:int -> y:int -> unit = "gr_moveto"
         (* Position the current point. *)
 val rmoveto : x:int -> y:int -> unit
-        (* [rmoveto x y] translates the current point of the given vector. *)
+        (* [rmoveto x y] translates the current point by the given vector. *)
 external current_x : unit -> int = "gr_current_x"
         (* Return the abscissa of the current point. *)
 external current_y : unit -> int = "gr_current_y"
@@ -94,7 +95,7 @@ external lineto : x:int -> y:int -> unit = "gr_lineto"
            and move the current point to the given point. *)
 val rlineto : x:int -> y:int -> unit
         (* Draws a line with endpoints the current point and the
-           current point translated of the given vector,
+           current point translated by the given vector,
            and move the current point to this point. *)
 external draw_rect : x:int -> y:int -> w:int -> h:int -> unit = "gr_draw_rect"
         (* [draw_rect x y w h] draws the rectangle with lower left corner
@@ -246,7 +247,7 @@ external sound : freq:int -> ms:int -> unit = "gr_sound"
 (*** Double buffering *)
 
 val auto_synchronize : bool -> unit
-        (* By default, drawings takes place both on the window displayed
+        (* By default, drawing takes place both on the window displayed
            on screen, and in a memory area (the ``backing store'').
            The backing store image is used to re-paint the on-screen
            window when necessary.
@@ -276,13 +277,12 @@ external display_mode : bool -> unit = "gr_display_mode"
         (* Set display mode on or off. When turned on, drawings are done
            in the graphics window; when turned off, drawings do not affect
            the graphics window.  This occurs independently of
-           drawings into the backing store (see the function [remember_mode]
+           drawing into the backing store (see the function [remember_mode]
            below). Default display mode is on. *)
 
 external remember_mode : bool -> unit = "gr_remember_mode"
         (* Set remember mode on or off. When turned on, drawings are done
            in the backing store; when turned off, the backing store is
-           unaffected by drawings.  This
-           occurs independently of drawings onto the graphics window
-           (see the function [display_mode] above).
+           unaffected by drawings.  This occurs independently of drawing
+           onto the graphics window (see the function [display_mode] above).
            Default remember mode is on.  *)
