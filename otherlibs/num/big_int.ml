@@ -178,6 +178,7 @@ let mult_int_big_int i bi =
   if i = monster_int
      then let res = create_nat size_res in
             blit_nat res 0 (bi.abs_value) 0 size_bi;
+            set_digit_nat res size_bi 0;
             mult_digit_nat res 0 size_res (bi.abs_value) 0 size_bi 
                            (nat_of_int biggest_int) 0;
             { sign = - (sign_big_int bi);
