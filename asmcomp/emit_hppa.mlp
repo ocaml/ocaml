@@ -29,6 +29,14 @@ open Mach
 open Linearize
 open Emitaux
 
+(* Adaptation to HPUX and NextStep *)
+
+let hpux =
+  match Config.system with
+    "hpux" -> true
+  | "nextstep" -> false
+  | _ -> fatal_error "Emit_hppa.hpux"
+
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -56,13 +64,17 @@ let slot_offset loc cl =
 
 (* Output a label *)
 
+let label_prefix = if hpux then "L$" else "L"
+
 let emit_label lbl =
-  emit_string "L"; emit_int lbl
+  emit_string label_prefix; emit_int lbl
 
 (* Output a symbol *)
 
+let symbol_prefix = if hpux then "" else "_"
+
 let emit_symbol s =
-  emit_string "_"; Emitaux.emit_symbol '$' s
+  emit_string symbol_prefix; Emitaux.emit_symbol '$' s
 
 (* Output a pseudo-register *)
 
@@ -71,7 +83,28 @@ let emit_reg r =
     Reg r -> emit_string (register_name r)
   | _ -> fatal_error "Emit.emit_reg"
 
-(***********
+(* Output low address / high address prefixes *)
+
+let low_prefix = if hpux then "RR'" else "R`"
+let high_prefix = if hpux then "LR'" else "L`"
+
+let emit_int_low n = emit_string low_prefix; emit_int n
+let emit_int_high n = emit_string high_prefix; emit_int n
+
+let emit_symbol_low s =
+  if hpux
+  then `RR'{emit_symbol s}-$global$`
+  else `R\`{emit_symbol s}`
+
+let load_symbol_high s =
+  if hpux
+  then `	addil	LR'{emit_symbol s}-$global$, %r27\n`
+  else `	ldil	L\`{emit_symbol s}, %r1\n`
+
+let load_symbol_offset_high s ofs =
+  if hpux
+  then `	addil	LR'{emit_symbol s}-$global$+{emit_int ofs}, %r27\n`
+  else `	ldil	L\`{emit_symbol s}+{emit_int ofs}, %r1\n`
 
 (* Record imported symbols *)
 
@@ -80,12 +113,14 @@ let defined_symbols = ref StringSet.empty
 let called_symbols = ref StringSet.empty
 
 let use_symbol s =
-  used_symbols := StringSet.add s !used_symbols
+  if hpux then used_symbols := StringSet.add s !used_symbols
 let define_symbol s =
-  defined_symbols := StringSet.add s !defined_symbols
+  if hpux then defined_symbols := StringSet.add s !defined_symbols
 let call_symbol s =
-  used_symbols := StringSet.add s !used_symbols;
-  called_symbols := StringSet.add s !called_symbols
+  if hpux then begin
+    used_symbols := StringSet.add s !used_symbols;
+    called_symbols := StringSet.add s !called_symbols
+  end
 
 (* An external symbol is code if either it is branched to, or
    it does not start with an uppercase letter. *)
@@ -104,8 +139,6 @@ let emit_imports () =
   defined_symbols := StringSet.empty;
   called_symbols := StringSet.empty
 
-************)
-
 (* Output an integer load / store *)
 
 let is_offset n = (n < 8192) & (n >= -8192) (* 14 bits *)
@@ -113,33 +146,37 @@ let is_offset n = (n < 8192) & (n >= -8192) (* 14 bits *)
 let emit_load instr addr arg dst =
   match addr with
     Ibased(s, 0) ->
-        `	ldil	L\`{emit_symbol s}, %r1\n`;
-        `	{emit_string instr}	R\`{emit_symbol s}(%r1), {emit_reg dst}\n`
+        use_symbol s;
+        load_symbol_high s;
+        `	{emit_string instr}	{emit_symbol_low s}(%r1), {emit_reg dst}\n`
   | Ibased(s, ofs) ->
-        `	ldil	L\`{emit_symbol s}+{emit_int ofs}, %r1\n`;
-        `	{emit_string instr}	R\`{emit_symbol s}+{emit_int ofs}(%r1), {emit_reg dst}\n`
+        load_symbol_offset_high s ofs;
+        use_symbol s;
+        `	{emit_string instr}	{emit_symbol_low s}+{emit_int ofs}(%r1), {emit_reg dst}\n`
   | Iindexed ofs ->
       if is_offset ofs then
         `	{emit_string instr}	{emit_int ofs}({emit_reg arg.(0)}), {emit_reg dst}\n`
       else begin
-        `	addil	L\`{emit_int ofs}, {emit_reg arg.(0)}\n`;
-        `	{emit_string instr}	R\`{emit_int ofs}(%r1), {emit_reg dst}\n`
+        `	addil	{emit_int_high ofs}, {emit_reg arg.(0)}\n`;
+        `	{emit_string instr}	{emit_int_low ofs}(%r1), {emit_reg dst}\n`
       end
 
 let emit_store instr addr arg src =
   match addr with
     Ibased(s, 0) ->
-        `	ldil	L\`{emit_symbol s}, %r1\n`;
-        `	{emit_string instr}	{emit_reg src}, R\`{emit_symbol s}(%r1)\n`
+        use_symbol s;
+        load_symbol_high s;
+        `	{emit_string instr}	{emit_reg src}, {emit_symbol_low s}(%r1)\n`
   | Ibased(s, ofs) ->
-        `	ldil	L\`{emit_symbol s}+{emit_int ofs}, %r1\n`;
-        `	{emit_string instr}	{emit_reg src}, R\`{emit_symbol s}+{emit_int ofs}(%r1)\n`
+        use_symbol s;
+        load_symbol_offset_high s ofs;
+        `	{emit_string instr}	{emit_reg src}, {emit_symbol_low s}+{emit_int ofs}(%r1)\n`
   | Iindexed ofs ->
       if is_offset ofs then
         `	{emit_string instr}	{emit_reg src}, {emit_int ofs}({emit_reg arg.(1)})\n`
       else begin
-        `	addil	L\`{emit_int ofs}, {emit_reg arg.(0)}\n`;
-        `	{emit_string instr}	{emit_reg src}, R\`{emit_int ofs}(%r1)\n`
+        `	addil	{emit_int_high ofs}, {emit_reg arg.(0)}\n`;
+        `	{emit_string instr}	{emit_reg src}, {emit_int_low ofs}(%r1)\n`
       end
 
 (* Output a floating-point load / store *)
@@ -147,13 +184,15 @@ let emit_store instr addr arg src =
 let emit_float_load addr arg dst =
   match addr with
     Ibased(s, 0) ->
-        `	ldil	L\`{emit_symbol s}, %r1\n`;
-        `	ldo	R\`{emit_symbol s}(%r1), %r1\n`;
+        use_symbol s;
+        load_symbol_high s;
+        `	ldo	{emit_symbol_low s}(%r1), %r1\n`;
         `	fldws	0(%r1), {emit_reg dst}L\n`;
         `	fldws	4(%r1), {emit_reg dst}R\n`
   | Ibased(s, ofs) ->
-        `	ldil	L\`{emit_symbol s}+{emit_int ofs}, %r1\n`;
-        `	ldo	R\`{emit_symbol s}+{emit_int ofs}(%r1), %r1\n`;
+        use_symbol s;
+        load_symbol_offset_high s ofs;
+        `	ldo	{emit_symbol_low s}+{emit_int ofs}(%r1), %r1\n`;
         `	fldws	0(%r1), {emit_reg dst}L\n`;
         `	fldws	4(%r1), {emit_reg dst}R\n`
   | Iindexed ofs ->
@@ -164,8 +203,8 @@ let emit_float_load addr arg dst =
         if is_offset ofs then
           `	ldo	{emit_int ofs}({emit_reg arg.(0)}), %r1\n`
         else begin
-          `	addil	L\`{emit_int ofs}, {emit_reg arg.(0)}\n`;
-          `	ldo	R\`{emit_int ofs}(%r1), %r1\n`
+          `	addil	{emit_int_high ofs}, {emit_reg arg.(0)}\n`;
+          `	ldo	{emit_int_low ofs}(%r1), %r1\n`
         end;
         `	fldws	0(%r1), {emit_reg dst}L\n`;
         `	fldws	4(%r1), {emit_reg dst}R\n`
@@ -174,13 +213,15 @@ let emit_float_load addr arg dst =
 let emit_float_store addr arg src =
   match addr with
     Ibased(s, 0) ->
-        `	ldil	L\`{emit_symbol s}, %r1\n`;
-        `	ldo	R\`{emit_symbol s}(%r1), %r1\n`;
+        use_symbol s;
+        load_symbol_high s;
+        `	ldo	{emit_symbol_low s}(%r1), %r1\n`;
         `	fstws	{emit_reg src}L, 0(%r1)\n`;
         `	fstws	{emit_reg src}R, 4(%r1)\n`
   | Ibased(s, ofs) ->
-        `	ldil	L\`{emit_symbol s}+{emit_int ofs}, %r1\n`;
-        `	ldo	R\`{emit_symbol s}+{emit_int ofs}(%r1), %r1\n`;
+        use_symbol s;
+        load_symbol_offset_high s ofs;
+        `	ldo	{emit_symbol_low s}+{emit_int ofs}(%r1), %r1\n`;
         `	fstws	{emit_reg src}L, 0(%r1)\n`;
         `	fstws	{emit_reg src}R, 4(%r1)\n`
   | Iindexed ofs ->
@@ -191,12 +232,21 @@ let emit_float_store addr arg src =
         if is_offset ofs then
           `	ldo	{emit_int ofs}({emit_reg arg.(1)}), %r1\n`
         else begin
-          `	addil	L\`{emit_int ofs}, {emit_reg arg.(1)}\n`;
-          `	ldo	R\`{emit_int ofs}(%r1), %r1\n`
+          `	addil	{emit_int_high ofs}, {emit_reg arg.(1)}\n`;
+          `	ldo	{emit_int_low ofs}(%r1), %r1\n`
         end;
         `	fstws	{emit_reg src}L, 0(%r1)\n`;
         `	fstws	{emit_reg src}R, 4(%r1)\n`
       end
+
+(* Output an align directive.
+   Under HPUX: alignment = number of bytes
+   Undex NextStep: alignment = log2 of number of bytes *)
+
+let emit_align n =
+  if hpux
+  then `	.align	{emit_int n}\n`
+  else `	.align	{emit_int(Misc.log2 n)}\n`
 
 (* Record live pointers at call points *)
 
@@ -232,15 +282,20 @@ let emit_frame fd =
     (fun n ->
       `	.short	{emit_int n}\n`)
     fd.fd_live_offset;
-  `	.align	2\n`
+  emit_align 4
 
 (* Record floating-point constants *)
 
 let float_constants = ref ([] : (int * string) list)
 
 let emit_float_constant (lbl, cst) =
-  `	.literal8\n`;
-  `	.align	3\n`;
+  if hpux then begin
+    `	.SPACE	$TEXT$\n`;
+    `	.SUBSPA	$LIT$\n`
+  end else begin
+    `	.literal8\n`
+  end;
+  emit_align 8;
   `{emit_label lbl}:	.double	{emit_string cst}\n`
 
 (* Record external calls and generate stub code for these *)
@@ -259,12 +314,27 @@ let stub_label symb =
 
 let emit_stub symb lbl =
   `{emit_label lbl}:	ldil	L\`{emit_symbol symb}, %r1\n`;
-  `	ble,n	R\`{emit_symbol symb}(4, %r1)\n`
+  `	ble,n	{emit_symbol_low symb}(4, %r1)\n`
 
 let emit_stubs () =
   `	.text\n`;
-  `	.align	2\n`;
+  emit_align 4;
   Hashtbl.iter emit_stub stub_label_table
+
+(* Output a function call *)
+
+let emit_call symbol retref =
+  if hpux then begin
+    `	.CALL\n`;
+    `	bl	{emit_symbol s}, {emit_string retreg}\n`;
+    call_symbol symbol
+  end else
+  if StringSet.mem s !defined_functions then
+    `	bl	{emit_symbol s}, {emit_string retreg}\n`
+  else begin
+    let lbl = stub_label symbol in
+    `	jbsr	{emit_symbol s}, {emit_string retreg}, {emit_label lbl}\n`
+  end
 
 (* Names of various instructions *)
 
@@ -362,29 +432,24 @@ let rec emit_instr i dslot =
         if is_offset n then
           `	ldi	{emit_int n}, {emit_reg i.res.(0)}\n`
         else begin
-          `	ldil	L\`{emit_int n}, {emit_reg i.res.(0)}\n`;
-          `	ldo	R\`{emit_int n}({emit_reg i.res.(0)}), {emit_reg i.res.(0)}\n`
+          `	ldil	{emit_int_high n}, {emit_reg i.res.(0)}\n`;
+          `	ldo	{emit_int_low n}({emit_reg i.res.(0)}), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_float s) ->
         let lbl = new_label() in
         float_constants := (lbl, s) :: !float_constants;
-        `	ldil	L\`{emit_label lbl}, %r1\n`;
-        `	ldo	R\`{emit_label lbl}(%r1), %r1\n`;
+        `	ldil	{emit_string high_prefix}{emit_label lbl}, %r1\n`;
+        `	ldo	{emit_string low_prefix}{emit_label lbl}(%r1), %r1\n`;
         `	fldds	0(%r1), {emit_reg i.res.(0)}\n`
     | Lop(Iconst_symbol s) ->
-        `	ldil	L\`{emit_symbol s}, {emit_reg i.res.(0)}\n`;
-        `	ldo	R\`{emit_symbol s}({emit_reg i.res.(0)}), {emit_reg i.res.(0)}\n`
+        load_symbol_high s;
+        `	ldo	{emit_symbol_low s}(%r1), {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `	ble	0(4, {emit_reg i.arg.(0)})\n`; (* retaddr in %r31 *)
         `	copy	%r31, %r2\n`; (* in delay slot: save retaddr in %r2 *)
         record_frame i.live
     | Lop(Icall_imm s) ->
-        if StringSet.mem s !defined_functions then
-          `	bl	{emit_symbol s}, %r2\n`
-        else begin
-          let lbl = stub_label s in
-          `	jbsr	{emit_symbol s}, %r2, {emit_label lbl}\n`
-        end;
+        emit_call s "%r2";
         fill_delay_slot dslot;
         record_frame i.live
     | Lop(Itailcall_ind) ->
@@ -400,23 +465,22 @@ let rec emit_instr i dslot =
         end else begin
           if !contains_calls then
             `	ldw	{emit_int(-n)}(%r30), %r2\n`;
-          if StringSet.mem s !defined_functions then
-            `	bl	{emit_symbol s}, %r0\n`
-          else begin
-            let lbl = stub_label s in
-            `	jbsr	{emit_symbol s}, %r0, {emit_label lbl}\n`
-          end;
-          `	ldo	{emit_int(-n)}(%r30), %r30\n` (* in delay slot *)
+          emit_call s "%r0";
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          `	ldil	L\`{emit_symbol s}, %r22\n`;
-          `	bl	{emit_symbol "caml_c_call"}, %r2\n`;
-          `	ldo	R\`{emit_symbol s}(%r22), %r22\n`; (* in delay slot *)
+          if hpux then begin
+            `	ldil	LP'{emit_symbol s}, %r22\n`;
+            emit_call "caml_c_call" "%r2";
+            `	ldo	RP'{emit_symbol s}(%r22), %r22\n`  (* in delay slot *)
+          end else begin
+            `	ldil	L\`{emit_symbol s}, %r22\n`;
+            emit_call "caml_c_call" "%r2";
+          `	ldo	{emit_symbol_low s}(%r22), %r22\n` (* in delay slot *)
+          end;
           record_frame i.live
         end else begin
-          let lbl = stub_label s in
-          `	jbsr	{emit_symbol s}, %r2, {emit_label lbl}\n`;
+          emit_call s "%r2";
           fill_delay_slot dslot
         end
     | Lop(Istackoffset n) ->
@@ -456,19 +520,17 @@ let rec emit_instr i dslot =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           let lbl_cont = new_label() in
-          let lbl_stub = stub_label "caml_call_gc" in
           `	ldw	0(%r4), %r1\n`;
           `	ldo	{emit_int (-n)}(%r3), %r3\n`;
           `	comb,>>= %r3, %r1, {emit_label lbl_cont}\n`;
           `	addi	4, %r3, {emit_reg i.res.(0)}\n`; (* in delay slot *)
-          `	jbsr	{emit_symbol "caml_call_gc"}, %r2, {emit_label lbl_stub}\n`;
+          emit_call "caml_call_gc" "%r2";
           `	ldi	{emit_int n}, %r1\n`; (* in delay slot *)
           record_frame i.live;
           `	addi	4, %r3, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl_cont}:\n`
         end else begin
-          let lbl_stub = stub_label "caml_alloc" in
-          `	jbsr	{emit_symbol "caml_alloc"}, %r2, {emit_label lbl_stub}\n`;
+          emit_call "caml_alloc" "%r2";
           `	ldi	{emit_int n}, %r1\n`; (* in delay slot *)
           record_frame i.live;
           `	addi	4, %r3, {emit_reg i.res.(0)}\n` (* in delay slot *)
@@ -483,13 +545,21 @@ let rec emit_instr i dslot =
         `	ldws,mb	-8(%r30), {emit_reg i.res.(0)}\n`
     | Lop(Iintop Idiv) ->
         (* Arguments are assumed to be in %r26 and %r25, result in %r29 *)
-        `	ldil	L\`$$divI, %r1\n`;
-        `	ble	R\`$$divI(4, %r1)\n`;
+        if hpux then
+          `	bl	$$divI, %r31\n`
+        else begin
+          `	ldil	L\`$$divI, %r1\n`;
+          `	ble	R\`$$divI(4, %r1)\n`
+        end;
         `	nop\n`
     | Lop(Iintop Imod) ->
         (* Arguments are assumed to be in %r26 and %r25, result in %r29 *)
-        `	ldil	L\`$$remI, %r1\n`;
-        `	ble	R\`$$remI(4, %r1)\n`;
+        if hpux then
+          `	bl	$$remI, %r31\n`
+        else begin
+          `	ldil	L\`$$remI, %r1\n`;
+          `	ble	R\`$$remI(4, %r1)\n`
+        end;
         `	nop\n`
     | Lop(Iintop Ilsl) ->
         `	subi	31, {emit_reg i.arg.(1)}, %r1\n`;
@@ -718,11 +788,25 @@ let fundecl fundecl =
   float_constants := [];
   defined_functions := StringSet.add fundecl.fun_name !defined_functions;
   range_check_trap := 0;
-  `	.text\n`;
-  `	.align	2\n`;
-  `	.globl	{emit_symbol fundecl.fun_name}\n`;
-  `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() in
+  if hpux then begin
+    `	.SPACE	$TEXT$\n`;
+    `	.SUBSPA	$CODE$\n`;
+    `	.align	4\n`;
+    `	.EXPORT	{emit_symbol fundecl.fun_name}, ENTRY, PRIV_LEV=3\n`;
+    `{emit_symbol fundecl.fun_name}:\n`;
+    `	.PROC\n`;
+    if !contains_calls then
+      `	.CALLINFO FRAME={emit_int n}, CALLS, SAVE_RP\n`
+    else
+      `	.CALLINFO FRAME={emit_int n}, NO_CALLS\n`;
+    `	.ENTRY\n`
+  end else begin
+    `	.text\n`;
+    `	.align	2\n`;
+    `	.globl	{emit_symbol fundecl.fun_name}\n`;
+    `{emit_symbol fundecl.fun_name}:\n`
+  end;
   if !contains_calls then
     `	stwm	%r2, {emit_int n}(%r30)\n`
   else if n > 0 then
@@ -731,8 +815,17 @@ let fundecl fundecl =
   emit_all fundecl.fun_body;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    `	ldil	L\`{emit_symbol "array_bound_error"}, %r1\n`;
-    `	ble,n	R\`{emit_symbol "array_bound_error"}(4, %r1)\n`
+    if hpux then begin
+      emit_call "array_bound_error" "%r31";
+      `	nop\n`
+    end else begin
+      `	ldil	L\`{emit_symbol "array_bound_error"}, %r1\n`;
+      `	ble,n	{emit_symbol_low "array_bound_error"}(4, %r1)\n`
+    end
+  end;
+  if hpux then begin
+    `	.EXIT\n`;
+    `	.PROCEND\n`
   end;
   List.iter emit_float_constant !float_constants
 
