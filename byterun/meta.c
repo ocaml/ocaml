@@ -155,5 +155,6 @@ int callback_depth;
 int volatile something_to_do;
 void (* volatile async_action_hook)(void);
 void print_exception_backtrace(void) { }
+struct longjmp_buffer * external_raise;
 
 #endif
