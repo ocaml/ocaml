@@ -1,4 +1,5 @@
 Current :
+OK - mod: odoc_latex: use buffers instead of string concatenation
 OK - add: new ocamldoc man page, thanks to Samuel Mimram
 OK - fix: useless parenthesis around agruments of arguments of a type constructor in
      type definitions, and aournd arguments of exceptions in exception definitions.
@@ -42,7 +43,6 @@ OK - fix: bad display of type parameters for class and class types
 
 TODO:
  - need to fix display of type parameters for inherited classes/class types
- - odoc_latex: use buffers instead of string concatenation
 
 
 

@@ -285,7 +285,7 @@ module Analyser =
       let f_DEBUG var (mutable_flag, type_exp) = print_DEBUG var in
       Types.Vars.iter f_DEBUG class_signature.Types.cty_vars;
       print_DEBUG ("Type de la classe "^current_class_name^" : ");
-      print_DEBUG (Odoc_misc.string_of_type_expr class_signature.Types.cty_self);
+      print_DEBUG (Odoc_print.string_of_type_expr class_signature.Types.cty_self);
       let get_pos_limit2 q =
         match q with
           [] -> pos_limit
@@ -1196,7 +1196,7 @@ module Analyser =
           let f_DEBUG var (mutable_flag, type_exp) = print_DEBUG var in
           Types.Vars.iter f_DEBUG class_signature.Types.cty_vars;
           print_DEBUG ("Type de la classe "^current_class_name^" : ");
-          print_DEBUG (Odoc_misc.string_of_type_expr class_signature.Types.cty_self);
+          print_DEBUG (Odoc_print.string_of_type_expr class_signature.Types.cty_self);
           (* we get the elements of the class in class_type_field_list *)
           let (inher_l, ele) = analyse_class_elements env current_class_name 
               last_pos
@@ -1250,7 +1250,7 @@ module Analyser =
           let f_DEBUG var (mutable_flag, type_exp) = print_DEBUG var in
           Types.Vars.iter f_DEBUG class_signature.Types.cty_vars;
           print_DEBUG ("Type de la classe "^current_class_name^" : ");
-          print_DEBUG (Odoc_misc.string_of_type_expr class_signature.Types.cty_self);
+          print_DEBUG (Odoc_print.string_of_type_expr class_signature.Types.cty_self);
           (* we get the elements of the class in class_type_field_list *)
           let (inher_l, ele) = analyse_class_elements env current_class_name
               last_pos
