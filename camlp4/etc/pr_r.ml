@@ -143,6 +143,7 @@ value str_item x k = pr_str_item.pr_fun "top" x "" [: `S RO ";"; k :];
 value expr x k = pr_expr.pr_fun "top" x "" k;
 value patt x k = pr_patt.pr_fun "top" x "" k;
 value expr_fun_args ge = Extfun.apply pr_expr_fun_args.val ge;
+value simple_expr x k = pr_expr.pr_fun "simple" x "" k;
 
 (* type core *)
 
@@ -520,8 +521,7 @@ value rec sequence_loop =
            [: `S LR "let"; r :] (S LR "and") pel [: `S LR "in" :];
          sequence_loop el :]
   | [(<:expr< let $rec:_$ $list:_$ in $_$ >> as e) :: el] ->
-      [: `HVbox [: `S LO "("; `expr e [: `S RO ");" :] :];
-         sequence_loop el :]
+      [: `simple_expr e [: `S RO ";" :]; sequence_loop el :]
   | [e] -> [: `expr e [: :] :]
   | [e :: el] -> [: `expr e [: `S RO ";" :]; sequence_loop el :]
   | [] -> [: :] ]

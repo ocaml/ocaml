@@ -350,7 +350,7 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
         fprintf ppf "%s@ %a" name
           (print_list type_parameter (fun ppf -> fprintf ppf "@ ")) args ]
   in
-  fprintf ppf "@[<2>@[<hv 2>%s %t =@ %a@]%a@]" kwd type_defined
+  fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =@ %a@]%a@]" kwd type_defined
     Toploop.print_out_type.val ty print_constraints constraints
 ;
 
