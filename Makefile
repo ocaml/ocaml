@@ -384,7 +384,7 @@ alldepend::
 
 instrscheduler:
 	if test -d scheduler/$(ARCH); \
-        then cd scheduler/$(ARCH); $(MAKE) all; \
+        then (cd scheduler/$(ARCH); $(MAKE) all); \
              if test -f stdlib/scheduler_$(ARCH); then :; else \
                ln -s ../scheduler/$(ARCH)/scheduler_$(ARCH) \
                      stdlib/scheduler_$(ARCH); fi; \
