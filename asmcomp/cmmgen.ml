@@ -321,8 +321,11 @@ let lookup_tag obj tag =
   bind "tag" tag (fun tag ->
     let table = Ident.create "table" in
     let m = untag_int (Cop(Cload Word, [Cvar table])) in
-    let c = untag_uint31
-        (Cop(Cload Word, [Cop(Cadda, [Cvar table; Cconst_int size_addr])])) in
+    let c =
+      Cop(Csubi,
+          [Cop(Cload Word, [Cop(Cadda, [Cvar table; Cconst_int size_addr])]);
+           Cconst_int 1])
+    in
     let tag =
       match tag with
         Cconst_int tag ->
@@ -334,13 +337,9 @@ let lookup_tag obj tag =
       | _ ->
           untag_uint31 tag
     in
-    let mul =
-      match tag with
-        Cconst_natint n when n < 0x40000000n && size_addr = 4 ->
-          Cop(Cmuli, [Cconst_natint (Nativeint.shift_left n 1); c])
-      | _ ->
-          Cop(Clsl, [Cop(Cmuli, [tag; c]); Cconst_int(size_addr*8 - 31)])
-    in
+    let ofs = size_addr*8 - 32
+    and mul = Cop(Cmuli, [tag; c]) in
+    let mul = if ofs = 0 then mul else Cop(Clsl, [mul; Cconst_int ofs]) in
     let lab = Cop(Cadda, [Cop(Clsr, [mul; m]); Cconst_int 2]) in
     Clet(table, Cop (Cload Word, [obj]),
          Cop(Cload Word,
