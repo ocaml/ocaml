@@ -471,8 +471,9 @@ let compute_variance_decl env sharp decl (required, loc) =
   if not sharp then
     List.iter2
       (fun (_, c1, n1, t1) (_, c2, n2, t2) ->
-        if !c1 && not !c2 || !n1 && not !n2 || !t1 && not !t2 then
-          raise (Error(loc, Bad_variance)))
+        if !c1 && not !c2 || !n1 && not !n2 ||
+           !t1 && not !t2 && decl.type_kind = Type_abstract
+        then raise (Error(loc, Bad_variance)))
       tvl1 tvl2;
   List.map2
     (fun (_, co, cn, ct) (c, n) ->
