@@ -48,7 +48,8 @@ io.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  signals.h sys.h
 lexing.o: lexing.c fail.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
-macintosh.o: macintosh.c
+macintosh.o: macintosh.c misc.h config.h ../config/m.h ../config/s.h \
+ rotatecursor.h
 main.o: main.c misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
  sys.h
 major_gc.o: major_gc.c compact.h config.h ../config/m.h ../config/s.h \
@@ -148,7 +149,8 @@ io.d.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  signals.h sys.h
 lexing.d.o: lexing.c fail.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
-macintosh.d.o: macintosh.c
+macintosh.d.o: macintosh.c misc.h config.h ../config/m.h ../config/s.h \
+ rotatecursor.h
 main.d.o: main.c misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
  sys.h
 major_gc.d.o: major_gc.c compact.h config.h ../config/m.h ../config/s.h \
