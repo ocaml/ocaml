@@ -102,7 +102,7 @@ C-x SPACE sets break point at current line."
   (mapcar 'make-local-variable
 	  '(camldebug-last-frame-displayed-p  camldebug-last-frame
 	    camldebug-delete-prompt-marker camldebug-filter-function
-	    camldebug-filter-accumulator))
+           camldebug-filter-accumulator paragraph-start))
   (setq
    camldebug-last-frame nil
    camldebug-delete-prompt-marker (make-marker)
