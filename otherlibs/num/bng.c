@@ -14,6 +14,7 @@
 /* $Id$ */
 
 #include "bng.h"
+#include "config.h"
 
 #if defined(__GNUC__) && BNG_ASM_LEVEL > 0
 #if defined(BNG_ARCH_ia32)
