@@ -252,13 +252,13 @@ let call_linker file_list startup_file output_name =
             !Clflags.c_linker
             (Filename.quote output_name)
             (Clflags.std_include_flag "-I")
-            (String.concat " " (List.rev !Clflags.ccopts))
             (Filename.quote startup_file)
             (Ccomp.quote_files (List.rev file_list))
             (Ccomp.quote_files 
               (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
             (Filename.quote runtime_lib)
             c_lib
+            (String.concat " " (List.rev !Clflags.ccopts))
         else
           Printf.sprintf "%s /out:%s %s %s"
             Config.native_partial_linker
