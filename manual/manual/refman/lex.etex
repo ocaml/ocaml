@@ -31,9 +31,8 @@ Letters contain at least the 52 lowercase and uppercase
 letters from the ASCII set. The current implementation (except on
 MacOS) also recognizes as letters all accented characters from the ISO
 8859-1 (``ISO Latin 1'') set. All characters in an identifier are
-meaningful. The
-current implementation places no limits on the number of characters of
-an identifier.
+meaningful. The current implementation places no limits on the number
+of characters of an identifier.
 
 \subsubsection*{Integer literals}
 
@@ -153,22 +152,25 @@ first character, either "~" or "?".
 \begin{syntax}
 infix-symbol:
         ('=' || '<' || '>' || '@' || '^' || '|' || '&' ||
-         '+' || '-' || '*' || '/' || '$' || '%') { operator-char }
+         '+' || '-' || '*' || '/' || '$' || '%') { operator-char } ||
+        '`' ident '`'
 ;
 prefix-symbol:
         ('!' || '?' || '~') { operator-char }
 ;
 operator-char:
         '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
-         '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
-         '^' || '|' || '~'
+        '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
+        '^' || '|' || '~'
 ;
 \end{syntax}
 
 Sequences of ``operator characters'', such as "<=>" or "!!",
 are read as a single token from the @infix-symbol@ or @prefix-symbol@
 class. These symbols are parsed as prefix and infix operators inside
-expressions, but otherwise behave much as identifiers.
+expressions, but otherwise behave much as identifiers. Idents enclosed
+in "`" characters are parsed as infix operators with the same associativity
+and precedence as "*".
 
 \subsubsection*{Keywords}
 
