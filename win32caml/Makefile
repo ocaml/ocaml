@@ -31,11 +31,11 @@ ocamlwin.exe: $(OBJS)
 ocamlres.$(O): ocaml.rc ocaml.ico
 ifeq ($(TOOLCHAIN),msvc)
 	rc ocaml.rc
-	cvtres /out:$@ ocaml.res
+	cvtres /nologo /machine:ix86 /out:$@ ocaml.res
 	rm -f ocaml.res
 endif
 ifeq ($(TOOLCHAIN),mingw)
-	windres -i ocaml.rc -o ocamlres.o
+	windres -i ocaml.rc -o $@
 endif
 
 $(OBJS): inria.h inriares.h
