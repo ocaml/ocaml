@@ -15,7 +15,7 @@
 include ../config/Makefile
 
 CAMLC=../boot/ocamlrun ../ocamlc -I ../boot
-COMPFLAGS=$(INCLUDES)
+COMPFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=-linkall -I ../otherlibs/unix
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=

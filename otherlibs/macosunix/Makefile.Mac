@@ -21,7 +21,7 @@ COptions = -i {includepath} -includes unix -w 30,35 {cdbgflag} -model far
 PPCC = mrc
 PPCCOptions = -i {includepath} -includes unix -w 30,35 {cdbgflag}
 
-CAMLC = :::boot:ocamlrun :::boot:ocamlc -I :::stdlib:
+CAMLC = :::boot:ocamlrun :::boot:ocamlc -I :::stdlib: -warn-error A
 
 
 # Files in this directory

@@ -19,7 +19,7 @@ include ../../config/Makefile
 
 CAMLC=../../boot/ocamlrun ../../ocamlc
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
-COMPFLAGS=-I ../../stdlib $(INCLUDES)
+COMPFLAGS=-warn-error A -I ../../stdlib $(INCLUDES)
 
 OBJS=dynlink.cmo
 COMPILEROBJS=misc.cmo config.cmo tbl.cmo clflags.cmo \

@@ -5,7 +5,7 @@ include ../config/Makefile
 SHELL=/bin/sh
 
 INCLUDES=-I ../camlp4 -I ../boot -I ../odyl -I $(OTOP)/otherlibs/dynlink
-OCAMLCFLAGS=$(INCLUDES)
+OCAMLCFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 OBJS=crc.cmo ocpp.cmo
 INTERFACES=-I $(OLIBDIR) Arg Array Callback Char Digest Filename Format Gc Genlex Hashtbl Lexing List Map Obj Oo Parsing Pervasives Printexc Printf Queue Random Set Sort Stack Stream String Sys Weak -I ../boot Gramext Grammar Plexer Stdpp Token -I ../camlp4 MLast Quotation

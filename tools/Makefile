@@ -15,7 +15,7 @@
 include ../config/Makefile
 
 CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
+CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot -warn-error A
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../driver

@@ -22,6 +22,7 @@ CC=$(BYTECC)
 CFLAGS=-O -I$(REGEXLIB) -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+COMPFLAGS=-warn-error A
 REGEXLIB=regex-0.12
 COBJS=strstubs.o $(REGEXLIB)/regex.o
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib

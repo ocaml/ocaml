@@ -22,6 +22,7 @@ CFLAGS=-I../../byterun $(X11_INCLUDES) -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+COMPFLAGS=-warn-error A
 
 OBJS=open.o draw.o fill.o color.o text.o \
   image.o make_img.o dump_img.o point_col.o sound.o events.o \
@@ -61,9 +62,9 @@ installopt:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
-	$(CAMLC) -c $<
+	$(CAMLC) -c $(COMPFLAGS) $<
 .ml.cmo:
-	$(CAMLC) -c $<
+	$(CAMLC) -c $(COMPFLAGS) $<
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 

@@ -22,6 +22,7 @@ CC=$(BYTECC) -g
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
+COMPFLAGS=-warn-error A
 COBJS=dbstubs.o
 
 all: libmldb.a db.cmi db.cma

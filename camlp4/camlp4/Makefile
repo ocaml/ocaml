@@ -5,7 +5,7 @@ include ../config/Makefile
 SHELL=/bin/sh
 
 INCLUDES=-I ../odyl -I ../boot -I $(OTOP)/utils -I $(OTOP)/parsing -I $(OTOP)/otherlibs/dynlink
-OCAMLCFLAGS=$(INCLUDES)
+OCAMLCFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 INTERFACES=-I $(OLIBDIR) Arg Array Buffer Callback Char Digest Filename Format Gc Genlex Hashtbl Lazy Lexing List Map Marshal Obj Oo Parsing Pervasives Printexc Printf Queue Random Set Sort Stack Stream String Sys Weak -I ../boot Extfun Fstream Gramext Grammar Plexer Stdpp Token -I $(OTOP)/utils Config Warnings -I $(OTOP)/parsing Asttypes Location Longident Parsetree -I . Ast2pt MLast Pcaml Quotation Spretty
 CAMLP4_INTF=$(OTOP)/utils/config.cmi $(OTOP)/utils/warnings.cmi $(OTOP)/parsing/asttypes.cmi $(OTOP)/parsing/location.cmi $(OTOP)/parsing/longident.cmi $(OTOP)/parsing/parsetree.cmi ast2pt.cmi mLast.cmi pcaml.cmi spretty.cmi quotation.cmi

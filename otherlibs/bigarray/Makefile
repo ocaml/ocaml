@@ -20,6 +20,7 @@ CFLAGS=-I../../byterun -g -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+COMPFLAGS=-warn-error A
 
 C_OBJS=bigarray_stubs.o mmap_unix.o
 

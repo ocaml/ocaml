@@ -16,7 +16,7 @@
 
 CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
 CAMLOPT=../boot/ocamlrun ../ocamlopt -I ../stdlib
-COMPFLAGS=
+COMPFLAGS=-warn-error A
 LINKFLAGS=
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=

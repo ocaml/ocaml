@@ -18,10 +18,10 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-g
+COMPFLAGS=-g -warn-error A
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=
+OPTCOMPFLAGS=-warn-error A
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \

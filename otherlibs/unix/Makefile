@@ -23,6 +23,7 @@ CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+COMPFLAGS=-warn-error A
 
 OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
