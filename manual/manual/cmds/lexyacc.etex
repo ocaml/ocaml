@@ -89,7 +89,11 @@ constants. Match the denoted character.
 (Underscore.) Match any character.
 
 \item["eof"]
-Match the end of the lexer input.
+Match the end of the lexer input.\\
+{\bf Note:} On some systems, with interactive input, and end-of-file
+may be followed by more characters.  However, "ocamllex" will not
+correctly handle regular expressions that contain "eof" followed by
+something else.
 
 \item[@'"' string '"'@]
 A string constant, with the same syntax as Objective Caml string
