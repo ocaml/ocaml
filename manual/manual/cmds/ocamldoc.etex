@@ -73,7 +73,8 @@ option is supported by the "ocamldoc" command, but not by its
 native-code version "ocamldoc.opt".
 If the given file is a simple one and does not exist in
 the current directory, then ocamldoc looks for it in the custom 
-generators default directory.
+generators default directory, and in the directories specified with
+optional "-i" options.
 
 \item["-customdir"]
 Display the custom generators default directory.
@@ -160,6 +161,7 @@ Use \var{title} as the title for the generated documentation.
 
 \item["-intro" \var{file}]
 Use content of \var{file} as ocamldoc text to use as introduction (HTML, \LaTeX and TeXinfo only).
+For HTML, the file is used to create the whole "index.html" file.
 
 \item["-v"]
 Verbose mode. Display progress information.
@@ -692,7 +694,15 @@ text descriptions.
 as raw \LaTeX\ code.\\
 {\tt | \{!{\it string}\}} & insert a reference to the element named
 {\it string}. {\it string} must be a fully qualified element name,
-for example {\tt Foo.Bar.t}.\\
+for example {\tt Foo.Bar.t}. The kind of the referenced element can be forced
+(useful when various elements have the same qualified name) with the following
+syntax: {\tt\{!{\it kind}: Foo.Bar.t\}} where {\tt \it kind} can be
+{\tt module}, {\tt modtype}, {\tt class}, {\tt classtype}, {\tt val},
+{\tt type}, {\tt exception}, {\tt attribute}, {\tt method} or {\tt section}.\\
+{\tt | \{!modules: {\it string} {\it string} ...\}} & insert an index table
+for the given module names. Used in HTML only.\\
+{\tt | \{!indexlist\}} & insert a table of links to the various indexes
+(types, values, modules, ...). Used in HTML only.\\
 {\tt | \{\^{} {\it text}\}} & set text in superscript.\\
 {\tt | \{\_ {\it text}\}} & set text in subscript.\\
 {\tt | {\it escaped\_string}} & typeset the given string as is; 
