@@ -234,6 +234,34 @@ let sqrt_nat rad off len =
   loop ()
  end;;
 
+(* Modular exponentiation.  Return a fresh nat equal to (a ^ b) mod c.
+   We assume c > 0 and a < c. *)
+
+let modexp_nat a b c =
+  let len_c = length_nat c in
+  let res = make_nat len_c in
+  set_digit_nat res 0 1;
+  let prod = create_nat (2 * len_c) in
+  let modmult_res x =
+    (* res <- res * x mod c *)
+    let len_x = length_nat x in
+    set_to_zero_nat prod 0 (2 * len_c);
+    ignore(mult_nat prod 0 (len_c + len_x) res 0 len_c x 0 len_x);
+    div_nat prod 0 (len_c + len_x) c 0 len_c;
+    blit_nat res 0 prod 0 len_c in
+  let digit = make_nat 1
+  and carry = make_nat 1 in
+  (* Iterate over each bit of b, from most significant to least significant *)
+  for i = length_nat b - 1 downto 0 do
+    blit_nat digit 0 b i 1;
+    for i = 1 to length_of_digit do
+      modmult_res res;                  (* res <- res * res *)
+      shift_left_nat digit 0 1 carry 0 1;
+      if is_digit_odd carry 0 then modmult_res a (* res <- res * a *)
+    done
+  done;
+  res
+
 let power_base_max = make_nat 2;;
 
 match length_of_digit with

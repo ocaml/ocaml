@@ -74,10 +74,15 @@ val power_big_int_positive_int: big_int -> int -> big_int
 val power_int_positive_big_int: int -> big_int -> big_int
 val power_big_int_positive_big_int: big_int -> big_int -> big_int
         (** Exponentiation functions.  Return the big integer
-           representing the first argument [a] raised to the power [b]
-           (the second argument).  Depending
-           on the function, [a] and [b] can be either small integers
-           or big integers.  Raise [Invalid_argument] if [b] is negative. *)
+            representing the first argument [a] raised to the power [b]
+            (the second argument).  Depending
+            on the function, [a] and [b] can be either small integers
+            or big integers.  Raise [Invalid_argument] if [b] is negative. *)
+val modexp_big_int: big_int -> big_int -> big_int -> big_int
+        (** Modular exponentiation.  [modexp_big_int a b c] returns
+            [a] to the [b]-th power, modulo [c].  Raise [Invalid_argument]
+            if [b] or [c] are negative, and [Division_by_zero] if [c]
+            is zero. *)
 
 (** {6 Comparisons and tests} *)
 
