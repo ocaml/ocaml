@@ -35,7 +35,7 @@ int main(int argc, char **argv)
   expand_command_line(&argc, &argv);
 #endif
 #if macintosh
-  rotatecursor_init (&something_to_do);
+  rotatecursor_options (&something_to_do, 50);
 #endif /* macintosh */
   caml_main(argv);
   sys_exit(Val_int(0));

@@ -495,7 +495,7 @@ value interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       p++;
       for (i = 1; i < nfuncs; i++) {
-        *p = Make_header(i * 2, Infix_tag, Black); /* color irrelevant? */
+        *p = Make_header(i * 2, Infix_tag, Black); /* color irrelevant?  Yes. */
         p++;
         *p = (value) (pc + pc[i]);
         *--sp = (value) p;
@@ -804,10 +804,7 @@ value interprete(code_t prog, asize_t prog_size)
         }
       }
 #if macintosh
-      if (have_to_interact){
-        have_to_interact = 0;
-        rotatecursor_action (0);
-      }
+      ROTATECURSOR_MAGIC ();
 #endif
       Next;
 
