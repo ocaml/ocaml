@@ -44,7 +44,7 @@ val from_function : (unit -> char) -> scanbuf;;
 
 end;;
 
-exception Scan_failure of Scanning.scanbuf * string;;
+exception Scan_failure of string;;
 (** The exception that formatted input functions raise when the input
    cannot be read according to the given format. *)
 
@@ -67,7 +67,7 @@ val bscanf :
    amount of space to skip between tokens.
 
    Among plain characters the white space character (ASCII code 32) has a
-   special meaning: it macthes a ``space'', that is any number of tab,
+   special meaning: it matches a ``space'', that is any number of tab,
    white space, newline and return. Hence, a space in the format
    matches any number of white spaces in the input.
 
@@ -109,7 +109,7 @@ val bscanf :
    For instance, [%6d] reads an integer, having at most 6 decimal digits;
    and [%4f] reads a float with 4 characters.
 
-   The scanning indication are introduced by a [@] character, followed
+   The scanning indications are introduced by a [@] character, followed
    by any character [c], that matches a plain [c] character in the
    input. If a scanning indication immediately follows a [s]
    conversion specification, it specifies the boundary of the token
@@ -130,5 +130,11 @@ val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.bscanf}, but inputs from [stdin]. *)
 
-val kscanf : Scanning.scanbuf -> ('a, 'b, 'c) format ->
-  'a -> (Scanning.scanbuf -> string -> 'c) -> 'c;;
+val kscanf :
+  Scanning.scanbuf -> ('a, 'b, 'c) format -> 'a ->
+  (Scanning.scanbuf -> string -> 'c) -> 'c;;
+(** Same as {!Scanf.bscanf}, but takes an additional function argument
+  [ef] that is called in case of error: if the scanning process or
+  some convertion fails, the scanning function aborts and applies the
+  scanning buffer and a string that explains the error to the error
+  continuation [ef]. *)
