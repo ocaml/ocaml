@@ -23,17 +23,25 @@ value unix_accept(sock)          /* ML */
   SOCKET sconn = (SOCKET) Handle_val(sock);
   SOCKET snew;
   value fd = Val_unit, adr = Val_unit, res;
-  int optionValue;
+  int oldvalue, newvalue, retcode;
 
-  /* Set sockets to synchronous mode  */
-  optionValue = SO_SYNCHRONOUS_NONALERT;
-  setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
-             (char *)&optionValue, sizeof(optionValue));
-
+  retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
+                       (char *) &oldvalue, sizeof(oldvalue));
+  if (retcode == 0) {
+    /* Set sockets to synchronous mode  */
+    newvalue = SO_SYNCHRONOUS_NONALERT;
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
+               (char *) &newvalue, sizeof(newvalue));
+  }
   sock_addr_len = sizeof(sock_addr);
   enter_blocking_section();
   snew = accept(sconn, &sock_addr.s_gen, &sock_addr_len);
   leave_blocking_section();
+  if (retcode == 0) {
+    /* Restore initial mode */
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
+               (char *) &oldvalue, sizeof(oldvalue));
+  }
   if (snew == INVALID_SOCKET)
     unix_error(WSAGetLastError(), "accept", Nothing);
   Begin_roots2 (fd, adr)
