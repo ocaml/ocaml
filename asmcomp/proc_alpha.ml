@@ -237,6 +237,26 @@ let max_register_pressure = function
 let reload_test makereg tst args = raise Use_default
 let reload_operation makereg op args res = raise Use_default
 
+(* Latencies (in cycles). 
+   Cf. Appendix A of the Alpha architecture handbook *)
+
+let need_scheduling = true
+
+let oper_latency = function
+    Ireload -> 3
+  | Iload(Word, _) -> 3
+  | Iload(_, _) -> 5                    (* 3 for load, 2 for extension *)
+  | Iconst_symbol _ -> 3                (* turned into a load *)
+  | Iconst_float _ -> 3                 (* turned into a load *)
+  | Iintop Imul -> 10
+  | Iintop_imm(Imul, _) -> 10
+  | Iintop(Ilsl | Ilsr | Iasr) -> 2
+  | Iintop_imm((Ilsl | Ilsr | Iasr), _) -> 2
+  | Iaddf | Isubf -> 4
+  | Imulf -> 5
+  | Idivf -> 10
+  | _ -> 1
+
 (* Layout of the stack *)
 
 let num_stack_slots = [| 0; 0 |]

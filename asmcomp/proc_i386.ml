@@ -327,6 +327,24 @@ let reload_operation makereg op arg res =
   | _ -> (* Other operations: all args and results in registers *)
       raise Use_default
 
+(* Instruction scheduling. Only effective on the Pentium. *)
+
+let need_scheduling = true
+
+(* Wild guesses *)
+
+let oper_latency = function
+    Ireload -> 2
+  | Iload(_, _) -> 2
+  | Iintop_imm(Imul, _) -> 10
+  | Iintop(Idiv | Imod) -> 20
+  | Iintop_imm((Idiv | Imod), _) -> 20
+  | Iaddf | Isubf -> 5
+  | Imulf -> 10
+  | Idivf -> 20
+  | Ispecific(Istore_int(_, _) | Istore_symbol(_, _) | Ioffset_loc(_, _)) -> -1
+  | _ -> 1
+
 (* Layout of the stack frame *)
 
 let num_stack_slots = [| 0; 0 |]

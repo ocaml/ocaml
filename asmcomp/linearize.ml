@@ -72,6 +72,11 @@ let rec end_instr =
     res = [||];
     live = Reg.Set.empty }
 
+(* Cons an instruction (live empty) *)
+
+let instr_cons d a r n =
+  { desc = d; next = n; arg = a; res = r; live = Reg.Set.empty }
+
 (* Cons a simple instruction (arg, res, live empty) *)
 
 let cons_instr d n =

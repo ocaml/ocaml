@@ -32,7 +32,8 @@ OTHEROBJS=../utils/misc.cmo ../utils/tbl.cmo \
   ../asmcomp/printmach.cmo ../asmcomp/selection.cmo \
   ../asmcomp/liveness.cmo ../asmcomp/spill.cmo ../asmcomp/split.cmo \
   ../asmcomp/interf.cmo ../asmcomp/coloring.cmo ../asmcomp/reload.cmo \
-  ../asmcomp/linearize.cmo ../asmcomp/printlinear.cmo ../asmcomp/emitaux.cmo \
+  ../asmcomp/linearize.cmo ../asmcomp/scheduling.cmo \
+  ../asmcomp/printlinear.cmo ../asmcomp/emitaux.cmo \
   ../asmcomp/emit.cmo ../asmcomp/asmgen.cmo
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo main.cmo

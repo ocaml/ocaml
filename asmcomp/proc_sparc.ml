@@ -230,6 +230,23 @@ let max_register_pressure = function
 let reload_test makereg tst args = raise Use_default
 let reload_operation makereg op args res = raise Use_default
 
+(* Latencies (in cycles). Wild guesses. *)
+
+let need_scheduling = true
+
+let oper_latency = function
+    Ireload -> 3
+  | Iload(_, _) -> 3                    (* 3 for load, 2 for extension *)
+  | Iconst_float -> 3                   (* turned into a load *)
+  | Iintop Imul -> 10
+  | Iintop_imm(Imul, _) -> 10
+  | Iintop(Idiv | Imod) -> 20
+  | Iintop_imm(Idiv | Imod, _) -> 20
+  | Iaddf | Isubf -> 3
+  | Imulf -> 5
+  | Idivf -> 15
+  | _ -> 1
+
 (* Layout of the stack *)
 
 let num_stack_slots = [| 0; 0 |]

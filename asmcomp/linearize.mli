@@ -37,6 +37,10 @@ and instruction_desc =
   | Lpoptrap
   | Lraise
 
+val end_instr: instruction
+val instr_cons: 
+  instruction_desc -> Reg.t array -> Reg.t array -> instruction -> instruction
+
 type fundecl =
   { fun_name: string;
     fun_body: instruction;

@@ -65,6 +65,7 @@ let main () =
        "-dprefer", Arg.Unit(fun () -> dump_prefer := true);
        "-dalloc", Arg.Unit(fun () -> dump_regalloc := true);
        "-dreload", Arg.Unit(fun () -> dump_reload := true);
+       "-dscheduling", Arg.Unit(fun () -> dump_scheduling := true);
        "-dlinear", Arg.Unit(fun () -> dump_linear := true);
        "-dstartup", Arg.Unit(fun () -> keep_startup_file := true);
        "-v", Arg.Unit print_version_number;

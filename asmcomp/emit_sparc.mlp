@@ -211,6 +211,13 @@ let name_for_int_operation = function
   | Iasr -> "sra"
   | _ -> Misc.fatal_error "Emit.name_for_int_operation"
 
+let name_for_float_operation = function
+    Iaddf -> "faddd"
+  | Isbuf -> "fsubd"
+  | Imulf -> "fmuld"
+  | Idivf -> "fdivd"
+  | _ -> Misc.fatal_error "Emit.name_for_float_operation"
+
 let name_for_int_comparison = function
     Isigned Ceq -> "be"      | Isigned Cne -> "bne"
   | Isigned Cle -> "ble"     | Isigned Cgt -> "bg"
@@ -234,8 +241,7 @@ let emit_instr i =
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
-        if src.loc <> dst.loc then begin
-          match (src, dst) with
+        begin match (src, dst) with
             {loc = Reg rs; typ = (Int | Addr)}, {loc = Reg rd} ->
               `	mov	{emit_reg src}, {emit_reg dst}\n`
           | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
@@ -288,35 +294,42 @@ let emit_instr i =
         let n = frame_size() in
         if !contains_calls then begin
           `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-          `	andn	%o7, 1, %o7\n`
-        end;
-        `	jmp	{emit_reg i.arg.(0)}\n`;
-        if n > 0 then
-          `	add	%sp, {emit_int n}, %sp\n`
-        else
-          `	nop\n`
-    | Lop(Itailcall_imm s) ->
-        if s = !function_name then begin
-          `	b	{emit_label !tailrec_entry_point}\n`;
-          `	nop\n`
+          `	add	%sp, {emit_int n}, %sp\n`;
+          `	jmp	{emit_reg i.arg.(0)}\n`;
+          `	andn	%o7, 1, %o7\n`  (* in delay slot *)
         end else begin
-          let n = frame_size() in
+          `	jmp	{emit_reg i.arg.(0)}\n`;
+          `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
+        end
+    | Lop(Itailcall_imm s) ->
+        let n = frame_size() in
+        if s = !function_name then
           if !contains_calls then begin
             `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-            `	andn	%o7, 1, %o7\n`
-          end;
-          `	sethi	%hi({emit_symbol s}), %g1\n`;
-          `	jmp	%g1 + %lo({emit_symbol s})\n`;
-          if n > 0 then
-            `	add	%sp, {emit_int n}, %sp\n`
-          else
+            `	andn	%o7, 1, %o7\n`;
+            `	b	{emit_label !tailrec_entry_point}\n`;
+            `	st	%o7, [%sp + {emit_int(n - 4 + 96)}]\n`
+          end else
+            `	b	{emit_label !tailrec_entry_point}\n`;
             `	nop\n`
-        end
+          end
+        else
+          if !contains_calls then begin
+            `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
+            `	add	%sp, {emit_int n}, %sp\n`;
+            `	sethi	%hi({emit_symbol s}), %g1\n`;
+            `	jmp	%g1 + %lo({emit_symbol s})\n`;
+            `	andn	%o7, 1, %o7\n`  (* in delay slot *)
+          end else begin
+            `	sethi	%hi({emit_symbol s}), %g1\n`;
+            `	jmp	%g1 + %lo({emit_symbol s})\n`;
+            `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
+          end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           `	sethi	%hi({emit_symbol s}), %g4\n`;
           `{record_frame i.live}	call	{emit_symbol "caml_c_call"}\n`;
-          `	or	%g4, %lo({emit_symbol s}), %g4\n`
+          `	or	%g4, %lo({emit_symbol s}), %g4\n` (* in delay slot *)
         end else begin
           `	call	{emit_symbol s}\n`;
           `	nop\n`
@@ -358,14 +371,14 @@ let emit_instr i =
           `	sub	%g6, {emit_int n}, %g6\n`;
           `	cmp	%g6, %g7\n`;
           `	bgeu	{emit_label lbl_cont}\n`;
-          `	add	%g6, 4, {emit_reg i.res.(0)}\n`;
+          `	add	%g6, 4, {emit_reg i.res.(0)}\n`; (* in delay slot *)
           `{record_frame i.live}	call	{emit_symbol "caml_call_gc"}\n`;
-          `	mov	{emit_int n}, %g4\n`;
+          `	mov	{emit_int n}, %g4\n`; (* in delay slot *)
           `	add	%g6, 4, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl_cont}:\n`
         end else begin
           `{record_frame i.live}	call	{emit_symbol "caml_alloc"}\n`;
-          `	mov	{emit_int n}, %g4\n`;
+          `	mov	{emit_int n}, %g4\n`; (* in delay slot *)
           `	add	%g6, 4, {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop Idiv) ->
@@ -451,14 +464,9 @@ let emit_instr i =
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
-    | Lop(Iaddf) ->
-        `	faddd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
-    | Lop(Isubf) ->
-        `	fsubd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
-    | Lop(Imulf) ->
-        `	fmuld	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
-    | Lop(Idivf) ->
-        `	fdivd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
+    | Lop(Iaddf | Isubf | Imulf | Idivf) ->
+        let instr = name_for_float_operation op in
+        `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
     | Lop(Ifloatofint) ->
         `	sub	%sp, 4, %sp\n`;
         `	st	{emit_reg i.arg.(0)}, [%sp + 96]\n`;
@@ -477,13 +485,10 @@ let emit_instr i =
         let n = frame_size() in
         if !contains_calls then begin
           `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-          `	andn	%o7, 1, %o7\n`
+          `	andn	%o7, 1, %o7\n`  (* poor scheduling *)
         end;
         `	retl\n`;
-        if n > 0 then
-          `	add	%sp, {emit_int n}, %sp\n`
-        else
-          `	nop\n`
+        `	add	%sp, {emit_int n}, %sp\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
     | Lbranch lbl ->
@@ -543,7 +548,7 @@ let emit_instr i =
         `	or	%g1, %lo({emit_label lbl_jumptbl}), %g1\n`;
         `	sll	{emit_reg i.arg.(0)}, 2, %g4\n`;
         `	ld	[%g1 + %g4], %g1\n`;
-        `	jmp	%g1\n`;
+        `	jmp	%g1\n`;         (* poor scheduling *)
         `	nop\n`;
         `{emit_label lbl_jumptbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
@@ -564,7 +569,7 @@ let emit_instr i =
     | Lraise ->
         `	mov	%g5, %sp\n`;
         `	ldd	[%sp + 96], %g4\n`; (* Load %g4 and %g5 *)
-        `	jmp	%g4 + 8\n`;
+        `	jmp	%g4 + 8\n`;         (* poor scheduling *)
         `	add	%sp, 8, %sp\n`
 
 let rec emit_all i =

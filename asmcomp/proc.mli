@@ -63,6 +63,10 @@ val reload_operation:
       (Reg.t -> Reg.t) -> Mach.operation -> Reg.t array -> Reg.t array ->
         Reg.t array * Reg.t array
 
+(* Latency info for instruction scheduling *)
+val need_scheduling: bool
+val oper_latency: Mach.operation -> int
+
 (* Info for laying out the stack frame *)
 val num_stack_slots: int array
 val contains_calls: bool ref
