@@ -79,7 +79,9 @@ let compile_phrase p =
 
 let compile_implementation prefixname lam =
   let asmfile =
-    if !keep_asm_file then prefixname ^ ".s" else temp_file "camlasm" ".s" in
+    if !keep_asm_file
+    then prefixname ^ ".s"
+    else Filename.temp_file "camlasm" ".s" in
   let oc = open_out asmfile in
   begin try
     Emitaux.output_channel := oc;

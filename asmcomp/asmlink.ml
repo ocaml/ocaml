@@ -205,9 +205,9 @@ let link objfiles =
   Array.iter remove_required Runtimedef.builtin_exceptions;
   if not (StringSet.is_empty !missing_globals) then
     raise(Error(Missing_implementations(StringSet.elements !missing_globals)));
-  let startup = temp_file "camlstartup" ".s" in
+  let startup = Filename.temp_file "camlstartup" ".s" in
   make_startup_file startup units_tolink;
-  let startup_obj = temp_file "camlstartup" ".o" in
+  let startup_obj = Filename.temp_file "camlstartup" ".o" in
   if Proc.assemble_file startup startup_obj <> 0 then
     raise(Error(Assembler_error startup));
   try
