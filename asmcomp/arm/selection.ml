@@ -29,7 +29,14 @@ let rec is_immed n shift =
   else if n land (0xFF lsl shift) = n then true
   else is_immed n (shift + 2)
 
-let is_offset n = n < 4096 && n > -4096 (* 12-bit offset *)
+(* We have 12-bit signed offsets for word accesses,
+   8-bit signed word offsets for float accesses,
+   and 8-bit byte offsets for bytes and shorts.
+   Use lowest common denominator. *)
+
+let is_offset n = n < 128 && n > -128
+
+let is_intconst = function Cconst_int n -> true | _ -> false
 
 (* Instruction selection *)
 class selector = object(self)
@@ -49,14 +56,18 @@ method select_addressing = function
  
 method select_shift_arith op shiftop shiftrevop args =
   match args with
-    [arg1; Cop(Clsl, [arg2; Cconst_int n])] when n > 0 && n < 32 ->
+    [arg1; Cop(Clsl, [arg2; Cconst_int n])]
+    when n > 0 && n < 32 && not(is_intconst arg2) ->
       (Ispecific(Ishiftarith(shiftop, n)), [arg1; arg2])
-  | [arg1; Cop(Clsr, [arg2; Cconst_int n])] when n > 0 && n < 32 ->
+  | [arg1; Cop(Casr, [arg2; Cconst_int n])]
+    when n > 0 && n < 32 && not(is_intconst arg2) ->
       (Ispecific(Ishiftarith(shiftop, -n)), [arg1; arg2])
-  | [Cop(Clsl, [arg1; Cconst_int n]); arg2] when n > 0 && n < 32 ->
-      (Ispecific(Ishiftarith(shiftrevop, n)), [arg1; arg2])
-  | [Cop(Clsr, [arg1; Cconst_int n]); arg2] when n > 0 && n < 32 ->
-      (Ispecific(Ishiftarith(shiftrevop, -n)), [arg1; arg2])
+  | [Cop(Clsl, [arg1; Cconst_int n]); arg2]
+    when n > 0 && n < 32 && not(is_intconst arg1) ->
+      (Ispecific(Ishiftarith(shiftrevop, n)), [arg2; arg1])
+  | [Cop(Casr, [arg1; Cconst_int n]); arg2]
+    when n > 0 && n < 32 && not(is_intconst arg1) ->
+      (Ispecific(Ishiftarith(shiftrevop, -n)), [arg2; arg1])
   | _ ->
       super#select_operation op args
 
@@ -73,6 +84,8 @@ method select_operation op args =
       begin match args with
         [arg1; Cconst_int n] when n < 0 && self#is_immediate (-n) ->
           (Iintop_imm(Iadd, -n), [arg1])
+      | [Cconst_int n; arg2] when self#is_immediate n ->
+          (Ispecific(Irevsubimm n), [arg2])
       | _ ->
           self#select_shift_arith op Ishiftsub Ishiftsubrev args
       end
@@ -91,6 +104,14 @@ method select_operation op args =
           (Iintop_imm(Imod, n), [arg1])
       | _ ->
           (Iextcall("__modsi3", false), args)
+      end
+  | Ccheckbound ->
+      begin match args with
+        [Cop(Clsr, [arg1; Cconst_int n]); arg2]
+	when n > 0 && n < 32 && not(is_intconst arg2) ->
+	  (Ispecific(Ishiftcheckbound n), [arg1; arg2])
+      | _ ->
+        super#select_operation op args
       end
   | _ -> super#select_operation op args
 

@@ -30,6 +30,8 @@ type addressing_mode =
 
 type specific_operation =
     Ishiftarith of arith_operation * int
+  | Ishiftcheckbound of int
+  | Irevsubimm of int
 
 and arith_operation =
     Ishiftadd
@@ -73,3 +75,10 @@ let print_specific_operation printreg op arg =
       if shift >= 0
       then begin print_string " << "; print_int shift end
       else begin print_string " >> "; print_int (-shift) end
+  | Ishiftcheckbound n ->
+      print_string "check ";
+      printreg arg.(0);
+      print_string " >> "; print_int n; print_string " > ";
+      printreg arg.(1)
+  | Irevsubimm n ->
+      print_int n; print_string " - "; printreg arg.(0)

@@ -180,6 +180,30 @@ let rec is_immed n shift =
 
 let is_immediate n = is_immed n 0
 
+(* Emit a non-immediate integer constant *)
+
+let emit_complex_intconst r n =
+  let i = ref n in
+  let shift = ref 0 in
+  let first = ref true in
+  let ninstr = ref 0 in
+  while Nativeint.sign !i <> 0 do
+    if Nativeint.to_int (Nativeint.shift !i (- !shift)) land 3 = 0 then
+      shift := !shift + 2
+    else begin
+      let mask = Nativeint.shift (Nativeint.from 0xFF) !shift in
+      let bits = Nativeint.logand !i mask in
+      if !first
+      then `	mov	{emit_reg r}, #{emit_nativeint bits} @ {emit_nativeint n}\n`
+      else `	add	{emit_reg r}, {emit_reg r}, #{emit_nativeint bits}\n`;
+      first := false;
+      shift := !shift + 8;
+      i := Nativeint.sub !i bits;
+      incr ninstr
+    end
+  done;
+  !ninstr
+
 (* Name of current function *)
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
@@ -188,14 +212,19 @@ let tailrec_entry_point = ref 0
 let symbol_constants = (Hashtbl.create 11 : (string, int) Hashtbl.t)
 (* Table of floating-point literals *)
 let float_constants = (Hashtbl.create 11 : (string, int) Hashtbl.t)
+(* Total space (in word) occupied by pending literals *)
+let num_literals = ref 0
+(* True if we've at least one pending float literal *)
+let pending_float = ref false
 
 (* Label a symbol or float constant *)
-let label_constant tbl s =
+let label_constant tbl s size =
   try
     Hashtbl.find tbl s
   with Not_found ->
     let lbl = new_label() in
     Hashtbl.add tbl s lbl;
+    num_literals := !num_literals + size;
     lbl
 
 (* Emit all pending constants *)
@@ -210,7 +239,9 @@ let emit_constants () =
       `{emit_label lbl}:	.double	{emit_string s}\n`)
     float_constants;
   Hashtbl.clear symbol_constants;
-  Hashtbl.clear float_constants
+  Hashtbl.clear float_constants;
+  num_literals := 0;
+  pending_float := false
 
 (* Output the assembly code for an instruction *)
 
@@ -241,45 +272,24 @@ let emit_instr i =
         end
     | Lop(Iconst_int n) ->
         let r = i.res.(0) in
-	let nr = Nativeint.sub (Nativeint.from 0) n in
+	let nr = Nativeint.logxor n (Nativeint.from(-1)) in
         if is_immediate n then begin
           `	mov	{emit_reg r}, #{emit_nativeint n}\n`; 1
         end else if is_immediate nr then begin
-          `	mov	{emit_reg r}, #{emit_nativeint nr}\n`;
-          `	rsb	{emit_reg r}, {emit_reg r}, #0\n`; 2
-        end else begin
-          let i = ref n in
-          let shift = ref 0 in
-          let first = ref true in
-          let ninstr = ref 0 in
-          while Nativeint.sign !i <> 0 do
-            if Nativeint.to_int (Nativeint.shift !i (- !shift)) land 3 = 0
-            then
-              shift := !shift + 2
-            else begin
-              let mask = Nativeint.shift (Nativeint.from 0xFF) !shift in
-              let bits = Nativeint.logand !i mask in
-              if !first
-              then `	mov	{emit_reg r}, #{emit_nativeint bits} @ {emit_nativeint n}\n`
-              else `	add	{emit_reg r}, {emit_reg r}, #{emit_nativeint bits}\n`;
-              first := false;
-              shift := !shift + 8;
-              i := Nativeint.sub !i bits;
-              incr ninstr
-            end
-          done;
-          !ninstr
-        end
+          `	mvn	{emit_reg r}, #{emit_nativeint nr}\n`; 1
+        end else
+	  emit_complex_intconst r n
     | Lop(Iconst_float s) ->
         if float_of_string s = 0.0 then
           `	mvfd	{emit_reg i.res.(0)}, #0.0\n`
         else begin
-          let lbl = label_constant float_constants s in
+          let lbl = label_constant float_constants s 2 in
+	  pending_float := true;
           `	ldfd	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_string s}\n`
         end;
         1
     | Lop(Iconst_symbol s) ->
-        let lbl = label_constant symbol_constants s in
+        let lbl = label_constant symbol_constants s 1 in
         `	ldr	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_symbol s}\n`; 1
     | Lop(Icall_ind) ->
         `	mov	lr, pc\n`;
@@ -306,8 +316,8 @@ let emit_instr i =
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          let lbl = label_constant symbol_constants s in
-          `	ldr	r9, {emit_label lbl} @ {emit_symbol s}\n`;
+          let lbl = label_constant symbol_constants s 1 in
+          `	ldr	r10, {emit_label lbl} @ {emit_symbol s}\n`;
           `{record_frame i.live}	bl	caml_c_call\n`; 2
         end else begin
           `	bl	{emit_symbol s}\n`; 1
@@ -348,14 +358,19 @@ let emit_instr i =
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 1}\n`;
         1
     | Lop(Ialloc n) ->
-        if !fastcode_flag || (n <> 8 && n <> 12 && n <> 16) then begin
+        if !fastcode_flag then begin
+          `	ldr	r10, [alloc_limit, #0]\n`;
           `	sub	alloc_ptr, alloc_ptr, #{emit_int n}\n`;
-          `	cmp	alloc_ptr, alloc_limit\n`;
-          `{record_frame i.live}	blcc	_caml_call_gc\n`;
-          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 4
-        end else begin
-          `{record_frame i.live}	bl	_caml_alloc{emit_int ((n-4)/4)}\n`;
-          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 2
+          `	cmp	alloc_ptr, r10\n`;
+          `{record_frame i.live}	blcc	caml_call_gc\n`;
+          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 5
+        end else if n = 8 || n = 12 || n = 16 then begin
+            `{record_frame i.live}	bl	caml_alloc{emit_int ((n-4)/4)}\n`;
+            `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 2
+	end else begin
+	    `	mov	r10, #{emit_int n}\n`;
+	    `{record_frame i.live}	bl	caml_alloc\n`;
+            `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 3
         end
     | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
         let shift = name_for_shift_operation op in
@@ -421,6 +436,11 @@ let emit_instr i =
         then `, lsl #{emit_int shift}\n`
         else `, asr #{emit_int (-shift)}\n`;
         1
+    | Lop(Ispecific(Ishiftcheckbound shift)) ->
+        `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
+        `	blcs	array_bound_error\n`; 2
+    | Lop(Ispecific(Irevsubimm n)) ->
+	`	rsb	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
     | Lreloadretaddr ->
         let n = frame_size() in
         `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1
@@ -501,21 +521,34 @@ let emit_instr i =
         `	mov	sp, trap_ptr\n`;
         `	ldmfd	sp!, \{trap_ptr, pc}\n`; 2
 
+(* Emission of an instruction sequence *)
+
+let no_fallthrough = function
+    Lop(Itailcall_ind | Itailcall_imm _) -> true
+  | Lreturn -> true
+  | Lbranch _ -> true
+  | Lswitch _ -> true
+  | Lraise -> true
+  | _ -> false
+
 let rec emit_all ninstr i =
-  match i.desc with
-    Lend -> ()
-  | _ ->
-    if ninstr >= 252 then begin
+  if i.desc = Lend then () else begin
+    let n = emit_instr i in
+    let ninstr' = ninstr + n in
+    let limit = (if !pending_float then 511 else 127) - !num_literals in
+    if ninstr' >= limit - 32 && no_fallthrough i.desc then begin
+      emit_constants();
+      emit_all 0 i.next
+    end else
+    if ninstr' >= limit then begin
       let lbl = new_label() in
       `	b	{emit_label lbl}\n`;
       emit_constants();
       `{emit_label lbl}:\n`;
-      let n = emit_instr i in
-      emit_all n i.next
-    end else begin
-      let n = emit_instr i in
-      emit_all (ninstr + n) i.next
-    end
+      emit_all 0 i.next
+    end else
+      emit_all ninstr' i.next
+  end
 
 (* Emission of a function declaration *)
 
@@ -575,25 +608,33 @@ let data l =
 
 let begin_assembly() =
   `trap_ptr	.req	r11\n`;
-  `alloc_ptr	.req	r10\n`;
-  `alloc_limit	.req	r12\n`;
+  `alloc_ptr	.req	r8\n`;
+  `alloc_limit	.req	r9\n`;
   `sp		.req	r13\n`;
   `lr		.req	r14\n`;
   `pc		.req	r15\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
+  let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
   `	.data\n`;
-  `	.globl	{emit_symbol lbl_begin}\n`;
+  `	.global	{emit_symbol lbl_begin}\n`;
+  `{emit_symbol lbl_begin}:\n`;
+  let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
+  `	.text\n`;
+  `	.global	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
-  let lbl_end = Compilenv.current_unit_name() ^ "_end" in
+  let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
+  `	.text\n`;
+  `	.global	{emit_symbol lbl_end}\n`;
+  `{emit_symbol lbl_end}:\n`;
+  let lbl_end = Compilenv.current_unit_name() ^ "_data_end" in
   `	.data\n`;
-  `	.globl	{emit_symbol lbl_end}\n`;
+  `	.global	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.word	0\n`;
   let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   `	.data\n`;
-  `	.globl	{emit_symbol lbl}\n`;
+  `	.global	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;
   `	.word	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;

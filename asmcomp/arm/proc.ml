@@ -26,10 +26,12 @@ let word_addressed = false
 (* Registers available for register allocation *)
 
 (* Register map:
-    r0 - r9                     general purpose (r4 - r9 preserved by C)
-    r10                         allocation pointer
+    r0 - r7                     general purpose (r4 - r7 preserved by C)
+    r8                          allocation pointer (preserved by C)
+    r9                          allocation limit (preserved by C)
+    r10                         general purpose
     r11                         trap pointer (preserved by C)
-    r12                         allocation limit
+    r12                         general purpose
     r13                         stack pointer
     r14                         return address
     r15                         program counter
@@ -38,7 +40,7 @@ let word_addressed = false
 *)
 
 let int_reg_name = [|
-  "r0"; "r1"; "r2"; "r3"; "r4"; "r5"; "r6"; "r7"; "r8"; "r9"
+  "r0"; "r1"; "r2"; "r3"; "r4"; "r5"; "r6"; "r7"; "r10"; "r12"
 |]
   
 let float_reg_name = [|
@@ -159,11 +161,12 @@ let loc_exn_bucket = phys_reg 0
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =               (* r4-r9, f4-f7 preserved *)
-  Array.of_list(List.map phys_reg [0;1;2;3; 100;101;102;103])
+  Array.of_list(List.map phys_reg [0;1;2;3;8;9; 100;101;102;103])
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+  | Iop(Ialloc(_)) -> [|phys_reg 8|]	(* r10 destroyed *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -174,7 +177,7 @@ let safe_register_pressure = function
     Iextcall(_, _) -> 4
   | _ -> 8
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 6; 4 |]
+    Iextcall(_, _) -> [| 4; 4 |]
   | _ -> [| 10; 8 |]
 
 (* Layout of the stack *)
