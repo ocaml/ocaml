@@ -32,6 +32,7 @@ module type EVALPATH =
     type value
     val eval_path: Path.t -> value
     exception Error
+    val same_value: value -> value -> bool
   end
 
 module type S =

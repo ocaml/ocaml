@@ -66,6 +66,7 @@ module EvalPath =
         else Debugcom.Remote_value.field v pos
     | Papply(p1, p2) ->
         raise Error
+    let same_value = Debugcom.Remote_value.same
   end
 
 module Printer = Genprintval.Make(Debugcom.Remote_value)(EvalPath)

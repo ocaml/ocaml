@@ -255,4 +255,11 @@ module Remote_value =
         flush !conn.io_out;
         input_binary_int !conn.io_in
 
+    let same rv1 rv2 =
+      match (rv1, rv2) with
+        (Local obj1, Local obj2) -> obj1 == obj2
+      | (Remote v1, Remote v2) -> v1 = v2
+           (* string equality -> equality of remote pointers *)
+      | (_, _) -> false
+
   end

@@ -35,6 +35,7 @@ module type EVALPATH =
     type value
     val eval_path: Path.t -> value
     exception Error
+    val same_value: value -> value -> bool
   end
 
 module type S =
@@ -351,7 +352,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the identifier
            contained in the exception bucket *)
-        if O.field bucket 0 != EVP.eval_path path then raise Not_found;
+        if not (EVP.same_value (O.field bucket 0) (EVP.eval_path path))
+        then raise Not_found;
         print_constr_with_args
            pp_print_string name prio 1 depth bucket ppf cstr.cstr_args
       with Not_found | EVP.Error ->

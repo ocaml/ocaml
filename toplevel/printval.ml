@@ -28,6 +28,7 @@ module EvalPath = struct
   type value = Obj.t
   exception Error
   let eval_path p = try eval_path p with Symtable.Error _ -> raise Error
+  let same_value v1 v2 = (v1 == v2)
 end
 
 module Printer = Genprintval.Make(Obj)(EvalPath)

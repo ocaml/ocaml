@@ -89,6 +89,7 @@ module Remote_value :
     val tag : t -> int
     val size : t -> int
     val field : t -> int -> t
+    val same : t -> t -> bool
 
     val of_int : int -> t
 
@@ -97,4 +98,5 @@ module Remote_value :
     val global : int -> t
     val accu : unit -> t
     val closure_code : t -> int
+
   end
