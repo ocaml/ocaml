@@ -23,6 +23,7 @@ type t =                             (* A is all *)
   | Partial_match of string          (* P *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
+  | Unused_pat                       (* U *)
   | Hide_instance_variable of string (* V *)
   | Other of string                  (* X *)
 ;;

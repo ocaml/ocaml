@@ -23,6 +23,7 @@ type t =                             (* A is all *)
   | Partial_match of string          (* P *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
+  | Unused_pat                       (* U *)
   | Hide_instance_variable of string (* V *)
   | Other of string                  (* X *)
 ;;
@@ -35,7 +36,7 @@ let letter = function        (* 'a' is all *)
   | Method_override _ ->        'm'
   | Partial_match _ ->          'p'
   | Statement_type ->           's'
-  | Unused_match ->             'u'
+  | Unused_match|Unused_pat ->  'u'
   | Hide_instance_variable _ -> 'v'
   | Other _ ->                  'x'
 ;;
@@ -86,6 +87,7 @@ let message = function
       "this pattern-matching is not exhaustive.\n\
        Here is an example of a value that is not matched:\n" ^ s
   | Unused_match -> "this match case is unused."
+  | Unused_pat   -> "this pattern is unused."
   | Labels_omitted ->
       "labels were omitted in the application of this function."
   | Method_override slist ->

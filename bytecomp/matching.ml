@@ -28,29 +28,7 @@ open Parmatch
   Bon, au commencement du monde c'etait vrai.
 *)
 
-let pretty_pat p =
-  Parmatch.top_pretty Format.str_formatter p ;
-  prerr_string (Format.flush_str_formatter ())
-
 type matrix = pattern list list
-
-let pretty_line ps =
-  List.iter
-    (fun p ->
-      Parmatch.top_pretty Format.str_formatter p ;
-      prerr_string " <" ;
-      prerr_string (Format.flush_str_formatter ()) ;
-      prerr_string ">")
-    ps
-
-let pretty_matrix pss =
-  prerr_endline "begin matrix" ;
-  List.iter
-    (fun ps ->
-      pretty_line ps ;
-      prerr_endline "")
-    pss ;
-  prerr_endline "end matrix"
 
 type ctx = {left:pattern list ; right:pattern list}
 
@@ -121,24 +99,29 @@ let ncols = function
 
 
 exception NoMatch
+exception OrPat
 exception Unused
 
 let filter_matrix matcher pss =
+
   let rec filter_rec = function
     | (p::ps)::rem ->
         begin match p.pat_desc with
-        | Tpat_or (p1,p2,_) ->
-            filter_rec ((p1::ps)::(p2::ps)::rem)
         | Tpat_alias (p,_) ->
             filter_rec ((p::ps)::rem)
         | Tpat_var _ ->
             filter_rec ((omega::ps)::rem)
         | _ ->
-            begin let rem = filter_rec rem in
-            try
-              matcher p ps::rem
-            with
-            | NoMatch -> rem
+            begin
+              let rem = filter_rec rem in
+              try
+                matcher p ps::rem
+              with
+              | NoMatch -> rem
+              | OrPat   ->
+                match p.pat_desc with
+                | Tpat_or (p1,p2,_) -> filter_rec [(p1::ps) ;(p2::ps)]@rem
+                | _ -> assert false
             end
         end
     | [] -> []
@@ -929,8 +912,6 @@ let divide_line make_ctx make get_args pat ctx pm =
   pat=pat}
 
 
-(* Matching against a constant *)
-
 let make_default matcher (exit,l) =
   let rec make_rec = function
     | [] -> []
@@ -943,11 +924,19 @@ let make_default matcher (exit,l) =
         | pss -> (pss,i)::rem in
   exit,make_rec l
 
+(* Matching against a constant *)
 
-let matcher_const cst p rem = match p.pat_desc with
-  | Tpat_constant c1 when c1=cst -> rem
-  | Tpat_any                     -> rem
-  | _ -> raise NoMatch
+
+
+let rec matcher_const cst p rem = match p.pat_desc with
+| Tpat_or (p1,p2,_) ->
+    begin try
+      matcher_const cst p1 rem with
+    | NoMatch -> matcher_const cst p2 rem
+    end
+| Tpat_constant c1 when c1=cst -> rem
+| Tpat_any                     -> rem
+| _ -> raise NoMatch
 
 let get_key_constant caller = function
   | {pat_desc= Tpat_constant cst} as p -> cst
@@ -1003,12 +992,49 @@ let pat_as_constr = function
   | _ -> fatal_error "Matching.pat_as_constr"
 
 
-let matcher_constr cstr q rem = match q.pat_desc with
-| Tpat_construct (cstr1, args)
-    when cstr.cstr_tag = cstr1.cstr_tag ->
-      args @ rem
-| Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
-| _        -> raise NoMatch
+let matcher_constr cstr = match cstr.cstr_arity with
+| 0 ->
+    let rec matcher_rec q rem = match q.pat_desc with
+    | Tpat_or (p1,p2,_) ->
+        begin
+          try
+            matcher_rec p1 rem
+          with
+          | NoMatch -> matcher_rec p2 rem
+        end
+    | Tpat_construct (cstr1, []) when cstr.cstr_tag = cstr1.cstr_tag ->
+        rem
+    | Tpat_any -> rem
+    | _ -> raise NoMatch in
+    matcher_rec
+| 1 ->
+    let rec matcher_rec q rem = match q.pat_desc with
+    | Tpat_or (p1,p2,_) ->
+        let r1 = try Some (matcher_rec p1 rem) with NoMatch -> None
+        and r2 = try Some (matcher_rec p2 rem) with NoMatch -> None in
+        begin match r1,r2 with
+        | None, None -> raise NoMatch
+        | Some r1, None -> r1
+        | None, Some r2 -> r2
+        | Some (a1::rem1), Some (a2::_) ->
+            {a1 with
+              pat_loc = Location.none ;
+              pat_desc = Tpat_or (a1, a2, None)}::
+            rem
+        | _, _ -> assert false
+        end
+    | Tpat_construct (cstr1, [arg]) when cstr.cstr_tag = cstr1.cstr_tag ->
+        arg::rem
+    | Tpat_any -> omega::rem
+    | _ -> raise NoMatch in
+    matcher_rec
+| _ ->
+    fun q rem -> match q.pat_desc with
+    | Tpat_or (_,_,_) -> raise OrPat
+    | Tpat_construct (cstr1, args)
+        when cstr.cstr_tag = cstr1.cstr_tag -> args @ rem
+    | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
+    | _        -> raise NoMatch
 
 let make_constr_matching p def ctx = function
     [] -> fatal_error "Matching.make_constr_matching"
@@ -1035,7 +1061,14 @@ let divide_constructor ctx pm =
 
 (* Matching against a variant *)
 
-let matcher_variant_const lab p rem = match p.pat_desc with
+let rec matcher_variant_const lab p rem = match p.pat_desc with
+| Tpat_or (p1, p2, _) ->
+    begin
+      try
+        matcher_variant_const lab p1 rem
+      with
+      | NoMatch -> matcher_variant_const lab p2 rem
+    end
 | Tpat_variant (lab1,_,_) when lab1=lab -> rem
 | Tpat_any -> rem
 | _   -> raise NoMatch
@@ -1051,6 +1084,7 @@ let make_variant_matching_constant p lab def ctx = function
       pat = normalize_pat p}
 
 let matcher_variant_nonconst lab p rem = match p.pat_desc with
+| Tpat_or (_,_,_) -> raise OrPat
 | Tpat_variant (lab1,Some arg,_) when lab1=lab -> arg::rem
 | Tpat_any -> omega::rem
 | _   -> raise NoMatch
@@ -1192,6 +1226,7 @@ let get_args_array p rem = match p with
   | _ -> assert false
 
 let matcher_array len p rem = match p.pat_desc with
+| Tpat_or (_,_,_) -> raise OrPat
 | Tpat_array args when List.length args=len -> args @ rem
 | Tpat_any -> Parmatch.omegas len @ rem
 | _ -> raise NoMatch
@@ -1222,9 +1257,6 @@ let sort_lambda_list l =
   List.sort
     (fun (x,_) (y,_) -> Pervasives.compare x y)
     l
-
-
-
 
 
 let rec cut n l =
@@ -2017,6 +2049,7 @@ let comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
 
    Output: a lambda term, a jump summary {..., exit number -> context, .. }
 *)
+
 
 let rec compile_match repr partial ctx m = match m with
 | { cases = [] } -> comp_exit ctx m

@@ -16,6 +16,11 @@
 open Types
 open Typedtree
 
+val top_pretty : Format.formatter -> pattern -> unit
+val pretty_pat : pattern -> unit
+val pretty_line : pattern list -> unit
+val pretty_matrix : pattern list list -> unit
+
 val omega : pattern
 val omegas : int -> pattern list
 val omega_list : 'a list -> pattern list
@@ -44,4 +49,4 @@ val check_partial:
 val check_unused: Env.t -> (pattern * expression) list -> unit
 
 
-val top_pretty : Format.formatter -> pattern -> unit
+
