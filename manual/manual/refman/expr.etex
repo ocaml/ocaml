@@ -398,7 +398,7 @@ bound to the values
    The loop body is never evaluated if $n > p$.
 \end{latexonly}
 \begin{rawhtml}
-   <i>n</i>, <i>n</i>+1, \ldots, <i>p</i>-1, <i>p</i>.
+   <i>n</i>, <i>n</i>+1, ..., <i>p</i>-1, <i>p</i>.
    The loop body is never evaluated if <i>n</i> &gt; <i>p</i>.
 \end{rawhtml}
 
@@ -409,7 +409,7 @@ evaluates similarly, except that @name@ is successively bound to the values
    The loop body is never evaluated if $n < p$.
 \end{latexonly}
 \begin{rawhtml}
-   <i>n</i>, <i>n</i>-1, \ldots, <i>p</i>+1, <i>p</i>.
+   <i>n</i>, <i>n</i>-1, ..., <i>p</i>+1, <i>p</i>.
    The loop body is never evaluated if <i>n</i> &lt; <i>p</i>.
 \end{rawhtml}
 
@@ -588,7 +588,7 @@ details). Their meaning may be changed at any time using
 
 \subsection{Objects}
 
-\subsubsection*{Object creation} \label {s:objects}
+\subsubsection*{Object creation} \label{s:objects}
 
 \ikwd{new\@\verb`new`}
 The expression @'new' class-path@ denotes a function that takes some
