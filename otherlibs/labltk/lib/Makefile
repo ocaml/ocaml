@@ -43,7 +43,8 @@ clean :
 
 install: labltk.cma labltktop$(EXE) labltk
 	@if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	cp *.cmi labltk.cma labltktop$(EXE) $(LABLTKDIR)
+	cp $(WIDGETOBJS:.cmo=.cmi) tk.cmi $(LABLTKDIR)
+	cp labltk.cma labltktop$(EXE) $(LABLTKDIR)
 	chmod 644 $(LABLTKDIR)/*.cmi
 	chmod 644 $(LABLTKDIR)/labltk.cma
 	chmod 755 $(LABLTKDIR)/labltktop$(EXE)
@@ -54,7 +55,9 @@ install: labltk.cma labltktop$(EXE) labltk
 
 installopt: labltk.cmxa
 	@if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
+	cp $(SUPPORTX) $(WIDGETOBJSX) tk.cmx $(LABLTKDIR)
 	cp labltk.cmxa labltk.a $(LABLTKDIR)
+	chmod 644 $(LABLTKDIR)/*.cmx
 	chmod 644 $(LABLTKDIR)/labltk.cmxa
 	chmod 644 $(LABLTKDIR)/labltk.a
 	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi

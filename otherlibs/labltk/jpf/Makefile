@@ -24,7 +24,7 @@ install: libjpf.cma
 	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(LABLTKDIR)
 
 installopt: libjpf.cmxa
-	cp libjpf.cmxa libjpf.a $(LABLTKDIR)
+	cp libjpf.cmxa libjpf.a $(OBJS:.cmo=.cmx) $(LABLTKDIR)
 
 clean:
 	rm -f *.cm* *.o *.a *~ *test
