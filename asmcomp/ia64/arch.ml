@@ -31,7 +31,6 @@ type specific_operation =
   | Imultsubf                           (* x *. y -. z *)
   | Isubmultf                           (* z -. x *. y *)
   | Istoreincr of int                   (* store y at x; x <- x + N *)
-  | Istackaddr                          (* take the address of a stack var *)
 
 (* Sizes, endianness *)
 
@@ -79,5 +78,3 @@ let print_specific_operation printreg op ppf arg =
   | Istoreincr n ->
       fprintf ppf "[%a] := %a; %a += %d"
               printreg arg.(0) printreg arg.(1) printreg arg.(0) n
-  | Istackaddr ->
-      fprintf ppf "&%a" printreg arg.(0)
