@@ -39,6 +39,11 @@ Both compilers:
 - Assertions are now type-checked even if the -noassert option is given,
   thus -noassert can no longe change the types of modules.
 
+Bytecode compiler and bytecode interpreter:
+- Print stack backtrace when a program aborts due to an uncaught exception
+  (requires compilation with -g and running with ocamlrun -b or
+   OCAMLRUNPARAM="b=1").
+
 Native-code compiler:
 - Better unboxing optimizations on the int32, int64, and nativeint types.
 - Tail recursion preserved for functions having more parameters than
