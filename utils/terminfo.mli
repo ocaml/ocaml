@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -13,8 +13,12 @@
 
 (* Basic interface to the terminfo database *)
 
-external setupterm: unit -> unit = "terminfo_setup"
-external getstr: string -> string = "terminfo_getstr"
-external getnum: string -> int = "terminfo_getnum"
-external puts: out_channel -> string -> int -> unit = "terminfo_puts"
-
+type status =
+  | Uninitialised
+  | Bad_term
+  | Good_term of int  (* number of lines of the terminal *)
+;;
+external setup : out_channel -> status = "terminfo_setup";;
+external backup : int -> unit = "terminfo_backup";;
+external standout : bool -> unit = "terminfo_standout";;
+external resume : int -> unit = "terminfo_resume";;
