@@ -44,7 +44,7 @@ all: ocamlrun.exe libcamlrun.lib
 	    -e "/Modify/,/^}/d" memory.h > ..\stdlib\caml\memory.h
 
 ocamlrun.exe: $(OBJS:.obj=.dobj) prims.dobj
-	link /nologo /out:ocamlrun.exe $(OBJS:.obj=.dobj) prims.dobj $(CCLIBS)
+	link /nologo /out:ocamlrun.exe $(OBJS:.obj=.dobj) prims.dobj $(BYTECCLIBS)
 
 libcamlrun.lib: $(OBJS:.obj=.sobj)
 	$(MKLIB)libcamlrun.lib $(OBJS:.obj=.sobj)

@@ -213,11 +213,19 @@ CAMLprim value sys_getcwd(value unit)
   return copy_string(buff);
 }
 
+#ifdef _WIN32
+extern char * win32_getenv(char * command);
+#endif
+
 CAMLprim value sys_getenv(value var)
 {
   char * res;
 
+#ifndef _WIN32
   res = getenv(String_val(var));
+#else
+  res = win32_getenv(String_val(var));
+#endif
   if (res == 0) raise_not_found();
   return copy_string(res);
 }

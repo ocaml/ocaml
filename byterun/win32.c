@@ -343,6 +343,43 @@ int win32_system(char * cmdline)
   }
 }
 
+/* Wrapper around "getenv" for Win32.  Look up resources if environment
+   variable is not set. Notice that the result is a pointer to static
+   memory space that will be overwritten at the next call; this is
+   OK since sys_getenv immediately copies the returned string. */
+
+char * win32_getenv(char * name)
+{
+  char * res;
+  HKEY hkey;
+  DWORD type, size;
+  static char buf[256];
+
+  res = getenv(name);
+  if (res != NULL) return res;
+  if (RegOpenKeyEx(HKEY_CURRENT_USER, /* root directory */
+		   "Software\\ocaml", /* entry name */
+		   0,                 /* reserved */
+		   KEY_QUERY_VALUE,   /* access rights requested */
+		   &hkey)             /* [out] result */
+      != ERROR_SUCCESS) return NULL;
+  size = sizeof(buf);
+  if (RegQueryValueEx(hkey,           /* key */
+		      name,           /* value name */
+		      0,              /* reserved */
+		      &type,          /* [out] type of value */
+		      buf,            /* [in,out] where to store the value */
+		      &size)          /* [in,out] size of buffer */
+      != ERROR_SUCCESS) {
+    RegCloseKey(hkey);
+    return NULL;
+  }
+  RegCloseKey(hkey);
+  if (type != REG_SZ) return NULL;
+  buf[size] = 0; /* make sure string is terminated */
+  return buf;
+}
+  
 #ifndef NATIVE_CODE
 
 /* Set up a new thread for control-C emulation */

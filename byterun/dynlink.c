@@ -66,6 +66,10 @@ static c_primitive lookup_primitive(char * name)
    listed there to the search path */
 
 #define LD_CONF_NAME "ld.conf"
+#ifdef _WIN32
+extern char * win32_getenv(char * command);
+#define getenv win32_getenv
+#endif
 
 static char * parse_ld_conf(void)
 {
