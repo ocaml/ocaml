@@ -9,9 +9,6 @@
 #include "signals.h"
 #include "stacks.h"
 
-/* For minor_gc.c */
-struct longjmp_buffer * external_raise;
-
 /* The globals holding predefined exceptions */
 
 typedef char caml_generated_constant[256];
@@ -72,10 +69,18 @@ void failwith (msg)
   raise_with_string((value) Failure, msg);
 }
 
+/* We chose to abort the program if a C primitive raises Invalid_argument.
+   Rationale: nobody should trap Invalid_argument, and we're not running
+   under a toplevel, so this will provide the same feedback to the user.
+   Moreover, divisions by zero or out-of-bounds accesses also abort the
+   program, and there's no way we can turn them into exceptions.
+   Finally, this allows a number of C primitives to be declared "noalloc",
+   and this makes calling them much more efficient. */
+   
 void invalid_argument (msg)
      char * msg;
 {
-  raise_with_string((value) Invalid_argument, msg);
+  fatal_error_arg("Fatal_error: Invalid_argument \"%s\"\n", msg);
 }
 
 /* To raise Out_of_memory, we can't use raise_constant,

@@ -1,5 +1,6 @@
 #include "misc.h"
 #include "mlvalues.h"
+#include "fail.h"
 #include "signals.h"
 
 void enter_blocking_section()
