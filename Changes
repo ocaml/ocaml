@@ -6,7 +6,7 @@ Language features:
   through a class.
 
 Both compilers:
-- Compacter compilation of classes.
+- More compact compilation of classes.
 - Much more efficient handling of class definitions inside functors
   or local modules.
 - Simpler represention for method tables. Objects can now be marshalled
