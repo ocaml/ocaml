@@ -41,7 +41,7 @@ void process_event(void)
 {
   int signal_number;
   void (*async_action)(void);
-  if (force_major_slice) minor_collection ();
+  if (force_major_slice) minor_collection (); /* FIXME should be check_urgent_gc */
   /* If a signal arrives between the following two instructions,
      it will be lost.  To do: use atomic swap or atomic read-and-clear
      for processors that support it? */

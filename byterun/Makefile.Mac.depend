@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 14:49:24 on Thu, Jul 12, 2001 by MakeDepend
+# These dependencies were produced at 20:33:13 on Tue, Aug 21, 2001 by MakeDepend
 
 :alloc.c.x Ä  ¶
  :alloc.c ¶
@@ -366,6 +366,25 @@
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h
 
+:globroots.c.x Ä  ¶
+ :globroots.c ¶
+ :memory.h ¶
+ :misc.h ¶
+ :mlvalues.h ¶
+ :globroots.h ¶
+ :config.h ¶
+ :gc.h ¶
+ :major_gc.h ¶
+ :minor_gc.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"stdlib.h ¶
+ ::config:m.h ¶
+ ::config:s.h ¶
+ :freelist.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"SizeTDef.h ¶
+ "{CIncludes}"WCharTDef.h
+
 :hash.c.x Ä  ¶
  :hash.c ¶
  :mlvalues.h ¶
@@ -566,9 +585,8 @@
  "{CIncludes}"VaListTDef.h ¶
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"OSUtils.h ¶
@@ -578,18 +596,37 @@
  "{CIncludes}"Aliases.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
  :config.h ¶
  "{CIncludes}"stddef.h ¶
- "{CIncludes}"Endian.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Events.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"Patches.h ¶
+ "{CIncludes}"CFString.h ¶
+ "{CIncludes}"Endian.h ¶
  "{CIncludes}"IntlResources.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
  "{CIncludes}"Script.h ¶
+ "{CIncludes}"TypeSelect.h ¶
  ::config:m.h ¶
- ::config:s.h
+ ::config:s.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
+ "{CIncludes}"stdarg.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h ¶
+ "{CIncludes}"CFURL.h
 
 :main.c.x Ä  ¶
  :main.c ¶
@@ -837,6 +874,7 @@
 :roots.c.x Ä  ¶
  :roots.c ¶
  :finalise.h ¶
+ :globroots.h ¶
  :major_gc.h ¶
  :memory.h ¶
  :minor_gc.h ¶
@@ -871,7 +909,14 @@
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"Patches.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h
+ "{CIncludes}"CFString.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
+ "{CIncludes}"stdarg.h ¶
+ "{CIncludes}"VaListTDef.h
 
 :signals.c.x Ä  ¶
  :signals.c ¶
@@ -1092,23 +1137,44 @@
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"MacErrors.h ¶
+ "{CIncludes}"CFString.h ¶
  :config.h ¶
  "{CIncludes}"stddef.h ¶
  "{CIncludes}"Files.h ¶
- "{CIncludes}"Notification.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"OSUtils.h ¶
  "{CIncludes}"Endian.h ¶
  "{CIncludes}"Fonts.h ¶
  "{CIncludes}"Processes.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
+ "{CIncludes}"stdarg.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
  "{CIncludes}"UTCUtils.h ¶
  "{CIncludes}"Finder.h ¶
+ "{CIncludes}"Notification.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"Patches.h ¶
- "{CIncludes}"DateTimeUtils.h
+ "{CIncludes}"DateTimeUtils.h ¶
+ "{CIncludes}"ATSTypes.h ¶
+ "{CIncludes}"IntlResources.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h ¶
+ "{CIncludes}"CFURL.h
 
