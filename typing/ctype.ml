@@ -1932,16 +1932,24 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
   if r1 <> [] || row1.row_closed && (not row2.row_closed || r2 <> []) 
   then raise (Unify []);
   let rm1 = repr row1.row_more and rm2 = repr row2.row_more in
-  let ext =
-    if not (static_row row2) then 
-      if rm1.desc <> Tunivar then moregen_occur env rm1.level rm2 else
-      if rm2.desc <> Tunivar then raise (Unify []);
-    if r2 = [] then rm2 else
-    let ty = newty2 generic_level (Tvariant{row2 with row_fields = r2}) in
-    moregen_occur env rm1.level ty;
-    ty
+  let univ =
+    match rm1.desc, rm2.desc with
+      Tunivar, Tunivar ->
+        unify_univar rm1 rm2 !univar_pairs;
+        true
+    | Tunivar, _ | _, Tunivar ->
+        raise (Unify [])
+    | _ ->
+        if not (static_row row2) then moregen_occur env rm1.level rm2;
+        let ext =
+          if r2 = [] then rm2 else
+          let row_ext = {row2 with row_fields = r2} in
+          iter_row (moregen_occur env rm1.level) row_ext;
+          newty2 rm1.level (Tvariant row_ext)
+        in
+        if ext != rm1 then rm1.desc <- Tlink ext;
+        false
   in
-  if ext != rm1 then rm1.desc <- Tlink ext;
   List.iter
     (fun (l,f1,f2) ->
       let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
@@ -1950,7 +1958,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
         Rpresent(Some t1), Rpresent(Some t2) ->
           moregen inst_nongen type_pairs env t1 t2
       | Rpresent None, Rpresent None -> ()
-      | Reither(false, tl1, _, e1), Rpresent(Some t2) ->
+      | Reither(false, tl1, _, e1), Rpresent(Some t2) when not univ ->
           e1 := Some f2;
           List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
       | Reither(c1, tl1, _, e1), Reither(c2, tl2, m2, e2) ->
@@ -1965,8 +1973,10 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
           | [] ->
               if tl1 <> [] then raise (Unify [])
           end
-      | Reither(true, [], _, e1), Rpresent None -> e1 := Some f2
-      | Reither(_, _, _, e1), Rabsent -> e1 := Some f2
+      | Reither(true, [], _, e1), Rpresent None when not univ ->
+          e1 := Some f2
+      | Reither(_, _, _, e1), Rabsent when not univ ->
+          e1 := Some f2
       | Rabsent, Rabsent -> ()
       | _ -> raise (Unify []))
     pairs
