@@ -713,7 +713,8 @@ let fundecl fundecl =
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	jmp	{emit_symbol "array_bound_error"}\n`;
+    `{emit_label !range_check_trap}:	call	{emit_symbol "array_bound_error"}\n`;
+    (* Never returns, but useful to have retaddr on stack for debugging *)
   List.iter emit_float_constant !float_constants
 
 (* Emission of data *)
