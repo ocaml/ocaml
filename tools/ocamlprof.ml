@@ -180,7 +180,7 @@ and rw_exp iflag sexp =
     rewrite_patexp_list iflag spat_sexp_list;
     rewrite_exp iflag sbody
 
-  | Pexp_function caselist ->
+  | Pexp_function (_, _, caselist) ->
     if !instr_fun && not sexp.pexp_loc.loc_ghost then
       rewrite_function iflag caselist
     else
@@ -202,7 +202,7 @@ and rw_exp iflag sexp =
 
   | Pexp_apply(sfunct, sargs) ->
     rewrite_exp iflag sfunct;
-    rewrite_exp_list iflag sargs
+    rewrite_exp_list iflag (List.map snd sargs)
 
   | Pexp_tuple sexpl ->
     rewrite_exp_list iflag sexpl
@@ -324,10 +324,11 @@ and rewrite_class_expr iflag cexpr =
     Pcl_constr _ -> ()
   | Pcl_structure (_, fields) ->
       List.iter (rewrite_class_field iflag) fields
-  | Pcl_fun (_, cexpr) ->
+  | Pcl_fun (_, _, _, cexpr) ->
       rewrite_class_expr iflag cexpr
   | Pcl_apply (cexpr, exprs) ->
-      rewrite_class_expr iflag cexpr; List.iter (rewrite_exp iflag) exprs
+      rewrite_class_expr iflag cexpr;
+      List.iter (rewrite_exp iflag) (List.map snd exprs)
   | Pcl_let (_, spat_sexp_list, cexpr) ->
       rewrite_patexp_list iflag spat_sexp_list;
       rewrite_class_expr iflag cexpr

@@ -548,7 +548,7 @@ let instr_break lexbuf =
         begin try
           let (v, ty) = Eval.expression !selected_event env expr in
           match (Ctype.repr ty).desc with
-            Tarrow (_, _) ->
+            Tarrow _ ->
               add_breakpoint_after_pc (Remote_value.closure_code v)
           | _ ->
               prerr_endline "Not a function.";

@@ -13,7 +13,7 @@
 
 (* Module [Oo]: object-oriented extension *)
 
-val copy : < .. > as 'a -> 'a
+val copy : (< .. > as 'a) -> 'a
         (* [Oo.copy o] returns a copy of object [o], that is a fresh
            object with the same methods and instance variables as [o]  *)
 

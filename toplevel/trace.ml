@@ -54,11 +54,17 @@ let set_code_pointer cls ptr = Obj.set_field cls 0 ptr
 let invoke_traced_function codeptr env arg =
   Meta.invoke_traced_function codeptr env arg
 
+let print_label l =
+  if l <> "" then begin
+    print_string l;
+    print_char ':'
+  end
+
 (* If a function returns a functional value, wrap it into a trace code *)
 
 let rec instrument_result env name clos_typ =
   match (Ctype.repr(Ctype.expand_head env clos_typ)).desc with
-    Tarrow(t1, t2) ->
+    Tarrow(l, t1, t2) ->
       let starred_name =
         match name with
           Lident s -> Lident(s ^ "*")
@@ -70,6 +76,7 @@ let rec instrument_result env name clos_typ =
           open_box 2;
           Printtyp.longident starred_name;
           print_string " <--"; print_space();
+	  print_label l;
           print_value !toplevel_env arg t1;
           close_box(); print_newline();
           try
@@ -92,11 +99,12 @@ let rec instrument_result env name clos_typ =
 
 let instrument_closure env name clos_typ =
   match (Ctype.repr(Ctype.expand_head env clos_typ)).desc with
-    Tarrow(t1, t2) ->
+    Tarrow(l, t1, t2) ->
       let trace_res = instrument_result env name t2 in
       (fun actual_code closure arg ->
         open_box 2;
         Printtyp.longident name; print_string " <--"; print_space();
+	print_label l;
         print_value !toplevel_env arg t1;
         close_box(); print_newline();
         try

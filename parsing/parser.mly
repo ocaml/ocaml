@@ -1114,8 +1114,10 @@ core_type2:
       { mktyp(Ptyp_arrow("?" ^ $2 ,
                {ptyp_desc = Ptyp_constr(Lident "option", [$3]);
                 ptyp_loc = $3.ptyp_loc}, $5)) }
-  | labeled core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
+  | LABEL core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
       { mktyp(Ptyp_arrow($1, $2, $4)) }
+  | core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
+      { mktyp(Ptyp_arrow("", $1, $3)) }
 ;
 
 simple_core_type:

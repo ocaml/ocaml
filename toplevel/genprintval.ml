@@ -191,7 +191,7 @@ module Make(O : OBJ) = struct
           match (Ctype.repr ty).desc with
             Tvar ->
               print_string "<poly>"
-          | Tarrow(ty1, ty2) ->
+          | Tarrow(_, ty1, ty2) ->
               print_string "<fun>"
           | Ttuple(ty_list) ->
               if check_depth depth obj ty then begin
