@@ -214,7 +214,9 @@ CAMLprim value caml_get_public_method (value obj, value tag)
   return Field (meths, li-1);
 }
 
-/*
+/* these two functions might be useful to an hypothetical JIT */
+
+#ifdef CAML_JIT
 value caml_cache_public_method (value meths, value tag, value *cache)
 {
   int li = 3, hi = Field(meths,0), mi;
@@ -243,4 +245,6 @@ value caml_cache_public_method2 (value *meths, value tag, value *cache)
     return meths[li-1];
   }
 }
-*/
+#endif /*CAML_JIT*/
+
+/* eof $Id$ */
