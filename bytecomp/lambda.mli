@@ -42,7 +42,8 @@ type primitive =
   | Poffsetref of int
   (* Float operations *)
   | Pintoffloat | Pfloatofint
-  | Pnegfloat | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
+  | Pnegfloat | Pabsfloat
+  | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   (* String operations *)
   | Pstringlength | Pstringrefu | Pstringsetu | Pstringrefs | Pstringsets

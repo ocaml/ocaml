@@ -278,6 +278,7 @@ let rec comp_expr env exp sz cont =
         | Pintoffloat -> Kccall("int_of_float", 1)
         | Pfloatofint -> Kccall("float_of_int", 1)
         | Pnegfloat -> Kccall("neg_float", 1)
+        | Pabsfloat -> Kccall("abs_float", 1)
         | Paddfloat -> Kccall("add_float", 2)
         | Psubfloat -> Kccall("sub_float", 2)
         | Pmulfloat -> Kccall("mul_float", 2)

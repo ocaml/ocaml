@@ -112,6 +112,7 @@ let primitives_table = create_hashtable 31 [
   "%intoffloat", Pintoffloat;
   "%floatofint", Pfloatofint;
   "%negfloat", Pnegfloat;
+  "%absfloat", Pabsfloat;
   "%addfloat", Paddfloat;
   "%subfloat", Psubfloat;
   "%mulfloat", Pmulfloat;
