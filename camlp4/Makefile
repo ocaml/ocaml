@@ -2,7 +2,7 @@
 
 include config/Makefile
 
-DIRS=odyl camlp4 meta etc compile top ocpp lib man
+DIRS=odyl camlp4 meta etc top ocpp lib man
 FDIRS=odyl camlp4 meta lib
 OPTDIRS=lib odyl camlp4 meta etc
 SHELL=/bin/sh
