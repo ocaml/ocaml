@@ -589,7 +589,7 @@ current buffer using \\[ocaml-qualified-identifier]."
               (case-fold-search nil))
           (goto-char (point-min))
           (if (or (re-search-forward
-                   (concat "\\(val\\|exception\\|external\\|[|{;]\\) +"
+                   (concat "\\(val\\|exception\\|type\\|external\\|[|{;]\\) +"
                            (regexp-quote entry))
                    (point-max) t)
                   (re-search-forward
@@ -597,7 +597,7 @@ current buffer using \\[ocaml-qualified-identifier]."
                    (point-max) t)
                   (progn
                     (if (window-live-p window) (select-window window))
-                    (error "Entry %S not found in module %S"
+                    (error "Entry %s not found in module %s"
                            entry module))
                   ;; (search-forward entry (point-max) t)
                   )
@@ -698,21 +698,22 @@ buffer positions."
 (make-variable-buffer-local 'ocaml-links)
 
 (defun ocaml-info-links (section)
-  (if (and ocaml-links section (equal (car ocaml-links) section))
-      (cdr ocaml-links)
-    (save-excursion
-      (goto-char (point-min))
-      (let ((regexp (concat (if (equal major-mode 'Info-mode) "^ - " "^")
-                            ocaml-link-regexp))
-            (all))
-        (while (re-search-forward regexp (point-max) t)
-          (setq all
-                (cons (cons (match-string 4)
-                            (cons (match-beginning 4)
-                                  (match-end 4)))
-                      all)))
-        (setq ocaml-links (cons section all))
-        ))))
+  (cdr 
+   (if (and ocaml-links section (equal (car ocaml-links) section))
+       ocaml-links
+     (save-excursion
+       (goto-char (point-min))
+       (let ((regexp (concat (if (equal major-mode 'Info-mode) "^ - " "^")
+                             ocaml-link-regexp))
+             (all))
+         (while (re-search-forward regexp (point-max) t)
+           (setq all
+                 (cons (cons (match-string 4)
+                             (cons (match-beginning 4)
+                                   (match-end 4)))
+                       all)))
+         (setq ocaml-links (cons section all))
+         )))))
 
 (defvar ocaml-link-map (make-sparse-keymap))
 (define-key ocaml-link-map [mouse-2] 'ocaml-link-goto)
@@ -748,28 +749,33 @@ buffer positions."
 
 
 (defun ocaml-link-activate (section)
-  (if (cdr (ocaml-info-links section))
-      (let ((regexp (concat "[^A-Za-z0-9'_]\\("
-                            ocaml-longident-regexp "\\|"
-                            (mapconcat 'car (cdr ocaml-links) "\\|")
-                            "\\)[^A-Za-z0-9'_]"))
-            (case-fold-search nil))
-        (goto-char (point-min))
-        (unwind-protect
-            (save-excursion
-              (setq buffer-read-only nil)
-              (goto-char (point-min))
-              (while (re-search-forward regexp (point-max) t)
-                (put-text-property (match-beginning 1) (match-end 1)
-                                   'mouse-face 'highlight)
-                (put-text-property (match-beginning 1) (match-end 1)
-                                   'local-map ocaml-link-map)
-                (if (x-display-color-p)
+  (let ((links (ocaml-info-links section)))
+    (if links
+        (let ((regexp (concat "[^A-Za-z0-9'_]\\("
+                              ocaml-longident-regexp "\\|"
+                              (mapconcat 'car links "\\|")
+                              "\\)[^A-Za-z0-9'_]"))
+              (case-fold-search nil))
+          (goto-char (point-min))
+          (let ((buffer-read-only nil)
+                ;; use of dynamic scoping, need not be restored!
+                (modified-p (buffer-modified-p)))
+            (unwind-protect
+                (save-excursion
+                  (goto-char (point-min))
+                  (while (re-search-forward regexp (point-max) t)
                     (put-text-property (match-beginning 1) (match-end 1)
-                                       'face 'ocaml-link-face)))
-              )
-          (setq buffer-read-only t))
-          )))
+                                       'mouse-face 'highlight)
+                    (put-text-property (match-beginning 1) (match-end 1)
+                                       'local-map ocaml-link-map)
+                    (if (x-display-color-p)
+                        (put-text-property (match-beginning 1) (match-end 1)
+                                           'face 'ocaml-link-face)))
+                  )
+              ;; need to restore flag if buffer was unmodified. 
+              (unless modified-p (set-buffer-modified-p nil))
+              ))
+          ))))
 
   
 
