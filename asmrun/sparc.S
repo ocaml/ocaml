@@ -34,9 +34,9 @@
 #define Caml_start_program _caml_start_program
 #define Caml_program _caml_program
 #define Raise_caml_exception _raise_caml_exception
-#define Callback _callback
-#define Callback2 _callback2
-#define Callback3 _callback3
+#define Callback_exn _callback_exn
+#define Callback2_exn _callback2_exn
+#define Callback3_exn _callback3_exn
 #define Caml_apply2 _caml_apply2
 #define Caml_apply3 _caml_apply3
 #define Mlraise _mlraise
@@ -60,9 +60,9 @@
 #define Caml_start_program caml_start_program
 #define Caml_program caml_program
 #define Raise_caml_exception raise_caml_exception
-#define Callback callback
-#define Callback2 callback2
-#define Callback3 callback3
+#define Callback_exn callback_exn
+#define Callback2_exn callback2_exn
+#define Callback3_exn callback3_exn
 #define Caml_apply2 caml_apply2
 #define Caml_apply3 caml_apply3
 #define Mlraise mlraise
@@ -242,7 +242,7 @@ L109:   call    %l2
         add     %sp, 8, %sp
         Store(Exn_ptr, Caml_exception_pointer)
     /* Pop callback link, restoring the global variables */
-        ldd     [%sp + 96], %l0
+L112:   ldd     [%sp + 96], %l0
         ld      [%sp + 104], %l2
         Store(%l0, Caml_bottom_of_stack)
         Store(%l1, Caml_last_return_address)
@@ -258,15 +258,9 @@ L109:   call    %l2
 L110:
     /* The trap handler */
         Store(Exn_ptr, Caml_exception_pointer)
-        Store(Alloc_ptr, Young_ptr)
-        ldd     [%sp + 96], %l0
-        ld      [%sp + 104], %l2
-        Store(%l0, Caml_bottom_of_stack)
-        Store(%l1, Caml_last_return_address)
-        Store(%l2, Caml_gc_regs)
-    /* Re-raise the exception through mlraise,
-       so that local C roots are cleaned up correctly. */
-        call    Mlraise         /* never returns */
+    /* Encode exception bucket as an exception result */
+        or      %o0, 2, %o0
+        b       L112
         nop
 
 /* Raise an exception from C */
@@ -300,8 +294,8 @@ L107:
 
 /* Callbacks C -> ML */
 
-        .global Callback
-Callback:
+        .global Callback_exn
+Callback_exn:
     /* Save callee-save registers and return address */
         save    %sp, -96, %sp
     /* Initial shuffling of arguments */
@@ -311,8 +305,8 @@ Callback:
         b       L108
         ld      [%g1], %l2      /* code pointer */
 
-        .global Callback2
-Callback2:
+        .global Callback2_exn
+Callback2_exn:
     /* Save callee-save registers and return address */
         save    %sp, -104, %sp
     /* Initial shuffling of arguments */
@@ -324,8 +318,8 @@ Callback2:
         b       L108
         or      %l2, %lo(Caml_apply2), %l2
 
-        .global Callback3
-Callback3:
+        .global Callback3_exn
+Callback3_exn:
     /* Save callee-save registers and return address */
         save    %sp, -104, %sp
     /* Initial shuffling of arguments */

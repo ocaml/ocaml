@@ -23,7 +23,7 @@
 #include "signals.h"
 #include "stacks.h"
 
-struct longjmp_buffer * external_raise;
+struct longjmp_buffer * external_raise = NULL;
 value exn_bucket;
 
 void mlraise(value v)
@@ -31,6 +31,7 @@ void mlraise(value v)
   Assert(! async_signal_mode);
   Unlock_exn();
   exn_bucket = v;
+  if (external_raise == NULL) fatal_uncaught_exception(v);
   siglongjmp(external_raise->buf, 1);
 }
 

@@ -374,6 +374,7 @@ L104:
         stw     %r31, LOW(G(caml_exception_pointer))(%r1)
         ldo     -8(%r30), %r30
 ; Pop the callback link
+L105:
         ldw     -16(%r30), %r31
         LOADHIGH(G(caml_bottom_of_stack))
         stw     %r31, LOW(G(caml_bottom_of_stack))(%r1)
@@ -434,22 +435,16 @@ L104:
         nop
 ; The trap handler
 L103:
-; Pop the callback link
-        ldw     -16(%r30), %r31
-        LOADHIGH(G(caml_bottom_of_stack))
-        stw     %r31, LOW(G(caml_bottom_of_stack))(%r1)
-        ldw     -12(%r30), %r31
-        LOADHIGH(G(caml_last_return_address))
-        stw     %r31, LOW(G(caml_last_return_address))(%r1)
-        ldw     -8(%r30), %r31
-        LOADHIGH(G(caml_gc_regs))
-        stw     %r31, LOW(G(caml_gc_regs))(%r1)
-        ldo     -16(%r30), %r30
-; Save allocation pointer and exception pointer
-        LOADHIGH(G(young_ptr))
-        stw     %r3, LOW(G(young_ptr))(%r1)
+; Save exception pointer
         LOADHIGH(G(caml_exception_pointer))
         stw     %r5, LOW(G(caml_exception_pointer))(%r1)
+; Encode exception bucket as an exception result and return it
+        ldi     2, %r1
+        or      %r26, %r1, %r26
+; Return it
+        b       L105
+        nop
+
 ; Re-raise the exception through mlraise, to clean up local C roots
         ldo     64(%r30), %r30
 #ifdef SYS_nextstep
@@ -486,8 +481,8 @@ G(raise_caml_exception):
 ; Callbacks C -> ML
 
         .align	CODE_ALIGN
-        EXPORT_CODE(G(callback))
-G(callback):
+        EXPORT_CODE(G(callback_exn))
+G(callback_exn):
         STARTPROC
 ; Initial shuffling of arguments
         copy    %r26, %r1       ; Closure
@@ -498,8 +493,8 @@ G(callback):
         ENDPROC
 
         .align	CODE_ALIGN
-        EXPORT_CODE(G(callback2))
-G(callback2):
+        EXPORT_CODE(G(callback2_exn))
+G(callback2_exn):
         STARTPROC
         copy    %r26, %r1       ; Closure
         copy    %r25, %r26      ; First argument
@@ -511,8 +506,8 @@ G(callback2):
         ENDPROC
 
         .align	CODE_ALIGN
-        EXPORT_CODE(G(callback3))
-G(callback3):
+        EXPORT_CODE(G(callback3_exn))
+G(callback3_exn):
         STARTPROC
         copy    %r26, %r1       ; Closure
         copy    %r25, %r26      ; First argument

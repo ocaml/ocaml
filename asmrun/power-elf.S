@@ -310,6 +310,7 @@ caml_start_program:
         Storeglobal(9, caml_exception_pointer, 11)
         addi    1, 1, 8
     /* Pop the callback link, restoring the global variables */
+L106:
         lwz     9, 0(1)
         lwz     10, 4(1)
         lwz     11, 8(1)
@@ -366,25 +367,17 @@ caml_start_program:
 
     /* The trap handler: */
 .L104:
-    /* Update caml_exception_pointer and young_ptr */
+    /* Update caml_exception_pointer */
         Storeglobal(29, caml_exception_pointer, 11)
-        Storeglobal(31, young_ptr, 11)
-    /* Pop the callback link, restoring the global variables */
-        lwz     9, 0(1)
-        lwz     10, 4(1)
-        lwz     11, 8(1)
-        Storeglobal(9, caml_bottom_of_stack, 12) 
-        Storeglobal(10, caml_last_return_address, 12) 
-        Storeglobal(11, caml_gc_regs, 12) 
-    /* Re-raise the exception through mlraise, */
-    /* so that local C roots are cleaned up correctly */
-        b       mlraise
+    /* Encode exception bucket as an exception result and return it */
+        ori     3, 3, 2
+        b       .L106
 
 /* Callback from C to Caml */
 
-        .globl  callback
-        .type   callback, @function
-callback:
+        .globl  callback_exn
+        .type   callback_exn, @function
+callback_exn:
     /* Initial shuffling of arguments */
         mr      0, 3            /* Closure */
         mr      3, 4            /* Argument */
@@ -392,9 +385,9 @@ callback:
         lwz     12, 0(4)        /* Code pointer */
         b       .L102
 
-        .globl  callback2
-        .type   callback2, @function
-callback2:
+        .globl  callback2_exn
+        .type   callback2_exn, @function
+callback2_exn:
         mr      0, 3            /* Closure */
         mr      3, 4            /* First argument */
         mr      4, 5            /* Second argument */
@@ -402,9 +395,9 @@ callback2:
         Addrglobal(12, caml_apply2)
         b       .L102
         
-        .globl  callback3
-        .type   callback3, @function
-callback3:
+        .globl  callback3_exn
+        .type   callback3_exn, @function
+callback3_exn:
         mr      0, 3            /* Closure */
         mr      3, 4            /* First argument */
         mr      4, 5            /* Second argument */

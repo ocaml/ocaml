@@ -200,6 +200,7 @@ LBL(107):
     /* Pop the exception handler */
         popl    G(caml_exception_pointer)
         popl    %esi    /* dummy register */
+LBL(109):
     /* Pop the callback link, restoring the global variables */
         popl    G(caml_bottom_of_stack)
         popl    G(caml_last_return_address)
@@ -213,14 +214,9 @@ LBL(107):
         ret
 LBL(108):
     /* Exception handler*/
-    /* Pop the callback link, restoring the global variables */
-        popl    G(caml_bottom_of_stack)
-        popl    G(caml_last_return_address)
-        popl    G(caml_gc_regs)
-    /* Re-raise the exception through mlraise,
-       so that local C roots are cleaned up correctly. */
-        pushl   %eax            /* exn bucket is the argument */
-        call    G(mlraise)      /* never returns */
+    /* Mark the bucket as an exception result and return it */
+        orl     $2, %eax
+        jmp     LBL(109)
 
 /* Raise an exception from C */
 
@@ -235,9 +231,9 @@ G(raise_caml_exception):
 
 /* Callback from C to Caml */
 
-        .globl  G(callback)
+        .globl  G(callback_exn)
         .align  FUNCTION_ALIGN
-G(callback):
+G(callback_exn):
         PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx
@@ -250,9 +246,9 @@ G(callback):
         movl    0(%ebx), %esi    /* code pointer */
         jmp     LBL(106)
 
-        .globl  G(callback2)
+        .globl  G(callback2_exn)
         .align  FUNCTION_ALIGN
-G(callback2):
+G(callback2_exn):
         PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx
@@ -266,9 +262,9 @@ G(callback2):
         movl    $ G(caml_apply2), %esi   /* code pointer */
         jmp     LBL(106)
 
-        .globl  G(callback3)
+        .globl  G(callback3_exn)
         .align  FUNCTION_ALIGN
-G(callback3):
+G(callback3_exn):
         PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx

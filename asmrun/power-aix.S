@@ -340,6 +340,7 @@ L..105:
         addi    1, 1, 24
         stw     9, 0(10)
     # Pop the callback link, restoring the global variables
+L..106:
         lwz     7, 0(1)
         lwz     8, 4(1)
         lwz     9, 8(1)
@@ -400,29 +401,17 @@ L..105:
         blr
     # The trap handler:
 L..104:
-    # Update caml_exception_pointer and young_ptr
+    # Update caml_exception_pointer
         lwz     9, L..caml_exception_pointer(2)
-        lwz     10, L..young_ptr(2)
         stw     29, 0(9)
-        stw     31, 0(10)
-    # Pop the callback link, restoring the global variables
-        lwz     7, 0(1)
-        lwz     8, 4(1)
-        lwz     9, 8(1)
-        lwz     10, L..caml_bottom_of_stack(2)
-        lwz     11, L..caml_last_return_address(2)
-        lwz     12, L..caml_gc_regs(2)
-        stw     7, 0(10)
-        stw     8, 0(11)
-        stw     9, 0(12)
-    # Re-raise the exception through mlraise,
-    # so that local C roots are cleaned up correctly
-        b       .mlraise
+    # Encode exception bucket as an exception result and return it
+        ori     3, 3, 2
+        b       L..106
 
 #### Callback from C to Caml
 
-        .globl  .callback
-.callback:
+        .globl  .callback_exn
+.callback_exn:
     # Initial shuffling of arguments
         mr      0, 3            # Closure
         mr      3, 4            # Argument
@@ -430,8 +419,8 @@ L..104:
         lwz     11, 0(4)        # Code pointer
         b       L..102
 
-        .globl  .callback2
-.callback2:
+        .globl  .callback2_exn
+.callback2_exn:
         mr      0, 3            # Closure
         mr      3, 4            # First argument
         mr      4, 5            # Second argument
@@ -439,8 +428,8 @@ L..104:
         lwz     11, L..caml_apply2(2)
         b       L..102
         
-        .globl  .callback3
-.callback3:
+        .globl  .callback3_exn
+.callback3_exn:
         mr      0, 3            # Closure
         mr      3, 4            # First argument
         mr      4, 5            # Second argument
@@ -506,18 +495,18 @@ raise_caml_exception:
 caml_start_program:
         .long   .caml_start_program, TOC[tc0], 0
 
-        .globl  callback
-        .csect  callback[DS]
-callback:
-        .long   .callback, TOC[tc0], 0
+        .globl  callback_exn
+        .csect  callback_exn[DS]
+callback_exn:
+        .long   .callback_exn, TOC[tc0], 0
 
-        .globl  callback2
-        .csect  callback2[DS]
-callback2:
-        .long   .callback2, TOC[tc0], 0
+        .globl  callback2_exn
+        .csect  callback2_exn[DS]
+callback2_exn:
+        .long   .callback2_exn, TOC[tc0], 0
 
-        .globl  callback3
-        .csect  callback3[DS]
-callback3:
-        .long   .callback3, TOC[tc0], 0
+        .globl  callback3_exn
+        .csect  callback3_exn[DS]
+callback3_exn:
+        .long   .callback3_exn, TOC[tc0], 0
 

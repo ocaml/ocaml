@@ -208,7 +208,7 @@ caml_start_program:
     /* Setup $gp */
         .cpsetup $25, 0x80, caml_start_program
     /* Load in $24 the code address to call */
-       la	$24, caml_program
+        la	$24, caml_program
     /* Code shared with callback* */
 $103:
     /* Save return address */
@@ -258,6 +258,7 @@ $104:
         lw      $24, 0($sp)
         sw      $24, caml_exception_pointer
         addu    $sp, $sp, 16
+$106:
     /* Pop the callback link, restoring the global variables */
         lw      $24, 0($sp)
         sw      $24, caml_bottom_of_stack
@@ -289,20 +290,12 @@ $104:
         addu    $sp, $sp, 0x90
         j       $31
         
-    /* The trap handler: re-raise the exception through mlraise,
-       so that local C roots are cleaned up correctly. */
+    /* The trap handler: encode exception bucket as an exception result
+       and return it */
 $105:
-        sw      $22, young_ptr
         sw      $30, caml_exception_pointer
-        lw      $24, 0($sp)
-        sw      $24, caml_bottom_of_stack
-        lw      $25, 4($sp)
-        sw      $25, caml_last_return_address
-        lw      $24, 8($sp)
-        sw      $24, caml_gc_regs
-        addu    $sp, $sp, 16
-        move    $4, $2          /* bucket as first argument */
-        jal     mlraise         /* never returns */
+        or      $2, $2, 2
+        b       $106
 
         .end    caml_start_program
 
@@ -328,23 +321,23 @@ raise_caml_exception:
 
 /* Callback from C to Caml */
 
-        .globl  callback
-        .ent    callback
-callback:
+        .globl  callback_exn
+        .ent    callback_exn
+callback_exn:
         subu    $sp, $sp, 0x90
-        .cpsetup $25, 0x80, callback
+        .cpsetup $25, 0x80, callback_exn
     /* Initial shuffling of arguments */
         move    $9, $4          /* closure */
         move    $8, $5          /* argument */
         lw      $24, 0($4)      /* code pointer */
         b       $103
-        .end    callback
+        .end    callback_exn
 
-        .globl  callback2
-        .ent    callback2
-callback2:
+        .globl  callback2_exn
+        .ent    callback2_exn
+callback2_exn:
         subu    $sp, $sp, 0x90
-        .cpsetup $25, 0x80, callback2
+        .cpsetup $25, 0x80, callback2_exn
     /* Initial shuffling of arguments */
         move    $10, $4                 /* closure */
         move    $8, $5                  /* first argument */
@@ -352,13 +345,13 @@ callback2:
         la      $24, caml_apply2        /* code pointer */
         b       $103
 
-        .end    callback2
+        .end    callback2_exn
 
-        .globl  callback3
-        .ent    callback3
-callback3:
+        .globl  callback3_exn
+        .ent    callback3_exn
+callback3_exn:
         subu    $sp, $sp, 0x90
-        .cpsetup $25, 0x80, callback3
+        .cpsetup $25, 0x80, callback3_exn
     /* Initial shuffling of arguments */
         move    $11, $4                 /* closure */
         move    $8, $5                  /* first argument */

@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "callback.h"
 #include "fail.h"
 #include "gc.h"
 #include "gc_ctrl.h"
@@ -98,12 +99,14 @@ static void parse_camlrunparam(void)
   }
 }
 
-extern void caml_start_program (void);
+extern value caml_start_program (void);
 extern void init_ieee_floats (void);
 extern void init_signals (void);
 
 void caml_main(char **argv)
 {
+  value res;
+
   init_ieee_floats();
 #ifdef DEBUG
   verbose_init = 1;
@@ -114,7 +117,9 @@ void caml_main(char **argv)
   init_atoms();
   init_signals();
   sys_init(argv);
-  caml_start_program();
+  res = caml_start_program();
+  if (Is_exception_result(res))
+    fatal_uncaught_exception(Extract_exception(res));
 }
 
 void caml_startup(char **argv)

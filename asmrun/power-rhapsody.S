@@ -309,6 +309,7 @@ L105:
         Storeglobal r9, _caml_exception_pointer, r11
         addi    r1, r1, 8
     /* Pop the callback link, restoring the global variables */
+L106:
         lwz     r9, 0(r1)
         lwz     r10, 4(r1)
         lwz     r11, 8(r1)
@@ -365,24 +366,16 @@ L105:
 
     /* The trap handler: */
 L104:
-    /* Update caml_exception_pointer and young_ptr */
+    /* Update caml_exception_pointer */
         Storeglobal r29, _caml_exception_pointer, r11
-        Storeglobal r31, _young_ptr, r11
-    /* Pop the callback link, restoring the global variables */
-        lwz     r9, 0(r1)
-        lwz     r10, 4(r1)
-        lwz     r11, 8(r1)
-        Storeglobal r9, _caml_bottom_of_stack, r12 
-        Storeglobal r10, _caml_last_return_address, r12 
-        Storeglobal r11, _caml_gc_regs, r12 
-    /* Re-raise the exception through mlraise, */
-    /* so that local C roots are cleaned up correctly */
-        b       _mlraise
+    /* Encode exception bucket as an exception result and return it */
+        ori     3, 3, 2
+        b       L106
 
 /* Callback from C to Caml */
 
-        .globl  _callback
-_callback:
+        .globl  _callback_exn
+_callback_exn:
     /* Initial shuffling of arguments */
         mr      r0, r3            /* Closure */
         mr      r3, r4            /* Argument */
@@ -390,8 +383,8 @@ _callback:
         lwz     r12, 0(r4)        /* Code pointer */
         b       L102
 
-        .globl  _callback2
-_callback2:
+        .globl  _callback2_exn
+_callback2_exn:
         mr      r0, r3            /* Closure */
         mr      r3, r4            /* First argument */
         mr      r4, r5            /* Second argument */
@@ -399,8 +392,8 @@ _callback2:
         Addrglobal r12, _caml_apply2
         b       L102
         
-        .globl  _callback3
-_callback3:
+        .globl  _callback3_exn
+_callback3_exn:
         mr      r0, r3            /* Closure */
         mr      r3, r4            /* First argument */
         mr      r4, r5            /* Second argument */

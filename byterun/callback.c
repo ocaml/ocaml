@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include "callback.h"
+#include "fail.h"
 #include "memory.h"
 #include "mlvalues.h"
 
@@ -49,7 +50,7 @@ static void thread_callback(void)
 
 #endif
 
-value callbackN(value closure, int narg, value args[])
+value callbackN_exn(value closure, int narg, value args[])
 {
   value res;
   int i;
@@ -64,18 +65,17 @@ value callbackN(value closure, int narg, value args[])
   extern_sp[narg + 3] = closure;
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
-  res = interprete(callback_code, sizeof(callback_code));
-  return res;
+  return interprete(callback_code, sizeof(callback_code));
 }
 
-value callback(value closure, value arg1)
+value callback_exn(value closure, value arg1)
 {
   value arg[1];
   arg[0] = arg1;
   return callbackN(closure, 1, arg);
 }
 
-value callback2(value closure, value arg1, value arg2)
+value callback2_exn(value closure, value arg1, value arg2)
 {
   value arg[2];
   arg[0] = arg1;
@@ -83,7 +83,7 @@ value callback2(value closure, value arg1, value arg2)
   return callbackN(closure, 2, arg);
 }
 
-value callback3(value closure, value arg1, value arg2, value arg3)
+value callback3_exn(value closure, value arg1, value arg2, value arg3)
 {
   value arg[3];
   arg[0] = arg1;
@@ -94,9 +94,9 @@ value callback3(value closure, value arg1, value arg2, value arg3)
 
 #else
 
-/* Native-code callbacks.  callback[123] are implemented in asm. */
+/* Native-code callbacks.  callback_exn[123] are implemented in asm. */
 
-value callbackN(value closure, int narg, value args[])
+value callbackN_exn(value closure, int narg, value args[])
 {
   value res;
   int i;
@@ -108,15 +108,18 @@ value callbackN(value closure, int narg, value args[])
         /* Pass as many arguments as possible */
         switch (narg - i) {
         case 1:
-          res = callback(res, args[i]);
+          res = callback_exn(res, args[i]);
+          if (Is_exception_result(res)) return res;
           i += 1;
           break;
         case 2:
           res = callback2(res, args[i], args[i + 1]);
+          if (Is_exception_result(res)) return res;
           i += 2;
           break;
         default:
           res = callback3(res, args[i], args[i + 1], args[i + 2]);
+          if (Is_exception_result(res)) return res;
           i += 3;
           break;
         }
@@ -127,6 +130,36 @@ value callbackN(value closure, int narg, value args[])
 }
 
 #endif
+
+/* Exception-propagating variants of the above */
+
+value callback (value closure, value arg)
+{
+  value res = callback_exn(closure, arg);
+  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  return res;
+}
+
+value callback2 (value closure, value arg1, value arg2)
+{
+  value res = callback2_exn(closure, arg1, arg2);
+  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  return res;
+}
+
+value callback3 (value closure, value arg1, value arg2, value arg3)
+{
+  value res = callback3_exn(closure, arg1, arg2, arg3);
+  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  return res;
+}
+
+value callbackN (value closure, int narg, value args[])
+{
+  value res = callbackN_exn(closure, narg, args);
+  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  return res;
+}
 
 /* Naming of Caml values */
 

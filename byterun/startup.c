@@ -22,6 +22,7 @@
 #include <unistd.h>
 #endif
 #include "alloc.h"
+#include "callback.h"
 #include "debugger.h"
 #include "exec.h"
 #include "fail.h"
@@ -240,68 +241,67 @@ void caml_main(char **argv)
   int fd;
   struct exec_trailer trail;
   int pos;
-  struct longjmp_buffer raise_buf;
   struct channel * chan;
+  value res;
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   init_ieee_floats();
-  /* Set up a catch-all exception handler */
-  if (sigsetjmp(raise_buf.buf, 1) == 0) {
-    external_raise = &raise_buf;
-    /* Determine options and position of bytecode file */
+  external_raise = NULL;
+  /* Determine options and position of bytecode file */
 #ifdef DEBUG
-    verbose_init = 63;
+  verbose_init = 63;
 #endif
-    parse_camlrunparam();
-    pos = 0;
-    fd = attempt_open(&argv[0], &trail, 0);
-    if (fd < 0) {
-      pos = parse_command_line(argv);
-      if (argv[pos] == 0)
-        fatal_error("No bytecode file specified.\n");
-      fd = attempt_open(&argv[pos], &trail, 1);
-      switch(fd) {
-      case FILE_NOT_FOUND:
-        fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
-        break;
-      case TRUNCATED_FILE:
-      case BAD_MAGIC_NUM:
-        fatal_error_arg(
-          "Fatal error: the file %s is not a bytecode executable file\n",
-          argv[pos]);
-        break;
-      }
+  parse_camlrunparam();
+  pos = 0;
+  fd = attempt_open(&argv[0], &trail, 0);
+  if (fd < 0) {
+    pos = parse_command_line(argv);
+    if (argv[pos] == 0)
+      fatal_error("No bytecode file specified.\n");
+    fd = attempt_open(&argv[pos], &trail, 1);
+    switch(fd) {
+    case FILE_NOT_FOUND:
+      fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
+      break;
+    case TRUNCATED_FILE:
+    case BAD_MAGIC_NUM:
+      fatal_error_arg(
+        "Fatal error: the file %s is not a bytecode executable file\n",
+        argv[pos]);
+      break;
     }
-    /* Initialize the abstract machine */
-    init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-             percent_free_init, max_percent_free_init, verbose_init);
-    init_stack (max_stack_init);
-    init_atoms();
-    /* Initialize the interpreter */
-    interprete(NULL, 0);
-    /* Initialize the debugger, if needed */
-    debugger_init();
-    /* Load the code */
-    lseek(fd, - (long) (TRAILER_SIZE + trail.code_size + trail.prim_size
-                        + trail.data_size + trail.symbol_size
-                        + trail.debug_size), SEEK_END);
-    load_code(fd, trail.code_size);
-    /* Check the primitives */
-    check_primitives(fd, trail.prim_size);
-    /* Load the globals */
-    chan = open_descriptor(fd);
-    global_data = input_val(chan);
-    close_channel(chan);
-    /* Ensure that the globals are in the major heap. */
-    oldify(global_data, &global_data);
-    /* Initialize system libraries */
-    init_exceptions();
-    sys_init(argv + pos);
-    /* Execute the program */
-    debugger(PROGRAM_START);
-    interprete(start_code, trail.code_size);
-  } else {
+  }
+  /* Initialize the abstract machine */
+  init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+           percent_free_init, max_percent_free_init, verbose_init);
+  init_stack (max_stack_init);
+  init_atoms();
+  /* Initialize the interpreter */
+  interprete(NULL, 0);
+  /* Initialize the debugger, if needed */
+  debugger_init();
+  /* Load the code */
+  lseek(fd, - (long) (TRAILER_SIZE + trail.code_size + trail.prim_size
+                      + trail.data_size + trail.symbol_size
+                      + trail.debug_size), SEEK_END);
+  load_code(fd, trail.code_size);
+  /* Check the primitives */
+  check_primitives(fd, trail.prim_size);
+  /* Load the globals */
+  chan = open_descriptor(fd);
+  global_data = input_val(chan);
+  close_channel(chan);
+  /* Ensure that the globals are in the major heap. */
+  oldify(global_data, &global_data);
+  /* Initialize system libraries */
+  init_exceptions();
+  sys_init(argv + pos);
+  /* Execute the program */
+  debugger(PROGRAM_START);
+  res = interprete(start_code, trail.code_size);
+  if (Is_exception_result(res)) {
+    exn_bucket = Extract_exception(res);
     extern_sp = &exn_bucket; /* The debugger needs the exception value. */
     debugger(UNCAUGHT_EXC);
     fatal_uncaught_exception(exn_bucket);
@@ -312,38 +312,35 @@ void caml_main(char **argv)
 
 void caml_startup_code(code_t code, asize_t code_size, char *data, char **argv)
 {
-  struct longjmp_buffer raise_buf;
+  value res;
 
   init_ieee_floats();
 #ifdef DEBUG
   verbose_init = 63;
 #endif
   parse_camlrunparam();
-  /* Set up a catch-all exception handler */
-  if (sigsetjmp(raise_buf.buf, 1) == 0) {
-    external_raise = &raise_buf;
-    /* Initialize the abstract machine */
-    init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-             percent_free_init, max_percent_free_init, verbose_init);
-    init_stack (max_stack_init);
-    init_atoms();
-    /* Initialize the interpreter */
-    interprete(NULL, 0);
-    /* Load the code */
-    start_code = code;
+  external_raise = NULL;
+  /* Initialize the abstract machine */
+  init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+           percent_free_init, max_percent_free_init, verbose_init);
+  init_stack (max_stack_init);
+  init_atoms();
+  /* Initialize the interpreter */
+  interprete(NULL, 0);
+  /* Load the code */
+  start_code = code;
 #ifdef THREADED_CODE
-    thread_code(start_code, code_size);
+  thread_code(start_code, code_size);
 #endif
-    /* Load the globals */
-    global_data = input_val_from_string((value)data, 0);
-    /* Ensure that the globals are in the major heap. */
-    oldify(global_data, &global_data);
-    /* Run the code */
-    init_exceptions();
-    sys_init(argv);
-    interprete(start_code, code_size);
-  } else {
-    fatal_uncaught_exception(exn_bucket);
-  }
+  /* Load the globals */
+  global_data = input_val_from_string((value)data, 0);
+  /* Ensure that the globals are in the major heap. */
+  oldify(global_data, &global_data);
+  /* Run the code */
+  init_exceptions();
+  sys_init(argv);
+  res = interprete(start_code, code_size);
+  if (Is_exception_result(res))
+    fatal_uncaught_exception(Extract_exception(res));
 }
 

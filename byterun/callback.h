@@ -23,11 +23,20 @@ value callback2 (value closure, value arg1, value arg2);
 value callback3 (value closure, value arg1, value arg2, value arg3);
 value callbackN (value closure, int narg, value args[]);
 
-extern int callback_depth;
+value callback_exn (value closure, value arg);
+value callback2_exn (value closure, value arg1, value arg2);
+value callback3_exn (value closure, value arg1, value arg2, value arg3);
+value callbackN_exn (value closure, int narg, value args[]);
+
+#define Make_exception_result(v) ((v) | 2)
+#define Is_exception_result(v) (((v) & 3) == 2)
+#define Extract_exception(v) ((v) & ~3)
 
 value * caml_named_value (char * name);
 
 void caml_main (char ** argv);
 void caml_startup (char ** argv);
+
+extern int callback_depth;
 
 #endif

@@ -173,6 +173,7 @@ L107:
     ; Pop the exception handler 
         pop	_caml_exception_pointer
         pop	esi    		; dummy register 
+L109:
     ; Pop the callback link, restoring the global variables
     ; used by caml_c_call
         pop	_caml_bottom_of_stack
@@ -187,15 +188,9 @@ L107:
         ret	
 L108:
     ; Exception handler
-    ; Pop the callback link, restoring the global variables
-    ; used by caml_c_call
-        pop	_caml_bottom_of_stack
-        pop	_caml_last_return_address
-        pop     _caml_gc_regs
-    ; Re-raise the exception through mlraise,
-    ; so that local C roots are cleaned up correctly.
-        push	eax            	; exn bucket is the argument 
-        call	_mlraise      	; never returns 
+    ; Mark the bucket as an exception result and return it
+        or      eax, 2
+        jmp     L109
 
 ; Raise an exception from C 
 
@@ -209,9 +204,9 @@ _raise_caml_exception:
 
 ; Callback from C to Caml 
 
-        PUBLIC  _callback
+        PUBLIC  _callback_exn
         ALIGN  4
-_callback:
+_callback_exn:
     ; Save callee-save registers 
         push	ebx
         push	esi
@@ -223,9 +218,9 @@ _callback:
         mov	esi, [ebx]      ; code pointer
         jmp     L106
 
-        PUBLIC  _callback2
+        PUBLIC  _callback2_exn
         ALIGN  4
-_callback2:
+_callback2_exn:
     ; Save callee-save registers 
         push	ebx
         push	esi
@@ -238,9 +233,9 @@ _callback2:
         mov	esi, offset _caml_apply2   ; code pointer 
         jmp	L106
 
-        PUBLIC  _callback3
+        PUBLIC  _callback3_exn
         ALIGN	4
-_callback3:
+_callback3_exn:
     ; Save callee-save registers 
         push	ebx
         push	esi

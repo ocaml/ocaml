@@ -754,10 +754,9 @@ value interprete(code_t prog, asize_t prog_size)
       if (trapsp >= trap_barrier) debugger(TRAP_BARRIER);
       sp = trapsp;
       if ((char *) sp >= (char *) stack_high - initial_sp_offset) {
-        exn_bucket = accu;
         external_raise = initial_external_raise;
         callback_depth--;
-        siglongjmp(external_raise->buf, 1);
+        return Make_exception_result(accu);
       }
       pc = Trap_pc(sp);
       trapsp = Trap_link(sp);

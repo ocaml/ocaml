@@ -154,6 +154,7 @@ L107:
     | Pop the exception handler
         movel   a7@+, _caml_exception_pointer
         addql   #4, a7
+L109:
     | Pop the callback link, restoring the global variables
     | used by caml_c_call
         movel   a7@+, _caml_bottom_of_stack
@@ -169,15 +170,11 @@ L108:
     | Save allocation pointer and exception pointer
         movel   d6, _young_ptr
         movel   d7, _caml_exception_pointer
-    | Pop the callback link, restoring the global variables
-    | used by caml_c_call
-        movel   a7@+, _caml_bottom_of_stack
-        movel   a7@+, _caml_last_return_address
-        movel   a7@+, _caml_gc_regs
-    | Re-raise the exception through mlraise,
-    | so that local C roots are cleaned up correctly.
-        movel   a0, a7@-       | exn bucket is the argument
-        jbsr    _mlraise        | never returns
+    | Encode exception bucket as an exception result
+        movel   a0, d0
+        orl     #2, d0
+    | Return it
+        bra     L109
 
 | Raise an exception from C
 
@@ -191,8 +188,8 @@ _raise_caml_exception:
 
 | Callback from C to Caml
 
-        .globl  _callback
-_callback:
+        .globl  _callback_exn
+_callback_exn:
         link    a6, #0
     | Save callee-save registers
         moveml  a2-a6/d2-d7, a7@-
@@ -203,8 +200,8 @@ _callback:
         movel   a1@(0), a5     | code pointer
         bra     L106
 
-        .globl  _callback2
-_callback2:
+        .globl  _callback2_exn
+_callback2_exn:
         link    a6, #0
     | Save callee-save registers
         moveml  a2-a6/d2-d7, a7@-
@@ -216,8 +213,8 @@ _callback2:
         lea     _caml_apply2, a5 | code pointer
         bra     L106
 
-        .globl  _callback3
-_callback3:
+        .globl  _callback3_exn
+_callback3_exn:
         link    a6, #0
     | Save callee-save registers
         moveml  a2-a6/d2-d7, a7@-

@@ -220,6 +220,7 @@ caml_start_program:
         str     r5, [r4, #0]
         add     sp, sp, #2 * 4
     /* Pop the callback link, restoring the global variables */
+.Lreturn_result:
         ldr     r4, .Lcaml_bottom_of_stack
         ldr     r5, [sp, #0]
         str     r5, [r4, #0]
@@ -242,24 +243,13 @@ caml_start_program:
 
     /* The trap handler */
 .Ltrap_handler:
-    /* Restore the global variables used by caml_c_call */
-        ldr     r4, .Lcaml_bottom_of_stack
-        ldr     r5, [sp, #0]
-        str     r5, [r4, #0]
-        ldr     r4, .Lcaml_last_return_address
-        ldr     r5, [sp, #4]
-        str     r5, [r4, #0]
-        ldr     r4, .Lcaml_gc_regs
-        ldr     r5, [sp, #8]
-        str     r5, [r4, #0]
-        add     sp, sp, #4*3
     /* Save young_ptr */
         ldr     r4, .Lyoung_ptr
         str     alloc_ptr, [r4, #0]
-    /* Re-raise the exception through mlraise,
-       so that local C roots are cleaned up correctly. */
-        bl      mlraise         /* Keep retaddr in lr for debugging */
-        /* never returns */
+    /* Encode exception bucket as an exception result */
+        orr     r0, r0, #2
+    /* Return it */
+        b       .Lreturn_result
 
 /* Raise an exception from C */
 
@@ -281,8 +271,8 @@ raise_caml_exception:
 
 /* Callback from C to Caml */
 
-        .global callback
-callback:
+        .global callback_exn
+callback_exn:
     /* Initial shuffling of arguments (r0 = closure, r1 = first arg) */
         mov     r10, r0
         mov     r0, r1            /* r0 = first arg */
@@ -290,8 +280,8 @@ callback:
         ldr     r10, [r10, #0]    /* code pointer */
         b       .Ljump_to_caml
 
-        .global callback2
-callback2:
+        .global callback2_exn
+callback2_exn:
     /* Initial shuffling of arguments (r0 = closure, r1 = arg1, r2 = arg2) */
         mov     r10, r0
         mov     r0, r1           /* r0 = first arg */
@@ -300,8 +290,8 @@ callback2:
         ldr     r10, .Lcaml_apply2
         b       .Ljump_to_caml
 
-        .global callback3
-callback3:
+        .global callback3_exn
+callback3_exn:
     /* Initial shuffling of arguments */
     /* (r0 = closure, r1 = arg1, r2 = arg2, r3 = arg3) */
         mov     r10, r0

@@ -309,7 +309,7 @@ $108:   jsr     ($25)
         stq     $15, caml_exception_pointer
         lda     $sp, 16($sp)
     /* Pop the callback link, restoring the global variables */
-        ldq     $24, 0($sp)
+$112:   ldq     $24, 0($sp)
         stq     $24, caml_bottom_of_stack
         ldq     $25, 8($sp)
         stq     $25, caml_last_return_address
@@ -341,20 +341,12 @@ $108:   jsr     ($25)
 
     /* The trap handler */
 $109:   ldgp    $gp, 0($26)
-    /* Restore the global variables used by caml_c_call */
-        ldq     $24, 0($sp)
-        stq     $24, caml_bottom_of_stack
-        ldq     $25, 8($sp)
-        stq     $25, caml_last_return_address
-        ldq     $25, 16($sp)
-        stq     $25, caml_gc_regs
-        lda     $sp, 32($sp)
-    /* Re-raise the exception through mlraise,
-       so that local C roots are cleaned up correctly. */
-        stq     $13, young_ptr
+    /* Save exception pointer */
         stq     $15, caml_exception_pointer
-        mov     $0, $16         /* bucket as first argument */
-        jsr     mlraise         /* never returns */
+    /* Encode exception bucket as an exception result */
+        or      $0, 2, $0
+    /* Return it */
+        br      $112
 
         .end    caml_start_program
 
@@ -378,10 +370,10 @@ raise_caml_exception:
 
 /* Callback from C to Caml */
 
-        .globl  callback
-        .ent    callback
+        .globl  callback_exn
+        .ent    callback_exn
         .align  3
-callback:
+callback_exn:
     /* Initial shuffling of arguments */
         ldgp    $gp, 0($27)
         mov     $16, $25
@@ -389,12 +381,12 @@ callback:
         mov     $25, $17        /* environment */
         ldq     $25, 0($25)     /* code pointer */
         br      $107
-        .end    callback
+        .end    callback_exn
 
-        .globl  callback2
-        .ent    callback2
+        .globl  callback2_exn
+        .ent    callback2_exn
         .align  3
-callback2:
+callback2_exn:
         ldgp    $gp, 0($27)
         mov     $16, $25
         mov     $17, $16        /* first arg */
@@ -402,12 +394,12 @@ callback2:
         mov     $25, $18        /* environment */
         lda     $25, caml_apply2
         br      $107
-        .end    callback2
+        .end    callback2_exn
 
-        .globl  callback3
-        .ent    callback3
+        .globl  callback3_exn
+        .ent    callback3_exn
         .align  3
-callback3:
+callback3_exn:
         ldgp    $gp, 0($27)
         mov     $16, $25
         mov     $17, $16        /* first arg */
@@ -416,7 +408,7 @@ callback3:
         mov     $25, $19        /* environment */
         lda     $25, caml_apply3
         br      $107
-        .end    callback3
+        .end    callback3_exn
 
 /* Glue code to call array_bound_error */
 
