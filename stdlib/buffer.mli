@@ -45,11 +45,11 @@ val contents : t -> string
 val sub : t -> int -> int -> string
 (** [Buffer.sub b off len] returns (a copy of) the substring of the
 current contents of the buffer [b] starting at offset [off] of length
-[len] bytes. May raise {!Invalid_arg} if out of bounds request. The
+[len] bytes. May raise [Invalid_argument] if out of bounds request. The
 buffer itself is unaffected. *)
 
 val nth : t -> int -> char
-(** get the n-th character of the buffer. Raise {!Invalid_arg} if
+(** get the n-th character of the buffer. Raise [Invalid_argument] if
 index out of bounds *)
 
 val length : t -> int
