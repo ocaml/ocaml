@@ -2,7 +2,7 @@
 \label{c:objectexamples}
 \pdfchapterfold{-15}{Tutorial: Objects in Caml}
 
-{\it (Chapter written by Jérôme Vouillon and Didier Rémy)}
+{\it (Chapter written by Jérôme Vouillon, Didier Rémy and Jacques Garrigue)}
 
 \bigskip
 
@@ -12,6 +12,7 @@ Objective Caml.
 \begin{htmlonly}
 
 \ref{ss:classes-and-objects} Classes and objects \\
+\ref{ss:immediate-objects} Immediate objects \\
 \ref{ss:reference-to-self} Reference to self \\
 \ref{ss:initializers} Initializers \\
 \ref{ss:virtual-methods} Virtual methods \\
@@ -175,6 +176,42 @@ the same class but with different initialization patterns; an
 alternative is to use initializers, as decribed below in section
 \ref{ss:initializers}.
 
+\section{Immediate objects}
+\pdfsection{Immediate objects}
+\label{ss:immediate-objects}
+
+There is another, more direct way to create an object: create it
+without going through a class.
+
+The syntax is exactly the same as for class expressions, but the
+result is a single object rather than a class. All the constructs
+described in the rest of this section also apply to immediate objects.
+\begin{caml_example}
+let p =
+  object 
+    val mutable x = 0
+    method get_x = x
+    method move d = x <- x + d
+  end;;
+p#get_x;;
+p#move 3;;
+p#get_x;;
+\end{caml_example}
+
+Contrary to classes, which cannot be defined inside an expression,
+immediate objects can appear anywhere, using variables from their
+environment.
+\begin{caml_example}
+let minmax x y =
+  if x < y then object method min = x method max = y end
+  else object method min = y method max = x end;;
+\end{caml_example}
+
+Immediate objects have two weaknesses compared to classes: their types
+are not abbreviated, and you cannot inherit from them. But these two
+weaknesses can be advantages in some situations, as we will see
+in sections \ref{ss:reference-to-self} and \ref{ss:parameterized-classes}.
+
 \section{Reference to self}
 \pdfsection{Reference to self}
 \label{ss:reference-to-self}
@@ -197,6 +234,31 @@ p#print;;
 Dynamically, the variable "s" is bound at the invocation of a method.  In
 particular, when the class "printable_point" is inherited, the variable
 "s" will be correctly bound to the object of the subclass.  
+
+A common problem with self is that, as its type may be extended in
+subclasses, you cannot fix it in advance. Here is a simple example.
+\begin{caml_example}
+let ints = ref [];;
+class my_int =
+  object (self)
+    method n = 1
+    method register = ints := self :: !ints
+  end;;
+\end{caml_example}
+You can ignore the first two lines of the error message. What matters
+is the last one: putting self into an external reference would make it
+impossible to extend it afterwards.
+We will see in section \ref{ss:using-coercions} a workaround to this
+problem.
+Note however that, since immediate objects are not extensible, the
+problem does not occur with them.
+\begin{caml_example}
+let my_int =
+  object (self)
+    method n = 1
+    method register = ints := self :: !ints
+  end;;
+\end{caml_example}
 
 \section{Initializers}
 \pdfsection{Initializers}
@@ -446,10 +508,20 @@ class ref (x_init:int) =
     method set y = x <- y
   end;;
 \end{caml_example}
-A class for polymorphic references must explicitly list the type
-parameters in its declaration. Class type parameters are always listed
-between "[" and "]". The type parameters must also be bound somewhere
-in the class body by a type constraint.
+Note that since immediate objects do not define a class type, the have
+no such restriction.
+\begin{caml_example}
+let new_ref x_init =
+  object 
+    val mutable x = x_init
+    method get = x
+    method set y = x <- y
+  end;;
+\end{caml_example}
+On the other hand, a class for polymorphic references must explicitly
+list the type parameters in its declaration. Class type parameters are
+always listed between "[" and "]". The type parameters must also be
+bound somewhere in the class body by a type constraint.
 \begin{caml_example}
 class ['a] ref x_init = 
   object 

@@ -231,6 +231,7 @@ The {\tt let} and {\tt let rec} constructs bind value names locally,
 as for the core language expressions.
 
 \subsubsection*{Class body}
+\label{ss:class-body}
 
 The expression
 @'object' '(' pattern [':' typexpr] ')' { class-field } 'end'@ denotes

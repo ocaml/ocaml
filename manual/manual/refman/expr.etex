@@ -23,6 +23,7 @@
 \ikwd{end\@\texttt{end}}
 \ikwd{when\@\texttt{when}}
 \ikwd{new\@\texttt{new}}
+\ikwd{object\@\texttt{object}}
 
 \begin{syntax}
 expr:
@@ -58,6 +59,7 @@ expr:
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding  { 'and' let-binding } 'in' expr
   | 'new' class-path
+  | 'object' ['(' pattern [':' typexpr] ')'] { class-field } 'end'
   | expr '#' method-name
   | inst-var-name
   | inst-var-name '<-' expr
@@ -634,6 +636,22 @@ methods of this class.
 When @class-path@ evaluates to a class function, @'new' class-path@
 evaluates to a function expecting the same number of arguments and
 returning a new object of this class.
+
+\subsubsection*{Immediate object creation}
+
+\ikwd{object\@\texttt{object}}
+
+Creating directly an object through the @'object' class-body 'end'@
+construct is operationally equivalent to defining locally a @'class'
+myclass '=' 'object' class-body 'end'@ ---see sections
+\ref{ss:class-body} and following for the syntax of @class-body@---
+and immediately creating a single object from it by @'new' myclass@.
+
+The typing of immediate objects is slightly different from explicitely
+defining a class in two respects. First, the inferred object type may
+contain free type variables. Second, since the class body of an
+immediate object will never be extended, its self type can be unified
+with a closed object type.
 
 \subsubsection*{Message sending}
 
