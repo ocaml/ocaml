@@ -33,6 +33,10 @@ let rename i =
 
 let name i = i.name
 
+(*> JOCAML *)
+let stamp i = i.stamp
+(*< JOCAML *)
+
 let unique_name i = i.name ^ "_" ^ string_of_int i.stamp
 
 let persistent i = (i.stamp = 0)

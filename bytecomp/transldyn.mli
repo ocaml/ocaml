@@ -16,4 +16,4 @@
    for dynamic typing *)
 
 val dynamics_prim : string -> Lambda.lambda
-val type_expr : Location.t -> Types.type_expr -> Lambda.lambda
+val make_type_repr_code : Env.t -> Types.type_expr -> Lambda.lambda

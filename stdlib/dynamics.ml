@@ -12,7 +12,14 @@
 
 (* $Id$ *)
 
-type type_expr = int
+(* This type resembles [Types.type_desc] in the compiler, although it differs
+   in quite a few ways. *)
+type type_expr =
+  | Pvar of int
+  | Builtin of string * type_expr list
+  | Tuple of type_expr list
+  | Arrow of string * type_expr * type_expr * bool
+  | Variant of string * type_expr list
 
 type type_repr = {
     expr : type_expr;

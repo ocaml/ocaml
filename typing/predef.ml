@@ -38,6 +38,11 @@ and ident_process = Ident.create "process"
 and ident_location = Ident.create "location"
 and ident_dyn = Ident.create "dyn"
 (*< JOCAML *)
+(*> JOCAML *)
+let first_predef_type_stamp = Ident.stamp ident_int
+let last_predef_type_stamp =
+  Ident.stamp (Ident.create "unused") - 1
+(*< JOCAML *)
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -58,6 +63,14 @@ and path_channel = Pident ident_channel
 and path_process = Pident ident_process
 and path_location = Pident ident_location
 and path_dyn = Pident ident_dyn
+(*< JOCAML *)
+
+(*> JOCAML *)
+let is_predef_type_path = function
+  | Pident ident ->
+      let stamp = Ident.stamp ident in
+      first_predef_type_stamp <= stamp && stamp <= last_predef_type_stamp
+  | _ -> false
 (*< JOCAML *)
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))

@@ -606,7 +606,7 @@ let rec transl_exp e =
 (*> JOCAML *)
   | Texp_dynamic d ->
       Lprim (Pmakeblock (0, Immutable),
-             [Transldyn.type_expr d.exp_loc d.exp_type;
+             [Transldyn.make_type_repr_code e.exp_env d.exp_type;
               transl_exp d])
   | Texp_coerce (d, t) ->
       let te = (* probably wrong if type variables are involved *)
@@ -614,7 +614,7 @@ let rec transl_exp e =
       in
       Lapply (Transldyn.dynamics_prim "coerce_internal",
               [transl_exp d;
-               Transldyn.type_expr t.Parsetree.ptyp_loc te])
+               Transldyn.make_type_repr_code e.exp_env te])
 (*< JOCAML *)
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,

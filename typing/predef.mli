@@ -54,6 +54,9 @@ val path_process : Path.t
 val path_channel : Path.t
 val path_dyn : Path.t
 (*< JOCAML *)
+(*> JOCAML *)
+val is_predef_type_path : Path.t -> bool
+(*< JOCAML *)
 val path_match_failure: Path.t
 val path_assert_failure : Path.t
 
