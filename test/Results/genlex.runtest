@@ -1,5 +1,5 @@
 case $1 in
-  test) ../byterun/camlrun genlex Lex/testscanner.mll;;
-  bench) xtime -o /dev/null ../byterun/camlrun genlex Lex/testscanner.mll;;
+  test) $camlrun genlex Lex/testscanner.mll;;
+  bench) xtime -o /dev/null $camlrun genlex Lex/testscanner.mll;;
 esac
 
