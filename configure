@@ -415,7 +415,7 @@ case "$arch,$model,$system" in
   power,*,rhapsody) ;;
   arm,*,linux)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   ia64,*,linux)     asflags=-xexplicit
-                    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM) -Wa,-xauto';;
+                    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM) -Wa,-xexplicit';;
 esac
 
 case "$arch,$model,$system" in
