@@ -36,6 +36,9 @@ and pattern_desc =
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * Path.t option
+(* GENERIC
+  | Tpat_dynamic of pattern * type_expr
+/GENERIC *)
 
 type partial = Partial | Total
 type optional = Required | Optional
@@ -77,8 +80,11 @@ and expression_desc =
   | Texp_assertfalse
 (* DYN *)
   | Texp_dynamic of expression
-  | Texp_coerce of expression * (pattern * Types.type_expr * expression) list
+  | Texp_coerce of expression
 (* /DYN *)
+(* GENERIC
+  | Texp_coerce of expression * (pattern * Types.type_expr * expression) list
+/GENERIC *)
 
 and meth =
     Tmeth_name of string

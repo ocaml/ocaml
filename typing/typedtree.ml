@@ -37,6 +37,9 @@ and pattern_desc =
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * Path.t option
+(* GENERIC
+  | Tpat_dynamic of pattern * type_expr
+/GENERIC *)
 
 type partial = Partial | Total
 type optional = Required | Optional
@@ -78,8 +81,11 @@ and expression_desc =
   | Texp_assertfalse
 (* DYN *)
   | Texp_dynamic of expression
-  | Texp_coerce of expression * (pattern * Types.type_expr * expression) list
+  | Texp_coerce of expression
 (* /DYN *)
+(* GENERIC
+  | Texp_coerce of expression * (pattern * Types.type_expr * expression) list
+/GENERIC *)
 
 and meth =
     Tmeth_name of string
@@ -171,6 +177,9 @@ let rec bound_idents pat =
   | Tpat_or(p1, _, _) ->
       (* Invariant : both arguments binds the same variables *)
       bound_idents p1
+(* GENERIC
+  | Tpat_dynamic (p,_) -> bound_idents p (* ??? *)
+/GENERIC *)
 
 let pat_bound_idents pat =
   idents := []; bound_idents pat; let res = !idents in idents := []; res
@@ -216,4 +225,9 @@ let rec alpha_pat env p = match p.pat_desc with
     {p with pat_desc =
     Tpat_or (alpha_pat env p1, alpha_pat env p2, path)}
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> p
+(* GENERIC
+| Tpat_dynamic (p,scm) -> 
+    { p with pat_desc =
+    Tpat_dynamic (alpha_pat env p, scm) } (* ??? *)  
+/GENERIC *)
 
