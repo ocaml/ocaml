@@ -34,8 +34,9 @@ let to_buffer buff ofs len v flags =
 
 let to_buffer' ~buf ~pos ~len v ~mode = to_buffer buf pos len v mode
 
-external from_string_unsafe: string -> int -> 'a = "input_value_from_string"
-external data_size_unsafe: string -> int -> int = "marshal_data_size"
+external from_string_unsafe: string -> int -> 'a
+         = "caml_input_value_from_string"
+external data_size_unsafe: string -> int -> int = "caml_marshal_data_size"
 
 let header_size = 20
 let data_size buff ofs =
