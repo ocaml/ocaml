@@ -63,12 +63,12 @@ let _ =
   let optlist = Options.list @ [
        "-p", Arg.String(fun s -> profargs := s :: "-m" :: !profargs),
              "[afilmt]  Profile constructs specified by argument:\n\
-       a  Everything\n\
-       f  Function calls\n\
-       i  if ... then ... else\n\
-       l  while, for\n\
-       m  match ... with\n\
-       t  try ... with"
+          \032     a  Everything\n\
+          \032     f  Function calls\n\
+          \032     i  if ... then ... else\n\
+          \032     l  while, for\n\
+          \032     m  match ... with\n\
+          \032     t  try ... with"
     ]
   in
   Arg.parse optlist process_file usage;
