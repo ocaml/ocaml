@@ -453,8 +453,9 @@ let rec transl_exp e =
       in
       Lfunction(kind, params, body)
   | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
-    when List.length args = p.prim_arity && List.for_all ((<>) None) args ->
-      let args = List.map (function Some x -> x | None -> assert false) args in
+    when List.length args = p.prim_arity
+    && List.for_all (fun (arg,_) -> arg <> None) args ->
+      let args = List.map (function Some x, _ -> x | _ -> assert false) args in
       let prim = transl_prim p args in
       let lam = Lprim(prim, transl_list args) in
       begin match prim with Pccall _ -> event_after e lam | _ -> lam end
@@ -610,7 +611,7 @@ and transl_apply lam sargs =
         Lapply(lexp, args)
   in
   let rec build_apply lam args = function
-      None :: l ->
+      (None, optional) :: l ->
         let defs = ref [] in
         let protect name lam =
           match lam with
@@ -620,13 +621,16 @@ and transl_apply lam sargs =
               defs := (id, lam) :: !defs;
               Lvar id
         in
+        let args, args' =
+          if List.for_all (fun (_,opt) -> opt = Optional) args then [], args
+          else args, [] in
         let lam =
-          if args = [] then lam else lapply lam (List.rev args) in
+          if args = [] then lam else lapply lam (List.rev_map fst args) in
         let handle = protect "func" lam
-        and l = List.map (may_map (protect "arg")) l
+        and l = List.map (fun (arg, opt) -> may_map (protect "arg") arg, opt) l
         and id_arg = Ident.create "param" in
         let body =
-          match build_apply handle [Lvar id_arg] l with
+          match build_apply handle ((Lvar id_arg, optional)::args') l with
             Lfunction(Curried, ids, lam) ->
               Lfunction(Curried, id_arg::ids, lam)
           | Levent(Lfunction(Curried, ids, lam), _) ->
@@ -637,12 +641,12 @@ and transl_apply lam sargs =
         List.fold_left
           (fun body (id, lam) -> Llet(Strict, id, lam, body))
           body !defs
-    | Some arg :: l ->
-        build_apply lam (arg :: args) l
+    | (Some arg, optional) :: l ->
+        build_apply lam ((arg, optional) :: args) l
     | [] ->
-        lapply lam (List.rev args)
+        lapply lam (List.rev_map fst args)
   in
-  build_apply lam [] (List.map (may_map transl_exp) sargs)
+  build_apply lam [] (List.map (fun (x,o) -> may_map transl_exp x, o) sargs)
 
 and transl_function loc untuplify_fn repr partial pat_expr_list =
   match pat_expr_list with

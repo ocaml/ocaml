@@ -641,7 +641,7 @@ and search_pos_class_expr ~pos cl =
         search_pos_class_expr cl ~pos
     | Tclass_apply (cl, el) ->
         search_pos_class_expr cl ~pos;
-        List.iter el ~f:(Misc.may (search_pos_expr ~pos))
+        List.iter el ~f:(fun (x,_) -> Misc.may (search_pos_expr ~pos) x)
     | Tclass_let (_, pel, iel, cl) ->
         List.iter pel ~f:
           begin fun (pat, exp) ->
@@ -678,7 +678,7 @@ and search_pos_expr ~pos exp =
         search_pos_expr exp ~pos
       end
   | Texp_apply (exp, l) ->
-      List.iter l ~f:(Misc.may (search_pos_expr ~pos));
+      List.iter l ~f:(fun (x,_) -> Misc.may (search_pos_expr ~pos) x);
       search_pos_expr exp ~pos
   | Texp_match (exp, l, _) ->
       search_pos_expr exp ~pos;

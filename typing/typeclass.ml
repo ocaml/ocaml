@@ -622,7 +622,9 @@ and class_expr cl_num val_env met_env scl =
       let rec type_args args omitted ty_fun sargs more_sargs =
         match ty_fun with
         | Tcty_fun (l, ty, ty_fun) when sargs <> [] || more_sargs <> [] ->
-            let name = Btype.label_name l in
+            let name = Btype.label_name l
+            and optional =
+              if Btype.is_optional l then Optional else Required in
             let sargs, more_sargs, arg =
               if !Clflags.classic && not (Btype.is_optional l) then begin
                 match sargs, more_sargs with
@@ -661,7 +663,7 @@ and class_expr cl_num val_env met_env scl =
                 else None
             in
             let omitted = if arg = None then (l,ty) :: omitted else omitted in
-            type_args (arg::args) omitted ty_fun sargs more_sargs
+            type_args ((arg,optional)::args) omitted ty_fun sargs more_sargs
         | _ ->
             match sargs @ more_sargs with
               (l, sarg0)::_ ->

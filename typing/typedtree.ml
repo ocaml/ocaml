@@ -39,6 +39,7 @@ and pattern_desc =
   | Tpat_or of pattern * pattern
 
 type partial = Partial | Total
+type optional = Required | Optional
 
 type expression =
   { exp_desc: expression_desc;
@@ -51,7 +52,7 @@ and expression_desc =
   | Texp_constant of constant
   | Texp_let of rec_flag * (pattern * expression) list * expression
   | Texp_function of (pattern * expression) list * partial
-  | Texp_apply of expression * expression option list
+  | Texp_apply of expression * (expression option * optional) list
   | Texp_match of expression * (pattern * expression) list * partial
   | Texp_try of expression * (pattern * expression) list
   | Texp_tuple of expression list
@@ -89,7 +90,7 @@ and class_expr_desc =
     Tclass_ident of Path.t
   | Tclass_structure of class_structure
   | Tclass_fun of pattern * (Ident.t * expression) list * class_expr * partial
-  | Tclass_apply of class_expr * expression option list
+  | Tclass_apply of class_expr * (expression option * optional) list
   | Tclass_let of rec_flag *  (pattern * expression) list *
                   (Ident.t * expression) list * class_expr
   | Tclass_constraint of class_expr * string list * string list * Concr.t
