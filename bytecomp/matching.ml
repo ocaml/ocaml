@@ -165,8 +165,10 @@ let combine_constant arg cst (const_lambda_list, total1) (lambda2, total2) =
         Lswitch(Lprim(Ptranslate transl_table, [arg]),
                 num_actions, actions, 0, [])
     | Const_string _ ->
-        make_test_sequence (Pccall("string_equal", 2, false))
-                           arg const_lambda_list
+        make_test_sequence
+          (Pccall{prim_name = "string_equal";
+                  prim_arity = 2; prim_alloc = false})
+          arg const_lambda_list
     | Const_float _ ->
         make_test_sequence (Pfloatcomp Ceq) arg const_lambda_list
   in (Lcatch(lambda1, lambda2), total2)

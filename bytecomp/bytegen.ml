@@ -1,7 +1,8 @@
-(*  codegen.ml : translation of lambda terms to lists of instructions. *)
+(*  bytegen.ml : translation of lambda terms to lists of instructions. *)
 
 open Misc
 open Asttypes
+open Typedtree
 open Lambda
 open Instruct
 
@@ -243,7 +244,7 @@ let rec comp_expr env exp sz cont =
         | Pmakeblock tag -> Kmakeblock(List.length args, tag)
         | Pfield n -> Kgetfield n
         | Psetfield(n, ptr) -> Ksetfield n
-        | Pccall(name, n, alloc) -> Kccall(name, n)
+        | Pccall p -> Kccall(p.prim_name, p.prim_arity)
         | Pnegint -> Knegint
         | Paddint -> Kaddint
         | Psubint -> Ksubint

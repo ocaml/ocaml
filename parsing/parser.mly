@@ -215,8 +215,8 @@ structure_item:
       { Pstr_eval $4 }
   | LET rec_flag let_bindings
       { Pstr_value($2, List.rev $3) }
-  | EXTERNAL val_ident COLON core_type EQUAL STRING
-      { Pstr_primitive($2, {pval_type = $4; pval_prim = Some $6}) }
+  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
+      { Pstr_primitive($2, {pval_type = $4; pval_prim = $6}) }
   | TYPE type_declarations
       { Pstr_type(List.rev $2) }
   | EXCEPTION UIDENT constructor_arguments
@@ -258,9 +258,9 @@ signature:
 ;
 signature_item:
     VAL val_ident COLON core_type
-      { Psig_value($2, {pval_type = $4; pval_prim = None}) }
-  | EXTERNAL val_ident COLON core_type EQUAL STRING
-      { Psig_value($2, {pval_type = $4; pval_prim = Some $6}) }
+      { Psig_value($2, {pval_type = $4; pval_prim = []}) }
+  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
+      { Psig_value($2, {pval_type = $4; pval_prim = $6}) }
   | TYPE type_declarations
       { Psig_type(List.rev $2) }
   | EXCEPTION UIDENT constructor_arguments
@@ -488,6 +488,13 @@ let_pattern:
       { $2 }
   | LPAREN pattern COLON core_type RPAREN
       { mkpat(Ppat_constraint($2, $4)) }
+;
+
+/* Primitive declarations */
+
+primitive_declaration:
+    STRING                                      { [$1] }
+  | STRING primitive_declaration                { $1 :: $2 }
 ;
 
 /* Type declarations */

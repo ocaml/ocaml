@@ -9,7 +9,7 @@ val transl_exp: compilenv -> expression -> lambda
 val transl_let:
         compilenv -> rec_flag -> (pattern * expression) list ->
           compilenv * (lambda -> lambda)
-val transl_primitive: primitive_description -> lambda
+val transl_primitive: primitive_description option -> lambda
 val transl_exception: Ident.t -> exception_declaration -> lambda
 
 type error =

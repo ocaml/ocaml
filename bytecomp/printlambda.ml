@@ -1,5 +1,6 @@
 open Format
 open Asttypes
+open Typedtree
 open Lambda
 
 
@@ -32,7 +33,7 @@ let primitive = function
   | Pmakeblock tag -> print_string "makeblock "; print_int tag
   | Pfield n -> print_string "field "; print_int n
   | Psetfield(n, _) -> print_string "setfield "; print_int n
-  | Pccall(name, arity, alloc) -> print_string name
+  | Pccall p -> print_string p.prim_name
   | Praise -> print_string "raise"
   | Psequand -> print_string "&&"
   | Psequor -> print_string "||"

@@ -1,6 +1,7 @@
 (* The "lambda" intermediate code *)
 
 open Asttypes
+open Typedtree
 
 type primitive =
     Pidentity
@@ -9,7 +10,7 @@ type primitive =
   | Pmakeblock of int
   | Pfield of int
   | Psetfield of int * bool
-  | Pccall of string * int * bool
+  | Pccall of primitive_description
   | Praise
   | Psequand | Psequor | Pnot
   | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
