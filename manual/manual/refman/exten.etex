@@ -42,7 +42,7 @@ stream-matching:
 ;
 stream-pattern:
           '[:' ':]'
-        | '[:' stream-pat-comp { ';' stream-pat-comp [ ':' expr ] }':]'
+        | '[:' stream-pat-comp { ';' stream-pat-comp [ '?' expr ] }':]'
 ;
 stream-pat-comp:
           "'" pattern [ 'when' expr ]
@@ -86,22 +86,23 @@ Stream matching proceeds in two steps: first, a pattern is selected by
 matching the stream against the first components of the stream
 patterns; then, the following components of the selected pattern are
 checked against the stream. If the following components do not match,
-the exception "Parse_error" is raised. There is no backtracking here:
-stream matching commits to the pattern selected according to the first
-element. If none of the first components of the stream patterns match,
-the exception "Parse_failure" is raised. The "Parse_failure" 
-exception causes the next alternative to be tried, if it occurs during
-the matching of the first element of a stream, before matching has
-committed to one pattern. 
+the exception "Stream.Parse_error" is raised. There is no backtracking
+here: stream matching commits to the pattern selected according to the
+first element. If none of the first components of the stream patterns
+match, the exception "Stream.Parse_failure" is raised. The
+"Stream.Parse_failure" exception causes the next alternative to be
+tried, if it occurs during the matching of the first element of a
+stream, before matching has committed to one pattern.
 
 The streams hold the count of their elements discarded. The optional
-@pattern@ before the first stream pattern is binded to the stream
+@pattern@ before the first stream pattern is bound to the stream
 count before the matching. The one after each stream pattern
-(optional, too) is binded to the stream count after the matching.
+(optional, too) is bound to the stream count after the matching.
 
 The exception "Parse_error" has a string parameter coming from the
-optional @':' expr@ after the stream pattern components (its default
-is the empty string).
+optional @'?' expr@ after the stream pattern components (its default
+is the empty string). This expression is evaluated only in case of
+error.
 
 See {\em Functional programming using Caml Light} for a more gentle
 introductions to streams, and for some examples of their use in
