@@ -31,22 +31,22 @@
    ]}
 *)
 
-(** The type of condition variables. *)
 type t
+(** The type of condition variables. *)
 
+val create : unit -> t
 (** Return a new condition variable. *)
-val create: unit -> t
 
+val wait : t -> Mutex.t -> unit
 (** [wait c m] atomically unlocks the mutex [m] and suspends the
    calling process on the condition variable [c]. The process will
    restart after the condition variable [c] has been signalled.
    The mutex [m] is locked again before [wait] returns. *)
-val wait: t -> Mutex.t -> unit
 
+val signal : t -> unit
 (** [signal c] restarts one of the processes waiting on the 
    condition variable [c]. *)
-val signal: t -> unit
 
+val broadcast : t -> unit
 (** [broadcast c] restarts all processes waiting on the 
    condition variable [c]. *)
-val broadcast: t -> unit
