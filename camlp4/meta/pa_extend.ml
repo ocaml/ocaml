@@ -561,12 +561,6 @@ value ssopt loc s =
   TXrules loc (srules loc "a_opt" rl "")
 ;
 
-value is_global e =
-  fun
-  [ None -> True
-  | Some gl -> List.exists (fun n -> n.tvar = e.name.tvar) gl ]
-;
-
 value text_of_entry loc gmod e =
   let ent =
     let x = e.name in
