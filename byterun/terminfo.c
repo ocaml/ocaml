@@ -22,7 +22,7 @@
 #ifdef HAS_TERMCAP
 
 extern int tgetent (char * buffer, char * name);
-extern int tgetstr (char * id, char ** area);
+extern char * tgetstr (char * id, char ** area);
 extern int tgetnum (char * id);
 extern int tputs (char * str, int count, int (*outchar)(int c));
 
@@ -37,8 +37,9 @@ value terminfo_getstr(value capa)     /* ML */
 {
   char buff[1024];
   char * p = buff;
-  if (tgetstr(String_val(capa), &p) == 0) raise_not_found();
-  return copy_string(buff);
+  char * s = tgetstr(String_val(capa), &p);
+  if (s == NULL) raise_not_found();
+  return copy_string(s);
 }
 
 value terminfo_getnum(value capa)     /* ML */
