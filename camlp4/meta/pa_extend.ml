@@ -422,7 +422,7 @@ value srules loc t rl gmod tvar =
 ;
 
 value sstoken loc s =
-  let n = mk_name loc <:expr< $lid:"anti_" ^ s$ >> in
+  let n = mk_name loc <:expr< $lid:"a_" ^ s$ >> in
   snterm loc n None
 ;
 
@@ -513,21 +513,27 @@ value text_of_entry loc gmod gl e =
   in
   let levels =
     if quotify.val && is_global e gl then
-      let level =
-        let rule =
-          let psymbol =
-            let s =
-              let n = mk_name loc <:expr< anti_ >> in
-              {used = []; text = snterm loc n None;
-               styp _ = <:ctyp< ast >>}
+      loop e.levels where rec loop =
+        fun
+        [ [] -> []
+        | [level] ->
+            let level =
+              let rule =
+                let psymbol =
+                  let s =
+                    let n = "a_" ^ e.name.tvar in
+                    let e = mk_name loc <:expr< $lid:n$ >> in
+                    {used = []; text = snterm loc e None;
+                     styp _ = <:ctyp< ast >>}
+                  in
+                  {pattern = Some <:patt< a >>; symbol = s}
+                in
+                {prod = [psymbol]; action = Some <:expr< a >>}
+              in
+              {(level) with rules = [rule :: level.rules]}
             in
-            {pattern = Some <:patt< a >>; symbol = s}
-          in
-          {prod = [psymbol]; action = Some <:expr< a >>}
-        in
-        {label = None; assoc = None; rules = [rule]}
-      in
-      e.levels @ [level]
+            [level]
+        | [level :: levels] -> [level :: loop levels] ]
     else e.levels
   in
   let txt =

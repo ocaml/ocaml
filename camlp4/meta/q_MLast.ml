@@ -29,6 +29,7 @@ type ast =
   | Antiquot of MLast.loc and string ]
 ;
 value list l = List l;
+value option o = Option o;
 value antiquot k (bp, ep) x =
   let shift =
     if k = "" then String.length "$"
@@ -115,16 +116,15 @@ EXTEND
           Node "MeStr" [Loc; st] ]
     | [ me1 = SELF; me2 = SELF -> Node "MeApp" [Loc; me1; me2] ]
     | [ me1 = SELF; "."; me2 = SELF -> Node "MeAcc" [Loc; me1; me2] ]
-    | [ a = ANTIQUOT "module_expr" -> antiquot "module_expr" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
+    | [ a = a_module_expr -> a
       | i = a_UIDENT -> Node "MeUid" [Loc; i]
       | "("; me = SELF; ":"; mt = module_type; ")" ->
           Node "MeTyc" [Loc; me; mt]
       | "("; me = SELF; ")" -> me ] ]
   ;
   str_item:
-    [ [ a = ANTIQUOT "str_item" -> antiquot "str_item" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
+    [ "top"
+      [ a = a_str_item -> a
       | "declare"; st = SLIST0 [ s = str_item; ";" -> s ]; "end" ->
           Node "StDcl" [Loc; st]
       | "exception"; ctl = constructor_declaration; b = rebind_exn ->
@@ -134,8 +134,7 @@ EXTEND
             | _ -> match () with [] ]
           in
           Node "StExc" [Loc; c; tl; b]
-      | "external"; i = a_LIDENT; ":"; t = ctyp; "=";
-        pd = SLIST1 a_STRING ->
+      | "external"; i = a_LIDENT; ":"; t = ctyp; "="; pd = SLIST1 a_STRING ->
           Node "StExt" [Loc; i; t; pd]
       | "include"; me = module_expr -> Node "StInc" [Loc; me]
       | "module"; i = a_UIDENT; mb = module_binding ->
@@ -582,6 +581,14 @@ EXTEND
     [ [ a = anti_mut -> a
       | "mutable" -> Bool True
       | -> Bool False ] ]
+  ;
+  a_module_expr:
+    [ [ a = ANTIQUOT "module_expr" -> antiquot "module_expr" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  a_str_item:
+    [ [ a = ANTIQUOT "str_item" -> antiquot "str_item" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
   ;
   a_UIDENT:
     [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a
