@@ -199,9 +199,13 @@ case "$bytecc,$host" in
     # GNU C extensions disabled, but __GNUC__ still defined!
     bytecccompopts="-fno-defer-pop $gcc_warnings -U__GNUC__ -posix"
     bytecclinkopts="-posix";;
-  *,*-*-rhapsody*|*,*-*-darwin*)
+  *,*-*-rhapsody*)
     # Almost the same as NeXTStep
     bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
+    mathlib="";;
+  *,*-*-darwin*)
+    # Almost the same as rhapsody
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
     mathlib="";;
   *,*-*-beos*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
@@ -500,7 +504,10 @@ case "$arch,$nativecc,$system,$host_type" in
                        nativecccompopts="-D_XOPEN_SOURCE=500";;
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
+# SHRINKED_GNUC is not necessary for MacOS 10.1 (don't know about 10.0)
+# (but it doesn't matter much for native code anyway)
   *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
+#  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings";;
   *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
