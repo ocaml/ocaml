@@ -20,8 +20,8 @@
 /* Initial size of stack when a thread is created (4 Ko) */
 #define Thread_stack_size (Stack_size / 4)
 
-/* Max computation time before rescheduling, in microseconds (100ms) */
-#define Thread_timeout 100000
+/* Max computation time before rescheduling, in microseconds (50ms) */
+#define Thread_timeout 50000
 
 /* The thread descriptors */
 
@@ -41,7 +41,8 @@ struct thread_struct {
 typedef struct thread_struct * thread_t;
 
 #define NO_FD (-1)
-#define NO_DELAY 1E20           /* +infty, for all purposes */
+#define NO_DELAY (-1.0)
+#define DELAY_INFTY 1E20        /* +infty, for this purpose */
 
 thread_t curr_thread = NULL;    /* The thread currently active */
 int num_waiting_on_fd;          /* Number of threads waiting on file descrs. */
@@ -152,10 +153,6 @@ double timeofday()
 void schedule_thread()
 {
   thread_t run_thread, th;
-  fd_set readfds;
-  struct timeval delay_tv, * delay_ptr;
-  double delay, now;
-  int retcode;
 
   /* Save the status of the current thread */
   curr_thread->stack_low = stack_low;
@@ -170,75 +167,78 @@ void schedule_thread()
     if (th->runnable) { run_thread = th; break; }
   END_FOREACH(th);
 
-  /* If some threads are blocked on I/O,  get ready to select on all
-     descriptors they are waiting for */
-  FD_ZERO(&readfds);
-  if (num_waiting_on_fd > 0) {
-    FOREACH_THREAD(th)
-      if (th->fd != NO_FD) FD_SET(th->fd, &readfds);
-    END_FOREACH(th);
-  }
-  /* If some threads are blocked on the timer, activate those for which the
-     time has elapsed, and compute the minimal delay until one gets
-     ready. */
-  delay = NO_DELAY;
-  if (num_waiting_on_timer > 0) {
-    now = timeofday();
-    FOREACH_THREAD(th)
-      if (th->delay < now) {
-          th->runnable = 1;
-          th->delay = NO_DELAY;
-          num_waiting_on_timer--;
-          if (run_thread == NULL) run_thread = th; /* Found a runnable one. */
-      } else {
-        if (th->delay <= delay) delay = th->delay;
+  if (num_waiting_on_fd > 0 || num_waiting_on_timer > 0) {
+    fd_set readfds;
+    struct timeval delay_tv, * delay_ptr;
+    double delay, now;
+    int retcode;
+
+    do {
+      /* If some threads are blocked on I/O,  get ready to select on all
+         descriptors they are waiting for */
+      FD_ZERO(&readfds);
+      if (num_waiting_on_fd > 0) {
+        FOREACH_THREAD(th)
+          if (th->fd != NO_FD) FD_SET(th->fd, &readfds);
+        END_FOREACH(th);
       }
-    END_FOREACH(th);
-    delay -= now;
-  }
-  /* Do the select if needed */
-  if (num_waiting_on_fd > 0 ||
-      (run_thread == NULL && num_waiting_on_timer > 0)) {
-    /* If a thread is runnable, just poll */
-    if (run_thread != NULL) delay = 0.0;
-    /* Convert delay to a timeval */
-    if (delay == NO_DELAY)
-      delay_ptr = NULL;
-    else {
-      delay_tv.tv_sec = (unsigned int) delay;
-      delay_tv.tv_usec = (delay - (double) delay_tv.tv_sec) * 1e6;
-      delay_ptr = &delay_tv;
-    }
-    retcode = select(FD_SETSIZE, &readfds, NULL, NULL, delay_ptr);
-    if (retcode > 0) {
-      /* Some descriptors are ready. 
-         Make the corresponding threads runnable. */
-      FOREACH_THREAD(th)
-        if (th->fd != NO_FD && FD_ISSET(th->fd, &readfds)) {
-          FD_CLR(th->fd, &readfds); /* Wake up only one thread per fd. */
-          th->runnable = 1;
-          th->fd = NO_FD;
-          num_waiting_on_fd--;
-          if (run_thread == NULL) run_thread = th; /* Found a runnable one. */
+      /* If some threads are blocked on the timer, activate those for which the
+         time has elapsed, and compute the minimal delay until one gets
+         ready. */
+      delay = DELAY_INFTY;
+      if (num_waiting_on_timer > 0) {
+        now = timeofday();
+        FOREACH_THREAD(th)
+          if (th->delay != NO_DELAY) {
+            if (th->delay <= now) {
+              th->runnable = 1;
+              th->delay = NO_DELAY;
+              num_waiting_on_timer--;
+              if (run_thread == NULL) run_thread = th; /* Found one. */
+            } else {
+              if (th->delay < delay) delay = th->delay;
+            }
+          }
+        END_FOREACH(th);
+        delay -= now;
+      }
+      /* Do the select if needed */
+      if (num_waiting_on_fd > 0 || run_thread == NULL) {
+        /* Convert delay to a timeval */
+        /* If a thread is runnable, just poll */
+        if (run_thread != NULL) {
+          delay_tv.tv_sec = 0;
+          delay_tv.tv_usec = 0;
+          delay_ptr = &delay_tv;
         }
-      END_FOREACH(th);
-    }
-    if (delay != 0.0 && delay != NO_DELAY) {
+        else if (delay == NO_DELAY) {
+          delay_ptr = NULL;
+        } else {
+          delay_tv.tv_sec = (unsigned int) delay;
+          delay_tv.tv_usec = (delay - (double) delay_tv.tv_sec) * 1e6;
+          delay_ptr = &delay_tv;
+        }
+        retcode = select(FD_SETSIZE, &readfds, NULL, NULL, delay_ptr);
+        if (retcode > 0) {
+          /* Some descriptors are ready. 
+             Make the corresponding threads runnable. */
+          FOREACH_THREAD(th)
+            if (th->fd != NO_FD && FD_ISSET(th->fd, &readfds)) {
+              FD_CLR(th->fd, &readfds); /* Wake up only one thread per fd. */
+              th->runnable = 1;
+              th->fd = NO_FD;
+              num_waiting_on_fd--;
+              if (run_thread == NULL) run_thread = th; /* Found one. */
+            }
+          END_FOREACH(th);
+        }
+      }
       /* The delays for some of the threads should have expired.
-         Make these threads runnable. */
-      now = timeofday();
-      FOREACH_THREAD(th)
-        if (th->delay <= now) {
-          th->runnable = 1;
-          th->delay = NO_DELAY;
-          num_waiting_on_timer--;
-          if (run_thread == NULL) run_thread = th; /* Found a runnable one. */
-        }
-      END_FOREACH(th);
-    }
+         Go through the loop once more, to check the delays. */
+    } while (run_thread == NULL && delay != DELAY_INFTY);
   }
   /* If we haven't something to run at that point, we're in big trouble. */
-  if (run_thread == NULL) fatal_error("Deadlock.");
+  if (run_thread == NULL) invalid_argument("Thread: deadlock");
 
   /* Activate the thread */
   curr_thread = run_thread;

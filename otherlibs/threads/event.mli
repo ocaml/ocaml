@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                         Caml Special Light                          *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*  David Nowak and Xavier Leroy, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)
 (*  Copyright 1995 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
@@ -11,19 +11,17 @@
 
 (* $Id$ *)
 
-(* Module [Thread]: user-level lightweight threads *)
+type 'a channel
 
-type t
-val new : ('a -> 'b) -> 'a -> t
-val exit : unit -> unit
-val self : unit -> t
-val kill : t -> unit
-val sleep : unit -> unit
-val wakeup : t -> unit
-val wait_descr : Unix.file_descr -> unit
-val wait_inchan : in_channel -> unit
-val delay: float -> unit
+val new_channel: unit -> 'a channel
 
-(*--*)
+type 'a event
 
-val critical_section: bool ref
+val send: 'a channel -> 'a -> unit event
+val receive: 'a channel -> 'a event
+val choose: 'a event list -> 'a event
+val guard: (unit -> 'a event) -> 'a event
+val wrap: 'a event -> ('a -> 'b) -> 'b event
+
+val sync: 'a event -> 'a
+val select: 'a event list -> 'a
