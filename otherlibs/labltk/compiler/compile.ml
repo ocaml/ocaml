@@ -15,6 +15,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Tables
 
 (* CONFIGURE *)

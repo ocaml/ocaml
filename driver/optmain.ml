@@ -89,10 +89,10 @@ let main () =
        "-labels", Arg.Clear classic, " Use commuting label mode";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
-       "-modern", Arg.Clear classic, " (deprecated) same as -labels";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
        "-noautolink", Arg.Set no_auto_link,
              " Don't automatically link C libraries specified in .cma files";
+       "-nolabels", Arg.Set classic, " Ignore non-optional labels in types";
        "-o", Arg.String(fun s -> exec_name := s;
                                  archive_name := s;
                                  object_name := s),

@@ -15,6 +15,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 (* Topological Sort.list *)
 (* d'apres More Programming Pearls *)
 

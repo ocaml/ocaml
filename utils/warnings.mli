@@ -25,7 +25,7 @@ type t =                             (* A is all *)
   | Other of string                  (* X *)
 ;;
 
-val parse_options : iserror:bool -> string -> unit;;
+val parse_options : bool -> string -> unit;;
 
 val is_active : t -> bool;;
 val is_error : t -> bool;;

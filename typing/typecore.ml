@@ -1123,6 +1123,22 @@ and type_application env funct sargs =
         in
         type_unknown_args ((Some arg1, optional) :: args) omitted ty2 sargl
   in
+  let rec nonopt_labels ls ty_fun =
+    match (expand_head env ty_fun).desc with
+    | Tarrow (l, _, ty_res, _) ->
+        if is_optional l then nonopt_labels ls ty_res
+        else nonopt_labels (l::ls) ty_res
+    | Tvar -> None
+    | _    -> Some ls
+  in
+  let ignore_labels =
+    !Clflags.classic ||
+    match nonopt_labels [] funct.exp_type with
+    | Some labels ->
+        List.length labels = List.length sargs &&
+        List.for_all (fun (l,_) -> l = "") sargs
+    | None -> false
+  in
   let rec type_args args omitted ty_fun ty_old sargs more_sargs =
     match expand_head env ty_fun with
       {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun'
@@ -1130,7 +1146,7 @@ and type_application env funct sargs =
         let name = label_name l
         and optional = if is_optional l then Optional else Required in
         let sargs, more_sargs, arg =
-          if !Clflags.classic && not (is_optional l) then begin
+          if ignore_labels && not (is_optional l) then begin
             (* In classic mode, omitted = [] *)
             match sargs, more_sargs with
               (l', sarg0) :: _, _ ->
@@ -1171,7 +1187,7 @@ and type_application env funct sargs =
         type_args ((arg,optional)::args) omitted ty_fun ty_old sargs more_sargs
     | _ ->
         match sargs with
-          (l, sarg0) :: _ when !Clflags.classic ->
+          (l, sarg0) :: _ when ignore_labels ->
             raise(Error(sarg0.pexp_loc, Apply_wrong_label(l, ty_old)));
         | _ ->
             type_unknown_args args omitted ty_fun (sargs @ more_sargs)
@@ -1190,7 +1206,7 @@ and type_application env funct sargs =
       ([Some exp, Required], ty_res)
   | _ ->
       let ty = funct.exp_type in
-      if !Clflags.classic then
+      if ignore_labels then
         type_args [] [] ty ty [] sargs
       else
         type_args [] [] ty ty sargs []

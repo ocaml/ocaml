@@ -15,6 +15,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Protocol
 
 external internal_tracevar : string -> cbid -> unit
@@ -36,7 +37,7 @@ let add_handle var cbid =
     r := cbid :: !r
   with
     Not_found -> 
-      Hashtbl.add handles ~key:var ~data:(ref [cbid])
+      Hashtbl.add' handles var (ref [cbid])
 
 let exceptq x =
   let rec ex acc = function
@@ -74,7 +75,7 @@ let handle vname ~callback:f =
     clear_callback id;
     rem_handle vname id;
     f() in
-  Hashtbl.add callback_naming_table ~key:id ~data:wrapped;
+  Hashtbl.add' callback_naming_table ~key:id ~data:wrapped;
   add_handle vname id;
   if !Protocol.debug then begin
     prerr_cbid id; prerr_string " for variable "; prerr_endline vname
@@ -95,7 +96,7 @@ let add w v =
     with
       Not_found -> 
         let r = ref StringSet.empty in
-          Hashtbl.add memo ~key:w ~data:r;
+          Hashtbl.add' memo ~key:w ~data:r;
           r in
    r := StringSet.add v !r
 
@@ -108,7 +109,7 @@ let free v =
 let freew w =
   try
     let r = Hashtbl.find memo w in
-    StringSet.iter ~f:free !r;
+    StringSet.iter free !r;
     Hashtbl.remove memo w 
   with
     Not_found -> ()

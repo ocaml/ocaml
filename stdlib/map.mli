@@ -44,7 +44,8 @@ module type S =
           (* The type of maps from type [key] to type ['a]. *)
     val empty: 'a t
           (* The empty map. *)
-    val add: key:key -> data:'a -> 'a t -> 'a t
+    val add: key -> 'a -> 'a t -> 'a t
+    val add': key:key -> data:'a -> 'a t -> 'a t
         (* [add x y m] returns a map containing the same bindings as
            [m], plus a binding of [x] to [y]. If [x] was already bound
            in [m], its previous binding disappears. *)
@@ -57,22 +58,22 @@ module type S =
     val mem: key -> 'a t -> bool
         (* [mem x m] returns [true] if [m] contains a binding for [m],
            and [false] otherwise. *)
-    val iter: f:(key:key -> data:'a -> unit) -> 'a t -> unit
+    val iter: (key -> 'a -> unit) -> 'a t -> unit
         (* [iter f m] applies [f] to all bindings in map [m].
            [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
            [f] is unspecified. Only current bindings are presented to [f]:
            bindings hidden by more recent bindings are not passed to [f]. *)
-    val map: f:('a -> 'b) -> 'a t -> 'b t
+    val map: ('a -> 'b) -> 'a t -> 'b t
         (* [map f m] returns a map with same domain as [m], where the
            associated value [a] of all bindings of [m] has been
            replaced by the result of the application of [f] to [a].
            The order in which the associated values are passed to [f]
            is unspecified. *)
-    val mapi: f:(key -> 'a -> 'b) -> 'a t -> 'b t
+    val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
         (* Same as [map], but the function receives as arguments both the
            key and the associated value for each binding of the map. *)
-    val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
+    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
         (* [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
            where [k1 ... kN] are the keys of all bindings in [m],
            and [d1 ... dN] are the associated data.

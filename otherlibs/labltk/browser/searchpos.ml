@@ -13,6 +13,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Tk
 open Jg_tk
 open Parsetree
@@ -69,7 +70,7 @@ let rec list_of_path = function
 
 class buffer ~size = object
   val buffer = Buffer.create size
-  method out ~buf = Buffer.add_substring buffer buf
+  method out buf = Buffer.add_substring buffer buf
   method get = Buffer.contents buffer
 end
 
@@ -228,13 +229,13 @@ type module_widgets =
 let shown_modules = Hashtbl.create 17
 let default_frame = ref None
 let filter_modules () =
-  Hashtbl.iter shown_modules ~f:
-    begin fun ~key ~data ->
+  Hashtbl.iter
+    (fun key data ->
       if not (Winfo.exists data.mw_frame) then
-        Hashtbl.remove shown_modules key
-    end
+        Hashtbl.remove shown_modules key)
+    shown_modules
 let add_shown_module path ~widgets =
-  Hashtbl.add shown_modules ~key:path ~data:widgets
+  Hashtbl.add' shown_modules ~key:path ~data:widgets
 let find_shown_module path =
   try
     filter_modules ();
@@ -474,7 +475,7 @@ and view_decl_menu lid ~kind ~env ~parent =
     let buf = new buffer ~size:60 in
     let (fo,ff) = Format.get_formatter_output_functions ()
     and margin = Format.get_margin () in
-    Format.set_formatter_output_functions ~out:buf#out ~flush:(fun () -> ());
+    Format.set_formatter_output_functions buf#out (fun () -> ());
     Format.set_margin 60;
     Format.open_hbox ();
     if kind = `Type then
@@ -488,9 +489,9 @@ and view_decl_menu lid ~kind ~env ~parent =
         Format.std_formatter
         (find_modtype path env);
     Format.close_box (); Format.print_flush ();
-    Format.set_formatter_output_functions ~out:fo ~flush:ff;
+    Format.set_formatter_output_functions fo ff;
     Format.set_margin margin;
-    let l = Str.split ~sep:~!"\n" buf#get in
+    let l = Str.split ~!"\n" buf#get in
     let font =
       let font =
         Option.get Widget.default_toplevel ~name:"font" ~clas:"Font" in
@@ -573,16 +574,16 @@ let view_type_menu kind ~env ~parent =
       let buf = new buffer ~size:60 in
       let (fo,ff) = Format.get_formatter_output_functions ()
       and margin = Format.get_margin () in
-      Format.set_formatter_output_functions ~out:buf#out ~flush:(fun () -> ());
+      Format.set_formatter_output_functions buf#out ignore;
       Format.set_margin 60;
       Format.open_hbox ();
       Printtyp.reset ();
       Printtyp.mark_loops ty;
       Printtyp.type_expr Format.std_formatter ty;
       Format.close_box (); Format.print_flush ();
-      Format.set_formatter_output_functions ~out:fo ~flush:ff;
+      Format.set_formatter_output_functions fo ff;
       Format.set_margin margin;
-      let l = Str.split ~sep:~!"\n" buf#get in
+      let l = Str.split ~!"\n" buf#get in
       let font =
         let font =
           Option.get Widget.default_toplevel ~name:"font" ~clas:"Font" in

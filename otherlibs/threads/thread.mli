@@ -58,15 +58,15 @@ val wait_write : Unix.file_descr -> unit
            one character is available for reading ([wait_read]) or
            one character can be written without blocking ([wait_write])
            on the given Unix file descriptor. *)
-val wait_timed_read : Unix.file_descr -> timeout:float -> bool
-val wait_timed_write : Unix.file_descr -> timeout:float -> bool
+val wait_timed_read : Unix.file_descr -> float -> bool
+val wait_timed_write : Unix.file_descr -> float -> bool
         (* Same as [wait_read] and [wait_write], but wait for at most
            the amount of time given as second argument (in seconds).
            Return [true] if the file descriptor is ready for input/output
            and [false] if the timeout expired. *)
 val select :
-  read:Unix.file_descr list -> write:Unix.file_descr list ->
-  exn:Unix.file_descr list -> timeout:float ->
+  Unix.file_descr list -> Unix.file_descr list ->
+  Unix.file_descr list -> float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
         (* Suspend the execution of the calling thead until input/output
            becomes possible on the given Unix file descriptors.

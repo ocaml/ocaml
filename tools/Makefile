@@ -73,7 +73,7 @@ install::
 clean::
 	rm -f ocamlmktop
 
-# Converter ocaml 2.04 to 3
+# Converter ocaml 2.99 to 3
 
 OCAML299TO3= lexer299.cmo ocaml299to3.cmo
 LIBRARY3= misc.cmo warnings.cmo linenum.cmo location.cmo
@@ -83,6 +83,16 @@ ocaml299to3: $(OCAML299TO3)
 
 lexer299.ml: lexer299.mll
 	$(CAMLLEX) lexer299.mll
+
+# Label remover for interface files
+
+SCRAPELABELS= lexer301.cmo scrapelabels.cmo
+
+scrapelabels: $(SCRAPELABELS)
+	$(CAMLC) $(LINKFLAGS) -o scrapelabels $(LIBRARY3) $(SCRAPELABELS)
+
+lexer301.ml: lexer301.mll
+	$(CAMLLEX) lexer301.mll
 
 #install::
 #	cp ocaml299to3 $(BINDIR)/ocaml299to3$(EXE)

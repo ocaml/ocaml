@@ -15,6 +15,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 (* Write .mli for widgets *)
 
 open Tables

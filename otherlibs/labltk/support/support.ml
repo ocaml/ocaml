@@ -15,6 +15,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 (* Parsing results of Tcl *)
 (* List.split a string according to char_sep predicate *)
 let split_str ~pred:char_sep str =

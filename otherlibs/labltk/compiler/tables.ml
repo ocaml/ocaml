@@ -15,6 +15,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 (* Internal compiler errors *)
 
 exception Compiler_Error of string 
@@ -60,7 +62,7 @@ type fullcomponent = {
   }
 
 let sort_components =
-  Sort.list ~order:(fun c1 c2 ->  c1.ml_name < c2.ml_name)
+  List.sort ~cmp:(fun c1 c2 ->  compare c1.ml_name c2.ml_name)
 
 
 (* components are given either in full or abbreviated *)
@@ -153,7 +155,7 @@ let new_type typname arity =
                 subtypes = []; 
                 requires_widget_context = false;
                 variant = false} in
-    Hashtbl.add types_table ~key:typname ~data:typdef;
+    Hashtbl.add' types_table ~key:typname ~data:typdef;
     typdef
 
 
@@ -344,8 +346,8 @@ let enter_subtype typ arity subtyp constructors =
       in
        (* TODO: duplicate def in subtype are not checked *)
        typdef.subtypes <-
-          (subtyp , Sort.list real_constructors
-                      ~order:(fun c1 c2 -> c1.var_name <= c2.var_name)) ::
+          (subtyp , List.sort real_constructors
+             ~cmp:(fun c1 c2 -> compare c1.var_name c2.var_name)) ::
           typdef.subtypes
     end
 
@@ -391,7 +393,7 @@ let enter_widget name components =
       try List.assoc External sorted_components
       with Not_found -> []
   in
-  Hashtbl.add module_table ~key:name 
+  Hashtbl.add' module_table ~key:name 
     ~data:{module_type = Widget; commands = commands; externals = externals}
   
 (******************** Functions ********************)
@@ -418,6 +420,6 @@ let enter_module name components =
       try List.assoc External sorted_components
       with Not_found -> []
   in
-    Hashtbl.add module_table ~key:name 
+    Hashtbl.add' module_table ~key:name 
       ~data:{module_type = Family; commands = commands; externals = externals}
 

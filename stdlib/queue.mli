@@ -32,11 +32,11 @@ val take: 'a t -> 'a
 val peek: 'a t -> 'a
         (* [peek q] returns the first element in queue [q], without removing
            it from the queue, or raises [Empty] if the queue is empty. *)
-val clear : 'a t -> unit
+val clear: 'a t -> unit
         (* Discard all elements from a queue. *)
 val length: 'a t -> int
         (* Return the number of elements in a queue. *)
-val iter: f:('a -> unit) -> 'a t -> unit
+val iter: ('a -> unit) -> 'a t -> unit
         (* [iter f q] applies [f] in turn to all elements of [q],
            from the least recently entered to the most recently entered.
            The queue itself is unchanged. *)

@@ -43,21 +43,20 @@ val make : int -> char -> string
            *)
 val copy : string -> string
         (* Return a copy of the given string. *)
-val sub : string -> pos:int -> len:int -> string
+val sub : string -> int -> int -> string
         (* [String.sub s start len] returns a fresh string of length [len],
            containing the characters number [start] to [start + len - 1]
            of string [s].
            Raise [Invalid_argument] if [start] and [len] do not
            designate a valid substring of [s]; that is, if [start < 0],
            or [len < 0], or [start + len > String.length s]. *)
-val fill : string -> pos:int -> len:int -> char -> unit
+val fill : string -> int -> int -> char -> unit
         (* [String.fill s start len c] modifies string [s] in place,
            replacing the characters number [start] to [start + len - 1]
            by [c].
            Raise [Invalid_argument] if [start] and [len] do not
            designate a valid substring of [s]. *)
-val blit : src:string -> src_pos:int ->
-           dst:string -> dst_pos:int -> len:int -> unit
+val blit : string -> int -> string -> int -> int -> unit
         (* [String.blit src srcoff dst dstoff len] copies [len] characters
            from string [src], starting at character number [srcoff], to
            string [dst], starting at character number [dstoff]. It works
@@ -67,9 +66,14 @@ val blit : src:string -> src_pos:int ->
            designate a valid substring of [src], or if [dstoff] and [len]
            do not designate a valid substring of [dst]. *)
 
-val concat : sep:string -> string list -> string
+val concat : string -> string list -> string
         (* [String.concat sep sl] catenates the list of strings [sl],
            inserting the separator string [sep] between each. *)
+
+val iter : (char -> unit) -> string -> unit
+        (* [String.iter f s] applies function [f] in turn to all
+           the characters of [s].  It is equivalent to
+           [f s.(0); f s.(1); ...; f s.(String.length s - 1); ()]. *)
 
 val escaped: string -> string
         (* Return a copy of the argument, with special characters represented
@@ -125,9 +129,7 @@ val uncapitalize: string -> string
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
-external unsafe_blit :
-        src:string -> src_pos:int ->
-        dst:string -> dst_pos:int -> len:int -> unit
+external unsafe_blit : string -> int -> string -> int -> int -> unit
         = "blit_string" "noalloc"
-external unsafe_fill : string -> pos:int -> len:int -> char -> unit
+external unsafe_fill : string -> int -> int -> char -> unit
         = "fill_string" "noalloc"

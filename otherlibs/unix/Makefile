@@ -38,20 +38,22 @@ OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   time.o times.o truncate.o umask.o unixsupport.o unlink.o \
   utimes.o wait.o write.o
 
-all: libunix.a unix.cmi unix.cma
+MLOBJS=unix.cmo unixLabels.cmo
 
-allopt: libunix.a unix.cmi unix.cmxa
+all: libunix.a unix.cma
+
+allopt: libunix.a unix.cmxa
 
 libunix.a: $(OBJS)
 	rm -f libunix.a
 	ar rc libunix.a $(OBJS)
 	$(RANLIB) libunix.a
 
-unix.cma: unix.cmo
-	$(CAMLC) -a -linkall -custom -o unix.cma unix.cmo -cclib -lunix
+unix.cma: $(MLOBJS)
+	$(CAMLC) -a -linkall -custom -o unix.cma $(MLOBJS) -cclib -lunix
 
-unix.cmxa: unix.cmx
-	$(CAMLOPT) -a -linkall -o unix.cmxa unix.cmx -cclib -lunix
+unix.cmxa: $(MLOBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -linkall -o unix.cmxa $(MLOBJS:.cmo=.cmx) -cclib -lunix
 
 unix.cmx: ../../ocamlopt
 
@@ -76,10 +78,10 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(CAMLC) -c $(COMPFLAGS) -nolabels $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(COMPFLAGS) -nolabels $<
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

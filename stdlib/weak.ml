@@ -53,3 +53,6 @@ let blit ar1 of1 ar2 of2 len =
     end
   end
 ;;
+
+let blit' ~src ~src_pos ~dst ~dst_pos ~len =
+  blit src src_pos dst dst_pos len

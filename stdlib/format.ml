@@ -570,6 +570,8 @@ let pp_set_all_formatter_output_functions state f g h i =
   pp_set_formatter_output_functions state f g;
   state.pp_output_newline <- (function _ -> function () -> h ());
   state.pp_output_spaces <- (function _ -> function n -> i n);;
+let pp_set_all_formatter_output_functions' state ~out ~flush ~newline ~space =
+  pp_set_all_formatter_output_functions state out flush newline space
 let pp_get_all_formatter_output_functions state () = 
   (state.pp_output_function, state.pp_flush_function,
    state.pp_output_newline state, state.pp_output_spaces state);;
@@ -690,6 +692,8 @@ and get_formatter_output_functions =
 
 and set_all_formatter_output_functions =
     pp_set_all_formatter_output_functions std_formatter
+and set_all_formatter_output_functions' =
+    pp_set_all_formatter_output_functions' std_formatter
 and get_all_formatter_output_functions =
     pp_get_all_formatter_output_functions std_formatter;;
 

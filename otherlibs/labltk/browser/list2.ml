@@ -13,6 +13,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 let exclude x l = List.filter l ~f:((<>) x)
 
 let rec flat_map ~f = function

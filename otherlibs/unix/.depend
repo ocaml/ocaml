@@ -90,3 +90,5 @@ wait.o: wait.c unixsupport.h
 write.o: write.c unixsupport.h
 unix.cmo: unix.cmi 
 unix.cmx: unix.cmi 
+unixLabels.cmo: unix.cmi unixLabels.cmi 
+unixLabels.cmx: unix.cmx unixLabels.cmi 

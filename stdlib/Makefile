@@ -23,13 +23,17 @@ CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 OPTCOMPFLAGS=
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-OBJS=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
+BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
   buffer.cmo printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo \
   lazy.cmo filename.cmo int32.cmo int64.cmo nativeint.cmo
+LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml
+
+OBJS=$(BASIC) stdLabels.cmo
+ALLOBJS=$(BASIC) $(LABELLED:.ml=.cmo) stdLabels.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
@@ -59,7 +63,7 @@ installopt-prof:
 	cd $(LIBDIR); $(RANLIB) stdlib.p.a
 
 stdlib.cma: $(OBJS)
-	$(CAMLC) -a -o stdlib.cma $(OBJS)
+	$(CAMLC) -a -o stdlib.cma $(ALLOBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
@@ -103,16 +107,31 @@ pervasives.p.cmx: pervasives.ml
 oo.cmi: oo.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c oo.mli
 
+# labelled modules require the -nolabels flag
+labelled-cmo: $(LABELLED)
+	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmo)
+	touch $@
+labelled-cmx: $(LABELLED)
+	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
+	touch $@
+labelled-p.cmx: $(LABELLED)
+	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:ml=.p.cmx)
+	touch $@
+
+stdLabels.cmo: labelled-cmo
+stdLabels.cmx: labelled-cmx
+stdLabels.p.cmx: labelled-p.cmx
+
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) $(EXTRAFLAGS) -c $<
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) $(EXTRAFLAGS) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(OPTCOMPFLAGS) -c $<
+	$(CAMLOPT) $(OPTCOMPFLAGS) $(EXTRAFLAGS) -c $<
 
 .ml.p.cmx:
 	@if test -f $*.cmx; then mv $*.cmx $*.n.cmx; else :; fi
@@ -129,7 +148,7 @@ $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi $(OPTCOMPILER)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
 
 clean::
-	rm -f *.cm* *.o *.a
+	rm -f *.cm* *.o *.a labelled-*
 	rm -f *~
 
 include .depend

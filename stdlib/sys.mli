@@ -23,7 +23,8 @@ external file_exists: string -> bool = "sys_file_exists"
         (* Test if a file with the given name exists. *)
 external remove: string -> unit = "sys_remove"
         (* Remove the given file name from the file system. *)
-external rename : src:string -> dst:string -> unit = "sys_rename"
+external rename : string -> string -> unit = "sys_rename"
+external rename' : src:string -> dst:string -> unit = "sys_rename"
         (* Rename a file. The first argument is the old name and the
            second is the new name. *)
 external getenv: string -> string = "sys_getenv"

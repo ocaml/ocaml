@@ -13,6 +13,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Location
 open Longident
 open Path

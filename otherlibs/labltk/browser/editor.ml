@@ -13,6 +13,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Tk
 open Parsetree
 open Location
@@ -99,7 +100,7 @@ let goto_line tw =
 
 let select_shell txt =
   let shells = Shell.get_all () in
-  let shells = Sort.list shells ~order:(fun (x,_) (y,_) -> x <= y) in
+  let shells = List.sort shells ~cmp:compare in
   let tl = Jg_toplevel.titled "Select Shell" in
   Jg_bind.escape_destroy tl;
   Wm.transient_set tl ~master:(Winfo.toplevel txt.tw);
@@ -145,7 +146,7 @@ let send_phrase txt =
         let i1,i2 = Text.tag_nextrange txt.tw ~tag:"sel" ~start:tstart in
         let phrase = Text.get txt.tw ~start:(i1,[]) ~stop:(i2,[]) in
         sh#send phrase;
-        if Str.string_match phrase ~pat:(Str.regexp ";;") ~pos:0
+        if Str.string_match (Str.regexp ";;") phrase 0
         then sh#send "\n" else sh#send ";;\n"
       with Not_found | Protocol.TkError _ ->
         let text = Text.get txt.tw ~start:tstart ~stop:tend in
@@ -250,7 +251,7 @@ let indent_line =
   fun tw ->
     let `Linechar(l,c) = Text.index tw ~index:(ins,[])
     and line = Text.get tw ~start:(ins,[`Linestart]) ~stop:(ins,[`Lineend]) in
-    ignore (Str.string_match ~pat:reg line ~pos:0);
+    ignore (Str.string_match reg line 0);
     let len = Str.match_end () in
     if len < c then Text.insert tw ~index:(ins,[]) ~text:"\t" else
     let width = string_width (Str.matched_string line) in
@@ -260,7 +261,7 @@ let indent_line =
       let previous =
         Text.get tw ~start:(ins,[`Line(-1);`Linestart])
           ~stop:(ins,[`Line(-1);`Lineend]) in
-      ignore (Str.string_match ~pat:reg previous ~pos:0);
+      ignore (Str.string_match reg previous 0);
       let previous = Str.matched_string previous in
       let width_previous = string_width previous in
       if  width_previous <= width then 2 else width_previous - width
@@ -288,8 +289,9 @@ class editor ~top ~menus = object (self)
   method reset_window_menu =
     Menu.delete window_menu#menu ~first:(`Num 0) ~last:`End;
     List.iter
-      (Sort.list windows ~order:
-         (fun w1 w2 -> Filename.basename w1.name < Filename.basename w2.name))
+      (List.sort windows ~cmp:
+         (fun w1 w2 ->
+           compare (Filename.basename w1.name) (Filename.basename w2.name)))
       ~f:
       begin fun txt ->
         Menu.add_radiobutton window_menu#menu
@@ -340,7 +342,7 @@ class editor ~top ~menus = object (self)
       ~action:(fun _ ->
         let text =
           Text.get tw ~start:(`Mark"insert",[]) ~stop:(`Mark"insert",[`Lineend])
-        in ignore (Str.string_match ~pat:(Str.regexp "[ \t]*") text ~pos:0);
+        in ignore (Str.string_match (Str.regexp "[ \t]*") text 0);
         if Str.match_end () <> String.length text then begin
           Clipboard.clear ();
           Clipboard.append ~data:text ()
@@ -390,7 +392,7 @@ class editor ~top ~menus = object (self)
     try
       if Sys.file_exists name then
         if txt.name = name then
-          Sys.rename ~src:name ~dst:(name ^ "~")
+          Sys.rename' ~src:name ~dst:(name ^ "~")
         else begin match
           Jg_message.ask ~master:top ~title:"Save"
             ("File `" ^ name ^ "' exists. Overwrite it?")
@@ -432,7 +434,7 @@ class editor ~top ~menus = object (self)
       and buf = String.create 4096 in
       Text.delete tw ~start:tstart ~stop:tend;
       while
-        len := input file ~buf ~pos:0 ~len:4096;
+        len := input' file ~buf ~pos:0 ~len:4096;
         !len > 0
       do
         Jg_text.output tw ~buf ~pos:0 ~len:!len

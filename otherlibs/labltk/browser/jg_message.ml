@@ -13,6 +13,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Tk
 open Jg_tk
 
@@ -59,11 +60,12 @@ let formatted ~title ?on ?(ppf = Format.std_formatter)
   Format.pp_set_margin ppf (width - 2);
   let fof,fff = Format.pp_get_formatter_output_functions ppf () in
   Format.pp_set_formatter_output_functions ppf
-    ~out:(Jg_text.output tw) ~flush:(fun () -> ());
+    (fun buf pos len -> Jg_text.output tw ~buf ~pos ~len)
+    ignore;
   tl, tw,
   begin fun () ->
     Format.pp_print_flush ppf ();
-    Format.pp_set_formatter_output_functions ppf ~out:fof ~flush:fff;
+    Format.pp_set_formatter_output_functions ppf fof fff;
     let `Linechar (l, _) = Text.index tw ~index:(tposend 1) in
     Text.configure tw ~height:(max minheight (min l maxheight));
     if l > 5 then

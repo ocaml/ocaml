@@ -15,7 +15,8 @@
 
 (* file selection box *)
 
-open Unix
+open StdLabels
+open UnixLabels
 open Str
 open Filename
 
@@ -72,20 +73,22 @@ let dirget = regexp "^\([^\*?[]*/\)\(.*\)"
 
 let parse_filter src = 
   (* replace // by / *)
-  let s = global_replace ~pat:(regexp "/+") ~templ:"/" src in
+  let s = global_replace (regexp "/+") "/" src in
   (* replace /./ by / *)
-  let s = global_replace ~pat:(regexp "/\./") ~templ:"/" s in
+  let s = global_replace (regexp "/\./") "/" s in
   (* replace ????/../ by "" *)
-  let s = global_replace s
-      ~pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./") 
-      ~templ:"" in
+  let s = global_replace
+      (regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./") 
+      ""
+      s in
   (* replace ????/..$ by "" *)
-  let s = global_replace s
-      ~pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$") 
-      ~templ:"" in
+  let s = global_replace
+      (regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$") 
+      ""
+      s in
   (* replace ^/../../ by / *)
-  let s = global_replace ~pat:(regexp "^\(/\.\.\)+/") ~templ:"/" s in
-  if string_match ~pat:dirget s ~pos:0 then 
+  let s = global_replace (regexp "^\(/\.\.\)+/") "/" s in
+  if string_match dirget s 0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in
@@ -108,7 +111,7 @@ let get_files_in_directory dir =
     | Some x ->
         get_them (x::l)
   in
-  Sort.list ~order:(<=) (get_them [])
+  List.sort ~cmp:compare (get_them [])
       
 let rec get_directories_in_files path =
   List.filter
@@ -218,7 +221,7 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
     (* OLDER let curdir = getcwd () in *)
 (* Printf.eprintf "CURDIR %s\n" curdir; *)
     let filter =
-      if string_match ~pat:(regexp "^/.*") filter ~pos:0 then filter
+      if string_match (regexp "^/.*") filter 0 then filter
       else 
         if filter = "" then !global_dir ^ "/*"
         else !global_dir ^ "/" ^ filter in

@@ -70,6 +70,8 @@ let add h key info =
   h.data.(i) <- bucket;
   if bucket_too_long h.max_len bucket then resize hash h
 
+let add' h ~key ~data = add h key data
+
 let remove h key =
   let rec remove_bucket = function
       Empty ->
@@ -157,6 +159,7 @@ module type S =
     val create: int -> 'a t
     val clear: 'a t -> unit
     val add: 'a t -> key -> 'a -> unit
+    val add': 'a t -> key:key -> data:'a -> unit
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
     val find_all: 'a t -> key -> 'a list
@@ -178,6 +181,8 @@ module Make(H: HashedType): (S with type key = H.t) =
       let bucket = Cons(key, info, h.data.(i)) in
       h.data.(i) <- bucket;
       if bucket_too_long h.max_len bucket then resize H.hash h
+
+    let add' h ~key ~data = add h key data
 
     let remove h key =
       let rec remove_bucket = function

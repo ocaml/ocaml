@@ -15,6 +15,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 (*
  * Widgets
  *)
@@ -66,7 +68,7 @@ let known_class = function
 let default_toplevel =
   let wname = "." in
   let w = Typed (wname, "toplevel") in
-    Hashtbl.add table ~key:wname ~data:w;
+    Hashtbl.add' table ~key:wname ~data:w;
     w
 
 (* Dummy widget to which global callbacks are associated *)
@@ -145,7 +147,7 @@ let new_atom ~parent ?name:nom clas =
           else parentpath ^ "." ^ name
     in
       let w = Typed(path,clas) in
-        Hashtbl.add table ~key:path ~data:w;
+        Hashtbl.add' table ~key:path ~data:w;
         w
 
 (* Just create a path. Only to check existence of widgets *)

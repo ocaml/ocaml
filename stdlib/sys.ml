@@ -25,6 +25,7 @@ let max_string_length = word_size / 8 * max_array_length - 1;;
 external file_exists: string -> bool = "sys_file_exists"
 external remove: string -> unit = "sys_remove"
 external rename : string -> string -> unit = "sys_rename"
+external rename' : src:string -> dst:string -> unit = "sys_rename"
 external getenv: string -> string = "sys_getenv"
 external command: string -> int = "sys_system_command"
 external time: unit -> float = "sys_time"

@@ -33,7 +33,7 @@ let add ~ms ~callback =
   let wrapped _ =
     clear_callback id; (* do it first in case f raises exception *)
     callback() in
-  Hashtbl.add callback_naming_table ~key:id ~data:wrapped;
+  Hashtbl.add' callback_naming_table ~key:id ~data:wrapped;
   if !Protocol.debug then begin
     prerr_cbid id; prerr_endline " for timer"
   end;

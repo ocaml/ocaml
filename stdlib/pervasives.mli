@@ -472,7 +472,7 @@ val open_out_bin : string -> out_channel
            so that no translation takes place during writes. On operating
            systems that do not distinguish between text mode and binary
            mode, this function behaves like [open_out]. *)
-val open_out_gen : mode:open_flag list -> perm:int -> string -> out_channel
+val open_out_gen : open_flag list -> int -> string -> out_channel
         (* Open the named file for writing, as above. The extra argument [mode]
            specify the opening mode. The extra argument [perm] specifies
            the file permissions, in case the file must be created.
@@ -486,7 +486,8 @@ val output_char : out_channel -> char -> unit
         (* Write the character on the given output channel. *)
 val output_string : out_channel -> string -> unit
         (* Write the string on the given output channel. *)
-val output : out_channel -> buf:string -> pos:int -> len:int -> unit
+val output : out_channel -> string -> int -> int -> unit
+val output' : out_channel -> buf:string -> pos:int -> len:int -> unit
         (* Write [len] characters from string [buf], starting at offset
            [pos], to the given output channel.
            Raise [Invalid_argument "output"] if [pos] and [len] do not
@@ -543,7 +544,7 @@ val open_in_bin : string -> in_channel
            so that no translation takes place during reads. On operating
            systems that do not distinguish between text mode and binary
            mode, this function behaves like [open_in]. *)
-val open_in_gen : mode:open_flag list -> perm:int -> string -> in_channel
+val open_in_gen : open_flag list -> int -> string -> in_channel
         (* Open the named file for reading, as above. The extra arguments
            [mode] and [perm] specify the opening mode and file permissions.
            [open_in] and [open_in_bin] are special cases of this function. *)
@@ -556,7 +557,8 @@ val input_line : in_channel -> string
            all characters read, without the newline character at the end.
            Raise [End_of_file] if the end of the file is reached
            at the beginning of line. *)
-val input : in_channel -> buf:string -> pos:int -> len:int -> int
+val input : in_channel -> string -> int -> int -> int
+val input' : in_channel -> buf:string -> pos:int -> len:int -> int
         (* Read up to [len] characters from the given channel,
            storing them in string [buf], starting at character number [pos].
            It returns the actual number of characters read, between 0 and
@@ -571,7 +573,7 @@ val input : in_channel -> buf:string -> pos:int -> len:int -> int
            exactly [len] characters.)
            Exception [Invalid_argument "input"] is raised if [pos] and [len]
            do not designate a valid substring of [buf]. *)          
-val really_input : in_channel -> buf:string -> pos:int -> len:int -> unit
+val really_input : in_channel -> string -> int -> int -> unit
         (* Read [len] characters from the given channel, storing them in
            string [buf], starting at character number [pos].
            Raise [End_of_file] if the end of file is reached before [len]

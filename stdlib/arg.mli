@@ -51,8 +51,8 @@ type spec =
         (* The concrete type describing the behavior associated
            with a keyword. *)
 
-val parse : keywords:(string * spec * string) list ->
-            others:(string -> unit) -> errmsg:string -> unit
+val parse : (string * spec * string) list ->
+            (string -> unit) -> string -> unit
 (*
     [Arg.parse speclist anonfun usage_msg] parses the command line.
     [speclist] is a list of triples [(key, spec, doc)].
@@ -85,7 +85,7 @@ exception Bad of string
      message to reject invalid arguments.
 *)
 
-val usage : keywords:(string * spec * string) list -> errmsg:string -> unit
+val usage : (string * spec * string) list -> string -> unit
 (*
     [Arg.usage speclist usage_msg] prints an error message including
     the list of valid options.  This is the same message that

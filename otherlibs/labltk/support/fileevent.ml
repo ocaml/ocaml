@@ -33,8 +33,8 @@ let fd_table = Hashtbl.create 37 (* Avoid space leak in callback table *)
 
 let add_fileinput ~fd ~callback:f =
   let id = new_function_id () in
-  Hashtbl.add callback_naming_table ~key:id ~data:(fun _ -> f());
-  Hashtbl.add fd_table ~key:(fd, 'r') ~data:id;
+  Hashtbl.add' callback_naming_table ~key:id ~data:(fun _ -> f());
+  Hashtbl.add' fd_table ~key:(fd, 'r') ~data:id;
   if !Protocol.debug then begin
     Protocol.prerr_cbid id; prerr_endline " for fileinput"
   end;
@@ -56,8 +56,8 @@ let remove_fileinput ~fd =
 
 let add_fileoutput ~fd ~callback:f =
   let id = new_function_id () in
-  Hashtbl.add callback_naming_table ~key:id ~data:(fun _ -> f());
-  Hashtbl.add fd_table ~key:(fd, 'w') ~data:id;
+  Hashtbl.add' callback_naming_table ~key:id ~data:(fun _ -> f());
+  Hashtbl.add' fd_table ~key:(fd, 'w') ~data:id;
   if !Protocol.debug then begin
     Protocol.prerr_cbid id; prerr_endline " for fileoutput"
   end;
