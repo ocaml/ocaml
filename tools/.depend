@@ -10,6 +10,8 @@ dumpobj.cmx: ../parsing/asttypes.cmi ../utils/config.cmx \
     ../bytecomp/opcodes.cmx opnames.cmx ../utils/tbl.cmx 
 objinfo.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi 
 objinfo.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
+ocamlcp.cmo: ../driver/main_args.cmi 
+ocamlcp.cmx: ../driver/main_args.cmx 
 ocamldep.cmo: ../utils/misc.cmi 
 ocamldep.cmx: ../utils/misc.cmx 
 ocamlprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
