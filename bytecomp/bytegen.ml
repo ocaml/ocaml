@@ -115,30 +115,16 @@ let rec add_pop n cont =
     | Kreraise :: _ -> cont
     | _ -> Kpop n :: cont
 
-(* Translates the accumulator + n-1 positions, m places down on the stack *)
-let rec squeeze_rec i n m cont =
-  if i <= 1 then
-    Kacc 0::add_pop  (if m <= n then m+1 else  m-n+1) (Kpush::cont)
-  else
-    Kacc (i-1)::
-    Kassign (m+i-1)::
-    squeeze_rec (i-1) n m cont
-    
-
-let add_squeeze n m cont =
-  if n=0 then add_pop m cont
-  else if n=1 then add_pop m (Kpush::cont)
-  else if m=0 then Kpush::cont    
-  else
-    Kpush::
-    squeeze_rec n n m cont
-      
-    
 (* Add the constant "unit" in front of a continuation *)
 
 let add_const_unit = function
     (Kacc _ | Kconst _ | Kgetglobal _ | Kpush_retaddr _) :: _ as cont -> cont
   | cont -> Kconst const_unit :: cont
+
+let rec push_dummies n k = match n with
+| 0 -> k
+| _ -> Kconst const_unit::Kpush::push_dummies (n-1) k
+
 
 (**** Auxiliary for compiling "let rec" ****)
 
@@ -564,24 +550,45 @@ let rec comp_expr env exp sz cont =
       comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
-  | Lstaticcatch (body, (i, vars) , handler) ->
-      let branch1, cont1 = make_branch cont
-      and nvars = List.length vars in
-      let lbl_handler, cont2 =
-        label_code
-          (comp_expr
-             (add_vars vars (sz+1) env)
-             handler (sz+nvars) (add_pop nvars cont1)) in
-      sz_static_raises := (i, (lbl_handler, sz+nvars)) :: !sz_static_raises ;
-      let cont3 = comp_expr env body sz (branch1 :: cont2) in
+   | Lstaticcatch (body, (i, vars) , handler) ->      
+      let nvars = List.length vars in
+      let branch1, cont1 = make_branch cont in
+      let r = 
+        if nvars <> 1 then begin (* general case *)
+          let lbl_handler, cont2 =
+            label_code
+              (comp_expr
+                (add_vars vars (sz+1) env)
+                handler (sz+nvars) (add_pop nvars cont1)) in
+          sz_static_raises :=
+            (i, (lbl_handler, sz+nvars)) :: !sz_static_raises ;
+          push_dummies nvars
+            (comp_expr env body (sz+nvars)
+            (add_pop nvars (branch1 :: cont2)))
+        end else begin (* small optimization for nvars = 1 *)
+          let var = match vars with [var] -> var | _ -> assert false in
+          let lbl_handler, cont2 =
+            label_code
+              (Kpush::comp_expr
+                (add_var var (sz+1) env)
+                handler (sz+1) (add_pop 1 cont1)) in
+          sz_static_raises :=
+            (i, (lbl_handler, sz)) :: !sz_static_raises ;
+          comp_expr env body sz (branch1 :: cont2)
+        end in
       sz_static_raises := List.tl !sz_static_raises ;
-      cont3
+      r
   | Lstaticraise (i, args) ->
       let cont = discard_dead_code cont in
       let label,size = find_raise_label i in
-      comp_expr_list env args sz
-      (add_squeeze (List.length args) (sz+List.length args-size)
-         (branch_to label cont))
+      begin match args with
+      | [arg] -> (* optim, argument passed in accumulator *)
+          comp_expr env arg sz
+            (add_pop (sz-size) (branch_to label cont))
+      | _ ->
+          comp_exit_args env args sz size
+            (add_pop (sz-size) (branch_to label cont))
+      end
   | Ltrywith(body, id, handler) ->
       let (branch1, cont1) = make_branch cont in
       let lbl_handler = new_label() in
@@ -713,12 +720,20 @@ let rec comp_expr env exp sz cont =
 and comp_args env argl sz cont =
   comp_expr_list env (List.rev argl) sz cont
 
-and comp_expr_list env exprl sz cont =
-  match exprl with
+and comp_expr_list env exprl sz cont = match exprl with
     [] -> cont
   | [exp] -> comp_expr env exp sz cont
   | exp :: rem ->
       comp_expr env exp sz (Kpush :: comp_expr_list env rem (sz+1) cont)
+
+and comp_exit_args  env argl sz pos cont =
+   comp_expr_list_assign env (List.rev argl) sz pos cont
+
+and comp_expr_list_assign env exprl sz pos cont = match exprl with
+  | [] -> cont
+  | exp :: rem ->
+      comp_expr env exp sz
+        (Kassign (sz-pos)::comp_expr_list_assign env rem sz (pos-1) cont)
 
 (* Compile an if-then-else test. *)
 

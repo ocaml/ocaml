@@ -1,3 +1,20 @@
+(**************************************************************)
+(*  This suite tests the pattern-matching compiler            *)
+(*  it should just compile and run.                           *)
+(*  While compiling the following messages are normal:        *)
+(**************************************************************)
+
+(*
+File "morematch.ml", line 21, characters 10-93:
+Warning: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+0
+File "morematch.ml", line 376, characters 2-15:
+Warning: this match case is unused.
+File "morematch.ml", line 443, characters 2-7:
+Warning: this match case is unused.
+*)
+
 let test msg f arg r =
   if f arg <> r then begin
     prerr_endline msg ;
@@ -623,7 +640,7 @@ test "jerome_constr"
    replicaContent2shortString (`ABSENT, `PropsChanged) "assert false" ;
 ;;
 
-(* Ohl's bug *)
+(* bug 319 *)
 
 type ab = A of int | B of int
 type cd = C | D
@@ -636,6 +653,8 @@ let ohl = function
 test "ohl" ohl (A 0,C) 0 ;
 test "ohl" ohl (B 0,D) 0 ; ()
 ;;
+
+(* bug 324 *)
 type pottier =
   | A
   | B
@@ -652,3 +671,39 @@ test "pottier" pottier ((B,2),B) true ;
 test "pottier" pottier ((A,2),A) true ; ()
 ;;
 
+(* bug 325 in bytecode compiler *)
+let coquery q =  match q with
+| y,0,([modu;defs]| [defs;modu;_]) -> y+defs-modu
+| _ -> 0
+;;
+
+test "coquery" coquery (1,0,[1 ; 2 ; 3]) 0 ;
+test "coquery" coquery (1,0,[1 ; 2]) 2 ; ()
+;;
+
+(*
+  Two other variable in or-pat tests
+*)
+type vars = A of int | B of (int * int) | C
+;;
+
+
+let vars1 = function
+  | (A x | B (_,x)) -> x
+  | C -> 0
+;;
+
+test "vars1" vars1 (A 1) 1 ;
+test "vars1" vars1 (B (1,2)) 2 ; ()
+;;
+
+let vars2 = function
+  | ([x]|[1 ; x ]|[1 ; 2 ; x]) -> x
+  | _ -> 0
+;;
+
+test"vars2" vars2 [1] 1 ;
+test"vars2" vars2 [1;2] 2 ;
+test"vars2" vars2 [1;2;3] 3 ;
+test"vars2" vars2 [0 ; 0] 0 ; ()
+;;
