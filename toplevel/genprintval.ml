@@ -30,9 +30,6 @@ module type OBJ =
     val tag : t -> int
     val size : t -> int
     val field : t -> int -> t
-(* DYN *)
-    val magic : t -> 'a
-(* /DYN *)
   end
 
 module type EVALPATH =
@@ -202,7 +199,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 (* DYN *)
 	  | Tconstr(path, [], _) 
 	    when Path.same path Predef.path_dyn ->
-	      let rt = (O.magic (O.field obj 1) : run_type) in
+	      let rt = (Obj.magic (O.field obj 1) : run_type) in
 	      (* use tree_of_run_type ? *)
 	      let oty = Transltype.tree_of_run_type rt in
 	      Oval_dynamic (oty)

@@ -25,9 +25,6 @@ module type OBJ =
     val tag : t -> int
     val size : t -> int
     val field : t -> int -> t
-    (* DYN *)
-    val magic : t -> 'a
-    (* /DYN *)
   end
 
 module type EVALPATH =

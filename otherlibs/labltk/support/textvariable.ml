@@ -148,5 +148,5 @@ let free v =
 let cCAMLtoTKtextVariable s = TkToken s
 
 let name s = s
-let coerce s = s
+let coerce_variable s = s
 

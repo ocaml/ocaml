@@ -113,11 +113,8 @@ PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   rtype
 
 # Recompile the system using the bootstrap compiler
-#JPF# I am not intrested in otherlibraries, camlp4 and debugger...
-#JPF# all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-#JPF# 	otherlibraries camlp4out $(DEBUGGER)
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml
-
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
+	otherlibraries camlp4out $(DEBUGGER)
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.

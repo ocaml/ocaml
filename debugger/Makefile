@@ -40,6 +40,7 @@ OTHEROBJS=\
   ../bytecomp/runtimedef.cmo ../bytecomp/bytesections.cmo \
   ../bytecomp/dll.cmo ../bytecomp/symtable.cmo \
   ../bytecomp/opcodes.cmo ../bytecomp/meta.cmo \
+  ../bytecomp/lambda.cmo ../bytecomp/transltype.cmo \
   ../toplevel/genprintval.cmo \
   ../otherlibs/dynlink/dynlink.cmo
 
