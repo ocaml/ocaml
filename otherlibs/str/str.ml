@@ -85,10 +85,11 @@ let global_substitute expr repl_fun text =
   let rec replace start =
     try
       let pos = search_forward expr text start in
+      let end_pos = match_end() in
       let repl_text = repl_fun text in
       String.sub text start (pos-start) ::
       repl_text ::
-      replace (match_end())
+      replace end_pos
     with Not_found ->
       [string_after text start] in
   String.concat "" (replace 0)
