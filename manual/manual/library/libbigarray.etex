@@ -3,7 +3,13 @@
 
 The "bigarray" library implements large, multi-dimensional, numerical
 arrays.  These arrays are called ``big arrays'' to distinguish them
-from the standard Caml arrays described in section~\ref{Array}.
+from the standard Caml arrays described in 
+\ifouthtml
+ \begin{rawhtml}<a HREF=libref/Array.html>Module <tt>Array</tt></a>.
+ \end{rawhtml}
+\else
+ section~\ref{Array}.
+\fi
 The main differences between ``big arrays''  and standard Caml arrays
 are as follows:
 \begin{itemize}

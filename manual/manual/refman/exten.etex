@@ -60,7 +60,13 @@ of "Lazy.force" to \var{v} do not evaluate @expr@ again.
 The expression @"lazy" expr@ is equivalent to
 @"ref"("Lazy.Delayed"("fun" "()" "->" expr))@.
 For more information, see the description of module "Lazy" in the
-standard library (section~\ref{Lazy}).
+standard library (
+\ifouthtml
+ \begin{rawhtml}<a HREF=libref/Lazy.html>Module <tt>Lazy</tt></a>
+ \end{rawhtml}
+\else
+section~\ref{Lazy}
+\fi).
 %
 \index{Lazy (module)\@\verb`Lazy` (module)}%
 \index{force\@\verb`force`}%
