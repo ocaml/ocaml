@@ -1,1 +1,1 @@
-let channel = open_out "titi/toto"
+let channel = open_out "titi:/toto"

@@ -2,41 +2,61 @@ CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib:
 CAMLDEP = :::boot:ocamlrun :::tools:ocamldep
 CAMLRUN = :::byterun:ocamlrun
 
+FILES = arrays.byt callback.byt equality.byt intext.byt io.byt manyargs.byt ¶
+        multdef.byt patmatch.byt recvalues.byt sets.byt signals.byt syserror.byt ¶
+        testrandom.byt usemultdef.byt wc.byt
+
+all Ä {FILES}
+  duplicate -y :::ocaml ":/vmunix"
+  duplicate -y :::byterun:interp.a ":/etc/hosts"
+  set -e ocamlcommands "{tempfolder}ocamlcommands"
+  set exit 0
+  for i in {FILES}
+    :{i}
+  end
+  delete -i ":/etc/hosts" ":/vmunix" "{tempfolder}ocamlcommands"
+
 callback.byt Ä callback.cmo callbackprim.c.o callbackprim.c.x
-	alias ocamlc "{CAMLC}"
-	:::tools:ocamlc-custom -o callback.byt callback.cmo callbackprim.c.[ox]
+  alias ocamlc "{CAMLC}"
+  :::tools:ocamlc-custom -o callback.byt callback.cmo callbackprim.c.[ox]
 
 manyargs.byt Ä manyargs.cmo manyargsprim.c.o manyargsprim.c.x
-	alias ocamlc "{CAMLC}"
-	:::tools:ocamlc-custom -o manyargs.byt manyargs.cmo manyargsprim.c.[ox]
+  alias ocamlc "{CAMLC}"
+  :::tools:ocamlc-custom -o manyargs.byt manyargs.cmo manyargsprim.c.[ox]
+
+usemultdef.byt Ä multdef.cmo usemultdef.cmo
+  {CAMLC} -o usemultdef.byt multdef.cmo usemultdef.cmo
 
 # Common rules
 
-.byt Ä .ml
-	{CAMLC} -o {default}.byt {default}.ml
+.byt Ä .cmo
+  {CAMLC} -o {default}.byt {default}.cmo
 
 .fast.byt Ä .ml
-	{CAMLC} -unsafe -o {default}.fast.byt {default}.ml
+  {CAMLC} -unsafe -o {default}.fast.byt {default}.fast.cmo
 
 .cmi Ä .mli
-	{CAMLC} -c {default}.mli
+  {CAMLC} -c {default}.mli
 
 .cmo Ä .ml
-	{CAMLC} -c {default}.ml
+  {CAMLC} -c {default}.ml
+
+.fast.cmo Ä .ml
+  {CAMLC} -unsafe -c {default}.ml
 
 .c.o Ä .c
-	sc -w 7 -i :::byterun: {default}.c -o {default}.c.o
+  sc -w 7 -i :::byterun: {default}.c -o {default}.c.o
 
 .c.x Ä .c
-	mrc -w 35 -i :::byterun: {default}.c -o {default}.c.x
+  mrc -w 7 -w 35 -i :::byterun: {default}.c -o {default}.c.x
 
 clean ÄÄ
-	delete -i Å.byt || set status 0
-	delete -i Å.cm[io] || set status 0
-	delete -i Å.c.[ox] || set status 0
-	delete -i intext.data
+  delete -i Å.byt || set status 0
+  delete -i Å.cm[io] || set status 0
+  delete -i Å.c.[ox] || set status 0
+  delete -i intext.data
 
 # Dependencies
 
 depend Ä
-	{CAMLDEP} Å.mli Å.ml > Makefile.Mac.depend
+  {CAMLDEP} Å.mli Å.ml > Makefile.Mac.depend
