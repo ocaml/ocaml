@@ -137,16 +137,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
     (* Print a constructor or label, giving it the same prefix as the type
        it comes from. Attempt to omit the prefix if the type comes from
        a module that has been opened. *)
-    let ident_pervasive = Ident.create_persistent "Pervasives"
-    let rec tree_of_type_path = function
-      | Pident id ->
-          Oide_ident (Ident.name id)
-      | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
-          Oide_ident s
-      | Pdot(p, s, pos) ->
-          Oide_dot (tree_of_type_path p, s)
-      | Papply(p1, p2) ->
-          Oide_apply (tree_of_type_path p1, tree_of_type_path p2)
 
     let tree_of_qualified lookup_fun env ty_path name =
       match ty_path with
@@ -159,9 +149,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                | _ -> false
              with Not_found -> false
           then Oide_ident name
-          else Oide_dot (tree_of_type_path p, name)
+          else Oide_dot (Printtyp.tree_of_path p, name)
       | Papply(p1, p2) ->
-          tree_of_type_path ty_path
+          Printtyp.tree_of_path ty_path
 
     let tree_of_constr =
       tree_of_qualified

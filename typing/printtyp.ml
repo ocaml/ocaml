@@ -22,6 +22,7 @@ open Path
 open Asttypes
 open Types
 open Btype
+open Outcometree
 
 (* Print a long identifier *)
 
@@ -37,6 +38,16 @@ let ident ppf id = fprintf ppf "%s" (Ident.name id)
 (* Print a path *)
 
 let ident_pervasive = Ident.create_persistent "Pervasives"
+
+let rec tree_of_path = function
+  | Pident id ->
+      Oide_ident (Ident.name id)
+  | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
+      Oide_ident s
+  | Pdot(p, s, pos) ->
+      Oide_dot (tree_of_path p, s)
+  | Papply(p1, p2) ->
+      Oide_apply (tree_of_path p1, tree_of_path p2)
 
 let rec path ppf = function
   | Pident id ->
@@ -170,36 +181,36 @@ let rec print_list pr sep ppf = function
   | [a] -> pr ppf a
   | a :: l -> pr ppf a; sep ppf; print_list pr sep ppf l;;
 
-let rec typexp sch prio0 ppf ty =
+let rec tree_of_typexp sch ty =
   let ty = repr ty in
   let px = proxy ty in
   if List.mem_assq px !names then
-   let mark = if ty.desc = Tvar then non_gen_mark sch px else "" in
-   fprintf ppf "'%s%a" mark print_name_of_type px else
+   let mark = if ty.desc = Tvar then is_non_gen sch px else false in
+   Otyp_var (mark, name_of_type px) else
 
-  let pr_typ ppf prio =
+  let pr_typ () =
    (match ty.desc with
     | Tvar ->
-        fprintf ppf "'%s%a" (non_gen_mark sch ty) print_name_of_type ty
+        Otyp_var (is_non_gen sch ty, name_of_type ty)
     | Tarrow(l, ty1, ty2, _) ->
-        let pr_arrow l ty1 ppf ty2 =
-          print_label ppf l;
-          if is_optional l then
-            match (repr ty1).desc with
-            | Tconstr(path, [ty], _) when Path.same path Predef.path_option ->
-                typexp sch 2 ppf ty
-            | _ -> fprintf ppf "<hidden>"
-          else typexp sch 2 ppf ty1;
-          fprintf ppf " ->@ %a" (typexp sch 1) ty2 in
-        if prio >= 2
-        then fprintf ppf "@[<1>(%a)@]" (pr_arrow l ty1) ty2
-        else fprintf ppf "@[<0>%a@]" (pr_arrow l ty1) ty2
+        let pr_arrow l ty1 ty2 =
+          let lab =
+            if !print_labels && l <> "" || is_optional l then l else ""
+          in
+          let t1 =
+            if is_optional l then
+              match (repr ty1).desc with
+              | Tconstr(path, [ty], _)
+                when Path.same path Predef.path_option ->
+                  tree_of_typexp sch ty
+              | _ -> Otyp_stuff "<hidden>"
+            else tree_of_typexp sch ty1 in
+          Otyp_arrow (lab, t1, tree_of_typexp sch ty2) in
+        pr_arrow l ty1 ty2
     | Ttuple tyl ->
-        if prio >= 3
-        then fprintf ppf "@[<1>(%a)@]" (typlist sch 3 " *") tyl
-        else fprintf ppf "@[<0>%a@]" (typlist sch 3 " *") tyl
+        Otyp_tuple (tree_of_typlist sch tyl)
     | Tconstr(p, tyl, abbrev) ->
-        fprintf ppf "@[%a%a@]" (typargs sch) tyl path p
+        Otyp_constr (tree_of_path p, tree_of_typlist sch tyl)
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -215,86 +226,56 @@ let rec typexp sch prio0 ppf ty =
                | _ -> false)
             fields in
         let all_present = List.length present = List.length fields in
-        let pr_present =
-          print_list (fun ppf (s, _) -> fprintf ppf "`%s" s)
-                     (fun ppf -> fprintf ppf "@ ")
-        in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
-            let sharp_mark =
-              if not all_present then non_gen_mark sch px ^ "#" else "" in
-            let print_present ppf = function
-              | [] -> ()
-              | l ->
-                 if not all_present then
-                   fprintf ppf "@[<hov>[>%a]@]" pr_present l in
-            fprintf ppf "@[%a%s%a%a@]"
-              (typargs sch) tyl sharp_mark path p print_present present
+            let id = tree_of_path p in
+            let args = tree_of_typlist sch tyl in
+            if all_present then
+              Otyp_constr (id, args)
+            else
+              let non_gen = is_non_gen sch px in
+              let tags = List.map fst present in
+              Otyp_class (non_gen, tree_of_path p, args, tags)
         | _ ->
-            let gen_mark =
-              if not (row.row_closed && all_present)
-              then non_gen_mark sch px
-              else "" in
-            let close_mark =
-              if row.row_closed then
-                if all_present then " " else "< "
-              else
-                if all_present then "> " else "? " in
-            let print_present ppf = function
-              | [] -> ()
-              | l ->
-                 if not all_present then
-                   fprintf ppf "@;<1 -2>> @[<hov>%a@]" pr_present l in
-            let print_fields =
-              print_list (row_field sch) (fun ppf -> fprintf ppf "@;<1 -2>| ")
+            let non_gen =
+              not (row.row_closed && all_present) && is_non_gen sch px
             in
-
-            fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a]@]"
-              gen_mark close_mark print_fields fields
-              print_present present
+            let row_fields = List.map (tree_of_row_field sch) fields in
+            let tags =
+              if all_present then None else Some (List.map fst present)
+            in
+            Otyp_variant (non_gen, row_fields, row.row_closed, tags)
         end
     | Tobject (fi, nm) ->
-        typobject sch ty fi ppf nm
+        tree_of_typobject sch ty fi nm
     | Tsubst ty ->
-        typexp sch prio ppf ty
+        tree_of_typexp sch ty
     | Tlink _ | Tnil | Tfield _ ->
-        fatal_error "Printtyp.typexp"
+        fatal_error "Printtyp.tree_of_typexp"
    ) in
   if is_aliased px then begin
     check_name_of_type px;
-    if prio0 >= 1
-    then fprintf ppf "@[<1>(%a as '%a)@]" pr_typ 0 print_name_of_type px
-    else fprintf ppf "@[%a as '%a@]" pr_typ prio0 print_name_of_type px end
-  else pr_typ ppf prio0
+    Otyp_alias (pr_typ (), name_of_type px) end
+  else pr_typ ()
 
-and row_field sch ppf (l, f) =
-  let pr_field ppf f =
-    match row_field_repr f with
-    | Rpresent None | Reither(true, [], _, _) -> ()
-    | Rpresent(Some ty) -> fprintf ppf " of@ %a" (typexp sch 0) ty
-    | Reither(c, tyl, _, _) ->
-        if c (* contradiction: un constructeur constant qui a un argument *)
-        then fprintf ppf " of@ &@ %a" (typlist sch 0 " &") tyl
-        else fprintf ppf " of@ %a" (typlist sch 0 " &") tyl
-    | Rabsent -> fprintf ppf "@ []" (* une erreur, en fait *) in
-  fprintf ppf "@[<hv 2>`%s%a@]" l pr_field f
+and tree_of_row_field sch (l, f) =
+  match row_field_repr f with
+  | Rpresent None | Reither(true, [], _, _) -> (l, false, [])
+  | Rpresent(Some ty) -> (l, false, [tree_of_typexp sch ty])
+  | Reither(c, tyl, _, _) ->
+      if c (* contradiction: un constructeur constant qui a un argument *)
+      then (l, true, tree_of_typlist sch tyl)
+      else (l, false, tree_of_typlist sch tyl)
+  | Rabsent -> (l, false, [] (* une erreur, en fait *))
 
-and typlist sch prio sep ppf = function
-  | [] -> ()
-  | [ty] -> typexp sch prio ppf ty
-  | ty :: tyl ->
-      fprintf ppf "%a%s@ %a"
-       (typexp sch prio) ty sep (typlist sch prio sep) tyl
+and tree_of_typlist sch = function
+  | [] -> []
+  | ty :: tyl -> tree_of_typexp sch ty :: tree_of_typlist sch tyl
 
-and typargs sch ppf = function
-  | [] -> ()
-  | [ty1] -> fprintf ppf "%a@ " (typexp sch 3) ty1
-  | tyl -> fprintf ppf "@[<1>(%a)@]@ " (typlist sch 0 ",") tyl
-
-and typobject sch ty fi ppf nm =
+and tree_of_typobject sch ty fi nm =
   begin match !nm with
   | None ->
-      let pr_fields ppf fi =
+      let pr_fields fi =
         let (fields, rest) = flatten_fields fi in
         let present_fields =
           List.fold_right
@@ -305,34 +286,144 @@ and typobject sch ty fi ppf nm =
             fields [] in
         let sorted_fields =
           Sort.list (fun (n, _) (n', _) -> n <= n') present_fields in
-        typfields sch rest ppf sorted_fields in
-      fprintf ppf "@[<2>< %a >@]" pr_fields fi
+        tree_of_typfields sch rest sorted_fields in
+      let (fields, rest) = pr_fields fi in
+      Otyp_object (fields, rest)
   | Some (p, {desc = Tvar} :: tyl) ->
-      fprintf ppf "@[%a%s#%a@]" (typargs sch) tyl (non_gen_mark sch ty) path p
+      let non_gen = is_non_gen sch ty in
+      let args = tree_of_typlist sch tyl in
+      Otyp_class (non_gen, tree_of_path p, args, [])
   | _ ->
-        fatal_error "Printtyp.typobject"
+      fatal_error "Printtyp.tree_of_typobject"
   end
 
-and non_gen_mark sch ty =
-    if sch && ty.level <> generic_level then "_" else "" 
+and is_non_gen sch ty =
+    sch && ty.level <> generic_level
 
-and typfields sch rest ppf = function
+and tree_of_typfields sch rest = function
   | [] ->
-      begin match rest.desc with
-      | Tvar -> fprintf ppf "%s.." (non_gen_mark sch rest)
-      | Tnil -> ()
-      | _ -> fatal_error "typfields (1)"
+      let rest =
+        match rest.desc with
+        | Tvar -> Some (is_non_gen sch rest)
+        | Tnil -> None
+        | _ -> fatal_error "typfields (1)"
+      in
+      ([], rest)
+  | (s, t) :: l ->
+      let field = (s, tree_of_typexp sch t) in
+      let (fields, rest) = tree_of_typfields sch rest l in
+      (field :: fields, rest)
+
+let rec print_ident ppf =
+  function
+  | Oide_ident s -> fprintf ppf "%s" s
+  | Oide_dot (id, s) -> fprintf ppf "%a.%s" print_ident id s
+  | Oide_apply (id1, id2) ->
+      fprintf ppf "%a(%a)" print_ident id1 print_ident id2
+
+let pr_present =
+  print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
+
+let rec print_out_type ppf =
+  function
+  | Otyp_alias (ty, s) ->
+      fprintf ppf "@[%a as '%s@]" print_out_type ty s
+  | ty ->
+      print_out_type_1 ppf ty
+
+and print_out_type_1 ppf =
+  function
+  | Otyp_arrow (lab, ty1, ty2) ->
+      fprintf ppf "@[%s%a ->@ %a@]"
+        (if lab <> "" then lab ^ ":" else "")
+        print_out_type_2 ty1 print_out_type_1 ty2
+  | ty ->
+      print_out_type_2 ppf ty
+
+and print_out_type_2 ppf =
+  function
+  | Otyp_tuple tyl ->
+      fprintf ppf "@[<0>%a@]" (print_typlist print_simple_out_type " *") tyl
+  | ty ->
+      print_simple_out_type ppf ty
+
+and print_simple_out_type ppf =
+  function
+  | Otyp_var (ng, s) ->
+      fprintf ppf "'%s%s" (if ng then "_" else "") s
+  | Otyp_constr (id, tyl) ->
+      fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id
+  | Otyp_stuff s ->
+      fprintf ppf "%s" s
+  | Otyp_variant (non_gen, row_fields, closed, tags) ->
+      let print_present ppf =
+        function
+        | None | Some [] -> ()
+        | Some l -> fprintf ppf "@;<1 -2>> @[<hov>%a@]" pr_present l
+      in
+      fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a]@]"
+        (if non_gen then "_" else "")
+        (if closed then if tags = None then " " else "< "
+         else if tags = None then "> " else "? ")
+        (print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| "))
+        row_fields
+        print_present tags
+  | Otyp_object (fields, rest) ->
+      fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
+  | Otyp_class (ng, id, tyl, tags) ->
+      let print_present ppf =
+        function
+        | [] -> ()
+        | l -> fprintf ppf "@[<hov>[>%a@]" pr_present l
+      in
+      fprintf ppf "@[%a%s#%a%a@]" print_typargs tyl
+        (if ng then "_" else "") print_ident id print_present tags
+  | Otyp_alias (_, _) | Otyp_arrow (_, _, _) | Otyp_tuple _ as ty ->
+      fprintf ppf "@[<1>(%a)@]" print_out_type ty
+
+and print_fields rest ppf =
+  function
+  | [] ->
+      begin match rest with
+      | Some non_gen -> fprintf ppf "%s.." (if non_gen then "_" else "")
+      | None -> ()
       end
   | [(s, t)] ->
-      fprintf ppf "%s : %a" s (typexp sch 0) t;
-      begin match rest.desc with
-      | Tvar -> fprintf ppf ";@ "
-      | Tnil -> ()
-      | _ -> fatal_error "typfields (2)"
+      fprintf ppf "%s : %a" s print_out_type t;
+      begin match rest with
+      | Some _ -> fprintf ppf ";@ "
+      | None -> ()
       end;
-      typfields sch rest ppf []
+      print_fields rest ppf []
   | (s, t) :: l ->
-      fprintf ppf "%s : %a;@ %a" s (typexp sch 0) t (typfields sch rest) l
+      fprintf ppf "%s : %a;@ %a" s print_out_type t (print_fields rest) l
+
+and print_row_field ppf (l, opt_amp, tyl) =
+  let pr_of ppf =
+    if opt_amp then fprintf ppf " of@ &@ "
+    else if tyl <> [] then fprintf ppf " of@ "
+    else fprintf ppf ""
+  in
+  fprintf ppf "@[<hv 2>`%s%t%a@]" l pr_of
+    (print_typlist print_out_type " &") tyl
+
+and print_typlist print_elem sep ppf = function
+  | [] -> ()
+  | [ty] -> print_elem ppf ty
+  | ty :: tyl ->
+      fprintf ppf "%a%s@ %a"
+        print_elem ty sep (print_typlist print_elem sep) tyl
+
+and print_typargs ppf =
+  function
+  | [] -> ()
+  | [ty1] -> fprintf ppf "%a@ " print_simple_out_type ty1
+  | tyl -> fprintf ppf "@[<1>(%a)@]@ " (print_typlist print_out_type ",") tyl
+
+let outcome_type_hook = ref print_out_type
+
+let typexp sch prio ppf ty =
+  !outcome_type_hook ppf (tree_of_typexp sch ty)
 
 let type_expr ppf ty = typexp false 0 ppf ty
 
@@ -428,7 +519,10 @@ let rec type_decl kwd id ppf decl =
 and constructor ppf (name, args) =
   match args with
   | [] -> fprintf ppf "%s" name
-  | _ -> fprintf ppf "@[<2>%s of@ %a@]" name (typlist false 3 " *") args
+  | _ ->
+      let tyl = tree_of_typlist false args in
+      fprintf ppf "@[<2>%s of@ %a@]" name
+        (print_typlist print_simple_out_type " *") tyl
 
 and label ppf (name, mut, arg) =
   fprintf ppf "@[<2>%s%s :@ %a@];" (string_of_mutable mut) name type_expr arg
@@ -514,7 +608,10 @@ let rec perform_class_type sch params ppf = function
       else
         let pr_tyl ppf = function
           | [] -> ()
-          | tyl -> fprintf ppf "@[<1>[%a]@]@ " (typlist true 0 ",") tyl in
+          | tyl ->
+              let tyl = tree_of_typlist true tyl in
+              fprintf ppf "@[<1>[%a]@]@ "
+                (print_typlist print_out_type ",") tyl in
         fprintf ppf "@[%a%a@]" pr_tyl tyl path p'
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
@@ -547,7 +644,9 @@ let class_type ppf cty =
 
 let class_params ppf = function
   | [] -> ()
-  | params -> fprintf ppf "@[<1>[%a]@]@ " (typlist true 0 ",") params
+  | params ->
+      let tyl = tree_of_typlist true params in
+      fprintf ppf "@[<1>[%a]@]@ " (print_typlist print_out_type ",") tyl
 
 let class_declaration id ppf cl =
   let params = filter_params cl.cty_params in

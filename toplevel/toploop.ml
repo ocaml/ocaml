@@ -78,6 +78,7 @@ let max_printer_depth = ref 100
 let max_printer_steps = ref 300
 
 let print_out_value = ref Printer.print_outval
+let print_out_type = Printtyp.outcome_type_hook
 
 let print_untyped_exception ppf obj =
   !print_out_value ppf (Printer.outval_of_untyped_exception obj)

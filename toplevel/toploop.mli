@@ -78,6 +78,7 @@ val print_warning : Location.t -> formatter -> Warnings.t -> unit
 val input_name : string ref
 
 val print_out_value : (formatter -> Outcometree.out_value -> unit) ref
+val print_out_type : (formatter -> Outcometree.out_type -> unit) ref
 
 (* Used by Trace module *)
 

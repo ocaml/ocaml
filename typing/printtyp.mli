@@ -47,3 +47,6 @@ val report_unification_error:
     formatter -> (type_expr * type_expr) list ->
     (formatter -> unit) -> (formatter -> unit) ->
     unit
+
+val tree_of_path: Path.t -> Outcometree.out_ident
+val outcome_type_hook: (formatter -> Outcometree.out_type -> unit) ref
