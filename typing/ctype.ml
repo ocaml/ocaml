@@ -103,16 +103,26 @@ let global_level = ref 1
 let saved_level = ref []
 let saved_global_level = ref []
 
+(* Start type definitions *)
 let init_def level = current_level := level; nongen_level := level
+(* Start a generalizable expression that may contain expansive parts *)
+(* Usage of levels:                                *)
+(*  nongen = current + 2 / current + 1             *)
+(*  gen = current + 3 / generic - 1                *)
+(* second ones are only used during generalization *)
+let begin_let_def () =
+  saved_level := (!current_level, !nongen_level) :: !saved_level;
+  current_level := !current_level + 3;
+  nongen_level := !current_level - 1
+(* Start a pure generalizable expression *)
 let begin_def () =
   saved_level := (!current_level, !nongen_level) :: !saved_level;
-  incr current_level; nongen_level := !current_level
-let begin_class_def () =
-  saved_level := (!current_level, !nongen_level) :: !saved_level;
   incr current_level
+(* Raise the non-generalizable level *)
 let raise_nongen_level () =
   saved_level := (!current_level, !nongen_level) :: !saved_level;
   nongen_level := !current_level
+(* End any of the above (except init_def) *)
 let end_def () =
   let (cl, nl) = List.hd !saved_level in
   saved_level := List.tl !saved_level;
@@ -617,36 +627,65 @@ let rec update_level env level ty =
     end
   end
 
-(* Generalize and lower levels of contravariant branches simultaneously *)
+(* 
+   Function [update_level] will never try to expand an abbreviation in
+   this case ([current_level] is greater than the binding time of any
+   type constructor path). So, it can be called with the empty
+   environnement.
+*)
+let make_nongen ty =
+  try
+    update_level Env.empty !nongen_level ty
+  with Unify [_, ty'] ->
+    raise (Unify [ty, ty'])
 
-let rec generalize_expansive env var_level ty =
+(*
+   New implementation of generalization, to be used with begin_let_def.
+   All potentially dangerous variables must have their level lowered
+   to !nongen_level beforehand using make_nongen.
+*)
+let rec generalize_let_def env ty =
   let ty = repr ty in
-  if ty.level <> generic_level then begin
-    if ty.level > var_level then begin
+  if ty.level < generic_level - 1 && ty.level > !current_level + 1 then begin
+    if ty.level >= !current_level + 3
+    then set_level ty (generic_level - 1)
+    else set_level ty (!current_level + 1);
+    match ty.desc with
+      Tconstr (path, tyl, abbrev) ->
+        let decl = Env.find_type path env in
+        abbrev := Mnil;
+        List.iter2
+          (fun (co,cn) t ->
+            if cn then generalize_let_cn env t
+            else generalize_let_def env t)
+          decl.type_variance tyl
+    | Tarrow (_, t1, t2, _) ->
+        generalize_let_cn env t1;
+        generalize_let_def env t2
+    | _ ->
+        iter_type_expr (generalize_let_def env) ty
+  end
+
+and generalize_let_cn env ty =
+  let ty = repr ty in
+  if ty.level <> generic_level && ty.level > !current_level then begin
+    if ty.level < !current_level + 3
+    then update_level env !nongen_level ty
+    else begin
       set_level ty generic_level;
-      match ty.desc with
-        Tconstr (path, tyl, abbrev) ->
-          let variance =
-            try (Env.find_type path env).type_variance
-            with Not_found -> List.map (fun _ -> (true,true)) tyl in
-          abbrev := Mnil;
-          List.iter2
-            (fun (co,cn) t ->
-              if cn then update_level env var_level t
-              else generalize_expansive env var_level t)
-            variance tyl
-      | Tarrow (_, t1, t2, _) ->
-          update_level env var_level t1;
-          generalize_expansive env var_level t2
-      | _ ->
-          iter_type_expr (generalize_expansive env var_level) ty
+      begin match ty.desc with
+        Tconstr (path, tyl, abbrev) -> abbrev := Mnil
+      | _ -> ()
+      end;
+      iter_type_expr (generalize_let_cn env) ty
     end
   end
 
-let generalize_expansive env ty =
+let generalize_let_def env ty =
   simple_abbrevs := Mnil;
   try
-    generalize_expansive env !nongen_level ty
+    generalize_let_def env ty;
+    generalize ty
   with Unify [_, ty'] ->
     raise (Unify [ty, ty'])
 

@@ -27,12 +27,14 @@ exception Recursive_abbrev
 
 val init_def: int -> unit
         (* Set the initial variable level *)
+val begin_let_def: unit -> unit
+        (* Start a generalizable expression that may contain expansive parts *)
 val begin_def: unit -> unit
         (* Raise the variable level by one at the beginning of a definition. *)
-val end_def: unit -> unit
-        (* Lower the variable level by one at the end of a definition *)
-val begin_class_def: unit -> unit
 val raise_nongen_level: unit -> unit
+        (* Also raise non-generalizable target level *)
+val end_def: unit -> unit
+        (* Recover old levels at the end of a definition *)
 val reset_global_level: unit -> unit
         (* Reset the global level before typing an expression *)
 val increase_global_level: unit -> int
@@ -85,9 +87,11 @@ val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
 val iterative_generalization: int -> type_expr list -> type_expr list
         (* Efficient repeated generalization of a type *)
-val generalize_expansive: Env.t -> type_expr -> unit
-        (* Generalize the covariant part of a type, making
-           contravariant branches non-generalizable *)
+val make_nongen: type_expr -> unit
+        (* Make non-generalizable the given type *)
+val generalize_let_def: Env.t -> type_expr -> unit
+        (* Generalize a let definition, making non-generalizable
+           contravariant branches marked by make_nongen *)
 val generalize_global: type_expr -> unit
         (* Generalize the structure of a type, lowering variables
            to !global_level *)

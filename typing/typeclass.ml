@@ -414,13 +414,15 @@ let rec class_field cl_num self_type meths vars
   | Pcf_val (lab, mut, sexp, loc) ->
       if StringSet.mem lab inh_vals then
         Location.prerr_warning loc (Warnings.Hide_instance_variable lab);
-      if !Clflags.principal then Ctype.begin_def ();
+      if !Clflags.principal then begin
+        Ctype.raise_nongen_level (); Ctype.begin_def ()
+      end;
       let exp =
         try type_exp val_env sexp with Ctype.Unify [(ty, _)] ->
           raise(Error(loc, Make_nongen_seltype ty))
       in
       if !Clflags.principal then begin
-        Ctype.end_def ();
+        Ctype.end_def (); Ctype.end_def ();
         Ctype.generalize_structure exp.exp_type
       end;
       let (id, val_env, met_env, par_env) =
@@ -769,14 +771,14 @@ and class_expr cl_num val_env met_env scl =
       let (vals, met_env) =
         List.fold_right
           (fun id (vals, met_env) ->
-             Ctype.begin_def ();
+             Ctype.begin_let_def ();
              let expr =
                Typecore.type_exp val_env
                  {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
                   pexp_loc = Location.none}
              in
              Ctype.end_def ();
-             Ctype.generalize expr.exp_type;
+             Ctype.generalize_let_def val_env expr.exp_type;
              let desc =
                {val_type = expr.exp_type; val_kind = Val_ivar (Immutable,
                                                                cl_num)}
@@ -793,7 +795,7 @@ and class_expr cl_num val_env met_env scl =
        cl_loc = scl.pcl_loc;
        cl_type = cl.cl_type}
   | Pcl_constraint (scl', scty) ->
-      Ctype.begin_class_def ();
+      Ctype.begin_def ();
       let context = Typetexp.narrow () in
       let cl = class_expr cl_num val_env met_env scl' in
       Typetexp.widen context;
@@ -912,7 +914,7 @@ let class_infos define_class kind
     (res, env) =
 
   reset_type_variables ();
-  Ctype.begin_class_def ();
+  Ctype.begin_def ();
   
   (* Introduce class parameters *)
   let params =
@@ -1182,7 +1184,7 @@ let type_classes define_class approx kind env cls =
       cls
   in
   Ctype.init_def (Ident.current_time ());
-  Ctype.begin_class_def ();
+  Ctype.begin_def ();
   let (res, env) =
     List.fold_left (initial_env define_class approx) ([], env) cls
   in
