@@ -127,8 +127,8 @@ let fastcode_flag = ref true
 let emit_label lbl =
   emit_string "$"; emit_int lbl
 
-let emit_Llabel failthrough lbl =
-  if (not failthrough) then begin 
+let emit_Llabel fallthrough lbl =
+  if (not fallthrough) then begin 
     emit_string "	.align	4\n"
   end ;
   emit_label lbl
@@ -352,7 +352,7 @@ let range_check_trap = ref 0
 let float_constants = ref ([] : (label * string) list)
 let bigint_constants = ref ([] : (label * nativeint) list)
 
-let emit_instr failthrough i =
+let emit_instr fallthrough i =
     match i.desc with
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
@@ -595,7 +595,7 @@ let emit_instr failthrough i =
         liveregs i live_26;
         `	ret	($26)\n`
     | Llabel lbl ->
-        `{emit_Llabel failthrough lbl}:\n`
+        `{emit_Llabel fallthrough lbl}:\n`
     | Lbranch lbl ->
         `	br	{emit_label lbl}\n`
     | Lcondbranch(tst, lbl) ->
@@ -691,11 +691,11 @@ let emit_instr failthrough i =
         liveregs i live_26;
         `	jmp	$25, ($26)\n`   (* Keep retaddr in $25 for debugging *)
 
-let rec emit_all failthrough i =  match i.desc with
+let rec emit_all fallthrough i =  match i.desc with
 | Lend -> ()
 | _ ->
-    emit_instr failthrough i;
-    emit_all (has_failthrough i.desc) i.next
+    emit_instr fallthrough i;
+    emit_all (has_fallthrough i.desc) i.next
 
 (* Emission of a function declaration *)
 

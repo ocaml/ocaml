@@ -96,8 +96,8 @@ let emit_align =
   | _ ->
       (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)
   
-let emit_Llabel failthrough lbl =
-  if not failthrough && !fastcode_flag then
+let emit_Llabel fallthrough lbl =
+  if not fallthrough && !fastcode_flag then
     emit_align 16 ;
   emit_label lbl
   
@@ -285,7 +285,7 @@ let float_constants = ref ([] : (int * string) list)
 let tos = phys_reg 100
 
 
-let emit_instr failthrough i =
+let emit_instr fallthrough i =
     match i.desc with
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
@@ -566,7 +566,7 @@ let emit_instr failthrough i =
         output_epilogue();
         `	ret\n`
     | Llabel lbl ->
-        `{emit_Llabel failthrough lbl}:\n`
+        `{emit_Llabel fallthrough lbl}:\n`
     | Lbranch lbl ->
         `	jmp	{emit_label lbl}\n`
     | Lcondbranch(tst, lbl) ->
@@ -699,14 +699,14 @@ let emit_instr failthrough i =
         `	popl    {emit_symbol "caml_exception_pointer"}\n`;
         `	ret\n`
 
-let rec emit_all failthrough i =
+let rec emit_all fallthrough i =
 
   match i.desc with
   |  Lend -> ()
   | _ ->
-      emit_instr failthrough i;
+      emit_instr fallthrough i;
       emit_all
-        (Linearize.has_failthrough  i.desc)
+        (Linearize.has_fallthrough  i.desc)
         i.next
 
 (* Emission of the floating-point constants *)

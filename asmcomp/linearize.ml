@@ -45,7 +45,7 @@ and instruction_desc =
   | Lpoptrap
   | Lraise
 
-let has_failthrough = function
+let has_fallthrough = function
   | Lreturn | Lbranch _ | Lswitch _ | Lraise
   | Lop Itailcall_ind | Lop (Itailcall_imm _) -> false
   | _ -> true 
@@ -108,7 +108,7 @@ let get_label n = match n.desc with
   | Lend -> (-1, n)
   | _ -> let lbl = new_label() in (lbl, cons_instr (Llabel lbl) n)
 
-(* Check the failthrough label *)
+(* Check the fallthrough label *)
 let check_label n = match n.desc with
   | Lbranch lbl -> lbl
   | Llabel lbl -> lbl
