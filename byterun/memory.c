@@ -24,7 +24,7 @@
 #include "mlvalues.h"
 #include "signals.h"
 
-/* Allocate a block of the requested size, which will be passed to
+/* Allocate a block of the requested size, to be passed to
    [add_to_heap] later.
    [request] must be a multiple of [Page_size].
    [alloc_for_heap] returns NULL if the request cannot be satisfied.
@@ -45,6 +45,14 @@ header_t *alloc_for_heap (asize_t request)
   return (header_t *) mem;
 }
 
+/* Use this function to free a block allocated with [alloc_for_heap]
+   if you don't add it with [add_to_heap].
+*/
+void free_for_heap (header_t *mem)
+{
+  free (Chunk_block (mem));
+}
+
 /* Take a block of memory as argument, which must be the result of a
    call to [alloc_for_heap], and insert it into the heap chaining.
    The contents of the block must be a sequence of valid objects and
@@ -54,19 +62,19 @@ header_t *alloc_for_heap (asize_t request)
    The caller must update [allocated_words] if applicable.
    Return value: 0 if no error; -1 in case of error.
 */
-int add_to_heap (header_t *arg_mem)
+int add_to_heap (header_t *mem)
 {
   asize_t i;
-  char *mem = (char *) arg_mem;
-                                     Assert (Chunk_size (mem) % Page_size == 0);
+  char *m = (char *) mem;
+                                     Assert (Chunk_size (m) % Page_size == 0);
 #ifdef DEBUG
   /* Should check the contents of the block. */
 #endif /* debug */
 
   /* Extend the page table as needed. */
-  if (Page (mem) < page_low){
+  if (Page (m) < page_low){
     page_table_entry *block, *new_page_table;
-    asize_t new_page_low = Page (mem);
+    asize_t new_page_low = Page (m);
     asize_t new_size = page_high - new_page_low;
     
     gc_message (0x08, "Growing page table to %lu entries\n", new_size);
@@ -82,9 +90,9 @@ int add_to_heap (header_t *arg_mem)
     page_table = new_page_table;
     page_low = new_page_low;
   }
-  if (Page (mem + Chunk_size (mem)) > page_high){
+  if (Page (m + Chunk_size (m)) > page_high){
     page_table_entry *block, *new_page_table;
-    asize_t new_page_high = Page (mem + Chunk_size (mem));
+    asize_t new_page_high = Page (m + Chunk_size (m));
     asize_t new_size = new_page_high - page_low;
     
     gc_message (0x08, "Growing page table to %lu entries\n", new_size);
@@ -104,30 +112,30 @@ int add_to_heap (header_t *arg_mem)
   }
 
   /* Update the heap bounds as needed. */
-  if (mem < heap_start) heap_start = mem;
-  if (mem + Chunk_size (mem) > heap_end) heap_end = mem + Chunk_size (mem);
+  if (m < heap_start) heap_start = m;
+  if (m + Chunk_size (m) > heap_end) heap_end = m + Chunk_size (m);
 
   /* Mark the pages as being in the heap. */
-  for (i = Page (mem); i < Page (mem + Chunk_size (mem)); i++){
+  for (i = Page (m); i < Page (m + Chunk_size (m)); i++){
     page_table [i] = In_heap;
   }
 
   /* Chain this heap block. */
-  if (mem < heap_start){
-    Chunk_next (mem) = heap_start;
-    heap_start = mem;
+  if (m < heap_start){
+    Chunk_next (m) = heap_start;
+    heap_start = m;
   }else{
     char **last = &heap_start;
     char *cur = *last;
 
-    while (cur != NULL && cur < mem){
+    while (cur != NULL && cur < m){
       last = &(Chunk_next (cur));
       cur = *last;
     }
-    Chunk_next (mem) = cur;
-    *last = mem;
+    Chunk_next (m) = cur;
+    *last = m;
   }
-  stat_heap_size += Chunk_size (mem);
+  stat_heap_size += Chunk_size (m);
   return 0;
 }
 

@@ -33,6 +33,7 @@ void * stat_alloc (asize_t);              /* Size in bytes. */
 void stat_free (void *);
 void * stat_resize (void *, asize_t);     /* Size in bytes. */
 header_t *alloc_for_heap (asize_t request);   /* Size in bytes. */
+void free_for_heap (header_t *mem);
 int add_to_heap (header_t *mem);
 color_t allocation_color (void *hp);
 
