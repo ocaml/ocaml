@@ -93,7 +93,7 @@ let empty = {
 let components_of_module' =
   ref ((fun env sub path mty -> assert false) :
           t -> Subst.t -> Path.t -> module_type -> module_components)
-let components_of_functor_appl =
+let components_of_functor_appl' =
   ref ((fun f p1 p2 -> assert false) :
           functor_components -> Path.t -> Path.t -> module_components)
 let check_modtype_inclusion =
@@ -146,8 +146,7 @@ let find_pers_struct name =
   try
     Hashtbl.find persistent_structures name
   with Not_found ->
-    read_pers_struct name
-      (find_in_path !load_path (String.uncapitalize name ^ ".cmi"))
+    read_pers_struct name (find_in_path_uncap !load_path (name ^ ".cmi"))
 
 let reset_cache() =
   Hashtbl.clear persistent_structures
@@ -176,7 +175,7 @@ let rec find_module_descr path env =
   | Papply(p1, p2) ->
       begin match Lazy.force(find_module_descr p1 env) with
         Functor_comps f ->
-          !components_of_functor_appl f p1 p2
+          !components_of_functor_appl' f p1 p2
       | Structure_comps c ->
           raise Not_found
       end
@@ -266,7 +265,7 @@ let rec lookup_module_descr lid env =
       begin match Lazy.force desc1 with
         Functor_comps f ->
           !check_modtype_inclusion env mty2 f.fcomp_arg;
-          (Papply(p1, p2), !components_of_functor_appl f p1 p2)
+          (Papply(p1, p2), !components_of_functor_appl' f p1 p2)
       | Structure_comps c ->
           raise Not_found
       end
@@ -567,27 +566,20 @@ and store_cltype id path desc env =
     cltypes = Ident.add id (path, desc) env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
-let _ = components_of_module' := components_of_module
+(* Compute the components of a functor application in a path. *)
 
-(* Memoized function to compute the components of a functor application
-   in a path. *)
+let components_of_functor_appl f p1 p2 =
+  let p = Papply(p1, p2) in
+  let mty = 
+    Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
+                  f.fcomp_res in
+  components_of_module f.fcomp_env f.fcomp_subst p mty
 
-let funappl_memo =
-  (Hashtbl.create 17 : (Path.t, module_components) Hashtbl.t)
+(* Define forward functions *)
 
 let _ =
-  components_of_functor_appl :=
-    (fun f p1 p2 ->
-      let p = Papply(p1, p2) in
-      try
-        Hashtbl.find funappl_memo p
-      with Not_found ->
-        let mty = 
-          Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
-                        f.fcomp_res in
-        let comps = components_of_module f.fcomp_env f.fcomp_subst p mty in
-        Hashtbl.add funappl_memo p comps;
-        comps)
+  components_of_module' := components_of_module;
+  components_of_functor_appl' := components_of_functor_appl
 
 (* Insertion of bindings by identifier *)
 
