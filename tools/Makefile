@@ -15,12 +15,12 @@
 include ../config/Makefile
 
 CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
-CAMLOPT=$(CAMLRUN) ../ocamlopt 
+CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
+CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../driver
-COMPFLAGS= -warn-error A $(INCLUDES) -nostdlib
+COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels
@@ -38,7 +38,7 @@ ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
 depend.cmx:
-	$(CAMLOPT) $(INCLUDES) -I ../stdlib -c depend.ml
+	$(CAMLOPT) $(COMPFLAGS) -I ../stdlib -c depend.ml
 
 clean::
 	rm -f ocamldep

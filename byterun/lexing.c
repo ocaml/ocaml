@@ -30,6 +30,8 @@ struct lexer_buffer {
   value lex_last_action;
   value lex_eof_reached;
   value lex_mem;
+  value lex_start_p;
+  value lex_curr_p;
 };
 
 struct lexing_table {

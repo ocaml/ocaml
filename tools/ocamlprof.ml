@@ -116,8 +116,8 @@ let add_val_counter (kind,pos) =
 (* ************* rewrite ************* *)
 
 let insert_profile rw_exp ex =
-  let st = ex.pexp_loc.loc_start
-  and en = ex.pexp_loc.loc_end
+  let st = ex.pexp_loc.loc_start.Lexing.pos_cnum
+  and en = ex.pexp_loc.loc_end.Lexing.pos_cnum
   and gh = ex.pexp_loc.loc_ghost
   in
   if gh || st = en then
@@ -377,6 +377,7 @@ let rewrite_file srcfile add_function =
   inchan := open_in_bin srcfile;
   let lb = Lexing.from_channel !inchan in
   Location.input_name := srcfile;
+  Location.init lb srcfile;
   List.iter (rewrite_str_item false) (Parse.implementation lb);
   final_rewrite add_function;
   close_in !inchan
@@ -457,10 +458,9 @@ let main () =
     exit 0
   with x ->
     let report_error ppf = function
-    | Lexer.Error(err, start, stop) ->
+    | Lexer.Error(err, range) ->
         fprintf ppf "@[%a%a@]@."
-        Location.print {loc_start = start; loc_end = stop; loc_ghost = false}
-        Lexer.report_error err
+        Location.print range  Lexer.report_error err
     | Syntaxerr.Error err ->
         fprintf ppf "@[%a@]@."
         Syntaxerr.report_error err

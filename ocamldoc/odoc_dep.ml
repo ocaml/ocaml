@@ -15,12 +15,6 @@ module StrS = Depend.StringSet
 module Module = Odoc_module
 module Type = Odoc_type
 
-let dummy_loc = { 
-  Location.loc_start = 0; 
-  Location.loc_end = 1 ;
-  Location.loc_ghost = true
-} 
-
 let set_to_list s =
   let l = ref [] in
   StrS.iter (fun e -> l := e :: !l) s;

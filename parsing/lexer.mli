@@ -26,7 +26,7 @@ type error =
   | Keyword_as_label of string
 ;;
 
-exception Error of error * int * int
+exception Error of error * Location.t
 
 open Format
 

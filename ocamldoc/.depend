@@ -70,10 +70,10 @@ odoc_cross.cmx: odoc_class.cmx odoc_exception.cmx odoc_messages.cmx \
     odoc_cross.cmi 
 odoc_dag2html.cmo: odoc_info.cmi odoc_dag2html.cmi 
 odoc_dag2html.cmx: odoc_info.cmx odoc_dag2html.cmi 
-odoc_dep.cmo: ../tools/depend.cmi ../parsing/location.cmi odoc_misc.cmi \
-    odoc_module.cmo odoc_type.cmo ../parsing/parsetree.cmi 
-odoc_dep.cmx: ../tools/depend.cmx ../parsing/location.cmx odoc_misc.cmx \
-    odoc_module.cmx odoc_type.cmx ../parsing/parsetree.cmi 
+odoc_dep.cmo: ../tools/depend.cmi odoc_misc.cmi odoc_module.cmo odoc_type.cmo \
+    ../parsing/parsetree.cmi 
+odoc_dep.cmx: ../tools/depend.cmx odoc_misc.cmx odoc_module.cmx odoc_type.cmx \
+    ../parsing/parsetree.cmi 
 odoc_dot.cmo: odoc_info.cmi 
 odoc_dot.cmx: odoc_info.cmx 
 odoc_env.cmo: ../typing/btype.cmi odoc_name.cmi ../typing/path.cmi \

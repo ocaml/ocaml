@@ -339,9 +339,7 @@ rule token = parse
         comment lexbuf;
         token lexbuf }
   | "(*)"
-      { let loc = { Location.loc_start = Lexing.lexeme_start lexbuf;
-                    Location.loc_end = Lexing.lexeme_end lexbuf - 1;
-                    Location.loc_ghost = false }
+      { let loc = Location.curr lexbuf
         and warn = Warnings.Comment "the start of a comment"
         in
         Location.prerr_warning loc warn;
@@ -350,9 +348,7 @@ rule token = parse
         token lexbuf
       }
   | "*)"
-      { let loc = { Location.loc_start = Lexing.lexeme_start lexbuf;
-                    Location.loc_end = Lexing.lexeme_end lexbuf;
-                    Location.loc_ghost = false }
+      { let loc = Location.curr lexbuf
         and warn = Warnings.Comment "not the end of a comment"
         in
         Location.prerr_warning loc warn;

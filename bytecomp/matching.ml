@@ -1900,7 +1900,7 @@ let rec event_branch repr lam =
       lam
   | (Levent(lam', ev), Some r) ->
       incr r;
-      Levent(lam', {lev_loc = ev.lev_loc;
+      Levent(lam', {lev_pos = ev.lev_pos;
                     lev_kind = ev.lev_kind;
                     lev_repr = repr;
                     lev_env = ev.lev_env})
@@ -2209,12 +2209,19 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
       lambda
 
 let partial_function loc () =
+  let fname = match loc.Location.loc_start.Lexing.pos_fname with
+              | "" -> !Location.input_name
+              | x -> x
+  in
+  let pos = loc.Location.loc_start in
+  let line = pos.Lexing.pos_lnum in
+  let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
   Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_match_failure;
            Lconst(Const_block(0,
-              [Const_base(Const_string !Location.input_name);
-               Const_base(Const_int loc.Location.loc_start);
-               Const_base(Const_int loc.Location.loc_end)]))])])
+              [Const_base(Const_string fname);
+               Const_base(Const_int line);
+               Const_base(Const_int char)]))])])
 
 let for_function loc repr param pat_act_list partial =
   compile_matching loc repr (partial_function loc) param pat_act_list partial

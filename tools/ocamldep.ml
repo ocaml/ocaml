@@ -176,10 +176,9 @@ let file_dependencies source_file =
         raise x
     with x ->
       let report_err = function
-      | Lexer.Error(err, start, stop) ->
+      | Lexer.Error(err, range) ->
           fprintf Format.err_formatter "@[%a%a@]@."
-          Location.print {loc_start = start; loc_end = stop; loc_ghost = false}
-          Lexer.report_error err
+          Location.print range  Lexer.report_error err
       | Syntaxerr.Error err ->
           fprintf Format.err_formatter "@[%a@]@."
           Syntaxerr.report_error err

@@ -22,14 +22,14 @@ open Lexing
 type parser_env =
   { mutable s_stack : int array;        (* States *)
     mutable v_stack : Obj.t array;      (* Semantic attributes *)
-    mutable symb_start_stack : int array; (* Start positions *)
-    mutable symb_end_stack : int array;   (* End positions *)
+    mutable symb_start_stack : position array; (* Start positions *)
+    mutable symb_end_stack : position array;   (* End positions *)
     mutable stacksize : int;            (* Size of the stacks *)
     mutable stackbase : int;            (* Base sp for current parse *)
     mutable curr_char : int;            (* Last token read *)
     mutable lval : Obj.t;               (* Its semantic attribute *)
-    mutable symb_start : int;           (* Start pos. of the current symbol*)
-    mutable symb_end : int;             (* End pos. of the current symbol *)
+    mutable symb_start : position;      (* Start pos. of the current symbol*)
+    mutable symb_end : position;        (* End pos. of the current symbol *)
     mutable asp : int;                  (* The stack pointer for attributes *)
     mutable rule_len : int;             (* Number of rhs items in the rule *)
     mutable rule_number : int;          (* Rule number to reduce by *)
@@ -81,14 +81,14 @@ external parse_engine :
 let env =
   { s_stack = Array.create 100 0;
     v_stack = Array.create 100 (Obj.repr ());
-    symb_start_stack = Array.create 100 0;
-    symb_end_stack = Array.create 100 0;
+    symb_start_stack = Array.create 100 dummy_pos;
+    symb_end_stack = Array.create 100 dummy_pos;
     stacksize = 100;
     stackbase = 0;
     curr_char = 0;
     lval = Obj.repr ();
-    symb_start = 0;
-    symb_end = 0;
+    symb_start = dummy_pos;
+    symb_end = dummy_pos;
     asp = 0;
     rule_len = 0;
     rule_number = 0;
@@ -101,8 +101,8 @@ let grow_stacks() =
   let newsize = oldsize * 2 in
   let new_s = Array.create newsize 0
   and new_v = Array.create newsize (Obj.repr ())
-  and new_start = Array.create newsize 0
-  and new_end = Array.create newsize 0 in
+  and new_start = Array.create newsize dummy_pos
+  and new_end = Array.create newsize dummy_pos in
     Array.blit env.s_stack 0 new_s 0 oldsize;
     env.s_stack <- new_s;
     Array.blit env.v_stack 0 new_v 0 oldsize;
@@ -124,8 +124,8 @@ let yyparse tables start lexer lexbuf =
     match parse_engine tables env cmd arg with
       Read_token ->
         let t = Obj.repr(lexer lexbuf) in
-        env.symb_start <- lexbuf.lex_abs_pos + lexbuf.lex_start_pos;
-        env.symb_end   <- lexbuf.lex_abs_pos + lexbuf.lex_curr_pos;
+        env.symb_start <- lexbuf.lex_start_p;
+        env.symb_end <- lexbuf.lex_curr_p;
         loop Token_read t
     | Raise_parse_error ->
         raise Parse_error
@@ -175,17 +175,19 @@ let yyparse tables start lexer lexbuf =
 let peek_val env n =
   Obj.magic env.v_stack.(env.asp - n)
 
-let symbol_start () =
+let symbol_start_pos () =
   if env.rule_len > 0
   then env.symb_start_stack.(env.asp - env.rule_len + 1)
   else env.symb_end_stack.(env.asp)
-let symbol_end () =
-  env.symb_end_stack.(env.asp)
+;;
+let symbol_end_pos () = env.symb_end_stack.(env.asp);;
+let rhs_start_pos n = env.symb_start_stack.(env.asp - (env.rule_len - n));;
+let rhs_end_pos n = env.symb_end_stack.(env.asp - (env.rule_len - n));;
 
-let rhs_start n =
-  env.symb_start_stack.(env.asp - (env.rule_len - n))
-let rhs_end n =
-  env.symb_end_stack.(env.asp - (env.rule_len - n))
+let symbol_start () = (symbol_start_pos ()).pos_cnum;;
+let symbol_end () = (symbol_end_pos ()).pos_cnum;;
+let rhs_start n = (rhs_start_pos n).pos_cnum;;
+let rhs_end n = (rhs_end_pos n).pos_cnum;;
 
 let is_current_lookahead tok =
   (!current_lookahead_fun)(Obj.repr tok)

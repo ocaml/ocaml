@@ -238,8 +238,8 @@ CAMLprim value parse_engine(struct parser_tables *tables,
   push:
     Field(env->s_stack, sp) = Val_int(state);
     modify(&Field(env->v_stack, sp), env->lval);
-    Field(env->symb_start_stack, sp) = env->symb_start;
-    Field(env->symb_end_stack, sp) = env->symb_end;
+    Store_field (env->symb_start_stack, sp, env->symb_start);
+    Store_field (env->symb_end_stack, sp, env->symb_end);
     goto loop;
 
   reduce:
@@ -275,10 +275,10 @@ CAMLprim value parse_engine(struct parser_tables *tables,
     Field(env->s_stack, sp) = Val_int(state);
     modify(&Field(env->v_stack, sp), arg);
     asp = Int_val(env->asp);
-    Field(env->symb_end_stack, sp) = Field(env->symb_end_stack, asp);
+    Store_field (env->symb_end_stack, sp, Field(env->symb_end_stack, asp));
     if (sp > asp) {
       /* This is an epsilon production. Take symb_start equal to symb_end. */
-      Field(env->symb_start_stack, sp) = Field(env->symb_end_stack, asp);
+      Store_field (env->symb_start_stack, sp, Field(env->symb_end_stack, asp));
     }
     goto loop;
 

@@ -22,10 +22,8 @@ open Format
 
 let report_error ppf exn =
   let report ppf = function
-  | Lexer.Error(err, start, stop) ->
-      Location.print ppf {Location.loc_start = start;
-                          Location.loc_end = stop;
-                          Location.loc_ghost = false};
+  | Lexer.Error(err, l) ->
+      Location.print ppf l;
       Lexer.report_error ppf err
   | Syntaxerr.Error err ->
       Syntaxerr.report_error ppf err

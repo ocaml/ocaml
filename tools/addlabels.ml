@@ -107,14 +107,15 @@ let rec insert_labels ~labels ~text expr =
   match labels, expr.pexp_desc with
     l::labels, Pexp_function(l', _, [pat, rem]) ->
       if l <> "" && l.[0] <> '?' && l' = "" then begin
-        let pos = insertion_point pat.ppat_loc.Location.loc_start ~text in
+        let start_c = pat.ppat_loc.Location.loc_start.Lexing.pos_cnum in
+        let pos = insertion_point start_c ~text in
         match pattern_name pat with
         | Some name when l = name -> add_insertion pos "~"
         | _ -> add_insertion pos ("~" ^ l ^ ":")
       end;
       insert_labels ~labels ~text rem
   | l::labels, Pexp_function(l', _, lst) ->
-      let pos = expr.pexp_loc.Location.loc_start in
+      let pos = expr.pexp_loc.Location.loc_start.Lexing.pos_cnum in
       if l <> "" && l.[0] <> '?' && l' = ""
       && String.sub text ~pos ~len:8 = "function" then begin
         String.blit ~src:"match th" ~src_pos:0 ~dst:text
@@ -146,7 +147,8 @@ let rec insert_labels_class ~labels ~text expr =
   match labels, expr.pcl_desc with
     l::labels, Pcl_fun(l', _, pat, rem) ->
       if l <> "" && l.[0] <> '?' && l' = "" then begin
-        let pos = insertion_point pat.ppat_loc.Location.loc_start ~text in
+        let start_c = pat.ppat_loc.Location.loc_start.Lexing.pos_cnum in
+        let pos = insertion_point start_c ~text in
         match pattern_name pat with
         | Some name when l = name -> add_insertion pos "~"
         | _ -> add_insertion pos ("~" ^ l ^ ":")
@@ -161,7 +163,8 @@ let rec insert_labels_type ~labels ~text ty =
   match labels, ty.ptyp_desc with
     l::labels, Ptyp_arrow(l', _, rem) ->
       if l <> "" && l.[0] <> '?' && l' = "" then begin
-        let pos = insertion_point ty.ptyp_loc.Location.loc_start ~text in
+        let start_c = ty.ptyp_loc.Location.loc_start.Lexing.pos_cnum in
+        let pos = insertion_point start_c ~text in
         add_insertion pos (l ^ ":")
       end;
       insert_labels_type ~labels ~text rem
@@ -172,7 +175,7 @@ let rec insert_labels_app ~labels ~text args =
   match labels, args with
     l::labels, (l',arg)::args ->
       if l <> "" && l.[0] <> '?' && l' = "" then begin
-        let pos0 = arg.pexp_loc.Location.loc_start in
+        let pos0 = arg.pexp_loc.Location.loc_start.Lexing.pos_cnum in
         let pos = insertion_point pos0 ~text in
         match arg.pexp_desc with
         | Pexp_ident(Longident.Lident name) when l = name && pos = pos0 ->
@@ -426,10 +429,12 @@ let process_file file =
     let intf = Filename.chop_suffix file ".ml" ^ ".mli" in
     let ic = open_in intf in
     let lexbuf = Lexing.from_channel ic in
+    Location.init lexbuf intf;
     let intf = Parse.interface lexbuf in
     close_in ic;
     let ic = open_in file in
     let lexbuf = Lexing.from_channel ic in
+    Location.init lexbuf file;
     let impl = Parse.implementation lexbuf in
     close_in ic;
     add_labels ~intf ~impl ~file

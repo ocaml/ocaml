@@ -39,11 +39,12 @@ let lines_to_chars n ~text:s =
   in ltc n ~pos:0
 
 let in_loc loc ~pos =
-  loc.loc_ghost || pos >= loc.loc_start && pos < loc.loc_end
+  loc.loc_ghost || pos >= loc.loc_start.Lexing.pos_cnum
+                   && pos < loc.loc_end.Lexing.pos_cnum
 
 let le_loc loc1 loc2 =
-  loc1.loc_start <= loc2.loc_start
-  && loc1.loc_end >= loc2.loc_end
+  loc1.loc_start.Lexing.pos_cnum <= loc2.loc_start.Lexing.pos_cnum
+  && loc1.loc_end.Lexing.pos_cnum >= loc2.loc_end.Lexing.pos_cnum
 
 let add_found ~found sol ~env ~loc =
   if loc.loc_ghost then () else
@@ -390,9 +391,11 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
             Syntaxerr.Unclosed(l,_,_,_) -> l
           | Syntaxerr.Other l -> l
         in
-        Jg_text.tag_and_see  tw ~start:(tpos l.loc_start)
-          ~stop:(tpos l.loc_end) ~tag:"error"; []
-      | Lexer.Error (_, s, e) ->
+        Jg_text.tag_and_see  tw ~start:(tpos l.loc_start.Lexing.pos_cnum)
+          ~stop:(tpos l.loc_end.Lexing.pos_cnum) ~tag:"error"; []
+      | Lexer.Error (_, l) ->
+         let s = l.loc_start.Lexing.pos_cnum in
+         let e = l.loc_end.Lexing.pos_cnum in
          Jg_text.tag_and_see tw ~start:(tpos s) ~stop:(tpos e) ~tag:"error"; []
   in
   Jg_bind.enter_focus tw;

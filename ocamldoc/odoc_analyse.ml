@@ -93,7 +93,9 @@ let parse_file inputfile parse_fun ast_magic =
       end else begin
         seek_in ic 0;
         Location.input_name := inputfile;
-        parse_fun (Lexing.from_channel ic)
+        let lexbuf = Lexing.from_channel ic in
+        Location.init lexbuf inputfile;
+        parse_fun lexbuf
       end
     with x -> close_in ic; raise x
   in
@@ -154,10 +156,8 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
    differences only concern code generation (i believe).*)
 let process_error exn =
   let report ppf = function
-  | Lexer.Error(err, start, stop) ->
-      Location.print ppf {Location.loc_start = start;
-                          Location.loc_end = stop;
-                          Location.loc_ghost = false};
+  | Lexer.Error(err, loc) ->
+      Location.print ppf loc;
       Lexer.report_error ppf err
   | Syntaxerr.Error err ->
       Syntaxerr.report_error ppf err

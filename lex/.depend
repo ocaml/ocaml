@@ -1,8 +1,8 @@
 compact.cmi: lexgen.cmi 
 lexer.cmi: parser.cmi 
 lexgen.cmi: syntax.cmi 
-outputbis.cmi: lexgen.cmi syntax.cmi 
 output.cmi: compact.cmi lexgen.cmi syntax.cmi 
+outputbis.cmi: lexgen.cmi syntax.cmi 
 parser.cmi: syntax.cmi 
 syntax.cmi: cset.cmi 
 common.cmo: lexgen.cmi syntax.cmi 
@@ -19,10 +19,10 @@ main.cmo: compact.cmi lexer.cmi lexgen.cmi output.cmi outputbis.cmi \
     parser.cmi syntax.cmi 
 main.cmx: compact.cmx lexer.cmx lexgen.cmx output.cmx outputbis.cmx \
     parser.cmx syntax.cmx 
-outputbis.cmo: common.cmo lexgen.cmi syntax.cmi outputbis.cmi 
-outputbis.cmx: common.cmx lexgen.cmx syntax.cmx outputbis.cmi 
 output.cmo: common.cmo compact.cmi lexgen.cmi syntax.cmi output.cmi 
 output.cmx: common.cmx compact.cmx lexgen.cmx syntax.cmx output.cmi 
+outputbis.cmo: common.cmo lexgen.cmi syntax.cmi outputbis.cmi 
+outputbis.cmx: common.cmx lexgen.cmx syntax.cmx outputbis.cmi 
 parser.cmo: cset.cmi syntax.cmi parser.cmi 
 parser.cmx: cset.cmx syntax.cmx parser.cmi 
 syntax.cmo: cset.cmi syntax.cmi 

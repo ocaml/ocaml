@@ -36,7 +36,16 @@ value string_of_string_token loc s =
 ;
 
 value mkloc (bp, ep) =
-  {Location.loc_start = bp; Location.loc_end = ep; Location.loc_ghost = False}
+  let loc_at n = {
+        Lexing.pos_fname = "";
+        Lexing.pos_lnum = 1;
+        Lexing.pos_bol = 0;
+        Lexing.pos_cnum = n
+      }
+  in
+  {Location.loc_start = loc_at bp;
+   Location.loc_end = loc_at ep;
+   Location.loc_ghost = False}
 ;
 
 value mktyp loc d = {ptyp_desc = d; ptyp_loc = mkloc loc};
