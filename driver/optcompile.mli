@@ -19,3 +19,5 @@ val c_file: string -> unit
 
 val initial_env: unit -> Env.t
 val init_path: unit -> unit
+
+val pproc : string option ref
