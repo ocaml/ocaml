@@ -13,7 +13,7 @@
 
 open Format
 
-type t = { mutable stamp: int; mutable name: string; mutable global: bool }
+type t = { stamp: int; name: string; mutable global: bool }
 
 (* A stamp of 0 denotes a persistent identifier *)
 
@@ -43,20 +43,6 @@ let same i1 i2 = i1 = i2
 let binding_time i = i.stamp
 
 let current_time() = !currentstamp
-
-let identify i1 i2 f =
-  let name2 = i2.name and stamp2 = i2.stamp in
-  try
-    i2.name <- i1.name;
-    i2.stamp <- i1.stamp;
-    let res = f () in
-    i2.name <- name2;
-    i2.stamp <- stamp2;
-    res
-  with x ->
-    i2.name <- name2;
-    i2.stamp <- stamp2;
-    raise x
 
 let hide i =
   { stamp = -1; name = i.name; global = i.global }
