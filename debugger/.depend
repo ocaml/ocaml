@@ -13,7 +13,7 @@ parser.cmi: ../parsing/longident.cmi parser_aux.cmi
 parser_aux.cmi: ../parsing/longident.cmi primitives.cmi 
 pattern_matching.cmi: debugcom.cmi parser_aux.cmi ../typing/typedtree.cmi 
 primitives.cmi: ../otherlibs/unix/unix.cmi 
-printval.cmi: debugcom.cmi ../typing/env.cmi ../parsing/longident.cmi \
+printval.cmi: debugcom.cmi ../typing/env.cmi parser_aux.cmi \
     ../typing/path.cmi ../typing/types.cmi 
 program_loading.cmi: primitives.cmi 
 show_information.cmi: ../bytecomp/instruct.cmi 
@@ -53,12 +53,12 @@ envaux.cmo: ../typing/env.cmi ../utils/misc.cmi ../typing/mtype.cmi \
 envaux.cmx: ../typing/env.cmx ../utils/misc.cmx ../typing/mtype.cmx \
     ../typing/types.cmx envaux.cmi 
 eval.cmo: ../typing/ctype.cmi debugcom.cmi debugger_config.cmi \
-    ../typing/env.cmi ../typing/ident.cmi ../bytecomp/instruct.cmi \
+    ../typing/env.cmi frames.cmi ../typing/ident.cmi ../bytecomp/instruct.cmi \
     ../parsing/longident.cmi ../utils/misc.cmi parser_aux.cmi \
     ../typing/path.cmi ../typing/predef.cmi ../typing/printtyp.cmi \
     printval.cmi ../bytecomp/symtable.cmi ../typing/types.cmi eval.cmi 
 eval.cmx: ../typing/ctype.cmx debugcom.cmx debugger_config.cmx \
-    ../typing/env.cmx ../typing/ident.cmx ../bytecomp/instruct.cmx \
+    ../typing/env.cmx frames.cmx ../typing/ident.cmx ../bytecomp/instruct.cmx \
     ../parsing/longident.cmx ../utils/misc.cmx parser_aux.cmi \
     ../typing/path.cmx ../typing/predef.cmx ../typing/printtyp.cmx \
     printval.cmx ../bytecomp/symtable.cmx ../typing/types.cmx eval.cmi 
@@ -117,13 +117,13 @@ pattern_matching.cmx: ../typing/ctype.cmx debugcom.cmx debugger_config.cmx \
 primitives.cmo: ../otherlibs/unix/unix.cmi primitives.cmi 
 primitives.cmx: ../otherlibs/unix/unix.cmx primitives.cmi 
 printval.cmo: ../typing/ctype.cmi debugcom.cmi ../typing/env.cmi \
-    ../typing/ident.cmi ../parsing/longident.cmi ../utils/misc.cmi \
-    ../typing/path.cmi ../typing/predef.cmi ../typing/printtyp.cmi \
-    ../typing/types.cmi printval.cmi 
+    ../typing/ident.cmi ../utils/misc.cmi parser_aux.cmi ../typing/path.cmi \
+    ../typing/predef.cmi ../typing/printtyp.cmi ../typing/types.cmi \
+    printval.cmi 
 printval.cmx: ../typing/ctype.cmx debugcom.cmx ../typing/env.cmx \
-    ../typing/ident.cmx ../parsing/longident.cmx ../utils/misc.cmx \
-    ../typing/path.cmx ../typing/predef.cmx ../typing/printtyp.cmx \
-    ../typing/types.cmx printval.cmi 
+    ../typing/ident.cmx ../utils/misc.cmx parser_aux.cmi ../typing/path.cmx \
+    ../typing/predef.cmx ../typing/printtyp.cmx ../typing/types.cmx \
+    printval.cmi 
 program_loading.cmo: debugger_config.cmi input_handling.cmi ../utils/misc.cmi \
     parameters.cmi primitives.cmi ../otherlibs/unix/unix.cmi unix_tools.cmi \
     program_loading.cmi 
