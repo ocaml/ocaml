@@ -1397,10 +1397,14 @@ The "deserialize" field contains a pointer to a C function that is
 called whenever a custom block with identifier "identifier" needs to
 be deserialized (un-marshaled) using the Caml functions "input_value"
 or "Marshal.from_...".  This user-provided function is responsible for
-reading back the data, using the "deserialize_..." functions defined
-in "<caml/intext.h>" and listed below. It must store the data at the
-pointer given as the "dst" argument, then return the size in bytes of
-the data.
+reading back the data written by the "serialize" operation, using the
+"deserialize_..." functions defined in "<caml/intext.h>" and listed
+below. It must then rebuild the data part of the custom block
+and store it at the pointer given as the "dst" argument.  Finally, it
+returns the size in bytes of the data part of the custom block.
+This size must be identical to the "wsize_32" result of
+the "serialize" operation if the architecture is 32 bits, or
+"wsize_64" if the architecture is 64 bits.
 
 The "deserialize" field can be set to "custom_deserialize_default"
 to indicate that deserialization is not supported.  In this case,
@@ -1521,7 +1525,7 @@ function declared in "<caml/custom.h>".  Deserialization proceeds by
 reading the identifier off the input stream, allocating a custom block
 of the size specified in the input stream, searching the registered
 "struct custom_operation" blocks for one with the same identifier, and
-calling its "deserialize" function to fill the custom block.
+calling its "deserialize" function to fill the data part of the custom block.
 
 \subsection{Choosing identifiers}
 
