@@ -791,16 +791,25 @@ value interprete(prog, prog_size)
       accu = (value)((long) accu - (long) *sp++ + 1); Next;
     Instruct(MULINT):
       accu = Val_long(Long_val(accu) * Long_val(*sp++)); Next;
+
+#define Abs(x) (unsigned long)(x < 0 ? -x : x)
+
     Instruct(DIVINT): {
-      value div = *sp++;
-      if (div == Val_long(0)) { Setup_for_c_call; raise_zero_divide(); }
-      accu = Val_long(Long_val(accu) / Long_val(div));
+      long dividend = Long_val(accu);
+      long divisor = Long_val(*sp++);
+      if (divisor == 0) { Setup_for_c_call; raise_zero_divide(); }
+      accu = Abs(dividend) / Abs(divisor);
+      if ((dividend ^ divisor) < 0) accu = -accu;
+      accu = Val_long(accu);
       Next;
     }
     Instruct(MODINT): {
-      value div = *sp++;
-      if (div == Val_long(0)) { Setup_for_c_call; raise_zero_divide(); }
-      accu = Val_long(Long_val(accu) % Long_val(div));
+      long dividend = Long_val(accu);
+      long divisor = Long_val(*sp++);
+      if (divisor == 0) { Setup_for_c_call; raise_zero_divide(); }
+      accu = Abs(dividend) % Abs(divisor);
+      if (dividend < 0) accu = -accu;
+      accu = Val_long(accu);
       Next;
     }
     Instruct(ANDINT):
