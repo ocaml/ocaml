@@ -172,7 +172,7 @@ let link_file outchan = function
 (* Create a bytecode executable file *)
 
 let link_bytecode objfiles exec_name copy_header =
-  let objfiles = "stdlib.cma" :: objfiles in
+  let objfiles = "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink =
     List.fold_right scan_file objfiles [] in
   let outchan =

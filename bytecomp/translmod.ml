@@ -35,9 +35,13 @@ let rec apply_coercion restr arg =
         Lfunction(param,
           apply_coercion cc_res
             (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)]))))
+  | Tcoerce_primitive p ->
+      fatal_error "Translmod.apply_coercion"
 
 and apply_coercion_field id (pos, cc) =
-  apply_coercion cc (Lprim(Pfield pos, [Lvar id]))
+  match cc with
+    Tcoerce_primitive p -> transl_primitive p
+  | _ -> apply_coercion cc (Lprim(Pfield pos, [Lvar id]))
 
 (* Compose two coercions
    apply_coercion c1 (apply_coercion c2 e) behaves like
@@ -114,8 +118,7 @@ and transl_structure env fields cc = function
       add_let(transl_structure ext_env ext_fields cc rem)
   | Tstr_primitive(id, descr) :: rem ->
       unsafe_implementation := true;
-      Llet(id, transl_primitive descr.val_prim,
-           transl_structure env (id :: fields) cc rem)
+      transl_structure env fields cc rem
   | Tstr_type(decls) :: rem ->
       transl_structure env fields cc rem
   | Tstr_exception(id, decl) :: rem ->
@@ -158,8 +161,7 @@ let transl_toplevel_item = function
       List.iter Ident.make_global idents;
       lam
   | Tstr_primitive(id, descr) ->
-      Ident.make_global id;
-      Lprim(Psetglobal id, [transl_primitive descr.val_prim])
+      lambda_unit
   | Tstr_type(decls) ->
       lambda_unit
   | Tstr_exception(id, decl) ->

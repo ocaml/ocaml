@@ -273,6 +273,28 @@ let transl_prim prim args =
   with Not_found ->
     Pccall prim
 
+(* Eta-expand a primitive without knowing the types of its arguments *)
+
+let transl_primitive p =
+  let prim =
+    try
+      let (gencomp, intcomp, floatcomp, stringcomp) =
+        Hashtbl.find comparisons_table p.prim_name in
+      gencomp
+    with Not_found ->
+    try
+      Hashtbl.find primitives_table p.prim_name
+    with Not_found ->
+      Pccall p in
+  let rec add_params n params =
+    if n >= p.prim_arity
+    then Lprim(prim, List.rev params)
+    else begin
+      let id = Ident.new "prim" in
+      Lfunction(id, add_params (n+1) (Lvar id :: params))
+    end in
+  add_params 0 []
+
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
 let check_recursive_lambda id lam =
@@ -318,7 +340,9 @@ let name_pattern_list default = function
 
 let rec transl_exp env e =
   match e.exp_desc with
-    Texp_ident(path, desc) ->
+    Texp_ident(path, {val_prim = Some p}) ->
+      transl_primitive p
+  | Texp_ident(path, desc) ->
       begin match path with
           Pident id -> transl_access env id
         | _ -> transl_path path
@@ -332,8 +356,8 @@ let rec transl_exp env e =
       let param = name_pattern_list "param" pat_expr_list in
       Lfunction(param, Matching.for_function e.exp_loc (Lvar param)
                          (transl_cases env (Lvar param) pat_expr_list))
-  | Texp_apply({exp_desc = Texp_ident(path, {val_prim = Some p})},
-               args) when List.length args = p.prim_arity ->
+  | Texp_apply({exp_desc = Texp_ident(path, {val_prim = Some p})}, args)
+    when List.length args = p.prim_arity ->
       Lprim(transl_prim p args, transl_list env args)
   | Texp_apply(funct, args) ->
       Lapply(transl_exp env funct, transl_list env args)
@@ -481,30 +505,6 @@ and transl_let env rec_flag pat_expr_list =
       let decls =
         List.map transl_case pat_expr_list in
       (env, fun e -> Lletrec(decls, e))
-
-(* Compile a primitive definition *)
-
-let transl_primitive = function
-    None -> fatal_error "Translcore.transl_primitive"
-  | Some p ->
-      let prim =
-        try
-          let (gencomp, intcomp, floatcomp, stringcomp) =
-            Hashtbl.find comparisons_table p.prim_name in
-          gencomp
-        with Not_found ->
-        try
-          Hashtbl.find primitives_table p.prim_name
-        with Not_found ->
-          Pccall p in
-      let rec add_params n params =
-        if n >= p.prim_arity
-        then Lprim(prim, List.rev params)
-        else begin
-          let id = Ident.new "prim" in
-          Lfunction(id, add_params (n+1) (Lvar id :: params))
-        end in
-      add_params 0 []
 
 (* Compile an exception definition *)
 
