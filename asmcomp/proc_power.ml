@@ -32,8 +32,9 @@ let powerpc =
 
 let elf =
   match Config.system with
-    "elf" -> false
-  | _     -> true
+    "aix" -> false
+  | "elf" -> true
+  | _ -> fatal_error "wrong $(SYSTEM)"
 
 (* Exceptions raised to signal cases not handled here *)
 
