@@ -223,11 +223,13 @@ let distribute_coercion restr idlist =
       fatal_error "Translmod.distribute_coercion"
 
 (* Transform the list (id, coercion) built above into a table
-   id -> (pos, coercion). *)
+   id -> (pos, coercion). A given identifier may appear several times
+   in the list (if it occurs several times in the signature); remember
+   to assign it the position of its last occurrence. *)
 
-let rec build_ident_map pos = function
-    [] -> Ident.empty
-  | (id, cc) :: rem -> Ident.add id (pos, cc) (build_ident_map (pos+1) rem)
+let rec build_ident_map pos map = function
+    [] -> map
+  | (id, cc) :: rem -> build_ident_map (pos+1) (Ident.add id (pos, cc) map) rem
 
 (* Compile an implementation using transl_store_structure 
    (for the native-code compiler). *)
@@ -236,7 +238,7 @@ let transl_store_implementation module_name str cc =
   primitive_declarations := [];
   let module_id = Ident.new_persistent module_name in
   let id_cc_list = distribute_coercion cc (defined_idents str) in
-  let map = build_ident_map 0 id_cc_list in
+  let map = build_ident_map 0 Ident.empty id_cc_list in
   (List.length id_cc_list, transl_store_structure module_id map str)
 
 (* Compile a sequence of expressions *)
