@@ -114,6 +114,10 @@ let rec transl_module cc rootpath mexp =
                 [transl_module ccarg None arg]))
   | Tmod_constraint(arg, mty, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
+  | Tmod_dyntype e ->
+      let te = Transldyn.make_sig_repr_code mexp.mod_env mexp.mod_type in
+      Lapply (Transldyn.dynamics_prim "coerce_module",
+              [transl_exp e; te])
 
 and transl_structure fields cc rootpath = function
     [] ->

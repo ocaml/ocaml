@@ -229,3 +229,11 @@ let make_type_repr_code env ty0 =
   let ty1 = canonicalize_type env ty0 in
   let z = Lconst (Const_block (0, [traverse ty1])) in
   z
+
+
+(* From a module type expression, produce code that builds a value that
+   describes this module type expression. Said value has the type
+   Dynamics.module_type_repr. *)
+let make_sig_repr_code env mty0 =
+  (*TODO*)
+  Lconst (Const_pointer 0)

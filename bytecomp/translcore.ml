@@ -615,6 +615,10 @@ let rec transl_exp e =
       Lapply (Transldyn.dynamics_prim "coerce_internal",
               [transl_exp d;
                Transldyn.make_type_repr_code e.exp_env te])
+  | Texp_dyntype modl ->
+      let me = !transl_module Tcoerce_none None modl
+      and te = Transldyn.make_sig_repr_code e.exp_env modl.mod_type in
+      Lprim (Pmakeblock (0, Immutable), [te; me])
 (*< JOCAML *)
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,

@@ -349,7 +349,8 @@ let rec type_module env smod =
         mod_loc = smod.pmod_loc }
 (*> JOCAML *)
   | Pmod_dyntype(sexpr,smty) ->
-      let expr = Typecore.type_expression env sexpr in
+      let di = Ctype.instance Predef.type_dtm in
+      let expr = Typecore.type_expect env sexpr di in
       let mty = transl_modtype env smty in
       { mod_desc = Tmod_dyntype expr;
         mod_type = mty;

@@ -41,14 +41,32 @@ type type_repr = {
     expr : type_expr;
   }
 
+
+
+type module_type_repr
+
+let compare_module_types amty emty =
+  amty = emty
+
+
+
 type anything
+type nothing (* a module, in fact *)
 
 exception Type_error of type_repr * type_repr
+exception Module_type_error of module_type_repr * module_type_repr
 
 external type_of : dyn -> type_repr = "%field0"
+external module_type_of : dynamically_typed_module -> module_type_repr = "%field0"
 
 let coerce_internal d expected_type =
   let (sent_type, v) = Obj.magic (d : dyn) in
   if sent_type.expr = expected_type.expr
   then (Obj.magic v : anything)
   else raise (Type_error (sent_type, expected_type))
+
+let coerce_module d expected_module_type =
+  let (actual_module_type, m) = Obj.magic (d : dynamically_typed_module) in
+  if compare_module_types actual_module_type expected_module_type
+  then (Obj.magic m : nothing)
+  else raise (Module_type_error (actual_module_type, expected_module_type))

@@ -17,3 +17,4 @@
 
 val dynamics_prim : string -> Lambda.lambda
 val make_type_repr_code : Env.t -> Types.type_expr -> Lambda.lambda
+val make_sig_repr_code : Env.t -> Types.module_type -> Lambda.lambda

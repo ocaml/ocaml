@@ -1444,7 +1444,7 @@ let rec do_type_exp ctx env sexp =
       {
         exp_desc = Texp_dyntype tme;
         exp_loc = sexp.pexp_loc;
-        exp_type = instance Predef.type_dyn;
+        exp_type = instance Predef.type_dtm;
         exp_env = env;
        }
 (*< JOCAML *)
