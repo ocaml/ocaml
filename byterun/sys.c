@@ -254,14 +254,15 @@ void sys_init(char * exe_name, char **argv)
   caml_main_argv = argv;
 }
 
+#ifdef _WIN32
+#define WIFEXITED(status) 1
+#define WEXITSTATUS(status) (status)
+#else
 #if !(defined(WIFEXITED) && defined(WEXITSTATUS))
 /* Assume old-style V7 status word */
 #define WIFEXITED(status) (((status) & 0xFF) == 0)
 #define WEXITSTATUS(status) (((status) >> 8) & 0xFF)
 #endif
-
-#ifdef _WIN32
-extern int win32_system(char * command);
 #endif
 
 CAMLprim value sys_system_command(value command)
@@ -274,19 +275,15 @@ CAMLprim value sys_system_command(value command)
   len = string_length (command);
   buf = stat_alloc (len + 1);
   memmove (buf, String_val (command), len + 1);
-  
   enter_blocking_section ();
-#ifndef _WIN32
   status = system(buf);
+  leave_blocking_section ();
+  stat_free(buf);
+  if (status == -1) sys_error(command);
   if (WIFEXITED(status))
     retcode = WEXITSTATUS(status);
   else
     retcode = 255;
-#else
-  status = retcode = win32_system(buf);
-#endif
-  leave_blocking_section ();
-  if (status == -1) sys_error(command);
   CAMLreturn (Val_int(retcode));
 }
 
