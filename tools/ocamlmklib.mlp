@@ -98,12 +98,12 @@ let parse_arguments argv =
     else if s = "-Wl,-rpath" then
      (let a = next_arg() in
       if starts_with a "-Wl,"
-      then rpath := chop_prefix "-Wl," s :: !rpath
+      then rpath := chop_prefix a "-Wl," :: !rpath
       else raise (Bad_argument("Option -Wl,-rpath expects a -Wl, argument")))
     else if starts_with s "-Wl,-rpath," then
-      rpath := chop_prefix "-Wl,-rpath," s :: !rpath
+      rpath := chop_prefix s "-Wl,-rpath," :: !rpath
     else if starts_with s "-Wl,-R" then
-      rpath := chop_prefix "-Wl,-R" s :: !rpath
+      rpath := chop_prefix s "-Wl,-R" :: !rpath
     else if s = "-v" || s = "-verbose" then
       verbose := true
     else if starts_with s "-" then
