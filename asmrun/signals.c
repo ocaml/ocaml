@@ -434,9 +434,8 @@ void init_signals(void)
 #if defined(SYS_rhapsody) || defined(SYS_aix)
   act.sa_flags = 0;
 #else
-  act.sa_flags = SA_NODEFER:;
+  act.sa_flags = SA_NODEFER;
 #endif
   sigaction(SIGTRAP, &act, NULL);
 #endif
 }
-
