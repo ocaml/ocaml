@@ -1522,7 +1522,7 @@ let check_partial loc casel =
       | _  ->
           Location.prerr_warning loc
             (Warnings.Other
-               "Bad style, all clauses in this pattern-matching are guarded.")
+               "bad style, all clauses in this pattern-matching are guarded.")
       end ;
       Partial
   | ps::_  ->      
@@ -1604,7 +1604,7 @@ let check_unused tdefs casel =
                   check_used_extra pss qs
             with e -> (* useless ? *)
               Location.prerr_warning (location_of_clause qs)
-                (Warnings.Other "Fatal Error in Parmatch.check_unused") ;
+                (Warnings.Other "fatal error in Parmatch.check_unused.") ;
               raise e
             end ;
                    

@@ -657,7 +657,7 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
       (Warnings.Other
          (String.concat " "
             ("the following private methods were made public implicitly:\n "
-             :: added)));
+             :: added @ ["."])));
 
   {cl_field = fields; cl_meths = meths}, sign
 
@@ -763,7 +763,7 @@ and class_expr cl_num val_env met_env scl =
       Ctype.end_def ();
       if Btype.is_optional l && all_labeled cl.cl_type then
         Location.prerr_warning pat.pat_loc
-          (Warnings.Other "This optional argument cannot be erased");
+          (Warnings.Other "this optional argument cannot be erased.");
       rc {cl_desc = Tclass_fun (pat, pv, cl, partial);
           cl_loc = scl.pcl_loc;
           cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type);

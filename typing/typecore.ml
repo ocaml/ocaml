@@ -1167,6 +1167,10 @@ let rec type_exp env sexp =
               let (id, typ) =
                 filter_self_method env met Private meths privty
               in
+              if (repr typ).desc = Tvar then
+                Location.prerr_warning sexp.pexp_loc
+                  (Warnings.Other
+                     ("the virtual method "^met^" is not declared."));
               (Texp_send(obj, Tmeth_val id), typ)
           | Texp_ident(path, {val_kind = Val_anc (methods, cl_num)}) ->
               let method_id =
@@ -1218,7 +1222,7 @@ let rec type_exp env sexp =
               if !Clflags.principal && l <> generic_level then
                 Location.prerr_warning sexp.pexp_loc
                   (Warnings.Other
-                     "This use of a polymorphic method is not principal");
+                     "this use of a polymorphic method is not principal.");
               snd (instance_poly false tl ty)
           | {desc = Tvar} as ty ->
               let ty' = newvar () in
@@ -1427,7 +1431,8 @@ and type_argument env sarg ty_expected' =
                                                [Some eta_var, Required])}],
                         Total) } in
       if warn then Location.prerr_warning texp.exp_loc
-          (Warnings.Other "Eliminated optional argument without principality");
+          (Warnings.Other
+             "eliminated optional argument without principality.");
       if is_nonexpansive texp then func texp else
       (* let-expand to have side effects *)
       let let_pat, let_var = var_pair "let" texp.exp_type in
@@ -1534,14 +1539,14 @@ and type_application env funct sargs =
                 let (l', sarg0, sargs1, sargs2) = extract_label name sargs in
                 if sargs1 <> [] then
                   may_warn sarg0.pexp_loc
-                    "Commuting this argument is not principal";
+                    "commuting this argument is not principal.";
                 (l', sarg0, sargs1 @ sargs2, more_sargs)
               with Not_found ->
                 let (l', sarg0, sargs1, sargs2) =
                   extract_label name more_sargs in
                 if sargs1 <> [] || sargs <> [] then
                   may_warn sarg0.pexp_loc
-                    "Commuting this argument is not principal";
+                    "commuting this argument is not principal.";
                 (l', sarg0, sargs @ sargs1, sargs2)
             in
             sargs, more_sargs,
@@ -1549,7 +1554,7 @@ and type_application env funct sargs =
               Some (fun () -> type_argument env sarg0 ty)
             else begin
               may_warn sarg0.pexp_loc
-                "Using an optional argument here is not principal";
+                "using an optional argument here is not principal.";
               Some (fun () -> option_some (type_argument env sarg0 
                                              (extract_option_type env ty)))
             end
@@ -1559,12 +1564,12 @@ and type_application env funct sargs =
               (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
             then begin
               may_warn funct.exp_loc
-                "Eliminated an optional argument without principality";
+                "eliminated an optional argument without principality.";
               ignored := (l,ty,lv) :: !ignored;
               Some (fun () -> option_none (instance ty) Location.none)
             end else begin
               may_warn funct.exp_loc
-                "Commuted an argument without principality";
+                "commuted an argument without principality.";
               None
             end
         in
@@ -1724,7 +1729,7 @@ and type_expect ?in_function env sexp ty_expected =
       in
       if is_optional l && all_labeled ty_res then
         Location.prerr_warning (fst (List.hd cases)).pat_loc
-          (Warnings.Other "This optional argument cannot be erased");
+          (Warnings.Other "this optional argument cannot be erased.");
       re {
         exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
