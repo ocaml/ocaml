@@ -13,7 +13,7 @@
 
 #include "m.h"
 
-#ifndef SIXTYFOUR
+#ifndef ARCH_SIXTYFOUR
 long intval = 0x41424344L;
 char * bigendian = "ABCD";
 char * littleendian = "DCBA";

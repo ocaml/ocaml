@@ -64,5 +64,5 @@ call_gen_code:
         .globl  caml_c_call
         .ent    caml_c_call
 caml_c_call:
-        j       $25
+        j       $24
         .end    caml_c_call

@@ -234,6 +234,12 @@ let contains_calls = ref false
 
 (* Calling the assembler *)
 
+let asm_command =
+  match Config.system with
+    "ultrix" -> "as -O2 -nocpp -o "
+  | "irix"   -> "as -32 -O2 -nocpp -o "
+  | _ -> fatal_error "Proc_mips.asm_command"
+
 let assemble_file infile outfile =
-  Sys.command ("as -O2 -nocpp -o " ^ outfile ^ " " ^ infile)
+  Sys.command (asm_command ^ outfile ^ " " ^ infile)
 

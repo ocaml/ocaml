@@ -38,7 +38,21 @@
         .globl  caml_alloc3
         .globl  caml_alloc
         .globl  caml_call_gc
-        .ent    caml_alloc1
+        .ent    caml_call_gc
+
+caml_call_gc:
+#ifdef _PIC
+	.set	noreorder
+        .cpload	$25
+        .set    reorder
+#endif
+    /* Record return address and adjust it to point back to
+       the beginning of the allocation sequence */
+        sw      $31, caml_last_return_address
+        subu    $31, $31, 32
+    /* Don't request any allocation, will be redone at return */
+        li      $24, 0
+	b	$110
 
 /* caml_alloc* : all code generator registers preserved. */
 
@@ -46,36 +60,43 @@ caml_alloc1:
         subu    $22, $22, 8
         bltu    $22, $23, $100
         j	$31
-$100:   li      $25, 8
-        b       caml_call_gc
+$100:   li      $24, 8
+        b       caml_call_gc_internal
 
 caml_alloc2:
         subu    $22, $22, 12
         bltu    $22, $23, $101
         j	$31
-$101:   li      $25, 12
-        b       caml_call_gc
+$101:   li      $24, 12
+        b       caml_call_gc_internal
 
 caml_alloc3:
         subu    $22, $22, 16
         bltu    $22, $23, $102
         j	$31
-$102:   li      $25, 16
-        b       caml_call_gc
+$102:   li      $24, 16
+        b       caml_call_gc_internal
 
 caml_alloc:
-        subu    $22, $22, $25
-        bltu    $22, $23, caml_call_gc
+        subu    $22, $22, $24
+        bltu    $22, $23, caml_call_gc_internal
         j       $31
         
-caml_call_gc:
-    /* Record lowest stack address and return address */
+caml_call_gc_internal:
+    /* Record return address */
         sw      $31, caml_last_return_address
+
+$110:
+    /* Record lowest stack address */
         sw      $sp, caml_bottom_of_stack
-    /* Save requested size. Also reserve some stack space for the call. */
-        subu    $sp, $sp, 24
-        sw      $31, 20($sp)
-        sw      $25, 16($sp)
+    /* Save actual return address, $gp, requested size.
+       Also reserve some stack space for the call. */
+        subu    $sp, $sp, 32
+        sw      $31, 28($sp)
+#ifdef _PIC
+        .cprestore 24
+#endif
+        sw      $24, 16($sp)
     /* Save current allocation pointer for debugging purposes */
         sw      $22, young_ptr
     /* Save the exception handler (if e.g. a sighandler raises) */
@@ -159,16 +180,16 @@ caml_call_gc:
         lw      $22, young_ptr
         lw      $23, young_limit
     /* Allocate space for the block */
-        lw      $25, 16($sp)
-        subu    $22, $22, $25
+        lw      $24, 16($sp)
+        subu    $22, $22, $24
     /* Say that we are back into Caml code */
         sw      $0, caml_last_return_address
     /* Return to caller */
-        lw	$31, 20($sp)
-        addu    $sp, $sp, 24
+        lw	$31, 28($sp)
+        addu    $sp, $sp, 32
         j       $31
 
-        .end    caml_alloc1
+        .end    caml_call_gc
 
 /* Call a C function from Caml */
 
@@ -176,7 +197,12 @@ caml_call_gc:
         .ent    caml_c_call
 
 caml_c_call:
-    /* Function to call is in $25 */
+    /* Function to call is in $24 */
+#ifdef _PIC
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
     /* Record lowest stack address and return address */
         sw      $31, caml_last_return_address
         sw      $sp, caml_bottom_of_stack
@@ -184,7 +210,16 @@ caml_c_call:
         sw      $22, young_ptr
         sw      $30, caml_exception_pointer
     /* Call the function */
-        jal     $25
+#ifdef _PIC
+        move    $25, $24
+#endif
+        jal     $24
+#ifdef _PIC
+    /* Reload $gp based on return address */
+        .set    noreorder
+        .cpload $31
+        .set    reorder
+#endif
     /* Reload alloc ptr and alloc limit */
         lw      $22, young_ptr
         lw      $23, young_limit
@@ -203,6 +238,11 @@ caml_c_call:
         .globl  stray_exn_handler
         .ent    caml_start_program
 caml_start_program:
+#ifdef _PIC
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
 	subu    $sp, $sp, 88
         sw      $31, 84($sp)
     /* Save all callee-save registers */
@@ -264,14 +304,19 @@ stray_exn_handler:
         .globl  raise_caml_exception
         .ent    raise_caml_exception
 raise_caml_exception:
+#ifdef _PIC
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
         move    $2, $4
         lw      $22, young_ptr
         lw      $23, young_limit
         lw      $sp, caml_exception_pointer
         lw      $30, 0($sp)
-        lw      $25, 4($sp)
+        lw      $24, 4($sp)
         addu    $sp, $sp, 8
-        j       $25
+        j       $24
 
         .end    raise_caml_exception
 
@@ -280,6 +325,11 @@ raise_caml_exception:
         .globl  callback
         .ent    callback
 callback:
+#ifdef _PIC
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
     /* Initial shuffling of arguments */
         move    $9, $4          /* closure */
         move    $8, $5          /* argument */
@@ -323,7 +373,16 @@ $103:
     /* Say that we are back into Caml code */
         sw      $0, caml_last_return_address
     /* Call the Caml code */
+#ifdef _PIC
+        move    $25, $24
+#endif
 $104:   jal     $24
+#ifdef _PIC
+    /* Reload $gp based on return address */
+        .set    noreorder
+        .cpload $31
+        .set    reorder
+#endif
     /* Pop the trap frame, restoring caml_exception_pointer */
         lw      $24, 0($sp)
         sw      $24, caml_exception_pointer
@@ -360,6 +419,12 @@ $104:   jal     $24
     /* The trap handler: re-raise the exception through mlraise,
        so that local C roots are cleaned up correctly. */
 $105:
+#ifdef _PIC
+    /* Reload $gp based on trap address (still in $25) */
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
         sw      $22, young_ptr
         sw      $30, caml_exception_pointer
         lw      $24, 0($sp)
@@ -374,6 +439,11 @@ $105:
         .globl  callback2
         .ent    callback2
 callback2:
+#ifdef _PIC
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
     /* Initial shuffling of arguments */
         move    $10, $4                 /* closure */
         move    $8, $5                  /* first argument */
@@ -386,6 +456,11 @@ callback2:
         .globl  callback3
         .ent    callback3
 callback3:
+#ifdef _PIC
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
     /* Initial shuffling of arguments */
         move    $11, $4                 /* closure */
         move    $8, $5                  /* first argument */
