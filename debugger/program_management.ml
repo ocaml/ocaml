@@ -118,11 +118,15 @@ let ask_kill_program () =
 let initialize_loading () =
   if !debug_loading then
     prerr_endline "Loading debugging informations...";
-  Symbols.read_symbols
-    (try search_in_path !program_name with
-       Not_found ->
-         prerr_endline "Program not found.";
-         raise Toplevel);
+  if Filename.is_relative !program_name then begin
+    program_name := Filename.concat (getcwd ()) !program_name;
+  end;
+  begin try access !program_name [F_OK]
+  with Unix_error _ ->
+    prerr_endline "Program not found.";
+    raise Toplevel;
+  end;
+  Symbols.read_symbols !program_name;
   if !debug_loading then
     prerr_endline "Opening a socket...";
   open_connection !socket_name
