@@ -37,8 +37,8 @@ hashtbl.cmo: array.cmi sys.cmi hashtbl.cmi
 hashtbl.cmx: array.cmx sys.cmx hashtbl.cmi 
 int32.cmo: pervasives.cmi int32.cmi 
 int32.cmx: pervasives.cmx int32.cmi 
-int64.cmo: int32.cmi obj.cmi pervasives.cmi int64.cmi 
-int64.cmx: int32.cmx obj.cmx pervasives.cmx int64.cmi 
+int64.cmo: pervasives.cmi int64.cmi 
+int64.cmx: pervasives.cmx int64.cmi 
 lazy.cmo: obj.cmi lazy.cmi 
 lazy.cmx: obj.cmx lazy.cmi 
 lexing.cmo: array.cmi string.cmi sys.cmi lexing.cmi 
