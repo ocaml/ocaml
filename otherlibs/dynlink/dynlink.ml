@@ -144,26 +144,6 @@ let check_unsafe_module cu =
   if (not !unsafe_allowed) && cu.cu_primitives <> []
   then raise(Error(Unsafe_file))
 
-(* Check that all globals referenced in the object file have been 
-   initialized already *)
-
-let check_global_references file_name patchlist =
-  (* First determine the globals we will define *)
-  let defined_globals = ref [] in
-  let add_defined = function
-      (Reloc_setglobal id, pos) -> defined_globals := id :: !defined_globals
-    | _ -> () in
-  List.iter add_defined patchlist;
-  (* Then check that all referenced, not defined globals have a value *)
-  let check_reference = function
-      (Reloc_getglobal id, pos) ->
-        if not (List.mem id !defined_globals)
-        && Obj.is_int (Symtable.get_global_value id) then
-          raise(Error(Linking_error(file_name,
-                                    Uninitialized_global(Ident.name id))))
-    | _ -> () in
-  List.iter check_reference patchlist
-
 (* Load in-core and execute a bytecode object file *)
 
 let load_compunit ic file_name compunit =
@@ -184,13 +164,14 @@ let load_compunit ic file_name compunit =
   let initial_symtable = Symtable.current_state() in
   begin try
     Symtable.patch_object code compunit.cu_reloc;
-    check_global_references file_name compunit.cu_reloc;
+    Symtable.check_global_initialized compunit.cu_reloc;
     Symtable.update_global_table()
   with Symtable.Error error ->
     let new_error =
       match error with
         Symtable.Undefined_global s -> Undefined_global s
       | Symtable.Unavailable_primitive s -> Unavailable_primitive s
+      | Symtable.Uninitialized_global s -> Uninitialized_global s
       | _ -> assert false in
     raise(Error(Linking_error (file_name, new_error)))
   end;
