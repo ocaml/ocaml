@@ -484,7 +484,7 @@ let rec transl = function
   | Uprim(Pidentity, [arg]) ->
       transl arg
   | Uprim(Pignore, [arg]) ->
-      return_unit(transl arg)
+      return_unit(remove_unit (transl arg))
   | Uprim(Pgetglobal id, []) ->
       Cconst_symbol(Ident.name id)
 
