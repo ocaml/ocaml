@@ -160,6 +160,10 @@ void getargs(argc, argv)
 	    ++i;
 	    goto no_more_options;
 
+        case 'v':
+            vflag = 1;
+            break;
+
 	case 'b':
 	    if (*++s)
 		 file_prefix = s;
@@ -168,10 +172,6 @@ void getargs(argc, argv)
 	    else
 		usage();
 	    continue;
-
-	case 's':
-	    sflag = 1;
-	    break;
 
 	default:
 	    usage();
@@ -186,10 +186,6 @@ void getargs(argc, argv)
 
 	    case 'v':
 		vflag = 1;
-		break;
-
-	    case 's':
-		sflag = 1;
 		break;
 
 	    default:
