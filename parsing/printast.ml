@@ -293,7 +293,7 @@ and expression i ppf x =
       line i ppf "Pexp_assertfalse";
 (*> JOCAML *)
   | Pexp_spawn (e) ->
-      line i ppf "Pexp_spawn" ;
+      line i ppf "Pexp_spawn\n" ;
       expression i ppf e ;
   | Pexp_par (e1, e2) ->
       line i ppf "Pexp_par\n";
@@ -302,15 +302,15 @@ and expression i ppf x =
   | Pexp_null ->
       line i ppf "Pexp_null";
   | Pexp_reply (e, id) ->
-      line i ppf "Pexp_reply";
+      line i ppf "Pexp_reply\n";
       expression i ppf e;
       joinident i ppf id;
   | Pexp_def (d,e) ->
-      line i ppf "Pexp_def";
+      line i ppf "Pexp_def\n";
       joindefinition i ppf d;
       expression i ppf e;
   | Pexp_loc (d,e) ->
-      line i ppf "Pexp_loc";
+      line i ppf "Pexp_loc\n";
       joinlocations i ppf d;
       expression i ppf e;
 
