@@ -137,6 +137,97 @@ value text_of_psymbol_list loc gmod psl tvar =
     psl <:expr< [] >>
 ;
 
+value meta_action = ref False;
+
+module MetaAction =
+  struct
+    value not_impl f x =
+      let desc =
+        if Obj.is_block (Obj.repr x) then
+          "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
+        else "int_val = " ^ string_of_int (Obj.magic x)
+      in
+      failwith (f ^ ", not impl: " ^ desc)
+    ;
+    value loc = (0, 0);
+    value rec mlist mf =
+      fun
+      [ [] -> <:expr< [] >>
+      | [x :: l] -> <:expr< [ $mf x$ :: $mlist mf l$ ] >> ]
+    ;
+    value moption mf =
+      fun
+      [ None -> <:expr< None >>
+      | Some x -> <:expr< Some $mf x$ >> ]
+    ;
+    value mbool =
+      fun
+      [ False -> <:expr< False >>
+      | True -> <:expr< True >> ]
+    ;
+    value mloc = <:expr< (0, 0) >>;
+    value rec mexpr =
+      fun
+      [ MLast.ExAcc loc e1 e2 ->
+          <:expr< MLast.ExAcc $mloc$ $mexpr e1$ $mexpr e2$ >>
+      | MLast.ExApp loc e1 e2 ->
+          <:expr< MLast.ExApp $mloc$ $mexpr e1$ $mexpr e2$ >>
+      | MLast.ExChr loc s -> <:expr< MLast.ExChr $mloc$ $str:s$ >>
+      | MLast.ExFun loc pwel -> <:expr< MLast.ExFun $mloc$ $mlist mpwe pwel$ >>
+      | MLast.ExIfe loc e1 e2 e3 ->
+          <:expr< MLast.ExIfe $mloc$ $mexpr e1$ $mexpr e2$ $mexpr e3$ >>
+      | MLast.ExInt loc s -> <:expr< MLast.ExInt $mloc$ $str:s$ >>
+      | MLast.ExFlo loc s -> <:expr< MLast.ExFlo $mloc$ $str:s$ >>
+      | MLast.ExLet loc rf pel e ->
+          <:expr< MLast.ExLet $mloc$ $mbool rf$ $mlist mpe pel$ $mexpr e$ >>
+      | MLast.ExLid loc s -> <:expr< MLast.ExLid $mloc$ $str:s$ >>
+      | MLast.ExMat loc e pwel ->
+          <:expr< MLast.ExMat $mloc$ $mexpr e$ $mlist mpwe pwel$ >>
+      | MLast.ExRec loc pel eo ->
+          <:expr< MLast.ExRec $mloc$ $mlist mpe pel$ $moption mexpr eo$ >>
+      | MLast.ExSeq loc el -> <:expr< MLast.ExSeq $mloc$ $mlist mexpr el$ >>
+      | MLast.ExStr loc s -> <:expr< MLast.ExStr $mloc$ $str:s$ >>
+      | MLast.ExTry loc e pwel ->
+          <:expr< MLast.ExTry $mloc$ $mexpr e$ $mlist mpwe pwel$ >>
+      | MLast.ExTup loc el -> <:expr< MLast.ExTup $mloc$ $mlist mexpr el$ >>
+      | MLast.ExTyc loc e t ->
+          <:expr< MLast.ExTyc $mloc$ $mexpr e$ $mctyp t$ >>
+      | MLast.ExUid loc s -> <:expr< MLast.ExUid $mloc$ $str:s$ >>
+      | x -> not_impl "mexpr" x ]
+    and mpatt =
+      fun
+      [ MLast.PaAcc loc p1 p2 ->
+          <:expr< MLast.PaAcc $mloc$ $mpatt p1$ $mpatt p2$ >>
+      | MLast.PaAny loc -> <:expr< MLast.PaAny $mloc$ >>
+      | MLast.PaApp loc p1 p2 ->
+          <:expr< MLast.PaApp $mloc$ $mpatt p1$ $mpatt p2$ >>
+      | MLast.PaInt loc s -> <:expr< MLast.PaInt $mloc$ $str:s$ >>
+      | MLast.PaLid loc s -> <:expr< MLast.PaLid $mloc$ $str:s$ >>
+      | MLast.PaOrp loc p1 p2 ->
+          <:expr< MLast.PaOrp $mloc$ $mpatt p1$ $mpatt p2$ >>
+      | MLast.PaStr loc s -> <:expr< MLast.PaStr $mloc$ $str:s$ >>
+      | MLast.PaTup loc pl -> <:expr< MLast.PaTup $mloc$ $mlist mpatt pl$ >>
+      | MLast.PaTyc loc p t ->
+          <:expr< MLast.PaTyc $mloc$ $mpatt p$ $mctyp t$ >>
+      | MLast.PaUid loc s -> <:expr< MLast.PaUid $mloc$ $str:s$ >>
+      | x -> not_impl "mpatt" x ]
+    and mctyp =
+      fun 
+      [ MLast.TyAcc loc t1 t2 ->
+          <:expr< MLast.TyAcc $mloc$ $mctyp t1$ $mctyp t2$ >>
+      | MLast.TyApp loc t1 t2 ->
+          <:expr< MLast.TyApp $mloc$ $mctyp t1$ $mctyp t2$ >>
+      | MLast.TyLid loc s -> <:expr< MLast.TyLid $mloc$ $str:s$ >>
+      | MLast.TyQuo loc s -> <:expr< MLast.TyQuo $mloc$ $str:s$ >>
+      | MLast.TyTup loc tl -> <:expr< MLast.TyTup $mloc$ $mlist mctyp tl$ >>
+      | MLast.TyUid loc s -> <:expr< MLast.TyUid $mloc$ $str:s$ >>
+      | x -> not_impl "mctyp" x ]
+    and mpe (p, e) = <:expr< ($mpatt p$, $mexpr e$) >>
+    and mpwe (p, w, e) = <:expr< ($mpatt p$, $moption mexpr w$, $mexpr e$) >>
+    ;
+  end
+;
+
 value text_of_action loc psl rtvar act tvar =
   let locid = <:patt< $lid:Stdpp.loc_name.val$ >> in
   let act =
@@ -154,6 +245,11 @@ value text_of_action loc psl rtvar act tvar =
              let t = ps.symbol.styp tvar in
              <:expr< fun [ ($p$ : $t$) -> $txt$ ] >> ])
       e psl
+  in
+  let txt =
+    if meta_action.val then
+      <:expr< Obj.magic $MetaAction.mexpr txt$ >>
+    else txt
   in
   <:expr< Gramext.action $txt$ >>
 ;
@@ -527,3 +623,6 @@ EXTEND
           Pcaml.expr_reloc (fun (bp, ep) -> (shift + bp, shift + ep)) 0 e ] ]
   ;
 END;
+
+Pcaml.add_option "-meta_action" (Arg.Set meta_action)
+  " Undocumented";

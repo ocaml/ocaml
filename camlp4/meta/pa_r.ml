@@ -427,13 +427,13 @@ EXTEND
     [ RIGHTA
       [ i = LIDENT -> <:expr< $lid:i$ >>
       | i = UIDENT -> <:expr< $uid:i$ >>
-      | m = UIDENT; "."; i = SELF ->
+      | i = UIDENT; "."; j = SELF ->
           let rec loop m =
             fun
             [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
             | e -> <:expr< $m$ . $e$ >> ]
           in
-          loop <:expr< $uid:m$ >> i ] ]
+          loop <:expr< $uid:i$ >> j ] ]
   ;
   fun_def:
     [ RIGHTA
@@ -571,7 +571,7 @@ EXTEND
     [ RIGHTA
       [ i = UIDENT -> [i]
       | i = LIDENT -> [i]
-      | m = UIDENT; "."; i = SELF -> [m :: i] ] ]
+      | i = UIDENT; "."; j = SELF -> [i :: j] ] ]
   ;
   direction_flag:
     [ [ "to" -> True
@@ -665,9 +665,9 @@ EXTEND
     [ [ mf = OPT "mutable"; l = label; "="; e = expr -> (l, o2b mf, e)
       | mf = OPT "mutable"; l = label; ":"; t = ctyp; "="; e = expr ->
           (l, o2b mf, <:expr< ($e$ : $t$) >>)
-      | mf = OPT "mutable"; l = label; ":"; t1 = ctyp; ":>"; t2 = ctyp; "=";
+      | mf = OPT "mutable"; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
         e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t1$ :> $t2$) >>)
+          (l, o2b mf, <:expr< ($e$ : $t$ :> $t2$) >>)
       | mf = OPT "mutable"; l = label; ":>"; t = ctyp; "="; e = expr ->
           (l, o2b mf, <:expr< ($e$ :> $t$) >>) ] ]
   ;
@@ -722,8 +722,8 @@ EXTEND
     [ [ e = SELF; "#"; lab = label -> <:expr< $e$ # $lab$ >> ] ]
   ;
   expr: LEVEL "simple"
-    [ [ "("; e = SELF; ":"; t1 = ctyp; ":>"; t2 = ctyp; ")" ->
-          <:expr< ($e$ : $t1$ :> $t2$ ) >>
+    [ [ "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
+          <:expr< ($e$ : $t$ :> $t2$ ) >>
       | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
       | "{<"; ">}" -> <:expr< {< >} >>
       | "{<"; fel = field_expr_list; ">}" -> <:expr< {< $list:fel$ >} >> ] ]

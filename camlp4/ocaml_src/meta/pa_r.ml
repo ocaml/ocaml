@@ -1192,13 +1192,13 @@ Grammar.extend
      [[Gramext.Stoken ("UIDENT", ""); Gramext.Stoken ("", ".");
        Gramext.Sself],
       Gramext.action
-        (fun (i : 'expr_ident) _ (m : string) (loc : int * int) ->
+        (fun (j : 'expr_ident) _ (i : string) (loc : int * int) ->
            (let rec loop m =
               function
                 MLast.ExAcc (_, x, y) -> loop (MLast.ExAcc (loc, m, x)) y
               | e -> MLast.ExAcc (loc, m, e)
             in
-            loop (MLast.ExUid (loc, m)) i :
+            loop (MLast.ExUid (loc, i)) j :
             'expr_ident));
       [Gramext.Stoken ("UIDENT", "")],
       Gramext.action
@@ -1597,8 +1597,8 @@ Grammar.extend
      [[Gramext.Stoken ("UIDENT", ""); Gramext.Stoken ("", ".");
        Gramext.Sself],
       Gramext.action
-        (fun (i : 'mod_ident) _ (m : string) (loc : int * int) ->
-           (m :: i : 'mod_ident));
+        (fun (j : 'mod_ident) _ (i : string) (loc : int * int) ->
+           (i :: j : 'mod_ident));
       [Gramext.Stoken ("LIDENT", "")],
       Gramext.action
         (fun (i : string) (loc : int * int) -> ([i] : 'mod_ident));
@@ -1955,9 +1955,9 @@ Grammar.extend
        Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'expr) _ (t2 : 'ctyp) _ (t1 : 'ctyp) _ (l : 'label)
+        (fun (e : 'expr) _ (t2 : 'ctyp) _ (t : 'ctyp) _ (l : 'label)
            (mf : string option) (loc : int * int) ->
-           (l, o2b mf, MLast.ExCoe (loc, e, Some t1, t2) : 'cvalue));
+           (l, o2b mf, MLast.ExCoe (loc, e, Some t, t2) : 'cvalue));
       [Gramext.Sopt (Gramext.Stoken ("", "mutable"));
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
@@ -2166,9 +2166,8 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (t2 : 'ctyp) _ (t1 : 'ctyp) _ (e : 'expr) _
-           (loc : int * int) ->
-           (MLast.ExCoe (loc, e, Some t1, t2) : 'expr))]];
+        (fun _ (t2 : 'ctyp) _ (t : 'ctyp) _ (e : 'expr) _ (loc : int * int) ->
+           (MLast.ExCoe (loc, e, Some t, t2) : 'expr))]];
     Grammar.Entry.obj (field_expr_list : 'field_expr_list Grammar.Entry.e),
     None,
     [None, None,
@@ -2462,7 +2461,7 @@ let warning_seq () =
     end
 ;;
 Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
-  "    Warn when using old syntax for sequences.";;
+  " No warning when using old syntax for sequences.";;
 
 Grammar.extend
   (let _ = (expr : 'expr Grammar.Entry.e)
