@@ -341,6 +341,8 @@ clean:: dummy
 	$(OCAMLYACC) odoc_parser.mly
 	$(OCAMLLEX) odoc_text_lexer.mll
 	$(OCAMLLEX) odoc_lexer.mll
+	$(OCAMLLEX) odoc_ocamlhtml.mll
+	$(OCAMLLEX) odoc_see_lexer.mll
 	$(OCAMLDEP) $(INCLUDES) *.mll *.mly *.ml *.mli > .depend
 
 dummy:
