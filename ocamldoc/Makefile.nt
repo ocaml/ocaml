@@ -11,19 +11,17 @@
 
 # $Id$
 
-include ../config/Makefile
+!include ..\config\Makefile.nt
 
-# Various commands and dir
-##########################
-CAMLRUN=../boot/ocamlrun
-OCAMLC   = $(CAMLRUN) ../boot/ocamlc -I ../boot -warn-error A
-OCAMLOPT = $(CAMLRUN) ../ocamlopt 
-OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
-OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
-OCAMLYACC= ../boot/ocamlyacc
+CAMLRUN =..\boot\ocamlrun
+OCAMLC   =$(CAMLRUN) ..\boot\ocamlc -I ..\boot -warn-error A
+OCAMLOPT =$(CAMLRUN) ..\ocamlopt
+OCAMLLEX =$(CAMLRUN) ..\boot\ocamllex
+OCAMLYACC=..\boot\ocamlyacc
+
 OCAMLLIB = $(LIBDIR)
 OCAMLBIN = $(BINDIR)
-EXTRAC_CRC = $(CAMLRUN) ../otherlibs/dynlink/extract_crc
+EXTRAC_CRC = $(CAMLRUN) ..\otherlibs\dynlink\extract_crc
 
 OCAMLPP=-pp 'grep -v DEBUG'
 
@@ -37,7 +35,7 @@ OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa 
 OCAMLDOC_LIBA=odoc_info.a
-INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
+INSTALL_LIBDIR=$(OCAMLLIB)\ocamldoc
 INSTALL_BINDIR=$(OCAMLBIN)
 
 INSTALL_MLIS=odoc_info.mli
@@ -46,19 +44,19 @@ INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
 # Compilation
 #############
 OCAMLSRCDIR:=..
-INCLUDES=  -I $(OCAMLSRCDIR)/parsing \
-	-I $(OCAMLSRCDIR)/utils \
-	-I $(OCAMLSRCDIR)/typing \
-	-I $(OCAMLSRCDIR)/driver \
-	-I $(OCAMLSRCDIR)/bytecomp \
-	-I $(OCAMLSRCDIR)/tools \
-	-I $(OCAMLSRCDIR)/stdlib \
-	-I $(OCAMLSRCDIR)/otherlibs/str \
-	-I $(OCAMLSRCDIR)/otherlibs/dynlink \
-	-I $(OCAMLSRCDIR)/otherlibs/unix \
-	-I $(OCAMLSRCDIR)/otherlibs/num \
-	-I $(OCAMLSRCDIR)/otherlibs/graph \
-	-I $(OCAMLSRCDIR)/toplevel/ \
+INCLUDES=  -I $(OCAMLSRCDIR)\parsing \
+	-I $(OCAMLSRCDIR)\utils \
+	-I $(OCAMLSRCDIR)\typing \
+	-I $(OCAMLSRCDIR)\driver \
+	-I $(OCAMLSRCDIR)\bytecomp \
+	-I $(OCAMLSRCDIR)\tools \
+	-I $(OCAMLSRCDIR)\stdlib \
+	-I $(OCAMLSRCDIR)\otherlibs/str \
+	-I $(OCAMLSRCDIR)\otherlibs/dynlink \
+	-I $(OCAMLSRCDIR)\otherlibs/unix \
+	-I $(OCAMLSRCDIR)\otherlibs/num \
+	-I $(OCAMLSRCDIR)\otherlibs/graph \
+	-I $(OCAMLSRCDIR)\toplevel/ \
 
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
@@ -119,52 +117,52 @@ LIBCMXFILES= $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES= $(LIBCMOFILES:.cmo=.cmi)
 
 # Les cmo et cmx de la distrib OCAML
-OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
-	$(OCAMLSRCDIR)/typing/ident.cmo \
-	$(OCAMLSRCDIR)/utils/tbl.cmo \
-	$(OCAMLSRCDIR)/utils/misc.cmo \
-	$(OCAMLSRCDIR)/utils/config.cmo \
-	$(OCAMLSRCDIR)/utils/clflags.cmo \
-	$(OCAMLSRCDIR)/utils/warnings.cmo \
-	$(OCAMLSRCDIR)/utils/ccomp.cmo \
-	$(OCAMLSRCDIR)/parsing/linenum.cmo\
-	$(OCAMLSRCDIR)/parsing/location.cmo\
-	$(OCAMLSRCDIR)/parsing/longident.cmo \
-	$(OCAMLSRCDIR)/parsing/syntaxerr.cmo \
-	$(OCAMLSRCDIR)/parsing/parser.cmo \
-	$(OCAMLSRCDIR)/parsing/lexer.cmo \
-	$(OCAMLSRCDIR)/parsing/parse.cmo \
-	$(OCAMLSRCDIR)/typing/types.cmo \
-	$(OCAMLSRCDIR)/typing/path.cmo \
-	$(OCAMLSRCDIR)/typing/btype.cmo \
-	$(OCAMLSRCDIR)/typing/predef.cmo \
-	$(OCAMLSRCDIR)/typing/datarepr.cmo \
-	$(OCAMLSRCDIR)/typing/subst.cmo \
-	$(OCAMLSRCDIR)/typing/env.cmo \
-	$(OCAMLSRCDIR)/typing/ctype.cmo \
-	$(OCAMLSRCDIR)/typing/primitive.cmo \
-	$(OCAMLSRCDIR)/typing/oprint.cmo \
-	$(OCAMLSRCDIR)/typing/printtyp.cmo \
-	$(OCAMLSRCDIR)/typing/includecore.cmo \
-	$(OCAMLSRCDIR)/typing/typetexp.cmo \
-	$(OCAMLSRCDIR)/typing/parmatch.cmo \
-	$(OCAMLSRCDIR)/typing/typedtree.cmo \
-	$(OCAMLSRCDIR)/typing/typecore.cmo \
-	$(OCAMLSRCDIR)/typing/includeclass.cmo \
-	$(OCAMLSRCDIR)/typing/typedecl.cmo \
-	$(OCAMLSRCDIR)/typing/typeclass.cmo \
-	$(OCAMLSRCDIR)/typing/mtype.cmo \
-	$(OCAMLSRCDIR)/typing/includemod.cmo \
-	$(OCAMLSRCDIR)/typing/typemod.cmo \
-	$(OCAMLSRCDIR)/bytecomp/lambda.cmo \
-	$(OCAMLSRCDIR)/bytecomp/typeopt.cmo \
-	$(OCAMLSRCDIR)/bytecomp/printlambda.cmo \
-	$(OCAMLSRCDIR)/bytecomp/switch.cmo \
-	$(OCAMLSRCDIR)/bytecomp/matching.cmo \
-	$(OCAMLSRCDIR)/bytecomp/translobj.cmo \
-	$(OCAMLSRCDIR)/bytecomp/translcore.cmo \
-	$(OCAMLSRCDIR)/bytecomp/translclass.cmo \
-	$(OCAMLSRCDIR)/tools/depend.cmo
+OCAMLCMOFILES=$(OCAMLSRCDIR)\parsing\printast.cmo \
+	$(OCAMLSRCDIR)\typing\ident.cmo \
+	$(OCAMLSRCDIR)\utils\tbl.cmo \
+	$(OCAMLSRCDIR)\utils\misc.cmo \
+	$(OCAMLSRCDIR)\utils\config.cmo \
+	$(OCAMLSRCDIR)\utils\clflags.cmo \
+	$(OCAMLSRCDIR)\utils\warnings.cmo \
+	$(OCAMLSRCDIR)\utils\ccomp.cmo \
+	$(OCAMLSRCDIR)\parsing\linenum.cmo\
+	$(OCAMLSRCDIR)\parsing\location.cmo\
+	$(OCAMLSRCDIR)\parsing\longident.cmo \
+	$(OCAMLSRCDIR)\parsing\syntaxerr.cmo \
+	$(OCAMLSRCDIR)\parsing\parser.cmo \
+	$(OCAMLSRCDIR)\parsing\lexer.cmo \
+	$(OCAMLSRCDIR)\parsing\parse.cmo \
+	$(OCAMLSRCDIR)\typing\types.cmo \
+	$(OCAMLSRCDIR)\typing\path.cmo \
+	$(OCAMLSRCDIR)\typing\btype.cmo \
+	$(OCAMLSRCDIR)\typing\predef.cmo \
+	$(OCAMLSRCDIR)\typing\datarepr.cmo \
+	$(OCAMLSRCDIR)\typing\subst.cmo \
+	$(OCAMLSRCDIR)\typing\env.cmo \
+	$(OCAMLSRCDIR)\typing\ctype.cmo \
+	$(OCAMLSRCDIR)\typing\primitive.cmo \
+	$(OCAMLSRCDIR)\typing\oprint.cmo \
+	$(OCAMLSRCDIR)\typing\printtyp.cmo \
+	$(OCAMLSRCDIR)\typing\includecore.cmo \
+	$(OCAMLSRCDIR)\typing\typetexp.cmo \
+	$(OCAMLSRCDIR)\typing\parmatch.cmo \
+	$(OCAMLSRCDIR)\typing\typedtree.cmo \
+	$(OCAMLSRCDIR)\typing\typecore.cmo \
+	$(OCAMLSRCDIR)\typing\includeclass.cmo \
+	$(OCAMLSRCDIR)\typing\typedecl.cmo \
+	$(OCAMLSRCDIR)\typing\typeclass.cmo \
+	$(OCAMLSRCDIR)\typing\mtype.cmo \
+	$(OCAMLSRCDIR)\typing\includemod.cmo \
+	$(OCAMLSRCDIR)\typing\typemod.cmo \
+	$(OCAMLSRCDIR)\bytecomp\lambda.cmo \
+	$(OCAMLSRCDIR)\bytecomp\typeopt.cmo \
+	$(OCAMLSRCDIR)\bytecomp\printlambda.cmo \
+	$(OCAMLSRCDIR)\bytecomp\switch.cmo \
+	$(OCAMLSRCDIR)\bytecomp\matching.cmo \
+	$(OCAMLSRCDIR)\bytecomp\translobj.cmo \
+	$(OCAMLSRCDIR)\bytecomp\translcore.cmo \
+	$(OCAMLSRCDIR)\bytecomp\translclass.cmo \
+	$(OCAMLSRCDIR)\tools\depend.cmo
 
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
