@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                         Caml Special Light                          *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1995 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
@@ -11,29 +11,27 @@
 
 (* $Id$ *)
 
-type t =
-  { mutable locked: bool;
-    mutable lock_waiting: t list }
+type t = { mutable locked: bool; mutable waiting: Thread.t list }
 
-(* We rely heavily on the fact that signals are detected only at
-   function applications and beginning of loops, making all other operations
-   atomic. *)
+let new () = { locked = false; waiting = [] }
 
-let new_lock () = { locked = false; lock_waiting = [] }
-
-let rec lock l =
-  if l.locked then begin
-    l.lock_waiting <- Thread.self() :: l.lock_waiting;
+let rec lock m =
+  if m.locked then begin                (* test and set atomic *)
+    Thread.critical_section := true;
+    m.waiting <- Thread.self() :: m.waiting;
     Thread.sleep();
-    lock l
+    lock m
   end else begin
-    l.locked <- true
+    m.locked <- true                    (* test and set atomic *)
   end
 
-let try_lock l =
-  if l.locked then false else begin l.locked <- true; true end
+let try_lock m =                        (* test and set atomic *)
+  if m.locked then false else begin m.locked <- true; true end
 
-let unlock l =
-  List.iter Thread.wakeup l.lock_waiting;
-  l.locked <- false
+let unlock m =
+  (* Don't play with Thread.critical_section here because of Condition.wait *)
+  let w = m.waiting in                  (* atomic *)
+  m.waiting <- [];                      (* atomic *)
+  m.locked <- false;                    (* atomic *)
+  List.iter Thread.wakeup w
 

@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                         Caml Special Light                          *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1995 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Module [Condition]: synchronization between threads via conditions *)
+(* Module [Condition]: synchronization between threads using conditions *)
 
 type t
 val new: unit -> t
