@@ -99,7 +99,8 @@ let build_initial_env add_type add_exception empty_env =
      type_kind = Type_abstract;
      type_manifest = None} in
 
-  add_exception ident_match_failure [newgenty (Ttuple[type_string; type_int; type_int])] (
+  add_exception ident_match_failure
+                         [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_exception ident_out_of_memory [] (
   add_exception ident_invalid_argument [type_string] (
   add_exception ident_failure [type_string] (
@@ -121,6 +122,7 @@ let build_initial_env add_type add_exception empty_env =
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))
-      [ident_match_failure; ident_out_of_memory; ident_invalid_argument;
+      [ident_match_failure; ident_out_of_memory;
+       ident_invalid_argument;
        ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
        ident_division_by_zero]
