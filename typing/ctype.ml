@@ -760,8 +760,9 @@ let rec copy ty =
           let row = row_repr row0 in
           let more = repr row.row_more in
           (* We must substitute in a subtle way *)
+          (* Tsubst takes a tuple containing the row var and the variant *)
           begin match more.desc with
-            Tsubst ty2 when (repr ty2).desc <> Tunivar ->
+            Tsubst {desc = Ttuple [_;ty2]} ->
               (* This variant type has been already copied *)
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
@@ -775,7 +776,7 @@ let rec copy ty =
                     if keep then more else newty more.desc
               in
               (* Register new type first for recursion *)
-              more.desc <- ty.desc;
+              more.desc <- Tsubst(newgenty(Ttuple[more';t]));
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
           end
@@ -3025,6 +3026,7 @@ let rec nondep_type_rec env id ty =
           let row = row_repr row in
           let more = repr row.row_more in
           (* We must substitute in a subtle way *)
+          (* Tsubst denotes the variant itself, as the row var is unchanged *)
           begin match more.desc with
             Tsubst ty2 ->
               (* This variant type has been already copied *)

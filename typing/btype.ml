@@ -80,6 +80,7 @@ let row_field_repr fi = row_field_repr_aux [] fi
 let rec row_repr row =
   match (repr row.row_more).desc with
   | Tvariant row' ->
+      if row.row_fields = [] then row_repr row' else
       let row' = row_repr row' in
       {row' with row_fields = row.row_fields @ row'.row_fields}
   | _ -> row
@@ -194,11 +195,13 @@ let rec copy_kind = function
 let copy_commu c =
   if commu_repr c = Cok then Cok else Clink (ref Cunknown)
 
+(* Since univars may be used as row variables, we need to do some
+   encoding during substitution *)
 let rec norm_univar ty =
   match ty.desc with
     Tunivar | Tsubst _ -> ty
   | Tlink ty           -> norm_univar ty
-  | Tvariant row       -> norm_univar (row_more row)
+  | Ttuple (ty :: _)   -> norm_univar ty
   | _                  -> assert false
 
 let rec copy_type_desc f = function

@@ -98,8 +98,9 @@ let rec typexp s ty =
           let row = row_repr row in
           let more = repr row.row_more in
           (* We must substitute in a subtle way *)
+          (* Tsubst takes a tuple containing the row var and the variant *)
           begin match more.desc with
-            Tsubst ty2 when (repr ty2).desc <> Tunivar ->
+            Tsubst {desc = Ttuple [_;ty2]} ->
               (* This variant type has been already copied *)
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
@@ -114,7 +115,7 @@ let rec typexp s ty =
                     if static then newgenvar () else more
               in
               (* Register new type first for recursion *)
-              more.desc <- ty.desc;
+              more.desc <- Tsubst(newgenty(Ttuple[more';ty']));
               (* Return a new copy *)
               let row =
                 copy_row (typexp s) true row (not s.for_saving) more' in
@@ -215,8 +216,8 @@ let cltype_declaration s decl =
       clty_type = class_type s decl.clty_type;
       clty_path = type_path s decl.clty_path }
   in
-  (* Do not clean up if saving: next is type_declaration *)
-  if not s.for_saving then cleanup_types ();
+  (* Do clean up even if saving: type_declaration may be recursive *)
+  cleanup_types ();
   decl
 
 let class_type s cty =
