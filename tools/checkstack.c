@@ -18,7 +18,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-#define MINSTACKBYTES (512 * 1024 * sizeof (long))
+#define MINSTACKBYTES (384 * 1024 * sizeof (long))
 
 int main(int argc, char ** argv)
 {
