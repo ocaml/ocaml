@@ -250,7 +250,7 @@ class text =
       s_title2^
       (match label_opt with
 	None -> ""
-      |	Some l -> self#make_label l)
+      |	Some l -> self#make_label (self#label ~no_: false l))
 
     method latex_of_Latex s = s
 
@@ -266,7 +266,7 @@ class text =
 	    (Odoc_info.Code (Odoc_info.use_hidden_modules name))
       |	Some kind when kind = RK_section -> 
 	  self#latex_of_text_element
-	    (Latex ("["^(self#make_ref (self#label (Name.simple name)))^"]"))
+	    (Latex ("["^(self#make_ref (self#label ~no_:false (Name.simple name)))^"]"))
       |	Some kind ->
 	  let f_label = 
 	    match kind with
