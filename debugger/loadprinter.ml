@@ -55,15 +55,33 @@ let use_debugger_symtable fn arg =
 
 (* Load a .cmo or .cma file *)
 
-let loadfile filename =
+open Format
+
+let rec loadfiles name =
+  try
+    let filename = find_in_path !Config.load_path name in
+    use_debugger_symtable Dynlink.loadfile filename;
+    print_string "File "; print_string name; print_string " loaded";
+    print_newline ();
+    true
+  with
+    Dynlink.Error (Dynlink.Unavailable_unit unit) ->
+      loadfiles (String.uncapitalize unit ^ ".cmo")
+        &&
+      loadfiles name
+  | Not_found ->
+      print_string "Cannot find file "; print_string name; print_newline();
+      false
+  | Dynlink.Error e ->
+      raise(Error(Load_failure e))
+
+let loadfile name =
   if !debugger_symtable = None then begin
     Dynlink.add_interfaces stdlib_units [Config.standard_library];
     Dynlink.allow_unsafe_modules true
   end;
-  try
-    use_debugger_symtable Dynlink.loadfile filename
-  with Dynlink.Error e ->
-    raise(Error(Load_failure e))
+  loadfiles name;
+  ()
 
 (* Return the value referred to by a path (as in toplevel/topdirs) *)
 (* Note: evaluation proceeds in the debugger memory space, not in
