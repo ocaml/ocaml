@@ -21,7 +21,7 @@ let compile_file filename =
   let lb = Lexing.from_channel ic in
   try
     while true do
-      Asmgen.compile_phrase(Parsecmm.phrase Lexcmm.token lb)
+      Asmgen.compile_phrase Format.std_formatter (Parsecmm.phrase Lexcmm.token lb)
     done
   with
       End_of_file ->

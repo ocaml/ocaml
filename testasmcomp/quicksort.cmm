@@ -38,6 +38,6 @@
         (let temp (addraref a i)
              (addraset a i (addraref a hi))
              (addraset a hi temp))
-        (app "quicksort" [lo (- i 1) a] unit)
-        (app "quicksort" [(+ i 1) hi a] unit))
+        (app "quicksort" lo (- i 1) a unit)
+        (app "quicksort" (+ i 1) hi a unit))
     []))

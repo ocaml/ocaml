@@ -44,11 +44,14 @@ let keyword_table =
     "exit", EXIT;
     "extcall", EXTCALL;
     "float", FLOAT;
+    "float32", FLOAT32;
+    "float64", FLOAT64;
     "floatofint", FLOATOFINT;
     "function", FUNCTION;
     "half", HALF;
     "if", IF;
     "int", INT;
+    "int32", INT32;
     "intoffloat", INTOFFLOAT;
     "string", KSTRING;
     "let", LET;

@@ -10,8 +10,8 @@ main.cmx: ../asmcomp/asmgen.cmx ../utils/clflags.cmx ../asmcomp/compilenv.cmx \
     ../asmcomp/emit.cmx lexcmm.cmx parsecmm.cmx parsecmmaux.cmx \
     ../asmcomp/printmach.cmx 
 parsecmm.cmo: ../asmcomp/arch.cmo ../asmcomp/cmm.cmi ../utils/misc.cmi \
-    ../utils/nativeint.cmi parsecmmaux.cmi parsecmm.cmi 
+    parsecmmaux.cmi parsecmm.cmi 
 parsecmm.cmx: ../asmcomp/arch.cmx ../asmcomp/cmm.cmx ../utils/misc.cmx \
-    ../utils/nativeint.cmx parsecmmaux.cmx parsecmm.cmi 
+    parsecmmaux.cmx parsecmm.cmi 
 parsecmmaux.cmo: ../typing/ident.cmi parsecmmaux.cmi 
 parsecmmaux.cmx: ../typing/ident.cmx parsecmmaux.cmi 

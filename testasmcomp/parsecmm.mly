@@ -70,6 +70,8 @@ let access_array base numelt size =
 %token EXIT
 %token EXTCALL
 %token FLOAT
+%token FLOAT32
+%token FLOAT64
 %token <string> FLOATCONST
 %token FLOATOFINT
 %token FUNCTION
@@ -83,6 +85,7 @@ let access_array base numelt size =
 %token <string> IDENT
 %token IF
 %token INT
+%token INT32
 %token <int> INTCONST
 %token INTOFFLOAT
 %token KSTRING
@@ -174,12 +177,11 @@ expr:
   | STRING      { Cconst_symbol $1 }
   | POINTER     { Cconst_pointer $1 }
   | IDENT       { Cvar(find_ident $1) }
+  | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
   | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
-  | LBRACKET exprlist RBRACKET { Ctuple(List.rev $2) }
-  | LPAREN APPLY expr expr machtype RPAREN { Cop(Capply $5, [$3; $4]) }
-  | LPAREN EXTCALL STRING expr machtype RPAREN { Cop(Cextcall($3, $5, true), [$4]) }
-  | LPAREN LOAD expr machtype RPAREN { Cop(Cload $4, [$3]) }
+  | LPAREN APPLY expr exprlist machtype RPAREN { Cop(Capply $5, $3 :: List.rev $4) }
+  | LPAREN EXTCALL STRING exprlist machtype RPAREN { Cop(Cextcall($3, $5, true), List.rev $4) }
   | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3]) }
   | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4]) }
   | LPAREN unaryop expr RPAREN { Cop($2, [$3]) }
@@ -194,17 +196,17 @@ expr:
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
   | LPAREN ADDRAREF expr expr RPAREN
-      { Cop(Cload typ_addr, [access_array $3 $4 Arch.size_addr]) }
+      { Cop(Cload Word, [access_array $3 $4 Arch.size_addr]) }
   | LPAREN INTAREF expr expr RPAREN
-      { Cop(Cload typ_int, [access_array $3 $4 Arch.size_int]) }
+      { Cop(Cload Word, [access_array $3 $4 Arch.size_int]) }
   | LPAREN FLOATAREF expr expr RPAREN
-      { Cop(Cload typ_float, [access_array $3 $4 Arch.size_float]) }
+      { Cop(Cload Double_u, [access_array $3 $4 Arch.size_float]) }
   | LPAREN ADDRASET expr expr expr RPAREN
-      { Cop(Cstore, [access_array $3 $4 Arch.size_addr; $5]) }
+      { Cop(Cstore Word, [access_array $3 $4 Arch.size_addr; $5]) }
   | LPAREN INTASET expr expr expr RPAREN
-      { Cop(Cstore, [access_array $3 $4 Arch.size_int; $5]) }
+      { Cop(Cstore Word, [access_array $3 $4 Arch.size_int; $5]) }
   | LPAREN FLOATASET expr expr expr RPAREN
-      { Cop(Cstore, [access_array $3 $4 Arch.size_float; $5]) }
+      { Cop(Cstore Double_u, [access_array $3 $4 Arch.size_float; $5]) }
 ;
 exprlist:
     exprlist expr               { $2 :: $1 }
@@ -226,11 +228,17 @@ chunk:
   | SIGNED BYTE                 { Byte_signed }
   | UNSIGNED HALF               { Sixteen_unsigned }
   | SIGNED HALF                 { Sixteen_signed }
+  | UNSIGNED INT32              { Thirtytwo_unsigned }
+  | SIGNED INT32                { Thirtytwo_signed }
+  | INT                         { Word }
+  | ADDR                        { Word }
+  | FLOAT32                     { Single }
+  | FLOAT64                     { Double }
+  | FLOAT                       { Double_u }
+
 ;
 unaryop:
-    PROJ INTCONST               { Cproj($2, 1) }
-  | PROJ INTCONST SUBI INTCONST { Cproj($2, $4 - $2 - 1) }
-  | LOAD chunk                  { Cloadchunk $2 }
+    LOAD chunk                  { Cload $2 }
   | ALLOC                       { Calloc }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
@@ -238,8 +246,7 @@ unaryop:
   | ABSF                        { Cabsf }
 ;
 binaryop:
-    STORE                       { Cstore }
-  | STORE chunk                 { Cstorechunk $2 }
+    STORE chunk                 { Cstore $2 }
   | ADDI                        { Caddi }
   | SUBI                        { Csubi }
   | MULI                        { Cmuli }
@@ -303,8 +310,8 @@ dataitem:
   | INTCONST COLON              { Cdefine_label $1 }
   | BYTE INTCONST               { Cint8 $2 }
   | HALF INTCONST               { Cint16 $2 }
-  | INT INTCONST                { Cint(Nativeint.from $2) }
-  | FLOAT FLOATCONST            { Cfloat $2 }
+  | INT INTCONST                { Cint(Nativeint.of_int $2) }
+  | FLOAT FLOATCONST            { Cdouble $2 }
   | ADDR STRING                 { Csymbol_address $2 }
   | ADDR INTCONST               { Clabel_address $2 }
   | KSTRING STRING              { Cstring $2 }

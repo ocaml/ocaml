@@ -15,8 +15,8 @@
 include ../config/Makefile
 
 CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
-COMPFLAGS=$(INCLUDES)
-LINKFLAGS=
+COMPFLAGS=$(INCLUDES) -g
+LINKFLAGS=-g
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
 CAMLLEX=../boot/ocamlrun ../boot/ocamllex
@@ -36,7 +36,7 @@ all: codegen $(PROGS)
 INCLUDES=-I ../utils -I ../typing -I ../asmcomp
 
 OTHEROBJS=../utils/misc.cmo ../utils/config.cmo ../utils/tbl.cmo \
-  ../utils/nativeint.cmo ../utils/clflags.cmo ../utils/ccomp.cmo \
+  ../utils/clflags.cmo ../utils/ccomp.cmo \
   ../utils/config.cmo ../utils/clflags.cmo ../utils/warnings.cmo \
   ../parsing/linenum.cmo ../parsing/location.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
@@ -48,7 +48,7 @@ OTHEROBJS=../utils/misc.cmo ../utils/config.cmo ../utils/tbl.cmo \
   ../asmcomp/reg.cmo ../asmcomp/mach.cmo ../asmcomp/proc.cmo \
   ../asmcomp/closure.cmo ../asmcomp/cmmgen.cmo \
   ../asmcomp/printmach.cmo \
-  ../asmcomp/selectgen.cmo ../asmcomp/selection.cmo \
+  ../asmcomp/selectgen.cmo ../asmcomp/selection.cmo ../asmcomp/comballoc.cmo \
   ../asmcomp/liveness.cmo ../asmcomp/spill.cmo ../asmcomp/split.cmo \
   ../asmcomp/interf.cmo ../asmcomp/coloring.cmo \
   ../asmcomp/reloadgen.cmo ../asmcomp/reload.cmo \

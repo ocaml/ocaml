@@ -24,13 +24,13 @@
           (catch
             (while 1
               (if (>= i hi) exit [])
-              (if (> (app cmp [(intaref a i) pivot] int) 0) exit [])
+              (if (> (app cmp (intaref a i) pivot int) 0) exit [])
               (assign i (+ i 1)))
             with [])
           (catch
             (while 1
               (if (<= j lo) exit [])
-              (if (< (app cmp [(intaref a j) pivot] int) 0) exit [])
+              (if (< (app cmp (intaref a j) pivot int) 0) exit [])
               (assign j (- j 1)))
            with [])
           (if (< i j)
@@ -41,8 +41,8 @@
         (let temp (intaref a i)
              (intaset a i (intaref a hi))
              (intaset a hi temp))
-        (app "quick" [lo (- i 1) a cmp] unit)
-        (app "quick" [(+ i 1) hi a cmp] unit))
+        (app "quick" lo (- i 1) a cmp unit)
+        (app "quick" (+ i 1) hi a cmp unit))
     []))
 
 (function "quicksort" (lo: int hi: int a: addr)
