@@ -409,6 +409,10 @@ object (self)
 
   method create_box =
     let fmbox, mbox, sb = Jg_box.create_with_scrollbar boxes_frame in
+    bind mbox ~events:[`Modified([`Double], `ButtonPressDetail 1)]
+      ~action:(fun _ -> show_all ());
+    bind mbox ~events:[`Modified([`Double], `KeyPressDetail "Return")]
+      ~action:(fun _ -> show_all ());
     boxes <- boxes @ [fmbox, mbox];
     pack [sb] ~side:`Right ~fill:`Y;
     pack [mbox] ~side:`Left ~fill:`Both ~expand:true;
@@ -441,10 +445,6 @@ object (self)
       begin fun index ->
         view_defined (Lident (Listbox.get mbox ~index)) ~env:!start_env
       end;
-    bind mbox ~events:[`Modified([`Double], `ButtonPressDetail 1)]
-      ~action:(fun _ -> show_all ());
-    bind mbox ~events:[`Modified([`Double], `KeyPressDetail "Return")]
-      ~action:(fun _ -> show_all ());
     Setpath.add_update_hook (fun () -> reset_modules mbox; self#hide_after 1);
     List.iter [1;2] ~f:(fun _ -> ignore self#create_box);
     Searchpos.default_frame := Some
