@@ -73,7 +73,7 @@ val blit :
    do not designate a valid substring of [dst]. *)
 
 val concat : sep:string -> string list -> string
-(** [String.concat sep sl] catenates the list of strings [sl],
+(** [String.concat sep sl] concatenates the list of strings [sl],
    inserting the separator string [sep] between each. *)
 
 val iter : f:(char -> unit) -> string -> unit
