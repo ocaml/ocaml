@@ -33,16 +33,28 @@ static value alloc_process_status(HANDLE pid, int status)
   return res;
 }
 
-value win_waitpid(value flags, value vpid_req) /* ML */
+enum { CAML_WNOHANG = 1, CAML_WUNTRACED = 2 };
+
+static int wait_flag_table[] = { CAML_WNOHANG, CAML_WUNTRACED };
+
+value win_waitpid(value vflags, value vpid_req) /* ML */
 {
-  int status;
+  int status, flags;
   HANDLE pid_req = (HANDLE) Long_val(vpid_req);
 
-  if (WaitForSingleObject(pid_req, INFINITE) != WAIT_FAILED
-      && GetExitCodeProcess(pid_req, &status)) {
-    return alloc_process_status(pid_req, status);
-  } else {
+  flags = convert_flag_list(vflags, wait_flag_table);
+  if (flags & CAML_WNOHANG == 0) {
+    if (WaitForSingleObject(pid_req, INFINITE) == WAIT_FAILED) {
+      _dosmaperr(GetLastError());
+      uerror("waitpid", Nothing);
+    }
+  }
+  if (! GetExitCodeProcess(pid_req, &status)) {
     _dosmaperr(GetLastError());
     uerror("waitpid", Nothing);
   }
+  if (status == STILL_ACTIVE)
+    return alloc_process_status((HANDLE) 0, 0);
+  else
+    return alloc_process_status(pid_req, status);
 }
