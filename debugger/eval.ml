@@ -36,7 +36,7 @@ type error =
 exception Error of error
 
 let abstract_type =
-  Ctype.newgenty (Tconstr (Pident (Ident.create "<abstr>"), [], ref Mnil))
+  Btype.newgenty (Tconstr (Pident (Ident.create "<abstr>"), [], ref Mnil))
 
 let rec path event = function
     Pident id ->
@@ -147,7 +147,7 @@ and find_label lbl env ty path tydesc pos = function
   | (name, mut, ty_arg) :: rem ->
       if name = lbl then begin
         let ty_res =
-          Ctype.newgenty(Tconstr(path, tydesc.type_params, ref Mnil))
+          Btype.newgenty(Tconstr(path, tydesc.type_params, ref Mnil))
         in
         (pos,
          try Ctype.apply env [ty_res] ty_arg [ty] with Ctype.Cannot_apply ->

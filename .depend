@@ -127,10 +127,10 @@ typing/includemod.cmx: typing/ctype.cmx typing/env.cmx typing/ident.cmx \
     typing/includeclass.cmx typing/includecore.cmx utils/misc.cmx \
     typing/path.cmx typing/printtyp.cmx typing/subst.cmx utils/tbl.cmx \
     typing/typedtree.cmx typing/types.cmx typing/includemod.cmi 
-typing/mtype.cmo: typing/ctype.cmi typing/env.cmi typing/ident.cmi \
-    typing/path.cmi typing/types.cmi typing/mtype.cmi 
-typing/mtype.cmx: typing/ctype.cmx typing/env.cmx typing/ident.cmx \
-    typing/path.cmx typing/types.cmx typing/mtype.cmi 
+typing/mtype.cmo: typing/btype.cmi typing/ctype.cmi typing/env.cmi \
+    typing/ident.cmi typing/path.cmi typing/types.cmi typing/mtype.cmi 
+typing/mtype.cmx: typing/btype.cmx typing/ctype.cmx typing/env.cmx \
+    typing/ident.cmx typing/path.cmx typing/types.cmx typing/mtype.cmi 
 typing/parmatch.cmo: parsing/asttypes.cmi typing/ctype.cmi typing/env.cmi \
     parsing/location.cmi utils/misc.cmi typing/typedtree.cmi typing/types.cmi \
     typing/parmatch.cmi 

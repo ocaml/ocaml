@@ -835,6 +835,7 @@ let final_env define_class
   | Some ty -> Ctype.generalize ty
   end;
 
+(* XXX Verifier que les parametre peuvent etre generalises... *)
   begin match
     Ctype.closed_class clty.cty_params
       (Ctype.signature_of_class_type clty.cty_type)
@@ -878,21 +879,9 @@ let type_classes define_class kind env cls =
     List.fold_right (class_infos define_class kind) res ([], env)
   in
   Ctype.end_def ();
-  (* Make type abbreviations fully generic *)
   let (res, env) =
     List.fold_right (final_env define_class) res ([], env)
   in
-(*
-  let env =
-    List.fold_right
-      (fun (_, _, _, _, obj_id, obj_abbr, cl_id, cl_abbr, _, _, _) env ->
-         Env.add_type obj_id
-           (Subst.type_declaration Subst.identity obj_abbr) (
-         Env.add_type cl_id
-           (Subst.type_declaration Subst.identity cl_abbr) env))
-      res env
-  in
-*)
   (List.rev res, env)
 
 let class_declaration env sexpr =

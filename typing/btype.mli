@@ -17,10 +17,14 @@ open Types
 
 val generic_level: int
 
+val newty2: int -> type_desc -> type_expr
+        (* Create a type *)
 val newgenty: type_desc -> type_expr
         (* Create a generic type *)
 val newgenvar: unit -> type_expr
         (* Return a fresh generic variable *)
+val newmarkedvar: int -> type_expr
+        (* Return a fresh marked variable *)
 val newmarkedgenvar: unit -> type_expr
         (* Return a fresh marked generic variable *)
 

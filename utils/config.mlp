@@ -27,7 +27,7 @@ let c_libraries = "%%CCLIBS%%"
 let ranlib = "%%RANLIBCMD%%"
 
 let exec_magic_number = "Caml1999X004"
-and cmi_magic_number = "Caml1999I003"
+and cmi_magic_number = "Caml1999I004"
 and cmo_magic_number = "Caml1999O004"
 and cma_magic_number = "Caml1999A004"
 and cmx_magic_number = "Caml1999Y006"

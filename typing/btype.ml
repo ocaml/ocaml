@@ -26,9 +26,17 @@ let pivot_level = 2 * lowest_level - 1
 
 (**** Some type creators ****)
 
-let newgenty desc      = { desc = desc; level = generic_level }
+let new_id = ref (-1)
+
+let newty2 level desc  =
+  incr new_id; { desc = desc; level = level; id = !new_id }
+let newgenty desc      = newty2 generic_level desc
 let newgenvar ()       = newgenty Tvar
-let newmarkedgenvar () = { desc = Tvar; level = pivot_level - generic_level }
+let newmarkedvar level =
+  incr new_id; { desc = Tvar; level = pivot_level - level; id = !new_id }
+let newmarkedgenvar () =
+  incr new_id;
+  { desc = Tvar; level = pivot_level - generic_level; id = !new_id }
 
 (**** Representative of a type ****)
 

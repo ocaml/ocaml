@@ -130,17 +130,15 @@ let restore_global_level () =
 
 (* Re-export generic type creators *)
 
-let newty desc         = { desc = desc; level = !current_level }
-let newty2 level desc  = { desc = desc; level = level }
-let newgenty           = newgenty
-let new_global_ty desc = { desc = desc; level = !global_level }
+let newty2             = Btype.newty2
+let newty desc         = newty2 !current_level desc
+let new_global_ty desc = newty2 !global_level desc
 
-let newvar ()          = { desc = Tvar; level = !current_level }
-let newvar2 level      = { desc = Tvar; level = level }
-let newmarkedvar () = { desc = Tvar; level = pivot_level - !current_level }
-let newgenvar          = newgenvar
-let new_global_var ()  = new_global_ty Tvar
-let newmarkedgenvar    = newmarkedgenvar
+let newvar ()          = newty2 !current_level Tvar
+let newvar2 level      = newty2 level Tvar
+let newmarkedvar       = Btype.newmarkedvar
+let new_global_var ()  = newty2 !global_level Tvar
+let newmarkedgenvar    = Btype.newmarkedgenvar
 
 let newobj fields      = newty (Tobject (fields, ref None))
 
@@ -152,6 +150,15 @@ let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
 (* Re-export repr *)
 let repr = repr
+
+(**** Type maps ****)
+
+module TypePairs =
+  Hashtbl.Make (struct
+    type t = type_expr * type_expr
+    let equal (t1, t1') (t2, t2') = (t1 == t2) && (t1' = t2')
+    let hash (t, t') = t.id + 93 * t'.id
+ end)
 
                   (**********************************************)
                   (*  Miscellaneous operations on object types  *)
@@ -177,7 +184,6 @@ let flatten_fields ty =
     let (l, r) = flatten [] ty in
     (Sort.list (fun (n, _, _) (n', _, _) -> n < n') l, r)
 
-(* XXX Doit preserver les niveaux... *)
 let build_fields level =
   List.fold_right
     (fun (s, k, ty1) ty2 -> newty2 level (Tfield(s, k, ty1, ty2)))
@@ -214,7 +220,7 @@ let close_object ty =
   let rec close ty =
     let ty = repr ty in
     match ty.desc with
-      Tvar                 -> ty.desc <- Tlink {desc = Tnil; level = ty.level}
+      Tvar                 -> ty.desc <- Tlink (newty2 ty.level Tnil)
     | Tfield(_, _, _, ty') -> close ty'
     | _                    -> assert false
   in
@@ -615,7 +621,7 @@ let rec copy ty =
   else begin
     let desc = ty.desc in
     save_desc ty desc;
-    let t = newmarkedvar () in          (* Stub *)
+    let t = newmarkedvar !current_level in          (* Stub *)
     ty.desc <- Tlink t;
     t.desc <-
       begin match desc with
@@ -883,7 +889,7 @@ let rec full_expand env ty =
   let ty = repr (expand_head env ty) in
   match ty.desc with
     Tobject (fi, {contents = Some (_, v::_)}) when (repr v).desc = Tvar ->
-      { desc = Tobject (fi, ref None); level = ty.level }
+      newty2 ty.level (Tobject (fi, ref None))
   | _ ->
       ty
 
@@ -946,7 +952,9 @@ let rec occur_rec env visited ty0 ty =
         if List.memq ty visited then raise Occur;
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
-        occur_rec env visited ty0 (try_expand_head env ty)
+        let ty' = try_expand_head env ty in
+        if List.memq ty' visited then raise Occur;
+        occur_rec env (ty'::visited) ty0 ty'
       with Cannot_expand ->
         raise Occur
       end
@@ -1076,7 +1084,7 @@ and unify3 env t1 t1' t2 t2' =
         occur env t2' (newty d1);
         if t1 == t1' then begin
           (* The variable must be instantiated... *)
-          let ty = {desc = d1; level = t1'.level} in
+          let ty = newty2 t1'.level d1 in
           update_level env t2'.level ty;
           t2'.desc <- Tlink ty
         end else begin
@@ -1301,12 +1309,10 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
-        if
-          List.exists (function (t1, t2) -> t1 == t1' && t2 == t2')
-            !type_pairs
-        then () else begin
-          type_pairs := (t1', t2') :: !type_pairs;
-
+        begin try
+          TypePairs.find type_pairs (t1', t2')
+        with Not_found ->
+          TypePairs.add type_pairs (t1', t2') ();
           match (t1'.desc, t2'.desc) with
             (Tvar, _) when if inst_nongen then t1'.level <> generic_level - 1
                                           else t1'.level =  generic_level ->
@@ -1388,7 +1394,7 @@ let moregeneral env inst_nongen pat_sch subj_sch =
   (* Duplicate generic variables *)
   let patt = instance pat_sch in
   let res =
-    try moregen inst_nongen (ref []) env patt subj; true with
+    try moregen inst_nongen (TypePairs.create 13) env patt subj; true with
       Unify _ -> false
   in
   current_level := old_level;
@@ -1422,12 +1428,10 @@ let rec eqtype rename type_pairs subst env t1 t2 =
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
-        if
-          List.exists (function (t1, t2) -> t1 == t1' & t2 == t2')
-            !type_pairs
-        then () else begin
-          type_pairs := (t1', t2') :: !type_pairs;
-
+        begin try
+          TypePairs.find type_pairs (t1', t2')
+        with Not_found ->
+          TypePairs.add type_pairs (t1', t2') ();
           match (t1'.desc, t2'.desc) with
             (Tvar, Tvar) when rename ->
               begin try
@@ -1490,7 +1494,9 @@ and eqtype_kind k1 k2 =
 
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
-  try eqtype_list rename (ref []) (ref []) env tyl1 tyl2; true with
+  try
+    eqtype_list rename (TypePairs.create 11) (ref []) env tyl1 tyl2; true
+  with
     Unify _ -> false
 
 
@@ -1557,7 +1563,7 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
 let match_class_types env pat_sch subj_sch =
-  let type_pairs = ref [] in
+  let type_pairs = TypePairs.create 53 in
   let old_level = !current_level in
   current_level := generic_level - 1;
   (*
@@ -1576,7 +1582,7 @@ let match_class_types env pat_sch subj_sch =
     let sign2 = signature_of_class_type subj in
     let t1 = repr sign1.cty_self in
     let t2 = repr sign2.cty_self in
-    type_pairs := (t1, t2) :: !type_pairs;
+    TypePairs.add type_pairs (t1, t2) ();
     let (fields1, rest1) = flatten_fields (object_fields t1)
     and (fields2, rest2) = flatten_fields (object_fields t2) in
     let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -1683,14 +1689,15 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
 (* XXX On pourrait autoriser l'instantiation du type des parametres... *)
+(* XXX Bug quand la classe n'est pas completement generalisee *)
 let match_class_declarations env patt_params patt_type subj_params subj_type =
-  let type_pairs = ref [] in
+  let type_pairs = TypePairs.create 53 in
   let subst = ref [] in
   let sign1 = signature_of_class_type patt_type in
   let sign2 = signature_of_class_type subj_type in
   let t1 = repr sign1.cty_self in
   let t2 = repr sign2.cty_self in
-  type_pairs := (t1, t2) :: !type_pairs;
+  TypePairs.add type_pairs (t1, t2) ();
   let (fields1, rest1) = flatten_fields (object_fields t1)
   and (fields2, rest2) = flatten_fields (object_fields t2) in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -1848,7 +1855,7 @@ let enlarge_type env ty =
     [generic_abbrev ...]).
 *)
 
-let subtypes = ref []
+let subtypes = TypePairs.create 17
 
 let subtype_error env trace =
   raise (Subtype (expand_trace env (List.rev trace), []))
@@ -1857,11 +1864,12 @@ let rec subtype_rec env trace t1 t2 cstrs =
   let t1 = repr t1 in
   let t2 = repr t2 in
   if t1 == t2 then [] else
-  if List.exists (fun (t1', t2') -> t1 == t1' & t2 == t2') !subtypes then
-      (* +++ Possibly slow *)
+  
+  begin try
+    TypePairs.find subtypes (t1, t2);
     cstrs
-  else begin
-    subtypes := (t1, t2) :: !subtypes;
+  with Not_found ->
+    TypePairs.add subtypes (t1, t2) ();
     match (t1.desc, t2.desc) with
       (Tvar, _) | (_, Tvar) ->
         (trace, t1, t2)::cstrs
@@ -1870,6 +1878,8 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_rec env ((u1, u2)::trace) u1 u2 cstrs
     | (Ttuple tl1, Ttuple tl2) ->
         subtype_list env trace tl1 tl2 cstrs
+    | (Tconstr(p1, [], _), Tconstr(p2, [], _)) when Path.same p1 p2 ->
+        cstrs
     | (Tconstr(p1, tl1, abbrev1), Tconstr _) when generic_abbrev env p1 ->
         subtype_rec env trace (expand_abbrev env t1) t2 cstrs
     | (Tconstr _, Tconstr(p2, tl2, abbrev2)) when generic_abbrev env p2 ->
@@ -1915,7 +1925,7 @@ and subtype_fields env trace ty1 ty2 cstrs =
      cstrs pairs)
 
 let subtype env ty1 ty2 =
-  subtypes := [];
+  TypePairs.clear subtypes;
   (* Build constraint set. *)
   let cstrs = subtype_rec env [(ty1, ty2)] ty1 ty2 [] in
   (* Enforce constraints. *)
@@ -1926,7 +1936,7 @@ let subtype env ty1 ty2 =
            raise (Subtype (expand_trace env (List.rev trace0),
                            List.tl (List.tl trace))))
       (List.rev cstrs);
-    subtypes := []
+    TypePairs.clear subtypes
 
 
                               (*******************)
@@ -1940,16 +1950,16 @@ let unalias ty =
     Tvar ->
       ty
   | _ ->
-      {desc = ty.desc; level = ty.level}
+      newty2 ty.level ty.desc
 
 let unroll_abbrev id tl ty =
   let ty = repr ty in
   if (ty.desc = Tvar) || (List.exists (deep_occur ty) tl) then
     ty
   else
-    let ty' = {desc = ty.desc; level = ty.level} in
-    ty.desc <- Tlink {desc = Tconstr (Path.Pident id, tl, ref Mnil);
-                      level = ty.level};
+    let ty' = newty2 ty.level ty.desc in
+    ty.desc <- Tlink (newty2 ty.level
+                             (Tconstr (Path.Pident id, tl, ref Mnil)));
     ty'
 
 (* Return the arity (as for curried functions) of the given type. *)
@@ -2012,7 +2022,7 @@ let rec nondep_type_rec env id ty =
           if Path.isfree id p then
             begin try
               Tlink (nondep_type_rec env id
-                       (expand_abbrev env {desc = desc; level = ty.level}))
+                       (expand_abbrev env (newty2 ty.level desc)))
               (*
                  The [Tlink] is important. The expanded type may be a
                  variable, or may not be completely copied yet

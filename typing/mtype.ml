@@ -48,7 +48,7 @@ and strengthen_sig env sg p =
             { type_params = decl.type_params;
               type_arity = decl.type_arity;
               type_kind = decl.type_kind;
-              type_manifest = Some(Ctype.newgenty(
+              type_manifest = Some(Btype.newgenty(
                                    Tconstr(Pdot(p, Ident.name id, nopos),
                                            decl.type_params,
                                            ref Mnil))) }

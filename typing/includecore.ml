@@ -82,7 +82,7 @@ let exception_declarations env ed1 ed2 =
 let encode_val (mut, ty) rem =
   begin match mut with
     Asttypes.Mutable   -> Predef.type_unit
-  | Asttypes.Immutable -> Ctype.newgenty Tvar
+  | Asttypes.Immutable -> Btype.newgenty Tvar
   end
   ::ty::rem
 

@@ -36,7 +36,6 @@ val increase_global_level: unit -> unit
 val restore_global_level: unit -> unit
 
 val newty: type_desc -> type_expr
-val newgenty: type_desc -> type_expr
 val newvar: unit -> type_expr
         (* Return a fresh variable *)
 val new_global_var: unit -> type_expr

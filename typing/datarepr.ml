@@ -51,7 +51,7 @@ let exception_descr path_exc decl =
     cstr_consts = -1;
     cstr_nonconsts = -1 }
 
-let none = {desc = Ttuple []; level = -1}
+let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_res = none; lbl_arg = none; lbl_mut = Immutable;

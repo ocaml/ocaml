@@ -330,8 +330,7 @@ let rec type_decl kwd id decl =
 
   open_hvbox 2;
   print_string kwd;
-  type_expr {desc = Tconstr(Pident id, params, ref Mnil);
-             level = generic_level};
+  type_expr (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)));
   begin match decl.type_manifest with
     None -> ()
   | Some ty ->
@@ -732,6 +731,7 @@ let unification_error tr txt1 txt2 =
     [] | _::[] ->
       assert false
   | (t1, t1')::(t2, t2')::tr ->
+      open_vbox 0;
       let tr = filter_trace tr in
       let mark (t, t') = mark_loops t; if t != t' then mark_loops t' in
       mark (t1, t1'); mark (t2, t2');
@@ -744,7 +744,7 @@ let unification_error tr txt1 txt2 =
       close_box();
       trace false (fun _ -> print_string "is not compatible with type") tr;
       print_cut ();
-      match t3.desc, t4.desc with
+      begin match t3.desc, t4.desc with
         Tfield _, Tvar | Tvar, Tfield _ ->
           print_string "Self type cannot escape its class"
       | Tconstr (p, _, _), Tvar ->
@@ -774,3 +774,5 @@ let unification_error tr txt1 txt2 =
           close_box()
       | _ ->
           ()
+      end;
+      close_box ()
