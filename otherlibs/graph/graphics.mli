@@ -95,7 +95,7 @@ external lineto : x:int -> y:int -> unit = "gr_lineto"
            and move the current point to the given point. *)
 val rlineto : dx:int -> dy:int -> unit
         (* Draws a line with endpoints the current point and the
-           current point translated by the given vector,
+           current point translated of the given vector,
            and move the current point to this point. *)
 external draw_rect : x:int -> y:int -> w:int -> h:int -> unit = "gr_draw_rect"
         (* [draw_rect x y w h] draws the rectangle with lower left corner
