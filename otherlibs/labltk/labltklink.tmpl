@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# links with the tcl, tk and X11 libraries
+
+exec olablc -custom -I /usr/local/lib/olabl/labltk41 tk41.cma $* \
+    -ccopt -L/usr/local/lib/olabl/labltk41 -cclib -llabltk41 \
+    -ccopt "-L/usr/local/lib" -cclib "-ltk4.2jp -ltcl7.6jp" \
+    -ccopt "" -cclib " -lX11"

@@ -1,0 +1,14 @@
+compile.cmo: tables.cmo 
+compile.cmx: tables.cmx 
+intf.cmo: compile.cmo tables.cmo 
+intf.cmx: compile.cmx tables.cmx 
+lexer.cmo: parser.cmi 
+lexer.cmx: parser.cmx 
+maincompile.cmo: compile.cmo intf.cmo lexer.cmo parser.cmi tables.cmo \
+    tsort.cmo 
+maincompile.cmx: compile.cmx intf.cmx lexer.cmx parser.cmx tables.cmx \
+    tsort.cmx 
+parser.cmo: tables.cmo parser.cmi 
+parser.cmx: tables.cmx parser.cmi 
+tables.cmo: tsort.cmo 
+tables.cmx: tsort.cmx 

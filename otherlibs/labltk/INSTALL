@@ -1,0 +1,91 @@
+PREREQUISITES
+
+You must have already installed
+ * Objective Label 2.02 Summer edition
+    see http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/
+
+ * Tcl7.5/Tk4.1 through Tcl/Tk8.2
+    http://www.scriptics.com/ or various mirrors
+
+
+INSTALLATION INSTRUCTIONS
+
+1- Extract the archive labltk41-2.02.tar.gz somewhere (preferably
+directly in the main directory of your Objective Label installation).
+This will create the "labltk41" directory. (Only if you get it
+independently of olabl-2.02-summer)
+
+2- Configure the system. To complete this step, you need to know the
+locations of
+ * the installed Objective Label libraries (e.g. /usr/local/lib/olabl)
+ * where are the header and libraries for Tcl/Tk
+   (e.g. /usr/local/include and /usr/local/lib)
+ * the sources of Objective Label (for LablBrowser)
+
+Edit the file site.config, and set the corresponding variables
+(OLABLLIBDIR and OLABLBINDIR). You should also set a destination
+directory for executables. The rest of the configuration is supposed
+to be automated by the "configure" script; this scripts attempts to
+find the correct information for compiling and linking against Tk. If
+it fails, e.g. because your installation uses exotic paths, then you
+can help configure by setting other variables in site.config:
+CPPFLAGS="-I/path/to/tclinclude -I/path/to/tkinclude"
+LDFLAGS=-L/path/to/tcllib -L/path/to/tklib
+
+If you are compiling for several platforms, you can of course keep several
+site.config files. Don't forget to remove config.cache between compilation 
+runs.
+
+Then run
+$ ./configure --with-config=site.config
+
+This generates the files "Makefile.config" and "labltklink".
+
+If the automatic configuration fails, look at config.log to see what
+happened, check and edit site.config and rerun configure.
+
+If you just can't get configure to work, then look at the files
+Makefile.config.tmpl and labltklink.tmpl, and generate the required files
+Makefile.config and labltklink following the indications.
+
+Other settable variables in site.config are:
+INSTALLDIR: the final location of libraries
+LIBEXT: for japanese version of Tcl/Tk
+TKNAME: for special versions of Tk
+
+3- Build the system. From the "labltk41" directory, do:
+   make all
+   make opt for the native version
+
+4- To be sure everything works well, you can try the examples
+   cd examples; make; ./hello
+
+If the examples program fail with error message
+./helloworld: can't load library 'libtk4.2.so'
+or something similar, this means that you must set the LD_LIBRARY_PATH
+in your shell environment, e.g.
+	$ LD_LIBRARY_PATH=/usr/local/lib
+	$ export LD_LIBRARY_PATH
+or
+	% setenv LD_LIBRARY_PATH /usr/local/lib
+
+5- You will be even surer by compiling LablBrowser:
+   make browser
+   browser/lablbrowser
+
+6- You can now install LablTk41.
+   make install
+
+This will create /usr/local/lib/olabl/labltk41/ (or the equivalent for
+your installation of Objective Labl) and copy there the various
+library files, and copy labltklink (a command to link with Tk and X
+libraries) and labltktop (an Objective Labl toplevel with builtin Tk)
+to INSTALLBINDIR. If lablbrowser was compiled, it will also be
+installed.
+
+Remark about labltktop: since cmi files for Tk are not in OLABLLIBDIR
+but in a subdirectory, "open Tk;;" will fail.
+First type the directive:
+	# #directory"/usr/local/lib/olabl/labltk41";;
+and then
+	# open Tk;;
