@@ -42,7 +42,7 @@
    state of the pretty-printer. *)
 
 (*** Boxes *)
-val open_box : int -> unit
+val open_box : int -> unit;;
         (* [open_box d] opens a new pretty-printing box
            with offset [d]. 
            This box is the general purpose pretty-printing box.
@@ -53,27 +53,40 @@ val open_box : int -> unit
            (demonstrating the indentation of the box).
            When a new line is printed in the box, [d] is added to the
            current indentation. *)
-val close_box : unit -> unit
+val close_box : unit -> unit;;
         (* Close the most recently opened pretty-printing box. *)
 
 (*** Formatting functions *)
-val print_string : string -> unit
+val print_string : string -> unit;;
         (* [print_string str] prints [str] in the current box. *)
-val print_as : int -> string -> unit
+val print_as : int -> string -> unit;;
         (* [print_as len str] prints [str] in the
            current box. The pretty-printer formats [str] as if
            it were of length [len]. *)
-val print_int : int -> unit
+val print_int : int -> unit;;
         (* Print an integer in the current box. *)
-val print_float : float -> unit
+val print_float : float -> unit;;
         (* Print a floating point number in the current box. *)
-val print_char : char -> unit
+val print_char : char -> unit;;
         (* Print a character in the current box. *)
-val print_bool : bool -> unit
+val print_bool : bool -> unit;;
         (* Print an boolean in the current box. *)
 
 (*** Break hints *)
-val print_break : int -> int -> unit
+val print_space : unit -> unit;;
+        (* [print_space ()] is used to separate items (typically to print
+           a space between two words). 
+           It indicates that the line may be split at this
+           point. It either prints one space or splits the line.
+           It is equivalent to [print_break 1 0]. *)
+val print_cut : unit -> unit;;
+        (* [print_cut ()] is used to mark a good break position.
+           It indicates that the line may be split at this 
+           point. It either prints nothing or splits the line.
+           This allows line splitting at the current
+           point, without printing spaces or adding indentation.
+           It is equivalent to [print_break 0 0]. *)
+val print_break : int -> int -> unit;;
         (* Insert a break hint in a pretty-printing box.
            [print_break nspaces offset] indicates that the line may
            be split (a newline character is printed) at this point,
@@ -81,73 +94,67 @@ val print_break : int -> int -> unit
            If the line is split at that point, [offset] is added to
            the current indentation. If the line is not split,
            [nspaces] spaces are printed. *)
-val print_cut : unit -> unit
-        (* [print_cut ()] is equivalent to [print_break 0 0].
-           This allows line splitting at the current point, without printing
-           spaces or adding indentation. *)
-val print_space : unit -> unit
-        (* [print_space ()] is equivalent to [print_break 1 0].
-           This either prints one space or splits the line at that point. *)
-val force_newline : unit -> unit
-        (* Force a newline in the current box. *)
 
-val print_flush : unit -> unit
+val print_flush : unit -> unit;;
         (* Flush the pretty printer: all opened boxes are closed,
            and all pending text is displayed. *)
-val print_newline : unit -> unit
+val print_newline : unit -> unit;;
         (* Equivalent to [print_flush] followed by a new line. *)
 
-val print_if_newline : unit -> unit
+val force_newline : unit -> unit;;
+        (* Force a newline in the current box. Not the normal way of
+           pretty-printing, you should prefer break hints. *)
+val print_if_newline : unit -> unit;;
         (* Execute the next formatting command if the preceding line
            has just been split. Otherwise, ignore the next formatting
            command. *)
 
 (*** Margin *)
-val set_margin : int -> unit
+val set_margin : int -> unit;;
         (* [set_margin d] sets the value of the right margin
            to [d] (in characters): this value is used to detect line
            overflows that leads to split lines.
            Nothing happens if [d] is smaller than 2 or
            bigger than 999999999. *)
-val get_margin : unit -> int
+val get_margin : unit -> int;;
         (* Return the position of the right margin. *)
 
 (*** Maximum indentation limit *)
-val set_max_indent : int -> unit
+val set_max_indent : int -> unit;;
         (* [set_max_indent d] sets the value of the maximum
            indentation limit to [d] (in characters):
            once this limit is reached, boxes are rejected to the left,
            if they do not fit on the current line.
            Nothing happens if [d] is smaller than 2 or
            bigger than 999999999. *)
-val get_max_indent : unit -> int
+val get_max_indent : unit -> int;;
         (* Return the value of the maximum indentation limit (in
            characters). *)
 
 (*** Formatting depth: maximum number of boxes allowed before ellipsis *)
-val set_max_boxes : int -> unit
+val set_max_boxes : int -> unit;;
         (* [set_max_boxes max] sets the maximum number
            of boxes simultaneously opened.
            Material inside boxes nested deeper is printed as an
            ellipsis (more precisely as the text returned by
            [get_ellipsis_text ()]).
            Nothing happens if [max] is not greater than 1. *)
-val get_max_boxes : unit -> int
+val get_max_boxes : unit -> int;;
         (* Return the maximum number of boxes allowed before ellipsis. *)
 
-(*** Advanced boxes *)
-val open_hbox : unit -> unit
+(*** Advanced formatting *)
+val open_hbox : unit -> unit;;
         (* [open_hbox ()] opens a new pretty-printing box.
            This box is ``horizontal'': the line is not split in this box
            (new lines may still occur inside boxes nested deeper). *)
-val open_vbox : int -> unit
+val open_vbox : int -> unit;;
         (* [open_vbox d] opens a new pretty-printing box
            with offset [d]. 
            This box is ``vertical'': every break hint inside this
            box leads to a new line.
            When a new line is printed in the box, [d] is added to the
            current indentation. *)
-val open_hvbox : int -> unit
+val open_hvbox : int -> unit;;
         (* [open_hovbox d] opens a new pretty-printing box
            with offset [d]. 
            This box is ``horizontal-vertical'': it behaves as an
@@ -155,7 +162,7 @@ val open_hvbox : int -> unit
            otherwise it behaves as a ``vertical'' box.
            When a new line is printed in the box, [d] is added to the
            current indentation. *)
-val open_hovbox : int -> unit
+val open_hovbox : int -> unit;;
         (* [open_hovbox d] opens a new pretty-printing box
            with offset [d]. 
            This box is ``horizontal or vertical'': break hints
@@ -165,11 +172,11 @@ val open_hovbox : int -> unit
            current indentation. *)
 
 (*** Tabulations *)
-val open_tbox : unit -> unit
+val open_tbox : unit -> unit;;
         (* Open a tabulation box. *)
-val close_tbox : unit -> unit
+val close_tbox : unit -> unit;;
         (* Close the most recently opened tabulation box. *)
-val print_tbreak : int -> int -> unit
+val print_tbreak : int -> int -> unit;;
         (* Break hint in a tabulation box.
            [print_tbreak spaces offset] moves the insertion point to
            the next tabulation ([spaces] being added to this position).
@@ -180,20 +187,20 @@ val print_tbreak : int -> int -> unit
            tabulation of the box.
            If a new line is printed, [offset] is added to the current
            indentation. *)
-val set_tab : unit -> unit
+val set_tab : unit -> unit;;
         (* Set a tabulation mark at the current insertion point. *)
-val print_tab : unit -> unit
+val print_tab : unit -> unit;;
         (* [print_tab ()] is equivalent to [print_tbreak (0,0)]. *)
 
 (*** Ellipsis *)
-val set_ellipsis_text : string -> unit
+val set_ellipsis_text : string -> unit;;
         (* Set the text of the ellipsis printed when too many boxes
            are opened (a single dot, [.], by default). *)
-val get_ellipsis_text : unit -> string
+val get_ellipsis_text : unit -> string;;
         (* Return the text of the ellipsis. *)
 
 (*** Redirecting formatter output *)
-val set_formatter_out_channel : out_channel -> unit
+val set_formatter_out_channel : out_channel -> unit;;
         (* Redirect the pretty-printer output to the given channel. *)
 
 val set_formatter_output_functions :
@@ -219,16 +226,28 @@ type formatter;;
            Parameters of the pretty-printer are local to the pretty-printer:
            margin, maximum indentation limit, maximum number of boxes
            simultaneously opened, ellipsis, and so on, are specific to
-           each pretty-printer and may be fixed independantly. *)
+           each pretty-printer and may be fixed independantly.
+           A new formatter is obtained by calling the [make_formatter]
+           function. *)
 
 val std_formatter : formatter;;
         (* The standard formatter used by the formatting functions
-           above. *)
+           above. It is defined using [make_formatter] with
+           output function [output stdout] and flushing function
+           [fun () -> flush stdout]. *)
+
+val err_formatter : formatter;;
+        (* A formatter to use with formatting functions below for
+           output to standard error. It is defined using [make_formatter] with
+           output function [output stderr] and flushing function
+           [fun () -> flush stderr]. *)
 
 val make_formatter :
         (string -> int -> int -> unit) -> (unit -> unit) -> formatter;;
-        (* Return a new formatter that writes according to the
-           output functions given as argument. *)
+        (* [make_formatter out flush] returns a new formatter that
+           writes according to the output function [out], and flushing
+           function [flush]. Hence, a formatter to out channel [oc]
+           is returned by [make_formatter (output oc) (fun () -> flush oc)]. *)
 
 val pp_open_hbox : formatter -> unit -> unit;;
 val pp_open_vbox : formatter -> int -> unit;;
