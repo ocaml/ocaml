@@ -108,6 +108,7 @@ let directive_table = (Hashtbl.new 13 : (string, directive_fun) Hashtbl.t)
 let toplevel_env = ref Env.empty
 
 let execute_phrase phr =
+  Location.reset();
   match phr with
     Ptop_def sstr ->
       let (str, sg, newenv) = Typemod.type_structure !toplevel_env sstr in
@@ -152,20 +153,14 @@ let execute_phrase phr =
         print_string "'"; print_newline();
         false
 
-(* Reading function -- should use input_scan_line directly... *)
+(* Reading function *)
+
+external input_scan_line : in_channel -> int = "input_scan_line"
 
 let refill_lexbuf buffer len =
   output_char stdout '#'; flush stdout;
-  let line = input_line stdin in
-  let linelen = String.length line in
-  if linelen + 1 <= len then begin
-    String.blit line 0 buffer 0 linelen;
-    buffer.[linelen] <- '\n';
-    linelen + 1
-  end else begin
-    String.blit line 0 buffer 0 len;
-    len
-  end
+  let n = min len (abs(input_scan_line stdin)) in
+  input stdin buffer 0 n
 
 (* Discard everything already in a lexer buffer *)
 
