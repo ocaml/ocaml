@@ -55,7 +55,7 @@ let pp_scan_stack = ref ([] : pp_scan_elem list)
    The formatting stack contains the description of
    the currently active blocks. *)
 type pp_format_elem = Format_elem of block_type * int
-let pp_format_stack = ref ([]:pp_format_elem list)
+let pp_format_stack = ref ([] : pp_format_elem list)
 
 let pp_tbox_stack = ref ([]:tblock list)
 
@@ -163,10 +163,11 @@ let format_pp_token size = function
       let insertion_point = !pp_margin - !pp_space_left in
       if insertion_point > !pp_max_indent then
          (* can't open a block right there ! *)
-         pp_force_newline () else
-         (* If block is rejected on the left current indentation will change *)
-      if size > !pp_space_left & !pp_current_indent < insertion_point then
-         pp_force_newline ();
+         begin pp_force_newline () end;
+         (* If block is rejected on the left current indentation will change
+            else if size > !pp_space_left &
+                    !pp_current_indent < insertion_point
+           then pp_force_newline (); *)
       let offset = !pp_space_left - off in
       let bl_type =
        begin match ty with
@@ -253,7 +254,7 @@ let rec advance_left () =
      match Queue.peek pp_queue with
       {elem_size = size; token = tok; length = len} ->
        if not (size < 0 &
-               (!pp_right_total - !pp_left_total <= !pp_space_left)) then
+               (!pp_right_total - !pp_left_total < !pp_space_left)) then
         begin
          Queue.take pp_queue;
          format_pp_token (if size < 0 then pp_infinity else size) tok;
@@ -467,15 +468,6 @@ let set_ellipsis_text s = pp_ellipsis := s
 and get_ellipsis_text () = !pp_ellipsis
 
 (* To set the margin of pretty-formater *)
-let set_margin n =
-    if n >= 1 then
-     begin
-      pp_margin := n;
-      pp_max_indent := !pp_margin - !pp_min_space_left;
-      pp_rinit () end
-
-let get_margin () = !pp_margin
-
 let set_min_space_left n =
     if n >= 1 then
      begin
@@ -485,6 +477,23 @@ let set_min_space_left n =
 
 let set_max_indent n = set_min_space_left (!pp_margin - n)
 let get_max_indent () = !pp_max_indent
+
+let set_margin n =
+    if n >= 1 then
+     begin
+      pp_margin := n;
+      let new_max_indent =
+          (* Try to maintain max_indent to its actual val *)
+          if !pp_max_indent <= !pp_margin then !pp_max_indent else
+          (* If possible maintain pp_min_space_left to its actual val,
+             if this leads to a too small max_indent, take half of the
+             new margin, if it is greater than 1 *)
+           max (max (!pp_margin - !pp_min_space_left) (!pp_margin / 2)) 1 in
+      (* Rebuild invariants *)
+      set_max_indent new_max_indent;
+      pp_rinit () end
+
+let get_margin () = !pp_margin
 
 let set_formatter_output_functions f =
   current_output.output_function <- f.output_function;
