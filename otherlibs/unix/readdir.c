@@ -12,6 +12,10 @@
 
 /* $Id$ */
 
+/* This avoids "overflow" errors when reading from very large directories
+   (PR#609) */
+#define _FILE_OFFSET_BITS 64
+
 #include <mlvalues.h>
 #include <fail.h>
 #include <alloc.h>
