@@ -152,6 +152,44 @@ let unclosed opening_name opening_num closing_name closing_num =
   raise(Syntaxerr.Error(Syntaxerr.Unclosed(rhs_loc opening_num, opening_name,
                                            rhs_loc closing_num, closing_name)))
 
+let bigarray_function str name =
+  Ldot(Ldot(Lident "Bigarray", str), name)
+
+let bigarray_untuplify = function
+    { pexp_desc = Pexp_tuple explist} -> explist
+  | exp -> [exp]
+
+let bigarray_get arr arg =
+  match bigarray_untuplify arg with
+    [c1] ->
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" "get")),
+                       ["", arr; "", c1]))
+  | [c1;c2] ->
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" "get")),
+                       ["", arr; "", c1; "", c2]))
+  | [c1;c2;c3] ->
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" "get")),
+                       ["", arr; "", c1; "", c2; "", c3]))
+  | coords ->
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "get")),
+                       ["", arr; "", ghexp(Pexp_array coords)]))
+
+let bigarray_set arr arg newval =
+  match bigarray_untuplify arg with
+    [c1] ->
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" "set")),
+                       ["", arr; "", c1; "", newval]))
+  | [c1;c2] ->
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" "set")),
+                       ["", arr; "", c1; "", c2; "", newval]))
+  | [c1;c2;c3] ->
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" "set")),
+                       ["", arr; "", c1; "", c2; "", c3; "", newval]))
+  | coords ->
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "set")),
+                       ["", arr; 
+                        "", ghexp(Pexp_array coords);
+                        "", newval]))
 %}
 
 /* Tokens */
@@ -778,6 +816,8 @@ expr:
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
       { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "set")),
                          ["",$1; "",$4; "",$7])) }
+  | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
+      { bigarray_set $1 $4 $7 }
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar($1, $3)) }
 /*
@@ -828,6 +868,10 @@ simple_expr:
                          ["",$1; "",$4])) }
   | simple_expr DOT LBRACKET seq_expr error
       { unclosed "[" 3 "]" 5 }
+  | simple_expr DOT LBRACE expr RBRACE
+      { bigarray_get $1 $4 }
+  | simple_expr DOT LBRACE expr_comma_list error
+      { unclosed "{" 3 "}" 5 }
   | LBRACE record_expr RBRACE
       { let (exten, fields) = $2 in mkexp(Pexp_record(fields, exten)) }
   | LBRACE record_expr error
