@@ -1,6 +1,13 @@
 Camlp4 Version 3.04
 -------------------
 
+- [03 Nov 01] Added option -ca (comment after) when using pr_o (pretty
+  print in normal syntax) which print ocamldoc comments after the
+  declarations, i.e. as they were before.
+- [03 Nov 01] In pretty printers pr_o and pr_r, skip to next begin of line
+  when displaying the sources between phrase, to prevent e.g. the displaying
+  of the possible last comment of a sum type declaration (the other comment
+  being not displayed anyway).
 - [24 Oct 01] Fixed incorrect locations in sequences.
 - [24 Oct 01] Was erroneously compiled by the OCaml boot compiler instead
   of the generated ocamlc. Fixed.

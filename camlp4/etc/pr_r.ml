@@ -1433,6 +1433,19 @@ value maxl = ref 78;
 value sep = ref None;
 value ncip = ref False;
 
+value input_from_next_bol ic bol len =
+  let buff = Buffer.create 20 in
+  loop bol 0 where rec loop bol_found i =
+    if i = len then Buffer.contents buff
+    else
+      let c = input_char ic in
+      let bol_found = bol_found || c = '\n' in
+      do {
+        if bol_found then Buffer.add_char buff c else ();
+        loop bol_found (i + 1)
+      }
+;
+
 value copy_source ic oc first bp ep =
   match sep.val with
   [ Some str ->
@@ -1442,7 +1455,8 @@ value copy_source ic oc first bp ep =
   | None ->
       do {
         seek_in ic bp;
-        for i = bp to pred ep do { output_char oc (input_char ic) }
+        let s = input_from_next_bol ic first (ep - bp) in
+        output_string oc s
       } ]
 ;
 

@@ -408,10 +408,10 @@ Grammar.extend
         (fun (b : 'rebind_exn) (ctl : 'constructor_declaration) _
            (loc : int * int) ->
            (match ctl with
-              Tuple ctl -> Node ("StExc", (ctl @ [b]))
+              Tuple [c; tl] -> Node ("StExc", [c; tl; b])
             | _ ->
                 match () with
-                _ -> raise (Match_failure ("meta/q_MLast.ml", 4399, 4415)) :
+                _ -> raise (Match_failure ("meta/q_MLast.ml", 4402, 4418)) :
             'str_item));
       [Gramext.Stoken ("", "#");
        Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e));
@@ -645,10 +645,10 @@ Grammar.extend
       Gramext.action
         (fun (ctl : 'constructor_declaration) _ (loc : int * int) ->
            (match ctl with
-              Tuple ctl -> Node ("SgExc", ctl)
+              Tuple [c; tl] -> Node ("SgExc", [c; tl])
             | _ ->
                 match () with
-                _ -> raise (Match_failure ("meta/q_MLast.ml", 6388, 6404)) :
+                _ -> raise (Match_failure ("meta/q_MLast.ml", 6399, 6415)) :
             'sig_item));
       [Gramext.Stoken ("", "#");
        Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e));

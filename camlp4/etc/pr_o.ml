@@ -1597,6 +1597,51 @@ value output_string_eval oc s =
 
 value maxl = ref 78;
 value sep = ref None;
+value comm_after = ref False;
+value delayed_comm = ref "";
+
+value copy_after oc s =
+  let s =
+    try
+      let i = String.index s '\n' in
+      do {
+        output_string oc (String.sub s 0 i);
+        String.sub s i (String.length s - i)
+      }
+    with
+    [ Not_found -> s ]
+  in
+  do {
+    output_string oc delayed_comm.val;
+    let len = String.length s in
+    let i =
+      if len > 4 && String.sub s (len - 3) 3 = "*)\n"
+      then
+        loop (len - 6) where rec loop i =
+          if i >= 0 then
+            if String.sub s i 5 = "\n(** " then i + 1 else loop (i - 1)
+          else len
+      else len
+    in
+    output_string oc (String.sub s 0 i);
+    delayed_comm.val :=
+      if i < len then "\n" ^ String.sub s i (len - i - 1)
+      else String.sub s i (len - i)
+  }
+;
+
+value input_from_next_bol ic bol len =
+  let buff = Buffer.create 20 in
+  loop bol 0 where rec loop bol_found i =
+    if i = len then Buffer.contents buff
+    else
+      let c = input_char ic in
+      let bol_found = bol_found || c = '\n' in
+      do {
+        if bol_found then Buffer.add_char buff c else ();
+        loop bol_found (i + 1)
+      }
+;
 
 value copy_source ic oc first bp ep =
   match sep.val with
@@ -1607,7 +1652,9 @@ value copy_source ic oc first bp ep =
   | None ->
       do {
         seek_in ic bp;
-        for i = bp to pred ep do { output_char oc (input_char ic) }
+        let s = input_from_next_bol ic first (ep - bp) in
+        if not comm_after.val then output_string oc s
+        else copy_after oc s
       } ]
 ;
 
@@ -1678,3 +1725,6 @@ Pcaml.add_option "-no_ss" (Arg.Set no_ss)
 
 Pcaml.add_option "-sep" (Arg.String (fun x -> sep.val := Some x))
   "<string> Use this string between phrases instead of reading source.";
+
+Pcaml.add_option "-ca" (Arg.Set comm_after)
+  "          Put the ocamldoc comments after declarations.";

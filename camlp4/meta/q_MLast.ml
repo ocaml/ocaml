@@ -126,7 +126,7 @@ EXTEND
       | "#"; n = lident; dp = dir_param -> Node "StDir" [n; dp]
       | "exception"; ctl = constructor_declaration; b = rebind_exn ->
           match ctl with
-          [ Tuple ctl -> Node "StExc" (ctl @ [b])
+          [ Tuple [c; tl] -> Node "StExc" [c; tl; b]
           | _ -> match () with [] ]
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "StExt" [i; t; p]
@@ -175,7 +175,7 @@ EXTEND
       | "#"; n = lident; dp = dir_param -> Node "SgDir" [n; dp]
       | "exception"; ctl = constructor_declaration ->
           match ctl with
-          [ Tuple ctl -> Node "SgExc" ctl
+          [ Tuple [c; tl] -> Node "SgExc" [c; tl]
           | _ -> match () with [] ]
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "SgExt" [i; t; p]
