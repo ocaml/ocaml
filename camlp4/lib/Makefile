@@ -55,6 +55,8 @@ installopt:
 	done
 	# Special treatment for this one: some versions of make don't like $(A) in $(TARGET:.cma=.$(A)) 
 	target="`echo $(TARGET) | sed -e 's/\.cma$$/.$(A)/'`" ; \
-	   test -f $$target && cp $$target "$(LIBDIR)/camlp4/." || true
+	   if test -f $$target ; then \
+	      cp $$target "$(LIBDIR)/camlp4/." && ( cd "$(LIBDIR)/camlp4/." && $(RANLIB) $$target ) \
+	  fi
 
 include .depend
