@@ -61,21 +61,6 @@ module StringSet =
     let compare = compare
   end)
 
-(* Check whether an abbreviation expands to itself. *)
-let rec cyclic_abbrev env id ty =
-  let ty = Ctype.repr ty in
-  match ty.desc with
-    Tconstr (Path.Pident id', _, _) when Ident.same id id' ->
-      true
-  | Tconstr (p, tl, abbrev) ->
-      begin try
-        cyclic_abbrev env id (Ctype.expand_abbrev env p tl abbrev ty.level)
-      with Ctype.Cannot_expand ->
-        false
-      end
-  | _ ->
-      false
-
 (* First pass: parameters, constraints and expansion *)
 let transl_declaration env (name, sdecl) (id, decl) =
   reset_type_variables();
@@ -111,7 +96,7 @@ let transl_declaration env (name, sdecl) (id, decl) =
               Ctype.unroll_abbrev id decl.type_params
                 (transl_simple_type env true sty)
             in
-            if cyclic_abbrev env id ty' then
+            if Ctype.cyclic_abbrev env id ty' then
               raise(Error(sdecl.ptype_loc, Recursive_abbrev name));
             begin try Ctype.unify env ty' ty with Ctype.Unify trace ->
               raise(Error(sdecl.ptype_loc, Type_clash trace))

@@ -143,9 +143,8 @@ let rec transl_type env policy styp =
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
-      let cstr' = new_global_var () in
       let args = List.map (transl_type env policy) stl in
-      let ty = expand_abbrev env path args (ref Mnil) cstr'.level in
+      let ty = Ctype.expand_head env (newty (Tconstr(path, args, ref Mnil))) in
       let params = Ctype.instance_list decl.type_params in
       List.iter2
         (fun (sty, ty') ty ->

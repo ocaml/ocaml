@@ -25,7 +25,7 @@ open Btype
    instance, during code generation or in the debugger), one must
    first make sure that the type levels are correct, using the
    function [correct_levels]. Then, this type can be correctely
-   manipulated by [apply], [expand_abbrev] and [moregeneral].
+   manipulated by [apply], [expand_head] and [moregeneral].
 *)
 
 (*
@@ -280,8 +280,8 @@ and generalize_expans =
   | Mcons(_, ty, rem) ->  generalize ty; generalize_expans rem
   | Mlink rem         ->  generalize_expans !rem
 
-let expand_abbrev' = (* Forward declaration *)
-  ref (fun env path args abbrev level -> raise Cannot_expand)
+let try_expand_head' = (* Forward declaration *)
+  ref (fun env ty -> raise Cannot_expand)
 
 (*
    Lower the levels of a type (assume [level] is not
@@ -298,19 +298,18 @@ let expand_abbrev' = (* Forward declaration *)
 let rec update_level env level ty =
   let ty = repr ty in
   if ty.level > level then begin
-    let old_level = ty.level in
-    ty.level <- level;
     begin match ty.desc with
       Tconstr(p, tl, abbrev)  when level < Path.binding_time p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
-          ty.desc <- Tlink (!expand_abbrev' env p tl abbrev old_level);
+          ty.desc <- Tlink (!try_expand_head' env ty);
           update_level env level ty
         with Cannot_expand ->
           (* +++ Levels should be restored... *)
           raise (Unify [])
         end
     | _ ->
+        ty.level <- level;
         iter_type_expr (update_level env level) ty
     end
   end
@@ -560,20 +559,26 @@ let expand_abbrev env path args abbrev level =
         subst env level abbrev (Some path) params args body
       with Unify _ -> raise Cannot_expand
 
-let _ = expand_abbrev' := expand_abbrev
-
-(* Fully expand the head of a type. *)
-let rec expand_head env ty =
+(* Fully expand the head of a type. Raise an exception if the type
+   cannot be expanded. *)
+let rec try_expand_head env ty =
   let ty = repr ty in
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
+      let ty' = expand_abbrev env p tl abbrev ty.level in
       begin try
-        expand_head env (expand_abbrev env p tl abbrev ty.level)
+        try_expand_head env ty'
       with Cannot_expand ->
-        ty
+        repr ty'
       end
   | _ ->
-      ty
+      raise Cannot_expand
+
+let _ = try_expand_head' := try_expand_head
+
+(* Fully expand the head of a type. *)
+let rec expand_head env ty =
+  try try_expand_head env ty with Cannot_expand -> repr ty
 
 (* Recursively expand the head of a type.
    Also expand #-types. *)
@@ -618,7 +623,7 @@ let rec non_recursive_abbrev env ty =
     match ty.desc with
       Tconstr(p, args, abbrev) ->
         begin try
-          non_recursive_abbrev env (expand_abbrev env p args abbrev level)
+          non_recursive_abbrev env (try_expand_head env ty)
         with Cannot_expand ->
           iter_type_expr (non_recursive_abbrev env) ty
         end
@@ -635,32 +640,24 @@ let correct_abbrev env ident params ty =
        [] [] ty);
   visited := []
 
+let rec occur_rec env ty0 ty =
+  if ty == ty0  then raise Occur;
+  match ty.desc with
+    Tconstr(p, tl, abbrev) ->
+      begin try
+        iter_type_expr (occur_rec env ty0) ty
+      with Occur -> try
+        occur_rec env ty0 (try_expand_head env ty)
+      with Cannot_expand ->
+        raise Occur
+      end
+  | Tobject (_, _) ->
+      ()
+  | _ ->
+      iter_type_expr (occur_rec env ty0) ty
+
 let occur env ty0 ty =
-  let rec occur_rec ty =
-    if ty == ty0  then raise Occur;
-    if ty.level >= lowest_level then
-      match ty.desc with
-        Tlink ty' ->
-          occur_rec ty'
-      | Tconstr(p, tl, abbrev) ->
-          ty.level <- pivot_level - ty.level;
-          begin try
-            iter_type_expr occur_rec ty
-          with Occur -> try
-            occur_rec (expand_abbrev env p tl abbrev ty.level)
-          with Cannot_expand ->
-            raise Occur
-          end
-      | Tobject (_, _) ->
-          ()
-      | _ ->
-          ty.level <- pivot_level - ty.level;
-          iter_type_expr occur_rec ty
-  in
-  try
-    occur_rec ty; unmark_type ty
-  with Occur ->
-    unmark_type ty; raise Occur
+  try occur_rec env ty0 ty with Occur -> raise (Unify [])
 
 
                               (*****************)
@@ -742,15 +739,11 @@ let rec unify env t1 t2 =
     | (Tconstr _, Tvar) when deep_occur t2 t1 ->
         unify2 env t1 t2
     | (Tvar, _) ->
-        begin try occur env t1 t2 with Occur ->
-          raise (Unify [])
-        end;
+        occur env t1 t2;
         update_level env t1.level t2;
         t1.desc <- Tlink t2
     | (_, Tvar) ->
-        begin try occur env t2 t1 with Occur ->
-          raise (Unify [])
-        end;
+        occur env t2 t1;
         update_level env t2.level t1;
         t2.desc <- Tlink t1
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
@@ -783,9 +776,11 @@ and unify3 env t1 t1' t2 t2' =
   
   if (t2 != t2') && (deep_occur t1' t2) then begin
     (* See point 3. *)
+    occur env t1' t2';
     update_level env t1'.level t2';
     t1'.desc <- Tlink t2'
   end else begin
+    occur env t1' t2;
     update_level env t1'.level t2;
     t1'.desc <- Tlink t2
   end;
@@ -793,13 +788,9 @@ and unify3 env t1 t1' t2 t2' =
   try
     begin match (d1, d2) with
       (Tvar, _) ->
-        begin try occur env t1' t2 with Occur ->
-          raise (Unify [])
-        end
+        ()
     | (_, Tvar) ->
-        begin try occur env t2' (newty d1) with Occur ->
-          raise (Unify [])
-        end;
+        occur env t2' (newty d1);
         if t1 == t1' then begin
           (* The variable must be instantiated... *)
           let ty = {desc = d1; level = t1'.level} in
@@ -910,7 +901,7 @@ let _ = unify' := unify
 
 (* Unify [t] and ['a -> 'b]. Return ['a] and ['b]. *)
 let rec filter_arrow env t =
-  let t = repr t in
+  let t = expand_head env t in
   match t.desc with
     Tvar ->
       let t1 = newvar () and t2 = newvar () in
@@ -920,12 +911,6 @@ let rec filter_arrow env t =
       (t1, t2)
   | Tarrow(t1, t2) ->
       (t1, t2)
-  | Tconstr(p, tl, abbrev) ->
-      begin try
-        filter_arrow env (expand_abbrev env p tl abbrev t.level)
-      with Cannot_expand ->
-        raise (Unify [])
-      end
   | _ ->
       raise (Unify [])
 
@@ -960,7 +945,7 @@ let rec filter_method_field env name priv ty =
 
 (* Unify [ty] and [< name : 'a; .. >]. Return ['a]. *)
 let rec filter_method env name priv ty =
-  let ty = repr ty in
+  let ty = expand_head env ty in
   match ty.desc with
     Tvar ->
       let ty1 = newvar () in
@@ -970,12 +955,6 @@ let rec filter_method env name priv ty =
       filter_method_field env name priv ty1
   | Tobject(f, _) ->
       filter_method_field env name priv f
-  | Tconstr(p, tl, abbrev) ->
-      begin try
-        filter_method env name priv (expand_abbrev env p tl abbrev ty.level)
-      with Cannot_expand ->
-        raise (Unify [])
-      end
   | _ ->
       raise (Unify [])
 
@@ -1385,6 +1364,21 @@ let rec arity ty =
   match (repr ty).desc with
     Tarrow(t1, t2) -> 1 + arity t2
   | _ -> 0
+
+(* Check whether an abbreviation expands to itself. *)
+let rec cyclic_abbrev env id ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tconstr (Path.Pident id', _, _) when Ident.same id id' ->
+      true
+  | Tconstr (p, tl, abbrev) ->
+      begin try
+        cyclic_abbrev env id (try_expand_head env ty)
+      with Cannot_expand ->
+        false
+      end
+  | _ ->
+      false
 
 
                               (*************************)

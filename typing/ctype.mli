@@ -86,10 +86,10 @@ val apply:
         the parameters [pi] and returns the corresponding instance of
         [t]. Exception [Cannot_apply] is raised in case of failure. *)
 
-val expand_abbrev:
-        Env.t -> Path.t -> type_expr list -> Types.abbrev_memo ref ->
-        int -> type_expr
-        (* Expand an abbreviation *)
+(* val expand_abbrev: *)
+(*         Env.t -> Path.t -> type_expr list -> Types.abbrev_memo ref -> *)
+(*         int -> type_expr *)
+(*         (* Expand an abbreviation *) *)
 val expand_head: Env.t -> type_expr -> type_expr
 val full_expand: Env.t -> type_expr -> type_expr
 
@@ -128,6 +128,7 @@ val nondep_class_type: Env.t -> Ident.t -> class_type -> class_type
         (* Same for class types. *)
 
 val correct_abbrev: Env.t -> Ident.t -> type_expr list -> type_expr -> unit
+val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool
 
 type closed_schema_result = Var of type_expr | Row_var of type_expr
 val closed_schema: type_expr -> bool
