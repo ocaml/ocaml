@@ -34,7 +34,7 @@ beforedepend:: csldep
 
 CSLPROF=cslprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  location.cmo longident.cmo parser.cmo lexer.cmo parse.cmo
+  location.cmo longident.cmo pstream.cmo parser.cmo lexer.cmo parse.cmo
 
 cslprof: $(CSLPROF)
 	$(CAMLC) $(LINKFLAGS) -o cslprof $(CSLPROF_IMPORTS) $(CSLPROF)

@@ -48,3 +48,4 @@ string.cmo: list.cmi string.cmi
 string.cmx: list.cmx string.cmi 
 sys.cmo: sys.cmi 
 sys.cmx: sys.cmi 
+stream.cmo: stream.cmi

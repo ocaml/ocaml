@@ -20,7 +20,7 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
-  parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
+  parsing/pstream.cmo parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/typedtree.cmo \
@@ -77,7 +77,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
 
 PERVASIVES=arg array char digest filename format gc hashtbl lexing list map \
   obj parsing pervasives printexc printf queue random set sort \
-  stack string sys
+  stack string stream sys
 
 # Recompile the system using the bootstrap compiler
 all: runtime cslc csllex cslyacc csltools library csltop otherlibraries

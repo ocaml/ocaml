@@ -57,6 +57,7 @@ let keyword_table =
     "of", OF;
     "open", OPEN;
     "or", OR;
+    "parser", PARSER;
     "rec", REC;
     "sig", SIG;
     "struct", STRUCT;
@@ -191,12 +192,14 @@ rule token = parse
   | ":" { COLON }
   | "::" { COLONCOLON }
   | ":=" { COLONEQUAL }
+  | ":]" { COLONRBRACKET }
   | ";" { SEMI }
   | ";;" { SEMISEMI }
   | "<-" { LESSMINUS }
   | "=" { EQUAL }
   | "[" { LBRACKET }
   | "[|" { LBRACKETBAR }
+  | "[:" { LBRACKETCOLON }
   | "]" { RBRACKET }
   | "_" { UNDERSCORE }
   | "{" { LBRACE }
