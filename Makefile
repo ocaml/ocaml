@@ -44,8 +44,8 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/compilenv.cmo \
   asmcomp/closure.cmo asmcomp/cmmgen.cmo \
-  asmcomp/printmach.cmo asmcomp/selection.cmo \
-  asmcomp/liveness.cmo asmcomp/spill.cmo asmcomp/split.cmo \
+  asmcomp/printmach.cmo asmcomp/selection.cmo asmcomp/liveness.cmo \
+  asmcomp/spill.cmo asmcomp/split.cmo \
   asmcomp/interf.cmo asmcomp/coloring.cmo asmcomp/reload.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo asmcomp/scheduling.cmo \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
