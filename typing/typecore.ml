@@ -658,6 +658,20 @@ let rec type_approx env sexp =
       end
   | _ -> newvar ()
 
+(* List labels in a function type, and whether return type is a variable *)
+let rec list_labels_aux env visited ls ty_fun =
+  let ty = expand_head env ty_fun in
+  if !Clflags.recursive_types && List.memq ty visited then
+    List.rev ls, false
+  else match ty.desc with
+    Tarrow (l, _, ty_res, _) ->
+      list_labels_aux env (ty::visited) (l::ls) ty_res
+  | _ ->
+      List.rev ls, ty.desc = Tvar
+
+let list_labels env ty = list_labels_aux env [] [] ty
+
+(* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 
 (* Typing of expressions *)
@@ -1111,14 +1125,9 @@ let rec type_exp env sexp =
        }
 
 and type_argument env sarg ty_expected =
-  let rec no_labels visited ty =
-    let ty = expand_head env ty in
-    if !Clflags.recursive_types && List.memq ty.id visited then true else
-    match ty.desc with
-      Tvar -> false
-    | Tarrow ("",_, ty',_) -> no_labels (ty.id::visited) ty'
-    | Tarrow _ -> false
-    | _ -> true
+  let no_labels ty =
+    let ls, tvar = list_labels env ty in
+    not tvar && List.for_all ((=) "") ls
   in
   match expand_head env ty_expected, sarg with
   | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
@@ -1134,12 +1143,12 @@ and type_argument env sarg ty_expected =
               ((Some(option_none ty_arg sarg.pexp_loc), Optional) :: args)
               ty_fun
         | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
-            args, ty_fun, no_labels [] ty_res'
+            args, ty_fun, no_labels ty_res'
         | Tvar ->  args, ty_fun, false
         |  _ -> [], texp.exp_type, false
       in
       let args, ty_fun, simple_res = make_args [] texp.exp_type in
-      if not (simple_res || no_labels [] ty_res) then begin
+      if not (simple_res || no_labels ty_res) then begin
         unify_exp env texp ty_expected;
         texp
       end else begin
@@ -1175,12 +1184,9 @@ and type_application env funct sargs =
       (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun,Cok)))
       ty_fun omitted
   in
-  let rec has_label l ty_fun =
-    match (expand_head env ty_fun).desc with
-    | Tarrow (l', _, ty_res, _) ->
-        (l = l' || has_label l ty_res)
-    | Tvar -> true
-    | _ -> false
+  let has_label l ty_fun =
+    let ls, tvar = list_labels env ty_fun in
+    tvar || List.mem l ls
   in
   let ignored = ref [] in
   let rec type_unknown_args args omitted ty_fun = function
@@ -1222,26 +1228,18 @@ and type_application env funct sargs =
         in
         type_unknown_args ((Some arg1, optional) :: args) omitted ty2 sargl
   in
-  let rec nonopt_labels ls ty_fun =
-    match (expand_head env ty_fun).desc with
-    | Tarrow (l, _, ty_res, _) ->
-        if is_optional l then nonopt_labels ls ty_res
-        else nonopt_labels (l::ls) ty_res
-    | Tvar -> None
-    | _    -> Some ls
-  in
   let ignore_labels =
     !Clflags.classic ||
-    match nonopt_labels [] funct.exp_type with
-    | Some labels ->
-        List.length labels = List.length sargs &&
-        List.for_all (fun (l,_) -> l = "") sargs &&
-        List.exists (fun l -> l <> "") labels &&
-        begin
-          Location.prerr_warning funct.exp_loc Warnings.Labels_omitted;
-          true
-        end
-    | None -> false
+    begin
+      let ls, tvar = list_labels env funct.exp_type in
+      not tvar &&
+      let labels = List.filter (fun l -> not (is_optional l)) ls in
+      List.length labels = List.length sargs &&
+      List.for_all (fun (l,_) -> l = "") sargs &&
+      List.exists (fun l -> l <> "") labels &&
+      (Location.prerr_warning funct.exp_loc Warnings.Labels_omitted;
+       true)
+    end
   in
   let rec type_args args omitted ty_fun ty_old sargs more_sargs =
     match expand_head env ty_fun with
@@ -1420,11 +1418,9 @@ and type_expect ?in_function env sexp ty_expected =
       let cases, partial =
         type_cases ~in_function:(loc,ty_fun) env ty_arg ty_res
           (Some sexp.pexp_loc) caselist in
-      let rec all_labeled ty =
-        match (repr ty).desc with
-          Tarrow ("", _, _, _) | Tvar -> false
-        | Tarrow (l, _, ty, _) -> l.[0] <> '?' && all_labeled ty
-        | _ -> true
+      let all_labeled ty =
+        let ls, tvar = list_labels env ty in
+        tvar || List.exists (fun l -> l = "" || l.[0] = '?') ls
       in
       if is_optional l && all_labeled ty_res then
         Location.prerr_warning (fst (List.hd cases)).pat_loc
