@@ -1,3 +1,42 @@
+Objective Caml 3.03:
+--------------------
+
+Type-checker:
+- Fixed obscure bug in module typing causing the type-checker to loop
+  on signatures of the form
+        module type M
+        module A: sig module type T = sig module T: M end end
+        module B: A.T
+- Improved efficiency of module type-checking via lazy computation of
+  certain summary information.
+
+Byte-code compiler:
+- Protect against VM stack overflow caused by module initialization code
+  with many local variables.
+
+Native-code compiler:
+- Attempt to recover gracefully from system stack overflow.  Currently
+  works on x86 under Linux and BSD.
+
+Toplevel environment:
+- Revised printing of inferred types and evaluation results
+  so that an external printer (e.g. Camlp4's) can be hooked in.
+
+Tools:
+- ocamldep: added -pp option to handle preprocessed source files.
+
+Run-time system:
+- Autoconfiguration script: fixed wrong detection of Mac OS X; problem
+  with the Sparc, gcc 3.0, and float alignment fixed.
+
+Other libraries:
+- Graphics under X Windows: revised event handling, should no longer lose
+    mouse events between two calls to wait_next_event(); wait_next_event()
+    now interruptible by signals.
+
+Windows port:
+- Fixed broken Unix.{get,set}sockopt*
+
 Objective Caml 3.02:
 --------------------
 
