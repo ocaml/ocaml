@@ -55,6 +55,6 @@ let report_error ppf exn =
       Location.print ppf loc; Typeclass.report_error ppf err
   | Translclass.Error(loc, err) ->
       Location.print ppf loc; Translclass.report_error ppf err
-  | x -> close_box(); raise x in
+  | x -> fprintf ppf "@]"; raise x in
 
   fprintf ppf "@[%a@]@." report exn
