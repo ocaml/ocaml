@@ -1933,7 +1933,9 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
   then raise (Unify []);
   let rm1 = repr row1.row_more and rm2 = repr row2.row_more in
   let ext =
-    if not (static_row row2) then moregen_occur env rm1.level rm2;
+    if not (static_row row2) then 
+      if rm1.desc <> Tunivar then moregen_occur env rm1.level rm2 else
+      if rm2.desc <> Tunivar then raise (Unify []);
     if r2 = [] then rm2 else
     let ty = newty2 generic_level (Tvariant{row2 with row_fields = r2}) in
     moregen_occur env rm1.level ty;
@@ -1969,6 +1971,11 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       | _ -> raise (Unify []))
     pairs
 
+(* Must empty univar_pairs first *)
+let moregen inst_nongen type_pairs env patt subj =
+  univar_pairs := [];
+  moregen inst_nongen type_pairs env patt subj
+
 (*
    Non-generic variable can be instanciated only if [inst_nongen] is
    true. So, [inst_nongen] should be set to false if the subject might
@@ -1990,7 +1997,6 @@ let moregeneral env inst_nongen pat_sch subj_sch =
   current_level := generic_level;
   (* Duplicate generic variables *)
   let patt = instance pat_sch in
-  univar_pairs := [];
   let res =
     try moregen inst_nongen (TypePairs.create 13) env patt subj; true with
       Unify _ -> false
@@ -2132,8 +2138,7 @@ and eqtype_row rename type_pairs subst env row1 row2 =
       | Rabsent, Rabsent -> ()
       | _ -> raise (Unify []))
     pairs
-     
-
+   
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
   try
@@ -2141,6 +2146,11 @@ let equal env rename tyl1 tyl2 =
     eqtype_list rename (TypePairs.create 11) (ref []) env tyl1 tyl2; true
   with
     Unify _ -> false
+
+(* Must empty univar_pairs first *)  
+let eqtype rename type_pairs subst env t1 t2 =
+  univar_pairs := [];
+  eqtype rename type_pairs subst env t1 t2
 
 
                           (*************************)
@@ -2209,7 +2219,6 @@ let match_class_types env pat_sch subj_sch =
   let type_pairs = TypePairs.create 53 in
   let old_level = !current_level in
   current_level := generic_level - 1;
-  univar_pairs := [];
   (*
      Generic variables are first duplicated with [instance].  So,
      their levels are lowered to [generic_level - 1].  The subject is
@@ -2338,7 +2347,6 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
 (* XXX Correct ? (variables de type dans parametres et corps de classe *)
 let match_class_declarations env patt_params patt_type subj_params subj_type =
   let type_pairs = TypePairs.create 53 in
-  univar_pairs := [];
   let subst = ref [] in
   let sign1 = signature_of_class_type patt_type in
   let sign2 = signature_of_class_type subj_type in
