@@ -17,6 +17,8 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c
 
+PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h
+
 all: ocamlrun
 
 ocamlrun: libcamlrun.a prims.o
@@ -30,7 +32,7 @@ install:
 	cp libcamlrun.a $(LIBDIR)/libcamlrun.a
 	cd $(LIBDIR); $(RANLIB) libcamlrun.a
 	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi
-	cp mlvalues.h alloc.h misc.h callback.h $(LIBDIR)/caml
+	cp $(PUBLIC_INCLUDES) $(LIBDIR)/caml
 	sed -e '/#include ".*\/m.h/r ../config/m.h' \
             -e '/#include ".*\/s.h/r ../config/s.h' \
             -e '/#include "/d' config.h > $(LIBDIR)/caml/config.h

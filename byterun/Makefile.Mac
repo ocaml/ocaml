@@ -35,6 +35,8 @@ PRIMS = array.c compare.c extern.c floats.c gc_ctrl.c hash.c ¶
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c ¶
   signals.c str.c sys.c terminfo.c callback.c weak.c
 
+PUBLIC_INCLUDES = mlvalues.h alloc.h misc.h callback.h fail.h
+
 all Ä ocamlrun libcamlrun.o libcamlrun.x
 
 ocamlrun ÄÄ libcamlrun.o prims.c.o
@@ -57,8 +59,7 @@ install Ä
     if "`exists -d "{LIBDIR}caml:"`" == ""
       newfolder "{LIBDIR}caml:"
     end
-    duplicate -y mlvalues.h alloc.h misc.h callback.h config.h memory.h ¶
-              "{LIBDIR}caml:"
+    duplicate -y {PUBLIC_INCLUDES} "{LIBDIR}caml:"
     open -t "{LIBDIR}caml:config.h"
     find ¥ "{LIBDIR}caml:config.h"
     find /Å'#include "'Åsm-Mac.hÅ°/ "{LIBDIR}caml:config.h"
