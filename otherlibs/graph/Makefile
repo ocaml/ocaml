@@ -36,10 +36,10 @@ libgraphics.a: $(OBJS)
 
 graphics.cma: graphics.cmo
 	$(CAMLC) -a -o graphics.cma -custom \
-          graphics.cmo -cclib -lgraph $(X11_LINK)
+          graphics.cmo -cclib -lgraphics $(X11_LINK)
 
 graphics.cmxa: graphics.cmx
-	$(CAMLOPT) -a -o graphics.cmxa graphics.cmx -cclib -lgraph $(X11_LINK)
+	$(CAMLOPT) -a -o graphics.cmxa graphics.cmx -cclib -lgraphics $(X11_LINK)
 
 partialclean:
 	rm -f *.cm*
