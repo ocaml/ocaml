@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -25,7 +25,11 @@ value raise_with_loc : (int * int) -> exn -> 'a;
     (* [raise_with_loc loc e], if [e] is already the exception [Exc_located],
        re-raise it, else raise the exception [Exc_located loc e]. *)
 
+value line_of_loc : string -> (int * int) -> (int * int * int);
+    (* [line_of_loc fname loc] reads the file [fname] up to the
+       location [loc] and returns the line number and the characters
+       location in the line *)
+
 value loc_name : ref string;
     (* Name of the location variable used in grammars and in the predefined
        quotations for OCaml syntax trees. Default: [loc] *)
-

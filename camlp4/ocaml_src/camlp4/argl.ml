@@ -66,32 +66,6 @@ let rec parse_aux spec_list anon_fun =
       else begin (anon_fun s : unit); parse_aux spec_list anon_fun sl end
 ;;
 
-let line_of_loc fname (bp, ep) =
-  let ic = open_in_bin fname in
-  let rec loop lin col cnt =
-    if cnt < bp then
-      let (lin, col) =
-        match input_char ic with
-          '\n' -> lin + 1, 0
-        | _ -> lin, col + 1
-      in
-      loop lin col (cnt + 1)
-    else lin, col, col + ep - bp
-  in
-  let r =
-    try loop 1 0 0 with
-      e ->
-        begin try close_in ic with
-          _ -> ()
-        end;
-        raise e
-  in
-  begin try close_in ic with
-    _ -> ()
-  end;
-  r
-;;
-
 let loc_fmt =
   match Sys.os_type with
     "MacOS" ->
@@ -102,7 +76,7 @@ let loc_fmt =
 
 let print_location loc =
   if !(Pcaml.input_file) <> "-" then
-    let (line, bp, ep) = line_of_loc !(Pcaml.input_file) loc in
+    let (line, bp, ep) = Stdpp.line_of_loc !(Pcaml.input_file) loc in
     eprintf loc_fmt !(Pcaml.input_file) line bp ep
   else eprintf "At location %d-%d\n" (fst loc) (snd loc)
 ;;

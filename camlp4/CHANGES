@@ -1,7 +1,9 @@
 Camlp4 Version 3.04+5
 ---------------------
 
-- [01 Fev 02] Fixed bug in token.ml: the location function provided by
+- [03 Feb 02] Added function Stdpp.line_of_loc returning the line and
+  columns positions from a character location and a file.
+- [01 Feb 02] Fixed bug in token.ml: the location function provided by
   lexer_func_of_parser, lexer_func_of_ocamllex and make_stream_and_location
   could raise Invalid_argument "Array.make" for big files if the number
   of read tokens overflows the maximum arrays size (Sys.max_array_length).

@@ -62,24 +62,6 @@ value rec parse_aux spec_list anon_fun =
       else do { (anon_fun s : unit); parse_aux spec_list anon_fun sl } ]
 ;
 
-value line_of_loc fname (bp, ep) =
-  let ic = open_in_bin fname in
-  let rec loop lin col cnt =
-    if cnt < bp then
-      let (lin, col) =
-        match input_char ic with
-        [ '\n' -> (lin + 1, 0)
-        | _ -> (lin, col + 1) ]
-      in
-      loop lin col (cnt + 1)
-    else (lin, col, col + ep - bp)
-  in
-  let r =
-    try loop 1 0 0 with e -> do { try close_in ic with _ -> (); raise e }
-  in
-  do { try close_in ic with _ -> (); r }
-;
-
 value loc_fmt =
   match Sys.os_type with
   [ "MacOS" ->
@@ -89,7 +71,7 @@ value loc_fmt =
 
 value print_location loc =
   if Pcaml.input_file.val <> "-" then
-    let (line, bp, ep) = line_of_loc Pcaml.input_file.val loc in
+    let (line, bp, ep) = Stdpp.line_of_loc Pcaml.input_file.val loc in
     eprintf loc_fmt Pcaml.input_file.val line bp ep
   else eprintf "At location %d-%d\n" (fst loc) (snd loc)
 ;
@@ -118,8 +100,7 @@ value process pa pr getdir =
                 | (loc, "directory", Some <:expr< $str:s$ >>) ->
                     Odyl_main.directory s
                 | (loc, _, _) ->
-                    Stdpp.raise_with_loc loc
-                      (Stream.Error "bad directive") ]
+                    Stdpp.raise_with_loc loc (Stream.Error "bad directive") ]
             | None -> () ];
             pl @ loop ()
           }

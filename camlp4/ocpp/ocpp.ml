@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -102,16 +102,6 @@ and inside_string cs =
 
 value copy_quot cs = do { copy cs; flush stdout; };
 
-value find_line (bp, ep) ic =
-  find 0 1 0 where rec find i line col =
-    match try Some (input_char ic) with [ End_of_file -> None ] with
-    [ Some x ->
-        if i == bp then (line, col, col + ep - bp)
-        else if x == '\n' then find (succ i) (succ line) 0
-        else find (succ i) line (succ col)
-    | None -> (line, 0, col) ]
-;
-
 value loc_fmt =
   match Sys.os_type with
   [ "MacOS" ->
@@ -120,9 +110,8 @@ value loc_fmt =
 ;
 
 value print_location loc file =
-  let ic = open_in_bin file in
-  let (line, c1, c2) = find_line loc ic in
-  do { close_in ic; Printf.eprintf loc_fmt file line c1 c2; flush stderr; }
+  let (line, c1, c2) = Stdpp.line_of_loc file loc in
+  do { Printf.eprintf loc_fmt file line c1 c2; flush stderr; }
 ;
 
 value file = ref "";
