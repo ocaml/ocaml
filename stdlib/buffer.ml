@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
+(*   Pierre Weis and Xavier Leroy, projet Cristal, INRIA Rocquencourt  *)
 (*                                                                     *)
 (*  Copyright 1999 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  Distributed only by permission.                   *)
@@ -15,176 +15,57 @@ type t =
  {mutable buffer : string;
   mutable position : int;
   mutable length : int;
-  mutable out_chan : out_channel option;
-  initial_buffer : string};;
+  initial_buffer : string}
 
 let create n =
  let s = String.create n in
- {buffer = s; position = 0; length = String.length s; out_chan = None;
-  initial_buffer = s};;
+ {buffer = s; position = 0; length = String.length s; initial_buffer = s}
 
-let contents b = String.sub b.buffer 0 b.position;;
+let contents b = String.sub b.buffer 0 b.position
 
-let length b = b.length;;
+let length b = b.position
 
-let position b = b.position;;
+let clear b = b.position <- 0
 
-let clear b = b.position <- 0;;
-
-let reset b = clear b; b.buffer <- b.initial_buffer;;
-
-let flush b =
- match b.out_chan with
- | None -> ()
- | Some oc ->
-     Pervasives.output oc b.buffer 0 b.position;
-     clear b;;
+let reset b = b.position <- 0; b.buffer <- b.initial_buffer
 
 let resize b more =
- flush b;
- let len = b.length in
- if b.position + more > len then 
-  let new_len = if more < len then len + len else len + len + more in
-  let new_buffer = String.create new_len in
+  let len = b.length in
+  let new_len = ref len in
+  while b.position + more > !new_len do new_len := 2 * !new_len done;
+  let new_buffer = String.create !new_len in
   String.blit b.buffer 0 new_buffer 0 b.position;
   b.buffer <- new_buffer;
-  b.length <- new_len;;
+  b.length <- !new_len
 
-(* Give_room is slightly different from resize, since it does not
-   flush systematically the buffer. *)
-let give_room b l =
- if b.position + l > b.length then resize b l;;
+let add_char b c =
+  let pos = b.position in
+  if pos >= b.length then resize b 1;
+  b.buffer.[pos] <- c;
+  b.position <- pos + 1
 
-let output_char b c =
- let pos = b.position in
- if pos >= b.length then resize b 1;
- b.buffer.[pos] <- c;
- b.position <- pos + 1;;
+let add_substring b s offset len =
+  if offset < 0 || len < 0 || offset + len > String.length s
+  then invalid_arg "Buffer.add_substring";
+  let new_position = b.position + len in
+  if new_position > b.length then resize b len;
+  String.blit s offset b.buffer b.position len;
+  b.position <- new_position
 
-let unsafe_output b s offset l =
- let new_position = b.position + l in
- if new_position > b.length then resize b l;
- String.blit s offset b.buffer b.position l;
- b.position <- new_position;;
+let add_string b s =
+  let len = String.length s in
+  let new_position = b.position + len in
+  if new_position > b.length then resize b len;
+  String.blit s 0 b.buffer b.position len;
+  b.position <- new_position
+  
+let add_buffer b bs =
+  add_substring b bs.buffer 0 bs.position
 
-let output_string b s = unsafe_output b s 0 (String.length s);;
+let add_channel b ic len =
+  if b.position + len > b.length then resize b len;
+  really_input ic b.buffer b.position len;
+  b.position <- b.position + len
 
-let output b s offset l =
-  if offset < 0 or offset + l > String.length s
-  then invalid_arg "Buffer.output"
-  else unsafe_output b s offset l;;
-
-let output_buffer b bs = unsafe_output b bs.buffer 0 bs.position;;
-
-let open_out b oc = b.out_chan <- Some oc;;
-
-let close_out b =
- match b.out_chan with
- | None -> ()
- | Some oc ->
-    Pervasives.output oc b.buffer 0 b.position;
-    reset b;
-    b.out_chan <- None;;
-
-(* Input in buffers. *)
-let really_input ic b len =
- give_room b len;
- Pervasives.really_input ic b.buffer b.position len;
- b.position <- b.position + len;;
-
-let input ic b len =
- give_room b len;
- let n = Pervasives.input ic b.buffer b.position len in
- b.position <- b.position + n;
- n;;
-
-let read_in_channel ic b =
- let len = in_channel_length ic in
- really_input ic b len;;
-
-(* The printf facility for buffers. *)
-
-external format_int: string -> int -> string = "format_int"
-external format_float: string -> float -> string = "format_float"
-
-let bprintf b format =
-  let format = (Obj.magic format : string) in
-
-  let rec doprn start i =
-    if i >= String.length format then begin
-      if i > start then output b format start (i - start);
-      (Obj.magic ())
-    end else
-      if format.[i] != '%' then
-        doprn start (succ i)
-      else begin
-        if i > start then output b format start (i - start);
-        let j = skip_args (succ i) in
-        match format.[j] with
-        | '%' ->
-            doprn j (succ j)
-        | 's' ->
-            Obj.magic(dostring i j)
-        | 'c' ->
-            Obj.magic(fun c ->
-                output_char b c;
-                doprn (succ j) (succ j))
-        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            Obj.magic(doint i j)
-        | 'f' | 'e' | 'E' | 'g' | 'G' ->
-            Obj.magic(dofloat i j)
-        | 'b' ->
-            Obj.magic(fun bool ->
-                output_string b (string_of_bool bool);
-                doprn (succ j) (succ j))
-        | 'a' ->
-            Obj.magic(fun printer arg ->
-              printer b arg;
-              doprn (succ j) (succ j))
-        | 't' ->
-            Obj.magic(fun printer ->
-              printer b;
-              doprn (succ j) (succ j))
-        | c ->
-            invalid_arg ("bprintf: unknown format " ^ Char.escaped c)
-      end
-
-  and skip_args j =
-    match format.[j] with
-    | '0' .. '9' | ' ' | '.' | '-' -> skip_args (succ j)
-    | c -> j
-    
-  and dostring i j s =
-    if j <= succ i then
-      output_string b s
-    else begin
-      let p =
-        try
-          int_of_string (String.sub format (succ i) (j - i - 1))
-        with _ ->
-          invalid_arg "bprintf: bad %s format" in
-      if p > 0 && String.length s < p then begin
-        output_string b (String.make (p - String.length s) ' ');
-        output_string b s
-      end else if p < 0 && String.length s < -p then begin
-        output_string b s;
-        output_string b (String.make (-p - String.length s) ' ')
-      end else
-        output_string b s
-    end;
-    doprn (succ j) (succ j)
-
-  and doint i j n =
-    let len = j - i in
-    let fmt = String.create (len + 2) in
-    String.blit format i fmt 0 len;
-    fmt.[len] <- 'l';
-    fmt.[len + 1] <- format.[j];
-    output_string b (format_int fmt n);
-    doprn (succ j) (succ j)
-
-  and dofloat i j f =
-    output_string b (format_float (String.sub format i (j - i + 1)) f);
-    doprn (succ j) (succ j)
-
-  in doprn 0 0;;
+let output_buffer oc b =
+  output oc b.buffer 0 b.position

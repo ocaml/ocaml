@@ -93,73 +93,92 @@ let fprintf outchan format =
 let printf fmt = fprintf stdout fmt
 and eprintf fmt = fprintf stderr fmt
 
-let sprintf format =
+let bprintf_internal tostring buf format =
   let format = (Obj.magic format : string) in
-  let rec doprn start i accu =
-    if i >= String.length format then begin
-      let res = 
-        if i > start    
-        then String.sub format start (i-start) :: accu
-        else accu in
-      Obj.magic(String.concat "" (List.rev res))
-    end else
-      if String.unsafe_get format i <> '%' then
-        doprn start (i+1) accu
-      else begin
-        let accu1 =
-          if i > start then
-          String.sub format start (i-start) :: accu
-          else accu in
+  let rec doprn i =
+    if i >= String.length format then
+      if tostring then Obj.magic (Buffer.contents buf) else Obj.magic ()
+    else begin
+      let c = String.unsafe_get format i in
+      if c <> '%' then begin
+        Buffer.add_char buf c;
+        doprn (succ i)
+      end else begin
         let j = skip_args (succ i) in
         match String.unsafe_get format j with
           '%' ->
-            doprn j (succ j) accu1
+            Buffer.add_char buf '%';
+            doprn (succ j)
         | 's' ->
             Obj.magic(fun s ->
-              let accu2 =
-                if j <= i+1 then
-                  s :: accu1
-                else begin
-                  let p =
-                    try
-                      int_of_string (String.sub format (i+1) (j-i-1))
-                    with _ ->
-                      invalid_arg "sprintf: bad %s format" in
-                  if p > 0 && String.length s < p then
-                    s :: String.make (p - String.length s) ' ' :: accu1
-                  else if p < 0 && String.length s < -p then
-                    String.make (-p - String.length s) ' ' :: s :: accu1
-                  else
-                    s :: accu1
-                end in
-              doprn (succ j) (succ j) accu2)
+              if j <= i+1 then
+                Buffer.add_string buf s
+              else begin
+                let p =
+                  try
+                    int_of_string (String.sub format (i+1) (j-i-1))
+                  with _ ->
+                    invalid_arg "fprintf: bad %s format" in
+                if p > 0 && String.length s < p then begin
+                  Buffer.add_string buf
+                                (String.make (p - String.length s) ' ');
+                  Buffer.add_string buf s
+                end else if p < 0 && String.length s < -p then begin
+                  Buffer.add_string buf s;
+                  Buffer.add_string buf
+                                (String.make (-p - String.length s) ' ')
+                end else
+                  Buffer.add_string buf s
+              end;
+              doprn (succ j))
         | 'c' ->
             Obj.magic(fun c ->
-              doprn (succ j) (succ j) (String.make 1 c :: accu1))
+              Buffer.add_char buf c;
+              doprn (succ j))
         | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
             Obj.magic(fun n ->
-              doprn (succ j) (succ j)
-                    (format_int (String.sub format i (j-i+1)) n :: accu1))
+              Buffer.add_string buf
+                            (format_int (String.sub format i (j-i+1)) n);
+              doprn (succ j))
         | 'f' | 'e' | 'E' | 'g' | 'G' ->
             Obj.magic(fun f ->
-              doprn (succ j) (succ j)
-                    (format_float (String.sub format i (j-i+1)) f :: accu1))
+              Buffer.add_string buf
+                            (format_float (String.sub format i (j-i+1)) f);
+              doprn (succ j))
         | 'b' ->
             Obj.magic(fun b ->
-              doprn (succ j) (succ j) (string_of_bool b :: accu1))
+              Buffer.add_string buf (string_of_bool b);
+              doprn (succ j))
         | 'a' ->
-            Obj.magic(fun printer arg ->
-              doprn (succ j) (succ j) (printer () arg :: accu1))
+            if tostring then
+              Obj.magic(fun printer arg ->
+                Buffer.add_string buf (printer () arg);
+                doprn(succ j))
+            else
+              Obj.magic(fun printer arg ->
+                printer buf arg;
+                doprn(succ j))
         | 't' ->
-            Obj.magic(fun printer ->
-              doprn (succ j) (succ j) (printer () :: accu1))
+            if tostring then
+              Obj.magic(fun printer ->
+                Buffer.add_string buf (printer ());
+                doprn(succ j))
+            else
+              Obj.magic(fun printer ->
+                printer buf;
+                doprn(succ j))
         | c ->
             invalid_arg ("sprintf: unknown format")
       end
+    end
 
   and skip_args j =
     match String.unsafe_get format j with
       '0' .. '9' | ' ' | '.' | '-' -> skip_args (succ j)
     | c -> j
 
-  in doprn 0 0 []
+  in doprn 0
+
+let bprintf buf fmt = bprintf_internal false buf fmt
+
+let sprintf fmt = bprintf_internal true (Buffer.create 16) fmt

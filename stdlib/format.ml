@@ -625,7 +625,7 @@ let formatter_of_out_channel oc =
  make_formatter (output oc) (fun () -> flush oc);;
 
 let formatter_of_buffer b =
-  make_formatter (Buffer.output b) (fun () -> Buffer.flush b);;
+  make_formatter (Buffer.add_substring b) (fun () -> ());;
 
 let stdbuf = Buffer.create 512;;
 

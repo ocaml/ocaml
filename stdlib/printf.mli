@@ -63,6 +63,12 @@ val eprintf: ('a, out_channel, unit) format -> 'a
         (* Same as [fprintf], but output on [stderr]. *)
 
 val sprintf: ('a, unit, string) format -> 'a
-        (* Same as [printf], but instead of printing on an output channel,
+        (* Same as [fprintf], but instead of printing on an output channel,
            return a string containing the result of formatting
            the arguments. *)
+
+val bprintf: Buffer.t -> ('a, Buffer.t, unit) format -> 'a
+        (* Same as [fprintf], but instead of printing on an output channel,
+           append the formatted arguments to the given extensible buffer
+           (see module [Buffer]). *)
+

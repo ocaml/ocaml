@@ -25,6 +25,7 @@ module type S =
     val add: key -> 'a -> 'a t -> 'a t
     val find: key -> 'a t -> 'a
     val remove: key -> 'a t -> 'a t
+    val mem:  key -> 'a t -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     val map: ('a -> 'b) -> 'a t -> 'b t
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
@@ -97,6 +98,13 @@ module Make(Ord: OrderedType) = struct
           let c = Ord.compare x v in
           if c = 0 then d
           else find x (if c < 0 then l else r)
+
+    let rec mem x = function
+        Empty ->
+          false
+      | Node(l, v, d, r, _) ->
+          let c = Ord.compare x v in
+          c = 0 || mem x (if c < 0 then l else r)
 
     let rec merge t1 t2 =
       match (t1, t2) with
