@@ -1,11 +1,11 @@
 pcaml.cmi: mLast.cmi spretty.cmi 
 quotation.cmi: mLast.cmi 
 reloc.cmi: mLast.cmi 
-argl.cmo: ast2pt.cmo mLast.cmi pcaml.cmi 
+argl.cmo: ast2pt.cmi mLast.cmi pcaml.cmi 
 argl.cmx: ast2pt.cmx mLast.cmi pcaml.cmx 
-ast2pt.cmo: mLast.cmi 
-ast2pt.cmx: mLast.cmi 
-pcaml.cmo: ast2pt.cmo mLast.cmi quotation.cmi reloc.cmi spretty.cmi pcaml.cmi 
+ast2pt.cmo: mLast.cmi ast2pt.cmi 
+ast2pt.cmx: mLast.cmi ast2pt.cmi 
+pcaml.cmo: ast2pt.cmi mLast.cmi quotation.cmi reloc.cmi spretty.cmi pcaml.cmi 
 pcaml.cmx: ast2pt.cmx mLast.cmi quotation.cmx reloc.cmx spretty.cmx pcaml.cmi 
 quotation.cmo: mLast.cmi quotation.cmi 
 quotation.cmx: mLast.cmi quotation.cmi 

@@ -1,3 +1,9 @@
+ingram.cmo: ../camlp4/mLast.cmi 
+ingram.cmx: ../camlp4/mLast.cmi 
+outgram.cmo: ../camlp4/pcaml.cmi 
+outgram.cmx: ../camlp4/pcaml.cmx 
+pa_cl.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
+pa_cl.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_extfun.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_extfun.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_format.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
