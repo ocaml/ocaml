@@ -580,12 +580,18 @@ let build_new_type temp_env env
   in
 
   (* Check whether the class can be concrete *)
-  if cl.pcl_kind = Concrete then
+  if cl.pcl_kind = Concrete then begin
     List.iter
       (function m ->
          if not (Concr.mem m cl_sig.cty_concr) then
            raise(Error(cl.pcl_loc, Virtual_class (cl.pcl_name, m))))
       public_methods;
+    Meths.iter
+      (fun m _ ->
+         if not (Concr.mem m cl_sig.cty_concr) then
+           raise(Error(cl.pcl_loc, Virtual_class (cl.pcl_name, m))))
+      meths
+  end;
 
   (* Final class implementation and interface *)
   let cl_imp =
@@ -1007,12 +1013,18 @@ let build_new_type temp_env env
   in
 
   (* Check whether the class can be concrete *)
-  if cl.pcty_kind = Concrete then
+  if cl.pcty_kind = Concrete then begin
     List.iter
       (function m ->
          if not (Concr.mem m cl_sig.cty_concr) then
            raise(Error(cl.pcty_loc, Virtual_class (cl.pcty_name, m))))
       public_methods;
+    Meths.iter
+      (fun m _ ->
+         if not (Concr.mem m cl_sig.cty_concr) then
+           raise(Error(cl.pcty_loc, Virtual_class (cl.pcty_name, m))))
+      meths
+  end;
 
   (* Final class type *)
   let cl_sig =
