@@ -595,12 +595,7 @@ let limited_generalize ty0 ty =
       if (ty.level = generic_level) || (ty == ty0) then
         roots := ty :: !roots;
       ty.level <- !idx;
-      let pty' =
-        match ty.desc with
-          Tvariant row -> [ty; row_more row]
-        | _ -> [ty]
-      in
-      iter_type_expr (inverse pty') ty
+      iter_type_expr (inverse [ty]) ty
     end else if ty.level < lowest_level then begin
       let (_, parents) = Hashtbl.find graph ty.level in
       parents := pty @ !parents
@@ -694,15 +689,15 @@ let rec copy ty =
               (* This variant type has been already copied *)
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
-          | _ when more.level <> generic_level ->
-              (* If the row variable is not generic, do nothing *)
-              Tvariant row0
           | _ ->
+              (* If the row variable is not generic, we must keep it *)
+              let keep = more.level <> generic_level in
               (* Register new type first for recursion *)
               save_desc more more.desc;
               more.desc <- ty.desc;
               (* Return a new copy *)
-              Tvariant (copy_row copy row false (newvar ()))
+              let more' = if keep then more else newvar () in
+              Tvariant (copy_row copy row keep more')
           end
       | _ -> copy_type_desc copy desc
       end;
@@ -1589,9 +1584,9 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       | Reither(false, tl1, _, e1), Rpresent(Some t2) ->
           e1 := Some f2;
           List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
-      | Reither(c1, tl1, _, e1), Reither(c2, tl2, _, e2) ->
+      | Reither(c1, tl1, _, e1), Reither(c2, tl2, m2, e2) ->
           if c1 && not c2 then raise(Unify []);
-          e1 := Some f2;
+          e1 := Some (Reither (c2, [], m2, e2));
           if List.length tl1 = List.length tl2 then
             List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
           else begin match tl2 with
@@ -2475,7 +2470,6 @@ let rec nondep_type_rec env id ty =
   match ty.desc with
     Tvar     -> ty
   | Tsubst ty -> ty
-(*| Tvariant row when not (static_row row) -> ty *)
   | _ ->
     let desc = ty.desc in
     save_desc ty desc;

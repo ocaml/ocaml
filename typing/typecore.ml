@@ -468,7 +468,7 @@ let check_unused_variant pat =
           | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
           end
       | Reither (c, l, true, e) ->
-          e := Some (Reither (c, l, false, ref None))
+          e := Some (Reither (c, [], false, ref None))
       | _ -> ()
       end
   | _ -> ()
