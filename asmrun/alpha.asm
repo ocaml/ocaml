@@ -134,11 +134,11 @@ $103:   ldgp    $gp, 0($27)
 caml_c_call:
     /* Function to call is in $27 */
         lda     $sp, -16($sp)
-        stq     $26, 0($sp)
         stq     $gp, 8($sp)
     /* Rebuild $gp */
         br      $25, $105
 $105:   ldgp    $gp, 0($25)
+        stq     $26, 0($sp)
     /* Record lowest stack address and return address */
         stq     $26, caml_last_return_address
 	lda	$25, 16($sp)
@@ -166,6 +166,7 @@ $105:   ldgp    $gp, 0($25)
         .ent    caml_start_program
         .align  3
 caml_start_program:
+        ldgp    $gp, 0($27)
 	lda	$sp, -128($sp)
         stq     $26, 0($sp)
     /* Save all callee-save registers */
