@@ -1,6 +1,8 @@
 (* camlp4r q_MLast.cmo *)
 (* $Id$ *)
 
+open Printf;
+
 value action_arg s sl =
   fun
   [ Arg.Unit f -> if s = "" then do { f (); Some sl } else None
@@ -88,12 +90,12 @@ value loc_fmt =
 value print_location loc =
   if Pcaml.input_file.val <> "-" then
     let (line, bp, ep) = line_of_loc Pcaml.input_file.val loc in
-    Printf.eprintf loc_fmt Pcaml.input_file.val line bp ep
-  else Printf.eprintf "At location %d-%d\n" (fst loc) (snd loc)
+    eprintf loc_fmt Pcaml.input_file.val line bp ep
+  else eprintf "At location %d-%d\n" (fst loc) (snd loc)
 ;
 
 value print_warning loc s =
-  do { print_location loc; Printf.eprintf "%s\n" s }
+  do { print_location loc; eprintf "%s\n" s }
 ;
 
 value process pa pr getdir =
@@ -160,20 +162,33 @@ value file_kind_of_name name =
 
 value print_version () =
   do {
-    Printf.eprintf "Camlp4 version %s\n" Pcaml.version; flush stderr; exit 0
+    eprintf "Camlp4 version %s\n" Pcaml.version; flush stderr; exit 0
   }
 ;
 
-value usage =
-  "\
+value usage ini_sl ext_sl =
+  do {
+    eprintf "\
 Usage: camlp4 [load-options] [--] [other-options]
-Load-options are:
+Load options:
   -I directory  Add directory in search patch for object files.
   -where        Print camlp4 library directory and exit.
   -nolib        No automatic search for object files in library directory.
   <object-file> Load this file in Camlp4 core.
-Other-options are:
-  <file>        Parse this file."
+Other options:
+  <file>        Parse this file.\n";
+    List.iter (fun (key, _, doc) -> eprintf "  %s %s\n" key doc) ini_sl;
+    loop (ini_sl @ ext_sl) where rec loop =
+      fun
+      [ [(y, _, _) :: _] when y = "-help" -> ()
+      | [_ :: sl] -> loop sl
+      | [] -> eprintf "  -help         Display this list of options.\n" ];
+    if ext_sl <> [] then do {
+      eprintf "Options added by loaded object files:\n";
+      List.iter (fun (key, _, doc) -> eprintf "  %s %s\n" key doc) ext_sl;
+    }
+    else ();
+  }
 ;
 
 value initial_spec_list =
@@ -213,8 +228,8 @@ value parse spec_list anon_fun remaining_args =
   try parse_aux spec_list anon_fun remaining_args with
   [ Arg.Bad s ->
       do {
-        Printf.eprintf "Error: %s\n" s;
-        Printf.eprintf "Use option -help for usage\n";
+        eprintf "Error: %s\n" s;
+        eprintf "Use option -help for usage\n";
         flush stderr;
         exit 2
       } ]
@@ -240,15 +255,16 @@ value report_error =
 ;
 
 value go () =
-  let arg_spec_list = initial_spec_list @ Pcaml.arg_spec_list () in
+  let ext_spec_list = Pcaml.arg_spec_list () in
+  let arg_spec_list = initial_spec_list @ ext_spec_list in
   do {
     match parse arg_spec_list anon_fun remaining_args with
     [ [] -> ()
-    | ["-help" :: sl] -> do { Arg.usage arg_spec_list usage; exit 0 }
+    | ["-help" :: sl] -> do { usage initial_spec_list ext_spec_list; exit 0 }
     | [s :: sl] ->
         do {
-          Printf.eprintf "%s: unknown or misused option\n" s;
-          Printf.eprintf "Use option -help for usage\n";
+          eprintf "%s: unknown or misused option\n" s;
+          eprintf "Use option -help for usage\n";
           exit 2
         } ];
     try
