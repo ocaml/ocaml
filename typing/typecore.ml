@@ -1015,7 +1015,7 @@ let report_error = function
         (function () ->
            print_string "but is here used with type")
   | Too_many_arguments ->
-      print_string "This function has too many arguments"
+      print_string "This function expects too many arguments"
   | Scoping_let_module(id, ty) ->
       reset (); mark_loops ty;
       print_string "This `let module' expression has type";
