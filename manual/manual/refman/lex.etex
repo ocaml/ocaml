@@ -190,10 +190,10 @@ otherwise:
       functor     if          in          include     inherit     initializer
       land        lazy        let         lor         lsl         lsr
       lxor        match       method      mod         module      mutable
-      new         object      of          open        or          parser
-      private     rec         sig         struct      then        to
-      true        try         type        val         virtual     when
-      while       with        
+      new         object      of          open        or          private
+      rec         sig         struct      then        to          true
+      try         type        val         virtual     when        while
+      with        
 \end{verbatim}
 %
 The following character sequences are also keywords:
@@ -206,10 +206,10 @@ The following character sequences are also keywords:
 \end{verbatim}
 %
 Note that the following identifiers are keywords of the Camlp4
-extensions, and should be avoided when working with Camlp4.
+extensions and should be avoided for compatibility reasons.
 %
 \begin{verbatim}
-    <<    <:    >>    $     $$    $:    
+    parser    <<    <:    >>    $     $$    $:
 \end{verbatim}
 
 \subsubsection*{Ambiguities}
