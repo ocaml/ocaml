@@ -1674,11 +1674,11 @@ void make_goal(void)
       bc->value = (unsigned char) bp->entry;
       pitem[nitems++] = bc;
       pitem[nitems++] = bp;
-      fprintf(entry_file,
-              "let %s lexfun lexbuf = yyparse yytables %d lexfun lexbuf\n",
-              bp->name, bp->entry);
       if (bp->tag == NULL)
         entry_without_type(bp->name);
+      fprintf(entry_file,
+              "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (yyparse yytables %d lexfun lexbuf : %s)\n",
+              bp->name, bp->entry, bp->tag);
       fprintf(interface_file,
               "val %s :\n  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> %s\n",
               bp->name,
