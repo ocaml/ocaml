@@ -87,28 +87,33 @@ let rec type_pat env sp =
     Ppat_any ->
       { pat_desc = Tpat_any;
         pat_loc = sp.ppat_loc;
-        pat_type = newvar() }
+        pat_type = newvar();
+        pat_env = env }
   | Ppat_var name ->
       let ty = newvar() in
       let id = enter_variable sp.ppat_loc name ty in
       { pat_desc = Tpat_var id;
         pat_loc = sp.ppat_loc;
-        pat_type = ty }
+        pat_type = ty;
+        pat_env = env }
   | Ppat_alias(sp, name) ->
       let p = type_pat env sp in
       let id = enter_variable sp.ppat_loc name p.pat_type in
       { pat_desc = Tpat_alias(p, id);
         pat_loc = sp.ppat_loc;
-        pat_type = p.pat_type }
+        pat_type = p.pat_type;
+        pat_env = env }
   | Ppat_constant cst ->
       { pat_desc = Tpat_constant cst;
         pat_loc = sp.ppat_loc;
-        pat_type = type_constant cst }
+        pat_type = type_constant cst;
+        pat_env = env }
   | Ppat_tuple spl ->
       let pl = List.map (type_pat env) spl in
       { pat_desc = Tpat_tuple pl;
         pat_loc = sp.ppat_loc;
-        pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl)) }
+        pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
+        pat_env = env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
       let constr =
         try
@@ -131,7 +136,8 @@ let rec type_pat env sp =
       List.iter2 (unify_pat env) args ty_args;
       { pat_desc = Tpat_construct(constr, args);
         pat_loc = sp.ppat_loc;
-        pat_type = ty_res }
+        pat_type = ty_res;
+        pat_env = env }
   | Ppat_record lid_sp_list ->
       let ty = newvar() in
       let type_label_pat (lid, sarg) =
@@ -152,7 +158,16 @@ let rec type_pat env sp =
       in
       { pat_desc = Tpat_record(List.map type_label_pat lid_sp_list);
         pat_loc = sp.ppat_loc;
-        pat_type = ty }
+        pat_type = ty;
+        pat_env = env }
+  | Ppat_array spl ->
+      let pl = List.map (type_pat env) spl in
+      let ty_elt = newvar() in
+      List.iter (fun p -> unify_pat env p ty_elt) pl;
+      { pat_desc = Tpat_array pl;
+        pat_loc = sp.ppat_loc;
+        pat_type = instance (Predef.type_array ty_elt);
+        pat_env = env }
   | Ppat_or(sp1, sp2) ->
       let initial_pattern_variables = !pattern_variables in
       let p1 = type_pat env sp1 in
@@ -162,7 +177,8 @@ let rec type_pat env sp =
       unify_pat env p2 p1.pat_type;
       { pat_desc = Tpat_or(p1, p2);
         pat_loc = sp.ppat_loc;
-        pat_type = p1.pat_type }
+        pat_type = p1.pat_type;
+        pat_env = env }
   | Ppat_constraint(sp, sty) ->
       let p = type_pat env sp in
       let ty = Typetexp.transl_simple_type env false sty in
@@ -823,7 +839,8 @@ let type_method env self self_name meths sexp ty_expected =
   let pattern =
     { pat_desc = Tpat_var obj;
       pat_loc = Location.none;
-      pat_type = self }
+      pat_type = self;
+      pat_env = env }
   in
   let (pattern, env) =
     match self_name with
@@ -835,7 +852,8 @@ let type_method env self self_name meths sexp ty_expected =
         in
         ({ pat_desc = Tpat_alias (pattern, self_name);
            pat_loc = Location.none;
-           pat_type = self },
+           pat_type = self;
+           pat_env = env },
          env)
   in
   let exp = type_expect_fun env sexp ty_expected in

@@ -22,7 +22,8 @@ open Types
 type pattern =
   { pat_desc: pattern_desc;
     pat_loc: Location.t;
-    pat_type: type_expr }
+    pat_type: type_expr;
+    pat_env: Env.t }
 
 and pattern_desc =
     Tpat_any
@@ -32,6 +33,7 @@ and pattern_desc =
   | Tpat_tuple of pattern list
   | Tpat_construct of constructor_description * pattern list
   | Tpat_record of (label_description * pattern) list
+  | Tpat_array of pattern list
   | Tpat_or of pattern * pattern
 
 type expression =

@@ -19,7 +19,8 @@ open Types
 open Typedtree
 
 let make_pat desc ty =
-  {pat_desc = desc; pat_loc = Location.none; pat_type = ty}
+  {pat_desc = desc; pat_loc = Location.none;
+   pat_type = ty; pat_env = Env.empty}
 
 let omega = make_pat Tpat_any Ctype.none
 
@@ -41,6 +42,7 @@ let simple_match p1 p2 =
       c1 = c2
   | Tpat_tuple(_), Tpat_tuple(_) -> true
   | Tpat_record(_), Tpat_record(_) -> true
+  | Tpat_array(p1s), Tpat_array(p2s) -> List.length p1s = List.length p2s
   | _, (Tpat_any | Tpat_var(_)) -> true
   | _, _ -> false
 
@@ -69,11 +71,13 @@ let simple_match_args p1 p2 =
     Tpat_construct(cstr, args) -> args
   | Tpat_tuple(args)  -> args
   | Tpat_record(args) ->  set_fields (record_num_fields p1) args
+  | Tpat_array(args) -> args
   | (Tpat_any | Tpat_var(_)) ->
       begin match p1.pat_desc with
         Tpat_construct(_, args) -> omega_list args
       | Tpat_tuple(args) -> omega_list args
       | Tpat_record(args) ->  omega_list args
+      | Tpat_array(args) ->  omega_list args
       | _ -> []
       end
   | _ -> []
@@ -174,6 +178,7 @@ let full_match env =
   | ({pat_desc = Tpat_constant(_)},_) :: _ -> false
   | ({pat_desc = Tpat_tuple(_)},_) :: _ -> true
   | ({pat_desc = Tpat_record(_)},_) :: _ -> true
+  | ({pat_desc = Tpat_array(_)},_) :: _ -> false
   | _ -> fatal_error "Parmatch.full_match"
 
 (*
@@ -204,7 +209,7 @@ let rec satisfiable pss qs =
               satisfiable pss (simple_match_args p omega @ qs)  in
             if full_match constrs
             then List.exists try_non_omega constrs
-            else satisfiable (filter_extra pss) qs or
+            else satisfiable (filter_extra pss) qs ||
                  List.exists try_non_omega constrs
         end
     | q::qs ->
@@ -227,16 +232,18 @@ let rec le_pat p q =
   | _, Tpat_or(q1,q2) -> le_pat p q1 & le_pat p q2
   | Tpat_constant(c1), Tpat_constant(c2) -> c1 = c2
   | Tpat_construct(c1,ps), Tpat_construct(c2,qs) ->
-      c1.cstr_tag = c2.cstr_tag & le_pats ps qs
+      c1.cstr_tag = c2.cstr_tag && le_pats ps qs
   | Tpat_tuple(ps), Tpat_tuple(qs) -> le_pats ps qs
   | Tpat_record(l1), Tpat_record(l2) ->
      let size = record_num_fields p in
      le_pats (set_fields size l1) (set_fields size l2)
+  | Tpat_array(ps), Tpat_array(qs) ->
+     List.length ps = List.length qs && le_pats ps qs
   | _, _ -> false  
 
 and le_pats ps qs =
   match ps,qs with
-    p::ps, q::qs -> le_pat p q & le_pats ps qs
+    p::ps, q::qs -> le_pat p q && le_pats ps qs
   | _, _         -> true
 
 let get_mins ps =
