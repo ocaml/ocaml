@@ -77,7 +77,13 @@ let reset name =
   current_unit.ui_force_link <- false
 
 let current_unit_name () =
-  "caml" ^ current_unit.ui_name
+  current_unit.ui_name
+
+let make_symbol ?(unitname = current_unit.ui_name) idopt =
+  let prefix = "caml" ^ unitname in
+  match idopt with
+  | None -> prefix
+  | Some id -> prefix ^ "__" ^ id
 
 let read_unit_info filename =
   let ic = open_in_bin filename in

@@ -31,8 +31,8 @@
 
 unsigned long caml_percent_free;
 long caml_major_heap_increment;
-char *caml_heap_start, *caml_heap_end;
-page_table_entry *caml_page_table;
+CAMLexport char *caml_heap_start, *caml_heap_end;
+CAMLexport page_table_entry *caml_page_table;
 asize_t caml_page_low, caml_page_high;
 char *caml_gc_sweep_hp;
 int caml_gc_phase;        /* always Phase_mark, Phase_sweep, or Phase_idle */

@@ -55,7 +55,7 @@ struct global_root_list caml_global_roots = { NULL, { NULL, }, 0 };
 
 /* Register a global C root */
 
-void caml_register_global_root(value *r)
+CAMLexport void caml_register_global_root(value *r)
 {
   struct global_root * update[MAX_LEVEL];
   struct global_root * e, * f;
@@ -95,7 +95,7 @@ void caml_register_global_root(value *r)
 
 /* Un-register a global C root */
 
-void caml_remove_global_root(value *r)
+CAMLexport void caml_remove_global_root(value *r)
 {
   struct global_root * update[MAX_LEVEL];
   struct global_root * e, * f;

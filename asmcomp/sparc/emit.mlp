@@ -721,26 +721,26 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  let lbl_begin = Compilenv.current_unit_name() ^ "__data_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.global	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "__code_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   `	.text\n`;
   `	.global	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly() =
   `	.text\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "__code_end" in
+  let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.global	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.data\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "__data_end" in
+  let lbl_end = Compilenv.make_symbol (Some "data_end") in
   `	.global	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.word	0\n`;
-  let lbl = Compilenv.current_unit_name() ^ "__frametable" in
+  let lbl = Compilenv.make_symbol (Some "frametable") in
   rodata ();
   `	.global	{emit_symbol lbl}\n`;
   if Config.system = "solaris" then

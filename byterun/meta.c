@@ -131,12 +131,6 @@ value caml_realloc_global(value size)
   return Val_unit; /* not reached */
 }
     
-value caml_available_primitives(value unit)
-{
-  caml_invalid_argument("Meta.available_primitives");
-  return Val_unit; /* not reached */
-}
-
 value caml_invoke_traced_function(value codeptr, value env, value arg)
 {
   caml_invalid_argument("Meta.invoke_traced_function");

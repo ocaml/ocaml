@@ -51,6 +51,13 @@ val reset: string -> unit
 val current_unit_name: unit -> string
         (* Return the name of the unit being compiled *)
 
+val make_symbol: ?unitname:string -> string option -> string
+        (* [make_symbol ~unitname:u None] returns the asm symbol that
+           corresponds to the compilation unit [u] (default: the current unit).
+           [make_symbol ~unitname:u (Some id)] returns the asm symbol that
+           corresponds to symbol [id] in the compilation unit [u]
+           (or the current unit). *)
+
 val global_approx: Ident.t -> Clambda.value_approximation
         (* Return the approximation for the given global identifier *)
 val set_global_approx: Clambda.value_approximation -> unit

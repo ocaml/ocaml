@@ -35,14 +35,14 @@ extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 #endif
 
-int volatile caml_async_signal_mode = 0;
-int volatile caml_pending_signal = 0;
-int volatile caml_something_to_do = 0;
+CAMLexport int volatile caml_async_signal_mode = 0;
+CAMLexport int volatile caml_pending_signal = 0;
+CAMLexport int volatile caml_something_to_do = 0;
 int volatile caml_force_major_slice = 0;
 value caml_signal_handlers = 0;
-void (*caml_enter_blocking_section_hook)(void) = NULL;
-void (*caml_leave_blocking_section_hook)(void) = NULL;
-void (* volatile caml_async_action_hook)(void) = NULL;
+CAMLexport void (*caml_enter_blocking_section_hook)(void) = NULL;
+CAMLexport void (*caml_leave_blocking_section_hook)(void) = NULL;
+CAMLexport void (* volatile caml_async_action_hook)(void) = NULL;
 
 void caml_process_event(void)
 {

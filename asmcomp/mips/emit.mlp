@@ -562,11 +562,11 @@ let begin_assembly() =
   `	.noalias $16,$sp; .noalias $16,$30; .noalias $17,$sp; .noalias $17,$30\n`;
   `	.noalias $18,$sp; .noalias $18,$30; .noalias $19,$sp; .noalias $19,$30\n`;
   `	.noalias $20,$sp; .noalias $20,$30; .noalias $21,$sp; .noalias $21,$30\n\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "__data_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "__code_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `	.ent	{emit_symbol lbl_begin}\n`;
@@ -574,18 +574,18 @@ let begin_assembly() =
   `	.end	{emit_symbol lbl_begin}\n`
 
 let end_assembly () =
-  let lbl_end = Compilenv.current_unit_name() ^ "__code_end" in
+  let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `	.ent	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.end	{emit_symbol lbl_end}\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "__data_end" in
+  let lbl_end = Compilenv.make_symbol (Some "data_end") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.word	0\n`;
-  let lbl = Compilenv.current_unit_name() ^ "__frametable" in
+  let lbl = Compilenv.make_symbol (Some "frametable") in
   `	.rdata\n`;
   `	.globl	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;

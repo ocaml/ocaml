@@ -28,10 +28,10 @@
 #include "signals.h"
 
 asize_t caml_minor_heap_size;
-char *caml_young_start = NULL, *caml_young_end = NULL;
-char *caml_young_ptr = NULL, *caml_young_limit = NULL;
+CAMLexport char *caml_young_start = NULL, *caml_young_end = NULL;
+CAMLexport char *caml_young_ptr = NULL, *caml_young_limit = NULL;
 static value **ref_table = NULL, **ref_table_end, **ref_table_threshold;
-value **caml_ref_table_ptr = NULL, **caml_ref_table_limit;
+CAMLexport value **caml_ref_table_ptr = NULL, **caml_ref_table_limit;
 static asize_t ref_table_size, ref_table_reserve;
 int caml_in_minor_collection = 0;
 
@@ -215,7 +215,7 @@ void caml_empty_minor_heap (void)
    functions, etc.
    Leave the minor heap empty.
 */
-void caml_minor_collection (void)
+CAMLexport void caml_minor_collection (void)
 {
   long prev_alloc_words = caml_allocated_words;
 
@@ -231,7 +231,7 @@ void caml_minor_collection (void)
   caml_empty_minor_heap ();
 }
 
-value caml_check_urgent_gc (value extra_root)
+CAMLexport value caml_check_urgent_gc (value extra_root)
 {
   CAMLparam1 (extra_root);
   if (caml_force_major_slice) caml_minor_collection();

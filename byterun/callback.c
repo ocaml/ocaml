@@ -30,7 +30,7 @@
 #include "fix_code.h"
 #include "stacks.h"
 
-int caml_callback_depth = 0;
+CAMLexport int caml_callback_depth = 0;
 
 static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
 

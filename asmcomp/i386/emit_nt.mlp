@@ -827,28 +827,28 @@ let begin_assembly() =
   `	EXTERN _caml_alloc3: PROC\n`;
   `	EXTERN _caml_ml_array_bound_error: PROC\n`;
   `	.DATA\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "__data_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   add_def_symbol lbl_begin;
   `	PUBLIC	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}	LABEL	DWORD\n`;
   `	.CODE\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "__code_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   add_def_symbol lbl_begin;
   `	PUBLIC	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}	LABEL	DWORD\n`
 
 let end_assembly() =
   `	.CODE\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "__code_end" in
+  let lbl_end = Compilenv.make_symbol (Some "code_end") in
   add_def_symbol lbl_end;
   `	PUBLIC	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}	LABEL	DWORD\n`;
   `	.DATA\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "__data_end" in
+  let lbl_end = Compilenv.make_symbol (Some "data_end") in
   add_def_symbol lbl_end;
   `	PUBLIC	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}	LABEL	DWORD\n`;
-  let lbl = Compilenv.current_unit_name() ^ "__frametable" in
+  let lbl = Compilenv.make_symbol (Some "frametable") in
   add_def_symbol lbl;
   `	PUBLIC	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}	DWORD	{emit_int (List.length !frame_descriptors)}\n`;

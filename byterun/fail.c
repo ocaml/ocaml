@@ -26,7 +26,7 @@
 #include "signals.h"
 #include "stacks.h"
 
-struct longjmp_buffer * caml_external_raise = NULL;
+CAMLexport struct longjmp_buffer * caml_external_raise = NULL;
 value caml_exn_bucket;
 
 CAMLexport void caml_raise(value v)

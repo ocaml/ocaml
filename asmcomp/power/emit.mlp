@@ -1044,11 +1044,11 @@ let begin_assembly() =
   jumptbl_entries := [];
   lbl_jumptbl := 0;
   (* Emit the beginning of the segments *)
-  let lbl_begin = Compilenv.current_unit_name() ^ "__data_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   emit_string data_space;
   declare_global_data lbl_begin;
   `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "__code_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   emit_string code_space;
   declare_global_data lbl_begin;
   `{emit_symbol lbl_begin}:\n`
@@ -1081,17 +1081,17 @@ let end_assembly() =
     StringSet.iter emit_external !external_functions;
   (* Emit the end of the segments *)
   emit_string code_space;
-  let lbl_end = Compilenv.current_unit_name() ^ "__code_end" in
+  let lbl_end = Compilenv.make_symbol (Some "code_end") in
   declare_global_data lbl_end;
   `{emit_symbol lbl_end}:\n`;
   emit_string data_space;
-  let lbl_end = Compilenv.current_unit_name() ^ "__data_end" in
+  let lbl_end = Compilenv.make_symbol (Some "data_end") in
   declare_global_data lbl_end;
   `{emit_symbol lbl_end}:\n`;
   `	.long	0\n`;
   (* Emit the frame descriptors *)
   emit_string rodata_space;
-  let lbl = Compilenv.current_unit_name() ^ "__frametable" in
+  let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;
   `	.long	{emit_int (List.length !frame_descriptors)}\n`;

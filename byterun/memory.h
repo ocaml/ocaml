@@ -31,7 +31,7 @@
 #include "mlvalues.h"
 
 CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
-void caml_adjust_gc_speed (mlsize_t, mlsize_t);
+CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_modify (value *, value);
 CAMLextern void caml_initialize (value *, value);
 CAMLextern value caml_check_urgent_gc (value);

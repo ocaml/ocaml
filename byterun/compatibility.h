@@ -34,17 +34,8 @@
 */
 
 /* a faire:
-   - supprimer le portage Mac OS 9 (?)
-   - ui_*   (dans ui.h, definies ou ?)
-   - changer les magic numbers ?
-   - comprendre pourquoi le $Id deconne dans unix.c (et qques autres)
+   - ui_*   (reverifier que win32.c n'en depend pas)
 */
-
-/* a supprimer (support Mac OS 9): */
-/* **** macintosh.c */
-/* **** mpwtool.c */
-/* **** rotatecursor.c */
-/* INSTALL.MPW, **Makefile.Mac, maccaml, otherlibs/macosunix */
 
 
 /* **** alloc.c */
@@ -87,7 +78,7 @@
 #define print_exception_backtrace caml_print_exception_backtrace
 
 /* **** callback.c */
-#define callback_depth caml_callback_depth /*FIXME CAMLextern sans CAMLexport */
+#define callback_depth caml_callback_depth
 #define callbackN_exn caml_callbackN_exn
 #define callback_exn caml_callback_exn
 #define callback2_exn caml_callback2_exn
@@ -114,8 +105,8 @@
 /*      greaterequal -> caml_greaterequal */
 
 /* **** custom.c */
-#define alloc_custom caml_alloc_custom /*FIXME defini CAMLextern !? */
-#define register_custom_operations caml_register_custom_operations/*FIXME idem*/
+#define alloc_custom caml_alloc_custom
+#define register_custom_operations caml_register_custom_operations
 /*    g find_custom_operations -> caml_find_custom_operations */
 /*    g final_custom_operations -> caml_final_custom_operations */
 /*    g init_custom_operations -> caml_init_custom_operations */
@@ -157,7 +148,7 @@
 #define serialize_block_float_8 caml_serialize_block_float_8
 
 /* **** fail.c */
-#define external_raise caml_external_raise /*FIXME CAMLextern sans export */
+#define external_raise caml_external_raise
 /*    g exn_bucket -> caml_exn_bucket */
 #define mlraise caml_raise /*SP*/
 #define raise_constant caml_raise_constant
@@ -249,7 +240,7 @@
 /* **** freelist.c */
 /*    g fl_merge -> caml_fl_merge */
 /*    g fl_cur_size -> caml_fl_cur_size */
-/*FIXME fl_check *** becomes static */
+/*    * fl_check *** becomes static */
 /*    g fl_allocate -> caml_fl_allocate */
 /*    g fl_init_merge -> caml_fl_init_merge */
 /*    g fl_reset -> caml_fl_reset */
@@ -279,8 +270,8 @@
 /*      gc_compaction -> caml_gc_compaction */
 
 /* **** globroots.c */
-#define register_global_root caml_register_global_root /* FIXME extern/export */
-#define remove_global_root caml_remove_global_root /* FIXME extern sans export*/
+#define register_global_root caml_register_global_root
+#define remove_global_root caml_remove_global_root
 
 /* **** hash.c */
 /*      hash_univ_param -> caml_hash_univ_param */
@@ -431,7 +422,7 @@
 /*      caml_open_descriptor_in -> caml_ml_open_descriptor_in SP*/
 /*      caml_open_descriptor_out -> caml_ml_open_descriptor_out SP*/
 /*      caml_out_channels_list -> caml_ml_out_channels_list SP*/
-/*      channel_descriptor -> caml_channel_descriptor FIXME add ml_ ? */
+/*      channel_descriptor -> caml_channel_descriptor */
 /*      caml_close_channel -> caml_ml_close_channel SP*/
 /*      caml_channel_size -> caml_ml_channel_size SP*/
 /*      caml_channel_size_64 -> caml_ml_channel_size_64 SP*/
@@ -467,9 +458,9 @@
 /* **** major_gc.c */
 /*    g percent_free -> caml_percent_free */
 /*    g major_heap_increment -> caml_major_heap_increment */
-#define heap_start caml_heap_start    /* FIXME CAMLextern sans CAMLexport */
-#define heap_end caml_heap_end        /* FIXME CAMLextern sans CAMLexport */
-#define page_table caml_page_table    /* FIXME CAMLextern sans CAMLexport */
+#define heap_start caml_heap_start
+#define heap_end caml_heap_end
+#define page_table caml_page_table
 /*    g page_low -> caml_page_low */
 /*    g page_high -> caml_page_high */
 /*    g gc_sweep_hp -> caml_gc_sweep_hp */
@@ -497,37 +488,36 @@
 /*    g add_to_heap -> caml_add_to_heap */
 /*    g shrink_heap -> caml_shrink_heap */
 /*    g allocation_color -> caml_allocation_color */
-#define alloc_shr caml_alloc_shr /* FIXME CAMLextern sans CAMLexport */
-/*    g adjust_gc_speed -> caml_adjust_gc_speed   FIXME pas CAMLextern ? */
+#define alloc_shr caml_alloc_shr
+/*    g adjust_gc_speed -> caml_adjust_gc_speed */
 #define initialize caml_initialize
 #define modify caml_modify
-#define stat_alloc caml_stat_alloc /* FIXME CAMLextern sans CAMLexport */
-#define stat_free caml_stat_free /* FIXME CAMLextern sans CAMLexport */
-#define stat_resize caml_stat_resize /* FIXME CAMLextern sans CAMLexport */
+#define stat_alloc caml_stat_alloc
+#define stat_free caml_stat_free
+#define stat_resize caml_stat_resize
 
 /* **** meta.c */
 /*      get_global_data -> caml_get_global_data */
-/*      reify_bytecode -> caml_reify_bytecode  FIXME missing in native code ? */
+/*      reify_bytecode -> caml_reify_bytecode */
 /*      realloc_global -> caml_realloc_global */
-/*    g available_primitives -> caml_available_primitives FIXME useless ? */
 /*      get_current_environment -> caml_get_current_environment */
 /*      invoke_traced_function -> caml_invoke_traced_function */
 
 /* **** minor_gc.c */
 /*    g minor_heap_size -> caml_minor_heap_size */
-#define young_start caml_young_start /* FIXME CAMLextern sans CAMLexport */
-#define young_end caml_young_end /* FIXME CAMLextern sans CAMLexport */
-#define young_ptr caml_young_ptr /* FIXME CAMLextern sans CAMLexport */
-#define young_limit caml_young_limit /* FIXME CAMLextern sans CAMLexport */
-#define ref_table_ptr caml_ref_table_ptr /* FIXME CAMLextern sans CAMLexport */
-#define ref_table_limit caml_ref_table_limit /* FIXME CAMLextern sans CAMLexpo*/
+#define young_start caml_young_start
+#define young_end caml_young_end
+#define young_ptr caml_young_ptr
+#define young_limit caml_young_limit
+#define ref_table_ptr caml_ref_table_ptr
+#define ref_table_limit caml_ref_table_limit
 /*    g in_minor_collection -> caml_in_minor_collection */
 /*    g set_minor_heap_size -> caml_set_minor_heap_size */
 /*    g oldify_one -> caml_oldify_one */
 /*    g oldify_mopup -> caml_oldify_mopup */
 /*    g empty_minor_heap -> caml_empty_minor_heap */
-#define minor_collection caml_minor_collection /*FIXME CAMLextern sans CAMLexp*/
-#define check_urgent_gc caml_check_urgent_gc /*FIXME CAMLextern sans CAMLexpor*/
+#define minor_collection caml_minor_collection
+#define check_urgent_gc caml_check_urgent_gc
 /*    g realloc_ref_table -> caml_realloc_ref_table */
 
 /* **** misc.c */
@@ -563,29 +553,29 @@
 /*    g names_of_builtin_cprim -> caml_names_of_builtin_cprim */
 
 /* **** printexc.c */
-#define format_caml_exception caml_format_exception /*SP*//*FIXME dbl declar*/
+#define format_caml_exception caml_format_exception /*SP*/
 /*    g fatal_uncaught_exception -> caml_fatal_uncaught_exception */
 
 /* **** roots.c */
 #define local_roots caml_local_roots
-#define scan_roots_hook caml_scan_roots_hook /* FIXME CAMLextern sans export */
+#define scan_roots_hook caml_scan_roots_hook
 /*    g oldify_local_roots -> caml_oldify_local_roots */
 /*    g darken_all_roots -> caml_darken_all_roots */
 /*    g do_roots -> caml_do_roots */
-#define do_local_roots caml_do_local_roots /* FIXME CAMLextern sans CAMLexport*/
+#define do_local_roots caml_do_local_roots
 
 /* **** signals.c */
-#define async_signal_mode caml_async_signal_mode /* FIXME CAMLextern sans expo*/
-#define pending_signal caml_pending_signal /* FIXME CAMLextern sans CAMLexport*/
-#define something_to_do caml_something_to_do /* FIXME CAMLextern sans export */
+#define async_signal_mode caml_async_signal_mode
+#define pending_signal caml_pending_signal
+#define something_to_do caml_something_to_do
 /*    g force_major_slice -> caml_force_major_slice */
 /*    g signal_handlers -> caml_signal_handlers */
-#define enter_blocking_section_hook caml_enter_blocking_section_hook /* FIXME */
-#define leave_blocking_section_hook caml_leave_blocking_section_hook /* FIXME */
-#define async_action_hook caml_async_action_hook /* FIXME CAMLextern sans expo*/
+#define enter_blocking_section_hook caml_enter_blocking_section_hook
+#define leave_blocking_section_hook caml_leave_blocking_section_hook
+#define async_action_hook caml_async_action_hook
 /*    g process_event -> caml_process_event */
 /*    g execute_signal -> caml_execute_signal */
-/*FIXME handle_signal *** becomes static */
+/*    * handle_signal *** becomes static */
 /*    g urge_major_slice -> caml_urge_major_slice */
 #define enter_blocking_section caml_enter_blocking_section
 #define leave_blocking_section caml_leave_blocking_section
@@ -596,7 +586,6 @@
 /*    g init_signals -> caml_init_signals */
 
 /* **** stacks.c */
-/*FIXME reset_roots *** decl removed from stack.h [void reset_roots (void);] */
 #define stack_low caml_stack_low
 #define stack_high caml_stack_high
 #define stack_threshold caml_stack_threshold
@@ -659,10 +648,10 @@
 /*      sys_read_directory -> caml_sys_read_directory */
 
 /* **** terminfo.c */
-/*      terminfo_setup -> caml_terminfo_setup   FIXME CAMLprim et CAMLexport */
-/*      terminfo_backup -> caml_terminfo_backup FIXME CAMLprim et CAMLexport */
-/*      terminfo_standout -> caml_terminfo_standout FIXME CAMLprim et CAMLexpo*/
-/*      terminfo_resume -> caml_terminfo_resume  FIXME CAMLprim et CAMLexport */
+/*      terminfo_setup -> caml_terminfo_setup */
+/*      terminfo_backup -> caml_terminfo_backup */
+/*      terminfo_standout -> caml_terminfo_standout*/
+/*      terminfo_resume -> caml_terminfo_resume */
 
 /* **** unix.c  &  win32.c */
 /*    g decompose_path -> caml_decompose_path */
@@ -691,7 +680,7 @@
 
 /* **** asmcomp/cmmgen.ml */
 /*    g bucket_* -> caml_bucket_* */
-/*    g globals_map -> caml_globals_map   FIXME a quoi ca sert ? */
+/*    g globals_map -> caml_globals_map */
 /*    g Match_failure -> caml_exn_Match_failure */
 /*    g Out_of_memory -> caml_exn_Out_of_memory */
 /*    g Invalid_argument -> caml_exn_Invalid_argument */
@@ -706,7 +695,7 @@
 /*    g Undefined_recursive_module -> caml_exn_Undefined_recursive_module */
 
 /* **** asmcomp/asmlink.ml, asmcomp/cmmgen.ml, asmcomp/compilenv.ml */
-/*    g Modulename -> camlModulename  FIXME ask Xavier about it */
+/*    g Module_name -> camlModule_name */
 
 #endif /* CAML_NAME_SPACE */
 #endif /* CAML_COMPATIBILITY_H */

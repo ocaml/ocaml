@@ -39,8 +39,6 @@ CAMLextern value caml_callbackN_exn (value closure, int narg, value args[]);
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
 
-CAMLextern char * caml_format_exception(value exn); /* in [printexc.c] */
-
 CAMLextern value * caml_named_value (char * name);
 
 CAMLextern void caml_main (char ** argv);

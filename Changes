@@ -1,3 +1,14 @@
+Objective Caml 3.08:
+--------------------
+
+Runtime System:
+- All global identifiers are now prefixed with "caml" to avoid name clashes
+  with other libraries.
+
+Mac OS 9 Port:
+- Removed all MacOS9-specific files.  The Mac OS 9 port is obsolete, it
+  was not updated since 3.05.
+
 Objective Caml 3.07:
 --------------------
 
@@ -1655,3 +1666,5 @@ Caml Special Light 1.06:
 ------------------------
 
 * First public release.
+
+$Id$

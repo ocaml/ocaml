@@ -251,7 +251,7 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   char *hp, *new_block;
 
@@ -305,7 +305,7 @@ value caml_alloc_shr (mlsize_t wosize, tag_t tag)
    (or kilobytes, ...) instead of words.  You can change units between
    calls to [caml_adjust_gc_speed].
 */
-void caml_adjust_gc_speed (mlsize_t mem, mlsize_t max)
+CAMLexport void caml_adjust_gc_speed (mlsize_t mem, mlsize_t max)
 {
   if (max == 0) max = 1;
   if (mem > max) mem = max;
@@ -348,7 +348,7 @@ void caml_modify (value *fp, value val)
   Modify (fp, val);
 }
 
-void * caml_stat_alloc (asize_t sz)
+CAMLexport void * caml_stat_alloc (asize_t sz)
 {
   void * result = malloc (sz);
 
@@ -360,12 +360,12 @@ void * caml_stat_alloc (asize_t sz)
   return result;
 }
 
-void caml_stat_free (void * blk)
+CAMLexport void caml_stat_free (void * blk)
 {
   free (blk);
 }
 
-void * caml_stat_resize (void * blk, asize_t sz)
+CAMLexport void * caml_stat_resize (void * blk, asize_t sz)
 {
   void * result = realloc (blk, sz);
 

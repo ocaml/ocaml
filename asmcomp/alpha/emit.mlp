@@ -834,26 +834,26 @@ let begin_assembly() =
      of line numbers for the debugger, 'cos they make .o files larger
      and slow down linking. *)
   `	.file	1 \"{emit_string !Location.input_name}\"\n\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "__data_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "__code_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
-  let lbl_end = Compilenv.current_unit_name() ^ "__code_end" in
+  let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "__data_end" in
+  let lbl_end = Compilenv.make_symbol (Some "data_end") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.quad	0\n`;
-  let lbl_frame = Compilenv.current_unit_name() ^ "__frametable" in
+  let lbl_frame = Compilenv.make_symbol (Some "frametable") in
   `	{emit_string rdata_section}\n`;
   `	.globl	{emit_symbol lbl_frame}\n`;
   `{emit_symbol lbl_frame}:\n`;

@@ -402,7 +402,7 @@ let new_const_label () =
 
 let new_const_symbol () =
   incr const_label;
-  Compilenv.current_unit_name () ^ "__" ^ string_of_int !const_label
+  Compilenv.make_symbol (Some (string_of_int !const_label))
 
 let structured_constants = ref ([] : (string * structured_constant) list)
 
@@ -1663,9 +1663,10 @@ let emit_all_constants cont =
 (* Translate a compilation unit *)
 
 let compunit size ulam =
-  let glob = Compilenv.current_unit_name () in
+  let glob = Compilenv.make_symbol None in
   let init_code = transl ulam in
-  let c1 = [Cfunction {fun_name = glob ^ "__entry"; fun_args = [];
+  let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
+                       fun_args = [];
                        fun_body = init_code; fun_fast = false}] in
   let c2 = transl_all_functions StringSet.empty c1 in
   let c3 = emit_all_constants c2 in

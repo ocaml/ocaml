@@ -1309,18 +1309,18 @@ let data l =
 
 let begin_assembly() =
   `	.data\n`;
-  emit_define_symbol (Compilenv.current_unit_name() ^ "__data_begin");
+  emit_define_symbol (Compilenv.make_symbol (Some "data_begin"));
   `	.text\n`;
-  emit_define_symbol (Compilenv.current_unit_name() ^ "__code_begin")
+  emit_define_symbol (Compilenv.make_symbol (Some "code_begin"))
 
 let end_assembly () =
   `	.data\n`;
-  emit_define_symbol (Compilenv.current_unit_name() ^ "__data_end");
+  emit_define_symbol (Compilenv.make_symbol (Some "data_end"));
   `	.text\n`;
-  emit_define_symbol (Compilenv.current_unit_name() ^ "__code_end");
+  emit_define_symbol (Compilenv.make_symbol (Some "code_end"));
   `	.rodata\n`;
   `	.align 8\n`;
-  emit_define_symbol (Compilenv.current_unit_name() ^ "__frametable");
+  emit_define_symbol (Compilenv.make_symbol (Some "frametable"));
   `	data8	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
   frame_descriptors := []
