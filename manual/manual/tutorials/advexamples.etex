@@ -9,7 +9,7 @@
 
 In this chapter, we show some larger examples using objects, classes
 and modules.  We review many of the object features simultaneously on
-the example of a bank accounty.  We show how modules taken from the
+the example of a bank account.  We show how modules taken from the
 standard library can be expressed as classes.  Lastly, we describe a
 programming pattern know of as {\em virtual types} through the example
 of window managers.
@@ -19,7 +19,7 @@ of window managers.
 \label{ss:bank-accounts}
 
 In this section, we illustrate most aspects of Object and inheritance
-by refinining, debuging, and specilazing the following 
+by refinining, debuging, and specializing the following 
 initial naive definition of a simple bank account.  (We reuse the
 module "Euro" defined at the end of chapter~\ref{c:objectexamples}.)
 \begin{caml_eval}
@@ -72,7 +72,7 @@ class account_with_interests =
     method private interest = self # deposit (self # balance # times 0.03)
   end;;
 \end{caml_example*}
-We make the "interest" method private, since clearly it should not be
+We make the method "interest" private, since clearly it should not be
 called freely from the outside. Here, it is only made accessible to subclasses
 that will manage monthly or yearly updates of the account. 
 
@@ -218,7 +218,7 @@ new Client.account (new Euro.c 100.);;
 Hence, the clients do not have direct access to the "balance", nor the
 "history" of their accounts. Their only way to change their balance is
 to deposit or withdraw some money.  It is important to give the clients
-a class an not just the ability to create accounts (such as the
+a class and not just the ability to create accounts (such as the
 promotional "discount" account), so that they can themselves define
 personalized client accounts.
 For instance, a client may refine the "deposit" and "withdraw" methods
@@ -298,8 +298,8 @@ new Client.account (new Euro.c 100.);;
 \label{ss:modules-as-classes}
 
 One may wonder whether it is possible to treat primitive types such as
-intergers and strings as objects. Although this is usually uninteresting
-for intergers or strings, there may be some situations where
+integers and strings as objects. Although this is usually uninteresting
+for integers or strings, there may be some situations where
 this is desirable. The "money" class above is an example. 
 We show here how to do it for strings. 
 
@@ -367,7 +367,7 @@ uninitialized string of a given length
 class cstring n = ostring (String.create n);;
 \end{caml_example*}
 Here, exposing the representation of strings is probably harmless, and we do
-not need to hide as we did for the class "money" in section \ref{ss:friends}
+not need to hide as we did for the class "money" in section~\ref{ss:friends}
 
 \subsubsection{Stacks}
 \label{module:stack}

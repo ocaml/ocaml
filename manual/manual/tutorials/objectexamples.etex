@@ -668,11 +668,11 @@ p#get_x;;
 p#get_x;;
 \end{caml_example}
 Note that the type abbreviation "functional_point" is recursive, which can
-be seen in the class type of "functional_point": the type of self to "'a"
-and "'a" appears inside the type of the "move" method.
+be seen in the class type of "functional_point": the type of self is "'a"
+and "'a" appears inside the type of the method "move".
 
 The above definition of "functional_point" is not equivalent
-with the following: 
+to the following: 
 \begin{caml_example}
 class bad_functional_point y =
   object 
@@ -686,7 +686,8 @@ p#get_x;;
 p#get_x;;
 \end{caml_example}
 While objects of either class will behave the same, objects of their
-subclasses will be different. In a subclass of later, the move method will
+subclasses will be different. In a subclass of the latter, the method
+"move" will
 keep returning an object of the parent class.  On the contrary, in a
 subclass of the former, the move method will return an object of the
 subclass.
@@ -704,7 +705,7 @@ it returns an object that is equal to the previous one. The
 instance variables have been copied but their contents are shared.
 Assigning a new value to an instance variable of the copy (using a method
 call) will not affect instance variables of the original, and conversely. 
-A deeper assigned (for example if the instance variable if a reference cell) 
+A deeper assignment (for example if the instance variable if a reference cell) 
 will of course affect both the original and the copy. 
 
 The type of "Oo.copy" is the following:
@@ -746,7 +747,7 @@ class copy =
     method copy = Oo.copy self
   end;;
 \end{caml_example}
-Only the override can be used to actially override fields, and 
+Only the override can be used to actually override fields, and 
 only the "Oo.copy" primitive can be used externally. 
 
 Cloning can also be used to provide a facilities.
