@@ -941,6 +941,7 @@ and type_application env funct sargs =
       (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun)))
       ty_fun omitted
   in
+  let ignored = ref [] in
   let rec type_unknown_args args omitted ty_fun = function
       [] ->
         (List.rev args, result_type omitted ty_fun)
@@ -949,7 +950,12 @@ and type_application env funct sargs =
           try
             filter_arrow env ty_fun l1
           with Unify _ ->
-            let ty_res = result_type omitted (expand_head env ty_fun) in
+	    let ty_fun =
+	      match expand_head env ty_fun with
+		{desc=Tarrow _} as ty -> ty
+	      |	_ -> ty_fun
+	    in
+            let ty_res = result_type (omitted @ !ignored) ty_fun in
             match ty_res with
               {desc=Tarrow _} ->
                 raise(Error(sarg1.pexp_loc, Apply_wrong_label(l1, ty_res)))
@@ -996,9 +1002,10 @@ and type_application env funct sargs =
             sargs, more_sargs,
             if is_optional l &&
               (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
-            then
+            then begin
+	      ignored := (l,ty,lv) :: !ignored;
               Some (option_none ty Location.none)
-            else None
+            end else None
         in
         let omitted = if arg = None then (l,ty,lv) :: omitted else omitted in
         let ty_old = if sargs = [] then ty_fun else ty_old in
