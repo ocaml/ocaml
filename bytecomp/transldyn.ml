@@ -93,9 +93,20 @@ let extract_type_definitions whole_env ty0 =
                     raise (Unimplemented
                              ("Dynamicisation involving an abstract type: " ^
                               name))
-                | _ ->
+                | Type_variant cases ->
+                    let constructor_names = List.map fst cases in
+                    let prefix = String.concat "+" constructor_names ^ "-" in
+                    let row = {
+                      row_fields = polymorphise_variants prefix 0 [] cases;
+                      row_more = Btype.newgenvar ();
+                      row_bound = [];
+                      row_closed = true;
+                      row_name = None;
+                    } in
+                    Some (Btype.newgenty (Tvariant row))
+                | Type_record (fields, representation) ->
                     raise (Unimplemented
-                             ("Dynamicisation involving a generative type: " ^
+                             ("Dynamicisation involving a record type: " ^
                               name))
             end;
           type_variance = decl.type_variance }
@@ -103,6 +114,15 @@ let extract_type_definitions whole_env ty0 =
       r_sig := Tsig_type (id, decl') :: !r_sig
     end;
     path'
+  and polymorphise_variants prefix n acc = function
+    | [] -> acc
+    | (_, args_list) :: tail ->
+        let args_desc = Ttuple (List.map all args_list) in
+        let row_field =
+          (prefix ^ string_of_int n,
+           Rpresent (Some (Btype.newgenty args_desc)))
+        in
+        polymorphise_variants prefix (n + 1) (row_field :: acc) tail
   in
   let ty1 = all ty0 in
   let clean = true in
