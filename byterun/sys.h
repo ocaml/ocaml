@@ -22,7 +22,7 @@
 
 CAMLextern void caml_sys_error (value);
 extern void sys_init (char * exe_name, char ** argv);
-CAMLextern value sys_exit (value);
+CAMLextern value caml_sys_exit (value);
 
 extern char * caml_exe_name;
 

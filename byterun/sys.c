@@ -116,7 +116,7 @@ CAMLexport void caml_sys_error(value arg)
   }
 }
 
-CAMLprim value sys_exit(value retcode)
+CAMLprim value caml_sys_exit(value retcode)
 {
 #ifndef NATIVE_CODE
   debugger(PROGRAM_EXIT);

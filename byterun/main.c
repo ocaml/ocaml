@@ -41,6 +41,6 @@ int main(int argc, char **argv)
   rotatecursor_options (&something_to_do, 0, NULL);
 #endif /* macintosh */
   caml_main(argv);
-  sys_exit(Val_int(0));
+  caml_sys_exit(Val_int(0));
   return 0; /* not reached */
 }

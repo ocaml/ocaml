@@ -414,7 +414,7 @@ let (( ^^ ) : ('a, 'b, 'c, 'd) format4 -> ('d, 'b, 'c, 'e) format4 ->
 
 (* Miscellaneous *)
 
-external sys_exit : int -> 'a = "sys_exit"
+external sys_exit : int -> 'a = "caml_sys_exit"
 
 let exit_function = ref flush_all
 
