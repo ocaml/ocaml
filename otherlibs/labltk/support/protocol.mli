@@ -46,6 +46,8 @@ val   mainLoop : unit -> unit
 (* Direct evaluation of tcl code *)
 val   tkEval : tkArgs array -> string
 
+val   tkCommand : tkArgs array -> unit
+
 (* Returning a value from a Tcl callback *)
 val   tkreturn: string -> unit
 

@@ -42,13 +42,15 @@ external tkreturn : string -> unit
 external callback_init : unit -> unit
         = "camltk_init"
 
+let tcl_command s = ignore (tcl_eval s);;
+
 exception TkError of string
       (* Raised by the communication functions *)
 let _ = Callback.register_exception "tkerror" (TkError "")
 
 (* Debugging support *)
 let debug = 
- ref (try Sys.getenv "CAMLTKDEBUG"; true
+ ref (try ignore (Sys.getenv "CAMLTKDEBUG"); true
       with Not_found -> false)
 
 (* This is approximative, since we don't quote what needs to be quoted *)
@@ -74,6 +76,8 @@ let tkEval args =
     prerr_endline res
     end;
   res
+
+let tkCommand args = ignore (tkEval args)
 
 (*
  * Callbacks
@@ -141,7 +145,7 @@ let install_cleanup () =
   let fid = new_function_id () in
   Hashtbl.add callback_naming_table key:fid data:call_destroy_hooks;
   (* setup general destroy callback *)
-  tcl_eval ("bind all <Destroy> {camlcb " ^ (string_of_cbid fid) ^" %W}")
+  tcl_command ("bind all <Destroy> {camlcb " ^ (string_of_cbid fid) ^" %W}")
 
 
 let prerr_cbid id =
@@ -179,7 +183,7 @@ let openTk ?(:display = "") ?(:class = "LablTk") () =
 
 (* Destroy all widgets, thus cleaning up table and exiting the loop *)
 let closeTk () =
-  tcl_eval "destroy ."; ()
+  tcl_command "destroy ."
 
 let mainLoop =
   tk_mainloop 
@@ -189,7 +193,6 @@ let mainLoop =
    name [tclname] *)
 let register tclname callback:cb =
   let s = register_callback Widget.default_toplevel callback:cb in
-    tcl_eval (Printf.sprintf "proc %s {args} {eval {camlcb %s} $args}"
-                             tclname s);
-    ()
+    tcl_command (Printf.sprintf "proc %s {args} {eval {camlcb %s} $args}"
+                             tclname s)
   

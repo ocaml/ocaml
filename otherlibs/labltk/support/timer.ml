@@ -40,6 +40,8 @@ let add ms:milli callback:f =
   let t = internal_add_timer milli id in
    t,id
 
+let set ms:milli callback:f = ignore (add ms:milli callback:f);;
+
 (* If the timer has never been used, there is a small space leak in
    the C heap, where a copy of id has been stored *)
 let remove (tkTimer, id) =

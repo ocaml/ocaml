@@ -14,7 +14,7 @@ TKLINKOPT=$(STATIC) -ccopt -L../support -cclib -llabltk41 \
 
 CAMLRUN=$(TOPDIR)/boot/ocamlrun
 LABLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
-LABLCOMP=$(LABLC) -w s -modern -c
+LABLCOMP=$(LABLC) -modern -c
 LABLYACC=$(TOPDIR)/boot/ocamlyacc -v
 LABLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
 LABLLIBR=$(LABLC) -a

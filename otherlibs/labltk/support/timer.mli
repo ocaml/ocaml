@@ -17,5 +17,6 @@
 
 type t
 
-val  add : ms:int -> callback:(unit -> unit) -> t
-val  remove : t -> unit
+val add : ms:int -> callback:(unit -> unit) -> t
+val set : ms:int -> callback:(unit -> unit) -> unit
+val remove : t -> unit
