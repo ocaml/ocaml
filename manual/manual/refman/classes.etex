@@ -6,7 +6,6 @@
 \ikwd{as\@\verb`as`}
 \ikwd{class\@\verb`class`}
 \ikwd{closed\@\verb`closed`}
-\ikwd{constraint\@\verb`constraint`}
 \ikwd{end\@\verb`end`}
 \ikwd{inherit\@\verb`inherit`}
 \ikwd{method\@\verb`method`}
@@ -36,9 +35,6 @@ class-params:
 ;
 class-binders:
     ['as' value-name] [':' "'" ident]
-;
-constraint:
-    'constraint' "'" ident '=' typexpr
 ;
 class-fields:
     'inherit' ancestor
@@ -76,11 +72,10 @@ with the type of any object belonging to a subclass (see
 section~\ref{s:sharp-types}).
 
 The class type parameters correspond to the ones of these two
-abbreviations. They must be bound to actual types in the class
-definition using type constraints. The abbreviations are obtained by
-pruning the method types at all occurrences of a type parameter.  So
-that the abbreviations are well-formed, no type variable must remain in
-the pruned types.
+abbreviations.  They must be bound to actual types in the class
+definition using type constraints.  So that the abbreviations are
+well-formed, type variables of the inferred type of the class must
+either be type parameters or be bound in the constraint clause.
 
 \subsubsection*{Class parameters}
 
@@ -225,10 +220,9 @@ The type of a concrete method can be omitted. That way, the status of
 a method can be changed from virtual to concrete without having the
 method type be given.
 
-Some type information can be hidden in a class type: it can be given
-stronger constraints than a matched class; some instance variables can
-be omitted; some previously non-mutable instance variables can be
-flagged mutable.
+Some type information can be hidden in a class type: some instance
+variables can be omitted; some previously non-mutable instance
+variables can be flagged mutable.
 
 \begin{syntax}
 class-type:

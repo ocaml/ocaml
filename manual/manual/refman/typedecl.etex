@@ -15,6 +15,7 @@ type-definition:
 ;
 typedef:
           [type-params] typeconstr-name [type-equation] [type-representation]
+          { constraint }
 ;
 type-equation:
           '=' typexpr
@@ -34,18 +35,23 @@ constr-decl:
 label-decl:
           label-name ':' typexpr
         | 'mutable' label-name ':' typexpr
+constraint:
+    'constraint' "'" ident '=' typexpr
+;
 \end{syntax}
 \ikwd{mutable\@\verb`mutable`}
+\ikwd{constraint\@\verb`constraint`}
 
 Type definitions are introduced by the "type" keyword, and
 consist in one or several simple definitions, possibly mutually
 recursive, separated by the "and" keyword. Each simple definition
 defines one type constructor.
 
-A simple definition consists in a lowercase identifier, possibly preceded by
-one or several type parameters, and followed by an optional type
-equation, then an optional type representation. The identifier
-is the name of the type constructor being defined.
+A simple definition consists in a lowercase identifier, possibly
+preceded by one or several type parameters, and followed by an
+optional type equation, then an optional type representation, and then
+a constraint clause. The identifier is the name of the type
+constructor being defined.
 
 The optional type parameters are either one type variable @"'" ident@,
 for type constructors with one parameter, or a list of type variables
@@ -117,6 +123,13 @@ must agree with the representation: it must be of the same kind
 in the same order, with the same arguments. 
 \end{description}
 
+\ikwd{constraint\@\verb`constraint`}
+The construct @ 'constraint' "'" ident '=' typexpr @ allows to specify
+type parameters.  Any actual type argument corresponding to the type
+parameter @ident@ have to be an instance of @typexpr@ (more precisely,
+@ident@ and @typexpr@ are unified). Type variables of @typexpr@ can
+appear in the type equation and the type declaration.
+
 \subsection{Exception definitions} \label{s:excdef}
 \ikwd{exception\@\verb`exception`}
 
@@ -128,4 +141,3 @@ exception-definition:
 Exception definitions add new constructors to the built-in variant
 type \verb"exn" of exception values. The constructors are declared as
 for a definition of a variant type.
-
