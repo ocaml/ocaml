@@ -586,7 +586,21 @@ let emit_instr i =
         `	add	esp, 8\n`;
         stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ilea addr)) ->
-        `	lea	{emit_reg i.res.(0)}, DWORD PTR {emit_addressing addr i.arg 0}\n`
+        begin match addr with
+          Iindexed n when i.arg.(0).loc = i.res.(0).loc ->
+            if n = 1 then
+              `	inc	{emit_reg i.res.(0)}\n`
+            else if n = -1 then
+              `	dec	{emit_reg i.res.(0)}\n`
+            else
+              `	add	{emit_reg i.res.(0)}, {emit_int n}\n`
+        | Iindexed2 0 when i.arg.(0).loc = i.res.(0).loc ->
+            `	add	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`
+        | Iindexed2 0 when i.arg.(1).loc = i.res.(0).loc ->
+            `	add	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+        | _ ->
+            `	lea	{emit_reg i.res.(0)}, DWORD PTR {emit_addressing addr i.arg 0}\n`
+        end
     | Lop(Ispecific(Istore_int(n, addr))) ->
         `	mov	DWORD PTR {emit_addressing addr i.arg 0},{emit_nativeint n}\n`
     | Lop(Ispecific(Istore_symbol(s, addr))) ->

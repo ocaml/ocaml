@@ -192,7 +192,9 @@ method select_operation op args =
   (* Recognize the LEA instruction *)
     Caddi | Cadda | Csubi | Csuba ->
       begin match self#select_addressing (Cop(op, args)) with
-        (Iindexed d, _) -> super#select_operation op args
+        (addr, (Cvar _ | Ctuple[Cvar _; Cvar _] as arg)) ->
+          (Ispecific(Ilea addr), [arg])
+      | (Iindexed _, _)
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end

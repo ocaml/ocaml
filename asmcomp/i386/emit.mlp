@@ -609,7 +609,21 @@ let emit_instr fallthrough i =
         `	addl	$8, %esp\n`;
         stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ilea addr)) ->
-        `	lea	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
+        begin match addr with
+          Iindexed n when i.arg.(0).loc = i.res.(0).loc ->
+            if n = 1 then
+              `	incl	{emit_reg i.res.(0)}\n`
+            else if n = -1 then
+              `	decl	{emit_reg i.res.(0)}\n`
+            else
+              `	addl	${emit_int n}, {emit_reg i.res.(0)}\n`
+        | Iindexed2 0 when i.arg.(0).loc = i.res.(0).loc ->
+            `	addl	{emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
+        | Iindexed2 0 when i.arg.(1).loc = i.res.(0).loc ->
+            `	addl	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
+        | _ ->
+            `	lea	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
+        end
     | Lop(Ispecific(Istore_int(n, addr))) ->
         `	movl	${emit_nativeint n}, {emit_addressing addr i.arg 0}\n`
     | Lop(Ispecific(Istore_symbol(s, addr))) ->
