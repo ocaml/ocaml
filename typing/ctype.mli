@@ -190,7 +190,7 @@ val correct_abbrev: Env.t -> Ident.t -> type_expr list -> type_expr -> unit
 val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool
 val normalize_type: Env.t -> type_expr -> unit
 
-val free_vars : type_expr -> (type_expr * bool) list
+val free_type_variables : type_expr -> type_expr list
 val closed_schema: type_expr -> bool
         (* Check whether the given type scheme contains no non-generic
            type variables *)

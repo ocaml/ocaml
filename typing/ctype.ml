@@ -395,6 +395,11 @@ let free_vars ty =
   free_variables := [];
   res
 
+let free_type_variables ty =
+  let res = List.map fst (free_vars ty) in
+  unmark_type ty;
+  res
+
 let rec closed_type ty =
   match free_vars ty with
       []           -> ()
