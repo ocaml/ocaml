@@ -18,6 +18,9 @@ val init : int -> unit
      The same seed will always yield the same sequence of numbers. *)
 val full_init : int array -> unit
   (* Same as [init] but takes more data as seed. *)
+val self_init : unit -> unit
+  (* Initialize the generator with a more-or-less random seed chosen
+     in a system-dependent way. *)
 
 val bits : unit -> int
   (* Return 30 random bits in a nonnegative integer. *)

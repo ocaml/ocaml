@@ -85,6 +85,9 @@ let full_init seed =
       (Array.unsafe_get state j + Array.unsafe_get seed i)
   done
 
+(* Low-entropy system-dependent initialisation. *)
+let self_init () = init (int_of_float (Sys.date () -. 2e9));;
+
 (********************
 
 (* Test functions.  Not included in the library.

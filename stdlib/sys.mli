@@ -33,6 +33,9 @@ external command: string -> int = "sys_system_command"
 external time: unit -> float = "sys_time"
         (* Return the processor time, in seconds, used by the program
            since the beginning of execution. *)
+external date: unit -> float = "sys_date"
+        (* Return the current calendar time, or -1.0 if the time is not
+           available.  The unit and origin are unspecified. *)
 external chdir: string -> unit = "sys_chdir"
         (* Change the current working directory of the process. *)
 external getcwd: unit -> string = "sys_getcwd"
