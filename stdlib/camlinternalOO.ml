@@ -131,7 +131,7 @@ let new_table pub_labels =
   let len' = fit_size len in
   let methods = Array.create (len*2+2) null_item in
   methods.(0) <- magic len;
-  methods.(1) <- magic (fit_size (len*2) - 1);
+  methods.(1) <- magic (fit_size len * Sys.word_size / 8 - 1);
   for i = 0 to len - 1 do methods.(i*2+3) <- magic pub_labels.(i) done;
   { methods = methods;
     methods_by_name = Meths.empty;

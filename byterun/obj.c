@@ -202,6 +202,6 @@ CAMLprim value oo_cache_public_method (value meths, value tag, value *cache)
     if (tag < Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
-  *cache = li-2;
+  *cache = (li-2)*sizeof(value);
   return Field (meths, li-1);
 }
