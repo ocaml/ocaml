@@ -1,3 +1,16 @@
+/***********************************************************************/
+/*                                                                     */
+/*                           Objective Caml                            */
+/*                                                                     */
+/*            Francois Rouaix, projet Cristal, INRIA Rocquencourt      */
+/*                                                                     */
+/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*  Automatique.  Distributed only by permission.                      */
+/*                                                                     */
+/***********************************************************************/
+
+/* $Id$ */
+
 #include <ndbm.h>
 #include <mlvalues.h>
 #include <alloc.h>
@@ -6,7 +19,7 @@
 
 #include <fcntl.h>
 
-/* Quit close to sys_open_flags, but we need RDWR */
+/* Quite close to sys_open_flags, but we need RDWR */
 static int dbm_open_flags[] = {
   O_RDONLY, O_WRONLY, O_RDWR, O_CREAT
 };
