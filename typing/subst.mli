@@ -34,7 +34,6 @@ val identity: t
 val add_type: Ident.t -> Path.t -> t -> t
 val add_module: Ident.t -> Path.t -> t -> t
 val add_modtype: Ident.t -> module_type -> t -> t
-val limit_level : int -> t -> t
 
 val type_expr: t -> type_expr -> type_expr
 val value_description: t -> value_description -> value_description

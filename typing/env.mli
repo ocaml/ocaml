@@ -100,11 +100,6 @@ type summary =
 
 val summary: t -> summary
 
-(* Environment level -- greater binding time of type constructor
-   bounds in the environment *)
-
-val level: t -> int
-
 (* Error report *)
 
 type error =
