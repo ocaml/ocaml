@@ -163,6 +163,10 @@ typedef opcode_t * code_t;
 #define Closure_tag 250
 #define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
 
+value callback P((value closure, value arg));
+value callback2 P((value closure, value arg1, value arg2));
+value callback3 P((value closure, value arg1, value arg2, value arg3));
+
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
 

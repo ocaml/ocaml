@@ -855,15 +855,36 @@ value interprete(prog, prog_size)
 #endif
 }
 
-static opcode_t callback_code[] = {
-  ACC1, APPLY1, POP, 1, STOP
-};
+static opcode_t callback1_code[] = { ACC1, APPLY1, POP, 1, STOP };
+static opcode_t callback2_code[] = { ACC2, APPLY2, POP, 1, STOP };
+static opcode_t callback3_code[] = { ACC3, APPLY3, POP, 1, STOP };
 
-value callback(closure, argument)
-     value closure, argument;
+value callback(closure, arg)
+     value closure, arg;
 {
   extern_sp -= 2;
-  extern_sp[0] = argument;
+  extern_sp[0] = arg;
   extern_sp[1] = closure;
-  return interprete(callback_code, sizeof(callback_code));
+  return interprete(callback1_code, sizeof(callback1_code));
+}
+
+value callback2(closure, arg1, arg2)
+     value closure, arg1, arg2;
+{
+  extern_sp -= 3;
+  extern_sp[0] = arg1;
+  extern_sp[1] = arg2;
+  extern_sp[2] = closure;
+  return interprete(callback2_code, sizeof(callback2_code));
+}
+
+value callback3(closure, arg1, arg2, arg3)
+     value closure, arg1, arg2, arg3;
+{
+  extern_sp -= 4;
+  extern_sp[0] = arg1;
+  extern_sp[1] = arg2;
+  extern_sp[2] = arg3;
+  extern_sp[3] = closure;
+  return interprete(callback3_code, sizeof(callback3_code));
 }
