@@ -212,8 +212,7 @@ let transl_prim prim args =
         stringcomp
     | _ ->
         gencomp
-    end,
-    false
+    end
   with Not_found ->
   try
     let p = Hashtbl.find primitives_table prim.prim_name in
@@ -226,11 +225,9 @@ let transl_prim prim args =
       | (Parrayrefs Pgenarray, arg1 :: _) -> Parrayrefs(array_kind arg1)
       | (Parraysets Pgenarray, arg1 :: _) -> Parraysets(array_kind arg1)
       | _ -> p
-    end,
-    false
+    end
   with Not_found ->
-    Pccall prim,
-    true
+    Pccall prim
 
 (* Eta-expand a primitive without knowing the types of its arguments *)
 
@@ -352,10 +349,9 @@ let rec transl_exp e =
       Lfunction(kind, params, body)
   | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
     when List.length args = p.prim_arity ->
-      let (prim, c_call) = transl_prim p args in
+      let prim = transl_prim p args in
       let lam = Lprim(prim, transl_list args) in
-      if c_call then event_after e lam
-      else lam
+      begin match prim with Pccall _ -> event_after e lam | _ -> lam end
   | Texp_apply(funct, args) ->
       let lam =
         match transl_exp funct with

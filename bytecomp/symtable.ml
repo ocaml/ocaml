@@ -82,11 +82,21 @@ let num_of_prim name =
 let require_primitive name =
   if name.[0] <> '%' then begin num_of_prim name; () end
 
-open Printf
-
-let output_primitives outchan =
+let all_primitives () =
   let prim = Array.create !c_prim_table.num_cnt "" in
   Tbl.iter (fun name number -> prim.(number) <- name) !c_prim_table.num_tbl;
+  prim
+
+let output_primitive_names outchan =
+  let prim = all_primitives() in
+  for i = 0 to Array.length prim - 1 do
+    output_string outchan prim.(i); output_char outchan '\000'
+  done
+
+open Printf
+
+let output_primitive_table outchan =
+  let prim = all_primitives() in
   for i = 0 to Array.length prim - 1 do
     fprintf outchan "extern long %s();\n" prim.(i)
   done;

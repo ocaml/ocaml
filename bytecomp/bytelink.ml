@@ -236,21 +236,25 @@ let link_bytecode objfiles exec_name copy_header =
     (* The final STOP instruction *)
     output_byte outchan Opcodes.opSTOP;
     output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
-    (* The table of global data *)
+    (* The names of all primitives *)
     let pos2 = pos_out outchan in
+    Symtable.output_primitive_names outchan;
+    (* The table of global data *)
+    let pos3 = pos_out outchan in
     output_value outchan (Symtable.initial_global_table());
     (* The map of global identifiers *)
-    let pos3 = pos_out outchan in
+    let pos4 = pos_out outchan in
     Symtable.output_global_map outchan;
     (* Debug info *)
-    let pos4 = pos_out outchan in
+    let pos5 = pos_out outchan in
     if !Clflags.debug then output_value outchan !debug_info;
     (* The trailer *)
-    let pos5 = pos_out outchan in
+    let pos6 = pos_out outchan in
     output_binary_int outchan (pos2 - pos1);
     output_binary_int outchan (pos3 - pos2);
     output_binary_int outchan (pos4 - pos3);
     output_binary_int outchan (pos5 - pos4);
+    output_binary_int outchan (pos6 - pos5);
     output_string outchan exec_magic_number;
     close_out outchan
   with x ->
@@ -314,7 +318,7 @@ let link_bytecode_as_c objfiles outfile =
     output_data_string outchan
        (Obj.marshal(Obj.repr(Symtable.initial_global_table())));
     (* The table of primitives *)
-    Symtable.output_primitives outchan;
+    Symtable.output_primitive_table outchan;
     (* The entry point *)
     output_string outchan "\n
 void caml_startup(argv)
@@ -455,7 +459,7 @@ let link objfiles =
     try
       link_bytecode objfiles bytecode_name false;
       let poc = open_out prim_name in
-      Symtable.output_primitives poc;
+      Symtable.output_primitive_table poc;
       close_out poc;
       if build_custom_runtime prim_name !Clflags.exec_name <> 0
       then raise(Error Custom_runtime);
