@@ -68,32 +68,33 @@ and ident3 len =
   | [: :] -> len ]
 and base_number len =
   parser
-  [ [: `'o' | 'O'; s :] -> octal_digits (store len 'o') s
-  | [: `'x' | 'X'; s :] -> hexa_digits (store len 'x') s
-  | [: `'b' | 'B'; s :] -> binary_digits (store len 'b') s
+  [ [: `'o' | 'O'; s :] -> digits octal (store len 'o') s
+  | [: `'x' | 'X'; s :] -> digits hexa (store len 'x') s
+  | [: `'b' | 'B'; s :] -> digits binary (store len 'b') s
   | [: a = number len :] -> a ]
-and octal_digits len =
+and digits kind len =
   parser
-  [ [: `('0'..'7' as d); s :] -> octal_digits (store len d) s
-  | [: :] -> ("INT", get_buff len) ]
-and hexa_digits len =
+  [ [: d = kind; s :] -> digits_under kind (store len d) s
+  | [: :] -> raise (Stream.Error "ill-formed integer constant") ]
+and digits_under kind len =
   parser
-  [ [: `('0'..'9' | 'a'..'f' | 'A'..'F' as d); s :] ->
-      hexa_digits (store len d) s
+  [ [: d = kind; s :] -> digits_under kind (store len d) s
+  | [: `'_'; s :] -> digits_under kind len s
   | [: :] -> ("INT", get_buff len) ]
-and binary_digits len =
-  parser
-  [ [: `('0'..'1' as d); s :] -> binary_digits (store len d) s
-  | [: :] -> ("INT", get_buff len) ]
+and octal = parser [ [: `('0'..'7' as d) :] -> d ]
+and hexa = parser [ [: `('0'..'9' | 'a'..'f' | 'A'..'F' as d) :] -> d ]
+and binary = parser [ [: `('0'..'1' as d) :] -> d ]
 and number len =
   parser
   [ [: `('0'..'9' as c); s :] -> number (store len c) s
+  | [: `'_'; s :] -> number len s
   | [: `'.'; s :] -> decimal_part (store len '.') s
   | [: `'e' | 'E'; s :] -> exponent_part (store len 'E') s
   | [: :] -> ("INT", get_buff len) ]
 and decimal_part len =
   parser
   [ [: `('0'..'9' as c); s :] -> decimal_part (store len c) s
+  | [: `'_'; s :] -> decimal_part len s
   | [: `'e' | 'E'; s :] -> exponent_part (store len 'E') s
   | [: :] -> ("FLOAT", get_buff len) ]
 and exponent_part len =
@@ -102,14 +103,13 @@ and exponent_part len =
   | [: a = end_exponent_part len :] -> a ]
 and end_exponent_part len =
   parser
-  [ [: `('0'..'9' as c); s :] -> end_exponent_part (store len c) s
-  | [: :] -> ("FLOAT", get_buff len) ]
-;
-
-value rec skip_spaces =
+  [ [: `('0'..'9' as c); s :] -> end_exponent_part_under (store len c) s
+  | [: :] -> raise (Stream.Error "ill-formed floating-point constant") ]
+and end_exponent_part_under len =
   parser
-  [ [: `' ' | '\010' | '\013' | '\t' | '\026' | '\012'; s :] -> skip_spaces s
-  | [: :] -> () ]
+  [ [: `('0'..'9' as c); s :] -> end_exponent_part_under (store len c) s
+  | [: `'_'; s :] -> end_exponent_part_under len s
+  | [: :] -> ("FLOAT", get_buff len) ]
 ;
 
 value error_on_unknown_keywords = ref False;
