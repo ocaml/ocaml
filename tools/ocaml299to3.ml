@@ -38,7 +38,8 @@ let convert buffer =
     and stop = Lexing.lexeme_end buffer
     and last_token, last_start, last_stop = !last in
     begin match token with
-    | LABEL l ->
+    | LABEL l0 ->
+        let l = if l0 = "fun" then "f" else l0 in
         begin match last_token with
         | PREFIXOP "?(" ->
             modified := true;
@@ -50,12 +51,20 @@ let convert buffer =
         | QUESTION | LPAREN | LBRACE | SEMI | MINUSGREATER
         | EQUAL | COLON | COLONGREATER
         | VAL | MUTABLE | EXTERNAL | METHOD | OF ->
-            ()
+            if l0 = "fun" then begin
+              modified := true;
+              copy_input start;
+              Buffer.add_string output_buffer l;
+              Buffer.add_char output_buffer ':';
+              input_pos := stop
+            end
         | _ ->
             modified := true;
             copy_input start;
             Buffer.add_char output_buffer '~';
-            copy_input stop
+            Buffer.add_string output_buffer l;
+            Buffer.add_char output_buffer ':';
+            input_pos := stop
         end
     | LABELID l ->
         modified := true;
@@ -117,7 +126,8 @@ let _ =
     print_endline
       "Convert Objective Caml 2.99 O'Labl-style labels in implementation files to";
     print_endline
-      "a syntax compatible with version 3. Other syntactic changes are not handled.";
+      "a syntax compatible with version 3. Also `fun:' labels are replaced by `f:'.";
+    print_endline "Other syntactic changes are not handled.";
     print_endline "Old files are renamed to <file>.bak.";
     print_endline "Interface files do not need label syntax conversion.";
     exit 0
