@@ -21,10 +21,10 @@
    Syntax of command lines:
     A keyword is a character string starting with a [-].
     An option is a keyword alone or followed by an argument.
-    The types of keywords are: [Unit], [Set], [Clear], [String],
-    [Set_string], [Int], [Set_int], [Float], [Set_float], [Symbol],
-    and [Rest].
-    [Unit], [Set] and [Clear] keywords take no argument.  A [Rest]
+    The types of keywords are: [Unit], [Bool], [Set], [Clear],
+    [String], [Set_string], [Int], [Set_int], [Float], [Set_float],
+    [Tuple], [Symbol], and [Rest].
+    [Unit], [Set] and [Clear] keywords take no argument. A [Rest]
     keyword takes the remaining of the command line as arguments.
     Every other keyword takes the following word on the command line
     as argument.
@@ -42,6 +42,7 @@
 
 type spec =
   | Unit of (unit -> unit)     (** Call the function with unit argument *)
+  | Bool of (bool -> unit)     (** Call the function with a bool argument *)
   | Set of bool ref            (** Set the reference to true *)
   | Clear of bool ref          (** Set the reference to false *)
   | String of (string -> unit) (** Call the function with a string argument *)
@@ -50,9 +51,11 @@ type spec =
   | Set_int of int ref         (** Set the reference to the int argument *)
   | Float of (float -> unit)   (** Call the function with a float argument *)
   | Set_float of float ref     (** Set the reference to the float argument *)
+  | Tuple of spec list         (** Take several arguments according to the
+                                   spec list *)
   | Symbol of string list * (string -> unit)
                                (** Take one of the symbols as argument and
-                                   call the function with the symbol. *)
+                                   call the function with the symbol *)
   | Rest of (string -> unit)   (** Stop interpreting keywords and call the 
                                    function with each remaining argument *)
 

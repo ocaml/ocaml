@@ -20,17 +20,20 @@ type anon_fun = (string -> unit)
 
 type spec =
   | Unit of (unit -> unit)     (* Call the function with unit argument *)
+  | Bool of (bool -> unit)     (* Call the function with a bool argument *)
   | Set of bool ref            (* Set the reference to true *)
   | Clear of bool ref          (* Set the reference to false *)
   | String of (string -> unit) (* Call the function with a string argument *)
-  | Set_string of string ref   (** Set the reference to the string argument *)
+  | Set_string of string ref   (* Set the reference to the string argument *)
   | Int of (int -> unit)       (* Call the function with an int argument *)
-  | Set_int of int ref         (** Set the reference to the int argument *)
+  | Set_int of int ref         (* Set the reference to the int argument *)
   | Float of (float -> unit)   (* Call the function with a float argument *)
-  | Set_float of float ref     (** Set the reference to the float argument *)
+  | Set_float of float ref     (* Set the reference to the float argument *)
+  | Tuple of spec list         (* Take several arguments according to the
+                                  spec list *)
   | Symbol of string list * (string -> unit)
-                               (** Take one of the symbols as argument and
-                                   call the function with the symbol. *)
+                               (* Take one of the symbols as argument and
+                                  call the function with the symbol. *)
   | Rest of (string -> unit)   (* Stop interpreting keywords and call the
                                   function with each remaining argument *)
 
@@ -107,8 +110,15 @@ let parse_argv argv speclist anonfun errmsg =
         with Not_found -> stop (Unknown s)
       in
       begin try
-        match action with
+        let rec treat_action = function
         | Unit f -> f ();
+        | Bool f ->
+            let arg = argv.(!current + 1) in
+            begin try f (bool_of_string arg)
+            with Invalid_argument "bool_of_string" ->
+                   stop (Wrong (s, arg, "a boolean"))
+            end;
+            incr current;
         | Set r -> r := true;
         | Clear r -> r := false;
         | String f when !current + 1 < l ->
@@ -149,12 +159,15 @@ let parse_argv argv speclist anonfun errmsg =
             with Failure "float_of_string" -> stop (Wrong (s, arg, "a float"))
             end;
             incr current;
+        | Tuple specs ->
+            List.iter treat_action specs;
         | Rest f ->
             while !current < l - 1 do
               f argv.(!current + 1);
               incr current;
             done;
-        | _ -> stop (Missing s)
+        | _ -> stop (Missing s) in
+        treat_action action
       with Bad m -> stop (Message m);
       end;
       incr current;
