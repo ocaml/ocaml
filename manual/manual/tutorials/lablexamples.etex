@@ -39,6 +39,12 @@ let f :x :y = x - y;;
 let pred x = f :x y:1;;
 \end{caml_example}
 
+Beware that if you use this abbreviated notation with labels named
+after keywords ({\em e.g.} ":fun", ":to"), you will not be able to use
+the newly defined variable, since its name is masked by the keyword!
+In such cases you should avoid the abbreviated notation, and write
+"fun:f" for instance.
+
 \paragraph{Warning}
 Since the colon ":" is used inside labels, you must be careful to put
 spaces around it in type annotations. You must write "(x : int)" and
