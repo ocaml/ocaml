@@ -1,3 +1,10 @@
+- [17 Nov 04] Renamed "loc" into "_loc", introducing an incompatibility
+  with existing code (3.08.x and before). Such code can generally run
+  unmodified using the -loc option (camlp4 -loc "loc").
+
+Camlp4 Version 3.08
+-------------------
+
 - [05 Jul 04] creation of the `unmaintained' directory:
   pa_format, pa_lefteval, pa_ocamllex, pa_olabl, pa_scheme and pa_sml
   go there, each in its own subdir. Currently, they compile fine.

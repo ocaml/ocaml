@@ -25,7 +25,7 @@ P4INCLUDES=-I ../../meta -I ../../etc -I ../../lib -I ../../camlp4
 OCAMLINCLUDES=-I ../../meta -I ../../lib  -I ../../camlp4
 
 CAMLP4=camlp4$(EXE) -nolib
-OCAMLCFLAGS=-warn-error A $(OCAMLINCLUDES)
+OCAMLCFLAGS=-warn-error Ay -w Y $(OCAMLINCLUDES)
 
 SRC=pa_sml.ml
 OBJS=$(SRC:.ml=.cmo)

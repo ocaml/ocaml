@@ -30,7 +30,7 @@ module Qast =
       | Loc
       | Antiquot of MLast.loc and string ]
     ;
-    value loc =
+    value _loc =
         let nowhere =
           {(Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
           (nowhere,nowhere);
@@ -1173,19 +1173,19 @@ EXTEND
   ;
   (* Antiquotations for local entries *)
   sequence:
-    [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
+    [ [ a = ANTIQUOT "list" -> antiquot "list" _loc a ] ]
   ;
   expr_ident:
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   patt_label_ident: LEVEL "simple"
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   when_expr_opt:
-    [ [ a = ANTIQUOT "when" -> antiquot "when" loc a ] ]
+    [ [ a = ANTIQUOT "when" -> antiquot "when" _loc a ] ]
   ;
   mod_ident:
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   clty_longident:
     [ [ a = a_list -> a ] ]
@@ -1194,62 +1194,62 @@ EXTEND
     [ [ a = a_list -> a ] ]
   ;
   direction_flag:
-    [ [ a = ANTIQUOT "to" -> antiquot "to" loc a ] ]
+    [ [ a = ANTIQUOT "to" -> antiquot "to" _loc a ] ]
   ;
   (* deprecated since version 3.05; code for compatibility *)
   class_expr: LEVEL "simple"
     [ [ "object"; x = ANTIQUOT; cf = class_structure; "end" ->
-          let _ = warn_antiq loc "3.05" in
-          Qast.Node "CeStr" [Qast.Loc; antiquot "" loc x; cf]
+          let _ = warn_antiq _loc "3.05" in
+          Qast.Node "CeStr" [Qast.Loc; antiquot "" _loc x; cf]
       | "object"; x = ANTIQUOT; ";";
         csl = SLIST0 [ cf = class_str_item; ";" -> cf ] ; "end" ->
-          let _ = warn_antiq loc "3.05" in
+          let _ = warn_antiq _loc "3.05" in
           Qast.Node "CeStr"
             [Qast.Loc; Qast.Option None;
-             Qast.Cons (antiquot "" loc x) csl] ] ]
+             Qast.Cons (antiquot "" _loc x) csl] ] ]
   ;
   class_type:
     [ [ "object"; x = ANTIQUOT;
         csf = SLIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
-          let _ = warn_antiq loc "3.05" in
-          Qast.Node "CtSig" [Qast.Loc; antiquot "" loc x; csf]
+          let _ = warn_antiq _loc "3.05" in
+          Qast.Node "CtSig" [Qast.Loc; antiquot "" _loc x; csf]
       | "object"; x = ANTIQUOT; ";";
         csf = SLIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
-          let _ = warn_antiq loc "3.05" in
+          let _ = warn_antiq _loc "3.05" in
           Qast.Node "CtSig"
             [Qast.Loc; Qast.Option None;
-             Qast.Cons (antiquot "" loc x) csf] ] ]
+             Qast.Cons (antiquot "" _loc x) csf] ] ]
   ;
   (* deprecated since version 3.06+18; code for compatibility *)
   expr: LEVEL "top"
     [ [ "let"; r = ANTIQUOT "rec"; l = SLIST1 let_binding SEP "and"; "in";
         x = SELF ->
-          let _ = warn_antiq loc "3.06+18" in
-          Qast.Node "ExLet" [Qast.Loc; antiquot "rec" loc r; l; x] ] ]
+          let _ = warn_antiq _loc "3.06+18" in
+          Qast.Node "ExLet" [Qast.Loc; antiquot "rec" _loc r; l; x] ] ]
   ;
   str_item: LEVEL "top"
     [ [ "value"; r = ANTIQUOT "rec"; l = SLIST1 let_binding SEP "and" ->
-          let _ = warn_antiq loc "3.06+18" in
-          Qast.Node "StVal" [Qast.Loc; antiquot "rec" loc r; l] ] ]
+          let _ = warn_antiq _loc "3.06+18" in
+          Qast.Node "StVal" [Qast.Loc; antiquot "rec" _loc r; l] ] ]
   ;
   class_expr: LEVEL "top"
     [ [ "let"; r = ANTIQUOT "rec"; lb = SLIST1 let_binding SEP "and"; "in";
         ce = SELF ->
-          let _ = warn_antiq loc "3.06+18" in
-          Qast.Node "CeLet" [Qast.Loc; antiquot "rec" loc r; lb; ce] ] ]
+          let _ = warn_antiq _loc "3.06+18" in
+          Qast.Node "CeLet" [Qast.Loc; antiquot "rec" _loc r; lb; ce] ] ]
   ;
   class_str_item:
     [ [ "inherit"; ce = class_expr; pb = ANTIQUOT "as" ->
-          let _ = warn_antiq loc "3.06+18" in
-          Qast.Node "CrInh" [Qast.Loc; ce; antiquot "as" loc pb]
+          let _ = warn_antiq _loc "3.06+18" in
+          Qast.Node "CrInh" [Qast.Loc; ce; antiquot "as" _loc pb]
       | "value"; mf = ANTIQUOT "mut"; lab = label; e = cvalue_binding ->
-          let _ = warn_antiq loc "3.06+18" in
-          Qast.Node "CrVal" [Qast.Loc; lab; antiquot "mut" loc mf; e] ] ]
+          let _ = warn_antiq _loc "3.06+18" in
+          Qast.Node "CrVal" [Qast.Loc; lab; antiquot "mut" _loc mf; e] ] ]
   ;
   class_sig_item:
     [ [ "value"; mf = ANTIQUOT "mut"; l = label; ":"; t = ctyp ->
-          let _ = warn_antiq loc "3.06+18" in
-          Qast.Node "CgVal" [Qast.Loc; l; antiquot "mut" loc mf; t] ] ]
+          let _ = warn_antiq _loc "3.06+18" in
+          Qast.Node "CgVal" [Qast.Loc; l; antiquot "mut" _loc mf; t] ] ]
   ;
 END;
 
@@ -1264,7 +1264,7 @@ EXTEND
           Qast.Node "SgDir" [Qast.Loc; n; dp] ] ]
   ;
   dir_param:
-    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" _loc a
       | e = expr -> Qast.Option (Some e)
       | -> Qast.Option None ] ]
   ;
@@ -1274,58 +1274,58 @@ END;
 
 EXTEND
   module_expr: LEVEL "simple"
-    [ [ a = ANTIQUOT "mexp" -> antiquot "mexp" loc a
-      | a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT "mexp" -> antiquot "mexp" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   str_item: LEVEL "top"
-    [ [ a = ANTIQUOT "stri" -> antiquot "stri" loc a
-      | a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT "stri" -> antiquot "stri" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   module_type: LEVEL "simple"
-    [ [ a = ANTIQUOT "mtyp" -> antiquot "mtyp" loc a
-      | a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT "mtyp" -> antiquot "mtyp" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   sig_item: LEVEL "top"
-    [ [ a = ANTIQUOT "sigi" -> antiquot "sigi" loc a
-      | a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT "sigi" -> antiquot "sigi" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   expr: LEVEL "simple"
-    [ [ a = ANTIQUOT "exp" -> antiquot "exp" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "exp" -> antiquot "exp" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | a = ANTIQUOT "anti" ->
-          Qast.Node "ExAnt" [Qast.Loc; antiquot "anti" loc a]
+          Qast.Node "ExAnt" [Qast.Loc; antiquot "anti" _loc a]
       | "("; el = a_list; ")" -> Qast.Node "ExTup" [Qast.Loc; el] ] ]
   ;
   patt: LEVEL "simple"
-    [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "pat" -> antiquot "pat" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | a = ANTIQUOT "anti" ->
-          Qast.Node "PaAnt" [Qast.Loc; antiquot "anti" loc a]
+          Qast.Node "PaAnt" [Qast.Loc; antiquot "anti" _loc a]
       | "("; pl = a_list; ")" -> Qast.Node "PaTup" [Qast.Loc; pl] ] ]
   ;
   ipatt:
-    [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "pat" -> antiquot "pat" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | a = ANTIQUOT "anti" ->
-          Qast.Node "PaAnt" [Qast.Loc; antiquot "anti" loc a]
+          Qast.Node "PaAnt" [Qast.Loc; antiquot "anti" _loc a]
       | "("; pl = a_list; ")" -> Qast.Node "PaTup" [Qast.Loc; pl] ] ]
   ;
   ctyp: LEVEL "simple"
-    [ [ a = ANTIQUOT "typ" -> antiquot "typ" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "typ" -> antiquot "typ" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | "("; tl = a_list; ")" -> Qast.Node "TyTup" [Qast.Loc; tl] ] ]
   ;
   class_expr: LEVEL "simple"
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   class_str_item:
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   class_sig_item:
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   class_type:
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" _loc a ] ]
   ;
   expr: LEVEL "simple"
     [ [ "{<"; fel = a_list; ">}" -> Qast.Node "ExOvr" [Qast.Loc; fel] ] ]
@@ -1334,65 +1334,65 @@ EXTEND
     [ [ "#"; a = a_list -> Qast.Node "PaTyp" [Qast.Loc; a] ] ]
   ;
   a_list:
-    [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
+    [ [ a = ANTIQUOT "list" -> antiquot "list" _loc a ] ]
   ;
   a_opt:
-    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" _loc a ] ]
   ;
   a_UIDENT:
-    [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "uid" -> antiquot "uid" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | i = UIDENT -> Qast.Str i ] ]
   ;
   a_LIDENT:
-    [ [ a = ANTIQUOT "lid" -> antiquot "lid" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "lid" -> antiquot "lid" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | i = LIDENT -> Qast.Str i ] ]
   ;
   a_INT:
-    [ [ a = ANTIQUOT "int" -> antiquot "int" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "int" -> antiquot "int" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | s = INT -> Qast.Str s ] ]
   ;
   a_INT32:
-    [ [ a = ANTIQUOT "int32" -> antiquot "int32" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "int32" -> antiquot "int32" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | s = INT32 -> Qast.Str s ] ]
   ;
   a_INT64:
-    [ [ a = ANTIQUOT "int64" -> antiquot "int64" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "int64" -> antiquot "int64" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | s = INT64 -> Qast.Str s ] ]
   ;
   a_NATIVEINT:
-    [ [ a = ANTIQUOT "nativeint" -> antiquot "nativeint" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "nativeint" -> antiquot "nativeint" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | s = NATIVEINT -> Qast.Str s ] ]
   ;
   a_FLOAT:
-    [ [ a = ANTIQUOT "flo" -> antiquot "flo" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "flo" -> antiquot "flo" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | s = FLOAT -> Qast.Str s ] ]
   ;
   a_STRING:
-    [ [ a = ANTIQUOT "str" -> antiquot "str" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "str" -> antiquot "str" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | s = STRING -> Qast.Str s ] ]
   ;
   a_CHAR:
-    [ [ a = ANTIQUOT "chr" -> antiquot "chr" loc a
-      | a = ANTIQUOT -> antiquot "" loc a
+    [ [ a = ANTIQUOT "chr" -> antiquot "chr" _loc a
+      | a = ANTIQUOT -> antiquot "" _loc a
       | s = CHAR -> Qast.Str s ] ]
   ;
   a_TILDEIDENT:
-    [ [ "~"; a = ANTIQUOT -> antiquot "" loc a
+    [ [ "~"; a = ANTIQUOT -> antiquot "" _loc a
       | s = TILDEIDENT -> Qast.Str s ] ]
   ;
   a_LABEL:
     [ [ s = LABEL -> Qast.Str s ] ]
   ;
   a_QUESTIONIDENT:
-    [ [ "?"; a = ANTIQUOT -> antiquot "" loc a
+    [ [ "?"; a = ANTIQUOT -> antiquot "" _loc a
       | s = QUESTIONIDENT -> Qast.Str s ] ]
   ;
   a_OPTLABEL:

@@ -75,7 +75,7 @@ let defined = ref [];;
 
 let is_defined i = List.mem_assoc i !defined;;
 
-let loc =
+let _loc =
   let nowhere =
     {(Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0}
   in
@@ -87,31 +87,31 @@ let subst mloc env =
     function
       MLast.ExLet (_, rf, pel, e) ->
         let pel = List.map (fun (p, e) -> p, loop e) pel in
-        MLast.ExLet (loc, rf, pel, loop e)
+        MLast.ExLet (_loc, rf, pel, loop e)
     | MLast.ExIfe (_, e1, e2, e3) ->
-        MLast.ExIfe (loc, loop e1, loop e2, loop e3)
-    | MLast.ExApp (_, e1, e2) -> MLast.ExApp (loc, loop e1, loop e2)
+        MLast.ExIfe (_loc, loop e1, loop e2, loop e3)
+    | MLast.ExApp (_, e1, e2) -> MLast.ExApp (_loc, loop e1, loop e2)
     | MLast.ExFun (_, [args, None, e]) ->
-        MLast.ExFun (loc, [args, None, loop e])
-    | MLast.ExFun (_, peoel) -> MLast.ExFun (loc, List.map loop_peoel peoel)
+        MLast.ExFun (_loc, [args, None, loop e])
+    | MLast.ExFun (_, peoel) -> MLast.ExFun (_loc, List.map loop_peoel peoel)
     | MLast.ExLid (_, x) | MLast.ExUid (_, x) as e ->
-        begin try MLast.ExAnt (loc, List.assoc x env) with
+        begin try MLast.ExAnt (_loc, List.assoc x env) with
           Not_found -> e
         end
-    | MLast.ExTup (_, x) -> MLast.ExTup (loc, List.map loop x)
-    | MLast.ExSeq (_, x) -> MLast.ExSeq (loc, List.map loop x)
+    | MLast.ExTup (_, x) -> MLast.ExTup (_loc, List.map loop x)
+    | MLast.ExSeq (_, x) -> MLast.ExSeq (_loc, List.map loop x)
     | MLast.ExRec (_, pel, None) ->
         let pel = List.map (fun (p, e) -> p, loop e) pel in
-        MLast.ExRec (loc, pel, None)
+        MLast.ExRec (_loc, pel, None)
     | MLast.ExMat (_, e, peoel) ->
-        MLast.ExMat (loc, loop e, List.map loop_peoel peoel)
+        MLast.ExMat (_loc, loop e, List.map loop_peoel peoel)
     | MLast.ExTry (_, e, pel) ->
         let loop' =
           function
             p, Some e1, e2 -> p, Some (loop e1), loop e2
           | p, None, e2 -> p, None, loop e2
         in
-        MLast.ExTry (loc, loop e, List.map loop' pel)
+        MLast.ExTry (_loc, loop e, List.map loop' pel)
     | e -> e
   and loop_peoel =
     function
@@ -124,21 +124,21 @@ let subst mloc env =
 let substp mloc env =
   let rec loop =
     function
-      MLast.ExApp (_, e1, e2) -> MLast.PaApp (loc, loop e1, loop e2)
+      MLast.ExApp (_, e1, e2) -> MLast.PaApp (_loc, loop e1, loop e2)
     | MLast.ExLid (_, x) ->
-        begin try MLast.PaAnt (loc, List.assoc x env) with
-          Not_found -> MLast.PaLid (loc, x)
+        begin try MLast.PaAnt (_loc, List.assoc x env) with
+          Not_found -> MLast.PaLid (_loc, x)
         end
     | MLast.ExUid (_, x) ->
-        begin try MLast.PaAnt (loc, List.assoc x env) with
-          Not_found -> MLast.PaUid (loc, x)
+        begin try MLast.PaAnt (_loc, List.assoc x env) with
+          Not_found -> MLast.PaUid (_loc, x)
         end
-    | MLast.ExInt (_, x) -> MLast.PaInt (loc, x)
-    | MLast.ExStr (_, s) -> MLast.PaStr (loc, s)
-    | MLast.ExTup (_, x) -> MLast.PaTup (loc, List.map loop x)
+    | MLast.ExInt (_, x) -> MLast.PaInt (_loc, x)
+    | MLast.ExStr (_, s) -> MLast.PaStr (_loc, s)
+    | MLast.ExTup (_, x) -> MLast.PaTup (_loc, List.map loop x)
     | MLast.ExRec (_, pel, None) ->
         let ppl = List.map (fun (p, e) -> p, loop e) pel in
-        MLast.PaRec (loc, ppl)
+        MLast.PaRec (_loc, ppl)
     | x ->
         Stdpp.raise_with_loc mloc
           (Failure
@@ -163,16 +163,16 @@ let define eo x =
          [None, None,
           [[Gramext.Stoken ("UIDENT", x)],
            Gramext.action
-             (fun _ (loc : Lexing.position * Lexing.position) ->
-                (Pcaml.expr_reloc (fun _ -> loc) (fst loc) e : 'expr))]];
+             (fun _ (_loc : Lexing.position * Lexing.position) ->
+                (Pcaml.expr_reloc (fun _ -> _loc) (fst _loc) e : 'expr))]];
          Grammar.Entry.obj (patt : 'patt Grammar.Entry.e),
          Some (Gramext.Level "simple"),
          [None, None,
           [[Gramext.Stoken ("UIDENT", x)],
            Gramext.action
-             (fun _ (loc : Lexing.position * Lexing.position) ->
-                (let p = substp loc [] e in
-                 Pcaml.patt_reloc (fun _ -> loc) (fst loc) p :
+             (fun _ (_loc : Lexing.position * Lexing.position) ->
+                (let p = substp _loc [] e in
+                 Pcaml.patt_reloc (fun _ -> _loc) (fst _loc) p :
                  'patt))]]]
   | Some (sl, e) ->
       Grammar.extend
@@ -182,7 +182,7 @@ let define eo x =
           [[Gramext.Stoken ("UIDENT", x); Gramext.Sself],
            Gramext.action
              (fun (param : 'expr) _
-                (loc : Lexing.position * Lexing.position) ->
+                (_loc : Lexing.position * Lexing.position) ->
                 (let el =
                    match param with
                      MLast.ExTup (_, el) -> el
@@ -190,9 +190,9 @@ let define eo x =
                  in
                  if List.length el = List.length sl then
                    let env = List.combine sl el in
-                   let e = subst loc env e in
-                   Pcaml.expr_reloc (fun _ -> loc) (fst loc) e
-                 else incorrect_number loc el sl :
+                   let e = subst _loc env e in
+                   Pcaml.expr_reloc (fun _ -> _loc) (fst _loc) e
+                 else incorrect_number _loc el sl :
                  'expr))]];
          Grammar.Entry.obj (patt : 'patt Grammar.Entry.e),
          Some (Gramext.Level "simple"),
@@ -200,7 +200,7 @@ let define eo x =
           [[Gramext.Stoken ("UIDENT", x); Gramext.Sself],
            Gramext.action
              (fun (param : 'patt) _
-                (loc : Lexing.position * Lexing.position) ->
+                (_loc : Lexing.position * Lexing.position) ->
                 (let pl =
                    match param with
                      MLast.PaTup (_, pl) -> pl
@@ -208,9 +208,9 @@ let define eo x =
                  in
                  if List.length pl = List.length sl then
                    let env = List.combine sl pl in
-                   let p = substp loc env e in
-                   Pcaml.patt_reloc (fun _ -> loc) (fst loc) p
-                 else incorrect_number loc pl sl :
+                   let p = substp _loc env e in
+                   Pcaml.patt_reloc (fun _ -> _loc) (fst _loc) p
+                 else incorrect_number _loc pl sl :
                  'patt))]]]
   | None -> ()
   end;
@@ -301,16 +301,16 @@ Grammar.extend
      [[Gramext.Snterm
          (Grammar.Entry.obj (macro_def : 'macro_def Grammar.Entry.e))],
       Gramext.action
-        (fun (x : 'macro_def) (loc : Lexing.position * Lexing.position) ->
+        (fun (x : 'macro_def) (_loc : Lexing.position * Lexing.position) ->
            (match execute_macro x with
               [si] -> si
-            | sil -> MLast.StDcl (loc, sil) :
+            | sil -> MLast.StDcl (_loc, sil) :
             'str_item))]];
     Grammar.Entry.obj (macro_def : 'macro_def Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "INCLUDE"); Gramext.Stoken ("STRING", "")],
       Gramext.action
-        (fun (fname : string) _ (loc : Lexing.position * Lexing.position) ->
+        (fun (fname : string) _ (_loc : Lexing.position * Lexing.position) ->
            (SdInc fname : 'macro_def));
       [Gramext.Stoken ("", "IFNDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
@@ -321,7 +321,7 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
         (fun (_ : 'endif) (dl2 : 'smlist) _ (dl1 : 'smlist) _ (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (SdITE (i, dl2, dl1) : 'macro_def));
       [Gramext.Stoken ("", "IFNDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
@@ -330,7 +330,7 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
         (fun (_ : 'endif) (dl : 'smlist) _ (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (SdITE (i, [], dl) : 'macro_def));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
@@ -341,7 +341,7 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
         (fun (_ : 'endif) (dl2 : 'smlist) _ (dl1 : 'smlist) _ (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (SdITE (i, dl1, dl2) : 'macro_def));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
@@ -350,12 +350,12 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
         (fun (_ : 'endif) (dl : 'smlist) _ (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (SdITE (i, dl, []) : 'macro_def));
       [Gramext.Stoken ("", "UNDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e))],
       Gramext.action
-        (fun (i : 'uident) _ (loc : Lexing.position * Lexing.position) ->
+        (fun (i : 'uident) _ (_loc : Lexing.position * Lexing.position) ->
            (SdUnd i : 'macro_def));
       [Gramext.Stoken ("", "DEFINE");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
@@ -364,7 +364,7 @@ Grammar.extend
             (opt_macro_value : 'opt_macro_value Grammar.Entry.e))],
       Gramext.action
         (fun (def : 'opt_macro_value) (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (SdDef (i, def) : 'macro_def))]];
     Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e), None,
     [None, None,
@@ -374,16 +374,16 @@ Grammar.extend
                (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e)))],
       Gramext.action
         (fun (sml : 'str_item_or_macro list)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (sml : 'smlist))]];
     Grammar.Entry.obj (endif : 'endif Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "ENDIF")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) -> (() : 'endif));
+        (fun _ (_loc : Lexing.position * Lexing.position) -> (() : 'endif));
       [Gramext.Stoken ("", "END")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) -> (() : 'endif))]];
+        (fun _ (_loc : Lexing.position * Lexing.position) -> (() : 'endif))]];
     Grammar.Entry.obj
       (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e),
     None,
@@ -391,24 +391,24 @@ Grammar.extend
      [[Gramext.Snterm
          (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e))],
       Gramext.action
-        (fun (si : 'str_item) (loc : Lexing.position * Lexing.position) ->
+        (fun (si : 'str_item) (_loc : Lexing.position * Lexing.position) ->
            (SdStr si : 'str_item_or_macro));
       [Gramext.Snterm
          (Grammar.Entry.obj (macro_def : 'macro_def Grammar.Entry.e))],
       Gramext.action
-        (fun (d : 'macro_def) (loc : Lexing.position * Lexing.position) ->
+        (fun (d : 'macro_def) (_loc : Lexing.position * Lexing.position) ->
            (d : 'str_item_or_macro))]];
     Grammar.Entry.obj (opt_macro_value : 'opt_macro_value Grammar.Entry.e),
     None,
     [None, None,
      [[],
       Gramext.action
-        (fun (loc : Lexing.position * Lexing.position) ->
+        (fun (_loc : Lexing.position * Lexing.position) ->
            (None : 'opt_macro_value));
       [Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'expr) _ (loc : Lexing.position * Lexing.position) ->
+        (fun (e : 'expr) _ (_loc : Lexing.position * Lexing.position) ->
            (Some ([], e) : 'opt_macro_value));
       [Gramext.Stoken ("", "(");
        Gramext.Slist1sep
@@ -417,7 +417,7 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'expr) _ _ (pl : string list) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (Some (pl, e) : 'opt_macro_value))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.Level "top"),
@@ -429,7 +429,7 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
         (fun (_ : 'endif) (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (if is_defined i then e2 else e1 : 'expr));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
@@ -438,23 +438,23 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
         (fun (_ : 'endif) (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (if is_defined i then e1 else e2 : 'expr))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.Level "simple"),
     [None, None,
      [[Gramext.Stoken ("LIDENT", "__LOCATION__")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
-           (let bp = string_of_int (fst loc).Lexing.pos_cnum in
-            let ep = string_of_int (snd loc).Lexing.pos_cnum in
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
+           (let bp = string_of_int (fst _loc).Lexing.pos_cnum in
+            let ep = string_of_int (snd _loc).Lexing.pos_cnum in
             MLast.ExTup
-              (loc, [MLast.ExInt (loc, bp); MLast.ExInt (loc, ep)]) :
+              (_loc, [MLast.ExInt (_loc, bp); MLast.ExInt (_loc, ep)]) :
             'expr));
       [Gramext.Stoken ("LIDENT", "__FILE__")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
-           (MLast.ExStr (loc, !(Pcaml.input_file)) : 'expr))]];
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
+           (MLast.ExStr (_loc, !(Pcaml.input_file)) : 'expr))]];
     Grammar.Entry.obj (patt : 'patt Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "IFNDEF");
@@ -464,7 +464,7 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
         (fun (_ : 'endif) (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (if is_defined i then p2 else p1 : 'patt));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
@@ -473,13 +473,13 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
         (fun (_ : 'endif) (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (if is_defined i then p1 else p2 : 'patt))]];
     Grammar.Entry.obj (uident : 'uident Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("UIDENT", "")],
       Gramext.action
-        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
+        (fun (i : string) (_loc : Lexing.position * Lexing.position) ->
            (i : 'uident))]]]);;
 
 Pcaml.add_option "-D" (Arg.String (define None))

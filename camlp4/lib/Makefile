@@ -3,7 +3,7 @@
 include ../config/Makefile
 
 INCLUDES=
-OCAMLCFLAGS=-warn-error A $(INCLUDES)
+OCAMLCFLAGS=-warn-error Ay -w Y $(INCLUDES)
 OBJS=stdpp.cmo token.cmo plexer.cmo gramext.cmo grammar.cmo extfold.cmo extfun.cmo fstream.cmo
 SHELL=/bin/sh
 TARGET=gramlib.cma

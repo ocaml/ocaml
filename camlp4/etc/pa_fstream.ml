@@ -16,7 +16,7 @@ type sexp_comp =
 (* parsers *)
 
 value strm_n = "strm__";
-value next_fun loc = <:expr< Fstream.next >>;
+value next_fun _loc = <:expr< Fstream.next >>;
 
 value rec pattern_eq_expression p e =
   match (p, e) with
@@ -36,26 +36,26 @@ value rec pattern_eq_expression p e =
 
 value stream_pattern_component skont =
   fun
-  [ SpTrm loc p wo ->
+  [ SpTrm _loc p wo ->
       let p = <:patt< Some ($p$, $lid:strm_n$) >> in
       if wo = None && pattern_eq_expression p skont then
-        <:expr< $next_fun loc$ $lid:strm_n$ >>
+        <:expr< $next_fun _loc$ $lid:strm_n$ >>
       else
-        <:expr< match $next_fun loc$ $lid:strm_n$ with
+        <:expr< match $next_fun _loc$ $lid:strm_n$ with
                 [ $p$ $when:wo$ -> $skont$
                 | _ -> None ] >>
-  | SpNtr loc p e ->
+  | SpNtr _loc p e ->
       let p = <:patt< Some ($p$, $lid:strm_n$) >> in
       if pattern_eq_expression p skont then <:expr< $e$ $lid:strm_n$ >>
       else
         <:expr< match $e$ $lid:strm_n$ with
                 [ $p$ -> $skont$
                 | _ -> None ] >>
-  | SpStr loc p ->
+  | SpStr _loc p ->
       <:expr< let $p$ = $lid:strm_n$ in $skont$ >> ]
 ;
 
-value rec stream_pattern loc epo e =
+value rec stream_pattern _loc epo e =
   fun
   [ [] ->
       let e =
@@ -65,24 +65,24 @@ value rec stream_pattern loc epo e =
       in
       <:expr< Some ($e$, $lid:strm_n$) >>
   | [spc :: spcl] ->
-      let skont = stream_pattern loc epo e spcl in
+      let skont = stream_pattern _loc epo e spcl in
       stream_pattern_component skont spc ]
 ;
 
-value rec parser_cases loc =
+value rec parser_cases _loc =
   fun
   [ [] -> <:expr< None >>
   | [(spcl, epo, e) :: spel] ->
-      match parser_cases loc spel with
-      [ <:expr< None >> -> stream_pattern loc epo e spcl
+      match parser_cases _loc spel with
+      [ <:expr< None >> -> stream_pattern _loc epo e spcl
       | pc ->
-          <:expr< match $stream_pattern loc epo e spcl$ with
+          <:expr< match $stream_pattern _loc epo e spcl$ with
                   [ Some _ as x -> x
                   | None -> $pc$ ] >> ] ]
 ;
 
-value cparser_match loc me bpo pc =
-  let pc = parser_cases loc pc in
+value cparser_match _loc me bpo pc =
+  let pc = parser_cases _loc pc in
   let e =
     match bpo with
     [ Some bp -> <:expr< let $bp$ = Stream.count $lid:strm_n$ in $pc$ >>
@@ -91,8 +91,8 @@ value cparser_match loc me bpo pc =
   <:expr< let ($lid:strm_n$ : Stream.t _) = $me$ in $e$ >>
 ;
 
-value cparser loc bpo pc =
-  let e = parser_cases loc pc in
+value cparser _loc bpo pc =
+  let e = parser_cases _loc pc in
   let e =
     match bpo with
     [ Some bp -> <:expr< let $bp$ = Fstream.count $lid:strm_n$ in $e$ >>
@@ -103,36 +103,36 @@ value cparser loc bpo pc =
 
 (* streams *)
 
-value slazy loc x = <:expr< fun () -> $x$ >>;
+value slazy _loc x = <:expr< fun () -> $x$ >>;
 
-value rec cstream loc =
+value rec cstream _loc =
   fun
   [ [] -> <:expr< Fstream.nil >>
-  | [SeTrm loc e :: sel] ->
-      let e2 = cstream loc sel in
+  | [SeTrm _loc e :: sel] ->
+      let e2 = cstream _loc sel in
       let x = <:expr< Fstream.cons $e$ $e2$ >> in
-      <:expr< Fstream.flazy $slazy loc x$ >>
-  | [SeNtr loc e] ->
+      <:expr< Fstream.flazy $slazy _loc x$ >>
+  | [SeNtr _loc e] ->
       e
-  | [SeNtr loc e :: sel] ->
-      let e2 = cstream loc sel in
+  | [SeNtr _loc e :: sel] ->
+      let e2 = cstream _loc sel in
       let x = <:expr< Fstream.app $e$ $e2$ >> in
-      <:expr< Fstream.flazy $slazy loc x$ >> ]
+      <:expr< Fstream.flazy $slazy _loc x$ >> ]
 ;
 
 EXTEND
   GLOBAL: expr;
   expr: LEVEL "top"
     [ [ "fparser"; po = OPT ipatt; "["; pcl = LIST0 parser_case SEP "|"; "]" ->
-          <:expr< $cparser loc po pcl$ >>
+          <:expr< $cparser _loc po pcl$ >>
       | "fparser"; po = OPT ipatt; pc = parser_case ->
-          <:expr< $cparser loc po [pc]$ >>
+          <:expr< $cparser _loc po [pc]$ >>
       | "match"; e = SELF; "with"; "parser"; po = OPT ipatt; "[";
         pcl = LIST0 parser_case SEP "|"; "]" ->
-          <:expr< $cparser_match loc e po pcl$ >>
+          <:expr< $cparser_match _loc e po pcl$ >>
       | "match"; e = SELF; "with"; "parser"; po = OPT ipatt;
         pc = parser_case ->
-          <:expr< $cparser_match loc e po [pc]$ >> ] ]
+          <:expr< $cparser_match _loc e po [pc]$ >> ] ]
   ;
   parser_case:
     [ [ "[:"; sp = stream_patt; ":]"; po = OPT ipatt; "->"; e = expr ->
@@ -145,19 +145,19 @@ EXTEND
       | -> [] ] ]
   ;
   stream_patt_comp:
-    [ [ "`"; p = patt; eo = OPT [ "when"; e = expr -> e ] -> SpTrm loc p eo
-      | p = patt; "="; e = expr -> SpNtr loc p e
-      | p = patt -> SpStr loc p ] ]
+    [ [ "`"; p = patt; eo = OPT [ "when"; e = expr -> e ] -> SpTrm _loc p eo
+      | p = patt; "="; e = expr -> SpNtr _loc p e
+      | p = patt -> SpStr _loc p ] ]
   ;
   ipatt:
     [ [ i = LIDENT -> <:patt< $lid:i$ >> ] ]
   ;
   expr: LEVEL "simple"
     [ [ "fstream"; "[:"; se = LIST0 stream_expr_comp SEP ";"; ":]" ->
-          <:expr< $cstream loc se$ >> ] ]
+          <:expr< $cstream _loc se$ >> ] ]
   ;
   stream_expr_comp:
-    [ [ "`"; e = expr -> SeTrm loc e
-      | e = expr -> SeNtr loc e ] ]
+    [ [ "`"; e = expr -> SeTrm _loc e
+      | e = expr -> SeNtr _loc e ] ]
   ;
 END;

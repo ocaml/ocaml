@@ -24,7 +24,7 @@ OCAMLOPT=$(OCAMLTOP)/ocamlopt$(EXE)
 
 P4INCLUDES= -nolib -I ../../meta -I ../../etc
 OCAMLINCLUDES= -nostdlib -I $(OCAMLTOP)/stdlib -I ../../camlp4 -I ../../lib -I ../../etc
-OCAMLCFLAGS=-warn-error A $(OCAMLINCLUDES)
+OCAMLCFLAGS=-warn-error Ay -w Y$(OCAMLINCLUDES)
 
 SCHSRC=pa_scheme.sc
 SRC=pa_scheme.ml  pr_scheme.ml  pr_schp_main.ml

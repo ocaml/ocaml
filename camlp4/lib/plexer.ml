@@ -236,7 +236,7 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
            [ [: `('a'..'z' as c); len = ident (store 0 c); s :] ep ->
                let id = get_buff len in
                match s with parser
-               [ [: `':' :] eb -> error_if_keyword (("LABEL", id), (bp, ep))
+               [ [: `':' :] ep -> error_if_keyword (("LABEL", id), (bp, ep))
                | [: :] -> error_if_keyword (("TILDEIDENT", id), (bp, ep)) ]
            | [: s :] ->
                let id = get_buff (ident2 (store 0 c) s) in
@@ -249,7 +249,7 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
            [ [: `('a'..'z' as c); len = ident (store 0 c); s :] ep ->
                let id = get_buff len in
                match s with parser
-               [ [: `':' :] eb -> error_if_keyword (("OPTLABEL", id), (bp,ep))
+               [ [: `':' :] ep -> error_if_keyword (("OPTLABEL", id), (bp,ep))
                | [: :] -> error_if_keyword (("QUESTIONIDENT", id), (bp, ep)) ]
            | [: s :] ->
                let id = get_buff (ident2 (store 0 c) s) in
@@ -316,7 +316,7 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
   and string bp len =
     parser
     [ [: `'"' :] -> len
-    | [: `'\\'; `c; s :] ep  -> string bp (store (store len '\\') c) s
+    | [: `'\\'; `c; s :]  -> string bp (store (store len '\\') c) s
     | [: `'\010'; s :] ep -> do { bolpos.val := ep; incr lnum; string bp (store len '\010') s }
     | [: `'\013'; s :] ep ->
         let (len, ep) =
@@ -493,7 +493,7 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     | _ -> False ]
   and any_to_nl =
     parser
-    [ [: `'\010'; s :] ep ->
+    [ [: `'\010'; _s :] ep ->
         do { bolpos.val := ep; incr lnum }
     | [: `'\013'; s :] ep ->
         let ep =
@@ -582,7 +582,7 @@ and check =
        _ =
          parser
          [ [: `']' | ':' | '=' | '>' :] -> ()
-         | [: :] -> () ] :] ep ->
+         | [: :] -> () ] :]  ->
       ()
   | [: `'>' | '|';
        _ =

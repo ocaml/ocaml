@@ -24,25 +24,25 @@ type sexp_comp =
 ;
 
 value strm_n = "strm__";
-value peek_fun loc = <:expr< Stream.peek >>;
-value junk_fun loc = <:expr< Stream.junk >>;
+value peek_fun _loc = <:expr< Stream.peek >>;
+value junk_fun _loc = <:expr< Stream.junk >>;
 
 (* Parsers. *)
 
 value stream_pattern_component skont =
   fun
-  [ SpTrm loc p wo ->
-      (<:expr< $peek_fun loc$ $lid:strm_n$ >>, p, wo,
-       <:expr< do { $junk_fun loc$ $lid:strm_n$; $skont$ } >>)
-  | SpNtr loc p e ->
+  [ SpTrm _loc p wo ->
+      (<:expr< $peek_fun _loc$ $lid:strm_n$ >>, p, wo,
+       <:expr< do { $junk_fun _loc$ $lid:strm_n$; $skont$ } >>)
+  | SpNtr _loc p e ->
       (<:expr< try Some ($e$ $lid:strm_n$) with
                [ Stream.Failure -> None ] >>,
        p, None, skont)
-  | SpStr loc p ->
+  | SpStr _loc p ->
       (<:expr< Some $lid:strm_n$ >>, p, None, skont) ]
 ;
 
-value rec stream_pattern loc epo e ekont =
+value rec stream_pattern _loc epo e ekont =
   fun
   [ [] ->
       match epo with
@@ -58,7 +58,7 @@ value rec stream_pattern loc epo e ekont =
           in
           <:expr< raise (Stream.Error $str$) >>
         in
-        stream_pattern loc epo e ekont spcl
+        stream_pattern _loc epo e ekont spcl
       in
       let (tst, p, wo, e) = stream_pattern_component skont spc in
       let ckont = ekont err in
@@ -66,15 +66,15 @@ value rec stream_pattern loc epo e ekont =
               [ Some $p$ $when:wo$ -> $e$ | _ -> $ckont$ ] >> ]
 ;
 
-value rec parser_cases loc =
+value rec parser_cases _loc =
   fun
   [ [] -> <:expr< raise Stream.Failure >>
   | [(spcl, epo, e) :: spel] ->
-      stream_pattern loc epo e (fun _ -> parser_cases loc spel) spcl ]
+      stream_pattern _loc epo e (fun _ -> parser_cases _loc spel) spcl ]
 ;
 
-value cparser loc bpo pc =
-  let e = parser_cases loc pc in
+value cparser _loc bpo pc =
+  let e = parser_cases _loc pc in
   let e =
     match bpo with
     [ Some bp -> <:expr< let $bp$ = Stream.count $lid:strm_n$ in $e$ >>
@@ -84,8 +84,8 @@ value cparser loc bpo pc =
   <:expr< fun $p$ -> $e$ >>
 ;
 
-value cparser_match loc me bpo pc =
-  let pc = parser_cases loc pc in
+value cparser_match _loc me bpo pc =
+  let pc = parser_cases _loc pc in
   let e =
     match bpo with
     [ Some bp -> <:expr< let $bp$ = Stream.count $lid:strm_n$ in $pc$ >>
@@ -96,15 +96,15 @@ value cparser_match loc me bpo pc =
 
 (* streams *)
 
-value slazy loc e = <:expr< fun _ -> $e$ >>;
+value slazy _loc e = <:expr< fun _ -> $e$ >>;
 
 value rec cstream gloc =
   fun
-  [ [] -> let loc = gloc in <:expr< Stream.sempty >>
-  | [SeTrm loc e :: secl] ->
-      <:expr< Stream.lcons $slazy loc e$ $cstream gloc secl$ >>
-  | [SeNtr loc e :: secl] ->
-      <:expr< Stream.lapp $slazy loc e$ $cstream gloc secl$ >> ]
+  [ [] -> let _loc = gloc in <:expr< Stream.sempty >>
+  | [SeTrm _loc e :: secl] ->
+      <:expr< Stream.lcons $slazy _loc e$ $cstream gloc secl$ >>
+  | [SeNtr _loc e :: secl] ->
+      <:expr< Stream.lapp $slazy _loc e$ $cstream gloc secl$ >> ]
 ;
 
 (* Syntax extensions in Ocaml grammar *)
@@ -114,10 +114,10 @@ EXTEND
   GLOBAL: expr;
   expr: LEVEL "expr1"
     [ [ "parser"; po = OPT ipatt; OPT "|"; pcl = LIST1 parser_case SEP "|" ->
-          <:expr< $cparser loc po pcl$ >>
+          <:expr< $cparser _loc po pcl$ >>
       | "match"; e = expr; "with"; "parser"; po = OPT ipatt; OPT "|";
         pcl = LIST1 parser_case SEP "|" ->
-          <:expr< $cparser_match loc e po pcl$ >> ] ]
+          <:expr< $cparser_match _loc e po pcl$ >> ] ]
   ;
   parser_case:
     [ [ "[<"; sp = stream_patt; ">]"; po = OPT ipatt; "->"; e = expr ->
@@ -136,9 +136,9 @@ EXTEND
   ;
   stream_patt_comp:
     [ [ "'"; p = patt; eo = OPT [ "when"; e = (expr LEVEL "expr1") -> e ] ->
-         SpTrm loc p eo
-     | p = patt; "="; e = (expr LEVEL "expr1") -> SpNtr loc p e
-     | p = patt -> SpStr loc p ] ]
+         SpTrm _loc p eo
+     | p = patt; "="; e = (expr LEVEL "expr1") -> SpNtr _loc p e
+     | p = patt -> SpStr _loc p ] ]
   ;
   ipatt:
     [ [ i = LIDENT -> <:patt< $lid:i$ >> ] ]
@@ -146,10 +146,10 @@ EXTEND
 
   expr: LEVEL "simple"
     [ [ "[<"; se = LIST0 stream_expr_comp SEP ";"; ">]" ->
-          <:expr< $cstream loc se$ >> ] ]
+          <:expr< $cstream _loc se$ >> ] ]
   ;
   stream_expr_comp:
-    [ [ "'"; e = expr LEVEL "expr1" -> SeTrm loc e
-      | e = expr LEVEL "expr1" -> SeNtr loc e ] ]
+    [ [ "'"; e = expr LEVEL "expr1" -> SeTrm _loc e
+      | e = expr LEVEL "expr1" -> SeNtr _loc e ] ]
   ;
 END;

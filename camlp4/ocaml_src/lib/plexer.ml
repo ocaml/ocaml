@@ -284,7 +284,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
               begin match Stream.peek strm__ with
                 Some ':' ->
                   Stream.junk strm__;
-                  let eb = Stream.count strm__ in
+                  let ep = Stream.count strm__ in
                   error_if_keyword (("LABEL", id), (bp, ep))
               | _ -> error_if_keyword (("TILDEIDENT", id), (bp, ep))
               end
@@ -311,7 +311,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
               begin match Stream.peek strm__ with
                 Some ':' ->
                   Stream.junk strm__;
-                  let eb = Stream.count strm__ in
+                  let ep = Stream.count strm__ in
                   error_if_keyword (("OPTLABEL", id), (bp, ep))
               | _ -> error_if_keyword (("QUESTIONIDENT", id), (bp, ep))
               end
@@ -439,9 +439,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
         Stream.junk strm__;
         begin match Stream.peek strm__ with
           Some c ->
-            Stream.junk strm__;
-            let ep = Stream.count strm__ in
-            string bp (store (store len '\\') c) strm__
+            Stream.junk strm__; string bp (store (store len '\\') c) strm__
         | _ -> raise (Stream.Error "")
         end
     | Some '\010' ->
@@ -747,7 +745,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     match Stream.peek strm__ with
       Some '\010' ->
         Stream.junk strm__;
-        let s = strm__ in
+        let _s = strm__ in
         let ep = Stream.count strm__ in bolpos := ep; incr lnum
     | Some '\013' ->
         Stream.junk strm__;
@@ -877,7 +875,7 @@ and check (strm__ : _ Stream.t) =
         with
           Stream.Failure -> raise (Stream.Error "")
       in
-      let ep = Stream.count strm__ in ()
+      ()
   | Some ('>' | '|') ->
       Stream.junk strm__;
       let _ =

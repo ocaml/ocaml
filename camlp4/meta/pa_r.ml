@@ -70,13 +70,13 @@ value o2b =
   | None -> False ]
 ;
 
-value mksequence loc =
+value mksequence _loc =
   fun
   [ [e] -> e
   | el -> <:expr< do { $list:el$ } >> ]
 ;
 
-value mkmatchcase loc p aso w e =
+value mkmatchcase _loc p aso w e =
   let p =
     match aso with
     [ Some p2 -> <:patt< ($p$ as $p2$) >>
@@ -91,7 +91,7 @@ value neg_string n =
   else "-" ^ n
 ;
 
-value mkumin loc f arg =
+value mkumin _loc f arg =
   match arg with
   [ <:expr< $int:n$ >> -> <:expr< $int:neg_string n$ >>
   | MLast.ExInt32 loc n -> MLast.ExInt32 loc (neg_string n)
@@ -103,7 +103,7 @@ value mkumin loc f arg =
       <:expr< $lid:f$ $arg$ >> ]
 ;
 
-value mklistexp loc last =
+value mklistexp _loc last =
   loop True where rec loop top =
     fun
     [ [] ->
@@ -111,13 +111,13 @@ value mklistexp loc last =
         [ Some e -> e
         | None -> <:expr< [] >> ]
     | [e1 :: el] ->
-        let loc =
-          if top then loc else (fst (MLast.loc_of_expr e1), snd loc)
+        let _loc =
+          if top then _loc else (fst (MLast.loc_of_expr e1), snd _loc)
         in
         <:expr< [$e1$ :: $loop False el$] >> ]
 ;
 
-value mklistpat loc last =
+value mklistpat _loc last =
   loop True where rec loop top =
     fun
     [ [] ->
@@ -125,13 +125,13 @@ value mklistpat loc last =
         [ Some p -> p
         | None -> <:patt< [] >> ]
     | [p1 :: pl] ->
-        let loc =
-          if top then loc else (fst (MLast.loc_of_patt p1), snd loc)
+        let _loc =
+          if top then _loc else (fst (MLast.loc_of_patt p1), snd _loc)
         in
         <:patt< [$p1$ :: $loop False pl$] >> ]
 ;
 
-value mkexprident loc i j =
+value mkexprident _loc i j =
   let rec loop m =
     fun
     [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
@@ -140,10 +140,10 @@ value mkexprident loc i j =
   loop <:expr< $uid:i$ >> j
 ;
 
-value mkassert loc e =
+value mkassert _loc e =
   match e with
-  [ <:expr< False >> -> MLast.ExAsf loc
-  | _ -> MLast.ExAsr loc e ]
+  [ <:expr< False >> -> MLast.ExAsf _loc
+  | _ -> MLast.ExAsr _loc e ]
 ;
 
 value append_elem el e = el @ [e];
@@ -221,7 +221,7 @@ EXTEND
       | "module"; i = UIDENT; mb = module_binding ->
           <:str_item< module $i$ = $mb$ >>
       | "module"; "rec"; nmtmes = LIST1 module_rec_binding SEP "and" ->
-          MLast.StRecMod loc nmtmes
+          MLast.StRecMod _loc nmtmes
       | "module"; "type"; i = UIDENT; "="; mt = module_type ->
           <:str_item< module type $i$ = $mt$ >>
       | "open"; i = mod_ident -> <:str_item< open $i$ >>
@@ -274,7 +274,7 @@ EXTEND
       | "module"; i = UIDENT; mt = module_declaration ->
           <:sig_item< module $i$ : $mt$ >>
       | "module"; "rec"; mds = LIST1 module_rec_declaration SEP "and" ->
-          MLast.SgRecMod loc mds
+          MLast.SgRecMod _loc mds
       | "module"; "type"; i = UIDENT; "="; mt = module_type ->
           <:sig_item< module type $i$ = $mt$ >>
       | "open"; i = mod_ident -> <:sig_item< open $i$ >>
@@ -318,7 +318,7 @@ EXTEND
           <:expr< try $e$ with $p1$ -> $e1$ >>
       | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
           <:expr< if $e1$ then $e2$ else $e3$ >>
-      | "do"; "{"; seq = sequence; "}" -> mksequence loc seq
+      | "do"; "{"; seq = sequence; "}" -> mksequence _loc seq
       | "for"; i = LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
         "do"; "{"; seq = sequence; "}" ->
           <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:seq$ } >>
@@ -326,7 +326,7 @@ EXTEND
           <:expr< while $e$ do { $list:seq$ } >>
       | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
           (* <:expr< object $opt:cspo$ $list:cf$ end >> *)
-          MLast.ExObj loc cspo cf ]
+          MLast.ExObj _loc cspo cf ]
     | "where"
       [ e = SELF; "where"; rf = OPT "rec"; lb = let_binding ->
           <:expr< let $opt:o2b rf$ $list:[lb]$ in $e$ >> ]
@@ -368,11 +368,11 @@ EXTEND
       | e1 = SELF; "lsl"; e2 = SELF -> <:expr< $e1$ lsl $e2$ >>
       | e1 = SELF; "lsr"; e2 = SELF -> <:expr< $e1$ lsr $e2$ >> ]
     | "unary minus" NONA
-      [ "-"; e = SELF -> mkumin loc "-" e
-      | "-."; e = SELF -> mkumin loc "-." e ]
+      [ "-"; e = SELF -> mkumin _loc "-" e
+      | "-."; e = SELF -> mkumin _loc "-." e ]
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF -> <:expr< $e1$ $e2$ >>
-      | "assert"; e = SELF -> mkassert loc e
+      | "assert"; e = SELF -> mkassert _loc e
       | "lazy"; e = SELF -> <:expr< lazy ($e$) >> ]
     | "." LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
@@ -383,16 +383,16 @@ EXTEND
       | "~-."; e = SELF -> <:expr< ~-. $e$ >> ]
     | "simple"
       [ s = INT -> <:expr< $int:s$ >>
-      | s = INT32 -> MLast.ExInt32 loc s
-      | s = INT64 -> MLast.ExInt64 loc s
-      | s = NATIVEINT -> MLast.ExNativeInt loc s
+      | s = INT32 -> MLast.ExInt32 _loc s
+      | s = INT64 -> MLast.ExInt64 _loc s
+      | s = NATIVEINT -> MLast.ExNativeInt _loc s
       | s = FLOAT -> <:expr< $flo:s$ >>
       | s = STRING -> <:expr< $str:s$ >>
       | s = CHAR -> <:expr< $chr:s$ >>
       | i = expr_ident -> i
       | "["; "]" -> <:expr< [] >>
       | "["; el = LIST1 expr SEP ";"; last = cons_expr_opt; "]" ->
-          mklistexp loc last el
+          mklistexp _loc last el
       | "[|"; el = LIST0 expr SEP ";"; "|]" -> <:expr< [| $list:el$ |] >>
       | "{"; lel = LIST1 label_expr SEP ";"; "}" -> <:expr< { $list:lel$ } >>
       | "{"; "("; e = SELF; ")"; "with"; lel = LIST1 label_expr SEP ";"; "}"
@@ -413,7 +413,7 @@ EXTEND
   sequence:
     [ [ "let"; rf = OPT "rec"; l = LIST1 let_binding SEP "and"; [ "in" | ";" ];
         el = SELF ->
-          [<:expr< let $opt:o2b rf$ $list:l$ in $mksequence loc el$ >>]
+          [<:expr< let $opt:o2b rf$ $list:l$ in $mksequence _loc el$ >>]
       | e = expr; ";"; el = SELF -> [e :: el]
       | e = expr; ";" -> [e]
       | e = expr -> [e] ] ]
@@ -429,7 +429,7 @@ EXTEND
   ;
   match_case:
     [ [ p = patt; aso = as_patt_opt; w = when_expr_opt; "->"; e = expr ->
-          mkmatchcase loc p aso w e ] ]
+          mkmatchcase _loc p aso w e ] ]
   ;
   as_patt_opt:
     [ [ "as"; p = patt -> Some p
@@ -446,7 +446,7 @@ EXTEND
     [ RIGHTA
       [ i = LIDENT -> <:expr< $lid:i$ >>
       | i = UIDENT -> <:expr< $uid:i$ >>
-      | i = UIDENT; "."; j = SELF -> mkexprident loc i j ] ]
+      | i = UIDENT; "."; j = SELF -> mkexprident _loc i j ] ]
   ;
   fun_def:
     [ RIGHTA
@@ -466,20 +466,20 @@ EXTEND
       [ s = LIDENT -> <:patt< $lid:s$ >>
       | s = UIDENT -> <:patt< $uid:s$ >>
       | s = INT -> <:patt< $int:s$ >>
-      | s = INT32 -> MLast.PaInt32 loc s
-      | s = INT64 -> MLast.PaInt64 loc s
-      | s = NATIVEINT -> MLast.PaNativeInt loc s
+      | s = INT32 -> MLast.PaInt32 _loc s
+      | s = INT64 -> MLast.PaInt64 _loc s
+      | s = NATIVEINT -> MLast.PaNativeInt _loc s
       | s = FLOAT -> <:patt< $flo:s$ >>
       | s = STRING -> <:patt< $str:s$ >>
       | s = CHAR -> <:patt< $chr:s$ >>
-      | "-"; s = INT -> MLast.PaInt loc (neg_string s)
-      | "-"; s = INT32 -> MLast.PaInt32 loc (neg_string s)
-      | "-"; s = INT64 -> MLast.PaInt64 loc (neg_string s)
-      | "-"; s = NATIVEINT -> MLast.PaNativeInt loc (neg_string s)
+      | "-"; s = INT -> MLast.PaInt _loc (neg_string s)
+      | "-"; s = INT32 -> MLast.PaInt32 _loc (neg_string s)
+      | "-"; s = INT64 -> MLast.PaInt64 _loc (neg_string s)
+      | "-"; s = NATIVEINT -> MLast.PaNativeInt _loc (neg_string s)
       | "-"; s = FLOAT -> <:patt< $flo:neg_string s$ >>
       | "["; "]" -> <:patt< [] >>
       | "["; pl = LIST1 patt SEP ";"; last = cons_patt_opt; "]" ->
-          mklistpat loc last pl
+          mklistpat _loc last pl
       | "[|"; pl = LIST0 patt SEP ";"; "|]" -> <:patt< [| $list:pl$ |] >>
       | "{"; lpl = LIST1 label_patt SEP ";"; "}" -> <:patt< { $list:lpl$ } >>
       | "("; ")" -> <:patt< () >>
@@ -524,7 +524,7 @@ EXTEND
           (n, tpl, tk, cl) ] ]
   ;
   type_patt:
-    [ [ n = LIDENT -> (loc, n) ] ]
+    [ [ n = LIDENT -> (_loc, n) ] ]
   ;
   constrain:
     [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> (t1, t2) ] ]
@@ -571,12 +571,12 @@ EXTEND
           <:ctyp< { $list:ldl$ } >> ] ]
   ;
   constructor_declaration:
-    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp SEP "and" -> (loc, ci, cal)
-      | ci = UIDENT -> (loc, ci, []) ] ]
+    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp SEP "and" -> (_loc, ci, cal)
+      | ci = UIDENT -> (_loc, ci, []) ] ]
   ;
   label_declaration:
     [ [ i = LIDENT; ":"; mf = OPT "mutable"; t = ctyp ->
-          (loc, i, o2b mf, t) ] ]
+          (_loc, i, o2b mf, t) ] ]
   ;
   ident:
     [ [ i = LIDENT -> i
@@ -604,7 +604,7 @@ EXTEND
   class_declaration:
     [ [ vf = OPT "virtual"; i = LIDENT; ctp = class_type_parameters;
         cfb = class_fun_binding ->
-          {MLast.ciLoc = loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
+          {MLast.ciLoc = _loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
            MLast.ciNam = i; MLast.ciExp = cfb} ] ]
   ;
   class_fun_binding:
@@ -614,8 +614,8 @@ EXTEND
       | p = ipatt; cfb = SELF -> <:class_expr< fun $p$ -> $cfb$ >> ] ]
   ;
   class_type_parameters:
-    [ [ -> (loc, [])
-      | "["; tpl = LIST1 type_parameter SEP ","; "]" -> (loc, tpl) ] ]
+    [ [ -> (_loc, [])
+      | "["; tpl = LIST1 type_parameter SEP ","; "]" -> (_loc, tpl) ] ]
   ;
   class_fun_def:
     [ [ p = ipatt; ce = SELF -> <:class_expr< fun $p$ -> $ce$ >>
@@ -709,13 +709,13 @@ EXTEND
   class_description:
     [ [ vf = OPT "virtual"; n = LIDENT; ctp = class_type_parameters; ":";
         ct = class_type ->
-          {MLast.ciLoc = loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
+          {MLast.ciLoc = _loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
            MLast.ciNam = n; MLast.ciExp = ct} ] ]
   ;
   class_type_declaration:
     [ [ vf = OPT "virtual"; n = LIDENT; ctp = class_type_parameters; "=";
         cs = class_type ->
-          {MLast.ciLoc = loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
+          {MLast.ciLoc = _loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
            MLast.ciNam = n; MLast.ciExp = cs} ] ]
   ;
   expr: LEVEL "apply"
@@ -854,7 +854,7 @@ EXTEND
           <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
   ;
   warning_variant:
-    [ [ -> warn_variant loc ] ]
+    [ [ -> warn_variant _loc ] ]
   ;
   (* Compatibility old syntax of sequences *)
   expr: LEVEL "top"
@@ -869,7 +869,7 @@ EXTEND
           <:expr< while $e$ do { $list:seq$ } >> ] ]
   ;
   warning_sequence:
-    [ [ -> warn_sequence loc ] ]
+    [ [ -> warn_sequence _loc ] ]
   ;
 END;
 
@@ -877,21 +877,21 @@ EXTEND
   GLOBAL: interf implem use_file top_phrase expr patt;
   interf:
     [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
-          ([(<:sig_item< # $n$ $opt:dp$ >>, loc)], True)
+          ([(<:sig_item< # $n$ $opt:dp$ >>, _loc)], True)
       | si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | EOI -> ([], False) ] ]
   ;
   sig_item_semi:
-    [ [ si = sig_item; ";" -> (si, loc) ] ]
+    [ [ si = sig_item; ";" -> (si, _loc) ] ]
   ;
   implem:
     [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
-          ([(<:str_item< # $n$ $opt:dp$ >>, loc)], True)
+          ([(<:str_item< # $n$ $opt:dp$ >>, _loc)], True)
       | si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | EOI -> ([], False) ] ]
   ;
   str_item_semi:
-    [ [ si = str_item; ";" -> (si, loc) ] ]
+    [ [ si = str_item; ";" -> (si, _loc) ] ]
   ;
   top_phrase:
     [ [ ph = phrase -> Some ph
@@ -919,7 +919,7 @@ EXTEND
             with
             [ Not_found | Failure _ -> ({(Lexing.dummy_pos) with Lexing.pos_cnum = 0}, x) ]
           in
-          Pcaml.handle_expr_locate loc x
+          Pcaml.handle_expr_locate _loc x
       | x = QUOTATION ->
           let x =
             try
@@ -929,7 +929,7 @@ EXTEND
             with
             [ Not_found -> ("", x) ]
           in
-          Pcaml.handle_expr_quotation loc x ] ]
+          Pcaml.handle_expr_quotation _loc x ] ]
   ;
   patt: LEVEL "simple"
     [ [ x = LOCATE ->
@@ -942,7 +942,7 @@ EXTEND
             with
             [ Not_found | Failure _ -> ({(Lexing.dummy_pos) with Lexing.pos_cnum = 0}, x) ]
           in
-          Pcaml.handle_patt_locate loc x
+          Pcaml.handle_patt_locate _loc x
       | x = QUOTATION ->
           let x =
             try
@@ -952,6 +952,6 @@ EXTEND
             with
             [ Not_found -> ("", x) ]
           in
-          Pcaml.handle_patt_quotation loc x ] ]
+          Pcaml.handle_patt_quotation _loc x ] ]
   ;
 END;

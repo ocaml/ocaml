@@ -3,7 +3,7 @@
 include ../config/Makefile
 
 INCLUDES=-I ../camlp4 -I ../boot -I $(OTOP)/utils
-OCAMLCFLAGS=-warn-error A $(INCLUDES)
+OCAMLCFLAGS=-warn-error Ay -w Y $(INCLUDES)
 OBJS=q_MLast.cmo pa_r.cmo pa_rp.cmo pa_extend.cmo pa_extend_m.cmo pa_macro.cmo pr_dump.cmo
 OBJSX=$(OBJS:.cmo=.cmx)
 CAMLP4RM=pa_r.cmo pa_rp.cmo pr_dump.cmo

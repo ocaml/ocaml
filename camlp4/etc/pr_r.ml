@@ -127,7 +127,7 @@ value flag n f = if f then [: `S LR n :] else [: :];
 
 (* default global loc *)
 
-value loc = (Token.nowhere, Token.nowhere);
+value _loc = (Token.nowhere, Token.nowhere);
 
 (* extensible printers *)
 
@@ -756,7 +756,7 @@ pr_sig_item.pr_levels :=
           fun curr next _ k -> [: `not_impl "sig_item1" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
           fun curr next _ k ->
-            [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
+            [: `variant [: `S LR "exception" :] (_loc, c, tl) k :]
       | <:sig_item< value $s$ : $t$ >> ->
           fun curr next _ k -> [: `value_description s t k :]
       | <:sig_item< include $mt$ >> ->
@@ -820,9 +820,9 @@ pr_str_item.pr_levels :=
       | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next _ k ->
             match b with
-            [ [] -> [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
+            [ [] -> [: `variant [: `S LR "exception" :] (_loc, c, tl) k :]
             | _ ->
-                [: `variant [: `S LR "exception" :] (loc, c, tl)
+                [: `variant [: `S LR "exception" :] (_loc, c, tl)
                       [: `S LR "=" :];
                    mod_ident b k :] ]
       | <:str_item< include $me$ >> ->

@@ -25,7 +25,7 @@ OCAMLOPT=$(OCAMLTOP)/ocamlopt$(EXE)
 
 P4INCLUDES= -nolib -I ../../etc -I ../../meta
 OCAMLINCLUDES= -nostdlib -I $(OCAMLTOP)/stdlib -I ../../camlp4 -I ../../lib -I $(OCAMLTOP)/lex
-OCAMLCFLAGS=-warn-error A $(OCAMLINCLUDES)
+OCAMLCFLAGS=-warn-error Ay -w Y $(OCAMLINCLUDES)
 
 SRC=pa_ocamllex.ml
 OBJS=pa_ocamllex.cmo

@@ -226,7 +226,9 @@ let mktype loc tl cl tk tm =
 ;;
 let mkmutable m = if m then Mutable else Immutable;;
 let mkprivate m = if m then Private else Public;;
-let mktrecord (loc, n, m, t) = n, mkmutable m, ctyp (mkpolytype t), mkloc loc;;
+let mktrecord (loc, n, m, t) =
+  n, mkmutable m, ctyp (mkpolytype t), mkloc loc
+;;
 let mkvariant (loc, c, tl) = c, List.map ctyp tl, mkloc loc;;
 let type_decl tl cl =
   function

@@ -8,7 +8,7 @@ open Gramext;
 value strict_parsing = ref False;
 value keywords = ref [];
 
-value loc =
+value _loc =
   let nowhere = 
     {(Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
   (nowhere,nowhere);
@@ -145,7 +145,7 @@ value parse_symbol_no_failure e rkont fkont ending_act =
 
 value rec contain_loc =
   fun
-  [ <:expr< $lid:s$ >> -> s = "loc"
+  [ <:expr< $lid:s$ >> -> (s = "loc") || (s = "_loc")
   | <:expr< $uid:_$ >> -> False
   | <:expr< $str:_$ >> -> False
   | <:expr< ($list:el$) >> -> List.exists contain_loc el
@@ -154,7 +154,7 @@ value rec contain_loc =
 ;
 
 value gen_let_loc loc e =
-  if contain_loc e then <:expr< let loc = P.gloc bp strm__ in $e$ >> else e
+  if contain_loc e then <:expr< let _loc = P.gloc bp strm__ in $e$ >> else e
 ;
 
 value phony_entry = Grammar.Entry.obj Pcaml.implem;

@@ -181,14 +181,14 @@ Grammar.extend
     [[Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
       Gramext.Stoken ("EOI", "")],
      Gramext.action
-       (fun _ (x : 'expr) (loc : Lexing.position * Lexing.position) ->
+       (fun _ (x : 'expr) (_loc : Lexing.position * Lexing.position) ->
           (x : 'expr_eoi))]];
    Grammar.Entry.obj (patt_eoi : 'patt_eoi Grammar.Entry.e), None,
    [None, None,
     [[Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
       Gramext.Stoken ("EOI", "")],
      Gramext.action
-       (fun _ (x : 'patt) (loc : Lexing.position * Lexing.position) ->
+       (fun _ (x : 'patt) (_loc : Lexing.position * Lexing.position) ->
           (x : 'patt_eoi))]]];;
 
 let handle_expr_quotation loc x =
