@@ -779,6 +779,7 @@ get_tag(void)
     while (1) {
       c = *++cptr;
       if (c == EOF) unexpected_EOF();
+      if (c == '\n') syntax_error(lineno, line, cptr);
       if (c == '>' && cptr[-1] != '-') break;
       cachec(c);
     }
