@@ -158,6 +158,7 @@ let _ = Hashtbl.add directive_table "use" (Directive_string dir_use)
 let find_printer_type lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
+    Ctype.init_def(Ident.current_time());
     Ctype.begin_def();
     let ty_arg = Ctype.newvar() in
     Ctype.unify !toplevel_env
