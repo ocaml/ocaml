@@ -170,6 +170,12 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
+STDLIB_MLIS=../stdlib/*.mli \
+	../otherlibs/unix/unix.mli \
+	../otherlibs/str/str.mli \
+	../otherlibs/bigarray/bigarray.mli \
+	../otherlibs/num/num.mli
+
 all: exe lib manpages
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) 
@@ -190,7 +196,7 @@ $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
 
-manpages: stdlib_man
+manpages: stdlib_man/Pervasives.o
 
 odoc_crc.ml: $(CMIFILES)
 	$(EXTRAC_CRC) $(INCLUDES) \
@@ -309,14 +315,11 @@ test_texi: dummy
 	$(MKDIR) $@ 
 	$(OCAMLDOC_RUN) -texi -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
-stdlib_man: dummy
-	$(MKDIR) $@ 
-	$(OCAMLDOC_RUN) -man -d $@ $(INCLUDES) ../stdlib/*.mli \
+stdlib_man/Pervasives.o: $(STDLIB_MLIS)
+	$(MKDIR) stdlib_man
+	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
 	-t "OCaml library" -man-mini \
-	../otherlibs/unix/unix.mli \
-	../otherlibs/str/str.mli \
-	../otherlibs/bigarray/bigarray.mli \
-	../otherlibs/num/num.mli
+	$(STDLIB_MLIS)
 
 # backup, clean and depend :
 ############################
