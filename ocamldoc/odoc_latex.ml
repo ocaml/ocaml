@@ -121,7 +121,7 @@ class text =
       let buf = Buffer.create len in
       for i = 0 to len - 1 do
         match name.[i] with
-          '_' -> if no_ then () else Buffer.add_char buf '_'
+          '_' -> if no_ then Buffer.add_string buf "!!!!" else Buffer.add_char buf '_'
         | '~' -> if no_ then () else Buffer.add_char buf '~'
 	| '%' -> Buffer.add_string buf (if no_ then "percent" else "%")
         | '@' -> Buffer.add_string buf "\"@"
