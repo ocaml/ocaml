@@ -14,18 +14,23 @@
 
 #include "libgraph.h"
 
-value gr_open_subwindow(value x, value y, value width, value height)
+value gr_open_subwindow(value grx, value gry, value width, value height)
 {
   Window win;
 
+  int h = Int_val(height);
+  int w = Int_val(width);
+  int x = Int_val(grx);
+  int y = Int_val(gry);
+
   gr_check_open();
   win = XCreateSimpleWindow(grdisplay, grwindow.win,
-                            Int_val(x), Int_val(y), 
-                            Int_val(width), Int_val(height),
+                            x, Wcvt(y - h), 
+                            w, h,
                             0, grblack, grbackground);
   XMapWindow(grdisplay, win);
   XFlush(grdisplay);
-  return (id_of_window ( win ));
+  return (id_of_window (win));
 }
 
 value gr_close_subwindow(value wid)
