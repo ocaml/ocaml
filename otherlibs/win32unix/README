@@ -21,7 +21,7 @@ work around the following problems:
 
 The first problem no longer affects the Win32unix library.
 
-The second problem makes it impoosible, under Windows 95, to create an
+The second problem makes it impossible, under Windows 95, to create an
 in_channel or out_channel on a file descriptor opened on a socket,
 using the in_channel_of_descr* and out_channel_of_descr*.
 

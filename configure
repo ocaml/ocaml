@@ -47,7 +47,7 @@ while : ; do
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
         x11_lib_dir=$2; shift;;
-    -with-pthread|--with-pthread)
+    -with-pthread*|--with-pthread*)
         posix_threads=yes;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
@@ -155,6 +155,7 @@ case "$bytecc,$host" in
     # Turn off warning "unused library"
     bytecclinkopts="-32 -Wl,-woff,84";;
   cc*,mips-*-irix6*)
+    # (For those who wnat to force "cc -64")
     # Turn off warning "unused library"
     bytecclinkopts="-Wl,-woff,84";;
 esac

@@ -16,7 +16,7 @@ standalone programs, or as an interactive, toplevel-based system.
 The other compiler generates high-performance native code for a number
 of processors. Compilation takes longer and generates bigger code, but
 the generated programs deliver excellent performance (better than
-Standard ML of New Jersey 1.08 on our tests), while retaining the
+Standard ML of New Jersey 1.09 on our tests), while retaining the
 moderate memory requirements of the bytecode compiler. The native-code
 compiler currently runs on the following platforms:
 
@@ -42,10 +42,13 @@ conversion from Caml Special Light to Objective Caml.
 
 CONTENTS:
 
+  Changes               what's new with each release
   INSTALL               instructions for installation
+  INSTALL.MPW           infos on the Macintosh MPW port of Objective Caml
   LICENSE               license and copyright notice
   Makefile              main Makefile
   README                this file
+  README.win32          infos on the MS Windows NT/Windows 95 port of O.Caml
   asmcomp/              native-code compiler and linker
   asmrun/               native-code runtime library
   boot/                 bootstrap compiler
@@ -56,6 +59,7 @@ CONTENTS:
   driver/               driver code for the compilers
   emacs/                Caml editing mode and debugger interface for GNU Emacs
   lex/                  lexer generator
+  otherlibs/            several external libraries
   parsing/              syntax analysis
   stdlib/               standard library
   tools/                various utilities
@@ -75,10 +79,11 @@ the copyright notice remains attached.
 INSTALLATION:
 
 See the file INSTALL for installation instructions on Unix machines. 
+For MS Windows, see README.win32.  For the Macintosh, see INSTALL.MPW.
 
 DOCUMENTATION:
 
-The Objective Caml manual is distributed in Postscript, DVI, and
+The Objective Caml manual is distributed in HTML, Postscript, DVI, and
 plain text. It can be obtained by anonymous FTP from ftp.inria.fr as
 described below. It is also available on the World Wide Web, at
 
@@ -100,7 +105,7 @@ There exists a mailing list of users of the Caml implementations
 developed at INRIA. The purpose of this list is to share
 experience, exchange ideas (and even code), and report on applications
 of the Caml language. This list is moderated; messages can be
-written in English or in French. The list has about 200 subscribers.
+written in English or in French. The list has about 400 subscribers.
 
 Messages to the list should be sent to:
 
@@ -132,5 +137,6 @@ The mailing list caml-light@inria.fr is forwarded to
 a small group of implementors at INRIA. For general questions and
 discussions, caml-list@inria.fr is better; for bug reports
 and very specific technical questions, caml-light@inria.fr
-is preferred. We often cross-post from one list to the other, anyway.
+is preferred. We often redirect messages from one list to the other,
+anyway.
 
