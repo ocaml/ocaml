@@ -1067,6 +1067,10 @@ if ./hasgot -i pthread.h $pthread_link pthread_self; then
   esac
   echo "Options for linking with POSIX threads: $pthread_link"
   echo "PTHREAD_LINK=$pthread_link" >> Makefile
+  if sh ./hasgot $pthread_link sigwait; then
+    echo "sigwait() found"
+    echo "#define HAS_SIGWAIT" >> s.h
+  fi
 else
   echo "POSIX threads not found."
 fi
