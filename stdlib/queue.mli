@@ -32,16 +32,28 @@ val create : unit -> 'a t
 val add : 'a -> 'a t -> unit
 (** [add x q] adds the element [x] at the end of the queue [q]. *)
 
+val push : 'a -> 'a t -> unit
+(** [push] is a synonym for [add]. *)
+
 val take : 'a t -> 'a
 (** [take q] removes and returns the first element in queue [q],
    or raises [Empty] if the queue is empty. *)
+
+val pop : 'a t -> 'a
+(** [pop] is a synonym for [take]. *)
 
 val peek : 'a t -> 'a
 (** [peek q] returns the first element in queue [q], without removing
    it from the queue, or raises [Empty] if the queue is empty. *)
 
+val top : 'a t -> 'a
+(** [top] is a synonym for [peek]. *)
+
 val clear : 'a t -> unit
 (** Discard all elements from a queue. *)
+
+val copy : 'a t -> 'a t
+(** Return a copy of the given queue. *)
 
 val length : 'a t -> int
 (** Return the number of elements in a queue. *)
@@ -51,3 +63,13 @@ val iter : ('a -> unit) -> 'a t -> unit
    from the least recently entered to the most recently entered.
    The queue itself is unchanged. *)
 
+val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
+(** [fold f accu q] is equivalent to [List.fold_left f accu l],
+   where [l] is the list of [q]'s elements. The queue remains
+   unchanged. *)
+
+val transfer : 'a t -> 'a t -> unit
+(** [transfer q1 q2] adds all of [q1]'s elements at the end of
+   the queue [q2], then clears [q1]. It is equivalent to the
+   sequence [iter (fun x -> add x q2) q1; clear q1], but runs
+   in constant time. *)
