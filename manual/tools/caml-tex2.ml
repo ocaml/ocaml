@@ -106,27 +106,26 @@ let process_file file =
         output_string caml_output "\"end_of_input\";;\n";
         flush caml_output;
         let output, (b, e) = read_output () in
-        if not omit_answer then begin
-          let phrase =
-            if b < e then begin
-              let start = String.sub phrase ~pos:0 ~len:b
-              and underlined = String.sub phrase ~pos:b ~len:(e-b)
-              and rest =
-                String.sub phrase ~pos:e ~len:(String.length phrase - e)
-              in
-              String.concat ""
-                [escape_backslash start; "\\<";
-                 escape_backslash underlined; "\\>";
-                 escape_backslash rest]
-            end else
-              escape_backslash phrase in
-          let phrase = global_replace ~pat:~!"^\(.\)" ~templ:camlin phrase
-          and output = global_replace ~pat:~!"^\(.\)" ~templ:camlout output in
-          if not !first then output_string oc "\\;";
-          fprintf oc "%s\n%s" phrase output;
-          flush oc;
-          first := false
-        end
+        let phrase =
+          if b < e then begin
+            let start = String.sub phrase ~pos:0 ~len:b
+            and underlined = String.sub phrase ~pos:b ~len:(e-b)
+            and rest =
+              String.sub phrase ~pos:e ~len:(String.length phrase - e)
+            in
+            String.concat ""
+              [escape_backslash start; "\\<";
+               escape_backslash underlined; "\\>";
+               escape_backslash rest]
+          end else
+            escape_backslash phrase in
+        let phrase = global_replace ~pat:~!"^\(.\)" ~templ:camlin phrase
+        and output = global_replace ~pat:~!"^\(.\)" ~templ:camlout output in
+        if not !first then output_string oc "\\;";
+        fprintf oc "%s\n" phrase;
+        if not omit_answer then fprintf oc "%s" output;
+        flush oc;
+        first := false
       done
       with End_of_file -> output_string oc camlend
     end
