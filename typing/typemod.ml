@@ -509,6 +509,32 @@ let type_implementation sourcefile prefixname modulename initial_env ast =
     end in
   (str, coercion)
 
+(* "Packaging" of several compilation units into one unit
+   having them as sub-modules.  *)
+
+let rec package_signatures subst = function
+    [] -> []
+  | (name, sg) :: rem ->
+      let sg' = Subst.signature subst sg in
+      let oldid = Ident.create_persistent name
+      and newid = Ident.create name in
+      Tsig_module(newid, Tmty_signature sg') ::
+      package_signatures (Subst.add_module oldid (Pident newid) subst) rem
+
+let package_units objfiles cmifile modulename =
+  (* Read the signatures of the units *)
+  let units =
+    List.map
+      (fun f ->
+         let pref = chop_extension_if_any f in
+         let modname = String.capitalize(Filename.basename pref) in
+         (modname, Env.read_signature modname (pref ^ ".cmi")))
+      objfiles in
+  (* Compute signature of packaged unit *)
+  let sg = package_signatures Subst.identity units in
+  (* Write packaged signature *)
+  Env.save_signature sg modulename cmifile
+
 (* Error report *)
 
 open Printtyp

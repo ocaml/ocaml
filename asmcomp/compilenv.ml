@@ -37,6 +37,7 @@ exception Error of error
 
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
+    mutable ui_defines: string list;      (* Unit and sub-units implemented *)
     mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
     mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
     mutable ui_approx: value_approximation;     (* Approx of the structure *)
@@ -57,6 +58,7 @@ let global_approx_table =
 
 let current_unit =
   { ui_name = "";
+    ui_defines = [];
     ui_imports_cmi = [];
     ui_imports_cmx = [];
     ui_approx = Value_unknown;
@@ -67,6 +69,7 @@ let current_unit =
 let reset name =
   Hashtbl.clear global_approx_table;
   current_unit.ui_name <- name;
+  current_unit.ui_defines <- [name];
   current_unit.ui_imports_cmi <- [];
   current_unit.ui_imports_cmx <- [];
   current_unit.ui_curry_fun <- [];
@@ -139,15 +142,18 @@ let need_apply_fun n =
 
 (* Write the description of the current unit *)
 
-let save_unit_info filename =
-  current_unit.ui_imports_cmi <- Env.imported_units();
+let write_unit_info info filename =
   let oc = open_out_bin filename in
   output_string oc cmx_magic_number;
-  output_value oc current_unit;
+  output_value oc info;
   flush oc;
   let crc = Digest.file filename in
   Digest.output oc crc;
   close_out oc
+
+let save_unit_info filename =
+  current_unit.ui_imports_cmi <- Env.imported_units();
+  write_unit_info current_unit filename
 
 (* Error report *)
 

@@ -514,10 +514,10 @@ caml_array_bound_error:
 
         .rodata
 
-        .global system_frametable#
-        .type   system_frametable#, @object
-        .size   system_frametable#, 8
-system_frametable:
+        .global system__frametable#
+        .type   system__frametable#, @object
+        .size   system__frametable#, 8
+system__frametable:
         data8   1               /* one descriptor */
         data8   .L102           /* return address into callback */
         data2   -1              /* negative frame size => use callback link */

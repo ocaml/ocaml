@@ -252,8 +252,8 @@ _callback3_exn:
         jmp	L106
 
         .DATA
-        PUBLIC  _system_frametable
-_system_frametable LABEL DWORD
+        PUBLIC  _system__frametable
+_system__frametable LABEL DWORD
         DWORD   1               ; one descriptor 
         DWORD   L107            ; return address into callback 
         WORD    -1              ; negative frame size => use callback link 

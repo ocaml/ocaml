@@ -178,6 +178,10 @@ let check_consistency file_name cu =
       end)
     cu.cu_imports
 
+let extract_crc_interfaces () =
+  Hashtbl.fold (fun name (file_name, crc) accu -> (name, crc) :: accu)
+               crc_interfaces []
+
 (* Record compilation events *)
 
 let debug_info = ref ([] : (int * string) list)

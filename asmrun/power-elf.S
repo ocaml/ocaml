@@ -411,9 +411,9 @@ callback3_exn:
 /* Frame table */
 
         .section ".data"
-        .globl  system_frametable
-        .type   system_frametable, @object
-system_frametable:
+        .globl  system__frametable
+        .type   system__frametable, @object
+system__frametable:
         .long   1               /* one descriptor */
         .long   .L105 + 4       /* return address into callback */
         .short  -1              /* negative size count => use callback link */

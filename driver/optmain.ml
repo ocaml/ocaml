@@ -104,6 +104,8 @@ let main () =
        "-p", Arg.Set gprofile,
              " Compile and link with profiling support for \"gprof\"\n\
                \t(not supported on all platforms)";
+       "-pack", Arg.Set make_package,
+              " Package the given .cmo files into one .cmo";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
        "-rectypes", Arg.Set recursive_types,
@@ -161,6 +163,10 @@ let main () =
       Optcompile.init_path();
       Asmlibrarian.create_archive (List.rev !objfiles) !archive_name
     end
+    else if !make_package then begin
+      Optcompile.init_path();
+      Asmpackager.package_files ppf (List.rev !objfiles) !object_name
+    end
     else if not !compile_only && !objfiles <> [] then begin
       Optcompile.init_path();
       Asmlink.link ppf (List.rev !objfiles)
@@ -170,4 +176,4 @@ let main () =
     Opterrors.report_error ppf x;
     exit 2
 
-let _ = Printexc.catch main ()
+let _ = main ()

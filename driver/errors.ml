@@ -54,6 +54,8 @@ let report_error ppf exn =
       Bytelink.report_error ppf code
   | Bytelibrarian.Error code ->
       Bytelibrarian.report_error ppf code
+  | Bytepackager.Error code ->
+      Bytepackager.report_error ppf code
   | Sys_error msg ->
       fprintf ppf "I/O error: %s" msg
   | Typeclass.Error(loc, err) ->

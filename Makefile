@@ -16,7 +16,7 @@
 
 include config/Makefile
 
-CAMLC=boot/ocamlrun boot/ocamlc -I boot
+CAMLC=boot/ocamlrun boot/ocamlc -I boot -g
 CAMLOPT=boot/ocamlrun ./ocamlopt -I stdlib
 COMPFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=
@@ -62,7 +62,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
 BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
   bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
-  bytecomp/bytelibrarian.cmo bytecomp/bytelink.cmo
+  bytecomp/bytelibrarian.cmo bytecomp/bytelink.cmo bytecomp/bytepackager.cmo
 
 ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
@@ -76,7 +76,7 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
-  asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo
+  asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo
 
 DRIVER=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
   driver/main_args.cmo driver/main.cmo
@@ -304,6 +304,8 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
             -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
             -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
+            -e 's|%%BINUTILS_NM%%|$(BINUTILS_NM)|' \
+            -e 's|%%BINUTILS_OBJCOPY%%|$(BINUTILS_OBJCOPY)|' \
             -e 's|%%ARCH%%|$(ARCH)|' \
             -e 's|%%MODEL%%|$(MODEL)|' \
             -e 's|%%SYSTEM%%|$(SYSTEM)|' \

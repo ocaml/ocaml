@@ -29,6 +29,9 @@ val transl_signature:
 val check_nongen_schemes:
         Env.t -> Typedtree.structure -> unit
 
+val package_units:
+        string list -> string -> string -> unit
+
 type error =
     Unbound_module of Longident.t
   | Unbound_modtype of Longident.t

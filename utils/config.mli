@@ -41,6 +41,10 @@ val native_partial_linker: string
         (* The linker to use for partial links (-output-obj option) *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
+val binutils_nm: string
+        (* The "nm" command from GNU binutils, or "" if not available *)
+val binutils_objcopy: string
+        (* The "objcopy" command from GNU binutils, or "" if not available *)
 
 val load_path: string list ref
         (* Directories in the search path for .cmi and .cmo files *)

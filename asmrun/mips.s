@@ -378,8 +378,8 @@ caml_array_bound_error:
         .end    caml_array_bound_error
 
         .rdata
-        .globl  system_frametable
-system_frametable:
+        .globl  system__frametable
+system__frametable:
         .word   1               /* one descriptor */
         .word   $104            /* return address into callback */
         .half   -1              /* negative frame size => use callback link */

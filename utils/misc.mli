@@ -19,6 +19,8 @@ exception Fatal_error
 
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)
+val map_left_right: ('a -> 'b) -> 'a list -> 'b list
+        (* Like [List.map], with guaranteed left-to-right evaluation order *)
 val for_all2: ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
         (* Same as [List.for_all] but for a binary predicate.
            In addition, this [for_all2] never fails: given two lists
@@ -74,3 +76,9 @@ val no_overflow_lsl: int -> bool
 val chop_extension_if_any: string -> string
         (* Like Filename.chop_extension but returns the initial file
            name if it has no extension *)
+
+val search_substring: string -> string -> int -> int
+        (* [search_substring pat str start] returns the position of the first
+           occurrence of string [pat] in string [str].  Search starts
+           at offset [start] in [str].  Raise [Not_found] if [pat]
+           does not occur. *)

@@ -18,6 +18,10 @@ open Format
 
 val link: formatter -> string list -> unit
 
+val check_consistency: string -> Compilenv.unit_infos -> Digest.t -> unit
+val extract_crc_interfaces: unit -> (string * Digest.t) list
+val extract_crc_implementations: unit -> (string * Digest.t) list
+
 type error =
     File_not_found of string
   | Not_an_object_file of string

@@ -354,7 +354,7 @@ let new_const_label () =
 
 let new_const_symbol () =
   incr const_label;
-  Compilenv.current_unit_name () ^ "_" ^ string_of_int !const_label
+  Compilenv.current_unit_name () ^ "__" ^ string_of_int !const_label
 
 let structured_constants = ref ([] : (string * structured_constant) list)
 
@@ -1549,13 +1549,22 @@ let emit_all_constants cont =
 let compunit size ulam =
   let glob = Compilenv.current_unit_name () in
   let init_code = transl ulam in
-  let c1 = [Cfunction {fun_name = glob ^ "_entry"; fun_args = [];
+  let c1 = [Cfunction {fun_name = glob ^ "__entry"; fun_args = [];
                        fun_body = init_code; fun_fast = false}] in
   let c2 = transl_all_functions StringSet.empty c1 in
   let c3 = emit_all_constants c2 in
   Cdata [Cint(block_header 0 size);
          Cdefine_symbol glob;
          Cskip(size * size_addr)] :: c3
+
+(* Translate a package *)
+
+let package unit_names target =
+  [Cdata (Cint(block_header 0 (List.length unit_names)) ::
+          Cdefine_symbol target ::
+          List.map (fun s -> Csymbol_address s) unit_names);
+   Cfunction {fun_name = target ^ "__entry"; fun_args = [];
+              fun_body = Ctuple[]; fun_fast = false}]
 
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
@@ -1685,7 +1694,7 @@ let entry_point namelist =
   let body =
     List.fold_right
       (fun name next ->
-        Csequence(Cop(Capply typ_void, [Cconst_symbol(name ^ "_entry")]),
+        Csequence(Cop(Capply typ_void, [Cconst_symbol(name ^ "__entry")]),
                   Csequence(incr_global_inited, next)))
       namelist (Cconst_int 1) in
   Cfunction {fun_name = "caml_program";
@@ -1710,8 +1719,8 @@ let globals_map namelist =
 
 let frame_table namelist =
   Cdata(Cdefine_symbol "caml_frametable" ::
-        List.map (fun name -> Csymbol_address(name ^ "_frametable")) namelist @
-        [cint_zero])
+        List.map (fun name -> Csymbol_address(name ^ "__frametable")) namelist
+                              @ [cint_zero])
 
 (* Generate the table of module data and code segments *)
 
@@ -1725,10 +1734,10 @@ let segment_table namelist symbol begname endname =
           [cint_zero])
 
 let data_segment_table namelist =
-  segment_table namelist "caml_data_segments" "_data_begin" "_data_end"
+  segment_table namelist "caml_data_segments" "__data_begin" "__data_end"
 
 let code_segment_table namelist =
-  segment_table namelist "caml_code_segments" "_code_begin" "_code_end"
+  segment_table namelist "caml_code_segments" "__code_begin" "__code_end"
 
 (* Initialize a predefined exception *)
 

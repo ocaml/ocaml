@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -12,17 +12,18 @@
 
 (* $Id$ *)
 
-(* Translation from closed lambda to C-- *)
+(* "Package" a set of .cmo files into one .cmo file having the
+   original compilation units as sub-modules. *)
 
-val compunit: int -> Clambda.ulambda -> Cmm.phrase list
+val package_files: string list -> string -> unit
 
-val package: string list -> string -> Cmm.phrase list
-val apply_function: int -> Cmm.phrase
-val curry_function: int -> Cmm.phrase list
-val entry_point: string list -> Cmm.phrase
-val global_table: string list -> Cmm.phrase
-val globals_map: (string * string) list -> Cmm.phrase
-val frame_table: string list -> Cmm.phrase
-val data_segment_table: string list -> Cmm.phrase
-val code_segment_table: string list -> Cmm.phrase
-val predef_exception: string -> Cmm.phrase
+type error =
+    Forward_reference of string * Ident.t
+  | Multiple_definition of string * Ident.t
+  | Not_an_object_file of string
+  | Illegal_renaming of string * string
+  | File_not_found of string
+
+exception Error of error
+
+val report_error: Format.formatter -> error -> unit

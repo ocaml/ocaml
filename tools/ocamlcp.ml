@@ -55,6 +55,7 @@ module Options = Main_args.Make_options (struct
   let _noautolink = option "-noautolink"
   let _o s = option_with_arg "-o" s
   let _output_obj = option "-output-obj"
+  let _pack = option "-pack"
   let _pp s = incompatible "-pp"
   let _rectypes = option "-rectypes"
   let _thread () = ismultithreaded := "-thread"; option "-thread" ()

@@ -44,7 +44,7 @@ SHARPBANGSCRIPTS=true
 
 ### Additional compile-time options for $(BYTECC).
 # If using gcc on Intel 386 or Motorola 68k:
-# (the -fno-defer-pop option circumvents a gcc bug)
+# (the -fno-defer-pop option circumvents a bug in certain versions of gcc)
 #BYTECCCOMPOPTS=-fno-defer-pop -Wall
 # If using gcc and being superstitious:
 #BYTECCCOMPOPTS=-Wall
@@ -104,21 +104,24 @@ SHARPBANGSCRIPTS=true
 ### Name of architecture for the native-code compiler
 ### Currently supported:
 ###
-### alpha       DecStation 3000 under OSF1
+### alpha       Digital/Compaq Alpha machines under DUnix/Tru64 or Linux
+### i386        Intel Pentium PCs under Linux, *BSD*, NextStep
 ### sparc       Sun Sparcstation under SunOS 4.1 or Solaris 2
-### i386        Intel 386 / 486 / Pentium PCs under Linux, NextStep or FreeBSD
-### mips        DecStation 3100 and 5000 under Ultrix 4
-### hppa        HP 9000/700 under NextStep
-### power       IBM RS6000 and PowerPC workstations under AIX 3.2
-### m68k        Motorola 68020 and beyond under SunOS 4
+### mips        SGI machines under IRIX
+### hppa        HP 9000/700 under HPUX
+### power       Mac OS X; IBM RS6000 and PowerPC workstations under AIX
+### ia64        Intel Itanium/IA64 under Linux
+### arm         ARM under Linux
 ###
 ### Set ARCH=none if your machine is not supported
 #ARCH=alpha
-#ARCH=sparc
 #ARCH=i386
+#ARCH=sparc
 #ARCH=mips
 #ARCH=hppa
-#ARCH=m68k
+#ARCH=power
+#ARCH=ia64
+#ARCH=arm
 #ARCH=none
 
 ### Name of architecture model for the native-code compiler.
@@ -131,7 +134,7 @@ SHARPBANGSCRIPTS=true
 ###   MODEL=rs6000      The original IBM RS6000 workstations
 ###                     (RIOS and RIOS2 processors)
 ###   MODEL=ppc         The newer PowerPC processors
-###                     (Motorola/IBM PPC601, PPC603, PPC604, etc)
+###                     (Motorola/IBM PPC601, PPC603, PPC604, G3, G4, etc)
 ### The Motorola PPC601 is compatible with both models, but the newer
 ### PPCs will work only with MODEL=ppc, and the older IBM RS6000
 ### workstations will work only with MODEL=rs6000.
@@ -215,6 +218,19 @@ SHARPBANGSCRIPTS=true
 #PROFILING=prof
 # If no: (all others)
 #PROFILING=noprof
+
+### Path to the "objcopy" program from GNU binutils.
+# You need a sufficiently recent version of the binutils so that
+# the option --redefine-sym is supported by objcopy.
+# Leave blank if you don't have "objcopy", but then "ocamlopt -pack"
+# will not work
+#BINUTILS_OBJCOPY=/usr/bin/objcopy
+
+### Path to the "nm" program from GNU binutils.
+# Other versions of nm do *not* work for our purposes.
+# Leave blank if you don't have GNU "nm", but then "ocamlopt -pack"
+# will not work
+#BINUTILS_NM=/usr/bin/nm
 
 ############# Configuration for the contributed libraries
 

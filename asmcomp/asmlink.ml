@@ -71,6 +71,12 @@ let check_consistency file_name unit crc =
   with Not_found ->
     Hashtbl.add crc_implementations unit.ui_name (file_name, crc)
 
+let extract_crcs table =
+  Hashtbl.fold (fun name (file_name, crc) accu -> (name, crc) :: accu)
+               table []
+let extract_crc_interfaces () = extract_crcs crc_interfaces
+let extract_crc_implementations () = extract_crcs crc_implementations
+
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
 
@@ -163,7 +169,8 @@ let make_startup_file ppf filename units_list =
   Location.input_name := "startup"; (* set the name of the "current" input *)
   Compilenv.reset "startup"; (* set the name of the "current" compunit *)
   Emit.begin_assembly();
-  let name_list = List.map (fun (info,_,_) -> info.ui_name) units_list in
+  let name_list =
+    List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
   compile_phrase (Cmmgen.entry_point name_list);
   let apply_functions = ref (IntSet.add 2 (IntSet.add 3 IntSet.empty)) in
   (* The callback functions always reference caml_apply[23] *)
@@ -191,9 +198,10 @@ let make_startup_file ppf filename units_list =
   compile_phrase
     (Cmmgen.globals_map
       (List.map
-        (fun name ->
-          let (auth_name,crc) = Hashtbl.find crc_interfaces name in (name,crc))
-        name_list));
+        (fun (unit,_,_) ->
+          let (auth_name,crc) = Hashtbl.find crc_interfaces unit.ui_name in
+          (unit.ui_name,crc))
+        units_list));
   compile_phrase(Cmmgen.data_segment_table ("startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("startup" :: name_list));
   compile_phrase

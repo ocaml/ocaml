@@ -92,6 +92,7 @@ module Options = Main_args.Make_options (struct
   let _noautolink = set no_auto_link
   let _o s = exec_name := s; archive_name := s; object_name := s
   let _output_obj () = output_c_object := true; custom_runtime := true
+  let _pack = set make_package
   let _pp s = preprocessor := Some s
   let _rectypes = set recursive_types
   let _thread = set thread_safe
@@ -118,6 +119,10 @@ let main () =
       Compile.init_path();
       Bytelibrarian.create_archive (List.rev !objfiles) !archive_name
     end
+    else if !make_package then begin
+      Compile.init_path();
+      Bytepackager.package_files (List.rev !objfiles) !object_name
+    end
     else if not !compile_only && !objfiles <> [] then begin
       Compile.init_path();
       Bytelink.link (List.rev !objfiles)
@@ -127,4 +132,4 @@ let main () =
     Errors.report_error Format.err_formatter x;
     exit 2
 
-let _ = Printexc.catch main ()
+let _ = main ()

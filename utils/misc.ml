@@ -26,6 +26,10 @@ let rec map_end f l1 l2 =
     [] -> l2
   | hd::tl -> f hd :: map_end f tl l2
 
+let rec map_left_right f = function
+    [] -> []
+  | hd::tl -> let res = f hd in res :: map_left_right f tl
+
 let rec for_all2 pred l1 l2 =
   match (l1, l2) with
     ([], []) -> true
@@ -127,6 +131,14 @@ let no_overflow_lsl a = min_int asr 1 <= a && a <= max_int asr 1
 
 let chop_extension_if_any fname =
   try
-    let _ = String.index (Filename.basename fname) '.' in
+    ignore(String.index (Filename.basename fname) '.');
     Filename.chop_extension fname
   with Not_found -> fname
+
+let search_substring pat str start =
+  let rec search i j =
+    if j >= String.length pat then i
+    else if i + j >= String.length str then raise Not_found
+    else if str.[i + j] = pat.[j] then search i (j+1)
+    else search (i+1) 0
+  in search start 0

@@ -56,6 +56,8 @@ let report_error ppf exn =
       Asmlink.report_error ppf code
   | Asmlibrarian.Error code ->
       Asmlibrarian.report_error ppf code
+  | Asmpackager.Error code ->
+      Asmpackager.report_error ppf code
   | Sys_error msg ->
       fprintf ppf "I/O error: %s" msg
   | Typeclass.Error(loc, err) ->

@@ -330,8 +330,8 @@ caml_array_bound_error:
 
         .data
 
-        .global system_frametable
-system_frametable:
+        .global system__frametable
+system__frametable:
         .word   1               /* one descriptor */
         .word   .Lcaml_retaddr  /* return address into callback */
         .short  -1              /* negative frame size => use callback link */

@@ -42,7 +42,7 @@
 #define Caml_apply2 _caml_apply2
 #define Caml_apply3 _caml_apply3
 #define Mlraise _mlraise
-#define System_frametable _system_frametable
+#define System_frametable _system__frametable
 
 #else
 
@@ -68,7 +68,7 @@
 #define Caml_apply2 caml_apply2
 #define Caml_apply3 caml_apply3
 #define Mlraise mlraise
-#define System_frametable system_frametable
+#define System_frametable system__frametable
 
 #endif
 

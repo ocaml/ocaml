@@ -36,6 +36,7 @@ module Make_options (F :
      val _nolabels : unit -> unit
      val _o : string -> unit
      val _output_obj : unit -> unit
+     val _pack : unit -> unit
      val _pp : string -> unit
      val _rectypes : unit -> unit
      val _thread : unit -> unit
@@ -93,6 +94,8 @@ struct
     "-o", Arg.String F._o, "<file>  Set output file name to <file>";
     "-output-obj", Arg.Unit F._output_obj,
            " Output a C object file instead of an executable";
+    "-pack", Arg.Unit F._pack,
+           " Package the given .cmo files into one .cmo";
     "-pp", Arg.String F._pp,
            "<command>  Pipe sources through preprocessor <command>";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";

@@ -236,8 +236,8 @@ _caml_array_bound_error:
         bra     _caml_c_call
 
         .data
-        .globl  _system_frametable
-_system_frametable:
+        .globl  _system__frametable
+_system__frametable:
         .long   1               | one descriptor
         .long   L107            | return address into callback
         .word   -1              | negative frame size => use callback link

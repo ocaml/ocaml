@@ -36,6 +36,7 @@ module Make_options (F :
       val _nolabels : unit -> unit
       val _o : string -> unit
       val _output_obj : unit -> unit
+      val _pack : unit -> unit
       val _pp : string -> unit
       val _rectypes : unit -> unit
       val _thread : unit -> unit

@@ -312,8 +312,8 @@ G(caml_array_bound_error):
         jmp     G(array_bound_error)
 
         .data
-        .globl  G(system_frametable)
-G(system_frametable):
+        .globl  G(system__frametable)
+G(system__frametable):
         .long   1               /* one descriptor */
         .long   LBL(107)        /* return address into callback */
 #ifndef SYS_solaris
