@@ -259,8 +259,8 @@ have caml-electric-indent on, which see.")
 (defvar caml-shell-active nil
   "Non nil when a subshell is running.")
 
-(defvar running-xemacs nil
-  "Non nil when using xemacs.")
+(defvar running-xemacs  (string-match "XEmacs" emacs-version)
+  "Non-nil if we are running in the XEmacs environment.")
 
 (defvar caml-mode-map nil
   "Keymap used in Caml mode.")

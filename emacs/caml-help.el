@@ -27,6 +27,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+(if (and (boundp 'running-xemacs) running-xemacs) 
+    (require 'caml-xemacs))
+
 ;; Loading or building databases.
 ;; 
 
@@ -217,7 +220,7 @@
 When call interactively, make completion over known modules."
   (interactive "P")
   (if (not (stringp arg))
-      (let ((modules (ocaml-module-alist)) module)
+      (let ((modules (ocaml-module-alist)))
         (setq arg
               (completing-read "Open module: " modules))))
   (if (and (stringp arg) (not (equal arg "")))
@@ -236,7 +239,7 @@ Otherwise if ARG is true, close all modules and reset to default. "
   (interactive "P")
   (if (= (prefix-numeric-value arg) 4)
       (setq ocaml-visible-modules 'lazy)
-    (let* ((modules (ocaml-visible-modules)) default)
+    (let* ((modules (ocaml-visible-modules)))
       (if (null modules) (error "No visible module to close"))
       (unless (stringp arg)
         (setq arg
@@ -325,9 +328,8 @@ If Module is undefined, it does completion in visible modules.
 Then, if completion fails, it does completion among  all modules 
 where identifier is defined."
   (interactive "p")
-  (let* ((module-entry (ocaml-qualified-identifier))
+  (let* ((module-entry (ocaml-qualified-identifier)) (entry)
          (module) 
-         (entry (cdr module-entry))
          (beg) (end) (pattern))
     (if (car module-entry)
         (progn
@@ -360,8 +362,7 @@ where identifier is defined."
         (error "Did not find anything to complete around point")
 
       (setq pattern (buffer-substring beg end))
-      (let* ((table 'ocaml-completion)
-             (all-completions (ocaml-completion pattern module))
+      (let* ((all-completions (ocaml-completion pattern module))
              (completion
               (try-completion pattern (mapcar 'list all-completions))))
         (cond ((eq completion t))
@@ -382,7 +383,7 @@ where identifier is defined."
                       (t
                        (setq hist (mapcar 'car modules))
                        (completing-read "Module: " modules nil t
-                                        "" (cons 'hist 0)))
+                                        "" (cons hist 0)))
                       )))
                  (if (null module)
                      (error "Can't find completion for \"%s\"" pattern)
@@ -555,6 +556,7 @@ command. An entry may be an info module or a complete file name."
   (and region (buffer-substring-no-properties (car region) (cdr region))))
 
 ;; Help function. 
+
 
 (defun ocaml-goto-help (&optional module entry)
   "Searches info manual for MODULE and ENTRY in MODULE.

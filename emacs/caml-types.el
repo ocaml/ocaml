@@ -14,6 +14,10 @@
 
 ; An emacs-lisp complement to the "-dtypes" option of ocamlc and ocamlopt.
 
+;; XEmacs compatibility
+(if (and (boundp 'running-xemacs) running-xemacs) 
+    (require 'caml-xemacs))
+
 
 (defvar caml-types-location-re nil "Regexp to parse *.annot files.
 
@@ -95,6 +99,9 @@ For the moment, the only possible keyword is \"type\"."
    . Even if type checking fails, you can still look at the types
      in the file, up to where the type checker failed.
 
+Types are also diplayed in the buffer *caml-types*, which buffer is
+display when the commande is called with Prefix argument 4. 
+
 See also `caml-types-explore' for exploration by mouse dragging.
 See `caml-types-location-re' for annotation file format.
 "
@@ -169,7 +176,6 @@ See `caml-types-location-re' for annotation file format.
 
 (defun caml-types-hcons (elem table)
   (or (cl-gethash elem table) (cl-puthash elem elem table) elem))
-      
 
 (defun caml-types-build-tree (target-file)
   (let ((stack ())
@@ -349,6 +355,7 @@ See `caml-types-location-re' for annotation file format.
     )
   buf))
 
+
 (defun caml-types-explore (event)
   "Explore type annotations by mouse dragging.
 
@@ -377,7 +384,8 @@ and its type is displayed in the minibuffer, until the move is released."
             (if (and limits (>= cnum (car limits)) (< cnum (cdr limits)))
                 (message mes)
               (setq target-bol
-                    (save-excursion (goto-char cnum) (line-beginning-position)))
+                    (save-excursion (goto-char cnum)
+                                    (line-beginning-position)))
               (setq target-line
                     (1+ (count-lines (point-min) target-bol)))
               (setq target-pos (vector target-file target-line target-bol cnum))
