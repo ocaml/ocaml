@@ -3,7 +3,8 @@ PREREQUISITES
 * The GNU C compiler gcc is recommended, as the bytecode
   interpreter takes advantage of gcc-specific features to enhance
   performance. Versions 2.5.8, 2.6.3, 2.7.0 and 2.7.2 have all been
-  tested at some point and appear to work.
+  tested at some point and appear to work. 2.7.2.1 has known problems,
+  at least under Linux; use some other version.
 
 * Under HP/UX, gcc, the GNU binutils, and GNU make are all required.
   The native cc, as, and make have major problems.
@@ -169,6 +170,11 @@ all versions of make. Use GNU make if this is a problem.
 * The Makefiles assume that make execute commands by calling /bin/sh. They
 won't work if /bin/csh is called instead. You may have to unset the SHELL
 environment variable, or set it to /bin/sh.
+
+* gcc 2.7.2.1 generates incorrect code for the runtime system in -O mode,
+at least on the Intel x86 architecture; other processors have not been
+tested with gcc 2.7.2.1. The solution is to downgrade to 2.7.2, or
+upgrade to 2.7.2.2; both work all right.
 
 * gcc 2.6.0 has been reported to generate incorrect code for the
 runtime system in -O mode. Upgrade to a newer version.

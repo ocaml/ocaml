@@ -1,3 +1,22 @@
+Objective Caml 1.05:
+--------------------
+
+* Typing: fixed several bugs causing spurious type errors.
+
+* Native-code compiler: fixed instruction selection bug causing GC to
+see ill-formed pointers; fixed callbacks to support invocation from a
+main program in C.
+
+* Standard library: fixed String.lowercase; Weak now resists integers.
+
+* Toplevel: multiple phrases without intermediate ";;" now really supported;
+fixed value printing problems where the wrong printer was selected.
+
+* Debugger: fixed printing problem with local references; revised
+handling of checkpoints; fixed problem with chop_extension.
+
+* Macintosh port: fixed signed division problem in bytecomp/emitcode.ml
+
 Objective Caml 1.04:
 --------------------
 

@@ -82,6 +82,26 @@ if test -z "$cc"; then
   fi
 fi
 
+# Check for buggy versions of GCC
+
+case "$cc" in
+  gcc*)
+    case `$cc --version` in
+      2.7.2.1)
+        echo ""
+        echo "WARNING: you are using gcc version 2.7.2.1."
+        echo "This version of gcc is known to generate incorrect code"
+        echo "for the Objective Caml runtime system, at least on Intel x86"
+        echo "machines. (The symptom is a crash of boot/ocamlc when compiling"
+        echo "stdlib/pervasives.mli.)"
+        echo "You are strongly advised to use another version of gcc, such as"
+        echo "2.7.2 or 2.7.2.2, which are known to work well with Objective Caml."
+        echo ""
+        echo "Press <enter> to proceed or <interrupt> to stop."
+        read reply;;
+    esac;;
+esac
+
 # Configure the bytecode compiler
 
 bytecc="$cc"
@@ -99,12 +119,12 @@ case "$bytecc,$host" in
     bytecclinkopts="-Xlinker -taso";;
   gcc*)
     bytecccompopts="-fno-defer-pop -Wall";;
-  cc,mips-*-irix*)
+  cc,mips-*-irix6*)
     # Add -32 flag to ensure compatibility with native-code compiler
     bytecccompopts="-32"
     # Turn off warning "unused library"
     bytecclinkopts="-32 -Wl,-woff,84";;
-  cc*,mips-*-irix*)
+  cc*,mips-*-irix6*)
     # Turn off warning "unused library"
     bytecclinkopts="-Wl,-woff,84";;
 esac
@@ -193,7 +213,7 @@ case "$host" in
   i[3456]86-*-*bsd*)            arch=i386; system=bsd;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         arch=i386; system=solaris;;
-  mips-*-irix*)                 arch=mips; system=irix;;
+  mips-*-irix6*)                arch=mips; system=irix;;
   mips-*-ultrix*)               arch=mips; system=ultrix;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
@@ -554,7 +574,7 @@ for dir in $x11_include_dir \
   /opt/X11R6/include /opt/X11R5/include
 do
   if test -f $dir/X11/X.h; then
-    x11_include=$dir
+    x11_include=$dir/X11
     break
   fi
 done
