@@ -66,8 +66,8 @@ void set_minor_heap_size (size)
 }
 
 void oldify (v, p)
-     value *p;
      value v;
+     value *p;
 {
   value result, field0;
   header_t hd;

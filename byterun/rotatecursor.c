@@ -72,7 +72,7 @@ void rotatecursor_init (int volatile *p1, int volatile *p2)
 
 int rotatecursor_action (int direction)
 {
-  PrimeTime ((QElemPtr) &mytmtask, 62);     /* 16 Hz */
+  PrimeTime ((QElemPtr) &mytmtask, 50);     /* 20 Hz */
   RotateCursor (direction ? 32 : -32);
   return 0;
 }

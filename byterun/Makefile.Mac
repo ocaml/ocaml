@@ -1,7 +1,7 @@
 C = sc
 COptions = -model far -d _STDC_ -w 7
 AOptions = -model far -wb
-LinkOptions = -model far -msg nodup -compact -state nouse
+LinkOptions = -model far -msg nodup -compact -pad 0 -state nouse
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
        "{libraries}ToolLibs.o" "{libraries}Interface.o"
@@ -19,7 +19,7 @@ OBJS = interp.a.o misc.c.o stacks.c.o fix_code.c.o startup.c.o main.c.o ¶
   compare.c.o ints.c.o floats.c.o str.c.o array.c.o io.c.o extern.c.o ¶
   intern.c.o ¶
   hash.c.o sys.c.o meta.c.o parsing.c.o gc_ctrl.c.o terminfo.c.o md5.c.o ¶
-  obj.c.o lexing.c.o macintosh.c.o rotatecursor.c.o printexc.c.o
+  obj.c.o lexing.c.o macintosh.c.o rotatecursor.c.o printexc.c.o callback.c.o
 
 PPCOBJS = interp.c.x misc.c.x stacks.c.x fix_code.c.x startup.c.x main.c.x ¶
   freelist.c.x major_gc.c.x minor_gc.c.x memory.c.x alloc.c.x roots.c.x ¶
@@ -27,11 +27,11 @@ PPCOBJS = interp.c.x misc.c.x stacks.c.x fix_code.c.x startup.c.x main.c.x ¶
   compare.c.x ints.c.x floats.c.x str.c.x array.c.x io.c.x extern.c.x ¶
   intern.c.x ¶
   hash.c.x sys.c.x meta.c.x parsing.c.x gc_ctrl.c.x terminfo.c.x md5.c.x ¶
-  obj.c.x lexing.c.x macintosh.c.x rotatecursor.c.x printexc.c.x
+  obj.c.x lexing.c.x macintosh.c.x rotatecursor.c.x printexc.c.x callback.c.x
 
 PRIMS = array.c compare.c extern.c floats.c gc_ctrl.c hash.c ¶
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c ¶
-  signals.c str.c sys.c terminfo.c
+  signals.c str.c sys.c terminfo.c callback.c
 
 all Ä ocamlrun libcamlrun.o libcamlrun.x
 
@@ -55,7 +55,8 @@ install Ä
 	if "`exists -d "{LIBDIR}caml:"`" == ""
 	  newfolder "{LIBDIR}caml:"
 	end
-	duplicate -y mlvalues.h alloc.h misc.h config.h memory.h "{LIBDIR}caml:"
+	duplicate -y mlvalues.h alloc.h misc.h callback.h config.h memory.h ¶
+	          "{LIBDIR}caml:"
 	open -t "{LIBDIR}caml:config.h"
 	find ¥ "{LIBDIR}caml:config.h"
 	find /Å'#include "'Åsm-Mac.hÅ°/ "{LIBDIR}caml:config.h"

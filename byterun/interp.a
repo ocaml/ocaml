@@ -42,10 +42,7 @@
   import (raise_zero_divide, fatal_error_arg): code
   import (thread_code): code
   import (instr_table): data
-
-callback_depth:   record export
-          dc.l       0
-endr
+  import (callback_depth): data
 
 msg       record
           dc.b       'Fatal error: bad opcode (%lx)', $0D, $00
@@ -1251,98 +1248,5 @@ lbl_1B88: Call_setup
           dc.b       $80 + 10, 'interprete', 0
           dc.w       0
      endproc
-
-callback1_code record
-  dc.l  $01, $21, $13, $01, $79
-endr
-
-callback2_code  record
-  dc.l  $02, $22, $13, $01, $79
-endr
-
-callback3_code  record
-  dc.l  $03, $23, $13, $01, $79
-endr
-
-
-callback  proc export
-          LINK       A6,#$0000
-          MOVE.L     D3,-(A7)
-          SUBQ.L     #$8,(extern_sp).L
-          MOVEA.L    (extern_sp).L,A0
-          MOVE.L     $000C(A6),(A0)
-          MOVEA.L    (extern_sp).L,A0
-          MOVE.L     $0008(A6),$0004(A0)
-          ADDQ.L     #$1,(callback_depth).L
-          MOVEQ      #$14,D0
-          MOVE.L     D0,-(A7)
-          PEA.L      (callback1_code).L
-          JSR        (interprete).L
-          ADDQ.L     #$8,A7
-          MOVE.L     D0,D3
-          SUBQ.L     #$1,(callback_depth).L
-          MOVE.L     D3,D0
-          MOVE.L     (A7)+,D3
-          UNLK       A6
-          RTS        
-          dc.b       $80 + 8, 'callback', 0
-          dc.w       $0000
-endproc
-
-callback2 proc export
-          LINK       A6,#$0000
-          MOVE.L     D3,-(A7)
-          MOVEQ      #$0C,D0
-          SUB.L      D0,(extern_sp).L
-          MOVEA.L    (extern_sp).L,A0
-          MOVE.L     $000C(A6),(A0)
-          MOVEA.L    (extern_sp).L,A0
-          MOVE.L     $0010(A6),$0004(A0)
-          MOVEA.L    (extern_sp).L,A0
-          MOVE.L     $0008(A6),$0008(A0)
-          ADDQ.L     #$1,(callback_depth).L
-          MOVEQ      #$14,D0
-          MOVE.L     D0,-(A7)
-          PEA.L      (callback2_code).L
-          JSR        (interprete).L
-          ADDQ.L     #$8,A7
-          MOVE.L     D0,D3
-          SUBQ.L     #$1,(callback_depth).L
-          MOVE.L     D3,D0
-          MOVE.L     (A7)+,D3
-          UNLK       A6
-          RTS        
-          dc.b       $80 + 9, 'callback2'
-          dc.w       $0000
-endproc
-
-callback3 proc export
-          LINK       A6,#$0000
-          MOVE.L     D3,-(A7)
-          MOVEQ      #$10,D0
-          SUB.L      D0,(extern_sp).L
-          MOVEA.L    (extern_sp).L,A0
-          MOVE.L     $000C(A6),(A0)
-          MOVEA.L    (extern_sp).L,A0
-          MOVE.L     $0010(A6),$0004(A0)
-          MOVEA.L    (extern_sp).L,A0
-          MOVE.L     $0014(A6),$0008(A0)
-          MOVEA.L    (extern_sp).L,A0
-          MOVE.L     $0008(A6),$000C(A0)
-          ADDQ.L     #$1,(callback_depth).L
-          MOVEQ      #$14,D0
-          MOVE.L     D0,-(A7)
-          PEA.L      (callback3_code).L
-          JSR        (interprete).L
-          ADDQ.L     #$8,A7
-          MOVE.L     D0,D3
-          SUBQ.L     #$1,(callback_depth).L
-          MOVE.L     D3,D0
-          MOVE.L     (A7)+,D3
-          UNLK       A6
-          RTS        
-          dc.b       $80 + 9, 'callback3'
-          dc.w       $0000
-endproc
 
           end
