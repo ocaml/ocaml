@@ -83,7 +83,7 @@ let c_file name =
   if Sys.command
      (Printf.sprintf
        "%s -c %s -I%s %s"
-       Config.c_compiler
+       Config.native_c_compiler
        (String.concat " "
          (List.map (fun dir -> "-I" ^ dir) 
                    (List.rev !Clflags.include_dirs)))
