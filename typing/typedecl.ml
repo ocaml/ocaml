@@ -301,8 +301,8 @@ let check_recursion env loc path decl to_check =
                      Parameters_differ(cpath, ty, Ctype.newconstr path args)))
           end
           (* Attempt to expand a type abbreviation if:
-              1- it belongs to one of the recursively-defined modules
-                 (otherwise its expansion cannot involve [path]);
+              1- [to_check path'] holds
+                 (otherwise the expansion cannot involve [path]);
               2- we haven't expanded this type constructor before
                  (otherwise we could loop if [path'] is itself 
                  a non-regular abbreviation). *)
