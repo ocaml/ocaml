@@ -21,6 +21,7 @@ static UserItemUPP DrawAboutUPP = NULL;
 
 static pascal void DrawAbout (DialogPtr d, short item)
 {
+#pragma unused (item)
   WEHandle we = WinGetWE (d);
 
   Assert (we != NULL);

@@ -166,6 +166,7 @@ static void DoMouseUp (EventRecord *e)
 
 static void DoNullEvent (EventRecord *event)
 {
+#pragma unused (event)
   WindowPtr w = FrontWindow ();
 
   if (w != NULL) WinDoIdle (w);

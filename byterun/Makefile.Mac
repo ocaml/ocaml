@@ -13,7 +13,7 @@
 # $Id$
 
 C = sc
-COptions = -model far # -d DEBUG -mbg full
+COptions = -model far -w 29,30,35 # -d DEBUG -mbg full
 AOptions = -model far # -d DEBUG -wb -l
 LinkOptions = -model far -ad 4 -msg nodup -compact -pad 0 -state nouse -br 68k
 Libs = "{libraries}IntEnv.o" ¶
@@ -24,7 +24,7 @@ Libs = "{libraries}IntEnv.o" ¶
        "{libraries}ToolLibs.o"
 
 PPCC = mrc
-PPCCOptions = -w 35 # -sym on -d DEBUG # beware: "-sym on" => "-opt off"
+PPCCOptions = -w 29,30,35 # -sym on -d DEBUG # beware: "-sym on" => "-opt off"
 PPCLinkOptions = -d # -sym on
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
@@ -125,8 +125,6 @@ opnames.h Ä instruct.h
 rotatecursor.c.o Ä
     {C} -b rotatecursor.c -o rotatecursor.c.o {COptions}
 
-md5.c.x Ä
-    {PPCC} -opt off md5.c -o md5.c.x {PPCCOptions}
-
 depend Ä prims.c opnames.h
-    makedepend Å.c > Makefile.Mac.depend
+    makedepend Å.c > Makefile.Mac.depend · dev:null
+    makedepend -objext .x Å.c >> Makefile.Mac.depend · dev:null

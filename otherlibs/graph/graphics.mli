@@ -42,19 +42,19 @@ external size_y : unit -> int = "gr_size_y"
 
 external auto_flush : bool -> unit = "gr_auto_flush"
         (* Set auto-flush mode on/off.  When turned off, drawings are done
-	   in the backing store window but no more in the graphics window
-	   itself.  This creates a simple effect of double buffering, by
-	   allowing the user to do complex drawings in the backing store
-	   while keeping older drawings on the screen.  The contents
-	   of the backing store is copied onto the graphics window by
-	   a call to [flush] (see below).  By default, auto-flush mode is
-	   on, and all drawings are done both in the backing store and in
-	   the graphics window. *)
+           in the backing store window but no more in the graphics window
+           itself.  This creates a simple effect of double buffering, by
+           allowing the user to do complex drawings in the backing store
+           while keeping older drawings on the screen.  The contents
+           of the backing store is copied onto the graphics window by
+           a call to [flush] (see below).  By default, auto-flush mode is
+           on, and all drawings are done both in the backing store and in
+           the graphics window. *)
 
 external flush : unit -> unit = "gr_flush"
         (* Flush the contents of the backing store onto the graphics
-	   window.  This function is automatically called each time
-	   auto-flush mode is enabled. *)
+           window.  This function is automatically called each time
+           auto-flush mode is enabled. *)
 
 (*** Colors *)
 
@@ -105,7 +105,7 @@ external lineto : x:int -> y:int -> unit = "gr_lineto"
         (* Draw a line with endpoints the current point and the given point,
            and move the current point to the given point. *)
 external draw_arc :
-	x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
+        x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
                = "gr_draw_arc" "gr_draw_arc_nat"
         (* [draw_arc x y rx ry a1 a2] draws an elliptical arc with center
            [x,y], horizontal radius [rx], vertical radius [ry], from angle

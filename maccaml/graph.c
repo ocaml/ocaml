@@ -60,7 +60,7 @@ static void GraphUpdateGW (void)
 {
   Rect r;
   WStatusH st = WinGetStatus (winGraphics);
-  
+
   Assert (st != NULL);
   Assert (gworld != NULL);
   WELongRectToRect (&(*st)->destrect, &r);
@@ -115,7 +115,7 @@ void GraphScroll (long dx, long dy)
   GraphUpdate ();
   ClipRect (&maxrect);
   DisposeRgn (update);
-  
+
   x0 += dx;
   y0 += dy;
   GetPen (&p);
@@ -184,10 +184,10 @@ void GraphGotEvent (EventRecord *evt)
   GrafPtr saveport;
   Point pt = evt->where;
   GraphEvent grevt;
-  
+
   PushWindowPort (winGraphics);
   GlobalToLocal (&pt);
-  PopPort;  
+  PopPort;
 
   switch (evt->what){
   case mouseDown:
@@ -222,6 +222,8 @@ value gr_open_graph (value vgeometry);
 value gr_close_graph (value unit);
 value gr_sigio_signal (value unit);
 value gr_sigio_handler (value unit);
+value gr_auto_flush (value flag);
+value gr_flush (value unit);
 value gr_clear_graph (value unit);
 value gr_size_x (value unit);
 value gr_size_y (value unit);
@@ -254,6 +256,15 @@ value gr_sound (value vfreq, value vdur);
 
 /**** Ancillary macros and function */
 
+/* double-buffer or write-through */
+static int grautoflush;
+
+/* Current state */
+static long cur_x, cur_y;
+static short cur_width, cur_font, cur_size;
+/* see also fgcolor */
+
+
 /* Drawing off-screen and on-screen simultaneously.  The following three
    macros must always be used together and in this order.
 */
@@ -270,14 +281,16 @@ value gr_sound (value vfreq, value vdur);
 #define On \
   SetGWorld (_saveport_, _savegdev_); \
   UnlockPixels (GetGWorldPixMap (gworld)); \
-  SetPort (winGraphics); \
-  ScrollCalcGraph (winGraphics, &_cliprect_); \
-  ClipRect (&_cliprect_);
+  if (grautoflush){ \
+    SetPort (winGraphics); \
+    ScrollCalcGraph (winGraphics, &_cliprect_); \
+    ClipRect (&_cliprect_);
 
 /* 3. Clean up after drawing. */
 #define End \
-  ClipRect (&maxrect); \
-  SetPort ((GrafPtr) _saveport_); \
+    ClipRect (&maxrect); \
+    SetPort ((GrafPtr) _saveport_); \
+  } \
 }
 
 /* Convert a red, green, or blue value from 8 bits to 16 bits. */
@@ -358,7 +371,7 @@ static value gr_alloc_int_vect(mlsize_t size)
 {
   value res;
   mlsize_t i;
-  
+
   if (size <= Max_young_wosize) {
     res = alloc(size, 0);
   } else {
@@ -396,7 +409,7 @@ value gr_open_graph (value vgeometry)
 
     err = WinOpenGraphics (w0, h0);
     if (err != noErr) goto failed;
-    
+
     x0 = y0 = 0;
 
     st = WinGetStatus (winGraphics);   Assert (st != NULL);
@@ -408,13 +421,14 @@ value gr_open_graph (value vgeometry)
     fgcolor.red = fgcolor.green = fgcolor.blue = 0;
   }
   /* Synchronise off-screen and on-screen by initialising everything. */
+  grautoflush = 1;
   gr_clear_graph (Val_unit);
   gr_moveto (Val_long (0), Val_long (0));
   gr_set_color (Val_long (0));
   gr_set_line_width (Val_long (0));
   gr_set_font ((value) "geneva");           /* XXX hack */
   gr_set_text_size (Val_long (12));
-  
+
   return Val_unit;
 
   failed:
@@ -439,11 +453,38 @@ value gr_close_graph (value unit)
 
 value gr_sigio_signal (value unit)            /* Not used on MacOS */
 {
+#pragma unused (unit)
   return Val_unit;
 }
 
 value gr_sigio_handler (value unit)           /* Not used on MacOS */
 {
+#pragma unused (unit)
+  return Val_unit;
+}
+
+value gr_flush (value unit)
+{
+#pragma unused (unit)
+  GraphUpdate ();
+  return Val_unit;
+}
+
+value gr_auto_flush (value flag)
+{
+  int newval = Bool_val (flag);
+
+  if (newval && !grautoflush){
+    gr_flush (Val_unit);
+    BeginOff
+    On
+      MoveTo (Wx (cur_x), Wy (cur_y));
+      PenSize (cur_width, cur_width);
+      TextFont (cur_font);
+      TextSize (cur_size);
+    End
+  }
+  grautoflush = newval;
   return Val_unit;
 }
 
@@ -476,7 +517,7 @@ value gr_size_y (value unit)
 value gr_set_color (value vrgb)
 {
   long rgb = Long_val (vrgb);
-  
+
   gr_check_open ();
   fgcolor.red = RGB8to16 ((rgb >> 16) & 0xFF);
   fgcolor.green = RGB8to16 ((rgb >> 8) & 0xFF);
@@ -529,6 +570,7 @@ value gr_moveto (value vx, value vy)
   On
     MoveTo (Wx (x), Wy (y));
   End
+  cur_x = x; cur_y = y;
   return Val_unit;
 }
 
@@ -536,34 +578,30 @@ value gr_current_point (value unit)
 {
 #pragma unused (unit)
   value result = alloc_tuple (2);
-  Point p;
-  
+
   gr_check_open ();
-  BeginOff
-    GetPen (&p);
-  On
-  End
-  Field (result, 0) = Val_long (Bx (p.h));
-  Field (result, 1) = Val_long (By (p.v));
+  Field (result, 0) = Val_long (cur_x);
+  Field (result, 1) = Val_long (cur_y);
   return result;
 }
 
 value gr_lineto (value vx, value vy)
 {
   XY;
-  
+
   gr_check_open ();
   BeginOff
     LineTo (Bx (x), By (y));
   On
     LineTo (Wx (x), Wy (y));
   End
-  
+  cur_x = x; cur_y = y;
   return Val_unit;
 }
 
 value gr_draw_arc (value *argv, int argc)
 {
+#pragma unused (argc)
   return gr_draw_arc_nat (argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
@@ -575,7 +613,7 @@ value gr_draw_arc_nat (value vx, value vy, value vrx, value vry, value va1,
   long a1 = Long_val (va1), a2 = Long_val (va2);
   Rect r;
   long qda1 = 90 - a1, qda2 = 90 - a2;
-  
+
   gr_check_open ();
   BeginOff
     SetRect (&r, Bx (x-rx), By (y+ry), Bx (x+rx), By (y-ry));
@@ -591,13 +629,14 @@ value gr_set_line_width (value vwidth)
 {
   short width = Int_val (vwidth);
 
-  if (width == 0) width = 1;  
+  if (width == 0) width = 1;
   gr_check_open ();
   BeginOff
     PenSize (width, width);
   On
     PenSize (width, width);
   End
+  cur_width = width;
   return Val_unit;
 }
 
@@ -606,7 +645,7 @@ value gr_fill_rect (value vx, value vy, value vw, value vh)
   XY;
   long w = Long_val (vw), h = Long_val (vh);
   Rect r;
-  
+
   gr_check_open ();
   BeginOff
     SetRect (&r, Bx (x), By (y+h), Bx (x+w), By (y));
@@ -622,10 +661,10 @@ value gr_fill_poly (value vpoints)
 {
   long i, n = Wosize_val (vpoints);
   PolyHandle p;
-  
+
   #define Bxx(i) Bx (Field (Field (vpoints, (i)), 0))
   #define Byy(i) By (Field (Field (vpoints, (i)), 1))
-  
+
   gr_check_open ();
   if (n < 1) return Val_unit;
 
@@ -645,6 +684,7 @@ value gr_fill_poly (value vpoints)
 
 value gr_fill_arc (value *argv, int argc)
 {
+#pragma unused (argc)
   return gr_fill_arc_nat (argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
@@ -656,7 +696,7 @@ value gr_fill_arc_nat (value vx, value vy, value vrx, value vry, value va1,
   long a1 = Long_val (va1), a2 = Long_val (va2);
   Rect r;
   long qda1 = 90 - a1, qda2 = 90 - a2;
-  
+
   gr_check_open ();
   BeginOff
     SetRect (&r, Bx (x-rx), By (y+ry), Bx (x+rx), By (y-ry));
@@ -671,13 +711,16 @@ value gr_fill_arc_nat (value vx, value vy, value vrx, value vry, value va1,
 value gr_draw_char (value vchr)
 {
   char c = Int_val (vchr);
-  
+  Point p;
+
   gr_check_open ();
   BeginOff
     DrawChar (c);
+    GetPen (&p);
   On
     DrawChar (c);
   End
+  cur_x = Bx (p.h); cur_y = By (p.v);
   return Val_unit;
 }
 
@@ -685,14 +728,17 @@ value gr_draw_string (value vstr)
 {
   mlsize_t len = string_length (vstr);
   char *str = String_val (vstr);
+  Point p;
 
   gr_check_open ();
   if (len > 32767) len = 32767;
   BeginOff
     DrawText (str, 0, len);
+    GetPen (&p);
   On
     DrawText (str, 0, len);
   End
+  cur_x = Bx (p.h); cur_y = By (p.v);
   return Val_unit;
 }
 
@@ -700,7 +746,7 @@ value gr_set_font (value vfontname)
 {
   Str255 pfontname;
   short fontnum;
-  
+
   gr_check_open ();
   CopyCStringToPascal (String_val (vfontname), pfontname);
   GetFNum (pfontname, &fontnum);
@@ -709,19 +755,21 @@ value gr_set_font (value vfontname)
   On
     TextFont (fontnum);
   End
+  cur_font = fontnum;
   return Val_unit;
 }
 
 value gr_set_text_size (value vsz)
 {
   short sz = Int_val (vsz);
-  
+
   gr_check_open ();
   BeginOff
     TextSize (sz);
   On
     TextSize (sz);
   End
+  cur_size = sz;
   return Val_unit;
 }
 
@@ -732,7 +780,7 @@ value gr_text_size (value vstr)
   value result = alloc_tuple (2);
   FontInfo info;
   long w, h;
-  
+
   BeginOff
     GetFontInfo (&info);
     w = TextWidth (str, 0, len);
@@ -756,7 +804,7 @@ value gr_make_image (value varray)
   int has_transp = 0;
   CGrafPtr saveport;
   GDHandle savegdev;
-  
+
   gr_check_open ();
   if (height == 0) return alloc_image (0, 0);
   width = Wosize_val (Field (varray, 0));
@@ -768,7 +816,7 @@ value gr_make_image (value varray)
 
   result = alloc_image (width, height);
   w = ((struct grimage *) Bp_val (result))->data;
-  
+
   LockPixels (GetGWorldPixMap (w));
   GetGWorld (&saveport, &savegdev);
   SetGWorld ((CGrafPtr) w, NULL);
@@ -784,11 +832,11 @@ value gr_make_image (value varray)
     }
   }
   UnlockPixels (GetGWorldPixMap (w));
-  
+
   if (has_transp){
     Rect r;
     QDErr err;
-    
+
     SetRect (&r, 0, 0, width, height);
     err = NewGWorld (&w, 1, &r, NULL, NULL, 0);
     if (err != noErr){
@@ -809,9 +857,9 @@ value gr_make_image (value varray)
     UnlockPixels (GetGWorldPixMap (w));
     ((struct grimage *) Bp_val (result))->mask = w;
   }
-  
+
   SetGWorld (saveport, savegdev);
-  
+
   return result;
 }
 
@@ -828,7 +876,7 @@ value gr_dump_image (value vimage)
   GDHandle savegdev;
   RGBColor qdcolor;
   value line;
-  
+
   gr_check_open ();
   Begin_roots2 (vimage, result);
     result = gr_alloc_int_vect (height);
@@ -871,7 +919,7 @@ value gr_draw_image (value vimage, value vx, value vy)
   struct grimage *im = (struct grimage *) Bp_val (vimage);
   RGBColor forecolor, backcolor;
   Rect srcrect, dstrect;
-  
+
   SetRect (&srcrect, 0, 0, im->width, im->height);
   if (im->mask != NULL){
     LockPixels (GetGWorldPixMap (im->data));
@@ -1086,7 +1134,7 @@ value gr_sound (value vfreq, value vdur)
   long scale;
   Handle h;
   OSErr err;
-  
+
   if (dur <= 0 || freq <= 0) return Val_unit;
   if (dur > 5000) dur = 5000;
   if (freq > 20000) gr_fail ("sound: frequency is too high", NULL);

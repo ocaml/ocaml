@@ -16,6 +16,7 @@
 
 static void DoAppleChoice (short item, EventModifiers mods)
 {
+#pragma unused (mods)
   if (item == kItemAbout){
     OpenAboutBox ();
   }else{
@@ -49,6 +50,7 @@ OSErr DoQuit ()
 
 static void DoFileChoice (short item, EventModifiers mods)
 {
+#pragma unused (mods)
   WindowPtr w = FrontWindow ();
 
   switch (item){
@@ -85,6 +87,7 @@ static void DoFileChoice (short item, EventModifiers mods)
 
 static void DoEditChoice (short item, EventModifiers mods)
 {
+#pragma unused (mods)
   WindowPtr w = FrontWindow ();
   WEReference we = WinGetWE (w);
 
@@ -147,6 +150,7 @@ static long winTableLen = 0;  /* number of entries in the table */
 
 static void DoWindowsChoice (short item, EventModifiers mods)
 {
+#pragma unused (mods)
   switch (item){
   case 1:
     Assert (winToplevel != NULL);

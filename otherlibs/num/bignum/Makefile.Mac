@@ -1,7 +1,7 @@
 #  Copyright     Digital Equipment Corporation & INRIA     1988, 1989, 1992
 
 C = sc
-COptions = -model far -i :h: -d CAML_LIGHT
+COptions = -model far -i :h: -d CAML_LIGHT -w 30
 LinkOptions = -state nouse -compact -model far
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶

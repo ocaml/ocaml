@@ -35,3 +35,5 @@
 #define CPU_TYPE_STRING "68k"
 #define THREADED_CODE
 #endif
+
+/* FIXME to do: add 64-bit integer stuff */

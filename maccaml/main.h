@@ -19,6 +19,7 @@
 
 #include <AERegistry.h>
 #include <AppleEvents.h>
+#include <ControlDefinitions.h>
 #include <Controls.h>
 #include <Devices.h>
 #include <Dialogs.h>

@@ -30,7 +30,7 @@ static OSErr GotRequiredParams (const AppleEvent *ae)
 static pascal OSErr HandleOpenApplication (const AppleEvent *ae,
                                            AppleEvent *reply, long refCon)
 {
-#pragma unused (refCon)
+#pragma unused (ae, reply, refCon)
   launch_toplevel_requested = 1;
   return noErr;
 }
@@ -38,7 +38,7 @@ static pascal OSErr HandleOpenApplication (const AppleEvent *ae,
 static pascal OSErr HandleQuitApplication (const AppleEvent *ae,
                                            AppleEvent *reply, long refCon)
 {
-#pragma unused (refCon)
+#pragma unused (ae, reply, refCon)
   WindowPtr w = FrontWindow ();
   WStatusH st;
   int request_interaction = prefs.asksavetop && winToplevel != NULL;
@@ -65,7 +65,7 @@ static pascal OSErr HandleQuitApplication (const AppleEvent *ae,
 static pascal OSErr HandleOpenDocuments (const AppleEvent *ae,
                                          AppleEvent *reply, long refCon)
 {
-#pragma unused (refCon)
+#pragma unused (reply, refCon)
   FSSpec filespec;
   AEDescList doclist = {0, NULL};
   OSErr err;
@@ -111,7 +111,7 @@ static pascal OSErr HandleOpenDocuments (const AppleEvent *ae,
 static pascal OSErr HandlePrintDocuments (const AppleEvent *ae,
                                           AppleEvent *reply, long refCon)
 {
-#pragma unused (refCon)
+#pragma unused (ae, reply, refCon)
   return errAEEventNotHandled; /* XXX */
 }
 

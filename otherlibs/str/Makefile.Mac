@@ -61,5 +61,6 @@ install Ä
     {CAMLC} -c {COMPFLAGS} {default}.ml
 
 depend Ä
-    MakeDepend Å.c > Makefile.Mac.depend
+    MakeDepend Å.c > Makefile.Mac.depend · dev:null
+    MakeDepend -objext .x Å.c >> Makefile.Mac.depend · dev:null
     :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml >> Makefile.Mac.depend

@@ -1,3 +1,4 @@
+initialize_nat
 create_nat
 set_to_zero_nat
 blit_nat

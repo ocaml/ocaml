@@ -16,12 +16,12 @@
 
 # Compilation options
 C = sc
-COptions = -model far -i :bignum:h:,:::byterun:
-CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib: -w s
-CAMLOPT = :::boot:ocamlrun :::ocamlopt: -I :::stdlib: -w s
-
+COptions = -model far -i :bignum:h:,:::byterun: -w 35
 PPCC = mrc
 PPCCOptions = -i :bignum:h:,:::byterun: -w 35
+
+CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib: -w s
+CAMLOPT = :::boot:ocamlrun :::ocamlopt: -I :::stdlib: -w s
 
 CAMLOBJS = int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo ¶
   ratio.cmo num.cmo arith_status.cmo
@@ -68,5 +68,6 @@ clean Ä partialclean
 nat_stubs.c.o Ä nat.h
 
 depend Ä
-    MakeDepend Å.c > Makefile.Mac.depend
+    MakeDepend Å.c > Makefile.Mac.depend · dev:null
+    MakeDepend -objext .x Å.c >> Makefile.Mac.depend · dev:null
     :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml >> Makefile.Mac.depend

@@ -19,7 +19,7 @@ XIncludes = -i ::byterun: ¶
             -i ":WASTE:WASTE 1.3 Distribution:WASTE C/C++ Headers:"
 
 C = sc
-COptions = {XIncludes} -model far -w 17 #-d DEBUG=1
+COptions = {XIncludes} -model far #-d DEBUG=1
 LinkOptions = -model far -compact -pad 0 -state nouse -br 68k -msg nodup
 SysLibs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
           "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
@@ -29,7 +29,7 @@ WELibs = ":WASTE:WASTE 1.3 Distribution:WASTELib.o"
 Libs = {camlrunlibs} {welibs} {syslibs}
 
 PPCC = mrc
-PPCCOptions = {XIncludes} -proto strict -sym on -w 35 #-d DEBUG=1
+PPCCOptions = {XIncludes} -proto strict -sym on #-d DEBUG=1
 PPCLinkOptions = -d -sym on
 PPCSysLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
              "{sharedlibraries}StdCLib" ¶
@@ -112,4 +112,5 @@ clean Ä
     delete -i "Objective Caml.xcoff" "Objective Caml.dbg"
 
 depend Ä prims.c
-    makedepend Å.c > Makefile.Mac.depend
+    makedepend Å.c > Makefile.Mac.depend · dev:null
+    makedepend -objext .x Å.c >> Makefile.Mac.depend · dev:null

@@ -25,6 +25,7 @@ static pascal StyledLineBreakCode CharBreak
    (Ptr pText, SInt32 textLength, SInt32 textStart, SInt32 textEnd,
     Fixed *textWidth, SInt32 *textOffset, WEHandle hWE)
 {
+#pragma unused (textLength, hWE)
   long base = textStart;
   long len = textEnd - textStart;
   long l = 0;
@@ -497,6 +498,7 @@ void WinDoKey (WindowPtr w, short chr, EventRecord *e)
 
 void WinDoZoom (WindowPtr w, short partCode)
 {
+#pragma unused (w, partCode)
   XXX ();
 }
 

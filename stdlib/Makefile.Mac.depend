@@ -24,6 +24,10 @@ genlex.cmoÄ char.cmi hashtbl.cmi list.cmi stream.cmi string.cmi genlex.cmi
 genlex.cmxÄ char.cmx hashtbl.cmx list.cmx stream.cmx string.cmx genlex.cmi 
 hashtbl.cmoÄ array.cmi sys.cmi hashtbl.cmi 
 hashtbl.cmxÄ array.cmx sys.cmx hashtbl.cmi 
+int32.cmoÄ int32.cmi 
+int32.cmxÄ int32.cmi 
+int64.cmoÄ int32.cmi obj.cmi int64.cmi 
+int64.cmxÄ int32.cmx obj.cmx int64.cmi 
 lazy.cmoÄ lazy.cmi 
 lazy.cmxÄ lazy.cmi 
 lexing.cmoÄ string.cmi lexing.cmi 
@@ -34,6 +38,8 @@ map.cmoÄ map.cmi
 map.cmxÄ map.cmi 
 marshal.cmoÄ string.cmi marshal.cmi 
 marshal.cmxÄ string.cmx marshal.cmi 
+nativeint.cmoÄ sys.cmi nativeint.cmi 
+nativeint.cmxÄ sys.cmx nativeint.cmi 
 obj.cmoÄ marshal.cmi obj.cmi 
 obj.cmxÄ marshal.cmx obj.cmi 
 oo.cmoÄ array.cmi hashtbl.cmi list.cmi map.cmi obj.cmi random.cmi sort.cmi ¶
