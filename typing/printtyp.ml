@@ -639,8 +639,11 @@ and signature_body spc ppf = function
             end
         | Tsig_cltype(id, decl) ->
             cltype_declaration id ppf decl;
-            match rem with tydecl1 :: tydecl2 :: rem -> rem | _ -> []
-      in signature_body true ppf cont
+            begin match rem with
+            | tydecl1 :: tydecl2 :: rem -> rem
+            | _ -> []
+            end
+      in signature_body false ppf cont
 
 and modtype_declaration id ppf decl =
   let pr_decl ppf = function
