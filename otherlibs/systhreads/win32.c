@@ -410,10 +410,13 @@ value caml_thread_yield(value unit)        /* ML */
 
 value caml_thread_join(value th)          /* ML */
 {
-  HANDLE h = Threadhandle(th)->handle;
-  enter_blocking_section();
-  WaitForSingleObject(h, INFINITE);
-  leave_blocking_section();
+  HANDLE h;
+  Begin_root(th)                /* prevent deallocation of handle */
+    h = Threadhandle(th)->handle;
+    enter_blocking_section();
+    WaitForSingleObject(h, INFINITE);
+    leave_blocking_section();
+  End_roots();
   return Val_unit;
 }
 
