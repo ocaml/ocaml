@@ -104,6 +104,10 @@ let print_location = Location.print
 let print_warning = Location.print_warning
 let input_name = Location.input_name
 
+(* Hooks for initialization *)
+
+let toplevel_startup_hook = ref (fun () -> ())
+
 (* Load in-core and execute a lambda term *)
 
 let may_trace = ref false (* Global lock on tracing *)

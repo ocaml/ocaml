@@ -98,6 +98,10 @@ val print_out_signature :
 val print_out_phrase :
   (formatter -> Outcometree.out_phrase -> unit) ref
 
+(* Hooks for initialization *)
+
+val toplevel_startup_hook : (unit -> unit) ref
+
 (* Used by Trace module *)
 
 val may_trace : bool ref
