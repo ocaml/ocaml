@@ -24,68 +24,59 @@ open Program_management
 open Frames
 open Show_information
 
-let toplevel_loop () =
-  let line_buffer = Lexing.from_function read_user_input in
-    let rec loop () =
-      try
-      	let rec loop2 () =
-	  (try
-             line_loop line_buffer
-	   with
-             End_of_file ->
-      	       forget_process
-                 !current_checkpoint.c_fd
-                 !current_checkpoint.c_pid;
-               flush stdout;
-	       stop_user_input ();
-               loop2 ());
-      	  if !loaded & (not (yes_or_no "The program is running. Quit anyway")) then
-	    loop2 ()
-	in
-	  loop2 ()
-      with
-        Toplevel ->
-          flush stdout;
-	  stop_user_input ();
-          loop ()
-      | Sys.Break ->
-      	  (try
-      	     print_endline "Interrupted.";
-	     Exec.protected
-	       (function () ->
-                  flush stdout;
-	          stop_user_input ();
-	          if !loaded then
-	            ((try select_frame 0 with Not_found -> ());
-	             show_current_event ()))
-	   with Sys.Break -> ());
-	  loop ()
-      | Current_checkpoint_lost ->
-          (try
-	     print_endline "Trying to recover...";
-             flush stdout;
-	     stop_user_input ();
-	     recover ();
-	     (try select_frame 0 with Not_found -> ());
-	     show_current_event ()
-           with
-	     x ->
-	       if x = Sys.Break then
-      	       	 print_endline "Interrupted";
-	       print_endline "Can't recover; killing program...";
-	       flush stdout;
-      	       kill_program ());
-          loop ()
-      | Not_found ->
-          print_endline "Cannot find file ";
+
+let line_buffer = Lexing.from_function read_user_input
+
+let loop () = line_loop line_buffer
+
+let rec protect cont =
+  try
+    cont ()
+  with
+    End_of_file ->
+      protect (function () ->
+        forget_process
+          !current_checkpoint.c_fd
+          !current_checkpoint.c_pid;
+        flush stdout;
+        stop_user_input ();
+        loop ())
+  | Toplevel ->
+      protect (function () ->
+        flush stdout;
+        stop_user_input ();
+        loop ())
+  | Sys.Break ->
+      protect (function () ->
+        print_endline "Interrupted.";
+        Exec.protected (function () ->
           flush stdout;
           stop_user_input ();
-          loop ()
-      | x ->
-      	  kill_program ();
-          raise x
-    in
-      loop ()
+          if !loaded then begin
+            try_select_frame 0;
+            show_current_event ()
+          end);
+        loop ())
+  | Current_checkpoint_lost ->
+      protect (function () ->
+        print_endline "Trying to recover...";
+        flush stdout;
+        stop_user_input ();
+        recover ();
+        try_select_frame 0;
+        show_current_event ();
+        loop ())
+  | Not_found ->
+      protect (function () ->
+        print_endline "File not found.";
+        flush stdout;
+        stop_user_input ();
+        loop ())
+  | x ->
+      kill_program ();
+      raise x
+
+let toplevel_loop () = protect loop
 
 let anonymous s =
   if !program_name = ""
@@ -123,7 +114,7 @@ let main () =
     print_string Config.version;
     print_newline(); print_newline();
     Config.load_path := !default_load_path;
-    toplevel_loop ();			(* Toplevel. *)
+    toplevel_loop ();                   (* Toplevel. *)
     kill_program ();
     exit 0
   with Toplevel ->
