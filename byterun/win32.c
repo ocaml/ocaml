@@ -237,14 +237,23 @@ static void expand_pattern(char * pat)
 {
   int handle;
   struct _finddata_t ffblk;
+  int preflen;
 
   handle = _findfirst(pat, &ffblk);
   if (handle == -1) {
     store_argument(pat); /* a la Bourne shell */
     return;
   }
+  for (preflen = strlen(pat); preflen > 0; preflen--) {
+    char c = pat[preflen - 1];
+    if (c == '\\' || c == '/' || c == ':') break;
+  }
   do {
-    store_argument(strdup(ffblk.name));
+    char * name = malloc(preflen + strlen(ffblk.name) + 1);
+    if (name == NULL) out_of_memory();
+    memcpy(name, pat, preflen);
+    strcpy(name + preflen, ffblk.name);
+    store_argument(name);
   } while (_findnext(handle, &ffblk) != -1);
   _findclose(handle);
 }
