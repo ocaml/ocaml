@@ -318,6 +318,7 @@ libraries.
 \entree{"buf:"}{a string used as buffer}
 \entree{"src:"}{the source of an operation}
 \entree{"dst:"}{the destination of an operation}
+\entree{"cmp:"}{a comparison function, {\it e.g.} "Pervasives.compare"}
 \entree{"key:"}{a value used as index}
 \entree{"data:"}{a value associated to an index}
 \entree{"mode:"}{an operation mode or a flag list}
