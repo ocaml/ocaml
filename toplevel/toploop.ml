@@ -91,7 +91,7 @@ let pr_item env ppf = function
       | _ ->
           fprintf ppf "@[<2>%a =@ %a@]"
           (Printtyp.value_description id) decl
-          (print_value env (getvalue (Ident.name id)))
+          (print_value env (getvalue (Ident.unique_name id)))
           decl.val_type
       end;
       rem

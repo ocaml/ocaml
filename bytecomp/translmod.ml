@@ -358,12 +358,12 @@ let toploop_setvalue_pos = 1 (* position of setvalue in module Toploop *)
 let toploop_getvalue id =
   Lapply(Lprim(Pfield toploop_getvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (Ident.name id)))])
+         [Lconst(Const_base(Const_string (Ident.unique_name id)))])
 
 let toploop_setvalue id lam =
   Lapply(Lprim(Pfield toploop_setvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (Ident.name id))); lam])
+         [Lconst(Const_base(Const_string (Ident.unique_name id))); lam])
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
 
