@@ -37,59 +37,6 @@ clean::
 
 scratch: clean
 
-# Ocaml compilers linked with parser and printer with revised syntax
-
-ocamlrc: always
-	$(MAKE) before_ocamlr
-	mv ../ocaml/ocamlc ../ocaml/ocamlc.saved
-	cd ../ocaml; $(MAKE) ocamlc DRIVER="../camlp4/etc/toploop.cmo ../camlp4/top/rprint.cmo driver/errors.cmo driver/compile.cmo driver/main_args.cmo driver/main.cmo"
-	mv ../ocaml/ocamlc ocamlrc
-	mv ../ocaml/ocamlc.saved ../ocaml/ocamlc
-	$(MAKE) after_ocamlr
-
-ocamlropt: always
-	$(MAKE) before_ocamlr
-	mv ../ocaml/ocamlopt ../ocaml/ocamlopt.saved
-	cd ../ocaml; $(MAKE) ocamlopt OPTDRIVER="../camlp4/etc/toploop.cmo ../camlp4/top/rprint.cmo driver/opterrors.cmo driver/optcompile.cmo driver/optmain.cmo"
-	mv ../ocaml/ocamlopt ocamlropt
-	mv ../ocaml/ocamlopt.saved ../ocaml/ocamlopt
-	$(MAKE) after_ocamlr
-
-ocamlrc.opt: always
-	$(MAKE) before_ocamlr.opt
-	mv ../ocaml/ocamlc.opt ../ocaml/ocamlc.opt.saved
-	cd ../ocaml; $(MAKE) ocamlc.opt DRIVER="../camlp4/etc/toploop.cmo ../camlp4/top/rprint.cmo driver/errors.cmo driver/compile.cmo driver/main_args.cmo driver/main.cmo"
-	mv ../ocaml/ocamlc.opt ocamlrc.opt
-	mv ../ocaml/ocamlc.opt.saved ../ocaml/ocamlc.opt
-	$(MAKE) after_ocamlr.opt
-
-ocamlropt.opt: always
-	$(MAKE) before_ocamlr.opt
-	mv ../ocaml/ocamlopt.opt ../ocaml/ocamlopt.opt.saved
-	cd ../ocaml; rm ocamlopt; $(MAKE) ocamlopt
-	cd ../ocaml; $(MAKE) ocamlopt.opt OPTDRIVER="../camlp4/etc/toploop.cmo ../camlp4/top/rprint.cmo driver/opterrors.cmo driver/optcompile.cmo driver/optmain.cmo"
-	mv ../ocaml/ocamlopt.opt ocamlropt.opt
-	mv ../ocaml/ocamlopt.opt.saved ../ocaml/ocamlopt.opt
-	$(MAKE) after_ocamlr.opt
-
-before_ocamlr:
-	cd etc; $(MAKE) OCAMLCFLAGS="-I ../../ocaml/typing -I ../../ocaml/utils" toploop.cmo
-	cd top; rm -f rprint.cmo; $(MAKE) INCLUDES="-I ../etc" rprint.cmo
-
-before_ocamlr.opt:
-	$(MAKE) before_ocamlr
-	cd etc; $(MAKE) OCAMLCFLAGS="-I ../../ocaml/typing -I ../../ocaml/utils" toploop.cmx
-	cd top; rm -f rprint.cmx; $(MAKE) INCLUDES="-I ../etc" rprint.cmx
-
-after_ocamlr:
-	rm -f top/rprint.cmo
-
-after_ocamlr.opt:
-	rm -f top/rprint.cmx
-
-clean::
-	rm -f ocamlrc ocamlropt ocamlrc.opt ocamlropt.opt
-
 always:
 
 # Normal bootstrap
