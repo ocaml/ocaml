@@ -145,6 +145,14 @@ standard library directory. Directories added with "-I" are searched
 after the current directory, in the order in which they were given on
 the command line, but before the standard library directory.
 
+\item["-impl" \var{filename}]
+Compile the file \var{filename} as an implementation file, even if its
+extension is not ".ml".
+
+\item["-intf" \var{filename}]
+Compile the file \var{filename} as an interface file, even if its
+extension is not ".mli".
+
 \item["-linkall"]
 Forces all modules contained in libraries to be linked in. If this
 flag is not given, unreferenced modules are not linked in. When
@@ -165,6 +173,12 @@ errors, the intermediate file is deleted afterwards. The name of this
 file is built from the basename of the source file with the extension
 ".ppi" for an interface (".mli") file and ".ppo" for an implementation
 (".ml") file.
+
+\item["-thread"]
+Compile or link multithreaded programs, in combination with the
+[Threads] library described in chapter~\ref{c:threads}. What this
+option actually does is select a special, thread-safe version of the
+standard library.
 
 \item["-v"]
 Print the version number of the compiler.

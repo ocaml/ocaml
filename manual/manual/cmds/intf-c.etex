@@ -222,8 +222,8 @@ word is a pointer to a piece of bytecode, the remaining words are
 "value" containing the environment.}
 \entree{"String_tag"}{A character string.}
 \entree{"Double_tag"}{A double-precision floating-point number.}
-%% \entree{"Double_array_tag"}{An array of double-precision
-%% floating-point numbers.}
+\entree{"Double_array_tag"}{An array of double-precision
+floating-point numbers (for the native-code compiler only).}
 \entree{"Abstract_tag"}{A block representing an abstract datatype.}
 \entree{"Final_tag"}{A block representing an abstract datatype
               with a ``finalization'' function, to be called when
@@ -234,7 +234,8 @@ word is a pointer to a piece of bytecode, the remaining words are
 
 Any word-aligned pointer to outside the heap can be safely cast to and
 from the type "value". This includes pointers returned by "malloc",
-and pointers to C variables obtained with the \verb'&' operator.
+and pointers to C variables (of size at least one word) obtained with
+the \verb'&' operator.
 
 \section{Representation of Caml Light data types}
 
@@ -250,15 +251,34 @@ This section describes how Caml Light data types are encoded in the
 \entree{"string"}{Blocks with tag "String_tag".}
 \end{tableau}
 
-\subsection{Product types}
+\subsection{Tuples and records}
 
-Tuples and arrays are represented by pointers to blocks, with tag~0.
+Tuples are represented by pointers to blocks, with tag~0.
 
 Records are also represented by zero-tagged blocks. The ordering of
 labels in the record type declaration determines the layout of
 the record fields: the value associated to the label
 declared first is stored in field~0 of the block, the value associated
 to the label declared next goes in field~1, and so on.
+
+The native-code compiler represents specially records whose fields all
+have type "float". These are represented as arrays of floating-point
+numbers, with tag "Double_array_tag". (See the section below on arrays.)
+
+\subsection{Arrays}
+
+In the bytecode compiler, all arrays are represented like tuples, 
+that is, as pointers to blocks tagged~0.
+
+The native-code compiler has a special, unboxed, more efficient
+representation for arrays of floating-point numbers (type 
+"float array"). These arrays are represented by pointers to blocks with tag
+"Double_array_tag". They should be accessed with the "Double_field"
+and "Store_double_field" macros.
+
+Arrays of floating-point numbers in the bytecode compiler should be
+accessed with "Double_val(Field(v, n))" for reading and
+"modify(&Field(v, n), copy_double(d))" for writing.
 
 \subsection{Concrete types}
 
@@ -287,6 +307,15 @@ contains "h", second field "t"}
 
 As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
 "Val_false" and "Val_true" to refer to "()", "false" and "true".
+
+\subsection{Objects}
+
+Objects are represented as zero-tagged blocks. The first field of the
+block refers to the object class and associated method suite, in a
+format that cannot easily be exploited from C. The remaining fields of
+the object contain the values of the instance variables of the object.
+Instance variables are stored in the order in which they appear in the
+class definition (taking inherited classes into account).
 
 \section{Operations on values}
 
@@ -334,6 +363,12 @@ Light strings can contain embedded null characters, that will confuse
 the usual C functions over strings. 
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
+\item (Native-code only.) "Double_field("\var{v}", "\var{n}")" returns
+the $n\th$ element of the array of floating-point numbers \var{v} (a
+block tagged "Double_array_tag").
+\item (Native-code only.) "Store_double_field("\var{v}", "\var{n}",
+"\var{d}")" stores the double precision floating-point number \var{d}
+in the $n\th$ element of the array of floating-point numbers \var{v}.
 \end{itemize}
 The expressions "Field("\var{v}", "\var{n}")",
 "Byte("\var{v}", "\var{n}")",
@@ -408,8 +443,8 @@ the pointer to a string array \var{p} (a \verb"char **").
 
 \subsection{Raising exceptions}
 
-C functions cannot raise arbitrary exceptions. However, two functions
-are provided to raise two standard exceptions:
+C functions cannot easily raise arbitrary exceptions. However, two
+functions are provided to raise two standard exceptions:
 \begin{itemize}
 \item "failwith("\var{s}")", where \var{s} is a null-terminated C string (with
 type \verb"char *"), raises exception "Failure" with argument \var{s}.

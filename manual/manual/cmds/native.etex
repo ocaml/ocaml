@@ -177,7 +177,7 @@ See section~\ref{s:comp-errors}.
 
 This section lists the known incompatibilities between the bytecode
 compiler and the native-code compiler. Except on those points, the two
-compilers should generate code that behave the same.
+compilers should generate code that behave identically.
 
 \begin{itemize}
 
@@ -186,7 +186,10 @@ hardware trap) instead of raising an exception ("Invalid_argument" and
 "Division_by_zero" respectively):
 \begin{itemize}
 \item accesses to arrays and strings out of bounds;
-\item division by zero, modulus by zero.
+\item integer division by zero, modulus by zero;
+\item on the Alpha processor only, floating-point operations involving
+infinite or denormalized numbers (all other processors supported by
+"ocamlopt" treat these numbers correctly, as per the IEEE 754 standard).
 \end{itemize}
 
 \item The following library functions print a fatal error message and
@@ -194,7 +197,7 @@ abort the program instead of raising the "Invalid_argument" exception:
 \begin{itemize}
 \item structural comparisons "(=)", "(<>)", etc., when encountering a
 functional value;
-\item "Array.new" and "String.create" when the requested size is
+\item "Array.create" and "String.create" when the requested size is
 negative or exceeds the memory manager limits;
 \item "output_value" when encountering a functional value or pointers
 outside the Caml heap (such as input-output buffers).

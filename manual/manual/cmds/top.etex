@@ -74,7 +74,7 @@ then immediately returns to the "#" prompt.
 
 \begin{windows}
 In addition to the text-only command "ocaml.exe", which works exactly
-linke under Unix (see above), a graphical user interface for the
+as under Unix (see above), a graphical user interface for the
 toplevel is available under the name "ocamlwin.exe". It should be
 launched from the Windows file manager or program manager.
 
