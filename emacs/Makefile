@@ -40,11 +40,17 @@ install:
           $(MAKE) simple-install; \
         fi
 
+# install the .el files, but do not compile them.
+install-el:
+	$(MAKE) NOCOMPILE=true install
+
 simple-install:
 	@echo "Installing in $(EMACSDIR)..."
 	if test -d $(EMACSDIR); then : ; else mkdir -p $(EMACSDIR); fi
 	cp $(FILES) $(EMACSDIR)
-	cd $(EMACSDIR); $(EMACS) --batch --eval '$(COMPILECMD)'
+	if [ -z "$(NOCOMPILE)" ]; then \
+	  cd $(EMACSDIR); $(EMACS) --batch --eval '$(COMPILECMD)'; \
+	fi
 
 ocamltags:	ocamltags.in
 	sed -e 's:@EMACS@:$(EMACS):' ocamltags.in >ocamltags
