@@ -273,6 +273,8 @@ Grammar.extend
      grammar_entry_create "class_type_declaration"
    and field_expr : 'field_expr Grammar.Entry.e =
      grammar_entry_create "field_expr"
+   and meth_list : 'meth_list Grammar.Entry.e =
+     grammar_entry_create "meth_list"
    and field : 'field Grammar.Entry.e = grammar_entry_create "field"
    and typevar : 'typevar Grammar.Entry.e = grammar_entry_create "typevar"
    and clty_longident : 'clty_longident Grammar.Entry.e =
@@ -2431,15 +2433,18 @@ Grammar.extend
     Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
     Some (Gramext.Level "simple"),
     [None, None,
-     [[Gramext.Stoken ("", "<");
-       Gramext.Slist0sep
-         (Gramext.Snterm (Grammar.Entry.obj (field : 'field Grammar.Entry.e)),
-          Gramext.Stoken ("", ";"));
-       Gramext.Sopt (Gramext.Stoken ("", "..")); Gramext.Stoken ("", ">")],
+     [[Gramext.Stoken ("", "<"); Gramext.Stoken ("", ">")],
       Gramext.action
-        (fun _ (v : string option) (ml : 'field list) _
+        (fun _ _ (loc : Lexing.position * Lexing.position) ->
+           (MLast.TyObj (loc, [], false) : 'ctyp));
+      [Gramext.Stoken ("", "<");
+       Gramext.Snterm
+         (Grammar.Entry.obj (meth_list : 'meth_list Grammar.Entry.e));
+       Gramext.Stoken ("", ">")],
+      Gramext.action
+        (fun _ (ml, v : 'meth_list) _
            (loc : Lexing.position * Lexing.position) ->
-           (MLast.TyObj (loc, ml, o2b v) : 'ctyp));
+           (MLast.TyObj (loc, ml, v) : 'ctyp));
       [Gramext.Stoken ("", "#");
        Gramext.Snterm
          (Grammar.Entry.obj
@@ -2448,6 +2453,27 @@ Grammar.extend
         (fun (id : 'class_longident) _
            (loc : Lexing.position * Lexing.position) ->
            (MLast.TyCls (loc, id) : 'ctyp))]];
+    Grammar.Entry.obj (meth_list : 'meth_list Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Stoken ("", "..")],
+      Gramext.action
+        (fun _ (loc : Lexing.position * Lexing.position) ->
+           ([], true : 'meth_list));
+      [Gramext.Snterm (Grammar.Entry.obj (field : 'field Grammar.Entry.e))],
+      Gramext.action
+        (fun (f : 'field) (loc : Lexing.position * Lexing.position) ->
+           ([f], false : 'meth_list));
+      [Gramext.Snterm (Grammar.Entry.obj (field : 'field Grammar.Entry.e));
+       Gramext.Stoken ("", ";")],
+      Gramext.action
+        (fun _ (f : 'field) (loc : Lexing.position * Lexing.position) ->
+           ([f], false : 'meth_list));
+      [Gramext.Snterm (Grammar.Entry.obj (field : 'field Grammar.Entry.e));
+       Gramext.Stoken ("", ";"); Gramext.Sself],
+      Gramext.action
+        (fun (ml, v : 'meth_list) _ (f : 'field)
+           (loc : Lexing.position * Lexing.position) ->
+           (f :: ml, v : 'meth_list))]];
     Grammar.Entry.obj (field : 'field Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("LIDENT", ""); Gramext.Stoken ("", ":");

@@ -735,8 +735,14 @@ EXTEND
   ;
   ctyp: LEVEL "simple"
     [ [ "#"; id = class_longident -> <:ctyp< # $list:id$ >>
-      | "<"; ml = LIST0 field SEP ";"; v = OPT ".."; ">" ->
-          <:ctyp< < $list:ml$ $opt:o2b v$ > >> ] ]
+      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $opt:v$ > >>
+      | "<"; ">" -> <:ctyp< < > >> ] ]
+  ;
+  meth_list:
+    [ [ f = field; ";"; (ml, v) = SELF -> ([f :: ml], v)
+      | f = field; ";" -> ([f], False)
+      | f = field -> ([f], False)
+      | ".." -> ([], True) ] ]
   ;
   field:
     [ [ lab = LIDENT; ":"; t = ctyp -> (lab, t) ] ]

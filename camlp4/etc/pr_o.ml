@@ -389,7 +389,7 @@ and match_assoc_list loc pel dg k =
         [: `HVbox [: `S LR "_"; `S LR "->" :]; `raise_match_failure loc k :]
   | _ ->
       BEVbox
-        [: `HVbox [: :]; listwbws match_assoc [: :] (S LR "|") pel "" k :] ]
+        [: `HVbox [: :]; listwbws match_assoc [: :] (S LR "|") pel dg k :] ]
 and match_assoc b (p, w, e) dg k =
   let s =
     match w with
@@ -957,11 +957,11 @@ pr_expr.pr_levels :=
                               [: `S LR "fun";
                                  list simple_patt [p :: pl] ""
                                    [: `S LR "->" :] :];
-                           `expr e "" k :] :]
+                           `expr e dg k :] :]
               | _ ->
                   [: `Vbox
                         [: `HVbox [: :]; `S LR "function";
-                           `match_assoc_list loc pel "" k :] :] ]
+                           `match_assoc_list loc pel dg k :] :] ]
             else
               match pel with
               [ [] ->
@@ -1034,7 +1034,7 @@ pr_expr.pr_levels :=
               match eel_e with
               [ ([], <:expr< () >>) ->
                   [: `BEbox [: `S LR "if"; `expr e1 "" [: :]; `S LR "then" :];
-                     `expr1 e2 dg k; `S LR "else"; `S LR "()" :]
+                     `expr1 e2 dg k :]
               | (eel, <:expr< () >>) ->
                   let (eel, (e1f, e2f)) =
                     let r = List.rev eel in
@@ -1081,7 +1081,7 @@ pr_expr.pr_levels :=
                            `HVbox [: `S LR "else"; `expr1 e dg k :] :] :] ]
             else
               match eel_e with
-              [ (_, <:expr< () >>) -> [: `next e "" k :]
+              [ (_, <:expr< () >>) -> [: `simple_expr e "" k :]
               | (eel, e) ->
                   [: `HVbox
                         [: `HVbox [: :];
