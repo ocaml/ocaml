@@ -4,8 +4,6 @@ PROGS=test1.byt test2.byt test3.byt test4.byt test5.byt test6.byt \
 
 include ../../../config/Makefile
 
-VPATH=../../threads/Tests
-
 CAMLC=../../../boot/ocamlrun ../../../ocamlc -I .. -I ../../unix -I ../../../stdlib 
 
 CAMLOPT=../../../boot/ocamlrun ../../../ocamlopt -I .. -I ../../unix -I ../../../stdlib 
@@ -18,14 +16,12 @@ clean:
 	rm -f *.cm* *.byt *.out
 	rm -f $(PROGS:.byt=.ml)
 
-.SUFFIXES: .ml .byt .out
-
-.ml.byt:
+%.byt: ../../threads/Tests/%.ml
 	cp ../../threads/Tests/$*.ml $*.ml
 	$(CAMLC) -custom -o $*.byt unix.cma threads.cma $*.ml ../libthreads.a ../../unix/libunix.a -cclib -lpthread
 
-.ml.out:
+%.out: ../../threads/Tests/%.ml
 	cp ../../threads/Tests/$*.ml $*.ml
 	$(CAMLOPT) -o $*.out unix.cmxa threads.cmxa $*.ml ../libthreadsnat.a ../../unix/libunix.a -cclib -lpthread
 
-$(PROGS): ../threads.cma ../libthreads.a ../stdlib.cma
+$(PROGS): ../threads.cma ../libthreads.a
