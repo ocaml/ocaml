@@ -1,0 +1,73 @@
+# Makefile for the "num" (exact rational arithmetic) library
+
+!include ..\..\config\Makefile.nt
+
+# Compilation options
+CC=$(BYTECC)
+CFLAGS=-O -I.\bignum\h -I..\..\byterun $(BYTECCCOMPOPTS)
+CAMLC=..\..\boot\cslrun ..\..\boot\cslc -I ..\..\boot
+CAMLOPT=..\..\boot\cslrun ..\..\cslopt -I ..\..\stdlib
+
+CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
+  ratio.cmo num.cmo arith_status.cmo
+
+CAMLINTF=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
+
+COBJS=nat_stubs.obj
+
+all: libnums.lib nums.cma $(CMIFILES)
+
+allopt: libnums.lib nums.cmxa $(CMIFILES)
+
+nums.cma: $(CAMLOBJS)
+	$(CAMLC) -a -o nums.cma $(CAMLOBJS)
+
+nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx)
+
+libnums.lib: bignum\libbignum.lib $(COBJS)
+	$(MKLIB)libnums.lib bignum\libbignum.lib $(COBJS)
+
+bignum\libbignum.lib:
+	cd bignum & $(MAKEREC)
+
+$(CAMLOBJS:.cmo=.cmx): ..\..\cslopt
+
+install:
+	cp libnums.lib $(LIBDIR)\libnums.lib
+	cp nums.cma $(CAMLINTF) $(LIBDIR)
+
+installopt:
+	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.lib $(LIBDIR)
+
+clean:
+	rm -f *.cm*
+
+realclean: clean
+	rm -f *.lib *.obj
+	rm -f nat.ml int_misc.ml
+	cd bignum & $(MAKEREC) clean
+	cd test & $(MAKEREC) clean
+
+.SUFFIXES: .ml .mli .mlp .cmi .cmo .cmx
+
+.mli.cmi:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+.mlp.ml:
+	$(CPP) $< > $@
+
+int_misc.ml: int_misc.mlp
+nat.ml: nat.mlp
+nat_stubs.obj: nat.h
+
+depend:
+	sed -e "s/\.o/.obj/g" .depend > .depend.nt
+
+!include .depend.nt

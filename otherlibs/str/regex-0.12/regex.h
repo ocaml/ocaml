@@ -29,6 +29,11 @@
 #include <stddef.h>
 #endif
 
+#ifdef _WIN32
+/* Same for Microsoft Visual C++ */
+#include <stddef.h>
+#endif
+
 
 /* The following bits are used to determine the regexp syntax we
    recognize.  The set/not-set meanings are chosen so that Emacs syntax

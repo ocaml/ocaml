@@ -1,0 +1,61 @@
+# Makefile for the str library
+
+!include ..\..\config\Makefile.nt
+
+# Compilation options
+CC=$(BYTECC)
+CFLAGS=-I$(REGEXLIB) -I..\..\byterun $(BYTECCCOMPOPTS)
+CAMLC=..\..\boot\cslrun ..\..\boot\cslc -I ..\..\boot
+CAMLOPT=..\..\boot\cslrun ..\..\cslopt -I ..\..\stdlib
+REGEXLIB=regex-0.12
+REGEXFLAGS=-DREGEX_MALLOC -DSTDC_HEADERS $(BYTECCCOMPOPTS)
+COBJS=strstubs.obj $(REGEXLIB)\regex.obj
+
+all: libstr.lib str.cmi str.cma
+
+allopt: libstr.lib str.cmi str.cmxa
+
+libstr.lib: $(COBJS)
+	$(MKLIB)libstr.lib $(COBJS)
+
+str.cma: str.cmo
+	$(CAMLC) -a -o str.cma str.cmo
+
+str.cmxa: str.cmx
+	$(CAMLOPT) -a -o str.cmxa str.cmx
+
+$(REGEXLIB)\regex.obj: $(REGEXLIB)\regex.c $(REGEXLIB)\regex.h
+	cd $(REGEXLIB) & $(CC) $(REGEXFLAGS) -c regex.c
+
+str.cmx: ..\..\cslopt
+
+clean:
+	rm -f *.cm*
+
+realclean: clean
+	rm -f *.lib *.obj
+	rm -f $(REGEXLIB)\*.obj
+
+install:
+	cp libstr.lib $(LIBDIR)\libstr.lib
+	cp str.cma str.cmi $(LIBDIR)
+
+installopt:
+	cp str.cmx str.cmxa str.lib $(LIBDIR)
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.mli.cmi:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+depend:
+	gcc -MM $(CFLAGS) *.c > .depend
+	..\..\tools\csldep *.mli *.ml >> .depend
+
+!include .depend
