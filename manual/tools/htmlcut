@@ -82,6 +82,8 @@ while(<INPUT>) {
   s|<A HREF="#([^"]*)">X</A>|'<A HREF="' . $url{$1} . '">' . $label{$1} . '</A>'|ige;
   print $_;
 }
+select(STDOUT);
+if ($level1 >= 1) { print "</UL>\n"; }
 
 sub print_title {
     local ($title) = @_;
