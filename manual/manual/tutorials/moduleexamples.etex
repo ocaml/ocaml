@@ -1,9 +1,10 @@
 \chapter{The module system} \label{c:moduleexamples}
-\pdfchapter{Tutorial: The module system}
+\pdfchapterfold{-5}{Tutorial: The module system}
 
 This chapter introduces the module system of Objective Caml.
 
-\subsection*{Structures}
+\section{Structures}
+\pdfsection{Structures}
 
 A primary motivation for modules is to package together related
 definitions (such as the definitions of a data type and associated
@@ -52,7 +53,8 @@ type "queue" defined in "PrioQueue".
 PrioQueue.insert PrioQueue.empty 1 "hello";;
 \end{caml_example}
 
-\subsection*{Signatures}
+\section{Signatures}
+\pdfsection{Signatures}
 
 Signatures are interfaces for structures. A signature specifies
 which components of a structure are accessible from the outside, and
@@ -92,7 +94,8 @@ An alternate syntax is provided for the above:
 module PrioQueue : PRIOQUEUE = struct ... end;;
 \end{verbatim}
 
-\subsection*{Functors}
+\section{Functors}
+\pdfsection{Functors}
 
 Functors are ``functions'' from structures to structures. They are used to
 express parameterized structures: a structure \var{A} parameterized by a
@@ -150,7 +153,8 @@ module StringSet = Set(OrderedString);;
 StringSet.member "bar" (StringSet.add "foo" StringSet.empty);;
 \end{caml_example}
 
-\subsection*{Functors and type abstraction}
+\section{Functors and type abstraction}
+\pdfsection{Functors and type abstraction}
 
 As in the "PrioQueue" example, it would be good style to hide the
 actual implementation of the type "set", so that users of the
@@ -239,7 +243,8 @@ operations from "AbstractStringSet" to values of type
 "NoCaseStringSet.set" could give incorrect results, or build
 lists that violate the invariants of "NoCaseStringSet".
 
-\subsection*{Modules and separate compilation}
+\section{Modules and separate compilation}
+\pdfsection{Modules and separate compilation}
 
 All examples of modules so far have been given in the context of the
 interactive system. However, modules are most useful for large,

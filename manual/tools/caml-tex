@@ -112,10 +112,10 @@ foreach $infile (@ARGV) {
       while(<IN>) {
         last if m/^\\end{caml_eval}\s*$/;
         if (m/;; *$/) {
-	  while ($lastread =~ s/^#//) { }
+          while ($lastread =~ s/^  //) { }
 	  while($lastread) {
 	    last if $lastread =~ s/^#//;
-	    print $lastread;
+	    print STDERR $lastread;
 	    $lastread = <TOPLEVEL>;
 	  }
         }

@@ -9,6 +9,8 @@
 
 {\bf Xavier Leroy}
 
+(with Didier Rémy, Jérôme Vouillon and Damien Doligez)
+
 Copyright \copyright\ 1998 Institut National de Recherche en Informatique et
 Automatique
 
@@ -29,6 +31,7 @@ and as a
 \input coreexamples.tex
 \input objectexamples.tex
 \input moduleexamples.tex
+\input advexamples.tex
 
 \part{The Objective Caml language} \label{p:refman}
 \input refman.tex

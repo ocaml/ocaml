@@ -13,7 +13,6 @@ Valérie Ménissier-Morain, technical report 141, INRIA, july 1992
 "INRIA/publications/RT", file "RT-0141.ps.Z"). A summary of the
 functions is given below.
 
-\begin{unix}
 Programs that use the "num" library must be linked in ``custom
 runtime'' mode, as follows:
 \begin{alltt}
@@ -25,21 +24,6 @@ For interactive use of the "nums" library, do:
         ocamlmktop -custom -o mytop nums.cma -cclib -lnums
         ./mytop
 \end{alltt}
-\end{unix}
-
-\begin{windows}
-Programs that use the "num" library must be linked in ``custom
-runtime'' mode, as follows:
-\begin{alltt}
-        ocamlc -custom \var{other options} nums.cma \var{other files} \%CAMLLIB\%/libnums.lib
-        ocamlopt \var{other options} nums.cmxa \var{other files} \%CAMLLIB\%/libnums.lib
-\end{alltt}
-For interactive use of the "nums" library, do:
-\begin{alltt}
-        ocamlmktop -custom -o mytop.exe nums.cma \%CAMLLIB\%/libnums.lib
-        ./mytop.exe
-\end{alltt}
-\end{windows}
 
 \begin{library}
 \input num.tex

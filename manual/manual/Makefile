@@ -1,6 +1,6 @@
 FILES=allfiles.tex biblio.tex foreword.tex version.tex foreword.htex
 DVI2TXT=../tools/dvi2txt
-TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
+TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:/usr/local/lib/tex/inputs
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 CSLDIR=../../csl
@@ -35,7 +35,7 @@ html: files
 	cd htmlman; \
         TEXINPUTS=$(TEXINPUTS) ../../tools/texexpand ../manual.htex | \
         ../../tools/htmlgen > ../manual.html
-	cd htmlman; ../../tools/htmlcut -5 -17 ../manual.html > index.html
+	cd htmlman; ../../tools/htmlcut -6 -18 ../manual.html > index.html
 	cd htmlman; ../../tools/htmlthread node*.html
 
 files: $(FILES)

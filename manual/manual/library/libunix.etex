@@ -10,7 +10,6 @@ details on the behavior of these functions.
 Not all functions are provided by all Unix variants. If some functions
 are not available, they will raise "Invalid_arg" when called.
 
-\begin{unix}
 Programs that use the "unix" library must be linked in ``custom
 runtime'' mode, as follows:
 \begin{alltt}
@@ -22,27 +21,11 @@ For interactive use of the "unix" library, do:
         ocamlmktop -custom -o mytop unix.cma -cclib -lunix
         ./mytop
 \end{alltt}
-\end{unix}
 
 \begin{windows}
 A fairly complete emulation of the Unix system calls is provided in
 the Windows version of Objective Caml. The end of this chapter gives
 more information on the functions that are not supported under Windows.
-
-Programs that use the "unix" library must be linked in ``custom
-runtime'' mode, as follows:
-\begin{alltt}
-        ocamlc -custom \var{other options} unix.cma \var{other files} \char92
-                \%CAMLLIB\%/libunix.lib wsock32.lib
-        ocamlopt \var{other options} unix.cmxa \var{other files} \char92
-                \%CAMLLIB\%/libunix.lib wsock32.lib
-\end{alltt}
-For interactive use of the "unix" library, do:
-\begin{alltt}
-        ocamlmktop -custom -o mytop.exe unix.cma \char92
-                \%CAMLLIB\%/libunix.lib wsock32.lib
-        mytop.exe
-\end{alltt}
 \end{windows}
 
 \begin{library}

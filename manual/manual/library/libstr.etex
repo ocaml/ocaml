@@ -6,7 +6,6 @@ some based on regular expressions. It is intended to support the kind
 of file processing that is usually performed with scripting languages
 such as "awk", "perl" or "sed".
 
-\begin{unix}
 Programs that use the "str" library must be linked in ``custom
 runtime'' mode, as follows:
 \begin{alltt}
@@ -18,21 +17,6 @@ For interactive use of the "str" library, do:
         ocamlmktop -custom -o mytop str.cma -cclib -lstr
         ./mytop
 \end{alltt}
-\end{unix}
-
-\begin{windows}
-Programs that use the "str" library must be linked in ``custom
-runtime'' mode, as follows:
-\begin{alltt}
-        ocamlc -custom \var{other options} str.cma \var{other files} \%CAMLLIB\%/libstr.lib
-        ocamlopt \var{other options} str.cmxa \var{other files} \%CAMLLIB\%/libstr.lib
-\end{alltt}
-For interactive use of the "str" library, do:
-\begin{alltt}
-        ocamlmktop -custom -o mytop.exe str.cma \%CAMLLIB\%/libstr.lib
-        ./mytop.exe
-\end{alltt}
-\end{windows}
 
 \begin{library}
 \input str.tex

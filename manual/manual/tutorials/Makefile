@@ -1,4 +1,4 @@
-FILES= coreexamples.tex objectexamples.tex moduleexamples.tex
+FILES= coreexamples.tex objectexamples.tex moduleexamples.tex advexamples.tex
 
 CAMLLATEX=../../tools/caml-tex
 TEXQUOTE=../../tools/texquote2

@@ -388,13 +388,16 @@ truth value of the C integer \var{x}.
 \subsection{Accessing blocks}
 
 \begin{itemize}
-\item "Wosize_val("\var{v}")" returns the size of value \var{v}, in words,
+\item "Wosize_val("\var{v}")" returns the size of the block \var{v}, in words,
 excluding the header.
-\item "Tag_val("\var{v}")" returns the tag of value \var{v}.
+\item "Tag_val("\var{v}")" returns the tag of the block \var{v}.
 \item "Field("\var{v}", "\var{n}")" returns the value contained in the
 $n\th$ field
 of the structured block \var{v}. Fields are numbered from 0 to
 $\hbox{"Wosize_val"}(v)-1$.
+\item "Store_field("\var{b}", "\var{n}", "\var{v}")" stores the value
+\var{v} in the field number \var{n} of value \var{b}, which must be a
+structured block.
 \item "Code_val("\var{v}")" returns the code part of the closure \var{v}.
 \item "string_length("\var{v}")" returns the length (number of characters)
 of the string \var{v}.
@@ -468,10 +471,10 @@ an array of floating-point numbers.)
 the pointer to a string array \var{p} (a \verb"char **").
 \end{itemize}
 
-\subsubsection{Optimized interface}
+\subsubsection{Low-level interface}
 
-The following functions are more efficient than "alloc", but also much
-more difficult to use.
+The following functions are slightly more efficient than "alloc", but
+also much more difficult to use.
 
 From the standpoint of the allocation functions, blocks are divided
 according to their size as zero-sized blocks, small blocks (with size
@@ -566,7 +569,7 @@ Example:
 \begin{verbatim}
 void foo (value v1, value v2, value v3)
 {
-  CAMLparam (v1, v2, v3);
+  CAMLparam3 (v1, v2, v3);
   ...
   CAMLreturn;
 }
@@ -594,8 +597,8 @@ Example:
 \begin{verbatim}
 value bar (value v1, value v2, value v3)
 {
-  CAMLparam (v1, v2, v3);
-  CAMLlocal result;
+  CAMLparam3 (v1, v2, v3);
+  CAMLlocal1 (result);
   result = alloc (3, 0);
   ...
   CAMLreturn result;
@@ -615,8 +618,8 @@ Example:
 \begin{verbatim}
 value bar (value v1, value v2, value v3)
 {
-  CAMLparam (v1, v2, v3);
-  CAMLlocal result;
+  CAMLparam3 (v1, v2, v3);
+  CAMLlocal1 (result);
   result = alloc (3, 0);
   Store_field (result, 0, v1);
   Store_field (result, 1, v2);
@@ -640,20 +643,22 @@ A registered global variable "v" can be un-registered by calling
 identifiers, structure tags) that start with "caml__".  Do not use any
 identifier starting with "caml__" in your programs.
 
-\subsection{Optimized interface}
+\subsection{Low-level interface}
 
 % Il faudrait simplifier violemment ce qui suit.
 % En gros, dire quand on n'a pas besoin de declarer les variables
 % et dans quels cas on peut se passer de "Store_field".
 
-The following details are provided for the very infrequent case where
-stub code needs to be optimized.
+We now give the GC rules corresponding to the low-level allocation
+functions "alloc_small" and "alloc_shr".  You can ignore those rules
+if you stick to the simplified allocation function "alloc".
 
 \begin{gcrule} After a structured block (a block with tag less than
-"No_scan_tag") is allocated, all fields of this block must be filled
-with well-formed values before the next allocation operation. If the
-block has been allocated with "alloc_small", filling
-is performed by direct assignment to the fields of the block:
+"No_scan_tag") is allocated with the low-level functions, all fields
+of this block must be filled with well-formed values before the next
+allocation operation. If the block has been allocated with
+"alloc_small", filling is performed by direct assignment to the fields
+of the block:
 \begin{alltt}
         Field(\var{v}, \var{n}) = \nth{v}{n};
 \end{alltt}
@@ -672,42 +677,42 @@ not represent well-formed values.
 If you really need to allocate before the fields can receive their
 final value,  first initialize with a constant value (e.g.
 "Val_long(0)"), then allocate, then modify the fields with the correct
-value (see rule~4).
+value (see rule~6).
 
-\begin{gcrule} Local variables and function parameters containing
-values must be registered with the garbage collector (using the
-"Begin_roots" and "End_roots" macros), if they are to survive a call
-to an allocation function.
-\end{gcrule}
-
-Registration is performed with the "Begin_roots" set of macros.
-"Begin_roots1("\var{v}")" registers variable \var{v} with the garbage
-collector.  Generally, \var{v} will be a local variable or a
-parameter of your function.  It must be initialized to a valid value
-(e.g. "Val_unit") before the first allocation.  Likewise,
-"Begin_roots2", \ldots, "Begin_roots5"
-let you register up to 5 variables at the same time.  "Begin_root" is
-the same as "Begin_roots1".  "Begin_roots_block("\var{ptr}","\var{size}")"
-allows you to register an array of roots.  \var{ptr} is a pointer to
-the first element, and \var{size} is the number of elements in the
-array.
-
-Once registered, each of your variables (or array element) has the
-following properties: if it points to a heap-allocated block, this
-block (and its contents) will not be reclaimed; moreover, if this
-block is relocated by the garbage collector, the variable is updated
-to point to the new location for the block.
-
-Each of the "Begin_roots" macros open a C block that must be closed
-with a matching "End_roots" at the same nesting level.  The block must
-be exited normally (i.e. not with "return" or "goto").  However, the
-roots are automatically un-registered if a Caml exception is raised,
-so you can exit the block with "failwith", "invalid_argument", or one
-of the "raise" functions.
-
-{\bf Note:} The "Begin_roots" macros use a local variable and a
-structure tag named "caml__roots_block".  Do not use this identifier
-in your programs.
+%% \begin{gcrule} Local variables and function parameters containing
+%% values must be registered with the garbage collector (using the
+%% "Begin_roots" and "End_roots" macros), if they are to survive a call
+%% to an allocation function.
+%% \end{gcrule}
+%% 
+%% Registration is performed with the "Begin_roots" set of macros.
+%% "Begin_roots1("\var{v}")" registers variable \var{v} with the garbage
+%% collector.  Generally, \var{v} will be a local variable or a
+%% parameter of your function.  It must be initialized to a valid value
+%% (e.g. "Val_unit") before the first allocation.  Likewise,
+%% "Begin_roots2", \ldots, "Begin_roots5"
+%% let you register up to 5 variables at the same time.  "Begin_root" is
+%% the same as "Begin_roots1".  "Begin_roots_block("\var{ptr}","\var{size}")"
+%% allows you to register an array of roots.  \var{ptr} is a pointer to
+%% the first element, and \var{size} is the number of elements in the
+%% array.
+%% 
+%% Once registered, each of your variables (or array element) has the
+%% following properties: if it points to a heap-allocated block, this
+%% block (and its contents) will not be reclaimed; moreover, if this
+%% block is relocated by the garbage collector, the variable is updated
+%% to point to the new location for the block.
+%% 
+%% Each of the "Begin_roots" macros open a C block that must be closed
+%% with a matching "End_roots" at the same nesting level.  The block must
+%% be exited normally (i.e. not with "return" or "goto").  However, the
+%% roots are automatically un-registered if a Caml exception is raised,
+%% so you can exit the block with "failwith", "invalid_argument", or one
+%% of the "raise" functions.
+%% 
+%% {\bf Note:} The "Begin_roots" macros use a local variable and a
+%% structure tag named "caml__roots_block".  Do not use this identifier
+%% in your programs.
 
 \begin{gcrule} Direct assignment to a field of a block, as in
 \begin{alltt}
@@ -729,46 +734,62 @@ well-formed value; then, call the "modify" function:
 \end{gcrule}
 
 To illustrate the rules above, here is a C function that builds and
-returns a list containing the two integers given as parameters:
+returns a list containing the two integers given as parameters.
+First, we write it using the simplified allocation functions:
 \begin{verbatim}
 value alloc_list_int(int i1, int i2)
 {
-  value result = Val_unit;
-  value r = Val_unit;
+  CAMLparam0;
+  CAMLlocal2 (result, r);
 
-  Begin_roots2 (r, result);
-    r = alloc(2, 0);                        /* Allocate a cons cell */
-    Field(r, 0) = Val_int(i2);              /* car = the integer i2 */
-    Field(r, 1) = Val_int(0);               /* cdr = the empty list [] */
-    result = alloc(2, 0);                   /* Allocate the other cons cell */
-    Field(result, 0) = Val_int(i1);         /* car = the integer i1 */
-    Field(result, 1) = r;                   /* cdr = the first cons cell */
-  End_roots ();
-  return result;
+  r = alloc(2, 0);                        /* Allocate a cons cell */
+  Store_field(r, 0, Val_int(i2));         /* car = the integer i2 */
+  Store_field(r, 1, Val_int(0));          /* cdr = the empty list [] */
+  result = alloc(2, 0);                   /* Allocate the other cons cell */
+  Store_field(result, 0, Val_int(i1));    /* car = the integer i1 */
+  Store_field(result, 1, r);              /* cdr = the first cons cell */
+  CAMLreturn result;
 }
 \end{verbatim}
 Here, the registering of "result" is not strictly needed, because no
 allocation takes place after it gets its value, but it's easier and
 safer to simply register all the local variables that have type "value".
 
-In the example above, the list is built bottom-up. Here is an
+Here is the same function written using the low-level allocation
+functions.  We notice that the cons cells are small blocks and can be
+allocated with "alloc_small", and filled by direct assignments on
+their fields.
+\begin{verbatim}
+value alloc_list_int(int i1, int i2)
+{
+  CAMLparam0;
+  CAMLlocal2 (result, r);
+
+  r = alloc_small(2, 0);                  /* Allocate a cons cell */
+  Field(r, 0) = Val_int(i2);              /* car = the integer i2 */
+  Field(r, 1) = Val_int(0);               /* cdr = the empty list [] */
+  result = alloc_small(2, 0);             /* Allocate the other cons cell */
+  Field(result, 0) = Val_int(i1);         /* car = the integer i1 */
+  Field(result, 1) = r;                   /* cdr = the first cons cell */
+  CAMLreturn result;
+}
+\end{verbatim}
+In the two examples above, the list is built bottom-up. Here is an
 alternate way, that proceeds top-down. It is less efficient, but
 illustrates the use of "modify".
 \begin{verbatim}
 value alloc_list_int(int i1, int i2)
 {
-  value tail;
-  value r = Val_unit;
+  CAMLparam0;
+  CAMLlocal2 (tail, r);
 
-  Begin_root (r);
-    r = alloc(2, 0);                        /* Allocate a cons cell */
-    Field(r, 0) = Val_int(i1);              /* car = the integer i1 */
-    Field(r, 1) = Val_int(0);               /* A dummy value
-    tail = alloc(2, 0);                     /* Allocate the other cons cell */
-    Field(tail, 0) = Val_int(i2);           /* car = the integer i2 */
-    Field(tail, 1) = Val_int(0);            /* cdr = the empty list [] */
-    modify(&Field(r, 1), tail);             /* cdr of the result = tail */
-  End_roots ();
+  r = alloc_small(2, 0);                  /* Allocate a cons cell */
+  Field(r, 0) = Val_int(i1);              /* car = the integer i1 */
+  Field(r, 1) = Val_int(0);               /* A dummy value
+  tail = alloc_small(2, 0);               /* Allocate the other cons cell */
+  Field(tail, 0) = Val_int(i2);           /* car = the integer i2 */
+  Field(tail, 1) = Val_int(0);            /* cdr = the empty list [] */
+  modify(&Field(r, 1), tail);             /* cdr of the result = tail */
   return r;
 }
 \end{verbatim}

@@ -1,5 +1,5 @@
 \chapter{The core language} \label{c:core-xamples}
-\pdfchapter{Tutorial: The core language}
+\pdfchapterfold{-9}{Tutorial: The core language}
 
 This part of the manual is a tutorial introduction to the Objective
 Caml language. A good familiarity with programming in a conventional
@@ -9,7 +9,8 @@ core language. Chapter~\ref{c:objectexamples} deals with the
 object-oriented features, and chapter~\ref{c:moduleexamples} with the
 module system.
 
-\subsection*{Basics}
+\section{Basics}
+\pdfsection{Basics}
 
 For this overview of Caml, we use the interactive system, which
 is started by running "ocaml" from the Unix shell, or by launching the
@@ -46,7 +47,8 @@ let rec fib n =
 fib 10;;
 \end{caml_example}
 
-\subsection*{Data types}
+\section{Data types}
+\pdfsection{Data types}
 
 In addition to integers and floating-point numbers,  Caml offers the
 usual basic data types: booleans, characters, and character strings.
@@ -110,7 +112,8 @@ data structures. Most Caml data structures are immutable, but a few
 (most notably arrays) are {\em mutable}, meaning that they can be
 modified in-place at any time.
 
-\subsection*{Functions as values}
+\section{Functions as values}
+\pdfsection{Functions as values}
 
 Caml is a  functional language: functions in the full mathematical
 sense are supported and can be passed around freely just as any other
@@ -147,7 +150,8 @@ let rec map f l =
   | hd :: tl -> f hd :: map f tl;;
 \end{caml_example}
 
-\subsection*{Records and variants}
+\section{Records and variants}
+\pdfsection{Records and variants}
 
 User-defined data structures include records and variants. Both are
 defined with the "type" declaration. Here, we declare a record type to
@@ -228,7 +232,8 @@ let rec insert x btree =
                 else Node(y, left, insert x right);;
 \end{caml_example}
 
-\subsection*{Imperative features}
+\section{Imperative features}
+\pdfsection{Imperative features}
 
 Though all examples so far were written in purely applicative style,
 Caml is also equipped with full imperative features. This includes the
@@ -299,7 +304,8 @@ let (!) r = r.contents;;
 let (:=) r newval = r.contents <- newval;;
 \end{caml_example}
 
-\subsection*{Exceptions}
+\section{Exceptions}
+\pdfsection{Exceptions}
 
 Caml provides exceptions for signalling and handling exceptional
 conditions. Exceptions can also be used as a general-purpose non-local
@@ -356,7 +362,8 @@ let temporarily_set_reference ref newval funct =
     raise x;;
 \end{caml_example}
 
-\subsection*{Symbolic processing of expressions}
+\section{Symbolic processing of expressions}
+\pdfsection{Symbolic processing of expressions}
 
 We finish this introduction with a more complete example
 representative of the use of Caml for symbolic processing: formal
@@ -406,7 +413,8 @@ let rec deriv exp dv =
 deriv (Quot(Const 1.0, Var "x")) "x";;
 \end{caml_example}
 
-\subsection*{Pretty-printing and parsing}
+\section{Pretty-printing and parsing}
+\pdfsection{Pretty-printing and parsing}
 
 As shown in the examples above, the internal representation (also
 called {\em abstract syntax\/}) of expressions quickly becomes hard to
@@ -517,7 +525,8 @@ let read_expr s = parse_expr(lexer(Stream.of_string s));;
 read_expr "2*(x+y)";;
 \end{caml_example}
 
-\subsection*{Standalone Caml programs}
+\section{Standalone Caml programs}
+\pdfsection{Standalone Caml programs}
 
 All examples given so far were executed under the interactive system.
 Caml code can also be compiled separately and executed
