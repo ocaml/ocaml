@@ -28,7 +28,7 @@ TKOBJS=$(SUPPORT) $(LABLTKOBJS) $(CAMLTKOBJS)
 
 TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
 
-$(LIBNAME).cma: $(SUPPORT)
+$(LIBNAME).cma: $(SUPPORT) ../Widgets.src
 	$(MAKE) superclean
 	cd ../labltk; $(MAKE)
 	cd ../camltk; $(MAKE)
@@ -36,7 +36,7 @@ $(LIBNAME).cma: $(SUPPORT)
           -I ../labltk -I ../camltk $(TKOBJS) \
           $(TK_LINK)
 
-$(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx)
+$(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx) ../Widgets.src
 	$(MAKE) superclean
 	cd ../labltk; $(MAKE) opt
 	cd ../camltk; $(MAKE) opt
