@@ -18,24 +18,18 @@ type t =
   mutable out_chan : out_channel option;
   initial_buffer : string};;
 
-let length b = b.length;;
-
-let position b = b.position;;
-let set_position b p =
- if p < 0 || p >= b.length then invalid_arg "set_position" else
- b.position <- p;;
-
-let of_string s =
+let create n =
+ let s = String.create n in
  {buffer = s; position = 0; length = String.length s; out_chan = None;
   initial_buffer = s};;
 
-let create n = of_string (String.create n);;
-
 let contents b = String.sub b.buffer 0 b.position;;
 
-let clear b = b.position <- 0;;
+let length b = b.length;;
 
-let to_string b = let s = contents b in clear b; s;;
+let position b = b.position;;
+
+let clear b = b.position <- 0;;
 
 let reset b = clear b; b.buffer <- b.initial_buffer;;
 
@@ -45,16 +39,6 @@ let flush b =
  | Some oc ->
      Pervasives.output oc b.buffer 0 b.position;
      clear b;;
-
-let connect_out b oc = b.out_chan <- Some oc;;
-
-let disconnect_out b =
- match b.out_chan with
- | None -> ()
- | Some oc ->
-    Pervasives.output oc b.buffer 0 b.position;
-    reset b;
-    b.out_chan <- None;;
 
 let resize b more =
  flush b;
@@ -77,17 +61,30 @@ let output_char b c =
  b.buffer.[pos] <- c;
  b.position <- pos + 1;;
 
-let output b s offset l =
+let unsafe_output b s offset l =
  let new_position = b.position + l in
  if new_position > b.length then resize b l;
  String.blit s offset b.buffer b.position l;
  b.position <- new_position;;
 
-let output_string b s = output b s 0 (String.length s);;
+let output_string b s = unsafe_output b s 0 (String.length s);;
 
-let output_buffer b bs = output b bs.buffer 0 bs.position;;
+let output b s offset l =
+  if offset < 0 or offset + l > String.length s
+  then invalid_arg "Buffer.output"
+  else unsafe_output b s offset l;;
 
-let output_buffer_out oc b = Pervasives.output oc b.buffer 0 b.position;;
+let output_buffer b bs = unsafe_output b bs.buffer 0 bs.position;;
+
+let open_out b oc = b.out_chan <- Some oc;;
+
+let close_out b =
+ match b.out_chan with
+ | None -> ()
+ | Some oc ->
+    Pervasives.output oc b.buffer 0 b.position;
+    reset b;
+    b.out_chan <- None;;
 
 (* Input in buffers. *)
 let really_input ic b len =
@@ -104,24 +101,6 @@ let input ic b len =
 let read_in_channel ic b =
  let len = in_channel_length ic in
  really_input ic b len;;
-
-let read_file b f =
- let ic = open_in f in
- read_in_channel ic b;
- close_in ic;;
-
-let of_file f =
- let ic = open_in f in
- let len = in_channel_length ic in
- let b = create len in
- really_input ic b len;
- close_in ic;
- b;;
-
-let to_file b f =
- let oc = Pervasives.open_out f in
- output_buffer_out oc b;
- Pervasives.close_out oc;;
 
 (* The printf facility for buffers. *)
 
@@ -208,5 +187,4 @@ let bprintf b format =
     output_string b (format_float (String.sub format i (j - i + 1)) f);
     doprn (succ j) (succ j)
 
-  in doprn 0 0
-;;
+  in doprn 0 0;;
