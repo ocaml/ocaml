@@ -129,7 +129,7 @@ val rlineto : x:int -> y:int -> unit
            current point translated of the given vector,
            and move the current point to this point. *)
 external draw_rect : x:int -> y:int -> w:int -> h:int -> unit = "gr_draw_rect"
-        (* [fill_rect x y w h] draws the rectangle with lower left corner
+        (* [draw_rect x y w h] draws the rectangle with lower left corner
            at [x,y], width [w] and height [h].
            The current point is unchanged. *)
 external draw_arc :
