@@ -1116,7 +1116,7 @@ cclibs="$cclibs $mathlib"
 echo "BYTECC=$bytecc" >> Makefile
 echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
-echo "BYTECCLIBS=$cclibs $dllib $curseslibs" >> Makefile
+echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link" >> Makefile
 echo "BYTECCRPATH=$byteccrpath" >> Makefile
 echo "EXE=$exe" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
@@ -1159,7 +1159,7 @@ echo "        manual pages.............. $mandir (with extension .$manext)"
 echo "Configuration for the bytecode compiler:"
 echo "        C compiler used........... $bytecc"
 echo "        options for compiling..... $bytecccompopts"
-echo "        options for linking....... $bytecclinkopts $cclibs $dllib $curseslibs"
+echo "        options for linking....... $bytecclinkopts $cclibs $dllib $curseslibs $pthread_link"
 if $shared_libraries_supported; then
 echo "        shared libraries are supported"
 echo "        options for compiling..... $sharedcccompopts $bytecccompopts"
