@@ -112,10 +112,11 @@ let dir_use name =
     let lb = Lexing.from_channel ic in
     protect Location.input_name filename (fun () ->
       try
-        while execute_phrase (Parse.toplevel_phrase lb)
-        do () done
+        List.iter
+          (fun ph -> if execute_phrase ph then () else raise Exit)
+          (Parse.use_file lb)
       with
-        End_of_file -> ()
+        Exit -> ()
       | Sys.Break ->
           print_string "Interrupted."; print_newline()
       | x ->

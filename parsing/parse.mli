@@ -13,8 +13,9 @@
 
 (* Entry points in the parser *)
 
-val toplevel_phrase : Lexing.lexbuf -> Parsetree.toplevel_phrase
 val implementation : Lexing.lexbuf -> Parsetree.structure
 val interface : Lexing.lexbuf -> Parsetree.signature
+val toplevel_phrase : Lexing.lexbuf -> Parsetree.toplevel_phrase
+val use_file : Lexing.lexbuf -> Parsetree.toplevel_phrase list
 
 exception Error of int * int        (* Syntax error *)

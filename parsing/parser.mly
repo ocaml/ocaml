@@ -189,6 +189,8 @@ let rec mkrangepat c1 c2 =
 %type <Parsetree.signature> interface
 %start toplevel_phrase                  /* for interactive use */
 %type <Parsetree.toplevel_phrase> toplevel_phrase
+%start use_file                         /* for the #use directive */
+%type <Parsetree.toplevel_phrase list> use_file
 
 %%
 
@@ -203,11 +205,21 @@ interface:
 toplevel_phrase:
     structure_item SEMISEMI              { Ptop_def[$1] }
   | expr SEMISEMI                        { Ptop_def[mkstrexp $1] }
-  | SHARP ident SEMISEMI                 { Ptop_dir($2, Pdir_none) }
-  | SHARP ident STRING SEMISEMI          { Ptop_dir($2, Pdir_string $3) }
-  | SHARP ident INT SEMISEMI             { Ptop_dir($2, Pdir_int $3) }
-  | SHARP ident val_longident SEMISEMI   { Ptop_dir($2, Pdir_ident $3) }
+  | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
+;
+use_file:
+    use_file_tail                        { $1 }
+  | expr use_file_tail                   { Ptop_def[mkstrexp $1] :: $2 }
+;
+use_file_tail:
+    EOF                                         { [] }
+  | SEMISEMI EOF                                { [] }
+  | SEMISEMI expr use_file_tail                 { Ptop_def[mkstrexp $2] :: $3 }
+  | SEMISEMI structure_item use_file_tail       { Ptop_def[$2] :: $3 }
+  | SEMISEMI toplevel_directive use_file_tail   { $2 :: $3 }
+  | structure_item use_file_tail                { Ptop_def[$1] :: $2 }
+  | toplevel_directive use_file_tail            { $1 :: $2 }
 ;
 
 /* Module expressions */
@@ -713,6 +725,15 @@ mod_ext_longident:
 mty_longident:
     ident                                       { Lident $1 }
   | mod_ext_longident DOT ident                 { Ldot($1, $3) }
+
+/* Toplevel directives */
+
+toplevel_directive:
+    SHARP ident                 { Ptop_dir($2, Pdir_none) }
+  | SHARP ident STRING          { Ptop_dir($2, Pdir_string $3) }
+  | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
+  | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
+;
 
 /* Miscellaneous */
 

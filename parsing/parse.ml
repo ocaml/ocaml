@@ -44,6 +44,7 @@ let wrap parsing_fun lexbuf =
         then maybe_skip_phrase lexbuf;
         raise(Error(start, stop))
 
-let toplevel_phrase = wrap Parser.toplevel_phrase
-and implementation = wrap Parser.implementation
+let implementation = wrap Parser.implementation
 and interface = wrap Parser.interface
+and toplevel_phrase = wrap Parser.toplevel_phrase
+and use_file = wrap Parser.use_file
