@@ -221,7 +221,7 @@ val stdout : file_descr
 (** File descriptor for standard output.*)
 
 val stderr : file_descr
-(** File descriptor for standard standard error. *)
+(** File descriptor for standard error. *)
 
 type open_flag =
     O_RDONLY                    (** Open for reading *)
