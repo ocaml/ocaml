@@ -336,9 +336,7 @@ let lookup_tag_cache obj tag cache n =
 		    [Cvar meths; tag; cache n]),
                 Cop(Cload Word, [meth_pos]))
 	))))
-*)
 
-(*
 let lookup_tag_cache obj tag cache n =
   bind "tag" tag (fun tag ->
     let cache n =
@@ -370,7 +368,6 @@ let call_cached_method obj tag cache n args =
   let cache =
     if n = 0 then cache else Cop(Cadda, [cache; Cconst_int (n * size_addr)]) in
   Compilenv.need_apply_fun (-arity);
-  Compilenv.need_apply_fun 1;
   Cop(Capply typ_addr,
       Cconst_symbol("caml_cached_method" ^ string_of_int arity) ::
       obj :: tag :: cache :: args)
@@ -1740,36 +1737,6 @@ let compunit size ulam =
          Cskip(size * size_addr)] :: c3
 
 (*
-let get_cached_method () =
-  let cache = Ident.create "cache"
-  and obj = Ident.create "obj"
-  and tag = Ident.create "tag" in
-  let body =
-    let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
-    let meths = Ident.create "meths" and cached = Ident.create "cached" in
-    let mask = get_field (Cvar meths) 1 in
-    let cached_pos = Cvar cached in
-    let tag_pos = Cop(Cadda, [cached_pos; Cconst_int(2*size_addr-1)]) in
-    let tag' = Cop(Cload Word, [tag_pos]) in
-    let meth_pos = Cop(Cadda, [cached_pos; Cconst_int(size_addr-1)]) in
-    Clet(meths, Cop(Cload Word, [obj]),
-    Clet(cached,
-	 Cop(Cadda,
-	     [Cop(Cand, [Cop(Cload Word, [cache]); mask]); Cvar meths]),
-    Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
-		Cop(Cextcall("oo_cache_public_method", typ_addr, false),
-		    [Cvar meths; tag; cache]),
-                Cop(Cload Word, [meth_pos]))
-        ))
-  in
-  Cfunction
-   {fun_name = "caml_get_cached_method";
-    fun_args = [obj, typ_addr; tag, typ_int; cache, typ_addr];
-    fun_body = body;
-    fun_fast = true}  
-*)
-
-(*
 CAMLprim value oo_cache_public_method (value meths, value tag, value *cache)
 {
   int li = 3, hi = Field(meths,0), mi;
@@ -1818,17 +1785,6 @@ let cache_public_method meths tag cache =
                       Cconst_int(1 - 2 * size_addr)]),
   Csequence(Cop (Cstore Word, [cache; Cvar tagged]),
             Cvar tagged)))))
-
-let get_cached_method () =
-  let cache = Ident.create "cache"
-  and meths = Ident.create "meths"
-  and tag = Ident.create "tag" in
-  let body = cache_public_method (Cvar meths) (Cvar tag) (Cvar cache) in
-  Cfunction
-   {fun_name = "caml_cache_method";
-    fun_args = [meths, typ_addr; tag, typ_int; cache, typ_addr];
-    fun_body = body;
-    fun_fast = true}  
 
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
@@ -1909,7 +1865,6 @@ let call_cached_method arity =
     fun_fast = true}
 
 let apply_function arity =
-  if arity = 1 then get_cached_method () else
   if arity < 1 then call_cached_method (-arity) else
   let (args, clos, body) = apply_function_body arity in
   let all_args = args @ [clos] in
