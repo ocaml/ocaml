@@ -368,3 +368,8 @@ and string = parse
   | _
       { store_string_char(Lexing.lexeme_char lexbuf 0);
         string lexbuf }
+
+and skip_sharp_bang = parse
+  | "#!" [^ '\n']* '\n' [^ '\n']* "\n!#\n"
+  | "#!" [^ '\n']* '\n'
+  | "" {}

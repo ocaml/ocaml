@@ -15,6 +15,7 @@
 (* The lexical analyzer *)
 
 val token: Lexing.lexbuf -> Parser.token
+val skip_sharp_bang: Lexing.lexbuf -> unit
 
 type error =
   | Illegal_character of char
