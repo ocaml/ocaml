@@ -26,7 +26,9 @@ indexed at the end of this report.
 \input{builtin.tex}
 
 \ifouthtml
+\section{Module {\tt Pervasives}: the initially opened module}
 \begin{rawhtml}
+<br>
 <a HREF="libref/Pervasives.html"> Module <tt>Pervasives</tt>: the initially opened module</a>
 \end{rawhtml}
 \else
