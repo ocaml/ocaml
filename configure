@@ -155,7 +155,7 @@ case "$bytecc,$host" in
     # Turn off warning "unused library"
     bytecclinkopts="-32 -Wl,-woff,84";;
   cc*,mips-*-irix6*)
-    # (For those who wnat to force "cc -64")
+    # (For those who want to force "cc -64")
     # Turn off warning "unused library"
     bytecclinkopts="-Wl,-woff,84";;
 esac
@@ -589,7 +589,7 @@ fi
 case "$host" in
   mips-*-ultrix*) bignum_arch=mips;;
   alpha-*-osf*) bignum_arch=alpha;;
-  i960*) bignum_arch=i960;;
+  i[3456]86-*-linux) bignum_arch=x86;;
   sparc-*-sunos*) bignum_arch=supersparc;;
   sparc-*-solaris*) bignum_arch=supersparc-solaris;;
   sparc-*-*bsd*) bignum_arch=sparc;;

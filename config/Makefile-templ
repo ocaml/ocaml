@@ -182,7 +182,7 @@ OTHERLIBRARIES=unix str num threads graph dynlink
 
 ### Name of the target architecture for the "num" library
 # Known targets:
-#       68K     vax     ns      mips    alpha   pyramid i960
+#       x86     68K     vax     ns      mips    alpha   pyramid i960
 #       sparc   supersparc      sparc-solaris   supersparc-solaris
 # See the file otherlibs/num/README for more explanations.
 # If you don't know, leave BIGNUM_ARCH=C, which selects a portable
