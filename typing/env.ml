@@ -147,6 +147,11 @@ let check_modtype_inclusion =
   ref ((fun env mty1 mty2 -> fatal_error "Env.include_modtypes") :
        t -> module_type -> module_type -> unit)
 
+let expand_head =
+  (* to be filled with Ctype.expand_head *)
+  ref ((fun env ty -> fatal_error "Env.expand_head") :
+       t -> type_expr -> type_expr)
+
 (* Lookup by identifier *)
 
 let rec find_module_descr path env =
@@ -366,12 +371,23 @@ let constructors_of_type ty_path decl =
 
 (* Compute label descriptions *)
 
-let labels_of_type ty_path decl =
-  match decl.type_kind with
-    Type_record labels ->
+let labels_of_type env ty_path decl decl' =
+  match (decl.type_kind, decl'.type_kind) with
+    (Type_record labels, Type_record labels') ->
       Datarepr.label_descrs
+        (!expand_head env)
+(*
+          begin match ty with
+            {desc=Tconstr(p, _, _)} ->
+              print_string "Expanding ";
+              print_string (Path.name p);
+              print_newline()
+          | _ -> ()
+          end;
+          !expand_head env ty) *)
+
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        labels
+        labels labels'
   | _ -> []
 
 (* Given a signature and a root path, prefix all idents in the signature
@@ -448,7 +464,8 @@ let rec components_of_module env sub path mty =
             List.iter
               (fun (name, descr) ->
                 c.comp_labels <- Tbl.add name (descr, nopos) c.comp_labels)
-              (labels_of_type path decl')
+              (labels_of_type !env path decl decl'); 
+            env := store_type_infos id path decl !env
         | Tsig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in
             let cstr = Datarepr.exception_descr path decl' in
@@ -520,8 +537,25 @@ and store_type id path info env =
       List.fold_right
         (fun (name, descr) labels ->
           Ident.add (Ident.create name) descr labels)
-        (labels_of_type path info)
+        (labels_of_type env path info info)
         env.labels;
+    types = Ident.add id (path, info) env.types;
+    modules = env.modules;
+    modtypes = env.modtypes;
+    components = env.components;
+    classes = env.classes;
+    cltypes = env.cltypes;
+    summary = Env_type(env.summary, id, info) }
+
+and store_type_infos id path info env =
+  (* Simplified version of store_type that doesn't compute and store
+     constructor and label infos, but simply record the arity and
+     manifest-ness of the type.  Used in components_of_module to
+     keep track of type abbreviations (e.g. type t = float) in the
+     computation of label representations. *)
+  { values = env.values;
+    constrs = env.constrs;
+    labels = env.labels;
     types = Ident.add id (path, info) env.types;
     modules = env.modules;
     modtypes = env.modtypes;

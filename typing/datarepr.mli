@@ -24,7 +24,9 @@ val constructor_descrs:
 val exception_descr:
   Path.t -> type_expr list -> constructor_description
 val label_descrs:
-  type_expr -> (string * mutable_flag * type_expr) list ->
+  (type_expr -> type_expr) -> type_expr ->
+  (string * mutable_flag * type_expr) list ->
+  (string * mutable_flag * type_expr) list ->
     (string * label_description) list
 
 exception Constr_not_found

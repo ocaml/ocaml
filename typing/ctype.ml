@@ -948,6 +948,8 @@ let _ = try_expand_head' := try_expand_head
 let rec expand_head env ty =
   try try_expand_head env ty with Cannot_expand -> repr ty
 
+let _ = Env.expand_head := expand_head
+
 (* Make sure that the type parameters of the type constructor [ty]
    respect the type constraints *)
 let enforce_constraints env ty =
