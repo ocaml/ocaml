@@ -36,12 +36,13 @@ CSLPROF=cslprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   location.cmo longident.cmo pstream.cmo parser.cmo lexer.cmo parse.cmo
 
-cslprof: $(CSLPROF)
+cslprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o cslprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
 install::
 	cp cslprof $(BINDIR)/cslprof
 	cp cslcp $(BINDIR)/cslcp
+	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
 	rm -f cslprof

@@ -1,5 +1,5 @@
-camldep.cmo: ../utils/misc.cmi 
-camldep.cmx: ../utils/misc.cmx 
+csldep.cmo: ../utils/misc.cmi 
+csldep.cmx: ../utils/misc.cmx 
 cslprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
     ../parsing/location.cmi ../utils/misc.cmi ../parsing/parse.cmi \
     ../parsing/parsetree.cmi 
@@ -20,3 +20,5 @@ dumpobj.cmx: ../parsing/asttypes.cmi ../utils/config.cmx \
     ../utils/tbl.cmx 
 objinfo.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi 
 objinfo.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
+profiling.cmo: profiling.cmi 
+profiling.cmx: profiling.cmi 
