@@ -36,7 +36,7 @@ dbm.cma: dbm.cmo
 	$(MKLIB) -ocamlc '$(CAMLC)' -o dbm -oc mldbm dbm.cmo $(DBM_LINK)
 
 dbm.cmxa: dbm.cmx
-	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o dbm dbm.cmx $(DBM_LINK)
+	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o dbm -oc mldbm dbm.cmx $(DBM_LINK)
 
 partialclean:
 	rm -f *.cm*
