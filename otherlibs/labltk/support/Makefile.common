@@ -11,7 +11,7 @@ LABLTKDIR=$(LIBDIR)/labltk
 ## Tools from the Objective Caml distribution
 
 CAMLRUN=$(TOPDIR)/boot/ocamlrun
-LABLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
+LABLC=$(CAMLRUN) $(TOPDIR)/ocamlc -w l -I $(TOPDIR)/stdlib
 LABLCOMP=$(LABLC) -c
 LABLYACC=$(TOPDIR)/boot/ocamlyacc -v
 LABLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
@@ -20,6 +20,6 @@ LABLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
 COMPFLAGS=
 LINKFLAGS=
 
-CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib -labels
+CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -w l -I $(TOPDIR)/stdlib -labels
 CAMLOPTLIBR=$(CAMLOPT) -a
 MKLIB=$(TOPDIR)/tools/ocamlmklib

@@ -181,7 +181,7 @@ let declared_type_parser_arity s =
     (Hashtbl.find types_table s).parser_arity
   with
     Not_found -> 
-      try List.assoc s ~map:!types_external
+      try List.assoc s !types_external
       with
         Not_found ->
            prerr_string "Type "; prerr_string s;
@@ -388,10 +388,10 @@ let enter_widget name components =
     | External, _ -> ()
     end;
   let commands = 
-      try List.assoc Command ~map:sorted_components
+      try List.assoc Command sorted_components
       with Not_found -> [] 
   and externals = 
-      try List.assoc External ~map:sorted_components
+      try List.assoc External sorted_components
       with Not_found -> []
   in
   Hashtbl'.add module_table ~key:name 
@@ -415,10 +415,10 @@ let enter_module name components =
     | External, _ -> ()
     end;
   let commands = 
-      try List.assoc Command ~map:sorted_components
+      try List.assoc Command sorted_components
       with Not_found -> [] 
   and externals = 
-      try List.assoc External ~map:sorted_components
+      try List.assoc External sorted_components
       with Not_found -> []
   in
     Hashtbl'.add module_table ~key:name 

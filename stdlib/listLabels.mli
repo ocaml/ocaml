@@ -148,14 +148,14 @@ val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
 
 (** Association lists *)
 
-val assoc : 'a -> map:('a * 'b) list -> 'b
+val assoc : 'a -> ('a * 'b) list -> 'b
         (* [assoc a l] returns the value associated with key [a] in the list of
            pairs [l]. That is,
              [assoc a [ ...; (a,b); ...] = b]
            if [(a,b)] is the leftmost binding of [a] in list [l].
            Raise [Not_found] if there is no value associated with [a] in the
            list [l]. *)
-val assq : 'a -> map:('a * 'b) list -> 'b
+val assq : 'a -> ('a * 'b) list -> 'b
         (* Same as [assoc], but uses physical equality instead of structural
            equality to compare keys. *)
 
@@ -166,12 +166,12 @@ val mem_assq : 'a -> map:('a * 'b) list -> bool
         (* Same as [mem_assoc], but uses physical equality instead of
            structural equality to compare keys. *)
 
-val remove_assoc : 'a -> map:('a * 'b) list -> ('a * 'b) list
+val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
         (* [remove_assoc a l] returns the list of
            pairs [l] without the first pair with key [a], if any.
            Not tail-recursive. *)
 
-val remove_assq : 'a -> map:('a * 'b) list -> ('a * 'b) list
+val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
         (* Same as [remove_assq], but uses physical equality instead
            of structural equality to compare keys.  Not tail-recursive. *)
 

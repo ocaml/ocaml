@@ -113,7 +113,7 @@ let select_shell txt =
       begin fun () ->
         try
           let name = Listbox.get box ~index:`Active in
-          txt.shell <- Some (name, List.assoc name ~map:shells);
+          txt.shell <- Some (name, List.assoc name shells);
           destroy tl
         with Not_found -> txt.shell <- None; destroy tl
       end

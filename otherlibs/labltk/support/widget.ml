@@ -126,7 +126,7 @@ and widget_toplevel_table = [ "toplevel" ]
 
 let new_suffix clas n =
   try 
-    (List.assoc clas ~map:naming_scheme) ^ (string_of_int n)
+    (List.assoc clas naming_scheme) ^ (string_of_int n)
   with
     Not_found -> "w" ^ (string_of_int n)
   
