@@ -169,9 +169,9 @@ let search_pos_type_decl td ~pos ~env =
       Ptype_abstract -> ()
     | Ptype_variant (dl, _) ->
         List.iter dl
-          ~f:(fun (_, tl) -> List.iter tl ~f:(search_pos_type ~pos ~env))
+          ~f:(fun (_, tl, _) -> List.iter tl ~f:(search_pos_type ~pos ~env))
     | Ptype_record (dl, _) ->
-        List.iter dl ~f:(fun (_, _, t) -> search_pos_type t ~pos ~env) in
+        List.iter dl ~f:(fun (_, _, t, _) -> search_pos_type t ~pos ~env) in
     search_tkind td.ptype_kind;
     List.iter td.ptype_cstrs ~f:
       begin fun (t1, t2, _) ->

@@ -130,8 +130,9 @@ and type_declaration =
 
 and type_kind =
     Ptype_abstract
-  | Ptype_variant of (string * core_type list) list * private_flag
-  | Ptype_record of (string * mutable_flag * core_type) list * private_flag
+  | Ptype_variant of (string * core_type list * Location.t) list * private_flag
+  | Ptype_record of
+      (string * mutable_flag * core_type * Location.t) list * private_flag
 
 and exception_declaration = core_type list
 

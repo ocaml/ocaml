@@ -109,29 +109,29 @@ let transl_declaration env (name, sdecl) id =
         | Ptype_variant (cstrs, priv) ->
             let all_constrs = ref StringSet.empty in
             List.iter
-              (fun (name, args) ->
+              (fun (name, args, loc) ->
                 if StringSet.mem name !all_constrs then
                   raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
                 all_constrs := StringSet.add name !all_constrs)
               cstrs;
-            if List.length (List.filter (fun (name, args) -> args <> []) cstrs)
+            if List.length (List.filter (fun (_, args, _) -> args <> []) cstrs)
                > (Config.max_tag + 1) then
               raise(Error(sdecl.ptype_loc, Too_many_constructors));
             Type_variant(List.map
-              (fun (name, args) ->
+              (fun (name, args, loc) ->
                       (name, List.map (transl_simple_type env true) args))
               cstrs, priv)
         | Ptype_record (lbls, priv) ->
             let all_labels = ref StringSet.empty in
             List.iter
-              (fun (name, mut, arg) ->
+              (fun (name, mut, arg, loc) ->
                 if StringSet.mem name !all_labels then
                   raise(Error(sdecl.ptype_loc, Duplicate_label name));
                 all_labels := StringSet.add name !all_labels)
               lbls;
             let lbls' =
               List.map
-                (fun (name, mut, arg) ->
+                (fun (name, mut, arg, loc) ->
                   let ty = transl_simple_type env true arg in
                   name, mut, match ty.desc with Tpoly(t,[]) -> t | _ -> ty)
                 lbls in
@@ -223,7 +223,9 @@ let check_constraints env (_, sdecl) (_, decl) =
       let pl = find_pl sdecl.ptype_kind in
       List.iter
         (fun (name, tyl) ->
-          let styl = try List.assoc name pl with Not_found -> assert false in
+          let styl =
+            try let (_,sty,_) = List.find (fun (n,_,_) -> n = name) pl in sty
+            with Not_found -> assert false in
           List.iter2
             (fun sty ty ->
               check_constraints_rec env sty.ptyp_loc visited ty)
@@ -237,7 +239,7 @@ let check_constraints env (_, sdecl) (_, decl) =
       let pl = find_pl sdecl.ptype_kind in
       let rec get_loc name = function
           [] -> assert false
-        | (name', _, sty) :: tl ->
+        | (name', _, sty, _) :: tl ->
             if name = name' then sty.ptyp_loc else get_loc name tl
       in
       List.iter

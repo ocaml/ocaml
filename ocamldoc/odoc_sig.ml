@@ -180,13 +180,14 @@ module Analyser =
             match cons_core_type_list_list with
               [] ->
                 (0, acc)
-            | (name, core_type_list) :: [] ->
+            | (name, core_type_list, xxloc) :: [] ->
                 let pos = Str.search_forward (Str.regexp_string name) !file last_pos in
                 let s = get_string_of_file pos_end pos_limit in
                 let (len, comment_opt) =  My_ir.just_after_special !file_name s in
                 (len, acc @ [ (name, comment_opt) ])
 
-            | (name, core_type_list) :: (name2, core_type_list2) :: q ->
+            | (name, core_type_list, xxloc) :: (name2, core_type_list2, loc2)
+              :: q ->
                 match (List.rev core_type_list, core_type_list2) with
                   ([], []) ->
                     let pos = Str.search_forward (Str.regexp_string name) !file last_pos in
@@ -194,7 +195,8 @@ module Analyser =
                     let pos2 = Str.search_forward (Str.regexp_string name2) !file pos' in
                     let s = get_string_of_file pos' pos2 in
                     let (_,comment_opt) =  My_ir.just_after_special !file_name  s in
-                    f (acc @ [name, comment_opt]) pos2 ((name2, core_type_list2) :: q)
+                    f (acc @ [name, comment_opt]) pos2
+                      ((name2, core_type_list2, loc2) :: q)
                       
                 | ([], (ct2 :: _)) ->
                     let pos = Str.search_forward (Str.regexp_string name) !file last_pos in
@@ -203,7 +205,8 @@ module Analyser =
                     let pos2' = Str.search_backward (Str.regexp_string name2) !file pos2 in
                     let s = get_string_of_file pos' pos2' in
                     let (_,comment_opt) =  My_ir.just_after_special !file_name  s in
-                    f (acc @ [name, comment_opt]) pos2' ((name2, core_type_list2) :: q)
+                    f (acc @ [name, comment_opt]) pos2'
+                      ((name2, core_type_list2, loc2) :: q)
                       
                 | ((ct :: _), _) ->
                     let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
@@ -215,7 +218,8 @@ module Analyser =
                         None -> ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum
                        | Some _ -> Str.search_forward (Str.regexp "*)") !file pos
                     in
-                    f (acc @ [name, comment_opt]) new_pos_end ((name2, core_type_list2) :: q)
+                    f (acc @ [name, comment_opt]) new_pos_end
+                      ((name2, core_type_list2, loc2) :: q)
           in
           f [] pos_start cons_core_type_list_list
             
@@ -223,12 +227,12 @@ module Analyser =
           let rec f = function
               [] ->
                 []
-            | (name, _, ct) :: [] ->
+            | (name, _, ct, xxloc) :: [] ->
                 let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
                 let s = get_string_of_file pos pos_end in
                 let (_,comment_opt) =  My_ir.just_after_special !file_name s in
                 [name, comment_opt]
-            | (name,_,ct) :: ((name2,_,ct2) as ele2) :: q ->
+            | (name,_,ct,xxloc) :: ((name2,_,ct2,xxloc2) as ele2) :: q ->
                 let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
                 let pos2 = ct2.Parsetree.ptyp_loc.Location.loc_start.Lexing.pos_cnum in
                 let s = get_string_of_file pos pos2 in
