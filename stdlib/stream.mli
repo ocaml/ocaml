@@ -53,7 +53,7 @@ val next : 'a t -> 'a
 val empty : 'a t -> unit
 	(* Return [()] if the stream is empty, else raise [Parse_failure]. *)
 
-(** Usefull functions *)
+(** Useful functions *)
 
 val peek : 'a t -> 'a option
         (* Return [Some] of "the first element" of the stream, or [None] if

@@ -53,6 +53,11 @@ type 'a option = None | Some of 'a
 
 external raise : exn -> 'a = "%raise"
         (* Raise the given exception value *)
+(*- exception Match_failure of string * int * int *)
+        (* Exception raised when none of the cases of a pattern-matching
+           apply. The arguments are the location of the pattern-matching
+           in the source code (file name, position of first character,
+           position of last character). *)
 (*- exception Invalid_argument of string *)
         (* Exception raised by library functions to signal that the given
            arguments do not make sense. *)

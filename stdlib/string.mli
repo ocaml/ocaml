@@ -46,13 +46,13 @@ val sub : string -> int -> int -> string
            designate a valid substring of [s]; that is, if [start < 0],
            or [len < 0], or [start + len > String.length s]. *)
 val fill : string -> int -> int -> char -> unit
-        (* [fill_string s start len c] modifies string [s] in place,
+        (* [String.fill s start len c] modifies string [s] in place,
            replacing the characters number [start] to [start + len - 1]
            by [c].
            Raise [Invalid_argument] if [start] and [len] do not
            designate a valid substring of [s]. *)
 val blit : string -> int -> string -> int -> int -> unit
-        (* [blit_string s1 o1 s2 o2 len] copies [len] characters
+        (* [String.blit s1 o1 s2 o2 len] copies [len] characters
            from string [s1], starting at character number [o1], to string [s2],
            starting at character number [o2]. It works correctly even if
            [s1] and [s2] are the same string,
@@ -62,7 +62,8 @@ val blit : string -> int -> string -> int -> int -> unit
            designate a valid substring of [s2]. *)
 
 val concat : string -> string list -> string
-        (* Catenate a list of strings. *)
+        (* [String.concat sep sl] catenates the list of strings [sl],
+           inserting the separator string [sep] between each. *)
 
 val escaped: string -> string
         (* Return a copy of the argument, with special characters represented

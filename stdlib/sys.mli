@@ -21,6 +21,9 @@ external file_exists: string -> bool = "sys_file_exists"
         (* Test if a file with the given name exists. *)
 external remove: string -> unit = "sys_remove"
         (* Remove the given file name from the file system. *)
+external rename : string -> string -> unit = "sys_rename"
+        (* Rename a file. The first argument is the old name and the
+           second is the new name. *)
 external getenv: string -> string = "sys_getenv"
         (* Return the value associated to a variable in the process
            environment. Raise [Not_found] if the variable is unbound. *)
