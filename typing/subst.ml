@@ -106,11 +106,12 @@ let rec typexp s ty =
               save_desc more more.desc;
               more.desc <- ty.desc;
               let more' =
-                if static then
-                  if s.for_saving then newpersvar () else newgenvar ()
-                else more in
+                if s.for_saving then newpersvar () else
+                if static then newgenvar () else more in
               (* Return a new copy *)
-              let row = copy_row (typexp s) row true more' in
+              let row = copy_row (typexp s) row (not s.for_saving) more' in
+              let row =
+                if s.for_saving then {row with row_bound = []} else row in
               match row.row_name with
                 Some (p, tl) ->
                   Tvariant {row with row_name = Some (type_path s p, tl)}
