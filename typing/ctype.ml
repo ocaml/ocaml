@@ -666,14 +666,6 @@ let rec copy ty =
     ty.desc <- Tsubst t;
     t.desc <-
       begin match desc with
-        Tvar ->
-          Tvar
-      | Tarrow (l, t1, t2, c) ->
-          let c =
-            if commu_repr c = Cok then Cok else Clink (ref Cunknown) in
-          Tarrow (l, copy t1, copy t2, c)
-      | Ttuple tl ->
-          Ttuple (List.map copy tl)
       | Tconstr (p, tl, _) ->
           begin match find_repr p !(!abbreviations) with
             Some ty when repr ty != t -> (* XXX Commentaire... *)
@@ -693,15 +685,6 @@ let rec copy ty =
                               Mcons _ -> Mlink !abbreviations
                             | abbrev  -> abbrev))
           end
-      | Tobject (t1, {contents = name}) ->
-          let name' =
-            match name with
-              None ->
-                None
-            | Some (p, tl) ->
-                Some (p, List.map copy tl)
-          in
-          Tobject (copy t1, ref name')
       | Tvariant row0 ->
           let row = row_repr row0 in
           let more = repr row.row_more in
@@ -718,38 +701,10 @@ let rec copy ty =
               (* Register new type first for recursion *)
               save_desc more more.desc;
               more.desc <- ty.desc;
-              (* Create a new copy *)
-              let fields =
-                List.map
-                  (fun (l,fi) -> l,
-                    match row_field_repr fi with
-                      Rpresent (Some ty) -> Rpresent(Some(copy ty))
-                    | Reither(c, l, m, _) ->
-                        Reither(c, List.map copy l, m, ref None)
-                    | fi -> fi)
-                  row.row_fields
-              and name =
-                may_map (fun (p,l) -> p, List.map copy l) row.row_name
-              in
-              Tvariant { row_fields = fields; row_more = newvar();
-                         row_bound = List.map copy row.row_bound;
-                         row_closed = row.row_closed; row_name = name }
+              (* Return a new copy *)
+              Tvariant (copy_row copy row (newvar ()))
           end
-      | Tfield (label, kind, t1, t2) ->
-          begin match field_kind_repr kind with
-            Fpresent ->
-              Tfield (label, Fpresent, copy t1, copy t2)
-          | Fvar _ (* {contents = None} *) ->
-              Tfield (label, Fvar (ref None), copy t1, copy t2)
-          | Fabsent ->
-              assert false
-          end
-      | Tnil ->
-          Tnil
-      | Tlink t -> (* Actually unused *)
-          Tlink (copy t)
-      | Tsubst _ ->
-          assert false
+      | _ -> copy_type_desc copy desc
       end;
     t
 
@@ -2527,14 +2482,6 @@ let rec nondep_type_rec env id ty =
     ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
-        Tvar ->
-          fatal_error "Ctype.nondep_type_rec"
-      | Tarrow(l, t1, t2, c) ->
-          let c =
-            if commu_repr c = Cok then Cok else Clink (ref Cunknown) in
-          Tarrow(l, nondep_type_rec env id t1, nondep_type_rec env id t2, c)
-      | Ttuple tl ->
-          Ttuple(List.map (nondep_type_rec env id) tl)
       | Tconstr(p, tl, abbrev) ->
           if Path.isfree id p then
             begin try
@@ -2568,35 +2515,11 @@ let rec nondep_type_rec env id ty =
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
-              (* We create a new copy *)
-              let bound = ref [] in
-              let fields =
-                List.map
-                  (fun (l,fi) -> l,
-                    match row_field_repr fi with
-                      Rpresent (Some ty) ->
-                        Rpresent(Some (nondep_type_rec env id ty))
-                    | Reither(c, l, m, _) ->
-                        let l = List.map (nondep_type_rec env id) l in
-                        bound := l @ !bound;
-                        Reither(c, l, m, ref None)
-                    | fi -> fi)
-                  row.row_fields
-              and name =
-                match row.row_name with
-                  Some (p,l) when Path.isfree id p ->
-                    Some (p, List.map (nondep_type_rec env id) l)
-                | _ -> None
-              in
-              let var =
-                Tvariant { row_fields = fields; row_more = newgenvar();
-                           row_bound = !bound;
-                           row_closed = row.row_closed; row_name = name }
-              in
-              (* Remember it for other occurences *)
+              (* Register new type first for recursion *)
               save_desc more more.desc;
               more.desc <- ty.desc;
-              var
+              (* Return a new copy *)
+              Tvariant (copy_row (nondep_type_rec env id) row (newgenvar()))
           end
       | Tfield(label, kind, t1, t2) ->
           begin match field_kind_repr kind with
@@ -2609,12 +2532,7 @@ let rec nondep_type_rec env id ty =
           | Fabsent ->
               assert false
           end
-      | Tnil ->
-          Tnil
-      | Tlink ty ->                    (* Actually unused *)
-          Tlink(nondep_type_rec env id ty)
-      | Tsubst _ ->
-          assert false
+      | _ -> copy_type_desc (nondep_type_rec env id) desc
       end;
     ty'
 
