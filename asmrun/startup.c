@@ -42,7 +42,7 @@ static void init_atoms()
 
 extern value caml_start_program P((void));
 
-int main(argc, argv)
+int caml_main(argc, argv)
      int argc;
      char * argv[];
 {

@@ -5,7 +5,7 @@ FLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM)
 CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 
-COBJS=main.o fail.o roots.o signals.o \
+COBJS=startup.o main.o fail.o roots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o
@@ -34,6 +34,8 @@ install:
 power.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.o
 
+main.c: ../byterun/main.c
+	ln -s ../byterun/main.c main.c
 misc.c: ../byterun/misc.c
 	ln -s ../byterun/misc.c misc.c
 freelist.c: ../byterun/freelist.c
