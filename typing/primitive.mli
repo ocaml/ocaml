@@ -22,4 +22,7 @@ type description =
     prim_native_float: bool }  (* Does the above operate on unboxed floats? *)
 
 val parse_declaration: int -> string list -> description
-val print_description: description -> unit
+
+open Format
+
+val print_description: formatter -> description -> unit

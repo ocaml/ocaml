@@ -15,7 +15,6 @@
 (* Description of primitive functions *)
 
 open Misc
-open Formatmsg
 
 type description =
   { prim_name: string;         (* Name of primitive  or C function *)
@@ -26,7 +25,7 @@ type description =
 
 let parse_declaration arity decl =
   match decl with
-    name :: "noalloc" :: name2 :: "float" :: _ ->
+  | name :: "noalloc" :: name2 :: "float" :: _ ->
       {prim_name = name; prim_arity = arity; prim_alloc = false;
        prim_native_name = name2; prim_native_float = true}
   | name :: "noalloc" :: name2 :: _ ->
@@ -47,13 +46,14 @@ let parse_declaration arity decl =
   | [] ->
       fatal_error "Primitive.parse_declaration"
 
-let print_quoted s = print_char '"'; print_string s; print_char '"'
+open Format;;
 
-let print_description p =
-  print_quoted p.prim_name;
-  if not p.prim_alloc then
-    (print_space(); print_quoted "noalloc");
+let print_quoted ppf s = fprintf ppf "\"%s\"" s
+
+let print_description ppf p =
+  print_quoted ppf p.prim_name;
+  if not p.prim_alloc then fprintf ppf "@ %a" print_quoted "noalloc";
   if p.prim_native_name <> "" then
-    (print_space(); print_quoted p.prim_native_name);
+     fprintf ppf "@ %a" print_quoted p.prim_native_name;
   if p.prim_native_float then
-    (print_space(); print_quoted "float")
+     fprintf ppf "@ %a" print_quoted "float"

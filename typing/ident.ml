@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-open Formatmsg
+open Format
 
 type t = { stamp: int; name: string; mutable global: bool }
 
@@ -55,12 +55,11 @@ let make_global i =
 let global i =
   i.global
 
-let print i =
-  print_string i.name;
+let print ppf i =
   match i.stamp with
-    0 -> print_string "!"
-  | -1 -> print_string "#"
-  | n -> print_string "/"; print_int n; if i.global then print_string "g"
+  | 0 -> fprintf ppf "%s!" i.name
+  | -1 -> fprintf ppf "%s#" i.name
+  | n -> fprintf ppf "%s/%i%s" i.name n (if i.global then "g" else "")
 
 type 'a tbl =
     Empty

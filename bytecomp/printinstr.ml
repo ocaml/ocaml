@@ -18,7 +18,6 @@ open Format
 open Lambda
 open Instruct
 
-
 let instruction ppf = function
   | Klabel lbl -> fprintf ppf "L%i:" lbl
   | Kacc n -> fprintf ppf "\tacc %i" n
@@ -40,8 +39,8 @@ let instruction ppf = function
       List.iter (fun lbl -> fprintf ppf " %i" lbl) lbls;
       fprintf ppf ", %i" n
   | Koffsetclosure n -> fprintf ppf "\toffsetclosure %i" n
-  | Kgetglobal id -> fprintf ppf "\tgetglobal "; Ident.print id
-  | Ksetglobal id -> fprintf ppf "\tsetglobal "; Ident.print id
+  | Kgetglobal id -> fprintf ppf "\tgetglobal %a" Ident.print id
+  | Ksetglobal id -> fprintf ppf "\tsetglobal %a" Ident.print id
   | Kconst cst ->
       fprintf ppf "@[<10>\tconst@ %a@]" Printlambda.structured_constant cst
   | Kmakeblock(n, m) ->

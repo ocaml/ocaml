@@ -17,7 +17,6 @@
 open Misc
 open Ctype
 open Format
-(*open Formatmsg*)
 open Longident
 open Path
 open Asttypes
@@ -458,7 +457,7 @@ let value_description id ppf decl =
   let pr_val ppf =
     match decl.val_kind with
     | Val_prim p ->
-        fprintf ppf "@ = "; Primitive.print_description p
+        fprintf ppf "@ = %a" Primitive.print_description p
     | _ -> () in
   fprintf ppf "@[<2>%s%a :@ %a%t@]"
     kwd value_ident id type_scheme decl.val_type pr_val

@@ -41,8 +41,6 @@ let rec struct_const ppf = function
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
       fprintf ppf "@[<1[|@[%s%a@]|]@]" f1 floats fl
 
-let print_id ppf id = Ident.print id
-
 let boxed_integer_name = function
   | Pnativeint -> "nativeint"
   | Pint32 -> "int32"
@@ -85,8 +83,8 @@ let print_bigarray name kind ppf layout =
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pignore -> fprintf ppf "ignore"
-  | Pgetglobal id -> fprintf ppf "global %a" print_id id
-  | Psetglobal id -> fprintf ppf "setglobal %a" print_id id
+  | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
+  | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
   | Pfield n -> fprintf ppf "field %i" n
@@ -173,7 +171,7 @@ let primitive ppf = function
 
 let rec lam ppf = function
   | Lvar id ->
-      print_id ppf id
+      Ident.print ppf id
   | Lconst cst ->
       struct_const ppf cst
   | Lapply(lfun, largs) ->
@@ -184,24 +182,24 @@ let rec lam ppf = function
       let pr_params ppf params =
         match kind with
         | Curried ->
-            List.iter (fun param -> fprintf ppf "@ %a" print_id param) params
+            List.iter (fun param -> fprintf ppf "@ %a" Ident.print param) params
         | Tupled ->
             fprintf ppf " (";
             let first = ref true in
             List.iter
               (fun param ->
                 if !first then first := false else fprintf ppf ",@ ";
-                print_id ppf param)
+                Ident.print ppf param)
               params;
             fprintf ppf ")" in
       fprintf ppf "@[<2>(function%a@ %a)@]" pr_params params lam body
   | Llet(str, id, arg, body) ->
       let rec letbody = function
         | Llet(str, id, arg, body) ->
-            fprintf ppf "@ @[<2>%a@ %a@]" print_id id lam arg;
+            fprintf ppf "@ @[<2>%a@ %a@]" Ident.print id lam arg;
             letbody body
         | expr -> expr in
-      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" print_id id lam arg;
+      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" Ident.print id lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Lletrec(id_arg_list, body) ->
@@ -210,7 +208,7 @@ let rec lam ppf = function
         List.iter
           (fun (id, l) ->
             if !spc then print_space() else spc := true;
-            fprintf ppf "@[<2>%a@ %a@]" print_id id lam l)
+            fprintf ppf "@[<2>%a@ %a@]" Ident.print id lam l)
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
@@ -241,7 +239,7 @@ let rec lam ppf = function
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with@ %a)@]" lam lbody lam lhandler
   | Ltrywith(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
-        lam lbody print_id param lam lhandler
+        lam lbody Ident.print param lam lhandler
   | Lifthenelse(lcond, lif, lelse) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Lsequence(l1, l2) ->
@@ -250,11 +248,11 @@ let rec lam ppf = function
       fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
   | Lfor(param, lo, hi, dir, body) ->
       fprintf ppf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
-       print_id param lam lo
+       Ident.print param lam lo
        (match dir with Upto -> "to" | Downto -> "downto")
        lam hi lam body
   | Lassign(id, expr) ->
-      fprintf ppf "@[<2>(assign@ %a@ %a)@]" print_id id lam expr
+      fprintf ppf "@[<2>(assign@ %a@ %a)@]" Ident.print id lam expr
   | Lsend (met, obj, largs) ->
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
@@ -267,13 +265,13 @@ let rec lam ppf = function
        | Lev_function -> "funct-body" in
       fprintf ppf "@[<2>(%s %i@ %a)@]" kind ev.lev_loc lam expr
   | Lifused(id, expr) ->
-      fprintf ppf "@[<2>(ifused@ %a@ %a)@]" print_id id lam expr
+      fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
 
 and sequence ppf = function
   | Lsequence(l1, l2) ->
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | Llet(str, id, arg, body) ->
-      fprintf ppf "@[<2>let@ %a@ %a@]@ %a" print_id id lam arg sequence body
+      fprintf ppf "@[<2>let@ %a@ %a@]@ %a" Ident.print id lam arg sequence body
   | l ->
       lam ppf l
 

@@ -42,7 +42,7 @@ val binding_time: t -> int
 val current_time: unit -> int
 val set_current_time: int -> unit
 
-val print: t -> unit
+val print: Format.formatter -> t -> unit
 
 type 'a tbl
         (* Association tables from identifiers to type 'a. *)
