@@ -42,8 +42,8 @@ install:
 power.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.o
 
-power.p.o: power-$(SYSTEM).p.o
-	cp power-$(SYSTEM).p.o power.p.o
+power.p.o: power-$(SYSTEM).o
+	cp power-$(SYSTEM).o power.p.o
 
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
