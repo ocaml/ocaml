@@ -26,7 +26,8 @@ open Cmm
 
 let bind name arg fn =
   match arg with
-    Cvar _ | Cconst_int _ | Cconst_symbol _ | Cconst_pointer _ -> fn arg
+    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
+  | Cconst_pointer _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 (* Block headers. Meaning of the tag field:
@@ -42,24 +43,30 @@ let bind name arg fn =
 let float_tag = Cconst_int 253
 let floatarray_tag = Cconst_int 254
 
-let block_header tag sz = (sz lsl 10) + tag
+let block_header tag sz =
+  Nativeint.add (Nativeint.shift (Nativeint.from sz) 10) (Nativeint.from tag)
 let closure_header sz = block_header 250 sz
 let infix_header ofs = block_header 249 ofs
 let float_header = block_header 253 (size_float / size_addr)
 let floatarray_header len = block_header 254 (len * size_float / size_addr)
 let string_header len = block_header 252 ((len + size_addr) / size_addr)
 
-let alloc_block_header tag sz = Cconst_int(block_header tag sz)
-let alloc_floatarray_header len = Cconst_int(floatarray_header len)
-let alloc_closure_header sz = Cconst_int(closure_header sz)
-let alloc_infix_header ofs = Cconst_int(infix_header ofs)
+let alloc_block_header tag sz = Cconst_natint(block_header tag sz)
+let alloc_float_header = Cconst_natint(float_header)
+let alloc_floatarray_header len = Cconst_natint(floatarray_header len)
+let alloc_closure_header sz = Cconst_natint(closure_header sz)
+let alloc_infix_header ofs = Cconst_natint(infix_header ofs)
 
 (* Integers *)
 
+let max_repr_int = max_int asr 1
+let min_repr_int = min_int asr 1
+
 let int_const n =
-  if n <= max_int asr 1 & n >= min_int asr 1
+  if n <= max_repr_int & n >= min_repr_int
   then Cconst_int((n lsl 1) + 1)
-  else Cop(Caddi, [Cop(Clsl, [Cconst_int n; Cconst_int 1]); Cconst_int 1])
+  else Cconst_natint(Nativeint.add (Nativeint.shift (Nativeint.from n) 1)
+                                   (Nativeint.from 1))
 
 let add_const c n =
   if n = 0 then c else Cop(Caddi, [c; Cconst_int n])
@@ -107,7 +114,6 @@ let tag_int = function
 let untag_int = function
     Cconst_int n -> Cconst_int(n asr 1)
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) -> c
-  | Cop(Clsl, [c; Cconst_int 1]) -> c
   | c -> Cop(Casr, [c; Cconst_int 1])
 
 (* Bool *)
@@ -119,7 +125,7 @@ let test_bool = function
 
 (* Float *)
 
-let box_float c = Cop(Calloc, [Cconst_int(float_header); c])
+let box_float c = Cop(Calloc, [alloc_float_header; c])
 
 let unbox_float = function
     Cop(Calloc, [header; c]) -> c
@@ -919,11 +925,11 @@ and emit_constant_fields fields cont =
 and emit_constant_field field cont =
   match field with
     Const_base(Const_int n) ->
-      if n <= max_int asr 1 & n >= min_int asr 1
-      then (Cint((n lsl 1) + 1), cont)
-      else (Cintlit(string_of_int n ^ "*2+1"), cont)
+      (Cint(Nativeint.add (Nativeint.shift (Nativeint.from n) 1)
+                          (Nativeint.from 1)),
+       cont)
   | Const_base(Const_char c) ->
-      (Cint(((Char.code c) lsl 1) + 1), cont)
+      (Cint(Nativeint.from(((Char.code c) lsl 1) + 1)), cont)
   | Const_base(Const_float s) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
@@ -934,7 +940,7 @@ and emit_constant_field field cont =
        Cint(string_header (String.length s)) :: Cdefine_label lbl :: 
        emit_string_constant s cont)
   | Const_pointer n ->
-      (Cint((n lsl 1) + 1), cont)
+      (Cint(Nativeint.from((n lsl 1) + 1)), cont)
   | Const_block(tag, fields) ->
       let lbl = new_const_label() in
       let (emit_fields, cont1) = emit_constant_fields fields cont in
@@ -1107,17 +1113,19 @@ let entry_point namelist =
 
 (* Generate the table of globals *)
 
+let cint_zero = Cint(Nativeint.from 0)
+
 let global_table namelist =
   Cdata(Cdefine_symbol "caml_globals" ::
         List.map (fun name -> Csymbol_address name) namelist @
-        [Cint 0])
+        [cint_zero])
 
 (* Generate the master table of frame descriptors *)
 
 let frame_table namelist =
   Cdata(Cdefine_symbol "caml_frametable" ::
         List.map (fun name -> Csymbol_address(name ^ "_frametable")) namelist @
-        [Cint 0])
+        [cint_zero])
 
 (* Generate the table of module data segments *)
 
@@ -1128,7 +1136,7 @@ let data_segment_table namelist =
             Csymbol_address(name ^ "_begin") ::
             Csymbol_address(name ^ "_end") :: lst)
           namelist
-          [Cint 0])
+          [cint_zero])
 
 (* Initialize a predefined exception *)
 

@@ -301,13 +301,13 @@ let emit_instr i =
           else
               `	movl	{emit_reg src}, {emit_reg dst}\n`
         end
-    | Lop(Iconst_int 0) ->
-        begin match i.res.(0).loc with
-          Reg n -> `	xorl	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-        | _     -> `	movl	$0, {emit_reg i.res.(0)}\n`
-        end
     | Lop(Iconst_int n) ->
-        `	movl	${emit_int n}, {emit_reg i.res.(0)}\n`
+        if Nativeint.sign n = 0 then begin
+          match i.res.(0).loc with
+            Reg n -> `	xorl	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+          | _     -> `	movl	$0, {emit_reg i.res.(0)}\n`
+        end else
+          `	movl	${emit_nativeint n}, {emit_reg i.res.(0)}\n`
     | Lop(Iconst_float s) ->
         let f = float_of_string s in
         if f = 0.0 then
@@ -749,9 +749,7 @@ let emit_item = function
   | Cint16 n ->
       `	{emit_string word_dir}	{emit_int n}\n`
   | Cint n ->
-      `	.long	{emit_int n}\n`
-  | Cintlit n ->
-      `	.long	{emit_string n}\n`
+      `	.long	{emit_nativeint n}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->

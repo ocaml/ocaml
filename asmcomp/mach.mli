@@ -36,7 +36,7 @@ type operation =
     Imove
   | Ispill
   | Ireload
-  | Iconst_int of int
+  | Iconst_int of Nativeint.t
   | Iconst_float of string
   | Iconst_symbol of string
   | Icall_ind

@@ -284,10 +284,11 @@ let emit_instr i =
           | _ ->
               fatal_error "Emit_mips: Imove"
         end
-    | Lop(Iconst_int 0) ->
-        `	move	{emit_reg i.res.(0)}, $0\n`
     | Lop(Iconst_int n) ->
-        `	li	{emit_reg i.res.(0)}, {emit_int n}\n`
+        if Nativeint.sign n = 0 then
+          `	move	{emit_reg i.res.(0)}, $0\n`
+        else
+          `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
     | Lop(Iconst_float s) ->
         `	li.d	{emit_reg i.res.(0)}, {emit_string s}\n`
     | Lop(Iconst_symbol s) ->
@@ -567,9 +568,7 @@ let emit_item = function
   | Cint16 n ->
       `	.half	{emit_int n}\n`
   | Cint n ->
-      `	.word	{emit_int n}\n`
-  | Cintlit s ->
-      `	.word	{emit_string s}\n`
+      `	.word	{emit_nativeint n}\n`
   | Cfloat f ->
       `	.align	0\n`; (* Prevent alignment on 8-byte boundary *)
       `	.double	{emit_string f}\n`

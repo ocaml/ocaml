@@ -65,6 +65,11 @@ let emit_symbol s =
   then emit_string s
   else begin emit_string symbol_prefix; Emitaux.emit_symbol '$' s end
 
+(* Check if a native integer is an immediate operand *)
+
+let is_native_immediate n =
+  Nativeint.cmp n 4095 <= 0 && Nativeint.cmp n (-4096) >= 0
+
 (* Output a label *)
 
 let label_prefix =
@@ -273,11 +278,11 @@ let rec emit_instr i dslot =
               fatal_error "Emit: Imove"
         end
     | Lop(Iconst_int n) ->
-        if is_immediate n then
-          `	mov	{emit_int n}, {emit_reg i.res.(0)}\n`
+        if is_native_immediate n then
+          `	mov	{emit_nativeint n}, {emit_reg i.res.(0)}\n`
         else begin
-          `	sethi	%hi({emit_int n}), %g1\n`;
-          `	or	%g1, %lo({emit_int n}), {emit_reg i.res.(0)}\n`
+          `	sethi	%hi({emit_nativeint n}), %g1\n`;
+          `	or	%g1, %lo({emit_nativeint n}), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_float s) ->
         let lbl = new_label() in
@@ -536,7 +541,7 @@ let is_one_instr i =
     Lop op ->
       begin match op with
         Imove | Ispill | Ireload -> i.arg.(0).typ = i.res.(0).typ
-      | Iconst_int n -> is_immediate n
+      | Iconst_int n -> is_native_immediate n
       | Istackoffset _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_immediate n
       | Iload(_, Iindexed2 n) -> i.res.(0).typ <> Float & n = 0
@@ -619,9 +624,7 @@ let emit_item = function
   | Cint16 n ->
       `	.half	{emit_int n}\n`
   | Cint n ->
-      `	.word	{emit_int n}\n`
-  | Cintlit s ->
-      `	.word	{emit_string s}\n`
+      `	.word	{emit_nativeint n}\n`
   | Cfloat f ->
       `	.double	0r{emit_string f}\n`
   | Csymbol_address s ->

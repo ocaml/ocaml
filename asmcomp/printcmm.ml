@@ -85,6 +85,7 @@ let operation = function
 
 let rec expression = function
     Cconst_int n -> print_int n
+  | Cconst_natint n -> print_string(Nativeint.to_string n)
   | Cconst_float s -> print_string s
   | Cconst_symbol s -> print_string "\""; print_string s; print_string "\""
   | Cconst_pointer n -> print_int n; print_string "a"
@@ -226,8 +227,7 @@ let data_item = function
   | Cdefine_label l -> print_string "L"; print_int l; print_string ":"
   | Cint8 n -> print_string "byte "; print_int n
   | Cint16 n -> print_string "half "; print_int n
-  | Cint n -> print_string "int "; print_int n
-  | Cintlit s -> print_string "intlit "; print_string s
+  | Cint n -> print_string "int "; print_string(Nativeint.to_string n)
   | Cfloat f -> print_string "float "; print_string f
   | Csymbol_address s ->
       print_string "addr \""; print_string s; print_string "\""

@@ -176,7 +176,9 @@ let rec instr_uses_gp i =
   match i.desc with
     Lend -> false
   | Lop(Iconst_int n) ->
-      if n < -0x8000000 or n > 0x7FFFFFFF then true else instr_uses_gp i.next
+      if Nativeint.cmp n (Nativeint.from (-0x8000000)) < 0
+      || Nativeint.cmp n (Nativeint.from 0x7FFFFFFF) > 0
+      then true else instr_uses_gp i.next
   | Lop(Iconst_float s) -> true
   | Lop(Iconst_symbol s) -> true
   | Lop(Iextcall(_, _)) -> true
@@ -185,7 +187,7 @@ let rec instr_uses_gp i =
   | Lop(Iintop(Idiv | Imod)) -> true    (* divq and remq can be turned into *)
   | Lop(Iintop_imm((Idiv | Imod), _)) -> true (* a function call *)
   | Lop(Iintop_imm(_, n)) ->
-      if n < -0x8000000 or n > 0x7FFFFFFF then true else instr_uses_gp i.next
+      if n < -0x8000000 || n > 0x7FFFFFFF then true else instr_uses_gp i.next
   | Lsetuptrap lbl -> true
   | _ ->
       instr_uses_gp i.next
@@ -279,10 +281,11 @@ let emit_instr i =
           | _ ->
               fatal_error "Emit_alpha: Imove"
         end
-    | Lop(Iconst_int 0) ->
-        `	clr	{emit_reg i.res.(0)}\n`
     | Lop(Iconst_int n) ->
-        `	ldiq	{emit_reg i.res.(0)}, {emit_int n}\n`
+        if Nativeint.sign n = 0 then
+          `	clr	{emit_reg i.res.(0)}\n`
+        else
+          `	ldiq	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
     | Lop(Iconst_float s) ->
         `	ldit	{emit_reg i.res.(0)}, {emit_string s}\n`
     | Lop(Iconst_symbol s) ->
@@ -591,9 +594,7 @@ let emit_item = function
   | Cint16 n ->
       `	.word	{emit_int n}\n`
   | Cint n ->
-      `	.quad	{emit_int n}\n`
-  | Cintlit n ->
-      `	.quad	{emit_string n}\n`
+      `	.quad	{emit_nativeint n}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->

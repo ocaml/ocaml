@@ -91,6 +91,9 @@ let high_prefix = if hpux then "LR'" else "L\`"
 let emit_int_low n = emit_string low_prefix; emit_int n
 let emit_int_high n = emit_string high_prefix; emit_int n
 
+let emit_nativeint_low n = emit_string low_prefix; emit_nativeint n
+let emit_nativeint_high n = emit_string high_prefix; emit_nativeint n
+
 let emit_symbol_low s =
   if hpux
   then `RR'{emit_symbol s}-$global$`
@@ -141,7 +144,11 @@ let emit_imports () =
 
 (* Output an integer load / store *)
 
-let is_offset n = (n < 8192) & (n >= -8192) (* 14 bits *)
+let is_offset n = (n < 8192) && (n >= -8192) (* 14 bits *)
+
+let is_offset_native n = 
+  Nativeint.cmp n (Nativeint.from 8192) < 0 &&
+  Nativeint.cmp n (Nativeint.from -8192) >= 0
 
 let emit_load instr addr arg dst =
   match addr with
@@ -247,8 +254,6 @@ let emit_align n =
   if hpux
   then `	.align	{emit_int n}\n`
   else `	.align	{emit_int(Misc.log2 n)}\n`
-
-(* Directoves to emit data *)
 
 (* Record live pointers at call points *)
 
@@ -443,11 +448,11 @@ let rec emit_instr i dslot =
               fatal_error "Emit: Imove"
         end
     | Lop(Iconst_int n) ->
-        if is_offset n then
-          `	ldi	{emit_int n}, {emit_reg i.res.(0)}\n`
+        if is_offset_native n then
+          `	ldi	{emit_nativeint n}, {emit_reg i.res.(0)}\n`
         else begin
-          `	ldil	{emit_int_high n}, {emit_reg i.res.(0)}\n`;
-          `	ldo	{emit_int_low n}({emit_reg i.res.(0)}), {emit_reg i.res.(0)}\n`
+          `	ldil	{emit_nativeint_high n}, {emit_reg i.res.(0)}\n`;
+          `	ldo	{emit_nativeint_low n}({emit_reg i.res.(0)}), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_float s) ->
         let lbl = new_label() in
@@ -752,7 +757,7 @@ let is_one_instr i =
           | (_, {typ = Float; loc = Stack s}) -> is_immediate(slot_offset s 1)
           | (_, _) -> true
           end
-      | Iconst_int n -> is_offset n
+      | Iconst_int n -> is_offset_native n
       | Istackoffset _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_offset n
       | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float & is_offset n
@@ -866,9 +871,7 @@ let emit_item = function
   | Cint16 n ->
       `	.short	{emit_int n}\n`
   | Cint n ->
-      `	.long	{emit_int n}\n`
-  | Cintlit s ->
-      `	.long	{emit_string s}\n`
+      `	.long	{emit_nativeint n}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->

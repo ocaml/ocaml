@@ -274,13 +274,13 @@ let emit_instr i =
           else
             `	mov	{emit_reg dst}, {emit_reg src}\n`
         end
-    | Lop(Iconst_int 0) ->
-        begin match i.res.(0).loc with
-          Reg n -> `	xor	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-        | _     -> `	mov	{emit_reg i.res.(0)}, 0\n`
-        end
     | Lop(Iconst_int n) ->
-        `	mov	{emit_reg i.res.(0)}, {emit_int n}\n`
+        if Nativeint.sign n = 0 then begin
+          match i.res.(0).loc with
+            Reg n -> `	xor	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+          | _     -> `	mov	{emit_reg i.res.(0)}, 0\n`
+        end else
+          `	mov	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
     | Lop(Iconst_float s) ->
         let f = float_of_string s in
         if f = 0.0 then
@@ -734,9 +734,7 @@ let emit_item = function
   | Cint16 n ->
       `	WORD	{emit_int n}\n`
   | Cint n ->
-      `	DWORD	{emit_int n}\n`
-  | Cintlit n ->
-      `	DWORD	{emit_string n}\n`
+      `	DWORD	{emit_nativeint n}\n`
   | Cfloat f ->
       `	REAL8 {emit_string f}\n`
   | Csymbol_address s ->

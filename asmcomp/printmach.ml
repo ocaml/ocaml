@@ -103,7 +103,7 @@ let operation op arg res =
     Imove -> regs arg
   | Ispill -> regs arg; print_string " (spill)"
   | Ireload -> regs arg; print_string " (reload)"
-  | Iconst_int n -> print_int n
+  | Iconst_int n -> print_string(Nativeint.to_string n)
   | Iconst_float s -> print_string s
   | Iconst_symbol s -> print_string "\""; print_string s; print_string "\""
   | Icall_ind -> print_string "call "; regs arg

@@ -278,18 +278,19 @@ let emit_instr i =
     | Lop(Iconst_int n) ->
         begin match i.res.(0) with
           {typ = Addr; loc = Reg _} ->
-            if n >= -32768 && n < 32768 then
-              `	movew	#{emit_int n}, {emit_reg i.res.(0)}\n`
+            if Nativeint.cmp n (-32768) >= 0 && Nativeint.cmp n 32768 < 0 then
+              `	movew	#{emit_nativeint n}, {emit_reg i.res.(0)}\n`
             else
-              `	movel	#{emit_int n}, {emit_reg i.res.(0)}\n`
-        | _ when n = 0 ->
+              `	movel	#{emit_nativeint n}, {emit_reg i.res.(0)}\n`
+        | _ when Nativeint.sign n = 0 ->
             `	clrl	{emit_reg i.res.(0)}\n`;
             set_cc i.res.(0)
-        | {typ = Int; loc = Reg _} when n >= -128 && n < 128 ->
-            `	moveq	#{emit_int n}, {emit_reg i.res.(0)}\n`;
+        | {typ = Int; loc = Reg _}
+          when Nativeint.cmp n (-128) >= 0 && Nativeint.cmp n 128 < 0 ->
+            `	moveq	#{emit_nativeint n}, {emit_reg i.res.(0)}\n`;
             set_cc i.res.(0)
         | _ ->
-            `	movel	#{emit_int n}, {emit_reg i.res.(0)}\n`;
+            `	movel	#{emit_nativeint n}, {emit_reg i.res.(0)}\n`;
             set_cc i.res.(0)
         end
     | Lop(Iconst_float s) ->
@@ -681,9 +682,7 @@ let emit_item = function
   | Cint16 n ->
       `	.word	{emit_int n}\n`
   | Cint n ->
-      `	.long	{emit_int n}\n`
-  | Cintlit n ->
-      `	.long	{emit_string n}\n`
+      `	.long	{emit_nativeint n}\n`
   | Cfloat f ->
       `	.double	0r{emit_string f}\n`
   | Csymbol_address s ->

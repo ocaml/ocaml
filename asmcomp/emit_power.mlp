@@ -112,6 +112,12 @@ let emit_stack r =
 let low n = n land 0xFFFF
 let high n = n asr 16
 
+let nativelow n = Nativeint.to_int n land 0xFFFF
+let nativehigh n = Nativeint.to_int (Nativeint.shift n (-16))
+
+let is_native_immediate n =
+  Nativeint.cmp n 32767 <= 0 && Nativeint.cmp n (-32768) >= 0
+
 (* Output a load or store operation *)
 
 let emit_symbol_offset s d =
@@ -319,12 +325,12 @@ let rec emit_instr i dslot =
                 fatal_error "Emit: Imove"
         end
     | Lop(Iconst_int n) ->
-        if is_immediate n then
-          `	li	{emit_reg i.res.(0)}, {emit_int n}\n`
+        if is_native_immediate n then
+          `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
         else begin
-          `	lis	{emit_reg i.res.(0)}, {emit_int(high n)}\n`;
+          `	lis	{emit_reg i.res.(0)}, {emit_int(nativehigh n)}\n`;
           if low n <> 0 then
-            `	ori	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_int(low n)}\n`
+            `	ori	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_int(nativelow n)}\n`
         end
     | Lop(Iconst_float s) ->
         if toc then begin
@@ -784,9 +790,7 @@ let emit_item = function
   | Cint16 n ->
       `	.short	{emit_int n}\n`
   | Cint n ->
-      `	.long	{emit_int n}\n`
-  | Cintlit s ->
-      `	.long	{emit_string s}\n`
+      `	.long	{emit_nativeint n}\n`
   | Cfloat f ->
       `	.double	0d{emit_string f}\n`
   | Csymbol_address s ->

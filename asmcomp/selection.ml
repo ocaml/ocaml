@@ -44,7 +44,7 @@ let oper_result_type = function
 
 let size_expr env exp =
   let rec size localenv = function
-      Cconst_int _ -> Arch.size_int
+      Cconst_int _ | Cconst_natint _ -> Arch.size_int
     | Cconst_symbol _ | Cconst_pointer _ -> Arch.size_addr
     | Cconst_float _ -> Arch.size_float
     | Cvar id ->
@@ -76,6 +76,7 @@ let size_expr env exp =
 
 let rec is_simple_expr = function
     Cconst_int _ -> true
+  | Cconst_natint _ -> true
   | Cconst_float _ -> true
   | Cconst_symbol _ -> true
   | Cconst_pointer _ -> true
@@ -348,6 +349,9 @@ let rec emit_expr env exp seq =
   match exp with
     Cconst_int n ->
       let r = Reg.createv typ_int in
+      insert_op (Iconst_int(Nativeint.from n)) [||] r seq
+  | Cconst_natint n ->
+      let r = Reg.createv typ_int in
       insert_op (Iconst_int n) [||] r seq
   | Cconst_float n ->
       let r = Reg.createv typ_float in
@@ -357,7 +361,7 @@ let rec emit_expr env exp seq =
       insert_op (Iconst_symbol n) [||] r seq
   | Cconst_pointer n ->
       let r = Reg.createv typ_addr in
-      insert_op (Iconst_int n) [||] r seq
+      insert_op (Iconst_int(Nativeint.from n)) [||] r seq
   | Cvar v ->
       begin try
         Tbl.find v env
