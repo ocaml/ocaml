@@ -123,14 +123,18 @@ val group_beginning : int -> int
    of the substring that was matched by the [n]th group of
    the regular expression. 
    @raise Not_found if the [n]th group of the regular expression
-   was not matched. *)
+   was not matched.
+   @raise Invalid_argument if there are fewer than [n] groups in
+   the regular expression. *)
 
 val group_end : int -> int
 (** [group_end n] returns
    the position of the character following the last character of
    substring that was matched by the [n]th group of the regular expression. 
    @raise Not_found if the [n]th group of the regular expression
-   was not matched. *)
+   was not matched.
+   @raise Invalid_argument if there are fewer than [n] groups in
+   the regular expression. *)
 
 
 (** {6 Replacement} *)
