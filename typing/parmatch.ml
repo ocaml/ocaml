@@ -838,7 +838,9 @@ let rec try_many variants f = function
   | x::rest ->
       begin match f x with
       | Rnone -> try_many variants f rest
-      | r -> r
+      | r ->
+          if variants then ignore (try_many variants f rest);
+          r
       end
 
 let rec exhaust variants tdefs pss n = match pss with
