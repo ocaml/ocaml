@@ -176,9 +176,17 @@ value thread_new(clos)          /* ML */
   return (value) th;
 }
 
+/* Return the thread identifier */
+
+value thread_id(th)             /* ML */
+     value th;
+{
+  return ((struct thread_struct *)th)->ident;
+}
+
 /* Return the current time as a floating-point number */
 
-double timeofday()
+static double timeofday()
 {
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -190,7 +198,7 @@ double timeofday()
 #define FOREACH_THREAD(x) x = curr_thread; do { x = x->next;
 #define END_FOREACH(x) } while (x != curr_thread)
 
-void schedule_thread()
+static void schedule_thread()
 {
   thread_t run_thread, th;
   fd_set readfds, writefds;

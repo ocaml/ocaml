@@ -14,7 +14,7 @@
 (* Module [Thread]: user-level lightweight threads *)
 
 type t
-        (* The type of thread identifiers. *)
+        (* The type of thread handles. *)
 
 (** Thread creation and termination *)
 
@@ -22,7 +22,7 @@ val new : ('a -> 'b) -> 'a -> t
         (* [new funct arg] creates a new thread of control, in which the
            function application [funct arg] is executed concurrently
            with the other threads of the program. The application of [new]
-           returns the identifier of the newly created thread.
+           returns the handle of the newly created thread.
            The new thread terminates when the application [funct arg]
            returns, either normally or by raising an uncaught exception.
            In the latter case, the exception is printed on standard error,
@@ -30,11 +30,15 @@ val new : ('a -> 'b) -> 'a -> t
            result of the application [funct arg] is discarded and not
            directly accessible to the parent thread. *)
 val self : unit -> t
-        (* Return the identifier of the calling thread. *)
+        (* Return the thread currently executing. *)
+external id : t -> int = "thread_id"
+        (* Return the identifier of the given thread. A thread identifier
+           is an integer that identifies uniquely the thread.
+           It can be used to build data structures indexed by threads. *)
 val exit : unit -> unit
-        (* Terminate prematurely the calling thread. *)
+        (* Terminate prematurely the currently executing thread. *)
 val kill : t -> unit
-        (* Terminate prematurely the thread whose identifier is given. *)
+        (* Terminate prematurely the thread whose handle is given. *)
 
 (** Suspending threads *)
 
@@ -84,8 +88,6 @@ val sleep : unit -> unit
            [critical_section] and suspending the calling thread is an
            atomic operation. *)
 val wakeup : t -> unit
-        (* Reactivate the thread whose identifier is given. This thread
-           is assumed to be suspended on a call to [sleep], [delay],
-           [wait_inchan] or [wait_descr]. After the call to [wakeup],
-           the suspended thread will resume execution at some future time.
-           [wakeup] does nothing if the thread was not suspended. *)
+        (* Reactivate the given thread. This thread is assumed to 
+           be suspended on a call to [sleep]. After the call to [wakeup],
+           the suspended thread will resume execution at some future time. *)

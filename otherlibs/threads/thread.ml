@@ -39,6 +39,8 @@ external thread_wakeup : t -> unit = "thread_wakeup"
 external thread_self : unit -> t = "thread_self"
 external thread_kill : t -> unit = "thread_kill"
 
+external id : t -> int = "thread_id"
+
 (* In sleep() below, we rely on the fact that signals are detected
    only at function applications and beginning of loops,
    making all other operations atomic. *)
