@@ -612,10 +612,19 @@ let rec converterCAMLtoTK ~context_widget argname ty =
         String.concat ~sep:"; "
           (List.map2 vars tyl ~f:(converterCAMLtoTK ~context_widget)) ::
         ["]"])
+ | List ty -> (* Just added for Imagephoto.put *)
+     String.concat ~sep:" "
+       [(if !Flags.camltk then 
+	   "TkQuote (TkTokenList (List.map (fun y -> "
+         else 
+	   "TkQuote (TkTokenList (List.map ~f:(fun y -> ");
+	converterCAMLtoTK ~context_widget "y" ty;
+	")";
+	argname;
+ 	"))"]
  | Function _ -> fatal_error "unexpected function type in converterCAMLtoTK"
  | Unit -> fatal_error "unexpected unit type in converterCAMLtoTK"
  | Record _ -> fatal_error "unexpected product type in converterCAMLtoTK"
- | List ty -> fatal_error "unexpected list type in converterCAMLtoTK"
 
 (* 
  * Produce a list of arguments from a template

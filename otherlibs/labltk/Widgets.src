@@ -1430,7 +1430,8 @@ module Imagephoto {
   function () copy [ImagePhoto; "copy"; src: ImagePhoto; photo(copy) list]
   function (int, int, int) get [ImagePhoto; "get"; x: int; y: int]
 % it is buggy ? can't express nested lists ?
-%  function () put [ImagePhoto; "put"; [[Color list] list]; photo(put)]
+  function () put [ImagePhoto; "put"; [Color list list]; photo(put) list]
+%  external put "builtin/imagephoto_put"
   function () read [ImagePhoto; "read"; file: string; photo(read) list]
   function () redither [ImagePhoto; "redither"]
   function () write [ImagePhoto; "write"; file: string; photo(write) list]

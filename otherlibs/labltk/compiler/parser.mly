@@ -109,7 +109,7 @@ Type1 :
 Type2 :
     Type1
      { $1 }
-  | Type1 LIST
+  | Type2 LIST
      { List $1 }
 ;
 
