@@ -14,8 +14,8 @@
 
 let ok = "Ok"
 let software = "OCamldoc"
-let version = "3.04-Pre4"
-let magic = "3.04+9+0"
+let version = Config.version
+let magic = version^"+0"
 let message_version = software^" "^version
 
 (** Messages for command line *)

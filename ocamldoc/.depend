@@ -158,12 +158,12 @@ odoc_merge.cmx: ../stdlib/list.cmx odoc_args.cmx odoc_class.cmx \
     odoc_exception.cmx odoc_messages.cmx odoc_module.cmx odoc_name.cmx \
     odoc_parameter.cmx odoc_type.cmx odoc_types.cmx odoc_value.cmx \
     odoc_merge.cmi 
-odoc_messages.cmo: ../stdlib/array.cmi ../stdlib/list.cmi odoc_global.cmi \
-    ../stdlib/printf.cmi ../otherlibs/str/str.cmi ../stdlib/string.cmi \
-    ../stdlib/sys.cmi 
-odoc_messages.cmx: ../stdlib/array.cmx ../stdlib/list.cmx odoc_global.cmx \
-    ../stdlib/printf.cmx ../otherlibs/str/str.cmx ../stdlib/string.cmx \
-    ../stdlib/sys.cmx 
+odoc_messages.cmo: ../stdlib/array.cmi ../utils/config.cmi ../stdlib/list.cmi \
+    odoc_global.cmi ../stdlib/printf.cmi ../otherlibs/str/str.cmi \
+    ../stdlib/string.cmi ../stdlib/sys.cmi 
+odoc_messages.cmx: ../stdlib/array.cmx ../utils/config.cmx ../stdlib/list.cmx \
+    odoc_global.cmx ../stdlib/printf.cmx ../otherlibs/str/str.cmx \
+    ../stdlib/string.cmx ../stdlib/sys.cmx 
 odoc_misc.cmo: ../typing/btype.cmi ../stdlib/buffer.cmi ../stdlib/char.cmi \
     ../typing/ctype.cmi ../stdlib/format.cmi ../typing/ident.cmi \
     ../stdlib/list.cmi ../parsing/longident.cmi odoc_messages.cmo \
@@ -280,6 +280,8 @@ odoc_to_text.cmx: ../stdlib/format.cmx ../stdlib/list.cmx odoc_info.cmx \
     odoc_messages.cmx ../otherlibs/str/str.cmx ../stdlib/string.cmx 
 odoc_type.cmo: odoc_name.cmi odoc_types.cmo ../typing/types.cmi 
 odoc_type.cmx: odoc_name.cmx odoc_types.cmx ../typing/types.cmx 
+odoc_types.cmo: odoc_messages.cmo 
+odoc_types.cmx: odoc_messages.cmx 
 odoc_value.cmo: ../stdlib/list.cmi odoc_name.cmi odoc_parameter.cmo \
     odoc_types.cmo ../typing/printtyp.cmi ../stdlib/string.cmi \
     ../typing/types.cmi 
