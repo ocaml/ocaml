@@ -244,9 +244,9 @@ caml_start_program:
 
     /* The trap handler */
 .Ltrap_handler:
-    /* Save young_ptr */
-        ldr     r4, .Lyoung_ptr
-        str     alloc_ptr, [r4, #0]
+    /* Save exception pointer */
+        ldr     r4, .Lcaml_exception_pointer
+        str     trap_ptr, [r4, #0]
     /* Encode exception bucket as an exception result */
         orr     r0, r0, #2
     /* Return it */
