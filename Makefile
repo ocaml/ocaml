@@ -34,7 +34,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/dectree.cmo bytecomp/matching.cmo \
   bytecomp/translcore.cmo bytecomp/translmod.cmo \
-  bytecomp/runtimedef.cmo
+  bytecomp/simplif.cmo bytecomp/runtimedef.cmo
 
 BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
