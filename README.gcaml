@@ -38,6 +38,9 @@ Run time type construction syntax
 
 	is the run time type representation of the type int -> int.
 
+============================================================
+This is not true!!!
+
 	At this momemnt, the scope of type variables inside [: :] notation
 	is independent from the outside context. For instance, in the
 	following expression,
@@ -47,6 +50,9 @@ Run time type construction syntax
 	the first and second occurrences of the type variable 'a have
 	no relationship each other. Even if the first 'a is instantiated
 	to some other type, the second remains as a type variable.
+
+This is not true!!!
+============================================================
 
 	You can use ^x notation inside [: :], to substitute a run time type
 	bound to a variable x. Ex:

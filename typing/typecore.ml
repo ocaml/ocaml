@@ -1399,12 +1399,25 @@ Format.fprintf Format.err_formatter "funct=%a@."
         exp_env = env;
       }
   | Pexp_rtype sty ->
-      let sexp = Typertype.value_of_type 
-	  (fun lid -> fst (Env.lookup_type lid env)) sty in
-      type_expect env kset sexp (Typertype.get_rtype_type ())
+      let f loc lid = 
+        let exp =
+	  type_expect env (Kset.empty ()) 
+	    { pexp_desc= Pexp_ident lid; pexp_loc= sty.ptyp_loc } 
+	    (Typertype.get_rtype_type ()) 
+	in
+	match exp.exp_desc with
+	| Texp_ident (p, _) -> Ctype.newty (Tpath p)
+	| _ -> assert false
+      in
+      let ty = Typetexp.transl_run_time_type f env sty in
+      re {
+        exp_desc = Texp_rtype ty;
+        exp_loc = sexp.pexp_loc;
+        exp_type = Typertype.get_rtype_type ();
+        exp_env = env }
   | Pexp_typedecl lid ->
       begin try
-	let path, decl = Env.lookup_type lid env in
+	let path, _ = Env.lookup_type lid env in
 	let t = Typertype.get_rtype_type_declaration () in
 
 	let make_ident path =

@@ -139,6 +139,28 @@ builtintypes.p.cmx: builtintypes.ml
 	@if test -f builtintypes.n.o; \
            then mv builtintypes.n.o builtintypes.o; else :; fi
 
+rtype.cmi: rtype.mli
+	$(CAMLC) $(COMPFLAGS) -rectypes -c rtype.mli
+
+rtype.cmo: rtype.ml
+	$(CAMLC) $(COMPFLAGS) -rectypes -c rtype.ml
+
+rtype.cmx: rtype.ml
+	$(CAMLOPT) $(OPTCOMPFLAGS) -rectypes -c rtype.ml
+
+rtype.p.cmx: rtype.ml
+	@if test -f rtype.cmx; \
+           then mv rtype.cmx rtype.n.cmx; else :; fi
+	@if test -f rtype.o; \
+           then mv rtype.o rtype.n.o; else :; fi
+	$(CAMLOPT) $(OPTCOMPFLAGS) -p -rectypes -c rtype.ml
+	mv rtype.cmx rtype.p.cmx
+	mv rtype.o rtype.p.o
+	@if test -f rtype.n.cmx; \
+           then mv rtype.n.cmx rtype.cmx; else :; fi
+	@if test -f rtype.n.o; \
+           then mv rtype.n.o rtype.o; else :; fi
+
 # camlinternalOO.cmi must be compiled with -nopervasives for applets
 camlinternalOO.cmi: camlinternalOO.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c camlinternalOO.mli

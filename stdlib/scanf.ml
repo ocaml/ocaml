@@ -238,18 +238,18 @@ let bad_input s = raise (Scan_failure s);;
 let bad_input_char c = bad_input (String.make 1 c);;
 
 let bad_input_escape c =
-  bad_input (Printf.sprintf "illegal escape character %c" c);;
+  bad_input (Printf.sprintf "illegal escape character %C" c);;
 
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
       let i = Scanning.char_count ib in
-      bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
+      bad_input (Printf.sprintf "scanf: bad input at char number %i: %S" i s)
   | x -> raise x;;
 
 let bad_format fmt i fc =
   invalid_arg
     (Printf.sprintf
-       "scanf: bad conversion %c, at char number %i in format %s" fc i fmt);;
+       "scanf: bad conversion %%%c, at char number %i in format %S" fc i fmt);;
 
 let bad_float () = bad_input "no dot or exponent part found in float token";;
 
@@ -259,13 +259,13 @@ let check_char_in range ib =
   if List.memq ci range then Scanning.next_char ib else
   let sr = String.concat "" (List.map (String.make 1) range) in
   bad_input
-    (Printf.sprintf "looking for one of range %s, found %c" sr ci);;
+    (Printf.sprintf "looking for one of range %S, found %C" sr ci);;
 
 (* Checking that [c] is indeed in the input, then skip it. *)
 let check_char ib c =
   let ci = Scanning.checked_peek_char ib in
   if ci == c then Scanning.next_char ib else
-  bad_input (Printf.sprintf "looking for %c, found %c" c ci);;
+  bad_input (Printf.sprintf "looking for %C, found %C" c ci);;
 
 (* Extracting tokens from ouput token buffer. *)
 

@@ -506,46 +506,59 @@ let assert_failed loc =
 
 (* Translation of expressions *)
 
+let path_of_runtime_type_declaration env p =
+  if not (List.mem p Predef.builtin_types) then p
+  else
+    (* FIXME typecore has the same code *)
+    let redirect_to_builtintypes = function
+      | Path.Pident id -> 
+  	  let lid = 
+	    if not !Clflags.nobuiltintypes then
+	      Longident.Ldot (Longident.Lident "Builtintypes", 
+			      Ident.name id)
+	    else begin (* inside builtintypes.ml *)
+	      Longident.Lident (Ident.name id)
+	    end
+	  in
+	  begin try
+	    fst (Env.lookup_value lid env)
+	  with
+	  | Not_found ->
+	      Format.fprintf Format.err_formatter 
+		"Fatal error: failed to resolve type %a in builtintypes.ml@."
+		Printtyp.longident lid;
+	      raise Not_found
+	  end
+      | _ -> assert false
+    in
+    redirect_to_builtintypes p
+
 let transl_type_declaration env decl =
   (* Translation of type declaration *)
   (* We need the current env to find recursive reference inside 
      builtintypes.ml *)
-  let rdecl, dummy_tbl = Typertype.runtime_type_declaration decl in
+  let rdecl, type_rtype_tbl, dummy_tbl = 
+    Typertype.runtime_type_declaration decl in
+  let dummy_tbl = 
+    (* if the path is one of builtin types, 
+       it must be redirected to those of builtintypes.ml *)
+    List.map 
+      (fun (d,p) -> d, path_of_runtime_type_declaration env p) dummy_tbl 
+  in
   let overrides = 
-    List.map (fun (d,p) ->
-      (* if the path is one of builtin types, 
-	 it must be redirected to those of builtintypes.ml *)
-      let p = 
-	if not (List.mem p Predef.builtin_types) then p
-	else begin
-	  (* FIXME typecore has the same code *)
-	  let redirect_to_builtintypes = function
-	    | Path.Pident id -> 
-  		let lid = 
-		  if not !Clflags.nobuiltintypes then
-		    Longident.Ldot (Longident.Lident "Builtintypes", 
-				    Ident.name id)
-		  else begin (* inside builtintypes.ml *)
-		    Longident.Lident (Ident.name id)
-		  end
-		in
-		begin try
-		  fst (Env.lookup_value lid env)
-		with
-		| Not_found ->
-		    Format.fprintf Format.err_formatter 
-		      "Failed to resolve %a in builtintypes.ml"
-		      Printtyp.longident lid;
-		    raise Not_found
-		end
-	    | _ -> assert false
-	  in
-	  redirect_to_builtintypes p
-	end
-      in
-      Obj.repr d, transl_path p) dummy_tbl 
+    List.map (fun (d,p) -> Obj.repr d, transl_path p) dummy_tbl 
   in
   Metacomp.transl_constant overrides (Obj.repr rdecl)
+
+(* weak table for ident => path recovery in Texp_typedecl *)
+module IDPATH = struct
+  type t = Ident.t * Path.t
+  let equal ((i1 : Ident.t),_) ((i2 : Ident.t),_) = i1 = i2 
+  let hash (i,_) = Hashtbl.hash i
+end
+
+module IDPATHTBL = Weak.Make(IDPATH)
+let id_path_tbl = IDPATHTBL.create 17
 
 let rec transl_exp e =
   let eval_once =
@@ -568,6 +581,17 @@ and transl_exp0 e =
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, ({val_kind = Val_reg | Val_self _} as vdesc)) ->
+      let path = (* path conversion for typedecl *)
+	match path with
+	| Pident id -> 
+	    begin try
+	      let _,path = IDPATHTBL.find id_path_tbl (id,path (* dummy *)) in
+	      path
+	    with
+	    | Not_found -> path
+	    end
+	| _ -> path 
+      in
       begin match Etype.type_abstraction_of_value vdesc with
       | [] -> transl_path path
       | _ -> 
@@ -758,7 +782,7 @@ and transl_exp0 e =
   | Texp_typedecl path ->
       (* This is a very special case. It happens only in the compilation
 	 of stdlib/builtintypes.ml, where we have to build the type
-	 declaration code on the fly. *)
+	 declaration code *)
       transl_type_declaration e.exp_env (Env.find_type path Env.initial)
       
 
@@ -950,10 +974,53 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 (* Generic stuffs *)
 
 and transl_type_exprs env vartbl tys = 
+  let rtys, type_rtype_tbl, decl_path_tbl = 
+    Typertype.runtime_type_exprs tys 
+  in
+  (* type abstracted variables must be replaced by identifiers bound
+     in [vartbl]. *)
+  (* dummy type declarations must be replaced by identifiers bound
+     in [decl_path_tbl]. Note: we must use special paths for builtin 
+     data types. *)
+  let decl_path_tbl =
+    List.map 
+      (fun (decl, path) -> decl, path_of_runtime_type_declaration env path)
+      decl_path_tbl
+  in
+  let overrides_paths =
+    List.fold_left (fun st (ty,rt) ->
+      match ty.desc with
+      | Tpath p -> (Obj.repr rt, transl_path p) :: st
+      | _ -> st) [] type_rtype_tbl
+  in
+  let overrides_type_decls =
+    List.map (fun (decl,path) -> Obj.repr decl, transl_path path) 
+      decl_path_tbl 
+  in
+  let overrides = 
+    List.fold_left (fun st (ty,rt) ->
+      try 
+	(* retrieve the original type variable, in order to recover
+	   the linkage to the generalization *)
+	let t = List.assq ty vartbl in
+	let id = Etype.find_ident_of_type_variable t in
+	(Obj.repr rt, transl_path (Pident id)) :: st
+      with
+      | Not_found -> st) (overrides_paths @ overrides_type_decls) 
+      type_rtype_tbl
+  in
+  List.map (fun rty -> Metacomp.transl_constant overrides (Obj.repr rty)) rtys
+(*
   let stys, path_lid_tbl, tabst_ids = Typertype.to_core_types vartbl tys in
   let lid_path_tbl = List.map (fun (p,lid) -> (lid,p)) path_lid_tbl in
+  let ident_path_tbl = 
+    List.map (fun (lid,p) -> 
+      match lid with
+      | Longident.Lident name -> Ident.create name, p 
+      | _ -> assert false) lid_path_tbl
+  in
   let sexps = 
-    List.map (Typertype.value_of_type (fun lid -> 
+    List.map (Typertype.value_of_type (fun lid ->
       try List.assoc lid lid_path_tbl with Not_found -> 
 	assert false)) stys
   in
@@ -964,13 +1031,22 @@ and transl_type_exprs env vartbl tys =
   let env' = List.fold_left (fun env id -> 
     Env.add_value id vdesc env) env tabst_ids
   in
+  let vdesc = { val_type= Typertype.get_rtype_type_declaration ();
+		val_kind= Val_reg }
+  in
+  let env'' = List.fold_left (fun env (id, p) ->
+    Env.add_value id vdesc env) env' ident_path_tbl
+  in
   let exps = 
     List.map (fun sexp -> 
-      Typecore.type_expect env' (Kset.empty ()) sexp 
+      Typecore.type_expect env'' (Kset.empty ()) sexp 
 	(Typertype.get_rtype_type ())) 
       sexps
   in
+  List.iter (fun (id,path) -> 
+    IDPATHTBL.add id_path_tbl (id,path)) ident_path_tbl;
   List.map transl_exp exps
+*)
 
 and transl_generic_instance env path vdesc etyp =
   (* we must fix the type using correct_levels *)

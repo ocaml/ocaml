@@ -24,7 +24,7 @@ CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 OPTCOMPFLAGS=-warn-error A -nostdlib -I ../stdlib -I ../toplevel -I ../typing
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-OBJS=gcaml.cmo gcamltop.cmo
+OBJS=gcaml.cmo gcamltop.cmo safevio.cmo
 ALLOBJS=$(OBJS)
 
 all: gcamllib.cma

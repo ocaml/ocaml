@@ -131,6 +131,7 @@ let pattern_of_type transl_longident t =
   pattern_of_type t
 
     
+(**
 (* Value *)
 
 let make_exp loc desc = { pexp_desc= desc; pexp_loc= loc }
@@ -216,8 +217,7 @@ let value_of_type transl_longident t =
 	make_desc t.ptyp_loc (value_of_desc t.ptyp_loc t.ptyp_desc)
      
   and value_of_desc loc = function
-    | Ptyp_var n -> 
-	make_exp_construct loc (cstr "Tvar") [] (*FIXME*)
+    | Ptyp_var n -> assert false 
     | Ptyp_arrow (l, t1, t2) -> 
 	make_exp_construct loc (cstr "Tarrow")
  	  [ make_exp loc (Pexp_constant (Const_string l));
@@ -230,7 +230,8 @@ let value_of_type transl_longident t =
 	make_exp_construct loc (cstr "Tconstr")
  	  [make_exp loc (Pexp_tuple
 			   [ value_of_longident transl_longident loc lid;
-			     make_exp loc (Pexp_typedecl lid) ]);
+			     make_exp loc (Pexp_ident lid) ]);
+	                     (* lid may be fake_idents! *)
  	   mktailexp (List.map value_of_type ts)]
     | Ptyp_lident _ -> assert false
     | _ -> raise (Error (loc, Unsupported))
@@ -269,10 +270,15 @@ let make_type desc = { ptyp_desc= desc; ptyp_loc= Location.none }
    needs longidents instead of paths. We remember this fake conversion
    and later recover the original idents. *)
  
-let rec to_fake_longident = function
-  | Pident id -> Lident ("f" ^ Ident.unique_name id)
-  | Pdot (p, n, i) -> Ldot (to_fake_longident p, n ^ "*" ^ string_of_int i) 
-  | Papply (p1, p2) -> Lapply (to_fake_longident p1, to_fake_longident p2)
+let to_fake_longident path = 
+  let rec name = function
+    | Pident id -> Ident.unique_name id
+    | Pdot (p, n, i) -> 
+	Printf.sprintf "%s.%s_%d" (name p) n i
+    | Papply (p1, p2) -> 
+	Printf.sprintf "%s(%s)" (name p1) (name p2)
+  in
+  Lident ("*fake*" ^ name path)
 
 let to_core_types vartbl typs =
   let path_lid_tbl = ref [] in
@@ -287,8 +293,8 @@ let to_core_types vartbl typs =
 	begin try
 	  let t = List.assq typ vartbl in 
 	  let id = Etype.find_ident_of_type_variable t in
-	  (* here, the mapping between longident and identifer is 
-	     one to one *)
+	  (* Here, the mapping between longident and identifer is 
+	     one to one. *)
 	  let lid = Lident (Ident.name id) in
 	  type_abstractions := id :: !type_abstractions;
   	  make_type (Ptyp_lident lid)
@@ -303,11 +309,14 @@ let to_core_types vartbl typs =
 	end
     | Tlink t -> to_core t
     | _ -> make_type (to_core_desc typ.desc)
+
   and to_core_desc = function
     | Tvar | Tlink _ -> assert false
     | Tarrow (l, t1, t2, _) -> Ptyp_arrow (l, to_core t1, to_core t2)
     | Ttuple ts -> Ptyp_tuple (List.map to_core ts)
     | Tconstr (p, ts, _) ->
+	(* Here paths are converted back to longident. The conversions
+	   are registered and returned with the final result. *)
 	let lid = 
 	  try List.assoc p !path_lid_tbl with Not_found ->
 	    let lid = to_fake_longident p in
@@ -329,6 +338,7 @@ let to_core_types vartbl typs =
   in
   let core_types = List.map to_core typs in
   core_types, !path_lid_tbl, !type_abstractions
+***)
 
 (* rtype -> type_expr *)
 
@@ -361,12 +371,13 @@ let recover_type_expr t =
 
 (* type declarations *)
 
-let cached_runtime_type_tbl = ref []
-let reset_cached_runtime_type_tbl () =
-  cached_runtime_type_tbl := []
+let cached_runtime_type_tbl = 
+  ref ([] : (Types.type_expr * Rtype.type_expr) list)
+let dummy_runtime_type_declaration_tbl = 
+  ref ([] : (Rtype.type_declaration * Path.t) list)
 
-let dummy_runtime_type_declaration_tbl = ref []
-let reset_dummy_runtime_type_declaration_tbl () =
+let reset_tables () =
+  cached_runtime_type_tbl := [];
   dummy_runtime_type_declaration_tbl := []
 
 (* empty type declaration for compilation hacks *)
@@ -390,12 +401,14 @@ let rec runtime_type_expr t =
 	List.assq t !cached_runtime_type_tbl
       with
       | Not_found ->
-	  { Rtype.desc= runtime_type_desc t.desc }
+	  let rt = { Rtype.desc= runtime_type_desc t.desc } in
+	  cached_runtime_type_tbl := (t, rt) :: !cached_runtime_type_tbl;
+	  rt
 
 and runtime_type_desc = function
   | Tvar -> Rtype.Tvar
   | Tarrow (l,t1,t2,_) -> 
-      Rtype.Tarrow (l,runtime_type_expr t1, runtime_type_expr t2)
+      Rtype.Tarrow (l, runtime_type_expr t1, runtime_type_expr t2)
   | Ttuple ts -> Rtype.Ttuple (List.map runtime_type_expr ts)
   | Tconstr (p, ts, _) ->
       let dummy = dummy_runtime_type_declaration () in
@@ -403,7 +416,13 @@ and runtime_type_desc = function
 	(dummy, p) :: !dummy_runtime_type_declaration_tbl;
       Rtype.Tconstr ((runtime_path p, dummy), 
 		     List.map runtime_type_expr ts)
+  | Tpath p -> Rtype.Tvar
   | _ -> raise (Error (Location.none, Unsupported))
+
+let runtime_type_exprs ts =
+  reset_tables ();
+  let rts = List.map runtime_type_expr ts in 
+  rts, !cached_runtime_type_tbl, !dummy_runtime_type_declaration_tbl
 
 let runtime_private_flag = function
   | Private -> Rtype.Private
@@ -431,8 +450,7 @@ let runtime_type_kind = function
 	 runtime_private_flag p)
 
 let runtime_type_declaration td =
-  reset_cached_runtime_type_tbl ();
-  reset_dummy_runtime_type_declaration_tbl ();
+  reset_tables ();
   let rdecl = 
     { Rtype.type_params= List.map runtime_type_expr td.type_params;
       Rtype.type_arity= td.type_arity;
@@ -445,7 +463,7 @@ let runtime_type_declaration td =
   in
   (* note that rdecl is computed before we return the content of the reference
    dummy_runtime_type_declaration *)
-  rdecl, !dummy_runtime_type_declaration_tbl
+  rdecl, !cached_runtime_type_tbl, !dummy_runtime_type_declaration_tbl
 
 (* Error reporting *)
 

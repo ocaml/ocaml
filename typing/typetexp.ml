@@ -55,7 +55,7 @@ let local_aliases  = ref ([] : string list)
 
 let used_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let bindings       = ref ([] : (Location.t * type_expr * type_expr) list)
-        (* These two variables are used for the "delayed" policy. *)
+  (* These two variables are used for the "delayed" policy. *)
 
 let reset_pre_univars () =
   pre_univars := [];
@@ -545,12 +545,35 @@ let transl_type_scheme env sktyp =
   generalize t;
   t
 
+let escape_states f v =
+  (* push *)
+  let tv = !type_variables
+  and pu = !pre_univars
+  and uv = !used_variables
+  and bs = !bindings
+  in
+  type_variables := Tbl.empty;
+  pre_univars := [];
+  used_variables := Tbl.empty;
+  bindings := [];
+  let pop () =
+    type_variables := tv;
+    pre_univars := pu;
+    used_variables := uv;
+    bindings := bs
+  in
+  try 
+    let r = f v in pop (); r
+  with
+  | e -> pop (); raise e
+
 let transl_run_time_type f env styp =
-  univars := []; local_aliases := [];
-  let typ = transl_type env ~lident: f Extensible styp in
-  type_variables := List.fold_right Tbl.remove !local_aliases !type_variables;
-  make_fixed_univars typ;
-  typ
+  escape_states (fun () ->
+    let typ = transl_type env ~lident: f Extensible styp in
+    type_variables := 
+      List.fold_right Tbl.remove !local_aliases !type_variables;
+    make_fixed_univars typ;
+    typ) ()
 
 (* Error report *)
 
