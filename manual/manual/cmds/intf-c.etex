@@ -62,18 +62,38 @@ primitive is applied as arguments. The value returned by the function is
 passed back to the Caml Light program as the result of the function
 application.
 
-User primitives with arity greater than 5 are implemented by C
-functions that receive two arguments: a pointer to an array of Caml
-Light values (the values for the arguments), and an integer which is
-the number of arguments provided:
+User primitives with arity greater than 5 should be implemented by two
+C functions. The first function, to be used in conjunction with the
+bytecode compiler "cslc", receives two arguments: a pointer to an
+array of Caml Light values (the values for the arguments), and an
+integer which is the number of arguments provided. The other function,
+to be used in conjunction with the native-code compiler "cslopt",
+takes its arguments directly. For instance, here are the two C
+functions for the 7-argument primitive "Nat.add_nat":
 \begin{verbatim}
-        value prim_with_lots_of_args(argv, argn)
-                value * argv;
-                int argn;
+        value add_nat_native(nat1, ofs1, len1, nat2, ofs2, len2, carry_in)
+             value nat1, ofs1, len1, nat2, ofs2, len2, carry_in;
         {
-          ... argv[0] ...;              /* The first argument */
-          ... argv[6] ...;              /* The seventh argument */
+          ...
         }
+        value add_nat_bytecode(argv, argn)
+             value * argv;
+             int argn;
+        {
+          return add_nat_native(argv[0], argv[1], argv[2], argv[3],
+                                argv[4], argv[5], argv[6]);
+        }
+\end{verbatim}
+The names of the two C functions must be given in the primitive
+declaration, as follows:
+\begin{alltt}
+        external \var{name} : \var{type} =
+                 \var{bytecode-C-function-name} \var{native-code-C-function-name}
+\end{alltt}
+For instance, in the case of "add_nat", the declaration is:
+\begin{verbatim}
+        external add_nat: nat -> int -> int -> nat -> int -> int -> int -> int
+                        = "add_nat_bytecode" "add_nat_native"
 \end{verbatim}
 
 Implementing a user primitive is actually two separate tasks: on the
