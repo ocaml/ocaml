@@ -155,7 +155,7 @@ let rec do_find_opt = function
       let opt1,all1 = do_find_opt e1
       and opt2,all2 = do_find_opt e2 in
       StringSet.union
-        (stringset_delta opt1 opt2)
+        (StringSet.union opt1 opt2)
         (stringset_delta all1 all2),
       StringSet.union all1 all2
   | Repetition e  ->
