@@ -143,7 +143,7 @@ let main () =
       Optcompile.init_path();
       Asmlibrarian.create_archive (List.rev !objfiles) !archive_name
     end
-    else if not !compile_only & !objfiles <> [] then begin
+    else if not !compile_only && !objfiles <> [] then begin
       Optcompile.init_path();
       Asmlink.link (List.rev !objfiles)
     end;
