@@ -395,14 +395,16 @@ class editor ~top ~menus = object (self)
     error_messages <- Typecheck.f (List.hd windows)
 
   method lex () =
-    Toplevel.configure top ~cursor:(`Xcursor "watch");
+    List.iter [ Widget.default_toplevel; top ]
+      ~f:(Toplevel.configure ~cursor:(`Xcursor "watch"));
     Text.configure current_tw ~cursor:(`Xcursor "watch");
     ignore (Timer.add ~ms:1 ~callback:
       begin fun () ->
         Text.tag_remove current_tw ~tag:"error" ~start:tstart ~stop:tend;
         Lexical.tag current_tw;
         Text.configure current_tw ~cursor:(`Xcursor "xterm");
-        Toplevel.configure top ~cursor:(`Xcursor "")
+        List.iter [ Widget.default_toplevel; top ]
+          ~f:(Toplevel.configure ~cursor:(`Xcursor ""))
       end)
 
   method save_text ?name:l txt =
