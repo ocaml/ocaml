@@ -332,14 +332,17 @@ esac
 nativecccompopts=''
 nativecclinkopts=''
 
-case "$arch,$nativecc,$system" in
-  alpha,cc*,digital) nativecccompopts=-std1;;
-  mips,cc*,irix)     nativecccompopts=-n32
-                     nativecclinkopts="-n32 -Wl,-woff,84";;
-  *,*,nextstep)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
-                     nativecclinkopts="-posix";;
-  *,*,rhapsody)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
-  *,gcc*,*)          nativecccompopts="$gcc_warnings";;
+case "$arch,$nativecc,$system,$host_type" in
+  alpha,cc*,digital,*) nativecccompopts=-std1;;
+  mips,cc*,irix,*)     nativecccompopts=-n32
+                       nativecclinkopts="-n32 -Wl,-woff,84";;
+  hppa,gcc*,hpux,*hpux10*)
+                       nativecccompopts="$gcc_warnings"
+                       nativecclinkopts="-Wl,+vnocompatwarnings";;
+  *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
+                       nativecclinkopts="-posix";;
+  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
+  *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
 
 asflags=''
@@ -365,7 +368,7 @@ case "$arch,$model,$system" in
                          *) asppflags='-P -DSYS_$(SYSTEM)';;
                     esac;;
   i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  hppa,*,*)         aspp="$cc"; asppflags='-c -DSYS_$(SYSTEM)';;
+  hppa,*,*)         aspp="$cc"; asppflags='-traditional -c -DSYS_$(SYSTEM)';;
   power,rs6000,aix) asflags='-u -m pwr -w'; asppflags="$asflags";;
   power,ppc,aix)    asflags='-u -m ppc -w'; asppflags="$asflags";;
   power,*,elf)      aspp='gcc'; asppflags='-c';;
