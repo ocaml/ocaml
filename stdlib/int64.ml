@@ -55,3 +55,7 @@ external of_string : string -> int64 = "int64_of_string"
 
 external bits_of_float : float -> int64 = "int64_bits_of_float"
 external float_of_bits : int64 -> float = "int64_float_of_bits"
+
+type t = int64
+
+let compare = (Pervasives.compare: t -> t -> int)

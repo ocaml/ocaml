@@ -49,3 +49,7 @@ external format : string -> nativeint -> string = "nativeint_format"
 let to_string n = format "%d" n
 
 external of_string: string -> nativeint = "nativeint_of_string"
+
+type t = nativeint
+
+let compare = (Pervasives.compare: t -> t -> int)

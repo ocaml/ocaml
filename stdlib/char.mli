@@ -34,6 +34,15 @@ val lowercase : char -> char
 val uppercase : char -> char
 (** Convert the given character to its equivalent uppercase character. *)
 
+type t = char
+(** An alias for the type of characters. *)
+
+val compare: t -> t -> int
+(** The comparison function for characters, with the same specification as
+    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    allows the module [Char] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)
+
 (**/**)
 
 external unsafe_chr : int -> char = "%identity"

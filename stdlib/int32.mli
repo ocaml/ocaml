@@ -142,3 +142,11 @@ external format : string -> int32 -> string = "int32_format"
    This function is deprecated; use {!Printf.sprintf} with a [%lx] format
    instead. *)
 
+type t = int32
+(** An alias for the type of 32-bit integers. *)
+
+val compare: t -> t -> int
+(** The comparison function for 32-bit integers, with the same specification as
+    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    allows the module [Int32] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)

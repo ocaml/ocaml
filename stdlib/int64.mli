@@ -21,11 +21,6 @@
    platforms.  All arithmetic operations over [int64] are taken
    modulo 2{^64} 
 
-   The type [int64] is supported on all 64-bit platforms, as well as
-   on all 32-bit platforms for which the C compiler supports 64-bit
-   arithmetic.  On 32-bit platforms without support for 64-bit arithmetic,
-   all functions in this module raise an [Invalid_argument] exception.
-
    Performance notice: values of type [int64] occupy more memory
    space than values of type [int], and arithmetic operations on
    [int64] are generally slower than those on [int].  Use [int64]
@@ -181,3 +176,11 @@ external float_of_bits : int64 -> float = "int64_float_of_bits"
    according to the IEEE 754 floating-point ``double format'' bit layout,
    is the given [int64]. *)
 
+type t = int64
+(** An alias for the type of 64-bit integers. *)
+
+val compare: t -> t -> int
+(** The comparison function for 64-bit integers, with the same specification as
+    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    allows the module [Int64] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)

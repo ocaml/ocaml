@@ -46,3 +46,7 @@ external format : string -> int32 -> string = "int32_format"
 let to_string n = format "%d" n
 
 external of_string : string -> int32 = "int32_of_string"
+
+type t = int32
+
+let compare = (Pervasives.compare: t -> t -> int)

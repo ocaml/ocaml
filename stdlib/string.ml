@@ -171,3 +171,7 @@ let rcontains_from s i c =
   try ignore(rindex_rec s i c); true with Not_found -> false;;
 
 let contains s c = contains_from s 0 c;;
+
+type t = string
+
+let compare = (Pervasives.compare: t -> t -> int)

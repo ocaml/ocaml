@@ -171,4 +171,12 @@ external format : string -> nativeint -> string = "nativeint_format"
    This function is deprecated; use {!Printf.sprintf} with a [%nx] format
    instead. *)
 
+type t = nativeint
+(** An alias for the type of native integers. *)
+
+val compare: t -> t -> int
+(** The comparison function for native integers, with the same specification as
+    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    allows the module [Nativeint] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)
 
