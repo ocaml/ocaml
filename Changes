@@ -94,6 +94,7 @@ Other libraries:
 - Graphics: added support for double buffering; added rmoveto, rlineto.
 - Num: fixed bug in Num.float_of_num.
 - Str: worked around potential symbol conflicts with C standard library.
+- Dbm: fixed bug with Dbm.iter on empty database.
 
 Macintosh port:
 - Implemented the Unix and Thread libraries.
