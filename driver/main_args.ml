@@ -76,12 +76,12 @@ struct
     "-make_runtime", Arg.Unit F._make_runtime,
            " (deprecated) same as -make-runtime";
     "-modern", Arg.Unit F._label, " (deprecated) same as -label";
-    "-noassert", Arg.Unit F._noassert, " Do not compile assertion checks";
+    "-noassert", Arg.Unit F._noassert, " Don't compile assertion checks";
     "-noautolink", Arg.Unit F._noautolink,
            " Don't automatically link C libraries specified in .cma files";
     "-o", Arg.String F._o, "<file>  Set output file name to <file>";
     "-output-obj", Arg.Unit F._output_obj,
-                           "Output a C object file instead of an executable";
+                          " Output a C object file instead of an executable";
     "-pp", Arg.String F._pp,
                     "<command>  Pipe sources through preprocessor <command>";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";

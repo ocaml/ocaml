@@ -69,7 +69,7 @@ let main () =
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
-       "-i", Arg.Set print_types, " Print the inferred types";
+       "-i", Arg.Set print_types, " Print the types";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";
        "-impl", Arg.String (process_implementation_file ppf),
@@ -79,19 +79,20 @@ let main () =
        "-intf", Arg.String (process_interface_file ppf),
              "<file>  Compile <file> as a .mli file";
        "-intf-suffix", Arg.String (fun s -> Config.interface_suffix := s),
-             "<file>  Suffix for interface file (default: .mli)";
+             "<file>  Suffix for interface files (default: .mli)";
        "-intf_suffix", Arg.String (fun s -> Config.interface_suffix := s),
-             "<file>  same as -intf-suffix";
+             "<file>  (deprecated) same as -intf-suffix";
+       "-label", Arg.Clear classic, " Use strict label syntax";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
-       "-modern", Arg.Clear classic, " Use strict label syntax";
+       "-modern", Arg.Clear classic, " (deprecated) same as -label";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
        "-noautolink", Arg.Set no_auto_link,
              " Don't automatically link C libraries specified in .cma files";
        "-o", Arg.String(fun s -> exec_name := s;
                                  archive_name := s;
                                  object_name := s),
-             "<file>  Set output file name to <file> (default a.out)";
+             "<file>  Set output file name to <file>";
        "-output-obj", Arg.Unit(fun () -> output_c_object := true),
              " Output a C object file instead of an executable";
        "-p", Arg.Set gprofile,
@@ -110,6 +111,7 @@ let main () =
        "-w", Arg.String Warnings.parse_options,
              "<flags>  Enable or disable warnings according to <flags>:\n\
          \032    A/a enable/disable all warnings\n\
+         \032    C/c enable/disable suspicious comment\n\
          \032    F/f enable/disable partially applied function\n\
          \032    M/m enable/disable overriden methods\n\
          \032    P/p enable/disable partial match\n\
@@ -120,6 +122,7 @@ let main () =
          \032    default setting is A (all warnings enabled)";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
+       "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
        "-dlambda", Arg.Set dump_lambda, " (undocumented)";
        "-dcmm", Arg.Set dump_cmm, " (undocumented)";
