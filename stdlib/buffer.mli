@@ -51,7 +51,7 @@ val reset : t -> unit
    buffer contents, replacing it with the initial internal string
    of length [n] that was allocated by {!Buffer.create} [n].
    For long-lived buffers that may have grown a lot, [reset] allows
-   faster reclaimation of the space used by the buffer. *)
+   faster reclamation of the space used by the buffer. *)
 
 val add_char : t -> char -> unit
 (** [add_char b c] appends the character [c] at the end of the buffer [b]. *)
