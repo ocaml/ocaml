@@ -38,6 +38,9 @@ module Make_options (F :
      val _pp : string -> unit
      val _rectypes : unit -> unit
      val _thread : unit -> unit
+(*> JOCAML *)
+     val _join : unit -> unit
+(*> JOCAML *)
      val _unsafe : unit -> unit
      val _use_prims : string -> unit
      val _use_runtime : string -> unit
@@ -93,6 +96,9 @@ struct
                     "<command>  Pipe sources through preprocessor <command>";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
     "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
+(*> JOCAML *)
+    "-join", Arg.Unit F._join, " Be a jocaml compiler";
+(*< JOCAML *)    
     "-unsafe", Arg.Unit F._unsafe,
                             " No bounds checking on array and string access";
     (* "-use-runtime", Arg.String F._use_runtime,
@@ -127,7 +133,6 @@ struct
     "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
     "-dinstr", Arg.Unit F._dinstr, " (undocumented)";
     "-use-prims", Arg.String F._use_prims, "<file>  (undocumented)";
-
     "-", Arg.String F.anonymous,
           "<file>  Treat <file> as a file name (even if it starts with `-')";
   ]

@@ -13,7 +13,7 @@
 (* $Id$ *)
 
 (*
-  This module gathers some definitions specific to jocaml
+  From typedtree to lambda code, for some jocaml constructs
 *)
 
 (* Basic join operations from the module Jprims *)

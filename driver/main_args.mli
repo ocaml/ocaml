@@ -38,6 +38,9 @@ module Make_options (F :
       val _pp : string -> unit
       val _rectypes : unit -> unit
       val _thread : unit -> unit
+(*> JOCAML *)
+      val _join : unit -> unit
+(*< JOCAML *)
       val _unsafe : unit -> unit
       val _use_prims : string -> unit
       val _use_runtime : string -> unit

@@ -35,7 +35,7 @@ posix_threads=no
 verbose=no
 withcurses=yes
 withsharedlibs=yes
-
+jocaml=yes
 gcc_warnings="-Wall -Wno-unused"
 
 # Parse command-line arguments
@@ -901,6 +901,12 @@ else
   echo "No threads library (missing system calls)"
 fi
 
+# Configure for jocaml
+if test "$jocaml" = "yes"; then
+  otherlibraries="$otherlibraries join"
+  jocparsing="jocp"
+fi
+
 # Determine the location of X include files and libraries
 
 x11_include="not found"
@@ -1141,6 +1147,7 @@ echo "PROFILING=$profiling" >> Makefile
 echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "DEBUGGER=$debugger" >> Makefile
+echo "JOCPARSING=$jocparsing" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile

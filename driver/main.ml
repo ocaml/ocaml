@@ -93,6 +93,9 @@ module Options = Main_args.Make_options (struct
   let _pp s = preprocessor := Some s
   let _rectypes = set recursive_types
   let _thread = set thread_safe
+(*> JOCAML *)
+  let _join = set join
+(*< JOCAML *)
   let _unsafe = set fast
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s

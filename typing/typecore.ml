@@ -439,9 +439,13 @@ let rec enter_channel auto_count all_chans auto_chans cl_ids chan = function
       cl_ids := (id, ty) :: !cl_ids ;
       (id, ty)
   | (id, ty, num, _)::rem ->
-      if Ident.name id = chan.pjident_desc then
+      let name =  chan.pjident_desc in
+      if Ident.name id = name then begin
+        let p id = Ident.name id = name in
+        if List.exists (fun (id,_) -> p id) !cl_ids then
+          raise (Error (chan.pjident_loc, Multiply_bound_variable));
         (id, ty)
-      else
+      end else
         enter_channel auto_count all_chans auto_chans cl_ids chan rem
 
 let enter_location all_chans jid =
@@ -1267,15 +1271,25 @@ let rec do_type_exp ctx env sexp =
          exp_type = newvar ();
          exp_env = env;
        }
-  | Pexp_spawn (sarg) ->
-      check_expression ctx sexp ;
-      let arg = do_type_exp P env sarg in
-      {
-        exp_desc = Texp_spawn arg;
-        exp_loc = sexp.pexp_loc;
-        exp_type = instance (Predef.type_unit);
-        exp_env = env;
-      } 
+  | Pexp_spawn (sarg) -> (* Hum, spawn et exec synonymes dans le source... *)
+      begin match ctx with
+      | E ->
+          let arg = do_type_exp P env sarg in
+          {
+            exp_desc = Texp_spawn arg;
+            exp_loc = sexp.pexp_loc;
+            exp_type = instance Predef.type_unit;
+            exp_env = env;
+          } 
+      | P ->
+          let arg = type_expect env sarg (instance Predef.type_unit) in
+          {
+            exp_desc = Texp_exec arg;
+            exp_loc = sexp.pexp_loc;
+            exp_type = instance Predef.type_process;
+            exp_env = env;
+          } 
+      end
   | Pexp_par (se1, se2) ->
       let e1 = do_type_exp P env se1
       and e2 = do_type_exp P env se2 in
@@ -1778,8 +1792,9 @@ and type_clause env names jpats scl =
   (* And type guarded process *)
   let exp = do_type_exp P new_env sexp in
 
-  (* Now type defined names *)
-  List.iter2
+  (* Now type defined names, continuations variables are added to patterns *)
+  let jpats =
+  List.map2
     (fun jpat kdesc ->
       let chan, arg = jpat.jpat_desc in
       let tchan =
@@ -1788,16 +1803,39 @@ and type_clause env names jpats scl =
           ty
         with Not_found -> assert false in
       let targ = arg.pat_type in
-      let otchan =
+      let otchan,is_sync =
         match kdesc with
-        | {continuation_kind=false} -> Ctype.make_channel targ
+        | {continuation_kind=false} -> Ctype.make_channel targ, false
         | {continuation_type=tres}  ->
-            newty (Tarrow ("", targ, tres, Cok)) in
-      try
+            newty (Tarrow ("", targ, tres, Cok)), true in
+      begin try
         unify env otchan tchan
       with Unify trace ->
-        raise(Error(jpat.jpat_loc, Join_pattern_type_clash(trace))))
-    jpats !conts ;
+        raise(Error(jpat.jpat_loc, Join_pattern_type_clash(trace)))
+      end ;
+      if is_sync then
+        let cont_id =
+          try
+            match
+              Env.lookup_continuation
+                (Longident.parse (Ident.name chan.jident_desc)) new_env
+            with
+            | (Path.Pident id,_) -> id
+            | _ -> assert false
+          with Not_found -> assert false in
+        let cont_pat =
+          {pat_desc=Tpat_var cont_id ; pat_loc=Location.none ;
+           pat_type=Ctype.none ; pat_env=Env.empty;} in
+        {jpat with jpat_desc =
+           chan,
+           {
+             pat_desc=Tpat_tuple [cont_pat;arg] ; pat_loc=Location.none ;
+             pat_type=Ctype.none ; pat_env=Env.empty;
+            } 
+        }
+      else
+        jpat)
+    jpats !conts in
 
   { jclause_loc = scl.pjclause_loc;
     jclause_desc = (jpats, exp);}

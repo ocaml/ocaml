@@ -79,6 +79,7 @@ and expression_desc =
 (*> JOCAML *)
   | Texp_asyncsend of expression * expression
   | Texp_spawn of expression
+  | Texp_exec  of expression
   | Texp_par of expression * expression
   | Texp_null
   | Texp_reply of expression * Path.t
@@ -227,6 +228,30 @@ let rev_let_bound_idents pat_expr_list =
 
 let let_bound_idents pat_expr_list =
   List.rev(rev_let_bound_idents pat_expr_list)
+
+(*> JOCAML *)
+let do_def_bound_idents autos r =
+  List.fold_right
+    (fun {jauto_name = name ; jauto_names=names} r ->
+      List.fold_right
+        (fun (name,_) r -> name::r)
+        names
+        r)
+    autos r
+
+let do_loc_bound_idents locs r =
+  List.fold_right
+    (fun {jloc_desc=(id_loc,autos,_)} r ->
+      id_loc.jident_desc::do_def_bound_idents autos r)
+    locs r
+      
+
+let def_bound_idents d = do_def_bound_idents d []
+let loc_bound_idents d = do_loc_bound_idents d []
+
+let rev_def_bound_idents d = List.rev (def_bound_idents d)
+let rev_loc_bound_idents d =  List.rev (loc_bound_idents d)
+(*< JOCAML *)
 
 let alpha_var env id = List.assoc id env
 

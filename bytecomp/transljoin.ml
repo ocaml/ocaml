@@ -247,6 +247,7 @@ let get_num names id =
 let transl_jpat {jpat_desc=_,arg} = arg
 
 let transl_jpats jpats = List.map transl_jpat jpats
+         
 
 let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
   let r = Array.create (List.length names) [] in
@@ -254,19 +255,30 @@ let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
   let rec build_clauses i = function
     | [] -> []
     | {jclause_desc = (jpats,e); jclause_loc=cl_loc}::rem ->
+        (* Sort jpats by channel indexes *)
+        let jpats =
+          List.sort
+            (fun
+              {jpat_desc=({jident_desc=id1}, _)}
+              {jpat_desc=({jident_desc=id2}, _)} ->
+                get_num names id1 - get_num names id2)
+            jpats in
+        (* collect channel indexes *)
         let nums =
           List.map
             (fun {jpat_desc=({jident_desc=id}, _)} -> get_num names id)
             jpats in
+        (* compute bitfield for jpats *)
         let base_pat =
           List.fold_left
             (fun r num -> r lor (1 lsl num))
             0
             nums in
+        (* add automaton entries for jpats *)
         List.iter
           (fun num ->
             r.(num) <-
-               i :: (base_pat land (lnot (1 lsl num))) :: r.(num))
+               i :: base_pat :: r.(num))
           nums ;
         (cl_loc,transl_jpats jpats, e)::build_clauses (i+1) rem in
 

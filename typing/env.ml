@@ -600,7 +600,9 @@ let _ =
         comps)
 
 (* Insertion of bindings by identifier *)
-
+(*> JOCAML *)
+  
+(*< JOCAML *)
 let add_value id desc env =
   store_value id (Pident id) desc env
 
@@ -624,8 +626,9 @@ and add_cltype id ty env =
 
 (*> JOCAML *)
 and add_continuation id desc env  =
+  let cont_id = Ident.create (Ident.name id) in
   let new_conts = 
-    Ident.add id (Pident id, desc) env.continuations in
+    Ident.add id (Pident cont_id, desc) env.continuations in
   {env with continuations = new_conts}
 
 and remove_continuations t =

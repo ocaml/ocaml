@@ -44,6 +44,23 @@ let initial_env () =
   with Not_found ->
     fatal_error "cannot open pervasives.cmi"
 
+(*> JOCAML *)
+(* Parse a jocaml file *)
+exception Preprocessor_error
+
+let parse_jocaml inputfile =
+  let tmpfile = Filename.temp_file "camlpp" "" in
+  let comm = Printf.sprintf "%s %s > %s"
+      Config.standard_joinparser inputfile tmpfile in
+  if Ccomp.command comm <> 0 then begin
+    remove_file tmpfile;
+    prerr_endline "Jocaml parsing error";
+    raise Preprocessor_error
+  end;
+  tmpfile
+
+(*< JOCAML *)
+
 (* Optionally preprocess a source file *)
 
 let preprocess sourcefile =
@@ -54,8 +71,8 @@ let preprocess sourcefile =
       let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Ccomp.command comm <> 0 then begin
         remove_file tmpfile;
-        Printf.eprintf "Preprocessing error\n";
-        exit 2
+        prerr_endline "Preprocessing error" ;
+        raise Preprocessor_error
       end;
       tmpfile
 
@@ -64,11 +81,12 @@ let remove_preprocessed inputfile =
     None -> ()
   | Some _ -> remove_file inputfile
 
+
 (* Parse a file or get a dumped syntax tree in it *)
 
 exception Outdated_version
 
-let parse_file inputfile parse_fun ast_magic =
+let rec parse_file impl inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
@@ -88,20 +106,28 @@ let parse_file inputfile parse_fun ast_magic =
       if is_ast_file then begin
         Location.input_name := input_value ic;
         input_value ic
+      end else if impl && !Clflags.join then begin
+        let joininputfile = parse_jocaml inputfile in
+        let ast =
+          try
+            parse_file impl joininputfile parse_fun ast_magic
+          with x -> remove_file joininputfile ; raise x in
+        remove_file joininputfile ;
+        ast
       end else begin
         seek_in ic 0;
         Location.input_name := inputfile;
         parse_fun (Lexing.from_channel ic)
       end
-    with x -> close_in ic; raise x
+    with x -> close_in ic;  raise x
   in
   close_in ic;
   ast
 
 let remove_preprocessed_if_ast inputfile =
-  match !Clflags.preprocessor with
-    None -> ()
-  | Some _ -> if inputfile <> !Location.input_name then remove_file inputfile
+  if !Clflags.preprocessor <> None || !Clflags.join then begin
+    if inputfile <> !Location.input_name then remove_file inputfile
+  end
 
 (* Compile a .mli file *)
 
@@ -111,7 +137,8 @@ let interface ppf sourcefile =
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile in
   try
-    let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
+    let ast =
+      parse_file false inputfile Parse.interface ast_intf_magic_number in
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
     let sg = Typemod.transl_signature (initial_env()) ast in
     if !Clflags.print_types
@@ -140,7 +167,7 @@ let implementation ppf sourcefile =
   let oc = open_out_bin objfile in
   let env = initial_env() in
   try
-    parse_file inputfile Parse.implementation ast_impl_magic_number
+    parse_file true inputfile Parse.implementation ast_impl_magic_number
     ++ print_if ppf Clflags.dump_parsetree Printast.implementation
     ++ Typemod.type_implementation sourcefile prefixname modulename env
     ++ Translmod.transl_implementation modulename
@@ -151,13 +178,18 @@ let implementation ppf sourcefile =
     ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
     ++ Emitcode.to_file oc modulename;
     Warnings.check_fatal ();
-    remove_preprocessed inputfile;
+    remove_preprocessed inputfile;    
     close_out oc;
-  with x ->
-    close_out oc;
-    remove_file objfile;
-    remove_preprocessed_if_ast inputfile;
-    raise x
+  with
+  | Preprocessor_error ->
+      close_out oc ;
+      remove_file objfile;
+      exit 2
+  | x ->
+      close_out oc;
+      remove_file objfile;
+      remove_preprocessed_if_ast inputfile;
+      raise x
 
 let c_file name =
   if Ccomp.compile_file name <> 0 then exit 2

@@ -1,3 +1,4 @@
+
 #########################################################################
 #                                                                       #
 #                            Objective Caml                             #
@@ -114,7 +115,7 @@ PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries camlp4out $(DEBUGGER)
+  otherlibraries camlp4out $(DEBUGGER) $(JOCPARSING)
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -233,6 +234,7 @@ install: FORCE
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	cd camlp4; $(MAKE) install
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi
+	if test -f jocparsing/jocp; then (cd jocparsing; $(MAKE) install); else :; fi
 
 # Installation of the native-code compiler
 installopt:
@@ -298,6 +300,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%EXT_ASM%%|.s|' \
             -e 's|%%EXT_LIB%%|.a|' \
             -e 's|%%EXT_DLL%%|.so|' \
+            -e 's|%%JOINPARSER%%|$(BINDIR)/jocp -impl|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 
@@ -548,6 +551,13 @@ partialclean::
 	set -e; cd camlp4; $(MAKE) clean
 alldepend::
 	set -e; cd camlp4; $(MAKE) depend
+
+# Parser for jocaml
+jocp: ocamlc
+	set -e ; cd jocparsing ; $(MAKE) all
+
+alldepend::
+	set -e; cd jocparsing ; $(MAKE) depend
 
 # Default rules
 

@@ -77,7 +77,8 @@ and expression_desc =
   | Texp_assertfalse
 (*> JOCAML *)
   | Texp_asyncsend of expression * expression
-  | Texp_spawn of expression
+  | Texp_spawn of expression (* insert processes in expressions *)
+  | Texp_exec  of expression (* insert expressions in processes *)
   | Texp_par of expression * expression
   | Texp_null
   | Texp_reply of expression * Path.t
@@ -195,6 +196,12 @@ and module_coercion =
 
 val let_bound_idents: (pattern * expression) list -> Ident.t list
 val rev_let_bound_idents: (pattern * expression) list -> Ident.t list
+(*> JOCAML *)
+val def_bound_idents: joinautomaton list -> Ident.t list
+val loc_bound_idents: joinlocation list -> Ident.t list
+val rev_def_bound_idents: joinautomaton list -> Ident.t list
+val rev_loc_bound_idents: joinlocation list -> Ident.t list
+(*< JOCAML *)
 
 (* Alpha conversion of patterns *)
 val alpha_pat : (Ident.t * Ident.t) list -> pattern -> pattern
