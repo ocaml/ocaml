@@ -59,8 +59,8 @@ limit is $2^{54} - 1$
 
 Variant values are either a constant constructor, or a pair of a
 non-constant constructor and a value. The former case is written
-$cconstr$; the latter case is written $ncconstr(v)$, where $v$ is said
-to be the argument of the non-constant constructor $ncconstr$.
+$constr$; the latter case is written $constr(v)$, where $v$ is said
+to be the argument of the non-constant constructor $constr$.
 
 The following constants are treated like built-in constant
 constructors:

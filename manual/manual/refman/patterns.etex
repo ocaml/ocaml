@@ -11,7 +11,7 @@ pattern:
   | '(' pattern ')'
   | '(' pattern ':' typexpr ')'
   | pattern '|' pattern
-  | ncconstr pattern
+  | constr pattern
   | "`"tag-name pattern
   | "#"typeconstr-name
   | pattern { ',' pattern }
@@ -88,8 +88,8 @@ Otherwise, value~@v@ matches  @pattern_2@ whose bindings are performed.
 
 \subsubsection*{Variant patterns}
 
-The pattern @ncconstr pattern_1@ matches all variants whose
-constructor is equal to @ncconstr@, and whose argument matches
+The pattern @constr pattern_1@ matches all variants whose
+constructor is equal to @constr@, and whose argument matches
 @pattern_1@.
 
 The pattern @pattern_1 "::" pattern_2@ matches non-empty lists whose

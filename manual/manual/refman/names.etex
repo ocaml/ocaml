@@ -5,8 +5,7 @@ Identifiers are used to give names to several classes of language
 objects and refer to these objects by name later:
 \begin{itemize}
 \item value names (syntactic class @value-name@),
-\item value constructors (constant -- class @cconstr-name@ -- or
-non-constant -- class @ncconstr-name@),
+\item value constructors (class @constr-name@),
 \item labels (@label-name@),
 \item variant tags (@tag-name@),
 \item type constructors (@typeconstr-name@),
@@ -41,16 +40,16 @@ infix-op:
   | '*' || '=' || 'or' || '&' || ':='
   | 'mod' || 'land' || 'lor' || 'lxor' || 'lsl' || 'lsr' || 'asr'
 ;
-cconstr-name:
+constr-name:
         capitalized-ident
       | 'false'
       | 'true'
       | '[' ']'
       | '(' ')'
-;
-ncconstr-name:
-        capitalized-ident
       | '::'
+;
+exception-name:
+        capitalized-ident
 ;
 label-name:
         lowercase-ident
@@ -81,7 +80,7 @@ method-name:
 \end{syntax}
 As shown above, prefix and infix symbols as well as some keywords can
 be used as value names, provided they are written between parentheses.
-Keywords such as '::' and 'false' are also constructor names. The
+Keywords such as '()' and 'false' are also constructor names. The
 capitalization rules  are summarized in the table
 below.
 
@@ -89,7 +88,8 @@ below.
 \entree{Values}{lowercase}
 \entree{Constructors}{uppercase}
 \entree{Labels}{lowercase}
-\entree{Variant tag}{uppercase}
+\entree{Variant tags}{uppercase}
+\entree{Exceptions}{uppercase}
 \entree{Type constructors}{lowercase}
 \entree{Record fields}{lowercase}
 \entree{Classes}{lowercase}
@@ -108,14 +108,10 @@ compatibility with future OCaml versions.
 \begin{syntax}
 value-path:
         value-name
-      | module-path '.' lowercase-ident
+      | module-path '.' value-name
 ;
-cconstr:
-        cconstr-name
-      | module-path '.' capitalized-ident
-;
-ncconstr:
-        ncconstr-name
+constr:
+        constr-name
       | module-path '.' capitalized-ident
 ;
 typeconstr:

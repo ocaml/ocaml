@@ -172,7 +172,7 @@ class-expr:
 class-field:
       'inherit' class-expr ['as' value-name]
    |  'val' ['mutable'] inst-var-name [':' typexpr] '=' expr
-   |  'method' ['private'] method-name {pattern} [':' typexpr] '=' expr
+   |  'method' ['private'] method-name {parameter} [':' typexpr] '=' expr
    |  'method' ['private'] method-name ':' poly-typexpr '=' expr
    |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
@@ -378,7 +378,7 @@ class-definition:
 ;
 class-binding:
           ['virtual'] ['[' type-parameters ']'] class-name
-          { pattern } [':' class-type] '=' class-expr
+          {parameter} [':' class-type] '=' class-expr
 ;
 type-parameters:
           "'" ident { "," "'" ident }

@@ -7,7 +7,7 @@ constant:
   | float-literal
   | char-literal
   | string-literal
-  | cconstr
+  | constr
   | "`"tag-name
 \end{syntax}
 
