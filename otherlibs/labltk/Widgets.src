@@ -724,14 +724,25 @@ subtype options(font) {
 }               
 
 module Font {
-  function (string) actual ["font"; "actual"; font; 
-                                ?displayof:["-displayof"; widget]; 
-                                options(font) list]
-##ifdef CAMLTK
-  function (string) actual_displayof ["font"; "actual"; font; 
-                                        "-displayof"; widget; 
-                                        options(font) list]
-##endif
+  function (string) actual_family ["font"; "actual"; font; 
+                                   ?displayof:["-displayof"; widget];
+                                   "-family"]
+  function (int) actual_size ["font"; "actual"; font; 
+                                   ?displayof:["-displayof"; widget];
+                                   "-size"]
+  function (string) actual_weight ["font"; "actual"; font; 
+                                   ?displayof:["-displayof"; widget];
+                                   "-weight"]
+  function (string) actual_slant ["font"; "actual"; font; 
+                                   ?displayof:["-displayof"; widget];
+                                   "-slant"]
+  function (bool) actual_underline ["font"; "actual"; font; 
+                                   ?displayof:["-displayof"; widget];
+                                   "-underline"]
+  function (bool) actual_overstrike ["font"; "actual"; font; 
+                                   ?displayof:["-displayof"; widget];
+                                   "-overstrike"]
+
   function () configure ["font"; "configure"; font; options(font) list]
   function (font) create ["font"; "create"; ?name:[string]; options(font) list]
 ##ifdef CAMLTK
