@@ -84,16 +84,25 @@ static long compare_val(value v1, value v2)
 
   sp = compare_stack;
   while (1) {
-    while (Is_block (v1) && Tag_val (v1) == Forward_tag) v1 = Forward_val (v1);
-    while (Is_block (v2) && Tag_val (v2) == Forward_tag) v2 = Forward_val (v2);
     if (v1 == v2) goto next_item;
     if (Is_long(v1)) {
       if (Is_long(v2))
         return Long_val(v1) - Long_val(v2);
-      else
-        return -1;
+      if ((Is_atom(v2) || Is_young(v2) || Is_in_heap(v2)) &&
+          Tag_val(v2) == Forward_tag) {
+        v2 = Forward_val(v2);
+        continue;
+      }
+      return -1;                /* v1 long < v2 block */
     }
-    if (Is_long(v2)) return 1;
+    if (Is_long(v2)) {
+      if ((Is_atom(v1) || Is_young(v1) || Is_in_heap(v1)) &&
+          Tag_val(v1) == Forward_tag) {
+        v1 = Forward_val(v1);
+        continue;
+      }
+      return 1;                 /* v1 block > v2 long */
+    }
     /* If one of the objects is outside the heap (but is not an atom),
        use address comparison. Since both addresses are 2-aligned,
        shift lsb off to avoid overflow in subtraction. */
@@ -102,6 +111,8 @@ static long compare_val(value v1, value v2)
       return (v1 >> 1) - (v2 >> 1);
     t1 = Tag_val(v1);
     t2 = Tag_val(v2);
+    if (t1 == Forward_tag) { v1 = Forward_val (v1); continue; }
+    if (t2 == Forward_tag) { v2 = Forward_val (v2); continue; }
     if (t1 != t2) return (long)t1 - (long)t2;
     switch(t1) {
     case String_tag: {
