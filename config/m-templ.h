@@ -39,3 +39,10 @@
 /* Define ARCH_CODE32 if, on a 64-bit machine, code pointers fit in 32 bits,
    i.e. the code segment resides in the low 4G of the addressing space.
    ARCH_CODE32 is ignored on 32-bit machines. */
+
+#define SIZEOF_INT 4
+#define SIZEOF_LONG 4
+#define SIZEOF_SHORT 2
+
+/* Define SIZEOF_INT, SIZEOF_LONG and SIZEOF_SHORT to the sizes in byte
+   of the C types "int", "long" and "short", respectively. */

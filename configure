@@ -187,32 +187,37 @@ esac
 
 echo "Checking the sizes of integers and pointers..."
 set `sh ./runtest sizes.c`
-case "$1,$2,$3" in
-  4,4,4) echo "OK, this is a regular 32 bit architecture."
-         echo "#undef ARCH_SIXTYFOUR" >> m.h;;
-  4,8,8) echo "Wow! A 64 bit architecture!"
-         echo "#define ARCH_SIXTYFOUR" >> m.h
-         case "$bytecc,$host" in
-           gcc,alpha-*-osf*) echo "#define ARCH_CODE32" >> m.h;;
-           *)                echo "#undef ARCH_CODE32" >> m.h;;
-         esac;;
-  8,*,*) echo "Wow! A 64 bit architecture!"
-         echo "Unfortunately, Objective Caml does not handle the case"
-         echo "sizeof(int) = 8."
-         echo "Objective Caml won't run on this architecture."
-         exit 2;;
-  *,*,8) echo "Wow! A 64 bit architecture!"
-         echo "Unfortunately, Objective Caml cannot work in the case"
-         echo "sizeof(long) != sizeof(long *)."
-         echo "Objective Caml won't run on this architecture."
-         exit 2;;
-  *,*,*) echo "This architecture seems to be neither 32 bits nor 64 bits."
-         echo "Objective Caml won't run on this architecture."
-         exit 2;;
-      *) echo "Unable to compile the test program."
-         echo "Make sure the C compiler $cc is properly installed."
-         exit 2;;
+case "$2,$3" in
+  4,4) echo "OK, this is a regular 32 bit architecture."
+       echo "#undef ARCH_SIXTYFOUR" >> m.h;;
+  8,8) echo "Wow! A 64 bit architecture!"
+       echo "#define ARCH_SIXTYFOUR" >> m.h
+       case "$bytecc,$host" in
+         gcc,alpha-*-osf*) echo "#define ARCH_CODE32" >> m.h;;
+         *)                echo "#undef ARCH_CODE32" >> m.h;;
+       esac;;
+  *,8) echo "Wow! A 64 bit architecture!"
+       echo "Unfortunately, Objective Caml cannot work in the case"
+       echo "sizeof(long) != sizeof(long *)."
+       echo "Objective Caml won't run on this architecture."
+       exit 2;;
+  *,*) echo "This architecture seems to be neither 32 bits nor 64 bits."
+       echo "Objective Caml won't run on this architecture."
+       exit 2;;
+    *) echo "Unable to compile the test program."
+       echo "Make sure the C compiler $cc is properly installed."
+       exit 2;;
 esac
+if test $1 != 4 && test $2 != 4 && test $4 != 4; then
+  echo "Sorry, we can't find a 32-bit integer type"
+  echo "(sizeof(short) = $4, sizeof(int) = $1, sizeof(long) = $2)"
+  echo "Objective Caml won't run on this architecture."
+  exit 2
+fi
+
+echo "#define SIZEOF_INT $1" >> m.h
+echo "#define SIZEOF_LONG $2" >> m.h
+echo "#define SIZEOF_SHORT $4" >> m.h
 
 # Determine endianness
 

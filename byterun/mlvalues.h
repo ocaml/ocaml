@@ -55,8 +55,16 @@ typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef unsigned long color_t;
 typedef unsigned long mark_t;
 
-typedef int int32;            /* Not portable, but checked by autoconf. */
-typedef unsigned int uint32;  /* Seems like a reasonable assumption anyway. */
+#if SIZEOF_INT == 4
+typedef int int32;
+typedef unsigned int uint32;
+#elif SIZEOF_LONG == 4
+typedef long int32;
+typedef unsigned long uint32;
+#elif SIZEOF_SHORT == 4
+typedef short int32;
+typedef unsigned short uint32;
+#endif
 
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)

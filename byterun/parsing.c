@@ -57,7 +57,7 @@ struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
   value errflag;
 };
 
-#ifdef ARCH_BIG_ENDIAN
+#if defined(ARCH_BIG_ENDIAN) || SIZEOF_SHORT != 2
 #define Short(tbl,n) \
   (*((unsigned char *)((tbl) + (n) * 2)) + \
           (*((schar *)((tbl) + (n) * 2 + 1)) << 8))
