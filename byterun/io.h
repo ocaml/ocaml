@@ -18,7 +18,6 @@
 #ifndef _io_
 #define _io_
 
-
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -27,6 +26,7 @@
 #endif
 
 #ifdef HAS_OFF_T
+#include <sys/types.h>
 typedef off_t file_offset;
 #else
 typedef long file_offset;

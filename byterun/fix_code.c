@@ -16,6 +16,11 @@
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
 #include "config.h"
+
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
+
 #include "debugger.h"
 #include "fix_code.h"
 #include "instruct.h"
@@ -24,9 +29,6 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "reverse.h"
-#ifdef HAS_UNISTD
-#include <unistd.h>
-#endif
 
 code_t start_code;
 asize_t code_size;
