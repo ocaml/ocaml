@@ -720,7 +720,7 @@ buffer positions."
 (defun ocaml-link-goto (click)
   (interactive "e")
   (let* ((pos (caml-event-point-start click))
-         (buf (caml-event-window click))
+         (buf (window-buffer (caml-event-window click)))
          (window (selected-window))
          (link))
     (setq link
