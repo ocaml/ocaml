@@ -46,7 +46,7 @@ install-default:
 	cd $(LIBDIR); $(RANLIB) libasmrun.a
 
 install-noprof:
-	ln -s libasmrun.a $(LIBDIR)/libasmrunp.a
+	rm -f $(LIBDIR)/libasmrunp.a; ln -s libasmrun.a $(LIBDIR)/libasmrunp.a
 
 install-prof:
 	cp libasmrunp.a $(LIBDIR)/libasmrunp.a
