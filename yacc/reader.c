@@ -961,8 +961,10 @@ output_token_type()
       fprintf(interface_file, "  %c %s", n == 0 ? ' ' : '|', bp->name);
       fprintf(output_file, "  %c %s", n == 0 ? ' ' : '|', bp->name);
       if (bp->tag) {
-        fprintf(interface_file, " of %s", bp->tag);
-        fprintf(output_file, " of %s", bp->tag);
+        /* Print the type expression in parentheses to make sure
+           that the constructor is unary */
+        fprintf(interface_file, " of (%s)", bp->tag);
+        fprintf(output_file, " of (%s)", bp->tag);
       }
       fprintf(interface_file, "\n");
       fprintf(output_file, "\n");

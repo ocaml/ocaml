@@ -717,9 +717,16 @@ output_transl()
 {
   int i;
 
-  fprintf(code_file, "let yytransl = [|\n");
+  fprintf(code_file, "let yytransl_const = [|\n");
   for (i = 0; i < ntokens; i++) {
-    if (symbol_true_token[i]) {
+    if (symbol_true_token[i] && symbol_tag[i] == NULL) {
+      fprintf(code_file, "  %3d (* %s *);\n", symbol_value[i], symbol_name[i]);
+    }
+  }
+  fprintf(code_file, "    0|]\n\n");
+  fprintf(code_file, "let yytransl_block = [|\n");
+  for (i = 0; i < ntokens; i++) {
+    if (symbol_true_token[i] && symbol_tag[i] != NULL) {
       fprintf(code_file, "  %3d (* %s *);\n", symbol_value[i], symbol_name[i]);
     }
   }

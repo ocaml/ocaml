@@ -10,7 +10,8 @@ char *define_tables[] =
 {
   "let yytables =",
   "  { actions=yyact;",
-  "    transl=yytransl;",
+  "    transl_const=yytransl_const;",
+  "    transl_block=yytransl_block;",
   "    lhs=yylhs;",
   "    len=yylen;",
   "    defred=yydefred;",
