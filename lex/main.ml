@@ -55,6 +55,9 @@ let main () =
   let oc = open_out dest_name in
   let tr = Common.open_tracker dest_name oc in
   let lexbuf = Lexing.from_channel ic in
+  lexbuf.Lexing.lex_curr_p <-
+    {Lexing.pos_fname = source_name; Lexing.pos_lnum = 1;
+     Lexing.pos_bol = 0; Lexing.pos_cnum = 0};
   try
     let def = Parser.lexer_definition Lexer.main lexbuf in
     let (entries, transitions) = Lexgen.make_dfa def.entrypoints in
@@ -77,14 +80,15 @@ let main () =
     Sys.remove dest_name;
     begin match exn with
       Parsing.Parse_error ->
+        let p = Lexing.lexeme_start_p lexbuf in
         Printf.fprintf stderr
           "File \"%s\", line %d, character %d: syntax error.\n"
-          source_name !Lexer.line_num
-          (Lexing.lexeme_start lexbuf - !Lexer.line_start_pos)
-    | Lexer.Lexical_error(msg, line, col) ->
+          p.Lexing.pos_fname p.Lexing.pos_lnum
+          (p.Lexing.pos_cnum - p.Lexing.pos_bol)
+    | Lexer.Lexical_error(msg, file, line, col) ->
         Printf.fprintf stderr
           "File \"%s\", line %d, character %d: %s.\n"
-          source_name line col msg
+          file line col msg
     | Lexgen.Memory_overflow ->
         Printf.fprintf stderr
           "File \"%s\":\n Position memory overflow, too many bindings\n"

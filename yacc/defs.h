@@ -215,6 +215,7 @@ extern char *myname;
 extern char *cptr;
 extern char *line;
 extern int lineno;
+extern char *virtual_input_file_name;
 extern int outline;
 
 extern char *action_file_name;

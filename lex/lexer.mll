@@ -25,7 +25,7 @@ and comment_depth = ref 0
 
 let in_pattern () = !brace_depth = 0 && !comment_depth = 0
 
-exception Lexical_error of string * int * int
+exception Lexical_error of string * string * int * int
 
 let string_buff = Buffer.create 256
 
@@ -42,24 +42,32 @@ let char_for_backslash = function
   | 'r' -> '\r'
   | c   -> c
 
-
-let line_num = ref 1
-let line_start_pos = ref 0
+let raise_lexical_error lexbuf msg =
+  let p = Lexing.lexeme_start_p lexbuf in
+  raise (Lexical_error (msg,
+                        p.Lexing.pos_fname,
+                        p.Lexing.pos_lnum,
+                        p.Lexing.pos_cnum - p.Lexing.pos_bol + 1))
+;;
 
 let handle_lexical_error fn lexbuf =
-  let line = !line_num
-  and column = Lexing.lexeme_start lexbuf - !line_start_pos + 1 in
+  let p = Lexing.lexeme_start_p lexbuf in
+  let line = p.Lexing.pos_lnum
+  and column = p.Lexing.pos_cnum - p.Lexing.pos_bol + 1
+  and file = p.Lexing.pos_fname
+  in
   try
     fn lexbuf
-  with Lexical_error (msg, 0, 0) ->
-    raise(Lexical_error(msg, line, column))
+  with Lexical_error (msg, "", 0, 0) ->
+    raise(Lexical_error(msg, file, line, column))
 
 let get_input_name () = Sys.argv.(Array.length Sys.argv - 1)
   
 let warning lexbuf msg =
+  let p = Lexing.lexeme_start_p lexbuf in
   Printf.eprintf "ocamllex warning:\nFile \"%s\", line %d, character %d: %s.\n"
-    (get_input_name ()) !line_num
-    (Lexing.lexeme_start lexbuf - !line_start_pos+1) msg;
+    p.Lexing.pos_fname p.Lexing.pos_lnum
+    (p.Lexing.pos_cnum - p.Lexing.pos_bol + 1) msg;
   flush stderr
 
 let decimal_code  c d u =
@@ -78,6 +86,27 @@ let char_for_hexadecimal_code d u =
   in
   Char.chr (val1 * 16 + val2)
 
+let incr_loc lexbuf delta =
+  let pos = lexbuf.Lexing.lex_curr_p in
+  lexbuf.Lexing.lex_curr_p <- { pos with
+    Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
+    Lexing.pos_bol = pos.Lexing.pos_cnum - delta;
+  }
+;;
+
+let update_loc lexbuf opt_file line =
+  let pos = lexbuf.Lexing.lex_curr_p in
+  let new_file = match opt_file with
+                 | None -> pos.Lexing.pos_fname
+                 | Some f -> f
+  in
+  lexbuf.Lexing.lex_curr_p <- { pos with
+    Lexing.pos_fname = new_file;
+    Lexing.pos_lnum = line;
+    Lexing.pos_bol = pos.Lexing.pos_cnum;
+  }
+;;
+
 }
 
 let identstart =
@@ -91,9 +120,14 @@ rule main = parse
     [' ' '\013' '\009' '\012' ] + 
     { main lexbuf }
   | '\010'
-    { line_start_pos := Lexing.lexeme_end lexbuf;
-      incr line_num;
+    { incr_loc lexbuf 0;
       main lexbuf }
+  | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
+    ('\"' ([^ '\010' '\013' '\"']* as name) '\"')?
+    [^ '\010' '\013']* '\010'
+    { update_loc lexbuf name (int_of_string num);
+      main lexbuf
+    }
   | "(*" 
     { comment_depth := 1;
       handle_lexical_error comment lexbuf;
@@ -121,25 +155,22 @@ rule main = parse
   | "'" '\\' (['0'-'9'] as c) (['0'-'9'] as d) (['0'-'9'] as u)"'" 
     { let v = decimal_code c d u in
       if v > 255 then
-        raise
-          (Lexical_error
-            (Printf.sprintf "illegal escape sequence \\%c%c%c" c d u,
-            !line_num, Lexing.lexeme_start lexbuf - !line_start_pos+1))
+        raise_lexical_error lexbuf
+          (Printf.sprintf "illegal escape sequence \\%c%c%c" c d u)
       else
         Tchar v }
   | "'" '\\' 'x'
        (['0'-'9' 'a'-'f' 'A'-'F'] as d) (['0'-'9' 'a'-'f' 'A'-'F'] as u) "'"
        { Tchar(Char.code(char_for_hexadecimal_code d u)) }
   | "'" '\\' (_ as c)
-    { raise
-       (Lexical_error
-         (Printf.sprintf "illegal escape sequence \\%c" c,
-          !line_num, Lexing.lexeme_start lexbuf - !line_start_pos+1))
+    { raise_lexical_error lexbuf
+        (Printf.sprintf "illegal escape sequence \\%c" c)
     }
   | '{' 
-    { let n1 = Lexing.lexeme_end lexbuf
-      and l1 = !line_num
-      and s1 = !line_start_pos in
+    { let p = Lexing.lexeme_end_p lexbuf in
+      let n1 = p.Lexing.pos_cnum
+      and l1 = p.Lexing.pos_lnum
+      and s1 = p.Lexing.pos_bol in
       brace_depth := 1;
       let n2 = handle_lexical_error action lexbuf in
       Taction({start_pos = n1; end_pos = n2;
@@ -157,18 +188,17 @@ rule main = parse
   | '-'  { Tdash }
   | eof  { Tend }
   | _
-    { raise(Lexical_error
-             ("illegal character " ^ String.escaped(Lexing.lexeme lexbuf),
-              !line_num, Lexing.lexeme_start lexbuf - !line_start_pos+1)) }
+    { raise_lexical_error lexbuf
+        ("illegal character " ^ String.escaped(Lexing.lexeme lexbuf))
+    }
 
 
 (* String parsing comes from the compiler lexer *)
 and string = parse
     '"' 
     { () }
-   | '\\' ("\010" | "\013" | "\013\010") [' ' '\009'] *
-    { line_start_pos := Lexing.lexeme_end lexbuf;
-      incr line_num;
+   | '\\' ("\010" | "\013" | "\013\010") ([' ' '\009'] * as spaces)
+    { incr_loc lexbuf (String.length spaces);
       string lexbuf }
   | '\\' (backslash_escapes as c)
     { store_string_char(char_for_backslash c);
@@ -192,11 +222,10 @@ and string = parse
       store_string_char c ;
       string lexbuf }
   | eof 
-    { raise(Lexical_error("unterminated string", 0, 0)) }
+    { raise(Lexical_error("unterminated string", "", 0, 0)) }
   | '\010'
     { store_string_char '\010';
-      line_start_pos := Lexing.lexeme_end lexbuf;
-      incr line_num;
+      incr_loc lexbuf 0;
       string lexbuf }
   | _ as c
     { store_string_char c;
@@ -223,10 +252,9 @@ and comment = parse
     { skip_char lexbuf ;
       comment lexbuf }
   | eof 
-    { raise(Lexical_error("unterminated comment", 0, 0)) }
+    { raise(Lexical_error("unterminated comment", "", 0, 0)) }
   | '\010'
-    { line_start_pos := Lexing.lexeme_end lexbuf;
-      incr line_num;
+    { incr_loc lexbuf 0;
       comment lexbuf }
   | _ 
     { comment lexbuf }
@@ -251,18 +279,17 @@ and action = parse
       comment lexbuf;
       action lexbuf }
   | eof 
-    { raise (Lexical_error("unterminated action", 0, 0)) }
+    { raise (Lexical_error("unterminated action", "", 0, 0)) }
   | '\010'
-    { line_start_pos := Lexing.lexeme_end lexbuf;
-      incr line_num;
+    { incr_loc lexbuf 0;
       action lexbuf }
   | _ 
     { action lexbuf }
 
 and skip_char = parse
   | '\\'? '\010' "'"
-     { line_start_pos := Lexing.lexeme_end lexbuf;
-       incr line_num }
+     { incr_loc lexbuf 1;
+     }
   | [^ '\\' '\''] "'" (* regular character *)
 (* one character and numeric escape sequences *)
   | '\\' _ "'"

@@ -1,6 +1,12 @@
 Objective Caml 3.08:
 --------------------
 
+Ocamllex:
+- #line directives in the input file are now accepted
+
+Ocamlyacc:
+- #line directives in the input file are now accepted
+
 Runtime System:
 - All global identifiers are now prefixed with "caml" to avoid name clashes
   with other libraries.

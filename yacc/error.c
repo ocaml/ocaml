@@ -42,7 +42,7 @@ void open_error(char *filename)
 void unexpected_EOF(void)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", unexpected end-of-file\n",
-            myname, lineno, input_file_name);
+            myname, lineno, virtual_input_file_name);
     done(1);
 }
 
@@ -75,7 +75,7 @@ void print_pos(char *st_line, char *st_cptr)
 void syntax_error(int st_lineno, char *st_line, char *st_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", syntax error\n",
-            myname, st_lineno, input_file_name);
+            myname, st_lineno, virtual_input_file_name);
     print_pos(st_line, st_cptr);
     done(1);
 }
@@ -84,7 +84,7 @@ void syntax_error(int st_lineno, char *st_line, char *st_cptr)
 void unterminated_comment(int c_lineno, char *c_line, char *c_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", unmatched /*\n",
-            myname, c_lineno, input_file_name);
+            myname, c_lineno, virtual_input_file_name);
     print_pos(c_line, c_cptr);
     done(1);
 }
@@ -93,7 +93,7 @@ void unterminated_comment(int c_lineno, char *c_line, char *c_cptr)
 void unterminated_string(int s_lineno, char *s_line, char *s_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", unterminated string\n",
-            myname, s_lineno, input_file_name);
+            myname, s_lineno, virtual_input_file_name);
     print_pos(s_line, s_cptr);
     done(1);
 }
@@ -102,7 +102,7 @@ void unterminated_string(int s_lineno, char *s_line, char *s_cptr)
 void unterminated_text(int t_lineno, char *t_line, char *t_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", unmatched %%{\n",
-            myname, t_lineno, input_file_name);
+            myname, t_lineno, virtual_input_file_name);
     print_pos(t_line, t_cptr);
     done(1);
 }
@@ -111,7 +111,7 @@ void unterminated_text(int t_lineno, char *t_line, char *t_cptr)
 void unterminated_union(int u_lineno, char *u_line, char *u_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", unterminated %%union \
-declaration\n", myname, u_lineno, input_file_name);
+declaration\n", myname, u_lineno, virtual_input_file_name);
     print_pos(u_line, u_cptr);
     done(1);
 }
@@ -120,7 +120,7 @@ declaration\n", myname, u_lineno, input_file_name);
 void over_unionized(char *u_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", too many %%union \
-declarations\n", myname, lineno, input_file_name);
+declarations\n", myname, lineno, virtual_input_file_name);
     print_pos(line, u_cptr);
     done(1);
 }
@@ -129,7 +129,7 @@ declarations\n", myname, lineno, input_file_name);
 void illegal_tag(int t_lineno, char *t_line, char *t_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", illegal tag\n",
-            myname, t_lineno, input_file_name);
+            myname, t_lineno, virtual_input_file_name);
     print_pos(t_line, t_cptr);
     done(1);
 }
@@ -138,7 +138,7 @@ void illegal_tag(int t_lineno, char *t_line, char *t_cptr)
 void illegal_character(char *c_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", illegal character\n",
-            myname, lineno, input_file_name);
+            myname, lineno, virtual_input_file_name);
     print_pos(line, c_cptr);
     done(1);
 }
@@ -147,7 +147,7 @@ void illegal_character(char *c_cptr)
 void used_reserved(char *s)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", illegal use of reserved symbol \
-%s\n", myname, lineno, input_file_name, s);
+%s\n", myname, lineno, virtual_input_file_name, s);
     done(1);
 }
 
@@ -155,7 +155,7 @@ void used_reserved(char *s)
 void tokenized_start(char *s)
 {
      fprintf(stderr, "%s: e - line %d of \"%s\", the start symbol %s cannot be \
-declared to be a token\n", myname, lineno, input_file_name, s);
+declared to be a token\n", myname, lineno, virtual_input_file_name, s);
      done(1);
 }
 
@@ -163,35 +163,35 @@ declared to be a token\n", myname, lineno, input_file_name, s);
 void retyped_warning(char *s)
 {
     fprintf(stderr, "%s: w - line %d of \"%s\", the type of %s has been \
-redeclared\n", myname, lineno, input_file_name, s);
+redeclared\n", myname, lineno, virtual_input_file_name, s);
 }
 
 
 void reprec_warning(char *s)
 {
     fprintf(stderr, "%s: w - line %d of \"%s\", the precedence of %s has been \
-redeclared\n", myname, lineno, input_file_name, s);
+redeclared\n", myname, lineno, virtual_input_file_name, s);
 }
 
 
 void revalued_warning(char *s)
 {
     fprintf(stderr, "%s: w - line %d of \"%s\", the value of %s has been \
-redeclared\n", myname, lineno, input_file_name, s);
+redeclared\n", myname, lineno, virtual_input_file_name, s);
 }
 
 
 void terminal_start(char *s)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", the entry point %s is a \
-token\n", myname, lineno, input_file_name, s);
+token\n", myname, lineno, virtual_input_file_name, s);
     done(1);
 }
 
 void too_many_entries(void)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", more than 256 entry points\n",
-            myname, lineno, input_file_name);
+            myname, lineno, virtual_input_file_name);
     done(1);
 }
 
@@ -199,7 +199,7 @@ void too_many_entries(void)
 void no_grammar(void)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", no grammar has been \
-specified\n", myname, lineno, input_file_name);
+specified\n", myname, lineno, virtual_input_file_name);
     done(1);
 }
 
@@ -207,7 +207,7 @@ specified\n", myname, lineno, input_file_name);
 void terminal_lhs(int s_lineno)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", a token appears on the lhs \
-of a production\n", myname, s_lineno, input_file_name);
+of a production\n", myname, s_lineno, virtual_input_file_name);
     done(1);
 }
 
@@ -215,14 +215,14 @@ of a production\n", myname, s_lineno, input_file_name);
 void prec_redeclared(void)
 {
     fprintf(stderr, "%s: w - line %d of  \"%s\", conflicting %%prec \
-specifiers\n", myname, lineno, input_file_name);
+specifiers\n", myname, lineno, virtual_input_file_name);
 }
 
 
 void unterminated_action(int a_lineno, char *a_line, char *a_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", unterminated action\n",
-            myname, a_lineno, input_file_name);
+            myname, a_lineno, virtual_input_file_name);
     print_pos(a_line, a_cptr);
     done(1);
 }
@@ -231,14 +231,14 @@ void unterminated_action(int a_lineno, char *a_line, char *a_cptr)
 void dollar_warning(int a_lineno, int i)
 {
     fprintf(stderr, "%s: w - line %d of \"%s\", $%d references beyond the \
-end of the current rule\n", myname, a_lineno, input_file_name, i);
+end of the current rule\n", myname, a_lineno, virtual_input_file_name, i);
 }
 
 
 void dollar_error(int a_lineno, char *a_line, char *a_cptr)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", illegal $-name\n",
-            myname, a_lineno, input_file_name);
+            myname, a_lineno, virtual_input_file_name);
     print_pos(a_line, a_cptr);
     done(1);
 }
@@ -247,7 +247,7 @@ void dollar_error(int a_lineno, char *a_line, char *a_cptr)
 void untyped_lhs(void)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", $$ is untyped\n",
-            myname, lineno, input_file_name);
+            myname, lineno, virtual_input_file_name);
     done(1);
 }
 
@@ -255,7 +255,7 @@ void untyped_lhs(void)
 void untyped_rhs(int i, char *s)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", $%d (%s) is untyped\n",
-            myname, lineno, input_file_name, i, s);
+            myname, lineno, virtual_input_file_name, i, s);
     done(1);
 }
 
@@ -263,21 +263,21 @@ void untyped_rhs(int i, char *s)
 void unknown_rhs(int i)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", $%d is unbound\n",
-            myname, lineno, input_file_name, i);
+            myname, lineno, virtual_input_file_name, i);
     done(1);
 }
 
 void illegal_token_ref(int i, char *name)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", $%d refers to terminal `%s', which has no argument\n",
-            myname, lineno, input_file_name, i, name);
+            myname, lineno, virtual_input_file_name, i, name);
     done(1);
 }
 
 void default_action_error(void)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", no action specified for this production\n",
-            myname, lineno, input_file_name);
+            myname, lineno, virtual_input_file_name);
     done(1);
 }
 
