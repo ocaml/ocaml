@@ -39,6 +39,7 @@ val global: t -> bool
 
 val binding_time: t -> int
 val current_time: unit -> int
+val set_current_time: int -> unit
 
 val print: t -> unit
 

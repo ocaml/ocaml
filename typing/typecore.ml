@@ -745,6 +745,7 @@ let rec type_exp env sexp =
       end
   | Pexp_letmodule(name, smodl, sbody) ->
       let ty = newvar() in
+      Ident.set_current_time ty.level;
       let modl = !type_module env smodl in
       let (id, new_env) = Env.enter_module name modl.mod_type env in
       Ctype.init_def(Ident.current_time());
