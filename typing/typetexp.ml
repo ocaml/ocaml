@@ -486,13 +486,11 @@ let transl_simple_type_univars env styp =
       [] !pre_univars
   in
   pre_univars := [];
-  (* add this code to allow reuse of variable names
   Tbl.iter
     (fun name ty ->
       if List.exists (fun tu -> repr ty == repr tu) univs
       then type_variables := Tbl.remove name !type_variables)
     !type_variables;
-  *)
   instance (Btype.newgenty (Tpoly (typ, univs)))
 
 let transl_simple_type_delayed env styp =

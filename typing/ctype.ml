@@ -1258,7 +1258,8 @@ let occur_univar ty =
         true
     then
       match ty.desc with
-	Tunivar -> if not (TypeSet.mem ty bound) then raise Occur
+	Tunivar ->
+          if not (TypeSet.mem ty bound) then raise (Unify [ty, newgenvar()])
       |	Tpoly (ty, tyl) ->
           let bound = List.fold_right TypeSet.add (List.map repr tyl) bound in
           occur_rec bound  ty
@@ -1266,8 +1267,8 @@ let occur_univar ty =
   in
   try
     occur_rec TypeSet.empty ty; unmark_type ty
-  with Occur ->
-    unmark_type ty; raise (Unify [])
+  with exn ->
+    unmark_type ty; raise exn
 
 let univar_pairs = ref []
 
@@ -1575,6 +1576,11 @@ and unify_row env row1 row2 =
         row_field_repr f1 = Rabsent || row_field_repr f2 <> Rabsent)
       pairs
   in
+  let mkvariant fields closed =
+    newgenty
+      (Tvariant
+         {row_fields = fields; row_closed = closed; row_more = newvar();
+          row_bound = []; row_fixed = false; row_name = None }) in
   let empty fields =
     List.for_all (fun (_,f) -> row_field_repr f = Rabsent) fields in
   (* Check whether we are going to build an empty type *)
@@ -1583,7 +1589,7 @@ and unify_row env row1 row2 =
       (fun (_,f1,f2) ->
         row_field_repr f1 = Rabsent || row_field_repr f2 = Rabsent)
       pairs
-  then raise (Unify []);
+  then raise (Unify [mkvariant [] true, mkvariant [] true]);
   let name =
     if row1.row_name <> None && (row1.row_closed || empty r2) &&
       (not row2.row_closed || keep (fun f1 f2 -> f1, f2) && empty r1)
@@ -1602,8 +1608,10 @@ and unify_row env row1 row2 =
         filter_row_fields row.row_closed rest
       else rest in
     if rest <> [] && (row.row_closed || row.row_fixed)
-    || closed && row.row_fixed && not row.row_closed
-    then raise (Unify []);
+    || closed && row.row_fixed && not row.row_closed then begin
+      let t1 = mkvariant [] true and t2 = mkvariant rest false in
+      raise (Unify [if row == row1 then (t1,t2) else (t2,t1)])
+    end;
     let rm = row_more row in
     if row.row_fixed then
       if row0.row_more == rm then () else rm.desc <- Tlink row0.row_more

@@ -281,7 +281,7 @@ let rec tree_of_typexp sch ty =
 	tree_of_typexp sch ty
     | Tpoly (ty, tyl) ->
         let tyl = List.map repr tyl in
-        let tyl = List.filter is_aliased tyl in
+        (* let tyl = List.filter is_aliased tyl in *)
         if tyl = [] then tree_of_typexp sch ty else
         let tl = List.map name_of_type tyl in
         delayed := tyl @ !delayed;
@@ -514,6 +514,12 @@ let metho sch concrete ppf (lab, kind, ty) =
     fprintf ppf "@ @[<2>method %s%s%s :@ %a@]" priv virt lab (typexp sch 0) ty
   end
 
+let method_type ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tpoly(ty, _) -> ty
+  | _            -> ty
+
 let tree_of_metho sch concrete csil (lab, kind, ty) =
   if lab <> "*dummy method*" then begin
     let priv =
@@ -521,15 +527,10 @@ let tree_of_metho sch concrete csil (lab, kind, ty) =
       | Fvar _ (* {contents = None} *) -> true
       | _ (* Fpresent *) -> false in
     let virt = not (Concr.mem lab concrete) in
+    let ty = method_type ty in
     Ocsg_method (lab, priv, virt, tree_of_typexp sch ty) :: csil
   end
   else csil
-
-let prepare_class_field ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tpoly(ty, _) -> mark_loops ty
-  | _ -> mark_loops ty
 
 let rec prepare_class_type params = function
   | Tcty_constr (p, tyl, cty) ->
@@ -547,7 +548,7 @@ let rec prepare_class_type params = function
       let (fields, _) =
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
-      List.iter (fun (_, _, ty) -> prepare_class_field ty) fields;
+      List.iter (fun (_, _, ty) -> mark_loops (method_type ty)) fields;
       Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
   | Tcty_fun (_, ty, cty) ->
       mark_loops ty;
@@ -782,6 +783,12 @@ let prepare_expansion (t, t') =
   mark_loops t; if t != t' then mark_loops t';
   (t, t')
 
+let print_tags ppf fields =
+  match fields with [] -> ()
+  | (t, _) :: fields ->
+      fprintf ppf "`%s" t;
+      List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
+
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
   | Tfield _, Tvar | Tvar, Tfield _ ->
@@ -796,6 +803,9 @@ let explanation unif t3 t4 ppf =
       fprintf ppf
         "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         path p
+  | Tvar, Tunivar | Tunivar, Tvar ->
+      fprintf ppf "@,The universal variable %a would escape its scope"
+        type_expr (if t3.desc = Tunivar then t3 else t4)
   | Tfield ("*dummy method*", _, _, _), _
   | _, Tfield ("*dummy method*", _, _, _) ->
       fprintf ppf
@@ -806,6 +816,22 @@ let explanation unif t3 t4 ppf =
   | _, Tfield (l, _, _, _) ->
       fprintf ppf
         "@,@[Only the second object type has a method %s@]" l
+  | Tvariant row1, Tvariant row2 ->
+      let row1 = row_repr row1 and row2 = row_repr row2 in
+      begin match
+        row1.row_fields, row1.row_closed, row2.row_fields, row1.row_closed with
+      | [], true, [], true ->
+          fprintf ppf "@,These two variant types have no intersection"
+      | [], true, fields, _ ->
+          fprintf ppf
+            "@,@[The first variant type does not allow tag(s)@ @[<hov>%a@]@]"
+            print_tags fields
+      | fields, _, [], true ->
+          fprintf ppf
+            "@,@[The second variant type does not allow tag(s)@ @[<hov>%a@]@]"
+            print_tags fields
+      | _ -> ()
+      end
   | _ -> ()
 
 let unification_error unif tr txt1 ppf txt2 =

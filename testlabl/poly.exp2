@@ -1,4 +1,4 @@
-        Objective Caml version 3.04+14 (2002-06-10)
+        Objective Caml version 3.04+15 (2002-06-18)
 
 #   * * *       #   type 'a t = { t : 'a; } 
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; } 
@@ -123,6 +123,7 @@ val d : float = 11.4536240471
 #   Characters 41-42:
 This expression has type < m : 'a. 'a -> 'a list > but is here used with type
   < m : 'a. 'a -> 'b >
+The universal variable 'a would escape its scope
 #           class id : object method id : 'a -> 'a end
 #         class type id_spec = object method id : 'a -> 'a end
 #       class id_impl : object method id : 'a -> 'a end
