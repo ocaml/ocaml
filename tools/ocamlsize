@@ -2,8 +2,9 @@
 
 foreach $f (@ARGV) {
   open(FILE, $f) || die("Cannot open $f");
-  seek(FILE, -28, 2);
+  seek(FILE, -32, 2);
   $code_size = do read_int();
+  $prim_size = do read_int();
   $data_size = do read_int();
   $symbol_size = do read_int();
   $debug_size = do read_int();

@@ -76,7 +76,7 @@ beforedepend:: cvt_emit.ml
 DUMPOBJ=opnames.cmo dumpobj.cmo
 
 dumpobj: $(DUMPOBJ)
-	$(CAMLC) $(LINKFLAGS) -o dumpobj misc.cmo tbl.cmo config.cmo ident.cmo opcodes.cmo runtimedef.cmo $(DUMPOBJ)
+	$(CAMLC) $(LINKFLAGS) -o dumpobj misc.cmo tbl.cmo config.cmo ident.cmo opcodes.cmo $(DUMPOBJ)
 
 clean::
 	rm -f dumpobj

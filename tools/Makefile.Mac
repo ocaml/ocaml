@@ -58,7 +58,7 @@ DUMPOBJ = opnames.cmo dumpobj.cmo
 
 DumpCamlObj Ä {DUMPOBJ}
     {CAMLC} {LINKFLAGS} -o DumpCamlObj misc.cmo tbl.cmo config.cmo ident.cmo ¶
-            opcodes.cmo runtimedef.cmo {DUMPOBJ}
+            opcodes.cmo {DUMPOBJ}
 
 clean ÄÄ
     delete -i DumpCamlObj
