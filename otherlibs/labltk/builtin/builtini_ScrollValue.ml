@@ -6,7 +6,7 @@ let cCAMLtoTKscrollValue = function
  | ScrollUnit v1 ->
     TkTokenList [TkToken"scroll"; TkToken (string_of_int v1); TkToken"units"]
  | MoveTo v1 ->
-    TkTokenList [TkToken"moveto"; TkToken (string_of_float v1)]
+    TkTokenList [TkToken"moveto"; TkToken (Printf.sprintf "%g" v1)]
 ;;
 
 (* str l -> scrllv -> str l *)
@@ -28,7 +28,7 @@ let cCAMLtoTKscrollValue : scrollValue -> tkArgs = function
  | `Unit v1 ->
     TkTokenList [TkToken"scroll"; TkToken (string_of_int v1); TkToken"units"]
  | `Moveto v1 ->
-    TkTokenList [TkToken"moveto"; TkToken (string_of_float v1)]
+    TkTokenList [TkToken"moveto"; TkToken (Printf.sprintf "%g" v1)]
 ;;
 
 (* str l -> scrllv -> str l *)

@@ -553,7 +553,7 @@ let write_TKtoCAML ~w name ~def:typdef =
 let rec converterCAMLtoTK ~context_widget argname ty =
  match ty with
     Int -> "TkToken (string_of_int " ^ argname ^ ")"
- |  Float -> "TkToken (string_of_float " ^ argname ^ ")"
+ |  Float -> "TkToken (Printf.sprintf \"%g\" " ^ argname ^ ")"
  |  Bool -> "if " ^ argname ^ " then TkToken \"1\" else TkToken \"0\""
  |  Char -> "TkToken (Char.escaped " ^ argname ^ ")"
  |  String -> "TkToken " ^ argname

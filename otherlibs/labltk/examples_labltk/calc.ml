@@ -69,7 +69,7 @@ class calc () = object (calc)
         | Some f ->
             x <- f x (calc#get_float);
             op <- Some (List.assoc c ops);
-            calc#set (string_of_float x)
+            calc#set (Printf.sprintf "%g" x)
         end
     | '='|'\n'|'\r' ->
         displaying <- true;
@@ -78,7 +78,7 @@ class calc () = object (calc)
         | Some f ->
             x <- f x (calc#get_float);
             op <- None;
-            calc#set (string_of_float x)
+            calc#set (Printf.sprintf "%g" x)
         end
     | 'q' -> closeTk (); exit 0
     | _ -> ()

@@ -2,10 +2,10 @@
 
 let cCAMLtoTKunits = function
     Pixels (foo) -> TkToken (string_of_int foo)
-  | Millimeters (foo)  -> TkToken(string_of_float foo^"m")
-  | Inches (foo)  -> TkToken(string_of_float foo^"i")
-  | PrinterPoint (foo) -> TkToken(string_of_float foo^"p")
-  | Centimeters (foo) -> TkToken(string_of_float foo^"c")
+  | Millimeters (foo)  -> TkToken(Printf.sprintf "%gm" foo)
+  | Inches (foo)  -> TkToken(Printf.sprintf "%gi" foo)
+  | PrinterPoint (foo) -> TkToken(Printf.sprintf "%gp" foo)
+  | Centimeters (foo) -> TkToken(Printf.sprintf "%gc" foo)
 ;;
 
 let cTKtoCAMLunits str = 
@@ -23,10 +23,10 @@ let cTKtoCAMLunits str =
 
 let cCAMLtoTKunits : units -> tkArgs = function
   | `Pix (foo) -> TkToken (string_of_int foo)
-  | `Mm (foo)  -> TkToken(string_of_float foo^"m")
-  | `In (foo)  -> TkToken(string_of_float foo^"i")
-  | `Pt (foo) -> TkToken(string_of_float foo^"p")
-  | `Cm (foo) -> TkToken(string_of_float foo^"c")
+  | `Mm (foo)  -> TkToken(Printf.sprintf "%gm" foo)
+  | `In (foo)  -> TkToken(Printf.sprintf "%gi" foo)
+  | `Pt (foo) -> TkToken(Printf.sprintf "%gp" foo)
+  | `Cm (foo) -> TkToken(Printf.sprintf "%gc" foo)
 ;;
 
 let cTKtoCAMLunits str = 
