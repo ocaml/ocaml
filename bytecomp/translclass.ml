@@ -402,7 +402,7 @@ let transl_class ids cl_id arity pub_meths cl =
          lam)
   and def_ids cla lam =
     Llet(StrictOpt, env2,
-         Lapply (oo_prim "new_variable", [Lvar cla; transl_label "env"]),
+         Lapply (oo_prim "new_variable", [Lvar cla; transl_label ""]),
          lam)
   in
   let obj_init2 = Ident.create "obj_init"
@@ -454,6 +454,8 @@ module F(X : sig class c : object method x : int end end) =
   struct class c = object inherit X.c as super method x = super#x + 1 end end;;
 module M0 = struct class c = object method x = 0 end end;;
 module M2 = struct class c = object method x = 2 end end;;
+let f x = object method x = x end;;
+let f x y z = object method x = x method s = object method y = y end end;;
 *)
 
 let class_stub =
