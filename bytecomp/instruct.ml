@@ -24,7 +24,7 @@ type instruction =
   | Kgetfield of int
   | Ksetfield of int
   | Kdummy of int
-  | Kupdate
+  | Kupdate of int
   | Kvectlength
   | Kgetvectitem
   | Ksetvectitem

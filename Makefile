@@ -65,8 +65,7 @@ all: runtime camlc camllex camlyacc library camltop
 world: coldstart all
 
 # Complete bootstrapping cycle
-bootstrap: backup promote-cross clean camlc camllex library-cross \
-           promote clean all compare
+bootstrap: backup promote-cross clean camlc camllex library-cross promote clean all compare
 # backup        save the bootstrap compiler
 # promote-cross promote the new compiler but keep the old runtime
 #               (runs on boot/camlrun, produces code for byterun/camlrun)

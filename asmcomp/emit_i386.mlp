@@ -447,9 +447,11 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-    Clabel lbl ->
-      `	.globl	_{emit_symbol lbl}\n`;
-      `_{emit_symbol lbl}:\n`
+    Cdefine_symbol s ->
+      `	.globl	_{emit_symbol s}\n`;
+      `_{emit_symbol s}:\n`
+  | Cdefine_label lbl ->
+      `{emit_label (10000 + lbl)}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -458,8 +460,10 @@ let emit_item = function
       `	.long	{emit_int n}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
-  | Caddress lbl ->
-      `	.long	_{emit_symbol lbl}\n`
+  | Csymbol_address s ->
+      `	.long	_{emit_symbol s}\n`
+  | Clabel_address lbl ->
+      `	.long	{emit_label (10000 + lbl)}\n`
   | Cstring s ->
       let l = String.length s in
       if l = 0 then ()

@@ -132,7 +132,7 @@ let emit_instr = function
   | Kacc n ->
       if n < 8 then out(opACC0 + n) else (out opACC; out_int n)
   | Kenvacc n ->
-      if n < 4 then out(opENVACC0 + n) else (out opENVACC; out_int n)
+      if n < 4 then out(opENVACC1 + n) else (out opENVACC; out_int (n+1))
   | Kpush ->
       out opPUSH
   | Kpop n ->
@@ -175,7 +175,7 @@ let emit_instr = function
   | Ksetfield n ->
       if n < 4 then out(opSETFIELD0 + n) else (out opSETFIELD; out_int n)
   | Kdummy n -> out opDUMMY; out_int n
-  | Kupdate -> out opUPDATE
+  | Kupdate n -> out opUPDATE
   | Kvectlength -> out opVECTLENGTH
   | Kgetvectitem -> out opGETVECTITEM
   | Ksetvectitem -> out opSETVECTITEM
@@ -228,7 +228,8 @@ let rec emit = function
       if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
       emit c
   | Kpush :: Kenvacc n :: c ->
-      if n < 4 then out(opPUSHENVACC0 + n) else (out opPUSHENVACC; out_int n);
+      if n < 4 then out(opPUSHENVACC1 + n)
+               else (out opPUSHENVACC; out_int (n+1));
       emit c
   | Kpush :: Kgetglobal id :: Kgetfield n :: c ->
       out opPUSHGETGLOBALFIELD; slot_for_getglobal id; out n; emit c

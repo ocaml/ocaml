@@ -25,8 +25,8 @@ type instruction =
   | Kmakeblock of int * int             (* size, tag *)
   | Kgetfield of int
   | Ksetfield of int
-  | Kdummy of int
-  | Kupdate
+  | Kdummy of int                       (* block size *)
+  | Kupdate of int                      (* block size *)
   | Kvectlength
   | Kgetvectitem
   | Ksetvectitem

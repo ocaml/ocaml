@@ -34,7 +34,7 @@ let instruction = function
   | Kgetfield n -> print_string "\tgetfield "; print_int n
   | Ksetfield n -> print_string "\tsetfield "; print_int n
   | Kdummy n -> print_string "\tdummy "; print_int n
-  | Kupdate -> print_string "\tupdate"
+  | Kupdate n -> print_string "\tupdate"; print_int n
   | Kvectlength -> print_string "\tvectlength"
   | Kgetvectitem -> print_string "\tgetvectitem"
   | Ksetvectitem -> print_string "\tsetvectitem"

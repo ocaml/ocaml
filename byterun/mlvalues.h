@@ -145,10 +145,8 @@ bits  63    10 9     8 7   0
 typedef int32 opcode_t;
 typedef opcode_t * code_t;
 
-#define Closure_wosize 2
 #define Closure_tag (No_scan_tag - 1)
 #define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
-#define Env_val(val) (Field(val, 1))               /* Also an l-value. */
 
 
 /* 2- If tag >= No_scan_tag : a sequence of bytes. */

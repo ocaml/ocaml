@@ -39,11 +39,17 @@ let print_exception obj =
 
 exception Constr_not_found
 
-let rec find_constr tag = function
+let rec find_constr tag num_const num_nonconst = function
     [] ->
       raise Constr_not_found
-  | constr :: rest ->
-      if tag = 0 then constr else find_constr (tag - 1) rest
+  | (name, [] as cstr) :: rem ->
+      if tag = Cstr_constant num_const
+      then cstr
+      else find_constr tag (num_const + 1) num_nonconst rem
+  | (name, _ as cstr) :: rem ->
+      if tag = Cstr_block num_nonconst
+      then cstr
+      else find_constr tag num_const (num_nonconst + 1) rem
 
 (* The user-defined printers. Also used for some builtin types. *)
 
@@ -166,10 +172,13 @@ let print_value env obj ty =
               print_val prio depth obj
                         (Ctype.substitute decl.type_params ty_list body)
           | Type_variant constr_list ->
-              let tag = Obj.tag obj in
               begin try
+                let tag =
+                  if Obj.is_block obj
+                  then Cstr_block(Obj.tag obj)
+                  else Cstr_constant(Obj.magic obj) in
                 let (constr_name, constr_args) =
-                  find_constr tag constr_list in
+                  find_constr tag 0 0 constr_list in
                 let ty_args =
                   List.map (Ctype.substitute decl.type_params ty_list)
                       constr_args in

@@ -22,6 +22,7 @@ module type S =
     val equal: t -> t -> bool
     val iter: (elt -> 'a) -> t -> unit
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val cardinal: t -> int
     val elements: t -> elt list
     val choose: t -> elt
   end
@@ -211,6 +212,10 @@ module Make(Ord: OrderedType): (S with elt = Ord.t) =
       match s with
         Empty -> accu
       | Node(l, v, r, _) -> fold f l (f v (fold f r accu))
+
+    let rec cardinal = function
+        Empty -> 0
+      | Node(l, v, r, _) -> cardinal l + 1 + cardinal r
 
     let rec elements_aux accu = function
         Empty -> accu

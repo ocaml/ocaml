@@ -91,7 +91,6 @@ let primitives_table = create_hashtable 31 [
   "%field1", Pfield 1;
   "%setfield0", Psetfield 0;
   "%makeblock", Pmakeblock 0;
-  "%update", Pupdate;
   "%raise", Praise;
   "%sequand", Psequand;
   "%sequor", Psequor;
@@ -164,7 +163,7 @@ exception Unknown
 
 let size_of_lambda id lam =
   let rec size = function
-      Lfunction(param, body) -> 2
+      Lfunction(param, body) as funct -> 1 + List.length(free_variables funct)
     | Lprim(Pmakeblock tag, args) -> List.iter check args; List.length args
     | Llet(id, arg, body) -> check arg; size body
     | _ -> raise Unknown

@@ -156,6 +156,21 @@ let _ = Hashtbl.add directive_table "install_printer"
 let _ = Hashtbl.add directive_table "remove_printer"
              (Directive_ident dir_remove_printer)
 
+(* Make a copy of a closure *)
+
+let copy_closure cls =
+  let sz = Obj.size cls in
+  let new = Obj.new_block 251 sz in
+  for i = 0 to sz - 1 do Obj.set_field new i (Obj.field cls i) done;
+  new
+
+(* Overwrite a closure by another *)
+
+let overwrite_closure dst src =
+  for i = 0 to Obj.size src - 1 do
+    Obj.set_field dst i (Obj.field src i)
+  done
+
 (* The trace *)
 
 let rec trace_closure name clos_typ =
@@ -193,16 +208,13 @@ let dir_trace lid =
     let clos = eval_path path in
     (* Nothing to do if it's not a closure *)
     if Obj.is_block clos & Obj.tag clos = 251 then begin
-      (* Make a copy of the closure *)
-      let old_clos = Obj.new_block 251 2 in
-      Obj.set_field old_clos 0 (Obj.field clos 0);
-      Obj.set_field old_clos 1 (Obj.field clos 1);
+      let old_clos = copy_closure clos in
       (* Instrument the old closure *)
       let new_clos =
         trace_closure lid (Ctype.instance desc.val_type) old_clos in
       trace_env := (path, old_clos) :: !trace_env;
       (* Overwrite the old closure *)
-      Obj.update clos new_clos;
+      overwrite_closure clos new_clos;
       match desc.val_prim with
         Not_prim ->
           Printtyp.longident lid; print_string " is now traced.";
@@ -231,7 +243,7 @@ let dir_untrace lid =
         []
     | (p, oldval) :: rem ->
         if Path.same p path then begin
-          Obj.update (eval_path path) oldval;
+          overwrite_closure (eval_path path) oldval;
           Printtyp.longident lid; print_string " is no longer traced.";
           print_newline();
           rem
@@ -244,7 +256,7 @@ let dir_untrace lid =
 let dir_untrace_all () =
   List.iter
     (fun (path, oldval) ->
-        Obj.update (eval_path path) oldval;
+        overwrite_closure (eval_path path) oldval;
         Printtyp.path path; print_string " is no longer traced.";
         print_newline())
     !trace_env;

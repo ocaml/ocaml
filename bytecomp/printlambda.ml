@@ -32,7 +32,6 @@ let primitive = function
   | Pfield n -> print_string "field "; print_int n
   | Psetfield n -> print_string "setfield "; print_int n
   | Pccall(name, arity) -> print_string name
-  | Pupdate -> print_string "update"
   | Praise -> print_string "raise"
   | Psequand -> print_string "&&"
   | Psequor -> print_string "||"

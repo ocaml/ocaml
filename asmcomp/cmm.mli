@@ -80,12 +80,14 @@ type fundecl =
     fun_body: expression }
 
 type data_item =
-    Clabel of string
+    Cdefine_symbol of string
+  | Cdefine_label of int
   | Cint8 of int
   | Cint16 of int
   | Cint of int
   | Cfloat of string
-  | Caddress of string
+  | Csymbol_address of string
+  | Clabel_address of int
   | Cstring of string
   | Cskip of int
   | Calign of int

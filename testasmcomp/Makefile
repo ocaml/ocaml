@@ -1,7 +1,7 @@
 ARCH=alpha
 
 CODEGEN=../codegen
-ASFLAGS=-O
+ASFLAGS=-O2
 CFLAGS=-g
 
 PROGS=fib tak quicksort quicksort2 soli integr
@@ -25,6 +25,18 @@ soli: main.c soli.o $(ARCH).o
 
 integr: main.c integr.o $(ARCH).o
 	$(CC) $(CFLAGS) -o integr -DINT_FLOAT -DFUN=test main.c integr.o $(ARCH).o
+
+tagged-fib: main.c tagged-fib.o $(ARCH).o
+	$(CC) $(CFLAGS) -o tagged-fib -DINT_INT -DFUN=fib main.c tagged-fib.o $(ARCH).o
+
+tagged-tak: main.c tagged-tak.o $(ARCH).o
+	$(CC) $(CFLAGS) -o tagged-tak -DUNIT_INT -DFUN=takmain main.c tagged-tak.o $(ARCH).o
+
+tagged-quicksort: main.c tagged-quicksort.o $(ARCH).o
+	$(CC) $(CFLAGS) -o tagged-quicksort -DSORT -DFUN=quicksort main.c tagged-quicksort.o $(ARCH).o
+
+tagged-integr: main.c tagged-integr.o $(ARCH).o
+	$(CC) $(CFLAGS) -o tagged-integr -DINT_FLOAT -DFUN=test main.c tagged-integr.o $(ARCH).o
 
 .SUFFIXES:
 .SUFFIXES: .cmm .c .o .asm

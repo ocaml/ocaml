@@ -22,6 +22,7 @@ module type S =
     val equal: t -> t -> bool
     val iter: (elt -> 'a) -> t -> unit
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val cardinal: t -> int
     val elements: t -> elt list
     val choose: t -> elt
   end

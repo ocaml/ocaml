@@ -199,23 +199,23 @@ value interprete(prog, prog_size)
 
 /* Access in heap-allocated environment */
 
-    Instruct(ENVACC0):
-      accu = Field(env, 0); Next;
     Instruct(ENVACC1):
       accu = Field(env, 1); Next;
     Instruct(ENVACC2):
       accu = Field(env, 2); Next;
     Instruct(ENVACC3):
       accu = Field(env, 3); Next;
+    Instruct(ENVACC4):
+      accu = Field(env, 4); Next;
 
-    Instruct(PUSHENVACC0):
-      *--sp = accu; accu = Field(env, 0); Next;
     Instruct(PUSHENVACC1):
       *--sp = accu; accu = Field(env, 1); Next;
     Instruct(PUSHENVACC2):
       *--sp = accu; accu = Field(env, 2); Next;
     Instruct(PUSHENVACC3):
       *--sp = accu; accu = Field(env, 3); Next;
+    Instruct(PUSHENVACC4):
+      *--sp = accu; accu = Field(env, 4); Next;
 
     Instruct(PUSHENVACC):
       *--sp = accu;
@@ -237,7 +237,7 @@ value interprete(prog, prog_size)
     Instruct(APPLY): {
       extra_args = *pc++ - 1;
       pc = Code_val(accu);
-      env = Env_val(accu);
+      env = accu;
       goto check_stacks;
     }
     Instruct(APPLY1): {
@@ -248,7 +248,7 @@ value interprete(prog, prog_size)
       sp[2] = env;
       sp[3] = Val_long(extra_args);
       pc = Code_val(accu);
-      env = Env_val(accu);
+      env = accu;
       extra_args = 0;
       goto check_stacks;
     }
@@ -262,7 +262,7 @@ value interprete(prog, prog_size)
       sp[3] = env;
       sp[4] = Val_long(extra_args);
       pc = Code_val(accu);
-      env = Env_val(accu);
+      env = accu;
       extra_args = 1;
       goto check_stacks;
     }
@@ -278,7 +278,7 @@ value interprete(prog, prog_size)
       sp[4] = env;
       sp[5] = Val_long(extra_args);
       pc = Code_val(accu);
-      env = Env_val(accu);
+      env = accu;
       extra_args = 2;
       goto check_stacks;
     }
@@ -294,7 +294,7 @@ value interprete(prog, prog_size)
       for (i = nargs - 1; i >= 0; i--) newsp[i] = sp[i];
       sp = newsp;
       pc = Code_val(accu);
-      env = Env_val(accu);
+      env = accu;
       extra_args += nargs - 1;
       goto check_stacks;
     }
@@ -303,7 +303,7 @@ value interprete(prog, prog_size)
       sp = sp + *pc++ - 1;
       sp[0] = arg1;
       pc = Code_val(accu);
-      env = Env_val(accu);
+      env = accu;
       goto check_stacks;
     }
     Instruct(APPTERM2): {
@@ -313,7 +313,7 @@ value interprete(prog, prog_size)
       sp[0] = arg1;
       sp[1] = arg2;
       pc = Code_val(accu);
-      env = Env_val(accu);
+      env = accu;
       extra_args += 1;
       goto check_stacks;
     }
@@ -326,7 +326,7 @@ value interprete(prog, prog_size)
       sp[1] = arg2;
       sp[2] = arg3;
       pc = Code_val(accu);
-      env = Env_val(accu);
+      env = accu;
       extra_args += 2;
       goto check_stacks;
     }
@@ -336,7 +336,7 @@ value interprete(prog, prog_size)
       if (extra_args > 0) {
         extra_args--;
         pc = Code_val(accu);
-        env = Env_val(accu);
+        env = accu;
       } else {
         pc = (code_t)(sp[0]);
         env = sp[1];
@@ -347,11 +347,11 @@ value interprete(prog, prog_size)
     }
 
     Instruct(RESTART): {
-      int num_args = Wosize_val(env) - 1;
+      int num_args = Wosize_val(env) - 2;
       int i;
       sp -= num_args;
-      for (i = 0; i < num_args; i++) sp[i] = Field(env, i);
-      env = Field(env, num_args);
+      for (i = 0; i < num_args; i++) sp[i] = Field(env, i + 2);
+      env = Field(env, 1);
       extra_args += num_args;
       Next;
     }
@@ -361,62 +361,43 @@ value interprete(prog, prog_size)
       if (extra_args >= required) {
         extra_args -= required;
       } else {
-        value clos;
         mlsize_t num_args, i;
         num_args = 1 + extra_args; /* arg1 + extra args */
-        Alloc_small(accu, num_args + 1, 0);
-        for (i = 0; i < num_args; i++) Field(accu, i) = sp[i];
-        Field(accu, num_args) = env;
+        Alloc_small(accu, num_args + 2, Closure_tag);
+        Field(accu, 1) = env;
+        for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
+        Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
         sp += num_args;
-        Alloc_small(clos, Closure_wosize, Closure_tag);
-        Code_val(clos) = pc - 3; /* Point to the preceding RESTART instr. */
-        Env_val(clos) = accu;
         pc = (code_t)(sp[0]);
         env = sp[1];
         extra_args = Long_val(sp[2]);
         sp += 3;
-        accu = clos;
       }
       Next;
     }
 
     Instruct(CLOSURE): {
       int nvars = *pc++;
-      value clos;
       int i;
-      if (nvars == 0) {
-        accu = Val_int(0);
-      } else {
-        *--sp = accu;
-        Alloc_small(accu, nvars, 0);
-        for (i = 0; i < nvars; i++) Field(accu, i) = sp[i];
-        sp += nvars;
-      }
-      Alloc_small(clos, Closure_wosize, Closure_tag);
-      Code_val(clos) = pc + *pc;
-      Env_val(clos) = accu;
-      accu = clos;
+      if (nvars > 0) *--sp = accu;
+      Alloc_small(accu, 1 + nvars, Closure_tag);
+      Code_val(accu) = pc + *pc;
+      for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
+      sp += nvars;
       pc++;
       Next;
     }
 
     Instruct(CLOSUREREC): {
       int nvars = *pc++;
-      value fun_clos, fun_env;
       int i;
-      Alloc_small(fun_env, nvars + 1, 0);
-      Field(fun_env, 0) = Val_int(0);
-      if (nvars > 0) {
-        *--sp = accu;
-        for (i = 0; i < nvars; i++) Field(fun_env, i+1) = sp[i];
-        sp += nvars;
-      }
-      accu = fun_env;
-      Alloc_small(fun_clos, Closure_wosize, Closure_tag);
-      Code_val(fun_clos) = pc + *pc;
-      Env_val(fun_clos) = accu;
-      modify(&Field(accu, 0), fun_clos);
-      accu = fun_clos;
+      if (nvars > 0) *--sp = accu;
+      Alloc_small(accu, 2 + nvars, Closure_tag);
+      Code_val(accu) = pc + *pc;
+      Field(accu, 1) = Val_int(0);
+      for (i = 0; i < nvars; i++) Field(accu, i + 2) = sp[i];
+      sp += nvars;
+      modify(&Field(accu, 1), accu);
       pc++;
       Next;
     }
@@ -550,8 +531,9 @@ value interprete(prog, prog_size)
     Instruct(UPDATE): {
       value newval = *sp++;
       mlsize_t size, n;
-      Tag_val(accu) = Tag_val(newval);
       size = Wosize_val(newval);
+      Assert(size == Wosize_val(accu));
+      Tag_val(accu) = Tag_val(newval);
       for (n = 0; n < size; n++) {
         modify(&Field(accu, n), Field(newval, n));
       }
@@ -706,8 +688,9 @@ value interprete(prog, prog_size)
           sp[1] = (value) pc;
           sp[2] = env;
           sp[3] = Val_long(extra_args);
-          pc = Code_val(Field(signal_handlers, signal_number));
-          env = Env_val(Field(signal_handlers, signal_number));
+          /* Branch to the signal handler */
+          env = Field(signal_handlers, signal_number);
+          pc = Code_val(env);
           extra_args = 0;
         }
       }

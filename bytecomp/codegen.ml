@@ -169,7 +169,8 @@ let rec comp_expr env exp sz cont =
             comp_expr new_env body sz (add_pop ndecl cont)
         | (id, exp, blocksize) :: rem ->
             comp_expr new_env exp sz
-              (Kpush :: Kacc i :: Kupdate :: comp_decl new_env sz (i-1) rem) in
+              (Kpush :: Kacc i :: Kupdate blocksize ::
+               comp_decl new_env sz (i-1) rem) in
       let rec comp_init new_env sz = function
           [] ->
             comp_decl new_env sz ndecl decl
@@ -225,7 +226,6 @@ let rec comp_expr env exp sz cont =
         match p with
           Pgetglobal id -> Kgetglobal id
         | Psetglobal id -> Ksetglobal id
-        | Pupdate -> Kupdate
         | Pintcomp cmp -> Kintcomp cmp
         | Pmakeblock tag -> Kmakeblock(List.length args, tag)
         | Pfield n -> Kgetfield n
