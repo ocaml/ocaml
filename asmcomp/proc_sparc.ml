@@ -259,5 +259,13 @@ let assemble_file infile outfile =
 
 let create_archive archive file_list =
   Misc.remove_file archive;
-  Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list ^
-               " && ranlib " ^ archive)
+  match Config.system with
+    "sunos" ->
+      Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list ^
+                   " && ranlib " ^ archive)
+  | "solaris" ->
+      Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list)
+  | _ ->
+      fatal_error "Proc_sparc.create_archive"
+
+

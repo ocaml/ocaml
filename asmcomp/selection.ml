@@ -397,15 +397,22 @@ let rec emit_expr env exp seq =
             a := Arch.offset_addressing !a (size_component ty.(i))
           done;
           rd
+      | Istore(Word, addr) ->
+          begin match new_args with
+            [] -> fatal_error "Selection.Istore"
+          | arg_addr :: args_data ->
+              let ra = emit_expr env arg_addr seq in
+              emit_stores env args_data seq ra addr;
+              [||]
+          end
       | Istore(chunk, addr) ->
           begin match new_args with
             [arg_addr; arg_data] ->
               let ra = emit_expr env arg_addr seq in
               let rd = emit_expr env arg_data seq in
-              insert (Iop(Istore(chunk, addr)))
-                     (Array.append rd ra) [||] seq;
+              insert (Iop(Istore(chunk, addr))) (Array.append rd ra) [||] seq;
               [||]
-          | _ -> fatal_error "Selection.Istore"
+          | _ -> fatal_error "Selection.Istorechunk"
           end
       | Ialloc _ ->
           Proc.contains_calls := true;
