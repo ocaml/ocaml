@@ -1194,6 +1194,7 @@ for dir in \
 do
   if test -f $dir/libX11.a || \
      test -f $dir/libX11.so || \
+     test -f $dir/libX11.dll.a || \
      test -f $dir/libX11.sa; then
     if test $dir = /usr/lib; then
       x11_link="-lX11"
@@ -1240,6 +1241,8 @@ for dir in /usr/include /usr/include/db1 /usr/include/gdbm; do
       dbm_link="-ldb1"
     elif sh ./hasgot -lgdbm dbm_open; then
       dbm_link="-lgdbm"
+    elif sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
+      dbm_link="-lgdbm_compat -lgdbm" 
     fi
     break
   fi
