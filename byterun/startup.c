@@ -263,7 +263,7 @@ static int parse_command_line(char **argv)
   return i;
 }
 
-/* Parse the CAMLRUNPARAM variable */
+/* Parse the OCAMLRUNPARAM variable */
 /* The option letter for each runtime option is the first letter of the
    last word of the ML name of the option (see [stdlib/gc.mli]).
    Except for l (maximum stack size) and h (initial heap size).
