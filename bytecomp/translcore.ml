@@ -65,8 +65,9 @@ let comparisons_table = create_hashtable 11 [
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Clt,
        Pfloatcomp Clt,
-       Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "string_lessthan"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
        Pbintcomp(Pnativeint, Clt),
        Pbintcomp(Pint32, Clt),
        Pbintcomp(Pint64, Clt));
@@ -75,8 +76,9 @@ let comparisons_table = create_hashtable 11 [
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cgt,
        Pfloatcomp Cgt,
-       Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "string_greaterthan"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
        Pbintcomp(Pnativeint, Cgt),
        Pbintcomp(Pint32, Cgt),
        Pbintcomp(Pint64, Cgt));
@@ -85,8 +87,9 @@ let comparisons_table = create_hashtable 11 [
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cle,
        Pfloatcomp Cle,
-       Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "string_lessequal"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
        Pbintcomp(Pnativeint, Cle),
        Pbintcomp(Pint32, Cle),
        Pbintcomp(Pint64, Cle));
@@ -95,11 +98,33 @@ let comparisons_table = create_hashtable 11 [
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cge,
        Pfloatcomp Cge,
-       Pccall{prim_name = "greaterequal"; prim_arity = 2; prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "string_greaterequal"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
        Pbintcomp(Pnativeint, Cge),
        Pbintcomp(Pint32, Cge),
-       Pbintcomp(Pint64, Cge))
+       Pbintcomp(Pint64, Cge));
+  "%compare",
+      (Pccall{prim_name = "compare"; prim_arity = 2; prim_alloc = true;
+              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "int_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "float_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "string_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "nativeint_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "int32_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "int64_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false})
 ]
 
 let primitives_table = create_hashtable 57 [

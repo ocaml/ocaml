@@ -78,6 +78,41 @@ CAMLprim value string_notequal(value s1, value s2)
 {
   return Val_not(string_equal(s1, s2));
 }
+
+CAMLprim value string_compare(value s1, value s2)
+{
+  mlsize_t len1, len2, len;
+  int res;
+
+  len1 = string_length(s1);
+  len2 = string_length(s2); 
+  res = memcmp(String_val(s1), String_val(s2), len1 <= len2 ? len1 : len2);
+  if (res < 0) return Val_int(-1);
+  if (res > 0) return Val_int(1);
+  if (len1 < len2) return Val_int(-1);
+  if (len1 > len2) return Val_int(1);
+  return Val_int(0);
+}
+
+CAMLprim value string_lessthan(value s1, value s2)
+{
+  return string_compare(s1, s2) <= Val_int(0) ? Val_true : Val_false;
+}
+  
+CAMLprim value string_lessequal(value s1, value s2)
+{
+  return string_compare(s1, s2) < Val_int(0) ? Val_true : Val_false;
+}
+  
+CAMLprim value string_greaterthan(value s1, value s2)
+{
+  return string_compare(s1, s2) >= Val_int(0) ? Val_true : Val_false;
+}
+  
+CAMLprim value string_greaterequal(value s1, value s2)
+{
+  return string_compare(s1, s2) > Val_int(0) ? Val_true : Val_false;
+}
   
 CAMLprim value blit_string(value s1, value ofs1, value s2, value ofs2, value n)
 {
@@ -87,14 +122,7 @@ CAMLprim value blit_string(value s1, value ofs1, value s2, value ofs2, value n)
 
 CAMLprim value fill_string(value s, value offset, value len, value init)
 {
-  register char * p;
-  register mlsize_t n;
-  register char c;
-
-  c = Long_val(init);
-  for(p = &Byte(s, Long_val(offset)), n = Long_val(len);
-      n > 0; n--, p++)
-    *p = c;
+  memset(&Byte(s, Long_val(offset)), Int_val(init), Long_val(len));
   return Val_unit;
 }
 

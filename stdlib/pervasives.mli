@@ -73,7 +73,7 @@ external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
    Comparison between functional values may raise [Invalid_argument].
    Comparison between cyclic structures may not terminate. *)
 
-external compare : 'a -> 'a -> int = "compare"
+external compare : 'a -> 'a -> int = "%compare"
 (** [compare x y] returns [0] if [x=y], a negative integer if
    [x<y], and a positive integer if [x>y]. The same restrictions
    as for [=] apply. [compare] can be used as the comparison function

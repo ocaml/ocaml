@@ -97,6 +97,12 @@ long caml_safe_mod(long p, long q)
 
 /* Tagged integers */
 
+CAMLprim value int_compare(value v1, value v2)
+{
+  int res = (v1 > v2) - (v1 < v2);
+  return Val_int(res);
+}
+
 CAMLprim value int_of_string(value s)
 {
   return Val_long(parse_long(String_val(s)));
@@ -168,11 +174,11 @@ CAMLprim value format_int(value fmt, value arg)
 
 /* 32-bit integers */
 
-static int int32_compare(value v1, value v2)
+static int int32_cmp(value v1, value v2)
 {
   int32 i1 = Int32_val(v1);
   int32 i2 = Int32_val(v2);
-  return i1 == i2 ? 0 : i1 < i2 ? -1 : 1;
+  return (i1 > i2) - (i1 < i2);
 }
 
 static long int32_hash(value v)
@@ -196,7 +202,7 @@ static unsigned long int32_deserialize(void * dst)
 CAMLexport struct custom_operations int32_ops = {
   "_i",
   custom_finalize_default,
-  int32_compare,
+  int32_cmp,
   int32_hash,
   int32_serialize,
   int32_deserialize
@@ -273,6 +279,14 @@ CAMLprim value int32_of_float(value v)
 CAMLprim value int32_to_float(value v)
 { return copy_double((double)(Int32_val(v))); }
 
+CAMLprim value int32_compare(value v1, value v2)
+{
+  int32 i1 = Int32_val(v1);
+  int32 i2 = Int32_val(v2);
+  int res = (i1 > i2) - (i1 < i2);
+  return Val_int(res);
+}
+
 CAMLprim value int32_format(value fmt, value arg)
 {
   char format_string[FORMAT_BUFFER_SIZE];
@@ -313,7 +327,7 @@ CAMLexport int64 Int64_val(value v)
 
 #endif
 
-static int int64_compare(value v1, value v2)
+static int int64_cmp(value v1, value v2)
 {
   int64 i1 = Int64_val(v1);
   int64 i2 = Int64_val(v2);
@@ -348,7 +362,7 @@ static unsigned long int64_deserialize(void * dst)
 CAMLexport struct custom_operations int64_ops = {
   "_j",
   custom_finalize_default,
-  int64_compare,
+  int64_cmp,
   int64_hash,
   int64_serialize,
   int64_deserialize
@@ -439,6 +453,13 @@ CAMLprim value int64_of_nativeint(value v)
 CAMLprim value int64_to_nativeint(value v)
 { return copy_nativeint(I64_to_long(Int64_val(v))); }
 
+CAMLprim value int64_compare(value v1, value v2)
+{
+  int64 i1 = Int64_val(v1);
+  int64 i2 = Int64_val(v2);
+  return Val_int(I64_compare(i1, i2));
+}
+
 #ifdef ARCH_INT64_PRINTF_FORMAT
 #define I64_format(buf,fmt,x) sprintf(buf,fmt,x)
 #else
@@ -500,11 +521,11 @@ CAMLprim value int64_float_of_bits(value vi)
 
 /* Native integers */
 
-static int nativeint_compare(value v1, value v2)
+static int nativeint_cmp(value v1, value v2)
 {
   long i1 = Nativeint_val(v1);
   long i2 = Nativeint_val(v2);
-  return i1 == i2 ? 0 : i1 < i2 ? -1 : 1;
+  return (i1 > i2) - (i1 < i2);
 }
 
 static long nativeint_hash(value v)
@@ -554,7 +575,7 @@ static unsigned long nativeint_deserialize(void * dst)
 CAMLexport struct custom_operations nativeint_ops = {
   "_n",
   custom_finalize_default,
-  nativeint_compare,
+  nativeint_cmp,
   nativeint_hash,
   nativeint_serialize,
   nativeint_deserialize
@@ -636,6 +657,14 @@ CAMLprim value nativeint_of_int32(value v)
 
 CAMLprim value nativeint_to_int32(value v)
 { return copy_int32(Nativeint_val(v)); }
+
+CAMLprim value nativeint_compare(value v1, value v2)
+{
+  long i1 = Nativeint_val(v1);
+  long i2 = Nativeint_val(v2);
+  int res = (i1 > i2) - (i1 < i2);
+  return Val_int(res);
+}
 
 CAMLprim value nativeint_format(value fmt, value arg)
 {

@@ -322,6 +322,13 @@ CAMLprim value gt_float(value f, value g)
   return Val_bool(Double_val(f) > Double_val(g));
 }
 
+CAMLprim value float_compare(value vf, value vg)
+{
+  double f = Double_val(vf);
+  double g = Double_val(vg);
+  return f < g ? Val_int(-1) : f > g ? Val_int(1) : Val_int(0);
+}
+
 CAMLprim value float_of_bytes(value s)
 {
   value d = copy_double(0.0);

@@ -17,7 +17,7 @@
    so that it has the same interface as the software emulation
    provided in int64_emul.h */
 
-#define I64_compare(x,y) ((x) == (y) ? 0 : (x) < (y) ? -1 : 1)
+#define I64_compare(x,y) (((x) > (y)) - ((x) < (y)))
 #define I64_neg(x) (-(x))
 #define I64_add(x,y) ((x) + (y))
 #define I64_sub(x,y) ((x) - (y))
