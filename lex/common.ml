@@ -69,7 +69,7 @@ let copy_chars =
   | _       -> copy_chars_unix
 
 let copy_chunk sourcefile ic oc trl loc add_parens =
-  if loc.start_pos < loc.end_pos then begin
+  if loc.start_pos < loc.end_pos || add_parens then begin
     fprintf oc "# %d \"%s\"\n" loc.start_line sourcefile;
     if add_parens then begin
       for i = 1 to loc.start_col - 1 do output_char oc ' ' done;
