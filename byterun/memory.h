@@ -115,7 +115,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 */
 
 #define CAMLparam0() \
-  caml__roots_block *caml__frame = local_roots
+  struct caml__roots_block *caml__frame = local_roots
 
 #define CAMLparam1(x) \
   CAMLparam0 (); \
@@ -138,7 +138,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
   CAMLxparam5 (x, y, z, t, u)
 
 #define CAMLxparam1(x) \
-  caml__roots_block caml__roots_##x; \
+  struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
@@ -149,7 +149,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
     NULL)
 
 #define CAMLxparam2(x, y) \
-  caml__roots_block caml__roots_##x; \
+  struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
@@ -161,7 +161,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
     NULL)
 
 #define CAMLxparam3(x, y, z) \
-  caml__roots_block caml__roots_##x; \
+  struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
@@ -174,7 +174,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
     NULL)
 
 #define CAMLxparam4(x, y, z, t) \
-  caml__roots_block caml__roots_##x; \
+  struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
@@ -188,7 +188,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
     NULL)
 
 #define CAMLxparam5(x, y, z, t, u) \
-  caml__roots_block caml__roots_##x; \
+  struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
@@ -224,7 +224,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 
 #define CAMLlocalN(x, size) \
   value x [(size)] = { 0 /* , 0, 0, ... */ }; \
-  caml__roots_block caml__roots_##x; \
+  struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
   caml__frame, \
   (caml__roots_##x.next = local_roots), \

@@ -44,3 +44,13 @@ value mypushroot(value v, value fun, value arg)
   Pop_roots();
   return v;
 }
+
+value mycamlparam (value v, value fun, value arg)
+{
+  CAMLparam3 (v, fun, arg);
+  CAMLlocal2 (x, y);
+  x = v;
+  y = callback (fun, arg);
+  v = x;
+  CAMLreturn v;
+}

@@ -24,10 +24,11 @@ let trapexit () =
   tak (18, 12, 6)
 
 external mypushroot : 'a -> ('b -> 'c) -> 'b -> 'a = "mypushroot"
+external mycamlparam : 'a -> ('b -> 'c) -> 'b -> 'a = "mycamlparam"
 
-let tripwire () =
+let tripwire f =
   let s = String.make 5 'a' in
-  mypushroot s trapexit ()
+  f s trapexit ()
 
 (* Test callbacks performed to handle signals *)
 
@@ -61,7 +62,8 @@ let _ =
   print_int(mycallback3 tak3 18 12 6); print_newline();
   print_int(mycallback4 tak4 18 12 3 3); print_newline();
   print_int(trapexit ()); print_newline();
-  print_string(tripwire ()); print_newline();
+  print_string(tripwire mypushroot); print_newline();
+  print_string(tripwire mycamlparam); print_newline();
   Sys.signal Sys.sigusr1 (Sys.Signal_handle sighandler);
   print_string(callbacksig ()); print_newline()
 
