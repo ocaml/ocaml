@@ -154,7 +154,7 @@ static void print_location(value events, int index)
   value ev;
 
   if (pc == NULL) {
-    fprintf(stderr, "Raised from a C function");
+    fprintf(stderr, "Raised from a C function\n");
     return;
   }
   ev = event_for_location(events, pc);
