@@ -14,6 +14,13 @@
 open Config
 open Clflags
 
+let process_interface_file name =
+  Optcompile.interface name
+
+let process_implementation_file name =
+  Optcompile.implementation name;
+  objfiles := (Filename.chop_extension name ^ ".cmx") :: !objfiles
+
 let process_file name =
   if Filename.check_suffix name ".ml"
   or Filename.check_suffix name ".mlt" then begin
@@ -73,6 +80,8 @@ let main () =
        "-dlinear", Arg.Set dump_linear;
        "-dstartup", Arg.Set keep_startup_file;
        "-v", Arg.Unit print_version_number;
+       "-intf", Arg.String process_interface_file;
+       "-impl", Arg.String process_implementation_file;
        "-", Arg.String process_file]
       process_file;
     if !make_archive then begin
