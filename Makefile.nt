@@ -349,7 +349,7 @@ clean::
 beforedepend:: asmcomp\emit.ml
 
 tools\cvt_emit: tools\cvt_emit.mll
-	cd tools && $(MAKE) cvt_emit
+	cd tools && $(MAKEREC) cvt_emit
 
 # The "expunge" utility
 
