@@ -43,8 +43,14 @@ type spec =
   | Set of bool ref            (** Set the reference to true *)
   | Clear of bool ref          (** Set the reference to false *)
   | String of (string -> unit) (** Call the function with a string argument *)
+  | Set_string of string ref   (** Set the reference to the string argument *)
   | Int of (int -> unit)       (** Call the function with an int argument *)
+  | Set_int of int ref         (** Set the reference to the int argument *)
   | Float of (float -> unit)   (** Call the function with a float argument *)
+  | Set_float of float ref     (** Set the reference to the float argument *)
+  | Symbol of string list * (string -> unit)
+                               (** Take one of the symbols as argument and
+                                   call the function with the symbol. *)
   | Rest of (string -> unit)   (** Stop interpreting keywords and call the 
                                    function with each remaining argument *)
 

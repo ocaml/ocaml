@@ -18,8 +18,14 @@ type spec =
   | Set of bool ref            (* Set the reference to true *)
   | Clear of bool ref          (* Set the reference to false *)
   | String of (string -> unit) (* Call the function with a string argument *)
+  | Set_string of string ref   (** Set the reference to the string argument *)
   | Int of (int -> unit)       (* Call the function with an int argument *)
+  | Set_int of int ref         (** Set the reference to the int argument *)
   | Float of (float -> unit)   (* Call the function with a float argument *)
+  | Set_float of float ref     (** Set the reference to the float argument *)
+  | Symbol of string list * (string -> unit)
+                               (** Take one of the symbols as argument and
+                                   call the function with the symbol. *)
   | Rest of (string -> unit)   (* Stop interpreting keywords and call the
                                   function with each remaining argument *)
 
@@ -40,13 +46,25 @@ let rec assoc3 x l =
   | _::t -> assoc3 x t
 ;;
 
+let make_symlist prefix separator suffix l =
+  match l with
+  | [] -> "<none>"
+  | h::t -> (List.fold_left (fun x y -> x ^ "|" ^ y) (prefix ^ h) t) ^ suffix
+;;
+
+let print_spec (key, spec, doc) =
+  match spec with
+  | Symbol (l, _) -> eprintf "  %s %s %s\n" key (make_symlist "{" "|" "}" l) doc
+  | _ -> eprintf "  %s %s\n" key doc
+;;
+
 let usage speclist errmsg =
   eprintf "%s\n" errmsg;
-  List.iter (function (key, _, doc) -> eprintf "  %s %s\n" key doc) speclist;
+  List.iter print_spec speclist;
   try ignore (assoc3 "-help" speclist)
-  with Not_found -> eprintf "  -help  display this list of options\n";
+  with Not_found -> eprintf "  -help   Display this list of options\n";
   try ignore (assoc3 "--help" speclist)
-  with Not_found -> eprintf "  --help display this list of options\n";
+  with Not_found -> eprintf "  --help  Display this list of options\n";
 ;;
 
 let current = ref 0;;
@@ -89,8 +107,18 @@ let parse_argv argv speclist anonfun errmsg =
         | Set r -> r := true;
         | Clear r -> r := false;
         | String f when !current + 1 < l ->
+            f argv.(!current+1);
+            incr current;
+        | Symbol (symb, f) when !current + 1 < l ->
             let arg = argv.(!current+1) in
-            f arg;
+            if List.mem arg symb then begin
+              f argv.(!current+1);
+              incr current;
+            end else begin
+              stop (Wrong (s, arg, "one of " ^ (make_symlist "" " " "" symb)))
+            end
+        | Set_string r when !current + 1 < l ->
+            r := argv.(!current+1);
             incr current;
         | Int f when !current + 1 < l ->
             let arg = argv.(!current+1) in
@@ -98,9 +126,21 @@ let parse_argv argv speclist anonfun errmsg =
             with Failure "int_of_string" -> stop (Wrong (s, arg, "an integer"))
             end;
             incr current;
+        | Set_int r when !current + 1 < l ->
+            let arg = argv.(!current+1) in
+            begin try r := (int_of_string arg)
+            with Failure "int_of_string" -> stop (Wrong (s, arg, "an integer"))
+            end;
+            incr current;
         | Float f when !current + 1 < l ->
             let arg = argv.(!current+1) in
             begin try f (float_of_string arg);
+            with Failure "float_of_string" -> stop (Wrong (s, arg, "a float"))
+            end;
+            incr current;
+        | Set_float r when !current + 1 < l ->
+            let arg = argv.(!current+1) in
+            begin try r := (float_of_string arg);
             with Failure "float_of_string" -> stop (Wrong (s, arg, "a float"))
             end;
             incr current;
