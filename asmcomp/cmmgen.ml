@@ -816,17 +816,19 @@ let rec transl_all_functions already_translated cont =
 let rec transl_structure glob = function
     Uprim(Pmakeblock(tag, mut), args) ->
       (* Scan the args, storing those that are not identifiers and
-         returning a map id -> position in block for those that are idents. *)
-      let rec make_stores pos map = function
-        [] -> (Ctuple [], map)
+         returning a hashtable id -> position in block
+         for those that are idents. *)
+      let map = Hashtbl.new 17 in
+      let rec make_stores pos = function
+        [] -> Ctuple []
       | Uvar v :: rem ->
-          make_stores (pos+1) (Tbl.add v pos map) rem
+          Hashtbl.add map v pos;
+          make_stores (pos+1) rem
       | ulam :: rem ->
-          let (c, final_map) = make_stores (pos+1) map rem in
-          (Csequence(Cop(Cstore, [field_address (Cconst_symbol glob) pos;
-                                  transl ulam]), c),
-           final_map) in
-      let (c, map) = make_stores 0 Tbl.empty args in
+          Csequence(Cop(Cstore,
+                        [field_address (Cconst_symbol glob) pos; transl ulam]),
+                    make_stores (pos+1) rem) in
+      let c = make_stores 0 args in
       (c, map, List.length args)
   | Usequence(e1, e2) ->
       let (c2, map, size) = transl_structure glob e2 in
@@ -843,12 +845,12 @@ let rec transl_structure glob = function
       fatal_error "Cmmgen.transl_structure"
 
 and add_store glob id map code =
-  try
-    let pos = Tbl.find id map in
-    Csequence(Cop(Cstore, [field_address (Cconst_symbol glob) pos; Cvar id]),
-              code)
-  with Not_found ->
-    code
+  let rec store = function
+    [] -> code
+  | pos :: rem ->
+      Csequence(Cop(Cstore, [field_address (Cconst_symbol glob) pos; Cvar id]),
+                store rem) in
+  store (Hashtbl.find_all map id)
 
 and add_stores glob bindings map code =
   match bindings with
