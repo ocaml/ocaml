@@ -707,7 +707,13 @@ simple_pattern:
   | LBRACKET pattern_semi_list opt_semi RBRACKET
       { mklistpat(List.rev $2) }
   | LBRACKET pattern_semi_list opt_semi error
-      { unclosed "{" 1 "}" 4 }
+      { unclosed "[" 1 "]" 4 }
+  | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
+      { mkpat(Ppat_array(List.rev $2)) }
+  | LBRACKETBAR BARRBRACKET
+      { mkpat(Ppat_array []) }
+  | LBRACKETBAR pattern_semi_list opt_semi error
+      { unclosed "[|" 1 "|]" 4 }
   | LPAREN pattern RPAREN
       { $2 }
   | LPAREN pattern error
