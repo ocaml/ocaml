@@ -50,3 +50,5 @@ let dump_reload = ref false             (* -dreload *)
 let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
 let keep_startup_file = ref false       (* -dstartup *)
+
+let native_code = ref false             (* set to true under ocamlopt *)

@@ -50,6 +50,7 @@ let print_version_number () =
 
 let main () =
   try
+    native_code := true;
     Arg.parse
       ["-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs);
        "-c", Arg.Set compile_only;
