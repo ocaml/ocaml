@@ -48,19 +48,22 @@ INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
 # Compilation
 #############
 OCAMLSRCDIR=..
-INCLUDES=-I $(OCAMLSRCDIR)/parsing \
+INCLUDES_DEP=-I $(OCAMLSRCDIR)/parsing \
 	-I $(OCAMLSRCDIR)/utils \
 	-I $(OCAMLSRCDIR)/typing \
 	-I $(OCAMLSRCDIR)/driver \
 	-I $(OCAMLSRCDIR)/bytecomp \
 	-I $(OCAMLSRCDIR)/tools \
-	-I $(OCAMLSRCDIR)/stdlib \
+	-I $(OCAMLSRCDIR)/toplevel/
+
+INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 	-I $(OCAMLSRCDIR)/otherlibs/str \
 	-I $(OCAMLSRCDIR)/otherlibs/dynlink \
 	-I $(OCAMLSRCDIR)/otherlibs/unix \
 	-I $(OCAMLSRCDIR)/otherlibs/num \
-	-I $(OCAMLSRCDIR)/otherlibs/graph \
-	-I $(OCAMLSRCDIR)/toplevel/
+	-I $(OCAMLSRCDIR)/otherlibs/graph
+
+INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
 COMPFLAGS=$(INCLUDES) -warn-error A
 LINKFLAGS=$(INCLUDES)
@@ -338,7 +341,7 @@ depend::
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll
 	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(INCLUDES) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
 
 dummy:
 
