@@ -97,6 +97,8 @@ type instruction =
   | Kisint
   | Kisout
   | Kgetmethod
+  | Kgetpubmet of int
+  | Kgetdynmet
   | Kevent of debug_event
   | Kstop
 

@@ -197,3 +197,50 @@ CAMLprim value caml_lazy_make_forward (value v)
   Modify (&Field (res, 0), v);
   CAMLreturn (res);
 }
+
+/* For camlinternalOO.ml
+   See also GETPUBMET in interp.c
+ */
+
+CAMLprim value caml_get_public_method (value obj, value tag)
+{
+  value meths = Field (obj, 0);
+  int li = 3, hi = Field(meths,0), mi;
+  while (li < hi) {
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
+    else li = mi;
+  }
+  return Field (meths, li-1);
+}
+
+/*
+value caml_cache_public_method (value meths, value tag, value *cache)
+{
+  int li = 3, hi = Field(meths,0), mi;
+  while (li < hi) {
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
+    else li = mi;
+  }
+  *cache = (li-3)*sizeof(value)+1;
+  return Field (meths, li-1);
+}
+
+value caml_cache_public_method2 (value *meths, value tag, value *cache)
+{
+  value ofs = *cache & meths[1];
+  if (*(value*)(((char*)(meths+3)) + ofs - 1) == tag)
+    return *(value*)(((char*)(meths+2)) + ofs - 1);
+  {
+    int li = 3, hi = meths[0], mi;
+    while (li < hi) {
+      mi = ((li+hi) >> 1) | 1;
+      if (tag < meths[mi]) hi = mi-2;
+      else li = mi;
+    }
+    *cache = (li-3)*sizeof(value)+1;
+    return meths[li-1];
+  }
+}
+*/

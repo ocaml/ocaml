@@ -115,6 +115,8 @@ type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
 
+type meth_kind = Self | Public | Cached
+
 type shared_code = (int * int) list
 
 type lambda =
@@ -134,7 +136,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
-  | Lsend of lambda * lambda * lambda list
+  | Lsend of meth_kind * lambda * lambda * lambda list
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
 
@@ -225,7 +227,7 @@ let free_variables l =
       freevars e1; freevars e2; freevars e3; fv := IdentSet.remove v !fv
   | Lassign(id, e) ->
       fv := IdentSet.add id !fv; freevars e
-  | Lsend (met, obj, args) ->
+  | Lsend (k, met, obj, args) ->
       List.iter freevars (met::obj::args)
   | Levent (lam, evt) ->
       freevars lam
@@ -309,7 +311,8 @@ let subst_lambda s lam =
   | Lwhile(e1, e2) -> Lwhile(subst e1, subst e2)
   | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3) 
   | Lassign(id, e) -> Lassign(id, subst e)
-  | Lsend (met, obj, args) -> Lsend (subst met, subst obj, List.map subst args)
+  | Lsend (k, met, obj, args) ->
+      Lsend (k, subst met, subst obj, List.map subst args)
   | Levent (lam, evt) -> Levent (subst lam, evt)
   | Lifused (v, e) -> Lifused (v, subst e)
   and subst_decl (id, exp) = (id, subst exp)

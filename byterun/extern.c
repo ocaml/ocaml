@@ -338,9 +338,11 @@ static void extern_rec(value v)
       writecode32(CODE_INFIXPOINTER, Infix_offset_hd(hd));
       extern_rec(v - Infix_offset_hd(hd));
       break;
+    /* Use default case for objects
     case Object_tag:
       extern_invalid_argument("output_value: object value");
       break;
+    */
     case Custom_tag: {
       unsigned long sz_32, sz_64;
       char * ident = Custom_ops_val(v)->identifier;

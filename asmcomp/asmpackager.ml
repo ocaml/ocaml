@@ -222,8 +222,8 @@ let rename_approx mapping_lbl mapping_id approx =
       Ufor(id, ren_ulambda u1, ren_ulambda u2, dir, ren_ulambda u3)
   | Uassign(id, u) ->
       Uassign(id, ren_ulambda u)
-  | Usend(u1, u2, ul) ->
-      Usend(ren_ulambda u1, ren_ulambda u2, List.map ren_ulambda ul) in
+  | Usend(k, u1, u2, ul) ->
+      Usend(k, ren_ulambda u1, ren_ulambda u2, List.map ren_ulambda ul) in
 
   let rec ren_approx = function
       Value_closure(fd, res) ->
@@ -285,6 +285,7 @@ let build_package_cmx members target symbols_to_rename cmxfile =
       ui_approx = rename_approx mapping_lbl mapping_id approx;
       ui_curry_fun = union(List.map (fun info -> info.ui_curry_fun) units);
       ui_apply_fun = union(List.map (fun info -> info.ui_apply_fun) units);
+      ui_send_fun = union(List.map (fun info -> info.ui_send_fun) units);
       ui_force_link = List.exists (fun info -> info.ui_force_link) units
     } in
   Compilenv.write_unit_info pkg_infos cmxfile

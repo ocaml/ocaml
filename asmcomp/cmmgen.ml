@@ -245,6 +245,9 @@ let get_tag ptr =
     Cop(Cload Byte_unsigned,
         [Cop(Cadda, [ptr; Cconst_int(tag_offset)])])
 
+let get_size ptr =
+  Cop(Clsr, [header ptr; Cconst_int 10])
+
 (* Array indexing *)
 
 let log2_size_addr = Misc.log2 size_addr
@@ -312,13 +315,22 @@ let string_length exp =
 
 (* Message sending *)
 
+let lookup_tag obj tag =
+  bind "tag" tag (fun tag ->
+    Cop(Cextcall("caml_get_public_method", typ_addr, false), [obj; tag]))
+
 let lookup_label obj lab =
   bind "lab" lab (fun lab ->
     let table = Cop (Cload Word, [obj]) in
-    let buck_index = Cop(Clsr, [lab; Cconst_int 16]) in
-    let bucket = Cop(Cload Word, [Cop (Cadda, [table; buck_index])]) in
-    let item_index = Cop(Cand, [lab; Cconst_int (255 * size_addr)]) in
-    Cop (Cload Word, [Cop (Cadda, [bucket; item_index])]))
+    addr_array_ref table lab)
+
+let call_cached_method obj tag cache pos args =
+  let arity = List.length args in
+  let cache = array_indexing log2_size_addr cache pos in
+  Compilenv.need_send_fun arity;
+  Cop(Capply typ_addr,
+      Cconst_symbol("caml_send" ^ string_of_int arity) ::
+      obj :: tag :: cache :: args)
 
 (* Allocation *)
 
@@ -806,17 +818,23 @@ let rec transl = function
       let cargs = Cconst_symbol(apply_function arity) ::
         List.map transl (args @ [clos]) in
       Cop(Capply typ_addr, cargs)
-  | Usend(met, obj, []) ->
+  | Usend(kind, met, obj, args) ->
+      let call_met obj args clos =
+	if args = [] then Cop(Capply typ_addr,[get_field clos 0;obj;clos]) else
+	let arity = List.length args + 1 in
+        let cargs = Cconst_symbol(apply_function arity) :: obj ::
+	  (List.map transl args) @ [clos] in
+        Cop(Capply typ_addr, cargs)
+      in
       bind "obj" (transl obj) (fun obj ->
-        bind "met" (lookup_label obj (transl met)) (fun clos ->
-          Cop(Capply typ_addr, [get_field clos 0; obj; clos])))
-  | Usend(met, obj, args) ->
-      let arity = List.length args + 1 in
-      bind "obj" (transl obj) (fun obj ->
-        bind "met" (lookup_label obj (transl met)) (fun clos ->
-          let cargs = Cconst_symbol(apply_function arity) ::
-            obj :: (List.map transl args) @ [clos] in
-          Cop(Capply typ_addr, cargs)))
+	match kind, args with
+	  Self, _ ->
+            bind "met" (lookup_label obj (transl met)) (call_met obj args)
+	| Cached, cache :: pos :: args ->
+            call_cached_method obj (transl met) (transl cache) (transl pos)
+              (List.map transl args)
+	| _ ->
+            bind "met" (lookup_tag obj (transl met)) (call_met obj args))
   | Ulet(id, exp, body) ->
       begin match is_unboxed_number exp with
         No_unboxing ->
@@ -1676,6 +1694,56 @@ let compunit size ulam =
          Cdefine_symbol glob;
          Cskip(size * size_addr)] :: c3
 
+(*
+CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
+{
+  int li = 3, hi = Field(meths,0), mi;
+  while (li < hi) { // no need to check the 1st time
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
+    else li = mi;
+  }
+  *cache = (li-3)*sizeof(value)+1;
+  return Field (meths, li-1);
+}
+*)
+
+let cache_public_method meths tag cache =
+  let raise_num = next_raise_count () in
+  let li = Ident.create "li" and hi = Ident.create "hi"
+  and mi = Ident.create "mi" and tagged = Ident.create "tagged" in
+  Clet (
+  li, Cconst_int 3,
+  Clet (
+  hi, Cop(Cload Word, [meths]),
+  Csequence(
+  Ccatch
+    (raise_num, [],
+     Cloop
+       (Clet(
+	mi,
+	Cop(Cor,
+	    [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi]); Cconst_int 1]);
+	     Cconst_int 1]),
+	Csequence(
+	Cifthenelse
+	  (Cop (Ccmpi Clt,
+		[tag;
+		 Cop(Cload Word,
+		     [Cop(Cadda,
+			  [meths; lsl_const (Cvar mi) log2_size_addr])])]),
+	   Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2])),
+	   Cassign(li, Cvar mi)),
+	Cifthenelse
+	  (Cop(Ccmpi Cge, [Cvar li; Cvar hi]), Cexit (raise_num, []),
+	   Ctuple [])))),
+     Ctuple []),
+  Clet (
+  tagged, Cop(Cadda, [lsl_const (Cvar li) log2_size_addr;
+                      Cconst_int(1 - 3 * size_addr)]),
+  Csequence(Cop (Cstore Word, [cache; Cvar tagged]),
+            Cvar tagged)))))
+
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
        (if (= clos.arity N)
@@ -1687,7 +1755,7 @@ let compunit size ulam =
            (app closN-1.code aN closN-1))))
 *)
 
-let apply_function arity =
+let apply_function_body arity =
   let arg = Array.create arity (Ident.create "arg") in
   for i = 1 to arity - 1 do arg.(i) <- Ident.create "arg" done;
   let clos = Ident.create "clos" in
@@ -1702,13 +1770,56 @@ let apply_function arity =
                [get_field (Cvar clos) 0; Cvar arg.(n); Cvar clos]),
            app_fun newclos (n+1))
     end in
-  let all_args = Array.to_list arg @ [clos] in
-  let body =
-    Cifthenelse(
-      Cop(Ccmpi Ceq, [get_field (Cvar clos) 1; int_const arity]),
-      Cop(Capply typ_addr,
-          get_field (Cvar clos) 2 :: List.map (fun s -> Cvar s) all_args),
-      app_fun clos 0) in
+  let args = Array.to_list arg in
+  let all_args = args @ [clos] in
+  (args, clos,
+   if arity = 1 then app_fun clos 0 else
+   Cifthenelse(
+   Cop(Ccmpi Ceq, [get_field (Cvar clos) 1; int_const arity]),
+   Cop(Capply typ_addr,
+       get_field (Cvar clos) 2 :: List.map (fun s -> Cvar s) all_args),
+   app_fun clos 0))
+
+let send_function arity =
+  let (args, clos', body) = apply_function_body (1+arity) in
+  let cache = Ident.create "cache"
+  and obj = List.hd args
+  and tag = Ident.create "tag" in
+  let clos =
+    let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
+    let meths = Ident.create "meths" and cached = Ident.create "cached" in
+    let real = Ident.create "real" in
+    let mask = get_field (Cvar meths) 1 in
+    let cached_pos = Cvar cached in
+    let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths]);
+                              Cconst_int(3*size_addr-1)]) in
+    let tag' = Cop(Cload Word, [tag_pos]) in
+    Clet (
+    meths, Cop(Cload Word, [obj]),
+    Clet (
+    cached, Cop(Cand, [Cop(Cload Word, [cache]); mask]),
+    Clet (
+    real,     
+    Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
+	        cache_public_method (Cvar meths) tag cache,
+                cached_pos),
+    Cop(Cload Word, [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths]);
+                                 Cconst_int(2*size_addr-1)])]))))
+    
+  in
+  let body = Clet(clos', clos, body) in
+  let fun_args =
+    [obj, typ_addr; tag, typ_int; cache, typ_addr]
+    @ List.map (fun id -> (id, typ_addr)) (List.tl args) in
+  Cfunction
+   {fun_name = "caml_send" ^ string_of_int arity;
+    fun_args = fun_args;
+    fun_body = body;
+    fun_fast = true}
+
+let apply_function arity =
+  let (args, clos, body) = apply_function_body arity in
+  let all_args = args @ [clos] in
   Cfunction
    {fun_name = "caml_apply" ^ string_of_int arity;
     fun_args = List.map (fun id -> (id, typ_addr)) all_args;

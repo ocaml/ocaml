@@ -409,20 +409,27 @@ let rec comp_expr env exp sz cont =
             (Kpush :: comp_expr env func (sz + 3 + nargs)
                       (Kapply nargs :: cont1))
         end
-  | Lsend(met, obj, args) ->
+  | Lsend(kind, met, obj, args) ->
+      let args = if kind = Cached then List.tl args else args in
       let nargs = List.length args + 1 in
+      let getmethod, args' =
+        if kind = Self then (Kgetmethod, met::obj::args) else
+        match met with
+          Lconst(Const_base(Const_int n)) -> (Kgetpubmet n, obj::args)
+        | _ -> (Kgetdynmet, met::obj::args)
+      in
       if is_tailcall cont then
-        comp_args env (met::obj::args) sz
-          (Kgetmethod :: Kappterm(nargs, sz + nargs) :: discard_dead_code cont)
+        comp_args env args' sz
+          (getmethod :: Kappterm(nargs, sz + nargs) :: discard_dead_code cont)
       else
         if nargs < 4 then
-          comp_args env (met::obj::args) sz
-            (Kgetmethod :: Kapply nargs :: cont)
+          comp_args env args' sz
+            (getmethod :: Kapply nargs :: cont)
         else begin
           let (lbl, cont1) = label_code cont in
           Kpush_retaddr lbl ::
-          comp_args env (met::obj::args) (sz + 3)
-            (Kgetmethod :: Kapply nargs :: cont1)
+          comp_args env args' (sz + 3)
+            (getmethod :: Kapply nargs :: cont1)
         end
   | Lfunction(kind, params, body) -> (* assume kind = Curried *)
       let lbl = new_label() in
@@ -714,7 +721,7 @@ let rec comp_expr env exp sz cont =
           let info =
             match lam with
               Lapply(_, args)   -> Event_return (List.length args)
-            | Lsend(_, _, args) -> Event_return (List.length args + 1)
+            | Lsend(_, _, _, args) -> Event_return (List.length args + 1)
             | _                 -> Event_other
           in
           let ev = event (Event_after ty) info in

@@ -119,20 +119,24 @@ pervasives.p.cmx: pervasives.ml
 camlinternalOO.cmi: camlinternalOO.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c camlinternalOO.mli
 
+# camlinternalOO.cmx should not be inlined
 CIOO=camlinternalOO
 $(CIOO).cmx $(CIOO).p.cmx: $(CIOO).ml
-	$(MAKE) EXTRAFLAGS="-inline 0" CIOO=dummy $@
+	$(MAKE) CAMLOPT="$(CAMLOPT)" OPTCOMPFLAGS="$(OPTCOMPFLAGS)" \
+		EXTRAFLAGS="-inline 0" CIOO=dummy $@
 
 # labelled modules require the -nolabels flag
 labelled.cmo:
-	$(MAKE) EXTRAFLAGS=-nolabels RUNTIME=$(RUNTIME) \
-                COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
+	$(MAKE) CAMLC="$(CAMLC)" COMPFLAGS="$(COMPFLAGS)" \
+		EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmo)
 	touch $@
 labelled.cmx:
-	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
+	$(MAKE) CAMLOPT="$(CAMLOPT)" OPTCOMPFLAGS="$(OPTCOMPFLAGS)" \
+		EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
 	touch $@
 labelled.p.cmx:
-	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.p.cmx)
+	$(MAKE) CAMLOPT="$(CAMLOPT)" OPTCOMPFLAGS="$(OPTCOMPFLAGS)" \
+		EXTRAFLAGS=-nolabels $(LABELLED:.ml=.p.cmx)
 	touch $@
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
