@@ -208,7 +208,7 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
     after a scan involving a format that necessitates some look ahead
     (such as a format that ends by skipping whitespace in the input).
 
-    To avoid confusion, consider using [bscanf] with an explicitely
+    To avoid confusion, consider using [bscanf] with an explicitly
     created scanning buffer. Use for instance [Scanning.from_file f]
     to allocate the scanning buffer reading from file [f].
 
