@@ -199,7 +199,7 @@ let add_event ev =
 
 (* The label to which Lstaticfail branches, and the stack size at that point.*)
 
-let lbl_staticfail = ref 0
+let lbl_staticfail = ref None
 and sz_staticfail = ref 0
 
 (* Function bodies that remain to be compiled *)
@@ -461,15 +461,19 @@ let rec comp_expr env exp sz cont =
       let (lbl_handler, cont2) = label_code (comp_expr env handler sz cont1) in
       let saved_lbl_staticfail = !lbl_staticfail
       and saved_sz_staticfail = !sz_staticfail in
-      lbl_staticfail := lbl_handler;
+      lbl_staticfail := Some lbl_handler;
       sz_staticfail := sz;
       let cont3 = comp_expr env body sz (branch1 :: cont2) in
       lbl_staticfail := saved_lbl_staticfail;
       sz_staticfail := saved_sz_staticfail;
       cont3
   | Lstaticfail ->
-      add_pop (sz - !sz_staticfail)
-              (Kbranch !lbl_staticfail :: discard_dead_code cont)
+      let cont = discard_dead_code cont in
+      begin match !lbl_staticfail with
+        None -> cont
+      | Some label ->
+          add_pop (sz - !sz_staticfail) (Kbranch label :: cont)
+      end
   | Ltrywith(body, id, handler) ->
       let (branch1, cont1) = make_branch cont in
       let lbl_handler = new_label() in
@@ -604,11 +608,19 @@ and comp_binary_test env cond ifso ifnot sz cont =
       let (lbl_end, cont1) = label_code cont in
       Kstrictbranchifnot lbl_end :: comp_expr env ifso sz cont1
     end else
-    if ifso = Lstaticfail & sz = !sz_staticfail then
-      Kbranchif !lbl_staticfail :: comp_expr env ifnot sz cont
+    if ifso = Lstaticfail && (sz = !sz_staticfail || !lbl_staticfail = None)
+    then
+      let cont = comp_expr env ifnot sz cont in
+      match !lbl_staticfail with
+        None -> cont
+      | Some label -> Kbranchif label :: cont
     else
-    if ifnot = Lstaticfail & sz = !sz_staticfail then
-      Kbranchifnot !lbl_staticfail :: comp_expr env ifso sz cont
+    if ifnot = Lstaticfail && (sz = !sz_staticfail || !lbl_staticfail = None)
+    then
+      let cont = comp_expr env ifso sz cont in
+      match !lbl_staticfail with
+        None -> cont
+      | Some label -> Kbranchif label :: cont
     else begin
       let (branch_end, cont1) = make_branch cont in
       let (lbl_not, cont2) = label_code(comp_expr env ifnot sz cont1) in
@@ -650,7 +662,7 @@ let comp_remainder cont =
 let compile_implementation modulename expr =
   Stack.clear functions_to_compile;
   label_counter := 0;
-  lbl_staticfail := 0;
+  lbl_staticfail := None;
   sz_staticfail := 0;
   compunit_name := modulename;
   let init_code = comp_expr empty_env expr 0 [] in
@@ -663,7 +675,7 @@ let compile_implementation modulename expr =
 let compile_phrase expr =
   Stack.clear functions_to_compile;
   label_counter := 0;
-  lbl_staticfail := 0;
+  lbl_staticfail := None;
   sz_staticfail := 0;
   let init_code = comp_expr empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
