@@ -194,7 +194,7 @@ let receive channel =
         with Queue.Empty ->
           false);
     suspend = (fun () ->
-      channel.read_pending <- cleanup_queue channel.read_pending;
+      channel.reads_pending <- cleanup_queue channel.reads_pending;
       Queue.add rcomm channel.reads_pending);
     result = (fun () ->
       match rcomm.data with
