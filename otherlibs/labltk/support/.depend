@@ -1,11 +1,11 @@
 protocol.cmi: widget.cmi 
 textvariable.cmi: protocol.cmi widget.cmi 
-coerce.cmo: widget.cmi 
-coerce.cmx: widget.cmx 
 fileevent.cmo: protocol.cmi fileevent.cmi 
 fileevent.cmx: protocol.cmx fileevent.cmi 
 protocol.cmo: widget.cmi protocol.cmi 
 protocol.cmx: widget.cmx protocol.cmi 
+slave.cmo: widget.cmi 
+slave.cmx: widget.cmx 
 support.cmo: support.cmi 
 support.cmx: support.cmi 
 textvariable.cmo: protocol.cmi widget.cmi textvariable.cmi 

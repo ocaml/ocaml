@@ -19,9 +19,9 @@
 
 #include <tcl.h>
 #include <tk.h>
-#include <caml/mlvalues.h>
-#include <caml/alloc.h>
-#include <caml/memory.h>
+#include <mlvalues.h>
+#include <alloc.h>
+#include <memory.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
@@ -31,9 +31,7 @@
 Tcl_Interp *cltclinterp = NULL;
 
 /* Copy a list of strings from the C heap to Caml */
-value copy_string_list(argc, argv)
-     int argc;
-     char ** argv;
+value copy_string_list(int argc, char **argv)
 {
   value res;
   int i;
@@ -57,8 +55,7 @@ value copy_string_list(argc, argv)
  *   this version works on an arbitrary Tcl command,
  *   and does parsing and substitution
  */
-value camltk_tcl_eval(str) /* ML */
-value str; 
+value camltk_tcl_eval(value str) /* ML */
 {
   int code;
   char *cmd = NULL;
@@ -100,8 +97,7 @@ value str;
  * TkTokenList must be expanded,
  * TkQuote count for one.
  */
-int argv_size(v)
-value v;
+int argv_size(value v)
 {
   switch (Tag_val(v)) {
   case 0:                       /* TkToken */
@@ -115,6 +111,9 @@ value v;
     }
   case 2:                       /* TkQuote */
     return 1;
+  default:                      /* should not happen */
+    Assert(0);
+    return 0;
   }
 }
 
@@ -134,10 +133,7 @@ static char *quotedargv[16];
  *  not tamper with our strings
  *  make copies if strings are "persistent"
  */
-int fill_args (argv, where, v) 
-char ** argv;
-int where;
-value v;
+int fill_args (char **argv, int where, value v)
 {
   switch (Tag_val(v)) {
   case 0:
@@ -164,12 +160,14 @@ value v;
         stat_free((char *)tmpargv);
       return (where + 1);
     }
+  default:                      /* should not happen */
+    Assert(0);
+    return 0;
   }
 }
 
 /* v is an array of TkArg */
-value camltk_tcl_direct_eval(v) /* ML */
-value v; 
+value camltk_tcl_direct_eval(value v) /* ML */
 {
   int i;
   int size;                     /* size of argv */

@@ -17,19 +17,17 @@
 
 #include <tcl.h>
 #include <tk.h>
-#include <caml/mlvalues.h>
-#include <caml/callback.h>
+#include <mlvalues.h>
+#include <alloc.h>
+#include <callback.h>
+#include <fail.h>
 #include "camltk.h"
 
 value * tkerror_exn = NULL;
 value * handler_code = NULL;
 
 /* The Tcl command for evaluating callback in Caml */
-int CamlCBCmd(clientdata, interp, argc, argv)
-     ClientData clientdata;
-     Tcl_Interp *interp;
-     int argc;
-     char *argv[];
+int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp, int argc, char **argv)
 {
   CheckInit();
 
@@ -53,8 +51,7 @@ int CamlCBCmd(clientdata, interp, argc, argv)
  * using the following. TCL_VOLATILE ensures that Tcl will make
  * a copy of the string
  */
-value camltk_return (v) /* ML */
-     value v;
+value camltk_return (value v) /* ML */
 {
   CheckInit();
 
@@ -63,8 +60,7 @@ value camltk_return (v) /* ML */
 }
 
 /* Note: raise_with_string WILL copy the error message */
-void tk_error(errmsg)
-     char *errmsg;
+void tk_error(char *errmsg)
 {
   raise_with_string(*tkerror_exn, errmsg);
 }
@@ -75,8 +71,7 @@ void tk_error(errmsg)
    takes place during loading of the protocol module
  */
 
-value camltk_init(v) /* ML */
-     value v;
+value camltk_init(value v) /* ML */
 {
   /* Initialize the Caml pointers */
   if (tkerror_exn == NULL)

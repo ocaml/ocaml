@@ -17,8 +17,9 @@
 
 #include <tcl.h>
 #include <tk.h>
-#include <caml/mlvalues.h>
-#include <caml/memory.h>
+#include <mlvalues.h>
+#include <memory.h>
+#include <callback.h>
 #include "camltk.h"
 
 /* The following are replacements for 
@@ -42,9 +43,8 @@ struct WinCBData {
   Tk_Window win;
 };
 
-static void WaitVisibilityProc(clientData, eventPtr)
-    ClientData clientData;      
-    XEvent *eventPtr;           /* Information about event (not used). */
+static void WaitVisibilityProc(ClientData clientData, XEvent *eventPtr)
+                                /* Information about event (not used). */
 {
   struct WinCBData *vis = clientData;
   value cbid = Val_int(vis->cbid);
@@ -57,9 +57,7 @@ static void WaitVisibilityProc(clientData, eventPtr)
 }
 
 /* Sets up a callback upon Visibility of a window */
-value camltk_wait_vis(win,cbid) /* ML */
-     value win;
-     value cbid;
+value camltk_wait_vis(value win, value cbid) /* ML */
 {
   struct WinCBData *vis =
     (struct WinCBData *)stat_alloc(sizeof(struct WinCBData));
@@ -74,9 +72,7 @@ value camltk_wait_vis(win,cbid) /* ML */
   return Val_unit;
 }
 
-static void WaitWindowProc(clientData, eventPtr)
-    ClientData clientData;      
-    XEvent *eventPtr;           
+static void WaitWindowProc(ClientData clientData, XEvent *eventPtr)
 {
   if (eventPtr->type == DestroyNotify) {
     struct WinCBData *vis = clientData;
@@ -88,9 +84,7 @@ static void WaitWindowProc(clientData, eventPtr)
 }
 
 /* Sets up a callback upon window destruction */
-value camltk_wait_des(win,cbid) /* ML */
-     value win;
-     value cbid;
+value camltk_wait_des(value win, value cbid) /* ML */
 {
   struct WinCBData *vis =
     (struct WinCBData *)stat_alloc(sizeof(struct WinCBData));

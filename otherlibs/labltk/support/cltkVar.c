@@ -19,12 +19,13 @@
 #include <string.h>
 #include <tcl.h>
 #include <tk.h>
-#include <caml/mlvalues.h>
-#include <caml/memory.h>
+#include <mlvalues.h>
+#include <memory.h>
+#include <alloc.h>
+#include <callback.h>
 #include "camltk.h"
 
-value camltk_getvar(var) /* ML */
-     value var;
+value camltk_getvar(value var) /* ML */
 {
   char *s;
   char *stable_var = NULL;
@@ -41,9 +42,7 @@ value camltk_getvar(var) /* ML */
     return(copy_string(s));
 }
 
-value camltk_setvar(var,contents) /* ML */
-     value var;
-     value contents;
+value camltk_setvar(value var, value contents) /* ML */
 {
   char *s;
   char *stable_var = NULL;
@@ -68,12 +67,12 @@ value camltk_setvar(var,contents) /* ML */
 typedef char *(Tcl_VarTraceProc) _ANSI_ARGS_((ClientData clientData,
         Tcl_Interp *interp, char *part1, char *part2, int flags));
  */
-static char * tracevar(clientdata, interp, name1, name2, flags)
-     ClientData clientdata;
-     Tcl_Interp *interp;        /* Interpreter containing variable. */
-     char *name1;               /* Name of variable. */
-     char *name2;               /* Second part of variable name. */
-     int flags;                 /* Information about what happened. */
+static char * tracevar(ClientData clientdata, Tcl_Interp *interp,
+                       char *name1, char *name2, int flags)
+                                /* Interpreter containing variable. */
+                                /* Name of variable. */
+                                /* Second part of variable name. */
+                                /* Information about what happened. */
 {
   Tcl_UntraceVar2(interp, name1, name2,
                 TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
@@ -83,9 +82,7 @@ static char * tracevar(clientdata, interp, name1, name2, flags)
 }
 
 /* Sets up a callback upon modification of a variable */
-value camltk_trace_var(var,cbid) /* ML */
-     value var;
-     value cbid;
+value camltk_trace_var(value var, value cbid) /* ML */
 {
   char *cvar = NULL;
 
@@ -106,9 +103,7 @@ value camltk_trace_var(var,cbid) /* ML */
   return Val_unit;
 }
 
-value camltk_untrace_var(var,cbid) /* ML */
-     value var;
-     value cbid;
+value camltk_untrace_var(value var, value cbid) /* ML */
 {
   char *cvar = NULL;
 

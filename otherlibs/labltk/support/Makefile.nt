@@ -11,7 +11,7 @@ opt: support.cmx widget.cmx protocol.cmx \
 COBJS=cltkCaml.obj cltkEval.obj cltkEvent.obj cltkFile.obj cltkMain.obj \
       cltkMisc.obj cltkTimer.obj cltkVar.obj cltkWait.obj
 
-CCFLAGS=-ccopt "/Zi $(TK_DEFS)"
+CCFLAGS=-I..\..\..\byterun /Zi $(TK_DEFS)
 
 COMPFLAGS=-I $(OTHERS)/win32unix
 
@@ -46,9 +46,11 @@ clean :
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 .c.obj:
-	$(LABLCOMP) $(CCFLAGS) $<
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
 
 depend:
 	$(LABLDEP) *.mli *.ml > .depend
+
+$(COBJS): camltk.h
 
 !include .depend

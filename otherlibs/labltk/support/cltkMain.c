@@ -18,9 +18,10 @@
 #include <string.h>
 #include <tcl.h>
 #include <tk.h>
-#include <caml/mlvalues.h>
-#include <caml/memory.h>
-#include <caml/callback.h>
+#include <mlvalues.h>
+#include <memory.h>
+#include <callback.h>
+#include <signals.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>  /* for R_OK */
 #endif
@@ -44,8 +45,7 @@
 
 int signal_events = 0; /* do we have a pending timer */
 
-void invoke_pending_caml_signals (clientdata) 
-     ClientData clientdata;
+void invoke_pending_caml_signals (ClientData clientdata)
 {
   signal_events = 0;
   enter_blocking_section(); /* triggers signal handling */
@@ -64,8 +64,7 @@ Tk_Window cltk_mainWindow;
 int cltk_slave_mode = 0;
 
 /* Initialisation, based on tkMain.c */
-value camltk_opentk(display, name) /* ML */
-     value display,name;
+value camltk_opentk(value display, value name) /* ML */
 {
   if (!cltk_slave_mode) {
     /* Create an interpreter, dies if error */

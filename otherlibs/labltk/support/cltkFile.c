@@ -22,7 +22,8 @@
 #endif
 #include <tcl.h>
 #include <tk.h>
-#include <caml/mlvalues.h>
+#include <mlvalues.h>
+#include <callback.h>
 #include "camltk.h"
 
 /*
