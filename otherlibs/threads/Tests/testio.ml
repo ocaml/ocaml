@@ -70,31 +70,33 @@ let make_lines ofile =
 (* The test *)
 
 let main() =
+  let ifile = Sys.argv.(1) in
+  let ofile = "/tmp/testio" in
   test "256-byte chunks, 256-byte chunks"
-       (copy_file 256) (copy_file 256) "/vmunix" "/tmp/testio";
+       (copy_file 256) (copy_file 256) ifile ofile;
   test "4096-byte chunks, 4096-byte chunks"
-       (copy_file 4096) (copy_file 4096) "/vmunix" "/tmp/testio";
+       (copy_file 4096) (copy_file 4096) ifile ofile;
   test "65536-byte chunks, 65536-byte chunks"
-       (copy_file 65536) (copy_file 65536) "/vmunix" "/tmp/testio";
+       (copy_file 65536) (copy_file 65536) ifile ofile;
   test "256-byte chunks, 4096-byte chunks"
-       (copy_file 256) (copy_file 4096) "/vmunix" "/tmp/testio";
+       (copy_file 256) (copy_file 4096) ifile ofile;
   test "4096-byte chunks, 256-byte chunks"
-       (copy_file 4096) (copy_file 256) "/vmunix" "/tmp/testio";
+       (copy_file 4096) (copy_file 256) ifile ofile;
   test "4096-byte chunks, 65536-byte chunks"
-       (copy_file 4096) (copy_file 65536) "/vmunix" "/tmp/testio";
+       (copy_file 4096) (copy_file 65536) ifile ofile;
   test "263-byte chunks, 4011-byte chunks"
-       (copy_file 263) (copy_file 4011) "/vmunix" "/tmp/testio";
+       (copy_file 263) (copy_file 4011) ifile ofile;
   test "613-byte chunks, 1027-byte chunks"
-       (copy_file 613) (copy_file 1027) "/vmunix" "/tmp/testio";
+       (copy_file 613) (copy_file 1027) ifile ofile;
   test "0...8192 byte chunks"
-       (copy_random 8192) (copy_random 8192) "/vmunix" "/tmp/testio";
+       (copy_random 8192) (copy_random 8192) ifile ofile;
   test "line per line, short lines"
-       copy_line copy_line "/etc/hosts" "/tmp/testio";
+       copy_line copy_line "/etc/hosts" ofile;
   make_lines "/tmp/lines";
   test "line per line, short and long lines"
-       copy_line copy_line "/tmp/lines" "/tmp/testio";
+       copy_line copy_line "/tmp/lines" ofile;
   Sys.remove "/tmp/lines";
-  Sys.remove "/tmp/testio";
+  Sys.remove ofile;
   exit 0
 
 let _ = Unix.handle_unix_error main (); exit 0
