@@ -146,13 +146,17 @@ case "$1,$2,$3" in
   4,4,4) echo "OK, this is a regular 32 bit architecture."
          echo "#undef ARCH_SIXTYFOUR" >> m.h;;
   4,8,8) echo "Wow! A 64 bit architecture!"
-         echo "#define ARCH_SIXTYFOUR" >> m.h;;
+         echo "#define ARCH_SIXTYFOUR" >> m.h
+         case "$bytecc,$host" in
+           gcc,alpha-*-osf*) echo "#define ARCH_CODE32" >> m.h;;
+           *)                echo "#undef ARCH_CODE32" >> m.h;;
+         esac;;
   8,*,*) echo "Wow! A 64 bit architecture!"
          echo "Unfortunately, Objective Caml does not handle the case"
          echo "sizeof(int) = 8."
          echo "Objective Caml won't run on this architecture."
          exit 2;;
-  *,4,8) echo "Wow! A 64 bit architecture!"
+  *,*,8) echo "Wow! A 64 bit architecture!"
          echo "Unfortunately, Objective Caml cannot work in the case"
          echo "sizeof(long) != sizeof(long *)."
          echo "Objective Caml won't run on this architecture."

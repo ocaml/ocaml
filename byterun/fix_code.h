@@ -31,6 +31,7 @@ void set_instruction P((code_t pos, opcode_t instr));
 
 #ifdef THREADED_CODE
 extern void ** instr_table;
+extern void * instr_base;
 void thread_code P((code_t code, asize_t len));
 #endif
 

@@ -79,6 +79,7 @@ void fixup_endianness(code, len)
 #ifdef THREADED_CODE
 
 void ** instr_table;
+void * instr_base;
 
 void thread_code (code_t code, asize_t len)
 {
@@ -109,9 +110,9 @@ void thread_code (code_t code, asize_t len)
     opcode_t instr = *p;
     if (instr < 0 || instr > STOP){
       fatal_error_arg ("Fatal error in fix_code: bad opcode (%lx)\n",
-                       (void *) instr);
+                       (char *)(long)instr);
     }
-    *p++ = (opcode_t)((unsigned long)(instr_table[instr]));
+    *p++ = (opcode_t)(instr_table[instr] - instr_base);
     if (instr == SWITCH) {
       uint32 sizes = *p++;
       uint32 const_size = sizes & 0xFFFF;
@@ -131,7 +132,7 @@ void set_instruction(pos, instr)
      opcode_t instr;
 {
 #ifdef THREADED_CODE
-  *pos = (opcode_t)((unsigned long)(instr_table[instr]));
+  *pos = (opcode_t)(instr_table[instr] - instr_base);
 #else
   *pos = instr;
 #endif

@@ -49,10 +49,16 @@ sp is a local copy of the global variable extern_sp. */
 
 #ifdef THREADED_CODE
 #  define Instruct(name) lbl_##name
+#  if defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
+#    define Jumptbl_base &&lbl_ACC0
+#  else
+#    define Jumptbl_base ((void *) 0)
+#    define jumptbl_base ((void *) 0)
+#  endif
 #  ifdef DEBUG
 #    define Next goto next_instr
 #  else
-#    define Next goto *((void *)((unsigned long)(*pc++)))
+#    define Next goto *(jumptbl_base + *pc++)
 #  endif
 #else
 #  define Instruct(name) case name
@@ -106,6 +112,7 @@ sp is a local copy of the global variable extern_sp. */
 #define PC_REG asm("$9")
 #define SP_REG asm("$10")
 #define ACCU_REG asm("$11")
+#define JUMPTBL_BASE_REG asm("$12")
 #endif
 #ifdef __i386__
 #define PC_REG asm("%esi")
@@ -144,6 +151,13 @@ value interprete(prog, prog_size)
   register value * sp;
   register value accu;
 #endif
+#if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
+#ifdef JUMPTBL_BASE_REG
+  register void * jumptbl_base JUMPTBL_BASE_REG;
+#else
+  register void * jumptbl_base;
+#endif
+#endif
   value env;
   long extra_args;
   struct longjmp_buffer * initial_external_raise;
@@ -163,10 +177,14 @@ value interprete(prog, prog_size)
   if (prog == NULL) {           /* Interpreter is initializing */
 #ifdef THREADED_CODE
     instr_table = jumptable; 
+    instr_base = Jumptbl_base;
 #endif
     return Val_unit;
   }
 
+#if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
+  jumptbl_base = Jumptbl_base;
+#endif
   sp = extern_sp;
   pc = prog;
   extra_args = 0;
@@ -191,10 +209,8 @@ value interprete(prog, prog_size)
   if (icount-- == 0) stop_here ();
   Assert(sp >= stack_low);
   Assert(sp <= stack_high);
-  goto *((void *)((unsigned long)(*pc++)));
-#else
-  Next;                         /* Jump to the first instruction */
 #endif
+  goto *(jumptbl_base + *pc++); /* Jump to the first instruction */
 #else
   while(1) {
 #ifdef DEBUG
@@ -915,7 +931,8 @@ value interprete(prog, prog_size)
 
 #ifndef THREADED_CODE
     default:
-      fatal_error_arg("Fatal error: bad opcode (%lx)\n", (char *) *(pc-1));
+      fatal_error_arg("Fatal error: bad opcode (%lx)\n",
+                      (char *)(long)(*(pc-1)));
     }
   }
 #endif

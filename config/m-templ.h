@@ -34,3 +34,8 @@
    doubleword-aligned. Leave ARCH_ALIGN_DOUBLE undefined if the processor
    supports word-aligned doubles. */
 
+#undef ARCH_CODE32
+
+/* Define ARCH_CODE32 if, on a 64-bit machine, code pointers fit in 32 bits,
+   i.e. the code segment resides in the low 4G of the addressing space.
+   ARCH_CODE32 is ignored on 32-bit machines. */
