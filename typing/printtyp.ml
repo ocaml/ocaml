@@ -72,11 +72,6 @@ let name_of_type t =
 
 let check_name_of_type t = ignore(name_of_type t)
 
-(*
-let remove_name_of_type t =
-  names := List.remove_assq t !names
-*)
-
 let print_name_of_type ppf t = fprintf ppf "%s" (name_of_type t)
 
 let visited_objects = ref ([] : type_expr list)
@@ -165,11 +160,6 @@ let reset_and_mark_loops_list tyl =
 let print_labels = ref true
 let print_label ppf l =
   if !print_labels && l <> "" || is_optional l then fprintf ppf "%s:" l
-(*
-let print_label ppf l =
-  if is_optional l then fprintf ppf "%s:" l else
-  if !print_labels && l <> "" || is_optional l then fprintf ppf "`%s:" l
-*)
 
 let rec print_list_init pr sep ppf = function
   | [] -> ()
@@ -184,7 +174,7 @@ let rec typexp sch prio0 ppf ty =
   let ty = repr ty in
   let px = proxy ty in
   if List.mem_assq px !names then
-   let mark = if px.desc = Tvar then non_gen_mark sch px else "" in
+   let mark = if ty.desc = Tvar then non_gen_mark sch px else "" in
    fprintf ppf "'%s%a" mark print_name_of_type px else
 
   let pr_typ ppf prio =
