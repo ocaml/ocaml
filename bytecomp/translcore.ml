@@ -327,14 +327,13 @@ let check_recursive_lambda idlist lam =
     | Levent (lam, _) -> check idlist lam
     | lam ->
         let fv = free_variables lam in
-        List.for_all (fun id -> not(IdentSet.mem id fv)) idlist
+        not (List.exists (fun id -> IdentSet.mem id fv) idlist)
 
   and add_let id arg idlist =
-    match arg with
-      Lvar id' -> if List.mem id' idlist then id :: idlist else idlist
-    | Llet(_, _, _, body) -> add_let id body idlist
-    | Lletrec(_, body) -> add_let id body idlist
-    | _ -> idlist
+    let fv = free_variables arg in
+    if List.exists (fun id -> IdentSet.mem id fv) idlist
+    then id :: idlist
+    else idlist
 
   and add_letrec bindings idlist =
     List.fold_right (fun (id, arg) idl -> add_let id arg idl)
