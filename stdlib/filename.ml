@@ -146,7 +146,9 @@ let wnt_dirname name =
   try
     match wnt_rindexsep name with
       0 -> "\\"
-    | n -> String.sub name 0 n
+    | n ->
+        let n = if name.[n] = ':' then n+1 else n in
+        String.sub name 0 n
   with Not_found ->
     "."
 
