@@ -292,8 +292,8 @@ int main(int argc, char **argv)
     }
   }
   while(1) {
-    X = rand() & 0x1FFFFFFF - 0x10000000;
-    Y = rand() & 0x1FFFFFFF - 0x10000000;
+    X = (rand() & 0x1FFFFFFF) - 0x10000000;
+    Y = (rand() & 0x1FFFFFFF) - 0x10000000;
     F = X / 1e3;
     G = Y / 1e3;
     do_test();
