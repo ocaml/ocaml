@@ -1,0 +1,153 @@
+\chapter{The bigarray library}
+\pdfchapterfold{-1}{The bigarray library}
+
+The "bigarray" library implements large, multi-dimensional, numerical
+arrays.  These arrays are called ``big arrays'' to distinguish them
+from the standard Caml arrays described in section~\ref{s:Array}.
+The main differences between ``big arrays'  and standard Caml arrays
+are as follows:
+\begin{itemize}
+\item Big arrays are not limited in size, unlike Caml arrays
+("float array" are limited to 2097151 elements on a 32-bit platform,
+other "array" types to 4194303 elements).
+\item Big arrays are multi-dimensional.  Any number of dimensions
+between 1 and 16 is supported.  In contrast, Caml arrays are
+mono-dimensional and require encoding multi-dimensional arrays as
+arrays of arrays.
+\item Big arrays can only contain integers and floating-point
+numbers, while Caml arrays can contain arbitrary Caml data types.
+However, big arrays provide more space-efficient storage of integer
+and floating-point elements, in particular because they support
+``small'' types such as single-precision floats and 8 and 16-bit
+integers, in addition to the standard Caml types of double-precision
+floats and 32 and 64-bit integers.
+\item The memory layout of big arrays is entirely compatible with that
+of arrays in C and Fortran, allowing large arrays to be passed back
+and forth between Caml code and C or Fortran numerical libraries with no
+data copying at all.
+\item Big arrays support interesting high-level operations that normal
+arrays do not provide efficiently, such as extracting sub-arrays and
+``slicing'' a multi-dimensional array along certain dimensions, all
+without any copying.
+\end{itemize}
+%
+Programs that use the "bigarray" library must be linked as follows:
+\begin{alltt}
+        ocamlc \var{other options} bigarray.cma \var{other files}
+        ocamlopt \var{other options} bigarray.cmxa \var{other files}
+\end{alltt}
+For interactive use of the "bigarray" library, do:
+\begin{alltt}
+        ocamlmktop -o mytop bigarray.cma
+        ./mytop
+\end{alltt}
+
+\begin{library}
+\input{bigarray.tex}
+\end{library}
+
+\section{Big arrays in the Caml-C interface}
+
+C stub code that interface C or Fortran code with Caml code, as
+described in chapter~\ref{c:intf-c}, can exploit big arrays as
+follows.
+
+\subsection{Include file}
+
+The include file "<caml/bigarray.h>" must be included in the C stub
+file.  It declares the functions, constants and macros discussed
+below.
+
+\subsection{Accessing a Caml bigarray from C or Fortran}
+
+If $v$ is a Caml "value" representing a big array, the expression
+"Data_bigarray_val(v)" returns a pointer to the data part of the array.
+This pointer is of type "void *" and can be cast to the appropriate C
+type for the array (e.g. "double []", "char [][10]", etc).
+
+Various characteristics of the Caml big array can be consulted from C
+as follows:
+\begin{tableau}{|l|l|}{C expression}{Returns}
+\entree{"Bigarray_val(v)->num_dims"}{number of dimensions}
+\entree{"Bigarray_val(v)->dim["\var{i}"[i]"}{\var{i}-th dimension}
+\entree{"Bigarray_val(v)->flags & BIGARRAY_KIND_MASK"}{kind of array elements}
+\end{tableau}
+The kind of array elements is one of the following constants:
+\begin{tableau}{|l|l|}{Constant}{Element kind}
+\entree{"BIGARRAY_FLOAT32"}{32-bit single-precision floats}
+\entree{"BIGARRAY_FLOAT64"}{64-bit double-precision floats}
+\entree{"BIGARRAY_SINT8"}{8-bit signed integers}
+\entree{"BIGARRAY_UINT8"}{8-bit unsigned integers}
+\entree{"BIGARRAY_SINT16"}{16-bit signed integers}
+\entree{"BIGARRAY_UINT16"}{16-bit unsigned integers}
+\entree{"BIGARRAY_INT32"}{32-bit signed integers}
+\entree{"BIGARRAY_INT64"}{64-bit signed integers}
+\entree{"BIGARRAY_CAML_INT"}{31- or 63-bit signed integers}
+\entree{"BIGARRAY_NATIVE_INT"}{32- or 64-bit (platform-native) integers}
+\end{tableau}
+%
+The following example shows the passing of a two-dimensional big array
+to a C function and a Fortran function.
+\begin{verbatim}
+    extern void my_c_function(double * data, int dimx, int dimy);
+    extern void my_fortran_function_(double * data, int * dimx, int * dimy);
+
+    value caml_stub(value bigarray)
+    {
+      int dimx = Bigarray_val(bigarray)->dim[0];
+      int dimy = Bigarray_val(bigarray)->dim[1];
+      my_c_function(Data_bigarray_val(bigarray), dimx, dimy);
+      /* Fortran passes all parameters by reference */
+      my_fortran_function_(Data_bigarray_val(bigarray), &dimx, &dimy);
+      return Val_unit;
+    }
+\end{verbatim}
+
+\subsection{Wrapping a C or Fortran array as a Caml big array}
+
+A pointer \var{p} to an already-allocated C or Fortran array can be
+wrapped and returned to Caml as a big array using the "alloc_bigarray"
+or "alloc_bigarray_dims" functions.
+\begin{itemize}
+\item
+"alloc_bigarray("\var{kind} "|" \var{layout}, \var{numdims}, \var{p}, \var{dims}")"
+
+Return a Caml big array wrapping the data pointed to by \var{p}.
+\var{kind} is the kind of array elements (one of the "BIGARRAY_"
+kind constants above).  \var{layout} is "BIGARRAY_C_LAYOUT" for an
+array with C layout and "BIGARRAY_FORTRAN_LAYOUT" for an array with
+Fortran layout.  \var{numdims} is the number of dimensions in the
+array.  \var{dims} is an array of \var{numdims} long integers, giving
+the sizes of the array in each dimension.
+
+\item
+"alloc_bigarray_dims("\var{kind} "|" \var{layout}, \var{numdims},
+\var{p}, "(long) "\nth{dim}{1}, "(long) "\nth{dim}{2}, \ldots, "(long) "\nth{dim}{numdims}")"
+
+Same as "alloc_bigarray", but the sizes of the array in each dimension
+are listed as extra arguments in the function call, rather than being
+passed as an array.
+\end{itemize}
+%
+The following example illustrates how statically-allocated C and
+Fortran arrays can be made available to Caml.
+\begin{verbatim}
+    extern long my_c_array[100][200];
+    extern float my_fortran_array_[300][400];
+
+    value caml_get_c_array(value unit)
+    {
+      long dims[2];
+      dims[0] = 100; dims[1] = 200;
+      return alloc_bigarray(BIGARRAY_NATIVEINT | BIGARRAY_C_LAYOUT,
+                            2, my_c_array, dims);
+    }
+
+    value caml_get_fortran_array(value unit)
+    {
+      return alloc_bigarray_dims(BIGARRAY_FLOAT32 | BIGARRAY_FORTRAN_LAYOUT,
+                                 2, my_fortran_array_, 300L, 400L);
+    }
+\end{verbatim}
+
+
