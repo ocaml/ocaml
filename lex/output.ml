@@ -74,7 +74,7 @@ let output_tables oc tbl =
 
 let output_entry sourcefile ic oc oci e =
   let init_num, init_moves = e.auto_initial_state in
-  fprintf oc "%s %a lexbuf =
+  fprintf oc "%s %alexbuf =
   %a%a  __ocaml_lex_%s_rec %alexbuf %d\n"
     e.auto_name
     output_args  e.auto_args 

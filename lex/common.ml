@@ -139,9 +139,7 @@ let output_env oc env =
         env ;
       fprintf oc " in\n"
 
-(* Output the user arguments (if any) *)
-let output_args oc args = match args with
-  [] -> ()
-| args ->
-    List.iter (fun x -> (output_string oc x; output_char oc ' ')) args
+(* Output the user arguments *)
+let output_args oc args =
+  List.iter (fun x -> (output_string oc x; output_char oc ' ')) args
 
