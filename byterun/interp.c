@@ -1043,13 +1043,23 @@ value caml_interprete(code_t prog, asize_t prog_size)
       accu = Lookup(sp[0], accu);
       Next;
 
-#define CAML_NO_METHOD_CACHE
     Instruct(GETPUBMET): {
       /* accu == tag, sp[0] == object, *pc == cache */
       value meths = Field (sp[0], 0);
-#ifndef CAML_NO_METHOD_CACHE
+#ifdef CAML_METHOD_CACHE
+#ifdef CAML_TEST_CACHE
+      static int calls = 0, hits = 0;
+      if (calls >= 10000000) {
+        fprintf(stderr, "cache hit = %d%%\n", hits / 100000);
+        calls = 0; hits = 0;
+      }
+      calls++;
+#endif
       value ofs = *pc & Field(meths,1);
       if (*(value*)(((char*)&Field(meths,2)) + ofs) == accu) {
+#ifdef CAML_TEST_CACHE
+        hits++;
+#endif
         accu = *(value*)(((char*)&Field(meths,1)) + ofs);
       }
       else
@@ -1061,7 +1071,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
           if (accu < Field(meths,mi)) hi = mi-2;
           else li = mi;
         }
-#ifndef CAML_NO_METHOD_CACHE
+#ifdef CAML_METHOD_CACHE
         *pc = (li-2)*sizeof(value);
 #endif
         accu = Field (meths, li-1);

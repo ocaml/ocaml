@@ -129,7 +129,6 @@ let rec fit_size n =
 let new_table pub_labels =
   incr table_count;
   let len = Array.length pub_labels in
-  let len' = fit_size len in
   let methods = Array.create (len*2+2) null_item in
   methods.(0) <- magic len;
   methods.(1) <- magic (fit_size len * Sys.word_size / 8 - 1);
@@ -299,7 +298,7 @@ let create_table public_methods =
 let init_class table =
   inst_var_count := !inst_var_count + table.size - 1;
   table.initializers <- List.rev table.initializers;
-  resize table (3 + magic table.methods.(1))
+  resize table (3 + magic table.methods.(1) * 16 / Sys.word_size)
 
 let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
   narrow cla vals virt_meths concr_meths;
@@ -463,6 +462,10 @@ let send_meth m n c =
     sendcache (sendself obj n) m (Array.unsafe_get obj 0) c)
 let new_cache table =
   let n = new_method table in
+  let n =
+    if n mod 2 = 0 || n > 2 + magic table.methods.(1) * 16 / Sys.word_size
+    then n else new_method table
+  in
   table.methods.(n) <- Obj.magic 0;
   n
 
