@@ -33,12 +33,22 @@ let copy (o : < .. >) : 'a =
   Obj.obj r
 
 (**** Compression options ****)
+(* Parameters *)
+type params = {
+    mutable compact_table : bool;
+    mutable copy_parent : bool;
+    mutable clean_when_copying : bool;
+    mutable retry_count : int;
+    mutable bucket_small_size : int
+  } 
 
-let compact_table = ref true
-let copy_parent = ref true
-let clean_when_copying = ref true
-let retry_count = ref 3
-let bucket_small_size = ref 16
+let params = {
+  compact_table = true;
+  copy_parent = true;
+  clean_when_copying = true;
+  retry_count = 3;
+  bucket_small_size = 16
+} 
 
 (**** Parameters ****)
 
@@ -137,7 +147,7 @@ let bucket_used b =
   done;
   !n
 
-let small_bucket b = bucket_used b <= !bucket_small_size
+let small_bucket b = bucket_used b <= params.bucket_small_size
 
 exception Failed
 
@@ -179,7 +189,7 @@ let compact b =
   if
     (b != empty_bucket) & (bucket_version b = !version) & (small_bucket b)
   then
-    choose b !retry_count
+    choose b params.retry_count
   else
     b
 
@@ -283,7 +293,7 @@ let put array label element =
           &
       (!bucket.(elem) != dummy_item)
     then begin
-      if !clean_when_copying then
+      if params.clean_when_copying then
         bucket := new_filled_bucket buck array.meth_defs
       else
         bucket := copy_bucket !bucket;
@@ -314,7 +324,7 @@ let set_initializer table init =
 
 let inheritance table cl vars meths =
   if
-    !copy_parent
+    params.copy_parent
     && (table.methods = Meths.empty) && (table.size = initial_object_size)
     && (table.init = [[]; []])
   then begin
@@ -446,7 +456,7 @@ let create_class class_info public_methods creator class_init =
     public_methods;
   class_init table;
   method_count := !method_count + List.length table.meth_defs;
-  if !compact_table then
+  if params.compact_table then
     compact_buckets table.buckets;
   inst_var_count := !inst_var_count + table.size - 1;
   class_info.class_init <- class_init;

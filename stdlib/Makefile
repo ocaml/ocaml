@@ -51,6 +51,10 @@ pervasives.cmo: pervasives.ml
 pervasives.cmx: pervasives.ml
 	$(CAMLOPT) $(OPTCOMPFLAGS) -nopervasives -c pervasives.ml
 
+# oo.cmi must be compiled with -nopervasives for applets
+oo.cmi: oo.mli
+	$(CAMLC) $(COMPFLAGS) -nopervasives -c oo.mli
+
 .SUFFIXES: .mli .ml .cmi .cmo .cmx
 
 .mli.cmi:

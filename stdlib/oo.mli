@@ -49,12 +49,15 @@ val create_object: table -> t
 val send:   object -> label -> t
 
 (* Parameters *)
+type params = {
+    mutable compact_table : bool;
+    mutable copy_parent : bool;
+    mutable clean_when_copying : bool;
+    mutable retry_count : int;
+    mutable bucket_small_size : int
+  } 
 
-val compact_table : bool ref
-val copy_parent : bool ref
-val clean_when_copying : bool ref
-val retry_count : int ref
-val bucket_small_size : int ref
+val params : params
 
 (* Statistics *)
 type stats =
