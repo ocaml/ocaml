@@ -1354,11 +1354,12 @@ if test $has_tk = true; then
     *) echo "This version is not known."; has_tk=false ;;
     esac
   else
-    echo "tcl.h not found."
+    echo "tcl.h and/or tk.h not found."
     has_tk=false
   fi
 fi
 
+# FIXME redundant?
 if test $has_tk = true; then
   if sh ./hasgot $tk_x11_include $tk_defs -i tk.h; then
     echo "tk.h found."
