@@ -156,7 +156,7 @@ let repr = repr
 module TypePairs =
   Hashtbl.Make (struct
     type t = type_expr * type_expr
-    let equal (t1, t1') (t2, t2') = (t1 == t2) && (t1' = t2')
+    let equal (t1, t1') (t2, t2') = (t1 == t2) && (t1' == t2')
     let hash (t, t') = t.id + 93 * t'.id
  end)
 
