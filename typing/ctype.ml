@@ -1350,14 +1350,13 @@ let unalias ty =
 
 let unroll_abbrev id tl ty =
   let ty = repr ty in
-  match ty.desc with
-    Tvar ->
-      ty
-  | _ ->
-      let ty' = {desc = ty.desc; level = ty.level} in
-      ty.desc <- Tlink {desc = Tconstr (Path.Pident id, tl, ref Mnil);
-                        level = ty.level};
-      ty'
+  if (ty.desc = Tvar) || (List.exists (deep_occur ty) tl) then
+    ty
+  else
+    let ty' = {desc = ty.desc; level = ty.level} in
+    ty.desc <- Tlink {desc = Tconstr (Path.Pident id, tl, ref Mnil);
+                      level = ty.level};
+    ty'
 
 (* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
