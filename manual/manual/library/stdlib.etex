@@ -74,6 +74,7 @@ Here is a short listing, by theme, of the standard library modules.
 \input lexing.tex
 \input list.tex
 \input map.tex
+\input oo.tex
 \input parsing.tex
 \input printexc.tex
 \input printf.tex

@@ -30,6 +30,7 @@
 \label{p:refman}
 \input refman.tex
 \input exten.tex
+\input objects.tex
 
 \part{The Caml Special Light tools}
 \label{p:commands}
