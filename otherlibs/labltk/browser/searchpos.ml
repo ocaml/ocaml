@@ -171,7 +171,12 @@ let search_pos_type_decl td ~pos ~env =
           ~f:(fun (_, tl) -> List.iter tl ~f:(search_pos_type ~pos ~env))
     | Ptype_record dl ->
         List.iter dl ~f:(fun (_, _, t) -> search_pos_type t ~pos ~env)
-    end
+    end;
+    List.iter td.ptype_cstrs ~f:
+      begin fun (t1, t2, _) ->
+        search_pos_type t1 ~pos ~env;
+        search_pos_type t2 ~pos ~env
+      end
   end
   
 let rec search_pos_signature l ~pos ~env =
