@@ -1,7 +1,7 @@
 \section{Expressions} \label{s:value-expr}
 \pdfsection{Expressions}
 \ikwd{in\@\verb`in`|see{\verb`let`}}
-\ikwd{and\@\verb`and`|see{\verb`let`, \verb`type`}}
+\ikwd{and\@\verb`and`|see{\verb`let`, \verb`type`, \verb`class`}}
 \ikwd{rec\@\verb`rec`|see{\verb`let`}}
 \ikwd{let\@\verb`let`}
 \ikwd{try\@\verb`try`}

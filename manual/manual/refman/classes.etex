@@ -211,7 +211,6 @@ closed object type.
 
 \subsection{Class types} \label{s:classtype}
 
-\ikwd{and\@\verb`and`}
 \ikwd{as\@\verb`as`}
 \ikwd{class\@\verb`class`}
 \ikwd{closed\@\verb`closed`}
