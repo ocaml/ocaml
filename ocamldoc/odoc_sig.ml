@@ -167,7 +167,6 @@ module Analyser =
 	!file_name
 	(get_string_of_file pos_start pos_end)
 
-    (** This function merge two optional info structures. *)
     let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options 
 
     let name_comment_from_type_kind pos_start pos_end pos_limit tk =
