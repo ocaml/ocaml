@@ -295,12 +295,15 @@ let emit_instr i =
         end
     | Lop(Iconst_int n) ->
         `	movl	${emit_int n}, {emit_reg i.res.(0)}\n`
-    | Lop(Iconst_float f) ->
-        if float_of_string f = 0.0 then
+    | Lop(Iconst_float s) ->
+        let f = float_of_string s in
+        if f = 0.0 then
           `	fldz\n`
+        else if f = 1.0 then
+          `	fld1\n`
         else begin
           let lbl = new_label() in
-          float_constants := (lbl, f) :: !float_constants;
+          float_constants := (lbl, s) :: !float_constants;
           `	fldl	{emit_label lbl}\n`
         end;
         incr fp_offset
