@@ -209,9 +209,9 @@ let rec write fd buf ofs len =
     wait_write fd; write fd buf ofs len
 
 external in_channel_of_descr : file_descr -> in_channel
-                             = "caml_open_descriptor"
+                             = "caml_open_descriptor_in"
 external out_channel_of_descr : file_descr -> out_channel
-                              = "caml_open_descriptor"
+                              = "caml_open_descriptor_out"
 external descr_of_in_channel : in_channel -> file_descr = "channel_descriptor"
 external descr_of_out_channel : out_channel -> file_descr
                               = "channel_descriptor"
