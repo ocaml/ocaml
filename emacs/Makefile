@@ -48,7 +48,6 @@ ocamltags:	ocamltags.in
 	chmod a+x ocamltags
 
 install-ocamltags: ocamltags
-
 	cp ocamltags $(SCRIPTDIR)/ocamltags
 
 clean:
