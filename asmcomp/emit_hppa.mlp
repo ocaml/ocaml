@@ -247,7 +247,7 @@ let emit_float_constant (lbl, cst) =
 
 let defined_functions = ref StringSet.empty
 
-let stub_label_table = (Hashtbl.new 19 : (string, int) Hashtbl.t)
+let stub_label_table = (Hashtbl.create 19 : (string, int) Hashtbl.t)
 
 let stub_label symb =
   try
