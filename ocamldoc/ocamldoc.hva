@@ -1,0 +1,10 @@
+\usepackage{alltt}
+\newenvironment{ocamldoccode}{\begin{alltt}}{\end{alltt}}
+\newenvironment{ocamldocdescription}{\begin{quote}}{\end{quote}}
+\newenvironment{ocamldoccomment}{\begin{quote}}{\end{quote}}
+\newcommand\textbar{|}
+\newcommand\textbackslash{\\}
+\newcommand\textasciicircum{\^{}}
+\newcommand\sharp{#}
+
+
