@@ -276,19 +276,31 @@ external modf : float -> float * float = "modf_float" "modf"
         (* [modf f] returns the pair of the fractional and integral
            part of [f]. *)
 external float : int -> float = "%floatofint"
-        (* Convert an integer to floating-point. *)
 external float_of_int : int -> float = "%floatofint"
-        (* Alias of [float] above. *)
+        (* Convert an integer to floating-point. *)
 external truncate : float -> int = "%intoffloat"
+external int_of_float : float -> int = "%intoffloat"
         (* Truncate the given floating-point number to an integer.
            The result is unspecified if it falls outside the
            range of representable integers. *)
-external int_of_float : float -> int = "%intoffloat"
-        (* Alias of [truncate] above. *)
 
 (*** String operations *)
 
 (* More string operations are provided in module [String]. *)
+
+val (^) : string -> string -> string
+        (* String concatenation. *)
+
+(*** Character operations *)
+
+external int_of_char : char -> int = "%identity"
+        (* Return the ASCII code of the argument. *)
+val char_of_int : int -> char
+        (* Return the character with the given ASCII code.
+           Raise [Invalid_argument "char_of_int"] if the argument is
+           outside the range 0--255. *)
+
+(* More character operations are provided in module [Char]. *)
 
 val (^) : string -> string -> string
         (* String concatenation. *)

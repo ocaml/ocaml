@@ -41,7 +41,13 @@ Objective Caml 2.01:
   - Declaration of string_length in <caml/mlvalues.h>.
 
 * Standard library:
-  - Added List.mem_assoc, List.mem_assq, List.remove, List.removeq.
+  - Module Format: added {get,set}_all_formatter_output_functions,
+    formatter_of_out_channel, and the control sequence @<n> in printf.
+  - Module List: added mem_assoc, mem_assq, remove, removeq.
+  - Module Pervasives: added float_of_int (synonymous for float),
+    int_of_float (truncate), int_of_char (Char.code), char_of_int (Char.chr),
+    bool_of_string.
+  - Module String: added contains, contains_from, rcontains_from.
 
 * Unix library:
   - Unix.lockf: added F_RLOCK, F_TRLOCK; use POSIX locks whenever available.
@@ -60,6 +66,11 @@ Objective Caml 2.01:
 * ocamlyacc: emit correct '# lineno' directive for prelude part of .mly file.
 
 * Emacs editing mode: updated with Jacques Garrigue's newest code.
+
+* Windows port:
+  - Added support for the "-cclib -lfoo" option (instead of
+     -cclib /full/path/libfoo.lib as before).
+  - Threads: fixed a bug at initialization time.
 
 * Macintosh port: source code for Macintosh application merged in.
 

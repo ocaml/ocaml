@@ -14,12 +14,10 @@
 (* Character operations *)
 
 external code: char -> int = "%identity"
-external int_of_char: char -> int = "%identity"
 external unsafe_chr: int -> char = "%identity"
 
 let chr n =
   if n < 0 or n > 255 then invalid_arg "Char.chr" else unsafe_chr n
-let char_of_int = chr
 
 external is_printable: char -> bool = "is_printable"
 
