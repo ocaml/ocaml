@@ -16,6 +16,7 @@
 (* $Id$ *)
 
 open Tables
+open Printer
 open Compile
 open Intf
 
@@ -36,10 +37,10 @@ let usage () =
 
 
 let prerr_error_header () =
-      prerr_string "File \""; prerr_string !input_name;
-      prerr_string "\", line ";
-      prerr_string (string_of_int !Lexer.current_line);
-      prerr_string ": "
+  prerr_string "File \""; prerr_string !input_name;
+  prerr_string "\", line ";
+  prerr_string (string_of_int !Lexer.current_line);
+  prerr_string ": "
 
 
 let parse_file filename =
@@ -77,57 +78,102 @@ let parse_file filename =
   | End_of_file ->
       close_in ic
 
-(* hack to provoke production of cCAMLtoTKoptions_constrs *)
+(* The hack to provoke the production of cCAMLtoTKoptions_constrs *)
+
+(* Auxiliary function: the list of all the elements associated to keys
+   in an hash table. *)
+let elements t =
+ let elems = ref [] in
+ Hashtbl.iter fun:(fun key:_ data:d -> elems := d :: !elems) t;
+ !elems;;
+
+(* Verifies that duplicated clauses are semantically equivalent and
+   returns a unique set of clauses. *)
+let uniq_clauses = function
+  | [] -> []
+  | l ->
+     let check_constr constr1 constr2 =
+       if constr1.template <> constr2.template then
+       begin
+        let code1, vars11, vars12, opts1 = 
+         code_of_template context_widget:"dummy" constr1.template in
+        let code2, vars12, vars22, opts2 = 
+         code_of_template context_widget:"dummy" constr2.template in
+        let err =
+         Printf.sprintf
+          "uncompatible redondant clauses for variant %s:\n %s\n and\n %s"
+          constr1.var_name code1 code2 in
+        Format.print_newline();
+        print_fullcomponent constr1;
+        Format.print_newline();
+        print_fullcomponent constr2;
+        Format.print_newline();
+        prerr_endline err;
+        fatal_error err
+       end in
+     let t = Hashtbl.create 11 in
+     List.iter l
+      fun:(fun constr ->
+       let c = constr.var_name in
+       if Hashtbl.mem t key:c
+       then (check_constr constr (Hashtbl.find t key:c))
+       else Hashtbl.add t key:c data:constr);
+     elements t;;
+
 let option_hack oc =
-  try
+  if Hashtbl.mem types_table key:"options" then
    let typdef = Hashtbl.find types_table key:"options" in
    let hack =
    { parser_arity = OneToken;
      constructors = 
-      List.map typdef.constructors fun:
-      begin fun c -> 
-      { component = Constructor;
-        ml_name = c.ml_name;
-        var_name = c.var_name; (* as variants *)
-        template = 
-          begin match c.template with
-            ListArg (x::_) -> x
-          | _ -> fatal_error "bogus hack"
-          end;
-        result = UserDefined "options_constrs";
-        safe = true }
+      begin
+       let constrs = 
+        List.map typdef.constructors fun:
+         begin fun c -> 
+         { component = Constructor;
+           ml_name = c.ml_name;
+           var_name = c.var_name; (* as variants *)
+           template = 
+             begin match c.template with
+               ListArg (x :: _) -> x
+             | _ -> fatal_error "bogus hack"
+             end;
+           result = UserDefined "options_constrs";
+           safe = true }
+         end in
+       uniq_clauses constrs
       end;
      subtypes = [];
      requires_widget_context = false; 
      variant = false }
    in
-   write_CAMLtoTK w:(output_string to:oc) "options_constrs" def:hack safetype: false
-  with Not_found -> ()
+   write_CAMLtoTK
+     w:(output_string to:oc) def:hack safetype:false "options_constrs"
 
 let compile () = 
-verbose_endline "Creating tkgen.ml ...";
+  verbose_endline "Creating tkgen.ml ...";
   let oc = open_out_bin (destfile "tkgen.ml") in
   let oc' = open_out_bin (destfile "tkigen.ml") in
   let oc'' = open_out_bin (destfile "tkfgen.ml") in
   let sorted_types = Tsort.sort types_order in
-verbose_endline "  writing types ...";
+  verbose_endline "  writing types ...";
   List.iter sorted_types fun:
   begin fun typname ->
-verbose_string ("    "^typname^" ");
+  verbose_string ("    " ^ typname ^ " ");
   try
     let typdef = Hashtbl.find types_table key:typname in
-verbose_string "type ";
+    verbose_string "type ";
     write_type intf:(output_string to:oc)
                impl:(output_string to:oc')
                typname def:typdef;
-verbose_string "C2T ";
+    verbose_string "C2T ";
     write_CAMLtoTK w:(output_string to:oc') typname def:typdef;
-verbose_string "T2C ";
+    verbose_string "T2C ";
     if List.mem item:typname !types_returned then
     write_TKtoCAML w:(output_string to:oc') typname def:typdef;
-verbose_string "CO ";
+    verbose_string "CO ";
     write_catch_optionals w:(output_string to:oc') typname def:typdef;
-verbose_endline "."
+    verbose_endline "."
   with Not_found -> 
     if not (List.mem_assoc key:typname !types_external) then
     begin
@@ -137,23 +183,24 @@ verbose_endline "."
     end
     else verbose_endline "."
   end;
+  verbose_endline "  option hacking ...";
   option_hack oc';
-verbose_endline "  writing functions ...";
+  verbose_endline "  writing functions ...";
   List.iter fun:(write_function w:(output_string to:oc'')) !function_table;
   close_out oc;
   close_out oc';
   close_out oc'';
   (* Write the interface for public functions *)
   (* this interface is used only for documentation *)
-verbose_endline "Creating tkgen.mli ...";
+  verbose_endline "Creating tkgen.mli ...";
   let oc = open_out_bin (destfile "tkgen.mli") in
   List.iter (sort_components !function_table)
     fun:(write_function_type w:(output_string to:oc));
   close_out oc;
-verbose_endline "Creating other ml, mli ...";
+  verbose_endline "Creating other ml, mli ...";
   Hashtbl.iter module_table fun:
   begin fun key:wname data:wdef ->
-verbose_endline ("  "^wname);
+    verbose_endline ("  "^wname);
     let modname = wname in
     let oc = open_out_bin (destfile (modname ^ ".ml")) 
     and oc' = open_out_bin (destfile (modname ^ ".mli")) in 
@@ -219,27 +266,27 @@ let main () =
     others:(fun filename -> input_name := filename)
     errmsg:"Usage: tkcompiler <source file>" ;
   try
-verbose_string "Parsing... ";
+    verbose_string "Parsing... ";
     parse_file !input_name;
-verbose_string "Compiling... ";
+    verbose_string "Compiling... ";
     compile ();
-verbose_string "Finished";
+    verbose_string "Finished";
     exit 0
   with
-    Lexer.Lexical_error s ->
+  | Lexer.Lexical_error s ->
       prerr_string "Invalid lexical character: ";
       prerr_endline s;
       exit 1
- | Duplicate_Definition (s,s') ->
+  | Duplicate_Definition (s, s') ->
       prerr_string s; prerr_string " "; prerr_string s';
       prerr_endline " is redefined illegally";
       exit 1
- | Invalid_implicit_constructor c ->
+  | Invalid_implicit_constructor c ->
       prerr_string "Constructor ";
       prerr_string c;
       prerr_endline " is used implicitly before defined";
       exit 1
- | Tsort.Cyclic ->
+  | Tsort.Cyclic ->
       prerr_endline "Cyclic dependency of types";
       exit 1
 
