@@ -14,6 +14,7 @@ typexpr:
       | typexpr typeconstr
       | '(' typexpr { ',' typexpr } ')' typeconstr
       | typexpr 'as' "'" ident
+      | '[' variant-type ']'
       | '<' ['..'] '>'
       | '<' method-type { ';' method-type } [';' '..'] '>'
       | '#' class-path
@@ -88,6 +89,43 @@ in @typexpr@ and in the remaining part of the type.  If the type variable
 @ident@ actually occurs in @typexpr@, a recursive type is created. Recursive
 types for which  there exists a recursive path that does not contain
 an object type constructor are rejected. 
+
+\subsubsection*{Variant types}
+
+\begin{syntax}
+variant-type:
+        [ tag-desc { '|' tag-desc } ]
+      | '>' tag-desc { '|' tag-desc }
+      | '<' '..'
+      | '<' tag-desc-full { '|' tag-desc-full } ['|' '..'] [ '>' {{ '`'tag-name }} ]
+;
+tag-desc:
+        '`'tag-name [ typexpr ]
+;
+tag-desc-full:
+        '`'tag-name [ typexpr ] { '&' typexpr }
+\end{syntax}
+
+Variant types describe the values a polymorphic variant may take.
+
+The first case is an exact variant type: all possible tags are
+known, with their associated types, and they can all be present.
+Its structure is fully known.
+
+The second case describes a polymorphic variant value: 
+it gives the list of all tags the value could take, with their
+associated types. This type is still compatible with a variant type
+containing more tags.
+
+The third case is the type with no information: nothing is known about
+which tags the variant is allowed to use. It only says that this must
+be a variant.
+
+The fourth case is the most general one. It gives information about
+all the possible tags and their associated types, whether more tags
+are allowed or not (with the ellipsis '..'), and which tags are known
+to potentially appear in values.
+
 
 \subsubsection*{Object types}
 

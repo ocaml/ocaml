@@ -42,8 +42,8 @@ supports tuple of up to $2^{22} - 1$ elements (4194303 elements).
 \subsection{Records}
 
 Record values are labeled tuples of values. The record value written
-$\{ label_1 = v_1; \ldots; label_n = v_n \}$ associates the value
-$v_i$ to the record label $label_i$, for $i = 1 \ldots n$. The current
+$\{ field_1 = v_1; \ldots; field_n = v_n \}$ associates the value
+$v_i$ to the record field $field_i$, for $i = 1 \ldots n$. The current
 implementation supports records with up to $2^{22} - 1$ fields
 (4194303 fields).
 
@@ -71,6 +71,13 @@ constructors:
 
 The current implementation limits the number of distinct constructors
 in a given variant type to at most 249.
+
+\subsection{Polymorphic variants}
+
+Polymorphic variants are an alternate form of variant values, not
+belonging explicitly to a predefined variant type, and following
+specific typing rules. They can be either constant, written {\em
+"`"tag-name}, or non-constant {\em "`"tag-name}($v$).
 
 \subsection{Functions}
 

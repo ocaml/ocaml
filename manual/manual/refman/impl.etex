@@ -38,7 +38,7 @@ raised. The scope of these bindings is the phrases that follow the
 value definition in the module implementation.
 
 Type and exception definitions introduce type constructors, variant
-constructors and record labels as described in sections
+constructors and record fields as described in sections
 \ref{s:typdef}~and~\ref{s:excdef}.
 The scope of these definitions is the phrases that follow the value
 definition in the module implementation. The evaluation of an

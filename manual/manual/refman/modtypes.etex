@@ -106,7 +106,7 @@ implemented in a matching structure by any kind of type definition
 (provided it has the same number of type parameters). The exact
 implementation of the type will be hidden to the users of the
 structure. In particular, if the type is implemented as a variant type
-or record type, the associated constructors and labels will not be
+or record type, the associated constructors and fields will not be
 accessible to the users; if the type is implemented as an
 abbreviation, the type equality between the type name and the
 right-hand side of the abbreviation will be hidden from the users of the
@@ -120,8 +120,8 @@ compatible with @typexp@.
 
 \item[New variant type or record type: no equation, a representation.] ~ \\
 The type name must be implemented by a variant type or record type
-with exactly the constructors or labels specified. All users of the
-structure have access to the constructors or labels, and can use them
+with exactly the constructors or fields specified. All users of the
+structure have access to the constructors or fields, and can use them
 to create or inspect values of that type. However, users of the
 structure consider that type as incompatible with any other type: a
 fresh type has been generated.

@@ -18,7 +18,7 @@ value-declaration:
 \end{syntax}
 
 Module interfaces declare the global objects (value variables, type
-constructors, variant constructors, record labels) that a module
+constructors, variant constructors, record fields) that a module
 exports, that is, makes available to other modules.
 Other modules can refer to these globals using qualified identifiers
 or the \verb"#open" directive, as explained in section~\ref{s:names}.
@@ -36,11 +36,11 @@ scope of the bindings for these global variables extends from the
 module implementation itself to all modules that refer to those variables.
 
 Type or exception definitions introduce type constructors, variant
-constructors and record labels as described in sections
+constructors and record fields as described in sections
 \ref{s:typdef}~and~\ref{s:excdef}. Exception definitions and type
 definitions that are not abstract type declarations also take effect
 in the module implementation; that is, the type constructors, variant
-constructors and record labels they define are considered bound on
+constructors and record fields they define are considered bound on
 entrance to the module implementation, and can be referred to by the
 implementation phrases. Type definitions that are not abstract type
 declarations must not be redefined in the module implementation. In

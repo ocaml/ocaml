@@ -13,7 +13,7 @@ pattern:
   | pattern '|' pattern
   | ncconstr pattern
   | pattern { ',' pattern }
-  | '{' label '=' pattern { ';' label '=' pattern } '}'
+  | '{' field '=' pattern { ';' field '=' pattern } '}'
   | '[' pattern { ';' pattern } ']'
   | pattern '::' pattern
 \end{syntax}
@@ -102,11 +102,11 @@ is, the pattern matches the tuple values @(v_1, \ldots, v_n)@ such that
 
 \subsubsection*{Record patterns}
 
-The pattern @"{" label_1 "=" pattern_1 ";" \ldots ";" label_n "="
-pattern_n "}"@ matches records that define at least the labels
-@label_1@ through @label_n@, and such that the value associated to
-@label_i@ match the pattern @pattern_i@, for \fromoneto{i}{n}.
-The record value can define more labels than @label_1@ \ldots
-@label_n@; the values associated to these extra labels are not taken
+The pattern @"{" field_1 "=" pattern_1 ";" \ldots ";" field_n "="
+pattern_n "}"@ matches records that define at least the fields
+@field_1@ through @field_n@, and such that the value associated to
+@field_i@ match the pattern @pattern_i@, for \fromoneto{i}{n}.
+The record value can define more fields than @field_1@ \ldots
+@field_n@; the values associated to these extra fields are not taken
 into account for matching.
 

@@ -33,15 +33,16 @@ expr:
   | '(' expr ':' typexpr ')'
   | expr ',' expr { ',' expr }
   | ncconstr expr
+  | '`'ident expr
   | expr '::' expr
   | '[' expr { ';' expr } ']'
   | '[|' expr { ';' expr } '|]'
-  | '{' label '=' expr { ';' label '=' expr } '}'
+  | '{' field '=' expr { ';' field '=' expr } '}'
   | expr expr
   | prefix-symbol expr
   | expr infix-op expr
-  | expr '.' label
-  | expr '.' label '<-' expr
+  | expr '.' field
+  | expr '.' field '<-' expr
   | expr '.(' expr ')'
   | expr '.(' expr ')' '<-' expr
   | expr '.[' expr ']'
@@ -433,26 +434,26 @@ values of @expr_1@ to @expr_n@.
 
 \subsubsection*{Records}
 
-The expression @'{' label_1 '=' expr_1 ';' \ldots ';' label_n '='
+The expression @'{' field_1 '=' expr_1 ';' \ldots ';' field_n '='
 expr_n '}'@ evaluates to the record value
-@'{' label_1 '=' v_1 ';' \ldots ';' label_n '=' v_n '}'@,
+@'{' field_1 '=' v_1 ';' \ldots ';' field_n '=' v_n '}'@,
 where @v_i@ is the value of @expr_i@ for \fromoneto{i}{n}.
-The labels @label_1@ to @label_n@ must all belong to the same record
-types; all labels belonging to this record type must appear exactly
+The fields @field_1@ to @field_n@ must all belong to the same record
+types; all fields belonging to this record type must appear exactly
 once in the record expression, though they can appear in any
 order. The order in which @expr_1@ to @expr_n@ are evaluated is not
 specified.
 
-The expression @expr_1 '.' label@ evaluates @expr_1@ to a record
-value, and returns the value associated to @label@ in this record
+The expression @expr_1 '.' field@ evaluates @expr_1@ to a record
+value, and returns the value associated to @field@ in this record
 value.
 
-The expression @expr_1 '.' label '<-' expr_2@ evaluates @expr_1@ to a record
+The expression @expr_1 '.' field '<-' expr_2@ evaluates @expr_1@ to a record
 value, which is then modified in-place by replacing the value
-associated to @label@ in this record by the value of
-@expr_2@. This operation is permitted only if @label@ has been
+associated to @field@ in this record by the value of
+@expr_2@. This operation is permitted only if @field@ has been
 declared @'mutable'@ in the definition of the record type. The whole
-expression @expr_1 '.' label '<-' expr_2@ evaluates to the unit value
+expression @expr_1 '.' field '<-' expr_2@ evaluates to the unit value
 @'()'@.
 
 \subsubsection*{Arrays}

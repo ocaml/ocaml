@@ -133,6 +133,18 @@ string literals.
 The current implementation places no restrictions on the length of
 string literals.
 
+\subsubsection*{Labels}
+
+\begin{syntax}
+label: ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" } ":" ;
+labelid: ":" ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" }
+\end{syntax}
+
+Labels can be used to differentiate arguments in function definition
+and application. They are made of a lowercase identifier followed by a
+colon ":", without space between them. The sequence "name:name" may be
+abbreviated by the label-identifier ":name".
+
 \subsubsection*{Prefix and infix symbols}
 
 \begin{syntax}
@@ -176,9 +188,9 @@ The following character sequences are also keywords:
 %
 \begin{verbatim}
     #     &     '     (     )     *     ,     ->    ?
-    .     ..    .(    .[    :     ::    :=    ;     ;;
-    <-    =     [     [|    [<    {<    ]     |]    >]
-    >}    _     {     |     }
+    ??    .     ..    .(    .[    :     ::    :=    ;
+    ;;    <-    =     [     [|    [<    {<    ]     |]
+    >]    >}    _     `     {     |     }
 \end{verbatim}
 
 \subsubsection*{Ambiguities}

@@ -6,7 +6,7 @@
 
 Type definitions bind type constructors to data types: either
 variant types, record types, type abbreviations, or abstract data
-types. They also bind the value constructors and record labels
+types. They also bind the value constructors and record fields
 associated with the definition.
 
 \ikwd{type\@\texttt{type}}
@@ -24,7 +24,7 @@ type-equation:
 ;
 type-representation:
           '=' constr-decl { '|' constr-decl }
-        | '=' '{' label-decl { ';' label-decl } '}'
+        | '=' '{' field-decl { ';' field-decl } '}'
 ;
 type-params:
           "'" ident
@@ -34,9 +34,9 @@ constr-decl:
           cconstr-name
         | ncconstr-name 'of' typexpr
 ;
-label-decl:
-          label-name ':' typexpr
-        | 'mutable' label-name ':' typexpr
+field-decl:
+          field-name ':' typexpr
+        | 'mutable' field-name ':' typexpr
 ;
 type-constraint:
     'constraint' "'" ident '=' typexpr
@@ -70,7 +70,7 @@ is incompatible with any other type.
 
 The optional type representation describes the data structure
 representing the defined type, by giving the list of associated
-constructors (if it is a variant type) or associated labels (if it is
+constructors (if it is a variant type) or associated fields (if it is
 a record type). If no type representation is given, nothing is
 assumed on the structure of the type besides what is stated in the
 optional type equation.
@@ -85,15 +85,15 @@ argument has type @typexpr@. The constructor declaration @cconstr-name@
 declares the name @cconstr-name@ as a constant
 constructor. Constructor names must be capitalized.
 
-The type representation @'=' '{' label-decl { ';' label-decl } '}'@
-describes a record type. The label declarations @label-decl_1, \ldots,
-label-decl_n@ describe the labels associated to this record type.
-The label declaration @label-name ':' typexpr@ declares @label-name@
-as a label whose argument has type @typexpr@.
-The label declaration @'mutable' label-name ':' typexpr@
+The type representation @'=' '{' field-decl { ';' field-decl } '}'@
+describes a record type. The field declarations @field-decl_1, \ldots,
+field-decl_n@ describe the fields associated to this record type.
+The field declaration @field-name ':' typexpr@ declares @field-name@
+as a field whose argument has type @typexpr@.
+The field declaration @'mutable' field-name ':' typexpr@
 \ikwd{mutable\@\texttt{mutable}}
 behaves similarly; in addition, it allows physical modification over
-the argument to this label.
+the argument to this field.
 
 The two components of a type definition, the optional equation and the
 optional representation, can be combined independently, giving
@@ -112,17 +112,17 @@ expression on the right of the @'='@ sign.
 
 \item[New variant type or record type: no equation, a representation.] ~\\
 This generates a new type constructor and defines associated
-constructors or labels, through which values of that type can be
+constructors or fields, through which values of that type can be
 directly built or inspected.
 
 \item[Re-exported variant type or record type: an equation,
 a representation.] ~\\
 In this case, the type constructor is defined as an abbreviation for
 the type expression given in the equation, but in addition the
-constructors or labels given in the representation remain attached to
+constructors or fields given in the representation remain attached to
 the defined type constructor. The type expression in the equation part
 must agree with the representation: it must be of the same kind
-(record or variant) and have exactly the same constructors or labels,
+(record or variant) and have exactly the same constructors or fields,
 in the same order, with the same arguments. 
 \end{description}
 

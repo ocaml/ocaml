@@ -7,8 +7,9 @@ objects and refer to these objects by name later:
 \item value names (syntactic class @value-name@),
 \item value constructors (constant -- class @cconstr-name@ -- or
 non-constant -- class @ncconstr-name@),
+\item variant tags (@tag-name@),
 \item type constructors (@typeconstr-name@),
-\item record labels (@label-name@),
+\item record fields (@field-name@),
 \item class names (@class-name@),
 \item method names (@method-name@),
 \item instance variable names (@inst-var-name@),
@@ -45,10 +46,13 @@ ncconstr-name:
         capitalized-ident
       | '::'
 ;
+tag-name:
+        capitalized-ident
+;
 typeconstr-name:
         lowercase-ident
 ;
-label-name:
+field-name:
         lowercase-ident
 ;
 module-name:
@@ -75,8 +79,9 @@ below.
 \begin{tableau}{|l|l|}{Name space}{Case of first letter}
 \entree{Values}{lowercase}
 \entree{Constructors}{uppercase}
+\entree{Variant tag}{uppercase}
 \entree{Type constructors}{lowercase}
-\entree{Record labels}{lowercase}
+\entree{Record fields}{lowercase}
 \entree{Classes}{lowercase}
 \entree{Methods}{lowercase}
 \entree{Modules}{uppercase}
@@ -102,8 +107,8 @@ typeconstr:
         typeconstr-name
       | extended-module-path '.' lowercase-ident
 ;
-label:
-        label-name
+field:
+        field-name
       | module-path '.' lowercase-ident
 ;
 module-path:
@@ -135,5 +140,6 @@ also contain simple functor applications (as in the syntactic class
 @extended-module-path@ above), in case the defining module is the
 result of a functor application.
 
-Instance variable names and method names need not be qualified: the
-former are local to a class while the latter are global labels.
+Instance variable names, tag names and method names need not be
+qualified: the former are local to a class while the two latter are
+global labels.
