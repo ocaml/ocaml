@@ -332,7 +332,6 @@ module Analyser =
         met.met_value.val_info <- merge_infos met.met_value.val_info info_after_opt ;
         (* update the parameter description *)
         Odoc_value.update_value_parameters_text met.met_value;
-
         (met, maybe_more)
       in
       let rec f last_pos class_type_field_list =
