@@ -44,16 +44,16 @@ let status = ref Terminfo.Uninitialised
 
 let num_loc_lines = ref 0 (* number of lines already printed after input *)
 
-let rec highlight_locations loc1 loc2 =
+let rec highlight_locations ppf loc1 loc2 =
   match !status with
     Terminfo.Uninitialised ->
-      status := Terminfo.setup stdout; highlight_locations loc1 loc2
+      status := Terminfo.setup stdout; highlight_locations ppf loc1 loc2
   | Terminfo.Bad_term ->
       begin match !input_lexbuf with
         None -> false
       | Some lb ->
           try
-            if Sys.getenv "TERM" = "character" then false else raise Not_found
+            if Sys.getenv "TERM" = "norepeat" then false else raise Not_found
           with Not_found ->
           try
             (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
@@ -67,7 +67,9 @@ let rec highlight_locations loc1 loc2 =
             done;
             let end_pos = lb.lex_buffer_len - pos0 - 1 in
             let pos_at_bol = ref 0 in
-            print_string "Toplevel input:\n# ";
+            Format.fprintf ppf "Characters %i-%i:@."
+              loc1.loc_start loc1.loc_end;
+            print_string "  ";
             (* Print the input, underlining the location *)
             for pos = 0 to end_pos do
               let c = lb.lex_buffer.[pos + pos0] in
@@ -86,8 +88,7 @@ let rec highlight_locations loc1 loc2 =
                 else if !pos_at_bol <= loc1.loc_start && loc1.loc_start < pos
                 then begin
                   print_char '\r';
-                  print_char (if !pos_at_bol = 0 then '#' else ' ');
-                  print_char ' ';
+                  print_string "  ";
                   for i = !pos_at_bol to loc1.loc_start - 1 do
                     print_char '.'
                   done;
@@ -165,7 +166,7 @@ let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
 
 let print ppf loc =
   if String.length !input_name = 0 then
-    if highlight_locations loc none then () else
+    if highlight_locations ppf loc none then () else
       fprintf ppf "Characters %i-%i:@." loc.loc_start loc.loc_end
   else begin
     let (filename, linenum, linebeg) =
