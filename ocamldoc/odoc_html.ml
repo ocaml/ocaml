@@ -28,19 +28,25 @@ module Naming =
   struct
     (** The prefix for types marks. *)
     let mark_type = "TYPE"
+
     (** The prefix for functions marks. *)
     let mark_function = "FUN"
+
     (** The prefix for exceptions marks. *)
     let mark_exception = "EXCEPTION"
+
     (** The prefix for values marks. *)
     let mark_value = "VAL"
+
     (** The prefix for attributes marks. *)
     let mark_attribute = "ATT"
+
     (** The prefix for methods marks. *)
     let mark_method = "METHOD"
 
     (** The prefix for code files.. *)
     let code_prefix = "code_"
+
     (** The prefix for type files.. *)
     let type_prefix = "type_"
 
@@ -52,6 +58,7 @@ module Naming =
 
     (** Return the target for the given prefix and simple name. *)
     let target pref simple_name = pref^simple_name
+
     (** Return the complete link target (file#target) for the given prefix string and complete name.*)
     let complete_target pref complete_name = 
       let simple_name = Name.simple complete_name in
@@ -64,27 +71,64 @@ module Naming =
 
     (** Return the link target for the given type. *)
     let type_target t = target mark_type (Name.simple t.ty_name)
+
     (** Return the complete link target for the given type. *)
     let complete_type_target t = complete_target mark_type t.ty_name
 
     (** Return the link target for the given exception. *)
     let exception_target e = target mark_exception (Name.simple e.ex_name)
+
     (** Return the complete link target for the given exception. *)
     let complete_exception_target e = complete_target mark_exception e.ex_name
 
+	
+    
     (** Return the link target for the given value. *)
     let value_target v = target mark_value (Name.simple v.val_name)
+
+    (** Return the given value name where symbols accepted in infix values
+       are replaced by strings, to avoid clashes with the filesystem.*)
+    let subst_infix_symbols name =
+      let len = String.length name in
+      let buf = Buffer.create len in
+      let ch c = Buffer.add_char buf c in
+      let st s = Buffer.add_string buf s in
+      for i = 0 to len - 1 do
+	match name.[i] with
+	| '|' -> st "_pipe_"
+        | '<' -> st "_lt_"
+        | '>' -> st "_gt_"
+        | '@' -> st "_at_"
+        | '^' -> st "_exp_"
+        | '&' -> st "_amp_"
+        | '+' -> st "_plus_"
+        | '-' -> st "_minus_"
+        | '*' -> st "_star_"
+        | '/' -> st "_slash_"
+        | '$' -> st "_dollar_"
+        | '%' -> st "_percent_"
+        | '=' -> st "_equal_"
+        | ':' -> st "_column_"
+        | '~' -> st "_tilde_"
+        | '!' -> st "_bang_"
+	| c -> ch c
+      done;
+      Buffer.contents buf
+
     (** Return the complete link target for the given value. *)
     let complete_value_target v = complete_target mark_value v.val_name
+
     (** Return the complete filename for the code of the given value. *)
     let file_code_value_complete_target v = 
-      let f = code_prefix^mark_value^v.val_name^".html" in
+      let f = code_prefix^mark_value^(subst_infix_symbols v.val_name)^".html" in
       f
 
     (** Return the link target for the given attribute. *)
     let attribute_target a = target mark_attribute (Name.simple a.att_value.val_name)
+
     (** Return the complete link target for the given attribute. *)
     let complete_attribute_target a = complete_target mark_attribute a.att_value.val_name
+
     (** Return the complete filename for the code of the given attribute. *)
     let file_code_attribute_complete_target a = 
       let f = code_prefix^mark_attribute^a.att_value.val_name^".html" in
@@ -92,8 +136,10 @@ module Naming =
 
     (** Return the link target for the given method. *)
     let method_target m = target mark_method (Name.simple m.met_value.val_name)
+
     (** Return the complete link target for the given method. *)
     let complete_method_target m = complete_target mark_method m.met_value.val_name
+
     (** Return the complete filename for the code of the given method. *)
     let file_code_method_complete_target m = 
       let f = code_prefix^mark_method^m.met_value.val_name^".html" in
@@ -101,6 +147,7 @@ module Naming =
 
     (** Return the link target for the given label section. *)
     let label_target l = target "" l
+
     (** Return the complete link target for the given section label. *)
     let complete_label_target l = complete_target "" l
 
