@@ -19,6 +19,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#ifndef SO_BROADCAST
+#define SO_BROADCAST (-1)
+#endif
+#ifndef SO_OOBINLINE
+#define SO_OOBINLINE (-1)
+#endif
+
 static int sockopt[] = {
   SO_DEBUG, SO_BROADCAST, SO_REUSEADDR, SO_KEEPALIVE, 
   SO_DONTROUTE, SO_OOBINLINE };
