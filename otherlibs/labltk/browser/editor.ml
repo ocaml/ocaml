@@ -473,14 +473,16 @@ class editor :top :menus = object (self)
   method close_file () = self#close_window (List.hd windows)
 
   method quit () =
-    try List.iter windows
-        fun:(fun txt ->
+    try
+      List.iter windows fun:
+        begin fun txt ->
           if Textvariable.get txt.modified = "modified" then
             match Jg_message.ask master:top title:"Quit"
                 ("`" ^ Filename.basename txt.name ^ "' modified. Save it?")
             with `yes -> self#save_text txt
             | `no -> ()
-            | `cancel -> raise Exit);
+            | `cancel -> raise Exit
+        end;
       bind top events:[`Destroy];
       destroy top; break ()
     with Exit -> break ()
@@ -511,18 +513,19 @@ class editor :top :menus = object (self)
           action:(fun _ -> act (); break ())
       end;
 
-    bind top events:[`Destroy] breakable:true fields:[`Widget]
-      action:(fun ev ->
+    bind top events:[`Destroy] breakable:true fields:[`Widget] action:
+      begin fun ev ->
         if Widget.name ev.ev_Widget = Widget.name top
-        then self#quit ());
+        then self#quit ()
+      end;
 
     (* File menu *)
     file_menu#add_command "Open File..." command:self#open_file;
     file_menu#add_command "Reopen"
       command:(fun () -> self#load_text [(List.hd windows).name]);
     file_menu#add_command "Save File" command:self#save_file accelerator:"M-s";
-    file_menu#add_command "Save As..." underline:5
-      command:begin fun () ->
+    file_menu#add_command "Save As..." underline:5 command:
+      begin fun () ->
         let txt = List.hd windows in
         Fileselect.f title:"Save as File"
           action:(fun name -> self#save_text txt :name)

@@ -102,37 +102,6 @@ pervasives.p.cmx: pervasives.ml
 oo.cmi: oo.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c oo.mli
 
-# stdlabel.cmo and morelabel.cmo use -labelize
-stdlabel.cmo: stdlabel.ml
-	$(CAMLC) $(COMPFLAGS) -labelize -c stdlabel.ml
-
-stdlabel.cmx: stdlabel.ml
-	$(CAMLOPT) $(OPTCOMPFLAGS) -labelize -c stdlabel.ml
-
-stdlabel.p.cmx: stdlabel.ml
-	@if test -f stdlabel.cmx; then mv stdlabel.cmx stdlabel.n.cmx; else :; fi
-	@if test -f stdlabel.o; then mv stdlabel.o stdlabel.n.o; else :; fi
-	$(CAMLOPT) $(OPTCOMPFLAGS) -p -labelize -c stdlabel.ml
-	mv stdlabel.cmx stdlabel.p.cmx
-	mv stdlabel.o stdlabel.p.o
-	@if test -f stdlabel.n.cmx; then mv stdlabel.n.cmx stdlabel.cmx; else :; fi
-	@if test -f stdlabel.n.o; then mv stdlabel.n.o stdlabel.o; else :; fi
-
-morelabel.cmo: morelabel.ml
-	$(CAMLC) $(COMPFLAGS) -labelize -c morelabel.ml
-
-morelabel.cmx: morelabel.ml
-	$(CAMLOPT) $(OPTCOMPFLAGS) -labelize -c morelabel.ml
-
-morelabel.p.cmx: morelabel.ml
-	@if test -f morelabel.cmx; then mv morelabel.cmx morelabel.n.cmx; else :; fi
-	@if test -f morelabel.o; then mv morelabel.o morelabel.n.o; else :; fi
-	$(CAMLOPT) $(OPTCOMPFLAGS) -p -labelize -c morelabel.ml
-	mv morelabel.cmx morelabel.p.cmx
-	mv morelabel.o morelabel.p.o
-	@if test -f morelabel.n.cmx; then mv morelabel.n.cmx morelabel.cmx; else :; fi
-	@if test -f morelabel.n.o; then mv morelabel.n.o morelabel.o; else :; fi
-
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
 .mli.cmi:

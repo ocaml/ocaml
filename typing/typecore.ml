@@ -903,6 +903,7 @@ and type_application env funct sargs =
                 raise(Error(funct.exp_loc,
                             Apply_non_function funct.exp_type)) in
         let arg1 = type_expect env sarg1 ty1 in
+        if is_optional l1 then unify_exp env arg1 (type_option(newvar()));
         type_unknown_args (Some arg1 :: args) omitted ty2 sargl
   in
   let rec type_args args omitted ty_fun ty_old sargs more_sargs =
