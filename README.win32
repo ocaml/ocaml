@@ -145,9 +145,6 @@ Then, use "nmake -f Makefile.nt" to build the system, e.g.
         nmake -f Makefile.nt bootstrap
         nmake -f Makefile.nt opt
         
-The sources for the toplevel graphical user interface are not currently
-available to the general public.  Contact us if you think you need them.
-
 
 RANDOM NOTES:
 
