@@ -58,7 +58,7 @@
      . font-lock-keyword-face)
 ;control
    (cons (concat
-          "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|if"
+          "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|i\\(f\\|gnore\\)"
           "\\|lazy\\|match\\|new\\|or\\|t\\(hen\\|o\\|ry\\)"
           "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
           "\\|\|\\|->\\|&\\|#")

@@ -33,7 +33,7 @@
    '("\\<\\(object\\|struct\\|sig\\|begin\\|end\\)\\>" 2 include)
 ;control
    (list (concat
-          "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|if"
+          "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|i\\(f\\|gnore\\)"
           "\\|lazy\\|match\\|new\\|or\\|t\\(hen\\|o\\|ry\\)"
           "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
           "\\|\|\\|->\\|&\\|#")
