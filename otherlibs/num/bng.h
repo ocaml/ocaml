@@ -95,6 +95,13 @@ struct bng_operations {
         bng c/*[clen]*/, bngsize clen);
 #define bng_mult_add bng_ops.mult_add
 
+  /* {a,alen} := 2 * {a,alen} + {b,blen}^2.  Return carry out.
+     Require alen >= 2 * blen. */
+  bngcarry (*square_add)
+       (bng a/*[alen]*/, bngsize alen,
+        bng b/*[blen]*/, bngsize blen);
+#define bng_square_add bng_ops.square_add
+
   /* {a,len-1} := {b,len} / d.  Return {b,len} modulo d.
      Require d is normalized and MSD of b < d.
      See div_rem_digit for a function that does not require d

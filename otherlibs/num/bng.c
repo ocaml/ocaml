@@ -271,6 +271,44 @@ static bngcarry bng_generic_mult_add
   return carry;
 }
 
+/* {a,alen} := 2 * {a,alen} + {b,blen}^2.  Return carry out.
+   Require alen >= 2 * blen. */
+static bngcarry bng_generic_square_add
+     (bng a/*[alen]*/, bngsize alen,
+      bng b/*[blen]*/, bngsize blen)
+{
+  bngcarry carry1, carry2;
+  bngsize i, aofs;
+  bngdigit ph, pl, d;
+
+  /* Double products */
+  for (carry1 = 0, i = 1; i < blen; i++) {
+    aofs = 2 * i - 1;
+    carry1 += bng_mult_add_digit(a + aofs, alen - aofs, 
+                                 b + i, blen - i, b[i - 1]);
+  }
+  /* Multiply by two */
+  carry1 = (carry1 << 1) | bng_shift_left(a, alen, 1);
+  /* Add square of digits */
+  carry2 = 0;
+  for (i = 0; i < blen; i++) {
+    d = b[i];
+    BngMult(ph, pl, d, d);
+    BngAdd2Carry(*a, carry2, *a, pl, carry2);
+    a++;
+    BngAdd2Carry(*a, carry2, *a, ph, carry2);
+    a++;
+  }
+  alen -= 2 * blen;
+  if (alen > 0 && carry2 != 0) {
+    do {
+      if (++(*a) != 0) { carry2 = 0; break; }
+      a++;
+    } while (--alen);
+  }
+  return carry1 + carry2;
+}
+
 /* {a,len-1} := {b,len} / d.  Return {b,len} modulo d.
    Require MSD of b < d.
    If BngDivNeedsNormalization is defined, require d normalized. */
@@ -378,6 +416,7 @@ struct bng_operations bng_ops = {
   bng_generic_mult_add_digit,
   bng_generic_mult_sub_digit,
   bng_generic_mult_add,
+  bng_generic_square_add,
   bng_generic_div_rem_norm_digit,
 #ifdef BngDivNeedsNormalization
   bng_generic_div_rem_digit,

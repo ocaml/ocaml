@@ -195,6 +195,20 @@ CAMLprim value mult_nat(value *argv, int argn)
                          argv[4], argv[5], argv[6], argv[7], argv[8]);
 }
 
+value square_nat_native(value nat1, value ofs1, value len1,
+                        value nat2, value ofs2, value len2)
+{
+  return
+    Val_long(bng_square_add(&Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+                            &Digit_val(nat2, Long_val(ofs2)), Long_val(len2)));
+}
+
+CAMLprim value square_nat(value *argv, int argn)
+{
+  return square_nat_native(argv[0], argv[1], argv[2],
+                           argv[3], argv[4], argv[5]);
+}
+
 value shift_left_nat_native(value nat1, value ofs1, value len1,
                             value nat2, value ofs2, value nbits)
 {

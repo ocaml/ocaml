@@ -35,6 +35,7 @@ external decr_nat: nat -> int -> int -> int -> int = "decr_nat"
 external sub_nat: nat -> int -> int -> nat -> int -> int -> int -> int = "sub_nat" "sub_nat_native"
 external mult_digit_nat: nat -> int -> int -> nat -> int -> int -> nat -> int -> int = "mult_digit_nat" "mult_digit_nat_native"
 external mult_nat: nat -> int -> int -> nat -> int -> int -> nat -> int -> int -> int = "mult_nat" "mult_nat_native"
+external square_nat: nat -> int -> int -> nat -> int -> int -> int = "square_nat" "square_nat_native"
 external shift_left_nat: nat -> int -> int -> nat -> int -> int -> unit = "shift_left_nat" "shift_left_nat_native"
 external div_digit_nat: nat -> int -> nat -> int -> nat -> int -> int -> nat -> int -> unit = "div_digit_nat" "div_digit_nat_native"
 external div_nat: nat -> int -> int -> nat -> int -> int -> unit = "div_nat" "div_nat_native"
@@ -101,6 +102,10 @@ and gt_nat nat1 off1 len1 nat2 off2 len2 =
   compare_nat nat1 off1 (num_digits_nat nat1 off1 len1)
               nat2 off2 (num_digits_nat nat2 off2 len2) > 0
 
+(* XL: now implemented in C for better performance.
+   The code below doesn't handle carries correctly.
+   Fortunately, the carry is never used. *)
+(***
 let square_nat nat1 off1 len1 nat2 off2 len2 =
   let c = ref 0 
   and trash = make_nat 1 in
@@ -130,6 +135,7 @@ let square_nat nat1 off1 len1 nat2 off2 len2 =
                          (off2 + i)
     done;
   !c
+***)
 
 let gcd_int_nat i nat off len = 
   if i = 0 then 1 else

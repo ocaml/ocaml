@@ -344,6 +344,20 @@ int test_bng_ops(int i)
            bng2string(g, 2*p), co);
     return 1;
   }
+  /* square_add */
+  randbng(f, 2*p);
+  bng_assign(g, f, 2*p);
+  co = bng_square_add(g, 2*p, b, q);
+  BnnAssign(h, f, 2*p);
+  cp = BnnAdd(h, 2*p, h, 2*p);
+  cp += BnnMultiply(h, 2*p, b, q, b, q);
+  if (co != cp || !bngsame(g, h, 2*p)) {
+    printf("Round %d, bng_square_add(%s, %ld, %s, %ld) -> %s, %d\n",
+           i, bng2string(f, 2*p), 2*p,
+           bng2string(b, q), q,
+           bng2string(g, 2*p), co);
+    return 1;
+  }
   /* div_rem_digit */
   if (a[p - 1] < dg) {
     do_ = bng_div_rem_digit(c, a, p, dg);
