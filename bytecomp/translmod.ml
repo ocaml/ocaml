@@ -268,7 +268,8 @@ let transl_store_structure glob map prims str =
       | id :: idl ->
           Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
                Lsequence(store_ident id, store_idents (pos + 1) idl)) in
-      Llet(Strict, mid, transl_module Tcoerce_none None modl,
+      Llet(Strict, mid,
+           subst_lambda subst (transl_module Tcoerce_none None modl),
            store_idents 0 ids)
 
   and store_ident id =
