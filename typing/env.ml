@@ -754,6 +754,15 @@ let open_pers_signature name env =
 let read_signature modname filename =
   let ps = read_pers_struct modname filename in ps.ps_sig
 
+(* Return the CRC of the interface of the given compilation unit *)
+
+let crc_of_unit name =
+  let ps = find_pers_struct name in
+  try
+    List.assoc name ps.ps_crcs
+  with Not_found ->
+    assert false
+
 (* Return the list of imported interfaces with their CRCs *)
 
 let imported_units() =
