@@ -3,6 +3,7 @@ TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 CSLDIR=../../csl
+OCAMLDOC=$(CSLDIR)/ocamldoc/ocamldoc.opt
 HEVEA=hevea -v -fix -exec xxdate.exe
 HACHA=hacha
 INFO=-info -w 79
@@ -43,7 +44,7 @@ index::
 html: files
 	cd htmlman; \
 	mkdir -p libref ; \
-	ocamldoc -colorize-code -sort -html \
+	../$(OCAMLDOC) -colorize-code -sort -html \
 	-d libref \
 	-I $(CSLDIR2)/stdlib  \
 	-I $(CSLDIR2)/otherlibs/bigarray \
