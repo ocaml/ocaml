@@ -35,19 +35,19 @@ double F, G;
 #define INTFLOATTEST(arg,res) \
   { long result = (res); \
     if (arg != result) \
-      printf("Failed test \"%s == %s\" for F=%g and G=%g: result %ld, expected %ld\n", \
+      printf("Failed test \"%s == %s\" for F=%.15g and G=%.15g: result %ld, expected %ld\n", \
              #arg, #res, F, G, arg, result); \
   }
 #define FLOATTEST(arg,res) \
   { double result = (res); \
     if (arg < result || arg > result) \
-      printf("Failed test \"%s == %s\" for F=%g and G=%g: result %e, expected %e\n", \
+      printf("Failed test \"%s == %s\" for F=%.15g and G=%.15g: result %.15g, expected %.15g\n", \
              #arg, #res, F, G, arg, result); \
   }
 #define FLOATINTTEST(arg,res) \
   { double result = (res); \
     if (arg < result || arg > result) \
-      printf("Failed test \"%s == %s\" for X=%ld and Y=%ld: result %e, expected %e\n", \
+      printf("Failed test \"%s == %s\" for X=%ld and Y=%ld: result %.15g, expected %.15g\n", \
              #arg, #res, X, Y, arg, result); \
   }
 
