@@ -43,7 +43,7 @@ stream-matching:
 ;
 stream-pattern:
           '[<' '>]'
-        | '[<' stream-pat-comp { ';' stream-pat-comp [ '?' expr ] }'>]'
+        | '[<' stream-pat-comp { ';' stream-pat-comp [ '??' expr ] }'>]'
 ;
 stream-pat-comp:
           "'" pattern [ 'when' expr ]
@@ -91,7 +91,7 @@ the exception "Stream.Error" is raised. There is no backtracking
 here: stream matching commits to the pattern selected according to the
 first element. If none of the first components of the stream patterns
 match, the exception "Stream.Failure" is raised. The
-"Stream.Parse_failure" exception causes the next alternative to be
+"Stream.Failure" exception causes the next alternative to be
 tried, if it occurs during the matching of the first element of a
 stream, before matching has committed to one pattern.
 
@@ -100,8 +100,8 @@ The streams hold the count of their elements discarded. The optional
 count before the matching. The one after each stream pattern
 (optional, too) is bound to the stream count after the matching.
 
-The exception "Parse_error" has a string parameter coming from the
-optional @'?' expr@ after the stream pattern components (its default
+The exception "Stream.Error" has a string parameter coming from the
+optional @'??' expr@ after the stream pattern components (its default
 is the empty string). This expression is evaluated only in case of
 error.
 
