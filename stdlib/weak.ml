@@ -24,6 +24,8 @@ external set : 'a t -> int -> 'a option -> unit = "weak_set";;
 
 external get: 'a t -> int -> 'a option = "weak_get";;
 
+external get_copy: 'a t -> int -> 'a option = "weak_get_copy";;
+
 external check: 'a t -> int -> bool = "weak_check";;
 
 let fill ar ofs len x =

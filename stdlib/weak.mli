@@ -16,15 +16,16 @@
 
 type 'a t;;
         (* The type of arrays of weak pointers (weak arrays).  A weak
-           pointer is an object that the garbage collector may erase at
+           pointer is a value that the garbage collector may erase at
            any time.
-           A weak pointer is said to be full if it points to an object,
-           empty if the object was erased by the GC.
+           A weak pointer is said to be full if it points to a value,
+           empty if the value was erased by the GC.
          *)
 
 val create : int -> 'a t;;
         (* [Weak.create n] returns a new weak array of length [n].
-           All the pointers are initially empty.
+           All the pointers are initially empty.  Raise [Invalid_argument]
+           if [n] is negative or greater than [Sys.max_array_length-1].
          *)
 val length : 'a t -> int;;
         (* [Weak.length ar] returns the length (number of elements) of
@@ -39,10 +40,23 @@ val set : 'a t -> int -> 'a option -> unit;;
          *)
 val get : 'a t -> int -> 'a option;;
         (* [Weak.get ar n] returns None if the [n]th cell of [ar] is
-           empty, [Some x] (where [x] is the object) if it is full.
+           empty, [Some x] (where [x] is the value) if it is full.
            Raise [Invalid_argument "Weak.get"] if [n] is not in the range
            0 to [Weak.length a - 1].
          *)
+
+val get_copy : 'a t -> int -> 'a option;;
+        (* [Weak.get_copy ar n] returns None if the [n]th cell of [ar] is
+           empty, [Some x] (where [x] is a (shallow) copy of the value) if
+           it is full.
+           In addition to pitfalls with mutable values, the interesting
+           difference with [get] is that [get_copy] does not prevent
+           the incremental GC from erasing the value in its current cycle
+           ([get] may delay the erasure to the next GC cycle).
+           Raise [Invalid_argument "Weak.get"] if [n] is not in the range
+           0 to [Weak.length a - 1].
+         *)
+
 val check: 'a t -> int -> bool;;
         (* [Weak.check ar n] returns [true] if the [n]th cell of [ar] is
            full, [false] if it is empty.  Note that even if [Weak.check ar n]
