@@ -125,6 +125,8 @@ type lambda =
   | Lswitch of lambda * lambda_switch
   | Lstaticfail
   | Lcatch of lambda * lambda
+  | Lstaticraise of int
+  | Lstaticcatch of lambda * int * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -140,7 +142,8 @@ and lambda_switch =
     sw_consts: (int * lambda) list;
     sw_numblocks: int;
     sw_blocks: (int * lambda) list;
-    sw_checked: bool }
+    sw_checked: bool ;
+    sw_nofail: bool }
 
 and lambda_event =
   { lev_loc: int;
@@ -201,8 +204,11 @@ let free_variables l =
       freevars arg; 
       List.iter (fun (key, case) -> freevars case) sw.sw_consts;
       List.iter (fun (key, case) -> freevars case) sw.sw_blocks
-  | Lstaticfail -> ()
+  | Lstaticfail  -> ()
   | Lcatch(e1, e2) ->
+      freevars e1; freevars e2
+  | Lstaticraise _ -> ()
+  | Lstaticcatch(e1, _, e2) ->
       freevars e1; freevars e2
   | Ltrywith(e1, exn, e2) ->
       freevars e1; freevars e2; fv := IdentSet.remove exn !fv
@@ -270,8 +276,10 @@ let subst_lambda s lam =
       Lswitch(subst arg,
               {sw with sw_consts = List.map subst_case sw.sw_consts;
                        sw_blocks = List.map subst_case sw.sw_blocks})
-  | Lstaticfail -> Lstaticfail
+  | Lstaticfail as l -> l
   | Lcatch(e1, e2) -> Lcatch(subst e1, subst e2)
+  | Lstaticraise i as l -> l
+  | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
   | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
   | Lsequence(e1, e2) -> Lsequence(subst e1, subst e2)

@@ -230,13 +230,19 @@ let rec lam ppf = function
            fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l)
          sw.sw_blocks in
       fprintf ppf
-       "@[<1>(%s%a@ @[<v 0>%a@])@]"
-       (if sw.sw_checked then "switch-checked " else "switch ")
+       "@[<1>(%s%s%a@ @[<v 0>%a@])@]"
+       (if sw.sw_checked then "switch-checked" else "switch")
+       (if sw.sw_nofail then "* " else " ")
        lam larg switch sw
   | Lstaticfail ->
       fprintf ppf "exit"
+  | Lstaticraise i  ->
+      fprintf ppf "exit(%d)" i
   | Lcatch(lbody, lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with@ %a)@]" lam lbody lam lhandler
+  | Lstaticcatch(lbody, i, lhandler) ->
+      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with(%d)@ %a)@]"
+        lam lbody i lam lhandler
   | Ltrywith(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Ident.print param lam lhandler

@@ -134,6 +134,8 @@ type lambda =
   | Lswitch of lambda * lambda_switch
   | Lstaticfail
   | Lcatch of lambda * lambda
+  | Lstaticraise of int
+  | Lstaticcatch of lambda * int * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -149,8 +151,8 @@ and lambda_switch =
     sw_consts: (int * lambda) list;     (* Integer cases *)
     sw_numblocks: int;                  (* Number of tag block cases *)
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
-    sw_checked: bool }                  (* True if bound checks needed *)
-
+    sw_checked: bool ;                  (* True if bound checks needed *)
+    sw_nofail: bool}                    (* True if should not fail *)
 and lambda_event =
   { lev_loc: int;
     lev_kind: lambda_event_kind;

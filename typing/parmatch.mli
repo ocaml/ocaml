@@ -16,6 +16,12 @@
 
 open Typedtree
 
+val omega_list : 'a list -> pattern list
+
+val compat : pattern -> pattern -> bool
+val compats : pattern list -> pattern list -> bool
+
 val check_partial:
         Env.t -> Location.t -> (pattern * expression) list -> partial
 val check_unused: Env.t -> (pattern * expression) list -> unit
+

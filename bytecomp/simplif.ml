@@ -53,11 +53,13 @@ let rec eliminate_ref id = function
          sw_numblocks = sw.sw_numblocks;
          sw_blocks =
             List.map (fun (n, e) -> (n, eliminate_ref id e)) sw.sw_blocks;
-         sw_checked = sw.sw_checked})
-  | Lstaticfail ->
-      Lstaticfail
+         sw_checked = sw.sw_checked; sw_nofail = sw.sw_nofail})
+  | Lstaticfail as l -> l
+  | Lstaticraise _ as l -> l
   | Lcatch(e1, e2) ->
       Lcatch(eliminate_ref id e1, eliminate_ref id e2)
+  | Lstaticcatch(e1, i, e2) ->
+      Lstaticcatch(eliminate_ref id e1, i, eliminate_ref id e2)
   | Ltrywith(e1, v, e2) ->
       Ltrywith(eliminate_ref id e1, v, eliminate_ref id e2)
   | Lifthenelse(e1, e2, e3) ->
@@ -124,7 +126,9 @@ let simplify_lambda lam =
       List.iter (fun (n, l) -> count l) sw.sw_consts;
       List.iter (fun (n, l) -> count l) sw.sw_blocks
   | Lstaticfail -> ()
+  | Lstaticraise _ -> ()
   | Lcatch(l1, l2) -> count l1; count l2
+  | Lstaticcatch(l1, _, l2) -> count l1; count l2
   | Ltrywith(l1, v, l2) -> count l1; count l2
   | Lifthenelse(l1, l2, l3) -> count l1; count l2; count l3
   | Lsequence(l1, l2) -> count l1; count l2
@@ -182,14 +186,15 @@ let simplify_lambda lam =
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
   | Lswitch(l, sw) ->
-      Lswitch(simplif l,
-        {sw_numconsts = sw.sw_numconsts;
-         sw_consts = List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts;
-         sw_numblocks = sw.sw_numblocks;
-         sw_blocks = List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks;
-         sw_checked = sw.sw_checked})
-  | Lstaticfail -> Lstaticfail
+      let new_l = simplif l
+      and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
+      and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks in
+      Lswitch
+        (new_l,{sw with sw_consts = new_consts ; sw_blocks = new_blocks})
+  | Lstaticfail as l -> l
+  | Lstaticraise _ as l -> l
   | Lcatch(l1, l2) -> Lcatch(simplif l1, simplif l2)
+  | Lstaticcatch(l1, i, l2) -> Lstaticcatch(simplif l1, i, simplif l2)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
   | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
   | Lsequence(Lifused(v, l1), l2) ->

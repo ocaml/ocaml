@@ -202,6 +202,9 @@ let add_event ev =
 let lbl_staticfail = ref None
 and sz_staticfail = ref 0
 
+(* Same information as a stack for Lstaticraise *)
+let sz_static_raises = ref []
+
 (* Function bodies that remain to be compiled *)
 
 type function_to_compile =
@@ -507,13 +510,25 @@ let rec comp_expr env exp sz cont =
       lbl_staticfail := saved_lbl_staticfail;
       sz_staticfail := saved_sz_staticfail;
       cont3
-  | Lstaticfail ->
+  | Lstaticfail -> comp_static_fail sz cont
+  | Lstaticcatch (body, i, handler) ->
+      let branch1, cont1 = make_branch cont in
+      let lbl_handler, cont2 =
+        label_code (comp_expr env handler sz cont1) in
+      sz_static_raises := (i, (lbl_handler, sz)) :: !sz_static_raises ;
+      let cont3 = comp_expr env body sz (branch1 :: cont2) in
+      sz_static_raises := List.tl !sz_static_raises ;
+      cont3
+  | Lstaticraise i ->
       let cont = discard_dead_code cont in
-      begin match !lbl_staticfail with
-        None -> cont
-      | Some label ->
-          add_pop (sz - !sz_staticfail) (Kbranch label :: cont)
-      end
+      let label, size =
+        try
+          List.assoc i !sz_static_raises
+        with
+        | Not_found ->
+            Misc.fatal_error
+              ("exit("^string_of_int i^") outside appropriated catch") in
+      add_pop (sz-size) (Kbranch label :: cont)
   | Ltrywith(body, id, handler) ->
       let (branch1, cont1) = make_branch cont in
       let lbl_handler = new_label() in
@@ -556,19 +571,27 @@ let rec comp_expr env exp sz cont =
       List.iter (fun (n, act) -> act_blocks.(n) <- act) sw.sw_blocks;
       let lbl_consts = Array.create sw.sw_numconsts 0 in
       let lbl_blocks = Array.create sw.sw_numblocks 0 in
+      let comp_nofail =
+        if sw.sw_nofail then
+          fun l c -> match l with
+          | Lstaticfail -> label_code c
+          | _           -> label_code(comp_expr env l sz (branch :: c))
+        else
+          fun l c ->
+            label_code(comp_expr env l sz (branch :: c)) in
+            
       for i = sw.sw_numblocks - 1 downto 0 do
-        let (lbl, c1) =
-          label_code(comp_expr env act_blocks.(i) sz (branch :: !c)) in
+        let (lbl, c1) = comp_nofail act_blocks.(i) !c in
         lbl_blocks.(i) <- lbl;
         c := discard_dead_code c1
       done;
       for i = sw.sw_numconsts - 1 downto 0 do
-        let (lbl, c1) =
-          label_code(comp_expr env act_consts.(i) sz (branch :: !c)) in
+        let (lbl, c1) = comp_nofail act_consts.(i) !c in
         lbl_consts.(i) <- lbl;
         c := discard_dead_code c1
       done;
-      if sw.sw_checked then c := comp_expr env Lstaticfail sz !c;        
+      if sw.sw_checked && not sw.sw_nofail then
+        c := comp_expr env Lstaticfail sz !c;        
       comp_expr env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
   | Lassign(id, expr) ->
       begin try
@@ -626,6 +649,16 @@ let rec comp_expr env exp sz cont =
   | Lifused (_, exp) ->
       comp_expr env exp sz cont
 
+(* compile a static failure, fails if not enclosing catch *)
+and comp_static_fail sz cont =
+  let cont = discard_dead_code cont in
+  begin match !lbl_staticfail with
+  | None ->
+      Misc.fatal_error "exit outside appropriated catch"
+  | Some label ->
+      add_pop (sz - !sz_staticfail) (Kbranch label :: cont)
+  end
+
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,
    then e3, then ... The value of e1 is left in the accumulator. *)
@@ -648,18 +681,18 @@ and comp_binary_test env cond ifso ifnot sz cont =
       let (lbl_end, cont1) = label_code cont in
       Kstrictbranchifnot lbl_end :: comp_expr env ifso sz cont1
     end else
-    if ifso = Lstaticfail && (sz = !sz_staticfail || !lbl_staticfail = None)
+    if ifso = Lstaticfail && sz = !sz_staticfail
     then
       let cont = comp_expr env ifnot sz cont in
       match !lbl_staticfail with
-        None -> cont
+      | None ->  Misc.fatal_error "exit outside appropriated catch"
       | Some label -> Kbranchif label :: cont
     else
-    if ifnot = Lstaticfail && (sz = !sz_staticfail || !lbl_staticfail = None)
+    if ifnot = Lstaticfail && sz = !sz_staticfail 
     then
       let cont = comp_expr env ifso sz cont in
       match !lbl_staticfail with
-        None -> cont
+      | None -> Misc.fatal_error "exit outside appropriated catch"
       | Some label -> Kbranchifnot label :: cont
     else begin
       let (branch_end, cont1) = make_branch cont in

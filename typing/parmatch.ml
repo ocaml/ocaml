@@ -92,6 +92,11 @@ let record_arg p = match p.pat_desc with
 
 
 (* Raise Not_found when pos is not present in arg *)
+let sort_fields args =
+  Sort.list
+    (fun (lbl1,_) (lbl2,_) -> lbl1.lbl_pos <= lbl2.lbl_pos)
+    args
+
 let get_field pos arg =
   let _,p = List.find (fun (lbl,_) -> pos = lbl.lbl_pos) arg in
   p
@@ -105,14 +110,27 @@ let extract_fields omegas arg =
       with Not_found -> omega)
     omegas
 
+let records_args l1 l2 =
+  let l1 = sort_fields l1
+  and l2 = sort_fields l2 in
+  let rec combine r1 r2 l1 l2 = match l1,l2 with
+  | [],[] -> r1,r2
+  | [],(_,p2)::rem2 -> combine (omega::r1) (p2::r2) [] rem2
+  | (_,p1)::rem1,[] -> combine (p1::r1) (omega::r2) rem1 []
+  | (lbl1,p1)::rem1, (lbl2,p2)::rem2 ->
+      if lbl1.lbl_pos < lbl2.lbl_pos then
+        combine (p1::r1) (omega::r2) rem1 l2
+      else if lbl1.lbl_pos > lbl2.lbl_pos then
+        combine (omega::r1) (p2::r2) l1 rem2
+      else (* same label on both sides *)
+        combine (p1::r1) (p2::r2) rem1 rem2 in
+  combine [] [] l1 l2
+;;
+
 let sort_record p = match p.pat_desc with
 | Tpat_record args ->
     make_pat
-      (Tpat_record
-         (Sort.list
-            (fun (lbl1,_) (lbl2,_) ->
-              lbl1.lbl_pos <= lbl2.lbl_pos)
-            args))
+      (Tpat_record (sort_fields args))
       p.pat_type p.pat_env
 | _ -> p
 
@@ -377,21 +395,11 @@ let full_match tdefs force env =  match env with
               ok && List.mem_assoc tag fields)
         true row.row_fields
     end else
-      if row.row_closed then
-        List.for_all
-          (fun (tag,f) ->
-            Btype.row_field_repr f = Rabsent || List.mem_assoc tag fields)
-          row.row_fields
-      else begin
-        List.iter
-          (fun (tag,f) ->
-            match Btype.row_field_repr f with
-            | Reither(true, [], e) -> e := Some (Rpresent None)
-            | Reither(false, [t], e) -> e := Some (Rpresent (Some t))
-            | _ -> ())
-          row.row_fields;
-        false
-      end
+      row.row_closed &&
+      List.for_all
+        (fun (tag,f) ->
+          Btype.row_field_repr f = Rabsent || List.mem_assoc tag fields)
+        row.row_fields
 | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
     List.length env = 256
 | ({pat_desc = Tpat_constant(_)},_) :: _ -> false
@@ -666,11 +674,11 @@ let rec initial_matrix = function
 
 let rec le_pat p q =
   match (p.pat_desc, q.pat_desc) with
-    (Tpat_var _ | Tpat_any), _ -> true
+  | Tpat_var _,_ -> true | Tpat_any, _ -> true
   | Tpat_alias(p,_), _ -> le_pat p q
   | _, Tpat_alias(q,_) -> le_pat p q
-  | Tpat_or(p1,p2), _ -> le_pat p1 q or le_pat p2 q
-  | _, Tpat_or(q1,q2) -> le_pat p q1 & le_pat p q2
+  | Tpat_or(p1,p2), _ -> le_pat p1 q || le_pat p2 q
+  | _, Tpat_or(q1,q2) -> le_pat p q1 && le_pat p q2
   | Tpat_constant(c1), Tpat_constant(c2) -> c1 = c2
   | Tpat_construct(c1,ps), Tpat_construct(c2,qs) ->
       c1.cstr_tag = c2.cstr_tag && le_pats ps qs
@@ -700,8 +708,35 @@ let get_mins ps =
       else select_rec (p::r) ps in
   select_rec [] (select_rec [] ps)
 
-
-
+let rec compat p q = match p.pat_desc,q.pat_desc with
+| Tpat_alias (p,_),_     -> compat p q
+| _,Tpat_alias (q,_)     -> compat p q
+| (Tpat_any|Tpat_var _),_ -> true
+| _,(Tpat_any|Tpat_var _) -> true
+| Tpat_or (p1,p2),_       -> compat p1 q || compat p2 q
+| _,Tpat_or (q1,q2)       -> compat p q1 || compat p q2    
+| Tpat_constant c1, Tpat_constant c2 -> c1=c2
+| Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
+| Tpat_construct (c1,ps1), Tpat_construct (c2,ps2) ->
+    c1.cstr_tag = c2.cstr_tag && compats ps1 ps2
+| Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
+    l1=l2 && compat p1 p2
+| Tpat_variant (l1,None,_), Tpat_variant(l2,None,_) -> l1 = l2
+| Tpat_variant (_, None, _), Tpat_variant (_,Some _, _) -> false
+| Tpat_variant (_, Some _, _), Tpat_variant (_, None, _) -> false
+| Tpat_record l1,Tpat_record l2 ->
+    let ps,qs = records_args l1 l2 in
+    compats ps qs
+| Tpat_array ps, Tpat_array qs ->
+    List.length ps = List.length qs &&
+    compats ps qs
+| _,_  -> assert false
+    
+and compats ps qs = match ps,qs with
+| [], [] -> true
+| p::ps, q::qs -> compat p q && compats ps qs
+| _,_    -> assert false
+    
 (*************************************)
 (* Values as patterns pretty printer *)
 (*************************************)
@@ -805,63 +840,75 @@ let top_pretty ppf v =
 
 
 (******************************)
-(* Exported functions         *)
+(* Entry points               *)
 (*    - Partial match         *)
 (*    - Unused match case     *)
 (******************************)
 
 let check_partial tdefs loc casel =
-  let pss = get_mins (initial_matrix casel) in
-  let r = match pss with
-  | []     -> begin match casel with
-    | [] -> Rnone
-    | (p,_) :: _ -> Rsome [p]
-  end
-  | ps::_  -> satisfiable tdefs true pss (omega_list ps) in
-  match r with
-  | Rnone -> Total
-  | Rok ->
-      Location.prerr_warning loc (Warnings.Partial_match "");
-      Partial
-  | Rsome [v] ->
-      let errmsg =
-        try
-          let buf = Buffer.create 16 in
-          let fmt = formatter_of_buffer buf in
-          top_pretty fmt v;
-          Buffer.contents buf
-        with _ ->
-          "" in
-      Location.prerr_warning loc (Warnings.Partial_match errmsg);
-      Partial
-  | _ ->
-      fatal_error "Parmatch.check_partial"
+  if not (Warnings.is_active (Warnings.Partial_match "")) then
+    Partial
+  else   
+    let pss = get_mins (initial_matrix casel) in    
+    match pss with
+    | [] ->
+        (*
+          This can occur
+            - For empty matches generated by ocamlp4
+            - when all patterns have guards
+           Then match should be considered non-exhaustive
+           (cf. matching.ml) no warning is issued,
+           users should know what they do 
+         *)
+        Partial
+    | ps::_  ->
+        match satisfiable tdefs true pss (omega_list ps) with
+        | Rnone -> Total
+        | Rok ->
+            Location.prerr_warning loc (Warnings.Partial_match "");
+            Partial
+        | Rsome [v] ->
+            let errmsg =
+              try
+                let buf = Buffer.create 16 in
+                let fmt = formatter_of_buffer buf in
+                top_pretty fmt v;
+                Buffer.contents buf
+              with _ ->
+                "" in
+            Location.prerr_warning loc (Warnings.Partial_match errmsg);
+            Partial
+        | _ ->
+            fatal_error "Parmatch.check_partial"
 
 let location_of_clause = function
     pat :: _ -> pat.pat_loc
   | _ -> fatal_error "Parmatch.location_of_clause"
 
 let check_unused tdefs casel =
-  let prefs =   
-    List.fold_right
-      (fun (pat,act as clause) r ->
-         if has_guard act
-         then ([], ([pat], act)) :: r
-         else ([], ([pat], act)) :: 
-              List.map (fun (pss,clause) -> [pat]::pss,clause) r)
-      casel [] in
-  List.iter
-    (fun (pss, ((qs, _) as clause)) ->
-      try
-      if
-        (match satisfiable tdefs false pss qs with
-        | Rnone -> true
-        | Rok -> false
-        | _ -> assert false)
-      then
-        Location.prerr_warning (location_of_clause qs) Warnings.Unused_match
-      with e ->
-        Location.prerr_warning (location_of_clause qs)
-          (Warnings.Other "Fatal Error") ;
-        raise e)
-    prefs
+  if Warnings.is_active Warnings.Unused_match then begin
+    let prefs =   
+      List.fold_right
+        (fun (pat,act as clause) r ->
+          if has_guard act
+          then ([], ([pat], act)) :: r
+          else ([], ([pat], act)) :: 
+            List.map (fun (pss,clause) -> [pat]::pss,clause) r)
+        casel [] in
+    List.iter
+      (fun (pss, ((qs, _) as clause)) ->
+        try
+          if
+            (match satisfiable tdefs false pss qs with
+            | Rnone -> true
+            | Rok -> false
+            | _ -> assert false)
+          then
+            Location.prerr_warning
+              (location_of_clause qs) Warnings.Unused_match
+        with e ->
+          Location.prerr_warning (location_of_clause qs)
+            (Warnings.Other "Fatal Error") ;
+          raise e)
+      prefs
+  end
