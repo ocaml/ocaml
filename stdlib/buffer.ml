@@ -27,7 +27,9 @@ let length b = b.position
 
 let clear b = b.position <- 0
 
-let reset b = b.position <- 0; b.buffer <- b.initial_buffer
+let reset b =
+  b.position <- 0; b.buffer <- b.initial_buffer;
+  b.length <- String.length b.buffer
 
 let resize b more =
   let len = b.length in
