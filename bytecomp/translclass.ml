@@ -645,10 +645,18 @@ let transl_class ids cl_id arity pub_meths cl =
     List.sort
       (fun s s' -> compare (Btype.hash_variant s) (Btype.hash_variant s'))
       pub_meths in
+  let tags = List.map Btype.hash_variant pub_meths in
+  let rev_map = List.combine tags pub_meths in
+  List.iter2
+    (fun tag name ->
+      let name' = List.assoc tag rev_map in
+      if name' <> name then
+	fatal_error ("conflicting labels "^name^" and "^name'))
+    tags pub_meths;
   (*
   let hash_size () =
     if not !Clflags.native_code then lambda_unit else
-    let size = perfect_hash_size (List.map Btype.hash_variant pub_meths) in
+    let size = perfect_hash_size tags in
     Lconst(Const_base(Const_int size))
   in
   let public_map () =
