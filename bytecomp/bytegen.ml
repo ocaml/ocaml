@@ -108,7 +108,7 @@ let add_const_unit = function
 (**** Auxiliary for compiling "let rec" ****)
 
 let rec size_of_lambda = function
-    Lfunction(param, body) as funct ->
+    Lfunction(kind, params, body) as funct ->
       1 + IdentSet.cardinal(free_variables funct)
   | Lprim(Pmakeblock(tag, mut), args) ->
       List.length args
@@ -189,7 +189,7 @@ let rec comp_expr env exp sz cont =
           comp_args env (met::obj::args) (sz + 3)
             (Kgetmethod :: Kapply nargs :: cont1)
         end
-  | Lfunction(params, body) ->
+  | Lfunction(kind, params, body) -> (* assume kind = Curried *)
       let lbl = new_label() in
       let fv = IdentSet.elements(free_variables exp) in
       Stack.push (params, body, lbl, fv) functions_to_compile;
@@ -199,7 +199,7 @@ let rec comp_expr env exp sz cont =
       comp_expr env arg sz
         (Kpush :: comp_expr (add_var id (sz+1) env) body (sz+1)
           (add_pop 1 cont))
-  | Lletrec(([id, Lfunction(params, funct_body)] as decl), let_body) ->
+  | Lletrec(([id, Lfunction(kind, params, funct_body)] as decl), let_body) ->
       let lbl = new_label() in
       let fv =
         IdentSet.elements (free_variables (Lletrec(decl, lambda_unit))) in

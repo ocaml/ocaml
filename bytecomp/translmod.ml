@@ -36,7 +36,7 @@ let rec apply_coercion restr arg =
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
       name_lambda arg (fun id ->
-        Lfunction([param],
+        Lfunction(Curried, [param],
           apply_coercion cc_res
             (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)]))))
   | Tcoerce_primitive p ->
@@ -82,10 +82,10 @@ let rec transl_module cc mexp =
   | Tmod_functor(param, mty, body) ->
       begin match cc with
         Tcoerce_none ->
-          Lfunction([param], transl_module Tcoerce_none body)
+          Lfunction(Curried, [param], transl_module Tcoerce_none body)
       | Tcoerce_functor(ccarg, ccres) ->
           let param' = Ident.create "funarg" in
-          Lfunction([param'],
+          Lfunction(Curried, [param'],
             Llet(Alias, param, apply_coercion ccarg (Lvar param'),
               transl_module ccres body))
       | _ ->

@@ -125,10 +125,23 @@ let rec lambda = function
       List.iter (fun l -> print_space(); lambda l) largs;
       print_string ")";
       close_box()
-  | Lfunction(params, body) ->
+  | Lfunction(kind, params, body) ->
       open_hovbox 2;
       print_string "(function";
-      List.iter (fun param -> print_space(); Ident.print param) params;
+      begin match kind with
+        Curried ->
+          List.iter (fun param -> print_space(); Ident.print param) params
+      | Tupled ->
+          print_string " (";
+          let first = ref true in
+          List.iter
+            (fun param ->
+              if !first
+              then first := false
+              else begin print_string ",";print_space() end;
+              Ident.print param)
+            params
+      end;
       print_space(); lambda body; print_string ")"; close_box()
   | Llet(str, id, arg, body) ->
       open_hovbox 2;

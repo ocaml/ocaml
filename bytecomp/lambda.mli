@@ -68,6 +68,8 @@ type structured_constant =
   | Const_block of int * structured_constant list
   | Const_float_array of string list
 
+type function_kind = Curried | Tupled
+
 type let_kind = Strict | Alias | StrictOpt
 
 type shared_code = (int * int) list     (* stack size -> code label *)
@@ -76,7 +78,7 @@ type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
   | Lapply of lambda * lambda list
-  | Lfunction of Ident.t list * lambda
+  | Lfunction of function_kind * Ident.t list * lambda
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list

@@ -113,10 +113,10 @@ let transl_class cl_id cl =
       cl.cl_args
       ([], field_init)
   in
-  let obj_init = Lfunction(anc_id @ obj::params, body) in
+  let obj_init = Lfunction(Curried, anc_id @ obj::params, body) in
   let table = Ident.create "table" in
   let cl_init =
-    Lfunction ([table],
+    Lfunction (Curried, [table],
                List.fold_left (transl_val_hiding table)
                  (List.fold_right (transl_field_cl table) cl.cl_field
 	            (Lapply (oo_prim "set_initializer",

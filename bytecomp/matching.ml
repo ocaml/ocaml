@@ -411,16 +411,25 @@ let for_trywith param pat_act_list =
 let for_let loc param pat body =
   compile_matching (partial_function loc) param [pat, body]
 
+(* Handling of tupled functions and matches *)
+
 exception Cannot_flatten
 
-let rec flatten_patterns size = function
-    [] -> []
-  | ({pat_desc = Tpat_tuple args} :: _, action) :: rem ->
-      (args, action) :: flatten_patterns size rem
-  | ({pat_desc = Tpat_any} :: patl, action) :: rem ->
-      (replicate_list any_pat size, action) :: flatten_patterns size rem
-  | _ ->
-      raise Cannot_flatten
+let flatten_pattern size p =
+  match p.pat_desc with
+    Tpat_tuple args -> args
+  | Tpat_any -> replicate_list any_pat size
+  | _ -> raise Cannot_flatten
+
+let flatten_cases size cases =
+  List.map (fun (pat :: _, act) -> (flatten_pattern size pat, act)) cases
+
+let for_tupled_function loc paraml pats_act_list =
+  let pm =
+    { cases = pats_act_list;
+      args = List.map (fun id -> (Lvar id, Strict)) paraml } in
+  let (lambda, total) = compile_match pm in
+  if total then lambda else Lcatch(lambda, partial_function loc ())
 
 let for_multiple_match loc paraml pat_act_list =
   let pm1 =
@@ -430,7 +439,7 @@ let for_multiple_match loc paraml pat_act_list =
     simplify_matching pm1 in
   let pm3 =
     try
-      { cases = flatten_patterns (List.length paraml) pm2.cases;
+      { cases = flatten_cases (List.length paraml) pm2.cases;
         args = List.map (fun lam -> (lam, Strict)) paraml }
     with Cannot_flatten ->
       pm2 in
