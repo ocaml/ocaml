@@ -167,7 +167,9 @@ void empty_minor_heap (void)
     in_minor_collection = 1;
     gc_message (0x02, "<", 0);
     oldify_local_roots();
-    for (r = ref_table; r < ref_table_ptr; r++) oldify_one (**r, *r);
+    for (r = ref_table; r < ref_table_ptr; r++){
+      oldify_one (**r, *r);
+    }
     oldify_mopup ();
     if (young_ptr < young_limit) young_ptr = young_limit;
     stat_minor_words += Wsize_bsize (young_end - young_ptr);
