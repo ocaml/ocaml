@@ -1,18 +1,23 @@
-\chapter{The core language}
+\chapter{The core language} \label{c:core-xamples}
 
 This part of the manual is a tutorial introduction to the Objective
-Caml language. The present chapter introduces the core
-language. Chapter~\ref{c:objectexamples} deals with the
+Caml language. A good familiarity with programming in a conventional
+languages (say, Pascal or C) is assumed, but no prior exposure to
+functional languages is required. The present chapter introduces the
+core language. Chapter~\ref{c:objectexamples} deals with the
 object-oriented features, and chapter~\ref{c:moduleexamples} with the
 module system.
 
 \subsection*{Basics}
 
-For this overview of Caml, we will use the interactive system "ocaml".
-\begin{verbatim}
-~$ ocaml
+For this overview of Caml, we use the interactive system, which
+is started by running "ocaml" from the Unix shell, or by launching the
+"OCamlwin.exe" application under Windows. This tutorial is presented
+as the transcript of a session with the interactive system:
+lines in {\tt typewriter font}, starting with "#", represent user
+input, and lines in {\sltt slanted typewriter font} are the system
+responses.
 
-\end{verbatim}
 Under the interactive system, the user types Caml phrases, terminated
 by ";;", in response to the "#" prompt, and the system compiles them
 on the fly, executes them, and prints the outcome of evaluation.
@@ -25,8 +30,8 @@ let square x = x *. x;;
 square(sin pi) +. square(cos pi);;
 \end{caml_example}
 The Caml system computes both the value and the type for
-each phrase. Even function parameters do not need to be  given a type
-explicitly: the system infers their types from their usage in the
+each phrase. Even function parameters need no explicit type declaration:
+the system infers their types from their usage in the
 function. Notice also that integers and floating-point numbers are
 distinct types, with distinct operators: "+" and "*" operate on
 integers, but "+." and "*."  operate on floats.
@@ -41,41 +46,10 @@ let rec fib n =
 fib 10;;
 \end{caml_example}
 
-\subsection*{Interacting with Caml}
-
-Caml code  can also be compiled separately and executed
-non-interactively using the batch compiler "ocamlc". The source
-code must be put in a file with extension ".ml". It consists of a
-sequence of phrases, which will be evaluated at runtime in their order
-of appearance in the source file. Unlike in interactive mode, types
-and values are not printed automatically; the program must call
-printing functions explicitly to produce some output. Here is a sample
-standalone program to print Fibonacci numbers:
-\begin{verbatim}
-~$ cat fib.ml
-let rec fib n =
-  if n < 2 then 1 else fib(n-1) + fib(n-2);;
-let main () =
-  let arg = int_of_string Sys.argv.(1) in
-  print_int(fib arg);
-  print_newline();
-  exit 0;;
-main ();;
-~$ ocamlc -o fib fib.ml
-~$ ./fib 10
-89
-~$
-\end{verbatim}
-"Sys.argv" is an array of strings containing the command-line
-parameters. "Sys.argv.(1)" is thus the first command-line parameter. 
-Functions without parameters are defined using "()". The
-"let"\ldots"in"\ldots is a local definition, and the semicolon ";"
-evaluates two expressions one after the other.
-
 \subsection*{Data types}
 
 In addition to integers and floating-point numbers,  Caml offers the
-usual base data types: booleans, characters, and character strings.
+usual basic data types: booleans, characters, and character strings.
 \begin{caml_example}
 (1 < 2) = false;;
 'a';;
@@ -84,7 +58,7 @@ usual base data types: booleans, characters, and character strings.
 
 Predefined data structures include tuples, arrays, and lists. General
 mechanisms for defining your own data structures are also provided.
-The will be covered in more details later; for now, we concentrate on lists.
+They will be covered in more details later; for now, we concentrate on lists.
 Lists are either given in extension as a bracketed list of
 semicolon-separated elements, or built from the empty list "[]"
 (pronounce ``nil'') by adding elements in front using the "::"
@@ -106,13 +80,12 @@ parts of the list. As an example, here is insertion sort on a list:
 \begin{caml_example}
 let rec sort lst =
   match lst with
-    [] -> []              (* empty list: already sorted *)
-  | [elt] -> lst          (* one-element list: already sorted *)
+    [] -> []
   | head :: tail -> insert head (sort tail)
 and insert elt lst =
   match lst with
     [] -> [elt]
-  | head :: tail -> if elt <= head then lst else head :: insert elt tail
+  | head :: tail -> if elt <= head then elt :: lst else head :: insert elt tail
 ;;
 sort l;;
 \end{caml_example}
@@ -153,14 +126,14 @@ let compose f g = function x -> f(g(x));;
 let cos2 = compose square cos;;
 \end{caml_example}
 
-Functions that take other functions as arguments are known as
+Functions that take other functions as arguments are called
 ``functionals'', or ``higher-order functions''. Functionals are
 especially useful to provide iterators or similar generic operations
 over a data structure. For instance, the standard Caml library
 provides a "List.map" functional that applies a given function to each
 element of a list, and returns the list of the results:
 \begin{caml_example}
-List.map (fun n -> n * 2 + 1) [0;1;2;3;4];;
+List.map (function n -> n * 2 + 1) [0;1;2;3;4];;
 \end{caml_example}
 This functional, along with a number of other list and array
 functionals, is predefined because it is often useful, but there is
@@ -175,28 +148,22 @@ let rec map f l =
 \subsection*{Records and variants}
 
 User-defined data structures include records and variants. Both are
-defined with the "type" declaration. Here are declarations for record
-types representing 2-dimensional points and 2-dimensional
-transformations:
+defined with the "type" declaration. Here, we declare a record type to
+represent rational numbers.
 \begin{caml_example}
-type point = {x: float; y: float};;
-type transform = {scale_xx: float; scale_xy: float;
-                  scale_yx: float; scale_yy: float;
-                  transl_x: float; transl_y: float};;
-let apply_transf t p =
-  {x = p.x * t.scale_xx + p.y * t.scale_xy + t.transl_x;
-   y = p.x * t.scale_yx + p.y * t.scale_yy + t.transl_y};;
-let rotation angle =
-  {scale_xx = cos angle; scale_xy = sin angle;
-   scale_yx = -. sin angle; scale_yy = cos angle;
-   transl_x = 0.0; transl_y = 0.0};;
-apply (rotation (pi /. 4.0)) {x = 3.0; y = 2.0};;
-\end{caml_example}
+type ratio = {num: int; denum: int};;
+let add_ratio r1 r2 =
+  {num = r1.num * r2.denum + r2.num * r1.denum;
+   denum = r1.denum * r2.denum};;
+add_ratio {num=1; denum=3} {num=2; denum=5};;
+\end{caml_example}  
 
-The declaration of a variant type list all possible shapes for values
+The declaration of a variant type lists all possible shapes for values
 of that type. Each case is identified by a name, called a constructor,
 which serves both for constructing values of the variant type and
-inspecting them by pattern-matching. For instance, here is a variant
+inspecting them by pattern-matching. Constructor names are capitalized
+to distinguish them from variable names (which must start with a
+lowercase letter). For instance, here is a variant
 type for doing mixed arithmetic (integers and floats):
 \begin{caml_example}
 type number = Int of int | Float of float | Error;;
@@ -212,7 +179,7 @@ type sign = Positive | Negative;;
 let sign_int n = if n >= 0 then Positive else Negative;;
 \end{caml_example}
 
-Arithmetic operations over the "number" type are defined by
+To define arithmetic operations for the "number" type, we use
 pattern-matching on the two numbers involved:
 \begin{caml_example}
 let add_num n1 n2 =
@@ -242,7 +209,7 @@ one value of type "'a" and two subtrees containing also values of type
 
 Operations on binary trees express naturally as recursive functions
 following the same structure as the type definition itself. For
-instance, here are functions performing insertion and lookup in
+instance, here are functions performing lookup and insertion in
 ordered binary trees (elements increase from left to right):
 \begin{caml_example}
 let rec member x btree =
@@ -271,7 +238,7 @@ function below sums two vectors (represented as float arrays) componentwise.
 \begin{caml_example}
 let add_vect v1 v2 =
   let len = min (Array.length v1) (Array.length v2) in
-  let res = Array.new len 0.0 in
+  let res = Array.create len 0.0 in
   for i = 0 to len - 1 do
     res.(i) <- v1.(i) +. v2.(i)
   done;
@@ -279,8 +246,8 @@ let add_vect v1 v2 =
 add_vect [| 1.0; 2.0 |] [| 3.0; 4.0 |];;
 \end{caml_example}
 
-Record fields can also be modified by assignment, provided they have
-been declared "mutable" in the definition of the record type:
+Record fields can also be modified by assignment, provided they are
+declared "mutable" in the definition of the record type:
 \begin{caml_example}
 type mutable_point = { mutable x: float; mutable y: float };;
 let translate p dx dy =
@@ -311,12 +278,23 @@ let insertion_sort a =
   done;;
 \end{caml_example}
 
+References are also useful to write functions that maintain a current
+state between two calls to the function. For instance, the following
+pseudo-random number generator keeps the last returned number in a
+reference:
+\begin{caml_example}
+let current_rand = ref 0;;
+let random () =
+  current_rand := !current_rand * 25713 + 1345;
+  !current_rand;;
+\end{caml_example}
+
 Again, there is nothing magic with references: they are implemented as
 a one-field mutable record, as follows.
 \begin{caml_example}
 type 'a ref = { mutable contents: 'a };;
-let (!) ref = ref.contents;;
-let (:=) ref newval = ref.contents <- newval;;
+let (!) r = r.contents;;
+let (:=) r newval = r.contents <- newval;;
 \end{caml_example}
 
 \subsection*{Exceptions}
@@ -343,8 +321,8 @@ the "List.assoc" function, which returns the data associated with a
 given key in a list of (key, data) pairs, raises the predefined
 exception "Not_found" when the key does not appear in the list:
 \begin{caml_example}
-List.assoc 1 [0, "zero"; 1, "one"];;
-List.assoc 2 [0, "zero"; 1, "one"];;
+List.assoc 1 [(0, "zero"); (1, "one")];;
+List.assoc 2 [(0, "zero"); (1, "one")];;
 \end{caml_example}
 
 Exceptions can be trapped with the "try"\ldots"with" construct:
@@ -376,3 +354,197 @@ let temporarily_set_reference ref newval funct =
     raise x;;
 \end{caml_example}
 
+\subsection*{Symbolic processing of expressions}
+
+We finish this introduction with a more complete example
+representative of the use of Caml for symbolic processing: formal
+manipulations of arithmetic expressions containing variables. The
+following variant type describes the expressions we shall manipulate:
+\begin{caml_example}
+type expression =
+    Const of float
+  | Var of string
+  | Sum of expression * expression    (* e1 + e2 *)
+  | Diff of expression * expression   (* e1 - e2 *)
+  | Prod of expression * expression   (* e1 * e2 *)
+  | Quot of expression * expression   (* e1 / e2 *)
+;;
+\end{caml_example}
+
+We first define a function to evaluate an expression given an
+environment that maps variable names to their values. For simplicity,
+the environment is represented as an association list.
+\begin{caml_example}
+exception Unbound_variable of string;;
+let rec eval env exp =
+  match exp with
+    Const c -> c
+  | Var v ->
+      (try List.assoc v env with Not_found -> raise(Unbound_variable v))
+  | Sum(f, g) -> eval env f +. eval env g
+  | Diff(f, g) -> eval env f -. eval env g
+  | Prod(f, g) -> eval env f *. eval env g
+  | Quot(f, g) -> eval env f /. eval env g;;
+eval [("x", 1.0); ("y", 3.14)] (Prod(Sum(Var "x", Const 2.0), Var "y"));;
+\end{caml_example}
+
+Now for a real symbolic processing, we define the derivative of an
+expression with respect to a variable "dv":
+\begin{caml_example}
+let rec deriv exp dv =
+  match exp with
+    Const c -> Const 0.0
+  | Var v -> if v = dv then Const 1.0 else Const 0.0
+  | Sum(f, g) -> Sum(deriv f dv, deriv g dv)
+  | Diff(f, g) -> Diff(deriv f dv, deriv g dv)
+  | Prod(f, g) -> Sum(Prod(f, deriv g dv), Prod(deriv f dv, g))
+  | Quot(f, g) -> Quot(Diff(Prod(deriv f dv, g), Prod(f, deriv g dv)),
+                       Prod(g, g))
+;;
+deriv (Quot(Const 1.0, Var "x")) "x";;
+\end{caml_example}
+
+\subsection*{Pretty-printing and parsing}
+
+As shown in the examples above, the internal representation (also
+called {\em abstract syntax\/}) of expressions quickly becomes hard to
+read and write as the expressions get larger. We need a printer and a
+parser to go back and forth between the abstract syntax and the {\em
+concrete syntax}, which in the case of expressions is the familiar
+algebraic notation (e.g. "2*x+1").
+
+For the printing function, we take into account the usual precedence
+rules (i.e. "*" binds tighter than "+") to avoid printing unnecessary
+parentheses. To this end, we maintain the current operator precedence
+and print parentheses around an operator only if its precedence is
+less than the current precedence.
+\begin{caml_example}
+let print_expr exp =
+  (* Local function definitions *)
+  let open_paren prec op_prec =
+    if prec > op_prec then print_string "(" in
+  let close_paren prec op_prec =
+    if prec > op_prec then print_string ")" in
+  let rec print prec exp =     (* prec is the current precedence *)
+    match exp with
+      Const c -> print_float c
+    | Var v -> print_string v
+    | Sum(f, g) ->
+        open_paren prec 0;
+        print 0 f; print_string " + "; print 0 g;
+        close_paren prec 0
+    | Diff(f, g) ->
+        open_paren prec 0;
+        print 0 f; print_string " - "; print 1 g;
+        close_paren prec 0
+    | Prod(f, g) ->
+        open_paren prec 2;
+        print 2 f; print_string " * "; print 2 g;
+        close_paren prec 2
+    | Quot(f, g) ->
+        open_paren prec 2;
+        print 2 f; print_string " / "; print 3 g;
+        close_paren prec 2
+  in print 0 exp;;
+let e = Sum(Prod(Const 2.0, Var "x"), Const 1.0);;
+print_expr e; print_newline();;
+print_expr (deriv e "x"); print_newline();;
+\end{caml_example}
+
+Parsing (transforming concrete syntax into abstract syntax) is usually
+more delicate. Caml offers several tools to help write parsers:
+on the one hand, Caml versions of the lexer generator Lex and the
+parser generator Yacc (see chapter~\ref{c:ocamlyacc}), which handle
+LALR(1) languages using push-down automata; on the other hand, a
+predefined type of streams (of characters or tokens) and
+pattern-matching over streams, which facilitate the writing of
+recursive-descent parsers for LL(1) languages. An example using
+"ocamllex" and "ocamlyacc" is given in
+chapter~\ref{c:ocamlyacc}. Here, we will use stream parsers.
+
+\begin{caml_example}
+open Genlex;;	
+let lexer = make_lexer ["("; ")"; "+"; "-"; "*"; "/"];;
+\end{caml_example}
+For the lexical analysis phase (transformation of the input text into
+a stream of tokens), we use a ``generic'' lexer provided in the
+standard library module "Genlex". The "make_lexer" function takes a
+list of keywords and returns a lexing function that ``tokenizes'' an
+input stream of characters. Tokens are either identifiers, keywords,
+or literals (integer, floats, characters, strings). Whitespace and
+comments are skipped.
+\begin{caml_example}
+let token_stream = lexer(Stream.of_string "1.0 +x");;
+Stream.next token_stream;;
+Stream.next token_stream;;
+Stream.next token_stream;;
+\end{caml_example}
+
+The parser itself operates by pattern-matching on the stream of
+tokens. As usual with recursive descent parsers, we use several
+intermediate parsing functions to reflect the precedence and
+associativity of operators. Pattern-matching over streams is more
+powerful than on regular data structures, as it allows recursive calls
+to parsing functions inside the parser for matching sub-components of
+the input stream. See chapter~\ref{c:extensions} for more details.
+
+\begin{caml_example}
+let rec parse_expr = parser
+    [< e1 = parse_mult; e = parse_more_adds e1 >] -> e
+and parse_more_adds e1 = parser
+    [< 'Kwd "+"; e2 = parse_mult; e = parse_more_adds (Sum(e1, e2)) >] -> e
+  | [< 'Kwd "-"; e2 = parse_mult; e = parse_more_adds (Diff(e1, e2)) >] -> e
+  | [< >] -> e1
+and parse_mult = parser
+    [< e1 = parse_simple; e = parse_more_mults e1 >] -> e
+and parse_more_mults e1 = parser
+    [< 'Kwd "*"; e2 = parse_simple; e = parse_more_mults (Prod(e1, e2)) >] -> e
+  | [< 'Kwd "/"; e2 = parse_simple; e = parse_more_mults (Quot(e1, e2)) >] -> e
+  | [< >] -> e1
+and parse_simple = parser
+    [< 'Ident s >] -> Var s
+  | [< 'Int i >] -> Const(float i)
+  | [< 'Float f >] -> Const f
+  | [< 'Kwd "("; e = parse_expr; 'Kwd ")" >] -> e;;
+\end{caml_example}
+
+Composing the lexer and parser, we finally obtain a function to read
+an expression from a character string:
+\begin{caml_example}
+let read_expr s = parse_expr(lexer(Stream.of_string s));;
+read_expr "2*(x+y)";;
+\end{caml_example}
+
+\subsection*{Standalone Caml programs}
+
+All examples given so far were executed under the interactive system.
+Caml code can also be compiled separately and executed
+non-interactively using the batch compiler "ocamlc". The source code
+must be put in a file with extension ".ml". It consists of a sequence
+of phrases, which will be evaluated at runtime in their order of
+appearance in the source file. Unlike in interactive mode, types and
+values are not printed automatically; the program must call printing
+functions explicitly to produce some output. Here is a sample
+standalone program to print Fibonacci numbers:
+\begin{verbatim}
+(* File fib.ml *)
+let rec fib n =
+  if n < 2 then 1 else fib(n-1) + fib(n-2);;
+let main () =
+  let arg = int_of_string Sys.argv.(1) in
+  print_int(fib arg);
+  print_newline();
+  exit 0;;
+main ();;
+\end{verbatim}
+"Sys.argv" is an array of strings containing the command-line
+parameters. "Sys.argv.(1)" is thus the first command-line parameter. 
+The program above is compiled and executed with the following shell
+commands:
+\begin{verbatim}
+$ ocamlc -o fib fib.ml
+$ ./fib 10
+89
+$ ./fib 20
+10946
+\end{verbatim}

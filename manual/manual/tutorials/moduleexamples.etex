@@ -1,10 +1,8 @@
-\chapter{An introduction to the module system}
-\label{c:intro-modules}
+\chapter{The module system} \label{c:moduleexamples}
 
-This chapter is a tutorial introduction to the module system of Caml
-Special Light.
+This chapter introduces the module system of Objective Caml.
 
-\section{Structures}
+\subsection*{Structures}
 
 A primary motivation for modules is to package together related
 definitions (such as the definitions of a data type and associated
@@ -23,11 +21,11 @@ module PrioQueue =
     let empty = Empty
     let rec insert queue prio elt =
       match queue with
-        Empty -> Node(Empty, prio, elt, Empty)
+        Empty -> Node(prio, elt, Empty, Empty)
       | Node(p, e, left, right) ->
           if prio <= p
-          then Node(prio, elt, add right p e, left)
-          else Node(p, e, add right prio elt, left)
+          then Node(prio, elt, insert right p e, left)
+          else Node(p, e, insert right prio elt, left)
     exception Queue_is_empty
     let rec remove_top = function
         Empty -> raise Queue_is_empty
@@ -50,10 +48,10 @@ the function "insert" defined inside the structure
 "PrioQueue". Similarly, "PrioQueue.queue" in a type context is the
 type "queue" defined in "PrioQueue". 
 \begin{caml_example}
-PrioQueue.add 1 "hello" PrioQueue.empty;;
+PrioQueue.insert PrioQueue.empty 1 "hello";;
 \end{caml_example}
 
-\section{Signatures}
+\subsection*{Signatures}
 
 Signatures are interfaces for structures. A signature specifies
 which components of a structure are accessible from the outside, and
@@ -62,7 +60,7 @@ with which type. It can be used to hide some components of a structure
 restricted type. For instance, the signature below specifies the three
 priority queue operations "empty", "insert" and "extract", but not the
 auxiliary function "remove_top". Similarly, it makes the "queue" type
-abstract (by not providing its actual representation as a concrete type)
+abstract (by not providing its actual representation as a concrete type).
 \begin{caml_example}
 module type PRIOQUEUE =
   sig
@@ -81,7 +79,7 @@ queues is hidden:
 \begin{caml_example}
 module AbstractPrioQueue = (PrioQueue : PRIOQUEUE);;
 AbstractPrioQueue.remove_top;;
-AbstractPrioQueue.add 1 "hello" AbstractPrioQueue.empty;;
+AbstractPrioQueue.insert AbstractPrioQueue.empty 1 "hello";;
 \end{caml_example}
 The restriction can also be performed during the definition of the
 structure, as in
@@ -93,7 +91,7 @@ An alternate syntax is provided for the above:
 module PrioQueue : PRIOQUEUE = struct ... end;;
 \end{verbatim}
 
-\section{Functors}
+\subsection*{Functors}
 
 Functors are functions from structures to structures. They are used to
 express parameterized structures: a structure "A" parameterized by a
@@ -109,13 +107,11 @@ and an ordering function over this type (used to keep the sets
 sorted):
 \begin{caml_example}
 type comparison = Less | Equal | Greater;;
-
 module type ORDERED_TYPE =
   sig
     type t
     val cmp: t -> t -> comparison
   end;;
-
 module Set =
   functor (Elt: ORDERED_TYPE) ->
     struct
@@ -149,10 +145,10 @@ module OrderedString =
     let cmp x y = if x = y then Equal else if x < y then Less else Greater
   end;;
 module StringSet = Set(OrderedString);;
-StringSet.mem "bar" (StringSet.add "foo" StringSet.empty);;
+StringSet.member "bar" (StringSet.add "foo" StringSet.empty);;
 \end{caml_example}
 
-\section{Functors and type abstraction}
+\subsection*{Functors and type abstraction}
 
 As in the "PrioQueue" example, it would be good style to hide the
 actual implementation of the type "set", so that users of the
@@ -247,5 +243,69 @@ operations from "AbstractStringSet" to values of type
 "NoCaseStringSet.set" could give incorrect results, or build
 lists that violate the invariants of "NoCaseStringSet".
 
-\section{Modules and separate compilation}
+\subsection*{Modules and separate compilation}
 
+All examples of modules so far have been given in the context of the
+interactive system. However, modules are most useful for large,
+batch-compiled programs. For these programs, it is a practical
+necessity to split the source into several files, called compilation
+units, that can be compiled separately, thus minimizing recompilation
+after changes.
+
+In Objective Caml, compilation units are special cases of structures
+and signatures, and the relationship between the units can be
+explained easily in terms of the module system. A compilation unit \var{a}
+comprises two files:
+\begin{itemize}
+\item the implementation file \var{a}".ml", which contains a sequence
+of definitions, analogous to the inside of a "struct"\ldots"end"
+construct;
+\item the interface file \var{a}".mli", which contains a sequence of
+specifications, analogous to the inside of a "sig"\ldots"end"
+construct.
+\end{itemize}
+Both files define a structure named \var{A} (same name as the base name
+\var{a} of the two files, with the first letter capitalized), as if
+the following definition was entered at top-level:
+\begin{alltt}
+module \var{A}: sig (* \hbox{contents of file} \var{a}.mli *) end
+        = struct (* \hbox{contents of file} \var{a}.ml *) end;;
+\end{alltt}
+The files defining the compilation units can be compiled separately
+using the "ocaml -c" command (the "-c" option means ``compile only, do
+not try to link''); this produces compiled interface files (with
+extension ".cmi") and compiled object code files (with extension
+".cmo"). When all units have been compiled, their ".cmo" files are
+linked together using the "ocaml" command. For instance, the following
+commands compile and link a program composed of two compilation units
+"aux" and "main":
+\begin{verbatim}
+$ ocamlc -c aux.mli                     # produces aux.cmi
+$ ocamlc -c aux.ml                      # produces aux.cmo
+$ ocamlc -c main.mli                    # produces main.cmi
+$ ocamlc -c main.ml                     # produces main.cmo
+$ ocamlc -o theprogram aux.cmo main.cmo
+\end{verbatim}
+The program behaves exactly as if the following phrases were entered
+at top-level:
+\begin{alltt}
+module Aux: sig (* \hbox{contents of} aux.mli *)
+          = struct (* \hbox{contents of} aux.ml *);;
+module Main: sig (* \hbox{contents of} main.mli *)
+           = struct (* \hbox{contents of} main.ml *);;
+\end{alltt}
+In particular, "Main" can refer to "Aux": the definitions and
+declarations contained in "main.ml" and "main.mli" can refer to
+definition in "aux.ml", using the "Aux."\var{ident} notation, provided
+these definitions are exported in "aux.mli".
+
+The order in which the ".cmo" files are given to "ocaml" during the
+linking phase determines the order in which the module definitions
+occur. Hence, in the example above, "Aux" appears first and "Main" can
+refer to it, but "Aux" cannot refer to "Main".
+
+Notice that only top-level structures and signatures can be mapped to
+separately-compiled files, but not functors nor functor types.
+However, all module-class objects can appear as components of a
+structure, so the solution is to put the functor or functor type
+inside a structure, which can then be mapped to a file.

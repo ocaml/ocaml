@@ -5,7 +5,7 @@ This manual documents the release \ocamlversion\ of the Objective Caml
 system. It is organized as follows.
 \begin{itemize}
 \item Part~\ref{p:tutorials}, ``An introduction to Objective Caml'',
-is a tutorial introduction to the language.
+gives an overview of the language.
 \item Part~\ref{p:refman}, ``The Objective Caml language'', is the
 reference description of the language.
 \item Part~\ref{p:commands}, ``The Objective Caml tools, documents

@@ -14,9 +14,9 @@ clean:
 .SUFFIXES: .etex .tex .htex
 
 .etex.tex:
-	$(CAMLLATEX) -o - $*.etex | $(TEXQUOTE) > $*.tex
+	$(CAMLLATEX) -n 80 -o - $*.etex | $(TEXQUOTE) > $*.tex
 
 .etex.htex:
-	$(CAMLLATEX) -o $*.htex $*.etex
+	$(CAMLLATEX) -n 80 -o $*.htex $*.etex
 
 $(ALLFILES): $(CAMLLATEX) $(TEXQUOTE)
