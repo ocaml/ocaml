@@ -1,0 +1,46 @@
+### Compile-time configuration
+
+########## General configuration
+
+### Where to install the MPW tool binaries
+set -e BINDIR "{mpw}User Commands:"
+
+### Where to install the standard library for MPW tools
+set -e LIBDIR "{mpw}User Commands:ocaml-lib:"
+
+### Where to install the help file
+set -e HELPFILE "{mpw}OCaml.help"
+
+### Where to install the application and the standard library
+set -e APPLIDIR "{mpw}::OCaml:"
+
+
+############# Configuration for the contributed libraries
+
+### Which libraries to compile and install
+# Currently available:
+#       str             Regular expressions and high-level string processing
+#       num             Arbitrary-precision rational arithmetic
+#       dynlink         Dynamic linking of bytecode
+#       graph           Graphics (for the standalone application only)
+#
+set -e OTHERLIBRARIES "num str dynlink graph"
+
+
+############# Configuration for the native-code compiler
+# (not used)
+
+set -e ARCH none
+set -e MODEL ppc
+set -e SYSTEM unknown
+set -e NATIVECC MrC
+
+
+############# Version numbers (do not change)
+
+set -e OCAMLMAJOR 2
+set -e OCAMLMINOR 02
+set -e MAJOR 1
+set -e MINOR 0
+set -e STAGE a
+set -e REV 4

@@ -1,0 +1,10 @@
+jumptbl.h
+primitives
+prims.c
+opnames.h
+ocamlrun
+ocamlrund
+libcamlrun.x
+*.c.x
+ocamlrun.xcoff
+interp.a.lst

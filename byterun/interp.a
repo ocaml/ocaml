@@ -1,0 +1,1306 @@
+;***********************************************************************/
+;*                                                                     */
+;*                           Objective Caml                            */
+;*                                                                     */
+;*            Damien Doligez, Projet Para, INRIA Rocquencourt          */
+;*                                                                     */
+;*  Copyright 1996 Institut National de Recherche en Informatique et   */
+;*  en Automatique.  Distributed only by permission.                   */
+;*                                                                     */
+;***********************************************************************/
+
+;* $Id$ */
+
+;* The bytecode interpreter in 68000 assembly language */
+
+  string asis
+  print nopage
+  case obj
+
+; These constants must be kept in sync with the C code:
+
+Black equ $300
+Double_array_tag equ 254
+Double_tag equ 253
+Closure_tag equ 250
+Infix_tag equ 249
+Val_unit equ 1
+Val_false equ 1
+Val_true    equ 3
+
+  import (LMODT, LDIVT, ULMULT) : code
+  import (extern_sp, atom_table, local_roots, stack_high) : data
+  import (external_raise) : data
+  import (__setjmp) : code
+  import (exn_bucket, young_ptr, young_limit) : data
+  import (minor_collection, modify) : code
+  import (global_data, heap_start, heap_end, page_table, gc_phase): data
+  import (darken): code
+  import (young_start, young_end, ref_table_ptr, ref_table_limit): data
+  import (realloc_ref_table): code
+  import (trapsp): data
+  import (longjmp): code
+  import (stack_threshold): data
+  import (realloc_stack): code
+  import (something_to_do, force_major_slice, pending_signal): data
+  import (signal_handlers, rotatecursor_flag): data
+  import (execute_signal): code
+  import (rotatecursor_action): code
+  import (cprim): data
+  import (raise_zero_divide, fatal_error_arg): code
+  import (thread_code): code
+  import (instr_table, instr_base): data
+  import (callback_depth): data
+
+  import (disasm_instr): code                     ; debug
+
+  gbla &DEBUG
+&DEBUG seta &FINDSYM(&SYSGLOBAL, 'DEBUG')
+
+ IF &DEBUG THEN
+   machine mc68020
+   print push,off
+   include 'Types.a'
+   print pop
+ ENDIF
+
+fatalmsg: record
+          dc.b       'Fatal error in interp: bad opcode (%lx)', $0D, $00
+endr
+
+interprete proc export
+
+
+; Register assignment:
+
+; temp (caller-save)            A0
+; temp (caller-save)            A1
+accu_                    equ    A2
+pc_                      equ    A3
+sp_                      equ    A4
+env_                     equ    A5
+jtbl_                    equ    A6
+; 68k stack pointer             A7
+
+; temp (caller-save)            D0
+; temp (callee-save)            D1
+y_limit_reg              equ    D2
+y_ptr_reg                equ    D3
+; temp (callee-save)            D4
+; temp (callee-save)            D5
+saved_A5                 equ    D6
+extra_args_              equ    D7
+
+
+; stack, relative to A6
+
+; raise_buf_               equ      -$40
+; initial_sp_offset_       equ      -$44
+; initial_external_raise_  equ      -$48
+; initial_local_roots_     equ      -$4C
+; (nothing)                equ      -$50  (was initial_callback_depth_)
+
+
+; stack, relative to A7
+
+local_var_size_          equ      $50
+raise_buf_               equ      $10
+initial_sp_offset_       equ      $0C
+initial_external_raise_  equ      $08
+initial_local_roots_     equ      $04
+; (nothing)              equ      $00  (was initial_callback_depth_)
+
+
+; To call a C function, we must:
+; 1. set A5 back to its normal value
+; 2. put young_ptr and young_limit into the global variables
+
+; Note that this file must be assembled with the option  "-model far",
+; so access to global variables doesn't use A5.
+
+ macro
+   Call_setup
+          EXG.L      saved_A5, A5
+          MOVE.L     y_ptr_reg, (young_ptr).L
+          MOVE.L     y_limit_reg, (young_limit).L
+ endm
+
+ macro
+   Call_restore
+          MOVE.L     (young_limit).L, y_limit_reg
+          MOVE.L     (young_ptr).L, y_ptr_reg
+          EXG.L      saved_A5, A5
+ endm
+
+; To call a C function that uses the Caml runtime globals
+ macro
+   Setup_for_c_call
+          MOVE.L     env_, -(sp_)
+          MOVE.L     sp_, (extern_sp).L
+ endm
+
+ macro
+   Restore_after_c_call
+          MOVEA.L    (extern_sp).L, sp_
+          MOVEA.L    (sp_)+, env_
+ endm
+
+; To call a GC function
+ macro
+   Setup_for_gc
+          MOVE.L     env_, -(sp_)
+          MOVE.L     accu_, -(sp_)
+          MOVE.L     sp_, (extern_sp).L
+ endm
+
+ macro
+   Restore_after_gc
+          MOVEA.L    (sp_)+, accu_
+          MOVEA.L    (sp_)+, env_
+ endm
+
+; Dispatch to the next byte-code instruction
+ IF &DEBUG THEN
+   macro
+     Dispatch
+          BRA.L      camldispatch
+   endm
+ ELSE
+   macro
+     Dispatch
+          MOVE.L     (pc_)+, D0
+          JMP        (jtbl_, D0.W)
+   endm
+ ENDIF
+
+; Never executed unless something goes wrong
+ macro
+   NotReached
+          BRA.W      fatal
+ endm
+
+; Add some NOPs between useful instructions (to catch bad byte-codes)
+
+ macro
+   NOPs &n
+          DCB.W      &n, $4E71
+ endm
+ 
+ macro
+   Spacer &n=$10
+          NOPs       &n-2
+          NotReached
+ endm
+
+; The normal end of an instruction
+ macro
+   Next &n=$10
+          Dispatch
+          Spacer     &n
+ endm          
+
+; The Alloc_small macro from memory.h
+; Alloc_small [#],bhsize, [#],tag_col, result
+; input: bhsize = size in bytes including header
+;        tag_col = Black + (value of the tag)
+;        result = address register for the result
+; '#' specifies a constant, (emtpy) specifies a register
+
+; All register are preserved except A0, A1, D0, D1,
+; and &bhsize, &tag_col if they are registers.
+ macro
+   Alloc_small &sizetype, &bhsize, &tagtype, &tag_col, &result
+          MOVEA.L    y_ptr_reg, &result
+          SUBA.L     &sizetype.&bhsize, &result
+          CMPA.L     y_limit_reg, &result
+          BCC.S      @nogc
+    IF &tagtype = '' THEN
+          MOVE.L     &tag_col, -(A7)
+    ENDIF
+    IF &sizetype = '' THEN
+          MOVE.L     &bhsize, -(A7)
+    ENDIF
+          Setup_for_gc
+          Call_setup
+          JSR        (minor_collection).L
+          Call_restore
+          Restore_after_gc
+    IF &sizetype = '' THEN
+          MOVE.L     (A7)+, &bhsize
+    ENDIF
+    IF &tagtype = '' THEN
+          MOVE.L     (A7)+, &tag_col
+    ENDIF
+          MOVEA.L    y_ptr_reg, &result
+          SUBA.L     &sizetype.&bhsize, &result
+@nogc:    MOVE.L     &result, y_ptr_reg
+    IF &sizetype = '' THEN
+          SUBQ.L     #4, &bhsize
+          LSL.L      #8, &bhsize
+          OR.W       &tagtype.&tag_col, &bhsize
+          MOVE.L     &bhsize, (&result)+
+    ELSEIF &tagtype = '' THEN
+          ORI.L      #(&bhsize-4) << 8, &tag_col
+          MOVE.L     &tag_col, (&result)+
+    ELSE
+          MOVE.L     #((&bhsize-4)<<8) + &tag_col, (&result)+
+    ENDIF
+ endm
+
+
+; The threaded-code interpreter starts here.
+
+          ; _Debugger
+          MOVEM.L    D3-D7/A2-A6,-(A7)                  ; 10 registers
+          LEA.L      -local_var_size_(A7), A7
+          Call_restore
+
+          MOVE.L     local_var_size_+4*10+4(A7), D0     ; argument 0 (prog)
+          BNE.S      noinit                             ; == NULL => init
+          LEA.L      table(PC), A0
+          MOVE.L     A0, (instr_table).L
+          CLR.L      (instr_base).L
+          MOVEQ.L    #1, D0
+
+; return from the threaded-code interpreter
+ macro
+   interprete_return
+     gbla &section
+          Call_setup
+          LEA.L      local_var_size_(A7), A7
+          MOVEM.L    (A7)+, D3-D7/A2-A6
+          RTS
+
+          dc.b       $80 + 11, 'interprete', $30 + &section
+&section seta &section + 1
+ endm
+
+          interprete_return
+
+noinit:   LEA.L      i_start(PC), jtbl_
+          ADDA.L     #$8000, jtbl_
+          MOVE.L     (local_roots).L, initial_local_roots_(A7)
+          MOVE.L     (stack_high).L, D0
+          SUB.L      (extern_sp).L, D0
+          MOVE.L     D0, initial_sp_offset_(A7)
+          MOVE.L     (external_raise).L, initial_external_raise_(A7)
+          ADDQ.L     #1, (callback_depth).L
+          PEA.L      raise_buf_(A7)
+          Call_setup
+          JSR        (__setjmp).L
+          Call_restore
+          ADDQ.L     #4, A7
+          TST.L      D0
+          BEQ.S      no_jmp
+          MOVE.L     initial_local_roots_(A7), (local_roots).L
+          MOVEA.L    (exn_bucket).L, accu_
+          JMP        raise_exception-i_base(jtbl_)
+no_jmp:   LEA.L      raise_buf_(A7), A0
+          MOVE.L     A0, (external_raise).L
+          MOVEA.L    (extern_sp).L, sp_
+          MOVEA.L    local_var_size_+4*10+4(A7), pc_    ; argument 0 (prog)
+          CLR.L      extra_args_
+          LEA.L      (atom_table+4).L, env_
+          MOVEA.W    #1, accu_
+          Dispatch
+
+; Table of instruction addresses for the thread_code function
+ macro
+   Make_table
+     lcla &i
+     WHILE &i < 133 DO
+          DC.L       i_&i - i_base
+&i     seta &i+1
+     ENDW
+ endm
+
+table:    Make_table
+
+; A 64k-sized chunk of memory where we branch directly
+i_start:  NOPs       $4000
+
+i_base:   NOPs       $100
+
+fatal:    MOVE.L     -4(pc_), -(A7)
+          PEA.L      (fatalmsg).L
+          Call_setup
+          JSR        (fatal_error_arg).L
+          ;NotReached
+
+          Spacer     $100
+
+ macro
+   ACC &n
+          MOVEA.L    4*&n(sp_), accu_
+          Next
+ endm
+
+i_0:      ACC 0
+i_1:      ACC 1
+i_2:      ACC 2
+i_3:      ACC 3
+i_4:      ACC 4
+i_5:      ACC 5
+i_6:      ACC 6
+i_7:      ACC 7
+
+; The code for PUSH is duplicated everywhere
+ macro
+   _PUSH
+          MOVE.L     accu_, -(sp_)
+ endm
+
+i_9:      ; PUSH
+i_10:     ; PUSHACC0
+          _PUSH
+          Next
+
+ macro
+   PUSHACC &n
+          _PUSH
+          MOVEA.L    4*&n(sp_), accu_
+          Next
+ endm
+
+i_11:     PUSHACC 1
+i_12:     PUSHACC 2
+i_13:     PUSHACC 3
+i_14:     PUSHACC 4
+i_15:     PUSHACC 5
+i_16:     PUSHACC 6
+i_17:     PUSHACC 7
+
+i_18:     ; PUSHACC
+          _PUSH
+          ; fall through
+
+i_8:      ; ACC
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          MOVEA.L    (sp_, D0.L), accu_
+          Next
+
+i_19:     ; POP
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          ADDA.L     D0, sp_
+          Next
+
+i_20:     ; ASSIGN
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          MOVE.L     accu_, (sp_, D0.L)
+          MOVEA.W    #1, accu_
+          Next
+
+ macro
+   ENVACC &n
+          MOVEA.L    4*&n(env_), accu_
+          Next
+ endm
+
+i_21:     ENVACC 1
+i_22:     ENVACC 2
+i_23:     ENVACC 3
+i_24:     ENVACC 4
+
+ macro
+   PUSHENVACC &n
+          _PUSH
+          ENVACC &n
+ endm
+
+i_26:     PUSHENVACC 1
+i_27:     PUSHENVACC 2
+i_28:     PUSHENVACC 3
+i_29:     PUSHENVACC 4
+
+i_30:     ; PUSHENVACC
+          _PUSH
+          ; fall through
+
+i_25:     ; ENVACC
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          MOVEA.L    (env_, D0.L), accu_
+          Next
+
+i_31:     ; PUSH_RETADDR
+          MOVE.L     extra_args_, D0
+          ASL.L      #1, D0
+          ADDQ.L     #1, D0
+          MOVE.L     D0, -(sp_)
+          MOVE.L     env_, -(sp_)
+          MOVE.L     (pc_), D0
+          ASL.L      #2, D0
+          ADD.L      pc_, D0
+          MOVE.L     D0, -(sp_)
+          ADDQ.L     #4, pc_
+          Next
+
+i_32:     ; APPLY
+          MOVE.L     (pc_), extra_args_
+          SUBQ.L     #1, extra_args_
+          MOVEA.L    (accu_), pc_
+          MOVEA.L    accu_, env_
+          BRA        check_stacks
+          Spacer
+
+ macro
+   APPLY &n
+          LEA.L      -$0C(sp_), A0
+          MOVEA.L    A0, A1
+     lcla &i
+     WHILE &i < &n-1 DO
+          MOVE.L     (sp_)+, (A0)+
+&i     seta &i+1
+     ENDW
+          MOVE.L     (sp_), (A0)+
+          MOVEA.L    A1, sp_
+          MOVE.L     pc_, (A0)+
+          MOVE.L     env_, (A0)+
+          ASL.L      #1, extra_args_
+          ADDQ.L     #1, extra_args_
+          MOVE.L     extra_args_, (A0)
+          MOVEA.L    (accu_), pc_
+          MOVEA.L    accu_, env_
+          MOVEQ      #&n-1, extra_args_
+          BRA        check_stacks
+          Spacer
+ endm
+
+i_33:     APPLY 1
+i_34:     APPLY 2
+i_35:     APPLY 3
+
+i_36:     ; APPTERM
+          MOVE.L     (pc_)+, D1             ; D1 = nargs
+          MOVE.L     (pc_), D0              ; D0 = slotsize
+          ADD.L      D1, extra_args_
+          SUBQ.L     #1, extra_args_
+          SUB.L      D1, D0                 ; D0 = slotsize - nargs
+          ASL.L      #2, D0
+          LEA.L      (sp_, D0.L), A0        ; A0 = newsp
+          ASL.L      #2, D1                 ; D1 = 4*i
+          BRA.S      i_36b
+i_36a:    MOVE.L     (sp_, D1.L), (A0, D1.L)
+i_36b:    SUBQ.L     #4, D1
+          BPL.S      i_36a                  ; >= 0
+          MOVEA.L    A0, sp_
+          MOVEA.L    (accu_), pc_
+          MOVEA.L    accu_, env_
+          BRA        check_stacks
+          Spacer
+
+ macro
+   APPTERM &n
+          MOVEA.L    sp_, A0
+          MOVE.L     (pc_), D0
+          ASL.L      #2, D0
+          ADDA.L     D0, sp_
+     lcla &i
+&i   seta &n-1
+     WHILE &i >= 0 DO
+          MOVE.L     4*&i(A0), -(sp_)
+&i     seta &i-1
+     ENDW
+          MOVEA.L    (accu_), pc_
+          MOVEA.L    accu_, env_
+     IF &n > 1 THEN
+          ADDQ.L     #&n-1, extra_args_
+     ENDIF
+          BRA        check_stacks
+          Spacer
+ endm
+
+i_37:     APPTERM 1
+i_38:     APPTERM 2
+i_39:     APPTERM 3
+
+i_40:     ; RETURN
+          MOVE.L     (pc_), D0
+          ASL.L      #2, D0
+          ADD.L      D0, sp_
+          TST.L      extra_args_
+          BLE.S      i_40a
+          SUBQ.L     #1, extra_args_
+          MOVEA.L    (accu_), pc_
+          MOVEA.L    accu_, env_
+          Next
+i_40a:    MOVEA.L    (sp_)+, pc_
+          MOVEA.L    (sp_)+, env_
+          MOVE.L     (sp_)+, extra_args_
+          ASR.L      #1, extra_args_
+          Next
+
+i_41:     ; RESTART
+          MOVE.L     -4(env_), D5
+          LSR.L      #8, D5
+          LSR.L      #2, D5
+          SUBQ.L     #2, D5                 ; D5 = num_args
+          MOVE.L     D5, D0
+          ASL.L      #2, D0                 ; D0 = i*4
+          SUB.L      D0, sp_
+          BRA.S      i_41b
+i_41a:    MOVE.L     8(env_, D0.L), (sp_, D0.L)
+i_41b:    SUBQ.L     #4, D0
+          BPL.S      i_41a
+          MOVEA.L    4(env_), env_
+          ADD.L      D5, extra_args_
+          Next
+
+i_42:     ; GRAB
+          MOVE.L     (pc_)+, D0                   ; D0 = required
+          CMP.L      extra_args_, D0
+          BGT.S      i_42a
+          SUB.L      D0, extra_args_
+          Next
+i_42a:    MOVE.L     extra_args_, D4              ; extra_args_ = num_args - 1
+          ADDQ.L     #4, D4                       ; num_args + 2 + 1(hd)
+          LSL.L      #2, D4
+          Alloc_small ,D4, #,Black+Closure_tag, accu_
+          MOVE.L     env_, 4(accu_)
+          LEA.L      8(accu_), A0
+i_42b:    MOVE.L     (sp_)+, (A0)+
+          SUBQ.L     #1, extra_args_
+          BPL.S      i_42b
+          LEA.L      -$0C(pc_), A0
+          MOVE.L     A0, (accu_)
+          MOVEA.L    (sp_)+, pc_
+          MOVEA.L    (sp_)+, env_
+          MOVE.L     (sp_)+, extra_args_
+          ASR.L      #1, extra_args_
+          Dispatch
+
+i_43:     ; CLOSURE
+          MOVE.L     (pc_)+, D5                   ; D5 = nvars
+          BLE.S      i_43a
+          MOVE.L     accu_, -(sp_)
+i_43a:    MOVE.L     D5, D0
+          ADDQ.L     #2, D0                       ; D0 = 1 + nvars + 1(hd)
+          ASL.L      #2, D0
+          Alloc_small ,D0, #,Black+Closure_tag, accu_
+          MOVE.L     (pc_), D0
+          ASL.L      #2, D0
+          ADD.L      pc_, D0
+          MOVEA.L    accu_, A0
+          MOVE.L     D0, (A0)+
+          ADDQ.L     #4, pc_
+          BRA.S      i_43c
+i_43b:    MOVE.L     (sp_)+, (A0)+
+i_43c:    SUBQ.L     #1, D5
+          BPL.S      i_43b                        ; >= 0
+          Dispatch
+
+i_44:     ; CLOSUREREC
+          MOVE.L     (pc_)+, D4                   ; D4 = nfuncs
+          MOVE.L     (pc_)+, D5                   ; D5 = nvars
+          BLE.S      i_44a
+          MOVE.L     accu_, -(sp_)
+i_44a:    MOVE.L     D4, D0
+          ASL.L      #1, D0
+          ADD.L      D5, D0
+          ASL.L      #2, D0
+          Alloc_small ,D0, #,Black+Closure_tag, accu_
+          MOVEA.L    accu_, A0
+          MOVE.L     D4, D0
+          ASL.L      #3, D0
+          SUBQ.L     #4, D0
+          ADDA.L     D0, A0                       ; A0 = p
+          MOVE.L     D5, D0
+          BRA.S      i_44c
+i_44b:    MOVE.L     (sp_)+, (A0)+
+i_44c:    SUBQ.L     #1, D0
+          BPL.S      i_44b                        ; >= 0
+          MOVE.L     accu_, A0                    ; A0 = p
+          MOVE.L     (pc_), D0
+          ASL.L      #2, D0
+          ADD.L      pc_, D0
+          MOVE.L     D0, (A0)+
+          MOVE.L     accu_, -(sp_)
+          MOVEQ.L    #1, D0                       ; D0 = i
+          BRA.S      i_44e
+i_44d:    MOVE.L     D0, D1
+          ASL.L      #8, D1
+          ASL.L      #3, D1
+          ADD.W      #Black+Infix_tag, D1
+          MOVE.L     D1, (A0)+
+          MOVE.L     A0, -(sp_)
+          MOVE.L     D0, D1
+          ASL.L      #2, D1
+          MOVE.L     (pc_, D1), D1
+          ASL.L      #2, D1
+          ADD.L      pc_, D1
+          MOVE.L     D1, (A0)+
+          ADDQ.L     #1, D0
+i_44e:    CMP.L      D4, D0
+          BMI.S      i_44d                        ; D0 < D4
+          ASL.L      #2, D4
+          ADDA.L     D4, pc_
+          Next
+
+i_52:     ; PUSHOFFSETCLOSURE
+          _PUSH
+          ; fall through
+
+i_48:     ; OFFSETCLOSURE
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          ADD.L      env_, D0
+          MOVE.L     D0, accu_
+          Next
+
+i_49:     ; PUSHOFFSETCLOSUREM2
+          _PUSH
+          ; fall through
+
+i_45:     ; OFFSETCLOSUREM2
+          MOVE.L     env_, accu_
+          SUBQ.L     #8, accu_
+          Next
+
+i_50:     ; PUSHOFFSETCLOSURE0
+          _PUSH
+          ; fall through
+
+i_46:     ; OFFSETCLOSURE0
+          MOVE.L     env_, accu_
+          Next
+
+i_51:     ; PUSHOFFSETCLOSURE2
+          _PUSH
+          ; fall through
+
+i_47:     ; OFFSETCLOSURE2
+          MOVE.L     env_, accu_
+          ADDQ.L     #8, accu_
+          Next
+
+i_54:     ; PUSHGETGLOBAL
+          _PUSH
+          ; fall through
+
+i_53:     ; GETGLOBAL
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          MOVEA.L    (global_data).L, A0
+          MOVEA.L    (A0, D0.L), accu_
+          Next
+
+i_56:     ; PUSHGETGLOBALFIELD
+          _PUSH
+          ; fall through
+
+i_55:     ; GETGLOBALFIELD
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          MOVEA.L    (global_data).L, A0
+          MOVEA.L    (A0, D0.L), accu_
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          MOVEA.L    (accu_, D0.L), accu_
+          Next
+
+i_57:     ; SETGLOBAL
+          MOVE.L     accu_, -(A7)
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2,D0
+          MOVEA.L    (global_data).L, A0
+          PEA.L      (A0, D0.L)
+          Call_setup
+          JSR        (modify).L
+          Call_restore
+          ADDQ.L     #8, A7
+          MOVEA.W    #Val_unit, accu_
+          Next
+
+i_60:     ; PUSHATOM0
+          _PUSH
+          ; fall through
+
+i_58:     ; ATOM0
+          LEA.L      (atom_table+4).L, accu_
+          Next
+
+i_61:     ; PUSHATOM
+          _PUSH
+          ; fall through
+
+i_59:     ; ATOM
+          LEA.L      (atom_table+4).L, accu_
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          ADDA.L     D0, accu_
+          Next
+
+i_62:     ; MAKEBLOCK
+          MOVE.L     (pc_)+, D4         ; D4 = wosize
+          MOVE.L     (pc_)+, D1         ; D1 = tag
+          ORI.W      #Black, D1         ; D1 = tag + Black
+          MOVE.L     D4, D0
+          ADDQ.L     #1, D0             ; D0 = whsize
+          LSL.L      #2, D0             ; D0 = bhsize
+          Alloc_small ,D0, ,D1, A0      ; A0 = block
+          MOVE.L     accu_, (A0)
+          MOVEA.L    A0, accu_
+          ADDQ.L     #4, A0
+          BRA.S      i_62b
+i_62a:    MOVE.L     (sp_)+, (A0)+
+i_62b:    SUBQ.L     #1, D4
+          BHI.S      i_62a              ; > 0
+          Next
+
+ macro
+   MAKEBLOCK &n
+          MOVE.L     (pc_)+, D0
+          ORI.W      #$0300, D0
+          Alloc_small #,4*&n+4, ,D0, A0
+          MOVE.L     accu_, (A0)
+          MOVEA.L    A0, accu_
+          ADDQ.L     #4, A0
+     lcla &i
+&i   seta 1
+     WHILE &i < &n DO
+          MOVE.L     (sp_)+, (A0)+
+&i     seta &i+1
+     ENDW
+          Next
+ endm
+
+i_63:     MAKEBLOCK 1
+i_64:     MAKEBLOCK 2
+i_65:     MAKEBLOCK 3
+
+i_66:     ; MAKEFLOATBLOCK
+          MOVE.L     (pc_)+, D5
+          MOVE.L     D5, D0
+          ASL.L      #3, D0
+          ADDQ.L     #4, D0
+          Alloc_small ,D0, #,$3FE, A0
+          MOVE.L     A0, A1
+          MOVE.L     (accu_)+, (A1)+
+          MOVE.L     (accu_), (A1)+
+          MOVEA.L    A0, accu_
+          BRA.S      lbl_66b
+lbl_66a:  MOVE.L     (sp_)+, A0
+          MOVE.L     (A0)+, (A1)+
+          MOVE.L     (A0), (A1)+
+lbl_66b:  SUBQ.L     #1, D5
+          BHI.S      lbl_66a            ; > 0
+          Next
+
+ macro
+   GETFIELD &n
+          MOVEA.L    4*&n(accu_), accu_
+          Next
+ endm
+
+i_67:     GETFIELD   0
+i_68:     GETFIELD   1
+i_69:     GETFIELD   2
+i_70:     GETFIELD   3
+
+i_71:     ; GETFIELD
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          MOVEA.L    (accu_, D0.L), accu_
+          Next
+
+i_72:     ; GETFLOATFIELD
+          Alloc_small #,$C, #,Black+Double_tag, A0
+          MOVE.L     (pc_)+, D0
+          ASL.L      #3, D0
+          MOVE.L     (accu_, D0), (A0)
+          MOVE.L     4(accu_, D0), 4(A0)
+          MOVEA.L    A0, accu_
+          Next
+
+; Here, modify_l takes modify_dest in accu_ and modify_newval on the stack.
+
+i_73:     ; SETFIELD0
+modify_l: MOVE.L     (sp_)+, -(A7)                ; modify_newval
+          MOVE.L     accu_, -(A7)                 ; modify_dest
+          Call_setup
+          JSR        (modify).L
+          Call_restore
+          ADDQ.L     #8, A7
+          MOVE.W     #Val_unit, accu_
+          Next       $100                         ; avoid short branch warning
+
+ macro
+   SETFIELD &n
+          LEA.L      4*&n(accu_), accu_           ; accu_ = modify_dest
+          BRA.W      modify_l
+          Spacer
+ endm
+
+i_74:     SETFIELD 1
+i_75:     SETFIELD 2
+i_76:     SETFIELD 3
+
+i_77:     ; SETFIELD
+          MOVE.L     (pc_)+, D0
+          ASL.L      #$2, D0
+          LEA.L      (accu_, D0.L), accu_         ; accu_ = modify_dest
+          BRA        modify_l
+          Spacer
+
+i_78:     ; SETFLOATFIELD
+          MOVEA.L    (sp_)+, A0
+          MOVE.L     (pc_)+, D0
+          ASL.L      #3, D0
+          ADDA.L     D0, accu_
+          MOVE.L     (A0)+, (accu_)+
+          MOVE.L     (A0), (accu_)
+          MOVEA.W    #Val_unit, accu_
+          Next
+
+i_79:     ; VECTLENGTH
+          MOVE.L     -4(accu_), D0
+          LSR.L      #8, D0
+          LSR.L      #1, D0
+          CMP.B      #Double_array_tag, -1(accu_)
+          BNE.S      lbl_79a
+          LSR.L      #1, D0
+lbl_79a:  ORI.B      #1, D0
+          MOVEA.L    D0, accu_
+          Next
+
+i_80:     ; GETVECTITEM
+          MOVE.L     (sp_)+, D0
+          ASR.L      #1, D0
+          ASL.L      #2, D0
+          MOVEA.L    (accu_, D0.L), accu_
+          Next
+
+i_81:     ; SETVECTITEM
+          MOVE.L     (sp_)+, D0
+          ASR.L      #1, D0
+          ASL.L      #2, D0
+          LEA.L      (accu_, D0.L), accu_       ; accu_ = modify_dest
+          BRA        modify_l
+          Spacer
+
+i_82:     ; GETSTRINGCHAR
+          MOVE.L     (sp_)+, D1
+          ASR.L      #1, D1
+          CLR.L      D0
+          MOVE.B     (accu_, D1.L), D0
+          ASL.L      #1, D0
+          ADDQ.L     #1, D0
+          MOVEA.L    D0, accu_
+          Next
+
+i_83:     ; SETSTRINGCHAR
+          MOVE.L     (sp_)+, D0
+          ASR.L      #1, D0
+          MOVE.L     (sp_)+, D1
+          ASR.L      #1, D1
+          MOVE.B     D1, (accu_, D0.L)
+          MOVEA.W    #1, accu_
+          Next
+
+i_84:     ; BRANCH
+i_BRANCH: MOVE.L     (pc_), D0
+          ASL.L      #2, D0
+          ADDA.L     D0, pc_
+          Next
+
+i_85:     ; BRANCHIF
+          CMPA.W     #Val_false, accu_
+          BNE.S      i_BRANCH
+          ADDQ.L     #4, pc_
+          Next
+
+i_86:     ; BRANCHIFNOT
+          CMPA.W     #Val_false, accu_
+          BEQ.S      i_BRANCH
+          ADDQ.L     #4, pc_
+          Next
+
+i_87:     ; SWITCH
+          CLR.L      D5
+          MOVE.W     (pc_)+, D5                 ; D5 = sizes >> 16
+          CLR.L      D1
+          MOVE.W     (pc_)+, D1                 ; D1 = sizes & 0xFFFF
+          MOVE.L     accu_, D0
+          BTST.L     #0, D0
+          BNE.S      i_87a
+          CLR.L      D0
+          MOVE.B     -1(accu_), D0              ; D0 = index
+          ADD.L      D0, D1
+          LSL.L      #2, D1
+          MOVE.L     (pc_, D1.L), D0            ; D0
+          ASL.L      #2, D0
+          ADD.L      D0, pc_
+          Next
+i_87a:    ASR.L      #1, D0
+          CMP.L      D0, D1
+          BLS.S      i_87b
+          ASL.L      #2, D0
+          MOVE.L     (pc_, D0.L), D0            ; D0 = pc[index]
+          ASL.L      #2, D0
+          ADD.L      D0, pc_
+          Next
+i_87b:    ADD.L      D5, D1
+          LSL.L      #2, D1
+          ADDA.L     D1, pc_
+          Next
+
+i_88:     ; BOOLNOT
+          MOVEQ      #Val_false + Val_true, D0
+          SUB.L      accu_, D0
+          MOVEA.L    D0, accu_
+          Next
+
+i_89:     ; PUSHTRAP
+          MOVE.L     extra_args_, D0
+          ASL.L      #1, D0
+          ADDQ.L     #1, D0
+          MOVE.L     D0, -(sp_)
+          MOVE.L     env_, -(sp_)
+          MOVE.L     (trapsp).L, -(sp_)
+          MOVE.L     (pc_), D0
+          ASL.L      #2, D0
+          ADD.L      pc_, D0
+          MOVE.L     D0, -(sp_)
+          MOVE.L     sp_, (trapsp).L
+          ADDQ.L     #4, pc_
+          Next
+
+i_90:     ; POPTRAP
+          TST.L      (something_to_do).L
+          BEQ.S      i_90a
+          SUBQ.L     #4, pc_
+          BRA        process_signals
+i_90a:    MOVE.L     4(sp_), (trapsp).L
+          LEA.L      $10(sp_), sp_
+          Next
+
+i_91:     ; RAISE                         XXX debugger stuff not implemented
+raise_exception:
+          MOVEA.L    (trapsp).L, sp_
+          MOVEA.L    (stack_high).L, A0
+          SUBA.L     initial_sp_offset_(A7), A0
+          CMPA.L     sp_, A0
+          BHI.S      i_91a
+          MOVE.L     initial_external_raise_(A7), (external_raise).L
+          SUBQ.L     #1, (callback_depth).L
+          MOVE.L     accu_, D0
+          ORI.L      #2, D0                     ; Make_exception_result
+          interprete_return
+i_91a:    MOVEA.L    (sp_)+, pc_
+          MOVE.L     (sp_)+, (trapsp).L
+          MOVEA.L    (sp_)+, env_
+          MOVE.L     (sp_)+, extra_args_
+          ASR.L      #1, extra_args_
+          Dispatch
+
+check_stacks:
+          CMPA.L     (stack_threshold).L, sp_
+          BCC.S      stack_ok
+          MOVE.L     sp_, (extern_sp).L
+          Call_setup
+          JSR        (realloc_stack).L
+          Call_restore
+          MOVE.L     (extern_sp).L, sp_
+stack_ok: ; fall through
+
+i_92:     ; CHECK_SIGNALS
+          TST.L      (something_to_do).L
+          BNE.S      process_signals
+          Next
+process_signals:
+          CLR.L      (something_to_do).L
+          TST.L      (force_major_slice).L
+          BEQ.S      i_92a
+          Setup_for_gc
+          Call_setup
+          JSR        (minor_collection).L
+          Call_restore
+          Restore_after_gc
+i_92a:    MOVE.L     (pending_signal).L, D5
+          CLR.L      (pending_signal).L
+          TST.L      D5
+          BEQ.S      i_92b
+          CLR.L      -(A7)
+          MOVE.L     D5, -(A7)
+          Setup_for_gc
+          Call_setup
+          JSR        (execute_signal).L
+          Call_restore
+          Restore_after_gc
+          ADDQ.L     #8, A7
+i_92b:    TST.L      (rotatecursor_flag).L
+          BEQ.S      i_92c
+          CLR.L      -(A7)
+          Call_setup
+          JSR        (rotatecursor_action).L
+          Call_restore
+          ADDQ.L     #4, A7
+i_92c:    Next
+
+ macro
+   C_CALL &n
+          Setup_for_c_call
+     lcla &i
+&i   seta &n-1
+     WHILE &i > 0 DO
+          MOVE.L     4*&i(sp_), -(A7)
+&i     seta &i-1
+     ENDW
+          MOVE.L     accu_, -(A7)
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          LEA.L      (cprim).L, A0
+          MOVEA.L    (A0, D0.L), A0
+          Call_setup
+          JSR        (A0)
+          Call_restore
+          LEA.L      &n*4(A7), A7
+          MOVEA.L    D0, accu_
+          Restore_after_c_call
+      IF &n > 1 THEN
+          LEA.L      4*(&n-1)(sp_), sp_
+      ENDIF
+          Next
+ endm
+
+i_93:     C_CALL 1
+i_94:     C_CALL 2
+i_95:     C_CALL 3
+i_96:     C_CALL 4
+i_97:     C_CALL 5
+
+i_98:     ; C_CALLN
+          MOVE.L     (pc_)+, D4                 ; D4 = nargs
+          MOVE.L     accu_, -(sp_)
+          Setup_for_c_call
+          MOVE.L     D4, -(A7)
+          PEA.L      4(sp_)
+          MOVE.L     (pc_)+, D0
+          ASL.L      #2, D0
+          LEA.L      (cprim).L, A0
+          MOVEA.L    (A0, D0.L), A0
+          Call_setup
+          JSR        (A0)
+          Call_restore
+          ADDQ.L     #8, A7
+          MOVEA.L    D0, accu_
+          Restore_after_c_call
+          ASL.L      #2, D4
+          ADDA.L     D4, sp_
+          Next
+
+ macro
+   CONST &n
+          MOVEA.W    #2*&n+1, accu_
+          Next
+ endm
+
+i_99:     CONST 0
+i_100:    CONST 1
+i_101:    CONST 2
+i_102:    CONST 3
+
+ macro
+   PUSHCONST &n
+          _PUSH
+          CONST &n
+ endm
+
+i_104:    PUSHCONST 0
+i_105:    PUSHCONST 1
+i_106:    PUSHCONST 2
+i_107:    PUSHCONST 3
+
+i_108:    ; PUSHCONSTINT
+          _PUSH
+          ; fall through
+
+i_103:    ; CONSTINT
+          MOVEA.L    (pc_)+, A0
+          LEA.L      1(A0, A0.L), accu_
+          Next
+
+i_109:    ; NEGINT
+          MOVEQ.L    #2, D0
+          SUB.L      accu_, D0
+          MOVEA.L    D0, accu_
+          Next
+
+i_110:    ; ADDINT
+          ADDA.L     (sp_)+, accu_
+          SUBQ.L     #1, accu_
+          Next
+
+i_111:    ; SUBINT
+          SUBA.L     (sp_)+, accu_
+          ADDQ.L     #1, accu_
+          Next
+
+i_112:    ; MULINT
+          MOVE.L     accu_, D0
+          ASR.L      #1, D0
+          MOVE.L     (sp_)+, D1
+          ASR.L      #1, D1
+          Call_setup
+          JSR        (ULMULT).L
+          Call_restore
+          ASL.L      #1, D0
+          ADDQ.L     #1, D0
+          MOVEA.L    D0, accu_
+          Next
+
+ macro
+   DIVMODINT  &op                          ; op in {DIV, MOD}
+          MOVE.L     (sp_)+, D1
+          ASR.L      #1, D1
+          BNE.S      @nonzero
+          Setup_for_c_call
+          Call_setup
+          ; _Debugger
+          JSR        (raise_zero_divide).L
+          NotReached
+@nonzero: MOVE.L     accu_, D0
+          ASR.L      #1, D0
+          Call_setup
+          JSR        (L&op.T).L
+          Call_restore
+          ASL.L      #1, D0
+          ADDQ.L     #1, D0
+          MOVEA.L    D0, accu_
+          Next
+ endm
+
+i_113:    DIVMODINT  DIV
+i_114:    DIVMODINT  MOD
+
+i_115:    ; ANDINT
+          MOVE.L     accu_, D0
+          AND.L      (sp_)+, D0
+          MOVEA.L    D0, accu_
+          Dispatch
+
+i_116:    ; ORINT
+          MOVE.L     accu_, D0
+          OR.L       (sp_)+, D0
+          MOVEA.L    D0, accu_
+          Dispatch
+
+i_117:    ; XORINT
+          MOVE.L     accu_, D0
+          MOVE.L     (sp_)+, D1
+          EOR.L      D1, D0
+          ADDQ.L     #1, D0
+          MOVEA.L    D0, accu_
+          Dispatch
+
+ macro
+   SHIFTINT &op                         ; op in {LSL, LSR, ASR}
+          MOVE.L     accu_, D0
+          SUBQ.L     #1, D0
+          MOVE.L     (sp_)+, D1
+          ASR.L      #1, D1
+          &op..L     D1, D0
+          ORI.B      #1, D0
+          MOVEA.L    D0, accu_
+          Next
+ endm
+
+i_118: SHIFTINT LSL
+i_119: SHIFTINT LSR
+i_120: SHIFTINT ASR
+
+ macro
+   Integer_comparison &tst
+          CMPA.L     (sp_)+, accu_
+          B&tst..S   @true
+          MOVEA.W    #Val_false, accu_
+          Next
+@true     MOVEA.W    #Val_true, accu_
+          Next
+ endm
+
+i_121:    Integer_comparison EQ
+i_122:    Integer_comparison NE
+i_123:    Integer_comparison LT
+i_124:    Integer_comparison LE
+i_125:    Integer_comparison GT
+i_126:    Integer_comparison GE
+
+i_127:    ; OFFSETINT
+          MOVE.L     (pc_)+, D0
+          ASL.L      #1, D0
+          ADDA.L     D0, accu_
+          Next
+
+i_128:    ; OFFSETREF
+          MOVE.L     (pc_)+, D0
+          ASL.L      #1, D0
+          ADD.L      D0, (accu_)
+          MOVEA.W    #Val_unit, accu_
+          Next
+
+i_129:    ; GETMETHOD
+          MOVEA.L    (sp_), A0         ; sp[0]
+          MOVEA.L    (A0), A0          ; Field (sp[0], 0)
+          MOVE.L     accu_, D1
+          MOVEQ      #$12, D0
+          ASR.L      D0, D1
+          LSL.L      #2, D1            ; (accu >> 16) / sizeof (value) * 4
+          MOVEA.L    (A0, D1.L), A0    ; Field (Field (sp[0], 0), (accu >> 16) / sizeof (value))
+          MOVE.L     accu_, D0
+          ANDI.L     #$03FC, D0        ; ((accu / sizeof (value)) & 0xFF) * 4
+          MOVEA.L    (A0, D0.L), accu_ ; Field (Field (Field (...)...)...)
+          Next
+
+; STOP
+i_130:    MOVE.L     initial_external_raise_(A7), (external_raise).L
+          MOVE.L     sp_, (extern_sp).L
+          SUBQ.L     #1, (callback_depth).L
+          MOVE.L     accu_, D0
+          interprete_return
+          Spacer
+
+i_131:    ; EVENT                          XXX debugger stuff not implemented
+          Next
+
+i_132:    ; BREAK                          XXX debugger stuff not implemented
+          Next
+
+ IF NOT &DEBUG THEN
+          Spacer     i_base+$4000-*        ; fill the 64k bytes
+ ENDIF
+
+          RTS
+          dc.b       $80 + 11, 'interpreteX'
+
+
+ IF &DEBUG THEN
+
+camldispatch:
+          ADDQ.L     #1, (dcounter).L
+          BNE.S      nobreak
+          _Debugger
+nobreak:  BRA.S      notrace
+          MOVE.L     pc_, -(A7)
+          Call_setup
+          JSR        (disasm_instr).L
+          Call_restore
+          ADDQ.L     #4, A7
+notrace:  MOVE.L     (pc_)+, D0
+          JMP        (jtbl_, D0.W)
+
+          RTS
+          dc.b       $80 + 12, 'camldispatch'
+
+          DATA
+dcounter: dc.l       0
+
+ ENDIF
+
+
+ endproc ; interprete
+
+ end

@@ -1,0 +1,119 @@
+        Release notes on the MS Windows port of Objective Caml
+        ----------------------------------------------------------
+
+REQUIREMENTS:
+
+This port runs under Windows 95 and Windows NT on Intel-based machines.
+Windows 3.1 and Windows for Workgroups are not supported. Windows NT
+on non-Intel processors has not been tested.
+
+The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
+runs without any additional tools.
+
+Linking Caml bytecode with C code (ocamlc -custom) requires the
+Microsoft Visual C++ compiler version 6.
+
+The native-code compiler (ocamlopt) requires Visual C++ version 6
+and the Microsoft assembler MASM version 6.11 or later.
+MASM can be downloaded for free from Microsoft's Web site;
+see the comp.lang.asm.x86 FAQ for directions, or
+http://www.cs.uu.nl/wais/html/na-dir/assembly-language/x86/microsoft.html
+
+The CamlTk GUI requires Tcl/Tk 8.0.  Windows binaries are
+available from ftp://ftp.scriptics.com/pub/tcl/tcl8_0/tcl804.exe
+
+
+INSTALLATION:
+
+The binary distribution consists in a .zip archive file. This .zip
+contains long filenames and therefore cannot be unpacked with pkunzip.
+Use either Winzip (shareware) or the NT/95 version of unzip (freeware):
+
+        ftp://ftp.winsite.com/pub/pc/winnt/misc/wznt56.exe
+        ftp://ftp.uu.net/pub/archiving/zip/WIN32/unz540xN.exe
+
+Unzipping the distribution creates (among others) the following
+directories and files:
+
+        ocaml\ocamlwin.exe     The toplevel application
+        ocaml\ocamlwin.ini     Its configuration file
+        ocaml\bin\             The command-line compilers and tools
+        ocaml\lib\             The standard library files
+
+Installing the toplevel application:
+
+  First of all, copy the file ocaml\ocamlwin.ini to your Windows system
+  directory, e.g. C:\winnt or C:\win95 or C:\windows.
+
+  The file ocamlwin.ini you just copied assumes that the Caml distribution
+  resides in C:\ocaml. If this is not the case, edit the copy in
+  the Windows system directory (e.g. C:\winnt\ocamlwin.ini)
+  and change the line that says
+
+          CmdLine=ocamlrun c:\ocaml\bin\ocaml.exe -I c:\ocaml\lib
+  to
+          CmdLine=ocamlrun <caml_dir>\bin\ocaml.exe -I <caml_dir>\lib
+  e.g.
+          CmdLine=ocamlrun D:\lang\ocaml\bin\ocaml.exe -I D:\lang\ocaml\lib
+
+Installing the command-line tools:
+
+  You must add the ocaml\bin subdirectory to the PATH variable, e.g.
+
+          set PATH=%PATH%;D:\lang\ocaml\bin
+
+  Running directly the tools (e.g. typing D:\lang\ocaml\bin\ocamlc)
+  will not work if the ocaml\bin directory is not in PATH, because ocamlc
+  and the other tools will be unable to find the Caml runtime system
+  ocamlrun.exe.
+
+  The command-line tools assume that the standard library resides in
+  C:\ocaml\lib. If you have unpacked it elsehwere, define the CAMLLIB
+  environment variable to point to the standard library directory, e.g.
+
+          set CAMLLIB=D:\lang\ocaml\lib
+
+
+RECOMPILATION FROM THE SOURCES:
+
+The command-line tools can be recompiled from the Unix source
+distribution (ocaml-X.YZ.tar.gz), which also contains the files modified
+for Windows.
+
+In addition to Visual C++ (version 4, 5 or 6) and MASM 6, you will
+need the CygWin port of GNU tools, available from
+http://sourceware.cygnus.com/cygwin/
+
+To recompile, first copy manually the files config/m-nt.h and config/s-nt.h
+to config/m.h and config/s.h.  Edit config/Makefile.nt as needed.
+Then, use "nmake -f Makefile.nt" to build the system, e.g. 
+
+        nmake -f Makefile.nt world
+        nmake -f Makefile.nt bootstrap
+        nmake -f Makefile.nt opt
+        
+The sources for the toplevel graphical user interface are not currently
+available to the general public.  Contact us if you think you need them.
+
+
+RANDOM NOTES:
+
+* The VC++ compiler does a poor job on byterun/interp.c. Consequently,
+the performance of bytecode programs is about half of that obtained
+under Unix/GCC on similar hardware. GCC would give much better
+performance, but the currently available ports of GCC for
+Win32 lack crucial features such as thread support.
+
+* Libraries available under Win32: "num", "str", "threads", "graph",
+"camltk41", and large parts of "unix". 
+"graph" works only under the toplevel application.
+
+
+CREDITS:
+
+The initial port of Caml Special Light (the ancestor of Objective Caml)
+to Windows NT was done by Kevin Gallo at Microsoft Research, who
+kindly contributed his changes to the Caml project.
+
+The graphical user interface for the toplevel is due to Jean-Marie
+Geffroy at INRIA Rocquencourt.

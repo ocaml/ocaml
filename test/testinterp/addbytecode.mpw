@@ -1,0 +1,28 @@
+set echo 0
+
+Set f "`Files -f -q "{1}"`"			# get full pathnames
+
+exit if `evaluate "{f}" =~ /(Å)¨0.ml/` != 1
+set base "{¨0}"
+
+set _closeit 0
+Set _openWindows " ``Windows -q`` "
+If "{_openWindows}" !~ /Å [¶']*"{f}"[¶']* Å/
+  Open "{f}"
+  Set _closeit 1
+End
+
+ocamlc -unsafe -nopervasives "{f}"
+find ° "{f}"
+find Æ\'**)'\:\'(**'\Æ "{f}"
+echo >"{f}".¤
+ocamldumpobj a.out >>"{f}".¤
+find ¥ "{f}"
+
+format -t 8 "{f}"
+
+delete -i "{base}".cmi "{base}".cmo
+
+if {_closeit}
+  close -y "{f}"
+end
