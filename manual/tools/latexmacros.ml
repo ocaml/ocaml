@@ -49,6 +49,8 @@ def_macro "\\ldots" [Print "..."];
 def_macro "\\ " [Print " "];
 def_macro "\\{" [Print "{"];
 def_macro "\\}" [Print "}"];
+def_macro "\\%" [Print "%"];
+def_macro "\\$" [Print "$"];
 def_macro "\\/" [];
 def_macro "\\newpage" [];
 def_macro "\\label" [Print "<A name=\""; Print_arg; Print "\"></A>"];

@@ -53,7 +53,7 @@ while(<INPUT>) {
     print "<LI><A HREF=\"node$level1.html\">$1</A>\n";
     open(FILE1, "> node$level1.html");
     select(FILE1);
-    print "<TITLE>$1</TITLE>\n";
+    &print_title($1);
   }
   if ($split2[$level1] && m|^<H2>(.*)</H2>|) {
     $level2++;
@@ -62,8 +62,14 @@ while(<INPUT>) {
     print "<LI><A HREF=\"node$level1.$level2.html\">$1</A>\n";
     open(FILE2, "> node$level1.$level2.html");
     select(FILE2);
-    print "<TITLE>$1</TITLE>\n";
+    &print_title($1);
   }
   s|<A HREF="#([^"]*)">X</A>|'<A HREF="' . $url{$1} . '"><IMG SRC="cross_ref_motif.gif"></A>'|ige;
   print $_;
+}
+
+sub print_title {
+    local ($title) = @_;
+    $title =~ s|<[a-zA-Z/]+>||g;
+    print "<TITLE>$title</TITLE>\n";
 }
