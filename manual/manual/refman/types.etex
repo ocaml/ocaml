@@ -28,7 +28,7 @@ method-type:
     method-name ':' typexpr
 ;
 tag-list:
-    '[>' {{'`'tag-name}} ']' ]
+    '[>' {{'`'tag-name}} ']'
 \end{syntax}
 
 The table below shows the relative precedences and associativity of
@@ -114,10 +114,10 @@ variant-type:
       | '<' tag-spec-full { '|' tag-spec-full } ['|' '..'] [ '>' {{ '`'tag-name }} ]
 ;
 tag-spec:
-        '`'tag-name [ typexpr ]
+        '`'tag-name [ "of" typexpr ]
 ;
 tag-spec-full:
-        '`'tag-name [ typexpr ] { '&' typexpr }
+        '`'tag-name [ "of" typexpr ] { '&' typexpr }
 \end{syntax}
 
 Variant types describe the values a polymorphic variant may take.
