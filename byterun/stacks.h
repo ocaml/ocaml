@@ -34,7 +34,7 @@ extern value * trap_barrier;
 
 void reset_roots (void);
 void init_stack (unsigned long init_max_size);
-void realloc_stack (void);
+void realloc_stack (asize_t required_size);
 void change_max_stack_size (unsigned long new_max_size);
 
 

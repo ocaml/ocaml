@@ -249,6 +249,10 @@ let functions_to_compile  = (Stack.create () : function_to_compile Stack.t)
 
 let compunit_name = ref ""
 
+(* Maximal stack size reached during the current function body *)
+
+let max_stack_used = ref 0
+
 (* Translate a primitive to a bytecode instruction (possibly a call to a C
    function) *)
 
@@ -366,6 +370,7 @@ let explode_isout arg l h =
    Result = list of instructions that evaluate exp, then perform cont. *)
 
 let rec comp_expr env exp sz cont =
+  if sz > !max_stack_used then max_stack_used := sz;
   match exp with
     Lvar id ->
       begin try
@@ -771,12 +776,22 @@ let comp_function tc cont =
     { ce_stack = positions arity (-1) tc.params;
       ce_heap = positions (2 * (tc.num_defs - tc.rec_pos) - 1) 1 tc.free_vars;
       ce_rec = positions (-2 * tc.rec_pos) 2 tc.rec_vars } in
+  max_stack_used := 0;
   let cont1 =
     comp_expr env tc.body arity (Kreturn arity :: cont) in
+  let cont2 =
+    if !max_stack_used + 1 (* may have pushed one more word *)
+       > Config.stack_threshold
+    then
+      Kconst(Const_base(Const_int(!max_stack_used + 1))) ::
+      Kccall("ensure_stack_capacity", 1) ::
+      cont1
+    else
+      cont1 in
   if arity > 1 then
-    Krestart :: Klabel tc.label :: Kgrab(arity - 1) :: cont1
+    Krestart :: Klabel tc.label :: Kgrab(arity - 1) :: cont2
   else
-    Klabel tc.label :: cont1
+    Klabel tc.label :: cont2
 
 let comp_remainder cont =
   let c = ref cont in

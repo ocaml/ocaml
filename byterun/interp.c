@@ -805,7 +805,7 @@ value interprete(code_t prog, asize_t prog_size)
     check_stacks:
       if (sp < stack_threshold) {
         extern_sp = sp;
-        realloc_stack();
+        realloc_stack(Stack_threshold / sizeof(value));
         sp = extern_sp;
       }
       /* Fall through CHECK_SIGNALS */

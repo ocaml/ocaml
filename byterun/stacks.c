@@ -44,7 +44,7 @@ void init_stack (long unsigned int initial_max_size)
               max_stack_size / 1024 * sizeof (value));
 }
 
-void realloc_stack(void)
+void realloc_stack(asize_t required_space)
 {
   asize_t size;
   value * new_low, * new_high, * new_sp;
@@ -52,8 +52,10 @@ void realloc_stack(void)
 
   Assert(extern_sp >= stack_low);
   size = stack_high - stack_low;
-  if (size >= max_stack_size) raise_stack_overflow();
-  size *= 2;
+  do {
+    if (size >= max_stack_size) raise_stack_overflow();
+    size *= 2;
+  } while (size < stack_high - extern_sp + required_space);
   gc_message (0x08, "Growing stack to %luk bytes\n",
               (unsigned long) size * sizeof(value) / 1024);
   new_low = (value *) stat_alloc(size * sizeof(value));
@@ -77,6 +79,13 @@ void realloc_stack(void)
   extern_sp = new_sp;
 
 #undef shift
+}
+
+value ensure_stack_capacity(value required_space) /* ML */
+{
+  asize_t req = Long_val(required_space);
+  if (extern_sp - req < stack_low) realloc_stack(req);
+  return Val_unit;
 }
 
 void change_max_stack_size (long unsigned int new_max_size)
