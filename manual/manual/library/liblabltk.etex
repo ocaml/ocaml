@@ -8,7 +8,9 @@ the behavior of the numerous functions.
 
 \begin{unix}
 The "labltk" library is available for any system with Tcl/Tk installed,
-starting from Tcl 7.5/Tk 4.1 up to Tcl/Tk 8.0.
+starting from Tcl 7.5/Tk 4.1 up to Tcl/Tk 8.2. Beware that some beta
+versions may have compatibility problems.
+
 Library files are installed in the "labltk" subdirectory of the caml
 library. The default location is "/usr/local/lib/caml/labltk".
 
@@ -56,7 +58,9 @@ Grid                Palette             Wm
 \end{quote}
 
 Giving a detailed account of each of these module would be impractical
-here. We will just present some of the basic functions in the module "Tk".
+here. We will just present some of the basic functions in the module
+"Tk". Note that for most other modules information can be found in the
+"man" page of their name.
 
 \begin{library}
 \input{tk.tex}

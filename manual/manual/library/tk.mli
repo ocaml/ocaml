@@ -23,6 +23,13 @@ val appname_get : unit -> string
 val appname_set : string -> unit
        (* Get or set the application name. *)
 
+(*** Dimensions *)
+type units = [`Pix int|`Cm float|`In float|`Mm float|`Pt float]
+val pixels : units -> int
+       (* Converts various on-screen units to pixels,
+          respective to the default display. Available units are
+          pixels, centimeters, inches, millimeters and points *)
+
 (*** Widget layout commands *)
 type anchor = [`Center|`E|`N|`Ne|`Nw|`S|`Se|`Sw|`W]
 type fillMode = [`Both|`None|`X|`Y]
@@ -34,10 +41,10 @@ val pack :
   ?expand:bool ->
   ?fill:fillMode ->
   ?in:'c Widget.widget ->
-  ?ipadx:units ->
-  ?ipady:units ->
-  ?padx:units ->
-  ?pady:units ->
+  ?ipadx:int ->
+  ?ipady:int ->
+  ?padx:int ->
+  ?pady:int ->
   ?side:side ->
   'd Widget.widget list -> unit
         (* Pack a widget inside its parent,
@@ -46,10 +53,10 @@ val grid :
   ?column:int ->
   ?columnspan:int ->
   ?in:'a Widget.widget ->
-  ?ipadx:units ->
-  ?ipady:units ->
-  ?padx:units ->
-  ?pady:units ->
+  ?ipadx:int ->
+  ?ipady:int ->
+  ?padx:int ->
+  ?pady:int ->
   ?row:int ->
   ?rowspan:int ->
   ?sticky:string -> 'b Widget.widget list -> unit
@@ -58,14 +65,14 @@ type borderMode = [`Ignore|`Inside|`Outside]
 val place :
   ?anchor:anchor ->
   ?bordermode:borderMode ->
-  ?height:units ->
+  ?height:int ->
   ?in:'a Widget.widget ->
   ?relheight:float ->
   ?relwidth:float ->
   ?relx:float ->
   ?rely:float ->
-  ?width:units ->
-  ?x:units -> ?y:units -> 'b Widget.widget -> unit
+  ?width:int ->
+  ?x:int -> ?y:int -> 'b Widget.widget -> unit
         (* Pack a widget inside its parent, at absolute coordinates. *)
 val raise_window :
   ?above:'a Widget.widget -> 'b Widget.widget -> unit
@@ -75,22 +82,25 @@ val lower_window :
 
 (*** Event handling *)
 
-type xEvent =
-  [`ButtonPress|`ButtonPressDetail int|`ButtonRelease
-  |`ButtonReleaseDetail int|`Circulate|`ColorMap
-  |`Configure|`Destroy|`Enter|`Expose|`FocusIn|`FocusOut
-  |`Gravity|`KeyPress|`KeyPressDetail string|`KeyRelease
-  |`KeyReleaseDetail string|`Leave|`Map|`Motion|`Property
-  |`Reparent|`Unmap|`Visibility]
-
 type modifier =
-  [`Control|`Shift|`Lock|`Button1|`Button2|`Button3
-  |`Button4|`Button5|`Double|`Triple|`Mod1|`Mod2
-  |`Mod3|`Mod4|`Mod5|`Meta|`Alt]
+  [ `Control | `Shift | `Lock
+  | `Button1 | `Button2 | `Button3 | `Button4 | `Button5
+  | `Double | `Triple
+  | `Mod1 | `Mod2 | `Mod3 | `Mod4 | `Mod5 | `Meta | `Alt ]
 
-(* A compound event is a list of events happening in succession,
-   each of them possibly qualified by modifiers. That is, compound
-   events have type [(modifier list * xEvents) list] *)
+type event =
+  [ `ButtonPress | `ButtonPressDetail int
+  | `ButtonRelease | `ButtonReleaseDetail int
+  | `Circulate | `ColorMap | `Configure | `Destroy
+  | `Enter | `Expose | `FocusIn | `FocusOut | `Gravity
+  | `KeyPress | `KeyPressDetail string
+  | `KeyRelease | `KeyReleaseDetail string
+  | `Leave | `Map | `Motion | `Property
+  | `Reparent | `Unmap | `Visibility
+  | `Modified modifier list * event ]
+
+(* An event can be either a basic X event, or modified by a
+   key or mouse modifier. *)
 
 type eventInfo =
   { mutable ev_Above: int;
@@ -120,38 +130,54 @@ type eventInfo =
     mutable ev_RootX: int;
     mutable ev_RootY: int }
 
+(* Event related information accessible in callbacks. *)
+
 type eventField =
-  [`Above|`ButtonNumber|`Count|`Detail|`Focus|`Height
-  |`KeyCode|`Mode|`OverrideRedirect|`Place|`State
-  |`Time|`Width|`MouseX|`MouseY|`Char|`BorderWidth
-  |`SendEvent|`KeySymString|`KeySymInt|`RootWindow
-  |`SubWindow|`Type|`Widget|`RootX|`RootY]
+  [ `Above | `ButtonNumber | `Count | `Detail | `Focus | `Height
+  | `KeyCode | `Mode | `OverrideRedirect | `Place | `State
+  | `Time | `Width | `MouseX | `MouseY | `Char | `BorderWidth
+  | `SendEvent | `KeySymString | `KeySymInt | `RootWindow
+  | `SubWindow | `Type | `Widget | `RootX | `RootY ]
 
-type bindAction =
-  [`Set eventField list * (eventInfo -> unit)
-  |`Setbreakable eventField list * (eventInfo -> unit)
-  |`Remove
-  |`Extend eventField list * (eventInfo -> unit)]
-
-(* A bound action. [`Set] replaces any existing bound action.
-   [`Setbreakable] only differs in that you may use [break] inside
-   the action.
-   [`Remove] removes all bound actions.
-   [`Extend] adds a bound action after the currently defined one. *)
+(* In order to access the above event information, one has to pass
+   a list of required event fields to the [bind] function. *)
 
 val bind :
-  'a Widget.widget ->
-  events:(modifier list * xEvent) list -> action:bindAction -> unit
-        (* Bind a succession of events on a widget to an action. *)
-val class_bind :
-  string ->
-  events:(modifier list * xEvent) list -> action:bindAction -> unit
-        (* Same thing for all widgets of a given class *)
-val tag_bind :
-  string ->
-  events:(modifier list * xEvent) list -> action:bindAction -> unit
+  events:event list ->
+  ?extend:bool ->
+  ?breakable:bool ->
+  ?fields:eventField list
+  ?action:(eventInfo -> unit) ->
+  'a Widget.widget -> unit
+        (* Bind a succession of [events] on a widget to an [action].
+           If [extend] is true then then binding is added after existing
+           ones, otherwise it replaces them.
+           [breakable] should be true when [break] is to be called inside
+           the action.
+           [action] is called with the [fields] required set in
+           an [eventInfo] structure. Other fields should not be accessed.
+           If [action] is omitted then existing bindings are removed. *)
+val bind_class :
+  events:event list ->
+  ?extend:bool ->
+  ?breakable:bool ->
+  ?fields:eventField list
+  ?action:(eventInfo -> unit) ->
+  ?on:'a Widget.widget ->
+  string -> unit
+        (* Same thing for all widgets of a given class. If a widget
+           is given with label [on:], the binding will be removed as
+           soon as it is destroyed. *)
+val bind_tag :
+  events:event list ->
+  ?extend:bool ->
+  ?breakable:bool ->
+  ?fields:eventField list
+  ?action:(eventInfo -> unit) ->
+  ?on:'a Widget.widget ->
+  string -> unit
         (* Same thing for all widgets having a given tag *)
 val break : unit -> unit
         (* Used inside a bound action, do not call other actions
            after this one. This is only possible if this action
-           was set with [`Setbreakable] *)
+           was bound with [setbreakable:true]. *)
