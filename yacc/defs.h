@@ -27,7 +27,6 @@
 
 #if macintosh
 #include "::byterun:rotatecursor.h"
-extern int volatile have_to_interact;
 #endif
 
 /*  machine-dependent definitions			*/
@@ -126,8 +125,7 @@ extern int volatile have_to_interact;
 
 #if macintosh
 
-#define INTERACT() \
-  (have_to_interact ? (have_to_interact = 0, rotatecursor_action (1)): 0)
+#define INTERACT() ROTATECURSOR_MAGIC ()
 
 #define CALLOC(k,n)	 (INTERACT (), calloc((unsigned)(k),(unsigned)(n)))
 #define FREE(x)      (INTERACT (), free((char*)(x)))

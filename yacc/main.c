@@ -377,9 +377,6 @@ void open_files(void)
 
 int main(int argc, char **argv)
 {
-#if macintosh
-    rotatecursor_init (&have_to_interact);
-#endif
     set_signals();
     getargs(argc, argv);
     open_files();
