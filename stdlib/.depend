@@ -4,6 +4,8 @@ arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi
 arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
 array.cmo: list.cmi array.cmi 
 array.cmx: list.cmx array.cmi 
+callback.cmo: obj.cmi callback.cmi 
+callback.cmx: obj.cmx callback.cmi 
 char.cmo: char.cmi 
 char.cmx: char.cmi 
 digest.cmo: string.cmi digest.cmi 
