@@ -223,27 +223,8 @@ let call_linker file_list startup_file output_name =
   let c_lib =
     if !Clflags.nopervasives then "" else Config.native_c_libraries in
   let cmd =
-    match Config.system with
-      "win32" ->
-        if not !Clflags.output_c_object then
-          Printf.sprintf "%s /Fe%s %s %s %s %s %s %s %s"
-            !Clflags.c_linker
-            (Filename.quote output_name)
-            (Clflags.std_include_flag "-I")
-            (String.concat " " (List.rev !Clflags.ccopts))
-            (Filename.quote startup_file)
-            (Ccomp.quote_files (List.rev file_list))
-            (Ccomp.quote_files 
-              (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
-            (Filename.quote runtime_lib)
-            c_lib
-        else
-          Printf.sprintf "%s /out:%s %s %s"
-            Config.native_partial_linker
-            (Filename.quote output_name)
-            (Filename.quote startup_file)
-            (Ccomp.quote_files (List.rev file_list))
-    | _ ->
+    match Config.ccomp_type with
+      "cc" ->
         if not !Clflags.output_c_object then
           Printf.sprintf "%s %s -o %s %s %s %s %s %s %s %s %s"
             !Clflags.c_linker
@@ -265,6 +246,26 @@ let call_linker file_list startup_file output_name =
             (Filename.quote output_name)
             (Filename.quote startup_file)
             (Ccomp.quote_files (List.rev file_list))
+    | "msvc" ->
+        if not !Clflags.output_c_object then
+          Printf.sprintf "%s /Fe%s %s %s %s %s %s %s %s"
+            !Clflags.c_linker
+            (Filename.quote output_name)
+            (Clflags.std_include_flag "-I")
+            (String.concat " " (List.rev !Clflags.ccopts))
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
+            (Ccomp.quote_files 
+              (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
+            (Filename.quote runtime_lib)
+            c_lib
+        else
+          Printf.sprintf "%s /out:%s %s %s"
+            Config.native_partial_linker
+            (Filename.quote output_name)
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
+    | _ -> assert false
   in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
 
 let object_file_name name =
