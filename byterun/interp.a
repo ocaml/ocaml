@@ -21,7 +21,7 @@
   print nopage
   case obj
 
-  import (ULMODT, ULDIVT, ULMULT) : code
+  import (LMODT, LDIVT, ULMULT) : code
   import (extern_sp, atom_table, local_roots, stack_high) : data
   import (external_raise) : data
   import (__setjmp) : code
@@ -810,6 +810,7 @@ i_74:     MOVE.L     (sp_)+, D0
           MOVE.L     (sp_)+, D3
           ASR.L      #1, D3
           MOVE.B     D3, (accu_, D0.L)
+          MOVEA.W    #1, accu_
           Dispatch
 
 ; BRANCH
@@ -1096,7 +1097,7 @@ i_103:    MOVE.L     accu_, D0
           ASR.L      #1, D0
           Call_setup
           MOVE.L     D4, D1
-          JSR        (UL&op.T).L
+          JSR        (L&op.T).L
           Call_restore
           ASL.L      #1, D0
           ADDQ.L     #1, D0
@@ -1127,7 +1128,7 @@ i_108:    MOVE.L     accu_, D0
           MOVEA.L    D0, accu_
           Dispatch
 
-; SHIFTINT { LSL | LSR | ASL }
+; SHIFTINT { LSL | LSR | ASR }
      macro
           SHIFTINT &op
           MOVE.L     accu_, D0
