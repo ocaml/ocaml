@@ -16,17 +16,21 @@
 open Unix
 
 let get_files_in_directory dir =
-  try
-  let dirh = opendir dir in
-  let rec get_them () =
-    try
-      let x = readdir dirh in
-      x :: get_them ()
-    with
-      _ -> closedir dirh; [] 
-  in
-    Sort.list order:(<) (get_them ())
-  with Unix_error _ -> []
+  match
+    try Some(opendir dir) with Unix_error _ -> None
+  with
+    None -> []
+  | Some dirh ->
+      let rec get_them l =
+        match
+          try Some(readdir dirh) with _ -> None
+        with
+        | Some x ->
+            get_them (x::l)
+        | None ->
+            closedir dirh; l 
+      in
+      Sort.list order:(<=) (get_them [])
 
 let is_directory name =
   try
@@ -39,11 +43,13 @@ let get_directories_in_files :path =
 (************************************************** Subshell call *)
 let subshell :cmd =
   let rc = open_process_in cmd in
-  let rec it () =
-    try 
-      let x = input_line rc in x :: it ()
-    with _ -> []
+  let rec it l =
+    match
+      try Some(input_line rc) with _ -> None
+    with
+      Some x -> it (x::l)
+    | None -> List.rev l
   in 
-  let answer = it () in
+  let answer = it [] in
   ignore (close_process_in rc);
   answer

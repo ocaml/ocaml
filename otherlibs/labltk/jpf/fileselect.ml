@@ -54,13 +54,16 @@ let subshell cmd =
     | id -> 
         close w; 
         let rc = in_channel_of_descr r in
-        let rec it () = try 
-            let x = input_line rc in x:: it ()
-          with _ -> []
+        let rec it l =
+          match
+            try Some(input_line rc) with _ -> None
+          with
+            Some x -> it (x::l)
+          | None -> List.rev l
         in 
-          let answer = it() in
-          close_in rc;  (* because of finalize_channel *)
-          let p, st = waitpid mode:[] id in answer
+        let answer = it [] in
+        close_in rc;  (* because of finalize_channel *)
+        let p, st = waitpid mode:[] id in answer
 
 (***************************************************************** Path name *)
 
@@ -96,31 +99,24 @@ let ls dir pattern =
 
 let get_files_in_directory dir = 
   let dirh = opendir dir in
-  let rec get_them () =
-   try 
-    let x = readdir dirh in  (* no let cause Out of memory *)
-      x::(get_them ())
-   with
-      End_of_file -> closedir dirh; [] 
+  let rec get_them l =
+    match
+      try Some(Unix.readdir dirh) with _ -> None
+    with
+    | None ->
+        Unix.closedir dirh; l
+    | Some x ->
+        get_them (x::l)
   in
-    Sort.list order:(<) (get_them ())
+  Sort.list order:(<=) (get_them [])
       
-let rec get_directories_in_files path = function
-    [] -> []
-  | x::xs -> 
-      if try (stat (path ^ x)).st_kind = S_DIR with _ -> false then
-        x::(get_directories_in_files path xs)
-      else get_directories_in_files path xs
+let rec get_directories_in_files path =
+  List.filter
+    pred:(fun x -> try (stat (path ^ x)).st_kind = S_DIR with _ -> false)
 
-let remove_directories dirname = 
-  let rec remove = function
-    [] -> []
-  | x :: xs ->
-    if try (stat (dirname ^ x)).st_kind = S_DIR with _ -> true then 
-      remove xs
-    else  
-      x :: (remove xs)
-  in remove
+let remove_directories path = 
+  List.filter
+    pred:(fun x -> try (stat (path ^ x)).st_kind <> S_DIR with _ -> false)
 
 (************************* a nice interface to listbox - from frx_listbox.ml *)
 
