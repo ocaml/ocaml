@@ -3,7 +3,6 @@ genlex.cmi: stream.cmi
 moreLabels.cmi: hashtbl.cmi map.cmi set.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
 printf.cmi: buffer.cmi 
-scanf.cmi: scanning.cmi 
 weak.cmi: hashtbl.cmi 
 arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
 arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
@@ -71,12 +70,10 @@ queue.cmo: obj.cmi queue.cmi
 queue.cmx: obj.cmx queue.cmi 
 random.cmo: array.cmi char.cmi digest.cmi string.cmi random.cmi 
 random.cmx: array.cmx char.cmx digest.cmx string.cmx random.cmi 
-scanf.cmo: array.cmi list.cmi obj.cmi pervasives.cmi printf.cmi scanning.cmi \
+scanf.cmo: array.cmi list.cmi obj.cmi pervasives.cmi printf.cmi \
     string.cmi scanf.cmi 
-scanf.cmx: array.cmx list.cmx obj.cmx pervasives.cmx printf.cmx scanning.cmx \
+scanf.cmx: array.cmx list.cmx obj.cmx pervasives.cmx printf.cmx \
     string.cmx scanf.cmi 
-scanning.cmo: buffer.cmi string.cmi scanning.cmi 
-scanning.cmx: buffer.cmx string.cmx scanning.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
 sort.cmo: array.cmi sort.cmi 
