@@ -59,8 +59,7 @@ static bngcarry bng_ia32_add
         "decl %2 \n\t"
         "jnz 1b \n\t"
         "setc %b3"
-        : "=r" (a), "=r" (b), "=r" (blen), "=q" (carry), "=r" (tmp)
-        : "0" (a), "1" (b), "2" (blen), "3" (carry));
+        : "+&r" (a), "+&r" (b), "+&r" (blen), "+&q" (carry), "=&r" (tmp));
   }
   if (carry == 0 || alen == 0) return carry;
   do {
@@ -88,8 +87,7 @@ static bngcarry bng_ia32_sub
         "decl %2 \n\t"
         "jnz 1b \n\t"
         "setc %b3"
-        : "=r" (a), "=r" (b), "=r" (blen), "=q" (carry), "=r" (tmp)
-        : "0" (a), "1" (b), "2" (blen), "3" (carry));
+        : "+&r" (a), "+&r" (b), "+&r" (blen), "+&q" (carry), "=&r" (tmp));
   }
   if (carry == 0 || alen == 0) return carry;
   do {
@@ -112,7 +110,7 @@ static bngdigit bng_ia32_mult_add_digit
   if (blen > 0) {
     asm("1: \n\t"
         "movl (%1), %%eax \n\t"
-        "mull %7\n\t"           /* edx:eax = d * next digit of b */
+        "mull %4\n\t"           /* edx:eax = d * next digit of b */
         "addl (%0), %%eax \n\t" /* add next digit of a to eax */
         "adcl $0, %%edx \n\t"   /* accumulate carry in edx */
         "addl %3, %%eax \n\t"   /* add out to eax */
@@ -123,8 +121,8 @@ static bngdigit bng_ia32_mult_add_digit
         "leal 4(%1), %1 \n\t"
         "decl %2 \n\t"
         "jnz 1b"
-        : "=&r" (a), "=&r" (b), "=&rm" (blen), "=&r" (out)
-        : "0" (a), "1" (b), "2" (blen), "rm" (d), "3" (out)
+        : "+&r" (a), "+&r" (b), "+&rm" (blen), "+&r" (out)
+        : "rm" (d)
         : "eax", "edx");
   }
   if (alen == 0) return out;
@@ -155,7 +153,7 @@ static bngdigit bng_ia32_mult_sub_digit
     asm("1: \n\t"
         "movl (%1), %%eax \n\t"
         "movl (%0), %4 \n\t"
-        "mull %8\n\t"           /* edx:eax = d * next digit of b */
+        "mull %5\n\t"           /* edx:eax = d * next digit of b */
         "subl %%eax, %4 \n\t"   /* subtract eax from next digit of a */
         "adcl $0, %%edx \n\t"   /* accumulate carry in edx */
         "subl %3, %4 \n\t"      /* subtract out */
@@ -166,8 +164,8 @@ static bngdigit bng_ia32_mult_sub_digit
         "leal 4(%1), %1 \n\t"
         "decl %2 \n\t"
         "jnz 1b"
-        : "=&r" (a), "=&r" (b), "=&rm" (blen), "=&rm" (out), "=&r" (tmp)
-        : "0" (a), "1" (b), "2" (blen), "rm" (d), "3" (out)
+        : "+&r" (a), "+&r" (b), "+&rm" (blen), "+&rm" (out), "=&r" (tmp)
+        : "rm" (d)
         : "eax", "edx");
   }
   if (alen == 0) return out;
@@ -212,8 +210,7 @@ static bngcarry bng_ia32sse2_add
         "jne 1b \n\t"
         "movd %%mm0, %3 \n\t"
         "emms"
-        : "=r" (a), "=r" (b), "=r" (blen), "=rm" (carry)
-        : "0" (a), "1" (b), "2" (blen), "3" (carry));
+        : "+&r" (a), "+&r" (b), "+&r" (blen), "+&rm" (carry));
   }
   if (carry == 0 || alen == 0) return carry;
   do {
@@ -245,8 +242,7 @@ static bngcarry bng_ia32sse2_sub
         "jne 1b \n\t"
         "movd %%mm0, %3 \n\t"
         "emms"
-        : "=r" (a), "=r" (b), "=r" (blen), "=rm" (carry)
-        : "0" (a), "1" (b), "2" (blen), "3" (carry));
+        : "+&r" (a), "+&r" (b), "+&r" (blen), "+&rm" (carry));
   }
   if (carry == 0 || alen == 0) return carry;
   do {
@@ -268,7 +264,7 @@ static bngdigit bng_ia32sse2_mult_add_digit
   out = 0;
   if (blen > 0) {
     asm("pxor %%mm0, %%mm0 \n\t"      /* MM0 is carry */
-        "movd %7, %%mm7 \n\t"         /* MM7 is digit d */
+        "movd %4, %%mm7 \n\t"         /* MM7 is digit d */
         "1: \n\t"
         "movd (%0), %%mm1 \n\t"       /* MM1 is next digit of a */
         "movd (%1), %%mm2 \n\t"       /* MM2 is next digit of b */
@@ -283,8 +279,8 @@ static bngdigit bng_ia32sse2_mult_add_digit
         "jne 1b \n\t"
         "movd %%mm0, %3 \n\t"
         "emms"
-        : "=r" (a), "=r" (b), "=r" (blen), "=rm" (out)
-        : "0" (a), "1" (b), "2" (blen), "m" (d));
+        : "+&r" (a), "+&r" (b), "+&r" (blen), "=&rm" (out)
+        : "m" (d));
   }
   if (alen == 0) return out;
   /* current digit of a += out */
@@ -314,9 +310,9 @@ static bngdigit bng_ia32sse2_mult_sub_digit
   out = 0;
   if (blen > 0) {
     /* Carry C is represented by ENC(C) = 0xFFFFFFFF - C (one's complement) */
-    asm("movd %9, %%mm0 \n\t"         /* MM0 is carry (initially 0xFFFFFFFF) */
-        "movq %8, %%mm6 \n\t"         /* MM6 is magic constant bias1 */
-        "movd %7, %%mm7 \n\t"         /* MM7 is digit d */
+    asm("movd %5, %%mm0 \n\t"         /* MM0 is carry (initially 0xFFFFFFFF) */
+        "movq %6, %%mm6 \n\t"         /* MM6 is magic constant bias1 */
+        "movd %4, %%mm7 \n\t"         /* MM7 is digit d */
         "1: \n\t"
         "movd (%0), %%mm1 \n\t"       /* MM1 is next digit of a */
         "movd (%1), %%mm2 \n\t"       /* MM2 is next digit of b */
@@ -336,8 +332,8 @@ static bngdigit bng_ia32sse2_mult_sub_digit
         "jne 1b \n\t"
         "movd %%mm0, %3 \n\t"
         "emms"
-        : "=r" (a), "=r" (b), "=r" (blen), "=rm" (out)
-        : "0" (a), "1" (b), "2" (blen), "rm" (d), "m" (bias1), "m" (bias2));
+        : "+&r" (a), "+&r" (b), "+&r" (blen), "=&rm" (out)
+        : "m" (d), "m" (bias1), "m" (bias2));
     out = ~out; /* Undo encoding on out digit */
   }
   if (alen == 0) return out;
@@ -354,18 +350,10 @@ static bngdigit bng_ia32sse2_mult_sub_digit
   return 1;
 }
 
-#endif
+/* Detect whether SSE2 instructions are supported */
 
-static void bng_ia32_setup_ops(void)
+static int bng_ia32_sse2_supported(void)
 {
-  /* Select generic IA32 asm code first */
-  bng_ops.add = bng_ia32_add;
-  bng_ops.sub = bng_ia32_sub;
-  bng_ops.mult_add_digit = bng_ia32_mult_add_digit;
-  bng_ops.mult_sub_digit = bng_ia32_mult_sub_digit;
-
-#if BNG_ASM_LEVEL >= 2
-  {
   unsigned int flags, newflags, max_id, capabilities;
 
 #define EFLAG_CPUID 0x00200000
@@ -387,26 +375,37 @@ static void bng_ia32_setup_ops(void)
       : "=r" (flags) : "r" (newflags));
   /* If CPUID detection flag cannot be changed, CPUID instruction is not
      available */
-  if ((flags & EFLAG_CPUID) != (newflags & EFLAG_CPUID)) return;
+  if ((flags & EFLAG_CPUID) != (newflags & EFLAG_CPUID)) return 0;
   /* See if SSE2 extensions are supported */
   asm("pushl %%ebx \n\t"        /* need to preserve %ebx for PIC */
       "cpuid \n\t"
       "popl %%ebx"
       : "=a" (max_id) : "a" (CPUID_IDENTIFY): "ecx", "edx");
-  if (max_id < 1) return;
+  if (max_id < 1) return 0;
   asm("pushl %%ebx \n\t"
       "cpuid \n\t"
       "popl %%ebx"
       : "=d" (capabilities) : "a" (CPUID_CAPABILITIES) : "ecx");
-  if ((capabilities & (1 << SSE2_CAPABILITY)) == 0) return;
-  /* SSE2 extensions are supported */
-  bng_ops.add = bng_ia32sse2_add;
-  bng_ops.sub = bng_ia32sse2_sub;
-  bng_ops.mult_add_digit = bng_ia32sse2_mult_add_digit;
-  bng_ops.mult_sub_digit = bng_ia32sse2_mult_sub_digit;
-  }
+  return capabilities & (1 << SSE2_CAPABILITY);
+}
+
 #endif
 
+static void bng_ia32_setup_ops(void)
+{
+#if BNG_ASM_LEVEL >= 2
+  if (bng_ia32_sse2_supported()) {
+    bng_ops.add = bng_ia32sse2_add;
+    bng_ops.sub = bng_ia32sse2_sub;
+    bng_ops.mult_add_digit = bng_ia32sse2_mult_add_digit;
+    bng_ops.mult_sub_digit = bng_ia32sse2_mult_sub_digit;
+    return;
+  }
+#endif
+  bng_ops.add = bng_ia32_add;
+  bng_ops.sub = bng_ia32_sub;
+  bng_ops.mult_add_digit = bng_ia32_mult_add_digit;
+  bng_ops.mult_sub_digit = bng_ia32_mult_sub_digit;
 }
 
 #define BNG_SETUP_OPS bng_ia32_setup_ops()
