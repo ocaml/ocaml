@@ -79,6 +79,14 @@ let rec is_pure = function
   | Lprim(Pfield n, [arg]) -> is_pure arg
   | _ -> false
 
+(* Generate a direct application *)
+
+let direct_apply fundesc funct ufunct uargs =
+  let app_args =
+    if fundesc.fun_closed then uargs else uargs @ [ufunct] in
+  let app = Udirect_apply(fundesc.fun_label, app_args) in
+  (if is_pure funct then app else Usequence(ufunct, app))
+
 (* Maintain the approximation of the global structure being defined *)
 
 let global_approx = ref([||] : value_approximation array)
@@ -101,32 +109,26 @@ let rec close fenv cenv = function
       (close_var cenv id, approx_var fenv id)
   | Lconst cst ->
       (Uconst cst, Value_unknown)
-  | Lfunction(params, body) as funct ->
+  | Lfunction(kind, params, body) as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
   | Lapply(funct, args) ->
       let nargs = List.length args in
-      begin match close fenv cenv funct with
-        (ufunct, Value_closure(fundesc, approx_res))
+      begin match (close fenv cenv funct, close_list fenv cenv args) with
+        ((ufunct, Value_closure(fundesc, approx_res)),
+         [Uprim(Pmakeblock(_, _), uargs)])
+        when List.length uargs = - fundesc.fun_arity ->
+          (direct_apply fundesc funct ufunct uargs, approx_res)
+      | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when nargs = fundesc.fun_arity ->
-          let uargs = close_list fenv cenv args in
-          let app_args = if fundesc.fun_closed then uargs
-                                               else uargs @ [ufunct] in
-          let app = Udirect_apply(fundesc.fun_label, app_args) in
-          ((if is_pure funct then app else Usequence(ufunct, app)),
-           approx_res)
-      | (ufunct, Value_closure(fundesc, approx_res))
-        when nargs > fundesc.fun_arity ->
-          let (first_args, rem_args) = split_list fundesc.fun_arity args in
-          let ufirst_args = close_list fenv cenv first_args in
-          let app_args = if fundesc.fun_closed then ufirst_args
-                                               else ufirst_args @ [ufunct] in
-          let app =
-            Ugeneric_apply(Udirect_apply(fundesc.fun_label, app_args),
-                           close_list fenv cenv rem_args) in
-          ((if is_pure funct then app else Usequence(ufunct, app)),
+          (direct_apply fundesc funct ufunct uargs, approx_res)
+      | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
+        when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
+          let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
+          (Ugeneric_apply(direct_apply fundesc funct ufunct first_args,
+                          rem_args),
            Value_unknown)
-      | (ufunct, _) ->
-          (Ugeneric_apply(ufunct, close_list fenv cenv args), Value_unknown)
+      | ((ufunct, _), uargs) ->
+          (Ugeneric_apply(ufunct, uargs), Value_unknown)
       end
   | Lsend(met, obj, args) ->
       let (umet, _) = close fenv cenv met in
@@ -138,7 +140,7 @@ let rec close fenv cenv = function
       (Ulet(id, ulam, ubody), abody)
   | Lletrec(defs, body) ->
       if List.for_all
-           (function (id, Lfunction(_, _)) -> true | _ -> false)
+           (function (id, Lfunction(_, _, _)) -> true | _ -> false)
            defs
       then begin
         (* Simple case: only function definitions *)
@@ -241,7 +243,7 @@ and close_list fenv cenv = function
       ulam :: close_list fenv cenv rem
 
 and close_named fenv cenv id = function
-    Lfunction(params, body) as funct ->
+    Lfunction(kind, params, body) as funct ->
       close_one_function fenv cenv id funct
   | lam ->
       close fenv cenv lam
@@ -258,12 +260,13 @@ and close_functions fenv cenv fun_defs =
   let uncurried_defs =
     List.map
       (function
-          (id, (Lfunction(params, body) as def)) ->
+          (id, (Lfunction(kind, params, body) as def)) ->
             let label =
               Compilenv.current_unit_name() ^ "_" ^ Ident.unique_name id in
+            let arity = List.length params in
             let fundesc =
               {fun_label = label;
-               fun_arity = List.length params;
+               fun_arity = (if kind = Tupled then -arity else arity);
                fun_closed = true } in
             (id, params, body, fundesc)
         | (_, _) -> fatal_error "Closure.close_functions")
@@ -280,7 +283,7 @@ and close_functions fenv cenv fun_defs =
     List.map
       (fun (id, params, body, fundesc) ->
         let pos = !env_pos + 1 in
-        env_pos := !env_pos + 1 + (if fundesc.fun_arity > 1 then 3 else 2);
+        env_pos := !env_pos + 1 + (if fundesc.fun_arity <> 1 then 3 else 2);
         pos)
       uncurried_defs in
   let fv_pos = !env_pos in

@@ -344,7 +344,10 @@ and store_fields ptr pos = function
 let apply_function n =
   Compilenv.need_apply_fun n; "caml_apply" ^ string_of_int n
 let curry_function n =
-  Compilenv.need_curry_fun n; "caml_curry" ^ string_of_int n
+  Compilenv.need_curry_fun n;
+  if n >= 0
+  then "caml_curry" ^ string_of_int n
+  else "caml_tuplify" ^ string_of_int (-n)
 
 (* Comparisons *)
 
@@ -983,6 +986,25 @@ let apply_function arity =
     fun_body = body;
     fun_fast = true}
 
+(* Generate tuplifying functions:
+      (defun caml_tuplifyN (arg clos)
+        (app clos.direct #0(arg) ... #N-1(arg) clos)) *)
+
+let tuplify_function arity =
+  let arg = Ident.create "arg" in
+  let clos = Ident.create "clos" in
+  let rec access_components i =
+    if i >= arity
+    then []
+    else get_field (Cvar arg) i :: access_components(i+1) in
+  Cfunction
+   {fun_name = "caml_tuplify" ^ string_of_int arity;
+    fun_args = [arg, typ_addr; clos, typ_addr];
+    fun_body =
+      Cop(Capply typ_addr,
+          get_field (Cvar clos) 2 :: access_components 0 @ [Cvar clos]);
+    fun_fast = true}
+
 (* Generate currying functions:
       (defun caml_curryN (arg clos)
          (alloc HDR caml_curryN_1 arg clos))
@@ -1038,7 +1060,9 @@ let rec intermediate_curry_functions arity num =
   end
     
 let curry_function arity =
-  intermediate_curry_functions arity 0
+  if arity >= 0
+  then intermediate_curry_functions arity 0
+  else [tuplify_function (-arity)]
 
 (* Generate the entry point *)
 
