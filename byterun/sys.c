@@ -47,6 +47,7 @@
 #include "fail.h"
 #include "instruct.h"
 #include "mlvalues.h"
+#include "osdeps.h"
 #include "signals.h"
 #include "stacks.h"
 #include "sys.h"
@@ -336,3 +337,16 @@ CAMLprim value sys_get_config(value unit)
   CAMLreturn (result);
 }
 
+CAMLprim value sys_read_directory(value path)
+{
+  CAMLparam1(path);
+  CAMLlocal1(result);
+  struct ext_table tbl;
+
+  ext_table_init(&tbl, 50);
+  if (caml_read_directory(String_val(path), &tbl) == -1) sys_error(path);
+  ext_table_add(&tbl, NULL);
+  result = copy_string_array((char const **) tbl.contents);
+  ext_table_free(&tbl, 1);
+  CAMLreturn(result);
+}

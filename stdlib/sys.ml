@@ -31,6 +31,7 @@ external command: string -> int = "sys_system_command"
 external time: unit -> float = "sys_time"
 external chdir: string -> unit = "sys_chdir"
 external getcwd: unit -> string = "sys_getcwd"
+external readdir : string -> string array = "sys_read_directory"
 
 let interactive = ref false
 

@@ -50,6 +50,11 @@ extern void * caml_dlsym(void * handle, char * name);
 /* Return an error message describing the most recent dynlink failure. */
 extern char * caml_dlerror(void);
 
+/* Add to [contents] the (short) names of the files contained in
+   the directory named [dirname].  No entries are added for [.] and [..].
+   Return 0 on success, -1 on error; set errno in the case of error. */
+extern int caml_read_directory(char * dirname, struct ext_table * contents);
+
 #ifdef __linux__
 /* Recover executable name from /proc/self/exe if possible */
 extern int executable_name(char * name, int name_len);

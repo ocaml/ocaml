@@ -32,6 +32,11 @@
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
+#ifdef HAS_DIRENT
+#include <dirent.h>
+#else
+#include <sys/dir.h>
+#endif
 #include "memory.h"
 #include "misc.h"
 #include "osdeps.h"
@@ -321,6 +326,34 @@ void aligned_munmap (char * addr, asize_t size)
 }
 
 #endif
+
+/* Add to [contents] the (short) names of the files contained in
+   the directory named [dirname].  No entries are added for [.] and [..].
+   Return 0 on success, -1 on error; set errno in the case of error. */
+
+int caml_read_directory(char * dirname, struct ext_table * contents)
+{
+  DIR * d;
+#ifdef HAS_DIRENT
+  struct dirent * e;
+#else
+  struct direct * e;
+#endif
+  char * p;
+
+  d = opendir(dirname);
+  if (d == NULL) return -1;
+  while (1) {
+    e = readdir(d);
+    if (e == NULL) break;
+    if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) continue;
+    p = stat_alloc(strlen(e->d_name) + 1);
+    strcpy(p, e->d_name);
+    ext_table_add(contents, p);
+  }
+  closedir(d);
+  return 0;
+}
 
 /* Recover executable name from /proc/self/exe if possible */
 

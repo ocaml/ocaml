@@ -371,6 +371,29 @@ int win32_system(char * cmdline)
   }
 }
 
+/* Add to [contents] the (short) names of the files contained in
+   the directory named [dirname].  No entries are added for [.] and [..].
+   Return 0 on success, -1 on error; set errno in the case of error. */
+
+int caml_read_directory(char * dirname, struct ext_table * contents)
+{
+  int d;
+  struct _finddata_t fileinfo;
+  char * p;
+
+  h = _findfirst(dirname, &fileinfo);
+  if (h == -1) return errno == ENOENT ? 0 : -1;
+  do {
+    if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
+      p = stat_alloc(strlen(fileinfo.name) + 1);
+      strcpy(p, fileinfo.name);
+      ext_table_add(contents, p);
+    }
+  } while (_findnext(h, &fileinfo) == 0);
+  _findclose(h);
+  return 0;
+}
+
 #ifndef NATIVE_CODE
 
 /* Set up a new thread for control-C emulation and termination */

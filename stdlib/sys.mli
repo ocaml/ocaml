@@ -51,6 +51,15 @@ external chdir : string -> unit = "sys_chdir"
 external getcwd : unit -> string = "sys_getcwd"
 (** Return the current working directory of the process. *)
 
+external readdir : string -> string array = "sys_read_directory"
+(** Return the names of all files present in the given directory.
+   Names denoting the current directory and the parent directory
+   (["."] and [".."] in Unix) are not returned.  Each string in the
+   result is a file name rather than a complete path.  There is no
+   guarantee that the name strings in the resulting array will appear
+   in any specific order; they are not, in particular, guaranteed to
+   appear in alphabetical order. *)
+
 val interactive : bool ref
 (** This reference is initially set to [false] in standalone
    programs and to [true] if the code is being executed under
@@ -58,10 +67,10 @@ val interactive : bool ref
 
 val os_type : string
 (** Operating system currently executing the Caml program. One of
-   ["Unix"] (for all Unix versions, including Linux and Mac OS X),
-   ["Win32"] (for MS-Windows, OCaml compiled with MSVC++),
-   ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin),
-   ["MacOS"] (for MacOS 9). *)
+-  ["Unix"] (for all Unix versions, including Linux and Mac OS X),
+-  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or Mingw),
+-  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin),
+-  ["MacOS"] (for MacOS 9). *)
 
 val word_size : int
 (** Size of one word on the machine currently executing the Caml
