@@ -294,6 +294,6 @@ raise_caml_exception:
         ldq     $15, 0($sp)
         ldq     $27, 8($sp)
         lda     $sp, 16($sp)
-        jmp     $26, ($27)      /* Keep retaddr in $26 to help debugging */
+        jmp     $25, ($27)      /* Keep retaddr in $25 to help debugging */
 
         .end    raise_caml_exception

@@ -1,22 +1,19 @@
 include ../config/Makefile.h
 include ../Makefile.config
 
+VPATH=.:../byterun
+
 CFLAGS=-I../byterun -DTARGET_$(ARCH) -O $(CCCOMPOPTS)
 DFLAGS=-I../../byterun -DTARGET_$(ARCH) -g -DDEBUG $(CCCOMPOPTS)
 
-COBJS=fail.o main.o roots.o signals.o
+COBJS=misc.o main.o fail.o signals.o \
+  freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o \
+  compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
+  hash.o sys.o parsing.o gc_ctrl.o terminfo.o crc.o obj.o
 ASMOBJS=$(ARCH).o
-OTHEROBJS=../byterun/misc.o ../byterun/freelist.o \
-  ../byterun/major_gc.o ../byterun/minor_gc.o ../byterun/memory.o \
-  ../byterun/alloc.o ../byterun/compare.o \
-  ../byterun/ints.o ../byterun/floats.o ../byterun/str.o \
-  ../byterun/array.o ../byterun/io.o ../byterun/extern.o \
-  ../byterun/intern.o ../byterun/hash.o ../byterun/sys.o \
-  ../byterun/parsing.o ../byterun/gc_ctrl.o \
-  ../byterun/terminfo.o ../byterun/crc.o ../byterun/obj.o
 
-OBJS=$(COBJS) $(ASMOBJS) $(OTHEROBJS)
-DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS) $(OTHEROBJS:.o=.d.o)
+OBJS=$(COBJS) $(ASMOBJS)
+DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 
 all: libasmrun.a libasmrund.a
 
