@@ -284,10 +284,14 @@ value caml_thread_initialize(value unit)   /* ML */
     channel_mutex_unlock = caml_io_mutex_unlock;
     channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
     /* Fork the tick thread */
+#if 0
     tick_thread =
       CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&caml_thread_tick,
                    NULL, 0, &tick_id);
     if (tick_thread == NULL) caml_wthread_error("Thread.init");
+#endif
+    tick_thread = (HANDLE) _beginthread(caml_thread_tick, 0, NULL);
+    if (tick_thread == (HANDLE)(-1)) caml_wthread_error("Thread.init");
     CloseHandle(tick_thread);
   End_roots();
   return Val_unit;
@@ -363,10 +367,14 @@ value caml_thread_new(value clos)          /* ML */
     curr_thread->next->prev = th;
     curr_thread->next = th;
     /* Fork the new thread */
+#if 0
     th->wthread =
       CreateThread(NULL,0, (LPTHREAD_START_ROUTINE) caml_thread_start,
                    (void *) th, 0, &th_id);
     if (th->wthread == NULL) {
+#endif
+    th->wthread = (HANDLE) _beginthread(caml_thread_start, 0, (void *) th);
+    if (th->wthread == (HANDLE)(-1)) {
       /* Fork failed, remove thread info block from list of threads */
       th->next->prev = curr_thread;
       curr_thread->next = th->next;
