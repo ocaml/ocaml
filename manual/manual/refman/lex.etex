@@ -29,19 +29,20 @@ character), and "'" (the single quote), starting with a
 letter or an underscore.
 Letters contain at least the 52 lowercase and uppercase
 letters from the ASCII set. The current implementation (except on
-MacOS) also recognizes as letters all accented characters from the ISO
+MacOS 9) also recognizes as letters all accented characters from the ISO
 8859-1 (``ISO Latin 1'') set. All characters in an identifier are
-meaningful. The current implementation places no limits on the number
-of characters of an identifier.
+meaningful. The current implementation places practically no limit on
+the number of characters of an identifier.
 
 \subsubsection*{Integer literals}
 
 \begin{syntax}
 integer-literal:
-          ["-"] {{ "0"\ldots"9" }}
-        | ["-"] ("0x"||"0X") {{ "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f" }}
-        | ["-"] ("0o"||"0O") {{ "0"\ldots"7" }}
-        | ["-"] ("0b"||"0B") {{ "0"\ldots"1" }}
+          ["-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }
+        | ["-"] ("0x"||"0X") ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+                             { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+        | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
+        | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
 \end{syntax}
 
 An integer literal is a sequence of one or more digits, optionally
@@ -56,12 +57,15 @@ preceded by a minus sign. By default, integer literals are in decimal
 The interpretation of integer literals that fall outside the range of
 representable integer values is undefined.
 
+For convenience and readability, underscore characters ("_") are accepted
+(and ignored) within integer literals.
+
 \subsubsection*{Floating-point literals}
 
 \begin{syntax}
 float-literal:
-          ["-"] {{ "0"\ldots"9" }} ["." { "0"\ldots"9" }]
-          [("e"||"E") ["+"||"-"] {{ "0"\ldots"9" }}]
+          ["-"] ("0"\ldots"9") { "0"\ldots"9"||"_" } ["." { "0"\ldots"9"||"_" }]
+          [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
 \end{syntax}
 
 Floating-point decimals consist in an integer part, a decimal part and
@@ -75,6 +79,9 @@ avoid ambiguity with integer literals.
 The interpretation of floating-point literals that fall outside the
 range of representable floating-point values is undefined.
 
+For convenience and readability, underscore characters ("_") are accepted
+(and ignored) within floating-point literals.
+
 \subsubsection*{Character literals}
 \label{s:characterliteral}
 
@@ -86,6 +93,8 @@ char-literal:
 escape-sequence:
           "\" ("\" || '"' || "'" || "n" || "t" || "b" || "r")
         | "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9")
+        | "\x" ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+               ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
 \end{syntax}
 
 Character literals are delimited by "'" (single quote) characters.
@@ -100,6 +109,7 @@ The two single quotes enclose either one character different from
 \entree{"\\t"}{horizontal tabulation (TAB)}
 \entree{"\\b"}{backspace (BS)}
 \entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
+\entree{"\\x"\var{hh}}{the caracter with ASCII code \var{hh} in hexadecimal}
 \end{tableau}
 
 \subsubsection*{String literals}
@@ -220,3 +230,5 @@ a positive integer (the source line number), optionally followed by a
 character string (the source file name).
 Line number directives are treated as blank characters during lexical
 analysis.
+
+% $Id$
