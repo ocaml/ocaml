@@ -25,9 +25,6 @@
 #define FUNCTION_ALIGN 2
 #endif
 
-        .comm   G(gc_entry_regs), 128
-        .comm   G(gc_entry_float_regs), 256
-
 /* Allocation */
 
         .text
@@ -38,27 +35,26 @@
         .globl  G(caml_alloc)
 
 G(caml_call_gc):
-    /* Record lowest stack address and return address */
-        movl    0(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    4(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
-    /* Save all regs used by the code generator */
-L105:   movl    %ebx, G(gc_entry_regs) + 4
-        movl    %ecx, G(gc_entry_regs) + 8
-        movl    %edx, G(gc_entry_regs) + 12
-        movl    %esi, G(gc_entry_regs) + 16
-        movl    %edi, G(gc_entry_regs) + 20
-        movl    %ebp, G(gc_entry_regs) + 24
+    /* Build caml_context structure on stack
+       and save it into caml_last_context. */
+        pushl   %ebp
+        pushl   %edi
+        pushl   %esi
+        pushl   %edx
+        pushl   %ecx
+        pushl   %ebx
+        pushl   %eax
+        movl    %esp, G(caml_last_context)
     /* Call the garbage collector */
         call    G(garbage_collection)
     /* Restore all regs used by the code generator */
-        movl    G(gc_entry_regs) + 4, %ebx
-        movl    G(gc_entry_regs) + 8, %ecx
-        movl    G(gc_entry_regs) + 12, %edx
-        movl    G(gc_entry_regs) + 16, %esi
-        movl    G(gc_entry_regs) + 20, %edi
-        movl    G(gc_entry_regs) + 24, %ebp
+        popl    %eax
+        popl    %ebx
+        popl    %ecx
+        popl    %edx
+        popl    %esi
+        popl    %edi
+        popl    %ebp
     /* Return to caller */
         ret
 
@@ -70,11 +66,22 @@ G(caml_alloc1):
         cmpl    G(young_limit), %eax
         jb      L100
         ret
-L100:   movl    0(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    4(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
-        call    L105
+L100:   pushl   %ebp
+        pushl   %edi
+        pushl   %esi
+        pushl   %edx
+        pushl   %ecx
+        pushl   %ebx
+        pushl   %eax
+        movl    %esp, G(caml_last_context)
+        call    G(garbage_collection)
+        popl    %eax
+        popl    %ebx
+        popl    %ecx
+        popl    %edx
+        popl    %esi
+        popl    %edi
+        popl    %ebp
         jmp     G(caml_alloc1)
 
         .align  FUNCTION_ALIGN
@@ -85,11 +92,22 @@ G(caml_alloc2):
         cmpl    G(young_limit), %eax
         jb      L101
         ret
-L101:   movl    0(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    4(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
-        call    L105
+L101:   pushl   %ebp
+        pushl   %edi
+        pushl   %esi
+        pushl   %edx
+        pushl   %ecx
+        pushl   %ebx
+        pushl   %eax
+        movl    %esp, G(caml_last_context)
+        call    G(garbage_collection)
+        popl    %eax
+        popl    %ebx
+        popl    %ecx
+        popl    %edx
+        popl    %esi
+        popl    %edi
+        popl    %ebp
         jmp     G(caml_alloc2)
 
         .align  FUNCTION_ALIGN
@@ -100,11 +118,22 @@ G(caml_alloc3):
         cmpl    G(young_limit), %eax
         jb      L102
         ret
-L102:   movl    0(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    4(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
-        call    L105
+L102:   pushl   %ebp
+        pushl   %edi
+        pushl   %esi
+        pushl   %edx
+        pushl   %ecx
+        pushl   %ebx
+        pushl   %eax
+        movl    %esp, G(caml_last_context)
+        call    G(garbage_collection)
+        popl    %eax
+        popl    %ebx
+        popl    %ecx
+        popl    %edx
+        popl    %esi
+        popl    %edi
+        popl    %ebp
         jmp     G(caml_alloc3)
 
         .align  FUNCTION_ALIGN
@@ -117,14 +146,22 @@ G(caml_alloc):
         ret
 L103:   subl    G(young_ptr), %eax      /* eax = - size */
         negl    %eax                    /* eax = size */
-        pushl   %eax                    /* save desired size */
-        subl    %eax, G(young_ptr)      /* must update young_ptr */
-        movl    4(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    8(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
-        call    L105
-        popl    %eax                    /* recover desired size */
+        pushl   %ebp
+        pushl   %edi
+        pushl   %esi
+        pushl   %edx
+        pushl   %ecx
+        pushl   %ebx
+        pushl   %eax
+        movl    %esp, G(caml_last_context)
+        call    G(garbage_collection)
+        popl    %eax
+        popl    %ebx
+        popl    %ecx
+        popl    %edx
+        popl    %esi
+        popl    %edi
+        popl    %ebp
         jmp     G(caml_alloc)
 
 /* Call a C function from Caml */
@@ -132,11 +169,12 @@ L103:   subl    G(young_ptr), %eax      /* eax = - size */
         .globl  G(caml_c_call)
         .align  FUNCTION_ALIGN
 G(caml_c_call):
-    /* Record lowest stack address and return address */
-        movl    (%esp), %edx
-        movl    %edx, G(caml_last_return_address)
-        leal    4(%esp), %edx
-        movl    %edx, G(caml_bottom_of_stack)
+    /* Build caml_context structure on stack
+       and save it into caml_last_context.
+       We don't fill the gc_regs section, because no registers
+       are live across caml_c_call. */
+        lea     -28(%esp), %edx
+        movl    %edx, G(caml_last_context)
     /* Call the function (address in %eax) */
         jmp     *%eax
 
@@ -155,8 +193,7 @@ G(caml_start_program):
     /* Common code for caml_start_program and callback* */
 L106:
     /* Build a callback link */
-        pushl   G(caml_last_return_address)
-        pushl   G(caml_bottom_of_stack)
+        pushl   G(caml_last_context)
     /* Build an exception handler */
         pushl   $L108
         pushl   G(caml_exception_pointer)
@@ -167,10 +204,8 @@ L107:
     /* Pop the exception handler */
         popl    G(caml_exception_pointer)
         popl    %esi    /* dummy register */
-    /* Pop the callback link, restoring the global variables
-       used by caml_c_call */
-        popl    G(caml_bottom_of_stack)
-        popl    G(caml_last_return_address)
+    /* Pop the callback link, restoring caml_last_context */
+        popl    G(caml_last_context)
     /* Restore callee-save registers. */
         popl    %ebp
         popl    %edi
@@ -180,10 +215,8 @@ L107:
         ret
 L108:
     /* Exception handler*/
-    /* Pop the callback link, restoring the global variables
-       used by caml_c_call */
-        popl    G(caml_bottom_of_stack)
-        popl    G(caml_last_return_address)
+    /* Pop the callback link, restoring caml_last_context */
+        popl    G(caml_last_context)
     /* Re-raise the exception through mlraise,
        so that local C roots are cleaned up correctly. */
         pushl   %eax            /* exn bucket is the argument */

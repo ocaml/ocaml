@@ -20,9 +20,9 @@
 #include "gc.h"
 #include "memory.h"
 #include "mlvalues.h"
-#include "roots.h"
 #include "signals.h"
 #include "stack.h"
+#include "roots.h"
 
 /* The globals holding predefined exceptions */
 
