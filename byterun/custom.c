@@ -12,6 +12,8 @@
 
 /* $Id$ */
 
+#include <string.h>
+
 #include "alloc.h"
 #include "custom.h"
 #include "fail.h"

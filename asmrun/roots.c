@@ -14,6 +14,7 @@
 
 /* To walk the memory roots for garbage collection */
 
+#include "finalise.h"
 #include "memory.h"
 #include "major_gc.h"
 #include "minor_gc.h"
