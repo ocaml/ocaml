@@ -115,6 +115,7 @@ value gr_open_graph(value arg)
                           BORDER_WIDTH, grblack, grbackground);
     p = window_name;
     if (p == NULL) p = DEFAULT_WINDOW_NAME;
+    /* What not use XSetWMProperties? */
     XSetStandardProperties(grdisplay, grwindow.win, p, p,
                            None, NULL, 0, &hints);
     grwindow.gc = XCreateGC(grdisplay, grwindow.win, 0, NULL);
@@ -238,7 +239,7 @@ value gr_window_id(void)
 value gr_set_window_title(value n)
 {
   if (window_name != NULL) stat_free(window_name);
-  window_name = stat_alloc(strlen(String_val(n)));
+  window_name = stat_alloc(strlen(String_val(n))+1);
   strcpy(window_name, String_val(n));
   if (gr_initialized) {
     XStoreName(grdisplay, grwindow.win, window_name);
