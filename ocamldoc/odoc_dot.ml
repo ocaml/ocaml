@@ -88,7 +88,7 @@ class dot =
 
     method generate_types types =
       try
-	let oc = open_out !Odoc_args.dot_file in
+	let oc = open_out !Odoc_args.out_file in
 	let fmt = F.formatter_of_out_channel oc in
 	F.fprintf fmt "%s" self#header;
 	let graph = Odoc_info.Dep.deps_of_types 
@@ -106,7 +106,7 @@ class dot =
     method generate_modules modules_list = 
       try
 	modules <- modules_list ;
-	let oc = open_out !Odoc_args.dot_file in
+	let oc = open_out !Odoc_args.out_file in
 	let fmt = F.formatter_of_out_channel oc in
 	F.fprintf fmt "%s" self#header;
 
@@ -121,7 +121,7 @@ class dot =
 	Sys_error s ->
 	  raise (Failure s)
 
-    (** Generate the dot code in the file {!Odoc_args.dot_file}. *)
+    (** Generate the dot code in the file {!Odoc_args.out_file}. *)
     method generate (modules_list : Odoc_info.Module.t_module list) =
       if !Odoc_args.dot_types then
 	self#generate_types (Odoc_info.Search.types modules_list)

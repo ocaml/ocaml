@@ -28,6 +28,9 @@ val merge_options : Odoc_types.merge_option list ref
 (** Classic mode or not. *)
 val classic : bool ref
     
+(** The file used by the generators outputting only one file. *)
+val out_file : string ref
+
 (** The optional file name to dump the collected information into.*)
 val dump : string option ref
     
@@ -97,9 +100,6 @@ val with_index : bool ref
 
 (** The flag which indicates if we must escape accentuated characters (for TeXinfo).*)
 val esc_8bits : bool ref
-
-(** The file used byt the dot generator. *)
-val dot_file : string ref
 
 (** Include all modules or only the ones on the command line, for the dot ouput. *)
 val dot_include_all : bool ref

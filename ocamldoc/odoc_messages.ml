@@ -32,7 +32,7 @@ let preprocess = "<command>  Pipe sources through preprocessor <command>"
 let load_file = "<file.cm[o|a]>  Load file defining a new documentation generator"
 let nolabels = " Ignore non-optional labels in types"
 let werr = "Treat ocamldoc warnings as errors"
-let target_dir = "<dir>  Generate files in directory <dir>, rather than in current directory"
+let target_dir = "<dir>  Generate files in directory <dir>, rather than in current directory (for man and HTML generators)"
 let dump = "<file>  Dump collected information into <file>"
 let load = "<file>  Load information from <file> ; may be used several times"
 let css_style = "<file>  Use content of <file> as CSS style definition "^html_only
@@ -42,11 +42,12 @@ let generate_html = " Generate HTML documentation"
 let generate_latex = " Generate LaTeX documentation"
 let generate_texinfo = " Generate TeXinfo documentation"
 let generate_man = " Generate man pages"
-
 let generate_dot = " Generate dot code of top modules dependencies"
-let default_dot_file = "dep.dot"
-let dot_file = "<file> Set the file to use to output the dot code "^
-  "(default is "^default_dot_file^")"
+
+let default_out_file = "ocamldoc.out"
+let out_file = "<file> Set the ouput file name, used by texi, latex and dot generators "^
+  "(default is "^default_out_file^")"
+
 let dot_include_all = " include all modules in the dot output,\n"^
   "        not only the modules given on the command line"
 let dot_types = " generate dependency graph for types instead of modules"
@@ -91,7 +92,7 @@ let merge_custom = ('c', "merge custom @-tags")
 let merge_all = ('A', "merge all")
 
 let no_index = " Do not build index for Info files"^texi_only
-let esc_8bits = " scape accentuated characters in Info files"^texi_only^"\n"
+let esc_8bits = " Escape accentuated characters in Info files"^texi_only^"\n"
 
 let options_can_be = "        <options> can be one or more of the following characters:"
 let string_of_options_list l = 

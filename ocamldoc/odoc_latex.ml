@@ -802,7 +802,7 @@ class latex =
       (match !Odoc_args.title with None -> "" | Some _ -> "\\maketitle\n")^
       (if !Odoc_args.with_toc then "\\tableofcontents\n" else "")
 
-    (** Generate the [doc.tex] LaTeX file from a module list. *)
+    (** Generate the LaTeX file from a module list, in the {!Odoc_args.out_file} file. *)
     method generate module_list =
       if !Odoc_args.separate_files then
 	(
@@ -823,7 +823,7 @@ class latex =
 	);
       
       try
-	let chanout = open_out (Filename.concat !Odoc_args.target_dir "doc.tex") in
+	let chanout = open_out (Filename.concat !Odoc_args.target_dir !Odoc_args.out_file) in
 	let _ = if !Odoc_args.with_header then output_string chanout self#latex_header else () in
 	List.iter 
 	  (fun m -> if !Odoc_args.separate_files then

@@ -1000,11 +1000,11 @@ class texi =
 
 
 
-    (** Generate the [doc.texi] Texinfo file from a module list. *)
+    (** Generate the Texinfo file from a module list, in the {!Odoc_args.out_file} file. *)
     method generate module_list =
       try
 	let chanout = open_out 
-	    (Filename.concat !Odoc_args.target_dir "doc.texi") in
+	    (Filename.concat !Odoc_args.target_dir !Odoc_args.out_file) in
 	if !Odoc_args.with_header 
 	then self#generate_texi_header chanout module_list ;
 	List.iter 

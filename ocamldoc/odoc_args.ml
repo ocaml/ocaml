@@ -24,7 +24,7 @@ let doc_generator = ref (None : doc_generator option)
 
 let merge_options = ref ([] : Odoc_types.merge_option list)
 
-let dot_file = ref Odoc_messages.default_dot_file
+let out_file = ref Odoc_messages.default_out_file
 
 let dot_include_all = ref false
 
@@ -184,6 +184,7 @@ let options  = ref [
   "-rectypes", Arg.Set recursive_types, Odoc_messages.rectypes ;
   "-nolabels", Arg.Unit (fun () -> classic := true), Odoc_messages.nolabels ;
   "-warn-error", Arg.Set Odoc_global.warn_error, Odoc_messages.werr ;
+  "-o", Arg.String (fun s -> out_file := s), Odoc_messages.out_file ;
   "-d", Arg.String (fun s -> target_dir := s), Odoc_messages.target_dir ;
   "-sort", Arg.Unit (fun () -> sort_modules := true), Odoc_messages.sort_modules ;
   "-no-stop", Arg.Set no_stop, Odoc_messages.no_stop ;
@@ -226,7 +227,6 @@ let options  = ref [
   "-esc8", Arg.Set esc_8bits, Odoc_messages.esc_8bits ;
 
 (* dot only options *)
-  "-dot-file", Arg.String (fun s -> dot_file := s), Odoc_messages.dot_file ;
   "-dot-colors", Arg.String (fun s -> dot_colors := Str.split (Str.regexp_string ",") s), Odoc_messages.dot_colors ;
   "-dot-include-all", Arg.Set dot_include_all, Odoc_messages.dot_include_all ;
   "-dot-types", Arg.Set dot_types, Odoc_messages.dot_types ;
