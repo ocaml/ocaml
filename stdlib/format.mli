@@ -303,6 +303,9 @@ val set_mark_tags : bool -> unit;;
     ``verbatim'' material or richer decorated output depending on the
     treatment of tags. Default behavior of the pretty printer is to
     print tags and markers of tags. *)
+val get_print_tags : unit -> bool;;
+val get_mark_tags : unit -> bool;;
+(** Return the current status of tag printing and marking. *)
 
 
 (** {6 Ellipsis} *)
@@ -471,6 +474,8 @@ val pp_set_tab : formatter -> unit -> unit;;
 val pp_print_tab : formatter -> unit -> unit;;
 val pp_set_print_tags : formatter -> bool -> unit;;
 val pp_set_mark_tags : formatter -> bool -> unit;;
+val pp_get_print_tags : formatter -> unit -> bool;;
+val pp_get_mark_tags : formatter -> unit -> bool;;
 val pp_set_margin : formatter -> int -> unit;;
 val pp_get_margin : formatter -> unit -> int;;
 val pp_set_max_indent : formatter -> int -> unit;;

@@ -477,6 +477,8 @@ let pp_close_tag state () =
 
 let pp_set_print_tags state b = state.pp_print_tags <- b;;
 let pp_set_mark_tags state b = state.pp_mark_tags <- b;;
+let pp_get_print_tags state () = state.pp_print_tags;;
+let pp_get_mark_tags state () = state.pp_mark_tags;;
 
 let pp_get_formatter_tag_functions state () =
   {mark_open_tag = state.pp_mark_open_tag;
@@ -821,8 +823,12 @@ and get_formatter_tag_functions =
     pp_get_formatter_tag_functions std_formatter
 and set_print_tags =
     pp_set_print_tags std_formatter
+and get_print_tags =
+    pp_get_print_tags std_formatter
 and set_mark_tags =
     pp_set_mark_tags std_formatter
+and get_mark_tags =
+    pp_get_mark_tags std_formatter
 ;;
 
 
