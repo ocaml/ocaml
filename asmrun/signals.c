@@ -363,8 +363,19 @@ static int is_stack_overflow(char * fault_addr)
 
 DECLARE_SIGNAL_HANDLER(segv_handler)
 {
-  if (is_stack_overflow(CONTEXT_FAULTING_ADDRESS))
+  if (is_stack_overflow(CONTEXT_FAULTING_ADDRESS)) {
+#if defined(CONTEXT_PC) \
+ && defined(CONTEXT_YOUNG_PTR) \
+ && defined(CONTEXT_EXCEPTION_POINTER)
+    if (In_code_area(CONTEXT_PC)) {
+      caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+      caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
+      caml_raise_stack_overflow();
+    }
+#else
     caml_raise_stack_overflow();
+#endif
+  }
 }
 
 #endif
