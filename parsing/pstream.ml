@@ -58,7 +58,7 @@ let stream_pattern_component skont =
       (mkexp
          (Pexp_try
             (esome (mkexp (Pexp_apply (e, [mkexp sexp]))),
-             [(pcon "Parse_failure" None,
+             [(pcon "Failure" None,
                mkexp (Pexp_construct (Lident "None", None)))])),
        p, skont)
   | Spat_sterm p ->
@@ -80,7 +80,7 @@ let rec stream_pattern epo e ekont =
               Some estr -> estr
             | _ -> mkexp (Pexp_constant (Const_string ""))
           in
-          araise "Parse_error" (Some str)
+          araise "Error" (Some str)
         in
         stream_pattern epo e ekont spcl
       in
@@ -94,7 +94,7 @@ let rec stream_pattern epo e ekont =
 
 let rec parser_cases =
   function
-    [] -> araise "Parse_failure" None
+    [] -> araise "Failure" None
   | (spcl, epo, e)::cl -> stream_pattern epo e (fun _ -> parser_cases cl) spcl
   
 let cparser (bpo, pc) =

@@ -56,7 +56,7 @@ let make_lexer keywords =
   and keyword_or_error c =
     let s = String.make 1 c in
       try Hashtbl.find kwd_table s
-      with Not_found -> raise(Stream.Parse_error("Illegal character " ^ s)) in
+      with Not_found -> raise(Stream.Error("Illegal character " ^ s)) in
 
   let rec next_token = parser
     [< '  ' '|'\010'|'\013'|'\009'|'\026'|'\012'; s >] ->
