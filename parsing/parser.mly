@@ -464,11 +464,11 @@ simple_expr:
                          [$1; $4])) }
   | LBRACE lbl_expr_list opt_semi RBRACE
       { mkexp(Pexp_record(List.rev $2)) }
-  | LBRACKETLESS stream_expr GREATERRBRACKET
+  | LBRACKETLESS stream_expr opt_semi GREATERRBRACKET
       { Pstream.cstream (List.rev $2) }
   | LBRACKETLESS GREATERRBRACKET
       { Pstream.cstream [] }
-  | LBRACKETBAR expr_semi_list BARRBRACKET
+  | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { mkexp(Pexp_array(List.rev $2)) }
   | LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_array []) }
@@ -480,7 +480,7 @@ simple_expr:
       { mkexp(Pexp_send($1, $3)) }
   | NEW class_longident
       { mkexp(Pexp_new($2)) }
-  | LBRACELESS label_expr_list GREATERRBRACE
+  | LBRACELESS label_expr_list opt_semi GREATERRBRACE
       { mkexp(Pexp_override(List.rev $2)) }
   | LBRACELESS GREATERRBRACE
       { mkexp(Pexp_override []) }
@@ -517,8 +517,9 @@ parser_cases:
   | parser_cases BAR parser_case                { $3 :: $1 }
 ;
 parser_case:
-    LBRACKETLESS stream_pattern GREATERRBRACKET opt_pat MINUSGREATER seq_expr
-      { (List.rev $2, $4, $6) }
+    LBRACKETLESS stream_pattern opt_semi GREATERRBRACKET opt_pat
+    MINUSGREATER seq_expr
+      { (List.rev $2, $5, $7) }
   | LBRACKETLESS GREATERRBRACKET opt_pat MINUSGREATER seq_expr
       { ([], $3, $5) }
 ;
@@ -916,10 +917,8 @@ simple_core_type:
       { mktyp(Ptyp_class($5, List.rev $2)) }
 ;
 core_type_tuple:
-    simple_core_type STAR simple_core_type
-      { [$3; $1] }
-  | core_type_tuple STAR simple_core_type
-      { $3 :: $1 }
+    simple_core_type STAR simple_core_type      { [$3; $1] }
+  | core_type_tuple STAR simple_core_type       { $3 :: $1 }
 ;
 core_type_comma_list:
     core_type COMMA core_type                   { [$3; $1] }
@@ -930,20 +929,15 @@ core_type_list:
   | core_type_list STAR simple_core_type        { $3 :: $1 }
 ;
 meth_list:
-    field SEMI meth_list
-      { $1 :: $3 }
-  | field
-      { [$1] }
-  | DOTDOT
-      { [mkfield Pfield_var] }
+    field SEMI meth_list                        { $1 :: $3 }
+  | field opt_semi                              { [$1] }
+  | DOTDOT                                      { [mkfield Pfield_var] }
 ;
 field:
-    label COLON core_type
-      { mkfield(Pfield($1, $3)) }
+    label COLON core_type                       { mkfield(Pfield($1, $3)) }
 ;
 label:
-    LIDENT
-      { $1 }
+    LIDENT                                      { $1 }
 ;
 
 /* Constants */
