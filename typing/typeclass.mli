@@ -45,6 +45,8 @@ val approx_class_declarations:
    Ident.t * type_declaration *
    Ident.t * type_declaration) list
 
+val virtual_methods: Types.class_signature -> label list
+
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
   | Method_type_mismatch of string * (type_expr * type_expr) list
