@@ -53,18 +53,21 @@ let regexp_string s = compile_regexp (quote s) false
 let regexp_string_case_fold s = compile_regexp (quote s) true
 
 let group_beginning n =
-  if n < 0 or n >= 10 then invalid_arg "Str.group_beginning" else
+  if n < 0 || n >= 10 then invalid_arg "Str.group_beginning" else
   let pos = beginning_group n in
   if pos = -1 then raise Not_found else pos
 
 let group_end n =
-  if n < 0 or n >= 10 then invalid_arg "Str.group_end" else
+  if n < 0 || n >= 10 then invalid_arg "Str.group_end" else
   let pos = end_group n in
   if pos = -1 then raise Not_found else pos
 
 let matched_group n txt =
   let b = group_beginning n and e = group_end n in String.sub txt b (e-b)
 
+let replace_matched repl matched =
+  replacement_text repl matched
+  
 let match_beginning () = group_beginning 0
 and match_end () = group_end 0
 and matched_string txt = matched_group 0 txt
@@ -93,8 +96,8 @@ let global_substitute expr repl_fun text =
 let global_replace expr repl text =
   global_substitute expr (replacement_text repl) text
 and replace_first expr repl text =
-  substitute_first expr (replacement_text repl) text
-
+  substitute_first expr (replacement_text repl) text  
+  
 let bounded_split expr text num =
   let start =
     if string_match expr text 0 then match_end() else 0 in

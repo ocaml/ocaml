@@ -90,7 +90,9 @@ val matched_group: int -> string -> string
            by the [n]th group [\(...\)] of the regular expression during
            the latest [string_match], [search_forward] or [search_backward].
            The user must make sure that the parameter [s] is the same string
-           that was passed to the matching or searching function. *)
+that was passed to the matching or searching function. *)
+    
+val replace_matched : string -> string -> string
 val group_beginning: int -> int
 val group_end: int -> int
         (* [group_beginning n] returns the position of the first character
