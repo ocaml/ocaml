@@ -20,12 +20,12 @@ let copy o = (magic Array.copy : (< .. > as 'a) -> 'a) o
 let compact_table = ref true
 let copy_parent = ref true
 let clean_when_copying = ref true
-let retry_count = ref 6
-let bucket_small_size = ref 8
+let retry_count = ref 3
+let bucket_small_size = ref 16
 
 (**** Parameters ****)
 
-let step = if 1 lsl 31 = 0 then 2 else 4
+let step = (Sys.get_config()).Sys.word_size / 16
 
 let first_label = 0
 
