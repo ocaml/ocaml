@@ -44,6 +44,14 @@ type unit_infos =
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_force_link: bool }               (* Always linked *)
 
+(* Each .a library has a matching .cmxa file that provides the following
+   infos on the library: *)
+
+type library_infos =
+  { lib_units: (unit_infos * Digest.t) list;  (* List of unit infos w/ CRCs *)
+    lib_ccobjs: string list;            (* C object files needed *)
+    lib_ccopts: string list }           (* Extra opts to C compiler *)
+
 let global_approx_table =
   (Hashtbl.create 17 : (string, value_approximation) Hashtbl.t)
 

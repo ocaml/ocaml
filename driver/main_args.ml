@@ -30,6 +30,7 @@ module Make_options (F :
      val _make_runtime : unit -> unit
      val _modern : unit -> unit
      val _noassert : unit -> unit
+     val _noautolink : unit -> unit
      val _o : string -> unit
      val _output_obj : unit -> unit
      val _pp : string -> unit
@@ -75,6 +76,8 @@ struct
     "-make_runtime", Arg.Unit F._make_runtime,
            " (deprecated) same as -make-runtime";
     "-noassert", Arg.Unit F._noassert, " Do not compile assertion checks";
+    "-noautolink", Arg.Unit F._noautolink,
+           " Don't automatically link C libraries specified in .cma files";
     "-o", Arg.String F._o, "<file>  Set output file name to <file>";
     "-output-obj", Arg.Unit F._output_obj,
                            "Output a C object file instead of an executable";

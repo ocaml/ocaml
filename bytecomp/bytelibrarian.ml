@@ -72,7 +72,12 @@ let create_archive file_list lib_name =
     output_string outchan cma_magic_number;
     let ofs_pos_toc = pos_out outchan in
     output_binary_int outchan 0;
-    let toc = List.flatten(List.map (copy_object_file outchan) file_list) in
+    let toc =
+      { lib_units =
+          List.flatten(List.map (copy_object_file outchan) file_list);
+        lib_custom = !Clflags.custom_runtime;
+        lib_ccobjs = !Clflags.ccobjs;
+        lib_ccopts = !Clflags.ccopts } in
     let pos_toc = pos_out outchan in
     output_value outchan toc;
     seek_out outchan ofs_pos_toc;

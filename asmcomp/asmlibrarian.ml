@@ -46,7 +46,11 @@ let create_archive file_list lib_name =
     output_string outchan cmxa_magic_number;
     let (objfile_list, descr_list) =
       List.split (List.map read_info file_list) in
-    output_value outchan descr_list;
+    let infos =
+      { lib_units = descr_list;
+        lib_ccobjs = !Clflags.ccobjs;
+        lib_ccopts = !Clflags.ccopts } in
+    output_value outchan infos;
     if Ccomp.create_archive archive_name objfile_list <> 0
     then raise(Error(Archiver_error archive_name));
     close_out outchan

@@ -66,6 +66,18 @@ let check_consistency file_name unit crc =
     unit.ui_imports_cmx;
   Hashtbl.add crc_implementations unit.ui_name (file_name, crc)
 
+(* Add C objects and options and "custom" info from a library descriptor.
+   See bytecomp/bytelink.ml for comments on the order of C objects. *)
+
+let lib_ccobjs = ref []
+let lib_ccopts = ref []
+
+let add_ccobjs l =
+  if not !Clflags.no_auto_link then begin
+    lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
+    lib_ccopts := l.lib_ccopts @ !lib_ccopts
+  end
+
 (* First pass: determine which units are needed *)
 
 module StringSet =
@@ -108,20 +120,22 @@ let scan_file obj_name tolink =
     really_input ic buffer 0 (String.length cmxa_magic_number);
     if buffer <> cmxa_magic_number then
       raise(Error(Not_an_object_file file_name));
-    let info_crc_list = (input_value ic : (unit_infos * Digest.t) list) in
+    let infos = (input_value ic : library_infos) in
     close_in ic;
+    add_ccobjs infos;
     List.fold_right
       (fun (info, crc) reqd ->
         if info.ui_force_link
-        or !Clflags.link_everything
-        or is_required info.ui_name then begin
+        || !Clflags.link_everything
+        || is_required info.ui_name
+        then begin
           check_consistency file_name info crc;
           remove_required info.ui_name;
           List.iter add_required info.ui_imports_cmx;
           info :: reqd
         end else
           reqd)
-    info_crc_list tolink
+    infos.lib_units tolink
   end
   else raise(Error(Not_an_object_file file_name))
 
@@ -259,6 +273,8 @@ let link objfiles =
   Array.iter remove_required Runtimedef.builtin_exceptions;
   if not (StringSet.is_empty !missing_globals) then
     raise(Error(Missing_implementations(StringSet.elements !missing_globals)));
+  Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
+  Clflags.ccopts := !Clflags.ccopts @ !lib_ccopts;
   let startup = Filename.temp_file "camlstartup" ext_asm in
   make_startup_file startup units_tolink;
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in

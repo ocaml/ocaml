@@ -86,6 +86,8 @@ let main () =
              " Link all modules, even unused ones";
        "-modern", Arg.Clear classic, " Use strict label syntax";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
+       "-noautolink", Arg.Set no_auto_link,
+             " Don't automatically link C libraries specified in .cma files";
        "-o", Arg.String(fun s -> exec_name := s;
                                  archive_name := s;
                                  object_name := s),

@@ -45,10 +45,12 @@ posix_n.o: posix.c
 	mv posix.o posix_n.o
 
 threads.cma: $(THREAD_OBJS)
-	$(CAMLC) -a -o threads.cma $(THREAD_OBJS)
+	$(CAMLC) -a -o threads.cma -custom $(THREAD_OBJS) \
+          -cclib -lthreads -cclib -lunix $(PTHREAD_LINK)
 
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
+          -cclib -lthreads -cclib -lunix $(PTHREAD_LINK)
 
 $(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 

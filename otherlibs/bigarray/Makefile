@@ -33,10 +33,12 @@ libbigarray.a: $(C_OBJS)
 	$(RANLIB) libbigarray.a
 
 bigarray.cma: $(CAML_OBJS)
-	$(CAMLC) -a -linkall -o bigarray.cma $(CAML_OBJS)
+	$(CAMLC) -a -linkall -custom -o bigarray.cma \
+           $(CAML_OBJS) -cclib -lbigarray
 
 bigarray.cmxa: $(CAML_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -linkall -o bigarray.cmxa $(CAML_OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -linkall -o bigarray.cmxa \
+           $(CAML_OBJS:.cmo=.cmx) -cclib -lbigarray
 
 install:
 	cp bigarray.cmi bigarray.mli libbigarray.a bigarray.cma $(LIBDIR)

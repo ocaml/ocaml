@@ -60,10 +60,12 @@ io.h: $(SYSTEM_INCLUDES)\io.h
 	copy $(SYSTEM_INCLUDES)\io.h io.h
 
 unix.cma: $(CAML_OBJS)
-	$(CAMLC) -a -linkall -o unix.cma $(CAML_OBJS)
+	$(CAMLC) -a -linkall -o unix.cma -custom $(CAML_OBJS) \
+          -cclib -lunix wsock32.lib
 
 unix.cmxa: $(CAMLOPT_OBJS)
-	$(CAMLOPT) -a -linkall -o unix.cmxa $(CAMLOPT_OBJS)
+	$(CAMLOPT) -a -linkall -o unix.cmxa $(CAMLOPT_OBJS) \
+          -cclib -lunix wsock32.lib
 
 partialclean:
 	rm -f *.cm*

@@ -16,6 +16,16 @@
 
 open Clambda
 
+(* Each .o file has a matching .cmx file that provides the following infos
+   on the compilation unit:
+     - list of other units imported, with CRCs of their .cmx files
+     - approximation of the structure implemented
+       (includes descriptions of known functions: arity and direct entry
+        points)
+     - list of currying functions and application functions needed
+   The .cmx file contains these infos (as an externed record) plus a CRC
+   of these infos *)
+
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
     mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
@@ -24,6 +34,14 @@ type unit_infos =
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_force_link: bool }               (* Always linked *)
+
+(* Each .a library has a matching .cmxa file that provides the following
+   infos on the library: *)
+
+type library_infos =
+  { lib_units: (unit_infos * Digest.t) list;  (* List of unit infos w/ CRCs *)
+    lib_ccobjs: string list;            (* C object files needed *)
+    lib_ccopts: string list }           (* Extra opts to C compiler *)
 
 val reset: string -> unit
         (* Reset the environment and record the name of the unit being

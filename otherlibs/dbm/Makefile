@@ -33,10 +33,10 @@ libmldbm.a: $(COBJS)
 	$(RANLIB) libmldbm.a
 
 dbm.cma: dbm.cmo
-	$(CAMLC) -a -o dbm.cma dbm.cmo
+	$(CAMLC) -a -o dbm.cma -custom dbm.cmo -cclib -lmldbm -cclib -lndbm
 
 dbm.cmxa: dbm.cmx
-	$(CAMLOPT) -a -o dbm.cmxa dbm.cmx
+	$(CAMLOPT) -a -o dbm.cmxa dbm.cmx -cclib -lmldbm -cclib -lndbm
 
 partialclean:
 	rm -f *.cm*

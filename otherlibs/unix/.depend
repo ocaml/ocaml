@@ -74,7 +74,7 @@ sleep.o: sleep.c unixsupport.h
 socket.o: socket.c unixsupport.h
 socketaddr.o: socketaddr.c unixsupport.h socketaddr.h
 socketpair.o: socketpair.c unixsupport.h
-sockopt.o: sockopt.c unixsupport.h
+sockopt.o: sockopt.c unixsupport.h socketaddr.h
 stat.o: stat.c unixsupport.h cst2constr.h
 strofaddr.o: strofaddr.c unixsupport.h socketaddr.h
 symlink.o: symlink.c unixsupport.h

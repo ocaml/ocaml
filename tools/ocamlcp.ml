@@ -49,6 +49,7 @@ module Options = Main_args.Make_options (struct
   let _make_runtime = option "-make-runtime"
   let _modern = option "-modern"
   let _noassert = option "-noassert"
+  let _noautolink = option "-noautolink"
   let _o s = option_with_arg "-o" s
   let _output_obj = option "-output-obj"
   let _pp s = incompatible "-pp"

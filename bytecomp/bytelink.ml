@@ -36,6 +36,40 @@ type link_action =
   | Link_archive of string * compilation_unit list
       (* Name of .cma file and descriptors of the units to be linked. *)
 
+(* Add C objects and options and "custom" info from a library descriptor *)
+
+let lib_ccobjs = ref []
+let lib_ccopts = ref []
+
+let add_ccobjs l =
+  if not !Clflags.no_auto_link then begin
+    if l.lib_custom then Clflags.custom_runtime := true;
+    lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
+    lib_ccopts := l.lib_ccopts @ !lib_ccopts
+  end
+
+(* A note on ccobj ordering:
+   - Clflags.ccobjs is in reverse order w.r.t. what was given on the 
+        ocamlc command line;
+   - l.lib_ccobjs is also in reverse order w.r.t. what was given on the
+        ocamlc -a command line when the library was created;
+   - Clflags.ccobjs is reversed just before calling the C compiler for the
+        custom link;
+   - .cma files on the command line of ocamlc are scanned right to left;
+   - Before linking, we add lib_ccobjs after Clflags.ccobjs.
+   Thus, for ocamlc a.cma b.cma obj1 obj2
+   where a.cma was built with ocamlc -i ... obja1 obja2
+     and b.cma was built with ocamlc -i ... objb1 objb2
+   lib_ccobjs starts as [],
+   becomes objb2 objb1 when b.cma is scanned,
+   then obja2 obja1 objb2 objb1 when b.cma is scanned.
+   Clflags.ccobjs was initially obj2 obj1,
+   and is set to obj2 obj1 obja2 obja1 objb2 objb1.
+   Finally, the C compiler is given objb1 objb2 obja1 obja2 obj1 obj2,
+   which is what we need.  (If b depends on a, a.cma must appear before
+   b.cma, but b's C libraries must appear before a's C libraries.)
+*)
+
 (* First pass: determine which units are needed *)
 
 module IdentSet =
@@ -90,21 +124,22 @@ let scan_file obj_name tolink =
          in only if needed. *)
       let pos_toc = input_binary_int ic in    (* Go to table of contents *)
       seek_in ic pos_toc;
-      let toc = (input_value ic : compilation_unit list) in
+      let toc = (input_value ic : library) in
       close_in ic;
       let required =
         List.fold_right
           (fun compunit reqd ->
             if compunit.cu_force_link
-            or !Clflags.link_everything
-            or List.exists is_required compunit.cu_reloc
+            || !Clflags.link_everything
+            || List.exists is_required compunit.cu_reloc
             then begin
               List.iter remove_required compunit.cu_reloc;
               List.iter add_required compunit.cu_reloc;
               compunit :: reqd
             end else
               reqd)
-          toc [] in
+          toc.lib_units [] in
+      if required <> [] then add_ccobjs toc;
       Link_archive(file_name, required) :: tolink
     end
     else raise(Error(Not_an_object_file file_name))
@@ -220,8 +255,7 @@ let make_absolute file =
 
 (* Create a bytecode executable file *)
 
-let link_bytecode objfiles exec_name copy_header =
-  let tolink = List.fold_right scan_file objfiles [] in
+let link_bytecode tolink exec_name copy_header =
   if Sys.os_type = "MacOS" then begin
     (* Create it as a text file for bytecode scripts *)
     let c = open_out_gen [Open_wronly; Open_creat] 0o777 exec_name in
@@ -317,8 +351,7 @@ let output_data_string outchan data =
 
 (* Output a bytecode executable as a C file *)
 
-let link_bytecode_as_c objfiles outfile =
-  let tolink = List.fold_right scan_file objfiles [] in
+let link_bytecode_as_c tolink outfile =
   let outchan = open_out outfile in
   try
     (* The bytecode *)
@@ -471,13 +504,16 @@ let fix_exec_name name =
 let link objfiles =
   let objfiles = if !Clflags.nopervasives then objfiles
                  else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
+  let tolink = List.fold_right scan_file objfiles [] in
+  Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
+  Clflags.ccopts := !Clflags.ccopts @ !lib_ccopts;
   if not !Clflags.custom_runtime then
-    link_bytecode objfiles !Clflags.exec_name true
+    link_bytecode tolink !Clflags.exec_name true
   else if not !Clflags.output_c_object then begin
     let bytecode_name = Filename.temp_file "camlcode" "" in
     let prim_name = Filename.temp_file "camlprim" ".c" in
     try
-      link_bytecode objfiles bytecode_name false;
+      link_bytecode tolink bytecode_name false;
       let poc = open_out prim_name in
       Symtable.output_primitive_table poc;
       close_out poc;
@@ -496,7 +532,7 @@ let link objfiles =
       Filename.chop_suffix !Clflags.object_name Config.ext_obj ^ ".c" in
     if Sys.file_exists c_file then raise(Error(File_exists c_file));
     try
-      link_bytecode_as_c objfiles c_file;
+      link_bytecode_as_c tolink c_file;
       if Ccomp.compile_file c_file <> 0
       then raise(Error Custom_runtime);
       remove_file c_file

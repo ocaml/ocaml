@@ -44,6 +44,22 @@ type compilation_unit =
      block of relocatable bytecode
      compilation unit descriptor *)
 
+(* Descriptor for libraries *)
+
+type library =
+  { lib_units: compilation_unit list;   (* List of compilation units *)
+    lib_custom: bool;                   (* Requires custom mode linking? *)
+    lib_ccobjs: string list;            (* C object files needed *)
+    lib_ccopts: string list }           (* Extra opts to C compiler *)
+
+(* Format of a .cma file:
+     magic number (Config.cma_magic_number)
+     absolute offset of library descriptor
+     object code for first library member
+     ...
+     object code for last library member
+     library descriptor *)
+
 val to_file: out_channel -> string -> instruction list -> unit
         (* Arguments:
              channel on output file

@@ -35,10 +35,11 @@ libgraphics.a: $(OBJS)
 	$(RANLIB) libgraphics.a
 
 graphics.cma: graphics.cmo
-	$(CAMLC) -a -o graphics.cma graphics.cmo
+	$(CAMLC) -a -o graphics.cma -custom \
+          graphics.cmo -cclib -lgraph $(X11_LINK)
 
 graphics.cmxa: graphics.cmx
-	$(CAMLOPT) -a -o graphics.cmxa graphics.cmx
+	$(CAMLOPT) -a -o graphics.cmxa graphics.cmx -cclib -lgraph $(X11_LINK)
 
 partialclean:
 	rm -f *.cm*

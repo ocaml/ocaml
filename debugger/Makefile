@@ -16,7 +16,7 @@ include ../config/Makefile
 
 CAMLC=../boot/ocamlrun ../ocamlc -I ../boot
 COMPFLAGS=$(INCLUDES)
-LINKFLAGS=-custom -linkall
+LINKFLAGS=-linkall -ccopt -L../otherlibs/unix
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
 CAMLLEX=../boot/ocamlrun ../boot/ocamllex
@@ -75,7 +75,7 @@ OBJS=\
 all: ocamldebug
 
 ocamldebug: $(OBJS) $(OTHEROBJS)
-	$(CAMLC) $(LINKFLAGS) -o ocamldebug $(OTHEROBJS) $(OBJS) ../otherlibs/unix/libunix.a
+	$(CAMLC) $(LINKFLAGS) -o ocamldebug $(OTHEROBJS) $(OBJS)
 
 install:
 	cp ocamldebug $(BINDIR)/ocamldebug

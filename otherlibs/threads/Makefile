@@ -47,7 +47,7 @@ libthreads.a: $(C_OBJS)
 	$(RANLIB) libthreads.a
 
 threads.cma: $(CAML_OBJS)
-	$(CAMLC) -a -o threads.cma $(CAML_OBJS)
+	$(CAMLC) -a -o threads.cma -custom $(CAML_OBJS) -cclib -lthreads
 
 stdlib.cma: $(LIB_OBJS)
 	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)

@@ -48,10 +48,10 @@ libunix.a: $(OBJS)
 	$(RANLIB) libunix.a
 
 unix.cma: unix.cmo
-	$(CAMLC) -a -linkall -o unix.cma unix.cmo
+	$(CAMLC) -a -linkall -custom -o unix.cma unix.cmo -cclib -lunix
 
 unix.cmxa: unix.cmx
-	$(CAMLOPT) -a -linkall -o unix.cmxa unix.cmx
+	$(CAMLOPT) -a -linkall -o unix.cmxa unix.cmx -cclib -lunix
 
 unix.cmx: ../../ocamlopt
 

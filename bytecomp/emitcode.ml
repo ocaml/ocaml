@@ -43,11 +43,13 @@ type compilation_unit =
     mutable cu_debug: int;              (* Position of debugging info, or 0 *)
     cu_debugsize: int }                 (* Length of debugging info *)
 
-(* Format of a .cmo file:
-     magic number (Config.cmo_magic_number)
-     absolute offset of compilation unit descriptor
-     block of relocatable bytecode
-     compilation unit descriptor *)
+(* Descriptor for libraries *)
+
+type library =
+  { lib_units: compilation_unit list;   (* List of compilation units *)
+    lib_custom: bool;                   (* Requires custom mode linking? *)
+    lib_ccobjs: string list;            (* C object files needed *)
+    lib_ccopts: string list }           (* Extra opts to C compiler *)
 
 (* Buffering of bytecode *)
 

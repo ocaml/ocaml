@@ -51,8 +51,8 @@ bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrays.ml \
-                ../../otherlibs/bigarray/libbigarray.a \
-                ../../otherlibs/unix/libunix.a
+                -ccopt -L../../otherlibs/bigarray \
+                -ccopt -L../../otherlibs/unix
 
 bigarrays.out: ../../otherlibs/bigarray/bigarray.cmxa \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
@@ -60,8 +60,8 @@ bigarrays.out: ../../otherlibs/bigarray/bigarray.cmxa \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cmxa bigarray.cmxa bigarrays.ml \
-                ../../otherlibs/bigarray/libbigarray.a \
-                ../../otherlibs/unix/libunix.a
+                -ccopt -L../../otherlibs/bigarray \
+                -ccopt -L../../otherlibs/unix
 
 bigarrf.byt: bigarrf.o bigarrfstub.o \
                ../../otherlibs/bigarray/bigarray.cma \
@@ -71,8 +71,8 @@ bigarrf.byt: bigarrf.o bigarrfstub.o \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrf.ml \
                 bigarrf.o bigarrfstub.o \
-                ../../otherlibs/bigarray/libbigarray.a \
-                ../../otherlibs/unix/libunix.a \
+                -ccopt -L../../otherlibs/bigarray \
+                -ccopt -L../../otherlibs/unix \
                 ../../byterun/libcamlrun.a -cclib -lg2c
 
 bigarrf.out: bigarrf.o bigarrfstub.o \
@@ -83,8 +83,8 @@ bigarrf.out: bigarrf.o bigarrfstub.o \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrf.ml \
                 bigarrf.o bigarrfstub.o \
-                ../../otherlibs/bigarray/libbigarray.a \
-                ../../otherlibs/unix/libunix.a \
+                -ccopt -L../../otherlibs/bigarray \
+                -ccopt -L../../otherlibs/unix \
                 ../../byterun/libcamlrun.a -cclib -lg2c
 
 bigarrf.o: bigarrf.f

@@ -34,10 +34,10 @@ libstr.a: $(COBJS)
 	$(RANLIB) libstr.a
 
 str.cma: str.cmo
-	$(CAMLC) -a -o str.cma str.cmo
+	$(CAMLC) -a -o str.cma -custom str.cmo -cclib -lstr
 
 str.cmxa: str.cmx
-	$(CAMLOPT) -a -o str.cmxa str.cmx
+	$(CAMLOPT) -a -o str.cmxa str.cmx -cclib -lstr
 
 $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
 	cd $(REGEXLIB); CC="$(CC) $(BYTECCCOMPOPTS)" sh configure; $(MAKE)

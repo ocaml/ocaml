@@ -34,10 +34,10 @@ all: libnums.a nums.cma $(CMIFILES)
 allopt: libnums.a nums.cmxa $(CMIFILES)
 
 nums.cma: $(CAMLOBJS)
-	$(CAMLC) -a -o nums.cma $(CAMLOBJS)
+	$(CAMLC) -a -o nums.cma -custom $(CAMLOBJS) -cclib -lnums
 
 nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx) -cclib -lnums
 
 libnums.a: bignum/libbignum.a $(COBJS)
 	cp bignum/libbignum.a libnums.a

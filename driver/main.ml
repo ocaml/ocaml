@@ -81,6 +81,7 @@ module Options = Main_args.Make_options (struct
     custom_runtime := true; make_runtime := true; link_everything := true
   let _modern = unset classic
   let _noassert = set noassert
+  let _noautolink = set no_auto_link
   let _o s = exec_name := s; archive_name := s; object_name := s
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _pp s = preprocessor := Some s
