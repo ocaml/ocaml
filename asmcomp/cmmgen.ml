@@ -759,7 +759,7 @@ let rec transl = function
           bind "switch" (untag_int (transl arg)) (fun idx ->
             Cifthenelse(
               Cop(Ccmpa Cge,
-                  [idx; Cconst_pointer(Array.length s.us_index_consts)]),
+                  [idx; Cconst_int(Array.length s.us_index_consts)]),
               Cexit,
               transl_switch idx s.us_index_consts s.us_cases_consts))
         else
