@@ -102,6 +102,8 @@ let comparisons_table = create_hashtable 11 [
        Pbintcomp(Pint64, Cge))
 ]
 
+let raise_name = "%raise"
+
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%ignore", Pignore;
@@ -110,7 +112,7 @@ let primitives_table = create_hashtable 57 [
   "%setfield0", Psetfield(0, true);
   "%makeblock", Pmakeblock(0, Immutable);
   "%makemutable", Pmakeblock(0, Mutable);
-  "%raise", Praise;
+   raise_name, Praise;
   "%sequand", Psequand;
   "%sequor", Psequor;
   "%boolnot", Pnot;
@@ -276,6 +278,19 @@ let transl_prim prim args =
   with Not_found ->
     Pccall prim
 
+(*> JOCAML *)
+(*
+  Build a sequence if needed,
+  note that non debugging information is inserted
+*)
+let make_sequence lam1 lam2 =
+  if lam1 = lambda_unit then
+    lam2
+  else if lam2 = lambda_unit then
+    lam1
+  else
+    Lsequence (lam1, lam2)
+(*< JOCAML *)
 
 (* Eta-expand a primitive without knowing the types of its arguments *)
 
@@ -426,6 +441,8 @@ let event_after exp lam =
                     lev_env = Env.summary exp.exp_env})
   else lam
 
+let no_event exp lam = lam
+
 let event_function exp lam =
   if !Clflags.debug then
     let repr = Some (ref 0) in
@@ -464,9 +481,9 @@ let rec transl_exp e =
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
 (*> JOCAML *)
   | Texp_def (d,body) ->
-      transl_def d (event_before body (transl_exp body))
+      do_transl_def None d (transl_exp body)
   | Texp_loc (d,body) ->
-      transl_loc d (event_before body (transl_exp body))
+      transl_loc d (transl_exp body)
 (*< JOCAML *)
   | Texp_function (pat_expr_list, partial) ->
       let ((kind, params), body) =
@@ -503,16 +520,19 @@ let rec transl_exp e =
       event_after e (transl_apply (transl_exp funct) oargs)
   | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
       Matching.for_multiple_match e.exp_loc
-        (transl_list argl) (transl_cases transl_exp pat_expr_list) partial
+        (transl_list argl)
+        (transl_cases event_before transl_exp pat_expr_list) partial
   | Texp_match(arg, pat_expr_list, partial) ->
       Matching.for_function e.exp_loc None
-        (transl_exp arg) (transl_cases transl_exp pat_expr_list) partial
+        (transl_exp arg)
+        (transl_cases event_before transl_exp pat_expr_list) partial
   | Texp_try(body, pat_expr_list) ->
       let id = name_pattern "exn" pat_expr_list in
       Ltrywith
         (transl_exp body, id,
          Matching.for_trywith
-           (Lvar id) (transl_cases transl_exp pat_expr_list))
+           (Lvar id)
+           (transl_cases event_before transl_exp pat_expr_list))
   | Texp_tuple el ->
       let ll = transl_list el in
       begin try
@@ -592,7 +612,11 @@ let rec transl_exp e =
                   event_before ifso (transl_exp ifso),
                   lambda_unit)
   | Texp_sequence(expr1, expr2) ->
-      Lsequence(transl_exp expr1, event_before expr2 (transl_exp expr2))
+      let lam1 = transl_exp expr1 in
+      if lam1 = lambda_unit then
+        transl_exp expr2
+      else
+        Lsequence(lam1, event_before expr2 (transl_exp expr2))
   | Texp_while(cond, body) ->
       Lwhile(transl_exp cond, event_before body (transl_exp body))
   | Texp_for(param, low, high, dir, body) ->
@@ -635,76 +659,130 @@ let rec transl_exp e =
 (*
   proc constructs are compiled here when they have been spotted to terminate
 *)
-  | Texp_spawn (e) ->
-      let seqs, forks = Transljoin.as_procs e in
-      let lseq = List.fold_right transl_seq seqs lambda_unit in
-      List.fold_right transl_fork forks lseq
-  | Texp_par (_,_) ->
-      let seqs, forks = Transljoin.as_procs e in
-      let lseq = List.fold_right transl_seq seqs lambda_unit in
-      List.fold_right transl_fork forks lseq
-  | Texp_asyncsend
-      ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
-        Transljoin.send_async auto num (transl_exp e2)
-  | Texp_asyncsend (e1,e2) -> Lapply (transl_exp e1,[transl_exp e2])
+  | Texp_spawn (e) -> transl_spawn None e
 (*< JOCAML *)
-
   | _ ->
-      fatal_error "Translcore.transl"
+      Location.print Format.err_formatter e.exp_loc ;
+      fatal_error "Translcore.transl_exp"
 
-and transl_proc e = match e.exp_desc with
+(*> JOCAML *)
+and transl_proc p = match p.exp_desc with
 (* Mixed constructs *)
 | Texp_let(rec_flag, pat_expr_list, body) ->
-    transl_let rec_flag pat_expr_list
-      (event_before body (transl_proc body))
+    transl_let rec_flag pat_expr_list (transl_proc body)
 | Texp_def (d,body) ->
-    transl_def d (transl_proc body)
+    do_transl_def None d (transl_proc body)
 | Texp_loc (d,body) ->
     transl_loc d (transl_proc body)
-| Texp_sequence(expr1, expr2) ->
-    Lsequence(transl_exp expr1, transl_proc expr2)
+| Texp_ifthenelse(cond, ifso, Some ifnot) ->
+    Lifthenelse(transl_exp cond, transl_proc ifso, transl_proc ifnot)
+| Texp_ifthenelse(cond, ifso, None) ->
+    Lifthenelse(transl_exp cond, transl_proc ifso, lambda_unit)
+| Texp_sequence(e1, p2) ->
+    make_sequence (transl_exp e1) (transl_proc p2)
 | Texp_when(cond, body) ->
-    event_before cond
+    Lifthenelse
+       (transl_exp cond, transl_proc body, staticfail)
+| Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
+    Matching.for_multiple_match p.exp_loc
+      (transl_list argl)
+      (transl_cases no_event transl_proc pat_expr_list) partial
+| Texp_match(arg, pat_expr_list, partial) ->
+    Matching.for_function p.exp_loc None
+      (transl_exp arg)
+      (transl_cases no_event transl_proc pat_expr_list) partial
+(* Proc constructs *)
+| Texp_par (e1,e2) ->
+      let seqs, forks = Transljoin.as_procs p in
+      begin match forks, seqs with
+      | [],[] ->  lambda_unit
+      | fst::rem,_ ->
+          List.fold_right transl_seq seqs
+            (List.fold_right (transl_fork None) rem (transl_proc fst))
+      | [],_ ->
+          List.fold_right transl_seq seqs lambda_unit
+      end
+| Texp_asyncsend (_,_) | Texp_reply (_,_) | Texp_null | Texp_exec (_) ->
+    transl_simple_proc p
+| _ ->
+    Location.print Format.err_formatter p.exp_loc ;
+    fatal_error "Translcore.transl_proc"
+
+and transl_simple_proc p = match p.exp_desc with
+(* Mixed constructs *)
+| Texp_let(rec_flag, pat_expr_list, body) ->
+    transl_let rec_flag pat_expr_list (transl_simple_proc body)
+| Texp_def (d,body) ->
+    do_transl_def None d (transl_simple_proc body)
+| Texp_loc (d,body) ->
+    transl_loc d (transl_simple_proc body)
+| Texp_ifthenelse(cond, ifso, Some ifnot) ->
+    Lifthenelse
+      (transl_exp cond, transl_simple_proc ifso, transl_simple_proc ifnot)
+| Texp_ifthenelse(cond, ifso, None) ->
+    Lifthenelse(transl_exp cond, transl_proc ifso, lambda_unit)
+| Texp_sequence(e, p) ->
+    make_sequence (transl_exp e) (transl_simple_proc p)
+| Texp_when(cond, body) ->
       (Lifthenelse
-         (transl_exp cond, event_before body (transl_proc body),
+         (transl_exp cond, transl_simple_proc body,
           staticfail))
 | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
-    Matching.for_multiple_match e.exp_loc
-      (transl_list argl) (transl_cases transl_proc pat_expr_list) partial
+    Matching.for_multiple_match p.exp_loc
+      (transl_list argl)
+      (transl_cases no_event transl_simple_proc pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
-    Matching.for_function e.exp_loc None
-      (transl_exp arg) (transl_cases transl_proc pat_expr_list) partial
+    Matching.for_function p.exp_loc None
+      (transl_exp arg)
+      (transl_cases no_event transl_simple_proc pat_expr_list) partial
 (* Proc constructs *)
-| Texp_null -> Transljoin.exit ()
-| Texp_par (e1,e2) ->
-      let seqs, forks = Transljoin.as_procs e in
-      begin match forks, seqs with
-      | [],[] ->  Transljoin.exit ()
-      | p::rem,[] ->
-          List.fold_right transl_fork rem (transl_proc p)
-      | _,_ ->
-          let lseq = List.fold_right transl_seq seqs (Transljoin.exit ()) in
-          List.fold_right transl_fork forks lseq
-      end
-| _ -> Lsequence (transl_exp e,Transljoin.exit())
+| Texp_exec  (e) -> transl_exp e
+| Texp_par (_,_) -> transl_spawn None p
+| Texp_asyncsend
+    ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
+        Transljoin.send_async auto num (transl_exp e2)
+| Texp_asyncsend (e1,e2) -> Lapply (transl_exp e1,[transl_exp e2])
+| Texp_reply (e,id) ->
+    Transljoin.reply_to (transl_exp e) (transl_path id)
+| Texp_null -> lambda_unit
+(* Plain expression are errors *)
+| _ -> fatal_error "Translcore.transl_simple_proc"
 
-and transl_fork e k = 
-  let l = Transljoin.do_spawn (transl_proc e) in
-  if k = lambda_unit then
-    l
-  else
-    Lsequence (l,k)
-    
-and transl_seq e k =
-  let l = transl_exp e in
-  if k=lambda_unit then
-    l
-  else
-    Lsequence (l,k)
+
+and transl_guarded_proc loc pats p = match pats with
+| []     -> assert false
+| [pat]  ->
+    let param = name_join_pattern "param" pat in
+    ([param],
+     Matching.for_function
+       loc None (Lvar param)
+           (transl_cases no_event transl_proc [pat,p] ) Total)
+| pat::rem ->
+    let param = name_join_pattern "param" pat in
+    let (params, body) = transl_guarded_proc loc rem p in
+    (param::params,
+     Matching.for_function loc None (Lvar param) [pat,body] Total)
+      
+and guarded_proc_as_fun cl_loc jpats p =
+  let params, body = transl_guarded_proc cl_loc jpats p in
+  Lfunction (Curried, params, body)
+
+(* transl_spawn separetes e into a forked part and a part to execute now *)
+and transl_spawn some_loc e =
+  let seqs, forks = Transljoin.as_procs e in
+  let lforks = List.fold_right (transl_fork some_loc) forks lambda_unit in
+  List.fold_right transl_seq seqs lforks
+
+(* Do perform a fork *)
+and transl_fork some_loc e k = 
+  make_sequence (Transljoin.do_spawn some_loc (transl_proc e)) k
+
+(* Sequence for processes *)    
+and transl_seq e k =  make_sequence (transl_simple_proc e) k
 (*< JOCAML *)
 and transl_list expr_list =  List.map transl_exp expr_list
 
-and transl_cases transl_exp pat_expr_list =
+and transl_cases event_before transl_exp pat_expr_list =
   List.map
     (fun (pat, expr) -> (pat, event_before expr (transl_exp expr)))
     pat_expr_list
@@ -785,31 +863,13 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
         let param = name_pattern "param" pat_expr_list in
         ((Curried, [param]),
          Matching.for_function loc repr (Lvar param)
-           (transl_cases transl_exp pat_expr_list) partial)
+           (transl_cases event_before transl_exp pat_expr_list) partial)
       end
   | _ ->
       let param = name_pattern "param" pat_expr_list in
       ((Curried, [param]),
        Matching.for_function loc repr (Lvar param)
-         (transl_cases transl_exp pat_expr_list) partial)
-(*> JOCAML *)
-and transl_guarded_proc loc pats p = match pats with
-| []     -> assert false
-| [pat]  ->
-    let param = name_join_pattern "param" pat in
-    ([param],
-     Matching.for_function
-       loc None (Lvar param)
-           (transl_cases transl_proc [pat,p] ) Total)
-| pat::rem ->
-    let param = name_join_pattern "param" pat in
-    let (params, body) = transl_guarded_proc loc rem p in
-    (param::params,
-     Matching.for_function loc None (Lvar param) [pat,body] Total)
-      
-      
-
-(*< JOCAML *)  
+         (transl_cases event_before transl_exp pat_expr_list) partial)
 
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with
@@ -836,25 +896,69 @@ and transl_let rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 (*> JOCAML *)
 
-and transl_def autos body = body
-and transl_loc d body = body
-(*
-  let work_list = List.map Transljoin.build_matches autos in
-  let k =
+and  build_autos some_loc cautos k =
+  List.fold_right (Transljoin.build_auto some_loc) cautos k
+
+and  build_channels autos k =
+  List.fold_right Transljoin.build_channels autos k
+
+and build_guards cautos k =
+  List.fold_right
+    (Transljoin.build_guards guarded_proc_as_fun) cautos k
+
+and do_transl_def some_loc autos body =
+    let cautos = List.map Transljoin.build_matches autos in
+    build_autos some_loc cautos
+      (build_channels autos 
+         (build_guards cautos body))
+        
+and transl_loc locs body =
+  let clocs =
+    List.map
+      (fun {jloc_desc = (id_loc, autos, e)} ->
+        id_loc.jident_desc,
+        List.map Transljoin.build_matches autos,
+        e)
+      locs in
+
+  let build_autos_locs clocs k =
     List.fold_right
-      (fun (name, _, tp) k ->
-        let rec do_rec i =
-          let loc_cl,pats,body = tp.(i) in
-          let (params, body) =
-            event_function e
-              (function repr -> transl_guarded_proc loc_cl repr pats) in
-          
-          
-          Lfunction(Curried, params, body)
-*)      
-      
+      (fun (id_loc,cautos,_) k ->
+        Llet
+          (Strict, id_loc,  Transljoin.create_location (),
+           build_autos (Some id_loc) cautos k))
+      clocs k in
+
+  let build_channels_locs clocs k =
+    List.fold_right
+      (fun {jloc_desc=(_,cautos,_)} k ->
+        build_channels cautos k)
+      clocs k in
+
+  let build_guards_locs clocs k =
+    List.fold_right
+      (fun  (_,cautos,_) k ->
+        build_guards cautos k)
+      clocs k in
+
+  let spawn_locs clocs k =
+    List.fold_right
+      (fun (id_loc, _, e) k ->
+        (*
+          Let us admit some process must be spawned,
+          so as to reflect the change of location.
+          If not needed the code should be
+          transl_spawn (Some id_loc) e
+         *)
+        transl_fork (Some id_loc) e k)
+      clocs k in
   
+    build_autos_locs clocs
+      (build_channels_locs locs
+         (build_guards_locs clocs
+            (spawn_locs clocs body)))
 (*< JOCAML *)
+
 and transl_setinstvar self var expr =
   Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
                     [self; transl_path var; transl_exp expr])
@@ -920,6 +1024,11 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
              List.fold_right update_field lbl_expr_list (Lvar copy_id))
     end
   end
+
+(*> JOCAML *)
+(* For external usage *)
+let transl_def d k = do_transl_def None d k
+(*< JOCAML *)
 
 (* Compile an exception definition *)
 

@@ -33,6 +33,8 @@ let joinclause = Grammar.Entry.create gram "joinclause"
 let joinautomaton = Grammar.Entry.create gram "joinautomaton"
 let joinlocation =  Grammar.Entry.create gram "joinlocation"
 let bracedproc = Grammar.Entry.create gram "bracedproc"
+let nullproc = Grammar.Entry.create gram "nullproc"
+let topjpatt = Grammar.Entry.create gram "topjpatt"
 let ijpatt = Grammar.Entry.create gram "ijpatt"
 let label_ijpatt = Grammar.Entry.create gram "label_ijpatt"
 let ijpatt_label_ident = Grammar.Entry.create gram "label_ijpatt"
@@ -55,7 +57,7 @@ EXTEND
  ijpatt:
      [[
        "{"; lpl = LIST1 label_ijpatt SEP ";"; "}" -> PaRec (loc, lpl)
-      | "("; ")" -> PaLid (loc, "()")
+      | "("; ")" -> PaUid (loc, "()")
       | "("; p = SELF; ")" -> p
       | "("; p = SELF; "as"; p2 = SELF; ")" -> PaAli (loc, p, p2)
       | "("; p = SELF; ","; pl = LIST1 SELF SEP ","; ")" ->
@@ -64,13 +66,25 @@ EXTEND
       | "_" -> PaAny loc
       ]];
 
+ topjpatt:
+     [[
+       "{"; lpl = LIST1 label_ijpatt SEP ";"; "}" -> PaRec (loc, lpl)
+      | "("; ")" -> PaUid (loc, "()")
+      | "("; p = ijpatt ; ")" -> p
+      | "("; p = ijpatt ; "as"; p2 = SELF; ")" -> PaAli (loc, p, p2)
+      | "("; p = ijpatt ; ","; pl = LIST1 ijpatt SEP ","; ")" ->
+          PaTup (loc, p::pl)
+      ]];
+
  joinpattern:
-   [[id=joinident ; pat=ijpatt -> (loc, id, pat)]];
+   [[id=joinident ; pat=topjpatt -> (loc, id, pat)]];
 
  joinclause:
-   [[jpats = LIST1 joinpattern SEP "&" ; "=" ; e=expr ->
-     (loc, jpats, e)]];
-
+   [[
+    jpats = LIST1 joinpattern SEP "&" ; "=" ; e=nullproc -> (loc, jpats, e)
+  | jpats = LIST1 joinpattern SEP "&" ; "=" ; e=expr -> (loc, jpats, e)
+   ]];
+   
  joinautomaton:
    [[auto = LIST1 joinclause SEP "or" ->
      (loc, auto)]];
@@ -83,14 +97,17 @@ EXTEND
        (loc, id, [], e)
     ]];
 
+ expr: LEVEL "simple"
+    [[ e=nullproc -> e]];
+
  expr: BEFORE "expr1" 
     ["top" RIGHTA [
-      e1 = SELF ; "&"; e2 = SELF -> ExPar (loc, e1, e2)
+      e1 = SELF ; ";"; e2 = SELF ->  ExSeq (loc,e1::get_seq e2)
+      | e1 = SELF; ";" -> e1
     ]];
  expr: AFTER "top"
-    [[
-       e1 = SELF; ";"; e2 = SELF ->  ExSeq (loc,e1::get_seq e2)
-      | e1 = SELF; ";" -> e1
+    [RIGHTA[
+       e1 = SELF; "&"; e2 = SELF -> ExPar (loc, e1, e2)
     ]];
 
  expr: LEVEL "expr1"
@@ -98,6 +115,7 @@ EXTEND
         "reply" ; "to" ; id = joinident -> ExRep (loc, ExUid (loc, "()"), id)
      |  "reply" ; e = SELF ; "to" ; id = joinident -> ExRep (loc, e, id)
      | "spawn" ;  e = bracedproc -> ExSpa (loc, e)
+     | "exec" ; "{" ;  e = expr LEVEL "top" ; "}" -> ExSpa (loc, e)
      | "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ;
         "in" ; e=expr LEVEL "top" ->
         ExDef (loc, d, e)
@@ -105,10 +123,7 @@ EXTEND
         "in" ; e=expr LEVEL "top" ->
         ExLoc (loc, d, e)
     ]];
- expr: LEVEL "simple"
-    [[
-      "{" ; "}" -> ExNul (loc)
-    ]];
+
  str_item: LEVEL "top"
     [[
       "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ;
@@ -128,5 +143,11 @@ EXTEND
        "{" ; "}" ->  ExNul (loc)
     |  "{" ; e=expr LEVEL "top" ; "}" -> e
     ]];
+
+  nullproc:
+    [[
+       "{" ; "}" ->  ExNul (loc)
+    ]];
+
 END
 

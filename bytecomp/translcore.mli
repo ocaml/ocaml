@@ -20,12 +20,19 @@ open Types
 open Typedtree
 open Lambda
 
+(*> JOCAML *)
+val raise_name : string
+(*< JOCAML *)
 val name_pattern: string -> (pattern * 'a) list -> Ident.t
 
 val transl_exp: expression -> lambda
 val transl_apply: lambda -> (expression option * optional) list -> lambda
 val transl_let:
       rec_flag -> (pattern * expression) list -> lambda -> lambda
+(*> JOCAML *)
+val transl_def: joinautomaton list -> lambda -> lambda
+val transl_loc: joinlocation list -> lambda -> lambda    
+(*< JOCAML *)
 val transl_primitive: Primitive.description -> lambda
 val transl_exception:
       Ident.t -> Path.t option -> exception_declaration -> lambda
