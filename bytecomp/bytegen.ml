@@ -126,7 +126,7 @@ and sz_staticfail = ref 0
 (* Function bodies that remain to be compiled *)
 
 let functions_to_compile  =
-  (Stack.new () : (Ident.t * lambda * label * Ident.t list) Stack.t)
+  (Stack.new () : (Ident.t list * lambda * label * Ident.t list) Stack.t)
 
 (* Compile an expression.
    The value of the expression is left in the accumulator.
@@ -169,21 +169,21 @@ let rec comp_expr env exp sz cont =
             (Kpush :: comp_expr env func (sz + 3 + nargs)
                       (Kapply nargs :: cont1))
         end
-  | Lfunction(param, body) ->
+  | Lfunction(params, body) ->
       let lbl = new_label() in
       let fv = IdentSet.elements(free_variables exp) in
-      Stack.push (param, body, lbl, fv) functions_to_compile;
+      Stack.push (params, body, lbl, fv) functions_to_compile;
       comp_args env (List.map (fun n -> Lvar n) fv) sz
         (Kclosure(lbl, List.length fv) :: cont)
   | Llet(str, id, arg, body) ->
       comp_expr env arg sz
         (Kpush :: comp_expr (add_var id (sz+1) env) body (sz+1)
           (add_pop 1 cont))
-  | Lletrec(([id, Lfunction(param, funct_body)] as decl), let_body) ->
+  | Lletrec(([id, Lfunction(params, funct_body)] as decl), let_body) ->
       let lbl = new_label() in
       let fv =
         IdentSet.elements (free_variables (Lletrec(decl, lambda_unit))) in
-      Stack.push (param, funct_body, lbl, id :: fv) functions_to_compile;
+      Stack.push (params, funct_body, lbl, id :: fv) functions_to_compile;
       comp_args env (List.map (fun n -> Lvar n) fv) sz
         (Kclosurerec(lbl, List.length fv) :: Kpush ::
           (comp_expr (add_var id (sz+1) env) let_body (sz+1)
@@ -434,17 +434,7 @@ and comp_binary_test env cond ifso ifnot sz cont =
 
 (**** Compilation of functions ****)
 
-let comp_function (param, body, entry_lbl, free_vars) cont =
-  (* Uncurry the function body *)
-  let rec uncurry = function
-      Lfunction(param, body) ->
-        let (params, final) = uncurry body in (param :: params, final)
-    | Lshared(exp, lblref) ->
-        uncurry exp
-    | exp ->
-        ([], exp) in
-  let (params, fun_body) =
-    uncurry (Lfunction(param, body)) in
+let comp_function (params, fun_body, entry_lbl, free_vars) cont =
   let arity = List.length params in
   let rec pos_args pos delta = function
       [] -> Ident.empty

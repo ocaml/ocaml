@@ -133,9 +133,10 @@ let rec lambda = function
       List.iter (fun l -> print_space(); lambda l) largs;
       print_string ")";
       close_box()
-  | Lfunction(param, body) ->
+  | Lfunction(params, body) ->
       open_hovbox 2;
-      print_string "(function"; print_space(); Ident.print param;
+      print_string "(function";
+      List.iter (fun param -> print_space(); Ident.print param) params;
       print_space(); lambda body; print_string ")"; close_box()
   | Llet(str, id, arg, body) ->
       open_hovbox 2;

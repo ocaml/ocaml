@@ -76,7 +76,7 @@ type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
   | Lapply of lambda * lambda list
-  | Lfunction of Ident.t * lambda
+  | Lfunction of Ident.t list * lambda
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list

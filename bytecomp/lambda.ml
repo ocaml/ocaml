@@ -76,7 +76,7 @@ type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
   | Lapply of lambda * lambda list
-  | Lfunction of Ident.t * lambda
+  | Lfunction of Ident.t list * lambda
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
@@ -128,8 +128,9 @@ let free_variables l =
   | Lconst sc -> ()
   | Lapply(fn, args) ->
       freevars fn; List.iter freevars args
-  | Lfunction(param, body) ->
-      freevars body; fv := IdentSet.remove param !fv
+  | Lfunction(params, body) ->
+      freevars body;
+      List.iter (fun param -> fv := IdentSet.remove param !fv) params
   | Llet(str, id, arg, body) ->
       freevars arg; freevars body; fv := IdentSet.remove id !fv
   | Lletrec(decl, body) ->

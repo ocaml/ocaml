@@ -27,7 +27,7 @@ let rec eliminate_ref id = function
   | Lconst cst as lam -> lam
   | Lapply(e1, el) -> 
       Lapply(eliminate_ref id e1, List.map (eliminate_ref id) el)
-  | Lfunction(param, body) as lam ->
+  | Lfunction(params, body) as lam ->
       if IdentSet.mem id (free_variables lam)
       then raise Real_reference
       else lam
@@ -89,7 +89,7 @@ let simplify_lambda lam =
       end
   | Lconst cst -> ()
   | Lapply(l1, ll) -> count l1; List.iter count ll
-  | Lfunction(v, l) -> count l
+  | Lfunction(params, l) -> count l
   | Llet(str, v, Lvar w, l2) ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
@@ -138,7 +138,7 @@ let simplify_lambda lam =
       end
   | Lconst cst as l -> l
   | Lapply(l1, ll) -> Lapply(simplif l1, List.map simplif ll)
-  | Lfunction(v, l) -> Lfunction(v, simplif l)
+  | Lfunction(params, l) -> Lfunction(params, simplif l)
   | Llet(str, v, Lvar w, l2) ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2

@@ -214,27 +214,23 @@ let transl_primitive p =
       Hashtbl.find primitives_table p.prim_name
     with Not_found ->
       Pccall p in
-  let rec add_params n params =
-    if n >= p.prim_arity
-    then Lprim(prim, List.rev params)
-    else begin
-      let id = Ident.new "prim" in
-      Lfunction(id, add_params (n+1) (Lvar id :: params))
-    end in
-  add_params 0 []
+  let rec make_params n =
+    if n <= 0 then [] else Ident.new "prim" :: make_params (n-1) in
+  let params = make_params p.prim_arity in
+  Lfunction(params, Lprim(prim, List.map (fun id -> Lvar id) params))
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
 let check_recursive_lambda id lam =
   let rec check_top = function
-      Lfunction(param, body) as funct -> true
+      Lfunction(params, body) as funct -> true
     | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
     | Llet(str, id, arg, body) -> check arg & check_top body
     | _ -> false
   and check = function
       Lvar _ -> true
     | Lconst cst -> true
-    | Lfunction(param, body) -> true
+    | Lfunction(params, body) -> true
     | Llet(_, _, arg, body) -> check arg & check body
     | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
     | lam -> not(IdentSet.mem id (free_variables lam))
@@ -275,9 +271,8 @@ let rec transl_exp e =
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (transl_exp body)
   | Texp_function pat_expr_list ->
-      let param = name_pattern "param" pat_expr_list in
-      Lfunction(param, Matching.for_function e.exp_loc (Lvar param)
-                         (transl_cases pat_expr_list))
+      let (params, body) = transl_function e.exp_loc pat_expr_list in
+      Lfunction(params, body)
   | Texp_apply({exp_desc = Texp_ident(path, {val_prim = Some p})}, args)
     when List.length args = p.prim_arity ->
       Lprim(transl_prim p args, transl_list args)
@@ -391,6 +386,16 @@ and transl_list expr_list =
 
 and transl_cases pat_expr_list =
   List.map (fun (pat, expr) -> (pat, transl_exp expr)) pat_expr_list
+
+and transl_function loc pat_expr_list =
+  let param = name_pattern "param" pat_expr_list in
+  match pat_expr_list with
+    [pat, ({exp_desc = Texp_function pl} as exp)] ->
+      let (params, body) = transl_function exp.exp_loc pl in
+      (param :: params, Matching.for_function loc (Lvar param) [pat, body])
+  | _ ->
+      ([param], Matching.for_function loc (Lvar param)
+                                          (transl_cases pat_expr_list))
 
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with
