@@ -187,7 +187,7 @@ let pp_clear_queue state =
 (* Large value for default tokens size *)
 (* Could be 1073741823 that is 2^30 - 1, that is the minimal upper bound
    of integers; now that max_int is defined, could also be max_int - 1. *)
-let pp_infinity = 999999999;;
+let pp_infinity = 1000000000;;
 
 (* Output functions for the formatter *)
 let pp_output_string state s = state.pp_output_function s 0 (String.length s)
