@@ -72,6 +72,7 @@ module Map : sig
       type key
       and (+'a) t
       val empty : 'a t
+      val is_empty: 'a t -> bool
       val add : key:key -> data:'a -> 'a t -> 'a t
       val find : key -> 'a t -> 'a
       val remove : key -> 'a t -> 'a t
@@ -82,7 +83,9 @@ module Map : sig
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
-    end
+      val compare: cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
+      val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+  end
   module Make : functor (Ord : OrderedType) -> S with type key = Ord.t
 end
 

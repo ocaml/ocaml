@@ -49,6 +49,9 @@ module type S =
     val empty: 'a t
     (** The empty map. *)
 
+    val is_empty: 'a t -> bool
+    (** Test whether a map is empty or not. *)
+
     val add: key -> 'a -> 'a t -> 'a t
     (** [add x y m] returns a map containing the same bindings as
        [m], plus a binding of [x] to [y]. If [x] was already bound
@@ -89,6 +92,16 @@ module type S =
     (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
        where [k1 ... kN] are the keys of all bindings in [m]
        (in increasing order), and [d1 ... dN] are the associated data. *)
+
+    val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
+    (** Total ordering between maps.  The first argument is a total ordering
+        used to compare data associated with equal keys in the two maps. *)
+
+    val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+    (** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are
+       equal, that is, contain equal keys and associate them with
+       equal data.  [cmp] is the equality predicate used to compare
+       the data associated with the keys. *)
 
   end
 (** Output signature of the functor {!Map.Make}. *)
