@@ -33,8 +33,7 @@ tk.ml labltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp.exe #../b
 	) > _tk.ml
 	../../../boot/ocamlrun ../compiler/pp < _tk.ml > tk.ml
 	rm -f _tk.ml
-	$(CAMLDEP) -I ../support [a-z]*.mli [a-z]*.ml | \
-	sed -e 's|\\\\\\(.\\)|/\\1|g' > .depend
+	$(CAMLDEP) -slash -I ../support [a-z]*.mli [a-z]*.ml > .depend
 
 clean:
 	rm -f *.cm* *.ml *.mli *.$(O) *.$(A)

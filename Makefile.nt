@@ -161,8 +161,8 @@ core : runtime ocamlc ocamllex ocamlyacc ocamltools library
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
 backup:
-	if not exist boot/Saved mkdir boot/Saved
-	if exist $(MAXSAVED) rm -r $(MAXSAVED)
+	mkdir -p boot/Saved
+	if test -d $(MAXSAVED); then rm -r $(MAXSAVED); fi
 	mv boot/Saved boot/Saved.prev
 	mkdir boot/Saved
 	mv boot/Saved.prev boot/Saved/Saved.prev
@@ -219,11 +219,9 @@ installbyt:
 	cp yacc/ocamlyacc.exe $(BINDIR)/ocamlyacc.exe
 	cp toplevel/toplevellib.cma $(LIBDIR)/toplevellib.cma
 	cp expunge $(LIBDIR)/expunge.exe
-	cp typing/outcometree.cmi $(LIBDIR)/outcometree.cmi
-	cp typing/outcometree.mli $(LIBDIR)/outcometree.mli
-	cp toplevel/topmain.cmo $(LIBDIR)/topmain.cmo
-	cp toplevel/toploop.cmi $(LIBDIR)/toploop.cmi
-	cp toplevel/topdirs.cmi $(LIBDIR)/topdirs.cmi
+	cp typing/outcometree.cmi typing/outcometree.mli $(LIBDIR)
+	cp toplevel/topstart.cmo $(LIBDIR)
+	cp toplevel/toploop.cmi toplevel/topdirs.cmi toplevel/topmain.cmi $(LIBDIR)
 	cd tools ; $(MAKEREC) install
 	cd ocamldoc ; $(MAKEREC) install
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done

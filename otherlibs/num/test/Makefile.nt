@@ -13,12 +13,12 @@
 
 # $Id$
 
-CAMLC=..\..\..\boot\ocamlrun ..\..\..\ocamlc -I ..\..\..\stdlib -I ..
-CAMLOPT=..\..\..\boot\ocamlrun ..\..\..\ocamlopt -I ..\..\..\stdlib -I ..
+CAMLC=../../../boot/ocamlrun ../../../ocamlc -I ../../../stdlib -I ..
+CAMLOPT=../../../boot/ocamlrun ../../../ocamlopt -I ../../../stdlib -I ..
 
 test: test.byt test.opt
-	..\..\..\byterun\ocamlrun -I .. .\test.byt
-	.\test.opt
+	../../../byterun/ocamlrun -I .. ./test.byt
+	./test.opt
 
 TESTFILES=test.cmo \
   test_nats.cmo test_big_ints.cmo test_ratios.cmo test_nums.cmo \
@@ -26,13 +26,13 @@ TESTFILES=test.cmo \
 
 TESTOPTFILES=$(TESTFILES:.cmo=.cmx)
 
-test.byt: $(TESTFILES) ..\nums.cma ..\libnums.lib
+test.byt: $(TESTFILES) ../nums.cma ../libnums.lib
 	$(CAMLC) -o test.byt nums.cma $(TESTFILES)
 
-test.opt: $(TESTOPTFILES) ..\nums.cmxa ..\libnums.lib
+test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.lib
 	$(CAMLOPT) -o test.opt nums.cmxa $(TESTOPTFILES)
 
-$(TESTOPTFILES): ..\..\..\ocamlopt
+$(TESTOPTFILES): ../../../ocamlopt
 
 .SUFFIXES: .ml .cmo .cmx
 
@@ -42,13 +42,13 @@ $(TESTOPTFILES): ..\..\..\ocamlopt
 .ml.cmx:
 	$(CAMLOPT) -c $<
 
-ocamltopnum:
-	ocamlmktop -o ocamltopnum -custom ..\nums.cma ..\libnums.lib
+ocamltopnum.exe:
+	ocamlmktop -o ocamltopnum.exe -custom ../nums.cma ../libnums.$(A)
 
 clean:
-	rm -f test.byt test.opt *.obj *.cm? ocamltopnum
+	rm -f test.byt test.opt *.$(O) *.cm? ocamltopnum.exe
 
 depend:
 	ocamldep *.ml > .depend
 
-!include .depend
+include .depend

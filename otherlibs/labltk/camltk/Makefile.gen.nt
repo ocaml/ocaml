@@ -36,8 +36,7 @@ cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp.exe #../
 	) > _cTk.ml
 	../../../boot/ocamlrun ../compiler/pp < _cTk.ml > cTk.ml
 	rm -f _cTk.ml
-	$(CAMLDEP) -I ../support [a-z]*.mli [a-z]*.ml | \
-	sed -e 's|\\\\\\(.\\)|/\\1|g' > .depend
+	$(CAMLDEP) -slash -I ../support [a-z]*.mli [a-z]*.ml > .depend
 
 ../compiler/pp.exe:
 	cd ../compiler; $(MAKEREC) pp.exe
