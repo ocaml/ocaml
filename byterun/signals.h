@@ -13,9 +13,10 @@
 
 /* $Id$ */
 
-#ifndef _signals_
-#define _signals_
+#ifndef CAML_SIGNALS_H
+#define CAML_SIGNALS_H
 
+#include "compatibility.h"
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -41,5 +42,4 @@ CAMLextern void (*leave_blocking_section_hook)(void);
 CAMLextern void (* volatile async_action_hook)(void);
 /* </private> */
 
-#endif /* _signals_ */
-
+#endif /* CAML_SIGNALS_H */

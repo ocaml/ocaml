@@ -13,10 +13,11 @@
 
 /* $Id$ */
 
-#ifndef _custom_
-#define _custom_
+#ifndef CAML_CUSTOM_H
+#define CAML_CUSTOM_H
 
 
+#include "compatibility.h"
 #include "mlvalues.h"
 
 struct custom_operations {
@@ -52,4 +53,4 @@ extern struct custom_operations * final_custom_operations(void (*fn)(value));
 extern void init_custom_operations(void);
 /* </private> */
 
-#endif
+#endif /* CAML_CUSTOM_H */

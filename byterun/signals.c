@@ -270,11 +270,11 @@ CAMLprim value install_signal_handler(value signal_number, value action)
   sigact.sa_handler = act;
   sigemptyset(&sigact.sa_mask);
   sigact.sa_flags = 0;
-  if (sigaction(sig, &sigact, &oldsigact) == -1) sys_error(NO_ARG);
+  if (sigaction(sig, &sigact, &oldsigact) == -1) caml_sys_error(NO_ARG);
   oldact = oldsigact.sa_handler;
 #else
   oldact = signal(sig, act);
-  if (oldact == SIG_ERR) sys_error(NO_ARG);
+  if (oldact == SIG_ERR) caml_sys_error(NO_ARG);
 #endif
   if (oldact == handle_signal) {
     res = alloc_small (1, 0);          /* Signal_handle */

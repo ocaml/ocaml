@@ -15,10 +15,11 @@
 
 /* Allocation macros and functions */
 
-#ifndef _memory_
-#define _memory_
+#ifndef CAML_MEMORY_H
+#define CAML_MEMORY_H
 
 
+#include "compatibility.h"
 #include "config.h"
 /* <private> */
 #include "gc.h"
@@ -373,5 +374,4 @@ CAMLextern void register_global_root (value *);
 CAMLextern void remove_global_root (value *);
 
 
-#endif /* _memory_ */
-
+#endif /* CAML_MEMORY_H */

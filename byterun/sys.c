@@ -65,7 +65,7 @@ extern int errno;
 extern char * strerror(int);
 #endif
 
-char * error_message(void)
+static char * error_message(void)
 {
   return strerror(errno);
 }
@@ -75,7 +75,7 @@ char * error_message(void)
 extern int sys_nerr;
 extern char * sys_errlist [];
 
-char * error_message(void)
+static char * error_message(void)
 {
   if (errno < 0 || errno >= sys_nerr)
     return "unknown error";
@@ -92,7 +92,7 @@ char * error_message(void)
 #define EWOULDBLOCK (-1)
 #endif
 
-CAMLexport void sys_error(value arg)
+CAMLexport void caml_sys_error(value arg)
 {
   CAMLparam1 (arg);
   char * err;
@@ -165,7 +165,7 @@ CAMLprim value caml_sys_open(value path, value flags, value perm)
                                        );
   leave_blocking_section();
   stat_free(p);
-  if (fd == -1) sys_error(path);
+  if (fd == -1) caml_sys_error(path);
 #if defined(F_SETFD) && defined(FD_CLOEXEC)
   fcntl(fd, F_SETFD, FD_CLOEXEC);
 #endif
@@ -196,20 +196,20 @@ CAMLprim value sys_remove(value name)
 {
   int ret;
   ret = unlink(String_val(name));
-  if (ret != 0) sys_error(name);
+  if (ret != 0) caml_sys_error(name);
   return Val_unit;
 }
 
 CAMLprim value sys_rename(value oldname, value newname)
 {
   if (rename(String_val(oldname), String_val(newname)) != 0)
-    sys_error(oldname);
+    caml_sys_error(oldname);
   return Val_unit;
 }
 
 CAMLprim value sys_chdir(value dirname)
 {
-  if (chdir(String_val(dirname)) != 0) sys_error(dirname);
+  if (chdir(String_val(dirname)) != 0) caml_sys_error(dirname);
   return Val_unit;
 }
 
@@ -217,9 +217,9 @@ CAMLprim value sys_getcwd(value unit)
 {
   char buff[4096];
 #ifdef HAS_GETCWD
-  if (getcwd(buff, sizeof(buff)) == 0) sys_error(NO_ARG);
+  if (getcwd(buff, sizeof(buff)) == 0) caml_sys_error(NO_ARG);
 #else
-  if (getwd(buff) == 0) sys_error(NO_ARG);
+  if (getwd(buff) == 0) caml_sys_error(NO_ARG);
 #endif /* HAS_GETCWD */
   return copy_string(buff);
 }
@@ -279,7 +279,7 @@ CAMLprim value sys_system_command(value command)
   status = system(buf);
   leave_blocking_section ();
   stat_free(buf);
-  if (status == -1) sys_error(command);
+  if (status == -1) caml_sys_error(command);
   if (WIFEXITED(status))
     retcode = WEXITSTATUS(status);
   else
@@ -341,7 +341,7 @@ CAMLprim value sys_read_directory(value path)
   struct ext_table tbl;
 
   ext_table_init(&tbl, 50);
-  if (caml_read_directory(String_val(path), &tbl) == -1) sys_error(path);
+  if (caml_read_directory(String_val(path), &tbl) == -1) caml_sys_error(path);
   ext_table_add(&tbl, NULL);
   result = copy_string_array((char const **) tbl.contents);
   ext_table_free(&tbl, 1);

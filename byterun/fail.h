@@ -13,12 +13,14 @@
 
 /* $Id$ */
 
-#ifndef _fail_
-#define _fail_
+#ifndef CAML_FAIL_H
+#define CAML_FAIL_H
 
 /* <private> */
 #include <setjmp.h>
 /* </private> */
+
+#include "compatibility.h"
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -69,4 +71,4 @@ CAMLextern void init_exceptions (void);
 CAMLextern void array_bound_error (void) Noreturn;
 CAMLextern void raise_sys_blocked_io (void) Noreturn;
 
-#endif /* _fail_ */
+#endif /* CAML_FAIL_H */

@@ -17,6 +17,7 @@
 #define CAML_MLVALUES_H
 
 
+#include "compatibility.h"
 #include "config.h"
 #include "misc.h"
 

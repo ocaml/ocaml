@@ -104,15 +104,15 @@ loadprinter.cmx: ../utils/config.cmx ../typing/ctype.cmx debugger_config.cmx \
     ../typing/printtyp.cmx printval.cmx ../bytecomp/symtable.cmx \
     ../typing/types.cmx loadprinter.cmi 
 main.cmo: checkpoints.cmi command_line.cmi ../utils/config.cmi \
-    debugger_config.cmi exec.cmi frames.cmi input_handling.cmi \
-    ../utils/misc.cmi parameters.cmi primitives.cmi program_management.cmi \
-    show_information.cmi time_travel.cmi ../otherlibs/unix/unix.cmi \
-    unix_tools.cmi 
+    debugger_config.cmi ../typing/env.cmi exec.cmi frames.cmi \
+    input_handling.cmi ../utils/misc.cmi parameters.cmi primitives.cmi \
+    program_management.cmi show_information.cmi time_travel.cmi \
+    ../otherlibs/unix/unix.cmi unix_tools.cmi 
 main.cmx: checkpoints.cmx command_line.cmx ../utils/config.cmx \
-    debugger_config.cmx exec.cmx frames.cmx input_handling.cmx \
-    ../utils/misc.cmx parameters.cmx primitives.cmx program_management.cmx \
-    show_information.cmx time_travel.cmx ../otherlibs/unix/unix.cmx \
-    unix_tools.cmx 
+    debugger_config.cmx ../typing/env.cmx exec.cmx frames.cmx \
+    input_handling.cmx ../utils/misc.cmx parameters.cmx primitives.cmx \
+    program_management.cmx show_information.cmx time_travel.cmx \
+    ../otherlibs/unix/unix.cmx unix_tools.cmx 
 parameters.cmo: ../utils/config.cmi envaux.cmi ../utils/misc.cmi \
     primitives.cmi parameters.cmi 
 parameters.cmx: ../utils/config.cmx envaux.cmx ../utils/misc.cmx \

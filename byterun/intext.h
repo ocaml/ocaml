@@ -15,9 +15,10 @@
 
 /* Structured input/output */
 
-#ifndef __intext__
-#define __intext__
+#ifndef CAML_INTEXT_H
+#define CAML_INTEXT_H
 
+#include "compatibility.h"
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -170,5 +171,4 @@ extern char * code_area_start, * code_area_end;
 
 /* </private> */
 
-#endif
-
+#endif /* CAML_INTEXT_H */

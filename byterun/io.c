@@ -114,7 +114,7 @@ CAMLexport file_offset channel_size(struct channel *channel)
   end = lseek(channel->fd, 0, SEEK_END);
   if (end == -1 ||
       lseek(channel->fd, channel->offset, SEEK_SET) != channel->offset) {
-    sys_error(NO_ARG);
+    caml_sys_error(NO_ARG);
   }
   return end;
 }
@@ -166,7 +166,7 @@ again:
     }
   }
 #endif
-  if (retcode == -1) sys_error(NO_ARG);
+  if (retcode == -1) caml_sys_error(NO_ARG);
   return retcode;
 }
 
@@ -247,7 +247,7 @@ CAMLexport void really_putblock(struct channel *channel, char *p, long int len)
 CAMLexport void seek_out(struct channel *channel, file_offset dest)
 {
   flush(channel);
-  if (lseek(channel->fd, dest, SEEK_SET) != dest) sys_error(NO_ARG);
+  if (lseek(channel->fd, dest, SEEK_SET) != dest) caml_sys_error(NO_ARG);
   channel->offset = dest;
 }
 
@@ -275,7 +275,7 @@ CAMLexport int do_read(int fd, char *p, unsigned int n)
 #endif
 #endif
   leave_blocking_section();
-  if (retcode == -1) sys_error(NO_ARG);
+  if (retcode == -1) caml_sys_error(NO_ARG);
   return retcode;
 }
 
@@ -348,7 +348,7 @@ CAMLexport void seek_in(struct channel *channel, file_offset dest)
       dest <= channel->offset) {
     channel->curr = channel->max - (channel->offset - dest);
   } else {
-    if (lseek(channel->fd, dest, SEEK_SET) != dest) sys_error(NO_ARG);
+    if (lseek(channel->fd, dest, SEEK_SET) != dest) caml_sys_error(NO_ARG);
     channel->offset = dest;
     channel->curr = channel->max = channel->buff;
   }
@@ -474,7 +474,7 @@ CAMLprim value caml_out_channels_list (value unit)
 CAMLprim value channel_descriptor(value vchannel)
 {
   int fd = Channel(vchannel)->fd;
-  if (fd == -1) { errno = EBADF; sys_error(NO_ARG); }
+  if (fd == -1) { errno = EBADF; caml_sys_error(NO_ARG); }
   return Val_int(fd);
 }
 
@@ -494,7 +494,7 @@ CAMLprim value caml_close_channel(value vchannel)
      immediate flush_partial or refill, thus raising a Sys_error
      exception */
   channel->curr = channel->max = channel->end;
-  if (result == -1) sys_error (NO_ARG);
+  if (result == -1) caml_sys_error (NO_ARG);
   return Val_unit;
 }
 
@@ -510,7 +510,7 @@ CAMLprim value caml_close_channel(value vchannel)
 CAMLprim value caml_channel_size(value vchannel)
 {
   file_offset size = channel_size(Channel(vchannel));
-  if (size > Max_long) { errno = EOVERFLOW; sys_error(NO_ARG); }
+  if (size > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
   return Val_long(size);
 }
 
@@ -524,7 +524,7 @@ CAMLprim value caml_set_binary_mode(value vchannel, value mode)
 #ifdef _WIN32
   struct channel * channel = Channel(vchannel);
   if (setmode(channel->fd, Bool_val(mode) ? O_BINARY : O_TEXT) == -1)
-    sys_error(NO_ARG);
+    caml_sys_error(NO_ARG);
 #endif
   return Val_unit;
 }
@@ -627,7 +627,7 @@ CAMLprim value caml_seek_out_64(value vchannel, value pos)
 CAMLprim value caml_pos_out(value vchannel)
 {
   file_offset pos = pos_out(Channel(vchannel));
-  if (pos > Max_long) { errno = EOVERFLOW; sys_error(NO_ARG); }
+  if (pos > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
   return Val_long(pos);
 }
 
@@ -714,7 +714,7 @@ CAMLprim value caml_seek_in_64(value vchannel, value pos)
 CAMLprim value caml_pos_in(value vchannel)
 {
   file_offset pos = pos_in(Channel(vchannel));
-  if (pos > Max_long) { errno = EOVERFLOW; sys_error(NO_ARG); }
+  if (pos > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
   return Val_long(pos);
 }
 

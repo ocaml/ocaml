@@ -15,10 +15,11 @@
 
 /* Miscellaneous macros and variables. */
 
-#ifndef _misc_
-#define _misc_
+#ifndef CAML_MISC_H
+#define CAML_MISC_H
 
 
+#include "compatibility.h"
 #include "config.h"
 
 /* Standard definitions */
@@ -139,4 +140,4 @@ char *aligned_malloc (asize_t, int, void **);
 
 /* </private> */
 
-#endif /* _misc_ */
+#endif /* CAML_MISC_H */

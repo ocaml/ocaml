@@ -1,3 +1,4 @@
+camlinternalOO.cmi: obj.cmi 
 format.cmi: buffer.cmi 
 genlex.cmi: stream.cmi 
 moreLabels.cmi: hashtbl.cmi map.cmi set.cmi 
@@ -76,9 +77,9 @@ random.cmo: array.cmi char.cmi digest.cmi int32.cmi int64.cmi nativeint.cmi \
     pervasives.cmi string.cmi random.cmi 
 random.cmx: array.cmx char.cmx digest.cmx int32.cmx int64.cmx nativeint.cmx \
     pervasives.cmx string.cmx random.cmi 
-scanf.cmo: array.cmi buffer.cmi list.cmi obj.cmi printf.cmi string.cmi \
+scanf.cmo: buffer.cmi hashtbl.cmi list.cmi obj.cmi printf.cmi string.cmi \
     sys.cmi scanf.cmi 
-scanf.cmx: array.cmx buffer.cmx list.cmx obj.cmx printf.cmx string.cmx \
+scanf.cmx: buffer.cmx hashtbl.cmx list.cmx obj.cmx printf.cmx string.cmx \
     sys.cmx scanf.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
