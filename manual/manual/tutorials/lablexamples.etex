@@ -111,7 +111,8 @@ List.fold_left [1;2;3];;
 
 For such out-of-order applications, the type of the function must be
 known previous to the application, otherwise an incompatible
-out-of-order type will be generated.
+out-of-order type will be generated. See
+section~\ref{ss:label-inference} for more details.
 
 \begin{caml_example}
 let h g = g y:2 x:3;;
@@ -187,6 +188,7 @@ test2 ?x:None;;
 \end{caml_example}
 
 \subsection{Labels and type inference}
+\label{ss:label-inference}
 
 While they provide an increased comfort for writing function
 applications, labels and optional arguments have the pitfall that they
@@ -303,6 +305,7 @@ library.
 \entree{"item:"}{a value in a collection}
 \entree{"key:"}{a value used as index}
 \entree{"data:"}{a value associated to an index}
+\entree{"size:"}{a size parameter}
 \entree{"mode:"}{an operation mode or a flag list}
 \entree{"perm:"}{file permissions}
 \end{tableau}
