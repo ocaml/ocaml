@@ -98,9 +98,11 @@ Other libraries:
   toplevels including Bigarray.
 - Dynlink: raise an error instead of crashing when the loaded module
   refers to the not-yet-initialized module performing a dynlink operation.
-- Bytecode threads: added a thread-safe version of the Marshal module.
+- Bytecode threads: added a thread-safe version of the Marshal module;
+    fixed a rare GC bug in the thread scheduler.
 - POSIX threads: fixed compilation problem with threads.cmxa.
 - Both thread libraries: better tail-recursion in Event.sync.
+- Num library: fixed bug in square roots (Nat.sqrt_nat, Big_int.sqrt_big_int).
 
 Tools:
 - ocamldep: fixed missing dependencies on labels of record patterns and

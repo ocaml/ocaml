@@ -630,13 +630,13 @@ driver/opterrors.cmx: asmcomp/asmgen.cmx asmcomp/asmlibrarian.cmx \
     typing/typecore.cmx typing/typedecl.cmx typing/typemod.cmx \
     typing/typetexp.cmx driver/opterrors.cmi 
 driver/optmain.cmo: asmcomp/asmlibrarian.cmi asmcomp/asmlink.cmi \
-    utils/clflags.cmo utils/config.cmi bytecomp/matching.cmi \
-    driver/optcompile.cmi driver/opterrors.cmi asmcomp/printmach.cmi \
-    bytecomp/switch.cmi utils/warnings.cmi driver/optmain.cmi 
+    utils/clflags.cmo utils/config.cmi driver/optcompile.cmi \
+    driver/opterrors.cmi asmcomp/printmach.cmi utils/warnings.cmi \
+    driver/optmain.cmi 
 driver/optmain.cmx: asmcomp/asmlibrarian.cmx asmcomp/asmlink.cmx \
-    utils/clflags.cmx utils/config.cmx bytecomp/matching.cmx \
-    driver/optcompile.cmx driver/opterrors.cmx asmcomp/printmach.cmx \
-    bytecomp/switch.cmx utils/warnings.cmx driver/optmain.cmi 
+    utils/clflags.cmx utils/config.cmx driver/optcompile.cmx \
+    driver/opterrors.cmx asmcomp/printmach.cmx utils/warnings.cmx \
+    driver/optmain.cmi 
 toplevel/genprintval.cmi: typing/env.cmi typing/path.cmi typing/types.cmi 
 toplevel/topdirs.cmi: parsing/longident.cmi 
 toplevel/toploop.cmi: typing/env.cmi parsing/location.cmi \
