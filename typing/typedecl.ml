@@ -125,7 +125,13 @@ let transl_declaration env (name, sdecl) id =
         Tconstr(path, args, _) ->
           begin try
             let decl' = Env.find_type path env in
-            if args = params & Includecore.type_declarations env id decl decl'
+            if List.length args = List.length params
+            && List.for_all2 (fun v1 v2 -> Ctype.repr v1 == Ctype.repr v2)
+                             args params
+            && Includecore.type_declarations env id
+                (Subst.type_declaration (Subst.add_type id path Subst.identity)
+                                        decl)
+                decl'
             then ()
             else raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
           with Not_found ->
