@@ -1,4 +1,4 @@
-include ../Makefile.common
+include ../support/Makefile.common
 
 COMPFLAGS= -I ../support
 

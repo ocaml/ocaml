@@ -1,4 +1,4 @@
-include ../Makefile.common
+include ../support/Makefile.common
 
 OBJS=tsort.cmo tables.cmo lexer.cmo parser.cmo  compile.cmo intf.cmo \
      maincompile.cmo

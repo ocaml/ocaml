@@ -1,4 +1,4 @@
-include ../Makefile.common
+include ../support/Makefile.common
 
 COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/unix -I $(OTHERS)/str
 

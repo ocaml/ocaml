@@ -1,4 +1,4 @@
-include ../Makefile.common
+include ../support/Makefile.common
 
 LABLTKLIB=-I ../lib -I ../support
 OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str

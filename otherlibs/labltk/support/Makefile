@@ -1,4 +1,4 @@
-include ../Makefile.common
+include Makefile.common
 
 all: support.cmo widget.cmo protocol.cmo \
      textvariable.cmo timer.cmo fileevent.cmo \
