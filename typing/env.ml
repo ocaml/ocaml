@@ -71,10 +71,11 @@ and structure_components = {
 }
 
 and functor_components = {
-  fcomp_param: Ident.t;
-  fcomp_arg: module_type;
-  fcomp_res: module_type;
-  fcomp_env: t
+  fcomp_param: Ident.t;                 (* Formal parameter *)
+  fcomp_arg: module_type;               (* Argument signature *)
+  fcomp_res: module_type;               (* Result signature *)
+  fcomp_env: t;     (* Environment in which the result signature makes sense *)
+  fcomp_subst: Subst.t  (* Prefixing substitution for the result signature *)
 }
 
 let empty = {
@@ -295,7 +296,7 @@ and lookup_module lid env =
       begin match desc1 with
         Functor_comps f ->
           !check_modtype_inclusion env mty2 f.fcomp_arg;
-          (p, Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
+          (p, Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
                             f.fcomp_res)
       | Structure_comps c ->
           raise Not_found
@@ -375,16 +376,6 @@ let labels_of_type env ty_path decl decl' =
     (Type_record labels, Type_record labels') ->
       Datarepr.label_descrs
         (!expand_head env)
-(*
-          begin match ty with
-            {desc=Tconstr(p, _, _)} ->
-              print_string "Expanding ";
-              print_string (Path.name p);
-              print_newline()
-          | _ -> ()
-          end;
-          !expand_head env ty) *)
-
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels labels'
   | _ -> []
@@ -499,9 +490,13 @@ let rec components_of_module env sub path mty =
   | Tmty_functor(param, ty_arg, ty_res) ->
         Functor_comps {
           fcomp_param = param;
+          (* fcomp_arg must be prefixed eagerly, because it is interpreted
+             in the outer environment, not in env *)
           fcomp_arg = Subst.modtype sub ty_arg;
-          fcomp_res = Subst.modtype sub ty_res;
-          fcomp_env = env }
+          (* fcomp_res is prefixed lazily, because it is interpreted in env *)
+          fcomp_res = ty_res;
+          fcomp_env = env;
+          fcomp_subst = sub }
   | Tmty_ident p ->
         Structure_comps {
           comp_values = Tbl.empty; comp_constrs = Tbl.empty;
@@ -655,7 +650,7 @@ let _ =
         let mty = 
           Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
                         f.fcomp_res in
-        let comps = components_of_module f.fcomp_env Subst.identity p mty in
+        let comps = components_of_module f.fcomp_env f.fcomp_subst p mty in
         Hashtbl.add funappl_memo p comps;
         comps)
 
