@@ -55,7 +55,8 @@ let primitive = function
     Pidentity -> print_string "id"
   | Pgetglobal id -> print_string "global "; Ident.print id
   | Psetglobal id -> print_string "setglobal "; Ident.print id
-  | Pmakeblock tag -> print_string "makeblock "; print_int tag
+  | Pmakeblock(tag, Immutable) -> print_string "makeblock "; print_int tag
+  | Pmakeblock(tag, Mutable) -> print_string "makemutable "; print_int tag
   | Pfield n -> print_string "field "; print_int n
   | Psetfield(n, _) -> print_string "setfield "; print_int n
   | Pfloatfield n -> print_string "floatfield "; print_int n

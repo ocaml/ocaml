@@ -109,7 +109,7 @@ let add_const_unit = function
 let rec size_of_lambda = function
     Lfunction(param, body) as funct ->
       1 + IdentSet.cardinal(free_variables funct)
-  | Lprim(Pmakeblock tag, args) ->
+  | Lprim(Pmakeblock(tag, mut), args) ->
       List.length args
   | Llet(id, arg, body) ->
       size_of_lambda body
@@ -255,7 +255,7 @@ let rec comp_expr env exp sz cont =
           Pgetglobal id -> Kgetglobal id
         | Psetglobal id -> Ksetglobal id
         | Pintcomp cmp -> Kintcomp cmp
-        | Pmakeblock tag -> Kmakeblock(List.length args, tag)
+        | Pmakeblock(tag, mut) -> Kmakeblock(List.length args, tag)
         | Pfield n -> Kgetfield n
         | Psetfield(n, ptr) -> Ksetfield n
         | Pfloatfield n -> Kgetfield n

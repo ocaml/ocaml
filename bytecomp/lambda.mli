@@ -22,7 +22,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int
+  | Pmakeblock of int * mutable_flag
   | Pfield of int
   | Psetfield of int * bool
   | Pfloatfield of int

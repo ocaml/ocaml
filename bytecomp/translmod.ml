@@ -15,6 +15,7 @@
    for the module language *)
 
 open Misc
+open Asttypes
 open Typedtree
 open Lambda
 open Translcore
@@ -28,7 +29,8 @@ let rec apply_coercion restr arg =
       arg
   | Tcoerce_structure pos_cc_list ->
       name_lambda arg (fun id ->
-        Lprim(Pmakeblock 0, List.map (apply_coercion_field id) pos_cc_list))
+        Lprim(Pmakeblock(0, Immutable),
+              List.map (apply_coercion_field id) pos_cc_list))
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.new "funarg" in
       name_lambda arg (fun id ->
@@ -98,11 +100,11 @@ and transl_structure env fields cc = function
     [] ->
       begin match cc with
         Tcoerce_none ->
-          Lprim(Pmakeblock 0,
+          Lprim(Pmakeblock(0, Immutable),
                 List.map (fun id -> transl_access env id) (List.rev fields))
       | Tcoerce_structure pos_cc_list ->
           let v = Array.of_list (List.rev fields) in
-          Lprim(Pmakeblock 0,
+          Lprim(Pmakeblock(0, Immutable),
                 List.map
                   (fun (pos, cc) ->
                     match cc with

@@ -111,7 +111,7 @@ let divide_var {cases = cl; args = al} =
 
 let make_tuple_matching num_comps = function
     [] -> fatal_error "Matching.make_tuple_matching"
-  | Lprim(Pmakeblock _, components) :: argl ->
+  | Lprim(Pmakeblock(_, _), components) :: argl ->
       {cases = []; args = components @ argl}
   | arg :: argl ->
       let rec make_args pos =
@@ -292,7 +292,7 @@ let compile_matching handler_fun arg pat_act_list =
   if total then lambda else Lcatch(lambda, handler_fun())
 
 let partial_function loc () =
-  Lprim(Praise, [Lprim(Pmakeblock 0,
+  Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_match_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string !Location.input_name);

@@ -51,7 +51,7 @@ let rec bind_pattern env pat arg mut =
       end
   | Tpat_tuple patl ->
       begin match arg with
-        Lprim(Pmakeblock _, argl) -> bind_patterns env patl argl
+        Lprim(Pmakeblock(_, _), argl) -> bind_patterns env patl argl
       | _ -> bind_pattern_list env patl arg mut 0
       end
   | Tpat_construct(cstr, patl) ->
@@ -154,7 +154,8 @@ let primitives_table = create_hashtable 31 [
   "%field0", Pfield 0;
   "%field1", Pfield 1;
   "%setfield0", Psetfield(0, true);
-  "%makeblock", Pmakeblock 0;
+  "%makeblock", Pmakeblock(0, Immutable);
+  "%makemutable", Pmakeblock(0, Mutable);
   "%raise", Praise;
   "%sequand", Psequand;
   "%sequor", Psequor;
@@ -300,7 +301,7 @@ let transl_primitive p =
 let check_recursive_lambda id lam =
   let rec check_top = function
       Lfunction(param, body) as funct -> true
-    | Lprim(Pmakeblock tag, args) -> List.for_all check args
+    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
     | Llet(id, arg, body) -> check arg & check_top body
     | _ -> false
   and check = function
@@ -308,7 +309,7 @@ let check_recursive_lambda id lam =
     | Lconst cst -> true
     | Lfunction(param, body) -> true
     | Llet(_, arg, body) -> check arg & check body
-    | Lprim(Pmakeblock tag, args) -> List.for_all check args
+    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
     | lam -> not(IdentSet.mem id (free_variables lam))
   in check_top lam
 
@@ -363,7 +364,7 @@ let rec transl_exp env e =
       Lapply(transl_exp env funct, transl_list env args)
   | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list) ->
       name_lambda_list (transl_list env argl) (fun paraml ->
-        let param = Lprim(Pmakeblock 0, paraml) in
+        let param = Lprim(Pmakeblock(0, Immutable), paraml) in
           Matching.for_function e.exp_loc param
               (transl_cases env param pat_expr_list))
   | Texp_match(arg, pat_expr_list) ->
@@ -380,7 +381,7 @@ let rec transl_exp env e =
       begin try
         Lconst(Const_block(0, List.map extract_constant ll))
       with Not_constant ->
-        Lprim(Pmakeblock 0, ll)
+        Lprim(Pmakeblock(0, Immutable), ll)
       end
   | Texp_construct(cstr, args) ->
       let ll = transl_list env args in
@@ -391,10 +392,10 @@ let rec transl_exp env e =
           begin try
             Lconst(Const_block(n, List.map extract_constant ll))
           with Not_constant ->
-            Lprim(Pmakeblock n, ll)
+            Lprim(Pmakeblock(n, Immutable), ll)
           end
       | Cstr_exception path ->
-          Lprim(Pmakeblock 0, transl_path path :: ll)
+          Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
       end
   | Texp_record ((lbl1, _) :: _ as lbl_expr_list) ->
       let lv = Array.new (Array.length lbl1.lbl_all) Lstaticfail in
@@ -402,18 +403,22 @@ let rec transl_exp env e =
         (fun (lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp env expr)
         lbl_expr_list;
       let ll = Array.to_list lv in
-      begin try
-        List.iter
-          (fun (lbl, expr) -> if lbl.lbl_mut = Mutable then raise Not_constant)
-          lbl_expr_list;
-        let cl = List.map extract_constant ll in
+      if List.exists (fun (lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
+      then begin
         match lbl1.lbl_repres with
-          Record_regular -> Lconst(Const_block(0, cl))
-        | Record_float -> Lconst(Const_float_array(List.map extract_float cl))
-      with Not_constant ->
-        match lbl1.lbl_repres with
-          Record_regular -> Lprim(Pmakeblock 0, ll)
+          Record_regular -> Lprim(Pmakeblock(0, Mutable), ll)
         | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
+      end else begin
+        try
+          let cl = List.map extract_constant ll in
+          match lbl1.lbl_repres with
+            Record_regular -> Lconst(Const_block(0, cl))
+          | Record_float ->
+              Lconst(Const_float_array(List.map extract_float cl))
+        with Not_constant ->
+          match lbl1.lbl_repres with
+            Record_regular -> Lprim(Pmakeblock(0, Immutable), ll)
+          | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
       end
   | Texp_field(arg, lbl) ->
       let access =
@@ -509,7 +514,8 @@ and transl_let env rec_flag pat_expr_list =
 (* Compile an exception definition *)
 
 let transl_exception id decl =
-    Lprim(Pmakeblock 0, [Lconst(Const_base(Const_string(Ident.name id)))])
+    Lprim(Pmakeblock(0, Immutable),
+          [Lconst(Const_base(Const_string(Ident.name id)))])
 
 (* Error report *)
 
