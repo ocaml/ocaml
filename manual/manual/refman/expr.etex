@@ -38,6 +38,7 @@ expr:
   | '[' expr { ';' expr } ']'
   | '[|' expr { ';' expr } '|]'
   | '{' field '=' expr { ';' field '=' expr } '}'
+  | '{' expr 'with' field '=' expr { ';' field '=' expr } '}'
   | expr {{ argument }}
   | prefix-symbol expr
   | expr infix-op expr
@@ -116,7 +117,7 @@ precedence come first. For infix and prefix symbols, we write
 \entree{constructor application}{--}
 \entree{"-   -." (prefix)}{--}
 \entree{"**"\ldots}{right}
-\entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod   `"@ident@"`"}{left}
+\entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod"}{left} %% "`"@ident@"`"
 \entree{"+"\ldots"   -"\ldots}{left}
 \entree{"::"}{right}
 \entree{{\tt \char64}\ldots "^"\ldots}{right}
@@ -518,6 +519,14 @@ once in the record expression, though they can appear in any
 order. The order in which @expr_1@ to @expr_n@ are evaluated is not
 specified.
 
+The expression
+@"{" expr "with" field_1 "=" expr_1 ";" \ldots ";" field_n "=" expr_n "}"@
+builds a fresh record with fields @field_1 \ldots field_n@ equal to
+@expr_1 \ldots expr_n@, and all other fields having the same value as
+in the record @expr@.  In other terms, it returns a shallow copy of
+the record @expr@, except for the fields @field_1 \ldots field_n@,
+which are initialized to @expr_1 \ldots expr_n@.
+
 The expression @expr_1 '.' field@ evaluates @expr_1@ to a record
 value, and returns the value associated to @field@ in this record
 value.
@@ -575,9 +584,9 @@ interpreted as the application @'(' prefix-symbol ')'
 expr@. Similarly, the expression @expr_1 infix-symbol expr_2@ is
 interpreted as the application @'(' infix-symbol ')' expr_1 expr_2@.
 
-Conversely, a regular function identifier can also be used as an infix
-operator by enclosing it in backquotes: @expr_1 '`' ident '`' expr_2@
-is interpreted as the application @ident expr_1 expr_2@.
+%% Conversely, a regular function identifier can also be used as an infix
+%% operator by enclosing it in backquotes: @expr_1 '`' ident '`' expr_2@
+%% is interpreted as the application @ident expr_1 expr_2@.
 
 The table below lists the symbols defined in the initial environment
 and their initial meaning. (See the description of the standard

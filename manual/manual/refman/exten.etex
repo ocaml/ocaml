@@ -160,23 +160,6 @@ standard library (section~\ref{s:Lazy}).
 \index{Lazy (module)\@\verb`Lazy` (module)}%
 \index{force\@\verb`force`}%
 
-\section{Record copy with update}
-\ikwd{with\@\texttt{with}}
-
-The expression
-@"{" expr "with" lbl_1 "=" expr_1 ";" \ldots ";" lbl_n "=" expr_n "}"@
-builds a fresh record with fields @lbl_1 \ldots lbl_n@ equal to
-@expr_1 \ldots expr_n@, and all other fields having the same value as
-in the record @expr@.  In other terms, it returns a shallow copy of
-the record @expr@, except for the fields @lbl_1 \ldots lbl_n@,
-which are initialized to @expr_1 \ldots expr_n@.  For example:
-\begin{verbatim}
-        type point = { x : float; y : float; z : float }
-        let proj p = { p with x = 0.0 }
-        let proj p = { x = 0.0; y = p.y; z = p.z }
-\end{verbatim}
-The two definitions of "proj" above are equivalent.
-
 \section{Local modules}
 \ikwd{let\@\texttt{let}}
 \ikwd{module\@\texttt{module}}

@@ -149,11 +149,12 @@ first character, either "~" or "?".
 
 \subsubsection*{Prefix and infix symbols}
 
+%%  || '`' lowercase-ident '`'
+
 \begin{syntax}
 infix-symbol:
         ('=' || '<' || '>' || '@' || '^' || '|' || '&' ||
-         '+' || '-' || '*' || '/' || '$' || '%') { operator-char } ||
-        '`' lowercase-ident '`'
+         '+' || '-' || '*' || '/' || '$' || '%') { operator-char }
 ;
 prefix-symbol:
         ('!' || '?' || '~') { operator-char }
@@ -168,10 +169,10 @@ operator-char:
 Sequences of ``operator characters'', such as "<=>" or "!!",
 are read as a single token from the @infix-symbol@ or @prefix-symbol@
 class. These symbols are parsed as prefix and infix operators inside
-expressions, but otherwise behave much as identifiers. Identifiers
-starting with a lowercase letter and enclosed
-between backquote characters @'`' lowercase-ident '`'@ are also parsed
-as infix operators.
+expressions, but otherwise behave much as identifiers.
+%% Identifiers starting with a lowercase letter and enclosed
+%% between backquote characters @'`' lowercase-ident '`'@ are also parsed
+%% as infix operators.
 
 \subsubsection*{Keywords}
 
