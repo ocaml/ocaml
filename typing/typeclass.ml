@@ -1342,20 +1342,19 @@ let report_error ppf = function
   | Unbound_val lab ->
       fprintf ppf "Unbound instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
-      let print_labty real ppf ty =
-        if real then Printtyp.type_expr ppf ty else fprintf ppf ".." in
+      let print_common ppf kind ty0 real lab ty =
+        let ty1 =
+          if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
+        Printtyp.reset_and_mark_loops_list [ty; ty1];
+        fprintf ppf
+          "The %s %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
+            kind lab Printtyp.type_expr ty Printtyp.type_expr ty0
+      in
       let print_reason ppf = function
       | Ctype.CC_Method (ty0, real, lab, ty) ->
-          Printtyp.reset_and_mark_loops_list [ty; ty0];
-          fprintf ppf
-            "The method %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
-            lab Printtyp.type_expr ty (print_labty real) ty0
+          print_common ppf "method" ty0 real lab ty
       | Ctype.CC_Value (ty0, real, lab, ty) ->
-          Printtyp.reset_and_mark_loops_list [ty; ty0];
-          fprintf ppf
-            "The instance variable %s@ has type@;<1 2>%a@ \
-             where@ %a@ is unbound"
-            lab Printtyp.type_expr ty (print_labty real) ty0
+          print_common ppf "instance variable" ty0 real lab ty
       in
       Printtyp.reset ();
       fprintf ppf
