@@ -70,6 +70,7 @@ echo "O=o" >> Makefile.cnf
 echo "A=a" >> Makefile.cnf
 echo "OPT=" >> Makefile.cnf
 echo "OTOP=$ocaml_top" >> Makefile.cnf
+grep '^RANLIB' ../../config/Makefile >> Makefile.cnf
 
 if test "$ocaml_top" = "../ocaml_stuff"; then
     if ocamlc -v >/dev/null 2>&1; then

@@ -75,8 +75,15 @@ install:
 	cp mLast.mli quotation.mli ast2pt.mli pcaml.mli spretty.mli "$(LIBDIR)/camlp4/."
 	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi "$(LIBDIR)/camlp4/."
 	cp camlp4.cma $(LIBDIR)/camlp4/.
-	for f in  camlp4.$(A)  camlp4.p.$(A) camlp4.cmxa camlp4.p.cmxa; do \
-	  test -f $$f && cp $$f "$(LIBDIR)/camlp4/." || true; \
+	for f in  camlp4.$(A)  camlp4.p.$(A) ; do \
+	  if test -f $$f ; then \
+	     cp $$f "$(LIBDIR)/camlp4/." && ( cd  "$(LIBDIR)/camlp4/." && $(RANLIB) $$f ) ; \
+	  fi ; \
+	done
+	for f in camlp4.cmxa camlp4.p.cmxa ; do \
+	  if test -f $$f ; then \
+	     cp $$f "$(LIBDIR)/camlp4/." ; \
+	  fi ; \
 	done
 
 include .depend
