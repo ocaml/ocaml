@@ -370,7 +370,8 @@ int win32_system(char * cmdline)
   char cmd[MAX_CMD_LENGTH + 16];
   char template[9];
   char * tempfile;
-  int len, i, j, fd, retcode;
+  FILE * fd;
+  int len, i, j, k, retcode;
 
   len = strlen(cmdline);
   if (len < 1000) {
@@ -385,10 +386,11 @@ int win32_system(char * cmdline)
     /* Save remainder of command line to temp file */
     strcpy(template, "cmXXXXXX");
     tempfile = mktemp(template);
-    fd = open(tempfile, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT, 0666);
-    if (fd == -1) return -1;
-    write(fd, cmdline + i, len - i);
-    close(fd);
+    fd = fopen(tempfile, "w");
+    if (fd == NULL) return -1;
+    for (k = i; k < len; k++)
+      fputc((isspace(cmdline[k]) ? '\n' : cmdline[k]), fd);
+    fclose(fd);
     /* Add " @tempfile" to the command line */
     sprintf(cmd + j, " @%s", tempfile);
     /* Run command */
