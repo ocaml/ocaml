@@ -135,6 +135,9 @@ OCamldoc:
 - some fixes in html generation
 - don't overwrite existing style.css file when generating HTML
 - create the ocamldoc.sty file when generating LaTeX (if it does not already exists)
+- do not install ocamldoc.sty any more
+- man pages are now installed in man/man3 rather than man/mano
+- fix: empty [] in generated HTML indexes
 
 Objective Caml 3.06:
 --------------------
