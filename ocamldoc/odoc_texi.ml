@@ -1063,7 +1063,7 @@ class texi =
 
 
     (** Generate the Texinfo file from a module list, 
-       in the {!Args.out_file} file. *)
+       in the {!Odoc_info.Args.out_file} file. *)
     method generate module_list =
       try
         let chanout = open_out 

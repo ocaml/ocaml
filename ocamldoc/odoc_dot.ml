@@ -119,7 +119,7 @@ class dot =
         Sys_error s ->
           raise (Failure s)
 
-    (** Generate the dot code in the file {!Args.out_file}. *)
+    (** Generate the dot code in the file {!Odoc_info.Args.out_file}. *)
     method generate (modules_list : Odoc_info.Module.t_module list) =
       if !Args.dot_types then
         self#generate_types (Odoc_info.Search.types modules_list)
