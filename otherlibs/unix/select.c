@@ -25,7 +25,7 @@ static void fdlist_to_fdset(fdlist, fdset)
 {
   value l;
   FD_ZERO(fdset);
-  for (l = fdlist; Tag_val(l) == 1; l = Field(l, 1)) {
+  for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
     FD_SET(Int_val(Field(l, 0)), fdset);
   }
 }
@@ -36,10 +36,10 @@ static value fdset_to_fdlist(fdset)
   int i;
   Push_roots(roots, 1)
 #define res roots[0]
-  res = Atom(0);
+  res = Val_int(0);
   for (i = FD_SETSIZE - 1; i >= 0; i--) {
     if (FD_ISSET(i, fdset)) {
-      value newres = alloc(2, 1);
+      value newres = alloc(2, 0);
       Field(newres, 0) = Val_int(i);
       Field(newres, 1) = res;
       res = newres;

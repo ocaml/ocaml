@@ -11,5 +11,5 @@ value unix_rewinddir(d)          /* ML */
      value d;
 {
   rewinddir((DIR *) d);
-  return Atom(0);
+  return Val_unit;
 }

@@ -11,8 +11,8 @@ value unix_socketpair(domain, type, proto) /* ML */
 {
   int sv[2];
   value res;
-  if (socketpair(socket_domain_table[Tag_val(domain)],
-                 socket_type_table[Tag_val(type)],
+  if (socketpair(socket_domain_table[Int_val(domain)],
+                 socket_type_table[Int_val(type)],
                  Int_val(proto), sv) == -1)
     uerror("socketpair", Nothing);
   res = alloc_tuple(2);

@@ -10,7 +10,7 @@ static int shutdown_command_table[] = {
 value unix_shutdown(sock, cmd)   /* ML */
      value sock, cmd;
 {
-  if (shutdown(Int_val(sock), shutdown_command_table[Tag_val(cmd)]) == -1)
+  if (shutdown(Int_val(sock), shutdown_command_table[Int_val(cmd)]) == -1)
     uerror("shutdown", Nothing);
   return Val_unit;
 }

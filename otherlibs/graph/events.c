@@ -33,8 +33,8 @@ value gr_wait_event(eventlist)
 
   mask = 0;
   poll = False;
-  while (Tag_val(eventlist) == 1) {
-    switch (Tag_val(Field(eventlist, 0))) {
+  while (eventlist != Val_int(0)) {
+    switch (Int_val(Field(eventlist, 0))) {
     case 0:                     /* Button_down */
       mask |= ButtonPressMask; break;
     case 1:                     /* Button_up */

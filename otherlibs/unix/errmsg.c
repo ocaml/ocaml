@@ -12,7 +12,7 @@ value unix_error_message(err)
      value err;
 {
   int errnum;
-  errnum = error_table[Tag_val(err)];
+  errnum = error_table[Int_val(err)];
   return copy_string(strerror(errno));
 }
 
@@ -25,7 +25,7 @@ value unix_error_message(err)
      value err;
 {
   int errnum;
-  errnum = error_table[Tag_val(err)];
+  errnum = error_table[Int_val(err)];
   if (errnum < 0 || errnum >= sys_nerr) {
     return copy_string("Unknown error");
   } else {

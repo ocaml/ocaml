@@ -29,7 +29,7 @@ value unix_getprotobyname(name)  /* ML */
 {
   struct protoent * entry;
   entry = getprotobyname(String_val(name));
-  if (entry == (struct protoent *) NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == (struct protoent *) NULL) raise_not_found();
   return alloc_proto_entry(entry);
 }
 
@@ -38,7 +38,7 @@ value unix_getprotobynumber(proto) /* ML */
 {
   struct protoent * entry;
   entry = getprotobynumber(Int_val(proto));
-  if (entry == (struct protoent *) NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == (struct protoent *) NULL) raise_not_found();
   return alloc_proto_entry(entry);
 }
 

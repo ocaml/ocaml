@@ -18,8 +18,8 @@ value unix_socket(domain, type, proto) /* ML */
      value domain, type, proto;
 {
   int retcode;
-  retcode = socket(socket_domain_table[Tag_val(domain)],
-                   socket_type_table[Tag_val(type)],
+  retcode = socket(socket_domain_table[Int_val(domain)],
+                   socket_type_table[Int_val(type)],
                    Int_val(proto));
   if (retcode == -1) uerror("socket", Nothing);
   return Val_int(retcode);

@@ -34,7 +34,7 @@ value unix_getservbyname(name, proto)  /* ML */
 {
   struct servent * entry;
   entry = getservbyname(String_val(name), String_val(proto));
-  if (entry == (struct servent *) NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == (struct servent *) NULL) raise_not_found();
   return alloc_service_entry(entry);
 }
 
@@ -43,7 +43,7 @@ value unix_getservbyport(port, proto)  /* ML */
 {
   struct servent * entry;
   entry = getservbyport(Int_val(port), String_val(proto));
-  if (entry == (struct servent *) NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == (struct servent *) NULL) raise_not_found();
   return alloc_service_entry(entry);
 }
 

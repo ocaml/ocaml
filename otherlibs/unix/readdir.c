@@ -17,6 +17,6 @@ value unix_readdir(d)            /* ML */
   directory_entry * e;
 
   e = readdir((DIR *) d);
-  if (e == (directory_entry *) NULL) mlraise(Atom(END_OF_FILE_EXN));
+  if (e == (directory_entry *) NULL) raise_end_of_file();
   return copy_string(e->d_name);
 }

@@ -18,9 +18,9 @@ static int lock_command_table[] = {
 value unix_lockf(fd, cmd, span)  /* ML */
      value fd, cmd, span;
 {
-  if (lockf(Int_val(fd), lock_command_table[Tag_val(cmd)], Long_val(span))
+  if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
       == -1) uerror("lockf", Nothing);
-  return Atom(0);
+  return Val_unit;
 }
 
 #else
@@ -48,7 +48,7 @@ value unix_lockf(fd, cmd, span)  /* ML */
     l.l_start = 0L;
     l.l_len = size;
   }
-  switch (Tag_val(cmd)) {
+  switch (Int_val(cmd)) {
   case 0: /* F_ULOCK */
     l.l_type = F_UNLCK;
     ret = fcntl(fildes, F_SETLK, &l);

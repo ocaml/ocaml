@@ -10,6 +10,6 @@ value cst_to_constr(n, tbl, size, deflt)
 {
   int i;
   for (i = 0; i < size; i++)
-    if (n == tbl[i]) return Atom(i);
-  return Atom(deflt);
+    if (n == tbl[i]) return Val_int(i);
+  return Val_int(deflt);
 }

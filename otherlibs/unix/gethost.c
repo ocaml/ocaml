@@ -39,7 +39,7 @@ static value alloc_host_entry(entry)
   res = alloc_tuple(4);
   Field(res, 0) = r[0];
   Field(res, 1) = r[1];
-  Field(res, 2) = entry->h_addrtype == PF_UNIX ? Atom(0) : Atom(1);
+  Field(res, 2) = entry->h_addrtype == PF_UNIX ? Val_int(0) : Val_int(1);
   Field(res, 3) = r[2];
   Pop_roots();
   return res;
@@ -52,7 +52,7 @@ value unix_gethostbyaddr(a)   /* ML */
   struct hostent * entry;
   in_addr.s_addr = GET_INET_ADDR(a);
   entry = gethostbyaddr((char *) &in_addr, sizeof(in_addr), 0);
-  if (entry == (struct hostent *) NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == (struct hostent *) NULL) raise_not_found();
   return alloc_host_entry(entry);
 }
 
@@ -61,7 +61,7 @@ value unix_gethostbyname(name)   /* ML */
 {
   struct hostent * entry;
   entry = gethostbyname(String_val(name));
-  if (entry == (struct hostent *) NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == (struct hostent *) NULL) raise_not_found();
   return alloc_host_entry(entry);
 }
 

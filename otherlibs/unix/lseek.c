@@ -18,7 +18,7 @@ value unix_lseek(fd, ofs, cmd)   /* ML */
 {
   long ret;
   ret = lseek(Int_val(fd), Long_val(ofs),
-                       seek_command_table[Tag_val(cmd)]);
+                       seek_command_table[Int_val(cmd)]);
   if (ret == -1) uerror("lseek", Nothing);
   return Val_long(ret);
 }

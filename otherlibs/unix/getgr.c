@@ -29,7 +29,7 @@ value unix_getgrnam(name)        /* ML */
 {
   struct group * entry;
   entry = getgrnam(String_val(name));
-  if (entry == NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == NULL) raise_not_found();
   return alloc_group_entry(entry);
 }
 
@@ -38,6 +38,6 @@ value unix_getgrgid(gid)         /* ML */
 {
   struct group * entry;
   entry = getgrgid(Int_val(gid));
-  if (entry == NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == NULL) raise_not_found();
   return alloc_group_entry(entry);
 }

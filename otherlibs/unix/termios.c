@@ -177,7 +177,7 @@ static void decode_terminal_status(src)
     case Bool:
       { int * dst = (int *) (*pc++);
         int msk = *pc++;
-        if (Tag_val(*src) != 0)
+        if (Bool_val(*src))
           *dst |= msk;
         else
           *dst &= ~msk;
@@ -245,7 +245,7 @@ value unix_tcsetattr(fd, when, arg)
     uerror("tcsetattr", Nothing);
   decode_terminal_status(&Field(arg, 0));
   if (tcsetattr(Int_val(fd),
-                when_flag_table[Tag_val(when)],
+                when_flag_table[Int_val(when)],
                 &terminal_status) == -1)
     uerror("tcsetattr", Nothing);
   return Val_unit;
@@ -273,7 +273,7 @@ static int queue_flag_table[] = {
 value unix_tcflush(fd, queue)
      value fd, queue;
 {
-  if (tcflush(Int_val(fd), queue_flag_table[Tag_val(queue)]) == -1)
+  if (tcflush(Int_val(fd), queue_flag_table[Int_val(queue)]) == -1)
     uerror("tcflush", Nothing);
   return Val_unit;
 }
@@ -285,7 +285,7 @@ static int action_flag_table[] = {
 value unix_tcflow(fd, action)
      value fd, action;
 {
-  if (tcflow(Int_val(fd), action_flag_table[Tag_val(action)]) == -1)
+  if (tcflow(Int_val(fd), action_flag_table[Int_val(action)]) == -1)
     uerror("tcflow", Nothing);
   return Val_unit;
 }

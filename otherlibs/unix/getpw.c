@@ -33,7 +33,7 @@ value unix_getpwnam(name)        /* ML */
 {
   struct passwd * entry;
   entry = getpwnam(String_val(name));
-  if (entry == (struct passwd *) NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == (struct passwd *) NULL) raise_not_found();
   return alloc_passwd_entry(entry);
 }
 
@@ -42,6 +42,6 @@ value unix_getpwuid(uid)         /* ML */
 {
   struct passwd * entry;
   entry = getpwuid(Int_val(uid));
-  if (entry == (struct passwd *) NULL) mlraise(Atom(NOT_FOUND_EXN));
+  if (entry == (struct passwd *) NULL) raise_not_found();
   return alloc_passwd_entry(entry);
 }
