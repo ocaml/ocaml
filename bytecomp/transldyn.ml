@@ -17,6 +17,7 @@
 
 open Asttypes
 open Types
+open Typedynt
 open Typedtree
 open Longident
 open Lambda
@@ -57,7 +58,7 @@ let dummy_type_decl =
     type_variance = [] }
 
 let extract_type_definitions whole_env ty0 =
-  let r_env = ref Env.empty in
+  let r_env = ref Env.empty and r_sig = ref [] in
   let rec all ty = Btype.map_type_paths one ty
   and one path =
     let name = Path.name path in
@@ -91,11 +92,23 @@ let extract_type_definitions whole_env ty0 =
             end;
           type_variance = decl.type_variance }
       in
-      r_env := Env.add_type id decl' !r_env;
+      r_sig := Tsig_type (id, decl') :: !r_sig
     end;
     path'
   in
-  !r_env, all ty0
+  let ty' = all ty0 in
+
+  (* FIXME: if [ty'] contains free variables, they should be recorded as
+     [type_params]. (Otherwise weird things happens to them.) *)
+
+  let decl' =
+    { type_params = [];
+      type_arity = 0;
+      type_kind = Type_abstract;
+      type_manifest = Some ty';
+      type_variance = [] }
+  in
+  Tsig_type (interesting_ident, decl') :: !r_sig
 
 
 (* From a type expression, produce code that builds a value that describes
@@ -103,11 +116,11 @@ let extract_type_definitions whole_env ty0 =
 let make_type_repr_code whole_env ty0 =
   let ty1 = Ctype.correct_levels ty0 in
   Ctype.normalize_type whole_env ty1;
-  let extracted_env, ty2 = extract_type_definitions whole_env ty1 in
-  let s =
-    Marshal.to_string (extracted_env, ty2 : Ctype.reified_type_data) []
+  let sg = extract_type_definitions whole_env ty1 in
+  let bytes =
+    Marshal.to_string (sg : reified_type_data) []
   in
-  Lconst (Const_base (Const_string s))
+  Lconst (Const_base (Const_string bytes))
 
 
 (* From a module type expression, produce code that builds a value that

@@ -51,6 +51,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/includemod.cmo typing/parmatch.cmo \
   typing/typetexp.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
+  typing/typedynt.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \

@@ -208,6 +208,3 @@ val self_type: class_type -> type_expr
 val class_type_arity: class_type -> int
 val arity: type_expr -> int
         (* Return the arity (as for curried functions) of the given type. *)
-
-(* Reified types *)
-type reified_type_data = Env.t * Types.type_expr

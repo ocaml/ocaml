@@ -6,6 +6,7 @@ path.cmi: ident.cmi
 predef.cmi: ident.cmi path.cmi types.cmi 
 printtyp.cmi: ident.cmi longident.cmi outcometree.cmi path.cmi types.cmi 
 subst.cmi: ident.cmi path.cmi types.cmi 
+typedynt.cmi: ident.cmi types.cmi 
 types.cmi: asttypes.cmi ident.cmi path.cmi primitive.cmi 
 btype.cmo: misc.cmi path.cmi types.cmi btype.cmi 
 btype.cmx: misc.cmx path.cmx types.cmx btype.cmi 
@@ -19,8 +20,10 @@ ctype.cmx: asttypes.cmi btype.cmx clflags.cmx env.cmx ident.cmx longident.cmx \
     misc.cmx path.cmx predef.cmx subst.cmx types.cmx ctype.cmi 
 datarepr.cmo: asttypes.cmi misc.cmi predef.cmi types.cmi datarepr.cmi 
 datarepr.cmx: asttypes.cmi misc.cmx predef.cmx types.cmx datarepr.cmi 
-dynamics.cmo: ctype.cmi printtyp.cmi dynamics.cmi 
-dynamics.cmx: ctype.cmx printtyp.cmx dynamics.cmi 
+dynamics.cmo: env.cmi ident.cmi printtyp.cmi typedynt.cmi types.cmi \
+    dynamics.cmi 
+dynamics.cmx: env.cmx ident.cmx printtyp.cmx typedynt.cmx types.cmx \
+    dynamics.cmi 
 env.cmo: asttypes.cmi btype.cmi config.cmi datarepr.cmi ident.cmi \
     longident.cmi misc.cmi path.cmi predef.cmi subst.cmi tbl.cmi types.cmi \
     env.cmi 
@@ -49,5 +52,7 @@ subst.cmo: btype.cmi ident.cmi misc.cmi path.cmi tbl.cmi types.cmi subst.cmi
 subst.cmx: btype.cmx ident.cmx misc.cmx path.cmx tbl.cmx types.cmx subst.cmi 
 tbl.cmo: tbl.cmi 
 tbl.cmx: tbl.cmi 
+typedynt.cmo: ident.cmi types.cmi typedynt.cmi 
+typedynt.cmx: ident.cmx types.cmx typedynt.cmi 
 types.cmo: asttypes.cmi ident.cmi misc.cmi path.cmi primitive.cmi types.cmi 
 types.cmx: asttypes.cmi ident.cmx misc.cmx path.cmx primitive.cmx types.cmi 

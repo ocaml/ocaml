@@ -27,7 +27,7 @@ LOCAL_MODULES = dynamics
 ROOT = ../..
 UTILS_MODULES = config misc tbl
 PARSING_MODULES = longident
-TYPING_MODULES = path ident primitive types btype subst ctype datarepr env predef printtyp
+TYPING_MODULES = path ident primitive types typedynt btype subst ctype datarepr env predef printtyp
 IMPORTED_MODULES = $(UTILS_MODULES) $(PARSING_MODULES) $(TYPING_MODULES)
 IMPORTED_INTERFACES = $(IMPORTED_MODULES) asttypes outcometree
 CMIFILES = $(IMPORTED_MODULES:=.cmi) $(LOCAL_MODULES:=.cmi)

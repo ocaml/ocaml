@@ -13,7 +13,7 @@
 (* $Id$ *)
 
 type type_bytes = string
-type type_data = Ctype.reified_type_data
+type type_data = Typedynt.reified_type_data
 
 type module_type_data
 
@@ -40,15 +40,36 @@ let coerce_internal d expected_type =
   else raise (Type_error (sent_type, expected_type))
 *)
 
+let received_ident = Ident.create_persistent "received"
+let expected_ident = Ident.create_persistent "expected"
+
+let get_interesting_type env module_ident =
+  let decl =
+    Env.find_type (Path.Pdot (Path.Pident module_ident,
+                              Ident.name Typedynt.interesting_ident,
+                              Path.nopos))
+                   env
+  in
+  match decl.Types.type_manifest with
+  | None -> assert false
+  | Some ty -> ty
+
 let coerce_internal d expected_type_bytes =
-  let (sent_type_bytes, v : type_bytes * anything) = Obj.magic (d : dyn) in
-  let (sent_env, sent_type : type_data) =
-    Marshal.from_string sent_type_bytes 0
-  and (expected_env, expected_type : type_data) =
+  let (received_type_bytes, v : type_bytes * anything) = Obj.magic (d : dyn) in
+  let (received_sig : type_data) =
+    Marshal.from_string received_type_bytes 0
+  and (expected_sig : type_data) =
     Marshal.from_string expected_type_bytes 0
   in
+  let env =
+    Env.add_module received_ident (Types.Tmty_signature received_sig)
+        (Env.add_module expected_ident (Types.Tmty_signature expected_sig)
+            Env.empty)
+  in
+  let received_type = get_interesting_type env received_ident
+  and expected_type = get_interesting_type env expected_ident in
   Format.pp_print_string Format.err_formatter "%% RECEIVED ";
-  Printtyp.type_expr Format.err_formatter sent_type;
+  Printtyp.type_expr Format.err_formatter received_type;
   Format.pp_force_newline Format.err_formatter ();
   Format.pp_print_string Format.err_formatter "%% EXPECTED ";
   Printtyp.type_expr Format.err_formatter expected_type;
@@ -57,8 +78,7 @@ let coerce_internal d expected_type_bytes =
   flush stderr;
   if false
   then v
-  else raise (Type_error ((sent_env, sent_type),
-                          (expected_env, expected_type)))
+  else raise (Type_error (received_sig, expected_sig))
 
 let coerce_module d expected_module_type =
   let (actual_module_type, m) = Obj.magic (d : dynamically_typed_module) in
