@@ -358,6 +358,7 @@ let file_dependencies source_file =
 let usage = "Usage: ocamldep [-I <dir>] <files>"
 
 let _ =
+  Clflags.classic := false;
   Arg.parse [
      "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
            "<dir>  Add <dir> to the list of include directories"
