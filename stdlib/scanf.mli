@@ -47,7 +47,7 @@ end;;
 val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** [fscanf inchan format f] reads tokens from the channel [inchan] according
    to the format string [format], converts these tokens to values, and
-   applies these values to the function [f].
+   applies the function [f] to these values.
    The result of this application of [f] is the result of the whole construct.
 
    The format is a character string which contains three types of
