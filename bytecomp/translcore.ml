@@ -314,6 +314,8 @@ let rec transl_exp e =
             Lsend(lmet, lobj, largs @ transl_list args)
         | Levent(Lsend(lmet, lobj, largs), _) ->
             Lsend(lmet, lobj, largs @ transl_list args)
+        | Lapply(lexp, largs) ->
+            Lapply(lexp, largs @ transl_list args)
         | lexp ->
             Lapply(lexp, transl_list args) in
       event_after e lam
@@ -447,20 +449,8 @@ let rec transl_exp e =
         | Tmeth_val id  -> id
       in
       event_after e (Lsend(Lvar met_id, transl_exp expr, []))
-  | Texp_new (cl, cl_decl) when Ctype.class_type_arity cl_decl.cty_type = 0 ->
-      Lapply(Translobj.oo_prim "object_from_struct", [transl_path cl])
-(*
-      let cl_info = Ident.create "class_info" in
-      let self = Ident.create "self" in
-      Llet(Strict, cl_info, transl_path cl,
-      Llet(Strict, self,
-           Lapply(oo_prim "copy", [Lprim(Pfield 0, [Lvar cl_info])]),
-      Lsequence(Lapply(oo_prim "run_initializers",
-                       [Lvar self; Lprim(Pfield 2, [Lvar cl_info])]),
-                Lvar self)))
-*)
   | Texp_new (cl, _) ->
-      Lprim(Pfield 0, [transl_path cl])
+      Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit])
   | Texp_instvar(path_self, path) ->
       Lprim(Parrayrefu Paddrarray , [transl_path path_self; transl_path path])
   | Texp_setinstvar(path_self, path, expr) ->

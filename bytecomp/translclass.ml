@@ -83,79 +83,81 @@ let transl_super tbl meths inh_methods rem =
        end)
     inh_methods rem
 
-let rec build_object_init obj inh_init cl =
+let create_object cl obj init =
+  let obj' = Ident.create "self" in
+  let (inh_init, obj_init) = init obj' in
+  (inh_init,
+   Llet(Strict, obj', Lifthenelse(Lvar obj, Lvar obj,
+                                  Lapply (oo_prim "create_object", [Lvar cl])),
+        Lsequence(obj_init,
+        Lsequence(Lifthenelse(Lvar obj, lambda_unit,
+                              Lapply (oo_prim "run_initializers",
+                                      [Lvar obj'; Lvar cl])),
+                  Lvar obj'))))
+
+let rec build_object_init cl_table obj params inh_init cl =
   match cl.cl_desc with
     Tclass_ident path ->
       let obj_init = Ident.create "obj_init" in
       (obj_init::inh_init, Lapply(Lvar obj_init, [Lvar obj]))
   | Tclass_structure str ->
-      List.fold_right
-        (fun field (inh_init, obj_init) ->
-           match field with
-             Cf_inher (cl, _, _) ->
-               let (inh_init, obj_init') = build_object_init obj inh_init cl in
-               (inh_init, lsequence obj_init' obj_init)
-           | Cf_val (_, id, exp) ->
-               (inh_init, lsequence (set_inst_var obj id exp) obj_init)
-           | Cf_meth _ | Cf_init _ ->
-               (inh_init, obj_init)
-           | Cf_let (rec_flag, defs, vals) ->
-               (inh_init,
-                Translcore.transl_let rec_flag defs
-                  (List.fold_right
-                     (fun (id, expr) rem ->
-                        lsequence (Lifused(id, set_inst_var obj id expr)) rem)
-                     vals obj_init)))
-        str.cl_field
-        (inh_init, lambda_unit)
-  | Tclass_fun (pat, vals, cl) ->
-      let build params rem =
-        let param = name_pattern "param" [pat, ()] in
-        let rem =
+      create_object cl_table obj (fun obj ->
+        let (inh_init, obj_init) =
           List.fold_right
-            (fun (id, expr) rem ->
-              lsequence (Lifused (id, set_inst_var obj id expr)) rem)
-            vals rem
+            (fun field (inh_init, obj_init) ->
+               match field with
+                 Cf_inher (cl, _, _) ->
+                   let (inh_init, obj_init') =
+                     build_object_init cl_table obj [] inh_init cl
+                   in
+                   (inh_init, lsequence obj_init' obj_init)
+               | Cf_val (_, id, exp) ->
+                   (inh_init, lsequence (set_inst_var obj id exp) obj_init)
+               | Cf_meth _ | Cf_init _ ->
+                   (inh_init, obj_init)
+               | Cf_let (rec_flag, defs, vals) ->
+                   (inh_init,
+                    Translcore.transl_let rec_flag defs
+                      (List.fold_right
+                         (fun (id, expr) rem ->
+                            lsequence (Lifused(id, set_inst_var obj id expr))
+                                      rem)
+                         vals obj_init)))
+            str.cl_field
+            (inh_init, lambda_unit)
         in
-        Lfunction (Curried, param::params,
-                   Matching.for_function
-                     pat.pat_loc None (Lvar param) [pat, rem])
+        (inh_init,
+         List.fold_right
+           (fun (id, expr) rem ->
+              lsequence (Lifused (id, set_inst_var obj id expr)) rem)
+           params obj_init))
+  | Tclass_fun (pat, vals, cl) ->
+      let (inh_init, obj_init) =
+        build_object_init cl_table obj (vals @ params) inh_init cl
       in
-      let (inh_init, obj_init) =  build_object_init obj inh_init cl in
       (inh_init,
+       let build params rem =
+         let param = name_pattern "param" [pat, ()] in
+         Lfunction (Curried, param::params,
+                    Matching.for_function
+                      pat.pat_loc None (Lvar param) [pat, rem])
+       in
        begin match obj_init with
          Lfunction (Curried, params, rem) -> build params rem
        | rem                              -> build [] rem
        end)
   | Tclass_apply (cl, exprs) ->
-      let (inh_init, obj_init) =  build_object_init obj inh_init cl in
+      let (inh_init, obj_init) =
+        build_object_init cl_table obj params inh_init cl
+      in
       (inh_init, lapply obj_init (List.map transl_exp exprs))
   | Tclass_let (rec_flag, defs, vals, cl) ->
-      let (inh_init, obj_init) =  build_object_init obj inh_init cl in
-      (inh_init,
-       Translcore.transl_let rec_flag defs
-         (List.fold_right
-            (fun (id, expr) rem ->
-              lsequence (Lifused(id, set_inst_var obj id expr)) rem)
-            vals obj_init))
+      let (inh_init, obj_init) =
+        build_object_init cl_table obj (vals @ params) inh_init cl
+      in
+      (inh_init, Translcore.transl_let rec_flag defs obj_init)
   | Tclass_constraint (cl, vals, pub_meths, concr_meths) ->
-      build_object_init obj inh_init cl
-
-(*
-let inherited_values vals =
-  Lconst
-    (List.fold_right
-       (fun (v, _) rem ->
-          Const_block(0, [Const_base (Const_string v); rem]))
-       vals (Const_pointer 0))
-
-let inherited_meths methods =
-  Lconst
-    (List.fold_right
-       (fun v rem ->
-          Const_block(0, [Const_base (Const_string v); rem]))
-       methods (Const_pointer 0))
-*)
+      build_object_init cl_table obj params inh_init cl
 
 let bind_method tbl public_methods lab id cl_init =
   if List.mem lab public_methods then
@@ -175,10 +177,8 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
         obj_init::inh_init ->
           (inh_init,
            Llet (Strict, obj_init, 
-(*                 Lapply(oo_prim "get_class", [Lvar cla; transl_path path]), *)
-                 Lapply(Lprim(Pfield 1,
-                              [Lapply(Lprim(Pfield 1, [transl_path path]),
-                                      [Lvar cla])]), [lambda_unit]),
+                 Lapply(Lprim(Pfield 1, [transl_path path]),
+                        [Lvar cla]),
                  cl_init))
       | _ ->
           assert false
@@ -258,28 +258,6 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
                              transl_meth_list (Concr.elements concr_meths)]),
                    cl_init))
 
-let rec make_params =
-  function
-    0 -> []
-  | n -> (Ident.create "param") :: (make_params (n - 1))
-
-let creator arity cla obj_init =
-  let params = make_params arity in
-  let params' = List.map (fun p -> Lvar p) params in
-  let self = Ident.create "self" in
-  let rem = Lvar self in
-  let rem =
-    if arity = 0 then rem else
-    Lsequence(Lapply (oo_prim "run_initializers", [Lvar self; Lvar cla]),
-              rem)
-  in
-  let body =
-    Llet(Strict, self,
-         Lapply (oo_prim "create_object", [Lvar cla]),
-         Lsequence(Lapply (Lvar obj_init, (Lvar self) :: params'),
-                   rem))
-  in
-  if arity = 0 then body else Lfunction (Curried, params, body)
 
 (*
    XXX Il devrait etre peu couteux d'ecrire des classes :
@@ -292,99 +270,15 @@ let creator arity cla obj_init =
    let ???) ?
 *)
 
-(*
-let rec simpl_class =
-  function
-    Tclass_ident path     -> true
-  | Tclass_structure _    -> false
-  | Tclass_fun (_, _, cl) -> simpl_class cl
-  | Tclass_apply (cl, _)  -> simpl_class cl
-  | Tclass_constraint (cl, _, _, _) -> simpl_class cl
-*)
-let rec transl_var_copy_rec inh_init self offset templ cl rem =
-  match cl.cl_desc with
-    Tclass_ident path ->
-      begin match inh_init with
-        obj_init::inh_init ->
-          (inh_init, lsequence (Lapply (Lvar obj_init, [Lvar self])) rem)
-      | _ ->
-          assert false
-      end
-  | Tclass_structure str ->
-      List.fold_right (fun field (inh_init, rem) ->
-        match field with
-          Cf_inher (cl, _, _) ->
-            transl_var_copy_rec inh_init self offset templ cl rem
-        | Cf_val (name, id, expr) ->
-            (inh_init, lsequence (copy_inst_var self id expr templ offset) rem)
-        | Cf_let (rec_flag, defs, vals) ->
-            (inh_init,
-             Translcore.transl_let rec_flag defs
-               (List.fold_right
-                  (fun (id, expr) rem ->
-                    lsequence (Lifused(id,
-                                       copy_inst_var self id expr
-                                         templ offset))
-                              rem)
-                  vals rem))
-        | Cf_init _ | Cf_meth _ ->
-            (inh_init, rem))
-        str.cl_field
-        (inh_init, rem)
-  | Tclass_constraint (cl, _, _, _) ->
-      transl_var_copy_rec inh_init self offset templ cl rem
-  | Tclass_fun _ | Tclass_apply _ | Tclass_let _ ->
-      raise Exit
-
-let transl_var_copy inh_init cl_id cla cl =
-  try
-    let templ = Ident.create "template" in
-    let offset = Ident.create "offset" in
-    let self = Ident.create "self" in
-    let (inh_init, body) =
-      transl_var_copy_rec inh_init self offset templ cl lambda_unit
-    in
-    assert (inh_init = []);
-    Lfunction (Curried, [Ident.create "any"],
-               Llet(StrictOpt, templ, Lprim(Pfield 0, [Lvar cl_id]),
-               Llet(StrictOpt, offset,
-                    Lprim(Psubint,
-                          [Lprim(Pfield 0, [Lprim(Pfield 2, [Lvar cl_id])]);
-                           Lprim(Pfield 0, [Lvar cla])]),
-               Lfunction (Curried, [self], body))))
-  with Exit ->
-    Lapply(oo_prim "copy_variables", [Lvar cl_id; Lvar cla])
-
 let transl_class cl_id arity pub_meths cl =
-  let obj = Ident.create "self" in
-  let (inh_init, obj_init) = build_object_init obj [] cl in
   let cla = Ident.create "class" in
-  let obj_init =
-    if arity = 0 then
-      Lprim(Pmakeblock(0, Immutable),
-            [lfunction [obj] obj_init;
-(*
-              Lapply(oo_prim "copy_variables", [Lvar cl_id; Lvar cla])])
-*)
-        transl_var_copy (List.rev inh_init) cl_id cla cl])
-    else
-      let init = Ident.create "init" in
-      Llet(Strict, init, lfunction [obj] obj_init,
-           Lprim(Pmakeblock(0, Immutable),
-                 [Lvar init; Lfunction (Curried, [Ident.create "any"],
-                                        Lvar init)]))
-  in
+  let obj = Ident.create "self" in
+  let (inh_init, obj_init) = build_object_init cla obj [] [] cl in
+  let obj_init = lfunction [obj] obj_init in
   let (inh_init, cl_init) =
     build_class_init cla pub_meths true (List.rev inh_init) obj_init cl
   in
   assert (inh_init = []);
-(*
-  Lapply (oo_prim "create_class",
-          [Lvar cl_id;
-           transl_meth_list pub_meths;
-           Lfunction(Curried, [cla; initial], cl_init);
-           creator arity])
-*)
   let table = Ident.create "table" in
   let class_init = Ident.create "class_init" in
   let obj_init = Ident.create "obj_init" in
@@ -392,11 +286,10 @@ let transl_class cl_id arity pub_meths cl =
        Lapply (oo_prim "create_table", [transl_meth_list pub_meths]),
   Llet(Strict, class_init,
        Lfunction(Curried, [cla], cl_init),
-  Llet(Strict, obj_init,
-       Lprim(Pfield 0, [Lapply(Lvar class_init, [Lvar table])]),
+  Llet(Strict, obj_init, Lapply(Lvar class_init, [Lvar table]),
   Lsequence(Lapply (oo_prim "init_class", [Lvar table]),
             Lprim(Pmakeblock(0, Immutable),
-                  [creator arity table obj_init;
+                  [Lvar obj_init;
                    Lvar class_init;
                    Lvar table])))))
 
