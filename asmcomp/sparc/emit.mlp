@@ -466,7 +466,7 @@ let rec emit_instr i dslot =
         if !arch_version = SPARC_V9 then begin
           let comp = name_for_int_movcc cmp in
           `	mov	0, {emit_reg i.res.(0)}\n`;
-          `	mov{emit_string comp}	%xcc, 1, {emit_reg i.res.(0)}\n`
+          `	mov{emit_string comp}	%icc, 1, {emit_reg i.res.(0)}\n`
         end else begin
           let comp = name_for_int_comparison cmp
           and lbl = new_label() in
