@@ -21,6 +21,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "printexc.h"
 #include "signals.h"
 #include "stacks.h"
 

@@ -25,6 +25,7 @@
 #ifdef HAS_UI
 #include "ui.h"
 #endif
+#include "printexc.h"
 
 struct stringbuf {
   char * ptr;

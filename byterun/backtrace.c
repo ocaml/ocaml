@@ -15,6 +15,7 @@
 /* Stack backtrace for uncaught exceptions */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include "config.h"
 #ifdef HAS_UNISTD
@@ -34,8 +35,8 @@
 
 int backtrace_active = 0;
 int backtrace_pos = 0;
+code_t * backtrace_buffer = NULL;
 #define BACKTRACE_BUFFER_SIZE 1024
-static code_t backtrace_buffer[BACKTRACE_BUFFER_SIZE];
 
 /* Location of fields in the Instruct.debug_event record */
 enum { EV_POS = 0,
@@ -51,6 +52,10 @@ void stash_backtrace(code_t pc, value * sp)
   code_t end_code = start_code + code_size;
   if (pc != NULL) pc = pc - 1;
   if (backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+  if (backtrace_buffer == NULL) {
+    backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+    if (backtrace_buffer == NULL) return;
+  }
   backtrace_buffer[backtrace_pos++] = pc;
   for (/*nothing*/; sp < trapsp; sp++) {
     code_t p = (code_t) *sp;
