@@ -389,6 +389,7 @@ source type may be omitted.
 \begin{caml_example}
 type 'a wlist = [`Nil | `Cons of 'a * 'a wlist | `Snoc of 'a wlist * 'a];;
 let wlist_of_vlist  l = (l : 'a vlist :> 'a wlist);;
+let open_vlist l = (l : 'a vlist :> [> 'a vlist]);;
 fun x -> (x :> [`A|`B|`C]);;
 \end{caml_example}
 
