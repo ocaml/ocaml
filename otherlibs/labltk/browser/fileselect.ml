@@ -10,50 +10,43 @@ open Tk
 
 (**** Memoized rexgexp *)
 
-let regexp = (new Jg_memo.c fun:Str.regexp)#get
+let (~) = Jg_memo.fast fun:Str.regexp
 
 (************************************************************ Path name *)
 
 let parse_filter src = 
   (* replace // by / *)
-  let s = global_replace pat:(regexp "/+") with:"/" src in
+  let s = global_replace pat:~"/+" with:"/" src in
   (* replace /./ by / *)
-  let s = global_replace pat:(regexp "/\./") with:"/" s in
+  let s = global_replace pat:~"/\./" with:"/" s in
   (* replace hoge/../ by "" *)
   let s = global_replace s
-      pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./")
-      with:"" in
+      pat:~"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./" with:"" in
   (* replace hoge/..$ by *)
   let s = global_replace s
-      pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$")
-      with:"" in
+      pat:~"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$" with:"" in
   (* replace ^/../../ by / *)
-  let s = global_replace pat:(regexp "^\(/\.\.\)+/") with:"/" s in
-  if string_match s pat:(regexp "^\([^\*?[]*/\)\(.*\)") pos:0 then 
+  let s = global_replace pat:~"^\(/\.\.\)+/" with:"/" s in
+  if string_match s pat:~"^\([^\*?[]*/\)\(.*\)" pos:0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in
       dirs, ptrn
   else "", s
 
-let fixpoint fun:f v =
-  let v1 = ref v and v2 = ref (f v) in
-  while !v1 <> !v2 do v1 := !v2; v2 := f !v2 done;
-  !v1
+let rec fixpoint fun:f v =
+  let v' = f v in
+  if v = v' then v else fixpoint fun:f v'
 
 let unix_regexp s =
-  let s = Str.global_replace pat:(regexp "[$^.+]") with:"\\\\\\0" s in
-  let s = Str.global_replace pat:(regexp "\\*") with:".*" s in
-  let s = Str.global_replace pat:(regexp "\\?") with:".?" s in
+  let s = Str.global_replace pat:~"[$^.+]" with:"\\\\\\0" s in
+  let s = Str.global_replace pat:~"\\*" with:".*" s in
+  let s = Str.global_replace pat:~"\\?" with:".?" s in
   let s =
-    fixpoint s fun:
-      begin fun s ->
-        Str.global_replace s
-          pat:(regexp "\\({.*\\),\\(.*}\\)")
-          with:"\\1\\|\\2"
-      end in
+    fixpoint s
+      fun:(Str.replace_first pat:~"\\({.*\\),\\(.*}\\)" with:"\\1\\|\\2") in
   let s =
-    Str.global_replace pat:(regexp "{\\(.*\\)}") with:"\\(\\1\\)" s in
+    Str.global_replace pat:~"{\\(.*\\)}" with:"\\(\\1\\)" s in
   Str.regexp s
 
 let exact_match s :pat =
@@ -104,7 +97,7 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
 
   let configure :filter =
     let filter =
-      if string_match pat:(regexp "^/.*") filter pos:0
+      if string_match pat:~"^/.*" filter pos:0
       then filter
       else !current_dir ^ "/" ^ filter
     in

@@ -96,7 +96,7 @@ let get_files_in_directory dir =
 let rec get_directories_in_files path = function
     [] -> []
   | x::xs -> 
-      if try (stat name:(path ^ x)).st_kind = S_DIR with _ -> false then
+      if try (stat (path ^ x)).st_kind = S_DIR with _ -> false then
         x::(get_directories_in_files path xs)
       else get_directories_in_files path xs
 
@@ -104,7 +104,7 @@ let remove_directories dirname =
   let rec remove = function
     [] -> []
   | x :: xs ->
-    if try (stat name:(dirname ^ x)).st_kind = S_DIR with _ -> true then 
+    if try (stat (dirname ^ x)).st_kind = S_DIR with _ -> true then 
       remove xs
     else  
       x :: (remove xs)

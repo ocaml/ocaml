@@ -234,19 +234,20 @@ let indent_line =
   let ins = `Mark"insert" and reg = Str.regexp "[ \t]*" in
   fun tw ->
     let `Linechar(l,c) = Text.index tw index:(ins,[])
-    and line = Text.get tw start:(ins,[`Linestart]) end:(ins,[]) in
+    and line = Text.get tw start:(ins,[`Linestart]) end:(ins,[`Lineend]) in
     Str.string_match pat:reg line pos:0;
-    if Str.match_end () < c then
-      Text.insert tw index:(ins,[]) text:"\t"
-    else let indent =
+    let len = Str.match_end () in
+    if len < c then Text.insert tw index:(ins,[]) text:"\t" else
+    let width = string_width (Str.matched_string line) in
+    Text.mark_set tw mark:"insert" index:(ins,[`Linestart;`Char len]);
+    let indent =
       if l <= 1 then 2 else
       let previous =
         Text.get tw start:(ins,[`Line(-1);`Linestart])
           end:(ins,[`Line(-1);`Lineend]) in
       Str.string_match pat:reg previous pos:0;
       let previous = Str.matched_string previous in
-      let width = string_width line
-      and width_previous = string_width previous in
+      let width_previous = string_width previous in
       if  width_previous <= width then 2 else width_previous - width
     in
     Text.insert tw index:(ins,[]) text:(String.make len:indent ' ')
@@ -488,6 +489,7 @@ class editor :top :menus = object (self)
     List.iter
       [ [`Control], "s", (fun () -> Jg_text.search_string current_tw);
         [`Control], "g", (fun () -> goto_line current_tw);
+        [`Alt], "s", self#save_file;
         [`Alt], "x", (fun () -> send_phrase (List.hd windows));
         [`Alt], "l", self#lex;
         [`Alt], "t", self#typecheck ]
@@ -506,7 +508,7 @@ class editor :top :menus = object (self)
     file_menu#add_command "Open File..." command:self#open_file;
     file_menu#add_command "Reopen"
       command:(fun () -> self#load_text [(List.hd windows).name]);
-    file_menu#add_command "Save File" command:self#save_file;
+    file_menu#add_command "Save File" command:self#save_file accelerator:"M-s";
     file_menu#add_command "Save As..." underline:5
       command:begin fun () ->
         let txt = List.hd windows in

@@ -75,16 +75,10 @@ let load_lambda lam =
 let rec print_items env = function
     Tsig_value(id, decl)::rem ->
       open_box 2;
+      Printtyp.value_description id decl;
       begin match decl.val_kind with
-        Val_prim p ->
-          print_string "external "; Printtyp.ident id;
-          print_string " :"; print_space();
-          Printtyp.type_scheme decl.val_type; print_space();
-          print_string "= "; Primitive.print_description p
+        Val_prim _ -> ()
       | _ ->
-          print_string "val "; Printtyp.ident id;
-          print_string " :"; print_space();
-          Printtyp.type_scheme decl.val_type;
           print_string " ="; print_space();
           print_value env (Symtable.get_global_value id) decl.val_type
       end;

@@ -3,6 +3,10 @@
 open Tk
 open Jg_tk
 
+(* Here again, memoize regexps *)
+
+let (~) = Jg_memo.fast fun:Str.regexp
+
 (* Nice history class. May reuse *)
 
 class ['a] history () = object
@@ -105,6 +109,7 @@ object (self)
         end:(`Mark"insert",[]) in
     h#add s;
     Text.insert textw index:(`Mark"insert",[]) text:"\n";
+    Text.yview_index textw index:(`Mark"insert",[]);
     self#send s;
     self#send "\n"
   method private paste ev =
@@ -162,11 +167,11 @@ let may_exec prog =
 
 let f :prog :title =
   let progargs =
-    List.filter pred:((<>) "") (Str.split sep:(Str.regexp " ") prog) in
+    List.filter pred:((<>) "") (Str.split sep:~" " prog) in
   if progargs = [] then () else
   let prog = List.hd progargs in
   let path = try Sys.getenv "PATH" with Not_found -> "/bin:/usr/bin" in
-  let exec_path = Str.split sep:(Str.regexp":") path in
+  let exec_path = Str.split sep:~":" path in
   let exists =
     if not (Filename.is_implicit prog) then may_exec prog else
     List.exists exec_path
@@ -185,10 +190,9 @@ let f :prog :title =
   pack [sb] fill:`Y side:`Right;
   pack [tw] fill:`Both expand:true side:`Left;
   pack [frame] fill:`Both expand:true;
-  let reg = Str.regexp "TERM=" in
   let env = Array.map (Unix.environment ()) fun:
       begin fun s ->
-        if Str.string_match pat:reg s pos:0 then "TERM=dumb" else s
+        if Str.string_match pat:~"TERM=" s pos:0 then "TERM=dumb" else s
       end in
   let load_path =
     List2.flat_map !Config.load_path fun:(fun dir -> ["-I"; dir]) in

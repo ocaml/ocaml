@@ -95,6 +95,7 @@ let tag ?(:start=tstart) ?(:end=tend) tw =
       | SHARP
           -> "infix"
       | LABEL _
+      | LABELID _
       | QUESTION
           -> "label"
       | UIDENT _ -> "uident"

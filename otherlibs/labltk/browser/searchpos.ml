@@ -13,6 +13,8 @@ open Searchid
 
 (* auxiliary functions *)
 
+let (~) = Jg_memo.fast fun:Str.regexp
+
 let lines_to_chars n in:s =
   let l = String.length s in
   let rec ltc n :pos =
@@ -453,7 +455,7 @@ and view_decl_menu lid :kind :env :parent =
     Format.close_box (); Format.print_flush ();
     Format.set_formatter_output_functions out:fo flush:ff;
     Format.set_margin margin;
-    let l = Str.split sep:(Str.regexp "\n") buf#get in
+    let l = Str.split sep:~"\n" buf#get in
     let font =
       let font =
         Option.get Widget.default_toplevel name:"font" class:"Font" in
@@ -543,7 +545,7 @@ let view_type_menu kind :env :parent =
       Format.close_box (); Format.print_flush ();
       Format.set_formatter_output_functions out:fo flush:ff;
       Format.set_margin margin;
-      let l = Str.split sep:(Str.regexp "\n") buf#get in
+      let l = Str.split sep:~"\n" buf#get in
       let font =
         let font =
           Option.get Widget.default_toplevel name:"font" class:"Font" in

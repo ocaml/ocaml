@@ -292,9 +292,9 @@ type stats =
 
         (* The informations returned by the [stat] calls. *)
 
-val stat : name:string -> stats
+val stat : string -> stats
         (* Return the information for the named file. *)
-val lstat : name:string -> stats
+val lstat : string -> stats
         (* Same as [stat], but in case the file is a symbolic link,
            return the information for the link itself. *)
 val fstat : file_descr -> stats
@@ -304,7 +304,7 @@ val fstat : file_descr -> stats
 
 (*** Operations on file names *)
 
-val unlink : name:string -> unit
+val unlink : string -> unit
         (* Removes the named file *)
 val rename : old:string -> new:string -> unit
         (* [rename old new] changes the name of a file from [old] to [new]. *)
@@ -461,7 +461,7 @@ val close_process_full: in_channel * out_channel * in_channel -> process_status
 val symlink : src:string -> dst:string -> unit
         (* [symlink source dest] creates the file [dest] as a symbolic link
            to the file [source]. *)
-val readlink : name:string -> string
+val readlink : string -> string
         (* Read the contents of a link. *)
 
 

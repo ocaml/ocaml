@@ -1,17 +1,21 @@
 (* $Id$ *)
 
-class ['a,'b] c fun:(f : 'a -> 'b) = object
-  val hash = Hashtbl.create 7
-  method get key =
-    try Hashtbl.find hash :key
+type ('a, 'b) assoc_list =
+    Nil
+  | Cons of 'a * 'b * ('a, 'b) assoc_list
+
+let rec assq :key = function
+    Nil -> raise Not_found
+  | Cons (a, b, l) ->
+      if key == a then b else assq :key l
+
+let fast fun:f =
+  let memo = ref Nil in
+  fun key ->
+    try assq :key !memo
     with Not_found ->
       let data = f key in
-      Hashtbl.add hash :key :data;
+      memo := Cons(key, data, !memo);
       data
-  method clear = Hashtbl.clear hash
-  method reget key =
-    Hashtbl.remove :key hash;
-    let data = f key in
-    Hashtbl.add hash :key :data;
-    data
-end
+  
+  
