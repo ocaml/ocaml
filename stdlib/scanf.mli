@@ -117,7 +117,9 @@ val bscanf :
    - [s]: reads a string argument (by default strings end with a space).
    - [S]: reads a delimited string argument (delimiters and special
      escaped characters follow the lexical conventions of Caml).
-   - [c]: reads a single character.
+   - [c]: reads a single character. To test the current input character
+     without reading it, specify a null field width, i.e. use
+     specification [%0c].
    - [C]: reads a single delimited character (delimiters and special
      escaped characters follow the lexical conventions of Caml).
    - [f], [e], [E], [g], [G], [F]: reads an optionally signed
