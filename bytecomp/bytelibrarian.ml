@@ -27,7 +27,12 @@ let copy_compunit ic oc compunit =
   seek_in ic compunit.cu_pos;
   compunit.cu_pos <- pos_out oc;
   compunit.cu_force_link <- !Clflags.link_everything;
-  copy_file_chunk ic oc compunit.cu_codesize
+  copy_file_chunk ic oc compunit.cu_codesize;
+  if compunit.cu_debug > 0 then begin
+    seek_in ic compunit.cu_debug;
+    compunit.cu_debug <- pos_out oc;
+    copy_file_chunk ic oc compunit.cu_debugsize
+  end
 
 let copy_object_file oc name =
   let file_name =

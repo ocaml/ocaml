@@ -151,7 +151,10 @@ let link_compunit output_fun currpos_fun inchan file_name compunit =
   let code_block = String.create compunit.cu_codesize in
   really_input inchan code_block 0 compunit.cu_codesize;
   Symtable.patch_object code_block compunit.cu_reloc;
-  if !Clflags.debug then record_events (currpos_fun()) compunit.cu_events;
+  if !Clflags.debug && compunit.cu_debug > 0 then begin
+    seek_in inchan compunit.cu_debug;
+    record_events (currpos_fun()) (input_value inchan : debug_event list)
+  end;
   output_fun code_block;
   if !Clflags.link_everything then
     List.iter Symtable.require_primitive compunit.cu_primitives
@@ -175,14 +178,15 @@ let link_archive output_fun currpos_fun file_name units_required =
   let inchan = open_in_bin file_name in
   try
     List.iter
-      (link_compunit output_fun currpos_fun inchan file_name)
+      (fun cu ->
+         let name = file_name ^ "(" ^ cu.cu_name ^ ")" in
+         try
+           link_compunit output_fun currpos_fun inchan name cu
+         with Symtable.Error msg ->
+           raise(Error(Symbol_error(name, msg))))
       units_required;
     close_in inchan
-  with
-    Symtable.Error msg ->
-      close_in inchan; raise(Error(Symbol_error(file_name, msg)))
-  | x ->
-      close_in inchan; raise x
+  with x -> close_in inchan; raise x
 
 (* Link in a .cmo or .cma file *)
 

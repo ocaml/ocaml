@@ -303,7 +303,7 @@ let rec name_pattern default = function
 (* Insertion of debugging events *)
 
 let event_before exp lam =
-  if !Clflags.debug
+  if !Clflags.debug && lam <> Lstaticfail
   then Levent(lam, {lev_loc = exp.exp_loc.Location.loc_start;
                     lev_kind = Lev_before;
                     lev_env = Env.summary exp.exp_env})

@@ -123,6 +123,10 @@ and sz_staticfail = ref 0
 let functions_to_compile  =
   (Stack.create () : (Ident.t list * lambda * label * Ident.t list) Stack.t)
 
+(* Name of current compilation unit (for debugging events) *)
+
+let compunit_name = ref ""
+
 (* Compile an expression.
    The value of the expression is left in the accumulator.
    env = compilation environment
@@ -395,7 +399,7 @@ let rec comp_expr env exp sz cont =
   | Levent(lam, lev) ->
       let ev =
         { ev_pos = 0;                   (* patched in emitcode *)
-          ev_file = !Location.input_name;
+          ev_module = !compunit_name;
           ev_char = lev.lev_loc;
           ev_kind = begin match lev.lev_kind with
                       Lev_before -> Event_before
@@ -413,12 +417,16 @@ let rec comp_expr env exp sz cont =
           | _ -> Kevent ev :: c
           end
       | Lev_after ty ->
-          let cont1 =
-            (* Discard following events, supposedly less informative *)
-            match cont with
-              Kevent _ :: c -> c
-            | _ -> cont in
-          comp_expr env lam sz (Kevent ev :: cont1)
+          if is_tailcall cont then      (* don't destroy tail call opt *)
+            comp_expr env lam sz cont
+          else begin
+            let cont1 =
+              (* Discard following events, supposedly less informative *)
+              match cont with
+                Kevent _ :: c -> c
+              | _ -> cont in
+            comp_expr env lam sz (Kevent ev :: cont1)
+          end
       end
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
@@ -485,11 +493,12 @@ let comp_remainder cont =
 
 (**** Compilation of a lambda phrase ****)
 
-let compile_implementation expr =
+let compile_implementation modulename expr =
   Stack.clear functions_to_compile;
   label_counter := 0;
   lbl_staticfail := 0;
   sz_staticfail := 0;
+  compunit_name := modulename;
   let init_code = comp_expr empty_env expr 0 [] in
   if Stack.length functions_to_compile > 0 then begin
     let lbl_init = new_label() in

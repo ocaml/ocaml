@@ -184,6 +184,7 @@ let free_variables l =
 let rec is_guarded = function
     Lifthenelse(cond, body, Lstaticfail) -> true
   | Llet(str, id, lam, body) -> is_guarded body
+  | Levent(lam, ev) -> is_guarded lam
   | _ -> false
 
 let rec transl_path = function

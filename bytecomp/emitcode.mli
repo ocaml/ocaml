@@ -35,7 +35,8 @@ type compilation_unit =
     cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
     cu_primitives: string list;         (* Primitives declared inside *)
     mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
-    cu_events: debug_event list }       (* Debugging events *)
+    mutable cu_debug: int;              (* Position of debugging info, or 0 *)
+    cu_debugsize: int }                 (* Length of debugging info *)
 
 (* Format of a .cmo file:
      magic number (Config.cmo_magic_number)

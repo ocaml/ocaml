@@ -40,7 +40,8 @@ type compilation_unit =
     cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
     cu_primitives: string list;         (* Primitives declared inside *)
     mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
-    cu_events: debug_event list }       (* Debugging events *)
+    mutable cu_debug: int;              (* Position of debugging info, or 0 *)
+    cu_debugsize: int }                 (* Length of debugging info *)
 
 (* Format of a .cmo file:
      magic number (Config.cmo_magic_number)
@@ -262,8 +263,8 @@ let rec emit = function
       emit c
   | Kpush :: Kgetglobal id :: Kgetfield n :: c ->
       out opPUSHGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
-  | Kpush :: Kgetglobal q :: c ->
-      out opPUSHGETGLOBAL; slot_for_getglobal q; emit c
+  | Kpush :: Kgetglobal id :: c ->
+      out opPUSHGETGLOBAL; slot_for_getglobal id; emit c
   | Kpush :: Kconst sc :: c ->
       begin match sc with
         Const_base(Const_int i) when i >= immed_min & i <= immed_max ->
@@ -272,12 +273,22 @@ let rec emit = function
           else (out opPUSHCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opPUSHCONSTINT; out_int(Char.code c)
+      | Const_pointer i ->
+          if i >= 0 & i <= 3
+          then out (opPUSHCONST0 + i)
+          else (out opPUSHCONSTINT; out_int i)
       | Const_block(t, []) ->
           if t = 0 then out opPUSHATOM0 else (out opPUSHATOM; out_int t)
       | _ ->
           out opPUSHGETGLOBAL; slot_for_literal sc
       end;
       emit c
+  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+    (Kgetglobal _ as instr1) :: (Kgetfield _ as instr2) :: c ->
+      emit (Kpush :: instr1 :: instr2 :: ev :: c)
+  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+    (Kacc _ | Kenvacc _ | Kgetglobal _ | Kconst _ as instr) :: c ->
+      emit (Kpush :: instr :: ev :: c)
   | Kgetglobal id :: Kgetfield n :: c ->
       out opGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
   (* Default case *)
@@ -294,6 +305,13 @@ let to_file outchan unit_name crc_interface code =
   let pos_code = pos_out outchan in
   emit code;
   output outchan !out_buffer 0 !out_position;
+  let (pos_debug, size_debug) =
+    if !Clflags.debug then begin
+      let p = pos_out outchan in
+      output_value outchan !events;
+      (p, pos_out outchan - p)
+    end else
+      (0, 0) in
   let compunit =
     { cu_name = unit_name;
       cu_pos = pos_code;
@@ -303,7 +321,8 @@ let to_file outchan unit_name crc_interface code =
       cu_imports = Env.imported_units();
       cu_primitives = !Translmod.primitive_declarations;
       cu_force_link = false;
-      cu_events = !events } in
+      cu_debug = pos_debug;
+      cu_debugsize = size_debug } in
   init();                               (* Free out_buffer and reloc_info *)
   Types.cleanup_abbrev ();              (* Remove any cached abbreviation
                                            expansion before saving *)

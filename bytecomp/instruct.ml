@@ -19,7 +19,7 @@ type compilation_env =
 
 type debug_event =
   { mutable ev_pos: int;                (* Position in bytecode *)
-    ev_file: string;                    (* Source file name *)
+    ev_module: string;                  (* Name of defining module *)
     ev_char: int;                       (* Location in source file *)
     ev_kind: debug_event_kind;          (* Before/after event *)
     ev_typenv: Env.summary;             (* Typing environment *)
