@@ -658,6 +658,9 @@ let type_class_type_field env temp_env cl self
           raise (Error (loc, Unbound_class name))
       in
       let (cstr, args, vals, super) = Ctype.prune_class_type cl_sig in
+      if (List.length params <> List.length cstr) then
+        raise(Error(loc, Parameter_arity_mismatch
+                    (path, List.length cstr, List.length params)));
       List.iter2
         (fun t1 (t2, _) ->
            Ctype.unify temp_env
@@ -1084,7 +1087,7 @@ let report_error = function
       open_hovbox 0;
       print_string "The class "; Printtyp.path p;
       print_space(); print_string "expects "; print_int expected;
-      print_string " parameter(s),"; print_space();
+      print_string " type parameter(s),"; print_space();
       print_string "but is here applied to "; print_int provided;
-      print_string " parameter(s)";
+      print_string " type parameter(s)";
       close_box()
