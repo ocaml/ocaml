@@ -250,6 +250,7 @@ let bigarray_set arr arg newval =
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
+%token QUESTIONQUESTION
 %token QUOTE
 %token RBRACE
 %token RBRACKET
