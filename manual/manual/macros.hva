@@ -24,6 +24,7 @@
 \def\is{ & ::= & \spacefalse }
 \def\alt{ \\ & \mid & \spacefalse }
 \def\sep{ \\[2mm] \spacefalse }
+\def\cutline{}
 \def\emptystring{\epsilon}
 \def\syntax{$$\begin{array}{rrl}\spacefalse}
 \def\endsyntax{\end{array}$$}

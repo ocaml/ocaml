@@ -892,7 +892,7 @@ Let "custom.ml" be the file defining a new generator class.
 Compilation of "custom.ml" can be performed by the following command~:\\
 "ocamlc -I +ocamldoc -c custom.ml"\\
 The file "custom.cmo" is created and can be used this way~:\\
-{\tt ocamldoc -g custom.cmo {\em other_options} {\em source_files}}\\
+{\tt ocamldoc -g custom.cmo {\em other-options} {\em source-files}}\\
 It is important not to give the {\bf\tt -html} or any other option selecting a
 built in generator to {\tt ocamldoc},
 which would result in using this generator instead of the one you just loaded.
@@ -912,7 +912,7 @@ ocamlc -I +ocamldoc -c file2.ml[i]\\
 ocamlc -I +ocamldoc -c fileN.ml[i]\\
 ocamlc -o custom.cma -a file1.cmo file2.cmo ... fileN.cmo}\\
 Then, the following command uses {\tt custom.cma} as custom generator:\\
-{\tt ocamldoc -g custom.cma {\em other_options} {\em source_files}}\\
+{\tt ocamldoc -g custom.cma {\em other-options} {\em source-files}}\\
 Again, it is important not to give the {\bf\tt -html} or any other option selecting a
 built in generator to {\tt ocamldoc},
 which would result in using this generator instead of the one you just loaded.

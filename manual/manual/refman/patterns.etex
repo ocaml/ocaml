@@ -79,11 +79,12 @@ the two patterns @pattern_1@ and @pattern_2@. A value matches
 @pattern_1 "|" pattern_2@ either if it matches @pattern_1@ or if it
 matches @pattern_2@. The two sub-patterns @pattern_1@ and @pattern_2@
 must bind exactly the same identifiers to values having the same types.
-The bindings performed by matching against an ``or'' pattern are
-either those performed by the matching against @pattern_1@, if it
-succeeds, or those performed by the matching against @pattern_2@, if
-it succeeds.  If both matchings succeed, it is undefined which set of
-bindings is selected.
+Matching is performed from left to right.
+More precisely,
+in case some value~@v@ matches @pattern_1 "|" pattern_2@, the bindings 
+performed are those of @pattern_1@ when @v@ matches @pattern_1@.
+Otherwise, value~@v@ matches  @pattern_2@ whose bindings are performed.
+
 
 \subsubsection*{Variant patterns}
 
