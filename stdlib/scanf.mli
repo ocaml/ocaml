@@ -22,9 +22,9 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
    The result of this application of [f] is the result of the whole construct.
 
    The format is a character string which contains two types of
-   objects:  plain  characters, which are simply matched with the
+   objects: plain characters, which are simply matched with the
    input channel, and conversion specifications, each of which
-   causes  conversion and reading of one argument for [f].
+   causes conversion and reading of one argument for [f].
 
    Conversion specifications consist in the [%] character, followed
    by optional field width, followed by one or two conversion
@@ -57,7 +57,7 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
    - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
      the format specified by the second letter.
    - [\[ range \]]: reads characters that maches one of the characters
-     mentioned in the range of characters [range] (or not mentionned in
+     mentionned in the range of characters [range] (or not mentionned in
      it, if the range starts by [^]).
    - [N]: applies [f] to the number of characters read so far.
    - [%]: matches one [%] character in the input.
