@@ -99,7 +99,7 @@ type module_def = {
 (******************** The tables ********************)
 
 (* the table of all explicitly defined types *)
-let types_table = (Hashtbl.create 37 : (string, type_def) Hashtbl.t)
+let types_table = (Hashtbl.create size:37 : (string, type_def) Hashtbl.t)
 (* "builtin" types *)
 let types_external = ref ([] : (string * parser_arity) list)
 (* dependancy order *)
@@ -109,7 +109,7 @@ let types_returned = ref ([] : string list)
 (* Function table *)
 let function_table = ref ([] : fullcomponent list)
 (* Widget/Module table *)
-let module_table = (Hashtbl.create 37 : (string, module_def) Hashtbl.t)
+let module_table = (Hashtbl.create size:37 : (string, module_def) Hashtbl.t)
 
 
 (* variant name *)

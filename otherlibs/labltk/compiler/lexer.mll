@@ -25,7 +25,7 @@ let current_line = ref 1
 
 (* The table of keywords *)
 
-let keyword_table = (Hashtbl.create 149 : (string, token) Hashtbl.t)
+let keyword_table = (Hashtbl.create size:149 : (string, token) Hashtbl.t)
 
 let _ = List.iter
   fun:(fun (str,tok) -> Hashtbl.add keyword_table key:str data:tok)

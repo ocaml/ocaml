@@ -111,7 +111,7 @@ let uniq_clauses = function
         prerr_endline err;
         fatal_error err
        end in
-     let t = Hashtbl.create 11 in
+     let t = Hashtbl.create size:11 in
      List.iter l
       fun:(fun constr ->
        let c = constr.var_name in

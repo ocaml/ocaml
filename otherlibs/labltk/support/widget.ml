@@ -50,7 +50,7 @@ let forget_type w = (Obj.magic (w : 'a widget) : any widget)
 let coe = forget_type
 
 (* table of widgets *)
-let table = (Hashtbl.create 401 : (string, any widget) Hashtbl.t)
+let table = (Hashtbl.create size:401 : (string, any widget) Hashtbl.t)
 
 let name = function
     Untyped s -> s

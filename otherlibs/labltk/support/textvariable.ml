@@ -28,7 +28,7 @@ external get : string -> string = "camltk_getvar"
 type textVariable = string
 
 (* List of handles *)
-let handles = Hashtbl.create 401
+let handles = Hashtbl.create size:401
 
 let add_handle var cbid = 
   try
@@ -85,7 +85,7 @@ let handle vname f =
 module StringSet =
   Set.Make(struct type t = string let compare = compare end)
 let freelist = ref (StringSet.empty)
-let memo = Hashtbl.create 101
+let memo = Hashtbl.create size:101
 
 (* Added a variable v referenced by widget w *)
 let add w v =

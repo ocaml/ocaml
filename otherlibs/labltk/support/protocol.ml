@@ -92,10 +92,10 @@ let cTKtoCAMLwidget = function
 
 
 let callback_naming_table = 
-   (Hashtbl.create 401 : (int, callback_buffer -> unit) Hashtbl.t) 
+   (Hashtbl.create size:401 : (int, callback_buffer -> unit) Hashtbl.t) 
 
 let callback_memo_table =
-   (Hashtbl.create 401 : (any widget, int) Hashtbl.t)
+   (Hashtbl.create size:401 : (any widget, int) Hashtbl.t)
 
 let new_function_id =
   let counter = ref 0 in

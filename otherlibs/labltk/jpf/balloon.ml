@@ -77,7 +77,7 @@ let put on: w ms: millisec mesg =
     end
 
 let init () =
-  let t = Hashtbl.create 101 in
+  let t = Hashtbl.create size:101 in
   Protocol.add_destroy_hook (fun w ->
     Hashtbl.remove t key:w);
   topw := Toplevel.create default_toplevel;

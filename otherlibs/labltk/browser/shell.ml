@@ -44,7 +44,7 @@ let dump_mem ?(:pos = 0) ?:len obj =
     match len with
     | None -> Obj.size obj * Sys.word_size / 8 - pos
     | Some x -> x in
-  let buf = Buffer.create 256 in
+  let buf = Buffer.create size:256 in
   for i = pos to len - 1 do
     let c = String.unsafe_get (Obj.obj obj) i in
     Buffer.add_string buf (Printf.sprintf "%02x" (Char.code c))
@@ -74,7 +74,7 @@ object (self)
   val h = new history ()
   val mutable alive = true
   val mutable reading = false
-  val ibuffer = Buffer.create 1024
+  val ibuffer = Buffer.create size:1024
   val imutex = Mutex.create ()
   val mutable ithreads = []
   method alive = alive

@@ -20,7 +20,7 @@
 type t
      (* The abstract type of buffers. *)
 
-val create : int -> t
+val create : size:int -> t
      (* [create n] returns a fresh buffer, initially empty.
         The [n] parameter is the initial size of the internal string
         that holds the buffer contents.  That string is automatically

@@ -29,7 +29,7 @@ external rem_file_output : file_descr -> unit
 
 (* File input handlers *)
 
-let fd_table = Hashtbl.create 37 (* Avoid space leak in callback table *)
+let fd_table = Hashtbl.create size:37 (* Avoid space leak in callback table *)
 
 let add_fileinput :fd callback:f =
   let id = new_function_id () in

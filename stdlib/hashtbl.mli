@@ -21,7 +21,7 @@
 type ('a, 'b) t
         (* The type of hash tables from type ['a] to type ['b]. *)
 
-val create : int -> ('a,'b) t
+val create : size:int -> ('a,'b) t
         (* [Hashtbl.create n] creates a new, empty hash table, with
            initial size [n].  For best results, [n] should be on the
            order of the expected number of elements that will be in
@@ -88,7 +88,7 @@ module type S =
   sig
     type key
     type 'a t
-    val create: int -> 'a t
+    val create: size:int -> 'a t
     val clear: 'a t -> unit
     val add: 'a t -> key:key -> data:'a -> unit
     val remove: 'a t -> key:key -> unit

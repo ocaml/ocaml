@@ -67,8 +67,8 @@ let rec list_of_path = function
 
 (* a simple wrapper *)
 
-class buffer :len = object
-  val buffer = Buffer.create len
+class buffer :size = object
+  val buffer = Buffer.create :size
   method out :buf = Buffer.add_substring buffer buf
   method get = Buffer.contents buffer
 end
@@ -225,7 +225,7 @@ type module_widgets =
       mw_edit: Widget.button Widget.widget;
       mw_intf: Widget.button Widget.widget }
 
-let shown_modules = Hashtbl.create 17
+let shown_modules = Hashtbl.create size:17
 let filter_modules () =
   Hashtbl.iter shown_modules fun:
     begin fun :key :data ->
@@ -457,7 +457,7 @@ and view_decl_menu lid :kind :env :parent =
         command:(fun () -> view_decl lid :kind :env);
   end;
   if kind = `Type or kind = `Modtype then begin
-    let buf = new buffer len:60 in
+    let buf = new buffer size:60 in
     let (fo,ff) = Format.get_formatter_output_functions ()
     and margin = Format.get_margin () in
     Format.set_formatter_output_functions out:buf#out flush:(fun () -> ());
@@ -552,7 +552,7 @@ let view_type_menu kind :env :parent =
   end;
   begin match kind with `Module _ | `Class _ -> ()
   | `Exp(_, ty) ->
-      let buf = new buffer len:60 in
+      let buf = new buffer size:60 in
       let (fo,ff) = Format.get_formatter_output_functions ()
       and margin = Format.get_margin () in
       Format.set_formatter_output_functions out:buf#out flush:(fun () -> ());
