@@ -1076,9 +1076,10 @@ and type_argument env sarg ty_expected =
         |  _ -> [], texp.exp_type, false
       in
       let args, ty_fun, simple_res = make_args [] texp.exp_type in
-      if not (simple_res || no_labels ty_res) then
-        type_expect env sarg ty_expected
-      else begin
+      if not (simple_res || no_labels ty_res) then begin
+        unify_exp env texp ty_expected;
+        texp
+      end else begin
       unify_exp env {texp with exp_type = ty_fun} ty_expected;
       if args = [] then texp else
       (* eta-expand to avoid side effects *)
