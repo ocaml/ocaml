@@ -134,6 +134,10 @@ let with_index = ref true
 
 let esc_8bits = ref false
 
+let info_section = ref "Objective Caml"
+
+let info_entry = ref []
+
 let files = ref []
 
 let f_latex_title s =
@@ -252,6 +256,8 @@ let options = ref [
 (* tex only options *)
   "-noindex", Arg.Clear with_index, M.no_index ;
   "-esc8", Arg.Set esc_8bits, M.esc_8bits ;
+  "-info-section", Arg.String ((:=) info_section), M.info_section ;
+  "-info-entry", Arg.String (fun s -> info_entry := !info_entry @ [ s ]), M.info_entry ;
 
 (* dot only options *)
   "-dot-colors", Arg.String (fun s -> dot_colors := Str.split (Str.regexp_string ",") s), M.dot_colors ;

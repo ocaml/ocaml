@@ -132,6 +132,12 @@ val with_index : bool ref
 (** The flag which indicates if we must escape accentuated characters (for TeXinfo).*)
 val esc_8bits : bool ref
 
+(** The Info directory section *)
+val info_section : string ref
+
+(** The Info directory entries to insert *)
+val info_entry : string list ref
+
 (** Include all modules or only the ones on the command line, for the dot ouput. *)
 val dot_include_all : bool ref
 
