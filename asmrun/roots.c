@@ -162,7 +162,8 @@ void oldify_local_roots ()
   if (frame_descriptors == NULL) init_frame_descriptors();
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
-  while (1) {
+  /* A null sp means no more ML stack chunks; stop here. */
+  while (sp != NULL) {
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(retaddr);
     while(1) {
@@ -199,8 +200,6 @@ void oldify_local_roots ()
          Skip C portion of stack and continue with next ML stack chunk. */
       retaddr = Callback_link(sp)->return_address;
       sp = Callback_link(sp)->bottom_of_stack;
-      /* sp null means no more ML stack chunks; stop here. */
-      if (sp == NULL) break;
     }
   }
   /* Local C roots */
@@ -242,7 +241,8 @@ void darken_all_roots ()
   if (frame_descriptors == NULL) init_frame_descriptors();
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
-  while (1) {
+  /* A null sp means no more ML stack chunks; stop here. */
+  while (sp != NULL) {
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(retaddr);
     while(1) {
@@ -275,8 +275,6 @@ void darken_all_roots ()
          Skip C portion of stack and continue with next ML stack chunk. */
       retaddr = Callback_link(sp)->return_address;
       sp = Callback_link(sp)->bottom_of_stack;
-      /* sp null means no more ML stack chunks; stop here. */
-      if (sp == NULL) break;
     }
   }
   /* Local C roots */
