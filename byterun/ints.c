@@ -223,6 +223,12 @@ value int32_of_int(value v) /* ML */
 value int32_to_int(value v) /* ML */
 { return Val_long(Int32_val(v)); }
 
+value int32_of_float(value v) /* ML */
+{ return copy_int32((int32)(Double_val(v))); }
+
+value int32_to_float(value v) /* ML */
+{ return copy_double((double)(Int32_val(v))); }
+
 value int32_format(value fmt, value arg)      /* ML */
 {
   char format_string[32], default_format_buffer[32];
@@ -355,6 +361,12 @@ value int64_of_int(value v) /* ML */
 value int64_to_int(value v) /* ML */
 { return Val_long((long) Int64_val(v)); }
 
+value int64_of_float(value v) /* ML */
+{ return copy_int64((int64)(Double_val(v))); }
+
+value int64_to_float(value v) /* ML */
+{ return copy_double((double)(Int64_val(v))); }
+
 value int64_of_int32(value v) /* ML */
 { return copy_int64(Int32_val(v)); }
 
@@ -449,6 +461,12 @@ value int64_of_int(value v)
 { invalid_argument(int64_error); }
 
 value int64_to_int(value v)
+{ invalid_argument(int64_error); }
+
+value int64_of_float(value v)
+{ invalid_argument(int64_error); }
+
+value int64_to_float(value v)
 { invalid_argument(int64_error); }
 
 value int64_of_int32(value v)
@@ -589,6 +607,12 @@ value nativeint_of_int(value v) /* ML */
 
 value nativeint_to_int(value v) /* ML */
 { return Val_long(Nativeint_val(v)); }
+
+value nativeint_of_float(value v) /* ML */
+{ return copy_nativeint((long)(Double_val(v))); }
+
+value nativeint_to_float(value v) /* ML */
+{ return copy_double((double)(Nativeint_val(v))); }
 
 value nativeint_of_int32(value v) /* ML */
 { return copy_nativeint(Int32_val(v)); }
