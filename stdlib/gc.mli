@@ -143,7 +143,7 @@ val print_stat : out_channel -> unit
 val allocated_bytes : unit -> int
   (* Return the total number of bytes allocated since the program was
      started.  Warning: on 32-bit machines, this counter can easily
-     get beyond [max_int] and roll over. *)
+     overflow and roll over. *)
 
 
 val finalise : ('a -> unit) -> 'a -> unit;;
