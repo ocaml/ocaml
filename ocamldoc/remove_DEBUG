@@ -5,4 +5,4 @@
 # respecting the cpp # line annotation conventions
 
 echo "# 1 \"$1\""
-sed -e '/DEBUG/s/.*//' "$1"
+LC_ALL=C sed -e '/DEBUG/s/.*//' "$1"
