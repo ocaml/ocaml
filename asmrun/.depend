@@ -8,8 +8,6 @@ compare.o : compare.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/memory.h \
   ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
   ../byterun/str.h 
-crc.o : crc.c ../byterun/io.h ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/mlvalues.h 
 extern.o : extern.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/gc.h \
   ../byterun/intext.h ../byterun/io.h ../byterun/memory.h ../byterun/major_gc.h \
@@ -48,6 +46,8 @@ main.o : main.c ../byterun/gc.h ../byterun/mlvalues.h ../byterun/config.h ../byt
 major_gc.o : major_gc.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
   ../byterun/fail.h ../byterun/misc.h ../byterun/mlvalues.h ../byterun/freelist.h \
   ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/roots.h 
+md5.o : md5.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
+  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h ../byterun/io.h 
 memory.o : memory.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/freelist.h \
   ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/memory.h \
@@ -69,7 +69,7 @@ roots.o : roots.c ../byterun/memory.h ../byterun/config.h ../byterun/../config/m
   ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h \
   ../byterun/stacks.h 
 signals.o : signals.c ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/signals.h 
+  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h ../byterun/signals.h 
 str.o : str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h 
 sys.o : sys.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
@@ -79,118 +79,6 @@ sys.o : sys.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/
 terminfo.o : terminfo.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
   ../byterun/alloc.h ../byterun/misc.h ../byterun/mlvalues.h ../byterun/fail.h \
   ../byterun/io.h 
-alloc.o : ../byterun/alloc.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/memory.h ../byterun/gc.h ../byterun/minor_gc.h \
-  ../byterun/stacks.h 
-array.o : ../byterun/array.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h 
-compare.o : ../byterun/compare.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
-  ../byterun/str.h 
-crc.o : ../byterun/crc.c ../byterun/io.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h 
-extern.o : ../byterun/extern.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/gc.h \
-  ../byterun/intext.h ../byterun/io.h ../byterun/memory.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/reverse.h ../byterun/str.h 
-fail.o : ../byterun/fail.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/gc.h ../byterun/memory.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h ../byterun/signals.h ../byterun/stacks.h 
-fix_code.o : ../byterun/fix_code.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/fix_code.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/instruct.h ../byterun/reverse.h 
-floats.o : ../byterun/floats.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h ../byterun/stacks.h 
-freelist.o : ../byterun/freelist.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/freelist.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h 
-gc_ctrl.o : ../byterun/gc_ctrl.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/gc.h \
-  ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h 
-hash.o : ../byterun/hash.c ../byterun/mlvalues.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/misc.h ../byterun/memory.h ../byterun/gc.h \
-  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/str.h 
-instrtrace.o : ../byterun/instrtrace.c 
-intern.o : ../byterun/intern.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/gc.h \
-  ../byterun/intext.h ../byterun/io.h ../byterun/memory.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/reverse.h 
-interp.o : ../byterun/interp.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/fix_code.h ../byterun/instruct.h ../byterun/interp.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
-  ../byterun/prims.h ../byterun/signals.h ../byterun/stacks.h ../byterun/str.h \
-  ../byterun/instrtrace.h ../byterun/jumptbl.h 
-ints.o : ../byterun/ints.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h ../byterun/str.h 
-io.o : ../byterun/io.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/io.h ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h ../byterun/signals.h ../byterun/sys.h 
-main.o : ../byterun/main.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/exec.h \
-  ../byterun/fail.h ../byterun/fix_code.h ../byterun/gc_ctrl.h ../byterun/interp.h \
-  ../byterun/intext.h ../byterun/io.h ../byterun/stacks.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
-  ../byterun/sys.h 
-major_gc.o : ../byterun/major_gc.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/fail.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/freelist.h ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h \
-  ../byterun/roots.h 
-memory.o : ../byterun/memory.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/freelist.h \
-  ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/memory.h \
-  ../byterun/minor_gc.h 
-meta.o : ../byterun/meta.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fix_code.h \
-  ../byterun/interp.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/minor_gc.h ../byterun/prims.h 
-minor_gc.o : ../byterun/minor_gc.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/fail.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/memory.h ../byterun/minor_gc.h ../byterun/roots.h 
-misc.o : ../byterun/misc.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
-  ../byterun/misc.h 
-obj.o : ../byterun/obj.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/memory.h ../byterun/gc.h ../byterun/minor_gc.h \
-  ../byterun/prims.h 
-parsing.o : ../byterun/parsing.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/misc.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
-  ../byterun/alloc.h 
-prims.o : ../byterun/prims.c ../byterun/mlvalues.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/misc.h ../byterun/prims.h 
-roots.o : ../byterun/roots.c ../byterun/memory.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
-  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h \
-  ../byterun/stacks.h 
-signals.o : ../byterun/signals.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/interp.h ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h ../byterun/signals.h 
-stacks.o : ../byterun/stacks.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/fail.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/stacks.h ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/minor_gc.h 
-str.o : ../byterun/str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h 
-sys.o : ../byterun/sys.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
-  ../byterun/alloc.h ../byterun/misc.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/instruct.h ../byterun/signals.h ../byterun/stacks.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h 
-terminfo.o : ../byterun/terminfo.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/alloc.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/fail.h ../byterun/io.h 
 alloc.d.o : alloc.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/major_gc.h ../byterun/freelist.h \
   ../byterun/memory.h ../byterun/gc.h ../byterun/minor_gc.h ../byterun/stacks.h 
@@ -201,8 +89,6 @@ compare.d.o : compare.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h 
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/memory.h \
   ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
   ../byterun/str.h 
-crc.d.o : crc.c ../byterun/io.h ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/mlvalues.h 
 extern.d.o : extern.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/gc.h \
   ../byterun/intext.h ../byterun/io.h ../byterun/memory.h ../byterun/major_gc.h \
@@ -241,6 +127,8 @@ main.d.o : main.c ../byterun/gc.h ../byterun/mlvalues.h ../byterun/config.h ../b
 major_gc.d.o : major_gc.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
   ../byterun/fail.h ../byterun/misc.h ../byterun/mlvalues.h ../byterun/freelist.h \
   ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/roots.h 
+md5.d.o : md5.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
+  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h ../byterun/io.h 
 memory.d.o : memory.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/freelist.h \
   ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/memory.h \
@@ -262,7 +150,7 @@ roots.d.o : roots.c ../byterun/memory.h ../byterun/config.h ../byterun/../config
   ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h \
   ../byterun/stacks.h 
 signals.d.o : signals.c ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/signals.h 
+  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h ../byterun/signals.h 
 str.d.o : str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h 
 sys.d.o : sys.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
@@ -272,117 +160,3 @@ sys.d.o : sys.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../confi
 terminfo.d.o : terminfo.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
   ../byterun/alloc.h ../byterun/misc.h ../byterun/mlvalues.h ../byterun/fail.h \
   ../byterun/io.h 
-alloc.d.o : ../byterun/alloc.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/memory.h ../byterun/gc.h ../byterun/minor_gc.h \
-  ../byterun/stacks.h 
-array.d.o : ../byterun/array.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h 
-compare.d.o : ../byterun/compare.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
-  ../byterun/str.h 
-crc.d.o : ../byterun/crc.c ../byterun/io.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h 
-extern.d.o : ../byterun/extern.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/gc.h \
-  ../byterun/intext.h ../byterun/io.h ../byterun/memory.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/reverse.h ../byterun/str.h 
-fail.d.o : ../byterun/fail.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/gc.h ../byterun/memory.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h ../byterun/signals.h ../byterun/stacks.h 
-fix_code.d.o : ../byterun/fix_code.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/fix_code.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/instruct.h ../byterun/reverse.h 
-floats.d.o : ../byterun/floats.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h ../byterun/stacks.h 
-freelist.d.o : ../byterun/freelist.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/freelist.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h 
-gc_ctrl.d.o : ../byterun/gc_ctrl.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/gc.h \
-  ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h 
-hash.d.o : ../byterun/hash.c ../byterun/mlvalues.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/misc.h ../byterun/memory.h ../byterun/gc.h \
-  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/str.h 
-instrtrace.d.o : ../byterun/instrtrace.c ../byterun/instruct.h ../byterun/misc.h \
-  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
-  ../byterun/opnames.h 
-intern.d.o : ../byterun/intern.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/gc.h \
-  ../byterun/intext.h ../byterun/io.h ../byterun/memory.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/reverse.h 
-interp.d.o : ../byterun/interp.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/fix_code.h ../byterun/instruct.h ../byterun/interp.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
-  ../byterun/prims.h ../byterun/signals.h ../byterun/stacks.h ../byterun/str.h \
-  ../byterun/instrtrace.h 
-ints.d.o : ../byterun/ints.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h ../byterun/str.h 
-io.d.o : ../byterun/io.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/io.h ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/minor_gc.h ../byterun/signals.h ../byterun/sys.h 
-main.d.o : ../byterun/main.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/exec.h \
-  ../byterun/fail.h ../byterun/fix_code.h ../byterun/gc_ctrl.h ../byterun/interp.h \
-  ../byterun/intext.h ../byterun/io.h ../byterun/stacks.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
-  ../byterun/sys.h 
-major_gc.d.o : ../byterun/major_gc.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/fail.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/freelist.h ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h \
-  ../byterun/roots.h 
-memory.d.o : ../byterun/memory.c ../byterun/fail.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/freelist.h \
-  ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/memory.h \
-  ../byterun/minor_gc.h 
-meta.d.o : ../byterun/meta.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fix_code.h \
-  ../byterun/interp.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/minor_gc.h ../byterun/prims.h 
-minor_gc.d.o : ../byterun/minor_gc.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/fail.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/freelist.h \
-  ../byterun/memory.h ../byterun/minor_gc.h ../byterun/roots.h 
-misc.d.o : ../byterun/misc.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
-  ../byterun/misc.h 
-obj.d.o : ../byterun/obj.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/memory.h ../byterun/gc.h ../byterun/minor_gc.h \
-  ../byterun/prims.h 
-parsing.d.o : ../byterun/parsing.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/misc.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
-  ../byterun/alloc.h 
-prims.d.o : ../byterun/prims.c ../byterun/mlvalues.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/misc.h ../byterun/prims.h 
-roots.d.o : ../byterun/roots.c ../byterun/memory.h ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
-  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h \
-  ../byterun/stacks.h 
-signals.d.o : ../byterun/signals.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/interp.h ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h ../byterun/signals.h 
-stacks.d.o : ../byterun/stacks.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/fail.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/stacks.h ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
-  ../byterun/freelist.h ../byterun/minor_gc.h 
-str.d.o : ../byterun/str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
-  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/fail.h 
-sys.d.o : ../byterun/sys.c ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
-  ../byterun/alloc.h ../byterun/misc.h ../byterun/mlvalues.h ../byterun/fail.h \
-  ../byterun/instruct.h ../byterun/signals.h ../byterun/stacks.h ../byterun/memory.h \
-  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h 
-terminfo.d.o : ../byterun/terminfo.c ../byterun/config.h ../byterun/../config/m.h \
-  ../byterun/../config/s.h ../byterun/alloc.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/fail.h ../byterun/io.h 

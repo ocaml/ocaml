@@ -2,13 +2,14 @@ include ../config/Makefile.h
 include ../Makefile.config
 
 CC=$(NATIVECC)
-CFLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -O $(NATIVECCCOMPOPTS)
-DFLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -g -DDEBUG $(NATIVECCCOMPOPTS)
+FLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) 
+CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
+DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 
 COBJS=main.o fail.o roots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
-  gc_ctrl.o terminfo.o crc.o obj.o
+  gc_ctrl.o terminfo.o md5.o obj.o
 ASMOBJS=$(ARCH).o
 
 OBJS=$(COBJS) $(ASMOBJS)
@@ -66,8 +67,8 @@ gc_ctrl.c: ../byterun/gc_ctrl.c
 	ln -s ../byterun/gc_ctrl.c gc_ctrl.c
 terminfo.c: ../byterun/terminfo.c
 	ln -s ../byterun/terminfo.c terminfo.c
-crc.c: ../byterun/crc.c
-	ln -s ../byterun/crc.c crc.c
+md5.c: ../byterun/md5.c
+	ln -s ../byterun/md5.c md5.c
 obj.c: ../byterun/obj.c
 	ln -s ../byterun/obj.c obj.c
 
@@ -85,9 +86,9 @@ obj.c: ../byterun/obj.c
 clean::
 	rm -f *.o *.s *.a *~
 
-depend:
-	gcc -MM *.c ../byterun/*.c > .depend
-	gcc -MM -DDEBUG *.c ../byterun/*.c | sed -e 's/\.o/.d.o/' >> .depend
+depend: $(COBJS:.o=.c)
+	gcc -MM $(FLAGS) *.c > .depend
+	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 
 include .depend
 
