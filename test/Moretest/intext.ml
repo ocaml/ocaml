@@ -313,7 +313,7 @@ external marshal_to_block
    : string -> int -> 'a -> Marshal.extern_flags list -> unit
    = "marshal_to_block"
 external marshal_from_block : string -> int -> 'a = "marshal_from_block"
-external static_alloc : int -> string = "static_alloc"
+external static_alloc : int -> string = "caml_static_alloc"
 
 let test_block () =
   let s = static_alloc 512 in
