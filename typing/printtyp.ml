@@ -259,7 +259,7 @@ let rec typexp sch prio0 ppf ty =
         typobject sch ty fi ppf nm
     | Tsubst ty ->
         typexp sch prio ppf ty
-    | _ ->
+    | Tlink _ | Tnil | Tfield _ ->
         fatal_error "Printtyp.typexp"
    ) in
   if is_aliased px then begin
@@ -349,11 +349,21 @@ let constrain ppf ty =
   if ty != ty'
   then fprintf ppf "@ @[<2>constraint %a =@ %a@]" type_sch ty type_sch ty'
 
+let filter_params tyl =
+  let params =
+    List.fold_left
+      (fun tyl ty ->
+        let ty = repr ty in
+        if List.memq ty tyl then Btype.newgenty (Tsubst ty) :: tyl
+        else ty :: tyl)
+      [] tyl
+  in List.rev params
+
 let rec type_decl kwd id ppf decl =
 
   reset();
 
-  let params = List.map repr decl.type_params in
+  let params = filter_params decl.type_params in
 
   aliased := params @ !aliased;
   List.iter mark_loops params;
@@ -527,7 +537,7 @@ let class_params ppf = function
   | params -> fprintf ppf "@[<1>[%a]@]@ " (typlist true 0 ",") params
 
 let class_declaration id ppf cl =
-  let params = List.map repr cl.cty_params in
+  let params = filter_params cl.cty_params in
 
   reset ();
   aliased := params @ !aliased;
