@@ -50,15 +50,17 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/subst.cmo typing/predef.cmo \
   typing/datarepr.cmo typing/env.cmo \
   typing/typedtree.cmo typing/ctype.cmo \
+  typing/etype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/includecore.cmo \
   typing/includemod.cmo typing/parmatch.cmo \
-  typing/typetexp.cmo typing/stypes.cmo typing/typecore.cmo \
+  typing/typetexp.cmo typing/stypes.cmo typing/kset.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
+  bytecomp/transltype.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo
@@ -122,8 +124,9 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries camlp4out $(DEBUGGER) ocamldoc
+# all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
+#   otherlibraries camlp4out $(DEBUGGER) ocamldoc
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml gcamllibrary
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -669,3 +672,6 @@ alldepend:: depend
 FORCE:
 
 include .depend
+
+gcamllibrary: ocamlc
+	cd gcamllib; $(MAKE) all

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+boot/ocamlrun ./ocamlc -I stdlib -I toplevel $*
