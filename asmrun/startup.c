@@ -23,6 +23,7 @@
 #include "gc_ctrl.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "printexc.h"
 #include "sys.h"
 #ifdef HAS_UI
 #include "ui.h"

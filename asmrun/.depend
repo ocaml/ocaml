@@ -38,8 +38,8 @@ fail.o: fail.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/io.h \
  ../byterun/gc.h ../byterun/memory.h ../byterun/major_gc.h \
- ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/signals.h \
- stack.h ../byterun/roots.h
+ ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/printexc.h \
+ ../byterun/signals.h stack.h ../byterun/roots.h
 finalise.o: finalise.c ../byterun/callback.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/misc.h ../byterun/fail.h ../byterun/roots.h \
@@ -128,9 +128,10 @@ parsing.o: parsing.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/misc.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/alloc.h
-printexc.o: printexc.c ../byterun/fail.h ../byterun/misc.h \
+printexc.o: printexc.c ../byterun/backtrace.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h
+ ../byterun/misc.h ../byterun/debugger.h ../byterun/fail.h \
+ ../byterun/printexc.h
 roots.o: roots.c ../byterun/finalise.h ../byterun/roots.h \
  ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/memory.h ../byterun/gc.h \
@@ -145,7 +146,8 @@ signals.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
 startup.o: startup.c ../byterun/callback.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/misc.h ../byterun/custom.h ../byterun/fail.h \
- ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/sys.h
+ ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/printexc.h \
+ ../byterun/sys.h
 str.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h
@@ -203,8 +205,8 @@ fail.d.o: fail.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/io.h \
  ../byterun/gc.h ../byterun/memory.h ../byterun/major_gc.h \
- ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/signals.h \
- stack.h ../byterun/roots.h
+ ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/printexc.h \
+ ../byterun/signals.h stack.h ../byterun/roots.h
 finalise.d.o: finalise.c ../byterun/callback.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/misc.h ../byterun/fail.h ../byterun/roots.h \
@@ -293,9 +295,10 @@ parsing.d.o: parsing.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/misc.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/alloc.h
-printexc.d.o: printexc.c ../byterun/fail.h ../byterun/misc.h \
+printexc.d.o: printexc.c ../byterun/backtrace.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h
+ ../byterun/misc.h ../byterun/debugger.h ../byterun/fail.h \
+ ../byterun/printexc.h
 roots.d.o: roots.c ../byterun/finalise.h ../byterun/roots.h \
  ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/memory.h ../byterun/gc.h \
@@ -310,7 +313,8 @@ signals.d.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
 startup.d.o: startup.c ../byterun/callback.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/misc.h ../byterun/custom.h ../byterun/fail.h \
- ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/sys.h
+ ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/printexc.h \
+ ../byterun/sys.h
 str.d.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h
@@ -368,8 +372,8 @@ fail.p.o: fail.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/io.h \
  ../byterun/gc.h ../byterun/memory.h ../byterun/major_gc.h \
- ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/signals.h \
- stack.h ../byterun/roots.h
+ ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/printexc.h \
+ ../byterun/signals.h stack.h ../byterun/roots.h
 finalise.p.o: finalise.c ../byterun/callback.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/misc.h ../byterun/fail.h ../byterun/roots.h \
@@ -458,9 +462,10 @@ parsing.p.o: parsing.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/misc.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/alloc.h
-printexc.p.o: printexc.c ../byterun/fail.h ../byterun/misc.h \
+printexc.p.o: printexc.c ../byterun/backtrace.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h
+ ../byterun/misc.h ../byterun/debugger.h ../byterun/fail.h \
+ ../byterun/printexc.h
 roots.p.o: roots.c ../byterun/finalise.h ../byterun/roots.h \
  ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/memory.h ../byterun/gc.h \
@@ -475,7 +480,8 @@ signals.p.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
 startup.p.o: startup.c ../byterun/callback.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/misc.h ../byterun/custom.h ../byterun/fail.h \
- ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/sys.h
+ ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/printexc.h \
+ ../byterun/sys.h
 str.p.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h
