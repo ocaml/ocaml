@@ -31,8 +31,6 @@
         .comm   G(caml_bottom_of_stack), 4
         .comm   G(caml_top_of_stack), 4
         .comm   G(caml_last_return_address), 4
-        .comm   G(remembered_ptr), 4
-        .comm   G(remembered_end), 4
         .comm   G(caml_exception_pointer), 4
 
 /* Allocation */
