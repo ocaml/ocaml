@@ -178,7 +178,7 @@ static void intern_rec(value *dest)
         break;
 #else
         intern_cleanup();
-        failwith("input_value: integer too large");
+        caml_failwith("input_value: integer too large");
         break;
 #endif
       case CODE_SHARED8:
@@ -208,7 +208,7 @@ static void intern_rec(value *dest)
         goto read_block;
 #else
         intern_cleanup();
-        failwith("input_value: data block too large");
+        caml_failwith("input_value: data block too large");
         break;
 #endif
       case CODE_STRING8:
@@ -221,7 +221,7 @@ static void intern_rec(value *dest)
       case CODE_DOUBLE_BIG:
         if (sizeof(double) != 8) {
           intern_cleanup();
-          invalid_argument("input_value: non-standard floats");
+          caml_invalid_argument("input_value: non-standard floats");
         }
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
@@ -245,7 +245,7 @@ static void intern_rec(value *dest)
       read_double_array:
         if (sizeof(double) != 8) {
           intern_cleanup();
-          invalid_argument("input_value: non-standard floats");
+          caml_invalid_argument("input_value: non-standard floats");
         }
         size = len * Double_wosize;
         v = Val_hp(intern_dest);
@@ -289,9 +289,9 @@ static void intern_rec(value *dest)
       case CODE_CODEPOINTER:
         ofs = read32u();
         readblock(cksum, 16);
-        if (memcmp(cksum, code_checksum(), 16) != 0) {
+        if (memcmp(cksum, caml_code_checksum(), 16) != 0) {
           intern_cleanup();
-          failwith("input_value: code mismatch");
+          caml_failwith("input_value: code mismatch");
         }
         v = (value) (code_area_start + ofs);
         break;
@@ -301,10 +301,10 @@ static void intern_rec(value *dest)
         v = clos + ofs;
         break;
       case CODE_CUSTOM:
-        ops = find_custom_operations((char *) intern_src);
+        ops = caml_find_custom_operations((char *) intern_src);
         if (ops == NULL) {
           intern_cleanup();
-          failwith("input_value: unknown custom block identifier");
+          caml_failwith("input_value: unknown custom block identifier");
         }
         while (*intern_src++ != 0) /*nothing*/;  /*skip identifier*/
         size = ops->deserialize((void *) (intern_dest + 2));
@@ -317,7 +317,7 @@ static void intern_rec(value *dest)
         break;
       default:
         intern_cleanup();
-        failwith("input_value: ill-formed message");
+        caml_failwith("input_value: ill-formed message");
       }
     }
   }
@@ -340,7 +340,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
     intern_extra_block = caml_alloc_for_heap(request);
-    if (intern_extra_block == NULL) raise_out_of_memory();
+    if (intern_extra_block == NULL) caml_raise_out_of_memory();
     intern_color = caml_allocation_color(intern_extra_block);
     intern_dest = (header_t *) intern_extra_block;
   } else {
@@ -385,7 +385,7 @@ static void intern_add_to_heap(mlsize_t whsize)
   }
 }
 
-value input_val(struct channel *chan)
+value caml_input_val(struct channel *chan)
 {
   uint32 magic;
   mlsize_t block_len, num_objects, size_32, size_64, whsize;
@@ -393,22 +393,22 @@ value input_val(struct channel *chan)
   value res;
 
   if (! caml_channel_binary_mode(chan))
-    failwith("input_value: not a binary channel");
+    caml_failwith("input_value: not a binary channel");
   magic = caml_getword(chan);
-  if (magic != Intext_magic_number) failwith("input_value: bad object");
+  if (magic != Intext_magic_number) caml_failwith("input_value: bad object");
   block_len = caml_getword(chan);
   num_objects = caml_getword(chan);
   size_32 = caml_getword(chan);
   size_64 = caml_getword(chan);
   /* Read block from channel */
   block = caml_stat_alloc(block_len);
-  /* During caml_really_getblock, concurrent input_val operations can take
-     place (via signal handlers or context switching in systhreads),
-     and intern_input may change.  So, wait until caml_really_getblock
-     is over before using intern_input and the other global vars. */
+  /* During [caml_really_getblock], concurrent [caml_input_val] operations
+     can take place (via signal handlers or context switching in systhreads),
+     and [intern_input] may change.  So, wait until [caml_really_getblock]
+     is over before using [intern_input] and the other global vars. */
   if (caml_really_getblock(chan, block, block_len) == 0) {
     caml_stat_free(block);
-    failwith("input_value: truncated object");
+    caml_failwith("input_value: truncated object");
   }
   intern_input = (unsigned char *) block;
   intern_input_malloced = 1;
@@ -429,19 +429,19 @@ value input_val(struct channel *chan)
   return res;
 }
 
-CAMLprim value input_value(value vchan)
+CAMLprim value caml_input_value(value vchan)
 {
   CAMLparam1 (vchan);
   struct channel * chan = Channel(vchan);
   CAMLlocal1 (res);
 
   Lock(chan);
-  res = input_val(chan);
+  res = caml_input_val(chan);
   Unlock(chan);
   CAMLreturn (res);
 }
 
-CAMLexport value input_val_from_string(value str, long int ofs)
+CAMLexport value caml_input_val_from_string(value str, long int ofs)
 {
   CAMLparam1 (str);
   mlsize_t num_objects, size_32, size_64, whsize;
@@ -468,9 +468,9 @@ CAMLexport value input_val_from_string(value str, long int ofs)
   CAMLreturn (obj);
 }
 
-CAMLprim value input_value_from_string(value str, value ofs)
+CAMLprim value caml_input_value_from_string(value str, value ofs)
 {
-  return input_val_from_string(str, Long_val(ofs));
+  return caml_input_val_from_string(str, Long_val(ofs));
 }
 
 static value input_val_from_block(void)
@@ -496,7 +496,7 @@ static value input_val_from_block(void)
   return obj;
 }
 
-CAMLexport value input_value_from_malloc(char * data, long ofs)
+CAMLexport value caml_input_value_from_malloc(char * data, long ofs)
 {
   uint32 magic;
   mlsize_t block_len;
@@ -507,7 +507,7 @@ CAMLexport value input_value_from_malloc(char * data, long ofs)
   intern_input_malloced = 1;
   magic = read32u();
   if (magic != Intext_magic_number) 
-    failwith("input_value_from_malloc: bad object");
+    caml_failwith("input_value_from_malloc: bad object");
   block_len = read32u();
   obj = input_val_from_block();
   /* Free the input */
@@ -515,7 +515,7 @@ CAMLexport value input_value_from_malloc(char * data, long ofs)
   return obj;
 }
 
-CAMLexport value input_value_from_block(char * data, long len)
+CAMLexport value caml_input_value_from_block(char * data, long len)
 {
   uint32 magic;
   mlsize_t block_len;
@@ -526,15 +526,15 @@ CAMLexport value input_value_from_block(char * data, long len)
   intern_input_malloced = 0;
   magic = read32u();
   if (magic != Intext_magic_number) 
-    failwith("input_value_from_block: bad object");
+    caml_failwith("input_value_from_block: bad object");
   block_len = read32u();
   if (5*4 + block_len > len)
-    failwith("input_value_from_block: bad block length");
+    caml_failwith("input_value_from_block: bad block length");
   obj = input_val_from_block();
   return obj;
 }
 
-CAMLprim value marshal_data_size(value buff, value ofs)
+CAMLprim value caml_marshal_data_size(value buff, value ofs)
 {
   uint32 magic;
   mlsize_t block_len;
@@ -542,7 +542,9 @@ CAMLprim value marshal_data_size(value buff, value ofs)
   intern_src = &Byte_u(buff, Long_val(ofs));
   intern_input_malloced = 0;
   magic = read32u();
-  if (magic != Intext_magic_number) failwith("Marshal.data_size: bad object");
+  if (magic != Intext_magic_number){
+    caml_failwith("Marshal.data_size: bad object");
+  }
   block_len = read32u();
   return Val_long(block_len);
 }
@@ -553,7 +555,7 @@ CAMLprim value marshal_data_size(value buff, value ofs)
 
 #include "md5.h"
 
-unsigned char * code_checksum()
+unsigned char * caml_code_checksum(void)
 {
   static unsigned char checksum[16];
   static int checksum_computed = 0;
@@ -574,7 +576,7 @@ unsigned char * code_checksum()
 
 #include "fix_code.h"
 
-unsigned char * code_checksum(void)
+unsigned char * caml_code_checksum(void)
 {
   return code_md5;
 }
@@ -583,71 +585,71 @@ unsigned char * code_checksum(void)
 
 /* Functions for writing user-defined marshallers */
 
-CAMLexport int deserialize_uint_1(void)
+CAMLexport int caml_deserialize_uint_1(void)
 {
   return read8u();
 }
 
-CAMLexport int deserialize_sint_1(void)
+CAMLexport int caml_deserialize_sint_1(void)
 {
   return read8s();
 }
 
-CAMLexport int deserialize_uint_2(void)
+CAMLexport int caml_deserialize_uint_2(void)
 {
   return read16u();
 }
 
-CAMLexport int deserialize_sint_2(void)
+CAMLexport int caml_deserialize_sint_2(void)
 {
   return read16s();
 }
 
-CAMLexport uint32 deserialize_uint_4(void)
+CAMLexport uint32 caml_deserialize_uint_4(void)
 {
   return read32u();
 }
 
-CAMLexport int32 deserialize_sint_4(void)
+CAMLexport int32 caml_deserialize_sint_4(void)
 {
   return read32s();
 }
 
-CAMLexport uint64 deserialize_uint_8(void)
+CAMLexport uint64 caml_deserialize_uint_8(void)
 {
   uint64 i;
-  deserialize_block_8(&i, 1);
+  caml_deserialize_block_8(&i, 1);
   return i;
 }
 
-CAMLexport int64 deserialize_sint_8(void)
+CAMLexport int64 caml_deserialize_sint_8(void)
 {
   int64 i;
-  deserialize_block_8(&i, 1);
+  caml_deserialize_block_8(&i, 1);
   return i;
 }
 
-CAMLexport float deserialize_float_4(void)
+CAMLexport float caml_deserialize_float_4(void)
 {
   float f;
-  deserialize_block_4(&f, 1);
+  caml_deserialize_block_4(&f, 1);
   return f;
 }
 
-CAMLexport double deserialize_float_8(void)
+CAMLexport double caml_deserialize_float_8(void)
 {
   double f;
-  deserialize_block_float_8(&f, 1);
+  caml_deserialize_block_float_8(&f, 1);
   return f;
 }
 
-CAMLexport void deserialize_block_1(void * data, long len)
+CAMLexport void caml_deserialize_block_1(void * data, long len)
 {
   memmove(data, intern_src, len);
   intern_src += len;
 }
 
-CAMLexport void deserialize_block_2(void * data, long len)
+CAMLexport void caml_deserialize_block_2(void * data, long len)
 {
   unsigned char * p, * q;
 #ifndef ARCH_BIG_ENDIAN
@@ -660,7 +662,7 @@ CAMLexport void deserialize_block_2(void * data, long len)
 #endif
 }
 
-CAMLexport void deserialize_block_4(void * data, long len)
+CAMLexport void caml_deserialize_block_4(void * data, long len)
 {
   unsigned char * p, * q;
 #ifndef ARCH_BIG_ENDIAN
@@ -673,7 +675,7 @@ CAMLexport void deserialize_block_4(void * data, long len)
 #endif
 }
 
-CAMLexport void deserialize_block_8(void * data, long len)
+CAMLexport void caml_deserialize_block_8(void * data, long len)
 {
   unsigned char * p, * q;
 #ifndef ARCH_BIG_ENDIAN
@@ -686,7 +688,7 @@ CAMLexport void deserialize_block_8(void * data, long len)
 #endif
 }
 
-CAMLexport void deserialize_block_float_8(void * data, long len)
+CAMLexport void caml_deserialize_block_float_8(void * data, long len)
 {
   unsigned char * p, * q;
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567
@@ -703,8 +705,8 @@ CAMLexport void deserialize_block_float_8(void * data, long len)
 #endif
 }
 
-CAMLexport void deserialize_error(char * msg)
+CAMLexport void caml_deserialize_error(char * msg)
 {
   intern_cleanup();
-  failwith(msg);
+  caml_failwith(msg);
 }

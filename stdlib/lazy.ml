@@ -50,8 +50,8 @@ exception Undefined;;
 
 let raise_undefined = Obj.repr (fun () -> raise Undefined);;
 
-external follow_forward : Obj.t -> 'a = "lazy_follow_forward";;
-external make_forward : 'a -> 'a lazy_t = "lazy_make_forward";;
+external follow_forward : Obj.t -> 'a = "caml_lazy_follow_forward";;
+external make_forward : 'a -> 'a lazy_t = "caml_lazy_make_forward";;
 
 let force (l : 'arg t) =
   let x = Obj.repr l in

@@ -504,7 +504,7 @@ let fundecl fundecl =
   end;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    `	la	$25, caml_array_bound_error\n`;
+    `	la	$25, caml_ml_array_bound_error\n`;
     `	j	$25\n`
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`

@@ -23,7 +23,7 @@
 CAMLextern void caml_main (char **);
 
 #ifdef _WIN32
-CAMLextern void expand_command_line (int *, char ***);
+CAMLextern void caml_expand_command_line (int *, char ***);
 #endif
 
 #if macintosh
@@ -35,10 +35,10 @@ int main(int argc, char **argv)
 {
 #ifdef _WIN32
   /* Expand wildcards and diversions in command line */
-  expand_command_line(&argc, &argv);
+  caml_expand_command_line(&argc, &argv);
 #endif
 #if macintosh
-  rotatecursor_options (&something_to_do, 0, NULL);
+  rotatecursor_options (&caml_something_to_do, 0, NULL);
 #endif /* macintosh */
   caml_main(argv);
   caml_sys_exit(Val_int(0));

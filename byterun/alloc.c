@@ -88,8 +88,8 @@ CAMLexport value caml_alloc_string (mlsize_t len)
 CAMLexport value caml_alloc_final (mlsize_t len, final_fun fun,
                                    mlsize_t mem, mlsize_t max)
 {
-  return alloc_custom(final_custom_operations(fun),
-                      len * sizeof(value), mem, max);
+  return caml_alloc_custom(caml_final_custom_operations(fun),
+                           len * sizeof(value), mem, max);
 }
 
 CAMLexport value caml_copy_string(char const *s)

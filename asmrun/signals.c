@@ -40,7 +40,7 @@ extern char * code_area_start, * code_area_end;
 
 #ifdef _WIN32
 typedef void (*sighandler)(int sig);
-extern sighandler win32_signal(int sig, sighandler action);
+extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) win32_signal(sig,act)
 #endif
 
@@ -121,18 +121,18 @@ extern sighandler win32_signal(int sig, sighandler action);
 #endif
 #endif
 
-volatile int async_signal_mode = 0;
-volatile int pending_signal = 0;
-volatile int force_major_slice = 0;
-value signal_handlers = 0;
-void (*enter_blocking_section_hook)() = NULL;
-void (*leave_blocking_section_hook)() = NULL;
+volatile int caml_async_signal_mode = 0;
+volatile int caml_pending_signal = 0;
+volatile int caml_force_major_slice = 0;
+value caml_signal_handlers = 0;
+void (*caml_enter_blocking_section_hook)() = NULL;
+void (*caml_leave_blocking_section_hook)() = NULL;
 
 static int rev_convert_signal_number(int signo);
 
 /* Execute a signal handler immediately. */
 
-void execute_signal(int signal_number, int in_signal_handler)
+void caml_execute_signal(int signal_number, int in_signal_handler)
 {
   value res;
 #ifdef POSIX_SIGNALS
@@ -143,7 +143,7 @@ void execute_signal(int signal_number, int in_signal_handler)
   sigaddset(&sigs, signal_number);
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
-  res = caml_callback_exn(Field(signal_handlers, signal_number),
+  res = caml_callback_exn(Field(caml_signal_handlers, signal_number),
                           Val_int(rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
@@ -155,38 +155,38 @@ void execute_signal(int signal_number, int in_signal_handler)
     sigprocmask(SIG_SETMASK, &sigs, NULL);
   }
 #endif
-  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
 
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to Caml code.
    With system threads, this callback can cause a context switch.
-   Hence [garbage_collection] must not be called from regular C code
-   (e.g. the [alloc] function) because the context of the call
+   Hence [caml_garbage_collection] must not be called from regular C code
+   (e.g. the [caml_alloc] function) because the context of the call
    (e.g. [intern_val]) may not allow context switching.
-   Only generated assembly code can call [garbage_collection],
+   Only generated assembly code can call [caml_garbage_collection],
    via the caml_call_gc assembly stubs.  */
 
-void garbage_collection(void)
+void caml_garbage_collection(void)
 {
   int sig;
 
-  if (caml_young_ptr < caml_young_start || force_major_slice){
+  if (caml_young_ptr < caml_young_start || caml_force_major_slice){
     caml_minor_collection();
   }
   /* If a signal arrives between the following two instructions,
      it will be lost. */
-  sig = pending_signal;
-  pending_signal = 0;
+  sig = caml_pending_signal;
+  caml_pending_signal = 0;
   caml_young_limit = caml_young_start;
-  if (sig) execute_signal(sig, 0);
+  if (sig) caml_execute_signal(sig, 0);
 }
 
 /* Trigger a garbage collection as soon as possible */
 
-void urge_major_slice (void)
+void caml_urge_major_slice (void)
 {
-  force_major_slice = 1;
+  caml_force_major_slice = 1;
   caml_young_limit = caml_young_end;
   /* This is only moderately effective on ports that cache [caml_young_limit]
      in a register, since [caml_modify] is called directly, not through
@@ -194,30 +194,34 @@ void urge_major_slice (void)
      from [caml_young_limit]. */
 }
 
-void enter_blocking_section(void)
+void caml_enter_blocking_section(void)
 {
   int sig;
 
   while (1){
-    Assert (!async_signal_mode);
+    Assert (!caml_async_signal_mode);
     /* If a signal arrives between the next two instructions,
        it will be lost. */
-    sig = pending_signal;
-    pending_signal = 0;
+    sig = caml_pending_signal;
+    caml_pending_signal = 0;
     caml_young_limit = caml_young_start;
-    if (sig) execute_signal(sig, 0);
-    async_signal_mode = 1;
-    if (!pending_signal) break;
-    async_signal_mode = 0;
+    if (sig) caml_execute_signal(sig, 0);
+    caml_async_signal_mode = 1;
+    if (!caml_pending_signal) break;
+    caml_async_signal_mode = 0;
   }
-  if (enter_blocking_section_hook != NULL) enter_blocking_section_hook();
+  if (caml_enter_blocking_section_hook != NULL){
+    caml_enter_blocking_section_hook();
+  }
 }
 
-void leave_blocking_section(void)
+void caml_leave_blocking_section(void)
 {
-  if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
-  Assert(async_signal_mode);
-  async_signal_mode = 0;
+  if (caml_leave_blocking_section_hook != NULL){
+    caml_leave_blocking_section_hook();
+  }
+  Assert(caml_async_signal_mode);
+  caml_async_signal_mode = 0;
 }
 
 #ifdef POSIX_SIGNALS
@@ -239,35 +243,35 @@ static void reraise(int sig, int now)
 #endif
 
 #if defined(TARGET_alpha) || defined(TARGET_mips)
-void handle_signal(int sig, int code, struct sigcontext * context)
+static void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_aix)
-void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
+static void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
 #elif defined(TARGET_power) && defined(SYS_elf)
-void handle_signal(int sig, struct sigcontext * context)
+static void handle_signal(int sig, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_rhapsody)
-void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
+static void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
 #elif defined(TARGET_power) && defined(SYS_bsd)
-void handle_signal(int sig, int code, struct sigcontext * context)
+static void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_sparc) && defined(SYS_solaris)
-void handle_signal(int sig, int code, void * context)
+static void handle_signal(int sig, int code, void * context)
 #else
-void handle_signal(int sig)
+static void handle_signal(int sig)
 #endif
 {
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(sig, handle_signal);
 #endif
-  if (async_signal_mode) {
+  if (caml_async_signal_mode) {
     /* We are interrupting a C function blocked on I/O.
        Callback the Caml code immediately. */
-    leave_blocking_section();
-    execute_signal(sig, 1);
-    enter_blocking_section();
+    caml_leave_blocking_section();
+    caml_execute_signal(sig, 1);
+    caml_enter_blocking_section();
   } else {
     /* We can't execute the signal code immediately.
        Instead, we remember the signal and play with the allocation limit
        so that the next allocation will trigger a garbage collection. */
-    pending_signal = sig;
+    caml_pending_signal = sig;
     caml_young_limit = caml_young_end;
     /* Some ports cache [caml_young_limit] in a register.
        Use the signal context to modify that register too, but only if
@@ -390,7 +394,7 @@ static int posix_signals[] = {
   SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM, SIGPROF
 };
 
-int convert_signal_number(int signo)
+int caml_convert_signal_number(int signo)
 {
   if (signo < 0 && signo >= -(sizeof(posix_signals) / sizeof(int)))
     return posix_signals[-signo-1];
@@ -410,7 +414,7 @@ static int rev_convert_signal_number(int signo)
 #define NSIG 64
 #endif
 
-value install_signal_handler(value signal_number, value action) /* ML */
+value caml_install_signal_handler(value signal_number, value action) /* ML */
 {
   CAMLparam2 (signal_number, action);
   int sig;
@@ -420,9 +424,9 @@ value install_signal_handler(value signal_number, value action) /* ML */
 #endif
   CAMLlocal1 (res);
 
-  sig = convert_signal_number(Int_val(signal_number));
+  sig = caml_convert_signal_number(Int_val(signal_number));
   if (sig < 0 || sig >= NSIG) 
-    invalid_argument("Sys.signal: unavailable signal");
+    caml_invalid_argument("Sys.signal: unavailable signal");
   switch(action) {
   case Val_int(0):              /* Signal_default */
     act = SIG_DFL;
@@ -450,18 +454,18 @@ value install_signal_handler(value signal_number, value action) /* ML */
 #endif
   if (oldact == (void (*)(int)) handle_signal) {
     res = caml_alloc_small(1, 0);          /* Signal_handle */
-    Field(res, 0) = Field(signal_handlers, sig);
+    Field(res, 0) = Field(caml_signal_handlers, sig);
   }
   else if (oldact == SIG_IGN)
     res = Val_int(1);           /* Signal_ignore */
   else
     res = Val_int(0);           /* Signal_default */
   if (Is_block(action)) {
-    if (signal_handlers == 0) {
-      signal_handlers = caml_alloc(NSIG, 0);
-      register_global_root(&signal_handlers);
+    if (caml_signal_handlers == 0) {
+      caml_signal_handlers = caml_alloc(NSIG, 0);
+      register_global_root(&caml_signal_handlers);
     }
-    caml_modify(&Field(signal_handlers, sig), Field(action, 0));
+    caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
   CAMLreturn (res);
 }
@@ -609,7 +613,7 @@ static int is_stack_overflow(char * fault_addr)
 static void segv_handler(int signo, struct sigcontext sc)
 {
   if (is_stack_overflow((char *) sc.cr2))
-    raise_stack_overflow();
+    caml_raise_stack_overflow();
 }
 #endif
 
@@ -617,7 +621,7 @@ static void segv_handler(int signo, struct sigcontext sc)
 static void segv_handler(int signo, siginfo_t * info, void * arg)
 {
   if (is_stack_overflow((char *) info->si_addr))
-    raise_stack_overflow();
+    caml_raise_stack_overflow();
 }
 #endif
 
@@ -625,7 +629,7 @@ static void segv_handler(int signo, siginfo_t * info, void * arg)
 
 /* Initialization of signal stuff */
 
-void init_signals(void)
+void caml_init_signals(void)
 {
   /* Bound-check trap handling */
 #if defined(TARGET_sparc) && \

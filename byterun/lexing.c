@@ -101,7 +101,7 @@ CAMLprim value caml_lex_engine(struct lexing_table *tbl, value start_state,
     if (state < 0) {
       lexbuf->lex_curr_pos = lexbuf->lex_last_pos;
       if (lexbuf->lex_last_action == Val_int(-1)) {
-        failwith("lexing: empty token");
+        caml_failwith("lexing: empty token");
       } else {
         return lexbuf->lex_last_action;
       }
@@ -207,7 +207,7 @@ CAMLprim value caml_new_lex_engine(struct lexing_table *tbl, value start_state,
     if (state < 0) {
       lexbuf->lex_curr_pos = lexbuf->lex_last_pos;
       if (lexbuf->lex_last_action == Val_int(-1)) {
-        failwith("lexing: empty token");
+        caml_failwith("lexing: empty token");
       } else {
         return lexbuf->lex_last_action;
       }

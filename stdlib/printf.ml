@@ -13,10 +13,11 @@
 
 (* $Id$ *)
 
-external format_int: string -> int -> string = "format_int"
-external format_int32: string -> int32 -> string = "int32_format"
-external format_nativeint: string -> nativeint -> string = "nativeint_format"
-external format_int64: string -> int64 -> string = "int64_format"
+external format_int: string -> int -> string = "caml_format_int"
+external format_int32: string -> int32 -> string = "caml_int32_format"
+external format_nativeint: string -> nativeint -> string
+                         = "caml_nativeint_format"
+external format_int64: string -> int64 -> string = "caml_int64_format"
 external format_float: string -> float -> string = "format_float"
 
 let bad_format fmt pos =

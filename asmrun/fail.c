@@ -39,40 +39,40 @@ extern caml_generated_constant
 
 /* Exception raising */
 
-extern void raise_caml_exception (value bucket) Noreturn;
+extern void caml_raise_exception (value bucket) Noreturn;
 
 char * caml_exception_pointer = NULL;
 
-void mlraise(value v)
+void caml_raise(value v)
 {
   Unlock_exn();
-  if (caml_exception_pointer == NULL) fatal_uncaught_exception(v);
+  if (caml_exception_pointer == NULL) caml_fatal_uncaught_exception(v);
 
 #ifndef Stack_grows_upwards
 #define PUSHED_AFTER <
 #else
 #define PUSHED_AFTER >
 #endif
-  while (local_roots != NULL && 
-         (char *) local_roots PUSHED_AFTER caml_exception_pointer) {
-    local_roots = local_roots->next;
+  while (caml_local_roots != NULL && 
+         (char *) caml_local_roots PUSHED_AFTER caml_exception_pointer) {
+    caml_local_roots = caml_local_roots->next;
   }
 #undef PUSHED_AFTER
 
-  raise_caml_exception(v);
+  caml_raise_exception(v);
 }
 
-void raise_constant(value tag)
+void caml_raise_constant(value tag)
 {
   value bucket;
   Begin_root (tag);
     bucket = caml_alloc_small (1, 0);
     Field(bucket, 0) = tag;
   End_roots ();
-  mlraise(bucket);
+  caml_raise(bucket);
 }
 
-void raise_with_arg(value tag, value arg)
+void caml_raise_with_arg(value tag, value arg)
 {
   value bucket;
   Begin_roots2 (tag, arg);
@@ -80,70 +80,70 @@ void raise_with_arg(value tag, value arg)
     Field(bucket, 0) = tag;
     Field(bucket, 1) = arg;
   End_roots ();
-  mlraise(bucket);
+  caml_raise(bucket);
 }
 
-void raise_with_string(value tag, char *msg)
+void caml_raise_with_string(value tag, char *msg)
 {
-  raise_with_arg(tag, caml_copy_string(msg));
+  caml_raise_with_arg(tag, caml_copy_string(msg));
 }
 
-void failwith (char *msg)
+void caml_failwith (char *msg)
 {
-  raise_with_string((value) Failure, msg);
+  caml_raise_with_string((value) Failure, msg);
 }
 
-void invalid_argument (char *msg)
+void caml_invalid_argument (char *msg)
 {
-  raise_with_string((value) Invalid_argument, msg);
+  caml_raise_with_string((value) Invalid_argument, msg);
 }
 
-/* To raise Out_of_memory, we can't use raise_constant,
+/* To raise [Out_of_memory], we can't use [caml_raise_constant],
    because it allocates and we're out of memory...
    We therefore use a statically-allocated bucket constructed
    by the ocamlopt linker.
-   This works OK because the exception value for Out_of_memory is also
+   This works OK because the exception value for [Out_of_memory] is also
    statically allocated out of the heap.
    The same applies to Stack_overflow. */
 
-void raise_out_of_memory(void)
+void caml_raise_out_of_memory(void)
 {
-  mlraise((value) &bucket_Out_of_memory);
+  caml_raise((value) &bucket_Out_of_memory);
 }
 
-void raise_stack_overflow(void)
+void caml_raise_stack_overflow(void)
 {
-  mlraise((value) &bucket_Stack_overflow);
+  caml_raise((value) &bucket_Stack_overflow);
 }
 
-void raise_sys_error(value msg)
+void caml_raise_sys_error(value msg)
 {
-  raise_with_arg((value) Sys_error, msg);
+  caml_raise_with_arg((value) Sys_error, msg);
 }
 
-void raise_end_of_file(void)
+void caml_raise_end_of_file(void)
 {
-  raise_constant((value) End_of_file);
+  caml_raise_constant((value) End_of_file);
 }
 
-void raise_zero_divide(void)
+void caml_raise_zero_divide(void)
 {
-  raise_constant((value) Division_by_zero);
+  caml_raise_constant((value) Division_by_zero);
 }
 
-void raise_not_found(void)
+void caml_raise_not_found(void)
 {
-  raise_constant((value) Not_found);
+  caml_raise_constant((value) Not_found);
 }
 
-void raise_sys_blocked_io(void)
+void caml_raise_sys_blocked_io(void)
 {
-  raise_constant((value) Sys_blocked_io);
+  caml_raise_constant((value) Sys_blocked_io);
 }
 
 /* We allocate statically the bucket for the exception because we can't
    do a GC before the exception is raised (lack of stack descriptors
-   for the ccall to array_bound_error  */
+   for the ccall to [array_bound_error].  */
 
 #define BOUND_MSG "index out of bounds"
 #define BOUND_MSG_LEN (sizeof(BOUND_MSG) - 1)
@@ -168,5 +168,5 @@ void array_bound_error(void)
   array_bound_error_bucket.hdr = Make_header(2, 0, Caml_white);
   array_bound_error_bucket.exn = (value) Invalid_argument;
   array_bound_error_bucket.arg = (value) array_bound_error_msg.data;
-  mlraise((value) &array_bound_error_bucket.exn);
+  caml_raise((value) &array_bound_error_bucket.exn);
 }

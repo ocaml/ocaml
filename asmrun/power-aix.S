@@ -100,7 +100,7 @@
         stfdu   30, 8(11)
         stfdu   31, 8(11)
     # Call the GC
-        bl      .garbage_collection
+        bl      .caml_garbage_collection
         or      0, 0, 0
     # Reload new allocation pointer and allocation limit
         lwz     11, L..caml_young_ptr(2)
@@ -222,8 +222,8 @@
 
 #### Raise an exception from C
 
-        .globl  .raise_caml_exception
-.raise_caml_exception:
+        .globl  .caml_raise_exception
+.caml_raise_exception:
     # Reload Caml global registers
         lwz     4, L..caml_exception_pointer(2)
         lwz     5, L..caml_young_ptr(2)
@@ -487,10 +487,10 @@ caml_call_gc:
 caml_c_call:
         .long   .caml_c_call, TOC[tc0], 0
 
-        .globl  raise_caml_exception
-        .csect  raise_caml_exception[DS]
-raise_caml_exception:
-        .long   .raise_caml_exception, TOC[tc0], 0
+        .globl  caml_raise_exception
+        .csect  caml_raise_exception[DS]
+caml_raise_exception:
+        .long   .caml_raise_exception, TOC[tc0], 0
 
         .globl  caml_start_program
         .csect  caml_start_program[DS]

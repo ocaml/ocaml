@@ -31,7 +31,7 @@
 #include "ui.h"
 #endif
 
-extern int parser_trace;
+extern int caml_parser_trace;
 header_t caml_atom_table[256];
 char * static_data_start, * static_data_end;
 char * code_area_start, * code_area_end;
@@ -105,7 +105,7 @@ static void parse_camlrunparam(void)
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &caml_verb_gc); break;
-      case 'p': parser_trace = 1; break;
+      case 'p': caml_parser_trace = 1; break;
       }
     }
   }
@@ -117,7 +117,7 @@ void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (void);
 extern void init_ieee_floats (void);
-extern void init_signals (void);
+extern void caml_init_signals (void);
 
 void caml_main(char **argv)
 {
@@ -128,7 +128,7 @@ void caml_main(char **argv)
   value res;
 
   init_ieee_floats();
-  init_custom_operations();
+  caml_init_custom_operations();
 #ifdef DEBUG
   caml_verb_gc = 63;
 #endif
@@ -136,7 +136,7 @@ void caml_main(char **argv)
   init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
            percent_free_init, max_percent_free_init);
   init_atoms();
-  init_signals();
+  caml_init_signals();
   exe_name = argv[0];
 #ifdef __linux__
   if (executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
@@ -149,7 +149,7 @@ void caml_main(char **argv)
   }
   res = caml_start_program();
   if (Is_exception_result(res))
-    fatal_uncaught_exception(Extract_exception(res));
+    caml_fatal_uncaught_exception(Extract_exception(res));
 }
 
 void caml_startup(char **argv)

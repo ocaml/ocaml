@@ -192,7 +192,7 @@ let bool_of_string = function
 let string_of_int n =
   format_int "%d" n
 
-external int_of_string : string -> int = "int_of_string"
+external int_of_string : string -> int = "caml_int_of_string"
 
 let valid_float_lexem s =
   let l = string_length s in

@@ -113,7 +113,7 @@ let comparisons_table = create_hashtable 11 [
   "%compare",
       (Pccall{prim_name = "caml_compare"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
-       Pccall{prim_name = "int_compare"; prim_arity = 2;
+       Pccall{prim_name = "caml_int_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false},
        Pccall{prim_name = "float_compare"; prim_arity = 2;
@@ -122,13 +122,13 @@ let comparisons_table = create_hashtable 11 [
        Pccall{prim_name = "caml_string_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false},
-       Pccall{prim_name = "nativeint_compare"; prim_arity = 2;
+       Pccall{prim_name = "caml_nativeint_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false},
-       Pccall{prim_name = "int32_compare"; prim_arity = 2;
+       Pccall{prim_name = "caml_int32_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false},
-       Pccall{prim_name = "int64_compare"; prim_arity = 2;
+       Pccall{prim_name = "caml_int64_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false})
 ]
@@ -256,7 +256,7 @@ let prim_makearray =
     prim_native_name = ""; prim_native_float = false }
 
 let prim_obj_dup =
-  { prim_name = "obj_dup"; prim_arity = 1; prim_alloc = true;
+  { prim_name = "caml_obj_dup"; prim_arity = 1; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
 let transl_prim prim args =

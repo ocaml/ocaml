@@ -122,10 +122,10 @@ CAMLprim value float_of_string(value vs)
     if (c != '_') *dst++ = c;
   }
   *dst = 0;
-  if (dst == buf) failwith("float_of_string");
+  if (dst == buf) caml_failwith("float_of_string");
   d = strtod((const char *) buf, &end);
   if (buf != parse_buffer) caml_stat_free(buf);
-  if (end != dst) failwith("float_of_string");
+  if (end != dst) caml_failwith("float_of_string");
   return copy_double(d);
 }
 

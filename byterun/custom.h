@@ -41,18 +41,19 @@ struct custom_operations {
 
 #define Custom_ops_val(v) (*((struct custom_operations **) (v)))
 
-CAMLextern value alloc_custom(struct custom_operations * ops,
-                              unsigned long size, /*size in bytes*/
-                              mlsize_t mem, /*resources consumed*/
-                              mlsize_t max  /*max resources*/);
+CAMLextern value caml_alloc_custom(struct custom_operations * ops,
+                                   unsigned long size, /*size in bytes*/
+                                   mlsize_t mem, /*resources consumed*/
+                                   mlsize_t max  /*max resources*/);
 
-CAMLextern void register_custom_operations(struct custom_operations * ops);
+CAMLextern void caml_register_custom_operations(struct custom_operations * ops);
 
 /* <private> */
-extern struct custom_operations * find_custom_operations(char * ident);
-extern struct custom_operations * final_custom_operations(void (*fn)(value));
+extern struct custom_operations * caml_find_custom_operations(char * ident);
+extern struct custom_operations *
+          caml_final_custom_operations(void (*fn)(value));
 
-extern void init_custom_operations(void);
+extern void caml_init_custom_operations(void);
 /* </private> */
 
 #endif /* CAML_CUSTOM_H */

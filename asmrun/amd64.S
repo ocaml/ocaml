@@ -72,7 +72,7 @@ FUNCTION(caml_call_gc)
         movlpd  %xmm14, 14*8(%rsp)
         movlpd  %xmm15, 15*8(%rsp)
     /* Call the garbage collector */
-        call    garbage_collection
+        call    caml_garbage_collection
     /* Restore all regs used by the code generator */
         movlpd  0*8(%rsp), %xmm0
         movlpd  1*8(%rsp), %xmm1
@@ -155,7 +155,7 @@ FUNCTION(caml_alloc3)
 	addq	$8, %rsp
         jmp     caml_alloc3
 
-FUNCTION(caml_alloc)
+FUNCTION(caml_allocN)
         subq    %rax, %r15
         cmpq    caml_young_limit(%rip), %r15
         jb      .L103
@@ -168,7 +168,7 @@ FUNCTION(caml_alloc)
         movq    %rax, caml_bottom_of_stack(%rip)
         call    .L105
         popq    %rax                      /* recover desired size */
-        jmp     caml_alloc
+        jmp     caml_allocN
 
 /* Call a C function from Caml */
 
@@ -249,7 +249,7 @@ FUNCTION(caml_start_program)
 
 /* Raise an exception from C */
 
-FUNCTION(raise_caml_exception)
+FUNCTION(caml_raise_exception)
         movq    %rdi, %rax
         movq    caml_exception_pointer(%rip), %rsp
         popq    %r14                  /* Recover previous exception handler */
@@ -306,7 +306,7 @@ FUNCTION(caml_callback3_exn)
         leaq    caml_apply3(%rip), %r12  /* code pointer */
         jmp     .L106
 
-FUNCTION(caml_array_bound_error)
+FUNCTION(caml_ml_array_bound_error)
     /* Make the exception handler and alloc ptr available to the C code */
 	movq	%r15, caml_young_ptr(%rip)
 	movq	%r14, caml_exception_pointer(%rip)

@@ -99,7 +99,7 @@ CAMLexport void caml_sys_error(value arg)
   CAMLlocal1 (str);
   
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
-    raise_sys_blocked_io();
+    caml_raise_sys_blocked_io();
   } else {
     err = error_message();
     if (arg == NO_ARG) {
@@ -112,14 +112,14 @@ CAMLexport void caml_sys_error(value arg)
       memmove(&Byte(str, arg_len), ": ", 2);
       memmove(&Byte(str, arg_len + 2), err, err_len);
     }
-    raise_sys_error(str);
+    caml_raise_sys_error(str);
   }
 }
 
 CAMLprim value caml_sys_exit(value retcode)
 {
 #ifndef NATIVE_CODE
-  debugger(PROGRAM_EXIT);
+  caml_debugger(PROGRAM_EXIT);
 #endif
 #ifdef HAS_UI
   ui_exit(Int_val(retcode));
@@ -157,13 +157,13 @@ CAMLprim value caml_sys_open(value path, value flags, value perm)
   p = caml_stat_alloc(caml_string_length(path) + 1);
   strcpy(p, String_val(path));
   /* open on a named FIFO can block (PR#1533) */
-  enter_blocking_section();
+  caml_enter_blocking_section();
   fd = open(p, caml_convert_flag_list(flags, sys_open_flags)
 #if !macintosh
              , Int_val(perm)
 #endif
                                        );
-  leave_blocking_section();
+  caml_leave_blocking_section();
   caml_stat_free(p);
   if (fd == -1) caml_sys_error(path);
 #if defined(F_SETFD) && defined(FD_CLOEXEC)
@@ -229,7 +229,7 @@ CAMLprim value caml_sys_getenv(value var)
   char * res;
 
   res = getenv(String_val(var));
-  if (res == 0) raise_not_found();
+  if (res == 0) caml_raise_not_found();
   return caml_copy_string(res);
 }
 
@@ -275,9 +275,9 @@ CAMLprim value caml_sys_system_command(value command)
   len = caml_string_length (command);
   buf = caml_stat_alloc (len + 1);
   memmove (buf, String_val (command), len + 1);
-  enter_blocking_section ();
+  caml_enter_blocking_section ();
   status = system(buf);
-  leave_blocking_section ();
+  caml_leave_blocking_section ();
   caml_stat_free(buf);
   if (status == -1) caml_sys_error(command);
   if (WIFEXITED(status))

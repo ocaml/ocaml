@@ -80,7 +80,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    transmitted along with the code position.) *)
 
 external to_string :
-  'a -> extern_flags list -> string = "output_value_to_string"
+  'a -> extern_flags list -> string = "caml_output_value_to_string"
 (** [Marshal.to_string v flags] returns a string containing
    the representation of [v] as a sequence of bytes.
    The [flags] argument has the same meaning as for

@@ -186,7 +186,7 @@ void caml_empty_minor_heap (void)
   if (caml_young_ptr != caml_young_end){
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
-    oldify_local_roots();
+    caml_oldify_local_roots();
     for (r = ref_table; r < caml_ref_table_ptr; r++){
       caml_oldify_one (**r, *r);
     }
@@ -224,7 +224,7 @@ void caml_minor_collection (void)
   stat_promoted_words += caml_allocated_words - prev_alloc_words;
   ++ stat_minor_collections;
   caml_major_collection_slice (0);
-  force_major_slice = 0;
+  caml_force_major_slice = 0;
 
   final_do_calls ();
 
@@ -234,7 +234,7 @@ void caml_minor_collection (void)
 value caml_check_urgent_gc (value extra_root)
 {
   CAMLparam1 (extra_root);
-  if (force_major_slice) caml_minor_collection();
+  if (caml_force_major_slice) caml_minor_collection();
   CAMLreturn (extra_root);
 }
 
@@ -246,11 +246,11 @@ void caml_realloc_ref_table (void)
   if (caml_ref_table_limit == ref_table_threshold){
     caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
     caml_ref_table_limit = ref_table_end;
-    urge_major_slice ();
+    caml_urge_major_slice ();
   }else{ /* This will almost never happen with the bytecode interpreter. */
     asize_t sz;
     asize_t cur_ptr = caml_ref_table_ptr - ref_table;
-                                                  Assert (force_major_slice);
+                                             Assert (caml_force_major_slice);
 
     ref_table_size *= 2;
     sz = (ref_table_size + ref_table_reserve) * sizeof (value *);

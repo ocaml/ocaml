@@ -436,9 +436,9 @@ let box_int_constant bi n =
 
 let operations_boxed_int bi =
   match bi with
-    Pnativeint -> "nativeint_ops"
-  | Pint32 -> "int32_ops"
-  | Pint64 -> "int64_ops"
+    Pnativeint -> "caml_nativeint_ops"
+  | Pint32 -> "caml_int32_ops"
+  | Pint64 -> "caml_int64_ops"
 
 let box_int bi arg =
   match arg with
@@ -576,24 +576,26 @@ let default_prim name =
     prim_alloc = true; prim_native_name = ""; prim_native_float = false }
 
 let simplif_primitive_32bits = function
-    Pbintofint Pint64 -> Pccall (default_prim "int64_of_int")
-  | Pintofbint Pint64 -> Pccall (default_prim "int64_to_int")
-  | Pcvtbint(Pint32, Pint64) -> Pccall (default_prim "int64_of_int32")
-  | Pcvtbint(Pint64, Pint32) -> Pccall (default_prim "int64_to_int32")
-  | Pcvtbint(Pnativeint, Pint64) -> Pccall (default_prim "int64_of_nativeint")
-  | Pcvtbint(Pint64, Pnativeint) -> Pccall (default_prim "int64_to_nativeint")
-  | Pnegbint Pint64 -> Pccall (default_prim "int64_neg")
-  | Paddbint Pint64 -> Pccall (default_prim "int64_add")
-  | Psubbint Pint64 -> Pccall (default_prim "int64_sub")
-  | Pmulbint Pint64 -> Pccall (default_prim "int64_mul")
-  | Pdivbint Pint64 -> Pccall (default_prim "int64_div")
-  | Pmodbint Pint64 -> Pccall (default_prim "int64_mod")
-  | Pandbint Pint64 -> Pccall (default_prim "int64_and")
-  | Porbint Pint64 ->  Pccall (default_prim "int64_or")
-  | Pxorbint Pint64 -> Pccall (default_prim "int64_xor")
-  | Plslbint Pint64 -> Pccall (default_prim "int64_shift_left")
-  | Plsrbint Pint64 -> Pccall (default_prim "int64_shift_right_unsigned")
-  | Pasrbint Pint64 -> Pccall (default_prim "int64_shift_right")
+    Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
+  | Pintofbint Pint64 -> Pccall (default_prim "caml_int64_to_int")
+  | Pcvtbint(Pint32, Pint64) -> Pccall (default_prim "caml_int64_of_int32")
+  | Pcvtbint(Pint64, Pint32) -> Pccall (default_prim "caml_int64_to_int32")
+  | Pcvtbint(Pnativeint, Pint64) ->
+      Pccall (default_prim "caml_int64_of_nativeint")
+  | Pcvtbint(Pint64, Pnativeint) ->
+      Pccall (default_prim "caml_int64_to_nativeint")
+  | Pnegbint Pint64 -> Pccall (default_prim "caml_int64_neg")
+  | Paddbint Pint64 -> Pccall (default_prim "caml_int64_add")
+  | Psubbint Pint64 -> Pccall (default_prim "caml_int64_sub")
+  | Pmulbint Pint64 -> Pccall (default_prim "caml_int64_mul")
+  | Pdivbint Pint64 -> Pccall (default_prim "caml_int64_div")
+  | Pmodbint Pint64 -> Pccall (default_prim "caml_int64_mod")
+  | Pandbint Pint64 -> Pccall (default_prim "caml_int64_and")
+  | Porbint Pint64 ->  Pccall (default_prim "caml_int64_or")
+  | Pxorbint Pint64 -> Pccall (default_prim "caml_int64_xor")
+  | Plslbint Pint64 -> Pccall (default_prim "caml_int64_shift_left")
+  | Plsrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right_unsigned")
+  | Pasrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right")
   | Pbintcomp(Pint64, Lambda.Ceq) -> Pccall (default_prim "caml_equal")
   | Pbintcomp(Pint64, Lambda.Cneq) -> Pccall (default_prim "caml_notequal")
   | Pbintcomp(Pint64, Lambda.Clt) -> Pccall (default_prim "caml_lessthan")
@@ -1590,23 +1592,23 @@ and emit_string_constant s cont =
 and emit_boxed_int32_constant n cont =
   let n = Nativeint.of_int32 n in
   if size_int = 8 then
-    Csymbol_address("int32_ops") :: Cint32 n :: Cint32 0n :: cont
+    Csymbol_address("caml_int32_ops") :: Cint32 n :: Cint32 0n :: cont
   else
-    Csymbol_address("int32_ops") :: Cint n :: cont
+    Csymbol_address("caml_int32_ops") :: Cint n :: cont
 
 and emit_boxed_nativeint_constant n cont =
-  Csymbol_address("nativeint_ops") :: Cint n :: cont
+  Csymbol_address("caml_nativeint_ops") :: Cint n :: cont
 
 and emit_boxed_int64_constant n cont =
   let lo = Int64.to_nativeint n in
   if size_int = 8 then
-    Csymbol_address("int64_ops") :: Cint lo :: cont
+    Csymbol_address("caml_int64_ops") :: Cint lo :: cont
   else begin
     let hi = Int64.to_nativeint (Int64.shift_right n 32) in
     if big_endian then
-      Csymbol_address("int64_ops") :: Cint hi :: Cint lo :: cont
+      Csymbol_address("caml_int64_ops") :: Cint hi :: Cint lo :: cont
     else
-      Csymbol_address("int64_ops") :: Cint lo :: Cint hi :: cont
+      Csymbol_address("caml_int64_ops") :: Cint lo :: Cint hi :: cont
   end
 
 (* Emit constant closures *)

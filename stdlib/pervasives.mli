@@ -422,7 +422,7 @@ val bool_of_string : string -> bool
 val string_of_int : int -> string
 (** Return the string representation of an integer, in decimal. *)
 
-external int_of_string : string -> int = "int_of_string"
+external int_of_string : string -> int = "caml_int_of_string"
 (** Convert the given string to an integer.
    The string is read in decimal (by default) or in hexadecimal (if it
    begins with [0x] or [0X]), octal (if it begins with [0o] or [0O]),

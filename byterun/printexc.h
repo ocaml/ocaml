@@ -20,8 +20,8 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-CAMLextern char * format_caml_exception (value);
-void fatal_uncaught_exception (value) Noreturn;
+CAMLextern char * caml_format_exception (value);
+void caml_fatal_uncaught_exception (value) Noreturn;
 
 
 #endif /* CAML_PRINTEXC_H */

@@ -42,7 +42,7 @@ extern void caml_shrink_heap (char *);              /* memory.c */
   XXX Should be fixed:
   XXX The above assumes that all roots are aligned on a 4-byte boundary,
   XXX which is not always guaranteed by C.
-  XXX (see [register_global_roots] and [init_exceptions])
+  XXX (see [register_global_roots] and [caml_init_exceptions])
   XXX Should be able to fix it to only assume 2-byte alignment.
 */
 #define Make_ehd(s,t,c) (((s) << 10) | (t) << 2 | (c))
@@ -186,7 +186,7 @@ void caml_compact_heap (void)
     /* Invert roots first because the threads library needs some heap
        data structures to find its roots.  Fortunately, it doesn't need
        the headers (see above). */
-    do_roots (invert_root);
+    caml_do_roots (invert_root);
     final_do_weak_roots (invert_root);
 
     ch = caml_heap_start;
@@ -222,7 +222,7 @@ void caml_compact_heap (void)
     }
     /* Invert weak pointers. */
     {
-      value *pp = &weak_list_head;
+      value *pp = &caml_weak_list_head;
       value p;
       word q;
       size_t sz, i;
@@ -234,7 +234,7 @@ void caml_compact_heap (void)
         while (Ecolor (q) == 0) q = * (word *) q;
         sz = Wosize_ehd (q);
         for (i = 1; i < sz; i++){
-          if (Field (p,i) != weak_none){
+          if (Field (p,i) != caml_weak_none){
             invert_pointer_at ((word *) &(Field (p,i)));
           }
         }

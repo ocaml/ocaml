@@ -61,7 +61,7 @@
 #define SEEK_END 2
 #endif
 
-extern int parser_trace;
+extern int caml_parser_trace;
 
 CAMLexport header_t caml_atom_table[256];
 
@@ -102,7 +102,7 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
   int err;
   char buf [2];
 
-  truename = search_exe_in_path(*name);
+  truename = caml_search_exe_in_path(*name);
   *name = truename;
   caml_gc_message(0x100, "Opening bytecode executable %s\n",
                   (unsigned long) truename);
@@ -243,8 +243,8 @@ static int parse_command_line(char **argv)
       caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
       break;
     case 'p':
-      for (j = 0; names_of_builtin_cprim[j] != NULL; j++)
-        printf("%s\n", names_of_builtin_cprim[j]);
+      for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
+        printf("%s\n", caml_names_of_builtin_cprim[j]);
       exit(0);
       break;
     case 'b':
@@ -252,7 +252,7 @@ static int parse_command_line(char **argv)
       break;
     case 'I':
       if (argv[i + 1] != NULL) {
-        caml_ext_table_add(&shared_libs_path, argv[i + 1]);
+        caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
         i++;
       }
       break;
@@ -298,7 +298,7 @@ static void parse_camlrunparam(void)
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &caml_verb_gc); break;
       case 'b': caml_init_backtrace(); break;
-      case 'p': parser_trace = 1; break;
+      case 'p': caml_parser_trace = 1; break;
       }
     }
   }
@@ -327,9 +327,9 @@ CAMLexport void caml_main(char **argv)
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   init_ieee_floats();
-  init_custom_operations();
-  caml_ext_table_init(&shared_libs_path, 8);
-  external_raise = NULL;
+  caml_init_custom_operations();
+  caml_ext_table_init(&caml_shared_libs_path, 8);
+  caml_external_raise = NULL;
   /* Determine options and position of bytecode file */
 #ifdef DEBUG
   caml_verb_gc = 63;
@@ -338,7 +338,7 @@ CAMLexport void caml_main(char **argv)
   pos = 0;
   exe_name = argv[0];
 #ifdef __linux__
-  if (executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
+  if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
 #endif
   fd = caml_attempt_open(&exe_name, &trail, 0);
@@ -367,9 +367,9 @@ CAMLexport void caml_main(char **argv)
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */
-  interprete(NULL, 0);
+  caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
-  debugger_init();
+  caml_debugger_init();
   /* Load the code */
   code_size = caml_seek_section(fd, &trail, "CODE");
   load_code(fd, code_size);
@@ -378,21 +378,21 @@ CAMLexport void caml_main(char **argv)
   shared_libs = read_section(fd, &trail, "DLLS");
   req_prims = read_section(fd, &trail, "PRIM");
   if (req_prims == NULL) caml_fatal_error("Fatal error: no PRIM section\n");
-  build_primitive_table(shared_lib_path, shared_libs, req_prims);
+  caml_build_primitive_table(shared_lib_path, shared_libs, req_prims);
   caml_stat_free(shared_lib_path);
   caml_stat_free(shared_libs);
   caml_stat_free(req_prims);
   /* Load the globals */
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
-  caml_global_data = input_val(chan);
+  caml_global_data = caml_input_val(chan);
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
   /* Ensure that the globals are in the major heap. */
   caml_oldify_one (caml_global_data, &caml_global_data);
   caml_oldify_mopup ();
   /* Initialize system libraries */
-  init_exceptions();
+  caml_init_exceptions();
   caml_sys_init(exe_name, argv + pos);
 #ifdef _WIN32
   /* Start a thread to handle signals */
@@ -400,15 +400,16 @@ CAMLexport void caml_main(char **argv)
     _beginthread(caml_signal_thread, 4096, NULL);
 #endif
   /* Execute the program */
-  debugger(PROGRAM_START);
-  res = interprete(start_code, code_size);
+  caml_debugger(PROGRAM_START);
+  res = caml_interprete(start_code, code_size);
   if (Is_exception_result(res)) {
-    exn_bucket = Extract_exception(res);
-    if (debugger_in_use) {
-      caml_extern_sp = &exn_bucket; /* The debugger needs the exception value.*/
-      debugger(UNCAUGHT_EXC);
+    caml_exn_bucket = Extract_exception(res);
+    if (caml_debugger_in_use) {
+      caml_extern_sp = &caml_exn_bucket; /* The debugger needs the
+                                            exception value.*/
+      caml_debugger(UNCAUGHT_EXC);
     }
-    fatal_uncaught_exception(exn_bucket);
+    caml_fatal_uncaught_exception(caml_exn_bucket);
   }
 }
 
@@ -420,37 +421,37 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   value res;
 
   init_ieee_floats();
-  init_custom_operations();
+  caml_init_custom_operations();
 #ifdef DEBUG
   caml_verb_gc = 63;
 #endif
   parse_camlrunparam();
-  external_raise = NULL;
+  caml_external_raise = NULL;
   /* Initialize the abstract machine */
   init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
            percent_free_init, max_percent_free_init);
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */
-  interprete(NULL, 0);
+  caml_interprete(NULL, 0);
   /* Load the code */
   start_code = code;
 #ifdef THREADED_CODE
   thread_code(start_code, code_size);
 #endif
   /* Use the builtin table of primitives */
-  prim_table.size = prim_table.capacity = -1;
-  prim_table.contents = (void **) builtin_cprim;
+  caml_prim_table.size = caml_prim_table.capacity = -1;
+  caml_prim_table.contents = (void **) caml_builtin_cprim;
   /* Load the globals */
-  caml_global_data = input_val_from_string((value)data, 0);
+  caml_global_data = caml_input_val_from_string((value)data, 0);
   /* Ensure that the globals are in the major heap. */
   caml_oldify_one (caml_global_data, &caml_global_data);
   caml_oldify_mopup ();
   /* Run the code */
-  init_exceptions();
+  caml_init_exceptions();
   caml_sys_init("", argv);
-  res = interprete(start_code, code_size);
+  res = caml_interprete(start_code, code_size);
   if (Is_exception_result(res))
-    fatal_uncaught_exception(Extract_exception(res));
+    caml_fatal_uncaught_exception(Extract_exception(res));
 }
 

@@ -254,7 +254,8 @@ struct custom_operations;       /* defined in [custom.h] */
 #ifndef ARCH_ALIGN_INT64
 #define Int64_val(v) (*((int64 *) Data_custom_val(v)))
 #else
-CAMLextern int64 Int64_val(value v);
+CAMLextern int64 caml_Int64_val(value v);
+#define Int64_val(v) caml_Int64_val(v)
 #endif
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */

@@ -107,7 +107,7 @@ external float : int -> float = "%floatofint"
 external float_of_int : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
 external int_of_float : float -> int = "%intoffloat"
-external float_of_bits : int64 -> float = "int64_float_of_bits"
+external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
 let infinity =
   float_of_bits 0x7F_F0_00_00_00_00_00_00L
 let neg_infinity =
@@ -161,7 +161,7 @@ external snd : 'a * 'b -> 'b = "%field1"
 
 (* String conversion functions *)
 
-external format_int: string -> int -> string = "format_int"
+external format_int: string -> int -> string = "caml_format_int"
 external format_float: string -> float -> string = "format_float"
 
 let string_of_bool b =
@@ -174,7 +174,7 @@ let bool_of_string = function
 let string_of_int n =
   format_int "%d" n
 
-external int_of_string : string -> int = "int_of_string"
+external int_of_string : string -> int = "caml_int_of_string"
 
 module String = struct
   external get : string -> int -> char = "%string_safe_get"
@@ -260,7 +260,7 @@ external output_byte : out_channel -> int -> unit = "caml_ml_output_char"
 external output_binary_int : out_channel -> int -> unit = "caml_ml_output_int"
 
 external marshal_to_channel : out_channel -> 'a -> unit list -> unit
-     = "output_value"
+     = "caml_output_value"
 let output_value chan v = marshal_to_channel chan v []
 
 external seek_out : out_channel -> int -> unit = "caml_ml_seek_out"
@@ -340,7 +340,7 @@ let input_line chan =
 
 external input_byte : in_channel -> int = "caml_ml_input_char"
 external input_binary_int : in_channel -> int = "caml_ml_input_int"
-external input_value : in_channel -> 'a = "input_value"
+external input_value : in_channel -> 'a = "caml_input_value"
 external seek_in : in_channel -> int -> unit = "caml_ml_seek_in"
 external pos_in : in_channel -> int = "caml_ml_pos_in"
 external in_channel_length : in_channel -> int = "caml_ml_channel_size"

@@ -99,7 +99,8 @@ void final_do_calls (void)
 /* Call [*f] on the closures of the finalisable set and
    the closures and values of the finalising set.
    The recent set is empty.
-   This is called by the major GC and the compactor through [darken_all_roots].
+   This is called by the major GC and the compactor
+   through [caml_darken_all_roots].
 */
 void final_do_strong_roots (scanning_action f)
 {
@@ -128,7 +129,7 @@ void final_do_weak_roots (scanning_action f)
 }
 
 /* Call [*f] on the closures and values of the recent set.
-   This is called by the minor GC through [oldify_local_roots].
+   This is called by the minor GC through [caml_oldify_local_roots].
 */
 void final_do_young_roots (scanning_action f)
 {
@@ -154,7 +155,7 @@ void final_empty_young (void)
 CAMLprim value final_register (value f, value v)
 {
   if (!(Is_block (v) && (Is_in_heap (v) || Is_young (v)))){
-    invalid_argument ("Gc.finalise");
+    caml_invalid_argument ("Gc.finalise");
   }
 
   Assert (old <= young);

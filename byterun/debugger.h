@@ -21,17 +21,17 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-extern int debugger_in_use;
+extern int caml_debugger_in_use;
 extern int running;
-extern unsigned long event_count;
+extern unsigned long caml_event_count;
 
 enum event_kind {
   EVENT_COUNT, BREAKPOINT, PROGRAM_START, PROGRAM_EXIT,
   TRAP_BARRIER, UNCAUGHT_EXC
 };
 
-void debugger_init (void);
-void debugger (enum event_kind event);
+void caml_debugger_init (void);
+void caml_debugger (enum event_kind event);
 
 /* Communication protocol */
 
@@ -83,7 +83,7 @@ enum debugger_request {
   /* As REQ_GET_OBJ, but sends only one field. */
   REQ_MARSHAL_OBJ = 'M',        /* mlvalue v */
   /* Send a copy of the data structure rooted at v, using the same
-     format as output_value. */
+     format as [caml_output_value]. */
   REQ_GET_CLOSURE_CODE = 'C'    /* mlvalue v */
   /* Send the code address of the given closure.
      Reply is one uint32. */

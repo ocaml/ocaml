@@ -70,7 +70,7 @@
         .globl  G(caml_alloc1)
         .globl  G(caml_alloc2)
         .globl  G(caml_alloc3)
-        .globl  G(caml_alloc)
+        .globl  G(caml_allocN)
 
 G(caml_call_gc):
         PROFILE_CAML
@@ -90,7 +90,7 @@ LBL(105):
         pushl   %eax
         movl    %esp, G(caml_gc_regs)
     /* Call the garbage collector */
-        call    G(garbage_collection)
+        call    G(caml_garbage_collection)
     /* Restore all regs used by the code generator */
         popl    %eax
         popl    %ebx
@@ -154,7 +154,7 @@ LBL(102):
         jmp     G(caml_alloc3)
 
         .align  FUNCTION_ALIGN
-G(caml_alloc):
+G(caml_allocN):
         PROFILE_CAML
         subl    G(caml_young_ptr), %eax /* eax = size - caml_young_ptr */
         negl    %eax                    /* eax = caml_young_ptr - size */
@@ -173,7 +173,7 @@ LBL(103):
         movl    %eax, G(caml_bottom_of_stack)
         call    LBL(105)
         popl    %eax                    /* recover desired size */
-        jmp     G(caml_alloc)
+        jmp     G(caml_allocN)
 
 /* Call a C function from Caml */
 
@@ -238,9 +238,9 @@ LBL(108):
 
 /* Raise an exception from C */
 
-        .globl  G(raise_caml_exception)
+        .globl  G(caml_raise_exception)
         .align  FUNCTION_ALIGN
-G(raise_caml_exception):
+G(caml_raise_exception):
         PROFILE_C
         movl    4(%esp), %eax
         movl    G(caml_exception_pointer), %esp
@@ -297,9 +297,9 @@ G(caml_callback3_exn):
         movl    $ G(caml_apply3), %esi   /* code pointer */
         jmp     LBL(106)
 
-        .globl  G(caml_array_bound_error)
+        .globl  G(caml_ml_array_bound_error)
         .align  FUNCTION_ALIGN
-G(caml_array_bound_error):
+G(caml_ml_array_bound_error):
     /* Empty the floating-point stack */
         ffree   %st(0)
         ffree   %st(1)

@@ -262,58 +262,58 @@ char *search_exe_in_path (char * name)
 #include "mlvalues.h"
 #include "prims.h"
 
-struct ext_table shared_libs_path;
-struct ext_table prim_table;
+struct ext_table caml_shared_libs_path;
+struct ext_table caml_prim_table;
 
 static c_primitive lookup_primitive(char * name)
 {
   int i;
   void * res;
 
-  for (i = 0; names_of_builtin_cprim[i] != NULL; i++) {
-    if (strcmp(name, names_of_builtin_cprim[i]) == 0)
-      return builtin_cprim[i];
+  for (i = 0; caml_names_of_builtin_cprim[i] != NULL; i++) {
+    if (strcmp(name, caml_names_of_builtin_cprim[i]) == 0)
+      return caml_builtin_cprim[i];
   }
   return NULL;
 }
 
-void build_primitive_table(char * lib_path,
-                           char * libs,
-                           char * req_prims)
+void caml_build_primitive_table(char * lib_path,
+                                char * libs,
+                                char * req_prims)
 {
   char * p;
 
-  caml_ext_table_init(&prim_table, 0x180);
+  caml_ext_table_init(&caml_prim_table, 0x180);
   for (p = req_prims; *p != 0; p += strlen(p) + 1) {
     c_primitive prim = lookup_primitive(p);
     if (prim == NULL)
       caml_fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
-    caml_ext_table_add(&prim_table, (void *) prim);
+    caml_ext_table_add(&caml_prim_table, (void *) prim);
   }
 }
 
-value dynlink_open_lib (value filename)
+value caml_dynlink_open_lib (value filename)
 {
   return Val_unit;
 }
 
-value dynlink_close_lib(value handle)
+value caml_dynlink_close_lib(value handle)
 {
   return Val_unit;
 }
 
-value dynlink_lookup_symbol(value handle, value symbolname)
+value caml_dynlink_lookup_symbol(value handle, value symbolname)
 {
   return Val_unit;
 }
 
-value dynlink_add_primitive(value handle)
+value caml_dynlink_add_primitive(value handle)
 {
-  invalid_argument("dynlink_add_primitive");
+  caml_invalid_argument("dynlink_add_primitive");
   return Val_unit; /* not reached */
 }
 
-value dynlink_get_current_libs(value unit)
+value caml_dynlink_get_current_libs(value unit)
 {
   return Atom (0);
 }

@@ -935,7 +935,7 @@ let emit_instr i =
           insimm "addi" [| "r4" |] "8" (regs i.res)
         end else begin
           insimm "movi" [||] (string_of_int n) [| "r2" |];
-          insimm "brcall" [||] "caml_alloc#" [| "b0" |];
+          insimm "brcall" [||] "caml_allocN#" [| "b0" |];
           end_basic_block();
           `{record_frame i.live}\n`;
           insimm "addi" [| "r4" |] "8" (regs i.res)
@@ -954,7 +954,7 @@ let emit_instr i =
         insimm "movicond" [| p2 |] "0" (regs i.res)
     | Lop(Iintop(Icheckbound)) ->
         insert "cmp.leu" (regs i.arg) [| "p6"; "p0" |];
-        insimm "brcallcondexc" [| "p6" |] "caml_array_bound_error#"
+        insimm "brcallcondexc" [| "p6" |] "caml_ml_array_bound_error#"
                                [| "b0"; "heap" |]
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
@@ -1024,7 +1024,7 @@ let emit_instr i =
         insimm "movicond" [| p2 |] "0" (regs i.res)
     | Lop(Iintop_imm(Icheckbound, n)) ->
         insimm "cmpi.geu" (regs i.arg) (string_of_int n) [| "p6"; "p0" |];
-        insimm "brcallcondexc" [| "p6" |] "caml_array_bound_error#"
+        insimm "brcallcondexc" [| "p6" |] "caml_ml_array_bound_error#"
                                [| "b0"; "heap" |]
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op ^ "i" in

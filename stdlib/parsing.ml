@@ -76,7 +76,7 @@ type parser_output =
 
 external parse_engine :
     parse_tables -> parser_env -> parser_input -> Obj.t -> parser_output
-    = "parse_engine"
+    = "caml_parse_engine"
 
 let env =
   { s_stack = Array.create 100 0;

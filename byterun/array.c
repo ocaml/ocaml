@@ -143,13 +143,13 @@ CAMLprim value caml_make_vect(value len, value init)
            && Tag_val(init) == Double_tag) {
     d = Double_val(init);
     wsize = size * Double_wosize;
-    if (wsize > Max_wosize) invalid_argument("Array.make");
+    if (wsize > Max_wosize) caml_invalid_argument("Array.make");
     res = caml_alloc(wsize, Double_array_tag);
     for (i = 0; i < size; i++) {
       Store_double_field(res, i, d);
     }
   } else {
-    if (size > Max_wosize) invalid_argument("Array.make");
+    if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size < Max_young_wosize) {
       res = caml_alloc_small(size, 0);
       for (i = 0; i < size; i++) Field(res, i) = init;

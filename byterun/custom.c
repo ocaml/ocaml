@@ -21,10 +21,10 @@
 #include "memory.h"
 #include "mlvalues.h"
 
-CAMLextern value alloc_custom(struct custom_operations * ops,
-                              unsigned long size,
-                              mlsize_t mem,
-                              mlsize_t max)
+CAMLextern value caml_alloc_custom(struct custom_operations * ops,
+                                   unsigned long size,
+                                   mlsize_t mem,
+                                   mlsize_t max)
 {
   mlsize_t wosize;
   value result;
@@ -49,7 +49,7 @@ struct custom_operations_list {
 
 static struct custom_operations_list * custom_ops_table = NULL;
 
-CAMLextern void register_custom_operations(struct custom_operations * ops)
+CAMLextern void caml_register_custom_operations(struct custom_operations * ops)
 {
   struct custom_operations_list * l =
     caml_stat_alloc(sizeof(struct custom_operations_list));
@@ -60,7 +60,7 @@ CAMLextern void register_custom_operations(struct custom_operations * ops)
   custom_ops_table = l;
 }
 
-struct custom_operations * find_custom_operations(char * ident)
+struct custom_operations * caml_find_custom_operations(char * ident)
 {
   struct custom_operations_list * l;
   for (l = custom_ops_table; l != NULL; l = l->next)
@@ -70,7 +70,7 @@ struct custom_operations * find_custom_operations(char * ident)
 
 static struct custom_operations_list * custom_ops_final_table = NULL;
 
-struct custom_operations * final_custom_operations(final_fun fn)
+struct custom_operations * caml_final_custom_operations(final_fun fn)
 {
   struct custom_operations_list * l;
   struct custom_operations * ops;
@@ -90,11 +90,13 @@ struct custom_operations * final_custom_operations(final_fun fn)
   return ops;
 }
 
-extern struct custom_operations int32_ops, nativeint_ops, int64_ops;
+extern struct custom_operations caml_int32_ops,
+                                caml_nativeint_ops,
+                                caml_int64_ops;
 
-void init_custom_operations(void)
+void caml_init_custom_operations(void)
 {
-  register_custom_operations(&int32_ops);
-  register_custom_operations(&nativeint_ops);
-  register_custom_operations(&int64_ops);
+  caml_register_custom_operations(&caml_int32_ops);
+  caml_register_custom_operations(&caml_nativeint_ops);
+  caml_register_custom_operations(&caml_int64_ops);
 }

@@ -29,19 +29,19 @@
 #define Caml_gc_regs _caml_gc_regs
 #define Caml_exception_pointer _caml_exception_pointer
 #define Caml_required_size _caml_required_size
-#define Caml_alloc _caml_alloc
+#define Caml_allocN _caml_allocN
 #define Caml_call_gc _caml_call_gc
-#define Garbage_collection _garbage_collection
+#define Caml_garbage_collection _caml_garbage_collection
 #define Caml_c_call _caml_c_call
 #define Caml_start_program _caml_start_program
 #define Caml_program _caml_program
-#define Raise_caml_exception _raise_caml_exception
+#define Caml_raise_exception _caml_raise_exception
 #define Caml_callback_exn _caml_callback_exn
 #define Caml_callback2_exn _caml_callback2_exn
 #define Caml_callback3_exn _caml_callback3_exn
 #define Caml_apply2 _caml_apply2
 #define Caml_apply3 _caml_apply3
-#define Mlraise _mlraise
+#define Caml_raise _caml_raise
 #define System_frametable _system__frametable
 
 #else
@@ -55,19 +55,19 @@
 #define Caml_gc_regs caml_gc_regs
 #define Caml_exception_pointer caml_exception_pointer
 #define Caml_required_size caml_required_size
-#define Caml_alloc caml_alloc
+#define Caml_allocN caml_allocN
 #define Caml_call_gc caml_call_gc
-#define Garbage_collection garbage_collection
+#define Caml_garbage_collection caml_garbage_collection
 #define Caml_c_call caml_c_call
 #define Caml_start_program caml_start_program
 #define Caml_program caml_program
-#define Raise_caml_exception raise_caml_exception
+#define Caml_raise_exception caml_raise_exception
 #define Caml_callback_exn caml_callback_exn
 #define Caml_callback2_exn caml_callback2_exn
 #define Caml_callback3_exn caml_callback3_exn
 #define Caml_apply2 caml_apply2
 #define Caml_apply3 caml_apply3
-#define Mlraise mlraise
+#define Caml_raise caml_raise
 #define System_frametable system__frametable
 
 #endif
@@ -87,11 +87,11 @@
 /* Allocation functions */
 
         .text
-        .global Caml_alloc
+        .global Caml_allocN
         .global Caml_call_gc
 
 /* Required size in %g2 */
-Caml_alloc:
+Caml_allocN:
 #ifdef INDIRECT_LIMIT
         ld      [Alloc_limit], %g1
         sub     Alloc_ptr, %g2, Alloc_ptr
@@ -160,7 +160,7 @@ L100:   add     %sp, 96 + 15*8, %g2
         std     %f26, [%g1 + 0x68]
         std     %f28, [%g1 + 0x70]
     /* Call the garbage collector */
-        call    Garbage_collection
+        call    Caml_garbage_collection
         nop
     /* Restore all regs used by the code generator */
         add     %sp, 96 + 15*8, %g2
@@ -389,7 +389,7 @@ System_frametable:
         .half   0               /* no roots */
 
 #ifdef SYS_solaris
-	.type Caml_alloc, #function
+	.type Caml_allocN, #function
 	.type Caml_call_gc, #function
         .type Caml_c_call, #function
         .type Caml_start_program, #function

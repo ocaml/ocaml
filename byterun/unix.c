@@ -45,7 +45,7 @@
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
-char * decompose_path(struct ext_table * tbl, char * path)
+char * caml_decompose_path(struct ext_table * tbl, char * path)
 {
   char * p, * q;
   int n;
@@ -65,7 +65,7 @@ char * decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * search_in_path(struct ext_table * path, char * name)
+char * caml_search_in_path(struct ext_table * path, char * name)
 {
   char * p, * fullname;
   int i;
@@ -135,16 +135,16 @@ static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
   
 #endif
 
-char * search_exe_in_path(char * name)
+char * caml_search_exe_in_path(char * name)
 {
   struct ext_table path;
   char * tofree;
   char * res;
 
   caml_ext_table_init(&path, 8);
-  tofree = decompose_path(&path, getenv("PATH"));
+  tofree = caml_decompose_path(&path, getenv("PATH"));
 #ifndef __CYGWIN32__
-  res = search_in_path(&path, name);
+  res = caml_search_in_path(&path, name);
 #else
   res = cygwin_search_exe_in_path(&path, name);
 #endif
@@ -153,13 +153,13 @@ char * search_exe_in_path(char * name)
   return res;
 }
 
-char * search_dll_in_path(struct ext_table * path, char * name)
+char * caml_search_dll_in_path(struct ext_table * path, char * name)
 {
   char * dllname = caml_stat_alloc(strlen(name) + 4);
   char * res;
   strcpy(dllname, name);
   strcat(dllname, ".so");
-  res = search_in_path(path, dllname);
+  res = caml_search_in_path(path, dllname);
   caml_stat_free(dllname);
   return res;
 }
@@ -292,7 +292,7 @@ char * caml_dlerror(void)
 
 #include <sys/mman.h>
 
-char *aligned_mmap (asize_t size, int modulo, void **block)
+char *caml_aligned_mmap (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
   unsigned long aligned_mem;
@@ -319,7 +319,7 @@ char *aligned_mmap (asize_t size, int modulo, void **block)
   return (char *) (aligned_mem - modulo);
 }
 
-void aligned_munmap (char * addr, asize_t size)
+void caml_aligned_munmap (char * addr, asize_t size)
 {
   int retcode = munmap (addr, size + Page_size);
   Assert(retcode == 0);
@@ -359,7 +359,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
 
 #ifdef __linux__
 
-int executable_name(char * name, int name_len)
+int caml_executable_name(char * name, int name_len)
 {
   int retcode;
   struct stat st;

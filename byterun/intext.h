@@ -90,38 +90,38 @@
 
 /* The entry points */
 
-void output_val (struct channel * chan, value v, value flags);
+void caml_output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
 
 /* </private> */
 
-CAMLextern void output_value_to_malloc(value v, value flags,
-                                       /*out*/ char ** buf,
-                                       /*out*/ long * len);
+CAMLextern void caml_output_value_to_malloc(value v, value flags,
+                                            /*out*/ char ** buf,
+                                            /*out*/ long * len);
   /* Output [v] with flags [flags] to a memory buffer allocated with
      malloc.  On return, [*buf] points to the buffer and [*len]
      contains the number of bytes in buffer. */
-CAMLextern long output_value_to_block(value v, value flags,
-                                      char * data, long len);
+CAMLextern long caml_output_value_to_block(value v, value flags,
+                                           char * data, long len);
   /* Output [v] with flags [flags] to a user-provided memory buffer.
      [data] points to the start of this buffer, and [len] is its size
      in bytes.  Return the number of bytes actually written in buffer.
      Raise [Failure] if buffer is too short. */
 
 /* <private> */
-value input_val (struct channel * chan);
+value caml_input_val (struct channel * chan);
   /* Read a structured value from the channel [chan]. */
 /* </private> */
 
-CAMLextern value input_val_from_string (value str, long ofs);
+CAMLextern value caml_input_val_from_string (value str, long ofs);
   /* Read a structured value from the Caml string [str], starting
      at offset [ofs]. */
-CAMLextern value input_value_from_malloc(char * data, long ofs);
+CAMLextern value caml_input_value_from_malloc(char * data, long ofs);
   /* Read a structured value from a malloced buffer.  [data] points
      to the beginning of the buffer, and [ofs] is the offset of the
      beginning of the externed data in this buffer.  The buffer is
      deallocated with [free] on return, or if an exception is raised. */
-CAMLextern value input_value_from_block(char * data, long len);
+CAMLextern value caml_input_value_from_block(char * data, long len);
   /* Read a structured value from a user-provided buffer.  [data] points
      to the beginning of the externed data in this buffer,
      and [len] is the length in bytes of valid data in this buffer.
@@ -129,39 +129,39 @@ CAMLextern value input_value_from_block(char * data, long len);
 
 /* Functions for writing user-defined marshallers */
 
-CAMLextern void serialize_int_1(int i);
-CAMLextern void serialize_int_2(int i);
-CAMLextern void serialize_int_4(int32 i);
-CAMLextern void serialize_int_8(int64 i);
-CAMLextern void serialize_float_4(float f);
-CAMLextern void serialize_float_8(double f);
-CAMLextern void serialize_block_1(void * data, long len);
-CAMLextern void serialize_block_2(void * data, long len);
-CAMLextern void serialize_block_4(void * data, long len);
-CAMLextern void serialize_block_8(void * data, long len);
-CAMLextern void serialize_block_float_8(void * data, long len);
+CAMLextern void caml_serialize_int_1(int i);
+CAMLextern void caml_serialize_int_2(int i);
+CAMLextern void caml_serialize_int_4(int32 i);
+CAMLextern void caml_serialize_int_8(int64 i);
+CAMLextern void caml_serialize_float_4(float f);
+CAMLextern void caml_serialize_float_8(double f);
+CAMLextern void caml_serialize_block_1(void * data, long len);
+CAMLextern void caml_serialize_block_2(void * data, long len);
+CAMLextern void caml_serialize_block_4(void * data, long len);
+CAMLextern void caml_serialize_block_8(void * data, long len);
+CAMLextern void caml_serialize_block_float_8(void * data, long len);
 
-CAMLextern int deserialize_uint_1(void);
-CAMLextern int deserialize_sint_1(void);
-CAMLextern int deserialize_uint_2(void);
-CAMLextern int deserialize_sint_2(void);
-CAMLextern uint32 deserialize_uint_4(void);
-CAMLextern int32 deserialize_sint_4(void);
-CAMLextern uint64 deserialize_uint_8(void);
-CAMLextern int64 deserialize_sint_8(void);
-CAMLextern float deserialize_float_4(void);
-CAMLextern double deserialize_float_8(void);
-CAMLextern void deserialize_block_1(void * data, long len);
-CAMLextern void deserialize_block_2(void * data, long len);
-CAMLextern void deserialize_block_4(void * data, long len);
-CAMLextern void deserialize_block_8(void * data, long len);
-CAMLextern void deserialize_block_float_8(void * data, long len);
-CAMLextern void deserialize_error(char * msg);
+CAMLextern int caml_deserialize_uint_1(void);
+CAMLextern int caml_deserialize_sint_1(void);
+CAMLextern int caml_deserialize_uint_2(void);
+CAMLextern int caml_deserialize_sint_2(void);
+CAMLextern uint32 caml_deserialize_uint_4(void);
+CAMLextern int32 caml_deserialize_sint_4(void);
+CAMLextern uint64 caml_deserialize_uint_8(void);
+CAMLextern int64 caml_deserialize_sint_8(void);
+CAMLextern float caml_deserialize_float_4(void);
+CAMLextern double caml_deserialize_float_8(void);
+CAMLextern void caml_deserialize_block_1(void * data, long len);
+CAMLextern void caml_deserialize_block_2(void * data, long len);
+CAMLextern void caml_deserialize_block_4(void * data, long len);
+CAMLextern void caml_deserialize_block_8(void * data, long len);
+CAMLextern void caml_deserialize_block_float_8(void * data, long len);
+CAMLextern void caml_deserialize_error(char * msg);
 
 /* <private> */
 
 /* Auxiliary stuff for sending code pointers */
-unsigned char * code_checksum (void);
+unsigned char * caml_code_checksum (void);
 
 #ifndef NATIVE_CODE
 #include "fix_code.h"

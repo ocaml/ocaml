@@ -52,13 +52,13 @@ void load_code(int fd, asize_t len)
 #ifdef ARCH_BIG_ENDIAN
   fixup_endianness(start_code, code_size);
 #endif
-  if (debugger_in_use) {
+  if (caml_debugger_in_use) {
     len /= sizeof(opcode_t);
     saved_code = (unsigned char *) caml_stat_alloc(len);
     for (i = 0; i < len; i++) saved_code[i] = start_code[i];
   }
 #ifdef THREADED_CODE
-  /* Better to thread now than at the beginning of interprete(),
+  /* Better to thread now than at the beginning of [caml_interprete],
      since the debugger interface needs to perform SET_EVENT requests
      on the code. */
   thread_code(start_code, code_size);

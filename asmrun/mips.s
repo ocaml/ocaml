@@ -303,11 +303,11 @@ $105:
 
 /* Raise an exception from C */
 
-        .globl  raise_caml_exception
-        .ent    raise_caml_exception
-raise_caml_exception:
+        .globl  caml_raise_exception
+        .ent    caml_raise_exception
+caml_raise_exception:
     /* Setup $gp, discarding caller's $gp (we won't return) */
-        .cpsetup $25, $24, raise_caml_exception
+        .cpsetup $25, $24, caml_raise_exception
     /* Branch to exn handler */
         move    $2, $4
         lw      $22, caml_young_ptr
@@ -319,7 +319,7 @@ raise_caml_exception:
         addu    $sp, $sp, 16
         j       $24
 
-        .end    raise_caml_exception
+        .end    caml_raise_exception
 
 /* Callback from C to Caml */
 
@@ -366,16 +366,16 @@ caml_callback3_exn:
 
 /* Glue code to call array_bound_error */
 
-        .globl  caml_array_bound_error
-        .ent    caml_array_bound_error
+        .globl  caml_ml_array_bound_error
+        .ent    caml_ml_array_bound_error
 
-caml_array_bound_error:
+caml_ml_array_bound_error:
     /* Setup $gp, discarding caller's $gp (we won't return) */
-        .cpsetup $25, $24, caml_array_bound_error
+        .cpsetup $25, $24, caml_ml_array_bound_error
         la      $24, array_bound_error
         jal     caml_c_call             /* never returns */
 
-        .end    caml_array_bound_error
+        .end    caml_ml_array_bound_error
 
         .rdata
         .globl  system__frametable

@@ -55,7 +55,7 @@ CAMLprim value caml_md5_chan(value vchan, value len)
     while (toread > 0) {
       read = caml_getblock(chan, buffer,
                            toread > sizeof(buffer) ? sizeof(buffer) : toread);
-      if (read == 0) raise_end_of_file();
+      if (read == 0) caml_raise_end_of_file();
       caml_MD5Update(&ctx, (unsigned char *) buffer, read);
       toread -= read;
     }

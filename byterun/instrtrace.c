@@ -63,10 +63,10 @@ void disasm_instr(pc)
     printf(" %d,", pc[0]); pc++;
     /* fallthrough */
   case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4: case C_CALL5:
-    if (pc[0] < 0 || pc[0] >= prim_name_table.size)
+    if (pc[0] < 0 || pc[0] >= caml_prim_name_table.size)
       printf(" unknown primitive %d\n", pc[0]);
     else
-      printf(" %s\n", (char *) prim_name_table.contents[pc[0]]);
+      printf(" %s\n", (char *) caml_prim_name_table.contents[pc[0]]);
     break;
   default:
     printf("\n");

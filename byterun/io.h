@@ -102,7 +102,7 @@ CAMLextern void (*caml_channel_mutex_unlock_exn) (void);
 /* Conversion between file_offset and int64 */
 
 #ifdef ARCH_INT64_TYPE
-#define Val_file_offset(fofs) copy_int64(fofs)
+#define Val_file_offset(fofs) caml_copy_int64(fofs)
 #define File_offset_val(v) ((file_offset) Int64_val(v))
 #else
 CAMLextern value caml_Val_file_offset(file_offset fofs);

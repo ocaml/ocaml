@@ -80,8 +80,8 @@ caml_alloc3:
     /* Try again */
         b       caml_alloc3
 
-        .global caml_alloc
-caml_alloc:
+        .global caml_allocN
+caml_allocN:
         str     r12, [sp, #-4]!
         ldr     r12, [alloc_limit, #0]
         sub     alloc_ptr, alloc_ptr, r10
@@ -96,7 +96,7 @@ caml_alloc:
         bl      .Linvoke_gc
     /* Try again */
         ldr     r10, .Lcaml_requested_size
-        b       caml_alloc
+        b       caml_allocN
 
 /* Shared code to invoke the GC */
 .Linvoke_gc:
@@ -120,7 +120,7 @@ caml_alloc:
         ldr     r10, .Lcaml_exception_pointer
         str     trap_ptr, [r10, #0]
     /* Call the garbage collector */
-        bl      garbage_collection
+        bl      caml_garbage_collection
     /* Restore the registers from the stack */
         ldfd    f4, [sp], #8
         ldfd    f5, [sp], #8
@@ -255,8 +255,8 @@ caml_start_program:
 
 /* Raise an exception from C */
 
-        .global raise_caml_exception
-raise_caml_exception:
+        .global caml_raise_exception
+caml_raise_exception:
     /* Reload Caml allocation pointers */
         ldr     r1, .Lcaml_young_ptr
         ldr     alloc_ptr, [r1, #0]
@@ -304,8 +304,8 @@ caml_callback3_exn:
         ldr     r10, .Lcaml_apply3
         b       .Ljump_to_caml
 
-        .global caml_array_bound_error
-caml_array_bound_error:
+        .global caml_ml_array_bound_error
+caml_ml_array_bound_error:
     /* Load address of array_bound_error in r10 */
         ldr     r10, .Larray_bound_error
     /* Call that function */

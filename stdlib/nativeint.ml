@@ -29,8 +29,8 @@ external shift_right: nativeint -> int -> nativeint = "%nativeint_asr"
 external shift_right_logical: nativeint -> int -> nativeint = "%nativeint_lsr"
 external of_int: int -> nativeint = "%nativeint_of_int"
 external to_int: nativeint -> int = "%nativeint_to_int"
-external of_float : float -> nativeint = "nativeint_of_float"
-external to_float : nativeint -> float = "nativeint_to_float"
+external of_float : float -> nativeint = "caml_nativeint_of_float"
+external to_float : nativeint -> float = "caml_nativeint_to_float"
 external of_int32: int32 -> nativeint = "%nativeint_of_int32"
 external to_int32: nativeint -> int32 = "%nativeint_to_int32"
 
@@ -45,10 +45,10 @@ let min_int = shift_left 1n (size - 1)
 let max_int = sub min_int 1n
 let lognot n = logxor n (-1n)
 
-external format : string -> nativeint -> string = "nativeint_format"
+external format : string -> nativeint -> string = "caml_nativeint_format"
 let to_string n = format "%d" n
 
-external of_string: string -> nativeint = "nativeint_of_string"
+external of_string: string -> nativeint = "caml_nativeint_of_string"
 
 type t = nativeint
 

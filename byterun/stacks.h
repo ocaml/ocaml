@@ -33,7 +33,6 @@ CAMLextern value * caml_trap_barrier;
 #define Trap_pc(tp) (((code_t *)(tp))[0])
 #define Trap_link(tp) (((value **)(tp))[1])
 
-void reset_roots (void);
 void caml_init_stack (unsigned long init_max_size);
 void caml_realloc_stack (asize_t required_size);
 void caml_change_max_stack_size (unsigned long new_max_size);

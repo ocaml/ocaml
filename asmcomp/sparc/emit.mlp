@@ -404,7 +404,7 @@ let rec emit_instr i dslot =
           `	add	%l6, 4, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl_cont}:\n`
         end else begin
-          `{record_frame i.live}	call	{emit_symbol "caml_alloc"}\n`;
+          `{record_frame i.live}	call	{emit_symbol "caml_allocN"}\n`;
           `	mov	{emit_int n}, %g2\n`; (* in delay slot *)
           `	add	%l6, 4, {emit_reg i.res.(0)}\n`
         end

@@ -104,7 +104,7 @@ caml_call_gc:
         stfdu   30, 8(11)
         stfdu   31, 8(11)
     /* Call the GC */
-        bl      garbage_collection
+        bl      caml_garbage_collection
     /* Reload new allocation pointer and allocation limit */
         Loadglobal(31, caml_young_ptr, 11)
         Loadglobal(30, caml_young_limit, 11)
@@ -207,9 +207,9 @@ caml_c_call:
         
 /* Raise an exception from C */
 
-        .globl  raise_caml_exception
-        .type   raise_caml_exception, @function
-raise_caml_exception:
+        .globl  caml_raise_exception
+        .type   caml_raise_exception, @function
+caml_raise_exception:
     /* Reload Caml global registers */
         Loadglobal(1, caml_exception_pointer, 11)
         Loadglobal(31, caml_young_ptr, 11)

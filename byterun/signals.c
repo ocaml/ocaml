@@ -31,35 +31,35 @@
 
 #ifdef _WIN32
 typedef void (*sighandler)(int sig);
-extern sighandler win32_signal(int sig, sighandler action);
-#define signal(sig,act) win32_signal(sig,act)
+extern sighandler caml_win32_signal(int sig, sighandler action);
+#define signal(sig,act) caml_win32_signal(sig,act)
 #endif
 
-int volatile async_signal_mode = 0;
-int volatile pending_signal = 0;
-int volatile something_to_do = 0;
-int volatile force_major_slice = 0;
-value signal_handlers = 0;
-void (*enter_blocking_section_hook)(void) = NULL;
-void (*leave_blocking_section_hook)(void) = NULL;
-void (* volatile async_action_hook)(void) = NULL;
+int volatile caml_async_signal_mode = 0;
+int volatile caml_pending_signal = 0;
+int volatile caml_something_to_do = 0;
+int volatile caml_force_major_slice = 0;
+value caml_signal_handlers = 0;
+void (*caml_enter_blocking_section_hook)(void) = NULL;
+void (*caml_leave_blocking_section_hook)(void) = NULL;
+void (* volatile caml_async_action_hook)(void) = NULL;
 
-void process_event(void)
+void caml_process_event(void)
 {
   int signal_number;
   void (*async_action)(void);
-  if (force_major_slice) caml_minor_collection ();
+  if (caml_force_major_slice) caml_minor_collection ();
                              /* FIXME should be [caml_check_urgent_gc] */
   /* If a signal arrives between the following two instructions,
      it will be lost.  To do: use atomic swap or atomic read-and-clear
      for processors that support it? */
-  signal_number = pending_signal;
-  pending_signal = 0;
-  if (signal_number) execute_signal(signal_number, 0);
+  signal_number = caml_pending_signal;
+  caml_pending_signal = 0;
+  if (signal_number) caml_execute_signal(signal_number, 0);
   /* If an async action is scheduled between the following two instructions,
      it will be lost. */
-  async_action = async_action_hook;
-  async_action_hook = NULL;
+  async_action = caml_async_action_hook;
+  caml_async_action_hook = NULL;
   if (async_action != NULL) (*async_action)();
 #if macintosh
   ROTATECURSOR_MAGIC ();
@@ -68,7 +68,7 @@ void process_event(void)
 
 static int rev_convert_signal_number(int signo);
 
-void execute_signal(int signal_number, int in_signal_handler)
+void caml_execute_signal(int signal_number, int in_signal_handler)
 {
   value res;
 #ifdef POSIX_SIGNALS
@@ -79,7 +79,7 @@ void execute_signal(int signal_number, int in_signal_handler)
   sigaddset(&sigs, signal_number);
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
-  res = caml_callback_exn(Field(signal_handlers, signal_number),
+  res = caml_callback_exn(Field(caml_signal_handlers, signal_number),
                           Val_int(rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
@@ -91,66 +91,70 @@ void execute_signal(int signal_number, int in_signal_handler)
     sigprocmask(SIG_SETMASK, &sigs, NULL);
   }
 #endif
-  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
 
-void handle_signal(int signal_number)
+static void handle_signal(int signal_number)
 {
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(signal_number, handle_signal);
 #endif
-  if (async_signal_mode){
-    leave_blocking_section ();
-    execute_signal(signal_number, 1);
-    enter_blocking_section ();
+  if (caml_async_signal_mode){
+    caml_leave_blocking_section ();
+    caml_execute_signal(signal_number, 1);
+    caml_enter_blocking_section ();
   }else{
-    pending_signal = signal_number;
-    something_to_do = 1;
+    caml_pending_signal = signal_number;
+    caml_something_to_do = 1;
   }
 }
 
-void urge_major_slice (void)
+void caml_urge_major_slice (void)
 {
-  force_major_slice = 1;
-  something_to_do = 1;
+  caml_force_major_slice = 1;
+  caml_something_to_do = 1;
 }
 
-CAMLexport void enter_blocking_section(void)
+CAMLexport void caml_enter_blocking_section(void)
 {
   int temp;
 
   while (1){
-    Assert (!async_signal_mode);
+    Assert (!caml_async_signal_mode);
     /* If a signal arrives between the next two instructions,
        it will be lost. */
-    temp = pending_signal;   pending_signal = 0;
-    if (temp) execute_signal(temp, 0);
-    async_signal_mode = 1;
-    if (!pending_signal) break;
-    async_signal_mode = 0;
+    temp = caml_pending_signal;   caml_pending_signal = 0;
+    if (temp) caml_execute_signal(temp, 0);
+    caml_async_signal_mode = 1;
+    if (!caml_pending_signal) break;
+    caml_async_signal_mode = 0;
   }
-  if (enter_blocking_section_hook != NULL) enter_blocking_section_hook();
+  if (caml_enter_blocking_section_hook != NULL){
+    caml_enter_blocking_section_hook();
+  }
 }
 
-CAMLexport void leave_blocking_section(void)
+CAMLexport void caml_leave_blocking_section(void)
 {
 #ifdef _WIN32
   int signal_number;
 #endif
 
-  if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
+  if (caml_leave_blocking_section_hook != NULL){
+    caml_leave_blocking_section_hook();
+  }
 #ifdef _WIN32
   /* Under Win32, asynchronous signals such as ctrl-C are not processed
      immediately (see ctrl_handler in win32.c), but simply set
-     pending_signal and let the system call run to completion.
-     Hence, test pending_signal here and act upon it, before we get
+     [caml_pending_signal] and let the system call run to completion.
+     Hence, test [caml_pending_signal] here and act upon it, before we get
      a chance to process the result of the system call. */
-  signal_number = pending_signal;
-  pending_signal = 0;
-  if (signal_number) execute_signal(signal_number, 1);
+  signal_number = caml_pending_signal;
+  caml_pending_signal = 0;
+  if (signal_number) caml_execute_signal(signal_number, 1);
 #endif
-  Assert(async_signal_mode);
-  async_signal_mode = 0;
+  Assert(caml_async_signal_mode);
+  caml_async_signal_mode = 0;
 }
 
 #ifndef SIGABRT
@@ -223,7 +227,7 @@ static int posix_signals[] = {
   SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM, SIGPROF
 };
 
-CAMLexport int convert_signal_number(int signo)
+CAMLexport int caml_convert_signal_number(int signo)
 {
   if (signo < 0 && signo >= -(sizeof(posix_signals) / sizeof(int)))
     return posix_signals[-signo-1];
@@ -243,7 +247,7 @@ static int rev_convert_signal_number(int signo)
 #define NSIG 64
 #endif
 
-CAMLprim value install_signal_handler(value signal_number, value action)
+CAMLprim value caml_install_signal_handler(value signal_number, value action)
 {
   CAMLparam2 (signal_number, action);
   int sig;
@@ -253,9 +257,9 @@ CAMLprim value install_signal_handler(value signal_number, value action)
 #endif
   CAMLlocal1 (res);
 
-  sig = convert_signal_number(Int_val(signal_number));
+  sig = caml_convert_signal_number(Int_val(signal_number));
   if (sig < 0 || sig >= NSIG) 
-    invalid_argument("Sys.signal: unavailable signal");
+    caml_invalid_argument("Sys.signal: unavailable signal");
   switch(action) {
   case Val_int(0):              /* Signal_default */
     act = SIG_DFL;
@@ -279,18 +283,18 @@ CAMLprim value install_signal_handler(value signal_number, value action)
 #endif
   if (oldact == handle_signal) {
     res = caml_alloc_small (1, 0);          /* Signal_handle */
-    Field(res, 0) = Field(signal_handlers, sig);
+    Field(res, 0) = Field(caml_signal_handlers, sig);
   }
   else if (oldact == SIG_IGN)
     res = Val_int(1);           /* Signal_ignore */
   else
     res = Val_int(0);           /* Signal_default */
   if (Is_block(action)) {
-    if (signal_handlers == 0) {
-      signal_handlers = caml_alloc(NSIG, 0);
-      register_global_root(&signal_handlers);
+    if (caml_signal_handlers == 0) {
+      caml_signal_handlers = caml_alloc(NSIG, 0);
+      register_global_root(&caml_signal_handlers);
     }
-    caml_modify(&Field(signal_handlers, sig), Field(action, 0));
+    caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
   CAMLreturn (res);
 }

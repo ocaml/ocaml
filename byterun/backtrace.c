@@ -124,7 +124,7 @@ static value read_debug_info(void)
   events = caml_alloc(num_events, 0);
   for (i = 0; i < num_events; i++) {
     orig = caml_getword(chan);
-    evl = input_val(chan);
+    evl = caml_input_val(chan);
     /* Relocate events in event list */
     for (l = evl; l != Val_int(0); l = Field(l, 1)) {
       value ev = Field(l, 0);

@@ -380,7 +380,7 @@ let emit_instr fallthrough i =
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
           `{emit_label lbl_redo}:	subq	${emit_int n}, %r15\n`;
-          `	cmpq	{emit_symbol "young_limit"}(%rip), %r15\n`;
+          `	cmpq	{emit_symbol "caml_young_limit"}(%rip), %r15\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live in
           `	jb	{emit_label lbl_call_gc}\n`;
@@ -395,7 +395,7 @@ let emit_instr fallthrough i =
           | 24 -> `	call	{emit_symbol "caml_alloc2"}\n`
           | 32 -> `	call	{emit_symbol "caml_alloc3"}\n`
           | _  -> `	movq	${emit_int n}, %rax\n`;
-                  `	call	{emit_symbol "caml_alloc"}\n`
+                  `	call	{emit_symbol "caml_allocN"}\n`
           end;
           `{record_frame i.live}	leaq	8(%r15), {emit_reg i.res.(0)}\n`
         end
@@ -609,7 +609,7 @@ let fundecl fundecl =
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	call	{emit_symbol "caml_array_bound_error"}\n`;
+    `{emit_label !range_check_trap}:	call	{emit_symbol "caml_ml_array_bound_error"}\n`;
     (* Never returns, but useful to have retaddr on stack for debugging *)
   if !float_constants <> [] then begin
     `	.section	.rodata.cst8,\"aM\",@progbits,8\n`;

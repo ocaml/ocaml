@@ -18,14 +18,14 @@
 
 type 'a t;;
 
-external create: int -> 'a t = "weak_create";;
+external create: int -> 'a t = "caml_weak_create";;
 
 let length x = Obj.size(Obj.repr x) - 1;;
 
-external set : 'a t -> int -> 'a option -> unit = "weak_set";;
-external get: 'a t -> int -> 'a option = "weak_get";;
-external get_copy: 'a t -> int -> 'a option = "weak_get_copy";;
-external check: 'a t -> int -> bool = "weak_check";;
+external set : 'a t -> int -> 'a option -> unit = "caml_weak_set";;
+external get: 'a t -> int -> 'a option = "caml_weak_get";;
+external get_copy: 'a t -> int -> 'a option = "caml_weak_get_copy";;
+external check: 'a t -> int -> bool = "caml_weak_check";;
 
 let fill ar ofs len x =
   if ofs < 0 || len < 0 || ofs + len > length ar

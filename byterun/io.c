@@ -151,9 +151,9 @@ static int do_write(int fd, char *p, int n)
   retcode = ui_write(fd, p, n);
 #else
 again:
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = write(fd, p, n);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (retcode == -1) {
     if (errno == EINTR) goto again;
     if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
@@ -202,7 +202,7 @@ CAMLexport void caml_flush(struct channel *channel)
 CAMLexport void caml_putword(struct channel *channel, uint32 w)
 {
   if (! caml_channel_binary_mode(channel))
-    failwith("output_binary_int: not a binary channel");
+    caml_failwith("output_binary_int: not a binary channel");
   putch(channel, w >> 24);
   putch(channel, w >> 16);
   putch(channel, w >> 8);
@@ -264,7 +264,7 @@ CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
   int retcode;
 
   /*Assert(!Is_young((value) p)); ** Is_young only applies to a true value */
-  enter_blocking_section();
+  caml_enter_blocking_section();
 #ifdef HAS_UI
   retcode = ui_read(fd, p, n);
 #else
@@ -274,7 +274,7 @@ CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
   retcode = read(fd, p, n);
 #endif
 #endif
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (retcode == -1) caml_sys_error(NO_ARG);
   return retcode;
 }
@@ -284,7 +284,7 @@ CAMLexport unsigned char caml_refill(struct channel *channel)
   int n;
 
   n = caml_do_read(channel->fd, channel->buff, channel->end - channel->buff);
-  if (n == 0) raise_end_of_file();
+  if (n == 0) caml_raise_end_of_file();
   channel->offset += n;
   channel->max = channel->buff + n;
   channel->curr = channel->buff + 1;
@@ -297,7 +297,7 @@ CAMLexport uint32 caml_getword(struct channel *channel)
   uint32 res;
 
   if (! caml_channel_binary_mode(channel))
-    failwith("input_binary_int: not a binary channel");
+    caml_failwith("input_binary_int: not a binary channel");
   res = 0;
   for(i = 0; i < 4; i++) {
     res = (res << 8) + getch(channel);
@@ -433,7 +433,8 @@ CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
   chan->refcount++;             /* prevent finalization during next alloc */
-  res = alloc_custom(&channel_operations, sizeof(struct channel *), 1, 1000);
+  res = caml_alloc_custom(&channel_operations, sizeof(struct channel *),
+                          1, 1000);
   Channel(res) = chan;
   return res;
 }
@@ -748,7 +749,7 @@ CAMLexport value caml_Val_file_offset(file_offset fofs)
   int64 ofs;
   ofs.l = fofs;
   ofs.h = 0;
-  return copy_int64(ofs);
+  return caml_copy_int64(ofs);
 }
 
 CAMLexport file_offset caml_File_offset_val(value v)

@@ -51,7 +51,7 @@ static void compare_free_stack(void)
 static void compare_stack_overflow(void)
 {
   compare_free_stack();
-  raise_out_of_memory();
+  caml_raise_out_of_memory();
 }
 
 /* Grow the compare stack */
@@ -184,11 +184,11 @@ static long compare_val(value v1, value v2, int total)
     }
     case Abstract_tag:
       compare_free_stack();
-      invalid_argument("equal: abstract value");
+      caml_invalid_argument("equal: abstract value");
     case Closure_tag:
     case Infix_tag:
       compare_free_stack();
-      invalid_argument("equal: functional value");
+      caml_invalid_argument("equal: functional value");
     case Object_tag: {
       long oid1 = Oid_val(v1);
       long oid2 = Oid_val(v2);
@@ -198,7 +198,7 @@ static long compare_val(value v1, value v2, int total)
     case Custom_tag: {
       int res;
       int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare;
-      if (compare == NULL) invalid_argument("equal: abstract value");
+      if (compare == NULL) caml_invalid_argument("equal: abstract value");
       caml_compare_unordered = 0;
       res = Custom_ops_val(v1)->compare(v1, v2);
       if (caml_compare_unordered && !total) return UNORDERED;

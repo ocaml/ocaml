@@ -29,16 +29,16 @@
 #include "stacks.h"
 #include "sys.h"
 
-int debugger_in_use = 0;
-unsigned long event_count;
+int caml_debugger_in_use = 0;
+unsigned long caml_event_count;
 
 #if !defined(HAS_SOCKETS) || defined(_WIN32)
 
-void debugger_init(void)
+void caml_debugger_init(void)
 {
 }
 
-void debugger(enum event_kind event)
+void caml_debugger(enum event_kind event)
 {
 }
 
@@ -75,7 +75,7 @@ static void open_connection(void)
     caml_fatal_error("cannot connect to debugger");
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
-  if (!debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
+  if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
   caml_putword(dbg_out, getpid());
   caml_flush(dbg_out);
 }
@@ -87,7 +87,7 @@ static void close_connection(void)
   dbg_socket = -1;              /* was closed by caml_close_channel */
 }
 
-void debugger_init(void)
+void caml_debugger_init(void)
 {
   char * address;
   char * port, * p;
@@ -128,7 +128,7 @@ void debugger_init(void)
     sock_addr_len = sizeof(sock_addr.s_inet);
   }
   open_connection();
-  debugger_in_use = 1;
+  caml_debugger_in_use = 1;
   caml_trap_barrier = caml_stack_high;
 }
 
@@ -136,7 +136,7 @@ static value getval(struct channel *chan)
 {
   value res;
   if (caml_really_getblock(chan, (char *) &res, sizeof(res)) == 0)
-    raise_end_of_file(); /* Bad, but consistent with caml_getword */
+    caml_raise_end_of_file(); /* Bad, but consistent with caml_getword */
   return res;
 }
 
@@ -149,16 +149,16 @@ static void safe_output_value(struct channel *chan, value val)
 {
   struct longjmp_buffer raise_buf, * saved_external_raise;
 
-  /* Catch exceptions raised by output_val */
-  saved_external_raise = external_raise;
+  /* Catch exceptions raised by [caml_output_val] */
+  saved_external_raise = caml_external_raise;
   if (sigsetjmp(raise_buf.buf, 0) == 0) {
-    external_raise = &raise_buf;
-    output_val(chan, val, Val_unit);
+    caml_external_raise = &raise_buf;
+    caml_output_val(chan, val, Val_unit);
   } else {
-    /* Send wrong magic number, will cause input_value to fail */
+    /* Send wrong magic number, will cause [caml_input_value] to fail */
     caml_really_putblock(chan, "\000\000\000\000", 4);
   }
-  external_raise = saved_external_raise;
+  caml_external_raise = saved_external_raise;
 }
 
 #define Pc(sp) ((code_t)((sp)[0]))
@@ -166,7 +166,7 @@ static void safe_output_value(struct channel *chan, value val)
 #define Extra_args(sp) (Long_val(((sp)[2])))
 #define Locals(sp) ((sp) + 3)
 
-void debugger(enum event_kind event)
+void caml_debugger(enum event_kind event)
 {
   int frame_number;
   value * frame;
@@ -199,7 +199,7 @@ void debugger(enum event_kind event)
     putch(dbg_out, REP_UNCAUGHT_EXC);
     break;
   }
-  caml_putword(dbg_out, event_count);
+  caml_putword(dbg_out, caml_event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
     caml_putword(dbg_out, caml_stack_high - frame);
     caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
@@ -245,7 +245,7 @@ void debugger(enum event_kind event)
       }
       break;
     case REQ_GO:
-      event_count = caml_getword(dbg_in);
+      caml_event_count = caml_getword(dbg_in);
       return;
     case REQ_STOP:
       exit(0);

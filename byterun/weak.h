@@ -20,7 +20,7 @@
 
 #include "mlvalues.h"
 
-extern value weak_list_head;
-extern value weak_none;
+extern value caml_weak_list_head;
+extern value caml_weak_none;
 
 #endif /* CAML_WEAK_H */

@@ -24,11 +24,11 @@
    of shared libraries, and a list of primitive names
    (all three 0-separated in char arrays).
    Abort the runtime system on error. */
-extern void build_primitive_table(char * lib_path,
-                                  char * libs,
-                                  char * req_prims);
+extern void caml_build_primitive_table(char * lib_path,
+                                       char * libs,
+                                       char * req_prims);
 
 /* The search path for shared libraries */
-extern struct ext_table shared_libs_path;
+extern struct ext_table caml_shared_libs_path;
 
 #endif /* CAML_DYNLINK_H */

@@ -98,7 +98,7 @@ static void start_cycle (void)
   Assert (caml_gc_phase == Phase_idle);
   Assert (gray_vals_cur == gray_vals);
   caml_gc_message (0x01, "Starting new major GC cycle\n", 0);
-  darken_all_roots();
+  caml_darken_all_roots();
   caml_gc_phase = Phase_mark;
   gc_subphase = Subphase_main;
   markhp = NULL;
@@ -180,7 +180,7 @@ static void mark_slice (long work)
       /* The main marking phase is over.  Start removing weak pointers to
          dead values. */
       gc_subphase = Subphase_weak;
-      weak_prev = &weak_list_head;
+      weak_prev = &caml_weak_list_head;
     }else if (gc_subphase == Subphase_weak){
       value cur, curfield;
       mlsize_t sz, i;
@@ -197,7 +197,7 @@ static void mark_slice (long work)
           for (i = 1; i < sz; i++){
             curfield = Field (cur, i);
            weak_again:
-            if (curfield != weak_none
+            if (curfield != caml_weak_none
                 && Is_block (curfield) && Is_in_heap (curfield)){
               if (Tag_val (curfield) == Forward_tag){
                 value f = Forward_val (curfield);
@@ -212,7 +212,7 @@ static void mark_slice (long work)
                 }
               }
               if (Is_white_val (curfield)){
-                Field (cur, i) = weak_none;
+                Field (cur, i) = caml_weak_none;
               }
             }
           }
@@ -408,7 +408,7 @@ asize_t caml_round_heap_chunk_size (asize_t request)
   result = clip_heap_chunk_size (result);
 
   if (result < request){
-    raise_out_of_memory ();
+    caml_raise_out_of_memory ();
     return 0; /* not reached */
   }
   return result;

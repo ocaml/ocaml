@@ -38,6 +38,8 @@
 #define convert_flag_list caml_convert_flag_list
 /*      alloc_dummy -> caml_alloc_dummy */
 /*      update_dummy -> caml_update_dummy */
+/* **** asmrun/<arch>.s */
+/*    g caml_alloc -> caml_allocN */
 
 /* **** array.c */
 /*      array_get_addr -> caml_array_get_addr */
@@ -91,10 +93,83 @@
 /*      greaterequal -> caml_greaterequal */
 
 /* **** custom.c */
+#define alloc_custom caml_alloc_custom
+#define register_custom_operations caml_register_custom_operations
+/*    g find_custom_operations -> caml_find_custom_operations */
+/*    g final_custom_operations -> caml_final_custom_operations */
+/*    g init_custom_operations -> caml_init_custom_operations */
+
 /* **** debugger.c */
+/*    g debugger_in_use -> caml_debugger_in_use */
+/*    g event_count -> caml_event_count */
+/*    g debugger_init -> caml_debugger_init */
+/*    g debugger -> caml_debugger */
+
 /* **** dynlink.c */
+/*    g prim_table -> caml_prim_table */
+/*    g prim_name_table -> caml_prim_name_table */
+/*    g shared_libs_path -> caml_shared_libs_path */
+/*    g build_primitive_table -> caml_build_primitive_table */
+/*      dynlink_open_lib -> caml_dynlink_open_lib */
+/*      dynlink_close_lib -> caml_dynlink_close_lib */
+/*      dynlink_lookup_symbol -> caml_dynlink_lookup_symbol */
+/*      dynlink_add_primitive -> caml_dynlink_add_primitive */
+/*      dynlink_get_current_libs -> caml_dynlink_get_current_libs */
+
 /* **** extern.c */
-/* **** fail.c                check asmrun */
+/*    g output_val -> caml_output_val */
+/*      output_value -> caml_output_value */
+/*      output_value_to_string -> caml_output_value_to_string */
+/*      output_value_to_buffer -> caml_output_value_to_buffer */
+#define output_value_to_malloc caml_output_value_to_malloc
+#define output_value_to_block caml_output_value_to_block
+#define serialize_int_1 caml_serialize_int_1
+#define serialize_int_2 caml_serialize_int_2
+#define serialize_int_4 caml_serialize_int_4
+#define serialize_int_8 caml_serialize_int_8
+#define serialize_float_4 caml_serialize_float_4
+#define serialize_float_8 caml_serialize_float_8
+#define serialize_block_1 caml_serialize_block_1
+#define serialize_block_2 caml_serialize_block_2
+#define serialize_block_4 caml_serialize_block_4
+#define serialize_block_8 caml_serialize_block_8
+#define serialize_block_float_8 caml_serialize_block_float_8
+
+/* **** fail.c */
+#define external_raise caml_external_raise /*FIXME CAMLextern sans export */
+/*    g exn_bucket -> caml_exn_bucket */
+#define mlraise caml_raise
+#define raise_constant caml_raise_constant
+#define raise_with_arg caml_raise_with_arg
+#define raise_with_string caml_raise_with_string
+#define failwith caml_failwith
+#define invalid_argument caml_invalid_argument
+/*#define array_bound_error caml_array_bound_error FIXME */
+#define raise_out_of_memory caml_raise_out_of_memory
+#define raise_stack_overflow caml_raise_stack_overflow
+#define raise_sys_error caml_raise_sys_error
+#define raise_end_of_file caml_raise_end_of_file
+#define raise_zero_divide caml_raise_zero_divide
+#define raise_not_found caml_raise_not_found
+#define raise_sys_blocked_io caml_raise_sys_blocked_io
+#define init_exceptions caml_init_exceptions
+/* **** asmrun/fail.c */
+/*    g Out_of_memory -> caml_Out_of_memory FIXME a faire */
+/*    g Sys_error -> caml_Sys_error FIXME a faire */
+/*    g Failure -> caml_Failure FIXME a faire */
+/*    g Invalid_argument -> caml_Invalid_argument FIXME a faire */
+/*    g End_of_file -> caml_End_of_file FIXME a faire */
+/*    g Division_by_zero -> caml_Division_by_zero FIXME a faire */
+/*    g Not_found -> caml_Not_found FIXME a faire */
+/*    g Match_failure -> caml_Match_failure FIXME a faire */
+/*    g Sys_blocked_io -> caml_Sys_blocked_io FIXME a faire */
+/*    g Stack_overflow -> caml_Stack_overflow FIXME a faire */
+/*    g bucket_Out_of_memory -> caml_bucket_Out_of_memory FIXME pkoi extern? */
+/*    g bucket_Stack_overflow -> caml_bucket_Stack_overflow FIXME idem */
+/*    g raise_caml_exception -> caml_raise_exception */
+/* **** asmrun/<arch>.s */
+/*    g caml_array_bound_error -> caml_ml_array_bound_error */
+
 /* **** finalise.c */
 /* **** fix_code.c */
 /* **** floats.c */
@@ -103,9 +178,114 @@
 /* **** globroots.c */
 /* **** hash.c */
 /* **** instrtrace.c */
+
 /* **** intern.c */
+/*    g input_val -> caml_input_val */
+/*      input_value -> caml_input_value */
+#define input_val_from_string caml_input_val_from_string
+/*      input_value_from_string -> caml_input_value_from_string */
+#define input_value_from_malloc caml_input_value_from_malloc
+#define input_value_from_block caml_input_value_from_block
+/*      marshal_data_size -> caml_marshal_data_size */
+/*    g code_checksum -> caml_code_checksum */
+#define deserialize_uint_1 caml_deserialize_uint_1
+#define deserialize_sint_1 caml_deserialize_sint_1
+#define deserialize_uint_2 caml_deserialize_uint_2
+#define deserialize_sint_2 caml_deserialize_sint_2
+#define deserialize_uint_4 caml_deserialize_uint_4
+#define deserialize_sint_4 caml_deserialize_sint_4
+#define deserialize_uint_8 caml_deserialize_uint_8
+#define deserialize_sint_8 caml_deserialize_sint_8
+#define deserialize_float_4 caml_deserialize_float_4
+#define deserialize_float_8 caml_deserialize_float_8
+#define deserialize_block_1 caml_deserialize_block_1
+#define deserialize_block_2 caml_deserialize_block_2
+#define deserialize_block_4 caml_deserialize_block_4
+#define deserialize_block_8 caml_deserialize_block_8
+#define deserialize_block_float_8 caml_deserialize_block_float_8
+#define deserialize_error caml_deserialize_error
+
 /* **** interp.c */
+/*    g interprete -> caml_interprete */
+
 /* **** ints.c */
+/*      int_compare -> caml_int_compare */
+/*      int_of_string -> caml_int_of_string */
+/*      format_int -> caml_format_int */
+#define int32_ops caml_int32_ops
+#define copy_int32 caml_copy_int32
+/*      int32_neg -> caml_int32_neg */
+/*      int32_add -> caml_int32_add */
+/*      int32_sub -> caml_int32_sub */
+/*      int32_mul -> caml_int32_mul */
+/*      int32_div -> caml_int32_div */
+/*      int32_mod -> caml_int32_mod */
+/*      int32_and -> caml_int32_and */
+/*      int32_or -> caml_int32_or */
+/*      int32_xor -> caml_int32_xor */
+/*      int32_shift_left -> caml_int32_shift_left */
+/*      int32_shift_right -> caml_int32_shift_right */
+/*      int32_shift_right_unsigned -> caml_int32_shift_right_unsigned */
+/*      int32_of_int -> caml_int32_of_int */
+/*      int32_to_int -> caml_int32_to_int */
+/*      int32_of_float -> caml_int32_of_float */
+/*      int32_to_float -> caml_int32_to_float */
+/*      int32_compare -> caml_int32_compare */
+/*      int32_format -> caml_int32_format */
+/*      int32_of_string -> caml_int32_of_string */
+/*      int32_bits_of_float -> caml_int32_bits_of_float */
+/*      int32_float_of_bits -> caml_int32_float_of_bits */
+/* #define Int64_val caml_Int64_val   *** done in mlvalues.h as needed */
+#define int64_ops caml_int64_ops
+#define copy_int64 caml_copy_int64
+/*      int64_neg -> caml_int64_neg */
+/*      int64_add -> caml_int64_add */
+/*      int64_sub -> caml_int64_sub */
+/*      int64_mul -> caml_int64_mul */
+/*      int64_div -> caml_int64_div */
+/*      int64_mod -> caml_int64_mod */
+/*      int64_and -> caml_int64_and */
+/*      int64_or -> caml_int64_or */
+/*      int64_xor -> caml_int64_xor */
+/*      int64_shift_left -> caml_int64_shift_left */
+/*      int64_shift_right -> caml_int64_shift_right */
+/*      int64_shift_right_unsigned -> caml_int64_shift_right_unsigned */
+/*      int64_of_int -> caml_int64_of_int */
+/*      int64_to_int -> caml_int64_to_int */
+/*      int64_of_float -> caml_int64_of_float */
+/*      int64_to_float -> caml_int64_to_float */
+/*      int64_of_int32 -> caml_int64_of_int32 */
+/*      int64_to_int32 -> caml_int64_to_int32 */
+/*      int64_of_nativeint -> caml_int64_of_nativeint */
+/*      int64_to_nativeint -> caml_int64_to_nativeint */
+/*      int64_compare -> caml_int64_compare */
+/*      int64_format -> caml_int64_format */
+/*      int64_of_string -> caml_int64_of_string */
+/*      int64_bits_of_float -> caml_int64_bits_of_float */
+/*      int64_float_of_bits -> caml_int64_float_of_bits */
+#define nativeint_ops caml_nativeint_ops
+#define copy_nativeint caml_copy_nativeint
+/*      nativeint_neg -> caml_nativeint_neg */
+/*      nativeint_add -> caml_nativeint_add */
+/*      nativeint_sub -> caml_nativeint_sub */
+/*      nativeint_mul -> caml_nativeint_mul */
+/*      nativeint_div -> caml_nativeint_div */
+/*      nativeint_mod -> caml_nativeint_mod */
+/*      nativeint_and -> caml_nativeint_and */
+/*      nativeint_or -> caml_nativeint_or */
+/*      nativeint_xor -> caml_nativeint_xor */
+/*      nativeint_shift_left -> caml_nativeint_shift_left */
+/*      nativeint_shift_right -> caml_nativeint_shift_right */
+/*      nativeint_shift_right_unsigned -> caml_nativeint_shift_right_unsigned */
+/*      nativeint_of_int -> caml_nativeint_of_int */
+/*      nativeint_to_int -> caml_nativeint_to_int */
+/*      nativeint_of_float -> caml_nativeint_of_float */
+/*      nativeint_to_float -> caml_nativeint_to_float */
+/*      nativeint_of_int32 -> caml_nativeint_of_int32 */
+/*      nativeint_to_int32 -> caml_nativeint_to_int32 */
+/*      nativeint_compare -> caml_nativeint_compare */
+/*      nativeint_format -> caml_nativeint_format */
+/*      nativeint_of_string -> caml_nativeint_of_string */
 
 /* **** io.c */
 #define channel_mutex_free caml_channel_mutex_free
@@ -249,13 +429,62 @@
 /*    g ext_table_free -> caml_ext_table_free */
 
 /* **** obj.c */
+/*      static_alloc -> caml_static_alloc */
+/*      static_free -> caml_static_free */
+/*      static_resize -> caml_static_resize */
+/*      obj_is_block -> caml_obj_is_block */
+/*      obj_tag -> caml_obj_tag */
+/*      obj_set_tag -> caml_obj_set_tag */
+/*      obj_block -> caml_obj_block */
+/*      obj_dup -> caml_obj_dup */
+/*      obj_truncate -> caml_obj_truncate */
+/*      lazy_is_forward  FIXME primitive a supprimer */
+/*      lazy_follow_forward -> caml_lazy_follow_forward */
+/*      lazy_make_forward -> caml_lazy_make_forward */
+
 /* **** parsing.c */
-/* **** prims.c      (changer Makefile) */
+/*    g parser_trace -> caml_parser_trace */
+/*      parse_engine -> caml_parse_engine */
+
+/* **** prims.c */
+/*    g buitin_cprim -> caml_builtin_cprim */
+/*    g names_of_builtin_cprim -> caml_names_of_builtin_cprim */
+
 /* **** printexc.c */
-/* **** roots.c                     check asmrun */
-/* **** signals.c                   check asmrun */
+#define format_caml_exception caml_format_exception /* FIXME double declar. */
+/*    g fatal_uncaught_exception -> caml_fatal_uncaught_exception */
+
+/* **** roots.c */
+#define local_roots caml_local_roots
+#define scan_roots_hook caml_scan_roots_hook /* FIXME CAMLextern sans export */
+/*    g oldify_local_roots -> caml_oldify_local_roots */
+/*    g darken_all_roots -> caml_darken_all_roots */
+/*    g do_roots -> caml_do_roots */
+#define do_local_roots caml_do_local_roots /* FIXME CAMLextern sans CAMLexport*/
+
+/* **** signals.c */
+#define async_signal_mode caml_async_signal_mode /* FIXME CAMLextern sans expo*/
+#define pending_signal caml_pending_signal /* FIXME CAMLextern sans CAMLexport*/
+#define something_to_do caml_something_to_do /* FIXME CAMLextern sans export */
+/*    g force_major_slice -> caml_force_major_slice */
+/*    g signal_handlers -> caml_signal_handlers */
+#define enter_blocking_section_hook caml_enter_blocking_section_hook /* FIXME */
+#define leave_blocking_section_hook caml_leave_blocking_section_hook /* FIXME */
+#define async_action_hook caml_async_action_hook /* FIXME CAMLextern sans expo*/
+/*    g process_event -> caml_process_event */
+/*    g execute_signal -> caml_execute_signal */
+/* FIXME handle_signal devient static !? */
+/*    g urge_major_slice -> caml_urge_major_slice */
+#define enter_blocking_section caml_enter_blocking_section
+#define leave_blocking_section caml_leave_blocking_section
+#define convert_signal_number caml_convert_signal_number
+/*      install_signal_handler -> caml_install_signal_handler */
+/* **** asmrun/signals.c */
+/*    g garbage_collection -> caml_garbage_collection */
+/*    g init_signals -> caml_init_signals */
 
 /* **** stacks.c */
+/* FIXME stack.h: suppression de [void reset_roots (void);] !? */
 #define stack_low caml_stack_low
 #define stack_high caml_stack_high
 #define stack_threshold caml_stack_threshold
@@ -313,15 +542,38 @@
 /*      sys_read_directory -> caml_sys_read_directory */
 
 /* **** terminfo.c */
-/* **** unix.c */
+/*      terminfo_setup -> caml_terminfo_setup   FIXME CAMLprim et CAMLexport */
+/*      terminfo_backup -> caml_terminfo_backup FIXME CAMLprim et CAMLexport */
+/*      terminfo_standout -> caml_terminfo_standout FIXME CAMLprim et CAMLexpo*/
+/*      terminfo_resume -> caml_terminfo_resume  FIXME CAMLprim et CAMLexport */
+
+/* **** unix.c  &  win32.c */
+/*    g decompose_path -> caml_decompose_path */
+/*    g search_in_path -> caml_search_in_path */
+#define search_exe_in_path caml_search_exe_in_path
+/*    g search_dll_in_path -> caml_search_dll_in_path */
+/*    g aligned_mmap -> caml_aligned_mmap */
+/*    g aligned_munmap -> caml_aligned_munmap */
+/*    g executable_name -> caml_executable_name */
+/*    g win32_signal -> caml_win32_signal */
+/*    x expand_command_line -> caml_expand_command_line  private CAMLexport */
+
 /* **** weak.c */
-/* **** win32.c */
+/*    g weak_list_head -> caml_weak_list_head */
+/*    g weak_none -> caml_weak_none */
+/*      weak_create -> caml_weak_create */
+/*      weak_set -> caml_weak_set */
+/*      weak_get -> caml_weak_get */
+/*      weak_get_copy -> caml_weak_get_copy */
+/*      weak_check -> caml_weak_check */
 
 
 /* a supprimer (support Mac OS 9): */
 /* **** macintosh.c */
 /* **** mpwtool.c */
 /* **** rotatecursor.c */
+
+/* a faire: supprimer les Begin_roots/End_roots dans asmrun */
 
 
 #endif /* CAML_NAME_SPACE */

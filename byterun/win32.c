@@ -37,7 +37,7 @@
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
-char * decompose_path(struct ext_table * tbl, char * path)
+char * caml_decompose_path(struct ext_table * tbl, char * path)
 {
   char * p, * q;
   int n;
@@ -57,7 +57,7 @@ char * decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * search_in_path(struct ext_table * path, char * name)
+char * caml_search_in_path(struct ext_table * path, char * name)
 {
   char * p, * fullname;
   int i;
@@ -83,7 +83,7 @@ char * search_in_path(struct ext_table * path, char * name)
   return fullname;
 }
   
-CAMLexport char * search_exe_in_path(char * name)
+CAMLexport char * caml_search_exe_in_path(char * name)
 {
 #define MAX_PATH_LENGTH 512
   char * fullname = caml_stat_alloc(512);
@@ -99,13 +99,13 @@ CAMLexport char * search_exe_in_path(char * name)
   return fullname;
 }
 
-char * search_dll_in_path(struct ext_table * path, char * name)
+char * caml_search_dll_in_path(struct ext_table * path, char * name)
 {
   char * dllname = caml_stat_alloc(strlen(name) + 5);
   char * res;
   strcpy(dllname, name);
   strcat(dllname, ".dll");
-  res = search_in_path(path, dllname);
+  res = caml_search_in_path(path, dllname);
   caml_stat_free(dllname);
   return res;
 }
@@ -167,15 +167,15 @@ static BOOL WINAPI ctrl_handler(DWORD event)
      we do a longjmp() at this point (it looks like we're running in
      a different thread than the main program!).  So, pretend we are not in
      async signal mode, so that the handler simply records the signal. */
-  saved_mode = async_signal_mode;
-  async_signal_mode = 0;
+  saved_mode = caml_async_signal_mode;
+  caml_async_signal_mode = 0;
   action(SIGINT);
-  async_signal_mode = saved_mode;
+  caml_async_signal_mode = saved_mode;
   /* We have handled the event */
   return TRUE;
 }
 
-sighandler win32_signal(int sig, sighandler action)
+sighandler caml_win32_signal(int sig, sighandler action)
 {
   sighandler oldaction;
 
@@ -317,7 +317,7 @@ static void expand_diversion(char * filename)
   }
 }
 
-CAMLexport void expand_command_line(int * argcp, char *** argvp)
+CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
 {
   int i;
   argc = 0;
@@ -379,8 +379,8 @@ void caml_signal_thread(void * lpParam)
     if (!ret || numread != 1) caml_sys_exit(Val_int(2));
     switch (iobuf[0]) {
     case 'C':
-      pending_signal = SIGINT;
-      something_to_do = 1;
+      caml_pending_signal = SIGINT;
+      caml_something_to_do = 1;
       break;
     case 'T':
       raise(SIGTERM);

@@ -40,8 +40,8 @@ type signal_behavior =
   | Signal_ignore
   | Signal_handle of (int -> unit)
 
-external signal: int -> signal_behavior -> signal_behavior
-        = "install_signal_handler"
+external signal : int -> signal_behavior -> signal_behavior
+                = "caml_install_signal_handler"
 
 let set_signal sig_num sig_beh = ignore(signal sig_num sig_beh)
 
@@ -78,4 +78,4 @@ let catch_break on =
 
 (* OCaml version string, must be in the format described in sys.mli. *)
 
-let ocaml_version = "3.07+9 (2003-12-30)";;
+let ocaml_version = "3.07+10 (2004-01-01)";;

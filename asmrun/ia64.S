@@ -57,14 +57,14 @@
 /* Allocation */
 	.text
 
-        .global caml_alloc#
-        .proc   caml_alloc#
+        .global caml_allocN#
+        .proc   caml_allocN#
         .align 16
 
-/* caml_alloc: all code generator registers preserved,
+/* caml_allocN: all code generator registers preserved,
    gp preserved, r2 = requested size */
 
-caml_alloc:
+caml_allocN:
         sub     r4 = r4, r2 ;;
         cmp.ltu p0, p6 = r4, r5
         (p6) br.ret.sptk b0 ;;
@@ -78,7 +78,7 @@ caml_alloc:
         mov     b0 = r3 ;;
         br.ret.sptk b0
 
-        .endp   caml_alloc#
+        .endp   caml_allocN#
 
 /* caml_call_gc: all code generator registers preserved,
    gp preserved, r2 = requested size */
@@ -132,7 +132,7 @@ caml_call_gc:
         STOREGLOBAL(r6, caml_exception_pointer#)
 
         /* Call the garbage collector */
-        br.call.sptk    b0 = garbage_collection# ;;
+        br.call.sptk    b0 = caml_garbage_collection# ;;
 
         /* Restore gp */
         add     r3 = 24, sp ;;
@@ -410,10 +410,10 @@ caml_start_program:
 
 /* Raise an exception from C */
 
-        .global raise_caml_exception#
-        .proc   raise_caml_exception#
+        .global caml_raise_exception#
+        .proc   caml_raise_exception#
         .align  16
-raise_caml_exception:
+caml_raise_exception:
         /* Allocate 64 "out" registers (for the Caml code) and no locals */
         /* Since we don't return, don't bother saving the PFS */
         alloc	r2 = ar.pfs, 0, 0, 64, 0
@@ -454,7 +454,7 @@ raise_caml_exception:
 	   CFM and PFS correctly. */
         br.call.sptk.many b0 = b6
 
-        .endp   raise_caml_exception
+        .endp   caml_raise_exception
 
 /* Callbacks from C to Caml */
 
@@ -505,10 +505,10 @@ caml_callback3_exn:
 
 /* Glue code to call array_bound_error */
 
-        .global caml_array_bound_error#
-        .proc   caml_array_bound_error#
+        .global caml_ml_array_bound_error#
+        .proc   caml_ml_array_bound_error#
         .align  16
-caml_array_bound_error:
+caml_ml_array_bound_error:
         ADDRGLOBAL(r2, @fptr(array_bound_error#))
         br.sptk caml_c_call             /* never returns */        
 
@@ -524,7 +524,7 @@ system__frametable:
         data2   0               /* no roots here */
         .align  8
 
-/* Global variables used by raise_caml_exception */
+/* Global variables used by caml_raise_exception */
 
         .common caml_saved_bsp#, 8, 8
         .common caml_saved_rnat#, 8, 8

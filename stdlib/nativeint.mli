@@ -130,14 +130,14 @@ external to_int : nativeint -> int = "%nativeint_to_int"
    integer (type [int]).  The high-order bit is lost during
    the conversion. *)
 
-external of_float : float -> nativeint = "nativeint_of_float"
+external of_float : float -> nativeint = "caml_nativeint_of_float"
 (** Convert the given floating-point number to a native integer,
    discarding the fractional part (truncate towards 0).
    The result of the conversion is undefined if, after truncation,
    the number is outside the range
    \[{!Nativeint.min_int}, {!Nativeint.max_int}\]. *)
        
-external to_float : nativeint -> float = "nativeint_to_float"
+external to_float : nativeint -> float = "caml_nativeint_to_float"
 (** Convert the given native integer to a floating-point number. *)
 
 external of_int32 : int32 -> nativeint = "%nativeint_of_int32"
@@ -151,7 +151,7 @@ external to_int32 : nativeint -> int32 = "%nativeint_to_int32"
    i.e. the top 32 bits are lost.  On 32-bit platforms,
    the conversion is exact. *)
 
-external of_string : string -> nativeint = "nativeint_of_string"
+external of_string : string -> nativeint = "caml_nativeint_of_string"
 (** Convert the given string to a native integer.
    The string is read in decimal (by default) or in hexadecimal,
    octal or binary if the string begins with [0x], [0o] or [0b]
@@ -176,7 +176,7 @@ val compare: t -> t -> int
 
 (** {6 Deprecated functions} *)
 
-external format : string -> nativeint -> string = "nativeint_format"
+external format : string -> nativeint -> string = "caml_nativeint_format"
 (** [Nativeint.format fmt n] return the string representation of the
    native integer [n] in the format specified by [fmt].
    [fmt] is a [Printf]-style format consisting of exactly

@@ -67,7 +67,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   caml_extern_sp[narg + 3] = closure;
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
-  res = interprete(callback_code, sizeof(callback_code));
+  res = caml_interprete(callback_code, sizeof(callback_code));
   if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#1228 */
   return res;
 }
@@ -139,14 +139,14 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 CAMLexport value caml_callback (value closure, value arg)
 {
   value res = caml_callback_exn(closure, arg);
-  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
   return res;
 }
 
 CAMLexport value caml_callback2 (value closure, value arg1, value arg2)
 {
   value res = caml_callback2_exn(closure, arg1, arg2);
-  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
   return res;
 }
 
@@ -154,14 +154,14 @@ CAMLexport value caml_callback3 (value closure, value arg1, value arg2,
                                  value arg3)
 {
   value res = caml_callback3_exn(closure, arg1, arg2, arg3);
-  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
   return res;
 }
 
 CAMLexport value caml_callbackN (value closure, int narg, value args[])
 {
   value res = caml_callbackN_exn(closure, narg, args);
-  if (Is_exception_result(res)) mlraise(Extract_exception(res));
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
   return res;
 }
 

@@ -260,9 +260,9 @@ let max_stack_used = ref 0
 
 let comp_bint_primitive bi suff args =
   let pref =
-    match bi with Pnativeint -> "nativeint_"
-                | Pint32 -> "int32_"
-                | Pint64 -> "int64_" in
+    match bi with Pnativeint -> "caml_nativeint_"
+                | Pint32 -> "caml_int32_"
+                | Pint64 -> "caml_int64_" in
   Kccall(pref ^ suff, List.length args)
 
 let comp_primitive p args =
@@ -327,12 +327,12 @@ let comp_primitive p args =
   | Pbittest -> Kccall("caml_bitvect_test", 2)
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
   | Pintofbint bi -> comp_bint_primitive bi "to_int" args
-  | Pcvtbint(Pint32, Pnativeint) -> Kccall("nativeint_of_int32", 1)
-  | Pcvtbint(Pnativeint, Pint32) -> Kccall("nativeint_to_int32", 1)
-  | Pcvtbint(Pint32, Pint64) -> Kccall("int64_of_int32", 1)
-  | Pcvtbint(Pint64, Pint32) -> Kccall("int64_to_int32", 1)
-  | Pcvtbint(Pnativeint, Pint64) -> Kccall("int64_of_nativeint", 1)
-  | Pcvtbint(Pint64, Pnativeint) -> Kccall("int64_to_nativeint", 1)
+  | Pcvtbint(Pint32, Pnativeint) -> Kccall("caml_nativeint_of_int32", 1)
+  | Pcvtbint(Pnativeint, Pint32) -> Kccall("caml_nativeint_to_int32", 1)
+  | Pcvtbint(Pint32, Pint64) -> Kccall("caml_int64_of_int32", 1)
+  | Pcvtbint(Pint64, Pint32) -> Kccall("caml_int64_to_int32", 1)
+  | Pcvtbint(Pnativeint, Pint64) -> Kccall("caml_int64_of_nativeint", 1)
+  | Pcvtbint(Pint64, Pnativeint) -> Kccall("caml_int64_to_nativeint", 1)
   | Pnegbint bi -> comp_bint_primitive bi "neg" args
   | Paddbint bi -> comp_bint_primitive bi "add" args
   | Psubbint bi -> comp_bint_primitive bi "sub" args

@@ -23,25 +23,25 @@
 #include "mlvalues.h"
 
 /* <private> */
-extern value signal_handlers;
-CAMLextern int volatile pending_signal;
-CAMLextern int volatile something_to_do;
-extern int volatile force_major_slice;
-CAMLextern int volatile async_signal_mode;
+extern value caml_signal_handlers;
+CAMLextern int volatile caml_pending_signal;
+CAMLextern int volatile caml_something_to_do;
+extern int volatile caml_force_major_slice;
+CAMLextern int volatile caml_async_signal_mode;
 /* </private> */
 
-CAMLextern void enter_blocking_section (void);
-CAMLextern void leave_blocking_section (void);
+CAMLextern void caml_enter_blocking_section (void);
+CAMLextern void caml_leave_blocking_section (void);
 
 /* <private> */
-void urge_major_slice (void);
-CAMLextern int convert_signal_number (int);
-void execute_signal(int signal_number, int in_signal_handler);
-void process_event(void);
+void caml_urge_major_slice (void);
+CAMLextern int caml_convert_signal_number (int);
+void caml_execute_signal(int signal_number, int in_signal_handler);
+void caml_process_event(void);
 
-CAMLextern void (*enter_blocking_section_hook)(void);
-CAMLextern void (*leave_blocking_section_hook)(void);
-CAMLextern void (* volatile async_action_hook)(void);
+CAMLextern void (*caml_enter_blocking_section_hook)(void);
+CAMLextern void (*caml_leave_blocking_section_hook)(void);
+CAMLextern void (* volatile caml_async_action_hook)(void);
 /* </private> */
 
 #endif /* CAML_SIGNALS_H */

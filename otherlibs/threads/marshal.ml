@@ -18,14 +18,14 @@ type extern_flags =
   | Closures
 
 external to_string: 'a -> extern_flags list -> string
-    = "output_value_to_string"
+    = "caml_output_value_to_string"
 
 let to_channel chan v flags =
   output_string chan (to_string v flags)
 
 external to_buffer_unsafe:
       string -> int -> int -> 'a -> extern_flags list -> int
-    = "output_value_to_buffer"
+    = "caml_output_value_to_buffer"
 
 let to_buffer buff ofs len v flags =
   if ofs < 0 || len < 0 || ofs + len > String.length buff

@@ -53,9 +53,9 @@
 	.subspa $CODE$,quad=0,align=8,access=44,code_only
 	.import $global$, data
         .import $$dyncall, millicode
-	.import garbage_collection, code
+	.import caml_garbage_collection, code
 	.import caml_program, code
-	.import mlraise, code
+	.import caml_raise, code
 	.import caml_apply2, code
 	.import caml_apply3, code
 	.import array_bound_error, code
@@ -83,8 +83,8 @@ caml_required_size           .comm 8
 
         CODESPACE
 	.align	CODE_ALIGN
-        EXPORT_CODE(G(caml_alloc))
-G(caml_alloc):
+        EXPORT_CODE(G(caml_allocN))
+G(caml_allocN):
         STARTPROC
 ; Required size in %r29
         ldw     0(%r4), %r1
@@ -174,11 +174,11 @@ L100:   ldo     -(64 + 4*32)(%r30), %r31
 
 ; Call the garbage collector
 #ifdef SYS_nextstep
-        ldil    L`G(garbage_collection), %r1
-        ble     R`G(garbage_collection)(4, %r1)
+        ldil    L`G(caml_garbage_collection), %r1
+        ble     R`G(caml_garbage_collection)(4, %r1)
         copy    %r31, %r2
 #else
-        bl      G(garbage_collection), %r2
+        bl      G(caml_garbage_collection), %r2
         nop
 #endif
 
@@ -450,14 +450,14 @@ L103:
         b       L105
         nop
 
-; Re-raise the exception through mlraise, to clean up local C roots
+; Re-raise the exception through caml_raise, to clean up local C roots
         ldo     64(%r30), %r30
 #ifdef SYS_nextstep
-        ldil    L`G(mlraise), %r1
-        ble     R`G(mlraise)(4, %r1)
+        ldil    L`G(caml_raise), %r1
+        ble     R`G(caml_raise)(4, %r1)
         copy    %r31, %r2
 #else
-        bl      G(mlraise), %r2
+        bl      G(caml_raise), %r2
         nop
 #endif
         ENDPROC
@@ -465,8 +465,8 @@ L103:
 ; Raise an exception from C
 
 	.align	CODE_ALIGN
-	EXPORT_CODE(G(raise_caml_exception))
-G(raise_caml_exception):
+	EXPORT_CODE(G(caml_raise_exception))
+G(caml_raise_exception):
         STARTPROC
 ; Cut the stack
         LOADHIGH(G(caml_exception_pointer))
@@ -525,8 +525,8 @@ G(caml_callback3_exn):
         ENDPROC
 
         .align  CODE_ALIGN
-        EXPORT_CODE(G(caml_array_bound_error))
-G(caml_array_bound_error):
+        EXPORT_CODE(G(caml_ml_array_bound_error))
+G(caml_ml_array_bound_error):
         STARTPROC
 ; Load address of array_bound_error in %r22
 #ifdef SYS_hpux

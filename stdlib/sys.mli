@@ -98,7 +98,7 @@ type signal_behavior =
    number as argument. *)
 
 external signal :
-  int -> signal_behavior -> signal_behavior = "install_signal_handler"
+  int -> signal_behavior -> signal_behavior = "caml_install_signal_handler"
 (** Set the behavior of the system on receipt of a given signal.
    The first argument is the signal number.  Return the behavior
    previously associated with the signal. *)

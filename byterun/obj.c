@@ -26,28 +26,28 @@
 #include "mlvalues.h"
 #include "prims.h"
 
-CAMLprim value static_alloc(value size)
+CAMLprim value caml_static_alloc(value size)
 {
   return (value) caml_stat_alloc((asize_t) Long_val(size));
 }
 
-CAMLprim value static_free(value blk)
+CAMLprim value caml_static_free(value blk)
 {
   caml_stat_free((void *) blk);
   return Val_unit;
 }
 
-CAMLprim value static_resize(value blk, value new_size)
+CAMLprim value caml_static_resize(value blk, value new_size)
 {
   return (value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));
 }
 
-CAMLprim value obj_is_block(value arg)
+CAMLprim value caml_obj_is_block(value arg)
 {
   return Val_bool(Is_block(arg));
 }
 
-CAMLprim value obj_tag(value arg)
+CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
     return 1000;
@@ -58,13 +58,13 @@ CAMLprim value obj_tag(value arg)
   }
 }
 
-CAMLprim value obj_set_tag (value arg, value new_tag)
+CAMLprim value caml_obj_set_tag (value arg, value new_tag)
 {
   Tag_val (arg) = Int_val (new_tag);
   return Val_unit;
 }
 
-CAMLprim value obj_block(value tag, value size)
+CAMLprim value caml_obj_block(value tag, value size)
 {
   value res;
   mlsize_t sz, i;
@@ -80,7 +80,7 @@ CAMLprim value obj_block(value tag, value size)
   return res;
 }
 
-CAMLprim value obj_dup(value arg)
+CAMLprim value caml_obj_dup(value arg)
 {
   CAMLparam1 (arg);
   CAMLlocal1 (res);
@@ -112,7 +112,7 @@ CAMLprim value obj_dup(value arg)
    with the leftover part of the object: this is needed in the major
    heap and harmless in the minor heap.
 */
-CAMLprim value obj_truncate (value v, value newsize)
+CAMLprim value caml_obj_truncate (value v, value newsize)
 {
   mlsize_t new_wosize = Long_val (newsize);
   header_t hd = Hd_val (v);
@@ -123,7 +123,9 @@ CAMLprim value obj_truncate (value v, value newsize)
 
   if (tag == Double_array_tag) new_wosize *= Double_wosize;  /* PR#156 */
 
-  if (new_wosize <= 0 || new_wosize > wosize) invalid_argument ("Obj.truncate");
+  if (new_wosize <= 0 || new_wosize > wosize){
+    caml_invalid_argument ("Obj.truncate");
+  }
   if (new_wosize == wosize) return Val_unit;
   /* PR#61: since we're about to lose our references to the elements
      beyond new_wosize in v, erase them explicitly so that the GC
@@ -152,13 +154,13 @@ CAMLprim value obj_truncate (value v, value newsize)
  */
 
 /* [lazy_is_forward] is obsolete.  Stays here to make bootstrapping
-   easier for patched versions of 3.07.  To be removed before 3.08. */
+   easier for patched versions of 3.07.  To be removed before 3.08. FIXME */
 CAMLprim value lazy_is_forward (value v)
 {
   return Val_bool (Is_block (v) && Tag_val (v) == Forward_tag);
 }
 
-CAMLprim value lazy_follow_forward (value v)
+CAMLprim value caml_lazy_follow_forward (value v)
 {
   if (Is_block (v) && (Is_young (v) || Is_in_heap (v))
       && Tag_val (v) == Forward_tag){
@@ -168,7 +170,7 @@ CAMLprim value lazy_follow_forward (value v)
   }
 }
 
-CAMLprim value lazy_make_forward (value v)
+CAMLprim value caml_lazy_make_forward (value v)
 {
   CAMLparam1 (v);
   CAMLlocal1 (res);

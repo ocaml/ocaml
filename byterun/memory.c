@@ -27,8 +27,8 @@
 #include "signals.h"
 
 #ifdef USE_MMAP_INSTEAD_OF_MALLOC
-extern char * aligned_mmap (asize_t size, int modulo, void ** block);
-extern void aligned_munmap (char * addr, asize_t size);
+extern char * caml_aligned_mmap (asize_t size, int modulo, void ** block);
+extern void caml_aligned_munmap (char * addr, asize_t size);
 #endif
 
 /* Allocate a block of the requested size, to be passed to
@@ -44,8 +44,8 @@ char *caml_alloc_for_heap (asize_t request)
   void *block;
                                               Assert (request % Page_size == 0);
 #ifdef USE_MMAP_INSTEAD_OF_MALLOC
-  mem = aligned_mmap (request + sizeof (heap_chunk_head),
-                      sizeof (heap_chunk_head), &block);
+  mem = caml_aligned_mmap (request + sizeof (heap_chunk_head),
+                           sizeof (heap_chunk_head), &block);
 #else
   mem = caml_aligned_malloc (request + sizeof (heap_chunk_head),
                              sizeof (heap_chunk_head), &block);
@@ -63,8 +63,8 @@ char *caml_alloc_for_heap (asize_t request)
 void caml_free_for_heap (char *mem)
 {
 #ifdef USE_MMAP_INSTEAD_OF_MALLOC
-  aligned_munmap (Chunk_block (mem),
-                  Chunk_size (mem) + sizeof (heap_chunk_head));
+  aligned_caml_munmap (Chunk_block (mem),
+                       Chunk_size (mem) + sizeof (heap_chunk_head));
 #else
   free (Chunk_block (mem));
 #endif
@@ -252,7 +252,7 @@ value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   char *hp, *new_block;
 
-  if (wosize > Max_wosize) raise_out_of_memory ();
+  if (wosize > Max_wosize) caml_raise_out_of_memory ();
   hp = fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
@@ -260,7 +260,7 @@ value caml_alloc_shr (mlsize_t wosize, tag_t tag)
       if (caml_in_minor_collection)
         caml_fatal_error ("Fatal error: out of memory.\n");
       else
-        raise_out_of_memory ();
+        caml_raise_out_of_memory ();
     }
     fl_add_block (new_block);
     hp = fl_allocate (wosize);
@@ -281,7 +281,7 @@ value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   Assert (Hd_hp (hp) == Make_header (wosize, tag, caml_allocation_color (hp)));
   caml_allocated_words += Whsize_wosize (wosize);
   if (caml_allocated_words > Wsize_bsize (caml_minor_heap_size)){
-    urge_major_slice ();
+    caml_urge_major_slice ();
   }
 #ifdef DEBUG
   {
@@ -309,11 +309,11 @@ void caml_adjust_gc_speed (mlsize_t mem, mlsize_t max)
   caml_extra_heap_memory += (double) mem / (double) max;
   if (caml_extra_heap_memory > 1.0){
     caml_extra_heap_memory = 1.0;
-    urge_major_slice ();
+    caml_urge_major_slice ();
   }
   if (caml_extra_heap_memory > (double) Wsize_bsize (caml_minor_heap_size)
                                / 2.0 / (double) Wsize_bsize (stat_heap_size)) {
-    urge_major_slice ();
+    caml_urge_major_slice ();
   }
 }
 
@@ -349,7 +349,7 @@ void * caml_stat_alloc (asize_t sz)
   void * result = malloc (sz);
 
   /* malloc() may return NULL if size is 0 */
-  if (result == NULL && sz != 0) raise_out_of_memory ();
+  if (result == NULL && sz != 0) caml_raise_out_of_memory ();
 #ifdef DEBUG
   memset (result, Debug_uninit_stat, sz);
 #endif
@@ -365,6 +365,6 @@ void * caml_stat_resize (void * blk, asize_t sz)
 {
   void * result = realloc (blk, sz);
 
-  if (result == NULL) raise_out_of_memory ();
+  if (result == NULL) caml_raise_out_of_memory ();
   return result;
 }

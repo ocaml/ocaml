@@ -24,7 +24,7 @@
         .globl  _caml_alloc1
         .globl  _caml_alloc2
         .globl  _caml_alloc3
-        .globl  _caml_alloc
+        .globl  _caml_allocN
 
 _caml_call_gc:
     | Save desired size
@@ -52,7 +52,7 @@ _caml_call_gc:
         movel   a7, _caml_gc_regs
         fmovem  fp0-fp7, a7@-
     | Call the garbage collector
-        jbsr    _garbage_collection
+        jbsr    _caml_garbage_collection
     | Restore all regs used by the code generator
         fmovem  a7@+, fp0-fp7
         movel   a7@+, a0
@@ -97,7 +97,7 @@ _caml_alloc3:
 L102:   moveq   #16, d5
         bra     _caml_call_gc
 
-_caml_alloc:
+_caml_allocN:
         subl    d5, d6
         cmpl    _caml_young_limit, d6
         bcs     _caml_call_gc
@@ -180,8 +180,8 @@ L108:
 
 | Raise an exception from C
 
-        .globl  _raise_caml_exception
-_raise_caml_exception:
+        .globl  _caml_raise_exception
+_caml_raise_exception:
         movel   a7@(4), a0     | exception bucket
         movel   _caml_young_ptr, d6
         movel   _caml_exception_pointer, a7
@@ -229,8 +229,8 @@ _caml_callback3_exn:
         lea     _caml_apply3, a5 | code pointer
         bra     L106
 
-        .globl  _caml_array_bound_error
-_caml_array_bound_error:
+        .globl  _caml_ml_array_bound_error
+_caml_ml_array_bound_error:
     | Load address of array_bound_error in a0 and call it
         lea     _array_bound_error, a0
         bra     _caml_c_call

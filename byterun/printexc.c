@@ -48,7 +48,7 @@ static void add_string(struct stringbuf *buf, char *s)
   buf->ptr += len;
 }
   
-CAMLexport char * format_caml_exception(value exn)
+CAMLexport char * caml_format_exception(value exn)
 {
   mlsize_t start, i;
   value bucket, v;
@@ -96,7 +96,7 @@ CAMLexport char * format_caml_exception(value exn)
 }
 
 
-void fatal_uncaught_exception(value exn)
+void caml_fatal_uncaught_exception(value exn)
 {
   char * msg;
   value * at_exit;
@@ -104,7 +104,7 @@ void fatal_uncaught_exception(value exn)
   int saved_backtrace_active, saved_backtrace_pos;
 #endif
   /* Build a string representation of the exception */
-  msg = format_caml_exception(exn);
+  msg = caml_format_exception(exn);
   /* Perform "at_exit" processing, ignoring all exceptions that may
      be triggered by this */
 #ifndef NATIVE_CODE
@@ -127,7 +127,7 @@ void fatal_uncaught_exception(value exn)
   free(msg);
   /* Display the backtrace if available */
 #ifndef NATIVE_CODE
-  if (caml_backtrace_active && !debugger_in_use){
+  if (caml_backtrace_active && !caml_debugger_in_use){
     caml_print_exception_backtrace();
   }
 #endif

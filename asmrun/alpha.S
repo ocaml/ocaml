@@ -20,7 +20,7 @@
         .text
         .globl  caml_alloc2
         .globl  caml_alloc3
-        .globl  caml_alloc
+        .globl  caml_allocN
         .globl  caml_call_gc
 
 /* Note: the profiling code sets $27 to the address of the "normal" entrypoint.
@@ -68,10 +68,10 @@ $102:   ldiq    $25, 32
         br      $110
         .end    caml_alloc3
 
-        .globl  caml_alloc
-        .ent    caml_alloc
+        .globl  caml_allocN
+        .ent    caml_allocN
         .align  3
-caml_alloc:
+caml_allocN:
         .prologue 0
         subq    $13, $25, $13
         .set    noat
@@ -79,7 +79,7 @@ caml_alloc:
         bne     $at, $110
         .set    at
         ret     ($26)
-        .end    caml_alloc
+        .end    caml_allocN
         
         .globl  caml_call_gc
         .ent    caml_call_gc
@@ -150,7 +150,7 @@ $113:   stq     $13, caml_young_ptr
         stt     $f29, 29 * 8 ($sp)
         stt     $f30, 30 * 8 ($sp)
     /* Call the garbage collector */
-        jsr     garbage_collection
+        jsr     caml_garbage_collection
         ldgp    $gp, 0($26)
     /* Restore all regs used by the code generator */
         lda     $24, 0x100($sp)
@@ -356,10 +356,10 @@ $109:   ldgp    $gp, 0($26)
 
 /* Raise an exception from C */
 
-        .globl  raise_caml_exception
-        .ent    raise_caml_exception
+        .globl  caml_raise_exception
+        .ent    caml_raise_exception
         .align  3
-raise_caml_exception:
+caml_raise_exception:
         ldgp    $gp, 0($27)
         mov     $16, $0                         /* Move exn bucket */
         ldq     $13, caml_young_ptr
@@ -370,7 +370,7 @@ raise_caml_exception:
         ldq     $26, 8($sp)
         lda     $sp, 16($sp)
         jmp     $25, ($26)      /* Keep retaddr in $25 to help debugging */
-        .end    raise_caml_exception
+        .end    caml_raise_exception
 
 /* Callback from C to Caml */
 
@@ -414,17 +414,17 @@ caml_callback3_exn:
         br      $107
         .end    caml_callback3_exn
 
-/* Glue code to call array_bound_error */
+/* Glue code to call [array_bound_error] */
 
-        .globl  caml_array_bound_error
-        .ent    caml_array_bound_error
+        .globl  caml_ml_array_bound_error
+        .ent    caml_ml_array_bound_error
         .align  3
-caml_array_bound_error:
+caml_ml_array_bound_error:
         br      $27, $111
 $111:   ldgp    $gp, 0($27)
         lda     $25, array_bound_error
         br      caml_c_call             /* never returns */
-        .end    caml_array_bound_error
+        .end    caml_ml_array_bound_error
 
 #if defined(SYS_digital)
         .rdata

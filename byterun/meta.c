@@ -121,25 +121,25 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 
 value caml_get_global_data(value unit)
 {
-  invalid_argument("Meta.get_global_data");
+  caml_invalid_argument("Meta.get_global_data");
   return Val_unit; /* not reached */
 }
 
 value caml_realloc_global(value size)
 {
-  invalid_argument("Meta.realloc_global");
+  caml_invalid_argument("Meta.realloc_global");
   return Val_unit; /* not reached */
 }
     
 value caml_available_primitives(value unit)
 {
-  invalid_argument("Meta.available_primitives");
+  caml_invalid_argument("Meta.available_primitives");
   return Val_unit; /* not reached */
 }
 
 value caml_invoke_traced_function(value codeptr, value env, value arg)
 {
-  invalid_argument("Meta.invoke_traced_function");
+  caml_invalid_argument("Meta.invoke_traced_function");
   return Val_unit; /* not reached */
 }
 
@@ -153,9 +153,9 @@ int caml_backtrace_pos;
 code_t * caml_backtrace_buffer;
 value caml_backtrace_last_exn;
 int caml_callback_depth;
-int volatile something_to_do;
-void (* volatile async_action_hook)(void);
+int volatile caml_something_to_do;
+void (* volatile caml_async_action_hook)(void);
 void caml_print_exception_backtrace(void) { }
-struct longjmp_buffer * external_raise;
+struct longjmp_buffer * caml_external_raise;
 
 #endif

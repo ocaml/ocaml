@@ -113,16 +113,16 @@ external to_int : int32 -> int = "%int32_to_int"
    during the conversion.  On 64-bit platforms, the conversion
    is exact. *)
 
-external of_float : float -> int32 = "int32_of_float"
+external of_float : float -> int32 = "caml_int32_of_float"
 (** Convert the given floating-point number to a 32-bit integer,
    discarding the fractional part (truncate towards 0).
    The result of the conversion is undefined if, after truncation,
    the number is outside the range \[{!Int32.min_int}, {!Int32.max_int}\]. *)
 
-external to_float : int32 -> float = "int32_to_float"
+external to_float : int32 -> float = "caml_int32_to_float"
 (** Convert the given 32-bit integer to a floating-point number. *)
 
-external of_string : string -> int32 = "int32_of_string"
+external of_string : string -> int32 = "caml_int32_of_string"
 (** Convert the given string to a 32-bit integer.
    The string is read in decimal (by default) or in hexadecimal,
    octal or binary if the string begins with [0x], [0o] or [0b]
@@ -134,14 +134,14 @@ external of_string : string -> int32 = "int32_of_string"
 val to_string : int32 -> string
 (** Return the string representation of its argument, in signed decimal. *)
 
-external bits_of_float : float -> int32 = "int32_bits_of_float"
+external bits_of_float : float -> int32 = "caml_int32_bits_of_float"
 (** Return the internal representation of the given float according
    to the IEEE 754 floating-point ``single format'' bit layout.
    Bit 31 of the result represents the sign of the float;
    bits 30 to 23 represent the (biased) exponent; bits 22 to 0
    represent the mantissa. *)
 
-external float_of_bits : int32 -> float = "int32_float_of_bits"
+external float_of_bits : int32 -> float = "caml_int32_float_of_bits"
 (** Return the floating-point number whose internal representation,
    according to the IEEE 754 floating-point ``single format'' bit layout,
    is the given [int32]. *)
@@ -159,7 +159,7 @@ val compare: t -> t -> int
 
 (** {6 Deprecated functions} *)
 
-external format : string -> int32 -> string = "int32_format"
+external format : string -> int32 -> string = "caml_int32_format"
 (** [Int32.format fmt n] return the string representation of the
    32-bit integer [n] in the format specified by [fmt].
    [fmt] is a [Printf]-style format consisting of exactly

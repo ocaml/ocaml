@@ -185,7 +185,7 @@ extern long caml_safe_mod(long p, long q);
 
 /* The interpreter itself */
 
-value interprete(code_t prog, asize_t prog_size)
+value caml_interprete(code_t prog, asize_t prog_size)
 {
 #ifdef PC_REG
   register code_t pc PC_REG;
@@ -234,20 +234,20 @@ value interprete(code_t prog, asize_t prog_size)
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
   jumptbl_base = Jumptbl_base;
 #endif
-  initial_local_roots = local_roots;
+  initial_local_roots = caml_local_roots;
   initial_sp_offset = (char *) caml_stack_high - (char *) caml_extern_sp;
-  initial_external_raise = external_raise;
+  initial_external_raise = caml_external_raise;
   caml_callback_depth++;
   saved_pc = NULL;
 
   if (sigsetjmp(raise_buf.buf, 0)) {
-    local_roots = initial_local_roots;
+    caml_local_roots = initial_local_roots;
     sp = caml_extern_sp;
-    accu = exn_bucket;
+    accu = caml_exn_bucket;
     pc = saved_pc + 2; /* +2 adjustement for the sole purpose of backtraces */
     goto raise_exception;
   }
-  external_raise = &raise_buf;
+  caml_external_raise = &raise_buf;
 
   sp = caml_extern_sp;
   pc = prog;
@@ -793,7 +793,7 @@ value interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(POPTRAP):
-      if (something_to_do) {
+      if (caml_something_to_do) {
         /* We must check here so that if a signal is pending and its
            handler triggers an exception, the exception is trapped
            by the current try...with, not the enclosing one. */
@@ -806,11 +806,11 @@ value interprete(code_t prog, asize_t prog_size)
 
     Instruct(RAISE):
     raise_exception:
-      if (caml_trapsp >= caml_trap_barrier) debugger(TRAP_BARRIER);
+      if (caml_trapsp >= caml_trap_barrier) caml_debugger(TRAP_BARRIER);
       if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp);
       if ((char *) caml_trapsp
           >= (char *) caml_stack_high - initial_sp_offset) {
-        external_raise = initial_external_raise;
+        caml_external_raise = initial_external_raise;
         caml_extern_sp = (value *) ((char *) caml_stack_high
                                     - initial_sp_offset);
         caml_callback_depth--;
@@ -837,13 +837,13 @@ value interprete(code_t prog, asize_t prog_size)
 /* Signal handling */
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
-      if (something_to_do) goto process_signal;
+      if (caml_something_to_do) goto process_signal;
       Next;
 
     process_signal:
-      something_to_do = 0;
+      caml_something_to_do = 0;
       Setup_for_event;
-      process_event();
+      caml_process_event();
       Restore_after_event;
       Next;
 
@@ -935,7 +935,7 @@ value interprete(code_t prog, asize_t prog_size)
 
     Instruct(DIVINT): {
       long divisor = Long_val(*sp++);
-      if (divisor == 0) { Setup_for_c_call; raise_zero_divide(); }
+      if (divisor == 0) { Setup_for_c_call; caml_raise_zero_divide(); }
 #ifdef NONSTANDARD_DIV_MOD
       accu = Val_long(caml_safe_div(Long_val(accu), divisor));
 #else
@@ -945,7 +945,7 @@ value interprete(code_t prog, asize_t prog_size)
     }
     Instruct(MODINT): {
       long divisor = Long_val(*sp++);
-      if (divisor == 0) { Setup_for_c_call; raise_zero_divide(); }
+      if (divisor == 0) { Setup_for_c_call; caml_raise_zero_divide(); }
 #ifdef NONSTANDARD_DIV_MOD
       accu = Val_long(caml_safe_mod(Long_val(accu), divisor));
 #else
@@ -1023,22 +1023,22 @@ value interprete(code_t prog, asize_t prog_size)
 /* Debugging and machine control */
 
     Instruct(STOP):
-      external_raise = initial_external_raise;
+      caml_external_raise = initial_external_raise;
       caml_extern_sp = sp;
       caml_callback_depth--;
       return accu;
 
     Instruct(EVENT):
-      if (--event_count == 0) {
+      if (--caml_event_count == 0) {
         Setup_for_debugger;
-        debugger(EVENT_COUNT);
+        caml_debugger(EVENT_COUNT);
         Restore_after_debugger;
       }
       Restart_curr_instr;
 
     Instruct(BREAK):
       Setup_for_debugger;
-      debugger(BREAKPOINT);
+      caml_debugger(BREAKPOINT);
       Restore_after_debugger;
       Restart_curr_instr;
 

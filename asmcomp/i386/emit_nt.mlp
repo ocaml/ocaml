@@ -461,10 +461,10 @@ let emit_instr i =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
-          `{emit_label lbl_redo}:	mov	eax, _young_ptr\n`;
+          `{emit_label lbl_redo}:	mov	eax, _caml_young_ptr\n`;
           `	sub	eax, {emit_int n}\n`;
-          `	mov	_young_ptr, eax\n`;
-          `	cmp	eax, _young_limit\n`;
+          `	mov	_caml_young_ptr, eax\n`;
+          `	cmp	eax, _caml_young_limit\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live in
           `	jb	{emit_label lbl_call_gc}\n`;
@@ -479,7 +479,7 @@ let emit_instr i =
           | 12 -> `	call	_caml_alloc2\n`
           | 16 -> `	call	_caml_alloc3\n`
           | _  -> `	mov	eax, {emit_int n}\n`;
-                  `	call	_caml_alloc\n`
+                  `	call	_caml_allocN\n`
           end;
           `{record_frame i.live}        lea     {emit_reg i.res.(0)}, [eax+4]\n`
         end
@@ -764,7 +764,7 @@ let fundecl fundecl =
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	jmp	_caml_array_bound_error\n`;
+    `{emit_label !range_check_trap}:	jmp	_caml_ml_array_bound_error\n`;
   begin match !float_constants with
     [] -> ()
   | _  ->
@@ -816,16 +816,16 @@ let data l =
 let begin_assembly() =
   `.386\n`;
   `	.MODEL	FLAT\n\n`;
-  `	EXTERN _young_ptr: DWORD\n`;
-  `	EXTERN _young_limit: DWORD\n`;
+  `	EXTERN _caml_young_ptr: DWORD\n`;
+  `	EXTERN _caml_young_limit: DWORD\n`;
   `	EXTERN _caml_exception_pointer: DWORD\n`;
   `	EXTERN _caml_call_gc: PROC\n`;
   `	EXTERN _caml_c_call: PROC\n`;
-  `	EXTERN _caml_alloc: PROC\n`;
+  `	EXTERN _caml_allocN: PROC\n`;
   `	EXTERN _caml_alloc1: PROC\n`;
   `	EXTERN _caml_alloc2: PROC\n`;
   `	EXTERN _caml_alloc3: PROC\n`;
-  `	EXTERN _caml_array_bound_error: PROC\n`;
+  `	EXTERN _caml_ml_array_bound_error: PROC\n`;
   `	.DATA\n`;
   let lbl_begin = Compilenv.current_unit_name() ^ "__data_begin" in
   add_def_symbol lbl_begin;

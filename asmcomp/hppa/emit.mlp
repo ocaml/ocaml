@@ -579,7 +579,7 @@ let rec emit_instr i dslot =
           `	addi	4, %r3, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl_cont}:\n`
         end else begin
-          emit_call "caml_alloc" "%r2";
+          emit_call "caml_allocN" "%r2";
           (* Cannot use %r1 either *)
           `	ldi	{emit_int n}, %r29\n`; (* in delay slot *)
           record_frame i.live;
@@ -995,11 +995,11 @@ let fundecl fundecl =
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
     if hpux then begin
-      emit_call "caml_array_bound_error" "%r31";
+      emit_call "caml_ml_array_bound_error" "%r31";
       `	nop\n`
     end else begin
-      `	ldil	L\`{emit_symbol "caml_array_bound_error"}, %r1\n`;
-      `	ble,n	{emit_symbol_low "caml_array_bound_error"}(4, %r1)\n`
+      `	ldil	L\`{emit_symbol "caml_ml_array_bound_error"}, %r1\n`;
+      `	ble,n	{emit_symbol_low "caml_ml_array_bound_error"}(4, %r1)\n`
     end
   end;
   if hpux then begin

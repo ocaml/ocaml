@@ -484,10 +484,10 @@ let emit_instr fallthrough i =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
-          `{emit_label lbl_redo}:	movl	{emit_symbol "young_ptr"}, %eax\n`;
+          `{emit_label lbl_redo}:	movl	{emit_symbol "caml_young_ptr"}, %eax\n`;
           `	subl	${emit_int n}, %eax\n`;
-          `	movl	%eax, {emit_symbol "young_ptr"}\n`;
-          `	cmpl	{emit_symbol "young_limit"}, %eax\n`;
+          `	movl	%eax, {emit_symbol "caml_young_ptr"}\n`;
+          `	cmpl	{emit_symbol "caml_young_limit"}, %eax\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live in
           `	jb	{emit_label lbl_call_gc}\n`;
@@ -502,7 +502,7 @@ let emit_instr fallthrough i =
           | 12 -> `	call	{emit_symbol "caml_alloc2"}\n`
           | 16 -> `	call	{emit_symbol "caml_alloc3"}\n`
           | _  -> `	movl	${emit_int n}, %eax\n`;
-                  `	call	{emit_symbol "caml_alloc"}\n`
+                  `	call	{emit_symbol "caml_allocN"}\n`
           end;
           `{record_frame i.live}	leal	4(%eax), {emit_reg i.res.(0)}\n`
         end
@@ -808,7 +808,7 @@ let fundecl fundecl =
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	call	{emit_symbol "caml_array_bound_error"}\n`;
+    `{emit_label !range_check_trap}:	call	{emit_symbol "caml_ml_array_bound_error"}\n`;
     (* Never returns, but useful to have retaddr on stack for debugging *)
   List.iter emit_float_constant !float_constants
 
