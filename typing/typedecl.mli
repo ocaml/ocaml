@@ -35,7 +35,8 @@ val transl_with_constraint:
 (* for typeclass.ml *)
 val compute_variance_decls:
     Env.t ->
-    (Ident.t * type_declaration) list -> (Ident.t * type_declaration) list
+    ((Ident.t * type_declaration) * ((bool * bool) list * Location.t)) list ->
+    (Ident.t * type_declaration) list
     
 type error =
     Repeated_parameter
@@ -53,7 +54,7 @@ type error =
   | Unbound_type_var
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
-  | Constructor_in_variance
+  | Bad_variance
 
 exception Error of Location.t * error
 

@@ -292,8 +292,9 @@ rule token = parse
   | ">}" { GREATERRBRACE }
 
   | "!=" { INFIXOP0 "!=" }
-  | "-"  { SUBTRACTIVE "-" }
-  | "-." { SUBTRACTIVE "-." }
+  | "+"  { PLUS }
+  | "-"  { MINUS }
+  | "-." { MINUSDOT }
 
   | "!" symbolchar *
             { PREFIXOP(Lexing.lexeme lexbuf) }

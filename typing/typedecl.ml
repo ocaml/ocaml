@@ -38,7 +38,7 @@ type error =
   | Unbound_type_var
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
-  | Constructor_in_variance
+  | Bad_variance
 
 exception Error of Location.t * error
 
@@ -96,7 +96,7 @@ let transl_declaration env (name, sdecl) id =
       type_arity = List.length params;
       type_kind =
         begin match sdecl.ptype_kind with
-          Ptype_abstract _ ->
+          Ptype_abstract ->
             Type_abstract
         | Ptype_variant cstrs ->
             let all_constrs = ref StringSet.empty in
@@ -143,15 +143,6 @@ let transl_declaration env (name, sdecl) id =
         end;
       type_variance = List.map (fun _ -> true, true) params;
     } in
-  let variance =
-    match sdecl.ptype_kind with
-      Ptype_abstract(Some sty) ->
-        begin try Some (transl_simple_type Env.initial true sty)
-        with Typetexp.Error (loc, Unbound_type_constructor lid) ->
-          raise (Error(loc, Constructor_in_variance))
-        end
-    | _ -> None
-  in
 
   (* Check constraints *)
   List.iter
@@ -163,7 +154,7 @@ let transl_declaration env (name, sdecl) id =
          raise(Error(loc, Unconsistent_constraint)))
     sdecl.ptype_cstrs;
 
-  ((id, decl), variance)
+  (id, decl)
 
 (* Generalize a type declaration *)
 
@@ -382,16 +373,17 @@ let compute_variance env tvl nega posi ty =
       if TypeSet.mem ty !nvisited then convar := true)
     tvl
 
-let compute_variance_decl env decl abstract =
+let compute_variance_decl env decl (required, loc) =
+  if decl.type_kind = Type_abstract && decl.type_manifest = None then
+    List.map (fun (c, n) -> if c || n then (c, n) else (true, true)) required
+  else
   let tvl = List.map (fun ty -> (Btype.repr ty, ref false, ref false))
       decl.type_params in
   begin match decl.type_kind with
     Type_abstract ->
-      begin match decl.type_manifest, abstract with
-        None, None -> List.iter (fun (_, co, cn) -> co := true; cn := true) tvl
-      | Some ty, None -> compute_variance env tvl true false ty
-      | None, Some ty -> compute_variance env tvl true false ty
-      | _             -> assert false
+      begin match decl.type_manifest with
+        None -> assert false
+      | Some ty -> compute_variance env tvl true false ty
       end
   | Type_variant tll ->
       List.iter
@@ -402,9 +394,13 @@ let compute_variance_decl env decl abstract =
         (fun (_, mut, ty) -> compute_variance env tvl true (mut = Mutable) ty)
         ftl
   end;
-  List.map (fun (_, co, cn) -> (!co, !cn)) tvl
+  List.map2
+    (fun (_, co, cn) (c, n) ->
+      if c && !cn || n && !co then raise (Error(loc, Bad_variance));
+      (!co, !cn))
+    tvl required
 
-let rec compute_variance_fixpoint env decls abstract variances =
+let rec compute_variance_fixpoint env decls required variances =
   let new_decls =
     List.map2
       (fun (id, decl) variance -> id, {decl with type_variance = variance})
@@ -416,7 +412,7 @@ let rec compute_variance_fixpoint env decls abstract variances =
   in
   let new_variances =
     List.map2 (fun (_, decl) -> compute_variance_decl new_env decl)
-      new_decls abstract
+      new_decls required
   in
   let new_variances =
     List.map2 (List.map2 (fun (c1,n1) (c2,n2) -> (c1||c2), (n1||n2)))
@@ -424,16 +420,14 @@ let rec compute_variance_fixpoint env decls abstract variances =
   if new_variances = variances then
     new_decls, new_env
   else
-    compute_variance_fixpoint env decls abstract new_variances
+    compute_variance_fixpoint env decls required new_variances
 
 (* for typeclass.ml *)
 let compute_variance_decls env decls =
+  let decls, required = List.split decls in
   let variances =
-    List.map
-      (fun (_, decl) -> List.map (fun _ -> (false, false)) decl.type_params)
-      decls
-  and abstract = List.map (fun _ -> None) decls in
-  fst (compute_variance_fixpoint env decls abstract variances)
+    List.map (fun (l,_) -> List.map (fun _ -> false, false) l) required in
+  fst (compute_variance_fixpoint env decls required variances)
 
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
@@ -454,7 +448,6 @@ let transl_type_decl env name_sdecl_list =
   (* Translate each declaration. *)
   let decls =
     List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
-  let decls, abstract = List.split decls in
   (* Build the final env. *)
   let newenv =
     List.fold_right
@@ -491,8 +484,12 @@ let transl_type_decl env name_sdecl_list =
   in
   List.iter (check_expansion newenv (List.flatten id_loc_list)) decls;
   (* Add variances to the environment *)
+  let required =
+    List.map (fun (_, sdecl) -> sdecl.ptype_variance, sdecl.ptype_loc)
+      name_sdecl_list
+  in
   let final_decls, final_env =
-    compute_variance_fixpoint env decls abstract
+    compute_variance_fixpoint env decls required
       (List.map
          (fun (_,decl) -> List.map (fun _ -> (false, false)) decl.type_params)
          decls) in
@@ -567,7 +564,8 @@ let transl_with_constraint env sdecl =
     }
   in
   let decl =
-    {decl with type_variance = compute_variance_decl env decl None} in
+    {decl with type_variance =
+     compute_variance_decl env decl (sdecl.ptype_variance, sdecl.ptype_loc)} in
   Ctype.end_def();
   generalize_decl decl;
   decl
@@ -627,5 +625,6 @@ let report_error ppf = function
   | Not_an_exception lid ->
       fprintf ppf "The constructor@ %a@ is not an exception"
         Printtyp.longident lid
-  | Constructor_in_variance ->
-      fprintf ppf "Type constructors are not allowed in variance declarations"
+  | Bad_variance ->
+      fprintf ppf
+        "In this definition, expected parameter variances are not satisfied"

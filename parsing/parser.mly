@@ -257,6 +257,8 @@ let bigarray_set arr arg newval =
 %token LPAREN
 %token MATCH
 %token METHOD
+%token MINUS
+%token MINUSDOT
 %token MINUSGREATER
 %token MODULE
 %token MUTABLE
@@ -267,6 +269,7 @@ let bigarray_set arr arg newval =
 %token <string> OPTLABEL
 %token OR
 %token PARSER
+%token PLUS
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
@@ -283,7 +286,6 @@ let bigarray_set arr arg newval =
 %token STAR
 %token <string> STRING
 %token STRUCT
-%token <string> SUBTRACTIVE
 %token THEN
 %token TILDE
 %token TO
@@ -316,7 +318,7 @@ let bigarray_set arr arg newval =
 %left  INFIXOP0 EQUAL LESS GREATER      /* = < > etc */
 %right INFIXOP1                         /* @ ^ etc */
 %right COLONCOLON                       /* :: */
-%left  INFIXOP2 SUBTRACTIVE             /* + - */
+%left  INFIXOP2 PLUS MINUS MINUSDOT     /* + - */
 %left  INFIXOP3 STAR                    /* * / */
 %right INFIXOP4                         /* ** */
 %right prec_unary_minus                 /* - unary */
@@ -504,7 +506,9 @@ class_declarations:
 ;
 class_declaration:
     virtual_flag class_type_parameters LIDENT class_fun_binding
-      { {pci_virt = $1; pci_params = $2; pci_name = $3; pci_expr = $4;
+      { let params, variance = List.split (fst $2) in
+        {pci_virt = $1; pci_params = params, snd $2;
+         pci_name = $3; pci_expr = $4; pci_variance = variance;
          pci_loc = symbol_rloc ()} }
 ;
 class_fun_binding:
@@ -689,7 +693,9 @@ class_descriptions:
 ;
 class_description:
     virtual_flag class_type_parameters LIDENT COLON class_type
-      { {pci_virt = $1; pci_params = $2; pci_name = $3; pci_expr = $5;
+      { let params, variance = List.split (fst $2) in
+        {pci_virt = $1; pci_params = params, snd $2;
+         pci_name = $3; pci_expr = $5; pci_variance = variance;
          pci_loc = symbol_rloc ()} }
 ;
 class_type_declarations:
@@ -698,7 +704,9 @@ class_type_declarations:
 ;
 class_type_declaration:
     virtual_flag class_type_parameters LIDENT EQUAL class_signature
-      { {pci_virt = $1; pci_params = $2; pci_name = $3; pci_expr = $5;
+      { let params, variance = List.split (fst $2) in
+        {pci_virt = $1; pci_params = params, snd $2;
+         pci_name = $3; pci_expr = $5; pci_variance = variance;
          pci_loc = symbol_rloc ()} }
 ;
 
@@ -800,8 +808,12 @@ expr:
       { mkinfix $1 $2 $3 }
   | expr INFIXOP4 expr
       { mkinfix $1 $2 $3 }
-  | expr SUBTRACTIVE expr
-      { mkinfix $1 $2 $3 }
+  | expr PLUS expr
+      { mkinfix $1 "+" $3 }
+  | expr MINUS expr
+      { mkinfix $1 "-" $3 }
+  | expr MINUSDOT expr
+      { mkinfix $1 "-." $3 }
   | expr STAR expr
       { mkinfix $1 "*" $3 }
   | expr EQUAL expr
@@ -820,7 +832,7 @@ expr:
       { mkinfix $1 "&&" $3 }
   | expr COLONEQUAL expr
       { mkinfix $1 ":=" $3 }
-  | SUBTRACTIVE expr %prec prec_unary_minus
+  | subtractive expr %prec prec_unary_minus
       { mkuminus $1 $2 }
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, $3, $5)) }
@@ -1144,11 +1156,13 @@ type_declarations:
 ;
 type_declaration:
     type_parameters LIDENT type_kind constraints
-      { let (kind, manifest) = $3 in
-        ($2, {ptype_params = $1;
+      { let (params, variance) = List.split $1 in
+        let (kind, manifest) = $3 in
+        ($2, {ptype_params = params;
               ptype_cstrs = List.rev $4;
               ptype_kind = kind;
               ptype_manifest = manifest;
+              ptype_variance = variance;
               ptype_loc = symbol_rloc()}) }
 ;
 constraints:
@@ -1157,11 +1171,9 @@ constraints:
 ;
 type_kind:
     /*empty*/
-      { (Ptype_abstract None, None) }
-  | AS core_type
-      { (Ptype_abstract (Some $2), None) }
+      { (Ptype_abstract, None) }
   | EQUAL core_type %prec prec_type_def
-      { (Ptype_abstract None, Some $2) }
+      { (Ptype_abstract, Some $2) }
   | EQUAL constructor_declarations
       { (Ptype_variant(List.rev $2), None) }
   | EQUAL BAR constructor_declarations
@@ -1180,7 +1192,12 @@ type_parameters:
   | LPAREN type_parameter_list RPAREN           { List.rev $2 }
 ;
 type_parameter:
-    QUOTE ident                                 { $2 }
+    type_variance QUOTE ident                   { $3, $1 }
+;
+type_variance:
+    /* empty */                                 { false, false }
+  | PLUS                                        { true, false }
+  | MINUS                                       { false, true }
 ;
 type_parameter_list:
     type_parameter                              { [$1] }
@@ -1213,10 +1230,12 @@ with_constraints:
 ;
 with_constraint:
     TYPE type_parameters label_longident EQUAL core_type constraints
-      { ($3, Pwith_type {ptype_params = $2;
+      { let params, variance = List.split $2 in
+        ($3, Pwith_type {ptype_params = params;
                          ptype_cstrs = List.rev $6;
-                         ptype_kind = Ptype_abstract None;
+                         ptype_kind = Ptype_abstract;
                          ptype_manifest = Some $5;
+                         ptype_variance = variance;
                          ptype_loc = symbol_rloc()}) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
@@ -1229,8 +1248,8 @@ with_constraint:
 core_type:
     core_type2
       { $1 }
-  | core_type2 AS type_parameter
-      { mktyp(Ptyp_alias($1, $3)) }
+  | core_type2 AS QUOTE ident
+      { mktyp(Ptyp_alias($1, $4)) }
 ;
 core_type2:
     simple_core_type_or_tuple
@@ -1351,8 +1370,8 @@ constant:
 ;
 signed_constant:
     constant                                    { $1 }
-  | SUBTRACTIVE INT                             { Const_int(- $2) }
-  | SUBTRACTIVE FLOAT                           { Const_float("-" ^ $2) }
+  | MINUS INT                                   { Const_int(- $2) }
+  | subtractive FLOAT                           { Const_float("-" ^ $2) }
 ;
 /* Identifiers and long identifiers */
 
@@ -1376,7 +1395,9 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
-  | SUBTRACTIVE                                 { $1 }
+  | PLUS                                        { "+" }
+  | MINUS                                       { "-" }
+  | MINUSDOT                                    { "-." }
   | STAR                                        { "*" }
   | EQUAL                                       { "=" }
   | LESS                                        { "<" }
@@ -1480,5 +1501,9 @@ opt_bar:
 opt_semi:
   | /* empty */                                 { () }
   | SEMI                                        { () }
+;
+subtractive:
+  | MINUS					{ "-" }
+  | MINUSDOT                                    { "-." }
 ;
 %%

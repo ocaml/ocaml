@@ -48,6 +48,7 @@ type 'a class_infos =
     pci_params: string list * Location.t;
     pci_name: string;
     pci_expr: 'a;
+    pci_variance: (bool * bool) list;
     pci_loc: Location.t }
 
 (* Value expressions for the core language *)
@@ -114,10 +115,11 @@ and type_declaration =
     ptype_cstrs: (core_type * core_type * Location.t) list;
     ptype_kind: type_kind;
     ptype_manifest: core_type option;
+    ptype_variance: (bool * bool) list;
     ptype_loc: Location.t }
 
 and type_kind =
-    Ptype_abstract of core_type option
+    Ptype_abstract
   | Ptype_variant of (string * core_type list) list
   | Ptype_record of (string * mutable_flag * core_type) list
 

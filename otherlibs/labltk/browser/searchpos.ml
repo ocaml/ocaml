@@ -144,8 +144,7 @@ let search_pos_type_decl td ~pos ~env =
     | None -> ()
     end;
     begin match td.ptype_kind with
-      Ptype_abstract None -> ()
-    | Ptype_abstract(Some t) -> search_pos_type t ~pos ~env
+      Ptype_abstract -> ()
     | Ptype_variant dl ->
         List.iter dl
           ~f:(fun (_, tl) -> List.iter tl ~f:(search_pos_type ~pos ~env))

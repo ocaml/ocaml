@@ -286,9 +286,8 @@ and type_declaration i ppf x =
 
 and type_kind i ppf x =
   match x with
-  | Ptype_abstract (x) ->
-      line i ppf "Ptype_abstract\n";
-      option (i+1) core_type ppf x;
+  | Ptype_abstract ->
+      line i ppf "Ptype_abstract\n"
   | Ptype_variant (l) ->
       line i ppf "Ptype_variant\n";
       list (i+1) string_x_core_type_list ppf l;

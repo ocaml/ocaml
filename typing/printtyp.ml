@@ -163,12 +163,12 @@ let print_label ppf l =
 
 let rec print_list_init pr sep ppf = function
   | [] -> ()
-  | a :: l -> sep (); pr ppf a; print_list_init pr sep ppf l;;
+  | a :: l -> sep ppf; pr ppf a; print_list_init pr sep ppf l;;
 
 let rec print_list pr sep ppf = function
   | [] -> ()
   | [a] -> pr ppf a
-  | a :: l -> pr ppf a; sep (); print_list pr sep ppf l;;
+  | a :: l -> pr ppf a; sep ppf; print_list pr sep ppf l;;
 
 let rec typexp sch prio0 ppf ty =
   let ty = repr ty in
@@ -217,7 +217,7 @@ let rec typexp sch prio0 ppf ty =
         let all_present = List.length present = List.length fields in
         let pr_present =
           print_list (fun ppf (s, _) -> fprintf ppf "`%s" s)
-                     (fun () -> fprintf ppf "@ ")
+                     (fun ppf -> fprintf ppf "@ ")
         in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
@@ -245,7 +245,7 @@ let rec typexp sch prio0 ppf ty =
                  if not all_present then
                    fprintf ppf "@;<1 -2>> @[<hov>%a@]" pr_present l in
             let print_fields =
-              print_list (row_field sch) (fun () -> fprintf ppf "@;<1 -2>| ")
+              print_list (row_field sch) (fun ppf -> fprintf ppf "@;<1 -2>| ")
             in
 
             fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a]@]"
@@ -381,29 +381,29 @@ let rec type_decl kwd id ppf decl =
   let print_constraints ppf params =
     List.iter (constrain ppf) params in
 
+  let type_parameter ppf (ty,(co,cn)) =
+    fprintf ppf "%s%a"
+      (if not cn then "+" else if not co then "-" else "")
+      type_expr ty
+  in
+  let type_defined ppf decl =
+    if decl.type_kind = Type_abstract && decl.type_manifest = None
+       && List.exists (fun x -> x <> (true, true)) decl.type_variance then
+      fprintf ppf "(@[%a)@]@ %a"
+        (print_list type_parameter (fun ppf -> fprintf ppf ",@ "))
+        (List.combine params decl.type_variance)
+        ident id
+    else
+      type_expr ppf (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)))
+  in
   let print_manifest ppf decl =
     match decl.type_manifest with
-    | None ->
-        if decl.type_kind = Type_abstract
-        && List.exists (fun p -> p <> (true,true)) decl.type_variance then
-          let select f l1 l2 =
-            List.fold_right2 (fun x y l -> if f x then y :: l else l) l1 l2 []
-          in
-          let repres f =
-            let l = select f decl.type_variance params in
-            if l = [] then Predef.type_unit else Btype.newgenty (Ttuple l)
-          in
-          let covar = repres fst and convar = repres snd in
-          let ty =
-            if convar == Predef.type_unit then covar
-            else Btype.newgenty (Tarrow ("", convar, covar))
-          in
-          fprintf ppf " as@ %a" type_expr ty
+    | None -> ()
     | Some ty -> fprintf ppf " =@ %a" type_expr ty in
 
   let print_name_args ppf decl =
     fprintf ppf "%s%a%a"
-      kwd type_expr (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)))
+      kwd type_defined decl
       print_manifest decl in
 
   begin match decl.type_kind with
@@ -415,12 +415,12 @@ let rec type_decl kwd id ppf decl =
   | Type_variant cstrs ->
       fprintf ppf "@[<2>@[<hv 2>%a =@;<1 2>%a@]%a@]"
         print_name_args decl
-        (print_list constructor (fun () -> fprintf ppf "@ | ")) cstrs
+        (print_list constructor (fun ppf -> fprintf ppf "@ | ")) cstrs
         print_constraints params
   | Type_record(lbls, rep) ->
       fprintf ppf "@[<2>@[<hv 2>%a = {%a@;<1 -2>}@]@ %a@]"
         print_name_args decl
-        (print_list_init label (fun () -> fprintf ppf "@ ")) lbls
+        (print_list_init label (fun ppf -> fprintf ppf "@ ")) lbls
         print_constraints params
   end
 

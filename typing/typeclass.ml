@@ -1023,12 +1023,12 @@ let final_decl define_class
   end;
 
   (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-   arity, pub_meths, expr)
+   arity, pub_meths, expr, (cl.pci_variance, cl.pci_loc))
 
 let extract_type_decls
     (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, expr) decls =
-  (obj_id, obj_abbr) :: (cl_id, cl_abbr) :: decls
+     arity, pub_meths, expr, required) decls =
+  ((obj_id, obj_abbr), required) :: ((cl_id, cl_abbr), required) :: decls
 
 let rec compact = function
     [] -> []
@@ -1037,7 +1037,7 @@ let rec compact = function
 
 let merge_type_decls
     (id, clty, ty_id, cltydef, _obj_id, _obj_abbr, _cl_id, _cl_abbr,
-     arity, pub_meths, expr) ((obj_id, obj_abbr), (cl_id, cl_abbr)) =
+     arity, pub_meths, expr, req) ((obj_id, obj_abbr), (cl_id, cl_abbr)) =
   (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
    arity, pub_meths, expr)
 
