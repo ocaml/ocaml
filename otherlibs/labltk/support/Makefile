@@ -54,4 +54,6 @@ clean :
 depend:
 	$(LABLDEP) *.mli *.ml > .depend
 
+$(COBJS): $(TOPDIR)/config/Makefile
+
 include .depend
