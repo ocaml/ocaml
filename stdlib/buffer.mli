@@ -74,7 +74,7 @@ val add_substitute : t -> (string -> string) -> string -> unit
    - a non empty sequence of alphanumeric or [_] characters,
    - an arbitrary sequence of characters enclosed by a pair of
    matching parentheses or curly brackets.
-   An escaped [$] character is a [$] that immediately folows a backslash
+   An escaped [$] character is a [$] that immediately follows a backslash
    character; it then stands for a plain [$].
    Raise [Not_found] if the closing character of a parenthesized variable
    cannot be found. *)
