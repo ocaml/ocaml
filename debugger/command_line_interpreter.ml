@@ -139,7 +139,9 @@ let convert_module mdle =
   match mdle with
     Some m ->
       (* Strip .ml extension if any, and capitalize *)
-      String.capitalize(Filename.chop_extension m)
+      String.capitalize(if Filename.check_suffix m ".ml"
+                        then Filename.chop_suffix m ".ml"
+                        else m)
   | None ->
       try
         let (x, _) = current_point () in x
