@@ -21,7 +21,7 @@
 type lexbuf =
   { refill_buff : lexbuf -> unit;
     mutable lex_buffer : string;
-    mutable lex_buffer_end : int;
+    mutable lex_buffer_len : int;
     mutable lex_abs_pos : int;
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;

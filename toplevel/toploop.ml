@@ -333,7 +333,7 @@ let refill_lexbuf buffer len =
 let empty_lexbuf lb =
   lb.lex_curr_pos <- 0;
   lb.lex_abs_pos <- 0;
-  lb.lex_buffer_end <- 0
+  lb.lex_buffer_len <- 0
 
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop

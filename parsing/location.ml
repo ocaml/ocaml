@@ -62,10 +62,10 @@ let rec highlight_locations loc1 loc2 =
             if pos0 < 0 then raise Exit;
             (* Count number of lines in phrase *)
             let lines = ref !num_loc_lines in
-            for i = pos0 to lb.lex_buffer_end - 1 do
+            for i = pos0 to lb.lex_buffer_len - 1 do
               if lb.lex_buffer.[i] = '\n' then incr lines
             done;
-            let end_pos = lb.lex_buffer_end - pos0 - 1 in
+            let end_pos = lb.lex_buffer_len - pos0 - 1 in
             let pos_at_bol = ref 0 in
             print_string "Toplevel input:\n# ";
             (* Print the input, underlining the location *)
@@ -123,7 +123,7 @@ let rec highlight_locations loc1 loc2 =
             if pos0 < 0 then raise Exit;
             (* Count number of lines in phrase *)
             let lines = ref !num_loc_lines in
-            for i = pos0 to lb.lex_buffer_end - 1 do
+            for i = pos0 to lb.lex_buffer_len - 1 do
               if lb.lex_buffer.[i] = '\n' then incr lines
             done;
             (* If too many lines, give up *)
@@ -133,7 +133,7 @@ let rec highlight_locations loc1 loc2 =
             (* Print the input, switching to standout for the location *)
             let bol = ref false in
             print_string "# ";
-            for pos = 0 to lb.lex_buffer_end - pos0 - 1 do
+            for pos = 0 to lb.lex_buffer_len - pos0 - 1 do
               if !bol then (print_string "  "; bol := false);
               if pos = loc1.loc_start || pos = loc2.loc_start then
                 Terminfo.standout true;
