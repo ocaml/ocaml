@@ -161,10 +161,9 @@ or:
         make opt > log.opt 2>&1     # in sh
         make opt >& log.opt         # in csh
 
-5- (Optional) If you want to give the native-code compiler a serious
-test, you can try to compile the Objective Caml compilers with the
-native-code compiler (they are compiled to bytecode by default).
-Just do:
+5- (Optional) If you want to compile fast versions of the Objective
+Caml compilers, you can compile them with the native-code compiler
+(they are compiled to bytecode by default).  Just do:
 
         make opt.opt
 
