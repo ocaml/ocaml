@@ -249,37 +249,57 @@ caml_start_program:
 .L103:        
         /* Allocate 64 "out" registers (for the Caml code) and no locals */
         alloc	r3 = ar.pfs, 0, 0, 64, 0
+        add     sp = -(56 * 8), sp ;;
 
-        /* Save PFS, return address and GP on stack */
-        add     sp = -(20 * 16 + 4 * 8 + 4 * 8), sp ;;
+        /* Save all callee-save registers on stack */
         add     r2 = 16, sp ;;
-	ST8OFF(r2, r3, 8)
+	ST8OFF(r2, r3, 8)       /* 0 : ar.pfs */
         mov     r3 = b0 ;;
-        ST8OFF(r2, r3, 8) ;;
-        ST8OFF(r2, gp, 8) ;;
-
-        /* Save predicates on stack */
+        ST8OFF(r2, r3, 8) ;;    /* 1 : return address */
+        ST8OFF(r2, gp, 8)       /* 2 : gp */
         mov     r3 = pr ;;
+        ST8OFF(r2, r3, 8)       /* 3 : predicates */
+        mov     r3 = ar.fpsr ;;
+        ST8OFF(r2, r3, 8)       /* 4 : ar.fpsr */
+        mov     r3 = ar.unat ;;
+        ST8OFF(r2, r3, 8)       /* 5 : ar.unat */
+        mov     r3 = ar.lc ;;
+        ST8OFF(r2, r3, 8)       /* 6 : ar.lc */
+        mov     r3 = b1 ;;
+        ST8OFF(r2, r3, 8)       /* 7 - 11 : b1 - b5 */
+        mov     r3 = b2 ;;
+        ST8OFF(r2, r3, 8)
+        mov     r3 = b3 ;;
+        ST8OFF(r2, r3, 8)
+        mov     r3 = b4 ;;
+        ST8OFF(r2, r3, 8)
+        mov     r3 = b5 ;;
         ST8OFF(r2, r3, 8) ;;
 
-        /* Save callee-save integer registers on stack */
         add     r3 = 8, r2 ;;
-        SAVE4(r4,r5,r6,r7) ;;
+        SAVE4(r4,r5,r6,r7) ;;   /* 12 - 15 : r4 - r7 */
 
-        /* Save callee-save floating-point registers on stack */
-        add     r3 = 16, r2 ;;
+        add     r3 = 16, r2 ;;  /* 16 - 55 : f2 - f5, f16 - f31 */
         FSPILL4(f2,f3,f4,f5) ;;
         FSPILL8(f16,f17,f18,f19,f20,f21,f22,f23) ;;
         FSPILL8(f24,f25,f26,f27,f28,f29,f30,f31) ;;
 
-        /* Set up a callback link on the stack */
-        add     sp = -32, sp
+        /* Set up a callback link on the stack.  In addition to
+           the normal callback link contents (saved values of
+           caml_bottom_of_stack, caml_last_return_address and
+           caml_gc_regs), we also save there caml_saved_bsp
+           and caml_saved_rnat */
+        add     sp = -48, sp
         LOADGLOBAL(r3, caml_bottom_of_stack#)
         add     r2 = 16, sp ;;
         ST8OFF(r2, r3, 8)
         LOADGLOBAL(r3, caml_last_return_address#) ;;
         ST8OFF(r2, r3, 8)
         LOADGLOBAL(r3, caml_gc_regs#) ;;
+        ST8OFF(r2, r3, 8)
+        LOADGLOBAL(r3, caml_saved_bsp#) ;;
+        ST8OFF(r2, r3, 8)
+        LOADGLOBAL(r3, caml_saved_rnat#) ;;
         ST8OFF(r2, r3, 8)
 
         /* Set up a trap frame to catch exceptions escaping the Caml code */
@@ -291,6 +311,13 @@ caml_start_program:
 .L110:	mov	r3 = ip ;;
 	add	r3 = .L101 - .L110, r3 ;;
         ST8OFF(r2, r3, 8)
+
+        /* Save ar.bsp, flush register window, and save ar.rnat */
+        mov     r2 = ar.bsp ;;
+        STOREGLOBAL(r2, caml_saved_bsp#) ;;
+        flushrs ;;              /* must be first instr in group */
+        mov     r2 = ar.rnat ;;
+        STOREGLOBAL(r2, caml_saved_rnat#)
 
         /* Reload allocation pointers */
         LOADGLOBAL(r4, young_ptr#)
@@ -317,35 +344,51 @@ caml_start_program:
         STOREGLOBAL(r2, caml_last_return_address#)
         LD8OFF(r2, r14, 8) ;;
         STOREGLOBAL(r2, caml_gc_regs#)
-        add     sp = 32, sp
+        LD8OFF(r2, r14, 8) ;;
+        STOREGLOBAL(r2, caml_saved_bsp#)
+        LD8OFF(r2, r14, 8) ;;
+        STOREGLOBAL(r2, caml_saved_rnat#)
+        add     sp = 48, sp
 
         /* Update allocation pointer */
         STOREGLOBAL(r4, young_ptr#)
 
-        /* Restore PFS, return address and GP from stack */
+        /* Restore all callee-save registers from stack */
         add     r2 = 16, sp ;;
-        LD8OFF(r3, r2, 8) ;;
+	LD8OFF(r2, r3, 8) ;;    /* 0 : ar.pfs */
         mov     ar.pfs = r3
-        LD8OFF(r3, r2, 8) ;;
+        LD8OFF(r2, r3, 8) ;;    /* 1 : return address */
         mov     b0 = r3
-        LD8OFF(gp, r2, 8) ;;
+        LD8OFF(r2, gp, 8) ;;    /* 2 : gp */
+        LD8OFF(r2, r3, 8) ;;    /* 3 : predicates */
+        mov     r3 = pr
+        LD8OFF(r2, r3, 8) ;;    /* 4 : ar.fpsr */
+        mov     ar.fpsr = r3
+        LD8OFF(r2, r3, 8) ;;    /* 5 : ar.unat */
+        mov     ar.unat = r3
+        LD8OFF(r2, r3, 8) ;;    /* 6 : ar.lc */
+        mov     ar.lc = r3
+        LD8OFF(r2, r3, 8) ;;    /* 7 - 11 : b1 - b5 */
+        mov     b1 = r3
+        LD8OFF(r2, r3, 8) ;;
+        mov     b2 = r3
+        LD8OFF(r2, r3, 8) ;;
+        mov     b3 = r3
+        LD8OFF(r2, r3, 8) ;;
+        mov     b4 = r3
+        LD8OFF(r2, r3, 8) ;;
+        mov     b5 = r3
 
-        /* Restore the predicates */
-        LD8OFF(r3, r2, 8) ;;
-        mov     pr = r3, -1
-
-        /* Restore the saved integer register */
         add     r3 = 8, r2 ;;
-        LOAD4(r4,r5,r6,r7) ;;
+        LOAD4(r4,r5,r6,r7) ;;   /* 12 - 15 : r4 - r7 */
 
-        /* Restore the saved floating-point registers */
-        add     r3 = 16, r2 ;;
+        add     r3 = 16, r2 ;;  /* 16 - 55 : f2 - f5, f16 - f31 */
         FFILL4(f2,f3,f4,f5) ;;
         FFILL8(f16,f17,f18,f19,f20,f21,f22,f23) ;;
         FFILL8(f24,f25,f26,f27,f28,f29,f30,f31) ;;
 
         /* Pop stack frame and return */
-        add     sp = (20 * 16 + 4 * 8 + 4 * 8), sp
+        add     sp = (56 * 8), sp
         br.ret.sptk.many b0 ;;
 
         /* The trap handler */
@@ -372,7 +415,21 @@ raise_caml_exception:
         alloc	r2 = ar.pfs, 0, 0, 64, 0
 
         /* Move exn bucket where Caml expects it */
-        mov     r8 = r32
+        mov     r8 = r32 ;;
+
+        /* Perform "context switch" as per the Software Conventions Guide,
+           chapter 10 */
+        flushrs ;;                      /* flush dirty registers to stack */
+        mov     r4 = ar.rsc ;;
+        and     r2 = ~0x3, r4;;         /* set rsc.mode = 0 */
+        dep     r2 = r0, r2, 16, 4 ;;   /* clear rsc.loadrs */
+        mov     ar.rsc = r2 ;;          /* RSE is in enforced lazy mode */
+        invala ;;                       /* Invalidate ALAT */
+        LOADGLOBAL(r2, caml_saved_bsp#) ;;
+        mov     ar.bspstore = r2        /* Restore ar.bspstore */
+        LOADGLOBAL(r2, caml_saved_rnat#) ;;
+        mov     ar.rnat = r2            /* Restore ar.rnat */
+        mov     ar.rsc = r4 ;;          /* Restore original RSE mode */
 
         /* Reload allocation pointers and exception pointer */
         LOADGLOBAL(r4, young_ptr#)
@@ -462,3 +519,8 @@ system_frametable:
         data2   -1              /* negative frame size => use callback link */
         data2   0               /* no roots here */
         .align  8
+
+/* Global variables used by raise_caml_exception */
+
+        .common caml_saved_bsp#, 8, 8
+        .common caml_saved_rnat#, 8, 8
