@@ -1103,14 +1103,12 @@ module Analyser =
 	  (* si label = "", pas de label. ici on a l'information pour savoir si on a un label explicite. *)
 	  if parse_label = label then
 	    (
-	     let new_param = 
-	       (Simple_name 
-		  {
-		    sn_name = Btype.label_name label ;
-		    sn_type = Odoc_env.subst_type env type_expr ;
-		    sn_text = None ; (* will be updated when the class will be created *)
-		  },
-		label)
+	     let new_param = Simple_name 
+		 {
+		   sn_name = Btype.label_name label ;
+		   sn_type = Odoc_env.subst_type env type_expr ;
+		   sn_text = None ; (* will be updated when the class will be created *)
+		 }
 	     in
 	     let (l, k) = analyse_class_kind env current_class_name last_pos pclass_type class_type in
 	     ( (new_param :: l), k )

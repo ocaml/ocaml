@@ -652,7 +652,7 @@ and assoc_comments_parameter module_list p =
       List.iter (assoc_comments_parameter module_list) l
 
 and assoc_comments_parameter_list module_list pl =
-  List.iter (fun (pi, label) -> assoc_comments_parameter module_list pi) pl
+  List.iter (assoc_comments_parameter module_list) pl
 
 and assoc_comments_value module_list v =
   v.val_info <- ao (assoc_comments_info module_list) v.val_info ;

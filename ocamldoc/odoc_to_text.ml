@@ -297,23 +297,6 @@ class virtual to_text =
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
       (self#text_of_info e.ex_info)
 
-    (** Return [text] value for the given parameter,
-       and eventually its label. Note that we must remove
-       the option constructor if we print an optional argument.*)
-    method text_of_parameter m p =
-      let (pi,label) = p in
-      let (slabel, t) = 
-	let t = Parameter.typ p in
-	match label with
-	  "" -> ([], t)
-	| s -> 
-	    if is_optional label then 
-	      ([Code (s^":")], Odoc_info.remove_option t)
-	    else
-	      ([Code (s^":")], t)
-      in
-      slabel @ (self#text_of_type_expr m t)
-
     (** Return [text] value for the description of a function parameter. *)
     method text_of_parameter_description p =
       match Parameter.names p with

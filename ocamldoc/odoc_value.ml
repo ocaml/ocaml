@@ -114,7 +114,7 @@ let dummy_parameter_list typ =
 	     Odoc_parameter.sn_type = t ;
 	    Odoc_parameter.sn_text = None }
   in 
-  List.map (fun (label,t) -> (iter (label, t), label)) liste_param
+  List.map iter liste_param
 
 (** Return true if the value is a function, i.e. has a functional type.*)
 let is_function v =

@@ -982,23 +982,6 @@ class html =
 	self#html_of_described_parameter_list module_name m.met_value.val_parameters
       )
 
-    (** Return HTML code to print the type of the given parameter,
-       and eventually its label. Note that we must remove
-       the option constructor if we print an optional argument.*)
-    method html_of_parameter m p =
-      let (pi,label) = p in
-      let (slabel, t) = 
-	let t = Parameter.typ p in
-	match label with
-	  "" -> ("", t)
-	| s -> 
-	    if is_optional label then 
-	      (s^":", Odoc_info.remove_option t)
-	    else
-	      (s^":", t)
-      in
-      slabel^(self#html_of_type_expr m t)
-
     (** Return html code for the description of a function parameter. *)
     method html_of_parameter_description p =
       match Parameter.names p with

@@ -291,8 +291,8 @@ let rec merge_parameters param_mli param_ml =
   match (param_mli, param_ml) with
     ([], []) -> []
   | (l, []) | ([], l) -> l
-  | ((pi_mli, label) :: li, (pi_ml,_) :: l) ->
-      ((merge_param_info pi_mli pi_ml), label) :: merge_parameters li l
+  | ((pi_mli :: li), (pi_ml :: l)) ->
+      (merge_param_info pi_mli pi_ml) :: merge_parameters li l
 
 (** Merge of two t_class, one for a .mli, another for the .ml.
    The .mli class is completed with the information in the .ml class. *)

@@ -135,8 +135,8 @@ module Parameter :
       	Simple_name of simple_name
       | Tuple of param_info list * Types.type_expr
 
-    (** A parameter is just a param_info value and a label. *)
-    type parameter = param_info * Asttypes.label
+    (** A parameter is just a param_info.*)
+    type parameter = param_info
 
     (** A module parameter is just a name and a module type.*)
     type module_parameter = Odoc_parameter.module_parameter =
