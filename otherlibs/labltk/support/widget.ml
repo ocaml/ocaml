@@ -165,11 +165,11 @@ let check_class w clas =
   match w with
     Untyped _ -> () (* assume run-time check by tk*)
   | Typed(_,c) ->
-         if List.mem clas key:c then ()
+         if List.mem clas item:c then ()
          else raise (IllegalWidgetType c)
 
 
 (* Checking membership of constructor in subtype table *)
 let chk_sub errname table c =
-  if List.mem table key:c then ()
+  if List.mem table item:c then ()
   else raise (Invalid_argument errname)

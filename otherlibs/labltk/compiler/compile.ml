@@ -47,7 +47,7 @@ let small_ident s =
   let idents = ["to"; "raise"; "in"; "class"; "new"]
   in
   let s = small s in
-  if List.mem key:s idents then (String.make len:1 s.[0])^s
+  if List.mem item:s idents then (String.make len:1 s.[0])^s
   else s
 
 let gettklabel fc = 
@@ -59,7 +59,7 @@ let gettklabel fc =
         if s = "" then small fc.ml_name else small s
   | _ -> raise (Failure "gettklabel")
 
-let count key:x l =
+let count item:x l =
   let count = ref 0 in
   List.iter fun:(fun y -> if x = y then incr count) l;
   !count
@@ -103,7 +103,7 @@ let ppMLtype ?(:any=false) ?(:return=false) ?(:def=false) ?(:counter=ref 0) =
         let l = List.map fcl fun:
           begin fun fc ->
             "?" ^ begin let p = gettklabel fc in
-                  if count key:p tklabels > 1 then small fc.ml_name else p
+                  if count item:p tklabels > 1 then small fc.ml_name else p
                   end
             ^ ":" ^ 
             let l = types_of_template fc.template in
@@ -724,7 +724,7 @@ let write_catch_optionals :w clas def:typdef =
         if co <> "" then fatal_error "optionals in optionals";
         *)
         let p = gettklabel fc in
-        (if count key:p tklabels > 1 then small fc.ml_name else p),
+        (if count item:p tklabels > 1 then small fc.ml_name else p),
         small_ident fc.ml_name (* used as labels *),
         small fc.ml_name
       end in

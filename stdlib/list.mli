@@ -117,10 +117,10 @@ val exists2 : pred:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
         (* Same as [for_all] and [exists], but for a two-argument predicate.
            Raise [Invalid_argument] if the two lists have
            different lengths. *)
-val mem : key:'a -> 'a list -> bool
+val mem : item:'a -> 'a list -> bool
         (* [mem a l] is true if and only if [a] is equal
            to an element of [l]. *)
-val memq : key:'a -> 'a list -> bool
+val memq : item:'a -> 'a list -> bool
         (* Same as [mem], but uses physical equality instead of structural
            equality to compare list elements. *)
 

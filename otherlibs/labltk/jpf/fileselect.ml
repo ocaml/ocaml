@@ -49,7 +49,7 @@ let subshell cmd =
   let r,w = pipe () in
     match fork () with
       0 -> close r; dup2 src:w dst:stdout; 
-           execv name:"/bin/sh" args:[| "/bin/sh"; "-c"; cmd |]; 
+           execv prog:"/bin/sh" args:[| "/bin/sh"; "-c"; cmd |]; 
            exit 127
     | id -> 
         close w; 

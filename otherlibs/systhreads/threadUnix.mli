@@ -22,10 +22,9 @@
 
 (*** Process handling *)
 
-external execv : prog:string -> args:string array -> unit = "unix_execv"
-external execve : prog:string -> args:string array -> env:string array -> unit
-           = "unix_execve"
-external execvp : prog:string -> args:string array -> unit = "unix_execvp"
+val execv : prog:string -> args:string array -> unit
+val execve : prog:string -> args:string array -> env:string array -> unit
+val execvp : prog:string -> args:string array -> unit
 val wait : unit -> int * Unix.process_status
 val waitpid : flags:Unix.wait_flag list -> int -> int * Unix.process_status
 val system : string -> Unix.process_status
@@ -35,13 +34,6 @@ val system : string -> Unix.process_status
 val read : Unix.file_descr -> buf:string -> pos:int -> len:int -> int
 val write : Unix.file_descr -> buf:string -> pos:int -> len:int -> int
 
-(*** Polling *)
-
-val select :
-  read:Unix.file_descr list -> write:Unix.file_descr list ->
-  exn:Unix.file_descr list -> timeout:float ->
-        Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
-
 (*** Input/output with timeout *)
 
 val timed_read :
@@ -50,10 +42,17 @@ val timed_read :
 val timed_write :
       Unix.file_descr ->
       buf:string -> pos:int -> len:int -> timeout:float -> int
-      (* Behave as [read] and [write], except that 
+      (* Behave as [read] and [write], except that
          [Unix_error(ETIMEDOUT,_,_)] is raised if no data is
          available for reading or ready for writing after [d] seconds.
          The delay [d] is given in the fifth argument, in seconds. *)
+
+(*** Polling *)
+
+val select :
+  read:Unix.file_descr list -> write:Unix.file_descr list ->
+  except:Unix.file_descr list -> timeout:float ->
+        Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
 
 (*** Pipes and redirections *)
 
@@ -64,16 +63,16 @@ val open_process: string -> in_channel * out_channel
 
 (*** Time *)
 
-external sleep : int -> unit = "unix_sleep"
+val sleep : int -> unit
 
 (*** Sockets *)
 
 val socket : domain:Unix.socket_domain ->
       	     type:Unix.socket_type -> proto:int -> Unix.file_descr
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
-external connect : Unix.file_descr -> Unix.sockaddr -> unit = "unix_connect"
+val connect : Unix.file_descr -> Unix.sockaddr -> unit
 val recv : Unix.file_descr -> buf:string ->
-      	   pos:int -> len:int -> flags:Unix.msg_flag list -> int
+           pos:int -> len:int -> flags:Unix.msg_flag list -> int
 val recvfrom : Unix.file_descr -> buf:string -> pos:int -> len:int ->
                flags:Unix.msg_flag list -> int * Unix.sockaddr
 val send : Unix.file_descr -> buf:string -> pos:int -> len:int ->

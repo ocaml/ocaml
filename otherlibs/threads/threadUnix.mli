@@ -51,7 +51,7 @@ val timed_write :
 
 val select :
   read:Unix.file_descr list -> write:Unix.file_descr list ->
-  exn:Unix.file_descr list -> timeout:float ->
+  except:Unix.file_descr list -> timeout:float ->
         Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
 
 (*** Pipes and redirections *)

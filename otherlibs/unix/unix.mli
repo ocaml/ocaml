@@ -145,14 +145,14 @@ type wait_flag =
            [WUNTRACED] means report also the children that receive stop
            signals. *)
 
-val execv : name:string -> args:string array -> unit
+val execv : prog:string -> args:string array -> unit
         (* [execv prog args] execute the program in file [prog], with
            the arguments [args], and the current process environment. *)
-val execve : name:string -> args:string array -> env:string array -> unit
+val execve : prog:string -> args:string array -> env:string array -> unit
         (* Same as [execv], except that the third argument provides the
            environment to the program executed. *)
-val execvp : name:string -> args:string array -> unit
-val execvpe : name:string -> args:string array -> env:string array -> unit
+val execvp : prog:string -> args:string array -> unit
+val execvpe : prog:string -> args:string array -> env:string array -> unit
         (* Same as [execv] and [execvp] respectively, except that
            the program is searched in the path. *)
 val fork : unit -> int
@@ -323,17 +323,17 @@ type access_permission =
 
         (* Flags for the [access] call. *)
 
-val chmod : name:string -> perm:file_perm -> unit
+val chmod : file:string -> perm:file_perm -> unit
         (* Change the permissions of the named file. *)
 val fchmod : file_descr -> perm:file_perm -> unit
         (* Change the permissions of an opened file. *)
-val chown : name:string -> uid:int -> gid:int -> unit
+val chown : file:string -> uid:int -> gid:int -> unit
         (* Change the owner uid and owner gid of the named file. *)
 val fchown : file_descr -> uid:int -> gid:int -> unit
         (* Change the owner uid and owner gid of an opened file. *)
 val umask : int -> int
         (* Set the process creation mask, and return the previous mask. *)
-val access : name:string -> perm:access_permission list -> unit
+val access : file:string -> perm:access_permission list -> unit
         (* Check that the process has the given permissions over the named
            file. Raise [Unix_error] otherwise. *)
 
@@ -406,7 +406,7 @@ val mkfifo : string -> perm:file_perm -> unit
 (*** High-level process and redirection management *)
 
 val create_process :
-  name:string -> args:string array ->
+  prog:string -> args:string array ->
   stdin:file_descr -> stdout:file_descr -> stderr:file_descr -> int
         (* [create_process prog args new_stdin new_stdout new_stderr]
            forks a new process that executes the program
@@ -425,7 +425,7 @@ val create_process :
            outputs. *)
 
 val create_process_env :
-  name:string -> args:string array -> env:string array ->
+  prog:string -> args:string array -> env:string array ->
   stdin:file_descr -> stdout:file_descr -> stderr:file_descr -> int
         (* [create_process_env prog args env new_stdin new_stdout new_stderr]
            works as [create_process], except that the extra argument
@@ -468,7 +468,7 @@ val readlink : string -> string
 (*** Polling *)
 
 val select :
-  read:file_descr list -> write:file_descr list -> exn:file_descr list ->
+  read:file_descr list -> write:file_descr list -> except:file_descr list ->
   timeout:float ->
         file_descr list * file_descr list * file_descr list
         (* Wait until some input/output operations become possible on
@@ -582,7 +582,7 @@ val sleep : int -> unit
         (* Stop execution for the given number of seconds. *)
 val times : unit -> process_times
         (* Return the execution times of the process. *)
-val utimes : name:string -> access:float -> modif:float -> unit
+val utimes : file:string -> access:float -> modif:float -> unit
         (* Set the last access time (second arg) and last modification time
            (third arg) for a file. Times are expressed in seconds from
            00:00:00 GMT, Jan. 1, 1970. *)
