@@ -17,7 +17,7 @@
 #include <alloc.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_pipe(void)
+CAMLprim value unix_pipe(value unit)
 {
   int fd[2];
   value res;

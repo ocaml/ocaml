@@ -28,7 +28,8 @@ static int msg_flag_table[] = {
   MSG_OOB, MSG_DONTROUTE, MSG_PEEK
 };
 
-CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recv(value sock, value buff, value ofs, value len,
+                         value flags)
 {
   int ret, cv_flags;
   long numbytes;
@@ -47,7 +48,8 @@ CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value fla
   return Val_int(ret);
 }
 
-CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
+                             value flags)
 {
   int ret, cv_flags;
   long numbytes;
@@ -76,7 +78,8 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value
   return res;
 }
 
-CAMLprim value unix_send(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_send(value sock, value buff, value ofs, value len,
+                         value flags)
 {
   int ret, cv_flags;
   long numbytes;
@@ -93,7 +96,8 @@ CAMLprim value unix_send(value sock, value buff, value ofs, value len, value fla
   return Val_int(ret);
 }
 
-CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
+CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len,
+                                  value flags, value dest)
 {
   int ret, cv_flags;
   long numbytes;
@@ -122,16 +126,20 @@ CAMLprim value unix_sendto(value *argv, int argc)
 
 #else
 
-CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recv(value sock, value buff, value ofs, value len,
+                         value flags)
 { invalid_argument("recv not implemented"); }
 
-CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
+                             value flags)
 { invalid_argument("recvfrom not implemented"); }
 
-CAMLprim value unix_send(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_send(value sock, value buff, value ofs, value len,
+                         value flags)
 { invalid_argument("send not implemented"); }
 
-CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
+CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len,
+                                  value flags, value dest)
 { invalid_argument("sendto not implemented"); }
 
 CAMLprim value unix_sendto(value *argv, int argc)

@@ -18,7 +18,7 @@
 #include <alloc.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_time(void)
+CAMLprim value unix_time(value unit)
 {
   return copy_double((double) time((time_t *) NULL));
 }

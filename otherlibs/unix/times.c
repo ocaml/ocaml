@@ -29,7 +29,7 @@
 #endif
 #endif
 
-CAMLprim value unix_times(void)
+CAMLprim value unix_times(value unit)
 {
   value res;
   struct tms buffer;

@@ -44,7 +44,10 @@ CAMLprim value unix_mkfifo(value path, value mode)
 
 #else
 
-CAMLprim value unix_mkfifo() { invalid_argument("mkfifo not implemented"); }
+CAMLprim value unix_mkfifo(value path, value mode)
+{
+  invalid_argument("mkfifo not implemented");
+}
 
 #endif
 #endif
