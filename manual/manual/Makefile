@@ -1,6 +1,6 @@
 FILES=allfiles.tex biblio.tex foreword.tex version.tex foreword.htex
 DVI2TXT=../tools/dvi2txt
-TEXINPUTS=.:..:../refman:../library:../cmds:../../styles:
+TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 CSLDIR=../../csl
@@ -34,6 +34,7 @@ files: $(FILES)
 	cd refman; $(MAKE) all
 	cd library; $(MAKE) all
 	cd cmds; $(MAKE) all
+	cd tutorials; $(MAKE) all
 
 all:
 	$(MAKE) manual plaintext

@@ -1,8 +1,23 @@
+\input version.tex
+
+\begin{rawhtml}
+  <TITLE>Caml Special Light manual</TITLE>
+  <H1>The Caml Special Light system, documentation and user's guide</H1>
+\end{rawhtml}
+
+{\bf Release \cslversion}
+
+{\bf Xavier Leroy}
+
+Copyright \copyright\ 1995 Institut National de Recherche en Informatique et
+Automatique
+
 \input foreword.tex
 
 \part{The Caml Special Light language} \label{p:refman}
 \input refman.tex
 \input exten.tex
+\input objects.tex
 
 \part{The Caml Special Light tools}
 \label{p:commands}
@@ -26,3 +41,7 @@
 \input libstr.tex
 \input libthreads.tex
 \input libgraph.tex
+
+\part{Tutorials}
+\label{p:tutorials}
+\input objectexamples.tex

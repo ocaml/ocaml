@@ -1,0 +1,256 @@
+\chapter{An introduction to the object-oriented extension}
+\label{c:objexample}
+
+This chapter gives an overview of the object-oriented extension to
+Caml Special Light. Some commented examples introduces progressively
+most of its features.
+
+The class "point" has one instance variable "x" and two
+methods "get_x" and "move". The instance variable
+initial value is the one of the class parameter "y".  The
+variable "x" is mutable, so method "move" can change its
+value.
+\begin{caml_example}
+class point y =
+  val mutable x = y
+  method get_x = x
+  method move d = x <- x + d
+end;;
+\end{caml_example}
+We create a new point "p", giving the initialization argument
+"7". Note that the type of "p" is "point". This is an
+abbreviation automatically defined by the class definition above. It
+stands for the object type "< get_x : int; move : int -> unit>" :
+it lists the types of methods of class "point".
+\begin{caml_example}
+let p = new point 7;;
+\end{caml_example}
+Let us apply some methods to "p":
+\begin{caml_example}
+p#get_x;;
+p#move 3;;
+p#get_x;;
+\end{caml_example}
+The library function "Oo.copy" copy an object. Its type is
+"< .. > as 'a -> 'a". The keyword "as" in previous type
+binds the type variable "'a" to the object type "< .. >". So
+this function takes an object with any methods (represented by the
+ellipsis), and returns an object of the same type. Its type is
+different from type "< .. > -> < .. >" as each ellipsis
+represents a different set of methods. Ellipsis actually behaves as a
+type variable.
+\begin{caml_example}
+let q = Oo.copy p;;
+q#move 7; p#get_x, q#get_x;;
+\end{caml_example}
+We define a new class "color_point". This class inherits from
+class "point". So it has the same instance variable and the same methods,
+plus a  new instance variable "c" and a new method "color".
+\begin{caml_example}
+class color_point x (c : string) =
+  inherit point x
+  val c = c
+  method color = c
+end;;
+let p' = new color_point 5 "red";;
+p'#get_x, p'#color;;
+\end{caml_example}
+A point and a color point have incompatible types: a point has no
+method "color". Thus, if one wants to put "p" and "p'"
+in the same list, one need to coerce "p'", hiding its method
+"color".
+\begin{caml_example}
+let l = [p; (p' :> point)];;
+\end{caml_example}
+Function "get_x" is a generic function applying method
+"get_x" to any object "p" which has this method (and
+possibly some others, which are represented by ellipsis in the
+type). The method needs not be declared previously, as function
+"set_x" demonstrates. Function "get_x" can then be mapped on
+list~"l".
+\begin{caml_example}
+let get_x p = p#get_x;;
+let set_x p = p#set_x;;
+List.map get_x l;;
+\end{caml_example}
+Let us now define a parameterized class. The type parameter must be
+bound in class body by a type constraint, here to the type of the
+class parameter "c" (hence also to the type of the instance
+variable "center"). In class type, the type parameter actual
+value is displayed in the "constraint" clause. No free variables
+must remain, uncaptured by a type parameter. This is why we put
+an additional type constraint in method "move".
+\begin{caml_example}
+class 'a circle (c : 'a) =
+  val mutable center = c
+  method center = center
+  method set_center c = center <- c
+  method move = (center#move : int -> unit)
+end;;
+\end{caml_example}
+A "constraint" clause can also appear in a class definition.  The
+type "#point" is an abbreviation produced by class "point".
+This abbreviation unifies with the type of any object belonging to a
+subclass of class "point". It actually expands to
+"< get_x : int; move : int -> unit; .. >". So we can rewrite
+previous example in the following way, with however a stronger
+constraint as we now expect "center" to have a method
+"get_x":
+\begin{caml_example}
+class 'a circle (c : 'a) =
+  constraint 'a = #point
+  val mutable center = c
+  method center = center
+  method set_center c = center <- c
+  method move = center#move
+end;;
+\end{caml_example}
+The class "color_circle" is a specialized version of class
+"circle" which requires the type of the center to unify with
+"#color_point", and adds a method "color".
+\begin{caml_example}
+class 'a color_circle c =
+  constraint 'a = #color_point
+  inherit ('a) circle c
+  method color = center#color
+end;;
+\end{caml_example}
+It is possible to write a version of class "point" without side
+effects.  The
+construct "{< ... >}" returns a copy of self (that is, the
+current object), possibly changing the value of some instance
+variables.
+\begin{caml_example}
+class functional_point y =
+  val x = y
+  method get_x = x
+  method move d = {< x = x + d >}
+end;;
+let p = new functional_point 7;;
+p#get_x;;
+(p#move 3)#get_x;;
+p#get_x;;
+\end{caml_example}
+Methods can be sent to self. For that, self must be explicitly bound,
+here to variable "s".
+\begin{caml_example}
+class printable_point y as s =
+  inherit point y
+  method print = print_int s#get_x
+end;;
+let p = new printable_point 7;;
+p#print;;
+\end{caml_example}
+Multiple inheritance is allowed. Only the last definition of a method
+(or  of an instance variable) is kept.
+But previous definition of a method can be reused by binding the
+related ancestor. Here, "super" is bound to the ancestor
+"printable_point". The name "super" is not actually a variable and
+can only be used to select a method as in "super#print".
+\begin{caml_example}
+class printable_color_point y c as self =
+  inherit color_point y c
+  inherit printable_point y as super
+  method print =
+    print_string "(";
+    super#print;
+    print_string ", ";
+    print_string (self#color);
+    print_string ")"
+end;;
+let p' = new printable_color_point 7 "red";;
+p'#print;;
+\end{caml_example}
+The class "comparable" is a template for classes with a binary
+method "leq" of type "'a -> bool" where the type variable
+"'a" is bound to self type. As this class has a method declared
+but not defined, it must be flagged virtual and cannot be instanciated
+(that is, no object of this class can be created). It still
+defines abbreviations. In particular,
+"#comparable" expands to "< leq : 'a -> bool; .. > as 'a".
+We see here that the binder "as" also allows to write recursive
+types.
+\begin{caml_example}
+class virtual comparable () : 'a =
+  virtual leq : 'a -> bool
+end;;
+\end{caml_example}
+We then defines a subclass of "comparable", wrapping integers. There is
+a type constraint on class parameter "x" as the primitive "<=" is
+a polymorphic comparison function in Caml Special Light.  The "inherit"
+clause ensure that the type of objects of this class in an instance of
+"#comparable".
+\begin{caml_example}
+class int_comparable (x : int) =
+  inherit comparable ()
+  val x = x
+  method x = x
+  method leq p = x <= p#x
+end;;
+\end{caml_example}
+Objects of class "int_comparable2" can also modify the integer
+they holds. The status of instance variable "x" is changed. It is
+now mutable and private, that is subclasses cannot access it (it does
+not appear anymore in class type). Note that the type
+"int_comparable2" is not a subtype of type "int_comparable",
+as self type appears in contravariant position in the type of method
+"leq".
+\begin{caml_example}
+class int_comparable2 x =
+  inherit int_comparable x
+  val private mutable x
+  method set_x y = x <- y
+end;;
+\end{caml_example}
+The function "min" will return the minimum of any two objects
+whose type unify with "#comparable". The type of "min" is
+not the same as "#comparable -> #comparable -> #comparable", as
+the abbreviation "#comparable" hides a type variable (an
+ellipsis). Each occurence of this abbreviation generates a new
+variable.
+\begin{caml_example}
+let min (x : #comparable) y =
+  if x#leq y then x else y;;
+\end{caml_example}
+This function can be applied to objects of type "int_comparable"
+or "int_comparable2".
+\begin{caml_example}
+(min (new int_comparable  7) (new int_comparable 11))#x;;
+(min (new int_comparable2 5) (new int_comparable2 3))#x;;
+\end{caml_example}
+%This last example is somewhat more complicated. It demonstrates
+%recursive classes.
+%\begin{caml_example}
+%class virtual 'a lst () as self =
+%  virtual null : bool
+%  virtual hd : 'a
+%  virtual tl : 'a lst
+%  method map f =
+%    (if self#null then
+%       new nil ()
+%     else
+%       new cons (f self#hd) (self#tl#map f)
+%     : 'a lst)
+%  method iter (f : 'a -> unit) =
+%    if self#null then ()
+%    else begin
+%      f self#hd;
+%      self#tl#iter f
+%    end
+%and 'a nil () =
+%  inherit ('a) lst ()
+%  method null = true
+%  method hd   = failwith "hd"
+%  method tl   = failwith "tl"
+%and 'a cons h t =
+%  inherit ('a) lst ()
+%  val h = h val t = t
+%  method null = false
+%  method hd   = h
+%  method tl   = t
+%end;;
+%let l1 = new cons 3 (new cons 10 (new nil ()));;
+%l1#iter (fun i -> print_int i; print_string " ");;
+%let l2 = l1#map (fun x -> x + 1);;
+%l2#iter (fun i -> print_int i; print_string " ");;
+%\end{caml_example}
