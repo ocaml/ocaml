@@ -25,6 +25,7 @@ Toplevel environment:
   so that an external printer (e.g. Camlp4's) can be hooked in.
 
 Tools:
+- New tool ocamlmklib to help build mixed Caml/C libraries.
 - ocamldep: added -pp option to handle preprocessed source files.
 
 Run-time system:
