@@ -583,9 +583,9 @@ class_type:
       { $1 }
   | QUESTION LABEL simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_fun("?" ^ $2 ,
-		       {ptyp_desc = Ptyp_constr(Lident "option", [$3]);
-			ptyp_loc = $3.ptyp_loc},
-		       $5)) }
+                       {ptyp_desc = Ptyp_constr(Lident "option", [$3]);
+                        ptyp_loc = $3.ptyp_loc},
+                       $5)) }
   | LABEL simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_fun($1, $2, $4)) }
   | simple_core_type_or_tuple MINUSGREATER class_type
@@ -749,15 +749,15 @@ expr:
   | expr INFIXOP4 expr
       { mkinfix $1 $2 $3 }
   | expr SUBTRACTIVE expr
-      { mkinfix $1 $2 $3 } 
+      { mkinfix $1 $2 $3 }
   | expr STAR expr
-      { mkinfix $1 "*" $3 } 
+      { mkinfix $1 "*" $3 }
   | expr EQUAL expr
-      { mkinfix $1 "=" $3 } 
+      { mkinfix $1 "=" $3 }
   | expr LESS expr
-      { mkinfix $1 "<" $3 } 
+      { mkinfix $1 "<" $3 }
   | expr GREATER expr
-      { mkinfix $1 ">" $3 } 
+      { mkinfix $1 ">" $3 }
   | expr OR expr
       { mkinfix $1 "or" $3 }
   | expr BARBAR expr
@@ -953,7 +953,7 @@ match_cases:
   | match_cases BAR pattern match_action        { ($3, $4) :: $1 }
 ;
 fun_def:
-    match_action				{ $1 }
+    match_action                                { $1 }
   | labeled_simple_pattern fun_def
       { let (l,o,p) = $1 in mkexp(Pexp_function(l, o, [p, $2])) }
 ;
@@ -1217,40 +1217,40 @@ simple_core_type:
       { mktyp(Ptyp_variant([],false,[])) }
 ;
 opt_opened:
-    BAR DOTDOT					{ true }
-  | /* empty */					{ false }
+    BAR DOTDOT                                  { true }
+  | /* empty */                                 { false }
 ;
 row_field_list:
-    row_field					{ [$1] }
-  | row_field_list BAR row_field		{ $3 :: $1 }
+    row_field                                   { [$1] }
+  | row_field_list BAR row_field                { $3 :: $1 }
 ;
 row_field:
-    name_tag opt_ampersand amper_type_list	{ ($1, $2, List.rev $3) }
-  | name_tag					{ ($1, true, []) }
+    name_tag opt_ampersand amper_type_list      { ($1, $2, List.rev $3) }
+  | name_tag                                    { ($1, true, []) }
 ;
 opt_ampersand:
-    AMPERSAND					{ true }
-  | /* empty */					{ false }
+    AMPERSAND                                   { true }
+  | /* empty */                                 { false }
 ;
 amper_type_list:
-    core_type					{ [$1] }
-  | amper_type_list AMPERSAND core_type		{ $3 :: $1 }
+    core_type                                   { [$1] }
+  | amper_type_list AMPERSAND core_type         { $3 :: $1 }
 ;
 opt_present:
     LBRACKET GREATER name_tag_list RBRACKET     { List.rev $3 }
-  | /* empty */					{ [] }
+  | /* empty */                                 { [] }
 ;
 name_tag_list:
-    name_tag					{ [$1] }
-  | name_tag_list name_tag			{ $2 :: $1 }
+    name_tag                                    { [$1] }
+  | name_tag_list name_tag                      { $2 :: $1 }
 ;
 core_type_tuple:
     simple_core_type STAR simple_core_type      { [$3; $1] }
   | core_type_tuple STAR simple_core_type       { $3 :: $1 }
 ;
 simple_core_type_or_tuple:
-    simple_core_type			{ $1 }
-  | core_type_tuple			{ mktyp(Ptyp_tuple(List.rev $1)) }
+    simple_core_type                    { $1 }
+  | core_type_tuple                     { mktyp(Ptyp_tuple(List.rev $1)) }
 ;
 core_type_comma_list:
     core_type COMMA core_type                   { [$3; $1] }
@@ -1273,7 +1273,7 @@ label:
 ;
 label_colon:
     LIDENT COLON                                { $1 }
-  | LABEL					{ $1 }
+  | LABEL                                       { $1 }
 ;
 
 /* Constants */
@@ -1302,7 +1302,7 @@ val_ident:
 val_ident_colon:
     LIDENT COLON                                { $1 }
   | LPAREN operator RPAREN COLON                { $2 }
-  | LABEL					{ $1 }
+  | LABEL                                       { $1 }
 ;
 operator:
     PREFIXOP                                    { $1 }
@@ -1330,7 +1330,7 @@ constr_ident:
   | FALSE                                       { "false" }
   | TRUE                                        { "true" }
 ;
-    
+
 val_longident:
     val_ident                                   { Lident $1 }
   | mod_longident DOT val_ident                 { Ldot($1, $3) }
@@ -1386,7 +1386,7 @@ toplevel_directive:
 /* Miscellaneous */
 
 name_tag:
-    BACKQUOTE ident				{ $2 }
+    BACKQUOTE ident                             { $2 }
 ;
 rec_flag:
     /* empty */                                 { Nonrecursive }

@@ -41,7 +41,7 @@ let econ c x = ghexp (Pexp_construct (Ldot (Lident "Stream", c), x, false))
 let pcon c x = ghpat (Ppat_construct (Ldot (Lident "Stream", c), x, false))
 let afun f x =
   ghexp (Pexp_apply (ghexp (Pexp_ident (Ldot (Lident "Stream", f))),
-		     List.map (fun a -> "", a) x))
+                     List.map (fun a -> "", a) x))
 let araise c x =
   ghexp (Pexp_apply (ghexp (Pexp_ident (Lident "raise")), ["", econ c x]))
 let esome x = ghexp (Pexp_construct (Lident "Some", Some x, false))
@@ -100,7 +100,7 @@ let rec parser_cases =
   function
     [] -> araise "Failure" None
   | (spcl, epo, e)::cl -> stream_pattern epo e (fun _ -> parser_cases cl) spcl
-  
+
 let cparser (bpo, pc) =
   let pc = parser_cases pc in
   let e =
@@ -122,7 +122,7 @@ let cparser (bpo, pc) =
 let clazy e = ghexp (Pexp_function ("", None, [ghpat Ppat_any, e]))
 
 let rec cstream_aux =
-  function 
+  function
   | [] -> ghexp (Pexp_ident (Ldot (Lident "Stream", "sempty")))
   | Sexp_term e :: secl -> afun "lcons" [clazy e; cstream_aux secl]
   | Sexp_nterm e :: secl -> afun "lapp" [clazy e; cstream_aux secl]

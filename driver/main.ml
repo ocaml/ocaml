@@ -30,7 +30,7 @@ let process_file name =
   end
   else if Filename.check_suffix name !Config.interface_suffix then
     Compile.interface name
-  else if Filename.check_suffix name ".cmo" 
+  else if Filename.check_suffix name ".cmo"
        or Filename.check_suffix name ".cma" then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ext_obj
@@ -38,9 +38,9 @@ let process_file name =
     ccobjs := name :: !ccobjs
   else if Filename.check_suffix name ".c" then begin
     Compile.c_file name;
-	match Sys.os_type with
-	| "MacOS" -> ccobjs := (name ^ ".o") :: (name ^ ".x") :: !ccobjs
-	| _ ->
+    match Sys.os_type with
+    | "MacOS" -> ccobjs := (name ^ ".o") :: (name ^ ".x") :: !ccobjs
+    | _ ->
        ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
                  :: !ccobjs
   end
