@@ -14,7 +14,6 @@
 /* $Id$ */
 
 #include <signal.h>
-#include <stdio.h>
 #if defined(TARGET_sparc) && defined(SYS_solaris)
 #include <ucontext.h>
 #endif
@@ -35,6 +34,8 @@
 #include <sys/resource.h>
 #endif
 
+extern char * code_area_start, * code_area_end;
+
 #ifdef _WIN32
 typedef void (*sighandler)(int sig);
 extern sighandler win32_signal(int sig, sighandler action);
@@ -43,7 +44,7 @@ extern sighandler win32_signal(int sig, sighandler action);
 
 #if defined(TARGET_power) && defined(SYS_rhapsody)
   #ifdef DARWIN_VERSION_6
-    /* cf. xnu/osfmk/dev/ppc/unix_signal.c
+    /* cf. xnu/bsd/dev/ppc/unix_signal.c
            xnu/osfmk/mach/ppc/thread_status.h
            xnu/bsd/sys/ucontext.h
            xnu/bsd/ppc/signal.h
@@ -52,12 +53,16 @@ extern sighandler win32_signal(int sig, sighandler action);
     #define STRUCT_SIGCONTEXT struct ucontext
     #define CONTEXT_GPR(ctx, regno) \
       (((unsigned long *)&((ctx)->uc_mcontext->ss))[2 + (regno)])
+    #define CONTEXT_PC(ctx) \
+      (((unsigned long *)&((ctx)->uc_mcontext->ss))[0])
   #else
     /* Confer machdep/ppc/unix_signal.c and mach/ppc/thread_status.h
        in the Darwin sources */
     #define STRUCT_SIGCONTEXT struct sigcontext
     #define CONTEXT_GPR(ctx, regno) \
       (((unsigned long *)((ctx)->sc_regs))[2 + (regno)])
+    #define CONTEXT_PC(ctx) \
+      (((unsigned long *)((ctx)->sc_regs))[0])
   #endif
 #endif
 
@@ -200,28 +205,37 @@ void handle_signal(int sig)
     /* Some ports cache young_limit in a register.
        Use the signal context to modify that register too, but not if
        we are inside C code (i.e. caml_last_return_address != 0). */
-    if (caml_last_return_address == 0) {
 #if defined(TARGET_alpha)
+    if (caml_last_return_address == 0) {
       /* Cached in register $14 */
       context->sc_regs[14] = (long) young_limit;
+    }
 #endif
 #if defined(TARGET_mips)
+    if (caml_last_return_address == 0) {
       /* Cached in register $23 */
       context->sc_regs[23] = (int) young_limit;
+    }
 #endif
 #if defined(TARGET_power) && defined(SYS_aix)
+    if (caml_last_return_address == 0) {
       /* Cached in register 30 */
       CONTEXT_GPR(context, 30) = (ulong_t) young_limit;
+    }
 #endif
 #if defined(TARGET_power) && defined(SYS_elf)
+    if (caml_last_return_address == 0) {
       /* Cached in register 30 */
       context->regs->gpr[30] = (unsigned long) young_limit;
+    }
 #endif
 #if defined(TARGET_power) && defined(SYS_rhapsody)
+    if (CONTEXT_PC(context) >= (unsigned long) code_area_start
+        && CONTEXT_PC(context) <= (unsigned long) code_area_end) {
       /* Cached in register 30 */
       CONTEXT_GPR(context, 30) = (unsigned long) young_limit;
-#endif
     }
+#endif
   }
 }
 
@@ -342,7 +356,11 @@ value install_signal_handler(value signal_number, value action) /* ML */
 #ifdef POSIX_SIGNALS
   sigact.sa_handler = act;
   sigemptyset(&sigact.sa_mask);
+#ifdef SYS_rhapsody
+  sigact.sa_flags = SA_SIGINFO;
+#else
   sigact.sa_flags = 0;
+#endif
   if (sigaction(sig, &sigact, &oldsigact) == -1) sys_error(NO_ARG);
   oldact = oldsigact.sa_handler;
 #else
@@ -538,12 +556,10 @@ void init_signals(void)
     struct sigaction act;
     act.sa_handler = (void (*)(int)) trap_handler;
     sigemptyset(&act.sa_mask);
-#if defined(SYS_rhapsody) || defined(SYS_aix)
-  #ifdef DARWIN_VERSION_6
-    act.sa_flags = SA_SIGINFO;
-  #else
+#if defined (SYS_aix)
     act.sa_flags = 0;
-  #endif
+#elif defined (SYS_rhapsody)
+    act.sa_flags = SA_SIGINFO;
 #else
     act.sa_flags = SA_NODEFER;
 #endif
