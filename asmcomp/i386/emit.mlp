@@ -276,12 +276,6 @@ let output_epilogue () =
 
 let is_tos = function { loc = Reg _; typ = Float } -> true | _ -> false
 
-(* Emit a "p" suffix if TOS is dead after the given instruction *)
-
-let pop_suffix i = 
-  let r = i.arg.(0) in
-  if not (is_tos r && Reg.Set.mem r i.live) then emit_string "p"
-
 (* Emit the code for a floating-point comparison *)
 
 let emit_float_test cmp neg arg lbl =
@@ -384,7 +378,7 @@ let emit_instr fallthrough i =
         if src.loc <> dst.loc then begin
           if src.typ = Float then
             if is_tos src then
-              `	fst{pop_suffix i}l	{emit_reg dst}\n`
+              `	fstpl	{emit_reg dst}\n`
             else if is_tos dst then
               `	fldl	{emit_reg src}\n`
             else begin
@@ -471,14 +465,14 @@ let emit_instr fallthrough i =
             `	movw	{emit_reg16 i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
           | Single ->
               if is_tos i.arg.(0) then
-                `	fst{pop_suffix i}s	{emit_addressing addr i.arg 1}\n`
+                `	fstps	{emit_addressing addr i.arg 1}\n`
               else begin
                 `	fldl	{emit_reg i.arg.(0)}\n`;
                 `	fstps	{emit_addressing addr i.arg 1}\n`
               end
           | Double | Double_u ->
               if is_tos i.arg.(0) then
-                `	fst{pop_suffix i}l	{emit_addressing addr i.arg 1}\n`
+                `	fstpl	{emit_addressing addr i.arg 1}\n`
               else begin
                 `	fldl	{emit_reg i.arg.(0)}\n`;
                 `	fstpl	{emit_addressing addr i.arg 1}\n`
@@ -603,9 +597,9 @@ let emit_instr fallthrough i =
         `	fldcw	0(%esp)\n`;
         begin match i.res.(0).loc with
           Stack s ->
-            `	fist{pop_suffix i}l	{emit_reg i.res.(0)}\n`
+            `	fistpl	{emit_reg i.res.(0)}\n`
         | _ ->
-            `	fist{pop_suffix i}l	(%esp)\n`;
+            `	fistpl	(%esp)\n`;
             `	movl	(%esp), {emit_reg i.res.(0)}\n`
         end;
         `	fldcw	4(%esp)\n`;

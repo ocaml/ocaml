@@ -47,7 +47,7 @@ let register_class r =
   | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 7; 1 |]
+let num_available_registers = [| 7; 0 |]
 
 let first_available_register = [| 0; 100 |]
 

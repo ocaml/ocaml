@@ -250,12 +250,6 @@ let output_epilogue () =
 
 let is_tos = function { loc = Reg _; typ = Float } -> true | _ -> false
 
-(* Emit a "p" suffix if TOS is dead after the given instruction *)
-
-let pop_suffix i = 
-  let r = i.arg.(0) in
-  if not (is_tos r && Reg.Set.mem r i.live) then emit_string "p"
-
 (* Emit the code for a floating-point comparison *)
 
 let emit_float_test cmp neg arg lbl =
@@ -358,7 +352,7 @@ let emit_instr i =
         if src.loc <> dst.loc then begin
           if src.typ = Float then
             if is_tos src then
-              `	fst{pop_suffix i}	{emit_reg dst}\n`
+              `	fstp	{emit_reg dst}\n`
             else if is_tos dst then
               `	fld	{emit_reg dst}\n`
             else begin
@@ -449,14 +443,14 @@ let emit_instr i =
             `	mov	WORD PTR {emit_addressing addr i.arg 1}, {emit_reg16 i.arg.(0)}\n`
           | Single ->
               if is_tos i.arg.(0) then
-                `	fst{pop_suffix i}	REAL4 PTR {emit_addressing addr i.arg 1}\n`
+                `	fstp	REAL4 PTR {emit_addressing addr i.arg 1}\n`
               else begin
                 `	fld	{emit_reg i.arg.(0)}\n`;
                 `	fstp	REAL4 PTR {emit_addressing addr i.arg 1}\n`
               end
           | Double | Double_u ->
               if is_tos i.arg.(0) then
-                `	fst{pop_suffix i}	REAL8 PTR {emit_addressing addr i.arg 1}\n`
+                `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`
               else begin
                 `	fld	{emit_reg i.arg.(0)}\n`;
                 `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`
@@ -581,9 +575,9 @@ let emit_instr i =
         `	fldcw	[esp]\n`;
         begin match i.res.(0).loc with
           Stack s ->
-            `	fist{pop_suffix i}	{emit_reg i.res.(0)}\n`
+            `	fistp	{emit_reg i.res.(0)}\n`
         | _ ->
-            `	fist{pop_suffix i}	DWORD PTR [esp]\n`;
+            `	fistp	DWORD PTR [esp]\n`;
             `	mov	{emit_reg i.res.(0)}, [esp]\n`
         end;
         `	fldcw	[esp+4]\n`;
