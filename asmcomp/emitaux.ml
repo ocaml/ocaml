@@ -33,15 +33,21 @@ let emit_symbol s =
   done
 
 let emit_string_literal s =
+  let last_was_escape = ref false in
   emit_string "\"";
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
-    if c = '\\' then
-      emit_string "\\\\"
-    else if c >= ' ' & c <= '~' & c <> '"' then
-      output_char !output_channel c
-    else
-      Printf.fprintf !output_channel "\\%03o" (Char.code c)
+    if c >= '0' & c <= '9' then
+      if !last_was_escape
+      then Printf.fprintf !output_channel "\\%o" (Char.code c)
+      else output_char !output_channel c
+    else if c >= ' ' & c <= '~' & c <> '"' & c <> '\\' then begin
+      output_char !output_channel c;
+      last_was_escape := false
+    end else begin
+      Printf.fprintf !output_channel "\\%o" (Char.code c);
+      last_was_escape := true
+    end
   done;
   emit_string "\""
 
