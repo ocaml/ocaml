@@ -80,6 +80,34 @@ let latex_title ref_titles =
   (String.concat "\n"
      (List.map (fun (n,t) -> Printf.sprintf "                %d -> %s" n t) !ref_titles))
 
+let default_latex_value_prefix = ""
+let latex_value_prefix = "<string>  use <string> as prefix for the LaTeX labels of values. "^
+  "(default is \""^default_latex_value_prefix^"\")"
+let default_latex_type_prefix = ""
+let latex_type_prefix = "<string>  use <string> as prefix for the LaTeX labels of types. "^
+  "(default is \""^default_latex_type_prefix^"\")"
+let default_latex_exception_prefix = ""
+let latex_exception_prefix = "<string>  use <string> as prefix for the LaTeX labels of exceptions. "^
+  "(default is \""^default_latex_exception_prefix^"\")"
+let default_latex_module_prefix = ""
+let latex_module_prefix = "<string>  use <string> as prefix for the LaTeX labels of modules. "^
+  "(default is \""^default_latex_module_prefix^"\")"
+let default_latex_module_type_prefix = ""
+let latex_module_type_prefix = "<string>  use <string> as prefix for the LaTeX labels of module types. "^
+  "(default is \""^default_latex_module_type_prefix^"\")"
+let default_latex_class_prefix = ""
+let latex_class_prefix = "<string>  use <string> as prefix for the LaTeX labels of classes. "^
+  "(default is \""^default_latex_class_prefix^"\")"
+let default_latex_class_type_prefix = ""
+let latex_class_type_prefix = "<string>  use <string> as prefix for the LaTeX labels of class types. "^
+  "(default is \""^default_latex_class_type_prefix^"\")"
+let default_latex_attribute_prefix = ""
+let latex_attribute_prefix = "<string>  use <string> as prefix for the LaTeX labels of attributes. "^
+  "(default is \""^default_latex_attribute_prefix^"\")"
+let default_latex_method_prefix = ""
+let latex_method_prefix = "<string>  use <string> as prefix for the LaTeX labels of methods. "^
+  "(default is \""^default_latex_method_prefix^"\")"
+
 let no_toc = " Do not generate table of contents "^latex_only
 let sort_modules = " Sort the list of top modules before generating the documentation"
 let no_stop = " Do not stop at (**/**) comments"

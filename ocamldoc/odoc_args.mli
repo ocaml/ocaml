@@ -92,6 +92,33 @@ val separate_files : bool ref
 (** The list of pairs (title level, sectionning style). *)
 val latex_titles : (int * string) list ref
 
+(** The prefix to use for value labels in LaTeX. *)
+val latex_value_prefix : string ref
+
+(** The prefix to use for type labels in LaTeX. *)
+val latex_type_prefix : string ref
+
+(** The prefix to use for exception labels in LaTeX. *)
+val latex_exception_prefix : string ref
+
+(** The prefix to use for module labels in LaTeX. *)
+val latex_module_prefix : string ref
+
+(** The prefix to use for module type labels in LaTeX. *)
+val latex_module_type_prefix : string ref
+
+(** The prefix to use for class labels in LaTeX. *)
+val latex_class_prefix : string ref
+
+(** The prefix to use for class type labels in LaTeX. *)
+val latex_class_type_prefix : string ref
+
+(** The prefix to use for attribute labels in LaTeX. *)
+val latex_attribute_prefix : string ref
+
+(** The prefix to use for method labels in LaTeX. *)
+val latex_method_prefix : string ref
+
 (** The flag which indicates if we must generate a table of contents (for LaTeX). *)
 val with_toc : bool ref
 

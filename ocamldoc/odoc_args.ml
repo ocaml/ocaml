@@ -162,6 +162,16 @@ let add_hidden_modules s =
     )
     l
 
+let latex_value_prefix = ref ""
+let latex_type_prefix = ref ""
+let latex_exception_prefix = ref ""
+let latex_module_prefix = ref ""
+let latex_module_type_prefix = ref ""
+let latex_class_prefix = ref ""
+let latex_class_type_prefix = ref ""
+let latex_attribute_prefix = ref ""
+let latex_method_prefix = ref ""
+
 let set_doc_generator (dg_opt : doc_generator option) = doc_generator := dg_opt
 
 (** The default html generator. Initialized in the parse function, to be used during the command line analysis.*)
@@ -212,7 +222,6 @@ let options  = ref [
   "-dot", Arg.Unit (fun () -> set_doc_generator !default_dot_generator), Odoc_messages.generate_dot ;
   "-g", Arg.String (fun s -> ()), Odoc_messages.load_file^"\n" ;
 
-
 (* html only options *)
   "-all-params", Arg.Set with_parameter_list, Odoc_messages.with_parameter_list ;
   "-css-style", Arg.String (fun s -> css_style := Some s), Odoc_messages.css_style ;
@@ -224,6 +233,15 @@ let options  = ref [
   "-notrailer", Arg.Unit (fun () -> with_trailer := false), Odoc_messages.no_trailer ;
   "-sepfiles", Arg.Set separate_files, Odoc_messages.separate_files ;
   "-latextitle", Arg.String f_latex_title, Odoc_messages.latex_title latex_titles ;
+  "-latex-value-prefix", Arg.String (fun s -> latex_value_prefix := s), Odoc_messages.latex_value_prefix ;
+  "-latex-type-prefix", Arg.String (fun s -> latex_type_prefix := s), Odoc_messages.latex_type_prefix ;
+  "-latex-exception-prefix", Arg.String (fun s -> latex_exception_prefix := s), Odoc_messages.latex_exception_prefix ;
+  "-latex-attribute-prefix", Arg.String (fun s -> latex_attribute_prefix := s), Odoc_messages.latex_attribute_prefix ;
+  "-latex-method-prefix", Arg.String (fun s -> latex_method_prefix := s), Odoc_messages.latex_method_prefix ;
+  "-latex-module-prefix", Arg.String (fun s -> latex_module_prefix := s), Odoc_messages.latex_module_prefix ;
+  "-latex-module-type-prefix", Arg.String (fun s -> latex_module_type_prefix := s), Odoc_messages.latex_module_type_prefix ;
+  "-latex-class-prefix", Arg.String (fun s -> latex_class_prefix := s), Odoc_messages.latex_class_prefix ;
+  "-latex-class-type-prefix", Arg.String (fun s -> latex_class_type_prefix := s), Odoc_messages.latex_class_type_prefix ;
   "-notoc", Arg.Unit (fun () -> with_toc := false), Odoc_messages.no_toc^"\n" ;
 
 (* tex only options *)

@@ -117,29 +117,51 @@ class text =
 	
     (** Make a correct latex label from a name. *)
     method label ?(no_=true) name =
-      let s = 
-	if no_ then 
-	  Str.global_replace (Str.regexp_string "_") "" name 
-	else
-	  name
-      in
-      List.fold_right
-       (fun (s, s2) -> fun acc -> Str.global_replace (Str.regexp_string s) s2 acc)
-	[ 
-	  "~", "X" ;
-	  "@", "\"@" ;
-	  "!", "\"!" ;
-	  "|", "\"|" ;
-	] 
-	s
+      let len = String.length name in
+      let buf = Buffer.create len in
+      for i = 0 to len - 1 do
+	match name.[i] with
+	  '_' -> if no_ then () else Buffer.add_char buf '_'
+	| '~' -> Buffer.add_char buf 'X'
+	| '@' -> Buffer.add_string buf "\"@"
+	| '!' -> Buffer.add_string buf "\"!" 
+	| '|' -> Buffer.add_string buf "\"|"
+	| c -> Buffer.add_char buf c
+      done;
+      Buffer.contents buf
 
-    (** Return latex code for the label of a name. *)
-    method make_label name = 
-      "\\label{"^(self#label name)^"}"
+    (** Make a correct label from a value name. *)
+    method value_label ?no_ name = self#label ?no_ (!Odoc_args.latex_value_prefix^name)
 
-    (** Return latex code for the ref to a name. *)
-    method make_ref name = 
-      "\\ref{"^(self#label name)^"}"
+    (** Make a correct label from an attribute name. *)
+    method attribute_label ?no_ name = self#label ?no_ (!Odoc_args.latex_attribute_prefix^name)
+
+    (** Make a correct label from a method name. *)
+    method method_label ?no_ name = self#label ?no_ (!Odoc_args.latex_method_prefix^name)
+
+    (** Make a correct label from a class name. *)
+    method class_label ?no_ name = self#label ?no_ (!Odoc_args.latex_class_prefix^name)
+
+    (** Make a correct label from a class type name. *)
+    method class_type_label ?no_ name = self#label ?no_ (!Odoc_args.latex_class_type_prefix^name)
+
+    (** Make a correct label from a module name. *)
+    method module_label ?no_ name = self#label ?no_ (!Odoc_args.latex_module_prefix^name)
+
+    (** Make a correct label from a module type name. *)
+    method module_type_label ?no_ name = self#label ?no_ (!Odoc_args.latex_module_type_prefix^name)
+
+    (** Make a correct label from an exception name. *)
+    method exception_label ?no_ name = self#label ?no_ (!Odoc_args.latex_exception_prefix^name)
+
+    (** Make a correct label from a type name. *)
+    method type_label ?no_ name = self#label ?no_ (!Odoc_args.latex_type_prefix^name)
+
+    (** Return latex code for the label of a given label. *)
+    method make_label label = "\\label{"^label^"}"
+
+    (** Return latex code for the ref to a given label. *)
+    method make_ref label = "\\ref{"^label^"}"
 
     (** Return the LaTeX code corresponding to the [text] parameter.*)
     method latex_of_text t = String.concat "" (List.map self#latex_of_text_element t)
@@ -243,25 +265,26 @@ class text =
 	  self#latex_of_text_element 
 	    (Odoc_info.Code (Odoc_info.use_hidden_modules name))
       |	Some kind when kind = RK_section -> 
-	  self#latex_of_text_element (Latex ("["^(self#make_ref (Name.simple name))^"]"))
+	  self#latex_of_text_element
+	    (Latex ("["^(self#make_ref (self#label (Name.simple name)))^"]"))
       |	Some kind ->
-	  let target = 
+	  let f_label = 
 	    match kind with
-	      Odoc_info.RK_module 
-	    | Odoc_info.RK_module_type
-	    | Odoc_info.RK_class
-	    | Odoc_info.RK_class_type
-	    | Odoc_info.RK_value
-	    | Odoc_info.RK_type
-	    | Odoc_info.RK_exception
-	    | Odoc_info.RK_attribute
-	    | Odoc_info.RK_method -> name
+	      Odoc_info.RK_module -> self#module_label
+	    | Odoc_info.RK_module_type -> self#module_type_label
+	    | Odoc_info.RK_class -> self#class_label
+	    | Odoc_info.RK_class_type -> self#class_type_label
+	    | Odoc_info.RK_value -> self#value_label
+	    | Odoc_info.RK_type -> self#type_label
+	    | Odoc_info.RK_exception -> self#exception_label
+	    | Odoc_info.RK_attribute -> self#attribute_label
+	    | Odoc_info.RK_method -> self#method_label
 	    | Odoc_info.RK_section -> assert false
 	  in
 	  (self#latex_of_text 
 	     [
 	       Odoc_info.Code (Odoc_info.use_hidden_modules name) ;
-	       Latex ("["^(self#make_ref name)^"]")
+	       Latex ("["^(self#make_ref (f_label name))^"]")
 	     ] 
 	  )
 
@@ -315,19 +338,19 @@ class latex =
     method latex_of_value v = 
       Odoc_info.reset_type_names () ;
       self#latex_of_text 
-	((Latex (self#make_label v.val_name)) :: 
+	((Latex (self#make_label (self#value_label v.val_name))) :: 
 	 (to_text#text_of_value v))
 
     (** Return LaTeX code for a class attribute. *)
     method latex_of_attribute a =
       self#latex_of_text 
-	((Latex (self#make_label a.att_value.val_name)) :: 
+	((Latex (self#make_label (self#attribute_label a.att_value.val_name))) :: 
 	 (to_text#text_of_attribute a))
 
     (** Return LaTeX code for a class method. *)
     method latex_of_method m = 
       self#latex_of_text
-	((Latex (self#make_label m.met_value.val_name)) :: 
+	((Latex (self#make_label (self#method_label m.met_value.val_name))) :: 
 	 (to_text#text_of_method m))
 
     (** Return LaTeX code for a type. *)
@@ -437,17 +460,17 @@ class latex =
 	      e :: (iter q)
 	in
 	(iter defs2) @
-	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
+	[Latex ("\\index{"^(self#type_label s_name)^"@\\verb`"^(self#type_label ~no_:false s_name)^"`}\n")] @
 	(self#text_of_info t.ty_info)
       in
       self#latex_of_text 
-	((Latex (self#make_label t.ty_name)) :: text)
+	((Latex (self#make_label (self#type_label t.ty_name))) :: text)
 
     (** Return LaTeX code for an exception. *)
     method latex_of_exception e =
       Odoc_info.reset_type_names () ;
       self#latex_of_text 
-	((Latex (self#make_label e.ex_name)) :: 
+	((Latex (self#make_label (self#exception_label e.ex_name))) :: 
 	 (to_text#text_of_exception e))
 
     (** Return the LaTeX code for the given module. *)
@@ -464,7 +487,7 @@ class latex =
 	(CodePre (Buffer.contents buf)) ::
 	(
 	 if with_link 
-	 then [Odoc_info.Latex ("\\\n["^(self#make_ref m.m_name)^"]")]
+	 then [Odoc_info.Latex ("\\\n["^(self#make_ref (self#module_label m.m_name))^"]")]
 	 else [] 
 	)
       in
@@ -489,7 +512,7 @@ class latex =
 	(CodePre (Buffer.contents buf)) ::
 	(
 	 if with_link 
-	 then [Odoc_info.Latex ("\\\n["^(self#make_ref mt.mt_name)^"]")]
+	 then [Odoc_info.Latex ("\\\n["^(self#make_ref (self#module_type_label mt.mt_name))^"]")]
 	 else [] 
 	)
       in
@@ -530,7 +553,7 @@ class latex =
 	(CodePre (Buffer.contents buf)) ::
 	(
 	 if with_link 
-	 then [Odoc_info.Latex (" ["^(self#make_ref c.cl_name)^"]")]
+	 then [Odoc_info.Latex (" ["^(self#make_ref (self#class_label c.cl_name))^"]")]
 	 else [] 
 	) 
       in
@@ -560,7 +583,7 @@ class latex =
 	(CodePre (Buffer.contents buf)) ::
 	(
 	 if with_link 
-	 then [Odoc_info.Latex (" ["^(self#make_ref ct.clt_name)^"]")]
+	 then [Odoc_info.Latex (" ["^(self#make_ref (self#class_type_label ct.clt_name))^"]")]
 	 else [] 
 	) 
       in
@@ -606,10 +629,15 @@ class latex =
 	      None -> []
 	    | Some t -> Newline :: t
 	    )
-	| Some _ ->
+	| Some cct ->
+	    let label = 
+	      match cct with
+		Cl _ -> self#class_label inh.ic_name
+	      |	Cltype _ -> self#class_type_label inh.ic_name
+	    in
 	    (* we can create the reference *)
 	    (Odoc_info.Code inh.ic_name) ::
-	    (Odoc_info.Latex (" ["^(self#make_ref inh.ic_name)^"]")) :: 
+	    (Odoc_info.Latex (" ["^(self#make_ref label)^"]")) :: 
 	    (match inh.ic_text with
 	      None -> []
 	    | Some t -> Newline :: t
@@ -658,14 +686,14 @@ class latex =
 			  (match first_t with 
 			    [] -> []
 			  | t -> (Raw " : ") :: t)) ;
-		   Latex (self#make_label c.cl_name) ;
+		   Latex (self#make_label (self#class_label c.cl_name)) ;
 		 ] 
       in
       output_string chanout (self#latex_of_text text);
       output_string chanout ((self#latex_of_class ~with_link: false c)^"\n\n") ;
       let s_name = Name.simple c.cl_name in
       output_string chanout
-	(self#latex_of_text [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
+	(self#latex_of_text [Latex ("\\index{"^(self#class_label s_name)^"@\\verb`"^(self#class_label ~no_:false s_name)^"`}\n")]);
       output_string chanout (self#latex_of_text rest_t) ;
       (* parameters *)
       output_string chanout 
@@ -688,7 +716,7 @@ class latex =
 			  (match first_t with 
 			    [] -> []
 			  | t -> (Raw " : ") :: t)) ;
-		   Latex (self#make_label ct.clt_name) ;
+		   Latex (self#make_label (self#class_type_label ct.clt_name)) ;
 		 ] 
       in
 
@@ -696,7 +724,7 @@ class latex =
       output_string chanout ((self#latex_of_class_type ~with_link: false ct)^"\n\n") ;
       let s_name = Name.simple ct.clt_name in
       output_string chanout
-	(self#latex_of_text [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
+	(self#latex_of_text [Latex ("\\index{"^(self#class_type_label s_name)^"@\\verb`"^(self#class_type_label ~no_:false s_name)^"`}\n")]);
       output_string chanout ((self#latex_of_text rest_t)) ;
       output_string chanout (self#latex_of_text [ Newline]) ;
       output_string chanout ("\\vspace{0.5cm}\n\n");
@@ -715,7 +743,7 @@ class latex =
 			  (match first_t with 
 			    [] -> []
 			  | t -> (Raw " : ") :: t)) ;
-		   Latex (self#make_label mt.mt_name) ;
+		   Latex (self#make_label (self#module_type_label mt.mt_name)) ;
 		 ] 
       in
       output_string chanout (self#latex_of_text text);
@@ -723,7 +751,7 @@ class latex =
 	output_string chanout ((self#latex_of_module_type ~with_link: false mt)^"\n\n");
       let s_name = Name.simple mt.mt_name in
       output_string chanout
-	(self#latex_of_text [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
+	(self#latex_of_text [Latex ("\\index{"^(self#module_type_label s_name)^"@\\verb`"^(self#module_type_label ~no_:false s_name)^"`}\n")]);
       output_string chanout (self#latex_of_text rest_t) ;
       (* parameters *)
       output_string chanout 
@@ -756,7 +784,7 @@ class latex =
 			  (match first_t with 
 			    [] -> []
 			  | t -> (Raw " : ") :: t)) ;
-		   Latex (self#make_label m.m_name) ;
+		   Latex (self#make_label (self#module_label m.m_name)) ;
 		 ] 
       in
       output_string chanout (self#latex_of_text text);
@@ -764,7 +792,7 @@ class latex =
 	output_string chanout ((self#latex_of_module ~with_link: false m)^"\n\n");
       let s_name = Name.simple m.m_name in
       output_string chanout
-	(self#latex_of_text [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
+	(self#latex_of_text [Latex ("\\index{"^(self#module_label s_name)^"@\\verb`"^(self#module_label ~no_:false s_name)^"`}\n")]);
       output_string chanout (self#latex_of_text rest_t) ;
       (* parameters *)
       output_string chanout 
