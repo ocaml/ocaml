@@ -832,10 +832,11 @@ and type_statement env sexp =
     | Tarrow(_, _) ->
         Location.print_warning sexp.pexp_loc Warnings.Partial_application;
         exp
-    | Tconstr (p, _, _) when not (Path.same p Predef.path_unit) ->
+    | Tconstr (p, _, _) when Path.same p Predef.path_unit ->
+        exp
+    | _ ->
         Location.print_warning sexp.pexp_loc Warnings.Statement_type;
         exp
-    | _ -> exp
 
 (* Typing of match cases *)
 
