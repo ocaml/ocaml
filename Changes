@@ -4,15 +4,18 @@ Objective Caml 3.00:
 Language:
 - OCaml/OLabl merger:
   * Support for labeled and optional arguments for functions and classes.
+    (A tool ocaml299to3 is provided to help converting labels in programs
+     from OCaml 2.99 or OLabl style to OCaml 3.00.)
   * Support for variant types (sum types compared by structure).
-  See tutorial (chapter 2 of the OCaml manual) for more infos.
+  See tutorial (chapter 2 of the OCaml manual) for more information.
+- Syntactic change: "?" in stream error handlers changed to "??".
 - Added exception renaming in structures (exception E = F).
 
 Both compilers:
 - Option -labels to select commuting label mode (labels are mandatory,
   but labeled arguments can be passed in a different order than in
-  the definition of the function; in default mode, labels are optional,
-  but no argument reordering is possible).
+  the definition of the function; in default mode, labels may be omitted,
+  but argument reordering is only allowed for optional arguments).
 - Libraries (.cma and .cmxa files) now "remember" C libraries given
   at library construction time, and add them back at link time.
   Allows linking with e.g. just unix.cma instead of
