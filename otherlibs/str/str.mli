@@ -73,8 +73,8 @@ val regexp_string_case_fold : string -> regexp
 
 
 val string_match : regexp -> string -> int -> bool
-(** [string_match r s start] tests whether the characters in [s]
-   starting at position [start] match the regular expression [r].
+(** [string_match r s start] tests whether a substring of [s] that
+   starts at position [start] matches the regular expression [r].
    The first character of a string has position [0], as usual. *)
 
 val search_forward : regexp -> string -> int -> int
@@ -93,9 +93,9 @@ val search_backward : regexp -> string -> int -> int
   substring matches. *)
 
 val string_partial_match : regexp -> string -> int -> bool
-(** Similar to {!Str.string_match}, but succeeds whenever the argument
-   string is a prefix of a string that matches.  This includes
-   the case of a true complete match. *)
+(** Similar to {!Str.string_match}, but also returns true if
+   the argument string is a prefix of a string that matches.
+   This includes the case of a true complete match. *)
 
 val matched_string : string -> string
 (** [matched_string s] returns the substring of [s] that was matched
