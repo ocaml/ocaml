@@ -25,9 +25,6 @@ val native_c_compiler: string
         (* The C compiler to use for the native code compiler *)
 val c_libraries: string
         (* The C libraries to link with custom runtimes *)
-val standard_includes: string
-        (* Options to pass to the C compiler for including the standard
-           library directory. *)
 
 val load_path: string list ref
         (* Directories in the search path for .cmi and .cmo files *)
