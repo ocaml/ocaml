@@ -24,7 +24,7 @@ val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_method:
         Env.t -> type_expr -> string option ->
-        Parsetree.expression -> Typedtree.expression * type_expr
+        Parsetree.expression -> type_expr -> Typedtree.expression
 val type_pattern_list:
         Env.t -> Parsetree.pattern list -> Typedtree.pattern list * Env.t
 val type_expect:
@@ -57,6 +57,7 @@ type error =
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
+  | Too_many_arguments
 
 exception Error of Location.t * error
 

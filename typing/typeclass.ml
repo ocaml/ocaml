@@ -364,12 +364,16 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
       (met_env, fields, vars_sig)
 
   | Pcf_meth (lab, expr, loc)  ->
-      let (texp, ty) = type_method met_env self cl.pcl_self expr in
-      let ty' = Ctype.filter_method met_env lab self in
-        begin try Ctype.unify met_env ty ty' with Ctype.Unify trace ->
-          raise(Error(loc, Method_type_mismatch (lab, trace)))
-        end;
+      let ty = Ctype.filter_method met_env lab self in
+      let texp = type_method met_env self cl.pcl_self expr ty in
       (met_env, Cf_meth (lab, texp)::fields, vars_sig)
+  
+(*       let (texp, ty) = type_method met_env self cl.pcl_self expr in *)
+(*       let ty' = Ctype.filter_method met_env lab self in *)
+(*         begin try Ctype.unify met_env ty ty' with Ctype.Unify trace -> *)
+(*           raise(Error(loc, Method_type_mismatch (lab, trace))) *)
+(*         end; *)
+(*       (met_env, Cf_meth (lab, texp)::fields, vars_sig) *)
   
 let transl_class temp_env env
   (cl, id, cl_id, obj_id, self, concr, concr_meths, new_args, new_ty,

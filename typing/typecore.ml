@@ -45,6 +45,7 @@ type error =
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
+  | Too_many_arguments
 
 exception Error of Location.t * error
 
@@ -721,7 +722,32 @@ let type_expression env sexp =
 
 (* Typing of methods *)
 
-let type_method env self self_name sexp =
+let rec type_expect_fun env sexp ty_expected =
+  match sexp.pexp_desc with
+    Pexp_function caselist ->
+      let (ty_arg, ty_res) =
+        try filter_arrow env ty_expected with Unify _ ->
+          raise(Error(sexp.pexp_loc, Too_many_arguments))
+      in
+      let cases =
+        List.map
+          (fun (spat, sexp) ->
+             let (pat, ext_env) = type_pattern env spat in
+             unify_pat env pat ty_arg;
+             let exp = type_expect_fun ext_env sexp ty_res in
+             (pat, exp))
+          caselist
+      in
+      Parmatch.check_unused cases;
+      Parmatch.check_partial sexp.pexp_loc cases;
+      { exp_desc = Texp_function cases;
+        exp_loc = sexp.pexp_loc;
+        exp_type = newty (Tarrow(ty_arg, ty_res));
+        exp_env = env }
+  | _ ->
+      type_expect env sexp ty_expected
+
+let type_method env self self_name sexp ty_expected =
   let (obj, env) =
     Env.enter_value "*self*" {val_type = self; val_kind = Val_reg} env
   in
@@ -743,12 +769,11 @@ let type_method env self self_name sexp =
 	   pat_type = self },
 	 env)
   in
-  let exp = type_exp env sexp in
-  ({ exp_desc = Texp_function [(pattern, exp)];
-     exp_loc = sexp.pexp_loc;
-     exp_type = newty (Tarrow(pattern.pat_type, exp.exp_type));
-     exp_env = env },
-   exp.exp_type)
+  let exp = type_expect_fun env sexp ty_expected in
+  { exp_desc = Texp_function [(pattern, exp)];
+    exp_loc = sexp.pexp_loc;
+    exp_type = newty (Tarrow(pattern.pat_type, exp.exp_type));
+    exp_env = env }
 
 (* Error report *)
 
@@ -852,3 +877,5 @@ let report_error = function
            print_string "it has type")
         (function () ->
            print_string "but is here used with type")
+  | Too_many_arguments ->
+      print_string "This function has too many arguments"
