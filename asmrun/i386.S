@@ -29,9 +29,9 @@
 
 #if defined(PROFILING) && defined(SYS_linux_elf)
 #define PROFILE_CAML \
-        pushl %eax; movl %esp, %ebp; pushl %ecx; pushl %edx; \
+        pushl %ebp; movl %esp, %ebp; pushl %eax; pushl %ecx; pushl %edx; \
         call mcount; \
-        popl %edx; popl %ecx; popl %eax
+        popl %edx; popl %ecx; popl %eax; popl %ebp
 #define PROFILE_C \
         pushl %ebp; movl %esp, %ebp; call mcount; popl %ebp
 #else
