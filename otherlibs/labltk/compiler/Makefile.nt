@@ -3,8 +3,8 @@
 OBJS=   ../support/support.cmo tsort.cmo tables.cmo lexer.cmo parser.cmo \
         compile.cmo intf.cmo printer.cmo maincompile.cmo
 
-tkcompiler : $(OBJS)
-	$(LABLC) $(LINKFLAGS) -o tkcompiler $(OBJS)
+tkcompiler.exe : $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -o tkcompiler.exe $(OBJS)
 
 lexer.ml: lexer.mll
 	$(LABLLEX) lexer.mll
@@ -13,13 +13,13 @@ parser.ml parser.mli: parser.mly
 	$(LABLYACC) -v parser.mly
 
 clean : 
-	rm -f *.cm*  parser.ml parser.mli lexer.ml tkcompiler parser.output
+	rm -f *.cm*  parser.ml parser.mli lexer.ml tkcompiler.exe parser.output
 
 scratch :
-	rm -f *.cm*  parser.ml parser.mli lexer.ml tkcompiler
+	rm -f *.cm*  parser.ml parser.mli lexer.ml tkcompiler.exe
 
 install: 
-	cp tkcompiler $(LABLTKDIR)
+	cp tkcompiler.exe $(LABLTKDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .mlp

@@ -1,3 +1,19 @@
+/***********************************************************************/
+/*                                                                     */
+/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                                                                     */
+/*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
+/*               projet Cristal, INRIA Rocquencourt                    */
+/*            Jacques Garrigue, Kyoto University RIMS                  */
+/*                                                                     */
+/*  Copyright 2002 Institut National de Recherche en Informatique et   */
+/*  en Automatique and Kyoto University.  All rights reserved.         */
+/*  This file is distributed under the terms of the GNU Library        */
+/*  General Public License, with the special exception on linking      */
+/*  described in file ../LICENSE.                                      */
+/*                                                                     */
+/***********************************************************************/
+
 /* $Id$ */
 
 %{
@@ -21,6 +37,7 @@ open Tables
 %token RBRACKET         /* "]" */
 %token LBRACE           /* "{" */
 %token RBRACE           /* "}" */
+%token SLASH            /* "/" */
 
 %token TYINT            /* "int" */
 %token TYFLOAT          /* "float" */
@@ -66,9 +83,15 @@ Type0 :
       { UserDefined $1 }
 ;
 
+/* Camltk/Labltk types */
+Type0_5:
+  | Type0 SLASH Type0 { if !Flags.camltk then $1 else $3 }
+  | Type0 { $1 }  
+;
+
 /* with subtypes */
 Type1 : 
-    Type0
+    Type0_5
       { $1 }
   | TypeName LPAREN IDENT RPAREN
      { Subtype ($1, $3) }

@@ -14,21 +14,23 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+exception Error of string
 
-open Support
-
-val f :
-  title:string ->
-  action:(string list -> unit) ->
-  filter:string -> file:string -> multi:bool -> sync:bool -> unit
-
-(* action 
-      []  means canceled
-      if multi select is false, then the list is null or a singleton *)
-
-(* multi select 
-      if true then more than one file are selectable *)
-
-(* sync it 
-      if true then in synchronous mode *)
+let parse_channel ic =
+  let lexbuf = Lexing.from_channel ic in
+  try
+    Ppyac.code_list Pplex.token lexbuf 
+  with
+  | Pplex.Error s ->
+      let loc_start = Lexing.lexeme_start lexbuf 
+      and loc_end = Lexing.lexeme_end lexbuf
+      in
+      raise (Error (Printf.sprintf "parse error at char %d, %d: %s" 
+      		 loc_start loc_end s))
+  | Parsing.Parse_error ->
+      let loc_start = Lexing.lexeme_start lexbuf 
+      and loc_end = Lexing.lexeme_end lexbuf
+      in
+      raise (Error (Printf.sprintf "parse error at char %d, %d" 
+      		loc_start loc_end))
+;;

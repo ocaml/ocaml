@@ -1,8 +1,8 @@
 include ../support/Makefile.common
 
-COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/unix -I $(OTHERS)/str
+COMPFLAGS=-I ../labltk -I ../support -I $(OTHERS)/unix -I $(OTHERS)/str
 
-OBJS= fileselect.cmo balloon.cmo
+OBJS= fileselect.cmo balloon.cmo shell.cmo jpf_font.cmo
 
 OBJSX = $(OBJS:.cmo=.cmx)
 
@@ -65,7 +65,9 @@ depend:
 ### DO NOT DELETE THIS LINE
 balloon.cmo: balloon.cmi 
 balloon.cmx: balloon.cmi 
-balloontest.cmo: balloon.cmi 
-balloontest.cmx: balloon.cmx 
 fileselect.cmo: fileselect.cmi 
 fileselect.cmx: fileselect.cmi 
+jpf_font.cmo: shell.cmi jpf_font.cmi 
+jpf_font.cmx: shell.cmx jpf_font.cmi 
+shell.cmo: shell.cmi 
+shell.cmx: shell.cmi 

@@ -35,7 +35,7 @@ copyright.ml: copyright
 
 clean : 
 	rm -f *.cm* parser.ml parser.mli lexer.ml copyright.ml
-	rm -f pplex.ml ppyac.ml ppyac.mli
+	rm -f pplex.ml ppyac.ml ppyac.mli ppyac.output
 	rm -f tkcompiler$(EXE) pp$(EXE) parser.output
 
 scratch :

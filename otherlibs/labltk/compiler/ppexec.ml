@@ -14,21 +14,47 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+open Code
 
-open Support
+let debug = ref false
+let defined = ref []
+let linenum = ref 1
 
-val f :
-  title:string ->
-  action:(string list -> unit) ->
-  filter:string -> file:string -> multi:bool -> sync:bool -> unit
+let rec nop = function
+  | Line _ -> incr linenum
+  | Ifdef (_, _, c1, c2o) ->
+      List.iter nop c1;
+      begin match c2o with
+      |	Some c2 -> List.iter nop c2
+      |	None -> ()
+      end
+  | _ -> ()
+;;
 
-(* action 
-      []  means canceled
-      if multi select is false, then the list is null or a singleton *)
-
-(* multi select 
-      if true then more than one file are selectable *)
-
-(* sync it 
-      if true then in synchronous mode *)
+let rec exec lp f = function
+  | Line line -> 
+      if !debug then 
+	prerr_endline (Printf.sprintf "%03d: %s" !linenum 
+			 (String.sub line 0 ((String.length line) - 1)));
+      f line; incr linenum
+  | Ifdef (sw, k, c1, c2o) ->
+      if List.mem k !defined = sw then begin
+	List.iter (exec lp f) c1;
+	begin match c2o with
+	| Some c2 -> List.iter nop c2
+	| None -> ()
+	end;
+	lp !linenum
+      end else begin
+	List.iter nop c1;
+	match c2o with
+	| Some c2 -> 
+	    lp !linenum;
+	    List.iter (exec lp f) c2
+	| None -> ()
+      end
+  | Define k -> defined := k :: !defined
+  | Undef k -> 
+      defined := List.fold_right (fun k' s ->
+	if k = k' then s else k' :: s) [] !defined
+;;

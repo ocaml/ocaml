@@ -1,18 +1,18 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                Objective Caml LablTk library                          *)
-(*                                                                       *)
-(*         Francois Rouaix, Francois Pessaux and Jun Furuse              *)
-(*               projet Cristal, INRIA Rocquencourt                      *)
-(*            Jacques Garrigue, Kyoto University RIMS                    *)
-(*                                                                       *)
-(*   Copyright 1999 Institut National de Recherche en Informatique et    *)
-(*   en Automatique and Kyoto University.  All rights reserved.          *)
-(*   This file is distributed under the terms of the GNU Library         *)
-(*   General Public License, with the special exception on linking       *)
-(*   described in file ../../../LICENSE.                                 *)
-(*                                                                       *)
-(*************************************************************************)
+(***********************************************************************)
+(*                                                                     *)
+(*                 MLTk, Tcl/Tk interface of Objective Caml            *)
+(*                                                                     *)
+(*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    *)
+(*               projet Cristal, INRIA Rocquencourt                    *)
+(*            Jacques Garrigue, Kyoto University RIMS                  *)
+(*                                                                     *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*  en Automatique and Kyoto University.  All rights reserved.         *)
+(*  This file is distributed under the terms of the GNU Library        *)
+(*  General Public License, with the special exception on linking      *)
+(*  described in file LICENSE found in the Objective Caml source tree. *)
+(*                                                                     *)
+(***********************************************************************)
 
 (* $Id$ *)
 
@@ -56,8 +56,8 @@ type component_type =
 (* Full definition of a component *)
 type fullcomponent = {
   component : component_type;
-  ml_name : string; (* may be no longer useful *)
-  var_name : string;
+  ml_name : string; (* used for camltk *)
+  var_name : string; (* used just for labltk *)
   template : template;
   result   : mltype;
   safe : bool
@@ -157,7 +157,7 @@ let new_type typname arity =
                 subtypes = []; 
                 requires_widget_context = false;
                 variant = false} in
-    Hashtbl'.add types_table ~key:typname ~data:typdef;
+    Hashtbl.add types_table typname typdef;
     typdef
 
 
@@ -395,10 +395,11 @@ let enter_widget name components =
       try List.assoc External sorted_components
       with Not_found -> []
   in
-  Hashtbl'.add module_table ~key:name 
-    ~data:{module_type = Widget; commands = commands; externals = externals}
+  Hashtbl.add module_table name 
+    {module_type = Widget; commands = commands; externals = externals}
   
 (******************** Functions ********************)
+
 let enter_function comp =
   enter_component_types comp;
   function_table := comp :: !function_table
@@ -422,5 +423,5 @@ let enter_module name components =
       try List.assoc External sorted_components
       with Not_found -> []
   in
-    Hashtbl'.add module_table ~key:name 
-      ~data:{module_type = Family; commands = commands; externals = externals}
+    Hashtbl.add module_table name 
+      {module_type = Family; commands = commands; externals = externals}
