@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-let version = "1.15"
+let version = "1.16"
 
 let standard_library =
   try
@@ -27,10 +27,10 @@ let c_libraries = "%%CCLIBS%%"
 
 let exec_magic_number = "Caml1999X001"
 and cmi_magic_number = "Caml1999I002"
-and cmo_magic_number = "Caml1999O002"
-and cma_magic_number = "Caml1999A002"
-and cmx_magic_number = "Caml1999X002"
-and cmxa_magic_number = "Caml1999Z002"
+and cmo_magic_number = "Caml1999O003"
+and cma_magic_number = "Caml1999A003"
+and cmx_magic_number = "Caml1999X003"
+and cmxa_magic_number = "Caml1999Z003"
 
 let load_path = ref ([] : string list)
 
