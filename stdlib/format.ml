@@ -753,7 +753,7 @@ let make_formatter f g =
 let formatter_of_out_channel oc =
   make_formatter (output oc) (fun () -> flush oc);;
 
-let unit_out () = ();;
+let unit_out ppf = ();;
 
 let formatter_of_buffer b =
   make_formatter (Buffer.add_substring b) unit_out;;
@@ -934,7 +934,7 @@ let fprintf_out str out ppf format =
 
   let rec doprn i =
     if i >= limit then
-      Obj.magic (out ())
+      Obj.magic (out ppf)
     else
       match format.[i] with
       | '%' ->
@@ -1115,18 +1115,22 @@ let fprintf_out str out ppf format =
 
  **************************************************************)
 
-let fprintf ppf = fprintf_out false unit_out ppf;;
+let kfprintf k = fprintf_out false k;;
+let fprintf ppf = kfprintf unit_out ppf;;
 let printf f = fprintf std_formatter f;;
 let eprintf f = fprintf err_formatter f;;
 
-let kprintf k =
- let b = Buffer.create 512 in
- let ppf = formatter_of_buffer b in
- fprintf_out true (fun () -> k (string_out b ppf)) ppf;;
-let sprintf f = kprintf (fun x -> x) f;;
-
 let bprintf b =
  let ppf = formatter_of_buffer b in
- fprintf_out false (fun () -> pp_flush_queue ppf false) ppf;;
+ kfprintf (fun ppf -> pp_flush_queue ppf false) ppf;;
+
+let ksprintf k =
+ let b = Buffer.create 512 in
+ let ppf = formatter_of_buffer b in
+ fprintf_out true (fun ppf -> k (string_out b ppf)) ppf;;
+
+let sprintf f = ksprintf (fun s -> s) f;;
+
+let kprintf = ksprintf;;
 
 at_exit print_flush;;
