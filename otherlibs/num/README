@@ -1,0 +1,64 @@
+The "libnum" library implements exact-precision rational arithmetic.
+It is built upon the state-of-the-art BigNum arbitrary-precision
+integer arithmetic package, and therefore achieves very high
+performance (it's faster than Maple, for instance).
+
+This library is derived from Valerie Menissie-Morain's implementation
+of rational arithmetic for Caml V3.1 (INRIA), and builds on the BigNum
+package developed by Bernard Serpette, Jean Vuillemin and Jean-Claude
+Herve (INRIA and Digital PRL). Xavier Leroy (INRIA) did the Caml Light
+port. Victor Manuel Gulias Fernandez did the Caml Special Light port.
+
+This library is documented in "The CAML Numbers Reference Manual" by 
+Valerie Menissier-Morain, technical report 141, INRIA, july 1992,
+available by anonymous FTP from ftp.inria.fr, directory
+INRIA/publications/RT, file RT-0141.ps.Z.
+
+USAGE:
+
+To use the bignum library from your programs, just do
+
+        cslc -custom <other options> nums.cma <other .cmo and .ml files> -lnums
+
+for the linking phase.
+
+If you'd like to have the bignum functions available at toplevel, do
+
+        cslmktop -o csltopnum -custom <other options> nums.cma <other .cmo and .ml files> -lnums
+        ./csltopnum
+
+As an example, try:
+
+        open Num;;
+        let rec fact n =
+          if n = 0 then Int 1 else mult_num (num_of_int n) (fact(n-1));;
+        string_of_num(fact 1000);;
+
+KNOWN TARGET ARCHITECTURES:
+
+        C               portable C version (default)
+        sparc           Sparc V8 assembly code, SunOS 4.1
+        sparc-solaris   Sparc V8 assembly code, Solaris 2
+        supersparc      Sparc V9 assembly code, SunOS 4.1
+        supersparc-solaris Sparc V9 assembly code, Solaris 2
+        mips            MIPS R2000, R3000, R4000 assembly code
+        alpha           DEC Alpha (21064) assembly code
+        68K             Motorola 68020 assembly code
+        vax             DEC VAX assembly code
+        i960            Intel 80960A assembly code
+        ns              National Semiconductors 32032 assembly code
+        pyramid         Pyramid minicomputers assembly code
+
+LEGAL NOTICE:
+
+This work uses the BigNum package developed jointly by INRIA and Digital PRL.
+
+The code in the bignum/ subdirectory is copyright INRIA and Digital,
+and may be reproduced and distributed freely to non commercial usage
+according to the conditions stated in the documentation of this package
+(directory bignum/doc).
+
+KNOWN PROBLEMS:
+
+64-bit architectures are not yet fully supported.  The test suite passes on 
+a Dec Alpha, but some bugs remain.

@@ -1,0 +1,97 @@
+
+This directory contains the C and assembler source code for BigNum.
+
+   The subdirectory doc contains the documentation files:
+      bn.tex        	- Document BigNum in LaTeX format
+      bnf.tex       	- Document BigNum in French and LaTeX format
+      makeidx.sty	- macro used in BigNum document
+
+   The subdirectory h contains the C include files:
+      BigZ.h		- Types and structures for clients of BigZ
+      BigNum.h		- Types and structures for clients of BigNum
+
+   The subdirectory c contains the C source files:
+      KerN.c		- BigNum implementation ("kernel" routines)
+      bn/bn*.c		- BigNum implementation ("non-kernel" routines), 
+                          that is bnInit.c, bnMult.c, bnDivide.c and bnCmp.c
+      bz.c		- BigZ implementation
+      bzf.c		- Miscellaneous functions built on top of BigZ
+      bztest.c		- Test program for verifying a BigNum implementation
+      testKerN.c	- Test program for verifying KerN implementation
+
+   The subdirectory s contains the assembler source files:
+      vaxKerN.s		- Vax/U*ix implementation of KerN
+      vaxKerN.mar	- Vax/VMS implementation of KerN
+      68KerN.s		- 68020 implementation of KerN (MIT syntax)
+      68KerN_mot.s	- 68020 implementation of KerN (Motorola syntax)
+      nsKerN.s		- NS implementation of KerN
+      mipsKerN.s	- MIPS implementation of KerN
+      pyramidKerN.s	- Pyramid implementation of KerN
+      i960KerN.s	- Intel 80960 implementation of KerN
+      sparcKerN.s	- SPARC implementation of KerN
+      sparcfpuKerN.s	- SPARC implementation of KerN using FPU, may
+			  give faster multiplication on SPARC
+			  implementations with fast floating point
+      supersparcKerN.s  - SPARC V8 implementation of KerN
+                          (with hardware integer multiplication)
+
+   Other Files:
+      Makefile		- U*ix makefile
+      VMSmakefile	- VMS makefile
+      MSDOSmakefile	- MSDOS makefile
+
+
+Now, to build or modify the current version of the package, type one of:
+
+   on U*ix system:
+	make vax	- to use vax assembly code
+	make 68K	- to use 68020 assembly code
+	make ns		- to use NS assembly code
+	make mips	- to use mips assembly code
+	make pyramid	- to use pyramid assembly code
+	make i960	- to use intel 80960 assembly code
+	make sparc	- to use sparc assembly code (SunOS 4)
+	make sparcfpu	- to use sparc assembly code (with multiply in FPU)
+	make supersparc	- to use sparc V8 assembly code (Sun OS 4)
+        make sparc-solaris
+        make sparcfpu-solaris  same as above, for Solaris 2 instead of SunOS 4
+        make supersparc-solaris
+	make C16	- to use C code with 16 bits digits
+	make C32	- to use C code with 32 bits digits (default version)
+
+   on VMS system: (copy VMSmakefile to Makefile, before)
+	mms vax		- to use vax assembly code (default version)
+	mms C32		- to use C code with 32 bits digits 
+   we suppose you have defined the standard libraries of C-VMS with:
+        define  lnk$library  sys$library:vaxccurse
+        define  lnk$library_1  sys$library:vaxcrtlg
+        define  lnk$library_2  sys$library:vaxcrtl
+
+   on MSDOS system: (copy MSDOSmakefile to Makefile, before)
+	make makefile	- to use C code (16 bits digits)
+
+Each of these commands products the following files:
+
+   on U*ix system:
+	BigNum.a	- BigNum library
+	testKerN	- Test program executable for KerN
+	bztest		- Test program executable for BigZ
+
+   on VMS system:
+	BigNum.olb	- BigNum library
+	testKerN.exe	- Test program executable for KerN
+	bztest.exe	- Test program executable for BigZ
+
+   on MSDOS system:
+	BigNum.lib	- BigNum library
+	testKerN.exe	- Test program executable for KerN
+	bztest.exe	- Test program executable for BigZ
+
+
+On U*ix system, if you have the tools LaTeX (L. Lamport's special version of Knuth's
+famous TeX, as described in the Addison-Wesley book), makeindex and
+dvips, type: 
+	make doc	- to build the Postscript files of the documents, 
+
+If you do not have dvips, use your local equivalent tool to print
+the dvi file produced by the LaTeX command. 
