@@ -55,7 +55,7 @@ type error =
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
-  | Not_a_variant_type of Longident.t
+  | Wrong_type_kind of string * Longident.t option
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
 
@@ -296,7 +296,7 @@ let build_or_pat env loc lid =
     match ty.desc with
       Tvariant row when static_row row ->
         (row_repr row).row_fields
-    | _ -> raise(Error(loc, Not_a_variant_type lid))
+    | _ -> raise(Error(loc, Wrong_type_kind ("a variant", Some lid)))
   in
   let bound = ref [] in
   let pats, fields =
@@ -326,7 +326,7 @@ let build_or_pat env loc lid =
       pats
   in
   match pats with
-    [] -> raise(Error(loc, Not_a_variant_type lid))
+    [] -> raise(Error(loc, Wrong_type_kind ("a variant", Some lid)))
   | pat :: pats ->
       let r =
         List.fold_left
@@ -2013,8 +2013,12 @@ let report_error ppf = function
   | Private_label (lid, ty) ->
       fprintf ppf "Cannot assign field %a of the private type %a"
         longident lid type_expr ty
-  | Not_a_variant_type lid ->
-      fprintf ppf "The type %a@ is not a variant type" longident lid
+  | Wrong_type_kind (kind, lid) ->
+      begin match lid with
+        None -> fprintf ppf "This type"
+      | Some lid -> fprintf ppf "The type %a" longident lid
+      end;
+      fprintf ppf "@ is not %s type" kind
   | Incoherent_label_order ->
       fprintf ppf "This function is applied to arguments@ ";
       fprintf ppf "in an order different from other calls.@ ";

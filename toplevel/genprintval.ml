@@ -52,6 +52,21 @@ module type S =
           Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
+let get_const = CamlinternalOO.get_const (Obj.magic 0)
+let get_var = CamlinternalOO.get_var 0
+let get_env = CamlinternalOO.get_env 0 0
+let get_pointer clos : int = Obj.obj (Obj.field (Obj.repr clos) 0)
+let label_step = Sys.word_size / 16
+let bucket_size = 32
+let decode_label (label : CamlinternalOO.label) =
+  let label = Obj.magic label in
+  (label / 65536 / label_step,
+   (label mod (label_step * bucket_size)) / label_step)
+let is_abstract env p =
+  try (Env.find_type p env).type_kind = Type_abstract
+  with Not_found -> true
+
+
 module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 
     type t = O.t
@@ -310,8 +325,45 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                       else find fields
                   | [] -> Oval_stuff "<variant>" in
                 find row.row_fields
-          | Tobject (_, _) ->
-              Oval_stuff "<obj>"
+          | Tobject (fi, _) ->
+              let meths = O.field obj 0 in
+              let rec get_fields = function
+                  [] -> []
+                | (label, _, ty) :: rem ->
+                    let l = get_fields rem in
+                    begin match (Ctype.repr ty).desc with
+                      Tpoly (ty, _) ->
+                        begin match (Ctype.expand_head env ty).desc with
+                          Tvar | Tunivar | Tarrow _ -> l
+                        (*| Tconstr (p, _, _) when is_abstract env p -> l *)
+                        | _ ->
+                            let lab = CamlinternalOO.new_method label in
+                            let (buck, elem) = decode_label lab in
+                            let bucko = O.field meths buck in
+                            let clos = O.field bucko elem in
+                            (* cette ligne cause: Debugcom.Marshalling_error *)
+                            let ptr : int = O.obj (O.field clos 0) in
+                            if ptr == get_pointer get_const then
+                              (label, O.field clos 1, ty) :: l
+                            else if ptr == get_pointer get_var then
+                              let n : int = O.obj (O.field clos 1) in
+                              (label, O.field obj n, ty) :: l
+                            else if ptr == get_pointer get_env then
+                              let e : int = O.obj (O.field clos 1) in
+                              let n : int = O.obj (O.field clos 2) in
+                              (label, O.field (O.field obj e) n, ty) :: l
+                            else l
+                        end
+                    | _ -> l
+                    end
+              in
+              let fields = get_fields (fst (Ctype.flatten_fields fi)) in
+              if fields = [] then Oval_stuff "<obj>" else
+              Oval_record
+                (List.map
+                   (fun (label, obj, ty) ->
+                     Oide_ident label, tree_of_val (depth - 1) obj ty)
+                   fields)
           | Tsubst ty ->
               tree_of_val (depth - 1) obj ty
           | Tfield(_, _, _, _) | Tnil | Tlink _ ->

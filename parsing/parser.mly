@@ -205,6 +205,7 @@ let bigarray_set arr arg newval =
 %token COLONGREATER
 %token COMMA
 %token CONSTRAINT
+%token DELEGATE
 %token DO
 %token DONE
 %token DOT
@@ -623,6 +624,8 @@ class_fields:
       { [] }
   | class_fields INHERIT class_expr parent_binder
       { Pcf_inher ($3, $4) :: $1 }
+  | class_fields DELEGATE simple_core_type TO simple_expr
+      { Pcf_deleg ($3, $5) :: $1 }
   | class_fields VAL value
       { Pcf_val $3 :: $1 }
   | class_fields virtual_method
@@ -648,15 +651,15 @@ value:
             symbol_rloc () }
 ;
 virtual_method:
-    METHOD PRIVATE VIRTUAL label COLON poly_type
+    METHOD PRIVATE VIRTUAL method_label COLON poly_type
       { $4, Private, $6, symbol_rloc () }
-  | METHOD VIRTUAL private_flag label COLON poly_type
+  | METHOD VIRTUAL private_flag method_label COLON poly_type
       { $4, $3, $6, symbol_rloc () }
 ;
 concrete_method :
-    METHOD private_flag label strict_binding
+    METHOD private_flag method_label strict_binding
       { $3, $2, ghexp(Pexp_poly ($4, None)), symbol_rloc () }
-  | METHOD private_flag label COLON poly_type EQUAL seq_expr
+  | METHOD private_flag method_label COLON poly_type EQUAL seq_expr
       { $3, $2, ghexp(Pexp_poly($7,Some $5)), symbol_rloc () }
   | METHOD private_flag LABEL poly_type EQUAL seq_expr
       { $3, $2, ghexp(Pexp_poly($6,Some $4)), symbol_rloc () }
@@ -715,7 +718,7 @@ value_type:
       { $2, $1, Some $4, symbol_rloc () }
 ;
 method_type:
-    METHOD private_flag label COLON poly_type
+    METHOD private_flag method_label COLON poly_type
       { $3, $2, $5, symbol_rloc () }
 ;
 constrain:
@@ -884,6 +887,14 @@ expr:
       { mkexp (Pexp_object($2)) }
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
+  | send_assign
+      { $1 }
+  | send_assign expr
+      { mkexp(Pexp_apply($1, ["",$2])) }
+;
+send_assign:
+    simple_expr SHARP label LESSMINUS
+      { mkexp(Pexp_send($1, $3 ^ "<-")) }
 ;
 simple_expr:
     val_longident
@@ -1345,7 +1356,11 @@ meth_list:
   | DOTDOT                                      { [mkfield Pfield_var] }
 ;
 field:
-    label COLON poly_type                       { mkfield(Pfield($1, $3)) }
+    method_label COLON poly_type                { mkfield(Pfield($1, $3)) }
+;
+method_label:
+    label                                       { $1 }
+  | label LESSMINUS                             { $1 ^ "<-" }
 ;
 label:
     LIDENT                                      { $1 }

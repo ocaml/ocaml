@@ -74,6 +74,7 @@ type error =
   | Non_collapsable_conjunction of
       Ident.t * Types.class_declaration * (type_expr * type_expr) list
   | Final_self_clash of (type_expr * type_expr) list
+  | Not_a_variable
 
 exception Error of Location.t * error
 

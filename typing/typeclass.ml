@@ -49,6 +49,7 @@ type error =
   | Non_collapsable_conjunction of
       Ident.t * Types.class_declaration * (type_expr * type_expr) list
   | Final_self_clash of (type_expr * type_expr) list
+  | Not_a_variable
 
 exception Error of Location.t * error
 
@@ -373,6 +374,28 @@ and class_type env scty =
 
 (*******************************)
 
+let extract_fields env sty =
+  let loc = sty.ptyp_loc in
+  let ty, lid =
+    match sty.ptyp_desc with
+      Ptyp_constr (lid, _) ->
+        let path, decl =
+          try Env.lookup_type lid env
+          with Not_found ->
+            raise(Typetexp.Error(loc, Unbound_type_constructor lid))
+        in
+        let tyl = List.map (fun _ -> Ctype.newvar()) decl.type_params in
+        Ctype.newty(Tconstr(path, tyl, ref Mnil)), Some lid
+    | _ ->
+        transl_type_scheme env sty, None
+  in
+  match (Ctype.expand_head env ty).desc with
+    Tobject (ty, _) ->
+      List.map (fun (f,_,t) -> (f,t)) (fst (Ctype.flatten_fields ty))
+  | _ ->
+      raise(Typecore.Error (loc, Wrong_type_kind("an object", lid)))
+
+
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 let rec class_field cl_num self_type meths vars
@@ -418,6 +441,39 @@ let rec class_field cl_num self_type meths vars
       (val_env, met_env, par_env,
        lazy(Cf_inher (parent, inh_vars, inh_meths))::fields,
        concr_meths, warn_meths, inh_vals)
+
+  | Pcf_deleg (sty, sexp) ->
+      let labs = extract_fields met_env sty in
+      let loc = sexp.pexp_loc in
+      begin match sexp.pexp_desc with
+        Pexp_ident _ -> ()
+      | Pexp_send ({pexp_desc=Pexp_ident lid}, lab) when
+          begin try match Env.lookup_value lid met_env with
+            (_, {val_kind=Val_self(_,_,num,_)}) when num = cl_num -> true
+          | _ -> false
+          with Not_found -> false
+          end -> ()
+      | _ -> raise(Error(loc, Not_a_variable))
+      end;
+      let mets =
+        List.map
+          (fun (lab,t) ->
+            let (_, ty) =
+              Ctype.filter_self_method val_env lab Public meths self_type
+            in
+            begin try Ctype.unify val_env t ty with Ctype.Unify trace ->
+              raise(Error(loc, Method_type_mismatch (lab, trace)))
+            end;
+            let sexp =
+              {sexp with pexp_desc =
+               Pexp_poly({sexp with pexp_desc = Pexp_send(sexp, lab)}, None)}
+            in Pcf_meth (lab, Public, sexp, loc))
+          labs
+      in
+      List.fold_left
+        (class_field cl_num self_type meths vars)
+        (val_env, met_env, par_env, fields, concr_meths, warn_meths, inh_vals)
+        mets
 
   | Pcf_val (lab, mut, sexp, loc) ->
       if StringSet.mem lab inh_vals then
@@ -1493,3 +1549,6 @@ let report_error ppf = function
            fprintf ppf "This object is expected to have type")
         (function ppf ->
            fprintf ppf "but has actually type")
+  | Not_a_variable ->
+      fprintf ppf "@[%s@ %s@]" "You can only delegate to a variable"
+        "or a method of self (without arguments)"

@@ -177,6 +177,7 @@ and class_structure = pattern * class_field list
 
 and class_field =
     Pcf_inher of class_expr * string option
+  | Pcf_deleg of core_type * expression
   | Pcf_val   of (string * mutable_flag * expression * Location.t)
   | Pcf_virt  of (string * private_flag * core_type * Location.t)
   | Pcf_meth  of (string * private_flag * expression * Location.t)

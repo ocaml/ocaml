@@ -426,6 +426,10 @@ and class_field i ppf x =
       printf "Pcf_inher\n";
       class_expr (i+1) ppf ce;
       option (i+1) string ppf so;
+  | Pcf_deleg (t, e) ->
+      printf "Pcf_deleg\n";
+      core_type (i+1) ppf t;
+      expression (i+1) ppf e;
   | Pcf_val (s, mf, e, loc) ->
       line i ppf
         "Pcf_val \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;

@@ -41,6 +41,7 @@ let keyword_table =
     "begin", BEGIN;
     "class", CLASS;
     "constraint", CONSTRAINT;
+    "delegate", DELEGATE;
     "do", DO;
     "done", DONE;
     "downto", DOWNTO;
