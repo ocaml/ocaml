@@ -11,3 +11,6 @@ odoc_text_parser.ml
 odoc_text_parser.mli
 stdlib_man
 *.output
+test_stdlib
+test_latex
+test
