@@ -20,6 +20,7 @@
 #include "memory.h"
 #include "mlvalues.h"
 #include "misc.h"
+#include "reverse.h"
 #include "stacks.h"
 
 #ifdef ARCH_ALIGN_DOUBLE
@@ -301,23 +302,66 @@ value gt_float(value f, value g)        /* ML */
   return Val_bool(Double_val(f) > Double_val(g));
 }
 
+value float_of_bytes(value s)   /* ML */
+{
+  union { char bytes[8]; double d; } u;
+#ifdef ARCH_BIG_ENDIAN
+  memcpy(u.bytes, String_val(s), 8);
+#else
+  Reverse_64(u.bytes, String_val(s));
+#endif
+  return copy_double(u.d);
+}
+
+enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
+
+value classify_float(value vd)   /* ML */
+{
+#ifdef fpclassify
+  switch (fpclassify(Double_val(vd))) {
+  case FP_NAN:
+    return Val_int(FP_nan);
+  case FP_INFINITE:
+    return Val_int(FP_infinite);
+  case FP_ZERO:
+    return Val_int(FP_zero);
+  case FP_SUBNORMAL:
+    return Val_int(FP_subnormal);
+  default: /* case FP_NORMAL */
+    return Val_int(FP_normal);
+  }
+#else
+  double d = Double_val(vd);
+  uint32 h, l;
+#ifdef ARCH_BIG_ENDIAN
+  h = ((uint32 *) &d)[0];
+  l = ((uint32 *) &d)[1];
+#else
+  l = ((uint32 *) &d)[0];
+  h = ((uint32 *) &d)[1];
+#endif
+  l = l | (h & 0xFFFFF);
+  h = h & 0x7FF00000;
+  if ((h | l) == 0)
+    return Val_int(FP_zero);
+  if (h == 0)
+    return Val_int(FP_subnormal);
+  if (h == 0x7FF00000) {
+    if (l == 0)
+      return Val_int(FP_infinite);
+    else
+      return Val_int(FP_nan);
+  }
+  return Val_int(FP_normal);
+#endif
+}
+
 /* The init_ieee_float function should initialize floating-point hardware
    so that it behaves as much as possible like the IEEE standard.
    In particular, return special numbers like Infinity and NaN instead
-   of signalling exceptions. So far, only the Intel 386 under
-   FreeBSD is not in IEEE mode at program startup.  */
-
-#ifdef __i386__
-#ifdef __FreeBSD__
-#include <floatingpoint.h>
-#endif
-#endif
+   of signalling exceptions.  Currently, everyone is in IEEE mode
+   at program startup. */
 
 void init_ieee_floats(void)
 {
-#ifdef __i386__
-#ifdef __FreeBSD__
-  fpsetmask(0);
-#endif
-#endif
 }
