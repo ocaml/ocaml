@@ -1,6 +1,6 @@
 \input{book.hva}
+\renewcommand{\@indexsection}[1]{\chapter{#1}}
 \newcommand{\black}{\htmlcolor{#000000}}
-\newcounter{secnumdepth}
 \newcounter{tocdepth}
 \newcommand{\machine}{\tt}
 \newenvironment{camlunder}{\@style{U}}{}
@@ -104,7 +104,7 @@
 \def\transl#1{$[\![\mbox{#1}]\!]$}
 
 % Pour l'index
-\input{multind.hva}
+\usepackage{multind}
 \let\indexentry=\index
 \renewcommand{\index}[1]{\indexentry{\jobname}{#1}}
 \def\ikwd#1{\indexentry{\jobname.kwd}{#1}}

@@ -1,15 +1,6 @@
 \input{book.hva}
-%%\input{fancysection.hva}
-\renewcommand{\@bodyargs}{}
+\input{fancysection.hva}
 
-\renewcommand{\part}[2][]{%
-\stepcounter{part}%
-\ifoptarg\cuthere{part}{#1}%
-\else\cuthere{part}{#2}\fi
-\@open{H2}{ALIGN=left}%
-#2%
-\@close{H2}%
-}
 \newcounter{tocdepth}
 \newcommand{\machine}{\tt}
 \newcommand{\firstline}{\black\#\blue }
@@ -102,7 +93,7 @@
 \def\transl#1{$[\![\mbox{#1}]\!]$}
 
 % Pour l'index
-\input{multind.hva}
+\usepackage{multind}
 \let\indexentry=\index
 \renewcommand{\index}[1]{\indexentry{\jobname}{#1}}
 \def\ikwd#1{\indexentry{\jobname.kwd}{#1}}
@@ -117,7 +108,6 @@
 \def\event{§§}
 \def\fromoneto#1#2{$#1 = 1,\ldots{} , #2$}
 
-\newcommand{\jobname}{manual}
 \newcommand{\vfill}{}
 \def\number{}
 \def\year{2000}

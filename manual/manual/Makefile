@@ -3,7 +3,7 @@ TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 CSLDIR=../../csl
-HEVEA=hevea
+HEVEA=hevea -fix
 HACHA=hacha
 INFO=-info -w 79
 HTML=
@@ -58,9 +58,9 @@ clean:
 	cd library; $(MAKE) clean
 	cd cmds; $(MAKE) clean
 	-rm -f texstuff/*
-	cd htmlman; rm -f index.html manual*.html
-	cd textman; rm -f manual.txt
-	cd infoman; rm -f manual.info manual.info-*
+	cd htmlman; rm -f index.html manual*.html *.haux *.hind
+	cd textman; rm -f manual.txt *.haux *.hind
+	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
 
 release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
