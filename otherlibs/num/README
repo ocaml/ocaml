@@ -15,7 +15,7 @@ big integer operations is due to Xavier Leroy.
 
 This library is documented in "The CAML Numbers Reference Manual" by 
 Valerie Menissier-Morain, technical report 141, INRIA, july 1992,
-available at ftp://ftp.inria.fr/INRIA/publication/RT/RT-0141.ps.Z
+available at ftp://ftp.inria.fr/INRIA/publication/RT/RT-0141.ps.gz
 
 
 USAGE:
@@ -47,9 +47,9 @@ When compiled with GCC, the low-level primitives use "inline extended asm"
 to exploit useful features of the target processor (additions and 
 subtractions with carry; double-width multiplication, division).
 Here are the processors for which such optimizations are available:
-       IA32 (x86)
-       AMD64 (Opteron)
-       PowerPC
-       Alpha
-       SPARC
-       MIPS
+  IA32 (x86)       (carry, dwmult, dwdiv, 64-bit ops with SSE2 if available)
+  AMD64 (Opteron)  (carry, dwmult, dwdiv)
+  PowerPC          (carry, dwmult)
+  Alpha            (dwmult)
+  SPARC            (carry, dwmult, dwdiv)
+  MIPS             (dwmult)
