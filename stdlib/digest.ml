@@ -23,7 +23,7 @@ let string str =
   unsafe_string str 0 (String.length str)
 
 let substring str ofs len =
-  if ofs < 0 or ofs + len > String.length str
+  if ofs < 0 || len < 0 || ofs + len > String.length str
   then invalid_arg "Digest.substring"
   else unsafe_string str ofs len
 

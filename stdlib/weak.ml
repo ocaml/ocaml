@@ -27,7 +27,7 @@ external get: 'a t -> int -> 'a option = "weak_get";;
 external check: 'a t -> int -> bool = "weak_check";;
 
 let fill ar ofs len x =
-  if ofs < 0 || ofs + len > length ar
+  if ofs < 0 || len < 0 || ofs + len > length ar
   then raise (Invalid_argument "Weak.fill")
   else begin
     for i = ofs to (ofs + len - 1) do
