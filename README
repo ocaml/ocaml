@@ -85,7 +85,7 @@ The Caml Special Light manual is distributed in Postscript, DVI, and
 plain text. It can be obtained by anonymous FTP from ftp.inria.fr as
 described below. It is also available on the World Wide Web, at
 
-        http://pauillac.inria.fr/caml/
+        http://pauillac.inria.fr/csl/
 
 AVAILABILITY:
 
@@ -93,9 +93,9 @@ The complete Caml Special Light distribution resides on ftp.inria.fr,
 and can be accessed by anonymous FTP:
 
         host:       ftp.inria.fr (192.93.2.54)
-        directory:  lang/caml-special-light
+        directory:  lang/caml-light
 
-or through a Web browser at ftp://ftp.inria.fr/lang/caml-special-light/.
+or through a Web browser at ftp://ftp.inria.fr/lang/caml-light/.
 
 KEEPING IN TOUCH WITH THE CAML COMMUNITY:
 
@@ -115,7 +115,7 @@ If you wish to subscribe to this list, please send a message
               caml-list-request@pauillac.inria.fr
 
 Archives of the list are available on the World Wide Web at URL
-http://pauillac.inria.fr/caml/.
+http://pauillac.inria.fr/csl/.
 
 The Usenet news group comp.lang.ml also contains discussions about
 the ML family of programming languages, including Caml. The newsgroup

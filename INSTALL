@@ -104,12 +104,15 @@ pinpoint the problem.
 
 COMMON PROBLEMS:
 
+* The Makefiles use the "include" directive, which is not supported by
+older versions of make. Use GNU make instead.
+
 * The Makefiles assume that make execute commands by calling /bin/sh. They
 won't work if /bin/csh is called instead. You may have to unset the SHELL
 environment variable, or set it to /bin/sh.
 
 * gcc 2.6.0 has been reported to generate incorrect code for the
-runtime system in -O mode. Upgrade to 2.6.3.
+runtime system in -O mode. Upgrade to 2.6.3 or newer.
 
 
 MACHINE-SPECIFIC HINTS:
