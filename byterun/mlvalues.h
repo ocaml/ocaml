@@ -266,6 +266,10 @@ extern char * static_data_start, * static_data_end;
 
 #define Val_unit Val_int(0)
 
+/* List constructors */
+#define Val_emptylist Val_int(0)
+#define Tag_cons 0
+
 /* The table of global identifiers */
 
 extern value global_data;
