@@ -57,6 +57,8 @@ AFLAGS=/coff /Cp
 
 ############# Configuration for the contributed libraries
 
+OTHERLIBRARIES=str num graph
+
 ### Name of the target architecture for the "num" library
 BIGNUM_ARCH=C
 
