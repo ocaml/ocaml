@@ -266,6 +266,7 @@ let empty_lexbuf lb =
    can call directives from Topdirs. *)
 
 let _ =
+  Sys.interactive := true;
   Symtable.init_toplevel();
   Clflags.thread_safe := true;
   Compile.init_path()
@@ -275,7 +276,6 @@ let _ =
 exception PPerror
 
 let loop() =
-  Sys.interactive := true;
   print_string "        Objective Caml version ";
   print_string Config.version;
   print_newline(); print_newline();
