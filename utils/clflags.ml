@@ -28,7 +28,8 @@ and custom_runtime = ref false          (* -custom *)
 and ccopts = ref ([] : string list)     (* -ccopt *)
 and nopervasives = ref false            (* -nopervasives *)
 
-let dump_lambda = ref false             (* -dlambda *)
+let dump_rawlambda = ref false          (* -drawlambda *)
+and dump_lambda = ref false             (* -dlambda *)
 and dump_instr = ref false              (* -dinstr *)
 
 let keep_asm_file = ref false           (* -S *)
