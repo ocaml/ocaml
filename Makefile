@@ -235,6 +235,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
+            -e 's|%%PARTIALLD%%|ld -r $(NATIVECCLINKOPTS)|' \
             -e 's|%%CCLIBS%%|$(CCLIBS)|' \
             -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
             -e 's|%%ARCH%%|$(ARCH)|' \
