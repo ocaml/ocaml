@@ -99,15 +99,18 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
    If the function has more than 5 [value] parameters, use [CAMLparam5]
    for the first 5 parameters, and one or more calls to the [CAMLxparam]
    macros for the others.
+   If the function takes an array of [value]s as argument, use
+   [CAMLparamN] to declare it (or [CAMLxparamN] if you already have a
+   call to [CAMLparam] for some other arguments).
 
    If you need local variables of type [value], declare them with one
    or more calls to the [CAMLlocal] macros.
    Use [CAMLlocalN] to declare an array of [value]s.
 
    Your function may raise and exception or return a [value] with the
-   [CAMLreturn] macro.  Its argument is simply the [value] returned by
+   [CAMLreturn1] macro.  Its argument is simply the [value] returned by
    your function.  Do NOT directly return a [value] with the [return]
-   keyword.
+   keyword.  If your function returns void, use [CAMLreturn0].
 
    All the identifiers beginning with "caml__" are reserved by Caml.
    Do not use them for anything (local or global variables, struct or
@@ -137,10 +140,14 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
   CAMLparam0 (); \
   CAMLxparam5 (x, y, z, t, u)
 
+#define CAMLparamN(x, size) \
+  CAMLparam0 (); \
+  CAMLxparamN (x, (size))
+
+
 #define CAMLxparam1(x) \
   struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
-    caml__frame, \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -151,7 +158,6 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 #define CAMLxparam2(x, y) \
   struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
-    caml__frame, \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -163,7 +169,6 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 #define CAMLxparam3(x, y, z) \
   struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
-    caml__frame, \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -176,7 +181,6 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 #define CAMLxparam4(x, y, z, t) \
   struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
-    caml__frame, \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -190,7 +194,6 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 #define CAMLxparam5(x, y, z, t, u) \
   struct caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
-    caml__frame, \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -201,6 +204,16 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [3] = &t), \
     (caml__roots_##x.tables [4] = &u), \
     NULL)
+
+#define CAMLxparamN(x, size) \
+  struct caml__roots_block caml__roots_##x; \
+  void *caml__dummy_##x = ( \
+	(caml__roots_##x.next = local_roots), \
+	(local_roots = &caml__roots_##x), \
+	(caml__roots_##x.nitems = (size)), \
+	(caml__roots_##x.ntables = 1), \
+	(caml__roots_##x.tables[0] = &(x[0])), \
+	NULL)
 
 #define CAMLlocal1(x) \
   value x = 0; \
@@ -223,25 +236,19 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
   CAMLxparam5 (x, y, z, t, u)
 
 #define CAMLlocalN(x, size) \
-  value x [(size)] = { 0 /* , 0, 0, ... */ }; \
-  struct caml__roots_block caml__roots_##x; \
-  void *caml__dummy_##x = ( \
-  caml__frame, \
-  (caml__roots_##x.next = local_roots), \
-  (local_roots = &caml__roots_##x), \
-  (caml__roots_##x.nitems = (size)), \
-  (caml__roots_##x.ntables = 1), \
-  (caml__roots_##x.tables [0] = &(x [0])), \
-  NULL)
+  value x [(size)] = { 0, /* 0, 0, ... */ }; \
+  CAMLxparamN (x, (size))
 
-/* WARNING: [CAMLreturn] cannot be used exactly in the same places
-   as [return] : in an [if] statement, you must use a pair of braces
-   even if the [CAMLreturn] "statement" is the only statement in the
-   branch.
-*/
-#define CAMLreturn /*argument*/\
+
+#define CAMLreturn0 do{ \
   local_roots = caml__frame; \
-  return /*argument*/
+  return; \
+}while (0)
+
+#define CAMLreturn(result) do{ \
+  local_roots = caml__frame; \
+  return (result); \
+}while(0)
 
 /* convenience macro */
 #define Store_field(block, offset, val) modify (&Field (block, offset), val)
