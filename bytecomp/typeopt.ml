@@ -38,7 +38,8 @@ let maybe_pointer exp =
       not (Path.same p Predef.path_char) &&
       begin try
         match Env.find_type p exp.exp_env with
-          {type_kind = Type_variant cstrs} ->
+          {type_kind = Type_variant []} -> true (* type exn *)
+        | {type_kind = Type_variant cstrs} ->
             List.exists (fun (name, args) -> args <> []) cstrs
         | _ -> true
       with Not_found -> true
