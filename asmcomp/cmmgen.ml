@@ -1421,12 +1421,17 @@ and transl_switch arg index cases = match Array.length cases with
 and transl_letrec bindings cont =
   let bsz = List.map (fun (id, exp) -> (id, exp, expr_size exp)) bindings in
   let rec init_blocks = function
-    | [] -> fill_blocks bsz
+    | [] -> fill_nonrec bsz
     | (id, exp, RHS_block sz) :: rem ->
         Clet(id, Cop(Cextcall("alloc_dummy", typ_addr, true), [int_const sz]),
              init_blocks rem)
     | (id, exp, RHS_nonrec) :: rem ->
-        Clet (id, transl exp, init_blocks rem)
+        Clet (id, Cconst_int 0, init_blocks rem)
+  and fill_nonrec = function
+    | [] -> fill_blocks bsz
+    | (id, exp, RHS_block sz) :: rem -> fill_nonrec rem
+    | (id, exp, RHS_nonrec) :: rem ->
+        Clet (id, transl exp, fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
     | (id, exp, RHS_block _) :: rem ->
