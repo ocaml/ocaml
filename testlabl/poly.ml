@@ -494,7 +494,14 @@ fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
 fun (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) ->
   (x : <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>);;
 
-module M = struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
-module N :
-  sig val f : (<m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>) -> unit end
-  = M;;
+module M
+: sig val f : (<m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>) -> unit end
+= struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
+
+module M : sig type 'a t type u = <m: 'a. 'a t> end
+= struct type 'a t = int type u = <m: int> end;;
+module M : sig type 'a t val f : <m: 'a. 'a t> -> int end
+= struct type 'a t = int let f (x : <m:int>) = x#m end;;
+(* The following should be accepted too! *)
+module M : sig type 'a t val f : <m: 'a. 'a t> -> int end
+= struct type 'a t = int let f x = x#m end;;

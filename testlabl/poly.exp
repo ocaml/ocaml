@@ -361,8 +361,7 @@ Types for method m are incompatible
 This expression has type < m : 'b. 'b * ('b * 'a) > as 'a
 but is here used with type < m : 'b. 'b * ('b * < m : 'd. 'd * 'c > as 'c) >
 Types for method m are incompatible
-#   module M : sig val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit end
-#     Characters 91-92:
+#       Characters 88-150:
 Signature mismatch:
 Modules do not match:
   sig val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit end
@@ -372,4 +371,16 @@ Values do not match:
   val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit
 is not included in
   val f : < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > -> unit
+#     module M : sig type 'a t type u = < m : 'a. 'a t > end
+#   module M : sig type 'a t val f : < m : 'a. 'a t > -> int end
+#     Characters 104-144:
+Signature mismatch:
+Modules do not match:
+  sig type 'a t = int val f : < m : 'a; .. > -> 'a end
+is not included in
+  sig type 'a t val f : < m : 'a. 'a t > -> int end
+Values do not match:
+  val f : < m : 'a; .. > -> 'a
+is not included in
+  val f : < m : 'a. 'a t > -> int
 # 
