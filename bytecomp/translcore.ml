@@ -207,7 +207,7 @@ let maybe_pointer arg =
 
 let array_kind arg =
   match Ctype.repr arg.exp_type with
-    Tconstr(p, [ty]) ->
+    Tconstr(p, [ty]) when Path.same p Predef.path_array ->
       begin match Ctype.repr ty with
         Tvar v -> Pgenarray
       | Tconstr(p, _) ->
@@ -219,7 +219,7 @@ let array_kind arg =
             Paddrarray
       | _ -> Paddrarray
       end
-  | _ -> Pgenarray (* This can happen with abbreviations taht we can't expand
+  | _ -> Pgenarray (* This can happen with abbreviations that we can't expand
                       here because the typing environment is lost *)
 
 let transl_prim prim args =
