@@ -382,10 +382,15 @@ let exception_declaration id decl =
 
 (* Print a value declaration *)
 
+let value_ident id =
+  match (Ident.name id).[0] with
+    'a'..'z'|'\223'..'\246'|'\248'..'\255'|'_' -> ident id
+  | _ -> print_string "("; ident id; print_string ")"
+
 let value_description id decl =
   open_box 2;
   print_string (if decl.val_kind = Val_reg then "val " else "external ");
-  ident id; print_string " :"; print_space();
+  value_ident id; print_string " :"; print_space();
   type_scheme decl.val_type;
   begin match decl.val_kind with
     Val_prim p ->
