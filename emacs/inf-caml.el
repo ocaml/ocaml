@@ -5,6 +5,7 @@
 ;; modified by Jacques Garrigue, july 1997.
 
 (require 'comint)
+(require 'caml)
 
 ;; User modifiable variables
 
