@@ -39,7 +39,8 @@ external id : t -> int = "thread_id"
 val exit : unit -> unit
         (* Terminate prematurely the currently executing thread. *)
 val kill : t -> unit
-        (* Terminate prematurely the thread whose handle is given. *)
+        (* Terminate prematurely the thread whose handle is given.
+           This functionality is available only with bytecode-level threads. *)
 
 (** Suspending threads *)
 
