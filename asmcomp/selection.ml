@@ -89,10 +89,10 @@ let rec sel_operation op args =
       (Iload(chunk, addr), [eloc])
   | (Cstore, arg1 :: rem) ->
       let (addr, eloc) = Proc.select_addressing arg1 in
-      (Istore(Word, addr, true), eloc :: rem)
+      (Istore(Word, addr), eloc :: rem)
   | (Cstorechunk chunk, [arg1; arg2]) ->
       let (addr, eloc) = Proc.select_addressing arg1 in
-      (Istore(chunk, addr, true), [arg2; eloc])
+      (Istore(chunk, addr), [arg2; eloc])
       (* Inversion addr/datum in Istore *)
   | (Calloc, _) -> (Ialloc 0, args)
   | (Caddi, _) -> sel_arith_comm Iadd args
@@ -412,12 +412,12 @@ let rec emit_expr env exp seq =
           let r1 = emit_tuple env new_args seq in
           let rd = Reg.newv ty in
           insert_op (Iload(Word, addr)) r1 rd seq
-      | Istore(Word, addr, assign) ->
+      | Istore(Word, addr) ->
           begin match new_args with
             [] -> fatal_error "Selection.Istore"
           | arg_addr :: args_data ->
               let ra = emit_expr env arg_addr seq in
-              emit_stores env assign args_data seq ra addr;
+              emit_stores env args_data seq ra addr;
               [||]
           end
       | Ialloc _ ->
@@ -425,7 +425,7 @@ let rec emit_expr env exp seq =
           let rd = Reg.newv typ_addr in
           let size = size_expr env (Ctuple new_args) in
           insert (Iop(Ialloc size)) [||] rd seq;
-          emit_stores env false new_args seq rd 
+          emit_stores env new_args seq rd 
             (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int));
           rd
       | op ->
@@ -539,7 +539,7 @@ and emit_tuple env exp_list seq =
       loc_exp :: loc_rem in
   Array.concat(emit_list exp_list)
 
-and emit_stores env assign data seq regs_addr addr =
+and emit_stores env data seq regs_addr addr =
   let a = ref addr in
   List.iter
     (fun e ->
@@ -554,7 +554,7 @@ and emit_stores env assign data seq regs_addr addr =
       with Proc.Use_default ->
         let r = emit_expr env e seq in
         for i = 0 to Array.length r - 1 do
-          insert (Iop(Istore(Word, !a, assign)))
+          insert (Iop(Istore(Word, !a)))
                  (Array.append [|r.(i)|] regs_addr) [||] seq;
           a := Arch.offset_addressing !a (size_component r.(i).typ)
         done)

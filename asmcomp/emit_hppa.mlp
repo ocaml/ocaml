@@ -441,7 +441,7 @@ let rec emit_instr i dslot =
         | Float ->
             emit_float_load addr i.arg i.res.(0)
         end
-    | Lop(Istore(chunk, addr, assign)) ->
+    | Lop(Istore(chunk, addr)) ->
         begin match i.arg.(0).typ with
           Int | Addr ->
             let storeinstr =
@@ -662,7 +662,7 @@ let is_one_instr i =
       | Iconst_int n -> is_offset n
       | Istackoffset _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_offset n
-      | Istore(_, Iindexed n, _) -> i.arg.(0).typ <> Float & is_offset n
+      | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float & is_offset n
       | Iintop(Iadd | Isub | Iand | Ior | Ixor | Icheckbound) -> true
       | Iintop_imm((Iadd | Isub | Ilsl | Ilsr | Iasr | Icheckbound), _) -> true
       | Iaddf | Isubf | Imulf | Idivf -> true

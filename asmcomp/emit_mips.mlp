@@ -291,7 +291,7 @@ let emit_instr i =
             `	lwc1	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`;
             `	lwc1	{emit_twin_reg i.res.(0)}, {emit_addressing (offset_addressing addr 4) i.arg 0}\n`
         end
-    | Lop(Istore(chunk, addr, assign)) ->
+    | Lop(Istore(chunk, addr)) ->
         begin match i.arg.(0).typ with
           Int | Addr ->
             let store_instr =

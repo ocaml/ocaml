@@ -278,8 +278,8 @@ let pseudoregs_for_operation op arg res =
   (* For storing a byte, the argument must be in eax...edx.
      For storing a halfword, any reg is ok.
      Keep it simple, just force it to be in edx in both cases. *)
-  | Istore(Word, addr, assign) -> raise Use_default
-  | Istore(chunk, addr, assign) ->
+  | Istore(Word, addr) -> raise Use_default
+  | Istore(chunk, addr) ->
       let newarg = Array.copy arg in
       newarg.(0) <- edx;
       (newarg, res, false)

@@ -27,7 +27,7 @@ let in_basic_block instr =
         Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _ -> false
       | Iextcall(_, _) -> false
       | Istackoffset _ -> false
-      | Istore(_, _, assign) -> not assign
+      | Istore(_, _) -> false
       | Ialloc _ -> false
       | op -> Proc.oper_latency op >= 0
         (* The processor description can return a latency of -1 to signal
