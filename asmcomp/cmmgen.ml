@@ -73,12 +73,14 @@ let add_const c n =
 
 let incr_int = function
     Cconst_int n when n < max_int -> Cconst_int(n+1)
-  | Cop(Caddi, [c; Cconst_int n]) when n < max_int -> add_const c (n+1)
+  | Cop(Caddi, [c; Cconst_int n]) when n < max_int ->
+      if n = -1 then c else add_const c (n + 1)
   | c -> add_const c 1
 
 let decr_int = function
     Cconst_int n when n > min_int -> Cconst_int(n-1)
-  | Cop(Caddi, [c; Cconst_int n]) when n > min_int -> add_const c (n-1)
+  | Cop(Caddi, [c; Cconst_int n]) when n > min_int ->
+      if n = 1 then c else add_const c (n - 1)
   | c -> add_const c (-1)
 
 let add_int c1 c2 =
@@ -90,7 +92,9 @@ let add_int c1 c2 =
       add_const (Cop(Caddi, [c1; c2])) n1
   | (c1, Cop(Caddi, [c2; Cconst_int n2])) ->
       add_const (Cop(Caddi, [c1; c2])) n2
-  | (c1, c2) ->
+  | (Cconst_int _, _) ->
+      Cop(Caddi, [c2; c1])
+  | (_, _) ->
       Cop(Caddi, [c1; c2])
 
 let sub_int c1 c2 =
