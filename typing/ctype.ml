@@ -2521,6 +2521,10 @@ let rec build_subtype env visited loops posi onlyloop t =
         else (t, Unchanged)
       end
   | Tconstr(p, tl, abbrev) ->
+      (* Must check recursion on constructors, since we do not always
+         expand them *)
+      if List.memq t visited then (t, Unchanged) else
+      let visited = t :: visited in
       begin try
         let decl = Env.find_type p env in
         if onlyloop = 0 && generic_abbrev env p then warn := true;
