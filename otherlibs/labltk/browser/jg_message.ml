@@ -77,7 +77,7 @@ let formatted ~title ?on ?(ppf = Format.std_formatter)
     pack [Jg_text.add_scrollbar tw] ~before:tw ~side:`Right ~fill:`Y
   end
 
-let ask ~title ?master ?(cancel=true) text =
+let ask ~title ?master ?(no=true) ?(cancel=true) text =
   let tl = Jg_toplevel.titled title in
   begin match master with None -> ()
   | Some master -> Wm.transient_set tl ~master
@@ -87,7 +87,7 @@ let ask ~title ?master ?(cancel=true) text =
   and fw = Frame.create tl
   and sync = Textvariable.create ~on:tl ()
   and r = ref (`cancel : [`yes|`no|`cancel]) in
-  let accept = Button.create fw ~text:"Yes"
+  let accept = Button.create fw ~text:(if no then "Yes" else "Dismiss")
       ~command:(fun () -> r := `yes; destroy tl) 
   and refuse = Button.create fw ~text:"No"
       ~command:(fun () -> r := `no; destroy tl)
@@ -96,7 +96,8 @@ let ask ~title ?master ?(cancel=true) text =
   in
   bind tl ~events:[`Destroy] ~extend:true
     ~action:(fun _ -> Textvariable.set sync "1");
-  pack [accept; refuse] ~side:`Left ~fill:`X ~expand:true;
+  pack [accept] ~side:`Left ~fill:`X ~expand:true;
+  if no then pack [refuse] ~side:`Left ~fill:`X ~expand:true;
   if cancel then pack [cancelB] ~side:`Left ~fill:`X ~expand:true;
   pack [mw] ~side:`Top ~fill:`Both;
   pack [fw] ~side:`Bottom ~fill:`X ~expand:true;

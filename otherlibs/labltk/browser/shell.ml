@@ -247,6 +247,12 @@ let path_sep = if Sys.os_type = "Win32" then ";" else ":"
 
 let warnings = ref "A"
 
+let program_not_found prog =
+  ignore begin
+    Jg_message.ask ~cancel:false ~no:false ~title:"Error"
+      ("Program \"" ^ String.escaped prog ^ "\"\nwas not found in path")
+  end
+
 let f ~prog ~title =
   let progargs =
     List.filter ~f:((<>) "") (Str.split ~!" " prog) in
@@ -255,11 +261,13 @@ let f ~prog ~title =
   let path =
     try Sys.getenv "PATH" with Not_found -> "/bin" ^ path_sep ^ "/usr/bin" in
   let exec_path = Str.split ~!path_sep path in
+  let exec_path =
+    if Sys.os_type = "Win32" then "."::exec_path else exec_path in
   let exists =
     if not (Filename.is_implicit prog) then may_exec prog else
     List.exists exec_path
       ~f:(fun dir -> may_exec (Filename.concat dir prog)) in
-  if not exists then () else
+  if not exists then program_not_found prog else
   let tl = Jg_toplevel.titled title in
   let menus = Frame.create tl ~name:"menubar" in
   let file_menu = new Jg_menu.c "File" ~parent:menus
