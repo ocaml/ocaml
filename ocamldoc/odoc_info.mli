@@ -92,7 +92,7 @@ val dummy_loc : location
 (** Representation of element names. *)
 module Name :
     sig
-      type t = Odoc_name.t
+      type t = string
       (** Access to the simple name. *)
       val simple : t -> t
       (** [concat t1 t2] returns the concatenation of [t1] and [t2].*)
