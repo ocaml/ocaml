@@ -190,7 +190,7 @@ let poweropen_external_conventions first_int last_int
 let loc_external_arguments =
   match Config.system with
     "aix" | "rhapsody" -> poweropen_external_conventions 0 7 100 112
-  | "elf" -> calling_conventions 0 7 100 107 outgoing 8
+  | "elf" | "bsd" -> calling_conventions 0 7 100 107 outgoing 8
   | _ -> assert false
 
 let extcall_use_push = false
@@ -244,7 +244,7 @@ let assemble_file infile outfile =
       Ccomp.command ("as -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
   | "elf" ->
       Ccomp.command ("as -u -m ppc -o " ^ outfile ^ " " ^ infile)
-  | "rhapsody" ->
+  | "rhapsody" | "bsd" ->
       Ccomp.command ("as -o " ^ outfile ^ " " ^ infile)
   | _ -> assert false
 

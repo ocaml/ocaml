@@ -57,11 +57,10 @@ let next_in_pair = function
   | {loc = Reg r; typ = Float} -> phys_reg (r + 16)
   | _ -> fatal_error "Emit.next_in_pair"
 
-(* Symbols are prefixed with _ under SunOS and BSD but not under Solaris
-   nor Linux *)
+(* Symbols are prefixed with _ under SunOS *)
 
 let symbol_prefix =
-  if Config.system = "solaris" || Config.system = "linux" then "" else "_"
+  if Config.system = "sunos" then "_" else ""
 
 let emit_symbol s =
   if String.length s >= 1 & s.[0] = '.'
@@ -89,7 +88,7 @@ let is_native_immediate n =
 (* Output a label *)
 
 let label_prefix =
-  if Config.system = "solaris" || Config.system = "linux" then ".L" else "L"
+  if Config.system = "sunos" then "L" else ".L"
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl

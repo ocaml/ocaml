@@ -244,6 +244,8 @@ void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
 void handle_signal(int sig, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_rhapsody)
 void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
+#elif defined(TARGET_power) && defined(SYS_bsd)
+void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_sparc) && defined(SYS_solaris)
 void handle_signal(int sig, int code, void * context)
 #else
@@ -296,6 +298,12 @@ void handle_signal(int sig)
     if (In_code_area(CONTEXT_PC(context))) {
       /* Cached in register 30 */
       CONTEXT_GPR(context, 30) = (unsigned long) young_limit;
+    }
+#endif
+#if defined(TARGET_power) && defined(SYS_bsd)
+    if (caml_last_return_address == 0) {
+      /* Cached in register 30 */
+      context->sc_frame.fixreg[30] = (unsigned long) young_limit;
     }
 #endif
 #if defined(TARGET_sparc) && defined(SYS_solaris)
@@ -545,6 +553,17 @@ static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
   array_bound_error();
 }
 #endif
+
+#if defined(TARGET_power) && defined(SYS_bsd)
+static void trap_handler(int sig, int code, struct sigcontext * context)
+{
+  /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
+  caml_exception_pointer = (char *) context->sc_frame.fixreg[29];
+  young_ptr = (char *) context->sc_frame.fixreg[31];
+  array_bound_error();
+}
+#endif
+
 
 /* Machine- and OS-dependent handling of stack overflow */
 

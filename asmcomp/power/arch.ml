@@ -97,6 +97,5 @@ let powerpc =
 let toc =
   match Config.system with
   | "aix" -> true
-  | "elf" -> false
-  | "rhapsody" -> false
+  | "elf" | "rhapsody" | "bsd" -> false
   | _ -> Misc.fatal_error "wrong $(SYSTEM)"

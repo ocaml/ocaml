@@ -65,7 +65,7 @@ let slot_offset loc cls =
 
 let emit_symbol =
   match Config.system with
-    "aix" | "elf" -> (fun s -> Emitaux.emit_symbol '.' s)
+    "aix" | "elf" | "bsd" -> (fun s -> Emitaux.emit_symbol '.' s)
   | "rhapsody"    -> (fun s -> emit_char '_'; Emitaux.emit_symbol '$' s)
   | _ -> assert false
 
@@ -78,7 +78,7 @@ let emit_codesymbol s =
 let label_prefix =
   match Config.system with
     "aix" -> "L.."
-  | "elf" -> ".L"
+  | "elf" | "bsd" -> ".L"
   | "rhapsody" -> "L"
   | _ -> assert false
 
@@ -90,21 +90,21 @@ let emit_label lbl =
 let data_space =
   match Config.system with
     "aix" -> "	.csect  .data[RW]\n"
-  | "elf" -> "	.section \".data\"\n"
+  | "elf" | "bsd" -> "	.section \".data\"\n"
   | "rhapsody" -> "	.data\n"
   | _ -> assert false
 
 let code_space =
   match Config.system with
     "aix" -> "	.csect  .text[PR]\n"
-  | "elf" -> "	.section \".text\"\n"
+  | "elf" | "bsd" -> "	.section \".text\"\n"
   | "rhapsody" -> "	.text\n"
   | _ -> assert false
 
 let rodata_space =
   match Config.system with
     "aix" -> "	.csect  .data[RW]\n" (* ?? *)
-  | "elf" -> "	.section \".rodata\"\n"
+  | "elf" | "bsd" -> "	.section \".rodata\"\n"
   | "rhapsody" -> "	.const\n"
   | _ -> assert false
 
@@ -157,7 +157,7 @@ let is_native_immediate n =
 
 let emit_upper emit_fun arg =
   match Config.system with
-    "elf" ->
+    "elf" | "bsd" ->
       emit_fun arg; emit_string "@ha"
   | "rhapsody" ->
       emit_string "ha16("; emit_fun arg; emit_string ")"
@@ -165,7 +165,7 @@ let emit_upper emit_fun arg =
 
 let emit_lower emit_fun arg =
   match Config.system with
-    "elf" ->
+    "elf" | "bsd" ->
       emit_fun arg; emit_string "@l"
   | "rhapsody" ->
       emit_string "lo16("; emit_fun arg; emit_string ")"
@@ -951,7 +951,7 @@ let fundecl fundecl =
       `	.csect	{emit_symbol fundecl.fun_name}[DS]\n`;
       `{emit_symbol fundecl.fun_name}:\n`;
       `	.long	.{emit_symbol fundecl.fun_name}, TOC[tc0], 0\n`
-  | "elf" ->
+  | "elf" | "bsd" ->
       `	.type	{emit_symbol fundecl.fun_name}, @function\n`
   | _ -> ()
   end;
@@ -996,7 +996,7 @@ let fundecl fundecl =
 
 let declare_global_data s =
   `	.globl	{emit_symbol s}\n`;
-  if Config.system = "elf" then
+  if Config.system = "elf" || Config.system = "bsd" then
     `	.type	{emit_symbol s}, @object\n`
 
 let emit_item = function

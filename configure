@@ -547,6 +547,7 @@ case "$host" in
   rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
   powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
+  powerpc-*-netbsd*)            arch=power; model=ppc; system=bsd;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; model=ppc; system=rhapsody;;
   arm*-*-linux*)                arch=arm; system=linux;;
@@ -610,6 +611,7 @@ case "$arch,$model,$system" in
   power,rs6000,aix) asflags='-u -m pwr -w'; asppflags="$asflags";;
   power,ppc,aix)    asflags='-u -m ppc -w'; asppflags="$asflags";;
   power,*,elf)      aspp='gcc'; asppflags='-c';;
+  power,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   power,*,rhapsody) ;;
   arm,*,linux)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   ia64,*,linux)     asflags=-xexplicit
