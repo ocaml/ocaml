@@ -251,7 +251,7 @@ value alloc_shr (mlsize_t wosize, tag_t tag)
   }
   Assert (Hd_hp (hp) == Make_header (wosize, tag, allocation_color (hp)));
   allocated_words += Whsize_wosize (wosize);
-  /*if (allocated_words > Wsize_bsize (minor_heap_size)) urge_major_slice ();*/
+  if (allocated_words > Wsize_bsize (minor_heap_size)) urge_major_slice ();
 #ifdef DEBUG
   {
     unsigned long i;
