@@ -549,7 +549,8 @@ and modtype_declaration id decl =
 let signature sg =
   open_vbox 0;
   signature_body false sg;
-  close_box()
+  close_box();
+  print_newline()
 
 (* Print an unification error *)
 
