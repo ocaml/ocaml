@@ -60,6 +60,9 @@ Windows port:
 - Unix library: improved reporting of system error codes.
 - Fixed error in "globbing" of * and ? patterns on command line.
 
+Others:
+- Emacs mode : (** comments (doc comments for ocamldoc) are now in a 
+  different color from the (* or (*** comments.
 
 Objective Caml 3.03 ALPHA:
 --------------------------
