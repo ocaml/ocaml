@@ -107,10 +107,12 @@ CAMLprim value int_of_string(value s)
 static char * parse_format(value fmt,
                            char * suffix,
                            char format_string[],
-                           char default_format_buffer[])
+                           char default_format_buffer[],
+                           char *conv)
 {
-  int prec, lastletter;
+  int prec;
   char * p;
+  char lastletter;
   mlsize_t len, len_suffix;
 
   /* Copy Caml format fmt to format_string,
@@ -135,6 +137,7 @@ static char * parse_format(value fmt,
       break;
     }
   }
+  *conv = lastletter;
   if (prec < FORMAT_BUFFER_SIZE)
     return default_format_buffer;
   else
@@ -146,10 +149,18 @@ CAMLprim value format_int(value fmt, value arg)
   char format_string[FORMAT_BUFFER_SIZE];
   char default_format_buffer[FORMAT_BUFFER_SIZE];
   char * buffer;
+  char conv;
   value res;
 
-  buffer = parse_format(fmt, "l", format_string, default_format_buffer);
-  sprintf(buffer, format_string, Long_val(arg));
+  buffer = parse_format(fmt, "l", format_string, default_format_buffer, &conv);
+  switch (conv) {
+  case 'u': case 'x': case 'X': case 'o':
+    sprintf(buffer, format_string, Unsigned_long_val(arg));
+    break;
+  default:
+    sprintf(buffer, format_string, Long_val(arg));
+    break;
+  }
   res = copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
   return res;
@@ -267,9 +278,10 @@ CAMLprim value int32_format(value fmt, value arg)
   char format_string[FORMAT_BUFFER_SIZE];
   char default_format_buffer[FORMAT_BUFFER_SIZE];
   char * buffer;
+  char conv;
   value res;
 
-  buffer = parse_format(fmt, "", format_string, default_format_buffer);
+  buffer = parse_format(fmt, "", format_string, default_format_buffer, &conv);
   sprintf(buffer, format_string, (long) Int32_val(arg));
   res = copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
@@ -439,10 +451,11 @@ CAMLprim value int64_format(value fmt, value arg)
   char format_string[FORMAT_BUFFER_SIZE];
   char default_format_buffer[FORMAT_BUFFER_SIZE];
   char * buffer;
+  char conv;
   value res;
 
   buffer = parse_format(fmt, ARCH_INT64_PRINTF_FORMAT,
-                        format_string, default_format_buffer);
+                        format_string, default_format_buffer, &conv);
   I64_format(buffer, format_string, Int64_val(arg));
   res = copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
@@ -629,9 +642,10 @@ CAMLprim value nativeint_format(value fmt, value arg)
   char format_string[FORMAT_BUFFER_SIZE];
   char default_format_buffer[FORMAT_BUFFER_SIZE];
   char * buffer;
+  char conv;
   value res;
 
-  buffer = parse_format(fmt, "l", format_string, default_format_buffer);
+  buffer = parse_format(fmt, "l", format_string, default_format_buffer, &conv);
   sprintf(buffer, format_string, (long) Nativeint_val(arg));
   res = copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
