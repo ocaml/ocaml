@@ -15,9 +15,11 @@
 #include <math.h>
 #include "mlvalues.h"
 #include "alloc.h"
+#include "fail.h"
 #include "libgraph.h"
 #include "custom.h"
 #include "memory.h"
+
 HDC gcMetaFile;
 int grdisplay_mode;
 int grremember_mode;
@@ -402,125 +404,6 @@ CAMLprim value caml_gr_text_size(value str)
         Field(res, 0) = Val_long(extent.cx);
         Field(res, 1) = Val_long(extent.cy);
 
-        return res;
-}
-
-#if 0
-static unsigned char gr_queue[SIZE_QUEUE];
-static int gr_head = 0;       /* position of next read */
-static int gr_tail = 0;       /* position of next write */
-
-#define QueueIsEmpty (gr_head == gr_tail)
-#define QueueIsFull  (gr_head == gr_tail + 1)
-
-void gr_enqueue_char(unsigned char c)
-{
-        if (QueueIsFull) return;
-        gr_queue[gr_tail] = c;
-        gr_tail++;
-        if (gr_tail >= SIZE_QUEUE) gr_tail = 0;
-}
-#endif
-
-#define Button_down             1
-#define Button_up               2
-#define Key_pressed             4
-#define Mouse_motion    8
-#define Poll                    16
-MSG * InspectMessages = NULL;
-
-CAMLprim value caml_gr_wait_event(value eventlist)
-{
-        value res;
-        int mask;
-        BOOL poll;
-        int mouse_x, mouse_y, button, key;
-        int root_x, root_y, win_x, win_y;
-        int r,i,stop;
-        unsigned int modifiers;
-        POINT pt;
-        MSG msg;
-
-        gr_check_open();
-        mask = 0;
-        poll = FALSE;
-        while (eventlist != Val_int(0)) {
-                switch (Int_val(Field(eventlist,0))) {
-                case 0:                     /* Button_down */
-                        mask |= Button_down;
-                        break;
-                case 1:                     /* Button_up */
-                        mask |= Button_up;
-                        break;
-                case 2:                     /* Key_pressed */
-                        mask |= Key_pressed;
-                        break;
-                case 3:                     /* Mouse_motion */
-                        mask |= Mouse_motion;
-                        break;
-                case 4:                     /* Poll */
-                        poll = TRUE;
-                        break;
-                }
-                eventlist = Field(eventlist,1);
-        }
-        mouse_x = -1;
-        mouse_y = -1;
-        button = 0;
-        key = -1;
-
-        if (poll) {
-                // Poll uses info on last event stored in global variables
-                mouse_x = MouseLastX;
-                mouse_y = MouseLastY;
-                button = MouseLbuttonDown | MouseMbuttonDown | MouseRbuttonDown;
-                key = LastKey;
-        }
-        else { // Not polled. Block for a message
-                InspectMessages = &msg;
-                do {
-                        WaitForSingleObject(EventHandle,INFINITE);
-                        stop = 0;
-                        switch (msg.message) {
-                        case WM_LBUTTONDOWN:
-                        case WM_MBUTTONDOWN:
-                        case WM_RBUTTONDOWN:
-                                button = 1;
-                                if (mask&Button_down) stop = 1;
-                                break;
-                        case WM_LBUTTONUP:
-                        case WM_MBUTTONUP:
-                        case WM_RBUTTONUP:
-                                button = 0;
-                                if (mask&Button_up) stop = 1;
-                                break;
-                        case WM_MOUSEMOVE:
-                                if (mask&Mouse_motion) stop = 1;
-                                break;
-                        case WM_CHAR:
-                                key = msg.wParam & 0xFF;
-                                if (mask&Key_pressed) stop = 1;
-                                break;
-			case WM_CLOSE:
-			        stop = 1;
-				break;
-                        }
-                        if (stop) {
-                                pt = msg.pt;
-                                MapWindowPoints(HWND_DESKTOP,grwindow.hwnd,&pt,1);
-                                mouse_x = pt.x;
-                                mouse_y = grwindow.height- 1 - pt.y;
-                        }
-			SetEvent(EventProcessedHandle);
-                } while (! stop);
-                InspectMessages = NULL;
-        }
-        res = alloc_small(5, 0);
-        Field(res, 0) = Val_int(mouse_x);
-        Field(res, 1) = Val_int(mouse_y);
-        Field(res, 2) = Val_bool(button);
-        Field(res, 3) = Val_bool(key != -1);
-        Field(res, 4) = Val_int(key & 0xFF);
         return res;
 }
 
