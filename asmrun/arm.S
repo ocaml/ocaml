@@ -313,7 +313,7 @@ callback3:
         b       .Ljump_to_caml
 
         .global caml_array_bound_error
-array_bound_error:
+caml_array_bound_error:
     /* Load address of array_bound_error in r10 */
         ldr     r10, .Larray_bound_error
     /* Call that function */
