@@ -185,6 +185,7 @@ install:
 	cp lex/csllex $(BINDIR)/csllex
 	cp yacc/cslyacc $(BINDIR)/cslyacc
 	$(CAMLC) -a -o $(LIBDIR)/toplevellib.cma $(TOPLIB)
+	cp expunge $(LIBDIR)
 	cp toplevel/topmain.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
