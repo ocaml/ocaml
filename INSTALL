@@ -5,8 +5,9 @@ PREREQUISITES
 
 * The GNU C compiler gcc is recommended, as the bytecode
   interpreter takes advantage of gcc-specific features to enhance
-  performance. Versions 2.5.8, 2.6.3, 2.7.2 and 2.7.2.3 have
-  all been tested at some point and appear to work.
+  performance. Versions 2.5.8, 2.6.3, 2.7.2, 2.7.2.3
+  as well as egcs version 1.0 have all been tested at some point
+  and appear to work.
   2.7.2.1 for Intel under Linux/RedHat has known problems;
   upgrade to 2.7.2.3.
 

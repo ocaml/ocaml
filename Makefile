@@ -62,7 +62,8 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo
 
-DRIVER=driver/errors.cmo driver/compile.cmo driver/main_args.cmo driver/main.cmo
+DRIVER=driver/errors.cmo driver/compile.cmo driver/main_args.cmo \
+  driver/main.cmo
 
 OPTDRIVER=driver/opterrors.cmo driver/optcompile.cmo driver/optmain.cmo
 

@@ -29,6 +29,7 @@ compiler currently runs on the following platforms:
     PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 3.2,
                         PowerMacintosh under MkLinux, LinuxPPC, Rhapsody
     Motorola 680x0 processors: Sun 3 under SunOS
+    Strong ARM processors: Corel Netwinder under Linux
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
@@ -69,8 +70,8 @@ CONTENTS:
 COPYRIGHT:
 
 All files marked "Copyright INRIA" in this distribution are copyright
-1996, 1997, 1998 Institut National de Recherche en Informatique et
-Automatique (INRIA) and distributed under the conditions stated in
+1996, 1997, 1998, 1999 Institut National de Recherche en Informatique et
+en Automatique (INRIA) and distributed under the conditions stated in
 file LICENSE.  They can be freely redistributed for non-commercial
 purposes, provided the copyright notice remains attached.
 
@@ -81,10 +82,9 @@ For MS Windows, see README.win32.  For the Macintosh, see INSTALL.MPW.
 
 DOCUMENTATION:
 
-The Objective Caml manual is distributed in HTML, PDF, Postscript,
-DVI, and plain text. It can be obtained by anonymous FTP from
-ftp.inria.fr as described below. It is also available on the World
-Wide Web, at
+The Objective Caml manual is distributed in HTML, PDF, Postscript, and
+DVI. It can be obtained by anonymous FTP from ftp.inria.fr as
+described below. It is also available on the World Wide Web, at
 
         http://caml.inria.fr/ocaml/
 
@@ -96,7 +96,7 @@ and can be accessed by anonymous FTP:
         host:       ftp.inria.fr (192.93.2.54)
         directory:  lang/caml-light
 
-or through a Web browser at ftp://ftp.inria.fr/lang/caml-light/.
+or through a Web browser at ftp://ftp.inria.fr/lang/caml-light/
 
 KEEPING IN TOUCH WITH THE CAML COMMUNITY:
 
@@ -116,7 +116,7 @@ If you wish to subscribe to this list, please send a message
               caml-list-request@inria.fr
 
 Archives of the list are available on the World Wide Web at URL
-http://pauillac.inria.fr/caml/.
+http://caml.inria.fr/
 
 The Usenet news groups comp.lang.ml and comp.lang.functional
 also contains discussions about the ML family of programming languages,
