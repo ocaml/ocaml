@@ -719,8 +719,10 @@ let imported_units() =
 
 let save_signature sg modname filename =
   Btype.cleanup_abbrev ();
+  let s = Subst.for_saving Subst.identity in
+  let sg = Subst.signature s sg in
   let comps =
-    components_of_module empty Subst.identity
+    components_of_module empty s
       (Pident(Ident.create_persistent modname)) (Tmty_signature sg) in
   let oc = open_out_bin filename in
   try

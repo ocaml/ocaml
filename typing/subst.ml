@@ -22,25 +22,20 @@ open Btype
 type t = 
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
-    modtypes: (Ident.t, module_type) Tbl.t }
+    modtypes: (Ident.t, module_type) Tbl.t;
+    for_saving: bool }
 
 let identity =
-  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty }
+  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
+    for_saving = false }
 
-let add_type id p s =
-  { types = Tbl.add id p s.types;
-    modules = s.modules;
-    modtypes = s.modtypes }
+let add_type id p s = { s with types = Tbl.add id p s.types }
 
-let add_module id p s =
-  { types = s.types;
-    modules = Tbl.add id p s.modules;
-    modtypes = s.modtypes }
+let add_module id p s = { s with modules = Tbl.add id p s.modules }
 
-let add_modtype id ty s =
-  { types = s.types;
-    modules = s.modules;
-    modtypes = Tbl.add id ty s.modtypes }
+let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
+
+let for_saving s = { s with for_saving = true }
 
 let rec module_path s = function
     Pident id as p ->
@@ -58,12 +53,22 @@ let type_path s = function
   | Papply(p1, p2) ->
       fatal_error "Subst.type_path"
 
+(* Special type ids for saved signatures *)
+
+let new_id = ref (-1)
+
+let newpersvar () =
+  decr new_id; { desc = Tvar; level = generic_level; id = !new_id }
+
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
   let ty = repr ty in
   match ty.desc with
     Tvar ->
-      ty
+      if s.for_saving then
+        let ty' = newpersvar () in
+        save_desc ty Tvar; ty.desc <- Tsubst ty'; ty'
+      else ty
   | Tsubst ty ->
       ty
 (* cannot do it, since it would omit subsitution
@@ -73,7 +78,8 @@ let rec typexp s ty =
   | _ ->
     let desc = ty.desc in
     save_desc ty desc;
-    let ty' = newgenvar () in     (* Stub *)
+    (* Make a stub *)
+    let ty' = if s.for_saving then newpersvar () else newgenvar () in
     ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
@@ -99,7 +105,10 @@ let rec typexp s ty =
               (* Register new type first for recursion *)
               save_desc more more.desc;
               more.desc <- ty.desc;
-              let more' = if static then newgenvar () else more in
+              let more' =
+                if static then
+                  if s.for_saving then newpersvar () else newgenvar ()
+                else more in
               (* Return a new copy *)
               let row = copy_row (typexp s) row true more' in
               match row.row_name with

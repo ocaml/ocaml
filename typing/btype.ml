@@ -183,6 +183,53 @@ let rec copy_type_desc f = function
   | Tlink ty            -> copy_type_desc f ty.desc
   | Tsubst ty           -> assert false
 
+(*
+let rec iter_signature f =
+  List.iter (iter_signature_item f)
+
+and iter_signature_item f = function
+    Tsig_value (_, d) ->
+      f d.val_type;
+      (match d.val_kind with Val_reg | Val_prim _ -> () | _ -> assert false)
+  | Tsig_type (_, d) ->
+      List.iter f d.type_params;
+      begin match d.type_kind with
+        Type_abstract -> ()
+      | Type_variant l -> List.iter (fun (_, tl) -> List.iter f tl) l
+      | Type_record r -> List.iter (fun (_, _, t) -> f t)
+      end;
+      may f d.type_manifest
+  | Tsig_exception (_, d) -> List.iter f d
+  | Tsig_module (_, m) -> iter_module_type f m
+  | Tsig_modtype (_, Tmodtype_manifest m) -> iter_module_type f m
+  | Tsig_modtype (_, Tmodtype_bastract) -> ()
+  | Tsig_class (_, d) ->
+      List.iter f d.cty_params;
+      iter_class_type f d.cty_type;
+      may f d.cty_new
+  | Tsig_cltype (_, d) ->
+      List.iter f d.clty_params;
+      iter_class_type f d.clty_type
+
+and iter_module_type f = function
+    Tmty_ident _ -> ()
+  | Tmty_signature sg -> iter_signature f sg
+  | Tmty_functor (_, m1, m2) -> iter_module_type f m1; iter_module_type f m2
+
+and iter_class_type f = function
+    Tcty_constr (_, tl, ct) ->
+      List.iter f tl;
+      iter_class_type f ct
+  | Tcty_fun (_, t, ct) ->
+      f t;
+      iter_class_type f ct
+  | Tcty_signature s ->
+      f s.cty_self;
+      Vars.iter (fun _ (_, t) -> f t) s.cty_vars
+*)
+
+(* Utilities for copying *)
+
 let saved_desc = ref []
   (* Saved association of generic nodes with their description. *)
 
