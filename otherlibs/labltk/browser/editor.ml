@@ -598,7 +598,7 @@ class editor ~top ~menus = object (self)
             Env.add_module (Ident.create modname)
               (Types.Tmty_signature txt.signature)
               Env.initial
-          in Viewer.view_defined (Longident.Lident modname) ~env
+          in Viewer.view_defined (Longident.Lident modname) ~env ~show_all:true
       end;
 
     (* Modules *)

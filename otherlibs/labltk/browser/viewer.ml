@@ -225,7 +225,7 @@ let ident_of_decl ~modlid = function
   | Tsig_class (id, _) -> Lident (Ident.name id), Pclass
   | Tsig_cltype (id, _) -> Lident (Ident.name id), Pcltype
 
-let view_defined modlid ~env =
+let view_defined ~env ?(show_all=false) modlid =
   try match lookup_module modlid env with path, Tmty_signature sign ->
     let rec iter_sign sign idents =
       match sign with
@@ -238,8 +238,10 @@ let view_defined modlid ~env =
           in iter_sign rem (ident_of_decl ~modlid decl :: idents)
     in
     let l = iter_sign sign [] in
-    !choose_symbol_ref l ~title:(string_of_path path) ~signature:sign
-       ~env:(open_signature path sign env) ~path
+    let title = string_of_path path in
+    let env = open_signature path sign env in
+    !choose_symbol_ref l ~title ~signature:sign ~env ~path;
+    if show_all then view_signature sign ~title ~env ~path
   | _ -> ()
   with Not_found -> ()
   | Env.Error err ->
@@ -532,7 +534,6 @@ object (self)
           1
 
   method set_path path ~sign =
-    prerr_endline ("* " ^ string_of_path path);
     let rec path_elems l path =
       match path with
         Path.Pdot (path, _, _) -> path_elems (path::l) path
@@ -563,7 +564,6 @@ object (self)
         let s =
           if n = 0 then string_of_longident li else
           string_of_longident li ^ " (" ^ string_of_kind k ^ ")" in
-        prerr_endline s;
         let n = index s texts in
         Listbox.see box (`Num n);
         Listbox.activate box (`Num n)

@@ -58,7 +58,7 @@ let _ =
     with Env.Error _ -> ()
   end;
   
-  Searchpos.view_defined_ref := Viewer.view_defined;
+  Searchpos.view_defined_ref := (fun s ~env -> Viewer.view_defined s ~env);
   Searchpos.editor_ref := Editor.f;
 
   let top = openTk ~clas:"OCamlBrowser" () in
