@@ -21,7 +21,6 @@ type lexbuf =
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;
     mutable lex_last_pos : int;
-    mutable lex_saved_state : int;
     mutable lex_last_action : int }
 
 type lex_tables =
@@ -71,7 +70,6 @@ let from_function f =
     lex_start_pos = 1024;
     lex_curr_pos = 1024;
     lex_last_pos = 1024;
-    lex_saved_state = -1;
     lex_last_action = 0 }
 
 let from_channel ic =
@@ -86,7 +84,6 @@ let from_string s =
     lex_start_pos = 0;
     lex_curr_pos = 0;
     lex_last_pos = 0;
-    lex_saved_state = -1;
     lex_last_action = 0 }
 
 let lexeme lexbuf =
