@@ -1,5 +1,3 @@
-	Objective Caml version 1.04-3
-
 #   - : < x : int > ->
     < x : int > -> < x : int > -> < x : int > * < x : int > * < x : int >
 = <fun>
@@ -201,7 +199,7 @@ is not included in
 Multiple definition of the type name t.
 Names must be unique in a given structure.
 #   - : (< m : (< m : 'b -> 'b > as 'b) -> 'a; .. > as 'a) ->
-    < m : 'c -> 'c > as 'c
+    (< m : 'c -> 'c > as 'c)
 = <fun>
 #   Characters 10-39:
 Type int -> bool is not a subtype of type int -> int
@@ -214,4 +212,10 @@ Type bool is not a subtype of type int
 #   val x : '_a list ref = {contents=[]}
 #   module F : functor(X : sig end) -> sig type t = int end
 # - : < m : int > list ref = {contents=[]}
+#   type 'a t
+# - : ('a t as 'a) -> unit = <fun>
+# - : ('a t as 'a) -> unit = <fun>
+# type 'a t = < x : 'a >
+# - : (< x : 'a > as 'a) t -> unit = <fun>
+# - : (< x : 'a > as 'a) t -> unit = <fun>
 # 

@@ -282,3 +282,10 @@ let x = ref [];;
 module F(X : sig end) =
   struct type t = int let _ = (x : < m : t> list ref) end;;
 x;;
+
+type 'a t;;
+fun (x : 'a t as 'a) -> ();;
+fun (x : 'a t) -> (x : 'a); ();;
+type 'a t = < x : 'a >;;
+fun (x : 'a t as 'a) -> ();;
+fun (x : 'a t) -> (x : 'a); ();;
