@@ -107,6 +107,10 @@ let rec discard_dead_code n =
   match n.desc with
     Lend -> n
   | Llabel _ -> n
+(* Do not discard Lpoptrap or Istackoffset instructions,
+   as this may cause a stack imbalance later during assembler generation. *)
+  | Lpoptrap -> n
+  | Lop(Istackoffset _) -> n
   | _ -> discard_dead_code n.next
 
 (* Add a branch in front of a continuation.
