@@ -350,6 +350,7 @@ static void * caml_thread_start(void * arg)
   th->next->prev = th->prev;
   th->prev->next = th->next;
   /* Release the main mutex (forever) */
+  async_signal_mode = 1;
   pthread_mutex_unlock(&caml_mutex);
 #ifndef NATIVE_CODE
   /* Free the memory resources */

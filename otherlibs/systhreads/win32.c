@@ -334,6 +334,7 @@ static void caml_thread_start(caml_thread_t th)
   th->next->prev = th->prev;
   th->prev->next = th->next;
   /* Release the main mutex (forever) */
+  async_signal_mode = 1;
   ReleaseMutex(caml_mutex);
 #ifndef NATIVE_CODE
   /* Free the memory resources */
