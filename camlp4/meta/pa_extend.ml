@@ -313,6 +313,8 @@ value rec quot_expr e =
       [ Not_found -> e ]
   | <:expr< $lid:s$ >> ->
       if s = Stdpp.loc_name.val then <:expr< Qast.Loc >> else e
+  | <:expr< $_$.$uid:s$ >> -> <:expr< Qast.Node $str:s$ [] >>
+  | <:expr< $uid:s$ >> -> <:expr< Qast.Node $str:s$ [] >>
   | <:expr< $str:s$ >> -> <:expr< Qast.Str $str:s$ >>
   | <:expr< ($list:el$) >> ->
       let el = List.map quot_expr el in

@@ -1593,7 +1593,9 @@ Grammar.extend
            (Qast.Option (Some e) : 'cons_expr_opt))]];
     Grammar.Entry.obj (dummy : 'dummy Grammar.Entry.e), None,
     [None, None,
-     [[], Gramext.action (fun (loc : int * int) -> (() : 'dummy))]];
+     [[],
+      Gramext.action
+        (fun (loc : int * int) -> (Qast.Node ("()", []) : 'dummy))]];
     Grammar.Entry.obj (sequence : 'sequence Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
@@ -2596,7 +2598,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 32535, 32551))
+                  _ -> raise (Match_failure ("q_MLast.ml", 32550, 32566))
             in
             Qast.Node ("CrVal", [Qast.Loc; lab; mf; e]) :
             'class_str_item));
@@ -2991,7 +2993,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 37102, 37118))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37117, 37133))
             in
             Qast.Node ("TyObj", [Qast.Loc; ml; v]) :
             'ctyp));
@@ -3026,7 +3028,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 37449, 37465))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37464, 37480))
             in
             Qast.Tuple [Qast.Cons (f, ml); v] :
             'meth_list))]];

@@ -608,7 +608,7 @@ EXTEND
       | -> Qast.Option None ] ]
   ;
   dummy:
-    [ [ -> () ] ]
+    [ [ -> Qast.Node "()" [] ] ]
   ;
   sequence:
     [ [ "let"; rf = rec_flag; l = SLIST1 let_binding SEP "and";

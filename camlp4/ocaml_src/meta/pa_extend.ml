@@ -724,6 +724,24 @@ let rec quot_expr e =
       if s = !(Stdpp.loc_name) then
         MLast.ExAcc (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Loc"))
       else e
+  | MLast.ExAcc (_, _, MLast.ExUid (_, s)) ->
+      MLast.ExApp
+        (loc,
+         MLast.ExApp
+           (loc,
+            MLast.ExAcc
+              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
+            MLast.ExStr (loc, s)),
+         MLast.ExUid (loc, "[]"))
+  | MLast.ExUid (_, s) ->
+      MLast.ExApp
+        (loc,
+         MLast.ExApp
+           (loc,
+            MLast.ExAcc
+              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
+            MLast.ExStr (loc, s)),
+         MLast.ExUid (loc, "[]"))
   | MLast.ExStr (_, s) ->
       MLast.ExApp
         (loc,
