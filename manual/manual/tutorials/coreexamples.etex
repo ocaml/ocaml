@@ -206,7 +206,7 @@ type "'a" (an arbitrary type) is either empty, or is a node containing
 one value of type "'a" and two subtrees containing also values of type
 "'a", that is, two "'a btree".
 
-Operations on binary trees express naturally as recursive functions
+Operations on binary trees are naturally expressed as recursive functions
 following the same structure as the type definition itself. For
 instance, here are functions performing lookup and insertion in
 ordered binary trees (elements increase from left to right):
@@ -484,7 +484,7 @@ tokens. As usual with recursive descent parsers, we use several
 intermediate parsing functions to reflect the precedence and
 associativity of operators. Pattern-matching over streams is more
 powerful than on regular data structures, as it allows recursive calls
-to parsing functions inside the parser for matching sub-components of
+to parsing functions inside the patterns, for matching sub-components of
 the input stream. See chapter~\ref{c:extensions} for more details.
 
 \begin{caml_example}

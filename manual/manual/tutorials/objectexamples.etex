@@ -88,19 +88,19 @@ List.map get_x l;;
 
 Reference cells can also be implemented as objects:
 \begin{caml_example}
-class ref x = 
-  val mutable x = x 
+class ref x_init = 
+  val mutable x = x_init
   method get = x
   method set y = x <- y
 end;;
 \end{caml_example}
-The reason for this definition not to typecheck is that (at least) one
+The reason why this definition does not to typecheck is that at least one
 of the methods has a polymorphic type (here, the type of the value
 stored in the reference cell), thus the class should be parametric.  A
 monomorphic instance of the class could be defined by:
 \begin{caml_example}
-class ref (x:int) = 
-  val mutable x = x 
+class ref (x_init:int) = 
+  val mutable x = x_init
   method get = x
   method set y = x <- y
 end;;
@@ -109,19 +109,19 @@ A class for polymorphic references must  explicitly list the
 type parameters in its declaration.  The type parameters must also be
 bound somewhere in the class body by a type constraint. 
 \begin{caml_example}
-class 'a ref x = 
-  val mutable x = (x : 'a)
+class 'a ref x_init = 
+  val mutable x = (x_init : 'a)
   method get = x
   method set y = x <- y
 end;;
 let r = new ref 1 in r#set 2; (r#get);;
 \end{caml_example}
 The type parameter in the declaration may actually be constrained in the
-body of the class definition. In class type, the type parameter actual
-value is displayed in the "constraint" clause. 
+body of the class definition. In the class type, the actual value of
+the type parameter is displayed in the "constraint" clause. 
 \begin{caml_example}
-class 'a ref (x:'a) = 
-  val mutable x = x + 1
+class 'a ref (x_init:'a) = 
+  val mutable x = x_init + 1
   method get = x
   method set y = x <- y
 end;;
@@ -170,7 +170,7 @@ end;;
 \end{caml_example}
 
 
-\subsection *{Self reference}
+\subsection*{Self reference}
 
 A method can also send messages to the object that invoked the method. 
 For that, self must be explicitly bound, 
@@ -237,7 +237,7 @@ and "'a" appears inside the type of the "move" method.
 
 The class "comparable" below is a template for classes with a binary
 method "leq" of type "'a -> bool" where the type variable
-"'a" is bound to self type. As this class has a method declared
+"'a" is bound to the type of self. Since this class has a method declared
 but not defined, it must be flagged virtual and cannot be instantiated
 (that is, no object of this class can be created). It still
 defines abbreviations. In particular,
@@ -254,7 +254,7 @@ We then defines a subclass of "comparable", which wraps integers as
 comparable objects. There is a type constraint on the class parameter "x"
 as the primitive "<=" is a polymorphic comparison function in
 Objective Caml.  The "inherit" clause ensures that the type of objects
-of this class in an instance of "#comparable".
+of this class is an instance of "#comparable".
 \begin{caml_example}
 class int_comparable (x : int) =
   inherit comparable ()
@@ -297,18 +297,18 @@ or "int_comparable2".
 \end{caml_example}
 
 
-\subsection* {Recursive classes}
+\subsection*{Recursive classes}
 
 This last example is somewhat more complicated. It demonstrates
 recursive classes. Indeed, lists can also be implemented by classes.
 We recursively define three classes:
 \begin{enumerate}
-\item a virtual class "lst" that implements functional over lists, here a
+\item A virtual class "lst" implements functional over lists, here a
 map method, an interation method, and a printing method. 
 
-\item a class "nil" defines the behavior of the empty list. 
+\item A class "nil" defines the behavior of the empty list. 
 
-\item a class "cons" defines the behavior of non empty lists. 
+\item A class "cons" defines the behavior of non-empty lists. 
 
 \end{enumerate}
 All three classes have the same interface. 
@@ -353,7 +353,7 @@ end;;
 \end{caml_example}
 It is a weakness of Objective Caml that objects
 cannot have polymorphic methods: the  method "map" can
-only return a list of the same type as the objet to which it aplies.  
+only return a list of the same type as the objet to which it applies.  
 \begin{caml_example}
 let l1 = new cons 3 (new cons 10 (new nil ()));;
 l1#print print_int;;
@@ -364,9 +364,7 @@ A polymorphic "map" function can still be defined:
 \begin{caml_example}
 let rec map_list f (x:'a lst) = 
   if x#null then new nil() 
-  else new cons (f x#hd) (map_list f x#tl)
-;; 
-
+  else new cons (f x#hd) (map_list f x#tl);;
 let p1 = (map_list (fun x -> new printable_color_point x "red") l1);;
 p1#print (fun x -> x#print);;
 \end{caml_example}
