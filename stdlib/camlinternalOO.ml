@@ -588,18 +588,18 @@ type impl =
 let method_impl i arr =
   let next () = incr i; magic arr.(!i) in
   match next() with
-    GetConst -> let x : t = next() in ret (fun obj -> x)
+    GetConst -> let x : t = next() in get_const x
   | GetVar   -> let n = next() in get_var n
   | GetEnv   -> let e = next() and n = next() in get_env e n
   | GetMeth  -> let n = next() in get_meth n
   | SetVar   -> let n = next() in set_var n
-  | AppConst -> let f = next() and x = next() in ret (fun obj -> f x)
+  | AppConst -> let f = next() and x = next() in app_const f x
   | AppVar   -> let f = next() and n = next () in app_var f n
   | AppEnv   ->
       let f = next() and e = next() and n = next() in app_env f e n
   | AppMeth  -> let f = next() and n = next () in app_meth f n
   | AppConstConst ->
-      let f = next() and x = next() and y = next() in ret (fun obj -> f x y)
+      let f = next() and x = next() and y = next() in app_const_const f x y
   | AppConstVar ->
       let f = next() and x = next() and n = next() in app_const_var f x n
   | AppConstEnv ->
