@@ -34,7 +34,7 @@ let unix_close_graph () =
 
 let (open_graph, close_graph) =
   match Sys.os_type with
-  | "Unix" -> (unix_open_graph, unix_close_graph)
+  | "Unix" | "Cygwin" -> (unix_open_graph, unix_close_graph)
   | "Win32" -> (raw_open_graph, raw_close_graph)
   | "MacOS" -> (raw_open_graph, raw_close_graph)
   | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)
