@@ -53,7 +53,7 @@ let insert_action = ref (function x -> () : int -> unit)
 (* Producing instrumented code *)
 let add_incr_counter mod_name prof_counter =
    fprintf !outchan
-           "profile_%s_.(%d) <- profile_%s_.(%d) + 1; "
+           "profile_%s_.(%d) <- Pervasives.succ profile_%s_.(%d); "
            mod_name prof_counter mod_name prof_counter
 
 let counters = ref (Array.create 0 0)
@@ -74,17 +74,18 @@ let add_val_counter prof_counter =
    ()
 
 let insert_profile rewrite_exp ({pexp_loc={loc_start=st; loc_end=en}} as ex) =
-  if !instr_mode then begin
+  if st = en then
+    rewrite_exp ex
+  else begin
     copy st;
-    output_string !outchan "("
-  end;
-  copy st;
-  !insert_action !profile_counter; 
-  incr profile_counter;
-  rewrite_exp ex;
-  if !instr_mode then begin
-    copy en;
-    output_string !outchan ")"
+    if !instr_mode then output_string !outchan "(";
+    !insert_action !profile_counter; 
+    incr profile_counter;
+    rewrite_exp ex;
+    if !instr_mode then begin
+      copy en;
+      output_string !outchan ")"
+    end
   end
 ;;
 

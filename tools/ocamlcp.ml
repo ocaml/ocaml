@@ -75,6 +75,6 @@ let _ =
     Sys.command
       (Printf.sprintf "ocamlc -pp \"ocamlprof -instrument %s\" %s %s"
           (String.concat " " (List.rev !profargs))
-          (if !make_archive then "profiling.cmo" else "")
+          (if !make_archive then "" else "profiling.cmo")
           (String.concat " " (List.rev !compargs))) in
   exit status
