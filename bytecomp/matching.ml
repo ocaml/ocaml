@@ -1534,50 +1534,8 @@ let mk_res get_key env last_choice idef cant_fail ctx =
       env ([],jumps_fail) in
   fail, klist, jumps
       
-(*
-let mk_failaction get_key complete partial seen ctx (_,def) =
-  match partial with
-  | Total -> None, [], jumps_empty
-  | Partial ->
 
-      let add i b keys env = match keys with
-      | [] -> env
-      | _  -> (i,b,keys)::env in
-
-      let rec mk_rec env seen = function
-        | [] -> mk_res get_key env [] (-1) true ctx
-        | (pss,idef)::rem ->
-            try
-              let pats_here = extract_mat seen pss in
-              let keep, forget =
-                List.partition
-                  (fun p -> exists_ctx (compat p) ctx)
-                  pats_here in
-              let keep =
-                List.filter
-                  (fun p -> ctx_match (ctx_lub p ctx) pss)
-                  keep in                      
-              mk_rec (add idef false keep env) (keep@forget@seen) rem
-            with
-          (*  pss a priori catches everything left *)
-            | All ->
-                let pats = complete seen in
-                if pats = [] || group_var (List.hd pats) then
-                  mk_res get_key env pats idef (all_vars pss) ctx
-                else begin
-                  let keep, forget =
-                    List.partition
-                      (fun p -> exists_ctx (compat p) ctx) pats in
-                  let keep =
-                    List.filter
-                      (fun p -> ctx_match (ctx_lub p ctx) pss)
-                      keep in                      
-                  mk_rec (add idef (all_vars pss) keep env)
-                    (keep@forget@seen) rem
-                end in
-      mk_rec [] seen def
-*)
-
+(* Aucune optimisation, reflechir apres la release *)
 let mk_failaction_neg get_key partial seen ctx (_,def) = match partial with
 | Partial -> begin match def with
   | (_,idef)::_ ->
@@ -1588,7 +1546,7 @@ end
     None, [], jumps_empty
     
   
-
+(* Conforme a l'article et plus simple qu'avant *)
 and mk_failaction_pos partial seen ctx (_,defs)  =
   let rec scan_def env to_test defs = match to_test,defs with
   | ([],_)|(_,[]) ->
@@ -1788,19 +1746,12 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
       match (consts, nonconsts) with
       | ([n, act1], [m, act2]) when fail=None ->
           test_int_or_block arg act1 act2
-      | ([n, act], []) ->
+      | (_, []) -> (* One can compare integers and pointers *)
           make_test_sequence_variant_constant fail arg consts
-      | (_, []) ->
-          let lam =
-            make_test_sequence_variant_constant
-              fail arg consts in
-          begin match fail with
-          | None -> lam
-          | Some fail -> test_int_or_block arg lam fail
-          end
       | ([], _) ->
           let lam = make_test_sequence_variant_constr
                        fail arg nonconsts in
+          (* One must not dereference integers *)
           begin match fail with
           | None -> lam
           | Some fail -> test_int_or_block arg fail lam
