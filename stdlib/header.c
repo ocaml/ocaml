@@ -11,8 +11,8 @@
 
 /* $Id$ */
 
-char * runtime_name = "cslrun";
-char * errmsg = "Cannot exec cslrun.\n";
+char * runtime_name = "ocamlrun";
+char * errmsg = "Cannot exec ocamlrun.\n";
 
 int main(argc, argv)
      int argc;

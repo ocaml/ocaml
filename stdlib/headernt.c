@@ -13,8 +13,8 @@
 
 #include <process.h>
 
-char * runtime_name = "cslrun.exe";
-char * errmsg = "Cannot find cslrun.exe\n";
+char * runtime_name = "ocamlrun.exe";
+char * errmsg = "Cannot find ocamlrun.exe\n";
 
 int main(argc, argv)
      int argc;
