@@ -51,7 +51,8 @@ let print_version_number () =
   print_string "The Objective Caml compiler, version ";
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
-  print_string Config.standard_library; print_newline()
+  print_string Config.standard_library; print_newline();
+  exit 0
 
 let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
