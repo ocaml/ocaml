@@ -1,4 +1,6 @@
 Current :
+OK - fix: create a Module_with instead of a Module_alias when we encounter
+     module A : Foo in a signature
 OK - latex: style latex pour indenter dans les module kind et les class kind
 OK - latex: il manque la génération des paramètres de classe
 OK - parse des {!modules: } et {!indexlist}
