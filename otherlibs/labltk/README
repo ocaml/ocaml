@@ -1,0 +1,25 @@
+LablTk41 is a library for interfacing Objective Labl with the scripting
+language Tcl/Tk (all versions since 7.5/4.1, but no betas).
+
+In addition to the basic interface with Tcl/Tk, this package contains
+ * the LablBrowser code editor / library browser written by Jacques
+ Garrigue.
+ * the "jpf" library, written by Jun P. Furuse; it contains a "file
+ selector" and "balloon help" support
+ 
+
+REQUIREMENTS:
+You must have already installed
+ * Objective Label 2.02 Summer edition
+    http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/
+
+ * Tcl7.5/Tk4.1 through Tcl/Tk8.2
+    http://www.scriptics.com/ or various mirrors
+
+PLATFORMS:
+Essentially any Unix/X Window System platform. We have tested
+releases on Linux (ELF x86), FreeBSD (x86), SunOS4.1.x (sparc), DEC
+OSF/1 V4.0 (alpha), DGUX SVR4 (m88k).  We have not attempted to
+compile this package on Windows.
+
+See the INSTALL file for installation instructions.

@@ -1,0 +1,39 @@
+## Where you installed Objective Label
+LIBDIR=@OCAMLLIBDIR@
+
+## Where are the sources (for LablBrowser).
+OCAMLDIR=@OCAMLSRCDIR@
+
+## Where you want to install LablTk41 libraries and binaries
+INSTALLDIR=@INSTALLDIR@
+INSTALLBINDIR=@INSTALLBINDIR@
+
+### What to use to link with X
+X11_LIBS=-cclib "@X_LIBS@ @THE_X_LIBS@"
+
+### What to use to compile and link with Tcl/Tk
+TKINCLUDES=-ccopt "@CPPFLAGS@"
+TKLIBS=-cclib "@LDFLAGS@ @LIBS@"
+
+### Making a library
+RANLIB=@RANLIB@
+
+### Shouldn't need to change anything below
+## Tools from the Objective Label distribution
+EXCRC=$(LIBDIR)/extract_crc
+EXPUNGE=$(LIBDIR)/expunge
+
+LABLC=ocamlc
+LABLCOMP=$(LABLC) -w s -modern -c
+CPP=@CPPPROG@ -P
+LABLYACC=ocamlyacc -v
+LABLLEX=ocamllex
+LABLLIBR=$(LABLC) -a
+LABLDEP=ocamldep
+COMPFLAGS=
+LINKFLAGS=
+
+CAMLOPT=ocamlopt
+CAMLOPTLIBR=$(CAMLOPT) -a
+
+## End of configuration section

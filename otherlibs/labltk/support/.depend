@@ -1,0 +1,16 @@
+protocol.cmi: widget.cmi 
+textvariable.cmi: protocol.cmi widget.cmi 
+coerce.cmo: widget.cmi 
+coerce.cmx: widget.cmx 
+fileevent.cmo: protocol.cmi fileevent.cmi 
+fileevent.cmx: protocol.cmx fileevent.cmi 
+protocol.cmo: widget.cmi protocol.cmi 
+protocol.cmx: widget.cmx protocol.cmi 
+support.cmo: support.cmi 
+support.cmx: support.cmi 
+textvariable.cmo: protocol.cmi widget.cmi textvariable.cmi 
+textvariable.cmx: protocol.cmx widget.cmx textvariable.cmi 
+timer.cmo: protocol.cmi timer.cmi 
+timer.cmx: protocol.cmx timer.cmi 
+widget.cmo: widget.cmi 
+widget.cmx: widget.cmi 

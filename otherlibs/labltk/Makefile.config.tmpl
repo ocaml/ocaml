@@ -1,0 +1,40 @@
+# Generated automatically from Makefile.config.in by configure.
+## Where you installed Objective Label
+LIBDIR=/usr/local/lib/olabl
+
+## Where are the sources (for LablBrowser).
+OLABLDIR=../..
+
+## Where you want to install LablTk41 libraries and binaries
+INSTALLDIR=/usr/local/lib/olabl/labltk41
+INSTALLBINDIR=/usr/local/bin
+
+### What to use to link with X
+X11_LIBS=-ccopt "" -cclib " -lX11"
+
+### What to use to compile and link with Tcl/Tk
+TKINCLUDES=-ccopt "-I/usr/local/include "
+TKLIBS=-ccopt "-L/usr/local/lib" -cclib "-ltk4.2 -ltcl7.6 -lm"
+
+### Making a library
+RANLIB=ranlib
+
+### Shouldn't need to change anything below
+## Tools from the Objective Label distribution
+EXCRC=$(LIBDIR)/extract_crc
+EXPUNGE=$(LIBDIR)/expunge
+
+LABLC=olablc
+LABLCOMP=$(LABLC) -c
+CPP=/usr/bin/cpp -P
+LABLYACC=olablyacc -v
+LABLLEX=olabllex
+LABLLIBR=$(LABLC) -a
+LABLDEP=olabldep
+COMPFLAGS=
+LINKFLAGS=
+
+CAMLOPT=olablopt
+CAMLOPTLIBR=$(CAMLOPT) -a
+
+## End of configuration section

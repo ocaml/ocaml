@@ -1,0 +1,35 @@
+include ../Makefile.config
+
+all: tk.ml .depend
+
+tkgen.ml: ../Widgets.src ../compiler/tkcompiler
+	cd ..; compiler/tkcompiler
+
+# dependencies are broken: wouldn't work with gmake 3.77
+
+tk.ml .depend: tkgen.ml ../support/report.ml #../builtin/builtin_*.ml
+	(echo 'open Widget'; \
+         echo 'open Protocol'; \
+         echo 'open Support'; \
+	 echo 'open Textvariable'; \
+	 cat ../support/may.ml; \
+	 cat ../support/coerce.ml; \
+	 cat ../support/report.ml; \
+	 cat ../builtin/builtin_*.ml; \
+	 cat tkgen.ml; \
+	 echo ; \
+	 echo ; \
+	 echo 'module Tkintf = struct'; \
+	 cat ../builtin/builtini_*.ml; \
+	 cat tkigen.ml; \
+	 echo 'end (* module Tkintf *)'; \
+	 echo ; \
+	 echo ; \
+	 echo 'open Tkintf' ;\
+	 echo ; \
+	 echo ; \
+	 cat ../builtin/builtinf_*.ml; \
+	 cat tkfgen.ml; \
+	 echo ; \
+	) > tk.ml
+	$(LABLDEP) *.mli *.ml > .depend

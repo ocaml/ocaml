@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# links with the tcl, tk and X11 libraries
+
+exec ocamlopt -I @INSTALLDIR@ tk41.cmxa $* \
+    -cclib "-L@INSTALLDIR@ -llabltk41" \
+    -cclib "@LDFLAGS@ @LIBS@" \
+    -cclib "@X_LIBS@ @THE_X_LIBS@"
