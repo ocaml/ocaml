@@ -69,7 +69,7 @@ structure.
 For compatibility with toplevel phrases (chapter~\ref{c:camllight})
 and with Caml Light, an optional ";;" is allowed after each
 definition in a structure. The ";;" has no semantic meaning. Also for
-compatibility, @expr ';;'@ is allowed as a component of a structure,
+compatibility, @';;' expr@ is allowed as a component of a structure,
 meaning @'let' '_' '=' expr@, i.e. evaluate @expr@ for its side-effects.
 
 \subsubsection*{Value definitions}
