@@ -782,7 +782,7 @@ let empty_entry ename levn strm =
   raise (Stream.Error ("entry [" ^ ename ^ "] is empty"))
 ;;
 
-let rec start_parser_of_entry entry =
+let start_parser_of_entry entry =
   match entry.edesc with
     Dlevels [] -> empty_entry entry.ename
   | Dlevels elev -> start_parser_of_levels entry 0 elev

@@ -1,6 +1,8 @@
 Camlp4 Version 3.04
 -------------------
 
+- [15 Oct 01] Fixed parsing differences in parsers between pa_o and
+  ocamlyacc.
 - [12 Oct 01] Added missing bigarray syntax a.{b} (and Cie) in standard
   syntax (pa_o).
 

@@ -223,6 +223,16 @@ let remaining_args =
   List.rev (loop [] (!(Arg.current) + 1))
 ;;
 
+let report_error =
+  function
+    Odyl_main.Error (fname, msg) ->
+      Format.print_string "Error while loading \"";
+      Format.print_string fname;
+      Format.print_string "\": ";
+      Format.print_string msg
+  | exc -> Pcaml.report_error exc
+;;
+
 let go () =
   let arg_spec_list = initial_spec_list @ Pcaml.arg_spec_list () in
   begin match parse arg_spec_list anon_fun remaining_args with
@@ -247,10 +257,7 @@ let go () =
           Stdpp.Exc_located ((bp, ep), exc) -> print_location (bp, ep); exc
         | _ -> exc
       in
-      Pcaml.report_error exc;
-      Format.close_box ();
-      Format.print_newline ();
-      exit 2
+      report_error exc; Format.close_box (); Format.print_newline (); exit 2
 ;;
 
 Odyl_main.name := "camlp4";;
