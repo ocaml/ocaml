@@ -52,3 +52,16 @@ module M4 = struct
     | `Z -> 7
 end
 module M5 = F(M4)
+
+module M6 : sig
+  type c as < move: int -> unit; x: int; ..>
+  val create : int -> c
+end = struct
+  class c x = object
+    val mutable x : int = x
+    method x = x
+    method move d = x <- x+d
+  end
+  let create = new c
+end
+let f (x : M6.c) = x#move 3; x#x;;
