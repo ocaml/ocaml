@@ -14,7 +14,7 @@
 (* Output the DFA tables and its entry points *)
 
 val output_lexdef:
-      in_channel -> out_channel ->
+      string -> in_channel -> out_channel ->
       Syntax.location ->
       Compact.lex_tables ->
       Lexgen.automata_entry list ->

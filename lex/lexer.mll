@@ -22,7 +22,7 @@ open Parser
 let brace_depth = ref 0
 and comment_depth = ref 0
 
-exception Lexical_error of string
+exception Lexical_error of string * int * int
 
 let initial_string_buffer = String.create 256
 let string_buff = ref initial_string_buffer
@@ -56,14 +56,28 @@ let char_for_decimal_code lexbuf i =
                10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
                     (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48))
 
+let line_num = ref 1
+let line_start_pos = ref 0
+
+let handle_lexical_error fn lexbuf =
+  let line = !line_num
+  and column = Lexing.lexeme_start lexbuf - !line_start_pos in
+  try
+    fn lexbuf
+  with Lexical_error(msg, _, _) ->
+    raise(Lexical_error(msg, line, column))
 }
 
 rule main = parse
-    [' ' '\010' '\013' '\009' '\012' ] + 
+    [' ' '\013' '\009' '\012' ] + 
     { main lexbuf }
+  | '\010'
+    { line_start_pos := Lexing.lexeme_end lexbuf;
+      incr line_num;
+      main lexbuf }
   | "(*" 
     { comment_depth := 1;
-      comment lexbuf;
+      handle_lexical_error comment lexbuf;
       main lexbuf }
   | ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '\'' '_' '0'-'9'] *
     { match Lexing.lexeme lexbuf with
@@ -75,7 +89,7 @@ rule main = parse
       | s -> Tident s }
   | '"' 
     { reset_string_buffer();
-      string lexbuf;
+      handle_lexical_error string lexbuf;
       Tstring(get_stored_string()) }
   | "'" [^ '\\'] "'" 
     { Tchar(Char.code(Lexing.lexeme_char lexbuf 1)) }
@@ -84,10 +98,13 @@ rule main = parse
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
     { Tchar(Char.code(char_for_decimal_code lexbuf 2)) }
   | '{' 
-    { let n1 = Lexing.lexeme_end lexbuf in
-        brace_depth := 1;
-        let n2 = action lexbuf in
-          Taction(Location(n1, n2)) }
+    { let n1 = Lexing.lexeme_end lexbuf
+      and l1 = !line_num
+      and s1 = !line_start_pos in
+      brace_depth := 1;
+      let n2 = handle_lexical_error action lexbuf in
+      Taction({start_pos = n1; end_pos = n2;
+               start_line = l1; start_col = n1 - s1}) }
   | '='  { Tequal }
   | '|'  { Tor }
   | '_'  { Tunderscore }
@@ -103,7 +120,8 @@ rule main = parse
   | eof  { Tend }
   | _
     { raise(Lexical_error
-             ("illegal character " ^ String.escaped(Lexing.lexeme lexbuf))) }
+             ("illegal character " ^ String.escaped(Lexing.lexeme lexbuf),
+              !line_num, Lexing.lexeme_start lexbuf - !line_start_pos)) }
 
 and action = parse
     '{' 
@@ -111,7 +129,7 @@ and action = parse
       action lexbuf }
   | '}' 
     { decr brace_depth;
-      if !brace_depth == 0 then Lexing.lexeme_start lexbuf else action lexbuf }
+      if !brace_depth = 0 then Lexing.lexeme_start lexbuf else action lexbuf }
   | '"' 
     { reset_string_buffer();
       string lexbuf;
@@ -128,15 +146,21 @@ and action = parse
       comment lexbuf;
       action lexbuf }
   | eof 
-    { raise (Lexical_error "unterminated action") }
+    { raise (Lexical_error("unterminated action", 0, 0)) }
+  | '\010'
+    { line_start_pos := Lexing.lexeme_end lexbuf;
+      incr line_num;
+      action lexbuf }
   | _ 
     { action lexbuf }
       
 and string = parse
     '"' 
     { () }
-  | '\\' [' ' '\010' '\013' '\009' '\026' '\012'] +
-    { string lexbuf }
+  | '\\' [' ' '\013' '\009' '\012'] * '\010' [' ' '\013' '\009' '\012'] *
+    { line_start_pos := Lexing.lexeme_end lexbuf;
+      incr line_num;
+      string lexbuf }
   | '\\' ['\\' '"' 'n' 't' 'b' 'r'] 
     { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
       string lexbuf }
@@ -144,7 +168,12 @@ and string = parse
     { store_string_char(char_for_decimal_code lexbuf 1);
       string lexbuf }
   | eof 
-    { raise(Lexical_error "unterminated string") }
+    { raise(Lexical_error("unterminated string", 0, 0)) }
+  | '\010'
+    { store_string_char '\010';
+      line_start_pos := Lexing.lexeme_end lexbuf;
+      incr line_num;
+      string lexbuf }
   | _ 
     { store_string_char(Lexing.lexeme_char lexbuf 0);
       string lexbuf }
@@ -154,7 +183,7 @@ and comment = parse
     { incr comment_depth; comment lexbuf }
   | "*)" 
     { decr comment_depth;
-      if !comment_depth == 0 then () else comment lexbuf }
+      if !comment_depth = 0 then () else comment lexbuf }
   | '"' 
     { reset_string_buffer();
       string lexbuf;
@@ -169,6 +198,10 @@ and comment = parse
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
   | eof 
-    { raise(Lexical_error "unterminated comment") }
+    { raise(Lexical_error("unterminated comment", 0, 0)) }
+  | '\010'
+    { line_start_pos := Lexing.lexeme_end lexbuf;
+      incr line_num;
+      comment lexbuf }
   | _ 
     { comment lexbuf }

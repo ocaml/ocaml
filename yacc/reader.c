@@ -1203,8 +1203,10 @@ void copy_action(void)
 	insert_empty_rule();
     last_was_action = 1;
 
-    fprintf(f, "(* Rule %d, file %s, line %d *)\n",
+    /*
+      fprintf(f, "(* Rule %d, file %s, line %d *)\n",
             nrules-2, input_file_name, lineno);
+            */
     if (sflag)
       fprintf(f, "yyact.(%d) <- (fun parser_env ->\n", nrules-2);
     else
@@ -1216,7 +1218,7 @@ void copy_action(void)
     for (i = 1; i <= n; i++) {
       item = pitem[nitems + i - n - 1];
       if (item->class == TERM && !item->tag) continue;
-      fprintf(f, "\tlet dollar__%d = ", i);
+      fprintf(f, "\tlet _%d = ", i);
       if (item->tag)
         fprintf(f, "(peek_val parser_env %d : %s) in\n", n - i, item->tag);
       else if (sflag)
@@ -1224,7 +1226,9 @@ void copy_action(void)
       else
         fprintf(f, "(peek_val parser_env %d : '%s) in\n", n - i, item->name);
     }
-    fprintf(f, "\tObj.repr((");
+    fprintf(f, "\tObj.repr((\n");
+    fprintf(f, "# %d \"%s\"\n", lineno, input_file_name);
+    for (i = cptr - line; i >= 0; i--) fputc(' ', f);
 
     depth = 1;
     cptr++;
@@ -1243,7 +1247,7 @@ loop:
             item = pitem[nitems + i - n - 1];
             if (item->class == TERM && !item->tag)
               illegal_token_ref(i, item->name);
-            fprintf(f, "dollar__%d", i);
+            fprintf(f, "_%d", i);
 	    goto loop;
 	}
     }

@@ -39,21 +39,20 @@ let main () =
       Sys.remove dest_name;
       begin match exn with
         Parsing.Parse_error ->
-          prerr_string "Syntax error around char ";
-          prerr_int (Lexing.lexeme_start lexbuf);
-          prerr_endline "."
-      | Lexer.Lexical_error s ->
-          prerr_string "Lexical error around char ";
-          prerr_int (Lexing.lexeme_start lexbuf);
-          prerr_string ": ";
-          prerr_string s;
-          prerr_endline "."
+          Printf.fprintf stderr
+            "File \"%s\", line %d, character %d: syntax error.\n"
+            source_name !Lexer.line_num
+            (Lexing.lexeme_start lexbuf - !Lexer.line_start_pos)
+      | Lexer.Lexical_error(msg, line, col) ->
+          Printf.fprintf stderr
+            "File \"%s\", line %d, character %d: %s.\n"
+            source_name line col msg
       | _ -> raise exn
       end;
       exit 2 in
   let (entries, transitions) = Lexgen.make_dfa def in
   let tables = Compact.compact_tables transitions in
-  Output.output_lexdef ic oc def.header tables entries def.trailer;
+  Output.output_lexdef source_name ic oc def.header tables entries def.trailer;
   close_in ic;
   close_out oc
 

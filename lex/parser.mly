@@ -69,7 +69,7 @@ header:
     Taction
         { $1 }
   | /*epsilon*/
-        { Location(0,0) }
+        { { start_pos = 0; end_pos = 0; start_line = 1; start_col = 0 } }
 ;
 named_regexps:
     named_regexps Tlet Tident Tequal regexp

@@ -22,8 +22,7 @@ open Compact
 
 let copy_buffer = String.create 1024
 
-let copy_chunk_unix ic oc (Location(start,stop)) =
-  seek_in ic start;
+let copy_chars_unix ic oc start stop =
   let n = ref (stop - start) in
   while !n > 0 do
     let m = input ic copy_buffer 0 (min !n 1024) in
@@ -31,17 +30,24 @@ let copy_chunk_unix ic oc (Location(start,stop)) =
     n := !n - m
   done
 
-let copy_chunk_win32 ic oc (Location(start,stop)) =
-  seek_in ic start;
+let copy_chars_win32 ic oc start stop =
   for i = start to stop - 1 do
     let c = input_char ic in
     if c <> '\r' then output_char oc c
   done
 
-let copy_chunk =
+let copy_chars =
   match Sys.os_type with
-    "Win32" -> copy_chunk_win32
-  | _       -> copy_chunk_unix
+    "Win32" -> copy_chars_win32
+  | _       -> copy_chars_unix
+
+let copy_chunk sourcefile ic oc loc =
+  if loc.start_pos < loc.end_pos then begin
+    fprintf oc "# %d \"%s\"\n" loc.start_line sourcefile;
+    for i = 1 to loc.start_col do output_char oc ' ' done;
+    seek_in ic loc.start_pos;
+    copy_chars ic oc loc.start_pos loc.end_pos
+  end
 
 (* To output an array of short ints, encoded as a string *)
 
@@ -73,7 +79,7 @@ let output_tables oc tbl =
 
 (* Output the entries *)
 
-let output_entry ic oc e =
+let output_entry sourcefile ic oc e =
   fprintf oc "%s lexbuf = %s_rec lexbuf %d\n"
           e.auto_name e.auto_name e.auto_initial_state;
   fprintf oc "and %s_rec lexbuf state =\n" e.auto_name;
@@ -82,8 +88,8 @@ let output_entry ic oc e =
   List.iter
     (fun (num, loc) ->
       if !first then first := false else fprintf oc "  | ";
-      fprintf oc "%d -> (" num;
-      copy_chunk ic oc loc;
+      fprintf oc "%d -> (\n" num;
+      copy_chunk sourcefile ic oc loc;
       fprintf oc ")\n")
     e.auto_actions;
   fprintf oc "  | n -> lexbuf.Lexing.refill_buff lexbuf; %s_rec lexbuf n\n\n"
@@ -91,7 +97,7 @@ let output_entry ic oc e =
 
 (* Main output function *)
 
-let output_lexdef ic oc header tables entry_points trailer =
+let output_lexdef sourcefile ic oc header tables entry_points trailer =
   Printf.printf "%d states, %d transitions, table size %d bytes\n"
     (Array.length tables.tbl_base)
     (Array.length tables.tbl_trans)
@@ -99,14 +105,14 @@ let output_lexdef ic oc header tables entry_points trailer =
           Array.length tables.tbl_default + Array.length tables.tbl_trans +
           Array.length tables.tbl_check));
   flush stdout;
-  copy_chunk ic oc header;
+  copy_chunk sourcefile ic oc header;
   output_tables oc tables;
   begin match entry_points with
     [] -> ()
   | entry1 :: entries ->
-      output_string oc "let rec "; output_entry ic oc entry1;
+      output_string oc "let rec "; output_entry sourcefile ic oc entry1;
       List.iter
-        (fun e -> output_string oc "and "; output_entry ic oc e)
+        (fun e -> output_string oc "and "; output_entry sourcefile ic oc e)
         entries
   end;
-  copy_chunk ic oc trailer
+  copy_chunk sourcefile ic oc trailer
