@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-(** Formatting printing functions. *)
+(** Formatted output functions. *)
 
 (** [fprintf outchan format arg1 ... argN] formats the arguments
    [arg1] to [argN] according to the format string [format],
@@ -24,7 +24,7 @@
    causes  conversion and printing of one argument.
    
    Conversion specifications consist in the [%] character, followed
-   by optional flags and field widths, followed by one conversion
+   by optional flags and field widths, followed by one or two conversion
    character. The conversion characters and their meanings are:
    - [d] or [i]: convert an integer argument to signed decimal
    - [u]: convert an integer argument to unsigned decimal
@@ -42,6 +42,12 @@
    - [g] or [G]: convert a floating-point argument to decimal notation,
      in style [f] or [e], [E] (whichever is more compact)
    - [b]: convert a boolean argument to the string [true] or [false]
+   - [ld], [li], [lu], [lx], [lX], [lo]: convert an [int32] argument to
+     the format specified by the second letter (decimal, hexadecimal, etc).
+   - [nd], [ni], [nu], [nx], [nX], [no]: convert a [nativeint] argument to
+     the format specified by the second letter.
+   - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: convert an [int64] argument to
+     the format specified by the second letter.
    - [a]: user-defined printer. Takes two arguments and apply the first
      one to [outchan] (the current output channel) and to the second
      argument. The first argument must therefore have type
@@ -51,8 +57,22 @@
    - [t]: same as [%a], but takes only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
    - [%]: take no argument and output one [%] character.
-   - Refer to the C library [printf] function for the meaning of
-     flags and field width specifiers.
+
+   The optional flags include:
+   - [-]: left-justify the output (default is right justification).
+   - [+]: for numerical conversions, prefix number with a [+] sign if positive.
+   - space: for numerical conversions, prefix number with a space if positive.
+   - [#]: request an alternate formatting style for numbers.
+
+   The field widths are composed of an optional integer literal
+   indicating the minimal width of the result, possibly followed by
+   a dot [.] and another integer literal indicating how many digits
+   follow the decimal point in the [%f], [%e], and [%E] conversions.
+   For instance, [%6d] prints an integer, prefixing it with spaces to
+   fill at least 6 characters; and [%.4f] prints a float with 4
+   fractional digits.  Each or both of the integer literals can also be
+   specified as a [*], in which case an extra integer argument is taken
+   to specify the corresponding width or precision.
    
    Warning: if too few arguments are provided,
    for instance because the [printf] function is partially
@@ -81,3 +101,11 @@ val sprintf: ('a, unit, string) format -> 'a
    (see module {!Buffer}). *)
 val bprintf: Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 
+(*--*)
+
+(* For system use only.  Don't call directly. *)
+
+val scan_format:
+  string -> int -> (string -> int -> 'a)
+                -> ('b ->'c -> int -> 'a)
+                -> ('e -> int -> 'a) -> 'a

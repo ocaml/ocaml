@@ -705,13 +705,13 @@ let fprintf_out str out ppf format =
 
   let print_as = ref None in
 
-  let pp_print_as_char ppf c =
+  let pp_print_as_char c =
       match !print_as with
       | None -> pp_print_char ppf c
       | Some size ->
          pp_print_as ppf size (String.make 1 c);
          print_as := None
-  and pp_print_as_string ppf s =
+  and pp_print_as_string s =
       match !print_as with
       | None -> pp_print_string ppf s
       | Some size ->
@@ -723,6 +723,8 @@ let fprintf_out str out ppf format =
       Obj.magic (out ())
     else
       match format.[i] with
+      | '%' ->
+          Printf.scan_format format i cont_s cont_a cont_t
       | '@' ->
           let j = succ i in
           if j >= limit then invalid_arg ("fprintf: unknown format " ^ format)
@@ -762,79 +764,24 @@ let fprintf_out str out ppf format =
                then invalid_arg ("fprintf: bad print format " ^ format)
                else print_as := Some size;
               doprn j
-          | c -> format_invalid_arg "fprintf: unknown format " c end
-      | '%' ->
-          let j = skip_args (succ i) in
-          begin match format.[j] with
-          | '%' ->
-              pp_print_char ppf '%';
-              doprn (succ j)
-          | 's' ->
-              Obj.magic(fun s ->
-                if j <= succ i then
-                  pp_print_as_string ppf s
-                else begin
-                  let p =
-                    try
-                      int_of_string (String.sub format (succ i) (j - i - 1))
-                    with _ ->
-                      invalid_arg ("fprintf: bad %s format, " ^ format) in
-                  if p > 0 && String.length s < p then begin
-                    pp_print_as_string ppf
-                     (String.make (p - String.length s) ' ');
-                    pp_print_as_string ppf s end else
-                  if p < 0 && String.length s < -p then begin
-                    pp_print_as_string ppf s;
-                    pp_print_as_string ppf
-                     (String.make (-p - String.length s) ' ') end
-                  else pp_print_as_string ppf s
-                end;
-                doprn (succ j))
-          | 'c' ->
-              Obj.magic(fun c ->
-                pp_print_as_char ppf c;
-                doprn (succ j))
-          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-              Obj.magic(fun n ->
-                pp_print_as_string ppf
-                 (format_int (String.sub format i (j - i + 1)) n);
-                doprn (succ j))
-          | 'f' | 'e' | 'E' | 'g' | 'G' ->
-              Obj.magic(fun f ->
-                pp_print_as_string ppf
-                 (format_float (String.sub format i (j - i + 1)) f);
-                doprn (succ j))
-          | 'b' ->
-              Obj.magic(fun b ->
-                pp_print_as_string ppf (string_of_bool b);
-                doprn (succ j))
-          | 'a' ->
-              if str then
-               Obj.magic(fun printer arg ->
-                pp_print_as_string ppf (printer () arg);
-                doprn (succ j))
-              else
-               Obj.magic(fun printer arg ->
-                printer ppf arg;
-                doprn (succ j))
-          | 't' ->
-              if str then
-               Obj.magic(fun printer ->
-                pp_print_as_string ppf (printer ());
-                doprn (succ j))
-              else
-               Obj.magic(fun printer ->
-                printer ppf;
-                doprn (succ j))
-          | c ->
-              format_invalid_arg "fprintf: unknown format " c
+          | c -> format_invalid_arg "fprintf: unknown format " c
           end
-       | c -> pp_print_as_char ppf c; doprn (succ i)
+      | c -> pp_print_as_char c; doprn (succ i)
 
-  and skip_args j =
-    match format.[j] with
-    | '0' .. '9' | ' ' | '.' | '-' -> skip_args (succ j)
-    | c -> j
+  and cont_s s i =
+    pp_print_as_string s; doprn i
+  and cont_a printer arg i =
+    if str then
+      pp_print_as_string ((Obj.magic printer) () arg)
+    else
+      printer ppf arg;
+    doprn i
+  and cont_t printer i =
+    if str then
+      pp_print_as_string ((Obj.magic printer) ())
+    else
+      printer ppf;
+    doprn i
 
   and get_int s1 s2 i =
    if i >= limit then invalid_arg (s1 ^ s2) else
