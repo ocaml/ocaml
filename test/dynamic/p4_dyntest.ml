@@ -36,11 +36,11 @@ EXTEND
       | "SUMMARY"; "in"; c = expr ->
           <:expr<
             let counter = $c$ in
-            if counter.val = 0 then do {
+            if Pervasives.\! counter = 0 then do {
               print_endline "All tests had the expected results. Good!";
               exit 0
             } else do {
-              print_int counter.val;
+              print_int (Pervasives.\! counter);
               print_endline " tests had the wrong result.";
               exit 1
             }
