@@ -146,9 +146,15 @@ val read_int : unit -> int
 val read_float : unit -> float
 
 (* General output functions *)
+
+type open_flag =
+    Open_rdonly | Open_wronly | Open_rdwr
+  | Open_append | Open_creat | Open_trunc | Open_excl
+  | Open_binary | Open_text
+
 val open_out : string -> out_channel
 val open_out_bin : string -> out_channel
-val open_out_gen : Sys.open_flag list -> int -> string -> out_channel
+val open_out_gen : open_flag list -> int -> string -> out_channel
 val flush : out_channel -> unit = "flush"
 val output_char : out_channel -> char -> unit = "output_char"
 val output_string : out_channel -> string -> unit
@@ -165,7 +171,7 @@ val close_out : out_channel -> unit = "close_out"
 (* General input functions *)
 val open_in : string -> in_channel
 val open_in_bin : string -> in_channel
-val open_in_gen : Sys.open_flag list -> int -> string -> in_channel
+val open_in_gen : open_flag list -> int -> string -> in_channel
 val input_char : in_channel -> char = "input_char"
 val input_line : in_channel -> string
 val input : in_channel -> string -> int -> int -> int

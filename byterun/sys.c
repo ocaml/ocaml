@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include "config.h"
@@ -88,11 +89,10 @@ value sys_open(path, flags, perm) /* ML */
   return Val_long(ret);
 }
 
-value sys_close(fd)             /* ML */
-     value fd;
+value sys_file_exists(name)     /* ML */
+     value name;
 {
-  if (close(Int_val(fd)) != 0) sys_error(NULL);
-  return Atom(0);
+  return Val_bool(access(String_val(name), F_OK) == 0);
 }
 
 value sys_remove(name)          /* ML */
@@ -118,8 +118,6 @@ value sys_chdir(dirname)        /* ML */
   if (chdir(String_val(dirname)) != 0) sys_error(String_val(dirname));
   return Atom(0);
 }
-
-extern char * getenv();
 
 value sys_getenv(var)           /* ML */
      value var;
@@ -179,7 +177,7 @@ char * searchpath(name)
       *p++ = *q++;
     }
     *p = 0;
-    if (access(fullname, 1) == 0) return fullname;
+    if (access(fullname, F_OK) == 0) return fullname;
     if (*path == 0) return 0;
     path++;
   }

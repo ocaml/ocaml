@@ -22,21 +22,15 @@ let rec for_all2 pred l1 l2 =
 
 (* File functions *)
 
-let file_exists filename =
-  try
-    Sys.close_desc(Sys.open_desc filename [Sys.Open_rdonly] 0); true
-  with Sys_error msg ->
-    false
-
 let find_in_path path name =
   if Filename.is_absolute name then
-    if file_exists name then name else raise Not_found
+    if Sys.file_exists name then name else raise Not_found
   else begin
     let rec try_dir = function
       [] -> raise Not_found
     | dir::rem ->
         let fullname = Filename.concat dir name in
-        if file_exists fullname then fullname else try_dir rem
+        if Sys.file_exists fullname then fullname else try_dir rem
     in try_dir path
   end
 
@@ -49,7 +43,7 @@ let remove_file filename =
 let temp_file base suffix =
   let rec try_name counter =
     let name = "/tmp/" ^ base ^ string_of_int counter ^ suffix in
-    if file_exists name then try_name (counter + 1) else name
+    if Sys.file_exists name then try_name (counter + 1) else name
   in try_name 0
 
 (* Hashtable functions *)

@@ -8,8 +8,6 @@ exception Fatal_error
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
 val for_all2: ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 
-val file_exists: string -> bool
-        (* Check if the given file name List.exists. *)
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
 val remove_file: string -> unit

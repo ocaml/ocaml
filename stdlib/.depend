@@ -3,7 +3,6 @@ format.cmi: list.cmi
 gc.cmi: 
 lexing.cmi: obj.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
-pervasives.cmi: sys.cmi 
 printexc.cmi: 
 arg.cmo: arg.cmi sys.cmi string.cmi list.cmi array.cmi printf.cmi 
 array.cmo: array.cmi list.cmi array.cmi 
@@ -17,7 +16,7 @@ lexing.cmo: lexing.cmi string.cmi obj.cmi
 list.cmo: list.cmi list.cmi 
 obj.cmo: obj.cmi 
 parsing.cmo: parsing.cmi array.cmi lexing.cmi obj.cmi 
-pervasives.cmo: pervasives.cmi sys.cmi 
+pervasives.cmo: pervasives.cmi 
 printexc.cmo: printexc.cmi obj.cmi 
 printf.cmo: printf.cmi string.cmi obj.cmi 
 queue.cmo: queue.cmi 

@@ -1,18 +1,12 @@
 (* System interface *)
 
-type open_flag =
-    Open_rdonly | Open_wronly | Open_rdwr
-  | Open_append | Open_creat | Open_trunc | Open_excl
-  | Open_binary | Open_text
-
 external get_argv: unit -> string array = "sys_get_argv"
 
 let argv = get_argv()
 
+external file_exists: string -> bool = "sys_file_exists"
 external remove: string -> unit = "sys_remove"
 external getenv: string -> string = "sys_getenv"
-external open_desc: string -> open_flag list -> int -> int = "sys_open"
-external close_desc: int -> unit = "sys_close"
 external command: string -> int = "sys_system_command"
 external chdir: string -> unit = "sys_chdir"
 

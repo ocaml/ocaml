@@ -66,7 +66,7 @@ let implementation sourcefile =
       Typemod.type_structure (initial_env()) (Parse.implementation lb) in
     if !Clflags.print_types then (Printtyp.signature sg; print_flush());
     let (coercion, crc) =
-      if file_exists (prefixname ^ ".mli") then begin
+      if Sys.file_exists (prefixname ^ ".mli") then begin
         let (dclsig, crc) =
           Env.read_signature modulename (prefixname ^ ".cmi") in
         (Includemod.signatures Env.initial sg dclsig, crc)

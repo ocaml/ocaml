@@ -149,7 +149,7 @@ let link_bytecode objfiles exec_name copy_header =
   let tolink =
     List.fold_left scan_file [] (List.rev objfiles) in
   let outchan =
-    open_out_gen [Sys.Open_wronly; Sys.Open_trunc; Sys.Open_creat; Sys.Open_binary] 0o777 exec_name in
+    open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary] 0o777 exec_name in
   try
     (* Copy the header *)
     if copy_header then begin
@@ -212,7 +212,7 @@ let link objfiles =
       or Sys.command ("strip " ^ !Clflags.exec_name) <> 0
       then raise(Error Custom_runtime);
       let oc =
-        open_out_gen [Sys.Open_wronly; Sys.Open_append; Sys.Open_binary] 0 !Clflags.exec_name in
+        open_out_gen [Open_wronly; Open_append; Open_binary] 0 !Clflags.exec_name in
       let ic = open_in_bin bytecode_name in
       copy_file ic oc;
       close_in ic;

@@ -134,7 +134,12 @@ let stderr = open_descriptor_out 2
 
 (* General output functions *)
 
-open Sys
+type open_flag =
+    Open_rdonly | Open_wronly | Open_rdwr
+  | Open_append | Open_creat | Open_trunc | Open_excl
+  | Open_binary | Open_text
+
+external open_desc: string -> open_flag list -> int -> int = "sys_open"
 
 let open_out_gen mode perm name =
   open_descriptor_out(open_desc name mode perm)

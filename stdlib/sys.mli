@@ -1,15 +1,9 @@
 (* System interface *)
 
-type open_flag =
-    Open_rdonly | Open_wronly | Open_rdwr
-  | Open_append | Open_creat | Open_trunc | Open_excl
-  | Open_binary | Open_text
-
 val argv: string array
+val file_exists: string -> bool = "sys_file_exists"
 val remove: string -> unit = "sys_remove"
 val getenv: string -> string = "sys_getenv"
-val open_desc: string -> open_flag list -> int -> int = "sys_open"
-val close_desc: int -> unit = "sys_close"
 val command: string -> int = "sys_system_command"
 val chdir: string -> unit = "sys_chdir"
 

@@ -29,9 +29,6 @@ pervasives.cmi: pervasives.mli
 pervasives.cmo: pervasives.ml
 	$(CAMLC) -nopervasives -c pervasives.ml
 
-sys.cmi: sys.mli
-	$(CAMLC) -nopervasives -c sys.mli
-
 .SUFFIXES: .mli .ml .cmi .cmo
 
 .mli.cmi:

@@ -31,10 +31,10 @@ let main () =
   let header = String.create(String.length Config.exec_magic_number) in
   really_input ic header 0 (String.length Config.exec_magic_number);
   if header <> Config.exec_magic_number then begin
-    prerr_endline "Wrong Obj.magic number"; exit 2
+    prerr_endline "Wrong magic number"; exit 2
   end;
   let oc =
-    open_out_gen [Sys.Open_wronly; Sys.Open_creat; Sys.Open_trunc; Sys.Open_binary] 0o777 output_name in
+    open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o777 output_name in
   (* Copy the file up to the symbol section as is *)
   seek_in ic 0;
   copy_file_chunk ic oc (pos_trailer - symbol_size - debug_size);
