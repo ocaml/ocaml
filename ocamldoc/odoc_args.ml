@@ -13,6 +13,8 @@
 (** Command-line arguments. *)
 open Clflags
 
+module M = Odoc_messages
+
 let include_dirs = Clflags.include_dirs
 
 let bytecode_mode = ref true
@@ -26,7 +28,7 @@ let doc_generator = ref (None : doc_generator option)
 
 let merge_options = ref ([] : Odoc_types.merge_option list)
 
-let out_file = ref Odoc_messages.default_out_file
+let out_file = ref M.default_out_file
 
 let dot_include_all = ref false
 
@@ -34,9 +36,9 @@ let dot_types = ref false
 
 let dot_reduce = ref false
 
-let dot_colors  = ref Odoc_messages.default_dot_colors
+let dot_colors  = ref M.default_dot_colors
 
-let man_suffix = ref Odoc_messages.default_man_suffix
+let man_suffix = ref M.default_man_suffix
 
 let man_mini = ref false
 
@@ -57,17 +59,17 @@ let analyse_option_string l s =
    Returns the list of options specified.*)
 let analyse_merge_options s =
   let l = [
-    (Odoc_messages.merge_description, [Odoc_types.Merge_description]) ;
-    (Odoc_messages.merge_author, [Odoc_types.Merge_author]) ;
-    (Odoc_messages.merge_version, [Odoc_types.Merge_version]) ;
-    (Odoc_messages.merge_see, [Odoc_types.Merge_see]) ;
-    (Odoc_messages.merge_since, [Odoc_types.Merge_since]) ;
-    (Odoc_messages.merge_deprecated, [Odoc_types.Merge_deprecated]) ;
-    (Odoc_messages.merge_param, [Odoc_types.Merge_param]) ;
-    (Odoc_messages.merge_raised_exception, [Odoc_types.Merge_raised_exception]) ;
-    (Odoc_messages.merge_return_value, [Odoc_types.Merge_return_value]) ;
-    (Odoc_messages.merge_custom, [Odoc_types.Merge_custom]) ;
-    (Odoc_messages.merge_all, Odoc_types.all_merge_options)
+    (M.merge_description, [Odoc_types.Merge_description]) ;
+    (M.merge_author, [Odoc_types.Merge_author]) ;
+    (M.merge_version, [Odoc_types.Merge_version]) ;
+    (M.merge_see, [Odoc_types.Merge_see]) ;
+    (M.merge_since, [Odoc_types.Merge_since]) ;
+    (M.merge_deprecated, [Odoc_types.Merge_deprecated]) ;
+    (M.merge_param, [Odoc_types.Merge_param]) ;
+    (M.merge_raised_exception, [Odoc_types.Merge_raised_exception]) ;
+    (M.merge_return_value, [Odoc_types.Merge_return_value]) ;
+    (M.merge_custom, [Odoc_types.Merge_custom]) ;
+    (M.merge_all, Odoc_types.all_merge_options)
   ] 
   in
   analyse_option_string l s
@@ -146,7 +148,7 @@ let f_latex_title s =
     Not_found 
   | Invalid_argument _ -> 
       incr Odoc_global.errors ;
-      prerr_endline (Odoc_messages.wrong_format s)
+      prerr_endline (M.wrong_format s)
 
 let add_hidden_modules s =
   let l = Str.split (Str.regexp ",") s in
@@ -160,19 +162,19 @@ let add_hidden_modules s =
             'A'..'Z' -> hidden_modules := name :: !hidden_modules
           | _ ->
               incr Odoc_global.errors;
-              prerr_endline (Odoc_messages.not_a_module_name name)
+              prerr_endline (M.not_a_module_name name)
     )
     l
 
-let latex_value_prefix = ref ""
-let latex_type_prefix = ref ""
-let latex_exception_prefix = ref ""
-let latex_module_prefix = ref ""
-let latex_module_type_prefix = ref ""
-let latex_class_prefix = ref ""
-let latex_class_type_prefix = ref ""
-let latex_attribute_prefix = ref ""
-let latex_method_prefix = ref ""
+let latex_value_prefix = ref M.default_latex_value_prefix
+let latex_type_prefix = ref M.default_latex_type_prefix
+let latex_exception_prefix = ref M.default_latex_exception_prefix
+let latex_module_prefix = ref M.default_latex_module_prefix
+let latex_module_type_prefix = ref M.default_latex_module_type_prefix
+let latex_class_prefix = ref M.default_latex_class_prefix
+let latex_class_type_prefix = ref M.default_latex_class_type_prefix
+let latex_attribute_prefix = ref M.default_latex_attribute_prefix
+let latex_method_prefix = ref M.default_latex_method_prefix
 
 let set_doc_generator (dg_opt : doc_generator option) = doc_generator := dg_opt
 
@@ -193,73 +195,73 @@ let default_dot_generator = ref (None : doc_generator option)
 
 (** The default option list *)
 let options = ref [
-  "-version", Arg.Unit (fun () -> print_string Odoc_messages.message_version ; print_newline () ; exit 0) , Odoc_messages.option_version ;
-  "-v", Arg.Unit (fun () -> verbose := true), Odoc_messages.verbose_mode ;
-  "-I", Arg.String (fun s -> include_dirs := (Misc.expand_directory Config.standard_library s) :: !include_dirs), Odoc_messages.include_dirs ;
-  "-pp", Arg.String (fun s -> preprocessor := Some s), Odoc_messages.preprocess ;
-  "-rectypes", Arg.Set recursive_types, Odoc_messages.rectypes ;
-  "-nolabels", Arg.Unit (fun () -> classic := true), Odoc_messages.nolabels ;
-  "-warn-error", Arg.Set Odoc_global.warn_error, Odoc_messages.werr ;
-  "-o", Arg.String (fun s -> out_file := s), Odoc_messages.out_file ;
-  "-d", Arg.String (fun s -> target_dir := s), Odoc_messages.target_dir ;
-  "-sort", Arg.Unit (fun () -> sort_modules := true), Odoc_messages.sort_modules ;
-  "-no-stop", Arg.Set no_stop, Odoc_messages.no_stop ;
-  "-no-custom-tags", Arg.Set no_custom_tags, Odoc_messages.no_custom_tags ;
-  "-stars", Arg.Set remove_stars, Odoc_messages.remove_stars ;
-  "-inv-merge-ml-mli", Arg.Set inverse_merge_ml_mli, Odoc_messages.inverse_merge_ml_mli ;
-  "-keep-code", Arg.Set keep_code, Odoc_messages.keep_code^"\n" ;
+  "-version", Arg.Unit (fun () -> print_string M.message_version ; print_newline () ; exit 0) , M.option_version ;
+  "-v", Arg.Unit (fun () -> verbose := true), M.verbose_mode ;
+  "-I", Arg.String (fun s -> include_dirs := (Misc.expand_directory Config.standard_library s) :: !include_dirs), M.include_dirs ;
+  "-pp", Arg.String (fun s -> preprocessor := Some s), M.preprocess ;
+  "-rectypes", Arg.Set recursive_types, M.rectypes ;
+  "-nolabels", Arg.Unit (fun () -> classic := true), M.nolabels ;
+  "-warn-error", Arg.Set Odoc_global.warn_error, M.werr ;
+  "-o", Arg.String (fun s -> out_file := s), M.out_file ;
+  "-d", Arg.String (fun s -> target_dir := s), M.target_dir ;
+  "-sort", Arg.Unit (fun () -> sort_modules := true), M.sort_modules ;
+  "-no-stop", Arg.Set no_stop, M.no_stop ;
+  "-no-custom-tags", Arg.Set no_custom_tags, M.no_custom_tags ;
+  "-stars", Arg.Set remove_stars, M.remove_stars ;
+  "-inv-merge-ml-mli", Arg.Set inverse_merge_ml_mli, M.inverse_merge_ml_mli ;
+  "-keep-code", Arg.Set keep_code, M.keep_code^"\n" ;
 
-  "-dump", Arg.String (fun s -> dump := Some s), Odoc_messages.dump ;
-  "-load", Arg.String (fun s -> load := !load @ [s]), Odoc_messages.load^"\n" ;
+  "-dump", Arg.String (fun s -> dump := Some s), M.dump ;
+  "-load", Arg.String (fun s -> load := !load @ [s]), M.load^"\n" ;
 
-  "-t", Arg.String (fun s -> title := Some s), Odoc_messages.option_title ;
-  "-hide", Arg.String add_hidden_modules, Odoc_messages.hide_modules ;
-  "-m", Arg.String (fun s -> merge_options := !merge_options @ (analyse_merge_options s)), Odoc_messages.merge_options^"\n" ;
+  "-t", Arg.String (fun s -> title := Some s), M.option_title ;
+  "-hide", Arg.String add_hidden_modules, M.hide_modules ;
+  "-m", Arg.String (fun s -> merge_options := !merge_options @ (analyse_merge_options s)), M.merge_options^"\n" ;
 
 (* generators *)
-  "-html", Arg.Unit (fun () -> set_doc_generator !default_html_generator), Odoc_messages.generate_html ;
-  "-latex", Arg.Unit (fun () -> set_doc_generator !default_latex_generator), Odoc_messages.generate_latex ;
-  "-texi", Arg.Unit (fun () -> set_doc_generator !default_texi_generator), Odoc_messages.generate_texinfo ;
-  "-man", Arg.Unit (fun () -> set_doc_generator !default_man_generator), Odoc_messages.generate_man ;    
-  "-dot", Arg.Unit (fun () -> set_doc_generator !default_dot_generator), Odoc_messages.generate_dot ;
-  "-g", Arg.String (fun s -> if !bytecode_mode then () else (prerr_endline (Odoc_messages.option_not_in_native_code "-g"); exit 1)),
-        Odoc_messages.load_file^"\n" ;
+  "-html", Arg.Unit (fun () -> set_doc_generator !default_html_generator), M.generate_html ;
+  "-latex", Arg.Unit (fun () -> set_doc_generator !default_latex_generator), M.generate_latex ;
+  "-texi", Arg.Unit (fun () -> set_doc_generator !default_texi_generator), M.generate_texinfo ;
+  "-man", Arg.Unit (fun () -> set_doc_generator !default_man_generator), M.generate_man ;    
+  "-dot", Arg.Unit (fun () -> set_doc_generator !default_dot_generator), M.generate_dot ;
+  "-g", Arg.String (fun s -> if !bytecode_mode then () else (prerr_endline (M.option_not_in_native_code "-g"); exit 1)),
+        M.load_file^"\n" ;
 
 (* html only options *)
-  "-all-params", Arg.Set with_parameter_list, Odoc_messages.with_parameter_list ;
-  "-css-style", Arg.String (fun s -> css_style := Some s), Odoc_messages.css_style ;
-  "-index-only", Arg.Set index_only, Odoc_messages.index_only ;
-  "-colorize-code", Arg.Set colorize_code, Odoc_messages.colorize_code^"\n" ;
+  "-all-params", Arg.Set with_parameter_list, M.with_parameter_list ;
+  "-css-style", Arg.String (fun s -> css_style := Some s), M.css_style ;
+  "-index-only", Arg.Set index_only, M.index_only ;
+  "-colorize-code", Arg.Set colorize_code, M.colorize_code^"\n" ;
 
 (* latex only options *)
-  "-noheader", Arg.Unit (fun () -> with_header := false), Odoc_messages.no_header ;
-  "-notrailer", Arg.Unit (fun () -> with_trailer := false), Odoc_messages.no_trailer ;
-  "-sepfiles", Arg.Set separate_files, Odoc_messages.separate_files ;
-  "-latextitle", Arg.String f_latex_title, Odoc_messages.latex_title latex_titles ;
-  "-latex-value-prefix", Arg.String (fun s -> latex_value_prefix := s), Odoc_messages.latex_value_prefix ;
-  "-latex-type-prefix", Arg.String (fun s -> latex_type_prefix := s), Odoc_messages.latex_type_prefix ;
-  "-latex-exception-prefix", Arg.String (fun s -> latex_exception_prefix := s), Odoc_messages.latex_exception_prefix ;
-  "-latex-attribute-prefix", Arg.String (fun s -> latex_attribute_prefix := s), Odoc_messages.latex_attribute_prefix ;
-  "-latex-method-prefix", Arg.String (fun s -> latex_method_prefix := s), Odoc_messages.latex_method_prefix ;
-  "-latex-module-prefix", Arg.String (fun s -> latex_module_prefix := s), Odoc_messages.latex_module_prefix ;
-  "-latex-module-type-prefix", Arg.String (fun s -> latex_module_type_prefix := s), Odoc_messages.latex_module_type_prefix ;
-  "-latex-class-prefix", Arg.String (fun s -> latex_class_prefix := s), Odoc_messages.latex_class_prefix ;
-  "-latex-class-type-prefix", Arg.String (fun s -> latex_class_type_prefix := s), Odoc_messages.latex_class_type_prefix ;
-  "-notoc", Arg.Unit (fun () -> with_toc := false), Odoc_messages.no_toc^"\n" ;
+  "-noheader", Arg.Unit (fun () -> with_header := false), M.no_header ;
+  "-notrailer", Arg.Unit (fun () -> with_trailer := false), M.no_trailer ;
+  "-sepfiles", Arg.Set separate_files, M.separate_files ;
+  "-latextitle", Arg.String f_latex_title, M.latex_title latex_titles ;
+  "-latex-value-prefix", Arg.String (fun s -> latex_value_prefix := s), M.latex_value_prefix ;
+  "-latex-type-prefix", Arg.String (fun s -> latex_type_prefix := s), M.latex_type_prefix ;
+  "-latex-exception-prefix", Arg.String (fun s -> latex_exception_prefix := s), M.latex_exception_prefix ;
+  "-latex-attribute-prefix", Arg.String (fun s -> latex_attribute_prefix := s), M.latex_attribute_prefix ;
+  "-latex-method-prefix", Arg.String (fun s -> latex_method_prefix := s), M.latex_method_prefix ;
+  "-latex-module-prefix", Arg.String (fun s -> latex_module_prefix := s), M.latex_module_prefix ;
+  "-latex-module-type-prefix", Arg.String (fun s -> latex_module_type_prefix := s), M.latex_module_type_prefix ;
+  "-latex-class-prefix", Arg.String (fun s -> latex_class_prefix := s), M.latex_class_prefix ;
+  "-latex-class-type-prefix", Arg.String (fun s -> latex_class_type_prefix := s), M.latex_class_type_prefix ;
+  "-notoc", Arg.Unit (fun () -> with_toc := false), M.no_toc^"\n" ;
 
 (* tex only options *)
-  "-noindex", Arg.Clear with_index, Odoc_messages.no_index ;
-  "-esc8", Arg.Set esc_8bits, Odoc_messages.esc_8bits ;
+  "-noindex", Arg.Clear with_index, M.no_index ;
+  "-esc8", Arg.Set esc_8bits, M.esc_8bits ;
 
 (* dot only options *)
-  "-dot-colors", Arg.String (fun s -> dot_colors := Str.split (Str.regexp_string ",") s), Odoc_messages.dot_colors ;
-  "-dot-include-all", Arg.Set dot_include_all, Odoc_messages.dot_include_all ;
-  "-dot-types", Arg.Set dot_types, Odoc_messages.dot_types ;
-  "-dot-reduce", Arg.Set dot_reduce, Odoc_messages.dot_reduce ;
+  "-dot-colors", Arg.String (fun s -> dot_colors := Str.split (Str.regexp_string ",") s), M.dot_colors ;
+  "-dot-include-all", Arg.Set dot_include_all, M.dot_include_all ;
+  "-dot-types", Arg.Set dot_types, M.dot_types ;
+  "-dot-reduce", Arg.Set dot_reduce, M.dot_reduce ;
 
 (* man only options *)
-  "-man-mini", Arg.Set man_mini, Odoc_messages.man_mini ;
-  "-man-suffix", Arg.String (fun s -> man_suffix := s), Odoc_messages.man_suffix ;
+  "-man-mini", Arg.Set man_mini, M.man_mini ;
+  "-man-suffix", Arg.String (fun s -> man_suffix := s), M.man_suffix ;
 
 ] 
 
@@ -283,7 +285,7 @@ let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~dot_g
   default_dot_generator := Some dot_generator ;
   let _ = Arg.parse !options
       (fun s -> files := !files @ [s])
-      (Odoc_messages.usage^Odoc_messages.options_are)
+      (M.usage^M.options_are)
   in
   (* we sort the hidden modules by name, to be sure that for example,
      A.B is before A, so we will match against A.B before A in 

@@ -116,47 +116,67 @@ class text =
     method escape_code s = self#subst subst_strings_code s
         
     (** Make a correct latex label from a name. *)
+    (* The following characters are forbidden in LaTeX \index:
+       \ { } $ & # ^ _ % ~ ! " @ | (" to close the double quote)
+       The following characters are forbidden in LaTeX \label:
+       \ { } $ & # ^ _ % ~
+       So we will use characters not forbidden in \index if no_ = true.
+    *)
     method label ?(no_=true) name =
       let len = String.length name in
       let buf = Buffer.create len in
       for i = 0 to len - 1 do
-        match name.[i] with
-          '_' -> if no_ then Buffer.add_string buf "!!!!" else Buffer.add_char buf '_'
-        | '~' -> if no_ then () else Buffer.add_char buf '~'
-	| '%' -> Buffer.add_string buf (if no_ then "percent" else "%")
-        | '@' -> Buffer.add_string buf "\"@"
-        | '!' -> Buffer.add_string buf "\"!" 
-        | '|' -> Buffer.add_string buf "\"|"
-        | c -> Buffer.add_char buf c
+        let (s_no_, s) =
+	  match name.[i] with
+          '_' -> ("-underscore", "_")
+        | '~' -> ("-tilde", "~")
+	| '%' -> ("-percent", "%")
+        | '@' -> ("-at", "\"@")
+        | '!' -> ("-bang", "\"!")
+        | '|' -> ("-pipe", "\"|")
+	| '<' -> ("-lt", "<")
+        | '>' -> ("-gt", ">")
+        | '^' -> ("-exp", "^")
+        | '&' -> ("-ampersand", "&")
+        | '+' -> ("-plus", "+")
+        | '-' -> ("-minus", "-")
+        | '*' -> ("-star", "*")
+        | '/' -> ("-slash", "/")
+        | '$' -> ("-dollar", "$")
+        | '=' -> ("-equal", "=")
+        | ':' -> ("-colon", ":")
+        | c -> (String.make 1 c, String.make 1 c)
+	in
+	Buffer.add_string buf (if no_ then s_no_ else s)
       done;
       Buffer.contents buf
 
     (** Make a correct label from a value name. *)
-    method value_label ?no_ name = self#label ?no_ (!Args.latex_value_prefix^name)
+    method value_label ?no_ name = !Args.latex_value_prefix^(self#label ?no_ name)
 
     (** Make a correct label from an attribute name. *)
-    method attribute_label ?no_ name = self#label ?no_ (!Args.latex_attribute_prefix^name)
+    method attribute_label ?no_ name = !Args.latex_attribute_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a method name. *)
-    method method_label ?no_ name = self#label ?no_ (!Args.latex_method_prefix^name)
+    method method_label ?no_ name = !Args.latex_method_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a class name. *)
-    method class_label ?no_ name = self#label ?no_ (!Args.latex_class_prefix^name)
+    method class_label ?no_ name = !Args.latex_class_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a class type name. *)
-    method class_type_label ?no_ name = self#label ?no_ (!Args.latex_class_type_prefix^name)
+    method class_type_label ?no_ name = !Args.latex_class_type_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a module name. *)
-    method module_label ?no_ name = self#label ?no_ (!Args.latex_module_prefix^name)
+    method module_label ?no_ name = !Args.latex_module_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a module type name. *)
-    method module_type_label ?no_ name = self#label ?no_ (!Args.latex_module_type_prefix^name)
+    method module_type_label ?no_ name = !Args.latex_module_type_prefix^(self#label ?no_ name)
 
     (** Make a correct label from an exception name. *)
-    method exception_label ?no_ name = self#label ?no_ (!Args.latex_exception_prefix^name)
+    method exception_label ?no_ name = !Args.latex_exception_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a type name. *)
-    method type_label ?no_ name = self#label ?no_ (!Args.latex_type_prefix^name)
+    method type_label ?no_ name = !Args.latex_type_prefix^(self#label ?no_ name)
 
     (** Return latex code for the label of a given label. *)
     method make_label label = "\\label{"^label^"}"
