@@ -224,6 +224,7 @@ let rec opened_object ty =
     Tobject (t, _)     -> opened_object t
   | Tfield(_, _, _, t) -> opened_object t
   | Tvar               -> true
+  | Tunivar            -> true
   | _                  -> false
 
 (**** Close an object ****)
