@@ -147,28 +147,28 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 
 #define CAMLxparam1(x) \
   struct caml__roots_block caml__roots_##x; \
-  void *caml__dummy_##x = ( \
+  int caml__dummy_##x = ( \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables [0] = &x), \
-    NULL)
+    0)
 
 #define CAMLxparam2(x, y) \
   struct caml__roots_block caml__roots_##x; \
-  void *caml__dummy_##x = ( \
+  int caml__dummy_##x = ( \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 2), \
     (caml__roots_##x.tables [0] = &x), \
     (caml__roots_##x.tables [1] = &y), \
-    NULL)
+    0)
 
 #define CAMLxparam3(x, y, z) \
   struct caml__roots_block caml__roots_##x; \
-  void *caml__dummy_##x = ( \
+  int caml__dummy_##x = ( \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -176,11 +176,11 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [0] = &x), \
     (caml__roots_##x.tables [1] = &y), \
     (caml__roots_##x.tables [2] = &z), \
-    NULL)
+    0)
 
 #define CAMLxparam4(x, y, z, t) \
   struct caml__roots_block caml__roots_##x; \
-  void *caml__dummy_##x = ( \
+  int caml__dummy_##x = ( \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -189,11 +189,11 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [1] = &y), \
     (caml__roots_##x.tables [2] = &z), \
     (caml__roots_##x.tables [3] = &t), \
-    NULL)
+    0)
 
 #define CAMLxparam5(x, y, z, t, u) \
   struct caml__roots_block caml__roots_##x; \
-  void *caml__dummy_##x = ( \
+  int caml__dummy_##x = ( \
     (caml__roots_##x.next = local_roots), \
     (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -203,17 +203,17 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [2] = &z), \
     (caml__roots_##x.tables [3] = &t), \
     (caml__roots_##x.tables [4] = &u), \
-    NULL)
+    0)
 
 #define CAMLxparamN(x, size) \
   struct caml__roots_block caml__roots_##x; \
-  void *caml__dummy_##x = ( \
-	(caml__roots_##x.next = local_roots), \
-	(local_roots = &caml__roots_##x), \
-	(caml__roots_##x.nitems = (size)), \
-	(caml__roots_##x.ntables = 1), \
-	(caml__roots_##x.tables[0] = &(x[0])), \
-	NULL)
+  int caml__dummy_##x = ( \
+    (caml__roots_##x.next = local_roots), \
+    (local_roots = &caml__roots_##x), \
+    (caml__roots_##x.nitems = (size)), \
+    (caml__roots_##x.ntables = 1), \
+    (caml__roots_##x.tables[0] = &(x[0])), \
+    0)
 
 #define CAMLlocal1(x) \
   value x = 0; \
