@@ -69,12 +69,6 @@ let rec protect cont =
         try_select_frame 0;
         show_current_event ();
         loop ())
-  | Not_found ->
-      protect (function () ->
-        print_endline "File not found.";
-        flush stdout;
-        stop_user_input ();
-        loop ())
   | x ->
       kill_program ();
       raise x

@@ -58,23 +58,23 @@ let show_point mdle point before selected =
       let (start, line_number) = line_of_pos buffer point in
         print_line buffer line_number start point before; ()
     with
-      Out_of_range ->
+      Out_of_range -> (* line_of_pos *)
         prerr_endline "Position out of range."
-    | Not_found ->
+    | Not_found    -> (* get_buffer *)
         prerr_endline ("No source file for " ^ mdle ^ ".")
     end
 
 (* Display part of the source. *)
 let show_listing mdle start stop point before =
-  let buffer = get_buffer mdle in
-    try
+  try
+    let buffer = get_buffer mdle in
       let rec aff (line_start, line_number) =
       	if line_number <= stop then
           aff (print_line buffer line_number line_start point before + 1, line_number + 1)
       in
         aff (pos_of_line buffer start)
-    with
-      Out_of_range ->
-        prerr_endline "Position out of range."
-    | Not_found ->
-        prerr_endline ("No source file for " ^ mdle ^ ".")
+  with
+    Out_of_range -> (* pos_of_line *)
+      prerr_endline "Position out of range."
+  | Not_found    -> (* get_buffer *)
+      prerr_endline ("No source file for " ^ mdle ^ ".")
