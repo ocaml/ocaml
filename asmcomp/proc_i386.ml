@@ -195,16 +195,13 @@ let pseudoregs_for_operation op arg res =
   | Iintop(Imod) ->
       ([|phys_reg 0; arg.(1)|], [|phys_reg 3|])
     (* For storing a byte, the argument must be in eax...edx.
-       For storing a word, any reg is ok.
+       For storing a halfword, any reg is ok.
        Keep it simple, just force it to be in edx in both cases. *)
   | Istore(Word, addr) -> raise Use_default
   | Istore(chunk, addr) ->
       let newarg = Array.copy arg in
       newarg.(0) <- phys_reg 3;
       (newarg, res)
-    (* For modify, the argument must be in eax *)
-  | Imodify ->
-      ([|phys_reg 0|], [||])
     (* Other instructions are more or less regular *)
   | _ -> raise Use_default
 
@@ -268,7 +265,6 @@ let destroyed_at_oper = function
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) -> [| phys_reg 0; phys_reg 3 |] (* eax, edx *)
   | Iop(Ialloc _) -> [| phys_reg 0|] (* eax *)
-  | Iop(Imodify) -> [| phys_reg 0 |] (* eax *)
   | Iop(Iintop(Icomp _) | Iintop_imm(Icomp _, _)) -> [| phys_reg 0 |] (* eax *)
   | Iop(Iintoffloat) -> [| phys_reg 0 |] (* eax *)
   | Iifthenelse(Ifloattest _, _, _) -> [| phys_reg 0 |] (* eax *)
@@ -283,7 +279,7 @@ let safe_register_pressure op = 4
 let max_register_pressure = function
     Iextcall(_, _) -> [| 4; 4 |]
   | Iintop(Idiv | Imod) -> [| 5; 4 |]
-  | Ialloc _ | Imodify | Iintop(Icomp _) | Iintop_imm(Icomp _, _) |
+  | Ialloc _ | Iintop(Icomp _) | Iintop_imm(Icomp _, _) |
     Iintoffloat -> [| 6; 4 |]
   | _ -> [|7; 4|]
 

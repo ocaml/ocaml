@@ -42,7 +42,6 @@ type operation =
   | Calloc
   | Cstore
   | Cstorechunk of memory_chunk
-  | Cmodify
   | Caddi | Csubi | Cmuli | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
   | Ccmpi of comparison

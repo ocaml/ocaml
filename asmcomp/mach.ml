@@ -35,7 +35,6 @@ type operation =
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode
   | Ialloc of int
-  | Imodify
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Iaddf | Isubf | Imulf | Idivf

@@ -43,7 +43,6 @@ let operation = function
   | Calloc -> print_string "alloc"
   | Cstore -> print_string "store"
   | Cstorechunk c -> print_string "store "; chunk c
-  | Cmodify -> print_string "modify"
   | Caddi -> print_string "+"
   | Csubi -> print_string "-"
   | Cmuli -> print_string "*"

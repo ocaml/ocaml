@@ -117,7 +117,6 @@ let operation op arg res =
       print_string "] := ";
       reg arg.(0)
   | Ialloc n -> print_string "alloc "; print_int n
-  | Imodify -> print_string "modify "; reg arg.(0)
   | Iintop(op) -> reg arg.(0); intop op; reg arg.(1)
   | Iintop_imm(op, n) -> reg arg.(0); intop op; print_int n
   | Iaddf -> reg arg.(0); print_string " +f "; reg arg.(1)

@@ -279,16 +279,6 @@ let emit_instr i =
           end;
           `{record_frame i.live}	leal	4(%eax), {emit_reg i.res.(0)}\n`
         end
-    | Lop(Imodify) ->
-        (* Argument is in eax *)
-        if !fastcode_flag then begin
-          `	testb	$4, -3(%eax)\n`;
-          let lbl_cont = new_label() in
-          `	jne	{emit_label lbl_cont}\n`;
-          `	call	_caml_fast_modify\n`;
-          `{emit_label lbl_cont}:\n`
-        end else
-          `	call	_caml_modify\n`
     | Lop(Iintop(Icomp cmp)) ->
         `	cmpl	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
         let b = name_for_cond_branch cmp in

@@ -76,4 +76,3 @@ let print_specific_operation printreg op arg =
   | Ioffset_loc(n, addr) ->
       print_string "["; print_addressing printreg addr arg;
       print_string "] +:= "; print_int n
-

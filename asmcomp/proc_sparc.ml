@@ -45,15 +45,7 @@ let select_addressing exp =
 
 (* Instruction selection *)
 
-let select_oper op args =
-  match (op, args) with
-    (Cmuli, [arg1; Cconst_int n]) ->
-      let shift = Misc.log2 n in
-      if n = 1 lsl shift
-      then (Iintop_imm(Ilsl, shift), [arg1])
-      else raise Use_default
-  | _ ->
-      raise Use_default
+let select_oper op args = raise Use_default
 
 let select_store addr exp = raise Use_default
 

@@ -393,23 +393,6 @@ let emit_instr i =
           end;
           `	addq	$13, 8, {emit_reg i.res.(0)}\n`
         end
-    | Lop(Imodify) ->
-        if !fastcode_flag then begin
-          `	ldq	$24, -8({emit_reg i.arg.(0)})\n`;
-          `	and	$24, 1024, $25\n`;
-          let lbl_call_modify = new_label() in
-          let lbl_continue = new_label() in
-          `	beq	$25, {emit_label lbl_call_modify}\n`;
-          modify_sites :=
-            { mod_lbl = lbl_call_modify;
-              mod_return_lbl = lbl_continue;
-              mod_instr = i } :: !modify_sites;
-          `{emit_label lbl_continue}:`
-        end else begin
-          `	mov	{emit_reg i.arg.(0)}, $25\n`;
-          liveregs i live_25;
-          `	jsr	caml_modify\n`   (* Pointer in $25 *)
-        end
     | Lop(Iintop(Icomp cmp)) ->
         let (comp, test) = name_for_int_comparison cmp in
         `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`;
@@ -422,11 +405,24 @@ let emit_instr i =
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop_imm(Idiv, n)) when n = 1 lsl (Misc.log2 n) ->
+        let l = Misc.log2 n in
+        `	addq	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`;
+        `	cmovge	{emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}, $25\n`;
+        `	sra	$25, {emit_int l}, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop_imm(Imod, n)) when n = 1 lsl (Misc.log2 n) ->
+        let l = Misc.log2 n in
+        `	and	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`;
+        `	subq	$25, {emit_int n}, $24\n`;
+        `	cmovge	{emit_reg i.arg.(0)}, $25, $24\n`;
+        `	cmoveq	$25, $25, $24\n`;
+        `	move	$24, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         let (comp, test) = name_for_int_comparison cmp in
         `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`;
         if not test then
           `	xor	{emit_reg i.res.(0)}, 1, {emit_reg i.res.(0)}\n`
+
     | Lop(Iintop_imm(Icheckbound, n)) ->
         if !range_check_trap = 0 then range_check_trap := new_label();
         `	cmpule	{emit_reg i.arg.(0)}, {emit_int n}, $25\n`;

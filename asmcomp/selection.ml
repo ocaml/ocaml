@@ -16,7 +16,6 @@ let oper_result_type = function
   | Calloc -> typ_addr
   | Cstore -> typ_void
   | Cstorechunk c -> typ_void
-  | Cmodify -> typ_void
   | Caddi | Csubi | Cmuli | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
   | Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
@@ -58,7 +57,7 @@ let rec size_expr env = function
 let cheap_operation = function
     (* The following may have side effects *)
     Capply _ | Cextcall(_, _, _) | Calloc | Cstore | Cstorechunk _ | 
-    Cmodify | Craise -> false
+    Craise -> false
     (* The following are expensive to compute, better start them early *)
   | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat -> false
     (* The remaining operations are cheap *)
@@ -84,9 +83,13 @@ let rec sel_operation op args =
       let (addr, eloc) = Proc.select_addressing arg1 in
       (Istore(chunk, addr), eloc :: rem)
   | (Calloc, _) -> (Ialloc 0, args)
-  | (Cmodify, _) -> (Imodify, args)
   | (Caddi, _) -> sel_arith_comm Iadd args
   | (Csubi, _) -> sel_arith Isub args
+  | (Cmuli, [arg1; Cconst_int n]) ->
+      let l = Misc.log2 n in
+      if n = 1 lsl l
+      then (Iintop_imm(Ilsl, l), [arg1])
+      else sel_arith_comm Imul args
   | (Cmuli, _) -> sel_arith_comm Imul args
   | (Cdivi, _) -> sel_arith Idiv args
   | (Cmodi, _) -> sel_arith_comm Imod args
@@ -401,7 +404,6 @@ let rec emit_expr env exp seq =
             (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int));
           rd
       | op ->
-          if op = Imodify then Proc.contains_calls := true;
           let r1 = emit_tuple env new_args seq in
           let rd = Reg.newv ty in
           begin try

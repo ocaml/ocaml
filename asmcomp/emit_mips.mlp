@@ -319,8 +319,6 @@ let emit_instr i =
           end;
           `	addu	{emit_reg i.res.(0)}, $22, 4\n`
         end
-    | Lop(Imodify) ->
-        fatal_error "Emit_mips: Imodify"
     | Lop(Iintop(Icheckbound)) ->
         if !range_check_trap = 0 then range_check_trap := new_label();
         `	bleu	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_label !range_check_trap}\n`

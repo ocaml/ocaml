@@ -344,20 +344,6 @@ let emit_instr i =
           `	mov	{emit_int n}, %g4\n`;
           `	add	%g6, 4, {emit_reg i.res.(0)}\n`
         end
-    | Lop(Imodify) ->
-        if !fastcode_flag then begin
-          `	ld	[{emit_reg i.arg.(0)} - 4], %g4\n`;
-          `	andcc	%g4, 1024, %g0\n`;
-          let lbl_continue = new_label() in
-          `	bne	{emit_label lbl_continue}\n`;
-          `	nop\n`;
-          `	call	_caml_fast_modify\n`;
-          `	mov	{emit_reg i.arg.(0)}, %g1\n`;
-          `{emit_label lbl_continue}:\n`
-        end else begin
-          `	call	_caml_modify\n`;
-          `	mov	{emit_reg i.arg.(0)}, %g1\n`
-        end
     | Lop(Iintop Idiv) ->
         `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
         `	wr	%g0, %g1, %y\n`;
@@ -389,21 +375,43 @@ let emit_instr i =
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Idiv, n)) ->
-        `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
-        `	wr	%g0, %g1, %y\n`;
-        `	nop\n`;
-        `	nop\n`;
-        `	nop\n`;
-        `	sdiv	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
+        let l = Misc.log2 n in
+        if n = 1 lsl l then begin
+          let lbl = new_label() in
+          `	tst	{emit_reg i.arg.(0)}\n`;
+          `	bge	{emit_label lbl}\n`;
+          `	mov	{emit_reg i.arg.(0)}, %g1\n` (* in delay slot *)
+          `	add	%g1, {emit_int (n-1)}, %g1\n`
+          `{emit_label lbl}:	sra	%g1, {emit_int n}, {emit_reg i.res.(0)}\n`
+        end else begin
+          `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
+          `	wr	%g0, %g1, %y\n`;
+          `	nop\n`;
+          `	nop\n`;
+          `	nop\n`;
+          `	sdiv	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
+        end
     | Lop(Iintop_imm(Imod, n)) ->
-        `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
-        `	wr	%g0, %g1, %y\n`;
-        `	nop\n`;
-        `	nop\n`;
-        `	nop\n`;
-        `	sdiv	{emit_reg i.arg.(0)}, {emit_int n}, %g1\n`;
-        `	smul	%g1, {emit_int n}, %g1\n`;
-        `	sub	{emit_reg i.arg.(0)}, %g1, {emit_reg i.res.(0)}\n`
+        let l = Misc.log2 n in
+        if n = 1 lsl l then begin
+          let lbl = new_label() in
+          `	tst	{emit_reg i.arg.(0)}\n`;
+          `	bge	{emit_label lbl}\n`;
+          `	andcc	{emit_reg i.arg.(0)}, {emit_int (n-1)}, {emit_reg i.res.(0)}\n`; (* in delay slot *)
+          `	be	{emit_label lbl}\n`;
+          `	nop\n`;
+          `	sub	{emit_reg i.res.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`;
+          `{emit_label lbl}:\n`
+        end else begin
+          `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
+          `	wr	%g0, %g1, %y\n`;
+          `	nop\n`;
+          `	nop\n`;
+          `	nop\n`;
+          `	sdiv	{emit_reg i.arg.(0)}, {emit_int n}, %g1\n`;
+          `	smul	%g1, {emit_int n}, %g1\n`;
+          `	sub	{emit_reg i.arg.(0)}, %g1, {emit_reg i.res.(0)}\n`
+        end
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         let comp = name_for_int_comparison cmp in
         `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
