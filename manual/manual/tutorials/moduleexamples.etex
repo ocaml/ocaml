@@ -273,7 +273,7 @@ module \var{A}: sig (* \hbox{contents of file} \var{a}.mli *) end
         = struct (* \hbox{contents of file} \var{a}.ml *) end;;
 \end{alltt}
 The files defining the compilation units can be compiled separately
-using the "ocaml -c" command (the "-c" option means ``compile only, do
+using the "ocamlc -c" command (the "-c" option means ``compile only, do
 not try to link''); this produces compiled interface files (with
 extension ".cmi") and compiled object code files (with extension
 ".cmo"). When all units have been compiled, their ".cmo" files are

@@ -20,6 +20,8 @@ For interactive use of the "unix" library, do:
         ocamlmktop -o mytop unix.cma
         ./mytop
 \end{alltt}
+or (if dynamic linking of C libraries is supported on your platform),
+start "ocaml" and type "#load \"unix.cma\";;".
 
 \begin{macos}
 A fairly complete emulation of the Unix system calls is provided in

@@ -76,7 +76,8 @@ Arguments ending in ".c" are passed to the C compiler, which generates
 a ".o" object file. This object file is linked with the program.
 
 \item
-Arguments ending in ".o" or ".a" are assumed to be C object files and
+Arguments ending in ".o", ".a" or ".so" (".obj", ".lib" and ".dll"
+under Windows) are assumed to be C object files and
 libraries. They are linked with the program.
 
 \end{itemize}

@@ -1,7 +1,7 @@
 \chapter{The standard library}
 \pdfchapterfold{-32}{The standard library}
 
-This chapter describes the functions provided by the Caml Light
+This chapter describes the functions provided by the Objective Caml
 standard library. The modules from the standard library are
 automatically linked with the user's object code files by the "ocamlc"
 command. Hence, these modules can be used in standalone programs without

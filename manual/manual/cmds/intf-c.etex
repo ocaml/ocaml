@@ -73,12 +73,11 @@ functions and macros are described in details below.  For instance,
 here is the declaration for the C function implementing the "input"
 primitive:
 \begin{verbatim}
-        value input(value channel, value buffer, value offset, value length)
-        {
-         ...
-        }
+CAMLprim value input(value channel, value buffer, value offset, value length)
+{
+  ...
+}
 \end{verbatim}
-
 When the primitive function is applied in a Caml program, the C
 function is called with the values of the expressions to which the
 primitive is applied as arguments. The value returned by the function is
@@ -94,17 +93,17 @@ to be used in conjunction with the native-code compiler "ocamlopt",
 takes its arguments directly. For instance, here are the two C
 functions for the 7-argument primitive "Nat.add_nat":
 \begin{verbatim}
-        value add_nat_native(value nat1, value ofs1, value len1,
-                             value nat2, value ofs2, value len2,
-                             value carry_in)
-        {
-          ...
-        }
-        value add_nat_bytecode(value * argv, int argn)
-        {
-          return add_nat_native(argv[0], argv[1], argv[2], argv[3],
-                                argv[4], argv[5], argv[6]);
-        }
+CAMLprim value add_nat_native(value nat1, value ofs1, value len1,
+                              value nat2, value ofs2, value len2,
+                              value carry_in)
+{
+  ...
+}
+CAMLprim value add_nat_bytecode(value * argv, int argn)
+{
+  return add_nat_native(argv[0], argv[1], argv[2], argv[3],
+                        argv[4], argv[5], argv[6]);
+}
 \end{verbatim}
 The names of the two C functions must be given in the primitive
 declaration, as follows:
@@ -132,21 +131,24 @@ call the first function, and convert the returned C value to Caml
 value. For instance, here is the stub code for the "input"
 primitive:
 \begin{verbatim}
-        value input(value channel, value buffer, value offset, value length)
-        {
-          return Val_long(getblock((struct channel *) channel,
-                                   &Byte(buffer, Long_val(offset)),
-                                   Long_val(length)));
-        }
+CAMLprim value input(value channel, value buffer, value offset, value length)
+{
+  return Val_long(getblock((struct channel *) channel,
+                           &Byte(buffer, Long_val(offset)),
+                           Long_val(length)));
+}
 \end{verbatim}
 (Here, "Val_long", "Long_val" and so on are conversion macros for the
-type "value", that will be described later.) The hard work is
-performed by the function  "getblock", which is declared as:
+type "value", that will be described later.  The "CAMLprim" macro
+expands to the required compiler directives to ensure that the
+function following it is exported and accessible from Caml.)
+The hard work is performed by the function "getblock", which is
+declared as:
 \begin{verbatim}
-        long getblock(struct channel * channel, char * p, long n)
-        {
-          ...
-        }
+long getblock(struct channel * channel, char * p, long n)
+{
+  ...
+}
 \end{verbatim}
 
 To write C code that operates on Objective Caml values, the following
@@ -170,7 +172,8 @@ serialization and deserialization functions for custom blocks
 These files reside in the "caml/" subdirectory of the Objective Caml
 standard library directory (usually "/usr/local/lib/ocaml").
 
-\subsection{Linking C code with Caml code}
+\subsection{Statically linking C code with Caml code}
+\label{staticlink-c-code}
 
 The Objective Caml runtime system comprises three main parts: the bytecode
 interpreter, the memory manager, and a set of C functions that
@@ -181,7 +184,8 @@ table of functions (the table of primitives).
 In the default mode, the Caml linker produces bytecode for the
 standard runtime system, with a standard set of primitives. References
 to primitives that are not in this standard set result in the
-``unavailable C primitive'' error.
+``unavailable C primitive'' error.  (Unless dynamic loading of C
+libraries is supported -- see section~\ref{dynlink-c-code} below.)
 
 In the ``custom runtime'' mode, the Caml linker scans the
 object files and determines the set of required primitives. Then, it
@@ -217,8 +221,8 @@ execute the "ocamlopt" command with:
 \begin{itemize}
 \item the names of the desired Caml native object files (".cmx" and
 ".cmxa" files);
-\item the names of the C object files and libraries (".o" and ".a"
-files) that implement the required primitives.
+\item the names of the C object files and libraries (".o", ".a",
+".so" or ".dll" files) that implement the required primitives.
 \end{itemize}
 
 Starting with OCaml 3.00, it is possible to record the
@@ -252,40 +256,119 @@ options themselves at link-time:
 The former alternative is more convenient for the final users of the
 library, however.
 
-\subsection{Building standalone custom runtime systems}
-\label{s:custom-runtime}
+\subsection{Dynamically linking C code with Caml code}
+\label{dynlink-c-code}
 
-It is sometimes inconvenient to build a custom runtime system each
-time Caml code is linked with C libraries, like "ocamlc -custom" does.
-For one thing, the building of the runtime system is slow on some
-systems (that have bad linkers or slow remote file systems); for
-another thing, the platform-independence of bytecode files is lost,
-forcing to perform one "ocamlc -custom" link per platform of interest.
+Starting with OCaml 3.03, an alternative to static linking of C code
+using the "-custom" code is provided.  In this mode, the Caml linker
+generates a pure bytecode executable (no embedded custom runtime
+system) that simply records the names of dynamically-loaded libraries
+containing the C code.  The standard Caml runtime system "ocamlrun"
+then loads dynamically these libraries, and resolves references to the
+required primitives, before executing the bytecode.
 
-An alternative to "ocamlc -custom" is to build separately a custom
-runtime system integrating the desired C libraries, then generate
-``pure'' bytecode executables (not containing their own runtime
-system) that can run on this custom runtime.  This is achieved by the
-"-make_runtime" and "-use_runtime" flags to "ocamlc".  For example,
-to build a custom runtime system integrating the C parts of the
-``unix'' and ``threads'' libraries, do:
-\begin{verbatim}
-        ocamlc -make-runtime -o /home/me/ocamlunixrun unix.cma threads.cma
-\end{verbatim}
-To generate a bytecode executable that runs on this runtime system,
-do:
+This facility is currently supported and known to work well under
+Linux and Windows (the native Windows port).  It is supported, but not
+fully tested yet, under FreeBSD, Tru64, Solaris and Irix.  It is not
+supported yet under other Unixes, Cygwin for Windows, and MacOS.
+
+To dynamically link C code with Caml code, the C code must first be
+compiled into a shared library (under Unix) or DLL (under Windows).
+This involves 1- compiling the C files with appropriate C compiler
+flags for producing position-independent code, and 2- building a
+shared library from the resulting object files.  The resulting shared
+library or DLL file must be installed in a place where "ocamlrun" can
+find it later at program start-up time (see
+section~\ref{s-ocamlrun-dllpath}).
+Finally (step 3), execute the "ocamlc" command with
+\begin{itemize}
+\item the names of the desired Caml object files (".cmo" and ".cma" files) ;
+\item the names of the C shared libraries (".so" or ".dll" files) that
+implement the required primitives.  Under Unix and Windows, 
+a library named "lib"\var{name}".so" (respectively, ".dll") residing
+in one of the standard library directories can also be specified as
+"-cclib -l"\var{name}.
+\end{itemize}
+Do {\em not} set the "-custom" flag, otherwise you're back to static linking
+as described in section~\ref{staticlink-c-code}.
+Under Unix, the "ocamlmklib" tool (see section~\ref{s-ocamlmklib})
+automates steps 2 and 3.
+
+If you are using the native-code compiler "ocamlopt", you can also
+provide shared libraries (".so" or ".dll" files) during the final
+linking phase of "ocamlopt"; these will be linked with the produced
+executable, and dynamically loaded at program start-up.
+
+As in the case of static linking, it is possible (and recommended) to
+record the names of C libraries in a Caml ".cmo" library archive.  
+Consider again a Caml library
+"mylib.cma", built from the Caml object files "a.cmo" and "b.cmo",
+which reference C code in "libmylib.so".  If the library is
+built as follows:
 \begin{alltt}
-        ocamlc -use-runtime /home/me/ocamlunixrun -o myprog \char92
-                unix.cma threads.cma {\it{your .cmo and .cma files}}
+        ocamlc -a -o mylib.cma a.cmo b.cmo -cclib -lmylib
 \end{alltt}
-The bytecode executable "myprog" can then be launched as usual:
-"myprog" \var{args} or "/home/me/ocamlunixrun myprog" \var{args}.
+users of the library can simply link with "mylib.cma":
+\begin{alltt}
+        ocamlc -o myprog mylib.cma ...
+\end{alltt}
+and the system will automatically add the "-cclib -lmylib" option,
+achieving the same effect as
+\begin{alltt}
+        ocamlc -o myprog a.cmo b.cmo ... -cclib -lmylib
+\end{alltt}
+Using this mechanism, users of the library "mylib.cma" do not need to
+known that it references C code, nor whether this C code must be
+statically linked (using "-custom") or dynamically linked.
 
-Notice that the bytecode libraries "unix.cma" and "threads.cma" must
-be given twice: when building the runtime system (so that "ocamlc"
-knows which C primitives are required) and also when building the
-bytecode executable (so that the bytecode from "unix.cma" and
-"threads.cma" is actually linked in).
+\subsection{Choosing between static linking and dynamic linking}
+
+After having described two different ways of linking C code with Caml
+code, we now review the pros and cons of each, to help developers of
+mixed Caml/C libraries decide.
+
+The main advantage of dynamic linking is that it preserves the
+platform-independence of bytecode executables.  That is, the bytecode
+executable contains no machine code, and can therefore be compiled on
+platform $A$ and executed on other platforms $B$, $C$, \ldots, as long
+as the required shared libraries are available on all these
+platforms.  In contrast, executables generated by "ocamlc -custom" run
+only on the platform on which they were created, because they embark a
+custom-tailored runtime system specific to that platform.  In
+addition, dynamic linking results in smaller executables.
+
+Another advantage of dynamic linking is that the final users of the
+library do not need to have a C compiler, C linker, and C runtime
+libraries installed on their machines.  This is no big deal under 
+Unix and Cygwin, but many Windows users are reluctant to install
+Microsoft Visual C just to be able to do "ocamlc -custom".
+
+There are two drawbacks to dynamic linking.  The first is that the
+resulting executable is not stand-alone: it requires the shared
+libraries, as well as "ocamlrun", to be installed on the machine
+executing the code.  If you wish to distribute a stand-alone
+executable, it is better to link it statically, using "ocamlc -custom
+-ccopt -static" or "ocamlopt -ccopt -static".  Dynamic linking also
+raises the ``DLL hell'' problem: some care must be taken to ensure
+that the right versions of the shared libraries are found at start-up
+time.
+
+The second drawback of dynamic linking is that it complicates the
+construction of the library.  The C compiler and linker flags to
+compile to position-independent code and build a shared library vary
+wildly between different Unix systems.  Also, dynamic linking is not
+supported on all Unix systems, requiring a fall-back case to static
+linking in the Makefile for the library.  The "ocamlmklib" command
+(see section~\ref{s-ocamlmklib}) tries to hide some of these system
+dependencies.
+
+In conclusion: dynamic linking is highly recommended under the native
+Windows port, because there are no portability problems and it is much
+more convenient for the end users.  Under Unix, dynamic linking should
+be considered for mature, frequently used libraries because it
+enhances platform-independence of bytecode executables.  For new or
+rarely-used libraries, static linking is much simpler to set up in a
+portable way.
 
 \section{The "value" type}
 \pdfsection{The value type}
@@ -1571,3 +1654,114 @@ word is reserved for storing the custom operations; the other
 \var{n}-1 words are available for your data.  The two parameters
 \var{used} and \var{max} are used to control the speed of garbage
 collection, as described for "alloc_custom".
+
+\section{Building mixed C/Caml libraries: "ocamlmklib"} \label{s-ocamlmklib}
+
+The "ocamlmklib" command facilitates the construction of libraries
+containing both Caml code and C code, and usable both in static
+linking and dynamic linking modes.
+
+\begin{windows} This command is available only under Cygwin, but not for the
+native Win32 port.
+\end{windows}
+
+\begin{macos} This command is not available.
+\end{macos}
+%
+The "ocamlmklib" command takes three kinds of arguments:
+\begin{itemize}
+\item Caml source files and object files (".cmo", ".cmx", ".ml")
+comprising the Caml part of the library;
+\item C object files (".o", ".a") comprising the C part of the
+library;
+\item Support libraries for the C part ("-l"\var{lib}).
+\end{itemize}
+It generates the following outputs:
+\begin{itemize}
+\item A Caml bytecode library ".cma" incorporating the ".cmo" and
+".ml" Caml files given as arguments, and automatically referencing the
+C library generated with the C object files.
+\item A Caml native-code library ".cmxa" incorporating the ".cmx" and
+".ml" Caml files given as arguments, and automatically referencing the
+C library generated with the C object files.
+\item If dynamic linking is supported on the target platform, a
+".so" shared library built from the C object files given as arguments,
+and automatically referencing the support libraries.
+\item A C static library ".a" built from the C object files.
+\end{itemize}
+In addition, the following options are recognized:
+\begin{options}
+\item["-cclib", "-ccopt", "-I", "-linkall"]
+These options are passed as is to "ocamlc" or "ocamlopt".
+See the documentation of these commands.
+\item["-pthread", "-rpath", "-R", "-Wl,-rpath", "-Wl,-R"]
+These options are passed as is to the C compiler.  Refer to the
+documentation of the C compiler.
+\item["-custom"] Force the construction of a statically linked library
+only, even if dynamic linking is supported.
+\item["-failsafe"] Fall back to building a statically linked library
+if a problem occurs while building the shared library (e.g. some of
+the support libraries are not available as shared libraries).
+\item["-L"\var{dir}] Add \var{dir} to the search path for support
+libraries ("-l"\var{lib}).
+\item["-ocamlc" \var{cmd}] Use \var{cmd} instead of "ocamlc" to call
+the bytecode compiler.
+\item["-ocamlopt" \var{cmd}] Use \var{cmd} instead of "ocamlopt" to call
+the native-code compiler.
+\item["-o" \var{output}] Set the name of the generated Caml library.
+"ocamlmklib" will generate \var{output}".cma" and/or \var{output}".cmxa".
+If not specified, defaults to "a".
+\item["-oc" \var{outputc}] Set the name of the generated C library.
+"ocamlmklib" will generate "lib"\var{outputc}".so" (if shared
+libraries are supported) and "lib"\var{outputc}".a".
+If not specified, defaults to the output name given with "-o".
+\end{options}
+
+\paragraph{Example} Consider a Caml interface to the standard "libz"
+C library for reading and writing compressed files.  Assume this
+library resides in "/usr/local/zlib".  This interface is
+composed of a Caml part "zip.cmo"/"zip.cmx" and a C part "zipstubs.o"
+containing the stub code around the "libz" entry points.  The
+following command builds the Caml libraries "zip.cma" and "zip.cmxa",
+as well as the companion C libraries "libzip.so" and "libzip.a":
+\begin{verbatim}
+ocamlmklib -o zip zip.cmo zip.cmx zipstubs.o -lz -L/usr/local/zlib
+\end{verbatim}
+If shared libraries are supported, this performs the following
+commands:
+\begin{verbatim}
+ocamlc -a -o zip.cma zip.cmo -cclib -lzip
+ocamlopt -a -o zip.cmxa zip.cmx -cclib -lzip
+gcc -shared -o libzip.so zipstubs.o -lz -L/usr/local/zlib
+ar rc libzip.a zipstubs.o
+\end{verbatim}
+If shared libraries are not supported, the following commands are
+performed instead:
+\begin{verbatim}
+ocamlc -a -custom -o zip.cma zip.cmo -cclib -lzip \
+        -cclib -lz -ccopt -L/usr/local/zlib
+ocamlopt -a -o zip.cmxa zip.cmx -lzip \
+        -cclib -lz -ccopt -L/usr/local/zlib
+ar rc libzip.a zipstubs.o
+\end{verbatim}
+Instead of building simultaneously the bytecode library, the
+native-code library and the C libraries, "ocamlmklib" can be called
+three times to build each separately.  Thus,
+\begin{verbatim}
+ocamlmklib -o zip zip.cmo -lz -L/usr/local/zlib
+\end{verbatim}
+builds the bytecode library "zip.cma", and
+\begin{verbatim}
+ocamlmklib -o zip zip.cmx -lz -L/usr/local/zlib
+\end{verbatim}
+builds the native-code library "zip.cmxa", and
+\begin{verbatim}
+ocamlmklib -o zip zipstubs.o -lz -L/usr/local/zlib
+\end{verbatim}
+builds the C libraries "libzip.so" and "libzip.a".  Notice that the
+support libraries ("-lz") and the corresponding options
+("-L/usr/local/zlib") must be given every time, because they are
+needed at different times depending on whether shared libraries are
+supported.
+
+

@@ -20,6 +20,8 @@ For interactive use of the "nums" library, do:
         ocamlmktop -o mytop nums.cma
         ./mytop
 \end{alltt}
+or (if dynamic linking of C libraries is supported on your platform),
+start "ocaml" and type "#load \"nums.cma\";;".
 
 \begin{library}
 \input{num.tex}

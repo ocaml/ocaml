@@ -41,6 +41,8 @@ For interactive use of the "bigarray" library, do:
         ocamlmktop -o mytop bigarray.cma
         ./mytop
 \end{alltt}
+or (if dynamic linking of C libraries is supported on your platform),
+start "ocaml" and type "#load \"bigarray.cma\";;".
 
 \begin{library}
 \input{bigarray.tex}

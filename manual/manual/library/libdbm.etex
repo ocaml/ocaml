@@ -19,6 +19,8 @@ For interactive use of the "dbm" library, do:
         ./mytop
 \end{alltt}
 \end{unix}
+or (if dynamic linking of C libraries is supported on your platform),
+start "ocaml" and type "#load \"dbm.cma\";;".
 
 \begin{windows}
 This library is not available.

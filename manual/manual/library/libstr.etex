@@ -16,6 +16,9 @@ For interactive use of the "str" library, do:
         ocamlmktop -o mytop str.cma
         ./mytop
 \end{alltt}
+or (if dynamic linking of C libraries is supported on your platform),
+start "ocaml" and type "#load \"str.cma\";;".
+
 
 \begin{library}
 \input{str.tex}

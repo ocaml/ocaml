@@ -16,6 +16,9 @@ For interactive use of the "graphics" library, do:
         ocamlmktop -o mytop graphics.cma
         ./mytop
 \end{alltt}
+or (if dynamic linking of C libraries is supported on your platform),
+start "ocaml" and type "#load \"graphics.cma\";;".
+
 Here are the graphics mode specifications supported by "open_graph" on
 the X11 implementation of this library:
 the argument to "open_graph" has the format

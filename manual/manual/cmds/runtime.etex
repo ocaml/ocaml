@@ -58,6 +58,10 @@ back trace is printed only if the bytecode executable contains
 debugging information, i.e. was compiled and linked with the "-g"
 option to "ocamlc" set.  This is equivalent to setting "b=1"
 in the "OCAMLRUNPARAM" environment variable (see below).
+\item["-I" \var{dir}]
+Search the directory \var{dir} for dynamically-loaded libraries,
+in addition to the standard search path (see
+section~\ref{s-ocamlrun-dllpath}).
 \item["-v"] 
 Direct the memory manager to print some progress messages on
 standard error.  This is equivalent to setting "v=63" in the
@@ -69,6 +73,14 @@ standard error.  This is equivalent to setting "v=63" in the
 The following environment variables are also consulted:
 
 \begin{options}
+\item["CAML_LD_LIBRARY_PATH"]  Additional directories to search for
+  dynamically-loaded libraries (see section~\ref{s-ocamlrun-dllpath}).
+
+\item["CAMLLIB"] The directory containing the Objective Caml standard
+  library.  Used to locate the "ld.conf" configuration file for
+  dynamic loading (see section~\ref{s-ocamlrun-dllpath}).  If not set,
+  default to the library directory specified when compiling Objective Caml.
+
 \item["OCAMLRUNPARAM"] Set the runtime system options 
   and garbage collection parameters.
   (If "OCAMLRUNPARAM" is not set, "CAMLRUNPARAM" will be used instead.)
@@ -80,7 +92,7 @@ The following environment variables are also consulted:
   \begin{options}
   \item[b] (backtrace) Control the printing of a stack backtrace 
         when an uncaught exception aborts the program.  A non-zero
-        argument turn the backtrace facility on; a zero argument turn
+        argument turns the backtrace facility on; a zero argument turns
         it off.
   \item[s] ("minor_heap_size")  Size of the minor heap.
   \item[i] ("major_heap_increment")  Minimum size increment for the
@@ -100,7 +112,7 @@ The following environment variables are also consulted:
         \item[64  (= 0b0001000000)] Computation of major GC slice size.
         \item[128 (= 0b0010000000)] Calling of finalization functions
         \item[256 (= 0b0100000000)] Startup messages (loading the bytecode
-           executable file).
+           executable file, resolving shared libraries).
   \end{options}
   \item[l] ("stack_limit") The limit (in words) of the stack size.
   \item[h] The initial size of the major heap (in words).
@@ -119,6 +131,40 @@ The following environment variables are also consulted:
 executable file.
 \end{options}
 
+\section{Dynamic loading of shared libraries} \label{s-ocamlrun-dllpath}
+
+On platforms that support dynamic loading, "ocamlrun" can link
+dynamically with C shared libraries (DLLs) providing additional C primitives
+beyond those provided by the standard runtime system.  The names for
+these libraries are provided at link time as described in
+section~\ref{dynlink-c-code}), and recorded in the bytecode executable
+file;  "ocamlrun", then, locates these libraries and resolves references
+to their primitives when the bytecode executable program starts.
+
+The "ocamlrun" command searches shared libraries in the following
+directories, in the order indicated:
+\begin{enumerate}
+\item Directories specified on the "ocamlrun" command line with the
+"-I" option.
+\item Directories specified in the "CAML_LD_LIBRARY_PATH" environment
+variable.
+\item Directories specified at link-time via the "-rpath" option to
+"ocamlc".  (These directories are recorded in the bytecode executable
+file.)
+\item Directories specified in the file "ld.conf".  This file resides
+in the Objective Caml standard library directory, and lists directory
+names (one per line) to be searched.  Typically, it contains only one
+line naming the Objective Caml standard library directory.  Users can
+add there the names of other directories containing
+frequently-used shared libraries.
+\item Default directories searched by the system dynamic loader.
+Under Unix, these generally include "/lib" and "/usr/lib", plus the
+directories listed in the file "/etc/ld.so.conf" and the environment
+variable "LD_LIBRARY_PATH".  Under Windows, these include the Windows
+system directories, plus the directories listed in the "PATH"
+environment variable.
+\end{enumerate} 
+
 \section{Common errors}
 
 This section describes and explains the most frequently encountered
@@ -133,7 +179,7 @@ the "ocamlrun" bytecode interpreter on itself. The second possibility
 indicates that Objective Caml has not been properly installed on your
 system.
 
-\item["Cannot exec camlrun"]
+\item["Cannot exec ocamlrun"]
 (When launching a self-executable bytecode file.) The "ocamlrun"
  could not be found in the executable path. Check that Objective Caml
  has been properly installed on your system.
