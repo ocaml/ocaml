@@ -4,13 +4,14 @@ moreLabels.cmi: hashtbl.cmi map.cmi set.cmi
 oo.cmi: camlinternalOO.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
 printf.cmi: buffer.cmi 
+random.cmi: int32.cmi int64.cmi nativeint.cmi 
 weak.cmi: hashtbl.cmi 
-arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
-arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
-array.cmo: array.cmi 
-array.cmx: array.cmi 
+arg.cmo: array.cmi buffer.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
+arg.cmx: array.cmx buffer.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
 arrayLabels.cmo: array.cmi arrayLabels.cmi 
 arrayLabels.cmx: array.cmx arrayLabels.cmi 
+array.cmo: array.cmi 
+array.cmx: array.cmi 
 buffer.cmo: string.cmi sys.cmi buffer.cmi 
 buffer.cmx: string.cmx sys.cmx buffer.cmi 
 callback.cmo: obj.cmi callback.cmi 
@@ -25,8 +26,10 @@ complex.cmo: complex.cmi
 complex.cmx: complex.cmi 
 digest.cmo: printf.cmi string.cmi digest.cmi 
 digest.cmx: printf.cmx string.cmx digest.cmi 
-filename.cmo: buffer.cmi printf.cmi string.cmi sys.cmi filename.cmi 
-filename.cmx: buffer.cmx printf.cmx string.cmx sys.cmx filename.cmi 
+filename.cmo: buffer.cmi printf.cmi random.cmi string.cmi sys.cmi \
+    filename.cmi 
+filename.cmx: buffer.cmx printf.cmx random.cmx string.cmx sys.cmx \
+    filename.cmi 
 format.cmo: buffer.cmi list.cmi obj.cmi printf.cmi string.cmi format.cmi 
 format.cmx: buffer.cmx list.cmx obj.cmx printf.cmx string.cmx format.cmi 
 gc.cmo: printf.cmi sys.cmi gc.cmi 
@@ -43,10 +46,10 @@ lazy.cmo: obj.cmi lazy.cmi
 lazy.cmx: obj.cmx lazy.cmi 
 lexing.cmo: array.cmi string.cmi sys.cmi lexing.cmi 
 lexing.cmx: array.cmx string.cmx sys.cmx lexing.cmi 
-list.cmo: list.cmi 
-list.cmx: list.cmi 
 listLabels.cmo: list.cmi listLabels.cmi 
 listLabels.cmx: list.cmx listLabels.cmi 
+list.cmo: list.cmi 
+list.cmx: list.cmi 
 map.cmo: map.cmi 
 map.cmx: map.cmi 
 marshal.cmo: string.cmi marshal.cmi 
@@ -65,14 +68,14 @@ pervasives.cmo: pervasives.cmi
 pervasives.cmx: pervasives.cmi 
 printexc.cmo: obj.cmi printf.cmi sys.cmi printexc.cmi 
 printexc.cmx: obj.cmx printf.cmx sys.cmx printexc.cmi 
-printf.cmo: buffer.cmi char.cmi list.cmi obj.cmi string.cmi sys.cmi \
-    printf.cmi 
-printf.cmx: buffer.cmx char.cmx list.cmx obj.cmx string.cmx sys.cmx \
-    printf.cmi 
+printf.cmo: buffer.cmi char.cmi list.cmi obj.cmi string.cmi printf.cmi 
+printf.cmx: buffer.cmx char.cmx list.cmx obj.cmx string.cmx printf.cmi 
 queue.cmo: obj.cmi queue.cmi 
 queue.cmx: obj.cmx queue.cmi 
-random.cmo: array.cmi char.cmi digest.cmi string.cmi random.cmi 
-random.cmx: array.cmx char.cmx digest.cmx string.cmx random.cmi 
+random.cmo: array.cmi char.cmi digest.cmi int32.cmi int64.cmi nativeint.cmi \
+    pervasives.cmi string.cmi random.cmi 
+random.cmx: array.cmx char.cmx digest.cmx int32.cmx int64.cmx nativeint.cmx \
+    pervasives.cmx string.cmx random.cmi 
 scanf.cmo: array.cmi buffer.cmi list.cmi obj.cmi printf.cmi string.cmi \
     sys.cmi scanf.cmi 
 scanf.cmx: array.cmx buffer.cmx list.cmx obj.cmx printf.cmx string.cmx \
@@ -87,10 +90,10 @@ stdLabels.cmo: arrayLabels.cmi listLabels.cmi stringLabels.cmi stdLabels.cmi
 stdLabels.cmx: arrayLabels.cmx listLabels.cmx stringLabels.cmx stdLabels.cmi 
 stream.cmo: list.cmi obj.cmi string.cmi stream.cmi 
 stream.cmx: list.cmx obj.cmx string.cmx stream.cmi 
-string.cmo: char.cmi list.cmi pervasives.cmi string.cmi 
-string.cmx: char.cmx list.cmx pervasives.cmx string.cmi 
 stringLabels.cmo: string.cmi stringLabels.cmi 
 stringLabels.cmx: string.cmx stringLabels.cmi 
+string.cmo: char.cmi list.cmi pervasives.cmi string.cmi 
+string.cmx: char.cmx list.cmx pervasives.cmx string.cmi 
 sys.cmo: sys.cmi 
 sys.cmx: sys.cmi 
 weak.cmo: array.cmi hashtbl.cmi obj.cmi sys.cmi weak.cmi 

@@ -1,9 +1,9 @@
 dynlink.cmo: ../../utils/config.cmi ../../utils/consistbl.cmi \
-    ../../bytecomp/dll.cmi ../../bytecomp/emitcode.cmi ../../typing/ident.cmi \
+    ../../bytecomp/dll.cmi ../../bytecomp/emitcode.cmi \
     ../../bytecomp/meta.cmi ../../utils/misc.cmi ../../bytecomp/opcodes.cmo \
     ../../bytecomp/symtable.cmi dynlink.cmi 
 dynlink.cmx: ../../utils/config.cmx ../../utils/consistbl.cmx \
-    ../../bytecomp/dll.cmx ../../bytecomp/emitcode.cmx ../../typing/ident.cmx \
+    ../../bytecomp/dll.cmx ../../bytecomp/emitcode.cmx \
     ../../bytecomp/meta.cmx ../../utils/misc.cmx ../../bytecomp/opcodes.cmx \
     ../../bytecomp/symtable.cmx dynlink.cmi 
 extract_crc.cmo: dynlink.cmi 

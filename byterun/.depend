@@ -174,7 +174,7 @@ globroots.d.o: globroots.c memory.h config.h ../config/m.h ../config/s.h \
 hash.d.o: hash.c mlvalues.h config.h ../config/m.h ../config/s.h misc.h \
   custom.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 instrtrace.d.o: instrtrace.c instruct.h misc.h config.h ../config/m.h \
-  ../config/s.h mlvalues.h opnames.h
+  ../config/s.h mlvalues.h opnames.h prims.h
 intern.d.o: intern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
   mlvalues.h custom.h fail.h gc.h intext.h io.h fix_code.h memory.h \
   major_gc.h freelist.h minor_gc.h reverse.h
