@@ -48,13 +48,13 @@ let escaped = function
 let lowercase c =
   if (c >= 'A' && c <= 'Z')
   || (c >= '\192' && c <= '\214')
-  || (c >= '\217' && c <= '\222')
+  || (c >= '\216' && c <= '\222')
   then unsafe_chr(code c + 32)
   else c
 
 let uppercase c =
   if (c >= 'a' && c <= 'z')
   || (c >= '\224' && c <= '\246')
-  || (c >= '\249' && c <= '\254')
+  || (c >= '\248' && c <= '\254')
   then unsafe_chr(code c - 32)
   else c
