@@ -854,7 +854,7 @@ class html =
       let s = String.concat "\n"
           (Str.split (Str.regexp "\n") (Odoc_info.string_of_type_expr t))
       in
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
+      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
       Printf.sprintf 
 	"<code class=\"type\">%s</code>"
 	(self#create_fully_qualified_idents_links m_name s2)
@@ -864,7 +864,7 @@ class html =
       let s = String.concat "\n"
           (Str.split (Str.regexp "\n") (Odoc_info.string_of_class_type t))
       in
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
+      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
       "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
 
     (** Return html code to display a [Types.type_expr list]. *)
@@ -872,7 +872,7 @@ class html =
       print_DEBUG "html#html_of_type_expr_list";
       let s = Odoc_info.string_of_type_list sep l in
       print_DEBUG "html#html_of_type_expr_list: 1";
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
+      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
       print_DEBUG "html#html_of_type_expr_list: 2";
       "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
 
@@ -886,7 +886,7 @@ class html =
     (** Return html code to display a list of type parameters for the given type.*)
     method html_of_type_expr_param_list m_name t =
       let s = Odoc_info.string_of_type_param_list t in
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
+      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
       "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
 
     (** Return html code to display a [Types.module_type]. *)
@@ -894,7 +894,7 @@ class html =
       let s = String.concat "\n"
           (Str.split (Str.regexp "\n") (Odoc_info.string_of_module_type t))
       in
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
+      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
       "<code class=\"type\">"^(self#create_fully_qualified_module_idents_links m_name s2)^"</code>"
         
     (** Generate a file containing the module type in the given file name. *)
