@@ -54,7 +54,9 @@ type t = {
   summary: summary
 }
 
-and module_components =
+and module_components = module_components_repr Lazy.t
+
+and module_components_repr =
     Structure_comps of structure_components
   | Functor_comps of functor_components
 
@@ -86,6 +88,19 @@ let empty = {
   cltypes = Ident.empty;
   summary = Env_empty }
 
+(* Forward declarations *)
+
+let components_of_module' =
+  ref ((fun env sub path mty -> assert false) :
+          t -> Subst.t -> Path.t -> module_type -> module_components)
+let components_of_functor_appl =
+  ref ((fun f p1 p2 -> assert false) :
+          functor_components -> Path.t -> Path.t -> module_components)
+let check_modtype_inclusion =
+  (* to be filled with Includemod.check_modtype_inclusion *)
+  ref ((fun env mty1 mty2 -> assert false) :
+          t -> module_type -> module_type -> unit)
+
 (* Persistent structure descriptions *)
 
 type pers_struct =
@@ -97,8 +112,6 @@ type pers_struct =
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
-
-let components_of_module' = ref (fun _ _ _ _ -> assert false)
 
 let read_pers_struct modname filename =
   let ic = open_in_bin filename in
@@ -114,7 +127,8 @@ let read_pers_struct modname filename =
     close_in ic;
     let comps =
       !components_of_module' empty Subst.identity
-        (Pident(Ident.create_persistent name)) (Tmty_signature sign) in
+                             (Pident(Ident.create_persistent name))
+                             (Tmty_signature sign) in
     let ps = { ps_name = name;
                ps_sig = sign;
                ps_comps = comps;
@@ -138,17 +152,6 @@ let find_pers_struct name =
 let reset_cache() =
   Hashtbl.clear persistent_structures
 
-(* Forward declarations *)
-
-let components_of_functor_appl =
-  ref ((fun f p1 p2 -> fatal_error "Env.components_of_functor_appl") :
-       functor_components -> Path.t -> Path.t -> module_components)
-
-let check_modtype_inclusion =
-  (* to be filled with includemod.check_modtype_inclusion *)
-  ref ((fun env mty1 mty2 -> fatal_error "Env.include_modtypes") :
-       t -> module_type -> module_type -> unit)
-
 (* Lookup by identifier *)
 
 let rec find_module_descr path env =
@@ -163,7 +166,7 @@ let rec find_module_descr path env =
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
-      begin match find_module_descr p env with
+      begin match Lazy.force(find_module_descr p env) with
         Structure_comps c ->
           let (descr, pos) = Tbl.find s c.comp_components in
           descr
@@ -171,7 +174,7 @@ let rec find_module_descr path env =
          raise Not_found
       end
   | Papply(p1, p2) ->
-      begin match find_module_descr p1 env with
+      begin match Lazy.force(find_module_descr p1 env) with
         Functor_comps f ->
           !components_of_functor_appl f p1 p2
       | Structure_comps c ->
@@ -184,7 +187,7 @@ let find proj1 proj2 path env =
       let (p, data) = Ident.find_same id (proj1 env)
       in data
   | Pdot(p, s, pos) ->
-      begin match find_module_descr p env with
+      begin match Lazy.force(find_module_descr p env) with
         Structure_comps c ->
           let (data, pos) = Tbl.find s (proj2 c) in data
       | Functor_comps f ->
@@ -228,7 +231,7 @@ let find_module path env =
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
-      begin match find_module_descr p env with
+      begin match Lazy.force (find_module_descr p env) with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in data
       | Functor_comps f ->
@@ -250,7 +253,7 @@ let rec lookup_module_descr lid env =
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
-      begin match descr with
+      begin match Lazy.force descr with
         Structure_comps c ->
           let (descr, pos) = Tbl.find s c.comp_components in
           (Pdot(p, s, pos), descr)
@@ -260,7 +263,7 @@ let rec lookup_module_descr lid env =
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
       let (p2, mty2) = lookup_module l2 env in
-      begin match desc1 with
+      begin match Lazy.force desc1 with
         Functor_comps f ->
           !check_modtype_inclusion env mty2 f.fcomp_arg;
           (Papply(p1, p2), !components_of_functor_appl f p1 p2)
@@ -279,7 +282,7 @@ and lookup_module lid env =
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
-      begin match descr with
+      begin match Lazy.force descr with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
           (Pdot(p, s, pos), data)
@@ -290,7 +293,7 @@ and lookup_module lid env =
       let (p1, desc1) = lookup_module_descr l1 env in
       let (p2, mty2) = lookup_module l2 env in
       let p = Papply(p1, p2) in
-      begin match desc1 with
+      begin match Lazy.force desc1 with
         Functor_comps f ->
           !check_modtype_inclusion env mty2 f.fcomp_arg;
           (p, Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
@@ -304,11 +307,12 @@ let lookup proj1 proj2 lid env =
     Lident s ->
       Ident.find_name s (proj1 env)
   | Ldot(l, s) ->
-      begin match lookup_module_descr l env with
-        (p, Structure_comps c) ->
+      let (p, desc) = lookup_module_descr l env in
+      begin match Lazy.force desc with
+        Structure_comps c ->
           let (data, pos) = Tbl.find s (proj2 c) in
           (Pdot(p, s, pos), data)
-      | (p, Functor_comps f) ->
+      | Functor_comps f ->
           raise Not_found
       end
   | Lapply(l1, l2) ->
@@ -319,11 +323,12 @@ let lookup_simple proj1 proj2 lid env =
     Lident s ->
       Ident.find_name s (proj1 env)
   | Ldot(l, s) ->
-      begin match lookup_module_descr l env with
-        (p, Structure_comps c) ->
+      let (p, desc) = lookup_module_descr l env in
+      begin match Lazy.force desc with
+        Structure_comps c ->
           let (data, pos) = Tbl.find s (proj2 c) in
           data
-      | (p, Functor_comps f) ->
+      | Functor_comps f ->
           raise Not_found
       end
   | Lapply(l1, l2) ->
@@ -344,7 +349,7 @@ and lookup_class =
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
   
-(* Scrape a module type *)
+(* Expand manifest module type names at the top of the given module type *)
 
 let rec scrape_modtype mty env =
   match mty with
@@ -415,11 +420,10 @@ let rec prefix_idents root pos sub = function
       let (pl, final_sub) = prefix_idents root pos sub rem in
       (p::pl, final_sub)
 
-
 (* Compute structure descriptions *)
 
 let rec components_of_module env sub path mty =
-  match scrape_modtype mty env with
+  lazy(match scrape_modtype mty env with
     Tmty_signature sg ->
       let c =
         { comp_values = Tbl.empty; comp_constrs = Tbl.empty;
@@ -499,24 +503,17 @@ let rec components_of_module env sub path mty =
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
-          comp_cltypes = Tbl.empty }
+          comp_cltypes = Tbl.empty })
 
 (* Insertion of bindings by identifier + path *)
 
 and store_value id path decl env =
-  { values = Ident.add id (path, decl) env.values;
-    constrs = env.constrs;
-    labels = env.labels;
-    types = env.types;
-    modules = env.modules;
-    modtypes = env.modtypes;
-    components = env.components;
-    classes = env.classes;
-    cltypes = env.cltypes;
+  { env with
+    values = Ident.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }
 
 and store_type id path info env =
-  { values = env.values;
+  { env with
     constrs =
       List.fold_right
         (fun (name, descr) constrs ->
@@ -530,11 +527,6 @@ and store_type id path info env =
         (labels_of_type path info)
         env.labels;
     types = Ident.add id (path, info) env.types;
-    modules = env.modules;
-    modtypes = env.modtypes;
-    components = env.components;
-    classes = env.classes;
-    cltypes = env.cltypes;
     summary = Env_type(env.summary, id, info) }
 
 and store_type_infos id path info env =
@@ -543,76 +535,35 @@ and store_type_infos id path info env =
      manifest-ness of the type.  Used in components_of_module to
      keep track of type abbreviations (e.g. type t = float) in the
      computation of label representations. *)
-  { values = env.values;
-    constrs = env.constrs;
-    labels = env.labels;
+  { env with
     types = Ident.add id (path, info) env.types;
-    modules = env.modules;
-    modtypes = env.modtypes;
-    components = env.components;
-    classes = env.classes;
-    cltypes = env.cltypes;
     summary = Env_type(env.summary, id, info) }
 
 and store_exception id path decl env =
-  { values = env.values;
+  { env with
     constrs = Ident.add id (Datarepr.exception_descr path decl) env.constrs;
-    labels = env.labels;
-    types = env.types;
-    modules = env.modules;
-    modtypes = env.modtypes;
-    components = env.components;
-    classes = env.classes;
-    cltypes = env.cltypes;
     summary = Env_exception(env.summary, id, decl) }
 
 and store_module id path mty env =
-  { values = env.values;
-    constrs = env.constrs;
-    labels = env.labels;
-    types = env.types;
+  { env with
     modules = Ident.add id (path, mty) env.modules;
-    modtypes = env.modtypes;
     components =
       Ident.add id (path, components_of_module env Subst.identity path mty)
                    env.components;
-    classes = env.classes;
-    cltypes = env.cltypes;
     summary = Env_module(env.summary, id, mty) }
 
 and store_modtype id path info env =
-  { values = env.values;
-    constrs = env.constrs;
-    labels = env.labels;
-    types = env.types;
-    modules = env.modules;
+  { env with
     modtypes = Ident.add id (path, info) env.modtypes;
-    components = env.components;
-    classes = env.classes;
-    cltypes = env.cltypes;
     summary = Env_modtype(env.summary, id, info) }
 
 and store_class id path desc env =
-  { values = env.values;
-    constrs = env.constrs;
-    labels = env.labels;
-    types = env.types;
-    modules = env.modules;
-    modtypes = env.modtypes;
-    components = env.components;
+  { env with
     classes = Ident.add id (path, desc) env.classes;
-    cltypes = env.cltypes;
     summary = Env_class(env.summary, id, desc) }
 
 and store_cltype id path desc env =
-  { values = env.values;
-    constrs = env.constrs;
-    labels = env.labels;
-    types = env.types;
-    modules = env.modules;
-    modtypes = env.modtypes;
-    components = env.components;
-    classes = env.classes;
+  { env with
     cltypes = Ident.add id (path, desc) env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
@@ -722,16 +673,7 @@ let open_signature root sg env =
             store_cltype (Ident.hide id) p
                          (Subst.cltype_declaration sub decl) env)
       env sg pl in
-  { values = newenv.values;
-    constrs = newenv.constrs;
-    labels = newenv.labels;
-    types = newenv.types;
-    modules = newenv.modules;
-    modtypes = newenv.modtypes;
-    components = newenv.components;
-    classes = newenv.classes;
-    cltypes = newenv.cltypes;
-    summary = Env_open(env.summary, root) }
+  { newenv with summary = Env_open(env.summary, root) }
   
 (* Open a signature from a file *)
 
@@ -812,6 +754,7 @@ let initial = Predef.build_initial_env add_type add_exception empty
 let summary env = env.summary
 
 (* Error report *)
+
 open Format
 
 let report_error ppf = function
