@@ -643,21 +643,21 @@ let _ =
     bind w ~events:[`KeyPress] ~fields:[`KeySymString] ~action:
       begin fun e -> 
         match e.ev_KeySymString with
-        | "h" ->
+        | "i"|"Left" ->
             let m = copy_block current in
             m.x <- m.x - 1;
             ignore (try_to_move m)
-        | "j" ->
+        | "j"|"Up" ->
             let m = copy_block current in
             m.d <- m.d + 1;
             if m.d = List.length m.pattern then m.d <- 0;
             ignore (try_to_move m)
-        | "k" ->
+        | "k"|"Down" ->
             let m = copy_block current in
             m.d <- m.d - 1;
             if m.d < 0 then m.d <- List.length m.pattern - 1;
             ignore (try_to_move m)
-        | "l" ->
+        | "l"|"Right" ->
             let m = copy_block current in
             m.x <- m.x + 1;
             ignore (try_to_move m)
