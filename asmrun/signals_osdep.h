@@ -34,7 +34,7 @@
 
 /****************** AMD64, Linux */
 
-#elif defined(TARGET_amd64) && defined (SYS_linux_elf)
+#elif defined(TARGET_amd64) && defined (SYS_linux)
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, siginfo_t * info, ucontext_t * context)
@@ -43,11 +43,11 @@
      sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
      sigact.sa_flags = SA_SIGINFO
 
-  typedef unsigned long context_reg;
-  #define CONTEXT_PC (context->uc_mcontext.rip)
-  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.r14)
-  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.r15)
-  #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.cr2)
+  typedef greg_t context_reg;
+  #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
+  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.gregs[REG_R14])
+  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
+  #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.gregs[REG_CR2])
 
 /****************** I386, Linux */
 
