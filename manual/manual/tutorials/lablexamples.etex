@@ -383,8 +383,7 @@ When writing type annotations, one will most often describe fixed
 variant types, that is types that can be no longer refined. This is
 also the case for type abbreviations. Such types do not contain "<" or
 ">", but just an enumeration of the tags and their associated types,
-just like in a normal datatype definition. For conciseness, "of" is
-omitted in polymorphic variant types.
+just like in a normal datatype definition. 
 \begin{caml_example}
 type 'a vlist = [`Nil | `Cons of 'a * 'a vlist];;
 let rec map ~f : 'a vlist -> 'b vlist = function

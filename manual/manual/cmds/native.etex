@@ -137,11 +137,12 @@ and edit that file to remove all declarations of unexported names.
 
 \item["-I" \var{directory}]
 Add the given directory to the list of directories searched for
-compiled interface files (".cmi") and compiled object code files
-(".cmx"). By default, the current directory is searched first, then the
-standard library directory. Directories added with "-I" are searched
-after the current directory, in the order in which they were given on
-the command line, but before the standard library directory.
+compiled interface files (".cmi"), compiled object code files
+(".cmx"), and libraries (".cmxa"). By default, the current directory
+is searched first, then the standard library directory. Directories
+added with "-I" are searched after the current directory, in the order
+in which they were given on the command line, but before the standard
+library directory.
 
 If the given directory starts with "+", it is taken relative to the
 standard library directory.  For instance, "-I +labltk" adds the
