@@ -92,7 +92,8 @@ type pers_struct =
   { ps_name: string;
     ps_sig: signature;
     ps_comps: module_components;
-    ps_crcs: (string * Digest.t) list }
+    ps_crcs: (string * Digest.t) list;
+    ps_filename: string }
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
@@ -117,7 +118,8 @@ let read_pers_struct modname filename =
     let ps = { ps_name = name;
                ps_sig = sign;
                ps_comps = comps;
-               ps_crcs = crcs } in
+               ps_crcs = crcs;
+               ps_filename = filename } in
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(ps.ps_name, filename)));
     Hashtbl.add persistent_structures modname ps;
@@ -779,7 +781,7 @@ let imported_units() =
       Hashtbl.add units_xref name (crc, source);
       imported_units := (name, crc) :: !imported_units in
   Hashtbl.iter
-    (fun name ps -> List.iter (add_unit ps.ps_name) ps.ps_crcs)
+    (fun name ps -> List.iter (add_unit ps.ps_filename) ps.ps_crcs)
     persistent_structures;
   !imported_units
 
@@ -801,7 +803,11 @@ let save_signature sg modname filename =
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
     let ps =
-      { ps_name = modname; ps_sig = sg; ps_comps = comps; ps_crcs = crcs } in
+      { ps_name = modname;
+        ps_sig = sg;
+        ps_comps = comps;
+        ps_crcs = crcs;
+        ps_filename = filename } in
     Hashtbl.add persistent_structures modname ps;
     close_out oc
   with exn ->
@@ -829,6 +835,6 @@ let report_error ppf = function
       "Wrong file naming: %s@ contains the compiled interface for@ %s"
       filename modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
-      "@[<hv>The compiled interfaces for %s@ and %s@ \
+      "@[<hov>The compiled interfaces %s@ and %s@ \
               make inconsistent assumptions over interface %s@]"
       source1 source2  name;;
