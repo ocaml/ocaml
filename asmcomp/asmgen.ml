@@ -55,7 +55,7 @@ let compile_phrase p =
 
 let compile_implementation prefixname lam =
   let asmfile =
-    if !assembler_only then prefixname ^ ".s" else temp_file "camlasm" ".s" in
+    if !keep_asm_file then prefixname ^ ".s" else temp_file "camlasm" ".s" in
   let oc = open_out asmfile in
   begin try
     Emitaux.output_channel := oc;
@@ -65,14 +65,12 @@ let compile_implementation prefixname lam =
     close_out oc
   with x ->
     close_out oc;
-    if !assembler_only then () else remove_file asmfile;
+    if !keep_asm_file then () else remove_file asmfile;
     raise x
   end;
-  if !assembler_only then () else begin
-    if Proc.assemble_file asmfile (prefixname ^ ".o") <> 0
-    then raise(Error(Assembler_error asmfile))
-    else remove_file asmfile
-  end
+  if Proc.assemble_file asmfile (prefixname ^ ".o") <> 0
+  then raise(Error(Assembler_error asmfile));
+  if !keep_asm_file then () else remove_file asmfile
 
 (* Error report *)
 
