@@ -457,8 +457,9 @@ let rec emit_instr i dslot =
         if !fastcode_flag then begin
           let lbl_cont = new_label() in
           let lbl_stub = stub_label "caml_call_gc" in
+          `	ldw	0(%r4), %r1\n`;
           `	ldo	{emit_int (-n)}(%r3), %r3\n`;
-          `	comb,>>= %r3, %r4, {emit_label lbl_cont}\n`;
+          `	comb,>>= %r3, %r1, {emit_label lbl_cont}\n`;
           `	addi	4, %r3, {emit_reg i.res.(0)}\n`; (* in delay slot *)
           `	jbsr	{emit_symbol "caml_call_gc"}, %r2, {emit_label lbl_stub}\n`;
           `	ldi	{emit_int n}, %r1\n`; (* in delay slot *)
@@ -544,7 +545,7 @@ let rec emit_instr i dslot =
         `	ldi	1, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Icheckbound, n)) ->
         if !range_check_trap = 0 then range_check_trap := new_label();
-        `	comib,<<,n {emit_int n}, {emit_reg i.arg.(0)}, {emit_label !range_check_trap}\n`
+        `	comib,>>=,n {emit_int n}, {emit_reg i.arg.(0)}, {emit_label !range_check_trap}\n`
         (* Forward branch -> nullify if taken *)
     | Lop(Iintop_imm(op, n)) ->
         fatal_error "Emit_hppa: Iintop_imm"
@@ -725,10 +726,9 @@ let fundecl fundecl =
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   if !range_check_trap > 0 then begin
-    `{emit_label !range_check_trap}\n:`;
+    `{emit_label !range_check_trap}:\n`;
     `	ldil	L\`{emit_symbol "array_bound_error"}, %r1\n`;
-    `	ble	R\`{emit_symbol "array_bound_error"}(4, %r1)\n`;
-    `	nop\n`
+    `	ble,n	R\`{emit_symbol "array_bound_error"}(4, %r1)\n`
   end;
   List.iter emit_float_constant !float_constants
 
