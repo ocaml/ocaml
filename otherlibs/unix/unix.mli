@@ -371,6 +371,8 @@ val chdir : string -> unit
         (* Change the process working directory. *)
 val getcwd : unit -> string
         (* Return the name of the current working directory. *)
+val chroot : string -> unit
+        (* Change the process root directory. *)
 
 
 type dir_handle
@@ -472,10 +474,12 @@ val select :
 (*** Locking *)
 
 type lock_command =
-    F_ULOCK               (* Unlock a region *)
-  | F_LOCK                (* Lock a region, and block if already locked *)
-  | F_TLOCK               (* Lock a region, or fail if already locked *)
-  | F_TEST                (* Test a region for other process' locks *)
+    F_ULOCK       (* Unlock a region *)
+  | F_LOCK        (* Lock a region for writing, and block if already locked *)
+  | F_TLOCK       (* Lock a region for writing, or fail if already locked *)
+  | F_TEST        (* Test a region for other process locks *)
+  | F_RLOCK       (* Lock a region for reading, and block if already locked *)
+  | F_TRLOCK      (* Lock a region for reading, or fail if already locked *)
 
         (* Commands for [lockf]. *)
 
@@ -485,7 +489,12 @@ val lockf : file_descr -> lock_command -> int -> unit
            as [fd]. The region starts at the current read/write position for
            [fd] (as set by [lseek]), and extends [size] bytes forward if
            [size] is positive, [size] bytes backwards if [size] is negative,
-           or to the end of the file if [size] is zero. *)
+           or to the end of the file if [size] is zero.
+           A write lock (set with [F_LOCK] or [F_TLOCK]) prevents any other
+           process from acquiring a read or write lock on the region.
+           A read lock (set with [F_RLOCK] or [F_TRLOCK]) prevents any other
+           process from acquiring a write lock on the region, but lets
+           other processes acquire read locks on it. *)
 
 (*** Signals *)
 

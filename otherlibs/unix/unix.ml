@@ -235,6 +235,7 @@ external mkdir : string -> file_perm -> unit = "unix_mkdir"
 external rmdir : string -> unit = "unix_rmdir"
 external chdir : string -> unit = "unix_chdir"
 external getcwd : unit -> string = "unix_getcwd"
+external chroot : string -> unit = "unix_chroot"
 
 type dir_handle
 
@@ -256,6 +257,8 @@ type lock_command =
   | F_LOCK
   | F_TLOCK
   | F_TEST
+  | F_RLOCK
+  | F_TRLOCK
 
 external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
 external kill : int -> int -> unit = "unix_kill"

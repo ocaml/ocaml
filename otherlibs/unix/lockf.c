@@ -11,36 +11,12 @@
 
 /* $Id$ */
 
+#include <errno.h>
+#include <fcntl.h>
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-#ifdef HAS_LOCKF
-#ifdef HAS_UNISTD
-#include <unistd.h>
-#else
-#define F_ULOCK 0
-#define F_LOCK 1
-#define F_TLOCK 2
-#define F_TEST 3
-#endif
-
-static int lock_command_table[] = {
-  F_ULOCK, F_LOCK, F_TLOCK, F_TEST
-};
-
-value unix_lockf(value fd, value cmd, value span)  /* ML */
-{
-  if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
-      == -1) uerror("lockf", Nothing);
-  return Val_unit;
-}
-
-#else
-
-#include <errno.h>
-#include <fcntl.h>
-
-#ifdef F_SETLK
+#if defined(F_GETLK) && defined(F_SETLK) && defined(F_SETLKW)
 
 value unix_lockf(value fd, value cmd, value span)  /* ML */
 {
@@ -84,11 +60,42 @@ value unix_lockf(value fd, value cmd, value span)  /* ML */
       }
     }
     break;
+  case 4: /* F_RLOCK */
+    l.l_type = F_RDLCK;
+    ret = fcntl(fildes, F_SETLKW, &l);
+    break;
+  case 5: /* F_TRLOCK */
+    l.l_type = F_RDLCK;
+    ret = fcntl(fildes, F_SETLK, &l);
+    break;
   default:
     errno = EINVAL;
     ret = -1;
   }
   if (ret == -1) uerror("lockf", Nothing);
+  return Val_unit;
+}
+
+#else
+
+#ifdef HAS_LOCKF
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#else
+#define F_ULOCK 0
+#define F_LOCK 1
+#define F_TLOCK 2
+#define F_TEST 3
+#endif
+
+static int lock_command_table[] = {
+  F_ULOCK, F_LOCK, F_TLOCK, F_TEST, F_LOCK, F_TLOCK
+};
+
+value unix_lockf(value fd, value cmd, value span)  /* ML */
+{
+  if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
+      == -1) uerror("lockf", Nothing);
   return Val_unit;
 }
 
