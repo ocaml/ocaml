@@ -343,9 +343,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
             view_module path ~env;
             find_shown_module path
         in
-        prerr_endline (Widget.name mw.mw_frame);
         (try !set_path path ~sign with _ -> ());
-        prerr_endline "Here";
         begin match mw.mw_title with None -> ()
         | Some label ->
             Label.configure label ~text:title;
