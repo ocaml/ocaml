@@ -25,7 +25,8 @@
 #include "signals.h"
 
 asize_t minor_heap_size;
-char *young_start = NULL, *young_end = NULL, *young_ptr = NULL;
+char *young_start = NULL, *young_end = NULL;
+char *young_ptr = NULL, *young_limit = NULL;
 static value **ref_table = NULL, **ref_table_end, **ref_table_threshold;
 value **ref_table_ptr = NULL, **ref_table_limit;
 static asize_t ref_table_size, ref_table_reserve;
@@ -48,6 +49,7 @@ void set_minor_heap_size (size)
   }
   young_start = new_heap;
   young_end = new_heap + size;
+  young_limit = young_start;
   young_ptr = young_end;
   minor_heap_size = size;
 

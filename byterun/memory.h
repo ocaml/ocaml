@@ -33,11 +33,17 @@ void stat_free P((char *));
 char * stat_resize P((char *, asize_t));     /* Size in bytes. */
 
 
+#ifdef NATIVE_CODE
+#define Garbage_collection_function garbage_collection
+#else
+#define Garbage_collection_function minor_collection
+#endif
+
 #define Alloc_small(result, wosize, tag) {                                  \
   young_ptr -= Bhsize_wosize (wosize);                                      \
-  if (young_ptr < young_start){                                             \
+  if (young_ptr < young_limit){                                             \
     Setup_for_gc;                                                           \
-    minor_collection ();                                                    \
+    Garbage_collection_function ();                                         \
     Restore_after_gc;                                                       \
     young_ptr -= Bhsize_wosize (wosize);                                    \
   }                                                                         \

@@ -25,7 +25,6 @@ static Volatile int async_signal_mode = 0;
 Volatile int pending_signal = 0;
 Volatile int force_major_slice = 0;
 value signal_handlers = 0;
-char * young_limit;
 extern char * caml_last_return_address;
 
 /* Call the handler for the given signal */
@@ -299,6 +298,5 @@ void init_signals()
   act.sa_flags = SA_SIGINFO;
   sigaction(SIGILL, &act, NULL);
 #endif
-  young_limit = young_start;
 }
 

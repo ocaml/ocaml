@@ -17,7 +17,7 @@
 
 #include "misc.h"
 
-extern char *young_start, *young_ptr, *young_end;
+extern char *young_start, *young_ptr, *young_end, *young_limit;
 extern value **ref_table_ptr, **ref_table_limit;
 extern asize_t minor_heap_size;
 extern int in_minor_collection;

@@ -24,8 +24,8 @@ gc_ctrl.o: gc_ctrl.c alloc.h misc.h config.h ../config/m.h \
 hash.o: hash.c mlvalues.h config.h ../config/m.h ../config/s.h misc.h \
  memory.h gc.h major_gc.h freelist.h minor_gc.h str.h
 instrtrace.o: instrtrace.c
-intern.o: intern.c fail.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
+intern.o: intern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
+ mlvalues.h fail.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
  minor_gc.h reverse.h
 interp.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h fix_code.h instruct.h interp.h memory.h gc.h \
@@ -45,7 +45,8 @@ major_gc.o: major_gc.c config.h ../config/m.h ../config/s.h fail.h \
 md5.o: md5.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h io.h
 memory.o: memory.c fail.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h memory.h minor_gc.h
+ mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h memory.h minor_gc.h \
+ signals.h
 meta.o: meta.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fix_code.h interp.h major_gc.h freelist.h memory.h gc.h \
  minor_gc.h prims.h stacks.h
@@ -100,8 +101,8 @@ hash.d.o: hash.c mlvalues.h config.h ../config/m.h ../config/s.h misc.h \
  memory.h gc.h major_gc.h freelist.h minor_gc.h str.h
 instrtrace.d.o: instrtrace.c instruct.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h opnames.h
-intern.d.o: intern.c fail.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
+intern.d.o: intern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
+ mlvalues.h fail.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
  minor_gc.h reverse.h
 interp.d.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h fix_code.h instruct.h interp.h memory.h gc.h \
@@ -121,7 +122,8 @@ major_gc.d.o: major_gc.c config.h ../config/m.h ../config/s.h fail.h \
 md5.d.o: md5.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h io.h
 memory.d.o: memory.c fail.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h memory.h minor_gc.h
+ mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h memory.h minor_gc.h \
+ signals.h
 meta.d.o: meta.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fix_code.h interp.h major_gc.h freelist.h memory.h gc.h \
  minor_gc.h prims.h stacks.h
