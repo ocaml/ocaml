@@ -20,7 +20,7 @@ open Lexgen
 open Common
 
 let output_auto_defs oc =
-  fprintf oc "let __init_lexbuf lexbuf mem_size =
+  fprintf oc "let __ocaml_lex_init_lexbuf lexbuf mem_size =
   let pos = lexbuf.Lexing.lex_curr_pos in
   lexbuf.Lexing.lex_mem <- Array.create mem_size (-1) ;
   lexbuf.Lexing.lex_start_pos <- pos ;
@@ -30,13 +30,13 @@ let output_auto_defs oc =
 " ;
   
   output_string oc
-    "let rec __next_char lexbuf =
+    "let rec __ocaml_lex_next_char lexbuf =
   if lexbuf.Lexing.lex_curr_pos >= lexbuf.Lexing.lex_buffer_len then begin
     if lexbuf.Lexing.lex_eof_reached then
       256
     else begin
       lexbuf.Lexing.refill_buff lexbuf ;
-      __next_char lexbuf
+      __ocaml_lex_next_char lexbuf
     end
   end else begin
     let i = lexbuf.Lexing.lex_curr_pos in
@@ -58,7 +58,7 @@ let output_action oc mems r =
       "    lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_last_pos ;\n" ;
     fprintf oc "    lexbuf.Lexing.lex_last_action\n"
   | Goto n ->
-    fprintf oc "    __state%d lexbuf\n" n
+    fprintf oc "    __ocaml_lex_state%d lexbuf\n" n
 
 let output_pat oc i =
   if i >= 256 then
@@ -124,7 +124,7 @@ let output_tag_actions pref oc mvs =
     mvs
   
 let output_trans pref oc i trans =
-  fprintf oc "%s __state%d lexbuf = " pref i ;
+  fprintf oc "%s __ocaml_lex_state%d lexbuf = " pref i ;
   match trans with
   | Perform (n,mvs) ->
       output_tag_actions "  " oc mvs ;
@@ -138,7 +138,7 @@ let output_trans pref oc i trans =
           fprintf oc "  lexbuf.Lexing.lex_last_action <- %d ;\n" n
       | No_remember -> ()
       end ;
-      fprintf oc "  match __next_char lexbuf with\n" ;
+      fprintf oc "  match __ocaml_lex_next_char lexbuf with\n" ;
       output_moves oc move
     
 let output_automata oc auto =
@@ -156,7 +156,7 @@ let output_automata oc auto =
 let output_entry sourcefile ic oc tr e =
   let init_num, init_moves = e.auto_initial_state in
   fprintf oc "%s %alexbuf =
-  __init_lexbuf lexbuf %d; %a  match __state%d lexbuf with\n"
+ __ocaml_lex_init_lexbuf lexbuf %d; %a  match __ocaml_lex_state%d lexbuf with\n"
       e.auto_name output_args e.auto_args
       e.auto_mem_size (output_memory_actions "  ") init_moves init_num ;
   List.iter

@@ -86,9 +86,10 @@ let output_entry sourcefile ic oc oci e =
     e.auto_name
     output_args e.auto_args
     init_num;
-  fprintf oc "and __ocaml_lex_%s_rec %alexbuf state =\n"
+  fprintf oc "and __ocaml_lex_%s_rec %alexbuf __ocaml_lex_state =\n"
     e.auto_name output_args e.auto_args ;
-  fprintf oc "  match Lexing.%sengine lex_tables state lexbuf with\n    "
+  fprintf oc
+    "  match Lexing.%sengine lex_tables __ocaml_lex_state lexbuf with\n    "
     (if e.auto_mem_size == 0 then "" else "new_") ;
   List.iter
     (fun (num, env, loc) ->
