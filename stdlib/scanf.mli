@@ -220,7 +220,7 @@ val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 
 val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.bscanf}, but reads from the predefined scanning
-    buffer [Scanning.stdib] that is connected to [stdin]. *)
+    buffer {!Scanf.Scanning.stdib} that is connected to [stdin]. *)
 
 val kscanf :
   Scanning.scanbuf -> (Scanning.scanbuf -> exn -> 'a) ->
