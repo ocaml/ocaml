@@ -311,6 +311,12 @@ test: dummy
 	$(MKDIR) $@ 
 	./ocamldoc -html -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
+test_stdlib: dummy
+	$(MKDIR) $@ 
+	./ocamldoc -html -colorize-code -d $@ $(INCLUDES) -dump $@/stdlib.odoc ../stdlib/*.mli \
+	../otherlibs/unix/unix.mli \
+	../otherlibs/str/str.mli
+
 test_framed: dummy
 	$(MKDIR) $@ 
 	./ocamldoc -g odoc_fhtml.cmo -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
