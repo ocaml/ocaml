@@ -295,6 +295,26 @@ let rec unmark_class_type =
                   (*  Memorization of abbreviation expansion *)
                   (*******************************************)
 
+(* Search whether the expansion has been memorized. *)
+let rec find_expans p1 = function
+    Mnil -> None
+  | Mcons (p2, ty0, ty, _) when Path.same p1 p2 -> Some ty
+  | Mcons (_, _, _, rem)   -> find_expans p1 rem
+  | Mlink {contents = rem} -> find_expans p1 rem
+
+(* debug: check for cycles in abbreviation. only works with -principal
+let rec check_expans visited ty =
+  let ty = repr ty in
+  assert (not (List.memq ty visited));
+  match ty.desc with
+    Tconstr (path, args, abbrev) ->
+      begin match find_expans path !abbrev with
+        Some ty' -> check_expans (ty :: visited) ty'
+      | None -> ()
+      end
+  | _ -> ()
+*)
+
 let memo = ref []
         (* Contains the list of saved abbreviation expansions. *)
 
@@ -305,12 +325,8 @@ let cleanup_abbrev () =
 
 let memorize_abbrev mem path v v' =
         (* Memorize the expansion of an abbreviation. *)
-  (* assert
-    begin match (repr v').desc with
-      Tconstr (path', _, _) when Path.same path path'-> false
-    | _ -> true
-    end; *)
   mem := Mcons (path, v, v', !mem);
+  (* check_expans [] v; *)
   memo := mem :: !memo
 
 let rec forget_abbrev_rec mem path =
@@ -328,20 +344,17 @@ let rec forget_abbrev_rec mem path =
 let forget_abbrev mem path =
   try mem := forget_abbrev_rec !mem path with Exit -> ()
 
-let rec check_abbrev_rec path = function
+(* debug: check for invalid abbreviations
+let rec check_abbrev_rec = function
     Mnil -> true
-  | Mcons (path', _, ty, rem) ->
-      if Path.same path path' && 
-        match repr ty with
-          {desc = Tconstr(path',_,_)} -> Path.same path path'
-        | _ -> false
-      then false
-      else check_abbrev_rec path rem
+  | Mcons (_, ty1, ty2, rem) ->
+      repr ty1 != repr ty2
   | Mlink mem' ->
-      check_abbrev_rec path !mem'
+      check_abbrev_rec !mem'
 
-let check_memorized_abbrevs path =
-  List.for_all (fun mem -> check_abbrev_rec path !mem) !memo
+let check_memorized_abbrevs () =
+  List.for_all (fun mem -> check_abbrev_rec !mem) !memo
+*)
 
                   (**********************************)
                   (*  Utilities for labels          *)
@@ -406,10 +419,8 @@ let log_change ch =
 let log_type ty =
   if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
 let link_type ty ty' = log_type ty; ty.desc <- Tlink ty'
-(*match repr ty' with
-    {desc=Tconstr(path,_,_)} -> assert (check_memorized_abbrevs path)
-  | _ -> ()
-*)
+  (* ; assert (check_memorized_abbrevs ()) *)
+  (*  ; check_expans [] ty' *)
 let set_level ty level =
   if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
   ty.level <- level

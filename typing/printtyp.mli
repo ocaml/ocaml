@@ -22,6 +22,7 @@ val longident: formatter -> Longident.t -> unit
 val ident: formatter -> Ident.t -> unit
 val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
+val raw_type_expr: formatter -> type_expr -> unit
 val reset: unit -> unit
 val mark_loops: type_expr -> unit
 val reset_and_mark_loops: type_expr -> unit

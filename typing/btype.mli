@@ -97,6 +97,8 @@ val unmark_class_signature: class_signature -> unit
 
 (**** Memorization of abbreviation expansion ****)
 
+val find_expans: Path.t -> abbrev_memo -> type_expr option
+        (* Look up a memorized abbreviation *)
 val cleanup_abbrev: unit -> unit
         (* Flush the cache of abbreviation expansions.
            When some types are saved (using [output_value]), this

@@ -69,6 +69,112 @@ let rec path ppf = function
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
 
+(* Print a raw type expression, with sharing *)
+
+let raw_list pr ppf = function
+    [] -> fprintf ppf "[]"
+  | a :: l ->
+      fprintf ppf "@[<1>[%a%t]@]" pr a
+        (fun ppf -> List.iter (fun x -> fprintf ppf ";@,%a" pr x) l)
+
+let rec safe_kind_repr v = function
+    Fvar {contents=Some k}  ->
+      if List.memq k v then "Fvar loop" else
+      safe_kind_repr (k::v) k
+  | Fvar _ -> "Fvar None"
+  | Fpresent -> "Fpresent"
+  | Fabsent -> "Fabsent"
+
+let rec safe_commu_repr v = function
+    Cok -> "Cok"
+  | Cunknown -> "Cunknown"
+  | Clink r ->
+      if List.memq r v then "Clink loop" else
+      safe_commu_repr (r::v) !r
+
+let rec safe_repr v = function
+    {desc = Tlink t} when not (List.memq t v) ->
+      safe_repr (t::v) t
+  | t -> t
+
+let rec list_of_memo = function
+    Mnil -> []
+  | Mcons (p, t1, t2, rem) -> (p,t1,t2) :: list_of_memo rem
+  | Mlink rem -> list_of_memo !rem
+
+let visited = ref []
+let rec raw_type ppf ty =
+  let ty = safe_repr [] ty in
+  if List.memq ty !visited then fprintf ppf "{id=%d}" ty.id else begin
+    visited := ty :: !visited;
+    fprintf ppf "@[<1>{id=%d;level=%d;desc=@,%a}@]" ty.id ty.level
+      raw_type_desc ty.desc
+  end
+and raw_type_list tl = raw_list raw_type tl
+and raw_type_desc ppf = function
+    Tvar -> fprintf ppf "Tvar"
+  | Tarrow(l,t1,t2,c) ->
+      fprintf ppf "@[<hov1>Tarrow(%s,@,%a,@,%a,@,%s)@]"
+        l raw_type t1 raw_type t2
+        (safe_commu_repr [] c)
+  | Ttuple tl ->
+      fprintf ppf "@[<1>Ttuple@,%a@]" raw_type_list tl
+  | Tconstr (p, tl, abbrev) ->
+      fprintf ppf "@[<hov1>Tconstr(@,%a,@,%a,@,%a)@]" path p
+        raw_type_list tl
+        (raw_list (fun ppf (p,t1,t2) ->
+          fprintf ppf "@[%a,@ %a,@ %a@]" path p raw_type t1 raw_type t2))
+        (list_of_memo !abbrev)
+  | Tobject (t, nm) ->
+      fprintf ppf "@[<hov1>Tobject(@,%a,@,@[<1>ref%t@])@]" raw_type t
+        (fun ppf ->
+          match !nm with None -> fprintf ppf " None"
+          | Some(p,tl) ->
+              fprintf ppf "(Some(@,%a,@,%a))" path p raw_type_list tl)
+  | Tfield (f, k, t1, t2) ->
+      fprintf ppf "@[<hov1>Tfield(@,%s,@,%s,@,%a,@,%a)@]" f
+        (safe_kind_repr [] k)
+        raw_type t1 raw_type t2
+  | Tnil -> fprintf ppf "Tnil"  
+  | Tlink t -> fprintf ppf "@[<1>Tlink@,%a@]" raw_type t
+  | Tsubst t -> fprintf ppf "@[<1>Tsubst@,%a@]" raw_type t
+  | Tunivar -> fprintf ppf "Tunivar"
+  | Tpoly (t, tl) ->
+      fprintf ppf "@[<hov1>Tpoly(@,%a,@,%a)@]"
+        raw_type t
+        raw_type_list tl
+  | Tvariant row ->
+      fprintf ppf
+        "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@ %s%b;@ %s%b;@ @[<1>%s%t@]}@]"
+        "row_fields="
+        (raw_list (fun ppf (l, f) ->
+          fprintf ppf "@[%s,@ %a@]" l raw_field f))
+        row.row_fields
+        "row_more=" raw_type row.row_more
+        "row_closed=" row.row_closed
+        "row_fixed=" row.row_fixed
+        "row_name="
+        (fun ppf ->
+          match row.row_name with None -> fprintf ppf "None"
+          | Some(p,tl) ->
+              fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
+
+and raw_field ppf = function
+    Rpresent None -> fprintf ppf "Rpresent None"
+  | Rpresent (Some t) -> fprintf ppf "@[<1>Rpresent(Some@,%a)@]" raw_type t
+  | Reither (c,tl,m,e) ->
+      fprintf ppf "@[<hov1>Reither(%b,@,%a,@,%b,@,@[<1>ref%t@])@]" c
+        raw_type_list tl m
+        (fun ppf ->
+          match !e with None -> fprintf ppf " None"
+          | Some f -> fprintf ppf "@,@[<1>(%a)@]" raw_field f)
+  | Rabsent -> fprintf ppf "Rabsent"
+
+let raw_type_expr ppf t =
+  visited := [];
+  raw_type ppf t;
+  visited := []
+
 (* Print a type expression *)
 
 let names = ref ([] : (type_expr * string) list)
