@@ -23,11 +23,10 @@ standalone programs, or as an interactive, toplevel-based system.
 
 The other compiler generates high-performance native code for a number
 of processors. Compilation takes longer and generates bigger code, but
-the generated programs deliver excellent performance (our tests show
-that this compiler outperforms Standard ML of New Jersey 1.08), while
-retaining the moderate memory requirements of the bytecode
-compiler. The native-code compiler currently runs on the following
-platforms:
+the generated programs deliver excellent performance (better than
+Standard ML of New Jersey 1.08 on our tests), while retaining the
+moderate memory requirements of the bytecode compiler. The native-code
+compiler currently runs on the following platforms:
 
         Alpha processors: DecStation 3000 under OSF1
         Sparc processors: Sun Sparcstation under SunOS 4.1 or Solaris 2
