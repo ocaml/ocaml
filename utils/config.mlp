@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-let version = "1.07+4"
+let version = "1.07+5"
 
 let standard_library =
   try
@@ -47,4 +47,3 @@ let system = "%%SYSTEM%%"
 let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
 let ext_lib = "%%EXT_LIB%%"
-
