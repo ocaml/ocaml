@@ -65,7 +65,6 @@ void set_minor_heap_size (asize_t size)
   ref_table_end = ref_table + ref_table_size + ref_table_reserve;
 }
 
-#if 0
 void oldify (value v, value *p)
 {
   value result, field0;
@@ -117,60 +116,6 @@ void oldify (value v, value *p)
     *p = v;
   }
 }
-#else
-void oldify (value v, value *p)
-{
-  value result, field0;
-  header_t hd;
-  mlsize_t sz, i;
-  tag_t tag;
-
- tail_call:
-  if (Is_block (v) && Is_young (v)){
-    Assert (Hp_val (v) >= young_ptr);
-    hd = Hd_val (v);
-    tag = Tag_hd (hd);
-    if (Is_blue_hd (hd)){    /* Already forwarded ? */
-      *p = Field (v, 0);     /* Then the forward pointer is the first field. */
-    }else if (tag == Infix_tag) {
-      mlsize_t offset = Infix_offset_hd (hd);
-      oldify(v - offset, p);
-      *p += offset;
-    }else if (tag >= No_scan_tag){
-      sz = Wosize_hd (hd);
-      result = alloc_shr (sz, tag);
-      for (i = 0; i < sz; i++) Field(result, i) = Field(v, i);
-      Hd_val (v) = Bluehd_hd (hd);            /* Put the forward flag. */
-      Field (v, 0) = result;                  /* And the forward pointer. */
-      *p = result;
-    }else{
-      /* We can do recursive calls before all the fields are filled, because
-         we will not be calling the major GC. */
-      sz = Wosize_hd (hd);
-      result = alloc_shr (sz, tag);
-      *p = result;
-      field0 = Field (v, 0);
-      Hd_val (v) = Bluehd_hd (hd);            /* Put the forward flag. */
-      Field (v, 0) = result;                  /* And the forward pointer. */
-      if (sz == 1) {
-        p = &Field (result, 0);
-        v = field0;
-        goto tail_call;
-      } else {
-        oldify (field0, &Field (result, 0));
-        for (i = 1; i < sz - 1; i++){
-          oldify (Field(v, i), &Field (result, i));
-        }
-        p = &Field (result, i);
-        v = Field (v, i);
-        goto tail_call;
-      }
-    }
-  }else{
-    *p = v;
-  }
-}
-#endif
 
 void minor_collection (void)
 {
