@@ -58,7 +58,10 @@ let select_addressing exp =
 
 (* Instruction selection *)
 
+let is_immediate n = (n <= 4095) & (n >= -4096)
+
 let select_oper op args =
+  match (op, args) with
   (* Multiplication, division and modulus are turned into
      calls to C library routines, except if the dividend is a power of 2. *)
     (Cmuli, [arg; Cconst_int n]) ->
@@ -82,15 +85,13 @@ let select_oper op args =
     when is_immediate n & n = 1 lsl (Misc.log2 n) ->
       (Iintop_imm(Imod, n), [arg])
   | (Cmodi, _) ->
-      (Iextcall(".mod", false), args)
+      (Iextcall(".rem", false), args)
   | _ ->
       raise Use_default
 
 let select_store addr exp = raise Use_default
 
 let pseudoregs_for_operation op arg res = raise Use_default
-
-let is_immediate n = (n <= 4095) & (n >= -4096)
 
 let word_addressed = false
 
