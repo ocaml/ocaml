@@ -191,8 +191,7 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top =
 	  (fun init (obj_init, env_init, _) ->
 	    incr i;
 	    Llet(Strict, obj_init,
-		 Lapply(Lvar env_init,
-                        [Lprim(Pfield 3, [Lprim(Pfield !i, [Lvar env])])]),
+		 Lapply(Lvar env_init, [Lprim(Pfield !i, [Lvar env])]),
 		 init))
 	  obj_init inh_init in
       let obj_init = lfunction [env] obj_init in
@@ -319,8 +318,8 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
 let transl_class ids cl_id arity pub_meths cl =
   let tables = Ident.create (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
-  let new_ids = Env.diff top_env cl.cl_env in
-  let top = (new_ids = []) && not req in
+  let top = not req in
+  let new_ids = if top then [] else Env.diff top_env cl.cl_env in
   let env2 = Ident.create "env" in
   let subst env lam i0 new_ids' =
     let fv = free_variables lam in
@@ -373,12 +372,20 @@ let transl_class ids cl_id arity pub_meths cl =
   let table = Ident.create "table" in
   let class_init = Ident.create "class_init" in
   let obj_init = Ident.create "obj_init" in
-  let ltable lam =
+  let ltable table lam =
     Llet(Strict, table,
          Lapply (oo_prim "create_table", [transl_meth_list pub_meths]), lam)
-  and lclass lam =
+  and ldirect obj_init =
+    Llet(Strict, obj_init, cl_init,
+         Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
+                   Lapply(Lvar obj_init, [lambda_unit; lambda_unit])))
+  in
+  (* simplification when we are an object (indicated by ids=[]) *)
+  if top && ids = [] then ltable cla (ldirect obj_init) else
+
+  let lclass lam =
     Llet(Strict, class_init, Lfunction(Curried, [cla], cl_init), lam)
-  and lbody =
+  and lbody obj_init =
     Llet(Strict, obj_init, Lapply(Lvar class_init, [Lvar table; lambda_unit]),
          Lsequence(Lapply (oo_prim "init_class", [Lvar table]),
                    Lprim(Pmakeblock(0, Immutable),
@@ -387,7 +394,8 @@ let transl_class ids cl_id arity pub_meths cl =
                           Lvar table;
                           lambda_unit])))
   in
-  if top then ltable (lclass lbody) else
+  if top then ltable table (lclass (lbody obj_init)) else
+
   let env_index = Ident.create "env_index"
   and envs = Ident.create "envs" in
   let lenvs =
@@ -401,11 +409,12 @@ let transl_class ids cl_id arity pub_meths cl =
            Lprim(Pmakeblock(0, Immutable),
                  List.map (fun id -> Lvar id) !new_ids_meths)) ::
           List.map (fun id -> Lvar id) !new_ids_init)
+  and linh_envs =
+    List.map (fun (_, _, lpath) -> Lprim(Pfield 3, [lpath])) inh_init
   in
   let make_envs lam =
     Llet(StrictOpt, envs,
-         Lprim(Pmakeblock(0, Immutable),
-               lenv :: List.map (fun (_, _, lpath) -> lpath) inh_init),
+         Lprim(Pmakeblock(0, Immutable), lenv :: linh_envs),
          lam)
   and def_ids cla lam =
     Llet(StrictOpt, env2,
@@ -426,23 +435,30 @@ let transl_class ids cl_id arity pub_meths cl =
          Lapply(oo_prim "lookup_tables",
                 [Lvar tables; Lprim(Pmakeblock(0, Immutable), inh_keys)]),
          lam)
+  and lset_cached i lam =
+    Lprim(Psetfield(i, true), [Lvar cached; lam])
+  and lget_env_init cached =
+    Lapply(Lprim(Pfield 0, [Lvar cached]), [lenvs])
+  in
+  let ldirect () =
+    ltable cla (Lsequence (lset_cached 0 (def_ids cla cl_init),
+                           Lapply (oo_prim "init_class", [Lvar cla])))
   in
   lcache (
   Lsequence(
   Lifthenelse(Lprim(Pfield 0, [Lvar cached]), lambda_unit,
-              ltable (
+              if ids = [] then ldirect () else
+              ltable table (
               lclass (
-              Llet (Strict, env_init,
-                    Lapply(Lvar class_init, [Lvar table]),
-                    Lsequence(
-                    Lapply (oo_prim "init_class", [Lvar table]),
-                    Lsequence(
-                    Lprim(Psetfield(0, true), [Lvar cached; Lvar env_init]),
-                    Lsequence(
-                    Lprim(Psetfield(1, true), [Lvar cached; Lvar class_init]),
-                    Lprim(Psetfield(2, true), [Lvar cached; Lvar table])
-                   ))))))),
+              Lsequence(
+              lset_cached 0 (Lapply(Lvar class_init, [Lvar table])),
+              Lsequence (
+              Lapply (oo_prim "init_class", [Lvar table]),
+              Lsequence(lset_cached 1 (Lvar class_init),
+                        lset_cached 2 (Lvar table))
+             ))))),
   make_envs (
+  if ids = [] then lapply (lget_env_init cached) [lambda_unit] else
   Lprim(Pmakeblock(0, Immutable),
         [Lapply(Lprim(Pfield 0, [Lvar cached]), [lenvs]);
          Lprim(Pfield 1, [Lvar cached]);
@@ -471,13 +487,13 @@ let class_stub =
 let dummy_class undef_fn =
   Lprim(Pmakeblock(0, Mutable), [undef_fn; undef_fn; oo_prim "dummy_table"])
 
-let () =
-  transl_object := (fun id meths cl -> transl_class [] id 0 meths cl)
-
 (* Wrapper for class compilation *)
 
 let transl_class ids cl_id arity pub_meths cl =
   oo_wrap cl.cl_env false (transl_class ids cl_id arity pub_meths) cl
+
+let () =
+  transl_object := (fun id meths cl -> transl_class [] id 0 meths cl)
 
 (* Error report *)
 

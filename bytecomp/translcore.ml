@@ -504,6 +504,20 @@ let assert_failed loc =
 (* Translation of expressions *)
 
 let rec transl_exp e =
+  let const_env =
+    (* Whether classes for immediate objects must be cached *)
+    match e.exp_desc with
+      Texp_object _ | Texp_construct _ | Texp_tuple _
+    | Texp_variant _ | Texp_record _ | Texp_array _
+    | Texp_lazy _ -> true
+    | Texp_let(rec_flag, pat_expr_list, body) ->
+        List.for_all (fun (_,e) -> Typecore.is_nonexpansive e) pat_expr_list
+    | _ -> false
+  in
+  if const_env then transl_exp0 e else
+  Translobj.oo_wrap e.exp_env true transl_exp0 e
+
+and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, {val_kind = Val_prim p}) ->
       transl_primitive p
@@ -671,14 +685,11 @@ let rec transl_exp e =
       Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
   | Texp_object (cs, cty, meths) ->
       let cl = Ident.create "class" in
-      let lam =
-        !transl_object cl meths
-          { cl_desc = Tclass_structure cs;
-            cl_loc = e.exp_loc;
-            cl_type = Tcty_signature cty;
-            cl_env = e.exp_env }
-      in
-      Lapply(Lprim(Pfield 0, [lam]), [lambda_unit])
+      !transl_object cl meths
+        { cl_desc = Tclass_structure cs;
+          cl_loc = e.exp_loc;
+          cl_type = Tcty_signature cty;
+          cl_env = e.exp_env }
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -749,33 +760,6 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
         transl_function exp.exp_loc false repr partial' pl in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
-(*
-  | [({pat_desc = Tpat_var id} as pat),
-     ({exp_desc = Texp_let(Nonrecursive, cases,
-                          ({exp_desc = Texp_function _} as e2))} as e1)]
-    when Ident.name id = "*opt*" ->
-      transl_function loc untuplify_fn repr (cases::bindings) partial [pat, e2]
-  | [pat, exp] when bindings <> [] ->
-      let exp =
-        List.fold_left
-          (fun exp cases ->
-            {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
-          exp bindings
-      in
-      transl_function loc untuplify_fn repr [] partial [pat, exp]
-  | (pat, exp)::_ when bindings <> [] ->
-      let param = name_pattern "param" pat_expr_list in
-      let exp =
-        { exp with exp_loc = loc; exp_desc =
-          Texp_match
-            ({exp with exp_type = pat.pat_type; exp_desc =
-              Texp_ident (Path.Pident param,
-                          {val_type = pat.pat_type; val_kind = Val_reg})},
-             pat_expr_list, partial) }
-      in
-      transl_function loc untuplify_fn repr bindings Total
-        [{pat with pat_desc = Tpat_var param}, exp]
-*)
   | ({pat_desc = Tpat_tuple pl}, _) :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
@@ -893,15 +877,16 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 
 (* Wrapper for class compilation *)
 
-let transl_exp e =
-  Translobj.oo_wrap e.exp_env true transl_exp e
+(*
+let transl_exp = transl_exp_wrap
 
 let transl_let rec_flag pat_expr_list body =
   match pat_expr_list with
     [] -> body
   | (_, expr) :: _ ->
-      Translobj.oo_wrap expr.exp_env true
+      Translobj.oo_wrap expr.exp_env false
         (transl_let rec_flag pat_expr_list) body
+*)
 
 (* Compile an exception definition *)
 

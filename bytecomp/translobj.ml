@@ -75,10 +75,9 @@ let oo_add_class id =
 
 let oo_wrap env req f x =
   if !wrapping then
-    if !required || not req then f x else
-    let old = !required in
-    try let lam = f x in required := old; lam
-    with exn -> required := old; raise exn
+    if !required then f x else
+    try required := true; let lam = f x in required := false; lam
+    with exn -> required := false; raise exn
   else try
     wrapping := true;
     required := req;
