@@ -9,3 +9,5 @@ cvt_emit.ml
 ocamlcp
 ocamlmktop
 primreq
+ocaml2to3.ml
+ocaml2to3
