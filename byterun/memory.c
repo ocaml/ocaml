@@ -63,7 +63,7 @@ char *caml_alloc_for_heap (asize_t request)
 void caml_free_for_heap (char *mem)
 {
 #ifdef USE_MMAP_INSTEAD_OF_MALLOC
-  aligned_caml_munmap (Chunk_block (mem),
+  caml_aligned_munmap (Chunk_block (mem),
                        Chunk_size (mem) + sizeof (heap_chunk_head));
 #else
   free (Chunk_block (mem));
