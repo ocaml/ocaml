@@ -199,13 +199,13 @@ the concrete type "token", defined in the interface file
 
 Grammar definitions have the following format:
 \begin{alltt}
-%\{
+\%\{
   \var{header}
-%\}
+\%\}
   \var{declarations}
-%%
+\%\%
   \var{rules}
-%%
+\%\%
   \var{trailer}
 \end{alltt}
 

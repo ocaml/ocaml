@@ -611,7 +611,7 @@ value curses_initscr(unit)
 value curses_wrefresh(win)
         value win;
 {
-  wrefresh((value) win);
+  wrefresh((WINDOW *) win);
   return Val_unit;
 }
 
