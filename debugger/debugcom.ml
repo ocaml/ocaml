@@ -15,6 +15,7 @@
 
 (* Low-level communication with the debuggee *)
 
+open Int64ops
 open Primitives
 
 (* The current connection with the debuggee *)
@@ -60,7 +61,7 @@ type checkpoint_report =
 
 (* Run the debuggee for N events *)
 
-let do_go n =
+let do_go_smallint n =
   output_char !conn.io_out 'g';
   output_binary_int !conn.io_out n;
   flush !conn.io_out;
@@ -84,6 +85,16 @@ let do_go n =
          rep_event_count = event_counter;
          rep_stack_pointer = stack_pos;
          rep_program_pointer = pc })
+
+let rec do_go n =
+  assert (n >= _0);
+  if n > max_small_int then(
+    ignore (do_go_smallint max_int);
+    do_go (n -- max_small_int)
+  )else(
+    do_go_smallint (Int64.to_int n)
+  )
+;;
 
 (* Perform a checkpoint *)
 

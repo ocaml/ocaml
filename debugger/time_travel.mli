@@ -25,11 +25,11 @@ val kill_all_checkpoints : unit -> unit
 val forget_process : io_channel -> int -> unit
 val recover : unit -> unit
 
-val go_to : int -> unit
+val go_to : int64 -> unit
 
 val run : unit -> unit
 val back_run : unit -> unit
-val step : int -> unit
+val step : int64 -> unit
 val finish : unit -> unit
 val next : int -> unit
 val start : unit -> unit

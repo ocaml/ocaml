@@ -61,7 +61,7 @@ let read_symbols' bytecode_file =
     List.iter (relocate_event orig) evl;
     eventlists := evl :: !eventlists
   done;
-  close_in ic;
+  close_in_noerr ic;
   !eventlists
 
 let read_symbols bytecode_file =
@@ -86,7 +86,7 @@ let read_symbols bytecode_file =
       | ev :: _ as evl ->
           let md = ev.ev_module in
           let sorted_evl =
-            Sort.list (fun ev1 ev2 -> ev1.ev_char <= ev2.ev_char) evl in
+            List.sort (fun ev1 ev2 -> compare ev1.ev_char ev2.ev_char) evl in
           modules := md :: !modules;
           Hashtbl.add all_events_by_module md sorted_evl;
           let real_evl =

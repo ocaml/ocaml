@@ -15,6 +15,8 @@
 
 (**************************** Configuration file ***********************)
 
+open Int64ops
+
 exception Toplevel
 
 (*** Miscellaneous parameters. ***)
@@ -61,10 +63,10 @@ let history_size = ref 30
 (*** Time travel parameters. ***)
 
 (* Step between checkpoints for long displacements.*)
-let checkpoint_big_step = ref 10000
+let checkpoint_big_step = ref (~~ "10000")
 
 (* Idem for small ones. *)
-let checkpoint_small_step = ref 1000
+let checkpoint_small_step = ref (~~ "1000")
 
 (* Maximum number of checkpoints. *)
 let checkpoint_max_count = ref 15

@@ -26,7 +26,7 @@ open Breakpoints
 
 (* Display information about the current event. *)
 let show_current_event ppf =
-  fprintf ppf "Time : %i" (current_time ());
+  fprintf ppf "Time : %Li" (current_time ());
   (match current_pc () with
    | Some pc ->
        fprintf ppf " - pc : %i" pc
@@ -50,7 +50,7 @@ let show_current_event ppf =
              (fun ppf l ->
                List.iter
                 (function x -> fprintf ppf "%i " x) l)
-             (Sort.list (<) breakpoints));
+             (List.sort compare breakpoints));
         show_point mdle point (current_event_is_before ()) true
   | Some {rep_type = Exited} ->
       fprintf ppf "@.Program exit.@.";
@@ -88,7 +88,7 @@ let show_current_frame ppf selected =
           fprintf ppf "Breakpoints : %a@."
           (fun ppf l ->
             List.iter (function x -> fprintf ppf "%i " x) l)
-          (Sort.list (<) breakpoints);
+          (List.sort compare breakpoints);
       end;
       show_point sel_ev.ev_module sel_ev.ev_char
                  (selected_event_is_before ()) selected

@@ -67,7 +67,7 @@ and lexeme =    (* Read a lexeme *)
     | '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
     | '0' ['o' 'O'] ['0'-'7']+
     | '0' ['b' 'B'] ['0'-'1']+
-      { INTEGER (int_of_string (Lexing.lexeme lexbuf)) }
+      { INTEGER (Int64.of_string (Lexing.lexeme lexbuf)) }
   | '*'
       { STAR }
   | "-"

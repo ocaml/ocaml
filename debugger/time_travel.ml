@@ -15,6 +15,7 @@
 
 (**************************** Time travel ******************************)
 
+open Int64ops
 open Instruct
 open Events
 open Debugcom
@@ -136,11 +137,11 @@ let cut2 t0 t l =
     function
       [] -> []
     | l ->
-       let (after, before) = cut (t0 - t - 1) l in
-         let l = cut2_t0 (2 * t) before in
+       let (after, before) = cut (t0 -- t -- _1) l in
+         let l = cut2_t0 (t ++ t) before in
            after::l
   in
-    let (after, before) = cut (t0 - 1) l in
+    let (after, before) = cut (t0 -- _1) l in
       after::(cut2_t0 t before)
 
 (* Separe first elements and last element of a list of checkpoint. *)
@@ -172,7 +173,7 @@ let new_checkpoint_list checkpoint_count accepted rejected =
     let (k, l) =
       list_truncate2 (checkpoint_count - List.length accepted) rejected
     in
-      (Sort.merge (fun {c_time = t1} {c_time = t2} -> t1 > t2) accepted k,
+      (List.merge (fun {c_time = t1} {c_time = t2} -> compare t2 t1) accepted k,
        l)
 
 (* Clean the checkpoint list. *)
@@ -231,7 +232,7 @@ let duplicate_current_checkpoint () =
     in
       checkpoints := list_replace checkpoint new_checkpoint !checkpoints;
       set_current_checkpoint checkpoint;
-      clean_checkpoints (checkpoint.c_time + 1) (!checkpoint_max_count - 1);
+      clean_checkpoints (checkpoint.c_time ++ _1) (!checkpoint_max_count - 1);
       if new_checkpoint.c_pid = 0 then  (* The ghost has not been killed *)
         (match do_checkpoint () with    (* Duplicate checkpoint *)
            Checkpoint_done pid ->
@@ -278,7 +279,7 @@ and find_event () =
     print_string "Searching next event...";
     print_newline ()
   end;
-  let report = do_go 1 in
+  let report = do_go _1 in
   !current_checkpoint.c_report <- Some report;
   stop_on_event report
 
@@ -303,14 +304,14 @@ let internal_step duration =
              !current_checkpoint.c_state <- C_stopped;
              if report.rep_type = Event then begin
                !current_checkpoint.c_time <-
-                 !current_checkpoint.c_time + duration;
+                 !current_checkpoint.c_time ++ duration;
                interrupted := false;
                last_breakpoint := None
                end
              else begin
                !current_checkpoint.c_time <-
-                  !current_checkpoint.c_time + duration
-                  - report.rep_event_count + 1;
+                  !current_checkpoint.c_time ++ duration
+                  -- (Int64.of_int report.rep_event_count) ++ _1;
                interrupted := true;
                last_breakpoint := None;
                stop_on_event report
@@ -326,10 +327,8 @@ let internal_step duration =
           print_string "Checkpoints : pid(time)"; print_newline ();
           List.iter
             (function {c_time = time; c_pid = pid; c_valid = valid} ->
-               print_int pid;
-               print_string "("; print_int time; print_string ")";
-               if not valid then print_string "(invalid)";
-               print_string " ")
+              Printf.printf "%d(%Ld)%s " pid time
+                            (if valid then "" else "(invalid)"))
             !checkpoints;
           print_newline ()
         end
@@ -339,7 +338,7 @@ let internal_step duration =
 (* Create a checkpoint at time 0 (new program). *)
 let new_checkpoint pid fd =
   let new_checkpoint =
-    {c_time = 0;
+    {c_time = _0;
      c_pid = pid;
      c_fd = fd;
      c_valid = true;
@@ -385,21 +384,18 @@ let forget_process fd pid =
   let checkpoint =
     find (function c -> c.c_pid = pid) (!current_checkpoint::!checkpoints)
   in
-    prerr_string "Lost connection with process ";
-    prerr_int pid;
+    Printf.eprintf "Lost connection with process %d" pid;
     if checkpoint = !current_checkpoint then begin
-      prerr_endline " (active process)";
+      Printf.eprintf " (active process)\n";
       match !current_checkpoint.c_state with
         C_stopped ->
-          prerr_string "at time ";
-          prerr_int !current_checkpoint.c_time
+          Printf.eprintf "at time %Ld" !current_checkpoint.c_time
       | C_running duration ->
-          prerr_string "between time ";
-          prerr_int !current_checkpoint.c_time;
-          prerr_string " and time ";
-          prerr_int (!current_checkpoint.c_time + duration)
+          Printf.eprintf "between time %Ld and time %Ld"
+                         !current_checkpoint.c_time
+                         (!current_checkpoint.c_time ++ duration)
       end;
-    prerr_endline "";
+    Printf.eprintf "\n"; flush stderr;
     Input_handling.remove_file fd;
     close_io checkpoint.c_fd;
     remove_file checkpoint.c_fd;
@@ -428,15 +424,15 @@ let rec step_forward duration =
     in
       internal_step first_step;
       if not !interrupted then
-        step_forward (duration - first_step)
+        step_forward (duration -- first_step)
     end
-  else if duration != 0 then
+  else if duration != _0 then
     internal_step duration
 
 (* Go to time `time' from current checkpoint (internal). *)
 let internal_go_to time =
-  let duration = time - current_time () in
-    if duration > 0 then
+  let duration = time -- (current_time ()) in
+    if duration > _0 then
       execute_without_breakpoints (function () -> step_forward duration)
 
 (* Move to a given time. *)
@@ -450,7 +446,7 @@ let go_to time =
 let rec find_last_breakpoint max_time =
   let rec find break =
     let time = current_time () in
-    step_forward (max_time - time);
+    step_forward (max_time -- time);
     match !last_breakpoint, !temporary_breakpoint_position with
       (Some _, _) when current_time () < max_time ->
         find !last_breakpoint
@@ -469,7 +465,7 @@ let rec find_last_breakpoint max_time =
 (* --- Assume 0 <= time < time_max *)
 let rec back_to time time_max =
   let
-    {c_time = t} as checkpoint = find_checkpoint_before (time_max - 1)
+    {c_time = t} as checkpoint = find_checkpoint_before (pre64 time_max)
   in
     go_to (max time t);
     let (new_time, break) = find_last_breakpoint time_max in
@@ -484,8 +480,8 @@ let rec back_to time time_max =
 (* --- Assume duration > 1 *)
 let step_backward duration =
   let time = current_time () in
-    if time > 0 then
-      back_to (max 0 (time - duration)) time
+    if time > _0 then
+      back_to (max _0 (time -- duration)) time
 
 (* Run the program from current time. *)
 (* Stop at the first breakpoint, or at the end of the program. *)
@@ -497,16 +493,16 @@ let rec run () =
 (* Run backward the program form current time. *)
 (* Stop at the first breakpoint, or at the beginning of the program. *)
 let back_run () =
-  if current_time () > 0 then
-    back_to 0 (current_time ())
+  if current_time () > _0 then
+    back_to _0 (current_time ())
 
 (* Step in any direction. *)
 (* Stop at the first brakpoint, or after `duration' steps. *)
 let step duration =
-  if duration >= 0 then
+  if duration >= _0 then
     step_forward duration
   else
-    step_backward (-duration)
+    step_backward (_0 -- duration)
 
 (*** Next, finish. ***)
 
@@ -552,10 +548,10 @@ let next_1 () =
   update_current_event ();
   match !current_event with
     None ->                             (* Beginning of the program. *)
-      step 1
+      step _1
   | Some event1 ->
       let (frame1, pc1) = initial_frame() in
-      step 1;
+      step _1;
       if not !interrupted then begin
         update_current_event ();
         match !current_event with
@@ -606,7 +602,7 @@ let start () =
         exec_with_temporary_breakpoint pc back_run;
         match !last_breakpoint with
           Some (pc', frame') when pc = pc' ->
-            step (-1);
+            step _minus1;
             (not !interrupted)
               &&
             (frame' - nargs > frame - curr_event.ev_stacksize)
@@ -620,10 +616,10 @@ let previous_1 () =
   update_current_event ();
   match !current_event with
     None ->                             (* End of the program. *)
-      step (-1)
+      step _minus1
   | Some event1 ->
       let (frame1, pc1) = initial_frame() in
-      step (-1);
+      step _minus1;
       if not !interrupted then begin
         update_current_event ();
         match !current_event with

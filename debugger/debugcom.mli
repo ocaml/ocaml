@@ -48,7 +48,7 @@ val reset_instr : int -> unit
 val do_checkpoint : unit -> checkpoint_report
 
 (* Step N events. *)
-val do_go : int -> report
+val do_go : int64 -> report
 
 (* Tell given process to terminate *)
 val stop :  Primitives.io_channel -> unit

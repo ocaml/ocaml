@@ -15,6 +15,7 @@
 
 %{
 
+open Int64ops
 open Primitives
 open Input_handling
 open Longident
@@ -26,7 +27,7 @@ open Parser_aux
 %token <string> LIDENT
 %token <string> UIDENT
 %token <string> OPERATOR
-%token <int>    INTEGER
+%token <int64>  INTEGER
 %token          STAR                    /* *  */
 %token          MINUS                   /* -  */
 %token          DOT                     /* . */
@@ -55,6 +56,9 @@ open Parser_aux
 %start integer_eol
 %type <int> integer_eol
 
+%start int64_eol
+%type <int64> int64_eol
+
 %start integer
 %type <int> integer
 
@@ -63,6 +67,9 @@ open Parser_aux
 
 %start opt_signed_integer_eol
 %type <int option> opt_signed_integer_eol
+
+%start opt_signed_int64_eol
+%type <int64 option> opt_signed_int64_eol
 
 %start identifier
 %type <string> identifier
@@ -112,19 +119,29 @@ argument_eol :
 
 integer_list_eol :
     INTEGER integer_list_eol
-      { $1::$2 }
+      { (to_int $1) :: $2 }
   | end_of_line
       { [] };
 
 integer_eol :
     INTEGER end_of_line
+      { to_int $1 };
+
+int64_eol :
+    INTEGER end_of_line
       { $1 };
 
 integer :
     INTEGER
-      { $1 };
+      { to_int $1 };
 
 opt_integer_eol :
+    INTEGER end_of_line
+      { Some (to_int $1) }
+  | end_of_line
+      { None };
+
+opt_int64_eol :
     INTEGER end_of_line
       { Some $1 }
   | end_of_line
@@ -134,6 +151,12 @@ opt_signed_integer_eol :
     MINUS integer_eol
       { Some (- $2) }
   | opt_integer_eol
+      { $1 };
+
+opt_signed_int64_eol :
+    MINUS int64_eol
+      { Some (Int64.neg $2) }
+  | opt_int64_eol
       { $1 };
 
 /* Identifiers and long identifiers */
@@ -175,10 +198,10 @@ opt_identifier_eol :
 expression:
     longident                                  { E_ident $1 }
   | STAR                                        { E_result }
-  | DOLLAR INTEGER                              { E_name $2 }
-  | expression DOT INTEGER                      { E_item($1, $3) }
-  | expression DOT LBRACKET INTEGER RBRACKET    { E_item($1, $4) }
-  | expression DOT LPAREN INTEGER RPAREN        { E_item($1, $4) }
+  | DOLLAR INTEGER                              { E_name (to_int $2) }
+  | expression DOT INTEGER                      { E_item($1, (to_int $3)) }
+  | expression DOT LBRACKET INTEGER RBRACKET    { E_item($1, (to_int $4)) }
+  | expression DOT LPAREN INTEGER RPAREN        { E_item($1, (to_int $4)) }
   | expression DOT LIDENT                       { E_field($1, $3) }
   | BANG expression                             { E_field($2, "contents") }
   | LPAREN expression RPAREN                    { $2 }
@@ -197,7 +220,7 @@ break_argument_eol :
     end_of_line                                 { BA_none }
   | integer_eol                                 { BA_pc $1 }
   | expression end_of_line                      { BA_function $1 }
-  | AT opt_identifier INTEGER opt_integer_eol   { BA_pos1 ($2, $3, $4) }
+  | AT opt_identifier INTEGER opt_integer_eol   { BA_pos1 ($2, (to_int $3), $4)}
   | AT opt_identifier SHARP integer_eol         { BA_pos2 ($2, $4) }
 ;
 

@@ -183,13 +183,9 @@ let io_channel_of_descr fd = {
   }
 
 let close_io io_channel =
-  (try
-     (try
-        close_out io_channel.io_out
-      with
-        Sys_error _ -> ())
-   with End_of_file -> ());             (* SIGPIPE during flush. *)
-  close_in io_channel.io_in
+  close_out_noerr io_channel.io_out;
+  close_in_noerr io_channel.io_in;
+;;
 
 let std_io = {
   io_in = stdin;

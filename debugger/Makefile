@@ -44,6 +44,7 @@ OTHEROBJS=\
   ../otherlibs/dynlink/dynlink.cmo
 
 OBJS=\
+	int64ops.cmo \
 	primitives.cmo \
 	unix_tools.cmo \
 	debugger_config.cmo \

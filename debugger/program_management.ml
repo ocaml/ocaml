@@ -15,6 +15,7 @@
 
 (* Manage the loading of the program *)
 
+open Int64ops
 open Unix
 open Unix_tools
 open Debugger_config
@@ -131,7 +132,7 @@ let initialize_loading () =
     prerr_endline "Opening a socket...";
   open_connection !socket_name
     (function () ->
-      go_to 0;
+      go_to _0;
       Symbols.set_all_events();
       exit_main_loop ())
 

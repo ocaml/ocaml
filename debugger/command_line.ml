@@ -15,6 +15,7 @@
 
 (************************ Reading and executing commands ***************)
 
+open Int64ops
 open Format
 open Misc
 open Instruct
@@ -251,8 +252,8 @@ let instr_reverse ppf lexbuf =
 
 let instr_step ppf lexbuf =
   let step_count =
-    match opt_signed_integer_eol Lexer.lexeme lexbuf with
-    | None -> 1
+    match opt_signed_int64_eol Lexer.lexeme lexbuf with
+    | None -> _1
     | Some x -> x
   in
     ensure_loaded ();
@@ -262,13 +263,13 @@ let instr_step ppf lexbuf =
 
 let instr_back ppf lexbuf =
   let step_count =
-    match opt_signed_integer_eol Lexer.lexeme lexbuf with
-    | None -> 1
+    match opt_signed_int64_eol Lexer.lexeme lexbuf with
+    | None -> _1
     | Some x -> x
   in
     ensure_loaded ();
     reset_named_values();
-    step (-step_count);
+    step (_0 -- step_count);
     show_current_event ppf
 
 let instr_finish ppf lexbuf =
@@ -308,7 +309,7 @@ let instr_previous ppf lexbuf =
     show_current_event ppf
 
 let instr_goto ppf lexbuf =
-  let time = integer_eol Lexer.lexeme lexbuf in
+  let time = int64_eol Lexer.lexeme lexbuf in
     ensure_loaded ();
     reset_named_values();
     go_to time;
@@ -658,8 +659,8 @@ let instr_down ppf lexbuf =
 
 let instr_last ppf lexbuf =
   let count =
-    match opt_signed_integer_eol Lexer.lexeme lexbuf with
-    | None -> 1
+    match opt_signed_int64_eol Lexer.lexeme lexbuf with
+    | None -> _1
     | Some x -> x
   in
     reset_named_values();
@@ -723,6 +724,13 @@ let integer_variable kill min msg name =
        else if (not kill) || ask_kill_program () then name := argument),
   function ppf -> fprintf ppf "%i@." !name
 
+let int64_variable kill min msg name =
+  (function lexbuf ->
+     let argument = int64_eol Lexer.lexeme lexbuf in
+       if argument < min then print_endline msg
+       else if (not kill) || ask_kill_program () then name := argument),
+  function ppf -> fprintf ppf "%Li@." !name
+
 let boolean_variable kill name =
   (function lexbuf ->
      let argument =
@@ -782,18 +790,18 @@ let info_checkpoints ppf lexbuf =
   if !checkpoints = [] then fprintf ppf "No checkpoint.@."
   else
     (if !debug_breakpoints then
-       (prerr_endline "      Time   Pid Version";
+       (prerr_endline "               Time   Pid Version";
         List.iter
           (function
              {c_time = time; c_pid = pid; c_breakpoint_version = version} ->
-               Printf.printf "%10d %5d %d\n" time pid version)
+               Printf.printf "%19Ld %5d %d\n" time pid version)
           !checkpoints)
      else
-       (print_endline "      Time   Pid";
+       (print_endline "               Time   Pid";
         List.iter
           (function
              {c_time = time; c_pid = pid} ->
-               Printf.printf "%10d %5d\n" time pid)
+               Printf.printf "%19Ld %5d\n" time pid)
           !checkpoints))
 
 let info_breakpoints ppf lexbuf =
@@ -1007,7 +1015,7 @@ It can be either :
   manual : the program is not launched by the debugger,\n\
     but manually by the user." };
      { var_name = "processcount";
-       var_action = integer_variable false 1 "Must be > 1."
+       var_action = integer_variable false 1 "Must be >= 1."
                                      checkpoint_max_count;
        var_help =
 "maximum number of process to keep." };
@@ -1016,12 +1024,12 @@ It can be either :
        var_help =
 "whether to make checkpoints or not." };
      { var_name = "bigstep";
-       var_action = integer_variable false 1 "Must be > 1."
+       var_action = int64_variable false _1 "Must be >= 1."
                                      checkpoint_big_step;
        var_help =
 "step between checkpoints during long displacements." };
      { var_name = "smallstep";
-       var_action = integer_variable false 1 "Must be > 1."
+       var_action = int64_variable false _1 "Must be >= 1."
                                      checkpoint_small_step;
        var_help =
 "step between checkpoints during small displacements." };
