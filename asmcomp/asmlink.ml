@@ -135,8 +135,10 @@ let make_startup_file filename info_list =
   Emit.begin_assembly();
   let name_list = List.map (fun ui -> ui.ui_name) info_list in
   Asmgen.compile_phrase(Cmmgen.entry_point name_list);
-  let apply_functions = ref IntSet.empty in
-  let curry_functions = ref IntSet.empty in
+  let apply_functions = ref (IntSet.add 2 (IntSet.add 3 IntSet.empty)) in
+  (* The callback functions always reference caml_apply[23] *)
+  let curry_functions =
+    ref IntSet.empty in
   List.iter
     (fun info ->
       List.iter
@@ -156,7 +158,8 @@ let make_startup_file filename info_list =
     (fun name -> Asmgen.compile_phrase(Cmmgen.predef_exception name))
     Runtimedef.builtin_exceptions;
   Asmgen.compile_phrase(Cmmgen.global_table name_list);
-  Asmgen.compile_phrase(Cmmgen.frame_table ("startup" :: name_list));
+  Asmgen.compile_phrase
+    (Cmmgen.frame_table("startup" :: "system" :: name_list));
   Emit.end_assembly();
   close_out oc
 
