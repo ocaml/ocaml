@@ -368,13 +368,6 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
       let texp = type_method met_env self cl.pcl_self expr ty in
       (met_env, Cf_meth (lab, texp)::fields, vars_sig)
   
-(*       let (texp, ty) = type_method met_env self cl.pcl_self expr in *)
-(*       let ty' = Ctype.filter_method met_env lab self in *)
-(*         begin try Ctype.unify met_env ty ty' with Ctype.Unify trace -> *)
-(*           raise(Error(loc, Method_type_mismatch (lab, trace))) *)
-(*         end; *)
-(*       (met_env, Cf_meth (lab, texp)::fields, vars_sig) *)
-  
 let transl_class temp_env env
   (cl, id, cl_id, obj_id, self, concr, concr_meths, new_args, new_ty,
    temp_cl, temp_cl_params, cl_abbrev, temp_obj, temp_obj_params, abbrev)
@@ -663,7 +656,7 @@ let type_class_type_field env temp_env cl self
         try Env.lookup_class name env with Not_found ->
           raise (Error (loc, Unbound_class name))
       in
-      let (cstr, args, vals, super) = Ctype.prune_class_type cl_sig in
+      let (cstr, _, vals, super) = Ctype.prune_class_type cl_sig in
       if (List.length params <> List.length cstr) then
         raise(Error(loc, Parameter_arity_mismatch
                     (path, List.length cstr, List.length params)));
@@ -850,7 +843,7 @@ let build_abbrevs temp_env env (cl, obj_id) =
       cty_self = self;
       cty_concr = concr_meths;
       cty_new = None }
-  in
+  in let (_, ext_env) = Env.enter_class cl.pcty_name temp_cl_sig ext_env in
 
   ((cl, cl_id, cl_abbrev, obj_id, obj_abbrev, obj_params, obj_ty, temp_cl_sig,
     val_redef, meth_redef, concr),
