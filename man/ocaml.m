@@ -13,6 +13,9 @@ ocaml \- The Objective Caml interactive toplevel
 .BI \-I \ lib-dir
 ]
 [
+.I object-files
+]
+[
 .I script-file
 ]
 .SH DESCRIPTION
@@ -35,6 +38,14 @@ Phrases are read on standard input, results are printed on standard
 output, errors on standard error. End-of-file on standard input
 terminates
 .BR ocaml (1).
+
+If one or more
+.I object-files
+(ending in
+.B .cmo
+or
+.B .cma
+ ) are given, they are loaded silently before starting the toplevel.
 
 If a
 .I script-file

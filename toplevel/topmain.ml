@@ -14,7 +14,7 @@
 
 open Clflags
 
-let usage = "Usage: ocaml <options> [script-file]\noptions are:"
+let usage = "Usage: ocaml <options> <object-files> [script-file]\noptions are:"
 
 let preload_objects = ref []
 
