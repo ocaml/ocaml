@@ -203,7 +203,7 @@ let print_out_exception ppf exn outv =
   | Stack_overflow ->
       fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
   | _ ->
-      fprintf ppf "@[Uncaught exception:@ %a.@]@." !print_out_value outv
+      fprintf ppf "@[Exception:@ %a.@]@." !print_out_value outv
 
 let print_exception_outcome ppf exn =
   if exn = Out_of_memory then Gc.full_major ();
