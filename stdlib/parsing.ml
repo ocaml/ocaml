@@ -168,7 +168,9 @@ let peek_val env n =
   Obj.magic env.v_stack.(env.asp - n)
 
 let symbol_start () =
-  env.symb_start_stack.(env.asp - env.rule_len + 1)
+  if env.rule_len > 0
+  then env.symb_start_stack.(env.asp - env.rule_len + 1)
+  else env.symb_end_stack.(env.asp)
 let symbol_end () =
   env.symb_end_stack.(env.asp)
 
