@@ -523,21 +523,27 @@ method private emit_parts env exp =
     (exp, env)
   else begin
     let r = self#emit_expr env exp in
-    if Array.length r = 0 then
-      (Ctuple [], env)
-    else begin
-      let id = Ident.create "bind" in
-      if all_regs_anonymous r then
-        (Cvar id, Tbl.add id r env)
-      else begin
-        let rv = Array.create (Array.length r) Reg.dummy in
-        for i = 0 to Array.length r - 1 do
-          rv.(i) <- Reg.create r.(i).typ
-        done;
-        self#insert_moves r rv;
-        (Cvar id, Tbl.add id rv env)
-      end          
-    end
+    match Array.length r with
+      0 ->
+        (* Corresponds to a raise or exit instruction; make up some dummy
+           value, this is unreachable code! *)
+        (Cconst_int 0, env)
+    | 1 ->
+        (* The normal case *)
+        let id = Ident.create "bind" in
+        let r0 = r.(0) in
+        if String.length r0.name = 0 then
+          (* r0 is an anonymous, unshared register; can use it directly *)
+          (Cvar id, Tbl.add id r env)
+        else begin
+          (* Introduce a fresh temp reg to hold the result *)
+          let v0 = Reg.create r0.typ in
+          self#insert_move r0 v0;
+          (Cvar id, Tbl.add id [|v0|] env)
+        end
+    | _ ->
+        (* Must not happen, we no longer support nested tuples *)
+        assert false
   end
 
 method private emit_parts_list env exp_list =
