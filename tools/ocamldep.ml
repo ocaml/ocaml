@@ -218,7 +218,7 @@ and add_struct_item bv item =
   | Pstr_exception(id, args) ->
       List.iter (add_type bv) args; bv
   | Pstr_exn_rebind(id, l) ->
-      add l; bv
+      add bv l; bv
   | Pstr_module(id, modl) ->
       add_module bv modl; StringSet.add id bv
   | Pstr_modtype(id, mty) ->
