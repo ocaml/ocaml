@@ -40,8 +40,8 @@ clean::
 	rm -f *.o *.s *.a *~
 
 depend:
-	gcc -MM $(CFLAGS) *.c > .depend
-	gcc -MM $(DFLAGS) *.c | sed -e 's/\.o/.d.o/' >> .depend
+	gcc -MM $(CFLAGS) *.c ../byterun/*.c > .depend
+	gcc -MM $(CFLAGS) -DDEBUG *.c ../byterun/*.c | sed -e 's/\.o/.d.o/' >> .depend
 
 include .depend
 
