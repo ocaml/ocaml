@@ -22,10 +22,12 @@ compiler currently runs on the following platforms:
 
     Alpha processors: DecStation 3000 under OSF1 (a.k.a. Digital Unix)
     Sparc processors: Sun Sparcstation under SunOS 4.1, Solaris 2, NetBSD
-    Intel 486 and Pentium processors: PCs under Linux, NextStep, FreeBSD
+    Intel 486 and Pentium processors: PCs under Linux, NextStep,
+                                      FreeBSD, Solaris 2
     Mips processors: DecStation 3100 and 5000 under Ultrix 4
-    HP PA-RISC processors: HP 9000/700 under NextStep (no HPUX yet)
-    PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 3.2
+    HP PA-RISC processors: HP 9000/700 under HPUX 9 and NextStep
+    PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 3.2,
+                        PowerMacintosh under MkLinux
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
@@ -99,12 +101,12 @@ written in English or in French. The list has about 200 subscribers.
 
 Messages to the list should be sent to:
 
-              caml-list@pauillac.inria.fr
+              caml-list@inria.fr
 
 If you wish to subscribe to this list, please send a message
 (including your email address) to:
 
-              caml-list-request@pauillac.inria.fr
+              caml-list-request@inria.fr
 
 Archives of the list are available on the World Wide Web at URL
 http://pauillac.inria.fr/caml/.
@@ -117,15 +119,15 @@ BUG REPORTS AND USER FEEDBACK:
 
 Send your bug reports by E-mail to:
 
-          caml-light@pauillac.inria.fr
+          caml-light@inria.fr
 
 To be effective, bug reports should include a complete program
 (preferably small) that exhibits the unexpected behavior, and the
 configuration you are using (machine type, etc).
 
-The mailing list caml-light@pauillac.inria.fr is forwarded to
+The mailing list caml-light@inria.fr is forwarded to
 a small group of implementors at INRIA. For general questions and
-discussions, caml-list@pauillac.inria.fr is better; for bug reports
-and very specific technical questions, caml-light@pauillac.inria.fr
+discussions, caml-list@inria.fr is better; for bug reports
+and very specific technical questions, caml-light@inria.fr
 is preferred. We often cross-post from one list to the other, anyway.
 
