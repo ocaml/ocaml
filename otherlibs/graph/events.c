@@ -32,76 +32,76 @@ struct event_data {
   unsigned char key;
 };
 
-static struct event_data gr_queue[SIZE_QUEUE];
-static unsigned int gr_head = 0;       /* position of next read */
-static unsigned int gr_tail = 0;       /* position of next write */
+static struct event_data caml_gr_queue[SIZE_QUEUE];
+static unsigned int caml_gr_head = 0;       /* position of next read */
+static unsigned int caml_gr_tail = 0;       /* position of next write */
 
-#define QueueIsEmpty (gr_tail == gr_head)
+#define QueueIsEmpty (caml_gr_tail == caml_gr_head)
 
-static void gr_enqueue_event(int kind, int mouse_x, int mouse_y,
+static void caml_gr_enqueue_event(int kind, int mouse_x, int mouse_y,
                              int button, int key)
 {
   struct event_data * ev;
 
-  ev = &(gr_queue[gr_tail]);
+  ev = &(caml_gr_queue[caml_gr_tail]);
   ev->kind = kind;
   ev->mouse_x = mouse_x;
   ev->mouse_y = mouse_y;
   ev->button = (button != 0);
   ev->key = key;
-  gr_tail = (gr_tail + 1) % SIZE_QUEUE;
+  caml_gr_tail = (caml_gr_tail + 1) % SIZE_QUEUE;
   /* If queue was full, it now appears empty; drop oldest entry from queue. */
-  if (QueueIsEmpty) gr_head = (gr_head + 1) % SIZE_QUEUE;
+  if (QueueIsEmpty) caml_gr_head = (caml_gr_head + 1) % SIZE_QUEUE;
 }
 
 #define BUTTON_STATE(state) \
   ((state) & (Button1Mask|Button2Mask|Button3Mask|Button4Mask|Button5Mask))
 
-void gr_handle_event(XEvent * event)
+void caml_gr_handle_event(XEvent * event)
 {
   switch (event->type) {
 
   case Expose:
-    XCopyArea(grdisplay, grbstore.win, grwindow.win, grwindow.gc,
-              event->xexpose.x, event->xexpose.y + grbstore.h - grwindow.h,
+    XCopyArea(caml_gr_display, caml_gr_bstore.win, caml_gr_window.win, caml_gr_window.gc,
+              event->xexpose.x, event->xexpose.y + caml_gr_bstore.h - caml_gr_window.h,
               event->xexpose.width, event->xexpose.height,
               event->xexpose.x, event->xexpose.y);
-    XFlush(grdisplay);
+    XFlush(caml_gr_display);
     break;
 
   case ConfigureNotify:
-    grwindow.w = event->xconfigure.width;
-    grwindow.h = event->xconfigure.height;
-    if (grwindow.w > grbstore.w || grwindow.h > grbstore.h) {
+    caml_gr_window.w = event->xconfigure.width;
+    caml_gr_window.h = event->xconfigure.height;
+    if (caml_gr_window.w > caml_gr_bstore.w || caml_gr_window.h > caml_gr_bstore.h) {
 
       /* Allocate a new backing store large enough to accomodate
          both the old backing store and the current window. */
       struct canvas newbstore;
-      newbstore.w = max(grwindow.w, grbstore.w);
-      newbstore.h = max(grwindow.h, grbstore.h);
+      newbstore.w = max(caml_gr_window.w, caml_gr_bstore.w);
+      newbstore.h = max(caml_gr_window.h, caml_gr_bstore.h);
       newbstore.win =
-        XCreatePixmap(grdisplay, grwindow.win, newbstore.w, newbstore.h,
-                      XDefaultDepth(grdisplay, grscreen));
-      newbstore.gc = XCreateGC(grdisplay, newbstore.win, 0, NULL);
-      XSetBackground(grdisplay, newbstore.gc, grwhite);
-      XSetForeground(grdisplay, newbstore.gc, grwhite);
-      XFillRectangle(grdisplay, newbstore.win, newbstore.gc,
+        XCreatePixmap(caml_gr_display, caml_gr_window.win, newbstore.w, newbstore.h,
+                      XDefaultDepth(caml_gr_display, caml_gr_screen));
+      newbstore.gc = XCreateGC(caml_gr_display, newbstore.win, 0, NULL);
+      XSetBackground(caml_gr_display, newbstore.gc, caml_gr_white);
+      XSetForeground(caml_gr_display, newbstore.gc, caml_gr_white);
+      XFillRectangle(caml_gr_display, newbstore.win, newbstore.gc,
                      0, 0, newbstore.w, newbstore.h);
-      XSetForeground(grdisplay, newbstore.gc, grcolor);
-      if (grfont != NULL)
-        XSetFont(grdisplay, newbstore.gc, grfont->fid);
+      XSetForeground(caml_gr_display, newbstore.gc, caml_gr_color);
+      if (caml_gr_font != NULL)
+        XSetFont(caml_gr_display, newbstore.gc, caml_gr_font->fid);
 
       /* Copy the old backing store into the new one */
-      XCopyArea(grdisplay, grbstore.win, newbstore.win, newbstore.gc,
-                0, 0, grbstore.w, grbstore.h, 0, newbstore.h - grbstore.h);
+      XCopyArea(caml_gr_display, caml_gr_bstore.win, newbstore.win, newbstore.gc,
+                0, 0, caml_gr_bstore.w, caml_gr_bstore.h, 0, newbstore.h - caml_gr_bstore.h);
 
       /* Free the old backing store */
-      XFreeGC(grdisplay, grbstore.gc);
-      XFreePixmap(grdisplay, grbstore.win);
+      XFreeGC(caml_gr_display, caml_gr_bstore.gc);
+      XFreePixmap(caml_gr_display, caml_gr_bstore.win);
 
       /* Use the new backing store */
-      grbstore = newbstore;
-      XFlush(grdisplay);
+      caml_gr_bstore = newbstore;
+      XFlush(caml_gr_display);
     }
     break;
 
@@ -117,25 +117,25 @@ void gr_handle_event(XEvent * event)
       nchars = XLookupString(&(event->xkey), keytxt, sizeof(keytxt),
                              &thekey, 0);
       for (p = keytxt; nchars > 0; p++, nchars--)
-        gr_enqueue_event(event->type, event->xkey.x, event->xkey.y,
+        caml_gr_enqueue_event(event->type, event->xkey.x, event->xkey.y,
                          BUTTON_STATE(event->xkey.state), *p);
       break;
     }
 
   case ButtonPress:
   case ButtonRelease:
-    gr_enqueue_event(event->type, event->xbutton.x, event->xbutton.y,
+    caml_gr_enqueue_event(event->type, event->xbutton.x, event->xbutton.y,
                      event->type == ButtonPress, 0);
     break;
 
   case MotionNotify:
-    gr_enqueue_event(event->type, event->xmotion.x, event->xmotion.y,
+    caml_gr_enqueue_event(event->type, event->xmotion.x, event->xmotion.y,
                      BUTTON_STATE(event->xmotion.state), 0);
     break;
   }
 }
 
-static value gr_wait_allocate_result(int mouse_x, int mouse_y, int button,
+static value caml_gr_wait_allocate_result(int mouse_x, int mouse_y, int button,
                                      int keypressed, int key)
 {
   value res = alloc_small(5, 0);
@@ -147,7 +147,7 @@ static value gr_wait_allocate_result(int mouse_x, int mouse_y, int button,
   return res;
 }
 
-static value gr_wait_event_poll(void)
+static value caml_gr_wait_event_poll(void)
 {
   int mouse_x, mouse_y, button, key, keypressed;
   Window rootwin, childwin;
@@ -155,7 +155,7 @@ static value gr_wait_event_poll(void)
   unsigned int modifiers;
   unsigned int i;
 
-  if (XQueryPointer(grdisplay, grwindow.win,
+  if (XQueryPointer(caml_gr_display, caml_gr_window.win,
                     &rootwin, &childwin,
                     &root_x, &root_y, &win_x, &win_y,
                     &modifiers)) {
@@ -170,35 +170,35 @@ static value gr_wait_event_poll(void)
   /* Look inside event queue for pending KeyPress events */
   key = 0;
   keypressed = False;
-  for (i = gr_head; i != gr_tail; i = (i + 1) % SIZE_QUEUE) {
-    if (gr_queue[i].kind == KeyPress) {
+  for (i = caml_gr_head; i != caml_gr_tail; i = (i + 1) % SIZE_QUEUE) {
+    if (caml_gr_queue[i].kind == KeyPress) {
       keypressed = True;
-      key = gr_queue[i].key;
+      key = caml_gr_queue[i].key;
       break;
     }
   }
-  return gr_wait_allocate_result(mouse_x, mouse_y, button, keypressed, key);
+  return caml_gr_wait_allocate_result(mouse_x, mouse_y, button, keypressed, key);
 }
 
-static value gr_wait_event_in_queue(long mask)
+static value caml_gr_wait_event_in_queue(long mask)
 {
   struct event_data * ev;
   /* Pop events in queue until one matches mask. */
-  while (gr_head != gr_tail) {
-    ev = &(gr_queue[gr_head]);
-    gr_head = (gr_head + 1) % SIZE_QUEUE;
+  while (caml_gr_head != caml_gr_tail) {
+    ev = &(caml_gr_queue[caml_gr_head]);
+    caml_gr_head = (caml_gr_head + 1) % SIZE_QUEUE;
     if ((ev->kind == KeyPress && (mask & KeyPressMask))
         || (ev->kind == ButtonPress && (mask & ButtonPressMask))
         || (ev->kind == ButtonRelease && (mask & ButtonReleaseMask))
         || (ev->kind == MotionNotify && (mask & PointerMotionMask)))
-      return gr_wait_allocate_result(ev->mouse_x, ev->mouse_y,
+      return caml_gr_wait_allocate_result(ev->mouse_x, ev->mouse_y,
                                      ev->button, ev->kind == KeyPress,
                                      ev->key);
   }
   return Val_false;
 }
 
-static value gr_wait_event_blocking(long mask)
+static value caml_gr_wait_event_blocking(long mask)
 {
 #ifdef POSIX_SIGNALS
   sigset_t sigset;
@@ -210,13 +210,13 @@ static value gr_wait_event_blocking(long mask)
   value res;
 
   /* First see if we have a matching event in the queue */
-  res = gr_wait_event_in_queue(mask);
+  res = caml_gr_wait_event_in_queue(mask);
   if (res != Val_false) return res;
 
   /* Increase the selected events if required */
-  if ((mask & ~grselected_events) != 0) {
-    grselected_events |= mask;
-    XSelectInput(grdisplay, grwindow.win, grselected_events);
+  if ((mask & ~caml_gr_selected_events) != 0) {
+    caml_gr_selected_events |= mask;
+    XSelectInput(caml_gr_display, caml_gr_window.win, caml_gr_selected_events);
   }
 
   /* Block or deactivate the EVENT signal */
@@ -230,16 +230,16 @@ static value gr_wait_event_blocking(long mask)
 
   /* Replenish our event queue from that of X11 */
   while (1) {
-    if (XCheckMaskEvent(grdisplay, -1 /*all events*/, &event)) {
+    if (XCheckMaskEvent(caml_gr_display, -1 /*all events*/, &event)) {
       /* One event available: add it to our queue */
-      gr_handle_event(&event);
+      caml_gr_handle_event(&event);
       /* See if we now have a matching event */
-      res = gr_wait_event_in_queue(mask);
+      res = caml_gr_wait_event_in_queue(mask);
       if (res != Val_false) break;
     } else {
       /* No event available: block on input socket until one is */
       FD_ZERO(&readfds);
-      FD_SET(ConnectionNumber(grdisplay), &readfds);
+      FD_SET(ConnectionNumber(caml_gr_display), &readfds);
       enter_blocking_section();
       select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
       leave_blocking_section();
@@ -257,12 +257,12 @@ static value gr_wait_event_blocking(long mask)
   return res;
 }
 
-value gr_wait_event(value eventlist) /* ML */
+value caml_gr_wait_event(value eventlist) /* ML */
 {
   int mask;
   Bool poll;
 
-  gr_check_open();
+  caml_gr_check_open();
   mask = 0;
   poll = False;
   while (eventlist != Val_int(0)) {
@@ -281,7 +281,7 @@ value gr_wait_event(value eventlist) /* ML */
     eventlist = Field(eventlist, 1);
   }
   if (poll)
-    return gr_wait_event_poll();
+    return caml_gr_wait_event_poll();
   else
-    return gr_wait_event_blocking(mask);
+    return caml_gr_wait_event_blocking(mask);
 }

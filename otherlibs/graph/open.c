@@ -28,26 +28,26 @@
 #include <sys/time.h>
 #endif
 
-Display * grdisplay = NULL;
-int grscreen;
-Colormap grcolormap;
-int grwhite, grblack, grbackground;
-struct canvas grwindow;
-struct canvas grbstore;
-Bool grdisplay_mode;
-Bool grremember_mode;
-int grx, gry;
-int grcolor;
-extern XFontStruct * grfont;
-long grselected_events;
-static Bool gr_initialized = False;
+Display * caml_gr_display = NULL;
+int caml_gr_screen;
+Colormap caml_gr_colormap;
+int caml_gr_white, caml_gr_black, caml_gr_background;
+struct canvas caml_gr_window;
+struct canvas caml_gr_bstore;
+Bool caml_gr_display_modeflag;
+Bool caml_gr_remember_modeflag;
+int caml_gr_x, caml_gr_y;
+int caml_gr_color;
+extern XFontStruct * caml_gr_font;
+long caml_gr_selected_events;
+static Bool caml_gr_initialized = False;
 static char * window_name = NULL;
 
-static int gr_error_handler(Display *display, XErrorEvent *error);
-static int gr_ioerror_handler(Display *display);
-value gr_clear_graph(void);
+static int caml_gr_error_handler(Display *display, XErrorEvent *error);
+static int caml_gr_ioerror_handler(Display *display);
+value caml_gr_clear_graph(void);
 
-value gr_open_graph(value arg)
+value caml_gr_open_graph(value arg)
 {
   char display_name[256], geometry_spec[64];
   char * p, * q;
@@ -57,8 +57,8 @@ value gr_open_graph(value arg)
   int x, y, w, h;
   XWindowAttributes attributes;
 
-  if (gr_initialized) {
-    gr_clear_graph();
+  if (caml_gr_initialized) {
+    caml_gr_clear_graph();
   } else {
 
     /* Parse the argument */
@@ -71,20 +71,20 @@ value gr_open_graph(value arg)
     *q = 0;
 
     /* Open the display */
-    if (grdisplay == NULL) {
-      grdisplay = XOpenDisplay(display_name);
-      if (grdisplay == NULL)
-        gr_fail("Cannot open display %s", XDisplayName(display_name));
-      grscreen = DefaultScreen(grdisplay);
-      grblack = BlackPixel(grdisplay, grscreen);
-      grwhite = WhitePixel(grdisplay, grscreen);
-      grbackground = grwhite;
-      grcolormap = DefaultColormap(grdisplay, grscreen);
+    if (caml_gr_display == NULL) {
+      caml_gr_display = XOpenDisplay(display_name);
+      if (caml_gr_display == NULL)
+        caml_gr_fail("Cannot open display %s", XDisplayName(display_name));
+      caml_gr_screen = DefaultScreen(caml_gr_display);
+      caml_gr_black = BlackPixel(caml_gr_display, caml_gr_screen);
+      caml_gr_white = WhitePixel(caml_gr_display, caml_gr_screen);
+      caml_gr_background = caml_gr_white;
+      caml_gr_colormap = DefaultColormap(caml_gr_display, caml_gr_screen);
     }
 
     /* Set up the error handlers */
-    XSetErrorHandler(gr_error_handler);
-    XSetIOErrorHandler(gr_ioerror_handler);
+    XSetErrorHandler(caml_gr_error_handler);
+    XSetIOErrorHandler(caml_gr_ioerror_handler);
 
     /* Parse the geometry specification */
     hints.x = 0;
@@ -94,7 +94,7 @@ value gr_open_graph(value arg)
     hints.flags = PPosition | PSize;
     hints.win_gravity = 0;
 
-    ret = XWMGeometry(grdisplay, grscreen, geometry_spec, "", BORDER_WIDTH,
+    ret = XWMGeometry(caml_gr_display, caml_gr_screen, geometry_spec, "", BORDER_WIDTH,
                       &hints, &x, &y, &w, &h, &hints.win_gravity);
     if (ret & (XValue | YValue)) {
       hints.x = x; hints.y = y; hints.flags |= USPosition;
@@ -104,59 +104,59 @@ value gr_open_graph(value arg)
     }
 
     /* Initial drawing color is black */
-    grcolor = 0; /* CAML COLOR */
+    caml_gr_color = 0; /* CAML COLOR */
 
     /* Create the on-screen window */
-    grwindow.w = hints.width;
-    grwindow.h = hints.height;
-    grwindow.win =
-      XCreateSimpleWindow(grdisplay, DefaultRootWindow(grdisplay),
+    caml_gr_window.w = hints.width;
+    caml_gr_window.h = hints.height;
+    caml_gr_window.win =
+      XCreateSimpleWindow(caml_gr_display, DefaultRootWindow(caml_gr_display),
                           hints.x, hints.y, hints.width, hints.height,
-                          BORDER_WIDTH, grblack, grbackground);
+                          BORDER_WIDTH, caml_gr_black, caml_gr_background);
     p = window_name;
     if (p == NULL) p = DEFAULT_WINDOW_NAME;
     /* What not use XSetWMProperties? */
-    XSetStandardProperties(grdisplay, grwindow.win, p, p,
+    XSetStandardProperties(caml_gr_display, caml_gr_window.win, p, p,
                            None, NULL, 0, &hints);
-    grwindow.gc = XCreateGC(grdisplay, grwindow.win, 0, NULL);
-    XSetBackground(grdisplay, grwindow.gc, grbackground);
-    XSetForeground(grdisplay, grwindow.gc, grblack);
+    caml_gr_window.gc = XCreateGC(caml_gr_display, caml_gr_window.win, 0, NULL);
+    XSetBackground(caml_gr_display, caml_gr_window.gc, caml_gr_background);
+    XSetForeground(caml_gr_display, caml_gr_window.gc, caml_gr_black);
 
     /* Require exposure, resize and keyboard events */
-    grselected_events = DEFAULT_SELECTED_EVENTS;
-    XSelectInput(grdisplay, grwindow.win, grselected_events);
+    caml_gr_selected_events = DEFAULT_SELECTED_EVENTS;
+    XSelectInput(caml_gr_display, caml_gr_window.win, caml_gr_selected_events);
 
     /* Map the window on the screen and wait for the first Expose event */
-    XMapWindow(grdisplay, grwindow.win);
-    do { XNextEvent(grdisplay, &event); } while (event.type != Expose);
+    XMapWindow(caml_gr_display, caml_gr_window.win);
+    do { XNextEvent(caml_gr_display, &event); } while (event.type != Expose);
 
     /* Get the actual window dimensions */
-    XGetWindowAttributes(grdisplay, grwindow.win, &attributes);
-    grwindow.w = attributes.width;
-    grwindow.h = attributes.height;
+    XGetWindowAttributes(caml_gr_display, caml_gr_window.win, &attributes);
+    caml_gr_window.w = attributes.width;
+    caml_gr_window.h = attributes.height;
 
     /* Create the pixmap used for backing store */
-    grbstore.w = grwindow.w;
-    grbstore.h = grwindow.h;
-    grbstore.win =
-      XCreatePixmap(grdisplay, grwindow.win, grbstore.w, grbstore.h,
-                    XDefaultDepth(grdisplay, grscreen));
-    grbstore.gc = XCreateGC(grdisplay, grbstore.win, 0, NULL);
-    XSetBackground(grdisplay, grbstore.gc, grbackground);
+    caml_gr_bstore.w = caml_gr_window.w;
+    caml_gr_bstore.h = caml_gr_window.h;
+    caml_gr_bstore.win =
+      XCreatePixmap(caml_gr_display, caml_gr_window.win, caml_gr_bstore.w, caml_gr_bstore.h,
+                    XDefaultDepth(caml_gr_display, caml_gr_screen));
+    caml_gr_bstore.gc = XCreateGC(caml_gr_display, caml_gr_bstore.win, 0, NULL);
+    XSetBackground(caml_gr_display, caml_gr_bstore.gc, caml_gr_background);
 
     /* Clear the pixmap */
-    XSetForeground(grdisplay, grbstore.gc, grbackground);
-    XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
-                   0, 0, grbstore.w, grbstore.h);
-    XSetForeground(grdisplay, grbstore.gc, grblack);
+    XSetForeground(caml_gr_display, caml_gr_bstore.gc, caml_gr_background);
+    XFillRectangle(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
+                   0, 0, caml_gr_bstore.w, caml_gr_bstore.h);
+    XSetForeground(caml_gr_display, caml_gr_bstore.gc, caml_gr_black);
 
     /* Set the display and remember modes on */
-    grdisplay_mode = True ;
-    grremember_mode = True ;
+    caml_gr_display_modeflag = True ;
+    caml_gr_remember_modeflag = True ;
 
     /* The global data structures are now correctly initialized.
-       In particular, gr_sigio_handler can now handle events safely. */
-    gr_initialized = True;
+       In particular, caml_gr_sigio_handler can now handle events safely. */
+    caml_gr_initialized = True;
 
     /* If possible, request that system calls be restarted after
        the EVENT_SIGNAL signal. */
@@ -173,9 +173,9 @@ value gr_open_graph(value arg)
 #ifdef USE_ASYNC_IO
     /* If BSD-style asynchronous I/O are supported:
        arrange for I/O on the connection to trigger the SIGIO signal */
-    ret = fcntl(ConnectionNumber(grdisplay), F_GETFL, 0);
-    fcntl(ConnectionNumber(grdisplay), F_SETFL, ret | FASYNC);
-    fcntl(ConnectionNumber(grdisplay), F_SETOWN, getpid());
+    ret = fcntl(ConnectionNumber(caml_gr_display), F_GETFL, 0);
+    fcntl(ConnectionNumber(caml_gr_display), F_SETFL, ret | FASYNC);
+    fcntl(ConnectionNumber(caml_gr_display), F_SETOWN, getpid());
 #endif
   }
 #ifdef USE_INTERVAL_TIMER
@@ -194,35 +194,35 @@ value gr_open_graph(value arg)
   alarm(1);
 #endif
   /* Position the current point at origin */
-  grx = 0;
-  gry = 0;
+  caml_gr_x = 0;
+  caml_gr_y = 0;
   /* Reset the color cache */
-  gr_init_color_cache();
-  gr_init_direct_rgb_to_pixel();
+  caml_gr_init_color_cache();
+  caml_gr_init_direct_rgb_to_pixel();
   return Val_unit;
 }
 
-value gr_close_graph(void)
+value caml_gr_close_graph(void)
 {
-  if (gr_initialized) {
+  if (caml_gr_initialized) {
 #ifdef USE_INTERVAL_TIMER
     struct itimerval it;
     it.it_value.tv_sec = 0;
     it.it_value.tv_usec = 0;
     setitimer(ITIMER_REAL, &it, NULL);
 #endif
-    gr_initialized = False;
-    if (grfont != NULL) { XFreeFont(grdisplay, grfont); grfont = NULL; }
-    XFreeGC(grdisplay, grwindow.gc);
-    XDestroyWindow(grdisplay, grwindow.win);
-    XFreeGC(grdisplay, grbstore.gc);
-    XFreePixmap(grdisplay, grbstore.win);
-    XFlush(grdisplay);
+    caml_gr_initialized = False;
+    if (caml_gr_font != NULL) { XFreeFont(caml_gr_display, caml_gr_font); caml_gr_font = NULL; }
+    XFreeGC(caml_gr_display, caml_gr_window.gc);
+    XDestroyWindow(caml_gr_display, caml_gr_window.win);
+    XFreeGC(caml_gr_display, caml_gr_bstore.gc);
+    XFreePixmap(caml_gr_display, caml_gr_bstore.win);
+    XFlush(caml_gr_display);
   }
   return Val_unit;
 }
 
-value id_of_window(Window win)
+value caml_gr_id_of_window(Window win)
 {
   char tmp[256];
 
@@ -230,98 +230,98 @@ value id_of_window(Window win)
   return copy_string( tmp );
 }
 
-value gr_window_id(void)
+value caml_gr_window_id(void)
 {
-  gr_check_open();
-  return id_of_window(grwindow.win);
+  caml_gr_check_open();
+  return caml_gr_id_of_window(caml_gr_window.win);
 }
 
-value gr_set_window_title(value n)
+value caml_gr_set_window_title(value n)
 {
   if (window_name != NULL) stat_free(window_name);
   window_name = stat_alloc(strlen(String_val(n))+1);
   strcpy(window_name, String_val(n));
-  if (gr_initialized) {
-    XStoreName(grdisplay, grwindow.win, window_name);
-    XSetIconName(grdisplay, grwindow.win, window_name);
-    XFlush(grdisplay);
+  if (caml_gr_initialized) {
+    XStoreName(caml_gr_display, caml_gr_window.win, window_name);
+    XSetIconName(caml_gr_display, caml_gr_window.win, window_name);
+    XFlush(caml_gr_display);
   }
   return Val_unit;
 }
 
-value gr_clear_graph(void)
+value caml_gr_clear_graph(void)
 {
-  gr_check_open();
-  if(grremember_mode) {
-    XSetForeground(grdisplay, grbstore.gc, grwhite);
-    XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
-                   0, 0, grbstore.w, grbstore.h);
-    XSetForeground(grdisplay, grbstore.gc, grcolor);
+  caml_gr_check_open();
+  if(caml_gr_remember_modeflag) {
+    XSetForeground(caml_gr_display, caml_gr_bstore.gc, caml_gr_white);
+    XFillRectangle(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
+                   0, 0, caml_gr_bstore.w, caml_gr_bstore.h);
+    XSetForeground(caml_gr_display, caml_gr_bstore.gc, caml_gr_color);
   }
-  if(grdisplay_mode) {
-    XSetForeground(grdisplay, grwindow.gc, grwhite);
-    XFillRectangle(grdisplay, grwindow.win, grwindow.gc,
-                   0, 0, grwindow.w, grwindow.h);
-    XSetForeground(grdisplay, grwindow.gc, grcolor);
-    XFlush(grdisplay);
+  if(caml_gr_display_modeflag) {
+    XSetForeground(caml_gr_display, caml_gr_window.gc, caml_gr_white);
+    XFillRectangle(caml_gr_display, caml_gr_window.win, caml_gr_window.gc,
+                   0, 0, caml_gr_window.w, caml_gr_window.h);
+    XSetForeground(caml_gr_display, caml_gr_window.gc, caml_gr_color);
+    XFlush(caml_gr_display);
   }
-  gr_init_color_cache();
-  gr_init_direct_rgb_to_pixel();
+  caml_gr_init_color_cache();
+  caml_gr_init_direct_rgb_to_pixel();
   return Val_unit;
 }
 
-value gr_size_x(void)
+value caml_gr_size_x(void)
 {
-  gr_check_open();
-  return Val_int(grwindow.w);
+  caml_gr_check_open();
+  return Val_int(caml_gr_window.w);
 }
 
-value gr_size_y(void)
+value caml_gr_size_y(void)
 {
-  gr_check_open();
-  return Val_int(grwindow.h);
+  caml_gr_check_open();
+  return Val_int(caml_gr_window.h);
 }
 
-value gr_synchronize(void)
+value caml_gr_synchronize(void)
 {
-  gr_check_open();
-  XCopyArea(grdisplay, grbstore.win, grwindow.win, grwindow.gc,
-            0, grbstore.h - grwindow.h,
-            grwindow.w, grwindow.h,
+  caml_gr_check_open();
+  XCopyArea(caml_gr_display, caml_gr_bstore.win, caml_gr_window.win, caml_gr_window.gc,
+            0, caml_gr_bstore.h - caml_gr_window.h,
+            caml_gr_window.w, caml_gr_window.h,
             0, 0);
-  XFlush(grdisplay);
+  XFlush(caml_gr_display);
   return Val_unit ;
 }
 
-value gr_display_mode(value flag)
+value caml_gr_display_mode(value flag)
 {
-  grdisplay_mode = Bool_val (flag);
+  caml_gr_display_modeflag = Bool_val (flag);
   return Val_unit ;
 }
 
-value gr_remember_mode(value flag)
+value caml_gr_remember_mode(value flag)
 {
-  grremember_mode = Bool_val(flag);
+  caml_gr_remember_modeflag = Bool_val(flag);
   return Val_unit ;
 }
 
-/* The gr_sigio_handler is called via the signal machinery in the bytecode
+/* The caml_gr_sigio_handler is called via the signal machinery in the bytecode
    interpreter. The signal system ensures that this function will be
    called either between two bytecode instructions, or during a blocking
    primitive. In either case, not in the middle of an Xlib call. */
 
-value gr_sigio_signal(value unit)
+value caml_gr_sigio_signal(value unit)
 {
   return Val_int(EVENT_SIGNAL);
 }
 
-value gr_sigio_handler(void)
+value caml_gr_sigio_handler(void)
 {
   XEvent grevent;
 
-  if (gr_initialized) {
-    while (XCheckMaskEvent(grdisplay, -1 /*all events*/, &grevent)) {
-      gr_handle_event(&grevent);
+  if (caml_gr_initialized) {
+    while (XCheckMaskEvent(caml_gr_display, -1 /*all events*/, &grevent)) {
+      caml_gr_handle_event(&grevent);
     }
   }
 #ifdef USE_ALARM
@@ -334,7 +334,7 @@ value gr_sigio_handler(void)
 
 static value * graphic_failure_exn = NULL;
 
-void gr_fail(char *fmt, char *arg)
+void caml_gr_fail(char *fmt, char *arg)
 {
   char buffer[1024];
 
@@ -347,21 +347,21 @@ void gr_fail(char *fmt, char *arg)
   raise_with_string(*graphic_failure_exn, buffer);
 }
 
-void gr_check_open(void)
+void caml_gr_check_open(void)
 {
-  if (!gr_initialized) gr_fail("graphic screen not opened", NULL);
+  if (!caml_gr_initialized) caml_gr_fail("graphic screen not opened", NULL);
 }
 
-static int gr_error_handler(Display *display, XErrorEvent *error)
+static int caml_gr_error_handler(Display *display, XErrorEvent *error)
 {
   char errmsg[512];
   XGetErrorText(error->display, error->error_code, errmsg, sizeof(errmsg));
-  gr_fail("Xlib error: %s", errmsg);
+  caml_gr_fail("Xlib error: %s", errmsg);
   return 0;
 }
 
-static int gr_ioerror_handler(Display *display)
+static int caml_gr_ioerror_handler(Display *display)
 {
-  gr_fail("fatal I/O error", NULL);
+  caml_gr_fail("fatal I/O error", NULL);
   return 0;
 }

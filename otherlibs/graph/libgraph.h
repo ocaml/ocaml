@@ -24,30 +24,30 @@ struct canvas {
   GC gc;                        /* The associated graphics context */
 };
 
-extern Display * grdisplay;     /* The display connection */
-extern int grscreen;            /* The screen number */
-extern Colormap grcolormap;     /* The color map */
-extern struct canvas grwindow;  /* The graphics window */
-extern struct canvas grbstore;  /* The pixmap used for backing store */
-extern int grwhite, grblack;    /* Black and white pixels for X */
-extern int grbackground;        /* Background color for X 
+extern Display * caml_gr_display;     /* The display connection */
+extern int caml_gr_screen;            /* The screen number */
+extern Colormap caml_gr_colormap;     /* The color map */
+extern struct canvas caml_gr_window;  /* The graphics window */
+extern struct canvas caml_gr_bstore;  /* The pixmap used for backing store */
+extern int caml_gr_white, caml_gr_black;    /* Black and white pixels for X */
+extern int caml_gr_background;        /* Background color for X 
                                      (used for CAML color -1) */
-extern Bool grdisplay_mode;     /* Display-mode flag */
-extern Bool grremember_mode;    /* Remember-mode flag */
-extern int grx, gry;            /* Coordinates of the current point */
-extern int grcolor;             /* Current *CAML* drawing color (can be -1) */
-extern XFontStruct * grfont;    /* Current font */
-extern long grselected_events;  /* Events we are interested in */
+extern Bool caml_gr_display_modeflag;     /* Display-mode flag */
+extern Bool caml_gr_remember_modeflag;    /* Remember-mode flag */
+extern int caml_gr_x, caml_gr_y;            /* Coordinates of the current point */
+extern int caml_gr_color;             /* Current *CAML* drawing color (can be -1) */
+extern XFontStruct * caml_gr_font;    /* Current font */
+extern long caml_gr_selected_events;  /* Events we are interested in */
 
-extern Bool direct_rgb;
-extern int byte_order;
-extern int bitmap_unit;
-extern int bits_per_pixel;
+extern Bool caml_gr_direct_rgb;
+extern int caml_gr_byte_order;
+extern int caml_gr_bitmap_unit;
+extern int caml_gr_bits_per_pixel;
 
-#define Wcvt(y) (grwindow.h - 1 - (y))
-#define Bcvt(y) (grbstore.h - 1 - (y))
-#define WtoB(y) ((y) + grbstore.h - grwindow.h)
-#define BtoW(y) ((y) + grwindow.h - grbstore.h)
+#define Wcvt(y) (caml_gr_window.h - 1 - (y))
+#define Bcvt(y) (caml_gr_bstore.h - 1 - (y))
+#define WtoB(y) ((y) + caml_gr_bstore.h - caml_gr_window.h)
+#define BtoW(y) ((y) + caml_gr_window.h - caml_gr_bstore.h)
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
@@ -74,11 +74,11 @@ extern int bits_per_pixel;
 #endif
 #endif
 
-extern void gr_fail(char *fmt, char *arg);
-extern void gr_check_open(void);
-extern unsigned long gr_pixel_rgb(int rgb);
-extern int gr_rgb_pixel(long unsigned int pixel);
-extern void gr_handle_event(XEvent *e);
-extern void gr_init_color_cache(void);
-extern void gr_init_direct_rgb_to_pixel(void);
-extern value id_of_window( Window w );
+extern void caml_gr_fail(char *fmt, char *arg);
+extern void caml_gr_check_open(void);
+extern unsigned long caml_gr_pixel_rgb(int rgb);
+extern int caml_gr_rgb_pixel(long unsigned int pixel);
+extern void caml_gr_handle_event(XEvent *e);
+extern void caml_gr_init_color_cache(void);
+extern void caml_gr_init_direct_rgb_to_pixel(void);
+extern value caml_gr_id_of_window( Window w );

@@ -16,52 +16,52 @@
 #include "libgraph.h"
 #include <memory.h>
 
-value gr_fill_rect(value vx, value vy, value vw, value vh)
+value caml_gr_fill_rect(value vx, value vy, value vw, value vh)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
   int w = Int_val(vw);
   int h = Int_val(vh);
 
-  gr_check_open();
-  if(grremember_mode)
-    XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
+  caml_gr_check_open();
+  if(caml_gr_remember_modeflag)
+    XFillRectangle(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
                    x, Bcvt(y) - h + 1, w, h);
-  if(grdisplay_mode) {
-    XFillRectangle(grdisplay, grwindow.win, grwindow.gc,
+  if(caml_gr_display_modeflag) {
+    XFillRectangle(caml_gr_display, caml_gr_window.win, caml_gr_window.gc,
            x, Wcvt(y) - h + 1, w, h);
-    XFlush(grdisplay);
+    XFlush(caml_gr_display);
   }
   return Val_unit;
 }
 
-value gr_fill_poly(value array)
+value caml_gr_fill_poly(value array)
 {
   XPoint * points;
   int npoints, i;
 
-  gr_check_open();
+  caml_gr_check_open();
   npoints = Wosize_val(array);
   points = (XPoint *) stat_alloc(npoints * sizeof(XPoint));
   for (i = 0; i < npoints; i++) {
     points[i].x = Int_val(Field(Field(array, i), 0));
     points[i].y = Bcvt(Int_val(Field(Field(array, i), 1)));
   }
-  if(grremember_mode)
-    XFillPolygon(grdisplay, grbstore.win, grbstore.gc, points,
+  if(caml_gr_remember_modeflag)
+    XFillPolygon(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc, points,
                  npoints, Complex, CoordModeOrigin);
-  if(grdisplay_mode) {
+  if(caml_gr_display_modeflag) {
     for (i = 0; i < npoints; i++)
       points[i].y = BtoW(points[i].y);
-    XFillPolygon(grdisplay, grwindow.win, grwindow.gc, points,
+    XFillPolygon(caml_gr_display, caml_gr_window.win, caml_gr_window.gc, points,
          npoints, Complex, CoordModeOrigin);
-    XFlush(grdisplay);
+    XFlush(caml_gr_display);
   }
   stat_free((char *) points);
   return Val_unit;
 }
 
-value gr_fill_arc_nat(value vx, value vy, value vrx, value vry, value va1, value va2)
+value caml_gr_fill_arc_nat(value vx, value vy, value vrx, value vry, value va1, value va2)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -70,19 +70,19 @@ value gr_fill_arc_nat(value vx, value vy, value vrx, value vry, value va1, value
   int a1 = Int_val(va1);
   int a2 = Int_val(va2);
 
-  gr_check_open();
-  if(grremember_mode)
-    XFillArc(grdisplay, grbstore.win, grbstore.gc,
+  caml_gr_check_open();
+  if(caml_gr_remember_modeflag)
+    XFillArc(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
              x - rx, Bcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
-  if(grdisplay_mode) {
-    XFillArc(grdisplay, grwindow.win, grwindow.gc,
+  if(caml_gr_display_modeflag) {
+    XFillArc(caml_gr_display, caml_gr_window.win, caml_gr_window.gc,
          x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
-    XFlush(grdisplay);
+    XFlush(caml_gr_display);
   }
   return Val_unit;
 }
 
-value gr_fill_arc(value *argv, int argc)
+value caml_gr_fill_arc(value *argv, int argc)
 {
-  return gr_fill_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+  return caml_gr_fill_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }

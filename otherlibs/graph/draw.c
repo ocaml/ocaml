@@ -16,63 +16,63 @@
 #include "libgraph.h"
 #include <alloc.h>
 
-value gr_plot(value vx, value vy)
+value caml_gr_plot(value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
-  gr_check_open();
-  if(grremember_mode)
-    XDrawPoint(grdisplay, grbstore.win, grbstore.gc, x, Bcvt(y));
-  if(grdisplay_mode) {
-    XDrawPoint(grdisplay, grwindow.win, grwindow.gc, x, Wcvt(y));
-    XFlush(grdisplay);
+  caml_gr_check_open();
+  if(caml_gr_remember_modeflag)
+    XDrawPoint(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc, x, Bcvt(y));
+  if(caml_gr_display_modeflag) {
+    XDrawPoint(caml_gr_display, caml_gr_window.win, caml_gr_window.gc, x, Wcvt(y));
+    XFlush(caml_gr_display);
   }
   return Val_unit;
 }
 
-value gr_moveto(value vx, value vy)
+value caml_gr_moveto(value vx, value vy)
 {
-  grx = Int_val(vx);
-  gry = Int_val(vy);
+  caml_gr_x = Int_val(vx);
+  caml_gr_y = Int_val(vy);
   return Val_unit;
 }
 
-value gr_current_x(void)
+value caml_gr_current_x(void)
 {
-  return Val_int(grx);
+  return Val_int(caml_gr_x);
 }
 
-value gr_current_y(void)
+value caml_gr_current_y(void)
 {
-  return Val_int(gry);
+  return Val_int(caml_gr_y);
 }
 
-value gr_lineto(value vx, value vy)
+value caml_gr_lineto(value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
-  gr_check_open();
-  if(grremember_mode)
-    XDrawLine(grdisplay, grbstore.win, grbstore.gc,
-              grx, Bcvt(gry), x, Bcvt(y));
-  if(grdisplay_mode) {
-    XDrawLine(grdisplay, grwindow.win, grwindow.gc,
-          grx, Wcvt(gry), x, Wcvt(y));
-    XFlush(grdisplay);
+  caml_gr_check_open();
+  if(caml_gr_remember_modeflag)
+    XDrawLine(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
+              caml_gr_x, Bcvt(caml_gr_y), x, Bcvt(y));
+  if(caml_gr_display_modeflag) {
+    XDrawLine(caml_gr_display, caml_gr_window.win, caml_gr_window.gc,
+          caml_gr_x, Wcvt(caml_gr_y), x, Wcvt(y));
+    XFlush(caml_gr_display);
   }
-  grx = x;
-  gry = y;
+  caml_gr_x = x;
+  caml_gr_y = y;
   return Val_unit;
 }
 
-value gr_draw_rect(value vx, value vy, value vw, value vh)
+value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
   int w = Int_val(vw);
   int h = Int_val(vh);
 
-  gr_check_open();
+  caml_gr_check_open();
   y = Bcvt(y) - h + 1;
   /* Correct for XDrawRectangle irritating habit of drawing a larger
      rectangle hanging out one pixel below and to the right of the
@@ -81,18 +81,18 @@ value gr_draw_rect(value vx, value vy, value vw, value vh)
   y += 1;
   w -= 1;
   h -= 1;
-  if(grremember_mode)
-    XDrawRectangle(grdisplay, grbstore.win, grbstore.gc,
+  if(caml_gr_remember_modeflag)
+    XDrawRectangle(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
                    x, y, w, h);
-  if(grdisplay_mode) {
-    XDrawRectangle(grdisplay, grwindow.win, grwindow.gc,
+  if(caml_gr_display_modeflag) {
+    XDrawRectangle(caml_gr_display, caml_gr_window.win, caml_gr_window.gc,
                    x, y, w, h);
-    XFlush(grdisplay);
+    XFlush(caml_gr_display);
   }
   return Val_unit;
 }
 
-value gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1, value va2)
+value caml_gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1, value va2)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -101,31 +101,31 @@ value gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1, value
   int a1 = Int_val(va1);
   int a2 = Int_val(va2);
 
-  gr_check_open();
-  if(grremember_mode)
-    XDrawArc(grdisplay, grbstore.win, grbstore.gc,
+  caml_gr_check_open();
+  if(caml_gr_remember_modeflag)
+    XDrawArc(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
              x - rx, Bcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
-  if(grdisplay_mode) {
-    XDrawArc(grdisplay, grwindow.win, grwindow.gc,
+  if(caml_gr_display_modeflag) {
+    XDrawArc(caml_gr_display, caml_gr_window.win, caml_gr_window.gc,
          x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
-    XFlush(grdisplay);
+    XFlush(caml_gr_display);
   }
   return Val_unit;
 }
 
-value gr_draw_arc(value *argv, int argc)
+value caml_gr_draw_arc(value *argv, int argc)
 {
-  return gr_draw_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+  return caml_gr_draw_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
-value gr_set_line_width(value vwidth)
+value caml_gr_set_line_width(value vwidth)
 {
   int width = Int_val(vwidth);
 
-  gr_check_open();
-  XSetLineAttributes(grdisplay, grwindow.gc,
+  caml_gr_check_open();
+  XSetLineAttributes(caml_gr_display, caml_gr_window.gc,
                      width, LineSolid, CapRound, JoinRound);
-  XSetLineAttributes(grdisplay, grbstore.gc,
+  XSetLineAttributes(caml_gr_display, caml_gr_bstore.gc,
                      width, LineSolid, CapRound, JoinRound);
   return Val_unit;
 }

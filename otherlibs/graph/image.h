@@ -26,4 +26,4 @@ struct grimage {
 
 #define Transparent (-1)
 
-value gr_new_image(int w, int h);
+value caml_gr_new_image(int w, int h);

@@ -15,7 +15,7 @@
 
 #include "libgraph.h"
 
-value gr_open_subwindow(value vx, value vy, value width, value height)
+value caml_gr_open_subwindow(value vx, value vy, value width, value height)
 {
   Window win;
 
@@ -24,22 +24,22 @@ value gr_open_subwindow(value vx, value vy, value width, value height)
   int x = Int_val(vx);
   int y = Int_val(vy);
 
-  gr_check_open();
-  win = XCreateSimpleWindow(grdisplay, grwindow.win,
+  caml_gr_check_open();
+  win = XCreateSimpleWindow(caml_gr_display, caml_gr_window.win,
                             x, Wcvt(y + h), w, h,
-                            0, grblack, grbackground);
-  XMapWindow(grdisplay, win);
-  XFlush(grdisplay);
-  return (id_of_window (win));
+                            0, caml_gr_black, caml_gr_background);
+  XMapWindow(caml_gr_display, win);
+  XFlush(caml_gr_display);
+  return (caml_gr_id_of_window (win));
 }
 
-value gr_close_subwindow(value wid)
+value caml_gr_close_subwindow(value wid)
 {
   Window win;
 
-  gr_check_open();
+  caml_gr_check_open();
   sscanf( String_val(wid), "%lu", (unsigned long *)(&win) );
-  XDestroyWindow(grdisplay, win);
-  XFlush(grdisplay);
+  XDestroyWindow(caml_gr_display, win);
+  XFlush(caml_gr_display);
   return Val_unit;
 }

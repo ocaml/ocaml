@@ -35,13 +35,13 @@ val close_graph : unit -> unit
 val set_window_title : string -> unit
 (** Set the title of the graphics window. *)
 
-external clear_graph : unit -> unit = "gr_clear_graph"
+external clear_graph : unit -> unit = "caml_gr_clear_graph"
 (** Erase the graphics window. *)
 
-external size_x : unit -> int = "gr_size_x"
+external size_x : unit -> int = "caml_gr_size_x"
 (** See {!Graphics.size_y}. *)
 
-external size_y : unit -> int = "gr_size_y"
+external size_y : unit -> int = "caml_gr_size_y"
 (** Return the size of the graphics window. Coordinates of the screen
    pixels range over [0 .. size_x()-1] and [0 .. size_y()-1].
    Drawings outside of this rectangle are clipped, without causing
@@ -61,7 +61,7 @@ val rgb : int -> int -> int -> color
    component [r], green component [g], and blue component [b].
    [r], [g] and [b] are in the range [0..255]. *)
 
-external set_color : color -> unit = "gr_set_color"
+external set_color : color -> unit = "caml_gr_set_color"
 (** Set the current drawing color. *)
 
 val background : color
@@ -89,32 +89,32 @@ val magenta : color
 
 (** {6 Point and line drawing} *)
 
-external plot : int -> int -> unit = "gr_plot"
+external plot : int -> int -> unit = "caml_gr_plot"
 (** Plot the given point with the current drawing color. *)
 
 val plots : (int * int) array -> unit
 (** Plot the given points with the current drawing color. *)
 
-external point_color : int -> int -> color = "gr_point_color"
+external point_color : int -> int -> color = "caml_gr_point_color"
 (** Return the color of the given point in the backing store
    (see "Double buffering" below). *)
 
-external moveto : int -> int -> unit = "gr_moveto"
+external moveto : int -> int -> unit = "caml_gr_moveto"
 (** Position the current point. *)
 
 val rmoveto : int -> int -> unit
 (** [rmoveto dx dy] translates the current point by the given vector. *)
 
-external current_x : unit -> int = "gr_current_x"
+external current_x : unit -> int = "caml_gr_current_x"
 (** Return the abscissa of the current point. *)
 
-external current_y : unit -> int = "gr_current_y"
+external current_y : unit -> int = "caml_gr_current_y"
 (** Return the ordinate of the current point. *)
 
 val current_point : unit -> int * int
 (** Return the position of the current point. *)
 
-external lineto : int -> int -> unit = "gr_lineto"
+external lineto : int -> int -> unit = "caml_gr_lineto"
 (** Draw a line with endpoints the current point and the given point,
    and move the current point to the given point. *)
 
@@ -128,7 +128,7 @@ val curveto : int * int -> int * int -> int * int -> unit
    the current point to point [d], with control points [b] and
    [c], and moves the current point to [d]. *)
 
-external draw_rect : int -> int -> int -> int -> unit = "gr_draw_rect"
+external draw_rect : int -> int -> int -> int -> unit = "caml_gr_draw_rect"
 (** [draw_rect x y w h] draws the rectangle with lower left corner
    at [x,y], width [w] and height [h].
    The current point is unchanged. *)
@@ -155,7 +155,7 @@ val draw_segments : (int * int * int * int) array -> unit
 
 external draw_arc :
   int -> int -> int -> int -> int -> int ->
-    unit = "gr_draw_arc" "gr_draw_arc_nat"
+    unit = "caml_gr_draw_arc" "caml_gr_draw_arc_nat"
 (** [draw_arc x y rx ry a1 a2] draws an elliptical arc with center
    [x,y], horizontal radius [rx], vertical radius [ry], from angle
    [a1] to angle [a2] (in degrees). The current point is unchanged. *)
@@ -169,7 +169,7 @@ val draw_circle : int -> int -> int -> unit
 (** [draw_circle x y r] draws a circle with center [x,y] and
    radius [r]. The current point is unchanged. *)
 
-external set_line_width : int -> unit = "gr_set_line_width"
+external set_line_width : int -> unit = "caml_gr_set_line_width"
 (** Set the width of points and lines drawn with the functions above.
    Under X Windows, [set_line_width 0] selects a width of 1 pixel
    and a faster, but less precise drawing algorithm than the one
@@ -177,15 +177,15 @@ external set_line_width : int -> unit = "gr_set_line_width"
 
 (** {6 Text drawing} *)
 
-external draw_char : char -> unit = "gr_draw_char"
+external draw_char : char -> unit = "caml_gr_draw_char"
 (** See {!Graphics.draw_string}.*)
 
-external draw_string : string -> unit = "gr_draw_string"
+external draw_string : string -> unit = "caml_gr_draw_string"
 (** Draw a character or a character string with lower left corner
    at current position. After drawing, the current position is set
    to the lower right corner of the text drawn. *)
 
-external set_font : string -> unit = "gr_set_font"
+external set_font : string -> unit = "caml_gr_set_font"
 (** Set the font used for drawing text.
    The interpretation of the arguments to [set_font] 
    is implementation-dependent. *)
@@ -195,24 +195,24 @@ val set_text_size : int -> unit
    The interpretation of the arguments to [set_text_size] 
    is implementation-dependent. *)
 
-external text_size : string -> int * int = "gr_text_size"
+external text_size : string -> int * int = "caml_gr_text_size"
 (** Return the dimensions of the given text, if it were drawn with
    the current font and size. *)
 
 
 (** {6 Filling} *)
 
-external fill_rect : int -> int -> int -> int -> unit = "gr_fill_rect"
+external fill_rect : int -> int -> int -> int -> unit = "caml_gr_fill_rect"
 (** [fill_rect x y w h] fills the rectangle with lower left corner
    at [x,y], width [w] and height [h], with the current color. *)
 
-external fill_poly : (int * int) array -> unit = "gr_fill_poly"
+external fill_poly : (int * int) array -> unit = "caml_gr_fill_poly"
 (** Fill the given polygon with the current color. The array
    contains the coordinates of the vertices of the polygon. *)
 
 external fill_arc :
   int -> int -> int -> int -> int -> int ->
-    unit = "gr_fill_arc" "gr_fill_arc_nat"
+    unit = "caml_gr_fill_arc" "caml_gr_fill_arc_nat"
 (** Fill an elliptical pie slice with the current color. The
    parameters are the same as for {!Graphics.draw_arc}. *)
 
@@ -239,29 +239,29 @@ val transp : color
    of the corresponding point in the image. This allows superimposing
    an image over an existing background. *)
 
-external make_image : color array array -> image = "gr_make_image"
+external make_image : color array array -> image = "caml_gr_make_image"
 (** Convert the given color matrix to an image.
    Each sub-array represents one horizontal line. All sub-arrays
    must have the same length; otherwise, exception [Graphic_failure]
    is raised. *)
 
-external dump_image : image -> color array array = "gr_dump_image"
+external dump_image : image -> color array array = "caml_gr_dump_image"
 (** Convert an image to a color matrix. *)
 
-external draw_image : image -> int -> int -> unit = "gr_draw_image"
+external draw_image : image -> int -> int -> unit = "caml_gr_draw_image"
 (** Draw the given image with lower left corner at the given point. *)
 
 val get_image : int -> int -> int -> int -> image
 (** Capture the contents of a rectangle on the screen as an image.
    The parameters are the same as for {!Graphics.fill_rect}. *)
 
-external create_image : int -> int -> image = "gr_create_image"
+external create_image : int -> int -> image = "caml_gr_create_image"
 (** [create_image w h] returns a new image [w] pixels wide and [h]
    pixels tall, to be used in conjunction with [blit_image].
    The initial image contents are random, except that no point
    is transparent. *)
 
-external blit_image : image -> int -> int -> unit = "gr_blit_image"
+external blit_image : image -> int -> int -> unit = "caml_gr_blit_image"
 (** [blit_image img x y] copies screen pixels into the image [img],
    modifying [img] in-place. The pixels copied are those inside the
    rectangle with lower left corner at [x,y], and width and height
@@ -290,7 +290,7 @@ type event =
 (** To specify events to wait for. *)
 
 
-external wait_next_event : event list -> status = "gr_wait_event"
+external wait_next_event : event list -> status = "caml_gr_wait_event"
 (** Wait until one of the events specified in the given event list
    occurs, and return the status of the mouse and keyboard at
    that time. If [Poll] is given in the event list, return immediately
@@ -322,7 +322,7 @@ val key_pressed : unit -> bool
 
 (** {6 Sound} *)
 
-external sound : int -> int -> unit = "gr_sound"
+external sound : int -> int -> unit = "caml_gr_sound"
 (** [sound freq dur] plays a sound at frequency [freq] (in hertz)
    for a duration [dur] (in milliseconds). *)
 
@@ -350,13 +350,13 @@ val auto_synchronize : bool -> unit
    
    The default drawing mode corresponds to [auto_synchronize true]. *)
 
-external synchronize : unit -> unit = "gr_synchronize"
+external synchronize : unit -> unit = "caml_gr_synchronize"
 (** Synchronize the backing store and the on-screen window, by
    copying the contents of the backing store onto the graphics
    window. *)
 
 
-external display_mode : bool -> unit = "gr_display_mode"
+external display_mode : bool -> unit = "caml_gr_display_mode"
 (** Set display mode on or off. When turned on, drawings are done
    in the graphics window; when turned off, drawings do not affect
    the graphics window.  This occurs independently of
@@ -364,7 +364,7 @@ external display_mode : bool -> unit = "gr_display_mode"
    below). Default display mode is on. *)
 
 
-external remember_mode : bool -> unit = "gr_remember_mode"
+external remember_mode : bool -> unit = "caml_gr_remember_mode"
 (** Set remember mode on or off. When turned on, drawings are done
    in the backing store; when turned off, the backing store is
    unaffected by drawings.  This occurs independently of drawing

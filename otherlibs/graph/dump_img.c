@@ -18,14 +18,14 @@
 #include <alloc.h>
 #include <memory.h>
 
-value gr_dump_image(value image)
+value caml_gr_dump_image(value image)
 {
   int width, height, i, j;
   XImage * idata, * imask;
   value m = Val_unit;
 
   Begin_roots2(image, m);
-    gr_check_open();
+    caml_gr_check_open();
     width = Width_im(image);
     height = Height_im(image);
     m = alloc(height, 0);
@@ -35,15 +35,15 @@ value gr_dump_image(value image)
     }
 
     idata =
-      XGetImage(grdisplay, Data_im(image), 0, 0, width, height, (-1), ZPixmap);
+      XGetImage(caml_gr_display, Data_im(image), 0, 0, width, height, (-1), ZPixmap);
     for (i = 0; i < height; i++)
       for (j = 0; j < width; j++)
-        Field(Field(m, i), j) = Val_int(gr_rgb_pixel(XGetPixel(idata, j, i)));
+        Field(Field(m, i), j) = Val_int(caml_gr_rgb_pixel(XGetPixel(idata, j, i)));
     XDestroyImage(idata);
 
     if (Mask_im(image) != None) {
       imask =
-        XGetImage(grdisplay, Mask_im(image), 0, 0, width, height, 1, ZPixmap);
+        XGetImage(caml_gr_display, Mask_im(image), 0, 0, width, height, 1, ZPixmap);
       for (i = 0; i < height; i++)
         for (j = 0; j < width; j++)
           if (XGetPixel(imask, j, i) == 0)
