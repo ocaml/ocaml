@@ -570,9 +570,9 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
   let type_defined ppf =
     match args with
     | [] -> fprintf ppf "%s" name
-    | [arg] -> fprintf ppf "%a@ %s" type_parameter arg name
+    | [arg] -> fprintf ppf "@[%a@ %s@]" type_parameter arg name
     | _ ->
-        fprintf ppf "(@[%a)@]@ %s"
+        fprintf ppf "@[(@[%a)@]@ %s@]"
           (print_list type_parameter (fun ppf -> fprintf ppf ",@ "))
           args name
   in
@@ -604,7 +604,7 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
         print_constraints constraints
   | ty ->
-      fprintf ppf "@[<2>@[<hv 2>%t = %a@]%a@]"
+      fprintf ppf "@[<2>@[<hv 2>%t =@ %a@]%a@]"
         print_name_args !outcome_type ty
         print_constraints constraints
 and print_out_constr ppf (name, tyl) =
