@@ -93,7 +93,7 @@ val name_lambda: lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 val is_guarded: lambda -> bool
 
-module IdentSet: Set.S with elt = Ident.t
+module IdentSet: Set.S with type elt = Ident.t
 val free_variables: lambda -> IdentSet.t
 
 type compilenv

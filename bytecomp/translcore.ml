@@ -235,6 +235,10 @@ let array_kind arg =
   | _ -> Pgenarray (* This can happen with abbreviations that we can't expand
                       here because the typing environment is lost *)
 
+let prim_makearray =
+  { prim_name = "make_vect"; prim_arity = 2; prim_alloc = true;
+    prim_native_name = ""; prim_native_float = false }
+
 let transl_prim prim args =
   try
     let (gencomp, intcomp, floatcomp, stringcomp) =
@@ -400,7 +404,26 @@ let rec transl_exp env e =
         | Record_float -> Psetfloatfield lbl.lbl_pos in
       Lprim(access, [transl_exp env arg; transl_exp env newval])
   | Texp_array expr_list ->
-      Lprim(Pmakearray(array_kind e), transl_list env expr_list)
+      let kind = array_kind e in
+      let len = List.length expr_list in
+      if len <= Config.max_young_wosize then
+        Lprim(Pmakearray kind, transl_list env expr_list)
+      else begin
+        let v = Ident.new "makearray" in
+        let rec fill_fields pos = function
+          [] ->
+            Lvar v
+        | arg :: rem ->
+            Lsequence(Lprim(Parraysetu kind,
+                            [Lvar v;
+                             Lconst(Const_base(Const_int pos));
+                             transl_exp env arg]),
+                      fill_fields (pos+1) rem) in
+        Llet(v, Lprim(Pccall prim_makearray,
+                      [Lconst(Const_base(Const_int len));
+                       transl_exp env (List.hd expr_list)]),
+                fill_fields 1 (List.tl expr_list))
+      end
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp env cond, transl_exp env ifso,
                                        transl_exp env ifnot)
