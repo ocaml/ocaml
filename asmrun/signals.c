@@ -301,7 +301,7 @@ value caml_install_signal_handler(value signal_number, value action) /* ML */
 
 /* Machine- and OS-dependent handling of bound check trap */
 
-#if defined(TARGET_sparc) || defined(TARGET_power)
+#if defined(TARGET_power) || (defined(TARGET_sparc) && defined(SYS_solaris))
 DECLARE_SIGNAL_HANDLER(trap_handler)
 {
 #if defined(SYS_solaris)
@@ -323,13 +323,9 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
     sigprocmask(SIG_UNBLOCK, &mask, NULL);
   }
 #endif
-#if defined(CONTEXT_EXCEPTION_POINTER) && defined(CONTEXT_YOUNG_PTR)
   caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
   caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
   caml_array_bound_error();
-#else
-  caml_fatal_error("Fatal error: out-of-bound access in array or string\n");
-#endif
 }
 #endif
 
@@ -378,7 +374,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 void caml_init_signals(void)
 {
   /* Bound-check trap handling */
-#if defined(TARGET_sparc)
+#if defined(TARGET_sparc) && defined(SYS_solaris)
   { struct sigaction act;
     sigemptyset(&act.sa_mask);
     SET_SIGACT(act, trap_handler);

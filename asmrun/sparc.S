@@ -20,15 +20,12 @@
 
 #if defined(SYS_sunos)
 
-        .common _caml_required_size, 4, "bss"
-
 #define Caml_young_limit _caml_young_limit
 #define Caml_young_ptr _caml_young_ptr
 #define Caml_bottom_of_stack _caml_bottom_of_stack
 #define Caml_last_return_address _caml_last_return_address
 #define Caml_gc_regs _caml_gc_regs
 #define Caml_exception_pointer _caml_exception_pointer
-#define Caml_required_size _caml_required_size
 #define Caml_allocN _caml_allocN
 #define Caml_call_gc _caml_call_gc
 #define Caml_garbage_collection _caml_garbage_collection
@@ -43,10 +40,10 @@
 #define Caml_apply3 _caml_apply3
 #define Caml_raise _caml_raise
 #define Caml_system__frametable _caml_system__frametable
+#define Caml_ml_array_bound_error _caml_ml_array_bound_error
+#define Caml_array_bound_error _caml_array_bound_error
 
 #else
-
-        .common caml_required_size, 4, 4
 
 #define Caml_young_limit caml_young_limit
 #define Caml_young_ptr caml_young_ptr
@@ -54,7 +51,6 @@
 #define Caml_last_return_address caml_last_return_address
 #define Caml_gc_regs caml_gc_regs
 #define Caml_exception_pointer caml_exception_pointer
-#define Caml_required_size caml_required_size
 #define Caml_allocN caml_allocN
 #define Caml_call_gc caml_call_gc
 #define Caml_garbage_collection caml_garbage_collection
@@ -69,6 +65,8 @@
 #define Caml_apply3 caml_apply3
 #define Caml_raise caml_raise
 #define Caml_system__frametable caml_system__frametable
+#define Caml_ml_array_bound_error caml_ml_array_bound_error
+#define Caml_array_bound_error caml_array_bound_error
 
 #endif
 
@@ -108,8 +106,6 @@ Caml_allocN:
 
 /* Required size in %g2 */
 Caml_call_gc:
-    /* Save %g2 (required size) */
-        Store(%g2, Caml_required_size)
     /* Save exception pointer if GC raises */
         Store(Exn_ptr, Caml_exception_pointer)
     /* Save current allocation pointer for debugging purposes */
@@ -121,26 +117,28 @@ Caml_call_gc:
     /* Allocate space on stack for caml_context structure and float regs */
         sub     %sp, 20*4 + 15*8, %sp
     /* Save int regs on stack and save it into caml_gc_regs */
-L100:   add     %sp, 96 + 15*8, %g2
-        st      %o0, [%g2]
-        st      %o1, [%g2 + 0x4]
-        st      %o2, [%g2 + 0x8]
-        st      %o3, [%g2 + 0xc]
-        st      %o4, [%g2 + 0x10]
-        st      %o5, [%g2 + 0x14]
-        st      %i0, [%g2 + 0x18]
-        st      %i1, [%g2 + 0x1c]
-        st      %i2, [%g2 + 0x20]
-        st      %i3, [%g2 + 0x24]
-        st      %i4, [%g2 + 0x28]
-        st      %i5, [%g2 + 0x2c]
-        st      %l0, [%g2 + 0x30]
-        st      %l1, [%g2 + 0x34]
-        st      %l2, [%g2 + 0x38]
-        st      %l3, [%g2 + 0x3c]
-        st      %l4, [%g2 + 0x40]
-        st      %g3, [%g2 + 0x44]
-        st      %g4, [%g2 + 0x48]
+L100:   add     %sp, 96 + 15*8, %g1
+        st      %o0, [%g1]
+        st      %o1, [%g1 + 0x4]
+        st      %o2, [%g1 + 0x8]
+        st      %o3, [%g1 + 0xc]
+        st      %o4, [%g1 + 0x10]
+        st      %o5, [%g1 + 0x14]
+        st      %i0, [%g1 + 0x18]
+        st      %i1, [%g1 + 0x1c]
+        st      %i2, [%g1 + 0x20]
+        st      %i3, [%g1 + 0x24]
+        st      %i4, [%g1 + 0x28]
+        st      %i5, [%g1 + 0x2c]
+        st      %l0, [%g1 + 0x30]
+        st      %l1, [%g1 + 0x34]
+        st      %l2, [%g1 + 0x38]
+        st      %l3, [%g1 + 0x3c]
+        st      %l4, [%g1 + 0x40]
+        st      %g3, [%g1 + 0x44]
+        st      %g4, [%g1 + 0x48]
+        st      %g2, [%g1 + 0x4C]       /* Save required size */
+        mov     %g1, %g2
         Store(%g2, Caml_gc_regs)
     /* Save the floating-point registers */
         add     %sp, 96, %g1
@@ -163,26 +161,27 @@ L100:   add     %sp, 96 + 15*8, %g2
         call    Caml_garbage_collection
         nop
     /* Restore all regs used by the code generator */
-        add     %sp, 96 + 15*8, %g2
-        ld      [%g2], %o0
-        ld      [%g2 + 0x4], %o1
-        ld      [%g2 + 0x8], %o2
-        ld      [%g2 + 0xc], %o3
-        ld      [%g2 + 0x10], %o4
-        ld      [%g2 + 0x14], %o5
-        ld      [%g2 + 0x18], %i0
-        ld      [%g2 + 0x1c], %i1
-        ld      [%g2 + 0x20], %i2
-        ld      [%g2 + 0x24], %i3
-        ld      [%g2 + 0x28], %i4
-        ld      [%g2 + 0x2c], %i5
-        ld      [%g2 + 0x30], %l0
-        ld      [%g2 + 0x34], %l1
-        ld      [%g2 + 0x38], %l2
-        ld      [%g2 + 0x3c], %l3
-        ld      [%g2 + 0x40], %l4
-        ld      [%g2 + 0x44], %g3
-        ld      [%g2 + 0x48], %g4
+        add     %sp, 96 + 15*8, %g1
+        ld      [%g1], %o0
+        ld      [%g1 + 0x4], %o1
+        ld      [%g1 + 0x8], %o2
+        ld      [%g1 + 0xc], %o3
+        ld      [%g1 + 0x10], %o4
+        ld      [%g1 + 0x14], %o5
+        ld      [%g1 + 0x18], %i0
+        ld      [%g1 + 0x1c], %i1
+        ld      [%g1 + 0x20], %i2
+        ld      [%g1 + 0x24], %i3
+        ld      [%g1 + 0x28], %i4
+        ld      [%g1 + 0x2c], %i5
+        ld      [%g1 + 0x30], %l0
+        ld      [%g1 + 0x34], %l1
+        ld      [%g1 + 0x38], %l2
+        ld      [%g1 + 0x3c], %l3
+        ld      [%g1 + 0x40], %l4
+        ld      [%g1 + 0x44], %g3
+        ld      [%g1 + 0x48], %g4
+        ld      [%g1 + 0x4C], %g2     /* Recover desired size */
         add     %sp, 96, %g1
         ldd     [%g1], %f0
         ldd     [%g1 + 0x8], %f2
@@ -202,7 +201,6 @@ L100:   add     %sp, 96 + 15*8, %g2
     /* Reload alloc ptr */
         Load(Caml_young_ptr, Alloc_ptr)
     /* Allocate space for block */
-        Load(Caml_required_size, %g2)
 #ifdef INDIRECT_LIMIT
         ld      [Alloc_limit], %g1
         sub     Alloc_ptr, %g2, Alloc_ptr
@@ -375,6 +373,16 @@ Caml_callback3_exn:
         sethi   %hi(Caml_apply3), %l2
         b       L108
         or      %l2, %lo(Caml_apply3), %l2
+
+#ifndef SYS_solaris
+/* Glue code to call [caml_array_bound_error] */
+
+        .global Caml_ml_array_bound_error
+Caml_ml_array_bound_error:
+        Address(Caml_array_bound_error, %g2)
+        b       Caml_c_call
+        nop
+#endif
 
 #ifdef SYS_solaris
         .section ".rodata"
