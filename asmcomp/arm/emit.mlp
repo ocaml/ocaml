@@ -181,12 +181,12 @@ let rec is_immed n shift =
 
 let is_immediate n = is_immed n 0
 
-(* Emit a non-immediate integer constant *)
+(* General functional to decompose a non-immediate integer constant
+   into 8-bit chunks shifted left 0 ... 24 bits *)
 
-let emit_complex_intconst r n =
+let decompose_intconst n fn =
   let i = ref n in
   let shift = ref 0 in
-  let first = ref true in
   let ninstr = ref 0 in
   while !i <> Nativeint.zero do
     if Nativeint.to_int (Nativeint.shift_right !i !shift) land 3 = 0 then
@@ -194,16 +194,38 @@ let emit_complex_intconst r n =
     else begin
       let mask = Nativeint.shift_left (Nativeint.of_int 0xFF) !shift in
       let bits = Nativeint.logand !i mask in
-      if !first
-      then `	mov	{emit_reg r}, #{emit_nativeint bits} @ {emit_nativeint n}\n`
-      else `	add	{emit_reg r}, {emit_reg r}, #{emit_nativeint bits}\n`;
-      first := false;
+      fn bits;
       shift := !shift + 8;
       i := Nativeint.sub !i bits;
       incr ninstr
     end
   done;
   !ninstr
+
+(* Emit a non-immediate integer constant *)
+
+let emit_complex_intconst r n =
+  let first = ref true in
+  decompose_intconst n
+    (fun bits ->
+      if !first
+      then `	mov	{emit_reg r}, #{emit_nativeint bits} @ {emit_nativeint n}\n`
+      else `	add	{emit_reg r}, {emit_reg r}, #{emit_nativeint bits}\n`;
+      first := false)
+
+(* Adjust sp (up or down) by the given byte amount *)
+
+let emit_stack_adjustment instr n =
+  decompose_intconst (Nativeint.of_int n)
+    (fun bits ->
+       `	{emit_string instr}	sp, sp, #{emit_nativeint !bits}\n`)
+
+(* Adjust alloc_ptr down by the given byte amount *)
+
+let emit_alloc_decrement n =
+  decompose_intconst (Nativeint.of_int n)
+    (fun bits ->
+       `	sub	alloc_ptr, alloc_ptr, #{emit_nativeint !bits}\n`)
 
 (* Name of current function *)
 let function_name = ref ""
@@ -324,12 +346,12 @@ let emit_instr i =
           `	bl	{emit_symbol s}\n`; 1
         end
     | Lop(Istackoffset n) ->
-        if n >= 0 then
-          `	sub	sp, sp, #{emit_int n}\n`
-        else
-          `	add	sp, sp, #{emit_int (-n)}\n`;
+        let ninstr =
+          if n >= 0
+          then emit_stack_adjustment "sub" n
+          else emit_stack_adjustment "add" (-n) in
         stack_offset := !stack_offset + n;
-        1
+        ninstr
     | Lop(Iload(Single, addr)) ->
         let r = i.res.(0) in
         `	ldfs	{emit_reg	r}, {emit_addressing addr i.arg 0}\n`;
@@ -363,29 +385,26 @@ let emit_instr i =
         `	{emit_string	instr}     {emit_reg r}, {emit_addressing addr i.arg 1}\n`;
         1
     | Lop(Ialloc n) ->
-        let nn = Nativeint.of_int n in
         if !fastcode_flag then begin
-          if is_immediate nn then begin
-            `	ldr	r10, [alloc_limit, #0]\n`;
-            `	sub	alloc_ptr, alloc_ptr, #{emit_int n}\n`
-          end else begin
-            ignore(emit_complex_intconst (phys_reg 8 (*r10*)) nn);
-            `	sub	alloc_ptr, alloc_ptr, r10\n`;
-            `	ldr	r10, [alloc_limit, #0]\n`
-          end;
+          `	ldr	r10, [alloc_limit, #0]\n`;
+          let ni = emit_alloc_decrement n in
           `	cmp	alloc_ptr, r10\n`;
           `{record_frame i.live}        blcc    caml_call_gc\n`;
-          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 5
+          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
+          4 + ni
         end else if n = 8 || n = 12 || n = 16 then begin
             `{record_frame i.live}      bl      caml_alloc{emit_int ((n-4)/4)}\n`;
             `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 2
         end else begin
-            if is_immediate nn then
-              `	mov	r10, #{emit_int n}\n`
-            else
-              ignore(emit_complex_intconst (phys_reg 8 (*r10*)) nn);
+            let nn = Nativeint.of_int n in
+            let ni =
+              if is_immediate nn then begin
+                `	mov	r10, #{emit_int n}\n`; 1
+              end else
+                emit_complex_intconst (phys_reg 8 (*r10*)) nn in
             `{record_frame i.live}      bl      caml_alloc\n`;
-            `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 3
+            `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
+            2 + ni
         end
     | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
         let shift = name_for_shift_operation op in

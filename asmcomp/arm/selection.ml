@@ -30,12 +30,12 @@ let rec is_immed n shift =
   else if n land (0xFF lsl shift) = n then true
   else is_immed n (shift + 2)
 
-(* We have 12-bit signed offsets for word accesses,
-   8-bit signed word offsets for float accesses,
-   and 8-bit byte offsets for bytes and shorts.
+(* We have 12-bit + sign byte offsets for word accesses,
+   8-bit + sign word offsets for float accesses,
+   and 8-bit + sign byte offsets for bytes and shorts.
    Use lowest common denominator. *)
 
-let is_offset n = n < 128 && n > -128
+let is_offset n = n < 256 && n > -256
 
 let is_intconst = function Cconst_int n -> true | _ -> false
 
