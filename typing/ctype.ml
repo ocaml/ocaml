@@ -3115,3 +3115,27 @@ let nondep_cltype_declaration env id decl =
   List.iter unmark_type decl.clty_params;
   unmark_class_type decl.clty_type;
   decl
+
+(* collapse conjonctive types in class parameters *)
+let rec collapse_conj env visited ty =
+  let ty = repr ty in
+  if List.memq ty visited then () else
+  let visited = ty :: visited in
+  match ty.desc with
+    Tvariant row ->
+      let row = row_repr row in
+      List.iter
+        (fun (l,fi) ->
+          match row_field_repr fi with
+            Reither (c, t1::(_::_ as tl), m, e) ->
+              List.iter (unify env t1) tl;
+              e := Some (Reither (c, [t1], m, ref None))
+          | _ ->
+              ())
+        row.row_fields;
+      iter_row (collapse_conj env visited) row
+  | _ ->
+      iter_type_expr (collapse_conj env visited) ty
+
+let collapse_conj_params env params =
+  List.iter (collapse_conj env []) params

@@ -63,6 +63,8 @@ type error =
   | Make_nongen_seltype of type_expr
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
+  | Non_collapsable_conjunction of
+      Ident.t * Types.class_declaration * (type_expr * type_expr) list
 
 exception Error of Location.t * error
 

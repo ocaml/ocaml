@@ -222,3 +222,6 @@ val self_type: class_type -> type_expr
 val class_type_arity: class_type -> int
 val arity: type_expr -> int
         (* Return the arity (as for curried functions) of the given type. *)
+
+val collapse_conj_params: Env.t -> type_expr list -> unit
+        (* Collapse conjunctive types in class parameters *)

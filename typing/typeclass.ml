@@ -45,6 +45,8 @@ type error =
   | Make_nongen_seltype of type_expr
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
+  | Non_collapsable_conjunction of
+      Ident.t * Types.class_declaration * (type_expr * type_expr) list
 
 exception Error of Location.t * error
 
@@ -1070,9 +1072,14 @@ let class_infos define_class kind
     arity, pub_meths, List.rev !coercion_locs, expr) :: res,
    env)
 
-let final_decl define_class
+let final_decl env define_class
     (cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
      arity, pub_meths, coe, expr) =
+
+  begin try Ctype.collapse_conj_params env clty.cty_params
+  with Ctype.Unify trace ->
+    raise(Error(cl.pci_loc, Non_collapsable_conjunction (id, clty, trace)))
+  end;
 
   List.iter Ctype.generalize clty.cty_params;
   generalize_class_type clty.cty_type;
@@ -1183,7 +1190,7 @@ let type_classes define_class approx kind env cls =
     List.fold_right (class_infos define_class kind) res ([], env)
   in
   Ctype.end_def ();
-  let res = List.rev_map (final_decl define_class) res in
+  let res = List.rev_map (final_decl env define_class) res in
   let decls = List.fold_right extract_type_decls res [] in
   let decls = Typedecl.compute_variance_decls env decls in
   let res = List.map2 merge_type_decls res (compact decls) in
@@ -1350,3 +1357,11 @@ let report_error ppf = function
            the type of the current class:@ %a.@.\
            Some occurences are contravariant@]"
         Printtyp.type_scheme ty
+  | Non_collapsable_conjunction (id, clty, trace) ->
+      fprintf ppf
+        "@[The type of this class,@ %a,@ \
+           contains non-collapsable conjunctive types in constraints@]"
+        (Printtyp.class_declaration id) clty;
+      Printtyp.report_unification_error ppf trace
+        (fun ppf -> fprintf ppf "Type")
+        (fun ppf -> fprintf ppf "is not compatible with type")
