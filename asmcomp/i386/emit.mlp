@@ -777,6 +777,15 @@ let emit_profile () =
       `	popl	%eax\n`
   | _ -> () (*unsupported yet*)
 
+(* Declare a global function symbol *)
+
+let declare_function_symbol name =
+  `	.globl	{emit_symbol name}\n`;
+  match Config.system with
+    "linux_elf" | "bsd_elf" ->
+      `	.type	{emit_symbol name},@function\n`
+  | _ -> ()
+
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -789,7 +798,7 @@ let fundecl fundecl =
   range_check_trap := 0;
   `	.text\n`;
   emit_align 16;
-  `	.globl	{emit_symbol fundecl.fun_name}\n`;
+  declare_function_symbol fundecl.fun_name;
   `{emit_symbol fundecl.fun_name}:\n`;
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() - 4 in
