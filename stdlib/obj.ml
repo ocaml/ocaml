@@ -28,4 +28,4 @@ external new_block : int -> int -> t = "obj_block"
 let marshal (obj: t) =
   Marshal.to_string obj []
 let unmarshal str pos =
-  (Marshal.from_string str pos, Marshal.total_size str pos)
+  (Marshal.from_string str pos, pos + Marshal.total_size str pos)
