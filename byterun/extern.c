@@ -302,7 +302,7 @@ static void extern_rec(v)
         if (tag < 16 && sz < 8) {
           Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
         } else {
-          writecode32(CODE_BLOCK32, hd);
+          writecode32(CODE_BLOCK32, hd & ~Black);
         }
         size_32 += 1 + sz;
         size_64 += 1 + sz;

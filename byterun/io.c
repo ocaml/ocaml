@@ -151,7 +151,7 @@ value flush_partial(channel)            /* ML */
       bcopy(channel->buff + written, channel->buff, towrite - written);
     channel->curr -= written;
   }
-  return Val_bool(channel->max == channel->buff);
+  return Val_bool(channel->curr == channel->buff);
 }
 
 /* Flush completely the buffer. */
