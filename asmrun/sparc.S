@@ -22,7 +22,9 @@
 
 #define Young_limit _young_limit
 #define Young_ptr _young_ptr
-#define Caml_last_context _caml_last_context
+#define Caml_bottom_of_stack _caml_bottom_of_stack
+#define Caml_last_return_address _caml_last_return_address
+#define Caml_gc_regs _caml_gc_regs
 #define Caml_exception_pointer _caml_exception_pointer
 #define Caml_required_size _caml_required_size
 #define Caml_alloc _caml_alloc
@@ -46,7 +48,9 @@
 
 #define Young_limit young_limit
 #define Young_ptr young_ptr
-#define Caml_last_context caml_last_context
+#define Caml_bottom_of_stack caml_bottom_of_stack
+#define Caml_last_return_address caml_last_return_address
+#define Caml_gc_regs caml_gc_regs
 #define Caml_exception_pointer caml_exception_pointer
 #define Caml_required_size caml_required_size
 #define Caml_alloc caml_alloc
@@ -98,10 +102,13 @@ Caml_call_gc:
         Store(Exn_ptr, Caml_exception_pointer)
     /* Save current allocation pointer for debugging purposes */
         Store(Alloc_ptr, Young_ptr)
+    /* Record lowest stack address */
+        Store(%sp, Caml_bottom_of_stack)
+    /* Record last return address */
+        Store(%o7, Caml_last_return_address)
     /* Allocate space on stack for caml_context structure and float regs */
-        sub     %sp, 4 + 25*4 + 15*8, %sp
-    /* Build caml_context structure on stack
-       and save it into caml_last_context. */
+        sub     %sp, 20*4 + 15*8, %sp
+    /* Save int regs on stack and save it into caml_gc_regs */
         add     %sp, 96 + 15*8, %g2
         std     %o0, [%g2]
         std     %o2, [%g2 + 0x8]
@@ -114,8 +121,7 @@ Caml_call_gc:
         st      %l4, [%g2 + 0x40]
         st      %g3, [%g2 + 0x44]
         st      %g4, [%g2 + 0x48]
-        st      %o7, [%g2 + 0x64]
-        Store(%g2, Caml_last_context)
+        Store(%g2, Caml_gc_regs)
     /* Save the floating-point registers */
         add     %sp, 96, %g1
         std     %f0, [%g1]
@@ -136,7 +142,7 @@ Caml_call_gc:
     /* Call the garbage collector */
         call    Garbage_collection
         nop
-    /* Restore return address and all regs used by the code generator */
+    /* Restore all regs used by the code generator */
         add     %sp, 96 + 15*8, %g2
         ldd     [%g2], %o0
         ldd     [%g2 + 0x8], %o2
@@ -149,7 +155,6 @@ Caml_call_gc:
         ld      [%g2 + 0x40], %l4
         ld      [%g2 + 0x44], %g3
         ld      [%g2 + 0x48], %g4
-        ld      [%g2 + 0x64], %o7
         add     %sp, 96, %g1
         ldd     [%g1], %f0
         ldd     [%g1 + 0x8], %f2
@@ -172,6 +177,7 @@ Caml_call_gc:
         Load(Caml_required_size, %g2)
         sub     Alloc_ptr, %g2, Alloc_ptr
     /* Return to caller */
+        Load(Caml_last_return_address, %o7)
         retl
         add     %sp, 4 + 25*4 + 15*8, %sp       /* in delay slot */
 
@@ -180,14 +186,9 @@ Caml_call_gc:
         .global Caml_c_call
 /* Function to call is in %g2 */
 Caml_c_call:
-    /* Build caml_context structure on stack
-       and save it into caml_last_context.
-       We don't fill the gc_regs section, because no registers
-       are live across caml_c_call. */
-        sub     %sp, 8, %sp
-        st      %o7, [%sp + 100]
-        add     %sp, 100 - 25*4, %o7
-        Store(%o7, Caml_last_context)
+    /* Record lowest stack address and return address */
+        Store(%sp, Caml_bottom_of_stack)
+        Store(%o7, Caml_last_return_address)
     /* Save the exception handler and alloc pointer */
         Store(Exn_ptr, Caml_exception_pointer)
         sethi   %hi(Young_ptr), %g1
@@ -195,12 +196,12 @@ Caml_c_call:
         call    %g2
         st      Alloc_ptr, [%g1 + %lo(Young_ptr)]        /* in delay slot */
     /* Reload return address */
-        ld      [%sp + 100], %o7
+        Load(Caml_last_return_address, %o7)
     /* Reload alloc pointer */
-        Load(Young_ptr, Alloc_ptr)
+        sethi   %hi(Young_ptr), %g1
     /* Return to caller */
         retl
-        add     %sp, 8, %sp                 /* in delay slot */
+        ld      [%g1 + %lo(Young_ptr)], Alloc_ptr        /* in delay slot */
 
 /* Start the Caml program */
 
@@ -214,9 +215,12 @@ Caml_start_program:
     /* Code shared with callback* */
 L108:
     /* Set up a callback link on the stack. */
-        sub     %sp, 8, %sp
-        Load(Caml_last_context, %l0)
-        st      %l0, [%sp + 96]
+        sub     %sp, 16, %sp
+        Load(Caml_bottom_of_stack, %l0)
+        Load(Caml_last_return_address, %l1)
+        Load(Caml_gc_regs, %l2)
+        std     %l0, [%sp + 96]
+        st      %l2, [%sp + 104]
     /* Set up a trap frame to catch exceptions escaping the Caml code */
         call    L111
         nop
@@ -237,10 +241,13 @@ L109:   call    %l2
         ld      [%sp + 100], Exn_ptr
         add     %sp, 8, %sp
         Store(Exn_ptr, Caml_exception_pointer)
-    /* Pop callback link, restoring caml_last_context */
-        ld      [%sp + 96], %l0
-        add     %sp, 8, %sp
-        Store(%l0, Caml_last_context)
+    /* Pop callback link, restoring the global variables */
+        ldd     [%sp + 96], %l0
+        ld      [%sp + 104], %l2
+        Store(%l0, Caml_bottom_of_stack)
+        Store(%l1, Caml_last_return_address)
+        Store(%l2, Caml_gc_regs)
+        add     %sp, 16, %sp
     /* Save allocation pointer */
         Store(Alloc_ptr, Young_ptr)
     /* Move result where the C function expects it */
@@ -252,8 +259,11 @@ L110:
     /* The trap handler */
         Store(Exn_ptr, Caml_exception_pointer)
         Store(Alloc_ptr, Young_ptr)
-        ld      [%sp + 96], %l0
-        Store(%l0, Caml_last_context)
+        ldd     [%sp + 96], %l0
+        ld      [%sp + 104], %l2
+        Store(%l0, Caml_bottom_of_stack)
+        Store(%l1, Caml_last_return_address)
+        Store(%l2, Caml_gc_regs)
     /* Re-raise the exception through mlraise,
        so that local C roots are cleaned up correctly. */
         call    Mlraise         /* never returns */

@@ -83,16 +83,19 @@ caml_call_gc:
         .prologue 0
         ldiq    $25, 0
 $110:   lda     $sp, -0x200($sp)
-    /* 0x200 = 8 (retaddr) + 31*8 (ints) + 32*8 (floats) */
+    /* 0x200 = 32*8 (ints) + 32*8 (floats) */
         stq     $26, 0x1F8($sp)         /* return address */
         stq     $gp, 0x1F0($sp)         /* caller's $gp */
         stq     $25, 0x1E8($sp)         /* desired size */
     /* Rebuild $gp */
         br      $27, $103
 $103:   ldgp    $gp, 0($27)
-    /* Record last context */
+    /* Record lowest stack address, return address, GC regs */
+        stq     $26, caml_last_return_address
+        lda     $24, 0x200($sp)
+        stq     $24, caml_bottom_of_stack
         lda     $24, 0x100($sp)
-        stq     $24, caml_last_context
+        stq     $24, caml_gc_regs
     /* Save current allocation pointer for debugging purposes */
         stq     $13, young_ptr
     /* Save trap pointer in case an exception is raised (e.g. sighandler) */
@@ -195,7 +198,7 @@ $103:   ldgp    $gp, 0($27)
         ldq     $25, 0x1E8($sp)
         subq    $13, $25, $13
     /* Say that we are back into Caml code */
-        stq     $31, caml_last_context
+        stq     $31, caml_last_return_address
     /* Return to caller */
         ldq     $26, 0x1F8($sp)
         ldq     $gp, 0x1F0($sp)
@@ -218,13 +221,10 @@ caml_c_call:
     /* Rebuild $gp */
         br      $25, $104
 $104:   ldgp    $gp, 0($25)
-    /* Record last context.  We don't fill the register section since
-       no registers are live across caml_c_call. */
-        lda     $sp, -16($sp)
-        stq     $26, 8($sp)
-        lda     $25, (8 - 31*8)($sp)
-        lda     $11, caml_last_context
-        stq     $25, 0($11)
+    /* Record lowest stack address and return address */
+        lda     $11, caml_last_return_address
+        stq     $26, 0($11)
+        stq     $sp, caml_bottom_of_stack
     /* Make the exception handler and alloc ptr available to the C code */
         lda     $12, young_ptr
         stq     $13, 0($12)
@@ -236,11 +236,10 @@ $104:   ldgp    $gp, 0($25)
         ldq     $13, 0($12)  /* $12 still points to young_ptr */
         ldq     $14, 0($14)  /* $14 still points to young_limit */
     /* Say that we are back into Caml code */
-        stq     $31, 0($11)  /* $11 still points to caml_last_context */
+        stq     $31, 0($11)  /* $11 still points to caml_last_return_address */
     /* Restore $gp */
         mov     $10, $gp
     /* Return */
-        lda     $sp, 16($sp)
         ret     ($9)
 
         .end    caml_c_call
@@ -276,9 +275,13 @@ $107:
         stt     $f8, 112($sp)
         stt     $f9, 120($sp)
     /* Set up a callback link on the stack. */
-        lda     $sp, -16($sp)
-        ldq     $0, caml_last_context
+        lda     $sp, -32($sp)
+        ldq     $0, caml_bottom_of_stack
         stq     $0, 0($sp)
+        ldq     $1, caml_last_return_address
+        stq     $1, 8($sp)
+        ldq     $1, caml_gc_regs
+        stq     $1, 16($sp)
     /* Set up a trap frame to catch exceptions escaping the Caml code */
         lda     $sp, -16($sp)
         ldq     $15, caml_exception_pointer
@@ -301,10 +304,14 @@ $108:   jsr     ($25)
         ldq     $15, 0($sp)
         stq     $15, caml_exception_pointer
         lda     $sp, 16($sp)
-    /* Restore caml_last_context */
+    /* Pop the callback link, restoring the global variables */
         ldq     $24, 0($sp)
-        stq     $24, caml_last_context
-        lda     $sp, 16($sp)
+        stq     $24, caml_bottom_of_stack
+        ldq     $25, 8($sp)
+        stq     $25, caml_last_return_address
+        ldq     $24, 16($sp)
+        stq     $24, caml_gc_regs
+        lda     $sp, 32($sp)
     /* Update allocation pointer */
         stq     $13, young_ptr
     /* Reload callee-save registers */
@@ -330,10 +337,14 @@ $108:   jsr     ($25)
 
     /* The trap handler */
 $109:   ldgp    $gp, 0($26)
-    /* Restore caml_last_context */
+    /* Restore the global variables used by caml_c_call */
         ldq     $24, 0($sp)
-        stq     $24, caml_last_context
-        lda     $sp, 16($sp)
+        stq     $24, caml_bottom_of_stack
+        ldq     $25, 8($sp)
+        stq     $25, caml_last_return_address
+        ldq     $25, 16($sp)
+        stq     $25, caml_gc_regs
+        lda     $sp, 32($sp)
     /* Re-raise the exception through mlraise,
        so that local C roots are cleaned up correctly. */
         stq     $13, young_ptr
@@ -353,7 +364,7 @@ raise_caml_exception:
         mov     $16, $0                         /* Move exn bucket */
         ldq     $13, young_ptr
         ldq     $14, young_limit
-        stq     $31, caml_last_context          /* We're back into Caml */
+        stq     $31, caml_last_return_address   /* We're back into Caml */
         ldq     $sp, caml_exception_pointer
         ldq     $15, 0($sp)
         ldq     $26, 8($sp)

@@ -59,10 +59,9 @@
 
 young_limit                  .comm 8
 young_ptr                    .comm 8
-gc_entry_regs                .comm 32 * 4
-gc_entry_float_regs          .comm 32 * 8
 caml_bottom_of_stack         .comm 8
 caml_last_return_address     .comm 8
+caml_gc_regs                 .comm 8
 caml_exception_pointer       .comm 8
 caml_required_size           .comm 8
 #endif
@@ -70,10 +69,9 @@ caml_required_size           .comm 8
 #ifdef SYS_nextstep
 	.comm	G(young_limit), 8
 	.comm	G(young_ptr), 8
-	.comm	G(gc_entry_regs), 32 * 4
-	.comm	G(gc_entry_float_regs), 32 * 8
 	.comm	G(caml_bottom_of_stack), 8
 	.comm	G(caml_last_return_address), 8
+	.comm	G(caml_gc_regs), 8
 	.comm	G(caml_exception_pointer), 8
 	.comm	G(caml_required_size), 8
 #endif
@@ -111,9 +109,15 @@ G(caml_call_gc):
 ; Save the exception handler (if e.g. a sighandler raises)
         LOADHIGH(G(caml_exception_pointer))
         stw     %r5, LOW(G(caml_exception_pointer))(%r1)
+; Reserve stack space
+; 0x1C0 = 4 * 32 (int regs) + 8 * 32 (float regs) + 64 (for calling C)
+        ldo     0x1C0(%r30), %r30
+; Save caml_gc_regs
+        ldo     -(64 + 8*32)(%r30), %r31
+        LOADHIGH(G(caml_gc_regs))
+        stw     %r31, LOW(G(caml_gc_regs))(%r1)
 ; Save all regs used by the code generator
-        LOADHIGH(G(gc_entry_regs))
-        ldo     LOW(G(gc_entry_regs))(%r1), %r1
+        copy    %r31, %r1
         stws,ma %r6, 4(%r1)
         stws,ma %r7, 4(%r1)
         stws,ma %r8, 4(%r1)
@@ -136,9 +140,7 @@ G(caml_call_gc):
         stws,ma %r25, 4(%r1)
         stws,ma %r26, 4(%r1)
         stws,ma %r28, 4(%r1)
-;;        stws,ma %r29, 4(%r1)   %r29 is clobbered
-        LOADHIGH(G(gc_entry_float_regs))
-        ldo     LOW(G(gc_entry_float_regs))(%r1), %r1
+        ldo     -0x1C0(%r30), %r1
         fstds,ma %fr4, 8(%r1)
         fstds,ma %fr5, 8(%r1)
         fstds,ma %fr6, 8(%r1)
@@ -168,7 +170,6 @@ G(caml_call_gc):
         fstds,ma %fr30, 8(%r1)
 
 ; Call the garbage collector
-        ldo     64(%r30), %r30
 #ifdef SYS_nextstep
         ldil    L`G(garbage_collection), %r1
         ble     R`G(garbage_collection)(4, %r1)
@@ -177,11 +178,9 @@ G(caml_call_gc):
         bl      G(garbage_collection), %r2
         nop
 #endif
-        ldo     -64(%r30), %r30
 
 ; Restore all regs used by the code generator
-        LOADHIGH(G(gc_entry_regs))
-        ldo     LOW(G(gc_entry_regs))(%r1), %r1
+        ldo     -(64 + 8*32)(%r30), %r1
         ldws,ma 4(%r1), %r6
         ldws,ma 4(%r1), %r7
         ldws,ma 4(%r1), %r8
@@ -204,9 +203,7 @@ G(caml_call_gc):
         ldws,ma 4(%r1), %r25
         ldws,ma 4(%r1), %r26
         ldws,ma 4(%r1), %r28
-;;        ldws,ma 4(%r1), %r29    %r29 is clobbered
-        LOADHIGH(G(gc_entry_float_regs))
-        ldo     LOW(G(gc_entry_float_regs))(%r1), %r1
+        ldo     -0x1C0(%r30), %r1
         fldds,ma 8(%r1), %fr4
         fldds,ma 8(%r1), %fr5
         fldds,ma 8(%r1), %fr6
@@ -342,13 +339,16 @@ L102:
 	fstds,ma %fr30, -8(%r1)
 	fstds,ma %fr31, -8(%r1)
 ; Set up a callback link
-        ldo     8(%r30), %r30
+        ldo     16(%r30), %r30
         LOADHIGH(G(caml_bottom_of_stack))
         ldw     LOW(G(caml_bottom_of_stack))(%r1), %r1
-        stw     %r1, -8(%r30)
+        stw     %r1, -16(%r30)
         LOADHIGH(G(caml_last_return_address))
         ldw     LOW(G(caml_last_return_address))(%r1), %r1
-        stw     %r1, -4(%r30)
+        stw     %r1, -12(%r30)
+        LOADHIGH(G(caml_gc_regs))
+        ldw     LOW(G(caml_gc_regs))(%r1), %r1
+        stw     %r1, -8(%r30)
 ; Set up a trap frame to catch exceptions escaping the Caml code
         ldo     8(%r30), %r30
         LOADHIGH(G(caml_exception_pointer))
@@ -373,13 +373,16 @@ L104:
         stw     %r31, LOW(G(caml_exception_pointer))(%r1)
         ldo     -8(%r30), %r30
 ; Pop the callback link
-        ldw     -8(%r30), %r31
+        ldw     -16(%r30), %r31
         LOADHIGH(G(caml_bottom_of_stack))
         stw     %r31, LOW(G(caml_bottom_of_stack))(%r1)
-        ldw     -4(%r30), %r31
+        ldw     -12(%r30), %r31
         LOADHIGH(G(caml_last_return_address))
         stw     %r31, LOW(G(caml_last_return_address))(%r1)
-        ldo     -8(%r30), %r30
+        ldw     -8(%r30), %r31
+        LOADHIGH(G(caml_gc_regs))
+        stw     %r31, LOW(G(caml_gc_regs))(%r1)
+        ldo     -16(%r30), %r30
 ; Save allocation pointer
         LOADHIGH(G(young_ptr))
         stw     %r3, LOW(G(young_ptr))(%r1)
@@ -431,13 +434,16 @@ L104:
 ; The trap handler
 L103:
 ; Pop the callback link
-        ldw     -8(%r30), %r31
+        ldw     -16(%r30), %r31
         LOADHIGH(G(caml_bottom_of_stack))
         stw     %r31, LOW(G(caml_bottom_of_stack))(%r1)
-        ldw     -4(%r30), %r31
+        ldw     -12(%r30), %r31
         LOADHIGH(G(caml_last_return_address))
         stw     %r31, LOW(G(caml_last_return_address))(%r1)
-        ldo     -8(%r30), %r30
+        ldw     -8(%r30), %r31
+        LOADHIGH(G(caml_gc_regs))
+        stw     %r31, LOW(G(caml_gc_regs))(%r1)
+        ldo     -16(%r30), %r30
 ; Save allocation pointer and exception pointer
         LOADHIGH(G(young_ptr))
         stw     %r3, LOW(G(young_ptr))(%r1)

@@ -13,51 +13,6 @@
 
 /* Asm part of the runtime system, Mips processor */
 
-        .comm   gc_entry_regs, 4 * 32
-        .comm   gc_entry_float_regs, 8 * 32
-
-/* Save all callee-save registers in the stack frame */
-#define SAVE_CALLEE_SAVE_REGS \
-        sw      $16, 0($sp); \
-        sw      $17, 4($sp); \
-        sw      $18, 8($sp); \
-        sw      $19, 12($sp); \
-        sw      $20, 16($sp); \
-        sw      $21, 20($sp); \
-        sw      $22, 24($sp); \
-        sw      $23, 28($sp); \
-        sw      $30, 32($sp); \
-        s.d     $f20, 40($sp); \
-        s.d     $f22, 48($sp); \
-        s.d     $f24, 56($sp); \
-        s.d     $f26, 64($sp); \
-        s.d     $f28, 72($sp); \
-        s.d     $f30, 80($sp)
-
-#define RELOAD_CALLEE_SAVE_REGS \
-        lw      $16, 0($sp); \
-        lw      $17, 4($sp); \
-        lw      $18, 8($sp); \
-        lw      $19, 12($sp); \
-        lw      $20, 16($sp); \
-        lw      $21, 20($sp); \
-        lw      $22, 24($sp); \
-        lw      $23, 28($sp); \
-        lw      $30, 32($sp); \
-        l.d     $f20, 40($sp); \
-        l.d     $f22, 48($sp); \
-        l.d     $f24, 56($sp); \
-        l.d     $f26, 64($sp); \
-        l.d     $f28, 72($sp); \
-        l.d     $f30, 80($sp)
-
-/* Save and reload registers from gc_entry_regs and gc_entry_float_regs */
-
-#define SAVE(r) sw $/**/r, gc_entry_regs + r * 4
-#define LOAD(r) lw $/**/r, gc_entry_regs + r * 4
-#define FSAVE(r) s.d $f/**/r, gc_entry_float_regs + r * 4
-#define FLOAD(r) l.d $f/**/r, gc_entry_float_regs + r * 4
-
 /* Allocation */
 
         .text
@@ -117,110 +72,113 @@ caml_alloc:
 caml_call_gc_internal:
     /* Record return address */
         sw      $31, caml_last_return_address
-
 #endif
 
 $110:
     /* Record lowest stack address */
         sw      $sp, caml_bottom_of_stack
-    /* Save actual return address, $gp, requested size.
-       Also reserve some stack space for the call. */
-        subu    $sp, $sp, 32
-        sw      $31, 28($sp)
+    /* Reserve stack space for the registers and the call to C */
+        subu    $sp, $sp, 0x110
+    /* 0x110 = 32*4 (int regs) + 32*4 (float regs) + 16 (call) */
+    /* Save actual retaddr, $gp, requested size. */
+        sw      $31, 0x10C($sp)
+        sw      $24, 0x108($sp)
 #ifdef _PIC
-        .cprestore 24
+        .cprestore 0x104
 #endif
-        sw      $24, 16($sp)
+    /* Save pointer to register array */
+        addu    $24, $sp, 0x90
+        sw      $24, caml_gc_regs
     /* Save current allocation pointer for debugging purposes */
         sw      $22, young_ptr
     /* Save the exception handler (if e.g. a sighandler raises) */
         sw      $30, caml_exception_pointer
-    /* Save all regs used by the code generator in the arrays
-    /* gc_entry_regs and gc_entry_float_regs. */
-        SAVE(2)
-        SAVE(3)
-        SAVE(4)
-        SAVE(5)
-        SAVE(6)
-        SAVE(7)
-        SAVE(8)
-        SAVE(9)
-        SAVE(10)
-        SAVE(11)
-        SAVE(12)
-        SAVE(13)
-        SAVE(14)
-        SAVE(15)
-        SAVE(16)
-        SAVE(17)
-        SAVE(18)
-        SAVE(19)
-        SAVE(20)
-        SAVE(21)
-        FSAVE(0)
-        FSAVE(2)
-        FSAVE(4)
-        FSAVE(6)
-        FSAVE(8)
-        FSAVE(12)
-        FSAVE(14)
-        FSAVE(16)
-        FSAVE(18)
-        FSAVE(20)
-        FSAVE(22)
-        FSAVE(24)
-        FSAVE(26)
-        FSAVE(28)
-        FSAVE(30)
+    /* Save all regs used by the code generator on the stack */
+        sw      $2, 2 * 4($24)
+        sw      $3, 3 * 4($24)
+        sw      $4, 4 * 4($24)
+        sw      $5, 5 * 4($24)
+        sw      $6, 6 * 4($24)
+        sw      $7, 7 * 4($24)
+        sw      $8, 8 * 4($24)
+        sw      $9, 9 * 4($24)
+        sw      $10, 10 * 4($24)
+        sw      $11, 11 * 4($24)
+        sw      $12, 12 * 4($24)
+        sw      $13, 13 * 4($24)
+        sw      $14, 14 * 4($24)
+        sw      $15, 15 * 4($24)
+        sw      $16, 16 * 4($24)
+        sw      $17, 17 * 4($24)
+        sw      $18, 18 * 4($24)
+        sw      $19, 19 * 4($24)
+        sw      $20, 20 * 4($24)
+        sw      $21, 21 * 4($24)
+        s.d     $f0, 16 + 0 * 4($sp)
+        s.d     $f2, 16 + 2 * 4($sp)
+        s.d     $f4, 16 + 4 * 4($sp)
+        s.d     $f6, 16 + 6 * 4($sp)
+        s.d     $f8, 16 + 8 * 4($sp)
+        s.d     $f12, 16 + 12 * 4($sp)
+        s.d     $f14, 16 + 14 * 4($sp)
+        s.d     $f16, 16 + 16 * 4($sp)
+        s.d     $f18, 16 + 18 * 4($sp)
+        s.d     $f20, 16 + 20 * 4($sp)
+        s.d     $f22, 16 + 22 * 4($sp)
+        s.d     $f24, 16 + 24 * 4($sp)
+        s.d     $f26, 16 + 26 * 4($sp)
+        s.d     $f28, 16 + 28 * 4($sp)
+        s.d     $f30, 16 + 30 * 4($sp)
     /* Call the garbage collector */
         jal     garbage_collection
     /* Restore all regs used by the code generator */
-        LOAD(2)
-        LOAD(3)
-        LOAD(4)
-        LOAD(5)
-        LOAD(6)
-        LOAD(7)
-        LOAD(8)
-        LOAD(9)
-        LOAD(10)
-        LOAD(11)
-        LOAD(12)
-        LOAD(13)
-        LOAD(14)
-        LOAD(15)
-        LOAD(16)
-        LOAD(17)
-        LOAD(18)
-        LOAD(19)
-        LOAD(20)
-        LOAD(21)
-        FLOAD(0)
-        FLOAD(2)
-        FLOAD(4)
-        FLOAD(6)
-        FLOAD(8)
-        FLOAD(12)
-        FLOAD(14)
-        FLOAD(16)
-        FLOAD(18)
-        FLOAD(20)
-        FLOAD(22)
-        FLOAD(24)
-        FLOAD(26)
-        FLOAD(28)
-        FLOAD(30)
+        addu    $24, $sp, 0x90
+        lw      $2, 2 * 4($24)
+        lw      $3, 3 * 4($24)
+        lw      $4, 4 * 4($24)
+        lw      $5, 5 * 4($24)
+        lw      $6, 6 * 4($24)
+        lw      $7, 7 * 4($24)
+        lw      $8, 8 * 4($24)
+        lw      $9, 9 * 4($24)
+        lw      $10, 10 * 4($24)
+        lw      $11, 11 * 4($24)
+        lw      $12, 12 * 4($24)
+        lw      $13, 13 * 4($24)
+        lw      $14, 14 * 4($24)
+        lw      $15, 15 * 4($24)
+        lw      $16, 16 * 4($24)
+        lw      $17, 17 * 4($24)
+        lw      $18, 18 * 4($24)
+        lw      $19, 19 * 4($24)
+        lw      $20, 20 * 4($24)
+        lw      $21, 21 * 4($24)
+        l.d     $f0, 16 + 0 * 4($sp)
+        l.d     $f2, 16 + 2 * 4($sp)
+        l.d     $f4, 16 + 4 * 4($sp)
+        l.d     $f6, 16 + 6 * 4($sp)
+        l.d     $f8, 16 + 8 * 4($sp)
+        l.d     $f12, 16 + 12 * 4($sp)
+        l.d     $f14, 16 + 14 * 4($sp)
+        l.d     $f16, 16 + 16 * 4($sp)
+        l.d     $f18, 16 + 18 * 4($sp)
+        l.d     $f20, 16 + 20 * 4($sp)
+        l.d     $f22, 16 + 22 * 4($sp)
+        l.d     $f24, 16 + 24 * 4($sp)
+        l.d     $f26, 16 + 26 * 4($sp)
+        l.d     $f28, 16 + 28 * 4($sp)
+        l.d     $f30, 16 + 30 * 4($sp)
     /* Reload new allocation pointer and allocation limit */
         lw      $22, young_ptr
         lw      $23, young_limit
     /* Allocate space for the block */
-        lw      $24, 16($sp)
+        lw      $24, 0x108($sp)
         subu    $22, $22, $24
     /* Say that we are back into Caml code */
-        sw      $0, caml_last_return_address
+        sw      $0, caml_last_context
     /* Return to caller */
-        lw      $31, 28($sp)
-        addu    $sp, $sp, 32
+        lw      $31, 0x10C($sp)
+        addu    $sp, $sp, 0x110
         j       $31
 
         .end    caml_call_gc
@@ -292,13 +250,29 @@ $103:
         subu    $sp, $sp, 96
         sw      $31, 88($sp)
     /* Save all callee-save registers */
-        SAVE_CALLEE_SAVE_REGS
+        sw      $16, 0($sp)
+        sw      $17, 4($sp)
+        sw      $18, 8($sp)
+        sw      $19, 12($sp)
+        sw      $20, 16($sp)
+        sw      $21, 20($sp)
+        sw      $22, 24($sp)
+        sw      $23, 28($sp)
+        sw      $30, 32($sp)
+        s.d     $f20, 40($sp)
+        s.d     $f22, 48($sp)
+        s.d     $f24, 56($sp)
+        s.d     $f26, 64($sp)
+        s.d     $f28, 72($sp)
+        s.d     $f30, 80($sp)
     /* Set up a callback link on the stack. */
-        subu    $sp, $sp, 8
+        subu    $sp, $sp, 16
         lw      $2, caml_bottom_of_stack
         sw      $2, 0($sp)
         lw      $3, caml_last_return_address
         sw      $3, 4($sp)
+        lw      $4, caml_gc_regs
+        sw      $4, 8($sp)
     /* Set up a trap frame to catch exceptions escaping the Caml code */
         subu    $sp, $sp, 8
         lw      $30, caml_exception_pointer
@@ -310,7 +284,7 @@ $103:
         lw      $22, young_ptr
         lw      $23, young_limit
     /* Say that we are back into Caml code */
-        sw      $0, caml_last_return_address
+        sw      $0, caml_last_context
     /* Call the Caml code */
 #ifdef _PIC
         move    $25, $24
@@ -326,18 +300,33 @@ $104:   jal     $24
         lw      $24, 0($sp)
         sw      $24, caml_exception_pointer
         addu    $sp, $sp, 8
-    /* Pop the callback link,
-       restoring the global variables used by caml_c_call */
+    /* Pop the callback link, restoring the global variables */
         lw      $24, 0($sp)
         sw      $24, caml_bottom_of_stack
         lw      $25, 4($sp)
         sw      $25, caml_last_return_address
-        addu    $sp, $sp, 8
+        lw      $24, 8($sp)
+        sw      $24, caml_gc_regs
+        addu    $sp, $sp, 16
     /* Update allocation pointer */
         sw      $22, young_ptr
     /* Reload callee-save registers and return */
         lw      $31, 88($sp)
-        RELOAD_CALLEE_SAVE_REGS
+        lw      $16, 0($sp)
+        lw      $17, 4($sp)
+        lw      $18, 8($sp)
+        lw      $19, 12($sp)
+        lw      $20, 16($sp)
+        lw      $21, 20($sp)
+        lw      $22, 24($sp)
+        lw      $23, 28($sp)
+        lw      $30, 32($sp)
+        l.d     $f20, 40($sp)
+        l.d     $f22, 48($sp)
+        l.d     $f24, 56($sp)
+        l.d     $f26, 64($sp)
+        l.d     $f28, 72($sp)
+        l.d     $f30, 80($sp)
         addu    $sp, $sp, 96
         j       $31
         
@@ -356,6 +345,9 @@ $105:
         sw      $24, caml_bottom_of_stack
         lw      $25, 4($sp)
         sw      $25, caml_last_return_address
+        lw      $24, 8($sp)
+        sw      $24, caml_gc_regs
+        addu    $sp, $sp, 16
         move    $4, $2          /* bucket as first argument */
         jal     mlraise         /* never returns */
 

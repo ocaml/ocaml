@@ -11,9 +11,6 @@
 
 /* $Id$ */
 
-        .comm   gc_entry_regs, 4*32, 4
-        .comm   gc_entry_float_regs, 8*32, 8
-
 #define Addrglobal(reg,glob) \
         addis   reg, 0, glob@ha; \
         addi    reg, reg, glob@l
@@ -24,88 +21,6 @@
         addis   tmp, 0, glob@ha; \
         stw     reg, glob@l(tmp)
 
-/* Save and restore all callee-save registers */
-/* GPR 14 at sp+16 ... GPR 31 at sp+84
-   FPR 14 at sp+92 ... FPR 31 at sp+228 */
-
-#define Save_callee_save \
-        addic   11, 1, 16-4; \
-        stwu    14, 4(11); \
-        stwu    15, 4(11); \
-        stwu    16, 4(11); \
-        stwu    17, 4(11); \
-        stwu    18, 4(11); \
-        stwu    19, 4(11); \
-        stwu    20, 4(11); \
-        stwu    21, 4(11); \
-        stwu    22, 4(11); \
-        stwu    23, 4(11); \
-        stwu    24, 4(11); \
-        stwu    25, 4(11); \
-        stwu    26, 4(11); \
-        stwu    27, 4(11); \
-        stwu    28, 4(11); \
-        stwu    29, 4(11); \
-        stwu    30, 4(11); \
-        stwu    31, 4(11); \
-        stfdu   14, 8(11); \
-        stfdu   15, 8(11); \
-        stfdu   16, 8(11); \
-        stfdu   17, 8(11); \
-        stfdu   18, 8(11); \
-        stfdu   19, 8(11); \
-        stfdu   20, 8(11); \
-        stfdu   21, 8(11); \
-        stfdu   22, 8(11); \
-        stfdu   23, 8(11); \
-        stfdu   24, 8(11); \
-        stfdu   25, 8(11); \
-        stfdu   26, 8(11); \
-        stfdu   27, 8(11); \
-        stfdu   28, 8(11); \
-        stfdu   29, 8(11); \
-        stfdu   30, 8(11); \
-        stfdu   31, 8(11)
-
-#define Restore_callee_save \
-        addic   11, 1, 16-4; \
-        lwzu    14, 4(11); \
-        lwzu    15, 4(11); \
-        lwzu    16, 4(11); \
-        lwzu    17, 4(11); \
-        lwzu    18, 4(11); \
-        lwzu    19, 4(11); \
-        lwzu    20, 4(11); \
-        lwzu    21, 4(11); \
-        lwzu    22, 4(11); \
-        lwzu    23, 4(11); \
-        lwzu    24, 4(11); \
-        lwzu    25, 4(11); \
-        lwzu    26, 4(11); \
-        lwzu    27, 4(11); \
-        lwzu    28, 4(11); \
-        lwzu    29, 4(11); \
-        lwzu    30, 4(11); \
-        lwzu    31, 4(11); \
-        lfdu    14, 8(11); \
-        lfdu    15, 8(11); \
-        lfdu    16, 8(11); \
-        lfdu    17, 8(11); \
-        lfdu    18, 8(11); \
-        lfdu    19, 8(11); \
-        lfdu    20, 8(11); \
-        lfdu    21, 8(11); \
-        lfdu    22, 8(11); \
-        lfdu    23, 8(11); \
-        lfdu    24, 8(11); \
-        lfdu    25, 8(11); \
-        lfdu    26, 8(11); \
-        lfdu    27, 8(11); \
-        lfdu    28, 8(11); \
-        lfdu    29, 8(11); \
-        lfdu    30, 8(11); \
-        lfdu    31, 8(11)
-
         .section ".text"
 
 /* Invoke the garbage collector. */
@@ -113,20 +28,24 @@
         .globl  caml_call_gc
         .type   caml_call_gc, @function
 caml_call_gc:
-    /* Set up stack frame for calling the garbage collector */
-        stwu    1, -32(1)
+    /* Set up stack frame */
+        stwu    1, -0x1A0(1)
+    /* 0x1A0 = 4*32 (int regs) + 8*32 (float regs) + 32 (space for C call) */
     /* Record return address into Caml code */
         mflr    0
         Storeglobal(0, caml_last_return_address, 11)
     /* Record lowest stack address */
         addic   0, 1, 32
         Storeglobal(0, caml_bottom_of_stack, 11)
+    /* Record pointer to register array */
+        addic   0, 1, 8*32 + 32
+        Storeglobal(0, caml_gc_regs, 11)
     /* Save current allocation pointer for debugging purposes */
         Storeglobal(31, young_ptr, 11)
     /* Save exception pointer (if e.g. a sighandler raises) */
         Storeglobal(29, caml_exception_pointer, 11)
     /* Save all registers used by the code generator */
-        Addrglobal(11, gc_entry_regs - 4)
+        addic   11, 1, 8*32 + 32 - 4
         stwu    3, 4(11)
         stwu    4, 4(11)
         stwu    5, 4(11)
@@ -150,7 +69,7 @@ caml_call_gc:
         stwu    26, 4(11)
         stwu    27, 4(11)
         stwu    28, 4(11)
-        Addrglobal(11, gc_entry_float_regs - 8)
+        addic   11, 1, 32 - 8
         stfdu   1, 8(11)
         stfdu   2, 8(11)
         stfdu   3, 8(11)
@@ -188,8 +107,7 @@ caml_call_gc:
         Loadglobal(31, young_ptr, 11)
         Loadglobal(30, young_limit, 11)
     /* Restore all regs used by the code generator */
-        Addrglobal(11, gc_entry_regs)
-        addic   11, 11, -4
+        addic   11, 1, 8*32 + 32 - 4
         lwzu    3, 4(11)
         lwzu    4, 4(11)
         lwzu    5, 4(11)
@@ -213,8 +131,7 @@ caml_call_gc:
         lwzu    26, 4(11)
         lwzu    27, 4(11)
         lwzu    28, 4(11)
-        Addrglobal(11, gc_entry_float_regs)
-        addic   11, 11, -8
+        addic   11, 1, 32 - 8
         lfdu    1, 8(11)
         lfdu    2, 8(11)
         lfdu    3, 8(11)
@@ -250,8 +167,11 @@ caml_call_gc:
         Loadglobal(0, caml_last_return_address, 11)
         addic   0, 0, -16     /* Restart the allocation (4 instructions) */
         mtlr    0
+    /* Say we are back into Caml code */
+        li      12, 0
+        Storeglobal(12, caml_last_return_address, 11)
     /* Deallocate stack frame */
-        addi    1, 1, 32
+        addi    1, 1, 0x1A0
     /* Return */
         blr
 
@@ -268,15 +188,20 @@ caml_c_call:
         Storeglobal(1, caml_bottom_of_stack, 12)
         Storeglobal(25, caml_last_return_address, 12)
     /* Make the exception handler and alloc ptr available to the C code */
-        Storeglobal(31, young_ptr, 12)
-        Storeglobal(29, caml_exception_pointer, 12)
-    /* Call the function (address in 11) */
+        Storeglobal(31, young_ptr, 11)
+        Storeglobal(29, caml_exception_pointer, 11)
+    /* Call the function (address in link register) */
         blrl
     /* Restore return address (in 25, preserved by the C function) */
         mtlr    25
-    /* Reload allocation pointer */
+    /* Reload allocation pointer and allocation limit*/
         Loadglobal(31, young_ptr, 11)
+        Loadglobal(30, young_limit, 11)
+    /* Say we are back into Caml code */
+        li      12, 0
+        Storeglobal(12, caml_last_return_address, 11)
     /* Return to caller */
+        addic   1, 8, 1
         blr
         
 /* Raise an exception from C */
@@ -290,7 +215,7 @@ raise_caml_exception:
         Loadglobal(30, young_limit, 11)
     /* Say we are back into Caml code */
         li      0, 0
-        Storeglobal(0, caml_last_return_address, 11)
+        Storeglobal(0, caml_last_context, 11)
     /* Pop trap frame */
         lwz     0, 0(1)
         lwz     29, 4(1)
@@ -314,13 +239,53 @@ caml_start_program:
         mflr    0
         stw 0,  256+4(1)
     /* Save all callee-save registers */
-        Save_callee_save
+    /* GPR 14 at sp+16 ... GPR 31 at sp+84
+       FPR 14 at sp+92 ... FPR 31 at sp+228 */
+        addic   11, 1, 16-4
+        stwu    14, 4(11)
+        stwu    15, 4(11)
+        stwu    16, 4(11)
+        stwu    17, 4(11)
+        stwu    18, 4(11)
+        stwu    19, 4(11)
+        stwu    20, 4(11)
+        stwu    21, 4(11)
+        stwu    22, 4(11)
+        stwu    23, 4(11)
+        stwu    24, 4(11)
+        stwu    25, 4(11)
+        stwu    26, 4(11)
+        stwu    27, 4(11)
+        stwu    28, 4(11)
+        stwu    29, 4(11)
+        stwu    30, 4(11)
+        stwu    31, 4(11)
+        stfdu   14, 8(11)
+        stfdu   15, 8(11)
+        stfdu   16, 8(11)
+        stfdu   17, 8(11)
+        stfdu   18, 8(11)
+        stfdu   19, 8(11)
+        stfdu   20, 8(11)
+        stfdu   21, 8(11)
+        stfdu   22, 8(11)
+        stfdu   23, 8(11)
+        stfdu   24, 8(11)
+        stfdu   25, 8(11)
+        stfdu   26, 8(11)
+        stfdu   27, 8(11)
+        stfdu   28, 8(11)
+        stfdu   29, 8(11)
+        stfdu   30, 8(11)
+        stfdu   31, 8(11)
     /* Set up a callback link */
-        addi    1, 1, -8
+        addi    1, 1, -16
         Loadglobal(9, caml_bottom_of_stack, 11)
         Loadglobal(10, caml_last_return_address, 11)
+        Loadglobal(11, caml_gc_regs, 11)
         stw     9, 0(1)
         stw     10, 4(1)
+        stw     11, 8(1)
     /* Build an exception handler to catch exceptions escaping out of Caml */
         bl      .L103
         b       .L104
@@ -336,7 +301,7 @@ caml_start_program:
         Loadglobal(30, young_limit, 11)
     /* Say we are back into Caml code */
         li      0, 0
-        Storeglobal(0, caml_last_return_address, 11)
+        Storeglobal(0, caml_last_context, 11)
     /* Call the Caml code */
         mtlr    12
 .L105:
@@ -345,17 +310,58 @@ caml_start_program:
         lwz     9, 4(1)
         Storeglobal(9, caml_exception_pointer, 11)
         addi    1, 1, 8
-    /* Pop the callback link, restoring caml_bottom_of_stack */
-    /* and caml_last_return_address */
+    /* Pop the callback link, restoring the global variables */
         lwz     9, 0(1)
         lwz     10, 4(1)
-        Storeglobal(9, caml_bottom_of_stack, 11) 
-        Storeglobal(10, caml_last_return_address, 11) 
+        lwz     11, 8(1)
+        Storeglobal(9, caml_bottom_of_stack, 12) 
+        Storeglobal(10, caml_last_return_address, 12) 
+        Storeglobal(11, caml_gc_regs, 12) 
+        addi    1, 1, 16
+    /* Pop the callback link, restoring caml_last_context */
+        lwz     9, 0(1)
         addi    1, 1, 8
+        Storeglobal(9, caml_bottom_of_stack, 11) 
     /* Update allocation pointer */
         Storeglobal(31, young_ptr, 11)
     /* Restore callee-save registers */
-        Restore_callee_save
+        addic   11, 1, 16-4
+        lwzu    14, 4(11)
+        lwzu    15, 4(11)
+        lwzu    16, 4(11)
+        lwzu    17, 4(11)
+        lwzu    18, 4(11)
+        lwzu    19, 4(11)
+        lwzu    20, 4(11)
+        lwzu    21, 4(11)
+        lwzu    22, 4(11)
+        lwzu    23, 4(11)
+        lwzu    24, 4(11)
+        lwzu    25, 4(11)
+        lwzu    26, 4(11)
+        lwzu    27, 4(11)
+        lwzu    28, 4(11)
+        lwzu    29, 4(11)
+        lwzu    30, 4(11)
+        lwzu    31, 4(11)
+        lfdu    14, 8(11)
+        lfdu    15, 8(11)
+        lfdu    16, 8(11)
+        lfdu    17, 8(11)
+        lfdu    18, 8(11)
+        lfdu    19, 8(11)
+        lfdu    20, 8(11)
+        lfdu    21, 8(11)
+        lfdu    22, 8(11)
+        lfdu    23, 8(11)
+        lfdu    24, 8(11)
+        lfdu    25, 8(11)
+        lfdu    26, 8(11)
+        lfdu    27, 8(11)
+        lfdu    28, 8(11)
+        lfdu    29, 8(11)
+        lfdu    30, 8(11)
+        lfdu    31, 8(11)
     /* Reload return address */
         lwz     0, 256+4(1)
         mtlr    0
@@ -368,12 +374,13 @@ caml_start_program:
     /* Update caml_exception_pointer and young_ptr */
         Storeglobal(29, caml_exception_pointer, 11)
         Storeglobal(31, young_ptr, 11)
-    /* Pop the callback link, restoring caml_bottom_of_stack */
-    /* and caml_last_return_address */
+    /* Pop the callback link, restoring the global variables */
         lwz     9, 0(1)
-        lwz     10, 4(1)        
-        Storeglobal(9, caml_bottom_of_stack, 11)
-        Storeglobal(10, caml_last_return_address, 11)
+        lwz     10, 4(1)
+        lwz     11, 8(1)
+        Storeglobal(9, caml_bottom_of_stack, 12) 
+        Storeglobal(10, caml_last_return_address, 12) 
+        Storeglobal(11, caml_gc_regs, 12) 
     /* Re-raise the exception through mlraise, */
     /* so that local C roots are cleaned up correctly */
         b       mlraise

@@ -11,26 +11,28 @@
 
 # $Id$
 
-        .comm   gc_entry_regs, 4*32
-        .comm   gc_entry_float_regs, 8*32
-
         .csect  .text[PR]
 
 #### Invoke the garbage collector. r0 contains the return address
 
         .globl  .caml_call_gc
 .caml_call_gc:
-    # Set up stack frame for calling the garbage collector
-        stwu    1, -64(1)
+    # Set up stack frame
+        stwu    1, -0x1C0(1)
+    # 0x1A0 = 4*32 (int regs) + 8*32 (float regs) + 64 (space for C call)
     # Record last return address into Caml code
         lwz     11, L..caml_last_return_address(2)
         stw     0, 0(11)
     # Record return address into call_gc stub code
         mflr    0
-        stw     0, 72(1)
+        stw     0, 0x1C0+8(1)
     # Record lowest stack address
         lwz     11, L..caml_bottom_of_stack(2)
-	addic	0, 1, 64
+        addic   0, 1, 0x1C0
+        stw     0, 0(11)
+    # Record pointer to register array
+        lwz     11, L..caml_gc_regs(2)
+        addic   0, 1, 8*32 + 64
         stw     0, 0(11)
     # Save current allocation pointer for debugging purposes
         lwz     11, L..young_ptr(2)
@@ -39,8 +41,7 @@
         lwz     11, L..caml_exception_pointer(2)
         stw     29, 0(11)
     # Save all registers used by the code generator
-        lwz     11, L..gc_entry_regs(2)
-        addic   11, 11, -4
+        addic   11, 1, 8*32 + 64 - 4
         stwu    3, 4(11)
         stwu    4, 4(11)
         stwu    5, 4(11)
@@ -64,8 +65,7 @@
         stwu    26, 4(11)
         stwu    27, 4(11)
         stwu    28, 4(11)
-        lwz     11, L..gc_entry_float_regs(2)
-        addic   11, 11, -8
+        addic   11, 11, 64 - 8
         stfdu   1, 8(11)
         stfdu   2, 8(11)
         stfdu   3, 8(11)
@@ -106,8 +106,7 @@
         lwz     11, L..young_limit(2)
         lwz     30, 0(11)
     # Restore all regs used by the code generator
-        lwz     11, L..gc_entry_regs(2)
-        addic   11, 11, -4
+        addic   11, 1, 8*32 + 64 - 4
         lwzu    3, 4(11)
         lwzu    4, 4(11)
         lwzu    5, 4(11)
@@ -131,8 +130,7 @@
         lwzu    26, 4(11)
         lwzu    27, 4(11)
         lwzu    28, 4(11)
-        lwz     11, L..gc_entry_float_regs(2)
-        addic   11, 11, -8
+        addic   11, 11, 64 - 8
         lfdu    1, 8(11)
         lfdu    2, 8(11)
         lfdu    3, 8(11)
@@ -166,14 +164,17 @@
         lfdu    31, 8(11)
     # Return to caller (the stub code), leaving return address into
     # Caml code in the link register
-        lwz     0, 72(1)
+        lwz     0, 0x1C0+8(1)
         mtctr   0
         lwz     11, L..caml_last_return_address(2)
         lwz     0, 0(11)
         addic   0, 0, -16     # Restart the allocation (4 instructions)
         mtlr    0
+    # Say we are back into Caml code
+        li      12, 0
+        stw     12, 0(11)     # 11 still points to caml_last_return_address
     # Deallocate stack frame
-        addi    1, 1, 64
+        addi    1, 1, 0x1C0
     # Return
         bctr
 
@@ -181,12 +182,13 @@
 
         .globl  .caml_c_call
 .caml_c_call:
+    # Save return address in 25
 	mflr    25
     # Record lowest stack address and return address
         lwz     27, L..caml_bottom_of_stack(2)
-        lwz     26, L..caml_last_return_address(2)
+        lwz     24, L..caml_last_return_address(2)
         stw     1, 0(27)
-        stw     25, 0(26)
+        stw     25, 0(24)
     # Make the exception handler and alloc ptr available to the C code
         lwz     27, L..young_ptr(2)
         lwz     26, L..caml_exception_pointer(2)
@@ -195,7 +197,8 @@
     # Preserve RTOC and return address in callee-save registers
     # The C function will preserve them, and the Caml code does not
     # expect them to be preserved
-    # Return address is in 25, RTOC is in 26, pointer to young_ptr in 27
+    # Return address is in 25, RTOC is in 26, pointer to young_ptr in 27,
+    # pointer to caml_last_return_address is in 24
     # Call the function (descriptor in 11)
         lwz     0, 0(11)
         mr      26, 2
@@ -208,7 +211,10 @@
     # Restore RTOC
         mr      2, 26
     # Reload allocation pointer
-        lwz     31, 0(27)             # 27 still points to young_ptr
+        lwz     31, 0(27)     # 27 still points to young_ptr
+    # Say we are back into Caml code
+        li      12, 0
+        stw     12, 0(24)     # 24 still points to caml_last_return_address
     # Return to caller
         blr
         
@@ -292,10 +298,13 @@ L..102:
         addi    1, 1, -24
         lwz     9, L..caml_bottom_of_stack(2)
         lwz     10, L..caml_last_return_address(2)
+        lwz     11, L..caml_gc_regs(2)
         lwz     9, 0(9)
         lwz     10, 0(10)
+        lwz     11, 0(11)
         stw     9, 0(1)
         stw     10, 4(1)
+        stw     11, 8(1)
     # Build an exception handler to catch exceptions escaping out of Caml
         bl      L..103
         b       L..104
@@ -330,14 +339,16 @@ L..105:
         lwz     10, L..caml_exception_pointer(2)
         addi    1, 1, 24
         stw     9, 0(10)
-    # Pop the callback link, restoring caml_bottom_of_stack
-    # and caml_last_return_address
-        lwz     9, 0(1)
-        lwz     10, 4(1)        
-        lwz     11, L..caml_bottom_of_stack(2)
-        lwz     12, L..caml_last_return_address(2)
-        stw     9, 0(11)
-        stw     10, 0(12)
+    # Pop the callback link, restoring the global variables
+        lwz     7, 0(1)
+        lwz     8, 4(1)
+        lwz     9, 8(1)
+        lwz     10, L..caml_bottom_of_stack(2)
+        lwz     11, L..caml_last_return_address(2)
+        lwz     12, L..caml_gc_regs(2)
+        stw     7, 0(10)
+        stw     8, 0(11)
+        stw     9, 0(12)
         addi    1, 1, 24
     # Update allocation pointer
         lwz     11, L..young_ptr(2)
@@ -394,14 +405,16 @@ L..104:
         lwz     10, L..young_ptr(2)
         stw     29, 0(9)
         stw     31, 0(10)
-    # Pop the callback link, restoring caml_bottom_of_stack
-    # and caml_last_return_address
-        lwz     9, 0(1)
-        lwz     10, 4(1)        
-        lwz     11, L..caml_bottom_of_stack(2)
-        lwz     12, L..caml_last_return_address(2)
-        stw     9, 0(11)
-        stw     10, 0(12)
+    # Pop the callback link, restoring the global variables
+        lwz     7, 0(1)
+        lwz     8, 4(1)
+        lwz     9, 8(1)
+        lwz     10, L..caml_bottom_of_stack(2)
+        lwz     11, L..caml_last_return_address(2)
+        lwz     12, L..caml_gc_regs(2)
+        stw     7, 0(10)
+        stw     8, 0(11)
+        stw     9, 0(12)
     # Re-raise the exception through mlraise,
     # so that local C roots are cleaned up correctly
         b       .mlraise
@@ -457,6 +470,8 @@ L..caml_bottom_of_stack:
         .tc     caml_bottom_of_stack[TC], caml_bottom_of_stack
 L..caml_last_return_address:
         .tc     caml_last_return_address[TC], caml_last_return_address
+L..caml_gc_regs:
+        .tc     caml_gc_regs[TC], caml_gc_regs
 L..caml_exception_pointer:
         .tc     caml_exception_pointer[TC], caml_exception_pointer
 L..gc_entry_regs:

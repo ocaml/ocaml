@@ -122,7 +122,9 @@ static void init_frame_descriptors()
 
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
-struct caml_context * caml_last_context = NULL;
+char * caml_bottom_of_stack;
+unsigned long caml_last_return_address = 0;
+value * caml_gc_regs;
 
 /* Call [oldify] on all stack roots, C roots and global roots */
 
@@ -149,9 +151,9 @@ void oldify_local_roots ()
 
   /* The stack and local roots */
   if (frame_descriptors == NULL) init_frame_descriptors();
-  sp = caml_last_context->stack_chunk;
-  retaddr = caml_last_context->last_retaddr;
-  regs = caml_last_context->gc_regs;
+  sp = caml_bottom_of_stack;
+  retaddr = caml_last_return_address;
+  regs = caml_gc_regs;
   while (1) {
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(retaddr);
@@ -188,11 +190,11 @@ void oldify_local_roots ()
       /* This marks the top of a stack chunk for an ML callback.
          Skip C portion of stack and continue with next ML stack chunk. */
       struct caml_context * next_context = Callback_link(sp);
-      /* A null context means no more ML stack chunks; stop here. */
-      if (next_context == NULL) break;
-      sp = next_context->stack_chunk;
+      sp = next_context->bottom_of_stack;
       retaddr = next_context->last_retaddr;
       regs = next_context->gc_regs;
+      /* A null sp means no more ML stack chunks; stop here. */
+      if (sp == NULL) break;
     }
   }
   /* Local C roots */
@@ -234,7 +236,8 @@ void do_roots (f)
   }
   /* The stack and local roots */
   if (frame_descriptors == NULL) init_frame_descriptors();
-  do_local_roots(f, caml_last_context, local_roots);
+  do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
+                 caml_gc_regs, local_roots);
   /* Global C roots */
   for (gr = global_roots; gr != NULL; gr = gr->next) {
     f (*(gr->root), gr->root);
@@ -243,10 +246,9 @@ void do_roots (f)
   if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
 }
 
-void do_local_roots(f, first_context, local_roots)
-     scanning_action f;
-     struct caml_context * first_context;
-     struct caml__roots_block * local_roots;
+void do_local_roots(scanning_action f, char * bottom_of_stack,
+                    unsigned long last_retaddr, value * gc_regs,
+                    struct caml__roots_block * local_roots)
 {
   char * sp;
   unsigned long retaddr;
@@ -258,9 +260,9 @@ void do_local_roots(f, first_context, local_roots)
   value * root;
   struct caml__roots_block *lr;
 
-  sp = first_context->stack_chunk;
-  retaddr = first_context->last_retaddr;
-  regs = first_context->gc_regs;
+  sp = bottom_of_stack;
+  retaddr = last_retaddr;
+  regs = gc_regs;
   while (1) {
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(retaddr);
@@ -294,11 +296,11 @@ void do_local_roots(f, first_context, local_roots)
       /* This marks the top of a stack chunk for an ML callback.
          Skip C portion of stack and continue with next ML stack chunk. */
       struct caml_context * next_context = Callback_link(sp);
-      /* A null context means no more ML stack chunks; stop here. */
-      if (next_context == NULL) break;
-      sp = next_context->stack_chunk;
+      sp = next_context->bottom_of_stack;
       retaddr = next_context->last_retaddr;
       regs = next_context->gc_regs;
+      /* A null sp means no more ML stack chunks; stop here. */
+      if (sp == NULL) break;
     }
   }
   /* Local C roots */

@@ -25,16 +25,11 @@
         EXTERN  _young_ptr: DWORD
         EXTERN	_caml_bottom_of_stack: DWORD
         EXTERN	_caml_last_return_address: DWORD
+        EXTERN	_caml_gc_regs: DWORD
 	EXTERN	_caml_exception_pointer: DWORD
 
         PUBLIC	_gc_entry_regs
         PUBLIC	_gc_entry_float_regs
-
-	.DATA
-	ALIGN	4
-
-_gc_entry_regs			DWORD 32 DUP(?)
-_gc_entry_float_regs		QWORD 32 DUP(?)
 
 ; Allocation 
 
@@ -52,21 +47,24 @@ _caml_call_gc:
         lea     eax, [esp+4]
         mov     _caml_bottom_of_stack, eax
     ; Save all regs used by the code generator 
-L105:   mov	_gc_entry_regs + 4, ebx
-        mov	_gc_entry_regs + 8, ecx
-        mov	_gc_entry_regs + 12, edx
-        mov	_gc_entry_regs + 16, esi
-        mov	_gc_entry_regs + 20, edi
-        mov	_gc_entry_regs + 24, ebp
+L105:   push    ebp
+        push    edi
+        push    esi
+        push    edx
+        push    ecx
+        push    ebx
+        push    eax
+        mov     _caml_gc_regs, esp
     ; Call the garbage collector 
         call	_garbage_collection
     ; Restore all regs used by the code generator 
-        mov	ebx, _gc_entry_regs + 4
-        mov	ecx, _gc_entry_regs + 8
-        mov	edx, _gc_entry_regs + 12
-        mov	esi, _gc_entry_regs + 16
-        mov	edi, _gc_entry_regs + 20
-        mov	ebp, _gc_entry_regs + 24
+	pop     eax
+        pop     ebx
+        pop     ecx
+        pop     edx
+        pop     esi
+        pop     edi
+        pop     ebp
     ; Return to caller 
         ret	
 
@@ -167,6 +165,7 @@ L106:
     ; Build a callback link 
         push	_caml_last_return_address
         push	_caml_bottom_of_stack
+        push    _caml_gc_regs
     ; Build an exception handler 
         push	L108
         push	_caml_exception_pointer
@@ -179,6 +178,7 @@ L107:
         pop	esi    		; dummy register 
     ; Pop the callback link, restoring the global variables
     ; used by caml_c_call
+        pop     _caml_gc_regs
         pop	_caml_bottom_of_stack
         pop	_caml_last_return_address
     ; Restore callee-save registers.
@@ -192,6 +192,7 @@ L108:
     ; Exception handler
     ; Pop the callback link, restoring the global variables
     ; used by caml_c_call
+        pop     _caml_gc_regs
         pop	_caml_bottom_of_stack
         pop	_caml_last_return_address
     ; Re-raise the exception through mlraise,
