@@ -72,10 +72,10 @@
 
 /* The thread descriptors */
 
-struct thread_struct {
+struct caml_thread_struct {
   value ident;                  /* Unique id (for equality comparisons) */
-  struct thread_struct * next;  /* Double linking of threads */
-  struct thread_struct * prev;
+  struct caml_thread_struct * next;  /* Double linking of threads */
+  struct caml_thread_struct * prev;
   value * stack_low;            /* The execution stack for this thread */
   value * stack_high;
   value * stack_threshold;
@@ -94,7 +94,7 @@ struct thread_struct {
   value retval;                 /* Value to return when thread resumes */
 };
 
-typedef struct thread_struct * thread_t;
+typedef struct caml_thread_struct * caml_thread_t;
 
 #define RUNNABLE Val_int(0)
 #define KILLED Val_int(1)
@@ -122,7 +122,7 @@ typedef struct thread_struct * thread_t;
 #define DELAY_INFTY 1E30        /* +infty, for this purpose */
 
 /* The thread currently active */
-static thread_t curr_thread = NULL;
+static caml_thread_t curr_thread = NULL;
 /* Identifier for next thread creation */
 static value next_ident = Val_int(0);
 
@@ -134,7 +134,7 @@ static void (*prev_scan_roots_hook) (scanning_action);
 
 static void thread_scan_roots(scanning_action action)
 {
-  thread_t th, start;
+  caml_thread_t th, start;
 
   /* Scan all active descriptors */
   start = curr_thread;
@@ -161,7 +161,8 @@ value thread_initialize(value unit)       /* ML */
   if (curr_thread != NULL) return Val_unit;
   /* Create a descriptor for the current thread */
   curr_thread =
-    (thread_t) alloc_shr(sizeof(struct thread_struct) / sizeof(value), 0);
+    (caml_thread_t) alloc_shr(sizeof(struct caml_thread_struct)
+                              / sizeof(value), 0);
   curr_thread->ident = next_ident;
   next_ident = Val_int(Int_val(next_ident) + 1);
   curr_thread->next = curr_thread;
@@ -218,10 +219,11 @@ value thread_initialize_preemption(value unit)     /* ML */
 
 value thread_new(value clos)          /* ML */
 {
-  thread_t th;
+  caml_thread_t th;
   /* Allocate the thread and its stack */
   Begin_root(clos);
-    th = (thread_t) alloc_shr(sizeof(struct thread_struct) / sizeof(value), 0);
+    th = (caml_thread_t) alloc_shr(sizeof(struct caml_thread_struct)
+                                   / sizeof(value), 0);
   End_roots();
   th->ident = next_ident;
   next_ident = Val_int(Int_val(next_ident) + 1);
@@ -268,7 +270,7 @@ value thread_new(value clos)          /* ML */
 
 value thread_id(value th)             /* ML */
 {
-  return ((struct thread_struct *)th)->ident;
+  return ((caml_thread_t)th)->ident;
 }
 
 /* Return the current time as a floating-point number */
@@ -293,7 +295,7 @@ static void find_bad_fds(value fdl, fd_set *set);
 
 static value schedule_thread(void)
 {
-  thread_t run_thread, th;
+  caml_thread_t run_thread, th;
   fd_set readfds, writefds, exceptfds;
   double delay, now;
   int need_select, need_wait;
@@ -353,7 +355,7 @@ try_again:
       }
     }
     if (th->status & (BLOCKED_JOIN - 1)) {
-      if (((thread_t)(th->joining))->status == KILLED) {
+      if (((caml_thread_t)(th->joining))->status == KILLED) {
         th->status = RUNNABLE;
         Assign(th->retval, RESUMED_JOIN);
       }
@@ -682,7 +684,7 @@ value thread_join(value th)          /* ML */
 {
   check_callback();
   Assert(curr_thread != NULL);
-  if (((thread_t)th)->status == KILLED) return Val_unit;
+  if (((caml_thread_t)th)->status == KILLED) return Val_unit;
   curr_thread->status = BLOCKED_JOIN;
   Assign(curr_thread->joining, th);
   return schedule_thread();
@@ -703,7 +705,7 @@ value thread_wait_pid(value pid)          /* ML */
 
 value thread_wakeup(value thread)     /* ML */
 {
-  thread_t th = (thread_t) thread;
+  caml_thread_t th = (caml_thread_t) thread;
   switch (th->status) {
   case SUSPENDED:
     th->status = RUNNABLE;
@@ -730,7 +732,7 @@ value thread_self(value unit)         /* ML */
 value thread_kill(value thread)       /* ML */
 {
   value retval = Val_unit;
-  thread_t th = (thread_t) thread;
+  caml_thread_t th = (caml_thread_t) thread;
   if (th->status == KILLED) failwith("Thread.kill: killed thread");
   /* Don't paint ourselves in a corner */
   if (th == th->next) failwith("Thread.kill: cannot kill the last thread");
@@ -740,7 +742,7 @@ value thread_kill(value thread)       /* ML */
   if (th == curr_thread) {
     Begin_root(thread);
     retval = schedule_thread();
-    th = (thread_t) thread;
+    th = (caml_thread_t) thread;
     End_roots();
   }
   /* Remove thread from the doubly-linked list */
