@@ -1,13 +1,63 @@
 Objective Caml 1.04:
 --------------------
 
+* Replay debugger ported from Caml Light; added debugger support in
+  compiler (option -g) and runtime system.
+
+* Parsing:
+  - Support for "# linenum" directives.
+  - At toplevel, allow several phrases without intermediate ";;".
+
+* Typing:
+  - Allow constraints on datatype parameters, e.g. 
+    type 'a foo = ... constraint 'a = 'b * 'c.
+  - Fixed bug in signature matching in presence of free type variables '_a.
+  - Extensive cleanup of internals of type inference.
+
+* Native-code compilation:
+  - (conservative) inlining of small functions at point of call.
+  - MIPS code generator ported to SGI IRIX 6.
+  - better code generated for large integer constants.
+  - check for urgent GC when allocating large objects in major heap.
+  - PowerPC port: better scheduling, reduced TOC consumption.
+  - HPPA port: handle long conditional branches gracefully,
+    several span-dependent bugs fixed.
+
+* Standard library:
+  - More floating-point functions (all ANSI C float functions now available).
+  - Hashtbl: added functorial interface (allow providing own equality
+    and hash functions); rehash when resizing, avoid memory leak on
+    Hashtbl.remove.
+  - Added Char.uppercase, Char.lowercase, String.uppercase, String.lowercase,
+    String.capitalize, String.uncapitalize.
+  - New module Weak for manipulating weak pointers.
+  - New module Callback for registering closures and exceptions to be
+    used from C.
+
+* Foreign interface:
+  - Better support for callbacks (C calling Caml), exception raising
+    from C, and main() in C. Added function to remove a global root.
+  - Option -output-obj to package Caml code as a C library.
+
+* Thread library: fixed bug in timed_read and timed_write operations;
+  Lexing.from_function and Lexing.from_channel now reentrant.
+
+* Unix interface: renamed EACCESS to EACCES (the POSIX name); added setsid;
+  fixed bug in inet_addr_of_string for 64-bit platforms.
+
+* Ocamlyacc: default error function no longer prevents error recovery.
+
+* Ocamllex: fixed output problem (\r\r\n) under Win32.
+
 * Macintosh port:
   - The makefiles are provided for compiling and installing O'Caml on
     a Macintosh with MPW 3.4.1.
   - An application with the toplevel in a window is forthcoming.
 
-* Standard library:
-  - There is a new module for manipulating weak pointers: Weak.
+* Windows NT/95 port: updated toplevel GUI to that of Caml Light 0.73.
+
+* Emacs editing mode and debugger interface included in distribution.
+
 
 Objective Caml 1.03:
 --------------------
