@@ -71,6 +71,7 @@ type error =
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
       Ident.t * Types.class_declaration * (type_expr * type_expr) list
+  | Final_self_clash of (type_expr * type_expr) list
 
 exception Error of Location.t * error
 

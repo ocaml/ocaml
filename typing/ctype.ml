@@ -177,6 +177,8 @@ module TypePairs =
 
 (**** Object field manipulation. ****)
 
+let dummy_method = "*dummy method*"
+
 let object_fields ty =
   match (repr ty).desc with
     Tobject (fields, _) -> fields
@@ -452,7 +454,7 @@ let closed_class params sign =
   List.iter mark_type params;
   mark_type rest;
   List.iter
-    (fun (lab, _, ty) -> if lab = "*dummy method*" then mark_type ty)
+    (fun (lab, _, ty) -> if lab = dummy_method then mark_type ty)
     fields;
   try
     mark_type_node (repr sign.cty_self);
@@ -603,13 +605,8 @@ let rec update_level env level ty =
         end;
         set_level ty level;
         iter_type_expr (update_level env level) ty
-    | Tfield("*dummy method*", k, _, _) ->
-        begin match field_kind_repr k with
-          Fvar _ (* {contents = None} *) -> raise (Unify [(ty, newvar2 level)])
-        | _                              -> ()
-        end;
-        set_level ty level;
-        iter_type_expr (update_level env level) ty
+    | Tfield(lab, _, _, _) when lab = dummy_method ->
+        raise (Unify [(ty, newvar2 level)])
     | _ ->
         set_level ty level;
         (* XXX what about abbreviations in Tconstr ? *)
@@ -1459,6 +1456,11 @@ and unify3 env t1 t1' t2 t2' =
         unify_row env row1 row2
     | (Tfield _, Tfield _) ->           (* Actually unused *)
         unify_fields env t1' t2'
+    | (Tfield(_,kind,_,rem), Tnil) | (Tnil, Tfield(_,kind,_,rem)) ->
+        begin match field_kind_repr kind with
+          Fvar r -> r := Some Fabsent
+        | _      -> raise (Unify [])
+        end
     | (Tnil, Tnil) ->
         ()
     | (Tpoly (t1, []), Tpoly (t2, [])) ->

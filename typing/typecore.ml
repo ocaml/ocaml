@@ -589,7 +589,15 @@ let rec is_nonexpansive exp =
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_new (_, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
       true
+  (* Note: nonexpansive only means no _observable_ side effects *)
   | Texp_lazy e -> true
+  | Texp_object ({cl_field=fields}, _, _) ->
+      List.for_all
+        (function
+            Cf_meth _ -> true
+          | Cf_val (_,_,e) | Cf_init e -> is_nonexpansive e
+          | Cf_inher _ | Cf_let _ -> false)
+        fields
   | _ -> false
 
 and is_nonexpansive_opt = function
