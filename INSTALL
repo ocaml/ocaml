@@ -135,7 +135,9 @@ unable to compile correctly the runtime system (wrong code is
 generated for (x - y) where x is a pointer and y an integer).
 Fix: use gcc.
 
-* On some Next machines. cc pretends to be gcc but is not quite gcc.
-If the compilation of byterun/interp.c causes syntax errors, insert
-#undef __GNUC__ at the very beginning of byterun/misc.h.
+* On some versions of NeXTStep, cc pretends to be gcc but is not quite
+gcc.  If the compilation of byterun/interp.c causes syntax errors,
+insert #undef __GNUC__ at the very beginning of config/s.h
+
+
 
