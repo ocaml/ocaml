@@ -1,3 +1,5 @@
+	    O'Caml emacs mode, version 1.05 of 1997/07/14
+
 The files in this archive define a caml-mode for emacs, for editing
 Objective Caml and Objective Label programs, as well as an
 inferior-caml-mode, to run a toplevel.
@@ -35,30 +37,39 @@ and edit it to your taste and colors.
 Main key bindings:
 
 TAB	indent current line
-C-c C-q	indent phrase
+M-C-q	indent phrase
+M-C-h	mark phrase
 C-c C-a	switch between interface and implementation
 C-c C-c	compile (usually make)
 C-x`	goto next error (also mouse button 2 in the compilation log)
 
 Once you have started caml by M-x run-caml:
 
-M-C-x	send phrase to inferior caml process (also C-c C-e)
+M-C-x	send phrase to inferior caml process
 C-c C-r	send region to inferior caml process
+C-c C-s show inferior caml process
 
 For other bindings, see C-h b.
 
-Changes from the original packages are:
+Changes log:
+-----------
+Version 1.05:
+------------
+* a few indentation bugs corrected. let, val ... are now indented
+  correctly even when you write them at the beginning of a line.
 
-* support of Objective Caml and Objective Label.
+* added a Caml menu, and Imenu support. Imenu menu can be disabled
+  by setting the variable caml-imenu-disable to t.
 
-* an indentation very close to mine, which happens to be the same as
-  Xavier's, since the sources of the Objective Caml compiler do not
-  change if you indent them in this mode.
+* key bindings closer to lisp-mode.
 
-* highlighting.
+* O'Labl compatibility (":" is part of words) may be switched off by
+  setting caml-olabl-disable to t.
 
-Changes from previous versions:
+* camldebug.el was updated by Xavier Leroy.
 
+Version 1.03b:
+-------------
 * many bugs corrected.
 
 * (partial) compatibility with Caml-Light added.
@@ -77,7 +88,18 @@ Changes from previous versions:
 * nicer behaviour when sending a phrase/region to the inferior caml
   process.
 
+Version 1.03:
+------------
+* support of Objective Caml and Objective Label.
+
+* an indentation very close to mine, which happens to be the same as
+  Xavier's, since the sources of the Objective Caml compiler do not
+  change if you indent them in this mode.
+
+* highlighting.
+
 Some remarks about the style supported:
+--------------------------------------
 
 Since Objective Caml's syntax is very liberal (more than 100
 shift-reduce conflicts with yacc), automatic indentation is far from
@@ -99,15 +121,11 @@ disable the two idioms above, but to do anything more you will have to
 edit the code... Enjoy!
 
 This mode does not force you to put ;; in your program. This means
-that we had to use a heuristic to decide where a phrase stops, to
-speed up the code. A phrase ends when any of the keywords let, type,
-class, module, exception, val, external, appears at the beginning of a
-line. Using the first column in other cases may confuse it.
-
-Last remark: this mode is O'Labl compatible. This is a very small
-change, but ":" is registered as part of words (to make labels). As a
-result, you should not write a keyword next to it (without space). You
-can disable this by editing caml.el and inf-caml.el.
+that we had to use a heuristic to decide where a phrase starts and
+stops, to speed up the code. A phrase starts when any of the keywords
+let, type, class, module, functor, exception, val, external, appears
+at the beginning of a line. Using the first column for such keywords
+in other cases may confuse the phrase selection function.
 
 Comments and bug reports to
 

@@ -1,10 +1,9 @@
 ;; useful colors
 
-; I don't know exactly when font-lock turned color...
-
 (cond
  ((and (x-display-color-p)
-       (not (string< "19.30" emacs-version)))
+       (not (memq 'font-lock-type-face (face-list))))
+  ; make the necessary faces
   (make-face 'Firebrick)
   (set-face-foreground 'Firebrick "Firebrick")
   (make-face 'RosyBrown)
@@ -16,13 +15,10 @@
   (make-face 'DarkGoldenRod)
   (set-face-foreground 'DarkGoldenRod "DarkGoldenRod")
   (make-face 'DarkOliveGreen)
-  (set-face-foreground 'DarkOliveGreen "DarkOliveGreen3")
+  (set-face-foreground 'DarkOliveGreen "DarkOliveGreen4")
   (make-face 'CadetBlue)
-  (set-face-foreground 'CadetBlue "CadetBlue")))
-
-(cond
- ((and (x-display-color-p)
-       (not (string< "19.30" emacs-version)))
+  (set-face-foreground 'CadetBlue "CadetBlue")
+  ; assign them as standard faces
   (setq font-lock-comment-face 'Firebrick)
   (setq font-lock-string-face 'RosyBrown)
   (setq font-lock-keyword-face 'Purple)
@@ -87,13 +83,26 @@
 ;; font-lock commands are similar for caml-mode and inferior-caml-mode
 (setq caml-mode-hook
       '(lambda ()
-	 (setq font-lock-keywords caml-font-lock-keywords)
+	 (cond
+	  ((fboundp 'global-font-lock-mode)
+	   (make-local-variable 'font-lock-defaults)
+	   (setq font-lock-defaults
+		 '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
+	  (t
+	   (setq font-lock-keywords caml-font-lock-keywords)))
 	 (setq font-lock-no-comments t)
 	 (font-lock-mode 1)))
 
 (setq inferior-caml-mode-hooks
       '(lambda ()
-	 (setq font-lock-keywords inferior-caml-font-lock-keywords)
+	 (cond
+	  ((fboundp 'global-font-lock-mode)
+	   (make-local-variable 'font-lock-defaults)
+	   (setq font-lock-defaults
+		 '(inferior-caml-font-lock-keywords
+		   nil nil ((?' . "w") (?_ . "w")))))
+	  (t
+	   (setq font-lock-keywords inferior-caml-font-lock-keywords)))
 	 (setq font-lock-no-comments t)
 	 (font-lock-mode 1)))
 

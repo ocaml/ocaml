@@ -2,8 +2,9 @@
 
 ;; Xavier Leroy, july 1993.
 
+;; modified by Jacques Garrigue, july 1997.
+
 (require 'comint)
-(require 'caml)
 
 (defvar inferior-caml-mode-map nil)
 (if inferior-caml-mode-map nil
@@ -11,11 +12,6 @@
         (copy-keymap comint-mode-map)))
 
 ;; Augment Caml mode, so you can process Caml code in the source files.
-
-(define-key caml-mode-map "\M-\C-x" 'caml-eval-phrase)
-(define-key caml-mode-map "\C-x\C-e" 'caml-eval-phrase)
-(define-key caml-mode-map "\C-c\C-e" 'caml-eval-phrase)
-(define-key caml-mode-map "\C-c\C-r" 'caml-eval-region)
 
 (defvar inferior-caml-program "ocaml"
   "*Program name for invoking an inferior Caml from Emacs.")
@@ -65,6 +61,7 @@ Input and output via buffer `*inferior-caml*'."
 	(set-buffer (apply (function make-comint)
 			   "inferior-caml" (car cmdlist) nil (cdr cmdlist)))
 	(inferior-caml-mode)))
+  (setq caml-shell-active t)
   (switch-to-buffer "*inferior-caml*"))
 
 (defun inferior-caml-args-to-list (string)
@@ -80,20 +77,17 @@ Input and output via buffer `*inferior-caml*'."
 		 (inferior-caml-args-to-list (substring string pos
 							(length string)))))))))
 
-(defun caml-eval-region (start end)
+(defun inferior-caml-show-subshell ()
+  (interactive)
+  (display-buffer "*inferior-caml*"))
+
+(defun inferior-caml-eval-region (start end)
   "Send the current region to the inferior Caml process."
   (interactive"r")
   (comint-send-region "*inferior-caml*" start end)
   (comint-send-string "*inferior-caml*" ";;\n")
   (if (not (get-buffer-window "*inferior-caml*" t))
       (display-buffer "*inferior-caml*")))
-
-(defun caml-eval-phrase ()
-  "Send the current Caml phrase to the inferior Caml process."
-  (interactive)
-  (save-excursion
-    (let ((bounds (caml-mark-phrase)))
-    (caml-eval-region (car bounds) (cdr bounds)))))
 
 ;;; inf-caml.el ends here
 

@@ -1,16 +1,22 @@
-;;; caml.el --- Caml code editing commands for Emacs
+;;; caml.el --- O'Caml code editing commands for Emacs
 
-;; Initial code written by Xavier Leroy, july 1993.
+;; Xavier Leroy, july 1993.
 
-;; Indentation code is Copyright (C) 1996 by Ian T Zimmerman <itz@rahul.net>
-;; copying: covered by the current FSF General Public License.
+;;indentation code is Copyright (C) 1996 by Ian T Zimmerman <itz@rahul.net>
+;;copying: covered by the current FSF General Public License.
 
-;; Indentation code adapted for Objective Caml by Jacques Garrigue,
-;; october 1996. <garrigue@kurims.kyoto-u.ac.jp>
+;; indentation code adapted for Objective Caml by Jacques Garrigue,
+;; july 1997. <garrigue@kurims.kyoto-u.ac.jp>
 
 ;;user customizable variables
 (defvar caml-quote-char "'"
   "*Quote for character constants. \"'\" for Objective Caml, \"`\" for Caml-Light.")
+
+(defvar caml-imenu-disable nil
+  "*Disable Imenu support.")
+
+(defvar caml-olabl-disable nil
+  "*Disable O'Labl support")
 
 (defvar caml-mode-indentation 2
   "*Used for \\[caml-unindent-command].")
@@ -232,21 +238,14 @@ Many people find eletric keys irritating, so you can disable them if
 you are one. You should probably have this on, though, if you also
 have caml-electric-indent on, which see.")
 
-;;compatibility function for old emacs.
-
-(if (not (fboundp 'indent-line-to))
-    (defun indent-line-to (column)
-      "Indent current line to COLUMN.
-
-This function removes or adds spaces and tabs at beginning of line
-only if necessary.  It leaves point at end of indentation."
-      (if (= (current-indentation) column)
-	  (back-to-indentation)
-	(beginning-of-line 1)
-	(delete-horizontal-space)
-	(indent-to column))))
-
 ;;code
+(if (or (not (fboundp 'indent-line-to))
+	(not (fboundp 'buffer-substring-no-properties)))
+    (require 'caml-compat))
+
+(defvar caml-shell-active nil
+  "*Non nil when a subshell is running.")
+
 (defvar caml-mode-map nil
   "Keymap used in Caml mode.")
 (if caml-mode-map
@@ -257,7 +256,6 @@ only if necessary.  It leaves point at end of indentation."
   (define-key caml-mode-map "]" 'caml-electric-rb)
   (define-key caml-mode-map "\t" 'caml-indent-command)
   (define-key caml-mode-map [backtab] 'caml-unindent-command)
-  (define-key caml-mode-map "\M-\C-h" 'caml-mark-phrase)
 
 ;itz 04-21-96 instead of defining a new function, use defadvice
 ;that way we get out effect even when we do \C-x` in compilation buffer  
@@ -273,9 +271,38 @@ only if necessary.  It leaves point at end of indentation."
   (define-key caml-mode-map "\C-cw" 'caml-insert-while-form)
   (define-key caml-mode-map "\C-c\C-a" 'caml-find-alternate-file)
   (define-key caml-mode-map "\C-c\C-c" 'compile)
+  (define-key caml-mode-map "\C-c\C-e" 'caml-eval-phrase)
   (define-key caml-mode-map "\C-c\C-\[" 'caml-backward-to-less-indent)
   (define-key caml-mode-map "\C-c\C-\]" 'caml-forward-to-less-indent)
-  (define-key caml-mode-map "\C-c\C-q" 'caml-indent-phrase))
+  (define-key caml-mode-map "\C-c\C-q" 'caml-indent-phrase)
+  (define-key caml-mode-map "\C-c\C-r" 'caml-eval-region)
+  (define-key caml-mode-map "\C-c\C-s" 'caml-show-subshell)
+  (define-key caml-mode-map "\M-\C-h" 'caml-mark-phrase)
+  (define-key caml-mode-map "\M-\C-q" 'caml-indent-phrase)
+  (define-key caml-mode-map "\M-\C-x" 'caml-eval-phrase)
+  (let ((map (make-sparse-keymap "Caml"))
+	(forms (make-sparse-keymap "Forms")))
+    (define-key caml-mode-map [menu-bar] (make-sparse-keymap))
+    (define-key caml-mode-map [menu-bar caml] (cons "Caml" map))
+    (define-key map [run-caml] '("Start subshell..." . run-caml))
+    (define-key map [compile] '("Compile..." . compile))
+    (define-key map [switch-view] '("Switch view" . caml-find-alternate-file))
+    (define-key map [separator-format] '("--"))
+    (define-key map [forms] (cons "Forms" forms))
+    (define-key map [show-subshell] '("Show subshell" . caml-show-subshell))
+    (put 'caml-show-subshell 'menu-enable 'caml-shell-active)
+    (define-key map [eval-phrase] '("Eval phrase" . caml-eval-phrase))
+    (put 'caml-eval-phrase 'menu-enable 'caml-shell-active)
+    (define-key map [indent-phrase] '("Indent phrase" . caml-indent-phrase))
+    (define-key forms [while]
+      '("while .. do .. done" . caml-insert-while-form))
+    (define-key forms [try] '("try .. with .." . caml-insert-try-form))
+    (define-key forms [match] '("match .. with .." . caml-insert-match-form))
+    (define-key forms [let] '("let .. in .." . caml-insert-let-form))
+    (define-key forms [if] '("if .. then .. else .." . caml-insert-if-form))
+    (define-key forms [begin] '("for .. do .. done" . caml-insert-for-form))
+    (define-key forms [begin] '("begin .. end" . caml-insert-begin-form))))
+
 
 (defvar caml-mode-syntax-table nil
   "Syntax table in use in Caml mode buffers.")
@@ -296,8 +323,9 @@ only if necessary.  It leaves point at end of indentation."
   ; quote and underscore are part of words
   (modify-syntax-entry ?' "w" caml-mode-syntax-table)
   (modify-syntax-entry ?_ "w" caml-mode-syntax-table)
-  ; : is part of words (labels)
-  (modify-syntax-entry ?: "w" caml-mode-syntax-table)
+  ; : is part of words (labels) in O'Labl
+  (if caml-olabl-disable nil 
+    (modify-syntax-entry ?: "w" caml-mode-syntax-table))
   ; ISO-latin accented letters and EUC kanjis are part of words
   (let ((i 160))
     (while (< i 256)
@@ -358,6 +386,12 @@ only if necessary.  It leaves point at end of indentation."
   (setq caml-last-comment-end (make-marker))
   ;garrigue 27-11-96
   (setq case-fold-search nil)
+  ;imenu support
+  (make-local-variable 'imenu-create-index-function)
+  (setq imenu-create-index-function 'caml-create-index-function)
+  (if caml-imenu-disable nil
+    (require 'imenu)
+    (imenu-add-to-menubar "Defs"))
   (run-hooks 'caml-mode-hook))
 
 ;;; Auxiliary function. Garrigue 96-11-01.
@@ -370,6 +404,89 @@ only if necessary.  It leaves point at end of indentation."
 	 (concat
 	  (caml-match-string 1 name)
 	  (if (string= "ml" (caml-match-string 2 name)) ".mli" ".ml"))))))
+
+;;; subshell support
+
+(defun caml-eval-phrase ()
+  "Send the current Caml phrase to the inferior Caml process."
+  (interactive)
+  (save-excursion
+    (let ((bounds (caml-mark-phrase)))
+    (inferior-caml-eval-region (car bounds) (cdr bounds)))))
+
+(defun caml-show-subshell () (inferior-caml-show-subshell))
+
+;;; Imenu support
+(defconst caml-imenu-search-regexp
+  (concat "\\<in\\>\\|"
+	  "^[ \t]*\\(let\\|class\\|type\\|m\\(odule\\|ethod\\)"
+	  "\\|functor\\|and\\|val\\)[ \t]+"
+	  "\\(\\('[a-zA-Z0-9]+\\|([^)]+)"
+	  "\\|mutable\\|private\\|rec\\|type\\)[ \t]+\\)?"
+	  "\\([a-zA-Z][a-zA-Z0-9_']*\\)"))
+(defun caml-prev-index-position-function ()
+  (let (found data)
+    (while (and (setq found
+		      (re-search-backward caml-imenu-search-regexp nil 'move))
+		(progn (setq data (match-data)) t)
+		(or (caml-in-literal-p)
+		    (caml-in-comment-p)
+		    (if (looking-at "in") (caml-find-in-match)))))
+    (set-match-data data)
+    found))
+(defun caml-create-index-function ()
+  (let (value-alist
+	type-alist
+	class-alist
+	method-alist
+	module-alist
+	and-alist
+	all-alist
+	menu-alist
+	prev-pos
+	index)
+    (goto-char (point-max))
+    (imenu-progress-message prev-pos 0 t)
+    ;; collect definitions
+    (while (caml-prev-index-position-function)
+      (setq index (cons (caml-match-string 5) (point)))
+      (imenu-progress-message prev-pos nil t)
+      (setq all-alist (cons index all-alist))
+      (cond
+       ((looking-at "[ \t]*and")
+	(setq and-alist (cons index and-alist)))
+       ((looking-at "[ \t]*let")
+	(setq value-alist (cons index (append and-alist value-alist)))
+	(setq and-alist nil))
+       ((looking-at "[ \t]*type")
+	(setq type-alist (cons index (append and-alist type-alist)))
+	(setq and-alist nil))
+       ((looking-at "[ \t]*class")
+	(setq class-alist (cons index (append and-alist class-alist)))
+	(setq and-alist nil))
+       ((looking-at "[ \t]*val")
+	(setq value-alist (cons index value-alist)))
+       ((looking-at "[ \t]*\\(module\\|functor\\)")
+	(setq module-alist (cons index module-alist)))
+       ((looking-at "[ \t]*method")
+	(setq method-alist (cons index method-alist)))))
+    ;; build menu
+    (mapcar
+     '(lambda (pair)
+	(if (symbol-value (cdr pair))
+	    (setq menu-alist
+		  (cons
+		   (cons (car pair)
+			 (sort (symbol-value (cdr pair)) 'imenu--sort-by-name))
+		   menu-alist))))
+     '(("Values" . value-alist)
+       ("Types" . type-alist)
+       ("Modules" . module-alist)
+       ("Methods" . method-alist)
+       ("Classes" . class-alist)
+       ("Index" . all-alist)))
+    (imenu-progress-message prev-pos 100 t)
+    menu-alist))
 
 ;;; Indentation stuff
 
@@ -496,15 +613,6 @@ possible."
 ;; Usual match-string doesn't work properly with font-lock-mode
 ;; on some emacs.
 
-(cond
- ((fboundp 'buffer-substring-no-properties)
-  (defun caml-buffer-substring (b e)
-    (buffer-substring-no-properties b e)))
- ((fboundp 'buffer-substring-without-properties)
-  (defun caml-buffer-substring (b e)
-    (buffer-substring-without-properties b e)))
- (t (defun caml-buffer-substring (b e) (buffer-substring b e))))
-
 (defun caml-match-string (num &optional string)
 
   "Return string of text matched by last search, without properties.
@@ -518,7 +626,7 @@ whole string."
 	 (begin (nth (* 2 num) data))
 	 (end (nth (1+ (* 2 num)) data)))
     (if string (substring string begin end)
-      (caml-buffer-substring begin end))))
+      (buffer-substring-no-properties begin end))))
 
 ;;; Phrases
 
@@ -526,13 +634,15 @@ whole string."
 ;didn't seem right to me.
 
 (defconst caml-phrase-start-keywords
-  (concat "#\\|\\<\\(class\\|ex\\(ternal\\|ception\\)"
+  (concat "\\<\\(class\\|ex\\(ternal\\|ception\\)\\|functor"
 	  "\\|let\\|module\\|open\\|type\\|val\\)\\>")
   "Keywords starting phrases in files")
 
 ;; a phrase starts when a toplevel keyword is at the beginning of a line
 (defun caml-at-phrase-start-p ()
-  (and (bolp) (looking-at caml-phrase-start-keywords)))
+  (and (bolp)
+       (or (looking-at "#")
+	   (looking-at caml-phrase-start-keywords))))
 
 (defun caml-mark-phrase ()
   "Put mark at end of this Caml phrase, point at beginning.
@@ -735,13 +845,16 @@ Used to distinguish it from toplevel let construct.")
      (concat caml-before-expr-prefix "\\|"
 	     caml-matching-kw-regexp "\\|"
 	     (aref caml-kwop-regexps caml-max-indent-priority)))
-    (cond ((looking-at caml-before-expr-prefix)
-	   (goto-char (match-end 0))
-	   (skip-chars-forward " \t\n")
-	   (while (looking-at "(\\*")
-	     (forward-sexp 1)
-	     (skip-chars-forward " \t\n"))
-	   (if (<= pos (point)) (setq in-expr nil))))
+    (cond
+     ; special case for ;;
+     ((and (= (preceding-char) ?\;) (= (following-char) ?\;)))
+     ((looking-at caml-before-expr-prefix)
+      (goto-char (match-end 0))
+      (skip-chars-forward " \t\n")
+      (while (looking-at "(\\*")
+	(forward-sexp 1)
+	(skip-chars-forward " \t\n"))
+      (if (<= pos (point)) (setq in-expr nil))))
     (goto-char pos)
     in-expr))
 
@@ -896,9 +1009,10 @@ the line where the governing keyword occurs.")
     (while (and (not (= 0 unbalanced)) kwop)
       (setq kwop
 	    (caml-find-kwop
-	     "\\<\\(end\\|begin\\|class\\|s\\(ig\\|truct\\)\\)\\>\\|:begin\\>"))
+	     "\\<\\(end\\|begin\\|class\\|s\\(ig\\|truct\\)\\)\\>\\|:begin\\>\\|;;"))
       (cond
        ((not kwop))
+       ((string= kwop ";;") (setq kwop nil) (forward-line 1))
        ((string= kwop "end") (setq unbalanced (1+ unbalanced)))
        ( t (setq unbalanced (1- unbalanced)))))
     (if (string= kwop ":begin") "begin"
@@ -917,9 +1031,12 @@ the line where the governing keyword occurs.")
 (defun caml-find-with-match ()
   (let ((unbalanced 1) (kwop t))
     (while (and (not (= 0 unbalanced)) kwop)
-      (setq kwop (caml-find-kwop "\\<\\(with\\|try\\|match\\)\\>"))
+      (setq kwop (caml-find-kwop
+		  "\\<\\(with\\|try\\|m\\(atch\\|odule\\)\\|functor\\)\\>"))
       (cond
        ((not kwop))
+       ((or (string= kwop "module") (string= kwop "functor"))
+	(setq unbalanced 0))
        ((string= kwop "with") (setq unbalanced (1+ unbalanced)))
        ( t (setq unbalanced (1- unbalanced)))))
     kwop))
@@ -951,7 +1068,7 @@ the line where the governing keyword occurs.")
 (defun caml-find-pipe-match ()
   (let ((done nil) (kwop)
 	(re (concat
-	     "\\<\\(try\\|match\\|with\\|function\\|type"
+	     "\\<\\(try\\|match\\|with\\|function\\|parser\\|type"
 	     "\\|e\\(nd\\|lse\\)\\|done\\|then\\|in\\)\\>"
 	     "\\|[^[|]|\\|[])}]")))
     (while (not done)
@@ -1070,8 +1187,11 @@ Does not preserve point."
 	 (kwop (cond
 		((looking-at "|\\([^]|]\\|\\'\\)")
 		 (caml-find-pipe-match))
-		((caml-at-top-let-p)
-		 (caml-find-kwop-skipping-blocks 0))
+		((and (looking-at caml-phrase-start-keywords)
+		      (caml-in-expr-p))
+		 (caml-find-end-match))
+;		((caml-at-top-let-p)
+;		 (caml-find-kwop-skipping-blocks 0))
 		((and (looking-at caml-matching-kw-regexp)
 		      (assoc (caml-match-string 0) caml-matching-kw-alist))
 		 (funcall (cdr-safe (assoc (caml-match-string 0)
@@ -1084,6 +1204,7 @@ Does not preserve point."
 			(prio (if kwop-info (nth 2 kwop-info)
 				caml-max-indent-priority)))
 		   (if (and (looking-at (aref caml-kwop-regexps 0))
+			    (not (looking-at "class"))
 			    (caml-in-expr-p))
 		       (setq in-expr t))
 		   (caml-find-kwop-skipping-blocks prio)))
@@ -1150,7 +1271,7 @@ matching nodes to determine KEYWORD's final indentation.")
 	(looking-at comment-start-skip)
 	(goto-char (match-end 0))
 	(current-column)))
-     ((caml-at-phrase-start-p) 0)
+;     ((caml-at-phrase-start-p) 0)
      (t (let* ((leading (looking-at caml-leading-kwops-regexp))
 	       (assoc-val (if leading (assoc (caml-match-string 0)
 					     caml-leading-kwops-alist)))
