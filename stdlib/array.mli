@@ -74,6 +74,11 @@ val blit: 'a array -> int -> 'a array -> int -> int -> unit
            Raise [Invalid_argument "Array.blit"] if [o1] and [len] do not
            designate a valid subarray of [v1], or if [o2] and [len] do not
            designate a valid subarray of [v2]. *)
+val to_list: 'a array -> 'a list
+        (* [Array.to_list a] returns the list of all the elements of [a]. *)
+val of_list: 'a list -> 'a array
+        (* [Array.of_list l] returns a fresh array containing the elements
+           of [l]. *)
 val iter: ('a -> 'b) -> 'a array -> unit
         (* [Array.iter f a] applies function [f] in turn to all
            the elements of [a], discarding all the results:
@@ -82,12 +87,19 @@ val map: ('a -> 'b) -> 'a array -> 'b array
         (* [Array.map f a] applies function [f] to all the elements of [a],
            and builds an array with the results returned by [f]:
            [[| f a.(0); f a.(1); ...; f a.(Array.length a - 1) |]]. *)
-val to_list: 'a array -> 'a list
-        (* [Array.to_list a] returns the list of all the elements of [a]. *)
-val of_list: 'a list -> 'a array
-        (* [Array.of_list l] returns a fresh array containing the elements
-           of [l]. *)
-
+val iteri: (int -> 'a -> 'b) -> 'a array -> unit
+val mapi: (int -> 'a -> 'b) -> 'a array -> 'b array
+        (* Same as [Array.iter] and [Array.map] respectively, but the
+           function is applied to the index of the element as first argument,
+           and the element itself as second argument. *)
+val fold_left: ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
+        (* [Array.fold_left f x a] computes
+           [f (... (f (f x a.(0)) a.(1)) ...) a.(n-1)],
+           where [n] is the length of the array [a]. *)
+val fold_right: ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
+        (* [Array.fold_right f a x] computes
+           [f a.(0) (f a.(1) ( ... (f a.(n-1) x) ...))],
+           where [n] is the length of the array [a]. *)
 (*--*)
 
 external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"

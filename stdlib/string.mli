@@ -70,6 +70,15 @@ val escaped: string -> string
            by escape sequences, following the lexical conventions of
            Objective Caml. *)
 
+val index: string -> char -> int
+        (* [index s c] returns the position of the leftmost occurrence of
+           character [c] in string [s].  Raise [Not_found] if [c] does not
+           occur in [s]. *)
+val rindex: string -> char -> int
+        (* [rindex s c] returns the position of the rightmost occurrence of
+           character [c] in string [s].  Raise [Not_found] if [c] does not
+           occur in [s]. *)
+
 val uppercase: string -> string
         (* Return a copy of the argument, with all lowercase letters
            translated to uppercase, including accented letters of the ISO

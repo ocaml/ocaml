@@ -136,3 +136,17 @@ let apply1 f s =
 
 let capitalize s = apply1 Char.uppercase s
 let uncapitalize s = apply1 Char.lowercase s
+
+let index s c =
+  let rec idx i =
+    if i >= String.length s then raise Not_found
+    else if s.[i] = c then i
+    else idx (i+1)
+  in idx 0
+
+let rindex s c =
+  let rec idx i =
+    if i < 0 then raise Not_found
+    else if s.[i] = c then i
+    else idx (i-1)
+  in idx (String.length s - 1)

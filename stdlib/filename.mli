@@ -51,7 +51,10 @@ val dirname : string -> string
 val temp_file: string -> string -> string
         (* [temp_file prefix suffix] returns the name of a
            non-existent temporary file in the temporary directory.
-           The temporary directory is [/tmp] by default; if set,
-           the value of the environment variable [TMPDIR] is used instead.
            The base name of the temporary file is formed by concatenating
-           [prefix], then a suitably chosen integer number, then [suffix]. *)
+           [prefix], then a suitably chosen integer number, then [suffix].
+           Under Unix, the temporary directory is [/tmp] by default; if set,
+           the value of the environment variable [TMPDIR] is used instead.
+           Under Windows, the name of the temporary directory is the
+           value of the environment variable [TEMP],
+           or [C:\temp] by default. *)

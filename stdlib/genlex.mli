@@ -51,11 +51,11 @@ val make_lexer: string list -> (char Stream.t -> token Stream.t)
            The associated parser would be a function from [token stream]
            to, for instance, [int], and would have rules such as:
            [
-           let parse_expr = function
+           let parse_expr = parser
                   [< 'Int n >] -> n
                 | [< 'Kwd "("; n = parse_expr; 'Kwd ")" >] -> n
                 | [< n1 = parse_expr; n2 = parse_remainder n1 >] -> n2
-           and parse_remainder n1 = function
+           and parse_remainder n1 = parser
                   [< 'Kwd "+"; n2 = parse_expr >] -> n1+n2
                 | ...
            ]

@@ -111,6 +111,19 @@ let map f a =
     r
   end
 
+let iteri f a =
+  for i = 0 to length a - 1 do f i (unsafe_get a i) done
+
+let mapi f a =
+  let l = length a in
+  if l = 0 then [||] else begin
+    let r = create l (f 0 (unsafe_get a 0)) in
+    for i = 1 to l - 1 do
+      unsafe_set r i (f i (unsafe_get a i))
+    done;
+    r
+  end
+
 let to_list a =
   let rec tolist i res =
     if i < 0 then res else tolist (i - 1) (unsafe_get a i :: res) in
@@ -124,3 +137,17 @@ let of_list = function
           [] -> a
         | hd::tl -> unsafe_set a i hd; fill (i+1) tl in
       fill 1 tl
+
+let fold_left f x a =
+  let r = ref x in
+  for i = 0 to Array.length a - 1 do
+    r := f !r (unsafe_get a i)
+  done;
+  !r
+
+let fold_right f a x =
+  let r = ref x in
+  for i = Array.length a - 1 downto 0 do
+    r := f (unsafe_get a i) !r
+  done;
+  !r
