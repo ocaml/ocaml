@@ -143,7 +143,9 @@ let rec typexp sch prio0 ty =
   let ty = repr ty in
   try
     List.assq ty !names;
-    print_string "'";
+    if (ty.desc = Tvar) && sch && (ty.level <> generic_level)
+    then print_string "'_"
+    else print_string "'";
     print_string (name_of_type ty)
   with Not_found ->
     let alias = List.memq ty !aliased in
