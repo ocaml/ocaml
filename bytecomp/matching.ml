@@ -1838,7 +1838,6 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
     | (mat,i,vars,pm)::rem ->
         begin try
           let ctx = select_columns mat ctx in
-
           let handler_i, total_i = compile_fun ctx pm in
           match raw_action r with
           | Lstaticraise (j,args) ->
@@ -2038,8 +2037,8 @@ and do_compile_matching repr partial ctx arg
       fatal_error "Matching.do_compile_matching"
 
 and compile_no_test divide up_ctx repr partial ctx to_match to_catch =
-  let {pm=this_match ; ctx=ctx } = divide ctx to_match in
-  let lambda,total = compile_match repr partial ctx this_match in
+  let {pm=this_match ; ctx=this_ctx } = divide ctx to_match in
+  let lambda,total = compile_match repr partial this_ctx this_match in
   let total = jumps_map up_ctx total in
   compile_orhandlers (compile_match repr partial) lambda total ctx to_catch
 

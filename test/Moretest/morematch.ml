@@ -636,4 +636,19 @@ let ohl = function
 test "ohl" ohl (A 0,C) 0 ;
 test "ohl" ohl (B 0,D) 0 ; ()
 ;;
+type pottier =
+  | A
+  | B
+;;
+
+let pottier x =
+  match x with
+  | (( (A, 1) | (B, 2)),A) -> false
+  | _ -> true
+;;
+
+test "pottier" pottier ((B,2),A) false ;
+test "pottier" pottier ((B,2),B) true ;
+test "pottier" pottier ((A,2),A) true ; ()
+;;
 
