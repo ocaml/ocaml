@@ -434,10 +434,12 @@ The function uses two overlays.
               (caml-track-mouse
                (while event
                  (cond
-                  ;; In emacs eliminate 
+                  ;; we ignore non mouse events 
                   ((caml-ignore-event-p event))
+                  ;; we stop when the original button is released
                   ((caml-release-event-p original-event event)
                    (setq event nil))
+                  ;; we scroll when the motion is outside the window
                   ((and (caml-mouse-movement-p event)
                         (not (and (equal window (caml-event-window event))
                                   (integer-or-marker-p
@@ -470,18 +472,25 @@ The function uses two overlays.
                         )                         
                        (setq speed (* speed speed))
                        )))
+                  ;; main action, when the motion is inside the window
+                  ;; or on orginal button down event
                   ((or (caml-mouse-movement-p event)
                        (equal original-event event))
                    (setq cnum (caml-event-point-end event))
                    (if (and region
                             (<= (car region) cnum) (< cnum (cdr region)))
+                       ;; mouse remains in outer region
                        nil
+                     ;; otherwise, reset the outer region 
                      (setq region
                            (caml-types-typed-make-overlay
                             target-buf (caml-event-point-start event))))
-                   (if (and limits
+                   (if
+                       (and limits
                             (>= cnum (car limits)) (< cnum (cdr limits)))
-                       (message mes)
+                       ;; inner region is unchanged
+                       nil
+                     ;; recompute the inner region and type annotation
                      (setq target-bol
                            (save-excursion
                              (goto-char cnum) (caml-line-beginning-position))
@@ -514,14 +523,17 @@ The function uses two overlays.
                                (caml-types-find-interval
                                 target-buf target-pos target-tree))
                          ))
-                       (message (setq mes (format "type: %s" type)))
+                       (setq mes (format "type: %s" type))
                        (insert type)
                        ))
+                   (message mes)
                    )
                   )
+                 ;; we read next event, unless it is nil, and loop back.
                  (if event (setq event (caml-read-event)))
                  )
                )
+            ;; delete overlays at end of exploration
             (delete-overlay caml-types-expr-ovl)
             (delete-overlay caml-types-typed-ovl)
             ))
