@@ -123,7 +123,7 @@ void handle_signal(int sig)
     young_limit = young_end;
     /* Some ports cache young_limit in a register.
        Use the signal context to modify that register too, but not if
-       we are inside C code (i.e. caml_last_context != 0). */
+       we are inside C code (i.e. caml_last_return_address != 0). */
 #ifdef TARGET_alpha
     /* Cached in register $14 */
     if (caml_last_return_address == 0)

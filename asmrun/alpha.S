@@ -293,7 +293,7 @@ $107:
         ldq     $13, young_ptr
         ldq     $14, young_limit
     /* We are back into Caml code */
-        stq     $31, caml_last_context
+        stq     $31, caml_last_return_address
     /* Call the Caml code */
         mov     $25, $27
 $108:   jsr     ($25)

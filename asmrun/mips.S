@@ -175,7 +175,7 @@ $110:
         lw      $24, 0x108($sp)
         subu    $22, $22, $24
     /* Say that we are back into Caml code */
-        sw      $0, caml_last_context
+        sw      $0, caml_last_return_address
     /* Return to caller */
         lw      $31, 0x10C($sp)
         addu    $sp, $sp, 0x110
@@ -284,7 +284,7 @@ $103:
         lw      $22, young_ptr
         lw      $23, young_limit
     /* Say that we are back into Caml code */
-        sw      $0, caml_last_context
+        sw      $0, caml_last_return_address
     /* Call the Caml code */
 #ifdef _PIC
         move    $25, $24

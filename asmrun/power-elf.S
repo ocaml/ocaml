@@ -215,7 +215,7 @@ raise_caml_exception:
         Loadglobal(30, young_limit, 11)
     /* Say we are back into Caml code */
         li      0, 0
-        Storeglobal(0, caml_last_context, 11)
+        Storeglobal(0, caml_last_return_address, 11)
     /* Pop trap frame */
         lwz     0, 0(1)
         lwz     29, 4(1)
@@ -301,7 +301,7 @@ caml_start_program:
         Loadglobal(30, young_limit, 11)
     /* Say we are back into Caml code */
         li      0, 0
-        Storeglobal(0, caml_last_context, 11)
+        Storeglobal(0, caml_last_return_address, 11)
     /* Call the Caml code */
         mtlr    12
 .L105:
@@ -318,10 +318,6 @@ caml_start_program:
         Storeglobal(10, caml_last_return_address, 12) 
         Storeglobal(11, caml_gc_regs, 12) 
         addi    1, 1, 16
-    /* Pop the callback link, restoring caml_last_context */
-        lwz     9, 0(1)
-        addi    1, 1, 8
-        Storeglobal(9, caml_bottom_of_stack, 11) 
     /* Update allocation pointer */
         Storeglobal(31, young_ptr, 11)
     /* Restore callee-save registers */
