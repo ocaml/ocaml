@@ -42,37 +42,55 @@ let oper_result_type = function
 
 (* Infer the size in bytes of the result of a simple expression *)
 
-let rec size_expr env = function
-    Cconst_int _ -> Arch.size_int
-  | Cconst_symbol _ | Cconst_pointer _ -> Arch.size_addr
-  | Cconst_float _ -> Arch.size_float
-  | Cvar v ->
-      let r =
-        try
-          Tbl.find v env
+let size_expr env exp =
+  let rec size localenv = function
+      Cconst_int _ -> Arch.size_int
+    | Cconst_symbol _ | Cconst_pointer _ -> Arch.size_addr
+    | Cconst_float _ -> Arch.size_float
+    | Cvar id ->
+        begin try
+          Tbl.find id localenv
         with Not_found ->
-          fatal_error("Selection.emit_expr: unbound var " ^ Ident.name v) in
-      size_machtype (Array.map (fun r -> r.typ) r)
-  | Ctuple el ->
-      List.fold_right (fun e sz -> size_expr env e + sz) el 0
-  | Cop(op, args) ->
-      size_machtype(oper_result_type op)
-  | _ ->
-      fatal_error "Selection.size_expr"
+        try
+          let regs = Tbl.find id env in
+          size_machtype (Array.map (fun r -> r.typ) regs)
+        with Not_found ->
+          fatal_error("Selection.size_expr: unbound var " ^ Ident.name id)
+        end
+    | Ctuple el ->
+        List.fold_right (fun e sz -> size localenv e + sz) el 0
+    | Cop(op, args) ->
+        size_machtype(oper_result_type op)
+    | Clet(id, arg, body) ->
+        size (Tbl.add id (size localenv arg) localenv) body
+    | _ ->
+        fatal_error "Selection.size_expr"
+  in size Tbl.empty exp
 
-(* Says if an operation is "cheap". A "cheap" operation is an operation
-   without side-effects and whose execution can be delayed until its value
+(* Says if an expression is "simple". A "simple" expression has no
+   side-effects and its execution can be delayed until its value
    is really needed. In the case of e.g. an [alloc] instruction,
-   the non-cheap parts of arguments are computed in right-to-left order
-   first, then the block is allocated, then the cheap parts are evaluated
-   and stored. *)
+   the non-simple arguments are computed in right-to-left order
+   first, then the block is allocated, then the simple arguments are
+   evaluated and stored. *)
 
-let cheap_operation = function
-    (* The following may have side effects *)
-    Capply _ | Cextcall(_, _, _) | Calloc | Cstore | Cstorechunk _ | 
-    Craise -> false
-    (* The remaining operations are cheap *)
-  | _ -> true
+let rec is_simple_expr = function
+    Cconst_int _ -> true
+  | Cconst_float _ -> true
+  | Cconst_symbol _ -> true
+  | Cconst_pointer _ -> true
+  | Cvar _ -> true
+  | Ctuple el -> List.for_all is_simple_expr el
+  | Clet(id, arg, body) -> is_simple_expr arg && is_simple_expr body
+  | Cop(op, args) ->
+      begin match op with
+        (* The following may have side effects *)
+        Capply _ | Cextcall(_, _, _) | Calloc | Cstore | Cstorechunk _ | 
+        Craise -> false
+        (* The remaining operations are simple *)
+      | _ -> true
+      end
+  | _ -> false
 
 (* Default instruction selection for operators *)
 
@@ -509,35 +527,26 @@ and emit_let env v e1 seq =
   end
 
 and emit_parts env exp seq =
-  match exp with
-    Cconst_int _ | Cconst_float _ | Cconst_symbol _ | Cconst_pointer _ |
-    Cvar _ ->
-      (exp, env)
-  | Ctuple el ->
-      let (explist, env) = emit_parts_list env el seq in
-      (Ctuple explist, env)
-  | Clet(id, arg, body) ->
-      emit_parts (emit_let env id arg seq) body seq
-  | Cop(op, args) when cheap_operation op ->
-      let (new_args, new_env) = emit_parts_list env args seq in
-      (Cop(op, new_args), new_env)
-  | _ ->
-      let r = emit_expr env exp seq in
-      if Array.length r = 0 then
-        (Ctuple [], env)
+  if is_simple_expr exp then
+    (exp, env)
+  else begin
+    let r = emit_expr env exp seq in
+    if Array.length r = 0 then
+      (Ctuple [], env)
+    else begin
+      let id = Ident.create "bind" in
+      if all_regs_anonymous r then
+        (Cvar id, Tbl.add id r env)
       else begin
-        let id = Ident.create "bind" in
-        if all_regs_anonymous r then
-          (Cvar id, Tbl.add id r env)
-        else begin
-          let rv = Array.create (Array.length r) Reg.dummy in
-          for i = 0 to Array.length r - 1 do
-            rv.(i) <- Reg.create r.(i).typ
-          done;
-          insert_moves r rv seq;
-          (Cvar id, Tbl.add id rv env)
-        end          
-      end
+        let rv = Array.create (Array.length r) Reg.dummy in
+        for i = 0 to Array.length r - 1 do
+          rv.(i) <- Reg.create r.(i).typ
+        done;
+        insert_moves r rv seq;
+        (Cvar id, Tbl.add id rv env)
+      end          
+    end
+  end
 
 and emit_parts_list env exp_list seq =
   match exp_list with
