@@ -73,9 +73,9 @@ let fmt_private_flag f x =
   | Private -> Format.fprintf f "Private";
 ;;
 
-let line i s =
+let line i s (*...*) =
   printf "%s" (String.make (2*i) ' ');
-  printf s
+  printf s (*...*)
 ;;
 
 let list i f l = List.iter (f i) l;;
@@ -91,6 +91,7 @@ let option i f x =
 let longident i li = line i "%a" fmt_longident li;;
 let string i s = line i "\"%s\"\n" s;;
 let bool i x = line i "%s\n" (string_of_bool x);;
+let label i x = line i "label=\"%s\"\n" x;;
 
 let rec core_type i x =
   line i "core_type %a\n" fmt_location x.ptyp_loc;
@@ -110,9 +111,8 @@ let rec core_type i x =
       line i "Ptyp_constr %a\n" fmt_longident li;
       list i core_type l;
   | Ptyp_variant (l, closed, low) ->
-      line i "Ptyp_variant\n";
-      list i row_field l;
-      bool i closed;
+      line i "Ptyp_variant closed=%s\n" (string_of_bool closed);
+      list i label_x_bool_x_core_type_list l;
       list i string low
   | Ptyp_object (l) ->
       line i "Ptyp_object\n";
@@ -133,11 +133,6 @@ and core_field_type i x =
       line i "Pfield \"%s\"\n" s;
       core_type i ct;
   | Pfield_var -> line i "Pfield_var\n";
-
-and row_field i (l, pre, tyl) =
-  string i l;
-  bool i pre;
-  list i core_type tyl
 
 and pattern i x =
   line i "pattern %a\n" fmt_location x.ppat_loc;
@@ -191,7 +186,7 @@ and expression i x =
   | Pexp_apply (e, l) ->
       line i "Pexp_apply\n";
       expression i e;
-      list i argument l;
+      list i label_x_expression l;
   | Pexp_match (e, l) ->
       line i "Pexp_match\n";
       expression i e;
@@ -267,10 +262,6 @@ and expression i x =
       line i "Pexp_letmodule \"%s\"\n" s;
       module_expr i me;
       expression i e;
-
-and argument i (l,e) =
-  string i l;
-  expression i e;
 
 and value_description i x =
   line i "value_description\n";
@@ -358,11 +349,65 @@ and class_type_declaration i x =
   line i "pci_expr =\n";
   class_type (i+1) x.pci_expr;
 
-and class_expr i x = line i "xxx\n"
+and class_expr i x =
+  line i "class_expr %a\n" fmt_location x.pcl_loc;
+  let i = i+1 in
+  match x.pcl_desc with
+  | Pcl_constr (li, l) ->
+      line i "Pcl_constr %a\n" fmt_longident li;
+      list i core_type l;
+  | Pcl_structure (cs) ->
+      line i "Pcl_structure\n";
+      class_structure i cs;
+  | Pcl_fun (l, eo, p, e) ->
+      line i "Pcl_fun\n";
+      label i l;
+      option i expression eo;
+      pattern i p;
+      class_expr i e;
+  | Pcl_apply (ce, l) ->
+      line i "Pcl_apply\n";
+      class_expr i ce;
+      list i label_x_expression l;
+  | Pcl_let (rf, l, ce) ->
+      line i "Pcl_let %a\n" fmt_rec_flag rf;
+      list i pattern_x_expression_def l;
+      class_expr i ce;
+  | Pcl_constraint (ce, ct) ->
+      line i "Pcl_constraint\n";
+      class_expr i ce;
+      class_type i ct;
 
-and class_structure i x = line i "xxx\n"
+and class_structure i (p, l) =
+  line i "class_structure\n";
+  pattern (i+1) p;
+  list (i+1) class_field l;
 
-and class_field i x = line i "xxx\n"
+and class_field i x =
+  match x with
+  | Pcf_inher (ce, so) ->
+      printf "Pcf_inher\n";
+      class_expr (i+1) ce;
+      option (i+1) string so;
+  | Pcf_val (s, mf, e, loc) ->
+      line i "Pcf_val \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
+      expression (i+1) e;
+  | Pcf_virt (s, pf, ct, loc) ->
+      line i "Pcf_virt \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+      core_type (i+1) ct;
+  | Pcf_meth (s, pf, e, loc) ->
+      line i "Pcf_meth \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+      expression (i+1) e;
+  | Pcf_cstr (ct1, ct2, loc) ->
+      line i "Pcf_cstr %a\n" fmt_location loc;
+      core_type (i+1) ct1;
+      core_type (i+1) ct2;
+  | Pcf_let (rf, l, loc) ->
+      line i "Pcf_let %a %a\n" fmt_rec_flag rf fmt_location loc;
+      list (i+1) pattern_x_expression_def l;
+  | Pcf_init (e) ->
+      line i "Pcf_init\n";
+      expression (i+1) e;
 
 and class_declaration i x =
   line i "class_declaration %a\n" fmt_location x.pci_loc;
@@ -430,9 +475,33 @@ and modtype_declaration i x =
       line i "Pmodtype_manifest\n";
       module_type (i+1) mt;
 
-and with_constraint i x = line i "xxx\n"
+and with_constraint i x =
+  match x with
+  | Pwith_type (td) ->
+      line i "Pwith_type\n";
+      type_declaration (i+1) td;
+  | Pwith_module (li) -> line i "Pwith_module %a\n" fmt_longident li;
 
-and module_expr i x = line i "xxx\n"
+and module_expr i x =
+  line i "module_expr %a\n" fmt_location x.pmod_loc;
+  let i = i+1 in
+  match x.pmod_desc with
+  | Pmod_ident (li) -> line i "Pmod_ident %a\n" fmt_longident li;
+  | Pmod_structure (s) ->
+      line i "Pmod_structure\n";
+      structure i s;
+  | Pmod_functor (s, mt, me) ->
+      line i "Pmod_functor \"%s\"\n" s;
+      module_type i mt;
+      module_expr i me;
+  | Pmod_apply (me1, me2) ->
+      line i "Pmod_apply\n";
+      module_expr i me1;
+      module_expr i me2;
+  | Pmod_constraint (me, mt) ->
+      line i "Pmod_constraint\n";
+      module_expr i me;
+      module_type i mt;
 
 and structure i x = list i structure_item x
 
@@ -515,11 +584,32 @@ and string_x_expression i (s, e) =
 and longident_x_expression i (li, e) =
   line i "%a\n" fmt_longident li;
   expression (i+1) e;
+
+and label_x_expression i (l,e) =
+  line i "<label> \"%s\"\n" l;
+  expression (i+1) e;
+
+and label_x_bool_x_core_type_list i (l, b, ctl) =
+  line i "<row_field> \"%s\" %s\n" l (string_of_bool b);
+  list (i+1) core_type ctl
 ;;
 
-let rec toplevel_phrase i x = line i "xxx\n"
+let rec toplevel_phrase i x =
+  match x with
+  | Ptop_def (s) ->
+      line i "Ptop_def\n";
+      structure (i+1) s;
+  | Ptop_dir (s, da) ->
+      line i "Ptop_dir \"%s\"\n" s;
+      directive_argument i da;
 
-and directive_argument i x = line i "xxx\n"
+and directive_argument i x =
+  match x with
+  | Pdir_none -> line i "Pdir_none\n"
+  | Pdir_string (s) -> line i "Pdir_string \"%s\"\n" s;
+  | Pdir_int (i) -> line i "Pdir_int %d\n" i;
+  | Pdir_ident (li) -> line i "Pdir_ident %a\n" fmt_longident li;
+  | Pdir_bool (b) -> line i "Pdir_bool %s\n" (string_of_bool b);
 ;;
 
 let interface x = list 0 signature_item x;;
