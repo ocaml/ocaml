@@ -47,15 +47,21 @@ cm.out: cmcaml.ml cmstub.c cmmain.c
 
 bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
-	$(CAMLC) -custom -I ../../otherlibs/bigarray -o bigarrays.byt \
-                bigarray.cma bigarrays.ml \
-                ../../otherlibs/bigarray/libbigarray.a
+	$(CAMLC) -custom -o bigarrays.byt \
+                -I ../../otherlibs/bigarray \
+                -I ../../otherlibs/unix \
+                unix.cma bigarray.cma bigarrays.ml \
+                ../../otherlibs/bigarray/libbigarray.a \
+                ../../otherlibs/unix/libunix.a
 
 bigarrays.out: ../../otherlibs/bigarray/bigarray.cmxa \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
-	$(CAMLOPT) -I ../../otherlibs/bigarray -o bigarrays.out \
-                bigarray.cmxa bigarrays.ml \
-                ../../otherlibs/bigarray/libbigarray.a
+	$(CAMLOPT) -o bigarrays.out \
+                -I ../../otherlibs/bigarray \
+                -I ../../otherlibs/unix \
+                unix.cmxa bigarray.cmxa bigarrays.ml \
+                ../../otherlibs/bigarray/libbigarray.a \
+                ../../otherlibs/unix/libunix.a
 
 # Common rules
 

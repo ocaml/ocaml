@@ -474,6 +474,67 @@ let _ =
   test 6 (Array3.slice_right_1 a 1 2) (from_list_fortran int [112;212;312]);
   test 7 (Array3.slice_right_1 a 3 1) (from_list_fortran int [131;231;331]);
 
+(* I/O *)
+
+  print_newline();
+  testing_function "------ I/O --------";
+  testing_function "output_value/input_value";
+  let test_structured_io testno value =
+    let tmp = Filename.temp_file "bigarray" ".data" in
+    let oc = open_out_bin tmp in
+    output_value oc value;
+    close_out oc;
+    let ic = open_in_bin tmp in
+    let value' = input_value ic in
+    close_in ic;
+    Sys.remove tmp;
+    test testno value value' in
+  test_structured_io 1 (from_list int8_signed [1;2;3;-4;127;-128]);
+  test_structured_io 2 (from_list int16_signed [1;2;3;-4;127;-128]);
+  test_structured_io 3 (from_list int [1;2;3;-4;127;-128]);
+  test_structured_io 4
+    (from_list int32 (List.map Int32.of_int [1;2;3;-4;127;-128]));
+  test_structured_io 5
+    (from_list int64 (List.map Int64.of_int [1;2;3;-4;127;-128]));
+  test_structured_io 6
+    (from_list nativeint (List.map Nativeint.of_int [1;2;3;-4;127;-128]));
+  test_structured_io 7 (from_list float32 [0.0; 0.25; -4.0; 3.141592654]);
+  test_structured_io 8 (from_list float64 [0.0; 0.25; -4.0; 3.141592654]);
+  test_structured_io 9 (make_array2 int c_layout 0 100 100 id);
+  test_structured_io 10 (make_array2 float64 fortran_layout 1 200 200 float);
+  test_structured_io 11 (make_array3 int32 c_layout 0 20 30 40 Int32.of_int);
+  test_structured_io 12 (make_array3 float32 fortran_layout 1 10 50 100 float);
+
+  testing_function "map_file";
+  let mapped_file = Filename.temp_file "bigarray" ".data" in
+  let fd =
+   Unix.openfile mapped_file [Unix.O_RDWR; Unix.O_TRUNC; Unix.O_CREAT] 0o666 in
+  let a = Array1.map_file fd float64 c_layout true 10000 in
+  Unix.close fd;
+  for i = 0 to 9999 do a.{i} <- float i done;
+  let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
+  let b = Array2.map_file fd float64 fortran_layout false 100 (-1) in
+  Unix.close fd;
+  let ok = ref true in
+  for i = 0 to 99 do
+    for j = 0 to 99 do
+      if b.{j+1,i+1} <> float (100 * i + j) then ok := false
+    done
+  done;
+  test 1 !ok true;
+  b.{50,50} <- (-1.0);
+  let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
+  let c = Array2.map_file fd float64 c_layout false (-1) 100 in
+  Unix.close fd;
+  let ok = ref true in
+  for i = 0 to 99 do
+    for j = 0 to 99 do
+      if c.{i,j} <> float (100 * i + j) then ok := false
+    done
+  done;
+  test 2 !ok true;
+  Sys.remove mapped_file;
+
   ()
                   
 (********* End of test *********)
