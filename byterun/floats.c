@@ -157,7 +157,6 @@ value div_float(f, g)         /* ML */
      value f, g;
 {
   double dg = Double_val(g);
-  if (dg == 0.0) raise_zero_divide();
   return copy_double(Double_val(f) / dg);
 }
 
