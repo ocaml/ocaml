@@ -72,19 +72,26 @@ value unix_send(sock, buff, ofs, len, flags) /* ML */
   return Val_int(ret);
 }
 
-value unix_sendto(argv, argc)    /* ML */
-     value * argv;
-     int argc;
+value unix_sendto_native(sock, buff, ofs, len, flags, dest)
+     value sock, buff, ofs, len, flags, dest;
 {
   int ret;
-  get_sockaddr(argv[5]);
+  get_sockaddr(dest);
   enter_blocking_section();
-  ret = sendto(Int_val(argv[0]), &Byte(argv[1], Long_val(argv[2])),
-               Int_val(argv[3]), convert_flag_list(argv[4], msg_flag_table),
+  ret = sendto(Int_val(sock), &Byte(buff, Long_val(ofs)),
+               Int_val(len), convert_flag_list(flags, msg_flag_table),
                &sock_addr.s_gen, sock_addr_len);
   leave_blocking_section();
   if (ret == -1) uerror("sendto", Nothing);
   return Val_int(ret);
+}
+
+value unix_sendto(argv, argc)    /* ML */
+     value * argv;
+     int argc;
+{
+  return unix_sendto_native
+           (argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
 #else
@@ -94,6 +101,8 @@ value unix_recv() { invalid_argument("recv not implemented"); }
 value unix_recvfrom() { invalid_argument("recvfrom not implemented"); }
 
 value unix_send() { invalid_argument("send not implemented"); }
+
+value unix_sendto_native() { invalid_argument("sendto not implemented"); }
 
 value unix_sendto() { invalid_argument("sendto not implemented"); }
 

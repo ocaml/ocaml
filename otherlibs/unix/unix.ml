@@ -356,7 +356,7 @@ external send : file_descr -> string -> int -> int -> msg_flag list -> int
                                   = "unix_send"
 external sendto :
         file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
-                                  = "unix_sendto"
+                                  = "unix_sendto" "unix_sendto_native"
 
 type host_entry =
   { h_name : string;

@@ -6,6 +6,7 @@ include ../../Makefile.config
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
 CAMLC=../../boot/camlrun ../../boot/camlc -I ../../boot
+CAMLOPT=../../boot/camlrun ../../camlopt -I ../../stdlib
 
 OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
@@ -22,35 +23,43 @@ OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   truncate.o umask.o unix.o unlink.o utimes.o wait.o waitpid.o \
   write.o
 
-INTF= unix.cmi
-IMPL= unix.cmo
-LIB= unix.cma
+all: libunix.a unix.cmi unix.cma
 
-all: libunix.a $(INTF) $(LIB)
+allopt: libunix.a unix.cmi unix.cmxa
 
 libunix.a: $(OBJS)
 	rm -f libunix.a
 	ar rc libunix.a $(OBJS)
 	$(RANLIB) libunix.a
 
-unix.cma: $(IMPL)
-	$(CAMLC) -a -o unix.cma $(IMPL)
+unix.cma: unix.cmo
+	$(CAMLC) -a -o unix.cma unix.cmo
+
+unix.cmxa: unix.cmx
+	$(CAMLOPT) -a -o unix.cmxa unix.cmx
 
 clean:
-	rm -f libunix.a *.o *.cm[ioa]
+	rm -f libunix.a *.o *.cm*
 
 install:
 	cp libunix.a $(LIBDIR)/libunix.a
 	cd $(LIBDIR); $(RANLIB) libunix.a
-	cp $(INTF) $(LIB) $(LIBDIR)
+	cp unix.cmi unix.cma $(LIBDIR)
 
-.SUFFIXES: .ml .mli .cmo .cmi
+installopt:
+	cp unix.cmxa unix.a $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) unix.a
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
