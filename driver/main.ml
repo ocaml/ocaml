@@ -81,7 +81,7 @@ let main () =
     end;
     exit 0
   with x ->
-    Format.set_formatter_output stderr;
+    Format.set_formatter_out_channel stderr;
     Errors.report_error x;
     exit 2
 
