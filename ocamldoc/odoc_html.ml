@@ -1023,12 +1023,11 @@ class html =
 	     (List.map
 		(fun p ->
 		  "<tr>\n"^
-		  "<td align=\"center\" valign=\"top\" width=\"15%\">\n"^
-		  "<code>"^
+		  "<td align=\"center\" valign=\"top\" width=\"15%\" class=\"code\">\n"^
 		  (match Parameter.complete_name p with
 		    "" -> "?"
 		  | s -> s
-		  )^"</code></td>\n"^
+		  )^"</td>\n"^
 		  "<td align=\"center\" valign=\"top\">:</td>\n"^
 		  "<td>"^(self#html_of_type_expr m_name (Parameter.typ p))^"<br>\n"^
 		  (self#html_of_parameter_description p)^"\n"^
@@ -1052,7 +1051,7 @@ class html =
 	  l
       in
       let f p =
-	"<div class=\"info\"><code>"^(Parameter.complete_name p)^"</code> : "^
+	"<div class=\"info\"><code class=\"code\">"^(Parameter.complete_name p)^"</code> : "^
 	(self#html_of_parameter_description p)^"</div>\n"
       in
       match l2 with
