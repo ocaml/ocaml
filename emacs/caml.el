@@ -280,7 +280,9 @@ have caml-electric-indent on, which see.")
 ;that way we get out effect even when we do \C-x` in compilation buffer
 ;  (define-key caml-mode-map "\C-x`" 'caml-next-error)
 
-  (define-key caml-mode-map "\177" 'backward-delete-char-untabify)
+  (if running-xemacs
+      (define-key caml-mode-map 'backspace 'backward-delete-char-untabify)
+    (define-key caml-mode-map "\177" 'backward-delete-char-untabify))
   (define-key caml-mode-map "\C-cb" 'caml-insert-begin-form)
   (define-key caml-mode-map "\C-cf" 'caml-insert-for-form)
   (define-key caml-mode-map "\C-ci" 'caml-insert-if-form)
