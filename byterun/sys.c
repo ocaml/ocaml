@@ -256,21 +256,28 @@ extern int win32_system(char * command);
 
 CAMLprim value sys_system_command(value command)
 {
+  CAMLparam1 (command);
   int status, retcode;
+  char *buf;
+  unsigned long len;
+  
+  len = string_length (command);
+  buf = stat_alloc (len + 1);
+  memmove (buf, String_val (command), len + 1);
   
   enter_blocking_section ();
 #ifndef _WIN32
-  status = system(String_val(command));
+  status = system(buf);
   if (WIFEXITED(status))
     retcode = WEXITSTATUS(status);
   else
     retcode = 255;
 #else
-  status = retcode = win32_system(String_val(command));
+  status = retcode = win32_system(buf);
 #endif
   leave_blocking_section ();
   if (status == -1) sys_error(command);
-  return Val_int(retcode);
+  CAMLreturn (Val_int(retcode));
 }
 
 CAMLprim value sys_time(value unit)
