@@ -115,8 +115,9 @@ type scanbuf = {
   file_name : file_name;
 };;
 
-(* Reads a new character from input buffer, sets the end of file
-   condition if necessary. *)
+(* Reads a new character from input buffer.  Next_char never fails,
+   even in case of end of input: it then simply sets the end of file
+   condition. *)
 let next_char ib =
   try
    let c = ib.get_next_char () in
@@ -315,11 +316,20 @@ let token_int64 conv ib = int64_of_string (token_int_literal conv ib);;
 
 (* Scanning numbers. *)
 
-(* The decimal case is optimized. *)
+(* Digits scanning functions suppose that one character has been
+   checked and is available, since they return at end of file with the
+   currently found token selected. The digits scanning functions scan
+   a possibly empty sequence of digits, (hence a successful scanning
+   from one of those functions does not imply that the token is a
+   well-formed number: to get a true number, it is mandatory to check
+   that at least one digit is available before calling a digit
+   scanning function). *)
+
+(* The decimal case is treated especially for optimization purposes. *)
 let scan_decimal_digits max ib =
   let rec loop inside max =
     if max = 0 || Scanning.eof ib then max else
-    match Scanning.checked_peek_char ib with
+    match Scanning.cautious_peek_char ib with
     | '0' .. '9' as c ->
         let max = Scanning.store_char ib c max in
         loop true max
@@ -329,11 +339,12 @@ let scan_decimal_digits max ib =
     | c -> max in
   loop false max;;
 
-(* Other cases uses a predicate argument to scan_digits. *)
+(* To scan numbers from other bases, we use a predicate argument to
+   scan_digits. *)
 let scan_digits digitp max ib =
   let rec loop inside max =
     if max = 0 || Scanning.eof ib then max else
-    match Scanning.checked_peek_char ib with
+    match Scanning.cautious_peek_char ib with
     | c when digitp c ->
        let max = Scanning.store_char ib c max in
        loop true max
@@ -343,28 +354,41 @@ let scan_digits digitp max ib =
     | _ -> max in
   loop false max;;
 
-let scan_binary_digits =
-  let is_binary_digit = function
+let scan_digits_plus digitp max ib =
+  let c = Scanning.checked_peek_char ib in
+  if digitp c then
+    let max = Scanning.store_char ib c max in
+    scan_digits digitp max ib
+  else bad_input_char c;;
+
+let is_binary_digit = function
   | '0' .. '1' -> true
-  | _ -> false in
-  scan_digits is_binary_digit;;
+  | _ -> false;;
 
-let scan_octal_digits =
-  let is_octal_digit = function
+let scan_binary_digits = scan_digits is_binary_digit;;
+let scan_binary_int = scan_digits_plus is_binary_digit;;
+
+let is_octal_digit = function
   | '0' .. '7' -> true
-  | _ -> false in
-  scan_digits is_octal_digit;;
+  | _ -> false;;
 
-let scan_hexadecimal_digits =
-  let is_hexa_digit = function
+let scan_octal_digits = scan_digits is_octal_digit;;
+let scan_octal_int = scan_digits_plus is_octal_digit;;
+
+let is_hexa_digit = function
   | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' -> true
-  | _ -> false in
-  scan_digits is_hexa_digit;;
+  | _ -> false;;
 
-(* Decimal integers. *)
+let scan_hexadecimal_digits = scan_digits is_hexa_digit;;
+let scan_hexadecimal_int = scan_digits_plus is_hexa_digit;;
+
+(* Scan a decimal integer. *)
 let scan_unsigned_decimal_int max ib =
-  if max = 0 || Scanning.eof ib then bad_input "decimal digit" else
-  scan_decimal_digits max ib;;
+  match Scanning.checked_peek_char ib with
+  | '0' .. '9' as c ->
+      let max = Scanning.store_char ib c max in
+      scan_decimal_digits max ib
+  | c -> bad_input_char c;;
 
 let scan_sign max ib =
   let c = Scanning.checked_peek_char ib in
@@ -392,28 +416,27 @@ let scan_unsigned_int max ib =
       | 'o' -> scan_octal_digits (Scanning.store_char ib c max) ib
       | 'b' -> scan_binary_digits (Scanning.store_char ib c max) ib
       | c -> scan_decimal_digits max ib end
-  | c -> scan_decimal_digits max ib;;
+  | c -> scan_unsigned_decimal_int max ib;;
 
 let scan_optionally_signed_int max ib =
   let max = scan_sign max ib in
-  if max = 0 || Scanning.eof ib then bad_input "bad int" else
   scan_unsigned_int max ib;;
 
-let scan_int conv max ib =
+let scan_int_conv conv max ib =
   match conv with
-  | 'b' -> scan_binary_digits max ib
+  | 'b' -> scan_binary_int max ib
   | 'd' -> scan_optionally_signed_decimal_int max ib
   | 'i' -> scan_optionally_signed_int max ib
-  | 'o' -> scan_octal_digits max ib
+  | 'o' -> scan_octal_int max ib
   | 'u' -> scan_unsigned_decimal_int max ib
-  | 'x' | 'X' -> scan_hexadecimal_digits max ib
+  | 'x' | 'X' -> scan_hexadecimal_int max ib
   | c -> assert false;;
 
 (* Scanning floating point numbers. *)
 (* Fractional part is optional and can be reduced to 0 digits. *)
 let scan_frac_part max ib =
   if max = 0 || Scanning.eof ib then max else
-  scan_unsigned_decimal_int max ib;;
+  scan_decimal_digits max ib;;
 
 (* Exp part is optional and can be reduced to 0 digits. *)
 let scan_exp_part max ib =
@@ -424,8 +447,17 @@ let scan_exp_part max ib =
      scan_optionally_signed_decimal_int (Scanning.store_char ib c max) ib
   | _ -> max;;
 
+(* An optional sign followed by a possibly empty sequence of decimal digits. *)
+let scan_optionally_signed_decimal_digits max ib =
+  let max = scan_sign max ib in
+  scan_decimal_digits max ib;;
+
+(* Scan the integer part of a floating point number, (not using the
+   Caml lexical convention since the integer part can be empty). *)
+let scan_int_part = scan_optionally_signed_decimal_digits;;
+
 let scan_float max ib =
-  let max = scan_optionally_signed_decimal_int max ib in
+  let max = scan_int_part max ib in
   if max = 0 || Scanning.eof ib then max else
   let c = Scanning.peek_char ib in
   match c with
@@ -448,7 +480,7 @@ let scan_Float max ib =
      scan_exp_part max ib
   | c -> bad_float ();;
 
-(* Scan a regular string: it stops with a space or one of the
+(* Scan a regular string: stops when encountering a space or one of the
    characters in stp. It also stops when the maximum number of
    characters has been read.*)
 let scan_string stp max ib =
@@ -834,7 +866,7 @@ let kscanf ib ef fmt f =
           if conv = 'c' then scan_char max ib else scan_Char max ib in
         scan_fmt (stack f (token_char ib)) (i + 1)
     | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
-        let x = scan_int conv max ib in
+        let x = scan_int_conv conv max ib in
         scan_fmt (stack f (token_int conv ib)) (i + 1)
     | 'f' | 'g' | 'G' | 'e' | 'E' ->
         let x = scan_float max ib in
@@ -862,7 +894,7 @@ let kscanf ib ef fmt f =
         if i > lim then scan_fmt (stack f (get_count t ib)) i else begin
         match fmt.[i] with
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
-            let x = scan_int conv max ib in
+            let x = scan_int_conv conv max ib in
             begin match t with
             | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
             | 'L' -> scan_fmt (stack f (token_int64 conv ib)) (i + 1)
