@@ -106,16 +106,17 @@ let rec highlight_location loc =
                 Terminfo.puts stdout !cursor_up 1
               done;
               (* Print the input, switching to standout for the location *)
-              let bol = ref true in
+              let bol = ref false in
+	      print_string "# ";
               for pos = 0 to String.length lb.lex_buffer - pos0 - 1 do
-                if !bol then (print_char '#'; bol := false);
+                if !bol then (print_string "  "; bol := false);
                 if pos = loc.loc_start then
                   Terminfo.puts stdout !start_standout 1;
                 if pos = loc.loc_end then
                   Terminfo.puts stdout !end_standout 1;
                 let c = lb.lex_buffer.[pos + pos0] in
                 print_char c;
-                bol := (c = '\n') 
+                bol := (c = '\n')
               done;
               (* Make sure standout mode is over *)
               Terminfo.puts stdout !end_standout 1;

@@ -385,6 +385,8 @@ expr:
       { mkexp(Pexp_ifthenelse($2, $4, None)) }
   | expr SEMI expr
       { mkexp(Pexp_sequence($1, $3)) }
+  | expr SEMI
+      { mkexp(Pexp_sequence($1, mkexp(Pexp_construct(Lident "()", None)))) }
   | WHILE expr DO expr DONE
       { mkexp(Pexp_while($2, $4)) }
   | FOR val_ident EQUAL expr direction_flag expr DO expr DONE
