@@ -28,10 +28,13 @@
 #ifndef SO_OOBINLINE
 #define SO_OOBINLINE (-1)
 #endif
+#ifndef SO_ERROR
+#define SO_ERROR (-1)
+#endif
 
 static int sockopt[] = {
   SO_DEBUG, SO_BROADCAST, SO_REUSEADDR, SO_KEEPALIVE, 
-  SO_DONTROUTE, SO_OOBINLINE };
+  SO_DONTROUTE, SO_OOBINLINE, SO_ERROR };
 
 value unix_getsockopt(value socket, value option) /* ML */
 {

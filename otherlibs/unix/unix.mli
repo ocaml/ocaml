@@ -778,7 +778,9 @@ type socket_option =
   | SO_KEEPALIVE           (* Keep connection active *)
   | SO_DONTROUTE           (* Bypass the standard routing algorithms *)
   | SO_OOBINLINE           (* Leave out-of-band data in line *)
-        (* The socket options settable with [setsockopt]. *)
+  | SO_ERROR               (* Get and clear the pending socket error *)
+        (* The socket options that can be consulted with [getsockopt]
+           and modified with [setsockopt]. *)
 
 val getsockopt : file_descr -> socket_option -> bool
         (* Return the current status of an option in the given socket. *)

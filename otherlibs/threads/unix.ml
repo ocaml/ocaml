@@ -471,6 +471,7 @@ type socket_option =
   | SO_KEEPALIVE
   | SO_DONTROUTE
   | SO_OOBINLINE
+  | SO_ERROR
 
 external _socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
