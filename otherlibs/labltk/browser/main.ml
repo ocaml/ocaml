@@ -102,10 +102,11 @@ let _ =
     try Searchid.start_env := Env.open_pers_signature "Pervasives" Env.initial
     with _ ->
       fatal_error
-        (Printf.sprintf "%s\nPlease check that %s %s"
+        (Printf.sprintf "%s\nPlease check that %s %s\nCurrent value is `%s'"
            "Couldn't initialize environment."
            (if is_win32 then "%OCAMLLIB%" else "$OCAMLLIB")
-           "points to the Objective Caml library.")
+           "points to the Objective Caml library."
+           Config.standard_library)
   end;
   
   Searchpos.view_defined_ref := (fun s ~env -> Viewer.view_defined s ~env);
