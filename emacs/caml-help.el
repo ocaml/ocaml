@@ -560,7 +560,7 @@ command. An entry may be an info module or a complete file name."
 ;; Help function. 
 
 
-(defun ocaml-goto-help (&optional module entry)
+(defun ocaml-goto-help (&optional module entry same-window)
   "Searches info manual for MODULE and ENTRY in MODULE.
 If unspecified, MODULE and ENTRY are inferred from the position in the
 current buffer using \\[ocaml-qualified-identifier]."
@@ -578,9 +578,14 @@ current buffer using \\[ocaml-qualified-identifier]."
              (location (cdr (cadr module-info))))
         (cond
          (location
-          (view-file-other-window
-           (concat location (ocaml-uncapitalize module) ".mli"))
-          (bury-buffer (current-buffer)))
+          (let ((file (concat location (ocaml-uncapitalize module) ".mli")))
+            (if (window-live-p same-window)
+                (progn (select-window same-window)
+                       (view-mode-exit view-return-to-alist view-exit-action))
+              ;; (view-buffer (find-file-noselect file) 'view))
+              )
+            (view-file-other-window file)
+            (bury-buffer (current-buffer))))
          (info-section (error "Aborted"))
          (t (error "No help for module %s" module))))
       )
@@ -721,17 +726,19 @@ buffer positions."
 (defun ocaml-link-goto (click)
   (interactive "e")
   (let* ((pos (caml-event-point-start click))
-         (buf (window-buffer (caml-event-window click)))
+         (win (caml-event-window click))
+         (buf (window-buffer win))
          (window (selected-window))
          (link))
     (setq link
           (with-current-buffer buf
-           (buffer-substring (previous-property-change
-                              pos buf (- pos 100))
-                             (next-property-change
-                              pos buf (+ pos 100)))))
+            (buffer-substring
+             (previous-single-property-change (+ pos 1) 'local-map
+                                                   buf (- pos 100))
+             (next-single-property-change pos  'local-map
+                                        buf (+ pos 100)))))
     (if (string-match (concat "^" ocaml-longident-regexp "$") link)
-        (ocaml-goto-help (match-string 1 link) (match-string 2 link))
+        (ocaml-goto-help (match-string 1 link) (match-string 2 link) win)
       (if (not (equal (window-buffer window) buf))
           (switch-to-buffer-other-window buf))
       (if (setq link (assoc link (cdr ocaml-links)))
