@@ -36,14 +36,14 @@
 #define O_BINARY 0
 #endif
 
-header_t first_atoms[256];
+header_t atom_table[256];
 code_t start_code;
 asize_t code_size;
 
 static void init_atoms()
 {
   int i;
-  for(i = 0; i < 256; i++) first_atoms[i] = Make_header(0, i, White);
+  for(i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, White);
 }
 
 static unsigned long read_size(p)

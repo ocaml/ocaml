@@ -219,29 +219,22 @@ typedef void (*final_fun) P((value));
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 
-extern header_t first_atoms[];
-#define Atom(tag) (Val_hp (&(first_atoms [tag])))
+extern header_t atom_table[];
+#define Atom(tag) (Val_hp (&(atom_table [tag])))
 
 /* Is_atom tests whether a well-formed block is statically allocated
    outside the heap. For the bytecode system, only zero-sized block (Atoms)
-   fall in this class. For the native-code generator, all data in the
-   statically initialized or statically uninitialized (BSS) zones are atoms. */
+   fall in this class. For the native-code generator, data
+   emitted by the code generator (as described in the table
+   caml_data_segments) are also atoms. */
 
 #ifndef NATIVE_CODE
 #define Is_atom(v) ((v) >= Atom(0) && (v) <= Atom(255))
 #else
-#ifdef __alpha
-extern int _end;
-#define Is_atom(v) ((int *)(v) < &_end)
-#else
-#ifdef __MACH__
-extern int _DATA__end;          /* On NextStep, needs linking with -preload */
-#define Is_atom(v) ((int *)(v) < &_DATA__end)
-#else
-extern int end;
-#define Is_atom(v) ((int *)(v) < &end)
-#endif
-#endif
+extern char * static_data_start, * static_data_end;
+#define Is_atom(v) \
+  ((((char *)(v) >= static_data_start && (char *)(v) < static_data_end) || \
+   ((v) >= Atom(0) && (v) <= Atom(255))))
 #endif
 
 /* Booleans are integers 0 or 1 */
