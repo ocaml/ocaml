@@ -18,7 +18,7 @@ include config/Makefile
 
 CAMLC=boot/ocamlrun boot/ocamlc -I boot
 CAMLOPT=boot/ocamlrun ./ocamlopt -I stdlib
-COMPFLAGS=$(INCLUDES)
+COMPFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=
 CAMLYACC=boot/ocamlyacc
 YACCFLAGS=-v
@@ -226,7 +226,8 @@ install: FORCE
 	if test -d $(MANDIR); then : ; else $(MKDIR) $(MANDIR); fi
 	rm -f $(LIBDIR)/lib*.so
 	cd byterun; $(MAKE) install
-	if test -r $(LIBDIR)/ld.conf; then :; else echo "$(LIBDIR)" > $(LIBDIR)/ld.conf; fi
+	if test -r $(LIBDIR)/ld.conf; then :; \
+	   else echo "$(LIBDIR)" > $(LIBDIR)/ld.conf; fi
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)
 	cp ocaml $(BINDIR)/ocaml$(EXE)
 	cd stdlib; $(MAKE) install
@@ -244,7 +245,8 @@ install: FORCE
         done
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	cd camlp4; $(MAKE) install LIBDIR=$(LIBDIR)
-	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi
+	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
+	   else :; fi
 
 # Installation of the native-code compiler
 installopt:
