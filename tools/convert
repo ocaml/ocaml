@@ -127,6 +127,10 @@ O_TEXT                          Sys.Open_text";
 # Initialize the table %conv
 %conv = split(/\s+/, $convtbl);
 
+# Parse options
+$_ = $ARGV[0];
+$keep_semisemi = 1, shift if /^-semi/;
+
 # Open input.
 $infile = $ARGV[0];
 open(IN, $infile) || die("Cannot open $infile");
@@ -181,8 +185,10 @@ close(IN);
 sub convert {
     chop;
 # Double-semicolon
-    return if /^;;\s*$/;
-    s/;;//;
+    if (! $keep_semisemi) {
+        return if /^;;\s*$/;
+        s/;;//;
+    }
 # Identifiers that have been renamed
     s/([A-Za-z][A-Za-z0-9'_]*(__[A-Za-z][A-Za-z0-9'_]*)?)/$conv{$1} || $1/eg;
 # 'type glop == tau'
