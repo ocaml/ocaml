@@ -36,7 +36,7 @@ Both compilers:
 
 Native-code compiler:
 - Better unboxing optimizations on the int32, int64, and nativeint types.
-- Tail recursion preserved for functions with more parameters than
+- Tail recursion preserved for functions having more parameters than
   available registers (but tail calls to other functions are still
   turned off if parameters do not fit entirely in registers).
 - Fixed name-capture bug in function inlining.
@@ -45,8 +45,9 @@ Native-code compiler:
 - Removed spurious dependency on the -lcurses library.
 
 Toplevel environment:
-- Revised handling of top-level value definitions, allows reclamation
+- Revised handling of top-level value definitions, allows reclaimation
   of definitions that are shadowed by later definitions with the same names.
+  (E.g. "let x = <big list>;; let x = 1;;" allows <big list> to be reclaimed.)
 
 Runtime system:
 - Fixed portability issue on bcopy() vs memmove(), affecting Linux RedHat 7.0
@@ -71,7 +72,7 @@ Standard library:
 - Pervasives.input_value: fixed bug affecting shared custom objects.
 - Pervasives.output_value: fixed size bug affecting "int64" values.
 - Pervasives.int_of_string, {Int32,Int64,Nativeint}.of_string:
-  fixed bug causing illegal digits to be accepted without error.
+  fixed bug causing bad digits to be accepted without error.
 - Module Random: added get_state and set_state to checkpoint the generator.
 - Module Sys: signal handling functions are passed the system-independent
   signal number rather than the raw system signal number whenever possible.
