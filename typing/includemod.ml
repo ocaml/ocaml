@@ -347,7 +347,7 @@ let include_err ppf = function
   | Modtype_infos(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Module type declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
+        %a@;<1 -2>does not match@ %a@]"
       (modtype_declaration id) d1
       (modtype_declaration id) d2
   | Modtype_permutation ->
@@ -358,14 +358,14 @@ let include_err ppf = function
   | Class_type_declarations(id, d1, d2, reason) ->
       fprintf ppf
        "@[<hv 2>Class type declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]@ %a"
+        %a@;<1 -2>does not match@ %a@]@ %a"
       (Printtyp.cltype_declaration id) d1
       (Printtyp.cltype_declaration id) d2
       Includeclass.report_error reason
   | Class_declarations(id, d1, d2, reason) ->
       fprintf ppf
        "@[<hv 2>Class declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]@ %a"
+        %a@;<1 -2>does not match@ %a@]@ %a"
       (Printtyp.class_declaration id) d1
       (Printtyp.class_declaration id) d2
       Includeclass.report_error reason
