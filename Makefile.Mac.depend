@@ -448,11 +448,11 @@
 :driver:main.cmoÄ :bytecomp:bytelibrarian.cmi :bytecomp:bytelink.cmi ¶
     :utils:clflags.cmo :driver:compile.cmi :utils:config.cmi ¶
     :driver:errors.cmi :utils:formatmsg.cmi :driver:main_args.cmi ¶
-    :utils:warnings.cmi 
+    :utils:warnings.cmi :driver:main.cmi 
 :driver:main.cmxÄ :bytecomp:bytelibrarian.cmx :bytecomp:bytelink.cmx ¶
     :utils:clflags.cmx :driver:compile.cmx :utils:config.cmx ¶
     :driver:errors.cmx :utils:formatmsg.cmx :driver:main_args.cmx ¶
-    :utils:warnings.cmx 
+    :utils:warnings.cmx :driver:main.cmi 
 :driver:main_args.cmoÄ :driver:main_args.cmi 
 :driver:main_args.cmxÄ :driver:main_args.cmi 
 :driver:optcompile.cmoÄ :utils:ccomp.cmi :utils:clflags.cmo :utils:config.cmi ¶
@@ -479,10 +479,10 @@
     :typing:typetexp.cmx :driver:opterrors.cmi 
 :driver:optmain.cmoÄ :utils:clflags.cmo :utils:config.cmi ¶
     :utils:formatmsg.cmi :driver:optcompile.cmi :driver:opterrors.cmi ¶
-    :utils:warnings.cmi 
+    :utils:warnings.cmi :driver:optmain.cmi 
 :driver:optmain.cmxÄ :utils:clflags.cmx :utils:config.cmx ¶
     :utils:formatmsg.cmx :driver:optcompile.cmx :driver:opterrors.cmx ¶
-    :utils:warnings.cmx 
+    :utils:warnings.cmx :driver:optmain.cmi 
 :toplevel:genprintval.cmiÄ :typing:env.cmi :typing:path.cmi :typing:types.cmi 
 :toplevel:printval.cmiÄ :typing:env.cmi :typing:path.cmi :typing:types.cmi 
 :toplevel:topdirs.cmiÄ :parsing:longident.cmi 
