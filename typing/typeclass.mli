@@ -75,6 +75,7 @@ type error =
       Ident.t * Types.class_declaration * (type_expr * type_expr) list
   | Final_self_clash of (type_expr * type_expr) list
   | Not_a_variable
+  | Bad_field_access of string
 
 exception Error of Location.t * error
 

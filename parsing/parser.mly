@@ -644,11 +644,29 @@ parent_binder:
           {None}
 ;
 value:
-        mutable_flag label EQUAL seq_expr
-          { $2, $1, $4, symbol_rloc () }
-      | mutable_flag label type_constraint EQUAL seq_expr
-          { $2, $1, (let (t, t') = $3 in ghexp(Pexp_constraint($5, t, t'))),
-            symbol_rloc () }
+        mutable_flag label value_may_expr access_flags
+          { let e = match $3 with Some e -> e
+                    | None -> mkexp(Pexp_ident(Lident $2)) in
+            $2, $1, $4, e, symbol_rloc () }
+      | mutable_flag label type_constraint value_may_expr access_flags
+          { let (t, t') = $3 in
+            let e = match $4 with Some e -> e
+                    | None -> mkexp(Pexp_ident(Lident $2)) in
+            $2, $1, $5, ghexp(Pexp_constraint(e, t, t')), symbol_rloc () }
+;
+value_may_expr:
+    EQUAL seq_expr
+      { Some $2 }
+  | /* empty */
+      { None }
+;
+access_flags:
+    WITH label
+      { Some(Public, $2) }
+  | WITH PRIVATE label
+      { Some(Private, $3) }
+  | /* empty */
+      { None }
 ;
 virtual_method:
     METHOD PRIVATE VIRTUAL method_label COLON poly_type

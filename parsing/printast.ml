@@ -430,7 +430,7 @@ and class_field i ppf x =
       printf "Pcf_deleg\n";
       core_type (i+1) ppf t;
       expression (i+1) ppf e;
-  | Pcf_val (s, mf, e, loc) ->
+  | Pcf_val (s, mf, _, e, loc) ->
       line i ppf
         "Pcf_val \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
       expression (i+1) ppf e;

@@ -50,6 +50,7 @@ type error =
       Ident.t * Types.class_declaration * (type_expr * type_expr) list
   | Final_self_clash of (type_expr * type_expr) list
   | Not_a_variable
+  | Bad_field_access of string
 
 exception Error of Location.t * error
 
@@ -470,12 +471,15 @@ let rec class_field cl_num self_type meths vars
             in Pcf_meth (lab, Public, sexp, loc))
           labs
       in
-      List.fold_left
-        (class_field cl_num self_type meths vars)
-        (val_env, met_env, par_env, fields, concr_meths, warn_meths, inh_vals)
-        mets
+      let (val_env, met_env, par_env, fields, concr_meths, _, inh_vals) =
+        List.fold_left
+          (class_field cl_num self_type meths vars)
+          (val_env, met_env, par_env, fields, concr_meths, warn_meths,inh_vals)
+          mets
+      in
+      (val_env, met_env, par_env, fields, concr_meths, warn_meths, inh_vals)
 
-  | Pcf_val (lab, mut, sexp, loc) ->
+  | Pcf_val (lab, mut, attrs, sexp, loc) ->
       if StringSet.mem lab inh_vals then
         Location.prerr_warning loc (Warnings.Hide_instance_variable lab);
       if !Clflags.principal then Ctype.begin_def ();
@@ -490,8 +494,36 @@ let rec class_field cl_num self_type meths vars
       let (id, val_env, met_env, par_env) =
         enter_val cl_num vars lab mut exp.exp_type val_env met_env par_env
       in
-      (val_env, met_env, par_env, lazy(Cf_val (lab, id, exp)) :: fields,
-       concr_meths, warn_meths, inh_vals)
+      let env =
+        (val_env, met_env, par_env, lazy(Cf_val (lab, id, exp)) :: fields,
+         concr_meths, warn_meths, inh_vals) in
+      begin match attrs with
+        None -> env
+      | Some (priv, ("accessor"|"reader"|"writer" as attr)) ->
+          let ident s =
+            {pexp_desc=Pexp_ident(Longident.Lident s); pexp_loc=loc} in
+          let env =
+            if attr <> "writer" then
+              class_field cl_num self_type meths vars env
+                (Pcf_meth(lab, priv,
+                          {pexp_desc=Pexp_poly(ident lab, None); pexp_loc=loc},
+                          loc))
+            else env
+          in
+          if attr <> "reader" then
+            class_field cl_num self_type meths vars env
+              (Pcf_meth(
+               lab^"<-", priv,
+               {pexp_desc=Pexp_poly(
+                {pexp_desc=Pexp_function(
+                 "",None,[{ppat_desc=Ppat_var"*arg*";ppat_loc=loc},
+                          {pexp_desc=Pexp_setinstvar(lab, ident "*arg*");
+                           pexp_loc=loc}]);
+                 pexp_loc=loc}, None);
+                pexp_loc=loc}, loc))
+          else env
+      | Some(_,attr) -> raise(Error(loc, Bad_field_access attr))
+      end
 
   | Pcf_virt (lab, priv, sty, loc) ->
       virtual_method val_env meths self_type lab priv sty loc;
@@ -1552,3 +1584,5 @@ let report_error ppf = function
   | Not_a_variable ->
       fprintf ppf "@[%s@ %s@]" "You can only delegate to a variable"
         "or a method of self (without arguments)"
+  | Bad_field_access s ->
+      fprintf ppf "@[`%s' is not a valid field access qualifier@]" s
