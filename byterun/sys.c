@@ -141,6 +141,14 @@ value sys_chdir(dirname)        /* ML */
   return Val_unit;
 }
 
+value sys_getcwd(unit)		/* ML */
+     value unit;
+{
+  char buff[4096];
+  if (getcwd(buff, sizeof(buff)) == 0) sys_error(NULL);
+  return copy_string(buff);
+}
+
 value sys_getenv(var)           /* ML */
      value var;
 {
