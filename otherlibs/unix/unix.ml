@@ -716,14 +716,17 @@ let close_process_out outchan =
 
 let close_process (inchan, outchan) =
   let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
-  close_in inchan; close_out outchan;
+  close_in inchan;
+  begin try close_out outchan with Sys_error _ -> () end;
   snd(waitpid [] pid)
 
 let close_process_full (inchan, outchan, errchan) =
   let pid =
     find_proc_id "close_process_full"
                  (Process_full(inchan, outchan, errchan)) in
-  close_in inchan; close_out outchan; close_in errchan;
+  close_in inchan;
+  begin try close_out outchan with Sys_error _ -> () end;
+  close_in errchan;
   snd(waitpid [] pid)
 
 (* High-level network functions *)
