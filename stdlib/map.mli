@@ -69,7 +69,7 @@ module type S =
            replaced by the result of the application of [f] to [a].
            The order in which the associated values are passed to [f]
            is unspecified. *)
-    val mapi: fun:(key -> 'a -> 'b) -> 'a t -> 'b t
+    val mapi: fun:(key:key -> data:'a -> 'b) -> 'a t -> 'b t
         (* Same as [map], but the function receives as arguments both the
            key and the associated value for each binding of the map. *)
     val fold: fun:(key:key -> data:'a -> acc:'b -> 'b) -> 'a t -> acc:'b -> 'b
