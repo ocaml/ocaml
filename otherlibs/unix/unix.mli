@@ -381,7 +381,7 @@ external closedir : dir_handle -> unit = "unix_closedir"
 external pipe : unit -> file_descr * file_descr = "unix_pipe"
         (* Create a pipe. The first component of the result is opened
            for reading, that's the exit to the pipe. The second component is
-           opened for writing, that's the entrace to the pipe. *) 
+           opened for writing, that's the entrance to the pipe. *) 
 
 val open_process_in: string -> in_channel
 val open_process_out: string -> out_channel
