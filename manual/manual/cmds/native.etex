@@ -164,6 +164,27 @@ callable from any C program. See chapter~\ref{c:intf-c},
 section~\ref{s:embedded-code}. The name of the output object file is
 "camlprog.o" by default; it can be set with the "-o" option.
 
+\item["-p"]
+Generate extra code to write profile information when the program is
+executed.  The profile information can then be examined with the
+analysis program "gprof".  (See chapter~\ref{c:profiler} for more
+information on profiling.)  The "-p" option must be given both at
+compile-time and at link-time.  Linking object files not compiled with
+"-p" is possible, but results in less precise profiling.
+
+\begin{unix} See the Unix manual page for "gprof(1)" for more
+information about the profiles.
+
+Full support for "gprof" is only available for certain platforms
+(currently: Intel x86/Linux and Alpha/Digital Unix).
+On other platforms, the "-p" option will result in a less precise
+profile (no call graph information, only a time profile).
+\end{unix}
+
+\begin{windows}
+The "-p" option does not work under Windows.
+\end{windows}
+
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
 for each source file. The output of \var{command} is redirected to

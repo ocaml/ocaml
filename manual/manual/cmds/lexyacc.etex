@@ -447,32 +447,32 @@ definition is too complex and overflows this limit.  This is commonly
 caused by lexer definitions that have separate rules for each of the
 alphabetic keywords of the language, as in the following example.
 \begin{verbatim}
-        rule token = parse
-          "keyword1"   { KWD1 }
-        | "keyword2"   { KWD2 }
-        | ...
-        | "keyword100" { KWD100 }
-        | ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] *
-                       { IDENT(Lexing.lexeme lexbuf) }
+rule token = parse
+  "keyword1"   { KWD1 }
+| "keyword2"   { KWD2 }
+| ...
+| "keyword100" { KWD100 }
+| ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] *
+               { IDENT(Lexing.lexeme lexbuf) }
 \end{verbatim}
 To keep the generated automata small, rewrite those definitions with
 only one general ``identifier'' rule, followed by a hashtable lookup
 to separate keywords from identifiers:
 \begin{verbatim}
-        { let keyword_table = Hashtbl.create 53
-          let _ =
-            List.iter (fun (kwd, tok) -> Hashtbl.add keyword_table kwd tok)
-                      [ "keyword1", KWD1;
-                        "keyword2", KWD2; ...
-                        "keyword100", KWD100 ]
-        }
-        rule token = parse
-          ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] *
-                       { let id = Lexing.lexeme lexbuf in
-                         try
-                           Hashtbl.find keyword_table s
-                         with Not_found ->
-                           IDENT s }
+{ let keyword_table = Hashtbl.create 53
+  let _ =
+    List.iter (fun (kwd, tok) -> Hashtbl.add keyword_table kwd tok)
+              [ "keyword1", KWD1;
+                "keyword2", KWD2; ...
+                "keyword100", KWD100 ]
+}
+rule token = parse
+  ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] *
+               { let id = Lexing.lexeme lexbuf in
+                 try
+                   Hashtbl.find keyword_table s
+                 with Not_found ->
+                   IDENT s }
 \end{verbatim}
 
 \end{options}

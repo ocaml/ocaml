@@ -10,8 +10,6 @@ BSD sockets.
 
 \begin{windows} The debugger is not available. \end{windows}
 
-\begin{mac} The debugger is not available. \end{mac}
-
 \section{Compiling for debugging}
 
 Before the debugger can be used, the program must be compiled and

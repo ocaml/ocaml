@@ -43,12 +43,12 @@ that are passed to the compiler.
 Here is a template "Makefile" for a Objective Caml program.
 
 \begin{verbatim}
-CSLC=ocamlc
-CSLOPT=ocamlopt
-CSLDEP=ocamldep
-INCLUDES=               #all relevant -I options here
-CSLFLAGS=$(INCLUDES)    #add other options for ocamlc here
-CSLOPTFLAGS=$(INCLUDES) #add other options for ocamlopt here
+OCAMLC=ocamlc
+OCAMLOPT=ocamlopt
+OCAMLDEP=ocamldep
+INCLUDES=                 #all relevant -I options here
+OCAMLFLAGS=$(INCLUDES)    #add other options for ocamlc here
+OCAMLOPTFLAGS=$(INCLUDES) #add other options for ocamlopt here
 
 # prog1 should be compiled to bytecode, and is composed of three
 # units: mod1, mod2 and mod3.
@@ -57,7 +57,7 @@ CSLOPTFLAGS=$(INCLUDES) #add other options for ocamlopt here
 PROG1_OBJS=mod1.cmo mod2.cmo mod3.cmo
 
 prog1: $(PROG1_OBJS)
-	$(CSLC) -o prog1 $(CSLFLAGS) $(PROG1_OBJS)
+	$(OCAMLC) -o prog1 $(OCAMLFLAGS) $(PROG1_OBJS)
 
 # prog2 should be compiled to native-code, and is composed of two
 # units: mod4 and mod5.
@@ -66,19 +66,19 @@ prog1: $(PROG1_OBJS)
 PROG2_OBJS=mod4.cmx mod5.cmx
 
 prog2: $(PROG2_OBJS)
-	$(CSLOPT) -o prog2 $(CSLFLAGS) $(PROG2_OBJS)
+	$(OCAMLOPT) -o prog2 $(OCAMLFLAGS) $(PROG2_OBJS)
 
 # Common rules
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CSLC) $(CSLFLAGS) -c $<
+	$(OCAMLC) $(OCAMLFLAGS) -c $<
 
 .mli.cmi:
-	$(CSLC) $(CSLFLAGS) -c $<
+	$(OCAMLC) $(OCAMLFLAGS) -c $<
 
 .ml.cmx:
-	$(CSLOPT) $(CSLOPTFLAGS) -c $<
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $<
 
 # Clean up
 clean:
@@ -87,7 +87,7 @@ clean:
 
 # Dependencies
 depend:
-        $(CSLDEP) $(INCLUDES) *.mli *.ml > .depend
+        $(OCAMLDEP) $(INCLUDES) *.mli *.ml > .depend
 
 include .depend
 \end{verbatim}
