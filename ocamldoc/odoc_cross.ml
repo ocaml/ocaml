@@ -492,8 +492,7 @@ let rec assoc_comments_text_elements module_list t_ele =
     | Code _
     | CodePre _
     | Latex _
-    | Verbatim _ 
-    | Ref (_, Some _) -> t_ele
+    | Verbatim _ -> t_ele
     | Bold t -> Bold (assoc_comments_text module_list t)
     | Italic t -> Italic (assoc_comments_text module_list t)
     | Center t -> Center (assoc_comments_text module_list t)
@@ -509,27 +508,67 @@ let rec assoc_comments_text_elements module_list t_ele =
     | Title (n, l_opt, t) -> Title (n, l_opt, (assoc_comments_text module_list t))
     | Link (s, t) -> Link (s, (assoc_comments_text module_list t))
     | Ref (name, None) ->
-        let re = Str.regexp ("^"^(Str.quote name)^"$") in
+	(
+	 (* we look for the first element with this name *)
+         let re = Str.regexp ("^"^(Str.quote name)^"$") in
+         let res = Odoc_search.Search_by_name.search module_list re in
+         match res with
+           [] ->
+             Odoc_messages.pwarning (Odoc_messages.cross_element_not_found name);
+             t_ele
+         | ele :: _ ->
+             let kind = 
+               match ele with
+                 Odoc_search.Res_module _ -> RK_module
+               | Odoc_search.Res_module_type _ -> RK_module_type
+               | Odoc_search.Res_class _ -> RK_class
+               | Odoc_search.Res_class_type _ -> RK_class_type
+               | Odoc_search.Res_value _ -> RK_value
+               | Odoc_search.Res_type _ -> RK_type
+               | Odoc_search.Res_exception _ -> RK_exception
+               | Odoc_search.Res_attribute _ -> RK_attribute
+               | Odoc_search.Res_method _ -> RK_method
+               | Odoc_search.Res_section (_ ,t)-> RK_section t
+             in
+             Ref (name, Some kind)
+	)
+    | Ref (name, Some kind) -> 
+	(** we just verify that we find an element of this kind with this name *)
+	let re = Str.regexp ("^"^(Str.quote name)^"$") in
         let res = Odoc_search.Search_by_name.search module_list re in
-        match res with
-          [] ->
-            Odoc_messages.pwarning (Odoc_messages.cross_element_not_found name);
-            t_ele
-        | ele :: _ ->
-            let kind = 
-              match ele with
-                Odoc_search.Res_module _ -> RK_module
-              | Odoc_search.Res_module_type _ -> RK_module_type
-              | Odoc_search.Res_class _ -> RK_class
-              | Odoc_search.Res_class_type _ -> RK_class_type
-              | Odoc_search.Res_value _ -> RK_value
-              | Odoc_search.Res_type _ -> RK_type
-              | Odoc_search.Res_exception _ -> RK_exception
-              | Odoc_search.Res_attribute _ -> RK_attribute
-              | Odoc_search.Res_method _ -> RK_method
-              | Odoc_search.Res_section (_ ,t)-> RK_section t
-            in
-            Ref (name, Some kind)
+	match kind with
+	| RK_section _ ->
+	    (
+	     try
+	       let t = Odoc_search.find_section module_list re in
+	       Ref (name, Some (RK_section t))
+	     with
+	       Not_found ->
+		 Odoc_messages.pwarning (Odoc_messages.cross_section_not_found name);
+		 Ref (name, None)
+	    )
+	| _ ->
+	    let (f,f_mes) = 
+	      match kind with
+		RK_module -> Odoc_search.module_exists, Odoc_messages.cross_module_not_found
+	      | RK_module_type -> Odoc_search.module_type_exists, Odoc_messages.cross_module_type_not_found
+	      | RK_class -> Odoc_search.class_exists, Odoc_messages.cross_class_not_found
+	      | RK_class_type -> Odoc_search.class_type_exists, Odoc_messages.cross_class_type_not_found
+	      | RK_value -> Odoc_search.value_exists, Odoc_messages.cross_value_not_found
+	      | RK_type -> Odoc_search.type_exists, Odoc_messages.cross_type_not_found
+	      | RK_exception -> Odoc_search.exception_exists, Odoc_messages.cross_exception_not_found
+	      | RK_attribute -> Odoc_search.attribute_exists, Odoc_messages.cross_attribute_not_found
+	      | RK_method -> Odoc_search.method_exists, Odoc_messages.cross_method_not_found
+	      |	RK_section _ -> assert false
+	    in
+	    if f module_list re then
+	      Ref (name, Some kind)
+	    else
+	      (
+	       Odoc_messages.pwarning (f_mes name);
+	       Ref (name, None)
+	      )
+	
 
 and assoc_comments_text module_list text =
   List.map (assoc_comments_text_elements module_list) text

@@ -146,7 +146,20 @@ let begin_code_pre = "{["
 let end_code_pre = "]}" 
 let begin_verb = "{v"blank_nl
 let end_verb = blank_nl"v}"
+
 let begin_ele_ref = "{!"blank_nl | "{!"
+let begin_val_ref = "{!val:"blank_nl | "{!val:"
+let begin_typ_ref = "{!type:"blank_nl | "{!type:"
+let begin_exc_ref = "{!exception:"blank_nl | "{!exception:"
+let begin_mod_ref = "{!module:"blank_nl | "{!module:"
+let begin_modt_ref = "{!modtype:"blank_nl | "{!modtype:"
+let begin_cla_ref = "{!class:"blank_nl | "{!class:"
+let begin_clt_ref = "{!classtype:"blank_nl | "{!classtype:"
+let begin_att_ref = "{!attribute:"blank_nl | "{!attribute:"
+let begin_met_ref = "{!method:"blank_nl | "{!method:"
+let begin_sec_ref = "{!section:"blank_nl | "{!section:"
+
+
 let begin_superscript = "{^"blank_nl | "{^"
 let begin_subscript = "{_"blank_nl | "{_"
 
@@ -432,9 +445,181 @@ rule main = parse
         else
           (
            Char (Lexing.lexeme lexbuf)
-                     )
+          )
     }
     
+
+| begin_val_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           VAL_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_typ_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           TYP_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_exc_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           EXC_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_mod_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           MOD_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_modt_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           MODT_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_cla_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           CLA_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_clt_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           CLT_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_att_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           ATT_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_met_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           MET_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_sec_ref    
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           SEC_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+
 | begin_verb    
     {
       incr_cpts lexbuf ;

@@ -46,7 +46,20 @@ let print_DEBUG s = print_string s; print_newline ()
 %token END_VERB
 %token LATEX
 %token END_LATEX
+
 %token ELE_REF
+%token VAL_REF
+%token TYP_REF
+%token EXC_REF
+%token MOD_REF
+%token MODT_REF
+%token CLA_REF
+%token CLT_REF
+%token ATT_REF
+%token MET_REF
+%token SEC_REF
+
+
 %token SUPERSCRIPT
 %token SUBSCRIPT
 
@@ -98,6 +111,56 @@ text_element:
       let s2 = remove_beginning_blanks $2 in
       let s3 = remove_trailing_blanks s2 in
       Ref (s3, None) 
+     }
+| VAL_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some RK_value) 
+     }
+| TYP_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some RK_type) 
+     }
+| EXC_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some RK_exception) 
+     }
+| MOD_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some RK_module) 
+     }
+| MODT_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some RK_module_type) 
+     }
+| CLA_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some RK_class) 
+     }
+| CLT_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some RK_class_type) 
+     }
+| ATT_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some RK_attribute) 
+     }
+| MET_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some RK_method) 
+     }
+| SEC_REF string END { 
+      let s2 = remove_beginning_blanks $2 in
+      let s3 = remove_trailing_blanks s2 in
+      Ref (s3, Some (RK_section []))
      }
 | VERB string END_VERB { Verbatim $2 }
 | LATEX string END_LATEX { Latex $2 }

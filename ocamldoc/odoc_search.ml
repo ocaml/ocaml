@@ -533,3 +533,97 @@ let module_types l =
     | [] -> acc
   in
   iter [] l_ele
+
+let type_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+	Res_type _ -> true
+      | _ -> false
+    )
+    l
+
+let value_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+	Res_value _ -> true
+      | _ -> false
+    )
+    l
+
+let class_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+	Res_class _ -> true
+      | _ -> false
+    )
+    l
+
+let class_type_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+	Res_class_type _ -> true
+      | _ -> false
+    )
+    l
+
+let module_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+	Res_module _ -> true
+      | _ -> false
+    )
+    l
+
+let module_type_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+	Res_module_type _ -> true
+      | _ -> false
+    )
+    l
+
+let exception_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+	Res_exception _ -> true
+      | _ -> false
+    )
+    l
+
+let attribute_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+	Res_attribute _ -> true
+      | _ -> false
+    )
+    l
+
+let method_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+	Res_method _ -> true
+      | _ -> false
+    )
+    l
+
+let find_section mods regexp =
+  let l = Search_by_name.search mods regexp in
+  match 
+    List.find
+      (function
+	  Res_section _ -> true
+	| _ -> false
+      )
+      l
+  with
+    Res_section (_,t) -> t
+  | _ -> assert false

@@ -155,3 +155,44 @@ val modules : Odoc_module.t_module list -> Odoc_module.t_module list
 
 (** A function to search all the module types in a list of modules. *)
 val module_types : Odoc_module.t_module list -> Odoc_module.t_module_type list
+
+(** Return [true] if a type with the given complete name (regexp) exists
+   in the given module list.*)
+val type_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return [true] if a value with the given complete name (regexp) exists
+   in the given module list.*)
+val value_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return [true] if a module with the given complete name (regexp) exists
+   in the given module list.*)
+val module_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return [true] if a module type with the given complete name (regexp) exists
+   in the given module list.*)
+val module_type_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return [true] if a class with the given complete name (regexp) exists
+   in the given module list.*)
+val class_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return [true] if a class type  with the given complete name (regexp) exists
+   in the given module list.*)
+val class_type_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return [true] if a exception with the given complete name (regexp) exists
+   in the given module list.*)
+val exception_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return [true] if an attribute with the given complete name (regexp) exists
+   in the given module list.*)
+val attribute_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return [true] if a method with the given complete name (regexp) exists
+   in the given module list.*)
+val method_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return the [text] of the section with the given complete name (regexp) 
+   in the given module list.
+   @raise Not_found if the section was not found.*)
+val find_section : Odoc_module.t_module list -> Str.regexp -> Odoc_types.text
