@@ -123,7 +123,7 @@ let char_for_backslash =
       | 'b' -> '\008'
       | 't' -> '\009'
       | c   -> c
-	  end
+      end
   | "MacOS" ->
       begin function
       | 'n' -> '\013'
@@ -131,9 +131,8 @@ let char_for_backslash =
       | 'b' -> '\008'
       | 't' -> '\009'
       | c   -> c
-	  end
+      end
   | x -> fatal_error "Lexer: unknown system type"
-;;
 
 let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
