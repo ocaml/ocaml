@@ -111,10 +111,9 @@ let scan_file obj_name tolink =
     (* This is a .cmx file. It must be linked in any case.
        Read the infos to see which modules it requires. *)
     let (info, crc) = Compilenv.read_unit_info file_name in
-    check_consistency file_name info crc;
     remove_required info.ui_name;
     List.iter (add_required file_name) info.ui_imports_cmx;
-    info :: tolink
+    (info, file_name, crc) :: tolink
   end
   else if Filename.check_suffix file_name ".cmxa" then begin
     (* This is an archive file. Each unit contained in it will be linked
@@ -133,12 +132,11 @@ let scan_file obj_name tolink =
         || !Clflags.link_everything
         || is_required info.ui_name
         then begin
-          check_consistency file_name info crc;
           remove_required info.ui_name;
           List.iter (add_required (Printf.sprintf "%s(%s)"
                                                   file_name info.ui_name))
                     info.ui_imports_cmx;
-          info :: reqd
+          (info, file_name, crc) :: reqd
         end else
           reqd)
     infos.lib_units tolink
@@ -153,28 +151,28 @@ module IntSet = Set.Make(
     let compare = compare
   end)
 
-let make_startup_file ppf filename info_list =
+let make_startup_file ppf filename units_list =
   let compile_phrase p = Asmgen.compile_phrase ppf p in
   let oc = open_out filename in
   Emitaux.output_channel := oc;
   Location.input_name := "startup"; (* set the name of the "current" input *)
   Compilenv.reset "startup"; (* set the name of the "current" compunit *)
   Emit.begin_assembly();
-  let name_list = List.map (fun ui -> ui.ui_name) info_list in
+  let name_list = List.map (fun (info,_,_) -> info.ui_name) units_list in
   compile_phrase (Cmmgen.entry_point name_list);
   let apply_functions = ref (IntSet.add 2 (IntSet.add 3 IntSet.empty)) in
   (* The callback functions always reference caml_apply[23] *)
   let curry_functions =
     ref IntSet.empty in
   List.iter
-    (fun info ->
+    (fun (info,_,_) ->
       List.iter
         (fun n -> apply_functions := IntSet.add n !apply_functions)
         info.ui_apply_fun;
       List.iter
         (fun n -> curry_functions := IntSet.add n !curry_functions)
         info.ui_curry_fun)
-    info_list;
+    units_list;
   IntSet.iter
     (fun n -> compile_phrase (Cmmgen.apply_function n))
     !apply_functions;
@@ -285,6 +283,9 @@ let link ppf objfiles =
     [] -> ()
   | mg -> raise(Error(Missing_implementations mg))
   end;
+  List.iter
+    (fun (info, file_name, crc) -> check_consistency file_name info crc)
+    units_tolink;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
   let startup = Filename.temp_file "camlstartup" ext_asm in
@@ -325,12 +326,12 @@ let report_error ppf = function
        print_modules l
   | Inconsistent_interface(intf, file1, file2) ->
       fprintf ppf
-       "@[<hv>Files %s@ and %s@ make inconsistent assumptions \
+       "@[<hov>Files %s@ and %s@ make inconsistent assumptions \
               over interface %s@]"
        file1 file2 intf
   | Inconsistent_implementation(intf, file1, file2) ->
       fprintf ppf
-       "@[<hv>Files %s@ and %s@ make inconsistent assumptions \
+       "@[<hov>Files %s@ and %s@ make inconsistent assumptions \
               over implementation %s@]"
        file1 file2 intf
   | Assembler_error file ->
