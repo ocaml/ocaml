@@ -162,7 +162,8 @@ let report_error = function
 rule token = parse
     [' ' '\010' '\013' '\009' '\012'] +
       { token lexbuf }
-  | ['a'-'z' '\223'-'\246' '\248'-'\255' ]
+  | "_"  { UNDERSCORE }
+  | ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
     (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
       '\'' '0'-'9' ]) *
       { let s = Lexing.lexeme lexbuf in
@@ -229,7 +230,6 @@ rule token = parse
   | "[|" { LBRACKETBAR }
   | "[<" { LBRACKETLESS }
   | "]"  { RBRACKET }
-  | "_"  { UNDERSCORE }
   | "{"  { LBRACE }
   | "{<" { LBRACELESS }
   | "|"  { BAR }
