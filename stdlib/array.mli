@@ -55,7 +55,11 @@ val init : int -> (int -> 'a) -> 'a array
 (** [Array.init n f] returns a fresh array of length [n],
    with element number [i] initialized to the result of [f i].
    In other terms, [Array.init n f] tabulates the results of [f]
-   applied to the integers [0] to [n-1]. *)
+   applied to the integers [0] to [n-1].
+
+   Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
+   If the return type of [f] is [float], then the maximum
+   size is only [Sys.max_array_length / 2].*)
 
 val make_matrix : int -> int -> 'a -> 'a array array
 (** [Array.make_matrix dimx dimy e] returns a two-dimensional array
@@ -65,7 +69,7 @@ val make_matrix : int -> int -> 'a -> 'a array array
    The element ([x,y]) of a matrix [m] is accessed
    with the notation [m.(x).(y)].
 
-   Raise [Invalid_argument] if [dimx] or [dimy] is less than 1 or
+   Raise [Invalid_argument] if [dimx] or [dimy] is negative or
    greater than [Sys.max_array_length].
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
