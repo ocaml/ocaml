@@ -40,10 +40,8 @@ let initial_env () =
 
 (* Optionally preprocess a source file *)
 
-let pproc = ref None
-
 let preprocess sourcefile tmpfile =
-  match !pproc with
+  match !Clflags.preprocessor with
     None -> sourcefile
   | Some pp ->
       let comm = pp ^ " " ^ sourcefile ^ " > " ^ tmpfile in
@@ -53,6 +51,11 @@ let preprocess sourcefile tmpfile =
         exit 2
       end;
       tmpfile
+
+let remove_preprocessed inputfile =
+  match !Clflags.preprocessor with
+    None -> ()
+  | Some _ -> remove_file inputfile
 
 (* Parse a file or get a dumped syntax tree in it *)
 
@@ -91,9 +94,7 @@ let interface sourcefile =
   let sg = Typemod.transl_signature (initial_env()) ast in
   if !Clflags.print_types then (Printtyp.signature sg; print_flush());
   Env.save_signature sg modulename (prefixname ^ ".cmi");
-  match !pproc with
-    None -> ()
-  | Some _ -> remove_file inputfile
+  remove_preprocessed inputfile
 
 (* Compile a .ml file *)
 
@@ -132,10 +133,7 @@ let implementation sourcefile =
             (Simplif.simplify_lambda
               (print_if Clflags.dump_rawlambda Printlambda.lambda
                 (Translmod.transl_implementation modulename str coercion))))));
-    begin match !pproc with
-      None -> ()
-    | Some _ -> remove_file inputfile
-    end;
+    remove_preprocessed inputfile;
     close_out oc
   with x ->
     close_out oc;

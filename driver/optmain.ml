@@ -50,12 +50,13 @@ let main () =
        "-o", Arg.String(fun s -> exec_name := s; archive_name := s);
        "-i", Arg.Set print_types;
        "-a", Arg.Set make_archive;
-       "-pp", Arg.String(fun s -> Optcompile.pproc := Some s);
+       "-pp", Arg.String(fun s -> preprocessor := Some s);
        "-unsafe", Arg.Set fast;
        "-compact", Arg.Clear optimize_for_speed;
        "-nopervasives", Arg.Set nopervasives;
        "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts);
        "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs);
+       "-linkall", Arg.Set link_everything;
        "-drawlambda", Arg.Set dump_rawlambda;
        "-dlambda", Arg.Set dump_lambda;
        "-dcmm", Arg.Set dump_cmm;
