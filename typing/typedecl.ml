@@ -85,14 +85,16 @@ let transl_declaration env (name, sdecl) (id, decl) =
     raise(Error(sdecl.ptype_loc, Repeated_parameter))
   end;
 
-  List.iter
-    (function (v, ty, loc) ->
+  let cstr_params =
+    List.map (function (v, _, loc) -> type_variable loc v) sdecl.ptype_cstrs
+  in
+  List.iter2
+    (fun (v, sty, loc) ty' ->
        try
-         Ctype.unify env
-           (type_variable loc v) (transl_simple_type env false ty)
+         Ctype.unify env (transl_simple_type env false sty) ty'
        with Ctype.Unify _ ->
          raise(Error(loc, Unconsistent_constraint)))
-    sdecl.ptype_cstrs;
+    sdecl.ptype_cstrs cstr_params;
 
   let decl' =
     { type_params = decl.type_params;
