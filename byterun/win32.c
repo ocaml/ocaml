@@ -199,19 +199,12 @@ int win32_system(char * cmdline)
 
 /* Set up a new thread for control-C emulation */
 
-#define hexa_digit(ch) (ch >= 97 ? ch - 87 : \
-                        (ch >= 65 ? ch - 55 : \
-                         (ch >= 48 ? ch - 48 : 0)))
-  
-DWORD WINAPI caml_signal_thread(LPVOID lpParam)
+void caml_signal_thread(void * lpParam)
 {
-  char *data;
-  int i;
+  char *endptr;
   HANDLE h;
   /* Get an hexa-code raw handle through the environment */
-  data = getenv("CAMLSIGPIPE");
-  for(i = 0; i < sizeof(HANDLE); i++)
-    ((char*)&h)[i] = (hexa_digit(data[2*i]) << 4) + hexa_digit(data[2*i+1]);
+  h = (HANDLE) strtol(getenv("CAMLSIGPIPE"), &endptr, 16);
   while (1) {
     DWORD numread;
     BOOL ret;

@@ -23,7 +23,7 @@
 #include <unistd.h>
 #endif
 #ifdef _WIN32
-#include <windows.h>
+#include <process.h>
 #endif
 #include "alloc.h"
 #include "backtrace.h"
@@ -302,7 +302,7 @@ static void parse_camlrunparam(void)
 extern void init_ieee_floats (void);
 
 #ifdef _WIN32
-extern DWORD WINAPI caml_signal_thread(LPVOID lpParam);
+extern void caml_signal_thread(void * lpParam);
 #endif
 
 /* Main entry point when loading code from a file */
@@ -372,10 +372,8 @@ void caml_main(char **argv)
   sys_init(argv + pos);
 #ifdef _WIN32
   /* Start a thread to handle signals */
-  if (getenv("CAMLSIGPIPE")) {
-    int lpThreadId;
-    CreateThread(NULL, 0, caml_signal_thread, NULL, 0, &lpThreadId);
-  }
+  if (getenv("CAMLSIGPIPE"))
+    _beginthread(caml_signal_thread, 0, NULL);
 #endif
   /* Execute the program */
   debugger(PROGRAM_START);
