@@ -565,13 +565,15 @@ CAMLexport void caml_serialize_block_1(void * data, long len)
 
 CAMLexport void caml_serialize_block_2(void * data, long len)
 {
-  unsigned char * p;
-  char * q;
   if (extern_ptr + 2 * len > extern_limit) resize_extern_block(2 * len);
 #ifndef ARCH_BIG_ENDIAN
-  for (p = data, q = extern_ptr; len > 0; len--, p += 2, q += 2)
-    Reverse_16(q, p);
-  extern_ptr = q;
+  {
+    unsigned char * p;
+    char * q;
+    for (p = data, q = extern_ptr; len > 0; len--, p += 2, q += 2)
+      Reverse_16(q, p);
+    extern_ptr = q;
+  }
 #else
   memmove(extern_ptr, data, len * 2);
   extern_ptr += len * 2;
@@ -580,13 +582,15 @@ CAMLexport void caml_serialize_block_2(void * data, long len)
 
 CAMLexport void caml_serialize_block_4(void * data, long len)
 {
-  unsigned char * p;
-  char * q;
   if (extern_ptr + 4 * len > extern_limit) resize_extern_block(4 * len);
 #ifndef ARCH_BIG_ENDIAN
-  for (p = data, q = extern_ptr; len > 0; len--, p += 4, q += 4)
-    Reverse_32(q, p);
-  extern_ptr = q;
+  {
+    unsigned char * p;
+    char * q;
+    for (p = data, q = extern_ptr; len > 0; len--, p += 4, q += 4)
+      Reverse_32(q, p);
+    extern_ptr = q;
+  }
 #else
   memmove(extern_ptr, data, len * 4);
   extern_ptr += len * 4;
@@ -595,13 +599,15 @@ CAMLexport void caml_serialize_block_4(void * data, long len)
 
 CAMLexport void caml_serialize_block_8(void * data, long len)
 {
-  unsigned char * p;
-  char * q;
   if (extern_ptr + 8 * len > extern_limit) resize_extern_block(8 * len);
 #ifndef ARCH_BIG_ENDIAN
-  for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
-    Reverse_64(q, p);
-  extern_ptr = q;
+  {
+    unsigned char * p;
+    char * q;
+    for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
+      Reverse_64(q, p);
+    extern_ptr = q;
+  }
 #else
   memmove(extern_ptr, data, len * 8);
   extern_ptr += len * 8;

@@ -39,7 +39,7 @@ verbose=no
 withcurses=yes
 withsharedlibs=yes
 binutils_dir=''
-gcc_warnings="-Wall -Wno-unused"
+gcc_warnings="-Wall"
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG

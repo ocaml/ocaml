@@ -83,7 +83,7 @@ CAMLprim value caml_string_notequal(value s1, value s2)
 
 CAMLprim value caml_string_compare(value s1, value s2)
 {
-  mlsize_t len1, len2, len;
+  mlsize_t len1, len2;
   int res;
 
   len1 = caml_string_length(s1);

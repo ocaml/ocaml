@@ -106,6 +106,7 @@ CAMLexport void caml_sys_error(value arg)
     }
     caml_raise_sys_error(str);
   }
+  CAMLnoreturn;
 }
 
 CAMLprim value caml_sys_exit(value retcode)

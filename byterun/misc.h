@@ -41,10 +41,10 @@ typedef char * addr;
 /* </private> */
 
 #ifdef __GNUC__
-/* Works only in GCC 2.5 and later */
-#define Noreturn __attribute ((noreturn))
+  /* Works only in GCC 2.5 and later */
+  #define Noreturn __attribute__ ((noreturn))
 #else
-#define Noreturn
+  #define Noreturn
 #endif
 
 /* Export control (to mark primitives and to handle Windows DLL) */
@@ -71,7 +71,7 @@ typedef char * addr;
 #define CAMLassert(x) ((x) ? 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
 CAMLextern int caml_failed_assert (char *, char *, int);
 #else
-#define CAMLassert(x) 0
+#define CAMLassert(x) ((void) 0)
 #endif
 
 CAMLextern void caml_fatal_error (char *msg) Noreturn;

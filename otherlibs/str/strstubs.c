@@ -401,7 +401,6 @@ CAMLprim value re_search_forward(value re, value str, value startpos)
   unsigned char * txt = &Byte_u(str, Long_val(startpos));
   unsigned char * endtxt = &Byte_u(str, string_length(str));
   unsigned char * startchars;
-  unsigned char c;
 
   if (txt < starttxt || txt > endtxt)
     invalid_argument("Str.search_forward");
@@ -431,7 +430,6 @@ CAMLprim value re_search_backward(value re, value str, value startpos)
   unsigned char * txt = &Byte_u(str, Long_val(startpos));
   unsigned char * endtxt = &Byte_u(str, string_length(str));
   unsigned char * startchars;
-  unsigned char c;
 
   if (txt < starttxt || txt > endtxt)
     invalid_argument("Str.search_backward");

@@ -102,7 +102,6 @@ FileReadGIF(interp, f, fileName, formatString)
     char newresbuf[640];
     char *imageName;
     char *resultptr;
-    int prevpos;
     int loop = -1;
 
     if((winPtr = Tk_MainWindow(interp)) == NULL){

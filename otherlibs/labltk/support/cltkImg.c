@@ -81,7 +81,6 @@ camltk_setimgdata_native (value imgname, value pixmap, value x, value y,
 {
   Tk_PhotoHandle ph;
   Tk_PhotoImageBlock pib;
-  int code;
 
 #if (TK_MAJOR_VERSION < 8)
   if (NULL == (ph = Tk_FindPhoto(String_val(imgname)))) 

@@ -417,7 +417,6 @@ asize_t caml_round_heap_chunk_size (asize_t request)
 void caml_init_major_heap (asize_t heap_size)
 {
   asize_t i;
-  void *block;
   asize_t page_table_size;
   page_table_entry *page_table_block;
 

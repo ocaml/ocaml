@@ -74,7 +74,6 @@ void caml_gr_init_direct_rgb_to_pixel(void)
   visual = DefaultVisual(caml_gr_display,caml_gr_screen);
   
   if ( visual->class == TrueColor || visual->class == DirectColor ){
-    int lsl, lsr;
 
     caml_gr_red_mask = visual->red_mask;
     caml_gr_green_mask = visual->green_mask;
@@ -150,7 +149,6 @@ unsigned long caml_gr_pixel_rgb(int rgb)
   unsigned int r, g, b;
   int h, i;
   XColor color;
-  unsigned short tmp;
 
   r = (rgb >> 16) & 0xFF;
   g = (rgb >> 8) & 0xFF;

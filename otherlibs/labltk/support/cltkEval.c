@@ -199,7 +199,6 @@ CAMLprim value camltk_tcl_direct_eval(value v)
      */
     if (info.proc == NULL) {
       Tcl_DString buf;
-      char *string;
       Tcl_DStringInit(&buf);
       Tcl_DStringAppend(&buf, argv[0], -1);
       for (i=1; i<size; i++) {
