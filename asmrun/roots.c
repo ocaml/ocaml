@@ -59,6 +59,8 @@ struct global_root {
   
 static struct global_root * global_roots = NULL;
 
+void (*scan_roots_hook) P((scanning_action)) = NULL;
+
 /* Register a global C root */
 
 void register_global_root(r)
@@ -156,7 +158,7 @@ void oldify_local_roots ()
   for (i = 0; caml_globals[i] != 0; i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++)
-      oldify(&Field(glob, j), Field(glob, j));
+      oldify(Field(glob, j), &Field(glob, j));
   }
 
   /* The stack */
@@ -179,7 +181,7 @@ void oldify_local_roots ()
       } else {
         root = &gc_entry_regs[-ofs-1];
       }
-      oldify(root, *root);
+      oldify(*root, root);
     }
     /* Move to next frame */
     sp += d->frame_size;
@@ -194,13 +196,15 @@ void oldify_local_roots ()
   /* Local C roots */
   for (block = local_roots; block != NULL; block = (value *) block [1]){
     for (root = block - (long) block [0]; root < block; root++){
-      oldify (root, *root);
+      oldify (*root, root);
     }
   }
   /* Global C roots */
   for (gr = global_roots; gr != NULL; gr = gr->next) {
-    oldify(gr->root, *(gr->root));
+    oldify(*(gr->root), gr->root);
   }
+  /* Hook */
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(oldify);
 }
 
 /* Call [darken] on all roots */
@@ -264,5 +268,7 @@ void darken_all_roots ()
   for (gr = global_roots; gr != NULL; gr = gr->next) {
     darken (*(gr->root));
   }
+  /* Hook */
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(darken);
 }
 
