@@ -171,11 +171,11 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
   | Tclass_constraint (cl, vals, pub_meths, concr_meths) ->
       build_object_init cl_table obj params inh_init obj_init cl
 
-let rec build_object_init_0 cl_table params cl copy_env subst_env i0 =
+let rec build_object_init_0 cl_table params cl copy_env subst_env top =
   match cl.cl_desc with
     Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, obj_init) =
-        build_object_init_0 cl_table (vals @ params) cl copy_env subst_env i0
+        build_object_init_0 cl_table (vals @ params) cl copy_env subst_env top
       in
       (inh_init, Translcore.transl_let rec_flag defs obj_init)
   | _ ->
@@ -185,8 +185,8 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env i0 =
       let obj_init = subst_lambda (subst_env env) obj_init in
       let obj_init = lfunction [obj] obj_init in
       let obj_init =
-	if i0 < 0 then obj_init else
-	let i = ref (i0-1) in
+	if top then obj_init else
+	let i = ref 0 in
 	List.fold_left
 	  (fun init (obj_init, env_init, _) ->
 	    incr i;
@@ -320,46 +320,48 @@ let transl_class ids cl_id arity pub_meths cl =
   let tables = Ident.create (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
   let new_ids = Env.diff top_env cl.cl_env in
+  let new_ids =
+    List.filter
+      (fun id ->
+        let s = Ident.name id in
+        String.length s < 8 || String.sub s 0 8 <> "selfpat-")
+      new_ids in
   let top = (new_ids = []) && not req in
-  let replicate id = Ident.create (Ident.name id) in
-  let new_ids2 = List.map replicate new_ids in
-  let subst self =
-    List.fold_left2
-      (fun subst id id2 ->
-        Ident.add id (Lprim(Parrayrefu Paddrarray, [Lvar self; Lvar id2]))
-          subst)
-      Ident.empty new_ids new_ids2
+  let env2 = Ident.create "env" in
+  let subst env =
+    match new_ids with
+      [id] -> Ident.add id env Ident.empty
+    | _ ->
+        let i = ref (-1) in
+        List.fold_left
+          (fun subst id ->
+            incr i; Ident.add id (Lprim (Pfield !i, [env]))  subst)
+          Ident.empty new_ids
   in
   let msubst =
     if new_ids = [] then fun x -> x else
     function
         Lfunction (Curried, self :: args, body) ->
-          Lfunction (Curried, self :: args, subst_lambda (subst self) body)
+          let env = Ident.create "env" in
+          Lfunction (
+          Curried, self :: args,
+          Llet(Alias, env,
+               Lprim(Parrayrefu Paddrarray, [Lvar self; Lvar env2]),
+               subst_lambda (subst (Lvar env)) body))
       | _ -> assert false
   in
-  let copy_env env self =
-    let i = ref (-1) in
-    List.fold_left
-      (fun lam id2 ->
-        incr i;
-        lsequence
-          (Lifused(id2, Lprim(
-                   Parraysetu Paddrarray,
-                   [Lvar self; Lvar id2; Lprim(Pfield !i, [Lvar env])])))
-          lam)
-      lambda_unit new_ids2
-  and subst_env env =
-    let i = ref (-1) in
-    List.fold_left
-      (fun subst id ->
-        incr i; Ident.add id (Lprim(Pfield !i, [Lvar env])) subst)
-      Ident.empty new_ids
+  let copy_env envs self =
+    if top then lambda_unit else
+    Lifused(env2, Lprim(
+            Parraysetu Paddrarray,
+            [Lvar self; Lvar env2; Lprim(Pfield 0, [Lvar envs])]))
+  and subst_env envs =
+    subst (Lprim(Pfield 0, [Lvar envs]))
   in
 
   let cla = Ident.create "class" in
-  let i0 = if top then -1 else List.length new_ids in
   let (inh_init, obj_init) =
-    build_object_init_0 cla [] cl copy_env subst_env i0 in
+    build_object_init_0 cla [] cl copy_env subst_env top in
   if not (Translcore.check_recursive_lambda ids obj_init) then
     raise(Error(cl.cl_loc, Illegal_class_expr));
   let (inh_init', cl_init) =
@@ -386,25 +388,25 @@ let transl_class ids cl_id arity pub_meths cl =
   in
   if top then ltable (lclass lbody) else
   let env_index = Ident.create "env_index"
-  and env = Ident.create "env" in
-  let make_env lam =
-    Llet(Strict, env,
+  and envs = Ident.create "envs" in
+  let lenv =
+    match new_ids with
+      [] -> lambda_unit
+    | [id] -> Lvar id
+    | _ -> Lprim(Pmakeblock(0,Immutable), List.map (fun id -> Lvar id) new_ids)
+  in
+  let make_envs lam =
+    Llet(Strict, envs,
          Lprim(Pmakeblock(0, Immutable),
-               List.map (fun id -> Lvar id) new_ids @
-	       List.map (fun (_, _, lpath) -> lpath) inh_init),
+               lenv :: List.map (fun (_, _, lpath) -> lpath) inh_init),
          lam)
   and def_ids cla lam =
-    let i = ref (-1) in
-    List.fold_left
-      (fun lam id2 ->
-        Llet(StrictOpt, id2,
-             Lapply (oo_prim "new_variable", [Lvar cla; transl_label ""]),
-             lam))
-   lam new_ids2
+    Llet(StrictOpt, env2,
+         Lapply (oo_prim "new_variable", [Lvar cla; transl_label "env"]),
+         lam)
   in
   let obj_init2 = Ident.create "obj_init"
   and env_init = Ident.create "env_init"
-  and env2 = Ident.create "env"
   and cached = Ident.create "cached" in
   let inh_keys =
     List.map (fun (_,_,lpath) -> Lprim(Pfield 2, [lpath])) inh_init in
@@ -433,12 +435,12 @@ let transl_class ids cl_id arity pub_meths cl =
                     Lprim(Psetfield(1, true), [Lvar cached; Lvar class_init]),
                     Lprim(Psetfield(2, true), [Lvar cached; Lvar table])
                    ))))))),
-  make_env (
+  make_envs (
   Lprim(Pmakeblock(0, Immutable),
-        [Lapply(Lprim(Pfield 0, [Lvar cached]), [Lvar env]);
+        [Lapply(Lprim(Pfield 0, [Lvar cached]), [Lvar envs]);
          Lprim(Pfield 1, [Lvar cached]);
          Lprim(Pfield 2, [Lvar cached]);
-         Lvar env]))))
+         Lvar envs]))))
 
 (* example:
 module M(X : sig val x : int end) = struct
