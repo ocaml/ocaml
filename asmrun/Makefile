@@ -72,10 +72,13 @@ md5.c: ../byterun/md5.c
 obj.c: ../byterun/obj.c
 	ln -s ../byterun/obj.c obj.c
 
-.SUFFIXES: .asm .d.o
+.SUFFIXES: .asm .S .d.o
 
 .asm.o:
 	$(AS) $(ASFLAGS) -o $*.o $*.asm
+
+.S.o:
+	$(CC) -c $(ASFLAGS) $*.S
 
 .c.d.o:
 	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi

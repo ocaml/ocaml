@@ -42,15 +42,25 @@ let slot_offset loc class =
       else !stack_offset + num_stack_slots.(0) * 4 + n * 8
   | Outgoing n -> n
 
-(* Symbols are prefixed with _ *)
+(* Symbols are prefixed with _, except under Linux with ELF binaries *)
+
+let symbol_prefix =
+  match Config.system with
+    "linux_elf" -> ""
+  | _ -> "_"
 
 let emit_symbol s =
-  emit_string "_"; Emitaux.emit_symbol s
+  emit_string symbol_prefix; Emitaux.emit_symbol s
 
 (* Output a label *)
 
+let label_prefix =
+  match Config.system with
+    "linux_elf" -> ".L"
+  | _ -> "L"
+
 let emit_label lbl =
-  emit_string "L"; emit_int lbl
+  emit_string label_prefix; emit_int lbl
 
 (* Output a pseudo-register *)
 
@@ -592,8 +602,6 @@ let emit_item = function
       `	.long	{emit_int n}\n`
   | Cintlit n ->
       `	.long	{emit_string n}\n`
-  | Cintlit s ->
-      `	.long	{emit_string s}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
