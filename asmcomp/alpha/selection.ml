@@ -63,7 +63,8 @@ method select_operation op args =
   | (Csubi, [Cop(Cmuli, [Cconst_int(4|8 as mult); arg1]); arg2]) ->
       (Ispecific(if mult = 4 then Isub4 else Isub8), [arg1; arg2])
     (* Work around various limitations of the GNU assembler *)
-  | ((Caddi|Cadda), [arg1; Cconst_int n]) when self#is_immediate (-n) ->
+  | ((Caddi|Cadda), [arg1; Cconst_int n])
+    when not (self#is_immediate n) && self#is_immediate (-n) ->
       (Iintop_imm(Isub, -n), [arg1])
   | (Cdivi, [arg1; Cconst_int n])
     when (not digital_asm) && n <> 1 lsl (Misc.log2 n) ->
