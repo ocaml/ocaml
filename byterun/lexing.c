@@ -26,7 +26,6 @@ struct lexer_buffer {
   value lex_start_pos;
   value lex_curr_pos;
   value lex_last_pos;
-  value lex_saved_state;
   value lex_last_action;
 };
 
@@ -52,14 +51,15 @@ value lex_engine(tbl, start_state, lexbuf)     /* ML */
      struct lexer_buffer * lexbuf;
 {
   int state, base, backtrk, c;
-  
-  if (Int_val(lexbuf->lex_saved_state) >= 0) {
-    state = Int_val(lexbuf->lex_saved_state);
-    lexbuf->lex_saved_state = Val_int(-1);
-  } else {
-    state = Int_val(start_state);
+
+  state = Int_val(start_state);
+  if (state >= 0) {
+    /* First entry */
     lexbuf->lex_last_pos = lexbuf->lex_start_pos = lexbuf->lex_curr_pos;
     lexbuf->lex_last_action = Val_int(-1);
+  } else {
+    /* Reentry after refill */
+    state = -state - 1;
   }
   while(1) {
     /* Lookup base address or action number for current state */
@@ -72,10 +72,8 @@ value lex_engine(tbl, start_state, lexbuf)     /* ML */
       lexbuf->lex_last_action = Val_int(backtrk);
     }
     /* See if we need a refill */
-    if (lexbuf->lex_curr_pos >= lexbuf->lex_buffer_len) {
-      lexbuf->lex_saved_state = Val_int(state);
-      return (-1);
-    }
+    if (lexbuf->lex_curr_pos >= lexbuf->lex_buffer_len)
+      return Val_int(-state - 1);
     /* Read next input char */
     c = Byte_u(lexbuf->lex_buffer, Long_val(lexbuf->lex_curr_pos));
     lexbuf->lex_curr_pos += 2;
