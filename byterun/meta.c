@@ -22,6 +22,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "prims.h"
+#include "stacks.h"
 
 value get_global_data(unit)     /* ML */
      value unit;
@@ -62,4 +63,9 @@ value realloc_global(size)      /* ML */
 value available_primitives()    /* ML */
 {
   return copy_string_array(names_of_cprim);
+}
+
+value get_current_environment() /* ML */
+{
+  return *extern_sp;
 }
