@@ -663,14 +663,12 @@ and modtype_declaration id decl =
   end;
   close_box()
 
-(* Print a signature body (used when compiling a .mli and printing results
-   in interactive use). *)
+(* Print a signature body (used by -i when compiling a .ml) *)
 
 let signature sg =
   open_vbox 0;
   signature_body false sg;
-  close_box();
-  print_newline()
+  close_box()
 
 (* Print an unification error *)
 

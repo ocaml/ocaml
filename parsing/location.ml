@@ -115,13 +115,10 @@ let print loc =
 
 let print_warning loc w =
  if Warnings.is_active w then begin
-  let (f1, f2) = Format.get_formatter_output_functions() in
-  if not !Sys.interactive then Format.set_formatter_out_channel stderr;
   print loc;
   print_string warn_head;
   print_string "Warning: "; print_string (Warnings.message w); print_newline();
-  incr num_loc_lines;
-  Format.set_formatter_output_functions f1 f2
+  incr num_loc_lines
  end
 ;;
 

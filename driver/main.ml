@@ -87,6 +87,7 @@ module Options = Main_args.Make_options (struct
 end)
 
 let main () =
+  Format.set_formatter_out_channel stderr;
   try
     Arg.parse Options.list process_file usage;
     if !make_archive then begin
@@ -99,7 +100,6 @@ let main () =
     end;
     exit 0
   with x ->
-    Format.set_formatter_out_channel stderr;
     Errors.report_error x;
     exit 2
 

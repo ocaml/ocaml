@@ -429,7 +429,12 @@ let _ =
 
 let type_implementation sourcefile prefixname modulename initial_env ast =
   let (str, sg, finalenv) = type_structure initial_env ast in
-  if !Clflags.print_types then (Printtyp.signature sg; print_newline());
+  if !Clflags.print_types then begin
+    let (f1, f2) = Format.get_formatter_output_functions() in
+    Format.set_formatter_out_channel stdout;
+    Printtyp.signature sg; Format.print_newline();
+    Format.set_formatter_output_functions f1 f2
+  end;
   let coercion =
     if Sys.file_exists (prefixname ^ !Config.interface_suffix) then begin
       let intf_file =

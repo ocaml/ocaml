@@ -52,9 +52,10 @@ let print_version_number () =
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
 let main () =
+  native_code := true;
   c_compiler := Config.native_c_compiler;
+  Format.set_formatter_out_channel stderr;
   try
-    native_code := true;
     Arg.parse [
        "-a", Arg.Set make_archive, " Build a library";
        "-c", Arg.Set compile_only, " Compile only (do not link)";
@@ -142,7 +143,6 @@ let main () =
     end;
     exit 0
   with x ->
-    Format.set_formatter_out_channel stderr;
     Opterrors.report_error x;
     exit 2
 
