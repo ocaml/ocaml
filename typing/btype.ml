@@ -103,8 +103,8 @@ let rec iter_row f row =
   List.iter
     (fun (_, fi) ->
       match row_field_repr fi with
-      |	Rpresent(Some ty) -> f ty
-      |	Reither(_, tl, _) -> List.iter f tl
+      | Rpresent(Some ty) -> f ty
+      | Reither(_, tl, _) -> List.iter f tl
       | _ -> ())
     row.row_fields;
   match (repr row.row_more).desc with
@@ -116,18 +116,18 @@ let rec iter_row f row =
 
 let iter_type_expr f ty =
   match ty.desc with
-    Tvar               	-> ()
+    Tvar                -> ()
   | Tarrow (_, ty1, ty2)-> f ty1; f ty2
   | Ttuple l            -> List.iter f l
   | Tconstr (_, l, _)   -> List.iter f l
   | Tobject(ty, {contents = Some (_, p)})
                         -> f ty; List.iter f p
   | Tobject (ty, _)     -> f ty
-  | Tvariant row	-> iter_row f row; f (row_more row)
+  | Tvariant row        -> iter_row f row; f (row_more row)
   | Tfield (_, _, ty1, ty2) -> f ty1; f ty2
   | Tnil                -> ()
   | Tlink ty            -> f ty
-  | Tsubst ty		-> assert false; f ty
+  | Tsubst ty           -> assert false; f ty
 
 let saved_desc = ref []
   (* Saved association of generic nodes with their description. *)

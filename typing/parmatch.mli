@@ -16,5 +16,5 @@
 open Typedtree
 
 val check_partial:
-	Env.t -> Location.t -> (pattern * expression) list -> partial
+        Env.t -> Location.t -> (pattern * expression) list -> partial
 val check_unused: Env.t -> (pattern * expression) list -> unit

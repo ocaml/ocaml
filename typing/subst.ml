@@ -101,41 +101,41 @@ let rec typexp s ty =
                         None -> None
                       | Some (p, tl) ->
                           Some (type_path s p, List.map (typexp s) tl)))
-      |	Tvariant row ->
-	  let row = row_repr row in
-	  let more = repr row.row_more in
-	  (* We must substitute in a subtle way *)
-	  begin match more.desc with
-	    Tsubst ty2 ->
-	      (* This variant type has been already copied *)
-	      ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
-	      Tlink ty2
-	  | _ ->
-	      (* We create a new copy *)
-	      let bound = ref [] in
-	      let fields =
-		List.map
-		  (fun (l,fi) -> l,
-		    match row_field_repr fi with
-		      Rpresent (Some ty) -> Rpresent(Some (typexp s ty))
-		    | Reither(c, l, _) ->
-			let l = List.map (typexp s) l in
-			bound := l @ !bound;
-			Reither(c, l, ref None)
-		    | fi -> fi)
-		  row.row_fields
-	      and name =
-		may_map (fun (p,l) -> p, List.map (typexp s) l) row.row_name in
-	      let var =
-		Tvariant { row_fields = fields; row_more = newgenvar();
-			   row_bound = !bound;
-			   row_closed = row.row_closed; row_name = name }
-	      in
-	      (* Remember it for other occurences *)
-	      save_desc more more.desc;
-	      more.desc <- ty.desc;
-	      var
-	  end
+      | Tvariant row ->
+          let row = row_repr row in
+          let more = repr row.row_more in
+          (* We must substitute in a subtle way *)
+          begin match more.desc with
+            Tsubst ty2 ->
+              (* This variant type has been already copied *)
+              ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
+              Tlink ty2
+          | _ ->
+              (* We create a new copy *)
+              let bound = ref [] in
+              let fields =
+                List.map
+                  (fun (l,fi) -> l,
+                    match row_field_repr fi with
+                      Rpresent (Some ty) -> Rpresent(Some (typexp s ty))
+                    | Reither(c, l, _) ->
+                        let l = List.map (typexp s) l in
+                        bound := l @ !bound;
+                        Reither(c, l, ref None)
+                    | fi -> fi)
+                  row.row_fields
+              and name =
+                may_map (fun (p,l) -> p, List.map (typexp s) l) row.row_name in
+              let var =
+                Tvariant { row_fields = fields; row_more = newgenvar();
+                           row_bound = !bound;
+                           row_closed = row.row_closed; row_name = name }
+              in
+              (* Remember it for other occurences *)
+              save_desc more more.desc;
+              more.desc <- ty.desc;
+              var
+          end
       | Tfield(label, kind, t1, t2) ->
           begin match field_kind_repr kind with
             Fpresent ->
@@ -147,8 +147,8 @@ let rec typexp s ty =
           end
       | Tnil ->
           Tnil
-      |	Tsubst _ ->
-	  assert false
+      | Tsubst _ ->
+          assert false
       end;
     ty'
 

@@ -31,7 +31,7 @@ and type_desc =
   | Tfield of string * field_kind * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
-  | Tsubst of type_expr		(* for copying *)
+  | Tsubst of type_expr         (* for copying *)
   | Tvariant of row_desc
 
 and row_desc =
@@ -44,7 +44,7 @@ and row_desc =
 and row_field =
     Rpresent of type_expr option
   | Reither of bool * type_expr list * row_field option ref
-	(* true denotes a constant constructor *)
+        (* true denotes a constant constructor *)
   | Rabsent
 
 and abbrev_memo =

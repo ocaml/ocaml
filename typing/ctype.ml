@@ -1357,7 +1357,12 @@ let _ = unify' := unify
 
 (**** Special cases of unification ****)
 
-(* Unify [t] and [l:'a -> 'b]. Return ['a] and ['b]. *)
+(*
+   Unify [t] and [l:'a -> 'b]. Return ['a] and ['b].
+   In modern mode, label mismatch is accepted when
+   (1) the requested label is ""
+   (2) the original label is not optional
+*)
 let rec filter_arrow env t l =
   let t = expand_head env t in
   match t.desc with

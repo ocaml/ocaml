@@ -111,8 +111,8 @@ let read_pers_struct modname filename =
     let crcs = input_value ic in
     close_in ic;
     let comps = lazy
-	(!components_of_module' empty Subst.identity
-	   (Pident(Ident.create_persistent name)) (Tmty_signature sign)) in
+        (!components_of_module' empty Subst.identity
+           (Pident(Ident.create_persistent name)) (Tmty_signature sign)) in
     let ps = { ps_name = name;
                ps_sig = sign;
                ps_comps = comps;
