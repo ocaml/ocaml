@@ -381,6 +381,11 @@ let transl_constant = function
           lbl
       in Cconst_symbol lbl
 
+(* Translate constant closures *)
+
+let constant_closures =
+  ref ([] : (string * (string * int * Ident.t list * ulambda) list) list)
+
 (* Translate an expression *)
 
 let functions = (Queue.create() : (string * Ident.t list * ulambda) Queue.t)
@@ -390,6 +395,14 @@ let rec transl = function
       Cvar id
   | Uconst sc ->
       transl_constant sc
+  | Uclosure(fundecls, []) ->
+      let lbl = new_const_symbol() in
+      constant_closures := (lbl, fundecls) :: !constant_closures;
+      List.iter
+        (fun (label, arity, params, body) ->
+            Queue.add (label, params, body) functions)
+        fundecls;
+      Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
       let block_size =
         fundecls_size fundecls + List.length clos_vars in
@@ -952,6 +965,38 @@ and emit_string_constant s cont =
   let n = size_int - 1 - (String.length s) mod size_int in
   Cstring s :: Cskip n :: Cint8 n :: cont
 
+(* Emit constant closures *)
+
+let emit_constant_closure symb fundecls cont =
+  match fundecls with
+    [] -> assert false
+  | (label, arity, params, body) :: remainder ->
+      let rec emit_others pos = function
+        [] -> cont
+      | (label, arity, params, body) :: rem ->
+          if arity = 1 then
+            Cint(infix_header pos) ::
+            Csymbol_address label ::
+            Cint(Nativeint.from 3) ::
+            emit_others (pos + 3) rem
+          else
+            Cint(infix_header pos) ::
+            Csymbol_address(curry_function arity) ::
+            Cint(Nativeint.from (arity lsl 1 + 1)) ::
+            Csymbol_address label ::
+            emit_others (pos + 4) rem in
+      Cint(closure_header (fundecls_size fundecls)) ::
+      Cdefine_symbol symb ::
+      if arity = 1 then
+        Csymbol_address label ::
+        Cint(Nativeint.from 3) ::
+        emit_others 3 remainder
+      else
+        Csymbol_address(curry_function arity) ::
+        Cint(Nativeint.from (arity lsl 1 + 1)) ::
+        Csymbol_address label ::
+        emit_others 4 remainder
+
 (* Emit all structured constants *)
 
 let emit_all_constants cont =
@@ -960,6 +1005,11 @@ let emit_all_constants cont =
     (fun cst lbl -> c := Cdata(emit_constant lbl cst []) :: !c)
     structured_constants;
   Hashtbl.clear structured_constants;
+  List.iter
+    (fun (symb, fundecls) ->
+        c := Cdata(emit_constant_closure symb fundecls []) :: !c)
+    !constant_closures;
+  constant_closures := [];
   !c
 
 (* Translate a compilation unit *)
