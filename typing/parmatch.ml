@@ -34,6 +34,8 @@ let rec omegas i =
 
 let omega_list l = List.map (fun _ -> omega) l
 
+let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
+
 (***********************)
 (* Compatibility check *)
 (***********************)
@@ -531,6 +533,25 @@ let filter_all pat0 pss =
       pss)
     pss
 
+(* Variant related functions *)
+
+let rec set_last a = function
+    [] -> []
+  | [_] -> [a]
+  | x::l -> x :: set_last a l
+
+(* mark constructor lines for failure when they are incomplete *)
+let rec mark_partial = function
+    ({pat_desc = Tpat_alias(p,_)}::ps)::pss -> 
+      mark_partial ((p::ps)::pss)
+  | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
+      mark_partial ((p1::ps)::(p2::ps)::pss)
+  | ({pat_desc = (Tpat_any | Tpat_var(_))} :: _ as ps) :: pss ->
+      ps :: mark_partial pss
+  | ps::pss  ->
+      (set_last zero ps) :: mark_partial pss
+  | [] -> []
+
 let close_variant env row =
   let row = Btype.row_repr row in
   let nm =
@@ -987,10 +1008,18 @@ let rec pressure_variants tdefs = function
       begin match filter_all q0 pss with
         [] -> pressure_variants tdefs (filter_extra pss)
       | constrs ->   
-          let try_non_omega (p,pss) = pressure_variants tdefs pss in
-          let sub = List.map try_non_omega constrs in
-          let ok = List.for_all (fun x -> x) sub in
-          if full_match None false constrs then ok else
+          let rec try_non_omega = function
+              (p,pss) :: rem ->
+                let ok = pressure_variants tdefs pss in
+                try_non_omega rem && ok
+            | [] -> true
+          in
+          if full_match None false constrs then try_non_omega constrs else
+          let ok =
+            if tdefs = None || full_match None true constrs then
+              try_non_omega constrs
+            else try_non_omega (filter_all q0 (mark_partial pss))
+          in
           begin
             if tdefs <> None && full_match None true constrs then
               ok && pressure_variants None (filter_extra pss)
@@ -1529,9 +1558,14 @@ and look_variants = function
   | [] -> false
   | q::rem -> look_variant q || look_variants rem
 
+let pressure_variants tdefs casel =
+  if List.exists (fun (p,_) -> look_variant p) casel then begin
+    let pss = List.map (fun (p,e) -> [p;omega]) casel in
+    ignore (pressure_variants (Some tdefs) pss)
+  end
 
 let check_partial tdefs loc casel =
-  ignore (pressure_variants (Some tdefs) (List.map (fun (p,e) -> [p]) casel));
+  pressure_variants tdefs casel;
   let variant_inside = false
       (* List.exists (fun (p,_) -> look_variant p) casel *) in
   let pss = initial_matrix casel in
