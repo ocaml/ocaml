@@ -48,6 +48,8 @@ let rec print_approx = function
       close_box()
   | Value_unknown ->
       print_string "_"
+  | Value_integer n ->
+      print_int n
 
 let print_name_crc (name, crc) =
   print_space(); print_string name;
@@ -56,7 +58,6 @@ let print_name_crc (name, crc) =
 let print_infos (ui, crc) =
   print_string "Name: "; print_string ui.ui_name; print_newline();
   print_string "CRC of implementation: "; print_digest crc; print_newline();
-  print_string "CRC of interface: "; print_digest ui.ui_interface; print_newline();
   open_vbox 2;
   print_string "Interfaces imported:";
   List.iter print_name_crc ui.ui_imports_cmi;
