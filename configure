@@ -285,6 +285,8 @@ system=unknown
 case "$host" in
   alpha-*-osf*)                 arch=alpha; system=digital;;
   alpha-*-linux*)               arch=alpha; system=linux;;
+  alpha-*-netbsd*)              arch=alpha; system=netbsd;;
+  alpha-*-openbsd*)             arch=alpha; system=openbsd;;
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
   sparc-*-solaris2.*)           arch=sparc; system=solaris;;
   sparc-*-*bsd*)                arch=sparc; system=bsd;;
@@ -334,6 +336,8 @@ case "$arch,$model,$system" in
   alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
                     asppprofflags='-pg -DPROFILING';;
   alpha,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  alpha,*,netbsd)   aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  alpha,*,openbsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   mips,*,irix)      asflags='-n32 -O2'; asppflags="$asflags";;
   sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
@@ -615,6 +619,11 @@ fi
 if sh ./hasgot putenv; then
   echo "putenv() found."
   echo "#define HAS_PUTENV" >> s.h
+fi
+
+if sh ./hasgot -i locale.h && sh ./hasgot setlocale; then
+  echo "setlocale() and <locale.h> found."
+  echo "#define HAS_LOCALE" >> s.h
 fi
 
 # Determine if the debugger is supported
