@@ -495,25 +495,25 @@ let build_other env =  match env with
   Moreover, when argument buid is true, a matching value is returned.
 *)
 
-type 'a result = None | Some of 'a | Ok
+type 'a result = Rnone | Rsome of 'a | Rok
 
 let rec try_many f = function
-  | [] -> None
+  | [] -> Rnone
   | x::rest ->
       begin match f x with
-      | None -> try_many f rest
+      | Rnone -> try_many f rest
       | r -> r
       end
   
 let rec satisfiable build pss qs =
   match pss with
-    [] -> if build then Some qs else Ok (* qs is a matching vector *)
+    [] -> if build then Rsome qs else Rok (* qs is a matching vector *)
   | _ ->
     match qs with
-      [] -> None
+      [] -> Rnone
     | {pat_desc = Tpat_or(q1,q2)}::qs ->
         begin match satisfiable build pss (q1::qs) with
-        | None -> satisfiable build pss (q2::qs)
+        | Rnone -> satisfiable build pss (q2::qs)
         | r -> r
         end
     | {pat_desc = Tpat_alias(q,_)}::qs ->
@@ -523,28 +523,28 @@ let rec satisfiable build pss qs =
         begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
           [] -> begin match satisfiable build (filter_extra pss) qs with
-          | Some r -> Some (q0::r)
+          | Rsome r -> Rsome (q0::r)
           | r -> r
           end
         | constrs ->          
             let try_non_omega (p,pss) =
               match satisfiable build pss (simple_match_args p omega @ qs) with
-              | Some r -> Some (set_args p r)
+              | Rsome r -> Rsome (set_args p r)
               | r -> r in
             if full_match constrs
             then try_many try_non_omega constrs
             else
               match satisfiable build (filter_extra pss) qs with
-              | None -> try_many try_non_omega constrs
-              | Ok -> Ok
-              | Some r ->  Some (build_other constrs::r)
+              | Rnone -> try_many try_non_omega constrs
+              | Rok -> Rok
+              | Rsome r ->  Rsome (build_other constrs::r)
         end
     | q::qs ->
         let q0 = discr_pat q pss in
         match
           satisfiable build (filter_one q0 pss) (simple_match_args q0 q @ qs)
         with
-        | Some r -> Some (set_args q0 r)
+        | Rsome r -> Rsome (set_args q0 r)
         | r -> r
 
 
@@ -709,15 +709,15 @@ let check_partial loc casel =
   let pss = get_mins (initial_matrix casel) in
   let r = match pss with
   | []     -> begin match casel with
-    | [] -> None
-    | (p,_) :: _ -> Some [p]
+    | [] -> Rnone
+    | (p,_) :: _ -> Rsome [p]
   end
   | ps::_  -> satisfiable true pss (omega_list ps) in
   match r with
-  | None -> ()
-  | Ok ->
+  | Rnone -> ()
+  | Rok ->
       Location.print_warning loc (Warnings.Partial_match "")
-  | Some [v] ->
+  | Rsome [v] ->
       let errmsg =
         try
           let buf = Buffer.create 16 in
@@ -748,8 +748,8 @@ let check_unused casel =
       try
       if
         (match satisfiable false pss qs with
-        | None -> true
-        | Ok -> false
+        | Rnone -> true
+        | Rok -> false
         | _ -> assert false)
       then
         Location.print_warning (location_of_clause qs) Warnings.Unused_match
