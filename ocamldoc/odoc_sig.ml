@@ -891,9 +891,11 @@ module Analyser =
               | Parsetree.Pmty_with (mt, _) ->
                   f mt.Parsetree.pmty_desc
             in
+	    let name = (f module_type.Parsetree.pmty_desc) in
+	    let full_name = Odoc_env.full_module_or_module_type_name env name in
             let im = 
               {
-                im_name = Odoc_env.full_module_or_module_type_name env (f module_type.Parsetree.pmty_desc) ;
+                im_name = full_name ;
                 im_module = None ;
 		im_info = comment_opt;
               } 

@@ -64,10 +64,12 @@ let simpl_module_type t =
   iter t
 
 let string_of_module_type ?(complete=false) t =
+  let buf = Buffer.create 256 in
+  let fmt = Format.formatter_of_buffer buf in
   let t2 = if complete then t else simpl_module_type t in
-  Printtyp.modtype Format.str_formatter t2;
-  let s = Format.flush_str_formatter () in
-  s
+  Printtyp.modtype fmt t2;
+  Format.pp_print_flush fmt () ;
+  Buffer.contents buf
 
 
 (** Return the given class type where methods and vals have been removed

@@ -894,8 +894,8 @@ class html =
       let s = String.concat "\n"
           (Str.split (Str.regexp "\n") (Odoc_info.string_of_module_type t))
       in
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
-      "<code class=\"type\">"^(self#create_fully_qualified_module_idents_links m_name s2)^"</code>"
+      "<code class=\"type\">"^
+      (self#create_fully_qualified_module_idents_links m_name s)^"</code>"
         
     (** Generate a file containing the module type in the given file name. *)
     method output_module_type in_title file mtyp =
@@ -1277,7 +1277,7 @@ class html =
                  let (html_file, _) = Naming.html_files mt.mt_name in
                  (html_file, mt.mt_name)
            in
-           "<a href=\""^file^"\">"^(Name.simple name)^"</a>"
+           "<a href=\""^file^"\">"^name^"</a>"
       )^
       "</pre>\n"^
       (self#html_of_info im.im_info)

@@ -46,6 +46,9 @@ INSTALL_MANODIR=$(MANDIR)/man3
 INSTALL_MLIS=odoc_info.mli 
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
 
+ODOC_TEST=odoc_test.cmo
+
+
 # Compilation
 #############
 OCAMLSRCDIR=..
@@ -186,7 +189,7 @@ STDLIB_MLIS=../stdlib/*.mli \
 
 all: exe lib manpages
 exe: $(OCAMLDOC)
-lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) 
+lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 
 opt.opt: exeopt libopt
 exeopt: $(OCAMLDOC_OPT)
