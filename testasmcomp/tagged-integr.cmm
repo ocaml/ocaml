@@ -1,0 +1,31 @@
+("res_square": skip 8)
+("h": skip 8)
+("x": skip 8)
+("s": skip 8)
+("res_integr": skip 8)
+
+(function "square" (x: addr)
+   (let r "res_square"
+        (store r ( *f (load x float) (load x float)))
+        r))
+
+(function "integr" (f: addr low: addr high: addr n: int)
+  (let (h "h" x "x" s "s" i n)
+    (store h (/f (-f (load high float) (load low float)) (floatofint n)))
+    (store x (load low float))
+    (store s 0.0)
+    (while (> i 0)
+      (store s (+f (load s float) (load (app f x addr) float)))
+      (store x (+f (load x float) (load h float)))
+      (assign i (- i 1)))
+    (store "res_integr" ( *f (load s float) (load h float)))
+    "res_integr"))
+
+("low": skip 8)
+("hi": skip 8)
+
+(function "test" (n: int)
+  (store "low" 0.0)
+  (store "hi" 1.0)
+  (load (app "integr" ["square" "low" "hi" n] addr) float))
+
