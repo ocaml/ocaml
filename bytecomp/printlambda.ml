@@ -51,8 +51,8 @@ let boxed_integer_name = function
 let print_boxed_integer name ppf bi =
   fprintf ppf "%s_%s" (boxed_integer_name bi) name
 
-let print_boxed_integer_conversion bi1 bi2 =
-  printf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
+let print_boxed_integer_conversion ppf bi1 bi2 =
+  fprintf ppf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
 
 let boxed_integer_mark name = function
   | Pnativeint -> Printf.sprintf "Nativeint.%s" name
@@ -149,6 +149,7 @@ let primitive ppf = function
   | Pbittest -> fprintf ppf "testbit"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
+  | Pcvtbint (bi1, bi2) -> print_boxed_integer_conversion ppf bi1 bi2
   | Pnegbint bi -> print_boxed_integer "neg" ppf bi
   | Paddbint bi -> print_boxed_integer "add" ppf bi
   | Psubbint bi -> print_boxed_integer "sub" ppf bi
