@@ -319,21 +319,21 @@ static void * caml_thread_start(void * arg)
   leave_blocking_section();
   /* Callback the closure */
   clos = Start_closure(th->descr);
-  Modify(&(Start_closure(th->descr)), Val_unit);
+  modify(&(Start_closure(th->descr)), Val_unit);
   callback(clos, Val_unit);
   /* Signal that the thread has terminated */
   caml_mutex_unlock(Terminated(th->descr));
   /* Remove th from the doubly-linked list of threads */
   th->next->prev = th->prev;
   th->prev->next = th->next;
+  /* Release the main mutex (forever) */
+  enter_blocking_section();
 #ifndef NATIVE_CODE
   /* Free the memory resources */
   stat_free(th->stack_low);
 #endif
   /* Free the thread descriptor */
   stat_free(th);
-  /* Release the main mutex (forever) */
-  enter_blocking_section();
   /* The thread now stops running */
   return NULL;
 }  
@@ -460,9 +460,11 @@ value caml_mutex_lock(value wrapper)     /* ML */
 {
   int retcode;
   pthread_mutex_t * mut = Mutex_val(wrapper);
-  enter_blocking_section();
-  retcode = pthread_mutex_lock(mut);
-  leave_blocking_section();
+  Begin_root(wrapper)           /* prevent the deallocation of mutex */
+    enter_blocking_section();
+    retcode = pthread_mutex_lock(mut);
+    leave_blocking_section();
+  End_roots();
   caml_pthread_check(retcode, "Mutex.lock");
   return Val_unit;
 }
@@ -471,9 +473,11 @@ value caml_mutex_unlock(value wrapper)           /* ML */
 {
   int retcode;
   pthread_mutex_t * mut = Mutex_val(wrapper);
-  enter_blocking_section();
-  retcode = pthread_mutex_unlock(mut);
-  leave_blocking_section();
+  Begin_root(wrapper)           /* prevent the deallocation of mutex */
+    enter_blocking_section();
+    retcode = pthread_mutex_unlock(mut);
+    leave_blocking_section();
+  End_roots();
   caml_pthread_check(retcode, "Mutex.unlock");
   return Val_unit;
 }
@@ -516,9 +520,11 @@ value caml_condition_wait(value wcond, value wmut)           /* ML */
   int retcode;
   pthread_cond_t * cond = Condition_val(wcond);
   pthread_mutex_t * mut = Mutex_val(wmut);
-  enter_blocking_section();
-  retcode = pthread_cond_wait(cond, mut);
-  leave_blocking_section();
+  Begin_roots2(wcond, wmut)     /* prevent deallocation of cond and mutex */
+    enter_blocking_section();
+    retcode = pthread_cond_wait(cond, mut);
+    leave_blocking_section();
+  End_roots();
   caml_pthread_check(retcode, "Condition.wait");
   return Val_unit;
 }
@@ -527,9 +533,11 @@ value caml_condition_signal(value wrapper)           /* ML */
 {
   int retcode;
   pthread_cond_t * cond = Condition_val(wrapper);
-  enter_blocking_section();
-  retcode = pthread_cond_signal(cond);
-  leave_blocking_section();
+  Begin_root(wrapper)           /* prevent deallocation of condition */
+    enter_blocking_section();
+    retcode = pthread_cond_signal(cond);
+    leave_blocking_section();
+  End_roots();
   caml_pthread_check(retcode, "Condition.signal");
   return Val_unit;
 }
@@ -538,9 +546,11 @@ value caml_condition_broadcast(value wrapper)           /* ML */
 {
   int retcode;
   pthread_cond_t * cond = Condition_val(wrapper);
-  enter_blocking_section();
-  retcode = pthread_cond_broadcast(cond);
-  leave_blocking_section();
+  Begin_root(wrapper)           /* prevent deallocation of condition */
+    enter_blocking_section();
+    retcode = pthread_cond_broadcast(cond);
+    leave_blocking_section();
+  End_roots();
   caml_pthread_check(retcode, "Condition.broadcast");
   return Val_unit;
 }

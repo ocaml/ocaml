@@ -311,14 +311,14 @@ static void caml_thread_start(caml_thread_t th)
   /* Remove th from the doubly-linked list of threads */
   th->next->prev = th->prev;
   th->prev->next = th->next;
+  /* Release the main mutex (forever) */
+  enter_blocking_section();
 #ifndef NATIVE_CODE
   /* Free the memory resources */
   stat_free(th->stack_low);
 #endif
   /* Free the thread descriptor */
   stat_free(th);
-  /* Release the main mutex (forever) */
-  enter_blocking_section();
   /* The thread now stops running */
 }  
 
@@ -440,9 +440,11 @@ value caml_mutex_new(value unit)        /* ML */
 value caml_mutex_lock(value mut)           /* ML */
 {
   int retcode;
-  enter_blocking_section();
-  retcode = WaitForSingleObject(Mutex_val(mut), INFINITE);
-  leave_blocking_section();
+  Begin_root(mut)               /* prevent deallocation of mutex */
+    enter_blocking_section();
+    retcode = WaitForSingleObject(Mutex_val(mut), INFINITE);
+    leave_blocking_section();
+  End_roots();
   if (retcode == WAIT_FAILED) caml_wthread_error("Mutex.lock");
   return Val_unit;
 }
@@ -450,9 +452,11 @@ value caml_mutex_lock(value mut)           /* ML */
 value caml_mutex_unlock(value mut)           /* ML */
 {
   BOOL retcode;
-  enter_blocking_section();
-  retcode = ReleaseMutex(Mutex_val(mut));
-  leave_blocking_section();
+  Begin_root(mut)               /* prevent deallocation of mutex */
+    enter_blocking_section();
+    retcode = ReleaseMutex(Mutex_val(mut));
+    leave_blocking_section();
+  End_roots();
   if (!retcode) caml_wthread_error("Mutex.unlock");
   return Val_unit;
 }
@@ -512,15 +516,17 @@ value caml_condition_wait(value cond, value mut)           /* ML */
   HANDLE handles[2];
 
   Condition_val(cond)->count ++;
-  enter_blocking_section();
-  /* Release mutex */
-  ReleaseMutex(m);
-  /* Wait for semaphore to be non-null, and decrement it.
-     Simultaneously, re-acquire mutex. */
-  handles[0] = s;
-  handles[1] = m;
-  retcode = WaitForMultipleObjects(2, handles, TRUE, INFINITE);
-  leave_blocking_section();
+  Begin_roots2(cond, mut)       /* prevent deallocation of cond and mutex */
+    enter_blocking_section();
+    /* Release mutex */
+    ReleaseMutex(m);
+    /* Wait for semaphore to be non-null, and decrement it.
+       Simultaneously, re-acquire mutex. */
+    handles[0] = s;
+    handles[1] = m;
+    retcode = WaitForMultipleObjects(2, handles, TRUE, INFINITE);
+    leave_blocking_section();
+  End_roots();
   if (retcode == WAIT_FAILED) caml_wthread_error("Condition.wait");
   return Val_unit;
 }
@@ -531,10 +537,12 @@ value caml_condition_signal(value cond)           /* ML */
 
   if (Condition_val(cond)->count > 0) {
     Condition_val(cond)->count --;
-    enter_blocking_section();
-    /* Increment semaphore by 1, waking up one waiter */
-    ReleaseSemaphore(s, 1, NULL);
-    leave_blocking_section();
+    Begin_roots(cond)           /* prevent deallocation of cond */
+      enter_blocking_section();
+      /* Increment semaphore by 1, waking up one waiter */
+      ReleaseSemaphore(s, 1, NULL);
+      leave_blocking_section();
+    End_roots();
   }
   return Val_unit;
 }
@@ -546,10 +554,12 @@ value caml_condition_broadcast(value cond)           /* ML */
 
   if (c > 0) {
     Condition_val(cond)->count = 0;
-    enter_blocking_section();
-    /* Increment semaphore by c, waking up all waiters */
-    ReleaseSemaphore(s, c, NULL);
-    leave_blocking_section();
+    Begin_roots(cond)           /* prevent deallocation of cond */
+      enter_blocking_section();
+      /* Increment semaphore by c, waking up all waiters */
+      ReleaseSemaphore(s, c, NULL);
+      leave_blocking_section();
+    End_roots();
   }
   return Val_unit;
 }
