@@ -127,10 +127,10 @@ void run_mem(unsigned char *pc, value mem, value curr_pos) {
       return ;
     src = *pc++ ;
     if (src == 0xff) {
-      //      fprintf(stderr,"[%hhu] <- %d\n",dst,Int_val(curr_pos)) ;
+      /*      fprintf(stderr,"[%hhu] <- %d\n",dst,Int_val(curr_pos)) ;*/
       Field(mem,dst) = curr_pos ;
     } else {
-      //      fprintf(stderr,"[%hhu] <- [%hhu]\n",dst,src) ;
+      /*      fprintf(stderr,"[%hhu] <- [%hhu]\n",dst,src) ; */
       Field(mem,dst) = Field(mem,src) ;
     }
   }
@@ -145,10 +145,10 @@ void run_tag(unsigned char *pc, value mem) {
       return ;
     src = *pc++ ;
     if (src == 0xff) {
-      //      fprintf(stderr,"[%hhu] <- -1\n",dst) ;
+      /*      fprintf(stderr,"[%hhu] <- -1\n",dst) ; */
       Field(mem,dst) = Val_int(-1) ;
     } else {
-      //      fprintf(stderr,"[%hhu] <- [%hhu]\n",dst,src) ;
+      /*      fprintf(stderr,"[%hhu] <- [%hhu]\n",dst,src) ; */
       Field(mem,dst) = Field(mem,src) ;
     }
   }
@@ -173,7 +173,7 @@ CAMLprim value new_lex_engine(struct lexing_table *tbl, value start_state,
     if (base < 0) {
       int pc_off = Short(tbl->lex_base_code, state) ;
       run_tag(Bp_val(tbl->lex_code) + pc_off, lexbuf->lex_mem);
-      //      fprintf(stderr,"Perform: %d\n",-base-1) ;
+      /*      fprintf(stderr,"Perform: %d\n",-base-1) ; */
       return Val_int(-base-1);
     }
     /* See if it's a backtrack point */
