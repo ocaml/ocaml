@@ -45,12 +45,12 @@ let mkoperator name pos =
   { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
 
 (* Ghost expressions and patterns:
-    expressions and patterns added by the parser;
+    expressions and patterns that do not appear explicitely in the source file
     they have the loc_ghost flag set to true to tell the profiler
     not to instrument them.
 
     Every grammar rule that generates an element with a location must
-    make exactly one non-ghost element, the topmost one.
+    make at most one non-ghost element, the topmost one.
 *)
 let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc () };;
 let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc () };;
@@ -87,7 +87,7 @@ let rec mktailexp = function
       let exp_el = mktailexp el in
       let l = {loc_start = e1.pexp_loc.loc_start;
                loc_end = exp_el.pexp_loc.loc_end;
-               loc_ghost = false}
+               loc_ghost = true}
       in
       let arg = {pexp_desc = Pexp_tuple [e1; exp_el];
                  pexp_loc = {l with loc_ghost = true} } in
