@@ -251,8 +251,8 @@ let f ?(:dir=Unix.getcwd()) ?:on () =
       let tl = Jg_toplevel.titled "Module viewer" in
       Jg_bind.escape_destroy tl; coe tl
   | Some top ->
-      Wm.title_set top title:"LablBrowser";
-      Wm.iconname_set top name:"LablBrowser";
+      Wm.title_set top title:"OCamlBrowser";
+      Wm.iconname_set top name:"OCamlBrowser";
       let tl = Frame.create top in
       pack [tl] expand:true fill:`Both;
       coe tl

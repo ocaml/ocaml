@@ -1,22 +1,22 @@
 
-		   Installing and Using LablBrowser
+		   Installing and Using OCamlBrowser
 
 
 INSTALLATION
    If you installed it with LablTk, nothing to do.
-   Otherwise, the source is in labltk41/browser.
+   Otherwise, the source is in labltk/browser.
    After installing LablTk, simply do "make" and "make install".
-   The name of the command is `lablbrowser'.
+   The name of the command is `ocamlbrowser'.
 
 USE
-   LablBrowser is composed of three tools, the Editor, which allows
+   OCamlBrowser is composed of three tools, the Editor, which allows
    one to edit/typecheck/analyse .mli and .ml files, the Viewer, to
-   walk around compiled modules, and the Shell, to run an O'Labl
+   walk around compiled modules, and the Shell, to run an OCaml
    subshell. You may only have one instance of Editor and Viewer, but
    you may use several subshells.
 
    As with the compiler, you may specify a different path for the
-   standard library by setting OLABLDIR. You may also extend the
+   standard library by setting OCAMLDIR. You may also extend the
    initial load path (only standard library by default) by using the
    -I command line option.
 
@@ -35,7 +35,7 @@ a) Viewer
 
    File - Open and File - Editor give access to the editor.
 
-   File - Shell opens an O'Labl shell.
+   File - Shell opens an OCaml shell.
 
    Modules - Path editor changes the load path.
 	Pressing [Add to path] or Insert key adds selected directories
@@ -128,7 +128,7 @@ d) Shell
 
 BUGS
 
-* This not really a bug, but LablBrowser is a huge memory consumer.
+* This not really a bug, but OCamlBrowser is a huge memory consumer.
   Go and buy some.
 
 * When you quit the editor and some file was modified, a dialogue is
@@ -138,7 +138,7 @@ BUGS
   but you cannot cancel the destruction... Beware.
 
 * When you run it through xon, the shell hangs at the first error. But 
-  its ok if you start lablbrowser from a remote shell...
+  its ok if you start ocamlbrowser from a remote shell...
 
 TODO
 

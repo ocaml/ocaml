@@ -8,7 +8,7 @@ let _ =
     keywords:[ "-I", Arg.String (fun s -> path := s :: !path),
                "<dir>  Add <dir> to the list of include directories" ]
     others:(fun name -> raise(Arg.Bad("don't know what to do with " ^ name)))
-    errmsg:"lablbrowser :";
+    errmsg:"ocamlbrowser :";
   Config.load_path := List.rev !path @ [Config.standard_library];
   begin
     try Searchid.start_env := Env.open_pers_signature "Pervasives" Env.initial
@@ -18,7 +18,7 @@ let _ =
   Searchpos.view_defined_ref := Viewer.view_defined;
   Searchpos.editor_ref.contents <- Editor.f;
 
-  let top = openTkClass "LablBrowser" in
+  let top = openTkClass "OCamlBrowser" in
   Jg_config.init ();
 
   bind top events:[[], `Destroy] action:(`Set ([], fun _ -> exit 0));

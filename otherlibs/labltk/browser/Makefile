@@ -25,10 +25,10 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 .mli.cmi:
 	$(LABLCOMP) $(INCLUDES) $<
 
-all: lablbrowser
+all: ocamlbrowser
 
-lablbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ)
-	$(LABLC) -custom -o lablbrowser $(INCLUDES) \
+ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ)
+	$(LABLC) -custom -o ocamlbrowser $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma str.cma tk41.cma jglib.cma $(OBJ) \
 		-cclib "$(CLIBS)" $(TKLINKOPT)
@@ -37,10 +37,10 @@ jglib.cma: $(JG)
 	$(LABLCOMP) -a -o jglib.cma $(JG) 
 
 install:
-	if test -f lablbrowser; then : ; cp lablbrowser $(BINDIR); fi
+	if test -f ocamlbrowser; then : ; cp ocamlbrowser $(BINDIR); fi
 
 clean:
-	rm -f *.cm? lablbrowser *~ *.orig
+	rm -f *.cm? ocamlbrowser *~ *.orig
 
 depend:
 	$(LABLDEP) *.ml *.mli > .depend

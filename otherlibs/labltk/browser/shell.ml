@@ -147,7 +147,7 @@ object (self)
     end
 end
 
-(* Specific use of shell, for LablBrowser *)
+(* Specific use of shell, for OCamlBrowser *)
 
 let shells : (string * shell) list ref = ref []
 
