@@ -78,12 +78,6 @@ rule main = parse
     { reset_string_buffer();
       string lexbuf;
       Tstring(get_stored_string()) }
-  | "`" [^ '\\'] "`" 
-    { Tchar(Lexing.lexeme_char lexbuf 1) }
-  | "`" '\\' ['\\' '`' 'n' 't' 'b' 'r'] "`" 
-    { Tchar(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
-  | "`" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "`" 
-    { Tchar(char_for_decimal_code lexbuf 2) }
   | "'" [^ '\\'] "'" 
     { Tchar(Lexing.lexeme_char lexbuf 1) }
   | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'" 
@@ -166,6 +160,14 @@ and comment = parse
       string lexbuf;
       reset_string_buffer();
       comment lexbuf }
+  | "''"
+      { comment lexbuf }
+  | "'" [^ '\\' '\''] "'"
+      { comment lexbuf }
+  | "'\\" ['\\' '\'' 'n' 't' 'b' 'r'] "'"
+      { comment lexbuf }
+  | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+      { comment lexbuf }
   | eof 
     { raise(Lexical_error "unterminated comment") }
   | _ 
