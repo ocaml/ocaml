@@ -24,6 +24,7 @@ type stream_expr_component =
     Sexp_term of expression
   | Sexp_nterm of expression
 
+let mktyp d = { ptyp_desc = d; ptyp_loc = symbol_loc() }
 let mkpat d = { ppat_desc = d; ppat_loc = symbol_loc() }
 let mkexp d = { pexp_desc = d; pexp_loc = symbol_loc() }
 let eloc loc e = { pexp_desc = e; pexp_loc = loc }
@@ -105,7 +106,13 @@ let cparser (bpo, pc) =
       Some bp -> mkexp (Pexp_match (afun "count" [mkexp sexp], [(bp, pc)]))
     | None -> pc
   in
-  mkexp (Pexp_function [(mkpat spat, e)])
+  let p =
+    let t =
+      mktyp (Ptyp_constr (Ldot (Lident "Stream", "t"), [mktyp Ptyp_any]))
+    in
+    mkpat (Ppat_constraint (mkpat spat, t))
+  in
+  mkexp (Pexp_function [(p, e)])
 
 
 (* streams *)
