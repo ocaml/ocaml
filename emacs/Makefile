@@ -2,7 +2,7 @@
 FILES=caml-font.el caml-hilit.el caml.el camldebug.el inf-caml.el
 
 # Where to install. If empty, automatically determined.
-EMACSDIR=
+#EMACSDIR=
 
 # Name of Emacs executable
 EMACS=emacs
