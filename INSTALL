@@ -90,6 +90,9 @@ Examples:
     ./configure -prefix /usr/bin
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
     ./configure -cc "acc -fast" -libs "-lucb"
+                    # For Sun Solaris with the acc compiler
+    ./configure -cc "xlc_r -D_AIX43 -Wl,-bexpall,-brtl -qmaxmem=8192"
+                    # For AIX 4.3 with the IBM compiler
 
 If something goes wrong during the automatic configuration, or if the
 generated files cause errors later on, then look at the template files
