@@ -37,6 +37,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "prims.h"
+#include "signals.h"
 #include "stacks.h"
 #include "sys.h"
 
@@ -238,6 +239,11 @@ static void parse_camlrunparam(void)
 
 extern void init_ieee_floats (void);
 
+#ifdef _WIN32
+#include <windows.h>
+extern DWORD WINAPI caml_signal_thread(LPVOID lpParam);
+#endif
+
 /* Main entry point when loading code from a file */
 
 void caml_main(char **argv)
@@ -301,6 +307,13 @@ void caml_main(char **argv)
   /* Initialize system libraries */
   init_exceptions();
   sys_init(argv + pos);
+#ifdef _WIN32
+  /* Startup a thread for signals */
+  if (getenv("CAMLSIGPIPE")) {
+    int lpThreadId;
+    CreateThread(NULL, 0, caml_signal_thread, NULL, 0, &lpThreadId);
+  }
+#endif
   /* Execute the program */
   debugger(PROGRAM_START);
   res = interprete(start_code, trail.code_size);

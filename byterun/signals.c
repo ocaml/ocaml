@@ -99,6 +99,42 @@ void handle_signal(int signal_number)
   }
 }
 
+#ifdef _WIN32
+#include <windows.h>
+
+#define hexa_digit(ch) (ch >= 97 ? ch - 87 : \
+                        (ch >= 65 ? ch - 55 : \
+                         (ch >= 48 ? ch - 48 : 0)))
+  
+DWORD WINAPI caml_signal_thread(LPVOID lpParam)
+{
+  char *data;
+  int i;
+  HANDLE h;
+  /* Get an hexa-code raw handle through the environment */
+  data = getenv("CAMLSIGPIPE");
+  for(i = 0; i < sizeof(HANDLE); i++)
+    ((char*)&h)[i] = (hexa_digit(data[2*i]) << 4) + hexa_digit(data[2*i+1]);
+  while (1) {
+    DWORD numread;
+    BOOL ret;
+    char iobuf[2];
+    /* This shall always return a single character */
+    ret = ReadFile(h, iobuf, 1, &numread, NULL);
+    if (!ret || numread != 1) sys_exit(Val_int(0));
+    switch (iobuf[0]) {
+    case 'C':
+      pending_signal = SIGINT;
+      something_to_do = 1;
+      break;
+    case 'T':
+      exit(0);
+      break;
+    }
+  }
+}
+#endif   
+
 void urge_major_slice (void)
 {
   force_major_slice = 1;
