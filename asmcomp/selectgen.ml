@@ -57,7 +57,8 @@ let size_expr env exp =
           let regs = Tbl.find id env in
           size_machtype (Array.map (fun r -> r.typ) regs)
         with Not_found ->
-          fatal_error("Selection.size_expr: unbound var " ^ Ident.name id)
+          fatal_error("Selection.size_expr: unbound var " ^
+                      Ident.unique_name id)
         end
     | Ctuple el ->
         List.fold_right (fun e sz -> size localenv e + sz) el 0
@@ -288,6 +289,10 @@ method select_condition = function
       (Iinttest_imm(Isigned cmp, n), arg1)
   | Cop(Ccmpi cmp, [Cconst_int n; arg2]) when self#is_immediate n ->
       (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
+  | Cop(Ccmpi cmp, [arg1; Cconst_pointer n]) when self#is_immediate n ->
+      (Iinttest_imm(Isigned cmp, n), arg1)
+  | Cop(Ccmpi cmp, [Cconst_pointer n; arg2]) when self#is_immediate n ->
+      (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args) ->
       (Iinttest(Isigned cmp), Ctuple args)
   | Cop(Ccmpa cmp, [arg1; Cconst_pointer n]) when self#is_immediate n ->
@@ -370,7 +375,7 @@ method emit_expr env exp =
       begin try
         Tbl.find v env
       with Not_found ->
-        fatal_error("Selection.emit_expr: unbound var " ^ Ident.name v)
+        fatal_error("Selection.emit_expr: unbound var " ^ Ident.unique_name v)
       end
   | Clet(v, e1, e2) ->
       self#emit_expr (self#emit_let env v e1) e2
