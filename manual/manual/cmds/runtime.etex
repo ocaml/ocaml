@@ -121,7 +121,7 @@ The following environment variables are also consulted:
         \item[16  (= 0x010)] Heap compaction.
         \item[32  (= 0x020)] Change of GC parameters.
         \item[64  (= 0x040)] Computation of major GC slice size.
-        \item[128 (= 0x080)] Calling of finalization functions
+        \item[128 (= 0x080)] Calling of finalisation functions
         \item[256 (= 0x100)] Startup messages (loading the bytecode
            executable file, resolving shared libraries).
   \end{options}
