@@ -82,13 +82,14 @@ extern sighandler win32_signal(int sig, sighandler action);
       return &(regs[2 + regno]);
     }
   #else
+    #define SA_SIGINFO 0x0040
     struct ucontext {
       int       uc_onstack;
       sigset_t  uc_sigmask;
-      stack_t   uc_stack;
+      struct sigaltstack uc_stack;
       struct ucontext   *uc_link;
       size_t    uc_mcsize;
-      long      *uc_mcontext;  /* hack ! */
+      unsigned long     *uc_mcontext;
     };
     static unsigned long *context_gpr_p (void *ctx, int regno)
     {
@@ -100,7 +101,7 @@ extern sighandler win32_signal(int sig, sighandler action);
       }else{
         Assert (ctx_version == 2);
         /* new-style context (10.2) */
-        regs = (unsigned long *)&(((struct ucontext *)ctx)->uc_mcontext) + 8;
+        regs = (unsigned long *)((struct ucontext *)ctx)->uc_mcontext + 8;
       }
       return &(regs[2 + regno]);
     }
@@ -425,7 +426,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
 #ifdef POSIX_SIGNALS
   sigact.sa_handler = act;
   sigemptyset(&sigact.sa_mask);
-#if defined(SYS_solaris) || defined(DARWIN_VERSION_6)
+#if defined(SYS_solaris) || defined(SYS_rhapsody)
   sigact.sa_flags = SA_SIGINFO;
 #else
   sigact.sa_flags = 0;
@@ -623,9 +624,9 @@ void init_signals(void)
     struct sigaction act;
     act.sa_handler = (void (*)(int)) trap_handler;
     sigemptyset(&act.sa_mask);
-#if defined (DARWIN_VERSION_6)
+#if defined (SYS_rhapsody)
     act.sa_flags = SA_SIGINFO;
-#elif defined (SYS_aix) || defined (SYS_rhapsody)
+#elif defined (SYS_aix)
     act.sa_flags = 0;
 #else
     act.sa_flags = SA_NODEFER;
