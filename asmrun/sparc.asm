@@ -108,8 +108,9 @@
 
 /* Required size in %g4 */
 Caml_alloc:
+	ld	[%g7], %g1
         sub     %g6, %g4, %g6
-        cmp     %g6, %g7
+        cmp     %g6, %g1
         blu     Caml_call_gc
         nop
         retl
