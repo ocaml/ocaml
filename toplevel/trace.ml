@@ -52,15 +52,15 @@ let overwrite_closure dst src =
 (* Return a closure that performs as the given closure, but also
    traces its execution. *)
 
-let rec instrument_closure name clos_typ =
-  match (Ctype.repr clos_typ).desc with
+let rec instrument_closure env name clos_typ =
+  match (Ctype.repr(Ctype.expand_root env clos_typ)).desc with
     Tarrow(t1, t2) ->
       let starred_name =
         match name with
           Lident s -> Lident(s ^ "*")
         | Ldot(lid, s) -> Ldot(lid, s ^ "*")
         | Lapply(l1, l2) -> fatal_error "Trace.instrument_closure" in
-      let trace_res = instrument_closure starred_name t2 in
+      let trace_res = instrument_closure env starred_name t2 in
       (fun clos_val ->
         Obj.repr(fun arg ->
           open_hovbox 2;

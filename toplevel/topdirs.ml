@@ -233,7 +233,8 @@ let dir_trace lid =
                 closure = clos;
                 initial_closure = old_clos;
                 instrumented_fun =
-                  instrument_closure lid (Ctype.instance desc.val_type)
+                  instrument_closure !toplevel_env lid
+                                     (Ctype.instance desc.val_type)
                                      old_clos}
               :: !traced_functions;
             (* Redirect the code field of the old closure *)
