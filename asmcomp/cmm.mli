@@ -96,6 +96,7 @@ type data_item =
   | Cint8 of int
   | Cint16 of int
   | Cint of int
+  | Cintlit of string
   | Cfloat of string
   | Csymbol_address of string
   | Clabel_address of int

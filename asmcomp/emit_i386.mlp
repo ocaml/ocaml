@@ -590,6 +590,10 @@ let emit_item = function
       `	.word	{emit_int n}\n`
   | Cint n ->
       `	.long	{emit_int n}\n`
+  | Cintlit n ->
+      `	.long	{emit_string n}\n`
+  | Cintlit s ->
+      `	.long	{emit_string s}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->

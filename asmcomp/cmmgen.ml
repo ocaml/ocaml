@@ -56,25 +56,28 @@ let alloc_infix_header ofs = Cconst_int(infix_header ofs)
 
 (* Integers *)
 
-let int_const n = Cconst_int((n lsl 1) + 1)
+let int_const n =
+  if n <= max_int asr 1 & n >= min_int asr 1
+  then Cconst_int((n lsl 1) + 1)
+  else Cop(Caddi, [Cop(Clsl, [Cconst_int n; Cconst_int 1]); Cconst_int 1])
 
 let add_const c n =
   if n = 0 then c else Cop(Caddi, [c; Cconst_int n])
 
 let incr_int = function
-    Cconst_int n -> Cconst_int(n+1)
-  | Cop(Caddi, [c; Cconst_int n]) -> add_const c (n+1)
+    Cconst_int n when n < max_int -> Cconst_int(n+1)
+  | Cop(Caddi, [c; Cconst_int n]) when n < max_int -> add_const c (n+1)
   | c -> add_const c 1
 
 let decr_int = function
-    Cconst_int n -> Cconst_int(n-1)
-  | Cop(Caddi, [c; Cconst_int n]) -> add_const c (n-1)
+    Cconst_int n when n > min_int -> Cconst_int(n-1)
+  | Cop(Caddi, [c; Cconst_int n]) when n > min_int -> add_const c (n-1)
   | c -> add_const c (-1)
 
 let add_int c1 c2 =
   match (c1, c2) with
     (Cop(Caddi, [c1; Cconst_int n1]),
-     Cop(Caddi, [c2; Cconst_int n2])) ->
+     Cop(Caddi, [c2; Cconst_int n2])) when no_overflow_add n1 n2 ->
       add_const (Cop(Caddi, [c1; c2])) (n1 + n2)
   | (Cop(Caddi, [c1; Cconst_int n1]), c2) ->
       add_const (Cop(Caddi, [c1; c2])) n1
@@ -86,19 +89,19 @@ let add_int c1 c2 =
 let sub_int c1 c2 =
   match (c1, c2) with
     (Cop(Caddi, [c1; Cconst_int n1]),
-     Cop(Caddi, [c2; Cconst_int n2])) ->
+     Cop(Caddi, [c2; Cconst_int n2])) when no_overflow_sub n1 n2 ->
       add_const (Cop(Csubi, [c1; c2])) (n1 - n2)
   | (Cop(Caddi, [c1; Cconst_int n1]), c2) ->
       add_const (Cop(Csubi, [c1; c2])) n1
-  | (c1, Cop(Caddi, [c2; Cconst_int n2])) ->
+  | (c1, Cop(Caddi, [c2; Cconst_int n2])) when n2 <> min_int ->
       add_const (Cop(Csubi, [c1; c2])) (-n2)
-  | (c1, Cconst_int n) ->
+  | (c1, Cconst_int n) when n <> min_int ->
       add_const c1 (-n)
   | (c1, c2) ->
       Cop(Csubi, [c1; c2])
 
 let tag_int = function
-    Cconst_int n -> Cconst_int((n lsl 1) + 1)
+    Cconst_int n -> int_const n
   | c -> Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1])
 
 let untag_int = function
@@ -869,7 +872,9 @@ and emit_constant_fields fields cont =
 and emit_constant_field field cont =
   match field with
     Const_base(Const_int n) ->
-      (Cint((n lsl 1) + 1), cont)
+      if n <= max_int asr 1 & n >= min_int asr 1
+      then (Cint((n lsl 1) + 1), cont)
+      else (Cintlit(string_of_int n ^ "*2+1"), cont)
   | Const_base(Const_char c) ->
       (Cint(((Char.code c) lsl 1) + 1), cont)
   | Const_base(Const_float s) ->

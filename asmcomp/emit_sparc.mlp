@@ -658,6 +658,8 @@ let emit_item = function
       `	.half	{emit_int n}\n`
   | Cint n ->
       `	.word	{emit_int n}\n`
+  | Cintlit s ->
+      `	.word	{emit_string n}\n`
   | Cfloat f ->
       `	.double	0r{emit_string f}\n`
   | Csymbol_address s ->
