@@ -1485,7 +1485,11 @@ pr_patt.pr_levels :=
                `ctyp t [: `S RO ")"; k :] :]
       | <:patt< ? $i$ : ($p$) >> ->
           fun curr next _ k ->
-            [: `S LO ("?"^ i ^ ":"); `S LO "("; `patt p [: `S RO ")"; k :] :]
+            match p with
+            [ <:patt< $lid:x$ >> when i = x -> [: `S LR ("?" ^ i); k :]
+            | _ ->
+                [: `S LO ("?"^ i ^ ":"); `S LO "("; `patt p [: `S RO ")";
+                   k :] :] ]
       | <:patt< ? $i$ : ($p$ : $t$ = $e$) >> ->
           fun curr next _ k ->
             [: `S LO ("?" ^ i ^ ":"); `S LO "("; `patt p [: `S LR ":" :];
