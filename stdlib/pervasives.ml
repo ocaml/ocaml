@@ -144,11 +144,10 @@ external float_of_string : string -> float = "float_of_string"
 
 (* List operations -- more in module List *)
 
-let rec rev_append accu = function
-  | [] -> accu
-  | a::l -> rev_append (a :: accu) l
-
-let (@) l1 l2 = rev_append l2 (rev_append [] l1);;
+let rec (@) l1 l2 =
+  match l1 with
+    [] -> l2
+  | hd :: tl -> hd :: (tl @ l2)
 
 (* I/O operations *)
 
