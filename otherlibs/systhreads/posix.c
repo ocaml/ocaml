@@ -229,6 +229,11 @@ static void caml_io_mutex_unlock_exn(void)
 static void * caml_thread_tick(void * arg)
 {
   struct timeval timeout;
+  sigset_t mask;
+
+  /* Block all signals so that we don't try to execute a Caml signal handler */
+  sigfillset(&mask);
+  pthread_sigmask(SIG_BLOCK, &mask, NULL);
   while(1) {
     /* select() seems to be the most efficient way to suspend the
        thread for sub-second intervals */
