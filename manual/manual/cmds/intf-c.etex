@@ -620,7 +620,7 @@ All the macros described in this section are declared in the
 \begin{gcrule}
 A function that has parameters or local variables of type "value" must
 begin with a call to one of the "CAMLparam" macros and return with
-"CAMLreturn".
+"CAMLreturn" or "CAMLreturn0".
 \end{gcrule}
 
 There are six "CAMLparam" macros: "CAMLparam0" to "CAMLparam5", which
@@ -631,10 +631,12 @@ parameters of type "value", use "CAMLparam5" with five of these
 parameters, and use one or more calls to the "CAMLxparam" macros for
 the remaining parameters ("CAMLxparam0" to "CAMLxparam5").
 
-The macro "CAMLreturn" is used as a direct replacement for the C
-keyword "return".  All occurences of "return" must be replaced by
-"CAMLreturn", including the implicit "return" at the end of a
-procedure ("void"-returning function).
+The macros "CAMLreturn" and "CAMLreturn0" are used to replace the C
+keyword "return".  Every occurence of "return x" must be replaced by
+"CAMLreturn (x)", every occurence of "return" without argument must be
+replaced by "CAMLreturn0".  If your C function is a procedure (i.e. if
+it returns void), you must insert "CAMLreturn0" at the end (to replace
+C's implicit "return").
 
 \goodbreak
 
@@ -644,7 +646,7 @@ void foo (value v1, value v2, value v3)
 {
   CAMLparam3 (v1, v2, v3);
   ...
-  CAMLreturn;
+  CAMLreturn0;
 }
 \end{verbatim}
 
@@ -674,7 +676,7 @@ value bar (value v1, value v2, value v3)
   CAMLlocal1 (result);
   result = alloc (3, 0);
   ...
-  CAMLreturn result;
+  CAMLreturn (result);
 }
 \end{verbatim}
 
@@ -697,7 +699,7 @@ value bar (value v1, value v2, value v3)
   Store_field (result, 0, v1);
   Store_field (result, 1, v2);
   Store_field (result, 2, v3);
-  CAMLreturn result;
+  CAMLreturn (result);
 }
 \end{verbatim}
 
@@ -821,7 +823,7 @@ value alloc_list_int(int i1, int i2)
   result = alloc(2, 0);                   /* Allocate the other cons cell */
   Store_field(result, 0, Val_int(i1));    /* car = the integer i1 */
   Store_field(result, 1, r);              /* cdr = the first cons cell */
-  CAMLreturn result;
+  CAMLreturn (result);
 }
 \end{verbatim}
 Here, the registering of "result" is not strictly needed, because no
@@ -844,7 +846,7 @@ value alloc_list_int(int i1, int i2)
   result = alloc_small(2, 0);             /* Allocate the other cons cell */
   Field(result, 0) = Val_int(i1);         /* car = the integer i1 */
   Field(result, 1) = r;                   /* cdr = the first cons cell */
-  CAMLreturn result;
+  CAMLreturn (result);
 }
 \end{verbatim}
 In the two examples above, the list is built bottom-up. Here is an
