@@ -8,7 +8,7 @@ INCLUDES=-I ..\utils -I ..\parsing -I ..\typing -I ..\bytecomp -I ..\asmcomp \
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp.exe ocamlmktop.exe
+all: ocamldep ocamlprof ocamlcp.exe ocamlmktop.exe primreq
 
 # The dependency generator
 
@@ -116,6 +116,16 @@ objinfo: objinfo.cmo
 
 clean::
 	rm -f objinfo
+
+# Scan object files for required primitives
+
+PRIMREQ=primreq.cmo
+
+primreq: $(PRIMREQ)
+	$(CAMLC) $(LINKFLAGS) -o primreq config.cmo $(PRIMREQ)
+
+clean::
+	rm -f primreq
 
 # Common stuff
 

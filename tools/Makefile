@@ -117,6 +117,16 @@ objinfo: objinfo.cmo
 clean::
 	rm -f objinfo
 
+# Scan object files for required primitives
+
+PRIMREQ=primreq.cmo
+
+primreq: $(PRIMREQ)
+	$(CAMLC) $(LINKFLAGS) -o primreq config.cmo $(PRIMREQ)
+
+clean::
+	rm -f primreq
+
 # Common stuff
 
 .SUFFIXES:
