@@ -108,7 +108,7 @@ let dump_modules = Odoc_analyse.dump_modules
 
 let load_modules = Odoc_analyse.load_modules
 
-let reset_type_names = Printtyp.reset_names
+let reset_type_names = Printtyp.reset
 
 let string_of_type_expr t = Odoc_misc.string_of_type_expr t
 
