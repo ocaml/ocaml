@@ -32,6 +32,7 @@ value weak_create (len)        /* ML */
   for (i = 1; i < size; i++) Field (res, i) = 0;
   Field (res, 0) = weak_list_head;
   weak_list_head = res;
+  return res;
 }
 
 #define None_val 1
