@@ -12,22 +12,32 @@
 
 /* $Id$ */
 
-#include <string.h>
-#include <wtypes.h>
-#include <winbase.h>
-#include <process.h>
+#define STRICT
+#define WIN32_LEAN_AND_MEAN
+
+#include <windows.h>
 #include "../byterun/exec.h"
+
+#pragma comment(linker , "/entry:headerentry")
+#pragma comment(linker , "/subsystem:console")
+#pragma comment(lib , "kernel32")
 
 char * default_runtime_name = "ocamlrun";
 
-static unsigned long read_size(char * ptr)
+static
+#if _MSC_VER >= 1200
+__forceinline
+#else
+__inline
+#endif
+unsigned long read_size(const char * const ptr)
 {
-  unsigned char * p = (unsigned char *) ptr;
-  return ((unsigned long) p[0] << 24) + ((unsigned long) p[1] << 16) +
-         ((unsigned long) p[2] << 8) + p[3];
+  const unsigned char * const p = (const unsigned char * const) ptr;
+  return ((unsigned long) p[0] << 24) | ((unsigned long) p[1] << 16) |
+         ((unsigned long) p[2] << 8) | p[3];
 }
 
-static char * read_runtime_path(HANDLE h)
+static __inline char * read_runtime_path(HANDLE h)
 {
   char buffer[TRAILER_SIZE];
   static char runtime_path[MAX_PATH];
@@ -55,46 +65,83 @@ static char * read_runtime_path(HANDLE h)
   return runtime_path;
 }
 
-static void errwrite(char * msg)
+#define msg_and_length(msg) msg , (sizeof(msg) - 1)
+
+static __inline void __declspec(noreturn) run_runtime(char * runtime,
+         char * const cmdline)
 {
-  DWORD numwritten;
-  WriteFile(GetStdHandle(STD_ERROR_HANDLE), msg, strlen(msg),
-            &numwritten, NULL);
+  char path[MAX_PATH];
+  STARTUPINFO stinfo;
+  PROCESS_INFORMATION procinfo;
+  DWORD retcode;
+  if (SearchPath(NULL, runtime, ".exe", MAX_PATH, path, &runtime) == 0) {
+    HANDLE errh;
+    DWORD numwritten;
+    errh = GetStdHandle(STD_ERROR_HANDLE);
+    WriteFile(errh, msg_and_length("Cannot exec "), &numwritten, NULL);
+    WriteFile(errh, runtime, strlen(runtime), &numwritten, NULL);
+    WriteFile(errh, msg_and_length("\r\n"), &numwritten, NULL);
+    ExitProcess(2);
+#if _MSC_VER >= 1200
+    __assume(0); /* Not reached */
+#endif
+  }
+  stinfo.cb = sizeof(stinfo);
+  stinfo.lpReserved = NULL;
+  stinfo.lpDesktop = NULL;
+  stinfo.lpTitle = NULL;
+  stinfo.dwFlags = 0;
+  stinfo.cbReserved2 = 0;
+  stinfo.lpReserved2 = NULL;
+  if (!CreateProcess(path, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
+                     &stinfo, &procinfo)) {
+    HANDLE errh;
+    DWORD numwritten;
+    errh = GetStdHandle(STD_ERROR_HANDLE);
+    WriteFile(errh, msg_and_length("Cannot exec "), &numwritten, NULL);
+    WriteFile(errh, runtime, strlen(runtime), &numwritten, NULL);
+    WriteFile(errh, msg_and_length("\r\n"), &numwritten, NULL);
+    ExitProcess(2);
+#if _MSC_VER >= 1200
+    __assume(0); /* Not reached */
+#endif
+  }
+  CloseHandle(procinfo.hThread);
+  WaitForSingleObject(procinfo.hProcess , INFINITE);
+  GetExitCodeProcess(procinfo.hProcess , &retcode);
+  CloseHandle(procinfo.hProcess);
+  ExitProcess(retcode);
+#if _MSC_VER >= 1200
+    __assume(0); /* Not reached */
+#endif
 }
 
-int main(int argc, char ** argv)
+void __declspec(noreturn) __cdecl headerentry()
 {
   char truename[MAX_PATH];
   char * cmdline = GetCommandLine();
   char * runtime_path;
   HANDLE h;
-  int retcode;
 
   GetModuleFileName(NULL, truename, sizeof(truename));
   h = CreateFile(truename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
                  NULL, OPEN_EXISTING, 0, NULL);
   if (h == INVALID_HANDLE_VALUE ||
       (runtime_path = read_runtime_path(h)) == NULL) {
-    errwrite(truename);
-    errwrite(" not found or is not a bytecode executable file\r\n");
-    return 2;
+    HANDLE errh;
+    DWORD numwritten;
+    errh = GetStdHandle(STD_ERROR_HANDLE);
+    WriteFile(errh, truename, strlen(truename), &numwritten, NULL);
+    WriteFile(errh, msg_and_length(" not found or is not a bytecode executable file\r\n"),
+              &numwritten, NULL);
+    ExitProcess(2);
+#if _MSC_VER >= 1200
+    __assume(0); /* Not reached */
+#endif
   }
   CloseHandle(h);
-  retcode = spawnlp(P_WAIT, runtime_path, cmdline, NULL);
-  /* We use P_WAIT instead of P_OVERLAY here because under NT,
-     P_OVERLAY returns to the command interpreter, displaying the prompt
-     before executing the command. */
-  if (retcode == -1) {
-    errwrite("Cannot exec ");
-    errwrite(runtime_path);
-    errwrite("\r\n");
-    return 2;
-  }
-  return retcode;
+  run_runtime(runtime_path , cmdline);
+#if _MSC_VER >= 1200
+    __assume(0); /* Not reached */
+#endif
 }
-
-/* Prevent VC++ from linking its own _setargv function, which
-   performs command-line processing (we don't need it) */
-
-static void _setargv() { }
-
