@@ -179,7 +179,7 @@ and transl_structure fields cc rootpath = function
       | id :: ids ->
           Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
                rebind_idents (pos + 1) (id :: newfields) ids) in
-      Llet(Strict, mid, transl_module Tcoerce_none None modl,
+      Llet(Alias, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
 
 (* Update forward declaration in Translcore *)
