@@ -373,12 +373,12 @@ val open_out_gen : open_flag list -> int -> string -> out_channel
            specify the opening mode. The extra argument [rights] specifies
            the file permissions, in case the file must be created.
            [open_out] and [open_out_bin] are special cases of this function. *)
-external flush : out_channel -> unit = "flush"
+val flush : out_channel -> unit
         (* Flush the buffer associated with the given output channel, 
            performing all pending writes on that channel.
            Interactive programs must be careful about flushing standard
            output and standard error at the right time. *)
-external output_char : out_channel -> char -> unit = "output_char"
+val output_char : out_channel -> char -> unit
         (* Write the character on the given output channel. *)
 val output_string : out_channel -> string -> unit
         (* Write the string on the given output channel. *)
@@ -387,22 +387,22 @@ val output : out_channel -> string -> int -> int -> unit
            [buff], starting at offset [ofs], to the output channel [chan].
            Raise [Invalid_argument "output"] if [ofs] and [len] do not
            designate a valid substring of [buff]. *)
-external output_byte : out_channel -> int -> unit = "output_char"
+val output_byte : out_channel -> int -> unit
         (* Write one 8-bit integer (as the single character with that code)
            on the given output channel. The given integer is taken modulo
            256. *)
-external output_binary_int : out_channel -> int -> unit = "output_int"
+val output_binary_int : out_channel -> int -> unit
         (* Write one integer in binary format on the given output channel.
            The only reliable way to read it back is through the
            [input_binary_int] function. The format is compatible across
 	   all machines for a given version of Caml Light. *)
-external output_value : out_channel -> 'a -> unit = "output_value"
+val output_value : out_channel -> 'a -> unit
         (* Write the representation of a structured value of any type
            to a channel. Circularities and sharing inside the value
            are detected and preserved. The object can be read back,
            by the function [input_value]. The format is compatible across
 	   all machines for a given version of Caml Light. *)
-external seek_out : out_channel -> int -> unit = "seek_out"
+val seek_out : out_channel -> int -> unit
         (* [seek_out chan pos] sets the current writing position to [pos]
            for channel [chan]. This works only for regular files. On
            files of other kinds (such as terminals, pipes and sockets),
@@ -434,7 +434,7 @@ val open_in_gen : open_flag list -> int -> string -> in_channel
            [filename] for reading, as above. The extra arguments
            [mode] and [rights] specify the opening mode and file permissions.
            [open_in] and [open_in_bin] are special cases of this function. *)
-external input_char : in_channel -> char = "input_char"
+val input_char : in_channel -> char
         (* Read one character from the given input channel.
            Raise [End_of_file] if there are no more characters to read. *)
 val input_line : in_channel -> string
@@ -461,16 +461,16 @@ val really_input : in_channel -> string -> int -> int -> unit
            the end of file is reached before [len] characters have been read.
            Raise [Invalid_argument "really_input"] if
            [ofs] and [len] do not designate a valid substring of [buff]. *)
-external input_byte : in_channel -> int = "input_char"
+val input_byte : in_channel -> int
         (* Same as [input_char], but return the 8-bit integer representing
            the character.
            Raise [End_of_file] if an end of file was reached. *)
-external input_binary_int : in_channel -> int = "input_int"
+val input_binary_int : in_channel -> int
         (* Read an integer encoded in binary format from the given input
            channel. See [output_binary_int].
            Raise [End_of_file] if an end of file was reached while reading the
 	   integer. *)
-external input_value : in_channel -> 'a = "input_value"
+val input_value : in_channel -> 'a
         (* Read the representation of a structured value, as produced
            by [output_value] or [output_compact_value], and return
            the corresponding value.
@@ -492,7 +492,7 @@ external in_channel_length : in_channel -> int = "channel_size"
         (* Return the total length (number of characters) of the
            given channel. This works only for regular files. On files of
            other kinds, the result is meaningless. *)
-external close_in : in_channel -> unit = "close_channel"
+val close_in : in_channel -> unit
         (* Close the given channel. Anything can happen if any of the
            functions above is called on a closed channel. *)
 
