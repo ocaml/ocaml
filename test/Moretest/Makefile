@@ -56,7 +56,7 @@ bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
 
 bigarrays.out: ../../otherlibs/bigarray/bigarray.cmxa \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
-	$(CAMLOPT) -o bigarrays.out \
+	$(CAMLOPT) $(OPTFLAGS) -o bigarrays.out \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cmxa bigarray.cmxa bigarrays.ml \

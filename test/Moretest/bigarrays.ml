@@ -122,7 +122,6 @@ let _ =
                   1.2345678, 1.2345678;
                   3.1415e10, 3.1415e10]);
 
-  testing_function "comparisons";
   let from_list kind vals =
     let a = Array1.create kind c_layout (List.length vals) in
     let rec set i = function
@@ -138,6 +137,20 @@ let _ =
     set 1 vals;
     a in
 
+  testing_function "set/get (specialized)";
+  let a = Array1.create int c_layout 3 in
+  for i = 0 to 2 do a.{i} <- i done;
+  for i = 0 to 2 do test (i+1) a.{i} i done;
+  test 4 true (try a.{3}; false with Invalid_argument _ -> true);
+  test 5 true (try a.{-1}; false with Invalid_argument _ -> true);
+    
+  let b = Array1.create float64 fortran_layout 3 in
+  for i = 1 to 3 do b.{i} <- float i done;
+  for i = 1 to 3 do test (5 + i) b.{i} (float i) done;
+  test 8 true (try b.{4}; false with Invalid_argument _ -> true);
+  test 9 true (try b.{0}; false with Invalid_argument _ -> true);
+
+  testing_function "comparisons";
   let normalize_comparison n =
     if n = 0 then 0 else if n < 0 then -1 else 1 in
   test 1 0 (normalize_comparison (compare
@@ -354,6 +367,31 @@ let _ =
     (check_array2 (make_array2 float64 fortran_layout 1 10 20 float)
                   1 10 20 float);
 
+  testing_function "set/get (specialized)";
+  let a = Array2.create int16_signed c_layout 3 3 in
+  for i = 0 to 2 do for j = 0 to 2 do a.{i,j} <- i-j done done;
+  let ok = ref true in
+  for i = 0 to 2 do
+    for j = 0 to 2 do if a.{i,j} <> i-j then ok := false done
+  done;
+  test 1 true !ok;
+  test 2 true (try a.{3,0}; false with Invalid_argument _ -> true);
+  test 3 true (try a.{-1,0}; false with Invalid_argument _ -> true);
+  test 4 true (try a.{0,3}; false with Invalid_argument _ -> true);
+  test 5 true (try a.{0,-1}; false with Invalid_argument _ -> true);
+    
+  let b = Array2.create float32 fortran_layout 3 3 in
+  for i = 1 to 3 do for j = 1 to 3 do b.{i,j} <- float(i-j) done done;
+  let ok = ref true in
+  for i = 1 to 3 do
+    for j = 1 to 3 do if b.{i,j} <> float(i-j) then ok := false done
+  done;
+  test 6 true !ok;
+  test 7 true (try b.{4,1}; false with Invalid_argument _ -> true);
+  test 8 true (try b.{0,1}; false with Invalid_argument _ -> true);
+  test 9 true (try b.{1,4}; false with Invalid_argument _ -> true);
+  test 10 true (try b.{1,0}; false with Invalid_argument _ -> true);
+
   testing_function "dim";
   let a = (make_array2 int c_layout 0 4 6 id) in
   test 1 (Array2.dim1 a) 4;
@@ -452,6 +490,27 @@ let _ =
   test 10 true
     (check_array3 (make_array3 float64 fortran_layout 1 4 5 6 float)
                   1 4 5 6 float);
+
+  testing_function "set/get (specialized)";
+  let a = Array3.create int32 c_layout 2 3 4 in
+  for i = 0 to 1 do for j = 0 to 2 do for k = 0 to 3 do
+     a.{i,j,k} <- Int32.of_int((i lsl 4) + (j lsl 2) + k)
+  done done done;
+  let ok = ref true in
+  for i = 0 to 1 do for j = 0 to 2 do for k = 0 to 3 do
+     if Int32.to_int a.{i,j,k} <> (i lsl 4) + (j lsl 2) + k then ok := false
+  done done done;
+  test 1 true !ok;
+    
+  let b = Array3.create int64 fortran_layout 2 3 4 in
+  for i = 1 to 2 do for j = 1 to 3 do for k = 1 to 4 do
+     b.{i,j,k} <- Int64.of_int((i lsl 4) + (j lsl 2) + k)
+  done done done;
+  let ok = ref true in
+  for i = 1 to 2 do for j = 1 to 3 do for k = 1 to 4 do
+     if Int64.to_int b.{i,j,k} <> (i lsl 4) + (j lsl 2) + k then ok := false
+  done done done;
+  test 2 true !ok;
 
   testing_function "dim";
   let a = (make_array3 int c_layout 0 4 5 6 id) in
