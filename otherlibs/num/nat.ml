@@ -44,7 +44,7 @@ external land_digit_nat: nat -> int -> nat -> int -> unit = "land_digit_nat"
 external lor_digit_nat: nat -> int -> nat -> int -> unit = "lor_digit_nat"
 external lxor_digit_nat: nat -> int -> nat -> int -> unit = "lxor_digit_nat"
 
-let length_of_digit = (Sys.get_config ()).Sys.word_size;;
+let length_of_digit = Sys.word_size;;
 
 let make_nat len =
   if len < 0 then invalid_arg "make_nat" else

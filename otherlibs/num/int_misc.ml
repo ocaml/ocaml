@@ -24,7 +24,7 @@ let num_bits_int n = num_bits_int_aux (abs n);;
 
 let sign_int i = if i = 0 then 0 else if i > 0 then 1 else -1;;
 
-let length_of_int = (Sys.get_config()).Sys.word_size - 2;;
+let length_of_int = Sys.word_size - 2;;
 
 let monster_int = 1 lsl length_of_int;;
 let biggest_int = monster_int - 1;;
