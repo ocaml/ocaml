@@ -13,7 +13,7 @@
 
 (* Module [Event]: first-class synchronous communication *)
 
-(* This module implements synchronous interprocess communications over
+(* This module implements synchronous inter-thread communications over
    channels. As in John Reppy's Concurrent ML system, the communication 
    events are first-class values: they can be built and combined
    independently before being offered for communication. *)
@@ -42,6 +42,10 @@ val wrap: 'a event -> ('a -> 'b) -> 'b event
         (* [wrap ev fn] returns the event that performs the same communications
            as [ev], then applies the post-processing function [fn]
            on the return value. *)
+val wrap_abort: 'a event -> (unit -> unit) -> 'a event
+        (* [wrap_abort ev fn] returns the event that performs
+           the same communications as [ev], but if it is not selected
+           the function [fn] is called after the synchronization. *)
 val guard: (unit -> 'a event) -> 'a event
         (* [guard fn] returns the event that, when synchronized, computes
            [fn()] and behaves as the resulting event. This allows to

@@ -21,9 +21,12 @@ type 'a basic_event =
     result: unit -> 'a }
       (* Return the result of the communication *)
 
+type 'a behavior = int ref -> Condition.t -> int -> 'a basic_event
+
 type 'a event =
-    Communication of (int ref -> Condition.t -> int -> 'a basic_event)
+    Communication of 'a behavior
   | Choose of 'a event list
+  | WrapAbort of 'a event * (unit -> unit)
   | Guard of (unit -> 'a event)
 
 (* Communication channels *)
@@ -51,13 +54,25 @@ let new_channel () =
 
 let masterlock = Mutex.create()
 
-let basic_sync genev =
+let do_aborts abort_env genev performed = 
+  if abort_env <> [] then begin
+    if performed >= 0 then begin
+      let ids_done = snd genev.(performed) in
+      List.iter 
+	(fun (id,f) -> if not (List.mem id ids_done) then f ())
+	abort_env
+    end else begin
+      List.iter (fun (_,f) -> f ()) abort_env
+    end
+  end
+
+let basic_sync abort_env genev =
   let performed = ref (-1) in
   let condition = Condition.create() in
   let bev = Array.create (Array.length genev)
-                         (genev.(0) performed condition 0) in
+                         (fst (genev.(0)) performed condition 0) in
   for i = 1 to Array.length genev - 1 do
-    bev.(i) <- genev.(i) performed condition i
+    bev.(i) <- (fst genev.(i)) performed condition i
   done;
   (* See if any of the events is already activable *)
   let rec poll_events i =
@@ -73,12 +88,17 @@ let basic_sync genev =
   end;
   Mutex.unlock masterlock;
   (* Extract the result *)
-  bev.(!performed).result()
+  let num = !performed in
+  let result = bev.(!performed).result() in
+  (* Handle the aborts and return the result *)
+  do_aborts abort_env genev num;
+  result
 
 (* Apply a random permutation on an array *)
 
 let scramble_array a =
   let len = Array.length a in
+  if len = 0 then invalid_arg "Event.choose";
   for i = len - 1 downto 1 do
     let j = Random.int (i + 1) in
     let temp = a.(i) in a.(i) <- a.(j); a.(j) <- temp
@@ -87,24 +107,41 @@ let scramble_array a =
 
 (* Main synchronization function *)
 
-let rec flatten_event ev accu =
+let gensym = let count = ref 0 in fun () -> incr count; !count
+
+let rec flatten_event 
+      (abort_list : int list) 
+      (accu : ('a behavior * int list) list)
+      (accu_abort : (int * (unit -> unit)) list) 
+      ev =
   match ev with
-    Communication bev -> bev :: accu
-  | Choose evl -> List.fold_right flatten_event evl accu
-  | Guard fn -> flatten_event (fn ()) accu
+     Communication bev -> ((bev,abort_list) :: accu) , accu_abort
+  | WrapAbort (ev,fn) ->
+      let id = gensym () in 
+      flatten_event (id :: abort_list) accu ((id,fn)::accu_abort) ev
+  | Choose evl ->
+      let rec flatten_list accu' accu_abort'= function
+	 ev :: l ->
+	   let (accu'',accu_abort'') = 
+	     flatten_event abort_list accu' accu_abort' ev in
+	   flatten_list accu'' accu_abort'' l
+       | [] -> (accu',accu_abort') in
+      flatten_list accu accu_abort evl
+  | Guard fn -> flatten_event abort_list accu accu_abort (fn ()) 
 
 let sync ev =
-  basic_sync(scramble_array(Array.of_list(flatten_event ev [])))
+  let (evl,abort_env) = flatten_event [] [] [] ev in
+  basic_sync abort_env (scramble_array(Array.of_list evl))
 
 (* Event polling -- like sync, but non-blocking *)
 
-let basic_poll genev =
+let basic_poll abort_env genev =
   let performed = ref (-1) in
   let condition = Condition.create() in
   let bev = Array.create(Array.length genev)
-                        (genev.(0) performed condition 0) in
+                        (fst genev.(0) performed condition 0) in
   for i = 1 to Array.length genev - 1 do
-    bev.(i) <- genev.(i) performed condition i
+    bev.(i) <- fst genev.(i) performed condition i
   done;
   (* See if any of the events is already activable *)
   let rec poll_events i =
@@ -116,16 +153,19 @@ let basic_poll genev =
   if ready then begin
     (* Extract the result *)
     Mutex.unlock masterlock;
-    Some(bev.(!performed).result())
+    let result = Some(bev.(!performed).result()) in
+    do_aborts abort_env genev !performed; result
   end else begin
     (* Cancel the communication offers *)
     performed := 0;
     Mutex.unlock masterlock;
+    do_aborts abort_env genev (-1);
     None
   end
 
 let poll ev =
-  basic_poll(scramble_array(Array.of_list(flatten_event ev [])))
+  let (evl,abort_env) = flatten_event [] [] [] ev in
+  basic_poll abort_env (scramble_array(Array.of_list evl))
 
 (* Remove all communication opportunities already synchronized *)
 
@@ -201,9 +241,9 @@ let receive channel =
         None -> invalid_arg "Event.receive"
       | Some res -> res) })
 
-let choose = function
-    [] -> invalid_arg "Event.choose"
-  | evl -> Choose evl
+let choose evl = Choose evl
+
+let wrap_abort ev fn = WrapAbort(ev,fn)
 
 let guard fn = Guard fn
 
@@ -217,6 +257,8 @@ let rec wrap ev fn =
           result = (fun () -> fn(bev.result())) })
   | Choose evl ->
       Choose(List.map (fun ev -> wrap ev fn) evl)
+  | WrapAbort (ev, f') ->
+      WrapAbort (wrap ev fn, f')
   | Guard gu ->
       Guard(fun () -> wrap (gu()) fn)
 
