@@ -262,12 +262,12 @@ void debugger(event)
       trap_barrier = stack_high - i;
       break;
     case REQ_GET_LOCAL:
-      i = getch(dbg_in);
+      i = getword(dbg_in);
       putval(dbg_out, Locals(frame)[i]);
       flush(dbg_out);
       break;
     case REQ_GET_ENVIRONMENT:
-      i = getch(dbg_in);
+      i = getword(dbg_in);
       putval(dbg_out, Field(Env(frame), i));
       flush(dbg_out);
       break;
