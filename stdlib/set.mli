@@ -23,17 +23,20 @@
    logarithmic in the size of the set, for instance. 
 *)
 
-module type OrderedType = sig type t val compare : t -> t -> int end
-(** The input signature of the functor {!Set.Make}.
-   [t] is the type of the set elements.
-   [compare] is a total ordering function over the set elements.
-   This is a two-argument function [f] such that
-   [f e1 e2] is zero if the elements [e1] and [e2] are equal,
-   [f e1 e2] is strictly negative if [e1] is smaller than [e2],
-   and [f e1 e2] is strictly positive if [e1] is greater than [e2].
-   Example: a suitable ordering function is
-   the generic structural comparison function {!Pervasives.compare}. *)
-
+module type OrderedType = 
+  sig
+    type t
+      (** The type of the set elements. *)
+    val compare : t -> t -> int
+      (** A total ordering function over the set elements.
+          This is a two-argument function [f] such that
+          [f e1 e2] is zero if the elements [e1] and [e2] are equal,
+          [f e1 e2] is strictly negative if [e1] is smaller than [e2],
+          and [f e1 e2] is strictly positive if [e1] is greater than [e2].
+          Example: a suitable ordering function is
+          the generic structural comparison function {!Pervasives.compare}. *)
+  end
+(** Input signature of the functor {!Set.Make}. *)
 
 module type S =
   sig
@@ -136,6 +139,7 @@ module type S =
        the set is empty. Which element is chosen is unspecified,
        but equal elements will be chosen for equal sets. *)
   end
+(** Output signature of the functor {!Set.Make}. *)
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t
 (** Functor building an implementation of the set structure
