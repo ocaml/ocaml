@@ -42,23 +42,23 @@ val add_destroy_hook : (any widget -> unit) -> unit
 val default_display : unit -> string
 
 val opentk : unit -> toplevel widget
-    (* The basic initialization function. [opentk ()] parses automatically
-       the command line options and use the tk related options in them
-       such as "-display localhost:0" to initialize Tk applications. 
-       Consult wish manpage about the supported options. *)
+    (* The basic initialization function. *)
 
 val keywords : (string * Arg.spec * string) list
     (* Command line parsing specification for Arg.parse, which contains
        the standard Tcl/Tk command line options such as "-display" and "-name".
-       These Tk command line options are used by opentk *)
+       Add [keywords] to a [Arg.parse] call, then call [opentk].
+       Then [opentk] can make use of these command line options 
+       to initiate applications. *)
 
 val opentk_with_args : string list -> toplevel widget
-    (* [opentk_with_args argv] invokes [opentk] with the tk related 
-       command line options given by [argv] to the executable program. *) 
+    (* [opentk_with_args] is a lower level interface to initiate Tcl/Tk 
+       applications.  [opentk_with_args argv] initializes Tcl/Tk with
+       the command line options given by [argv] *)
 
 val openTk : ?display:string -> ?clas:string -> unit -> toplevel widget
     (* [openTk ~display:display ~clas:clas ()] is equivalent to
-       [opentk ["-display"; display; "-name"; clas]] *)
+       [opentk_with_args ["-display"; display; "-name"; clas]] *)
 
 (* Legacy opentk functions *)
 val openTkClass: string -> toplevel widget

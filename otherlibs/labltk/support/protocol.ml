@@ -241,10 +241,7 @@ let opentk_with_args argv (* = [argv1;..;argvn] *) =
   install_cleanup();
   Widget.default_toplevel
 
-let opentk () = 
-  let argv0 = Sys.argv.(0) in 
-  Arg.parse keywords (fun _ -> ()) argv0;
-  opentk_with_args !camltk_argv 
+let opentk () = opentk_with_args !camltk_argv;;
 
 let openTkClass s = opentk_with_args ["-name"; s]
 let openTkDisplayClass disp cl = opentk_with_args ["-display"; disp; "-name"; cl]
