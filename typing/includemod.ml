@@ -26,6 +26,7 @@ type error =
       Ident.t * exception_declaration * exception_declaration
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
+  | Modtype_permutation
   | Interface_mismatch of string * string
 
 exception Error of error list
@@ -216,12 +217,16 @@ and modtype_infos env id info1 info2 =
       (Tmodtype_abstract, Tmodtype_abstract) -> ()
     | (Tmodtype_manifest mty1, Tmodtype_abstract) -> ()
     | (Tmodtype_manifest mty1, Tmodtype_manifest mty2) ->
-        modtypes env mty1 mty2; modtypes env mty2 mty1; ()
-    | (_, Tmodtype_manifest mty2) ->
-        let mty1 = Tmty_ident(Pident id) in
-        modtypes env mty1 mty2; modtypes env mty2 mty1; ()
+        check_modtype_equiv env mty1 mty2
+    | (Tmodtype_abstract, Tmodtype_manifest mty2) ->
+        check_modtype_equiv env (Tmty_ident(Pident id)) mty2
   with Error reasons ->
     raise(Error(Modtype_infos(id, info1, info2) :: reasons))
+
+and check_modtype_equiv env mty1 mty2 =
+  match (modtypes env mty1 mty2, modtypes env mty2 mty1) with
+    (Tcoerce_none, Tcoerce_none) -> ()
+  | (_, _) -> raise(Error [Modtype_permutation])
 
 (* Simplified inclusion check between module types *)
 
@@ -291,6 +296,8 @@ let include_err = function
       print_string "is not included in"; print_space();
       modtype_declaration id d2;
       close_box()
+  | Modtype_permutation ->
+      print_string "Illegal permutation of structure fields"
   | Interface_mismatch(impl_name, intf_name) ->
       open_hovbox 0;
       print_string "The implementation "; print_string impl_name;
