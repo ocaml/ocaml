@@ -138,6 +138,9 @@ Parenthesized expressions can contain a type constraint, as in @'('
 expr ':' type ')'@. This constraint forces the type of @expr@ to be
 compatible with @type@.
 
+Parenthesized expressions can also contain coercions @'(' expr [':' type] ':>' type')'@ (see subsection~\ref{s:objects} below).
+
+
 \subsubsection*{Function application}
 
 Function application is denoted by juxtaposition of expressions. The
@@ -211,9 +214,9 @@ match case to be selected. Guards occur just before the "->" token and
 are introduced by the "when" keyword:
 \begin{latexonly}
 $$\begin{array}{rlll}
-\token{function} & {\sl pattern}_1  [\token{when} {\sl cond}_1] & \token{->} & {\sl expr}_1 \\
+\token{function} & {\sl pattern}_1 \; [\token{when} \; {\sl cond}_1] & \token{->} & {\sl expr}_1 \\
 \token{|}   & \ldots \\
-\token{|}   & {\sl pattern}_n  [\token{when} {\sl cond}_n] & \token{->} & {\sl expr}_n
+\token{|}   & {\sl pattern}_n  \; [\token{when} \; {\sl cond}_n] & \token{->} & {\sl expr}_n
 \end{array}$$
 \end{latexonly}
 \begin{rawhtml}
@@ -584,7 +587,7 @@ details). Their meaning may be changed at any time using
 
 \subsection{Objects}
 
-\subsubsection*{Object creation}
+\subsubsection*{Object creation} \label {s:objects}
 
 \ikwd{new\@\verb`new`}
 The expression @'new' class-path@ denotes a function that takes some

@@ -18,7 +18,7 @@
 
 \begin{syntax}
 class-definition:
-    class-header '=' [constraints] { class-fields }
+    class-header '=' { constraint } { class-fields }
 ;
 class-header:
     class-tags parameterized-class-name class-params class-binders
@@ -37,8 +37,8 @@ class-params:
 class-binders:
     ['as' value-name] [':' "'" ident]
 ;
-constraints:
-    { 'constraint' "'" ident '=' typexpr }
+constraint:
+    'constraint' "'" ident '=' typexpr
 ;
 class-fields:
     'inherit' ancestor
@@ -64,7 +64,8 @@ method-type:
 
 A class definition @'class' class-definition { 'and' class-definition }@
 is recursive. Each @class-definition@ defines a @class-name@ that can be
-used in the whole expression except for inheritance. 
+used in the whole expression except for inheritance. It can also be used for
+inheritance, but only in the definitions that follow its own.   
 
 \subsubsection*{Type parameters}
 
@@ -74,7 +75,7 @@ objects of this class, while the second is more general as it unifies
 with the type of any object belonging to a subclass (see
 section~\ref{s:sharp-types}).
 
-The class type parameters corresponds to the ones of these two
+The class type parameters correspond to the ones of these two
 abbreviations. They must be bound to actual types in the class
 definition using type constraints. The abbreviations are obtained by
 pruning the method types at all occurrences of a type parameter.  So
@@ -93,15 +94,15 @@ construct.
 The binders @class-binders@, i.e.  @'as' value-name@ and @':' "'" ident@,
 allow
 to bind self (the current object) and its type, respectively. The variable
-@value-name@ can then be used as any variable in methods body.
+@value-name@ can then be used as any variable in method body.
 
 \subsubsection*{Constraints on type parameters}
 
 \ikwd{constraint\@\verb`constraint`}
-The construct @{ 'constraint' "'" ident '=' typexpr }@ allows to
-specify type parameters.  The value of the type parameter @ident_i@
-will be an instance of @typexpr_i@ (more precisely, @ident_i@ and
-@typexpr_i@ are unified).
+The construct @ 'constraint' "'" ident '=' typexpr @ allows to
+specify type parameters.  The value of the type parameter @ident@
+will be an instance of @typexpr@ (more precisely, @ident@ and
+@typexpr@ are unified).
 
 \subsubsection*{Inheritance}
 
@@ -172,7 +173,8 @@ The expression @inst-var-name@ evaluates to the value of the
 corresponding instance variable in the current object, while the
 expression @inst-var-name '<-' expr@ modifies in-place the current
 object by replacing the value associated to @inst-var-name@ by the
-value of @expr@. Of course, this instance variable must be mutable.
+value of @expr@. Of course, this instance variable must have been declared
+mutable. 
 
 The expression
 @'{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } ] '>}'@
@@ -218,7 +220,7 @@ class types is closely modeled on class definitions.
 
 \begin{syntax}
 class-type:
-    class-type-header '=' [constraints] { class-type-fields }
+    class-type-header '=' { constraint } { class-type-fields }
 ;
 class-type-header:
     class-tags parameterized-class-name class-type-params

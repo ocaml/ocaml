@@ -86,13 +86,52 @@ List.map get_x l;;
 
 \subsection*{Parameterized classes}
 
-Let us now define a parameterized class. The type parameter must be
-bound in the class body by a type constraint. Here, it is bound to the
-type of the class parameter "c" (hence also to the type of the
-instance variable "center"). In the class type, the actual value of
-the type parameter is displayed in the "constraint" clause. No free
-variables must remain (variables not captured by a type parameter);
-this is why we put an additional type constraint in method "move".
+Reference cells can also be implemented as objects:
+\begin{caml_example}
+class ref x = 
+  val mutable x = x 
+  method get = x
+  method set y = x <- y
+end;;
+\end{caml_example}
+The reason for this definition not to typecheck is that (at least) one of
+the method   has a polymorphic types ---the type of the
+value stored in the reference cell, thus the class should be pamametric.  A
+monormophic instance of the class 
+could be defined by:
+\begin{caml_example}
+class ref (x:int) = 
+  val mutable x = x 
+  method get = x
+  method set y = x <- y
+end;;
+\end{caml_example}
+A class for polymorphic references must  explicitly list the
+type parameters in its declaration.  The type parameters must also be
+bound somewhere in the class body by a type constraint. 
+\begin{caml_example}
+class 'a ref x = 
+  val mutable x = (x : 'a)
+  method get = x
+  method set y = x <- y
+end;;
+
+let r = new ref 1 in r#set 2; (r#get);;
+\end{caml_example}
+The type parameter in the declaration may actually be constrainted in the
+body of the class definition. In class type, the type parameter actual
+value is displayed in the "constraint" clause. 
+\begin{caml_example}
+class 'a ref (x:'a) = 
+  val mutable x = x + 1
+  method get = x
+  method set y = x <- y
+end;;
+\end{caml_example}
+
+Let us consider a more realistic example.  We put an additional type
+constraint in method "move", since no free variables must remain uncaptured
+by a type parameter.
 \begin{caml_example}
 class 'a circle (c : 'a) =
   val mutable center = c

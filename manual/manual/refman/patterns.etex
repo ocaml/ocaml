@@ -64,7 +64,7 @@ bindings performed by the matching against @pattern_1@.
 
 The pattern @"(" pattern_1 ")"@ matches the same values as
 @pattern_1@. A type constraint can appear in a
-parenthesized patterns, as in @"(" pattern_1 ":" typexpr ")"@. This
+parenthesized pattern, as in @"(" pattern_1 ":" typexpr ")"@. This
 constraint forces the type of @pattern_1@ to be compatible with
 @type@.
 

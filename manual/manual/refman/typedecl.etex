@@ -55,7 +55,7 @@ of the right-hand side of the definition.
 
 The optional type equation @'=' typexpr@ makes the defined type
 equivalent to the type expression @typexpr@ on the right of the @'='@
-sign: one can be substituted freely for the other during typing.
+sign: one can be substituted  for the other during typing.
 If no type equation is given, a new type is generated: the defined type
 is incompatible with any other type.
 
