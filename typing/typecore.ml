@@ -383,9 +383,9 @@ let rec type_pat env sp =
         pat_loc = sp.ppat_loc;
         pat_type = p1.pat_type;
         pat_env = env }
-  | Ppat_constraint(sp, sty) ->
+  | Ppat_constraint(sp, (lv,sty)) ->
       let p = type_pat env sp in
-      let ty = Typetexp.transl_simple_type env false sty in
+      let ty = Typetexp.transl_simple_type env false ~local_vars:lv sty in
       unify_pat env p ty;
       p
   | Ppat_type lid ->
@@ -678,8 +678,8 @@ let rec type_approx env sexp =
   | Pexp_sequence (_,e) -> type_approx env e
   | Pexp_constraint (e, sty1, sty2) ->
       let ty = type_approx env e
-      and ty1 = match sty1 with None -> newvar () | Some sty -> approx_type sty
-      and ty2 = match sty1 with None -> newvar () | Some sty -> approx_type sty
+      and ty1 = match sty1 with None -> newvar () | Some (_(* DYN *),sty) -> approx_type sty
+      and ty2 = match sty1 with None -> newvar () | Some (_(* DYN *),sty) -> approx_type sty
       in begin
         try unify env ty ty1; unify env ty1 ty2; ty2
         with Unify trace ->
@@ -951,17 +951,18 @@ let rec type_exp env sexp =
         exp_type = instance Predef.type_unit;
         exp_env = env }
   | Pexp_constraint(sarg, sty, sty') ->
+(* DYN: local variables *)
       let (arg, ty') =
         match (sty, sty') with
           (None, None) ->               (* Case actually unused *)
             let arg = type_exp env sarg in
             (arg, arg.exp_type)
-        | (Some sty, None) ->
-            let ty = Typetexp.transl_simple_type env false sty in
+        | (Some (lvs,sty), None) ->
+            let ty = Typetexp.transl_simple_type env false ~local_vars:lvs sty in
             (type_expect env sarg ty, ty)
-        | (None, Some sty') ->
+        | (None, Some (lvs',sty')) ->
             let (ty', force) =
-              Typetexp.transl_simple_type_delayed env sty'
+              Typetexp.transl_simple_type_delayed env ~local_vars:lvs' sty'
             in
             let arg = type_exp env sarg in
             begin match arg.exp_desc, !self_coercion, (repr ty').desc with
@@ -978,11 +979,11 @@ let rec type_exp env sexp =
                 end
             end;
             (arg, ty')
-        | (Some sty, Some sty') ->
+        | (Some (lvs,sty), Some (lvs',sty')) ->
             let (ty, force) =
-              Typetexp.transl_simple_type_delayed env sty
+              Typetexp.transl_simple_type_delayed env ~local_vars:lvs sty
             and (ty', force') =
-              Typetexp.transl_simple_type_delayed env sty'
+              Typetexp.transl_simple_type_delayed env ~local_vars:lvs' sty'
             in
             begin try
               let force'' = subtype env ty ty' in
@@ -996,6 +997,7 @@ let rec type_exp env sexp =
         exp_loc = arg.exp_loc;
         exp_type = ty';
         exp_env = env }
+(* /DYN *)
   | Pexp_when(scond, sbody) ->
       let cond = type_expect env scond (instance Predef.type_bool) in
       let body = type_exp env sbody in
@@ -1166,21 +1168,10 @@ let rec type_exp env sexp =
          exp_env = env;
        }
 (* DYN *)
-  | Pexp_dynamic (se,stopt) ->
-      let e =
-	match stopt with
-	| Some st ->
-	    let t_expected = Typetexp.transl_type_scheme_for_dynamic env st in
-	    begin_def ();
-	    let e = type_expect env se t_expected in
-	    end_def ();
-	    e
-	| None -> 
-	    begin_def ();
-	    let e = type_exp env se in
-	    end_def ();
-	    e
-      in
+  | Pexp_dynamic (se) ->
+      begin_def ();
+      let e = type_exp env se in
+      end_def ();
       (* We do not generalize the type here. The generalization
 	 and closedness check will be done after all the types
 	 become stable (i.e. at the compilation) *)
@@ -1198,14 +1189,9 @@ let rec type_exp env sexp =
 	exp_type= Predef.type_dyn;
 	exp_env= env;
       }	
-  | Pexp_import (sarg,stopt) ->
+  | Pexp_import (sarg) ->
       let arg = type_expect env sarg Predef.type_dyn in
-      let ty_res =
-	match stopt with
-	| Some st ->
-	    Typetexp.transl_type_scheme_for_dynamic env st
-	| None -> newvar ()
-      in
+      let ty_res = newvar () in
       { exp_desc = Texp_import (arg);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
