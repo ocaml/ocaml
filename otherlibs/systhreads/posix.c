@@ -241,27 +241,6 @@ static void * caml_thread_tick(void * arg)
   return NULL;                  /* prevents compiler warning */
 }
 
-/* Thread termination: remove the descriptor from the list and free
-   the stack space.  */
-
-static void caml_thread_terminate(void)
-{
-  /* Signal that the thread has terminated */
-  caml_mutex_unlock(Terminated(curr_thread->descr));
-  /* Remove curr_thread from the doubly-linked list of threads */
-  curr_thread->next->prev = curr_thread->prev;
-  curr_thread->prev->next = curr_thread->next;
-#ifndef NATIVE_CODE
-  /* Free the memory resources */
-  stat_free(curr_thread->stack_low);
-#endif
-  /* Free the thread descriptor */
-  stat_free(curr_thread);
-  /* Release the main mutex (forever) */
-  enter_blocking_section();
-  /* The thread now stops running */
-}
-
 /* Initialize the thread machinery */
 
 value caml_thread_initialize(value unit)   /* ML */
@@ -336,8 +315,20 @@ static void * caml_thread_start(void * arg)
   clos = Start_closure(th->descr);
   Modify(&(Start_closure(th->descr)), Val_unit);
   callback(clos, Val_unit);
-  /* Cleanup: free the thread resources and release the mutex */
-  caml_thread_terminate();
+  /* Signal that the thread has terminated */
+  caml_mutex_unlock(Terminated(th->descr));
+  /* Remove th from the doubly-linked list of threads */
+  th->next->prev = th->prev;
+  th->prev->next = th->next;
+#ifndef NATIVE_CODE
+  /* Free the memory resources */
+  stat_free(th->stack_low);
+#endif
+  /* Free the thread descriptor */
+  stat_free(th);
+  /* Release the main mutex (forever) */
+  enter_blocking_section();
+  /* The thread now stops running */
   return NULL;
 }  
 
@@ -430,25 +421,6 @@ value caml_thread_join(value th)          /* ML */
 {
   caml_mutex_lock(Terminated(th));
   caml_mutex_unlock(Terminated(th));
-  return Val_unit;
-}
-
-/* Terminate the current thread */
-
-value caml_thread_exit(value unit)       /* ML */
-{
-  caml_thread_terminate();
-  pthread_exit(0);
-  return Val_unit;              /* never reached */
-}
-
-/* Kill another thread */
-/* Currently not implemented due to problems with cleanup handlers on
-   several platforms */
-value caml_thread_kill(caml_thread_t th)       /* ML */
-{
-  invalid_argument("Thread.kill: not implemented");
-  /* pthread_cancel(th->pthread); */
   return Val_unit;
 }
 

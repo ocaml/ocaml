@@ -35,9 +35,9 @@ external id : t -> int = "caml_thread_id"
         (* Return the identifier of the given thread. A thread identifier
            is an integer that identifies uniquely the thread.
            It can be used to build data structures indexed by threads. *)
-external exit : unit -> unit = "caml_thread_exit"
+val exit : unit -> unit
         (* Terminate prematurely the currently executing thread. *)
-external kill : t -> unit = "caml_thread_kill"
+val kill : t -> unit
         (* Terminate prematurely the thread whose handle is given. *)
 
 (** Suspending threads *)
