@@ -209,6 +209,7 @@ let _ =
 (* The loop *)
 
 let parse_toplevel_phrase = ref Parse.toplevel_phrase
+exception PPerror
 
 let loop() =
   print_string "        Objective Caml version ";
@@ -228,11 +229,13 @@ let loop() =
       empty_lexbuf lb;
       Location.reset();
       first_line := true;
-      execute_phrase (!parse_toplevel_phrase lb); ()
+      let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
+      execute_phrase phr; ()
     with
       End_of_file -> exit 0
     | Sys.Break ->
         print_string "Interrupted."; print_newline()
+    | PPerror -> ()
     | x ->
         Errors.report_error x
   done
