@@ -212,7 +212,7 @@ let instr_cd ppf lexbuf =
 let instr_shell ppf lexbuf =
   let cmd = argument_eol argument lexbuf in
   let err = Sys.command cmd in
-  if (err != 0) then eprintf "Shell ommand %S failed with exit code %d\n%!" cmd err
+  if (err != 0) then eprintf "Shell command %S failed with exit code %d\n%!" cmd err
 
 let instr_pwd ppf lexbuf =
   eol lexbuf;
@@ -898,7 +898,7 @@ With no argument, reset the search path." };
 "exit the debugger." };
      { instr_name = "shell"; instr_prio = false;
        instr_action = instr_shell; instr_repeat = true; instr_help =
-"Execute a given COMMAND thru the usual shell (using system call)." };
+"Execute a given COMMAND thru the shell." };
       (* Displacements *)
      { instr_name = "run"; instr_prio = true;
        instr_action = instr_run; instr_repeat = true; instr_help =
