@@ -543,6 +543,7 @@ case "$host" in
   i[3456]86-*-cygwin*)          arch=i386; system=cygwin;;
   mips-*-irix6*)                arch=mips; system=irix;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
+  hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
   hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
   rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
   powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
