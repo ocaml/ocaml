@@ -197,7 +197,7 @@ As demonstrated above, it is important that the type "element" in the
 signature "SET" be declared equal to "Elt.t"; unfortunately, this is
 impossible above since "SET" is defined in a context where "Elt" does
 not exist. To overcome this difficulty, Objective Caml provides a
-"with type" construct over signatures that allow to enrich a signature
+"with type" construct over signatures that allows to enrich a signature
 with extra type equalities:
 \begin{caml_example}
 module AbstractSet = 
@@ -221,14 +221,8 @@ distinguishing upper and lower case.
 module NoCaseString =
   struct
     type t = string
-    let normalize s =           (* Convert to lowercase *)
-      let r = String.copy s in
-      for i = 0 to String.length r - 1 do
-        if r.[i] >= 'A' && r.[i] <= 'Z' then
-          r.[i] <- Char.chr(Char.code r.[i] + 32)
-      done;
-      r
-    let cmp s1 s2 = OrderedString.cmp (normalize s1) (normalize s2)
+    let cmp s1 s2 =
+      OrderedString.cmp (String.lowercase s1) (String.lowercase s2)
   end;;
 module NoCaseStringSet = AbstractSet(NoCaseString);;
 NoCaseStringSet.add "FOO" AbstractStringSet.empty;;

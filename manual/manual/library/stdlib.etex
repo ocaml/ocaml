@@ -47,6 +47,7 @@ Here is a short listing, by theme, of the standard library modules.
 \subsubsection{Input/output:}
 \begin{tabular}{lll}
 "Format" & p.~\pageref{s:Format} & pretty printing \\
+"Marshal" & p.~\pageref{s:Marshal} & marshaling of data structures \\
 "Printf" & p.~\pageref{s:Printf} & formatting printing functions \\
 "Digest" & p.~\pageref{s:Digest} & MD5 message digest \\
 \end{tabular}
@@ -83,6 +84,7 @@ be called from C \\
 \input lexing.tex
 \input list.tex
 \input map.tex
+\input marshal.tex
 \input oo.tex
 \input parsing.tex
 \input printexc.tex

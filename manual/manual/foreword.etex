@@ -33,16 +33,16 @@ shown below:
 
 \section*{License}
 
-The Objective Caml system is copyright \copyright\ 1996 Institut
+The Objective Caml system is copyright \copyright\ 1996, 1997 Institut
 National de Recherche en Informatique et en Automatique (INRIA).
 INRIA holds all ownership rights to the Objective Caml system. See
 the file "LICENSE" in the distribution for licensing information.
 
-The Objective Caml system can be freely copied, but not sold. More
-precisely, INRIA grants any user of the Objective Caml system the
-right to reproduce it, provided that the copies are distributed free
-of charge and under the conditions given in the "LICENSE" file. The
-present documentation is distributed under the same conditions.
+The Objective Caml system can be freely redistributed.
+More precisely, INRIA grants any user of the Objective Caml system the
+right to reproduce it, provided that the copies are distributed under
+the conditions given in the "LICENSE" file. The present documentation
+is distributed under the same conditions.
 
 \section*{Availability}
 

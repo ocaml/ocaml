@@ -35,6 +35,9 @@ programs.  Programs that use this alternate implementation of the
         ocamlopt -thread \var{other options} threads.cmxa \var{other files} \char92
                 -cclib -lthreadsnat -cclib -lpthread
 \end{alltt}
+Depending on the operating system, extra system libraries can be
+necessary.  For instance, under Solaris 2.5, add "-cclib -lposix4"
+at the end of the command line.
 \end{unix}
 
 \begin{windows}

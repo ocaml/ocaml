@@ -49,8 +49,8 @@ q#move 7; (p#get_x, q#get_x);;
 \end{caml_example}
 
 Objects can be compared using the generic comparison functions ("=",
-"<", ...).  Two objects are equals if and only if they are physically
-equals. In particular, an object and its copy are not equals.
+"<", ...).  Two objects are equal if and only if they are physically
+equal. In particular, an object and its copy are not equal.
 \begin{caml_example}
 let q = Oo.copy p;;
 p = q, p = p;;
@@ -303,9 +303,9 @@ or "int_comparable2".
 
 \subsection*{Protected methods}
 
-Protected methods are methods that does not appears in object
-interfaces. They can only be invoked from other methods of the
-same object.
+Protected methods are methods that do not appear in object
+interfaces. They can only be invoked from other methods of the same
+object.
 \begin{caml_example} 
 class restricted_point x_init as self =
   val mutable x = x_init
@@ -341,7 +341,7 @@ end;;
 \end{caml_example}
 It is sometime necessary to restrict the interface of classes.
 Instance variables and protected methods can be hidden by signature
-matching (however, public methods cannot be hidden):
+matching, as shown below. However, public methods cannot be hidden.
 \begin{caml_example}
 module type ABSPOINT = sig 
   class restricted_point (int) =
@@ -354,14 +354,13 @@ module Abspoint : ABSPOINT = Point;;
 
 \subsection*{Using coercions}
 
-Subtyping  is never implicit.  There are, however, two ways of getting
+Subtyping is never implicit.  There are, however, two ways to perform
 subtyping.  The most general construction is fully explicit: both the domain
 and the codomain of the type coercion must be given.
 
-We have seen that points and colored points have incompatible types.  For
-instance, they cannot be mixed in the same
-list. However, a colored point can be coerced to a point, hiding its "color"
-method:
+We have seen that points and colored points have incompatible types.
+For instance, they cannot be mixed in the same list. However, a
+colored point can be coerced to a point, hiding its "color" method:
 \begin{caml_example}
 let colored_point_to_point cp = (cp : colored_point :> point);;
 let p = new point 3 and q = new colored_point 4 "blue";;
