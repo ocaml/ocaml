@@ -220,7 +220,7 @@ value gr_window_id(void)
   char tmp[256];
 
   gr_check_open();
-  sprintf(tmp, "%lu", grwindow.win);
+  sprintf(tmp, "%lu", (unsigned long)grwindow.win);
   return copy_string( tmp );
 }
 
