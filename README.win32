@@ -39,15 +39,19 @@ directories and files:
 
 Installing the toplevel application:
 
-  The file ocaml\ocamlwin.ini assumes that the Caml distribution
-  resides in C:\ocaml. If this is not the case, edit the file
-  ocaml\ocamlwin.ini and change the line that says
+  First of all, copy the file ocaml\ocamlwin.ini to your Windows system
+  directory, e.g. C:\winnt or C:\win95 or C:\windows.
+
+  The file ocamlwin.ini you just copied assumes that the Caml distribution
+  resides in C:\ocaml. If this is not the case, edit the copy in
+  the Windows system directory (e.g. C:\winnt\ocamlwin.ini)
+  and change the line that says
 
           CmdLine=ocamlrun c:\ocaml\bin\ocaml.exe -I c:\ocaml\lib
   to
           CmdLine=ocamlrun <caml_dir>\bin\ocaml.exe -I <caml_dir>\lib
   e.g.
-          CmdLine=ocamlrun d:\lang\ocaml\bin\ocaml.exe -I d:\lang\ocaml\lib
+          CmdLine=ocamlrun D:\lang\ocaml\bin\ocaml.exe -I D:\lang\ocaml\lib
 
 Installing the command-line tools:
 
