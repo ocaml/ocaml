@@ -713,11 +713,17 @@ if test "$posix_threads" = "yes"; then
   otherlibraries="$otherlibraries systhreads"
   bytecccompopts="$bytecccompopts -D_REENTRANT"
   nativecccompopts="$nativecccompopts -D_REENTRANT"
+  case "$host" in
+    *-*-solaris*) pthread_link="-cclib -lpthread -cclib -lposix4";;
+               *) pthread_link="-cclib -lpthread";;
+  esac
+  echo "Options for linking with POSIX threads: $pthread_link"
+  echo "PTHREAD_LINK=$pthread_link" >> Makefile
 elif test "$has_select" = "yes" \
 && test "$has_setitimer" = "yes" \
 && test "$has_gettimeofday" = "yes" \
 && test "$has_wait" = "yes"; then
-  echo "Threads library supported."
+  echo "Threads library supported (using bytecode-level scheduling)."
   otherlibraries="$otherlibraries threads"
 else
   echo "No threads library (missing system calls)"
@@ -764,7 +770,7 @@ do
     if test $dir = /usr/lib; then
       x11_link="-cclib -lX11"
     else
-      x11_link="-cclib -L$dir -cclib -lX11"
+      x11_link="-ccopt -L$dir -cclib -lX11"
       x11_libs="-L$dir"
     fi
     break
