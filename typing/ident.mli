@@ -18,6 +18,7 @@ type t
 
 val create: string -> t
 val create_persistent: string -> t
+val rename: t -> t
 val name: t -> string
 val unique_name: t -> string
 val persistent: t -> bool

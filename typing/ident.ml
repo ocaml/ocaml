@@ -27,6 +27,10 @@ let create s =
 let create_persistent s =
   { name = s; stamp = 0; global = true }
 
+let rename i =
+  incr currentstamp;
+  { i with stamp = !currentstamp }
+
 let name i = i.name
 
 let unique_name i = i.name ^ "_" ^ string_of_int i.stamp
@@ -47,7 +51,7 @@ let current_time() = !currentstamp
 let set_current_time t = currentstamp := max !currentstamp t
 
 let hide i =
-  { stamp = -1; name = i.name; global = i.global }
+  { i with stamp = -1 }
 
 let make_global i =
   i.global <- true
