@@ -176,8 +176,7 @@ let rec instr_uses_gp i =
   match i.desc with
     Lend -> false
   | Lop(Iconst_int n) ->
-      if Nativeint.cmp n (Nativeint.from (-0x8000000)) < 0
-      || Nativeint.cmp n (Nativeint.from 0x7FFFFFFF) > 0
+      if Nativeint.cmp n (-0x8000000) < 0 || Nativeint.cmp n 0x7FFFFFFF > 0
       then true else instr_uses_gp i.next
   | Lop(Iconst_float s) -> true
   | Lop(Iconst_symbol s) -> true

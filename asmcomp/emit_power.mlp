@@ -329,7 +329,7 @@ let rec emit_instr i dslot =
           `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
         else begin
           `	lis	{emit_reg i.res.(0)}, {emit_int(nativehigh n)}\n`;
-          if low n <> 0 then
+          if nativelow n <> 0 then
             `	ori	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_int(nativelow n)}\n`
         end
     | Lop(Iconst_float s) ->
