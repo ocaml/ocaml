@@ -64,6 +64,14 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      in the output of [fprintf] at the current point.
    - [t]: same as [%a], but takes only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
+   - [\{ fmt %\}]: convert a format string argument to its minimal
+     specification. The argument must match the internal format string
+     specification [fmt] that enumerates the
+     conversion specification sequence that defines the format
+     type of the argument.
+   - [\( fmt %\)]: printing format insertion. This convertion takes a
+     format string argument and substitutes it to the specification
+     [fmt] to print the following arguments.
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
 
@@ -120,5 +128,9 @@ val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
 (* For system use only.  Don't call directly. *)
 
 val scan_format :
-  string -> int -> (string -> int -> 'a) -> ('b -> 'c -> int -> 'a) ->
-    ('e -> int -> 'a) -> (int -> 'a) -> 'a
+  string -> int -> (string -> int -> 'a) -> ('b -> 'c -> int -> 'd) ->
+  ('e -> int -> 'f) -> (int -> 'g) ->
+  (('h, 'i, 'j, 'k) format4 -> int -> 'a) -> 'a
+
+val sub_format : char -> string -> int -> int
+val summarize_format : string -> string

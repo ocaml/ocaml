@@ -22,7 +22,8 @@ external format_float: string -> float -> string = "caml_format_float"
 
 let bad_format fmt pos =
   invalid_arg
-    ("printf: bad format " ^ String.sub fmt pos (String.length fmt - pos))
+    ("printf: in format string " ^ fmt ^ ", bad conversion " ^
+     String.sub fmt pos (String.length fmt - pos))
 
 (* Parses a format to return the specified length and the padding direction. *)
 let parse_format format =
@@ -80,13 +81,88 @@ let format_int_with_conv conv fmt i =
    | 'n' | 'N' -> fmt.[String.length fmt - 1] <- 'u'; format_int fmt i
    | _ -> format_int fmt i
 
+(* Returns the position of the last character of the meta format
+   string, starting from position [i], inside a given format [fmt].
+   According to the character [conv], the meta format string is
+   enclosed by the delimitors %{ and %} (when [conv = '{'])
+   or %( and %) (when [conv = '(']). Hence [sub_format] returns the
+   index of the character ')' or '}' that ends the meta format. *)
+let sub_format conv fmt i =
+  let len = String.length fmt in
+  let rec sub_fmt c i =
+    let close = if c = '(' then ')' else '}' in
+    let rec sub j =
+       if j >= len then bad_format fmt i else
+       match fmt.[j] with
+       | '%' -> sub_sub (j + 1)
+       | _ -> sub (j + 1)
+    and sub_sub j =
+       if j >= len then bad_format fmt i else
+       match fmt.[j] with
+       | '(' | '{' as c -> let j = sub_fmt c (j + 1) in sub (j + 1)
+       | ')' | '}' as c ->
+           if c = close then j else bad_format fmt i
+       | _ -> sub (j + 1) in
+    sub i in
+  sub_fmt conv i;;
+
+let get_sub_format conv fmt i =
+ let j = sub_format conv fmt i in
+ String.sub fmt i (j - i - 1);;
+
+(* Returns a string that summarizes the typing information that a given
+   format string contains.
+   It also check the well-formedness of the string format.
+   For instance [format_type "A number %d\n"] is "%i". *)
+let summarize_format fmt =
+  let len = String.length fmt in
+  let b = Buffer.create len in
+  let add i c = Buffer.add_char b '%'; Buffer.add_char b c; i + 1 in
+  let rec scan_flags i =
+    if i >= len then bad_format fmt i (*incomplete i*) else
+    match String.unsafe_get fmt i with
+    | '*' -> scan_flags (add i '*')
+    | '#' | '-' | ' ' | '+' -> scan_flags (succ i)
+    | '_' -> Buffer.add_char b '_'; scan_flags (i + 1)
+    | '0'..'9'
+    | '.'  -> scan_flags (succ i)
+    | _ -> scan_conv i
+  and scan_conv i =
+    if i >= len then bad_format fmt i (*incomplete i*) else
+    match String.unsafe_get fmt i with
+    | '%' | '!' -> succ i
+    | 's' | 'S' | '[' -> add i 's'
+    | 'c' | 'C' -> add i 'c'
+    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' -> add i 'i'
+    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> add i 'f'
+    | 'B' | 'b' -> add i 'B'
+    | 'a' | 't' as conv -> add i conv
+    | 'l' | 'n' | 'L' as conv ->
+        let j = i + 1 in
+        if j >= len then add i 'i' else begin
+          match fmt.[j] with
+          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' -> add (add i conv) 'i'
+          | c -> add i 'i' end
+    | '{' | '(' as conv -> add i conv
+    | '}' | ')' as conv -> add i conv
+    | _ -> bad_format fmt i in
+  let lim = len - 1 in
+  let rec loop i =
+    if i < lim then
+     if fmt.[i] = '%' then loop (scan_flags (i + 1)) else
+     loop (i + 1) in
+  loop 0;
+  Buffer.contents b;;
+
 (* Decode a %format and act on it.
    [fmt] is the printf format style, and [pos] points to a [%] character.
    After consuming the appropriate number of arguments and formatting
-   them, one of the three continuations is called:
+   them, one of the five continuations is called:
    [cont_s] for outputting a string (args: string, next pos)
    [cont_a] for performing a %a action (args: fn, arg, next pos)
    [cont_t] for performing a %t action (args: fn, next pos)
+   [cont_f] for performing a flush action 
+   [cont_m] for performing a %( action (args: sfmt, next pos)
    "next pos" is the position in [fmt] of the first character following
    the %format in [fmt]. *)
 
@@ -97,7 +173,7 @@ let format_int_with_conv conv fmt i =
    caught by the [_ -> bad_format] clauses below.
    Don't do this at home, kids. *)
 
-let scan_format fmt pos cont_s cont_a cont_t cont_f =
+let scan_format fmt pos cont_s cont_a cont_t cont_f cont_m =
   let rec scan_flags widths i =
     match String.unsafe_get fmt i with
     | '*' ->
@@ -109,30 +185,30 @@ let scan_format fmt pos cont_s cont_a cont_t cont_f =
     | '%' ->
         cont_s "%" (succ i)
     | 's' | 'S' as conv ->
-        Obj.magic (fun (s: string) ->
+        Obj.magic (fun (s : string) ->
           let s = if conv = 's' then s else "\"" ^ String.escaped s ^ "\"" in
           if i = succ pos (* optimize for common case %s *)
           then cont_s s (succ i)
           else cont_s (format_string (extract_format fmt pos i widths) s)
                       (succ i))
     | 'c' | 'C' as conv ->
-        Obj.magic (fun (c: char) ->
+        Obj.magic (fun (c : char) ->
           if conv = 'c'
           then cont_s (String.make 1 c) (succ i)
           else cont_s ("'" ^ Char.escaped c ^ "'") (succ i))
     | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' as conv ->
-        Obj.magic(fun (n: int) ->
-          cont_s (format_int_with_conv conv
-                    (extract_format fmt pos i widths) n)
-                 (succ i))
+        Obj.magic (fun (n : int) ->
+          cont_s
+            (format_int_with_conv conv (extract_format fmt pos i widths) n)
+            (succ i))
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' as conv ->
-        Obj.magic(fun (f: float) ->
+        Obj.magic (fun (f : float) ->
           let s =
             if conv = 'F' then string_of_float f else
             format_float (extract_format fmt pos i widths) f in
           cont_s s (succ i))
     | 'B' | 'b' ->
-        Obj.magic(fun (b: bool) ->
+        Obj.magic (fun (b : bool) ->
           cont_s (string_of_bool b) (succ i))
     | 'a' ->
         Obj.magic (fun printer arg ->
@@ -140,54 +216,59 @@ let scan_format fmt pos cont_s cont_a cont_t cont_f =
     | 't' ->
         Obj.magic (fun printer ->
           cont_t printer (succ i))
-    | 'l' ->
+    | 'l' | 'n' | 'L' as conv ->
         begin match String.unsafe_get fmt (succ i) with
         | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            Obj.magic(fun (n: int32) ->
-              cont_s (format_int32 (extract_format fmt pos (succ i) widths) n)
-                     (i + 2))
+            begin match conv with
+            | 'l' ->
+               Obj.magic (fun (n : int32) ->
+                 cont_s
+                   (format_int32 (extract_format fmt pos (succ i) widths) n)
+                   (i + 2))
+            | 'n' ->
+               Obj.magic (fun (n : nativeint) ->
+                 cont_s
+                   (format_nativeint (extract_format fmt pos (succ i) widths) n)
+                   (i + 2))
+            | _ ->
+               Obj.magic (fun (n : int64) ->
+                 cont_s
+                   (format_int64 (extract_format fmt pos (succ i) widths) n)
+                   (i + 2))
+            end
         | _ ->
-            bad_format fmt pos
-        end
-    | 'n' ->
-        begin match String.unsafe_get fmt (succ i) with
-        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            Obj.magic(fun (n: nativeint) ->
-              cont_s (format_nativeint
-                        (extract_format fmt pos (succ i) widths)
-                        n)
-                     (i + 2))
-        | _ ->
-            Obj.magic(fun (n: int) ->
-              cont_s (format_int_with_conv 'n'
-                        (extract_format fmt pos i widths)
-                        n)
-                     (succ i))
-        end
-    | 'L' ->
-        begin match String.unsafe_get fmt (succ i) with
-        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            Obj.magic(fun (n: int64) ->
-              cont_s (format_int64 (extract_format fmt pos (succ i) widths) n)
-                     (i + 2))
-        | _ ->
-            bad_format fmt pos
+           Obj.magic (fun (n : int) ->
+              cont_s
+                (format_int_with_conv 'n' (extract_format fmt pos i widths) n)
+                (succ i))
         end
     | '!' ->
         Obj.magic (cont_f (succ i))
+    | '{' | '(' as conv ->
+        Obj.magic (fun xf ->
+          let i = succ i in
+          let j = sub_format conv fmt i + 1 in
+          if conv = '{' then
+            (* Just print the format argument as a specification. *)
+            cont_s (summarize_format (string_of_format xf)) j else
+            (* Use the format argument instead of the format specification. *)
+            cont_m xf j)
+    | ')' ->
+        Obj.magic (cont_s "" (succ i))
     | _ ->
-        bad_format fmt pos
-  in scan_flags [] (pos + 1)
+        bad_format fmt pos in
+  scan_flags [] (pos + 1)
 
 (* Application to [fprintf], etc.  See also [Format.*printf]. *)
 
-let fprintf chan fmt =
+let rec kfprintf k chan fmt =
   let fmt = string_of_format fmt in
   let len = String.length fmt in
+
   let rec doprn i =
-    if i >= len then Obj.magic () else
+    if i >= len then Obj.magic (k chan) else
     match String.unsafe_get fmt i with
-    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f
+    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f cont_m
     |  c  -> output_char chan c; doprn (succ i)
   and cont_s s i =
     output_string chan s; doprn i
@@ -197,23 +278,27 @@ let fprintf chan fmt =
     printer chan; doprn i
   and cont_f i =
     flush chan; doprn i
-  in doprn 0
+  and cont_m sfmt i =
+    kfprintf (Obj.magic (fun _ -> doprn i)) chan sfmt in
 
+  doprn 0
+
+let fprintf chan fmt = kfprintf (fun _ -> ()) chan fmt
 let printf fmt = fprintf stdout fmt
 let eprintf fmt = fprintf stderr fmt
 
-let kprintf kont fmt =
+let rec ksprintf kont fmt =
   let fmt = string_of_format fmt in
   let len = String.length fmt in
   let dest = Buffer.create (len + 16) in
   let rec doprn i =
     if i >= len then begin
       let res = Buffer.contents dest in
-      Buffer.clear dest;  (* just in case kprintf is partially applied *)
+      Buffer.clear dest; (* just in case ksprintf is partially applied *)
       Obj.magic (kont res)
     end else
     match String.unsafe_get fmt i with
-    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f
+    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f cont_m
     |  c  -> Buffer.add_char dest c; doprn (succ i)
   and cont_s s i =
     Buffer.add_string dest s; doprn i
@@ -222,17 +307,22 @@ let kprintf kont fmt =
   and cont_t printer i =
     Buffer.add_string dest (printer ()); doprn i
   and cont_f i = doprn i
-  in doprn 0
+  and cont_m sfmt i =
+    ksprintf (fun res -> Obj.magic (cont_s res i)) sfmt in
 
-let sprintf fmt = kprintf (fun x -> x) fmt;;
+  doprn 0
 
-let bprintf dest fmt =
+let sprintf fmt = ksprintf (fun x -> x) fmt
+
+let kprintf = ksprintf
+
+let rec bprintf dest fmt =
   let fmt = string_of_format fmt in
   let len = String.length fmt in
   let rec doprn i =
     if i >= len then Obj.magic () else
     match String.unsafe_get fmt i with
-    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f
+    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f cont_m
     |  c  -> Buffer.add_char dest c; doprn (succ i)
   and cont_s s i =
     Buffer.add_string dest s; doprn i
@@ -241,4 +331,7 @@ let bprintf dest fmt =
   and cont_t printer i =
     printer dest; doprn i
   and cont_f i = doprn i
-  in doprn 0
+  and cont_m sfmt i =
+    bprintf dest sfmt; doprn i in
+
+  doprn 0

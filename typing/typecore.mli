@@ -75,6 +75,7 @@ type error =
   | Label_missing of string list
   | Label_not_mutable of Longident.t
   | Bad_format of string
+  | Bad_conversion of string * string
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t

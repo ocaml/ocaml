@@ -931,7 +931,7 @@ let implode_rev s0 = function
    according to the format.
    Regular [fprintf]-like functions of this module are obtained via partial
    applications of [fprintf_out]. *)
-let fprintf_out str out ppf format =
+let rec fprintf_out str out ppf format =
   let format = string_of_format format in
   let limit = String.length format in
 
@@ -956,7 +956,7 @@ let fprintf_out str out ppf format =
     else
       match format.[i] with
       | '%' ->
-          Printf.scan_format format i cont_s cont_a cont_t cont_f
+          Printf.scan_format format i cont_s cont_a cont_t cont_f cont_m
       | '@' ->
           let i = succ i in
           if i >= limit then invalid_format format i else
@@ -1018,6 +1018,9 @@ let fprintf_out str out ppf format =
     doprn i
   and cont_f i =
     pp_print_flush ppf (); doprn i
+  and cont_m fmt i =
+    (* Mu-rule bites one more time! *)
+    (Obj.magic fprintf_out) str (fun out -> doprn i) ppf fmt 
 
   and get_int i c =
    if i >= limit then invalid_integer format i else
@@ -1028,7 +1031,7 @@ let fprintf_out str out ppf format =
       and cont_a printer arg i = invalid_integer format i
       and cont_t printer i = invalid_integer format i
       and cont_f i = invalid_integer format i in
-      Printf.scan_format format i cont_s cont_a cont_t cont_f
+      Printf.scan_format format i cont_s cont_a cont_t cont_f cont_m
    | _ ->
       let rec get j =
        if j >= limit then invalid_integer format j else
@@ -1088,7 +1091,7 @@ let fprintf_out str out ppf format =
          get (s :: s0 :: accu) i i
        and cont_f i =
          format_invalid_arg "bad tag name specification" format i in
-       Printf.scan_format format j cont_s cont_a cont_t cont_f
+       Printf.scan_format format j cont_s cont_a cont_t cont_f cont_m
     | c -> get accu i (succ j) in
    get [] i i
 

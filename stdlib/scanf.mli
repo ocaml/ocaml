@@ -147,6 +147,24 @@ val bscanf :
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
      [\[^\]\]] matches any character that is not [\]].
+   - [\{ fmt %\}]: reads a format string argument that matches
+     the internal format string specification [fmt].
+     The [fmt] character string defines the conversion
+     specification sequence that in turn states the format type [t] of the
+     argument returned.
+     The argument is read according to the lexical conventions of Caml
+     for format strings, and must have a type compatible with [t],
+     otherwise the exception [Scan_failure] is raised.
+     For instance, "%\{%i%\}" reads any format string that can read a value of
+     type [int]; hence [Scanf.sscanf "fmt:\\\"number is %u\\\"" "fmt:%\{%i%\}"]
+     succeeds and returns the format string ["number is %u"].
+   - [\( fmt %\)]: scanning format insertion.
+     This conversion reads a format string specified by [fmt] with
+     the same conventions as the [\{ fmt \}] conversion above.
+     After successful reading of a format string compatible with
+     [fmt], the scanning process goes on, first scanning according to
+     the very format string read, then resuming as usual to the
+     following conversions.
    - [l]: applies [f] to the number of lines read so far.
    - [n]: applies [f] to the number of characters read so far.
    - [N] or [L]: applies [f] to the number of tokens read so far.

@@ -244,7 +244,7 @@ let bad_input_escape c =
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
       let i = Scanning.char_count ib in
-      bad_input (Printf.sprintf "scanf: bad input at char number %i: %S" i s)
+      bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
   | x -> raise x;;
 
 let bad_format fmt i fc =
@@ -253,6 +253,12 @@ let bad_format fmt i fc =
        "scanf: bad conversion %%%c, at char number %i in format %S" fc i fmt);;
 
 let bad_float () = bad_input "no dot or exponent part found in float token";;
+
+let format_mismatch fmt1 fmt2 ib =
+  let err =
+    Printf.sprintf
+      "format read %S does not match specification %S" fmt2 fmt1 in
+  scanf_bad_input ib (Scan_failure err);;
 
 (* Checking that the current char is indeed one of range, then skip it. *)
 let check_char_in range ib =
@@ -656,16 +662,18 @@ let get_char_in_range r c = get_bit_of_range r (int_of_char c);;
 
 let bit_not b = (lnot b) land 1;;
 
-(* Build the bit vector corresponding to a char set read in the format. *)
-let make_bv bit set =
+(* Build the bit vector corresponding to the set of characters
+   that belongs to the string argument [set].
+   (In the Scanf module [set] is always a sub-string of the format). *)
+let make_char_bit_vect bit set =
   let r = make_range (bit_not bit) in
   let lim = String.length set - 1 in
   let rec loop bit rp i =
     if i <= lim then
     match set.[i] with
     | '-' when rp ->
-       (* if i = 0 then rp is false (since the initial call is loop bit false 0)
-          hence i >= 1 and the following is safe. *)
+       (* if i = 0 then rp is false (since the initial call is
+          loop bit false 0). Hence i >= 1 and the following is safe. *)
        let c1 = set.[i - 1] in
        let i = i + 1 in
        if i > lim then loop bit false (i - 1) else
@@ -681,7 +689,7 @@ let make_bv bit set =
 
 (* Compute the predicate on chars corresponding to a char set. *)
 let make_pred bit set stp =
-  let r = make_bv bit set in
+  let r = make_char_bit_vect bit set in
   List.iter
     (fun c -> set_bit_of_range r (int_of_char c) (bit_not bit)) stp;
   (fun c -> get_char_in_range r c);;
@@ -859,8 +867,8 @@ let kscanf ib ef fmt f =
   and scan_conversion skip max f i =
     let stack = if skip then no_stack else stack in
     match fmt.[i] with
-    | '%' as c ->
-        check_char ib c; scan_fmt f (i + 1)
+    | '%' as conv ->
+        check_char ib conv; scan_fmt f (i + 1)
     | 'c' when max = 0 ->
         let c = Scanning.checked_peek_char ib in
         scan_fmt (stack f c) (i + 1)
@@ -893,26 +901,26 @@ let kscanf ib ef fmt f =
     | 'B' | 'b' ->
         let x = scan_bool max ib in
         scan_fmt (stack f (token_bool ib)) (i + 1)
-    | 'l' | 'n' | 'L' as t ->
+    | 'l' | 'n' | 'L' as conv ->
         let i = i + 1 in
-        if i > lim then scan_fmt (stack f (get_count t ib)) i else begin
+        if i > lim then scan_fmt (stack f (get_count conv ib)) i else begin
         match fmt.[i] with
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
             let x = scan_int_conv conv max ib in
-            begin match t with
+            begin match conv with
             | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
-            | 'L' -> scan_fmt (stack f (token_int64 conv ib)) (i + 1)
-            | _ -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1) end
-        | c -> scan_fmt (stack f (get_count t ib)) i end
-    | 'N' as t ->
-        scan_fmt (stack f (get_count t ib)) (i + 1)
-    | '!' as c ->
+            | 'n' -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1)
+            | _ -> scan_fmt (stack f (token_int64 conv ib)) (i + 1) end
+        | c -> scan_fmt (stack f (get_count conv ib)) i end
+    | 'N' as conv ->
+        scan_fmt (stack f (get_count conv ib)) (i + 1)
+    | '!' ->
         if Scanning.end_of_input ib then scan_fmt f (i + 1)
         else bad_input "end of input not found"
     | '_' ->
         if i > lim then bad_format fmt i fmt.[lim - 1] else
         scan_conversion true max f (i + 1)
-    | '0' .. '9' as c ->
+    | '0' .. '9' as conv ->
         let rec read_width accu i =
           if i > lim then accu, i else
           match fmt.[i] with
@@ -920,10 +928,27 @@ let kscanf ib ef fmt f =
              let accu = 10 * accu + int_value_of_char c in
              read_width accu (i + 1)
           | _ -> accu, i in
-        let max, i = read_width (int_value_of_char c) (i + 1) in
-        if i > lim then bad_format fmt i fmt.[lim - 1] else
-        scan_conversion skip max f i
-    | c -> bad_format fmt i c
+        let max, i = read_width (int_value_of_char conv) (i + 1) in
+        if i > lim then bad_format fmt i fmt.[lim - 1] else begin
+        match fmt.[i] with
+        | '.' ->
+          let p, i = read_width 0 (i + 1) in
+          scan_conversion skip (max + p + 1) f i
+        | _ -> scan_conversion skip max f i end
+    | '(' | '{' as conv ->
+        let i = succ i in
+        let sj = Printf.sub_format conv fmt i in
+        let sfmt = String.sub fmt i (sj - i - 1) in
+        let x = scan_String max ib in
+        let rfmt = token_string ib in
+        if Printf.summarize_format sfmt <> Printf.summarize_format rfmt
+          then format_mismatch sfmt rfmt ib else 
+        begin match conv with
+        | '{' -> scan_fmt (stack f rfmt) (sj + 1)
+        | _ ->
+          let nf = scan_fmt (Obj.magic rfmt) 0 in
+          scan_fmt (stack f nf) (sj + 1) end
+    | conv -> bad_format fmt i conv
 
   and scan_fmt_stoppers i =
     if i > lim then i - 1, [] else

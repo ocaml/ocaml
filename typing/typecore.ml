@@ -38,6 +38,7 @@ type error =
   | Label_missing of string list
   | Label_not_mutable of Longident.t
   | Bad_format of string
+  | Bad_conversion of string * string
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t
@@ -626,110 +627,115 @@ and is_nonexpansive_opt = function
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
 let type_format loc fmt =
-  let len = String.length fmt in
-  let ty_input = newvar ()
-  and ty_result = newvar ()
-  and ty_aresult = newvar () in
+
   let ty_arrow gty ty = newty (Tarrow ("", instance gty, ty, Cok)) in
 
-  let invalid_fmt s = raise (Error (loc, Bad_format s)) in
-  let incomplete i = invalid_fmt (String.sub fmt i (len - i)) in
-  let invalid i j = invalid_fmt (String.sub fmt i (j - i + 1)) in
+  let rec type_in_format fmt =
+    let len = String.length fmt in
 
-  let rec scan_format i =
-    if i >= len then ty_aresult, ty_result else
-    match fmt.[i] with
-    | '%' -> scan_flags i (i + 1)
-    | _ -> scan_format (i + 1)
-  and scan_flags i j =
-    if j >= len then incomplete i else
-    match fmt.[j] with
-    | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j + 1)
-    | _ -> scan_skip i j
-  and scan_skip i j =
-    if j >= len then incomplete i else
+    let bad_format i len =
+      raise (Error (loc, Bad_format (String.sub fmt i len))) in
+    let bad_conversion i len =
+      raise (Error (loc, Bad_conversion (fmt, String.sub fmt i len))) in
+    let incomplete i = bad_format i (len - i) in
+
+    let ty_input = newvar ()
+    and ty_result = newvar ()
+    and ty_aresult = newvar () in
+
+    let meta = ref 0 in
+
+    let rec scan_format i =
+      if i >= len then
+        if !meta = 0 then ty_aresult, ty_result else incomplete (i - 1) else
+      match fmt.[i] with
+      | '%' -> scan_opts i (i + 1)
+      | _ -> scan_format (i + 1)
+    and scan_opts i j =
+      if j >= len then incomplete i else
       match fmt.[j] with
-      | '_' -> scan_rest true i j
+      | '_' -> scan_rest true i (j + 1)
       | _ -> scan_rest false i j
-  and scan_rest skip i j =
-    let rec scan_width i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '*' ->
-          let ty_aresult, ty_result = scan_dot i (j + 1) in
-          ty_aresult, ty_arrow Predef.type_int ty_result
-      | '_' -> scan_fixed_width i (j + 1)
-      | '.' -> scan_precision i (j + 1)
-      | _ -> scan_fixed_width i j
-    and scan_fixed_width i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '0' .. '9' | '-' | '+' -> scan_fixed_width i (j + 1)
-      | '.' -> scan_precision i (j + 1)
-      | _ -> scan_conversion i j
-    and scan_dot i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '.' -> scan_precision i (j + 1)
-      | _ -> scan_conversion i j
-    and scan_precision i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '*' ->
-          let ty_aresult, ty_result = scan_conversion i (j + 1) in
-          ty_aresult, ty_arrow Predef.type_int ty_result
-      | _ -> scan_fixed_precision i j
-    and scan_fixed_precision i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '0' .. '9' | '-' | '+' -> scan_fixed_precision i (j + 1)
-      | _ -> scan_conversion i j
+    and scan_rest skip i j =
+      let rec scan_flags i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j + 1)
+        | _ -> scan_width i j
+      and scan_width i j = scan_width_or_prec_value scan_precision i j
+      and scan_decimal_string scan i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '0' .. '9' -> scan_decimal_string scan i (j + 1)
+        | _ -> scan i j
+      and scan_width_or_prec_value scan i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '*' ->
+            let ty_aresult, ty_result = scan i (j + 1) in
+            ty_aresult, ty_arrow Predef.type_int ty_result
+        | '-' | '+' -> scan_decimal_string scan i (j + 1)
+        | _ -> scan_decimal_string scan i j
+      and scan_precision i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '.' -> scan_width_or_prec_value scan_conversion i (j + 1)
+        | _ -> scan_conversion i j
 
-    and conversion j ty_arg =
-      let ty_aresult, ty_result = scan_format (j + 1) in
-      ty_aresult,
-      if skip then ty_result else ty_arrow ty_arg ty_result
+      and conversion j ty_arg =
+        let ty_aresult, ty_result = scan_format (j + 1) in
+        ty_aresult,
+        if skip then ty_result else ty_arrow ty_arg ty_result
 
-    and scan_conversion i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '%' | '!' -> scan_format (j + 1)
-      | 's' | 'S' | '[' -> conversion j Predef.type_string
-      | 'c' | 'C' -> conversion j Predef.type_char
-      | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' -> conversion j Predef.type_int
-      | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
-      | 'B' | 'b' -> conversion j Predef.type_bool
-      | 'a' ->
+      and scan_conversion i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '%' | '!' -> scan_format (j + 1)
+        | 's' | 'S' | '[' -> conversion j Predef.type_string
+        | 'c' | 'C' -> conversion j Predef.type_char
+        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
+          conversion j Predef.type_int
+        | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
+        | 'B' | 'b' -> conversion j Predef.type_bool
+        | 'a' ->
           let ty_arg = newvar () in
           let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in 
           let ty_aresult, ty_result = conversion j ty_arg in
           ty_aresult, ty_arrow ty_a ty_result
-      | 't' -> conversion j (ty_arrow ty_input ty_aresult)
-      | 'n' | 'l' when j + 1 = len -> conversion j Predef.type_int
-      | 'n' | 'l' | 'L' as c ->
+        | 't' -> conversion j (ty_arrow ty_input ty_aresult)
+        | 'l' | 'n' | 'L' as c ->
           let j = j + 1 in
-          if j >= len then incomplete i else begin
-          match fmt.[j] with
-          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-             let ty_arg =
-               match c with
-               | 'l' -> Predef.type_int32
-               | 'n' -> Predef.type_nativeint
-               | _ -> Predef.type_int64 in
+          if j >= len then conversion (j - 1) Predef.type_int else begin
+            match fmt.[j] with
+            | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+              let ty_arg =
+                match c with
+                | 'l' -> Predef.type_int32
+                | 'n' -> Predef.type_nativeint
+                | _ -> Predef.type_int64 in
               conversion j ty_arg
-          | _ ->
-             if c = 'l' || c = 'n'
-             then conversion (j - 1) Predef.type_int
-             else invalid i (j - 1)
+            | c -> conversion (j - 1) Predef.type_int
           end
-      | c -> invalid i j in
-    scan_width i j in
+        | '{' | '(' as c ->
+          let j = j + 1 in
+          if j >= len then incomplete i else
+          let sj = Printf.sub_format c fmt j in
+          let sfmt = String.sub fmt j (sj - j - 1) in
+          let ty_sfmt = type_in_format sfmt in
+          begin match c with
+          | '{' -> conversion (sj + 1) ty_sfmt
+          | _ -> incr meta; conversion (j - 1) ty_sfmt end
+        | ')' when !meta > 0 -> decr meta; scan_format (j + 1)
+        | c -> bad_conversion i (j - i + 1) in
+      scan_flags i j in
 
-  let ty_ares, ty_res = scan_format 0 in
-  newty
-    (Tconstr(Predef.path_format4,
-             [ty_res; ty_input; ty_ares; ty_result],
-             ref Mnil))
+    let ty_ares, ty_res = scan_format 0 in
+    newty
+      (Tconstr(Predef.path_format4,
+               [ty_res; ty_input; ty_ares; ty_result],
+               ref Mnil)) in
+
+  type_in_format fmt
 
 (* Approximate the type of an expression, for better recursion *)
 
@@ -1959,7 +1965,9 @@ let report_error ppf = function
   | Label_not_mutable lid ->
       fprintf ppf "The record field label %a is not mutable" longident lid
   | Bad_format s ->
-      fprintf ppf "Bad format `%s'" s
+      fprintf ppf "Bad format %S" s
+  | Bad_conversion (fmt, conv) ->
+      fprintf ppf "Bad conversion %S in format %S" fmt conv
   | Undefined_method (ty, me) ->
       reset_and_mark_loops ty;
       fprintf ppf
