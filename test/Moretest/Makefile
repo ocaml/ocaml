@@ -25,11 +25,11 @@ cm.byt: cmcaml.ml cmstub.c cmmain.c
 
 cmlinked.out: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLC) -output-obj -o cm.o cmcaml.ml
-	$(BYTECC) -g -o cmlinked.out cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../byterun/libcamlrun.a $(CCLIBS)
+	$(BYTECC) -g -o cmlinked.out cm.o -I../../byterun -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../byterun/libcamlrun.a $(CCLIBS)
 
 cm.out: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLOPT) -output-obj -o cm.o cmcaml.ml
-	$(NATIVECC) -g -o cm.out cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../asmrun/libasmrun.a $(CCLIBS)
+	$(NATIVECC) -g -o cm.out cm.o -I../../byterun -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../asmrun/libasmrun.a $(CCLIBS)
 
 # Common rules
 

@@ -1,7 +1,7 @@
 /* Main program -- in C */
 
 #include <stdlib.h>
-#include <caml/callback.h>
+#include <callback.h>
 
 extern int fib(int n);
 extern char * format_result(int n);
