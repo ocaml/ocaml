@@ -13,8 +13,12 @@
 (* $Id$ *)
 
 type type_repr
-type anything
+(* type dyn = type_repr * 'a with (t, v : dyn) <==> v : t *)
 
 exception Type_error of type_repr * type_repr
 
-val coerce_internal : type_repr * 'a -> type_repr -> anything
+external type_of : dyn -> type_repr = "%field0"
+
+(*--*)
+type anything
+val coerce_internal : dyn -> type_repr -> anything
