@@ -33,7 +33,7 @@ open Mach
 
 (* Association of spill registers to registers *)
 
-let spill_env = ref (Reg.Map.empty: Reg.t Reg.Map.t)
+let spill_env = ref (Reg.Map.empty : Reg.t Reg.Map.t)
 
 let spill_reg r =
   try
@@ -47,7 +47,7 @@ let spill_reg r =
 
 (* Record the position of last use of registers *)
 
-let use_date = ref (Reg.Map.empty: int Reg.Map.t)
+let use_date = ref (Reg.Map.empty : int Reg.Map.t)
 let current_date = ref 0
 
 let record_use regv =
