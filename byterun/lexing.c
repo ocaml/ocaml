@@ -43,7 +43,7 @@ struct lexing_table {
   (*((unsigned char *)((tbl) + (n) * 2)) + \
           (*((schar *)((tbl) + (n) * 2 + 1)) << 8))
 #else
-#define Short(tbl,n) (((short *)(tbl))[n])
+#define Short(tbl,n) (((short *)(tbl))[(n)])
 #endif
 
 value lex_engine(struct lexing_table *tbl, value start_state, struct lexer_buffer *lexbuf)     /* ML */

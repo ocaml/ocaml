@@ -20,8 +20,8 @@
 #include "io.h"
 #include "mlvalues.h"
 
-#define Uninitialised Val_int(0)
-#define Bad_term Val_int(1)
+#define Uninitialised (Val_int(0))
+#define Bad_term (Val_int(1))
 #define Good_term_tag 0
 
 #if defined (HAS_TERMCAP) && !defined (NATIVE_CODE)

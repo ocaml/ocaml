@@ -160,10 +160,10 @@ static void safe_output_value(struct channel *chan, value val)
   external_raise = saved_external_raise;
 }
 
-#define Pc(sp) ((code_t)(sp[0]))
-#define Env(sp) (sp[1])
-#define Extra_args(sp) (Long_val((sp[2])))
-#define Locals(sp) (sp + 3)
+#define Pc(sp) ((code_t)((sp)[0]))
+#define Env(sp) ((sp)[1])
+#define Extra_args(sp) (Long_val(((sp)[2])))
+#define Locals(sp) ((sp) + 3)
 
 void debugger(enum event_kind event)
 {

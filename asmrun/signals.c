@@ -42,11 +42,11 @@
 #ifdef _AIXVERSION_430
 #define STRUCT_SIGCONTEXT struct __sigcontext
 #define CONTEXT_GPR(ctx, regno) \
-  ((ctx)->__sc_jmpbuf.__jmp_context.__gpr[regno])
+  ((ctx)->__sc_jmpbuf.__jmp_context.__gpr[(regno)])
 #else
 #define STRUCT_SIGCONTEXT struct sigcontext
 #define CONTEXT_GPR(ctx, regno) \
-  ((ctx)->sc_jmpbuf.jmp_context.gpr[regno])
+  ((ctx)->sc_jmpbuf.jmp_context.gpr[(regno)])
 #endif
 #endif
 

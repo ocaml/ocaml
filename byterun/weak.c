@@ -37,7 +37,7 @@ value weak_create (value len)        /* ML */
   return res;
 }
 
-#define None_val Val_int(0)
+#define None_val (Val_int(0))
 #define Some_tag 0
 
 value weak_set (value ar, value n, value el)     /* ML */

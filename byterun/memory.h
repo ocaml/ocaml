@@ -41,20 +41,21 @@ color_t allocation_color (void *hp);
 /* void shrink_heap (char *);        Only used in compact.c */
 
 #ifdef DEBUG
-#define DEBUG_clear(result, wosize) { \
-  unsigned long __DEBUG_i; \
-  for (__DEBUG_i = 0; __DEBUG_i < wosize; ++ __DEBUG_i){ \
-    Field (result, __DEBUG_i) = Debug_uninit_minor; \
+#define DEBUG_clear(result, wosize) do{ \
+  unsigned long caml__DEBUG_i; \
+  for (caml__DEBUG_i = 0; caml__DEBUG_i < (wosize); ++ caml__DEBUG_i){ \
+    Field ((result), caml__DEBUG_i) = Debug_uninit_minor; \
   } \
-}
+}while(0)
 #else
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) {        CAMLassert (wosize >= 1); \
+#define Alloc_small(result, wosize, tag) do{      CAMLassert (wosize >= 1); \
                                             CAMLassert ((tag_t) tag < 256); \
   young_ptr -= Bhsize_wosize (wosize);                                      \
   if (young_ptr < young_limit){                                             \
+    young_ptr += Bhsize_wosize (wosize);                                    \
     Setup_for_gc;                                                           \
     minor_collection ();                                                    \
     Restore_after_gc;                                                       \
@@ -62,15 +63,15 @@ color_t allocation_color (void *hp);
   }                                                                         \
   Hd_hp (young_ptr) = Make_header ((wosize), (tag), Caml_black);            \
   (result) = Val_hp (young_ptr);                                            \
-  DEBUG_clear (result, wosize);                                             \
-}
+  DEBUG_clear ((result), (wosize));                                         \
+}while(0)
 
 /* You must use [Modify] to change a field of an existing shared block,
    unless you are sure the value being overwritten is not a shared block and
    the value being written is not a young block. */
 /* [Modify] never calls the GC. */
 
-#define Modify(fp, val) {                                                   \
+#define Modify(fp, val) do{                                                 \
   value _old_ = *(fp);                                                      \
   *(fp) = (val);                                                            \
   if (Is_in_heap (fp)){                                                     \
@@ -84,8 +85,7 @@ color_t allocation_color (void *hp);
       }                                                                     \
     }                                                                       \
   }                                                                         \
-}                                                                           \
-
+}while(0)
 
 struct caml__roots_block {
   struct caml__roots_block *next;
@@ -258,7 +258,11 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 }while(0)
 
 /* convenience macro */
-#define Store_field(block, offset, val) modify (&Field (block, offset), val)
+#define Store_field(block, offset, val) do{ \
+  mlsize_t caml__temp_offset = (offset); \
+  value caml__temp_val = (val); \
+  modify (&Field ((block), caml__temp_offset), caml__temp_val); \
+}while(0)
 
 /*
    NOTE: [Begin_roots] and [End_roots] are superseded by [CAMLparam]*,

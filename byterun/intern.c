@@ -93,7 +93,7 @@ static long read64s(void)
 #endif
 
 #define readblock(dest,len) \
-  (memmove(dest, intern_src, len), intern_src += len)
+  (memmove((dest), intern_src, (len)), intern_src += (len))
 
 static void intern_cleanup(void)
 {

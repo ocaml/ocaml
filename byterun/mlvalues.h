@@ -67,7 +67,7 @@ typedef unsigned long mark_t;
 #define Long_val(x)     ((x) >> 1)
 #define Max_long ((1L << (8 * sizeof(value) - 2)) - 1)
 #define Min_long (-(1L << (8 * sizeof(value) - 2)))
-#define Val_int Val_long
+#define Val_int(x) Val_long(x)
 #define Int_val(x) ((int) Long_val(x))
 
 /* Structure of the header:
@@ -173,8 +173,8 @@ typedef opcode_t * code_t;
 
 /* Another special case: objects */
 #define Object_tag 248
-#define Class_val(val) Field(val, 0)
-#define Oid_val(val) Long_val(Field(val, 1))
+#define Class_val(val) Field((val), 0)
+#define Oid_val(val) Long_val(Field((val), 1))
 
 /* Another special case: variants */
 extern value hash_variant(char * tag);
@@ -212,8 +212,11 @@ void Store_double_val (value,double);
 /* Arrays of floating-point numbers. */
 #define Double_array_tag 254
 #define Double_field(v,i) Double_val((value)((double *)(v) + (i)))
-#define Store_double_field(v,i,d) \
-  Store_double_val((value)((double *)(v) + (i)),d)
+#define Store_double_field(v,i,d) do{ \
+  mlsize_t caml__temp_i = (i); \
+  value caml__temp_d = (d); \
+  Store_double_val((value)((double *) v + caml__temp_i), caml__temp_d); \
+}while(0)
 
 /* Custom blocks.  They contain a pointer to a "method suite"
    of functions (for finalization, comparison, hashing, etc)
@@ -221,7 +224,7 @@ void Store_double_val (value,double);
    the GC; therefore, they must not contain any [value].
    See [custom.h] for operations on method suites. */
 #define Custom_tag 255
-#define Data_custom_val(v) ((void *) &Field(v, 1))
+#define Data_custom_val(v) ((void *) &Field((v), 1))
 struct custom_operations;       /* defined in [custom.h] */
 
 /* Int32.t, Int64.t and Nativeint.t are represented as custom blocks. */
@@ -237,7 +240,7 @@ extern int64 Int64_val(value v);
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 
 extern header_t atom_table[];
-#define Atom(tag) (Val_hp (&(atom_table [tag])))
+#define Atom(tag) (Val_hp (&(atom_table [(tag)])))
 
 /* Is_atom tests whether a well-formed block is statically allocated
    outside the heap. For the bytecode system, only zero-sized block (Atoms)

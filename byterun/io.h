@@ -44,9 +44,10 @@ struct channel {
 /* Functions and macros that can be called from C.  Take arguments of
    type struct channel *.  No locking is performed. */
 
-#define putch(channel, ch)                                                  \
-  { if ((channel)->curr >= (channel)->end) flush_partial(channel);          \
-    *((channel)->curr)++ = (ch); }
+#define putch(channel, ch) do{                                            \
+  if ((channel)->curr >= (channel)->end) flush_partial(channel);          \
+  *((channel)->curr)++ = (ch);                                            \
+}while(0)
 
 #define getch(channel)                                                      \
   ((channel)->curr >= (channel)->max                                        \

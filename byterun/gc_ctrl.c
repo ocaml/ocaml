@@ -204,16 +204,23 @@ static value heap_stats (int returnstats)
   if (returnstats){
     CAMLlocal1 (res);
 
+    /* get a copy of these before allocating anything... */
+    double minwords = stat_minor_words
+                      + (double) Wsize_bsize (young_end - young_ptr);
+    double prowords = stat_promoted_words;
+    double majwords = stat_major_words + (double) allocated_words;
+    long mincoll = stat_major_collections;
+    long majcoll = stat_minor_collections;
+    long heapsz = stat_heap_size;
+    long cpct = stat_compactions;
+
     res = alloc_tuple (14);
-    Store_field (res, 0,
-                 copy_double (stat_minor_words
-                              + (double) Wsize_bsize (young_end - young_ptr)));
-    Store_field (res, 1, copy_double (stat_promoted_words));
-    Store_field (res, 2,
-                 copy_double (stat_major_words + (double) allocated_words));
-    Store_field (res, 3, Val_long (stat_minor_collections));
-    Store_field (res, 4, Val_long (stat_major_collections));
-    Store_field (res, 5, Val_long (Wsize_bsize (stat_heap_size)));
+    Store_field (res, 0, copy_double (minwords));
+    Store_field (res, 1, copy_double (prowords));
+    Store_field (res, 2, copy_double (majwords));
+    Store_field (res, 3, Val_long (mincoll));
+    Store_field (res, 4, Val_long (majcoll));
+    Store_field (res, 5, Val_long (heapsz));
     Store_field (res, 6, Val_long (heap_chunks));
     Store_field (res, 7, Val_long (live_words));
     Store_field (res, 8, Val_long (live_blocks));
@@ -221,7 +228,7 @@ static value heap_stats (int returnstats)
     Store_field (res, 10, Val_long (free_blocks));
     Store_field (res, 11, Val_long (largest_free));
     Store_field (res, 12, Val_long (fragments));
-    Store_field (res, 13, Val_long (stat_compactions));
+    Store_field (res, 13, Val_long (cpct));
     CAMLreturn (res);
   }else{
     CAMLreturn (Val_unit);
@@ -246,13 +253,16 @@ value gc_counters(value v) /* ML */
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
+  /* get a copy of these before allocating anything... */
+  double minwords = stat_minor_words
+                    + (double) Wsize_bsize (young_end - young_ptr);
+  double prowords = stat_promoted_words;
+  double majwords = stat_major_words + (double) allocated_words;
+
   res = alloc_tuple (3);
-  Store_field (res, 0,
-               copy_double (stat_minor_words
-                            + (double) Wsize_bsize (young_end - young_ptr)));
-  Store_field (res, 1, copy_double (stat_promoted_words));
-  Store_field (res, 2,
-               copy_double (stat_major_words + (double) allocated_words));
+  Store_field (res, 0, copy_double (minwords));
+  Store_field (res, 1, copy_double (prowords));
+  Store_field (res, 2, copy_double (majwords));
   CAMLreturn (res);
 }
 

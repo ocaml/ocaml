@@ -77,7 +77,7 @@ void final_do_calls (void)
 }
 
 /* Call a scanning_action [f] on [x]. */
-#define Call_action(f,x) (*f) (x, &(x))
+#define Call_action(f,x) (*(f)) ((x), &(x))
 
 /* Call [*f] on the closures of the finalisable set and
    the closures and values of the finalising set.

@@ -19,63 +19,63 @@
 
 /* Macros to access the stack frame */
 #ifdef TARGET_alpha
-#define Saved_return_address(sp) *((long *)(sp - 8))
-#define Already_scanned(sp, retaddr) (retaddr & 1L)
-#define Mark_scanned(sp, retaddr) (*((long *)(sp - 8)) = retaddr | 1L)
-#define Mask_already_scanned(retaddr) (retaddr & ~1L)
-#define Callback_link(sp) ((struct caml_context *)(sp + 16))
+#define Saved_return_address(sp) *((long *)((sp) - 8))
+#define Already_scanned(sp, retaddr) ((retaddr) & 1L)
+#define Mark_scanned(sp, retaddr) (*((long *)((sp) - 8)) = (retaddr) | 1L)
+#define Mask_already_scanned(retaddr) ((retaddr) & ~1L)
+#define Callback_link(sp) ((struct caml_context *)((sp) + 16))
 #endif
 
 #ifdef TARGET_sparc
-#define Saved_return_address(sp) *((long *)(sp + 92))
-#define Callback_link(sp) ((struct caml_context *)(sp + 104))
+#define Saved_return_address(sp) *((long *)((sp) + 92))
+#define Callback_link(sp) ((struct caml_context *)((sp) + 104))
 #endif
 
 #ifdef TARGET_i386
-#define Saved_return_address(sp) *((long *)(sp - 4))
-#define Callback_link(sp) ((struct caml_context *)(sp + 8))
+#define Saved_return_address(sp) *((long *)((sp) - 4))
+#define Callback_link(sp) ((struct caml_context *)((sp) + 8))
 #endif
 
 #ifdef TARGET_mips
-#define Saved_return_address(sp) *((long *)(sp - 4))
-#define Callback_link(sp) ((struct caml_context *)(sp + 16))
+#define Saved_return_address(sp) *((long *)((sp) - 4))
+#define Callback_link(sp) ((struct caml_context *)((sp) + 16))
 #endif
 
 #ifdef TARGET_hppa
 #define Stack_grows_upwards
-#define Saved_return_address(sp) *((long *)sp)
-#define Callback_link(sp) ((struct caml_context *)(sp - 24))
+#define Saved_return_address(sp) *((long *)(sp))
+#define Callback_link(sp) ((struct caml_context *)((sp) - 24))
 #endif
 
 #ifdef TARGET_power
-#define Saved_return_address(sp) *((long *)(sp - 4))
-#define Already_scanned(sp, retaddr) (retaddr & 1)
-#define Mark_scanned(sp, retaddr) (*((long *)(sp - 4)) = retaddr | 1)
-#define Mask_already_scanned(retaddr) (retaddr & ~1)
+#define Saved_return_address(sp) *((long *)((sp) - 4))
+#define Already_scanned(sp, retaddr) ((retaddr) & 1)
+#define Mark_scanned(sp, retaddr) (*((long *)((sp) - 4)) = (retaddr) | 1)
+#define Mask_already_scanned(retaddr) ((retaddr) & ~1)
 #ifdef SYS_aix
 #define Trap_frame_size 24
 #else
 #define Trap_frame_size 8
 #endif
-#define Callback_link(sp) ((struct caml_context *)(sp + Trap_frame_size))
+#define Callback_link(sp) ((struct caml_context *)((sp) + Trap_frame_size))
 #endif
 
 #ifdef TARGET_m68k
-#define Saved_return_address(sp) *((long *)(sp - 4))
-#define Callback_link(sp) ((struct caml_context *)(sp + 8))
+#define Saved_return_address(sp) *((long *)((sp) - 4))
+#define Callback_link(sp) ((struct caml_context *)((sp) + 8))
 #endif
 
 #ifdef TARGET_arm
-#define Saved_return_address(sp) *((long *)(sp - 4))
-#define Callback_link(sp) ((struct caml_context *)(sp + 8))
+#define Saved_return_address(sp) *((long *)((sp) - 4))
+#define Callback_link(sp) ((struct caml_context *)((sp) + 8))
 #endif
 
 #ifdef TARGET_ia64
-#define Saved_return_address(sp) *((long *)(sp + 8))
-#define Already_scanned(sp, retaddr) (retaddr & 1L)
-#define Mark_scanned(sp, retaddr) (*((long *)(sp + 8)) = retaddr | 1L)
-#define Mask_already_scanned(retaddr) (retaddr & ~1L)
-#define Callback_link(sp) ((struct caml_context *)(sp + 32))
+#define Saved_return_address(sp) *((long *)((sp) + 8))
+#define Already_scanned(sp, retaddr) ((retaddr) & 1L)
+#define Mark_scanned(sp, retaddr) (*((long *)((sp) + 8)) = (retaddr) | 1L)
+#define Mask_already_scanned(retaddr) ((retaddr) & ~1L)
+#define Callback_link(sp) ((struct caml_context *)((sp) + 32))
 #endif
 
 /* Structure of Caml callback contexts */

@@ -130,6 +130,7 @@ void empty_minor_heap (void)
     gc_message (0x02, "<", 0);
     oldify_local_roots();
     for (r = ref_table; r < ref_table_ptr; r++) oldify (**r, *r);
+    if (young_ptr < young_limit) young_ptr = young_limit;
     stat_minor_words += Wsize_bsize (young_end - young_ptr);
     young_ptr = young_end;
     ref_table_ptr = ref_table;
