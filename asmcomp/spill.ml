@@ -48,7 +48,8 @@ let record_use regv =
 (* Check if the register pressure overflows the maximum pressure allowed
    at that point. If so, spill enough registers to lower the pressure. *)
 
-let add_superpressure_regs live_regs res_regs spilled =
+let add_superpressure_regs op live_regs res_regs spilled =
+  let max_pressure = Proc.max_register_pressure op in
   let regs = Reg.add_set_array live_regs res_regs in
   (* Compute the pressure in each register class *)
   let pressure = Array.new Proc.num_register_classes 0 in
@@ -63,15 +64,17 @@ let add_superpressure_regs live_regs res_regs spilled =
   let rec check_pressure class spilled =
     if class >= Proc.num_register_classes then
       spilled
-    else if pressure.(class) <= Proc.max_register_pressure.(class) then
+    else if pressure.(class) <= max_pressure.(class) then
       check_pressure (class+1) spilled
     else begin
-      (* Find the least recently used, unspilled register in the class *)
+      (* Find the least recently used, unspilled, unallocated, live register
+         in the class *)
       let lru_date = ref 1000000 and lru_reg = ref Reg.dummy in
       Reg.Set.iter
         (fun r ->
           if Proc.register_class r = class &
-             not (Reg.Set.mem r spilled) then begin
+             not (Reg.Set.mem r spilled) &
+             r.loc = Unknown then begin
             try
               let d = Reg.Map.find r !use_date in
               if d < !lru_date then begin
@@ -81,7 +84,7 @@ let add_superpressure_regs live_regs res_regs spilled =
             with Not_found ->                 (* Should not happen *)
               ()
           end)
-        regs;
+        live_regs;
       pressure.(class) <- pressure.(class) - 1;
       check_pressure class (Reg.Set.add !lru_reg spilled)
     end in
@@ -108,7 +111,7 @@ let rec reload i before =
   | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
       (add_reloads (Reg.inter_set_array before i.arg) i,
        Reg.Set.empty)
-  | Iop(Icall_ind | Icall_imm _ | Iextcall _) ->
+  | Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) ->
       (* All regs live across must be spilled *)
       let (new_next, finally) = reload i.next i.live in
       (add_reloads (Reg.inter_set_array before i.arg)
@@ -118,9 +121,9 @@ let rec reload i before =
       let new_before =
         (* Quick check to see if the register pressure is below the maximum *)
         if Reg.Set.cardinal i.live + Array.length i.res <=
-           Proc.safe_register_pressure
+           Proc.safe_register_pressure op
         then before
-        else add_superpressure_regs i.live i.res before in
+        else add_superpressure_regs op i.live i.res before in
       let after =
         Reg.diff_set_array (Reg.diff_set_array new_before i.arg) i.res in
       let (new_next, finally) = reload i.next after in
@@ -233,7 +236,7 @@ let rec spill i finally =
       let before1 = Reg.diff_set_array after i.res in
       let before =
         match i.desc with
-          Iop(Icall_ind) | Iop(Icall_imm _) | Iop(Iextcall _) ->
+          Iop(Icall_ind) | Iop(Icall_imm _) | Iop(Iextcall(_, _)) ->
             Reg.Set.union before1 !spill_at_raise
         | _ ->
             before1 in

@@ -1,9 +1,9 @@
 (* String operations *)
 
-external length : string -> int = "ml_string_length"
+external length : string -> int = "%string_length"
 
-external get : string -> int -> char = "string_get"
-external set : string -> int -> char -> unit = "string_set"
+external get : string -> int -> char = "%string_safe_get"
+external set : string -> int -> char -> unit = "%string_safe_set"
 
 external create : int -> string = "create_string"
 val make : int -> char -> string

@@ -13,6 +13,22 @@ open Emitaux
 
 let fastcode_flag = ref true
 
+let stack_offset = ref 0
+
+(* Layout of the stack frame *)
+
+let frame_size () =                     (* includes return address *)
+  !stack_offset + 4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) + 4
+
+let slot_offset loc class =
+  match loc with
+    Incoming n -> frame_size() + n
+  | Local n ->
+      if class = 0
+      then !stack_offset + n * 4
+      else !stack_offset + num_stack_slots.(0) * 4 + n * 8
+  | Outgoing n -> n
+
 (* Symbols are prefixed with _ *)
 
 let emit_symbol s =
@@ -76,7 +92,7 @@ type frame_descr =
 
 let frame_descriptors = ref([] : frame_descr list)
 
-let record_frame live =
+let record_frame_label live =
   let lbl = new_label() in
   let live_offset = ref [] in
   Reg.Set.iter
@@ -91,16 +107,20 @@ let record_frame live =
     { fd_lbl = lbl;
       fd_frame_size = frame_size();
       fd_live_offset = !live_offset } :: !frame_descriptors;
-  `{emit_label lbl}:`
+  lbl
+
+let record_frame live =
+  let lbl = record_frame_label live in `{emit_label lbl}:`
 
 let emit_frame fd =
-  `	.long	{emit_label fd.fd_lbl} + 4\n`;
+  `	.long	{emit_label fd.fd_lbl}\n`;
   `	.word	{emit_int fd.fd_frame_size}\n`;
   `	.word	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
     (fun n ->
       `	.word	{emit_int n}\n`)
-    fd.fd_live_offset
+    fd.fd_live_offset;
+  `	.align	2\n`
 
 (* Names for instructions *)
 
@@ -126,8 +146,12 @@ let name_for_cond_branch = function
     
 (* Output the assembly code for an instruction *)
 
+(* Name of current function *)
 let function_name = ref ""
+(* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
+(* Label of trap for out-of-range accesses *)
+let range_check_trap = ref 0
 
 let float_constants = ref ([] : (int * string) list)
 
@@ -166,9 +190,11 @@ let emit_instr i =
     | Lop(Iconst_symbol s) ->
         `	movl	${emit_symbol s}, {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
-        `{record_frame i.live}	call	*{emit_reg i.arg.(0)}\n`
+        `	call	*{emit_reg i.arg.(0)}\n`;
+        record_frame i.live
     | Lop(Icall_imm s) ->
-        `{record_frame i.live}	call	{emit_symbol s}\n`
+        `	call	{emit_symbol s}\n`;
+        record_frame i.live
     | Lop(Itailcall_ind) ->
         let n = frame_size() - 4 in
         if n > 0 then
@@ -183,9 +209,14 @@ let emit_instr i =
             `	addl	${emit_int n}, %esp\n`;
           `	jmp	{emit_symbol s}\n`
         end
-    | Lop(Iextcall s) ->
-        `	movl	${emit_symbol s}, %eax\n`;
-        `{record_frame i.live}	call	_caml_c_call\n`
+    | Lop(Iextcall(s, alloc)) ->
+        if alloc then begin
+          `	movl	${emit_symbol s}, %eax\n`;
+          `	call	_caml_c_call\n`;
+          record_frame i.live
+        end else begin
+          `	call	{emit_symbol s}\n`
+        end
     | Lop(Istackoffset n) ->
         if n >= 0
         then `	subl	${emit_int n}, %esp\n`
@@ -233,20 +264,20 @@ let emit_instr i =
           `	subl	${emit_int n}, %eax\n`;
           `	movl	%eax, _young_ptr\n`;
           `	cmpl	_young_start, %eax\n`;
-          let lbl_cont = new_label() in
+          let lbl_cont = record_frame_label i.live in
           `	jae	{emit_label lbl_cont}\n`;
           `	movl	${emit_int n}, %eax\n`;
-          `{record_frame i.live}	call	_caml_call_gc\n`;
+          `	call	_caml_call_gc\n`;
           `{emit_label lbl_cont}:	leal	4(%eax), {emit_reg i.res.(0)}\n`
         end else begin
           begin match n with
-            8  -> `{record_frame i.live}	call	_caml_alloc1\n`
-          | 12 -> `{record_frame i.live}	call	_caml_alloc2\n`
-          | 16 -> `{record_frame i.live}	call	_caml_alloc3\n`
+            8  -> `	call	_caml_alloc1\n`
+          | 12 -> `	call	_caml_alloc2\n`
+          | 16 -> `	call	_caml_alloc3\n`
           | _  -> `	movl	${emit_int n}, %eax\n`;
-                  `{record_frame i.live}	call	_caml_alloc\n`
+                  `	call	_caml_alloc\n`
           end;
-          `	leal	4(%eax), {emit_reg i.res.(0)}\n`
+          `{record_frame i.live}	leal	4(%eax), {emit_reg i.res.(0)}\n`
         end
     | Lop(Imodify) ->
         (* Argument is in eax *)
@@ -268,6 +299,14 @@ let emit_instr i =
         let b = name_for_cond_branch cmp in
         `	set{emit_string b}	%al\n`;
         `	movzbl	%al, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop Icheckbound) ->
+        if !range_check_trap = 0 then range_check_trap := new_label();
+        `	cmpl	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
+        `	jbe	{emit_label !range_check_trap}\n`
+    | Lop(Iintop_imm(Icheckbound, n)) ->
+        if !range_check_trap = 0 then range_check_trap := new_label();
+        `	cmpl	${emit_int n}, {emit_reg i.arg.(0)}\n`;
+        `	jbe	{emit_label !range_check_trap}\n`
     | Lop(Iintop(Idiv | Imod)) ->
         `	cltd\n`;
         `	idivl	{emit_reg i.arg.(1)}\n`
@@ -365,6 +404,13 @@ let emit_instr i =
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
         | Ifloattest cmp ->
+            `	fldl	{emit_reg i.arg.(0)}\n`;
+            begin match i.arg.(1).loc with
+              Stack s ->
+                `	fcompl	{emit_shift i.arg.(1)}\n`
+            | _ ->
+                `	fcomp	{emit_shift i.arg.(1)}\n`
+            end;
             `	fnstsw	%ax\n`;
             match cmp with
               Ceq ->
@@ -410,22 +456,20 @@ let emit_instr i =
             `	.long	{emit_label jumptbl.(i)}\n`
           done
         end
-    | Lpushtrap lbl ->
+    | Lsetuptrap lbl ->
+        `	call	{emit_label lbl}\n`
+    | Lpushtrap ->
         `	pushl	_caml_exception_pointer\n`;
-        `	pushl	${emit_label lbl}\n`;
         `	movl	%esp, _caml_exception_pointer\n`;
         stack_offset := !stack_offset + 8
     | Lpoptrap ->
-        `	addl	$4, %esp\n`;
         `	popl	_caml_exception_pointer\n`;
+        `	addl	$4, %esp\n`;
         stack_offset := !stack_offset - 8
-    | Lentertrap ->
-        ()
     | Lraise ->
         `	movl	_caml_exception_pointer, %esp\n`;
-        `	popl	%edx\n`;
         `	popl    _caml_exception_pointer\n`;
-        `	jmp	*%edx\n`
+        `	ret\n`
 
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
@@ -444,6 +488,7 @@ let fundecl fundecl =
   tailrec_entry_point := new_label();
   stack_offset := 0;
   float_constants := [];
+  range_check_trap := 0;
   `	.text\n`;
   `	.align	4\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
@@ -453,6 +498,8 @@ let fundecl fundecl =
     `	subl	${emit_int n}, %esp\n`;
   `{emit_label !tailrec_entry_point}:`;
   emit_all fundecl.fun_body;
+  if !range_check_trap > 0 then
+    `{emit_label !range_check_trap}:	int	$5\n`
   List.iter emit_float_constant !float_constants
 
 (* Emission of data *)

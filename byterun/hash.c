@@ -74,6 +74,9 @@ static void hash_aux(obj)
       /* We don't know anything about the contents of the block.
          Better do nothing. */
       break;
+    case Infix_tag:
+      hash_aux(obj - Infix_offset_val(obj));
+      break;
     default:
       hash_univ_count--;
       Combine_small(tag);

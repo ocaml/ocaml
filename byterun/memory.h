@@ -21,17 +21,15 @@ char * stat_resize P((char *, asize_t));     /* Size in bytes. */
 
 
 #define Alloc_small(result, wosize, tag) {                                  \
-  char *_res_ = young_ptr;                                                  \
-  young_ptr += Bhsize_wosize (wosize);                                      \
-  if (young_ptr > young_end){                                               \
+  young_ptr -= Bhsize_wosize (wosize);                                      \
+  if (young_ptr < young_start){                                             \
     Setup_for_gc;                                                           \
     minor_collection ();                                                    \
     Restore_after_gc;                                                       \
-    _res_ = young_ptr;                                                      \
-    young_ptr += Bhsize_wosize (wosize);                                    \
+    young_ptr -= Bhsize_wosize (wosize);                                    \
   }                                                                         \
-  Hd_hp (_res_) = Make_header ((wosize), (tag), Black);                     \
-  (result) = Val_hp (_res_);                                                \
+  Hd_hp (young_ptr) = Make_header ((wosize), (tag), Black);                 \
+  (result) = Val_hp (young_ptr);                                            \
 }
 
 /* You must use [Modify] to change a field of an existing shared block,

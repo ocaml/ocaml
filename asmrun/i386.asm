@@ -4,6 +4,7 @@
         .comm   _young_ptr, 4
         .comm   _gc_entry_regs, 4 * 7
         .comm   _caml_bottom_of_stack, 4
+        .comm   _caml_top_of_stack, 4
         .comm   _caml_last_return_address, 4
         .comm   _remembered_ptr, 4
         .comm   _remembered_end, 4
@@ -74,11 +75,10 @@ _caml_call_gc:
         movl    %esi, _gc_entry_regs + 16
         movl    %edi, _gc_entry_regs + 20
         movl    %ebp, _gc_entry_regs + 24
-    # Pass the desired size as first argument
+    # Save desired size
         pushl   %eax
     # Call the garbage collector
-        call    _garbage_collection
-        add     $4, %esp
+        call    _minor_collection
     # Restore all regs used by the code generator
         movl    _gc_entry_regs + 4, %ebx
         movl    _gc_entry_regs + 8, %ecx
@@ -86,6 +86,9 @@ _caml_call_gc:
         movl    _gc_entry_regs + 16, %esi
         movl    _gc_entry_regs + 20, %edi
         movl    _gc_entry_regs + 24, %ebp
+    # Decrement young_ptr by desired size
+        popl    %eax
+        subl    %eax, _young_ptr
     # Reload result of allocation in %eax
         movl    _young_ptr, %eax
     # Return to caller
@@ -94,35 +97,35 @@ _caml_call_gc:
 
 # Modification
 
-        .globl  _caml_modify
-        .globl  _caml_fast_modify
-
-        .align  4
-_caml_modify:
-        testb   $4, -3(%eax)
-        jz      _caml_fast_modify
-        ret
-
-_caml_fast_modify:
-    # Store address of object in remembered set
-        pushl   %eax
-        movl    _remembered_ptr, %eax
-        popl    (%eax)
-        addl    $4, %eax
-        movl    %eax, _remembered_ptr
-        cmpl    _remembered_end, %eax
-        ja      _caml_modify_realloc
-        ret
-
-_caml_modify_realloc:
-    # Reallocate the remembered set while preserving all regs
-        pushl   %ecx
-        pushl   %edx
-    # (%eax dead, %ebx, %esi, %edi, %ebp preserved by C)
-        call    _realloc_remembered
-        popl    %edx
-        popl    %ecx
-        ret
+#        .globl  _caml_modify
+#        .globl  _caml_fast_modify
+#
+#        .align  4
+#_caml_modify:
+#        testb   $4, -3(%eax)
+#        jz      _caml_fast_modify
+#        ret
+#
+#_caml_fast_modify:
+#    # Store address of object in remembered set
+#        pushl   %eax
+#        movl    _remembered_ptr, %eax
+#        popl    (%eax)
+#        addl    $4, %eax
+#        movl    %eax, _remembered_ptr
+#        cmpl    _remembered_end, %eax
+#        ja      _caml_modify_realloc
+#        ret
+#
+#_caml_modify_realloc:
+#    # Reallocate the remembered set while preserving all regs
+#        pushl   %ecx
+#        pushl   %edx
+#    # (%eax dead, %ebx, %esi, %edi, %ebp preserved by C)
+#        call    _realloc_remembered
+#        popl    %edx
+#        popl    %ecx
+#        ret
 
 # Call a C function from Caml
 
@@ -150,9 +153,11 @@ _caml_start_program:
         pushl   %edi
         pushl   %ebp
     # Build an exception handler
-        pushl   $0
         pushl   $L104
+        pushl   $0
         movl    %esp, _caml_exception_pointer
+    # Record highest stack address
+        movl    %esp, _caml_top_of_stack
     # Go for it
         call    _caml_program
     # Pop handler

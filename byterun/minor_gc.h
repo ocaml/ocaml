@@ -14,6 +14,6 @@ extern asize_t minor_heap_size;
 extern void set_minor_heap_size P((asize_t));
 extern void minor_collection P((void));
 extern void realloc_ref_table P((void));
-
+extern void oldify P((value *, value));
 
 #endif /* _minor_gc_ */

@@ -78,7 +78,7 @@ all: runtime camlc camllex camlyacc library camltop
 # Never mind, just do make bootstrap to reach fixpoint again.
 
 # Compile everything the first time
-world: coldstart all
+world: coldstart clean all
 
 # Complete bootstrapping cycle
 bootstrap:

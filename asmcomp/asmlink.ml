@@ -172,7 +172,7 @@ let link objfiles =
     raise(Error(Assembler_error startup));
   try
     call_linker (List.map object_file_name objfiles) startup_obj;
-    remove_file startup;
+    if not !Clflags.keep_startup_file then remove_file startup;
     remove_file startup_obj
   with x ->
     remove_file startup_obj;

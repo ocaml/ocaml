@@ -52,6 +52,7 @@ let main () =
        "-dalloc", Arg.Unit(fun () -> Clflags.dump_regalloc := true);
        "-dreload", Arg.Unit(fun () -> Clflags.dump_reload := true);
        "-dlinear", Arg.Unit(fun () -> Clflags.dump_linear := true);
+       "-dstartup", Arg.Unit(fun () -> Clflags.keep_startup_file := true);
        "-v", Arg.Unit print_version_number;
        "-", Arg.String process_file]
       process_file;

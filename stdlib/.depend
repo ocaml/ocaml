@@ -1,26 +1,45 @@
 format.cmi: list.cmi 
-gc.cmi: 
 lexing.cmi: obj.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
-printexc.cmi: 
 arg.cmo: arg.cmi sys.cmi string.cmi list.cmi array.cmi printf.cmi 
-array.cmo: array.cmi list.cmi array.cmi 
-char.cmo: char.cmi char.cmi string.cmi 
+arg.cmx: arg.cmi sys.cmx string.cmx list.cmx array.cmx printf.cmx 
+array.cmo: array.cmi list.cmi 
+array.cmx: array.cmi list.cmx 
+char.cmo: char.cmi string.cmi 
+char.cmx: char.cmi string.cmx 
 filename.cmo: filename.cmi string.cmi 
+filename.cmx: filename.cmi string.cmx 
 format.cmo: format.cmi queue.cmi string.cmi list.cmi 
+format.cmx: format.cmi queue.cmx string.cmx list.cmx 
 gc.cmo: gc.cmi printf.cmi 
+gc.cmx: gc.cmi printf.cmx 
 hashtbl.cmo: hashtbl.cmi array.cmi 
+hashtbl.cmx: hashtbl.cmi array.cmx 
 lexing.cmo: lexing.cmi string.cmi obj.cmi 
-list.cmo: list.cmi list.cmi 
-map.cmo: map.cmi 
+lexing.cmx: lexing.cmi string.cmx obj.cmx 
+list.cmo: list.cmi 
+list.cmx: list.cmi 
+map.cmo: map.cmi set.cmi 
+map.cmx: map.cmi set.cmx 
 obj.cmo: obj.cmi 
+obj.cmx: obj.cmi 
 parsing.cmo: parsing.cmi array.cmi lexing.cmi obj.cmi 
+parsing.cmx: parsing.cmi array.cmx lexing.cmx obj.cmx 
 pervasives.cmo: pervasives.cmi 
+pervasives.cmx: pervasives.cmi 
 printexc.cmo: printexc.cmi obj.cmi 
+printexc.cmx: printexc.cmi obj.cmx 
 printf.cmo: printf.cmi string.cmi list.cmi obj.cmi 
+printf.cmx: printf.cmi string.cmx list.cmx obj.cmx 
 queue.cmo: queue.cmi 
+queue.cmx: queue.cmi 
 set.cmo: set.cmi 
+set.cmx: set.cmi 
 sort.cmo: sort.cmi 
+sort.cmx: sort.cmi 
 stack.cmo: stack.cmi list.cmi 
-string.cmo: string.cmi char.cmi string.cmi list.cmi 
+stack.cmx: stack.cmi list.cmx 
+string.cmo: string.cmi list.cmi 
+string.cmx: string.cmi list.cmx 
 sys.cmo: sys.cmi 
+sys.cmx: sys.cmi 

@@ -131,8 +131,8 @@ bits  63    10 9     8 7   0
                                                  /* Also an l-value. */
 #endif
 
-/* The Lowest tag for blocks containing no value. */
-#define No_scan_tag (Num_tags - 4)
+/* The lowest tag for blocks containing no value. */
+#define No_scan_tag (Num_tags - 5)
 
 
 /* 1- If tag < No_scan_tag : a tuple of fields.  */
@@ -148,8 +148,14 @@ typedef opcode_t * code_t;
 #define Closure_tag (No_scan_tag - 1)
 #define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
 
+/* 2- If tag == No_scan_tag : an infix header inside a closure */
+/* Since No_scan_tag is odd, the infix header will be scanned as an integer */
 
-/* 2- If tag >= No_scan_tag : a sequence of bytes. */
+#define Infix_tag No_scan_tag
+#define Infix_offset_hd(hd) (Bosize_hd(hd))
+#define Infix_offset_val(v) Infix_offset_hd(Hd_val(v))
+
+/* 2- If tag > No_scan_tag : a sequence of bytes. */
 
 /* Pointer to the first byte */
 #define Bp_val(v) ((char *) (v))
@@ -161,14 +167,14 @@ typedef opcode_t * code_t;
 /* Abstract things.  Their contents is not traced by the GC; therefore they
    must not contain any [value].
 */
-#define Abstract_tag No_scan_tag
+#define Abstract_tag (No_scan_tag + 1)
 
 /* Strings. */
-#define String_tag (No_scan_tag + 1)
+#define String_tag (No_scan_tag + 2)
 #define String_val(x) ((char *) Bp_val(x))
 
 /* Floating-point numbers. */
-#define Double_tag (No_scan_tag + 2)
+#define Double_tag (No_scan_tag + 3)
 #define Double_wosize ((sizeof(double) / sizeof(value)))
 #ifndef ALIGN_DOUBLE
 #define Double_val(v) (* (double *) (v))
@@ -181,7 +187,7 @@ void Store_double_val P((value,double));
 /* Finalized things.  Just like abstract things, but the GC will call the
    [Final_fun] before deallocation.
 */
-#define Final_tag (No_scan_tag + 3)
+#define Final_tag (No_scan_tag + 4)
 typedef void (*final_fun) P((value));
 #define Final_fun(val) (((final_fun *) (val)) [0]) /* Also an l-value. */
 
@@ -198,6 +204,7 @@ extern header_t first_atoms[];
 #define Bool_val(x) Int_val(x)
 #define Val_false Val_int(0)
 #define Val_true Val_int(1)
+#define Val_not(x) (4 - (x))
 
 /* The unit value is 0 */
 

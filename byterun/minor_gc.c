@@ -11,7 +11,7 @@
 #include "roots.h"
 
 asize_t minor_heap_size;
-char *young_start = NULL, *young_end, *young_ptr = NULL;
+char *young_start = NULL, *young_end = NULL, *young_ptr = NULL;
 static value **ref_table = NULL, **ref_table_end, **ref_table_threshold;
 value **ref_table_ptr = NULL, **ref_table_limit;
 static asize_t ref_table_size, ref_table_reserve;
@@ -25,15 +25,15 @@ void set_minor_heap_size (size)
   Assert (size >= Minor_heap_min);
   Assert (size <= Minor_heap_max);
   Assert (size % sizeof (value) == 0);
-  if (young_ptr != young_start) minor_collection ();
-                                           Assert (young_ptr == young_start);
+  if (young_ptr != young_end) minor_collection ();
+                                           Assert (young_ptr == young_end);
   new_heap = (char *) stat_alloc (size);
   if (young_start != NULL){
     stat_free ((char *) young_start);
   }
   young_start = new_heap;
   young_end = new_heap + size;
-  young_ptr = young_start;
+  young_ptr = young_end;
   minor_heap_size = size;
 
   ref_table_size = minor_heap_size / sizeof (value) / 8;
@@ -48,7 +48,7 @@ void set_minor_heap_size (size)
   ref_table_end = ref_table + ref_table_size + ref_table_reserve;
 }
 
-static void oldify (p, v)
+void oldify (p, v)
      value *p;
      value v;
 {
@@ -57,9 +57,13 @@ static void oldify (p, v)
 
  tail_call:
   if (Is_block (v) && Is_young (v)){
-    Assert (Hp_val (v) < young_ptr);
+    Assert (Hp_val (v) >= young_ptr);
     if (Is_blue_val (v)){    /* Already forwarded ? */
       *p = Field (v, 0);     /* Then the forward pointer is the first field. */
+    }else if (Tag_val(v) == Infix_tag) {
+      mlsize_t offset = Infix_offset_val(v);
+      oldify(p, v - offset);
+      *p += offset;
     }else if (Tag_val (v) >= No_scan_tag){
       result = alloc_shr (Wosize_val (v), Tag_val (v));
       bcopy (Bp_val (v), Bp_val (result), Bosize_val (v));
@@ -109,10 +113,10 @@ void minor_collection ()
   external_raise = &raise_buf;
 
   gc_message ("<", 0);
-  scan_local_roots (oldify);
+  oldify_local_roots();
   for (r = ref_table; r < ref_table_ptr; r++) oldify (*r, **r);
-  stat_minor_words += Wsize_bsize (young_ptr - young_start);
-  young_ptr = young_start;
+  stat_minor_words += Wsize_bsize (young_end - young_ptr);
+  young_ptr = young_end;
   ref_table_ptr = ref_table;
   ref_table_limit = ref_table_threshold;
   gc_message (">", 0);

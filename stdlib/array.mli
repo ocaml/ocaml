@@ -1,9 +1,8 @@
 (* Array operations *)
 
 external length : 'a array -> int = "%array_length"
-
-external get: 'a array -> int -> 'a = "array_get"
-external set: 'a array -> int -> 'a -> unit = "array_set"
+external get: 'a array -> int -> 'a = "%array_safe_get"
+external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
 external new: int -> 'a -> 'a array = "make_vect"
 val new_matrix: int -> int -> 'a -> 'a array array
 val append: 'a array -> 'a array -> 'a array

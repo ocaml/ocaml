@@ -3,7 +3,8 @@
 
 #include "misc.h"
 
-void scan_local_roots P((void (*copy_fn) (value *, value)));
+void oldify_local_roots P((void));
+void darken_all_roots P((void));
 
 
 #endif /* _roots_ */

@@ -68,6 +68,7 @@ let intop = function
   | Ilsr -> print_string " >>u "
   | Iasr -> print_string " >>s "
   | Icomp cmp -> intcomp cmp
+  | Icheckbound -> print_string " check > "
     
 let test tst arg =
   match tst with
@@ -96,9 +97,10 @@ let operation op arg res =
   | Itailcall_imm lbl ->
       print_string "tailcall \""; print_string lbl;
       print_string "\" "; regs arg
-  | Iextcall lbl ->
+  | Iextcall(lbl, alloc) ->
       print_string "extcall \""; print_string lbl;
-      print_string "\" "; regs arg
+      print_string "\" "; regs arg;
+      if not alloc then print_string " (noalloc)"
   | Istackoffset n ->
       print_string "offset stack "; print_int n
   | Iload(chunk, addr) ->
@@ -122,8 +124,6 @@ let operation op arg res =
   | Idivf -> reg arg.(0); print_string " /f "; reg arg.(1)
   | Ifloatofint -> print_string "floatofint "; reg arg.(0)
   | Iintoffloat -> print_string "intoffloat "; reg arg.(0)
-  | Icheckbound ->
-      print_string "check "; reg arg.(0); print_string " < "; reg arg.(1)
   | Ispecific op ->
       Arch.print_specific_operation reg op arg
 

@@ -8,6 +8,7 @@ type integer_operation =
     Iadd | Isub | Imul | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
+  | Icheckbound
 
 type test =
     Itruetest
@@ -27,7 +28,7 @@ type operation =
   | Icall_imm of string
   | Itailcall_ind
   | Itailcall_imm of string
-  | Iextcall of string
+  | Iextcall of string * bool
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode
@@ -37,7 +38,6 @@ type operation =
   | Iintop_imm of integer_operation * int
   | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
-  | Icheckbound
   | Ispecific of Arch.specific_operation
 
 type instruction =

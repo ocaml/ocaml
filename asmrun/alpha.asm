@@ -89,42 +89,45 @@ caml_alloc:
         ret     ($26)
         
 caml_call_gc:
-        lda     $sp, -16($sp)
+        lda     $sp, -32($sp)
         stq     $26, 0($sp)
         stq     $gp, 8($sp)
+        stq     $25, 16($sp)
     /* Rebuild $gp */
         br      $27, $103
 $103:   ldgp    $gp, 0($27)
     /* Record lowest stack address and return address */
         ldq     $24, 0($sp)
         stq     $24, caml_last_return_address
-        lda     $24, 16($sp)
+        lda     $24, 32($sp)
         stq     $24, caml_bottom_of_stack
     /* Save current allocation pointer for debugging purposes */
         stq     $13, young_ptr
     /* Save all regs used by the code generator in the arrays
     /* gc_entry_regs and gc_entry_float_regs. */
         SAVE_ALL_REGS
-    /* Pass the desired size as first argument */
-        mov     $25, $16
     /* Call the garbage collector */
-        jsr     garbage_collection
+        jsr     minor_collection
     /* Restore all regs used by the code generator */
         ldgp    $gp, 0($26)
         LOAD_ALL_REGS
     /* Reload new allocation pointer and allocation limit */
         ldq     $13, young_ptr
         ldq     $14, young_start
+    /* Allocate space for the block */
+        ldq     $25, 16($sp)
+        subq    $13, $25, $13
     /* Return to caller */
         ldq     $26, 0($sp)
         ldq     $gp, 8($sp)
-        lda     $sp, 16($sp)
+        lda     $sp, 32($sp)
         ret     ($26)
 
         .end    caml_alloc1
 
 /* Modification */
 
+#if 0
         .globl  caml_modify
         .globl  caml_fast_modify
         .ent    caml_modify
@@ -177,6 +180,7 @@ caml_modify_realloc:
         ret     ($26)
 
         .end    caml_modify
+#endif
 
 /* Call a C function from Caml */
 

@@ -242,8 +242,8 @@ let rec comp_expr env exp sz cont =
         | Pintcomp cmp -> Kintcomp cmp
         | Pmakeblock tag -> Kmakeblock(List.length args, tag)
         | Pfield n -> Kgetfield n
-        | Psetfield n -> Ksetfield n
-        | Pccall(name, n) -> Kccall(name, n)
+        | Psetfield(n, ptr) -> Ksetfield n
+        | Pccall(name, n, alloc) -> Kccall(name, n)
         | Pnegint -> Knegint
         | Paddint -> Kaddint
         | Psubint -> Ksubint
@@ -269,11 +269,16 @@ let rec comp_expr env exp sz cont =
         | Pfloatcomp Cgt -> Kccall("gt_float", 2)
         | Pfloatcomp Cle -> Kccall("le_float", 2)
         | Pfloatcomp Cge -> Kccall("ge_float", 2)
+        | Pstringlength -> Kccall("ml_string_length", 1)
+        | Psafegetstringchar -> Kccall("string_get", 2)
+        | Psafesetstringchar -> Kccall("string_set", 3)
         | Pgetstringchar -> Kgetstringchar
         | Psetstringchar -> Ksetstringchar
         | Pvectlength -> Kvectlength
+        | Psafegetvectitem -> Kccall("array_get", 2)
+        | Psafesetvectitem ptr -> Kccall("array_set", 3)
         | Pgetvectitem -> Kgetvectitem
-        | Psetvectitem -> Ksetvectitem
+        | Psetvectitem ptr -> Ksetvectitem
         | Ptranslate tbl -> Ktranslate tbl
         | _ -> fatal_error "Codegen.comp_expr: prim" in
       comp_args env args sz (instr :: cont)

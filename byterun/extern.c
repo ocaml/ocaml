@@ -190,6 +190,7 @@ static void emit_compact(chan, v)
         invalid_argument("output_value: abstract value");
         break;
       case Closure_tag:
+      case Infix_tag:
         invalid_argument("output_value: functional value");
         break;
       default: {

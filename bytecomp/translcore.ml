@@ -87,24 +87,42 @@ and bind_patterns env patl argl =
 
 let comparisons_table = create_hashtable 11 [
   "%equal",
-      (Pccall("equal", 2), Pintcomp Ceq, Pfloatcomp Ceq);
+      (Pccall("equal", 2, true),
+       Pintcomp Ceq,
+       Pfloatcomp Ceq,
+       Pccall("string_equal", 2, false));
   "%notequal",
-      (Pccall("notequal", 2), Pintcomp Cneq, Pfloatcomp Cneq);
+      (Pccall("notequal", 2, true),
+       Pintcomp Cneq,
+       Pfloatcomp Cneq,
+       Pccall("string_notequal", 2, false));
   "%lessthan",
-      (Pccall("lessthan", 2), Pintcomp Clt, Pfloatcomp Clt);
+      (Pccall("lessthan", 2, true),
+       Pintcomp Clt,
+       Pfloatcomp Clt,
+       Pccall("lessthan", 2, true));
   "%greaterthan",
-      (Pccall("greaterthan", 2), Pintcomp Cgt, Pfloatcomp Cgt);
+      (Pccall("greaterthan", 2, true),
+       Pintcomp Cgt,
+       Pfloatcomp Cgt,
+       Pccall("greaterthan", 2, true));
   "%lessequal",
-      (Pccall("lessequal", 2), Pintcomp Cle, Pfloatcomp Cle);
+      (Pccall("lessequal", 2, true),
+       Pintcomp Cle,
+       Pfloatcomp Cle,
+       Pccall("lessequal", 2, true));
   "%greaterequal",
-      (Pccall("greaterequal", 2), Pintcomp Cge, Pfloatcomp Cge)
+      (Pccall("greaterequal", 2, true),
+       Pintcomp Cge,
+       Pfloatcomp Cge,
+       Pccall("greaterequal", 2, true))
 ]
 
 let primitives_table = create_hashtable 31 [
   "%identity", Pidentity;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
-  "%setfield0", Psetfield 0;
+  "%setfield0", Psetfield(0, true);
   "%makeblock", Pmakeblock 0;
   "%raise", Praise;
   "%sequand", Psequand;
@@ -143,11 +161,16 @@ let primitives_table = create_hashtable 31 [
   "%lefloat", Pfloatcomp Cle;
   "%gtfloat", Pfloatcomp Cgt;
   "%gefloat", Pfloatcomp Cge;
+  "%string_length", Pstringlength;
+  "%string_safe_get", Psafegetstringchar;
+  "%string_safe_set", Psafesetstringchar;
   "%string_unsafe_get", Pgetstringchar;
   "%string_unsafe_set", Psetstringchar;
   "%array_length", Pvectlength;
+  "%array_safe_get", Psafegetvectitem;
+  "%array_safe_set", Psafesetvectitem true;
   "%array_unsafe_get", Pgetvectitem;
-  "%array_unsafe_set", Psetvectitem
+  "%array_unsafe_set", Psetvectitem true
 ]
 
 let same_base_type ty1 ty2 =
@@ -155,9 +178,15 @@ let same_base_type ty1 ty2 =
     (Tconstr(p1, []), Tconstr(p2, [])) -> Path.same p1 p2
   | (_, _) -> false
 
+let maybe_pointer arg =
+  if same_base_type arg.exp_type Predef.type_int
+  or same_base_type arg.exp_type Predef.type_char
+  then false
+  else true
+
 let transl_prim prim arity args =
   try
-    let (gencomp, intcomp, floatcomp) =
+    let (gencomp, intcomp, floatcomp, stringcomp) =
       Hashtbl.find comparisons_table prim in
     match args with
       [arg1; arg2] when same_base_type arg1.exp_type Predef.type_int
@@ -165,13 +194,24 @@ let transl_prim prim arity args =
         intcomp
     | [arg1; arg2] when same_base_type arg1.exp_type Predef.type_float ->
         floatcomp
+    | [arg1; arg2] when same_base_type arg1.exp_type Predef.type_string ->
+        stringcomp
     | _ ->
         gencomp
   with Not_found ->
   try
-    Hashtbl.find primitives_table prim
+    let p = Hashtbl.find primitives_table prim in
+    begin match (p, args) with
+        (Psetfield(n, _), [arg1; arg2]) ->
+          Psetfield(n, maybe_pointer arg2)
+      | (Psafesetvectitem _, [arg1; arg2; arg3]) ->
+          Psafesetvectitem(maybe_pointer arg3)
+      | (Psetvectitem _, [arg1; arg2; arg3]) ->
+          Psetvectitem(maybe_pointer arg3)
+      | _ -> p
+    end
   with Not_found ->
-    Pccall(prim, arity)
+    Pccall(prim, arity, true)
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
@@ -284,7 +324,7 @@ let rec transl_exp env e =
   | Texp_field(arg, lbl) ->
       Lprim(Pfield lbl.lbl_pos, [transl_exp env arg])
   | Texp_setfield(arg, lbl, newval) ->
-      Lprim(Psetfield lbl.lbl_pos,
+      Lprim(Psetfield(lbl.lbl_pos, maybe_pointer newval),
             [transl_exp env arg; transl_exp env newval])
   | Texp_array expr_list ->
       Lprim(Pmakeblock 0, transl_list env expr_list)
@@ -351,14 +391,14 @@ let transl_primitive = function
   | Primitive(name, arity) ->
       let prim =
         try
-          let (gencomp, intcomp, floatcomp) =
+          let (gencomp, intcomp, floatcomp, stringcomp) =
             Hashtbl.find comparisons_table name in
           gencomp
         with Not_found ->
         try
           Hashtbl.find primitives_table name
         with Not_found ->
-          Pccall(name, arity) in
+          Pccall(name, arity, true) in
       let rec add_params n params =
         if n >= arity
         then Lprim(prim, List.rev params)

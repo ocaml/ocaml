@@ -3,6 +3,8 @@ include ../Makefile.config
 RUNTIME=../boot/camlrun
 COMPILER=../camlc
 CAMLC=$(RUNTIME) $(COMPILER)
+OPTCOMPILER=../camlopt
+CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../tools/camldep
 
 OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
@@ -18,6 +20,10 @@ install:
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
 
+# stdlib.cmxa: $(OBJS:.cmo=.cmx)
+#	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+optlib: $(OBJS:.cmo=.cmx)
+
 cslheader: header.c ../Makefile.config
 	if $(SHARPBANGSCRIPTS); \
 	then echo "#!$(BINDIR)/cslrun" > cslheader; \
@@ -30,7 +36,10 @@ pervasives.cmi: pervasives.mli
 pervasives.cmo: pervasives.ml
 	$(CAMLC) -nopervasives -c pervasives.ml
 
-.SUFFIXES: .mli .ml .cmi .cmo
+pervasives.cmx: pervasives.ml
+	$(CAMLOPT) -nopervasives -c pervasives.ml
+
+.SUFFIXES: .mli .ml .cmi .cmo .cmx
 
 .mli.cmi:
 	$(CAMLC) $(COMPFLAGS) -c $<
@@ -38,13 +47,17 @@ pervasives.cmo: pervasives.ml
 .ml.cmo:
 	$(CAMLC) $(COMPFLAGS) -c $<
 
+.ml.cmx:
+	$(CAMLOPT) $(COMPFLAGS) -c $<
+
 $(OBJS): pervasives.cmi
 
 $(OBJS): $(COMPILER)
 $(OBJS:.cmo=.cmi): $(COMPILER)
+$(OBJS:.cmo=.cmx): $(OPTCOMPILER)
 
 clean:
-	rm -f *.cm[ioa]
+	rm -f *.cm*
 	rm -f cslheader
 	rm -f *~
 

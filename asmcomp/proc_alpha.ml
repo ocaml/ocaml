@@ -19,6 +19,8 @@ let select_addressing = function
       (Ibased(s, n), Ctuple [])
   | Cop(Cadda, [arg; Cconst_int n]) ->
       (Iindexed n, arg)
+  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
+      (Iindexed n, Cop(Cadda, [arg1; arg2]))
   | arg ->
       (Iindexed 0, arg)
 
@@ -193,17 +195,27 @@ let loc_exn_bucket = phys_reg 0         (* $0 *)
 
 (* Registers destroyed by operations *)
 
+let destroyed_at_c_call =               (* $9 - $12, $f2 - $f9 preserved *)
+  Array.of_list(List.map phys_reg
+    [0;1;2;3;4;5;6;7;8;13;14;15;16;17;18;19;20;
+     100;101;110;111;112;113;114;115;116;117;118;119;120;121;122;123;124;
+     125;126;127;128;129])
+
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall _) -> all_phys_regs
+    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
+  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
 
 (* Maximal register pressure *)
 
-let max_register_pressure = [| 20; 29 |]
-
-let safe_register_pressure = 20
+let safe_register_pressure = function
+    Iextcall(_, _) -> 4
+  | _ -> 20
+let max_register_pressure = function
+    Iextcall(_, _) -> [| 4; 8 |]
+  | _ -> [| 20; 29 |]
 
 (* Reloading *)
 
@@ -235,4 +247,4 @@ let slot_offset loc class =
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Sys.command ("as -nocpp -O2 -o " ^ outfile ^ " " ^ infile)
+  Sys.command ("as -O2 -o " ^ outfile ^ " " ^ infile)

@@ -27,7 +27,7 @@ sub scan_source {
   local ($source_name, $target_name) = @_;
   $modname = $target_name;
   $modname =~ s|^.*/||;
-  $modname =~ s|\.z[io]$||;
+  $modname =~ s|\.cm[iox]$||;
   undef(%imports);
   open(SRC, $source_name) || return;
   while(<SRC>) {
@@ -41,8 +41,10 @@ sub scan_source {
   }
   close(SRC);
   undef(@deps);
+  undef(@optdeps);
   if ($target_name =~ m/(.*)\.cmo$/ && -r ($source_name . "i")) {
     push(@deps, "$1.cmi");
+    push(@optdeps, "$1.cmi");
   }
   foreach $modl (keys(%imports)) {
     $modl = do lowercase($modl);
@@ -50,26 +52,38 @@ sub scan_source {
     if ($dep = do find_path ("$modl.mli")) {
       $dep =~ s/\.mli$/.cmi/;
       push(@deps, $dep);
+      $dep =~ s/\.cmi$/.cmx/;
+      push(@optdeps, $dep);
     }
     elsif ($dep = do find_path ("$modl.ml")) {
       $dep =~ s/\.ml$/.cmo/;
       push(@deps, $dep);
+      $dep =~ s/\.cmo$/.cmx/;
+      push(@optdeps, $dep);
     }
   }
   if ($#deps >= 0) {
     print "$target_name: ";
-    $col = length($target_name) + 2;
-    foreach $dep (@deps) {
-      next if $dep eq $target_name;
-      $col += length($dep) + 1;
-      if ($col >= 77) {
-        print "\\\n    ";
-        $col = length($dep) + 5;
-      }
-      print $dep, " ";
-    }
-    print "\n";
+    do print_deps(@deps);
   }
+  if ($target_name =~ /^(.*)\.cmo$/ && $#optdeps >= 0) {
+    print "$1.cmx: ";
+    do print_deps(@optdeps);
+  }
+}
+
+sub print_deps {
+  $col = length($target_name) + 3;
+  foreach $dep (@_) {
+    next if $dep eq $target_name;
+    $col += length($dep) + 1;
+    if ($col >= 77) {
+      print "\\\n    ";
+      $col = length($dep) + 5;
+    }
+    print $dep, " ";
+  }
+  print "\n";
 }
 
 sub find_path {

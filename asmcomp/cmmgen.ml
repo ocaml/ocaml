@@ -7,29 +7,35 @@ open Lambda
 open Clambda
 open Cmm
 
+(* Local binding of complex expressions *)
+
+let bind name arg fn =
+  match arg with
+    Cvar _ | Cconst_int _ | Cconst_symbol _ | Cconst_pointer _ -> fn arg
+  | _ -> let id = Ident.new name in Clet(id, arg, fn (Cvar id))
+
 (* Block headers. Meaning of the tag field:
-       0xFF: infix header
-       0xFE: finalized
-       0xFD: abstract
-       0xFC: string
-       0xFB: float
-       0xFA: closure
-       0 - 0xF9: regular blocks *)
+       0 - 249: regular blocks
+       250: closures
+       251: infix closure
+       252: abstract
+       253: string
+       254: float
+       255: finalized *)
 
-let block_header tag sz = (sz lsl 11) + tag
-let closure_header sz = block_header 0xFA sz
-let infix_header ofs = block_header 0xFF ofs
-let float_header = block_header 0xFB (size_float / size_addr)
-let string_header len = block_header 0xFC ((len + size_addr) / size_addr)
+let block_header tag sz = (sz lsl 10) + tag
+let closure_header sz = block_header 250 sz
+let infix_header ofs = block_header 251 ofs
+let float_header = block_header 254 (size_float / size_addr)
+let string_header len = block_header 253 ((len + size_addr) / size_addr)
 
-let modified = 1 lsl 10
-let alloc_block_header tag sz = Cconst_int((block_header tag sz) lor modified)
-let alloc_closure_header sz = Cconst_int((closure_header sz) lor modified)
+let alloc_block_header tag sz = Cconst_int(block_header tag sz)
+let alloc_closure_header sz = Cconst_int(closure_header sz)
 let alloc_infix_header ofs = Cconst_int(infix_header ofs)
 
 (* Integers *)
 
-let int_const n = Cconst_int((n lsl 1 + 1))
+let int_const n = Cconst_int((n lsl 1) + 1)
 
 let add_const c n =
   if n = 0 then c else Cop(Caddi, [c; Cconst_int n])
@@ -98,7 +104,8 @@ let unbox_float = function
 let return_unit c = Csequence(c, Cconst_int 1)
 
 let rec remove_unit = function
-    Csequence(c, Cconst_int 1) -> c
+    Cconst_int 1 -> Ctuple []
+  | Csequence(c, Cconst_int 1) -> c
   | Csequence(c1, c2) ->
       Csequence(c1, remove_unit c2)
   | Cifthenelse(cond, ifso, ifnot) ->
@@ -131,21 +138,6 @@ let get_tag ptr =
   Cop(Cloadchunk Byte_unsigned,
       [Cop(Cadda, [ptr; Cconst_int(tag_offset)])])
 
-(* Determine if a clambda is guaranteed to return an integer or a pointer
-   outside the heap, making it unneccesary to do Cmodify. *)
-
-let rec is_outside_heap = function
-    Uconst _ -> true
-  | Uprim(p, _) ->
-      begin match p with
-          Pnot | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
-        | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
-        | Pintcomp _ | Poffsetint _ | Pfloatcomp _
-        | Pgetstringchar | Pvectlength -> true
-        | _ -> false
-      end
-  | _ -> false
-
 (* Array indexing *)
 
 let log2_size_addr = Misc.log2 size_addr
@@ -165,6 +157,22 @@ let array_indexing ptr ofs =
   | _ ->
       Cop(Cadda, [ptr; add_const (lsl_const ofs (log2_size_addr - 1))
                                  ((-1) lsl (log2_size_addr - 1))])
+
+(* String length *)
+
+let string_length exp =
+  bind "str" exp (fun str ->
+    let tmp_var = Ident.new "tmp" in
+    Clet(tmp_var,
+         Cop(Csubi,
+             [Cop(Clsl,
+                  [Cop(Clsr, [get_field str (-1); Cconst_int 10]);
+                   Cconst_int log2_size_addr]);
+              Cconst_int 1]),
+         Cop(Csubi,
+             [Cvar tmp_var;
+              Cop(Cloadchunk Byte_unsigned,
+                  [Cop(Cadda, [str; Cvar tmp_var])])])))
 
 (* To compile "let rec" over values *)
 
@@ -242,13 +250,6 @@ let transl_constant = function
       structured_constants := (lbl, cst) :: !structured_constants;
       Cconst_symbol lbl
 
-(* Local binding of complex expressions *)
-
-let bind name arg fn =
-  match arg with
-    Cvar id -> fn id
-  | _ -> let id = Ident.new name in Clet(id, arg, fn id)
-
 (* Translate an expression *)
 
 let functions = (Queue.new() : (string * Ident.t list * ulambda) Queue.t)
@@ -287,9 +288,8 @@ let rec transl = function
   | Udirect_apply(lbl, args) ->
       Cop(Capply typ_addr, Cconst_symbol lbl :: List.map transl args)
   | Ugeneric_apply(clos, [arg]) ->
-      bind "fun" (transl clos) (fun clos_var ->
-        Cop(Capply typ_addr,
-            [get_field (Cvar clos_var) 0; transl arg; Cvar clos_var]))
+      bind "fun" (transl clos) (fun clos ->
+        Cop(Capply typ_addr, [get_field clos 0; transl arg; clos]))
   | Ugeneric_apply(clos, args) ->
       let arity = List.length args in
       Cop(Capply typ_addr,
@@ -321,17 +321,14 @@ let rec transl = function
                   List.map transl args)
   | Uprim(Pfield n, [arg]) ->
       get_field (transl arg) n
-  | Uprim(Psetfield n, [loc; newval]) ->
-      let c =
-        if is_outside_heap newval then
-          set_field (transl loc) n (transl newval)
-        else
-          bind "modify" (transl loc) (fun loc_var ->
-            Csequence(Cop(Cmodify, [Cvar loc_var]),
-                      set_field (transl loc) n (transl newval)))
-      in return_unit c
-  | Uprim(Pccall(lbl, arity), args) ->
-      Cop(Cextcall(lbl, typ_addr), List.map transl args)
+  | Uprim(Psetfield(n, ptr), [loc; newval]) ->
+      if ptr then
+        return_unit(Cop(Cextcall("modify", typ_void, false),
+                        [field_address (transl loc) n; transl newval]))
+      else
+        return_unit(set_field (transl loc) n (transl newval))
+  | Uprim(Pccall(lbl, arity, alloc), args) ->
+      Cop(Cextcall(lbl, typ_addr, alloc), List.map transl args)
   | Uprim(Praise, [arg]) ->
       Cop(Craise, [transl arg])
   | Uprim(Psequand, [arg1; arg2]) ->
@@ -370,10 +367,9 @@ let rec transl = function
       add_const (transl arg) (n lsl 1)
   | Uprim(Poffsetref n, [arg]) ->
       return_unit
-        (bind "ref" (transl arg) (fun arg_var ->
+        (bind "ref" (transl arg) (fun arg ->
           Cop(Cstore,
-              [Cvar arg_var;
-               add_const (Cop(Cload typ_int, [Cvar arg_var])) (n lsl 1)])))
+              [arg; add_const (Cop(Cload typ_int, [arg])) (n lsl 1)])))
   | Uprim(Pnegfloat, [arg]) ->
       box_float(Cop(Caddf, [Cconst_float "0.0";
                             transl_unbox_float arg]))
@@ -386,9 +382,10 @@ let rec transl = function
   | Uprim(Pdivfloat, [arg1; arg2]) ->
       box_float(Cop(Cdivf, [transl_unbox_float arg1; transl_unbox_float arg2]))
   | Uprim(Pfloatcomp cmp, [arg1; arg2]) ->
-      Cifthenelse(Cop(Ccmpf(transl_comparison cmp),
-                      [transl_unbox_float arg1; transl_unbox_float arg2]),
-                  int_const 1, int_const 0)
+      tag_int(Cop(Ccmpf(transl_comparison cmp),
+                  [transl_unbox_float arg1; transl_unbox_float arg2]))
+  | Uprim(Pstringlength, [arg]) ->
+      tag_int(string_length (transl arg))
   | Uprim(Pgetstringchar, [arg1; arg2]) ->
       tag_int(Cop(Cloadchunk Byte_unsigned,
                   [add_int (transl arg1) (untag_int(transl arg2))]))
@@ -396,36 +393,66 @@ let rec transl = function
       return_unit(Cop(Cstorechunk Byte_unsigned,
                       [add_int (transl arg1) (untag_int(transl arg2));
                        transl arg3]))
+  | Uprim(Psafegetstringchar, [arg1; arg2]) ->
+      tag_int
+        (bind "str" (transl arg1) (fun str ->
+          bind "index" (untag_int (transl arg2)) (fun idx ->
+            Csequence(
+              Cop(Ccheckbound, [string_length str; idx]),
+              Cop(Cloadchunk Byte_unsigned, [add_int str idx])))))
+  | Uprim(Psafesetstringchar, [arg1; arg2; arg3]) ->
+      return_unit
+        (bind "str" (transl arg1) (fun str ->
+          bind "index" (untag_int (transl arg2)) (fun idx ->
+            Csequence(
+              Cop(Ccheckbound, [string_length str; idx]),
+              Cop(Cstorechunk Byte_unsigned,
+                  [add_int str idx; transl arg3])))))
   | Uprim(Pvectlength, [arg]) ->
-      Cop(Cor, [Cop(Clsr, [get_field (transl arg) (-1); Cconst_int 10]);
+      Cop(Cor, [Cop(Clsr, [get_field (transl arg) (-1); Cconst_int 9]);
                 Cconst_int 1])
   | Uprim(Pgetvectitem, [arg1; arg2]) ->
       Cop(Cload typ_addr, [array_indexing (transl arg1) (transl arg2)])
-  | Uprim(Psetvectitem, [arg1; arg2; arg3]) ->
-      let c =
-        if is_outside_heap arg3 then
-          Cop(Cstore, [array_indexing (transl arg1) (transl arg2);
-                       transl arg3])
-        else
-          bind "modify" (transl arg1) (fun loc_var ->
-            Csequence(Cop(Cmodify, [Cvar loc_var]),
-                      Cop(Cstore,
-                            [array_indexing (Cvar loc_var) (transl arg2);
-                             transl arg3])))
-      in return_unit c
+  | Uprim(Psetvectitem ptr, [arg1; arg2; arg3]) ->
+      if ptr then
+        return_unit(Cop(Cextcall("modify", typ_void, false),
+                        [array_indexing (transl arg1) (transl arg2);
+                         transl arg3]))
+      else
+        return_unit(Cop(Cstore, [array_indexing (transl arg1) (transl arg2);
+                                 transl arg3]))
+  | Uprim(Psafegetvectitem, [arg1; arg2]) ->
+      bind "array" (transl arg1) (fun arr ->
+        bind "index" (transl arg2) (fun idx ->
+          Csequence(
+            Cop(Ccheckbound,
+                [Cop(Clsr, [get_field arr (-1); Cconst_int 9]); idx]),
+            Cop(Cload typ_addr, [array_indexing arr idx]))))
+  | Uprim(Psafesetvectitem ptr, [arg1; arg2; arg3]) ->
+      return_unit
+        (bind "array" (transl arg1) (fun arr ->
+          bind "index" (transl arg2) (fun idx ->
+            Csequence(
+              Cop(Ccheckbound, 
+                  [Cop(Clsr, [get_field arr (-1); Cconst_int 9]); idx]),
+              if ptr then
+                Cop(Cextcall("modify", typ_void, false),
+                    [array_indexing arr idx; transl arg3])
+              else
+                Cop(Cstore, [array_indexing arr idx; transl arg3])))))
   | Uprim(Ptranslate tbl, [arg]) ->
-      bind "transl" (transl arg) (fun arg_id ->
+      bind "transl" (transl arg) (fun arg ->
         let rec transl_tests lo hi =
           if lo > hi then int_const 0 else begin
             let i = (lo + hi) / 2 in
             let (first_val, last_val, ofs) = tbl.(i) in
             Cifthenelse(
-              Cop(Ccmpi Clt, [Cvar arg_id; int_const first_val]),
+              Cop(Ccmpi Clt, [arg; int_const first_val]),
               transl_tests lo (i-1),
               Cifthenelse(
-                Cop(Ccmpi Cgt, [Cvar arg_id; int_const last_val]),
+                Cop(Ccmpi Cgt, [arg; int_const last_val]),
                 transl_tests (i+1) hi,
-                add_const (Cvar arg_id) ((ofs - first_val) * 2)))
+                add_const arg ((ofs - first_val) * 2)))
           end in
         transl_tests 0 (Array.length tbl - 1))
   | Uprim(_, _) ->
@@ -436,11 +463,11 @@ let rec transl = function
       else if Array.length const_index = 0 then
         transl_switch (get_tag (transl arg)) block_index block_cases
       else
-        bind "switch" (transl arg) (fun loc_arg ->
+        bind "switch" (transl arg) (fun arg ->
           Cifthenelse(
-            Cop(Cand, [Cvar loc_arg; Cconst_int 1]),
-            transl_switch (untag_int(Cvar loc_arg)) const_index const_cases,
-            transl_switch (get_tag(Cvar loc_arg)) block_index block_cases))
+            Cop(Cand, [arg; Cconst_int 1]),
+            transl_switch (untag_int arg) const_index const_cases,
+            transl_switch (get_tag arg) block_index block_cases))
   | Ustaticfail ->
       Cexit
   | Ucatch(body, handler) ->
@@ -461,16 +488,17 @@ let rec transl = function
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl exp1), transl exp2)
   | Uwhile(cond, body) ->
-      return_unit(Ccatch(Cloop(exit_if_true cond (transl body)), Ctuple []))
+      return_unit(Ccatch(Cloop(exit_if_false cond (remove_unit(transl body))),
+                         Ctuple []))
   | Ufor(id, low, high, dir, body) ->
       let tst = match dir with Upto -> Cgt   | Downto -> Clt in
       let inc = match dir with Upto -> Caddi | Downto -> Csubi in
       return_unit
         (Clet(id, transl low,
-          bind "bound" (transl high) (fun var_high ->
+          bind "bound" (transl high) (fun high ->
             Ccatch(
               Cloop(Cifthenelse(
-                Cop(Ccmpi tst, [Cvar id; Cvar var_high]),
+                Cop(Ccmpi tst, [Cvar id; high]),
                 Cexit,
                  Csequence(remove_unit(transl body),
                            Cassign(id, Cop(inc, 

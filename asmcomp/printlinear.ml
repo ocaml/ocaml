@@ -13,7 +13,7 @@ let instr i =
     Lend -> ()
   | Lop op ->
       begin match op with
-        Ialloc _ | Icall_ind | Icall_imm _ | Iextcall _ ->
+        Ialloc _ | Icall_ind | Icall_imm _ | Iextcall(_, _) ->
           open_hovbox 1;
           print_string "{";
           regsetaddr i.live;

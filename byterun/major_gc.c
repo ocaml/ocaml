@@ -65,26 +65,20 @@ static void realloc_gray_vals ()
 void darken (v)
      value v;
 {
-  if (Is_block (v) && Is_in_heap (v) && Is_white_val (v)){
-    Hd_val (v) = Grayhd_hd (Hd_val (v));
-    *gray_vals_cur++ = v;
-    if (gray_vals_cur >= gray_vals_end) realloc_gray_vals ();
+  if (Is_block (v) && Is_in_heap (v)) {
+    if (Tag_val(v) == Infix_tag) v -= Infix_offset_val(v);
+    if (Is_white_val (v)){
+      Hd_val (v) = Grayhd_hd (Hd_val (v));
+      *gray_vals_cur++ = v;
+      if (gray_vals_cur >= gray_vals_end) realloc_gray_vals ();
+    }
   }
-}
-
-static void darken_root (p, v)
-     value *p;
-     value v;
-{
-  darken (v);
 }
 
 static void start_cycle ()
 {
   Assert (gray_vals_cur == gray_vals);
-  Assert (Is_white_val (global_data));
-  darken (global_data);
-  scan_local_roots (darken_root);
+  darken_all_roots();
   gc_phase = Phase_mark;
   markhp = NULL;
 }

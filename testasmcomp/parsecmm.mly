@@ -164,7 +164,7 @@ expr:
   | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
   | LBRACKET exprlist RBRACKET { Ctuple(List.rev $2) }
   | LPAREN APPLY expr expr machtype RPAREN { Cop(Capply $5, [$3; $4]) }
-  | LPAREN EXTCALL STRING expr machtype RPAREN { Cop(Cextcall($3, $5), [$4]) }
+  | LPAREN EXTCALL STRING expr machtype RPAREN { Cop(Cextcall($3, $5, true), [$4]) }
   | LPAREN LOAD expr machtype RPAREN { Cop(Cload $4, [$3]) }
   | LPAREN unaryop expr RPAREN { Cop($2, [$3]) }
   | LPAREN binaryop expr expr RPAREN { Cop($2, [$3; $4]) }

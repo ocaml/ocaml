@@ -92,23 +92,20 @@ value alloc_array(funct, arr)
   nbr = 0;
   while (arr[nbr] != 0) nbr++;
   if (nbr == 0) {
-    v = Atom(0);
+    return Atom(0);
   } else {
-    while (extern_sp - nbr <= stack_low)
-      realloc_stack();
+    Push_roots(r, 1);
+    r[0] = nbr < Max_young_wosize ? alloc(nbr, 0) : alloc_shr(nbr, 0);
     for (n = 0; n < nbr; n++)
-      *--extern_sp = funct(arr[n]);
-    if (nbr < Max_young_wosize) {
-      v = alloc(nbr, 0);
-      n = nbr;
-      while (n-- > 0) Field (v, n) = *extern_sp++;
-    } else {
-      v = alloc_shr(nbr, 0);
-      n = nbr;
-      while (n-- > 0) initialize (&Field(v, n), *extern_sp++);
+      Field(r[0], n) = Val_int(0);
+    for (n = 0; n < nbr; n++) {
+      v = funct(arr[n]);
+      modify(&Field(r[0], n), v);
     }
+    v = r[0];
+    Pop_roots();
+    return v;
   }
-  return v;
 }
 
 value copy_string_array(arr)

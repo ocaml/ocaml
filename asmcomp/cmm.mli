@@ -35,7 +35,7 @@ type memory_chunk =
 
 type operation =
     Capply of machtype
-  | Cextcall of string * machtype
+  | Cextcall of string * machtype * bool
   | Cproj of int * int
   | Cload of machtype
   | Cloadchunk of memory_chunk

@@ -35,8 +35,8 @@ val loc_exn_bucket: Reg.t
 
 (* Maximal register pressures for pre-spilling *)
 
-val safe_register_pressure: int
-val max_register_pressure: int array
+val safe_register_pressure: Mach.operation -> int
+val max_register_pressure: Mach.operation -> int array
 
 (* Registers destroyed by operations *)
 val destroyed_at_oper: Mach.instruction_desc -> Reg.t array

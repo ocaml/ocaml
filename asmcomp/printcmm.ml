@@ -33,7 +33,7 @@ let chunk = function
 
 let operation = function
     Capply ty -> print_string "app"
-  | Cextcall(lbl, ty) ->
+  | Cextcall(lbl, ty, alloc) ->
       print_string "extcall \""; print_string lbl; print_string "\""
   | Cproj(ofs, len) ->
       print_string "proj "; print_int ofs;
@@ -127,7 +127,7 @@ let rec expression = function
       List.iter (fun e -> print_space(); expression e) el;
       begin match op with
         Capply mty -> print_space(); machtype mty
-      | Cextcall(_, mty) -> print_space(); machtype mty
+      | Cextcall(_, mty, _) -> print_space(); machtype mty
       | Cload mty -> print_space(); machtype mty
       | _ -> ()
       end;

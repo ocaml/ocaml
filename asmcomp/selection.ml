@@ -10,7 +10,7 @@ open Mach
 
 let oper_result_type = function
     Capply ty -> ty
-  | Cextcall(s, ty) -> ty
+  | Cextcall(s, ty, alloc) -> ty
   | Cload ty -> ty
   | Cloadchunk c -> typ_int
   | Calloc -> typ_addr
@@ -51,7 +51,7 @@ let rec size_expr env = function
 (* Says if an operation is "safe", i.e. without side-effects *)
 
 let safe_operation = function
-    Capply _ | Cextcall(_, _) | Calloc | Cstore | Cstorechunk _ | 
+    Capply _ | Cextcall(_, _, _) | Calloc | Cstore | Cstorechunk _ | 
     Cmodify | Craise -> false
   | _ -> true
 
@@ -61,7 +61,7 @@ let rec sel_operation op args =
   match (op, args) with
     (Capply ty, Cconst_symbol s :: rem) -> (Icall_imm s, rem)
   | (Capply ty, _) -> (Icall_ind, args)
-  | (Cextcall(s, ty), _) -> (Iextcall s, args)
+  | (Cextcall(s, ty, alloc), _) -> (Iextcall(s, alloc), args)
   | (Cload ty, [arg]) ->
       let (addr, eloc) = Proc.select_addressing arg in
       (Iload(Word, addr), [eloc])
@@ -97,7 +97,7 @@ let rec sel_operation op args =
   | (Cdivf, _) -> (Idivf, args)
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
-  | (Ccheckbound, _) -> (Icheckbound, args)
+  | (Ccheckbound, _) -> sel_arith Icheckbound args
   | _ -> fatal_error "Selection.sel_oper"
 
 and sel_arith_comm op = function
@@ -337,14 +337,14 @@ let rec emit_expr env exp seq =
           insert (Iop(Icall_imm lbl)) loc_arg loc_res seq;
           insert_move_results loc_res rd stack_ofs seq;
           rd
-      | Iextcall lbl ->
+      | Iextcall(lbl, alloc) ->
           Proc.contains_calls := true;
           let r1 = emit_tuple env new_args seq in
           let rd = Reg.newv ty in
           let (loc_arg, stack_ofs) = Proc.loc_external_arguments r1 in
           let loc_res = Proc.loc_external_results rd in
           insert_move_args r1 loc_arg stack_ofs seq;
-          insert (Iop(Iextcall lbl)) loc_arg loc_res seq;
+          insert (Iop(Iextcall(lbl, alloc))) loc_arg loc_res seq;
           insert_move_results loc_res rd stack_ofs seq;
           rd
       | Iload(Word, addr) ->

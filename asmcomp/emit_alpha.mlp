@@ -196,6 +196,7 @@ let rec instr_uses_gp i =
       if n < -0x8000000 or n > 0x7FFFFFFF then true else instr_uses_gp i.next
   | Lop(Iconst_float s) -> true
   | Lop(Iconst_symbol s) -> true
+  | Lop(Iextcall(_, _)) -> true
   | Lop(Iload(_, Ibased(_, _))) -> true
   | Lop(Istore(_, Ibased(_, _))) -> true
   | Lop(Iintop_imm(_, n)) ->
@@ -220,7 +221,7 @@ let name_for_int_operation = function
   | Ilsl -> "sll"
   | Ilsr -> "srl"
   | Iasr -> "sra"
-  | Icomp _ -> Misc.fatal_error "Emit.name_for_int_operation"
+  | _ -> Misc.fatal_error "Emit.name_for_int_operation"
 
 let name_for_specific_operation = function
     Iadd4 -> "s4addq"
@@ -281,7 +282,9 @@ let emit_instr i =
               `	ldt	{emit_reg i.res.(0)}, {emit_stack i.arg.(0)}\n`
             else
               `	ldq	{emit_reg i.res.(0)}, {emit_stack i.arg.(0)}\n`
-        | (_, _) ->
+        | (Stack ss, Stack sd) ->
+            if ss <> sd then fatal_error "Emit_alpha: Imove stack-stack"
+        | _ ->
             fatal_error "Emit_alpha: Imove"
         end
     | Lop(Iconst_int 0) ->
@@ -322,10 +325,14 @@ let emit_instr i =
           liveregs i 0;
           `	br	{emit_symbol s}\n`
         end
-    | Lop(Iextcall s) ->
-        `	lda	$25, {emit_symbol s}\n`;
-        liveregs i live_25;
-        `{record_frame i.live}	bsr	caml_c_call\n`
+    | Lop(Iextcall(s, alloc)) ->
+        if alloc then begin
+          `	lda	$25, {emit_symbol s}\n`;
+          liveregs i live_25;
+          `{record_frame i.live}	bsr	caml_c_call\n`
+        end else begin
+          `	jsr	{emit_symbol s}\n`
+        end
     | Lop(Istackoffset n) ->
         `	lda	$sp, {emit_int (-n)}($sp)\n`;
         stack_offset := !stack_offset + n
@@ -391,15 +398,15 @@ let emit_instr i =
           liveregs i live_25;
           `	jsr	caml_modify\n`   (* Pointer in $25 *)
         end
-    | Lop(Icheckbound) ->
-        if !range_check_trap = 0 then range_check_trap := new_label();
-        `	cmplt	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $25\n`;
-        `	beq	{emit_label !range_check_trap}\n`
     | Lop(Iintop(Icomp cmp)) ->
         let (comp, test) = name_for_int_comparison cmp in
         `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`;
         if not test then
           `	xor	{emit_reg i.res.(0)}, 1, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop(Icheckbound)) ->
+        if !range_check_trap = 0 then range_check_trap := new_label();
+        `	cmpule	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $25\n`;
+        `	bne	$25, {emit_label !range_check_trap}\n`
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
@@ -408,6 +415,10 @@ let emit_instr i =
         `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`;
         if not test then
           `	xor	{emit_reg i.res.(0)}, 1, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop_imm(Icheckbound, n)) ->
+        if !range_check_trap = 0 then range_check_trap := new_label();
+        `	cmpule	{emit_reg i.arg.(0)}, {emit_int n}, $25\n`;
+        `	bne	$25, {emit_label !range_check_trap}\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
@@ -569,7 +580,7 @@ let fundecl fundecl =
   List.iter emit_call_gc !call_gc_sites;
   List.iter emit_modify !modify_sites;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	call_pal	PAL_gentrap\n`;
+    `{emit_label !range_check_trap}:	call_pal PAL_gentrap\n`;
   `	.end	{emit_symbol fundecl.fun_name}\n`
 
 (* Emission of data *)

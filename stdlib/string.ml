@@ -1,26 +1,14 @@
 (* String operations *)
 
-external length : string -> int = "ml_string_length"
+external length : string -> int = "%string_length"
+external get : string -> int -> char = "%string_safe_get"
+external set : string -> int -> char -> unit = "%string_safe_set"
 external create: int -> string = "create_string"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
-external get : string -> int -> char = "string_get"
-external set : string -> int -> char -> unit = "string_set"
 external unsafe_blit : string -> int -> string -> int -> int -> unit
                 = "blit_string"
 external unsafe_fill : string -> int -> int -> char -> unit = "fill_string"
-
-(******
-let get s n =
-  if n < 0 or n >= length s
-  then invalid_arg "String.get"
-  else unsafe_get s n
-
-let set s n c =
-  if n < 0 or n >= length s
-  then invalid_arg "String.set"
-  else unsafe_set s n c
-*******)
 
 let make n c =
   let s = create n in
@@ -72,6 +60,8 @@ let concat sep l =
       r
 
 external is_printable: char -> bool = "is_printable"
+external char_code: char -> int = "%identity"
+external char_chr: int -> char = "%identity"
 
 let escaped s =
   let n = ref 0 in
@@ -97,14 +87,14 @@ let escaped s =
                 if is_printable c then
                   unsafe_set s' !n c
                 else begin
-                  let a = Char.code c in
+                  let a = char_code c in
                   unsafe_set s' !n '\\';
                   incr n;
-                  unsafe_set s' !n (Char.unsafe_chr (48 + a / 100));
+                  unsafe_set s' !n (char_chr (48 + a / 100));
                   incr n;
-                  unsafe_set s' !n (Char.unsafe_chr (48 + (a / 10) mod 10));
+                  unsafe_set s' !n (char_chr (48 + (a / 10) mod 10));
                   incr n;
-                  unsafe_set s' !n (Char.unsafe_chr (48 + a mod 10))
+                  unsafe_set s' !n (char_chr (48 + a mod 10))
                 end
           end;
           incr n

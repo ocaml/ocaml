@@ -258,8 +258,12 @@ let loc_exn_bucket = phys_reg 0         (* eax *)
 
 (* Registers destroyed by operations *)
 
+let destroyed_at_c_call =               (* ebx, esi, edi, ebp preserved *)
+  Array.of_list(List.map phys_reg [0;2;3;100;101;102;103])
+
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall _) -> all_phys_regs
+    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
+  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) -> [| phys_reg 0; phys_reg 3 |] (* eax, edx *)
   | Iop(Ialloc _) -> [| phys_reg 0|] (* eax *)
   | Iop(Imodify) -> [| phys_reg 0 |] (* eax *)
@@ -272,9 +276,14 @@ let destroyed_at_raise = all_phys_regs
 
 (* Maximal register pressure *)
 
-let max_register_pressure = [|7; 4|]
+let safe_register_pressure op = 4
 
-let safe_register_pressure = 4
+let max_register_pressure = function
+    Iextcall(_, _) -> [| 4; 4 |]
+  | Iintop(Idiv | Imod) -> [| 5; 4 |]
+  | Ialloc _ | Imodify | Iintop(Icomp _) | Iintop_imm(Icomp _, _) |
+    Iintoffloat -> [| 6; 4 |]
+  | _ -> [|7; 4|]
 
 (* Reloading of instruction arguments, storing of instruction results *)
 
@@ -293,7 +302,7 @@ let reload_test makereg tst arg =
 
 let reload_operation makereg op arg res =
   match op with
-    Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor|Icomp _) ->
+    Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
       (* One of the two arguments can reside in the stack *)
       if stackp arg.(0) & stackp arg.(1)
       then ([|arg.(0); makereg arg.(1)|], res)
@@ -308,20 +317,7 @@ let reload_operation makereg op arg res =
 (* Layout of the stack frame *)
 
 let num_stack_slots = [| 0; 0 |]
-let stack_offset = ref 0
 let contains_calls = ref false
-
-let frame_size () =                     (* includes return address *)
-  !stack_offset + 4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) + 4
-
-let slot_offset loc class =
-  match loc with
-    Incoming n -> frame_size() + n
-  | Local n ->
-      if class = 0
-      then !stack_offset + n * 4
-      else !stack_offset + num_stack_slots.(0) * 4 + n * 8
-  | Outgoing n -> n
 
 (* Calling the assembler *)
 

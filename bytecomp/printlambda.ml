@@ -31,8 +31,8 @@ let primitive = function
   | Psetglobal id -> print_string "setglobal "; Ident.print id
   | Pmakeblock tag -> print_string "makeblock "; print_int tag
   | Pfield n -> print_string "field "; print_int n
-  | Psetfield n -> print_string "setfield "; print_int n
-  | Pccall(name, arity) -> print_string name
+  | Psetfield(n, _) -> print_string "setfield "; print_int n
+  | Pccall(name, arity, alloc) -> print_string name
   | Praise -> print_string "raise"
   | Psequand -> print_string "&&"
   | Psequor -> print_string "||"
@@ -68,11 +68,16 @@ let primitive = function
   | Pfloatcomp(Cle) -> print_string "<=."
   | Pfloatcomp(Cgt) -> print_string ">."
   | Pfloatcomp(Cge) -> print_string ">=."
-  | Pgetstringchar -> print_string "string.get"
-  | Psetstringchar -> print_string "string.set"
+  | Pstringlength -> print_string "string.length"
+  | Pgetstringchar -> print_string "string.unsafe_get"
+  | Psetstringchar -> print_string "string.unsafe_set"
+  | Psafegetstringchar -> print_string "string.get"
+  | Psafesetstringchar -> print_string "string.set"
   | Pvectlength -> print_string "array.length"
-  | Pgetvectitem -> print_string "array.get"
-  | Psetvectitem -> print_string "array.set"
+  | Pgetvectitem -> print_string "array.unsafe_get"
+  | Psetvectitem _ -> print_string "array.unsafe_set"
+  | Psafegetvectitem -> print_string "array.get"
+  | Psafesetvectitem _ -> print_string "array.set"
   | Ptranslate tbl ->
       print_string "translate [";
       open_hvbox 0;

@@ -1,5 +1,3 @@
-ARCH=alpha
-
 include ../Makefile.config
 
 CAMLC=../boot/camlrun ../boot/camlc -I ../boot

@@ -8,8 +8,8 @@ type primitive =
   | Psetglobal of Ident.t
   | Pmakeblock of int
   | Pfield of int
-  | Psetfield of int
-  | Pccall of string * int
+  | Psetfield of int * bool
+  | Pccall of string * int * bool
   | Praise
   | Psequand | Psequor | Pnot
   | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
@@ -20,8 +20,10 @@ type primitive =
   | Poffsetref of int
   | Pnegfloat | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
-  | Pgetstringchar | Psetstringchar
-  | Pvectlength | Pgetvectitem | Psetvectitem
+  | Pstringlength | Pgetstringchar | Psetstringchar
+  | Psafegetstringchar | Psafesetstringchar
+  | Pvectlength | Pgetvectitem | Psetvectitem of bool
+  | Psafegetvectitem | Psafesetvectitem of bool
   | Ptranslate of (int * int * int) array
 
 and comparison =

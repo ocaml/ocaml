@@ -43,7 +43,7 @@ let insert_moves src dst next =
 let rec reload i =
   match i.desc with
     Iend | Ireturn | Iop Itailcall_ind | Iop(Itailcall_imm _) | Iraise -> i
-  | Iop(Icall_ind | Icall_imm _ | Iextcall _) ->
+  | Iop(Icall_ind | Icall_imm _ | Iextcall(_, _)) ->
       (* Don't do anything, the arguments and results are already at
          the correct position (e.g. on stack for some arguments). *)
       instr_cons_live i.desc i.arg i.res i.live (reload i.next)

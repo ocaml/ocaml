@@ -86,7 +86,7 @@ value gc_stat(v) /* ML */
 
   res = alloc (13, 0);
   Field (res, 0) = Val_long (stat_minor_words
-                             + Wsize_bsize (young_ptr - young_start));
+                             + Wsize_bsize (young_end - young_ptr));
   Field (res, 1) = Val_long (stat_promoted_words);
   Field (res, 2) = Val_long (stat_major_words + allocated_words);
   Field (res, 3) = Val_long (stat_minor_collections);
