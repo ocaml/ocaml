@@ -79,7 +79,7 @@ void sys_error(arg)
   raise_sys_error(str);
 }
 
-void sys_exit(retcode)          /* ML */
+value sys_exit(retcode)          /* ML */
      value retcode;
 {
 #ifdef HAS_UI
@@ -87,6 +87,7 @@ void sys_exit(retcode)          /* ML */
 #else
   exit(Int_val(retcode));
 #endif
+  return Val_unit;
 }
 
 #ifndef O_BINARY
