@@ -1,9 +1,7 @@
-nat_stubs.o: nat_stubs.c bignum/h/BigNum.h bignum/h/BntoBnn.h \
- ../../byterun/mlvalues.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/memory.h \
- ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
- ../../byterun/minor_gc.h nat.h
+nat_stubs.o : nat_stubs.c ./bignum/h/BigNum.h ./bignum/h/BntoBnn.h ../../byterun/mlvalues.h \
+  ../../byterun/config.h ../../byterun/../config/m.h ../../byterun/../config/s.h \
+  ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/memory.h ../../byterun/gc.h \
+  ../../byterun/major_gc.h ../../byterun/freelist.h ../../byterun/minor_gc.h nat.h 
 big_int.cmi: nat.cmi 
 num.cmi: big_int.cmi nat.cmi ratio.cmi 
 ratio.cmi: big_int.cmi nat.cmi 

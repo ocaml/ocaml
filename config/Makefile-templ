@@ -14,7 +14,7 @@ MANEXT=1
 
 ### Do #! scripts work on your system?
 ### Beware: on some systems (e.g. SunOS 4), this will work only if 
-### the string "#!$(BINDIR)/cslrun" is less than 32 characters long.
+### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
 ### In doubt, set SHARPBANGSCRIPTS to false.
 SHARPBANGSCRIPTS=true
 #SHARPBANGSCRIPTS=false
@@ -189,7 +189,7 @@ BIGNUM_ARCH=C
 # For SunOS with OpenLook:
 #X11_INCLUDES=/usr/openwin/include
 
-### Link-time options to cslc or cslopt for linking with X11 libraries
+### Link-time options to ocamlc or ocamlopt for linking with X11 libraries
 # Needed for the "graph" package
 # Usually:
 #X11_LINK=-cclib -lX11

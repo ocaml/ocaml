@@ -14,4 +14,4 @@
 let _ =
   let args =
     String.concat " " (List.tl (Array.to_list Sys.argv)) in
-  exit(Sys.command("cslc -linkall toplevellib.cma " ^ args ^ " topmain.cmo"))
+  exit(Sys.command("ocamlc -linkall toplevellib.cma " ^ args ^ " topmain.cmo"))

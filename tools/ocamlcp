@@ -1,7 +1,6 @@
 #!/bin/sh
 
-toremove=""
-cslargs="profiling.cmo"
+compargs="profiling.cmo"
 profargs=""
 
 while : ; do
@@ -11,18 +10,14 @@ while : ; do
     -p)
       profargs="$profargs -m $2"; shift;;
     -I|-o|-ccopt|-cclib)
-      cslargs="$cslargs $1 $2"; shift;;
-    *.ml)
-      toremove="$toremove ${1}t"
-      cslprof -instrument $profargs $1 > ${1}t || { rm -f $toremove; exit 2; }
-      cslargs="$cslargs ${1}t";;
+      compargs="$compargs $1 $2"; shift;;
+    -pp)
+      echo 1>&2 "ocamlcp: profiling is incompatible with the -pp option"
+      exit 2;;
     *)
-      cslargs="$cslargs $1";;
+      compargs="$compargs $1";;
   esac
   shift
 done
 
-ocamlc $cslargs
-status=$?
-rm -f $toremove
-exit $status
+exec ocamlc -pp "ocamlprof -instrument $profargs" $compargs

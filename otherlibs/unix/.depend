@@ -1,91 +1,91 @@
-accept.o: accept.c unix.h socketaddr.h
-access.o: access.c unix.h
-addrofstr.o: addrofstr.c unix.h socketaddr.h
-alarm.o: alarm.c unix.h
-bind.o: bind.c unix.h socketaddr.h
-chdir.o: chdir.c unix.h
-chmod.o: chmod.c unix.h
-chown.o: chown.c unix.h
-chroot.o: chroot.c unix.h
-close.o: close.c unix.h
-closedir.o: closedir.c unix.h
-connect.o: connect.c unix.h socketaddr.h
-cst2constr.o: cst2constr.c cst2constr.h
-cstringv.o: cstringv.c unix.h
-dup.o: dup.c unix.h
-dup2.o: dup2.c unix.h
-envir.o: envir.c
-errmsg.o: errmsg.c
-execv.o: execv.c unix.h
-execve.o: execve.c unix.h
-execvp.o: execvp.c unix.h
-exit.o: exit.c unix.h
-fchmod.o: fchmod.c unix.h
-fchown.o: fchown.c unix.h
-fcntl.o: fcntl.c unix.h
-fork.o: fork.c unix.h
-ftruncate.o: ftruncate.c unix.h
-getcwd.o: getcwd.c unix.h
-getegid.o: getegid.c unix.h
-geteuid.o: geteuid.c unix.h
-getgid.o: getgid.c unix.h
-getgr.o: getgr.c unix.h
-getgroups.o: getgroups.c unix.h
-gethost.o: gethost.c unix.h socketaddr.h
-gethostname.o: gethostname.c unix.h
-getlogin.o: getlogin.c unix.h
-getpeername.o: getpeername.c unix.h socketaddr.h
-getpid.o: getpid.c unix.h
-getppid.o: getppid.c unix.h
-getproto.o: getproto.c unix.h
-getpw.o: getpw.c unix.h
-getserv.o: getserv.c unix.h
-getsockname.o: getsockname.c unix.h socketaddr.h
-gettimeofday.o: gettimeofday.c unix.h
-getuid.o: getuid.c unix.h
-gmtime.o: gmtime.c unix.h
-ioctl.o: ioctl.c unix.h
-itimer.o: itimer.c unix.h
-kill.o: kill.c unix.h
-link.o: link.c unix.h
-listen.o: listen.c unix.h
-lockf.o: lockf.c unix.h
-lseek.o: lseek.c unix.h
-mkdir.o: mkdir.c unix.h
-mkfifo.o: mkfifo.c unix.h
-nice.o: nice.c unix.h
-open.o: open.c unix.h
-opendir.o: opendir.c unix.h
-pause.o: pause.c unix.h
-pipe.o: pipe.c unix.h
-read.o: read.c unix.h
-readdir.o: readdir.c unix.h
-readlink.o: readlink.c unix.h
-rename.o: rename.c unix.h
-rewinddir.o: rewinddir.c unix.h
-rmdir.o: rmdir.c unix.h
-select.o: select.c unix.h
-sendrecv.o: sendrecv.c unix.h socketaddr.h
-setgid.o: setgid.c unix.h
-setuid.o: setuid.c unix.h
-shutdown.o: shutdown.c unix.h
-sleep.o: sleep.c unix.h
-socket.o: socket.c unix.h
-socketaddr.o: socketaddr.c unix.h socketaddr.h
-socketpair.o: socketpair.c unix.h
-sockopt.o: sockopt.c unix.h
-stat.o: stat.c unix.h cst2constr.h
-strofaddr.o: strofaddr.c unix.h socketaddr.h
-symlink.o: symlink.c unix.h
-termios.o: termios.c unix.h
-time.o: time.c unix.h
-times.o: times.c unix.h
-truncate.o: truncate.c unix.h
-umask.o: umask.c unix.h
-unixsupport.o: unixsupport.c unix.h cst2constr.h
-unlink.o: unlink.c unix.h
-utimes.o: utimes.c unix.h
-wait.o: wait.c unix.h
-write.o: write.c unix.h
+accept.o : accept.c unix.h socketaddr.h 
+access.o : access.c unix.h 
+addrofstr.o : addrofstr.c unix.h socketaddr.h 
+alarm.o : alarm.c unix.h 
+bind.o : bind.c unix.h socketaddr.h 
+chdir.o : chdir.c unix.h 
+chmod.o : chmod.c unix.h 
+chown.o : chown.c unix.h 
+chroot.o : chroot.c unix.h 
+close.o : close.c unix.h 
+closedir.o : closedir.c unix.h 
+connect.o : connect.c unix.h socketaddr.h 
+cst2constr.o : cst2constr.c cst2constr.h 
+cstringv.o : cstringv.c unix.h 
+dup.o : dup.c unix.h 
+dup2.o : dup2.c unix.h 
+envir.o : envir.c 
+errmsg.o : errmsg.c 
+execv.o : execv.c unix.h 
+execve.o : execve.c unix.h 
+execvp.o : execvp.c unix.h 
+exit.o : exit.c unix.h 
+fchmod.o : fchmod.c unix.h 
+fchown.o : fchown.c unix.h 
+fcntl.o : fcntl.c unix.h 
+fork.o : fork.c unix.h 
+ftruncate.o : ftruncate.c unix.h 
+getcwd.o : getcwd.c unix.h 
+getegid.o : getegid.c unix.h 
+geteuid.o : geteuid.c unix.h 
+getgid.o : getgid.c unix.h 
+getgr.o : getgr.c unix.h 
+getgroups.o : getgroups.c unix.h 
+gethost.o : gethost.c unix.h socketaddr.h 
+gethostname.o : gethostname.c unix.h 
+getlogin.o : getlogin.c unix.h 
+getpeername.o : getpeername.c unix.h socketaddr.h 
+getpid.o : getpid.c unix.h 
+getppid.o : getppid.c unix.h 
+getproto.o : getproto.c unix.h 
+getpw.o : getpw.c unix.h 
+getserv.o : getserv.c unix.h 
+getsockname.o : getsockname.c unix.h socketaddr.h 
+gettimeofday.o : gettimeofday.c unix.h 
+getuid.o : getuid.c unix.h 
+gmtime.o : gmtime.c unix.h 
+ioctl.o : ioctl.c unix.h 
+itimer.o : itimer.c unix.h 
+kill.o : kill.c unix.h 
+link.o : link.c unix.h 
+listen.o : listen.c unix.h 
+lockf.o : lockf.c unix.h 
+lseek.o : lseek.c unix.h 
+mkdir.o : mkdir.c unix.h 
+mkfifo.o : mkfifo.c unix.h 
+nice.o : nice.c unix.h 
+open.o : open.c unix.h 
+opendir.o : opendir.c unix.h 
+pause.o : pause.c unix.h 
+pipe.o : pipe.c unix.h 
+read.o : read.c unix.h 
+readdir.o : readdir.c unix.h 
+readlink.o : readlink.c unix.h 
+rename.o : rename.c unix.h 
+rewinddir.o : rewinddir.c unix.h 
+rmdir.o : rmdir.c unix.h 
+select.o : select.c unix.h 
+sendrecv.o : sendrecv.c unix.h socketaddr.h 
+setgid.o : setgid.c unix.h 
+setuid.o : setuid.c unix.h 
+shutdown.o : shutdown.c unix.h 
+sleep.o : sleep.c unix.h 
+socket.o : socket.c unix.h 
+socketaddr.o : socketaddr.c unix.h socketaddr.h 
+socketpair.o : socketpair.c unix.h 
+sockopt.o : sockopt.c unix.h 
+stat.o : stat.c unix.h cst2constr.h 
+strofaddr.o : strofaddr.c unix.h socketaddr.h 
+symlink.o : symlink.c unix.h 
+termios.o : termios.c unix.h 
+time.o : time.c unix.h 
+times.o : times.c unix.h 
+truncate.o : truncate.c unix.h 
+umask.o : umask.c unix.h 
+unixsupport.o : unixsupport.c unix.h cst2constr.h 
+unlink.o : unlink.c unix.h 
+utimes.o : utimes.c unix.h 
+wait.o : wait.c unix.h 
+write.o : write.c unix.h 
 unix.cmo: unix.cmi 
 unix.cmx: unix.cmi 

@@ -1,11 +1,3 @@
-csldep.cmo: ../utils/misc.cmi 
-csldep.cmx: ../utils/misc.cmx 
-cslprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
-    ../parsing/location.cmi ../utils/misc.cmi ../parsing/parse.cmi \
-    ../parsing/parsetree.cmi 
-cslprof.cmx: ../utils/clflags.cmx ../utils/config.cmx ../parsing/lexer.cmx \
-    ../parsing/location.cmx ../utils/misc.cmx ../parsing/parse.cmx \
-    ../parsing/parsetree.cmi 
 dumpapprox.cmo: ../asmcomp/clambda.cmi ../asmcomp/compilenv.cmi \
     ../utils/config.cmi 
 dumpapprox.cmx: ../asmcomp/clambda.cmx ../asmcomp/compilenv.cmx \
@@ -20,5 +12,13 @@ dumpobj.cmx: ../parsing/asttypes.cmi ../utils/config.cmx \
     ../utils/tbl.cmx 
 objinfo.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi 
 objinfo.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
+ocamldep.cmo: ../utils/misc.cmi 
+ocamldep.cmx: ../utils/misc.cmx 
+ocamlprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
+    ../parsing/location.cmi ../utils/misc.cmi ../parsing/parse.cmi \
+    ../parsing/parsetree.cmi 
+ocamlprof.cmx: ../utils/clflags.cmx ../utils/config.cmx ../parsing/lexer.cmx \
+    ../parsing/location.cmx ../utils/misc.cmx ../parsing/parse.cmx \
+    ../parsing/parsetree.cmi 
 profiling.cmo: profiling.cmi 
 profiling.cmx: profiling.cmi 

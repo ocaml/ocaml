@@ -11,42 +11,23 @@
 
 (* $Id$ *)
 
-let cslargs = ref ([] : string list)
+let compargs = ref ([] : string list)
 let profargs = ref ([] : string list)
 let toremove = ref ([] : string list)
 
-let remove_file name =
-  try Sys.remove name with Sys_error _ -> ()
-
-let option opt () = cslargs := opt :: !cslargs
-let option_with_arg opt arg = cslargs := arg :: opt :: !cslargs
-
-let process_file filename =
-  if Filename.check_suffix filename ".ml" then begin
-    let instrname = filename ^ "t" in
-    toremove := instrname :: !toremove;
-    let status =
-      Sys.command
-        (Printf.sprintf "cslprof -instrument %s %s > %s"
-                        (String.concat " " (List.rev !profargs))
-                        filename instrname) in
-    if status <> 0 then begin
-      List.iter remove_file !toremove;
-      exit 2
-    end;
-    cslargs := instrname :: !cslargs
-  end else begin
-    cslargs := filename :: !cslargs
-  end
+let option opt () = compargs := opt :: !compargs
+let option_with_arg opt arg = compargs := arg :: opt :: !compargs
+let process_file filename = compargs := filename :: !compargs
 
 let _ =
   Arg.parse
-    (* Same options as the compiler cslc *)
+    (* Same options as the compiler ocamlc *)
       ["-I", Arg.String(option_with_arg "-I");
        "-c", Arg.Unit(option "-c");
        "-o", Arg.String(option_with_arg "-o");
        "-i", Arg.Unit(option "-i");
        "-a", Arg.Unit(option "-a");
+       "-pp", Arg.Unit(fun () -> prerr_endline "ocamlcp: profiling is incompatible with the -pp option"; exit 2);
        "-unsafe", Arg.Unit(option "-unsafe");
        "-nopervasives", Arg.Unit(option "-nopervasives");
        "-custom", Arg.Unit(option "-custom");
@@ -62,6 +43,8 @@ let _ =
        "-p", Arg.String(fun s -> profargs := s :: "-m" :: !profargs)]
       process_file;
   let status =
-    Sys.command ("cslc " ^ String.concat " " (List.rev !cslargs)) in
-  List.iter remove_file !toremove;
+    Sys.command
+      (Printf.sprintf "ocamlc -pp \"ocamlprof -instrument %s\" %s"
+          String.concat " " (List.rev !profargs)
+          String.concat " " (List.rev !compargs)) in
   exit status

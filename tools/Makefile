@@ -109,3 +109,4 @@ depend: beforedepend
 	$(CAMLRUN) ./ocamldep $(INCLUDES) *.mli *.ml > .depend
 
 include .depend
+# DO NOT DELETE THIS LINE -- make depend depends on it.
