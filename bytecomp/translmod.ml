@@ -355,12 +355,13 @@ let toploop_ident = Ident.create_persistent "Toploop"
 let toploop_getvalue_pos = 0 (* position of getvalue in module Toploop *)
 let toploop_setvalue_pos = 1 (* position of setvalue in module Toploop *)
 
-let aliased_idents = Hashtbl.create 17
+let aliased_idents = ref Ident.empty
 
-let set_toplevel_name = Hashtbl.add aliased_idents
+let set_toplevel_name id name =
+  aliased_idents := Ident.add id name !aliased_idents
 
 let toplevel_name id =
-  try Hashtbl.find aliased_idents id
+  try Ident.find_same id !aliased_idents
   with Not_found -> Ident.name id
 
 let toploop_getvalue id =
