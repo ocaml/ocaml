@@ -39,6 +39,7 @@ clean::
 	$(MAKE) clean_hot clean_cold
 	rm -f boot/*.cm[oi] boot/camlp4*
 	rm -rf boot/SAVED
+	cd unmaintained && $(MAKE) clean
 
 scratch: clean
 

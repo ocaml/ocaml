@@ -1,4 +1,17 @@
-; camlp4 ./pa_schemer.cmo pa_extend.cmo q_MLast.cmo pr_dump.cmo
+; pa_r.cmo pa_rp.cmo pa_extend.cmo q_MLast.cmo pr_dump.cmo
+; **********************************************************************
+;                                                                       
+;                                Camlp4                                 
+;                                                                       
+;     Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt          
+;                                                                       
+;   Copyright 2002 Institut National de Recherche en Informatique et    
+;   en Automatique.  All rights reserved.  This file is distributed     
+;   under the terms of the GNU Library General Public License, with     
+;   the special exception on linking described in file                  
+;    ../../../LICENSE.                                                  
+;                                                                       
+; **********************************************************************
 ; $Id$
 
 (open Pcaml)
@@ -99,7 +112,9 @@
   (parser
    (((d kind) s) (values "INT" (digits_under kind (Buff.store len d) s)))
    ((s) ep
-    (raise_with_loc (Token.make_loc (values bp ep))
+    (raise_with_loc (values
+                       (Reloc.shift_pos bp Reloc.zero_loc)
+                       (Reloc.shift_pos ep Reloc.zero_loc))
        (Failure "ill-formed integer constant")))))
 
 (define (base_number kwt bp len)
@@ -119,7 +134,9 @@
    (((` ''')) (values "CHAR" (String.make 1 x)))
    ((s) ep
     (if (List.mem x no_ident)
-        (Stdpp.raise_with_loc (Token.make_loc (values (- ep 2) (- ep 1)))
+        (Stdpp.raise_with_loc (values
+                                 (Reloc.shift_pos (- ep 2) Reloc.zero_loc)
+                                 (Reloc.shift_pos (- ep 1) Reloc.zero_loc))
          (Stream.Error "bad quote"))
         (let* ((len (Buff.store (Buff.store 0 ''') x))
                ((values s dot) (ident len s)))
@@ -156,7 +173,9 @@
   (no_dot
     (parser
      (((` '.')) ep
-      (Stdpp.raise_with_loc (Token.make_loc (values (- ep 1) ep))
+      (Stdpp.raise_with_loc (values
+                               (Reloc.shift_pos (- ep 1) Reloc.zero_loc)
+                               (Reloc.shift_pos ep Reloc.zero_loc))
          (Stream.Error "bad dot")))
      (() ())))
   ((lexer0 kwt)
@@ -254,7 +273,8 @@
        (Token.lexer_func_of_parser
         (lambda (s)
           (let (((values r (values bp ep)) (lexer kwt s)))
-            (values r (Token.make_loc (values bp ep)))))))
+            (values r (values (Reloc.shift_pos bp Reloc.zero_loc)
+                              (Reloc.shift_pos ep Reloc.zero_loc)))))))
       (Token.tok_using (lexer_using kwt))
       (Token.tok_removing (lambda))
       (Token.tok_match Token.default_match)

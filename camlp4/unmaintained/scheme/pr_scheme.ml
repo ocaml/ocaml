@@ -1,4 +1,17 @@
-(* camlp4r q_MLast.cmo ./pa_extfun.cmo *)
+(* pa_r.cmo q_MLast.cmo pa_extfun.cmo pr_dump.cmo *)
+(***********************************************************************)
+(*                                                                     *)
+(*                               Camlp4                                *)
+(*                                                                     *)
+(*    Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file                 *)
+(*   ../../../LICENSE.                                                 *)
+(*                                                                     *)
+(***********************************************************************)
 (* $Id$ *)
 
 open Pcaml;

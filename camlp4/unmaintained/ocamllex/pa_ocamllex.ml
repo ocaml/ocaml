@@ -1,6 +1,18 @@
-(* camlp4 ./pa_o.cmo q_MLast.cmo pa_extend.cmo pr_dump.cmo *)
+(* pa_o.cmo q_MLast.cmo pa_extend.cmo pr_dump.cmo *)
+(***********************************************************************)
+(*                                                                     *)
+(*                               Camlp4                                *)
+(*                                                                     *)
+(*     Alain Frisch, projet Cristal, INRIA Rocquencourt                *)
+(*                                                                     *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file                 *)
+(*   ../../../LICENSE.                                                 *)
+(*                                                                     *)
+(***********************************************************************)
 (* $Id$ *)
-(* Alain Frisch's contribution *)
 
 open Syntax
 open Lexgen
