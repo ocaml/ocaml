@@ -777,12 +777,11 @@ let rec type_approx env sexp =
       in
       let ty = type_approx env e
       and ty1 = approx_ty_opt sty1
-      and ty2 = approx_ty_opt sty2
-      in begin
-        try unify env ty ty1; unify env ty1 ty2; ty2
-        with Unify trace ->
-          raise(Error(sexp.pexp_loc, Expr_type_clash trace))
-      end
+      and ty2 = approx_ty_opt sty2 in
+      begin try unify env ty ty1 with Unify trace ->
+        raise(Error(sexp.pexp_loc, Expr_type_clash trace))
+      end;
+      if sty2 = None then ty1 else ty2
   | _ -> newvar ()
 
 (* List labels in a function type, and whether return type is a variable *)
