@@ -1,0 +1,39 @@
+# Makefile for the portable graphics library
+
+!include ..\..\config\Makefile.nt
+
+CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot
+CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
+
+all: graphics.cmi graphics.cmo
+
+allopt:
+
+graphics.ml: graphics.mlp
+	$(CPP) graphics.mlp > graphics.ml
+
+clean:
+	rm -f *.cm*
+	rm -f graphics.ml
+
+realclean: clean
+	rm -f *.a *.o
+
+install:
+	cp graphics.cm[io] $(LIBDIR)
+
+installopt:
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.mli.cmi:
+	$(CAMLC) -c $<
+.ml.cmo:
+	$(CAMLC) -c $<
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+depend: graphics.ml
+	..\..\tools\ocamldep *.mli *.ml >> .depend
+
+!include .depend
