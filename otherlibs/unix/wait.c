@@ -84,11 +84,11 @@ static int wait_flag_table[] = {
 
 CAMLprim value unix_waitpid(value flags, value pid_req)
 {
-  int pid, status;
-  
+  int pid, status, cv_flags;
+
+  cv_flags = convert_flag_list(flags, wait_flag_table);
   enter_blocking_section();
-  pid = waitpid(Int_val(pid_req), &status, 
-                convert_flag_list(flags, wait_flag_table));
+  pid = waitpid(Int_val(pid_req), &status, cv_flags);
   leave_blocking_section();
   if (pid == -1) uerror("waitpid", Nothing);
   return alloc_process_status(pid, status);

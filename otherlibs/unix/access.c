@@ -42,9 +42,10 @@ static int access_permission_table[] = {
 
 CAMLprim value unix_access(value path, value perms)
 {
-  int ret;
-  ret = access(String_val(path),
-               convert_flag_list(perms, access_permission_table));
+  int ret, cv_flags;
+
+  cv_flags = convert_flag_list(perms, access_permission_table);
+  ret = access(String_val(path), cv_flags);
   if (ret == -1)
     uerror("access", path);
   return Val_unit;
