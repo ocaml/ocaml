@@ -141,7 +141,8 @@ let primitives_table = create_hashtable 31 [
 ]
 
 let has_base_type exp base_ty =
-  let exp_ty = Ctype.expand_head exp.exp_env exp.exp_type in
+  let exp_ty =
+    Ctype.expand_head exp.exp_env (Ctype.correct_levels exp.exp_type) in
   match (Ctype.repr exp_ty, Ctype.repr base_ty) with
     {desc = Tconstr(p1, _, _)}, {desc = Tconstr(p2, _, _)} -> Path.same p1 p2
   | (_, _) -> false
@@ -369,7 +370,7 @@ let rec transl_exp e =
       Matching.for_function e.exp_loc None
         (transl_exp arg) (transl_cases pat_expr_list)
   | Texp_try(body, pat_expr_list) ->
-      let id = Ident.create "exn" in
+      let id = name_pattern "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
                Matching.for_trywith (Lvar id) (transl_cases pat_expr_list))
   | Texp_tuple el ->
