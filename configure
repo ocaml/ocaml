@@ -345,8 +345,8 @@ fi
 if (SHELL=/bin/sh; export SHELL; ./sharpbang > /dev/null); then
   echo "#! appears to work in shell scripts"
   case "$host" in
-    *-*-sunos*)
-      echo "We won't use it, though, because under SunOS it breaks"
+    *-*-sunos*|*-*-unicos*)
+      echo "We won't use it, though, because under SunOS and Unicos it breaks"
       echo "on pathnames longer than 30 characters"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)  echo "SHARPBANGSCRIPTS=true" >> Makefile;;
