@@ -208,7 +208,7 @@ CAMLprim value oo_cache_public_method (value meths, value tag,
     else li = mi;
   }
   modify (&Field(cache, n), meths);
-  met = Field (meths, li+1);
-  modify (&Field(cache, n+1), met);
-  return met;
+  li++;
+  Field(cache, n+1) = Val_int(li);
+  return Field(meths, li);
 }

@@ -121,7 +121,7 @@ let table_count = ref 0
 
 let new_table pub_labels =
   incr table_count;
-  { methods = [| magic (pub_labels : tag array) |];
+  { methods = [| pub_labels |];
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
@@ -260,11 +260,19 @@ let get_variables table names =
 let add_initializer table f =
   table.initializers <- f::table.initializers
 
+module Keys = Map.Make(struct type t = tag array let compare = compare end)
+let key_map = ref Keys.empty
+let get_key tags : item =
+  try magic (Keys.find tags !key_map : tag array)
+  with Not_found ->
+    key_map := Keys.add tags tags !key_map;
+    magic tags
+
 let create_table public_methods =
-  if public_methods == magic 0 then new_table [||] else
+  if public_methods == magic 0 then new_table dummy_item else
   (* [public_methods] must be in ascending order for bytecode *)
   let tags = Array.map public_method_label public_methods in
-  let table = new_table tags in
+  let table = new_table (get_key tags) in
   Array.iter
     (function met ->
       let lab = new_method table in

@@ -469,17 +469,19 @@ let rec close fenv cenv = function
       in
       let met, args =
         match args with
-          Lprim(Pfield n, [cache]) :: args ->
+          Lprim(Pfield n, [Lvar cache]) :: args
+          when Ident.name cache = "*cache*" ->
             let imeths = Ident.create "meths"
             and icache = Ident.create "cache" in
             (Llet(Alias, imeths, Lprim(Pfield 0, [Lvar self]),
-             Llet(Alias, icache, cache,
+             Llet(Alias, icache, Lvar cache,
                   let cache = Lvar icache and meths = Lvar imeths in
                   Lifthenelse(
                   Lprim(Pintcomp Cneq, [Lprim(Pfield n, [cache]); meths]),
                   Lprim(Pccall (prim "cache" 4),
                         [meths; met; cache; Lconst(Const_pointer n)]),
-                  Lprim(Pfield (n+1), [cache])))),
+                  Lprim(Parrayrefu Paddrarray,
+                        [meths; Lprim(Pfield (n+1), [cache])])))),
              args)
         | _ ->
             (Lprim (Pccall (prim "get" 2), [Lvar self; met]), args)

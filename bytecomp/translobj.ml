@@ -45,14 +45,15 @@ let share c =
 
 (* Collect labels *)
 
-let method_cache = Ident.create "meth_cache"
+let cache_required = ref false
+let method_cache = Ident.create "*cache*"
 let method_count = ref 0
 
 let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
 
 let meth lab =
   let tag = meth_tag lab in
-  if not !Clflags.native_code then (tag, []) else
+  if not (!cache_required && !Clflags.native_code) then (tag, []) else
   let n = !method_count in
   incr method_count;
   (tag, [Lprim(Pfield (2*n), [Lvar method_cache])])
@@ -89,22 +90,21 @@ let transl_label_init expr =
 (* Share classes *)
 
 let wrapping = ref false
-let required = ref true
 let top_env = ref Env.empty
 let classes = ref []
 
 let oo_add_class id =
   classes := id :: !classes;
-  (!top_env, !required)
+  (!top_env, !cache_required)
 
 let oo_wrap env req f x =
   if !wrapping then
-    if !required then f x else
-    try required := true; let lam = f x in required := false; lam
-    with exn -> required := false; raise exn
+    if !cache_required then f x else
+    try cache_required := true; let lam = f x in cache_required := false; lam
+    with exn -> cache_required := false; raise exn
   else try
     wrapping := true;
-    required := req;
+    cache_required := req;
     top_env := env;
     classes := [];
     let lambda = f x in
