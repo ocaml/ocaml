@@ -22,6 +22,7 @@ extern value signal_handlers;
 extern int volatile pending_signal;
 extern int volatile something_to_do;
 extern int volatile force_major_slice;
+extern int volatile async_signal_mode;
 
 void enter_blocking_section (void);
 void leave_blocking_section (void);
