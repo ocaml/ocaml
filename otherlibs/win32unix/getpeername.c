@@ -31,5 +31,5 @@ CAMLprim value unix_getpeername(sock)
     win32_maperr(WSAGetLastError());
     uerror("getpeername", Nothing);
   }
-  return alloc_sockaddr(&addr, addr_len);
+  return alloc_sockaddr(&addr, addr_len, -1);
 }

@@ -868,21 +868,25 @@ let find_proc_id fun_name proc =
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
 
+let rec waitpid_non_intr pid =
+  try waitpid [] pid 
+  with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
+
 let close_process_in inchan =
   let pid = find_proc_id "close_process_in" (Process_in inchan) in
   close_in inchan;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 let close_process_out outchan =
   let pid = find_proc_id "close_process_out" (Process_out outchan) in
   close_out outchan;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 let close_process (inchan, outchan) =
   let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
   close_in inchan;
   begin try close_out outchan with Sys_error _ -> () end;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 let close_process_full (inchan, outchan, errchan) =
   let pid =
@@ -891,7 +895,7 @@ let close_process_full (inchan, outchan, errchan) =
   close_in inchan;
   begin try close_out outchan with Sys_error _ -> () end;
   close_in errchan;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 (* High-level network functions *)
 

@@ -76,7 +76,8 @@ let translate c =
     (Char.code c - Char.code 'A', true)
   else if c >= 'a' && c <= 'z' then
     (Char.code c - Char.code 'a', false)
-  else (26, false)
+  else
+    (26, false)
 ;;
 
 let is_active x =

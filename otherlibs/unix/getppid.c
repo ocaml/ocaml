@@ -16,7 +16,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_getppid(void)
+CAMLprim value unix_getppid(value unit)
 {
   return Val_int(getppid());
 }

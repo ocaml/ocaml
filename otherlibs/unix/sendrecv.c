@@ -16,6 +16,7 @@
 #include <string.h>
 #include <mlvalues.h>
 #include <alloc.h>
+#include <fail.h>
 #include <memory.h>
 #include <signals.h>
 #include "unixsupport.h"
@@ -27,18 +28,19 @@ static int msg_flag_table[] = {
   MSG_OOB, MSG_DONTROUTE, MSG_PEEK
 };
 
-CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recv(value sock, value buff, value ofs, value len,
+                         value flags)
 {
-  int ret;
+  int ret, cv_flags;
   long numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
 
+  cv_flags = convert_flag_list(flags, msg_flag_table);
   Begin_root (buff);
     numbytes = Long_val(len);
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
     enter_blocking_section();
-    ret = recv(Int_val(sock), iobuf, (int) numbytes,
-               convert_flag_list(flags, msg_flag_table));
+    ret = recv(Int_val(sock), iobuf, (int) numbytes, cv_flags);
     leave_blocking_section();
     if (ret == -1) uerror("recv", Nothing);
     memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
@@ -46,9 +48,10 @@ CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value fla
   return Val_int(ret);
 }
 
-CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
+                             value flags)
 {
-  int ret;
+  int ret, cv_flags;
   long numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
   value res;
@@ -56,18 +59,18 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value
   union sock_addr_union addr;
   socklen_param_type addr_len;
 
+  cv_flags = convert_flag_list(flags, msg_flag_table);
   Begin_roots2 (buff, adr);
     numbytes = Long_val(len);
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
     addr_len = sizeof(addr);
     enter_blocking_section();
-    ret = recvfrom(Int_val(sock), iobuf, (int) numbytes,
-                   convert_flag_list(flags, msg_flag_table),
+    ret = recvfrom(Int_val(sock), iobuf, (int) numbytes, cv_flags,
                    &addr.s_gen, &addr_len);
     leave_blocking_section();
     if (ret == -1) uerror("recvfrom", Nothing);
     memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
-    adr = alloc_sockaddr(&addr, addr_len);
+    adr = alloc_sockaddr(&addr, addr_len, -1);
     res = alloc_small(2, 0);
     Field(res, 0) = Val_int(ret);
     Field(res, 1) = adr;
@@ -75,38 +78,40 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value
   return res;
 }
 
-CAMLprim value unix_send(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_send(value sock, value buff, value ofs, value len,
+                         value flags)
 {
-  int ret;
+  int ret, cv_flags;
   long numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
 
+  cv_flags = convert_flag_list(flags, msg_flag_table);
   numbytes = Long_val(len);
   if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
   memmove (iobuf, &Byte(buff, Long_val(ofs)), numbytes);
   enter_blocking_section();
-  ret = send(Int_val(sock), iobuf, (int) numbytes,
-             convert_flag_list(flags, msg_flag_table));
+  ret = send(Int_val(sock), iobuf, (int) numbytes, cv_flags);
   leave_blocking_section();
   if (ret == -1) uerror("send", Nothing);
   return Val_int(ret);
 }
 
-CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
+CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len,
+                                  value flags, value dest)
 {
-  int ret;
+  int ret, cv_flags;
   long numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
   union sock_addr_union addr;
   socklen_param_type addr_len;
 
+  cv_flags = convert_flag_list(flags, msg_flag_table);
   get_sockaddr(dest, &addr, &addr_len);
   numbytes = Long_val(len);
   if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
   memmove (iobuf, &Byte(buff, Long_val(ofs)), numbytes);
   enter_blocking_section();
-  ret = sendto(Int_val(sock), iobuf, (int) numbytes,
-               convert_flag_list(flags, msg_flag_table),
+  ret = sendto(Int_val(sock), iobuf, (int) numbytes, cv_flags,
                &addr.s_gen, addr_len);
   leave_blocking_section();
   if (ret == -1) uerror("sendto", Nothing);
@@ -121,16 +126,20 @@ CAMLprim value unix_sendto(value *argv, int argc)
 
 #else
 
-CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recv(value sock, value buff, value ofs, value len,
+                         value flags)
 { invalid_argument("recv not implemented"); }
 
-CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
+                             value flags)
 { invalid_argument("recvfrom not implemented"); }
 
-CAMLprim value unix_send(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_send(value sock, value buff, value ofs, value len,
+                         value flags)
 { invalid_argument("send not implemented"); }
 
-CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
+CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len,
+                                  value flags, value dest)
 { invalid_argument("sendto not implemented"); }
 
 CAMLprim value unix_sendto(value *argv, int argc)

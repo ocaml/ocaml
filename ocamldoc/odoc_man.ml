@@ -654,10 +654,9 @@ class man =
       try
         let chanout = self#open_out file in
 	let b = new_buf () in
-	bs b ".TH \"";
-	bs b Odoc_messages.clas;
-	bs b ("\" "^cl.cl_name^" ");
-        bs b ("\""^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+	bs b (".TH \""^cl.cl_name^"\" ");
+        bs b !Odoc_args.man_section ;
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
@@ -714,9 +713,9 @@ class man =
       try
         let chanout = self#open_out file in
 	let b = new_buf () in
-	bs b (".TH \""^Odoc_messages.class_type^"\" ");
-        bs b (ct.clt_name^" ");
-        bs b ("\""^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+	bs b (".TH \""^ct.clt_name^"\" ");
+        bs b !Odoc_args.man_section ;
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
@@ -771,9 +770,9 @@ class man =
       try
         let chanout = self#open_out file in
 	let b = new_buf () in
-	bs b (".TH \""^Odoc_messages.module_type^"\" ");
-        bs b (mt.mt_name^" ");
-        bs b ("\""^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+	bs b (".TH \""^mt.mt_name^"\" ");
+        bs b !Odoc_args.man_section ;
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
@@ -849,11 +848,9 @@ class man =
       try
         let chanout = self#open_out file in
 	let b = new_buf () in
-        bs b ".TH \"";
-	bs b Odoc_messages.modul;
-	bs b "\" ";
-        bs b (m.m_name^" ");
-        bs b ("\""^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+	bs b (".TH \""^m.m_name^"\" ");
+        bs b !Odoc_args.man_section ;
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
@@ -978,9 +975,9 @@ class man =
       try
         let chanout = self#open_out file in
 	let b = new_buf () in
-        bs b (".TH \""^name^"\" ");
-        bs b "man ";
-        bs b ("\""^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+	bs b (".TH \""^name^"\" ");
+        bs b !Odoc_args.man_section ;
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 	bs b ".SH NAME\n";

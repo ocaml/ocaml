@@ -842,6 +842,9 @@ let package_units objfiles cmifile modulename =
   let mlifile =
     chop_extension_if_any cmifile ^ !Config.interface_suffix in
   if Sys.file_exists mlifile then begin
+    if not (Sys.file_exists cmifile) then begin
+      raise(Error(Location.in_file mlifile, Interface_not_compiled mlifile))
+    end;
     let dclsig = Env.read_signature modulename cmifile in
     Includemod.compunit "(obtained by packing)" sg mlifile dclsig 
   end else begin

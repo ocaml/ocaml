@@ -139,9 +139,14 @@ void caml_main(char **argv)
   init_atoms();
   caml_init_signals();
   exe_name = argv[0];
+  if (exe_name == NULL) exe_name = "";
 #ifdef __linux__
   if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
+  else
+    exe_name = caml_search_exe_in_path(exe_name);
+#else
+  exe_name = caml_search_exe_in_path(exe_name);
 #endif
   caml_sys_init(exe_name, argv);
   if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {

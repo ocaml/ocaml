@@ -65,7 +65,6 @@ partialclean:
 
 clean: partialclean
 	rm -f *.dll *.$(A) *.$(O)
-	cd bignum ; $(MAKEREC) scratch
 	cd test ; $(MAKEREC) clean
 
 .SUFFIXES: .ml .mli .cmi .cmo .cmx .$(DO) .$(SO)

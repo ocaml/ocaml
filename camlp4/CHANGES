@@ -2,9 +2,21 @@
   with existing code (3.08.x and before). Such code can generally run
   unmodified using the -loc option (camlp4 -loc "loc").
 
-Camlp4 Version 3.08
--------------------
+Camlp4 Version 3.08.2
+------------------------
+- [07 Oct 04] Changes in the interfaces plexer.mli and pcaml.mli:
+   - plexer.mli: introduced a new lexer building function `make_lexer',
+     similar to `gmake', but returning a triple of references in addition
+     (holding respectively the character number of the beginning + of the
+     current line, the current line number and the name of the file + being
+     parsed).
+   - pcaml.mli: a new value `position'. A global reference to a triple like
+     the one mentioned above.
+- [07 Sep 04] Camlp4 grammars `error recovery mode' now issues a warning
+  when used (but this warning is disabled by default).
 
+Camlp4 Version 3.08.[01]
+------------------------
 - [05 Jul 04] creation of the `unmaintained' directory:
   pa_format, pa_lefteval, pa_ocamllex, pa_olabl, pa_scheme and pa_sml
   go there, each in its own subdir. Currently, they compile fine.

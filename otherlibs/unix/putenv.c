@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <fail.h>
 #include <memory.h>
 #include <mlvalues.h>
 

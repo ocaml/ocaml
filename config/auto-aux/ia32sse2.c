@@ -18,5 +18,7 @@
 int main()
 {
   asm("pmuludq %mm1, %mm0");
+  asm("paddq %mm1, %mm0");
+  asm("psubq %mm1, %mm0");
   return 0;
 }

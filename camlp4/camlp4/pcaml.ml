@@ -479,3 +479,7 @@ value string_of pr x =
 ;
 
 value inter_phrases = ref None;
+
+value position =
+  ref(ref 0, ref 0, ref "")
+;

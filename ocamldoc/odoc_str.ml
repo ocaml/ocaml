@@ -25,6 +25,14 @@ let string_of_variance t (co,cn) =
     | _ -> ""
   else
     ""
+let rec is_arrow_type t =
+  match t.Types.desc with
+    Types.Tarrow _ -> true
+  | Types.Tlink t2 | Types.Tsubst t2 -> is_arrow_type t2
+  | Types.Ttuple _
+  | Types.Tconstr _
+  | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
+  | Types.Tfield _ | Types.Tnil | Types.Tvariant _ -> false
 
 let raw_string_of_type_list sep type_list =
   let buf = Buffer.create 256 in
@@ -41,7 +49,7 @@ let raw_string_of_type_list sep type_list =
   let print_one_type variance t =
     Printtyp.mark_loops t;
     if need_parent t then
-      ( 
+      (
        Format.fprintf fmt "(%s" variance;
        Printtyp.type_scheme_max ~b_reset_names: false fmt t;
        Format.fprintf fmt ")"
@@ -59,8 +67,8 @@ let raw_string_of_type_list sep type_list =
       Format.fprintf fmt "@[<hov 2>";
       print_one_type variance ty;
       List.iter
-        (fun (variance, t) -> 
-	  Format.fprintf fmt "@,%s" sep; 
+        (fun (variance, t) ->
+	  Format.fprintf fmt "@,%s" sep;
 	  print_one_type variance t
 	)
         tyl;
@@ -84,7 +92,7 @@ let string_of_type_list ?par sep type_list =
     (if par then ")" else "")
 
 let string_of_type_param_list t =
-  let par = 
+  let par =
     match t.Odoc_type.ty_parameters with
       [] | [_] -> false
     | _ -> true
@@ -92,7 +100,7 @@ let string_of_type_param_list t =
   Printf.sprintf "%s%s%s"
     (if par then "(" else "")
     (raw_string_of_type_list ", "
-       (List.map 
+       (List.map
 	  (fun (typ, co, cn) -> (string_of_variance t (co, cn), typ))
 	  t.Odoc_type.ty_parameters
        )
@@ -100,7 +108,7 @@ let string_of_type_param_list t =
     (if par then ")" else "")
 
 let string_of_class_type_param_list l =
-  let par = 
+  let par =
     match l with
       [] | [_] -> false
     | _ -> true
@@ -108,7 +116,7 @@ let string_of_class_type_param_list l =
   Printf.sprintf "%s%s%s"
     (if par then "[" else "")
     (raw_string_of_type_list ", "
-       (List.map 
+       (List.map
 	  (fun typ -> ("", typ))
 	  l
        )
@@ -119,21 +127,24 @@ let string_of_class_params c =
   let b = Buffer.create 256 in
   let rec iter = function
       Types.Tcty_fun (label, t, ctype) ->
-	Printf.bprintf b "%s%s -> "
+	let parent = is_arrow_type t in
+	Printf.bprintf b "%s%s%s%s -> "
 	  (
 	   match label with
 	     "" -> ""
 	   | s -> s^":"
 	  )
+	  (if parent then "(" else "")
 	  (Odoc_print.string_of_type_expr
 	     (if Odoc_misc.is_optional label then
 	       Odoc_misc.remove_option t
 	     else
 	       t
 	     )
-	  );
+	  )
+	  (if parent then ")" else "");
 	iter ctype
-    | Types.Tcty_signature _ 
+    | Types.Tcty_signature _
     | Types.Tcty_constr _ -> ()
   in
   iter c.Odoc_class.cl_type;
@@ -143,8 +154,8 @@ let string_of_type t =
   let module M = Odoc_type in
   "type "^
   (String.concat ""
-     (List.map 
-        (fun (p, co, cn) -> 
+     (List.map
+        (fun (p, co, cn) ->
 	  (string_of_variance t (co, cn))^
 	  (Odoc_print.string_of_type_expr p)^" "
 	)
@@ -157,18 +168,18 @@ let string_of_type t =
   | Some typ -> "= "^(Odoc_print.string_of_type_expr typ)^" "
   )^
   (match t.M.ty_kind with
-    M.Type_abstract -> 
+    M.Type_abstract ->
       ""
   | M.Type_variant (l, priv) ->
       "="^(if priv then " private" else "")^"\n"^
       (String.concat ""
-         (List.map 
+         (List.map
             (fun cons ->
               "  | "^cons.M.vc_name^
               (match cons.M.vc_args with
-                [] -> "" 
-              | l -> 
-                  " of "^(String.concat " * " 
+                [] -> ""
+              | l ->
+                  " of "^(String.concat " * "
                             (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))
               )^
               (match cons.M.vc_text with
@@ -184,7 +195,7 @@ let string_of_type t =
   | M.Type_record (l, priv) ->
       "= "^(if priv then "private " else "")^"{\n"^
       (String.concat ""
-         (List.map 
+         (List.map
             (fun record ->
               "   "^(if record.M.rf_mutable then "mutable " else "")^
               record.M.rf_name^" : "^(Odoc_print.string_of_type_expr record.M.rf_type)^";"^
@@ -210,7 +221,7 @@ let string_of_exception e =
   (match e.M.ex_args with
     [] -> ""
   | _ ->" : "^
-      (String.concat " -> " 
+      (String.concat " -> "
          (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") e.M.ex_args)
       )
   )^

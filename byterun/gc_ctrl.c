@@ -392,21 +392,40 @@ CAMLprim value caml_gc_minor(value v)
   return Val_unit;
 }
 
+static void test_and_compact (void)
+{
+  float fp;
+
+  fp = 100.0 * caml_fl_cur_size
+       / (Wsize_bsize (caml_stat_heap_size) - caml_fl_cur_size);
+  if (fp > 1000000.0) fp = 1000000.0;
+  caml_gc_message (0x200, "Estimated overhead (lower bound) = %lu%%\n",
+                   (unsigned long) fp);
+  if (fp >= caml_percent_max && caml_stat_heap_chunks > 1){
+    caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
+    caml_compact_heap ();
+  }
+}
+
 CAMLprim value caml_gc_major(value v)
 {                                                    Assert (v == Val_unit);
+  caml_gc_message (0x1, "Major GC cycle requested\n", 0);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
+  test_and_compact ();
   caml_final_do_calls ();
   return Val_unit;
 }
 
 CAMLprim value caml_gc_full_major(value v)
 {                                                    Assert (v == Val_unit);
+  caml_gc_message (0x1, "Full major GC cycle requested\n", 0);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
   caml_final_do_calls ();
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
+  test_and_compact ();
   caml_final_do_calls ();
   return Val_unit;
 }

@@ -60,37 +60,41 @@ let generate_dot = "\t\tGenerate dot code of top modules dependencies"
 let option_not_in_native_code op = "Option "^op^" not available in native code version."
 
 let default_out_file = "ocamldoc.out"
-let out_file = 
+let out_file =
   "<file>\tSet the ouput file name, used by texi, latex and dot generators\n"^
   "\t\t(default is "^default_out_file^")"
 
-let dot_include_all = 
+let dot_include_all =
   "\n\t\tInclude all modules in the dot output, not only the\n"^
   "\t\tmodules given on the command line"
 let dot_types = "\tGenerate dependency graph for types instead of modules"
-let default_dot_colors = 
+let default_dot_colors =
   [ [ "darkturquoise" ; "darkgoldenrod2" ; "cyan" ; "green" ; ] ;
     [ "magenta" ; "yellow" ; "burlywood1" ; "aquamarine" ; "floralwhite" ; "lightpink" ] ;
     [ "lightblue" ; "mediumturquoise" ; "salmon" ; "slategray3"] ;
-  ] 
+  ]
 
-let dot_colors = 
+let dot_colors =
   "<c1,c2,...,cn>\n\t\tUse colors c1,c1,...,cn in the dot output\n"^
   "\t\t(default list is "^
   (String.concat ",\n\t\t" (List.map (String.concat ", ") default_dot_colors))^")"
 
-let dot_reduce = 
+let dot_reduce =
   "\tPerform a transitive reduction on the selected dependency graph\n"^
   "\t\tbefore the dot output"
 
 let man_mini = "\tGenerate man pages only for modules, module types, classes\n"^
   "\t\tand class types "^man_only
-let default_man_suffix = "o"
+let default_man_section = "3"
+let man_section = "<section>\n\t\tUse <section> in man page files "^
+  "(default is "^default_man_section^") "^man_only^"\n"
+
+let default_man_suffix = default_man_section^"o"
 let man_suffix = "<suffix>\n\t\tUse <suffix> for man page files "^
   "(default is "^default_man_suffix^") "^man_only^"\n"
 
 let option_title = "<title>\tUse <title> as title for the generated documentation"
-let option_intro = 
+let option_intro =
   "<file>\tUse content of <file> as ocamldoc text to use as introduction\n"^
   "\t\t"^(html_latex_texi_only)
 let with_parameter_list = "\tDisplay the complete list of parameters for functions and\n"^
@@ -99,7 +103,7 @@ let hide_modules = "<M1,M2.M3,...>\n\t\tHide the given complete module names in 
 let no_header = "\tSuppress header in generated documentation\n\t\t"^latex_texi_only
 let no_trailer = "\tSuppress trailer in generated documentation\n\t\t"^latex_texi_only
 let separate_files = "\tGenerate one file per toplevel module "^latex_only
-let latex_title ref_titles = 
+let latex_title ref_titles =
   "n,style\n\t\tAssociate {n } to the given sectionning style\n"^
   "\t\t(e.g. 'section') in the latex output "^latex_only^"\n"^
   "\t\tDefault sectionning is:\n\t\t"^
@@ -107,32 +111,32 @@ let latex_title ref_titles =
      (List.map (fun (n,t) -> Printf.sprintf " %d -> %s" n t) !ref_titles))
 
 let default_latex_value_prefix = "val:"
-let latex_value_prefix = 
+let latex_value_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of values.\n"^
   "\t\t(default is \""^default_latex_value_prefix^"\")"
 
 let default_latex_type_prefix = "type:"
-let latex_type_prefix = 
+let latex_type_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of types.\n"^
   "\t\t(default is \""^default_latex_type_prefix^"\")"
 
 let default_latex_exception_prefix = "exception:"
-let latex_exception_prefix = 
+let latex_exception_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of exceptions.\n"^
   "\t\t(default is \""^default_latex_exception_prefix^"\")"
 
 let default_latex_module_prefix = "module:"
-let latex_module_prefix = 
+let latex_module_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of modules.\n"^
   "\t\t(default is \""^default_latex_module_prefix^"\")"
 
 let default_latex_module_type_prefix = "moduletype:"
-let latex_module_type_prefix = 
+let latex_module_type_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of module types.\n"^
   "\t\t(default is \""^default_latex_module_type_prefix^"\")"
 
 let default_latex_class_prefix = "class:"
-let latex_class_prefix = 
+let latex_class_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of classes.\n"^
   "\t\t(default is \""^default_latex_class_prefix^"\")"
 
@@ -142,12 +146,12 @@ let latex_class_type_prefix =
   "\t\t(default is \""^default_latex_class_type_prefix^"\")"
 
 let default_latex_attribute_prefix = "val:"
-let latex_attribute_prefix = 
+let latex_attribute_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of attributes.\n"^
   "\t\t(default is \""^default_latex_attribute_prefix^"\")"
 
 let default_latex_method_prefix = "method:"
-let latex_method_prefix = 
+let latex_method_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of methods.\n"^
   "\t\t(default is \""^default_latex_method_prefix^"\")"
 
@@ -176,12 +180,12 @@ let info_section = "Specify section of Info directory "^texi_only
 let info_entry = "\tSpecify Info directory entry "^texi_only
 
 let options_can_be = "<options> can be one or more of the following characters:"
-let string_of_options_list l = 
+let string_of_options_list l =
   List.fold_left (fun acc -> fun (c, m) -> acc^"\n\t\t"^(String.make 1 c)^"  "^m)
     ""
     l
 
-let merge_options = 
+let merge_options =
   "<options>\tspecify merge options between .mli and .ml\n\t\t"^
   options_can_be^
   (string_of_options_list
@@ -202,11 +206,11 @@ let merge_options =
 (** Error and warning messages *)
 
 let warning = "Warning"
-let pwarning s = 
+let pwarning s =
   prerr_endline (warning^": "^s);
   if !Odoc_global.warn_error then incr Odoc_global.errors
 
-let bad_magic_number = 
+let bad_magic_number =
   "Bad magic number for this ocamldoc dump!\n"^
   "This dump was not created by this version of OCamldoc."
 
@@ -346,4 +350,3 @@ let index_of_module_types = index_of^" module types"
 let previous = "Previous"
 let next = "Next"
 let up = "Up"
-

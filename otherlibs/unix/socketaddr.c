@@ -28,7 +28,7 @@
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
 #endif
 
-CAMLprim value alloc_inet_addr(struct in_addr * a)
+CAMLexport value alloc_inet_addr(struct in_addr * a)
 {
   value res;
   /* Use a string rather than an abstract block so that it can be
@@ -41,7 +41,7 @@ CAMLprim value alloc_inet_addr(struct in_addr * a)
 
 #ifdef HAS_IPV6
 
-CAMLprim value alloc_inet6_addr(struct in6_addr * a)
+CAMLexport value alloc_inet6_addr(struct in6_addr * a)
 {
   value res;
   res = alloc_string(16);
@@ -94,7 +94,7 @@ void get_sockaddr(value mladr,
 }
 
 value alloc_sockaddr(union sock_addr_union * adr /*in*/,
-                     socklen_param_type adr_len)
+                     socklen_param_type adr_len, int close_on_error)
 {
   value res;
   switch(adr->s_gen.sa_family) {
@@ -129,6 +129,7 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
     }
 #endif
   default:
+    if (close_on_error != -1) close (close_on_error);
     unix_error(EAFNOSUPPORT, "", Nothing);
   }
   return res;

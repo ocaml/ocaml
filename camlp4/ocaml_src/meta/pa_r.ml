@@ -37,7 +37,9 @@ Pcaml.add_option "-help_seq" (Arg.Unit help_sequences)
 
 let odfa = !(Plexer.dollar_for_antiquotation) in
 Plexer.dollar_for_antiquotation := false;
-Grammar.Unsafe.gram_reinit gram (Plexer.gmake ());
+let (lexer, pos) = Plexer.make_lexer () in
+Pcaml.position := pos;
+Grammar.Unsafe.gram_reinit gram lexer;
 Plexer.dollar_for_antiquotation := odfa;
 Grammar.Unsafe.clear_entry interf;
 Grammar.Unsafe.clear_entry implem;

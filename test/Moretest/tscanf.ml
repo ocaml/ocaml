@@ -282,6 +282,7 @@ let test110 () =
  sscanf " " " %s " (fun x -> x = "") &&
  sscanf " " " %s %s" (fun x y -> x = "" && x = y) &&
  sscanf " " " %s@ %s" (fun x y -> x = "" && x = y) &&
+ sscanf " poi !" " %s@ %s@." (fun x y -> x = "" && y = "poi!") &&
  sscanf " poi !" " %s@ %s@." (fun x y -> x = "poi" && y = "!") &&
  sscanf " poi !" "%s@ %s@." (fun x y -> x = "" && y = "poi !");;
 

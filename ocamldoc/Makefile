@@ -312,7 +312,7 @@ test_texi: dummy
 stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
-	-t "OCaml library" -man-mini -man-suffix 3o \
+	-t "OCaml library" -man-mini \
 	$(STDLIB_MLIS)
 
 autotest_stdlib: dummy

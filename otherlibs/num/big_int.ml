@@ -353,6 +353,7 @@ let sys_big_int_of_string_aux s ofs len sgn =
 ;;
 
 let sys_big_int_of_string s ofs len =
+  if len < 1 then failwith "sys_big_int_of_string";
   match s.[ofs] with
   | '-' -> sys_big_int_of_string_aux s (ofs+1) (len-1) (-1)
   | '+' -> sys_big_int_of_string_aux s (ofs+1) (len-1) 1

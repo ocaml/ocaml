@@ -16,8 +16,8 @@
 #include <string.h>
 #include <mlvalues.h>
 #include <alloc.h>
-#include <memory.h>
 #include <fail.h>
+#include <memory.h>
 #include <signals.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
@@ -40,7 +40,7 @@ static value convert_addrinfo(struct addrinfo * a)
   union sock_addr_union sa;
 
   memcpy(&sa.s_gen, a->ai_addr, sizeof(struct sockaddr));
-  vaddr = alloc_sockaddr(&sa, sizeof(struct sockaddr));
+  vaddr = alloc_sockaddr(&sa, sizeof(struct sockaddr), -1);
   vcanonname = copy_string(a->ai_canonname == NULL ? "" : a->ai_canonname);
   vres = alloc_small(5, 0);
   Field(vres, 0) = cst_to_constr(a->ai_family, socket_domain_table, 3, 0);

@@ -18,6 +18,16 @@ type t = { loc_start: position; loc_end: position; loc_ghost: bool };;
 
 let none = { loc_start = dummy_pos; loc_end = dummy_pos; loc_ghost = true };;
 
+let in_file name =
+  let loc = {
+    pos_fname = name;
+    pos_lnum = 1;
+    pos_bol = 0;
+    pos_cnum = -1;
+  } in
+  { loc_start = loc; loc_end = loc; loc_ghost = true }
+;;
+
 let curr lexbuf = {
   loc_start = lexbuf.lex_start_p;
   loc_end = lexbuf.lex_curr_p;

@@ -705,7 +705,7 @@ type process_times =
 (** The execution times (CPU times) of a process. *)
 
 type tm =
-  { tm_sec : int;               (** Seconds 0..59 *)
+  { tm_sec : int;               (** Seconds 0..60 *)
     tm_min : int;               (** Minutes 0..59 *)
     tm_hour : int;              (** Hours 0..23 *)
     tm_mday : int;              (** Day of month 1..31 *)

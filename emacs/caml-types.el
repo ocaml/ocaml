@@ -112,8 +112,8 @@ For the moment, the only possible keyword is \"type\"."
    . Even if type checking fails, you can still look at the types
      in the file, up to where the type checker failed.
 
-Types are also diplayed in the buffer *caml-types*, which buffer is
-display when the commande is called with Prefix argument 4. 
+Types are also displayed in the buffer *caml-types*, which is
+displayed when the command is called with Prefix argument 4. 
 
 See also `caml-types-explore' for exploration by mouse dragging.
 See `caml-types-location-re' for annotation file format.

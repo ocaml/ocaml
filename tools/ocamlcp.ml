@@ -41,8 +41,6 @@ let incompatible o =
   fprintf stderr "ocamlcp: profiling is incompatible with the %s option\n" o;
   exit 2
 
-let ismultithreaded = ref ""
-
 module Options = Main_args.Make_options (struct
   let _a () = make_archive := true; option "-a" ()
   let _c = option "-c"
@@ -72,8 +70,8 @@ module Options = Main_args.Make_options (struct
   let _pp s = incompatible "-pp"
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
-  let _thread () = ismultithreaded := "-thread"; option "-thread" ()
-  let _vmthread () = ismultithreaded := "-vmthread"; option "-vmthread" ()
+  let _thread () = option "-thread" ()
+  let _vmthread () = option "-vmthread" ()
   let _unsafe = option "-unsafe"
   let _use_prims s = option_with_arg "-use-prims" s
   let _use_runtime s = option_with_arg "-use-runtime" s
@@ -124,8 +122,7 @@ if !with_impl then profargs := "-impl" :: !profargs;
 if !with_intf then profargs := "-intf" :: !profargs;
 let status =
   Sys.command
-    (Printf.sprintf "ocamlc -pp \"ocamlprof %s -instrument %s\" %s %s"
-        !ismultithreaded
+    (Printf.sprintf "ocamlc -pp \"ocamlprof -instrument %s\" %s %s"
         (String.concat " " (List.rev !profargs))
         (if !make_archive then "" else "profiling.cmo")
         (String.concat " " (List.rev !compargs)))

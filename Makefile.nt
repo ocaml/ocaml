@@ -228,8 +228,8 @@ installbyt:
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	cd win32caml ; $(MAKE) install
 	cd camlp4 ; make install
-	cp README $(DISTRIB)/Readme.gen
-	cp README.win32 $(DISTRIB)/Readme.win
+	cp README $(DISTRIB)/Readme.general.txt
+	cp README.win32 $(DISTRIB)/Readme.windows.txt
 	cp LICENSE $(DISTRIB)/License.txt
 	cp Changes $(DISTRIB)/Changes.txt
 

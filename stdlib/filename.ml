@@ -129,11 +129,14 @@ let concat dirname filename =
   else dirname ^ dir_sep ^ filename
 
 let basename name =
-  try
-    let p = rindex_dir_sep name + 1 in
-    String.sub name p (String.length name - p)
-  with Not_found ->
-    name
+  let raw_name =
+    try
+      let p = rindex_dir_sep name + 1 in
+      String.sub name p (String.length name - p)
+    with Not_found ->
+      name
+  in
+  if raw_name = "" then current_dir_name else raw_name
 
 let dirname name =
   try

@@ -15,9 +15,10 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
+#include <fail.h>
 #if defined (_WIN32)
 #include <winsock.h>
-#elif !macintosh
+#else
 #include <sys/param.h>
 #endif
 #include "unixsupport.h"

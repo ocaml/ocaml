@@ -23,7 +23,7 @@ camlp4$D.fast.opt: pa_$D_fast.cmx
 	cd ../camlp4; $(MAKE) optp4 CAMLP4OPT=../compile/camlp4$D.fast.opt CAMLP4M="../compile/pa_$D_fast.cmx ../meta/pr_dump.cmx"
 
 pa_$D_fast.ml: comp_head.ml $D_fast.ml comp_trail.ml
-	cat $(SRC) | sed -e "s/Plexer.gmake ()/P.lexer/" -e "/EXTEND/,/END/d" -e "/Grammar.Entry.of_parser/d" -e "/Grammar.Entry.gcreate/d" | cat comp_head.ml - $D_fast.ml comp_trail.ml > pa_$D_fast.ml
+	cat $(SRC) | sed -e "s/Plexer.make_lexer *()/P.lexer_pos/" -e "/EXTEND/,/END/d" -e "/Grammar.Entry.of_parser/d" -e "/Grammar.Entry.gcreate/d" | cat comp_head.ml - $D_fast.ml comp_trail.ml > pa_$D_fast.ml
 
 $D_fast.ml: compile.cmo $(SRC)
 	OTOP=$(OTOP) EXE=$(EXE) ./compile.sh $(COMP_OPT) $(SRC) > $D_fast.ml

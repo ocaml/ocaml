@@ -1322,5 +1322,3 @@ module Analyser =
       }
 
     end
-
-(* eof $Id$ *)

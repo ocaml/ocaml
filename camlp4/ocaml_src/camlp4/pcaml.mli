@@ -37,6 +37,11 @@ val parse_implem :
        default, they use the grammars entries [implem] and [interf]
        defined below. *)
 
+val position : (int ref * int ref * string ref) ref;;
+   (** References holding respectively the character number of the beginning
+       of the current line, the current line number and the name of the file
+       being parsed. *)
+
 val gram : Grammar.g;;
    (** Grammar variable of the OCaml language *)
 
