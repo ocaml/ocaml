@@ -34,9 +34,18 @@
 
 ;; variables to be customized
 
-(defvar ocaml-lib-path
-  '("/usr/lib/ocaml/" "/usr/local/lib/ocaml/")
-  "Path for ocaml lib sources (mli files)")
+(defvar ocaml-lib-path 'lazy
+  "Path for ocaml lib sources (mli files)
+
+'lazy means ask ocaml to find it for your at first use.")
+(defun ocaml-lib-path ()
+  "Computes if necessary and returns the path for ocaml libs"
+  (if (listp 'ocaml-lib-path) nil
+    (setq ocaml-lib-path
+          (split-string (shell-command-to-string "ocamlc -where")))
+    ocaml-lib-path))
+
+      
 
 (defvar ocaml-info-alist 'ocaml-info-default-function
   "A-list binding module names to info entries: 
@@ -97,13 +106,13 @@ command. An entry may be an info module or a complete file name."
 
 (defun ocaml-add-mli-modules (modules tag &optional path)
   (let ((files
-         (ocaml-find-files (or path ocaml-lib-path)
+         (ocaml-find-files (or path (ocaml-lib-path))
                            "-type f -name '*.mli'" 1 t)))
     (while (consp files)
       (if (string-match "\\([^/]*\\).mli" (car files))
           (let* ((module (ocaml-capitalize (match-string 1 (car files))))
                  (dir (file-name-directory (car files)))
-                 (dirp (member dir ocaml-lib-path)))
+                 (dirp (member dir (ocaml-lib-path))))
             (if (and (consp dirp) (string-equal dir (car dirp)))
                 (setq dir (car dirp)))
             (if (assoc module modules) nil
@@ -196,27 +205,40 @@ command. An entry may be an info module or a complete file name."
 
 ;; Look for identifiers around point
 
-(defun ocaml-current-position ()
-  "Return a pair (MODULE . ENTRY) such that point is above ENTRY and 
-MODULE is the module preceeding ENTRY.
+(defun ocaml-qualified-identifier (&optional show)
+  "Search for a qualified identifier (Path. entry) around point. 
 
-Both are a pair of position (BEG . END) in the buffer and can be nil if
-undefined."
+Entry may be nil.
+Currently, the path may only be nil or a single Module. 
+For paths is of the form Module.Path', it returns Module 
+and always nil for entry. 
+
+If defined Module and Entry are represented by a region in the buffer, 
+and are nil otherwise. 
+
+For debugging purposes, it returns the string Module.entry if called 
+with an optional non-nil argument. 
+"
   (save-excursion
     (let ((module) (entry))
       (if (re-search-backward
-           "\\(\\<[A-Z][A-Za-z0-9_]*\\>\\.\\|[^.]\\)\\<[A-Za-z0-9_]*\\="
+           "[^A-Za-z0-9_.']\\([A-Za-z0-9_']*[.]\\)*[A-Za-z0-9_']*\\="
            (- (point) 100) t)
           (progn
-            (if (looking-at "\\<\\([A-Za-z_'][A-Za-z0-9_']*\\)\\>[.]")
+            (forward-char 1)
+            (if (looking-at "\\<\\([A-Za-z_][A-Za-z0-9_']*\\)[.]")
                 (progn
                   (setq module (cons (match-beginning 1) (match-end 1)))
                   (goto-char (match-end 0))))
-            (if (looking-at "\\<\\([a-z_'][A-Za-z0-9_']*\\)\\>")
-                (progn (message "TROIS")
-                (setq entry (cons (match-beginning 1) (match-end 1)))))))
+            (if (looking-at "\\<\\([a-z_][A-Za-z0-9_']*\\)\\>")
+                (setq entry (cons (match-beginning 1) (match-end 1))))))
+      (if show
+          (concat
+           (and module (buffer-substring (car module) (cdr module)))
+           "."
+           (and entry (buffer-substring (car entry) (cdr entry))))
       (cons module entry))
-    ))
+    )))
 
 ;; completion around point
 
@@ -243,9 +265,19 @@ undefined."
       )))
 
 (defun caml-complete (arg)
-  "Complete symbol define in libraries"
+  "Does completion for qualified identifiers. 
+
+It attemps to recognize an qualified identifier Module . entry 
+around point using function \\[ocaml-qualified-identifier].
+
+If Module is defined, it does completion for identifier in Module.
+
+If Module is undefined, it does completion in visible modules. 
+Then, if completion fails, it does completion among  all modules 
+where identifier is defined. 
+"
   (interactive "p")
-  (let* ((module-entry (ocaml-current-position))
+  (let* ((module-entry (ocaml-qualified-identifier))
          (module)
          (entry (cdr module-entry))
          (beg) (end) (pattern))
@@ -305,22 +337,14 @@ undefined."
 ;; Info files
 
 
-(defvar ocaml-module-regexp "[A-Z][A-Za-z0-9_]*")
-; (defvar ocaml-info-section-regexp
-;   (concat "\\* \\(Section [1-9][0-9--]*\\|" ocaml-module-regexp
-;           "\\)::[ \t][ \t]*Module *\\(" ocaml-module-regexp "\\|\n\\)"))
-(defvar ocaml-info-section-regexp
-  (concat "\\* \\(Section [1-9][0-9--]*\\)::[ \t][ \t]*Module *\\(" ocaml-module-regexp "\\)"))
-(defun ocaml-info-section ()
-  (let ((section (match-string 1)) (module (match-string 2)))
-    (if (string-equal module "\n") (setq module section))
-    (cons module section)))
-
-(defun ocaml-info-add-entries (entries dir name)
+(defun ocaml-info-add-entries-old (entries dir name)
   (let*
-      ((filter (concat "-type f -regex '.*/" name
-                       "\\(.info\\|\\)\\(-[0-9]*\\|\\)\\([.]gz\\|\\)'"
-                       ))
+      ((filter
+        (concat "-type f -regex '.*/" name
+                "\\(.info\\|\\)\\(-[0-9]*\\|\\)\\([.]gz\\|\\)'"
+                ))
+       (section-regexp
+        "\\* \\(Section [1-9][0-9--]*\\)::[ \t][ \t]*Module *\\([A-Z][A-Za-z_0-9]*\\)")
        (files (ocaml-find-files dir filter))
        (command))
     ;; scanning info files
@@ -332,11 +356,11 @@ undefined."
       (set-buffer (get-buffer-create "*caml-help*"))
       (setq command
             (concat "gunzip -c -f " files
-                " | grep -e '" ocaml-info-section-regexp "'"))
+                " | grep -e '" section-regexp "'"))
       (message command)
       (or (shell-command command (current-buffer)) (error "HERE"))
       (goto-char (point-min))
-      (while (re-search-forward ocaml-info-section-regexp (point-max) t)
+      (while (re-search-forward section-regexp (point-max) t)
         (let* ((module (match-string 2))
                (section (match-string 1)))
           (message "%s %s" module section)
@@ -346,6 +370,43 @@ undefined."
                         entries))
             )))
       (kill-buffer (current-buffer)))
+    entries))
+
+(defun ocaml-info-default-function-old ()
+  "The default way to create an info data base from the value 
+of \\[Info-default-directory-list] and the base name \\[ocaml-info-name] 
+of files to look for."
+  (let ((collect) (seen))
+    (iter '(lambda (d)
+             (if (member d seen) nil
+               (setq collect
+                     (ocaml-info-add-entries-old
+                      collect d ocaml-info-name-list))
+               (setq done (cons d seen))))
+          Info-directory-list)
+    collect))
+
+(defun ocaml-info-add-entries (entries dir name)
+  (let*
+      ((module-regexp "^Node: \\([A-Z][A-Za-z_0-9]*\\)[^ ]")
+       (command
+        (concat
+         "find " dir " -type f -regex '.*/" name
+         "\\(.info\\|\\)\\([.]gz\\|\\)' -print0"
+         " | xargs -0 grep '" module-regexp "'")))
+    (message "Scanning info files in %s" dir)
+    (message command)
+    (set-buffer (get-buffer-create "*caml-help*"))
+    (or (shell-command command (current-buffer)) (error "HERE"))
+    (goto-char (point-min))
+    (while (re-search-forward module-regexp (point-max) t)
+      (let* ((module (match-string 1)))
+        (if (assoc module entries) nil
+          (setq entries
+                (cons (cons module (concat "(" name ")" module))
+                      entries))
+          )))
+    (kill-buffer (current-buffer))
     entries))
 
 (defun ocaml-info-default-function ()
@@ -391,7 +452,7 @@ of files to look for."
 (defun ocaml-goto-help (&optional module entry)
   "Searches info manual for MODULE and ENTRY in MODULE.
 If unspecified, MODULE and ENTRY are inferred from the position in the
-current buffer using \\[ocaml-current-position]."
+current buffer using \\[ocaml-qualified-identifier]."
   (interactive)
   (let ((info-section (assoc module (ocaml-info-alist))))
     (if info-section (info (cdr info-section))
@@ -423,10 +484,24 @@ current buffer using \\[ocaml-current-position]."
   )
 
 (defun caml-help (arg)
+  "Find help for qualified identifiers. 
+
+It attemps to recognize an qualified identifier of the form Module . entry 
+around point using function \\[ocaml-qualified-identifier].
+
+If Module is undefined it finds it from indentifier and visible modules, 
+or asks the user interactively. 
+
+It then opens the info documentation for Module if available or 
+to the Module.mli file otherwises, and searches for entry. 
+
+With prefix arg 0, it recomputes visible modules and their content. 
+With prefix arg 4, it prompt for Module instead of its contectual value. 
+"
   (interactive "p")
   (let ((module) (entry))
     (cond
-     ((or (= arg 4))
+     ((= arg 4)
       (or (and
            (setq module
                 (completing-read "Module: " ocaml-module-alist nil t))
@@ -434,7 +509,7 @@ current buffer using \\[ocaml-current-position]."
           (error "Quit")))
      (t
       (if (= arg 0) (setq ocaml-visible-modules 'lazy))
-      (let ((module-entry (ocaml-current-position)))
+      (let ((module-entry (ocaml-qualified-identifier)))
         (setq entry (ocaml-buffer-substring (cdr module-entry)))
         (setq module
               (or (ocaml-buffer-substring (car module-entry))
