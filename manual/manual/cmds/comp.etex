@@ -107,8 +107,7 @@ The following command-line options are recognized by "ocamlc".
 \item["-a"]
 Build a library (".cma" file) with the object files (".cmo" files)
 given on the command line, instead of linking them into an executable
-file. The name of the library can be set with the "-o" option. The
-default name is "library.cma". 
+file. The name of the library must be set with the "-o" option.
 
 If "-custom", "-cclib" or "-ccopt" options are passed on the command
 line, these options are stored in the resulting ".cma" library.  Then,
