@@ -157,7 +157,6 @@ static void thread_restore_std_descr(void);
 
 value thread_initialize(value unit)       /* ML */
 {
-  struct itimerval timer;
   /* Protect against repeated initialization (PR#1325) */
   if (curr_thread != NULL) return Val_unit;
   /* Create a descriptor for the current thread */
@@ -187,11 +186,6 @@ value thread_initialize(value unit)       /* ML */
   /* Initialize GC */
   prev_scan_roots_hook = scan_roots_hook;
   scan_roots_hook = thread_scan_roots;
-  /* Initialize interval timer */
-  timer.it_interval.tv_sec = 0;
-  timer.it_interval.tv_usec = Thread_timeout;
-  timer.it_value = timer.it_interval;
-  setitimer(ITIMER_VIRTUAL, &timer, NULL);
   /* Set standard file descriptors to non-blocking mode */
   stdin_initial_status = fcntl(0, F_GETFL);
   stdout_initial_status = fcntl(1, F_GETFL);
@@ -204,6 +198,19 @@ value thread_initialize(value unit)       /* ML */
     fcntl(2, F_SETFL, stderr_initial_status | O_NONBLOCK);
   /* Register an at-exit function to restore the standard file descriptors */
   atexit(thread_restore_std_descr);
+  return Val_unit;
+}
+
+/* Initialize the interval timer used for preemption */
+
+value thread_initialize_preemption(value unit)     /* ML */
+{
+  struct itimerval timer;
+
+  timer.it_interval.tv_sec = 0;
+  timer.it_interval.tv_usec = Thread_timeout;
+  timer.it_value = timer.it_interval;
+  setitimer(ITIMER_VIRTUAL, &timer, NULL);
   return Val_unit;
 }
 

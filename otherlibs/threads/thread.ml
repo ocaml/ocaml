@@ -39,6 +39,7 @@ type resumption_status =
    must take exactly one argument. *)
 
 external thread_initialize : unit -> unit = "thread_initialize"
+external thread_initialize_preemption : unit -> unit = "thread_initialize_preemption"
 external thread_new : (unit -> unit) -> t = "thread_new"
 external thread_yield : unit -> unit = "thread_yield"
 external thread_request_reschedule : unit -> unit = "thread_request_reschedule"
@@ -135,5 +136,6 @@ let preempt signal =
 (* Initialization of the scheduler *)
 
 let _ =
+  thread_initialize();
   Sys.set_signal Sys.sigvtalrm (Sys.Signal_handle preempt);
-  thread_initialize()
+  thread_initialize_preemption()
