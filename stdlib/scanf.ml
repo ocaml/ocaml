@@ -132,20 +132,18 @@ end;;
 (** Formatted input functions. *)
 
 (* Reporting errors. *)
-exception Scan_failure of Scanning.scanbuf * string;;
+exception Scan_failure of string;;
 
-let bad_input ib s = raise (Scan_failure (ib, s));;
-let bad_input_eof ib = bad_input ib "eof";;
-let bad_input_char ib c = bad_input ib (String.make 1 c);;
+let bad_input s = raise (Scan_failure s);;
+let bad_input_eof () = bad_input "eof";;
+let bad_input_char c = bad_input (String.make 1 c);;
 
-let bad_input_escape ib c =
-  bad_input ib (Printf.sprintf "a char, found illegal escape character %c" c);;
+let bad_input_escape c =
+  bad_input (Printf.sprintf "illegal escape character %c" c);;
 
 let scanf_bad_input ib s =
   let i = Scanning.char_count ib in
-  bad_input ib
-    (Printf.sprintf "scanf: bad input at char number %i%s" i
-       (if s = "" then s else Printf.sprintf ", while scanning %s" s));;
+  bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s);;
 
 let bad_format fmt i fc =
   invalid_arg
@@ -153,55 +151,38 @@ let bad_format fmt i fc =
        "scanf: bad format %c, at char number %i of format %s" fc i fmt);;
 
 (* Extracting tokens from ouput token buffer. *)
-let token_int ib =
-  let s = Scanning.token ib in
-  try int_of_string s with
-  | Failure s -> bad_input ib s;;
+
+let token_char ib = (Scanning.token ib).[0];;
+
+let token_string = Scanning.token;;
 
 let token_bool ib =
   match Scanning.token ib with
   | "true" -> true
   | "false" -> false
-  | s -> bad_input ib ("a boolean, found " ^ s);;
+  | s -> bad_input ("invalid boolean " ^ s);;
 
-let token_char ib =
-  (Scanning.token ib).[0];;
-
-let token_float ib =
-  let s = Scanning.token ib in
-  try float_of_string s with
-  | Failure s -> bad_input ib s;;
-
-let token_string = Scanning.token;;
+(* All the functions that convert a string to a number raise the exception
+   Failure when the convertion is not possible.
+   This exception is then trapped in kscanf. *)
+let token_int ib = int_of_string (Scanning.token ib);;
+let token_float ib = float_of_string (Scanning.token ib);;
 
 (* To scan native ints, int32 and int64 integers.
-   We cannot access to convertion to/from strings for those types,
+   We cannot access to convertions to/from strings for those types,
    Nativeint.of_string, Int32.of_string, and Int64.of_string,
    since those modules are not available to scanf.
    However, we can bind and use the corresponding primitives that are
    available in the runtime. *)
-
 external nativeint_of_string: string -> nativeint = "nativeint_of_string";;
 external int32_of_string : string -> int32 = "int32_of_string";;
 external int64_of_string : string -> int64 = "int64_of_string";;
 
-let token_nativeint ib =
-  let s = Scanning.token ib in
-  try nativeint_of_string s with
-  | Failure s -> bad_input ib s;;
-
-let token_int32 ib =
-  let s = Scanning.token ib in
-  try int32_of_string s with
-  | Failure s -> bad_input ib s;;
-
-let token_int64 ib =
-  let s = Scanning.token ib in
-  try int64_of_string s with
-  | Failure s -> bad_input ib s;;
+let token_nativeint ib = nativeint_of_string (Scanning.token ib);;
+let token_int32 ib = int32_of_string (Scanning.token ib);;
+let token_int64 ib = int64_of_string (Scanning.token ib);;
 
 (* Scanning numbers. *)
-
 let scan_sign max ib =
   let c = Scanning.peek_char ib in
   match c with
@@ -253,7 +234,7 @@ let scan_Hexadecimal_digits =
 
 (* Decimal integers. *)
 let scan_unsigned_decimal_int max ib =
-  if max = 0 || Scanning.end_of_input ib then bad_input ib "an int" else
+  if max = 0 || Scanning.end_of_input ib then bad_input "bad int" else
   scan_decimal_digits max ib;;
 
 let scan_optionally_signed_decimal_int max ib =
@@ -262,7 +243,7 @@ let scan_optionally_signed_decimal_int max ib =
 
 (* Scan an unsigned integer that could be given in any (common) basis.
    If digits are prefixed by 0b for one of x, X, o, b the number is
-   assumed to be written respectively in hexadecimal, hexadecimal,
+   assumed to be written respectively in hexadecimal, Hexadecimal,
    octal, or binary. *)
 let scan_unsigned_int max ib =
   match Scanning.peek_char ib with
@@ -280,7 +261,7 @@ let scan_unsigned_int max ib =
 
 let scan_optionally_signed_int max ib =
   let max = scan_sign max ib in
-  if max = 0 || Scanning.end_of_input ib then bad_input ib "an int" else
+  if max = 0 || Scanning.end_of_input ib then bad_input "bad int" else
   scan_unsigned_int max ib;;
 
 let scan_int conv max ib =
@@ -330,7 +311,7 @@ let scan_string stp max ib =
 
 (* Scan a char: peek strictly one character in the input, whatsoever. *)
 let scan_char max ib =
-  if max = 0 || Scanning.end_of_input ib then bad_input ib "a char" else
+  if max = 0 || Scanning.end_of_input ib then bad_input "a char" else
   Scanning.store_char ib (Scanning.peek_char ib) max;;
 
 let char_for_backslash =
@@ -353,18 +334,18 @@ let char_for_backslash =
       end
   | x -> assert false;;
 
-let char_for_decimal_code ib c0 c1 c2 =
+let char_for_decimal_code c0 c1 c2 =
   let c =
     100 * (int_of_char c0 - 48) + 10 * (int_of_char c1 - 48) +
     (int_of_char c2 - 48) in
   if c < 0 || c > 255
-  then bad_input ib (Printf.sprintf "\\ %c%c%c" c0 c1 c2)
+  then bad_input (Printf.sprintf "bad char \\%c%c%c" c0 c1 c2)
   else char_of_int c;;
 
 (* Called when encountering '\\' as starter of a char.
    Stops before the corresponding '\''. *)
 let scan_backslash_char max ib =
-  if max = 0 || Scanning.end_of_input ib then bad_input ib "a char" else
+  if max = 0 || Scanning.end_of_input ib then bad_input "a char" else
   let c = Scanning.peek_char ib in
   match c with
   | '\\' | '\'' | '"' | 'n' | 't' | 'b' | 'r' (* '"' helping Emacs *) ->
@@ -375,16 +356,16 @@ let scan_backslash_char max ib =
        let c = Scanning.peek_char ib in
        match c with
        | '0' .. '9' as c -> c
-       | c -> bad_input_escape ib c in
+       | c -> bad_input_escape c in
      let c0 = c in
      let c1 = get_digit () in
      let c2 = get_digit () in
-     Scanning.store_char ib (char_for_decimal_code ib c0 c1 c2) (max - 2)
-  | c -> bad_input_char ib c;;
+     Scanning.store_char ib (char_for_decimal_code c0 c1 c2) (max - 2)
+  | c -> bad_input_char c;;
 
 let scan_Char max ib =
   let rec loop s max =
-   if max = 0 || Scanning.end_of_input ib then bad_input ib "a char" else
+   if max = 0 || Scanning.end_of_input ib then bad_input "a char" else
    let c = Scanning.peek_char ib in
    match c, s with
    | '\'', 3 -> Scanning.next_char ib; loop 2 (max - 1)
@@ -392,12 +373,12 @@ let scan_Char max ib =
    | '\\', 2 -> Scanning.next_char ib;
                 loop 1 (scan_backslash_char (max - 1) ib)
    | c, 2 -> loop 1 (Scanning.store_char ib c max)
-   | c, _ -> bad_input_escape ib c in
+   | c, _ -> bad_input_escape c in
   loop 3 max;;
 
 let scan_String stp max ib =
   let rec loop s max =
-    if max = 0 || Scanning.end_of_input ib then bad_input ib "a string" else
+    if max = 0 || Scanning.end_of_input ib then bad_input "a string" else
     let c = Scanning.peek_char ib in
     if stp = [] then
       match c, s with
@@ -408,7 +389,7 @@ let scan_String stp max ib =
       | '\\', false ->
          Scanning.next_char ib; loop false (scan_backslash_char (max - 1) ib)
       | c, false -> loop false (Scanning.store_char ib c max)
-      | c, _ -> bad_input_char ib c else
+      | c, _ -> bad_input_char c else
     if List.mem c stp then max else loop s (Scanning.store_char ib c max) in
   loop true max;;
 
@@ -495,9 +476,9 @@ external string_of_format : ('a, 'b, 'c) format -> string = "%identity";;
 (* Main scanning function:
    it takes an input buffer, a format and a function.
    Then it scans the format and the buffer in parallel to find out
-   values as specified by the format. When it founds some it converts
-   it as specified and remembers the converted value as a future
-   argument to the function f and continues scanning.
+   tokens as specified by the format. When it founds one token, it converts
+   it as specified, remembers the converted value as a future
+   argument to the function [f], and continues scanning.
    If the scanning or some convertion fail, the scanning function
    aborts and applies the scanning buffer and a string that explains
    the error to the error continuation [ef]. *)
@@ -517,17 +498,17 @@ let kscanf ib (fmt : ('a, 'b, 'c) format) f ef =
         let i = i + 1 in
         if i > lim then bad_format fmt (i - 1) t else begin
         match fmt.[i] with
-        | c when Scanning.end_of_input ib -> bad_input_eof ib
+        | c when Scanning.end_of_input ib -> bad_input_eof ()
         | '@' as c when Scanning.peek_char ib = c ->
            Scanning.next_char ib; scan f (i + 1)
         | c when Scanning.peek_char ib = c ->
            Scanning.next_char ib; scan f (i + 1)
-        | c -> bad_input_char ib c end
+        | c -> bad_input_char c end
     | ' ' | '\r' | '\t' | '\n' -> skip_whites ib; scan f (i + 1)
-    | c when Scanning.end_of_input ib -> bad_input_eof ib
+    | c when Scanning.end_of_input ib -> bad_input_eof ()
     | c when Scanning.peek_char ib = c ->
         Scanning.next_char ib; scan f (i + 1)
-    | c -> bad_input_char ib c
+    | c -> bad_input_char c
 
   and scan_width f i =
     if i > lim then bad_format fmt i '%' else
@@ -551,10 +532,10 @@ let kscanf ib (fmt : ('a, 'b, 'c) format) f ef =
         let x =
           if conv = 'c' then scan_char max ib else scan_Char max ib in
         scan (stack f (token_char ib)) (i + 1)
-    | c when Scanning.end_of_input ib -> bad_input_eof ib
+    | c when Scanning.end_of_input ib -> bad_input_eof ()
     | '%' as fc when Scanning.peek_char ib = fc ->
         Scanning.next_char ib; scan f (i + 1)
-    | '%' -> bad_input_char ib (Scanning.peek_char ib)
+    | '%' -> bad_input_char (Scanning.peek_char ib)
     | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
         let x = scan_int conv max ib in
         scan (stack f (token_int ib)) (i + 1)
@@ -605,14 +586,14 @@ let kscanf ib (fmt : ('a, 'b, 'c) format) f ef =
   Scanning.reset_token ib;
   let v =
     try scan (fun () -> f) 0 with
-    | Scan_failure (ib, s) -> stack (delay ef ib) s in
+    | Scan_failure s | Failure s -> stack (delay ef ib) s in
   return v;;
 
 let bscanf ib fmt f = kscanf ib fmt f scanf_bad_input;;
 
 let fscanf ic = bscanf (Scanning.from_channel ic);;
 
-let scanf fmt = fscanf stdin fmt;;
-
 let sscanf s = bscanf (Scanning.from_string s);;
+
+let scanf fmt = fscanf stdin fmt;;
 
