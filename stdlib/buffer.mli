@@ -25,14 +25,14 @@ type t
 val create : int -> t
 (** [create n] returns a fresh buffer, initially empty.
    The [n] parameter is the initial size of the internal string
-   that holds the buffer contents.  That string is automatically
+   that holds the buffer contents. That string is automatically
    reallocated when more than [n] characters are stored in the buffer,
    but shrinks back to [n] characters when [reset] is called.
    For best performance, [n] should be of the same order of magnitude
    as the number of characters that are expected to be stored in
    the buffer (for instance, 80 for a buffer that holds one output
    line).  Nothing bad will happen if the buffer grows beyond that
-   limit, however.  In doubt, take [n = 16] for instance.
+   limit, however. In doubt, take [n = 16] for instance.
    If [n] is not between 1 and {!Sys.max_string_length}, it will
    be clipped to that interval. *)
 
@@ -62,6 +62,18 @@ val add_string : t -> string -> unit
 val add_substring : t -> string -> int -> int -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset
    [ofs] in string [s] and appends them at the end of the buffer [b]. *)
+
+val add_substitute : t -> (string -> string) -> string -> unit
+(** [add_substitute b f s] appends the string [s] at the end of the buffer [b]
+   with substitution: variable names in [s] get replaced by their image by [f].
+   A variable name is defined as a non empty sequence of alphanumeric or [_]
+   characters (or alternatively an arbitrary sequence of characters
+   enclosed by a pair of matching parentheses or curly brackets),
+   that immediately follows a (non-escaped) [$] character;
+   an escaped [$] character is a [$] that immediately follows
+   a backslash character; it then stands for a plain [$].
+   Raise [Not_found] if the closing character of a parenthesized variable
+   cannot be found. *)
 
 val add_buffer : t -> t -> unit
 (** [add_buffer b1 b2] appends the current contents of buffer [b2]
