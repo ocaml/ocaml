@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -196,7 +196,7 @@ let _ =
 (* The loop *)
 
 let loop() =
-  print_string "\tCaml Special Light version ";
+  print_string "\tObjective Caml version ";
   print_string Config.version;
   print_newline(); print_newline();
   (* Add whatever -I options have been specified on the command line,

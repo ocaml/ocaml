@@ -1,15 +1,10 @@
 OVERVIEW:
 
-Caml Special Light is an implementation of the ML language, based on
-the Caml Light dialect extended with a powerful module system in the
-style of Standard ML.
+Objective Caml is an implementation of the ML language, based on
+the Caml Light dialect extended with a complete class-based object system
+and a powerful module system in the style of Standard ML.
 
-Though close to Caml Light in many ways, Caml Special Light is not the
-latest release of Caml Light: the language implemented has changed in
-significant ways, source-level compatibility is not ensured, and the
-implementation has been almost completely rewritten from scratch.
-
-Caml Special Light comprises two compilers. One generates bytecode
+Objective Caml comprises two compilers. One generates bytecode
 which is then interpreted by a C program. This compiler runs quickly,
 generates compact code with moderate memory requirements, and is
 portable to essentially any 32 or 64 bit Unix platform. Performance of
@@ -68,7 +63,7 @@ CONTENTS:
 
 COPYRIGHT:
 
-All files in this distribution are copyright 1995 Institut National de
+All files in this distribution are copyright 1996 Institut National de
 Recherche en Informatique et Automatique (INRIA) and distributed under
 the conditions stated in file LICENSE.
 They can be freely redistributed for non-commercial purposes, provided
@@ -80,15 +75,15 @@ See the file INSTALL for installation instructions on Unix machines.
 
 DOCUMENTATION:
 
-The Caml Special Light manual is distributed in Postscript, DVI, and
+The Objective Caml manual is distributed in Postscript, DVI, and
 plain text. It can be obtained by anonymous FTP from ftp.inria.fr as
 described below. It is also available on the World Wide Web, at
 
-        http://pauillac.inria.fr/csl/
+        http://pauillac.inria.fr/caml/
 
 AVAILABILITY:
 
-The complete Caml Special Light distribution resides on ftp.inria.fr,
+The complete Objective Caml distribution resides on ftp.inria.fr,
 and can be accessed by anonymous FTP:
 
         host:       ftp.inria.fr (192.93.2.54)

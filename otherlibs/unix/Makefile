@@ -5,8 +5,8 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
-CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot
-CAMLOPT=../../boot/cslrun ../../cslopt -I ../../stdlib
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../boot
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 
 OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
@@ -38,7 +38,7 @@ unix.cma: unix.cmo
 unix.cmxa: unix.cmx
 	$(CAMLOPT) -a -linkall -o unix.cmxa unix.cmx
 
-unix.cmx: ../../cslopt
+unix.cmx: ../../ocamlopt
 
 clean:
 	rm -f *.cm*
@@ -68,6 +68,6 @@ installopt:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/csldep *.mli *.ml >> .depend
+	../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

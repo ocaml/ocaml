@@ -1,56 +1,56 @@
 include ../config/Makefile
 
-CAMLRUN=../boot/cslrun
-CAMLC=$(CAMLRUN) ../boot/cslc -I ../boot
-CAMLLEX=$(CAMLRUN) ../boot/csllex
+CAMLRUN=../boot/ocamlrun
+CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
+CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: csldep cslprof
+all: ocamldep ocamlprof
 
 # The dependency generator
 
-CAMLDEP=csldep.cmo
+CAMLDEP=ocamldep.cmo
 
-csldep: $(CAMLDEP)
-	$(CAMLC) $(LINKFLAGS) -o csldep misc.cmo $(CAMLDEP)
-
-clean::
-	rm -f csldep
-
-csldep.ml: csldep.mll
-	$(CAMLLEX) csldep.mll
+ocamldep: $(CAMLDEP)
+	$(CAMLC) $(LINKFLAGS) -o ocamldep misc.cmo $(CAMLDEP)
 
 clean::
-	rm -f csldep.ml
+	rm -f ocamldep
+
+ocamldep.ml: ocamldep.mll
+	$(CAMLLEX) ocamldep.mll
+
+clean::
+	rm -f ocamldep.ml
 
 install::
-	cp csldep $(BINDIR)/csldep
+	cp ocamldep $(BINDIR)/ocamldep
 
-beforedepend:: csldep
+beforedepend:: ocamldep
 
 # The profiler
 
-CSLPROF=cslprof.cmo
+CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   location.cmo longident.cmo pstream.cmo parser.cmo lexer.cmo parse.cmo
 
-cslprof: $(CSLPROF) profiling.cmo
-	$(CAMLC) $(LINKFLAGS) -o cslprof $(CSLPROF_IMPORTS) $(CSLPROF)
+ocamlprof: $(CSLPROF) profiling.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
 install::
-	cp cslprof $(BINDIR)/cslprof
-	cp cslcp $(BINDIR)/cslcp
+	cp ocamlprof $(BINDIR)/ocamlprof
+	cp ocamlcp $(BINDIR)/ocamlcp
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
-	rm -f cslprof
+	rm -f ocamlprof
 
 # To make custom toplevels
 
 install::
-	cp cslmktop $(BINDIR)/cslmktop
+	cp ocamlmktop $(BINDIR)/ocamlmktop
 
 # The bytecode disassembler
 
@@ -106,6 +106,6 @@ clean::
 	rm -f *.cmo *.cmi
 
 depend: beforedepend
-	$(CAMLRUN) ./csldep $(INCLUDES) *.mli *.ml > .depend
+	$(CAMLRUN) ./ocamldep $(INCLUDES) *.mli *.ml > .depend
 
 include .depend

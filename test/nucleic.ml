@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -2875,15 +2875,15 @@ let rec get_var id (v::lst) =
 
 (* Sequential backtracking algorithm *)
 
-let rec search (partial_inst : variable list) l constraint =
+let rec search (partial_inst : variable list) l constr =
   match l with
     [] -> [partial_inst]
   | (h::t) ->
       let rec try_assignments = function
         [] -> []
       | v::vs ->
-          if constraint v partial_inst then
-            (search (v::partial_inst) t constraint) @ (try_assignments vs)
+          if constr v partial_inst then
+            (search (v::partial_inst) t constr) @ (try_assignments vs)
           else
             try_assignments vs
       in

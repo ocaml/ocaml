@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)

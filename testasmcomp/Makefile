@@ -1,14 +1,14 @@
 include ../config/Makefile
 
-CAMLC=../boot/cslrun ../boot/cslc -I ../boot
+CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=
-CAMLYACC=../boot/cslyacc
+CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
-CAMLLEX=../boot/cslrun ../boot/csllex
-CAMLDEP=../boot/cslrun ../tools/csldep
+CAMLLEX=../boot/ocamlrun ../boot/ocamllex
+CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 DEPFLAGS=$(INCLUDES)
-CAMLRUN=../boot/cslrun
+CAMLRUN=../boot/ocamlrun
 
 CODEGEN=./codegen
 CC=$(NATIVECC)
@@ -23,10 +23,10 @@ INCLUDES=-I ../utils -I ../typing -I ../asmcomp
 
 OTHEROBJS=../utils/misc.cmo ../utils/tbl.cmo \
   ../utils/clflags.cmo ../utils/config.cmo \
-  ../parsing/location.cmo \
-  ../typing/ident.cmo ../typing/path.cmo ../typing/subst.cmo \
-  ../typing/primitive.cmo ../typing/predef.cmo ../typing/printtyp.cmo \
-  ../typing/datarepr.cmo ../typing/env.cmo \
+  ../parsing/location.cmo ../parsing/label.cmo \
+  ../typing/ident.cmo ../typing/path.cmo \
+  ../typing/typedtree.cmo ../typing/subst.cmo ../typing/primitive.cmo \
+  ../typing/predef.cmo ../typing/datarepr.cmo ../typing/env.cmo \
   ../bytecomp/lambda.cmo \
   ../asmcomp/arch.cmo ../asmcomp/cmm.cmo ../asmcomp/printcmm.cmo \
   ../asmcomp/clambda.cmo ../asmcomp/compilenv.cmo \

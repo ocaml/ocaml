@@ -1,65 +1,65 @@
 !include ..\config\Makefile.nt
 
-CAMLRUN=..\boot\cslrun
-CAMLC=$(CAMLRUN) ..\boot\cslc -I ..\boot
-CAMLLEX=$(CAMLRUN) ..\boot\csllex
+CAMLRUN=..\boot\ocamlrun
+CAMLC=$(CAMLRUN) ..\boot\ocamlc -I ..\boot
+CAMLLEX=$(CAMLRUN) ..\boot\ocamllex
 INCLUDES=-I ..\utils -I ..\parsing -I ..\typing -I ..\bytecomp -I ..\asmcomp
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: csldep cslprof cslcp.exe cslmktop.exe
+all: ocamldep ocamlprof ocamlcp.exe ocamlmktop.exe
 
 # The dependency generator
 
-CAMLDEP=csldep.cmo
+CAMLDEP=ocamldep.cmo
 
-csldep: $(CAMLDEP)
-	$(CAMLC) $(LINKFLAGS) -o csldep misc.cmo $(CAMLDEP)
-
-clean::
-	rm -f csldep
-
-csldep.ml: csldep.mll
-	$(CAMLLEX) csldep.mll
+ocamldep: $(CAMLDEP)
+	$(CAMLC) $(LINKFLAGS) -o ocamldep misc.cmo $(CAMLDEP)
 
 clean::
-	rm -f csldep.ml
+	rm -f ocamldep
+
+ocamldep.ml: ocamldep.mll
+	$(CAMLLEX) ocamldep.mll
+
+clean::
+	rm -f ocamldep.ml
 
 install::
-	cp csldep $(BINDIR)\csldep.exe
+	cp ocamldep $(BINDIR)\ocamldep.exe
 
-beforedepend:: csldep
+beforedepend:: ocamldep
 
 # The profiler
 
-CSLPROF=cslprof.cmo
+CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   location.cmo longident.cmo pstream.cmo parser.cmo lexer.cmo parse.cmo
 
-cslprof: $(CSLPROF) profiling.cmo
-	$(CAMLC) $(LINKFLAGS) -o cslprof $(CSLPROF_IMPORTS) $(CSLPROF)
+ocamlprof: $(CSLPROF) profiling.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
-cslcp.exe: cslcp.cmo
-	$(CAMLC) $(LINKFLAGS) -o cslcp.exe cslcp.cmo
+ocamlcp.exe: ocamlcp.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlcp.exe ocamlcp.cmo
 
 install::
-	cp cslprof $(BINDIR)\cslprof.exe
-	cp cslcp.exe $(BINDIR)\cslcp.exe
+	cp ocamlprof $(BINDIR)\ocamlprof.exe
+	cp ocamlcp.exe $(BINDIR)\ocamlcp.exe
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
-	rm -f cslprof cslcp.exe
+	rm -f ocamlprof ocamlcp.exe
 
 # To make custom toplevels
 
-cslmktop.exe: cslmktop.cmo
-	$(CAMLC) $(LINKFLAGS) -o cslmktop.exe cslmktop.cmo
+ocamlmktop.exe: ocamlmktop.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlmktop.exe ocamlmktop.cmo
 
 install::
-	cp cslmktop.exe $(BINDIR)\cslmktop.exe
+	cp ocamlmktop.exe $(BINDIR)\ocamlmktop.exe
 
 clean::
-	rm -f cslmktop.exe
+	rm -f ocamlmktop.exe
 
 # The bytecode disassembler
 
@@ -115,6 +115,6 @@ clean::
 	rm -f *.cmo *.cmi
 
 depend: beforedepend
-	$(CAMLRUN) .\csldep $(INCLUDES) *.mli *.ml > .depend
+	$(CAMLRUN) .\ocamldep $(INCLUDES) *.mli *.ml > .depend
 
 !include .depend

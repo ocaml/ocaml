@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -136,8 +136,8 @@ let test np =
   print_int np; print_string "... "; flush stdout;
   let enp = float np in
   let npm = np / 2 - 1 in
-  let pxr = Array.new (np+2) 0.0
-  and pxi = Array.new (np+2) 0.0 in
+  let pxr = Array.create (np+2) 0.0
+  and pxi = Array.create (np+2) 0.0 in
   let t = pi /. enp in
   pxr.(1) <- (enp -. 1.0) *. 0.5;
   pxi.(1) <- 0.0;

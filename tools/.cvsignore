@@ -1,6 +1,6 @@
-csldep
-csldep.ml
-cslprof
+ocamldep
+ocamldep.ml
+ocamlprof
 opnames.ml
 dumpobj
 dumpapprox

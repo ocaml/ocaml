@@ -1,10 +1,10 @@
 .TH CSLYACC 1
 
 .SH NAME
-cslyacc \- The Caml Special Light parser generator
+ocamlyacc \- The Objective Caml parser generator
 
 .SH SYNOPSIS
-.B cslyacc
+.B ocamlyacc
 [
 .B -v
 ]
@@ -16,14 +16,14 @@ cslyacc \- The Caml Special Light parser generator
 .SH DESCRIPTION
 
 The 
-.BR cslyacc (1)
+.BR ocamlyacc (1)
 command produces a parser from a LALR(1) context-free grammar
 specification with attached semantic actions, in the style of
 .BR yacc (1).
 Assuming the input file is 
 .IR grammar \&.mly,
 running
-.B cslyacc
+.B ocamlyacc
 produces Caml code for a parser in the file 
 .IR grammar \&.ml,
 and its interface in file 
@@ -35,18 +35,18 @@ Parsing functions take as arguments a lexical analyzer (a function
 from lexer buffers to tokens) and a lexer buffer, and return the
 semantic attribute of the corresponding entry point. Lexical analyzer
 functions are usually generated from a lexer specification by the
-.BR csllex (1)
+.BR ocamllex (1)
 program. Lexer buffers are an abstract data type
 implemented in the standard library module Lexing. Tokens are values from
 the concrete type token, defined in the interface file
 .IR grammar \&.mli
 produced by 
-.BR cslyacc (1).
+.BR ocamlyacc (1).
 
 .SH OPTIONS
 
 The 
-.BR cslyacc (1)
+.BR ocamlyacc (1)
 command recognizes the following options:
 
 .TP
@@ -65,7 +65,7 @@ Name the output files
 instead of the default naming convention.
 
 .SH SEE ALSO
-.BR csllex (1).
+.BR ocamllex (1).
 .br
-.I The Caml Special Light user's manual,
+.I The Objective Caml user's manual,
 chapter "Lexer and parser generators".

@@ -16,16 +16,16 @@ PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c
 
-all: cslrun
+all: ocamlrun
 
-cslrun: $(OBJS) prims.o
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o cslrun prims.o $(OBJS) $(CCLIBS)
+ocamlrun: $(OBJS) prims.o
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun prims.o $(OBJS) $(CCLIBS)
 
-cslrund: $(DOBJS) prims.o
-	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o cslrund prims.o $(DOBJS) $(CCLIBS)
+ocamlrund: $(DOBJS) prims.o
+	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrund prims.o $(DOBJS) $(CCLIBS)
 
 install:
-	cp cslrun $(BINDIR)/cslrun
+	cp ocamlrun $(BINDIR)/ocamlrun
 	rm -f $(LIBDIR)/libcamlrun.a
 	ar rc $(LIBDIR)/libcamlrun.a $(OBJS)
 	cd $(LIBDIR); $(RANLIB) libcamlrun.a
@@ -39,7 +39,7 @@ install:
 	    -e '/Modify/,/^}/d' memory.h > $(LIBDIR)/caml/memory.h
 
 clean:
-	rm -f cslrun cslrund *.o *.a
+	rm -f ocamlrun ocamlrund *.o *.a
 	rm -f primitives prims.c opnames.h jumptbl.h
 
 primitives : $(PRIMS)

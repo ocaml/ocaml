@@ -1,11 +1,11 @@
 .TH CSLOPT 1
 
 .SH NAME
-cslopt \- The Caml Special Light native-code compiler
+ocamlopt \- The Objective Caml native-code compiler
 
 
 .SH SYNOPSIS
-.B cslopt
+.B ocamlopt
 [
 .B \-acivS
 ]
@@ -30,17 +30,17 @@ cslopt \- The Caml Special Light native-code compiler
 .I filename ...
 
 .SH DESCRIPTION
-The Caml Special Light high-performance
+The Objective Caml high-performance
 native-code compiler 
-.BR cslopt (1)
+.BR ocamlopt (1)
 compiles Caml source files to native code object files and link these
 object files to produce standalone executables.
 
 The 
-.BR cslopt (1)
+.BR ocamlopt (1)
 command has a command-line interface very close to that
 of 
-.BR cslc (1).
+.BR ocamlc (1).
 It accepts the same types of arguments:
 
 Arguments ending in .mli are taken to be source files for
@@ -50,13 +50,13 @@ public data types, declare abstract data types, and so on. From the
 file 
 .IR x \&.mli,
 the 
-.BR cslopt (1)
+.BR ocamlopt (1)
 compiler produces a compiled interface
 in the file 
 .IR x \&.cmi.
 The interface produced is identical to that
 produced by the bytecode compiler 
-.BR cslc (1).
+.BR ocamlc (1).
 
 Arguments ending in .ml are taken to be source files for compilation
 unit implementations. Implementations provide definitions for the
@@ -64,7 +64,7 @@ names exported by the unit, and also contain expressions to be
 evaluated for their side-effects.  From the file 
 .IR x \&.ml,
 the 
-.BR cslc (1)
+.BR ocamlc (1)
 compiler produces two files: 
 .IR x \&.o,
 containing native object code, and 
@@ -74,13 +74,13 @@ optimization of the clients of the unit. The compiled implementation
 should always be referred to under the name 
 .IR x \&.cmx
 (when given a .o file, 
-.BR cslopt (1)
+.BR ocamlopt (1)
 assumes that it contains code compiled from C, not from Caml).
 
 The implementation is checked against the interface file 
 .IR x \&.mli
 (if it exists) as described in the manual for 
-.BR cslc (1).
+.BR ocamlc (1).
 
 Arguments ending in .cmx are taken to be compiled object code.  These
 files are linked together, along with the object files obtained
@@ -101,7 +101,7 @@ Such a library packs in two files
 and 
 .IR lib \&.a
 a set of object files (.cmx/.o files). Libraries are build with
-.B cslopt \-a
+.B ocamlopt \-a
 (see the description of the
 .B \-a
 option below). The object
@@ -118,13 +118,13 @@ libraries. They are linked with the program.
 
 The output of the linking phase is a regular Unix executable file. It
 does not need 
-.BR cslrun (1)
+.BR ocamlrun (1)
 to run.
 
 .SH OPTIONS
 
 The following command-line options are recognized by 
-.BR cslopt (1).
+.BR ocamlopt (1).
 
 .TP
 .B \-a
@@ -209,7 +209,7 @@ faster, but unsafe: anything can happen if the program accesses an
 array or string outside of its bounds.
 
 .SH SEE ALSO
-.BR cslc (1).
+.BR ocamlc (1).
 .br
-.I The Caml Special Light user's manual,
+.I The Objective Caml user's manual,
 chapter "Native-code compilation".

@@ -1,5 +1,41 @@
-Release 1.15:
--------------
+Objective Caml 1.00:
+--------------------
+
+* Merge of Jerome Vouillon and Didier Remy's object-oriented
+extensions.
+
+* All libraries: all "new" functions renamed to "create" because "new"
+is now a reserved keyword.
+
+* Compilation of "or" patterns (pat1 | pat2) completely revised to
+avoid code size explosion.
+
+* Compiler support for preprocessing source files (-pp flag).
+
+* Library construction: flag -linkall to force linking of all units in
+a library.
+
+* Native-code compiler: port to the Sparc under NetBSD.
+
+* Toplevel: fixed bug when tracing several times the same function
+under different names.
+
+* New format for marshaling arbitrary data structures, allows
+marshaling to/from strings.
+
+* Standard library: new module Genlex (configurable lexer for streams)
+
+* Thread library: much better support for I/O and blocking system calls.
+
+* Graphics library: faster reclaimation of unused pixmaps.
+
+* Unix library: new functions {set,clear}_nonblock, {set,clear}_close_on_exec,
+{set,get}itimer, inet_addr_any, {get,set}sockopt.
+
+* Dynlink library: added support for linking libraries (.cma files).
+
+Caml Special Light 1.15:
+------------------------
 
 * Caml Special Light now runs under Windows NT and 95. Many thanks to
 Kevin Gallo (Microsoft Research) who contributed his initial port.
@@ -29,8 +65,8 @@ manifest module type specifications.
 * Unix library: bug in gethostbyaddr fixed; bounds checking for read,
 write, etc.
 
-Release 1.14:
--------------
+Caml Special Light 1.14:
+------------------------
 
 * cslopt ported to the PowerPC/RS6000 architecture. Better support for
 AIX in the bytecode system as well.
@@ -43,8 +79,8 @@ out-of-order pops fixed.
 
 * Several bug fixes in callbacks and signals.
 
-Release 1.13:
--------------
+Caml Special Light 1.13:
+------------------------
 
 * Pattern-matching compilation revised to factor out accesses inside
 matched structures.
@@ -67,13 +103,13 @@ Intel decided to organize the floating-point registers as a stack).
 * cslopt for the Sparc: don't use Sparc V8 smul and sdiv instructions,
 emulation on V7 processors is abysmal.
 
-Release 1.12:
--------------
+Caml Special Light 1.12:
+------------------------
 
 * Fixed an embarrassing bug with references to floats.
 
-Release 1.11:
--------------
+Caml Special Light 1.11:
+------------------------
 
 * Streams and stream parsers a la Caml Light are back (thanks to
 Daniel de Rauglaudre).
@@ -95,8 +131,8 @@ core on me).
 
 * Lower memory consumption for the native-code compiler.
 
-Release 1.10:
--------------
+Caml Special Light 1.10:
+------------------------
 
 * Many bug fixes (too many to list here).
 
@@ -113,8 +149,8 @@ arbitrary-precision arithmetic have been ported (thanks to John
 Malecki and Victor Manuel Gulias Fernandez); better docs for the Unix
 and regexp libraries.
 
-Release 1.07:
--------------
+Caml Special Light 1.07:
+------------------------
 
 * Syntax: optional ;; allowed in compilation units and structures
 (back by popular demand)
@@ -130,7 +166,7 @@ no calls to ranlib in Solaris
 
 * Standard library: added List.memq; documentation of Array fixed.
 
-Release 1.06:
--------------
+Caml Special Light 1.06:
+------------------------
 
 * First public release.

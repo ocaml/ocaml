@@ -13,13 +13,13 @@ PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c
 
-all: cslrun.exe
+all: ocamlrun.exe
 
-cslrun.exe: $(OBJS) prims.obj
+ocamlrun.exe: $(OBJS) prims.obj
 	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) /Fecslrun.exe prims.obj $(OBJS) $(CCLIBS)
 
 install:
-	cp cslrun.exe $(BINDIR)\cslrun.exe
+	cp ocamlrun.exe $(BINDIR)\ocamlrun.exe
 	rm -f $(LIBDIR)\libcamlrun.lib
 	$(MKLIB)$(LIBDIR)\libcamlrun.lib $(OBJS)
 	if not exist $(LIBDIR)\caml mkdir $(LIBDIR)\caml
@@ -32,7 +32,7 @@ install:
 	    -e "/Modify/,/^}/d" memory.h > $(LIBDIR)\caml\memory.h
 
 clean:
-	rm -f cslrun.exe *.obj *.lib
+	rm -f ocamlrun.exe *.obj *.lib
 	rm -f primitives prims.c opnames.h jumptbl.h
 
 primitives : $(PRIMS)

@@ -1,10 +1,10 @@
 /***********************************************************************/
 /*                                                                     */
-/*                         Caml Special Light                          */
+/*                           Objective Caml                            */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
-/*  Copyright 1995 Institut National de Recherche en Informatique et   */
+/*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  Automatique.  Distributed only by permission.                      */
 /*                                                                     */
 /***********************************************************************/
@@ -25,9 +25,9 @@ let rec make_letdef def body =
       Clet(id, def, make_letdef rem body)
 
 let make_switch n selector caselist =
-  let index = Array.new n 0 in
+  let index = Array.create n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.new (Array.length casev) Cexit in
+  let actv = Array.create (Array.length casev) Cexit in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;

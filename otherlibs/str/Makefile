@@ -5,8 +5,8 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-O -I$(REGEXLIB) -I../../byterun $(BYTECCCOMPOPTS)
-CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot
-CAMLOPT=../../boot/cslrun ../../cslopt -I ../../stdlib
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../boot
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 REGEXLIB=regex-0.12
 COBJS=strstubs.o $(REGEXLIB)/regex.o
 
@@ -28,7 +28,7 @@ str.cmxa: str.cmx
 $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
 	cd $(REGEXLIB); CC="$(CC)" sh configure; $(MAKE)
 
-str.cmx: ../../cslopt
+str.cmx: ../../ocamlopt
 
 clean:
 	rm -f *.cm*
@@ -59,6 +59,6 @@ installopt:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/csldep *.mli *.ml >> .depend
+	../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

@@ -1,12 +1,12 @@
 include ../config/Makefile
 
-CAMLC=../boot/cslrun ../cslc -I ../stdlib -I KB -I Lex
-CAMLOPT=../boot/cslrun ../cslopt -I ../stdlib -I KB -I Lex
+CAMLC=../boot/ocamlrun ../ocamlc -I ../stdlib -I KB -I Lex
+CAMLOPT=../boot/ocamlrun ../ocamlopt -I ../stdlib -I KB -I Lex
 OPTFLAGS=-S
-CAMLYACC=../yacc/cslyacc
-CAMLLEX=../boot/cslrun ../lex/csllex
-CAMLDEP=../boot/cslrun ../tools/csldep
-CAMLRUN=../byterun/cslrun
+CAMLYACC=../yacc/ocamlyacc
+CAMLLEX=../boot/ocamlrun ../lex/ocamllex
+CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+CAMLRUN=../byterun/ocamlrun
 CODERUNPARAMS=CAMLRUNPARAM='o=100'
 
 BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
@@ -57,14 +57,14 @@ clean::
 	rm -f Lex/*.cm[iox] Lex/*.[os]
 	rm -f Lex/*~
 
-Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly ../yacc/cslyacc
+Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly ../yacc/ocamlyacc
 	$(CAMLYACC) $(YACCFLAGS) Lex/grammar.mly
 
 clean::
 	rm -f Lex/grammar.ml Lex/grammar.mli
 beforedepend:: Lex/grammar.ml Lex/grammar.mli
 
-Lex/scanner.ml: Lex/scanner.mll ../lex/csllex
+Lex/scanner.ml: Lex/scanner.mll ../lex/ocamllex
 	$(CAMLLEX) Lex/scanner.mll
 
 clean::
@@ -101,9 +101,9 @@ beforedepend:: Lex/scanner.ml
 .ml.cmx:
 	$(CAMLOPT) $(OPTFLAGS) -c $<
 
-$(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ../cslc
+$(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ../ocamlc
 $(BYTE_EXE): ../stdlib/stdlib.cma
-$(CODE_EXE) $(CODE_KB) $(CODE_GENLEX): ../cslopt
+$(CODE_EXE) $(CODE_KB) $(CODE_GENLEX): ../ocamlopt
 $(CODE_EXE): ../stdlib/stdlib.cmxa ../stdlib/libasmrun.a
 
 clean::

@@ -1,12 +1,12 @@
 .TH CSLCP 1
 
 .SH NAME
-cslcp \- The Caml Special Light profiling compiler
+ocamlcp \- The Objective Caml profiling compiler
 
 .SH SYNOPSIS
-.B cslcp
+.B ocamlcp
 [
-.I cslc options
+.I ocamlc options
 ]
 [
 .BI \-p \ flags
@@ -15,25 +15,25 @@ cslcp \- The Caml Special Light profiling compiler
 
 .SH DESCRIPTION
 The
-.B cslcp
+.B ocamlcp
 script is a front-end to
-.BR cslc (1)
+.BR ocamlc (1)
 that instruments the source code, adding code to record how many times
 functions are called, branches of conditionals are taken, ...
 Execution of instrumented code produces an execution profile in the
-file cslprof.dump, which can be read using
-.BR cslprof (1).
+file ocamlprof.dump, which can be read using
+.BR ocamlprof (1).
 
-.B cslcp
+.B ocamlcp
 accepts the same arguments and options as
-.BR cslc (1).
+.BR ocamlc (1).
 
 .SH OPTIONS
 
 In addition to the
-.BR cslc (1)
+.BR ocamlc (1)
 options,
-.B cslcp
+.B ocamlcp
 accepts the following option controlling the amount of profiling
 information:
 
@@ -67,12 +67,12 @@ try...with branches: a count point is set at the
 beginning of the body of each branch
 
 For instance, compiling with 
-.B cslcp \-pfilm
+.B ocamlcp \-pfilm
 profiles function calls, if... then... else..., loops, and pattern
 matching.
 
 Calling 
-.BR cslcp (1)
+.BR ocamlcp (1)
 without the
 .B \-p
 option defaults to
@@ -81,8 +81,8 @@ meaning
 that only function calls and pattern matching are profiled.
 
 .SH SEE ALSO
-.BR cslc (1),
-.BR cslprof (1).
+.BR ocamlc (1),
+.BR ocamlprof (1).
 .br
-.I The Caml Special Light user's manual,
+.I The Objective Caml user's manual,
 chapter "Profiling".

@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -49,7 +49,7 @@ let dir = [| {dx = 0; dy = 1}; {dx = 1; dy = 0};
 
 type move = { x1: int; y1: int; x2: int; y2: int }
 
-let moves = Array.new 31 {x1=0;y1=0;x2=0;y2=0}
+let moves = Array.create 31 {x1=0;y1=0;x2=0;y2=0}
 
 let counter = ref 0
 

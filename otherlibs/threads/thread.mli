@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -19,9 +19,10 @@ type t
 (** Thread creation and termination *)
 
 val create : ('a -> 'b) -> 'a -> t
-        (* [new funct arg] creates a new thread of control, in which the
-           function application [funct arg] is executed concurrently
-           with the other threads of the program. The application of [new]
+        (* [Thread.create funct arg] creates a new thread of control,
+           in which the function application [funct arg]
+           is executed concurrently with the other threads of the program.
+           The application of [Thread.create]
            returns the handle of the newly created thread.
            The new thread terminates when the application [funct arg]
            returns, either normally or by raising an uncaught exception.

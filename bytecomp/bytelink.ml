@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -186,7 +186,7 @@ let link_bytecode objfiles exec_name copy_header =
     (* Copy the header *)
     if copy_header then begin
       try
-        let inchan = open_in_bin (find_in_path !load_path "cslheader") in
+        let inchan = open_in_bin (find_in_path !load_path "camlheader") in
         copy_file inchan outchan;
         close_in inchan
       with Not_found | Sys_error _ -> ()

@@ -2,7 +2,7 @@
 
 include ../../config/Makefile
 
-CAMLC=../../boot/cslrun ../../boot/cslc
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
 COMPFLAGS=-I ../../boot $(INCLUDES)
 
@@ -39,6 +39,6 @@ realclean:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend:
-	../../tools/csldep *.mli *.ml > .depend
+	../../tools/ocamldep *.mli *.ml > .depend
 
 include .depend

@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -186,48 +186,53 @@ rule token = parse
         start_pos := Lexing.lexeme_start lexbuf;
         comment lexbuf;
         token lexbuf }
-  | "#" { SHARP }
-  | "&" { AMPERSAND }
+  | "#"  { SHARP }
+  | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
-  | "'" { QUOTE }
-  | "(" { LPAREN }
-  | ")" { RPAREN }
-  | "*" { STAR }
-  | "," { COMMA }
-  | "?" { QUESTION }
+  | "'"  { QUOTE }
+  | "("  { LPAREN }
+  | ")"  { RPAREN }
+  | "*"  { STAR }
+  | ","  { COMMA }
+  | "?"  { QUESTION }
   | "->" { MINUSGREATER }
-  | "." { DOT }
+  | "."  { DOT }
   | ".." { DOTDOT }
-  | ":" { COLON }
+  | ":"  { COLON }
   | "::" { COLONCOLON }
   | ":=" { COLONEQUAL }
   | ":>" { COLONGREATER }
-  | ";" { SEMI }
+  | ";"  { SEMI }
   | ";;" { SEMISEMI }
+  | "<"  { LESS }
   | "<-" { LESSMINUS }
-  | "=" { EQUAL }
-  | "[" { LBRACKET }
+  | "="  { EQUAL }
+  | "["  { LBRACKET }
   | "[|" { LBRACKETBAR }
   | "[<" { LBRACKETLESS }
-  | "]" { RBRACKET }
-  | "_" { UNDERSCORE }
-  | "{" { LBRACE }
+  | "]"  { RBRACKET }
+  | "_"  { UNDERSCORE }
+  | "{"  { LBRACE }
   | "{<" { LBRACELESS }
-  | "|" { BAR }
+  | "|"  { BAR }
   | "||" { BARBAR }
   | "|]" { BARRBRACKET }
+  | ">"  { GREATER }
   | ">]" { GREATERRBRACKET }
-  | "}" { RBRACE }
+  | "}"  { RBRACE }
   | ">}" { GREATERRBRACE }
 
-  | "!="    { INFIXOP1 "!=" }
-  | "-"     { SUBTRACTIVE "-" }
-  | "-."    { SUBTRACTIVE "-." }
+  | "!=" { INFIXOP0 "!=" }
+  | "-"  { SUBTRACTIVE "-" }
+  | "-." { SUBTRACTIVE "-." }
 
   | ['!' '?' '~']
     ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
             { PREFIXOP(Lexing.lexeme lexbuf) }
-  | ['=' '<' '>' '@' '^' '|' '&' '$']
+  | ['=' '<' '>' '|' '&' '$']
+    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
+            { INFIXOP0(Lexing.lexeme lexbuf) }
+  | ['@' '^']
     ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
             { INFIXOP1(Lexing.lexeme lexbuf) }
   | ['+' '-']

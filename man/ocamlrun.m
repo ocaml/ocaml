@@ -1,10 +1,10 @@
 .TH CSLRUN 1
 
 .SH NAME
-cslrun \- The Caml Special Light bytecode interpreter
+ocamlrun \- The Objective Caml bytecode interpreter
 
 .SH SYNOPSIS
-.B cslrun
+.B ocamlrun
 [
 .B \-v
 ]
@@ -12,10 +12,10 @@ cslrun \- The Caml Special Light bytecode interpreter
 
 .SH DESCRIPTION
 The 
-.BR cslrun (1)
+.BR ocamlrun (1)
 command executes bytecode files produced by the
 linking phase of the 
-.BR cslc (1)
+.BR ocamlc (1)
 command.
 
 The first non-option argument is taken to be the name of the file
@@ -29,16 +29,16 @@ are the remaining arguments.
 
 In most cases, the bytecode
 executable files produced by the 
-.BR cslc (1)
+.BR ocamlc (1)
 command are self-executable,
 and manage to launch the 
-.BR cslrun (1)
+.BR ocamlrun (1)
 command on themselves automatically.
 
 .SH OPTIONS
 
 The following command-line option is recognized by 
-.BR cslrun (1).
+.BR ocamlrun (1).
 
 .TP
 .B \-v 
@@ -74,7 +74,7 @@ false; 1 is true; other values may give unexpected results.
 List of directories searched to find the bytecode executable file.
 
 .SH SEE ALSO
-.BR cslc (1).
+.BR ocamlc (1).
 .br
-.I The Caml Special Light user's manual,
+.I The Objective Caml user's manual,
 chapter "Runtime system".

@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -64,8 +64,8 @@ let random() =
 exception Failed
 
 let test_sort sort_fun size =
-  let a = Array.new size 0 in
-  let check = Array.new 4096 0 in
+  let a = Array.create size 0 in
+  let check = Array.create 4096 0 in
   for i = 0 to size-1 do
     let n = random() in a.(i) <- n; check.(n) <- check.(n)+1
   done;

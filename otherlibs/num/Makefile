@@ -5,8 +5,8 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-O -I./bignum/h -I../../byterun $(BYTECCCOMPOPTS)
-CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot
-CAMLOPT=../../boot/cslrun ../../cslopt -I ../../stdlib
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../boot
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 
 CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
   ratio.cmo num.cmo arith_status.cmo
@@ -33,7 +33,7 @@ libnums.a: bignum/libbignum.a $(COBJS)
 bignum/libbignum.a:
 	cd bignum; $(MAKE) $(BIGNUM_ARCH) CC="$(CC)"
 
-$(CAMLOBJS:.cmo=.cmx): ../../cslopt
+$(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
 install:
 	cp libnums.a $(LIBDIR)/libnums.a
@@ -75,6 +75,6 @@ nat_stubs.o: nat.h
 
 depend: nat.ml int_misc.ml
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/csldep *.mli *.ml >> .depend
+	../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

@@ -3,7 +3,7 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
-CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot -I ../unix
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../boot -I ../unix
 
 C_OBJS=scheduler.o
 CAML_OBJS=thread.cmo threadIO.cmo threadUnix.cmo \
@@ -46,6 +46,6 @@ installopt:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/csldep *.mli *.ml >> .depend
+	../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

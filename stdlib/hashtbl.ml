@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -93,8 +93,9 @@ let find_all h key =
   find_in_bucket h.data.((hash_param 10 100 key) mod (Array.length h.data))
 
 let iter f h =
-  let len = Array.length h.data in
-  for i = 0 to Array.length h.data - 1 do
+  let d = h.data in
+  let len = Array.length d in
+  for i = 0 to len - 1 do
     let rec do_bucket = function
         Empty ->
           ()
@@ -102,7 +103,7 @@ let iter f h =
           if (hash_param 10 100 k) mod len = i
           then begin f k d; do_bucket rest end
           else do_bucket rest in
-    do_bucket h.data.(i)
+    do_bucket d.(i)
   done
 
 let hash x = hash_param 50 500 x

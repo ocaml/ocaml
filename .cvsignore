@@ -1,4 +1,4 @@
-cslc
+ocamlc
 expunge
-csltop
-cslopt
+ocaml
+ocamlopt

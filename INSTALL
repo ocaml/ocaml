@@ -12,7 +12,7 @@ The "configure" script accepts the following options:
 -bindir <dir>                   (default: /usr/local/bin)
         Directory where the binaries will be installed
 
--libdir <dir>                   (default: /usr/local/lib/camlsl)
+-libdir <dir>                   (default: /usr/local/lib/ocaml)
         Directory where the Caml library will be installed
 
 -mandir <dir>                   (default: /usr/local/man/man1)
@@ -32,8 +32,8 @@ The "configure" script accepts the following options:
         for gcc or emacs contain a complete list of configuration names.
 
 Examples:
-        ./configure -bindir /usr/bin -libdir /usr/lib/csl -mandir /usr/man/manl
-        ./configure -cc "acc -fast" -libs "-lucb"
+    ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
+    ./configure -cc "acc -fast" -libs "-lucb"
 
 If something goes wrong during the automatic configuration, or if the
 generated files cause errors later on, then look at the template files
@@ -48,14 +48,14 @@ for guidance on how to edit the generated files by hand.
 
         make world
 
-This builds the Caml Special Light bytecode compiler for the first time.
+This builds the Objective Caml bytecode compiler for the first time.
 This phase is fairly verbose; consider redirecting the output to a file:
 
         make world > log.world 2>&1     # in sh
         make world >& log.world         # in csh
 
 3- To be sure everything works well, you can try to bootstrap the
-system --- that is, to recompile all Caml Special Light sources with
+system --- that is, to recompile all Objective Caml sources with
 the newly created compiler. From the top directory, do:
 
         make bootstrap
@@ -83,20 +83,20 @@ or:
         make opt > log.opt 2>&1     # in sh
         make opt >& log.opt         # in csh
 
-5- You can now install the Caml Special Light system. This will create the
+5- You can now install the Objective Caml system. This will create the
 following commands (in the binary directory selected during autoconfiguration):
 
-        cslc           the batch bytecode compiler
-        cslopt         the batch native-code compiler (if supported)
-        cslrun         the runtime system for the bytecode compiler
-        cslyacc        the parser generator
-        csllex         the lexer generator
-        csltop         the interactive, toplevel-based system
-        cslmktop       a tool to make toplevel systems that integrate
-                       user-defined C primitives and Caml code
-        csldep         output "make" dependencies for Caml sources
-        cslprof        execution count profiler
-        cslcp          the bytecode compiler in profiling mode
+        ocamlc           the batch bytecode compiler
+        ocamlopt         the batch native-code compiler (if supported)
+        ocamlrun         the runtime system for the bytecode compiler
+        ocamlyacc        the parser generator
+        ocamllex         the lexer generator
+        ocaml            the interactive, toplevel-based system
+        ocamlmktop       a tool to make toplevel systems that integrate
+                         user-defined C primitives and Caml code
+        ocamldep         output "make" dependencies for Caml sources
+        ocamlprof        execution count profiler
+        ocamlcp          the bytecode compiler in profiling mode
 
 From the top directory, become superuser and do "make install".
 Also do "make installopt" to install the native-code compiler, if you
@@ -126,8 +126,8 @@ that can uncover bugs in optimizing compilers. Alternatively, try
 another C compiler (e.g. gcc instead of the vendor-supplied cc).
 
 You can also build a debug version of the runtime system. Go to the
-byterun/ directory and do "make camlrund". Then, copy camlrund to
-../boot/camlrun, and try again. This version of the runtime system
+byterun/ directory and do "make ocamlrund". Then, copy ocamlrund to
+../boot/ocamlrun, and try again. This version of the runtime system
 contains lots of assertions and sanity checks that could help you
 pinpoint the problem.
 

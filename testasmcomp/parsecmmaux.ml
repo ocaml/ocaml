@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -18,10 +18,10 @@ type error =
 
 exception Error of error
 
-let tbl_ident = (Hashtbl.new 57 : (string, Ident.t) Hashtbl.t)
+let tbl_ident = (Hashtbl.create 57 : (string, Ident.t) Hashtbl.t)
 
 let bind_ident s =
-  let id = Ident.new s in
+  let id = Ident.create s in
   Hashtbl.add tbl_ident s id;
   id
 

@@ -2,16 +2,16 @@
 
 include config/Makefile
 
-CAMLC=boot/cslrun boot/cslc -I boot
-CAMLOPT=boot/cslrun ./cslopt -I stdlib
+CAMLC=boot/ocamlrun boot/ocamlc -I boot
+CAMLOPT=boot/ocamlrun ./ocamlopt -I stdlib
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=
-CAMLYACC=boot/cslyacc
+CAMLYACC=boot/ocamlyacc
 YACCFLAGS=
-CAMLLEX=boot/cslrun boot/csllex
-CAMLDEP=boot/cslrun tools/csldep
+CAMLLEX=boot/ocamlrun boot/ocamllex
+CAMLDEP=boot/ocamlrun tools/ocamldep
 DEPFLAGS=$(INCLUDES)
-CAMLRUN=byterun/cslrun
+CAMLRUN=byterun/ocamlrun
 SHELL=/bin/sh
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
@@ -82,9 +82,9 @@ PERVASIVES=arg array char digest filename format gc hashtbl lexing list map \
   stack string stream sys oo
 
 # Recompile the system using the bootstrap compiler
-all: runtime cslc csllex cslyacc csltools library csltop otherlibraries
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
 
-# The compilation of csltop will fail if the runtime has changed.
+# The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
 
 # Compile everything the first time
@@ -95,30 +95,31 @@ bootstrap:
 # Save the original bootstrap compiler
 	$(MAKE) backup
 # Promote the new compiler but keep the old runtime
-# This compiler runs on boot/cslrun and produces bytecode for byterun/cslrun
+# This compiler runs on boot/ocamlrun and produces bytecode for
+# byterun/ocamlrun
 	$(MAKE) promote-cross
-# Rebuild cslc and csllex (run on byterun/cslrun)
+# Rebuild ocamlc and ocamllex (run on byterun/ocamlrun)
 	$(MAKE) clean
-	$(MAKE) cslc csllex
-# Rebuild the library (using byterun/cslrun ./cslc)
+	$(MAKE) ocamlc ocamllex
+# Rebuild the library (using byterun/ocamlrun ./ocamlc)
 	$(MAKE) library-cross
 # Promote the new compiler and the new runtime
 	$(MAKE) promote
-# Rebuild everything, including csltop and the tools
+# Rebuild everything, including ocaml and the tools
 	$(MAKE) clean
 	$(MAKE) all
 # Check if fixpoint reached
 	$(MAKE) compare
 
-LIBFILES=stdlib.cma std_exit.cmo *.cmi cslheader
+LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 
 # Start up the system from the distribution compiler
 coldstart:
 	cd byterun; $(MAKE) all
-	cp byterun/cslrun boot/cslrun
+	cp byterun/ocamlrun boot/ocamlrun
 	cd yacc; $(MAKE) all
-	cp yacc/cslyacc boot/cslyacc
-	cd stdlib; $(MAKE) COMPILER=../boot/cslc all
+	cp yacc/ocamlyacc boot/ocamlyacc
+	cd stdlib; $(MAKE) COMPILER=../boot/ocamlc all
 	cd stdlib; cp $(LIBFILES) ../boot
 
 # Save the current bootstrap compiler
@@ -127,22 +128,22 @@ backup:
 	mv boot/Saved boot/Saved.prev
 	mkdir boot/Saved
 	mv boot/Saved.prev boot/Saved/Saved.prev
-	cp boot/cslrun boot/Saved
-	mv boot/cslc boot/csllex boot/cslyacc boot/Saved
+	cp boot/ocamlrun boot/Saved
+	mv boot/ocamlc boot/ocamllex boot/ocamlyacc boot/Saved
 	cd boot; cp $(LIBFILES) Saved
 
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
 promote-cross:
-	cp cslc boot/cslc
-	cp lex/csllex boot/csllex
-	cp yacc/cslyacc boot/cslyacc
+	cp ocamlc boot/ocamlc
+	cp lex/ocamllex boot/ocamllex
+	cp yacc/ocamlyacc boot/ocamlyacc
 	cd stdlib; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
 # (Runs on the new runtime, produces code for the new runtime)
 promote: promote-cross
-	cp byterun/cslrun boot/cslrun
+	cp byterun/ocamlrun boot/ocamlrun
 
 # Restore the saved bootstrap compiler if a problem arises
 restore:
@@ -152,7 +153,7 @@ restore:
 
 # Check if fixpoint reached
 compare:
-	@if cmp boot/cslc cslc && cmp boot/csllex lex/csllex; \
+	@if cmp boot/ocamlc ocamlc && cmp boot/ocamllex lex/ocamllex; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
         else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
 	fi
@@ -162,7 +163,7 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt cslopt libraryopt otherlibrariesopt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Installation
 install:
@@ -170,11 +171,11 @@ install:
 	if test -d $(LIBDIR); then : ; else mkdir $(LIBDIR); fi
 	if test -d $(MANDIR); then : ; else mkdir $(MANDIR); fi
 	cd byterun; $(MAKE) install
-	cp cslc $(BINDIR)/cslc
-	cp csltop $(BINDIR)/csltop
+	cp ocamlc $(BINDIR)/ocamlc
+	cp ocaml $(BINDIR)/ocaml
 	cd stdlib; $(MAKE) install
-	cp lex/csllex $(BINDIR)/csllex
-	cp yacc/cslyacc $(BINDIR)/cslyacc
+	cp lex/ocamllex $(BINDIR)/ocamllex
+	cp yacc/ocamlyacc $(BINDIR)/ocamlyacc
 	$(CAMLC) -a -o $(LIBDIR)/toplevellib.cma $(TOPLIB)
 	cp expunge $(LIBDIR)
 	cp toplevel/topmain.cmo $(LIBDIR)
@@ -186,7 +187,7 @@ install:
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
-	cp cslopt $(BINDIR)/cslopt
+	cp ocamlopt $(BINDIR)/ocamlopt
 	cd stdlib; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt); done
 
@@ -194,29 +195,29 @@ realclean:: clean
 
 # The compiler
 
-cslc: $(COMPOBJS)
-	$(CAMLC) $(LINKFLAGS) -o cslc $(COMPOBJS)
+ocamlc: $(COMPOBJS)
+	$(CAMLC) $(LINKFLAGS) -o ocamlc $(COMPOBJS)
 
 clean::
-	rm -f cslc
+	rm -f ocamlc
 
 # The native-code compiler
 
-cslopt: $(OPTOBJS)
-	$(CAMLC) $(LINKFLAGS) -o cslopt $(OPTOBJS)
+ocamlopt: $(OPTOBJS)
+	$(CAMLC) $(LINKFLAGS) -o ocamlopt $(OPTOBJS)
 
 clean::
-	rm -f cslopt
+	rm -f ocamlopt
 
 # The toplevel
 
-csltop: $(TOPOBJS) expunge
-	$(CAMLC) $(LINKFLAGS) -linkall -o csltop.tmp $(TOPOBJS)
-	- $(CAMLRUN) ./expunge csltop.tmp csltop $(PERVASIVES)
-	rm -f csltop.tmp
+ocaml: $(TOPOBJS) expunge
+	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp $(TOPOBJS)
+	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
+	rm -f ocaml.tmp
 
 clean::
-	rm -f csltop
+	rm -f ocaml
 
 # The configuration file
 
@@ -264,21 +265,21 @@ beforedepend:: parsing/lexer.ml
 # Currently not working because it requires C primitives from byterun/meta.c
 # which are not provided by asmrun/libasmrun.a
 
-# cslc.opt: $(COMPOBJS:.cmo=.cmx)
-#	$(CAMLOPT) $(LINKFLAGS) -o cslc.opt $(COMPOBJS:.cmo=.cmx)
+# ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
+#	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx)
 
 clean::
-	rm -f cslc.opt
+	rm -f ocamlc.opt
 
 # The native-code compiler compiled with itself
 
-cslopt.opt: $(OPTOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o cslopt.opt $(OPTOBJS:.cmo=.cmx)
+ocamlopt.opt: $(OPTOBJS:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt $(OPTOBJS:.cmo=.cmx)
 
 clean::
-	rm -f cslopt.opt
+	rm -f ocamlopt.opt
 
-$(OPTOBJS:.cmo=.cmx): cslopt
+$(OPTOBJS:.cmo=.cmx): ocamlopt
 
 # The numeric opcodes
 
@@ -372,7 +373,7 @@ alldepend::
 library:
 	cd stdlib; $(MAKE) all
 library-cross:
-	cd stdlib; $(MAKE) RUNTIME=../byterun/cslrun all
+	cd stdlib; $(MAKE) RUNTIME=../byterun/ocamlrun all
 libraryopt:
 	cd stdlib; $(MAKE) allopt
 clean::
@@ -382,21 +383,21 @@ alldepend::
 
 # The lexer and parser generators
 
-csllex:
+ocamllex:
 	cd lex; $(MAKE) all
 clean::
 	cd lex; $(MAKE) clean
 alldepend::
 	cd lex; $(MAKE) depend
 
-cslyacc:
+ocamlyacc:
 	cd yacc; $(MAKE) all
 realclean::
 	cd yacc; $(MAKE) clean
 
 # Tools
 
-csltools:
+ocamltools:
 	cd tools; $(MAKE) all
 clean::
 	cd tools; $(MAKE) clean

@@ -1,10 +1,10 @@
 .TH CSLDEP 1
 
 .SH NAME
-csldep \- Dependency generator for Caml Special Light
+ocamldep \- Dependency generator for Objective Caml
 
 .SH SYNOPSIS
-.B csldep 
+.B ocamldep 
 [
 .BI \-I \ lib-dir
 ]
@@ -13,8 +13,8 @@ csldep \- Dependency generator for Caml Special Light
 .SH DESCRIPTION
 
 The 
-.BR csldep (1)
-command scans a set of Caml Special Light source files
+.BR ocamldep (1)
+command scans a set of Objective Caml source files
 (.ml and .mli files) for references to external compilation units,
 and outputs dependency lines in a format suitable for the
 .BR make (1)
@@ -24,7 +24,7 @@ file is modified.
 
 The typical usage is:
 .P
-csldep 
+ocamldep 
 .I options
 *.mli *.ml > .depend
 .P
@@ -33,14 +33,14 @@ dependencies.
 
 Dependencies are generated both for compiling with the bytecode
 compiler 
-.BR cslc (1)
+.BR ocamlc (1)
 and with the native-code compiler 
-.BR cslopt (1).
+.BR ocamlopt (1).
 
 .SH OPTIONS
 
 The following command-line option is recognized by 
-.BR csldep (1).
+.BR ocamldep (1).
 
 .TP
 .BI \-I \ directory
@@ -53,12 +53,12 @@ current directory or in one of the directories specified with
 Otherwise, Bar is assumed to be a module form the standard library,
 and no dependencies are generated. For programs that span multiple
 directories, it is recommended to pass 
-.BR csldep (1)
+.BR ocamldep (1)
 the same -I options that are passed to the compiler.
 
 .SH SEE ALSO
-.BR cslc (1),
-.BR cslopt (1).
+.BR ocamlc (1),
+.BR ocamlopt (1).
 .br
-.I The Caml Special Light user's manual,
+.I The Objective Caml user's manual,
 chapter "Dependency generator".

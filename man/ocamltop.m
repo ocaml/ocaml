@@ -1,11 +1,11 @@
 .TH CSLTOP 1
 
 .SH NAME
-csltop \- The Caml Special Light interactive toplevel
+ocaml \- The Objective Caml interactive toplevel
 
 
 .SH SYNOPSIS
-.B csltop
+.B ocaml
 [
 .B \-unsafe
 ]
@@ -16,9 +16,9 @@ csltop \- The Caml Special Light interactive toplevel
 .SH DESCRIPTION
 
 The
-.BR csltop (1)
-command is the toplevel system for Caml Special Light,
-that permits interactive use of the Caml Special Light system through a
+.BR ocaml (1)
+command is the toplevel system for Objective Caml,
+that permits interactive use of the Objective Caml system through a
 read-eval-print loop. In this mode, the system repeatedly reads Caml
 phrases from the input, then typechecks, compile and evaluate
 them, then prints the inferred type and result value, if any. The
@@ -28,16 +28,16 @@ A toplevel phrase can span several lines. It is terminated by ;; (a
 double-semicolon). The syntax of toplevel phrases is as follows.
 
 The toplevel system is started by the command 
-.BR csltop (1).
+.BR ocaml (1).
 Phrases are read on standard input, results are printed on standard
 output, errors on standard error. End-of-file on standard input
 terminates
-.BR csltop (1).
+.BR ocaml (1).
 
 .SH OPTIONS
 
 The following command-line options are recognized by
-.BR csltop (1).
+.BR ocaml (1).
 
 .TP
 .BI \-I \ directory
@@ -74,8 +74,8 @@ consults the TERM variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
 
 .SH SEE ALSO
-.BR cslc (1).
+.BR ocamlc (1).
 .br
-.I The Caml Special Light user's manual,
+.I The Objective Caml user's manual,
 chapter "The toplevel system".
 

@@ -2,7 +2,7 @@
 
 #*********************************************************************#
 #                                                                     #
-#                         Caml Special Light                          #
+#                           Objective Caml                            #
 #                                                                     #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt         #
 #                                                                     #
@@ -14,7 +14,7 @@
 # $Id$
 
 bindir=/usr/local/bin
-libdir=/usr/local/lib/camlsl
+libdir=/usr/local/lib/ocaml
 mandir=/usr/local/man/man1
 manext=1
 host_type=unknown
@@ -98,17 +98,17 @@ case "$1,$2,$3" in
   4,8,8) echo "Wow! A 64 bit architecture!"
          echo "#define SIXTYFOUR" >> m.h;;
   8,*,*) echo "Wow! A 64 bit architecture!"
-         echo "Unfortunately, Caml Special Light does not handle the case"
+         echo "Unfortunately, Objective Caml does not handle the case"
          echo "sizeof(int) = 8."
-         echo "Caml Special Light won't run on this architecture."
+         echo "Objective Caml won't run on this architecture."
          exit 2;;
   *,4,8) echo "Wow! A 64 bit architecture!"
-         echo "Unfortunately, Caml Special Light cannot work in the case"
+         echo "Unfortunately, Objective Caml cannot work in the case"
          echo "sizeof(long) != sizeof(long *)."
-         echo "Caml Special Light won't run on this architecture."
+         echo "Objective Caml won't run on this architecture."
          exit 2;;
   ?,?,?) echo "This architecture seems to be neither 32 bits nor 64 bits."
-         echo "Caml Special Light won't run on this architecture."
+         echo "Objective Caml won't run on this architecture."
          exit 2;;
       *) echo "Unable to compile the test program."
          echo "Make sure the C compiler $cc is properly installed."
@@ -124,7 +124,7 @@ case $? in
   1) echo "This is a little-endian architecture."
      echo "#undef BIG_ENDIAN" >> m.h;;
   2) echo "This architecture seems to be neither big endian nor little endian."
-     echo "Caml Special Light won't run on this architecture."
+     echo "Objective Caml won't run on this architecture."
      exit 2;;
   *) echo "Something went wrong during endianness determination."
      echo "You'll have to figure out endianness yourself"
@@ -141,7 +141,7 @@ case $? in
      echo "#define ALIGN_DOUBLE" >> m.h;;
   *) echo "Something went wrong during alignment determination for doubles."
      echo "I'm going to assume this architecture has alignment constraints over doubles."
-     echo "That's a safe bet: Caml Special Light will work even if"
+     echo "That's a safe bet: Objective Caml will work even if"
      echo "this architecture has actually no alignment constraints."
      echo "#define ALIGN_DOUBLE" >> m.h;;
 esac
@@ -558,7 +558,7 @@ mv m.h s.h Makefile ..
 echo
 echo "** Configuration summary **"
 echo
-echo "Directories where Caml Special Light will be installed:"
+echo "Directories where Objective Caml will be installed:"
 echo "	binaries.................. $bindir"
 echo "	standard library.......... $libdir"
 echo "	manual pages.............. $mandir (with extension .$manext)"

@@ -1,10 +1,10 @@
 include ../../config/Makefile
 
-CAMLC=../../boot/cslrun ../../cslc -I ../../stdlib
-CAMLOPT=../../boot/cslrun ../../cslopt -I ../../stdlib
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 OPTFLAGS=-S
-CAMLDEP=../../boot/cslrun ../../tools/csldep
-CAMLRUN=../../byterun/cslrun
+CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
+CAMLRUN=../../byterun/ocamlrun
 CODERUNPARAMS=CAMLRUNPARAM='o=100'
 
 callback.byt: callback.cmo callbackprim.o

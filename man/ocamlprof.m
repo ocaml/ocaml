@@ -1,10 +1,10 @@
 .TH CSLPROF 1
 
 .SH NAME
-cslprof \- The Caml Special Light profiler
+ocamlprof \- The Objective Caml profiler
 
 .SH SYNOPSIS
-.B cslprof
+.B ocamlprof
 [
 .BI \-f \ dump-file
 ]
@@ -15,15 +15,15 @@ cslprof \- The Caml Special Light profiler
 
 .SH DESCRIPTION
 The
-.B cslprof
+.B ocamlprof
 command prints execution counts gathered during the execution of a
-Caml Special Light program instrumented with
-.BR cslcp (1).
+Objective Caml program instrumented with
+.BR ocamlcp (1).
 
 It produces a source listing of the program modules given as arguments
 where execution counts have been inserted as comments. For instance,
 .P
-cslprof foo.ml
+ocamlprof foo.ml
 .P
 prints the source code for the foo module, with comments indicating
 how many times the functions in this module have been called. Naturally,
@@ -35,12 +35,12 @@ since the profiling execution took place.
 .TP
 .BI \-f \ dumpfile 
 Specifies an alternate dump file of profiling information.
-The default is the file cslprof.dump in the current directory.
+The default is the file ocamlprof.dump in the current directory.
 .TP
 .BI \-F \ string
 Specifies an additional string to be output with profiling information.
 By default,
-.B cslprof
+.B ocamlprof
 will annotate progams with comments of the form
 .BI (* \ n \ *)
 where
@@ -51,7 +51,7 @@ the annotation will be
 .BI (* \ s\ n \ *)
 
 .SH SEE ALSO
-.BR cslcp (1).
+.BR ocamlcp (1).
 .br
-.I The Caml Special Light user's manual,
+.I The Objective Caml user's manual,
 chapter "Profiling".

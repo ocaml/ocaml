@@ -5,8 +5,8 @@ include ../../config/Makefile
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -I$(X11_INCLUDES) -O $(BYTECCCOMPOPTS)
 
-CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot
-CAMLOPT=../../boot/cslrun ../../cslopt -I ../../stdlib
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../boot
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 
 OBJS=open.o draw.o fill.o color.o text.o \
   image.o make_img.o dump_img.o point_col.o sound.o events.o
@@ -51,6 +51,6 @@ installopt:
 
 depend: graphics.ml
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/csldep *.mli *.ml >> .depend
+	../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

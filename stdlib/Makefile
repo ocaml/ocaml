@@ -1,11 +1,11 @@
 include ../config/Makefile
 
-RUNTIME=../boot/cslrun
-COMPILER=../cslc
+RUNTIME=../boot/ocamlrun
+COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-OPTCOMPILER=../cslopt
+OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-CAMLDEP=../boot/cslrun ../tools/csldep
+CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 CPPFLAGS=-DUNIX
 
 OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
@@ -14,12 +14,12 @@ OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
   printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo oo.cmo genlex.cmo
 
-all: stdlib.cma std_exit.cmo cslheader
+all: stdlib.cma std_exit.cmo camlheader
 
 allopt: stdlib.cmxa std_exit.cmx
 
 install:
-	cp stdlib.cma std_exit.cmo *.cmi *.mli cslheader $(LIBDIR)
+	cp stdlib.cma std_exit.cmo *.cmi *.mli camlheader $(LIBDIR)
 
 installopt:
 	cp stdlib.cmxa stdlib.a std_exit.o *.cmx $(LIBDIR)
@@ -31,14 +31,14 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
-cslheader: header.c ../config/Makefile
+camlheader: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); \
-	then echo "#!$(BINDIR)/cslrun" > cslheader; \
-	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) header.c -o cslheader; \
-	     strip cslheader; fi
+	then echo "#!$(BINDIR)/ocamlrun" > camlheader; \
+	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) header.c -o camlheader; \
+	     strip camlheader; fi
 
 clean::
-	rm -f cslheader
+	rm -f camlheader
 
 pervasives.cmi: pervasives.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.mli

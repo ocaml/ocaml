@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -44,7 +44,7 @@ val add_available_units : (string * Digest.t) list -> unit
            for each unit. This way, the [.cmi] interface files need not be
            available at run-time. The digests can be extracted from [.cmi]
            files using the [extract_crc] program installed in the
-           Caml Special Light standard library directory. *)
+             Objective Caml   standard library directory. *)
 val clear_available_units : unit -> unit
         (* Clear the list of compilation units accessible to dynamically-linked
            programs. *)

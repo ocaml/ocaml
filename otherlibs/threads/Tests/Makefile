@@ -8,11 +8,11 @@ clean:
 	rm -f *.cm* *.byt
 
 sorts.byt: sorts.ml
-	cslc -custom -o sorts.byt -I .. -I ../../graph threads.cma graphics.cma sorts.ml ../libthreads.a ../../graph/libgraphics.a $(X11_LINK)
+	ocamlc -custom -o sorts.byt -I .. -I ../../graph threads.cma graphics.cma sorts.ml ../libthreads.a ../../graph/libgraphics.a $(X11_LINK)
 
 .SUFFIXES: .ml .byt
 
 .ml.byt:
-	cslc -custom -o $*.byt -I .. -I ../../unix unix.cma threads.cma $*.ml ../libthreads.a ../../unix/libunix.a
+	ocamlc -custom -o $*.byt -I .. -I ../../unix unix.cma threads.cma $*.ml ../libthreads.a ../../unix/libunix.a
 
 $(PROGS): ../threads.cma ../libthreads.a

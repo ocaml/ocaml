@@ -1,14 +1,14 @@
 !include ..\config\Makefile.nt
 
-CAMLC=..\boot\cslrun ..\boot\cslc -I ..\boot
+CAMLC=..\boot\ocamlrun ..\boot\ocamlc -I ..\boot
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=
-CAMLYACC=..\boot\cslyacc
+CAMLYACC=..\boot\ocamlyacc
 YACCFLAGS=
-CAMLLEX=..\boot\cslrun ..\boot\csllex
-CAMLDEP=..\boot\cslrun ..\tools\csldep
+CAMLLEX=..\boot\ocamlrun ..\boot\ocamllex
+CAMLDEP=..\boot\ocamlrun ..\tools\ocamldep
 DEPFLAGS=$(INCLUDES)
-CAMLRUN=..\boot\cslrun
+CAMLRUN=..\boot\ocamlrun
 
 CODEGEN=.\codegen
 CC=$(NATIVECC)

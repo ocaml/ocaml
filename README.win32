@@ -1,4 +1,4 @@
-        Release notes on the MS Windows port of Caml Special Light
+        Release notes on the MS Windows port of Objective Caml
         ----------------------------------------------------------
 
 REQUIREMENTS:
@@ -7,13 +7,13 @@ This port runs under Windows 95 and Windows NT on Intel-based machines.
 Windows 3.1 and Windows for Workgroups are not supported. Windows NT
 on non-Intel processors has not been tested.
 
-The base bytecode system (cslc, csltop, csllex, cslyacc, ...) runs without
-any additional tools.
+The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
+runs without any additional tools.
 
-Linking Caml bytecode with C code (cslc -custom) requires the
+Linking Caml bytecode with C code (ocamlc -custom) requires the
 Microsoft Visual C++ compiler.
 
-The native-code compiler (cslopt) requires Visual C++ and the
+The native-code compiler (ocamlopt) requires Visual C++ and the
 Microsoft assembler MASM version 6.
 
 
@@ -29,55 +29,55 @@ version 2. Use either Winzip (shareware) or the NT/95 version of unzip
 Unzipping the distribution creates (among others) the following
 directories and files:
 
-        camlsl\cslwin.exe       The toplevel application
-        camlsl\cslwin.ini       Its configuration file
-        camlsl\bin\             The command-line compilers and tools
-        camlsl\lib\             The standard library files
+        ocaml\ocamlwin.exe     The toplevel application
+        ocaml\ocamlwin.ini     Its configuration file
+        ocaml\bin\             The command-line compilers and tools
+        ocaml\lib\             The standard library files
 
 Installing the toplevel application:
 
-  Copy the file camlsl\cslwin.ini to the Windows system directory
+  Copy the file ocaml\ocamlwin.ini to the Windows system directory
   (e.g. C:\windows). This file assumes that the Caml distribution
-  resides in C:\camlsl. If this is not the case, edit the file cslwin.ini
+  resides in C:\ocaml. If this is not the case, edit the file ocamlwin.ini
   and change the line that says
 
-          CmdLine=cslrun c:\camlsl\bin\csltop.exe -I c:\camlsl\lib
+          CmdLine=ocamlrun c:\ocaml\bin\ocaml.exe -I c:\ocaml\lib
   to
-          CmdLine=cslrun <caml_dir>\bin\csltop.exe -I <caml_dir>\lib
+          CmdLine=ocamlrun <caml_dir>\bin\ocaml.exe -I <caml_dir>\lib
   e.g.
-          CmdLine=cslrun d:\lang\camlsl\bin\csltop.exe -I d:\lang\camlsl\lib
+          CmdLine=ocamlrun d:\lang\ocaml\bin\ocaml.exe -I d:\lang\ocaml\lib
 
 Installing the command-line tools:
 
-  You must add the camlsl\bin subdirectory to the PATH variable, e.g.
+  You must add the ocaml\bin subdirectory to the PATH variable, e.g.
 
-          set PATH=%PATH%;D:\lang\camlsl\bin
+          set PATH=%PATH%;D:\lang\ocaml\bin
 
-  Running directly the tools (e.g. typing D:\lang\camlsl\bin\cslc)
-  will not work if the camlsl\bin directory is not in PATH, because cslc
+  Running directly the tools (e.g. typing D:\lang\ocaml\bin\ocamlc)
+  will not work if the ocaml\bin directory is not in PATH, because ocamlc
   and the other tools will be unable to find the Caml runtime system
-  cslrun.exe.
+  ocamlrun.exe.
 
   The command-line tools assume that the standard library resides in
-  C:\camlsl\lib. If you have unpacked it elsehwere, define the CAMLLIB
+  C:\ocaml\lib. If you have unpacked it elsehwere, define the CAMLLIB
   environment variable to point to the standard library directory, e.g.
 
-          set CAMLLIB=D:\lang\camlsl\lib
+          set CAMLLIB=D:\lang\ocaml\lib
 
 
 RECOMPILATION FROM THE SOURCES:
 
 The command-line tools can be recompiled from the Unix source
-distribution (csl-X.YZ.tar.gz), which also contains the files modified
+distribution (ocaml-X.YZ.tar.gz), which also contains the files modified
 for Windows.
 
 In addition to Visual C++ 4.0 and MASM 6, you will also need a healthy
 set of Unix / GNU utilities that understands long file names
 (see e.g. ftp://ftp.cc.utexas.edu/microlib/nt/gnu/).
 
-The bootstrap compilers provided in the Unix distribution (boot/cslc
-and boot/csllex) must be replaced by those from the binary Windows
-distribution (camlsl\bin\cslc.exe and camlsl\bin\csllex.exe).
+The bootstrap compilers provided in the Unix distribution (boot/ocamlc
+and boot/ocamllex) must be replaced by those from the binary Windows
+distribution (ocaml\bin\ocamlc.exe and ocaml\bin\ocamllex.exe).
 
 The sources for the toplevel graphical user interface are not
 publically available.
@@ -101,9 +101,9 @@ Win32.
 
 CREDITS:
 
-The initial port of Caml Special Light to Windows NT was done by Kevin
-Gallo at Microsoft Research, who kindly contributed his changes to the
-Caml Special Light project.
+The initial port of Caml Special Light (the ancestor of Objective Caml)
+to Windows NT was done by Kevin Gallo at Microsoft Research, who
+kindly contributed his changes to the Caml project.
 
 The graphical user interface for the toplevel is due to Jean-Marie
 Geffroy at INRIA Rocquencourt.

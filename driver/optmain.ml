@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -37,7 +37,7 @@ let process_file name =
     raise(Arg.Bad("don't know what to do with " ^ name))
 
 let print_version_number () =
-  print_string "The Caml Special Light native-code compiler, version ";
+  print_string "The Objective Caml native-code compiler, version ";
   print_string Config.version;
   print_newline()
 

@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -165,7 +165,7 @@ let rec lastpos = function
 
 
 let followpos size name_regexp_list =
-  let v = Array.new size [] in
+  let v = Array.create size [] in
     let fill_pos first = function
         OnChars pos -> v.(pos) <- merge_trans first v.(pos); ()
       | ToAction _  -> () in
@@ -195,7 +195,7 @@ let split_trans_set =
     (no_action, [])
 
 
-let memory = (Hashtbl.new 131 : (transition list, int) Hashtbl.t)
+let memory = (Hashtbl.create 131 : (transition list, int) Hashtbl.t)
 let todo = ref ([] : (transition list * int) list)
 let next = ref 0
 
@@ -222,8 +222,8 @@ let goto_state = function
 
 
 let transition_from chars follow pos_set = 
-  let tr = Array.new 256 []
-  and shift = Array.new 256 Backtrack in
+  let tr = Array.create 256 []
+  and shift = Array.create 256 Backtrack in
     List.iter
       (fun pos ->
         List.iter
@@ -259,7 +259,7 @@ let make_dfa lexdef =
   let states =
     map_on_states (translate_state chars follow) in
   let v =
-    Array.new (number_of_states()) (Perform 0) in
+    Array.create (number_of_states()) (Perform 0) in
   List.iter (fun (auto, i) -> v.(i) <- auto) states;
   (initial_states, v, actions)
 

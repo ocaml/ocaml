@@ -8,13 +8,13 @@ CFLAGS=-DNDEBUG -DNO_UNIX $(BYTECCCOMPOPTS)
 OBJS= closure.obj error.obj lalr.obj lr0.obj main.obj mkpar.obj output.obj reader.obj \
   skeleton.obj symtab.obj verbose.obj warshall.obj
 
-all: cslyacc.exe
+all: ocamlyacc.exe
 
-cslyacc.exe: $(OBJS)
-	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o cslyacc.exe $(OBJS)
+ocamlyacc.exe: $(OBJS)
+	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o ocamlyacc.exe $(OBJS)
 
 clean:
-	rm -f *.obj cslyacc.exe *~
+	rm -f *.obj ocamlyacc.exe *~
 
 depend:
 

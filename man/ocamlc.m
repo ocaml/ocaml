@@ -1,11 +1,11 @@
 .TH CSLC 1
 
 .SH NAME
-cslc \- The Caml Special Light bytecode compiler
+ocamlc \- The Objective Caml bytecode compiler
 
 
 .SH SYNOPSIS
-.B cslc
+.B ocamlc
 [
 .B \-aciv
 ]
@@ -31,15 +31,15 @@ cslc \- The Caml Special Light bytecode compiler
 
 .SH DESCRIPTION
 
-The Caml Special Light bytecode compiler
-.BR cslc (1)
+The Objective Caml bytecode compiler
+.BR ocamlc (1)
 compiles Caml source files to bytecode object files and link
 these object files to produce standalone bytecode executable files.
 These executable files are then run by the bytecode interpreter
-.BR cslrun (1).
+.BR ocamlrun (1).
 
 The 
-.BR cslc (1)
+.BR ocamlc (1)
 command has a command-line interface similar to the one of
 most C compilers. It accepts several types of arguments:
 
@@ -50,7 +50,7 @@ public data types, declare abstract data types, and so on. From the
 file 
 .IR x \&.mli,
 the 
-.BR cslc (1)
+.BR ocamlc (1)
 compiler produces a compiled interface
 in the file 
 .IR x \&.cmi.
@@ -61,7 +61,7 @@ names exported by the unit, and also contain expressions to be
 evaluated for their side-effects.  From the file 
 .IR x \&.ml,
 the 
-.BR cslc (1)
+.BR ocamlc (1)
 compiler produces compiled object bytecode in the file 
 .IR x \&.cmo.
  
@@ -101,7 +101,7 @@ file must come before all .cmo files that refer to the unit
 Arguments ending in .cma are taken to be libraries of object bytecode.
 A library of object bytecode packs in a single file a set of object
 bytecode files (.cmo files). Libraries are built with 
-.B cslc \-a
+.B ocamlc \-a
 (see the description of the 
 .B \-a
 option below). The object files
@@ -125,7 +125,7 @@ below).
 .SH OPTIONS
 
 The following command-line options are recognized by 
-.BR cslc (1).
+.BR ocamlc (1).
 
 .TP
 .B \-a
@@ -169,12 +169,12 @@ directory
 Link in ``custom runtime'' mode. In the default linking mode, the
 linker produces bytecode that is intended to be executed with the
 shared runtime system, 
-.BR cslrun (1).
+.BR ocamlrun (1).
 In the custom runtime mode, the
 linker produces an output file that contains both the runtime system
 and the bytecode for the program. The resulting file is larger, but it
 can be executed directly, even if the 
-.BR cslrun (1)
+.BR ocamlrun (1)
 command is not
 installed. Moreover, the ``custom runtime'' mode enables linking Caml
 code with user-defined C functions.
@@ -226,8 +226,8 @@ slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
 
 .SH SEE ALSO
-.BR csltop (1),
-.BR cslrun (1).
+.BR ocaml (1),
+.BR ocamlrun (1).
 .br
-.I The Caml Special Light user's manual,
+.I The Objective Caml user's manual,
 chapter "Batch compilation".

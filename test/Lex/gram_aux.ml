@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -29,11 +29,11 @@ let regexp_for_string s =
 
 
 let char_class c1 c2 =
-  let class = ref [] in
+  let cl = ref [] in
   for i = Char.code c2 downto Char.code c1 do
-    class := Char.chr i :: !class
+    cl := Char.chr i :: !cl
   done;
-  !class
+  !cl
 
 
 let all_chars = char_class '\001' '\255'

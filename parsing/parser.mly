@@ -1,10 +1,10 @@
 /***********************************************************************/
 /*                                                                     */
-/*                         Caml Special Light                          */
+/*                           Objective Caml                            */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
-/*  Copyright 1995 Institut National de Recherche en Informatique et   */
+/*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  Automatique.  Distributed only by permission.                      */
 /*                                                                     */
 /***********************************************************************/
@@ -116,11 +116,13 @@ let rec mkrangepat c1 c2 =
 %token FUN
 %token FUNCTION
 %token FUNCTOR
+%token GREATER
 %token GREATERRBRACE
 %token GREATERRBRACKET
 %token IF
 %token IN
 %token INCLUDE
+%token <string> INFIXOP0
 %token <string> INFIXOP1
 %token <string> INFIXOP2
 %token <string> INFIXOP3
@@ -132,6 +134,7 @@ let rec mkrangepat c1 c2 =
 %token LBRACKET
 %token LBRACKETBAR
 %token LBRACKETLESS
+%token LESS
 %token LESSMINUS
 %token LET
 %token <string> LIDENT
@@ -190,7 +193,8 @@ let rec mkrangepat c1 c2 =
 %right prec_type_arrow                  /* -> in type expressions */
 %right OR BARBAR                        /* or */
 %right AMPERSAND AMPERAMPER             /* & */
-%left  INFIXOP1 EQUAL                   /* = < > etc */
+%left  INFIXOP0 EQUAL LESS GREATER      /* = < > etc */
+%right INFIXOP1                         /* @ ^ etc */
 %right COLONCOLON                       /* :: */
 %left  INFIXOP2 SUBTRACTIVE             /* + - */
 %left  INFIXOP3 STAR                    /* * / */
@@ -387,6 +391,8 @@ expr:
       { mkexp(Pexp_for($2, $4, $6, $5, $8)) }
   | expr COLONCOLON expr
       { mkexp(Pexp_construct(Lident "::", Some(mkexp(Pexp_tuple[$1;$3])))) }
+  | expr INFIXOP0 expr
+      { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP2 expr
@@ -401,6 +407,10 @@ expr:
       { mkinfix $1 "*" $3 } 
   | expr EQUAL expr
       { mkinfix $1 "=" $3 } 
+  | expr LESS expr
+      { mkinfix $1 "<" $3 } 
+  | expr GREATER expr
+      { mkinfix $1 ">" $3 } 
   | expr OR expr
       { mkinfix $1 "or" $3 }
   | expr BARBAR expr
@@ -867,9 +877,9 @@ simple_core_type:
       { mktyp(Ptyp_constr($4, List.rev $2, $5)) }
   | LPAREN core_type RPAREN
       { $2 }
-  | less meth_list more alias
+  | LESS meth_list GREATER alias
       { mktyp(Ptyp_object($2, $4)) }
-  | less more alias
+  | LESS GREATER alias
       { mktyp(Ptyp_object([], $3)) }
   | SHARP class_longident alias
       { mktyp(Ptyp_class($2, [], $3)) }
@@ -884,14 +894,6 @@ alias:
       { Some $2 }
   | /* empty */
       {None}
-;
-less:
-    INFIXOP1
-      { if $1 <> "<" then raise Parse_error }
-;
-more:
-    INFIXOP1
-      { if $1 <> ">" then raise Parse_error }
 ;
 core_type_tuple:
     simple_core_type STAR simple_core_type
@@ -949,6 +951,7 @@ val_ident:
 ;
 operator:
     PREFIXOP                                    { $1 }
+  | INFIXOP0                                    { $1 }
   | INFIXOP1                                    { $1 }
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
@@ -956,6 +959,8 @@ operator:
   | SUBTRACTIVE                                 { $1 }
   | STAR                                        { "*" }
   | EQUAL                                       { "=" }
+  | LESS                                        { "<" }
+  | GREATER                                     { ">" }
   | OR                                          { "or" }
   | BARBAR                                      { "||" }
   | AMPERSAND                                   { "&" }

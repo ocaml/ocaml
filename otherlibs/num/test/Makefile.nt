@@ -1,5 +1,5 @@
-CAMLC=..\..\..\boot\cslrun ..\..\..\cslc -I ..\..\..\stdlib
-CAMLOPT=..\..\..\boot\cslrun ..\..\..\cslopt -I ..\..\..\stdlib
+CAMLC=..\..\..\boot\ocamlrun ..\..\..\ocamlc -I ..\..\..\stdlib
+CAMLOPT=..\..\..\boot\ocamlrun ..\..\..\ocamlopt -I ..\..\..\stdlib
 
 test: test.byt test.opt
 	.\test.byt
@@ -16,7 +16,7 @@ test.byt: $(TESTFILES) ..\nums.cma ..\libnums.lib
 test.opt: $(TESTOPTFILES) ..\nums.cmxa ..\libnums.lib
 	$(CAMLOPT) -o test.opt ..\nums.cmxa $(TESTOPTFILES) ..\libnums.lib
 
-$(TESTOPTFILES): ..\..\..\cslopt
+$(TESTOPTFILES): ..\..\..\ocamlopt
 
 .SUFFIXES: .ml .cmo .cmx
 
@@ -26,13 +26,13 @@ $(TESTOPTFILES): ..\..\..\cslopt
 .ml.cmx:
 	$(CAMLOPT) -I .. -c $<
 
-csltopnum:
-	cslmktop -o csltopnum -custom ..\nums.cma ..\libnums.lib
+ocamltopnum:
+	ocamlmktop -o ocamltopnum -custom ..\nums.cma ..\libnums.lib
 
 clean:
-	rm -f test.byt test.opt *.obj *.cm? csltopnum
+	rm -f test.byt test.opt *.obj *.cm? ocamltopnum
 
 depend:
-	csldep *.ml > .depend
+	ocamldep *.ml > .depend
 
 !include .depend
