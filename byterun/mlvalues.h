@@ -228,7 +228,7 @@ CAMLextern mlsize_t caml_string_length (value);   /* size in bytes */
 CAMLextern double caml_Double_val (value);
 CAMLextern void caml_Store_double_val (value,double);
 #define Double_val(v) caml_Double_val(v)
-#define Store_double_val(v) caml_Store_double_val(v)
+#define Store_double_val(v,d) caml_Store_double_val(v,d)
 #endif
 
 /* Arrays of floating-point numbers. */
