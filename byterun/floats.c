@@ -308,12 +308,9 @@ value gt_float(value f, value g)        /* ML */
    so that it behaves as much as possible like the IEEE standard.
    In particular, return special numbers like Infinity and NaN instead
    of signalling exceptions. So far, only the Intel 386 under
-   Linux and BSD is not in IEEE mode at program startup. */
+   FreeBSD is not in IEEE mode at program startup.  */
 
 #ifdef __i386__
-#ifdef __linux__
-#include <i386/fpu_control.h>
-#endif
 #ifdef __FreeBSD__
 #include <floatingpoint.h>
 #endif
@@ -322,9 +319,6 @@ value gt_float(value f, value g)        /* ML */
 void init_ieee_floats(void)
 {
 #ifdef __i386__
-#ifdef __linux__
-  __setfpucw(_FPU_IEEE);
-#endif
 #ifdef __FreeBSD__
   fpsetmask(0);
 #endif

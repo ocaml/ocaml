@@ -26,9 +26,9 @@ void do_roots (scanning_action);
 void do_local_roots (scanning_action, value *, value *,
                      struct caml__roots_block *);
 #else
-struct caml_context;            /* defined in stack.h */
-void do_local_roots (scanning_action, struct caml_context *,
-                     struct caml__roots_block *);
+void do_local_roots(scanning_action f, char * bottom_of_stack,
+                    unsigned long last_retaddr, value * gc_regs,
+                    struct caml__roots_block * local_roots);
 #endif
 
 extern void (*scan_roots_hook) (scanning_action);
