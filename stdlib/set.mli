@@ -138,12 +138,13 @@ module type S =
        but equal elements will be chosen for equal sets. *)
 
     val split: elt -> t -> t * bool * t
-    (** Splitting.  [split x s] returns a triple [(l, present, r)] where
-        - [l] is the set of elements of s that are < x
-        - [r] is the set of elements of s that are > x
-        - [present] is false if [s] contains no element equal to [x],
-          or true if [s] contains an element equal to [x]. *)
-
+    (** [split x s] returns a triple [(l, present, r)], where
+          [l] is the set of elements of [s] that are
+          strictly less than [x];
+          [r] is the set of elements of [s] that are
+          strictly greater than [x];
+          [present] is [false] if [s] contains no element equal to [x],
+          or [true] if [s] contains an element equal to [x]. *)
   end
 (** Output signature of the functor {!Set.Make}. *)
 

@@ -244,23 +244,26 @@ module Make(Ord: OrderedType) =
           | (l2, true, r2) ->
               concat (diff l1 l2) (diff r1 r2)
 
-    let rec compare_aux l1 l2 =
-        match (l1, l2) with
-        ([], []) -> 0
-      | ([], _)  -> -1
-      | (_, []) -> 1
-      | (Empty :: t1, Empty :: t2) ->
-          compare_aux t1 t2
-      | (Node(Empty, v1, r1, _) :: t1, Node(Empty, v2, r2, _) :: t2) ->
+    type enumeration = End | More of elt * t * enumeration
+
+    let rec cons_enum s e =
+      match s with
+        Empty -> e
+      | Node(l, v, r, _) -> cons_enum l (More(v, r, e))
+
+    let rec compare_aux e1 e2 =
+        match (e1, e2) with
+        (End, End) -> 0
+      | (End, _)  -> -1
+      | (_, End) -> 1
+      | (More(v1, r1, e1), More(v2, r2, e2)) ->
           let c = Ord.compare v1 v2 in
-          if c <> 0 then c else compare_aux (r1::t1) (r2::t2)
-      | (Node(l1, v1, r1, _) :: t1, t2) ->
-          compare_aux (l1 :: Node(Empty, v1, r1, 0) :: t1) t2
-      | (t1, Node(l2, v2, r2, _) :: t2) ->
-          compare_aux t1 (l2 :: Node(Empty, v2, r2, 0) :: t2)
+          if c <> 0
+          then c
+          else compare_aux (cons_enum r1 e1) (cons_enum r2 e2)
 
     let compare s1 s2 =
-      compare_aux [s1] [s2]
+      compare_aux (cons_enum s1 End) (cons_enum s2 End)
 
     let equal s1 s2 =
       compare s1 s2 = 0
