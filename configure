@@ -382,19 +382,22 @@ if test $withsharedlibs = "yes"; then
       mksharedlib="ld -shared -expect_unresolved '*' -o"
       byteccrpath="-Wl,-rpath,"
       shared_libraries_supported=true;;
-    sparc-sun-solaris2*)
+    *-*-solaris2*)
       case "$bytecc" in
         gcc*)
-	  if sh ./solaris-ld; then :; else
           sharedcccompopts="-fPIC"
+	  if sh ./solaris-ld; then
+	  mksharedlib="$bytecc -shared -o"
+          byteccrpath="-Wl,-R"
+          else
 	  mksharedlib="$bytecc -shared -o"
           bytecclinkopts="$bytecclinkopts -Wl,-E"
-          byteccrpath="-Wl,-rpath,";
-	  shared_libraries_supported=true
-	  fi;;
+          byteccrpath="-Wl,-rpath,"
+	  fi
+	  shared_libraries_supported=true;;
         *)
           sharedcccompopts="-KPIC"
-          byteccrpath="-Wl,-R,"
+          byteccrpath="-Wl,-R"
 	  mksharedlib="/usr/ccs/bin/ld -G -o"
 	  shared_libraries_supported=true;;
       esac;;
