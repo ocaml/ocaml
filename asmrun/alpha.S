@@ -92,7 +92,7 @@ $110:   lda     $sp, -0x200($sp)
 $103:   ldgp    $gp, 0($27)
     /* Record last context */
         lda     $24, 0x100($sp)
-        sta     $24, caml_last_context
+        stq     $24, caml_last_context
     /* Save current allocation pointer for debugging purposes */
         stq     $13, young_ptr
     /* Save trap pointer in case an exception is raised (e.g. sighandler) */
@@ -220,11 +220,11 @@ caml_c_call:
 $104:   ldgp    $gp, 0($25)
     /* Record last context.  We don't fill the register section since
        no registers are live across caml_c_call. */
-        lda     -16($sp), $sp
-        sta     $26, 8($sp)
-        lda     (8 - 31*8)($sp), $25
+        lda     $sp, -16($sp)
+        stq     $26, 8($sp)
+        lda     $25, (8 - 31*8)($sp)
         lda     $11, caml_last_context
-        sta     $25, 0($11)
+        stq     $25, 0($11)
     /* Make the exception handler and alloc ptr available to the C code */
         lda     $12, young_ptr
         stq     $13, 0($12)
@@ -240,7 +240,7 @@ $104:   ldgp    $gp, 0($25)
     /* Restore $gp */
         mov     $10, $gp
     /* Return */
-        lda     16($sp), $sp
+        lda     $sp, 16($sp)
         ret     ($9)
 
         .end    caml_c_call
@@ -330,11 +330,9 @@ $108:   jsr     ($25)
 
     /* The trap handler */
 $109:   ldgp    $gp, 0($26)
-    /* Restore the global variables used by caml_c_call */
+    /* Restore caml_last_context */
         ldq     $24, 0($sp)
-        stq     $24, caml_bottom_of_stack
-        ldq     $25, 8($sp)
-        stq     $25, caml_last_return_address
+        stq     $24, caml_last_context
         lda     $sp, 16($sp)
     /* Re-raise the exception through mlraise,
        so that local C roots are cleaned up correctly. */
@@ -355,7 +353,7 @@ raise_caml_exception:
         mov     $16, $0                         /* Move exn bucket */
         ldq     $13, young_ptr
         ldq     $14, young_limit
-        stq     $31, caml_last_return_address   /* We're back into Caml */
+        stq     $31, caml_last_context          /* We're back into Caml */
         ldq     $sp, caml_exception_pointer
         ldq     $15, 0($sp)
         ldq     $26, 8($sp)

@@ -24,12 +24,12 @@
 #include "mlvalues.h"
 #include "fail.h"
 #include "signals.h"
+#include "stack.h"
 
 volatile int async_signal_mode = 0;
 volatile int pending_signal = 0;
 volatile int force_major_slice = 0;
 value signal_handlers = 0;
-extern unsigned long caml_last_return_address;
 void (*enter_blocking_section_hook)() = NULL;
 void (*leave_blocking_section_hook)() = NULL;
 
@@ -123,25 +123,25 @@ void handle_signal(int sig)
     young_limit = young_end;
     /* Some ports cache young_limit in a register.
        Use the signal context to modify that register too, but not if
-       we are inside C code (i.e. caml_last_return_address != 0). */
+       we are inside C code (i.e. caml_last_context != 0). */
 #ifdef TARGET_alpha
     /* Cached in register $14 */
-    if (caml_last_return_address == 0)
+    if (caml_last_context == NULL)
       context->sc_regs[14] = (long) young_limit;
 #endif
 #ifdef TARGET_mips
       /* Cached in register $23 */
-      if (caml_last_return_address == 0)
+      if (caml_last_context == NULL)
         context->sc_regs[23] = (int) young_limit;
 #endif
 #ifdef TARGET_power
       /* Cached in register 31 */
 #ifdef _AIX
-      if (caml_last_return_address == 0)
+      if (caml_last_context == NULL)
         context->sc_jmpbuf.jmp_context.gpr[31] = (ulong_t) young_limit;
 #endif
 #ifdef __linux
-      if (caml_last_return_address == 0)
+      if (caml_last_context == NULL)
         context->gpr[31] = (unsigned long) young_limit;
 #endif
 #endif
