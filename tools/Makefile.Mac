@@ -13,13 +13,13 @@
 # $Id$
 
 CAMLRUN = ::boot:ocamlrun
-CAMLC = {CAMLRUN} ::boot:ocamlc -I ::boot:
-CAMLLEX = {CAMLRUN} ::boot:ocamllex
+CAMLC = "{CAMLRUN}" ::boot:ocamlc -I ::boot:
+CAMLLEX = "{CAMLRUN}" ::boot:ocamllex
 INCLUDES = -I ::utils: -I ::parsing: -I ::typing: -I ::bytecomp: -I ::asmcomp:
 COMPFLAGS = {INCLUDES}
 LINKFLAGS = {INCLUDES}
 
-all Ä ocamldep ocamldumpobj
+all Ä ocamldep ocamldumpobj objinfo primreq keywords
 
 # The dependency generator
 
@@ -36,7 +36,7 @@ clean ÄÄ
     delete -i ocamldep
 
 install ÄÄ
-    duplicate -y OCamlDep "{BINDIR}OCamlDep"
+    duplicate -y ocamldep "{BINDIR}ocamldep"
 
 # The profiler  (not available on MacOS for the moment)
 #
@@ -60,7 +60,6 @@ install ÄÄ
 
 install ÄÄ
     duplicate -y ocamlmktop.tpl "{BINDIR}ocamlmktop"
-    duplicate -y ocamlc-custom "{BINDIR}ocamlc-custom"
 
 # The bytecode disassembler
 
@@ -72,7 +71,7 @@ ocamldumpobj Ä {DUMPOBJ}
             {DUMPOBJ}
 
 clean ÄÄ
-    delete -i OCamlDumpObj
+    delete -i ocamldumpobj
 
 opnames.ml Ä ::byterun:instruct.h
     streamedit -e '/¶/¶*/ delete' ¶
@@ -89,11 +88,11 @@ beforedepend ÄÄ opnames.ml
 
 # Dump .cmx files
 
-dumpapprox Ä dumpapprox.cmo
-    {CAMLC} {LINKFLAGS} -o dumpapprox config.cmo dumpapprox.cmo
-
-clean ÄÄ
-    delete -i dumpapprox
+#dumpapprox Ä dumpapprox.cmo
+#    {CAMLC} {LINKFLAGS} -o dumpapprox config.cmo dumpapprox.cmo
+#
+#clean ÄÄ
+#    delete -i dumpapprox
 
 # Print imported interfaces for .cmo files
 
@@ -106,10 +105,10 @@ clean ÄÄ
 # Common stuff
 
 .cmo Ä .ml
-    {CAMLC} -c {COMPFLAGS} {default}.ml
+    {CAMLC} -c {COMPFLAGS} {depdir}{default}.ml
 
 .cmi Ä .mli
-    {CAMLC} -c {COMPFLAGS} {default}.mli
+    {CAMLC} -c {COMPFLAGS} {depdir}{default}.mli
 
 clean ÄÄ
     delete -i Å.cm[io] || set status 0
@@ -119,10 +118,17 @@ depend Ä beforedepend
 
 # Scan object files for required primitives
 
-PRIMREQ=primreq.cmo
-
-primreq Ä {PRIMREQ}
-    {CAMLC} {LINKFLAGS} -o primreq config.cmo {PRIMREQ}
+primreq Ä primreq.cmo
+    {CAMLC} {LINKFLAGS} -o primreq config.cmo primreq.cmo
  
 clean ÄÄ
     delete -i primreq
+
+
+# Resources for keyword-coloring for MPW Shell
+
+keywords Ä keywords.r
+    rez keywords.r -o keywords
+
+clean ÄÄ
+    delete -i keywords
