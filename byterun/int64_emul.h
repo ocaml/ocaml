@@ -21,7 +21,7 @@
 
 #include <math.h>
 
-#if ARCH_BIG_ENDIAN
+#ifdef ARCH_BIG_ENDIAN
 #define I64_literal(hi,lo) { hi, lo }
 #else
 #define I64_literal(hi,lo) { lo, hi }

@@ -49,7 +49,7 @@ typedef unsigned short uint32;
 typedef ARCH_INT64_TYPE int64;
 typedef ARCH_UINT64_TYPE uint64;
 #else
-#  if ARCH_BIG_ENDIAN
+#  ifdef ARCH_BIG_ENDIAN
 typedef struct { uint32 h, l; } uint64, int64;
 #  else
 typedef struct { uint32 l, h; } uint64, int64;
