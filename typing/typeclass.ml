@@ -950,6 +950,7 @@ let build_class_type env
 let rec transl_class_types env class_type_list =
   (* Type classes are first abstract *)
   let (info, temp_env) = iter enter_class env class_type_list in
+  Ctype.init_def(Ident.current_time());
   let (info, new_env) = iter (build_abbrevs temp_env) env info in
   List.iter (check_abbrev new_env) info;
   let (info, final_env) = iter build_class_type new_env info in
