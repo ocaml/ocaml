@@ -135,19 +135,19 @@ struct
 
     testing_function "mul";
     test 1 (mul (of_int 0) (of_int 0)) (of_int 0);
-    test 1 (mul (of_int 123) (of_int 0)) (of_int 0);
-    test 1 (mul (of_int 0) (of_int (-456))) (of_int 0);
-    test 2 (mul (of_int 123) (of_int 1)) (of_int 123);
-    test 3 (mul (of_int 1) (of_int (-456))) (of_int (-456));
-    test 2 (mul (of_int 123) (of_int (-1))) (of_int (-123));
-    test 3 (mul (of_int (-1)) (of_int (-456))) (of_int 456);
-    test 4 (mul (of_int 123) (of_int 456)) (of_int 56088);
-    test 5 (mul (of_int (-123)) (of_int 456)) (of_int (-56088));
-    test 6 (mul (of_int 123) (of_int (-456))) (of_int (-56088));
-    test 7 (mul (of_int (-123)) (of_int (-456))) (of_int 56088);
-    test 8 (mul (of_string "0x12345678") (of_string "0x9ABCDEF"))
-           (of_string "0xe242d208");
-    test 9 (mul max max) one;
+    test 2 (mul (of_int 123) (of_int 0)) (of_int 0);
+    test 3 (mul (of_int 0) (of_int (-456))) (of_int 0);
+    test 4 (mul (of_int 123) (of_int 1)) (of_int 123);
+    test 5 (mul (of_int 1) (of_int (-456))) (of_int (-456));
+    test 6 (mul (of_int 123) (of_int (-1))) (of_int (-123));
+    test 7 (mul (of_int (-1)) (of_int (-456))) (of_int 456);
+    test 8 (mul (of_int 123) (of_int 456)) (of_int 56088);
+    test 9 (mul (of_int (-123)) (of_int 456)) (of_int (-56088));
+    test 10 (mul (of_int 123) (of_int (-456))) (of_int (-56088));
+    test 11 (mul (of_int (-123)) (of_int (-456))) (of_int 56088);
+    test 12 (mul (of_string "0x12345678") (of_string "0x9ABCDEF"))
+            (of_string "0xe242d208");
+    test 13 (mul max max) one;
 
     testing_function "div";
     List.iter
@@ -351,19 +351,19 @@ struct
 
     testing_function "mul";
     test 1 (mul (of_int 0) (of_int 0)) (of_int 0);
-    test 1 (mul (of_int 123) (of_int 0)) (of_int 0);
-    test 1 (mul (of_int 0) (of_int (-456))) (of_int 0);
-    test 2 (mul (of_int 123) (of_int 1)) (of_int 123);
-    test 3 (mul (of_int 1) (of_int (-456))) (of_int (-456));
-    test 2 (mul (of_int 123) (of_int (-1))) (of_int (-123));
-    test 3 (mul (of_int (-1)) (of_int (-456))) (of_int 456);
-    test 4 (mul (of_int 123) (of_int 456)) (of_int 56088);
-    test 5 (mul (of_int (-123)) (of_int 456)) (of_int (-56088));
-    test 6 (mul (of_int 123) (of_int (-456))) (of_int (-56088));
-    test 7 (mul (of_int (-123)) (of_int (-456))) (of_int 56088);
-    test 8 (mul (of_string "0x12345678") (of_string "0x9ABCDEF"))
+    test 2 (mul (of_int 123) (of_int 0)) (of_int 0);
+    test 3 (mul (of_int 0) (of_int (-456))) (of_int 0);
+    test 4 (mul (of_int 123) (of_int 1)) (of_int 123);
+    test 5 (mul (of_int 1) (of_int (-456))) (of_int (-456));
+    test 6 (mul (of_int 123) (of_int (-1))) (of_int (-123));
+    test 7 (mul (of_int (-1)) (of_int (-456))) (of_int 456);
+    test 8 (mul (of_int 123) (of_int 456)) (of_int 56088);
+    test 9 (mul (of_int (-123)) (of_int 456)) (of_int (-56088));
+    test 10 (mul (of_int 123) (of_int (-456))) (of_int (-56088));
+    test 11 (mul (of_int (-123)) (of_int (-456))) (of_int 56088);
+    test 12 (mul (of_string "0x12345678") (of_string "0x9ABCDEF"))
            (of_string "0xb00ea4e242d208");
-    test 9 (mul max max) one;
+    test 13 (mul max max) one;
 
     testing_function "div";
     List.iter
