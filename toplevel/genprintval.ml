@@ -30,9 +30,9 @@ module type OBJ =
     val tag : t -> int
     val size : t -> int
     val field : t -> int -> t
-    (* DYN *)
+(* DYN *)
     val magic : t -> 'a
-    (* /DYN *)
+(* /DYN *)
   end
 
 module type EVALPATH =
@@ -191,13 +191,25 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
               Oval_tuple (tree_of_val_list 0 depth obj ty_list)
           | Tconstr(path, [], _) when Path.same path Predef.path_exn ->
               tree_of_exception depth obj
-(* DYN *)
+(* GENERIC (dynamic values are not printable)
 	  | Tconstr(path, [], _) 
 	    when Path.same path Predef.path_dyn ->
 	      let rt = (O.magic (O.field obj 1) : rtype) in
-	      let ty = Transltype.type_expr_of_rtype rt in
+	      let ty = Transltype.type_expr_of_run_type rt in
 	      Oval_dynamic (tree_of_val depth (O.field obj 0) ty,
 			    Printtyp.tree_of_type_scheme ty)
+/GENERIC *)
+(* DYN *)
+	  | Tconstr(path, [], _) 
+	    when Path.same path Predef.path_dyn ->
+	      let rt = (O.magic (O.field obj 1) : run_type) in
+	      (* use tree_of_run_type ? *)
+	      let oty = Transltype.tree_of_run_type rt in
+	      Oval_dynamic (oty)
+(* GENERIC
+	      let ty = Transltype.typexp_of_run_type rt in
+	      Oval_dynamic (Printtyp.tree_of_type_scheme ty)
+/GENERIC *)
 (* /DYN *)
           | Tconstr(path, [ty_arg], _)
             when Path.same path Predef.path_list ->
@@ -412,11 +424,15 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
             fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true)) fel
         | Oval_ellipsis -> raise Ellipsis
         | Oval_printer f -> f ppf
-	(* DYN *)
-	| Oval_dynamic (v,t) -> fprintf ppf "dynamic (%a : %a)" 
+(* GENERIC (now the dynamic values are not printable...
+	| Oval_dynamic (v,t) -> fprintf ppf "dyn (%a : %a)" 
 	      print_tree v
 	      !Printtyp.outcome_type t
-        (* /DYN *)
+/GENERIC *)
+(* DYN *)
+	| Oval_dynamic (t) -> fprintf ppf "<dyn : %a>" 
+	      !Printtyp.outcome_type t
+(* /DYN  *)
 	| tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree) tree
       and print_fields first ppf =
         function
