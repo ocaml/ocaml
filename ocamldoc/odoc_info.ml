@@ -22,9 +22,9 @@ type ref_kind = Odoc_types.ref_kind =
   | RK_exception
   | RK_attribute
   | RK_method
-  | RK_section
+  | RK_section of text
 
-type text_element = Odoc_types.text_element =
+and text_element = Odoc_types.text_element =
   | Raw of string
   | Code of string
   | CodePre of string
@@ -183,7 +183,7 @@ module Search =
         | Res_exception of Exception.t_exception
         | Res_attribute of Value.t_attribute
         | Res_method of Value.t_method
-        | Res_section of string
+        | Res_section of string * text
 
     type search_result = result_element list
 

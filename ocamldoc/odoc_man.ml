@@ -768,7 +768,7 @@ class man =
         | Res_exception e -> Name.simple e.ex_name
         | Res_attribute a -> Name.simple a.att_value.val_name
         | Res_method m -> Name.simple m.met_value.val_name
-        | Res_section s -> assert false
+        | Res_section _ -> assert false
       in
       let all_items_pre = Odoc_info.Search.search_by_name module_list (Str.regexp ".*")  in
       let all_items = List.filter 
@@ -809,7 +809,7 @@ class man =
           | Res_exception e -> e.ex_name
           | Res_attribute a -> a.att_value.val_name
           | Res_method m -> m.met_value.val_name
-          | Res_section s -> s
+          | Res_section (s,_) -> s
          )
      in
      let date = Unix.time () in

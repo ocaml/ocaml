@@ -264,7 +264,7 @@ class text =
         None -> 
           self#latex_of_text_element 
             (Odoc_info.Code (Odoc_info.use_hidden_modules name))
-      | Some kind when kind = RK_section -> 
+      | Some (RK_section _) -> 
           self#latex_of_text_element
             (Latex ("["^(self#make_ref (self#label ~no_:false (Name.simple name)))^"]"))
       | Some kind ->
@@ -279,7 +279,7 @@ class text =
             | Odoc_info.RK_exception -> self#exception_label
             | Odoc_info.RK_attribute -> self#attribute_label
             | Odoc_info.RK_method -> self#method_label
-            | Odoc_info.RK_section -> assert false
+            | Odoc_info.RK_section _ -> assert false
           in
           (self#latex_of_text 
              [

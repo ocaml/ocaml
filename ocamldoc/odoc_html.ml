@@ -146,17 +146,20 @@ class text =
       done;
       Buffer.contents buf
 
+    (** Return a label created from the first sentence of a text. *)
+    method label_of_text t=
+      let t2 = Odoc_info.first_sentence_of_text t in
+      let s = Odoc_info.string_of_text t2 in
+      let s2 = self#keep_alpha_num s in
+      s2
+
     (** Create a label for the associated title. 
-       If a label is given, use the label, or else create a mark
-       from the title level and the first sentence of the title.*)
+       Return the label specified by the user or a label created
+       from the title level and the first sentence of the title. *)
     method create_title_label (n,label_opt,t) =
       match label_opt with
         Some s -> s
-      | None ->
-          let t2 = Odoc_info.first_sentence_of_text t in
-          let s = Odoc_info.string_of_text t2 in
-          let s2 = self#keep_alpha_num s in
-          Printf.sprintf "%d%s" n s2
+      | None -> Printf.sprintf "%d_%s" n (self#label_of_text t)
 
     (** Return the html code corresponding to the [text] parameter. *)
     method html_of_text t = String.concat "" (List.map self#html_of_text_element t)
@@ -227,8 +230,9 @@ class text =
 
     method html_of_Title n label_opt t =
       let css_class = "title"^(string_of_int n) in
+      let label1 = self#create_title_label (n, label_opt, t) in
       "<br>\n"^
-      "<a name=\""^(Naming.label_target (self#create_title_label (n, label_opt, t)))^"\"></a>"^
+      "<a name=\""^(Naming.label_target label1)^"\"></a>\n"^
       "<table cellpadding=5 cellspacing=5 width=\"100%\">\n"^
       "<tr class=\""^css_class^"\"><td><div align=center>\n"^
       "<span class=\""^css_class^"\">"^(self#html_of_text t)^"</span>\n"^
@@ -245,23 +249,26 @@ class text =
         None -> 
           self#html_of_text_element (Odoc_info.Code name)
       | Some kind ->
-          let target = 
+	  let h name = Odoc_info.Code (Odoc_info.use_hidden_modules name) in
+          let (target, text) = 
             match kind with
               Odoc_info.RK_module 
             | Odoc_info.RK_module_type
             | Odoc_info.RK_class
             | Odoc_info.RK_class_type ->
                 let (html_file, _) = Naming.html_files name in
-                html_file
-            | Odoc_info.RK_value -> Naming.complete_target Naming.mark_value name
-            | Odoc_info.RK_type -> Naming.complete_target Naming.mark_type name
-            | Odoc_info.RK_exception -> Naming.complete_target Naming.mark_exception name
-            | Odoc_info.RK_attribute -> Naming.complete_target Naming.mark_attribute name
-            | Odoc_info.RK_method -> Naming.complete_target Naming.mark_method name
-            | Odoc_info.RK_section -> Naming.complete_label_target name
+                (html_file, h name)
+            | Odoc_info.RK_value -> (Naming.complete_target Naming.mark_value name, h name)
+            | Odoc_info.RK_type -> (Naming.complete_target Naming.mark_type name, h name)
+            | Odoc_info.RK_exception -> (Naming.complete_target Naming.mark_exception name, h name)
+            | Odoc_info.RK_attribute -> (Naming.complete_target Naming.mark_attribute name, h name)
+            | Odoc_info.RK_method -> (Naming.complete_target Naming.mark_method name, h name)
+            | Odoc_info.RK_section t -> (Naming.complete_label_target name,
+					 Odoc_info.Italic [Raw (Odoc_info.string_of_text t)])
           in
           "<a href=\""^target^"\">"^
-          (self#html_of_text_element (Odoc_info.Code (Odoc_info.use_hidden_modules name)))^"</a>"
+          (self#html_of_text_element text)^
+	  "</a>"
 
     method html_of_Superscript t =
       "<sup class=\"superscript\">"^(self#html_of_text t)^"</sup>"

@@ -527,7 +527,7 @@ let rec assoc_comments_text_elements module_list t_ele =
               | Odoc_search.Res_exception _ -> RK_exception
               | Odoc_search.Res_attribute _ -> RK_attribute
               | Odoc_search.Res_method _ -> RK_method
-              | Odoc_search.Res_section _ -> RK_section
+              | Odoc_search.Res_section (_ ,t)-> RK_section t
             in
             Ref (name, Some kind)
 

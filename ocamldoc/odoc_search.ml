@@ -30,7 +30,7 @@ type result_element =
   | Res_exception of t_exception
   | Res_attribute of t_attribute
   | Res_method of t_method
-  | Res_section of string
+  | Res_section of string * Odoc_types.text
 
 type result = result_element list
 
@@ -52,7 +52,7 @@ module type Predicates =
 module Search =
   functor (P : Predicates) ->
   struct
-    let search_section s v = if P.p_section s v then [Res_section s] else []
+    let search_section t s v = if P.p_section s v then [Res_section (s,t)] else []
 
     let rec search_text root t v =
       List.flatten (List.map (fun e -> search_text_ele root e v) t)
@@ -82,7 +82,7 @@ module Search =
       | T.Title (n, l_opt, t) -> 
           (match l_opt with
             None -> []
-          | Some s -> search_section (Name.concat root s) v) @
+          | Some s -> search_section t (Name.concat root s) v) @
           (search_text root t v)
 
     let search_value va v = if P.p_value va v then [Res_value va] else []

@@ -20,9 +20,9 @@ type ref_kind =
   | RK_exception
   | RK_attribute
   | RK_method
-  | RK_section
+  | RK_section of text
 
-type text_element = 
+and text_element = 
   | Raw of string
   | Code of string
   | CodePre of string

@@ -23,7 +23,7 @@ type result_element =
   | Res_exception of Odoc_exception.t_exception
   | Res_attribute of Odoc_value.t_attribute
   | Res_method of Odoc_value.t_method
-  | Res_section of string
+  | Res_section of string * Odoc_types.text
 
 (** The type representing a research result.*)
 type result = result_element list
@@ -53,7 +53,7 @@ module Search :
   functor (P : Predicates) ->
     sig
       (** search in a section title *)
-      val search_section : string -> P.t -> result_element list
+      val search_section : Odoc_types.text -> string -> P.t -> result_element list
 
       (** search in a value *)
       val search_value : Odoc_value.t_value -> P.t -> result_element list
@@ -110,7 +110,7 @@ module P_name :
 (** A module to search elements by name. *)
 module Search_by_name :
   sig
-    val search_section : string -> P_name.t -> result_element list
+    val search_section : Odoc_types.text -> string -> P_name.t -> result_element list
     val search_value : Odoc_value.t_value -> P_name.t -> result_element list
     val search_type : Odoc_type.t_type -> P_name.t -> result_element list
     val search_exception :

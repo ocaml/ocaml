@@ -22,9 +22,9 @@ type ref_kind =
   | RK_exception
   | RK_attribute
   | RK_method
-  | RK_section
+  | RK_section of text
 
-type text_element = 
+and text_element = 
   | Raw of string (** Raw text. *)
   | Code of string (** The string is source code. *)
   | CodePre of string (** The string is pre-formatted source code. *)
