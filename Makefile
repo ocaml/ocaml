@@ -51,9 +51,8 @@ EXPUNGEOBJS=utils/misc.cmo utils/cset.cmo utils/tbl.cmo \
   bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
   toplevel/expunge.cmo
 
-PERVASIVES= arg array baltree char filename format hashtbl lexing list \
-  obj parsing pervasives printexc printf queue set sort stack string sys \
-  topfuncs
+PERVASIVES=arg array baltree char filename format hashtbl lexing list \
+  obj parsing pervasives printexc printf queue set sort stack string sys
 
 # Recompile the system using the bootstrap compiler
 all: runtime camlc camltop lex/camllex yacc/camlyacc library
@@ -115,6 +114,9 @@ install:
 	cd stdlib; $(MAKE) install
 	cp lex/camllex $(BINDIR)/csllex
 	cp yacc/camlyacc $(BINDIR)/cslyacc
+	$(CAMLC) -a -o $(LIBDIR)/toplevellib.cma $(TOPOBJS)
+	cp tools/camldep $(BINDIR)/csldep
+	cp tools/camlmktop $(BINDIR)/cslmktop
 
 realclean:: clean
 
