@@ -70,7 +70,7 @@
 */
 
 #define BngSub3(res,carryaccu,arg1,arg2,arg3)                               \
-  asm("neg %1, %1, 0 \n\t"                                                  \
+  asm("neg %1, %1 \n\t"                                                     \
       "subfc %0, %3, %2 \n\t"                                               \
       "addze %1, %1 \n\t"                                                   \
       "subfc %0, %4, %0 \n\t"                                               \
