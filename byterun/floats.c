@@ -141,8 +141,7 @@ value mul_float(value f, value g)         /* ML */
 
 value div_float(value f, value g)         /* ML */
 {
-  double dg = Double_val(g);
-  return copy_double(Double_val(f) / dg);
+  return copy_double(Double_val(f) / Double_val(g));
 }
 
 value exp_float(value f)              /* ML */
@@ -165,7 +164,6 @@ value frexp_float(value f)              /* ML */
   int exponent;
   value res;
   value mantissa = copy_double(frexp (Double_val(f), &exponent));
-
   Begin_root(mantissa);
     res = alloc_tuple(2);
     Field(res, 0) = mantissa;
