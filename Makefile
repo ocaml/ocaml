@@ -224,6 +224,7 @@ install: FORCE
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
 	if test -d $(LIBDIR)/shlibs; then : ; else $(MKDIR) $(LIBDIR)/shlibs; fi
 	if test -d $(MANDIR); then : ; else $(MKDIR) $(MANDIR); fi
+	rm -f $(LIBDIR)/lib*.so
 	cd byterun; $(MAKE) install
 	if test -r $(LIBDIR)/ld.conf; then :; else echo "$(LIBDIR)" > $(LIBDIR)/ld.conf; fi
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)
