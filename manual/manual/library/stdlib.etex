@@ -36,6 +36,7 @@ Here is a short listing, by theme, of the standard library modules.
 "List" & p.~\pageref{s:List} & list operations \\
 "Sort" & p.~\pageref{s:Sort} & sorting and merging lists \\
 "Hashtbl" & p.~\pageref{s:Hashtbl} & hash tables and hash functions \\
+"Random" & p.~\pageref{s:Random} & pseudo-random number generator \\
 "Set" & p.~\pageref{s:Set} & sets over ordered types \\
 "Map" & p.~\pageref{s:Map} & association tables over ordered types \\
 "Oo" & p.~\pageref{s:Oo} & useful functions on objects \\
@@ -83,6 +84,7 @@ Here is a short listing, by theme, of the standard library modules.
 \input printexc.tex
 \input printf.tex
 \input queue.tex
+\input random.tex
 \input set.tex
 \input sort.tex
 \input stack.tex
