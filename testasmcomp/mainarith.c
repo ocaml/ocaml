@@ -166,13 +166,34 @@ void do_test()
       INTTEST(r[96], (f >= g));
 }
 
+#ifdef __i386__
+#ifdef __linux__
+#include <i386/fpu_control.h>
+#endif
+#ifdef __FreeBSD__
+#include <floatingpoint.h>
+#endif
+#endif
 
+void init_ieee_floats()
+{
+#ifdef __i386__
+#ifdef __linux__
+  __setfpucw(_FPU_IEEE);
+#endif
+#ifdef __FreeBSD__
+  fpsetmask(0);
+#endif
+#endif
+}
 
 int main(argc, argv)
      int argc;
      char ** argv;
 {
   double weird[4];
+
+  init_ieee_floats();
 
   if (argc >= 5) {
     x = atoi(argv[1]);
