@@ -44,7 +44,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f libthreads.a *.o *.cm*
+	rm -f libthreads*.lib *.obj
 	rm -f $(GENFILES)
 
 install:
@@ -54,8 +54,8 @@ install:
 	rm -f $(LIBDIR)/threads/stdlib.cma
 
 installopt:
-	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
-	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
+	cp libthreadsnat.lib $(LIBDIR)/libthreadsnat.lib
+	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.lib $(LIBDIR)/threads
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
