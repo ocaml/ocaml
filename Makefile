@@ -19,8 +19,8 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I tople
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/crc.cmo
 
-PARSING=parsing/location.cmo parsing/parser.cmo parsing/lexer.cmo \
-  parsing/parse.cmo
+PARSING=parsing/location.cmo parsing/longident.cmo \
+  parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/typedtree.cmo \
