@@ -577,7 +577,7 @@ let _ =
     Textvariable.set scorev (string_of_int !score); 
 
     if !line /10 <> pline /10 then 
-       (* undate the background every 10 lines. *)
+      (* update the background every 10 lines. *)
       begin
         let num_image = List.length backgrounds - 1 in
         let n = !line/10 in
@@ -682,7 +682,7 @@ let _ =
   in
 
   let game_init () =
-     (* Game Initialization *)
+    (* Game Initialization *)
     set_message "Initializing ...";
     remove_timer ();
     image_load (List.hd backgrounds);
