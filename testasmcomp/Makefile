@@ -112,7 +112,7 @@ power.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.o
 
 .SUFFIXES:
-.SUFFIXES: .cmm .c .o .asm .S .ml .mli .cmo .cmi
+.SUFFIXES: .cmm .c .o .S .ml .mli .cmo .cmi
 
 .ml.cmo:
 	$(CAMLC) $(COMPFLAGS) -c $<
@@ -122,13 +122,10 @@ power.o: power-$(SYSTEM).o
 
 .cmm.o:
 	$(CAMLRUN) $(CODEGEN) $*.cmm > $*.s
-	$(AS) -o $*.o $*.s
-
-.asm.o:
-	$(AS) $(ASFLAGS) -o $*.o $*.asm
+	$(AS) $(ASFLAGS) -o $*.o $*.s
 
 .S.o:
-	$(CC) -c $(ASFLAGS) $*.S
+	$(ASPP) $(ASPPFLAGS) -o $*.o $*.S
 
 clean::
 	rm -f *.out *.cm[io] *.s *.o *~
