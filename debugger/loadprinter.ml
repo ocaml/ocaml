@@ -45,9 +45,10 @@ let use_debugger_symtable fn arg =
       Symtable.restore_state st
   end;
   try
-    fn arg;
+    let result = fn arg in
     debugger_symtable := Some(Symtable.current_state());
-    Symtable.restore_state old_symtable
+    Symtable.restore_state old_symtable;
+    result
   with exn ->
     Symtable.restore_state old_symtable;
     raise exn

@@ -26,7 +26,7 @@ let events =
   ref ([] : debug_event list)
 let events_by_pc =
   (Hashtbl.create 257 : (int, debug_event) Hashtbl.t)
-let events_by_file =
+let events_by_module =
   (Hashtbl.create 17 : (string, debug_event array) Hashtbl.t)
 
 let read_symbols' bytecode_file =
@@ -69,10 +69,11 @@ let read_symbols bytecode_file =
     (function
         [] -> ()
       | ev :: _ as evl ->
-      	  let file = ev.ev_file
-          and sorted_evl = Sort.list (fun ev1 ev2 -> ev1.ev_char <= ev2.ev_char) evl in
-	  modules := file :: !modules;
-          Hashtbl.add events_by_file file (Array.of_list sorted_evl))
+      	  let md = ev.ev_module
+          and sorted_evl =
+            Sort.list (fun ev1 ev2 -> ev1.ev_char <= ev2.ev_char) evl in
+	  modules := md :: !modules;
+          Hashtbl.add events_by_module md (Array.of_list sorted_evl))
     all_events
 
 let event_at_pc pc =
@@ -82,7 +83,6 @@ let event_at_pc pc =
     Hashtbl.find events_by_pc pc
   with Not_found ->
     prerr_string "No event at pc="; prerr_int pc; prerr_endline ".";
-    (*exit 2*)
     raise Toplevel
 *)
 
@@ -90,21 +90,44 @@ let event_at_pc pc =
 let events_at_pc =
   Hashtbl.find_all events_by_pc
 
-let event_at_pos file char =
-  let ev = Hashtbl.find events_by_file file in
-  (* Binary search of event at or just after char *)
+(* List all events in module *)
+let events_in_module mdle =
+  try
+    Hashtbl.find events_by_module mdle
+  with Not_found ->
+    [||]
+
+(* Binary search of event at or just after char *)
+let find_event ev char =
   let rec bsearch lo hi =
     if lo >= hi then
-      if hi + 1 < Array.length ev then ev.(hi+1) else ev.(hi)
+      if hi + 1 < Array.length ev then hi+1 else hi
     else begin
       let pivot = (lo + hi) / 2 in
       let e = ev.(pivot) in
-      if char = e.ev_char then e else
+      if char = e.ev_char then pivot else
       if char < e.ev_char then bsearch lo (pivot - 1)
                           else bsearch (pivot + 1) hi
-    end in
-  bsearch 0 (Array.length ev - 1)
+    end
+  in bsearch 0 (Array.length ev - 1)
 
+(* Return first event after the given position. *)
+(* Raise [Not_found] if module is unknown. *)
+let event_at_pos md char =
+  let ev = Hashtbl.find events_by_module md in
+  ev.(find_event ev char)
+
+(* Return event closest to given position *)
+(* Raise [Not_found] if module is unknown. *)
+let event_near_pos md char =
+  let ev = Hashtbl.find events_by_module md in
+  let pos = find_event ev char in
+  (* Desired event is either ev.(pos) or ev.(pos - 1), whichever is closest *)
+  if pos > 0 && char - ev.(pos - 1).ev_char <= char - ev.(pos).ev_char
+  then ev.(pos - 1)
+  else ev.(pos)
+
+(* Flip "event" bit on all instructions *)
 let set_all_events () =
   Hashtbl.iter
     (fun pc ev -> Debugcom.set_event ev.ev_pos)

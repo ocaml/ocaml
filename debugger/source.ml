@@ -20,7 +20,7 @@ open Primitives
 (*** Conversion function. ***)
 
 let source_of_module mdle =
-  find_in_path !Config.load_path mdle
+  find_in_path !Config.load_path (String.uncapitalize mdle ^ ".ml")
 
 (*** Buffer cache ***)
 

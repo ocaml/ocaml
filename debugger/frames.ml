@@ -33,7 +33,7 @@ let selected_point () =
   match !selected_event with
     None ->
       raise Not_found
-  | Some {ev_char = point; ev_file = mdle} ->
+  | Some {ev_char = point; ev_module = mdle} ->
       (mdle, point)
 
 let selected_event_is_before () =

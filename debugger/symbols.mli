@@ -15,12 +15,23 @@
 (* Modules used by the program. *)
 val modules : string list ref
 
-(* Events used by the program *)
-val events : Instruct.debug_event list ref
-val events_by_pc : (int, Instruct.debug_event) Hashtbl.t
-val events_by_file : (string, Instruct.debug_event array) Hashtbl.t
-
+(* Read debugging info from executable file *)
 val read_symbols : string -> unit
-val event_at_pc : int -> Instruct.debug_event
-val event_at_pos : string -> int -> Instruct.debug_event
+
+(* Flip "event" bit on all instructions *)
 val set_all_events : unit -> unit
+
+(* Return event at given PC, or raise Not_found *)
+val event_at_pc : int -> Instruct.debug_event
+
+(* List the events in `module'. *)
+val events_in_module : string -> Instruct.debug_event array
+
+(* First event after the given position. *)
+(* --- Raise `Not_found' if no such event. *)
+val event_at_pos : string -> int -> Instruct.debug_event
+
+(* Closest event from given position. *)
+(* --- Raise `Not_found' if no such event. *)
+val event_near_pos : string -> int -> Instruct.debug_event
+

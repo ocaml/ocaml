@@ -61,7 +61,7 @@ let show_point mdle point before selected =
       Out_of_range ->
         prerr_endline "Position out of range."
     | Not_found ->
-        prerr_endline ("Cannot find " ^ mdle ^ ".")
+        prerr_endline ("No source file for " ^ mdle ^ ".")
     end
 
 (* Display part of the source. *)
@@ -77,4 +77,4 @@ let show_listing mdle start stop point before =
       Out_of_range ->
         prerr_endline "Position out of range."
     | Not_found ->
-        prerr_endline ("Cannot find " ^ mdle ^ ".")
+        prerr_endline ("No source file for " ^ mdle ^ ".")

@@ -114,12 +114,26 @@ let find_info action alternative lexbuf =
 let add_breakpoint_at_pc pc =
   try
     new_breakpoint (event_at_pc pc)
-  with
-    Not_found ->
+  with Not_found ->
+    prerr_string "Can't add breakpoint at pc ";
+    prerr_int pc;
+    prerr_endline " : no event there.";
+    raise Toplevel
+
+let add_breakpoint_after_pc pc =
+  let rec try_add n =
+    if n < 4 then begin
+      try
+        new_breakpoint (event_at_pc(pc + n * 4))
+      with Not_found ->
+        try_add (n+1)
+    end else begin
       prerr_string "Can't add breakpoint at pc ";
       prerr_int pc;
       prerr_endline " : no event there.";
       raise Toplevel
+    end
+  in try_add 0
 
 let convert_module mdle =
   match mdle with
@@ -211,8 +225,10 @@ let instr_dir lexbuf =
       end
     else
       List.iter (function x -> add_path (expand_path x)) (List.rev new_directory);
+    open_box 2;
     print_string "Directories :";
     List.iter (function x -> print_space(); print_string x) !Config.load_path;
+    close_box();
     print_newline ()
 
 let instr_kill lexbuf =
@@ -425,8 +441,17 @@ let instr_print lexbuf = print_command !max_printer_depth lexbuf
 
 let instr_display lexbuf = print_command 1 lexbuf
 
+(* Loading of command files *)
+
+let extract_filename arg =
+  (* Allow enclosing filename in quotes *)
+  let l = String.length arg in
+  let pos1 = if l > 0 && arg.[0] = '"' then 1 else 0 in
+  let pos2 = if l > 0 && arg.[l-1] = '"' then l-1 else l in
+  String.sub arg pos1 (pos2 - pos1)
+
 let instr_source lexbuf =
-  let file = argument_eol argument lexbuf
+  let file = extract_filename(argument_eol argument lexbuf)
   and old_state = !interactif
   and old_channel = !user_channel in
     let io_chan =
@@ -449,16 +474,6 @@ let instr_source lexbuf =
           interactif := old_state;
           user_channel := old_channel;
           raise x
-
-let instr_open lexbuf = ()
-(***
-  let mdles = argument_list_eol argument lexbuf in
-    List.iter open_module mdles ***)
-
-let instr_close lexbuf = ()
-(***
-  let mdles = argument_list_eol argument lexbuf in
-    List.iter close_module mdles ***)
 
 let instr_set =
   find_variable
@@ -496,30 +511,30 @@ let instr_break lexbuf =
              raise Toplevel)
     | BA_pc pc ->                               (* break PC *)
         add_breakpoint_at_pc pc
-    | BA_function lid ->                       (* break FUNCTION *)
-        let e = match !current_event with
+    | BA_function expr ->                       (* break FUNCTION *)
+        let ev = match !current_event with
             None -> raise Toplevel
           | Some x -> x in
-        let env = Envaux.env_from_summary e.ev_typenv in
-        (try
-          let (path, valdesc) = Env.lookup_value lid env in
-          let typ = (Ctype.instance valdesc.Types.val_type)
-          and valu = Eval.path e path in
-            match (Ctype.repr typ).desc with
-              Tarrow (_, _) ->
-                prerr_endline "Not Yet Implemented"
-            | _ ->
-                prerr_endline "Not a function.";
-                raise Toplevel
-        with Not_found ->
-          print_string "Unbound identifier"; print_newline())
+        let env = Envaux.env_from_summary ev.ev_typenv in
+        begin try
+          let (v, ty) = Eval.expression ev env expr in
+          match (Ctype.repr ty).desc with
+            Tarrow (_, _) ->
+              add_breakpoint_after_pc (Debugcom.get_closure_code v)
+          | _ ->
+              prerr_endline "Not a function.";
+              raise Toplevel
+        with Eval.Error msg ->
+          Eval.report_error msg;
+          raise Toplevel
+        end
     | BA_pos1 (mdle, line, column) ->         (* break @ [MODULE] LINE [COL] *)
         let module_name = convert_module mdle in
           new_breakpoint
             (try
                match column with
                  None ->
-                   event_after_pos
+                   event_at_pos
                      module_name
                      (fst (pos_of_line (get_buffer module_name) line))
                | Some col ->
@@ -610,7 +625,7 @@ let do_up rep =
   let stack_pointer = rep.rep_stack_pointer in
   let pc = rep.rep_program_pointer in
   let ev = ref (event_at_pc pc) in
-      print_string !ev.ev_file; print_string " char "; print_int !ev.ev_char;
+      print_string !ev.ev_module; print_string " char "; print_int !ev.ev_char;
       print_newline();
       let (stackpos, pc) = Debugcom.up_frame !ev.ev_stacksize in
       if stackpos = -1 then raise Exit;
@@ -813,8 +828,8 @@ let info_breakpoints lexbuf =
   else
     (print_endline "Num    Address  Where";
      List.iter
-       (function (num, {ev_pos = pc; ev_file = file; ev_char = char}) ->
-          Printf.printf "%3d %10d  in %s.ml, character %d\n" num pc file char)
+       (function (num, {ev_pos = pc; ev_module = md; ev_char = char}) ->
+          Printf.printf "%3d %10d  in %s, character %d\n" num pc md char)
        (List.rev !breakpoints))
 
 let info_events lexbuf =
@@ -827,11 +842,11 @@ let info_events lexbuf =
         match !current_event with
           None ->
             prerr_endline "Not in a module."; raise Toplevel
-        | Some {ev_file = f} -> f
+        | Some {ev_module = m} -> m
   in
     print_endline ("Module : " ^ mdle);
     print_endline "   Address  Character   Kind";
-    List.iter
+    Array.iter
       (function {ev_pos = pc; ev_char = char; ev_kind = kind} ->
          Printf.printf
            "%10d %10d  %s\n"
@@ -845,7 +860,7 @@ let info_events lexbuf =
 (** User-defined printers **)
 
 let instr_load_printer lexbuf =
-  let filename = argument_eol argument lexbuf in
+  let filename = extract_filename(argument_eol argument lexbuf) in
   try
     Loadprinter.loadfile filename
   with Loadprinter.Error e ->
@@ -922,7 +937,7 @@ Argument N means do this N times (or till program stops for another reason)." };
        instr_action = instr_print; instr_repeat = true; instr_help =
 "print value of expressions (deep printing)." };
      { instr_name = "display"; instr_prio = true;
-       instr_action = instr_print; instr_repeat = true; instr_help =
+       instr_action = instr_display; instr_repeat = true; instr_help =
 "print value of expressions (shallow printing)." };
      { instr_name = "source"; instr_prio = false;
        instr_action = instr_source; instr_repeat = true; instr_help =

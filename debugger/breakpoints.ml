@@ -156,12 +156,12 @@ let new_breakpoint event =
   print_string " at ";
   print_int event.ev_pos;
   print_string " : file ";
-  print_string event.ev_file;
-  print_string ".ml, line ";
-  (let (start, line) = line_of_pos (get_buffer event.ev_file) event.ev_char in
-     print_int line;
-     print_string " column ";
-     print_int (event.ev_char - start + 1));
+  print_string event.ev_module;
+  print_string ", line ";
+  let (start, line) = line_of_pos (get_buffer event.ev_module) event.ev_char in
+  print_int line;
+  print_string " column ";
+  print_int (event.ev_char - start + 1);
   print_newline ()
 
 (* Remove a breakpoint from lists. *)

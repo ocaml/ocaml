@@ -28,16 +28,3 @@ val current_point : unit -> string * int
 
 val current_event_is_before : unit -> bool
 
-(** Finding events. **)
-
-(* List the events in `module'. *)
-(* ### module -> event_list *)
-val events_in_module : string -> debug_event list
-
-(* First event after the given position. *)
-(* --- Raise `Not_found' if no such event. *)
-val event_after_pos : string -> int -> debug_event
-
-(* Nearest event from given position. *)
-(* --- Raise `Not_found' if no such event. *)
-val event_near_pos : string -> int -> debug_event

@@ -46,7 +46,7 @@ let rec path event = function
         with Not_found ->
         try
           let pos = Ident.find_same id event.ev_compenv.ce_heap in
-          Debugcom.get_environment pos
+          Debugcom.get_environment (pos + 1)
         with Not_found ->
           raise(Error(Unbound_identifier id))
       end
@@ -146,7 +146,7 @@ let report_error error =
   open_hovbox 0;
   begin match error with
     Unbound_identifier id ->
-      print_string "Unbound identifier "; Ident.print id
+      print_string "Unbound identifier "; print_string (Ident.name id)
   | Not_initialized_yet path ->
       print_string "The module path "; Printtyp.path path;
       print_string " is not yet initialized."; print_space();

@@ -9,7 +9,7 @@ events.cmi: ../bytecomp/instruct.cmi
 frames.cmi: ../bytecomp/instruct.cmi primitives.cmi 
 input_handling.cmi: primitives.cmi 
 loadprinter.cmi: ../parsing/longident.cmi 
-parser.cmi: parser_aux.cmi 
+parser.cmi: ../parsing/longident.cmi parser_aux.cmi 
 parser_aux.cmi: ../parsing/longident.cmi primitives.cmi 
 pattern_matching.cmi: debugcom.cmi parser_aux.cmi ../typing/typedtree.cmi 
 primitives.cmi: ../otherlibs/unix/unix.cmi 
@@ -86,22 +86,20 @@ loadprinter.cmo: ../utils/config.cmi ../typing/ctype.cmi debugger_config.cmi \
     ../typing/env.cmi ../typing/ident.cmi ../parsing/longident.cmi \
     ../utils/misc.cmi ../typing/path.cmi ../typing/predef.cmi \
     ../typing/printtyp.cmi printval.cmi ../bytecomp/symtable.cmi \
-    loadprinter.cmi 
+    ../typing/types.cmi loadprinter.cmi 
 loadprinter.cmx: ../utils/config.cmx ../typing/ctype.cmx debugger_config.cmx \
     ../typing/env.cmx ../typing/ident.cmx ../parsing/longident.cmx \
     ../utils/misc.cmx ../typing/path.cmx ../typing/predef.cmx \
     ../typing/printtyp.cmx printval.cmx ../bytecomp/symtable.cmx \
-    loadprinter.cmi 
+    ../typing/types.cmx loadprinter.cmi 
 main.cmo: checkpoints.cmi command_line_interpreter.cmi ../utils/config.cmi \
     debugger_config.cmi exec.cmi frames.cmi input_handling.cmi \
-    loadprinter.cmi ../utils/misc.cmi parameters.cmi primitives.cmi \
-    program_management.cmi show_information.cmi time_travel.cmi \
-    ../otherlibs/unix/unix.cmi 
+    ../utils/misc.cmi parameters.cmi primitives.cmi program_management.cmi \
+    show_information.cmi time_travel.cmi ../otherlibs/unix/unix.cmi 
 main.cmx: checkpoints.cmx command_line_interpreter.cmx ../utils/config.cmx \
     debugger_config.cmx exec.cmx frames.cmx input_handling.cmx \
-    loadprinter.cmx ../utils/misc.cmx parameters.cmx primitives.cmx \
-    program_management.cmx show_information.cmx time_travel.cmx \
-    ../otherlibs/unix/unix.cmx 
+    ../utils/misc.cmx parameters.cmx primitives.cmx program_management.cmx \
+    show_information.cmx time_travel.cmx ../otherlibs/unix/unix.cmx 
 parameters.cmo: ../utils/config.cmi envaux.cmi ../utils/misc.cmi \
     primitives.cmi parameters.cmi 
 parameters.cmx: ../utils/config.cmx envaux.cmx ../utils/misc.cmx \

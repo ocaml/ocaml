@@ -47,7 +47,7 @@ let current_point () =
   match !current_event with
     None ->
       raise Not_found
-  | Some {ev_char = point; ev_file = mdle} ->
+  | Some {ev_char = point; ev_module = mdle} ->
       (mdle, point)
 
 let current_event_is_before () =
@@ -58,56 +58,3 @@ let current_event_is_before () =
       true
   | _ ->
       false
-
-(*** Finding events. ***)
-
-(* List the events in `module'. *)
-let events_in_module mdle =
-  let filename = String.uncapitalize mdle ^ ".ml" in
-  filter
-    (function {ev_file = f} -> f = filename)
-    !Symbols.events
-
-(* First event after the given position. *)
-(* Raise `Not_found' if no such event. *)
-let event_after_pos mdle position =
-  match
-    List.fold_right
-      (function
-      	 ({ev_char = pos1} as ev) ->
-	   if pos1 < position then
-	     function x -> x
-	   else
-	     function
-	       None ->
-	         Some ev
-             | (Some {ev_char = pos2} as old) ->
-	         if pos1 < pos2 then
-		   Some ev
-		 else
-		   old)
-      (events_in_module mdle)
-      None
-  with
-    None ->
-      raise Not_found
-  | Some x ->
-      x
-
-(* Nearest event from given position. *)
-(* Raise `Not_found' if no such event. *)
-let event_near_pos mdle position =
-  match events_in_module mdle with
-    [] ->
-      raise Not_found
-  | [event] ->
-      event
-  | a::l ->
-      List.fold_right
-      	(fun ({ev_char = pos1} as ev) ({ev_char = pos2} as old) ->
-	   if abs (position - pos1) < abs (position - pos2) then
-	     ev
-	   else
-	     old)
-	l
-	a

@@ -78,7 +78,7 @@ let show_one_frame framenum event =
   print_string "  Pc : ";
   print_int event.ev_pos;
   print_string "  ";
-  print_string event.ev_file;
+  print_string event.ev_module;
   print_string " char ";
   print_int event.ev_char;
   print_newline ()
@@ -103,5 +103,5 @@ let show_current_frame selected =
           List.iter (function x -> print_int x; print_string " ") breakpoints;
           print_newline ()
       end;
-      show_point sel_ev.ev_file sel_ev.ev_char
+      show_point sel_ev.ev_module sel_ev.ev_char
                  (selected_event_is_before ()) selected
