@@ -24,7 +24,7 @@ camlp4o.opt: $(CAMLP4OMX)
 	cd ../camlp4; $(MAKE) optp4 CAMLP4OPT=../etc/camlp4o.opt CAMLP4M="-I ../etc $(CAMLP4OMX)"
 
 mkcamlp4.sh: mkcamlp4.sh.tpl
-	sed -e "s'LIBDIR'$(LIBDIR)'g" mkcamlp4.sh.tpl > mkcamlp4.sh
+	sed -e "s!LIBDIR!$(LIBDIR)!g" mkcamlp4.sh.tpl > mkcamlp4.sh
 
 pa_ocamllex.cma: pa_ocamllex.cmo
 	$(OCAMLC) -I $(OTOP)/lex syntax.cmo lexgen.cmo compact.cmo pa_ocamllex.cmo -a -o pa_ocamllex.cma
