@@ -132,6 +132,7 @@ let include_err =
       print_string "The private method ";
       print_string lab;
       print_string " cannot become public";
+      close_box ()
 
 let report_error errlist =
   match errlist with
