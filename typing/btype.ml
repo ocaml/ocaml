@@ -77,13 +77,31 @@ let rec row_field_repr_aux tl = function
 
 let row_field_repr fi = row_field_repr_aux [] fi
 
-let rec row_repr row =
+let rec rev_concat l ll =
+  match ll with
+    [] -> l
+  | l'::ll -> rev_concat (l'@l) ll
+
+let rec row_repr_aux ll row =
   match (repr row.row_more).desc with
   | Tvariant row' ->
-      if row.row_fields = [] then row_repr row' else
-      let row' = row_repr row' in
-      {row' with row_fields = row.row_fields @ row'.row_fields}
-  | _ -> row
+      let f = row.row_fields in
+      row_repr_aux (if f = [] then ll else f::ll) row'
+  | _ ->
+      if ll = [] then row else
+      {row with row_fields = rev_concat row.row_fields ll}
+
+let row_repr row = row_repr_aux [] row
+
+let rec row_field tag row =
+  let rec find = function
+    | (tag',f) :: fields ->
+	if tag = tag' then row_field_repr f else find fields
+    | [] ->
+	match repr row.row_more with
+	| {desc=Tvariant row'} -> row_field tag row'
+	| _ -> Rabsent
+  in find row.row_fields
 
 let rec row_more row =
   match repr row.row_more with

@@ -152,10 +152,7 @@ let finalize_variant pat =
   match pat.pat_desc with
     Tpat_variant(tag, opat, row) ->
       let row = row_repr row in
-      let field =
-        try row_field_repr (List.assoc tag row.row_fields)
-        with Not_found -> Rabsent
-      in
+      let field = row_field tag row in
       begin match field with
       | Rabsent -> assert false
       | Reither (true, [], _, e) when not row.row_closed ->

@@ -46,6 +46,7 @@ val commu_repr: commutable -> commutable
 val row_repr: row_desc -> row_desc
         (* Return the canonical representative of a row description *)
 val row_field_repr: row_field -> row_field
+val row_field: label -> row_desc -> row_field
         (* Return the canonical representative of a row field *)
 val row_more: row_desc -> type_expr
         (* Return the extension variable of the row *)

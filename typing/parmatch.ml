@@ -43,11 +43,7 @@ let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
 (* p and q compatible means, there exists V that matches both *)
 
 let is_absent tag row =
-  let row = Btype.row_repr row in
-  let field =
-    try Btype.row_field_repr (List.assoc tag row.row_fields)
-    with Not_found -> Rabsent
-  in field = Rabsent
+  Btype.row_field tag row = Rabsent
 
 let sort_fields args =
   Sort.list
