@@ -232,17 +232,24 @@ let create_process f =
 
 type queue = Obj.t list
 
-type status = int
+ (* set idx sets status bit idx, it answers true if
+    that bit status changes (ie it was unset) *)
 
-type automaton = {
-  mutable status : status ;
+type 'a status =
+  { set : int -> bool ;
+    erase : int -> unit ;
+    includes : 'a -> bool ;
+    to_string : unit -> string ; }
+
+type 'a automaton = {
+  status : 'a status ;
   mutex : Mutex.t ;
   queues : queue array ;
-  mutable matches : (reaction) array ;
+  mutable matches : ('a reaction) array ;
   names : Obj.t ;
 } 
 
-and reaction = status * int * (Obj.t -> Obj.t)
+and 'a reaction = 'a * int * (Obj.t -> Obj.t)
 
 let put_queue auto idx a = auto.queues.(idx) <- a :: auto.queues.(idx)
 
@@ -251,28 +258,82 @@ let get_queue auto idx = match auto.queues.(idx) with
 | a::rem ->
     auto.queues.(idx) <- rem ;
     begin match rem with
-    | [] -> auto.status <- auto.status land (lnot (1 lsl idx))
+    | [] -> auto.status.erase idx
     | _  -> ()
     end ;
     a
 
-let create_automaton nchans =
+let int_ops () =
+  let me = ref 0 in
+  { 
+    set = (fun i ->
+      let old_me = !me in
+      let new_me = old_me lor  (1 lsl i) in
+      me := new_me ;
+      old_me <> new_me) ;
+    erase = (fun i -> me := !me land (lnot (1 lsl i))) ;
+    includes = (fun mask -> !me land mask = mask) ;
+    to_string = (fun () -> sprintf "%08x" !me) ;
+  }
+
+let major i = i / 31
+and minor i =  i mod 31
+
+let bv_ops nchans =
+  let nslots = (nchans + 30) / 31 in (* eh oui *)
+  let me = Array.create nslots 0 in
+  let set i =
+    let slot = major i and idx = minor i in
+    let old_me = me.(slot) in
+    let new_me = old_me lor  (1 lsl idx) in
+    me.(slot) <- new_me ;
+    old_me <> new_me in
+
+  let erase i =
+    let slot = major i and idx = minor i in
+    me.(slot) <- me.(slot) land (lnot (1 lsl idx)) in
+
+  let rec do_includes mask slot =
+    if slot >= nslots then true
+    else
+      let m = mask.(slot) in
+      me.(slot) land m = m && do_includes mask (slot+1) in
+
+  let includes mask = do_includes mask 0 in
+
+  let rec do_to_string slot =
+    if slot >= nslots then []
+    else
+      Printf.sprintf "%x08" me.(slot)::
+      do_to_string (slot+1) in
+
+  let to_string () = String.concat "" (do_to_string 0) in
+
   {
-    status = 0 ;
-    mutex = Mutex.create () ;
-    queues = Array.create nchans [] ;
-    matches = [| |] ;
-    names = Obj.magic 0 ;
+    set = set ;
+    erase = erase ;
+    includes = includes ;
+    to_string = to_string ;
   } 
 
+let empty_status nchans =
+  if nchans > 31 then
+    Obj.magic (int_ops ())
+  else
+    Obj.magic (bv_ops nchans)
+    
 let create_automaton_debug nchans names =
+  let status = empty_status nchans in
   {
-    status = 0 ;
+    status = status ;
     mutex = Mutex.create () ;
     queues = Array.create nchans [] ;
     matches = [| |] ;
     names = names ;
   } 
+
+let create_automaton nchans = create_automaton_debug nchans (Obj.magic 0)
+
 
 let get_name auto idx = Obj.magic (Obj.field auto.names idx)
 
@@ -296,9 +357,9 @@ let kont_create auto =
 (* Asynchronous sends *)
 (**********************)
 
-type async =
-    Async of (automaton) * int
-  | Alone of (automaton) * int
+type 'a async =
+    Async of ('a automaton) * int
+  | Alone of ('a automaton) * int
 
 
 let create_async auto i = Async (auto, i)
@@ -331,11 +392,12 @@ let just_go_async auto f =
 
 let rec attempt_match tail auto reactions idx i =
   if i >= Obj.size reactions then begin
-(*DEBUG*)debug3 "ATTEMPT FAILED" (sprintf "%s %i" (get_name auto idx) auto.status) ;    
+(*DEBUG*)debug3 "ATTEMPT FAILED" (sprintf "%s %s"
+(*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;    
     Mutex.unlock auto.mutex
   end else begin
     let (ipat, iprim, f) = Obj.magic (Obj.field reactions i) in
-    if ipat land auto.status = ipat then
+    if auto.status.includes ipat then
       if iprim < 0 then begin
         f (if tail then just_go_async else fire_go) (* f will unlock auto's mutex *)
       end else begin
@@ -346,16 +408,14 @@ let rec attempt_match tail auto reactions idx i =
   end
 
 let direct_send_async auto idx a =
-(*DEBUG*)debug3 "SEND_ASYNC" (sprintf "channel=%s, status=%x"
-(*DEBUG*)                      (get_name auto idx) auto.status ) ;
+(*DEBUG*)debug3 "SEND_ASYNC" (sprintf "channel=%s, status=%s"
+(*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
-  let old_status = auto.status in
-  let new_status = old_status lor (1 lsl idx) in
   put_queue auto idx a ;
-  auto.status <- new_status ;
-  if old_status = new_status then begin
-(*DEBUG*)debug3 "SEND_ASYNC" (sprintf "Return: %i" auto.status) ;
+  if not (auto.status.set idx) then begin
+(*DEBUG*)debug3 "SEND_ASYNC" (sprintf "Return: %s"
+(*DEBUG*)  (auto.status.to_string ())) ;
     Mutex.unlock auto.mutex
   end else begin
     attempt_match false auto (Obj.magic auto.matches) idx 0
@@ -374,16 +434,14 @@ let send_async chan a = match chan with
 
 
 let tail_direct_send_async auto idx a =
-(*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "channel %s, status=%i"
-(*DEBUG*)       (get_name auto idx) auto.status) ;
+(*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "channel %s, status=%s"
+(*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
-  let old_status = auto.status in
-  let new_status = old_status lor (1 lsl idx) in
   put_queue auto idx a ;
-  auto.status <- new_status ;
-  if old_status = new_status then begin
-(*DEBUG*)    debug3 "TAIL_ASYNC" (sprintf "Return: %i" auto.status) ;
+  if not (auto.status.set idx) then begin
+(*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "Return: %s"
+(*DEBUG*) (auto.status.to_string ())) ;
     Mutex.unlock auto.mutex
   end else begin
     attempt_match true auto (Obj.magic auto.matches) idx 0
@@ -460,11 +518,12 @@ let fire_suspend k _ f =
 
 let rec attempt_match_sync idx kont auto reactions i =
   if i >= Obj.size reactions then begin
-(*DEBUG*)debug3 "SYNC ATTEMPT FAILED" (sprintf "%s %i" (get_name auto idx) auto.status) ;    
+(*DEBUG*)debug3 "SYNC ATTEMPT FAILED" (sprintf "%s %s"
+(*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;    
     kont_suspend kont
   end else begin
     let (ipat, ipri, f) = Obj.magic (Obj.field reactions i) in
-    if ipat land auto.status = ipat then begin
+    if auto.status.includes ipat then begin
       if ipri < 0 then
         f (fire_suspend kont)   (* will create other thread *)
       else if ipri = idx then begin
@@ -479,13 +538,11 @@ let send_sync auto idx a =
 (*DEBUG*)  debug3 "SEND_SYNC" (sprintf "channel %s" (get_name auto idx)) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
-  let old_status = auto.status in
-  let new_status = old_status lor (1 lsl idx) in
   let kont = kont_create auto in
   put_queue auto idx (Obj.magic (kont,a)) ;
-  auto.status <- new_status ;
-  if old_status = new_status then begin
-(*DEBUG*)    debug3 "SEND_SYNC" (sprintf "Return: %i" auto.status) ;
+  if not (auto.status.set idx) then begin
+(*DEBUG*)debug3 "SEND_SYNC" (sprintf "Return: %s"
+(*DEBUG*) (auto.status.to_string ())) ;
     kont_suspend kont
   end else begin
     attempt_match_sync idx kont auto (Obj.magic auto.matches) 0

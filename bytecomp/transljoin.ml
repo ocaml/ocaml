@@ -600,15 +600,68 @@ let build_lets bds r =
      | Some y -> Llet (Strict, y, lam, r))
    bds r
 
-let build_mask names jpats =
+
+let nslots n_names = (n_names + 30) / 31
+let major i =  i / 31
+and minor i = i mod 31
+
+let build_singleton n_names num =
+  if n_names < 32 then
+    lambda_int (1 lsl num)
+  else
+    let nslots = nslots n_names
+    and slot = major num
+    and idx = minor num in
+    let rec do_rec i =
+      if i >= nslots then []
+      else
+        lambda_int
+          (if i = slot then (1 lsl idx) else 0)::
+        do_rec (i+1) in
+    Lprim (Pmakearray Pintarray, do_rec 0)
+
+
+let build_int_mask names jpats =
   let rec do_rec mask = function
     | [] -> mask
     | jpat::rem ->
         let jid,_ = jpat.jpat_desc in
         let i = get_num "(build_mask)" names jid.jident_desc in
         do_rec (mask lor (1 lsl i)) rem in
-  do_rec 0 jpats
+  lambda_int (do_rec 0 jpats)
 
+and  build_bv_mask n_names names jpats =
+  let nslots = nslots n_names in
+
+  let rec empty i =
+    if i <= 0 then []
+    else 0::empty (i-1) in
+
+  let rec set_bit slot idx i = function
+    | [] -> assert false
+    | num::rem ->
+        if i = slot then
+          num lor (1 lsl idx)::rem
+        else
+          num::set_bit slot idx (i+1) rem in
+
+  let rec do_rec mask = function
+    | [] -> mask
+    | jpat::rem ->
+        let jid,_ = jpat.jpat_desc in
+        let i = get_num "(build_mask)" names jid.jident_desc in        
+        do_rec
+          (set_bit (major i) (minor i) 0 mask) rem in
+
+  Lprim
+    (Pmakearray Pintarray,
+     List.map lambda_int (do_rec (empty nslots) jpats))
+
+let build_mask n_names names jpats =
+  if n_names < 32 then 
+    build_int_mask names jpats
+  else
+    build_bv_mask n_names names jpats
 
 let rec explode = function
   | [] -> []
@@ -630,6 +683,7 @@ let create_table some_loc auto1 gs r =
   let ngs = Array.length gs
   and name = auto1.jauto_name
   and names = auto1.jauto_names in
+  let n_names = List.length names in
 
   let rec do_guard i =
     if i >= ngs then []
@@ -663,7 +717,7 @@ let create_table some_loc auto1 gs r =
                       Lapply (Lvar g, [do_get_queue (Lvar name) num])])) in
           Lprim
             (Pmakeblock (0, Immutable),
-             [lambda_int (1 lsl num); lambda_int ipri; lam])
+             [build_singleton n_names num ; lambda_int ipri; lam])
           ::do_guard (i+1)
       | Reaction (pats, _) ->
           let pats = explode pats in
@@ -720,7 +774,7 @@ let create_table some_loc auto1 gs r =
                         (Lvar goid, [pri_kont ; Lapply (Lvar g, args)]))) in
             Lprim
               (Pmakeblock (0, Immutable),
-               [lambda_int (build_mask names jpats) ;
+               [build_mask n_names names jpats ;
                  lambda_int ipri ; real_g])::r in
 
           List.fold_right create_reaction pats (do_guard (i+1)) in
