@@ -62,7 +62,6 @@ external lxor_digit_nat: nat -> int -> nat -> int -> unit = "lxor_digit_nat"
 val square_nat : nat -> int -> int -> nat -> int -> int -> int
 val gcd_nat : nat -> int -> int -> nat -> int -> int -> int
 val sqrt_nat : nat -> int -> int -> nat
-val mod_power_nat : nat -> nat -> nat -> nat
 val string_of_nat : nat -> string
 val nat_of_string : string -> nat
 val sys_nat_of_string : int -> string -> int -> int -> nat

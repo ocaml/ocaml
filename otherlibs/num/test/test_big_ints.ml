@@ -466,24 +466,3 @@ test 3 eq_big_int
  (square_big_int (big_int_of_string "-1"), big_int_of_string "1");;
 test 4 eq_big_int
  (square_big_int (big_int_of_string "-7"), big_int_of_string "49");;
-
-testing_function "mod_power_big_int";;
-
-test 1 eq_big_int
-  (mod_power_big_int (big_int_of_int 0) (big_int_of_int 0) (big_int_of_int 42),
-   big_int_of_int 1);;
-test 2 eq_big_int
-  (mod_power_big_int (big_int_of_int 0) (big_int_of_int 1) (big_int_of_int 42),
-   big_int_of_int 0);;
-test 3 eq_big_int
-  (mod_power_big_int (big_int_of_int 12345) (big_int_of_int 6789)
-                     (big_int_of_string "4782546123567"),
-   big_int_of_string "3726846414024");;
-test 4 eq_big_int
-  (mod_power_big_int (big_int_of_int (-12345)) (big_int_of_int 6789)
-                  (big_int_of_string "4782546123567"),
-   big_int_of_string "1055699709543");;
-test 5 eq_big_int
-  (mod_power_big_int (big_int_of_string "200866937202159") (big_int_of_int 6789)
-                     (big_int_of_string "4782546123567"),
-   big_int_of_string "3726846414024");;

@@ -531,19 +531,6 @@ let base_power_big_int base n bi =
                then zero_big_int
                else create_big_int (bi.sign) res
 
-(* Modular exponentiation *)
-
-let mod_power_big_int a b c =
-  if b.sign < 0 || c.sign < 0 then invalid_arg "modexp_big_int";
-  if c.sign = 0 then raise Division_by_zero;
-  let na =
-    if a.sign < 0 || ge_big_int a c
-    then mod_big_int a c (* normalize a in the range [0...c[ *)
-    else a in
-  let res_nat = mod_power_nat na.abs_value b.abs_value c.abs_value in
-  { sign = if is_zero_nat res_nat 0 (length_nat res_nat) then 0 else 1;
-    abs_value = res_nat }
-
 (* Coercion with float type *)
 
 let float_of_big_int bi = 
