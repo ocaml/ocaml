@@ -78,7 +78,8 @@ CAMLprim value unix_stat(value path)
   struct stat buf;
   ret = stat(String_val(path), &buf);
   if (ret == -1) uerror("stat", path);
-  if (buf.st_size > Max_long) unix_error(EOVERFLOW, "stat", path);
+  if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
+    unix_error(EOVERFLOW, "stat", path);
   return stat_aux(0, &buf);
 }
 
@@ -92,7 +93,8 @@ CAMLprim value unix_lstat(value path)
   ret = stat(String_val(path), &buf);
 #endif
   if (ret == -1) uerror("lstat", path);
-  if (buf.st_size > Max_long) unix_error(EOVERFLOW, "lstat", path);
+  if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
+    unix_error(EOVERFLOW, "lstat", path);
   return stat_aux(0, &buf);
 }
 
@@ -102,7 +104,8 @@ CAMLprim value unix_fstat(value fd)
   struct stat buf;
   ret = fstat(Int_val(fd), &buf);
   if (ret == -1) uerror("fstat", Nothing);
-  if (buf.st_size > Max_long) unix_error(EOVERFLOW, "fstat", Nothing);
+  if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
+    unix_error(EOVERFLOW, "fstat", Nothing);
   return stat_aux(0, &buf);
 }
 
