@@ -151,7 +151,9 @@ let assign_location reg =
         (fun r w ->
           match r.loc with
             Reg n -> if n >= first_reg & n < last_reg then
-                       score.(n - first_reg) <- score.(n - first_reg) - w
+                       score.(n - first_reg) <- score.(n - first_reg) - (w - 1)
+                     (* w-1 to break the symmetry when two conflicting regs
+                        have the same preference for a third reg. *)
           | _ -> ())
         neighbour)
     reg.interf;

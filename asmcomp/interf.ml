@@ -56,12 +56,58 @@ let build_graph fundecl =
   let add_interf_move src dst s =
     Reg.Set.iter (fun r -> if r.stamp <> src.stamp then add_interf dst r) s in
 
-  (* Add a preference from one reg to another *)
+  (* Compute interferences *)
+
+  let rec interf i =
+    let destroyed = Proc.destroyed_at_oper i.desc in
+    if Array.length destroyed > 0 then add_interf_set destroyed i.live;
+    match i.desc with
+      Iend -> ()
+    | Ireturn -> ()
+    | Iop(Imove | Ispill | Ireload) ->
+        add_interf_move i.arg.(0) i.res.(0) i.live;
+        interf i.next
+    | Iop(Itailcall_ind) -> ()
+    | Iop(Itailcall_imm lbl) -> ()
+    | Iop op ->
+        add_interf_set i.res i.live;
+        add_interf_self i.res;
+        interf i.next
+    | Iifthenelse(tst, ifso, ifnot) ->
+        interf ifso;
+        interf ifnot;
+        interf i.next
+    | Iswitch(index, cases) ->
+        for i = 0 to Array.length cases - 1 do
+          interf cases.(i)
+        done;
+        interf i.next
+    | Iloop body ->
+        interf body; interf i.next
+    | Icatch(body, handler) ->
+        interf body; interf handler; interf i.next
+    | Iexit ->
+        ()
+    | Itrywith(body, handler) ->
+        add_interf_set Proc.destroyed_at_raise handler.live;    
+        interf body; interf handler; interf i.next
+    | Iraise -> () in
+
+  (* Add a preference from one reg to another.
+     Do not add anything if the two registers conflict,
+     or if the source register already has a location. *)
+
   let add_pref weight r1 r2 =
-    if r1.stamp = r2.stamp then () else begin
+    let i = r1.stamp and j = r2.stamp in
+    if i = j then () else begin
       match r1.loc with
-          Unknown -> r1.prefer <- (r2, weight) :: r1.prefer
-        | _ -> ()
+        Unknown ->
+          let n = if i < j then ((j * (j + 1)) lsr 1) + i
+                           else ((i * (i + 1)) lsr 1) + j in
+          let b = Char.code(mat.[n lsr 3]) in
+          let msk = 1 lsl (n land 7) in
+          if b land msk = 0 then r1.prefer <- (r2, weight) :: r1.prefer
+      | _ -> ()
     end in
 
   (* Add a mutual preference between two regs *)
@@ -75,53 +121,46 @@ let build_graph fundecl =
       let r = arg.(i) in r.spill_cost <- r.spill_cost + cost
     done in
 
-  (* Compute interferences, preferences and spill costs *)
+  (* Compute preferences and spill costs *)
 
-  let rec interf weight i =
-    let destroyed = Proc.destroyed_at_oper i.desc in
-    if Array.length destroyed > 0 then add_interf_set destroyed i.live;
+  let rec prefer weight i =
     add_spill_cost weight i.arg;
     add_spill_cost weight i.res;
     match i.desc with
       Iend -> ()
     | Ireturn -> ()
     | Iop(Imove) ->
-        add_interf_move i.arg.(0) i.res.(0) i.live;
         add_mutual_pref weight i.arg.(0) i.res.(0);
-        interf weight i.next
+        prefer weight i.next
     | Iop(Ispill) ->
-        add_interf_move i.arg.(0) i.res.(0) i.live;
         add_pref (weight / 4) i.arg.(0) i.res.(0);
-        interf weight i.next
+        prefer weight i.next
     | Iop(Ireload) ->
-        add_interf_move i.arg.(0) i.res.(0) i.live;
         add_pref (weight / 4) i.res.(0) i.arg.(0);
-        interf weight i.next
+        prefer weight i.next
     | Iop(Itailcall_ind) -> ()
     | Iop(Itailcall_imm lbl) -> ()
     | Iop op ->
-        add_interf_set i.res i.live;
-        add_interf_self i.res;
-        interf weight i.next
+        prefer weight i.next
     | Iifthenelse(tst, ifso, ifnot) ->
-        interf (weight / 2) ifso;
-        interf (weight / 2) ifnot;
-        interf weight i.next
+        prefer (weight / 2) ifso;
+        prefer (weight / 2) ifnot;
+        prefer weight i.next
     | Iswitch(index, cases) ->
         for i = 0 to Array.length cases - 1 do
-          interf (weight / 2) cases.(i)
+          prefer (weight / 2) cases.(i)
         done;
-        interf weight i.next
+        prefer weight i.next
     | Iloop body ->
-        interf (8 * weight) body; interf weight i.next
+        prefer (8 * weight) body; prefer weight i.next
     | Icatch(body, handler) ->
-        interf weight body; interf weight handler; interf weight i.next
+        prefer weight body; prefer weight handler; prefer weight i.next
     | Iexit ->
         ()
     | Itrywith(body, handler) ->
-        add_interf_set Proc.destroyed_at_raise handler.live;    
-        interf weight body; interf weight handler; interf weight i.next
+        prefer weight body; prefer weight handler; prefer weight i.next
     | Iraise -> ()
   in
-  interf 8 fundecl.fun_body
+
+  interf fundecl.fun_body; prefer 8 fundecl.fun_body
 

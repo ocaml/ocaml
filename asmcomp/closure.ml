@@ -255,7 +255,8 @@ and close_functions fenv cenv fun_defs =
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
     if !useless_env & occurs_var env_param ubody then useless_env := false;
-    ((fundesc.fun_label, fundesc.fun_arity, params @ [env_param], ubody),
+    let fun_params = if !useless_env then params else params @ [env_param] in
+    ((fundesc.fun_label, fundesc.fun_arity, fun_params, ubody),
      (id, env_pos, Value_closure(fundesc, approx))) in
   (* Translate all function definitions. *)
   let clos_info_list = 

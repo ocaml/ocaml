@@ -552,7 +552,7 @@ let transl_function lbl params body =
   Cfunction {fun_name = lbl;
              fun_args = List.map (fun id -> (id, typ_addr)) params;
              fun_body = transl body;
-             fun_fast = true}
+             fun_fast = !Clflags.optimize_for_speed}
 
 (* Translate all function definitions *)
 
