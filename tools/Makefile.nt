@@ -7,7 +7,7 @@ INCLUDES=-I ..\utils -I ..\parsing -I ..\typing -I ..\bytecomp -I ..\asmcomp
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: csldep cslprof
+all: csldep cslprof cslcp.exe cslmktop.exe
 
 # The dependency generator
 
@@ -39,18 +39,27 @@ CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
 cslprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o cslprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
+cslcp.exe: cslcp.cmo
+	$(CAMLC) $(LINKFLAGS) -o cslcp.exe cslcp.cmo
+
 install::
 	cp cslprof $(BINDIR)\cslprof.exe
-	cp cslcp $(BINDIR)\cslcp.sh
+	cp cslcp.exe $(BINDIR)\cslcp.exe
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
-	rm -f cslprof
+	rm -f cslprof cslcp.exe
 
 # To make custom toplevels
 
+cslmktop.exe: cslmktop.cmo
+	$(CAMLC) $(LINKFLAGS) -o cslmktop.exe cslmktop.cmo
+
 install::
-	cp cslmktop $(BINDIR)\cslmktop.sh
+	cp cslmktop.exe $(BINDIR)\cslmktop.exe
+
+clean::
+	rm -f cslmktop.exe
 
 # The bytecode disassembler
 
