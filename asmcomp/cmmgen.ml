@@ -40,6 +40,7 @@ let bind name arg fn =
        255: finalized *)
 
 let float_tag = Cconst_int 253
+let floatarray_tag = Cconst_int 254
 
 let block_header tag sz = (sz lsl 10) + tag
 let closure_header sz = block_header 250 sz
@@ -209,7 +210,7 @@ let wordsize_shift = 9
 let numfloat_shift = 9 + log2_size_float - log2_size_addr
 
 let is_addr_array hdr =
-  Cop(Ccmpi Cne, [Cop(Cand, [hdr; Cconst_int 255]); float_tag])
+  Cop(Ccmpi Cne, [Cop(Cand, [hdr; Cconst_int 255]); floatarray_tag])
 
 let addr_array_length hdr = Cop(Clsr, [hdr; Cconst_int wordsize_shift])
 let float_array_length hdr = Cop(Clsr, [hdr; Cconst_int numfloat_shift])
