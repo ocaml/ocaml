@@ -216,10 +216,10 @@ let dir_trace lid =
       (* Overwrite the old closure *)
       overwrite_closure clos new_clos;
       match desc.val_prim with
-        Not_prim ->
+        None ->
           Printtyp.longident lid; print_string " is now traced.";
           print_newline()
-      | Primitive(_,_) ->
+      | Some p ->
           open_hovbox 0;
           print_string "Warning: "; Printtyp.longident lid;
           print_string " is an external function."; print_space();

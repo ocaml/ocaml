@@ -47,17 +47,17 @@ let print_item env = function
     Tsig_value(id, decl) ->
       open_hovbox 2;
       begin match decl.val_prim with
-        Not_prim ->
+        None ->
           print_string "val "; Printtyp.ident id;
           print_string " :"; print_space();
           Printtyp.type_scheme decl.val_type;
           print_string " ="; print_space();
           print_value env (Symtable.get_global_value id) decl.val_type
-      | Primitive(p, ar) ->
+      | Some p ->
           print_string "external "; Printtyp.ident id;
           print_string " :"; print_space();
           Printtyp.type_scheme decl.val_type; print_space();
-          print_string "= \""; print_string p; print_string "\""
+          print_string "= \""; print_string p.prim_name; print_string "\""
       end;
       close_box()
   | Tsig_type(id, decl) ->
