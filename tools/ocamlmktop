@@ -4,7 +4,7 @@
 
 if : == x
 then # Bourne Shell
-     exec ocamlc -linkall toplevellib.cma $* topmain.cmo
+     exec ocamlc -linkall toplevellib.cma "$@" topmain.cmo
 else # MPW Shell
      ocamlc-custom -linkall toplevellib.cma {"parameters"} topmain.cmo
      exit {status}
