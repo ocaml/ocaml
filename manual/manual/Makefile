@@ -45,11 +45,19 @@ files: $(FILES)
 	cd tutorials; $(MAKE) all
 
 all:
-	$(MAKE) manual pdfmanual # plaintext
-	$(MAKE) manual pdfmanual # plaintext
+	$(MAKE) manual pdfmanual
+	$(MAKE) manual pdfmanual
 	$(MAKE) index
-	$(MAKE) manual pdfmanual # plaintext
+	$(MAKE) manual pdfmanual
 	$(MAKE) html
+
+#all:
+#	$(MAKE) manual pdfmanual plaintext
+#	$(MAKE) manual pdfmanual plaintext
+#	$(MAKE) index
+#	$(MAKE) manual pdfmanual plaintext
+#	$(MAKE) html
+
 clean:
 	rm -f $(FILES)
 	cd refman; $(MAKE) clean
