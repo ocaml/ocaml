@@ -411,7 +411,7 @@ let rec type_decl kwd id ppf decl =
 
 and constructor ppf (name, args) =
   match args with
-  | [] -> print_string name
+  | [] -> printf ppf "%s" name
   | _ -> fprintf ppf "%s of @[<2>%a@]" name (typlist false 3 " *") args
 
 and label ppf (name, mut, arg) =
@@ -596,7 +596,7 @@ let rec modtype ppf = function
 and signature_body spc ppf = function
   | [] -> ()
   | item :: rem ->
-      if spc then print_space();
+      if spc then fprintf ppf "@ "
       let cont =
         match item with
         | Tsig_value(id, decl) ->
