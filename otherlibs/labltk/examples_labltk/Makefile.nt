@@ -5,7 +5,7 @@ COMPFLAGS= -I ../lib -I ../labltk -I ../support
 LINKFLAGS= -I ../lib -I ../labltk -I ../support
 
 # Use pieces of Makefile.config
-TKLINKOPT=labltk.cma $(TKLIBS) 
+TKLINKOPT=$(LIBNAME).cma $(TKLIBS) 
 
 all: hello.exe demo.exe eyes.exe calc.exe clock.exe tetris.exe lang.exe
 
