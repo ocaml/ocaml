@@ -12,28 +12,12 @@
 
 (* $Id$ *)
 
-(* 
-   Types of join definition after compilation of pattern matching in join patterns
-   cf. Compiling Pattern Matching in Join-Patterns
+(*
+  Carry out the compilation from join definition with pattern matching
+  of message contents to equivalent join definition without the requirement
+  of pattern matching on message contents.
+
+  cf. Compiling Pattern Matching in Join-Patterns
 *)
 
-type match_automaton = 
-    matchclause Typedtree.joinautomaton_gen
-
-and match_clause =
-    Reaction of Typedtree.joinpattern list list * guard
-  | Dispatcher of dispatcher
-
-and guard =
-    (Ident.t * Typedtree.pattern) list * Typedtree.expression
-
-(* c, z, [pat_i * c_i] list means reaction
-
-   c(z) = match z with
-          ...
-         | pat_i -> c_i(z)
-         ...
-*)
-and dispatcher =
-    Ident.t * Ident.t * (Typedtree.pattern * Ident.t) list * Typedtree.partial
-
+val transl_jmatch: Typedtree.joinautomaton -> Joinmatch.match_automaton
