@@ -77,7 +77,7 @@ let reset name =
   current_unit.ui_force_link <- false
 
 let current_unit_name () =
-  current_unit.ui_name
+  "caml" ^ current_unit.ui_name
 
 let read_unit_info filename =
   let ic = open_in_bin filename in

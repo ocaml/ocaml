@@ -835,7 +835,9 @@ let rec transl = function
   | Uprim(prim, args) ->
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
-          Cconst_symbol(Ident.name id)
+          if Ident.is_predef_exn id
+          then Cconst_symbol ("caml_exn_" ^ (Ident.name id))
+          else Cconst_symbol ("caml" ^ (Ident.name id))
       | (Pmakeblock(tag, mut), []) ->
           transl_constant(Const_block(tag, []))
       | (Pmakeblock(tag, mut), args) ->
@@ -1800,7 +1802,7 @@ let entry_point namelist =
   let body =
     List.fold_right
       (fun name next ->
-        Csequence(Cop(Capply typ_void, [Cconst_symbol(name ^ "__entry")]),
+        Csequence(Cop(Capply typ_void, [Cconst_symbol("caml"^name^"__entry")]),
                   Csequence(incr_global_inited, next)))
       namelist (Cconst_int 1) in
   Cfunction {fun_name = "caml_program";
@@ -1815,7 +1817,7 @@ let cint_zero = Cint 0n
 let global_table namelist =
   Cdata(Cglobal_symbol "caml_globals" ::
         Cdefine_symbol "caml_globals" ::
-        List.map (fun name -> Csymbol_address name) namelist @
+        List.map (fun name -> Csymbol_address ("caml" ^ name)) namelist @
         [cint_zero])
 
 let globals_map namelist =
@@ -1828,8 +1830,9 @@ let globals_map namelist =
 let frame_table namelist =
   Cdata(Cglobal_symbol "caml_frametable" ::
         Cdefine_symbol "caml_frametable" ::
-        List.map (fun name -> Csymbol_address(name ^ "__frametable")) namelist
-                              @ [cint_zero])
+        List.map (fun name -> Csymbol_address("caml" ^ name ^ "__frametable"))
+                 namelist
+        @ [cint_zero])
 
 (* Generate the table of module data and code segments *)
 
@@ -1838,8 +1841,8 @@ let segment_table namelist symbol begname endname =
         Cdefine_symbol symbol ::
         List.fold_right
           (fun name lst ->
-            Csymbol_address(name ^ begname) ::
-            Csymbol_address(name ^ endname) :: lst)
+            Csymbol_address("caml" ^ name ^ begname) ::
+            Csymbol_address("caml" ^ name ^ endname) :: lst)
           namelist
           [cint_zero])
 
@@ -1853,9 +1856,10 @@ let code_segment_table namelist =
 
 let predef_exception name =
   let bucketname = "caml_bucket_" ^ name in
-  Cdata(Cglobal_symbol name ::
-        emit_constant name (Const_block(0,[Const_base(Const_string name)]))
+  let symname = "caml_exn_" ^ name in
+  Cdata(Cglobal_symbol symname ::
+        emit_constant symname (Const_block(0,[Const_base(Const_string name)]))
         [ Cglobal_symbol bucketname;
           Cint(block_header 0 1);
           Cdefine_symbol bucketname;
-          Csymbol_address name ])
+          Csymbol_address symname ])

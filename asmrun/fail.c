@@ -31,11 +31,20 @@
 
 typedef value caml_generated_constant[1];
 
-extern caml_generated_constant Out_of_memory, Sys_error, Failure,
-  Invalid_argument, End_of_file, Division_by_zero, Not_found,
-  Match_failure, Sys_blocked_io, Stack_overflow;
 extern caml_generated_constant
-  caml_bucket_Out_of_memory, caml_bucket_Stack_overflow;
+  caml_exn_Out_of_memory,
+  caml_exn_Sys_error,
+  caml_exn_Failure,
+  caml_exn_Invalid_argument,
+  caml_exn_End_of_file,
+  caml_exn_Division_by_zero,
+  caml_exn_Not_found,
+  caml_exn_Match_failure,
+  caml_exn_Sys_blocked_io,
+  caml_exn_Stack_overflow;
+extern caml_generated_constant
+  caml_bucket_Out_of_memory,
+  caml_bucket_Stack_overflow;
 
 /* Exception raising */
 
@@ -90,12 +99,12 @@ void caml_raise_with_string(value tag, char *msg)
 
 void caml_failwith (char *msg)
 {
-  caml_raise_with_string((value) Failure, msg);
+  caml_raise_with_string((value) caml_exn_Failure, msg);
 }
 
 void caml_invalid_argument (char *msg)
 {
-  caml_raise_with_string((value) Invalid_argument, msg);
+  caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
 }
 
 /* To raise [Out_of_memory], we can't use [caml_raise_constant],
@@ -118,27 +127,27 @@ void caml_raise_stack_overflow(void)
 
 void caml_raise_sys_error(value msg)
 {
-  caml_raise_with_arg((value) Sys_error, msg);
+  caml_raise_with_arg((value) caml_exn_Sys_error, msg);
 }
 
 void caml_raise_end_of_file(void)
 {
-  caml_raise_constant((value) End_of_file);
+  caml_raise_constant((value) caml_exn_End_of_file);
 }
 
 void caml_raise_zero_divide(void)
 {
-  caml_raise_constant((value) Division_by_zero);
+  caml_raise_constant((value) caml_exn_Division_by_zero);
 }
 
 void caml_raise_not_found(void)
 {
-  caml_raise_constant((value) Not_found);
+  caml_raise_constant((value) caml_exn_Not_found);
 }
 
 void caml_raise_sys_blocked_io(void)
 {
-  caml_raise_constant((value) Sys_blocked_io);
+  caml_raise_constant((value) caml_exn_Sys_blocked_io);
 }
 
 /* We allocate statically the bucket for the exception because we can't
@@ -166,7 +175,7 @@ void caml_array_bound_error(void)
   array_bound_error_msg.hdr = Make_header(wosize, String_tag, Caml_white);
   array_bound_error_msg.data[offset_index] = offset_index - BOUND_MSG_LEN;
   array_bound_error_bucket.hdr = Make_header(2, 0, Caml_white);
-  array_bound_error_bucket.exn = (value) Invalid_argument;
+  array_bound_error_bucket.exn = (value) caml_exn_Invalid_argument;
   array_bound_error_bucket.arg = (value) array_bound_error_msg.data;
   caml_raise((value) &array_bound_error_bucket.exn);
 }

@@ -18,6 +18,7 @@ type t
 
 val create: string -> t
 val create_persistent: string -> t
+val create_predef_exn: string -> t
 val rename: t -> t
 val name: t -> string
 val unique_name: t -> string
@@ -39,6 +40,7 @@ val hide: t -> t
 
 val make_global: t -> unit
 val global: t -> bool
+val is_predef_exn: t -> bool
 
 val binding_time: t -> int
 val current_time: unit -> int

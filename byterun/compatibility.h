@@ -20,26 +20,35 @@
 
 #ifndef CAML_NAME_SPACE
 
-/* codage:
-   #define --> CAMLextern  (CAMLexport ou CAMLprim)
+/*
+   #define --> CAMLextern  (defined with CAMLexport or CAMLprim)
    (rien)  --> CAMLprim
-   g       --> ident global C
+   g       --> global C identifier
+   x       --> special case
+
+   SP signals the special cases:
+   - when the identifier was not simply prefixed with [caml_]
+   - when the [caml_] version was already used for something else, and
+     was renamed out of the way (watch out for caml_alloc and
+     array_bound_error in *.s)
 */
 
 /* a faire:
    - supprimer le portage Mac OS 9 (?)
-   - exceptions predefinies en natif: ajouter caml_exn_
    - ui_*   (dans ui.h, definies ou ?)
+   - changer les magic numbers ?
+   - comprendre pourquoi le $Id deconne dans unix.c (et qques autres)
 */
 
 /* a supprimer (support Mac OS 9): */
 /* **** macintosh.c */
 /* **** mpwtool.c */
 /* **** rotatecursor.c */
+/* INSTALL.MPW, **/Makefile.Mac, maccaml, otherlibs/macosunix */
 
 
 /* **** alloc.c */
-#define alloc caml_alloc
+#define alloc caml_alloc  /*SP*/
 #define alloc_small caml_alloc_small
 #define alloc_tuple caml_alloc_tuple
 #define alloc_string caml_alloc_string
@@ -51,7 +60,7 @@
 /*      alloc_dummy -> caml_alloc_dummy */
 /*      update_dummy -> caml_update_dummy */
 /* **** asmrun/<arch>.s */
-/*    g caml_alloc -> caml_allocN */
+/*    g caml_alloc -> caml_allocN SP*/
 
 /* **** array.c */
 /*      array_get_addr -> caml_array_get_addr */
@@ -105,8 +114,8 @@
 /*      greaterequal -> caml_greaterequal */
 
 /* **** custom.c */
-#define alloc_custom caml_alloc_custom
-#define register_custom_operations caml_register_custom_operations
+#define alloc_custom caml_alloc_custom /*FIXME defini CAMLextern !? */
+#define register_custom_operations caml_register_custom_operations/*FIXME idem*/
 /*    g find_custom_operations -> caml_find_custom_operations */
 /*    g final_custom_operations -> caml_final_custom_operations */
 /*    g init_custom_operations -> caml_init_custom_operations */
@@ -129,7 +138,7 @@
 /*      dynlink_get_current_libs -> caml_dynlink_get_current_libs */
 
 /* **** extern.c */
-/*    g output_val -> caml_output_val */
+#define output_val caml_output_val
 /*      output_value -> caml_output_value */
 /*      output_value_to_string -> caml_output_value_to_string */
 /*      output_value_to_buffer -> caml_output_value_to_buffer */
@@ -150,13 +159,13 @@
 /* **** fail.c */
 #define external_raise caml_external_raise /*FIXME CAMLextern sans export */
 /*    g exn_bucket -> caml_exn_bucket */
-#define mlraise caml_raise
+#define mlraise caml_raise /*SP*/
 #define raise_constant caml_raise_constant
 #define raise_with_arg caml_raise_with_arg
 #define raise_with_string caml_raise_with_string
 #define failwith caml_failwith
 #define invalid_argument caml_invalid_argument
-#define array_bound_error caml_array_bound_error
+#define array_bound_error caml_array_bound_error /*SP*/
 #define raise_out_of_memory caml_raise_out_of_memory
 #define raise_stack_overflow caml_raise_stack_overflow
 #define raise_sys_error caml_raise_sys_error
@@ -168,7 +177,7 @@
 /* **** asmrun/fail.c */
 /*    g raise_caml_exception -> caml_raise_exception */
 /* **** asmrun/<arch>.s */
-/*    g caml_array_bound_error -> caml_ml_array_bound_error */
+/*    g caml_array_bound_error -> caml_ml_array_bound_error SP*/
 
 /* **** finalise.c */
 /*    g final_update -> caml_final_update */
@@ -193,8 +202,8 @@
 /*    g is_instruction -> caml_is_instruction */
 
 /* **** floats.c */
-/*#define Double_val caml_Double_val             done as needed in mlvalues.h */
-/*#define Store_double_val caml_Store_double_val done as needed in mlvalues.h */
+/*#define Double_val caml_Double_val             done in mlvalues.h as needed */
+/*#define Store_double_val caml_Store_double_val done in mlvalues.h as needed */
 #define copy_double caml_copy_double
 /*      format_float -> caml_format_float */
 /*      float_of_string -> caml_float_of_string */
@@ -240,7 +249,7 @@
 /* **** freelist.c */
 /*    g fl_merge -> caml_fl_merge */
 /*    g fl_cur_size -> caml_fl_cur_size */
-/*      fl_check *** devient static */
+/*FIXME fl_check *** becomes static */
 /*    g fl_allocate -> caml_fl_allocate */
 /*    g fl_init_merge -> caml_fl_init_merge */
 /*    g fl_reset -> caml_fl_reset */
@@ -275,7 +284,7 @@
 
 /* **** hash.c */
 /*      hash_univ_param -> caml_hash_univ_param */
-#define hash_variant caml_hash_variant */
+#define hash_variant caml_hash_variant
 
 /* **** instrtrace.c */
 /*    g icount -> caml_icount */
@@ -284,7 +293,7 @@
 /*    g disasm_instr -> caml_disasm_instr */
 
 /* **** intern.c */
-/*    g input_val -> caml_input_val */
+#define input_val caml_input_val
 /*      input_value -> caml_input_value */
 #define input_val_from_string caml_input_val_from_string
 /*      input_value_from_string -> caml_input_value_from_string */
@@ -339,7 +348,7 @@
 /*      int32_of_string -> caml_int32_of_string */
 /*      int32_bits_of_float -> caml_int32_bits_of_float */
 /*      int32_float_of_bits -> caml_int32_float_of_bits */
-/* #define Int64_val caml_Int64_val   *** done in mlvalues.h as needed */
+/*#define Int64_val caml_Int64_val   *** done in mlvalues.h as needed */
 #define int64_ops caml_int64_ops
 #define copy_int64 caml_copy_int64
 /*      int64_neg -> caml_int64_neg */
@@ -397,63 +406,63 @@
 #define channel_mutex_unlock caml_channel_mutex_unlock
 #define channel_mutex_unlock_exn caml_channel_mutex_unlock_exn
 #define all_opened_channels caml_all_opened_channels
-#define open_descriptor_in caml_open_descriptor_in
-#define open_descriptor_out caml_open_descriptor_out
-#define close_channel caml_close_channel
-#define channel_size caml_channel_size
+#define open_descriptor_in caml_open_descriptor_in /*SP*/
+#define open_descriptor_out caml_open_descriptor_out /*SP*/
+#define close_channel caml_close_channel /*SP*/
+#define channel_size caml_channel_size /*SP*/
 #define channel_binary_mode caml_channel_binary_mode
-#define flush_partial caml_flush_partial
-#define flush caml_flush
+#define flush_partial caml_flush_partial /*SP*/
+#define flush caml_flush /*SP*/
 #define putword caml_putword
 #define putblock caml_putblock
 #define really_putblock caml_really_putblock
-#define seek_out caml_seek_out
-#define pos_out caml_pos_out
+#define seek_out caml_seek_out /*SP*/
+#define pos_out caml_pos_out /*SP*/
 #define do_read caml_do_read                      /* FIXME not in io.h */
 #define refill caml_refill
 #define getword caml_getword
 #define getblock caml_getblock
 #define really_getblock caml_really_getblock
-#define seek_in caml_seek_in
-#define pos_in caml_pos_in
-#define input_scan_line caml_input_scan_line
+#define seek_in caml_seek_in /*SP*/
+#define pos_in caml_pos_in /*SP*/
+#define input_scan_line caml_input_scan_line /*SP*/
 #define finalize_channel caml_finalize_channel    /* FIXME not in io.h */
 #define alloc_channel caml_alloc_channel
-/*      caml_open_descriptor_in -> caml_ml_open_descriptor_in */
-/*      caml_open_descriptor_out -> caml_ml_open_descriptor_out */
-/*      caml_out_channels_list -> caml_ml_out_channels_list */
+/*      caml_open_descriptor_in -> caml_ml_open_descriptor_in SP*/
+/*      caml_open_descriptor_out -> caml_ml_open_descriptor_out SP*/
+/*      caml_out_channels_list -> caml_ml_out_channels_list SP*/
 /*      channel_descriptor -> caml_channel_descriptor */
-/*      caml_close_channel -> caml_ml_close_channel */
-/*      caml_channel_size -> caml_ml_channel_size */
-/*      caml_channel_size_64 -> caml_ml_channel_size_64 */
-/*      caml_set_binary_mode -> caml_ml_set_binary_mode */
-/*      caml_flush_partial -> caml_ml_flush_partial */
-/*      caml_flush -> caml_ml_flush */
-/*      caml_output_char -> caml_ml_output_char */
-/*      caml_output_int -> caml_ml_output_int */
-/*      caml_output_partial -> caml_ml_output_partial */
-/*      caml_output -> caml_ml_output */
-/*      caml_seek_out -> caml_ml_seek_out */
-/*      caml_seek_out_64 -> caml_ml_seek_out_64 */
-/*      caml_pos_out -> caml_ml_pos_out */
-/*      caml_pos_out_64 -> caml_ml_pos_out_64 */
-/*      caml_input_char -> caml_ml_input_char */
-/*      caml_input_int -> caml_ml_input_int */
-/*      caml_input -> caml_ml_input */
-/*      caml_seek_in -> caml_ml_seek_in */
-/*      caml_seek_in_64 -> caml_ml_seek_in_64 */
-/*      caml_pos_in -> caml_ml_pos_in */
-/*      caml_pos_in_64 -> caml_ml_pos_in_64 */
-/*      caml_input_scan_line -> caml_ml_input_scan_line */
-/* #define Val_file_offset caml_Val_file_offset   *** done in io.h */
-/* #define File_offset_val caml_File_offset_val   *** done in io.h */
+/*      caml_close_channel -> caml_ml_close_channel SP*/
+/*      caml_channel_size -> caml_ml_channel_size SP*/
+/*      caml_channel_size_64 -> caml_ml_channel_size_64 SP*/
+/*      caml_set_binary_mode -> caml_ml_set_binary_mode SP*/
+/*      caml_flush_partial -> caml_ml_flush_partial SP*/
+/*      caml_flush -> caml_ml_flush SP*/
+/*      caml_output_char -> caml_ml_output_char SP*/
+/*      caml_output_int -> caml_ml_output_int SP*/
+/*      caml_output_partial -> caml_ml_output_partial SP*/
+/*      caml_output -> caml_ml_output SP*/
+/*      caml_seek_out -> caml_ml_seek_out SP*/
+/*      caml_seek_out_64 -> caml_ml_seek_out_64 SP*/
+/*      caml_pos_out -> caml_ml_pos_out SP*/
+/*      caml_pos_out_64 -> caml_ml_pos_out_64 SP*/
+/*      caml_input_char -> caml_ml_input_char SP*/
+/*      caml_input_int -> caml_ml_input_int SP*/
+/*      caml_input -> caml_ml_input SP*/
+/*      caml_seek_in -> caml_ml_seek_in SP*/
+/*      caml_seek_in_64 -> caml_ml_seek_in_64 SP*/
+/*      caml_pos_in -> caml_ml_pos_in SP*/
+/*      caml_pos_in_64 -> caml_ml_pos_in_64 SP*/
+/*      caml_input_scan_line -> caml_ml_input_scan_line SP*/
+/*#define Val_file_offset caml_Val_file_offset   *** done in io.h as needed */
+/*#define File_offset_val caml_File_offset_val   *** done in io.h as needed */
 
 /* **** lexing.c */
 /*      lex_engine -> caml_lex_engine */
 /*      new_lex_engine -> caml_new_lex_engine */
 
 /* **** main.c */
-/* no change */
+/* *** no change */
 
 /* **** major_gc.c */
 /*    g percent_free -> caml_percent_free */
@@ -554,7 +563,7 @@
 /*    g names_of_builtin_cprim -> caml_names_of_builtin_cprim */
 
 /* **** printexc.c */
-#define format_caml_exception caml_format_exception /* FIXME double declar. */
+#define format_caml_exception caml_format_exception /*SP*//*FIXME dbl declar*/
 /*    g fatal_uncaught_exception -> caml_fatal_uncaught_exception */
 
 /* **** roots.c */
@@ -576,18 +585,18 @@
 #define async_action_hook caml_async_action_hook /* FIXME CAMLextern sans expo*/
 /*    g process_event -> caml_process_event */
 /*    g execute_signal -> caml_execute_signal */
-/* FIXME handle_signal devient static !? */
+/*FIXME handle_signal *** becomes static */
 /*    g urge_major_slice -> caml_urge_major_slice */
 #define enter_blocking_section caml_enter_blocking_section
 #define leave_blocking_section caml_leave_blocking_section
 #define convert_signal_number caml_convert_signal_number
 /*      install_signal_handler -> caml_install_signal_handler */
 /* **** asmrun/signals.c */
-/*    g garbage_collection -> caml_garbage_collection */
+#define garbage_collection caml_garbage_collection
 /*    g init_signals -> caml_init_signals */
 
 /* **** stacks.c */
-/* FIXME stack.h: suppression de [void reset_roots (void);] !? */
+/*FIXME reset_roots *** decl removed from stack.h [void reset_roots (void);] */
 #define stack_low caml_stack_low
 #define stack_high caml_stack_high
 #define stack_threshold caml_stack_threshold
@@ -608,8 +617,8 @@
 /*    g seek_optional_section -> caml_seek_optional_section */
 /*    g seek_section -> caml_seek_section */
 /* **** asmrun/startup.c */
-/*    g static_data_start -> caml_static_data_start */
-/*    g static_data_end -> caml_static_data_end */
+#define static_data_start caml_static_data_start
+#define static_data_end caml_static_data_end
 /*    g code_area_start -> caml_code_area_start */
 /*    g code_area_end -> caml_code_area_end */
 
@@ -675,16 +684,29 @@
 /*      weak_get_copy -> caml_weak_get_copy */
 /*      weak_check -> caml_weak_check */
 
-/* **** asmcomp/cmmgen.ml */
-/*    g bucket_* -> caml_bucket_* */
-/*    g globals_map -> caml_globals_map   FIXME a quoi ca sert ? */
-
 /* **** asmcomp/asmlink.ml */
 /*    g startup -> caml_startup */
 /*    g startup__frametable -> caml_startup_frametable */
 /*    g system__frametable -> caml_system__frametable */
 
+/* **** asmcomp/cmmgen.ml */
+/*    g bucket_* -> caml_bucket_* */
+/*    g globals_map -> caml_globals_map   FIXME a quoi ca sert ? */
+/*    g Match_failure -> caml_exn_Match_failure */
+/*    g Out_of_memory -> caml_exn_Out_of_memory */
+/*    g Invalid_argument -> caml_exn_Invalid_argument */
+/*    g Failure -> caml_exn_Failure */
+/*    g Not_found -> caml_exn_Not_found */
+/*    g Sys_error -> caml_exn_Sys_error */
+/*    g End_of_file -> caml_exn_End_of_file */
+/*    g Division_by_zero -> caml_exn_Division_by_zero */
+/*    g Stack_overflow -> caml_exn_Stack_overflow */
+/*    g Sys_blocked_io -> caml_exn_Sys_blocked_io */
+/*    g Assert_failure -> caml_exn_Assert_failure */
+/*    g Undefined_recursive_module -> caml_exn_Undefined_recursive_module */
+
+/* **** asmcomp/asmlink.ml, asmcomp/cmmgen.ml, asmcomp/compilenv.ml */
+/*    g Modulename -> camlModulename  FIXME ask Xavier about it */
 
 #endif /* CAML_NAME_SPACE */
-
 #endif /* CAML_COMPATIBILITY_H */
