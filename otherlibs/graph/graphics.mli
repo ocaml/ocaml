@@ -86,7 +86,7 @@ external lineto : int -> int -> unit = "gr_lineto"
         (* Draw a line with endpoints the current point and the given point,
            and move the current point to the given point. *)
 external draw_arc : int -> int -> int -> int -> int -> int -> unit
-               = "gr_draw_arc"
+               = "gr_draw_arc" "gr_draw_arc_nat"
         (* [draw_arc x y rx ry a1 a2] draws an elliptical arc with center
            [x,y], horizontal radius [rx], vertical radius [ry], from angle
            [a1] to angle [a2] (in degrees). The current point is unchanged. *)
@@ -128,7 +128,7 @@ external fill_poly : (int * int) array -> unit = "gr_fill_poly"
         (* Fill the given polygon with the current color. The array
            contains the coordinates of the vertices of the polygon. *)
 external fill_arc : int -> int -> int -> int -> int -> int -> unit
-               = "gr_fill_arc"
+               = "gr_fill_arc" "gr_fill_arc_nat"
         (* Fill an elliptical pie slice with the current color. The
            parameters are the same as for [draw_arc]. *)
 val fill_ellipse : int -> int -> int -> int -> unit

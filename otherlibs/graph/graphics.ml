@@ -63,7 +63,7 @@ external moveto : int -> int -> unit = "gr_moveto"
 external current_point : unit -> int * int = "gr_current_point"
 external lineto : int -> int -> unit = "gr_lineto"
 external draw_arc : int -> int -> int -> int -> int -> int -> unit
-               = "gr_draw_arc"
+               = "gr_draw_arc" "gr_draw_arc_nat"
 let draw_ellipse x y rx ry = draw_arc x y rx ry 0 360
 let draw_circle x y r = draw_arc x y r r 0 360
 external set_line_width : int -> unit = "gr_set_line_width"
@@ -71,7 +71,7 @@ external set_line_width : int -> unit = "gr_set_line_width"
 external fill_rect : int -> int -> int -> int -> unit = "gr_fill_rect"
 external fill_poly : (int * int) array -> unit = "gr_fill_poly"
 external fill_arc : int -> int -> int -> int -> int -> int -> unit
-               = "gr_fill_arc"
+               = "gr_fill_arc" "gr_fill_arc_nat"
 let fill_ellipse x y rx ry = fill_arc x y rx ry 0 360
 let fill_circle x y r = fill_arc x y r r 0 360
 

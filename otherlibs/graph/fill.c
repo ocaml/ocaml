@@ -54,21 +54,28 @@ value gr_fill_poly(array)
   return Val_unit;
 }
 
-value gr_fill_arc(argv, argc)
-     int argc;
-     value * argv;
+value gr_fill_arc_nat(vx, vy, vrx, vry, va1, va2)
+     value vx, vy, vrx, vry, va1, va2;
 {
-  int x = Int_val(argv[0]);
-  int y = Int_val(argv[1]);
-  int rx = Int_val(argv[2]);
-  int ry = Int_val(argv[3]);
-  int a1 = Int_val(argv[4]);
-  int a2 = Int_val(argv[5]);
+  int x = Int_val(vx);
+  int y = Int_val(vy);
+  int rx = Int_val(vrx);
+  int ry = Int_val(vry);
+  int a1 = Int_val(va1);
+  int a2 = Int_val(va2);
+
   XFillArc(grdisplay, grwindow.win, grwindow.gc,
            x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
   XFillArc(grdisplay, grbstore.win, grbstore.gc,
            x - rx, Bcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
   XFlush(grdisplay);
   return Val_unit;
+}
+
+value gr_fill_arc(argv, argc)
+     int argc;
+     value * argv;
+{
+  return gr_fill_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
