@@ -127,6 +127,13 @@ Optimize the produced code for space rather than for time. This
 results in slightly smaller but slightly slower programs. The default is to
 optimize for speed.
 
+\item["-dtypes"]
+Dump detailed type information.  The information for file \var{x}".ml"
+is put into file \var{x}".annot".  In case of a type error, dump
+all the information inferred by the type-checker before the error.
+The \var{x}".annot" file can be used with the emacs commands given in
+"emacs/caml-types.el" to display types interactively.
+
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (".ml"

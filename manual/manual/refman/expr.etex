@@ -100,7 +100,6 @@ The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
 precedence come first. For infix and prefix symbols, we write
 ``"*"\ldots'' to mean ``any symbol starting with "*"''.
-\ikwd{not\@\texttt{not}}%
 \ikwd{or\@\texttt{or}}%
 \ikwd{if\@\texttt{if}}%
 \ikwd{fun\@\texttt{fun}}%

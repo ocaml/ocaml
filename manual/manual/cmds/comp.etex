@@ -165,6 +165,13 @@ The "-dllpath" option simply stores \var{dir} in the produced
 executable file, where "ocamlrun" can find it and exploit it as
 described in section~\ref{s-ocamlrun-dllpath}.
 
+\item["-dtypes"]
+Dump detailed type information.  The information for file \var{x}".ml"
+is put into file \var{x}".annot".  In case of a type error, dump
+all the information inferred by the type-checker before the error.
+The \var{x}".annot" file can be used with the emacs commands given in
+"emacs/caml-types.el" to display types interactively.
+
 \item["-g"]
 Add debugging information while compiling and linking. This option is
 required in order to be able to debug the program with "ocamldebug"

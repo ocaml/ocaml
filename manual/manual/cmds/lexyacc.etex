@@ -379,9 +379,9 @@ resolve reduce/reduce and shift/reduce conflicts:
   of a rule is the precedence of its rightmost terminal.  You
   can override this default by using the @"%prec"@ directive in the rule.
 \item A reduce/reduce conflict
-  is resolved by comparing the precedences of the two rules to be
-  reduced, the
-  higher precedence rule will be reduced.  A shift/reduce conflict
+  is resolved in favor of the first rule (in the order given by the
+  source file), and "ocamlyacc" outputs a warning.
+\item A shift/reduce conflict
   is resolved by comparing the precedence of the rule to be
   reduced with the precedence of the token to be shifted.  If the
   precedence of the rule is higher, then the rule will be reduced;
@@ -393,10 +393,9 @@ resolve reduce/reduce and shift/reduce conflicts:
   token is right-associative, then the parser will shift.  If the
   token is non-associative, then the parser will declare a syntax
   error.
-\item When a conflict cannot be resolved using the above method,
-  then "ocamlyacc" will output a warning.  In the case of a shift/reduce
-  conflict, it will always shift.  In the case of a reduce/reduce
-  conflict, it is not specified which rule will be reduced.
+\item When a shift/reduce conflict cannot be resolved using the above
+  method, then "ocamlyacc" will output a warning and the parser will
+  always shift.
 \end{itemize}
 
 \end{options}
