@@ -49,12 +49,15 @@ let process_file ppf name =
   else
     raise(Arg.Bad("don't know what to do with " ^ name))
 
-let print_version_number () =
+let print_version_and_library () =
   print_string "The Objective Caml compiler, version ";
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
   print_string Config.standard_library; print_newline();
   exit 0
+
+let print_version_string () =
+  print_string Config.version; print_newline(); exit 0
 
 let print_standard_library () =
   print_string Config.standard_library; print_newline(); exit 0
@@ -101,7 +104,8 @@ module Options = Main_args.Make_options (struct
   let _unsafe = set fast
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
-  let _v = print_version_number
+  let _v = print_version_and_library
+  let _version = print_version_string
   let _w = (Warnings.parse_options false)
   let _warn_error = (Warnings.parse_options true)
   let _where = print_standard_library

@@ -46,6 +46,7 @@ module Make_options (F :
      val _use_prims : string -> unit
      val _use_runtime : string -> unit
      val _v : unit -> unit
+     val _version : unit -> unit
      val _verbose : unit -> unit
      val _w : string -> unit
      val _warn_error : string -> unit
@@ -112,7 +113,9 @@ struct
            "<file>  Generate bytecode for the given runtime system";
     "-use_runtime", Arg.String F._use_runtime,
            "<file>  (deprecated) same as -use-runtime";
-    "-v", Arg.Unit F._v, " Print compiler version number and exit";
+    "-v", Arg.Unit F._v,
+           " Print compiler version and location of standard library and exit";
+    "-version", Arg.Unit F._version, " Print compiler version and exit";
     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
     "-w", Arg.String F._w,
       "<flags>  Enable or disable warnings according to <flags>:\n\

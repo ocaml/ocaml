@@ -44,12 +44,15 @@ let process_file ppf name =
   else
     raise(Arg.Bad("don't know what to do with " ^ name))
 
-let print_version_number () =
+let print_version_and_library () =
   print_string "The Objective Caml native-code compiler, version ";
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
   print_string Config.standard_library; print_newline();
   exit 0
+
+let print_version_string () =
+  print_string Config.version; print_newline(); exit 0
 
 let print_standard_library () =
   print_string Config.standard_library; print_newline(); exit 0
@@ -126,7 +129,10 @@ let main () =
        "-thread", Arg.Set thread_safe, " Use thread-safe standard library";
        "-unsafe", Arg.Set fast,
              " No bounds checking on array and string access";
-       "-v", Arg.Unit print_version_number, " Print compiler version number";
+       "-v", Arg.Unit print_version_and_library,
+             " Print compiler version and standard library location and exit";
+       "-version", Arg.Unit print_version_string,
+             " Print compiler version and exit";
        "-verbose", Arg.Set verbose, " Print calls to external commands";
        "-w", Arg.String (Warnings.parse_options false),
              "<flags>  Enable or disable warnings according to <flags>:\n\

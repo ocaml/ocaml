@@ -46,6 +46,7 @@ module Make_options (F :
       val _use_prims : string -> unit
       val _use_runtime : string -> unit
       val _v : unit -> unit
+      val _version : unit -> unit
       val _verbose : unit -> unit
       val _w : string -> unit
       val _warn_error : string -> unit
