@@ -110,7 +110,7 @@ let rindexsep s =
 
 let basename name =
   try
-    let p = rindexsep + 1 in
+    let p = rindexsep name + 1 in
     String.sub name p (String.length name - p)
   with Not_found ->
     name

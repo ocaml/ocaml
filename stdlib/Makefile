@@ -6,6 +6,7 @@ CAMLC=$(RUNTIME) $(COMPILER)
 OPTCOMPILER=../cslopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/cslrun ../tools/csldep
+CPPFLAGS=-DUNIX
 
 OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
   hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \
@@ -50,7 +51,7 @@ pervasives.cmx: pervasives.ml
 
 filename.ml: filename.mlp ../config/Makefile
 	@rm -f filename.ml
-	$(CPP) -DUNIX filename.mlp > filename.ml || \
+	$(CPP) $(CPPFLAGS) filename.mlp > filename.ml || \
         { rm -f filename.ml; exit 2; }
 	@chmod -w filename.ml
 
