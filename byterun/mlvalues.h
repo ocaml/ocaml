@@ -255,9 +255,9 @@ extern char * static_data_start, * static_data_end;
 #define Bool_val(x) Int_val(x)
 #define Val_false Val_int(0)
 #define Val_true Val_int(1)
-#define Val_not(x) (4 - (x))
+#define Val_not(x) (Val_false + Val_true - (x))
 
-/* The unit value is 0 */
+/* The unit value is 0 (tagged) */
 
 #define Val_unit Val_int(0)
 
