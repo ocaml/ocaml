@@ -68,5 +68,9 @@ install:
 	cp mLast.mli quotation.mli ast2pt.mli pcaml.mli spretty.mli $(LIBDIR)/camlp4/.
 	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi $(LIBDIR)/camlp4/.
 	cp camlp4.cma $(LIBDIR)/camlp4/.
+	if [ -f camlp4.cmxa ]; \
+	  then cp camlp4.cmxa camlp4.a $(LIBDIR)/camlp4/.; \
+	  else : ; \
+	fi
 
 include .depend
