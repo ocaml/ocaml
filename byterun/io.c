@@ -391,7 +391,9 @@ value caml_open_descriptor(value fd)       /* ML */
 
 value channel_descriptor(value vchannel)   /* ML */
 {
-  return Val_long(Channel(vchannel)->fd);
+  int fd = Channel(vchannel)->fd;
+  if (fd == -1) { errno = EBADF; sys_error(NO_ARG); }
+  return Val_int(fd);
 }
 
 value caml_close_channel(value vchannel)      /* ML */
