@@ -141,7 +141,7 @@ value hash_variant(char * tag)
   for (accu = Val_int(0); *tag != 0; tag++) 
     accu = Val_int(223 * Int_val(accu) + *((unsigned char *) tag));
 #ifdef ARCH_SIXTYFOUR
-  accu = accu & Val_int(0x7FFFFFFF);
+  accu = accu & Val_long(0x7FFFFFFFL);
 #endif
   /* Force sign extension of bit 31 for compatibility between 32 and 64-bit
      platforms */
