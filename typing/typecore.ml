@@ -483,14 +483,14 @@ let finalize_variant pat =
       begin match field with
       | Rabsent -> assert false
       | Reither (true, [], _, e) when not row.row_closed ->
-          e := Some (Rpresent None)
+          set_row_field e (Rpresent None)
       | Reither (false, ty::tl, _, e) when not row.row_closed ->
-          e := Some (Rpresent (Some ty));
+          set_row_field e (Rpresent (Some ty));
           begin match opat with None -> assert false
           | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
           end
       | Reither (c, l, true, e) when not row.row_fixed ->
-          e := Some (Reither (c, [], false, ref None))
+          set_row_field e (Reither (c, [], false, ref None))
       | _ -> ()
       end;
       (* Force check of well-formedness *)
@@ -715,7 +715,7 @@ let check_univars env kind exp ty_expected vars =
         let t = repr t in
         generalize t;
         if t.desc = Tvar && t.level = generic_level then
-          (t.desc <- Tunivar; true)
+          (log_type t; t.desc <- Tunivar; true)
         else false)
       vars in
   if List.length vars = List.length vars' then () else
@@ -804,7 +804,8 @@ let rec type_exp env sexp =
       let arg = type_exp env sarg in
       let ty_res = newvar() in
       let cases, partial =
-        type_cases env arg.exp_type ty_res (Some sexp.pexp_loc) caselist in
+        type_cases env arg.exp_type ty_res (Some sexp.pexp_loc) caselist
+      in
       { exp_desc = Texp_match(arg, cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;

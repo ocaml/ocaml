@@ -331,3 +331,94 @@ let rec extract_label_aux hd l = function
       else extract_label_aux (p::hd) l ls
 
 let extract_label l ls = extract_label_aux [] l ls
+
+
+                  (**********************************)
+                  (*  Utilities for backtracking    *)
+                  (**********************************)
+
+type change =
+    Ctype of type_expr * type_desc
+  | Clevel of type_expr * int
+  | Cname of
+      (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
+  | Crow of row_field option ref * row_field option
+  | Ckind of field_kind option ref * field_kind option
+  | Ccommu of commutable ref * commutable
+  | Cuniv of type_expr option ref * type_expr option
+
+let undo_change = function
+    Ctype  (ty, desc)  -> ty.desc <- desc
+  | Clevel (ty, level) -> ty.level <- level
+  | Cname  (r, v) -> r := v
+  | Crow   (r, v) -> r := v
+  | Ckind  (r, v) -> r := v
+  | Ccommu (r, v) -> r := v
+  | Cuniv  (r, v) -> r := v
+
+type changes = 
+    Change of change * changes ref
+  | Unchanged
+  | Invalid
+
+type snapshot = changes ref
+
+let trail = Weak.create 1
+let last_snapshot = ref 0
+
+let log_change ch =
+  match Weak.get trail 0 with None -> ()
+  | Some r ->
+      let r' = ref Unchanged in
+      r := Change (ch, r');
+      Weak.set trail 0 (Some r')
+
+let log_type ty =
+  if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
+let link_type ty ty' = log_type ty; ty.desc <- Tlink ty'
+let set_level ty level =
+  if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
+  ty.level <- level
+let set_univar rty ty =
+  log_change (Cuniv (rty, !rty)); rty := Some ty
+let log_name nm = log_change (Cname (nm, !nm))
+let unset_name nm = log_name nm; nm := None
+let set_row_field e v =
+  log_change (Crow (e, !e)); e := Some v
+let set_kind rk k =
+  log_change (Ckind (rk, !rk)); rk := Some k
+let set_commu rc c =
+  log_change (Ccommu (rc, !rc)); rc := c
+
+let snapshot () =
+  last_snapshot := !new_id;
+  match Weak.get trail 0 with Some r -> r
+  | None ->
+      let r = ref Unchanged in
+      Weak.set trail 0 (Some r);
+      r
+
+let rec rev_log accu = function
+    Unchanged -> accu
+  | Invalid -> assert false
+  | Change (ch, next) ->
+      rev_log (ch::accu) !next
+
+let rec invalidate_after = function
+    Unchanged -> ()
+  | Invalid -> assert false
+  | Change (_, next) ->
+      let d = !next in
+      next := Invalid;
+      invalidate_after d
+
+let backtrack changes =
+  match !changes with
+    Unchanged -> ()
+  | Invalid -> failwith "Btype.backtrack"
+  | Change _ as change ->
+      cleanup_abbrev ();
+      let backlog = rev_log [] change in
+      List.iter undo_change backlog;
+      invalidate_after change;
+      changes := Unchanged
