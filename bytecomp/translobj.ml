@@ -22,7 +22,7 @@ open Lambda
 let oo_prim name =
   try
     transl_path
-      (fst (Env.lookup_value (Ldot (Lident "Oo", name)) Env.empty))
+      (fst (Env.lookup_value (Ldot (Lident "CamlinternalOO", name)) Env.empty))
   with Not_found ->
     fatal_error ("Primitive " ^ name ^ " not found.")
 

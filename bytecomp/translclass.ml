@@ -91,14 +91,18 @@ let transl_super tbl meths inh_methods rem =
 let create_object cl obj init =
   let obj' = Ident.create "self" in
   let (inh_init, obj_init) = init obj' in
-  (inh_init,
-   Llet(Strict, obj', Lifthenelse(Lvar obj, Lvar obj,
-                                  Lapply (oo_prim "create_object", [Lvar cl])),
-        Lsequence(obj_init,
-        Lsequence(Lifthenelse(Lvar obj, lambda_unit,
-                              Lapply (oo_prim "run_initializers",
-                                      [Lvar obj'; Lvar cl])),
-                  Lvar obj'))))
+  if obj_init = lambda_unit then
+   (inh_init,
+    Lapply (oo_prim "create_object_and_run_initializers",
+            [Lvar obj; Lvar cl]))
+  else begin
+   (inh_init,
+    Llet(Strict, obj',
+            Lapply (oo_prim "create_object_opt", [Lvar obj; Lvar cl]),
+         Lsequence(obj_init,
+                  Lapply (oo_prim "run_initializers_opt",
+                          [Lvar obj; Lvar obj'; Lvar cl]))))
+  end
 
 let rec build_object_init cl_table obj params inh_init cl =
   match cl.cl_desc with
@@ -213,13 +217,18 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
             | Cf_val (name, id, exp) ->
                 (inh_init, transl_val cla true name id cl_init)
             | Cf_meth (name, exp) ->
-                let met = Ident.create ("method_" ^ name) in
+                let met_code =
+                  if !Clflags.native_code then begin
+                    (* Force correct naming of method for profiles *)
+                    let met = Ident.create ("method_" ^ name) in
+                    Llet(Strict, met, transl_exp exp, Lvar met)
+                  end else
+                    transl_exp exp in
                 (inh_init,
                  Lsequence(Lapply (oo_prim "set_method",
                                    [Lvar cla;
                                     Lvar (Meths.find name str.cl_meths);
-                                    Llet(Strict, met, transl_exp exp,
-                                         Lvar met)]),
+                                    met_code]),
                            cl_init))
             | Cf_let (rec_flag, defs, vals) ->
                 let vals =
