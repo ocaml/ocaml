@@ -15,11 +15,11 @@
 
 (** Thread-compatible system calls.
 
-   This module reimplements some of the functions from [Unix]
-   so that they only block the calling thread, not all threads
-   in the program, if they cannot complete immediately.
-   See the documentation of the {!Unix} module for more
-   precise descriptions of the functions below. *)
+   @deprecated The functionality of this module has been merged back into
+   the {!Unix} module.  Threaded programs can now call the functions
+   from module {!Unix} directly, and still get the correct behavior
+   (block the calling thread, if required, but do not block all threads
+   in the process).  *)
 
 (** {6 Process handling} *)
 
@@ -40,13 +40,15 @@ val write : Unix.file_descr -> string -> int -> int -> int
 val timed_read :
       Unix.file_descr ->
       string -> int -> int -> float -> int
+(** See {!ThreadUnix.timed_write}. *)
+
 val timed_write :
       Unix.file_descr ->
       string -> int -> int -> float -> int
-      (** Behave as [read] and [write], except that
-         [Unix_error(ETIMEDOUT,_,_)] is raised if no data is
-         available for reading or ready for writing after [d] seconds.
-         The delay [d] is given in the fifth argument, in seconds. *)
+(** Behave as {!ThreadUnix.read} and {!ThreadUnix.write}, except that
+   [Unix_error(ETIMEDOUT,_,_)] is raised if no data is
+   available for reading or ready for writing after [d] seconds.
+   The delay [d] is given in the fifth argument, in seconds. *)
 
 (** {6 Polling} *)
 
