@@ -214,20 +214,20 @@ value initial_spec_list =
       (fun x -> do { file_kind.val := Impl; Pcaml.input_file.val := x }),
     "<file>  Parse <file> as an implementation, whatever its extension.");
    ("-unsafe", Arg.Set Ast2pt.fast,
-    "      Generate unsafe accesses to array and strings.");
+    "Generate unsafe accesses to array and strings.");
    ("-noassert", Arg.Set Pcaml.no_assert,
-    "    Don't compile assertion checks.");
+    "Don't compile assertion checks.");
    ("-verbose", Arg.Set Grammar.error_verbose,
-    "     More verbose in parsing errors.");
+    "More verbose in parsing errors.");
    ("-loc", Arg.String (fun x -> Stdpp.loc_name.val := x),
     "<name>   Name of the location variable (default: " ^ Stdpp.loc_name.val ^
       ")");
    ("-QD", Arg.String (fun x -> Pcaml.quotation_dump_file.val := Some x),
-    "<file>    Dump quotation expander result in case of syntax error.");
+    "<file> Dump quotation expander result in case of syntax error.");
    ("-o", Arg.String (fun x -> Pcaml.output_file.val := Some x),
-    "<file>     Output on <file> instead of standard output.");
+    "<file> Output on <file> instead of standard output.");
    ("-v", Arg.Unit print_version,
-    "           Print Camlp4 version and exit.")]
+    "Print Camlp4 version and exit.")]
 ;
 
 value anon_fun x =
