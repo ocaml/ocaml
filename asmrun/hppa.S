@@ -26,7 +26,6 @@
 #define LOW(x) RR%x-$global$
 #define LOADHIGHLABEL(x) ldil LR%x, %r1
 #define LOWLABEL(x) RR%x
-#define CALL(x) bl x, %r2 ! nop
 #endif
 
 #ifdef SYS_nextstep
@@ -41,7 +40,6 @@
 #define LOW(x) R`x
 #define LOADHIGHLABEL(x) ldil L`x, %r1
 #define LOWLABEL(x) R`x
-#define CALL(x) ldil L`x, %r1; ble R`x(4, %r1); copy %r31, %r2
 #endif
 
 #ifdef SYS_hpux
@@ -174,7 +172,14 @@ G(caml_call_gc):
 
 ; Call the garbage collector
         ldo     64(%r30), %r30
-        CALL(G(garbage_collection))
+#ifdef SYS_nextstep
+        ldil    L`G(garbage_collection), %r1
+        ble     R`G(garbage_collection)(4, %r1)
+        copy    %r31, %r2
+#else
+        bl      G(garbage_collection), %r2
+        nop
+#endif
         ldo     -64(%r30), %r30
 
 ; Restore all regs used by the code generator
@@ -354,7 +359,14 @@ L100:
         LOADHIGH(G(young_limit))
         ldo     LOW(G(young_limit))(%r1), %r4
 ; Go for it
-	CALL(G(caml_program))
+#ifdef SYS_nextstep
+        ldil    L`G(caml_program), %r1
+        ble     R`G(caml_program)(4, %r1)
+        copy    %r31, %r2
+#else
+        bl      G(caml_program), %r2
+        nop
+#endif
 ; Pop handler
         ldo     -8(%r30), %r30
 ; Return with zero result
@@ -583,7 +595,14 @@ L103:
         stw     %r5, LOW(G(caml_exception_pointer))(%r1)
 ; Re-raise the exception through mlraise, to clean up local C roots
         ldo     64(%r30), %r30
-	CALL(G(mlraise))        ; never returns
+#ifdef SYS_nextstep
+        ldil    L`G(mlraise), %r1
+        ble     R`G(mlraise)(4, %r1)
+        copy    %r31, %r2
+#else
+        bl      G(mlraise), %r2
+        nop
+#endif
         ENDPROC
 
         .align	CODE_ALIGN
@@ -616,7 +635,7 @@ G(callback3):
         .data
         EXPORT_DATA(G(system_frametable))
 G(system_frametable):
-        .word   1               /* one descriptor */
-        .word   L104 + 3        /* return address into callback */
+        .long   1               /* one descriptor */
+        .long   L104 + 3        /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots */

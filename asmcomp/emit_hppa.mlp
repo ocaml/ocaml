@@ -277,7 +277,7 @@ let record_frame live =
   `{emit_label lbl}:\n`
 
 let emit_frame fd =
-  `	.word	{emit_label fd.fd_lbl} + 3\n`;
+  `	.long	{emit_label fd.fd_lbl} + 3\n`;
   `	.short	{emit_int fd.fd_frame_size}\n`;
   `	.short	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
@@ -867,15 +867,15 @@ let emit_item = function
   | Cint16 n ->
       `	.short	{emit_int n}\n`
   | Cint n ->
-      `	.word	{emit_int n}\n`
+      `	.long	{emit_int n}\n`
   | Cintlit s ->
-      `	.word	{emit_string s}\n`
+      `	.long	{emit_string s}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
-      `	.word	{emit_symbol s}\n`
+      `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.word	{emit_label(lbl + 10000)}\n`
+      `	.long	{emit_label(lbl + 10000)}\n`
   | Cstring s ->
       let l = String.length s in
       if l = 0 then ()
@@ -929,11 +929,11 @@ let end_assembly() =
   let lbl_end = Compilenv.current_unit_name() ^ "_end" in
   emit_global lbl_end;
   `{emit_symbol lbl_end}:\n`;
-  `	.word	0\n`;
+  `	.long	0\n`;
   let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   emit_global lbl;
   `{emit_symbol lbl}:\n`;
-  `	.word	{emit_int (List.length !frame_descriptors)}\n`;
+  `	.long	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
   frame_descriptors := [];
   if hpux then emit_imports()

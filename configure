@@ -216,7 +216,7 @@ case "$arch" in
         *)      asflags='-P -DSYS_$(SYSTEM)';;
     esac;;
   i386)         asflags='-DSYS_$(SYSTEM)';;
-  hppa)         as='gcc'; asflags='-c -DSYS_$(SYSTEM)';;
+  hppa)         as="$cc"; asflags='-c -DSYS_$(SYSTEM)';;
   power)
     case "$model" in
       rs6000)   asflags='-u -m pwr -w';;
