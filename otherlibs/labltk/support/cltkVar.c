@@ -40,22 +40,28 @@ CAMLprim value camltk_getvar(value var)
   if (s == NULL)
     tk_error(cltclinterp->result);
   else 
-    return(copy_string(s));
+    return(tcl_string_to_caml(s));
 }
 
 CAMLprim value camltk_setvar(value var, value contents)
 {
   char *s;
   char *stable_var = NULL;
+  char *utf_contents; 
   CheckInit();
 
   /* SetVar makes a copy of the contents. */
   /* In case we have write traces in Caml, it's better to make sure that
      var doesn't move... */
   stable_var = string_to_c(var);
-  s = Tcl_SetVar(cltclinterp,stable_var, String_val(contents),
+  utf_contents = caml_string_to_tcl(contents);
+  s = Tcl_SetVar(cltclinterp,stable_var, utf_contents,
                    TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
   stat_free(stable_var);
+  if( s == utf_contents ){ 
+    tk_error("camltk_setvar: Tcl_SetVar returned strange result. Call the author of mlTk!");
+  }
+  stat_free(utf_contents);
 
   if (s == NULL)
     tk_error(cltclinterp->result);

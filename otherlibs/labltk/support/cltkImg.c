@@ -31,10 +31,11 @@
 
 value camltk_getimgdata (value imgname) /* ML */
 {
+  CAMLparam1(imgname);
+  CAMLlocal1(res);
   Tk_PhotoHandle ph;
   Tk_PhotoImageBlock pib;
   int code,size;
-  value res;
 
 #if (TK_MAJOR_VERSION < 8)
   if (NULL == (ph = Tk_FindPhoto(String_val(imgname)))) 
@@ -55,7 +56,7 @@ value camltk_getimgdata (value imgname) /* ML */
       (pib.offset[1] == 1) &&
       (pib.offset[2] == 2)) {
     memcpy(pib.pixelPtr, String_val(res),size);
-    return res;
+    CAMLreturn(res);
   } else {
     int y;                      /* varies from 0 to height - 1 */
     int yoffs = 0;		/* byte offset of line in src */
@@ -70,7 +71,7 @@ value camltk_getimgdata (value imgname) /* ML */
 	Byte(res, xidx + 2) = pib.pixelPtr[xoffs+pib.offset[2]];
       };
     }
-    return res;
+    CAMLreturn(res);
   }
 }
 

@@ -68,11 +68,12 @@ int cltk_slave_mode = 0;
 /* Initialisation, based on tkMain.c */
 CAMLprim value camltk_opentk(value argv)
 {
-  /* argv must contain argv[0], the application command name */
-  value tmp = Val_unit;
+  CAMLparam1(argv);
+  CAMLlocal1(tmp);
   char *argv0;
 
-  Begin_root(tmp);
+  /* argv must contain argv[0], the application command name */
+  tmp = Val_unit;
 
   if ( argv == Val_int(0) ){
     failwith("camltk_opentk: argv is empty");
@@ -105,7 +106,7 @@ CAMLprim value camltk_opentk(value argv)
 	char **tkargv;
 	char argcstr[256]; /* string of argc */
 
-	tkargv = malloc( sizeof( char* ) * argc );
+	tkargv = (char**)stat_alloc(sizeof( char* ) * argc );
 	tmp = Field(argv, 1); /* starts from argv[1] */
 	i = 0;
 
@@ -120,7 +121,7 @@ CAMLprim value camltk_opentk(value argv)
         args = Tcl_Merge(argc, tkargv); /* args must be freed by Tcl_Free */
         Tcl_SetVar(cltclinterp, "argv", args, TCL_GLOBAL_ONLY);
         Tcl_Free(args);
-	free( tkargv );
+	stat_free( tkargv );
       }
     }
     if (Tk_Init(cltclinterp) != TCL_OK)
@@ -163,8 +164,7 @@ CAMLprim value camltk_opentk(value argv)
     }
   }
 
-  End_roots();
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 value camltk_finalize(value unit) /* ML */

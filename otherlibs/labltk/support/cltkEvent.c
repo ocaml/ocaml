@@ -26,14 +26,13 @@ CAMLprim value camltk_tk_mainloop(void)
 {
   CheckInit();
 
-  if (cltk_slave_mode)
-    return Val_unit;
+  if (cltk_slave_mode) return Val_unit;
 
   if (!signal_events) {
     /* Initialise signal handling */
     signal_events = 1;
     Tk_CreateTimerHandler(100, invoke_pending_caml_signals, NULL);
-  };
+  }
   Tk_MainLoop();
   return Val_unit;
 }

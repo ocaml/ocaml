@@ -14,7 +14,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: */
+/* $Id$ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -33,25 +33,6 @@
     (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION >= 1)) /* 8.1 */
 # define UTFCONVERSION
 #endif
-
-/* This variable auto_utf_conversion controls the automatic conversion 
-   between the coding specified by LANG and UTF. */
-int auto_utf_conversion = 0;
-
-value get_auto_utf_conversion( value u )
-{
-  return Val_int(auto_utf_conversion);
-}
-
-value set_auto_utf_conversion( value b )
-{
-  if (Int_val(b)) {
-    auto_utf_conversion = 1;
-  } else {
-    auto_utf_conversion = 0;
-  }
-  return Val_unit;
-}
 
 #ifdef UTFCONVERSION
 
