@@ -4,7 +4,7 @@ Objective Caml 1.02:
   - fixed bug with type names escaping their scope via unification
     with non-generalized type variables '_a;
   - keep #class abbreviations longer;
-  - faster checking of well-formed object types in declarations;
+  - faster checking of well-formed abbreviation definitions;
   - stricter checking of "with" constraints over signatures (arity
     mismatch, overriding of an already manifest type).
 
