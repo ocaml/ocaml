@@ -11,7 +11,7 @@ opt: support.cmx widget.cmx protocol.cmx \
 COBJS=cltkCaml.obj cltkEval.obj cltkEvent.obj cltkFile.obj cltkMain.obj \
       cltkMisc.obj cltkTimer.obj cltkVar.obj cltkWait.obj
 
-CCFLAGS=-I..\..\..\byterun $(TK_DEFS)
+CCFLAGS=-I..\..\..\byterun -I..\..\win32unix $(TK_DEFS)
 
 COMPFLAGS=-I $(OTHERS)/win32unix
 
