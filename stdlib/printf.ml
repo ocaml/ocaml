@@ -54,45 +54,6 @@ let format_string format s =
   let (p, neg) = parse_format format in
   pad_string ' ' p neg s 0 (String.length s)
 
-(* Format a [%b] format: write a binary representation of an integer. *)
-let format_binary_int format n =
-  let sharp = String.contains format '#' in
-  let add_sharp_len l = if sharp then l + 2 else l in
-  (* Max length of a Caml int + 1 for a minus sign. *)
-  let maxlen = Sys.word_size - 1 + 1 in
-  let len = add_sharp_len maxlen in
-  let b = String.make len ' ' in
-  let rec format_bin i n =
-    if n = 0 then i else
-    let c = char_of_int (int_of_char '0' + n land 1) in
-    String.unsafe_set b i c;
-    format_bin (i - 1) (n lsr 1) in
-  let rec find_pad_char i len =
-    if i >= len then ' ' else
-    match String.unsafe_get format i with
-    | '0' -> '0'
-    | '1' .. '9' -> ' '
-    | _ -> find_pad_char (i + 1) len in
-  let add_sharp s i =
-    String.unsafe_set s i '0';
-    String.unsafe_set s (i + 1) 'b' in
-  let add_bin pad_char s i =
-    match pad_char with
-    | ' ' -> add_sharp s i; s
-    | _ -> add_sharp s 0; s in
-  let i =
-     match n with
-     | 0 ->
-        String.unsafe_set b (len - 1) '0';
-        len - 2
-     | n -> format_bin (len - 1) n in
-  let p, neg = parse_format format in
-  let blen = len - 1 - i in
-  let pad_char = find_pad_char 0 (String.length format) in
-  let p = add_sharp_len (max p blen) in
-  let s = pad_string pad_char p neg b (i + 1) blen in
-  if sharp then add_bin pad_char s (i - 1) else s;;
-
 (* Extract a %format from [fmt] between [start] and [stop] inclusive.
    '*' in the format are replaced by integers taken from the [widths] list.
    The function is somewhat optimized for the "no *" case. *)
@@ -115,7 +76,6 @@ let extract_format fmt start stop widths =
 
 let format_int_with_conv conv fmt i =
    match conv with
-   | 'b' -> format_binary_int fmt i
    | 'n' | 'N' -> fmt.[String.length fmt - 1] <- 'u'; format_int fmt i
    | _ -> format_int fmt i
 
