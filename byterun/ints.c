@@ -255,16 +255,6 @@ int64 Int64_val(value v)
   return buffer.j;
 }
 
-void Store_int64_val(value v, int64 n)
-{
-  union { int32 i[2]; int64 j; } buffer;
-  buffer.j = n;
-  ((int32 *) Data_custom_val(v))[0] = buffer.i[0];
-  ((int32 *) Data_custom_val(v))[1] = buffer.i[1];
-}
-
-#endif
-
 #endif
 
 static int int64_compare(value v1, value v2)
@@ -304,7 +294,14 @@ struct custom_operations int64_ops = {
 value copy_int64(int64 i)
 {
   value res = alloc_custom(&int64_ops, 8, 0, 1);
+#ifndef ARCH_ALIGN_INT64
   Int64_val(res) = i;
+#else
+  union { int32 i[2]; int64 j; } buffer;
+  buffer.j = i;
+  ((int32 *) Data_custom_val(res))[0] = buffer.i[0];
+  ((int32 *) Data_custom_val(res))[1] = buffer.i[1];
+#endif
   return res;
 }
 
