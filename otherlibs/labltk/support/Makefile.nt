@@ -2,7 +2,7 @@
 
 all: support.cmo widget.cmo protocol.cmo \
      textvariable.cmo timer.cmo fileevent.cmo \
-     liblabltk41.dll liblabltk41.lib
+     dlllabltk41.dll liblabltk41.lib
 
 opt: support.cmx widget.cmx protocol.cmx \
      textvariable.cmx timer.cmx fileevent.cmx \
@@ -15,8 +15,8 @@ CCFLAGS=-I..\..\..\byterun $(TK_DEFS)
 
 COMPFLAGS=-I $(OTHERS)/win32unix
 
-liblabltk41.dll : $(COBJS:.obj=.dobj)
-	link /nologo /dll /out:liblabltk41.dll /implib:tmp.lib \
+dlllabltk41.dll : $(COBJS:.obj=.dobj)
+	link /nologo /dll /out:dlllabltk41.dll /implib:tmp.lib \
 	  $(COBJS:.obj=.dobj) ..\..\..\byterun\ocamlrun.lib \
           $(TK_LINK) wsock32.lib
 	rm tmp.*
@@ -31,10 +31,10 @@ PUB=fileevent.cmi fileevent.mli \
     timer.cmi timer.mli \
     widget.cmi widget.mli
 
-install: liblabltk41.dll liblabltk41.lib $(PUB)
+install: dlllabltk41.dll liblabltk41.lib $(PUB)
 	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
 	cp $(PUB) $(LABLTKDIR)
-	cp liblabltk41.dll liblabltk41.lib $(LABLTKDIR)
+	cp dlllabltk41.dll liblabltk41.lib $(LABLTKDIR)
 	echo $(LABLTKDIR)>> $(LIBDIR)\ld.conf
 
 clean : 

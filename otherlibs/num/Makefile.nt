@@ -29,7 +29,7 @@ CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
 
 COBJS=nat_stubs.obj
 
-all: libnums.dll libnums.lib nums.cma $(CMIFILES)
+all: dllnums.dll libnums.lib nums.cma $(CMIFILES)
 
 allopt: libnums.lib nums.cmxa $(CMIFILES)
 
@@ -39,8 +39,8 @@ nums.cma: $(CAMLOBJS)
 nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx) -cclib -lnums
 
-libnums.dll: bignum\dbignum.lib $(COBJS:.obj=.dobj)
-	link /nologo /dll /out:libnums.dll /implib:tmp.lib \
+dllnums.dll: bignum\dbignum.lib $(COBJS:.obj=.dobj)
+	link /nologo /dll /out:dllnums.dll /implib:tmp.lib \
 	  bignum\dbignum.lib $(COBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib
 	rm tmp.*
 
@@ -53,7 +53,7 @@ bignum\dbignum.lib bignum\sbignum.lib:
 $(CAMLOBJS:.cmo=.cmx): ..\..\ocamlopt
 
 install:
-	cp libnums.dll $(LIBDIR)\libnums.dll
+	cp dllnums.dll $(LIBDIR)\dllnums.dll
 	cp libnums.lib $(LIBDIR)\libnums.lib
 	cp nums.cma $(CMIFILES) $(LIBDIR)
 

@@ -22,12 +22,12 @@ THREAD_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
 GENFILES=thread.ml
 
-all: libthreads.dll libthreads.lib threads.cma
+all: dllthreads.dll libthreads.lib threads.cma
 
 allopt: libthreadsnat.lib threads.cmxa
 
-libthreads.dll: win32_b.dobj
-	link /nologo /dll /out:libthreads.dll /implib:tmp.lib \
+dllthreads.dll: win32_b.dobj
+	link /nologo /dll /out:dllthreads.dll /implib:tmp.lib \
           win32_b.dobj ..\..\byterun\ocamlrun.lib
 	rm tmp.*
 
@@ -71,7 +71,7 @@ clean: partialclean
 	rm -f $(GENFILES)
 
 install:
-	cp libthreads.dll $(LIBDIR)/libthreads.dll
+	cp dllthreads.dll $(LIBDIR)/dllthreads.dll
 	cp libthreads.lib $(LIBDIR)/libthreads.lib
 	if not exist $(LIBDIR)\threads mkdir $(LIBDIR)\threads
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads

@@ -25,12 +25,12 @@ REGEXLIB=regex-0.12
 REGEXFLAGS=-DREGEX_MALLOC -DSTDC_HEADERS
 COBJS=strstubs.obj $(REGEXLIB)\regex.obj
 
-all: libstr.dll libstr.lib str.cmi str.cma
+all: dllstr.dll libstr.lib str.cmi str.cma
 
 allopt: libstr.lib str.cmi str.cmxa
 
-libstr.dll: $(COBJS:.obj=.dobj)
-	link /nologo /dll /out:libstr.dll /implib:tmp.lib $(COBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib
+dllstr.dll: $(COBJS:.obj=.dobj)
+	link /nologo /dll /out:dllstr.dll /implib:tmp.lib $(COBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib
 	rm tmp.*
 
 libstr.lib: $(COBJS:.obj=.sobj)
@@ -60,7 +60,7 @@ clean: partialclean
 	rm -f $(REGEXLIB)/*.dobj $(REGEXLIB)/*.sobj
 
 install:
-	cp libstr.dll $(LIBDIR)\libstr.dll
+	cp dllstr.dll $(LIBDIR)\dllstr.dll
 	cp libstr.lib $(LIBDIR)\libstr.lib
 	cp str.cma str.cmi $(LIBDIR)
 

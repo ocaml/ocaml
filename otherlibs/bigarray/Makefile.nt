@@ -23,12 +23,12 @@ C_OBJS=bigarray_stubs.obj mmap_win32.obj
 
 CAML_OBJS=bigarray.cmo
 
-all: libbigarray.dll libbigarray.lib bigarray.cma
+all: dllbigarray.dll libbigarray.lib bigarray.cma
 
 allopt: libbigarray.lib bigarray.cmxa
 
-libbigarray.dll: $(C_OBJS:.obj=.dobj)
-	link /nologo /dll /out:libbigarray.dll /implib:tmp.lib \
+dllbigarray.dll: $(C_OBJS:.obj=.dobj)
+	link /nologo /dll /out:dllbigarray.dll /implib:tmp.lib \
 	  $(C_OBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib
 	rm tmp.*
 
@@ -44,7 +44,7 @@ bigarray.cmxa: $(CAML_OBJS:.cmo=.cmx)
            $(CAML_OBJS:.cmo=.cmx) -cclib -lbigarray
 
 install:
-	cp libbigarray.dll libbigarray.lib $(LIBDIR)
+	cp dllbigarray.dll libbigarray.lib $(LIBDIR)
 	cp bigarray.cmi bigarray.mli bigarray.cma $(LIBDIR)
 	cp bigarray.h $(LIBDIR)/caml/bigarray.h
 

@@ -43,12 +43,12 @@ C_OBJS=$(WIN_OBJS) $(UNIX_OBJS)
 CAML_OBJS=unix.cmo unixLabels.cmo
 CAMLOPT_OBJS=$(CAML_OBJS:.cmo=.cmx)
 
-all: libunix.dll libunix.lib unix.cma
+all: dllunix.dll libunix.lib unix.cma
 
 allopt: libunix.lib unix.cmxa
 
-libunix.dll: copy_unix_files io.h $(C_OBJS:.obj=.dobj)
-	link /nologo /dll /out:libunix.dll /implib:tmp.lib \
+dllunix.dll: copy_unix_files io.h $(C_OBJS:.obj=.dobj)
+	link /nologo /dll /out:dllunix.dll /implib:tmp.lib \
 	  $(C_OBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib wsock32.lib
 	rm tmp.*
 
@@ -81,7 +81,7 @@ clean: partialclean
 	rm -f io.h
 
 install:
-	cp libunix.dll $(LIBDIR)/libunix.dll
+	cp dllunix.dll $(LIBDIR)/dllunix.dll
 	cp libunix.lib $(LIBDIR)/libunix.lib
 	cp unix.cmi unix.cma $(LIBDIR)
 
