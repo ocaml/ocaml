@@ -28,10 +28,14 @@ let process_file ppf name =
     Compile.implementation ppf name;
     objfiles := (Misc.chop_extension_if_any name ^ ".cmo") :: !objfiles
   end
-  else if Filename.check_suffix name !Config.interface_suffix then
-    Compile.interface ppf name
+  else if Filename.check_suffix name !Config.interface_suffix then begin
+    Compile.interface ppf name;
+    if !make_package then objfiles := name :: !objfiles
+  end
   else if Filename.check_suffix name ".cmo"
        || Filename.check_suffix name ".cma" then
+    objfiles := name :: !objfiles
+  else if Filename.check_suffix name ".cmi" && !make_package then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ext_obj
        || Filename.check_suffix name ext_lib then

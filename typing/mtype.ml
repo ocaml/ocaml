@@ -180,3 +180,25 @@ and type_paths_sig env p pos sg =
       type_paths_sig env p (pos+1) rem
   | (Tsig_cltype _) :: rem ->
       type_paths_sig env p pos rem
+
+let rec no_code_needed env mty =
+  match scrape env mty with
+    Tmty_ident p -> false
+  | Tmty_signature sg -> no_code_needed_sig env sg
+  | Tmty_functor(_, _, _) -> false  
+
+and no_code_needed_sig env sg =
+  match sg with
+    [] -> true
+  | Tsig_value(id, decl) :: rem ->
+      begin match decl.val_kind with
+      | Val_prim _ -> no_code_needed_sig env rem
+      | _ -> false
+      end
+  | Tsig_module(id, mty) :: rem ->
+      no_code_needed env mty &&
+      no_code_needed_sig (Env.add_module id mty env) rem
+  | (Tsig_type _ | Tsig_modtype _ | Tsig_cltype _) :: rem ->
+      no_code_needed_sig env rem
+  | (Tsig_exception _ | Tsig_class _) :: rem ->
+      false

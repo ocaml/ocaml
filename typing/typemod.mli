@@ -48,6 +48,7 @@ type error =
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
+  | Implementation_is_required of string
 
 exception Error of Location.t * error
 

@@ -33,27 +33,44 @@ exception Error of error
 
 (* Read the unit information from a .cmx file. *)
 
-let read_unit_info cmxfile =
-  let (info, crc) = Compilenv.read_unit_info cmxfile in
-  if info.ui_name
-  <> String.capitalize(Filename.basename(chop_extension_if_any cmxfile))
-  then raise(Error(Illegal_renaming(cmxfile, info.ui_name)));
-  Asmlink.check_consistency cmxfile info crc;
-  info
+type pack_member_kind = PM_intf | PM_impl of unit_infos
+
+type pack_member =
+  { pm_file: string;
+    pm_name: string;
+    pm_kind: pack_member_kind }
+
+let read_member_info file =
+  let name =
+    String.capitalize(Filename.basename(chop_extension_if_any file)) in
+  let kind =
+    if Filename.check_suffix file ".cmx" then begin
+      let (info, crc) = Compilenv.read_unit_info file in
+      if info.ui_name <> name
+      then raise(Error(Illegal_renaming(file, info.ui_name)));
+      Asmlink.check_consistency file info crc;
+      PM_impl info
+    end else
+      PM_intf in
+  { pm_file = file; pm_name = name; pm_kind = kind }
 
 (* Check absence of forward references *)
 
-let check_units cmxfiles units unit_names =
+let check_units members =
   let rec check forbidden = function
     [] -> ()
-  | (cmxfile, infos) :: tl ->
-      List.iter
-        (fun (unit, _) ->
-          if List.mem unit forbidden
-          then raise(Error(Forward_reference(cmxfile, unit))))
-        infos.ui_imports_cmx;
-      check (list_remove infos.ui_name forbidden) tl in
-  check unit_names (List.combine cmxfiles units)
+  | mb :: tl ->
+      begin match mb.pm_kind with
+      | PM_intf -> ()
+      | PM_impl infos ->
+          List.iter
+            (fun (unit, _) ->
+              if List.mem unit forbidden
+              then raise(Error(Forward_reference(mb.pm_file, unit))))
+            infos.ui_imports_cmx
+      end;
+      check (list_remove mb.pm_name forbidden) tl in
+  check (List.map (fun mb -> mb.pm_name) members) members
 
 (* Rename symbols in an object file.  All defined symbols of the form
    caml[T] or caml[T]__xxx, where [T] belongs to the list [units], are
@@ -107,7 +124,8 @@ let prefix_symbol p s =
 (* return the list of symbols to rename in low-level form
    (with the leading "_caml" or "caml")
 *)
-let rename_in_object_file units pref objfile =
+let rename_in_object_file members pref objfile =
+  let units = List.map (fun m -> m.pm_name) members in
   let symbolfile = Filename.temp_file "camlsymbols" "" in
   try
     let nm_cmdline =
@@ -224,7 +242,9 @@ let rename_approx mapping_lbl mapping_id approx =
 
 (* Make the .cmx file for the package *)
 
-let build_package_cmx units unit_names target symbols_to_rename cmxfile =
+let build_package_cmx members target symbols_to_rename cmxfile =
+  let unit_names =
+    List.map (fun m -> m.pm_name) members in
   let filter lst =
     List.filter (fun (name, crc) -> not (List.mem name unit_names)) lst in
   let union lst =
@@ -242,10 +262,17 @@ let build_package_cmx units unit_names target symbols_to_rename cmxfile =
   let mapping_lbl =
     List.fold_left (fun tbl s -> Tbl.add s (prefix_symbol target s) tbl)
                    Tbl.empty symbols_to_rename in
+  let member_defines m =
+    match m.pm_kind with PM_intf -> [] | PM_impl info -> info.ui_defines in
   let defines =
     map_end (fun s -> target ^ "__" ^ s)
-            (List.concat (List.map (fun info -> info.ui_defines) units))
+            (List.concat (List.map member_defines members))
             [target] in
+  let units =
+    List.fold_left
+      (fun accu m ->
+        match m.pm_kind with PM_intf -> accu | PM_impl info -> info :: accu)
+      [] members in
   let approx =
     Compilenv.global_approx (Ident.create_persistent target) in
   let pkg_infos =
@@ -263,16 +290,25 @@ let build_package_cmx units unit_names target symbols_to_rename cmxfile =
 
 (* Make the .o file for the package (not renamed yet) *)
 
-let make_package_object ppf unit_names objfiles
-                        targetobj targetname coercion =
+let make_package_object ppf members targetobj targetname coercion =
   let objtemp = Filename.temp_file "camlpackage" Config.ext_obj in
   Location.input_name := targetname; (* set the name of the "current" input *)
   Compilenv.reset targetname; (* set the name of the "current" compunit *)
+  let components =
+    List.map
+      (fun m ->
+        match m.pm_kind with
+        | PM_intf -> None
+        | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
+      members in
   Asmgen.compile_implementation
     (chop_extension_if_any objtemp) ppf
     (Translmod.transl_store_package
-       (List.map Ident.create_persistent unit_names)
-       (Ident.create_persistent targetname) coercion);
+       components (Ident.create_persistent targetname) coercion);
+  let objfiles =
+    List.map
+      (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
+      (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
   let ld_cmd =
     sprintf "%s -o %s %s %s"
             Config.native_pack_linker 
@@ -285,23 +321,20 @@ let make_package_object ppf unit_names objfiles
 
 (* Make the .cmx and the .o for the package *)
 
-let package_object_files ppf cmxfiles targetcmx 
+let package_object_files ppf files targetcmx 
                          targetobj targetname coercion =
-  let units = map_left_right read_unit_info cmxfiles in
-  let unit_names = List.map (fun info -> info.ui_name) units in
-  check_units cmxfiles units unit_names;
-  let objfiles =
-    List.map (fun f -> chop_extension_if_any f ^ Config.ext_obj) cmxfiles in
-  make_package_object ppf unit_names objfiles targetobj targetname coercion;
-  let symbols = rename_in_object_file unit_names targetname targetobj in
-  build_package_cmx units unit_names targetname symbols targetcmx
+  let members = map_left_right read_member_info files in
+  check_units members;
+  make_package_object ppf members targetobj targetname coercion;
+  let symbols = rename_in_object_file members targetname targetobj in
+  build_package_cmx members targetname symbols targetcmx
 
 (* The entry point *)
 
 let package_files ppf files targetcmx =
   if Config.binutils_objcopy = "" || Config.binutils_nm = ""
   then raise (Error No_binutils);
-  let cmxfiles =
+  let files =
     List.map
       (fun f ->
         try find_in_path !Config.load_path f
@@ -312,8 +345,8 @@ let package_files ppf files targetcmx =
   let targetobj = prefix ^ Config.ext_obj in
   let targetname = String.capitalize(Filename.basename prefix) in
   try
-    let coercion = Typemod.package_units cmxfiles targetcmi targetname in
-    package_object_files ppf cmxfiles targetcmx targetobj targetname coercion
+    let coercion = Typemod.package_units files targetcmi targetname in
+    package_object_files ppf files targetcmx targetobj targetname coercion
   with x ->
     remove_file targetcmx; remove_file targetobj;
     raise x

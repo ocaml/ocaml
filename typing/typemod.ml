@@ -36,6 +36,7 @@ type error =
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
+  | Implementation_is_required of string
 
 exception Error of Location.t * error
 
@@ -766,6 +767,10 @@ let package_units objfiles cmifile modulename =
       (fun f ->
          let pref = chop_extension_if_any f in
          let modname = String.capitalize(Filename.basename pref) in
+         let sg = Env.read_signature modname (pref ^ ".cmi") in
+         if Filename.check_suffix f ".cmi" &&
+            not(Mtype.no_code_needed_sig Env.initial sg)
+         then raise(Error(Location.none, Implementation_is_required f));
          (modname, Env.read_signature modname (pref ^ ".cmi")))
       objfiles in
   (* Compute signature of packaged unit *)
@@ -840,3 +845,7 @@ let report_error ppf = function
       fprintf ppf
         "@[The type of this module,@ %a,@ \
            contains type variables that cannot be generalized@]" modtype mty
+  | Implementation_is_required intf_name ->
+      fprintf ppf
+        "@[The interface %s@ declares values, not just types.@ \
+           An implementation must be provided.@]" intf_name

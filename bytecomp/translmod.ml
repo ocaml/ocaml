@@ -638,15 +638,19 @@ let transl_toplevel_definition str =
 
 (* Compile the initialization code for a packed library *)
 
+let get_component = function
+    None -> Lconst const_unit
+  | Some id -> Lprim(Pgetglobal id, []) 
+
 let transl_package component_names target_name coercion =
   let components =
     match coercion with
       Tcoerce_none ->
-        List.map (fun id -> Lprim(Pgetglobal id, [])) component_names
+        List.map get_component component_names
     | Tcoerce_structure pos_cc_list ->
         let g = Array.of_list component_names in
         List.map
-          (fun (pos, cc) -> apply_coercion cc (Lprim(Pgetglobal g.(pos), [])))
+          (fun (pos, cc) -> apply_coercion cc (get_component g.(pos)))
           pos_cc_list
     | _ ->
         assert false in
@@ -664,7 +668,7 @@ let transl_store_package component_names target_name coercion =
          (fun pos id ->
            Lprim(Psetfield(pos, false),
                  [Lprim(Pgetglobal target_name, []);
-                  Lprim(Pgetglobal id, [])]))
+                  get_component id]))
          0 component_names)
   | Tcoerce_structure pos_cc_list ->
       let id = Array.of_list component_names in
@@ -673,7 +677,7 @@ let transl_store_package component_names target_name coercion =
          (fun dst (src, cc) ->
            Lprim(Psetfield(dst, false),
                  [Lprim(Pgetglobal target_name, []);
-                  apply_coercion cc (Lprim(Pgetglobal id.(src), []))]))
+                  apply_coercion cc (get_component id.(src))]))
          0 pos_cc_list)
   | _ -> assert false
 

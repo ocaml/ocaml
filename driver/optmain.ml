@@ -28,10 +28,14 @@ let process_file ppf name =
     Optcompile.implementation ppf name;
     objfiles := (Misc.chop_extension_if_any name ^ ".cmx") :: !objfiles
   end
-  else if Filename.check_suffix name !Config.interface_suffix then
-    Optcompile.interface ppf name
+  else if Filename.check_suffix name !Config.interface_suffix then begin
+    Optcompile.interface ppf name;
+    if !make_package then objfiles := name :: !objfiles
+  end
   else if Filename.check_suffix name ".cmx" 
        || Filename.check_suffix name ".cmxa" then
+    objfiles := name :: !objfiles
+  else if Filename.check_suffix name ".cmi" && !make_package then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ext_obj
        || Filename.check_suffix name ext_lib then
