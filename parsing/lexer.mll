@@ -373,6 +373,7 @@ rule token = parse
   | "["  { LBRACKET }
   | "[|" { LBRACKETBAR }
   | "[<" { LBRACKETLESS }
+  | "[>" { LBRACKETGREATER }
   | "]"  { RBRACKET }
   | "{"  { LBRACE }
   | "{<" { LBRACELESS }

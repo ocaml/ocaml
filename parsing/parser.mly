@@ -245,6 +245,7 @@ let bigarray_set arr arg newval =
 %token LBRACKET
 %token LBRACKETBAR
 %token LBRACKETLESS
+%token LBRACKETGREATER
 %token LESS
 %token LESSMINUS
 %token LET
@@ -1286,9 +1287,9 @@ simple_core_type2:
       { mktyp(Ptyp_variant(List.rev $3, true, None)) }
   | LBRACKET row_field BAR row_field_list RBRACKET
       { mktyp(Ptyp_variant($2 :: List.rev $4, true, None)) }
-  | LBRACKET GREATER opt_bar row_field_list RBRACKET
-      { mktyp(Ptyp_variant(List.rev $4, false, None)) }
-  | LBRACKET GREATER RBRACKET
+  | LBRACKETGREATER opt_bar row_field_list RBRACKET
+      { mktyp(Ptyp_variant(List.rev $3, false, None)) }
+  | LBRACKETGREATER RBRACKET
       { mktyp(Ptyp_variant([], false, None)) }
   | LBRACKETLESS opt_bar row_field_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, Some [])) }
@@ -1318,7 +1319,7 @@ amper_type_list:
   | amper_type_list AMPERSAND core_type         { $3 :: $1 }
 ;
 opt_present:
-    LBRACKET GREATER name_tag_list RBRACKET     { List.rev $3 }
+    LBRACKETGREATER name_tag_list RBRACKET      { List.rev $2 }
   | /* empty */                                 { [] }
 ;
 name_tag_list:
