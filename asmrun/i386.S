@@ -123,6 +123,7 @@ G(caml_alloc):
 L103:   subl	G(young_ptr), %eax      /* eax = - size */
         negl    %eax                    /* eax = size */
         pushl   %eax                    /* save desired size */
+        subl    %eax, G(young_ptr)      /* must update young_ptr */
         movl    4(%esp), %eax
         movl    %eax, G(caml_last_return_address)
         leal    8(%esp), %eax

@@ -130,6 +130,7 @@ _caml_alloc:
 L103:   sub     eax, _young_ptr         ; eax = - size
         neg     eax                     ; eax = size
         push    eax                     ; save desired size
+        sub     _young_ptr, eax         ; must update young_ptr
         mov	eax, [esp+4]
         mov     _caml_last_return_address, eax
         lea     eax, [esp+8]
