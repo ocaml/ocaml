@@ -1278,19 +1278,14 @@ simple_core_type:
   | LBRACKET GREATER opt_bar row_field_list RBRACKET
       { let l = List.rev $4 in
         mktyp(Ptyp_variant(l, false, List.map (fun (p,_,_) -> p) l)) }
-  | LBRACKETLESS opt_bar row_field_list opt_opened RBRACKET
-      { mktyp(Ptyp_variant(List.rev $3, not $4, [])) }
-  | LBRACKETLESS opt_bar row_field_list opt_opened GREATER name_tag_list
-    RBRACKET
-      { mktyp(Ptyp_variant(List.rev $3, not $4, List.rev $6)) }
+  | LBRACKETLESS opt_bar row_field_list RBRACKET
+      { mktyp(Ptyp_variant(List.rev $3, true, [])) }
+  | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
+      { mktyp(Ptyp_variant(List.rev $3, true, List.rev $5)) }
   | LBRACKET RBRACKET
       { mktyp(Ptyp_variant([],true,[])) }
-  | LBRACKETLESS opt_bar DOTDOT RBRACKET
+  | LBRACKET GREATER RBRACKET
       { mktyp(Ptyp_variant([],false,[])) }
-;
-opt_opened:
-    BAR DOTDOT                                  { true }
-  | /* empty */                                 { false }
 ;
 row_field_list:
     row_field                                   { [$1] }

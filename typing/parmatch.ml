@@ -377,11 +377,21 @@ let full_match tdefs force env =  match env with
               ok && List.mem_assoc tag fields)
         true row.row_fields
     end else
-      row.row_closed &&
-      List.for_all
-        (fun (tag,f) ->
-          Btype.row_field_repr f = Rabsent || List.mem_assoc tag fields)
-        row.row_fields
+      if row.row_closed then
+        List.for_all
+          (fun (tag,f) ->
+            Btype.row_field_repr f = Rabsent || List.mem_assoc tag fields)
+          row.row_fields
+      else begin
+        List.iter
+          (fun (tag,f) ->
+            match Btype.row_field_repr f with
+            | Reither(true, [], e) -> e := Some (Rpresent None)
+            | Reither(false, [t], e) -> e := Some (Rpresent (Some t))
+            | _ -> ())
+          row.row_fields;
+        false
+      end
 | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
     List.length env = 256
 | ({pat_desc = Tpat_constant(_)},_) :: _ -> false

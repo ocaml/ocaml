@@ -236,12 +236,9 @@ let rec typexp sch prio0 ppf ty =
               then non_gen_mark sch px
               else "" in
             let close_mark =
-              if not all_present then "< " else
-              if row.row_closed then " " else
-              if fields = [] then "< .." else "> " in
-            let pr_ellipsis ppf =
-              if not (row.row_closed || all_present)
-              then fprintf ppf "@;<1 -2>| .." in
+              if row.row_closed then
+                if all_present then " " else "< "
+              else "> " in
             let print_present ppf = function
               | [] -> ()
               | l ->
@@ -251,8 +248,8 @@ let rec typexp sch prio0 ppf ty =
               print_list (row_field sch) (fun () -> fprintf ppf "@;<1 -2>| ")
             in
 
-            fprintf ppf "%s[%s@[<hv>@[<hv>%a%t@]%a]@]"
-              gen_mark close_mark print_fields fields pr_ellipsis
+            fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a]@]"
+              gen_mark close_mark print_fields fields
               print_present present
         end
     | Tobject (fi, nm) ->
