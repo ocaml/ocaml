@@ -109,9 +109,9 @@ let rec sel_operation op args =
   | (Cand, _) -> sel_arith_comm Iand args
   | (Cor, _) -> sel_arith_comm Ior args
   | (Cxor, _) -> sel_arith_comm Ixor args
-  | (Clsl, _) -> sel_arith Ilsl args
-  | (Clsr, _) -> sel_arith Ilsr args
-  | (Casr, _) -> sel_arith Iasr args
+  | (Clsl, _) -> sel_shift Ilsl args
+  | (Clsr, _) -> sel_shift Ilsr args
+  | (Casr, _) -> sel_shift Iasr args
   | (Ccmpi comp, _) -> sel_arith_comp (Isigned comp) args
   | (Cadda, _) -> sel_arith_comm Iadd args
   | (Csuba, _) -> sel_arith Isub args
@@ -141,6 +141,12 @@ and sel_arith op = function
     [arg; Cconst_int n] when Proc.is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | [arg; Cconst_pointer n] when Proc.is_immediate n ->
+      (Iintop_imm(op, n), [arg])
+  | args ->
+      (Iintop op, args)
+
+and sel_shift op = function
+    [arg; Cconst_int n] when n >= 0 & n < Arch.size_int * 8 ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
