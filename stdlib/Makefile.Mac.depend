@@ -4,6 +4,8 @@ arg.cmoÄ array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi
 arg.cmxÄ array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
 array.cmoÄ list.cmi array.cmi 
 array.cmxÄ list.cmx array.cmi 
+callback.cmoÄ obj.cmi callback.cmi 
+callback.cmxÄ obj.cmx callback.cmi 
 char.cmoÄ char.cmi 
 char.cmxÄ char.cmi 
 digest.cmoÄ string.cmi digest.cmi 
