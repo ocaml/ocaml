@@ -22,9 +22,9 @@ let read () =
   print_int(sync(receive read_ch)); print_newline()
 
 let main () =
-  Thread.new accu 0;
-  Thread.new adder 1;
-  Thread.new subber 1;
+  Thread.create accu 0;
+  Thread.create adder 1;
+  Thread.create subber 1;
   while true do read() done
 
 let _ = Printexc.catch main ()

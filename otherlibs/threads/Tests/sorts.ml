@@ -17,7 +17,7 @@ type graphic_context =
 
 (* Array assignment and exchange with screen update *)
 
-let screen_mutex = Mutex.new()
+let screen_mutex = Mutex.create()
 
 let draw gc i v =
   fill_rect (gc.x0 + (gc.width * i) / gc.nelts)
@@ -63,17 +63,17 @@ let initialize name array maxval x y w h =
 (* Main animation function *)
 
 let display functs nelts maxval =
-  let a = Array.new nelts 0 in
+  let a = Array.create nelts 0 in
   for i = 0 to nelts - 1 do
     a.(i) <- Random.int maxval
   done;
   let num_finished = ref 0 in
-  let lock_finished = Mutex.new() in
-  let cond_finished = Condition.new() in
+  let lock_finished = Mutex.create() in
+  let cond_finished = Condition.create() in
   for i = 0 to Array.length functs - 1 do
     let (name, funct, x, y, w, h) = functs.(i) in
     let gc = initialize name a maxval x y w h in
-    Thread.new
+    Thread.create
       (fun () ->
         funct gc;
         Mutex.lock lock_finished;

@@ -8,7 +8,7 @@ let fibtask n =
   done
 
 let _ =
-  Thread.new fibtask 28;
+  Thread.create fibtask 28;
   while true do
     let l = read_line () in
     print_string ">> "; print_string l; print_newline()

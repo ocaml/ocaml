@@ -12,9 +12,9 @@ let rec receiver name =
   receiver name
 
 let _ =
-  Thread.new sender "hello";
-  Thread.new sender "world";
-  Thread.new receiver "A";
+  Thread.create sender "hello";
+  Thread.create sender "world";
+  Thread.create receiver "A";
   receiver "B";
   exit 0
 

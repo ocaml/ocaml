@@ -18,9 +18,9 @@ let read () =
   print_int(sync(receive read_ch)); print_newline()
 
 let main () =
-  Thread.new accu 0;
-  Thread.new (sender add_ch) 1;
-  Thread.new (sender sub_ch) 1;
+  Thread.create accu 0;
+  Thread.create (sender add_ch) 1;
+  Thread.create (sender sub_ch) 1;
   while true do read() done
 
 let _ = Printexc.catch main ()

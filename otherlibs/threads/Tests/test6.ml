@@ -10,7 +10,7 @@ let rec f tag msg =
   f tag msg
 
 let _ =
-  Thread.new (f "A") "hello";
+  Thread.create (f "A") "hello";
   f "B" "world";
   exit 0
 

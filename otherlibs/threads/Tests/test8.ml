@@ -5,7 +5,7 @@ type 'a buffer_channel = { input: 'a channel; output: 'a channel }
 let new_buffer_channel() =
   let ic = new_channel() in
   let oc = new_channel() in
-  let buff = Queue.new() in
+  let buff = Queue.create() in
   let rec buffer_process front rear =
     match (front, rear) with
       ([], []) -> buffer_process [sync(receive ic)] []
@@ -15,7 +15,7 @@ let new_buffer_channel() =
           wrap (send oc hd) (fun () -> buffer_process tl rear)
         ]
     | ([], _) -> buffer_process (List.rev rear) [] in
-  Thread.new (buffer_process []) [];
+  Thread.create (buffer_process []) [];
   { input = ic; output = oc }
 
 let buffer_send bc data =
@@ -40,7 +40,7 @@ let g () =
   print_string (sync(buffer_receive box)); print_newline()
 
 let _ =
-  Thread.new f ();
+  Thread.create f ();
   g()
 
 

@@ -8,13 +8,13 @@ type 'a prodcons =
     notempty: Condition.t;
     notfull: Condition.t }
 
-let new size init =
-  { buffer = Array.new size init;
-    lock = Mutex.new();
+let create size init =
+  { buffer = Array.create size init;
+    lock = Mutex.create();
     readpos = 0;
     writepos = 0;
-    notempty = Condition.new();
-    notfull = Condition.new() }
+    notempty = Condition.create();
+    notfull = Condition.create() }
 
 let put p data =
   Mutex.lock p.lock;
@@ -39,7 +39,7 @@ let get p =
 
 (* Test *)
 
-let buff = new 20 0
+let buff = create 20 0
 
 let rec produce n =
   print_int n; print_string "-->"; print_newline();
@@ -52,7 +52,7 @@ let rec consume () =
   consume ()
 
 let _ =
-  Thread.new produce 0;
+  Thread.create produce 0;
   consume()
 
 

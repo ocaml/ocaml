@@ -16,13 +16,13 @@ let engine number address =
     close_in ic; close_out oc
 
 let main() =
-  let addresses = Array.new (Array.length Sys.argv - 1) inet_addr_any in
+  let addresses = Array.create (Array.length Sys.argv - 1) inet_addr_any in
   for i = 1 to Array.length Sys.argv - 1 do
     addresses.(i - 1) <- (gethostbyname Sys.argv.(i)).h_addr_list.(0)
   done;
-  let processes = Array.new (Array.length addresses) (Thread.self()) in
+  let processes = Array.create (Array.length addresses) (Thread.self()) in
   for i = 0 to Array.length addresses - 1 do
-    processes.(i) <- Thread.new (engine i) addresses.(i)
+    processes.(i) <- Thread.create (engine i) addresses.(i)
   done;
   for i = 0 to Array.length processes - 1 do
     Thread.join processes.(i)

@@ -21,6 +21,6 @@ let g () =
   print_string "g "; print_string res; print_newline()
 
 let _ =
-  let id = Thread.new f () in
+  let id = Thread.create f () in
   g ();
   Thread.join id

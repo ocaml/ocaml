@@ -31,13 +31,13 @@ let reader_thread (ic, size) =
   done
 
 let main() =
-  Thread.new gc_thread ();
+  Thread.create gc_thread ();
   let (out1, in1) = Unix.pipe() in
-  Thread.new writer_thread (in1, 4096);
-  Thread.new reader_thread (out1, 4096);
+  Thread.create writer_thread (in1, 4096);
+  Thread.create reader_thread (out1, 4096);
   let (out2, in2) = Unix.pipe() in
-  Thread.new writer_thread (in2, 16);
-  Thread.new reader_thread (out2, 16);
+  Thread.create writer_thread (in2, 16);
+  Thread.create reader_thread (out2, 16);
   stdin_thread()
 
 let _ = main()

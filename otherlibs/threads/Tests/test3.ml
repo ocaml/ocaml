@@ -4,5 +4,5 @@ let print_message delay c =
   done
 
 let _ =
-  Thread.new (print_message 0.6666666666) 'a';
+  Thread.create (print_message 0.6666666666) 'a';
   print_message 1.0 'b'
