@@ -50,10 +50,12 @@ let select_oper op args =
     (Cmuli, [arg1; Cconst_int n]) ->
       let shift = Misc.log2 n in
       if n = 1 lsl shift
-      then (Iintop_imm(Ilsl, shift), arg1)
+      then (Iintop_imm(Ilsl, shift), [arg1])
       else raise Use_default
   | _ ->
       raise Use_default
+
+let select_store addr exp = raise Use_default
 
 let pseudoregs_for_operation op arg res = raise Use_default
 
@@ -196,13 +198,25 @@ let loc_exn_bucket = phys_reg 8         (* $o0 *)
 
 (* Registers destroyed by operations *)
 
-let destroyed_at_call = all_phys_regs
-let destroyed_at_raise = all_phys_regs
-let destroyed_at_extcall = (* %l0-%l7, %i0-%i5 preserved *)
-  Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 6; 7; 14; 15; 16; 17; 18; 19])
+let destroyed_at_c_call = (* %l0-%l7, %i0-%i5 preserved *)
+  Array.of_list(List.map phys_reg [8; 9; 10; 11; 12; 13; 20; 21])
 
-let destroyed_at_oper op = [||]
+let destroyed_at_oper = function
+    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
+  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+  | _ -> [||]
+
+let destroyed_at_raise = all_phys_regs
+
+(* Maximal register pressure *)
+
+let safe_register_pressure = function
+    Iextcall(_, _) -> 0
+  | _ -> 15
+
+let max_register_pressure = function
+    Iextcall(_, _) -> [| 14; 0 |]
+  | _ -> [| 22; 15 |]
 
 (* Reloading *)
 

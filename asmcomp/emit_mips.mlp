@@ -182,25 +182,24 @@ let emit_instr i =
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
-        begin match (src, dst) with
-          {loc = Reg rs; typ = Int|Addr}, {loc = Reg rd; typ = Int|Addr} ->
-            if rs <> rd then
+        if src.loc <> dst.loc then begin
+          match (src, dst) with
+            {loc = Reg rs; typ = Int|Addr}, {loc = Reg rd; typ = Int|Addr} ->
               `	move	{emit_reg dst}, {emit_reg src}\n`
-        | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
-            if rs <> rd then
+          | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
               `	mov.d	{emit_reg dst}, {emit_reg src}\n`
-        | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Int|Addr} ->
-            `	mfc1.d	{emit_reg dst}, {emit_reg src}\n`
-        | {loc = Reg rs; typ = Int|Addr}, {loc = Stack sd} ->
-            `	sw	{emit_reg src}, {emit_stack dst}\n`
-        | {loc = Reg rs; typ = Float}, {loc = Stack sd} ->
-            `	s.d	{emit_reg src}, {emit_stack dst}\n`
-        | {loc = Stack ss; typ = Int|Addr}, {loc = Reg rd} ->
-            `	lw	{emit_reg dst}, {emit_stack src}\n`
-        | {loc = Stack ss; typ = Float}, {loc = Reg rd} ->
-            `	l.d	{emit_reg dst}, {emit_stack src}\n`
-        | _ ->
-            fatal_error "Emit_mips: Imove"
+          | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Int|Addr} ->
+              `	mfc1.d	{emit_reg dst}, {emit_reg src}\n`
+          | {loc = Reg rs; typ = Int|Addr}, {loc = Stack sd} ->
+              `	sw	{emit_reg src}, {emit_stack dst}\n`
+          | {loc = Reg rs; typ = Float}, {loc = Stack sd} ->
+              `	s.d	{emit_reg src}, {emit_stack dst}\n`
+          | {loc = Stack ss; typ = Int|Addr}, {loc = Reg rd} ->
+              `	lw	{emit_reg dst}, {emit_stack src}\n`
+          | {loc = Stack ss; typ = Float}, {loc = Reg rd} ->
+              `	l.d	{emit_reg dst}, {emit_stack src}\n`
+          | _ ->
+              fatal_error "Emit_mips: Imove"
         end
     | Lop(Iconst_int 0) ->
         `	move	{emit_reg i.res.(0)}, $0\n`

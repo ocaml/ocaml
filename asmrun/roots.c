@@ -24,6 +24,13 @@
 #define Mask_already_scanned(retaddr) (retaddr & ~1)
 #endif
 
+#ifdef TARGET_sparc
+#define Saved_return_address(sp) *((long *)(sp + 92))
+#define Already_scanned(sp, retaddr) (retaddr & 1)
+#define Mark_scanned(sp, retaddr) (*((long *)(sp + 92)) = retaddr | 1)
+#define Mask_already_scanned(retaddr) (retaddr & ~1)
+#endif
+
 #ifdef TARGET_i386
 #define Saved_return_address(sp) *((long *)(sp - 4))
 #endif
@@ -155,10 +162,8 @@ void oldify_local_roots ()
     for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
       ofs = *p;
       if (ofs >= 0) {
-        Assert(ofs < d->frame_size);
         root = (value *)(sp + ofs);
       } else {
-        Assert(ofs >= -32);
         root = &gc_entry_regs[-ofs-1];
       }
       oldify(root, *root);
@@ -222,10 +227,8 @@ void darken_all_roots ()
     for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
       ofs = *p;
       if (ofs >= 0) {
-        Assert(ofs < d->frame_size);
         darken(*((value *)(sp + ofs)));
       } else {
-        Assert(ofs >= -32);
         darken(gc_entry_regs[-ofs-1]);
       }
     }

@@ -148,15 +148,15 @@ and swap_intcomp = function
 (* Instruction selection for conditionals *)
 
 let sel_condition = function
-    Cop(Ccmpi cmp, [arg1; Cconst_int n]) ->
+    Cop(Ccmpi cmp, [arg1; Cconst_int n]) when Proc.is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_int n; arg2]) ->
+  | Cop(Ccmpi cmp, [Cconst_int n; arg2]) when Proc.is_immediate n ->
       (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args) ->
       (Iinttest(Isigned cmp), Ctuple args)
-  | Cop(Ccmpa cmp, [arg1; Cconst_pointer n]) ->
+  | Cop(Ccmpa cmp, [arg1; Cconst_pointer n]) when Proc.is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [Cconst_pointer n; arg2]) ->
+  | Cop(Ccmpa cmp, [Cconst_pointer n; arg2]) when Proc.is_immediate n ->
       (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args) ->
       (Iinttest(Iunsigned cmp), Ctuple args)

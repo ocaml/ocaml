@@ -246,6 +246,7 @@ caml_start_program:
 	lda	$0, stray_exn_handler
 	stq	$0, 8($sp)
 	mov	$sp, $15
+    /* Record highest stack address */
         stq     $sp, caml_top_of_stack
     /* Initialize allocation registers */
 	ldq	$13, young_ptr

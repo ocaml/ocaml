@@ -274,27 +274,26 @@ let emit_instr i =
     match i.desc with
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
-        begin match (i.arg.(0).loc, i.res.(0).loc) with
-          (Reg rs, Reg rd) ->
-            if rs <> rd then
-            if i.arg.(0).typ = Float then
-              `	fmov	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
-            else
-              `	mov	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
-        | (Reg rs, Stack sd) ->
-            if i.arg.(0).typ = Float then
-              `	stt	{emit_reg i.arg.(0)}, {emit_stack i.res.(0)}\n`
-            else
-              `	stq	{emit_reg i.arg.(0)}, {emit_stack i.res.(0)}\n`
-        | (Stack ss, Reg rd) ->
-            if i.arg.(0).typ = Float then
-              `	ldt	{emit_reg i.res.(0)}, {emit_stack i.arg.(0)}\n`
-            else
-              `	ldq	{emit_reg i.res.(0)}, {emit_stack i.arg.(0)}\n`
-        | (Stack ss, Stack sd) ->
-            if ss <> sd then fatal_error "Emit_alpha: Imove stack-stack"
-        | _ ->
-            fatal_error "Emit_alpha: Imove"
+        let src = i.arg.(0) and dst = i.res.(0) in
+        if src.loc <> dst.loc then begin        
+          match (src.loc, dst.loc) with
+            (Reg rs, Reg rd) ->
+              if src.typ = Float then
+                `	fmov	{emit_reg src}, {emit_reg dst}\n`
+              else
+                `	mov	{emit_reg src}, {emit_reg dst}\n`
+          | (Reg rs, Stack sd) ->
+              if src.typ = Float then
+                `	stt	{emit_reg src}, {emit_stack dst}\n`
+              else
+                `	stq	{emit_reg src}, {emit_stack dst}\n`
+          | (Stack ss, Reg rd) ->
+              if src.typ = Float then
+                `	ldt	{emit_reg dst}, {emit_stack src}\n`
+              else
+                `	ldq	{emit_reg dst}, {emit_stack src}\n`
+          | _ ->
+              fatal_error "Emit_alpha: Imove"
         end
     | Lop(Iconst_int 0) ->
         `	clr	{emit_reg i.res.(0)}\n`
