@@ -580,19 +580,20 @@ and class_expr cl_num val_env met_env scl =
 	| Tcty_fun (_, _, ty_fun) -> all_labeled ty_fun
 	| _ -> true
       in
-      ignore (Parmatch.check_partial val_env pat.pat_loc
-		[pat, (* Dummy expression *)
-		 {exp_desc = Texp_constant (Asttypes.Const_int 1);
-		  exp_loc = Location.none;
-		  exp_type = Ctype.none;
-		  exp_env = Env.empty }]);
+      let partial =
+	Parmatch.check_partial val_env pat.pat_loc
+	  [pat, (* Dummy expression *)
+	   {exp_desc = Texp_constant (Asttypes.Const_int 1);
+	    exp_loc = Location.none;
+	    exp_type = Ctype.none;
+	    exp_env = Env.empty }] in
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env met_env scl' in
       Ctype.end_def ();
       if Btype.is_optional l && all_labeled cl.cl_type then
 	Location.print_warning pat.pat_loc
 	  (Warnings.Other "This optional argument cannot be erased");
-      {cl_desc = Tclass_fun (pat, pv, cl);
+      {cl_desc = Tclass_fun (pat, pv, cl, partial);
        cl_loc = scl.pcl_loc;
        cl_type = Tcty_fun (l, pat.pat_type, cl.cl_type)}
   | Pcl_apply (scl', sargs) ->

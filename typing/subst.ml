@@ -117,9 +117,7 @@ let rec typexp s ty =
 		  (fun (l,fi) -> l,
 		    match row_field_repr fi with
 		      Rpresent (Some ty) -> Rpresent(Some (typexp s ty))
-		    | Reither(Some l, _) ->
-			Reither(Some(List.map (typexp s) l), ref None)
-		    | Reither(None, _) -> Reither(None, ref None)
+		    | Reither(l, _) -> Reither(List.map (typexp s) l, ref None)
 		    | fi -> fi)
 		  row.row_fields
 	      and name =

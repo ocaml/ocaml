@@ -182,7 +182,9 @@ let full_match tdefs force env =
 	List.map
           (fun (pat,_) -> match pat.pat_desc with
 	    Tpat_variant (tag, opt, _) ->
-	      (tag, Reither(may_map (fun _ -> [Ctype.newvar()]) opt, ref None))
+	      let tl =
+		if opt = None then [] else [Ctype.newvar()] in
+	      (tag, Reither(tl, ref None))
           | _ -> fatal_error "Parmatch.full_match")
 	  env
       in

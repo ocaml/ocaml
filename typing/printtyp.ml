@@ -280,9 +280,9 @@ and row_field sch (l,f) =
   print_char '`';
   print_string l;
   match row_field_repr f with
-    Rpresent None | Reither(None, _) -> ()
+    Rpresent None | Reither([], _) -> ()
   | Rpresent(Some ty) -> print_space (); typexp sch 0 ty
-  | Reither(Some tyl,_) -> print_space (); typlist sch 0 " &" tyl
+  | Reither(tyl,_) -> print_space (); typlist sch 0 " &" tyl
   | Rabsent -> print_space (); print_string "[]"
 
 and typlist sch prio sep = function

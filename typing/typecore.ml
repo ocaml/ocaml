@@ -148,7 +148,7 @@ let rec type_pat env sp =
         pat_env = env }
   | Ppat_variant(l, sarg) ->
       let arg = may_map (type_pat env) sarg in
-      let arg_type = may_map (fun arg -> [arg.pat_type]) arg in
+      let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
       let row = { row_fields = [l, Reither(arg_type,ref None)];
 		  row_closed = false;
 		  row_more = newvar ();

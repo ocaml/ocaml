@@ -141,7 +141,7 @@ let constr_of_variant row lab =
       (fun (lab', f) ->
 	match Btype.row_field_repr f with
 	  Rabsent -> ()
-	| Reither(None,_) | Rpresent None -> incr consts
+	| Reither([],_) | Rpresent None -> incr consts
 	| Reither _ | Rpresent _ ->
 	    nonconsts := 1; if lab = lab' then cst := false)
       row.row_fields
@@ -167,7 +167,7 @@ let map_variant_matching pm =
 	    if row.row_closed then
       	      List.iter
 		(fun (lab,f) -> match Btype.row_field_repr f with
-		| Reither(Some _,_) | Rpresent(Some _) -> incr consts
+		| Reither(_::_,_) | Rpresent(Some _) -> incr consts
 		| _ -> ())
       	       	row.row_fields
 	    else consts := 100000;

@@ -101,7 +101,7 @@ let rec iter_row f row =
     (fun (_, fi) ->
       match row_field_repr fi with
       |	Rpresent(Some ty) -> f ty
-      |	Reither(Some tl, _) -> List.iter f tl
+      |	Reither(tl, _) -> List.iter f tl
       | _ -> ())
     row.row_fields;
   match (repr row.row_more).desc with

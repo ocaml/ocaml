@@ -43,7 +43,7 @@ and row_desc =
 
 and row_field =
     Rpresent of type_expr option
-  | Reither of type_expr list option * row_field option ref
+  | Reither of type_expr list * row_field option ref
   | Rabsent
 
 and abbrev_memo =

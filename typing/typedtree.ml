@@ -87,7 +87,7 @@ and class_expr =
 and class_expr_desc =
     Tclass_ident of Path.t
   | Tclass_structure of class_structure
-  | Tclass_fun of pattern * (Ident.t * expression) list * class_expr
+  | Tclass_fun of pattern * (Ident.t * expression) list * class_expr * partial
   | Tclass_apply of class_expr * expression option list
   | Tclass_let of rec_flag *  (pattern * expression) list *
                   (Ident.t * expression) list * class_expr

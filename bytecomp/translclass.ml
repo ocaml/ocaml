@@ -135,7 +135,7 @@ let rec build_object_init cl_table obj params inh_init cl =
            (fun (id, expr) rem ->
               lsequence (Lifused (id, set_inst_var obj id expr)) rem)
            params obj_init))
-  | Tclass_fun (pat, vals, cl) ->
+  | Tclass_fun (pat, vals, cl, partial) ->
       let (inh_init, obj_init) =
         build_object_init cl_table obj (vals @ params) inh_init cl
       in
@@ -144,7 +144,7 @@ let rec build_object_init cl_table obj params inh_init cl =
          let param = name_pattern "param" [pat, ()] in
          Lfunction (Curried, param::params,
                     Matching.for_function
-                      pat.pat_loc None (Lvar param) [pat, rem])
+                      pat.pat_loc None (Lvar param) [pat, rem] partial)
        in
        begin match obj_init with
          Lfunction (Curried, params, rem) -> build params rem
@@ -234,7 +234,7 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
           (inh_init, cl_init)
       in
       (inh_init, bind_methods cla pub_meths str.cl_meths cl_init)
-  | Tclass_fun (pat, vals, cl) ->
+  | Tclass_fun (pat, vals, cl, _) ->
       let (inh_init, cl_init) =
         build_class_init cla pub_meths cstr inh_init cl_init cl
       in

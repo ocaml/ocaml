@@ -42,7 +42,8 @@ and row_desc =
 
 and row_field =
     Rpresent of type_expr option
-  | Reither of type_expr list option * row_field option ref
+  | Reither of type_expr list * row_field option ref
+	(* an empty list denotes a constant constructor *)
   | Rabsent
 
 and abbrev_memo =
