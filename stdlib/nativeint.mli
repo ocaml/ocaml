@@ -52,11 +52,11 @@ val pred: nativeint -> nativeint
       (* Predecessor.  [Nativeint.pred x] is [Nativeint.sub x 1n]. *)
 val abs: nativeint -> nativeint
       (* Return the absolute value of its argument. *)
-val max: nativeint
+val max_int: nativeint
       (* The greatest representable native integer,
          either $2^{31} - 1$ on a 32-bit platform,
          or $2^{63} - 1$ on a 64-bit platform. *)
-val min: nativeint
+val min_int: nativeint
       (* The greatest representable native integer,
          either $-2^{31}$ on a 32-bit platform,
          or $-2^{63}$ on a 64-bit platform. *)

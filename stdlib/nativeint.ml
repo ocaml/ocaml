@@ -37,8 +37,8 @@ let minus_one = of_int (-1)
 let succ n = add n one
 let pred n = sub n one
 let abs n = if n >= zero then n else neg n
-let min = shift_left one (Sys.word_size - 1)
-let max = sub min one
+let min_int = shift_left one (Sys.word_size - 1)
+let max_int = sub min_int one
 let lognot n = logxor n minus_one
 
 external format : string -> nativeint -> string = "nativeint_format"

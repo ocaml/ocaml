@@ -87,16 +87,16 @@ let _ =
                  [Int32.zero, Int32.zero;
                   Int32.of_int 123, Int32.of_int 123;
                   Int32.of_int (-456), Int32.of_int (-456);
-                  Int32.max, Int32.max;
-                  Int32.min, Int32.min;
+                  Int32.max_int, Int32.max_int;
+                  Int32.min_int, Int32.min_int;
                   Int32.of_string "0x12345678", Int32.of_string "0x12345678"]);
   test 7 true
     (test_setget int64
                  [Int64.zero, Int64.zero;
                   Int64.of_int 123, Int64.of_int 123;
                   Int64.of_int (-456), Int64.of_int (-456);
-                  Int64.max, Int64.max;
-                  Int64.min, Int64.min;
+                  Int64.max_int, Int64.max_int;
+                  Int64.min_int, Int64.min_int;
                   Int64.of_string "0x123456789ABCDEF0",
                      Int64.of_string "0x123456789ABCDEF0"]);
   test 8 true
@@ -104,8 +104,8 @@ let _ =
                  [Nativeint.zero, Nativeint.zero;
                   Nativeint.of_int 123, Nativeint.of_int 123;
                   Nativeint.of_int (-456), Nativeint.of_int (-456);
-                  Nativeint.max, Nativeint.max;
-                  Nativeint.min, Nativeint.min;
+                  Nativeint.max_int, Nativeint.max_int;
+                  Nativeint.min_int, Nativeint.min_int;
                   Nativeint.of_string "0x12345678",
                     Nativeint.of_string "0x12345678"]);
   test 9 true
