@@ -100,6 +100,8 @@ $103:   ldgp    $gp, 0($26)
         stq     $24, caml_last_return_address
         lda     $24, 16($sp)
         stq     $24, caml_bottom_of_stack
+    /* Save current allocation pointer for debugging purposes */
+        stq     $13, young_ptr
     /* Save all regs used by the code generator in the arrays
     /* gc_entry_regs and gc_entry_float_regs. */
         SAVE_ALL_REGS
@@ -200,6 +202,7 @@ caml_c_call:
 /* Start the Caml program */
 
         .globl  caml_start_program
+        .globl  stray_exn_handler
         .ent    caml_start_program
         .align  3
 caml_start_program:
@@ -273,6 +276,6 @@ raise_caml_exception:
         ldq     $15, 0($sp)
         ldq     $27, 8($sp)
         lda     $sp, 16($sp)
-        jmp     ($27)
+        jmp     $26, ($27)      /* Keep retaddr in $26 to help debugging */
 
         .end    raise_caml_exception
