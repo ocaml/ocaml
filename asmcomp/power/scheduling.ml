@@ -36,6 +36,10 @@ method oper_latency = function
   | Ispecific(Imultaddf | Imultsubf) -> 5
   | _ -> 1
 
+method reload_retaddr_latency = 12
+  (* If we can have that many cycles between the reloadretaddr and the
+     return, we can expect that the blr branch will be completely folded. *)
+
 (* Issue cycles.  Rough approximations. *)
 
 method oper_issue_cycles = function
@@ -51,6 +55,10 @@ method oper_issue_cycles = function
   | Ifloatofint -> 9
   | Iintoffloat -> 4
   | _ -> 1
+
+method reload_retaddr_issue_cycles = 3
+  (* load then stalling mtlr *)
+
 end
 
 let fundecl f = (new scheduler ())#schedule_fundecl f

@@ -36,14 +36,20 @@ let dummy_node =
 
 (* The code dag itself is represented by two tables from registers to nodes:
    - "results" maps registers to the instructions that produced them;
-   - "uses" maps registers to the instructions that use them. *)
+   - "uses" maps registers to the instructions that use them.
+   In addition, code_stores contains the latest store nodes emitted so far
+   and code_loads contains all load nodes emitted since the last store. *)
 
 let code_results = (Hashtbl.create 31 : (location, code_dag_node) Hashtbl.t)
 let code_uses = (Hashtbl.create 31 : (location, code_dag_node) Hashtbl.t)
+let code_stores = ref ([] : code_dag_node list)
+let code_loads = ref ([] : code_dag_node list)
 
 let clear_code_dag () =
   Hashtbl.clear code_results;
-  Hashtbl.clear code_uses
+  Hashtbl.clear code_uses;
+  code_stores := [];
+  code_loads := []
 
 (* Add an edge to the code DAG *)
 
@@ -102,7 +108,7 @@ class virtual scheduler_generic () as self =
 
 (* Determine whether an operation ends a basic block or not.
    Can be overriden for some processors to signal specific instructions
-   that terminate a basic block, e.g. Istore_symbol for the 386. *)
+   that terminate a basic block. *)
 
 method oper_in_basic_block = function
     Icall_ind -> false
@@ -111,7 +117,6 @@ method oper_in_basic_block = function
   | Itailcall_imm _ -> false
   | Iextcall(_, _) -> false
   | Istackoffset _ -> false
-  | Istore(_, _) -> false
   | Ialloc _ -> false
   | _ -> true
 
@@ -123,35 +128,59 @@ method protected instr_in_basic_block instr =
   | Lreloadretaddr -> true
   | _ -> false
 
-(* Estimate the delay needed to evaluate an operation. *)
+(* Determine whether an operation is a memory store or a memory load.
+   Can be overriden for some processors to signal specific
+   load or store instructions (e.g. on the I386). *)
+
+method is_store = function
+    Istore(_, _) -> true
+  | _ -> false
+
+method is_load = function
+    Iload(_, _) -> true
+  | _ -> false
+
+method protected instr_is_store instr =
+  match instr.desc with
+    Lop op -> self#is_store op
+  | _ -> false
+
+method protected instr_is_load instr =
+  match instr.desc with
+    Lop op -> self#is_load op
+  | _ -> false
+
+(* Estimate the latency of an operation. *)
 
 virtual oper_latency : Mach.operation -> int
+
+(* Estimate the latency of a Lreloadretaddr operation. *)
+
+method reload_retaddr_latency = self#oper_latency some_load
 
 (* Estimate the delay needed to evaluate an instruction *)
 
 method protected instr_latency instr =
   match instr.desc with
-    Lop op ->
-      self#oper_latency op
-  | Lreloadretaddr ->
-      self#oper_latency some_load
-  | _ ->
-      assert false
+    Lop op -> self#oper_latency op
+  | Lreloadretaddr -> self#reload_retaddr_latency
+  | _ -> assert false
 
 (* Estimate the number of cycles consumed by emitting an operation. *)
 
 virtual oper_issue_cycles : Mach.operation -> int
 
+(* Estimate the number of cycles consumed by emitting a Lreloadretaddr. *)
+
+method reload_retaddr_issue_cycles = self#oper_issue_cycles some_load
+
 (* Estimate the number of cycles consumed by emitting an instruction. *)
 
 method protected instr_issue_cycles instr =
   match instr.desc with
-    Lop op ->
-      self#oper_issue_cycles op
-  | Lreloadretaddr ->
-      self#oper_issue_cycles some_load
-  | _ ->
-      assert false
+    Lop op -> self#oper_issue_cycles op
+  | Lreloadretaddr -> self#reload_retaddr_issue_cycles
+  | _ -> assert false
 
 (* Add an instruction to the code dag *)
 
@@ -189,6 +218,22 @@ method protected add_instruction ready_queue instr =
     with Not_found ->
       ()
   done;
+  (* If this is a load, add edges from the most recent store viewed so
+     far (if any) and remember the load *)
+  if self#instr_is_load instr then begin
+    List.iter (fun store -> add_edge store node 0) !code_stores;
+    code_loads := node :: !code_loads
+  end
+  (* If this is a store, add edges from the most recent store,
+     as well as all loads viewed since then.  Remember the store,
+     discarding the previous store and loads. *)
+  else if self#instr_is_store instr then begin
+    List.iter (fun store -> add_edge store node 0) !code_stores;
+    List.iter (fun load -> add_edge load node 0) !code_loads;
+    code_stores := [node];
+    code_loads := []
+  end;
+
   (* Remember the registers used and produced by this instruction *)
   for i = 0 to Array.length instr.res - 1 do
     Hashtbl.add code_results instr.res.(i).loc node
