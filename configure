@@ -560,6 +560,8 @@ case "$host" in
   powerpc-*-darwin*)            arch=power; model=ppc; system=rhapsody;;
   arm*-*-linux*)                arch=arm; system=linux;;
   ia64-*-linux*)                arch=ia64; system=linux;;
+  ia64-*-freebsd*)              arch=ia64; system=freebsd;;
+  amd64-*-freebsd*)             arch=amd64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
 esac
 
@@ -622,7 +624,7 @@ case "$arch,$model,$system" in
   power,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   power,*,rhapsody) ;;
   arm,*,linux)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  ia64,*,linux)     asflags=-xexplicit
+  ia64,*,*)         asflags=-xexplicit
                     aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM) -Wa,-xexplicit';;
   amd64,*,*)        aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
 esac
