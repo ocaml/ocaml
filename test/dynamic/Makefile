@@ -13,6 +13,8 @@ tests = basic
 
 default: build run
 
+.SUFFIXES: .mli .ml .cmi .cmo .cmx .cma .cmxa .byte .opt .run
+
 build: p4_dyntest.cmo basic.byte
 
 run: $(tests:=.byte)
@@ -23,7 +25,8 @@ run: $(tests:=.byte)
 	done; \
 	echo "All tests succeeded."
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx .cma .cmxa .byte .opt
+.byte.run:
+	$(OCAMLRUN) ./$<
 
 .ml.cmo:
 	$(OCAMLC) -join $(OCAMLCFLAGS) -pp "$(CAMLP4O) ./p4_dyntest.cmo $(JOCPARSER)" -c $<
