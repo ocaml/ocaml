@@ -331,10 +331,10 @@ val close_tag : unit -> unit;;
    into the output device of the formatter. *)
 
 val set_tags : bool -> unit;;
-(** [set_tags b] turns on or off the treatment of tags (default is on). *)
+(** [set_tags b] turns on or off the treatment of tags (default is off). *)
 val set_print_tags : bool -> unit;;
 val set_mark_tags : bool -> unit;;
-(** [set_print_tags b] turns on or off the printing of tags, while 
+(** [set_print_tags b] turns on or off the printing of tags, while
     [set_mark_tags b] turns on or off the output of tag markers. *)
 val get_print_tags : unit -> bool;;
 val get_mark_tags : unit -> bool;;
