@@ -175,13 +175,16 @@ let make_startup_file ppf filename units_list =
   compile_phrase (Cmmgen.entry_point name_list);
   let apply_functions = ref (IntSet.add 2 (IntSet.add 3 IntSet.empty)) in
   (* The callback functions always reference caml_apply[23] *)
-  let curry_functions =
-    ref IntSet.empty in
+  let send_functions = ref IntSet.empty in
+  let curry_functions = ref IntSet.empty in
   List.iter
     (fun (info,_,_) ->
       List.iter
         (fun n -> apply_functions := IntSet.add n !apply_functions)
         info.ui_apply_fun;
+      List.iter
+        (fun n -> send_functions := IntSet.add n !send_functions)
+        info.ui_send_fun;
       List.iter
         (fun n -> curry_functions := IntSet.add n !curry_functions)
         info.ui_curry_fun)
@@ -189,6 +192,9 @@ let make_startup_file ppf filename units_list =
   IntSet.iter
     (fun n -> compile_phrase (Cmmgen.apply_function n))
     !apply_functions;
+  IntSet.iter
+    (fun n -> compile_phrase (Cmmgen.send_function n))
+    !send_functions;
   IntSet.iter
     (fun n -> List.iter (compile_phrase) (Cmmgen.curry_function n))
     !curry_functions;

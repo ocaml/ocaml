@@ -327,12 +327,10 @@ let lookup_label obj lab =
 let call_cached_method obj tag cache pos args =
   let arity = List.length args in
   let cache = array_indexing log2_size_addr cache pos in
-  Compilenv.need_apply_fun (-arity);
-  let res =
+  Compilenv.need_send_fun arity;
   Cop(Capply typ_addr,
-      Cconst_symbol("caml_cached_method" ^ string_of_int arity) ::
+      Cconst_symbol("caml_send" ^ string_of_int arity) ::
       obj :: tag :: cache :: args)
-  in Format.printf "%a@." Printcmm.expression res; res
 
 (* Allocation *)
 
@@ -1782,7 +1780,7 @@ let apply_function_body arity =
        get_field (Cvar clos) 2 :: List.map (fun s -> Cvar s) all_args),
    app_fun clos 0))
 
-let call_cached_method arity =
+let send_function arity =
   let (args, clos', body) = apply_function_body (1+arity) in
   let cache = Ident.create "cache"
   and obj = List.hd args
@@ -1814,13 +1812,12 @@ let call_cached_method arity =
     [obj, typ_addr; tag, typ_int; cache, typ_addr]
     @ List.map (fun id -> (id, typ_addr)) (List.tl args) in
   Cfunction
-   {fun_name = "caml_cached_method" ^ string_of_int arity;
+   {fun_name = "caml_send" ^ string_of_int arity;
     fun_args = fun_args;
     fun_body = body;
     fun_fast = true}
 
 let apply_function arity =
-  if arity < 1 then call_cached_method (-arity) else
   let (args, clos, body) = apply_function_body arity in
   let all_args = args @ [clos] in
   Cfunction
