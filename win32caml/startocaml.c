@@ -14,7 +14,6 @@
 
 #include <windows.h>
 #include <stdio.h>
-#include <windows.h>
 #include <direct.h>
 #include <io.h>
 #include "inria.h"
@@ -144,6 +143,7 @@ int GetOcamlPath(void)
                      "Software", "Objective Caml",
                      "InterpreterPath", path)) {
     /* Key doesn't exist?  Ask user */
+    path[0] = '\0';
     if (!BrowseForFile("Ocaml interpreter|ocaml.exe", path)) {
       ShowDbgMsg("Impossible to find ocaml.exe. I quit");
       exit(0);
@@ -217,13 +217,14 @@ int IsWindowsNT(void)
  Errors:        If any system call for whatever reason fails, the
                 thread will exit. No error message is shown.
 ------------------------------------------------------------------------*/
-int _stdcall DoStartOcaml(HWND hwndParent)
+DWORD _stdcall DoStartOcaml(LPVOID param)
 {
         char *cmdline;
         int processStarted;
         LPSECURITY_ATTRIBUTES lpsa=NULL;
         SECURITY_ATTRIBUTES sa;
         SECURITY_DESCRIPTOR sd;
+	HWND hwndParent = (HWND) param;
 
         sa.nLength = sizeof(SECURITY_ATTRIBUTES);
         // Under windows NT/2000/Whistler we have to initialize the security descriptors
@@ -356,7 +357,7 @@ void InterruptOcaml(void)
 {
   if (! GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pi.dwProcessId)) {
     char message[1024];
-    sprintf(message, "GenerateConsole failed: %d\n", GetLastError());
+    sprintf(message, "GenerateConsole failed: %ld\n", GetLastError());
     MessageBox(NULL, message, "Ocaml", MB_OK);
   }
   WriteToPipe(" ");

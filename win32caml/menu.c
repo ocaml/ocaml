@@ -18,6 +18,7 @@
 #include "inria.h"
 #include "inriares.h"
 
+void InterruptOcaml(void);
 LOGFONT CurrentFont;
 int CurrentFontFamily = (FIXED_PITCH | FF_MODERN);
 int CurrentFontStyle;

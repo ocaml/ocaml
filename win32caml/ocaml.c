@@ -29,6 +29,7 @@
 int EditControls = IDEDITCONTROL;
 static WNDPROC lpEProc;
 static char lineBuffer[1024*32];
+int ResetText(void);
 int ReadToLineBuffer(void);
 int AddLineBuffer(void);
 static int busy;
