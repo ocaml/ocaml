@@ -38,7 +38,7 @@
 
 
 %%venant de macros.tex
-
+\newif\ifouthtml\outhtmlfalse
 \def\versionspecific#1{
 \quad\textsf{#1:}
 \begin{quote}}

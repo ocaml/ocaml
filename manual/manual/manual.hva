@@ -2,3 +2,4 @@
 \input{fancysection.hva}
 \newcounter{tocdepth}
 \input{macros.hva}
+\newif\ifouthtml\outhtmltrue

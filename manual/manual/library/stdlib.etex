@@ -81,6 +81,7 @@ be called from C \\
 \end{tabular}
 \end{latexonly}
 
+\ifouthtml
 \begin{rawhtml}
 <ul>
 <li><a HREF=libref/Arg.html> Module <tt>Arg</tt>: parsing of command line arguments</a>
@@ -117,7 +118,7 @@ be called from C \\
 <li><a HREF=libref/Weak.html> Module <tt>Weak</tt>: arrays of weak pointers</a>
 </ul>
 \end{rawhtml}
-%BEGIN LATEX
+\else
 \input{Arg.tex}
 \input{Array.tex}
 \input{Buffer.tex}
@@ -151,4 +152,4 @@ be called from C \\
 \input{String.tex}
 \input{Sys.tex}
 \input{Weak.tex}
-%END LATEX
+\fi
