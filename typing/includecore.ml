@@ -137,9 +137,16 @@ let type_declarations env id decl1 decl2 =
         Ctype.equal env true decl1.type_params decl2.type_params &&
         Ctype.equal env false [ty1] [ty2]
   end &&
-  List.for_all2
-    (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2) && (not cn1 || cn2))
-    decl1.type_variance decl2.type_variance
+  if match decl2.type_kind with
+  | Type_record(_,_,priv) | Type_variant(_,priv) -> priv = Private
+  | Type_abstract ->
+      match decl2.type_manifest with None -> true
+      | Some ty -> Btype.has_constr_row (Ctype.expand_head env ty)
+  then
+    List.for_all2
+      (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2) && (not cn1 || cn2))
+      decl1.type_variance decl2.type_variance
+  else true
 
 (* Inclusion between exception declarations *)
 
