@@ -69,6 +69,11 @@ let handle_lexical_error fn lexbuf =
     raise(Lexical_error(msg, line, column))
 }
 
+let identstart = 
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255']
+let identbody = 
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+
 rule main = parse
     [' ' '\013' '\009' '\012' ] + 
     { main lexbuf }
@@ -80,7 +85,8 @@ rule main = parse
     { comment_depth := 1;
       handle_lexical_error comment lexbuf;
       main lexbuf }
-  | ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '\'' '_' '0'-'9'] *
+  | '_'  { Tunderscore }
+  | identstart identbody *
     { match Lexing.lexeme lexbuf with
         "rule" -> Trule
       | "parse" -> Tparse
@@ -108,7 +114,6 @@ rule main = parse
                start_line = l1; start_col = n1 - s1}) }
   | '='  { Tequal }
   | '|'  { Tor }
-  | '_'  { Tunderscore }
   | '['  { Tlbracket }
   | ']'  { Trbracket }
   | '*'  { Tstar }
