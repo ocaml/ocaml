@@ -473,9 +473,7 @@ object (self)
       begin fun () ->
         let v = Textvariable.get show_search in
         if v = "1" then begin
-          Pack.forget [boxes_frame];
-          pack [search_frame] ~fill:`X ~expand:true;
-          pack [boxes_frame] ~fill:`Both ~expand:true
+          pack [search_frame] ~after:menus ~fill:`X
         end else Pack.forget [search_frame]
       end;
 
@@ -493,9 +491,9 @@ object (self)
       ~side:`Left ~ipadx:5 ~anchor:`W;
     pack [helpmenu#button] ~side:`Right ~anchor:`E ~ipadx:5;
     pack [menus] ~fill:`X;      
-    pack [search_frame] ~fill:`X ~expand:true;      
+    pack [search_frame] ~fill:`X;      
     pack [boxes_frame] ~fill:`Both ~expand:true;
-    pack [buttons] ~fill:`X ~side:`Bottom ~expand:false;
+    pack [buttons] ~fill:`X ~side:`Bottom;
     pack [view] ~fill:`Both ~side:`Bottom ~expand:true;
     reset_modules mbox
 
