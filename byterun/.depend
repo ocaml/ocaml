@@ -62,8 +62,8 @@ memory.o: memory.c fail.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h memory.h minor_gc.h \
  signals.h
 meta.o: meta.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h fix_code.h interp.h major_gc.h freelist.h memory.h gc.h \
- minor_gc.h prims.h stacks.h
+ mlvalues.h fail.h fix_code.h interp.h major_gc.h freelist.h memory.h \
+ gc.h minor_gc.h prims.h stacks.h
 minor_gc.o: minor_gc.c config.h ../config/m.h ../config/s.h fail.h \
  misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h freelist.h memory.h \
  minor_gc.h roots.h signals.h
@@ -163,8 +163,8 @@ memory.d.o: memory.c fail.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h memory.h minor_gc.h \
  signals.h
 meta.d.o: meta.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h fix_code.h interp.h major_gc.h freelist.h memory.h gc.h \
- minor_gc.h prims.h stacks.h
+ mlvalues.h fail.h fix_code.h interp.h major_gc.h freelist.h memory.h \
+ gc.h minor_gc.h prims.h stacks.h
 minor_gc.d.o: minor_gc.c config.h ../config/m.h ../config/s.h fail.h \
  misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h freelist.h memory.h \
  minor_gc.h roots.h signals.h
