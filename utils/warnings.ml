@@ -17,6 +17,7 @@
 type t =                             (* A is all *)
   | Comment of string                (* C *)
   | Deprecated                       (* D *)
+  | Fragile_pat of string            (* E *)
   | Partial_application              (* F *)
   | Labels_omitted                   (* L *)
   | Method_override of string list   (* M *)
@@ -31,6 +32,7 @@ type t =                             (* A is all *)
 let letter = function        (* 'a' is all *)
   | Comment _ ->                'c'
   | Deprecated ->               'd'
+  | Fragile_pat _ ->              'e'
   | Partial_application ->      'f'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
@@ -42,7 +44,7 @@ let letter = function        (* 'a' is all *)
 ;;
 
 let check c =
-  try ignore (String.index "acdflmpsuvxACDFLMPSUVX" c)
+  try ignore (String.index "acdeflmpsuvxACDEFLMPSUVX" c)
   with _ -> raise (Arg.Bad (Printf.sprintf "unknown warning option %c" c))
 ;;    
 
@@ -88,6 +90,13 @@ let message = function
        Here is an example of a value that is not matched:\n" ^ s
   | Unused_match -> "this match case is unused."
   | Unused_pat   -> "this pattern is unused."
+  | Fragile_pat "" ->
+      "this pattern is fragile: it would not cause a warning \n\
+       in case of modification of the data types it matches."
+  | Fragile_pat s ->
+      "this pattern is fragile: it would not cause a warning \n\
+       in case of modification of the data types it matches.\n\
+       Here is an example of a more robust pattern:\n" ^ s
   | Labels_omitted ->
       "labels were omitted in the application of this function."
   | Method_override slist ->
