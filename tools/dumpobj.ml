@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Disassembler for executable and .zo object files *)
+(* Disassembler for executable and .cmo object files *)
 
 open Obj
 open Printf

@@ -50,6 +50,12 @@ dumpapprox: dumpapprox.cmo
 clean::
 	rm -f dumpapprox
 
+objinfo: objinfo.cmo
+	$(CAMLC) $(LINKFLAGS) -o objinfo config.cmo objinfo.cmo
+
+clean::
+	rm -f objinfo
+
 .SUFFIXES:
 .SUFFIXES: .ml .cmo .mli .cmi
 

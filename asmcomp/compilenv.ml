@@ -35,20 +35,22 @@ exception Error of error
    of these infos *)
 
 type unit_infos =
-  { mutable ui_name: string;
-    mutable ui_interfaces: (string * int) list;
-    mutable ui_imports: (string * int) list;
-    mutable ui_approx: value_approximation;
-    mutable ui_curry_fun: int list;
-    mutable ui_apply_fun: int list }
+  { mutable ui_name: string;                    (* Name of unit implemented *)
+    mutable ui_interface: Digest.t;             (* CRC of interface impl. *)
+    mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
+    mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
+    mutable ui_approx: value_approximation;     (* Approx of the structure *)
+    mutable ui_curry_fun: int list;             (* Currying functions needed *)
+    mutable ui_apply_fun: int list }            (* Apply functions needed *)
 
 let global_approx_table =
   (Hashtbl.new 17 : (string, value_approximation) Hashtbl.t)
 
 let current_unit =
   { ui_name = "";
-    ui_interfaces = [];
-    ui_imports = [];
+    ui_interface = "";
+    ui_imports_cmi = [];
+    ui_imports_cmx = [];
     ui_approx = Value_unknown;
     ui_curry_fun = [];
     ui_apply_fun = [] }
@@ -56,8 +58,9 @@ let current_unit =
 let reset name crc_intf =
   Hashtbl.clear global_approx_table;
   current_unit.ui_name <- name;
-  current_unit.ui_interfaces <- [name, crc_intf];
-  current_unit.ui_imports <- [];
+  current_unit.ui_interface <- crc_intf;
+  current_unit.ui_imports_cmi <- [];
+  current_unit.ui_imports_cmx <- [];
   current_unit.ui_curry_fun <- [];
   current_unit.ui_apply_fun <- []
 
@@ -74,7 +77,7 @@ let read_unit_info filename =
       raise(Error(Not_a_unit_info filename))
     end;
     let ui = (input_value ic : unit_infos) in
-    let crc = input_binary_int ic in
+    let crc = Digest.input ic in
     close_in ic;
     (ui, crc)
   with End_of_file | Failure _ ->
@@ -95,8 +98,8 @@ let global_approx global_ident =
         let (ui, crc) = read_unit_info filename in
         if ui.ui_name <> modname then
           raise(Error(Illegal_renaming(modname, filename)));
-        current_unit.ui_imports <-
-          (modname, crc) :: current_unit.ui_imports;
+        current_unit.ui_imports_cmx <-
+          (modname, crc) :: current_unit.ui_imports_cmx;
         ui.ui_approx
       with Not_found ->
         Value_unknown in
@@ -121,17 +124,13 @@ let need_apply_fun n =
 (* Write the description of the current unit *)
 
 let save_unit_info filename =
-  current_unit.ui_interfaces <-
-    current_unit.ui_interfaces @ Env.imported_units();
+  current_unit.ui_imports_cmi <- Env.imported_units();
   let oc = open_out_bin filename in
   output_string oc cmx_magic_number;
   output_value oc current_unit;
-  let pos = pos_out oc in
   flush oc;
-  let ic = open_in_bin filename in
-  let crc = Crc.for_channel ic pos in
-  close_in ic;
-  output_binary_int oc crc;
+  let crc = Digest.file filename in
+  Digest.output oc crc;
   close_out oc
 
 (* Error report *)

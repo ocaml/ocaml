@@ -31,26 +31,24 @@ exception Error of error
 
 (* Consistency check between interfaces and implementations *)
 
-let crc_interfaces = (Hashtbl.new 17 : (string, string * int) Hashtbl.t)
-let crc_implementations = (Hashtbl.new 17 : (string, string * int) Hashtbl.t)
+let crc_interfaces =
+      (Hashtbl.new 17 : (string, string * Digest.t) Hashtbl.t)
+let crc_implementations =
+      (Hashtbl.new 17 : (string, string * Digest.t) Hashtbl.t)
 
 let check_consistency file_name unit crc =
-  begin match unit.ui_interfaces with
-    [] -> raise(Error(Not_an_object_file file_name))
-  | (unit_name, unit_crc) :: imports ->
-      List.iter
-        (fun (name, crc) ->
-          try
-            let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
-            if crc <> auth_crc then
-              raise(Error(Inconsistent_interface(name, file_name, auth_name)))
-          with Not_found ->
-            (* Can only happen for unit for which only a .cmi file was used,
-               but no .cmo is provided *)
-            Hashtbl.add crc_interfaces name (file_name, crc))
-        imports;
-      Hashtbl.add crc_interfaces unit_name (file_name, unit_crc)
-  end;
+  List.iter
+    (fun (name, crc) ->
+      try
+        let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
+        if crc <> auth_crc then
+          raise(Error(Inconsistent_interface(name, file_name, auth_name)))
+      with Not_found ->
+        (* Can only happen for unit for which only a .cmi file was used,
+           but no .cmo is provided *)
+        Hashtbl.add crc_interfaces name (file_name, crc))
+    unit.ui_imports_cmi;
+  Hashtbl.add crc_interfaces unit.ui_name (file_name, unit.ui_interface);
   List.iter
     (fun (name, crc) ->
       try
@@ -59,7 +57,7 @@ let check_consistency file_name unit crc =
           raise(Error(Inconsistent_implementation(name, file_name, auth_name)))
       with Not_found ->
         Hashtbl.add crc_implementations name (file_name, crc))
-    unit.ui_imports;
+    unit.ui_imports_cmx;
   Hashtbl.add crc_implementations unit.ui_name (file_name, crc)
 
 (* First pass: determine which units are needed *)
@@ -93,7 +91,7 @@ let scan_file tolink obj_name =
     let (info, crc) = Compilenv.read_unit_info file_name in
     check_consistency file_name info crc;
     remove_required info.ui_name;
-    List.iter add_required info.ui_imports;
+    List.iter add_required info.ui_imports_cmx;
     info :: tolink
   end
   else if Filename.check_suffix file_name ".cmxa" then begin
@@ -104,14 +102,14 @@ let scan_file tolink obj_name =
     really_input ic buffer 0 (String.length cmxa_magic_number);
     if buffer <> cmxa_magic_number then
       raise(Error(Not_an_object_file file_name));
-    let info_crc_list = (input_value ic : (unit_infos * int) list) in
+    let info_crc_list = (input_value ic : (unit_infos * Digest.t) list) in
     close_in ic;
     List.fold_right
       (fun (info, crc) reqd ->
         if is_required info.ui_name then begin
           check_consistency file_name info crc;
           remove_required info.ui_name;
-          List.iter add_required info.ui_imports;
+          List.iter add_required info.ui_imports_cmx;
           info :: reqd
         end else
           reqd)
@@ -131,7 +129,7 @@ let make_startup_file filename info_list =
   let oc = open_out filename in
   Emitaux.output_channel := oc;
   Location.input_name := "startup"; (* set the name of the "current" input *)
-  Compilenv.reset "startup" 0; (* set the name of the "current" compunit *)
+  Compilenv.reset "startup" ""; (* set the name of the "current" compunit *)
   Emit.begin_assembly();
   let name_list = List.map (fun ui -> ui.ui_name) info_list in
   Asmgen.compile_phrase(Cmmgen.entry_point name_list);

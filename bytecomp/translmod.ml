@@ -59,6 +59,11 @@ let rec compose_coercions c1 c2 =
   | (_, _) ->
       fatal_error "Translmod.compose_coercions"
 
+(* Record whether unsafe features (-fast or primitive declarations)
+   were used while compiling this module *)
+
+let unsafe_implementation = ref false
+
 (* Compile a module expression *)
 
 let rec transl_module env cc mexp =
@@ -108,6 +113,7 @@ and transl_structure env fields cc = function
       let (ext_env, add_let) = transl_let env rec_flag pat_expr_list in
       add_let(transl_structure ext_env ext_fields cc rem)
   | Tstr_primitive(id, descr) :: rem ->
+      unsafe_implementation := true;
       Llet(id, transl_primitive descr.val_prim,
            transl_structure env (id :: fields) cc rem)
   | Tstr_type(decls) :: rem ->
@@ -126,6 +132,7 @@ and transl_structure env fields cc = function
 (* Compile an implementation *)
 
 let transl_implementation module_name str cc =
+  unsafe_implementation := !Clflags.fast;
   let module_id = Ident.new_persistent module_name in
   Lprim(Psetglobal module_id, [transl_structure empty_env [] cc str])
 

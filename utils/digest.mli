@@ -11,9 +11,14 @@
 
 (* $Id$ *)
 
-(* CRC computation *)
+(* Message digest (MD5) *)
 
-val for_string: string -> int -> int -> int
-external for_channel: in_channel -> int -> int = "crc_chan"
+type t = string
+val string: string -> int -> int -> t
+external channel: in_channel -> int -> t = "md5_chan"
+val file: string -> t
+val output: out_channel -> t -> unit
+val input: in_channel -> t
+
 
 

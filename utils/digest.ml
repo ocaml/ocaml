@@ -11,15 +11,28 @@
 
 (* $Id$ *)
 
-(* CRC computation *)
+(* Message digest (MD5) *)
 
-external unsafe_for_string: string -> int -> int -> int = "crc_string"
+type t = string
 
-let for_string str ofs len =
+external unsafe_string: string -> int -> int -> t = "md5_string"
+external channel: in_channel -> int -> t = "md5_chan"
+
+let string str ofs len =
   if ofs < 0 or ofs + len > String.length str
-  then invalid_arg "Crc.for_string"
-  else unsafe_for_string str ofs len
+  then invalid_arg "Digest.string"
+  else unsafe_string str ofs len
 
-external for_channel: in_channel -> int -> int = "crc_chan"
+let file filename =
+  let ic = open_in_bin filename in
+  let d = channel ic (in_channel_length ic) in
+  close_in ic;
+  d
 
+let output chan digest =
+  output chan digest 0 16
 
+let input chan =
+  let digest = String.create 16 in
+  really_input chan digest 0 16;
+  digest

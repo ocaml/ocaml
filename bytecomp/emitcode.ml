@@ -32,10 +32,13 @@ type reloc_info =
 (* Descriptor for compilation units *)
 
 type compilation_unit =
-  { mutable cu_pos: int;                (* Absolute position in file *)
+  { cu_name: string;                    (* Name of compilation unit *)
+    mutable cu_pos: int;                (* Absolute position in file *)
     cu_codesize: int;                   (* Size of code block *)
     cu_reloc: (reloc_info * int) list;  (* Relocation information *)
-    cu_interfaces: (string * int) list } (* Names and CRC of intfs imported *)
+    cu_interface: Digest.t;             (* CRC of interface implemented *)
+    cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
+    cu_unsafe: bool }                   (* Uses unsafe features? *)
 
 (* Format of a .cmo file:
      magic number (Config.cmo_magic_number)
@@ -284,10 +287,13 @@ let to_file outchan unit_name crc_interface code =
   emit code;
   output outchan !out_buffer 0 !out_position;
   let compunit =
-    { cu_pos = pos_code;
+    { cu_name = unit_name;
+      cu_pos = pos_code;
       cu_codesize = !out_position;
       cu_reloc = List.rev !reloc_info;
-      cu_interfaces = (unit_name, crc_interface) :: Env.imported_units() } in
+      cu_interface = crc_interface;
+      cu_imports = Env.imported_units();
+      cu_unsafe = !Translmod.unsafe_implementation } in
   init();                               (* Free out_buffer and reloc_info *)
   let pos_compunit = pos_out outchan in
   output_value outchan compunit;

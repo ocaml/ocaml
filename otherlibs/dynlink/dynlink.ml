@@ -6,7 +6,7 @@ type error =
     Not_a_bytecode_file of string
   | Inconsistent_import of string
   | Unavailable_unit of string
-  | Unauthorized_primitive of string
+  | Unsafe_file
   | Linking_error of string
   | Corrupted_interface of string
 
@@ -21,23 +21,19 @@ let init () =
    the same interfaces as the program itself. In addition, check that
    only authorized compilation units are referenced. *)
 
-let crc_interfaces = (Hashtbl.new 17 : (string, int) Hashtbl.t)
+let crc_interfaces = (Hashtbl.new 17 : (string, Digest.t) Hashtbl.t)
 
 let check_consistency file_name cu =
-  match cu.cu_interfaces with
-    [] ->
-      raise(Error(Not_a_bytecode_file file_name))
-  | (unit_name, unit_interface_crc) :: imports ->
-      List.iter
-	(fun (name, crc) ->
-	  try
-	    let auth_crc = Hashtbl.find crc_interfaces name in
-	    if crc <> auth_crc then
-	      raise(Error(Inconsistent_import name))
-	  with Not_found ->
-	    raise(Error(Unavailable_unit name)))
-	imports;
-      Hashtbl.add crc_interfaces unit_name unit_interface_crc
+  List.iter
+    (fun (name, crc) ->
+      try
+        let auth_crc = Hashtbl.find crc_interfaces name in
+        if crc <> auth_crc then
+          raise(Error(Inconsistent_import name))
+      with Not_found ->
+        raise(Error(Unavailable_unit name)))
+    cu.cu_imports;
+  Hashtbl.add crc_interfaces cu.cu_name cu.cu_interface
 
 (* Reset the crc_interfaces table *)
 
@@ -62,7 +58,7 @@ let crc_interface unit loadpath =
       raise(Error(Corrupted_interface filename))
     end;
     input_value ic;
-    let crc = input_binary_int ic in
+    let crc = Digest.input ic in
     close_in ic;
     crc
   with End_of_file | Failure _ ->
@@ -76,24 +72,16 @@ let add_interfaces units loadpath =
   add_available_units
     (List.map (fun unit -> (unit, crc_interface unit loadpath)) units)
 
-(* Check that the object file being loaded does not call any unauthorized
-   C function directly *)
+(* Check whether the object file being loaded was compiled in unsafe mode *)
 
-let all_available_primitives() = Array.to_list(Meta.available_primitives())
+let unsafe_allowed = ref false
 
-let safe_primitives = ref (all_available_primitives())
+let allow_unsafe_modules b =
+  unsafe_allowed := b
 
-let check_primitives cu =
-  List.iter
-    (function
-      	(Reloc_primitive p, pos) ->
-	    if not (List.mem p !safe_primitives) 
-      	    then raise(Error(Unauthorized_primitive p))
-     | _ -> ())
-    cu.cu_reloc
-
-let set_authorized_primitives primlist =
-  safe_primitives := primlist
+let check_unsafe_module cu =
+  if (not !unsafe_allowed) & cu.cu_unsafe
+  then raise(Error(Unsafe_file))
 
 (* Load in-core and execute a bytecode object file *)
 
@@ -107,7 +95,7 @@ let loadfile file_name =
   seek_in ic compunit_pos;
   let compunit = (input_value ic : compilation_unit) in
   check_consistency file_name compunit;
-  check_primitives compunit;
+  check_unsafe_module compunit;
   seek_in ic compunit.cu_pos;
   let code_size = compunit.cu_codesize + 4 in
   let code = Meta.static_alloc code_size in
@@ -125,3 +113,20 @@ let loadfile file_name =
     raise(Error(Linking_error file_name))
   end;
   Meta.execute_bytecode code code_size; ()
+
+(* Error report *)
+
+let error_message = function
+    Not_a_bytecode_file name ->
+      name ^ " is not a bytecode object file"
+  | Inconsistent_import name ->
+      "interface mismatch on " ^ name
+  | Unavailable_unit name ->
+      "no implementation available for " ^ name
+  | Unsafe_file ->
+      "this object file uses unsafe features"
+  | Linking_error name ->
+      "error while linking " ^ name
+  | Corrupted_interface name ->
+      "corrupted interface file " ^ name
+

@@ -76,7 +76,7 @@ type pers_struct =
 let persistent_structures =
   (Hashtbl.new 17 : (string, pers_struct) Hashtbl.t)
 
-let imported_units = ref ([] : (string * int) list)
+let imported_units = ref ([] : (string * Digest.t) list)
 
 let read_pers_struct modname filename =
   let ic = open_in_bin filename in
@@ -88,7 +88,7 @@ let read_pers_struct modname filename =
       raise(Error(Not_an_interface filename))
     end;
     let ps = (input_value ic : pers_struct) in
-    let crc = input_binary_int ic in
+    let crc = Digest.input ic in
     close_in ic;
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(modname, filename)));
@@ -578,11 +578,8 @@ let save_signature sg modname filename =
   output_string oc cmi_magic_number;
   output_value oc ps;
   flush oc;
-  let pos = pos_out oc in
-  let ic = open_in_bin filename in
-  let crc = Crc.for_channel ic pos in
-  close_in ic;
-  output_binary_int oc crc;
+  let crc = Digest.file filename in
+  Digest.output oc crc;
   close_out oc;
   crc
 

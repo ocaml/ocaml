@@ -7,8 +7,8 @@ INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
 COMPFLAGS=-I ../../boot $(INCLUDES)
 
 OBJS=dynlink.cmo
-COMPILEROBJS=misc.cmo tbl.cmo clflags.cmo config.cmo ident.cmo predef.cmo \
-  runtimedef.cmo symtable.cmo opcodes.cmo
+COMPILEROBJS=misc.cmo tbl.cmo clflags.cmo config.cmo digest.cmo ident.cmo \
+  predef.cmo runtimedef.cmo symtable.cmo opcodes.cmo
 
 all: dynlink.cma extract_crc
 

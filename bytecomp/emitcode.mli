@@ -27,10 +27,13 @@ type reloc_info =
 (* Descriptor for compilation units *)
 
 type compilation_unit =
-  { mutable cu_pos: int;                (* Absolute position in file *)
+  { cu_name: string;                    (* Name of compilation unit *)
+    mutable cu_pos: int;                (* Absolute position in file *)
     cu_codesize: int;                   (* Size of code block *)
     cu_reloc: (reloc_info * int) list;  (* Relocation information *)
-    cu_interfaces: (string * int) list } (* Names and CRC of intfs imported *)
+    cu_interface: Digest.t;             (* CRC of interface implemented *)
+    cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
+    cu_unsafe: bool }                   (* Uses unsafe features? *)
 
 (* Format of a .cmo file:
      Obj.magic number (Config.cmo_magic_number)
@@ -38,7 +41,7 @@ type compilation_unit =
      block of relocatable bytecode
      compilation unit descriptor *)
 
-val to_file: out_channel -> string -> int -> instruction list -> unit
+val to_file: out_channel -> string -> Digest.t -> instruction list -> unit
         (* Arguments:
              channel on output file
              name of compilation unit implemented

@@ -17,13 +17,14 @@ open Clambda
 
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
-    mutable ui_interfaces: (string * int) list; (* Interfaces imported *)
-    mutable ui_imports: (string * int) list;    (* Other units imported *)
+    mutable ui_interface: Digest.t;             (* CRC of interface impl. *)
+    mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
+    mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
     mutable ui_approx: value_approximation;     (* Approx of the structure *)
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list }            (* Apply functions needed *)
 
-val reset: string -> int -> unit
+val reset: string -> Digest.t -> unit
         (* Reset the environment and record the name of the unit being
            compiled (first arg) and the CRC of the matching interface
            (second arg) *)
@@ -41,7 +42,7 @@ val need_apply_fun: int -> unit
         (* Record the need of a currying (resp. application) function
            with the given arity *)
 
-val read_unit_info: string -> unit_infos * int
+val read_unit_info: string -> unit_infos * Digest.t
         (* Read infos and CRC from a [.cmx] file. *)
 val save_unit_info: string -> unit
         (* Save the infos for the current unit in the given file *)

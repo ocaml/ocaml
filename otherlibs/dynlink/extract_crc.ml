@@ -7,8 +7,11 @@ let print_crc unit =
   try
     let crc = Dynlink.crc_interface unit !load_path in
     if !first then first := false else print_string ";\n";
-    print_string "  \""; print_string unit; print_string "\", ";
-    print_int crc
+    print_string "  \""; print_string unit; print_string "\",\n    \"";
+    for i = 0 to String.length crc - 1 do
+      Printf.printf "\\%03d" (Char.code crc.[i])
+    done;
+    print_string "\""
   with exn ->
     prerr_string "Error while reading the interface for ";
     prerr_endline unit;
