@@ -1242,7 +1242,7 @@ if test $has_tk = true; then
     tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   fi
   if test -n "$tcl_version"; then
-    echo "tcl.h version $tcl_version found."
+    echo "tcl.h version $tcl_version found with \"$tk_defs\"."
     case $tcl_version in
     7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
     7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
