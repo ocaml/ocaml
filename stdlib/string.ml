@@ -125,7 +125,7 @@ let map f s =
   end
 
 let uppercase s = map Char.uppercase s
-let lowercase s = map Char.uppercase s
+let lowercase s = map Char.lowercase s
 
 let apply1 f s =
   if length s = 0 then s else begin
