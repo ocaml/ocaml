@@ -154,11 +154,13 @@ will be public (that is, not protected) if any of the definition
 states so.
 
 A protected method, @'method protected' method@ or @'virtual
-protected' method@, is a method that can only be invoked from other
-methods to the current object. This invocation is performed using the
+protected' method@, is a method that can only be invoked on self
+(from other methods of the current class as well as of subclasses of the
+current class).
+This invocation is performed using the
 expression @value-name '#' method-name@, where @value-name@ is
 directly bound to self at the beginning of the class definition.
-Protected methods does not appears in object types.
+Protected methods do not appear in object types.
 
 Method bodies do not have access to class parameters, but to instance
 variables.  Some special

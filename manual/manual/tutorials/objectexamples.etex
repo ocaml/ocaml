@@ -23,7 +23,7 @@ let p = new point 7;;
 \end{caml_example}
 Note that the type of "p" is "point". This is an
 abbreviation automatically defined by the class definition above. It
-stands for the object type "< get_x : int; move : int -> unit>",
+stands for the object type "<get_x : int; move : int -> unit>",
 listing the methods of class "point" along with their types.
 
 Let us apply some methods to "p":
@@ -36,9 +36,10 @@ p#get_x;;
 % XXX expliquer shallow
 
 The library function "Oo.copy" makes a shallow copy of an object. Its type is
-"< .. > as 'a -> 'a". The keyword "as" in that type
+"< .. > as 'a -> 'a" (which is parsed as "(< .. > as 'a) -> 'a"). 
+The keyword "as" in that type 
 binds the type variable "'a" to the object type "< .. >".
-"Oo.copy" therefore takes an object with any methods (represented by
+Therefore, "Oo.copy"  takes an object with any methods (represented by
 the ellipsis), and returns an object of the same type. The type of
 "Oo.copy" is different from type "< .. > -> < .. >" as each ellipsis
 represents a different set of methods. Ellipsis actually behaves as a
@@ -82,7 +83,7 @@ type). Thus, it applies to both points and colored points.
 let get_succ_x p = p#get_x + 1;;
 get_succ_x p + get_succ_x p';;
 \end{caml_example}
-Methods needs not be declared previously, as shown by the example:
+Methods need not be declared previously, as shown by the example:
 \begin{caml_example}
 let set_x p = p#set_x;;
 let incr p = set_x p (get_succ_x p);;
@@ -199,8 +200,8 @@ be bound to an object of the subclass.
 
 Multiple inheritance is allowed. Only the last definition of a method
 (or  of an instance variable) is kept.
-But previous definitions of a method can be reused by binding the
-related ancestor. Here, "super" is bound to the ancestor
+Previous definitions of a method can be reused by binding the
+related ancestor. Below, "super" is bound to the ancestor
 "printable_point". The name "super" is not actually a variable and
 can only be used to select a method as in "super#print".
 \begin{caml_example}
@@ -449,6 +450,7 @@ class virtual c () : 'a = virtual m : 'a end;;
 Then, a coercion operator is not even required.
 \begin{caml_example}
 class c' () as self =
+  inherit c ()
   method m = self
   method m' = 1
 end;;
@@ -481,7 +483,7 @@ what is desired.
 \begin{caml_example}
 class closed c () as self = method m = (self : #c :> c) end;;
 \end{caml_example}
-This problem can be avoided by first defining the abbreviation, 
+This problem can sometimes be avoided by first defining the abbreviation, 
 using a virtual class:
 \begin{caml_example}
 class virtual c0 () = virtual m : c0 end;;
@@ -504,10 +506,9 @@ abbreviation "#c0" is defined from the class "c0", not from the type
 class c () as self =  method m = (self : <m : c1; ..> as 'a :> c1) end;;
 \end{caml_example}
 
-
 \subsection*{Recursive classes}
 
-Recursive classes are used to define objects whose types are
+Recursive classes can be used to define objects whose types are
 mutually recursive.
 \begin{caml_example}
 class window () =
@@ -558,7 +559,10 @@ let s = new stack2 ();;
 s#fold (+) 0;;
 s;;
 \end{caml_example}
-The solution is to leave the function "fold" outside of the class.
+The best solution would be to make method "fold" polymorphic. 
+However Ocaml does not currently allow methods to be polymorphic. 
+
+Thus, the current solution is to leave the function "fold" outside of the class.
 \begin{caml_example}
 class 'a stack3 () =
   inherit ('a) stack ()
