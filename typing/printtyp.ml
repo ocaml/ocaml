@@ -431,16 +431,25 @@ let metho sch concrete (lab, kind, ty) =
     close_box ()
   end
 
-let rec prepare_class_type path =
+let rec prepare_class_type =
   function
     Tcty_constr (p, tyl, cty) ->
       let sty = Ctype.self_type cty in
-      visited_objects := sty :: !visited_objects;
-      List.iter mark_loops tyl
+      begin try
+        if List.memq sty !visited_objects then raise (Unify []);
+        List.iter (occur Env.empty sty) tyl;
+        List.iter mark_loops tyl
+      with Unify _ ->
+        prepare_class_type cty
+      end
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
       (* Self may have a name *)
-      visited_objects := sty :: !visited_objects;
+      if List.memq sty !visited_objects then begin
+        if not (List.memq sty !aliased) then
+          aliased := sty :: !aliased
+      end else
+        visited_objects := sty :: !visited_objects;
       let (fields, _) =
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
@@ -451,32 +460,27 @@ let rec prepare_class_type path =
       end;
       Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
   | Tcty_fun (ty, cty) ->
-      prepare_class_type path cty;
-      mark_loops ty
+      mark_loops ty;
+      prepare_class_type cty
 
-let rec perform_class_type sch p params =
+let rec perform_class_type sch params =
   function
     Tcty_constr (p', tyl, cty) ->
       let sty = Ctype.self_type cty in
-      open_box 0;
-      if tyl <> [] then begin
-        open_box 1;
-        print_string "[";
-        typlist true 0 "," tyl;
-        print_string "]";
-        close_box ();
-        print_space ()
-      end;
-      path p';
-      if List.memq sty !aliased then begin
-        print_space ();
+      if List.memq sty !visited_objects then
+        perform_class_type sch params cty
+      else begin
         open_box 0;
-        print_string "['";
-        print_name_of_type sty;
-        print_string "]";
+        if tyl <> [] then begin
+          open_box 1;
+          print_string "[";
+          typlist true 0 "," tyl;
+          print_string "]";
+          close_box ();
+          print_space ()
+        end;
         close_box ()
-      end;
-      close_box ()
+      end
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
       open_hvbox 2;
@@ -504,31 +508,20 @@ let rec perform_class_type sch p params =
       open_box 0;
       typexp sch 2 ty; print_string " ->";
       print_space ();
-      perform_class_type sch p params cty;
+      perform_class_type sch params cty;
       close_box ()
-
-let rec alternate_class_type sch path params cty =
-  match cty with
-    Tcty_signature _ | Tcty_constr _ ->
-      print_string ":"; print_space ();
-      perform_class_type sch path params cty
-  | Tcty_fun (ty, cty) ->
-      print_string "("; typexp sch 0 ty; print_string ")";
-      print_space ();
-      alternate_class_type sch path params cty
 
 let class_type cty =
   reset ();
-  let no_path = Pident (Ident.create "") in
-  prepare_class_type no_path cty;
-  perform_class_type false no_path [] cty
+  prepare_class_type cty;
+  perform_class_type false [] cty
 
 let class_declaration id cl =
   let params = List.map repr cl.cty_params in
 
   reset ();
   aliased := params @ !aliased;
-  prepare_class_type cl.cty_path cl.cty_type;
+  prepare_class_type cl.cty_type;
   let sty = self_type cl.cty_type in
   List.iter mark_loops params;
 
@@ -554,7 +547,7 @@ let class_declaration id cl =
   ident id;
   print_space ();
   print_string ":"; print_space ();
-  perform_class_type true cl.cty_path params cl.cty_type;
+  perform_class_type true params cl.cty_type;
   close_box ()
 
 let cltype_declaration id cl =
@@ -562,7 +555,7 @@ let cltype_declaration id cl =
 
   reset ();
   aliased := params @ !aliased;
-  prepare_class_type cl.clty_path cl.clty_type;
+  prepare_class_type cl.clty_type;
   let sty = self_type cl.clty_type in
   List.iter mark_loops params;
 
@@ -602,7 +595,7 @@ let cltype_declaration id cl =
   print_space ();
   print_string "=";
   print_space ();
-  perform_class_type true cl.clty_path params cl.clty_type;
+  perform_class_type true params cl.clty_type;
   close_box ()
 
 (* Print a module type *)
