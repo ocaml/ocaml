@@ -1,3 +1,68 @@
+Objective Caml 2.01:
+--------------------
+
+* Typing:
+  - Added warning for expressions of the form "a; b" where a does not have
+    type "unit"; catches silly mistake such as "rec.lbl = newval; ..."
+    instead of "rec.lbl <- newval; ...".
+  - Typing bug in "let module" fixed.
+
+* Compilation:
+  - Fixed bug in compilation of recursive and mutually recursive classes.
+  - Option -w to turn specific warnings on/off.
+  - Option -cc to choose the C compiler used with ocamlc -custom and ocamlopt.
+
+* Bytecode compiler and bytecode interpreter:
+  - Intel x86: removed asm declaration causing "fixed or forbidden register
+    spilled" error with egcs and gcc 2.8 (but not with gcc 2.7, go figure).
+  - Revised handling of debugging information, allows faster linking with -g.
+
+* Native-code compiler:
+  - Fixed bugs in integer constant propagation.
+  - Out-of-bound accesses in array and strings now raise an Invalid_argument
+    exception (like the bytecode system) instead of stopping the program.
+  - Corrected scheduling of bound checks.
+  - Port to the StrongARM under Linux (e.g. Corel Netwinder).
+  - I386: fixed bug in profiled code (ocamlopt -p).
+  - Sparc: simplified the addressing modes, allows for better scheduling.
+
+* Toplevel:
+  - #trace works again.
+  - ocamlmktop: use matching ocamlc, not any ocamlc from the search path.
+
+* Memory management:
+  - Fixed bug in heap expansion that could cause the GC to loop.
+
+* C interface:
+  - New macros CAMLparam... and CAMLlocal... to simplify the handling
+    of local roots in C code.
+  - Simplified procedure for allocating and filling Caml blocks from C.
+  - Declaration of string_length in <caml/mlvalues.h>.
+
+* Standard library:
+  - Added List.mem_assoc, List.mem_assq, List.remove, List.removeq.
+
+* Unix library:
+  - Unix.lockf: added F_RLOCK, F_TRLOCK; use POSIX locks whenever available.
+  - Unix.tc{get,set}attr: added non-standard speeds 57600, 115200, 230400.
+  - Unix.chroot: added.
+
+* Threads:
+  - Bytecode threads: improved speed of I/O scheduling.
+  - Native threads: fixed a bug involving signals and exceptions
+    generated from C.
+
+* The "str" library:
+  - Added Str.string_partial_match.
+  - Bumped size of internal stack.
+
+* ocamlyacc: emit correct '# lineno' directive for prelude part of .mly file.
+
+* Emacs editing mode: updated with Jacques Garrigue's newest code.
+
+* Macintosh port: source code for Macintosh application merged in.
+
+
 Objective Caml 2.00:
 --------------------
 
