@@ -30,6 +30,13 @@
 #include "stack.h"
 #include "sys.h"
 
+#if defined(TARGET_power) && defined(SYS_rhapsody)
+/* Confer machdep/ppc/unix_signal.c and mach/ppc/thread_status.h
+   in the Darwin sources */
+#define CONTEXT_GPR(ctx, regno) \
+  (((unsigned long *)((ctx)->sc_regs))[2 + (regno)])
+#endif
+
 volatile int async_signal_mode = 0;
 volatile int pending_signal = 0;
 volatile int force_major_slice = 0;
@@ -125,6 +132,8 @@ void handle_signal(int sig, int code, struct sigcontext * context)
 void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_elf)
 void handle_signal(int sig, struct pt_regs * context)
+#elif defined(TARGET_power) && defined(SYS_rhapsody)
+void handle_signal(int sig, int code, struct sigcontext * context)
 #else
 void handle_signal(int sig)
 #endif
@@ -163,6 +172,10 @@ void handle_signal(int sig)
 #if defined(TARGET_power) && defined(SYS_elf)
       /* Cached in register 30 */
       context->gpr[30] = (unsigned long) young_limit;
+#endif
+#if defined(TARGET_power) && defined(SYS_rhapsody)
+      /* Cached in register 30 */
+      CONTEXT_GPR(context, 30) = (unsigned long) young_limit;
 #endif
     }
   }
@@ -251,7 +264,6 @@ int convert_signal_number(int signo)
 #endif
 
 value install_signal_handler(value signal_number, value action) /* ML */
-                                 
 {
   int sig;
   void (*act)(int signo), (*oldact)(int signo);
@@ -316,6 +328,11 @@ static void trap_handler(int sig, int code,
     fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n", code);
     exit(100);
   }
+  /* Unblock SIGILL */
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGILL);
+  sigprocmask(SIG_UNBLOCK, &mask, NULL);
   /* Recover young_ptr and caml_exception_pointer from the %l5 and %l6 regs */
   sp = (int *) context->sc_sp;
   caml_exception_pointer = (char *) sp[5];
@@ -372,6 +389,21 @@ static void trap_handler(int sig, struct pt_regs * context)
 }
 #endif
 
+#if defined(TARGET_power) && defined(SYS_rhapsody)
+static void trap_handler(int sig, int code, struct sigcontext * context)
+{
+  /* Unblock SIGTRAP */
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGTRAP);
+  sigprocmask(SIG_UNBLOCK, &mask, NULL);
+  /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
+  caml_exception_pointer = (char *) CONTEXT_GPR(context, 29);
+  young_ptr = (char *) CONTEXT_GPR(context, 31);
+  array_bound_error();
+}
+#endif
+
 /* Initialization of signal stuff */
 
 void init_signals(void)
@@ -388,14 +420,18 @@ void init_signals(void)
   struct sigaction act;
   act.sa_sigaction = trap_handler;
   sigemptyset(&act.sa_mask);
-  act.sa_flags = SA_SIGINFO;
+  act.sa_flags = SA_SIGINFO | SA_NODEFER;
   sigaction(SIGILL, &act, NULL);
 #endif
 #if defined(TARGET_power)
   struct sigaction act;
   act.sa_handler = (void (*)(int)) trap_handler;
   sigemptyset(&act.sa_mask);
+#if defined(SYS_rhapsody)
   act.sa_flags = 0;
+#else
+  act.sa_flags = SA_NODEFER:;
+#endif
   sigaction(SIGTRAP, &act, NULL);
 #endif
 }

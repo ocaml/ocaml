@@ -414,11 +414,6 @@ fi
 
 if sh ./hasgot sigaction sigprocmask; then
   echo "POSIX signal handling found."
-  case $host in
-  *-*-rhapsody*) echo "But it doesn't work properly."
-                 echo "#define BSD_SIGNALS" >> s.h;;
-  *) echo "#define POSIX_SIGNALS" >> s.h;;
-  esac
 else
   if sh ./runtest signals.c; then
     echo "Signals have the BSD semantics."

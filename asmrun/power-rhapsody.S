@@ -369,7 +369,7 @@ L104:
     /* Update caml_exception_pointer */
         Storeglobal r29, _caml_exception_pointer, r11
     /* Encode exception bucket as an exception result and return it */
-        ori     3, 3, 2
+        ori     r3, r3, 2
         b       L106
 
 /* Callback from C to Caml */
