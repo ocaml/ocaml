@@ -121,7 +121,7 @@ val fold_right: f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
 (** Sorting *)
 val sort : cmp:('a -> 'a -> int) -> 'a array -> unit;;
         (* Sort an array in increasing order according to a comparison
-           function.  The comparison function must return 0 if it arguments
+           function.  The comparison function must return 0 if its arguments
            compare as equal, a positive integer if the first is greater,
            and a negative integer if the first is smaller.  For example,
            the [compare] function is a suitable comparison function.
