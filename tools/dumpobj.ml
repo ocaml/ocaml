@@ -522,13 +522,17 @@ let dump_exe ic =
 
 let main() =
   for i = 1 to Array.length Sys.argv - 1 do
-    let ic = open_in_bin Sys.argv.(i) in
+    let filnam = Sys.argv.(i) in
+    let ic = open_in_bin filnam in
+    if i>1 then print_newline ();
+    printf "## start of ocaml dump of %S\n%!" filnam;
     begin try
       objfile := false; dump_exe ic
     with Bytesections.Bad_magic_number ->
       objfile := true; seek_in ic 0; dump_obj (Sys.argv.(i)) ic
     end;
-    close_in ic
+    close_in ic;
+    printf "## end of ocaml dump of %S\n%!" filnam;
   done;
   exit 0
 
