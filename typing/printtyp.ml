@@ -177,6 +177,11 @@ let reset_and_mark_loops_list tyl =
 let print_labels = ref true
 let print_label ppf l =
   if !print_labels && l <> "" || is_optional l then fprintf ppf "%s:" l
+(*
+let print_label ppf l =
+  if is_optional l then fprintf ppf "%s:" l else
+  if !print_labels && l <> "" || is_optional l then fprintf ppf "`%s:" l
+*)
 
 let rec print_list_init pr sep ppf = function
   | [] -> ()
@@ -234,7 +239,7 @@ let rec typexp sch prio0 ppf ty =
         let all_present = List.length present = List.length fields in
         let pr_present =
           print_list (fun ppf (s, _) -> fprintf ppf "`%s" s)
-                     (fun () -> fprintf ppf "@ |")
+                     (fun () -> fprintf ppf "@;<1 -2>| ")
         in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
@@ -253,22 +258,22 @@ let rec typexp sch prio0 ppf ty =
               then non_gen_mark sch px
               else "" in
             let close_mark =
-              if not all_present then "<" else
-              if row.row_closed then "" else
-              if fields = [] then "< .." else ">" in
+              if not all_present then "< " else
+              if row.row_closed then " " else
+              if fields = [] then "< .." else "> " in
             let pr_ellipsis ppf =
               if not (row.row_closed || all_present)
-              then fprintf ppf "@ | .." in
+              then fprintf ppf "@;<1 -2>| .." in
             let print_present ppf = function
               | [] -> ()
               | l ->
                  if not all_present then
-                   fprintf ppf "@ @[<hov>>%a@]" pr_present l in
+                   fprintf ppf "@;<1 -2>> @[<hov>%a@]" pr_present l in
             let print_fields =
-              (* add only space on the left of the |, to preserve alignment *)
-              print_list (row_field sch) (fun () -> fprintf ppf "@ |") in
+              print_list (row_field sch) (fun () -> fprintf ppf "@;<1 -2>| ")
+            in
 
-            fprintf ppf "%s@[<hv>@[<hv>[%s%a%t@]%a]@]"
+            fprintf ppf "%s[%s@[<hv>@[<hv>%a%t@]%a]@]"
               gen_mark close_mark print_fields fields pr_ellipsis
               print_present present
         end
@@ -290,12 +295,12 @@ and row_field sch ppf (l, f) =
   let pr_field ppf f =
     match row_field_repr f with
     | Rpresent None | Reither(true, [], _) -> ()
-    | Rpresent(Some ty) -> fprintf ppf "@ %a" (typexp sch 0) ty
+    | Rpresent(Some ty) -> fprintf ppf " of@ %a" (typexp sch 0) ty
     | Reither(c, tyl,_) ->
-        if c
-        then fprintf ppf "@ &@ %a" (typlist sch 0 " &") tyl
-        else fprintf ppf "@ %a" (typlist sch 0 " &") tyl
-    | Rabsent -> fprintf ppf "@ []" in
+        if c (* contradiction: un constructeur constant qui a un argument *)
+        then fprintf ppf " of@ &@ %a" (typlist sch 0 " &") tyl
+        else fprintf ppf " of@ %a" (typlist sch 0 " &") tyl
+    | Rabsent -> fprintf ppf "@ []" (* une erreur, en fait *) in
   fprintf ppf "@[<hv 2>`%s%a@]" l pr_field f
 
 and typlist sch prio sep ppf = function
