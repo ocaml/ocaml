@@ -72,10 +72,10 @@ let neg_float_string f =
   else "-" ^ f
 
 let mkuminus name arg =
-  match arg.pexp_desc with
-    Pexp_constant(Const_int n) ->
+  match name, arg.pexp_desc with
+  | "-", Pexp_constant(Const_int n) ->
       mkexp(Pexp_constant(Const_int(-n)))
-  | Pexp_constant(Const_float f) ->
+  | _, Pexp_constant(Const_float f) ->
       mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
