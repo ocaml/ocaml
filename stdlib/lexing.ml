@@ -146,6 +146,7 @@ let sub_lexeme_opt lexbuf i1 i2 =
   if i1 >= 0 then begin
     let len = i2-i1 in
     let s = String.create len in
+    String.unsafe_blit lexbuf.lex_buffer i1 s 0 len;
     Some s
   end else begin
     None
