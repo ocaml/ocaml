@@ -18,3 +18,4 @@
 #include "mlvalues.h"
 
 extern value weak_list_head;
+extern value weak_none;
