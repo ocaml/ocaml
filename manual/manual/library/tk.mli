@@ -5,7 +5,7 @@
 open Tk
 open Widget
 
-(** {2 Initialization and termination} *)
+(** {6 Initialization and termination} *)
 
 val openTk : ?display:string -> ?clas:string -> unit -> toplevel widget
        (** Initialize LablTk and open a toplevel window.
@@ -18,7 +18,7 @@ val closeTk : unit -> unit
 val destroy : 'a Widget.widget -> unit
        (** Destroy an individual widget. *)
 
-(** {2 Application wide commands} *)
+(** {6 Application wide commands} *)
 
 val update : unit -> unit
        (** Synchronize display with internal state. *)
@@ -27,7 +27,7 @@ val appname_get : unit -> string
 val appname_set : string -> unit
        (** Get or set the application name. *)
 
-(** {2 Dimensions} *)
+(** {6 Dimensions} *)
 
 type units = [`Pix of int | `Cm of float | `In of float | `Mm of float | `Pt of float]
 val pixels : units -> int
@@ -35,7 +35,7 @@ val pixels : units -> int
           respective to the default display. Available units are
           pixels, centimeters, inches, millimeters and points *)
 
-(** {2 Widget layout commands} *)
+(** {6 Widget layout commands} *)
 
 type anchor = [`Center|`E|`N|`Ne|`Nw|`S|`Se|`Sw|`W]
 type fillMode = [`Both|`None|`X|`Y]
@@ -88,7 +88,7 @@ val lower_window :
   ?below:'a Widget.widget -> 'b Widget.widget -> unit
         (** Raise or lower the window associated to a widget. *)
 
-(** {2 Event handling} *)
+(** {6 Event handling} *)
 
 type modifier =
   [ `Control | `Shift | `Lock
