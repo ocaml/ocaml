@@ -3,6 +3,7 @@
 type lexbuf =
   { refill_buff : lexbuf -> unit;
     lex_buffer : string;
+    lex_buffer_len : int;
     mutable lex_abs_pos : int;
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;
@@ -31,6 +32,7 @@ let dummy_action x = failwith "lexing: empty token"
 let from_function f =
   { refill_buff = lex_refill f;
     lex_buffer = String.create 2048;
+    lex_buffer_len = 2048;
     lex_abs_pos = - 2048;
     lex_start_pos = 2048;
     lex_curr_pos = 2048;
@@ -44,18 +46,32 @@ let from_string s =
   { refill_buff =
       (fun lexbuf -> lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1);
     lex_buffer = s ^ "\000";
+    lex_buffer_len = String.length s + 1;
     lex_abs_pos = 0;
     lex_start_pos = 0;
     lex_curr_pos = 0;
     lex_last_pos = 0;
     lex_last_action = dummy_action }
 
-external get_next_char : lexbuf -> char = "get_next_char"
+let get_next_char lexbuf =
+  let p = lexbuf.lex_curr_pos in
+  if p < lexbuf.lex_buffer_len then begin
+    let c = String.unsafe_get lexbuf.lex_buffer p in
+    lexbuf.lex_curr_pos <- p + 1;
+    c
+  end else begin
+    lexbuf.refill_buff lexbuf;
+    let p = lexbuf.lex_curr_pos in
+    let c = String.unsafe_get lexbuf.lex_buffer p in
+    lexbuf.lex_curr_pos <- p + 1;
+    c
+  end
 
 let lexeme lexbuf =
   let len = lexbuf.lex_curr_pos - lexbuf.lex_start_pos in
   let s = String.create len in
-  String.unsafe_blit lexbuf.lex_buffer lexbuf.lex_start_pos s 0 len; s
+  String.unsafe_blit lexbuf.lex_buffer lexbuf.lex_start_pos s 0 len;
+  s
 
 let lexeme_char lexbuf i =
   String.get lexbuf.lex_buffer (lexbuf.lex_start_pos + i)

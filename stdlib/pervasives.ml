@@ -73,8 +73,8 @@ external atan2 : float -> float -> float = "atan2_float"
 
 let abs_float f = if f >= 0.0 then f else -. f
 
-external float : int -> float = "float_of_int"
-external truncate : float -> int = "int_of_float"
+external float : int -> float = "%floatofint"
+external truncate : float -> int = "%intoffloat"
 
 (* String operations -- more in module String *)
 

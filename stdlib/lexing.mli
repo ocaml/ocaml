@@ -5,6 +5,7 @@
 type lexbuf =
   { refill_buff : lexbuf -> unit;
     lex_buffer : string;
+    lex_buffer_len : int;
     mutable lex_abs_pos : int;
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;
@@ -64,5 +65,5 @@ val lexeme_end : lexbuf -> int
    They are not intended to be used by user programs. *)
 
 val start_lexing : lexbuf -> unit
-external get_next_char : lexbuf -> char = "get_next_char"
+val get_next_char : lexbuf -> char
 val backtrack : lexbuf -> 'a

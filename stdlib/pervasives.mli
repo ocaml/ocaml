@@ -88,8 +88,8 @@ external acos : float -> float = "acos_float"
 external atan : float -> float = "atan_float"
 external atan2 : float -> float -> float = "atan2_float"
 val abs_float : float -> float
-external float : int -> float = "float_of_int"
-external truncate : float -> int = "int_of_float"
+external float : int -> float = "%floatofint"
+external truncate : float -> int = "%intoffloat"
 
 (* String operations -- more in module String *)
 
