@@ -75,6 +75,8 @@ let rec print_struct_const = function
           List.iter (fun a -> printf ", "; print_struct_const a) al;
           printf ")"
       end
+  | Const_float_array a ->
+      printf "floatarray"
 
 (* Print an obj *)
 
@@ -241,12 +243,6 @@ let print_instr ic =
      for i = 0 to (n lsr 16) - 1 do
        print_string "\n\ttag "; print_int i; print_string " -> ";
        print_int(orig + inputs ic)
-     done)
-  (* translate *)
-  else if op == opTRANSLATE then
-    (let n = inputu ic in
-     for i = 0 to n-1 do
-       print_string "\n\t"; print_int(inputu ic)
      done)
   (* default *)
   else ();
