@@ -840,7 +840,7 @@ let rec try_many f = function
       | r -> r
       end
 
-let rec exhaust tdefs pss n = match pss with
+let rec exhaust variants tdefs pss n = match pss with
 | []    ->  Rsome (omegas n)
 | []::_ ->  Rnone
 | pss   ->
@@ -848,14 +848,14 @@ let rec exhaust tdefs pss n = match pss with
     begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
       [] ->
-        begin match exhaust tdefs (filter_extra pss) (n-1) with
+        begin match exhaust variants tdefs (filter_extra pss) (n-1) with
         | Rsome r -> Rsome (q0::r)
         | r -> r
       end
     | constrs ->          
         let try_non_omega (p,pss) =
           match
-            exhaust tdefs pss
+            exhaust variants tdefs pss
               (List.length (simple_match_args p omega) + n - 1)
           with
           | Rsome r -> Rsome (set_args p r)
@@ -863,11 +863,13 @@ let rec exhaust tdefs pss n = match pss with
         if full_match tdefs true constrs
         then try_many try_non_omega constrs
         else
-          match exhaust tdefs (filter_extra pss) (n-1) with
+          match exhaust variants tdefs (filter_extra pss) (n-1) with
           | Rnone ->   try_many try_non_omega constrs
           | Rsome r ->
               (* try all constructors anyway, for variant typing ! *)
-              ignore (try_many try_non_omega constrs);
+              (* Note: it may impact dramatically on cost *)
+              if variants then
+                ignore (try_many try_non_omega constrs) ;
               try
                 Rsome (build_other constrs::r)
               with
@@ -1351,8 +1353,24 @@ let check_partial_all v casel =
   with
   | NoGuard -> None
 
+(* look for variants *)
+let rec look_variant p = match p.pat_desc with
+  | Tpat_variant (_,_,_) -> true
+  | Tpat_any | Tpat_var _ | Tpat_constant _ -> false
+  | Tpat_alias (p,_)  -> look_variant p
+  | Tpat_or (p1,p2,_) -> look_variant p1 || look_variant p2
+  | Tpat_construct (_,ps) | Tpat_tuple ps | Tpat_array ps -> look_variants ps
+  | Tpat_record lps -> look_variants (List.map snd lps)
+      
+and look_variants = function
+  | [] -> false
+  | q::rem -> look_variant q || look_variants rem
+
+
 let check_partial tdefs loc casel =
-  let pss = get_mins le_pats (initial_matrix casel) in    
+  let variant_inside = List.exists (fun (p,_) -> look_variant p) casel in
+  let pss = initial_matrix casel in    
+  let pss = get_mins le_pats pss in
   match pss with
   | [] ->
         (*
@@ -1371,8 +1389,8 @@ let check_partial tdefs loc casel =
                "Bad style, all clauses in this pattern-matching are guarded.")
       end ;
       Partial
-  | ps::_  ->
-      begin match exhaust tdefs pss (List.length ps) with
+  | ps::_  ->      
+      begin match exhaust variant_inside tdefs pss (List.length ps) with
       | Rnone -> Total
       | Rsome [v] ->
           let errmsg =
@@ -1399,41 +1417,44 @@ let check_partial tdefs loc casel =
           fatal_error "Parmatch.check_partial"
       end
 
+
 let location_of_clause = function
     pat :: _ -> pat.pat_loc
   | _ -> fatal_error "Parmatch.location_of_clause"
 
+let seen_pat q pss = [q]::pss
+
 let check_unused tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
-    let prefs =   
-      List.fold_right
-        (fun (pat,act as clause) r ->
-          if has_guard act then
-            ([], ([pat], act)) :: r
-          else
-            ([], ([pat], act)) :: 
-            List.map (fun (pss,clause) -> [pat]::pss,clause) r)
-        casel [] in
-    List.iter
-      (fun (pss, ((qs, _) as clause)) ->
-        try
-(* Do my best to remove lines out of pss *)
-          let pss = get_mins le_pats (List.filter (compats qs) pss) in
-(* Before calling the expansive every_satisfiables *)
-          let r = every_satisfiables (make_rows pss) (make_row qs) in
-          match r with
-          | Unused ->
-              Location.prerr_warning
-                (location_of_clause qs) Warnings.Unused_match
-          | Upartial ps ->
-              List.iter
-                (fun p ->
+    let rec do_rec pref = function
+      | [] -> ()
+      | (q,act as clause)::rem ->
+          let qs = [q] in
+            begin try
+              let pss = get_mins le_pats (List.filter (compats qs) pref) in
+              let r = every_satisfiables (make_rows pss) (make_row qs) in
+              match r with
+              | Unused ->
                   Location.prerr_warning
-                    p.pat_loc Warnings.Unused_pat)
-                ps
-          | Used -> ()
-        with e -> (* useless ? *)
-          Location.prerr_warning (location_of_clause qs)
-            (Warnings.Other "Fatal Error in Parmatch.check_unused") ;
-          raise e)
-      prefs
+                    (location_of_clause qs) Warnings.Unused_match
+              | Upartial ps ->
+                  List.iter
+                    (fun p ->
+                      Location.prerr_warning
+                        p.pat_loc Warnings.Unused_pat)
+                    ps
+              | Used -> ()
+            with e -> (* useless ? *)
+              Location.prerr_warning (location_of_clause qs)
+                (Warnings.Other "Fatal Error in Parmatch.check_unused") ;
+              raise e
+            end ;
+                   
+          if has_guard act then
+            do_rec pref rem
+          else
+            do_rec (seen_pat q pref) rem in
+
+
+
+    do_rec [] casel
