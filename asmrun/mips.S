@@ -14,7 +14,7 @@
 /* Asm part of the runtime system, Mips processor */
 
         .comm   gc_entry_regs, 4 * 32
-        .comm   gc_entry_float_regs, 8 * 16
+        .comm   gc_entry_float_regs, 8 * 32
 
 /* Save all callee-save registers in the stack frame */
 #define SAVE_CALLEE_SAVE_REGS \

@@ -13,7 +13,8 @@
 
 | Asm part of the runtime system, Motorola 68k processor
 
-        .comm   _gc_entry_regs, 48
+        .comm   _gc_entry_regs, 128
+        .comm   _gc_entry_float, 256
         .comm   _caml_requested_size, 4
 
 | Allocation

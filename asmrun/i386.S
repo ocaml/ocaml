@@ -25,7 +25,8 @@
 #define FUNCTION_ALIGN 2
 #endif
 
-        .comm   G(gc_entry_regs), 28
+        .comm   G(gc_entry_regs), 128
+        .comm   G(gc_entry_float_regs), 256
 
 /* Allocation */
 

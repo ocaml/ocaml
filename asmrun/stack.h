@@ -11,12 +11,23 @@
 
 /* $Id$ */
 
-/* Machine-dependent macros to access the stack frames. */
+/* Machine-dependent interface with the asm code */
 
 #ifndef _stack_
 #define _stack_
 
+/* Declaration of variables defined in the asm code */
+extern char * caml_bottom_of_stack;
+extern unsigned long caml_last_return_address;
+extern char * caml_exception_pointer;
+#define MAX_NUM_GC_REGS 32
+extern value gc_entry_regs[MAX_NUM_GC_REGS];
+#define MAX_NUM_GC_FLOAT_REGS 32
+extern double gc_entry_float_regs[MAX_NUM_GC_FLOAT_REGS];
+extern value caml_globals[];
+extern long * caml_frametable[];
 
+/* Macros to access the stack frame */
 #ifdef TARGET_alpha
 #define Saved_return_address(sp) *((long *)(sp - 8))
 #define Already_scanned(sp, retaddr) (retaddr & 1L)

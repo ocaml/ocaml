@@ -28,11 +28,13 @@
 	EXTERN	_caml_exception_pointer: DWORD
 
         PUBLIC	_gc_entry_regs
+        PUBLIC	_gc_entry_float_regs
 
 	.DATA
 	ALIGN	4
 
-_gc_entry_regs			DWORD 7 DUP(?)
+_gc_entry_regs			DWORD 32 DUP(?)
+_gc_entry_float_regs		QWORD 32 DUP(?)
 
 ; Allocation 
 

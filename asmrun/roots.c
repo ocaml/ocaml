@@ -77,8 +77,6 @@ static int frame_descriptors_mask;
 #define Hash_retaddr(addr) \
   (((unsigned long)(addr) >> 3) & frame_descriptors_mask)
 
-extern long * caml_frametable[];
-
 static void init_frame_descriptors()
 {
   long num_descr, tblsize, i, j, len;
@@ -124,8 +122,6 @@ static void init_frame_descriptors()
 
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
-extern value caml_globals[];
-extern value gc_entry_regs[];
 char * caml_bottom_of_stack = NULL;
 unsigned long caml_last_return_address;
 
@@ -243,7 +239,7 @@ void do_roots (f)
   /* The stack and local roots */
   if (frame_descriptors == NULL) init_frame_descriptors();
   do_local_roots(f, caml_last_return_address,
-                 caml_bottom_of_stack, local_roots);
+                 caml_bottom_of_stack, local_roots, gc_entry_regs);
   /* Global C roots */
   for (gr = global_roots; gr != NULL; gr = gr->next) {
     f (*(gr->root), gr->root);
@@ -252,11 +248,13 @@ void do_roots (f)
   if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
 }
 
-void do_local_roots(f, last_return_address, stack_low, local_roots)
+void do_local_roots(f, last_return_address, stack_low, local_roots,
+                    gc_entry_regs)
      scanning_action f;
      unsigned long last_return_address;
      char * stack_low;
      struct caml__roots_block * local_roots;
+     value * gc_entry_regs;
 {
   char * sp;
   unsigned long retaddr;

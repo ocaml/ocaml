@@ -18,8 +18,8 @@
 
 #ifndef SYS_solaris
 
-        .common _gc_entry_regs, 19 * 4, "bss"
-        .common _gc_entry_float_regs, 30 * 4, "bss"
+        .common _gc_entry_regs, 32 * 4, "bss"
+        .common _gc_entry_float_regs, 32 * 8, "bss"
         .common _caml_required_size, 4, "bss"
 
 #define Young_limit _young_limit
@@ -47,8 +47,8 @@
 
 #else
 
-        .common gc_entry_regs, 19 * 4, 8
-        .common gc_entry_float_regs, 30 * 4, 8
+        .common gc_entry_regs, 32 * 4, 8
+        .common gc_entry_float_regs, 32 * 8, 8
         .common caml_required_size, 4, 4
 
 #define Young_limit young_limit
