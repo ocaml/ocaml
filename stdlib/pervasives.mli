@@ -475,7 +475,7 @@ val print_float : float -> unit
 
 val print_endline : string -> unit
 (** Print a string, followed by a newline character, on
-   standard output. *)
+   standard output and flush standard output. *)
 
 val print_newline : unit -> unit
 (** Print a newline character on standard output, and flush
