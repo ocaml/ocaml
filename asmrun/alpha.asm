@@ -18,12 +18,26 @@
         .comm   young_ptr 8
         .comm   gc_entry_regs 8 * 32
         .comm   gc_entry_float_regs 8 * 32
-        .comm   caml_top_of_stack 8
-        .comm   caml_bottom_of_stack 8
-        .comm   caml_last_return_address 8
-        .comm   caml_exception_pointer 8
         .comm   remembered_ptr 8
         .comm   remembered_end 8
+
+        .sdata
+        .globl  caml_top_of_stack
+        .globl  caml_bottom_of_stack
+        .globl  caml_last_return_address
+        .globl  caml_exception_pointer
+        .globl  caml_saved_gp
+caml_top_of_stack:              .quad   0
+caml_bottom_of_stack:           .quad   0
+caml_last_return_address:       .quad   0
+caml_exception_pointer:         .quad   0
+caml_saved_gp:                  .quad   0
+
+/* These are offsets relative to caml_bottom_of_stack */
+
+#define Ofs_last_return_address 8
+#define Ofs_exception_pointer 16
+#define Ofs_saved_gp 24
 
 #define SAVE_ALL_REGS \
         lda     $24, gc_entry_regs; \
@@ -211,28 +225,28 @@ $103:   ldgp    $gp, 0($27)
         .align  3
 caml_c_call:
     /* Function to call is in $27 */
-        lda     $sp, -16($sp)
-        stq     $gp, 8($sp)
+        mov     $gp, $24
     /* Rebuild $gp */
         br      $25, $105
 $105:   ldgp    $gp, 0($25)
-        stq     $26, 0($sp)
-    /* Record lowest stack address and return address */
-        stq     $26, caml_last_return_address
-	lda	$25, 16($sp)
-        stq     $25, caml_bottom_of_stack
+    /* Record lowest stack address, return address, and caller's $gp */
+        lda     $25, caml_bottom_of_stack
+        stq     $sp, 0($25)
+        stq     $26, Ofs_last_return_address($25)
+        stq     $24, Ofs_saved_gp($25)
     /* Make the exception handler and alloc ptr available to the C code */
         stq     $13, young_ptr
-        stq     $15, caml_exception_pointer
+        stq     $15, Ofs_exception_pointer($25)
     /* Call the function */
         jsr     ($27)
     /* Reload alloc ptr */
         ldgp    $gp, 0($26)
         ldq     $13, young_ptr
-    /* Restore $gp and return */
-        ldq     $26, 0($sp)
-        ldq     $gp, 8($sp)
-        lda     $sp, 16($sp)
+    /* Reload $gp and return address */
+        lda     $25, caml_bottom_of_stack
+        ldq     $26, Ofs_last_return_address($25)
+        ldq     $gp, Ofs_saved_gp($25)
+    /* Return */
         ret     ($26)
 
         .end    caml_c_call
