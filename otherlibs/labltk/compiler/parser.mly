@@ -90,7 +90,7 @@ Type2 :
 
 Labeled_type2 :
     Type2
-      { "",$1 }
+      { "", $1 }
   | IDENT COLON Type2
       { $1, $3 }
 ;
@@ -134,16 +134,16 @@ SimpleArg:
     STRING
       {StringArg $1}
   | Type
-      {TypeArg ("",$1) }
+      {TypeArg ("", $1) }
 ;
 
 Arg:
     STRING
       {StringArg $1}
   | Type
-      {TypeArg ("",$1) }
+      {TypeArg ("", $1) }
   | IDENT COLON Type
-      {TypeArg ($1,$3)}       
+      {TypeArg ($1, $3)}       
   | QUESTION IDENT COLON LBRACKET SimpleArgList RBRACKET DefaultList
       {OptionalArgs ( $2, $5, $7 )}
   | QUESTION WIDGET COLON LBRACKET SimpleArgList RBRACKET DefaultList
@@ -153,7 +153,7 @@ Arg:
   | QUESTION WIDGET COLON LBRACKET SimpleArgList RBRACKET
       {OptionalArgs ( "widget", $5, [] )}
   | WIDGET COLON Type
-      {TypeArg ("widget",$3)}
+      {TypeArg ("widget", $3)}
   | Template
       { $1 }
 ;

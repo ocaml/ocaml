@@ -47,7 +47,7 @@ let small_ident s =
   let idents = ["to"; "raise"; "in"; "class"; "new"]
   in
   let s = small s in
-  if List.mem item:s idents then (String.make len:1 s.[0])^s
+  if List.mem item:s idents then (String.make len:1 s.[0]) ^ s
   else s
 
 let gettklabel fc = 
@@ -69,10 +69,10 @@ let rec types_of_template = function
     StringArg _ -> []
   | TypeArg (l, t) -> [l, t]
   | ListArg l -> List.flatten (List.map fun:types_of_template l)
-  | OptionalArgs (l,tl,_) -> 
+  | OptionalArgs (l, tl, _) -> 
       begin
       match List.flatten (List.map fun:types_of_template tl) with
-          ["", t] -> ["?"^l, t]
+          ["", t] -> ["?" ^ l, t]
         | [_, _] -> raise (Failure "0 label required")
         | _ -> raise (Failure "0 or more than 1 args in for optionals")
       end
@@ -91,9 +91,9 @@ let ppMLtype ?(:any=false) ?(:return=false) ?(:def=false) ?(:counter=ref 0) =
   | Char -> "char"
   | String -> "string"
 (* new *)
-  | List (Subtype (sup,sub)) ->
+  | List (Subtype (sup, sub)) ->
     if return then
-      sub^"_"^sup^" list"
+      sub ^ "_" ^ sup ^ " list"
     else 
      begin
        try 
@@ -124,7 +124,7 @@ let ppMLtype ?(:any=false) ?(:return=false) ?(:def=false) ?(:counter=ref 0) =
   | Product tyl -> String.concat sep:" * " (List.map fun:ppMLtype tyl)
   | Record tyl -> 
       String.concat sep:" * "
-        (List.map tyl fun:(fun (l,t) -> labelstring l ^ ppMLtype t))
+        (List.map tyl fun:(fun (l, t) -> labelstring l ^ ppMLtype t))
   | Subtype ("widget", sub) -> sub ^ " widget"
   | UserDefined "widget" -> 
       if any then "any widget" else 
@@ -163,7 +163,7 @@ let ppMLtype ?(:any=false) ?(:return=false) ?(:def=false) ?(:counter=ref 0) =
         raise (Failure "Function (Product tyl) ? ppMLtype")
   | Function (Record tyl) -> 
         "(" ^ String.concat sep:" -> " 
-          (List.map tyl fun:(fun (l,t) -> labelstring l ^ ppMLtype t))
+          (List.map tyl fun:(fun (l, t) -> labelstring l ^ ppMLtype t))
         ^ " -> unit)"
   | Function ty ->
         "(" ^ (ppMLtype ty) ^ " -> unit)"
@@ -174,9 +174,9 @@ let ppMLtype ?(:any=false) ?(:return=false) ?(:def=false) ?(:counter=ref 0) =
 (* Produce a documentation version of a template *)
 let rec ppTemplate = function
     StringArg s -> s
-  | TypeArg (l,t) -> "<" ^ ppMLtype t ^ ">"
+  | TypeArg (l, t) -> "<" ^ ppMLtype t ^ ">"
   | ListArg l -> "{" ^ String.concat sep:" " (List.map fun:ppTemplate l) ^ "}"
-  | OptionalArgs (l,tl,d) ->
+  | OptionalArgs (l, tl, d) ->
       "?" ^ l ^ "{" ^ String.concat sep:" " (List.map fun:ppTemplate tl)
       ^ "}[<" ^ String.concat sep:" " (List.map fun:ppTemplate d) ^ ">]"
 
@@ -259,7 +259,7 @@ let rec converterTKtoCAML argname as:ty =
   | UserDefined s -> "cTKtoCAML" ^ s ^ " " ^ argname
   | Subtype ("widget", s') ->
       "(Obj.magic (cTKtoCAMLwidget " ^ argname ^ ") : " ^ s' ^ " widget)"
-  | Subtype (s,s') -> "cTKtoCAML"^s'^"_"^s^" "^argname
+  | Subtype (s, s') -> "cTKtoCAML" ^ s' ^ "_" ^ s ^ " " ^ argname
   | List ty ->
      begin match type_parser_arity ty with
        OneToken -> 
@@ -294,10 +294,10 @@ let varnames :prefix n =
 
 let rec wrapper_code fname of:ty =
   match ty with
-    Unit -> "(function _ -> "^fname^" ())"
+    Unit -> "(function _ -> " ^ fname ^ " ())"
   | As (ty, _) -> wrapper_code fname of:ty
   | ty ->
-      "(function args ->\n        " ^ 
+      "(function args ->\n        " ^
       begin match ty with
           Product tyl -> raise (Failure "Product -> record was done. ???")
         | Record tyl ->
@@ -306,20 +306,20 @@ let rec wrapper_code fname of:ty =
           (* getting the arguments *)
           let readarg = 
             List.map2 vnames tyl fun:
-            begin fun v (l,ty) ->
+            begin fun v (l, ty) ->
               match type_parser_arity ty with
                 OneToken ->
-                  "let ("^v^",args) = " ^
-                  converterTKtoCAML "(List.hd args)"  as:ty  ^
+                  "let (" ^ v ^ ", args) = " ^
+                  converterTKtoCAML "(List.hd args)" as:ty ^
                   ", List.tl args in\n        "
               | MultipleToken ->
-                  "let ("^v^",args) = " ^
-                  converterTKtoCAML "args"  as:ty ^
+                  "let (" ^ v ^ ", args) = " ^
+                  converterTKtoCAML "args" as:ty ^
                   " in\n        "
             end in
           String.concat sep:"" readarg ^ fname ^ " " ^
           String.concat sep:" " 
-            (List.map2 fun:(fun v (l,_) -> labelstring l^v) vnames tyl)
+            (List.map2 fun:(fun v (l, _) -> labelstring l ^ v) vnames tyl)
 
         (* all other types are read in one operation *)
         | List ty ->
@@ -331,7 +331,7 @@ let rec wrapper_code fname of:ty =
             OneToken -> 
               fname ^ "(" ^ converterTKtoCAML "(List.hd args)" as:ty ^ ")"
           | MultipleToken ->
-              "let (v,_) = " ^ converterTKtoCAML "args" as:ty ^
+              "let (v, _) = " ^ converterTKtoCAML "args" as:ty ^
               " in\n        " ^ fname ^ " v"
           end
       end ^ ")"
@@ -363,12 +363,12 @@ let can_generate_parser constructors =
     begin fun c ->
       match c.template with
         ListArg [StringArg s] ->
-          pp.zeroary <- (s,"`" ^ c.var_name):: 
+          pp.zeroary <- (s, "`" ^ c.var_name) :: 
             pp.zeroary; true
-      | ListArg [TypeArg(_,Int)] | ListArg[TypeArg(_,Float)] -> 
+      | ListArg [TypeArg(_, Int)] | ListArg[TypeArg(_, Float)] -> 
           if pp.intpar <> [] then false
           else (pp.intpar <- ["`" ^ c.var_name]; true)
-      | ListArg [TypeArg(_,String)] ->
+      | ListArg [TypeArg(_, String)] ->
           if pp.stringpar <> [] then false
           else (pp.stringpar <- ["`" ^ c.var_name]; true)
       | _ -> false
@@ -388,9 +388,9 @@ let write_TKtoCAML :w name def:typdef =
     match can_generate_parser consts with
       NoParser ->
         prerr_string
-          ("You must write cTKtoCAML" ^ name ^" : string ->"^name^"\n")
+          ("You must write cTKtoCAML" ^ name ^ " : string ->" ^ name ^ "\n")
     | ParserPieces pp ->
-        w ("let cTKtoCAML"^name^" n =\n");
+        w ("let cTKtoCAML" ^ name ^ " n =\n");
         (* First check integer *)
         if pp.intpar <> [] then
         begin
@@ -399,13 +399,13 @@ let write_TKtoCAML :w name def:typdef =
         end;
         w ("    match n with\n");
         List.iter pp.zeroary fun:
-          begin fun (tk,ml) -> 
+          begin fun (tk, ml) -> 
             w "    | \""; w tk; w "\" -> "; w ml; w "\n"
           end;
         let final = if pp.stringpar <> [] then
               "n -> " ^ List.hd pp.stringpar ^ " n"
            else "s -> Pervasives.raise (Invalid_argument (\"cTKtoCAML"
-                ^ name ^ ": \" ^s))"
+                ^ name ^ ": \" ^ s))"
         in
         w "    | ";
         w final;
@@ -414,7 +414,7 @@ let write_TKtoCAML :w name def:typdef =
     begin
       write :name consts:typdef.constructors;
       List.iter typdef.subtypes fun: begin
-        fun (subname,consts) -> write name:(subname^"_"^name) :consts
+        fun (subname, consts) -> write name:(subname ^ "_" ^ name) :consts
       end
     end
 
@@ -428,35 +428,35 @@ let rec converterCAMLtoTK :context_widget argname as:ty =
  match ty with
     Int -> "TkToken (string_of_int " ^ argname ^ ")"
  |  Float -> "TkToken (string_of_float " ^ argname ^ ")"
- |  Bool -> "if "^argname^" then TkToken \"1\" else TkToken \"0\""
+ |  Bool -> "if " ^ argname ^ " then TkToken \"1\" else TkToken \"0\""
  |  Char -> "TkToken (Char.escaped " ^ argname ^ ")"
  |  String -> "TkToken " ^ argname
  |  As (ty, _) -> converterCAMLtoTK :context_widget argname as:ty
  |  UserDefined s -> 
-       let name = "cCAMLtoTK"^s^" " in
+       let name = "cCAMLtoTK" ^ s ^ " " in
        let args = argname in
        let args = 
            if requires_widget_context s then
-             context_widget^" "^args
+             context_widget ^ " " ^ args
            else args in
-       name^args
- |  Subtype ("widget",s') ->
+       name ^ args
+ |  Subtype ("widget", s') ->
        let name = "cCAMLtoTKwidget" in
-       let args = "("^argname^" : "^s'^" widget)" in
-       name^args
- |  Subtype (s,s') ->
-       let name = "cCAMLtoTK"^s'^"_"^s^" " in
-       let args = if safetype then "("^argname^" : #"^s'^"_"^s^")" else argname
+       let args = "(" ^ argname ^ " : " ^ s' ^ " widget)" in
+       name ^ args
+ |  Subtype (s, s') ->
+       let name = "cCAMLtoTK" ^ s' ^ "_" ^ s ^ " " in
+       let args = if safetype then "(" ^ argname ^ " : #" ^ s' ^ "_" ^ s ^ ")"
+                  else argname
        in
        let args = 
-           if requires_widget_context s then
-             context_widget^" "^args
+           if requires_widget_context s then context_widget ^ " " ^ args
            else args in
-       name^args
+       name ^ args
  | Function _ -> fatal_error "unexpected function type in converterCAMLtoTK"
- | Unit       -> fatal_error "unexpected unit type in converterCAMLtoTK"
- | Product _  -> fatal_error "unexpected product type in converterCAMLtoTK"
- | Record _  -> fatal_error "unexpected product type in converterCAMLtoTK"
+ | Unit -> fatal_error "unexpected unit type in converterCAMLtoTK"
+ | Product _ -> fatal_error "unexpected product type in converterCAMLtoTK"
+ | Record _ -> fatal_error "unexpected product type in converterCAMLtoTK"
  | List ty -> fatal_error "unexpected list type in converterCAMLtoTK"
 
 (* 
@@ -464,9 +464,9 @@ let rec converterCAMLtoTK :context_widget argname as:ty =
  *  The idea here is to avoid allocation as much as possible
  *
  *)
- 
+
 let code_of_template :context_widget ?(func:funtemplate=false) template =
-  let catch_opts = ref ("","") in (* class name and first option *)
+  let catch_opts = ref ("", "") in (* class name and first option *)
   let variables = ref [] in
   let variables2 = ref [] in
   let varcnter = ref 0 in
@@ -477,18 +477,18 @@ let code_of_template :context_widget ?(func:funtemplate=false) template =
       | None ->
           incr varcnter;
           let v = "v" ^ (string_of_int !varcnter) in
-          variables := (l,v) :: !variables; v in
+          variables := (l, v) :: !variables; v in
   let newvar2 l =
       match !optionvar with
         Some v -> optionvar := None; v
       | None ->
           incr varcnter;
           let v = "v" ^ (string_of_int !varcnter) in
-          variables2 := (l,v) :: !variables2; v in
+          variables2 := (l, v) :: !variables2; v in
   let newvar = ref newvar1 in     
   let rec coderec = function
     StringArg s -> "TkToken \"" ^ s ^ "\""
-  | TypeArg (_, List (Subtype (sup,sub) as ty)) ->
+  | TypeArg (_, List (Subtype (sup, sub) as ty)) ->
       let typdef = Hashtbl.find key:sup types_table in
       let classdef = List.assoc key:sub typdef.subtypes in
       let lbl = gettklabel (List.hd classdef) in
@@ -500,19 +500,19 @@ let code_of_template :context_widget ?(func:funtemplate=false) template =
       ^ converterCAMLtoTK :context_widget "x" as:ty
       ^ ") " ^ !newvar l ^ ")"
   | TypeArg (l, Function tyarg) ->
-     "let id = register_callback " ^context_widget
-     ^ " callback: "^ wrapper_code (!newvar l) of:tyarg
-     ^ " in TkToken (\"camlcb \"^id)"
-  | TypeArg (l,ty) -> converterCAMLtoTK :context_widget (!newvar l) as:ty
+     "let id = register_callback " ^ context_widget
+     ^ " callback: " ^ wrapper_code (!newvar l) of:tyarg
+     ^ " in TkToken (\"camlcb \" ^ id)"
+  | TypeArg (l, ty) -> converterCAMLtoTK :context_widget (!newvar l) as:ty
   | ListArg l ->
       "TkQuote (TkTokenList ["
       ^ String.concat sep:";\n    " (List.map fun:coderec l) ^ "])" 
   | OptionalArgs (l, tl, d) -> 
-      let nv = !newvar ("?"^l) in
+      let nv = !newvar ("?" ^ l) in
       optionvar := Some nv; (* Store *)
       let argstr = String.concat sep:"; " (List.map fun:coderec tl) in 
       let defstr = String.concat sep:"; " (List.map fun:coderec d) in
-      "TkTokenList (match "^ nv ^" with\n"
+      "TkTokenList (match " ^ nv ^ " with\n"
       ^ " | Some " ^ nv ^ " -> [" ^ argstr ^ "]\n"
       ^ " | None -> [" ^ defstr ^ "])"
   in
@@ -542,14 +542,14 @@ let write_clause :w :context_widget comp =
   let warrow () = w " -> " in
   w "`";
   w comp.var_name;
-  
+
   let code, variables, variables2, (co, _) =
     code_of_template :context_widget comp.template in
 
   (* no subtype I think ... *)
   if co <> "" then raise (Failure "write_clause subtype ?"); 
   begin match variables with
-    [] -> warrow()
+  | [] -> warrow()
   | [x] -> w " "; w (labeloff x at:"write_clause"); warrow()
   | l ->
       w " ( ";
@@ -559,11 +559,10 @@ let write_clause :w :context_widget comp =
   end;
   w code
 
-
-(* The full converter *)         
+(* The full converter *)
 let write_CAMLtoTK :w def:typdef ?(safetype:st = true) name =
   let write_one name constrs =
-    w ("let cCAMLtoTK"^name);
+    w ("let cCAMLtoTK" ^ name);
     let context_widget = 
       if typdef.requires_widget_context then begin
         w " w"; "w"
@@ -575,24 +574,25 @@ let write_CAMLtoTK :w def:typdef ?(safetype:st = true) name =
       if typdef.variant then w "#";
       w name; w " -> tkArgs "
     end;
-    w(" = function\n    ");
-    write_clause :w :context_widget (List.hd constrs);
-    List.iter (List.tl constrs)
-      fun:(fun c -> w "\n    | "; write_clause :w :context_widget c);
+    w (" = function");
+    List.iter constrs
+      fun:(fun c -> w "\n  | "; write_clause :w :context_widget c);
     w "\n\n\n"
   in
+  
   (* Only needed if no subtypes, otherwise use optionals *)
+  let constrs = typdef.constructors in
   if typdef.subtypes == [] then
-    write_one name typdef.constructors
+    write_one name constrs
   else
-    List.iter typdef.constructors fun:
+    List.iter constrs fun:
       begin fun fc ->
         let code, vars, _, (co, _) =
           code_of_template context_widget:"dummy" fc.template in
         if co <> "" then fatal_error "optionals in optionals";
         let vars = List.map fun:snd vars in
         w "let ccCAMLtoTK"; w name; w "_"; w (small fc.ml_name);
-        w " ("; w (String.concat sep:"," vars); w ") =\n    ";
+        w " ("; w (String.concat sep:", " vars); w ") =\n    ";
         w code; w "\n\n"
       end
 
@@ -601,7 +601,7 @@ let rec write_result_parsing :w = function
     List String ->
       w "(splitlist res)"
   | List ty ->
-      w ("    List.map fun: "^ converterTKtoCAML "(splitlist res)" as:ty)
+      w ("    List.map fun: " ^ converterTKtoCAML "(splitlist res)" as:ty)
   | Product tyl -> raise (Failure "Product -> record was done. ???") 
   | Record tyl -> (* of course all the labels are "" *)
       let rnames = varnames prefix:"r" (List.length tyl) in
@@ -610,7 +610,7 @@ let rec write_result_parsing :w = function
       w ("\n      then Pervasives.raise (TkError (\"unexpected result: \" ^ res))");
       w ("\n      else ");
       List.iter2 rnames tyl fun:
-        begin fun r (l,ty) ->
+        begin fun r (l, ty) ->
           if l <> "" then raise (Failure "lables in return type!!!"); 
           w ("    let " ^ r ^ ", l = ");
           begin match type_parser_arity ty with
@@ -621,7 +621,7 @@ let rec write_result_parsing :w = function
           end;
           w (" in\n")
         end;
-      w (String.concat sep:"," rnames)
+      w (String.concat sep:", " rnames)
   | String ->
       w (converterTKtoCAML "res" as:String)
   | As (ty, _) -> write_result_parsing :w ty
@@ -631,11 +631,11 @@ let rec write_result_parsing :w = function
       | MultipleToken -> w (converterTKtoCAML "(splitlist res)" as:ty)
 
 let write_function :w def =
-  w ("let "^def.ml_name);
+  w ("let " ^ def.ml_name);
   (* a bit approximative *)
   let context_widget = match def.template with
-    ListArg (TypeArg(_,UserDefined("widget"))::_) -> "v1"
-  | ListArg (TypeArg(_,Subtype("widget",_))::_) -> "v1"
+    ListArg (TypeArg(_, UserDefined("widget")) :: _) -> "v1"
+  | ListArg (TypeArg(_, Subtype("widget", _)) :: _) -> "v1"
   | _ -> "dummy" in
 
   let code, variables, variables2, (co, lbl) =
@@ -644,16 +644,16 @@ let write_function :w def =
   let uv, lv, ov = 
     let rec replace_args :u :l :o = function
         [] -> u, l, o
-      | ("",x)::ls ->
-          replace_args u:(x::u) :l :o  ls
-      | (p,_ as x)::ls when p.[0] = '?' ->
-          replace_args :u :l o:(x::o) ls
-      | x::ls ->
-          replace_args :u l:(x::l) :o ls
+      | ("", x) :: ls ->
+          replace_args u:(x :: u) :l :o  ls
+      | (p, _ as x) :: ls when p.[0] = '?' ->
+          replace_args :u :l o:(x :: o) ls
+      | x :: ls ->
+          replace_args :u l:(x :: l) :o ls
     in
       replace_args u:[] l:[] o:[] (List.rev (variables @ variables2))
   in
-  List.iter (lv@ov) fun:(fun (l,v) -> w " "; w (labelstring l); w v);
+  List.iter (lv@ov) fun:(fun (l, v) -> w " "; w (labelstring l); w v);
   if co <> "" then begin
     if lv = [] && ov = [] then w (" ?" ^ lbl ^ ":eta");
     w " =\n";
@@ -679,7 +679,7 @@ let write_function :w def =
 
 let write_create :w clas =
   (w  "let create ?:name =\n" : unit);
-  w ("  "^ clas ^ "_options_optionals (fun opts parent ->\n");
+  w ("  " ^ clas ^ "_options_optionals (fun opts parent ->\n");
   w ("     let w = new_atom \"" ^ clas ^ "\" :parent ?:name in\n");
   w  "     tkCommand [|";
   w ("TkToken \"" ^ clas ^ "\";\n");
@@ -697,7 +697,7 @@ let find_in_path path name =
   else begin
     let rec try_dir = function
       [] -> raise Not_found
-    | dir::rem ->
+    | dir :: rem ->
         let fullname = Filename.concat dir name in
         if Sys.file_exists fullname then fullname else try_dir rem
     in try_dir path
@@ -729,7 +729,7 @@ let write_catch_optionals :w clas def:typdef =
   if typdef.subtypes = [] then () else
   List.iter typdef.subtypes fun:
   begin fun (subclass, classdefs) ->
-    w  ("let " ^ subclass ^"_"^ clas ^ "_optionals f = fun\n");
+    w  ("let " ^ subclass ^ "_" ^ clas ^ "_optionals f = fun\n");
     let tklabels = List.map fun:gettklabel classdefs in
     let l = 
       List.map classdefs fun:

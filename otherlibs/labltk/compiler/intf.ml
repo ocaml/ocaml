@@ -35,17 +35,17 @@ let write_create_p :w wname =
         end in
       w (String.concat sep:" ->\n" 
          (List.map l fun:
-          begin fun (s,t) ->
+          begin fun (s, t) ->
             "  ?" ^ s ^ ":"
             ^(ppMLtype
              (match types_of_template t with
-                [t] -> labeloff t at:"write_create_p"
-             | [] -> fatal_error "multiple"
-             | l -> Product (List.map fun:(labeloff at:"write_create_p") l)))
+              | [t] -> labeloff t at:"write_create_p"
+              | [] -> fatal_error "multiple"
+              | l -> Product (List.map fun:(labeloff at:"write_create_p") l)))
           end))
     with Not_found -> fatal_error "in write_create_p"
   end;
-  w (" ->\n  'a widget -> "^wname^" widget\n");
+  w (" ->\n  'a widget -> " ^ wname ^ " widget\n");
   w "             (* [create p options ?name] creates a new widget with\n";
   w "                parent p and new patch component name.\n";
   w "                Options are restricted to the widget class subset,\n";
@@ -59,11 +59,11 @@ let write_function_type :w def =
     let tys = types_of_template def.template in
     let rec replace_args :u :l :o = function
         [] -> u, l, o
-      | (_,List(Subtype _) as x)::ls -> 
+      | (_, List(Subtype _) as x)::ls -> 
           replace_args :u :l o:(x::o) ls
-      | ("",_ as x)::ls ->
+      | ("", _ as x)::ls ->
           replace_args u:(x::u) :l :o  ls
-      | (p,_ as x)::ls when p.[0] = '?' ->
+      | (p, _ as x)::ls when p.[0] = '?' ->
           replace_args :u :l o:(x::o) ls
       | x::ls ->
           replace_args :u l:(x::l) :o ls
@@ -72,7 +72,7 @@ let write_function_type :w def =
   in
   let counter = ref 0 in
   List.iter (ls @ os @ us)
-    fun:(fun (l,t) -> labelprint :w l; w (ppMLtype t :counter); w " -> ");
+    fun:(fun (l, t) -> labelprint :w l; w (ppMLtype t :counter); w " -> ");
   if (os <> [] || ls = []) && us = [] then w "unit -> ";
   w (ppMLtype any:true return:true def.result); (* RETURN TYPE !!! *)
   w " \n";
