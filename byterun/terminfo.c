@@ -21,6 +21,9 @@
 
 #ifdef HAS_TERMCAP
 
+#ifdef __linux__
+#include <termios.h>
+#endif
 #define _BSD /* For DEC OSF1 */
 #undef getch
 #include <curses.h>
