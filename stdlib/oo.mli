@@ -22,3 +22,7 @@ val copy : (< .. > as 'a) -> 'a
 external id : < .. > -> int = "%field1"
 (** Return an integer identifying this object, unique for
     the current execution of the program. *)
+
+(**/**)
+(** For internal use (CamlIDL) *)
+val new_method : string -> CamlinternalOO.label
