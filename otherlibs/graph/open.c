@@ -23,6 +23,14 @@
 #endif
 
 Display * grdisplay = NULL;
+int grscreen;
+Colormap grcolormap;
+int grwhite, grblack;
+struct canvas grwindow;
+struct canvas grbstore;
+int grx, gry;
+unsigned long grcolor;
+extern XFontStruct * grfont;
 
 static Bool gr_initialized = False;
 

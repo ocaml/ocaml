@@ -23,13 +23,13 @@ struct canvas {
 };
 
 extern Display * grdisplay;     /* The display connection */
-int grscreen;                   /* The screen number */
-Colormap grcolormap;            /* The color map */
-struct canvas grwindow;         /* The graphics window */
-struct canvas grbstore;         /* The pixmap used for backing store */
-int grwhite, grblack;           /* Black and white pixels */
-int grx, gry;                   /* Coordinates of the current point */
-unsigned long grcolor;          /* Current drawing color */
+extern int grscreen;            /* The screen number */
+extern Colormap grcolormap;     /* The color map */
+extern struct canvas grwindow;  /* The graphics window */
+extern struct canvas grbstore;  /* The pixmap used for backing store */
+extern int grwhite, grblack;    /* Black and white pixels */
+extern int grx, gry;            /* Coordinates of the current point */
+extern unsigned long grcolor;   /* Current drawing color */
 extern XFontStruct * grfont;    /* Current font */
 
 #define Wcvt(y) (grwindow.h - 1 - (y))
