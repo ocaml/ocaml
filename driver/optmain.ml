@@ -61,7 +61,6 @@ let main () =
                                     Printmach.print_live := true);
        "-dspill", Arg.Set dump_spill;
        "-dsplit", Arg.Set dump_split;
-       "-dscheduling", Arg.Set dump_scheduling;
        "-dinterf", Arg.Set dump_interf;
        "-dprefer", Arg.Set dump_prefer;
        "-dalloc", Arg.Set dump_regalloc;
