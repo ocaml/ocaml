@@ -27,12 +27,6 @@ open Emitaux
 
 (* First pass: insert Iloadgp instructions where needed *)
 
-let multiple_gp =
-  match Config.system with
-    "digital" -> true
-  | "linux" -> false
-  | _ -> assert false
-
 let insert_load_gp f =
 
   let labels_needing_gp = ref LabelSet.empty in
@@ -405,16 +399,12 @@ let emit_instr i =
         `	lda	{emit_reg i.res.(0)}, {emit_symbol s}\n`
     | Lop(Icall_ind) ->
         liveregs i 0;
-        if multiple_gp then
-          `	mov	{emit_reg i.arg.(0)}, $27\n`;
+        `	mov	{emit_reg i.arg.(0)}, $27\n`;
         `	jsr	({emit_reg i.arg.(0)})\n`;
         `{record_frame i.live}\n`
     | Lop(Icall_imm s) ->
         liveregs i 0;
-        if multiple_gp then
-          `	jsr	{emit_symbol s}\n`
-        else
-          `	bsr	$26, {emit_symbol s}\n`;
+        `	jsr	{emit_symbol s}\n`;
         `{record_frame i.live}\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
@@ -422,8 +412,7 @@ let emit_instr i =
           `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
         if n > 0 then
           `	lda	$sp, {emit_int n}($sp)\n`;
-        if multiple_gp then
-          `	mov	{emit_reg i.arg.(0)}, $27\n`;
+        `	mov	{emit_reg i.arg.(0)}, $27\n`;
         liveregs i (live_26 + live_27);
         `	jmp	({emit_reg i.arg.(0)})\n`
     | Lop(Itailcall_imm s) ->
@@ -435,8 +424,7 @@ let emit_instr i =
             `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
           if n > 0 then
             `	lda	$sp, {emit_int n}($sp)\n`;
-          if multiple_gp then
-            `	lda	$27, {emit_symbol s}\n`;
+          `	lda	$27, {emit_symbol s}\n`;
           liveregs i (live_26 + live_27);
           `	br	{emit_symbol s}\n`
         end
@@ -447,9 +435,7 @@ let emit_instr i =
           `	bsr	$26, caml_c_call\n`;
           `{record_frame i.live}\n`
         end else begin
-          `	jsr	{emit_symbol s}\n`;
-          if not multiple_gp then
-            `	ldgp	$gp, 0($26)\n`
+          `	jsr	{emit_symbol s}\n`
         end
     | Lop(Istackoffset n) ->
         `	lda	$sp, {emit_int (-n)}($sp)\n`;
@@ -743,7 +729,7 @@ let emit_fundecl (fundecl, needs_gp) =
   end
 
 let fundecl f =
-  emit_fundecl (if multiple_gp then insert_load_gp f else (f, false))
+  emit_fundecl (insert_load_gp f)
 
 (* Emission of data *)
 
