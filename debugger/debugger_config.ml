@@ -54,8 +54,7 @@ let event_mark_after  = "<|a|>"
 let shell = "/bin/sh"
 
 (* Name of the Objective Caml runtime. *)
-(* let runtime_program = "ocamlrun" *)
-let runtime_program = "/home/mouton/xleroy/csl-debugger/byterun/ocamlrun"
+let runtime_program = "ocamlrun"
 
 (* Time history size (for `last') *)
 let history_size = ref 30
@@ -74,51 +73,3 @@ let checkpoint_max_count = ref 15
 (* Whether to keep checkpoints or not. *)
 let make_checkpoints = ref true
 
-(*** Dynamic loader ***)
-
-(* List of standard library modules *)
-let stdlib_units = [
-  "Arg";
-  "Array";
-  "ArrayLabels";
-  "Buffer";
-  "Callback";
-  "CamlinternalOO";
-  "Char";
-  "Complex";
-  "Digest";
-  "Filename";
-  "Format";
-  "Gc";
-  "Genlex";
-  "Hashtbl";
-  "Int32";
-  "Int64";
-  "Lazy";
-  "Lexing";
-  "List";
-  "ListLabels";
-  "Map";
-  "Marshal";
-  "MoreLabels";
-  "Nativeint";
-  "Obj";
-  "Oo";
-  "Parsing";
-  "Pervasives";
-  "Printexc";
-  "Printf";
-  "Queue";
-  "Random";
-  "Scanf";
-  "Set";
-  "Sort";
-  "Stack";
-  "StdLabels";
-  "Stream";
-  "String";
-  "StringLabels";
-  "Sys";
-  "Weak";
-  "Unix"
-]

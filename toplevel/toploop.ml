@@ -344,8 +344,12 @@ let empty_lexbuf lb =
 
 let _ =
   Sys.interactive := true;
-  Symtable.init_toplevel();
-  Compile.init_path()
+  let crc_intfs = Symtable.init_toplevel() in
+  Compile.init_path();
+  List.iter
+    (fun (name, crc) ->
+      Consistbl.set Env.crc_units name crc Sys.executable_name)
+    crc_intfs
 
 let load_ocamlinit ppf =
   if Sys.file_exists ".ocamlinit" then ignore(use_silently ppf ".ocamlinit")

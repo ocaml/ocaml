@@ -13,6 +13,7 @@
 # $Id$
 
 include ../config/Makefile
+include ../stdlib/StdlibModules
 
 CAMLC=../ocamlcomp.sh
 COMPFLAGS=-warn-error A $(INCLUDES)
@@ -21,6 +22,7 @@ CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
 CAMLLEX=../boot/ocamlrun ../boot/ocamllex
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+EXPUNGE=../boot/ocamlrun ../expunge
 DEPFLAGS=$(INCLUDES)
 
 INCLUDES=\
@@ -30,7 +32,7 @@ INCLUDES=\
 OTHEROBJS=\
   ../otherlibs/unix/unix.cma \
   ../utils/misc.cmo ../utils/config.cmo \
-  ../utils/tbl.cmo ../utils/clflags.cmo \
+  ../utils/tbl.cmo ../utils/clflags.cmo ../utils/consistbl.cmo \
   ../parsing/longident.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
   ../typing/btype.cmo ../typing/primitive.cmo ../typing/typedtree.cmo \
@@ -77,7 +79,9 @@ OBJS=\
 all: ocamldebug$(EXE)
 
 ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
-	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) $(OTHEROBJS) $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -o ocamldebug.tmp -linkall $(OTHEROBJS) $(OBJS)
+	$(EXPUNGE) ocamldebug.tmp ocamldebug$(EXE) $(STDLIB_MODULES)
+	rm -f ocamldebug.tmp
 
 install:
 	cp ocamldebug$(EXE) $(BINDIR)/ocamldebug$(EXE)

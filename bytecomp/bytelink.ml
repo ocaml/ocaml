@@ -158,29 +158,21 @@ let scan_file obj_name tolink =
 
 (* Consistency check between interfaces *)
 
-let crc_interfaces =
-  (Hashtbl.create 17 : (string, string * Digest.t) Hashtbl.t)
+let crc_interfaces = Consistbl.create ()
 
 let check_consistency file_name cu =
-  List.iter
-    (fun (name, crc) ->
-      if name = cu.cu_name then begin
-        Hashtbl.add crc_interfaces name (file_name, crc)
-      end else begin
-        try
-          let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
-          if crc <> auth_crc then
-            raise(Error(Inconsistent_import(name, file_name, auth_name)))
-        with Not_found ->
-          (* Can only happen for unit for which only a .cmi file was used,
-             but no .cmo is provided *)
-          Hashtbl.add crc_interfaces name (file_name, crc)
-      end)
-    cu.cu_imports
+  try
+    List.iter
+      (fun (name, crc) ->
+        if name = cu.cu_name
+        then Consistbl.set crc_interfaces name crc file_name
+        else Consistbl.check crc_interfaces name crc file_name)
+      cu.cu_imports
+  with Consistbl.Inconsistency(name, user, auth) ->
+    raise(Error(Inconsistent_import(name, user, auth)))
 
 let extract_crc_interfaces () =
-  Hashtbl.fold (fun name (file_name, crc) accu -> (name, crc) :: accu)
-               crc_interfaces []
+  Consistbl.extract crc_interfaces
 
 (* Record compilation events *)
 
@@ -301,7 +293,7 @@ let link_bytecode tolink exec_name standalone =
     (* The bytecode *)
     let start_code = pos_out outchan in
     Symtable.init();
-    Hashtbl.clear crc_interfaces;
+    Consistbl.clear crc_interfaces;
     let sharedobjs = List.map Dll.extract_dll_name !Clflags.dllibs in
     if standalone then begin
       (* Initialize the DLL machinery *)
@@ -336,6 +328,9 @@ let link_bytecode tolink exec_name standalone =
     (* The map of global identifiers *)
     Symtable.output_global_map outchan;
     Bytesections.record outchan "SYMB";
+    (* CRCs for modules *)
+    output_value outchan (extract_crc_interfaces());
+    Bytesections.record outchan "CRCS";
     (* Debug info *)
     if !Clflags.debug then begin
       output_debug_info outchan;
@@ -391,7 +386,7 @@ let link_bytecode_as_c tolink outfile =
     (* The bytecode *)
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
-    Hashtbl.clear crc_interfaces;
+    Consistbl.clear crc_interfaces;
     let output_fun = output_code_string outchan
     and currpos_fun () = 0 in
     List.iter (link_file output_fun currpos_fun) tolink;

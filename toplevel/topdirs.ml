@@ -37,8 +37,7 @@ let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
   Config.load_path := d :: !Config.load_path;
-  Dll.add_path [d];
-  Env.reset_cache()
+  Dll.add_path [d]
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
 
@@ -52,23 +51,16 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 
 exception Load_failed
 
-let check_consistency ppf filename compunit =
-  Bytelink.check_consistency filename compunit;
-  (* Check consistency of unit against its .cmi, if it can be found *)
+let check_consistency ppf filename cu =
   try
-    let crc_intf = Env.crc_of_unit compunit.cu_name in
-    let crc_impl =
-      try List.assoc compunit.cu_name compunit.cu_imports
-      with Not_found -> assert false in
-    if crc_intf <> crc_impl then begin
-      fprintf ppf "@[<hv 0>File %s is not up-to-date with respect to@ \
-                           interface %s@]@."
-              filename compunit.cu_name;
-        raise Load_failed
-      end
-  with Not_found ->
-    (* Couldn't find .cmi, ignore it (or should we print a warning?) *)
-    ()
+    List.iter
+      (fun (name, crc) -> Consistbl.check Env.crc_units name crc filename)
+      cu.cu_imports
+  with Consistbl.Inconsistency(name, user, auth) ->
+    fprintf ppf "@[<hv 0>The files %s@ and %s@ \
+                 disagree over interface %s@]@."
+            user auth name;
+    raise Load_failed
 
 let load_compunit ic filename ppf compunit =
   check_consistency ppf filename compunit;

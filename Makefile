@@ -15,6 +15,7 @@
 # The main Makefile
 
 include config/Makefile
+include stdlib/StdlibModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
 CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib
@@ -33,7 +34,8 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
          -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
-  utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo
+  utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
+  utils/consistbl.cmo
 
 OPTUTILS=$(UTILS)
 
@@ -105,14 +107,6 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   typing/ident.cmo typing/path.cmo typing/types.cmo typing/btype.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
-
-PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
-  lexing list map obj parsing pervasives printexc printf scanf \
-  queue random set sort stack string stream \
-  sys oo camlinternalOO \
-  genlex topdirs toploop weak lazy \
-  marshal int32 int64 nativeint complex outcometree \
-  arrayLabels listLabels stringLabels stdLabels moreLabels
 
 # For users who don't read the INSTALL file
 defaultentry:
@@ -308,7 +302,7 @@ partialclean::
 
 ocaml: $(TOPOBJS) expunge
 	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp $(TOPOBJS)
-	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
+	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(STDLIB_MODULES)
 	rm -f ocaml.tmp
 
 toplevel/toplevellib.cma: $(TOPLIB)

@@ -33,49 +33,37 @@ exception Error of error
 
 (* Consistency check between interfaces and implementations *)
 
-let crc_interfaces =
-      (Hashtbl.create 17 : (string, string * Digest.t) Hashtbl.t)
-let crc_implementations =
-      (Hashtbl.create 17 : (string, string * Digest.t) Hashtbl.t)
+let crc_interfaces = Consistbl.create ()
+let crc_implementations = Consistbl.create ()
 
 let check_consistency file_name unit crc =
-  List.iter
-    (fun (name, crc) ->
-      if name = unit.ui_name then begin
-        Hashtbl.add crc_interfaces name (file_name, crc)
-      end else begin
-        try
-          let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
-          if crc <> auth_crc then
-            raise(Error(Inconsistent_interface(name, file_name, auth_name)))
-        with Not_found ->
-          (* Can only happen for unit for which only a .cmi file was used,
-             but no .cmo is provided *)
-          Hashtbl.add crc_interfaces name (file_name, crc)
-      end)
-    unit.ui_imports_cmi;
-  List.iter
-    (fun (name, crc) ->
-      if crc <> cmx_not_found_crc then begin
-      try
-        let (auth_name, auth_crc) = Hashtbl.find crc_implementations name in
-        if crc <> auth_crc then
-          raise(Error(Inconsistent_implementation(name, file_name, auth_name)))
-      with Not_found ->
-        Hashtbl.add crc_implementations name (file_name, crc)
-      end)
-    unit.ui_imports_cmx;
-  try
-    let (name, crc) = Hashtbl.find crc_implementations unit.ui_name in
-    raise (Error(Multiple_definition(unit.ui_name, file_name, name)))
-  with Not_found ->
-    Hashtbl.add crc_implementations unit.ui_name (file_name, crc)
+  begin try
+    List.iter
+      (fun (name, crc) ->
+        if name = unit.ui_name
+        then Consistbl.set crc_interfaces name crc file_name
+        else Consistbl.check crc_interfaces name crc file_name)
+      unit.ui_imports_cmi
+  with Consistbl.Inconsistency(name, user, auth) ->
+    raise(Error(Inconsistent_interface(name, user, auth)))
+  end;
+  begin try
+    List.iter
+      (fun (name, crc) ->
+        if crc <> cmx_not_found_crc then
+          Consistbl.check crc_implementations name crc file_name)
+      unit.ui_imports_cmx
+  with Consistbl.Inconsistency(name, user, auth) ->
+    raise(Error(Inconsistent_implementations(name, user, auth)))
+  end;
+  if Consistbl.is_bound crc_implementations unit.ui_name then
+    raise (Error(Multiple_definition(unit.ui_name, file_name, name)));
+  Consistbl.set crc_implementations unit.ui_name crc file_name
 
-let extract_crcs table =
-  Hashtbl.fold (fun name (file_name, crc) accu -> (name, crc) :: accu)
-               table []
-let extract_crc_interfaces () = extract_crcs crc_interfaces
-let extract_crc_implementations () = extract_crcs crc_implementations
+let extract_crc_interfaces () =
+  Consistbl.extract crc_interfaces
+let extract_crc_implementations () = 
+  Consistbl.extract crc_implementations
 
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
