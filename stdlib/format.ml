@@ -79,9 +79,12 @@ type 'a queue = {
  mutable body : 'a queue_elem
 };;
 
-type formatter_tag_marker_functions = {
- mark_open_tag : string -> string;
- mark_close_tag : string -> string
+type formatter_tag_functions = {
+ mark_open_tag : tag -> string;
+ mark_close_tag : tag -> string;
+ print_open_tag : tag -> unit;
+ print_close_tag : tag -> unit;
+
 };;
 
 type formatter = {
@@ -89,6 +92,7 @@ type formatter = {
  mutable pp_format_stack : pp_format_elem list;
  mutable pp_tbox_stack : tblock list;
  mutable pp_tag_stack : tag list;
+ mutable pp_mark_stack : tag list;
  (* Global variables: default initialization is
     set_margin 78
     set_min_space_left 0 *)
@@ -125,9 +129,13 @@ type formatter = {
  mutable pp_output_spaces : int -> unit;
  (* Are tags printed ? *)
  mutable pp_print_tags : bool;
+ (* Are tags marked ? *)
+ mutable pp_mark_tags : bool;
  (* Find opening and closing markers of tags. *)
- mutable pp_open_tag_marker_function : tag -> string;
- mutable pp_close_tag_marker_function : tag -> string;
+ mutable pp_mark_open_tag : tag -> string;
+ mutable pp_mark_close_tag : tag -> string;
+ mutable pp_print_open_tag : tag -> unit;
+ mutable pp_print_close_tag : tag -> unit;
  (* The pretty-printer queue *)
  mutable pp_queue : pp_queue_elem queue
 };;
@@ -329,16 +337,16 @@ let format_pp_token state size = function
      end
 
    | Pp_open_tag tag_name ->
-      let marker = state.pp_open_tag_marker_function tag_name in
+      let marker = state.pp_mark_open_tag tag_name in
       pp_output_string state marker;
-      state.pp_tag_stack <- tag_name :: state.pp_tag_stack
+      state.pp_mark_stack <- tag_name :: state.pp_mark_stack
 
    | Pp_close_tag ->
-      begin match state.pp_tag_stack with
+      begin match state.pp_mark_stack with
       | tag_name :: tags ->
-          let marker = state.pp_close_tag_marker_function tag_name in
+          let marker = state.pp_mark_close_tag tag_name in
           pp_output_string state marker;
-          state.pp_tag_stack <- tags
+          state.pp_mark_stack <- tags
       | _ -> () (* No more tag to close *)
       end;;
 
@@ -447,25 +455,45 @@ let pp_close_box state () =
      end;;
 
 (* Open a tag, pushing it on the tag stack. *)
-let pp_open_tag state s =
-    if state.pp_print_tags then
-    pp_enqueue state {elem_size = 0; token = Pp_open_tag s; length = 0};;
+let pp_open_tag state tag_name =
+    if state.pp_print_tags then begin
+      state.pp_tag_stack <- tag_name :: state.pp_tag_stack;
+      state.pp_print_open_tag tag_name end;
+    if state.pp_mark_tags then
+      pp_enqueue state
+        {elem_size = 0; token = Pp_open_tag tag_name; length = 0};;
 
 (* Close a tag, popping it from the tag stack. *)
 let pp_close_tag state () =
+    if state.pp_mark_tags then
+      pp_enqueue state {elem_size = 0; token = Pp_close_tag; length = 0};
     if state.pp_print_tags then
-    pp_enqueue state {elem_size = 0; token = Pp_close_tag; length = 0};;
+      begin match state.pp_tag_stack with
+      | tag_name :: tags ->
+          state.pp_print_close_tag tag_name;
+          state.pp_tag_stack <- tags
+      | _ -> () (* No more tag to close *)
+      end;;
 
 let pp_set_print_tags state b = state.pp_print_tags <- b;;
+let pp_set_mark_tags state b = state.pp_mark_tags <- b;;
 
-let pp_get_formatter_tag_marker_functions state () =
-  {mark_open_tag = state.pp_open_tag_marker_function;
-   mark_close_tag = state.pp_close_tag_marker_function};;
+let pp_get_formatter_tag_functions state () =
+  {mark_open_tag = state.pp_mark_open_tag;
+   mark_close_tag = state.pp_mark_close_tag;
+   print_open_tag = state.pp_print_open_tag;
+   print_close_tag = state.pp_print_close_tag;
+};;
 
-let pp_set_formatter_tag_marker_functions state
-    {mark_open_tag = otag; mark_close_tag = ctag} =
-  state.pp_open_tag_marker_function <- otag;
-  state.pp_close_tag_marker_function <- ctag;;
+let pp_set_formatter_tag_functions state
+    {mark_open_tag = motag;
+     mark_close_tag = mctag;
+     print_open_tag = potag;
+     print_close_tag = pctag;} =
+  state.pp_mark_open_tag <- motag;
+  state.pp_mark_close_tag <- mctag;
+  state.pp_print_open_tag <- potag;
+  state.pp_print_close_tag <- pctag;;
 
 (* Initialize pretty-printer. *)
 let pp_rinit state =
@@ -477,6 +505,7 @@ let pp_rinit state =
     state.pp_format_stack <- [];
     state.pp_tbox_stack <- [];
     state.pp_tag_stack <- [];
+    state.pp_mark_stack <- [];
     pp_open_sys_box state;;
 
 (* Flushing pretty-printer queue. *)
@@ -649,8 +678,11 @@ let pp_set_formatter_out_channel state os =
   state.pp_output_function <- output os;
   state.pp_flush_function <- (fun () -> flush os);;
 
-let default_pp_open_tag_marker_function s = "<" ^ s ^ ">";;
-let default_pp_close_tag_marker_function s = "</" ^ s ^ ">";;
+let default_pp_mark_open_tag s = "<" ^ s ^ ">";;
+let default_pp_mark_close_tag s = "</" ^ s ^ ">";;
+
+let default_pp_print_open_tag s = ();;
+let default_pp_print_close_tag = default_pp_print_open_tag;;
 
 let pp_make_formatter f g h i =
  (* The initial state of the formatter contains a dummy box *)
@@ -664,6 +696,7 @@ let pp_make_formatter f g h i =
   pp_format_stack = [];
   pp_tbox_stack = [];
   pp_tag_stack = [];
+  pp_mark_stack = [];
   pp_margin = 78;
   pp_min_space_left = 10;
   pp_max_indent = 78 - 10;
@@ -680,8 +713,11 @@ let pp_make_formatter f g h i =
   pp_output_newline = h;
   pp_output_spaces = i;
   pp_print_tags = true;
-  pp_open_tag_marker_function = default_pp_open_tag_marker_function;
-  pp_close_tag_marker_function = default_pp_close_tag_marker_function;
+  pp_mark_tags = true;
+  pp_mark_open_tag = default_pp_mark_open_tag;
+  pp_mark_close_tag = default_pp_mark_close_tag;
+  pp_print_open_tag = default_pp_print_open_tag;
+  pp_print_close_tag = default_pp_print_close_tag;
   pp_queue = pp_q
  };;
 
@@ -779,12 +815,14 @@ and set_all_formatter_output_functions =
 and get_all_formatter_output_functions =
     pp_get_all_formatter_output_functions std_formatter
 
-and set_formatter_tag_marker_functions =
-    pp_set_formatter_tag_marker_functions std_formatter
-and get_formatter_tag_marker_functions =
-    pp_get_formatter_tag_marker_functions std_formatter
+and set_formatter_tag_functions =
+    pp_set_formatter_tag_functions std_formatter
+and get_formatter_tag_functions =
+    pp_get_formatter_tag_functions std_formatter
 and set_print_tags =
     pp_set_print_tags std_formatter
+and set_mark_tags =
+    pp_set_mark_tags std_formatter
 ;;
 
 

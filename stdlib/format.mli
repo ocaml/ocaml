@@ -276,26 +276,33 @@ type tag = string;;
 
 val open_tag : tag -> unit;;
 val close_tag : unit -> unit;;
-(** [open_tag s] opens the tag named [s] that is printed as the zero
+(** [open_tag s] opens the tag named [s] that is output as the zero
     length token [mark_open_tag s]; next [close_tag ()] call
     outputs [mark_close_tag s], also as a zero length token.  *)
 
-type formatter_tag_marker_functions = {
-  mark_open_tag : string -> string;
-  mark_close_tag : string -> string
+type formatter_tag_functions = {
+  mark_open_tag : tag -> string;
+  mark_close_tag : tag -> string;
+  print_open_tag : tag -> unit;
+  print_close_tag : tag -> unit;
 };;
+(** The tag handling functions of a formatter:
+ [mark] versions output string as 0 length tokens,
+ [print] versions can perform regular printing. *)
 
-val set_formatter_tag_marker_functions :
-    formatter_tag_marker_functions -> unit;;
-val get_formatter_tag_marker_functions :
-    unit -> formatter_tag_marker_functions;;
+val set_formatter_tag_functions :
+    formatter_tag_functions -> unit;;
+val get_formatter_tag_functions :
+    unit -> formatter_tag_functions;;
 
 val set_print_tags : bool -> unit;;
-(** [set_print_tags b] turns on or off the output of tags.  This way a
-    single pretty printing routine can output both simple ``verbatim''
-    material or richer decorated output depending on the treatment of
-    tags. Default behavior of the pretty printer is to print the
-    tags. *)
+val set_mark_tags : bool -> unit;;
+(** [set_print_tags b] turns on or off the printing of tags, while 
+    [set_mark_tags b] turns on or off the output of tag markers.
+    This way a single pretty printing routine can output both simple
+    ``verbatim'' material or richer decorated output depending on the
+    treatment of tags. Default behavior of the pretty printer is to
+    print tags and markers of tags. *)
 
 
 (** {6 Ellipsis} *)
@@ -484,10 +491,10 @@ val pp_get_all_formatter_output_functions :
   formatter -> unit ->
   (string -> int -> int -> unit) * (unit -> unit) * (unit -> unit) *
   (int -> unit);;
-val pp_set_formatter_tag_marker_functions :
-  formatter -> formatter_tag_marker_functions -> unit;;
-val pp_get_formatter_tag_marker_functions :
-  formatter -> unit -> formatter_tag_marker_functions;;
+val pp_set_formatter_tag_functions :
+  formatter -> formatter_tag_functions -> unit;;
+val pp_get_formatter_tag_functions :
+  formatter -> unit -> formatter_tag_functions;;
 (** These functions are the basic ones: usual functions
    operating on the standard formatter are defined via partial
    evaluation of these primitives. For instance,
