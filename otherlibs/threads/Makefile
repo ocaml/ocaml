@@ -15,7 +15,7 @@
 include ../../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
+CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) -g
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
 
 C_OBJS=scheduler.o
@@ -37,7 +37,11 @@ LIB_OBJS=pervasives.cmo \
   $(LIB)/lazy.cmo $(LIB)/filename.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo \
   $(LIB)/nativeint.cmo
 
-all: libthreads.a threads.cma stdlib.cma
+UNIXLIB=../unix
+
+UNIXLIB_OBJS=unix.cmo
+
+all: libthreads.a threads.cma stdlib.cma unix.cma
 
 allopt:
 
@@ -51,6 +55,9 @@ threads.cma: $(CAML_OBJS)
 
 stdlib.cma: $(LIB_OBJS)
 	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)
+
+unix.cma: $(UNIXLIB_OBJS)
+	$(CAMLC) -a -linkall -custom -o unix.cma $(UNIXLIB_OBJS) -cclib -lunix
 
 pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
 	$(CAMLC) -nopervasives -c pervasives.ml
@@ -70,18 +77,27 @@ marshal.mli: $(LIB)/marshal.mli
 marshal.cmi: $(LIB)/marshal.cmi
 	ln -s $(LIB)/marshal.cmi marshal.cmi
 
+unix.cmo: unix.mli unix.cmi unix.ml
+	$(CAMLC) -c unix.ml
+
+unix.mli: $(UNIXLIB)/unix.mli
+	ln -s $(UNIXLIB)/unix.mli unix.mli
+
+unix.cmi: $(UNIXLIB)/unix.cmi
+	ln -s $(UNIXLIB)/unix.cmi unix.cmi
+
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
 	rm -f libthreads.a *.o
-	rm -f pervasives.mli marshal.mli
+	rm -f pervasives.mli marshal.mli unix.mli
 
 install:
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then : ; else mkdir $(LIBDIR)/threads; fi
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma $(LIBDIR)/threads
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/threads
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
 
 installopt:
@@ -92,7 +108,7 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(CAMLC) -c -g $(COMPFLAGS) $<
+	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<

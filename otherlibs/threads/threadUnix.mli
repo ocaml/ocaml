@@ -14,11 +14,11 @@
 
 (* Module [ThreadUnix]: thread-compatible system calls *)
 
-(* This module reimplements some of the functions from [Unix]
-   so that they only block the calling thread, not all threads
-   in the program, if they cannot complete immediately.
-   See the documentation of the [Unix] module for more
-   precise descriptions of the functions below. *)
+(* This module is deprecated: its functionality has been merged back into
+   the [Unix] module.  Threaded programs can now call the functions
+   from module [Unix] directly, and still get the correct behavior
+   (block the calling thread, if required, but do not block all threads
+   in the process).  *)
 
 (*** Process handling *)
 
@@ -85,5 +85,5 @@ val sendto : Unix.file_descr -> buf:string -> pos:int -> len:int ->
              mode:Unix.msg_flag list -> addr:Unix.sockaddr -> int
 val open_connection : Unix.sockaddr -> in_channel * out_channel
 val establish_server :
-      (in_channel -> out_channel -> 'a) ->
+      (in_channel -> out_channel -> unit) ->
       addr:Unix.sockaddr -> unit
