@@ -97,7 +97,7 @@ or type representation, if given. More precisely, we have the
 following four situations:
 
 \begin{description}
-\item[Abstract type: no equation, no representation.] \\
+\item[Abstract type: no equation, no representation.] ~ \\
 Names that are defined as abstract types in a signature can be
 implemented in a matching structure by any kind of type definition
 (provided it has the same number of type parameters). The exact
@@ -110,12 +110,12 @@ right-hand side of the abbreviation will be hidden from the users of the
 structure. Users of the structure consider that type as incompatible
 with any other type: a fresh type has been generated.
 
-\item[Type abbreviation: an equation @'=' typexp@, no representation.] \\
+\item[Type abbreviation: an equation @'=' typexp@, no representation.] ~ \\
 The type name must be implemented by a type compatible with @typexp@.
 All users of the structure know that the type name is
 compatible with @typexp@.
 
-\item[New variant type or record type: no equation, a representation.] \\
+\item[New variant type or record type: no equation, a representation.] ~ \\
 The type name must be implemented by a variant type or record type
 with exactly the constructors or labels specified. All users of the
 structure have access to the constructors or labels, and can use them
@@ -124,7 +124,7 @@ structure consider that type as incompatible with any other type: a
 fresh type has been generated.
 
 \item[Re-exported variant type or record type: an equation,
-a representation.] \\
+a representation.] ~ \\
 This case combines the previous two: the representation of the type is
 made visible to all users, and no fresh type is generated.
 \end{description}

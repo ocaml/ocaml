@@ -218,7 +218,7 @@ to which subclasses cannot add methods.
 Class types are specifications for class definitions. The syntax of
 class types is closely modeled on class definitions.
 
-Some type information can be hidden in a class type : it can be given
+Some type information can be hidden in a class type: it can be given
 stronger constraints than a matched class; some instance variables can
 be omitted; some previously non-mutable instance variables can be
 flagged mutable.

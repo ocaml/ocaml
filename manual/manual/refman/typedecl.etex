@@ -91,23 +91,23 @@ optional representation, can be combined independently, giving
 rise to four typical situations:
 
 \begin{description}
-\item[Abstract type: no equation, no representation.] \\
+\item[Abstract type: no equation, no representation.] ~\\
 When appearing in a module signature, this definition specifies
 nothing on the type constructor, besides its number of parameters: 
 its representation is hidden and it is assumed incompatible with any
 other type.
 
-\item[Type abbreviation: an equation, no representation.] \\
+\item[Type abbreviation: an equation, no representation.] ~\\
 This defines the type constructor as an abbreviation for the type
 expression on the right of the @'='@ sign. 
 
-\item[New variant type or record type: no equation, a representation.] \\
+\item[New variant type or record type: no equation, a representation.] ~\\
 This generates a new type constructor and defines associated
 constructors or labels, through which values of that type can be
 directly built or inspected.
 
 \item[Re-exported variant type or record type: an equation,
-a representation.] \\
+a representation.] ~\\
 In this case, the type constructor is defined as an abbreviation for
 the type expression given in the equation, but in addition the
 constructors or labels given in the representation remain attached to
