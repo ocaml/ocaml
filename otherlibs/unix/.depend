@@ -45,6 +45,7 @@ gettimeofday.o: gettimeofday.c unix.h
 getuid.o: getuid.c unix.h
 gmtime.o: gmtime.c unix.h
 ioctl.o: ioctl.c unix.h
+itimer.o: itimer.c unix.h
 kill.o: kill.c unix.h
 link.o: link.c unix.h
 listen.o: listen.c unix.h
@@ -72,6 +73,7 @@ sleep.o: sleep.c unix.h
 socket.o: socket.c unix.h
 socketaddr.o: socketaddr.c unix.h socketaddr.h
 socketpair.o: socketpair.c unix.h
+sockopt.o: sockopt.c unix.h
 stat.o: stat.c unix.h cst2constr.h
 strofaddr.o: strofaddr.c unix.h socketaddr.h
 symlink.o: symlink.c unix.h
@@ -84,7 +86,6 @@ unixsupport.o: unixsupport.c unix.h cst2constr.h
 unlink.o: unlink.c unix.h
 utimes.o: utimes.c unix.h
 wait.o: wait.c unix.h
-waitpid.o: waitpid.c unix.h
 write.o: write.c unix.h
 unix.cmo: unix.cmi 
 unix.cmx: unix.cmi 

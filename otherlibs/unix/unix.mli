@@ -16,41 +16,45 @@
 (*** Error report *)
 
 type error =
-    ENOERR
-  | EPERM               (* Not owner *)
-  | ENOENT              (* No such file or directory *)
-  | ESRCH               (* No such process *)
-  | EINTR               (* Interrupted system call *)
-  | EIO                 (* I/O error *)
-  | ENXIO               (* No such device or address *)
-  | E2BIG               (* Arg list too long *)
-  | ENOEXEC             (* Exec format error *)
-  | EBADF               (* Bad file number *)
-  | ECHILD              (* No children *)
-  | EAGAIN              (* No more processes *)
-  | ENOMEM              (* Not enough core *)
-  | EACCES              (* Permission denied *)
-  | EFAULT              (* Bad address *)
-  | ENOTBLK             (* Block device required *)
-  | EBUSY               (* Mount device busy *)
+  (* Errors defined in the POSIX standard *)
+    E2BIG               (* Argument list too long *)
+  | EACCESS             (* Permission denied *)
+  | EAGAIN              (* Resource temporarily unavailable; try again *)
+  | EBADF               (* Bad file descriptor *)
+  | EBUSY               (* Resource unavailable *)
+  | ECHILD              (* No child process *)
+  | EDEADLK             (* Resource deadlock would occur *)
+  | EDOM                (* Domain error for math functions, etc. *)
   | EEXIST              (* File exists *)
-  | EXDEV               (* Cross-device link *)
-  | ENODEV              (* No such device *)
-  | ENOTDIR             (* Not a directory*)
-  | EISDIR              (* Is a directory *)
-  | EINVAL              (* Invalid argument *)
-  | ENFILE              (* File table overflow *)
-  | EMFILE              (* Too many open files *)
-  | ENOTTY              (* Not a typewriter *)
-  | ETXTBSY             (* Text file busy *)
+  | EFAULT              (* Bad address *)
   | EFBIG               (* File too large *)
-  | ENOSPC              (* No space left on device *)
-  | ESPIPE              (* Illegal seek *)
-  | EROFS               (* Read-only file system *)
+  | EINTR               (* Function interrupted by signal *)
+  | EINVAL              (* Invalid argument *)
+  | EIO                 (* Hardware I/O error *)
+  | EISDIR              (* Is a directory *)
+  | EMFILE              (* Too many open files by the process *)
   | EMLINK              (* Too many links *)
+  | ENAMETOOLONG        (* Filename too long *)
+  | ENFILE              (* Too many open files in the system *)
+  | ENODEV              (* No such device *)
+  | ENOENT              (* No such file or directory *)
+  | ENOEXEC             (* Not an executable file *)
+  | ENOLCK              (* No locks available *)
+  | ENOMEM              (* Not enough memory *)
+  | ENOSPC              (* No space left on device *)
+  | ENOSYS              (* Function not supported *)
+  | ENOTDIR             (* Not a directory *)
+  | ENOTEMPTY           (* Directory not empty *)
+  | ENOTTY              (* Inappropriate I/O control operation *)
+  | ENXIO               (* No such device or address *)
+  | EPERM               (* Operation not permitted *)
   | EPIPE               (* Broken pipe *)
-  | EDOM                (* Argument too large *)
   | ERANGE              (* Result too large *)
+  | EROFS               (* Read-only file system *)
+  | ESPIPE              (* Invalid seek e.g. on a pipe *)
+  | ESRCH               (* No such process *)
+  | EXDEV               (* Invalid link *)
+  (* Additional errors, mostly BSD *)
   | EWOULDBLOCK         (* Operation would block *)
   | EINPROGRESS         (* Operation now in progress *)
   | EALREADY            (* Operation already in progress *)
@@ -78,21 +82,11 @@ type error =
   | ETOOMANYREFS        (* Too many references: can't splice *)
   | ETIMEDOUT           (* Connection timed out *)
   | ECONNREFUSED        (* Connection refused *)
-  | ELOOP               (* Too many levels of symbolic links *)
-  | ENAMETOOLONG        (* File name too long *)
   | EHOSTDOWN           (* Host is down *)
   | EHOSTUNREACH        (* No route to host *)
-  | ENOTEMPTY           (* Directory not empty *)
-  | EPROCLIM            (* Too many processes *)
-  | EUSERS              (* Too many users *)
-  | EDQUOT              (* Disc quota exceeded *)
-  | ESTALE              (* Stale NFS file handle *)
-  | EREMOTE             (* Too many levels of remote in path *)
-  | EIDRM               (* Identifier removed *)
-  | EDEADLK             (* Deadlock condition. *)
-  | ENOLCK              (* No record locks available. *)
-  | ENOSYS              (* Function not implemented *)
-  | EUNKNOWNERR
+  | ELOOP               (* Too many levels of symbolic links *)
+  (* All other errors are mapped to EUNKNOWNERR *)
+  | EUNKNOWNERR         (* Unknown error *)
 
         (* The type of error codes. *)
 
@@ -121,14 +115,13 @@ external environment : unit -> string array = "unix_environment"
 
 type process_status =
     WEXITED of int
-  | WSIGNALED of int * bool
+  | WSIGNALED of int
   | WSTOPPED of int
 
         (* The termination status of a process. [WEXITED] means that the
            process terminated normally by [exit]; the argument is the return
            code. [WSIGNALED] means that the process was killed by a signal;
-           the first argument is the signal number, the second argument
-           indicates whether a ``core dump'' was performed. [WSTOPPED] means
+           the argument is the signal number. [WSTOPPED] means
            that the process was stopped by a signal; the argument is the
            signal number. *)
 
@@ -159,7 +152,9 @@ external wait : unit -> int * process_status = "unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status
            = "unix_waitpid"
         (* Same as [wait], but waits for the process whose pid is given.
-	   A pid of  [0] means wait for any child.
+	   A pid of [-1] means wait for any child.
+           A pid of [0] means wait for any child in the same process group
+           as the current process.
            Negative pid arguments represent process groups.
 	   The list of options indicates whether [waitpid] should return
 	   immediately without waiting, or also report stopped children. *)
@@ -195,7 +190,7 @@ type open_flag =
     O_RDONLY                            (* Open for reading *)
   | O_WRONLY                            (* Open for writing *)
   | O_RDWR                              (* Open for reading and writing *)
-  | O_NDELAY                            (* Open in non-blocking mode *)
+  | O_NONBLOCK                          (* Open in non-blocking mode *)
   | O_APPEND                            (* Open for append *)
   | O_CREAT                             (* Create if nonexistent *)
   | O_TRUNC                             (* Truncate to 0 length if existing *)
@@ -330,16 +325,27 @@ external access : string -> access_permission list -> unit = "unix_access"
            file. Raise [Unix_error] otherwise. *)
 
 
-(*** File descriptor hacking *)
+(*** Operations on file descriptors *)
 
-external fcntl_int : file_descr -> int -> int -> int = "unix_fcntl_int"
-        (* Interface to [fcntl] in the case where the argument is an
-           integer. The first integer argument is the command code;
-           the second is the integer parameter. *)
-external fcntl_ptr : file_descr -> int -> string -> int = "unix_fcntl_ptr"
-        (* Interface to [fcntl] in the case where the argument is a pointer.
-           The integer argument is the command code. A pointer to the string
-           argument is passed as argument to the command. *)
+external dup : file_descr -> file_descr = "unix_dup"
+        (* Duplicate a descriptor. *)
+external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
+        (* [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
+           opened. *)
+external set_nonblock : file_descr -> unit = "unix_set_nonblock"
+external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
+        (* Set or clear the ``non-blocking'' flag on the given descriptor.
+           When the non-blocking flag is set, reading on a descriptor
+           on which there is temporarily no data available raises the
+           [EAGAIN] or [EWOULDBLOCK] error instead of blocking;
+           writing on a descriptor on which there is temporarily no room
+           for writing also raises [EAGAIN] or [EWOULDBLOCK]. *)
+external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
+external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
+        (* Set or clear the ``close-on-exec'' flag on the given descriptor.
+           A descriptor with the close-on-exec flag is automatically
+           closed when the current process starts another program with
+           one of the [exec] functions. *)
 
 
 (*** Directories *)
@@ -376,12 +382,6 @@ external pipe : unit -> file_descr * file_descr = "unix_pipe"
         (* Create a pipe. The first component of the result is opened
            for reading, that's the exit to the pipe. The second component is
            opened for writing, that's the entrace to the pipe. *) 
-external dup : file_descr -> file_descr = "unix_dup"
-        (* Duplicate a descriptor. *)
-external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
-        (* [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
-           opened. *)
-
 
 val open_process_in: string -> in_channel
 val open_process_out: string -> out_channel
@@ -518,6 +518,37 @@ external utimes : string -> int -> int -> unit = "unix_utimes"
            (third arg) for a file. Times are expressed in seconds from
            00:00:00 GMT, Jan. 1, 1970. *)
 
+type interval_timer =
+    ITIMER_REAL
+  | ITIMER_VIRTUAL
+  | ITIMER_PROF
+        (* The three kinds of interval timers.
+           [ITIMER_REAL] decrements in real time, and sends the signal
+           [SIGALRM] when expired.
+           [ITIMER_VIRTUAL] decrements in process virtual time, and sends
+           [SIGVTALRM] when expired.
+           [ITIMER_PROF] (for profiling) decrements both when the process
+           is running and when the system is running on behalf of the
+           process; it sends [SIGPROF] when expired. *)
+
+type interval_timer_status =
+  { it_interval: float;                 (* Period *)
+    it_value: float }                   (* Current value of the timer *)
+        (* The type describing the status of an interval timer *)
+
+external getitimer: interval_timer -> interval_timer_status = "unix_getitimer"
+        (* Return the current status of the given interval timer. *)
+external setitimer:
+  interval_timer -> interval_timer_status -> interval_timer_status
+  = "unix_setitimer"
+        (* [setitimer t s] set the interval timer [t] and return its previous
+           status. The [s] argument is interpreted as follows:
+           [s.it_value], if nonzero, is the time to the next timer expiration;
+           [s.it_interval], if nonzero, specifies a value to
+           be used in reloading it_value when the timer expires.
+           Setting [s.it_value] to zero disable the timer.
+           Setting [s.it_interval] to zero causes the timer to be disabled
+           after its next expiration. *)
 
 (*** User id, group id *)
 
@@ -584,6 +615,9 @@ external string_of_inet_addr : inet_addr -> string
            and Internet addresses. [inet_addr_of_string] raises [Failure]
            when given a string that does not match this format. *)
 
+val inet_addr_any : inet_addr
+        (* A special Internet address, for use only with [bind], representing
+           all the Internet addresses that the host machine possesses. *)
 
 (*** Sockets *)
 
@@ -612,20 +646,6 @@ type sockaddr =
            domain; [addr] is the Internet address of the machine, and
            [port] is the port number. *)
 
-type shutdown_command =
-    SHUTDOWN_RECEIVE                    (* Close for receiving *)
-  | SHUTDOWN_SEND                       (* Close for sending *)
-  | SHUTDOWN_ALL                        (* Close both *)
-
-        (* The type of commands for [shutdown]. *)
-
-type msg_flag =
-    MSG_OOB
-  | MSG_DONTROUTE
-  | MSG_PEEK
-
-        (* The flags for [recv], [recvfrom], [send] and [sendto]. *)
-
 external socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
         (* Create a new socket in the given domain, and with the
@@ -646,16 +666,31 @@ external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"
         (* Set up a socket for receiving connection requests. The integer
            argument is the maximal number of pending requests. *)
+
+type shutdown_command =
+    SHUTDOWN_RECEIVE                    (* Close for receiving *)
+  | SHUTDOWN_SEND                       (* Close for sending *)
+  | SHUTDOWN_ALL                        (* Close both *)
+        (* The type of commands for [shutdown]. *)
+
 external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown" 
         (* Shutdown a socket connection. [SHUTDOWN_SEND] as second argument
            causes reads on the other end of the connection to return
            an end-of-file condition.
            [SHUTDOWN_RECEIVE] causes writes on the other end of the connection
            to return a closed pipe condition ([SIGPIPE] signal). *)
+
 external getsockname : file_descr -> sockaddr = "unix_getsockname"
         (* Return the address of the given socket. *)
 external getpeername : file_descr -> sockaddr = "unix_getpeername"
         (* Return the address of the host connected to the given socket. *)
+
+type msg_flag =
+    MSG_OOB
+  | MSG_DONTROUTE
+  | MSG_PEEK
+        (* The flags for [recv], [recvfrom], [send] and [sendto]. *)
+
 val recv : file_descr -> string -> int -> int -> msg_flag list -> int
 val recvfrom :
         file_descr -> string -> int -> int -> msg_flag list -> int * sockaddr
@@ -665,6 +700,20 @@ val sendto :
         file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
         (* Send data over an unconnected socket. *)
 
+type socket_option =
+    SO_DEBUG               (* Record debugging information *)
+  | SO_BROADCAST           (* Permit sending of broadcast messages *)
+  | SO_REUSEADDR           (* Allow reuse of local addresses for bind *)
+  | SO_KEEPALIVE           (* Keep connection active *)
+  | SO_DONTROUTE           (* Bypass the standard routing algorithms *)
+  | SO_OOBINLINE           (* Leave out-of-band data in line *)
+        (* The socket options settable with [setsockopt]. *)
+
+external getsockopt : file_descr -> socket_option -> bool = "unix_getsockopt"
+        (* Return the current status of an option in the given socket. *)
+external setsockopt : file_descr -> socket_option -> bool -> unit
+                                                          = "unix_setsockopt"
+        (* Set or clear an option in the given socket. *)
 
 (*** High-level network connection functions *)
 

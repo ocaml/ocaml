@@ -12,41 +12,43 @@
 (* $Id$ *)
 
 type error =
-    ENOERR
-  | EPERM
-  | ENOENT
-  | ESRCH
-  | EINTR
-  | EIO
-  | ENXIO
-  | E2BIG
-  | ENOEXEC
-  | EBADF
-  | ECHILD
+    E2BIG
+  | EACCESS
   | EAGAIN
-  | ENOMEM
-  | EACCES
-  | EFAULT
-  | ENOTBLK
+  | EBADF
   | EBUSY
-  | EEXIST
-  | EXDEV
-  | ENODEV
-  | ENOTDIR
-  | EISDIR
-  | EINVAL
-  | ENFILE
-  | EMFILE
-  | ENOTTY
-  | ETXTBSY
-  | EFBIG
-  | ENOSPC
-  | ESPIPE
-  | EROFS
-  | EMLINK
-  | EPIPE
+  | ECHILD
+  | EDEADLK
   | EDOM
+  | EEXIST
+  | EFAULT
+  | EFBIG
+  | EINTR
+  | EINVAL
+  | EIO
+  | EISDIR
+  | EMFILE
+  | EMLINK
+  | ENAMETOOLONG
+  | ENFILE
+  | ENODEV
+  | ENOENT
+  | ENOEXEC
+  | ENOLCK
+  | ENOMEM
+  | ENOSPC
+  | ENOSYS
+  | ENOTDIR
+  | ENOTEMPTY
+  | ENOTTY
+  | ENXIO
+  | EPERM
+  | EPIPE
   | ERANGE
+  | EROFS
+  | ESPIPE
+  | ESRCH
+  | EXDEV
   | EWOULDBLOCK
   | EINPROGRESS
   | EALREADY
@@ -74,20 +76,9 @@ type error =
   | ETOOMANYREFS
   | ETIMEDOUT
   | ECONNREFUSED
-  | ELOOP
-  | ENAMETOOLONG
   | EHOSTDOWN
   | EHOSTUNREACH
-  | ENOTEMPTY
-  | EPROCLIM
-  | EUSERS
-  | EDQUOT
-  | ESTALE
-  | EREMOTE
-  | EIDRM
-  | EDEADLK
-  | ENOLCK
-  | ENOSYS
+  | ELOOP
   | EUNKNOWNERR
 
 exception Unix_error of error * string * string
@@ -119,7 +110,7 @@ external environment : unit -> string array = "unix_environment"
 
 type process_status =
     WEXITED of int
-  | WSIGNALED of int * bool
+  | WSIGNALED of int
   | WSTOPPED of int
 
 type wait_flag =
@@ -146,7 +137,7 @@ type open_flag =
     O_RDONLY
   | O_WRONLY
   | O_RDWR
-  | O_NDELAY
+  | O_NONBLOCK
   | O_APPEND
   | O_CREAT
   | O_TRUNC
@@ -226,8 +217,14 @@ external chown : string -> int -> int -> unit = "unix_chown"
 external fchown : file_descr -> int -> int -> unit = "unix_fchown"
 external umask : int -> int = "unix_umask"
 external access : string -> access_permission list -> unit = "unix_access"
-external fcntl_int : file_descr -> int -> int -> int = "unix_fcntl_int"
-external fcntl_ptr : file_descr -> int -> string -> int = "unix_fcntl_ptr"
+
+external dup : file_descr -> file_descr = "unix_dup"
+external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
+external set_nonblock : file_descr -> unit = "unix_set_nonblock"
+external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
+external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
+external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
+
 external mkdir : string -> file_perm -> unit = "unix_mkdir"
 external rmdir : string -> unit = "unix_rmdir"
 external chdir : string -> unit = "unix_chdir"
@@ -240,8 +237,6 @@ external readdir : dir_handle -> string = "unix_readdir"
 external rewinddir : dir_handle -> unit = "unix_rewinddir"
 external closedir : dir_handle -> unit = "unix_closedir"
 external pipe : unit -> file_descr * file_descr = "unix_pipe"
-external dup : file_descr -> file_descr = "unix_dup"
-external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
 external symlink : string -> string -> unit = "unix_symlink"
 external readlink : string -> string = "unix_readlink"
 external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
@@ -287,6 +282,21 @@ external sleep : int -> unit = "unix_sleep"
 external times : unit -> process_times =
               "unix_times_bytecode" "unix_times_native"
 external utimes : string -> int -> int -> unit = "unix_utimes"
+
+type interval_timer =
+    ITIMER_REAL
+  | ITIMER_VIRTUAL
+  | ITIMER_PROF
+
+type interval_timer_status =
+  { it_interval: float;                 (* Period *)
+    it_value: float }                   (* Current value of the timer *)
+
+external getitimer: interval_timer -> interval_timer_status = "unix_getitimer"
+external setitimer:
+  interval_timer -> interval_timer_status -> interval_timer_status
+  = "unix_setitimer"
+
 external getuid : unit -> int = "unix_getuid"
 external geteuid : unit -> int = "unix_geteuid"
 external setuid : int -> unit = "unix_setuid"
@@ -323,6 +333,9 @@ external inet_addr_of_string : string -> inet_addr
                                     = "unix_inet_addr_of_string"
 external string_of_inet_addr : inet_addr -> string
                                     = "unix_string_of_inet_addr"
+
+let inet_addr_any = inet_addr_of_string "0.0.0.0"
+
 type socket_domain =
     PF_UNIX
   | PF_INET
@@ -346,6 +359,14 @@ type msg_flag =
     MSG_OOB
   | MSG_DONTROUTE
   | MSG_PEEK
+
+type socket_option =
+    SO_DEBUG
+  | SO_BROADCAST
+  | SO_REUSEADDR
+  | SO_KEEPALIVE
+  | SO_DONTROUTE
+  | SO_OOBINLINE
 
 external socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
@@ -390,6 +411,9 @@ let sendto fd buf ofs len flags addr =
   then invalid_arg "Unix.sendto"
   else unsafe_sendto fd buf ofs len flags addr
 
+external getsockopt : file_descr -> socket_option -> bool = "unix_getsockopt"
+external setsockopt : file_descr -> socket_option -> bool -> unit
+                                                          = "unix_setsockopt"
 type host_entry =
   { h_name : string;
     h_aliases : string array;
@@ -490,10 +514,11 @@ type popen_process =
 
 let popen_processes = (Hashtbl.new 7 : (popen_process, int) Hashtbl.t)
 
-let open_proc cmd proc input output =
+let open_proc cmd proc input output toclose =
   match fork() with
      0 -> if input <> stdin then begin dup2 input stdin; close input end;
           if output <> stdout then begin dup2 output stdout; close output end;
+          List.iter close toclose;
           execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
           exit 127
   | id -> Hashtbl.add popen_processes proc id
@@ -501,14 +526,14 @@ let open_proc cmd proc input output =
 let open_process_in cmd =
   let (in_read, in_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
-  open_proc cmd (Process_in inchan) stdin in_write;
+  open_proc cmd (Process_in inchan) stdin in_write [in_read];
   close in_write;
   inchan
 
 let open_process_out cmd =
   let (out_read, out_write) = pipe() in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process_out outchan) out_read stdout;
+  open_proc cmd (Process_out outchan) out_read stdout [out_write];
   close out_read;
   outchan
 
@@ -517,27 +542,32 @@ let open_process cmd =
   let (out_read, out_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process(inchan, outchan)) out_read in_write; (inchan, outchan)
+  open_proc cmd (Process(inchan, outchan))
+            out_read in_write [in_read; out_write];
+  (inchan, outchan)
 
-let close_proc fun_name proc =
+let find_proc_id fun_name proc =
   try
-    let (_, status) = waitpid [] (Hashtbl.find popen_processes proc) in
+    let pid = Hashtbl.find popen_processes proc in
     Hashtbl.remove popen_processes proc;
-    status
+    pid
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
 
 let close_process_in inchan =
-  close_in inchan; 
-  close_proc "close_process_in" (Process_in inchan)
+  let pid = find_proc_id "close_process_in" (Process_in inchan) in
+  close_in inchan;
+  snd(waitpid [] pid)
 
 let close_process_out outchan =
+  let pid = find_proc_id "close_process_out" (Process_out outchan) in
   close_out outchan;
-  close_proc "close_process_out" (Process_out outchan)
+  snd(waitpid [] pid)
 
 let close_process (inchan, outchan) =
-  close_in inchan; close_out outchan; 
-  close_proc "close_process" (Process(inchan, outchan))
+  let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
+  close_in inchan; close_out outchan;
+  snd(waitpid [] pid)
 
 (* High-level network functions *)
 
@@ -564,7 +594,7 @@ let establish_server server_fun sockaddr =
     (* The "double fork" trick, the process which calls server_fun will not
        leave a zombie process *)
     match fork() with
-       0 -> if fork() != 0 then exit 0; (* The son exits, the grandson works *)
+       0 -> if fork() <> 0 then exit 0; (* The son exits, the grandson works *)
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
             server_fun inchan outchan;

@@ -16,8 +16,12 @@
 #include "unix.h"
 #include <fcntl.h>
 
+#ifndef O_NONBLOCK
+#define O_NONBLOCK O_NDELAY
+#endif
+
 static int open_flag_table[] = {
-  O_RDONLY, O_WRONLY, O_RDWR, O_NDELAY, O_APPEND, O_CREAT, O_TRUNC, O_EXCL
+  O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_APPEND, O_CREAT, O_TRUNC, O_EXCL
 };
 
 value unix_open(path, flags, perm) /* ML */

@@ -13,21 +13,67 @@
 
 #include <mlvalues.h>
 #include "unix.h"
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
+#include <fcntl.h>
 
-value unix_fcntl_int(fd, request, arg)
-     value fd, request, arg;
+#ifndef O_NONBLOCK
+#define O_NONBLOCK O_NDELAY
+#endif
+
+value unix_set_nonblock(fd)
+     value fd;
 {
   int retcode;
-  retcode = fcntl(Int_val(fd), Int_val(request), (char *) Long_val(arg));
-  if (retcode == -1) uerror("fcntl_int", Nothing);
-  return Val_int(retcode);
+  retcode = fcntl(Int_val(fd), F_GETFL, 0);
+  if (retcode == -1 ||
+      fcntl(Int_val(fd), F_SETFL, retcode | O_NONBLOCK) == -1)
+    uerror("set_nonblock", Nothing);
+  return Val_unit;
 }
 
-value unix_fcntl_ptr(fd, request, arg)
-     value fd, request, arg;
+value unix_clear_nonblock(fd)
+     value fd;
 {
   int retcode;
-  retcode = fcntl(Int_val(fd), Int_val(request), String_val(arg));
-  if (retcode == -1) uerror("fcntl_ptr", Nothing);
-  return Val_int(retcode);
+  retcode = fcntl(Int_val(fd), F_GETFL, 0);
+  if (retcode == -1 ||
+      fcntl(Int_val(fd), F_SETFL, retcode & ~O_NONBLOCK) == -1)
+    uerror("clear_nonblock", Nothing);
+  return Val_unit;
 }
+
+#ifdef FD_CLOEXEC
+
+value unix_set_close_on_exec(fd)
+     value fd;
+{
+  int retcode;
+  retcode = fcntl(Int_val(fd), F_GETFD, 0);
+  if (retcode == -1 ||
+      fcntl(Int_val(fd), F_SETFD, retcode | FD_CLOEXEC) == -1)
+    uerror("set_close_on_exec", Nothing);
+  return Val_unit;
+}
+
+value unix_clear_close_on_exec(fd)
+     value fd;
+{
+  int retcode;
+  retcode = fcntl(Int_val(fd), F_GETFD, 0);
+  if (retcode == -1 ||
+      fcntl(Int_val(fd), F_SETFD, retcode & ~FD_CLOEXEC) == -1)
+    uerror("clear_close_on_exec", Nothing);
+  return Val_unit;
+}
+
+#else
+
+value unix_set_close_on_exec()
+{ invalid_argument("set_close_on_exec not implemented"); }
+
+value unix_clear_close_on_exec()
+{ invalid_argument("clear_close_on_exec not implemented"); }
+
+#endif
