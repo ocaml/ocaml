@@ -455,14 +455,22 @@ let type_self_pattern cl_num val_env met_env par_env spat =
   in
   (pat, meths, vars, val_env, met_env, par_env)
 
+let delayed_checks = ref []
+let reset_delayed_checks () = delayed_checks := []
+let add_delayed_check f = delayed_checks := f :: !delayed_checks
+let force_delayed_checks () =
+  List.iter (fun f -> f ()) (List.rev !delayed_checks);
+  reset_delayed_checks ()
+
 let check_unused_variant pat =
   match pat.pat_desc with
     Tpat_variant(tag, opat, row) ->
       let row = row_repr row in
-      begin match
+      let field =
         try row_field_repr (List.assoc tag row.row_fields)
         with Not_found -> Rabsent
-      with
+      in
+      begin match field with
       | Rpresent _ -> ()
       | Rabsent ->
           Location.prerr_warning pat.pat_loc Warnings.Unused_match
@@ -476,7 +484,16 @@ let check_unused_variant pat =
       | Reither (c, l, true, e) when not row.row_fixed ->
           e := Some (Reither (c, [], false, ref None))
       | _ -> ()
-      end
+      end;
+      (* Force check of well-formedness *)
+      unify_pat pat.pat_env pat
+        (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
+                        row_bound=[]; row_fixed=false; row_name=None}));
+      (* Eventually post a delayed warning check *)
+      if (match row_field_repr field with Reither _ -> true | _ -> false) then
+        add_delayed_check
+          (fun () -> if row_field_repr field = Rabsent then
+            Location.prerr_warning pat.pat_loc Warnings.Unused_match)
   | _ -> ()
 
 let rec iter_pattern f p =
@@ -694,6 +711,13 @@ let check_univars env kind exp ty_expected vars =
   and ty_expected = repr ty_expected in
   raise (Error (exp.exp_loc,
                 Less_general(kind, [ty, ty; ty_expected, ty_expected])))
+
+(* Check that a type is not a function *)
+let check_partial_application env exp =
+  match expand_head env exp.exp_type with
+  | {desc = Tarrow _} ->
+      Location.prerr_warning exp.exp_loc Warnings.Partial_application
+  | _ -> ()
 
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
@@ -1428,9 +1452,11 @@ and type_application env funct sargs =
     ["", sarg] ->
       let ty_arg, ty_res = filter_arrow env (instance funct.exp_type) "" in
       let exp = type_expect env sarg ty_arg in
-      begin match expand_head env exp.exp_type with
-      | {desc = Tarrow _} ->
+      begin match (expand_head env exp.exp_type).desc with
+      | Tarrow _ ->
           Location.prerr_warning exp.exp_loc Warnings.Partial_application
+      | Tvar ->
+          add_delayed_check (fun () -> check_partial_application env exp)
       | _ -> ()
       end;
       ([Some exp, Required], ty_res)
@@ -1605,7 +1631,9 @@ and type_statement env sexp =
         Location.prerr_warning sexp.pexp_loc Warnings.Partial_application;
         exp
     | Tconstr (p, _, _) when Path.same p Predef.path_unit -> exp
-    | Tvar -> exp
+    | Tvar ->
+        add_delayed_check (fun () -> check_partial_application env exp);
+        exp
     | _ ->
         Location.prerr_warning sexp.pexp_loc Warnings.Statement_type;
         exp

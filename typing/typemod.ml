@@ -491,7 +491,9 @@ and normalize_signature_item env = function
 (* Typecheck an implementation file *)
 
 let type_implementation sourcefile prefixname modulename initial_env ast =
+  Typecore.reset_delayed_checks ();
   let (str, sg, finalenv) = type_structure initial_env ast in
+  Typecore.force_delayed_checks ();
   if !Clflags.print_types then
     fprintf std_formatter "%a@." Printtyp.signature sg;
   let coercion =
