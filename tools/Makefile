@@ -224,14 +224,6 @@ objinfo: objinfo.cmo
 clean::
 	rm -f objinfo
 
-# Print imported interfaces for .cmi files
-
-intfinfo: intfinfo.cmo
-	$(CAMLC) $(LINKFLAGS) -o intfinfo config.cmo intfinfo.cmo
-
-clean::
-	rm -f intfinfo
-
 # Scan object files for required primitives
 
 PRIMREQ=primreq.cmo
