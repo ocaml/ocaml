@@ -323,16 +323,15 @@ static void trap_handler(int sig, int code,
                          struct sigcontext * context, char * address)
 {
   int * sp;
-
-  if (code != ILL_TRAP_FAULT(5)) {
-    fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n", code);
-    exit(100);
-  }
   /* Unblock SIGILL */
   sigset_t mask;
   sigemptyset(&mask);
   sigaddset(&mask, SIGILL);
   sigprocmask(SIG_UNBLOCK, &mask, NULL);
+  if (code != ILL_TRAP_FAULT(5)) {
+    fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n", code);
+    exit(100);
+  }
   /* Recover young_ptr and caml_exception_pointer from the %l5 and %l6 regs */
   sp = (int *) context->sc_sp;
   caml_exception_pointer = (char *) sp[5];
