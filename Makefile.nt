@@ -556,7 +556,15 @@ alldepend::
 # Camlp4
 
 camlp4out:
-	cd camlp4/config ; cat Makefile.tpl Makefile-nt.cnf > Makefile
+	cd camlp4/config ; \
+	(cat Makefile.tpl; \
+	 echo 'EXE=.exe'; \
+	 echo 'OPT='; \
+	 echo 'OTOP=../..'; \
+	 echo 'OLIBDIR=$$(OTOP)/boot'; \
+	 echo 'BINDIR=$(BINDIR)'; \
+	 echo 'LIBDIR=$(LIBDIR)'; \
+	 echo 'MANDIR=' ) > Makefile
 	cd camlp4 ; $(MAKE)
 camlp4opt:
 	cd camlp4 ; $(MAKE) opt

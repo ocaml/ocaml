@@ -15,12 +15,14 @@ depend:
 get_promote:
 
 install:
-	-$(MKDIR) $(MANDIR)/man1
-	-cp $(TARGET) $(MANDIR)/man1/.
-	-for i in $(ALIASES); do \
+	if test -n '$(MANDIR)'; then \
+	  $(MKDIR) $(MANDIR)/man1 ; \
+	  cp $(TARGET) $(MANDIR)/man1/. ; \
+	  for i in $(ALIASES); do \
             rm -f $(MANDIR)/man1/$$i; \
             echo '.so man1/$(TARGET)' > $(MANDIR)/man1/$$i; \
-         done
+          done; \
+	fi
 
 camlp4.1: camlp4.1.tpl
 	sed -e "s'LIBDIR'$(LIBDIR)'g" camlp4.1.tpl > camlp4.1

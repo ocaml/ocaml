@@ -20,11 +20,9 @@
 PREFIX=C:/ocamlmgw
 
 ### Where to install the binaries
-# If you change this, also change camlp4/config/Makefile-nt.cnf
 BINDIR=$(PREFIX)/bin
 
 ### Where to install the standard library
-# If you change this, also change camlp4/config/Makefile-nt.cnf
 LIBDIR=$(PREFIX)/lib
 
 ### Where to install the stub DLLs
