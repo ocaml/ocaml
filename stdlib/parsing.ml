@@ -182,5 +182,4 @@ let rhs_end n =
 let is_current_lookahead tok =
   (!current_lookahead_fun)(Obj.repr tok)
 
-let parse_error (msg: string) =
-  raise Parse_error
+let parse_error (msg: string) = ()
