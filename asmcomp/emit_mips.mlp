@@ -156,13 +156,26 @@ let emit_frame fd =
     fd.fd_live_offset;
   `	.align	2\n`
 
-(* Determine if absolute jumps ("j symb") are supported.
-   The OSes that produce position-independent code don't like this. *)
+(* Output an absolute jump to a symbol.
+   Some OSes that produce position-independent code don't like "j symb". *)
 
 let supports_absolute_jumps =
   match Config.system with
     "irix" -> false
   | _ -> true
+
+let emit_jump_symbol symb =
+  if supports_absolute_jumps then
+    `	j	{emit_symbol symb}\n`
+  else begin
+    `	.set	noreorder\n`;
+    `	.set	noat\n`;
+    `	move	$at, $31\n`;
+    `	jal	{emit_symbol symb}\n`;
+    `	move	$31, $at\n`;
+    `	.set	reorder\n`;
+    `	.set	at\n`
+  end
 
 (* Names of various instructions *)
 
@@ -261,24 +274,12 @@ let emit_instr i =
           `	b	{emit_label !tailrec_entry_point}\n`
         end else begin
           let n = frame_size() in
-          if supports_absolute_jumps then begin
-            if !contains_calls then
-              `	lw	$31, {emit_int(n - 4)}($sp)\n`;
-            if n > 0 then
-              `	addu	$sp, $sp, {emit_int n}\n`;
-            liveregs i 0;
-              `	j	{emit_symbol s}\n`
-          end else begin
-            if !contains_calls then
-              `	lw	$25, {emit_int(n - 4)}($sp)\n`;
-            if n > 0 then
-              `	addu	$sp, $sp, {emit_int n}\n`;
-            liveregs i 0;
-              `	.set	noreorder\n`;
-              `	jal	{emit_symbol s}\n`;
-              `	move	$31, $25\n`;
-              `	.set	reorder\n`
-          end
+          if !contains_calls then
+            `	lw	$31, {emit_int(n - 4)}($sp)\n`;
+          if n > 0 then
+            `	addu	$sp, $sp, {emit_int n}\n`;
+          liveregs i 0;
+          emit_jump_symbol s
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
@@ -480,16 +481,10 @@ let fundecl fundecl =
     `	sw	$31, {emit_int(n - 4)}($sp)\n`;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
-  if !call_gc_label > 0 then
-    if supports_absolute_jumps then
-      `{emit_label !call_gc_label}:	j	caml_call_gc\n`
-    else begin
-      `{emit_label !call_gc_label}:	move	$24, $31\n`;
-      `	.set	noreorder\n`;
-      `	jal	caml_call_gc\n`;
-      `	move	$31, $24\n`;
-      `	.set	reorder\n`
-    end;
+  if !call_gc_label > 0 then begin
+    `{emit_label !call_gc_label}:	`;
+    emit_jump_symbol "caml_call_gc"
+  end;
   if !range_check_trap > 0 then
     `{emit_label !range_check_trap}:	break	BRK_RANGE\n`;
   `	.end	{emit_symbol fundecl.fun_name}\n`
