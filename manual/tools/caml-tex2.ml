@@ -11,7 +11,7 @@ let camlout = "\\\\:\\1"
 let camlbunderline = "\\<"
 let camleunderline = "\\>"
 
-let camllight = ref "TERM=character ocaml"
+let camllight = ref "TERM=norepeat ocaml"
 let linelen = ref 72
 let outfile = ref ""
 let cut_at_blanks = ref false
