@@ -20,6 +20,10 @@ open Format
 val getvalue : string -> Obj.t
 val setvalue : string -> Obj.t -> unit
 
+(* Set the load paths, before running anything *)
+
+val set_paths : unit -> unit
+
 (* The interactive toplevel loop *)
 
 val loop : formatter -> unit

@@ -375,18 +375,20 @@ let _ =
 let load_ocamlinit ppf =
   if Sys.file_exists ".ocamlinit" then ignore(use_silently ppf ".ocamlinit")
 
+let set_paths () =
+  (* Add whatever -I options have been specified on the command line,
+     but keep the directories that user code linked in with ocamlmktop
+     may have added to load_path. *)
+  load_path := !load_path @ [Filename.concat Config.standard_library "camlp4"];
+  load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
+  Dll.add_path !load_path
+
 (* The interactive loop *)
 
 exception PPerror
 
 let loop ppf =
   fprintf ppf "        Objective Caml version %s@.@." Config.version;
-  (* Add whatever -I options have been specified on the command line,
-     but keep the directories that user code linked in with ocamlmktop
-     may have added to load_path. *)
-  load_path := !load_path @ [Filename.concat Config.standard_library "camlp4"];
-  load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
-  Dll.add_path !load_path;
   toplevel_env := Compile.initial_env();
   let lb = Lexing.from_function refill_lexbuf in
   Location.input_name := "";

@@ -16,11 +16,23 @@ open Clflags
 
 let usage = "Usage: ocaml <options> [script-file]\noptions are:"
 
-let file_argument name =
-  exit (if Toploop.run_script Format.err_formatter name Sys.argv then 0 else 2)
+let preload_objects = ref []
 
-let object_argument name =
-  Topdirs.dir_load
+let prepare ppf =
+  Toploop.set_paths ();
+  try List.for_all (Topdirs.load_file ppf) (List.rev !preload_objects)
+  with x ->
+    try Errors.report_error ppf x; false
+    with x ->
+      Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
+      false
+
+let file_argument name =
+  let ppf = Format.err_formatter in
+  if Filename.check_suffix name ".cmo" || Filename.check_suffix name ".cma"
+  then preload_objects := name :: !preload_objects
+  else exit
+      (if prepare ppf && Toploop.run_script ppf name Sys.argv then 0 else 2)
 
 let main () =
   Arg.parse [
@@ -56,6 +68,7 @@ let main () =
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)";
     ] file_argument usage;
+  if not (prepare Format.err_formatter) then exit 2;
   Toploop.loop Format.std_formatter
 
 let _ = Printexc.catch main ()
