@@ -1,5 +1,6 @@
 (* Transformation of Mach code into a list of pseudo-instructions. *)
 
+open Reg
 open Mach
 
 type label = int
@@ -109,6 +110,9 @@ let rec linear i n =
     Iend -> n
   | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
       copy_instr (Lop op) i (discard_dead_code n)
+  | Iop(Imove | Ireload | Ispill)
+    when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
+      linear i.Mach.next n
   | Iop op ->
       copy_instr (Lop op) i (linear i.Mach.next n)
   | Ireturn ->
@@ -171,7 +175,7 @@ let rec linear i n =
       cons_instr (Lsetuptrap lbl_body)
         (linear handler (add_branch lbl_join n2))
   | Iraise ->
-      copy_instr Lraise i n
+      copy_instr Lraise i (discard_dead_code n)
 
 let fundecl f =
   { fun_name = f.Mach.fun_name;

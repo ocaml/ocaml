@@ -405,36 +405,40 @@ let emit_instr i =
             `	j{emit_string b}	{emit_label lbl}\n`
         | Ifloattest cmp ->
             `	fldl	{emit_reg i.arg.(0)}\n`;
+            let comp_instr =
+              match cmp with
+                Ceq | Cne -> "fucom"
+              | _ -> "fcom" in
             begin match i.arg.(1).loc with
               Stack s ->
-                `	fcompl	{emit_shift i.arg.(1)}\n`
+                `	{emit_string comp_instr}pl	{emit_shift i.arg.(1)}\n`
             | _ ->
-                `	fcomp	{emit_shift i.arg.(1)}\n`
+                `	{emit_string comp_instr}p	{emit_shift i.arg.(1)}\n`
             end;
             `	fnstsw	%ax\n`;
             begin match cmp with
               Ceq ->
-                `	andb	$69, %al\n`;
-                `	cmpb	$64, %al\n`;
+                `	andb	$69, %ah\n`;
+                `	cmpb	$64, %ah\n`;
                 `	je	{emit_label lbl}\n`
             | Cne ->
-                `	andb	$68, %al\n`;
-                `	xorb	$64, %al\n`;
+                `	andb	$68, %ah\n`;
+                `	xorb	$64, %ah\n`;
                 `	jne	{emit_label lbl}\n`
             | Cle ->
-                `	andb	$69, %al\n`;
-                `	decb	%al\n`;
-                `	cmpb	$64, %al\n`;
+                `	andb	$69, %ah\n`;
+                `	decb	%ah\n`;
+                `	cmpb	$64, %ah\n`;
                 `	jb	{emit_label lbl}\n`
             | Cge ->
-                `	andb	$5, %al\n`;
+                `	andb	$5, %ah\n`;
                 `	je	{emit_label lbl}\n`
             | Clt ->
-                `	andb	$69, %al\n`;
-                `	cmpb	$1, %al\n`;
+                `	andb	$69, %ah\n`;
+                `	cmpb	$1, %ah\n`;
                 `	je	{emit_label lbl}\n`
             | Cgt ->
-                `	andb	$69, %al\n`;
+                `	andb	$69, %ah\n`;
                 `	je	{emit_label lbl}\n`
             end
         | Ioddtest ->
@@ -506,7 +510,7 @@ let fundecl fundecl =
   `{emit_label !tailrec_entry_point}:`;
   emit_all fundecl.fun_body;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	int	$5\n`
+    `{emit_label !range_check_trap}:	int	$5\n`;
   List.iter emit_float_constant !float_constants
 
 (* Emission of data *)

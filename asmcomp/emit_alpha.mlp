@@ -472,6 +472,10 @@ let emit_instr i =
             `	bne	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
         | Ifalsetest ->
             `	beq	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
+        | Iinttest(Isigned _ | Iunsigned Ceq | Iunsigned Cne as cmp) ->
+            `	subq	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $25\n`;
+            let branch = name_for_int_cond_branch cmp in
+            `	{emit_string branch}	$25, {emit_label lbl}\n`
         | Iinttest cmp ->
             let (comp, test) = name_for_int_comparison cmp in
             `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $25\n`;
@@ -482,6 +486,10 @@ let emit_instr i =
         | Iinttest_imm(cmp, 0) ->
             let branch = name_for_int_cond_branch cmp in
             `	{emit_string branch}	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
+        | Iinttest_imm(Isigned _ | Iunsigned Ceq | Iunsigned Cne as cmp, n) ->
+            `	subq	{emit_reg i.arg.(0)}, {emit_int n}, $25\n`;
+            let branch = name_for_int_cond_branch cmp in
+            `	{emit_string branch}	$25, {emit_label lbl}\n`
         | Iinttest_imm(cmp, n) ->
             let (comp, test) = name_for_int_comparison cmp in
             `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}, $25\n`;

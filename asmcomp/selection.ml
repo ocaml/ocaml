@@ -612,6 +612,18 @@ let rec emit_tail env exp seq =
              [||] [||] seq
   | Cexit ->
       insert Iexit [||] [||] seq
+  | Ctrywith(e1, v, e2) ->
+      Proc.contains_calls := true;
+      let (r1, s1) = emit_sequence env e1 in
+      let rv = Reg.newv typ_addr in
+      let s2 = emit_tail_sequence (Tbl.add v rv env) e2 in
+      let loc = Proc.loc_results r1 in
+      insert
+        (Itrywith(extract_sequence s1,
+                  instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv s2))
+        [||] [||] seq;
+      insert_moves r1 loc seq;
+      insert Ireturn loc [||] seq
   | _ ->
       emit_return env exp seq
 
