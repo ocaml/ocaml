@@ -39,6 +39,7 @@ let compiler_preferences () =
          [ "No pervasives", Clflags.nopervasives, false;
            "No warnings", Typecheck.nowarnings, false;
            "Labels commute", Clflags.classic, true;
+           "Recursive types", Clflags.recursive_types, false;
            "Lex on load", lex_on_load, false;
            "Type on load", type_on_load, false ])
   in

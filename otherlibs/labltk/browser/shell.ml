@@ -284,17 +284,20 @@ let f ~prog ~title =
       end in
   let load_path =
     List2.flat_map !Config.load_path ~f:(fun dir -> ["-I"; dir]) in
-  let modern = if !Clflags.classic then [] else ["-labels"] in
+  let labels = if !Clflags.classic then [] else ["-labels"] in
+  let rectypes = if !Clflags.recursive_types then ["-rectypes"] else [] in
   let warnings =
     if List.mem "-w" progargs || !warnings = "A" then []
     else ["-w"; !warnings]
   in
-  let args = Array.of_list (progargs @ modern @ warnings @ load_path) in
+  let args =
+    Array.of_list (progargs @ labels @ warnings @ rectypes @ load_path) in
   let sh = new shell ~textw:tw ~prog ~env ~args in
   let current_dir = ref (Unix.getcwd ()) in
   file_menu#add_command "Use..." ~command:
     begin fun () ->
-      Fileselect.f ~title:"Use File" ~filter:"*.ml" ~sync:true ~dir:!current_dir ()
+      Fileselect.f ~title:"Use File" ~filter:"*.ml"
+        ~sync:true ~dir:!current_dir ()
         ~action:(fun l ->
           if l = [] then () else
           let name = List.hd l in
