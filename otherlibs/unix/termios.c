@@ -34,7 +34,7 @@ enum { Input, Output };
 
 /* Number of fields in the terminal_io record field. Cf. unix.mli */
 
-#define NFIELDS 51
+#define NFIELDS 38
 
 /* Structure of the terminal_io record. Cf. unix.mli */
   
@@ -53,19 +53,6 @@ static long terminal_io_descr[] = {
   Bool, iflags, IXOFF,
   /* Output modes */
   Bool, oflags, OPOST,
-  Bool, oflags, OLCUC,
-  Bool, oflags, ONLCR,
-  Bool, oflags, OCRNL,
-  Bool, oflags, ONOCR,
-  Bool, oflags, ONLRET,
-  Bool, oflags, OFILL,
-  Bool, oflags, OFDEL,
-  Enum, oflags, 0, 2, NLDLY, NL0, NL1,
-  Enum, oflags, 0, 2, CRDLY, CR0, CR1,
-  Enum, oflags, 0, 4, TABDLY, TAB0, TAB1, TAB2, TAB3,
-  Enum, oflags, 0, 2, BSDLY, BS0, BS1,
-  Enum, oflags, 0, 2, VTDLY, VT0, VT1,
-  Enum, oflags, 0, 2, FFDLY, FF0, FF1,
   /* Control modes */
   Speed, Output,
   Speed, Input,
@@ -110,21 +97,21 @@ static struct {
   speed_t speed;
   int baud;
 } speedtable[] = {
-  B0,       0,
-  B50,      50,
-  B75,      75,
-  B110,     110,
-  B134,     134,
-  B150,     150,
-  B300,     300,
-  B600,     600,
-  B1200,    1200,
-  B1800,    1800,
-  B2400,    2400,
-  B4800,    4800,
-  B9600,    9600,
-  B19200,   19200,
-  B38400,   38400
+  {B0,       0},
+  {B50,      50},
+  {B75,      75},
+  {B110,     110},
+  {B134,     134},
+  {B150,     150},
+  {B300,     300},
+  {B600,     600},
+  {B1200,    1200},
+  {B1800,    1800},
+  {B2400,    2400},
+  {B4800,    4800},
+  {B9600,    9600},
+  {B19200,   19200},
+  {B38400,   38400}
 };
 
 #define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))
