@@ -148,7 +148,7 @@ void oldify_local_roots ()
   int i, j, n, ofs;
   short * p;
   value glob;
-  value * root, * block;
+  value * root;
   struct global_root * gr;
   struct caml__roots_block *lr;
 
@@ -237,7 +237,7 @@ void do_roots (f)
   int i, j, n, ofs;
   short * p;
   value glob;
-  value * block, * root;
+  value * root;
   struct global_root * gr;
   struct caml__roots_block *lr;
 
