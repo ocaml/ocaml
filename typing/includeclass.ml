@@ -44,7 +44,7 @@ let include_err =
         "The classes do not have the same number of type parameters"     
   | CM_Type_parameter_mismatch trace ->
       open_box 0;
-      Printtyp.unification_error trace
+      Printtyp.unification_error false trace
         (function () ->
           print_string "One type parameter has type")
         (function () ->
@@ -61,7 +61,7 @@ let include_err =
       close_box ()
   | CM_Parameter_mismatch trace ->
       open_box 0;
-      Printtyp.unification_error trace
+      Printtyp.unification_error false trace
         (function () ->
           print_string "One parameter has type")
         (function () ->
@@ -69,7 +69,7 @@ let include_err =
       close_box ()
   | CM_Val_type_mismatch (lab, trace) ->
       open_box 0;
-      Printtyp.unification_error trace
+      Printtyp.unification_error false trace
         (function () ->
           print_string "The instance variable ";
           print_string lab; print_space ();
@@ -79,7 +79,7 @@ let include_err =
       close_box ()
   | CM_Meth_type_mismatch (lab, trace) ->
       open_box 0;
-      Printtyp.unification_error trace
+      Printtyp.unification_error false trace
         (function () ->
           print_string "The method ";
           print_string lab; print_space ();

@@ -35,5 +35,6 @@ val cltype_declaration: Ident.t -> cltype_declaration -> unit
 val type_expansion: type_expr -> type_expr -> unit
 val trace: bool -> (unit -> unit) -> (type_expr * type_expr) list -> unit
 val unification_error:
-        (type_expr * type_expr) list -> (unit -> unit) -> (unit -> unit) ->
+        bool -> (type_expr * type_expr) list ->
+        (unit -> unit) -> (unit -> unit) ->
         unit

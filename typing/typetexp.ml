@@ -249,13 +249,13 @@ let report_error = function
   | Unbound_row_variable lid ->
       print_string "Unbound row variable in #"; longident lid
   | Type_mismatch trace ->
-      Printtyp.unification_error trace
+      Printtyp.unification_error true trace
         (function () ->
            print_string "This type parameter")
         (function () ->
            print_string "should be an instance of type")
   | Alias_type_mismatch trace ->
-      Printtyp.unification_error trace
+      Printtyp.unification_error true trace
         (function () ->
            print_string "This alias is bound to type")
         (function () ->

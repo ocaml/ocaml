@@ -343,7 +343,7 @@ let report_error = function
   | Unconsistent_constraint ->
       print_string "The type constraints are not consistent"
   | Type_clash trace ->
-      Printtyp.unification_error trace
+      Printtyp.unification_error true trace
         (function () ->
            print_string "This type constructor expands to type")
         (function () ->
