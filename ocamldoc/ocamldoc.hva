@@ -7,4 +7,13 @@
 \newcommand\textasciicircum{\^{}}
 \newcommand\sharp{#}
 
-
+\let\ocamldocvspace\vspace
+\newenvironment{ocamldocindent}{\list{}{}\item\relax}{\endlist}
+\newenvironment{ocamldocsigend}
+     {\noindent\quad\texttt{sig}\ocamldocindent}
+     {\endocamldocindent\vskip -\lastskip
+      \noindent\quad\texttt{end}\medskip}
+\newenvironment{ocamldocobjectend}
+     {\noindent\quad\texttt{object}\ocamldocindent}
+     {\endocamldocindent\vskip -\lastskip
+      \noindent\quad\texttt{end}\medskip}
