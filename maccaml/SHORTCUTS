@@ -1,4 +1,4 @@
-option-click on a scrollbar's arrow -> scroll by one pixel
+option-click a scrollbar's arrow -> scroll by one pixel
 
 Enter in the toplevel window -> go to bottom of window and append
 a newline

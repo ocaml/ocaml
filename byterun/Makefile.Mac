@@ -1,7 +1,7 @@
 C = sc
 COptions = -model far # -d DEBUG -mbg full
-AOptions = -model far # -d DEBUG -wb
-LinkOptions = -model far -msg nodup -compact -pad 0 -state nouse -br 68k
+AOptions = -model far # -d DEBUG -wb -l
+LinkOptions = -model far -ad 4 -msg nodup -compact -pad 0 -state nouse -br 68k
 Libs = "{libraries}IntEnv.o" ¶
        "{libraries}Interface.o" ¶
        "{libraries}MacRuntime.o" ¶
@@ -9,8 +9,8 @@ Libs = "{libraries}IntEnv.o" ¶
        "{clibraries}StdCLib.o" ¶
        "{libraries}ToolLibs.o"
 
-PPCC = mrc -sym on
-PPCCOptions = -w 35
+PPCC = mrc
+PPCCOptions = -w 35 -sym on # -d DEBUG
 PPCLinkOptions = -d -sym on
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶

@@ -197,6 +197,10 @@ extern struct prefs prefs;
 void ReadPrefs (void);
 void WritePrefs (void);
 
+/* print.c */
+void FilePageSetup (void);
+void FilePrint (void);
+
 /* scroll.c */
 extern WEScrollUPP scrollFollowUPP;
 void AdjustScrollBars (WindowPtr w);

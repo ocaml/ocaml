@@ -178,7 +178,7 @@ OSErr launch_caml_main (void)
   if (envPtr == NULL){ err = MemError (); goto failed; }
   memcpy (envPtr, *template, len);
 
-  rotatecursor_init (&something_to_do);
+  rotatecursor_options (&something_to_do, 50);
   err = WinOpenToplevel ();
   if (err != noErr) ExitApplication ();
 

@@ -70,10 +70,10 @@ static void DoFileChoice (short item, EventModifiers mods)
     FileRevert (w);
     break;
   case kItemPageSetup:
-    XXX ();
+    FilePageSetup ();
     break;
   case kItemPrint:
-    XXX ();
+    FilePrint ();
     break;
   case kItemQuit:
     DoQuit ();

@@ -3,7 +3,7 @@
 MacVersion = "Mac{MAJOR}.{MINOR}{STAGE}{REV}"
 
 CAMLC = :boot:ocamlrun :boot:ocamlc -I :boot:
-COMPFLAGS = -w s {INCLUDES}
+COMPFLAGS = {INCLUDES}
 LINKFLAGS =
 CAMLYACC = :boot:ocamlyacc
 YACCFLAGS =
@@ -105,7 +105,6 @@ bootstrap Ä
     domake all
       # Check if fixpoint reached
     domake compare
-    beep
 
 LIBFILES = :stdlib.cma :std_exit.cmo :Å.cmi camlheader
 

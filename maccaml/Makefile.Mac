@@ -33,14 +33,14 @@ OBJS = aboutbox.c.o appleevents.c.o clipboard.c.o ¶
        events.c.o files.c.o glue.c.o ¶
        graph.c.o lcontrols.c.o lib.c.o main.c.o memory.c.o ¶
        menus.c.o misc.c.o modalfilter.c.o prefs.c.o prims.c.o ¶
-       scroll.c.o windows.c.o
+       print.c.o scroll.c.o windows.c.o
 
 PPCOBJS = aboutbox.c.x appleevents.c.x clipboard.c.x ¶
           drag.c.x errors.c.x ¶
           events.c.x files.c.x glue.c.x ¶
           graph.c.x lcontrols.c.x lib.c.x main.c.x memory.c.x ¶
           menus.c.x misc.c.x modalfilter.c.x prefs.c.x prims.c.x ¶
-          scroll.c.x windows.c.x
+          print.c.x scroll.c.x windows.c.x
 
 all Ä appli
     set status 0

@@ -9,10 +9,10 @@ set -e BINDIR "{mpw}User Commands:"
 set -e LIBDIR "{mpw}User Commands:ocaml-lib:"
 
 ### Where to install the help file
-set -e HELPFILE "{mpw}O'Caml.help"
+set -e HELPFILE "{mpw}OCaml.help"
 
 ### Where to install the application and the standard library
-set -e APPLIDIR "{mpw}::O'Caml:"
+set -e APPLIDIR "{mpw}::OCaml:"
 
 
 ############# Configuration for the contributed libraries

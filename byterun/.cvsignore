@@ -7,3 +7,4 @@ ocamlrund
 libcamlrun.x
 *.c.x
 ocamlrun.xcoff
+interp.a.lst

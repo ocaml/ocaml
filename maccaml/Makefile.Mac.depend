@@ -88,6 +88,11 @@
 
 "prims.c.x" Ä  prims.c
 
+"print.c.x" Ä  print.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
+
 "scroll.c.x" Ä  scroll.c ¶
                            main.h ¶
                            ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
@@ -187,6 +192,11 @@
                           constants.h
 
 "prims.c.o" Ä  prims.c
+
+"print.c.o" Ä  print.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
 
 "scroll.c.o" Ä  scroll.c ¶
                            main.h ¶

@@ -28,6 +28,9 @@
 #define SIZEOF_LONG 4
 #define SIZEOF_SHORT 2
 
-#if !powerc
+#if powerc
+#define CPU_TYPE_STRING "PPC"
+#else
+#define CPU_TYPE_STRING "68k"
 #define THREADED_CODE
 #endif

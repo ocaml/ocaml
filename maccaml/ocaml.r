@@ -195,7 +195,7 @@ resource 'DITL' (kAlertNeed32BitQD) {
 };
 
 resource 'ALRT' (kAlertNonZeroExit) {
-    {60, 81, 200, 431}, kAlertNonZeroExit,
+    {60, 81, 210, 431}, kAlertNonZeroExit,
     {
         OK, visible, silent,
         OK, visible, silent,
@@ -207,12 +207,13 @@ resource 'ALRT' (kAlertNonZeroExit) {
 
 resource 'DITL' (kAlertNonZeroExit) {
     {
-        {100, 270, 120, 328}, Button {enabled, "OK"},
+        {110, 270, 130, 328}, Button {enabled, "OK"},
 
-        {10, 70, 85, 328},
+        {10, 70, 95, 328},
         StaticText {
           disabled,
-          "The O'Caml toplevel loop exited with error code ^0."
+          "The O'Caml toplevel loop exited with error code ^0.\n\n"
+          "Any further input in the toplevel window will be ignored."
         },
     }
 };
@@ -316,7 +317,7 @@ resource 'DITL' (kDialogAbout) {
 
 data 'TEXT' (kAboutText, purgeable) {
     "Objective Caml version " VERSIONSTR "\n"
-    "Copyright 1991-1998 INRIA\n"
+    "Copyright 1991-1999 INRIA\n"
     "\n"
     "Xavier Leroy, Jer™me Vouillon, Damien Doligez, et al.\n"
     "\n"
