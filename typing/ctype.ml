@@ -2311,6 +2311,8 @@ let rec cyclic_abbrev env id ty =
   | _ ->
       false
 
+
+(* Normalize a type before printing, saving... *)
 let rec normalize_type_rec env ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
