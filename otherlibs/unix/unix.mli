@@ -230,19 +230,13 @@ val write : file_descr -> string -> int -> int -> int
 (*** Interfacing with the standard input/output library. *)
 
 val in_channel_of_descr : file_descr -> in_channel 
-        (* Create an input channel reading from the given descriptor. *)
+        (* Create an input channel reading from the given descriptor.
+           The channel is initially in binary mode; use
+           [set_binary_mode_in ic false] if text mode is desired. *)
 val out_channel_of_descr : file_descr -> out_channel
-        (* Create an output channel writing on the given descriptor. *)
-val in_channel_of_descr_bin : file_descr -> in_channel 
-val out_channel_of_descr_bin : file_descr -> out_channel
-        (* Same as [in_channel_of_descr] and
-           [out_channel_of_descr], except that the channel
-           is created in binary mode (no translation).
-           In contrast, [in_channel_of_descr] and [out_channel_of_descr]
-           return channels that are set to text mode (translation of
-           end-of-lines may take place).  This makes no difference under
-           Unix, where text mode and binary mode are identical,
-           but this matters under Windows. *)
+        (* Create an output channel writing on the given descriptor.
+           The channel is initially in binary mode; use
+           [set_binary_mode_out oc false] if text mode is desired. *)
 val descr_of_in_channel : in_channel -> file_descr
         (* Return the descriptor corresponding to an input channel. *)
 val descr_of_out_channel : out_channel -> file_descr

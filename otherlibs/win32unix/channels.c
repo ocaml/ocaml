@@ -16,14 +16,9 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-static int open_descr_flags[3] = {
-  O_BINARY, O_TEXT, O_APPEND
-};
-
-value win_fd_handle(value handle, value flags) /* ML */
+value win_fd_handle(value handle) /* ML */
 {
-  int fd = _open_osfhandle((long) Handle_val(handle),
-			   convert_flag_list(flags, open_descr_flags));
+  int fd = _open_osfhandle((long) Handle_val(handle), O_BINARY);
   if (fd == -1) uerror("channel_of_descr", Nothing);
   return Val_int(fd);
 }

@@ -192,31 +192,16 @@ external open_write_descriptor : int -> out_channel = "caml_open_descriptor"
 external fd_of_in_channel : in_channel -> int = "channel_descriptor"
 external fd_of_out_channel : out_channel -> int = "channel_descriptor"
 
-type descr_flag =
-    D_BINARY
-  | D_TEXT
-  | D_APPEND
-
-external open_handle : file_descr -> descr_flag list -> int = "win_fd_handle"
+external open_handle : file_descr -> int = "win_fd_handle"
 external filedescr_of_fd : int -> file_descr = "win_handle_fd"
 
-let in_channel_of_descr_gen flags handle =
-  open_read_descriptor(open_handle handle flags)
 let in_channel_of_descr handle =
-  in_channel_of_descr_gen [D_TEXT] handle
-let in_channel_of_descr_bin handle =
-  in_channel_of_descr_gen [D_BINARY] handle
-
-let out_channel_of_descr_gen flags handle =
-  open_write_descriptor(open_handle handle flags)
+  open_read_descriptor(open_handle handle)
 let out_channel_of_descr handle =
-  out_channel_of_descr_gen [D_TEXT] handle
-let out_channel_of_descr_bin handle =
-  out_channel_of_descr_gen [D_BINARY] handle
+  open_write_descriptor(open_handle handle)
 
 let descr_of_in_channel inchan =
   filedescr_of_fd(fd_of_in_channel inchan)
-
 let descr_of_out_channel outchan =
   filedescr_of_fd(fd_of_out_channel outchan)
 
