@@ -301,7 +301,8 @@ let rec type_declaration id decl =
     Type_abstract -> ()
   | Type_variant [] -> ()
       (* A fatal error actually, except when printing type exn... *)
-  | Type_variant (cstr1 :: cstrs) ->
+  | Type_variant (cstr1 :: cstrs as cstrs0) ->
+      List.iter (fun (_, args) -> List.iter mark_loops args) cstrs0;
       print_string " ="; print_break 1 2;
       constructor cstr1;
       List.iter
@@ -541,7 +542,7 @@ let rec trace fst txt =
     (t1, t1')::(t2, t2')::rem ->
       if not fst then
         print_cut ();
-      open_hovbox 0;
+      open_box 0;
       print_string "Type"; print_break 1 2;
       type_expansion t1 t1'; print_space ();
       txt (); print_break 1 2;
@@ -556,7 +557,7 @@ let unification_error tr txt1 txt2 =
   List.iter
     (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
     tr;
-  open_hovbox 0;
+  open_box 0;
   let (t1, t1') = List.hd tr in
   let (t2, t2') = List.hd (List.tl tr) in
   txt1 (); print_break 1 2;
