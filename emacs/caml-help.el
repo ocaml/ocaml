@@ -33,12 +33,12 @@
 ;; variables to be customized
 
 (defvar ocaml-lib-path 'lazy
-  "Path for ocaml lib sources (mli files)
+  "Path list for ocaml lib sources (mli files)
 
 'lazy means ask ocaml to find it for your at first use.")
 (defun ocaml-lib-path ()
   "Computes if necessary and returns the path for ocaml libs"
-  (if (listp 'ocaml-lib-path) nil
+  (if (listp ocaml-lib-path) nil
     (setq ocaml-lib-path
           (split-string
            (shell-command-to-string
@@ -51,8 +51,8 @@
                                      "c")))
                         (and (file-executable-p file)
                              (concat file " -where"))))
-             "ocamlc -where"))))
-    ocaml-lib-path))
+             "ocamlc -where")))))
+    ocaml-lib-path)
 
       
 
@@ -62,7 +62,9 @@
   (concat (capitalize (substring s 0 1)) (substring s 1)))
 
 (defun ocaml-uncapitalize (s)
-  (concat (downcase (substring s 0 1)) (substring s 1)))
+  (if (> (length s) 0)
+      (concat (downcase (substring s 0 1)) (substring s 1))
+    s))
 
 (defun iter (f l) (while (consp l) (apply f (list (car l))) (setq l (cdr l))))
 
@@ -111,8 +113,23 @@
       (setq files (cdr files)))
     modules))
 
+(defun ocaml-add-path (dir &optional path)
+  "Extend  ocaml-module-alist with modules of DIR relative to PATH"
+  (interactive "D")
+  (let* ((old (ocaml-lib-path))
+         (new
+          (if (file-name-absolute-p dir) dir
+            (concat
+             (or (find-if '(lambda (p) (file-directory-p (concat p  "/" dir)))
+                      (cons default-directory old))
+                 (error "Directory not found"))
+             "/" dir))))
+    (setq ocaml-lib-path (cons (car old) (cons new (cdr old))))
+    (setq ocaml-module-alist
+          (ocaml-add-mli-modules (ocaml-module-alist) 'lib new))))
+
 (defun ocaml-module-alist ()
-  "Call by need value of valriable ocaml-module-alist"
+  "Call by need value of variable ocaml-module-alist"
   (if (listp ocaml-module-alist)
       nil
     ;; build list of mli files
@@ -252,10 +269,10 @@ with an optional non-nil argument.
     (let ((module) (entry))
       (if (looking-at "[ \n]") (skip-chars-backward " ")) 
       (if (re-search-backward
-           "[^A-Za-z0-9_.']\\([A-Za-z0-9_']*[.]\\)*[A-Za-z0-9_']*\\="
+           "\\([^A-Za-z0-9_.']\\|\\`\\)\\([A-Za-z0-9_']*[.]\\)*[A-Za-z0-9_']*\\="
            (- (point) 100) t)
           (progn
-            (forward-char 1)
+            (or (looking-at "\\`[A-Za-z)-9_.]") (forward-char 1))
             (if (looking-at "\\<\\([A-Za-z_][A-Za-z0-9_']*\\)[.]")
                 (progn
                   (setq module (cons (match-beginning 1) (match-end 1)))
@@ -528,7 +545,7 @@ command. An entry may be an info module or a complete file name."
       (if (member symbol (ocaml-module-symbols (car list)))
           (setq collect (cons (car list) collect)))
       (setq list (cdr list)))
-    collect
+    (nreverse collect)
     ))
 
 (defun ocaml-buffer-substring (region)
@@ -554,7 +571,6 @@ current buffer using \\[ocaml-qualified-identifier]."
           (cond
            (location
                                         ; (view-file
-            (message "FOO")
             (view-file-other-window
              (concat location (ocaml-uncapitalize module) ".mli"))
             (bury-buffer (current-buffer)))
@@ -562,17 +578,24 @@ current buffer using \\[ocaml-qualified-identifier]."
            (t (error "No help for module %s" module))))
         ))
     (if (stringp entry)
-        (let ((here (point)))
+        (let ((here (point))
+              (case-fold-search nil))
           (goto-char (point-min))
-          (or (re-search-forward
-               (concat "\\(val\\|exception\\|external\\|[|{;]\\) +"
-                       (regexp-quote entry))
-               (point-max) t)
-              (search-forward entry (point-max) t)
-              (progn
-                (message "Help for entry %s not found in module %s"
-                         entry module)
-                (goto-char here)))))
+          (if (or (re-search-forward
+                   (concat "\\(val\\|exception\\|external\\|[|{;]\\) +"
+                           (regexp-quote entry))
+                   (point-max) t)
+                  (progn
+                    (if (window-live-p window) (select-window window))
+                    (error "Entry %S not found in module %S"
+                           entry module))
+                  ;; (search-forward entry (point-max) t)
+                  )
+              (recenter 1)
+            (progn
+              (message "Help for entry %s not found in module %s"
+                       entry module)
+              (goto-char here)))))
     (if (window-live-p window) (select-window window))
     ))
 
@@ -599,8 +622,8 @@ of using contextual values.
       (or (and
            (setq module
                 (completing-read "Module: " (ocaml-module-alist)
-                                 nil t "" (cons 'hist 0))))
-           (not (string-equal module ""))
+                                 nil t "" (cons 'hist 0)))
+           (not (string-equal module "")))
           (error "Quit"))
       (let ((symbols
              (mapcar 'list
@@ -618,7 +641,7 @@ of using contextual values.
                 (let ((modules
                        (or (ocaml-find-module entry (ocaml-visible-modules))
                            (ocaml-find-module entry)))
-                      (hist))
+                      (hist) (default))
                   (cond
                    ((null modules)
                     (error "No module found for entry %s" entry))
@@ -626,8 +649,13 @@ of using contextual values.
                     (caar modules))
                    (t
                     (setq hist (mapcar 'car modules))
-                    (completing-read "Module: " modules nil t
-                                     "" (cons 'hist 0)))
+                    (setq default (car hist))
+                    (setq module
+                          (completing-read
+                           (concat "Module: "
+                                   (and default (concat "[" default "] ")))
+                           modules nil t "" (cons 'hist 0)))
+                    (if (string-equal module "") default module))
                    ))))
       ))
      (message "Help for %s%s%s" module (if entry "." "") (or entry ""))

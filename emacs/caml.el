@@ -424,6 +424,10 @@ have caml-electric-indent on, which see.")
   (if (and (boundp 'running-xemacs) running-xemacs) nil
     (require 'imenu)))
 
+;;
+(defvar caml-mode-hook nil
+  "Hook for caml-mode")
+
 (defun caml-mode ()
   "Major mode for editing Caml code.
 
@@ -483,6 +487,17 @@ have caml-electric-indent on, which see.")
     (if (and caml-imenu-enable (< (buffer-size) 10000))
         (caml-show-imenu)))
   (run-hooks 'caml-mode-hook))
+
+(defun caml-set-compile-command ()
+  (interactive)
+  (unless (or (file-exists-p "makefile")
+              (file-exists-p "Makefile"))
+    (make-local-variable 'compile-command)
+    (setq compile-command
+          (concat "ocamlc -c "
+                  (file-name-nondirectory buffer-file-name)))))
+
+(add-hook 'caml-mode-hook 'caml-set-compile-command)
 
 ;;; Auxiliary function. Garrigue 96-11-01.
 

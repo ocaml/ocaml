@@ -94,7 +94,7 @@
    caml-font-lock-keywords))
 
 ;; font-lock commands are similar for caml-mode and inferior-caml-mode
-(setq caml-mode-hook
+(add-hook 'caml-mode-hook
       '(lambda ()
          (cond
           ((fboundp 'global-font-lock-mode)
