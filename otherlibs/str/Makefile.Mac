@@ -15,22 +15,15 @@
 # Makefile for the str library
 
 # Compilation options
-C = sc
-COptions = -model far -i {REGEXLIB},:::byterun:,:::config: -w 7 {cdbgflag}
-
 PPCC = mrc
 PPCCOptions = -i {REGEXLIB},:::byterun:,:::config: -w 7 {cdbgflag}
 
 CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib:
 REGEXLIB = :regex-0.12:
 
-COBJS = strstubs.c.o {REGEXLIB}regex.c.o
 PPCCOBJS = strstubs.c.x {REGEXLIB}regex.c.x
 
-all Ä libstr.o libstr.x str.cmi str.cma
-
-libstr.o Ä {COBJS}
-    lib -o libstr.o {COBJS}
+all Ä libstr.x str.cmi str.cma
 
 libstr.x Ä {PPCCOBJS}
     ppclink {ldbgflag} -xm library -o libstr.x {PPCCOBJS}
@@ -38,21 +31,18 @@ libstr.x Ä {PPCCOBJS}
 str.cma Ä str.cmo
     {CAMLC} -a -o str.cma str.cmo
 
-{REGEXLIB}regex.c.x Ä {REGEXLIB}regex.c.o
-    echo -n
-
-{REGEXLIB}regex.c.o Ä {REGEXLIB}regex.c {REGEXLIB}regex.h
+{REGEXLIB}regex.c.x Ä {REGEXLIB}regex.c {REGEXLIB}regex.h
     directory {REGEXLIB}; domake; directory ::
 
 partialclean Ä
     delete -i Å.cm[aio] || set status 0
 
 clean Ä partialclean
-    delete -i Å.[ox] || set status 0
+    delete -i Å.x || set status 0
     directory {REGEXLIB}; domake distclean; directory ::
 
 install Ä
-    duplicate -y libstr.o libstr.x str.cma str.cmi "{LIBDIR}"
+    duplicate -y libstr.x str.cma str.cmi "{LIBDIR}"
 
 .cmi Ä .mli
     {CAMLC} -c {COMPFLAGS} {default}.mli
@@ -63,6 +53,5 @@ install Ä
 depend Ä
     begin
       MakeDepend -w -objext .x Å.c
-      MakeDepend -w Å.c
       :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml
     end | streamedit -e "/¶t/ replace // ' ' -c °" > Makefile.Mac.depend

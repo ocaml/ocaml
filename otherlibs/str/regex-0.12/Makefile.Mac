@@ -27,17 +27,12 @@ version = 0.12
 #           are used.
 CPPFLAGS = 
 
-C = sc
-COptions = -model far -w 29,35 {cdbgflag}
-
 PPCC = mrc
 PPCCOptions = -w 29,35 {cdbgflag}
 
 DEFS = -d STDC_HEADERS -d STRING_H -d REGEX_MALLOC
 
-default all Ä regex.c.o regex.c.x
-
-regex.c.o Ä regex.c regex.h
+default all Ä regex.c.x
 	{C} {COptions} {CPPFLAGS} {DEFS} regex.c -o regex.c.o
 
 regex.c.x Ä regex.c regex.h

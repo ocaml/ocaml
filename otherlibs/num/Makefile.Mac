@@ -15,8 +15,6 @@
 # Makefile for the "num" (exact rational arithmetic) library
 
 # Compilation options
-C = sc
-COptions = -model far -i :bignum:h:,:::byterun:,:::config: -w 35 {cdbgflag}
 PPCC = mrc
 PPCCOptions = -i :bignum:h:,:::byterun:,:::config: -w 35 {cdbgflag}
 
@@ -28,34 +26,27 @@ CAMLOBJS = int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo ¶
 
 CMIFILES = big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
 
-COBJS = nat_stubs.c.o
 PPCCOBJS = nat_stubs.c.x
 
-all Ä libnums.o libnums.x nums.cma {CMIFILES}
+all Ä libnums.x nums.cma {CMIFILES}
 
 nums.cma Ä {CAMLOBJS}
     {CAMLC} -a -o nums.cma {CAMLOBJS}
-
-libnums.o Ä :bignum:libbignum.o {COBJS}
-    lib -o libnums.o :bignum:libbignum.o {COBJS}
 
 libnums.x Ä :bignum:libbignum.x {PPCCOBJS}
     ppclink {ldbgflag} -xm library -o libnums.x :bignum:libbignum.x {PPCCOBJS}
 
 :bignum:libbignum.x Ä :bignum:libbignum.o
-    echo -n
-
-:bignum:libbignum.o Ä
     directory :bignum; domake C; directory ::
 
 install Ä
-    duplicate -y libnums.o libnums.x nums.cma {CMIFILES} "{LIBDIR}"
+    duplicate -y libnums.x nums.cma {CMIFILES} "{LIBDIR}"
 
 partialclean Ä
     delete -i Å.cm[aio] || set status 0
 
 clean Ä partialclean
-    delete -i Å.[ox] || set status 0
+    delete -i Å.x || set status 0
     directory :bignum; domake scratch; directory ::
     directory :test; domake clean; directory ::
 
@@ -65,11 +56,8 @@ clean Ä partialclean
 .cmo Ä .ml
     {CAMLC} -c {COMPFLAGS} {default}.ml
 
-nat_stubs.c.o Ä nat.h
-
 depend Ä
     begin
       MakeDepend -w -objext .x Å.c
-      MakeDepend -w Å.c
       :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml
 	end | streamedit -e "/¶t/ replace // ' ' -c °" > Makefile.Mac.depend
