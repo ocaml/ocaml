@@ -27,7 +27,7 @@ html: files
 	cd htmlman; \
         TEXINPUTS=$(TEXINPUTS) ../../tools/texexpand ../manual.htex | \
         ../../tools/htmlgen > ../manual.html
-	cd htmlman; ../../tools/htmlcut -3 -12 ../manual.html > index.html
+	cd htmlman; ../../tools/htmlcut -2 -13 ../manual.html > index.html
 	cd htmlman; ../../tools/htmlthread node*.html
 
 files: $(FILES)
