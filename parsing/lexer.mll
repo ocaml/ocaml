@@ -311,6 +311,8 @@ rule token = parse
             { INFIXOP4(Lexing.lexeme lexbuf) }
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
+  | "`" lowercase identchar * "`"
+            { INFIXOP3(Lexing.lexeme lexbuf) }
   | eof { EOF }
   | _
       { raise (Error(Illegal_character ((Lexing.lexeme lexbuf).[0]),
