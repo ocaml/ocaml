@@ -269,7 +269,7 @@ let flush_all () =
           () (* ignore channels closed during a preceding flush. *)
         end;
         iter l
-  in iter (out_channels ())
+  in iter (out_channels_list ())
 
 external unsafe_output_partial : out_channel -> string -> int -> int -> int
                         = "caml_output_partial"
