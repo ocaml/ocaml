@@ -5,14 +5,15 @@ PREREQUISITES
 
 * The GNU C compiler gcc is recommended, as the bytecode
   interpreter takes advantage of gcc-specific features to enhance
-  performance. Versions 2.5.8, 2.6.3, 2.7.2, 2.7.2.3
-  as well as egcs version 1.0 have all been tested at some point
-  and appear to work.
-  2.7.2.1 for Intel under Linux/RedHat has known problems;
-  upgrade to 2.7.2.3.
+  performance. Versions 2.5.8, 2.6.3, 2.7.2, 2.7.2.3, 2.95
+  as well as egcs versions 1.0 and 2.91 have all been tested at some point
+  and work well.
+  2.7.2.1 for Intel as found in Linux/RedHat 4.1 and 4.2 has known problems;
+  upgrade to something more recent.
 
-* Under HP/UX, gcc, the GNU binutils, and GNU make are all required.
-  The native cc, as, and make have major problems.
+* Under HP/UX, the GNU C compiler gcc, the GNU assembler as, and GNU make
+  are all *required*.  The vendor-provided compiler, assembler and make
+  have major problems.
 
 
 INSTALLATION INSTRUCTIONS
