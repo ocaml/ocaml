@@ -179,7 +179,7 @@ Caml_call_gc:
     /* Return to caller */
         Load(Caml_last_return_address, %o7)
         retl
-        add     %sp, 4 + 25*4 + 15*8, %sp       /* in delay slot */
+        add     %sp, 20*4 + 15*8, %sp       /* in delay slot */
 
 /* Call a C function from Caml */
 
@@ -218,9 +218,9 @@ L108:
         sub     %sp, 16, %sp
         Load(Caml_bottom_of_stack, %l0)
         Load(Caml_last_return_address, %l1)
-        Load(Caml_gc_regs, %l2)
+        Load(Caml_gc_regs, %l3)
         std     %l0, [%sp + 96]
-        st      %l2, [%sp + 104]
+        st      %l3, [%sp + 104]
     /* Set up a trap frame to catch exceptions escaping the Caml code */
         call    L111
         nop
