@@ -23,9 +23,12 @@
 #include "::config:sm-Mac.h"
 #endif
 
-/* Types for signed chars, 32-bit integers, 64-bit integers */
+/* Types for signed chars, 16-bit integers, 32-bit integers, 64-bit integers */
 
 typedef signed char schar;
+
+typedef short int16;            /* FIXME -- not true on the Cray T3E */
+typedef unsigned short uint16;  /* FIXME -- not true on the Cray T3E */
 
 #if SIZEOF_INT == 4
 typedef int int32;
