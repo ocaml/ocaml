@@ -37,11 +37,8 @@ call_gen_code:
 caml_c_call:
         lda     $sp, -16($sp)
         stq     $26, 0($sp)
-        stq     $gp, 8($sp)
-        mov     $25, $27
-        jsr     ($25)
+        jsr     ($27)
         ldq     $26, 0($sp)
-        ldq     $gp, 8($sp)
         lda     $sp, 16($sp)
         ret     ($26)
 
