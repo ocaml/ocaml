@@ -60,7 +60,7 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
    amount of space to skip between tokens.
 
    Among plain characters the white space character (ASCII code 32) has a
-   special meaning: it maches a ``space'', that is any number of tab,
+   special meaning: it macthes a ``space'', that is any number of tab,
    white space, newline and return. Hence, a space in the format
    matches any number of white spaces in the input.
 
@@ -76,10 +76,10 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
    - [X]: reads an unsigned hexadecimal integer with uppercase letters.
    - [o]: reads an unsigned octal integer.
    - [s]: reads a string argument (by default strings end with a space).
-   - [S]: reads a delimited string argument (delimitors and special
+   - [S]: reads a delimited string argument (delimiters and special
      escaped characters follow the lexical conventions of Objective Caml).
    - [c]: reads a single character.
-   - [C]: reads a single delimited character (delimitors and special
+   - [C]: reads a single delimited character (delimiters and special
      escaped characters follow the lexical conventions of Objective Caml).
    - [f], [e], [E], [g], [G]: reads an optionally signed floating-point number
      in decimal notation, in the style [dddd.ddd e/E+-dd].
@@ -90,8 +90,8 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
      the format specified by the second letter.
    - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
      the format specified by the second letter.
-   - [\[ range \]]: reads characters that maches one of the characters
-     mentionned in the range of characters [range] (or not mentionned in
+   - [\[ range \]]: reads characters that matches one of the characters
+     mentioned in the range of characters [range] (or not mentioned in
      it, if the range starts by [^]). Returns a [string] that can be
      empty, if no character in the input matches the range.
    - [N]: applies [f] to the number of characters read so far.
