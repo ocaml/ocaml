@@ -1536,7 +1536,7 @@ widget text {
    option Wrap ["-wrap"; WrapMode]
 
    function (int,int,int,int) bbox [widget(text); "bbox"; index: TextIndex]
-   function (bool) compare [widget(text); "compare"; index: TextIndex; comparison: Comparison; index: TextIndex]
+   function (bool) compare [widget(text); "compare"; index: TextIndex; op: Comparison; index: TextIndex]
    function () configure [widget(text); "configure"; option(text) list]
    function (string) configure_get [widget(text); "configure"]
    function () debug [widget(text); "debug"; switch: bool]
@@ -1563,7 +1563,7 @@ widget text {
    # Scan 
    function () scan_mark [widget(text); "scan"; "mark"; x: int; y: int]
    function () scan_dragto [widget(text); "scan"; "dragto"; x: int; y: int]
-   function (Index(text) as "[>`Linechar int * int]") search [widget(text); "search"; switches: TextSearch list; "--"; pattern: string; start: TextIndex; ?end: [TextIndex]]
+   function (Index(text) as "[>`Linechar int * int]") search [widget(text); "search"; switches: TextSearch list; "--"; pattern: string; start: TextIndex; ?stop: [TextIndex]]
    function () see [widget(text); "see"; index: TextIndex]
    # Tags
    function () tag_add [widget(text); "tag"; "add"; tag: TextTag; start: TextIndex; end: TextIndex]

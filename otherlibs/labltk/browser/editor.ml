@@ -127,6 +127,72 @@ let send_region txt =
         sh#send";;\n"
       with _ -> ()
 
+open Parser
+
+let send_phrase txt =
+  if txt.shell = None then begin
+    match Shell.get_all () with [] -> ()
+    | [sh] -> txt.shell <- Some sh
+    | l ->  select_shell txt
+  end;
+  match txt.shell with None -> ()
+  | Some (_,sh) ->
+      try
+        let i1,i2 = Text.tag_nextrange txt.tw tag:"sel" start:tstart in
+        let phrase = Text.get txt.tw start:(i1,[]) end:(i2,[]) in
+        sh#send phrase;
+        try
+          ignore(Str.search_forward phrase pat:(Str.regexp ";;") pos:0);
+          sh#send "\n"
+        with Not_found ->
+          sh#send ";;\n"
+      with Not_found | Protocol.TkError _ ->
+        let text = Text.get txt.tw start:tstart end:tend in
+        let buffer = Lexing.from_string text in
+        let start = ref 0
+        and block_start = ref []
+        and pend = ref (-1)
+        and after = ref false in
+        while !pend = -1 do
+          let token = Lexer.token buffer in
+          let pos = Lexing.lexeme_start buffer in
+          if not !after &&
+            Text.compare txt.tw index:(tpos pos) op:`Gt
+              index:(`Mark"insert",[])
+          then begin
+            after := true;
+            if !block_start <> [] then begin
+              start := List.hd !block_start;
+              block_start := []
+            end
+          end;
+          let bol = (pos = 0) || text.[pos-1] = '\n' in
+          match token with
+            CLASS | EXTERNAL | EXCEPTION | FUNCTOR
+          | LET | MODULE | OPEN | TYPE | VAL | SHARP when bol ->
+              if !block_start = [] then
+                if !after then pend := pos else start := pos
+              else block_start := pos :: List.tl !block_start
+          | SEMISEMI ->
+              let pos' = Lexing.lexeme_end buffer in
+              if !block_start = [] then
+                if !after then pend := pos else start := pos'
+              else block_start := pos' :: List.tl !block_start
+          | BEGIN | OBJECT | STRUCT | SIG ->
+              block_start := Lexing.lexeme_end buffer :: !block_start
+          | END ->
+              if !block_start = [] then
+                if !after then pend := pos else ()
+              else block_start := List.tl !block_start
+          | EOF ->
+              pend := pos
+          | _ ->
+              ()
+        done;
+        let phrase = String.sub text pos:!start len:(!pend - !start) in
+        sh#send phrase;
+        sh#send ";;\n"
+
 let search_pos_window txt :x :y =
   if txt.structure = [] & txt.psignature = [] then () else
   let `Linechar (l, c) = Text.index txt.tw index:(`Atxy(x,y), []) in
@@ -431,7 +497,7 @@ class editor :top :menus = object (self)
     List.iter
       [ [`Control], "s", (fun () -> Jg_text.search_string current_tw);
         [`Control], "g", (fun () -> goto_line current_tw);
-        [`Alt], "x", (fun () -> send_region (List.hd windows));
+        [`Alt], "x", (fun () -> send_phrase (List.hd windows));
         [`Alt], "l", self#lex;
         [`Alt], "t", self#typecheck ]
       fun:begin fun (modi,key,act) ->

@@ -25,18 +25,6 @@ let cCAMLtoTKmenu_index = (cCAMLtoTKindex : menu_index -> tkArgs)
 let cCAMLtoTKtext_index = (cCAMLtoTKindex : text_index -> tkArgs)
 
 (* Assume returned values are only numerical and l.c *)
-(* .menu index returns none if arg is none, but blast it *)
-
-let cTKtoCAMLindex s =
-  try
-   let p = String.index char:'.' s in
-    `Linechar (int_of_string (String.sub s pos:0 len:p), 
-             int_of_string (String.sub s pos:(p+1) 
-                                         len:(String.length s - p - 1)))
-  with
-    Not_found ->
-      try `Num (int_of_string s)
-      with _ -> raise (Invalid_argument ("TKtoCAMLindex: "^s))
 
 let cTKtoCAMLtext_index s = 
   try
@@ -52,19 +40,3 @@ let cTKtoCAMLtext_index s =
 let cTKtoCAMLlistbox_index s =
   try `Num (int_of_string s)
   with _ -> raise (Invalid_argument ("TKtoCAMLlistbox_index: "^s))
-
-(*
-let cTKtoCAMLlinechar_index s =
-  try
-   let p = char_index '.' in:s in
-      (int_of_string (String.sub s pos:0 len:p), 
-             int_of_string (String.sub s pos:(p+1) 
-                                         len:(String.length s - p - 1)))
-  with
-    Not_found ->
-      raise (Invalid_argument ("TKtoCAMLlinechar_index: "^s))
-
-let cTKtoCAMLnum_index s =
-  try int_of_string s
-  with _ -> raise (Invalid_argument ("TKtoCAMLnum_index: "^s))
-*)
