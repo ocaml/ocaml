@@ -111,17 +111,12 @@ let process_implementation_file ppf sourcefile =
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
-  let cmi_file = (Filename.chop_extension sourcefile)^".cmi" in
   try
-    let _ = Sys.command ("cp "^cmi_file^" /tmp") in
-    
     let parsetree = parse_file inputfile Parse.implementation ast_impl_magic_number in
     let typedtree = Typemod.type_implementation sourcefile prefixname modulename env parsetree in
-    let _ = Sys.command ("mv "^"/tmp/"^(Filename.basename cmi_file)^" "^cmi_file) in
     (Some (parsetree, typedtree), inputfile)
   with
     e ->
-      let _ = Sys.command ("mv "^"/tmp/"^(Filename.basename cmi_file)^" "^cmi_file) in
       match e with
 	Syntaxerr.Error err ->
 	  fprintf Format.err_formatter "@[%a@]@."

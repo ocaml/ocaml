@@ -10,6 +10,12 @@
 (***********************************************************************)
 
 
+(** Global variables. *)
+
 let errors = ref 0
 
 let warn_error = ref false
+
+
+(* Tell ocaml compiler not to generate files. *)
+let _ = Clflags.dont_write_files := true
