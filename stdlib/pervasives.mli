@@ -445,11 +445,13 @@ val open_out_gen : open_flag list -> int -> string -> out_channel
            specify the opening mode. The extra argument [rights] specifies
            the file permissions, in case the file must be created.
            [open_out] and [open_out_bin] are special cases of this function. *)
+val fflush : out_channel -> unit
 val flush : out_channel -> unit
         (* Flush the buffer associated with the given output channel, 
            performing all pending writes on that channel.
            Interactive programs must be careful about flushing standard
-           output and standard error at the right time. *)
+           output and standard error at the right time.
+           [flush] is an alias for [fflush]. *)
 val output_char : out_channel -> char -> unit
         (* Write the character on the given output channel. *)
 val output_string : out_channel -> string -> unit

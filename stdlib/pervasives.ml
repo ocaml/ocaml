@@ -196,6 +196,7 @@ let open_out name =
 let open_out_bin name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
 
+external fflush : out_channel -> unit = "caml_flush"
 external flush : out_channel -> unit = "caml_flush"
 
 external unsafe_output : out_channel -> string -> int -> int -> unit
