@@ -26,10 +26,10 @@ TESTFILES=test.cmo \
 TESTOPTFILES=$(TESTFILES:.cmo=.cmx)
 
 test.byt: $(TESTFILES) ../nums.cma ../libnums.a
-	$(CAMLC) -o test.byt -custom ../nums.cma $(TESTFILES) ../libnums.a
+	$(CAMLC) -ccopt -L.. -o test.byt -custom ../nums.cma $(TESTFILES)
 
 test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.a
-	$(CAMLOPT) -o test.opt ../nums.cmxa $(TESTOPTFILES) ../libnums.a
+	$(CAMLOPT) -ccopt -L.. -o test.opt ../nums.cmxa $(TESTOPTFILES)
 
 $(TESTOPTFILES): ../../../ocamlopt
 
