@@ -138,7 +138,7 @@ caml_alloc1:
         bne     $25, $100
         ret     ($26)
 $100:   ldiq    $25, 16
-        br      caml_call_gc
+        br      $110
         .end    caml_alloc1
 
         .globl  caml_alloc2
@@ -150,7 +150,7 @@ caml_alloc2:
         bne     $25, $101
         ret     ($26)
 $101:   ldiq    $25, 24
-        br      caml_call_gc
+        br      $110
         .end    caml_alloc2
 
         .globl  caml_alloc3
@@ -162,7 +162,7 @@ caml_alloc3:
         bne     $25, $102
         ret     ($26)
 $102:   ldiq    $25, 32
-        br      caml_call_gc
+        br      $110
         .end    caml_alloc3
 
         .globl  caml_alloc
@@ -172,7 +172,7 @@ caml_alloc:
         subq    $13, $25, $13
         .set    noat
         cmpult  $13, $14, $at
-        bne     $at, caml_call_gc
+        bne     $at, $110
         .set    at
         ret     ($26)
         .end    caml_alloc
@@ -181,7 +181,8 @@ caml_alloc:
         .ent    caml_call_gc
         .align  3
 caml_call_gc:
-        lda     $sp, -32($sp)
+        ldiq    $25, 0
+$110:   lda     $sp, -32($sp)
         stq     $26, 0($sp)
         stq     $gp, 8($sp)
         stq     $25, 16($sp)

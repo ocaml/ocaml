@@ -349,19 +349,18 @@ let emit_instr i =
         `	{emit_string store_instr}	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
-          let lbl_cont = new_label() in
-          `	subq	$13, {emit_int n}, $13\n`;
+          let lbl_redo = new_label() in
+          `{emit_label lbl_redo}:	subq	$13, {emit_int n}, $13\n`;
           `	cmpult	$13, $14, $25\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live in
           `	bne	$25, {emit_label lbl_call_gc}\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
-              gc_return_lbl = lbl_cont;
-              gc_desired_size = n;
+              gc_return_lbl = lbl_redo;
               gc_frame = lbl_frame;
               gc_instr = i } :: !call_gc_sites;
-          `{emit_label lbl_cont}:	addq	$13, 8, {emit_reg i.res.(0)}\n`
+          `	addq	$13, 8, {emit_reg i.res.(0)}\n`
         end else begin
           begin match n with
             16 -> liveregs i 0;
