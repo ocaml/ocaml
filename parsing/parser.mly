@@ -27,8 +27,12 @@ let mkexp d =
   { pexp_desc = d; pexp_loc = symbol_loc() }
 let mkmty d =
   { pmty_desc = d; pmty_loc = symbol_loc() }
+let mksig d =
+  { psig_desc = d; psig_loc = symbol_loc() }
 let mkmod d =
   { pmod_desc = d; pmod_loc = symbol_loc() }
+let mkstr d =
+  { pstr_desc = d; pstr_loc = symbol_loc() }
 
 let mkoperator name pos =
   { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
@@ -57,6 +61,9 @@ let rec mklistpat = function
   | p1 :: pl ->
       mkpat(Ppat_construct(Lident "::",
                            Some(mkpat(Ppat_tuple[p1; mklistpat pl]))))
+
+let mkstrexp e =
+  { pstr_desc = Pstr_eval e; pstr_loc = e.pexp_loc }
 
 let array_function str name =
   Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name))
@@ -195,7 +202,7 @@ interface:
 ;
 toplevel_phrase:
     structure_item SEMISEMI              { Ptop_def[$1] }
-  | expr SEMISEMI                        { Ptop_def[Pstr_eval($1)] }
+  | expr SEMISEMI                        { Ptop_def[mkstrexp $1] }
   | SHARP ident SEMISEMI                 { Ptop_dir($2, Pdir_none) }
   | SHARP ident STRING SEMISEMI          { Ptop_dir($2, Pdir_string $3) }
   | SHARP ident INT SEMISEMI             { Ptop_dir($2, Pdir_int $3) }
@@ -222,32 +229,32 @@ module_expr:
 ;
 structure:
     structure_tail                              { $1 }
-  | expr structure_tail                         { Pstr_eval $1 :: $2 }
+  | expr structure_tail                         { mkstrexp $1 :: $2 }
 ;
 structure_tail:
     /* empty */                                 { [] }
   | SEMISEMI                                    { [] }
-  | SEMISEMI expr structure_tail                { Pstr_eval $2 :: $3 }
+  | SEMISEMI expr structure_tail                { mkstrexp $2 :: $3 }
   | SEMISEMI structure_item structure_tail      { $2 :: $3 }
   | structure_item structure_tail               { $1 :: $2 }
 ;
 structure_item:
     LET UNDERSCORE EQUAL expr
-      { Pstr_eval $4 }
+      { mkstr(Pstr_eval $4) }
   | LET rec_flag let_bindings
-      { Pstr_value($2, List.rev $3) }
+      { mkstr(Pstr_value($2, List.rev $3)) }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-      { Pstr_primitive($2, {pval_type = $4; pval_prim = $6}) }
+      { mkstr(Pstr_primitive($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
-      { Pstr_type(List.rev $2) }
+      { mkstr(Pstr_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments
-      { Pstr_exception($2, $3) }
+      { mkstr(Pstr_exception($2, $3)) }
   | MODULE UIDENT module_binding
-      { Pstr_module($2, $3) }
+      { mkstr(Pstr_module($2, $3)) }
   | MODULE TYPE ident EQUAL module_type
-      { Pstr_modtype($3, $5) }
+      { mkstr(Pstr_modtype($3, $5)) }
   | OPEN mod_longident
-      { Pstr_open($2, rhs_loc 2) }
+      { mkstr(Pstr_open $2) }
 ;
 module_binding:
     EQUAL module_expr
@@ -280,23 +287,23 @@ signature:
 ;
 signature_item:
     VAL val_ident COLON core_type
-      { Psig_value($2, {pval_type = $4; pval_prim = []}) }
+      { mksig(Psig_value($2, {pval_type = $4; pval_prim = []})) }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-      { Psig_value($2, {pval_type = $4; pval_prim = $6}) }
+      { mksig(Psig_value($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
-      { Psig_type(List.rev $2) }
+      { mksig(Psig_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments
-      { Psig_exception($2, $3) }
+      { mksig(Psig_exception($2, $3)) }
   | MODULE UIDENT module_declaration
-      { Psig_module($2, $3) }
+      { mksig(Psig_module($2, $3)) }
   | MODULE TYPE ident
-      { Psig_modtype($3, Pmodtype_abstract) }
+      { mksig(Psig_modtype($3, Pmodtype_abstract)) }
   | MODULE TYPE ident EQUAL module_type
-      { Psig_modtype($3, Pmodtype_manifest $5) }
+      { mksig(Psig_modtype($3, Pmodtype_manifest $5)) }
   | OPEN mod_longident
-      { Psig_open($2, rhs_loc 2) }
+      { mksig(Psig_open $2) }
   | INCLUDE module_type
-      { Psig_include $2 }
+      { mksig(Psig_include $2) }
 ;
 
 module_declaration:
