@@ -42,20 +42,22 @@ let clear h =
 let resize hashfun tbl =
   let odata = tbl.data in
   let osize = Array.length odata in
-  let nsize = 2 * osize + 1 in
-  let ndata = Array.create nsize Empty in
-  let rec insert_bucket = function
-      Empty -> ()
-    | Cons(key, data, rest) ->
-        insert_bucket rest; (* preserve original order of elements *)
-        let nidx = (hashfun key) mod nsize in
-        ndata.(nidx) <- Cons(key, data, ndata.(nidx)) in
-  for i = 0 to osize - 1 do
-    insert_bucket odata.(i)
-  done;
-  tbl.data <- ndata;
+  let nsize = min (2 * osize + 1) Sys.max_array_length in
+  if nsize <> osize then begin
+    let ndata = Array.create nsize Empty in
+    let rec insert_bucket = function
+        Empty -> ()
+      | Cons(key, data, rest) ->
+          insert_bucket rest; (* preserve original order of elements *)
+          let nidx = (hashfun key) mod nsize in
+          ndata.(nidx) <- Cons(key, data, ndata.(nidx)) in
+    for i = 0 to osize - 1 do
+      insert_bucket odata.(i)
+    done;
+    tbl.data <- ndata;
+  end;
   tbl.max_len <- 2 * tbl.max_len
-          
+
 let rec bucket_too_long n bucket =
   if n < 0 then true else
     match bucket with
