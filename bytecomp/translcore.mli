@@ -20,7 +20,6 @@ open Typedtree
 open Lambda
 
 val name_pattern: string -> (pattern * 'a) list -> Ident.t
-val maybe_pointer: expression -> bool
 
 val transl_exp: expression -> lambda
 val transl_let:

@@ -159,7 +159,9 @@ let emit_instr = function
   | Kacc n ->
       if n < 8 then out(opACC0 + n) else (out opACC; out_int n)
   | Kenvacc n ->
-      if n < 4 then out(opENVACC1 + n) else (out opENVACC; out_int (n+1))
+      if n >= 1 && n < 4
+      then out(opENVACC1 + n - 1)
+      else (out opENVACC; out_int n)
   | Kpush ->
       out opPUSH
   | Kpop n ->
@@ -176,7 +178,14 @@ let emit_instr = function
   | Krestart -> out opRESTART
   | Kgrab n -> out opGRAB; out_int n
   | Kclosure(lbl, n) -> out opCLOSURE; out_int n; out_label lbl
-  | Kclosurerec(lbl, n) -> out opCLOSUREREC; out_int n; out_label lbl
+  | Kclosurerec(lbls, n) ->
+      out opCLOSUREREC; out_int (List.length lbls); out_int n;
+      let org = !out_position in
+      List.iter (out_label_with_orig org) lbls
+  | Koffsetclosure ofs ->
+      if ofs = -2 || ofs = 0 || ofs = 2
+      then out (opOFFSETCLOSURE0 + ofs / 2)
+      else (out opOFFSETCLOSURE; out_int ofs)
   | Kgetglobal q -> out opGETGLOBAL; slot_for_getglobal q
   | Ksetglobal q -> out opSETGLOBAL; slot_for_setglobal q
   | Kconst sc ->
@@ -205,9 +214,10 @@ let emit_instr = function
       if n < 4 then out(opGETFIELD0 + n) else (out opGETFIELD; out_int n)
   | Ksetfield n ->
       if n < 4 then out(opSETFIELD0 + n) else (out opSETFIELD; out_int n)
-  | Kdummy n ->
-      if n = 0 then out opATOM0 else (out opDUMMY; out_int n)
-  | Kupdate n -> out opUPDATE
+  | Kmakefloatblock(n) ->
+      if n = 0 then out opATOM0 else (out opMAKEFLOATBLOCK; out_int n)
+  | Kgetfloatfield n -> out opGETFLOATFIELD; out_int n
+  | Ksetfloatfield n -> out opSETFLOATFIELD; out_int n
   | Kvectlength -> out opVECTLENGTH
   | Kgetvectitem -> out opGETVECTITEM
   | Ksetvectitem -> out opSETVECTITEM
@@ -257,8 +267,14 @@ let rec emit = function
       if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
       emit c
   | Kpush :: Kenvacc n :: c ->
-      if n < 4 then out(opPUSHENVACC1 + n)
-               else (out opPUSHENVACC; out_int (n+1));
+      if n >= 1 && n < 4
+      then out(opPUSHENVACC1 + n - 1)
+      else (out opPUSHENVACC; out_int n);
+      emit c
+  | Kpush :: Koffsetclosure ofs :: c ->
+      if ofs = -2 || ofs = 0 || ofs = 2
+      then out(opPUSHOFFSETCLOSURE0 + ofs / 2)
+      else (out opPUSHOFFSETCLOSURE; out_int ofs);
       emit c
   | Kpush :: Kgetglobal id :: Kgetfield n :: c ->
       out opPUSHGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
@@ -286,7 +302,7 @@ let rec emit = function
     (Kgetglobal _ as instr1) :: (Kgetfield _ as instr2) :: c ->
       emit (Kpush :: instr1 :: instr2 :: ev :: c)
   | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
-    (Kacc _ | Kenvacc _ | Kgetglobal _ | Kconst _ as instr) :: c ->
+    (Kacc _ | Kenvacc _ | Koffsetclosure _ | Kgetglobal _ | Kconst _ as instr) :: c ->
       emit (Kpush :: instr :: ev :: c)
   | Kgetglobal id :: Kgetfield n :: c ->
       out opGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c

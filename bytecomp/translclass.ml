@@ -30,9 +30,8 @@ let rec transl_meth_list =
 
 (* Instance variable initialization *)
 let set_inst_var obj var id expr =
-  Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
-        [Lvar obj; Lvar id; transl_exp expr])
-
+  let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
+  Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr])
 
 let transl_super tbl meths inh_methods rem =
   List.fold_right

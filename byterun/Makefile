@@ -13,7 +13,7 @@ OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
 
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 
-PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
+PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c
 

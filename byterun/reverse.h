@@ -11,7 +11,7 @@
 
 /* $Id$ */
 
-/* Swap byte-order in 32-bit integers and in words */
+/* Swap byte-order in 32-bit integers and in 64-bit floats */
 
 #ifndef _reverse_
 #define _reverse_
@@ -28,7 +28,7 @@
   _p[2] = _a;                                                                 \
 }
 
-#define Reverse_int64(d) {                                                    \
+#define Reverse_double(d) {                                                   \
   char * _p;                                                                  \
   int _a;                                                                     \
   _p = (char *) (d);                                                          \
@@ -45,8 +45,5 @@
   _p[3] = _p[4];                                                              \
   _p[4] = _a;                                                                 \
 }
-
-#define Reverse_double Reverse_int64
-
 
 #endif /* _reverse_ */

@@ -44,9 +44,11 @@ void disasm_instr(pc)
     case APPTERM1: case APPTERM2: case APPTERM3: case RETURN:
     case GRAB: case PUSHGETGLOBAL: case GETGLOBAL: case SETGLOBAL:
     case PUSHATOM: case ATOM: case MAKEBLOCK1: case MAKEBLOCK2:
-    case MAKEBLOCK3: case GETFIELD: case SETFIELD: case DUMMY:
+    case MAKEBLOCK3: case MAKEFLOATBLOCK: 
+    case GETFIELD: case SETFIELD: case GETFLOATFIELD: case SETFLOATFIELD:
     case BRANCH: case BRANCHIF: case BRANCHIFNOT: case PUSHTRAP:
     case CONSTINT: case PUSHCONSTINT: case OFFSETINT: case OFFSETREF:
+    case OFFSETCLOSURE: case PUSHOFFSETCLOSURE:
       printf(" %d\n", pc[0]); break;
       /* Instructions with two operands */
     case APPTERM: case CLOSURE: case CLOSUREREC: case PUSHGETGLOBALFIELD:

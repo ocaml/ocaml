@@ -169,8 +169,7 @@ let rec transl_const = function
         fields;
       block
   | Const_float_array fields ->
-      transl_const
-        (Const_block(0, List.map (fun f -> Const_base(Const_float f)) fields))
+      Obj.repr(Array.of_list(List.map (fun f -> float_of_string f) fields))
 
 (* Build the initial table of globals *)
 

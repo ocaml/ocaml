@@ -34,8 +34,9 @@ let instruction = function
   | Kgrab n -> print_string "\tgrab "; print_int n
   | Kclosure(lbl, n) ->
       print_string "\tclosure L"; print_int lbl; print_string ", "; print_int n
-  | Kclosurerec(lbl, n) ->
-      print_string "\tclosurerec L"; print_int lbl;
+  | Kclosurerec(lbls, n) ->
+      print_string "\tclosurerec";
+      List.iter (fun lbl -> print_string " "; print_int lbl) lbls;
       print_string ", "; print_int n
   | Kgetglobal id -> print_string "\tgetglobal "; Ident.print id
   | Ksetglobal id -> print_string "\tsetglobal "; Ident.print id
@@ -44,10 +45,12 @@ let instruction = function
       Printlambda.structured_constant cst; close_box()
   | Kmakeblock(n, m) ->
       print_string "\tmakeblock "; print_int n; print_string ", "; print_int m
+  | Kmakefloatblock(n) ->
+      print_string "\tmakefloatblock "; print_int n
   | Kgetfield n -> print_string "\tgetfield "; print_int n
   | Ksetfield n -> print_string "\tsetfield "; print_int n
-  | Kdummy n -> print_string "\tdummy "; print_int n
-  | Kupdate n -> print_string "\tupdate"; print_int n
+  | Kgetfloatfield n -> print_string "\tgetfloatfield "; print_int n
+  | Ksetfloatfield n -> print_string "\tsetfloatfield "; print_int n
   | Kvectlength -> print_string "\tvectlength"
   | Kgetvectitem -> print_string "\tgetvectitem"
   | Ksetvectitem -> print_string "\tsetvectitem"

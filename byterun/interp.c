@@ -461,25 +461,59 @@ value interprete(code_t prog, asize_t prog_size)
       if (nvars > 0) *--sp = accu;
       Alloc_small(accu, 1 + nvars, Closure_tag);
       Code_val(accu) = pc + *pc;
+      pc++;
       for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
       sp += nvars;
-      pc++;
       Next;
     }
 
     Instruct(CLOSUREREC): {
+      int nfuncs = *pc++;
       int nvars = *pc++;
       int i;
+      value * p;
       if (nvars > 0) *--sp = accu;
-      Alloc_small(accu, 2 + nvars, Closure_tag);
-      Code_val(accu) = pc + *pc;
-      Field(accu, 1) = Val_int(0);
-      for (i = 0; i < nvars; i++) Field(accu, i + 2) = sp[i];
+      Alloc_small(accu, nfuncs * 2 - 1 + nvars, Closure_tag);
+      p = &Field(accu, nfuncs * 2 - 1);
+      for (i = 0; i < nvars; i++) {
+        *p++ = sp[i];
+      }
       sp += nvars;
-      modify(&Field(accu, 1), accu);
-      pc++;
+      p = &Field(accu, 0);
+      *p = (value) (pc + pc[0]);
+      *--sp = accu;
+      p++;
+      for (i = 1; i < nfuncs; i++) {
+        *p = Make_header(i * 2, Infix_tag, Black); /* color irrelevant? */
+        p++;
+        *p = (value) (pc + pc[i]);
+        *--sp = (value) p;
+        p++;
+      }
+      pc += nfuncs;
       Next;
     }
+
+    Instruct(PUSHOFFSETCLOSURE):
+      *--sp = accu; /* fallthrough */
+    Instruct(OFFSETCLOSURE):
+      accu = env + *pc++ * sizeof(value); Next;
+
+    Instruct(PUSHOFFSETCLOSUREM2):
+      *--sp = accu; /* fallthrough */
+    Instruct(OFFSETCLOSUREM2):
+      accu = env - 2 * sizeof(value); Next;
+    Instruct(PUSHOFFSETCLOSURE0):
+      *--sp = accu; /* fallthrough */
+    Instruct(OFFSETCLOSURE0):
+      accu = env; Next;
+    Instruct(PUSHOFFSETCLOSURE2):
+      *--sp = accu; /* fallthrough */
+    Instruct(OFFSETCLOSURE2):
+      accu = env + 2 * sizeof(value); Next;
+    
+
+/* Access to global variables */
 
     Instruct(PUSHGETGLOBAL):
       *--sp = accu;
@@ -560,6 +594,17 @@ value interprete(code_t prog, asize_t prog_size)
       accu = block;
       Next;
     }
+    Instruct(MAKEFLOATBLOCK): {
+      mlsize_t size = *pc++;
+      mlsize_t i;
+      value block;
+      Alloc_small(block, size * Double_wosize, Double_array_tag);
+      Store_double_field(block, 0, Double_val(accu));
+      for (i = 1; i < size; i++)
+        Store_double_field(block, i, Double_val(*sp++));
+      accu = block;
+      Next;
+    }
 
 /* Access to components of blocks */
 
@@ -573,6 +618,13 @@ value interprete(code_t prog, asize_t prog_size)
       accu = Field(accu, 3); Next;
     Instruct(GETFIELD):
       accu = Field(accu, *pc); pc++; Next;
+    Instruct(GETFLOATFIELD): {
+      double d = Double_field(accu, *pc);
+      Alloc_small(accu, Double_wosize, Double_tag);
+      Double_val(accu) = d;
+      pc++;
+      Next;
+    }
 
     Instruct(SETFIELD0):
       modify_dest = &Field(accu, 0);
@@ -598,33 +650,21 @@ value interprete(code_t prog, asize_t prog_size)
       pc++;
       modify_newval = *sp++;
       goto modify;
-
-/* For recursive definitions */
-
-    Instruct(DUMMY): {
-      int size = *pc++;
-      Alloc_small(accu, size, 0);
-      while (size--) Field(accu, size) = Val_long(0);
-      Next;
-    }
-    Instruct(UPDATE): {
-      value newval = *sp++;
-      mlsize_t size, n;
-      size = Wosize_val(newval);
-      Assert(size == Wosize_val(accu));
-      Tag_val(accu) = Tag_val(newval);
-      for (n = 0; n < size; n++) {
-        modify(&Field(accu, n), Field(newval, n));
-      }
+    Instruct(SETFLOATFIELD):
+      Store_double_field(accu, *pc, Double_val(*sp));
       accu = Val_unit;
+      sp++;
+      pc++;
       Next;
-    }
 
 /* Array operations */
 
-    Instruct(VECTLENGTH):
-      accu = Val_long(Wosize_val(accu));
+    Instruct(VECTLENGTH): {
+      mlsize_t size = Wosize_val(accu);
+      if (Tag_val(accu) == Double_array_tag) size = size / Double_wosize;
+      accu = Val_long(size);
       Next;
+    }
     Instruct(GETVECTITEM):
       accu = Field(accu, Long_val(sp[0]));
       sp += 1;

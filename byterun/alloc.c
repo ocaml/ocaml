@@ -94,7 +94,8 @@ value alloc_array(value (*funct)(char *), char ** arr)
     Begin_root(result);
       for (n = 0; n < nbr; n++) {
 	/* The two statements below must be separate because of evaluation
-           order. */
+           order (don't take the address &Field(result, n) before
+           calling funct, which may cause a GC and move result). */
 	v = funct(arr[n]);
 	modify(&Field(result, n), v);
       }
@@ -117,4 +118,29 @@ int convert_flag_list(value list, int *flags)
     list = Field(list, 1);
   }
   return res;
+}
+
+/* For compiling let rec over values */
+
+value alloc_dummy(value size) /* ML */
+{
+  mlsize_t wosize = Int_val(size);
+  value result;
+  mlsize_t i;
+
+  if (wosize == 0) return Atom(0);
+  result = alloc(wosize, 0);
+  for (i = 0; i < wosize; i++) Field(result, i) = Val_int(0);
+  return result;
+}
+
+value update_dummy(value dummy, value newval) /* ML */
+{
+  mlsize_t size, i;
+  size = Wosize_val(newval);
+  Assert (size == Wosize_val(dummy));
+  Tag_val(dummy) = Tag_val(newval);
+  for (i = 0; i < size; i++)
+    modify(&Field(dummy, i), Field(newval, i));
+  return Val_unit;
 }

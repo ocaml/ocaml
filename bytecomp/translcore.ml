@@ -20,8 +20,8 @@ open Primitive
 open Path
 open Types
 open Typedtree
+open Typeopt
 open Lambda
-open Translobj
 
 type error =
     Illegal_letrec_pat
@@ -139,61 +139,10 @@ let primitives_table = create_hashtable 31 [
   "%array_safe_set", Parraysets Pgenarray;
   "%array_unsafe_get", Parrayrefu Pgenarray;
   "%array_unsafe_set", Parraysetu Pgenarray;
-  "%obj_size", Parraylength Paddrarray;
-  "%obj_field", Parrayrefu Paddrarray;
-  "%obj_set_field", Parraysetu Paddrarray
+  "%obj_size", Parraylength Pgenarray;
+  "%obj_field", Parrayrefu Pgenarray;
+  "%obj_set_field", Parraysetu Pgenarray
 ]
-
-let has_base_type exp base_ty =
-  let exp_ty =
-    Ctype.expand_head exp.exp_env (Ctype.correct_levels exp.exp_type) in
-  match (Ctype.repr exp_ty, Ctype.repr base_ty) with
-    {desc = Tconstr(p1, _, _)}, {desc = Tconstr(p2, _, _)} -> Path.same p1 p2
-  | (_, _) -> false
-
-let maybe_pointer arg =
-  not(has_base_type arg Predef.type_int or has_base_type arg Predef.type_char)
-
-let array_element_kind env ty =
-  let ty = Ctype.repr (Ctype.expand_head env ty) in
-  match ty.desc with
-    Tvar ->
-      Pgenarray
-  | Tconstr(p, args, abbrev) ->
-      if Path.same p Predef.path_int || Path.same p Predef.path_char then
-        Pintarray
-      else if Path.same p Predef.path_float then
-        Pfloatarray
-      else if Path.same p Predef.path_string
-           || Path.same p Predef.path_array then
-        Paddrarray
-      else begin
-        try
-          match Env.find_type p env with
-            {type_kind = Type_abstract} ->
-              Pgenarray
-          | {type_kind = Type_variant cstrs}
-            when List.for_all (fun (name, args) -> args = []) cstrs ->
-              Pintarray
-          | {type_kind = _} ->
-              Paddrarray
-        with Not_found ->
-          (* This can happen due to e.g. missing -I options,
-             causing some .cmi files to be unavailable.
-             Maybe we should emit a warning. *)
-          Pgenarray
-      end
-  | _ ->
-      Paddrarray
-
-let array_kind arg =
-  let ty = Ctype.correct_levels arg.exp_type in
-  let array_ty = Ctype.expand_head arg.exp_env ty in
-  match (Ctype.repr array_ty).desc with
-    Tconstr(p, [elt_ty], _) when Path.same p Predef.path_array ->
-      array_element_kind arg.exp_env elt_ty
-  | _ ->
-    fatal_error "Translcore.array_kind"
 
 let prim_makearray =
   { prim_name = "make_vect"; prim_arity = 2; prim_alloc = true;
@@ -258,7 +207,7 @@ let check_recursive_lambda idlist lam =
   let rec check_top = function
       Lfunction(kind, params, body) as funct -> true
     | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
-    | Lprim(Pmakearray kind, args) -> List.for_all check args
+    | Lprim(Pmakearray(Paddrarray|Pintarray), args) -> List.for_all check args
     | Llet(str, id, arg, body) -> check arg & check_top body
     | Lletrec(bindings, body) ->
         List.for_all (fun (id, arg) -> check arg) bindings & check_top body
@@ -272,7 +221,7 @@ let check_recursive_lambda idlist lam =
     | Lletrec(bindings, body) ->
         List.for_all (fun (id, arg) -> check arg) bindings & check body
     | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
-    | Lprim(Pmakearray kind, args) -> List.for_all check args
+    | Lprim(Pmakearray(Paddrarray|Pintarray), args) -> List.for_all check args
     | Levent (lam, _) -> check lam
     | lam ->
         let fv = free_variables lam in
@@ -477,7 +426,7 @@ let rec transl_exp e =
   | Texp_send(expr, met) ->
       let met_id =
         match met with
-          Tmeth_name nm -> meth nm
+          Tmeth_name nm -> Translobj.meth nm
         | Tmeth_val id  -> id
       in
       event_after e (Lsend(Lvar met_id, transl_exp expr, []))
@@ -489,13 +438,14 @@ let rec transl_exp e =
       transl_setinstvar (transl_path path_self) path expr
   | Texp_override(path_self, modifs) ->
       let cpy = Ident.create "copy" in
-      Llet(Strict, cpy, Lapply(oo_prim "copy", [transl_path path_self]),
-      List.fold_right
-        (fun (path, expr) rem ->
-           Lsequence(transl_setinstvar (Lvar cpy) path expr,
-                     rem))
-        modifs
-        (Lvar cpy))
+      Llet(Strict, cpy,
+           Lapply(Translobj.oo_prim "copy", [transl_path path_self]),
+           List.fold_right
+             (fun (path, expr) rem ->
+                Lsequence(transl_setinstvar (Lvar cpy) path expr,
+                          rem))
+             modifs
+             (Lvar cpy))
   | Texp_letmodule(id, modl, body) ->
       Llet(Strict, id, !transl_module Tcoerce_none modl, transl_exp body)
   | _ ->

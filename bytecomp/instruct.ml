@@ -15,8 +15,8 @@ open Lambda
 
 type compilation_env =
   { ce_stack: int Ident.tbl;
-    ce_heap: int Ident.tbl }
-
+    ce_heap: int Ident.tbl;
+    ce_rec: int Ident.tbl }
 
 type debug_event =
   { mutable ev_pos: int;                (* Position in bytecode *)
@@ -60,15 +60,17 @@ type instruction =
   | Krestart
   | Kgrab of int                        (* number of arguments *)
   | Kclosure of label * int
-  | Kclosurerec of label * int
+  | Kclosurerec of label list * int
+  | Koffsetclosure of int
   | Kgetglobal of Ident.t
   | Ksetglobal of Ident.t
   | Kconst of structured_constant
   | Kmakeblock of int * int             (* size, tag *)
+  | Kmakefloatblock of int
   | Kgetfield of int
   | Ksetfield of int
-  | Kdummy of int
-  | Kupdate of int
+  | Kgetfloatfield of int
+  | Ksetfloatfield of int
   | Kvectlength
   | Kgetvectitem
   | Ksetvectitem

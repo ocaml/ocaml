@@ -30,13 +30,19 @@ let new_label () =
 (**** Operations on compilation environments. ****)
 
 let empty_env =
-  { ce_stack = Ident.empty; ce_heap = Ident.empty }
+  { ce_stack = Ident.empty; ce_heap = Ident.empty; ce_rec = Ident.empty }
 
 (* Add a stack-allocated variable *)
 
 let add_var id pos env =
   { ce_stack = Ident.add id pos env.ce_stack;
-    ce_heap = env.ce_heap }
+    ce_heap = env.ce_heap;
+    ce_rec = env.ce_rec }
+
+let rec add_vars idlist pos env =
+  match idlist with
+    [] -> env
+  | id :: rem -> add_vars rem (pos + 1) (add_var id pos env)
 
 (**** Examination of the continuation ****)
 
@@ -186,8 +192,16 @@ and sz_staticfail = ref 0
 
 (* Function bodies that remain to be compiled *)
 
-let functions_to_compile  =
-  (Stack.create () : (Ident.t list * lambda * label * Ident.t list) Stack.t)
+type function_to_compile =
+  { params: Ident.t list;               (* function parameters *)
+    body: lambda;                       (* the function body *)
+    label: label;                       (* the label of the function entry *)
+    free_vars: Ident.t list;            (* free variables of the function *)
+    num_defs: int;            (* number of mutually recursive definitions *)
+    rec_vars: Ident.t list;             (* mutually recursive fn names *)
+    rec_pos: int }                      (* rank in recursive definition *)
+
+let functions_to_compile  = (Stack.create () : function_to_compile Stack.t)
 
 (* Name of current compilation unit (for debugging events) *)
 
@@ -211,6 +225,10 @@ let rec comp_expr env exp sz cont =
       try
         let pos = Ident.find_same id env.ce_heap in
         Kenvacc(pos) :: cont
+      with Not_found ->
+      try
+        let ofs = Ident.find_same id env.ce_rec in
+        Koffsetclosure(ofs) :: cont
       with Not_found ->
         Ident.print id; print_newline();
         fatal_error "Bytegen.comp_expr: var"
@@ -252,40 +270,59 @@ let rec comp_expr env exp sz cont =
   | Lfunction(kind, params, body) -> (* assume kind = Curried *)
       let lbl = new_label() in
       let fv = IdentSet.elements(free_variables exp) in
-      Stack.push (params, body, lbl, fv) functions_to_compile;
+      let to_compile =
+        { params = params; body = body; label = lbl;
+          free_vars = fv; num_defs = 1; rec_vars = []; rec_pos = 0 } in
+      Stack.push to_compile functions_to_compile;
       comp_args env (List.map (fun n -> Lvar n) fv) sz
         (Kclosure(lbl, List.length fv) :: cont)
   | Llet(str, id, arg, body) ->
       comp_expr env arg sz
         (Kpush :: comp_expr (add_var id (sz+1) env) body (sz+1)
           (add_pop 1 cont))
-  | Lletrec(([id, Lfunction(kind, params, funct_body)] as decl), let_body) ->
-      let lbl = new_label() in
-      let fv =
-        IdentSet.elements (free_variables (Lletrec(decl, lambda_unit))) in
-      Stack.push (params, funct_body, lbl, id :: fv) functions_to_compile;
-      comp_args env (List.map (fun n -> Lvar n) fv) sz
-        (Kclosurerec(lbl, List.length fv) :: Kpush ::
-          (comp_expr (add_var id (sz+1) env) let_body (sz+1)
-                     (add_pop 1 cont)))
   | Lletrec(decl, body) ->
       let ndecl = List.length decl in
-      let decl_size =
-        List.map (fun (id, exp) -> (id, exp, size_of_lambda exp)) decl in
-      let rec comp_decl new_env sz i = function
-          [] ->
-            comp_expr new_env body sz (add_pop ndecl cont)
-        | (id, exp, blocksize) :: rem ->
-            comp_expr new_env exp sz
-              (Kpush :: Kacc i :: Kupdate blocksize ::
-               comp_decl new_env sz (i-1) rem) in
-      let rec comp_init new_env sz = function
-          [] ->
-            comp_decl new_env sz ndecl decl_size
-        | (id, exp, blocksize) :: rem ->
-            Kdummy blocksize :: Kpush ::
-            comp_init (add_var id (sz+1) new_env) (sz+1) rem in
-      comp_init env sz decl_size
+      if List.for_all (function (_, Lfunction(_,_,_)) -> true | _ -> false)
+                      decl then begin
+        (* let rec of functions *)
+        let fv =
+          IdentSet.elements (free_variables (Lletrec(decl, lambda_unit))) in
+        let rec_idents = List.map (fun (id, lam) -> id) decl in
+        let rec comp_fun pos = function
+            [] -> []
+          | (id, Lfunction(kind, params, body)) :: rem ->
+              let lbl = new_label() in
+              let to_compile =
+                { params = params; body = body; label = lbl; free_vars = fv;
+                  num_defs = ndecl; rec_vars = rec_idents; rec_pos = pos} in
+              Stack.push to_compile functions_to_compile;
+              lbl :: comp_fun (pos + 1) rem
+          | _ -> assert false in
+        let lbls = comp_fun 0 decl in
+        let num_funcs = List.length lbls in
+        comp_args env (List.map (fun n -> Lvar n) fv) sz
+          (Kclosurerec(lbls, List.length fv) ::
+            (comp_expr (add_vars rec_idents (sz+1) env) body (sz + ndecl)
+                       (add_pop ndecl cont)))
+      end else begin
+        let decl_size =
+          List.map (fun (id, exp) -> (id, exp, size_of_lambda exp)) decl in
+        let rec comp_decl new_env sz i = function
+            [] ->
+              comp_expr new_env body sz (add_pop ndecl cont)
+          | (id, exp, blocksize) :: rem ->
+              comp_expr new_env exp sz
+                (Kpush :: Kacc i :: Kccall("update_dummy", 2) ::
+                 comp_decl new_env sz (i-1) rem) in
+        let rec comp_init new_env sz = function
+            [] ->
+              comp_decl new_env sz ndecl decl_size
+          | (id, exp, blocksize) :: rem ->
+              Kconst(Const_base(Const_int blocksize)) ::
+              Kccall("alloc_dummy", 1) :: Kpush ::
+              comp_init (add_var id (sz+1) new_env) (sz+1) rem in
+        comp_init env sz decl_size
+      end
   | Lprim(Pidentity, [arg]) ->
       comp_expr env arg sz cont
   | Lprim(Pnot, [arg]) ->
@@ -329,6 +366,19 @@ let rec comp_expr env exp sz cont =
     when n >= immed_min & n <= immed_max ->
       let ofs = if prim == Paddint then n else -n in
       comp_expr env arg sz (Koffsetint ofs :: cont)
+  | Lprim(Pmakearray kind, args) ->
+      begin match kind with
+        Pintarray | Paddrarray ->
+          comp_args env args sz (Kmakeblock(List.length args, 0) :: cont)
+      | Pfloatarray ->
+          comp_args env args sz (Kmakefloatblock(List.length args) :: cont)
+      | Pgenarray ->
+          if args = []
+          then Kmakeblock(0, 0) :: cont
+          else comp_args env args sz
+                 (Kmakeblock(List.length args, 0) ::
+                  Kccall("make_array", 1) :: cont)
+      end
   | Lprim(p, args) ->
       let instr =
         match p with
@@ -338,8 +388,8 @@ let rec comp_expr env exp sz cont =
         | Pmakeblock(tag, mut) -> Kmakeblock(List.length args, tag)
         | Pfield n -> Kgetfield n
         | Psetfield(n, ptr) -> Ksetfield n
-        | Pfloatfield n -> Kgetfield n
-        | Psetfloatfield n -> Ksetfield n
+        | Pfloatfield n -> Kgetfloatfield n
+        | Psetfloatfield n -> Ksetfloatfield n
         | Pccall p -> Kccall(p.prim_name, p.prim_arity)
         | Pnegint -> Knegint
         | Paddint -> Kaddint
@@ -374,12 +424,19 @@ let rec comp_expr env exp sz cont =
         | Pstringsets -> Kccall("string_set", 3)
         | Pstringrefu -> Kgetstringchar
         | Pstringsetu -> Ksetstringchar
-        | Pmakearray kind -> Kmakeblock(List.length args, 0)
         | Parraylength kind -> Kvectlength
-        | Parrayrefs kind -> Kccall("array_get", 2)
-        | Parraysets kind -> Kccall("array_set", 3)
-        | Parrayrefu kind -> Kgetvectitem
-        | Parraysetu kind -> Ksetvectitem
+        | Parrayrefs Pgenarray -> Kccall("array_get", 2)
+        | Parrayrefs Pfloatarray -> Kccall("array_get_float", 2)
+        | Parrayrefs _ -> Kccall("array_get_addr", 2)
+        | Parraysets Pgenarray -> Kccall("array_set", 3)
+        | Parraysets Pfloatarray -> Kccall("array_set_float", 3)
+        | Parraysets _ -> Kccall("array_set_addr", 3)
+        | Parrayrefu Pgenarray -> Kccall("array_unsafe_get", 2)
+        | Parrayrefu Pfloatarray -> Kccall("array_unsafe_get_float", 2)
+        | Parrayrefu _ -> Kgetvectitem
+        | Parraysetu Pgenarray -> Kccall("array_unsafe_set", 3)
+        | Parraysetu Pfloatarray -> Kccall("array_unsafe_set_float", 3)
+        | Parraysetu _ -> Ksetvectitem
         | Pbittest -> Kccall("bitvect_test", 2)
         | _ -> fatal_error "Bytegen.comp_expr: prim" in
       comp_args env args sz (instr :: cont)
@@ -545,20 +602,21 @@ and comp_binary_test env cond ifso ifnot sz cont =
 
 (**** Compilation of functions ****)
 
-let comp_function (params, fun_body, entry_lbl, free_vars) cont =
-  let arity = List.length params in
-  let rec pos_args pos delta = function
+let comp_function tc cont =
+  let arity = List.length tc.params in
+  let rec positions pos delta = function
       [] -> Ident.empty
-    | id :: rem -> Ident.add id pos (pos_args (pos+delta) delta rem) in
+    | id :: rem -> Ident.add id pos (positions (pos + delta) delta rem) in
   let env =
-    { ce_stack = pos_args arity (-1) params;
-      ce_heap = pos_args 0 1 free_vars } in
+    { ce_stack = positions arity (-1) tc.params;
+      ce_heap = positions (2 * (tc.num_defs - tc.rec_pos) - 1) 1 tc.free_vars;
+      ce_rec = positions (-2 * tc.rec_pos) 2 tc.rec_vars } in
   let cont1 =
-    comp_expr env fun_body arity (Kreturn arity :: cont) in
+    comp_expr env tc.body arity (Kreturn arity :: cont) in
   if arity > 1 then
-    Krestart :: Klabel entry_lbl :: Kgrab(arity - 1) :: cont1
+    Krestart :: Klabel tc.label :: Kgrab(arity - 1) :: cont1
   else
-    Klabel entry_lbl :: cont1
+    Klabel tc.label :: cont1
 
 let comp_remainder cont =
   let c = ref cont in

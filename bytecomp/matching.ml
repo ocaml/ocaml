@@ -57,7 +57,8 @@ let rec name_pattern default = function
 (* To remove aliases and bind named components *)
 
 let any_pat =
-  {pat_desc = Tpat_any; pat_loc = Location.none; pat_type = Ctype.none}
+  { pat_desc = Tpat_any; pat_loc = Location.none;
+    pat_type = Ctype.none; pat_env = Env.empty }
 
 let simplify_matching m =
   match m.args with
@@ -94,18 +95,23 @@ let divide_constant {cases = cl; args = al} =
 
 (* Matching against a constructor *)
 
+let make_field_args binding_kind arg first_pos last_pos argl =
+  let rec make_args pos =
+    if pos > last_pos
+    then argl
+    else (Lprim(Pfield pos, [arg]), binding_kind) :: make_args (pos + 1)
+  in make_args first_pos
+
 let make_constr_matching cstr = function
     [] -> fatal_error "Matching.make_constr_matching"
   | ((arg, mut) :: argl) ->
-      let (first_pos, last_pos) =
+      let newargs =
         match cstr.cstr_tag with
-          Cstr_constant _ | Cstr_block _ -> (0, cstr.cstr_arity - 1)
-        | Cstr_exception _ -> (1, cstr.cstr_arity) in
-      let rec make_args pos =
-        if pos > last_pos
-        then argl
-        else (Lprim(Pfield pos, [arg]), Alias) :: make_args (pos + 1) in
-      {cases = []; args = make_args first_pos}
+          Cstr_constant _ | Cstr_block _ ->
+            make_field_args Alias arg 0 (cstr.cstr_arity - 1) argl
+        | Cstr_exception _ ->
+            make_field_args Alias arg 1 cstr.cstr_arity argl in
+      {cases = []; args = newargs}
 
 let divide_constructor {cases = cl; args = al} =
   let rec divide = function
@@ -204,6 +210,24 @@ let divide_orpat = function
        {cases = casel; args = args})
   | _ ->
     fatal_error "Matching.divide_orpat"
+
+(* Matching against an array pattern *)
+
+let make_array_matching len = function
+    [] -> fatal_error "Matching.make_array_matching"
+  | ((arg, mut) :: argl) ->
+      {cases = []; args = make_field_args StrictOpt arg 0 (len - 1) argl}
+
+let divide_array {cases = cl; args = al} =
+  let rec divide = function
+      ({pat_desc = Tpat_array(args)} :: patl, action) :: rem ->
+        let len = List.length args in
+        let (constructs, others) = divide rem in
+        (add (make_array_matching len) constructs len (args @ patl, action) al,
+         others)
+    | cl ->
+      ([], {cases = cl; args = al})
+  in divide cl
 
 (* To combine sub-matchings together *)
 
@@ -321,13 +345,30 @@ let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
                         sw_blocks = nonconsts;
                         sw_checked = false}) in
     if total1
-     & List.length tag_lambda_list = cstr.cstr_consts + cstr.cstr_nonconsts
+    && List.length tag_lambda_list = cstr.cstr_consts + cstr.cstr_nonconsts
     then (lambda1, true)
     else (Lcatch(lambda1, lambda2), total2)
   end
 
 let combine_orpat (lambda1, total1) (lambda2, total2) (lambda3, total3) =
   (Lcatch(Lsequence(lambda1, lambda2), lambda3), total3)
+
+let combine_array kind arg (len_lambda_list, total1) (lambda2, total2) =
+  let lambda1 =
+    match len_lambda_list with
+      [] -> Lstaticfail (* does not happen? *)
+    | [n, act] ->
+        Lifthenelse(Lprim(Pintcomp Ceq,
+                          [Lprim(Parraylength kind, [arg]);
+                           Lconst(Const_base(Const_int n))]),
+                    act, Lstaticfail)
+    | _ ->
+        let max_len =
+          List.fold_left (fun m (n, act) -> max m n) 0 len_lambda_list in
+        Lswitch(Lprim(Parraylength kind, [arg]),
+                {sw_numblocks = 0; sw_blocks = []; sw_checked = true;
+                 sw_numconsts = max_len + 1; sw_consts = len_lambda_list}) in
+  (Lcatch(lambda1, lambda2), total2)
 
 (* Insertion of debugging events *)
 
@@ -407,6 +448,11 @@ let rec compile_match repr m =
                 let (records, others) = divide_record lbl.lbl_all pm in
                 combine_var (compile_match repr records)
                             (compile_match repr others)
+            | Tpat_array(patl) ->
+                let (arrays, others) = divide_array pm in
+                combine_array (Typeopt.array_pattern_kind pat) newarg
+                              (compile_list arrays)
+                              (compile_match repr others)
             | Tpat_or(pat1, pat2) ->
                 (* Avoid duplicating the code of the action *)
                 let (or_match, remainder_line, others) = divide_orpat pm in

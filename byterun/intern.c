@@ -184,7 +184,6 @@ static void intern_rec(value *dest)
       case CODE_DOUBLE_ARRAY8_BIG:
         len = read8u();
       read_double_array:
-#ifdef NATIVE_CODE
         if (sizeof(double) != 8) {
           intern_cleanup();
           invalid_argument("input_value: non-standard floats");
@@ -200,10 +199,6 @@ static void intern_rec(value *dest)
           mlsize_t i;
           for (i = 0; i < len; i++) Reverse_double((value)((double *)v + i));
         }
-#else
-        intern_cleanup();
-        failwith("input_value: cannot read float array");
-#endif
         break;
       case CODE_DOUBLE_ARRAY32_LITTLE:
       case CODE_DOUBLE_ARRAY32_BIG:

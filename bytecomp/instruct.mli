@@ -19,13 +19,19 @@ open Lambda
 
 type compilation_env =
   { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
-    ce_heap: int Ident.tbl } (* Structure of the heap-allocated env *)
+    ce_heap: int Ident.tbl;  (* Structure of the heap-allocated env *)
+    ce_rec: int Ident.tbl }  (* Functions bound by the same let rec *)
 
 (* The ce_stack component gives locations of variables residing 
    in the stack. The locations are offsets w.r.t. the origin of the
    stack frame.
    The ce_heap component gives the positions of variables residing in the
-   heap-allocated environment. *)
+   heap-allocated environment.
+   The ce_rec component associate offsets to identifiers for functions
+   bound by the same let rec as the current function.  The offsets
+   are used by the OFFSETCLOSURE instruction to recover the closure
+   pointer of the desired function from the env register (which
+   points to the closure for the current function). *)
 
 (* Debugging events *)
 
@@ -73,15 +79,17 @@ type instruction =
   | Krestart
   | Kgrab of int                        (* number of arguments *)
   | Kclosure of label * int
-  | Kclosurerec of label * int
+  | Kclosurerec of label list * int
+  | Koffsetclosure of int
   | Kgetglobal of Ident.t
   | Ksetglobal of Ident.t
   | Kconst of structured_constant
   | Kmakeblock of int * int             (* size, tag *)
+  | Kmakefloatblock of int
   | Kgetfield of int
   | Ksetfield of int
-  | Kdummy of int                       (* block size *)
-  | Kupdate of int                      (* block size *)
+  | Kgetfloatfield of int
+  | Ksetfloatfield of int
   | Kvectlength
   | Kgetvectitem
   | Ksetvectitem
