@@ -27,7 +27,7 @@ compiler currently runs on the following platforms:
                      DecStation 3100 and 5000 under Ultrix 4
     HP PA-RISC processors: HP 9000/700 under HPUX 9 and NextStep
     PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 3.2,
-                        PowerMacintosh under MkLinux and LinuxPPC
+                        PowerMacintosh under MkLinux, LinuxPPC, Rhapsody
     Motorola 680x0 processors: Sun 3 under SunOS
 
 Other operating systems for the processors above have not been tested,
@@ -71,10 +71,10 @@ CONTENTS:
 COPYRIGHT:
 
 All files marked "Copyright INRIA" in this distribution are copyright
-1996, 1997 Institut National de Recherche en Informatique et Automatique
-(INRIA) and distributed under the conditions stated in file LICENSE.
-They can be freely redistributed for non-commercial purposes, provided
-the copyright notice remains attached.
+1996, 1997, 1998 Institut National de Recherche en Informatique et
+Automatique (INRIA) and distributed under the conditions stated in
+file LICENSE.  They can be freely redistributed for non-commercial
+purposes, provided the copyright notice remains attached.
 
 INSTALLATION:
 
