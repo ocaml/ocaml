@@ -46,14 +46,11 @@ let parse_declaration arity decl =
   | [] ->
       fatal_error "Primitive.parse_declaration"
 
-open Format;;
-
-let print_quoted ppf s = fprintf ppf "\"%s\"" s
-
-let print_description ppf p =
-  print_quoted ppf p.prim_name;
-  if not p.prim_alloc then fprintf ppf "@ %a" print_quoted "noalloc";
-  if p.prim_native_name <> "" then
-     fprintf ppf "@ %a" print_quoted p.prim_native_name;
-  if p.prim_native_float then
-     fprintf ppf "@ %a" print_quoted "float"
+let description_list p =
+  let list = [p.prim_name] in
+  let list = if not p.prim_alloc then "noalloc" :: list else list in
+  let list =
+    if p.prim_native_name <> "" then p.prim_native_name :: list else list
+  in
+  let list = if p.prim_native_float then "float" :: list else list in
+  List.rev list

@@ -31,7 +31,6 @@ val type_declaration: Ident.t -> formatter -> type_declaration -> unit
 val exception_declaration: Ident.t -> formatter -> exception_declaration -> unit
 val modtype: formatter -> module_type -> unit
 val signature: formatter -> signature -> unit
-val signature_body: bool -> formatter -> signature -> unit
 val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit
 val class_type: formatter -> class_type -> unit
 val class_declaration: Ident.t -> formatter -> class_declaration -> unit
@@ -49,4 +48,6 @@ val report_unification_error:
     unit
 
 val tree_of_path: Path.t -> Outcometree.out_ident
-val outcome_type_hook: (formatter -> Outcometree.out_type -> unit) ref
+val tree_of_modtype: module_type -> Outcometree.out_module_type
+val outcome_type: (formatter -> Outcometree.out_type -> unit) ref
+val outcome_sig_item: (formatter -> Outcometree.out_sig_item -> unit) ref

@@ -78,7 +78,8 @@ let max_printer_depth = ref 100
 let max_printer_steps = ref 300
 
 let print_out_value = ref Printer.print_outval
-let print_out_type = Printtyp.outcome_type_hook
+let print_out_type = Printtyp.outcome_type
+let print_out_sig_item = Printtyp.outcome_sig_item
 
 let print_untyped_exception ppf obj =
   !print_out_value ppf (Printer.outval_of_untyped_exception obj)
@@ -154,9 +155,8 @@ let pr_item env ppf = function
       (Printtyp.exception_declaration id) decl;
       rem
   | Tsig_module(id, mty) :: rem ->
-      fprintf ppf "@[<2>module %a :@ %a@]"
-      Printtyp.ident id
-      Printtyp.modtype mty;
+      !print_out_sig_item ppf
+        (Osig_module (Ident.name id, Printtyp.tree_of_modtype mty));
       rem
   | Tsig_modtype(id, decl) :: rem ->
       fprintf ppf "@[%a@]" 

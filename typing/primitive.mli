@@ -23,6 +23,4 @@ type description =
 
 val parse_declaration: int -> string list -> description
 
-open Format
-
-val print_description: formatter -> description -> unit
+val description_list: description -> string list
