@@ -12,38 +12,10 @@
 
 (* $Id$ *)
 
-(* This type resembles [Types.type_desc] in the compiler, although it differs
-   in quite a few ways. *)
-type type_expr =
-  | Pvar of int
-  | Builtin of string * type_expr list
-  | Tuple of type_expr list
-  | Arrow of string * type_expr * type_expr * bool
-  | Variant of row_desc
-  | Classical_variant of string * type_expr list
+type type_bytes = string
+type type_data = Ctype.reified_type_data
 
-and row_desc =
-    { row_fields: (string * row_field) list;
-      row_more: type_expr;
-      row_bound: type_expr list;
-      row_closed: bool;
-      row_name: (string * type_expr list) option }
-
-and row_field =
-    Rpresent of type_expr option
-  | Reither of bool * type_expr list * bool * row_field option
-        (* 1st true denotes a constant constructor *)
-        (* 2nd true denotes a tag in a pattern matching, and
-           is erased later *)
-  | Rabsent
-
-type type_repr = {
-    expr : type_expr;
-  }
-
-
-
-type module_type_repr
+type module_type_data
 
 let compare_module_types amty emty =
   amty = emty
@@ -53,20 +25,43 @@ let compare_module_types amty emty =
 type anything
 type nothing (* a module, in fact *)
 
-exception Type_error of type_repr * type_repr
-exception Module_type_error of module_type_repr * module_type_repr
+exception Type_error of type_data * type_data
+exception Module_type_error of module_type_data * module_type_data
 
-external type_of : dyn -> type_repr = "%field0"
-external module_type_of : dynamically_typed_module -> module_type_repr = "%field0"
+external type_bytes_of : dyn -> type_bytes = "%field0"
+let type_of d = (Marshal.from_string (type_bytes_of d) 0 : type_data)
+external module_type_of : dynamically_typed_module -> module_type_data = "%field0"
 
+(*
 let coerce_internal d expected_type =
   let (sent_type, v) = Obj.magic (d : dyn) in
   if sent_type.expr = expected_type.expr
   then (Obj.magic v : anything)
   else raise (Type_error (sent_type, expected_type))
+*)
+
+let coerce_internal d expected_type_bytes =
+  let (sent_type_bytes, v : type_bytes * anything) = Obj.magic (d : dyn) in
+  let (sent_env, sent_type : type_data) =
+    Marshal.from_string sent_type_bytes 0
+  and (expected_env, expected_type : type_data) =
+    Marshal.from_string expected_type_bytes 0
+  in
+  Format.pp_print_string Format.err_formatter "%% RECEIVED ";
+  Printtyp.type_expr Format.err_formatter sent_type;
+  Format.pp_force_newline Format.err_formatter ();
+  Format.pp_print_string Format.err_formatter "%% EXPECTED ";
+  Printtyp.type_expr Format.err_formatter expected_type;
+  Format.pp_force_newline Format.err_formatter ();
+  Format.pp_print_flush Format.err_formatter ();
+  flush stderr;
+  if false
+  then v
+  else raise (Type_error ((sent_env, sent_type),
+                          (expected_env, expected_type)))
 
 let coerce_module d expected_module_type =
   let (actual_module_type, m) = Obj.magic (d : dynamically_typed_module) in
   if compare_module_types actual_module_type expected_module_type
-  then (Obj.magic m : nothing)
+  then (m : nothing)
   else raise (Module_type_error (actual_module_type, expected_module_type))
