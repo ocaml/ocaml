@@ -465,7 +465,7 @@ let box_int bi arg =
         else arg in
       Cop(Calloc, [alloc_boxedint_header;
                    Cconst_symbol(operations_boxed_int bi);
-                   arg])
+                   arg'])
 
 let unbox_int bi arg =
   match arg with
