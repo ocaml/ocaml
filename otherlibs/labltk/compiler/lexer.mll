@@ -28,7 +28,7 @@ let current_line = ref 1
 let keyword_table = (Hashtbl.create 149 : (string, token) Hashtbl.t)
 
 let _ = List.iter
-  f:(fun (str,tok) -> Hashtbl.add keyword_table key:str data:tok)
+  ~f:(fun (str,tok) -> Hashtbl.add keyword_table ~key:str ~data:tok)
   [
   "int", TYINT;
   "float", TYFLOAT;
@@ -64,15 +64,15 @@ let reset_string_buffer () =
 let store_string_char c =
   if !string_index >= String.length (!string_buff) then begin
     let new_buff = String.create (String.length (!string_buff) * 2) in
-      String.blit src:(!string_buff) src_pos:0 dst:new_buff dst_pos:0
-                  len:(String.length (!string_buff));
+      String.blit ~src:(!string_buff) ~src_pos:0 ~dst:new_buff ~dst_pos:0
+                  ~len:(String.length (!string_buff));
       string_buff := new_buff
   end;
   String.set (!string_buff) (!string_index) c;
   incr string_index
 
 let get_stored_string () =
-  let s = String.sub (!string_buff) pos:0 len:(!string_index) in
+  let s = String.sub (!string_buff) ~pos:0 ~len:(!string_index) in
     string_buff := initial_string_buffer;
     s
 (* To translate escape sequences *)

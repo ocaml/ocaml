@@ -43,9 +43,9 @@
                  "\\|\"[^\"\\]*\\(\\\\\\(.\\|\n\\)[^\"\\]*\\)*\"")
          'font-lock-string-face)
 ;labels (and open)
-   '("\\(\\<[A-Za-z][A-Za-z0-9_']*:\\)\\([^:=]\\|\\'\\|$\\)" 1
+   '("\\(\\([~?]\\|\\<\\)[a-z][a-z0-9_']*:\\)[^:=]" 1
      font-lock-variable-name-face)
-   '("\\<\\(assert\\|open\\|include\\|:[A-Za-z][A-Za-z0-9_']*\\)\\>\\|?"
+   '("\\<\\(assert\\|open\\|include\\)\\>\\|[~?][ (]*[a-z][a-z0-9_']*"
      . font-lock-variable-name-face)
 ;modules and constructors
    '("\\(\\<\\|:\\)\\([A-Z][A-Za-z0-9_']*\\)\\>"

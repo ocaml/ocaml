@@ -51,17 +51,17 @@ let rec longident_of_path = function
   | Pdot (path, s, _) -> Ldot (longident_of_path path, s)
   | Papply (p1, p2) -> Lapply (longident_of_path p1, longident_of_path p2)
 
-let rec remove_prefix lid :prefix =
-  let rec remove_hd lid :name =
+let rec remove_prefix lid ~prefix =
+  let rec remove_hd lid ~name =
   match lid with
     Ldot (Lident s1, s2) when s1 = name -> Lident s2
-  | Ldot (l, s) -> Ldot (remove_hd :name l, s)
+  | Ldot (l, s) -> Ldot (remove_hd ~name l, s)
   | _ -> raise Not_found
   in
   match prefix with
     [] -> lid
   | name :: prefix ->
-    try remove_prefix :prefix (remove_hd :name lid)
+    try remove_prefix ~prefix (remove_hd ~name lid)
     with Not_found -> lid
 
 let rec permutations l = match l with
@@ -69,27 +69,27 @@ let rec permutations l = match l with
   | [a;b] -> [l; [b;a]]
   | _ ->
   let _, perms =
-    List.fold_left l init:(l,[]) f:
+    List.fold_left l ~init:(l,[]) ~f:
     begin fun (l, perms) a ->
       let l = List.tl l in
       l @ [a],
-      List.map (permutations l) f:(fun l -> a :: l) @ perms
+      List.map (permutations l) ~f:(fun l -> a :: l) @ perms
     end
   in perms
 
-let rec choose n in:l =
+let rec choose n ~card:l =
   let len = List.length l in
   if n = len then [l] else
-  if n = 1 then List.map l f:(fun x -> [x]) else
+  if n = 1 then List.map l ~f:(fun x -> [x]) else
   if n = 0 then [[]] else
   if n > len then [] else
   match l with [] -> [] 
   | a :: l ->
-    List.map (choose (n-1) in:l) f:(fun l -> a :: l)
-    @ choose n in:l
+    List.map (choose (n-1) ~card:l) ~f:(fun l -> a :: l)
+    @ choose n ~card:l
 
-let rec arr p in:n =
-  if p = 0 then 1 else n * arr (p-1) in:(n-1)
+let rec arr p ~card:n =
+  if p = 0 then 1 else n * arr (p-1) ~card:(n-1)
 
 let rec all_args ty =
   let ty = repr ty in
@@ -97,7 +97,7 @@ let rec all_args ty =
     Tarrow(l, ty1, ty2) -> let (tl,ty) = all_args ty2 in ((l,ty1)::tl, ty)
   | _ -> ([], ty)
   
-let rec equal :prefix t1 t2 =
+let rec equal ~prefix t1 t2 =
   match (repr t1).desc, (repr t2).desc with
     Tvar, Tvar -> true
   | Tvariant row1, Tvariant row2 ->
@@ -107,40 +107,40 @@ let rec equal :prefix t1 t2 =
       in
       let r1, r2, pairs = merge_row_fields fields1 fields2 in
       row1.row_closed = row2.row_closed & r1 = [] & r2 = [] &
-      List.for_all pairs f:
+      List.for_all pairs ~f:
            begin fun (_,f1,f2) ->
              match row_field_repr f1, row_field_repr f2 with
                Rpresent None, Rpresent None -> true
-             | Rpresent(Some t1), Rpresent (Some t2) -> equal t1 t2 :prefix
+             | Rpresent(Some t1), Rpresent (Some t2) -> equal t1 t2 ~prefix
              | Reither(c1, tl1, _), Reither(c2, tl2, _) ->
                  c1 = c2 & List.length tl1 = List.length tl2 &
-                 List.for_all2 tl1 tl2 f:(equal :prefix)
+                 List.for_all2 tl1 tl2 ~f:(equal ~prefix)
              | _ -> false
            end
   | Tarrow _, Tarrow _ ->
       let l1, t1 = all_args t1 and l2, t2 = all_args t2 in
-      equal t1 t2 :prefix &
+      equal t1 t2 ~prefix &
       List.length l1 = List.length l2 &
-      List.exists (permutations l1) f:
+      List.exists (permutations l1) ~f:
       begin fun l1 ->
-        List.for_all2 l1 l2 f:
+        List.for_all2 l1 l2 ~f:
         begin fun (p1,t1) (p2,t2) ->
-          (p1 = "" or p1 = p2) & equal t1 t2 :prefix
+          (p1 = "" or p1 = p2) & equal t1 t2 ~prefix
         end
       end
   | Ttuple l1, Ttuple l2 ->
       List.length l1 = List.length l2 &
-      List.for_all2 l1 l2 f:(equal :prefix)
+      List.for_all2 l1 l2 ~f:(equal ~prefix)
   | Tconstr (p1, l1, _), Tconstr (p2, l2, _) ->
-      remove_prefix :prefix (longident_of_path p1) = (longident_of_path p2)
+      remove_prefix ~prefix (longident_of_path p1) = (longident_of_path p2)
       & List.length l1 = List.length l2
-      & List.for_all2 l1 l2 f:(equal :prefix)
+      & List.for_all2 l1 l2 ~f:(equal ~prefix)
   | _ -> false
 
 let is_opt s = s <> "" & s.[0] = '?'
-let get_options = List.filter f:is_opt
+let get_options = List.filter ~f:is_opt
 
-let rec included :prefix t1 t2 =
+let rec included ~prefix t1 t2 =
   match (repr t1).desc, (repr t2).desc with
     Tvar, _ -> true
   | Tvariant row1, Tvariant row2 ->
@@ -150,71 +150,71 @@ let rec included :prefix t1 t2 =
       in
       let r1, r2, pairs = merge_row_fields fields1 fields2 in
       r1 = [] &
-      List.for_all pairs f:
+      List.for_all pairs ~f:
            begin fun (_,f1,f2) ->
              match row_field_repr f1, row_field_repr f2 with
                Rpresent None, Rpresent None -> true
-             | Rpresent(Some t1), Rpresent (Some t2) -> included t1 t2 :prefix
+             | Rpresent(Some t1), Rpresent (Some t2) -> included t1 t2 ~prefix
              | Reither(c1, tl1, _), Reither(c2, tl2, _) ->
                  c1 = c2 & List.length tl1 = List.length tl2 &
-                 List.for_all2 tl1 tl2 f:(included :prefix)
+                 List.for_all2 tl1 tl2 ~f:(included ~prefix)
              | _ -> false
            end
   | Tarrow _, Tarrow _ ->
       let l1, t1 = all_args t1 and l2, t2 = all_args t2 in
-      included t1 t2 :prefix &
+      included t1 t2 ~prefix &
       let len1 = List.length l1 and len2 = List.length l2 in
-      let l2 = if arr len1 in:len2 < 100 then l2 else
+      let l2 = if arr len1 ~card:len2 < 100 then l2 else
           let ll1 = get_options (fst (List.split l1)) in
           List.filter l2
-          f:(fun (l,_) -> not (is_opt l) or List.mem l ll1)
+          ~f:(fun (l,_) -> not (is_opt l) or List.mem l ll1)
       in
       len1 <= len2 &
-      List.exists (List2.flat_map f:permutations (choose len1 in:l2)) f:
+      List.exists (List2.flat_map ~f:permutations (choose len1 ~card:l2)) ~f:
       begin fun l2 ->
-        List.for_all2 l1 l2 f:
+        List.for_all2 l1 l2 ~f:
         begin fun (p1,t1) (p2,t2) ->
-          (p1 = "" or p1 = p2) & included t1 t2 :prefix
+          (p1 = "" or p1 = p2) & included t1 t2 ~prefix
         end
       end
   | Ttuple l1, Ttuple l2 ->
       let len1 = List.length l1 in
       len1 <= List.length l2 &
-      List.exists (List2.flat_map f:permutations (choose len1 in:l2)) f:
+      List.exists (List2.flat_map ~f:permutations (choose len1 ~card:l2)) ~f:
       begin fun l2 ->
-        List.for_all2 l1 l2 f:(included :prefix)
+        List.for_all2 l1 l2 ~f:(included ~prefix)
       end
-  | _, Ttuple _ -> included (newty (Ttuple [t1])) t2 :prefix
+  | _, Ttuple _ -> included (newty (Ttuple [t1])) t2 ~prefix
   | Tconstr (p1, l1, _), Tconstr (p2, l2, _) ->
-      remove_prefix :prefix (longident_of_path p1) = (longident_of_path p2)
+      remove_prefix ~prefix (longident_of_path p1) = (longident_of_path p2)
       & List.length l1 = List.length l2
-      & List.for_all2 l1 l2 f:(included :prefix)
+      & List.for_all2 l1 l2 ~f:(included ~prefix)
   | _ -> false
 
 let mklid = function
     [] -> raise (Invalid_argument "Searchid.mklid")
   | x :: l ->
-      List.fold_left l init:(Lident x) f:(fun acc x -> Ldot (acc, x))
+      List.fold_left l ~init:(Lident x) ~f:(fun acc x -> Ldot (acc, x))
 
 let mkpath = function
     [] -> raise (Invalid_argument "Searchid.mklid")
   | x :: l ->
-      List.fold_left l init:(Pident (Ident.create x))
-      f:(fun acc x -> Pdot (acc, x, 0))
+      List.fold_left l ~init:(Pident (Ident.create x))
+      ~f:(fun acc x -> Pdot (acc, x, 0))
 
-let get_fields :prefix :sign self =
+let get_fields ~prefix ~sign self =
   let env = open_signature (mkpath prefix) sign initial in
   match (expand_head env self).desc with
     Tobject (ty_obj, _) ->
       let l,_ = flatten_fields ty_obj in l
   | _ -> []
 
-let rec search_type_in_signature t in:sign :prefix :mode =
+let rec search_type_in_signature t ~sign ~prefix ~mode =
   let matches = match mode with
-        `included -> included t :prefix
-      | `exact -> equal t :prefix
+        `included -> included t ~prefix
+      | `exact -> equal t ~prefix
   and lid_of_id id = mklid (prefix @ [Ident.name id]) in
-  List2.flat_map sign f:
+  List2.flat_map sign ~f:
   begin fun item -> match item with
         Tsig_value (id, vd) ->
           if matches vd.val_type then [lid_of_id id, Pvalue] else []
@@ -227,60 +227,60 @@ let rec search_type_in_signature t in:sign :prefix :mode =
           begin match td.type_kind with
             Type_abstract -> false
           | Type_variant l ->
-            List.exists l f:(fun (_, l) -> List.exists l f:matches)
+            List.exists l ~f:(fun (_, l) -> List.exists l ~f:matches)
           | Type_record(l, rep) ->
-            List.exists l f:(fun (_, _, t) -> matches t)
+            List.exists l ~f:(fun (_, _, t) -> matches t)
           end
           then [lid_of_id id, Ptype] else []
       | Tsig_exception (id, l) ->
-          if List.exists l f:matches
+          if List.exists l ~f:matches
           then [lid_of_id id, Pconstructor]
           else []
       | Tsig_module (id, Tmty_signature sign) ->
-          search_type_in_signature t in:sign :mode
-            prefix:(prefix @ [Ident.name id])
+          search_type_in_signature t ~sign ~mode
+            ~prefix:(prefix @ [Ident.name id])
       | Tsig_module _ -> []
       | Tsig_modtype _ -> []
       | Tsig_class (id, cl) ->
           let self = self_type cl.cty_type in
           if matches self
           or (match cl.cty_new with None -> false | Some ty -> matches ty)
-          (* or List.exists (get_fields :prefix :sign self)
-              f:(fun (_,_,ty_field) -> matches ty_field) *)
+          (* or List.exists (get_fields ~prefix ~sign self)
+              ~f:(fun (_,_,ty_field) -> matches ty_field) *)
           then [lid_of_id id, Pclass] else []
       | Tsig_cltype (id, cl) ->
           let self = self_type cl.clty_type in
           if matches self
-          (* or List.exists (get_fields :prefix :sign self)
-              f:(fun (_,_,ty_field) -> matches ty_field) *)
+          (* or List.exists (get_fields ~prefix ~sign self)
+              ~f:(fun (_,_,ty_field) -> matches ty_field) *)
           then [lid_of_id id, Pclass] else []
   end
 
-let search_all_types t :mode =
+let search_all_types t ~mode =
   let tl = match mode, t.desc with
       `exact, _ -> [t]
     | `included, Tarrow _ -> [t]
     | `included, _ ->
       [t; newty(Tarrow("",t,newvar())); newty(Tarrow("",newvar(),t))]
-  in List2.flat_map !module_list f:
+  in List2.flat_map !module_list ~f:
     begin fun modname ->
     let mlid = Lident modname in
     try match lookup_module mlid initial with
       _, Tmty_signature sign ->
         List2.flat_map tl
-          f:(search_type_in_signature in:sign prefix:[modname] :mode)
+          ~f:(search_type_in_signature ~sign ~prefix:[modname] ~mode)
     | _ -> []
     with Not_found | Env.Error _ -> []
     end
 
 exception Error of int * int
 
-let search_string_type text :mode =
+let search_string_type text ~mode =
   try
     let sexp = Parse.interface (Lexing.from_string ("val z : " ^ text)) in
     let sign =
       try Typemod.transl_signature !start_env sexp with _ ->
-      let env = List.fold_left !module_list init:initial f:
+      let env = List.fold_left !module_list ~init:initial ~f:
         begin fun acc m ->
           try open_pers_signature m acc with Env.Error _ -> acc
         end in
@@ -290,7 +290,7 @@ let search_string_type text :mode =
       | Typetexp.Error (l,_) -> raise (Error (l.loc_start - 8, l.loc_end - 8))
     in match sign with
         [Tsig_value (_, vd)] ->
-          search_all_types vd.val_type :mode
+          search_all_types vd.val_type ~mode
       | _ -> []
   with
     Syntaxerr.Error(Syntaxerr.Unclosed(l,_,_,_)) ->
@@ -303,9 +303,9 @@ let longident_of_string text =
   let exploded = ref [] and l = ref 0 in
   for i = 0 to String.length text - 2 do
     if text.[i] ='.' then
-    (exploded := String.sub text pos:!l len:(i - !l) :: !exploded; l := i+1)
+    (exploded := String.sub text ~pos:!l ~len:(i - !l) :: !exploded; l := i+1)
   done;
-  let sym = String.sub text pos:!l len:(String.length text - !l) in
+  let sym = String.sub text ~pos:!l ~len:(String.length text - !l) in
   let rec mklid = function
       [s] -> Lident s
     | s :: l -> Ldot (mklid l, s)
@@ -319,24 +319,24 @@ let explode s =
     l := s.[i] :: !l
   done; !l
 
-let rec check_match :pattern s =
+let rec check_match ~pattern s =
   match pattern, s with
     [], [] -> true
-  | '*'::l, l' -> check_match pattern:l l'
-                  or check_match pattern:('?'::'*'::l) l'
-  | '?'::l, _::l' -> check_match pattern:l l'
-  | x::l, y::l' when x == y -> check_match pattern:l l'
+  | '*'::l, l' -> check_match ~pattern:l l'
+                  or check_match ~pattern:('?'::'*'::l) l'
+  | '?'::l, _::l' -> check_match ~pattern:l l'
+  | x::l, y::l' when x == y -> check_match ~pattern:l l'
   | _ -> false
 
 let search_pattern_symbol text =
   if text = "" then [] else
   let pattern = explode text in
-  let check i = check_match :pattern (explode (Ident.name i)) in
-  let l = List.map !module_list f:
+  let check i = check_match ~pattern (explode (Ident.name i)) in
+  let l = List.map !module_list ~f:
     begin fun modname -> Lident modname,
     try match lookup_module (Lident modname) initial with
       _, Tmty_signature sign ->
-        List2.flat_map sign f:
+        List2.flat_map sign ~f:
           begin function
             Tsig_value (i, _) when check i -> [i, Pvalue]
           | Tsig_type (i, _) when check i -> [i, Ptype]
@@ -345,13 +345,13 @@ let search_pattern_symbol text =
           | Tsig_modtype (i, _) when check i -> [i, Pmodtype]
           | Tsig_class (i, cl) when check i
             or List.exists
-                (get_fields prefix:[modname] :sign (self_type cl.cty_type))
-                f:(fun (name,_,_) -> check_match :pattern (explode name))
+                (get_fields ~prefix:[modname] ~sign (self_type cl.cty_type))
+                ~f:(fun (name,_,_) -> check_match ~pattern (explode name))
             -> [i, Pclass]
           | Tsig_cltype (i, cl) when check i
             or List.exists
-                (get_fields prefix:[modname] :sign (self_type cl.clty_type))
-                f:(fun (name,_,_) -> check_match :pattern (explode name))
+                (get_fields ~prefix:[modname] ~sign (self_type cl.clty_type))
+                ~f:(fun (name,_,_) -> check_match ~pattern (explode name))
             -> [i, Pcltype]
           | _ -> []
           end
@@ -359,9 +359,9 @@ let search_pattern_symbol text =
     with Env.Error _ -> []
     end
   in
-  List2.flat_map l f:
+  List2.flat_map l ~f:
     begin fun (m, l) ->
-      List.map l f:(fun (i, p) -> Ldot (m, Ident.name i), p)
+      List.map l ~f:(fun (i, p) -> Ldot (m, Ident.name i), p)
     end
 
 (*
@@ -394,26 +394,26 @@ let rec bound_variables pat =
     Ppat_any | Ppat_constant _ | Ppat_type _ -> []
   | Ppat_var s -> [s]
   | Ppat_alias (pat,s) -> s :: bound_variables pat
-  | Ppat_tuple l -> List2.flat_map l f:bound_variables
+  | Ppat_tuple l -> List2.flat_map l ~f:bound_variables
   | Ppat_construct (_,None,_) -> []
   | Ppat_construct (_,Some pat,_) -> bound_variables pat
   | Ppat_variant (_,None) -> []
   | Ppat_variant (_,Some pat) -> bound_variables pat
   | Ppat_record l ->
-      List2.flat_map l f:(fun (_,pat) -> bound_variables pat)
+      List2.flat_map l ~f:(fun (_,pat) -> bound_variables pat)
   | Ppat_array l ->
-      List2.flat_map l f:bound_variables
+      List2.flat_map l ~f:bound_variables
   | Ppat_or (pat1,pat2) ->
       bound_variables pat1 @ bound_variables pat2
   | Ppat_constraint (pat,_) -> bound_variables pat
 
-let search_structure str :name :kind :prefix =
+let search_structure str ~name ~kind ~prefix =
   let loc = ref 0 in
-  let rec search_module str :prefix =
+  let rec search_module str ~prefix =
     match prefix with [] -> str
     | modu::prefix ->
         let str =
-          List.fold_left init:[] str f:
+          List.fold_left ~init:[] str ~f:
             begin fun acc item ->
               match item.pstr_desc with
                 Pstr_module (s, mexp) when s = modu ->
@@ -424,13 +424,13 @@ let search_structure str :name :kind :prefix =
                   end
               | _ -> acc
             end
-        in search_module str :prefix
+        in search_module str ~prefix
   in
-  List.iter (search_module str :prefix) f:
+  List.iter (search_module str ~prefix) ~f:
     begin fun item ->
       if match item.pstr_desc with
         Pstr_value (_, l) when kind = Pvalue ->
-          List.iter l f:
+          List.iter l ~f:
             begin fun (pat,_) ->
               if List.mem name (bound_variables pat)
               then loc := pat.ppat_loc.loc_start
@@ -438,7 +438,7 @@ let search_structure str :name :kind :prefix =
           false
       | Pstr_primitive (s, _) when kind = Pvalue -> name = s
       | Pstr_type l when kind = Ptype ->
-          List.iter l f:
+          List.iter l ~f:
             begin fun (s, td) ->
               if s = name then loc := td.ptype_loc.loc_start
             end;
@@ -447,13 +447,13 @@ let search_structure str :name :kind :prefix =
       | Pstr_module (s, _) when kind = Pmodule -> name = s
       | Pstr_modtype (s, _) when kind = Pmodtype -> name = s
       | Pstr_class l when kind = Pclass or kind = Ptype or kind = Pcltype ->
-          List.iter l f:
+          List.iter l ~f:
             begin fun c ->
               if c.pci_name = name then loc := c.pci_loc.loc_start
             end;
           false
       | Pstr_class_type l when kind = Pcltype or kind = Ptype ->
-          List.iter l f:
+          List.iter l ~f:
             begin fun c ->
               if c.pci_name = name then loc := c.pci_loc.loc_start
             end;
@@ -463,13 +463,13 @@ let search_structure str :name :kind :prefix =
     end;
   !loc
 
-let search_signature sign :name :kind :prefix =
+let search_signature sign ~name ~kind ~prefix =
   let loc = ref 0 in
-  let rec search_module_type  sign :prefix =
+  let rec search_module_type  sign ~prefix =
     match prefix with [] -> sign
     | modu::prefix ->
         let sign =
-          List.fold_left init:[] sign f:
+          List.fold_left ~init:[] sign ~f:
             begin fun acc item ->
               match item.psig_desc with
                 Psig_module (s, mtyp) when s = modu ->
@@ -480,14 +480,14 @@ let search_signature sign :name :kind :prefix =
                   end
               | _ -> acc
             end
-        in search_module_type sign :prefix
+        in search_module_type sign ~prefix
   in
-  List.iter (search_module_type sign :prefix) f:
+  List.iter (search_module_type sign ~prefix) ~f:
     begin fun item ->
       if match item.psig_desc with
         Psig_value (s, _) when kind = Pvalue -> name = s
       | Psig_type l when kind = Ptype ->
-          List.iter l f:
+          List.iter l ~f:
             begin fun (s, td) ->
               if s = name then loc := td.ptype_loc.loc_start
             end;
@@ -496,13 +496,13 @@ let search_signature sign :name :kind :prefix =
       | Psig_module (s, _) when kind = Pmodule -> name = s
       | Psig_modtype (s, _) when kind = Pmodtype -> name = s
       | Psig_class l when kind = Pclass or kind = Ptype or kind = Pcltype ->
-          List.iter l f:
+          List.iter l ~f:
             begin fun c ->
               if c.pci_name = name then loc := c.pci_loc.loc_start
             end;
           false
       | Psig_class_type l when kind = Ptype or kind = Pcltype ->
-          List.iter l f:
+          List.iter l ~f:
             begin fun c ->
               if c.pci_name = name then loc := c.pci_loc.loc_start
             end;

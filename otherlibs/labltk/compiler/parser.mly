@@ -95,13 +95,14 @@ Labeled_type2 :
       { $1, $3 }
 ;
 
-/* products */
+/* products
 Type_list :
     Type2 COMMA Type_list
       { $1 :: $3 }
   | Type2
       { [$1] }
 ;
+*/
 
 /* records */
 Type_record :
@@ -287,7 +288,7 @@ entry :
   TYPE ParserArity TypeName LBRACE Constructors RBRACE
     { enter_type $3 $2 $5 }
 | VARIANT TYPE ParserArity TypeName LBRACE Constructors RBRACE
-    { enter_type $4 $3 $6 variant: true }
+    { enter_type $4 $3 $6 ~variant: true }
 | TYPE ParserArity TypeName EXTERNAL
     { enter_external_type $3 $2 }
 | SUBTYPE ParserArity OPTION LPAREN IDENT RPAREN LBRACE AbbrevConstructors RBRACE

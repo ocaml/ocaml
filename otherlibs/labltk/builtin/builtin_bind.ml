@@ -178,11 +178,12 @@ let wrapeventInfo f (what : eventField list) =
     ev_RootY = 0 } in
      function args ->
        let l = ref args in
-         List.iter f:(function field ->
-                    match !l with
-                    | [] -> ()
-                    | v :: rest -> filleventInfo ev v field; l := rest)
-                 what;
+       List.iter what ~f:
+         begin fun field ->
+           match !l with
+           | [] -> ()
+           | v :: rest -> filleventInfo ev v field; l := rest
+         end;
        f ev
 
 

@@ -29,9 +29,9 @@ let cCAMLtoTKtext_index = (cCAMLtoTKindex : text_index -> tkArgs)
 let cTKtoCAMLtext_index s = 
   try
    let p = String.index s '.' in
-    `Linechar (int_of_string (String.sub s pos:0 len:p), 
-             int_of_string (String.sub s pos:(p + 1) 
-                                         len:(String.length s - p - 1)))
+    `Linechar (int_of_string (String.sub s ~pos:0 ~len:p), 
+             int_of_string (String.sub s ~pos:(p + 1) 
+                                         ~len:(String.length s - p - 1)))
   with
     Not_found ->
       raise (Invalid_argument ("TKtoCAMLtext_index: " ^ s))

@@ -26,8 +26,8 @@ let f txt =
   let text = Jg_text.get_all txt.tw
   and env = ref (Env.open_pers_signature "Pervasives" Env.initial) in
   let tl, ew, end_message =
-    Jg_message.formatted title:"Warnings" ppf:Format.err_formatter () in
-  Text.tag_remove txt.tw tag:"error" start:tstart end:tend;
+    Jg_message.formatted ~title:"Warnings" ~ppf:Format.err_formatter () in
+  Text.tag_remove txt.tw ~tag:"error" ~start:tstart ~stop:tend;
   begin
   txt.structure <- [];
   txt.signature <- [];
@@ -42,7 +42,7 @@ let f txt =
     else (* others are interpreted as .ml *)
 
     let psl = Parse.use_file (Lexing.from_string text) in
-    List.iter psl f:
+    List.iter psl ~f:
     begin function
       Ptop_def pstr ->
         let str, sign, env' = Typemod.type_structure !env pstr in
@@ -58,7 +58,7 @@ let f txt =
   | Typeclass.Error _ | Typedecl.Error _
   | Typetexp.Error _ | Includemod.Error _
   | Env.Error _ | Ctype.Tags _ as exn ->
-      let et, ew, end_message = Jg_message.formatted title:"Error !" () in
+      let et, ew, end_message = Jg_message.formatted ~title:"Error !" () in
       error_messages := et :: !error_messages;
       let s, e = match exn with
         Lexer.Error (err, s, e) ->
@@ -93,23 +93,22 @@ let f txt =
       in
       end_message ();
       if s < e then
-        Jg_text.tag_and_see txt.tw start:(tpos s) end:(tpos e) tag:"error"
+        Jg_text.tag_and_see txt.tw ~start:(tpos s) ~stop:(tpos e) ~tag:"error"
   end;
   end_message ();
-  if !nowarnings or Text.index ew index:tend = `Linechar (2,0)
+  if !nowarnings or Text.index ew ~index:tend = `Linechar (2,0)
   then destroy tl
   else begin
     error_messages := tl :: !error_messages;
-    Text.configure ew state:`Disabled;
-    bind ew events:[`Modified([`Double], `ButtonPressDetail 1)]
-      action:(fun _ ->
-        let s =
-          Text.get ew start:(`Mark "insert", [`Wordstart])
-                      end:(`Mark "insert", [`Wordend]) in
+    Text.configure ew ~state:`Disabled;
+    bind ew ~events:[`Modified([`Double], `ButtonReleaseDetail 1)]
+      ~action:(fun _ ->
         try
+          let start, ende = Text.tag_nextrange ew ~tag:"sel" ~start:(tpos 0) in
+          let s = Text.get ew ~start:(start,[]) ~stop:(ende,[]) in
           let n = int_of_string s in
-          Text.mark_set txt.tw index:(tpos n) mark:"insert";
-          Text.see txt.tw index:(`Mark "insert", [])
-        with Failure "int_of_string" -> ())
+          Text.mark_set txt.tw ~index:(tpos n) ~mark:"insert";
+          Text.see txt.tw ~index:(`Mark "insert", [])
+        with _ -> ())
   end;
   !error_messages

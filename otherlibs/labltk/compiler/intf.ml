@@ -20,28 +20,29 @@
 open Tables
 open Compile
 
-let write_create_p :w wname =
+let write_create_p ~w wname =
   w "val create :\n  ?name:string ->\n";
   begin
     try 
       let option = Hashtbl.find types_table "options" in
       let classdefs = List.assoc wname option.subtypes in
-      let tklabels = List.map f:gettklabel classdefs in
-      let l = List.map classdefs f:
+      let tklabels = List.map ~f:gettklabel classdefs in
+      let l = List.map classdefs ~f:
         begin fun fc ->
           begin let p = gettklabel fc in
-            if count item:p tklabels > 1 then small fc.ml_name else p
-          end, fc.template
+            if count ~item:p tklabels > 1 then small fc.ml_name else p
+          end,
+          fc.template
         end in
-      w (String.concat sep:" ->\n" 
-         (List.map l f:
+      w (String.concat ~sep:" ->\n" 
+         (List.map l ~f:
           begin fun (s, t) ->
             "  ?" ^ s ^ ":"
             ^(ppMLtype
              (match types_of_template t with
-              | [t] -> labeloff t at:"write_create_p"
+              | [t] -> labeloff t ~at:"write_create_p"
               | [] -> fatal_error "multiple"
-              | l -> Product (List.map f:(labeloff at:"write_create_p") l)))
+              | l -> Product (List.map ~f:(labeloff ~at:"write_create_p") l)))
           end))
     with Not_found -> fatal_error "in write_create_p"
   end;
@@ -52,35 +53,39 @@ let write_create_p :w wname =
   w "                and checked dynamically. *)\n"
 
 (* Unsafe: write special comment *)
-let write_function_type :w def =
+let write_function_type ~w def =
   if not def.safe then w "(* unsafe *)\n";
   w "val "; w def.ml_name; w " : ";
   let us, ls, os =
     let tys = types_of_template def.template in
-    let rec replace_args :u :l :o = function
+    let rec replace_args ~u ~l ~o = function
         [] -> u, l, o
       | (_, List(Subtype _) as x)::ls -> 
-          replace_args :u :l o:(x::o) ls
+          replace_args ~u ~l ~o:(x::o) ls
       | ("", _ as x)::ls ->
-          replace_args u:(x::u) :l :o  ls
+          replace_args ~u:(x::u) ~l ~o  ls
       | (p, _ as x)::ls when p.[0] = '?' ->
-          replace_args :u :l o:(x::o) ls
+          replace_args ~u ~l ~o:(x::o) ls
       | x::ls ->
-          replace_args :u l:(x::l) :o ls
+          replace_args ~u ~l:(x::l) ~o ls
     in
-      replace_args u:[] l:[] o:[] (List.rev tys)
+      replace_args ~u:[] ~l:[] ~o:[] (List.rev tys)
   in
   let counter = ref 0 in
-  List.iter (ls @ os @ us)
-    f:(fun (l, t) -> labelprint :w l; w (ppMLtype t :counter); w " -> ");
+  List.iter (ls @ os @ us) ~f:
+    begin fun (l, t) ->
+      if l <> "" then w (l ^ ":");
+      w (ppMLtype t ~counter);
+      w " -> "
+    end;
   if (os <> [] || ls = []) && us = [] then w "unit -> ";
-  w (ppMLtype any:true return:true def.result); (* RETURN TYPE !!! *)
+  w (ppMLtype ~any:true ~return:true def.result); (* RETURN TYPE !!! *)
   w " \n";
 (*  w "(* tk invocation: "; w (doc_of_template def.template); w " *)"; *)
   if def.safe then w "\n\n"
   else w "\n(* /unsafe *)\n\n"
 
-let write_external_type :w def =
+let write_external_type ~w def =
   match def.template with
   | StringArg fname ->
       begin try

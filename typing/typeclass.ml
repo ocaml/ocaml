@@ -1081,7 +1081,7 @@ let report_error ppf = function
   | Apply_wrong_label l ->
       let mark_label = function
         | "" -> "out label"
-        |  l -> sprintf " label %s:" l in
+        |  l -> sprintf " label %s" l in
       fprintf ppf "This argument cannot be applied with%s" (mark_label l)
   | Pattern_type_clash ty ->
       (* XXX Trace *)

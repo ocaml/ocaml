@@ -30,18 +30,18 @@ let get_files_in_directory dir =
         | None ->
             closedir dirh; l 
       in
-      Sort.list order:(<=) (get_them [])
+      Sort.list ~order:(<=) (get_them [])
 
 let is_directory name =
   try
     (stat name).st_kind = S_DIR
   with _ -> false
 
-let get_directories_in_files :path =
-  List.filter f:(fun x -> is_directory  (path ^ "/" ^ x))
+let get_directories_in_files ~path =
+  List.filter ~f:(fun x -> is_directory  (path ^ "/" ^ x))
 
 (************************************************** Subshell call *)
-let subshell :cmd =
+let subshell ~cmd =
   let rc = open_process_in cmd in
   let rec it l =
     match

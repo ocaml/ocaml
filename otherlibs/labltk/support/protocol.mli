@@ -38,7 +38,7 @@ val add_destroy_hook : (any widget -> unit) -> unit
 
 
 (* Opening, closing, and mainloop *)
-val   openTk : ?display:string -> ?class:string -> unit -> toplevel widget
+val   openTk : ?display:string -> ?clas:string -> unit -> toplevel widget
 val   closeTk : unit -> unit
 val   mainLoop : unit -> unit
 

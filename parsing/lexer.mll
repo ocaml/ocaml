@@ -23,6 +23,7 @@ type error =
   | Unterminated_comment
   | Unterminated_string
   | Unterminated_string_in_comment
+  | Keyword_as_label of string
 ;;
 
 exception Error of error * int * int
@@ -159,6 +160,8 @@ let report_error ppf = function
       fprintf ppf "String literal not terminated"
   | Unterminated_string_in_comment ->
       fprintf ppf "This comment contains an unterminated string literal"
+  | Keyword_as_label kwd ->
+      fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
 ;;
 
 }
@@ -170,9 +173,6 @@ let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
-let symbolchar2 =
-  ['!' '$' '%' '&' '*' '+' '-' '.' '/' '<' '=' '>' '?' '@' '^' '|' '~']
-(*  ['!' '$' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *)
 let decimal_literal = ['0'-'9']+
 let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
 let oct_literal = '0' ['o' 'O'] ['0'-'7']+
@@ -185,20 +185,22 @@ rule token = parse
       { token lexbuf }
   | "_"
       { UNDERSCORE }
-  | lowercase identchar * ':' [ ^ ':' '=' '>']
+  | "~"  { TILDE }
+  | "~" lowercase identchar * ':'
       { let s = Lexing.lexeme lexbuf in
-        lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
-        LABEL (String.sub s 0 (String.length s - 2)) }
-(*
-  | lowercase identchar * ':'
+        let name = String.sub s 1 (String.length s - 2) in
+        if Hashtbl.mem keyword_table name then
+          raise (Error(Keyword_as_label name, Lexing.lexeme_start lexbuf,
+                       Lexing.lexeme_end lexbuf));
+        LABEL name }
+  | "?"  { QUESTION }
+  | "?" lowercase identchar * ':'
       { let s = Lexing.lexeme lexbuf in
-        LABEL (String.sub s 0 (String.length s - 1)) }
-  | '%' lowercase identchar *
-*)
-  | ':' lowercase identchar *
-      { let s = Lexing.lexeme lexbuf in
-        let l = String.length s - 1 in
-        LABELID (String.sub s 1 l) }
+        let name = String.sub s 1 (String.length s - 2) in
+        if Hashtbl.mem keyword_table name then
+          raise (Error(Keyword_as_label name, Lexing.lexeme_start lexbuf,
+                       Lexing.lexeme_end lexbuf));
+        OPTLABEL name }
   | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
           try
@@ -262,7 +264,6 @@ rule token = parse
   | ")"  { RPAREN }
   | "*"  { STAR }
   | ","  { COMMA }
-  | "?"  { QUESTION }
   | "??" { QUESTION2 }
   | "->" { MINUSGREATER }
   | "."  { DOT }
@@ -294,9 +295,9 @@ rule token = parse
   | "-"  { SUBTRACTIVE "-" }
   | "-." { SUBTRACTIVE "-." }
 
-  | ['!' '~'] symbolchar *
+  | "!" symbolchar *
             { PREFIXOP(Lexing.lexeme lexbuf) }
-  | '?' symbolchar2 *
+  | ['~' '?'] symbolchar +
             { PREFIXOP(Lexing.lexeme lexbuf) }
   | ['=' '<' '>' '|' '&' '$'] symbolchar *
             { INFIXOP0(Lexing.lexeme lexbuf) }

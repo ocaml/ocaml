@@ -306,7 +306,7 @@ val fstat : file_descr -> stats
 
 val unlink : string -> unit
         (* Removes the named file *)
-val rename : old:string -> new:string -> unit
+val rename : src:string -> dst:string -> unit
         (* [rename old new] changes the name of a file from [old] to [new]. *)
 val link : src:string -> dst:string -> unit
         (* [link source dest] creates a hard link named [dest] to the file
@@ -713,12 +713,12 @@ type sockaddr =
            [port] is the port number. *)
 
 val socket :
-  domain:socket_domain -> type:socket_type -> protocol:int -> file_descr
+  domain:socket_domain -> kind:socket_type -> protocol:int -> file_descr
         (* Create a new socket in the given domain, and with the
            given kind. The third argument is the protocol type; 0 selects
            the default protocol for that kind of sockets. *)
 val socketpair :
-  domain:socket_domain -> type:socket_type -> protocol:int ->
+  domain:socket_domain -> kind:socket_type -> protocol:int ->
     file_descr * file_descr
         (* Create a pair of unnamed sockets, connected together. *)
 val accept : file_descr -> file_descr * sockaddr

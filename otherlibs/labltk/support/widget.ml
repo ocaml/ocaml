@@ -66,7 +66,7 @@ let known_class = function
 let default_toplevel =
   let wname = "." in
   let w = Typed (wname, "toplevel") in
-    Hashtbl.add table key:wname data:w;
+    Hashtbl.add table ~key:wname ~data:w;
     w
 
 (* Dummy widget to which global callbacks are associated *)
@@ -103,7 +103,7 @@ let naming_scheme = [
         "toplevel", "top" ]
 
 
-let widget_any_table =  List.map f:fst naming_scheme
+let widget_any_table =  List.map ~f:fst naming_scheme
 (* subtypes *)
 let widget_button_table = [ "button" ]
 and widget_canvas_table = [ "canvas" ]
@@ -130,7 +130,7 @@ let new_suffix clas n =
 
 (* The function called by generic creation *)
 let counter = ref 0
-let new_atom :parent ?name:nom clas =
+let new_atom ~parent ?name:nom clas =
   let parentpath = name parent in
     let path = 
       match nom with
@@ -145,12 +145,12 @@ let new_atom :parent ?name:nom clas =
           else parentpath ^ "." ^ name
     in
       let w = Typed(path,clas) in
-        Hashtbl.add table key:path data:w;
+        Hashtbl.add table ~key:path ~data:w;
         w
 
 (* Just create a path. Only to check existence of widgets *)
 (* Use with care *)
-let atom :parent name:pathcomp =
+let atom ~parent ~name:pathcomp =
   let parentpath = name parent in
   let path =
     if parentpath = "."

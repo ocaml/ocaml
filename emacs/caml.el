@@ -15,8 +15,8 @@
 (defvar caml-imenu-enable nil
   "*Enable Imenu support.")
 
-(defvar caml-olabl-disable nil
-  "*Disable O'Labl support")
+(defvar caml-olabl-enable nil
+  "*Enable O'Labl support")
 
 (defvar caml-mode-indentation 2
   "*Used for \\[caml-unindent-command].")
@@ -369,8 +369,7 @@ have caml-electric-indent on, which see.")
   (modify-syntax-entry ?' "w" caml-mode-syntax-table)
   (modify-syntax-entry ?_ "w" caml-mode-syntax-table)
   ; : is part of words (labels) in O'Labl
-  (if caml-olabl-disable nil
-    (modify-syntax-entry ?: "w" caml-mode-syntax-table))
+  (if caml-olabl-enable (modify-syntax-entry ?: "w" caml-mode-syntax-table))
   ; ISO-latin accented letters and EUC kanjis are part of words
   (let ((i 160))
     (while (< i 256)

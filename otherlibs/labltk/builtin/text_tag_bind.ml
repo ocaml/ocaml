@@ -1,5 +1,5 @@
-let tag_bind :tag :events ?(:extend = false) ?(:breakable = false)
-    ?(:fields = []) ?:action widget =
+let tag_bind ~tag ~events ?(extend = false) ?(breakable = false)
+    ?(fields = []) ?action widget =
   tkCommand
     [| cCAMLtoTKwidget widget;
        TkToken "tag";
@@ -10,7 +10,7 @@ let tag_bind :tag :events ?(:extend = false) ?(:breakable = false)
        | None -> TkToken ""
        | Some f ->
            let cbId =
-             register_callback widget callback: (wrapeventInfo f fields) in
+             register_callback widget ~callback: (wrapeventInfo f fields) in
            let cb = if extend then "+camlcb " else "camlcb " in
            let cb = cb ^ cbId ^ writeeventField fields in
            let cb =

@@ -244,7 +244,6 @@ let bigarray_set arr arg newval =
 %token INITIALIZER
 %token <int> INT
 %token <string> LABEL
-%token <string> LABELID
 %token LAZY
 %token LBRACE
 %token LBRACELESS
@@ -265,6 +264,7 @@ let bigarray_set arr arg newval =
 %token OBJECT
 %token OF
 %token OPEN
+%token <string> OPTLABEL
 %token OR
 %token PARSER
 %token <string> PREFIXOP
@@ -285,6 +285,7 @@ let bigarray_set arr arg newval =
 %token STRUCT
 %token <string> SUBTRACTIVE
 %token THEN
+%token TILDE
 %token TO
 %token TRUE
 %token TRY
@@ -606,10 +607,10 @@ value:
             symbol_rloc () }
 ;
 virtual_method:
-    METHOD PRIVATE VIRTUAL label_colon core_type
-      { $4, Private, $5, symbol_rloc () }
-  | METHOD VIRTUAL private_flag label_colon core_type
-      { $4, $3, $5, symbol_rloc () }
+    METHOD PRIVATE VIRTUAL label COLON core_type
+      { $4, Private, $6, symbol_rloc () }
+  | METHOD VIRTUAL private_flag label COLON core_type
+      { $4, $3, $6, symbol_rloc () }
 ;
 concrete_method :
     METHOD private_flag label fun_binding
@@ -621,13 +622,18 @@ concrete_method :
 class_type:
     class_signature
       { $1 }
-  | QUESTION LABEL simple_core_type_or_tuple MINUSGREATER class_type
+  | QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_fun("?" ^ $2 ,
-                       {ptyp_desc = Ptyp_constr(Lident "option", [$3]);
-                        ptyp_loc = $3.ptyp_loc},
-                       $5)) }
-  | LABEL simple_core_type_or_tuple MINUSGREATER class_type
-      { mkcty(Pcty_fun($1, $2, $4)) }
+                       {ptyp_desc = Ptyp_constr(Lident "option", [$4]);
+                        ptyp_loc = $4.ptyp_loc},
+                       $6)) }
+  | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
+      { mkcty(Pcty_fun("?" ^ $1 ,
+                       {ptyp_desc = Ptyp_constr(Lident "option", [$2]);
+                        ptyp_loc = $2.ptyp_loc},
+                       $4)) }
+  | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
+      { mkcty(Pcty_fun($1, $3, $5)) }
   | simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_fun("", $1, $3)) }
 ;
@@ -662,8 +668,8 @@ class_sig_fields:
   | class_sig_fields CONSTRAINT constrain       { Pctf_cstr  $3 :: $1 }
 ;
 value_type:
-    mutable_flag label_colon core_type
-      { $2, $1, Some $3, symbol_rloc () }
+    mutable_flag label COLON core_type
+      { $2, $1, Some $4, symbol_rloc () }
 /*
 XXX Should be removed
   | mutable_flag label
@@ -671,8 +677,8 @@ XXX Should be removed
 */
 ;
 method_type:
-    METHOD private_flag label_colon core_type
-      { $3, $2, $4, symbol_rloc () }
+    METHOD private_flag label COLON core_type
+      { $3, $2, $5, symbol_rloc () }
 ;
 constrain:
         core_type EQUAL core_type          { $1, $3, symbol_rloc () }
@@ -682,8 +688,8 @@ class_descriptions:
   | class_description                           { [$1] }
 ;
 class_description:
-    virtual_flag class_type_parameters label_colon class_type
-      { {pci_virt = $1; pci_params = $2; pci_name = $3; pci_expr = $4;
+    virtual_flag class_type_parameters LIDENT COLON class_type
+      { {pci_virt = $1; pci_params = $2; pci_name = $3; pci_expr = $5;
          pci_loc = symbol_rloc ()} }
 ;
 class_type_declarations:
@@ -706,36 +712,42 @@ seq_expr:
 labeled_simple_pattern:
     QUESTION LPAREN label_let_pattern opt_default RPAREN
       { ("?" ^ fst $3, $4, snd $3) }
-  | QUESTION label_simple_pattern
+  | QUESTION label_var
       { ("?" ^ fst $2, None, snd $2) }
-  | LPAREN label_let_pattern RPAREN
-      { if !Clflags.classic then syntax_error () else (fst $2, None, snd $2) }
-  | label_simple_pattern
-      { (fst $1, None, snd $1) }
+  | OPTLABEL LPAREN let_pattern opt_default RPAREN
+      { ("?" ^ $1, $4, $3) }
+  | OPTLABEL pattern_var
+      { ("?" ^ $1, None, $2) }
+  | TILDE LPAREN label_let_pattern RPAREN
+      { (fst $3, None, snd $3) }
+  | TILDE label_var
+      { (fst $2, None, snd $2) }
+  | LABEL simple_pattern
+      { ($1, None, $2) }
   | simple_pattern
       { ("", None, $1) }
+;
+pattern_var:
+    LIDENT    { mkpat(Ppat_var $1) }
 ;
 opt_default:
     /* empty */                         { None }
   | EQUAL seq_expr                      { Some $2 }
 ;
 label_let_pattern:
-    label_pattern
+    label_var
       { $1 }
-  | label_pattern COLON core_type
+  | label_var COLON core_type
       { let (lab, pat) = $1 in (lab, mkpat(Ppat_constraint(pat, $3))) }
 ;
-label_pattern:
-    LABEL pattern
-      { ($1, $2) }
-  | LABELID
-      { ($1, mkpat(Ppat_var $1)) }
+label_var:
+    LIDENT    { ($1, mkpat(Ppat_var $1)) }
 ;
-label_simple_pattern:
-    LABEL simple_pattern
-      { ($1, $2) }
-  | LABELID
-      { ($1, mkpat(Ppat_var $1)) }
+let_pattern:
+    pattern
+      { $1 }
+  | pattern COLON core_type
+      { mkpat(Ppat_constraint($1, $3)) }
 ;
 expr:
     simple_expr
@@ -918,14 +930,19 @@ labeled_simple_expr:
       { ("", $1) }
   | label_expr
       { $1 }
-  | QUESTION label_expr
-      { ("?" ^ fst $2, snd $2) }
 ;
 label_expr:
     LABEL simple_expr
       { ($1, $2) }
-  | LABELID
-      { ($1, mkexp(Pexp_ident(Lident $1))) }
+  | TILDE label_ident
+      { $2 }
+  | QUESTION label_ident
+      { ("?" ^ fst $2, snd $2) }
+  | OPTLABEL simple_expr
+      { ("?" ^ $1, $2) }
+;
+label_ident:
+    LIDENT   { ($1, mkexp(Pexp_ident(Lident $1))) }
 ;
 /*
 simple_expr_list:
@@ -1183,7 +1200,7 @@ label_declarations:
   | label_declarations SEMI label_declaration   { $3 :: $1 }
 ;
 label_declaration:
-    mutable_flag label_colon core_type          { ($2, $1, $3) }
+    mutable_flag label COLON core_type          { ($2, $1, $4) }
 ;
 
 /* "with" constraints (additional type equations over signature components) */
@@ -1216,12 +1233,16 @@ core_type:
 core_type2:
     simple_core_type_or_tuple
       { $1 }
-  | QUESTION LABEL core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
+  | QUESTION LIDENT COLON core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
       { mktyp(Ptyp_arrow("?" ^ $2 ,
-               {ptyp_desc = Ptyp_constr(Lident "option", [$3]);
-                ptyp_loc = $3.ptyp_loc}, $5)) }
-  | LABEL core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
-      { mktyp(Ptyp_arrow($1, $2, $4)) }
+               {ptyp_desc = Ptyp_constr(Lident "option", [$4]);
+                ptyp_loc = $4.ptyp_loc}, $6)) }
+  | OPTLABEL core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
+      { mktyp(Ptyp_arrow("?" ^ $1 ,
+               {ptyp_desc = Ptyp_constr(Lident "option", [$2]);
+                ptyp_loc = $2.ptyp_loc}, $4)) }
+  | LIDENT COLON core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
+      { mktyp(Ptyp_arrow($1, $3, $5)) }
   | core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
       { mktyp(Ptyp_arrow("", $1, $3)) }
 ;
@@ -1317,14 +1338,10 @@ meth_list:
   | DOTDOT                                      { [mkfield Pfield_var] }
 ;
 field:
-    label_colon core_type                       { mkfield(Pfield($1, $2)) }
+    label COLON core_type                       { mkfield(Pfield($1, $3)) }
 ;
 label:
     LIDENT                                      { $1 }
-;
-label_colon:
-    LIDENT COLON                                { $1 }
-  | LABEL                                       { $1 }
 ;
 
 /* Constants */

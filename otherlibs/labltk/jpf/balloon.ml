@@ -34,7 +34,7 @@ let configure_cursor w cursor =
                     TkToken "-cursor";
                     TkToken cursor |]
 
-let put on: w ms: millisec mesg = 
+let put ~on: w ~ms: millisec mesg = 
   let t = ref None in
   let cursor = ref "" in
 
@@ -52,15 +52,15 @@ let put on: w ms: millisec mesg =
         end
   and set ev =
     if !flag then
-      t := Some (Timer.add ms: millisec callback: (fun () -> 
+      t := Some (Timer.add ~ms: millisec ~callback: (fun () -> 
         t := None;
         if !debug then
           prerr_endline ("Balloon: " ^ Widget.name w);
         update_idletasks();
-        Message.configure !popupw text: mesg; 
+        Message.configure !popupw ~text: mesg; 
         raise_window !topw;
         Wm.geometry_set !topw (* 9 & 8 are some kind of magic... *)
-          geometry: ("+"^(string_of_int (ev.ev_RootX + 9))^
+          ~geometry: ("+"^(string_of_int (ev.ev_RootX + 9))^
                      "+"^(string_of_int (ev.ev_RootY + 8)));
         Wm.deiconify !topw;
         cursor := cget w `Cursor;
@@ -69,11 +69,11 @@ let put on: w ms: millisec mesg =
 
   List.iter [[`Leave]; [`ButtonPress]; [`ButtonRelease]; [`Destroy];
              [`KeyPress]; [`KeyRelease]]
-    f:(fun events -> bind w :events extend:true action:(fun _ -> reset ()));
-  List.iter [[`Enter]; [`Motion]] f:
+    ~f:(fun events -> bind w ~events ~extend:true ~action:(fun _ -> reset ()));
+  List.iter [[`Enter]; [`Motion]] ~f:
     begin fun events ->
-      bind w :events extend:true fields:[`RootX; `RootY]
-        action:(fun ev -> reset (); set ev)
+      bind w ~events ~extend:true ~fields:[`RootX; `RootY]
+        ~action:(fun ev -> reset (); set ev)
     end
 
 let init () =
@@ -81,16 +81,16 @@ let init () =
   Protocol.add_destroy_hook (fun w ->
     Hashtbl.remove t w);
   topw := Toplevel.create default_toplevel;
-  Wm.overrideredirect_set !topw to: true;
+  Wm.overrideredirect_set !topw true;
   Wm.withdraw !topw;
-  popupw := Message.create !topw name: "balloon"
-              background: (`Color "yellow") aspect: 300;
+  popupw := Message.create !topw ~name: "balloon"
+              ~background: (`Color "yellow") ~aspect: 300;
   pack [!popupw];
-  bind_class "all" events: [`Enter] extend:true fields:[`Widget] action:
+  bind_class "all" ~events: [`Enter] ~extend:true ~fields:[`Widget] ~action:
     begin fun w ->
       try Hashtbl.find t w.ev_Widget
       with Not_found ->
-        Hashtbl.add t key:w.ev_Widget data: ();
-        let x = Option.get w.ev_Widget name: "balloon" class: "Balloon" in
-        if x <> "" then put on: w.ev_Widget ms: 1000 x
+        Hashtbl.add t ~key:w.ev_Widget ~data: ();
+        let x = Option.get w.ev_Widget ~name: "balloon" ~clas: "Balloon" in
+        if x <> "" then put ~on: w.ev_Widget ~ms: 1000 x
     end

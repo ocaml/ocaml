@@ -62,13 +62,13 @@ let sort order =
     let q = Queue.create () 
     and result = ref [] in
     List.iter !order
-      f:(function {pred_count = n} as node ->
+      ~f:(function {pred_count = n} as node ->
                 if n = 0 then Queue.add node q);
     begin try 
       while true do
         let t = Queue.take q in
           result := t.node :: !result;
-          List.iter t.successors f:
+          List.iter t.successors ~f:
             begin fun s -> 
               let n = s.pred_count - 1 in
               s.pred_count <- n;
@@ -78,7 +78,7 @@ let sort order =
     with
       Queue.Empty -> 
          List.iter !order
-           f:(fun node -> if node.pred_count <> 0
+           ~f:(fun node -> if node.pred_count <> 0
                               then raise Cyclic)
     end;
     !result

@@ -69,5 +69,5 @@ val view_type_menu : fkind -> env:Env.t -> parent:'a widget -> menu widget
 val parent_path : Path.t -> Path.t option
 val string_of_path : Path.t -> string
 val string_of_longident : Longident.t -> string
-val lines_to_chars : int -> in:string -> int
+val lines_to_chars : int -> text:string -> int
 

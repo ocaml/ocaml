@@ -590,7 +590,7 @@ widget entry {
    function () configure [widget(entry); "configure"; option(entry) list]
    function (string) configure_get [widget(entry); "configure"]
    function () delete_single [widget(entry); "delete"; index: Index(entry)]
-   function () delete_range [widget(entry); "delete"; start: Index(entry); end: Index(entry)]
+   function () delete_range [widget(entry); "delete"; start: Index(entry); stop: Index(entry)]
    function (string) get [widget(entry); "get"]
    function () icursor [widget(entry); "icursor"; index: Index(entry)]
    function (int) index [widget(entry); "index"; index: Index(entry)]
@@ -602,7 +602,7 @@ widget entry {
    function () selection_clear [widget(entry); "selection"; "clear"]
    function () selection_from [widget(entry); "selection"; "from"; index: Index(entry)]
    function (bool) selection_present [widget(entry); "selection"; "present"]
-   function () selection_range [widget(entry); "selection"; "range"; start: Index(entry) ; end: Index(entry)]
+   function () selection_range [widget(entry); "selection"; "range"; start: Index(entry) ; stop: Index(entry)]
    function () selection_to [widget(entry); "selection"; "to"; index: Index(entry)]
 
    function () xview [widget(entry); "xview"; scroll: ScrollValue]
@@ -634,7 +634,7 @@ type Colormap {
 # Visual classes are: directcolor, grayscale, greyscale, pseudocolor,
 #                     staticcolor, staticgray, staticgrey, truecolor
 type Visual {
-  ClassVisual (Class) [[string; int]]  
+  ClassVisual (Clas) [[string; int]]  
   DefaultVisual ["default"]
   WidgetVisual (Widget) [widget]
   BestDepth (Bestdepth) [["best"; int]]
@@ -653,7 +653,7 @@ widget frame {
 
    # Widget specific options
    option Background
-   option Class  ["-class"; string]
+   option Clas  ["-class"; string]
    option Colormap ["-colormap"; Colormap]
    option Height
    option Visual ["-visual"; Visual]
@@ -691,7 +691,7 @@ subtype option(rowcolumnconfigure) {
 subtype option(grid) {
    Column ["-column"; int]
    ColumnSpan ["-columnspan"; int]
-   In ["-in"; widget]
+   Inside ["-in"; widget]
    IPadX ["-ipadx"; int]
    IPadY ["-ipady"; int]
    PadX
@@ -718,7 +718,7 @@ module Grid {
    ## TODO: check result values
    function (int,int) location ["grid"; "location"; widget; x:int; y:int]
    function (bool) propagate_get ["grid"; "propagate"; widget]
-   function () propagate_set ["grid"; "propagate"; widget; to: bool]
+   function () propagate_set ["grid"; "propagate"; widget; bool]
    function () row_configure 
        ["grid"; "rowconfigure"; widget; int; option(rowcolumnconfigure) list]
    function (string) row_configure_get 
@@ -1074,7 +1074,7 @@ module Option {
    unsafe function () add
         ["option"; "add"; path: string; string; ?priority:[OptionPriority]]
    function () clear ["option"; "clear"]
-   function (string) get ["option"; "get"; widget; name: string; class: string]
+   function (string) get ["option"; "get"; widget; name: string; clas: string]
    unsafe function () readfile
         ["option"; "readfile"; string; ?priority:[OptionPriority]]
    }
@@ -1120,7 +1120,7 @@ module Pack {
     function () configure ["pack"; "configure"; widget list; option(pack) list]
     function () forget ["pack"; "forget"; widget list]
     function (bool) propagate_get ["pack"; "propagate"; widget]
-    function () propagate_set ["pack"; "propagate"; widget; to: bool]
+    function () propagate_set ["pack"; "propagate"; widget; bool]
     function (widget list) slaves ["pack"; "slaves"; widget]
     }
 
@@ -1188,7 +1188,7 @@ module Imagephoto {
   function () blank [ImagePhoto; "blank"]
   function () configure [ImagePhoto; "configure"; option(photoimage) list]
   function (string) configure_get [ImagePhoto; "configure"]
-  function () copy [ImagePhoto; "copy"; to: ImagePhoto; photo(copy) list]
+  function () copy [ImagePhoto; "copy"; dst: ImagePhoto; photo(copy) list]
   function (int, int, int) get [ImagePhoto; "get"; x: int; y: int]
 # can't express nested lists ?
 #  function () put [ImagePhoto; "put"; [[Color list] list]; photo(put) list]
@@ -1340,7 +1340,7 @@ widget scale {
    function (float) get [widget(scale); "get"]
    function (float) get_xy [widget(scale); "get"; x: int; y: int]
    function (ScaleElement) identify [widget(scale); x: int; y: int]
-   function () set [widget(scale); "set"; to: float]
+   function () set [widget(scale); "set"; float]
    }
 
 
@@ -1535,10 +1535,10 @@ widget text {
    function () configure [widget(text); "configure"; option(text) list]
    function (string) configure_get [widget(text); "configure"]
    function () debug [widget(text); "debug"; switch: bool]
-   function () delete [widget(text); "delete"; start: TextIndex; end: TextIndex]
+   function () delete [widget(text); "delete"; start: TextIndex; stop: TextIndex]
    function () delete_char [widget(text); "delete"; index: TextIndex]
    function (int, int, int, int, int) dlineinfo [ widget(text); "dlineinfo"; index: TextIndex]
-   function (string) get [widget(text); "get"; start: TextIndex; end: TextIndex]
+   function (string) get [widget(text); "get"; start: TextIndex; stop: TextIndex]
    function (string) get_char [widget(text); "get"; index: TextIndex]
    function () image_configure
      [widget(text); "image"; "configure"; name: string; option(embeddedi) list]
@@ -1561,7 +1561,7 @@ widget text {
    function (Index(text) as "[>`Linechar of int * int]") search [widget(text); "search"; switches: TextSearch list; "--"; pattern: string; start: TextIndex; ?stop: [TextIndex]]
    function () see [widget(text); "see"; index: TextIndex]
    # Tags
-   function () tag_add [widget(text); "tag"; "add"; tag: TextTag; start: TextIndex; end: TextIndex]
+   function () tag_add [widget(text); "tag"; "add"; tag: TextTag; start: TextIndex; stop: TextIndex]
    function () tag_add_char [widget(text); "tag"; "add"; tag: TextTag; at: TextIndex]
    external tag_bind "builtin/text_tag_bind"
    function () tag_configure [widget(text); "tag"; "configure"; tag: TextTag; option(texttag) list]
@@ -1572,12 +1572,12 @@ widget text {
    function (TextTag list) tag_names [widget(text); "tag"; "names"; ?index: [TextIndex]]
 #   function (TextTag list) tag_allnames [widget(text); "tag"; "names"]
 #   function (TextTag list) tag_indexnames [widget(text); "tag"; "names"; index: TextIndex]
-   function (Index(text) as "[>`Linechar of int * int]", Index(text) as "[>`Linechar of int * int]") tag_nextrange [widget(text); "tag"; "nextrange"; tag: TextTag; start: TextIndex; ?end: [TextIndex]]
+   function (Index(text) as "[>`Linechar of int * int]", Index(text) as "[>`Linechar of int * int]") tag_nextrange [widget(text); "tag"; "nextrange"; tag: TextTag; start: TextIndex; ?stop: [TextIndex]]
    function () tag_raise [widget(text); "tag"; "raise"; tag: TextTag; ?above: [TextTag]]
 #   function () tag_raise_above [widget(text); "tag"; "raise"; tag: TextTag; above: TextTag]
 #   function () tag_raise_top [widget(text); "tag"; "raise"; tag: TextTag ]
    function (Index(text) as "[>`Linechar of int * int]" list) tag_ranges [widget(text); "tag"; "ranges"; tag: TextTag]
-   function () tag_remove [widget(text); "tag"; "remove"; tag: TextTag; start: TextIndex; end: TextIndex]
+   function () tag_remove [widget(text); "tag"; "remove"; tag: TextTag; start: TextIndex; stop: TextIndex]
    function () tag_remove_char [widget(text); "tag"; "remove"; tag: TextTag; at: TextIndex]
    function () window_configure [widget(text); "window"; "configure"; tag: TextTag; option(embeddedw) list]
    function () window_create [widget(text); "window"; "create"; index: TextIndex; option(embeddedw) list]
@@ -1642,7 +1642,7 @@ widget toplevel {
 
    # Widget specific options
    option Background
-   option Class
+   option Clas
    option Colormap
    option Height
    option Screen ["-screen"; string]
@@ -1809,7 +1809,7 @@ module Wm {
    function () minsize_set ["wm"; "minsize"; widget; width: int; height: int]
    function (int,int) minsize_get ["wm"; "minsize"; widget]
 ### Override
-   function () overrideredirect_set ["wm"; "overrideredirect"; widget; to: bool]
+   function () overrideredirect_set ["wm"; "overrideredirect"; widget; bool]
    function (bool) overrideredirect_get ["wm"; "overrideredirect"; widget]
 ### Position
    function () positionfrom_clear ["wm"; "positionfrom"; widget; ""]

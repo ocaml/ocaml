@@ -22,7 +22,7 @@ let rec assq key = function
   | Cons (a, b, l) ->
       if key == a then b else assq key l
 
-let fast :f =
+let fast ~f =
   let memo = ref Nil in
   fun key ->
     try assq key !memo

@@ -70,8 +70,8 @@ val sleep : int -> unit
 (*** Sockets *)
 
 val socket : domain:Unix.socket_domain ->
-             type:Unix.socket_type -> proto:int -> Unix.file_descr
-val socketpair : domain:Unix.socket_domain -> type:Unix.socket_type ->
+             kind:Unix.socket_type -> proto:int -> Unix.file_descr
+val socketpair : domain:Unix.socket_domain -> kind:Unix.socket_type ->
                  proto:int -> Unix.file_descr * Unix.file_descr
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 val connect : Unix.file_descr -> Unix.sockaddr -> unit

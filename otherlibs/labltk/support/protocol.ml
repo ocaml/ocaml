@@ -27,7 +27,7 @@ type tkArgs =
 
 type cbid = int
 
-external opentk : display:string -> class:string -> unit
+external opentk : display:string -> clas:string -> unit
         =  "camltk_opentk"
 external tcl_eval : string -> string
         =  "camltk_tcl_eval"
@@ -57,10 +57,10 @@ let debug =
 let dump_args args =
   let rec print_arg = function 
     TkToken s -> prerr_string s; prerr_string " "
-  | TkTokenList l -> List.iter f:print_arg l
+  | TkTokenList l -> List.iter ~f:print_arg l
   | TkQuote a -> prerr_string "{"; print_arg a; prerr_string "} "
  in
-  Array.iter f:print_arg args;
+  Array.iter ~f:print_arg args;
   prerr_newline()
 
 (*
@@ -105,11 +105,11 @@ let string_of_cbid = string_of_int
 
 (* Add a new callback, associated to widget w *)
 (* The callback should be cleared when w is destroyed *)
-let register_callback w callback:f =
+let register_callback w ~callback:f =
   let id = new_function_id () in
-    Hashtbl.add callback_naming_table key:id data:f;
+    Hashtbl.add callback_naming_table ~key:id ~data:f;
     if (forget_type w) <> (forget_type Widget.dummy) then 
-      Hashtbl.add callback_memo_table key:(forget_type w) data:id;
+      Hashtbl.add callback_memo_table ~key:(forget_type w) ~data:id;
     (string_of_cbid id)
 
 let clear_callback id =
@@ -119,7 +119,7 @@ let clear_callback id =
 let remove_callbacks w =
   let w = forget_type w in
   let cb_ids = Hashtbl.find_all callback_memo_table w in
-    List.iter f:clear_callback cb_ids;
+    List.iter ~f:clear_callback cb_ids;
     for i = 1 to List.length cb_ids do
       Hashtbl.remove callback_memo_table w
     done
@@ -140,10 +140,10 @@ let install_cleanup () =
   let call_destroy_hooks = function
       [wname] -> 
         let w = cTKtoCAMLwidget wname in
-         List.iter f:(fun f -> f w) !destroy_hooks
+         List.iter ~f:(fun f -> f w) !destroy_hooks
     | _ -> raise (TkError "bad cleanup callback") in
   let fid = new_function_id () in
-  Hashtbl.add callback_naming_table key:fid data:call_destroy_hooks;
+  Hashtbl.add callback_naming_table ~key:fid ~data:call_destroy_hooks;
   (* setup general destroy callback *)
   tcl_command ("bind all <Destroy> {camlcb " ^ (string_of_cbid fid) ^" %W}")
 
@@ -155,7 +155,7 @@ let prerr_cbid id =
 let dispatch_callback id args =
   if !debug then begin
     prerr_cbid id;
-    List.iter f:(fun x -> prerr_string " "; prerr_string x) args;
+    List.iter ~f:(fun x -> prerr_string " "; prerr_string x) args;
     prerr_newline()
     end;
   (Hashtbl.find callback_naming_table id) args;
@@ -176,8 +176,8 @@ let _ = callback_init ()
 
 (* Different version of initialisation functions *)
 (* Native opentk is [opentk display class]       *)
-let openTk ?(:display = "") ?(:class = "LablTk") () =
-  opentk :display :class;
+let openTk ?(display = "") ?(clas = "LablTk") () =
+  opentk ~display ~clas;
   install_cleanup();
   Widget.default_toplevel
 
@@ -191,8 +191,8 @@ let mainLoop =
 
 (* [register tclname f] makes [f] available from Tcl with 
    name [tclname] *)
-let register tclname callback:cb =
-  let s = register_callback Widget.default_toplevel callback:cb in
+let register tclname ~callback =
+  let s = register_callback Widget.default_toplevel ~callback in
     tcl_command (Printf.sprintf "proc %s {args} {eval {camlcb %s} $args}"
                              tclname s)
   

@@ -21,6 +21,7 @@ type error =
   | Unterminated_comment
   | Unterminated_string
   | Unterminated_string_in_comment
+  | Keyword_as_label of string
 ;;
 
 exception Error of error * int * int

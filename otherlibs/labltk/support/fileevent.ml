@@ -31,16 +31,16 @@ external rem_file_output : file_descr -> unit
 
 let fd_table = Hashtbl.create 37 (* Avoid space leak in callback table *)
 
-let add_fileinput :fd callback:f =
+let add_fileinput ~fd ~callback:f =
   let id = new_function_id () in
-  Hashtbl.add callback_naming_table key:id data:(fun _ -> f());
-  Hashtbl.add fd_table key:(fd, 'r') data:id;
+  Hashtbl.add callback_naming_table ~key:id ~data:(fun _ -> f());
+  Hashtbl.add fd_table ~key:(fd, 'r') ~data:id;
   if !Protocol.debug then begin
     Protocol.prerr_cbid id; prerr_endline " for fileinput"
   end;
   add_file_input fd id
 
-let remove_fileinput :fd =
+let remove_fileinput ~fd =
   try
     let id = Hashtbl.find fd_table (fd, 'r') in
     clear_callback id;
@@ -54,16 +54,16 @@ let remove_fileinput :fd =
   with
     Not_found -> ()
 
-let add_fileoutput :fd callback:f =
+let add_fileoutput ~fd ~callback:f =
   let id = new_function_id () in
-  Hashtbl.add callback_naming_table key:id data:(fun _ -> f());
-  Hashtbl.add fd_table key:(fd, 'w') data:id;
+  Hashtbl.add callback_naming_table ~key:id ~data:(fun _ -> f());
+  Hashtbl.add fd_table ~key:(fd, 'w') ~data:id;
   if !Protocol.debug then begin
     Protocol.prerr_cbid id; prerr_endline " for fileoutput"
   end;
   add_file_output fd id
 
-let remove_fileoutput :fd =
+let remove_fileoutput ~fd =
   try
     let id = Hashtbl.find fd_table (fd, 'w') in
     clear_callback id;

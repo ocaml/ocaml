@@ -36,7 +36,7 @@ let add_handle var cbid =
     r := cbid :: !r
   with
     Not_found -> 
-      Hashtbl.add handles key:var data:(ref [cbid])
+      Hashtbl.add handles ~key:var ~data:(ref [cbid])
 
 let exceptq x =
   let rec ex acc = function
@@ -61,7 +61,7 @@ let rem_handle var cbid =
 let rem_all_handles var =
   try
     let r = Hashtbl.find handles var in
-    List.iter f:(internal_untracevar var) !r;
+    List.iter ~f:(internal_untracevar var) !r;
     Hashtbl.remove handles var
   with
     Not_found -> ()
@@ -74,7 +74,7 @@ let handle vname f =
     clear_callback id;
     rem_handle vname id;
     f() in
-  Hashtbl.add callback_naming_table key:id data:wrapped;
+  Hashtbl.add callback_naming_table ~key:id ~data:wrapped;
   add_handle vname id;
   if !Protocol.debug then begin
     prerr_cbid id; prerr_string " for variable "; prerr_endline vname
@@ -95,7 +95,7 @@ let add w v =
     with
       Not_found -> 
         let r = ref StringSet.empty in
-          Hashtbl.add memo key:w data:r;
+          Hashtbl.add memo ~key:w ~data:r;
           r in
    r := StringSet.add v !r
 
@@ -108,7 +108,7 @@ let free v =
 let freew w =
   try
     let r = Hashtbl.find memo w in
-    StringSet.iter f:free !r;
+    StringSet.iter ~f:free !r;
     Hashtbl.remove memo w 
   with
     Not_found -> ()

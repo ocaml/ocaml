@@ -18,7 +18,7 @@ open Tk
 let _ =
   let path = ref [] in
   Arg.parse
-    keywords:[ "-I", Arg.String (fun s -> path := s :: !path),
+    ~keywords:["-I", Arg.String (fun s -> path := s :: !path),
                "<dir>  Add <dir> to the list of include directories";
                "-label", Arg.Unit (fun () -> Clflags.classic := false),
                "Use strict label syntax";
@@ -35,9 +35,9 @@ let _ =
                 \032    U/u enable/disable unused match case\n\
                 \032    V/v enable/disable hidden instance variable\n\
                 \032    X/x enable/disable all other warnings\n\
-                \032    default setting is A (all warnings enabled)" ]
-    others:(fun name -> raise(Arg.Bad("don't know what to do with " ^ name)))
-    errmsg:"ocamlbrowser :";
+                \032    default setting is A (all warnings enabled)"]
+    ~others:(fun name -> raise(Arg.Bad("don't know what to do with " ^ name)))
+    ~errmsg:"ocamlbrowser :";
   Config.load_path := List.rev !path @ [Config.standard_library];
   Warnings.parse_options !Shell.warnings;
   Unix.putenv "TERM" "noterminal";
@@ -49,14 +49,14 @@ let _ =
   Searchpos.view_defined_ref := Viewer.view_defined;
   Searchpos.editor_ref.contents <- Editor.f;
 
-  let top = openTk class:"OCamlBrowser" () in
+  let top = openTk ~clas:"OCamlBrowser" () in
   Jg_config.init ();
 
-  bind top events:[`Destroy] action:(fun _ -> exit 0);
+  bind top ~events:[`Destroy] ~action:(fun _ -> exit 0);
   at_exit Shell.kill_all;
   
 
-  Viewer.f on:top ();
+  Viewer.f ~on:top ();
 
   while true do
     try

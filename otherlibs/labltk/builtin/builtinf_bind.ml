@@ -1,5 +1,5 @@
-let bind_class :events ?(:extend = false) ?(:breakable = false) ?(:fields = [])
-    ?:action ?(on:widget) name =
+let bind_class ~events ?(extend = false) ?(breakable = false) ?(fields = [])
+    ?action ?on:widget name =
   let widget = match widget with None -> Widget.dummy | Some w -> coe w in
   tkCommand
     [| TkToken "bind";
@@ -8,7 +8,7 @@ let bind_class :events ?(:extend = false) ?(:breakable = false) ?(:fields = [])
        begin match action with None -> TkToken ""
        | Some f ->
            let cbId =
-             register_callback widget callback: (wrapeventInfo f fields) in
+             register_callback widget ~callback: (wrapeventInfo f fields) in
            let cb = if extend then "+camlcb " else "camlcb " in
            let cb = cb ^ cbId ^ writeeventField fields in
            let cb =
@@ -20,8 +20,8 @@ let bind_class :events ?(:extend = false) ?(:breakable = false) ?(:fields = [])
        end
      |]
 
-let bind :events ?:extend ?:breakable ?:fields ?:action widget =
-  bind_class :events ?:extend ?:breakable ?:fields ?:action on:widget
+let bind ~events ?extend ?breakable ?fields ?action widget =
+  bind_class ~events ?extend ?breakable ?fields ?action ~on:widget
     (Widget.name widget)
 
 let bind_tag = bind_class
