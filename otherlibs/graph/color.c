@@ -114,9 +114,16 @@ int gr_rgb_pixel(long unsigned int pixel)
 
 value gr_set_color(value vrgb)
 {
+  int xcolor;
   gr_check_open();
-  grcolor = gr_pixel_rgb(Int_val(vrgb));
-  XSetForeground(grdisplay, grwindow.gc, grcolor);
-  XSetForeground(grdisplay, grbstore.gc, grcolor);
+  grcolor = Int_val(vrgb);
+  if (grcolor >= 0 ){
+    xcolor = gr_pixel_rgb(Int_val(vrgb));
+    XSetForeground(grdisplay, grwindow.gc, xcolor);
+    XSetForeground(grdisplay, grbstore.gc, xcolor);
+  } else {
+    XSetForeground(grdisplay, grwindow.gc, grbackground);
+    XSetForeground(grdisplay, grbstore.gc, grbackground);
+  }
   return Val_unit;
 }

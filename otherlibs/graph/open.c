@@ -29,13 +29,13 @@
 Display * grdisplay = NULL;
 int grscreen;
 Colormap grcolormap;
-int grwhite, grblack;
+int grwhite, grblack, grbackground;
 struct canvas grwindow;
 struct canvas grbstore;
 Bool grdisplay_mode;
 Bool grremember_mode;
 int grx, gry;
-unsigned long grcolor;
+int grcolor;
 extern XFontStruct * grfont;
 
 static Bool gr_initialized = False;
@@ -75,6 +75,7 @@ value gr_open_graph(value arg)
       grscreen = DefaultScreen(grdisplay);
       grblack = BlackPixel(grdisplay, grscreen);
       grwhite = WhitePixel(grdisplay, grscreen);
+      grbackground = grwhite;
       grcolormap = DefaultColormap(grdisplay, grscreen);
     }
 
@@ -100,7 +101,7 @@ value gr_open_graph(value arg)
     }
 
     /* Initial drawing color is black */
-    grcolor = grblack;
+    grcolor = 0; /* CAML COLOR */
 
     /* Create the on-screen window */
     grwindow.w = hints.width;
@@ -108,12 +109,12 @@ value gr_open_graph(value arg)
     grwindow.win =
       XCreateSimpleWindow(grdisplay, DefaultRootWindow(grdisplay),
                           hints.x, hints.y, hints.width, hints.height,
-                          BORDER_WIDTH, grblack, grwhite);
+                          BORDER_WIDTH, grblack, grbackground);
     XSetStandardProperties(grdisplay, grwindow.win, WINDOW_NAME, ICON_NAME,
                            None, NULL, 0, &hints);
     grwindow.gc = XCreateGC(grdisplay, grwindow.win, 0, NULL);
-    XSetBackground(grdisplay, grwindow.gc, grwhite);
-    XSetForeground(grdisplay, grwindow.gc, grcolor);
+    XSetBackground(grdisplay, grwindow.gc, grbackground);
+    XSetForeground(grdisplay, grwindow.gc, grblack);
 
     /* Require exposure, resize and keyboard events */
     XSelectInput(grdisplay, grwindow.win, DEFAULT_EVENT_MASK);
@@ -135,13 +136,13 @@ value gr_open_graph(value arg)
       XCreatePixmap(grdisplay, grwindow.win, grbstore.w, grbstore.h,
                     XDefaultDepth(grdisplay, grscreen));
     grbstore.gc = XCreateGC(grdisplay, grbstore.win, 0, NULL);
-    XSetBackground(grdisplay, grbstore.gc, grwhite);
+    XSetBackground(grdisplay, grbstore.gc, grbackground);
 
     /* Clear the pixmap */
-    XSetForeground(grdisplay, grbstore.gc, grwhite);
+    XSetForeground(grdisplay, grbstore.gc, grbackground);
     XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
                    0, 0, grbstore.w, grbstore.h);
-    XSetForeground(grdisplay, grbstore.gc, grcolor);
+    XSetForeground(grdisplay, grbstore.gc, grblack);
 
     /* Set the display and remember modes on */
     grdisplay_mode = True ;

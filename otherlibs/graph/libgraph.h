@@ -28,11 +28,13 @@ extern int grscreen;            /* The screen number */
 extern Colormap grcolormap;     /* The color map */
 extern struct canvas grwindow;  /* The graphics window */
 extern struct canvas grbstore;  /* The pixmap used for backing store */
-extern int grwhite, grblack;    /* Black and white pixels */
+extern int grwhite, grblack;    /* Black and white pixels for X */
+extern int grbackground;        /* Background color for X 
+				     (used for CAML color -1) */
 extern Bool grdisplay_mode;     /* Display-mode flag */
 extern Bool grremember_mode;    /* Remember-mode flag */
 extern int grx, gry;            /* Coordinates of the current point */
-extern unsigned long grcolor;   /* Current drawing color */
+extern int grcolor;             /* Current *CAML* drawing color (can be -1) */
 extern XFontStruct * grfont;    /* Current font */
 
 extern Bool direct_rgb;
