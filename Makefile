@@ -137,8 +137,8 @@ world: coldstart all
 # Compile also native code compiler and libraries, fast
 world.opt: coldstart opt.opt
 
-# Complete bootstrapping cycle
-bootstrap:
+# Simple bootstrapping cycle
+boots:
 # Save the original bootstrap compiler
 	$(MAKE) backup
 # Promote the new compiler but keep the old runtime
@@ -152,10 +152,16 @@ bootstrap:
 	$(MAKE) library-cross
 # Promote the new compiler and the new runtime
 	$(MAKE) promote
-# Rebuild everything, including ocaml and the tools
+# Rebuild ocamlc and ocamllex
 	$(MAKE) partialclean
-	$(MAKE) all
+	$(MAKE) ocamlc ocamllex
 # Check if fixpoint reached
+	$(MAKE) compare
+
+# Complete bootstrapping cycle
+bootstrap:
+	$(MAKE) boots
+	$(MAKE) all
 	$(MAKE) compare
 
 LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
