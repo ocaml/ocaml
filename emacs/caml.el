@@ -489,13 +489,31 @@ have caml-electric-indent on, which see.")
   (run-hooks 'caml-mode-hook))
 
 (defun caml-set-compile-command ()
+  "Hook to set compile-command locally, unless there is a Makefile in the 
+   current directory." 
   (interactive)
-  (unless (or (file-exists-p "makefile")
+  (unless (or (null buffer-file-name)
+              (file-exists-p "makefile")
               (file-exists-p "Makefile"))
-    (make-local-variable 'compile-command)
-    (setq compile-command
-          (concat "ocamlc -c "
-                  (file-name-nondirectory buffer-file-name)))))
+    (let* ((filename (file-name-nondirectory buffer-file-name))
+           (basename (file-name-sans-extension filename))
+           (command nil))
+      (cond
+       ((string-match ".*\\.mli\$" filename)
+        (setq command "ocamlc -c"))
+       ((string-match ".*\\.ml\$" filename)
+        (setq command "ocamlc -c") ; (concat "ocamlc -o " basename)
+        )
+       ((string-match ".*\\.mll\$" filename)
+        (setq command "ocamllex"))
+       ((string-match ".*\\.mll\$" filename)
+        (setq command "ocamlyacc"))
+       )
+      (if command
+          (progn 
+            (make-local-variable 'compile-command)
+            (setq compile-command (concat command " " filename))))
+      )))
 
 (add-hook 'caml-mode-hook 'caml-set-compile-command)
 
@@ -696,11 +714,18 @@ variable caml-mode-indentation."
   (defun forward-byte (count)
     (if (> count 0)
         (while (> count 0)
-          (setq count (- count (caml-char-bytes (char-after))))
-          (forward-char))
+          (let ((char (char-after)))
+            (if (null char)
+                (setq count 0)
+              (setq count (- count (caml-char-bytes (char-after))))
+              (forward-char))))
       (while (< count 0)
-        (setq count (+ count (caml-char-bytes (char-before))))
-        (backward-char)))))
+        (let ((char (char-after)))
+          (if (null char)
+              (setq count 0)
+            (setq count (+ count (caml-char-bytes (char-before))))
+            (backward-char))))
+    )))
 
 (require 'compile)
 
@@ -997,50 +1022,51 @@ Returns nil for the parenthesis openning a comment."
   ;;style is used, literals are never split across lines, so we don't
   ;;have to worry about bogus phrase breaks inside literals, while we
   ;;have to account for that possibility in comments.
-  (save-excursion
-    (let* ((cached-pos caml-last-noncomment-pos)
-           (cached-begin (marker-position caml-last-comment-start))
-           (cached-end (marker-position caml-last-comment-end)))
-      (cond
-       ((and cached-begin cached-end
-             (< cached-begin (point)) (< (point) cached-end)) t)
-       ((and cached-pos (= cached-pos (point))) nil)
-       ((and cached-pos (> cached-pos (point))
-             (< (abs (- cached-pos (point))) caml-lookback-limit))
-        (let (end found (here (point)))
-          ; go back to somewhere sure
-          (goto-char cached-pos)
-          (while (> (point) here)
-            ; look for the end of a comment
-            (while (and (if (search-backward comment-end (1- here) 'move)
-                            (setq end (match-end 0))
-                          (setq end nil))
-                        (caml-in-literal-p)))
-            (if end (setq found (caml-backward-comment))))
-          (if (and found (= (point) here)) (setq end nil))
-          (if (not end)
-              (setq caml-last-noncomment-pos here)
-            (set-marker caml-last-comment-start (point))
-            (set-marker caml-last-comment-end end))
-          end))
-       (t
-        (let (begin found (here (point)))
-          ; go back to somewhere sure (or far enough)
-          (goto-char
-           (if cached-pos cached-pos (- (point) caml-lookback-limit)))
-          (while (< (point) here)
-            ; look for the beginning of a comment
-            (while (and (if (search-forward comment-start (1+ here) 'move)
-                            (setq begin (match-beginning 0))
-                          (setq begin nil))
-                        (caml-in-literal-p)))
-            (if begin (setq found (caml-forward-comment))))
-          (if (and found (= (point) here)) (setq begin nil))
-          (if (not begin)
-              (setq caml-last-noncomment-pos here)
-            (set-marker caml-last-comment-start begin)
-            (set-marker caml-last-comment-end (point)))
-          begin))))))
+  (if caml-last-comment-start
+      (save-excursion
+        (let* ((cached-pos caml-last-noncomment-pos)
+               (cached-begin (marker-position caml-last-comment-start))
+               (cached-end (marker-position caml-last-comment-end)))
+          (cond
+           ((and cached-begin cached-end
+                 (< cached-begin (point)) (< (point) cached-end)) t)
+           ((and cached-pos (= cached-pos (point))) nil)
+           ((and cached-pos (> cached-pos (point))
+                 (< (abs (- cached-pos (point))) caml-lookback-limit))
+            (let (end found (here (point)))
+                                        ; go back to somewhere sure
+              (goto-char cached-pos)
+              (while (> (point) here)
+                                        ; look for the end of a comment
+                (while (and (if (search-backward comment-end (1- here) 'move)
+                                (setq end (match-end 0))
+                              (setq end nil))
+                            (caml-in-literal-p)))
+                (if end (setq found (caml-backward-comment))))
+              (if (and found (= (point) here)) (setq end nil))
+              (if (not end)
+                  (setq caml-last-noncomment-pos here)
+                (set-marker caml-last-comment-start (point))
+                (set-marker caml-last-comment-end end))
+              end))
+           (t
+            (let (begin found (here (point)))
+            ;; go back to somewhere sure (or far enough)
+              (goto-char
+               (if cached-pos cached-pos (- (point) caml-lookback-limit)))
+              (while (< (point) here)
+                ;; look for the beginning of a comment
+                (while (and (if (search-forward comment-start (1+ here) 'move)
+                                (setq begin (match-beginning 0))
+                              (setq begin nil))
+                            (caml-in-literal-p)))
+                (if begin (setq found (caml-forward-comment))))
+              (if (and found (= (point) here)) (setq begin nil))
+              (if (not begin)
+                  (setq caml-last-noncomment-pos here)
+                (set-marker caml-last-comment-start begin)
+                (set-marker caml-last-comment-end (point)))
+              begin)))))))
 
 ;; Various constants and regexps
 

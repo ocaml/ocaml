@@ -170,7 +170,7 @@
       (if (equal tag 'info)
           (setq dir (car ocaml-lib-path)) ; XXX to be fixed
         )
-      (setq file (concat dir (ocaml-uncapitalize module) ".mli"))
+      (setq file (concat dir "/" (ocaml-uncapitalize module) ".mli"))
       (message file)
       (save-window-excursion
         (set-buffer (get-buffer-create "*caml-help*"))
@@ -180,8 +180,10 @@
               (insert-file-contents file))
           (message "Module %s not found" module))
         (while (re-search-forward
-                "^\\([ \t]*val\\|let\\|external\\) \\([^ (:=]*\\)" (point-max) 'move)
-          (setq alist (cons (match-string 2) alist)))
+                "\\([ \t]*val\\|let\\|external\\|  [|]\\) \\([a-zA-Z_0-9'][a-zA-Z_0-9']*\\)\\|^  *[{]* \\([a-z_][A-Za-z_0-9]*\\) : [^;\n][^;\n]*;"
+                (point-max) 'move)
+          (pop-to-buffer (current-buffer))
+          (setq alist (cons (or (match-string 2) (match-string 3)) alist)))
         (erase-buffer)
         )
       (setcdr tail alist)
@@ -235,7 +237,7 @@ Otherwise if ARG is true, close all modules and reset to default. "
   (if (= (prefix-numeric-value arg) 4)
       (setq ocaml-visible-modules 'lazy)
     (let* ((modules (ocaml-visible-modules)) default)
-      (if (null modules) (error-message "No visible module to close"))
+      (if (null modules) (error "No visible module to close"))
       (unless (stringp arg)
         (setq arg
               (completing-read
@@ -277,7 +279,7 @@ with an optional non-nil argument.
                 (progn
                   (setq module (cons (match-beginning 1) (match-end 1)))
                   (goto-char (match-end 0))))
-            (if (looking-at "\\<\\([a-z_][A-Za-z0-9_']*\\)\\>")
+            (if (looking-at "\\<\\([A-Za-z_][A-Za-z0-9_']*\\)\\>")
                 (setq entry (cons (match-beginning 1) (match-end 1))))))
       (if show
           (concat
@@ -392,6 +394,7 @@ where identifier is defined."
                      
               ((not (string-equal pattern completion))
                (delete-region beg end)
+               (goto-char beg)
                (insert completion))
 
               (t
@@ -558,25 +561,25 @@ command. An entry may be an info module or a complete file name."
 If unspecified, MODULE and ENTRY are inferred from the position in the
 current buffer using \\[ocaml-qualified-identifier]."
   (interactive)
-  (let ((window (selected-window)))
-    (let ((info-section (assoc module (ocaml-info-alist))))
-      (if info-section (info-other-window (cdr info-section))
-        (ocaml-visible-modules)
-        (let* ((module-info
-                (or (assoc module (ocaml-module-alist))
-                    (and (file-exists-p
-                          (concat (ocaml-uncapitalize module) ".mli"))
-                         (ocaml-get-or-make-module module))))                  
-               (location (cdr (cadr module-info))))
-          (cond
-           (location
-                                        ; (view-file
-            (view-file-other-window
-             (concat location (ocaml-uncapitalize module) ".mli"))
-            (bury-buffer (current-buffer)))
-           (info-section (error "Aborted"))
-           (t (error "No help for module %s" module))))
-        ))
+  (let ((window (selected-window))
+        (info-section (assoc module (ocaml-info-alist))))
+    (if info-section
+        (info-other-window (cdr info-section))
+      (ocaml-visible-modules)
+      (let* ((module-info
+              (or (assoc module (ocaml-module-alist))
+                  (and (file-exists-p
+                        (concat (ocaml-uncapitalize module) ".mli"))
+                       (ocaml-get-or-make-module module))))                  
+             (location (cdr (cadr module-info))))
+        (cond
+         (location
+          (view-file-other-window
+           (concat location (ocaml-uncapitalize module) ".mli"))
+          (bury-buffer (current-buffer)))
+         (info-section (error "Aborted"))
+         (t (error "No help for module %s" module))))
+      )
     (if (stringp entry)
         (let ((here (point))
               (case-fold-search nil))
@@ -584,6 +587,9 @@ current buffer using \\[ocaml-qualified-identifier]."
           (if (or (re-search-forward
                    (concat "\\(val\\|exception\\|external\\|[|{;]\\) +"
                            (regexp-quote entry))
+                   (point-max) t)
+                  (re-search-forward
+                   (concat "type [^{]*{[^}]*" (regexp-quote entry) " :")
                    (point-max) t)
                   (progn
                     (if (window-live-p window) (select-window window))
@@ -596,24 +602,32 @@ current buffer using \\[ocaml-qualified-identifier]."
               (message "Help for entry %s not found in module %s"
                        entry module)
               (goto-char here)))))
+    (ocaml-link-activate (cdr info-section))
     (if (window-live-p window) (select-window window))
     ))
 
 (defun caml-help (arg)
   "Find help for qualified identifiers. 
 
-It attemps to recognize an qualified identifier of the form Module . entry 
-around point using function \\[ocaml-qualified-identifier].
+It attemps to recognize an qualified identifier of the form
+``Module . entry'' around point using function `ocaml-qualified-identifier'.
 
-If Module is undefined it finds it from indentifier and visible modules, 
-or asks the user interactively. 
+If Module is undetermined it is temptatively guessed from the identifier name
+and according to visible modules. If this is still unsucessful,  the user is 
+then prompted for a Module name. 
 
-It then opens the info documentation for Module if available or 
-to the Module.mli file otherwises, and searches for entry. 
+The documentation for Module is first seach in the info manual if available,
+then in the ``module.mli'' source file. The entry is then searched in the documentation. 
 
-With prefix arg 0, it recomputes visible modules and their content. 
-With prefix arg 4, prompts for Module and identifier instead
-of using contextual values. 
+Visible modules are computed only once, at the first call. 
+Modules can be made visible explicitly with `ocaml-open-module' and
+hidden with `ocaml-close-module'. 
+
+Prefix arg 0 forces recompilation of visible modules (and their content)
+from the file content. 
+
+Prefix arg 4 prompts for Module and identifier instead of guessing values
+from the possition of point in the current buffer. 
 "
   (interactive "p")
   (let ((module) (entry) (module-entry))
@@ -662,6 +676,99 @@ of using contextual values.
      (ocaml-goto-help module entry)
      ))
 
+;; auto-links
+
+(defconst ocaml-link-regexp
+  "\\(type\\|and\\) \\('[a-z] +\\|(\\('[a-z], *\\)*'[a-z])\\|\\) *\\([a-zA-Z0-9_]*\\)\\( *$\\| =\\)")
+(defconst ocaml-longident-regexp
+  "\\([A-Z][a-zA-Z_0]*\\)[.]\\([a-zA-Z][A-Za-z0-9_]*\\)")
+
+(defvar ocaml-links nil
+  "Local links in the current of last info node or interface file.
+
+The car of the list is a key that indentifies the module to prevent 
+recompilation when next help command is relative to the same module.
+The cdr is a list of elments, each of which is an string and a pair of
+buffer positions."
+)
+(make-variable-buffer-local 'ocaml-links)
+
+(defun ocaml-info-links (section)
+  (if (and ocaml-links section (equal (car ocaml-links) section))
+      (cdr ocaml-links)
+    (save-excursion
+      (goto-char (point-min))
+      (let ((regexp (concat (if (equal major-mode 'Info-mode) "^ - " "^")
+                            ocaml-link-regexp))
+            (all))
+        (while (re-search-forward regexp (point-max) t)
+          (setq all
+                (cons (cons (match-string 4)
+                            (cons (match-beginning 4)
+                                  (match-end 4)))
+                      all)))
+        (setq ocaml-links (cons section all))
+        ))))
+
+(defvar ocaml-link-map (make-sparse-keymap))
+(define-key ocaml-link-map [mouse-2] 'ocaml-link-goto)
+
+(defun ocaml-link-goto (click)
+  (interactive "e")
+  (let* ((start  (event-start click))
+         (pos (posn-point start))
+         (buf (window-buffer (posn-window start)))
+         (window (selected-window))
+         (link))
+    (setq link
+          (with-current-buffer buf
+           (buffer-substring (previous-property-change
+                              pos buf (- pos 100))
+                             (next-property-change
+                              pos buf (+ pos 100)))))
+    (if (string-match (concat "^" ocaml-longident-regexp "$") link)
+        (ocaml-goto-help (match-string 1 link) (match-string 2 link))
+      (if (not (equal (window-buffer window) buf))
+          (switch-to-buffer-other-window buf))
+      (if (setq link (assoc link (cdr ocaml-links)))
+          (progn
+            (goto-char (cadr link))
+            (recenter 1)))
+      (if (window-live-p window) (select-window window))
+      )))
+
+(cond
+ ((and (x-display-color-p)
+       (not (memq 'ocaml-link-face (face-list))))
+  (make-face 'ocaml-link-face)
+  (set-face-foreground 'ocaml-link-face "Purple")))
+
+
+(defun ocaml-link-activate (section)
+  (if (cdr (ocaml-info-links section))
+      (let ((regexp (concat "[^A-Za-z0-9'_]\\("
+                            ocaml-longident-regexp "\\|"
+                            (mapconcat 'car (cdr ocaml-links) "\\|")
+                            "\\)[^A-Za-z0-9'_]"))
+            (case-fold-search nil))
+        (goto-char (point-min))
+        (unwind-protect
+            (save-excursion
+              (setq buffer-read-only nil)
+              (goto-char (point-min))
+              (while (re-search-forward regexp (point-max) t)
+                (put-text-property (match-beginning 1) (match-end 1)
+                                   'mouse-face 'highlight)
+                (put-text-property (match-beginning 1) (match-end 1)
+                                   'local-map ocaml-link-map)
+                (if (x-display-color-p)
+                    (put-text-property (match-beginning 1) (match-end 1)
+                                       'face 'ocaml-link-face)))
+              )
+          (setq buffer-read-only t))
+          )))
+
+  
 
 ;; bindings
 
@@ -669,6 +776,9 @@ of using contextual values.
  (boundp 'caml-mode-map)
  (keymapp caml-mode-map)
  (progn 
+   (define-key caml-mode-map [?\C-c?i] 'ocaml-add-path)
+   (define-key caml-mode-map [?\C-c?]] 'ocaml-close-module)
+   (define-key caml-mode-map [?\C-c?[] 'ocaml-open-module)
    (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
    (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
    (let ((map (lookup-key caml-mode-map [menu-bar caml])))
@@ -676,6 +786,10 @@ of using contextual values.
       (keymapp map)
       (progn
         (define-key map [separator-help] '("---"))
+        (define-key map [open] '("Open add path" . ocaml-add-path ))
+        (define-key map [close]
+          '("Close module for help" . ocaml-close-module))
+        (define-key map [open] '("Open module for help" . ocaml-open-module))
         (define-key map [help] '("Help for identifier" . caml-help))
         (define-key map [complete] '("Complete identifier" . caml-complete))
         ) 
