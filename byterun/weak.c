@@ -50,7 +50,7 @@ CAMLprim value weak_set (value ar, value n, value el)
   if (el != None_val){
     value v;                                  Assert (Wosize_val (el) == 1);
     v = Field (el, 0);
-    if (Is_block (v) && Is_in_heap (v)){
+    if (Is_block (v) && (Is_young (v) || Is_in_heap (v))){
       Modify (&Field (ar, offset), v);
     }
   }
@@ -92,7 +92,7 @@ CAMLprim value weak_get_copy (value ar, value n)
 
   v = Field (ar, offset);
   if (v == 0) CAMLreturn (None_val);
-  if (Is_block (v) && Is_in_heap (v)){
+  if (Is_block (v) && (Is_young (v) || Is_in_heap (v))){
     elt = alloc (Wosize_val (v), Tag_val (v)); /* The GC may erase or move v. */
     v = Field (ar, offset);
     if (v == 0) CAMLreturn (None_val);
