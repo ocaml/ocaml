@@ -22,7 +22,7 @@
 struct lexer_buffer {
   value refill_buff;
   value lex_buffer;
-  value lex_buffer_end;
+  value lex_buffer_len;
   value lex_abs_pos;
   value lex_start_pos;
   value lex_curr_pos;
@@ -72,7 +72,7 @@ CAMLprim value lex_engine(struct lexing_table *tbl, value start_state,
       lexbuf->lex_last_action = Val_int(backtrk);
     }
     /* See if we need a refill */
-    if (lexbuf->lex_curr_pos >= lexbuf->lex_buffer_end){
+    if (lexbuf->lex_curr_pos >= lexbuf->lex_buffer_len){
       if (lexbuf->lex_eof_reached == Val_bool (0)){
         return Val_int(-state - 1);
       }else{
