@@ -50,22 +50,30 @@ let system cmd =
 
 (*** File I/O *)
 
-let read fd buff ofs len =
+let rec read fd buff ofs len =
   Thread.wait_read fd;
-  Unix.read fd buff ofs len
+  try Unix.read fd buff ofs len
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> read fd buff ofs len
 
-let write fd buff ofs len =
+let rec write fd buff ofs len =
   Thread.wait_write fd;
-  Unix.write fd buff ofs len
+  try Unix.write fd buff ofs len
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> write fd buff ofs len
 
-let timed_read fd buff ofs len timeout =
+let rec timed_read fd buff ofs len timeout =
   if Thread.wait_timed_read fd timeout
-  then Unix.read fd buff ofs len
+  then begin try Unix.read fd buff ofs len
+             with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+                    timed_read fd buff ofs len timeout
+       end
   else raise (Unix_error(ETIMEDOUT, "timed_read", ""))
 
-let timed_write fd buff ofs len timeout =
+let rec timed_write fd buff ofs len timeout =
   if Thread.wait_timed_write fd timeout
-  then Unix.write fd buff ofs len
+  then begin try Unix.write fd buff ofs len
+             with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+                    timed_write fd buff ofs len timeout
+       end
   else raise (Unix_error(ETIMEDOUT, "timed_write", ""))
 
 let select = Thread.select
@@ -104,11 +112,13 @@ let socketpair dom typ proto =
   Unix.set_nonblock s1; Unix.set_nonblock s2;
   spair
 
-let accept req =
+let rec accept req =
   Thread.wait_read req;
-  let (s, caller as result) = Unix.accept req in
-  Unix.set_nonblock s;
-  result
+  try
+    let (s, caller as result) = Unix.accept req in
+    Unix.set_nonblock s;
+    result
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> accept req
 
 let connect s addr =
   try
@@ -119,14 +129,27 @@ let connect s addr =
     let _ = Unix.getpeername s in
     ()
 
-let recv fd buf ofs len flags =
-  Thread.wait_read fd; Unix.recv fd buf ofs len flags
-let recvfrom fd buf ofs len flags =
-  Thread.wait_read fd; Unix.recvfrom fd buf ofs len flags
-let send fd buf ofs len flags =
-  Thread.wait_write fd; Unix.send fd buf ofs len flags
-let sendto fd buf ofs len flags addr =
-  Thread.wait_write fd; Unix.sendto fd buf ofs len flags addr
+let rec recv fd buf ofs len flags =
+  Thread.wait_read fd;
+  try Unix.recv fd buf ofs len flags
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> recv fd buf ofs len flags
+
+let rec recvfrom fd buf ofs len flags =
+  Thread.wait_read fd;
+  try Unix.recvfrom fd buf ofs len flags
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+              recvfrom fd buf ofs len flags
+
+let rec send fd buf ofs len flags =
+  Thread.wait_write fd;
+  try Unix.send fd buf ofs len flags
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> send fd buf ofs len flags
+  
+let rec sendto fd buf ofs len flags addr =
+  Thread.wait_write fd;
+  try Unix.sendto fd buf ofs len flags addr
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+              sendto fd buf ofs len flags addr
 
 let open_connection sockaddr =
   let domain =

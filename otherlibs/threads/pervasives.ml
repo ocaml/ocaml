@@ -167,11 +167,11 @@ let stderr = open_descriptor_out 2
 
 (* Non-blocking stuff *)
 
-external thread_select_prim :
-  Unix.file_descr list * Unix.file_descr list *
-  Unix.file_descr list * float -> unit = "thread_select"
+external thread_wait_read_prim : Unix.file_descr -> unit = "thread_wait_read"
+external thread_wait_write_prim : Unix.file_descr -> unit = "thread_wait_write"
 
-let thread_select arg = thread_select_prim arg
+let thread_wait_read fd = thread_wait_read_prim fd
+let thread_wait_write fd = thread_wait_write_prim fd
 
 external inchan_ready : in_channel -> bool = "thread_inchan_ready"
 external outchan_ready : out_channel -> int -> bool = "thread_outchan_ready"
@@ -179,13 +179,10 @@ external descr_inchan : in_channel -> Unix.file_descr = "channel_descriptor"
 external descr_outchan : out_channel -> Unix.file_descr = "channel_descriptor"
 
 let wait_inchan ic =
-  if not (inchan_ready ic) then begin
-    thread_select([descr_inchan ic], [], [], -1.0); ()
-  end
+  if not (inchan_ready ic) then thread_wait_read(descr_inchan ic)
+
 let wait_outchan oc len =
-  if not (outchan_ready oc len) then begin
-    thread_select([], [descr_outchan oc], [], -1.0); ()
-  end
+  if not (outchan_ready oc len) then thread_wait_write(descr_outchan oc)
 
 (* General output functions *)
 
@@ -209,7 +206,8 @@ external flush_partial : out_channel -> bool = "caml_flush_partial"
 
 let rec flush oc =
   wait_outchan oc (-1);
-  if flush_partial oc then () else flush oc
+  let success = try flush_partial oc with Sys_blocked_io -> false in
+  if success then () else flush oc
 
 external unsafe_output_partial : out_channel -> string -> int -> int -> int
                         = "caml_output_partial"
@@ -217,7 +215,8 @@ external unsafe_output_partial : out_channel -> string -> int -> int -> int
 let rec unsafe_output oc buf pos len =
   if len > 0 then begin
     wait_outchan oc len;
-    let written = unsafe_output_partial oc buf pos len in
+    let written = 
+      try unsafe_output_partial oc buf pos len with Sys_blocked_io -> 0 in
     unsafe_output oc buf (pos + written) (len - written)
   end
 
@@ -225,7 +224,9 @@ external output_char_blocking : out_channel -> char -> unit
                               = "caml_output_char"
 external output_byte_blocking : out_channel -> int -> unit = "caml_output_char"
 
-let output_char oc c = wait_outchan oc 1; output_char_blocking oc c
+let rec output_char oc c =
+  wait_outchan oc 1;
+  try output_char_blocking oc c with Sys_blocked_io -> output_char oc c
 
 let output_string oc s =
   unsafe_output oc s 0 (string_length s)
@@ -235,7 +236,9 @@ let output oc s ofs len =
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
-let output_byte oc b = wait_outchan oc 1; output_byte_blocking oc b
+let rec output_byte oc b =
+  wait_outchan oc 1;
+  try output_byte_blocking oc b with Sys_blocked_io -> output_byte oc b
 
 let output_binary_int oc n =
   output_byte oc (n asr 24);
@@ -274,13 +277,17 @@ let open_in_bin name =
 external input_char_blocking : in_channel -> char = "caml_input_char"
 external input_byte_blocking : in_channel -> int = "caml_input_char"
 
-let input_char ic = wait_inchan ic; input_char_blocking ic
+let rec input_char ic =
+  wait_inchan ic;
+  try input_char_blocking ic with Sys_blocked_io -> input_char ic
 
 external unsafe_input_blocking : in_channel -> string -> int -> int -> int
                                = "caml_input"
 
-let unsafe_input ic s ofs len =
-  wait_inchan ic; unsafe_input_blocking ic s ofs len
+let rec unsafe_input ic s ofs len =
+  wait_inchan ic;
+  try unsafe_input_blocking ic s ofs len
+  with Sys_blocked_io -> unsafe_input ic s ofs len
 
 let input ic s ofs len =
   if ofs < 0 or ofs + len > string_length s
@@ -319,7 +326,9 @@ let input_line ic =
     end in
   do_input (string_create 128) 0
 
-let input_byte ic = wait_inchan ic; input_byte_blocking ic
+let rec input_byte ic =
+  wait_inchan ic;
+  try input_byte_blocking ic with Sys_blocked_io -> input_byte ic
 
 let input_binary_int ic =
   let b1 = input_byte ic in
