@@ -91,8 +91,8 @@ let merge_return_value = ('r', "merge @return")
 let merge_custom = ('c', "merge custom @-tags")
 let merge_all = ('A', "merge all")
 
-let no_index = " Do not build index for Info files"^texi_only
-let esc_8bits = " Escape accentuated characters in Info files"^texi_only^"\n"
+let no_index = " Do not build index for Info files "^texi_only
+let esc_8bits = " Escape accentuated characters in Info files "^texi_only^"\n"
 
 let options_can_be = "        <options> can be one or more of the following characters:"
 let string_of_options_list l = 
