@@ -55,10 +55,12 @@ let float_reg_name = [|
   (* 100-105 *) "%f0"; "%f2"; "%f4"; "%f6"; "%f8"; "%f10";
   (* 106-109 *) "%f12"; "%f14"; "%f16"; "%f18";
   (* 110-114 *) "%f20"; "%f22"; "%f24"; "%f26"; "%f28";
+  (* 115 *)     "%f30";
   (* Odd parts of register pairs *)
-  (* 115-120 *) "%f1"; "%f3"; "%f5"; "%f7"; "%f9"; "%f11";
-  (* 121-124 *) "%f13"; "%f15"; "%f17"; "%f19";
-  (* 125-129 *) "%f21"; "%f23"; "%f25"; "%f27"; "%f29"
+  (* 116-121 *) "%f1"; "%f3"; "%f5"; "%f7"; "%f9"; "%f11";
+  (* 122-125 *) "%f13"; "%f15"; "%f17"; "%f19";
+  (* 126-130 *) "%f21"; "%f23"; "%f25"; "%f27"; "%f29";
+  (* 131 *)     "%f31"
 |]
 
 let num_register_classes = 2
@@ -86,13 +88,14 @@ let hard_int_reg =
   v
 
 let hard_float_reg =
-  let v = Array.create 30 Reg.dummy in
-  for i = 0 to 29 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
+  let v = Array.create 32 Reg.dummy in
+  for i = 0 to 31 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
   v
 
 let all_phys_regs =
   Array.append hard_int_reg (Array.sub hard_float_reg 0 15)
-  (* No need to include the odd parts of float register pairs *)
+  (* No need to include the odd parts of float register pairs,
+     nor the temporary register %f30 *)
 
 let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)

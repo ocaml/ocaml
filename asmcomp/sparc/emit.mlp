@@ -53,7 +53,7 @@ let slot_offset loc cl =
 
 let next_in_pair = function
     {loc = Reg r; typ = (Int | Addr)} -> phys_reg (r + 1)
-  | {loc = Reg r; typ = Float} -> phys_reg (r + 15)
+  | {loc = Reg r; typ = Float} -> phys_reg (r + 16)
   | _ -> fatal_error "Emit.next_in_pair"
 
 (* Symbols are prefixed with _ under SunOS and BSD but not under Solaris
@@ -312,32 +312,40 @@ let rec emit_instr i dslot =
         `	add	%sp, {emit_int (-n)}, %sp\n`;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
-        begin match i.res.(0).typ with
-          Int | Addr ->
+        let dest = i.res.(0) in
+        begin match chunk with
+          Double ->
+            emit_load "ld" addr i.arg dest;
+            emit_load "ld" (offset_addressing addr 4) i.arg (next_in_pair dest)
+        | Single ->
+            emit_load "ld" addr i.arg dest;
+            `	fstod	{emit_reg dest}, {emit_reg dest}\n`
+        | _ ->
             let loadinstr =
               match chunk with
-                Word -> "ld"
-              | Byte_unsigned -> "ldub"
+                Byte_unsigned -> "ldub"
               | Byte_signed -> "ldsb"
               | Sixteen_unsigned -> "lduh"
-              | Sixteen_signed -> "ldsh" in
-            emit_load loadinstr addr i.arg i.res.(0)
-        | Float ->
-            emit_load "ld" addr i.arg i.res.(0);
-            emit_load "ld" (offset_addressing addr 4) i.arg (next_in_pair i.res.(0))
+              | Sixteen_signed -> "ldsh"
+              | _ -> "ld" in
+            emit_load loadinstr addr i.arg dest
         end
     | Lop(Istore(chunk, addr)) ->
-        begin match i.arg.(0).typ with
-          Int | Addr ->
+        let src = i.arg.(0) in
+        begin match chunk with
+          Double ->
+            emit_store "st" addr i.arg src;
+            emit_store "st" (offset_addressing addr 4) i.arg (next_in_pair src)
+        | Single ->
+            `	fdtos	{emit_reg src}, %f30\n`;
+            emit_store "st" addr i.arg (phys_reg 115) (* %f30 *)
+        | _ ->
             let storeinstr =
               match chunk with
-                Word -> "st"
               | Byte_unsigned | Byte_signed -> "stb"
-              | Sixteen_unsigned | Sixteen_signed -> "sth" in
-            emit_store storeinstr addr i.arg i.arg.(0)
-        | Float ->
-            emit_store "st" addr i.arg i.arg.(0);
-            emit_store "st" (offset_addressing addr 4) i.arg (next_in_pair i.arg.(0))
+              | Sixteen_unsigned | Sixteen_signed -> "sth"
+              | _ -> "st" in
+            emit_store storeinstr addr i.arg src
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
@@ -608,7 +616,9 @@ let emit_item = function
       `	.half	{emit_int n}\n`
   | Cint n ->
       `	.word	{emit_nativeint n}\n`
-  | Cfloat f ->
+  | Csingle f ->
+      `	.single	0r{emit_string f}\n`
+  | Cdouble f ->
       `	.double	0r{emit_string f}\n`
   | Csymbol_address s ->
       `	.word	{emit_symbol s}\n`
