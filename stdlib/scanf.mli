@@ -142,7 +142,7 @@ val bscanf :
      it, if the range starts with [^]). Returns a [string] that can be
      empty, if no character in the input matches the range. Hence,
      [\[0-9\]] returns a string representing a decimal number or an empty
-     string if no decimal digit is found. 
+     string if no decimal digit is found.
      If a closing bracket appears in a range, it must occur as the
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
