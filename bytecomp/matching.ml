@@ -70,7 +70,7 @@ let le_ctx c1 c2 =
   
 let lshift {left=left ; right=right} = match right with
 | x::xs -> {left=x::left ; right=xs}
-| _ -> assert false
+| _ ->  assert false
 
 let lforget {left=left ; right=right} = match right with
 | x::xs -> {left=omega::left ; right=xs}
@@ -188,6 +188,7 @@ let ctx_matcher p =
   | Tpat_record l -> (* Records are normalized *)
       (fun q rem -> match q.pat_desc with
       | Tpat_record l' ->
+          let l' = all_record_args l' in
           p, List.fold_right (fun (_,p) r -> p::r) l' rem
       | _ -> p,List.fold_right (fun (_,p) r -> p::r) l rem)
   | _ -> fatal_error "Matching.ctx_matcher"
@@ -218,7 +219,7 @@ let filter_ctx q ctx =
             end
         end
     | [] -> []
-    | _ -> fatal_error "Matching.filter_ctx" in
+    | _ ->  fatal_error "Matching.filter_ctx" in
 
   filter_rec ctx
 
@@ -259,14 +260,15 @@ let ctx_match ctx pss =
 
 type jumps = (int * ctx ) list
 
-let pretty_jumps env =
-  prerr_endline "begin jumps" ;
-  List.iter
-    (fun (i,ctx) ->
-      Printf.fprintf stderr "jump for %d\n" i ;
-      pretty_ctx ctx)
-    env ;
-  prerr_endline "end jumps"
+let pretty_jumps env = match env with
+| [] -> ()
+| _ ->
+    List.iter
+      (fun (i,ctx) ->
+        Printf.fprintf stderr "jump for %d\n" i ;
+        pretty_ctx ctx)
+      env
+
 
 let rec jumps_extract i = function
   | [] -> [],[]
@@ -413,28 +415,6 @@ let rec name_pattern default = function
   | _ -> Ident.create default
 
 
-(* To remove aliases and bind named components *)
-
-exception Var of pattern
-
-
-let simplify_or p =
-  let rec simpl_rec = function
-    | {pat_desc = Tpat_any|Tpat_var _} as p -> raise (Var p)
-    | {pat_desc = Tpat_alias (q,id)} as p -> 
-        begin try
-          simpl_rec q
-        with
-        | Var q -> raise (Var {p with pat_desc = Tpat_alias (q,id)})
-        end
-    | {pat_desc = Tpat_or (p1,p2)} ->
-        simpl_rec p1 ; simpl_rec p2
-    | _ -> () in
-  try
-    simpl_rec p ; p
-  with
-  | Var p -> p
-
 exception Not_simple
 
 let rec raw_rec env = function
@@ -502,15 +482,36 @@ let rec what_is_or = function
   | {pat_desc=(Tpat_var _|Tpat_any)} -> fatal_error "Matching.what_is_or"
   | p -> p
 
-let rec all_record_pat pat = match pat.pat_desc  with
-  | Tpat_alias (p,x) ->
-      {pat with pat_desc = Tpat_alias (all_record_pat p,x)}
-  | Tpat_or (p,q) ->
-      {pat with pat_desc = Tpat_or (all_record_pat p, all_record_pat q)}
-  | Tpat_record lbls ->
-      let all_lbls = all_record_args lbls in
-      {pat with pat_desc=Tpat_record all_lbls}
-  | _ -> assert false
+
+(*
+   Simplify fonction normalize the first column of the match
+   - records are expanded so that they posses all fields
+   - or-patterns equivalent to variables are replaced by those variables
+*)
+
+exception Var of pattern
+
+
+let simplify_or p =
+  let rec simpl_rec p = match p with
+    | {pat_desc = Tpat_any|Tpat_var _} -> raise (Var p)
+    | {pat_desc = Tpat_alias (q,id)} -> 
+        begin try
+          {p with pat_desc = Tpat_alias (simpl_rec q,id)}
+        with
+        | Var q -> raise (Var {p with pat_desc = Tpat_alias (q,id)})
+        end
+    | {pat_desc = Tpat_or (p1,p2)} ->
+        {p with pat_desc = Tpat_or (simpl_rec p1, simpl_rec p2)}
+    | {pat_desc = Tpat_record lbls} ->
+        let all_lbls = all_record_args lbls in
+        {p with pat_desc=Tpat_record all_lbls}        
+    | _ -> p in
+  try
+    simpl_rec p
+  with
+  | Var p -> p
+
 
 let simplify_matching m = match m.args with
 | [] -> omega,m
@@ -544,16 +545,9 @@ let simplify_matching m = match m.args with
               begin match pat_simple.pat_desc with
               | Tpat_or (_,_) ->
                   let ex_pat = what_is_or pat_simple in
-                  begin match ex_pat.pat_desc with
-                  | Tpat_record _ ->
-                      record_ex_pat (all_record_pat ex_pat) ;
-                      (all_record_pat pat_simple :: patl, action) ::
-                      simplify rem
-                  | _ ->
-                      record_ex_pat ex_pat ;
-                      (pat_simple :: patl, action) ::
-                      simplify rem
-                  end
+                  record_ex_pat ex_pat ;
+                  (pat_simple :: patl, action) ::
+                  simplify rem
               | _ ->
                   simplify ((pat_simple::patl,action) :: rem)
               end
@@ -2036,6 +2030,17 @@ let rec compile_match repr partial ctx m = match m with
 | _ -> assert false
 
 
+(* verbose version of do_compile_matching, for debug *)
+and do_compile_matching_pr repr partial ctx arg x =
+  prerr_endline "COMPILE" ;
+  prerr_endline "MATCH" ;
+  pretty_ext x ;
+  prerr_endline "CTX" ;
+  pretty_ctx ctx ;
+  let (_, jumps) as r =  do_compile_matching repr partial ctx arg x in
+  prerr_endline "JUMPS" ;
+  pretty_jumps jumps ;    
+  r
 
 and do_compile_matching repr partial ctx arg
     {to_match=to_match; to_catch=to_catch} =

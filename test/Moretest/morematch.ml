@@ -952,3 +952,27 @@ match n with
  | 301    ->     RPL_AWAY
  | 300    ->     RPL_NONE
  | _ -> raise (Unknown_Reply n)
+
+(* Bug 454 *)
+type  habert_a=
+  | A of habert_c
+  | B of habert_c
+  
+and habert_c= {lvar:int; lassoc: habert_c;lnb:int} 
+  
+  
+let habert=function
+  | (A {lnb=i}|B {lnb=i}) when i=0 -> 1
+  | A {lassoc=({lnb=j});lnb=i} -> 2
+  | _ -> 3
+;;
+
+let rec ex0 = {lvar=0 ; lnb=0 ; lassoc=ex1}
+and ex1 = {lvar=1 ; lnb=1 ; lassoc=ex0} in
+
+test "habert" habert (A ex0) 1 ;
+test "habert" habert (B ex0) 1 ;
+test "habert" habert (A ex1) 2 ;
+test "habert" habert (B ex1) 3 ;
+()
+;;
