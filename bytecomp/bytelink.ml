@@ -37,12 +37,14 @@ type link_action =
       (* Name of .cma file and descriptors of the units to be linked. *)
 
 (* Add C objects and options and "custom" info from a library descriptor *)
+(* Ignore them if -noautolink or -use-runtime were given *)
 
 let lib_ccobjs = ref []
 let lib_ccopts = ref []
 
 let add_ccobjs l =
-  if not !Clflags.no_auto_link then begin
+  if not !Clflags.no_auto_link && String.length !Clflags.use_runtime = 0
+  then begin
     if l.lib_custom then Clflags.custom_runtime := true;
     lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
     lib_ccopts := l.lib_ccopts @ !lib_ccopts
