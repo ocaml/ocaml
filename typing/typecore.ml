@@ -492,14 +492,15 @@ let rec type_approx env sexp =
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
   | Pexp_sequence (_,e) -> type_approx env e
-  | Pexp_constraint (e, Some sty, _) ->
+  | Pexp_constraint (e, sty1, sty2) ->
       let ty = type_approx env e
-      and ty' = Typetexp.transl_simple_type env false sty in
-      (try unify env ty ty'; ty' with Unify trace ->
-       raise(Error(sexp.pexp_loc, Expr_type_clash trace)))
-  | Pexp_constraint (_, _, Some sty) ->
-      Typetexp.transl_simple_type env false sty
-  | Pexp_constraint (e, _, _) -> type_approx env e
+      and ty1 = match sty1 with None -> newvar () | Some sty -> approx_type sty
+      and ty2 = match sty1 with None -> newvar () | Some sty -> approx_type sty
+      in begin
+        try unify env ty ty1; unify env ty1 ty2; ty2
+        with Unify trace ->
+          raise(Error(sexp.pexp_loc, Expr_type_clash trace))
+      end
   | _ -> newvar ()
 
 (* Typing of expressions *)
