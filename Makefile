@@ -13,11 +13,12 @@ CAMLDEP=boot/ocamlrun tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun/ocamlrun
 SHELL=/bin/sh
+MKDIR=mkdir -p
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
-  utils/clflags.cmo utils/terminfo.cmo
+  utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo
 
 PARSING= parsing/location.cmo parsing/longident.cmo parsing/pstream.cmo \
   parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
@@ -168,9 +169,9 @@ opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Installation
 install:
-	if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
-	if test -d $(LIBDIR); then : ; else mkdir $(LIBDIR); fi
-	if test -d $(MANDIR); then : ; else mkdir $(MANDIR); fi
+	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
+	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
+	if test -d $(MANDIR); then : ; else $(MKDIR) $(MANDIR); fi
 	cd byterun; $(MAKE) install
 	cp ocamlc $(BINDIR)/ocamlc
 	cp ocaml $(BINDIR)/ocaml
@@ -229,6 +230,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
             -e 's|%%CCLIBS%%|$(CCLIBS)|' \
+            -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
             -e 's|%%ARCH%%|$(ARCH)|' \
             -e 's|%%MODEL%%|$(MODEL)|' \
             -e 's|%%SYSTEM%%|$(SYSTEM)|' \

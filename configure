@@ -265,9 +265,11 @@ echo "ASPPFLAGS=$asppflags" >> Makefile
 if sh ./searchpath ranlib; then
   echo "ranlib found"
   echo "RANLIB=ranlib" >> Makefile
+  echo "RANLIBCMD=ranlib" >> Makefile
 else
   echo "ranlib not used"
-  echo "RANLIB=ar -rs" >> Makefile
+  echo "RANLIB=ar rs" >> Makefile
+  echo "RANLIBCMD=" >> Makefile
 fi
 
 # Do #! scripts work?
