@@ -28,9 +28,6 @@
         EXTERN	_caml_gc_regs: DWORD
 	EXTERN	_caml_exception_pointer: DWORD
 
-        PUBLIC	_gc_entry_regs
-        PUBLIC	_gc_entry_float_regs
-
 ; Allocation 
 
         .CODE
