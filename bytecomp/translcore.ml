@@ -490,14 +490,20 @@ and transl_apply lam sargs =
   in
   let rec build_apply lam args = function
       None :: l ->
+        let defs = ref [] in
+        let protect name lam =
+	  match lam with
+	    Lvar _ | Lconst _ -> lam
+	  | _ ->
+	      let id = Ident.create name in
+              defs := (id, lam) :: !defs;
+              Lvar id
+        in
 	let lam =
 	  if args = [] then lam else lapply lam (List.rev args) in
-	let (var, handle) =
-	  match lam with
-	    Lvar _ -> (None, lam)
-	  | _ ->
-	      let id = Ident.create "app" in (Some id, Lvar id)
-	and id_arg = Ident.create "arg" in
+	let handle = protect "func" lam
+        and l = List.map (may_map (protect "arg")) l
+	and id_arg = Ident.create "param" in
 	let body =
 	  match build_apply handle [Lvar id_arg] l with
 	    Lfunction(Curried, ids, lam) ->
@@ -507,16 +513,15 @@ and transl_apply lam sargs =
 	  | lam ->
 	      Lfunction(Curried, [id_arg], lam)
 	in
-	begin match var with
-	  None -> body
-	| Some id -> Llet(Strict, id, lam, body)
-	end
+        List.fold_left
+          (fun body (id, lam) -> Llet(Strict, id, lam, body))
+          body !defs
     | Some arg :: l ->
-	build_apply lam (transl_exp arg :: args) l
+	build_apply lam (arg :: args) l
     | [] ->
 	lapply lam (List.rev args)
   in
-  build_apply lam [] sargs
+  build_apply lam [] (List.map (may_map transl_exp) sargs)
 
 and transl_function loc untuplify_fn repr bindings partial pat_expr_list =
   match pat_expr_list with
