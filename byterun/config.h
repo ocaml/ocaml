@@ -13,12 +13,8 @@
 #ifdef HAS_BCOPY
 /* Nothing to do */
 #else
-#ifdef HAS_MEMCPY
-#define bcopy(src,dst,len) memcpy((dst), (src), (len))
-#else
 #define bcopy(src,dst,len) memmov((dst), (src), (len))
 #define USING_MEMMOV
-#endif
 #endif
 #endif
 
