@@ -141,6 +141,9 @@ let emit_addressing addr r n =
   | Iindexed2 d ->
       if d <> 0 then emit_int d;
       `({emit_reg r.(n)}, {emit_reg r.(n+1)})`
+  | Iscaled(2, d) ->
+      if d <> 0 then emit_int d;
+      `({emit_reg r.(n)}, {emit_reg r.(n)})`
   | Iscaled(scale, d) ->
       if d <> 0 then emit_int d;
       `(, {emit_reg r.(n)}, {emit_int scale})`

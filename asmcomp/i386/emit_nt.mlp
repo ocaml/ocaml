@@ -126,6 +126,8 @@ let emit_addressing addr r n =
       `[{emit_reg r.(n)}{emit_signed_int d}]`
   | Iindexed2 d ->
       `[{emit_reg r.(n)}+{emit_reg r.(n+1)}{emit_signed_int d}]`
+  | Iscaled(2, d) ->
+      `[{emit_reg r.(n)}+{emit_reg r.(n)}{emit_signed_int d}]`
   | Iscaled(scale, d) ->
       `[{emit_reg r.(n)}*{emit_int scale}{emit_signed_int d}]`
   | Iindexed2scaled(scale, d) ->
