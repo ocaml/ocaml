@@ -126,7 +126,7 @@ regexp:
   | regexp Tmaybe
         { Alternative(Epsilon, $1) }
   | regexp Tplus
-        { Sequence($1, Repetition $1) }
+        { Sequence(Repetition ($1), $1) }
   | regexp Tor regexp
         { Alternative($1,$3) }
   | regexp regexp %prec CONCAT

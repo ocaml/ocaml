@@ -13,16 +13,14 @@
 # $Id$
 
 # The lexer generator
+CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
+CAMLOPT=../boot/ocamlrun ../ocamlopt -I ../stdlib
+COMPFLAGS=-warn-error A
+CAMLYACC=../boot/ocamlyacc
+YACCFLAGS=-v
+CAMLLEX=../boot/ocamlrun ../boot/ocamllex
+CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-CAMLC=ocamlc -g
-CAMLOPT=ocamlopt -p
-COMPFLAGS=
-LINKFLAGS=
-CAMLYACC=ocamlyacc
-YACCFLAGS=
-CAMLLEX=ocamllex
-CAMLDEP=ocamldep
-DEPFLAGS=
 
 OBJS=cset.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
 
