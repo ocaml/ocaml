@@ -54,9 +54,12 @@ val dirname : string -> string
            designate the same file as [name] before the call to [Sys.chdir]. *)
 val temp_file : prefix:string -> suffix:string -> string
         (* [temp_file prefix suffix] returns the name of a
-           non-existent temporary file in the temporary directory.
+           fresh temporary file in the temporary directory.
            The base name of the temporary file is formed by concatenating
            [prefix], then a suitably chosen integer number, then [suffix].
+           The temporary file is created empty, and is guaranteed to be
+           different from any other file that existed when [temp_file]
+           was called.
            Under Unix, the temporary directory is [/tmp] by default; if set,
            the value of the environment variable [TMPDIR] is used instead.
            Under Windows, the name of the temporary directory is the
