@@ -765,11 +765,6 @@ let transl_class ids cl_id arity pub_meths cl =
         else [lambda_unit; lfield cached 0; lambda_unit; lenvs]
        )))))
 
-(* Dummy for recursive modules *)
-
-let dummy_class undef_fn =
-  Lprim(Pmakeblock(0, Mutable), [undef_fn; undef_fn; undef_fn; lambda_unit])
-
 (* Wrapper for class compilation *)
 
 let transl_class ids cl_id arity pub_meths cl =

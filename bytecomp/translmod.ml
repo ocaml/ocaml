@@ -17,6 +17,7 @@
 
 open Misc
 open Asttypes
+open Longident
 open Path
 open Types
 open Typedtree
@@ -95,7 +96,15 @@ let field_path path field =
 
 (* Utilities for compiling "module rec" definitions *)
 
-let undefined_exception loc =
+let mod_prim name =
+  try
+    transl_path
+      (fst (Env.lookup_value (Ldot (Lident "CamlinternalMod", name))
+                             Env.empty))
+  with Not_found ->
+    fatal_error ("Primitive " ^ name ^ " not found.")
+
+let undefined_location loc =
   (* Confer Translcore.assert_failed *)
   let fname = match loc.Location.loc_start.Lexing.pos_fname with
               | "" -> !Location.input_name
@@ -103,61 +112,50 @@ let undefined_exception loc =
   let pos = loc.Location.loc_start in
   let line = pos.Lexing.pos_lnum in
   let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
-  Lprim(Pmakeblock(0, Immutable),
-        [transl_path Predef.path_undefined_recursive_module;
-         Lconst(Const_block(0,
-                   [Const_base(Const_string fname);
-                    Const_base(Const_int line);
-                    Const_base(Const_int char)]))])
+  Lconst(Const_block(0,
+                     [Const_base(Const_string fname);
+                      Const_base(Const_int line);
+                      Const_base(Const_int char)]))
 
-let undefined_function loc =
-  Lfunction(Curried, [Ident.create "undef"],
-            Lprim(Praise, [undefined_exception loc]))
-
-let init_value modl =
-  let undef_exn_id = Ident.create "undef_exception" in
-  let undef_function_id = Ident.create "undef_function" in
-  let rec init_value_mod env mty =
+let init_shape modl =
+  let rec init_shape_mod env mty =
     match Mtype.scrape env mty with
       Tmty_ident _ ->
         raise Not_found
     | Tmty_signature sg ->
-        Lprim(Pmakeblock(0, Mutable), init_value_struct env sg)
+        Const_block(0, [Const_block(0, init_shape_struct env sg)])
     | Tmty_functor(id, arg, res) ->
-        raise Not_found (* to be fixed? *)
-  and init_value_struct env sg =
+        raise Not_found (* can we do better? *)
+  and init_shape_struct env sg =
     match sg with
       [] -> []
     | Tsig_value(id, vdesc) :: rem ->
         let init_v =
           match Ctype.expand_head env vdesc.val_type with
             {desc = Tarrow(_,_,_,_)} ->
-              Lvar undef_function_id
+              Const_pointer 0 (* camlinternalMod.Function *)
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
-              Lprim(Pmakeblock(Config.lazy_tag, Immutable),
-                    [Lvar undef_function_id])
+              Const_pointer 1 (* camlinternalMod.Lazy *)
           | _ -> raise Not_found in
-        init_v :: init_value_struct env rem
+        init_v :: init_shape_struct env rem
     | Tsig_type(id, tdecl, _) :: rem ->
-        init_value_struct (Env.add_type id tdecl env) rem
+        init_shape_struct (Env.add_type id tdecl env) rem
     | Tsig_exception(id, edecl) :: rem ->
-        transl_exception
-          id (Some Predef.path_undefined_recursive_module) edecl ::
-        init_value_struct env rem
+        raise Not_found
     | Tsig_module(id, mty, _) :: rem ->
-        init_value_mod env mty ::
-        init_value_struct (Env.add_module id mty env) rem
+        init_shape_mod env mty ::
+        init_shape_struct (Env.add_module id mty env) rem
     | Tsig_modtype(id, minfo) :: rem ->
-        init_value_struct (Env.add_modtype id minfo env) rem
+        init_shape_struct (Env.add_modtype id minfo env) rem
     | Tsig_class(id, cdecl, _) :: rem ->
-        Translclass.dummy_class (Lvar undef_function_id) ::
-        init_value_struct env rem
+        Const_pointer 2 (* camlinternalMod.Class *)
+        :: init_shape_struct env rem
     | Tsig_cltype(id, ctyp, _) :: rem ->
-        init_value_struct env rem
+        init_shape_struct env rem
   in
   try
-    Some(Llet(Alias, undef_function_id, undefined_function modl.mod_loc,
-              init_value_mod modl.mod_env modl.mod_type))
+    Some(undefined_location modl.mod_loc,
+         Lconst(init_shape_mod modl.mod_env modl.mod_type))
   with Not_found ->
     None
 
@@ -197,35 +195,30 @@ let reorder_rec_bindings bindings =
 
 (* Generate lambda-code for a reordered list of bindings *)
 
-let prim_update =
-  { prim_name = "caml_update_dummy";
-    prim_arity = 2;
-    prim_alloc = true;
-    prim_native_name = "";
-    prim_native_float = false }
-
 let eval_rec_bindings bindings cont =
   let rec bind_inits = function
     [] ->
       bind_strict bindings
   | (id, None, rhs) :: rem ->
       bind_inits rem
-  | (id, Some init, rhs) :: rem ->
-      Llet(Strict, id, init, bind_inits rem)
+  | (id, Some(loc, shape), rhs) :: rem ->
+      Llet(Strict, id, Lapply(mod_prim "init_mod", [loc; shape]),
+           bind_inits rem)
   and bind_strict = function
     [] ->
       patch_forwards bindings
   | (id, None, rhs) :: rem ->
       Llet(Strict, id, rhs, bind_strict rem)
-  | (id, Some init, rhs) :: rem ->
+  | (id, Some(loc, shape), rhs) :: rem ->
       bind_strict rem
   and patch_forwards = function
     [] ->
       cont
   | (id, None, rhs) :: rem ->
       patch_forwards rem
-  | (id, Some init, rhs) :: rem ->
-      Lsequence(Lprim(Pccall prim_update, [Lvar id; rhs]), patch_forwards rem)
+  | (id, Some(loc, shape), rhs) :: rem ->
+      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs]),
+                patch_forwards rem)
   in
     bind_inits bindings
 
@@ -234,7 +227,7 @@ let compile_recmodule compile_rhs bindings cont =
     (reorder_rec_bindings
       (List.map
         (fun (id, modl) ->
-                  (id, modl.mod_loc, init_value modl, compile_rhs id modl))
+                  (id, modl.mod_loc, init_shape modl, compile_rhs id modl))
         bindings))
     cont
 
