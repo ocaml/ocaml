@@ -141,3 +141,17 @@ type ('a,'b) num_sort =
 module M : sig
   val poly : ('a,_) num_sort -> 'a list -> 'a -> 'a
 end = struct let poly = poly end;;
+
+
+(* type dispatch *)
+
+let print0 = multifun
+    `Int -> print_int
+  | `Float -> print_float
+;;
+let print1 = multifun
+    #num as x -> print0 x
+  | `List t -> List.iter (print0 t)
+  | `Pair(t1,t2) -> (fun (x,y) -> print0 t1 x; print0 t2 y)
+;;
+print1 (`Pair(`Int,`Float)) (1,1.0);;

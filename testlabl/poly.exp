@@ -1,4 +1,4 @@
-        Objective Caml version 3.07+beta 1
+        Objective Caml version 3.07+4 (2003-11-07)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -280,4 +280,37 @@ Here is an example of a value that is not matched:
 Characters 21-24:
 Warning: this match case is unused.
 - : int * [ `B ] -> int = <fun>
+#       Characters 69-135:
+Constraints are not satisfied in this type.
+Type
+([> `B of 'a ], 'a) b as 'a
+should be an instance of
+(('b, [> `A of 'b ] as 'c) a as 'b, 'c) b
+#                             class type ['a, 'b] a =
+  object
+    constraint 'a = ('a, 'b) #a
+    constraint 'b = ('a, 'b) #b
+    method as_a : ('a, 'b) a
+    method b : 'b
+  end
+class type ['a, 'b] b =
+  object
+    constraint 'a = ('a, 'b) #a
+    constraint 'b = ('a, 'b) #b
+    method a : 'a
+    method as_b : ('a, 'b) b
+  end
+class type ['a] ca =
+  object ('b)
+    constraint 'a = ('b, 'a) #b
+    method as_a : ('b, 'a) a
+    method b : 'a
+  end
+class type ['a] cb =
+  object ('b)
+    constraint 'a = ('a, 'b) #a
+    method a : 'a
+    method as_b : ('a, 'b) b
+  end
+type bt = 'a ca cb as 'a
 # 
