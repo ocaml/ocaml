@@ -4,6 +4,10 @@ TODO:
  - utilisation nouvelles infos de Xavier: "début de rec", etc.
 
 =====
+Release 3.08.2:
+ - fix: error "Lexing: empty token" (PR#3173)
+
+=====
 Release 3.08.1:
  - add: new -intf and -impl options supported (PR#3036)
  - fix: display of class parameters in HTML and LaTeX (PR#2994)
