@@ -142,22 +142,35 @@ value rec ctyp_fa al =
   | f -> (f, al) ]
 ;
 
-value rec ctyp_long_id =
-  fun
+value rec ctyp_long_id_prefix t =
+  match t with
   [ TyAcc _ m (TyLid _ s) ->
-      let (is_cls, li) = ctyp_long_id m in
-      (is_cls, ldot li s)
+      error (loc_of_ctyp t) "invalid path element in type name"
   | TyAcc _ m (TyUid _ s) ->
-      let (is_cls, li) = ctyp_long_id m in
+      let (is_cls, li) = ctyp_long_id_prefix m in
       (is_cls, ldot li s)
   | TyApp _ m1 m2 ->
-      let (is_cls, li1) = ctyp_long_id m1 in
-      let (_, li2) = ctyp_long_id m2 in
-      (is_cls, Lapply li1 li2)
+      error (loc_of_ctyp t) "invalid path element in type name"
   | TyUid _ s -> (False, lident s)
+  | TyLid _ s ->
+      error (loc_of_ctyp t) "invalid path element in type name"
+  | t -> error (loc_of_ctyp t) "invalid type" ]
+;
+
+value ctyp_long_id t =
+  match t with
+  [ TyAcc _ m (TyLid _ s) ->
+      let (is_cls, li) = ctyp_long_id_prefix m in
+      (is_cls, ldot li s)
+  | TyAcc _ m (TyUid _ s as t) ->
+      error (loc_of_ctyp t) "type names cannot be capitalized"
+  | TyApp _ m1 m2 ->
+      error (loc_of_ctyp t) "expecting a type name"
+  | TyUid _ s ->
+      error (loc_of_ctyp t) "type names cannot be capitalized"
   | TyLid _ s -> (False, lident s)
   | TyCls loc sl -> (True, long_id_of_string_list loc sl)
-  | t -> error (loc_of_ctyp t) "incorrect type" ]
+  | t -> error (loc_of_ctyp t) "invalid type" ]
 ;
 
 value rec ctyp =
@@ -171,7 +184,7 @@ value rec ctyp =
         match (t1, t2) with
         [ (t, TyQuo _ s) -> (t, s)
         | (TyQuo _ s, t) -> (t, s)
-        | _ -> error loc "incorrect alias type" ]
+        | _ -> error loc "invalid alias type" ]
       in
       mktyp loc (Ptyp_alias (ctyp t) i)
   | TyAny loc -> mktyp loc Ptyp_any
@@ -198,7 +211,7 @@ value rec ctyp =
   | TyRec loc _ _ -> error loc "record type not allowed here"
   | TySum loc _ _ -> error loc "sum type not allowed here"
   | TyTup loc tl -> mktyp loc (Ptyp_tuple (List.map ctyp tl))
-  | TyUid loc s -> mktyp loc (Ptyp_constr (lident s) [])
+  | TyUid loc s as t -> error (loc_of_ctyp t) "invalid type"
   | TyVrn loc catl ool ->
       let catl =
         List.map
@@ -402,7 +415,7 @@ value rec patt =
         match (p1, p2) with
         [ (p, PaLid _ s) -> (p, s)
         | (PaLid _ s, p) -> (p, s)
-        | _ -> error loc "incorrect alias pattern" ]
+        | _ -> error loc "invalid alias pattern" ]
       in
       mkpat loc (Ppat_alias (patt p) i)
   | PaAnt _ p -> patt p

@@ -926,8 +926,7 @@ EXTEND
     | "ctyp1"
       [ t1 = SELF; t2 = SELF -> <:ctyp< $t2$ $t1$ >> ]
     | "ctyp2"
-      [ t1 = SELF; "."; t2 = SELF -> <:ctyp< $t1$ . $t2$ >>
-      | t1 = SELF; "("; t2 = SELF; ")" -> <:ctyp< $t1$ $t2$ >> ]
+      [ t1 = SELF; "."; t2 = SELF -> <:ctyp< $t1$ . $t2$ >> ]
     | "simple"
       [ "'"; i = ident -> <:ctyp< '$i$ >>
       | "_" -> <:ctyp< _ >>
