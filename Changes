@@ -45,6 +45,11 @@ Objective Caml 1.01:
 
 * New "dbm" library, interfaces with NDBM.
 
+* Object-oriented extensions:
+    instance variables can now be omitted in class types;
+    some error messages have been made clearer;
+    several bugs fixes.
+
 Objective Caml 1.00:
 --------------------
 
