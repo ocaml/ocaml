@@ -37,14 +37,12 @@ static unsigned int gr_head = 0;       /* position of next read */
 static unsigned int gr_tail = 0;       /* position of next write */
 
 #define QueueIsEmpty (gr_tail == gr_head)
-#define QueueIsFull  ((gr_tail + 1) % SIZE_QUEUE == gr_head)
 
 static void gr_enqueue_event(int kind, int mouse_x, int mouse_y,
                              int button, int key)
 {
   struct event_data * ev;
 
-  if (QueueIsFull) return;
   ev = &(gr_queue[gr_tail]);
   ev->kind = kind;
   ev->mouse_x = mouse_x;
@@ -52,6 +50,8 @@ static void gr_enqueue_event(int kind, int mouse_x, int mouse_y,
   ev->button = (button != 0);
   ev->key = key;
   gr_tail = (gr_tail + 1) % SIZE_QUEUE;
+  /* If queue was full, it now appears empty; drop oldest entry from queue. */
+  if (QueueIsEmpty) gr_head = (gr_head + 1) % SIZE_QUEUE;
 }
 
 #define BUTTON_STATE(state) \
