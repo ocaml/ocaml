@@ -231,6 +231,7 @@ and schedule_block ready_queue i =
       match i.desc with
         Lop(Icall_ind | Itailcall_ind) -> [| i.arg.(0) |]
       | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall(_, _)) -> [||]
+      | Lreturn -> [||]
       | _ -> i.arg in
     List.iter (longest_path critical_outputs) ready_queue;
     reschedule ready_queue 0 (schedule i)
