@@ -85,7 +85,7 @@ sp is a local copy of the global variable extern_sp. */
 #endif
 
 /* Register optimization.
-   Many compilers underestimate the use of the local variables representing
+   Some compilers underestimate the use of the local variables representing
    the abstract machine registers, and don't put them in hardware registers,
    which slows down the interpreter considerably.
    For GCC, I have hand-assigned hardware registers for several architectures.
@@ -110,7 +110,7 @@ sp is a local copy of the global variable extern_sp. */
 #ifdef __i386__
 #define PC_REG asm("%esi")
 #define SP_REG asm("%edi")
-#define ACCU_REG
+#define ACCU_REG asm("%ebx")
 #endif
 #if defined(PPC) || defined(_POWER) || defined(_IBMR2)
 #define PC_REG asm("26")
