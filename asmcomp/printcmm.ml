@@ -92,7 +92,6 @@ let rec expr ppf = function
   | Cconst_natint n -> print_string(Nativeint.to_string n)
   | Cconst_float s -> print_string s
   | Cconst_symbol s -> printf "\"%s\"" s
-  | Cconst_pointer n -> printf "%ia" n
   | Cvar id -> Ident.print id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       let print_binding id ppf def =

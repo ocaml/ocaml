@@ -27,14 +27,12 @@ open Cmm
 
 let bind name arg fn =
   match arg with
-    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
-  | Cconst_pointer _ -> fn arg
+    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 let bind_nonvar name arg fn =
   match arg with
-    Cconst_int _ | Cconst_natint _ | Cconst_symbol _ | Cconst_pointer _ ->
-      fn arg
+    Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 (* Block headers. Meaning of the tag field:
@@ -214,11 +212,11 @@ let subst_boxed_float boxed_id unboxed_id exp =
 
 (* Unit *)
 
-let return_unit c = Csequence(c, Cconst_pointer 1)
+let return_unit c = Csequence(c, Cconst_int 1)
 
 let rec remove_unit = function
-    Cconst_pointer 1 -> Ctuple []
-  | Csequence(c, Cconst_pointer 1) -> c
+    Cconst_int 1 -> Ctuple []
+  | Csequence(c, Cconst_int 1) -> c
   | Csequence(c1, c2) ->
       Csequence(c1, remove_unit c2)
   | Cifthenelse(cond, ifso, ifnot) ->
@@ -407,7 +405,7 @@ let transl_constant = function
   | Const_base(Const_char c) ->
       Cconst_int(((Char.code c) lsl 1) + 1)
   | Const_pointer n ->
-      Cconst_pointer((n lsl 1) + 1)
+      int_const n
   | cst ->
       let lbl =
         try
@@ -1129,7 +1127,6 @@ and transl_prim_3 p arg1 arg2 arg3 =
       end)
   | _ ->
     fatal_error "Cmmgen.transl_prim_3"
-
 
 and transl_unbox_float = function
     Uconst(Const_base(Const_float f)) -> Cconst_float f
