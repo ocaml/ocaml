@@ -18,10 +18,10 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-g -warn-error Axy -w Y -nostdlib
+COMPFLAGS=-g -warn-error A -nostdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=-warn-error Axy -nostdlib
+OPTCOMPFLAGS=-warn-error A -nostdlib
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 OBJS=pervasives.cmo $(OTHERS)
