@@ -1111,11 +1111,12 @@ let rec type_exp env sexp =
        }
 
 and type_argument env sarg ty_expected =
-  let rec no_labels ty =
+  let rec no_labels visited ty =
     let ty = expand_head env ty in
+    if !Clflags.recursive_types && List.memq ty.id visited then true else
     match ty.desc with
       Tvar -> false
-    | Tarrow ("",_, ty,_) when not !Clflags.classic -> no_labels ty
+    | Tarrow ("",_, ty',_) -> no_labels (ty.id::visited) ty'
     | Tarrow _ -> false
     | _ -> true
   in
@@ -1133,12 +1134,12 @@ and type_argument env sarg ty_expected =
               ((Some(option_none ty_arg sarg.pexp_loc), Optional) :: args)
               ty_fun
         | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
-            args, ty_fun, no_labels ty_res'
+            args, ty_fun, no_labels [] ty_res'
         | Tvar ->  args, ty_fun, false
         |  _ -> [], texp.exp_type, false
       in
       let args, ty_fun, simple_res = make_args [] texp.exp_type in
-      if not (simple_res || no_labels ty_res) then begin
+      if not (simple_res || no_labels [] ty_res) then begin
         unify_exp env texp ty_expected;
         texp
       end else begin
