@@ -224,7 +224,6 @@ event, skipping over function calls. With an argument, do it
 the previous event, skipping over function calls. With an argument, do
 it \var{count} times.
 \item["finish"] Run the program until the current function returns.
-\end{options}
 \item["start"] Run the program backward and stop at the first event
 before the current function invocation.
 \end{options}
