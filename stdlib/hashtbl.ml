@@ -42,14 +42,14 @@ let resize hashfun tbl =
   let osize = Array.length odata in
   let nsize = 2 * osize + 1 in
   let ndata = Array.create nsize Empty in
-  let rec insert_bucket idx = function
+  let rec insert_bucket = function
       Empty -> ()
     | Cons(key, data, rest) ->
-        insert_bucket idx rest; (* preserve original order of elements *)
+        insert_bucket rest; (* preserve original order of elements *)
         let nidx = (hashfun key) mod nsize in
         ndata.(nidx) <- Cons(key, data, ndata.(nidx)) in
   for i = 0 to osize - 1 do
-    insert_bucket i odata.(i)
+    insert_bucket odata.(i)
   done;
   tbl.data <- ndata;
   tbl.max_len <- 2 * tbl.max_len

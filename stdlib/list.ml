@@ -13,9 +13,11 @@
 
 (* List operations *)
 
-let rec length = function
-    [] -> 0
-  | a::l -> 1 + length l
+let rec length_aux len = function
+    [] -> len
+  | a::l -> length_aux (len + 1) l
+
+let length l = length_aux 0 l
 
 let hd = function
     [] -> failwith "hd"
