@@ -16,6 +16,10 @@ value zero_loc : Lexing.position;
 value shift_pos : int -> Lexing.position -> Lexing.position;
 value adjust_loc : Lexing.position -> MLast.loc -> MLast.loc;
 value linearize : MLast.loc -> MLast.loc;
+
+value ctyp :           (MLast.loc -> MLast.loc) -> 'a -> MLast.ctyp -> MLast.ctyp;
+value row_field :      (MLast.loc -> MLast.loc) -> 'a -> MLast.row_field -> MLast.row_field;
+value class_infos :    ((MLast.loc -> MLast.loc) -> 'a -> 'b -> 'c) ->  (MLast.loc -> MLast.loc) -> 'a -> MLast.class_infos 'b -> MLast.class_infos 'c;
 value patt :           (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;
 value expr :           (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;
 value module_type :    (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.module_type -> MLast.module_type;
