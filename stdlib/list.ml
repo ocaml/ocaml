@@ -86,7 +86,7 @@ let rec map2 f l1 l2 =
 let rev_map2 f l1 l2 =
   let rec rmap2_f accu l1 l2 =
     match (l1, l2) with
-    | ([], []) -> []
+    | ([], []) -> accu
     | (a1::l1, a2::l2) -> rmap2_f (f a1 a2 :: accu) l1 l2
     | (_, _) -> invalid_arg "List.rev_map2"
   in
