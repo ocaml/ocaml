@@ -29,6 +29,7 @@ module type S =
     val mem:  key -> 'a t -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     val map: ('a -> 'b) -> 'a t -> 'b t
+    val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   end
 
@@ -134,6 +135,10 @@ module Make(Ord: OrderedType) = struct
     let rec map f = function
         Empty               -> Empty
       | Node(l, v, d, r, h) -> Node(map f l, v, f d, map f r, h)
+
+    let rec mapi f = function
+        Empty               -> Empty
+      | Node(l, v, d, r, h) -> Node(mapi f l, v, f v d, mapi f r, h)
 
     let rec fold f m accu =
       match m with
