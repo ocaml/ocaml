@@ -42,8 +42,7 @@ let getvalue name =
     fatal_error (name ^ " unbound at toplevel")
 
 let setvalue name v =
-  Hashtbl.remove toplevel_value_bindings name;
-  Hashtbl.add toplevel_value_bindings name v
+  Hashtbl.replace toplevel_value_bindings name v
 
 (* Hooks for parsing functions *)
 
