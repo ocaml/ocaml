@@ -125,17 +125,17 @@ external ( = ) : 'a -> 'a -> bool = "%equal"
    Equality between cyclic data structures may not terminate. *)
 
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
-(** Negation of [Pervasives.=]. *)
+(** Negation of {!Pervasives.(=)}. *)
 
 
 external ( < ) : 'a -> 'a -> bool = "%lessthan"
-(** See {!Pervasives.>=}. *)
+(** See {!Pervasives.(>=)}. *)
 
 external ( > ) : 'a -> 'a -> bool = "%greaterthan"
-(** See {!Pervasives.>=}. *)
+(** See {!Pervasives.(>=)}. *)
 
 external ( <= ) : 'a -> 'a -> bool = "%lessequal"
-(** See {!Pervasives.>=}. *)
+(** See {!Pervasives.(>=)}. *)
 
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 (** Structural ordering functions. These functions coincide with
@@ -169,7 +169,7 @@ external ( == ) : 'a -> 'a -> bool = "%eq"
    [e1 = e2]. *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
-(** Negation of {!Pervasives.==}. *)
+(** Negation of {!Pervasives.(==)}. *)
 
 
 (** {6 Boolean operations} *)
@@ -184,7 +184,7 @@ external ( && ) : bool -> bool -> bool = "%sequand"
    [e2] is not evaluated at all. *)
 
 external ( & ) : bool -> bool -> bool = "%sequand"
-(** @deprecated {!Pervasives.&&} should be used instead. *)
+(** @deprecated {!Pervasives.(&&)} should be used instead. *)
 
 external ( || ) : bool -> bool -> bool = "%sequor"
 (** See {!Pervasives.or}.*)
