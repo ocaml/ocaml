@@ -45,6 +45,7 @@ val string_tag : int
 val double_tag : int
 val double_array_tag : int
 val custom_tag : int
+val final_tag : int  (* DEPRECATED *)
 
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)
