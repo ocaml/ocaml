@@ -41,7 +41,8 @@ class formatted :parent :width :maxheight :minheight =
 end
 *)
 
-let formatted :title ?:on ?(:width=60) ?(:maxheight=10) ?(:minheight=0) () =
+let formatted :title ?:on ?(:ppf = Format.std_formatter)
+  ?(:width=60) ?(:maxheight=10) ?(:minheight=0) () =
   let tl, frame =
     match on with
       Some frame -> coe frame, frame
@@ -54,15 +55,15 @@ let formatted :title ?:on ?(:width=60) ?(:maxheight=10) ?(:minheight=0) () =
   in
   let tw = Text.create frame :width wrap:`Word  in
   pack [tw] side:`Left fill:`Both expand:true;
-  Format.print_flush ();
-  Format.set_margin (width - 2);
-  let fof,fff = Format.get_formatter_output_functions () in
-  Format.set_formatter_output_functions
+  Format.pp_print_flush ppf ();
+  Format.pp_set_margin ppf (width - 2);
+  let fof,fff = Format.pp_get_formatter_output_functions ppf () in
+  Format.pp_set_formatter_output_functions ppf
     out:(Jg_text.output tw) flush:(fun () -> ());
   tl, tw,
   begin fun () ->
-    Format.print_flush ();
-    Format.set_formatter_output_functions out:fof flush:fff;
+    Format.pp_print_flush ppf ();
+    Format.pp_set_formatter_output_functions ppf out:fof flush:fff;
     let `Linechar (l, _) = Text.index tw index:(tposend 1) in
     Text.configure tw height:(max minheight (min l maxheight));
     if l > 5 then

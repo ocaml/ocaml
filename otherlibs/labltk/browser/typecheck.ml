@@ -25,7 +25,8 @@ let f txt =
   let error_messages = ref [] in
   let text = Jg_text.get_all txt.tw
   and env = ref (Env.open_pers_signature "Pervasives" Env.initial) in
-  let tl, ew, end_message = Jg_message.formatted title:"Warnings" () in
+  let tl, ew, end_message =
+    Jg_message.formatted title:"Warnings" ppf:Format.err_formatter () in
   Text.tag_remove txt.tw tag:"error" start:tstart end:tend;
   begin
   txt.structure <- [];
@@ -61,31 +62,31 @@ let f txt =
       error_messages := et :: !error_messages;
       let s, e = match exn with
         Lexer.Error (err, s, e) ->
-          Lexer.report_error Format.err_formatter err; s,e
+          Lexer.report_error Format.std_formatter err; s,e
       | Syntaxerr.Error err ->
-          Syntaxerr.report_error Format.err_formatter err;
+          Syntaxerr.report_error Format.std_formatter err;
           let l =
             match err with
               Syntaxerr.Unclosed(l,_,_,_) -> l
             | Syntaxerr.Other l -> l
           in l.loc_start, l.loc_end
       | Typecore.Error (l,err) ->
-          Typecore.report_error Format.err_formatter err;
+          Typecore.report_error Format.std_formatter err;
           l.loc_start, l.loc_end
       | Typeclass.Error (l,err) ->
-          Typeclass.report_error Format.err_formatter err;
+          Typeclass.report_error Format.std_formatter err;
           l.loc_start, l.loc_end
       | Typedecl.Error (l, err) ->
-          Typedecl.report_error Format.err_formatter err;
+          Typedecl.report_error Format.std_formatter err;
           l.loc_start, l.loc_end
       | Typemod.Error (l,err) ->
-          Typemod.report_error Format.err_formatter err; l.loc_start, l.loc_end
+          Typemod.report_error Format.std_formatter err; l.loc_start, l.loc_end
       | Typetexp.Error (l,err) ->
-          Typetexp.report_error Format.err_formatter err; l.loc_start, l.loc_end
+          Typetexp.report_error Format.std_formatter err; l.loc_start, l.loc_end
       | Includemod.Error errl ->
-          Includemod.report_error Format.err_formatter errl; 0, 0
+          Includemod.report_error Format.std_formatter errl; 0, 0
       | Env.Error err ->
-          Env.report_error Format.err_formatter err; 0, 0
+          Env.report_error Format.std_formatter err; 0, 0
       | Ctype.Tags(l, l') ->
           Format.printf "In this program,@ variant constructors@ `%s and `%s@ have same hash value.@." l l'; 0, 0
       | _ -> assert false

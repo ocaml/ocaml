@@ -38,6 +38,7 @@ let _ =
     errmsg:"ocamlbrowser :";
   Config.load_path := List.rev !path @ [Config.standard_library];
   Warnings.parse_options !Shell.warnings;
+  Unix.putenv "TERM" "noterminal";
   begin
     try Searchid.start_env := Env.open_pers_signature "Pervasives" Env.initial
     with Env.Error _ -> ()

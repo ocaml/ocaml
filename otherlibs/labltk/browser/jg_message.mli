@@ -16,6 +16,7 @@
 val formatted :
   title:string ->
   ?on:Widget.frame Widget.widget ->
+  ?ppf:Format.formatter ->
   ?width:int ->
   ?maxheight:int ->
   ?minheight:int ->
