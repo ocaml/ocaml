@@ -5,7 +5,7 @@
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -13,8 +13,8 @@
 
 /* To walk the memory roots for garbage collection */
 
-#include "memory.h"
 #include "major_gc.h"
+#include "memory.h"
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -37,6 +37,8 @@ void (*scan_roots_hook) (scanning_action f) = NULL;
 void register_global_root(value *r)
 {
   struct global_root * gr;
+  
+  Assert (((long) r & 3) == 0);  /* compact.c demands this (for now) */
   gr = (struct global_root *) stat_alloc(sizeof(struct global_root));
   gr->root = r;
   gr->next = global_roots;
