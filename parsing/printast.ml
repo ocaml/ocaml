@@ -107,18 +107,6 @@ let joinident i ppf ji =
   let i = i+1 in
   line i ppf "%a\n" fmt_joinident ji.pjident_desc
 ;;
-
-let joinarg i ppf ji =
-  line i ppf "joinident %a\n" fmt_location ji.pjarg_loc;
-  let i = i+1 in
-  line i ppf "%a\n" fmt_joinarg ji.pjarg_desc
-;;
-let joinpattern i ppf jpat =
-  line i ppf "joinpattern %a\n" fmt_location jpat.pjpat_loc;
-  let x,args = jpat.pjpat_desc in
-  joinident (i+1) ppf x;
-  list (i+1) joinarg ppf args;
-;;
 (*< JOCAML *)
 
 
@@ -336,6 +324,13 @@ and joinclause i ppf cl =
   list i joinpattern ppf jpats;
   expression i ppf e;
 
+and joinpattern i ppf jpat =
+  line i ppf "joinpattern %a\n" fmt_location jpat.pjpat_loc;
+  let i = i+1 in
+  let chan,pat = jpat.pjpat_desc in
+  joinident i ppf chan ;
+  pattern i ppf pat
+  
 and joinlocations i ppf d = list i joinlocation ppf d
 
 and joinlocation i ppf l =

@@ -133,9 +133,8 @@ and joinpattern =
 
 and joinident = {pjident_desc : string ; pjident_loc : Location.t}
 
-and joinarg = {pjarg_desc : string option ; pjarg_loc : Location.t}
+and joinpattern_desc =  joinident * pattern
 
-and joinpattern_desc =  joinident * joinarg list
 (*< JOCAML *)
 
 (* Value descriptions *)

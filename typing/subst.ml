@@ -223,7 +223,7 @@ let class_type s cty =
 
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
-    val_kind = descr.val_kind }
+    val_kind = descr.val_kind;}
 
 let exception_declaration s tyl =
   List.map (type_expr s) tyl

@@ -277,6 +277,13 @@ let rec bound_value_identifiers = function
 
 (* Type a module value expression *)
 
+(*> JOCAML *)
+(* Channels appear as regular values in signatures *)
+let make_sig_channel_value env id =
+  let desc = Env.find_value (Pident id) env in
+  Tsig_value(id, {desc with val_kind=Val_reg})
+
+(*< JOCAML *)
 let rec type_module env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
@@ -374,10 +381,8 @@ and type_structure env sstr =
             (fun auto r ->
               map_end (fun (id,_) -> id) auto.jauto_names r)
             defs [] in
-        let make_sig_value id =
-          Tsig_value(id, Env.find_value (Pident id) newenv) in
         (Tstr_def(defs) :: str_rem,
-         map_end make_sig_value bound_idents sig_rem,
+         map_end (make_sig_channel_value newenv) bound_idents sig_rem,
          final_env)
     | {pstr_desc = Pstr_loc (sdefs)} :: srem ->
         let (defs, newenv) =
@@ -392,10 +397,8 @@ and type_structure env sstr =
                 (fun auto r -> map_end (fun (id,_) -> id) auto.jauto_names r)
                 autos r)
             defs [] in
-        let make_sig_value id =
-          Tsig_value(id, Env.find_value (Pident id) newenv) in
         (Tstr_loc(defs) :: str_rem,
-         map_end make_sig_value bound_idents sig_rem,
+         map_end (make_sig_channel_value newenv) bound_idents sig_rem,
          final_env)
 (*< JOCAML *)
     | {pstr_desc = Pstr_primitive(name, sdesc)} :: srem ->

@@ -359,6 +359,13 @@ let extract_float = function
 
 (* To find reasonable names for let-bound and lambda-bound idents *)
 
+(*> JOCAML *)
+let name_join_pattern default p = match p.pat_desc with
+  | Tpat_id id -> 
+  | Tpat_alias (_,id) -> id
+  | _ -> Ident.create default
+(*< JOCAML *)
+
 let rec name_pattern default = function
     [] -> Ident.create default
   | (p, e) :: rem ->
@@ -450,12 +457,18 @@ let rec transl_exp e =
       transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
-  | Texp_ident(path, {val_kind = Val_reg | Val_self _}) ->
+  | Texp_ident(path, {val_kind = Val_reg | Val_self _ | Val_channel (_,_)}) ->
       transl_path path
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
+(*> JOCAML *)
+  | Texp_def (d,body) ->
+      transl_def d (event_before body (transl_exp body))
+  | Texp_loc (d,body) ->
+      transl_loc d (event_before body (transl_exp body))
+(*< JOCAML *)
   | Texp_function (pat_expr_list, partial) ->
       let ((kind, params), body) =
         event_function e
@@ -477,18 +490,30 @@ let rec transl_exp e =
       | (_, _) ->
           Lprim(prim, transl_list args)
       end
+  | Texp_apply
+      ({exp_desc =
+         Texp_ident
+           (path, {val_kind = Val_channel (auto,num)})},
+       ((Some arg,_)::oargs)) ->
+      let lfunct = Transljoin.send_sync auto num (transl_exp arg) in
+      event_after e
+        (match rem_args with
+        | [] -> lfunct
+        | _  -> transl_apply lfunct oargs)
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs)
   | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
       Matching.for_multiple_match e.exp_loc
-        (transl_list argl) (transl_cases pat_expr_list) partial
+        (transl_list argl) (transl_cases transl_exp pat_expr_list) partial
   | Texp_match(arg, pat_expr_list, partial) ->
       Matching.for_function e.exp_loc None
-        (transl_exp arg) (transl_cases pat_expr_list) partial
+        (transl_exp arg) (transl_cases transl_exp pat_expr_list) partial
   | Texp_try(body, pat_expr_list) ->
       let id = name_pattern "exn" pat_expr_list in
-      Ltrywith(transl_exp body, id,
-               Matching.for_trywith (Lvar id) (transl_cases pat_expr_list))
+      Ltrywith
+        (transl_exp body, id,
+         Matching.for_trywith
+           (Lvar id) (transl_cases transl_expr pat_expr_list))
   | Texp_tuple el ->
       let ll = transl_list el in
       begin try
@@ -607,13 +632,78 @@ let rec transl_exp e =
       then lambda_unit
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
   | Texp_assertfalse -> assert_failed e.exp_loc
+(*> JOCAML *)
+(*
+  proc constructs are compiled here when they have been spotted to terminate
+*)
+  | Texp_spawn (e) | (Texp_par (_,_) as e) ->
+      let forks, seqs = Transljoin.as_procs e in
+      let lseq = List.fold_right transl_seq seqs lambda_unit in
+      List.fold_right transl_fork forks lseq
+  | Texp_asyncsend
+      ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
+        Transljoin_send_async auto num (transl_expr e2)
+  | Texp_asyncsend (e1,e2) -> Lapply (transl_expr e1) [transl_expr e2]
+(*< JOCAML *)
+
   | _ ->
       fatal_error "Translcore.transl"
 
-and transl_list expr_list =
-  List.map transl_exp expr_list
+and transl_proc e = match e.exp_desc with
+(* Mixed constructs *)
+| Texp_let(rec_flag, pat_expr_list, body) ->
+    transl_let rec_flag pat_expr_list
+      (event_before body (transl_proc body))
+| Texp_def (d,body) ->
+    transl_def d (event_before body (transl_proc body))
+| Texp_loc (d,body) ->
+    transl_loc d (event_before body (transl_proc body))
+| Texp_sequence(expr1, expr2) ->
+    Lsequence(transl_exp expr1, event_before expr2 (transl_proc expr2))
+| Texp_when(cond, body) ->
+    event_before cond
+      (Lifthenelse
+         (transl_exp cond, event_before body (transl_proc body),
+          staticfail))
+| Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
+    Matching.for_multiple_match e.exp_loc
+      (transl_list argl) (transl_cases transl_proc pat_expr_list) partial
+| Texp_match(arg, pat_expr_list, partial) ->
+    Matching.for_function e.exp_loc None
+      (transl_exp arg) (transl_cases transl_proc pat_expr_list) partial
+(* Proc constructs *)
+| Texp_null -> Transljoin.exit ()
+| Texp_par (e1,e2) ->
+      let forks, seqs = Transljoin.as_procs e in
+      match forks, seqs with
+      | [],[] ->  Transljoin.exit ()
+      | p::rem,[] ->
+          List.fold_right transl_fork rem (transl_proc p)
+      | _,_ ->
+          let lseq = List.fold_right transl_seq seqs (Transljoin.exit ()) in
+          List.fold_right transl_fork forks lseq
+end
 
-and transl_cases pat_expr_list =
+    
+
+and transl_fork e k = 
+  let l = Transljoin.do_spawn (transl_proc e) in
+  if k = lambda_unit then
+    l
+  else
+    Lsequence (l,k)
+    
+   
+and transl_seq e k =
+  let l = transl_expr e in
+  if k=lambda_unit then
+    l
+  else
+    Lsequence (l,k)
+(*< JOCAML *)
+and transl_list expr_list =  List.map transl_exp expr_list
+
+and transl_cases transl_exp pat_expr_list =
   List.map
     (fun (pat, expr) -> (pat, event_before expr (transl_exp expr)))
     pat_expr_list
@@ -679,33 +769,6 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
         transl_function exp.exp_loc false repr partial' pl in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
-(*
-  | [({pat_desc = Tpat_var id} as pat),
-     ({exp_desc = Texp_let(Nonrecursive, cases,
-                          ({exp_desc = Texp_function _} as e2))} as e1)]
-    when Ident.name id = "*opt*" ->
-      transl_function loc untuplify_fn repr (cases::bindings) partial [pat, e2]
-  | [pat, exp] when bindings <> [] ->
-      let exp =
-        List.fold_left
-          (fun exp cases ->
-            {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
-          exp bindings
-      in
-      transl_function loc untuplify_fn repr [] partial [pat, exp]
-  | (pat, exp)::_ when bindings <> [] ->
-      let param = name_pattern "param" pat_expr_list in
-      let exp =
-        { exp with exp_loc = loc; exp_desc =
-          Texp_match
-            ({exp with exp_type = pat.pat_type; exp_desc =
-              Texp_ident (Path.Pident param,
-                          {val_type = pat.pat_type; val_kind = Val_reg})},
-             pat_expr_list, partial) }
-      in
-      transl_function loc untuplify_fn repr bindings Total
-        [{pat with pat_desc = Tpat_var param}, exp]
-*)
   | ({pat_desc = Tpat_tuple pl}, _) :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
@@ -721,13 +784,30 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
         let param = name_pattern "param" pat_expr_list in
         ((Curried, [param]),
          Matching.for_function loc repr (Lvar param)
-           (transl_cases pat_expr_list) partial)
+           (transl_cases transl_expr pat_expr_list) partial)
       end
   | _ ->
       let param = name_pattern "param" pat_expr_list in
       ((Curried, [param]),
        Matching.for_function loc repr (Lvar param)
          (transl_cases pat_expr_list) partial)
+(*> JOCAML *)
+and transl_guarded_proc loc repr pats p = match pats with
+| []     -> assert false
+| [pat]  ->
+    let param = name_join_pattern "param" pat in
+    ([param],
+      Matching.for_function loc repr (Lvar param)
+           (transl_cases transl_proc [pat,p] ) Total)
+| pat::rem ->
+    let param = name_join_pattern "param" pat in
+    let (params, body) = transl_guarded_proc loc repr rem in
+    (param::params,
+     Matching.for_function loc None (Lvar param) [pat,body])
+      
+      
+
+(*< JOCAML *)  
 
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with
@@ -752,7 +832,25 @@ and transl_let rec_flag pat_expr_list body =
           raise(Error(expr.exp_loc, Illegal_letrec_expr));
         (id, lam) in
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
+(*> JOCAML *)
 
+and transl_def autos body =
+  let work_list = List.map Transljoin.build_matches autos in
+  let k =
+    List.fold_right
+      (fun (name, _, tp) k ->
+        let rec do_rec i =
+          let loc_cl,pats,body = tp.(i) in
+          let (params, body) =
+            event_function e
+              (function repr -> transl_guarded_proc loc_cl repr pats) in
+          
+          
+          Lfunction(Curried, params, body)
+      
+      
+  
+(*< JOCAML *)
 and transl_setinstvar self var expr =
   Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
                     [self; transl_path var; transl_exp expr])

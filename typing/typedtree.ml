@@ -77,7 +77,7 @@ and expression_desc =
   | Texp_assert of expression
   | Texp_assertfalse
 (*> JOCAML *)
-  | Texp_asend of expression * expression
+  | Texp_asyncsend of expression * expression
   | Texp_spawn of expression
   | Texp_par of expression * expression
   | Texp_null
@@ -91,12 +91,14 @@ and joinlocation =
 
 and joinautomaton =
     {jauto_desc : joinclause list ;
+     jauto_name : Ident.t;
      jauto_names : (Ident.t * joinchannel) list ;
      (* names defined, description *)
      jauto_loc : Location.t}
 
 and joinchannel =
     {jchannel_sync : bool ;
+     jchannel_id   : int ;
      jchannel_type : type_expr;}
 
 and joinclause =
@@ -104,7 +106,7 @@ and joinclause =
       jclause_loc : Location.t}
 
 and joinpattern =
-    { jpat_desc: joinident * joinarg list ;
+    { jpat_desc: joinident * pattern ;
       jpat_loc: Location.t}
 
 and joinident =

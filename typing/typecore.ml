@@ -124,13 +124,11 @@ let unify_pat env pat expected_ty =
   with Unify trace ->
     raise(Error(pat.pat_loc, Pattern_type_clash(trace)))
 
-let pattern_variables = ref ([]: (Ident.t * type_expr) list)
-
-let enter_variable loc name ty =
-  if List.exists (fun (id, _) -> Ident.name id = name) !pattern_variables
+let enter_pat_variable pat_vars loc name ty =
+  if List.exists (fun (id, _) -> Ident.name id = name) !pat_vars
   then raise(Error(loc, Multiply_bound_variable));
   let id = Ident.create name in
-  pattern_variables := (id, ty) :: !pattern_variables;
+  pat_vars := (id, ty) :: !pat_vars;
   id
 
 let sort_pattern_variables vs =
@@ -264,7 +262,7 @@ let build_or_pat env loc lid =
                           pat_env=env; pat_type=ty})
         pat pats
 
-let rec type_pat env sp =
+let rec type_pat pat_vars env sp =
   match sp.ppat_desc with
     Ppat_any ->
       { pat_desc = Tpat_any;
@@ -273,18 +271,18 @@ let rec type_pat env sp =
         pat_env = env }
   | Ppat_var name ->
       let ty = newvar() in
-      let id = enter_variable sp.ppat_loc name ty in
+      let id = enter_pat_variable pat_vars sp.ppat_loc name ty in
       { pat_desc = Tpat_var id;
         pat_loc = sp.ppat_loc;
         pat_type = ty;
         pat_env = env }
   | Ppat_alias(sq, name) ->
-      let q = type_pat env sq in
+      let q = type_pat pat_vars env sq in
       begin_def ();
       let ty_var = build_as_type env q in
       end_def ();
       generalize ty_var;
-      let id = enter_variable sp.ppat_loc name ty_var in
+      let id = enter_pat_variable pat_vars sp.ppat_loc name ty_var in
       { pat_desc = Tpat_alias(q, id);
         pat_loc = sp.ppat_loc;
         pat_type = q.pat_type;
@@ -295,7 +293,7 @@ let rec type_pat env sp =
         pat_type = type_constant cst;
         pat_env = env }
   | Ppat_tuple spl ->
-      let pl = List.map (type_pat env) spl in
+      let pl = List.map (type_pat pat_vars env) spl in
       { pat_desc = Tpat_tuple pl;
         pat_loc = sp.ppat_loc;
         pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
@@ -317,7 +315,7 @@ let rec type_pat env sp =
       if List.length sargs <> constr.cstr_arity then
         raise(Error(sp.ppat_loc, Constructor_arity_mismatch(lid,
                                      constr.cstr_arity, List.length sargs)));
-      let args = List.map (type_pat env) sargs in
+      let args = List.map (type_pat pat_vars env) sargs in
       let (ty_args, ty_res) = instance_constructor constr in
       List.iter2 (unify_pat env) args ty_args;
       { pat_desc = Tpat_construct(constr, args);
@@ -325,7 +323,7 @@ let rec type_pat env sp =
         pat_type = ty_res;
         pat_env = env }
   | Ppat_variant(l, sarg) ->
-      let arg = may_map (type_pat env) sarg in
+      let arg = may_map (type_pat pat_vars env) sarg in
       let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
       let row = { row_fields =
                     [l, Reither(arg = None, arg_type, true, ref None)];
@@ -358,7 +356,7 @@ let rec type_pat env sp =
         with Unify trace ->
           raise(Error(sp.ppat_loc, Label_mismatch(lid, trace)))
         end;
-        let arg = type_pat env sarg in
+        let arg = type_pat pat_vars env sarg in
         unify_pat env arg ty_arg;
         (label, arg)
       in
@@ -367,7 +365,7 @@ let rec type_pat env sp =
         pat_type = ty;
         pat_env = env }
   | Ppat_array spl ->
-      let pl = List.map (type_pat env) spl in
+      let pl = List.map (type_pat pat_vars env) spl in
       let ty_elt = newvar() in
       List.iter (fun p -> unify_pat env p ty_elt) pl;
       { pat_desc = Tpat_array pl;
@@ -375,46 +373,44 @@ let rec type_pat env sp =
         pat_type = instance (Predef.type_array ty_elt);
         pat_env = env }
   | Ppat_or(sp1, sp2) ->
-      let initial_pattern_variables = !pattern_variables in
-      let p1 = type_pat env sp1 in
-      let p1_variables = !pattern_variables in
-      pattern_variables := initial_pattern_variables ;
-      let p2 = type_pat env sp2 in
-      let p2_variables = !pattern_variables in
+      let initial_pattern_variables = !pat_vars in
+      let p1 = type_pat pat_vars env sp1 in
+      let p1_variables = !pat_vars in
+      pat_vars := initial_pattern_variables ;
+      let p2 = type_pat pat_vars env sp2 in
+      let p2_variables = !pat_vars in
       unify_pat env p2 p1.pat_type;
       let alpha_env =
         enter_orpat_variables sp.ppat_loc env p1_variables p2_variables in
-      pattern_variables := p1_variables ;
+      pat_vars := p1_variables ;
       { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
         pat_loc = sp.ppat_loc;
         pat_type = p1.pat_type;
         pat_env = env }
   | Ppat_constraint(sp, sty) ->
-      let p = type_pat env sp in
+      let p = type_pat pat_vars env sp in
       let ty = Typetexp.transl_simple_type env false sty in
       unify_pat env p ty;
       p
   | Ppat_type lid ->
       build_or_pat env sp.ppat_loc lid
 
-let add_pattern_variables env =
-  let pv = !pattern_variables in
-  pattern_variables := [];
+let add_pattern_variables pv env =
   List.fold_right
     (fun (id, ty) env ->
        Env.add_value id {val_type = ty; val_kind = Val_reg} env)
     pv env
 
 let type_pattern env spat =
-  pattern_variables := [];
-  let pat = type_pat env spat in
-  let new_env = add_pattern_variables env in
+  let pat_vars = ref [] in
+  let pat = type_pat pat_vars env spat in
+  let new_env = add_pattern_variables !pat_vars env in
   (pat, new_env)
 
 let type_pattern_list env spatl =
-  pattern_variables := [];
-  let patl = List.map (type_pat env) spatl in
-  let new_env = add_pattern_variables env in
+  let pattern_variables = ref [] in
+  let patl = List.map (type_pat pattern_variables env) spatl in
+  let new_env = add_pattern_variables !pattern_variables env in
   (patl, new_env)
 
 (*> JOCAML *)
@@ -424,26 +420,29 @@ let type_pattern_list env spatl =
 (* + linearity is checked *)
 (**************************)
 
-let rec enter_channel all_chans auto_chans cl_ids chan = function
+let rec enter_channel auto_count all_chans auto_chans cl_ids chan = function
   | [] ->
       (* check linearity *)
       let name = chan.pjident_desc in
       let p id = Ident.name id = name in  
       if
         List.exists p all_chans ||
-        List.exists p !cl_ids
+        List.exists (fun (id,_) -> p id) !cl_ids
       then
         raise (Error (chan.pjident_loc, Multiply_bound_variable));      
       (* create and register id *)
-      let (id, ty) as r = (Ident.create  chan.pjident_desc, newvar()) in
-      auto_chans := (id, ty, chan.pjident_loc) :: !auto_chans ;
-      cl_ids := id :: !cl_ids ;
-      r
-  | (id, ty, _)::rem ->
+      let id = Ident.create  chan.pjident_desc
+      and num = !auto_count
+      and ty =  newvar() in
+      incr auto_count ;
+      auto_chans := (id, ty, num, chan.pjident_loc) :: !auto_chans ;
+      cl_ids := (id, ty) :: !cl_ids ;
+      (id, ty)
+  | (id, ty, num, _)::rem ->
       if Ident.name id = chan.pjident_desc then
         (id, ty)
       else
-        enter_channel all_chans auto_chans cl_ids chan rem
+        enter_channel auto_count all_chans auto_chans cl_ids chan rem
 
 let enter_location all_chans jid =
   let name = jid.pjident_desc in
@@ -456,76 +455,50 @@ let enter_location all_chans jid =
   all_chans := id :: !all_chans ;
   (id, ty)
 
-let enter_jarg cl_ids arg = match arg.pjarg_desc with
-| Some name ->
-  let p id = Ident.name id = name in
-  (* check linearity *)
-  if
-    List.exists p !cl_ids
-  then
-    raise (Error (arg.pjarg_loc, Multiply_bound_variable));      
-  (* create identifier *)
-  let id = Ident.create name in
-  cl_ids := id :: !cl_ids ;
-  Some id
-| None -> None
-
 let mk_jident id loc ty env =
   {
-    jident_desc = id;
-    jident_loc  = loc;
+    jident_desc = id ;
+    jident_loc = loc;
     jident_type = ty;
-    jident_env  = env;
-  } 
-
-and mk_jarg id loc ty env =
-  {
-    jarg_desc = id;
-    jarg_loc  = loc;
-    jarg_type = ty;
-    jarg_env  = env;
-  } 
+    jident_env = env;
+  }
 
 let type_auto_lhs all_chans env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
-  let auto_chans = ref [] in
+  let auto_chans = ref []  and auto_count = ref 0 in
   let auto =
     List.map
       (fun cl ->
         let sjpats, _ = cl.pjclause_desc in
         let cl_ids = ref [] in
-        let jpat =
+        let jpats =
           List.map
             (fun sjpat ->
-              let schan, sargs = sjpat.pjpat_desc in
+              let schan, sarg = sjpat.pjpat_desc in
               let (id, ty) =
-                enter_channel
+                enter_channel auto_count
                   !all_chans auto_chans cl_ids schan !auto_chans in
               let chan = mk_jident id schan.pjident_loc ty env
-              and args =
-                List.map
-                  (fun jid ->
-                    let idopt = enter_jarg cl_ids jid in
-                    mk_jarg idopt jid.pjarg_loc (newvar()) env)
-                  sargs in
-              {jpat_desc = chan, args;
+              and arg = type_pat cl_ids env sarg in
+              {jpat_desc = chan, arg;
                jpat_loc  = sjpat.pjpat_loc;})
             sjpats in
-        jpat)
+        jpats)
       sauto in
 
   (* check linearity and collect defined channel names *)
   let old_all_chans = !all_chans in
+  let name = Ident.create "auto" in
   let names_defined =
     List.map
-      (fun (id,ty,loc) ->
+      (fun (id,ty,num,loc) ->
         if
           List.exists (fun oid -> Ident.equal oid id) old_all_chans
         then
           raise (Error (loc, Multiply_bound_variable));
         all_chans := id :: !all_chans;
-        (id,ty))
+        (id,(ty,num)))
       !auto_chans in
-  (names_defined, auto)
+  (name, names_defined, auto)
 
 let rec do_type_autos_lhs all_chans env = function
   | [] -> []
@@ -549,8 +522,8 @@ let type_locs_lhs env sdefs = do_type_locs_lhs (ref []) env sdefs
 (*< JOCAML *)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
-  pattern_variables := [];
-  let pat = type_pat val_env spat in
+  let pattern_variables = ref [] in
+  let pat = type_pat pattern_variables val_env spat in
   if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, met_env) =
     List.fold_right
@@ -562,7 +535,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
             env))
       !pattern_variables ([], met_env)
   in
-  let val_env = add_pattern_variables val_env in
+  let val_env = add_pattern_variables !pattern_variables val_env in
   (pat, pv, val_env, met_env)
 
 let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
@@ -571,12 +544,11 @@ let type_self_pattern cl_num val_env met_env par_env spat =
     mkpat (Ppat_alias (mkpat(Ppat_alias (spat, "selfpat-*")),
                        "selfpat-" ^ cl_num))
   in
-  pattern_variables := [];
-  let pat = type_pat val_env spat in
+  let pattern_variables = ref [] in
+  let pat = type_pat pattern_variables val_env spat in
   let meths = ref Meths.empty in
   let vars = ref Vars.empty in
   let pv = !pattern_variables in
-  pattern_variables := [];
   let (val_env, met_env, par_env) =
     List.fold_right
       (fun (id, ty) (val_env, met_env, par_env) ->
@@ -867,7 +839,7 @@ let rec do_type_exp ctx env sexp =
                     (Error
                        (sarg.pexp_loc, Garrigue_illegal "message")))
               ty in
-          { exp_desc = Texp_asend (funct, arg);
+          { exp_desc = Texp_asyncsend (funct, arg);
             exp_loc = sexp.pexp_loc;
             exp_type = instance Predef.type_process;
             exp_env = env }
@@ -1778,48 +1750,49 @@ and type_let env rec_flag spat_sexp_list =
 (*> JOCAML *)
 (* Typing of join definitions *)
 and type_clause env names jpats scl =
+(* First build environment for guarded process *)
   let conts = ref [] in
   let extend_env jpat env =
-    let chan,args = jpat.jpat_desc in
+    let chan,arg = jpat.jpat_desc in
     let kid = chan.jident_desc
     and kdesc =
       {continuation_type = newvar();
        continuation_kind = false;} in
     conts := kdesc :: !conts;
-    List.fold_left
-      (fun env jarg -> match jarg.jarg_desc with
-      | Some id ->
-          Env.add_value
-            id
-            {val_kind = Val_reg ;
-            val_type = jarg.jarg_type}
-            env
-      | None -> env)
-      (Env.add_continuation kid kdesc env) args in
+    let env_ref = ref (Env.add_continuation kid kdesc env) in
+
+    let extend_env_in_pat p = match p.pat_desc with
+    | Tpat_var id | Tpat_alias (_,id) ->
+        env_ref :=
+           Env.add_value id
+             {val_kind = Val_reg ;
+              val_type = p.pat_type}
+             !env_ref
+    | _ -> () in        
+    iter_pattern extend_env_in_pat arg ;
+    !env_ref in
+      
   let new_env = List.fold_right extend_env jpats env
   and _,sexp = scl.pjclause_desc in
+
+  (* And type guarded process *)
   let exp = do_type_exp P new_env sexp in
 
   (* Now type defined names *)
   List.iter2
     (fun jpat kdesc ->
-      let chan, args = jpat.jpat_desc in
+      let chan, arg = jpat.jpat_desc in
       let tchan =
         try
-          List.assoc chan.jident_desc names
+          let (ty,_) = List.assoc chan.jident_desc names in
+          ty
         with Not_found -> assert false in
-      let targs = match args with
-      | [] -> instance (Predef.type_unit)
-      | [jarg] -> jarg.jarg_type
-      | _ ->
-          newty
-            (Ttuple (List.map (fun jarg -> jarg.jarg_type) args)) in
+      let targ = arg.pat_type in
       let otchan =
         match kdesc with
-        | {continuation_kind=false} ->
-            Ctype.make_channel targs
-        | {continuation_type=tres} ->
-            newty (Tarrow ("", targs, tres, Cok)) in
+        | {continuation_kind=false} -> Ctype.make_channel targ
+        | {continuation_type=tres}  ->
+            newty (Tarrow ("", targ, tres, Cok)) in
       try
         unify env otchan tchan
       with Unify trace ->
@@ -1830,20 +1803,21 @@ and type_clause env names jpats scl =
     jclause_desc = (jpats, exp);}
   
 
-and type_auto env (def_names, auto_lhs) sauto =
+and type_auto env (my_name,def_names, auto_lhs) sauto =
   let env = Env.remove_continuations env in
   let cls =
     List.map2 (type_clause env def_names) auto_lhs sauto.pjauto_desc in
   let def_names =
     List.map
-      (fun (chan, ty) -> match (expand_head env ty).desc with
+      (fun (chan, (ty, num)) -> match (expand_head env ty).desc with
       | Tarrow (_, _, _, _) ->
-          chan, {jchannel_sync=true; jchannel_type=ty}
+          chan, {jchannel_sync=true; jchannel_type=ty ; jchannel_id=num}
       | Tconstr (p, _, _) when Path.same p Predef.path_channel ->
-          chan, {jchannel_sync=false; jchannel_type=ty}
+          chan, {jchannel_sync=false; jchannel_type=ty; jchannel_id=num}
       | _ -> assert false)
       def_names in
   {jauto_desc = cls;
+   jauto_name = my_name;
    jauto_names = List.rev def_names;
    jauto_loc = sauto.pjauto_loc}
 
@@ -1871,10 +1845,11 @@ and generalize_auto auto =
         (fun (id,chan) -> generalize chan.jchannel_type)
         auto.jauto_names
 
-and add_auto_names env names =
+and add_auto_names env name names =
    List.fold_left
-     (fun env (id,ty) ->
-         Env.add_value id {val_type = ty; val_kind = Val_reg} env)
+     (fun env (id,(ty,num)) ->
+         Env.add_value id
+         {val_type = ty; val_kind = Val_channel (name,num)} env)
       env names
 
 and type_def env sautos =
@@ -1882,7 +1857,7 @@ and type_def env sautos =
   let names_lhs_list = type_autos_lhs env sautos in
   let new_env =
     List.fold_left
-      (fun env (names,_) -> add_auto_names env names)
+      (fun env (name, names, _) -> add_auto_names env name names)
       env names_lhs_list in
   let autos =
     List.map2 (type_auto new_env) names_lhs_list sautos in
@@ -1900,7 +1875,7 @@ and type_loc env sdefs =
     List.fold_left
       (fun env (jid_loc, autos_lhs) ->
        List.fold_left
-          (fun env (names,_) -> add_auto_names env names)
+          (fun env (name,names,_) -> add_auto_names env name names)
           (Env.add_value
              jid_loc.jident_desc
              {val_type = jid_loc.jident_type; val_kind = Val_reg}

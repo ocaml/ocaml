@@ -1,3 +1,4 @@
+open Stdpp;;
 open Pcaml;;
 open MLast;;
 
@@ -27,25 +28,36 @@ let get_seq = function
 
 
 let joinident = Grammar.Entry.create gram "joinident"
-let joinarg   = Grammar.Entry.create gram "joinarg"
 let joinpattern = Grammar.Entry.create gram "joinpattern"
 let joinclause = Grammar.Entry.create gram "joinclause"
 let joinautomaton = Grammar.Entry.create gram "joinautomaton"
 let joinlocation =  Grammar.Entry.create gram "joinlocation"
 let bracedproc = Grammar.Entry.create gram "bracedproc"
+let ipatt = Grammar.Entry.create gram "ipatt"
+
 EXTEND
  joinident:
    [[id=LIDENT -> (loc, id)]];
 
- joinarg:
-   [[
-     id=LIDENT -> (loc, Some id)
-  |  "_"       -> (loc, None)
-   ]];
+ label_ijpatt:
+    [ [ i = patt_label_ident; "="; p = ijpatt -> (i, p) ] ];
+
+ ijpatt:
+     [ [ "{"; lpl = LIST1 label_ijpatt SEP ";"; "}" -> PaRec loc lpl
+      | "("; ")" ->
+          PaCon
+      | "("; p = SELF; ")" -> <:patt< $p$ >>
+      | "("; p = SELF; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
+      | "("; p = SELF; "as"; p2 = SELF; ")" -> <:patt< ($p$ as $p2$) >>
+      | "("; p = SELF; ","; pl = LIST1 ipatt SEP ","; ")" ->
+          <:patt< ( $list:[p::pl]$) >>
+      | s = LIDENT -> <:patt< $lid:s$ >>
+      | "_" -> <:patt< _ >> ] ]
 
  joinpattern:
-   [[id=joinident ; "(" ; args = LIST0 joinarg SEP "," ; ")" ->
-     (loc, id, args)]];
+   [[id=joinident ; pat=ijpatt ->
+     (loc, id, pat)]];
+
  joinclause:
    [[jpats = LIST1 joinpattern SEP "&" ; "=" ; e=expr ->
      (loc, jpats, e)]];
@@ -104,8 +116,8 @@ EXTEND
     ]];
   bracedproc:
     [[
-      "{" ; "}" ->  ExNul (loc)
-  |  "{" ; e=expr LEVEL "top" ; "}" -> e
+       "{" ; "}" ->  ExNul (loc)
+    |  "{" ; e=expr LEVEL "top" ; "}" -> e
     ]];
 END
 
