@@ -16,6 +16,7 @@
 #include <memory.h>
 #include "unixsupport.h"
 #include <time.h>
+#include <errno.h>
 
 static value alloc_tm(struct tm *tm)
 {
@@ -36,15 +37,21 @@ static value alloc_tm(struct tm *tm)
 value unix_gmtime(value t)             /* ML */
 {
   time_t clock;
+  struct tm * tm;
   clock = (time_t) Double_val(t);
-  return alloc_tm(gmtime(&clock));
+  tm = gmtime(&clock);
+  if (tm == NULL) unix_error(EINVAL, "gmtime", Nothing);
+  return alloc_tm(tm);
 }
 
 value unix_localtime(value t)          /* ML */
 {
   time_t clock;
+  struct tm * tm;
   clock = (time_t) Double_val(t);
-  return alloc_tm(localtime(&clock));
+  tm = localtime(&clock);
+  if (tm == NULL) unix_error(EINVAL, "localtime", Nothing);
+  return alloc_tm(tm);
 }
 
 #ifdef HAS_MKTIME
