@@ -231,24 +231,16 @@ See `caml-types-location-re' for annotation file format.
 
 ; trouve le premier fils qui commence apres la position
 ; ou (length node) si tous commencent avant
-;(defun caml-types-search (node pos)
-;  (let ((min 3)
-;        (max (length node))
-;        med)
-;    (while (< min max)
-;      (setq med (/ (+ min max) 2))
-;      (if (caml-types-pos<= (elt (elt node med) 0) pos)
-;          (setq min (1+ med))
-;        (setq max med)))
-;    min))
-
-; a remplacer par une dichotomie
 (defun caml-types-search (node pos)
-  (let ((i 3))
-    (while (and (< i (length node))
-                (caml-types-pos<= (elt (elt node i) 0) targ-pos))
-      (setq i (1+ i)))
-    i))
+  (let ((min 3)
+        (max (length node))
+        med)
+    (while (< min max)
+      (setq med (/ (+ min max) 2))
+      (if (caml-types-pos<= (elt (elt node med) 0) pos)
+          (setq min (1+ med))
+        (setq max med)))
+    min))
 
 (defun caml-types-pos-inside (pos node)
   (let ((left-pos (elt node 0))
