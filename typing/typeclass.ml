@@ -557,17 +557,19 @@ let make_abbrev env
   =
   (* Class type abbreviation *)
   let cl_abbrev =
-    { type_params = cl_sig.cty_params;
-      type_arity = List.length cl_sig.cty_params;
-      type_kind = Type_abstract;
-      type_manifest = Some
-        (if cl.pcl_closed = Closed then
-	  Ctype.newgenty (Tconstr(Path.Pident obj_id, cl_sig.cty_params,
-                                  ref Mnil))
-        else begin
-          Ctype.set_object_name cl_sig.cty_self cl_sig.cty_params obj_id;
-          cl_sig.cty_self
-	end) }
+    (* Make a fully generic copy *)
+    Subst.type_declaration Subst.identity
+      { type_params = cl_sig.cty_params;
+        type_arity = List.length cl_sig.cty_params;
+        type_kind = Type_abstract;
+        type_manifest = Some
+          (if cl.pcl_closed = Closed then
+            Ctype.newgenty (Tconstr(Path.Pident obj_id, cl_sig.cty_params,
+                                    ref Mnil))
+          else begin
+            Ctype.set_object_name cl_sig.cty_self cl_sig.cty_params obj_id;
+            cl_sig.cty_self
+          end) }
   in let new_env = Env.add_type cl_id cl_abbrev env in
 
   (* Object type abbreviation *)
@@ -589,10 +591,13 @@ let make_abbrev env
   end;
   Ctype.generalize obj_ty;
   let obj_abbrev =
-    { type_params = obj_ty_params;
-      type_arity = List.length obj_ty_params;
-      type_kind = Type_abstract;
-      type_manifest = Some (Ctype.unroll_abbrev obj_id obj_ty_params obj_ty) }
+    (* Make a fully generic copy *)
+    Subst.type_declaration Subst.identity
+      { type_params = obj_ty_params;
+        type_arity = List.length obj_ty_params;
+        type_kind = Type_abstract;
+        type_manifest =
+          Some (Ctype.unroll_abbrev obj_id obj_ty_params obj_ty) }
   in let new_env = Env.add_type obj_id obj_abbrev new_env in
 
   ((id, cl_sig, cl_id, cl_abbrev, obj_id, obj_abbrev, cl_imp), new_env)
