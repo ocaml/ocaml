@@ -25,7 +25,7 @@ let bucket_small_size = ref 16
 
 (**** Parameters ****)
 
-let step = (Sys.get_config()).Sys.word_size / 16
+let step = Sys.word_size / 16
 
 let first_label = 0
 
@@ -276,7 +276,7 @@ let set_initializer table init =
       in
         table.init <- (i::l')::l''
   | _ ->
-      failwith "Fatal error in Oo.set_initializer."
+      invalid_arg "Fatal error in Oo.set_initializer."
 
 let inheritance table cl vars =
   if
@@ -342,7 +342,7 @@ let hide_variable table name =
 let rec list_remove name =
   function
     [] ->
-       failwith "Fatal error in Oo.get_private_variable"
+       invalid_arg "Fatal error in Oo.get_private_variable"
   | (n, _) as a::l ->
        if name = n then l
        else a::list_remove name l

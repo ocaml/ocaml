@@ -11,14 +11,12 @@
 
 (* $Id$ *)
 
-let systype = (Sys.get_config()).Sys.os_type
-
 let current_dir_name =
-  match systype with
+  match Sys.os_type with
   | "Unix" -> "."
   | "Win32" -> "."
   | "MacOS" -> ":"
-  | _ -> failwith "Filename.current_dir_name: unknown system"
+  | _ -> invalid_arg "Filename.current_dir_name: unknown system"
 
 let unix_concat dirname filename =
   let l = String.length dirname in
@@ -39,11 +37,11 @@ let mac_concat dirname filename =
   else dirname ^ ":" ^ filename
 
 let concat =
-  match systype with
+  match Sys.os_type with
   | "Unix" -> unix_concat
   | "Win32" -> wnt_concat
   | "MacOS" -> mac_concat
-  | _ -> failwith "Filename.concat: unknown system"
+  | _ -> invalid_arg "Filename.concat: unknown system"
 
 let unix_is_absolute n =
      (String.length n >= 1 && String.sub n 0 1 = "/")
@@ -68,11 +66,11 @@ let mac_is_absolute n =
   with Exit -> true
 
 let is_absolute =
-  match systype with
+  match Sys.os_type with
   | "Unix" -> unix_is_absolute
   | "Win32" -> wnt_is_absolute
   | "MacOS" -> mac_is_absolute
-  | _ -> failwith "Filename.is_absolute: unknown system"
+  | _ -> invalid_arg "Filename.is_absolute: unknown system"
 
 let unix_check_suffix name suff =
  String.length name >= String.length suff &&
@@ -88,11 +86,11 @@ let wnt_check_suffix name suff =
 let mac_check_suffix = unix_check_suffix
 
 let check_suffix =
-  match systype with
+  match Sys.os_type with
   | "Unix" -> unix_check_suffix
   | "Win32" -> wnt_check_suffix
   | "MacOS" -> mac_check_suffix
-  | _ -> failwith "Filename.check_suffix: unknown system"
+  | _ -> invalid_arg "Filename.check_suffix: unknown system"
 
 let chop_suffix name suff =
   let n = String.length name - String.length suff in
@@ -161,25 +159,25 @@ let mac_dirname name =
   with Not_found -> ":"
 
 let basename =
-  match systype with
+  match Sys.os_type with
   | "Unix" -> unix_basename
   | "Win32" -> wnt_basename
   | "MacOS" -> mac_basename
-  | _ -> failwith "Filename.basename: unknown system"
+  | _ -> invalid_arg "Filename.basename: unknown system"
 
 let dirname =
-  match systype with
+  match Sys.os_type with
   | "Unix" -> unix_dirname
   | "Win32" -> wnt_dirname
   | "MacOS" -> mac_dirname
-  | _ -> failwith "Filename.dirname: unknown system"
+  | _ -> invalid_arg "Filename.dirname: unknown system"
 
 let temporary_directory =
-  match systype with
+  match Sys.os_type with
   | "Unix" -> (try Sys.getenv "TMPDIR" with Not_found -> "/tmp")
   | "Win32" -> (try Sys.getenv "TEMP" with Not_found -> "C:\\temp")
   | "MacOS" -> (try Sys.getenv "TempFolder" with Not_found -> ":")
-  | _ -> failwith "Filename.temporary_directory: unknown system"
+  | _ -> invalid_arg "Filename.temporary_directory: unknown system"
 
 external open_desc: string -> open_flag list -> int -> int = "sys_open"
 external close_desc: int -> unit = "sys_close"

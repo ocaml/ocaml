@@ -13,14 +13,6 @@
 
 (* Module [Sys]: system interface *)
 
-type config = { os_type : string; word_size : int };;
-        (* Configuration information:
--          [os_type] is one of Unix, Win32, MacOS.
--          [word_size] is the size of one word, in bits: 32 or 64
-        *)
-external get_config: unit -> config = "sys_get_config"
-        (* Return the current run-time configuration. *)
-
 val argv: string array
         (* The command line arguments given to the process.
            The first element is the command name used to invoke the program.
@@ -45,6 +37,13 @@ val interactive: bool ref
         (* This reference is initially set to [false] in standalone
            programs and to [true] if the code is being executed under
            the interactive toplevel [csltop]. *)
+val os_type: string
+        (* Operating system currently executing the Caml program.
+           One of ["Unix"], ["Win32"], or ["MacOS"]. *)
+val word_size: int
+        (* Size of one word on the machine currently executing the Caml
+           program, in bits: 32 or 64. *)
+
 (*** Signal handling *)
 
 type signal_behavior =

@@ -13,12 +13,11 @@
 
 (* System interface *)
 
-type config = { os_type : string; word_size : int };;
-external get_config: unit -> config = "sys_get_config"
-
+external get_config: unit -> string * int = "sys_get_config"
 external get_argv: unit -> string array = "sys_get_argv"
 
 let argv = get_argv()
+let (os_type, word_size) = get_config()
 
 external file_exists: string -> bool = "sys_file_exists"
 external remove: string -> unit = "sys_remove"

@@ -46,7 +46,7 @@ let rec get_data =
       | None -> get_data d2
       end
   | Slazy f -> get_data (f ())
-  | _ -> failwith "illegal stream concatenation"
+  | _ -> invalid_arg "illegal stream concatenation"
 
 let rec peek s =
   match s.data with
@@ -63,7 +63,7 @@ let rec peek s =
       end
   | Slazy f ->
       begin match f () with
-        Sgen _ | Sbuffio _ -> failwith "illegal stream concatenation"
+        Sgen _ | Sbuffio _ -> invalid_arg "illegal stream concatenation"
       | x -> Obj.set_field (Obj.repr s) 1 (Obj.repr x); peek s
       end
   | Sgen {curr = Some a} -> a
