@@ -142,4 +142,18 @@ value invoke_traced_function(value codeptr, value env, value arg)
   return Val_unit; /* not reached */
 }
 
+value * stack_low;
+value * stack_high;
+value * stack_threshold;
+value * extern_sp;
+value * trapsp;
+int backtrace_active;
+int backtrace_pos;
+code_t * backtrace_buffer;
+value backtrace_last_exn;
+int callback_depth;
+int volatile something_to_do;
+void (* volatile async_action_hook)(void);
+void print_exception_backtrace(void) { }
+
 #endif
