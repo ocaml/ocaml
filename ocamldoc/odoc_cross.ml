@@ -543,7 +543,8 @@ and assoc_comments_info module_list i =
     i_deprecated = ao ft i.i_deprecated ;
     i_params = List.map (fun (name, t) -> (name, ft t)) i.i_params;
     i_raised_exceptions = List.map (fun (name, t) -> (name, ft t)) i.i_raised_exceptions;
-    i_return_value = ao ft i.i_return_value
+    i_return_value = ao ft i.i_return_value ;
+    i_custom = List.map (fun (tag, t) -> (tag, ft t)) i.i_custom ;
   } 
     
 
