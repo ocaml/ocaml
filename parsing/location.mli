@@ -32,4 +32,4 @@ val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
 
-val highlight_locations: t -> t -> bool
+val highlight_locations: formatter -> t -> t -> bool
