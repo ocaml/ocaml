@@ -2,6 +2,9 @@ alloc.o: alloc.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h major_gc.h freelist.h memory.h gc.h minor_gc.h stacks.h
 array.o: array.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
+callback.o: callback.c callback.h mlvalues.h config.h ../config/m.h \
+ ../config/s.h misc.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
+ interp.h instruct.h stacks.h
 compare.o: compare.c fail.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h str.h
@@ -28,9 +31,9 @@ intern.o: intern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
  minor_gc.h reverse.h
 interp.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h fail.h fix_code.h instrtrace.h instruct.h interp.h \
- major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h signals.h \
- stacks.h str.h jumptbl.h
+ mlvalues.h callback.h fail.h fix_code.h instrtrace.h instruct.h \
+ interp.h major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h \
+ signals.h stacks.h str.h jumptbl.h
 ints.o: ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  str.h
@@ -68,8 +71,8 @@ roots.o: roots.c memory.h config.h ../config/m.h ../config/s.h gc.h \
  mlvalues.h misc.h major_gc.h freelist.h minor_gc.h roots.h stacks.h
 rotatecursor.o: rotatecursor.c rotatecursor.h
 signals.o: signals.c alloc.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h roots.h signals.h
+ ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h roots.h signals.h
 stacks.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
@@ -88,6 +91,9 @@ alloc.d.o: alloc.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h major_gc.h freelist.h memory.h gc.h minor_gc.h stacks.h
 array.d.o: array.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
+callback.d.o: callback.c callback.h mlvalues.h config.h ../config/m.h \
+ ../config/s.h misc.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
+ interp.h instruct.h stacks.h
 compare.d.o: compare.c fail.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h str.h
@@ -115,9 +121,9 @@ intern.d.o: intern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
  minor_gc.h reverse.h
 interp.d.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h fail.h fix_code.h instrtrace.h instruct.h interp.h \
- major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h signals.h \
- stacks.h str.h
+ mlvalues.h callback.h fail.h fix_code.h instrtrace.h instruct.h \
+ interp.h major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h \
+ signals.h stacks.h str.h
 ints.d.o: ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  str.h
@@ -155,8 +161,8 @@ roots.d.o: roots.c memory.h config.h ../config/m.h ../config/s.h gc.h \
  mlvalues.h misc.h major_gc.h freelist.h minor_gc.h roots.h stacks.h
 rotatecursor.d.o: rotatecursor.c rotatecursor.h
 signals.d.o: signals.c alloc.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h roots.h signals.h
+ ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h roots.h signals.h
 stacks.d.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.d.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
