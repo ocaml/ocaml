@@ -425,6 +425,22 @@ let _ =
   test 81 (Coerce2.f1 ()) 1
 ;;
 
+module Coerce4(A : sig val f : int -> int end) = struct
+  let x = 0
+  let at a = A.f a
+end
+
+module rec Coerce5
+  : sig val blabla: int -> int val f: int -> int end 
+  = struct let blabla x = 0 let f x = 5 end
+and Coerce6
+  : sig val at: int -> int end
+  = Coerce4(Coerce5)
+
+let _ =
+  test 82 (Coerce6.at 100) 5
+;;
+
 (* Miscellaneous bug reports *)
 
 module rec F 
