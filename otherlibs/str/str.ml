@@ -115,6 +115,7 @@ type regexp = {
   cpool: string array;     (* constant pool (string literals) *)
   normtable: string;       (* case folding table (if any) *)
   numgroups: int;          (* number of \(...\) groups *)
+  numregisters: int;       (* number of nullable Star or Plus *)
   startchars: int          (* index of set of starting chars, or -1 if none *)
 }
 
@@ -252,7 +253,7 @@ let compile fold_case re =
   let allocate_register_if_nullable r =
     if is_nullable r then begin
       let n = !numregs in
-      if n >= 32 then failwith "too many r* or r+ where r is nullable";
+      if n >= 64 then failwith "too many r* or r+ where r is nullable";
       incr numregs;
       n
     end else
@@ -415,6 +416,7 @@ let compile fold_case re =
     cpool = constantpool;
     normtable = if fold_case then fold_case_table else "";
     numgroups = !numgroups;
+    numregisters = !numregs;
     startchars = start_pos }
 
 (** Parsing of a regular expression *)

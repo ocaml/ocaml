@@ -77,7 +77,8 @@ enum {
 #define Cpool(re) Field(re, 1)
 #define Normtable(re) Field(re, 2)
 #define Numgroups(re) Int_val(Field(re, 3))
-#define Startchars(re) Int_val(Field(re, 4))
+#define Numregisters(re) Int_val(Field(re, 4))
+#define Startchars(re) Int_val(Field(re, 5))
 
 /* Record positions of matched groups */
 #define NUM_GROUPS 32
@@ -87,8 +88,9 @@ struct re_group {
 };
 static struct re_group re_group[NUM_GROUPS];
 
-/* Record positions reached during matching */
-#define NUM_REGISTERS 32
+/* Record positions reached during matching; used to check progress
+   in repeated matching of a regexp. */
+#define NUM_REGISTERS 64
 static unsigned char * re_register[NUM_REGISTERS];
 
 /* The initial backtracking stack */
@@ -130,13 +132,20 @@ static int re_match(value re,
   unsigned char c;
   union backtrack_point back;
 
+  { int i;
+    struct re_group * p;
+    unsigned char ** q;
+    for (p = &re_group[1], i = Numgroups(re); i > 1; i--, p++)
+      p->start = p->end = NULL;
+    for (q = &re_register[0], i = Numregisters(re); i > 0; i--, q++)
+      *q = NULL;
+  }
+
   pc = &Field(Prog(re), 0);
   stack = &initial_stack;
   sp = stack->point;
   cpool = Cpool(re);
   normtable = Normtable(re);
-  memset(re_group, 0, sizeof(re_group));
-  memset(re_register, 0, sizeof(re_register));
   re_group[0].start = txt;
 
   while (1) {
