@@ -273,3 +273,10 @@ int system (char const *cmd)
     RotateCursor (32);
     return result;
 }
+
+/* We don't need searchpath on the Macintosh because there are no #! scripts */
+
+char *searchpath (char * name)
+{
+  return name;
+}
