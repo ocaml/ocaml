@@ -4,6 +4,7 @@ prims.c
 opnames.h
 ocamlrun
 ocamlrund
+ld.conf
 libcamlrun.x
 libcamlrun-gui.x
 *.c.x

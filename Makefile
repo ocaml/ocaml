@@ -234,14 +234,12 @@ opt.opt: checkstack core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
 install: FORCE
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
-	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(LIBDIR)/stublibs; fi
+	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(STUBLIBDIR); fi
 	if test -d $(MANDIR)/man$(MANEXT); then : ; else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
 	cd $(LIBDIR); rm -f dllbigarray.so dlllabltk.so dllnums.so \
           dllthreads.so dllunix.so dllgraphics.so dllmldbm.so dllstr.so \
           dlltkanim.so
 	cd byterun; $(MAKE) install
-	echo "$(STUBLIBDIR)" > $(LIBDIR)/ld.conf
-	echo "$(LIBDIR)" >> $(LIBDIR)/ld.conf
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)
 	cp ocaml $(BINDIR)/ocaml$(EXE)
 	cd stdlib; $(MAKE) install

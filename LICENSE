@@ -1,16 +1,25 @@
 In the following, "the Library" refers to all files marked "Copyright
 INRIA" in the following directories and their sub-directories:
 
-  asmrun, byterun, camlp4, config, maccaml, otherlibs, stdlib, win32caml
+  asmrun, byterun, camlp4, config, otherlibs, stdlib, win32caml
 
 and "the Compiler" refers to all files marked "Copyright INRIA" in the
-other directories and their sub-directories.
+following directories and their sub-directories:
+
+  asmcomp, boot, bytecomp, debugger, driver, lex, ocamldoc, parsing,
+  tools, toplevel, typing, utils, yacc
 
 The Compiler is distributed under the terms of the Q Public License
-version 1.0 (included below).
+version 1.0 with a change to choice of law (included below).
 
 The Library is distributed under the terms of the GNU Library General
 Public License version 2 (included below).
+
+As a special exception to the Q Public Licence, you may develop
+application programs, reusable components and other software items
+that link with the original or modified versions of the Compiler
+and are not made available to the general public, without any of the
+additional requirements listed in clause 6c of the Q Public licence.
 
 As a special exception to the GNU Library General Public License, you
 may link, statically or dynamically, a "work that uses the Library"
@@ -129,8 +138,7 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
                             Choice of Law
 
-This license is governed by the Laws of France. Disputes shall be
-settled by the Court of Versailles.
+This license is governed by the Laws of France.
 
 ----------------------------------------------------------------------
 

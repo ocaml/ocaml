@@ -456,6 +456,10 @@ class latex =
 	  print_concat fmt ", " print_one t.ty_parameters;
 	  ps fmt ")"
 
+    method latex_of_class_parameter_list fmt father c =
+      self#latex_of_text fmt 
+	(self#text_of_class_params father c)
+
     (** Print LaTeX code for a type. *)
     method latex_of_type fmt t =
       let s_name = Name.simple t.ty_name in
@@ -632,16 +636,6 @@ class latex =
       | Module_constraint (k, tk) ->
 	  (* TODO: on affiche quoi ? *)
 	  self#latex_of_module_kind fmt father k
-
-    method latex_of_class_parameter fmt father p =
-      ps fmt (self#normal_type father (Parameter.typ p))
-
-    method latex_of_class_parameter_list fmt father params =
-      List.iter
-	(fun p -> 
-	  self#latex_of_class_parameter fmt father p;
-	  ps fmt " -> ")
-	params
 
     method latex_of_class_kind fmt father kind =
       match kind with
@@ -881,12 +875,23 @@ class latex =
 	] 
       in
       self#latex_of_text fmt t;
-      self#latex_of_class_parameter_list fmt father c.cl_parameters;
+      self#latex_of_class_parameter_list fmt father c;
+      (* avoid a big gap if the kind is a consrt *)
+      (
+       match c.cl_kind with
+	 Class.Class_constr _ ->
+	   self#latex_of_class_kind fmt father c.cl_kind
+       | _ ->
+	   ()
+      );
       self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
       self#latex_for_class_label fmt c;
       self#latex_for_class_index fmt c;
       p fmt "@[<h 4>";
-      self#latex_of_class_kind fmt father c.cl_kind;
+      (match c.cl_kind with
+	Class.Class_constr _ -> ()
+      |	_ -> self#latex_of_class_kind fmt father c.cl_kind
+      );
       self#latex_of_text fmt [Newline];
       self#latex_of_info fmt ~block: true c.cl_info;
       p fmt "@]"
@@ -1124,5 +1129,3 @@ class latex =
           prerr_endline s ;
           incr Odoc_info.errors 
   end
-
-(* eof $Id$ *)

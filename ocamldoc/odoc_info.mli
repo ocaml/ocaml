@@ -580,26 +580,6 @@ module Module :
     val module_type_comments : ?trans:bool-> t_module_type -> text list
   end
 
-(** Analysis of the given source files.
-   @param init is the list of modules already known from a previous analysis.
-   @return the list of analysed top modules. *)
-val analyse_files :
-    ?merge_options:Odoc_types.merge_option list ->
-      ?include_dirs:string list ->
-        ?labels:bool ->
-          ?sort_modules:bool ->
-            ?no_stop:bool ->
-              ?init: Odoc_module.t_module list ->
-                string list ->
-                  Module.t_module list
-
-(** Dump of a list of modules into a file. 
-   @raise Failure if an error occurs.*)
-val dump_modules : string -> Odoc_module.t_module list -> unit
-
-(** Load of a list of modules from a file. 
-   @raise Failure if an error occurs.*)
-val load_modules : string -> Odoc_module.t_module list
 
 (** {3 Getting strings from values} *)
     
@@ -618,6 +598,10 @@ val string_of_variance : Type.t_type -> (bool * bool) -> string
 
 (** This function returns a string representing a Types.type_expr. *)
 val string_of_type_expr : Types.type_expr -> string
+
+(** @return a string to display the parameters of the given class,
+   in the same form as the compiler. *)
+val string_of_class_params : Class.t_class -> string
 
 (** This function returns a string to represent the given list of types,
    with a given separator. *)
@@ -684,6 +668,10 @@ val first_sentence_and_rest_of_text : text -> text * text
 
 (** Return the given [text] without any title or list. *)
 val text_no_title_no_list : text -> text
+
+(** [concat sep l] concats the given list of text [l], each separated with
+   the text [sep]. *)
+val text_concat : Odoc_types.text -> Odoc_types.text list -> Odoc_types.text
 
 (** Return the list of titles in a [text]. 
    A title is a title level, an optional label and a text.*)
@@ -765,6 +753,8 @@ val info_string_of_info : info -> string
 *)
 val info_of_comment_file : string -> info
 
+(** [remove_ending_newline s] returns [s] without the optional ending newline. *)
+val remove_ending_newline : string -> string
 
 (** Research in elements *)
 module Search :
@@ -925,6 +915,11 @@ module Dep :
 (**  You can use this module to create custom generators.*)
 module Args :
     sig
+      (** The kind of source file in arguments. *)
+      type source_file =
+	  Impl_file of string
+	| Intf_file of string
+
       (** The class type of documentation generators. *)
       class type doc_generator =
 	object method generate : Module.t_module list -> unit end
@@ -1036,7 +1031,7 @@ module Args :
       val man_mini : bool ref
 
       (** The files to be analysed. *)
-      val files : string list ref
+      val files : source_file list ref
     
       (** To set the documentation generator. *)
       val set_doc_generator : doc_generator option -> unit
@@ -1044,3 +1039,24 @@ module Args :
       (** Add an option specification. *)
       val add_option : string * Arg.spec * string -> unit
     end
+
+(** Analysis of the given source files.
+   @param init is the list of modules already known from a previous analysis.
+   @return the list of analysed top modules. *)
+val analyse_files :
+    ?merge_options:Odoc_types.merge_option list ->
+      ?include_dirs:string list ->
+        ?labels:bool ->
+          ?sort_modules:bool ->
+            ?no_stop:bool ->
+              ?init: Odoc_module.t_module list ->
+                Args.source_file list ->
+                  Module.t_module list
+
+(** Dump of a list of modules into a file. 
+   @raise Failure if an error occurs.*)
+val dump_modules : string -> Odoc_module.t_module list -> unit
+
+(** Load of a list of modules from a file. 
+   @raise Failure if an error occurs.*)
+val load_modules : string -> Odoc_module.t_module list

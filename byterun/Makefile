@@ -37,7 +37,7 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
 PUBLIC_INCLUDES=alloc.h callback.h config.h custom.h fail.h intext.h \
   memory.h misc.h mlvalues.h signals.h compatibility.h
 
-all: ocamlrun$(EXE)
+all: ocamlrun$(EXE) ld.conf
 
 ocamlrun$(EXE): libcamlrun.a prims.o
 	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
@@ -55,6 +55,11 @@ install:
 	for i in $(PUBLIC_INCLUDES); do \
           sed -f ../tools/cleanup-header $$i > $(LIBDIR)/caml/$$i; \
         done
+	cp ld.conf $(LIBDIR)/ld.conf
+
+ld.conf:
+	echo "$(STUBLIBDIR)" >ld.conf
+	echo "$(LIBDIR)" >>ld.conf
 
 libcamlrun.a: $(OBJS)
 	ar rc libcamlrun.a $(OBJS)
@@ -66,7 +71,7 @@ libcamlrund.a: $(DOBJS)
 
 clean:
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.o lib*.a
-	rm -f primitives prims.c opnames.h jumptbl.h
+	rm -f primitives prims.c opnames.h jumptbl.h ld.conf
 
 primitives : $(PRIMS)
 	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" \

@@ -4,7 +4,13 @@ TODO:
  - utilisation nouvelles infos de Xavier: "début de rec", etc.
 
 =====
-Release 3.08:
+Release 3.08.1:
+ - add: new -intf and -impl options supported (PR#3036)
+ - fix: display of class parameters in HTML and LaTeX (PR#2994)
+ - fix: display of link to class page in html (PR#2994)
+
+=====
+Release 3.08.0:
  - fix: method parameters names in signature are now retrieved correctly
    (fix of Odoc_value.parameter_list_from_arrows to handle Tpoly for methods)
  - ajout à la doc de Module_list et Index_list (utilisé dans le html seulement)

@@ -75,6 +75,10 @@ val first_sentence_and_rest_of_text :
 (** Return the given [text] without any title or list. *)
 val text_no_title_no_list : Odoc_types.text -> Odoc_types.text
 
+(** [concat sep l] concats the given list of text [l], each separated with
+   the text [sep]. *)
+val text_concat : Odoc_types.text -> Odoc_types.text list -> Odoc_types.text
+
 (** Return the list of titles in a [text]. 
    A title is a title level, an optional label and a text.*)
 val get_titles_in_text : Odoc_types.text -> (int * string option * Odoc_types.text) list
@@ -85,6 +89,9 @@ val get_titles_in_text : Odoc_types.text -> (int * string option * Odoc_types.te
    Since the original list is sorted, elements whose name does not
    begin with a letter should be in the first returned list.*)
 val create_index_lists : 'a list -> ('a -> string) -> 'a list list
+
+(** [remove_ending_newline s] returns [s] without the optional ending newline. *)
+val remove_ending_newline : string -> string
 
 (** Take a type and remove the option top constructor. This is
    useful when printing labels, we we then remove the top option contructor

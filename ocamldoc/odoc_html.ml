@@ -653,15 +653,6 @@ let newline_to_indented_br s =
   done;
   Buffer.contents b
 
-let remove_last_newline s =
-  let len = String.length s in
-  if len <= 0 then
-    s
-  else
-    match s.[len-1] with
-      '\n' -> String.sub s 0 (len-1)
-    | _ -> s
-
 (** This class is used to create objects which can generate a simple html documentation. *)
 class html =
   object (self)
@@ -1060,7 +1051,7 @@ class html =
 
     (** Print html code to display a [Types.type_expr]. *)
     method html_of_type_expr b m_name t =
-      let s = remove_last_newline (Odoc_info.string_of_type_expr t) in
+      let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_type_expr t) in
       let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
@@ -1086,6 +1077,14 @@ class html =
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "]</code>"
 
+    method html_of_class_parameter_list b father c =
+      let s = Odoc_info.string_of_class_params c in
+      let s = Odoc_info.remove_ending_newline s in
+      let s2 = newline_to_indented_br s in
+      bs b "<code class=\"type\">";
+      bs b (self#create_fully_qualified_idents_links father s2);
+      bs b "</code>"
+
     (** Print html code to display a list of type parameters for the given type.*)
     method html_of_type_expr_param_list b m_name t =
       let s = Odoc_info.string_of_type_param_list t in
@@ -1096,7 +1095,7 @@ class html =
 
     (** Print html code to display a [Types.module_type]. *)
     method html_of_module_type b ?code m_name t =
-      let s = remove_last_newline (Odoc_info.string_of_module_type ?code t) in
+      let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_module_type ?code t) in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_module_idents_links m_name s);
       bs b "</code>"
@@ -1216,12 +1215,12 @@ class html =
 
     (** Generate a file containing the module type in the given file name. *)
     method output_module_type in_title file mtyp =
-      let s = remove_last_newline (Odoc_info.string_of_module_type ~complete: true mtyp) in
+      let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_module_type ~complete: true mtyp) in
       self#output_code in_title file s
 
     (** Generate a file containing the class type in the given file name. *)
     method output_class_type in_title file ctyp =
-      let s = remove_last_newline(Odoc_info.string_of_class_type ~complete: true ctyp) in
+      let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_class_type ~complete: true ctyp) in
       self#output_code in_title file s
 
     (** Print html code for a value. *)
@@ -1696,8 +1695,9 @@ class html =
                self#html_of_class_type_param_expr_list b father l;
 	       bs b " "
 	  );
-	  self#html_of_text b
-	    [Code (self#create_fully_qualified_idents_links father cco.cco_name)]
+	  bs b "<code class=\"type\">";
+	  bs b (self#create_fully_qualified_idents_links father cco.cco_name);
+	  bs b "</code>"
 
       | Class_constraint (ck, ctk) ->
           self#html_of_text b [Code "( "] ;
@@ -1716,8 +1716,9 @@ class html =
 	       self#html_of_class_type_param_expr_list b father l;
 	       bs b " "
           );
-          self#html_of_text b
-	    [Code (self#create_fully_qualified_idents_links father cta.cta_name)]
+          bs b "<code class=\"type\">";
+	  bs b (self#create_fully_qualified_idents_links father cta.cta_name);
+	  bs b "</code>"
 
       | Class_signature (inh, eles) -> 
 	  self#html_of_text b [Code "object"];
@@ -1736,16 +1737,6 @@ class html =
 	       bp b " <a href=\"%s\">..</a> " html_file
 	  );
 	  self#html_of_text b [Code "end"]
-
-    method html_of_class_parameter b father p =
-      self#html_of_type_expr b father (Parameter.typ p)
-
-    method html_of_class_parameter_list b father params =
-      List.iter
-	(fun p -> 
-	  self#html_of_class_parameter b father p;
-	  bs b " -&gt; ")
-	params
 
     (** Print html code for a class. *)
     method html_of_class b ?(complete=true) ?(with_link=true) c =
@@ -1783,7 +1774,7 @@ class html =
       );
 
       bs b " : " ;
-      self#html_of_class_parameter_list b father c.cl_parameters ;
+      self#html_of_class_parameter_list b father c ;
       self#html_of_class_kind b father ~cl: c c.cl_kind;
       bs b "</pre>" ;
       print_DEBUG "html#html_of_class : info" ;
@@ -2436,7 +2427,3 @@ class html =
 	  Buffer.contents b
 	)
   end
-
-
-                             
-(* eof $Id$ *)

@@ -17,6 +17,10 @@ open Clflags
 
 module M = Odoc_messages
 
+type source_file =
+    Impl_file of string
+  | Intf_file of string
+
 let include_dirs = Clflags.include_dirs
 
 let bytecode_mode = ref true
@@ -207,6 +211,8 @@ let options = ref [
   "-v", Arg.Unit (fun () -> verbose := true), M.verbose_mode ;
   "-I", Arg.String (fun s -> include_dirs := (Misc.expand_directory Config.standard_library s) :: !include_dirs), M.include_dirs ;
   "-pp", Arg.String (fun s -> preprocessor := Some s), M.preprocess ;
+  "-impl", Arg.String (fun s -> files := !files @ [Impl_file s]), M.option_impl ;
+  "-intf", Arg.String (fun s -> files := !files @ [Intf_file s]), M.option_intf ;
   "-rectypes", Arg.Set recursive_types, M.rectypes ;
   "-nolabels", Arg.Unit (fun () -> classic := true), M.nolabels ;
   "-warn-error", Arg.Set Odoc_global.warn_error, M.werr ;
@@ -302,19 +308,28 @@ let add_option o =
   options := iter !options
 
 let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~dot_generator =
+  let anonymous f =
+    let sf = 
+      if Filename.check_suffix f "ml" then
+	Impl_file f
+      else
+	if Filename.check_suffix f "mli" then
+	  Intf_file f
+	else
+	  failwith (Odoc_messages.unknown_extension f)
+    in
+    files := !files @ [sf]
+  in
   default_html_generator := Some html_generator ;
   default_latex_generator := Some latex_generator ;
   default_texi_generator := Some texi_generator ;
   default_man_generator := Some man_generator ;
   default_dot_generator := Some dot_generator ;
   let _ = Arg.parse !options
-      (fun s -> files := !files @ [s])
+      anonymous
       (M.usage^M.options_are)
   in
   (* we sort the hidden modules by name, to be sure that for example,
      A.B is before A, so we will match against A.B before A in 
      Odoc_name.hide_modules.*)
   hidden_modules := List.sort (fun a -> fun b -> - (compare a b)) !hidden_modules
-
-
-(* eof $Id$ *)

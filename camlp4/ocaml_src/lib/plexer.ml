@@ -448,7 +448,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
         Stream.junk strm__;
         let s = strm__ in
         let ep = Stream.count strm__ in
-        bolpos := ep; incr lnum; string bp len s
+        bolpos := ep; incr lnum; string bp (store len '\010') s
     | Some '\013' ->
         Stream.junk strm__;
         let s = strm__ in

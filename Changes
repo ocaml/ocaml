@@ -1,5 +1,30 @@
-Objective Caml 3.08:
---------------------
+Objective Caml 3.08.1:
+----------------------
+
+Licence:
+- The emacs files are now under GPL
+- Slightly relaxed some conditions of the QPL
+
+Bug fixes:
+- ld.conf now generated at compile-time instead of install-time
+- fixed -pack on Windows XP (PR#2935)
+- fixed Obj.tag (PR#2946)
+- added support for multiple dlopen in Darwin
+- run ranlib when installing camlp4 libraries (PR#2944)
+- link camlp4opt with -linkall (PR#2949)
+- camlp4 parsing of patterns now conforms to normal parsing (PR#3015)
+- install camlp4 *.cmx files (PR#2955)
+- fixed handling of linefeed in string constants in camlp4 (PR#3074)
+- ocamldoc: fixed display of class parameters in HTML and LaTeX (PR#2994)
+- ocamldoc: fixed display of link to class page in html (PR#2994)
+- Windows toplevel GUI: assorted fixes (including PR#2932)
+
+Misc:
+- added -v option to ocamllex
+- ocamldoc: new -intf and -impl options supported (PR#3036)
+
+Objective Caml 3.08.0:
+----------------------
 
 (Changes that can break existing programs are marked with a "*"  )
 

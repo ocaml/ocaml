@@ -242,5 +242,3 @@ value caml_cache_public_method2 (value *meths, value tag, value *cache)
   }
 }
 #endif /*CAML_JIT*/
-
-/* eof $Id$ */

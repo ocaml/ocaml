@@ -49,7 +49,10 @@ install:
 	cp camlp4r$(EXE) "$(BINDIR)/."
 	if test -f camlp4r.opt; then \
 	  cp camlp4r.opt "$(BINDIR)/camlp4r.opt$(EXE)" ;\
-	  cp $(OBJSX) $(OBJSX:.cmx=.$(O)) "$(LIBDIR)/camlp4/."; \
+	  cp $(OBJSX) "$(LIBDIR)/camlp4/."; \
+	  for file in $(OBJSX); do \
+	    cp "`echo $$file | sed -e 's/\.cmx$$/.$(O)/'`" "$(LIBDIR)/camlp4/."; \
+	  done ; \
 	fi
 
 include .depend
