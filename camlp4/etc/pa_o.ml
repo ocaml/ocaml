@@ -433,7 +433,7 @@ EXTEND
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
           match l with
           [ [(<:patt< _ >>, e)] -> <:str_item< $exp:e$ >>
-          | _ -> <:str_item< value $rec:o2b r$ $list:l$ >> ]
+          | _ -> <:str_item< value $opt:o2b r$ $list:l$ >> ]
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = expr ->
           <:str_item< let module $m$ = $mb$ in $e$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]

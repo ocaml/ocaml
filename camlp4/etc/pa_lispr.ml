@@ -222,7 +222,7 @@ and str_item_se se =
         | _ -> (False, sel) ]
       in
       let lbs = value_binding_se sel in
-      <:str_item< value $rec:r$ $list:lbs$ >>
+      <:str_item< value $opt:r$ $list:lbs$ >>
   | Sexpr loc _ ->
       let e = expr_se se in
       <:str_item< $exp:e$ >> ]

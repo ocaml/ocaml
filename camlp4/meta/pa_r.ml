@@ -202,7 +202,7 @@ EXTEND
       | "type"; tdl = LIST1 type_declaration SEP "and" ->
           <:str_item< type $list:tdl$ >>
       | "value"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
-          <:str_item< value $rec:o2b r$ $list:l$ >>
+          <:str_item< value $opt:o2b r$ $list:l$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
   ;
   rebind_exn:

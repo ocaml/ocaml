@@ -268,6 +268,9 @@ value rec quot_act e =
   | <:expr< Some $e$ >> -> <:expr< Option (Some $quot_act e$) >>
   | <:expr< False >> -> <:expr< Bool False >>
   | <:expr< True >> -> <:expr< Bool True >>
+  | <:expr< List $_$ >> -> e
+  | <:expr< Option $_$ >> -> e
+  | <:expr< Str $_$ >> -> e
   | <:expr< [] >> -> <:expr< List [] >>
   | <:expr< [$e$] >> -> <:expr< List [$quot_act e$] >>
   | <:expr< [$e1$ :: $e2$] >> -> <:expr< Cons $quot_act e1$  $quot_act e2$ >>
@@ -441,6 +444,19 @@ value ssopt loc symb =
       {prod = prod; action = Some act}
     in
     let r2 =
+      let symb =
+        match symb.text "" "" with
+        [ <:expr< Gramext.Stoken ("", $str:_$) >> ->
+            let rule =
+              let psymbol = {pattern = Some <:patt< x >>; symbol = symb} in
+              let action = Some <:expr< Str x >> in
+              {prod = [psymbol]; action = action}
+            in
+            let text = srules loc "ast" [rule] in
+            let styp _ = <:ctyp< ast >> in
+            {used = []; text = text; styp = styp}
+        | _ -> symb ]
+      in
       let psymb =
         let symb =
           {used = []; text = sopt loc symb;
@@ -449,7 +465,7 @@ value ssopt loc symb =
         let patt = <:patt< o >> in
         {pattern = Some patt; symbol = symb}
       in
-      let act = <:expr< option o >> in
+      let act = <:expr< Option o >> in
       {prod = [psymb]; action = Some act}
     in
     [r1; r2]
@@ -480,7 +496,7 @@ value sslist_aux loc min sep s =
         let patt = <:patt< l >> in
         {pattern = Some patt; symbol = symb}
       in
-      let act = <:expr< list l >> in
+      let act = <:expr< List l >> in
       {prod = [psymb]; action = Some act}
     in
     [r1; r2]

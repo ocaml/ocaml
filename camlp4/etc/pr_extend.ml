@@ -302,7 +302,7 @@ value rec symbol s k =
       [([(Some <:patt< a >>, Snterm <:expr< anti_list >>)], Some <:expr< a >>);
        ([(Some <:patt< l >>,
           ((Slist0 _ | Slist1 _ | Slist0sep _ _ | Slist1sep _ _) as s))],
-          Some <:expr< list l >>)]
+          Some <:expr< List l >>)]
     when not no_slist.val
     ->
       match s with

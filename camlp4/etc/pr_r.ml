@@ -974,7 +974,7 @@ pr_str_item.pr_levels :=
           fun curr next _ k -> [: `S LR "include"; `module_expr me k :]
       | <:str_item< type $list:tdl$ >> ->
           fun curr next _ k -> [: `type_list [: `S LR "type" :] tdl k :]
-      | <:str_item< value $rec:rf$ $list:pel$ >> ->
+      | <:str_item< value $opt:rf$ $list:pel$ >> ->
           fun curr next _ k ->
             [: `bind_list [: `S LR "value"; flag "rec" rf :] pel k :]
       | <:str_item< external $s$ : $t$ = $list:pl$ >> ->

@@ -28,8 +28,6 @@ type ast =
   | Loc
   | Antiquot of MLast.loc and string ]
 ;
-value list l = List l;
-value option o = Option o;
 value antiquot k (bp, ep) x =
   let shift =
     if k = "" then String.length "$"
@@ -51,6 +49,13 @@ value class_type = Grammar.Entry.create gram "class type";
 value class_expr = Grammar.Entry.create gram "class expr";
 value class_sig_item = Grammar.Entry.create gram "class signature item";
 value class_str_item = Grammar.Entry.create gram "class structure item";
+
+value o2b =
+  fun
+  [ Option (Some _) -> Bool True
+  | Option None -> Bool False
+  | x -> x ]
+;
 
 value mkumin f arg =
   match arg with
@@ -144,8 +149,8 @@ EXTEND
       | "open"; i = mod_ident -> Node "StOpn" [Loc; i]
       | "type"; tdl = SLIST1 type_declaration SEP "and" ->
           Node "StTyp" [Loc; tdl]
-      | "value"; r = rec_flag; l = SLIST1 let_binding SEP "and" ->
-          Node "StVal" [Loc; r; l]
+      | "value"; r = SOPT "rec"; l = SLIST1 let_binding SEP "and" ->
+          Node "StVal" [Loc; o2b r; l]
       | "#"; n = lident; dp = dir_param -> Node "StDir" [Loc; n; dp]
       | e = expr -> Node "StExp" [Loc; e] ] ]
   ;

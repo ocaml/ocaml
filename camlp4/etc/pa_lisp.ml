@@ -222,7 +222,7 @@
                           ((list (Satom _ Alid "rec") :: sel) (, True sel))
                           ((_) (, False sel))))
                   (lbs (value_binding_se sel)))
-             <:str_item< value $rec:r$ $list:lbs$ >>))
+             <:str_item< value $opt:r$ $list:lbs$ >>))
           ((Sexpr loc _)
            (let ((e (expr_se se)))
              <:str_item< $exp:e$ >>))))

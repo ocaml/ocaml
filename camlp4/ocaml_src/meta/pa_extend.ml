@@ -616,6 +616,9 @@ let rec quot_act e =
       MLast.ExApp (loc, MLast.ExUid (loc, "Bool"), MLast.ExUid (loc, "False"))
   | MLast.ExUid (_, "True") ->
       MLast.ExApp (loc, MLast.ExUid (loc, "Bool"), MLast.ExUid (loc, "True"))
+  | MLast.ExApp (_, MLast.ExUid (_, "List"), _) -> e
+  | MLast.ExApp (_, MLast.ExUid (_, "Option"), _) -> e
+  | MLast.ExApp (_, MLast.ExUid (_, "Str"), _) -> e
   | MLast.ExUid (_, "[]") ->
       MLast.ExApp (loc, MLast.ExUid (loc, "List"), MLast.ExUid (loc, "[]"))
   | MLast.ExApp
@@ -910,7 +913,7 @@ let srules loc t rl gmod tvar =
 ;;
 
 let sstoken loc s =
-  let n = mk_name loc (MLast.ExLid (loc, ("anti_" ^ s))) in snterm loc n None
+  let n = mk_name loc (MLast.ExLid (loc, ("a_" ^ s))) in snterm loc n None
 ;;
 
 let ssopt loc symb =
@@ -928,6 +931,29 @@ let ssopt loc symb =
       let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
     in
     let r2 =
+      let symb =
+        match symb.text "" "" with
+          MLast.ExApp
+            (_,
+             MLast.ExAcc
+               (_, MLast.ExUid (_, "Gramext"), MLast.ExUid (_, "Stoken")),
+             MLast.ExTup (_, [MLast.ExStr (_, ""); MLast.ExStr (_, _)])) ->
+            let rule =
+              let psymbol =
+                {pattern = Some (MLast.PaLid (loc, "x")); symbol = symb}
+              in
+              let action =
+                Some
+                  (MLast.ExApp
+                     (loc, MLast.ExUid (loc, "Str"), MLast.ExLid (loc, "x")))
+              in
+              {prod = [psymbol]; action = action}
+            in
+            let text = srules loc "ast" [rule] in
+            let styp _ = MLast.TyLid (loc, "ast") in
+            {used = []; text = text; styp = styp}
+        | _ -> symb
+      in
       let psymb =
         let symb =
           {used = []; text = sopt loc symb;
@@ -939,7 +965,7 @@ let ssopt loc symb =
         {pattern = Some patt; symbol = symb}
       in
       let act =
-        MLast.ExApp (loc, MLast.ExLid (loc, "option"), MLast.ExLid (loc, "o"))
+        MLast.ExApp (loc, MLast.ExUid (loc, "Option"), MLast.ExLid (loc, "o"))
       in
       {prod = [psymb]; action = Some act}
     in
@@ -973,7 +999,7 @@ let sslist_aux loc min sep s =
         {pattern = Some patt; symbol = symb}
       in
       let act =
-        MLast.ExApp (loc, MLast.ExLid (loc, "list"), MLast.ExLid (loc, "l"))
+        MLast.ExApp (loc, MLast.ExUid (loc, "List"), MLast.ExLid (loc, "l"))
       in
       {prod = [psymb]; action = Some act}
     in
@@ -1018,21 +1044,29 @@ let text_of_entry loc gmod gl e =
   in
   let levels =
     if !quotify && is_global e gl then
-      let level =
-        let rule =
-          let psymbol =
-            let s =
-              let n = mk_name loc (MLast.ExLid (loc, "anti_")) in
-              {used = []; text = snterm loc n None;
-               styp = fun _ -> MLast.TyLid (loc, "ast")}
+      let rec loop =
+        function
+          [] -> []
+        | [level] ->
+            let level =
+              let rule =
+                let psymbol =
+                  let s =
+                    let n = "a_" ^ e.name.tvar in
+                    let e = mk_name loc (MLast.ExLid (loc, n)) in
+                    {used = []; text = snterm loc e None;
+                     styp = fun _ -> MLast.TyLid (loc, "ast")}
+                  in
+                  {pattern = Some (MLast.PaLid (loc, "a")); symbol = s}
+                in
+                {prod = [psymbol]; action = Some (MLast.ExLid (loc, "a"))}
+              in
+              {level with rules = rule :: level.rules}
             in
-            {pattern = Some (MLast.PaLid (loc, "a")); symbol = s}
-          in
-          {prod = [psymbol]; action = Some (MLast.ExLid (loc, "a"))}
-        in
-        {label = None; assoc = None; rules = [rule]}
+            [level]
+        | level :: levels -> level :: loop levels
       in
-      e.levels @ [level]
+      loop e.levels
     else e.levels
   in
   let txt =
