@@ -608,9 +608,9 @@ alldepend::
 camlp4out: ocamlc
 	cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
-	cd camlp4; $(MAKE) opt
+	cd camlp4; $(MAKE) PROFILING=$(PROFILING) opt
 camlp4optopt: ocamlopt
-	cd camlp4; $(MAKE) opt.opt
+	cd camlp4; $(MAKE) PROFILING=$(PROFILING) opt.opt
 partialclean::
 	cd camlp4; $(MAKE) clean
 alldepend::
