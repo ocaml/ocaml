@@ -226,6 +226,7 @@ extern char lflag;
 extern char rflag;
 extern char tflag;
 extern char vflag;
+extern char qflag;
 extern char sflag;
 extern char big_endian;
 

@@ -26,6 +26,7 @@ char lflag;
 char rflag;
 char tflag;
 char vflag;
+char qflag;
 char sflag;
 char big_endian;
 
@@ -134,7 +135,7 @@ void set_signals(void)
 
 void usage(void)
 {
-    fprintf(stderr, "usage: %s [-v] [-b file_prefix] filename\n",
+    fprintf(stderr, "usage: %s [-v] [-q] [-b file_prefix] filename\n",
             myname);
     exit(1);
 }
@@ -164,6 +165,10 @@ void getargs(int argc, char **argv)
             vflag = 1;
             break;
 
+        case 'q':
+            qflag = 1;
+            break;
+
         case 'b':
             if (*++s)
                  file_prefix = s;
@@ -186,6 +191,10 @@ void getargs(int argc, char **argv)
 
             case 'v':
                 vflag = 1;
+                break;
+
+            case 'q':
+                qflag = 1;
                 break;
 
             default:
