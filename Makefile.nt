@@ -226,9 +226,7 @@ installbyt:
 	cd ocamldoc ; $(MAKEREC) install
 	mkdir -p $(STUBLIBDIR)
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
-ifeq ($(TOOLCHAIN),msvc)
 	cd win32caml ; $(MAKE) install
-endif
 	cd camlp4 ; make install
 	cp README $(DISTRIB)/Readme.gen
 	cp README.win32 $(DISTRIB)/Readme.win
@@ -586,9 +584,8 @@ partialclean::
 # The Win32 toplevel GUI
 
 win32gui:
-ifeq ($(TOOLCHAIN),msvc)
 	cd win32caml ; $(MAKE) all
-endif
+
 clean::
 	cd win32caml ; $(MAKE) clean
 
