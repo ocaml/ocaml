@@ -68,6 +68,7 @@ void ResetForClose(HWND hwnd)
         DeleteDC(grwindow.gcBitmap);
         DeleteObject(grwindow.hBitmap);
         memset(&grwindow,0,sizeof(grwindow));
+        gr_initialized = 0;
 }
 
         
@@ -270,7 +271,6 @@ CAMLprim value caml_gr_close_graph(void)
         if (gr_initialized) {
 	        PostMessage(grwindow.hwnd, WM_CLOSE, 0, 0);
                 WaitForSingleObject(threadHandle, INFINITE);
-                gr_initialized = 0;
         }
         return Val_unit;
 }
