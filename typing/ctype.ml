@@ -212,7 +212,7 @@ let rec filter env t1 t2 =
     if t1 == t2 then () else begin
       match (t1, t2) with
         (Tvar v, _) ->
-          if v.tvar_level = generic_level then raise Unify;
+          if v.tvar_level < !current_level then raise Unify;
           occur v t2;
           v.tvar_link <- Some t2
       | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
@@ -255,9 +255,13 @@ and filter_list env tl1 tl2 =
   | (_, _) -> raise Unify
   
 let moregeneral env sch1 sch2 =
+  begin_def();
   try
-    filter env (instance sch1) sch2; true
+    filter env (instance sch1) sch2;
+    end_def();
+    true
   with Unify ->
+    end_def();
     false
 
 let equal env params1 ty1 params2 ty2 =

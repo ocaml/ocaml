@@ -54,7 +54,7 @@ val closed_schema: type_expr -> bool
 val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr
         (* Return a type equivalent to the given type but without
            references to the given module identifier. Raise [Not_found]
-           if no such type List.exists. *)
+           if no such type exists. *)
 val free_type_ident: Env.t -> Ident.t list -> type_expr -> bool
         (* Test whether one of the given type identifiers occur free
            in the given type expression. *)
