@@ -22,10 +22,9 @@ open Parser
 
 rule line =     (* Read a whole line *)
   parse
-    [ ^ '\n' ]* '\n'
-      { let line = Lexing.lexeme lexbuf in
-        String.sub line 0 (String.length line - 1) }
-  | [ ^ '\n' ]*
+    ([ ^ '\n' '\r' ]* as s) ('\n' | '\r' | "\r\n")
+      { s }
+  | [ ^ '\n' '\r' ]*
       { Lexing.lexeme lexbuf }
   | eof
       { raise Exit }
