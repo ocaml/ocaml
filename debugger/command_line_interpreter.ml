@@ -113,9 +113,16 @@ let find_variable action alternative lexbuf =
 let find_info action alternative lexbuf =
   find_ident "info command" matching_infos action alternative lexbuf
 
+let add_breakpoint_at_event =
+  function
+    {ev_repr = Event_child pc} ->
+      new_breakpoint (any_event_at_pc !pc)
+  | ev ->
+      new_breakpoint ev
+
 let add_breakpoint_at_pc pc =
   try
-    new_breakpoint (event_at_pc pc)
+    add_breakpoint_at_event (any_event_at_pc pc)
   with Not_found ->
     prerr_string "Can't add breakpoint at pc ";
     prerr_int pc;
@@ -124,13 +131,14 @@ let add_breakpoint_at_pc pc =
 
 let add_breakpoint_after_pc pc =
   let rec try_add n =
-    if n < 4 then begin
+    if n < 3 then begin
       try
-        new_breakpoint (event_at_pc(pc + n * 4))
+        add_breakpoint_at_event (any_event_at_pc (pc + n * 4))
       with Not_found ->
         try_add (n+1)
     end else begin
-      prerr_endline "Can't add breakpoint at beginning of function: no event there";
+      prerr_endline
+        "Can't add breakpoint at beginning of function: no event there";
       raise Toplevel
     end
   in try_add 0
@@ -505,16 +513,14 @@ let instr_info =
          "\"info\" must be followed by the name of an info command.";
        raise Toplevel)
 
-(* XXX Point d'arret sur fonction a traiter de maniere specifique
-   (il n'y a pas toujours un unique evenement en debut de fonction) *)
 let instr_break lexbuf =
   let argument = break_argument_eol Lexer.lexeme lexbuf in
     ensure_loaded ();
     match argument with
       BA_none ->                                (* break *)
         (match !selected_event with
-           Some {ev_pos = pc} ->
-             add_breakpoint_at_pc pc
+           Some ev ->
+             add_breakpoint_at_event ev
          | None ->
              prerr_endline "Can't add breakpoint at this point.";
              raise Toplevel)
@@ -543,27 +549,28 @@ let instr_break lexbuf =
         end
     | BA_pos1 (mdle, line, column) ->         (* break @ [MODULE] LINE [COL] *)
         let module_name = convert_module mdle in
-          new_breakpoint
-            (try
-               match column with
-                 None ->
-                   event_at_pos
-                     module_name
-                     (fst (pos_of_line (get_buffer module_name) line))
-               | Some col ->
-                   event_near_pos
-                     module_name
-                     (point_of_coord (get_buffer module_name) line col)
-             with
-               Not_found ->
-                 prerr_endline "Can't find any event there.";
-                 raise Toplevel
-             | Out_of_range ->
-                 prerr_endline "Position out of range.";
-                 raise Toplevel)
+        add_breakpoint_at_event
+          (try
+             match column with
+               None ->
+                 event_at_pos
+                   module_name
+                   (fst (pos_of_line (get_buffer module_name) line))
+             | Some col ->
+                 event_near_pos
+                   module_name
+                   (point_of_coord (get_buffer module_name) line col)
+           with
+             Not_found ->
+               prerr_endline "Can't find any event there.";
+               raise Toplevel
+           | Out_of_range ->
+               prerr_endline "Position out of range.";
+               raise Toplevel)
     | BA_pos2 (mdle, position) ->             (* break @ [MODULE] # POSITION *)
         try
-          new_breakpoint (event_near_pos (convert_module mdle) position)
+          add_breakpoint_at_event
+            (event_near_pos (convert_module mdle) position)
         with
           Not_found ->
             prerr_endline "Can't find any event there."
@@ -841,28 +848,24 @@ let info_breakpoints lexbuf =
        (List.rev !breakpoints))
 
 let info_events lexbuf =
-  if not !loaded then
-    (prerr_endline "Not in a module."; raise Toplevel);
-  let mdle =
-    match opt_identifier_eol Lexer.lexeme lexbuf with
-      Some x -> x
-    | None ->
-        match !current_event with
-          None ->
-            prerr_endline "Not in a module."; raise Toplevel
-        | Some {ev_module = m} -> m
-  in
+  ensure_loaded ();
+  let mdle = convert_module (opt_identifier_eol Lexer.lexeme lexbuf) in
     print_endline ("Module : " ^ mdle);
-    print_endline "   Address  Character   Kind";
+    print_endline "   Address  Character      Kind      Repr.";
     Array.iter
-      (function {ev_pos = pc; ev_char = char; ev_kind = kind} ->
+      (fun {ev_pos = pc; ev_char = char; ev_kind = kind; ev_repr = repr} ->
          Printf.printf
-           "%10d %10d  %s\n"
+           "%10d %10d  %8s %10s\n"
            pc
            char
            (match kind with
-               Event_before -> "before"
-             | Event_after _ -> "after"))
+               Event_before   -> "before"
+             | Event_after _  -> "after"
+             | Event_function -> "function")
+           (match repr with
+              Event_none        -> ""
+            | Event_parent _    -> "(repr)"
+            | Event_child repr  -> string_of_int !repr))
       (events_in_module mdle)
 
 (** User-defined printers **)

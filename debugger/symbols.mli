@@ -22,6 +22,10 @@ val read_symbols : string -> unit
 val set_all_events : unit -> unit
 
 (* Return event at given PC, or raise Not_found *)
+(* Can also return pseudo-event at beginning of functions *)
+val any_event_at_pc : int -> Instruct.debug_event
+
+(* Return event at given PC, or raise Not_found *)
 val event_at_pc : int -> Instruct.debug_event
 
 (* List the events in `module'. *)

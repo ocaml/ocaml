@@ -76,19 +76,13 @@ let read_symbols bytecode_file =
           Hashtbl.add events_by_module md (Array.of_list sorted_evl))
     all_events
 
-let event_at_pc pc =
+let any_event_at_pc pc =
   Hashtbl.find events_by_pc pc
-(*
-  try
-    Hashtbl.find events_by_pc pc
-  with Not_found ->
-    prerr_string "No event at pc="; prerr_int pc; prerr_endline ".";
-    raise Toplevel
-*)
 
-(* Return the list of events at `pc' *)
-let events_at_pc =
-  Hashtbl.find_all events_by_pc
+let event_at_pc pc =
+  let ev = any_event_at_pc pc in
+  if ev.ev_kind = Event_function then raise Not_found;
+  ev
 
 (* List all events in module *)
 let events_in_module mdle =
@@ -137,5 +131,7 @@ let event_near_pos md char =
 (* Flip "event" bit on all instructions *)
 let set_all_events () =
   Hashtbl.iter
-    (fun pc ev -> Debugcom.set_event ev.ev_pos)
+    (fun pc ev ->
+       if ev.ev_kind <> Event_function then
+         Debugcom.set_event ev.ev_pos)
     events_by_pc
