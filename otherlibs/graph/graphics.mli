@@ -82,8 +82,8 @@ external point_color : x:int -> y:int -> color = "gr_point_color"
            (see "Double buffering" below). *)
 external moveto : x:int -> y:int -> unit = "gr_moveto"
         (* Position the current point. *)
-val rmoveto : x:int -> y:int -> unit
-        (* [rmoveto x y] translates the current point by the given vector. *)
+val rmoveto : dx:int -> dy:int -> unit
+        (* [rmoveto dx dy] translates the current point by the given vector. *)
 external current_x : unit -> int = "gr_current_x"
         (* Return the abscissa of the current point. *)
 external current_y : unit -> int = "gr_current_y"
@@ -93,7 +93,7 @@ val current_point : unit -> int * int
 external lineto : x:int -> y:int -> unit = "gr_lineto"
         (* Draw a line with endpoints the current point and the given point,
            and move the current point to the given point. *)
-val rlineto : x:int -> y:int -> unit
+val rlineto : dx:int -> dy:int -> unit
         (* Draws a line with endpoints the current point and the
            current point translated by the given vector,
            and move the current point to this point. *)
