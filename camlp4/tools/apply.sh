@@ -11,9 +11,12 @@ while test "" != "$1"; do
         shift
 done
 
-head -1 $FILE >/dev/null 2>&1 || exit 1
+# FILE must exist and be non empty (at least one line)
+test -s "$FILE" || exit 1
 
-set - `head -1 $FILE`
+
+
+set - `awk 'NR == 1' "$FILE"`
 if test "$2" = "camlp4r" -o "$2" = "camlp4"; then
         COMM="../boot/$2 -nolib -I ../boot -I ../etc"
         shift; shift

@@ -11,7 +11,7 @@ while test "" != "$1"; do
         shift
 done
 
-set - `head -1 $FILE`
+set - `awk 'NR == 1' "$FILE"`
 if test "$2" = "camlp4r" -o "$2" = "camlp4"; then
         COMM="$OTOP/boot/ocamlrun $DIR/../boot/$2 -nolib -I $DIR/../boot $INCL $DIR/../etc/pr_o.cmo"
         shift; shift
