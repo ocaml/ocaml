@@ -1,83 +1,69 @@
 include ../support/Makefile.common
 
-COMPFLAGS= -I ../support
+all: $(LIBNAME).cma $(LIBNAME)top$(EXE) $(LIBNAME)
 
-SUPPORT=../support/support.cmo ../support/widget.cmo ../support/protocol.cmo \
+opt: $(LIBNAME).cmxa
+
+clean: 
+	rm -f $(LIBNAME).cma $(LIBNAME).cmxa $(LIBNAME)top$(EXE) $(LIBNAME) *.a
+
+include ../labltk/modules
+LABLTKOBJS=tk.cmo $(WIDGETOBJS)
+
+include ../camltk/modules
+CAMLTKOBJS=cTk.cmo $(CWIDGETOBJS) labltk.cmo camltk.cmo
+
+SUPPORT=../support/support.cmo ../support/rawwidget.cmo \
+	../support/widget.cmo ../support/protocol.cmo \
         ../support/textvariable.cmo ../support/timer.cmo \
-        ../support/fileevent.cmo
+        ../support/fileevent.cmo ../support/camltkwrap.cmo
 
-SUPPORTX = $(SUPPORT:.cmo=.cmx)
+TKOBJS=$(SUPPORT) $(LABLTKOBJS) $(CAMLTKOBJS)
 
 TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
 
-all : labltk.cma labltktop$(EXE) labltk
-
-opt : labltk.cmxa
-
-include ./modules
-WIDGETOBJSX = $(WIDGETOBJS:.cmo=.cmx)
-
-labltk.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
-	$(MKLIB) -ocamlc '$(LABLC)' -o labltk -oc labltk41 \
-          $(SUPPORT) tk.cmo $(WIDGETOBJS) \
+$(LIBNAME).cma: $(SUPPORT)
+	cd ../labltk; $(MAKE)
+	cd ../camltk; $(MAKE)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o $(LIBNAME) -oc $(LIBNAME) \
+          -I ../labltk -I ../camltk $(TKOBJS) \
           $(TK_LINK) $(X11_LINK)
 
-labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
-	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o labltk -oc labltk41 \
-          $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \
+$(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx)
+	cd ../labltk; $(MAKE) opt
+	cd ../camltk; $(MAKE) opt
+	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o $(LIBNAME) -oc $(LIBNAME) \
+          -I ../labltk -I ../camltk $(TKOBJS:.cmo=.cmx) \
           $(TK_LINK) $(X11_LINK)
 
-labltktop$(EXE) : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT) ../support/liblabltk41.a
-	$(LABLC) -linkall -o labltktop$(EXE) -I ../support \
-	       -I $(TOPDIR)/toplevel toplevellib.cma labltk.cma \
+$(LIBNAME)top$(EXE) : $(TOPDEPS) $(LIBNAME).cma ../support/lib$(LIBNAME).a
+	$(CAMLC) -linkall -o $(LIBNAME)top$(EXE) -I ../support \
+	       -I $(TOPDIR)/toplevel toplevellib.cma \
+	       -I ../labltk -I ../camltk $(LIBNAME).cma \
 	       -I $(OTHERS)/unix unix.cma \
 	       -I $(OTHERS)/str str.cma \
 	       $(DLLPATH) \
 	       topmain.cmo
 
-labltk: Makefile $(TOPDIR)/config/Makefile
+$(LIBNAME): Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec $(LABLTKDIR)/labltktop$(EXE) -I $(LABLTKDIR) $$*' >> $@
+	@echo 'exec $(INSTALLDIR)/$(LIBNAME)top$(EXE) -I $(INSTALLDIR) $$*' >> $@
 
-# All .{ml,mli} files are generated in this directory
-clean : 
-	rm -f *.cm* *.ml *.mli *.o *.a labltktop$(EXE)
-
-install: labltk.cma labltktop$(EXE) labltk
-	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	if test `grep -s -c '^$(LABLTKDIR)$$' $(LIBDIR)/ld.conf || :` = 0; \
-        then echo $(LABLTKDIR) >> $(LIBDIR)/ld.conf; fi
-	cp $(WIDGETOBJS:.cmo=.cmi) tk.cmi $(LABLTKDIR)
-	cp labltk.cma labltktop$(EXE) $(LABLTKDIR)
-	chmod 644 $(LABLTKDIR)/*.cmi
-	chmod 644 $(LABLTKDIR)/labltk.cma
-	chmod 755 $(LABLTKDIR)/labltktop$(EXE)
+install: all
+	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
+	if test `grep -s -c '^$(INSTALLDIR)$$' $(LIBDIR)/ld.conf || :` = 0; \
+        then echo $(INSTALLDIR) >> $(LIBDIR)/ld.conf; fi
+	cp $(LIBNAME).cma $(LIBNAME)top$(EXE) $(INSTALLDIR)
+	chmod 644 $(INSTALLDIR)/$(LIBNAME).cma
+	chmod 755 $(INSTALLDIR)/$(LIBNAME)top$(EXE)
 	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
-	cp labltk $(BINDIR)
-	chmod 755 $(BINDIR)/labltk
+	cp $(LIBNAME) $(BINDIR)
+	chmod 755 $(BINDIR)/$(LIBNAME)
 
-
-installopt: labltk.cmxa
-	@if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	cp $(SUPPORTX) $(WIDGETOBJSX) tk.cmx $(LABLTKDIR)
-	cp labltk.cmxa labltk.a $(LABLTKDIR)
-	cd $(LABLTKDIR); $(RANLIB) labltk.a
-	chmod 644 $(LABLTKDIR)/*.cmx
-	chmod 644 $(LABLTKDIR)/labltk.cmxa
-	chmod 644 $(LABLTKDIR)/labltk.a
-	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
-
-.SUFFIXES :
-.SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
-
-.mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
-
-.ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
-
-.ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
-
-include .depend
+installopt: opt
+	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
+	cp $(LIBNAME).cmxa $(LIBNAME).a $(INSTALLDIR)
+	cd $(INSTALLDIR); $(RANLIB) $(LIBNAME).a
+	chmod 644 $(INSTALLDIR)/$(LIBNAME).cmxa
+	chmod 644 $(INSTALLDIR)/$(LIBNAME).a

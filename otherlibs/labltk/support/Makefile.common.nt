@@ -7,20 +7,22 @@ EXEDIR=$(TOPDIRNT)
 ## Path to the otherlibs subdirectory
 OTHERS=../..
 
+LIBNAME=mltk
+
 !include $(TOPDIRNT)\config\Makefile.nt
 
-LABLTKDIR=$(LIBDIR)\labltk
+INSTALLDIR=$(LIBDIR)\$(LIBNAME)
 TKLINKOPT=$(STATIC)
 
 ## Tools from the Objective Caml distribution
 
 CAMLRUN=$(EXEDIR)\boot\ocamlrun
-LABLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
-LABLCOMP=$(LABLC) -labels -c
-LABLYACC=$(EXEDIR)\boot\ocamlyacc -v
-LABLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
-LABLLIBR=$(LABLC) -a
-LABLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
+CAMLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
+CAMLCOMP=$(CAMLC) -labels -c
+CAMLYACC=$(EXEDIR)\boot\ocamlyacc -v
+CAMLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
+CAMLLIBR=$(CAMLC) -a
+CAMLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
 COMPFLAGS=
 LINKFLAGS=
 

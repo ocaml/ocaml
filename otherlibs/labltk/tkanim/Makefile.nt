@@ -1,0 +1,76 @@
+!include ..\support\Makefile.common.nt
+
+CCFLAGS=-I..\support -I..\..\..\byterun $(TK_DEFS)
+
+COMPFLAGS=-I $(OTHERS)/win32unix -I ../support -I ../camltk
+
+all: tkanim.cma dlltkanim.dll libtkanim.lib
+opt: tkanim.cmxa libtkanim.lib
+example: gifanimtest.exe
+
+OBJS=tkanim.cmo
+COBJS= cltkaniminit.obj tkAnimGIF.obj
+
+tkanim.cma: $(OBJS)
+	$(CAMLLIBR) -o tkanim.cma $(OBJS) \
+	  -dllib -ltkanim -cclib -ltkanim $(TK_LINK)
+
+tkanim.cmxa: $(OBJS:.cmo=.cmx)
+	$(CAMLOPTLIBR) -o tkanim.cmxa $(OBJS:.cmo=.cmx) \
+	  -cclib -ltkanim $(TK_LINK)
+
+libtkanim.lib: $(COBJS:.obj=.sobj)
+	rm -f libtkanim.lib
+	$(MKLIB)libtkanim.lib $(COBJS:.obj=.sobj)
+
+dlltkanim.dll: $(COBJS:.obj=.dobj)
+	link /nologo /dll /out:dlltkanim.dll /implib:tmp.lib \
+	  $(COBJS:.obj=.dobj) ..\support\dll$(LIBNAME).lib \
+	  ..\..\..\byterun\ocamlrun.lib \
+	  $(TK_LINK) wsock32.lib 
+	rm tmp.*
+
+gifanimtest.exe: all gifanimtest.cmo
+	$(CAMLC) -custom -o $@ -I ../lib -I ../camltk -I ../support unix.cma $(LIBNAME).cma tkanim.cma gifanimtest.cmo
+
+# animwish: $(TKANIM_LIB) tkAppInit.o
+# 	$(CC) -o $@  tkAppInit.o $(TK_LINK) $(X11_LINK) \
+# 		-L. -ltkanim $(LIBS)
+
+clean:
+	rm -f *.cm* *.obj *.dobj *.sobj *.lib *.dll gifanimtest.exe
+
+$(OBJS) $(OBJS:.cmo=.cmi): ..\lib\$(LIBNAME).cma
+
+$(OBJS:.cmo=.cmx): ..\lib\$(LIBNAME).cmxa
+
+.SUFFIXES :
+.SUFFIXES : .mli .ml .cmi .cmo .mlp .cmx .c .dobj .sobj
+
+.mli.cmi:
+	$(CAMLCOMP) $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLCOMP) $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+.c.dobj:
+	$(BYTECC) $(DLLCCCOMPOPTS) $(CCFLAGS) -c $<
+	mv $*.obj $*.dobj
+
+.c.sobj:
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
+	mv $*.obj $*.sobj
+
+install: tkanim.cma 
+	cp tkanim.cma *.cmi *.mli libtkanim.lib dlltkanim.dll $(INSTALLDIR)
+
+installopt: tkanim.cmxa
+	cp tkanim.cmxa $(INSTALLDIR)
+
+depend: tkanim.ml
+	$(CAMLDEP) *.mli *.ml > .depend
+
+!include .depend

@@ -255,7 +255,7 @@ let filter_modules () =
         Hashtbl.remove shown_modules key)
     shown_modules
 let add_shown_module path ~widgets =
-  Hashtbl'.add shown_modules ~key:path ~data:widgets
+  Hashtbl.add shown_modules path widgets
 let find_shown_module path =
   try
     filter_modules ();

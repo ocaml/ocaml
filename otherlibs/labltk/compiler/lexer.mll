@@ -1,18 +1,18 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                Objective Caml LablTk library                          *)
-(*                                                                       *)
-(*         Francois Rouaix, Francois Pessaux and Jun Furuse              *)
-(*               projet Cristal, INRIA Rocquencourt                      *)
-(*            Jacques Garrigue, Kyoto University RIMS                    *)
-(*                                                                       *)
-(*   Copyright 1999 Institut National de Recherche en Informatique et    *)
-(*   en Automatique and Kyoto University.  All rights reserved.          *)
-(*   This file is distributed under the terms of the GNU Library         *)
-(*   General Public License, with the special exception on linking       *)
-(*   described in file ../../../LICENSE.                                 *)
-(*                                                                       *)
-(*************************************************************************)
+(***********************************************************************)
+(*                                                                     *)
+(*                 MLTk, Tcl/Tk interface of Objective Caml            *)
+(*                                                                     *)
+(*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    *)
+(*               projet Cristal, INRIA Rocquencourt                    *)
+(*            Jacques Garrigue, Kyoto University RIMS                  *)
+(*                                                                     *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*  en Automatique and Kyoto University.  All rights reserved.         *)
+(*  This file is distributed under the terms of the GNU Library        *)
+(*  General Public License, with the special exception on linking      *)
+(*  described in file ../LICENSE.                                      *)
+(*                                                                     *)
+(***********************************************************************)
 
 (* $Id$ *)
 
@@ -31,7 +31,7 @@ let current_line = ref 1
 let keyword_table = (Hashtbl.create 149 : (string, token) Hashtbl.t)
 
 let _ = List.iter
-  ~f:(fun (str,tok) -> Hashtbl'.add keyword_table ~key:str ~data:tok)
+  ~f:(fun (str,tok) -> Hashtbl.add keyword_table str tok)
   [
   "int", TYINT;
   "float", TYFLOAT;
@@ -125,7 +125,9 @@ rule main = parse
   | ";" { SEMICOLON }
   | ":" {COLON}
   | "?" {QUESTION}
-  | "#" { comment lexbuf; main lexbuf }
+  | "/" {SLASH}
+  | "%" { comment lexbuf; main lexbuf }
+  | "##line" { line lexbuf; main lexbuf }  
   | eof { EOF }
   | _
       { raise (Lexical_error("illegal character")) }
@@ -157,3 +159,12 @@ and comment = parse
  | eof  { () }
  | _ { comment lexbuf }
 
+and linenum = parse
+ | ['0'-'9']+ { 
+            let next_line = int_of_string (Lexing.lexeme lexbuf) in
+	    current_line := next_line - 1
+	  }
+ | _ { raise (Lexical_error("illegal ##line directive: no line number"))}
+
+and line = parse
+ | [' ' '\t']* { linenum lexbuf }

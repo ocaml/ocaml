@@ -1,18 +1,18 @@
-/*************************************************************************/
-/*                                                                       */
-/*                Objective Caml LablTk library                          */
-/*                                                                       */
-/*         Francois Rouaix, Francois Pessaux and Jun Furuse              */
-/*               projet Cristal, INRIA Rocquencourt                      */
-/*            Jacques Garrigue, Kyoto University RIMS                    */
-/*                                                                       */
-/*   Copyright 1999 Institut National de Recherche en Informatique et    */
-/*   en Automatique and Kyoto University.  All rights reserved.          */
-/*   This file is distributed under the terms of the GNU Library         */
-/*   General Public License, with the special exception on linking       */
-/*   described in file ../../../LICENSE.                                 */
-/*                                                                       */
-/*************************************************************************/
+/***********************************************************************/
+/*                                                                     */
+/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                                                                     */
+/*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
+/*               projet Cristal, INRIA Rocquencourt                    */
+/*            Jacques Garrigue, Kyoto University RIMS                  */
+/*                                                                     */
+/*  Copyright 2002 Institut National de Recherche en Informatique et   */
+/*  en Automatique and Kyoto University.  All rights reserved.         */
+/*  This file is distributed under the terms of the GNU Library        */
+/*  General Public License, with the special exception on linking      */
+/*  described in file LICENSE found in the Objective Caml source tree. */
+/*                                                                     */
+/***********************************************************************/
 
 /* $Id$ */
 
@@ -44,8 +44,9 @@ struct WinCBData {
   Tk_Window win;
 };
 
-static void WaitVisibilityProc(ClientData clientData, XEvent *eventPtr)
-                                /* Information about event (not used). */
+static void WaitVisibilityProc(clientData, eventPtr)
+    ClientData clientData;	
+    XEvent *eventPtr;		/* Information about event (not used). */
 {
   struct WinCBData *vis = clientData;
   value cbid = Val_int(vis->cbid);

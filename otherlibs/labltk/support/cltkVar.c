@@ -1,18 +1,18 @@
-/*************************************************************************/
-/*                                                                       */
-/*                Objective Caml LablTk library                          */
-/*                                                                       */
-/*         Francois Rouaix, Francois Pessaux and Jun Furuse              */
-/*               projet Cristal, INRIA Rocquencourt                      */
-/*            Jacques Garrigue, Kyoto University RIMS                    */
-/*                                                                       */
-/*   Copyright 1999 Institut National de Recherche en Informatique et    */
-/*   en Automatique and Kyoto University.  All rights reserved.          */
-/*   This file is distributed under the terms of the GNU Library         */
-/*   General Public License, with the special exception on linking       */
-/*   described in file ../../../LICENSE.                                 */
-/*                                                                       */
-/*************************************************************************/
+/***********************************************************************/
+/*                                                                     */
+/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                                                                     */
+/*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
+/*               projet Cristal, INRIA Rocquencourt                    */
+/*            Jacques Garrigue, Kyoto University RIMS                  */
+/*                                                                     */
+/*  Copyright 2002 Institut National de Recherche en Informatique et   */
+/*  en Automatique and Kyoto University.  All rights reserved.         */
+/*  This file is distributed under the terms of the GNU Library        */
+/*  General Public License, with the special exception on linking      */
+/*  described in file LICENSE found in the Objective Caml source tree. */
+/*                                                                     */
+/***********************************************************************/
 
 /* $Id$ */
 
@@ -40,22 +40,28 @@ CAMLprim value camltk_getvar(value var)
   if (s == NULL)
     tk_error(cltclinterp->result);
   else 
-    return(copy_string(s));
+    return(tcl_string_to_caml(s));
 }
 
 CAMLprim value camltk_setvar(value var, value contents)
 {
   char *s;
   char *stable_var = NULL;
+  char *utf_contents; 
   CheckInit();
 
   /* SetVar makes a copy of the contents. */
   /* In case we have write traces in Caml, it's better to make sure that
      var doesn't move... */
   stable_var = string_to_c(var);
-  s = Tcl_SetVar(cltclinterp,stable_var, String_val(contents),
+  utf_contents = caml_string_to_tcl(contents);
+  s = Tcl_SetVar(cltclinterp,stable_var, utf_contents,
                    TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
   stat_free(stable_var);
+  if( s == utf_contents ){ 
+    tk_error("camltk_setvar: Tcl_SetVar returned strange result. Call the author of mlTk!");
+  }
+  stat_free(utf_contents);
 
   if (s == NULL)
     tk_error(cltclinterp->result);
@@ -68,12 +74,12 @@ CAMLprim value camltk_setvar(value var, value contents)
 typedef char *(Tcl_VarTraceProc) _ANSI_ARGS_((ClientData clientData,
         Tcl_Interp *interp, char *part1, char *part2, int flags));
  */
-static char * tracevar(ClientData clientdata, Tcl_Interp *interp,
-                       char *name1, char *name2, int flags)
-                                /* Interpreter containing variable. */
-                                /* Name of variable. */
-                                /* Second part of variable name. */
-                                /* Information about what happened. */
+static char * tracevar(clientdata, interp, name1, name2, flags)
+     ClientData clientdata;
+     Tcl_Interp *interp;	/* Interpreter containing variable. */
+     char *name1;		/* Name of variable. */
+     char *name2;		/* Second part of variable name. */
+     int flags;			/* Information about what happened. */
 {
   Tcl_UntraceVar2(interp, name1, name2,
                 TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,

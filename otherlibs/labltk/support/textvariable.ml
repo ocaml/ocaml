@@ -1,22 +1,21 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                Objective Caml LablTk library                          *)
-(*                                                                       *)
-(*         Francois Rouaix, Francois Pessaux and Jun Furuse              *)
-(*               projet Cristal, INRIA Rocquencourt                      *)
-(*            Jacques Garrigue, Kyoto University RIMS                    *)
-(*                                                                       *)
-(*   Copyright 1999 Institut National de Recherche en Informatique et    *)
-(*   en Automatique and Kyoto University.  All rights reserved.          *)
-(*   This file is distributed under the terms of the GNU Library         *)
-(*   General Public License, with the special exception on linking       *)
-(*   described in file ../../../LICENSE.                                 *)
-(*                                                                       *)
-(*************************************************************************)
+(***********************************************************************)
+(*                                                                     *)
+(*                 MLTk, Tcl/Tk interface of Objective Caml            *)
+(*                                                                     *)
+(*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    *)
+(*               projet Cristal, INRIA Rocquencourt                    *)
+(*            Jacques Garrigue, Kyoto University RIMS                  *)
+(*                                                                     *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*  en Automatique and Kyoto University.  All rights reserved.         *)
+(*  This file is distributed under the terms of the GNU Library        *)
+(*  General Public License, with the special exception on linking      *)
+(*  described in file LICENSE found in the Objective Caml source tree. *)
+(*                                                                     *)
+(***********************************************************************)
 
 (* $Id$ *)
 
-open StdLabels
 open Support
 open Protocol
 
@@ -39,7 +38,7 @@ let add_handle var cbid =
     r := cbid :: !r
   with
     Not_found -> 
-      Hashtbl'.add handles var (ref [cbid])
+      Hashtbl.add handles var (ref [cbid])
 
 let exceptq x =
   let rec ex acc = function
@@ -64,7 +63,7 @@ let rem_handle var cbid =
 let rem_all_handles var =
   try
     let r = Hashtbl.find handles var in
-    List.iter ~f:(internal_untracevar var) !r;
+    List.iter (internal_untracevar var) !r;
     Hashtbl.remove handles var
   with
     Not_found -> ()
@@ -77,7 +76,7 @@ let handle vname ~callback:f =
     clear_callback id;
     rem_handle vname id;
     f() in
-  Hashtbl'.add callback_naming_table ~key:id ~data:wrapped;
+  Hashtbl.add callback_naming_table id wrapped;
   add_handle vname id;
   if !Protocol.debug then begin
     prerr_cbid id; prerr_string " for variable "; prerr_endline vname
@@ -97,9 +96,9 @@ let add w v =
     try Hashtbl.find memo w 
     with
       Not_found -> 
-        let r = ref StringSet.empty in
-          Hashtbl'.add memo ~key:w ~data:r;
-          r in
+      	let r = ref StringSet.empty in
+	  Hashtbl.add memo w r;
+	  r in
    r := StringSet.add v !r
 
 (* to be used with care ! *)

@@ -1,3 +1,10 @@
+##ifdef CAMLTK
+
+val bind : widget -> tagOrId -> 
+                    (modifier list * xEvent) list -> bindAction -> unit 
+
+##else
+
 val bind :
   events: event list ->
   ?extend: bool ->
@@ -5,3 +12,5 @@ val bind :
   ?fields: eventField list ->
   ?action: (eventInfo -> unit) ->
   canvas widget -> tagOrId -> unit 
+
+##endif

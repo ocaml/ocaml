@@ -1,6 +1,6 @@
 !include ..\support\Makefile.common.nt
 
-LABLTKLIB=-I ../lib -I ../support
+LABLTKLIB=-I ../labltk -I ../lib -I ../support
 OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
@@ -21,35 +21,35 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
 .mli.cmi:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
-.c.obj:
+y.c.obj:
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
 
 all: ocamlbrowser.exe
 
 ocamlbrowser.exe: $(TOPDIR)/toplevel/toplevellib.cma \
-  ..\support\liblabltk41.lib
+	..\support\lib$(LIBNAME).lib
 ocamlbrowser.exe: jglib.cma $(OBJ) winmain.obj
-	$(LABLC) -o ocamlbrowser.exe -custom $(INCLUDES) \
+	$(CAMLC) -o ocamlbrowser.exe -custom $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma threads.cma str.cma labltk.cma jglib.cma $(OBJ) \
+		unix.cma threads.cma str.cma $(LIBNAME).cma jglib.cma $(OBJ) \
 		winmain.obj -cclib "/subsystem:windows"
 
 jglib.cma: $(JG)
-	$(LABLCOMP) -a -o jglib.cma $(JG) 
+	$(CAMLCOMP) -a -o jglib.cma $(JG) 
 
 install:
 	if exist ocamlbrowser.exe cp ocamlbrowser.exe $(BINDIR)
 
 clean:
-	rm -f *.cm? ocamlbrowser dummy.mli *~ *.orig
+	rm -f *.cm? ocamlbrowser.exe dummy.mli *~ *.orig *.obj *.pdb
 
 depend:
-	$(LABLDEP) *.ml *.mli > .depend
+	$(CAMLDEP) *.ml *.mli > .depend
 
 dummy.mli:
 	cp dummyWin.mli dummy.mli

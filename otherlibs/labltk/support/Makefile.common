@@ -4,22 +4,24 @@ TOPDIR=../../..
 ## Path to the otherlibs subdirectory
 OTHERS=../..
 
+LIBNAME=labltk
+
 include $(TOPDIR)/config/Makefile
 
-LABLTKDIR=$(LIBDIR)/labltk
+INSTALLDIR=$(LIBDIR)/$(LIBNAME)
 
 ## Tools from the Objective Caml distribution
 
 CAMLRUN=$(TOPDIR)/boot/ocamlrun
-LABLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
-LABLCOMP=$(LABLC) -c -warn-error A
-LABLYACC=$(TOPDIR)/boot/ocamlyacc -v
-LABLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
-LABLLIBR=$(LABLC) -a
-LABLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
+CAMLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
+CAMLCOMP=$(CAMLC) -c -warn-error A
+CAMLYACC=$(TOPDIR)/boot/ocamlyacc -v
+CAMLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
+CAMLLIBR=$(CAMLC) -a
+CAMLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
 COMPFLAGS=
 LINKFLAGS=
-DLLPATH=`if $(SUPPORTS_SHARED_LIBRARIES); then echo -dllpath $(LABLTKDIR); fi`
+DLLPATH=`if $(SUPPORTS_SHARED_LIBRARIES); then echo -dllpath $(INSTALLDIR); fi`
 
 CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib
 CAMLOPTLIBR=$(CAMLOPT) -a
