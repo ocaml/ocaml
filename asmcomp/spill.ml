@@ -103,6 +103,10 @@ let add_superpressure_regs op live_regs res_regs spilled =
     end in
   check_pressure 0 spilled
 
+(* A-list recording what is destroyed at if-then-else points. *)
+
+let destroyed_at_fork = ref ([] : (instruction * Reg.Set.t) list)
+
 (* First pass: insert reload instructions based on an approximation of
    what is destroyed at pressure points. *)
 
@@ -153,9 +157,11 @@ let rec reload i before =
       current_date := max date_ifso !current_date;
       let (new_next, finally) =
         reload i.next (Reg.Set.union after_ifso after_ifnot) in
-      (add_reloads (Reg.inter_set_array before i.arg)
-                   (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
-                               i.arg i.res new_next),
+      let new_i =
+        instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
+        i.arg i.res new_next in
+      destroyed_at_fork := (new_i, at_fork) :: !destroyed_at_fork;
+      (add_reloads (Reg.inter_set_array before i.arg) new_i,
        finally)
   | Iswitch(index, cases) ->
       let at_fork = Reg.diff_set_array before i.arg in
@@ -229,11 +235,11 @@ let rec reload i before =
    a conditional but not in the other, then we spill it late on entrance
    in the branch that needs it spilled.
    This strategy is turned off in loops, as it may prevent a spill from
-   being lifted up all the way out of the loop.
-   Optimization currently turned off -- does not work as implemented. *)
+   being lifted up all the way out of the loop. *)
 
 let spill_at_exit = ref Reg.Set.empty
 let spill_at_raise = ref Reg.Set.empty
+let inside_loop = ref false
 
 let add_spills regset i =
   Reg.Set.fold
@@ -267,17 +273,24 @@ let rec spill i finally =
       let (new_next, at_join) = spill i.next finally in
       let (new_ifso, before_ifso) = spill ifso at_join in
       let (new_ifnot, before_ifnot) = spill ifnot at_join in
-      (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
-                  i.arg i.res new_next,
-       Reg.Set.union before_ifso before_ifnot)
-(**** if !inside_loop then
+      if !inside_loop then
+        (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
+                     i.arg i.res new_next,
+         Reg.Set.union before_ifso before_ifnot)
+      else begin
+        let destroyed = List.assq i !destroyed_at_fork in
+        let spill_ifso_branch =
+          Reg.Set.diff (Reg.Set.diff before_ifso before_ifnot) destroyed
+        and spill_ifnot_branch =
+          Reg.Set.diff (Reg.Set.diff before_ifnot before_ifso) destroyed in
         (instr_cons
-            (Iifthenelse(test,
-              add_spills (Reg.Set.diff before_ifso before_ifnot) new_ifso,
-              add_spills (Reg.Set.diff before_ifnot before_ifso) new_ifnot))
+            (Iifthenelse(test, add_spills spill_ifso_branch new_ifso,
+                               add_spills spill_ifnot_branch new_ifnot))
             i.arg i.res new_next,
-         Reg.Set.inter before_ifso before_ifnot)
-*****)
+         Reg.Set.diff (Reg.Set.diff (Reg.Set.union before_ifso before_ifnot)
+                                    spill_ifso_branch)
+                       spill_ifnot_branch)
+      end
   | Iswitch(index, cases) ->
       let (new_next, at_join) = spill i.next finally in
       let before = ref Reg.Set.empty in
@@ -292,6 +305,8 @@ let rec spill i finally =
        !before)
   | Iloop(body) ->
       let (new_next, _) = spill i.next finally in
+      let saved_inside_loop = !inside_loop in
+      inside_loop := true;
       let at_head = ref Reg.Set.empty in
       let final_body = ref body in
       begin try
@@ -305,6 +320,7 @@ let rec spill i finally =
         done
       with Exit -> ()
       end;
+      inside_loop := saved_inside_loop;
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        !at_head)
   | Icatch(body, handler) ->
