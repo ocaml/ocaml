@@ -8,6 +8,8 @@ Language features:
   provided in the type definition module.
   That way, the construction functions can enforce any required invariant for
   the datatype.
+- Added integer literals of types int32, nativeint, int64
+  (written with an 'l', 'n' or 'L' suffix respectively).
 
 Type-checking:
 - Allow polymorphic generalization of covariant parts of expansive expressions

@@ -369,7 +369,7 @@ let emit_instr i =
             `	mov	{emit_reg dst}, {emit_reg src}\n`
         end
     | Lop(Iconst_int n) ->
-        if n = Nativeint.zero then begin
+        if n = 0n then begin
           match i.res.(0).loc with
             Reg n -> `	xor	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
           | _     -> `	mov	{emit_reg i.res.(0)}, 0\n`
@@ -575,9 +575,9 @@ let emit_instr i =
         stack_offset := !stack_offset - 8;
         `	sub	esp, 8\n`;
         `	fnstcw	[esp+4]\n`;
-        `	mov	eax, [esp+4]\n`;
+        `	mov	ax, [esp+4]\n`;
         `	mov	ah, 12\n`;
-        `	mov	[esp], eax\n`;
+        `	mov	[esp], ax\n`;
         `	fldcw	[esp]\n`;
         begin match i.res.(0).loc with
           Stack s ->

@@ -126,6 +126,9 @@ regexp.byt: ../../otherlibs/str/str.cma regexp.ml
 regexp.opt: ../../otherlibs/str/str.cmxa regexp.ml
 	$(CAMLOPT) -I ../../otherlibs/str -o regexp.opt str.cmxa regexp.ml
 
+md5.out: md5.ml
+	$(CAMLOPT) -unsafe -inline 100 -o md5.out md5.ml
+
 # Common rules
 
 .SUFFIXES:

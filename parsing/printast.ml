@@ -46,9 +46,11 @@ let fmt_constant f x =
   match x with
   | Const_int (i) -> fprintf f "Const_int %d" i;
   | Const_char (c) -> fprintf f "Const_char %02x" (Char.code c);
-  | Const_string (s) ->
-      fprintf f "Const_string %S" s;
+  | Const_string (s) -> fprintf f "Const_string %S" s;
   | Const_float (s) -> fprintf f "Const_float %s" s;
+  | Const_int32 (i) -> fprintf f "Const_int32 %ld" i;
+  | Const_int64 (i) -> fprintf f "Const_int64 %Ld" i;
+  | Const_nativeint (i) -> fprintf f "Const_nativeint %nd" i;
 ;;
 
 let fmt_mutable_flag f x =

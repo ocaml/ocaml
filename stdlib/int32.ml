@@ -32,15 +32,15 @@ external to_int : int32 -> int = "%int32_to_int"
 external of_float : float -> int32 = "int32_of_float"
 external to_float : int32 -> float = "int32_to_float"
 
-let zero = of_int 0
-let one = of_int 1
-let minus_one = of_int (-1)
-let succ n = add n one
-let pred n = sub n one
-let abs n = if n >= zero then n else neg n
-let min_int = shift_left one 31
-let max_int = sub min_int one
-let lognot n = logxor n minus_one
+let zero = 0l
+let one = 1l
+let minus_one = -1l
+let succ n = add n 1l
+let pred n = sub n 1l
+let abs n = if n >= 0l then n else neg n
+let min_int = 0x80000000l
+let max_int = 0x7FFFFFFFl
+let lognot n = logxor n (-1l)
 
 external format : string -> int32 -> string = "int32_format"
 let to_string n = format "%d" n

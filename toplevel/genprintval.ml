@@ -102,14 +102,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
       Pident(Ident.create "print_string"), Predef.type_string,
         (fun x -> Oval_string (O.obj x : string));
       Pident(Ident.create "print_int32"), Predef.type_int32,
-        (fun x -> Oval_stuff ("<int32 " ^
-                              Int32.to_string (O.obj x : int32) ^ ">"));
+        (fun x -> Oval_int32 (O.obj x : int32));
       Pident(Ident.create "print_nativeint"), Predef.type_nativeint,
-        (fun x -> Oval_stuff ("<nativeint " ^
-                             Nativeint.to_string (O.obj x : nativeint) ^ ">"));
+        (fun x -> Oval_nativeint (O.obj x : nativeint));
       Pident(Ident.create "print_int64"), Predef.type_int64,
-        (fun x -> Oval_stuff ("<int64 " ^
-                              Int64.to_string (O.obj x : int64) ^ ">"))
+        (fun x -> Oval_int64 (O.obj x : int64))
     ] : (Path.t * type_expr * (O.t -> Outcometree.out_value)) list)
 
     let install_printer path ty fn =

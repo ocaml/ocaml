@@ -110,7 +110,8 @@ let lambda_smaller lam threshold =
     if !size > threshold then raise Exit;
     match lam with
       Uvar v -> ()
-    | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _) |
+    | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _ |
+                        Const_int32 _ | Const_int64 _ | Const_nativeint _) |
              Const_pointer _) -> incr size
     | Uconst _ ->
         raise Exit (* avoid duplication of structured constants *)
@@ -312,7 +313,9 @@ let rec substitute sb ulam =
 
 let is_simple_argument = function
     Uvar _ -> true
-  | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _)) -> true
+  | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _ |
+                      Const_int32 _ | Const_int64 _ | Const_nativeint _)) ->
+      true
   | Uconst(Const_pointer _) -> true
   | _ -> false
 

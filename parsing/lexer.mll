@@ -231,6 +231,8 @@ let oct_literal =
   '0' ['o' 'O'] ['0'-'7'] ['0'-'7' '_']*
 let bin_literal =
   '0' ['b' 'B'] ['0'-'1'] ['0'-'1' '_']*
+let int_literal =
+  decimal_literal | hex_literal | oct_literal | bin_literal
 let float_literal =
   ['0'-'9'] ['0'-'9' '_']* 
   ('.' ['0'-'9' '_']* )?
@@ -268,10 +270,20 @@ rule token = parse
             LIDENT s }
   | uppercase identchar *
       { UIDENT(Lexing.lexeme lexbuf) }       (* No capitalized keywords *)
-  | decimal_literal | hex_literal | oct_literal | bin_literal
+  | int_literal
       { INT (int_of_string(Lexing.lexeme lexbuf)) }
   | float_literal
-      { FLOAT (remove_underscores (Lexing.lexeme lexbuf)) }
+      { FLOAT (remove_underscores(Lexing.lexeme lexbuf)) }
+  | int_literal "l"
+      { let s = Lexing.lexeme lexbuf in
+        INT32 (Int32.of_string(String.sub s 0 (String.length s - 1))) }
+  | int_literal "L"
+      { let s = Lexing.lexeme lexbuf in
+        INT64 (Int64.of_string(String.sub s 0 (String.length s - 1))) }
+  | int_literal "n"
+      { let s = Lexing.lexeme lexbuf in
+        NATIVEINT 
+          (Nativeint.of_string(String.sub s 0 (String.length s - 1))) }
   | "\""
       { reset_string_buffer();
         let string_start = lexbuf.lex_start_p in

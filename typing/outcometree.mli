@@ -33,6 +33,9 @@ type out_value =
   | Oval_ellipsis
   | Oval_float of float
   | Oval_int of int
+  | Oval_int32 of int32
+  | Oval_int64 of int64
+  | Oval_nativeint of nativeint
   | Oval_list of out_value list
   | Oval_printer of (Format.formatter -> unit)
   | Oval_record of (out_ident * out_value) list

@@ -40,6 +40,12 @@ let value_ident ppf name =
 
 (* Values *)
 
+let parenthesize_if_neg ppf fmt v zero =
+  let neg = (v < zero) in
+  if neg then pp_print_char ppf '(';
+  fprintf ppf fmt v;
+  if neg then pp_print_char ppf ')'
+
 let print_out_value ppf tree =
   let rec print_tree_1 ppf =
     function
@@ -52,14 +58,18 @@ let print_out_value ppf tree =
         fprintf ppf "@[<2>`%s@ %a@]" name print_simple_tree param
     | tree -> print_simple_tree ppf tree
   and print_constr_param ppf = function
-    | Oval_int i ->
-       if i < 0 then fprintf ppf "(%i)" i else fprintf ppf "%i" i
-    | Oval_float f ->
-       if f < 0.0 then fprintf ppf "(%F)" f else fprintf ppf "%F" f
+    | Oval_int i -> parenthesize_if_neg ppf "%i" i 0
+    | Oval_int32 i -> parenthesize_if_neg ppf "%lil" i 0l
+    | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i 0L
+    | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i 0n
+    | Oval_float f -> parenthesize_if_neg ppf "%F" f 0.0
     | tree -> print_simple_tree ppf tree
   and print_simple_tree ppf =
     function
       Oval_int i -> fprintf ppf "%i" i
+    | Oval_int32 i -> fprintf ppf "%lil" i
+    | Oval_int64 i -> fprintf ppf "%LiL" i
+    | Oval_nativeint i -> fprintf ppf "%nin" i
     | Oval_float f -> fprintf ppf "%F" f
     | Oval_char c -> fprintf ppf "%C" c
     | Oval_string s ->

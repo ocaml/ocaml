@@ -1291,12 +1291,8 @@ let sort_lambda_list l =
   List.sort
     (fun (x,_) (y,_) -> match x,y with
     | Const_float f1, Const_float f2 -> float_compare f1 f2
-    | Const_int i1, Const_int i2 -> Pervasives.compare i1 i2
-    | Const_char c1, Const_char c2 ->  Pervasives.compare c1 c2
-    | Const_string s1, Const_string s2 -> Pervasives.compare s1 s2
-    | _ -> assert false)
+    | _, _ -> Pervasives.compare x y)
     l
-
 
 let rec cut n l =
   if n = 0 then [],l
@@ -1733,8 +1729,23 @@ let combine_constant arg cst partial ctx def
         make_test_sequence
           fail
           (Pfloatcomp Cneq) (Pfloatcomp Clt)
-          arg const_lambda_list in
-  lambda1,jumps_union local_jumps total
+          arg const_lambda_list
+    | Const_int32 _ ->
+        make_test_sequence
+          fail
+          (Pbintcomp(Pint32, Cneq)) (Pbintcomp(Pint32, Clt))
+          arg const_lambda_list
+    | Const_int64 _ ->
+        make_test_sequence
+          fail
+          (Pbintcomp(Pint64, Cneq)) (Pbintcomp(Pint64, Clt))
+          arg const_lambda_list
+    | Const_nativeint _ ->
+        make_test_sequence
+          fail
+          (Pbintcomp(Pnativeint, Cneq)) (Pbintcomp(Pnativeint, Clt))
+          arg const_lambda_list
+  in lambda1,jumps_union local_jumps total
 
 
 

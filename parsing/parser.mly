@@ -87,6 +87,12 @@ let mkuminus name arg =
   match name, arg.pexp_desc with
   | "-", Pexp_constant(Const_int n) ->
       mkexp(Pexp_constant(Const_int(-n)))
+  | "-", Pexp_constant(Const_int32 n) ->
+      mkexp(Pexp_constant(Const_int32(Int32.neg n)))
+  | "-", Pexp_constant(Const_int64 n) ->
+      mkexp(Pexp_constant(Const_int64(Int64.neg n)))
+  | "-", Pexp_constant(Const_nativeint n) ->
+      mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n)))
   | _, Pexp_constant(Const_float f) ->
       mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
@@ -234,6 +240,8 @@ let mktype_kind vflag kind =
 %token INHERIT
 %token INITIALIZER
 %token <int> INT
+%token <int32> INT32
+%token <int64> INT64
 %token <string> LABEL
 %token LAZY
 %token LBRACE
@@ -253,6 +261,7 @@ let mktype_kind vflag kind =
 %token MINUSGREATER
 %token MODULE
 %token MUTABLE
+%token <nativeint> NATIVEINT
 %token NEW
 %token OBJECT
 %token OF
@@ -1365,11 +1374,17 @@ constant:
   | CHAR                                        { Const_char $1 }
   | STRING                                      { Const_string $1 }
   | FLOAT                                       { Const_float $1 }
+  | INT32                                       { Const_int32 $1 }
+  | INT64                                       { Const_int64 $1 }
+  | NATIVEINT                                   { Const_nativeint $1 }
 ;
 signed_constant:
     constant                                    { $1 }
   | MINUS INT                                   { Const_int(- $2) }
-  | subtractive FLOAT                           { Const_float("-" ^ $2) }
+  | MINUS FLOAT                                 { Const_float("-" ^ $2) }
+  | MINUS INT32                                 { Const_int32(Int32.neg $2) }
+  | MINUS INT64                                 { Const_int64(Int64.neg $2) }
+  | MINUS NATIVEINT                             { Const_nativeint(Nativeint.neg $2) }
 ;
 /* Identifiers and long identifiers */
 

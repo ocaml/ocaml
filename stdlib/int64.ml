@@ -36,17 +36,15 @@ external to_int32 : int64 -> int32 = "%int64_to_int32"
 external of_nativeint : nativeint -> int64 = "%int64_of_nativeint"
 external to_nativeint : int64 -> nativeint = "%int64_to_nativeint"
 
-let zero = try of_int 0 with Invalid_argument _ -> Obj.magic Int32.zero
-let one = try of_int 1 with Invalid_argument _ -> Obj.magic Int32.one
-let minus_one = try of_int (-1) with Invalid_argument _ -> Obj.magic Int32.minus_one
-let succ n = add n one
-let pred n = sub n one
-let abs n = if n >= zero then n else neg n
-let min_int =
-  try shift_left one 63 with Invalid_argument _ -> Obj.magic Int32.min_int
-let max_int =
-  try sub min_int one with Invalid_argument _ -> Obj.magic Int32.max_int
-let lognot n = logxor n minus_one
+let zero = 0L
+let one = 1L
+let minus_one = -1L
+let succ n = add n 1L
+let pred n = sub n 1L
+let abs n = if n >= 0L then n else neg n
+let min_int = 0x8000000000000000L
+let max_int = 0x7FFFFFFFFFFFFFFFL
+let lognot n = logxor n (-1L)
 
 external format : string -> int64 -> string = "int64_format"
 let to_string n = format "%d" n

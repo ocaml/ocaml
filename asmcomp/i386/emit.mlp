@@ -395,7 +395,7 @@ let emit_instr fallthrough i =
               `	movl	{emit_reg src}, {emit_reg dst}\n`
         end
     | Lop(Iconst_int n) ->
-        if n = Nativeint.zero then begin
+        if n = 0n then begin
           match i.res.(0).loc with
             Reg n -> `	xorl	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
           | _     -> `	movl	$0, {emit_reg i.res.(0)}\n`
@@ -597,10 +597,10 @@ let emit_instr fallthrough i =
         stack_offset := !stack_offset - 8;
         `	subl	$8, %esp\n`;
         `	fnstcw	4(%esp)\n`;
-        `	movl	4(%esp), %eax\n`;
+        `	movw	4(%esp), %ax\n`;
         `	movb    $12, %ah\n`;
-        `	movl	%eax, (%esp)\n`;
-        `	fldcw	(%esp)\n`;
+        `	movw	%ax, 0(%esp)\n`;
+        `	fldcw	0(%esp)\n`;
         begin match i.res.(0).loc with
           Stack s ->
             `	fist{pop_suffix i}l	{emit_reg i.res.(0)}\n`

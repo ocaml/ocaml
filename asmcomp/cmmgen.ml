@@ -69,9 +69,8 @@ let min_repr_int = min_int asr 1
 let int_const n =
   if n <= max_repr_int && n >= min_repr_int
   then Cconst_int((n lsl 1) + 1)
-  else Cconst_natint(Nativeint.add
-                       (Nativeint.shift_left (Nativeint.of_int n) 1)
-                       Nativeint.one)
+  else Cconst_natint
+          (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
 
 let add_const c n =
   if n = 0 then c else Cop(Caddi, [c; Cconst_int n])
@@ -401,9 +400,8 @@ let transl_constant = function
   | Const_pointer n ->      
       if n <= max_repr_int && n >= min_repr_int
       then Cconst_pointer((n lsl 1) + 1)
-      else Cconst_natpointer(Nativeint.add
-                                (Nativeint.shift_left (Nativeint.of_int n) 1)
-                                Nativeint.one)
+      else Cconst_natpointer
+              (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
   | cst ->
       let lbl = new_const_symbol() in
       structured_constants := (lbl, cst) :: !structured_constants;
@@ -416,60 +414,61 @@ let constant_closures =
 
 (* Boxed integers *)
 
+let box_int_constant bi n =
+  match bi with
+    Pnativeint -> Const_base(Const_nativeint n)
+  | Pint32 -> Const_base(Const_int32 (Nativeint.to_int32 n))
+  | Pint64 -> Const_base(Const_int64 (Int64.of_nativeint n))
+
 let operations_boxed_int bi =
-  match bi with Pnativeint -> "nativeint_ops"
-              | Pint32 -> "int32_ops"
-              | Pint64 -> "int64_ops"
-
-let constant_boxed_ints =
-  ref ([] : (string * boxed_integer * nativeint) list)
-
-let label_constant_boxed_int bi n =
-  let s = new_const_symbol() in
-  constant_boxed_ints := (s, bi, n) :: !constant_boxed_ints;
-  s
+  match bi with
+    Pnativeint -> "nativeint_ops"
+  | Pint32 -> "int32_ops"
+  | Pint64 -> "int64_ops"
 
 let box_int bi arg =
   match arg with
     Cconst_int n ->
-      Cconst_symbol(label_constant_boxed_int bi (Nativeint.of_int n))
+      transl_constant (box_int_constant bi (Nativeint.of_int n))
   | Cconst_natint n ->
-      Cconst_symbol(label_constant_boxed_int bi n)
+      transl_constant (box_int_constant bi n)
   | _ ->
-      if bi = Pint32 && size_int = 8 && big_endian then
-        let id = Ident.create "bint" in
-        Clet(id, Cop(Calloc, [alloc_boxedint_header;
-                              Cconst_symbol(operations_boxed_int bi);
-                              Cconst_int 0]),
-             Csequence(Cop(Cstore Thirtytwo_signed,
-                           [Cop(Cadda, [Cvar id; Cconst_int size_addr]);
-                                        arg]),
-                       Cvar id))
-      else
-        Cop(Calloc, [alloc_boxedint_header;
-                     Cconst_symbol(operations_boxed_int bi);
-                     arg])
+      let arg' =
+        if bi = Pint32 && size_int = 8 && big_endian
+        then Cop(Clsl, [arg; Cconst_int 32])
+        else arg in
+      Cop(Calloc, [alloc_boxedint_header;
+                   Cconst_symbol(operations_boxed_int bi);
+                   arg])
 
 let unbox_int bi arg =
   match arg with
-    Cop(Calloc, [hdr; ops; contents]) -> 
-      if bi = Pint32 && size_int = 8 then
-        (* Force sign-extension of low-order 32 bits *)
-        Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
-      else
-        contents
+    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32])])
+    when bi = Pint32 && size_int = 8 && big_endian ->
+      (* Force sign-extension of low 32 bits *)
+      Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
+  | Cop(Calloc, [hdr; ops; contents])
+    when bi = Pint32 && size_int = 8 && not big_endian ->
+      (* Force sign-extension of low 32 bits *)
+      Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
+  | Cop(Calloc, [hdr; ops; contents]) -> 
+      contents
   | _ ->
       Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word),
           [Cop(Cadda, [arg; Cconst_int size_addr])])
 
 let unbox_unsigned_int bi arg =
   match arg with
-    Cop(Calloc, [hdr; ops; contents]) -> 
-      if bi = Pint32 && size_int = 8 then
-        (* Force zero-extension of low-order 32 bits *)
-        Cop(Clsr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
-      else
-        contents
+    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32])])
+    when bi = Pint32 && size_int = 8 && big_endian ->
+      (* Force zero-extension of low 32 bits *)
+      Cop(Clsr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
+  | Cop(Calloc, [hdr; ops; contents])
+    when bi = Pint32 && size_int = 8 && not big_endian ->
+      (* Force zero-extension of low 32 bits *)
+      Cop(Clsr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
+  | Cop(Calloc, [hdr; ops; contents]) -> 
+      contents
   | _ ->
       Cop(Cload(if bi = Pint32 then Thirtytwo_unsigned else Word),
           [Cop(Cadda, [arg; Cconst_int size_addr])])
@@ -1317,7 +1316,13 @@ and transl_unbox_float = function
   | exp -> unbox_float(transl exp)
 
 and transl_unbox_int bi = function
-    Uprim(Pbintofint bi', [Uconst(Const_base(Const_int i))]) when bi = bi' ->
+    Uconst(Const_base(Const_int32 n)) ->
+      Cconst_natint (Nativeint.of_int32 n)
+  | Uconst(Const_base(Const_nativeint n)) ->
+      Cconst_natint n
+  | Uconst(Const_base(Const_int64 n)) ->
+      assert (size_int = 8); Cconst_natint (Int64.to_nativeint n)
+  | Uprim(Pbintofint bi', [Uconst(Const_base(Const_int i))]) when bi = bi' ->
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
@@ -1500,6 +1505,15 @@ let rec emit_constant symb cst cont =
       Cint(string_header (String.length s)) ::
       Cdefine_symbol symb ::
       emit_string_constant s cont
+  | Const_base(Const_int32 n) ->
+      Cint(boxedint_header) :: Cdefine_symbol symb ::
+      emit_boxed_int32_constant n cont
+  | Const_base(Const_int64 n) ->
+      Cint(boxedint_header) :: Cdefine_symbol symb ::
+      emit_boxed_int64_constant n cont
+  | Const_base(Const_nativeint n) ->
+      Cint(boxedint_header) :: Cdefine_symbol symb ::
+      emit_boxed_nativeint_constant n cont
   | Const_block(tag, fields) ->
       let (emit_fields, cont1) = emit_constant_fields fields cont in
       Cint(block_header tag (List.length fields)) ::
@@ -1522,8 +1536,7 @@ and emit_constant_fields fields cont =
 and emit_constant_field field cont =
   match field with
     Const_base(Const_int n) ->
-      (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 
-                          Nativeint.one),
+      (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n),
        cont)
   | Const_base(Const_char c) ->
       (Cint(Nativeint.of_int(((Char.code c) lsl 1) + 1)), cont)
@@ -1536,9 +1549,23 @@ and emit_constant_field field cont =
       (Clabel_address lbl,
        Cint(string_header (String.length s)) :: Cdefine_label lbl :: 
        emit_string_constant s cont)
+  | Const_base(Const_int32 n) ->
+      let lbl = new_const_label() in
+      (Clabel_address lbl,
+       Cint(boxedint_header) :: Cdefine_label lbl ::
+       emit_boxed_int32_constant n cont)
+  | Const_base(Const_int64 n) ->
+      let lbl = new_const_label() in
+      (Clabel_address lbl,
+       Cint(boxedint_header) :: Cdefine_label lbl ::
+       emit_boxed_int64_constant n cont)
+  | Const_base(Const_nativeint n) ->
+      let lbl = new_const_label() in
+      (Clabel_address lbl,
+       Cint(boxedint_header) :: Cdefine_label lbl ::
+       emit_boxed_nativeint_constant n cont)
   | Const_pointer n ->
-      (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 
-                          Nativeint.one),
+      (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n),
        cont)
   | Const_block(tag, fields) ->
       let lbl = new_const_label() in
@@ -1556,15 +1583,27 @@ and emit_string_constant s cont =
   let n = size_int - 1 - (String.length s) mod size_int in
   Cstring s :: Cskip n :: Cint8 n :: cont
 
-(* Emit boxed integer constants *)
+and emit_boxed_int32_constant n cont =
+  let n = Nativeint.of_int32 n in
+  if size_int = 8 then
+    Csymbol_address("int32_ops") :: Cint32 n :: Cint32 0n :: cont
+  else
+    Csymbol_address("int32_ops") :: Cint n :: cont
 
-let emit_boxedint_constant lbl bi n =
-  Cint boxedint_header ::
-  Cdefine_symbol lbl ::
-  Csymbol_address(operations_boxed_int bi) ::
-  (if bi = Pint32 && size_int = 8
-   then [Cint32 n; Cint32 Nativeint.zero]
-   else [Cint n])
+and emit_boxed_nativeint_constant n cont =
+  Csymbol_address("nativeint_ops") :: Cint n :: cont
+
+and emit_boxed_int64_constant n cont =
+  let lo = Int64.to_nativeint n in
+  if size_int = 8 then
+    Csymbol_address("int64_ops") :: Cint lo :: cont
+  else begin
+    let hi = Int64.to_nativeint (Int64.shift_right n 32) in
+    if big_endian then
+      Csymbol_address("int64_ops") :: Cint hi :: Cint lo :: cont
+    else
+      Csymbol_address("int64_ops") :: Cint lo :: Cint hi :: cont
+  end
 
 (* Emit constant closures *)
 
@@ -1578,7 +1617,7 @@ let emit_constant_closure symb fundecls cont =
           if arity = 1 then
             Cint(infix_header pos) ::
             Csymbol_address label ::
-            Cint(Nativeint.of_int 3) ::
+            Cint 3n ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
@@ -1590,7 +1629,7 @@ let emit_constant_closure symb fundecls cont =
       Cdefine_symbol symb ::
       if arity = 1 then
         Csymbol_address label ::
-        Cint(Nativeint.of_int 3) ::
+        Cint 3n ::
         emit_others 3 remainder
       else
         Csymbol_address(curry_function arity) ::
@@ -1606,11 +1645,6 @@ let emit_all_constants cont =
     (fun (lbl, cst) -> c := Cdata(emit_constant lbl cst []) :: !c)
     !structured_constants;
   structured_constants := [];
-  List.iter
-    (fun (symb, bi, n) ->
-        c := Cdata(emit_boxedint_constant symb bi n) :: !c)
-    !constant_boxed_ints;
-  constant_boxed_ints := [];
   List.iter
     (fun (symb, fundecls) ->
         c := Cdata(emit_constant_closure symb fundecls []) :: !c)
@@ -1770,7 +1804,7 @@ let entry_point namelist =
 
 (* Generate the table of globals *)
 
-let cint_zero = Cint(Nativeint.zero)
+let cint_zero = Cint 0n
 
 let global_table namelist =
   Cdata(Cglobal_symbol "caml_globals" ::

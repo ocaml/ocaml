@@ -91,7 +91,10 @@ let type_constant = function
   | Const_char _ -> instance Predef.type_char
   | Const_string _ -> instance Predef.type_string
   | Const_float _ -> instance Predef.type_float
-
+  | Const_int32 _ -> instance Predef.type_int32
+  | Const_int64 _ -> instance Predef.type_int64
+  | Const_nativeint _ -> instance Predef.type_nativeint
+  
 (* Specific version of type_option, using newty rather than newgenty *)
 
 let type_option ty =

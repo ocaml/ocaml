@@ -156,12 +156,12 @@ let rec pretty_val ppf v = match v.pat_desc with
   | Tpat_any -> fprintf ppf "_"
   | Tpat_var x -> Ident.print ppf x
   | Tpat_constant (Const_int i) -> fprintf ppf "%d" i
-  | Tpat_constant (Const_char c) ->
-      fprintf ppf "%C" c
-  | Tpat_constant (Const_string s) ->
-      fprintf ppf "%S" s
-  | Tpat_constant (Const_float s) ->
-      fprintf ppf "%s" s
+  | Tpat_constant (Const_char c) -> fprintf ppf "%C" c
+  | Tpat_constant (Const_string s) -> fprintf ppf "%S" s
+  | Tpat_constant (Const_float f) -> fprintf ppf "%s" f
+  | Tpat_constant (Const_int32 i) -> fprintf ppf "%ldl" i
+  | Tpat_constant (Const_int64 i) -> fprintf ppf "%LdL" i
+  | Tpat_constant (Const_nativeint i) -> fprintf ppf "%ndn" i
   | Tpat_tuple vs ->
       fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
   | Tpat_construct ({cstr_tag=tag},[]) ->
@@ -633,6 +633,16 @@ with
 | _ -> fatal_error "Parmatch.complete_constr"
 
 
+(* Auxiliary for build_other *)
+
+let build_other_constant proj make first next p env =
+  let all = List.map (fun (p, _) -> proj p.pat_desc) env in
+  let rec try_const i =
+    if List.mem i all
+    then try_const (next i)
+    else make_pat (make i) p.pat_type p.pat_env
+  in try_const first
+
 (*
   Builds a pattern that is incompatible with all patterns in
   in the first column of env
@@ -709,47 +719,40 @@ let build_other env =  match env with
     try_chars
       [ 'a', 'z' ; 'A', 'Z' ; '0', '9' ;
         ' ', '~' ; Char.chr 0 , Char.chr 255]
+
 | ({pat_desc=(Tpat_constant (Const_int _))} as p,_) :: _ ->
-    let all_ints =
-      List.map
-        (fun (p,_) -> match p.pat_desc with
-        | Tpat_constant (Const_int i) -> i
-        | _ -> assert false)
-        env in
-    let rec try_ints i =
-      if List.mem i all_ints then try_ints (i+1)
-      else
-        make_pat
-          (Tpat_constant (Const_int i)) p.pat_type p.pat_env in
-    try_ints 0
+    build_other_constant
+      (function Tpat_constant(Const_int i) -> i | _ -> assert false)
+      (function i -> Tpat_constant(Const_int i))
+      0 succ p env
+| ({pat_desc=(Tpat_constant (Const_int32 _))} as p,_) :: _ ->
+    build_other_constant
+      (function Tpat_constant(Const_int32 i) -> i | _ -> assert false)
+      (function i -> Tpat_constant(Const_int32 i))
+      0l Int32.succ p env
+| ({pat_desc=(Tpat_constant (Const_int64 _))} as p,_) :: _ ->
+    build_other_constant
+      (function Tpat_constant(Const_int64 i) -> i | _ -> assert false)
+      (function i -> Tpat_constant(Const_int64 i))
+      0L Int64.succ p env
+| ({pat_desc=(Tpat_constant (Const_nativeint _))} as p,_) :: _ ->
+    build_other_constant
+      (function Tpat_constant(Const_nativeint i) -> i | _ -> assert false)
+      (function i -> Tpat_constant(Const_nativeint i))
+      0n Nativeint.succ p env
 | ({pat_desc=(Tpat_constant (Const_string _))} as p,_) :: _ ->
-    let all_lengths =
-      List.map
-        (fun (p,_) -> match p.pat_desc with
-        | Tpat_constant (Const_string s) -> String.length s
-        | _ -> assert false)
-        env in
-    let rec try_strings i =
-      if List.mem i all_lengths then try_strings (i+1)
-      else
-        make_pat
-          (Tpat_constant (Const_string (String.make i '*')))
-          p.pat_type p.pat_env in
-    try_strings 0
+    build_other_constant
+      (function Tpat_constant(Const_string s) -> String.length s
+              | _ -> assert false)
+      (function i -> Tpat_constant(Const_string(String.make i '*')))
+      0 succ p env
 | ({pat_desc=(Tpat_constant (Const_float _))} as p,_) :: _ ->
-    let all_floats =
-      List.map
-        (fun (p,_) -> match p.pat_desc with
-        | Tpat_constant (Const_float s) -> float_of_string s
-        | _ -> assert false)
-        env in
-    let rec try_floats f =
-      if List.mem f all_floats then try_floats (f +. 1.0)
-      else
-        make_pat
-          (Tpat_constant (Const_float (string_of_float f)))
-          p.pat_type p.pat_env in
-    try_floats 0.0
+    build_other_constant
+      (function Tpat_constant(Const_float f) -> float_of_string f
+              | _ -> assert false)
+      (function f -> Tpat_constant(Const_float (string_of_float f)))
+      0.0 (fun f -> f +. 1.0) p env
+
 | ({pat_desc = Tpat_array args} as p,_)::_ ->
     let all_lengths =
       List.map

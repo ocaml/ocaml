@@ -189,11 +189,11 @@ let decompose_intconst n fn =
   let i = ref n in
   let shift = ref 0 in
   let ninstr = ref 0 in
-  while !i <> Nativeint.zero do
+  while !i <> 0n do
     if Nativeint.to_int (Nativeint.shift_right !i !shift) land 3 = 0 then
       shift := !shift + 2
     else begin
-      let mask = Nativeint.shift_left (Nativeint.of_int 0xFF) !shift in
+      let mask = Nativeint.shift_left 0xFFn !shift in
       let bits = Nativeint.logand !i mask in
       fn bits;
       shift := !shift + 8;
