@@ -452,9 +452,11 @@ value output_value_to_buffer(value buf, value ofs, value len, value v, value fla
 void output_value_to_malloc(value v, value flags,
                             /*out*/ char ** buf, /*out*/ long * len)
 {
+  long len_res;
   alloc_extern_block();
+  len_res = extern_value(v, flags);
   *buf = extern_block;
-  *len = extern_value(v, flags);
+  *len = len_res;
 }
 
 /* Functions for writing user-defined marshallers */
