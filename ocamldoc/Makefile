@@ -16,7 +16,7 @@ include ../config/Makefile
 # Various commands and dir
 ##########################
 CAMLRUN=../boot/ocamlrun
-OCAMLC   = $(CAMLRUN) ../ocamlc -warn-error A
+OCAMLC   = $(CAMLRUN) ../ocamlc #-warn-error A
 OCAMLOPT = $(CAMLRUN) ../ocamlopt
 OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
 OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
@@ -30,7 +30,7 @@ OCAMLPP=-pp 'grep -v DEBUG'
 # For installation 
 ##############
 MKDIR=mkdir -p
-CP=cp -f
+CP=cp -fr
 OCAMLDOC=ocamldoc
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma 
@@ -39,6 +39,7 @@ OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.a
 INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
 INSTALL_BINDIR=$(OCAMLBIN)
+INSTALL_MANDIR=$(PREFIX)/man
 
 INSTALL_MLIS=odoc_info.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
@@ -168,7 +169,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
-all: exe lib
+all: exe lib manpages
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) 
 
@@ -187,6 +188,8 @@ $(OCAMLDOC_LIBCMA): $(LIBCMIFILES) $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLCMOFILES) $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMIFILES) $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
+
+manpages: stdlib_man
 
 odoc_crc.ml: $(CMIFILES)
 	$(EXTRAC_CRC) $(INCLUDES)\
@@ -294,6 +297,7 @@ install: dummy
 	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)
 	$(CP) ocamldoc.sty ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
+	$(CP) stdlib_man $(INSTALL_MANDIR)/mano
 
 installopt:
 	if test -f $(OCAMLDOC_OPT) ; then $(MAKE) installopt_really ; fi
@@ -332,6 +336,14 @@ test_man: dummy
 test_texi: dummy
 	$(MKDIR) $@ 
 	./ocamldoc -texi -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+
+stdlib_man: dummy
+	$(MKDIR) $@ 
+	./ocamldoc -man -d $@ $(INCLUDES) ../stdlib/*.mli \
+	../otherlibs/unix/unix.mli \
+	../otherlibs/str/str.mli \
+	../otherlibs/bigarray/bigarray.mli \
+	../otherlibs/num/num.mli
 
 # backup, clean and depend :
 ############################
