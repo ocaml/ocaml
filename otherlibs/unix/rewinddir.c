@@ -15,6 +15,7 @@
 
 #include <mlvalues.h>
 #include "unixsupport.h"
+#include <errno.h>
 #include <sys/types.h>
 #ifdef HAS_DIRENT
 #include <dirent.h>
@@ -24,9 +25,11 @@
 
 #ifdef HAS_REWINDDIR
 
-CAMLprim value unix_rewinddir(value d)
+CAMLprim value unix_rewinddir(value vd)
 {
-  rewinddir((DIR *) d);
+  DIR * d = DIR_Val(vd);
+  if (d == (DIR *) NULL) unix_error(EBADF, "rewinddir", Nothing);
+  rewinddir(d);
   return Val_unit;
 }
 
