@@ -23,12 +23,12 @@ OCAMLLIB = $(LIBDIR)
 OCAMLBIN = $(BINDIR)
 EXTRAC_CRC = $(CAMLRUN) ..\otherlibs\dynlink\extract_crc
 
-OCAMLPP=-pp 'grep -v DEBUG'
+OCAMLPP=-pp "grep -v DEBUG"
 
 # For installation 
 ##############
-MKDIR=mkdir -p
-CP=cp -f
+MKDIR=mkdir
+CP=cp
 OCAMLDOC=ocamldoc
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma 
@@ -43,7 +43,7 @@ INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
 
 # Compilation
 #############
-OCAMLSRCDIR:=..
+OCAMLSRCDIR=..
 INCLUDES=  -I $(OCAMLSRCDIR)\parsing \
 	-I $(OCAMLSRCDIR)\utils \
 	-I $(OCAMLSRCDIR)\typing \
@@ -51,12 +51,12 @@ INCLUDES=  -I $(OCAMLSRCDIR)\parsing \
 	-I $(OCAMLSRCDIR)\bytecomp \
 	-I $(OCAMLSRCDIR)\tools \
 	-I $(OCAMLSRCDIR)\stdlib \
-	-I $(OCAMLSRCDIR)\otherlibs/str \
-	-I $(OCAMLSRCDIR)\otherlibs/dynlink \
-	-I $(OCAMLSRCDIR)\otherlibs/unix \
-	-I $(OCAMLSRCDIR)\otherlibs/num \
-	-I $(OCAMLSRCDIR)\otherlibs/graph \
-	-I $(OCAMLSRCDIR)\toplevel/ \
+	-I $(OCAMLSRCDIR)\otherlibs\str \
+	-I $(OCAMLSRCDIR)\otherlibs\dynlink \
+	-I $(OCAMLSRCDIR)\otherlibs\win32unix \
+	-I $(OCAMLSRCDIR)\otherlibs\num \
+	-I $(OCAMLSRCDIR)\otherlibs\graph \
+	-I $(OCAMLSRCDIR)\toplevel \
 
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
@@ -177,14 +177,14 @@ libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 debug: 
 	make OCAMLPP=""
 
-$(OCAMLDOC): $(EXECMIFILES) $(EXECMOFILES) odoc_crc.cmo odoc.cmo
+$(OCAMLDOC): $(EXECMOFILES) odoc_crc.cmo odoc.cmo
 	$(OCAMLC) -o $@ unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES) odoc_crc.cmo odoc.cmo
-$(OCAMLDOC_OPT): $(EXECMIFILES) $(EXECMXFILES) odoc_opt.cmx
+$(OCAMLDOC_OPT): $(EXECMXFILES) odoc_opt.cmx
 	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES) odoc_opt.cmx
 
-$(OCAMLDOC_LIBCMA): $(LIBCMIFILES) $(LIBCMOFILES)
+$(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLCMOFILES) $(LIBCMOFILES)
-$(OCAMLDOC_LIBCMXA): $(LIBCMIFILES) $(LIBCMXFILES)
+$(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
 
 odoc_crc.ml: $(CMIFILES)
@@ -265,42 +265,51 @@ odoc_crc.ml: $(CMIFILES)
 # generic rules :
 #################
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx .mll .mly
+.SUFFIXES: .mli .ml .cmi .cmo .cmx
 
-%.cmi:%.mli
+.mli.cmi:
 	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
 
-%.cmo:%.ml
+.ml.cmo:
 	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
 
-%.cmi %.cmo:%.ml
-	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
-
-%.cmx %.o:%.ml
+.ml.cmx:
 	$(OCAMLOPT) $(OCAMLPP) $(COMPFLAGS) -c $<
 
-%.ml:%.mll
-	$(OCAMLLEX) $<
+odoc_text_parser.ml odoc_text_parser.mli: odoc_text_parser.mly
+	$(OCAMLYACC) odoc_text_parser.mly
 
-%.mli %.ml:%.mly
-	$(OCAMLYACC) -v $<
+odoc_parser.ml odoc_parser.mli: odoc_parser.mly
+	$(OCAMLYACC) odoc_parser.mly
+
+odoc_text_lexer.ml: odoc_text_lexer.mll
+	$(OCAMLLEX) odoc_text_lexer.mll
+
+odoc_lexer.ml: odoc_lexer.mll
+	$(OCAMLLEX) odoc_lexer.mll
+
+odoc_ocamlhtml.ml: odoc_ocamlhtml.mll
+	$(OCAMLLEX) odoc_ocamlhtml.mll
+
+odoc_see_lexer.ml: odoc_see_lexer.mll
+	$(OCAMLLEX) odoc_see_lexer.mll
 
 # Installation targets
 ######################
 install: dummy
-	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
-	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
-	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)
+	if not exist $(INSTALL_BINDIR) $(MKDIR) $(INSTALL_BINDIR)
+	if not exist $(INSTALL_LIBDIR) $(MKDIR) $(INSTALL_LIBDIR)
+	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC).exe
 	$(CP) ocamldoc.sty ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
 installopt:
-	if test -f $(OCAMLDOC_OPT) ; then $(MAKE_REC) installopt_really ; fi
+	if exist $(OCAMLDOC_OPT) $(MAKE_REC) installopt_really
 
 installopt_really:
-	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
-	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
-	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)
+	if not exist $(INSTALL_BINDIR) $(MKDIR) $(INSTALL_BINDIR)
+	if not exist $(INSTALL_LIBDIR) $(MKDIR) $(INSTALL_LIBDIR)
+	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT)
 	$(CP) ocamldoc.sty ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
