@@ -2,6 +2,7 @@
 
 open Misc
 open Asttypes
+open Primitive
 open Typedtree
 open Lambda
 open Instruct
@@ -244,6 +245,8 @@ let rec comp_expr env exp sz cont =
         | Pmakeblock tag -> Kmakeblock(List.length args, tag)
         | Pfield n -> Kgetfield n
         | Psetfield(n, ptr) -> Ksetfield n
+        | Pfloatfield n -> Kgetfield n
+        | Psetfloatfield n -> Ksetfield n
         | Pccall p -> Kccall(p.prim_name, p.prim_arity)
         | Pnegint -> Knegint
         | Paddint -> Kaddint
@@ -273,15 +276,16 @@ let rec comp_expr env exp sz cont =
         | Pfloatcomp Cle -> Kccall("le_float", 2)
         | Pfloatcomp Cge -> Kccall("ge_float", 2)
         | Pstringlength -> Kccall("ml_string_length", 1)
-        | Psafegetstringchar -> Kccall("string_get", 2)
-        | Psafesetstringchar -> Kccall("string_set", 3)
-        | Pgetstringchar -> Kgetstringchar
-        | Psetstringchar -> Ksetstringchar
-        | Pvectlength -> Kvectlength
-        | Psafegetvectitem -> Kccall("array_get", 2)
-        | Psafesetvectitem ptr -> Kccall("array_set", 3)
-        | Pgetvectitem -> Kgetvectitem
-        | Psetvectitem ptr -> Ksetvectitem
+        | Pstringrefs -> Kccall("string_get", 2)
+        | Pstringsets -> Kccall("string_set", 3)
+        | Pstringrefu -> Kgetstringchar
+        | Pstringsetu -> Ksetstringchar
+        | Pmakearray kind -> Kmakeblock(List.length args, 0)
+        | Parraylength kind -> Kvectlength
+        | Parrayrefs kind -> Kccall("array_get", 2)
+        | Parraysets kind -> Kccall("array_set", 3)
+        | Parrayrefu kind -> Kgetvectitem
+        | Parraysetu kind -> Ksetvectitem
         | Ptranslate tbl -> Ktranslate tbl
         | _ -> fatal_error "Codegen.comp_expr: prim" in
       comp_args env args sz (instr :: cont)

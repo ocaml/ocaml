@@ -140,6 +140,9 @@ let rec transl_const = function
         (fun c -> Obj.set_field block !pos (transl_const c); incr pos)
         fields;
       block
+  | Const_float_array fields ->
+      transl_const
+        (Const_block(0, List.map (fun f -> Const_base(Const_float f)) fields))
 
 (* Build the initial table of globals *)
 

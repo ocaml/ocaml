@@ -1,5 +1,6 @@
 open Format
 open Asttypes
+open Primitive
 open Typedtree
 open Lambda
 
@@ -25,6 +26,17 @@ let rec structured_constant = function
       close_box();
       print_string "]";
       close_box()
+  | Const_float_array [] ->
+      print_string "[| |]"
+  | Const_float_array (f1 :: fl) ->
+      open_hovbox 1;
+      print_string "[|";
+      open_hovbox 0;
+      print_string f1;
+      List.iter (fun f -> print_space(); print_string f) fl;
+      close_box();
+      print_string "|]";
+      close_box()
 
 let primitive = function
     Pidentity -> print_string "id"
@@ -33,6 +45,8 @@ let primitive = function
   | Pmakeblock tag -> print_string "makeblock "; print_int tag
   | Pfield n -> print_string "field "; print_int n
   | Psetfield(n, _) -> print_string "setfield "; print_int n
+  | Pfloatfield n -> print_string "floatfield "; print_int n
+  | Psetfloatfield n -> print_string "setfloatfield "; print_int n
   | Pccall p -> print_string p.prim_name
   | Praise -> print_string "raise"
   | Psequand -> print_string "&&"
@@ -72,15 +86,16 @@ let primitive = function
   | Pfloatcomp(Cgt) -> print_string ">."
   | Pfloatcomp(Cge) -> print_string ">=."
   | Pstringlength -> print_string "string.length"
-  | Pgetstringchar -> print_string "string.unsafe_get"
-  | Psetstringchar -> print_string "string.unsafe_set"
-  | Psafegetstringchar -> print_string "string.get"
-  | Psafesetstringchar -> print_string "string.set"
-  | Pvectlength -> print_string "array.length"
-  | Pgetvectitem -> print_string "array.unsafe_get"
-  | Psetvectitem _ -> print_string "array.unsafe_set"
-  | Psafegetvectitem -> print_string "array.get"
-  | Psafesetvectitem _ -> print_string "array.set"
+  | Pstringrefu -> print_string "string.unsafe_get"
+  | Pstringsetu -> print_string "string.unsafe_set"
+  | Pstringrefs -> print_string "string.get"
+  | Pstringsets -> print_string "string.set"
+  | Parraylength _ -> print_string "array.length"
+  | Pmakearray _ -> print_string "makearray "
+  | Parrayrefu _ -> print_string "array.unsafe_get"
+  | Parraysetu _ -> print_string "array.unsafe_set"
+  | Parrayrefs _ -> print_string "array.get"
+  | Parraysets _ -> print_string "array.set"
   | Ptranslate tbl ->
       print_string "translate [";
       open_hvbox 0;

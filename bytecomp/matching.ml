@@ -3,6 +3,7 @@
 open Misc
 open Location
 open Asttypes
+open Primitive
 open Typedtree
 open Lambda
 
@@ -124,7 +125,20 @@ let divide_tuple arity {cases = cl; args = al} =
 
 (* Matching against a record pattern *)
 
-let divide_record num_fields {cases = cl; args = al} =
+let make_record_matching all_labels (arg :: argl) =
+  let rec make_args pos =
+    if pos >= Array.length all_labels then argl else begin
+      let lbl = all_labels.(pos) in
+      match lbl.lbl_repres with
+        Record_regular ->
+          Lprim(Pfield lbl.lbl_pos, [arg]) :: make_args(pos + 1)
+      | Record_float ->
+          Lprim(Pfloatfield lbl.lbl_pos, [arg]) :: make_args(pos + 1)
+    end in
+  {cases = []; args = make_args 0}
+
+let divide_record all_labels {cases = cl; args = al} =
+  let num_fields = Array.length all_labels in
   let record_matching_line lbl_pat_list =
     let patv = Array.new num_fields any_pat in
     List.iter (fun (lbl, pat) -> patv.(lbl.lbl_pos) <- pat) lbl_pat_list;
@@ -137,7 +151,7 @@ let divide_record num_fields {cases = cl; args = al} =
     | ({pat_desc = (Tpat_any | Tpat_var _)} :: patl, action) :: rem ->
         add_line (record_matching_line [] @ patl, action) (divide rem)
     | [] ->
-        make_tuple_matching num_fields al
+        make_record_matching all_labels al
   in divide cl
 
 (* To List.combine sub-matchings together *)
@@ -167,7 +181,8 @@ let combine_constant arg cst (const_lambda_list, total1) (lambda2, total2) =
     | Const_string _ ->
         make_test_sequence
           (Pccall{prim_name = "string_equal";
-                  prim_arity = 2; prim_alloc = false})
+                  prim_arity = 2; prim_alloc = false;
+                  prim_native_name = ""; prim_native_float = false})
           arg const_lambda_list
     | Const_float _ ->
         make_test_sequence (Pfloatcomp Ceq) arg const_lambda_list
@@ -252,7 +267,7 @@ let rec compile_match m =
           combine_constructor arg cstr
             (compile_list constrs) (compile_match others)
       | Tpat_record((lbl, _) :: _) ->
-          compile_match (divide_record (Array.length lbl.lbl_all) pm)
+          compile_match (divide_record lbl.lbl_all pm)
 
 (* The entry points *)
 

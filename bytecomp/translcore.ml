@@ -3,6 +3,7 @@
 
 open Misc
 open Asttypes
+open Primitive
 open Path
 open Typedtree
 open Lambda
@@ -67,8 +68,12 @@ and bind_label_pattern env patl arg mut =
   | (lbl, pat) :: rem ->
       let mut1 =
         match lbl.lbl_mut with Mutable -> Mutable | Immutable -> mut in
+      let access =
+        match lbl.lbl_repres with
+          Record_regular -> Pfield lbl.lbl_pos
+        | Record_float -> Pfloatfield lbl.lbl_pos in
       let (env1, bind1) =
-        bind_pattern env pat (Lprim(Pfield lbl.lbl_pos, [arg])) mut1 in
+        bind_pattern env pat (Lprim(access, [arg])) mut1 in
       let (env2, bind2) =
         bind_label_pattern env1 rem arg mut in
       (env2, fun e -> bind1(bind2 e))
@@ -87,36 +92,48 @@ and bind_patterns env patl argl =
 
 let comparisons_table = create_hashtable 11 [
   "%equal",
-      (Pccall{prim_name = "equal"; prim_arity = 2; prim_alloc = false},
+      (Pccall{prim_name = "equal"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false},
        Pintcomp Ceq,
        Pfloatcomp Ceq,
-       Pccall{prim_name = "string_equal"; prim_arity = 2; prim_alloc = false});
+       Pccall{prim_name = "string_equal"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false});
   "%notequal",
-      (Pccall{prim_name = "notequal"; prim_arity = 2; prim_alloc = false},
+      (Pccall{prim_name = "notequal"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false},
        Pintcomp Cneq,
        Pfloatcomp Cneq,
        Pccall{prim_name = "string_notequal"; prim_arity = 2;
-                                             prim_alloc = false});
+              prim_alloc = false; prim_native_name = ""; 
+              prim_native_float = false});
   "%lessthan",
-      (Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = false},
+      (Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = false; 
+              prim_native_name = ""; prim_native_float = false},
        Pintcomp Clt,
        Pfloatcomp Clt,
-       Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = false});
+       Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false});
   "%greaterthan",
-      (Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = false},
+      (Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false},
        Pintcomp Cgt,
        Pfloatcomp Cgt,
-       Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = false});
+       Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false});
   "%lessequal",
-      (Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = false},
+      (Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false},
        Pintcomp Cle,
        Pfloatcomp Cle,
-       Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = false});
+       Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false});
   "%greaterequal",
-      (Pccall{prim_name = "greaterequal"; prim_arity = 2; prim_alloc = false},
+      (Pccall{prim_name = "greaterequal"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false},
        Pintcomp Cge,
        Pfloatcomp Cge,
-       Pccall{prim_name = "greaterequal"; prim_arity = 2; prim_alloc = false})
+       Pccall{prim_name = "greaterequal"; prim_arity = 2; prim_alloc = false;
+              prim_native_name = ""; prim_native_float = false})
 ]
 
 let primitives_table = create_hashtable 31 [
@@ -165,15 +182,18 @@ let primitives_table = create_hashtable 31 [
   "%gtfloat", Pfloatcomp Cgt;
   "%gefloat", Pfloatcomp Cge;
   "%string_length", Pstringlength;
-  "%string_safe_get", Psafegetstringchar;
-  "%string_safe_set", Psafesetstringchar;
-  "%string_unsafe_get", Pgetstringchar;
-  "%string_unsafe_set", Psetstringchar;
-  "%array_length", Pvectlength;
-  "%array_safe_get", Psafegetvectitem;
-  "%array_safe_set", Psafesetvectitem true;
-  "%array_unsafe_get", Pgetvectitem;
-  "%array_unsafe_set", Psetvectitem true
+  "%string_safe_get", Pstringrefs;
+  "%string_safe_set", Pstringsets;
+  "%string_unsafe_get", Pstringrefu;
+  "%string_unsafe_set", Pstringsetu;
+  "%array_length", Parraylength Pgenarray;
+  "%array_safe_get", Parrayrefs Pgenarray;
+  "%array_safe_set", Parraysets Pgenarray;
+  "%array_unsafe_get", Parrayrefu Pgenarray;
+  "%array_unsafe_set", Parraysetu Pgenarray;
+  "%obj_size", Parraylength Paddrarray;
+  "%obj_field", Parrayrefu Paddrarray;
+  "%obj_set_field", Parraysetu Paddrarray
 ]
 
 let same_base_type ty1 ty2 =
@@ -182,17 +202,35 @@ let same_base_type ty1 ty2 =
   | (_, _) -> false
 
 let maybe_pointer arg =
-  if same_base_type arg.exp_type Predef.type_int
-  or same_base_type arg.exp_type Predef.type_char
-  then false
-  else true
+  not(same_base_type arg.exp_type Predef.type_int or
+      same_base_type arg.exp_type Predef.type_char)
+
+let array_kind arg =
+  match Ctype.repr arg.exp_type with
+    Tconstr(p, [ty]) ->
+      begin match Ctype.repr ty with
+        Tvar v -> Pgenarray
+      | Tconstr(p, _) ->
+          if Path.same p Predef.path_int or Path.same p Predef.path_char then
+            Pintarray
+          else if Path.same p Predef.path_float then
+            Pfloatarray
+          else
+            Paddrarray
+      | _ -> Paddrarray
+      end
+  | _ -> fatal_error "Translcore.array_kind"
 
 let transl_prim prim args =
   try
     let (gencomp, intcomp, floatcomp, stringcomp) =
       Hashtbl.find comparisons_table prim.prim_name in
     match args with
-      [arg1; arg2] when same_base_type arg1.exp_type Predef.type_int
+      [arg1; {exp_desc = Texp_construct(cstr, [])}] ->
+        intcomp
+    | [{exp_desc = Texp_construct(cstr, [])}; arg2] ->
+        intcomp
+    | [arg1; arg2] when same_base_type arg1.exp_type Predef.type_int
                      or same_base_type arg1.exp_type Predef.type_char ->
         intcomp
     | [arg1; arg2] when same_base_type arg1.exp_type Predef.type_float ->
@@ -204,13 +242,14 @@ let transl_prim prim args =
   with Not_found ->
   try
     let p = Hashtbl.find primitives_table prim.prim_name in
+    (* Try strength reduction based on the type of the argument *)
     begin match (p, args) with
-        (Psetfield(n, _), [arg1; arg2]) ->
-          Psetfield(n, maybe_pointer arg2)
-      | (Psafesetvectitem _, [arg1; arg2; arg3]) ->
-          Psafesetvectitem(maybe_pointer arg3)
-      | (Psetvectitem _, [arg1; arg2; arg3]) ->
-          Psetvectitem(maybe_pointer arg3)
+        (Psetfield(n, _), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2)
+      | (Parraylength Pgenarray, [arg])   -> Parraylength(array_kind arg)
+      | (Parrayrefu Pgenarray, arg1 :: _) -> Parrayrefu(array_kind arg1)
+      | (Parraysetu Pgenarray, arg1 :: _) -> Parraysetu(array_kind arg1)
+      | (Parrayrefs Pgenarray, arg1 :: _) -> Parrayrefs(array_kind arg1)
+      | (Parraysets Pgenarray, arg1 :: _) -> Parraysets(array_kind arg1)
       | _ -> p
     end
   with Not_found ->
@@ -237,7 +276,13 @@ let check_recursive_lambda id lam =
 
 exception Not_constant
 
-let extract_constant = function Lconst sc -> sc | _ -> raise Not_constant
+let extract_constant = function
+    Lconst sc -> sc
+  | _ -> raise Not_constant
+
+let extract_float = function
+    Const_base(Const_float f) -> f
+  | _ -> fatal_error "Translcore.extract_float"
 
 (* To find reasonable names for let-bound and lambda-bound idents *)
 
@@ -309,28 +354,39 @@ let rec transl_exp env e =
       | Cstr_exception path ->
           Lprim(Pmakeblock 0, transl_path path :: ll)
       end
-  | Texp_record lbl_expr_list ->
-      let lv = Array.new (List.length lbl_expr_list) Lstaticfail in
+  | Texp_record ((lbl1, _) :: _ as lbl_expr_list) ->
+      let lv = Array.new (Array.length lbl1.lbl_all) Lstaticfail in
       List.iter
         (fun (lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp env expr)
         lbl_expr_list;
       let ll = Array.to_list lv in
-      if List.for_all (fun (lbl, expr) -> lbl.lbl_mut = Immutable)
-                      lbl_expr_list
-      then begin
-        try
-          Lconst(Const_block(0, List.map extract_constant ll))
-        with Not_constant ->
-          Lprim(Pmakeblock 0, ll)
-      end else
-        Lprim(Pmakeblock 0, ll)
+      begin try
+        List.iter
+          (fun (lbl, expr) -> if lbl.lbl_mut = Mutable then raise Not_constant)
+          lbl_expr_list;
+        let cl = List.map extract_constant ll in
+        match lbl1.lbl_repres with
+          Record_regular -> Lconst(Const_block(0, cl))
+        | Record_float -> Lconst(Const_float_array(List.map extract_float cl))
+      with Not_constant ->
+        match lbl1.lbl_repres with
+          Record_regular -> Lprim(Pmakeblock 0, ll)
+        | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
+      end
   | Texp_field(arg, lbl) ->
-      Lprim(Pfield lbl.lbl_pos, [transl_exp env arg])
+      let access =
+        match lbl.lbl_repres with
+          Record_regular -> Pfield lbl.lbl_pos
+        | Record_float -> Pfloatfield lbl.lbl_pos in
+      Lprim(access, [transl_exp env arg])
   | Texp_setfield(arg, lbl, newval) ->
-      Lprim(Psetfield(lbl.lbl_pos, maybe_pointer newval),
-            [transl_exp env arg; transl_exp env newval])
+      let access =
+        match lbl.lbl_repres with
+          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
+        | Record_float -> Psetfloatfield lbl.lbl_pos in
+      Lprim(access, [transl_exp env arg; transl_exp env newval])
   | Texp_array expr_list ->
-      Lprim(Pmakeblock 0, transl_list env expr_list)
+      Lprim(Pmakearray(array_kind e), transl_list env expr_list)
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp env cond, transl_exp env ifso,
                                        transl_exp env ifnot)
@@ -345,6 +401,8 @@ let rec transl_exp env e =
            transl_exp env body)
   | Texp_when(cond, body) ->
       Lifthenelse(transl_exp env cond, transl_exp env body, Lstaticfail)
+  | _ ->
+      fatal_error "Translcore.transl"
 
 and transl_list env = function
     [] -> []
