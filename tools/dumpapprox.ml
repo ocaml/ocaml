@@ -40,7 +40,7 @@ let rec print_approx ppf = function
           if i > 0 then printf ";@ ";
           printf "%i: %a" i print_approx approx.(i)
         done in
-      printf "@[<hov 1[%a]@]" tuple approx
+      printf "@[<hov 1>%a@]" tuple approx
   | Value_unknown ->
       print_string "_"
   | Value_integer n ->
