@@ -626,13 +626,12 @@ let transl_class ids cl_id arity pub_meths cl =
     ids = [] ||
     Typeclass.virtual_methods (Ctype.signature_of_class_type cl.cl_type) = []
   and lclass lam =
-    Llet(Strict, class_init, Lfunction(Curried, [cla], cl_init),
-         lam class_init)
-  and lbody class_init =
-    let fv = free_variables cl_init in
+    let cl_init = llets (Lfunction(Curried, [cla], cl_init)) in
+    Llet(Strict, class_init, cl_init, lam (free_variables cl_init))
+  and lbody fv =
     if List.for_all (fun id -> not (IdentSet.mem id fv)) ids then
-      Lapply (oo_prim "make_class",
-	      [transl_meth_list pub_meths; Lvar class_init])
+      Lapply (oo_prim "make_class",[transl_meth_list pub_meths;
+				    Lvar class_init])
     else
       ltable table (
       Llet(
@@ -642,12 +641,12 @@ let transl_class ids cl_id arity pub_meths cl =
       Lprim(Pmakeblock(0, Immutable),
 	    [Lapply(Lvar env_init, [lambda_unit]);
 	     Lvar class_init; Lvar env_init; lambda_unit]))))
-    and lbody_virt lenvs =
+  and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
           [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])
   in
   (* Still easy: a class defined at toplevel *)
-  if top && concrete then llets (lclass lbody) else
+  if top && concrete then lclass lbody else
   if top then llets (lbody_virt lambda_unit) else
 
   (* Now for the hard stuff: prepare for table cacheing *)
