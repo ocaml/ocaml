@@ -107,7 +107,7 @@ static struct {
 
 void raise_out_of_memory(void)
 {
-  out_of_memory_bucket.hdr = Make_header(1, 0, White);
+  out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
   out_of_memory_bucket.exn = (value) Out_of_memory;
   mlraise((value) &(out_of_memory_bucket.exn));
 }
@@ -159,9 +159,9 @@ void array_bound_error(void)
 {
   mlsize_t wosize = (BOUND_MSG_LEN + sizeof(value)) / sizeof(value);
   mlsize_t offset_index = Bsize_wsize(wosize) - 1;
-  array_bound_error_msg.hdr = Make_header(wosize, String_tag, White);
+  array_bound_error_msg.hdr = Make_header(wosize, String_tag, Caml_white);
   array_bound_error_msg.data[offset_index] = offset_index - BOUND_MSG_LEN;
-  array_bound_error_bucket.hdr = Make_header(2, 0, White);
+  array_bound_error_bucket.hdr = Make_header(2, 0, Caml_white);
   array_bound_error_bucket.exn = (value) Invalid_argument;
   array_bound_error_bucket.arg = (value) array_bound_error_msg.data;
   mlraise((value) &array_bound_error_bucket.exn);

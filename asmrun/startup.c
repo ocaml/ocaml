@@ -51,7 +51,7 @@ static void init_atoms(void)
   int i;
   extern struct segment caml_data_segments[], caml_code_segments[];
 
-  for (i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, White);
+  for (i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, Caml_white);
   minmax_table(caml_data_segments, &static_data_start, &static_data_end);
   minmax_table(caml_code_segments, &code_area_start, &code_area_end);
 }
