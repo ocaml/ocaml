@@ -514,12 +514,21 @@ let system cmd =
           exit 127
   | id -> snd(waitpid [] id)
 
+let perform_redirections new_stdin new_stdout new_stderr =
+  if new_stdin <> stdin then begin
+    dup2 new_stdin stdin; close new_stdin
+  end;
+  if new_stdout <> stdout then begin
+    dup2 new_stdout stdout; close new_stdout
+  end;
+  if new_stderr <> stderr then begin
+    dup2 new_stderr stderr; close new_stderr
+  end
+
 let create_process cmd args new_stdin new_stdout new_stderr =
   match fork() with
     0 ->
-      if new_stdin  <> stdin  then dup2 new_stdin stdin;
-      if new_stdout <> stdout then dup2 new_stdout stdout;
-      if new_stderr <> stderr then dup2 new_stderr stderr;
+      perform_redirections new_stdin new_stdout new_stderr;
       execvp cmd args;
       exit 127
   | id -> id
@@ -527,9 +536,7 @@ let create_process cmd args new_stdin new_stdout new_stderr =
 let create_process_env cmd args env new_stdin new_stdout new_stderr =
   match fork() with
     0 ->
-      if new_stdin  <> stdin  then dup2 new_stdin stdin;
-      if new_stdout <> stdout then dup2 new_stdout stdout;
-      if new_stderr <> stderr then dup2 new_stderr stderr;
+      perform_redirections new_stdin new_stdout new_stderr;
       execvpe cmd args env;
       exit 127
   | id -> id
@@ -541,22 +548,26 @@ type popen_process =
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
-let open_proc cmd proc input output =
-  let pid =
-    create_process "/bin/sh" [| "/bin/sh"; "-c"; cmd |] input output stderr in
-  Hashtbl.add popen_processes proc pid
+let open_proc cmd proc input output toclose =
+  match fork() with
+     0 -> if input <> stdin then begin dup2 input stdin; close input end;
+          if output <> stdout then begin dup2 output stdout; close output end;
+          List.iter close toclose;
+          execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
+          exit 127
+  | id -> Hashtbl.add popen_processes proc id
 
 let open_process_in cmd =
   let (in_read, in_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
-  open_proc cmd (Process_in inchan) stdin in_write;
+  open_proc cmd (Process_in inchan) stdin in_write [in_read];
   close in_write;
   inchan
 
 let open_process_out cmd =
   let (out_read, out_write) = pipe() in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process_out outchan) out_read stdout;
+  open_proc cmd (Process_out outchan) out_read stdout [out_write];
   close out_read;
   outchan
 
@@ -565,9 +576,10 @@ let open_process cmd =
   let (out_read, out_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process(inchan, outchan)) out_read in_write;
-  close in_write;
+  open_proc cmd (Process(inchan, outchan)) out_read in_write
+                                           [in_read; out_write];
   close out_read;
+  close in_write;
   (inchan, outchan)
 
 let find_proc_id fun_name proc =
@@ -590,7 +602,7 @@ let close_process_out outchan =
 
 let close_process (inchan, outchan) =
   let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
-  close_in inchan; close_out outchan;
+  close_in inchan;
   snd(waitpid [] pid)
 
 (* High-level network functions *)
