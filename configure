@@ -608,9 +608,10 @@ binutils_objcopy=''
 binutils_nm=''
 
 if test "$arch" != "none"; then
+  binutils_path="${binutils_dir}:${PATH}:/usr/libexec/binutils"
   old_IFS="$IFS"
   IFS=':'
-  for d in ${binutils_dir}:${PATH}; do
+  for d in ${binutils_path}; do
     if test -z "$d"; then continue; fi
     if test -f "$d/objcopy" && test -f "$d/nm"; then
       echo "objcopy and nm found in $d"
