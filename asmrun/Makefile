@@ -49,6 +49,8 @@ memory.c: ../byterun/memory.c
 	ln -s ../byterun/memory.c memory.c
 alloc.c: ../byterun/alloc.c
 	ln -s ../byterun/alloc.c alloc.c
+array.c: ../byterun/array.c
+	ln -s ../byterun/array.c array.c
 compare.c: ../byterun/compare.c
 	ln -s ../byterun/compare.c compare.c
 ints.c: ../byterun/ints.c
@@ -90,7 +92,7 @@ compact.c: ../byterun/compact.c
 meta.c: ../byterun/meta.c
 	ln -s ../byterun/meta.c meta.c
 
-LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c \
+LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c compact.c meta.c
