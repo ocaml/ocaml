@@ -1012,7 +1012,7 @@ using \"load_printer\"." };
 "mode of loading.\n\
 It can be either :
   direct : the program is directly called by the debugger.\n\
-  runtime : the debugger execute `camlrun -D socket programname arguments'.\n\
+  runtime : the debugger execute `ocamlrun programname arguments'.\n\
   manual : the program is not launched by the debugger,\n\
     but manually by the user." };
      { var_name = "processcount";
