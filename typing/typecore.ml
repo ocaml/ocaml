@@ -515,26 +515,7 @@ let rec type_exp env sexp =
         exp_type = newty (Ttuple(List.map (fun exp -> exp.exp_type) expl));
         exp_env = env }
   | Pexp_construct(lid, sarg, explicit_arity) ->
-      let constr =
-        try
-          Env.lookup_constructor lid env
-        with Not_found ->
-          raise(Error(sexp.pexp_loc, Unbound_constructor lid)) in
-      let sargs =
-        match sarg with
-          None -> []
-        | Some {pexp_desc = Pexp_tuple sel} when explicit_arity -> sel
-        | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
-        | Some se -> [se] in
-      if List.length sargs <> constr.cstr_arity then
-        raise(Error(sexp.pexp_loc, Constructor_arity_mismatch(lid,
-                                       constr.cstr_arity, List.length sargs)));
-      let (ty_args, ty_res) = instance_constructor constr in
-      let args = List.map2 (type_expect env) sargs ty_args in
-      { exp_desc = Texp_construct(constr, args);
-        exp_loc = sexp.pexp_loc;
-        exp_type = ty_res;
-        exp_env = env }
+      type_construct env sexp.pexp_loc lid sarg explicit_arity (newvar ())
   | Pexp_variant(l, sarg) ->
       let arg = may_map (type_exp env) sarg in
       let arg_type = may_map (fun arg -> arg.exp_type) arg in
@@ -980,6 +961,31 @@ and type_application env funct sargs =
   else
     type_args [] [] funct.exp_type sargs []
 
+and type_construct env loc lid sarg explicit_arity ty_expected =
+  let constr =
+    try
+      Env.lookup_constructor lid env
+    with Not_found ->
+      raise(Error(loc, Unbound_constructor lid)) in
+  let sargs =
+    match sarg with
+      None -> []
+    | Some {pexp_desc = Pexp_tuple sel} when explicit_arity -> sel
+    | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
+    | Some se -> [se] in
+  if List.length sargs <> constr.cstr_arity then
+    raise(Error(loc, Constructor_arity_mismatch
+		  (lid, constr.cstr_arity, List.length sargs)));
+  let (ty_args, ty_res) = instance_constructor constr in
+  let texp =
+    { exp_desc = Texp_construct(constr, []);
+      exp_loc = loc;
+      exp_type = ty_res;
+      exp_env = env } in
+  unify_exp env texp ty_expected;
+  let args = List.map2 (type_expect env) sargs ty_args in
+  { texp with exp_desc = Texp_construct(constr, args) }
+
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
 
@@ -999,6 +1005,8 @@ and type_expect env sexp ty_expected =
           exp_env = env } in
       unify_exp env exp ty_expected;
       exp
+  | Pexp_construct(lid, sarg, explicit_arity) ->
+      type_construct env sexp.pexp_loc lid sarg explicit_arity ty_expected
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
       let (pat_exp_list, new_env) = type_let env rec_flag spat_sexp_list in
       let body = type_expect new_env sbody ty_expected in
