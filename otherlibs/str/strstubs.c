@@ -13,7 +13,6 @@
 
 /* $Id$ */
 
-#include <assert.h>
 #include <string.h>
 #include <ctype.h>
 #include <mlvalues.h>
@@ -283,7 +282,7 @@ static int re_match(value re,
       break;
     }
     default:
-      assert(0);
+      caml_fatal_error ("impossible case in re_match");
     }
     /* Continue with next instruction */
     continue;
