@@ -62,6 +62,10 @@ let rec repr =
       repr t'
   | t -> t
 
+let rec commu_repr = function
+    Clink r when !r <> Cunknown -> commu_repr !r
+  | c -> c
+
 let rec row_field_repr = function
     Reither(_, _, _, {contents = Some fi}) -> row_field_repr fi
   | fi -> fi
@@ -118,7 +122,7 @@ let rec iter_row f row =
 let iter_type_expr f ty =
   match ty.desc with
     Tvar                -> ()
-  | Tarrow (_, ty1, ty2)-> f ty1; f ty2
+  | Tarrow (_, ty1, ty2, _) -> f ty1; f ty2
   | Ttuple l            -> List.iter f l
   | Tconstr (_, l, _)   -> List.iter f l
   | Tobject(ty, {contents = Some (_, p)})

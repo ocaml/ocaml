@@ -94,7 +94,7 @@ let rec arr p ~card:n =
 let rec all_args ty =
   let ty = repr ty in
   match ty.desc with
-    Tarrow(l, ty1, ty2) -> let (tl,ty) = all_args ty2 in ((l,ty1)::tl, ty)
+    Tarrow(l, ty1, ty2, _) -> let (tl,ty) = all_args ty2 in ((l,ty1)::tl, ty)
   | _ -> ([], ty)
   
 let rec equal ~prefix t1 t2 =
@@ -261,7 +261,7 @@ let search_all_types t ~mode =
       `exact, _ -> [t]
     | `included, Tarrow _ -> [t]
     | `included, _ ->
-      [t; newty(Tarrow("",t,newvar())); newty(Tarrow("",newvar(),t))]
+      [t; newty(Tarrow("",t,newvar(),Cok)); newty(Tarrow("",newvar(),t,Cok))]
   in List2.flat_map !module_list ~f:
     begin fun modname ->
     let mlid = Lident modname in

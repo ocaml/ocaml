@@ -54,6 +54,7 @@ type error =
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
+  | Incoherent_label_order
 
 exception Error of Location.t * error
 
@@ -514,6 +515,7 @@ let type_format loc fmt =
       match fmt.[j] with
         '0' .. '9' | ' ' | '.' | '-' -> skip_args (j+1)
       | _ -> j in
+  let ty_arrow gty ty = newty (Tarrow("", instance gty, ty, Cok)) in
   let rec scan_format i =
     if i >= len then ty_result else
     match fmt.[i] with
@@ -524,31 +526,28 @@ let type_format loc fmt =
           '%' ->
             scan_format (j+1)
         | 's' ->
-            newty (Tarrow("",instance Predef.type_string, scan_format (j+1)))
+            ty_arrow Predef.type_string (scan_format (j+1))
         | 'c' ->
-            newty (Tarrow("",instance Predef.type_char, scan_format (j+1)))
+            ty_arrow Predef.type_char (scan_format (j+1))
         | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            newty (Tarrow("",instance Predef.type_int, scan_format (j+1)))
+            ty_arrow Predef.type_int (scan_format (j+1))
         | 'f' | 'e' | 'E' | 'g' | 'G' ->
-            newty (Tarrow("",instance Predef.type_float, scan_format (j+1)))
+            ty_arrow Predef.type_float (scan_format (j+1))
         | 'b' ->
-            newty (Tarrow("",instance Predef.type_bool, scan_format (j+1)))
+            ty_arrow Predef.type_bool (scan_format (j+1))
         | 'a' ->
             let ty_arg = newvar() in
-            newty (Tarrow ("",
-                           newty (Tarrow("", ty_input,
-                                         newty (Tarrow ("", ty_arg,
-                                                        ty_result)))),
-                           newty (Tarrow ("", ty_arg, scan_format (j+1)))))
+            ty_arrow (ty_arrow ty_input (ty_arrow ty_arg ty_result))
+                     (ty_arrow ty_arg (scan_format (j+1)))
         | 't' ->
-            newty (Tarrow("", newty (Tarrow("", ty_input, ty_result)),
-                          scan_format (j+1)))
+            ty_arrow (ty_arrow ty_input ty_result) (scan_format (j+1))
         | c ->
             raise(Error(loc, Bad_format(String.sub fmt i (j-i+1))))
         end
     | _ -> scan_format (i+1) in
   newty
-    (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result], ref Mnil))
+    (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result],
+             ref Mnil))
 
 (* Approximate the type of an expression, for better recursion *)
 
@@ -556,16 +555,16 @@ let rec approx_type sty =
   match sty.ptyp_desc with
     Ptyp_arrow (p, _, sty) ->
       let ty1 = if is_optional p then type_option (newvar ()) else newvar () in
-      newty (Tarrow (p, ty1, approx_type sty))
+      newty (Tarrow (p, ty1, approx_type sty, Cok))
   | _ -> newvar ()
 
 let rec type_approx env sexp =
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
   | Pexp_function (p,_,(_,e)::_) when is_optional p ->
-       newty (Tarrow(p, type_option (newvar ()), type_approx env e))
+       newty (Tarrow(p, type_option (newvar ()), type_approx env e, Cok))
   | Pexp_function (p,_,(_,e)::_) ->
-       newty (Tarrow(p, newvar (), type_approx env e))
+       newty (Tarrow(p, newvar (), type_approx env e, Cok))
   | Pexp_match (_, (_,e)::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
@@ -1019,29 +1018,32 @@ and type_argument env sarg ty_expected =
     let ty = expand_head env ty in
     match ty.desc with
       Tvar -> false
-    | Tarrow ("",_, ty) when not !Clflags.classic -> no_labels ty
+    | Tarrow ("",_, ty,_) when not !Clflags.classic -> no_labels ty
     | Tarrow _ -> false
     | _ -> true
   in
   match expand_head env ty_expected, sarg with
   | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
       type_expect env sarg ty_expected
-  | {desc = Tarrow("",ty_arg,ty_res)}, _ when no_labels ty_res ->
+  | {desc = Tarrow("",ty_arg,ty_res,_)}, _ ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       let texp = type_exp env sarg in
       let rec make_args args ty_fun =
         match (expand_head env ty_fun).desc with
-        | Tarrow (l,ty_arg,ty_fun) when is_optional l ->
+        | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
             make_args
               ((Some(option_none ty_arg sarg.pexp_loc), Optional) :: args)
               ty_fun
-        | Tarrow (l,_,_) when l = "" || !Clflags.classic ->
-            args, ty_fun
-        | Tvar ->  args, ty_fun
-        |  _ -> [], texp.exp_type
+        | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
+            args, ty_fun, no_labels ty_res'
+        | Tvar ->  args, ty_fun, false
+        |  _ -> [], texp.exp_type, false
       in
-      let args, ty_fun = make_args [] texp.exp_type in
+      let args, ty_fun, simple_res = make_args [] texp.exp_type in
+      if not (simple_res || no_labels ty_res) then
+        type_expect env sarg ty_expected
+      else begin
       unify_exp env {texp with exp_type = ty_fun} ty_expected;
       if args = [] then texp else
       (* eta-expand to avoid side effects *)
@@ -1064,14 +1066,22 @@ and type_argument env sarg ty_expected =
       let let_pat, let_var = var_pair "let" texp.exp_type in
       { texp with exp_type = ty_fun; exp_desc =
         Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
+      end
   | _ ->
       type_expect env sarg ty_expected
 
 and type_application env funct sargs =
   let result_type omitted ty_fun =
     List.fold_left
-      (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun)))
+      (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun,Cok)))
       ty_fun omitted
+  in
+  let rec has_label l ty_fun =
+    match (expand_head env ty_fun).desc with
+    | Tarrow (l', _, ty_res, _) ->
+        (l = l' || has_label l ty_res)
+    | Tvar -> true
+    | _ -> false
   in
   let ignored = ref [] in
   let rec type_unknown_args args omitted ty_fun = function
@@ -1082,21 +1092,28 @@ and type_application env funct sargs =
          result_type omitted ty_fun)
     | (l1, sarg1) :: sargl ->
         let (ty1, ty2) =
-          try
-            filter_arrow env ty_fun l1
-          with Unify _ ->
-            let ty_fun =
-              match expand_head env ty_fun with
-                {desc=Tarrow _} as ty -> ty
-              | _ -> ty_fun
-            in
-            let ty_res = result_type (omitted @ !ignored) ty_fun in
-            match ty_res with
-              {desc=Tarrow _} ->
-                raise(Error(sarg1.pexp_loc, Apply_wrong_label(l1, ty_res)))
-            | _ ->
-                raise(Error(funct.exp_loc,
-                            Apply_non_function funct.exp_type)) in
+          match (expand_head env ty_fun).desc with
+            Tvar ->
+              let t1 = newvar () and t2 = newvar () in
+              unify env ty_fun (newty (Tarrow(l1,t1,t2,Clink(ref Cunknown))));
+              (t1, t2)
+          | Tarrow (l,t1,t2,_) when l = l1
+            || !Clflags.classic && l1 = "" && not (is_optional l) ->
+              (t1, t2)
+          | td ->
+              let ty_fun =
+                match td with Tarrow _ -> newty td | _ -> ty_fun in
+              let ty_res = result_type (omitted @ !ignored) ty_fun in
+              match ty_res.desc with
+                Tarrow _ ->
+                  if (!Clflags.classic || not (has_label l1 ty_fun)) then
+                    raise(Error(sarg1.pexp_loc, Apply_wrong_label(l1, ty_res)))
+                  else
+                    raise(Error(funct.exp_loc, Incoherent_label_order))
+              | _ ->
+                  raise(Error(funct.exp_loc,
+                              Apply_non_function funct.exp_type))
+        in
         let optional = if is_optional l1 then Optional else Required in
         let arg1 () =
           let arg1 = type_expect env sarg1 ty1 in
@@ -1108,8 +1125,8 @@ and type_application env funct sargs =
   in
   let rec type_args args omitted ty_fun ty_old sargs more_sargs =
     match expand_head env ty_fun with
-      {desc=Tarrow (l, ty, ty_fun); level=lv} as ty_fun'
-      when sargs <> [] || more_sargs <> [] ->
+      {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun'
+      when (sargs <> [] || more_sargs <> []) && commu_repr com = Cok ->
         let name = label_name l
         and optional = if is_optional l then Optional else Required in
         let sargs, more_sargs, arg =
@@ -1166,7 +1183,7 @@ and type_application env funct sargs =
       let ty_arg, ty_res = filter_arrow env funct.exp_type "" in
       let exp = type_expect env sarg ty_arg in
       begin match expand_head env exp.exp_type with
-      | {desc=Tarrow(_, _, _)} ->
+      | {desc = Tarrow _} ->
           Location.prerr_warning exp.exp_loc Warnings.Partial_application
       | _ -> ()
       end;
@@ -1279,8 +1296,8 @@ and type_expect env sexp ty_expected =
         type_cases env ty_arg ty_res (Some sexp.pexp_loc) caselist in
       let rec all_labeled ty =
         match (repr ty).desc with
-          Tarrow ("", _, _) | Tvar -> false
-        | Tarrow (l, _, ty) -> l.[0] <> '?' && all_labeled ty
+          Tarrow ("", _, _, _) | Tvar -> false
+        | Tarrow (l, _, ty, _) -> l.[0] <> '?' && all_labeled ty
         | _ -> true
       in
       if is_optional l && all_labeled ty_res then
@@ -1288,7 +1305,7 @@ and type_expect env sexp ty_expected =
           (Warnings.Other "This optional argument cannot be erased");
       { exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
-        exp_type = newty (Tarrow(l, ty_arg, ty_res));
+        exp_type = newty (Tarrow(l, ty_arg, ty_res, Cok));
         exp_env = env }
   | _ ->
       let exp = type_exp env sexp in
@@ -1300,7 +1317,7 @@ and type_expect env sexp ty_expected =
 and type_statement env sexp =
     let exp = type_exp env sexp in
     match (expand_head env exp.exp_type).desc with
-    | Tarrow(_, _, _) ->
+    | Tarrow _ ->
         Location.prerr_warning sexp.pexp_loc Warnings.Partial_application;
         exp
     | Tconstr (p, _, _) when Path.same p Predef.path_unit -> exp
@@ -1522,3 +1539,7 @@ let report_error ppf = function
         longident lid
   | Not_a_variant_type lid ->
       fprintf ppf "The type %a@ is not a variant type" longident lid
+  | Incoherent_label_order ->
+      fprintf ppf "This function is applied to arguments@ ";
+      fprintf ppf "in an order different from other calls.@ ";
+      fprintf ppf "This is only allowed when the real type is known."

@@ -109,7 +109,7 @@ let rec constructor_type constr cty =
   | Tcty_signature sign ->
       constr
   | Tcty_fun (l, ty, cty) ->
-      Ctype.newty (Tarrow (l, ty, constructor_type constr cty))
+      Ctype.newty (Tarrow (l, ty, constructor_type constr cty, Cok))
 
 let rec class_body cty =
   match cty with
@@ -755,7 +755,7 @@ let rec approx_declaration cl =
       let arg =
         if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
-      Ctype.newty (Tarrow (l, arg, approx_declaration cl))
+      Ctype.newty (Tarrow (l, arg, approx_declaration cl, Cok))
   | Pcl_let (_, _, cl) ->
       approx_declaration cl
   | Pcl_constraint (cl, _) ->
@@ -768,7 +768,7 @@ let rec approx_description ct =
       let arg =
         if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
-      Ctype.newty (Tarrow (l, arg, approx_description ct))
+      Ctype.newty (Tarrow (l, arg, approx_description ct, Cok))
   | _ -> Ctype.newvar ()
 
 (*******************************)

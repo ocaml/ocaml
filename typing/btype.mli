@@ -40,6 +40,9 @@ val field_kind_repr: field_kind -> field_kind
         (* Return the canonical representative of an object field
            kind. *)
 
+val commu_repr: commutable -> commutable
+        (* Return the canonical representative of a commutation lock *)
+
 val row_repr: row_desc -> row_desc
         (* Return the canonical representative of a row description *)
 val row_field_repr: row_field -> row_field

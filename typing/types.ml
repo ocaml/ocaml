@@ -26,7 +26,7 @@ type type_expr =
 
 and type_desc =
     Tvar
-  | Tarrow of label * type_expr * type_expr
+  | Tarrow of label * type_expr * type_expr * commutable
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
@@ -57,6 +57,11 @@ and field_kind =
     Fvar of field_kind option ref
   | Fpresent
   | Fabsent
+
+and commutable =
+    Cok
+  | Cunknown
+  | Clink of commutable ref
 
 (* Maps of methods and instance variables *)
 

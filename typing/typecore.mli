@@ -84,6 +84,7 @@ type error =
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
+  | Incoherent_label_order
 
 exception Error of Location.t * error
 

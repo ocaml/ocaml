@@ -103,7 +103,7 @@ let rec mark_loops_rec visited ty =
     let visited = px :: visited in
     match ty.desc with
     | Tvar -> ()
-    | Tarrow(_, ty1, ty2) ->
+    | Tarrow(_, ty1, ty2, _) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl -> List.iter (mark_loops_rec visited) tyl
     | Tconstr(_, tyl, _) ->
@@ -181,7 +181,7 @@ let rec typexp sch prio0 ppf ty =
    (match ty.desc with
     | Tvar ->
         fprintf ppf "'%s%a" (non_gen_mark sch ty) print_name_of_type ty
-    | Tarrow(l, ty1, ty2) ->
+    | Tarrow(l, ty1, ty2, _) ->
         let pr_arrow l ty1 ppf ty2 =
           print_label ppf l;
           if is_optional l then

@@ -338,7 +338,7 @@ let compute_variance env tvl nega posi ty =
       if posi then pvisited := TypeSet.add ty !pvisited;
       if nega then nvisited := TypeSet.add ty !nvisited;
       match ty.desc with
-        Tarrow (_, ty1, ty2) ->
+        Tarrow (_, ty1, ty2, _) ->
           compute_variance_rec nega posi ty1;
           compute_variance_rec posi nega ty2
       | Ttuple tl ->

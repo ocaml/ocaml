@@ -75,8 +75,10 @@ let rec typexp s ty =
       begin match desc with
         Tvar | Tlink _ ->
           fatal_error "Subst.typexp"
-      | Tarrow(l, t1, t2) ->
-          Tarrow(l, typexp s t1, typexp s t2)
+      | Tarrow(l, t1, t2, c) ->
+          let c =
+            if commu_repr c = Cok then Cok else Clink (ref Cunknown) in
+          Tarrow(l, typexp s t1, typexp s t2, c)
       | Ttuple tl ->
           Ttuple(List.map (typexp s) tl)
       | Tconstr(p, tl, abbrev) ->

@@ -663,8 +663,10 @@ let rec copy ty =
       begin match desc with
         Tvar ->
           Tvar
-      | Tarrow (l, t1, t2) ->
-          Tarrow (l, copy t1, copy t2)
+      | Tarrow (l, t1, t2, c) ->
+          let c =
+            if commu_repr c = Cok then Cok else Clink (ref Cunknown) in
+          Tarrow (l, copy t1, copy t2, c)
       | Ttuple tl ->
           Ttuple (List.map copy tl)
       | Tconstr (p, tl, _) ->
@@ -1192,9 +1194,14 @@ and unify3 env t1 t1' t2 t2' =
           update_level env t2'.level t1;
           t2'.desc <- Tlink t1
         end
-    | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2
+    | (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
-        unify env t1 t2; unify env u1 u2
+        unify env t1 t2; unify env u1 u2;
+        begin match commu_repr c1, commu_repr c2 with
+          Clink r, c2 -> r := c2
+        | c1, Clink r -> r := c1
+        | _ -> ()
+        end
     | (Ttuple tl1, Ttuple tl2) ->
         unify_list env tl1 tl2
     | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
@@ -1406,11 +1413,11 @@ let rec filter_arrow env t l =
   match t.desc with
     Tvar ->
       let t1 = newvar () and t2 = newvar () in
-      let t' = newty (Tarrow (l, t1, t2)) in
+      let t' = newty (Tarrow (l, t1, t2, Cok)) in
       update_level env t.level t';
       t.desc <- Tlink t';
       (t1, t2)
-  | Tarrow(l', t1, t2)
+  | Tarrow(l', t1, t2, _)
     when l = l' || !Clflags.classic && l = "" && not (is_optional l') ->
       (t1, t2)
   | _ ->
@@ -1529,7 +1536,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
                                           else t1'.level =  generic_level ->
               moregen_occur env t1'.level t2;
               t1'.desc <- Tlink t2
-          | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2
+          | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
               moregen inst_nongen type_pairs env t1 t2;
               moregen inst_nongen type_pairs env u1 u2
@@ -1699,7 +1706,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               with Not_found ->
                 subst := (t1', t2') :: !subst
               end
-          | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2
+          | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
               eqtype rename type_pairs subst env t1 t2;
               eqtype rename type_pairs subst env u1 u2;
@@ -2084,13 +2091,13 @@ let rec build_subtype env visited posi t =
           (t, false)
       else
         (t, false)
-  | Tarrow(l, t1, t2) ->
+  | Tarrow(l, t1, t2, _) ->
       if List.memq t visited then (t, false) else
       let visited = t :: visited in
       (* let (t1', c1) = build_subtype env visited (not posi) t1 in *)
       let (t1', c1) = (t1, false) in
       let (t2', c2) = build_subtype env visited posi t2 in
-      if c1 || c2 then (newty (Tarrow(l, t1', t2')), true)
+      if c1 || c2 then (newty (Tarrow(l, t1', t2', Cok)), true)
       else (t, false)
   | Ttuple tlist ->
       if List.memq t visited then (t, false) else
@@ -2261,7 +2268,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
     match (t1.desc, t2.desc) with
       (Tvar, _) | (_, Tvar) ->
         (trace, t1, t2)::cstrs
-    | (Tarrow(l1, t1, u1), Tarrow(l2, t2, u2)) when l1 = l2
+    | (Tarrow(l1, t1, u1, _), Tarrow(l2, t2, u2, _)) when l1 = l2
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         let cstrs = subtype_rec env ((t2, t1)::trace) t2 t1 cstrs in
         subtype_rec env ((u1, u2)::trace) u1 u2 cstrs
@@ -2388,7 +2395,7 @@ let unroll_abbrev id tl ty =
 (* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
   match (repr ty).desc with
-    Tarrow(_, t1, t2) -> 1 + arity t2
+    Tarrow(_, t1, t2, _) -> 1 + arity t2
   | _ -> 0
 
 (* Check whether an abbreviation expands to itself. *)
@@ -2489,8 +2496,10 @@ let rec nondep_type_rec env id ty =
       begin match desc with
         Tvar ->
           fatal_error "Ctype.nondep_type_rec"
-      | Tarrow(l, t1, t2) ->
-          Tarrow(l, nondep_type_rec env id t1, nondep_type_rec env id t2)
+      | Tarrow(l, t1, t2, c) ->
+          let c =
+            if commu_repr c = Cok then Cok else Clink (ref Cunknown) in
+          Tarrow(l, nondep_type_rec env id t1, nondep_type_rec env id t2, c)
       | Ttuple tl ->
           Ttuple(List.map (nondep_type_rec env id) tl)
       | Tconstr(p, tl, abbrev) ->
