@@ -157,8 +157,8 @@ let loadfile file_name =
     if buffer = Config.cma_magic_number then begin
       let toc_pos = input_binary_int ic in  (* Go to table of contents *)
       seek_in ic toc_pos;
-      List.iter (load_compunit ic file_name)
-                (input_value ic : compilation_unit list)
+      let toc = (input_value ic : library) in
+      List.iter (load_compunit ic file_name) toc.lib_units
     end else
       raise(Error(Not_a_bytecode_file file_name));
     close_in ic
