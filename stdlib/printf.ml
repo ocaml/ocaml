@@ -130,7 +130,7 @@ let extract_format fmt start stop widths =
       let rec fill_format i w =
         if i > stop then Buffer.contents b else
           match (String.unsafe_get fmt i, w) with
-            ('*', h::t) ->
+          | ('*', h :: t) ->
               Buffer.add_string b (string_of_int h); fill_format (succ i) t
           | ('*', []) ->
               bad_format fmt start (* should not happen *)
@@ -178,13 +178,13 @@ let scan_format fmt pos cont_s cont_a cont_t =
           if conv = 'c'
           then cont_s (String.make 1 c) (succ i)
           else cont_s ("'" ^ Char.escaped c ^ "'") (succ i))
-    | 'b' ->
+    | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' as conv ->
         Obj.magic(fun (n: int) ->
-          cont_s (format_binary_int
-                    (extract_format fmt pos i widths) n) (succ i))
-    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' as conv ->
-        Obj.magic(fun (n: int) ->
-          cont_s (format_int (extract_format fmt pos i widths) n) (succ i))
+          cont_s (
+            if conv = 'b'
+            then format_binary_int (extract_format fmt pos i widths) n
+            else format_int (extract_format fmt pos i widths) n)
+            (succ i))
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' as conv ->
         Obj.magic(fun (f: float) ->
           let s =
@@ -214,8 +214,8 @@ let scan_format fmt pos cont_s cont_a cont_t =
         | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
             Obj.magic(fun (n: nativeint) ->
               cont_s (format_nativeint
-                         (extract_format fmt pos (succ i) widths)
-                         n)
+                        (extract_format fmt pos (succ i) widths)
+                        n)
                      (i + 2))
         | _ ->
             bad_format fmt pos
