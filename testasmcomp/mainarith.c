@@ -54,7 +54,7 @@ extern void testarith();
 
 void do_test()
 {
-      call_gen_code(&testarith);
+      call_gen_code(testarith);
 
       INTTEST(r[0], 0);
       INTTEST(r[1], 1);

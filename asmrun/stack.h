@@ -55,5 +55,12 @@
 #define Callback_link(sp) ((struct callback_link *)(sp - 8))
 #endif
 
+#ifdef TARGET_power
+#define Saved_return_address(sp) *((long *)(sp - 4))
+#define Already_scanned(sp, retaddr) (retaddr & 1)
+#define Mark_scanned(sp, retaddr) (*((long *)(sp - 4)) = retaddr | 1)
+#define Mask_already_scanned(retaddr) (retaddr & ~1)
+#define Callback_link(sp) ((struct callback_link *)(sp + 24))
+#endif
 
 #endif /* _stack_ */

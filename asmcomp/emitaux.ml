@@ -24,14 +24,14 @@ let emit_char c = output_char !output_channel c
 let emit_printf fmt =
   Printf.fprintf !output_channel fmt
 
-let emit_symbol s =
+let emit_symbol esc s =
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
     match c with
       'A'..'Z' | 'a'..'z' | '0'..'9' | '_' ->
         output_char !output_channel c
     | _ ->
-        Printf.fprintf !output_channel "$%02x" (Char.code c)
+        Printf.fprintf !output_channel "%c%02x" esc (Char.code c)
   done
 
 let emit_string_literal s =
