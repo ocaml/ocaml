@@ -107,6 +107,35 @@ and expression_desc =
   | Pexp_letmodule of string * module_expr * expression
   | Pexp_assert of expression
   | Pexp_assertfalse
+(*> JOCAML *)
+  | Pexp_spawn of expression
+  | Pexp_par of expression * expression
+  | Pexp_null
+  | Pexp_reply of expression * joinident
+  | Pexp_def of joinautomaton list * expression
+  | Pexp_loc of joinlocation list * expression
+
+and joinlocation =
+  {pjloc_desc : joinident * joinautomaton list * expression ;
+   pjloc_loc : Location.t}
+
+and joinautomaton =
+ {pjauto_desc : joinclause list ;
+  pjauto_loc : Location.t}
+
+and joinclause =
+    {pjclause_desc : joinpattern list * expression ;
+    pjclause_loc : Location.t}
+
+and joinpattern =
+  { pjpat_desc: joinpattern_desc;
+    pjpat_loc: Location.t}
+
+and joinident = {pjident_desc : string ; pjident_loc : Location.t}
+
+and joinpattern_desc =  joinident * joinident list
+
+(*< JOCAML *)
 
 (* Value descriptions *)
 
@@ -239,8 +268,12 @@ and structure_item =
     pstr_loc: Location.t }
 
 and structure_item_desc =
-    Pstr_eval of expression
+  | Pstr_eval of expression
   | Pstr_value of rec_flag * (pattern * expression) list
+(*> JOCAML *)
+  | Pstr_def of joinautomaton list
+  | Pstr_loc of joinlocation list
+(*< JOCAML *)
   | Pstr_primitive of string * value_description
   | Pstr_type of (string * type_declaration) list
   | Pstr_exception of string * exception_declaration

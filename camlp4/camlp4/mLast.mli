@@ -101,7 +101,12 @@ and expr =
   | ExTyc of loc and expr and ctyp
   | ExUid of loc and string
   | ExVrn of loc and string
-  | ExWhi of loc and expr and list expr ]
+  | ExWhi of loc and expr and list expr
+(*> JOCAML *)
+  | ExSpa of loc and expr
+  | ExPar of loc and expr and expr
+(*< JOCAML *)
+]
 and module_type =
   [ MtAcc of loc and module_type and module_type
   | MtApp of loc and module_type and module_type
