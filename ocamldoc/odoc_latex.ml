@@ -122,7 +122,7 @@ class text =
       for i = 0 to len - 1 do
 	match name.[i] with
 	  '_' -> if no_ then () else Buffer.add_char buf '_'
-	| '~' -> Buffer.add_char buf 'X'
+	| '~' -> if no_ then () else Buffer.add_char buf '~'
 	| '@' -> Buffer.add_string buf "\"@"
 	| '!' -> Buffer.add_string buf "\"!" 
 	| '|' -> Buffer.add_string buf "\"|"
