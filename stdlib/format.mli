@@ -146,6 +146,9 @@ val set_max_boxes : int -> unit;;
            Nothing happens if [max] is not greater than 1. *)
 val get_max_boxes : unit -> int;;
         (* Return the maximum number of boxes allowed before ellipsis. *)
+val over_max_boxes : unit -> bool;;
+        (* Test the maximum number of boxes allowed have
+           already been opened. *)
 
 (*** Advanced formatting *)
 val open_hbox : unit -> unit;;
@@ -284,6 +287,7 @@ val pp_set_max_indent : formatter -> int -> unit;;
 val pp_get_max_indent : formatter -> unit -> int;;
 val pp_set_max_boxes : formatter -> int -> unit;;
 val pp_get_max_boxes : formatter -> unit -> int;;
+val pp_over_max_boxes : formatter -> unit -> bool;;
 val pp_set_ellipsis_text : formatter -> string -> unit;;
 val pp_get_ellipsis_text : formatter -> unit -> string;;
 val pp_set_formatter_out_channel : formatter -> out_channel -> unit;;

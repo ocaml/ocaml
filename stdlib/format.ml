@@ -509,6 +509,8 @@ let pp_set_max_boxes state n = if n > 1 then state.pp_max_boxes <- n;;
 (* To know the current maximum number of boxes allowed *)
 let pp_get_max_boxes state () = state.pp_max_boxes;;
 
+let pp_over_max_boxes state () = state.pp_curr_depth = state.pp_max_boxes;;
+
 (* Ellipsis *)
 let pp_set_ellipsis_text state s = state.pp_ellipsis <- s
 and pp_get_ellipsis_text state () = state.pp_ellipsis;;
@@ -617,6 +619,7 @@ and set_max_indent = pp_set_max_indent std_formatter
 and get_max_indent = pp_get_max_indent std_formatter
 and set_max_boxes = pp_set_max_boxes std_formatter
 and get_max_boxes = pp_get_max_boxes std_formatter
+and over_max_boxes = pp_over_max_boxes std_formatter
 and set_ellipsis_text = pp_set_ellipsis_text std_formatter
 and get_ellipsis_text = pp_get_ellipsis_text std_formatter
 and set_formatter_out_channel =
