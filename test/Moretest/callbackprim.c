@@ -52,5 +52,5 @@ value mycamlparam (value v, value fun, value arg)
   x = v;
   y = callback (fun, arg);
   v = x;
-  CAMLreturn v;
+  CAMLreturn (v);
 }

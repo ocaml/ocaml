@@ -99,7 +99,7 @@ value callback3_exn(value closure, value arg1, value arg2, value arg3)
 value callbackN_exn(value closure, int narg, value args[])
 {
   CAMLparam1 (closure);
-  CAMLxparamN (args, nargs);
+  CAMLxparamN (args, narg);
   CAMLlocal1 (res);
   int i;
 
