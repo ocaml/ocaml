@@ -411,7 +411,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
            [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()].
            It prints [x = 1] within a pretty-printing box. *)
 
-val bprintf: Buffer.t -> ('a, Buffer.t, unit) format -> 'a;;
+val bprintf: Buffer.t -> ('a, formatter, unit) format -> 'a;;
         (* Same as [fprintf], but instead of printing on a formatter,
            writes into the buffer argument. *)
 val printf : ('a, formatter, unit) format -> 'a;;
