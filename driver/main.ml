@@ -85,6 +85,7 @@ let main () =
        "-unsafe", Arg.Set fast,
              " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_number, " Print compiler version number";
+       "-verbose", Arg.Set verbose, " Print calls to external commands";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";

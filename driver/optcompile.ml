@@ -46,7 +46,7 @@ let preprocess sourcefile tmpfile =
     None -> sourcefile
   | Some pp ->
       let comm = pp ^ " " ^ sourcefile ^ " > " ^ tmpfile in
-      if Sys.command comm <> 0 then begin
+      if Ccomp.command comm <> 0 then begin
         Printf.eprintf "Preprocessing error\n";
         flush stderr;
         exit 2
@@ -117,19 +117,19 @@ let implementation sourcefile =
   let ast = parse_file inputfile Parse.implementation ast_impl_magic_number in
   let (str, sg, finalenv) = Typemod.type_structure (initial_env()) ast in
   if !Clflags.print_types then (Printtyp.signature sg; print_newline());
-  let (coercion, crc) =
+  let coercion =
     if Sys.file_exists (prefixname ^ ".mli") then begin
       let intf_file =
         try find_in_path !load_path (prefixname ^ ".cmi")
         with Not_found -> prefixname ^ ".cmi" in
-      let (dclsig, crc) = Env.read_signature modulename intf_file in
-      (Includemod.compunit sourcefile sg intf_file dclsig, crc)
+      let dclsig = Env.read_signature modulename intf_file in
+      Includemod.compunit sourcefile sg intf_file dclsig
     end else begin
       Typemod.check_nongen_schemes finalenv str;
-      let crc = Env.save_signature sg modulename (prefixname ^ ".cmi") in
-      (Tcoerce_none, crc)
+      Env.save_signature sg modulename (prefixname ^ ".cmi");
+      Tcoerce_none
     end in
-  Compilenv.reset modulename crc;
+  Compilenv.reset modulename;
   let (compunit_size, lam) =
     Translmod.transl_store_implementation modulename str coercion in
   Asmgen.compile_implementation prefixname compunit_size
