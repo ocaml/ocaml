@@ -87,35 +87,35 @@ and bind_patterns env patl argl =
 
 let comparisons_table = create_hashtable 11 [
   "%equal",
-      (Pccall("equal", 2, true),
+      (Pccall("equal", 2, false),
        Pintcomp Ceq,
        Pfloatcomp Ceq,
        Pccall("string_equal", 2, false));
   "%notequal",
-      (Pccall("notequal", 2, true),
+      (Pccall("notequal", 2, false),
        Pintcomp Cneq,
        Pfloatcomp Cneq,
        Pccall("string_notequal", 2, false));
   "%lessthan",
-      (Pccall("lessthan", 2, true),
+      (Pccall("lessthan", 2, false),
        Pintcomp Clt,
        Pfloatcomp Clt,
-       Pccall("lessthan", 2, true));
+       Pccall("lessthan", 2, false));
   "%greaterthan",
-      (Pccall("greaterthan", 2, true),
+      (Pccall("greaterthan", 2, false),
        Pintcomp Cgt,
        Pfloatcomp Cgt,
-       Pccall("greaterthan", 2, true));
+       Pccall("greaterthan", 2, false));
   "%lessequal",
-      (Pccall("lessequal", 2, true),
+      (Pccall("lessequal", 2, false),
        Pintcomp Cle,
        Pfloatcomp Cle,
-       Pccall("lessequal", 2, true));
+       Pccall("lessequal", 2, false));
   "%greaterequal",
-      (Pccall("greaterequal", 2, true),
+      (Pccall("greaterequal", 2, false),
        Pintcomp Cge,
        Pfloatcomp Cge,
-       Pccall("greaterequal", 2, true))
+       Pccall("greaterequal", 2, false))
 ]
 
 let primitives_table = create_hashtable 31 [
@@ -175,6 +175,11 @@ let primitives_table = create_hashtable 31 [
   "%array_unsafe_set", Psetvectitem true
 ]
 
+let noalloc_primitives = [
+  "compare"; "equal"; "notequal"; "lessthan"; "lessequal"; "greaterthan";
+  "greaterequal"; "string_equal"; "string_notequal";
+  "hash_univ_param"; "blit_string"; "fill_string"]
+
 let same_base_type ty1 ty2 =
   match (Ctype.repr ty1, Ctype.repr ty2) with
     (Tconstr(p1, []), Tconstr(p2, [])) -> Path.same p1 p2
@@ -213,7 +218,7 @@ let transl_prim prim arity args =
       | _ -> p
     end
   with Not_found ->
-    Pccall(prim, arity, true)
+    Pccall(prim, arity, not(List.mem prim noalloc_primitives))
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
@@ -400,7 +405,7 @@ let transl_primitive = function
         try
           Hashtbl.find primitives_table name
         with Not_found ->
-          Pccall(name, arity, true) in
+          Pccall(name, arity, not(List.mem name noalloc_primitives)) in
       let rec add_params n params =
         if n >= arity
         then Lprim(prim, List.rev params)
