@@ -22,9 +22,9 @@
 value unix_inet_addr_of_string(s) /* ML */
      value s;
 {
-  unsigned long address;
+  unsigned int address;
   address = inet_addr(String_val(s));
-  if (address == (unsigned long) -1) failwith("inet_addr_of_string");
+  if (address == (unsigned int) -1) failwith("inet_addr_of_string");
   return alloc_inet_addr(address);
 }
 
