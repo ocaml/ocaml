@@ -20,7 +20,7 @@ Type-checking:
   types.
 - Added a new "-dtypes" option to ocamlc/ocamlopt, and an emacs extension
   "emacs/caml-types.el".  The compiler option saves inferred type information
-  to file *.types, and the emacs extension allows the user to look at the
+  to file *.annot, and the emacs extension allows the user to look at the
   type of any subexpression in the source file.  Works even in the case
   of a type error (all the types computed up to the error are available).
   This new feature is also supported by ocamlbrowser.
@@ -123,7 +123,6 @@ Ocamllex:
 
 Ocamldebug:
 - Handle programs that run for more than 2^30 steps.
-- Better support for preprocessed code.
 
 Emacs mode:
 - Added file caml-types.el to interactively display the type information
