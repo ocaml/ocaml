@@ -77,9 +77,14 @@ val for_all : ('a -> bool) -> 'a list -> bool
            satisfy the predicate [p]. That is, it returns
            [(p a1) & (p a2) & ... & (p an)]. *)
 val exists : ('a -> bool) -> 'a list -> bool
-        (* [exists p [a1; ...; an]] checks if at least one element of the list
-           satisfies the predicate [p]. That is, it returns
+        (* [exists p [a1; ...; an]] checks if at least one element of
+           the list satisfies the predicate [p]. That is, it returns
            [(p a1) or (p a2) or ... or (p an)]. *)
+val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+        (* Same as [for_all] and [exists], but for a two-argument predicate.
+           Raise [Invalid_argument] if the two lists have
+	   different lengths. *)
 val mem : 'a -> 'a list -> bool
         (* [mem a l] is true if and only if [a] is equal
            to an element of [l]. *)

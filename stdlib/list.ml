@@ -91,6 +91,18 @@ let rec exists p = function
     [] -> false
   | a::l -> p a or exists p l
 
+let rec for_all2 p l1 l2 =
+  match (l1, l2) with
+    ([], []) -> true
+  | (a1::l1, a2::l2) -> p a1 a2 & for_all2 p l1 l2
+  | (_, _) -> invalid_arg "List.for_all2"
+
+let rec exists2 p l1 l2 =
+  match (l1, l2) with
+    ([], []) -> true
+  | (a1::l1, a2::l2) -> p a1 a2 or exists2 p l1 l2
+  | (_, _) -> invalid_arg "List.exists2"
+
 let rec mem x = function
     [] -> false
   | a::l -> a = x or mem x l
