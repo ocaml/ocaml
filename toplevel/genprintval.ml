@@ -406,7 +406,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           [] -> ()
         | (name, tree) :: fields ->
             if not first then fprintf ppf ";@ ";
-            fprintf ppf "@[<1>%a=@,%a@]" print_ident name
+            fprintf ppf "@[<1>%a@ =@ %a@]" print_ident name
               (cautious print_tree) tree;
             print_fields false ppf fields
       and print_tree_list print_item sep ppf tree_list =
