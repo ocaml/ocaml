@@ -13,14 +13,4 @@
 
 # $Id$
 
-
-# Multi-shell script.  Works under Bourne Shell, MPW Shell, zsh.
-
-if : == x
-then # Bourne Shell or zsh
-     exec %%BINDIR%%/ocamlc -linkall toplevellib.cma "$@" topstart.cmo
-else # MPW Shell
-     ocamlc -linkall toplevellib.cma {"parameters"} topstart.cmo
-     exit {status}
-End # uppercase E because "end" is a keyword in zsh
-fi
+exec %%BINDIR%%/ocamlc -linkall toplevellib.cma "$@" topstart.cmo
