@@ -50,6 +50,7 @@ the above 3 modules \\
 "Buffer" & p.~\pageref{Buffer} & string buffers that grow on demand \\
 "Lazy"  & p.~\pageref{Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{Weak} & references that don't prevent objects from being garbage-collected \\
+"Complex" & p.~\pageref{Complex} & Complex numbers \\
 "Int32" & p.~\pageref{Int32} & operations on 32-bit integers \\
 "Int64" & p.~\pageref{Int64} & operations on 64-bit integers \\
 "Nativeint" & p.~\pageref{Nativeint} & operations on platform-native
@@ -90,6 +91,7 @@ be called from C \\
 <li><a HREF=libref/Buffer.html> Module <tt>Buffer</tt>: extensible string buffers</a>
 <li><a HREF=libref/Callback.html> Module <tt>Callback</tt>: registering Caml values with the C runtime</a>
 <li><a HREF=libref/Char.html> Module <tt>Char</tt>: character operations</a>
+<li><a HREF=libref/Complex.html> Module <tt>Complex</tt>: Complex numbers</a>
 <li><a HREF=libref/Digest.html> Module <tt>Digest</tt>: MD5 message digest</a>
 <li><a HREF=libref/Filename.html> Module <tt>Filename</tt>: operations on file names</a>
 <li><a HREF=libref/Format.html> Module <tt>Format</tt>: pretty printing</a>
@@ -129,6 +131,7 @@ be called from C \\
 \input{Buffer.tex}
 \input{Callback.tex}
 \input{Char.tex}
+\input{Complex.tex}
 \input{Digest.tex}
 \input{Filename.tex}
 \input{Format.tex}
