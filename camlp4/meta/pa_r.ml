@@ -542,6 +542,11 @@ EXTEND
           <:ctyp< ! $list:pl$ . $t$ >> ]
     | "arrow" RIGHTA
       [ t1 = SELF; "->"; t2 = SELF -> <:ctyp< $t1$ -> $t2$ >> ]
+    | "label" NONA
+      [ i = TILDEIDENT; ":"; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
+      | i = LABEL; t =  SELF  -> <:ctyp< ~ $i$ : $t$ >>
+      | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >>
+      | i = OPTLABEL; t = SELF -> <:ctyp< ? $i$ : $t$ >> ]
     | LEFTA
       [ t1 = SELF; t2 = SELF -> <:ctyp< $t1$ $t2$ >> ]
     | LEFTA
@@ -746,14 +751,6 @@ EXTEND
   class_longident:
     [ [ m = UIDENT; "."; l = SELF -> [m :: l]
       | i = LIDENT -> [i] ] ]
-  ;
-  (* Labels *)
-  ctyp: LEVEL "arrow"
-    [ RIGHTA
-      [ i = TILDEIDENT; ":"; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
-      | i = LABEL; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
-      | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >> 
-      | i = OPTLABEL; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "["; "="; rfl = row_field_list; "]" ->

@@ -1540,6 +1540,25 @@ Grammar.extend
       Gramext.action
         (fun (t2 : 'ctyp) _ (t1 : 'ctyp) (loc : int * int) ->
            (MLast.TyArr (loc, t1, t2) : 'ctyp))];
+     Some "label", Some Gramext.NonA,
+     [[Gramext.Stoken ("OPTLABEL", ""); Gramext.Sself],
+      Gramext.action
+        (fun (t : 'ctyp) (i : string) (loc : int * int) ->
+           (MLast.TyOlb (loc, i, t) : 'ctyp));
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Sself],
+      Gramext.action
+        (fun (t : 'ctyp) _ (i : string) (loc : int * int) ->
+           (MLast.TyOlb (loc, i, t) : 'ctyp));
+      [Gramext.Stoken ("LABEL", ""); Gramext.Sself],
+      Gramext.action
+        (fun (t : 'ctyp) (i : string) (loc : int * int) ->
+           (MLast.TyLab (loc, i, t) : 'ctyp));
+      [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Sself],
+      Gramext.action
+        (fun (t : 'ctyp) _ (i : string) (loc : int * int) ->
+           (MLast.TyLab (loc, i, t) : 'ctyp))];
      None, Some Gramext.LeftA,
      [[Gramext.Sself; Gramext.Sself],
       Gramext.action
@@ -2240,27 +2259,6 @@ Grammar.extend
       Gramext.action
         (fun (l : 'class_longident) _ (m : string) (loc : int * int) ->
            (m :: l : 'class_longident))]];
-    Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
-    Some (Gramext.Level "arrow"),
-    [None, Some Gramext.RightA,
-     [[Gramext.Stoken ("OPTLABEL", ""); Gramext.Sself],
-      Gramext.action
-        (fun (t : 'ctyp) (i : string) (loc : int * int) ->
-           (MLast.TyOlb (loc, i, t) : 'ctyp));
-      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
-       Gramext.Sself],
-      Gramext.action
-        (fun (t : 'ctyp) _ (i : string) (loc : int * int) ->
-           (MLast.TyOlb (loc, i, t) : 'ctyp));
-      [Gramext.Stoken ("LABEL", ""); Gramext.Sself],
-      Gramext.action
-        (fun (t : 'ctyp) (i : string) (loc : int * int) ->
-           (MLast.TyLab (loc, i, t) : 'ctyp));
-      [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
-       Gramext.Sself],
-      Gramext.action
-        (fun (t : 'ctyp) _ (i : string) (loc : int * int) ->
-           (MLast.TyLab (loc, i, t) : 'ctyp))]];
     Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
     Some (Gramext.Level "simple"),
     [None, None,

@@ -795,6 +795,13 @@ EXTEND
           Qast.Node "TyPol" [Qast.Loc; pl; t] ]
     | "arrow" RIGHTA
       [ t1 = SELF; "->"; t2 = SELF -> Qast.Node "TyArr" [Qast.Loc; t1; t2] ]
+    | "label" NONA
+      [ i = a_TILDEIDENT; ":"; t = SELF -> Qast.Node "TyLab" [Qast.Loc; i; t]
+      | i = a_LABEL; t = SELF -> Qast.Node "TyLab" [Qast.Loc; i; t]
+      | i = a_QUESTIONIDENT; ":"; t = SELF ->
+          Qast.Node "TyOlb" [Qast.Loc; i; t]
+      | i = a_OPTLABEL; t = SELF ->
+          Qast.Node "TyOlb" [Qast.Loc; i; t] ]
     | LEFTA
       [ t1 = SELF; t2 = SELF -> Qast.Node "TyApp" [Qast.Loc; t1; t2] ]
     | LEFTA
@@ -1007,16 +1014,6 @@ EXTEND
   class_longident:
     [ [ m = a_UIDENT; "."; l = SELF -> Qast.Cons m l
       | i = a_LIDENT -> Qast.List [i] ] ]
-  ;
-  (* Labels *)
-  ctyp: LEVEL "arrow"
-    [ RIGHTA
-      [ i = a_TILDEIDENT; ":"; t = SELF -> Qast.Node "TyLab" [Qast.Loc; i; t]
-      | i = a_LABEL; t = SELF -> Qast.Node "TyLab" [Qast.Loc; i; t]
-      | i = a_QUESTIONIDENT; ":"; t = SELF ->
-          Qast.Node "TyOlb" [Qast.Loc; i; t]
-      | i = a_OPTLABEL; t = SELF ->
-          Qast.Node "TyOlb" [Qast.Loc; i; t] ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "["; "="; rfl = row_field_list; "]" ->
