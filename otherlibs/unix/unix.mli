@@ -201,7 +201,8 @@ type open_flag =
 type file_perm = int
         (* The type of file access rights. *)
 
-val openfile : string -> open_flag list -> file_perm -> file_descr
+external openfile : string -> open_flag list -> file_perm -> file_descr
+   = "unix_open"
         (* Open the named file with the given flags. Third argument is
            the permissions to give to the file if it is created. Return
            a file descriptor on the named file. *)
@@ -326,7 +327,7 @@ external access : string -> access_permission list -> unit = "unix_access"
 
 (*** Operations on file descriptors *)
 
-val dup : file_descr -> file_descr
+external dup : file_descr -> file_descr = "unix_dup"
         (* Return a new file descriptor referencing the same file as
            the given descriptor. *)
 external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
@@ -378,7 +379,7 @@ external closedir : dir_handle -> unit = "unix_closedir"
 
 (*** Pipes and redirections *)
 
-val pipe : unit -> file_descr * file_descr
+external pipe : unit -> file_descr * file_descr = "unix_pipe"
         (* Create a pipe. The first component of the result is opened
            for reading, that's the exit to the pipe. The second component is
            opened for writing, that's the entrance to the pipe. *) 
@@ -553,18 +554,17 @@ type interval_timer =
            is running and when the system is running on behalf of the
            process; it sends [SIGPROF] when expired. *)
 
-type time_value = float
-
 type interval_timer_status =
-  { it_interval: time_value;                 (* Period *)
-    it_value: time_value }                   (* Current value of the timer *)
+  { it_interval: float;                 (* Period *)
+    it_value: float }                   (* Current value of the timer *)
         (* The type describing the status of an interval timer *)
 
-external getitimer: interval_timer -> interval_timer_status = "unix_getitimer"
+external getitimer: interval_timer -> interval_timer_status
+   = "unix_getitimer" "unix_getitimer_native"
         (* Return the current status of the given interval timer. *)
 external setitimer:
   interval_timer -> interval_timer_status -> interval_timer_status
-  = "unix_setitimer"
+  = "unix_setitimer" "unix_setitimer_native"
         (* [setitimer t s] sets the interval timer [t] and returns
            its previous status. The [s] argument is interpreted as follows:
            [s.it_value], if nonzero, is the time to the next timer expiration;
@@ -670,14 +670,16 @@ type sockaddr =
            domain; [addr] is the Internet address of the machine, and
            [port] is the port number. *)
 
-val socket : socket_domain -> socket_type -> int -> file_descr
+external socket : socket_domain -> socket_type -> int -> file_descr
+        = "unix_socket"
         (* Create a new socket in the given domain, and with the
            given kind. The third argument is the protocol type; 0 selects
            the default protocol for that kind of sockets. *)
-val socketpair :
+external socketpair :
         socket_domain -> socket_type -> int -> file_descr * file_descr
+        = "unix_socketpair"
         (* Create a pair of unnamed sockets, connected together. *)
-val accept : file_descr -> file_descr * sockaddr
+external accept : file_descr -> file_descr * sockaddr = "unix_accept"
         (* Accept connections on the given socket. The returned descriptor
            is a socket connected to the client; the returned address is
            the address of the connecting client. *)

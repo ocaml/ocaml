@@ -133,11 +133,6 @@ let stdin = 0
 let stdout = 1
 let stderr = 2
 
-let max_opened_descr = ref 2
-
-let record_descr fd =
-  if fd > !max_opened_descr then max_opened_descr := fd
-
 type open_flag =
     O_RDONLY
   | O_WRONLY
@@ -151,13 +146,8 @@ type open_flag =
 type file_perm = int
 
 
-external sys_openfile : string -> open_flag list -> file_perm -> file_descr
+external openfile : string -> open_flag list -> file_perm -> file_descr
            = "unix_open"
-
-let openfile name flags perm =
-  let fd = sys_openfile name flags perm in
-  record_descr fd;
-  fd
 
 external close : file_descr -> unit = "unix_close"
 external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
@@ -229,11 +219,7 @@ external fchown : file_descr -> int -> int -> unit = "unix_fchown"
 external umask : int -> int = "unix_umask"
 external access : string -> access_permission list -> unit = "unix_access"
 
-external sys_dup : file_descr -> file_descr = "unix_dup"
-
-let dup fd =
-  let newfd = sys_dup fd in record_descr newfd; newfd
-
+external dup : file_descr -> file_descr = "unix_dup"
 external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
 external set_nonblock : file_descr -> unit = "unix_set_nonblock"
 external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
@@ -252,12 +238,7 @@ external readdir : dir_handle -> string = "unix_readdir"
 external rewinddir : dir_handle -> unit = "unix_rewinddir"
 external closedir : dir_handle -> unit = "unix_closedir"
 
-external sys_pipe : unit -> file_descr * file_descr = "unix_pipe"
-
-let pipe () =
-  let (fd1, fd2 as fdpair) = sys_pipe() in
-  record_descr fd1; record_descr fd2; fdpair
-
+external pipe : unit -> file_descr * file_descr = "unix_pipe"
 external symlink : string -> string -> unit = "unix_symlink"
 external readlink : string -> string = "unix_readlink"
 external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
@@ -310,17 +291,15 @@ type interval_timer =
   | ITIMER_VIRTUAL
   | ITIMER_PROF
 
-type time_value = float
-
 type interval_timer_status =
-  { it_interval: time_value;                 (* Period *)
-    it_value: time_value }                   (* Current value of the timer *)
-        (* The type describing the status of an interval timer *)
+  { it_interval: float;                 (* Period *)
+    it_value: float }                   (* Current value of the timer *)
 
-external getitimer: interval_timer -> interval_timer_status = "unix_getitimer"
+external getitimer: interval_timer -> interval_timer_status
+   = "unix_getitimer" "unix_getitimer_native"
 external setitimer:
   interval_timer -> interval_timer_status -> interval_timer_status
-  = "unix_setitimer"
+  = "unix_setitimer" "unix_setitimer_native"
 
 external getuid : unit -> int = "unix_getuid"
 external geteuid : unit -> int = "unix_geteuid"
@@ -393,24 +372,12 @@ type socket_option =
   | SO_DONTROUTE
   | SO_OOBINLINE
 
-external sys_socket : socket_domain -> socket_type -> int -> file_descr
+external socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
-let socket domain typ proto =
-  let fd = sys_socket domain typ proto in
-  record_descr fd; fd
-
-external sys_socketpair :
+external socketpair :
         socket_domain -> socket_type -> int -> file_descr * file_descr
                                   = "unix_socketpair"
-let socketpair domain typ proto =
-  let (fd1, fd2 as fdpair) = sys_socketpair domain typ proto in
-  record_descr fd1; record_descr fd2; fdpair
-
-external sys_accept : file_descr -> file_descr * sockaddr = "unix_accept"
-
-let accept fd =
-  let (newfd, addr as result) = sys_accept fd in
-  record_descr newfd; result
+external accept : file_descr -> file_descr * sockaddr = "unix_accept"
 
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
@@ -540,12 +507,9 @@ external tcflow: file_descr -> flow_action -> unit = "unix_tcflow"
 
 (* High-level process management (system, popen) *)
 
-external closeall : int -> unit = "unix_closeall"
-
 let system cmd =
   match fork() with
-     0 -> closeall !max_opened_descr;
-          execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
+     0 -> execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
           exit 127
   | id -> snd(waitpid [] id)
 
@@ -555,7 +519,6 @@ let create_process cmd args new_stdin new_stdout new_stderr =
       if new_stdin  <> stdin  then dup2 new_stdin stdin;
       if new_stdout <> stdout then dup2 new_stdout stdout;
       if new_stderr <> stderr then dup2 new_stderr stderr;
-      closeall !max_opened_descr;
       execvp cmd args;
       exit 127
   | id -> id
