@@ -232,7 +232,7 @@ module Genarray :
   (** Read an element of a generic big array.
      [Genarray.get a [|i1; ...; iN|]] returns the element of [a]
      whose coordinates are [i1] in the first dimension, [i2] in
-     the second dimension, \ldots, [iN] in the [N]-th dimension.
+     the second dimension, ..., [iN] in the [N]-th dimension.
      
      If [a] has C layout, the coordinates must be greater or equal than 0
      and strictly less than the corresponding dimensions of [a].
@@ -252,7 +252,7 @@ module Genarray :
   (** Assign an element of a generic big array.
      [Genarray.set a [|i1; ...; iN|] v] stores the value [v] in the
      element of [a] whose coordinates are [i1] in the first dimension,
-     [i2] in the second dimension, \ldots, [iN] in the [N]-th dimension.
+     [i2] in the second dimension, ..., [iN] in the [N]-th dimension.
      
      The array [a] must have exactly [N] dimensions, and all coordinates
      must lie inside the array bounds, as described for [Genarray.get];
@@ -311,7 +311,7 @@ module Genarray :
      by fixing one or several of the first (left-most) coordinates.
      [Genarray.slice_left a [|i1; ... ; iM|]] returns the ``slice''
      of [a] obtained by setting the first [M] coordinates to
-     [i1], \ldots, [iM].  If [a] has [N] dimensions, the slice has
+     [i1], ..., [iM].  If [a] has [N] dimensions, the slice has
      dimension [N - M], and the element at coordinates
      [[|j1; ...; j(N-M)|]] in the slice is identical to the element
      at coordinates [[|i1; ...; iM; j1; ...; j(N-M)|]] in the original
@@ -329,7 +329,7 @@ module Genarray :
      by fixing one or several of the last (right-most) coordinates.
      [Genarray.slice_right a [|i1; ... ; iM|]] returns the ``slice''
      of [a] obtained by setting the last [M] coordinates to
-     [i1], \ldots, [iM].  If [a] has [N] dimensions, the slice has
+     [i1], ..., [iM].  If [a] has [N] dimensions, the slice has
      dimension [N - M], and the element at coordinates
      [[|j1; ...; j(N-M)|]] in the slice is identical to the element
      at coordinates [[|j1; ...; j(N-M); i1; ...; iM|]] in the original
