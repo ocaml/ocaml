@@ -270,13 +270,28 @@ value install_signal_handler(signal_number, action) /* ML */
 
 /* Machine- and OS-dependent handling of bound check trap */
 
+#if defined(TARGET_alpha)
+static void trap_handler(sig, code, context)
+     int sig, code;
+     struct sigcontext * context;
+{
+  if (code == FPE_INTOVF_FAULT) {
+    array_bound_error();
+  } else {
+    fprintf(stderr, "Fatal error: floating-point exception, code 0x%x\n",
+            code);
+    exit(100);
+  }
+}
+#endif
+
 #if defined(TARGET_sparc) && defined(SYS_sunos)
 static void trap_handler(sig, code, context, address)
      int sig, code;
      struct sigcontext * context;
      char * address;
 {
-  if (sig == SIGILL && code == ILL_TRAP_FAULT(5)) {
+  if (code == ILL_TRAP_FAULT(5)) {
     array_bound_error();
   } else {
     fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n", code);
@@ -291,7 +306,7 @@ static void trap_handler(sig, info, context)
      siginfo_t * info;
      struct ucontext_t * context;
 {
-  if (sig == SIGILL && info->si_code == ILL_ILLTRP) {
+  if (info->si_code == ILL_ILLTRP) {
     array_bound_error();
   } else {
     fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n",
@@ -321,6 +336,13 @@ static void trap_handler(sig)
 
 void init_signals()
 {
+#ifdef TARGET_alpha  
+  struct sigaction act;
+  act.sa_handler = (void (*)(int)) trap_handler;
+  sigemptyset(&act.sa_mask);
+  act.sa_flags = 0;
+  sigaction(SIGFPE, &act, NULL);
+#endif
 #if defined(TARGET_sparc) && (defined(SYS_sunos) || defined(SYS_bsd))
   signal(SIGILL, trap_handler);
 #endif

@@ -251,8 +251,6 @@ let name_for_float_comparison cmp neg =
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
-(* Label of trap for out-of-range accesses *)
-let range_check_trap = ref 0
 
 let emit_instr i =
     match i.desc with
@@ -381,9 +379,12 @@ let emit_instr i =
         if not test then
           `	xor	{emit_reg i.res.(0)}, 1, {emit_reg i.res.(0)}\n`
     | Lop(Iintop(Icheckbound)) ->
-        if !range_check_trap = 0 then range_check_trap := new_label();
         `	cmpule	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $25\n`;
-        `	bne	$25, {emit_label !range_check_trap}\n`
+        `	ldil	$24, 0x80000000\n`;
+        (* Trap if $25 > 0, i.e. if i.arg.(0) <u i.arg.(1) *)
+        `	.set	noreorder\n`;
+        `	sublv	$24, $25, $24\n`;
+        `	.set	reorder\n`
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
@@ -404,11 +405,13 @@ let emit_instr i =
         `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`;
         if not test then
           `	xor	{emit_reg i.res.(0)}, 1, {emit_reg i.res.(0)}\n`
-
     | Lop(Iintop_imm(Icheckbound, n)) ->
-        if !range_check_trap = 0 then range_check_trap := new_label();
         `	cmpule	{emit_reg i.arg.(0)}, {emit_int n}, $25\n`;
-        `	bne	$25, {emit_label !range_check_trap}\n`
+        `	ldil	$24, 0x80000000\n`;
+        (* Trap if $25 > 0, i.e. if i.arg.(0) <u N *)
+        `	.set	noreorder\n`;
+        `	sublv	$24, $25, $24\n`;
+        `	.set	reorder\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
@@ -549,7 +552,6 @@ let fundecl fundecl =
   call_gc_sites := [];
   uses_gp := instr_uses_gp fundecl.fun_body;
   if !uses_gp then contains_calls := true;
-  range_check_trap := 0;
   `	.text\n`;
   `	.align	4\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
@@ -569,8 +571,6 @@ let fundecl fundecl =
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
-  if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	br	$25, call_array_bound_error\n`;
   `	.end	{emit_symbol fundecl.fun_name}\n`
 
 (* Emission of data *)
