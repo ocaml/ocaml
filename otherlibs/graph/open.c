@@ -37,7 +37,7 @@ Bool grremember_mode;
 int grx, gry;
 int grcolor;
 extern XFontStruct * grfont;
-
+long grselected_events;
 static Bool gr_initialized = False;
 
 static int gr_error_handler(Display *display, XErrorEvent *error);
@@ -46,7 +46,7 @@ value gr_clear_graph(void);
 
 value gr_open_graph(value arg)
 {
-  char display_name[64], geometry_spec[64];
+  char display_name[256], geometry_spec[64];
   char * p, * q;
   XSizeHints hints;
   int ret;
@@ -117,14 +117,14 @@ value gr_open_graph(value arg)
     XSetForeground(grdisplay, grwindow.gc, grblack);
 
     /* Require exposure, resize and keyboard events */
-    XSelectInput(grdisplay, grwindow.win, DEFAULT_EVENT_MASK);
+    grselected_events = DEFAULT_SELECTED_EVENTS;
+    XSelectInput(grdisplay, grwindow.win, grselected_events);
 
     /* Map the window on the screen and wait for the first Expose event */
     XMapWindow(grdisplay, grwindow.win);
     do { XNextEvent(grdisplay, &event); } while (event.type != Expose);
 
     /* Get the actual window dimensions */
-
     XGetWindowAttributes(grdisplay, grwindow.win, &attributes);
     grwindow.w = attributes.width;
     grwindow.h = attributes.height;
@@ -298,11 +298,7 @@ value gr_remember_mode(value flag)
 /* The gr_sigio_handler is called via the signal machinery in the bytecode
    interpreter. The signal system ensures that this function will be
    called either between two bytecode instructions, or during a blocking
-   primitive. In either case, not in the middle of an Xlib call.
-   (There is no blocking primitives in this library, not even
-   wait_next_event, for various reasons.) */
-
-void gr_handle_simple_event(XEvent *e);
+   primitive. In either case, not in the middle of an Xlib call. */
 
 value gr_sigio_signal(value unit)
 {
@@ -314,77 +310,14 @@ value gr_sigio_handler(void)
   XEvent grevent;
 
   if (gr_initialized) {
-    while (XCheckMaskEvent(grdisplay, -1 /*all events*/, &grevent))
-      gr_handle_simple_event(&grevent);
+    while (XCheckMaskEvent(grdisplay, -1 /*all events*/, &grevent)) {
+      gr_handle_event(&grevent);
+    }
   }
 #ifdef USE_ALARM
   alarm(1);
 #endif
   return Val_unit;
-}
-
-void gr_handle_simple_event(XEvent *e)
-{
-  switch (e->type) {
-
-  case Expose:
-    XCopyArea(grdisplay, grbstore.win, grwindow.win, grwindow.gc,
-              e->xexpose.x, e->xexpose.y + grbstore.h - grwindow.h,
-              e->xexpose.width, e->xexpose.height,
-              e->xexpose.x, e->xexpose.y);
-    XFlush(grdisplay);
-    break;
-
-  case ConfigureNotify:
-    grwindow.w = e->xconfigure.width;
-    grwindow.h = e->xconfigure.height;
-    if (grwindow.w > grbstore.w || grwindow.h > grbstore.h) {
-
-      /* Allocate a new backing store large enough to accomodate
-         both the old backing store and the current window. */
-      struct canvas newbstore;
-      newbstore.w = max(grwindow.w, grbstore.w);
-      newbstore.h = max(grwindow.h, grbstore.h);
-      newbstore.win =
-        XCreatePixmap(grdisplay, grwindow.win, newbstore.w, newbstore.h,
-                      XDefaultDepth(grdisplay, grscreen));
-      newbstore.gc = XCreateGC(grdisplay, newbstore.win, 0, NULL);
-      XSetBackground(grdisplay, newbstore.gc, grwhite);
-      XSetForeground(grdisplay, newbstore.gc, grwhite);
-      XFillRectangle(grdisplay, newbstore.win, newbstore.gc,
-                     0, 0, newbstore.w, newbstore.h);
-      XSetForeground(grdisplay, newbstore.gc, grcolor);
-      if (grfont != NULL)
-        XSetFont(grdisplay, newbstore.gc, grfont->fid);
-
-      /* Copy the old backing store into the new one */
-      XCopyArea(grdisplay, grbstore.win, newbstore.win, newbstore.gc,
-                0, 0, grbstore.w, grbstore.h, 0, newbstore.h - grbstore.h);
-
-      /* Free the old backing store */
-      XFreeGC(grdisplay, grbstore.gc);
-      XFreePixmap(grdisplay, grbstore.win);
-
-      /* Use the new backing store */
-      grbstore = newbstore;
-      XFlush(grdisplay);
-    }
-    break;
-
-  case MappingNotify:
-    XRefreshKeyboardMapping(&(e->xmapping));
-    break;
-
-  case KeyPress:
-    { KeySym thekey;
-      char keytxt[256];
-      int nchars;
-      char * p;
-      nchars = XLookupString(&(e->xkey), keytxt, sizeof(keytxt), &thekey, 0);
-      for (p = keytxt; nchars > 0; p++, nchars--) gr_enqueue_char(*p);
-      break;
-    }
-  }
 }
 
 /* Processing of graphic errors */

@@ -36,6 +36,7 @@ extern Bool grremember_mode;    /* Remember-mode flag */
 extern int grx, gry;            /* Coordinates of the current point */
 extern int grcolor;             /* Current *CAML* drawing color (can be -1) */
 extern XFontStruct * grfont;    /* Current font */
+extern long grselected_events;  /* Events we are interested in */
 
 extern Bool direct_rgb;
 extern int byte_order;
@@ -54,8 +55,8 @@ extern int bits_per_pixel;
 #define BORDER_WIDTH 2
 #define WINDOW_NAME "Caml graphics"
 #define ICON_NAME "Caml graphics"
-#define DEFAULT_EVENT_MASK \
-          (ExposureMask | KeyPressMask | StructureNotifyMask)
+#define DEFAULT_SELECTED_EVENTS \
+            (ExposureMask | KeyPressMask | StructureNotifyMask)
 #define DEFAULT_FONT "fixed"
 #define SIZE_QUEUE 256
 
@@ -73,12 +74,10 @@ extern int bits_per_pixel;
 #endif
 #endif
 
-void gr_fail(char *fmt, char *arg);
-void gr_check_open(void);
-unsigned long gr_pixel_rgb(int rgb);
-int gr_rgb_pixel(long unsigned int pixel);
-void gr_handle_simple_event(XEvent *e);
-void gr_enqueue_char(unsigned char c);
-void gr_init_color_cache(void);
-
-value id_of_window( Window w );
+extern void gr_fail(char *fmt, char *arg);
+extern void gr_check_open(void);
+extern unsigned long gr_pixel_rgb(int rgb);
+extern int gr_rgb_pixel(long unsigned int pixel);
+extern void gr_handle_event(XEvent *e);
+extern void gr_init_color_cache(void);
+extern value id_of_window( Window w );
