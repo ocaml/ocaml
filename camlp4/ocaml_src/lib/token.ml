@@ -23,7 +23,8 @@ let make_loc (bp, ep) =
 ;;
 
 let nowhere = {(Lexing.dummy_pos) with Lexing.pos_cnum = 0};;
-let dummy_loc = (Lexing.dummy_pos, Lexing.dummy_pos);;
+
+let dummy_loc = Lexing.dummy_pos, Lexing.dummy_pos;;
 
 let succ_pos p = {p with Lexing.pos_cnum = p.Lexing.pos_cnum + 1};;
 let lt_pos p1 p2 = p1.Lexing.pos_cnum < p2.Lexing.pos_cnum;;

@@ -122,6 +122,10 @@ let parse_quotation_result entry loc shift name str =
       raise (Stdpp.Exc_located (loc, exc1))
 ;;
 
+let ghostify (bp, ep) =
+  let ghost p = {p with Lexing.pos_cnum = 0} in ghost bp, ghost ep
+;;
+
 let handle_quotation loc proj in_expr entry reloc (name, str) =
   let shift =
     match name with
@@ -147,7 +151,7 @@ let handle_quotation loc proj in_expr entry reloc (name, str) =
     (let zero = ref None in
      fun _ ->
        match !zero with
-         None -> zero := Some loc; loc
+         None -> zero := Some (ghostify loc); loc
        | Some x -> x)
     shift ast
 ;;
@@ -369,37 +373,37 @@ and kont = pretty Stream.t
 ;;
 
 let pr_str_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 392, 30))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 397, 30))); pr_levels = []}
 ;;
 let pr_sig_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 393, 30))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 398, 30))); pr_levels = []}
 ;;
 let pr_module_type =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 394, 33))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 399, 33))); pr_levels = []}
 ;;
 let pr_module_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 395, 33))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 400, 33))); pr_levels = []}
 ;;
 let pr_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 396, 26))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 401, 26))); pr_levels = []}
 ;;
 let pr_patt =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 397, 26))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 402, 26))); pr_levels = []}
 ;;
 let pr_ctyp =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 398, 26))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 403, 26))); pr_levels = []}
 ;;
 let pr_class_sig_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 399, 36))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 404, 36))); pr_levels = []}
 ;;
 let pr_class_str_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 400, 36))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 405, 36))); pr_levels = []}
 ;;
 let pr_class_type =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 401, 32))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 406, 32))); pr_levels = []}
 ;;
 let pr_class_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 402, 32))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 407, 32))); pr_levels = []}
 ;;
 let pr_expr_fun_args = ref Extfun.empty;;
 

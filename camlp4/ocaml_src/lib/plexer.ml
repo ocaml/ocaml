@@ -92,6 +92,9 @@ and digits_under kind len (strm__ : _ Stream.t) =
   | _ ->
       match Stream.peek strm__ with
         Some '_' -> Stream.junk strm__; digits_under kind len strm__
+      | Some 'l' -> Stream.junk strm__; "INT32", get_buff len
+      | Some 'L' -> Stream.junk strm__; "INT64", get_buff len
+      | Some 'n' -> Stream.junk strm__; "NATIVEINT", get_buff len
       | _ -> "INT", get_buff len
 and octal (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
@@ -1042,11 +1045,11 @@ let gmake () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 740, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 740, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 740, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 741, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 741, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("", 742, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("", 742, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("", 742, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("", 743, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("", 743, 37)));
        tok_comm = None}
   in
   let glex =
@@ -1076,11 +1079,11 @@ let make () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 769, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 769, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 769, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 770, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 770, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("", 771, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("", 771, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("", 771, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("", 772, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("", 772, 37)));
        tok_comm = None}
   in
   {func = func kwd_table glexr; using = using_token kwd_table id_table;

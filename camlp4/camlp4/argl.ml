@@ -216,6 +216,12 @@ value file_kind_of_name name =
   else raise (Arg.Bad ("don't know what to do with " ^ name))
 ;
 
+value print_version_string () =
+  do {
+    print_string Pcaml.version; print_newline(); exit 0
+  }
+;
+
 value print_version () =
   do {
     eprintf "Camlp4 version %s\n" Pcaml.version; flush stderr; exit 0
@@ -343,7 +349,10 @@ value initial_spec_list =
    ("-o", Arg.String (fun x -> Pcaml.output_file.val := Some x),
     "<file> Output on <file> instead of standard output.");
    ("-v", Arg.Unit print_version,
-    "Print Camlp4 version and exit.")]
+    "Print Camlp4 version and exit.");
+   ("-version", Arg.Unit print_version_string,
+    "Print Camlp4 version number and exit.")
+ ]
 ;
 
 value anon_fun x =
