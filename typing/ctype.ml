@@ -1384,18 +1384,17 @@ let rec unify env t1 t2 =
 
 and unify2 env t1 t2 =
   (* Second step: expansion of abbreviations *)
-  let rec expand_both t1 t2 =
+  let rec expand_both t1'' t2'' =
     let t1' = expand_head env t1 in
     let t2' = expand_head env t2 in
     (* Expansion may have changed the representative of the types... *)
-    if t1' == t1 && t2' == t2 then (t1,t2) else
+    if t1' == t1'' && t2' == t2'' then (t1',t2') else
     expand_both t1' t2'
   in
   let t1', t2' = expand_both t1 t2 in
-  let t1 = repr t1 and t2 = repr t2 in
-  (* Expansion may have changed the original types too... *)
-  if t1 == t2 || t1' == t2' then () else
+  if t1' == t2' then () else
 
+  let t1 = repr t1 and t2 = repr t2 in
   if (t1 == t1') || (t2 != t2') then
     unify3 env t1 t1' t2 t2'
   else
