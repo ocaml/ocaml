@@ -59,7 +59,7 @@ typedef int int32;            /* Not portable, but checked by autoconf. */
 typedef unsigned int uint32;  /* Seems like a reasonable assumption anyway. */
 
 /* Longs vs blocks. */
-#define Is_long(x)   (((x) & 1) == 1)
+#define Is_long(x)   (((x) & 1) != 0)
 #define Is_block(x)  (((x) & 1) == 0)
 
 /* Conversion macro names are always of the form  "to_from". */
