@@ -22,6 +22,9 @@
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "alloc.h"
 #include "callback.h"
 #include "custom.h"
@@ -275,7 +278,6 @@ static void parse_camlrunparam(void)
 extern void init_ieee_floats (void);
 
 #ifdef _WIN32
-#include <windows.h>
 extern DWORD WINAPI caml_signal_thread(LPVOID lpParam);
 #endif
 

@@ -12,8 +12,9 @@
 
 /* $Id$ */
 
-/* Expansion of @responsefile and *? file patterns in the command line */
+/* Win32-specific stuff */
 
+#include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <io.h>
@@ -22,6 +23,29 @@
 #include <sys/stat.h>
 #include <ctype.h>
 #include <string.h>
+#include <signal.h>
+#include "signals.h"
+
+/* Path searching function */
+
+char * searchpath(char * name)
+{
+#define MAX_PATH_LENGTH 1024
+  static char fullname[MAX_PATH_LENGTH];
+  char * filepart;
+
+  if (SearchPath(NULL,              /* use system search path */
+                 name,
+                 ".exe",            /* add .exe extension if needed */
+                 MAX_PATH_LENGTH,   /* size of buffer */
+                 fullname,
+                 &filepart))
+    return fullname;
+  else
+    return name;
+}
+
+/* Expansion of @responsefile and *? file patterns in the command line */
 
 static int argc;
 static char ** argv;
@@ -121,4 +145,80 @@ void expand_command_line(int * argcp, char *** argvp)
   argv[argc] = NULL;
   *argcp = argc;
   *argvp = argv;
+}
+
+/* Wrapper around "system" for Win32.  Create a diversion file if
+   command line is too long. */
+
+extern char * mktemp(char *);
+
+int win32_system(char * cmdline)
+{
+#define MAX_CMD_LENGTH 256
+  char cmd[MAX_CMD_LENGTH + 16];
+  char template[9];
+  char * tempfile;
+  FILE * fd;
+  int len, i, j, k, retcode;
+
+  len = strlen(cmdline);
+  if (len < 1000) {
+    return system(cmdline);
+  } else {
+    /* Skip initial blanks, if any */
+    for (i = 0; cmdline[i] != 0 && isspace(cmdline[i]); i++) /*nothing*/;
+    /* Copy command name to buffer, stop at first blank */
+    for (j = 0; cmdline[i] != 0 && ! isspace(cmdline[i]); i++) {
+      if (j < MAX_CMD_LENGTH) cmd[j++] = cmdline[i];
+    }
+    /* Save remainder of command line to temp file */
+    strcpy(template, "cmXXXXXX");
+    tempfile = mktemp(template);
+    fd = fopen(tempfile, "w");
+    if (fd == NULL) return -1;
+    for (k = i; k < len; k++)
+      fputc((isspace(cmdline[k]) ? '\n' : cmdline[k]), fd);
+    fclose(fd);
+    /* Add " @tempfile" to the command line */
+    sprintf(cmd + j, " @%s", tempfile);
+    /* Run command */
+    retcode = system(cmd);
+    /* Remove temp file and exit */
+    unlink(tempfile);
+    return retcode;
+  }
+}
+
+/* Set up a new thread for control-C emulation */
+
+#define hexa_digit(ch) (ch >= 97 ? ch - 87 : \
+                        (ch >= 65 ? ch - 55 : \
+                         (ch >= 48 ? ch - 48 : 0)))
+  
+DWORD WINAPI caml_signal_thread(LPVOID lpParam)
+{
+  char *data;
+  int i;
+  HANDLE h;
+  /* Get an hexa-code raw handle through the environment */
+  data = getenv("CAMLSIGPIPE");
+  for(i = 0; i < sizeof(HANDLE); i++)
+    ((char*)&h)[i] = (hexa_digit(data[2*i]) << 4) + hexa_digit(data[2*i+1]);
+  while (1) {
+    DWORD numread;
+    BOOL ret;
+    char iobuf[2];
+    /* This shall always return a single character */
+    ret = ReadFile(h, iobuf, 1, &numread, NULL);
+    if (!ret || numread != 1) sys_exit(Val_int(0));
+    switch (iobuf[0]) {
+    case 'C':
+      pending_signal = SIGINT;
+      something_to_do = 1;
+      break;
+    case 'T':
+      exit(0);
+      break;
+    }
+  }
 }

@@ -233,6 +233,10 @@ void sys_init(char **argv)
 #define WEXITSTATUS(status) (((status) >> 8) & 0xFF)
 #endif
 
+#ifdef _WIN32
+extern int win32_system(char * command);
+#endif
+
 value sys_system_command(value command)   /* ML */
 {
   int status, retcode;
@@ -295,53 +299,10 @@ value sys_get_config(value unit)  /* ML */
 }
 
 /* Search path function */
+/* For Win32: defined in win32.c */
+/* For MacOS: defined in macintosh.c */
 
-#ifdef _WIN32
-
-#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
-
-char * searchpath(char * name)
-{
-  char * fullname;
-  char * path;
-  char * p;
-  char * q;
-  struct stat st;
-
-  if (stat(name, &st) == 0) return name;
-  path = getenv("PATH");
-  if (path == NULL) return 0;
-  fullname = stat_alloc(strlen(name) + strlen(path) + 6);
-  strcpy(fullname, name);
-  strcat(fullname, ".exe");
-  if (stat(fullname, &st) == 0) return fullname;
-  for (p = name; *p != 0; p++) {
-    if (*p == '/' || *p == '\\' || *p == ':') return name;
-  }
-  while(1) {
-    for (p = fullname; *path != 0 && *path != ';'; p++, path++) *p = *path;
-    if (p != fullname && p[-1] != '\\') *p++ = '\\';
-    for (q = name; *q != 0; p++, q++) *p = *q;
-    *p = 0;
-    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
-    strcpy(p, ".exe");
-    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
-    if (*path == 0) return 0;
-    path++;
-  }
-  return fullname;
-}
-
-#elif macintosh
-
-/* We don't need searchpath on the Macintosh because there are no #! scripts */
-
-char *searchpath (char * name)
-{
-  return name;
-}
-
-#else
+#if !defined(_WIN32) && !defined(macintosh)
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -375,48 +336,3 @@ char * searchpath(char * name)
 
 #endif /* _WIN32, macintosh, ... */
 
-/* Wrapper around "system" for Win32 */
-
-#ifdef _WIN32
-
-#include <ctype.h>
-extern char * mktemp(char *);
-
-int win32_system(char * cmdline)
-{
-#define MAX_CMD_LENGTH 256
-  char cmd[MAX_CMD_LENGTH + 16];
-  char template[9];
-  char * tempfile;
-  FILE * fd;
-  int len, i, j, k, retcode;
-
-  len = strlen(cmdline);
-  if (len < 1000) {
-    return system(cmdline);
-  } else {
-    /* Skip initial blanks, if any */
-    for (i = 0; cmdline[i] != 0 && isspace(cmdline[i]); i++) /*nothing*/;
-    /* Copy command name to buffer, stop at first blank */
-    for (j = 0; cmdline[i] != 0 && ! isspace(cmdline[i]); i++) {
-      if (j < MAX_CMD_LENGTH) cmd[j++] = cmdline[i];
-    }
-    /* Save remainder of command line to temp file */
-    strcpy(template, "cmXXXXXX");
-    tempfile = mktemp(template);
-    fd = fopen(tempfile, "w");
-    if (fd == NULL) return -1;
-    for (k = i; k < len; k++)
-      fputc((isspace(cmdline[k]) ? '\n' : cmdline[k]), fd);
-    fclose(fd);
-    /* Add " @tempfile" to the command line */
-    sprintf(cmd + j, " @%s", tempfile);
-    /* Run command */
-    retcode = system(cmd);
-    /* Remove temp file and exit */
-    unlink(tempfile);
-    return retcode;
-  }
-}
-
-#endif
