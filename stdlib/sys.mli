@@ -100,9 +100,11 @@ type signal_behavior =
 
 external signal :
   int -> signal_behavior -> signal_behavior = "caml_install_signal_handler"
-(** Set the behavior of the system on receipt of a given signal.
-   The first argument is the signal number.  Return the behavior
-   previously associated with the signal. *)
+(** Set the behavior of the system on receipt of a given signal.  The
+   first argument is the signal number.  Return the behavior
+   previously associated with the signal. If the signal number is
+   invalid (or not available on your system), an [Invalid_argument]
+   exception is raised. *)
 
 val set_signal : int -> signal_behavior -> unit
 (** Same as {!Sys.signal} but return value is ignored. *)
