@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -525,16 +525,29 @@ let system cmd =
           exit 127
   | id -> snd(waitpid [] id)
 
-let perform_redirections new_stdin new_stdout new_stderr =
-  if new_stdin <> stdin then begin
-    dup2 new_stdin stdin; close new_stdin
-  end;
-  if new_stdout <> stdout then begin
-    dup2 new_stdout stdout; close new_stdout
-  end;
-  if new_stderr <> stderr then begin
-    dup2 new_stderr stderr; close new_stderr
+let rec safe_dup fd =
+  let new_fd = dup fd in
+  if new_fd >= 3 then
+    new_fd
+  else begin
+    let res = safe_dup fd in
+    close new_fd;
+    res
   end
+
+let safe_close fd =
+  try close fd with Unix_error(_,_,_) -> ()
+
+let perform_redirections new_stdin new_stdout new_stderr =
+  let newnewstdin = safe_dup new_stdin in
+  let newnewstdout = safe_dup new_stdout in
+  let newnewstderr = safe_dup new_stderr in
+  safe_close new_stdin;
+  safe_close new_stdout;
+  safe_close new_stderr;
+  dup2 newnewstdin stdin; close newnewstdin;
+  dup2 newnewstdout stdout; close newnewstdout;
+  dup2 newnewstderr stderr; close newnewstderr
 
 let create_process cmd args new_stdin new_stdout new_stderr =
   match fork() with
