@@ -62,7 +62,7 @@ let _ = do { Printf.eprintf "recovered or_zero at loc (%d, %d)\n" loc1 loc2; flu
       (if prev_symb = "" then "" else " after " ^ prev_symb) ^
       " (in [" ^ entry ^ "])"
     ;
-    value lexer = Plexer.make ();
+    value lexer = Plexer.gmake ();
   end
 ;
 

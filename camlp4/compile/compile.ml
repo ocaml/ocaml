@@ -21,7 +21,7 @@ value rec name_of_symbol entry =
   [ Snterm e -> "[" ^ e.ename ^ "]"
   | Snterml e l -> "[" ^ e.ename ^ " level " ^ l ^ "]"
   | Sself | Snext -> "[" ^ entry.ename ^ "]"
-  | Stoken tok -> entry.egram.glexer.Token.text tok
+  | Stoken tok -> entry.egram.glexer.Token.tok_text tok
   | _ -> "???" ]
 ;
 
@@ -363,11 +363,6 @@ value rec continue_parser_of_levels entry clevn levs =
       let pel = continue_parser_of_levels entry (succ clevn) levs in
       match lev.lsuffix with
       [ DeadEnd ->
-(*
-          let ncont = entry.ename ^ "_" ^ string_of_int clevn ^ "_cont" in
-          let e = <:expr< fun bp a__ strm__ -> a__ >> in
-          let pel = if levs = [] then [] else pel in
-*)
           [None :: pel]
       | tree ->
           let alevn =
@@ -515,18 +510,6 @@ value all_entries_in_graph list entry =
 
 value entries = ref [];
 
-(*
-  [Grammar.Entry.obj Pcaml.interf;
-   Grammar.Entry.obj Pcaml.implem;
-   Grammar.Entry.obj Pcaml.top_phrase;
-   Grammar.Entry.obj Pcaml.use_file;
-   Grammar.Entry.obj Pcaml.str_item;
-   Grammar.Entry.obj Pcaml.sig_item;
-   Grammar.Entry.obj Pcaml.ctyp;
-   Grammar.Entry.obj Pcaml.expr;
-   Grammar.Entry.obj Pcaml.patt]
-*)
-
 value rec list_mem_right_assoc x =
   fun
   [ [] -> False
@@ -561,7 +544,7 @@ value compile () =
   let si2 =
     let list = List.sort compare keywords.val in
     <:str_item<
-      List.iter (fun kw -> P.lexer.Token.using ("", kw))
+      List.iter (fun kw -> P.lexer.Token.tok_using ("", kw))
         $expr_list list$
     >>
   in
