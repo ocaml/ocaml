@@ -483,9 +483,9 @@ let make_if_out konst ctx l d mk_ifso mk_ifno = match l with
       (konst d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
 | _ ->
     Arg.bind
-      (Arg.make_offset ctx.arg (-l-ctx.off))
+      (Arg.make_offset ctx.arg (-l))
       (fun arg ->
-        let ctx = {off= (-l) ; arg=arg} in
+        let ctx = {off= (-l+ctx.off) ; arg=arg} in
         do_make_if_out
           (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
 
@@ -498,9 +498,9 @@ let make_if_in konst ctx l d mk_ifso mk_ifno = match l with
       (konst d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
 | _ ->
     Arg.bind
-      (Arg.make_offset ctx.arg (-l-ctx.off))
+      (Arg.make_offset ctx.arg (-l))
       (fun arg ->
-        let ctx = {off= (-l) ; arg=arg} in
+        let ctx = {off= (-l+ctx.off) ; arg=arg} in
         do_make_if_in
           (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
 
@@ -513,6 +513,11 @@ let rec c_test konst ctx ({cases=cases ; actions=actions} as s) =
   else begin
     
     let w,c = opt_count false cases in
+(*
+    Printf.fprintf stderr
+      "off=%d tactic=%a for %a\n"
+      ctx.off pret w pcases cases ;
+*)
     match w with
     | No -> actions.(get_act cases 0) ctx
     | Inter (i,j) ->
