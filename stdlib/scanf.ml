@@ -22,11 +22,21 @@ type scanbuf;;
 
 val next_char : scanbuf -> unit;;
 (** [Scanning.next_char scanbuf] advance the scanning buffer for
-    one character. *)
+    one character.
+    Set a end of file condition if no character can be read. *)
 
 val peek_char : scanbuf -> char;;
 (** [Scanning.peek_char scanbuf] returns the current char available in
     the input. *)
+
+val cautious_peek_char : scanbuf -> char;;
+(** [Scanning.cautious_peek_char scanbuf] returns the current char available in
+    the input or tries to read one if none has ever been read. *)
+
+val checked_peek_char : scanbuf -> char;;
+(** Same as above but always returns a valid char instead of a null 
+    char when the reading method of the input buffer has reached end of
+    file. *)
 
 val store_char : scanbuf -> char -> int -> int;;
 (** [Scanning.store_char scanbuf c lim] adds [c] to the token buffer
@@ -66,6 +76,7 @@ module Scanning : SCANNING = struct
 (* The run-time library for scanf. *)
 type scanbuf = {
   mutable eof : bool;
+  mutable bof : bool;
   mutable cur_char : char;
   mutable char_count : int;
   mutable token_count : int;
@@ -73,6 +84,8 @@ type scanbuf = {
   tokbuf : Buffer.t;
 };;
 
+(* Reads a new character from input buffer, sets the end of file
+   condition is necessary. *)
 let next_char ib =
   try
    ib.cur_char <- ib.get_next_char ();
@@ -81,8 +94,22 @@ let next_char ib =
    ib.cur_char <- '\000';
    ib.eof <- true;;
 
+(* Returns a valid current char for the input buffer.
+   In particular no irrelevant null character (as set by [next_char] in
+   case of end of input) is returned since [End_of_file] is raised if
+   [next_char] set the end of file condition while trying to read a new
+   character. *)
+let checked_peek_char ib =
+  if ib.bof then begin next_char ib; ib.bof <- false end;
+  if ib.eof then raise End_of_file;
+  ib.cur_char;;
+
+let cautious_peek_char ib =
+  if ib.bof then begin next_char ib; ib.bof <- false end;
+  ib.cur_char;;
+
 let peek_char ib = ib.cur_char;;
-let end_of_input ib = ib.eof && (ib.eof <- false; next_char ib; ib.eof);;
+let end_of_input ib = ib.eof;;
 let char_count ib = ib.char_count;;
 let reset_token ib = Buffer.reset ib.tokbuf;;
 
@@ -102,7 +129,8 @@ let store_char ib c max =
 
 let create next =
   let ib = {
-    eof = true;
+    bof = true;
+    eof = false;
     cur_char = '\000';
     char_count = 0;
     get_next_char = next;
@@ -151,6 +179,13 @@ let bad_format fmt i fc =
     (Printf.sprintf
        "scanf: bad format %c, at char number %i of format %s" fc i fmt);;
 
+(* Checking that [c] is in the input. *)
+let check_char ib c =
+(*  if Scanning.end_of_input ib then raise End_of_file else*)
+  let ci = Scanning.checked_peek_char ib in
+  if ci = c then Scanning.next_char ib
+  else bad_input (Printf.sprintf "looking for %c, found %c" c ci);;
+
 (* Extracting tokens from ouput token buffer. *)
 
 let token_char ib = (Scanning.token ib).[0];;
@@ -163,16 +198,29 @@ let token_bool ib =
   | "false" -> false
   | s -> bad_input ("invalid boolean " ^ s);;
 
+(* Extract an integer literal token.
+   Since the functions Pervasives.*int*_of_string do not accept a leading +,
+   we skip it if necessary. *)
 let token_int_literal conv ib =
-  match conv with
-  | 'd' | 'i' | 'u' -> Scanning.token ib
-  | 'o' -> "0o" ^ Scanning.token ib
-  | 'x' | 'X' -> "0x" ^ Scanning.token ib
-  | _ -> assert false
+  let tok =
+    match conv with
+    | 'd' | 'i' | 'u' -> Scanning.token ib
+    | 'o' -> "0o" ^ Scanning.token ib
+    | 'x' | 'X' -> "0x" ^ Scanning.token ib
+    | 'b' -> "0b" ^ Scanning.token ib
+    | _ -> assert false in
+  let l = String.length tok in
+  if l = 0 || tok.[0] <> '+' then tok else String.sub tok 1 (l - 1);;  
 
 (* All the functions that convert a string to a number raise the exception
    Failure when the conversion is not possible.
    This exception is then trapped in kscanf. *)
+let signed_int_of_string s =
+  let tok =
+    let l = String.length s in
+    if l = 0 || s.[0] <> '+' then s else String.sub s 1 (l - 1) in
+  int_of_string tok;;
+
 let token_int conv ib = int_of_string (token_int_literal conv ib);;
 let token_float ib = float_of_string (Scanning.token ib);;
 
@@ -191,17 +239,11 @@ let token_int32 conv ib = int32_of_string (token_int_literal conv ib);;
 let token_int64 conv ib = int64_of_string (token_int_literal conv ib);;
 
 (* Scanning numbers. *)
-let scan_sign max ib =
-  let c = Scanning.peek_char ib in
-  match c with
-  | '+' -> Scanning.store_char ib c max
-  | '-' -> Scanning.store_char ib c max
-  | c -> max;;
 
-(* Decimal case is optimized. *)
+(* The decimal case is optimized. *)
 let rec scan_decimal_digits max ib =
   if max = 0 || Scanning.end_of_input ib then max else
-  match Scanning.peek_char ib with
+  match Scanning.checked_peek_char ib with
   | '0' .. '9' as c ->
       let max = Scanning.store_char ib c max in
       scan_decimal_digits max ib
@@ -210,7 +252,7 @@ let rec scan_decimal_digits max ib =
 (* Other cases uses a predicate argument to scan_digits. *)
 let rec scan_digits digitp max ib =
   if max = 0 || Scanning.end_of_input ib then max else
-  match Scanning.peek_char ib with
+  match Scanning.checked_peek_char ib with
   | c when digitp c ->
      let max = Scanning.store_char ib c max in
      scan_digits digitp max ib
@@ -236,8 +278,15 @@ let scan_hexadecimal_digits =
 
 (* Decimal integers. *)
 let scan_unsigned_decimal_int max ib =
-  if max = 0 || Scanning.end_of_input ib then bad_input "bad int" else
+  if max = 0 || Scanning.end_of_input ib then bad_input "decimal digit" else
   scan_decimal_digits max ib;;
+
+let scan_sign max ib =
+  let c = Scanning.checked_peek_char ib in
+  match c with
+  | '+' -> Scanning.store_char ib c max
+  | '-' -> Scanning.store_char ib c max
+  | c -> max;;
 
 let scan_optionally_signed_decimal_int max ib =
   let max = scan_sign max ib in
@@ -248,7 +297,7 @@ let scan_optionally_signed_decimal_int max ib =
    assumed to be written respectively in hexadecimal, hexadecimal,
    octal, or binary. *)
 let scan_unsigned_int max ib =
-  match Scanning.peek_char ib with
+  match Scanning.checked_peek_char ib with
   | '0' as c ->
       let max = Scanning.store_char ib c max in
       if max = 0 || Scanning.end_of_input ib then max else
@@ -267,6 +316,7 @@ let scan_optionally_signed_int max ib =
 
 let scan_int conv max ib =
   match conv with
+  | 'b' -> scan_binary_digits max ib
   | 'd' -> scan_optionally_signed_decimal_int max ib
   | 'i' -> scan_optionally_signed_int max ib
   | 'o' -> scan_octal_digits max ib
@@ -275,8 +325,12 @@ let scan_int conv max ib =
   | c -> assert false;;
 
 (* Scanning floating point numbers. *)
-let scan_frac_part max ib = scan_unsigned_decimal_int max ib;;
+(* Fractional part is optional and can be reduced to 0 digits. *)
+let scan_frac_part max ib =
+  if max = 0 || Scanning.end_of_input ib then max else
+  scan_unsigned_decimal_int max ib;;
 
+(* Exp part is optional and can be reduced to 0 digits. *)
 let scan_exp_part max ib =
   if max = 0 || Scanning.end_of_input ib then max else
   let c = Scanning.peek_char ib in
@@ -301,7 +355,7 @@ let scan_float max ib =
 let scan_string stp max ib =
   let rec loop max =
     if max = 0 || Scanning.end_of_input ib then max else
-    let c = Scanning.peek_char ib in
+    let c = Scanning.checked_peek_char ib in
     if stp = [] then
       match c with
       | ' ' | '\t' | '\n' | '\r' -> max
@@ -311,8 +365,7 @@ let scan_string stp max ib =
 
 (* Scan a char: peek strictly one character in the input, whatsoever. *)
 let scan_char max ib =
-  if max = 0 || Scanning.end_of_input ib then bad_input "a char" else
-  Scanning.store_char ib (Scanning.peek_char ib) max;;
+  Scanning.store_char ib (Scanning.checked_peek_char ib) max;;
 
 let char_for_backslash =
   match Sys.os_type with
@@ -367,7 +420,7 @@ let scan_backslash_char max ib =
 let scan_Char max ib =
   let rec loop s max =
    if max = 0 || Scanning.end_of_input ib then bad_input "a char" else
-   let c = Scanning.peek_char ib in
+   let c = Scanning.checked_peek_char ib in
    match c, s with
    | '\'', 3 -> Scanning.next_char ib; loop 2 (max - 1)
    | '\'', 1 -> Scanning.next_char ib; max - 1
@@ -380,7 +433,7 @@ let scan_Char max ib =
 let scan_String max ib =
   let rec loop s max =
     if max = 0 || Scanning.end_of_input ib then bad_input "a string" else
-    let c = Scanning.peek_char ib in
+    let c = Scanning.checked_peek_char ib in
     match c, s with
     | '"', true (* '"' helping Emacs *) ->
        Scanning.next_char ib; loop false (max - 1)
@@ -393,8 +446,9 @@ let scan_String max ib =
   loop true max;;
 
 let scan_bool max ib =
+  if max < 4 || Scanning.end_of_input ib then bad_input "a boolean" else
   let m =
-    match Scanning.peek_char ib with
+    match Scanning.checked_peek_char ib with
     | 't' -> 4
     | 'f' -> 5
     | _ -> 0 in
@@ -458,17 +512,20 @@ let make_setp stp char_set =
 
 let scan_chars_in_char_set stp char_set max ib =
   let setp = make_setp stp char_set in
-  let rec loop max ib =
+  let rec loop max =
     if max = 0 || Scanning.end_of_input ib then max else
-    let c = Scanning.peek_char ib in
-    if setp c then loop (Scanning.store_char ib c max) ib else max in
-  loop max ib;;
+    let c = Scanning.checked_peek_char ib in
+    if setp c then loop (Scanning.store_char ib c max) else max in
+  loop max;;
 
-let rec skip_whites ib =
+let skip_whites ib =
+  let rec loop = function
+  | ' ' | '\r' | '\t' | '\n' ->
+     Scanning.next_char ib;
+     if not (Scanning.end_of_input ib) then loop (Scanning.peek_char ib)
+  | _ -> () in
   if not (Scanning.end_of_input ib) then
-  match Scanning.peek_char ib with
-  | ' ' | '\r' | '\t' | '\n' -> Scanning.next_char ib; skip_whites ib
-  | _ -> ();;
+  loop (Scanning.cautious_peek_char ib);;
 
 external string_of_format : ('a, 'b, 'c) format -> string = "%identity";;
 
@@ -494,93 +551,86 @@ let kscanf ib ef fmt f =
   let delay f x () = f x in
   let stack f = delay (return f) in
 
-  let rec scan f i =
+  let rec scan_fmt f i =
     if i > lim then f else
     match fmt.[i] with
-    | ' ' | '\t' | '\r' | '\n' -> skip_whites ib; scan f (i + 1)
-    | c when Scanning.end_of_input ib -> raise End_of_file
-    | '%' -> scan_width f (i + 1)
+    | ' ' | '\t' | '\r' | '\n' -> skip_whites ib; scan_fmt f (i + 1)
+    | '%' -> scan_fmt_width f (i + 1)
     | '@' as t ->
         let i = i + 1 in
-        if i > lim then bad_format fmt (i - 1) t else begin
-        match fmt.[i] with
-        | '@' as c when Scanning.peek_char ib = c ->
-           Scanning.next_char ib; scan f (i + 1)
-        | c when Scanning.peek_char ib = c ->
-           Scanning.next_char ib; scan f (i + 1)
-        | c -> bad_input_char (Scanning.peek_char ib) end
-    | c when Scanning.peek_char ib = c ->
-        Scanning.next_char ib; scan f (i + 1)
-    | c -> bad_input_char (Scanning.peek_char ib)
+        if i > lim then bad_format fmt (i - 1) t else check_input fmt.[i] f i
+    | c -> check_input c f i
 
-  and scan_width f i =
+  and check_input c f i =
+    check_char ib c;
+    scan_fmt f (i + 1)
+
+  and scan_fmt_width f i =
     if i > lim then bad_format fmt i '%' else
     match fmt.[i] with
     | '0' .. '9' as c ->
-         let rec read_width accu i =
-           if i > lim then accu, i else
-           match fmt.[i] with
-           | '0' .. '9' as c ->
-               let accu = 10 * accu + (int_of_char c - int_of_char '0') in
-               read_width accu (i + 1)
-           | _ -> accu, i in
-         let max, j = read_width 0 i in
-         scan_conversion max f j
-    | _ -> scan_conversion max_int f i
+        let rec read_width accu i =
+          if i > lim then accu, i else
+          match fmt.[i] with
+          | '0' .. '9' as c ->
+              let accu = 10 * accu + (int_of_char c - int_of_char '0') in
+              read_width accu (i + 1)
+          | _ -> accu, i in
+        let max, j = read_width 0 i in
+        scan_fmt_conversion max f j
+    | _ -> scan_fmt_conversion max_int f i
 
-  and scan_conversion max f i =
+  and scan_fmt_conversion max f i =
     if i > lim then bad_format fmt i fmt.[lim - 1] else
     match fmt.[i] with
-    | c when Scanning.end_of_input ib -> raise End_of_file
+    | '%' as c ->
+        check_input c f i
     | 'c' | 'C' as conv ->
         let x =
           if conv = 'c' then scan_char max ib else scan_Char max ib in
-        scan (stack f (token_char ib)) (i + 1)
-    | '%' as fc when Scanning.peek_char ib = fc ->
-        Scanning.next_char ib; scan f (i + 1)
-    | '%' -> bad_input_char (Scanning.peek_char ib)
-    | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
+        scan_fmt (stack f (token_char ib)) (i + 1)
+    | 'b' | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
         let x = scan_int conv max ib in
-        scan (stack f (token_int conv ib)) (i + 1)
+        scan_fmt (stack f (token_int conv ib)) (i + 1)
     | 'f' | 'g' | 'G' | 'e' | 'E' | 'F' ->
         let x = scan_float max ib in
-        scan (stack f (token_float ib)) (i + 1)
+        scan_fmt (stack f (token_float ib)) (i + 1)
     | 's' ->
-        let i, stp = scan_stoppers (i + 1) in
+        let i, stp = scan_fmt_stoppers (i + 1) in
         let x = scan_string stp max ib in
-        scan (stack f (token_string ib)) (i + 1)
+        scan_fmt (stack f (token_string ib)) (i + 1)
     | '[' ->
         let i, char_set = read_char_set fmt (i + 1) in
-        let i, stp = scan_stoppers (i + 1) in
+        let i, stp = scan_fmt_stoppers (i + 1) in
         let x = scan_chars_in_char_set stp char_set max ib in
-        scan (stack f (token_string ib)) (i + 1)
+        scan_fmt (stack f (token_string ib)) (i + 1)
     | 'S' ->
         let x = scan_String max ib in
-        scan (stack f (token_string ib)) (i + 1)
-    | 'b' | 'B' ->
+        scan_fmt (stack f (token_string ib)) (i + 1)
+    | 'B' ->
         let x = scan_bool max ib in
-        scan (stack f (token_bool ib)) (i + 1)
+        scan_fmt (stack f (token_bool ib)) (i + 1)
     | 'l' | 'n' | 'L' as t ->
         let i = i + 1 in
         if i > lim then bad_format fmt (i - 1) t else begin
         match fmt.[i] with
-        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
+        | 'b' | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
             let x = scan_int conv max ib in
             begin match t with
-            | 'l' -> scan (stack f (token_int32 conv ib)) (i + 1)
-            | 'L' -> scan (stack f (token_int64 conv ib)) (i + 1)
-            | _ -> scan (stack f (token_nativeint conv ib)) (i + 1) end
+            | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
+            | 'L' -> scan_fmt (stack f (token_int64 conv ib)) (i + 1)
+            | _ -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1) end
         | c -> bad_format fmt i c end
     | 'N' ->
         let x = Scanning.char_count ib in
-        scan (stack f x) (i + 1)
+        scan_fmt (stack f x) (i + 1)
     | 'r' ->
         Obj.magic (fun reader arg ->
           let x = reader ib arg in
-          scan (stack f x) (succ i))
+          scan_fmt (stack f x) (succ i))
     | c -> bad_format fmt i c
 
-  and scan_stoppers i =
+  and scan_fmt_stoppers i =
     if i > lim then i - 1, [] else
     match fmt.[i] with
     | '@' when i < lim -> let i = i + 1 in i, [fmt.[i]]
@@ -590,7 +640,7 @@ let kscanf ib ef fmt f =
   Scanning.reset_token ib;
 
   let v =
-    try scan (fun () -> f) 0 with
+    try scan_fmt (fun () -> f) 0 with
     | (Scan_failure _ | Failure _ | End_of_file) as exc ->
         stack (delay ef ib) exc in
   return v;;
@@ -601,5 +651,6 @@ let fscanf ic = bscanf (Scanning.from_channel ic);;
 
 let sscanf s = bscanf (Scanning.from_string s);;
 
-let scanf fmt = fscanf stdin fmt;;
+let stdib = Scanning.from_channel stdin;;
 
+let scanf fmt = bscanf stdib fmt;;
