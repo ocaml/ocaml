@@ -313,7 +313,7 @@ let file_dependencies source_file =
   if Sys.file_exists source_file then begin
     try
       free_structure_names := StringSet.empty;
-      let ic = open_in source_file in
+      let ic = open_in_bin source_file in
       try
         let lb = Lexing.from_channel ic in
         if Filename.check_suffix source_file ".ml" then begin
