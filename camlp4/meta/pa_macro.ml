@@ -38,6 +38,8 @@ Added statements:
   the macro cannot be used as a pattern, there is an error message if
   it is used in a pattern.
 
+  
+
   The toplevel statement INCLUDE <string> can be used to include a
   file containing macro definitions; note that files included in such
   a way can not have any non-macro toplevel items.  The included files
@@ -79,7 +81,7 @@ value loc =
     (nowhere, nowhere);
 
 value subst mloc env =
-  loop where rec loop =
+  let rec loop =
     fun
     [ <:expr< let $opt:rf$ $list:pel$ in $e$ >> ->
         let pel = List.map (fun (p, e) -> (p, loop e)) pel in
@@ -87,14 +89,29 @@ value subst mloc env =
     | <:expr< if $e1$ then $e2$ else $e3$ >> ->
          <:expr< if $loop e1$ then $loop e2$ else $loop e3$ >>
     | <:expr< $e1$ $e2$ >> -> <:expr< $loop e1$ $loop e2$ >>
+    | <:expr< fun $args$ -> $e$ >> -> <:expr< fun $args$ -> $loop e$ >>
+    | <:expr< fun [ $list: peoel$ ] >> -> <:expr< fun [ $list: (List.map loop_peoel peoel)$ ] >>
     | <:expr< $lid:x$ >> | <:expr< $uid:x$ >> as e ->
         try <:expr< $anti:List.assoc x env$ >> with
         [ Not_found -> e ]
     | <:expr< ($list:x$) >> -> <:expr< ($list:List.map loop x$) >>
+    | <:expr< do {$list:x$} >> -> <:expr< do {$list:List.map loop x$} >>
     | <:expr< { $list:pel$ } >> ->
         let pel = List.map (fun (p, e) -> (p, loop e)) pel in
         <:expr< { $list:pel$ } >>
+    | <:expr< match $e$ with [ $list:peoel$ ] >> ->
+        <:expr< match $loop e$ with [ $list: (List.map loop_peoel peoel)$ ] >>
+    | <:expr< try $e$ with [ $list:pel$ ] >> ->
+        let loop' = fun
+        [ (p, Some e1, e2) -> (p, Some (loop e1), loop e2)
+        | (p, None, e2) -> (p, None, loop e2) ] in
+        <:expr< try $loop e$ with [ $list: (List.map loop' pel)$ ] >>
     | e -> e ]
+  and loop_peoel =
+    fun
+      [ (p, Some e1, e2) -> (p, Some (loop e1), loop e2)
+      | (p, None, e2) -> (p, None, loop e2) ]
+  in loop
 ;
 
 value substp mloc env =

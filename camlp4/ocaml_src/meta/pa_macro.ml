@@ -38,6 +38,8 @@ Added statements:
   the macro cannot be used as a pattern, there is an error message if
   it is used in a pattern.
 
+  
+
   The toplevel statement INCLUDE <string> can be used to include a
   file containing macro definitions; note that files included in such
   a way can not have any non-macro toplevel items.  The included files
@@ -89,15 +91,32 @@ let subst mloc env =
     | MLast.ExIfe (_, e1, e2, e3) ->
         MLast.ExIfe (loc, loop e1, loop e2, loop e3)
     | MLast.ExApp (_, e1, e2) -> MLast.ExApp (loc, loop e1, loop e2)
+    | MLast.ExFun (_, [args, None, e]) ->
+        MLast.ExFun (loc, [args, None, loop e])
+    | MLast.ExFun (_, peoel) -> MLast.ExFun (loc, List.map loop_peoel peoel)
     | MLast.ExLid (_, x) | MLast.ExUid (_, x) as e ->
         begin try MLast.ExAnt (loc, List.assoc x env) with
           Not_found -> e
         end
     | MLast.ExTup (_, x) -> MLast.ExTup (loc, List.map loop x)
+    | MLast.ExSeq (_, x) -> MLast.ExSeq (loc, List.map loop x)
     | MLast.ExRec (_, pel, None) ->
         let pel = List.map (fun (p, e) -> p, loop e) pel in
         MLast.ExRec (loc, pel, None)
+    | MLast.ExMat (_, e, peoel) ->
+        MLast.ExMat (loc, loop e, List.map loop_peoel peoel)
+    | MLast.ExTry (_, e, pel) ->
+        let loop' =
+          function
+            p, Some e1, e2 -> p, Some (loop e1), loop e2
+          | p, None, e2 -> p, None, loop e2
+        in
+        MLast.ExTry (loc, loop e, List.map loop' pel)
     | e -> e
+  and loop_peoel =
+    function
+      p, Some e1, e2 -> p, Some (loop e1), loop e2
+    | p, None, e2 -> p, None, loop e2
   in
   loop
 ;;
