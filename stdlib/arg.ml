@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -52,7 +52,7 @@ let parse speclist anonfun errmsg =
     let progname =
       if initpos < Array.length Sys.argv then Sys.argv.(initpos) else "(?)" in
     begin match error with
-      | Unknown s when s = "-help" -> ()
+      | Unknown "-help" -> ()
       | Unknown s ->
           eprintf "%s: unknown option `%s'.\n" progname s
       | Missing s ->
@@ -64,7 +64,7 @@ let parse speclist anonfun errmsg =
           eprintf "%s: %s.\n" progname s
     end;
     usage speclist errmsg;
-    exit 2;
+    exit (if error = (Unknown "-help") then 0 else 2);
   in
   let l = Array.length Sys.argv in
   incr current;
