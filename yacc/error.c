@@ -147,43 +147,43 @@ void illegal_character(char *c_cptr)
 void used_reserved(char *s)
 {
     fprintf(stderr, "%s: e - line %d of \"%s\", illegal use of reserved symbol \
-%s\n", myname, lineno, virtual_input_file_name, s);
+`%s'\n", myname, lineno, virtual_input_file_name, s);
     done(1);
 }
 
 
 void tokenized_start(char *s)
 {
-     fprintf(stderr, "%s: e - line %d of \"%s\", the start symbol %s cannot be \
-declared to be a token\n", myname, lineno, virtual_input_file_name, s);
+     fprintf(stderr, "%s: e - line %d of \"%s\", the start symbol `%s' cannot \
+be declared to be a token\n", myname, lineno, virtual_input_file_name, s);
      done(1);
 }
 
 
 void retyped_warning(char *s)
 {
-    fprintf(stderr, "%s: w - line %d of \"%s\", the type of %s has been \
+    fprintf(stderr, "%s: w - line %d of \"%s\", the type of `%s' has been \
 redeclared\n", myname, lineno, virtual_input_file_name, s);
 }
 
 
 void reprec_warning(char *s)
 {
-    fprintf(stderr, "%s: w - line %d of \"%s\", the precedence of %s has been \
-redeclared\n", myname, lineno, virtual_input_file_name, s);
+    fprintf(stderr, "%s: w - line %d of \"%s\", the precedence of `%s' has \
+been redeclared\n", myname, lineno, virtual_input_file_name, s);
 }
 
 
 void revalued_warning(char *s)
 {
-    fprintf(stderr, "%s: w - line %d of \"%s\", the value of %s has been \
+    fprintf(stderr, "%s: w - line %d of \"%s\", the value of `%s' has been \
 redeclared\n", myname, lineno, virtual_input_file_name, s);
 }
 
 
 void terminal_start(char *s)
 {
-    fprintf(stderr, "%s: e - line %d of \"%s\", the entry point %s is a \
+    fprintf(stderr, "%s: e - line %d of \"%s\", the entry point `%s' is a \
 token\n", myname, lineno, virtual_input_file_name, s);
     done(1);
 }
@@ -284,13 +284,13 @@ void default_action_error(void)
 
 void undefined_goal(char *s)
 {
-    fprintf(stderr, "%s: e - the start symbol %s is undefined\n", myname, s);
+    fprintf(stderr, "%s: e - the start symbol `%s' is undefined\n", myname, s);
     done(1);
 }
 
 void undefined_symbol(char *s)
 {
-    fprintf(stderr, "%s: e - the symbol %s is undefined\n", myname, s);
+    fprintf(stderr, "%s: e - the symbol `%s' is undefined\n", myname, s);
     done(1);
 }
 
@@ -298,7 +298,7 @@ void undefined_symbol(char *s)
 void entry_without_type(char *s)
 {
     fprintf(stderr,
-            "%s: e - no type has been declared for the start symbol %s\n",
+            "%s: e - no type has been declared for the start symbol `%s'\n",
             myname, s);
     done(1);
 }
@@ -306,7 +306,7 @@ void entry_without_type(char *s)
 void polymorphic_entry_point(char *s)
 {
     fprintf(stderr,
-            "%s: e - the start symbol %s has a polymorphic type\n",
+            "%s: e - the start symbol `%s' has a polymorphic type\n",
             myname, s);
     done(1);
 }
