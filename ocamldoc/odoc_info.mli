@@ -638,6 +638,9 @@ val first_sentence_of_text : Odoc_types.text -> Odoc_types.text
 val first_sentence_and_rest_of_text : 
     Odoc_types.text -> Odoc_types.text * Odoc_types.text
 
+(** Return the given [text] without any title or list. *)
+val text_no_title_no_list : Odoc_types.text -> Odoc_types.text
+
 (** Take a sorted list of elements, a function to get the name
    of an element and return the list of list of elements, 
    where each list group elements beginning by the same letter.

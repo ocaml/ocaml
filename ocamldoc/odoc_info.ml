@@ -135,7 +135,10 @@ let string_of_attribute att = Odoc_str.string_of_attribute att
 let string_of_method m = Odoc_str.string_of_method m 
 
 let first_sentence_of_text = Odoc_misc.first_sentence_of_text
+
 let first_sentence_and_rest_of_text = Odoc_misc.first_sentence_and_rest_of_text
+
+let text_no_title_no_list = Odoc_misc.text_no_title_no_list
 
 let create_index_lists = Odoc_misc.create_index_lists
 

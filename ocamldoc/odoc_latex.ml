@@ -296,6 +296,9 @@ class latex =
     (** Get the first sentence and the rest of a description,
        from an optional [info] structure. The first sentence
        can be empty if it would not appear right in a title.
+       In the first sentence, the titles and lists has been removed,
+       since it is used in LaTeX titles and would make LaTeX complain
+       if we has two nested \section commands.
     *)
     method first_and_rest_of_info i_opt =
       match i_opt with
@@ -306,7 +309,7 @@ class latex =
 	    | Some t -> 
 		let (first,_) = Odoc_info.first_sentence_and_rest_of_text t in
 		let (_, rest) = Odoc_info.first_sentence_and_rest_of_text (self#text_of_info ~block: false i_opt) in
-		(first, rest)
+		(Odoc_info.text_no_title_no_list first, rest)
 
     (** Return LaTeX code for a value. *)
     method latex_of_value v = 

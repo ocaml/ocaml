@@ -374,7 +374,8 @@ class virtual info =
 	  (self#html_of_custom info.M.i_custom)^
 	  "</div>\n"
 
-    (** Return html code for the first sentence of a description. *)
+    (** Return html code for the first sentence of a description. 
+       The titles and lists in this first sentence has been removed.*)
     method html_of_info_first_sentence info_opt =
       match info_opt with
 	None -> ""
@@ -386,7 +387,9 @@ class virtual info =
 	  (match info.M.i_desc with
 	    None -> "" 
 	  | Some d when d = [Odoc_info.Raw ""] -> ""
-	  | Some d -> (self#html_of_text (Odoc_info.first_sentence_of_text d))^"\n"
+	  | Some d -> (self#html_of_text
+			 (Odoc_info.text_no_title_no_list
+			    (Odoc_info.first_sentence_of_text d)))^"\n"
 	  )^
 	  (if dep then "</font>" else "") ^
 	  "</div>\n"

@@ -274,6 +274,43 @@ let string_of_date ?(hour=true) d =
   )
 
 
+let rec text_list_concat sep l =
+  match l with
+    [] -> []
+  | [t] -> t
+  | t :: q ->
+      t @ (sep :: (text_list_concat sep q))
+
+let rec text_no_title_no_list t =
+  let rec iter t_ele = 
+    match t_ele with
+    | Odoc_types.Title (_,_,t) -> text_no_title_no_list t
+    | Odoc_types.List l
+    | Odoc_types.Enum l -> 
+	(Odoc_types.Raw " ") ::
+	(text_list_concat
+	   (Odoc_types.Raw ", ") 
+	   (List.map text_no_title_no_list l))
+    | Odoc_types.Raw _
+    | Odoc_types.Code _
+    | Odoc_types.CodePre _
+    | Odoc_types.Verbatim _
+    | Odoc_types.Ref _ -> [t_ele]
+    | Odoc_types.Newline ->  [Odoc_types.Newline]
+    | Odoc_types.Block t -> [Odoc_types.Block (text_no_title_no_list t)]
+    | Odoc_types.Bold t -> [Odoc_types.Bold (text_no_title_no_list t)]
+    | Odoc_types.Italic t -> [Odoc_types.Italic (text_no_title_no_list t)]
+    | Odoc_types.Center t -> [Odoc_types.Center (text_no_title_no_list t)]
+    | Odoc_types.Left t -> [Odoc_types.Left (text_no_title_no_list t)]
+    | Odoc_types.Right t -> [Odoc_types.Right (text_no_title_no_list t)]
+    | Odoc_types.Emphasize t -> [Odoc_types.Emphasize (text_no_title_no_list t)]
+    | Odoc_types.Latex s -> [Odoc_types.Latex s]
+    | Odoc_types.Link (s, t) -> [Odoc_types.Link (s, (text_no_title_no_list t))]
+    | Odoc_types.Superscript t -> [Odoc_types.Superscript (text_no_title_no_list t)]
+    | Odoc_types.Subscript t -> [Odoc_types.Subscript (text_no_title_no_list t)]
+  in
+  List.flatten (List.map iter t)
+
 
 (*********************************************************)
 let rec get_before_dot s =

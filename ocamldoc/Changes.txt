@@ -1,4 +1,7 @@
 Next release :
+ - no titles nor lists in first sentence of text in indexes and latex titles
+ - only one table for the titles in HTML output
+ - fix of bad comment association for types in .ml files
  - dumps now contain a magic number, checked when dumps are loaded
  - new option -o to use with texi, latex and dot generators
  - new .code CSS class used
