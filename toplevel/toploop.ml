@@ -176,9 +176,13 @@ let refill_lexbuf buffer len =
   output_string stdout (if !first_line then "# " else "  "); flush stdout;
   first_line := false;
   let i = ref 0 in
-  while !i < len && (let c = input_char stdin in buffer.[!i] <- c; c <> '\n')
-  do incr i done;
-  !i + 1
+  try
+    while !i < len && (let c = input_char stdin in buffer.[!i] <- c; c <> '\n')
+    do incr i done;
+    !i + 1
+  with End_of_file ->
+    Location.echo_eof ();
+    !i
 
 (* Discard everything already in a lexer buffer *)
 
@@ -221,8 +225,7 @@ let loop() =
       first_line := true;
       execute_phrase (!parse_toplevel_phrase lb); ()
     with
-      End_of_file ->
-        print_newline(); exit 0
+      End_of_file -> exit 0
     | Sys.Break ->
         print_string "Interrupted."; print_newline()
     | x ->
