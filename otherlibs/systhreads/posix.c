@@ -251,6 +251,7 @@ static void * caml_thread_tick(void * arg)
     something_to_do = 1;
 #endif
   }
+  return NULL;                  /* prevents compiler warning */
 }
 
 /* Thread cleanup: remove the descriptor from the list and free
