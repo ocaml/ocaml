@@ -183,10 +183,10 @@ val bscanf :
    [Str]), stream parsers, [ocamllex]-generated lexers,
    [ocamlyacc]-generated parsers. 
 
-   - Scanning indications are similar those in the [Format] module;
-   hence it is advised to use [!Format.fprintf] (and not
-   [!Printf.fprintf]) and related functions to produce formatted text
-   to be scanned by [!Scanf.bscanf] ...
+   - Scanning indications are similar to those in the [Format] module;
+   hence it is advised to use [!Format.fprintf] and related functions
+   (instead of [!Printf.fprintf] ...) to produce formatted text to be
+   scanned by [!Scanf.bscanf] etc...
 
 *)
 
