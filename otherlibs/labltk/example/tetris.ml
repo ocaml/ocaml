@@ -205,43 +205,43 @@ let line_full = int_of_string  "0b1111111111111111"
 
 let decode_block dvec =
   let btoi d = int_of_string ("0b"^d) in
-  Array.map f:btoi dvec
+  Array.map ~f:btoi dvec
 
-class cell t1 t2 t3 :canvas :x :y = object
+class cell t1 t2 t3 ~canvas ~x ~y = object
   val mutable color = 0
   method get = color
-  method set color:col =
+  method set ~color:col =
     if color = col then () else
     if color <> 0 & col = 0 then begin
-      Canvas.move t1 :canvas
-        x:(- block_size * (x + 1) -10 - cell_border * 2)
-        y:(- block_size * (y + 1) -10 - cell_border * 2);
-      Canvas.move t2 :canvas
-        x:(- block_size * (x + 1) -10 - cell_border * 2)
-        y:(- block_size * (y + 1) -10 - cell_border * 2);
-      Canvas.move t3 :canvas
-        x:(- block_size * (x + 1) -10 - cell_border * 2)
-        y:(- block_size * (y + 1) -10 - cell_border * 2)
+      Canvas.move t1 ~canvas
+        ~x:(- block_size * (x + 1) -10 - cell_border * 2)
+        ~y:(- block_size * (y + 1) -10 - cell_border * 2);
+      Canvas.move t2 ~canvas
+        ~x:(- block_size * (x + 1) -10 - cell_border * 2)
+        ~y:(- block_size * (y + 1) -10 - cell_border * 2);
+      Canvas.move t3 ~canvas
+        ~x:(- block_size * (x + 1) -10 - cell_border * 2)
+        ~y:(- block_size * (y + 1) -10 - cell_border * 2)
     end else begin
-      Canvas.configure_rectangle t2 :canvas
-        fill: colors.(col - 1)
-        outline: colors.(col - 1);
-      Canvas.configure_rectangle t1 :canvas
-        fill: `Black
-        outline: `Black;
-      Canvas.configure_rectangle t3 :canvas
-        fill: (`Color "light gray")
-        outline: (`Color "light gray");
+      Canvas.configure_rectangle t2 ~canvas
+        ~fill: colors.(col - 1)
+        ~outline: colors.(col - 1);
+      Canvas.configure_rectangle t1 ~canvas
+        ~fill: `Black
+        ~outline: `Black;
+      Canvas.configure_rectangle t3 ~canvas
+        ~fill: (`Color "light gray")
+        ~outline: (`Color "light gray");
       if color = 0 & col <> 0 then begin
-        Canvas.move t1 :canvas
-          x: (block_size * (x+1)+10+ cell_border*2)
-          y: (block_size * (y+1)+10+ cell_border*2);
-        Canvas.move t2 :canvas
-          x: (block_size * (x+1)+10+ cell_border*2)
-          y: (block_size * (y+1)+10+ cell_border*2);
-        Canvas.move t3 :canvas
-          x: (block_size * (x+1)+10+ cell_border*2)
-          y: (block_size * (y+1)+10+ cell_border*2)
+        Canvas.move t1 ~canvas
+          ~x: (block_size * (x+1)+10+ cell_border*2)
+          ~y: (block_size * (y+1)+10+ cell_border*2);
+        Canvas.move t2 ~canvas
+          ~x: (block_size * (x+1)+10+ cell_border*2)
+          ~y: (block_size * (y+1)+10+ cell_border*2);
+        Canvas.move t3 ~canvas
+          ~x: (block_size * (x+1)+10+ cell_border*2)
+          ~y: (block_size * (y+1)+10+ cell_border*2)
       end     
     end;
     color <- col
@@ -249,13 +249,13 @@ end
     
 let cell_get (c, cf) x y = cf.(y).(x) #get
 
-let cell_set (c, cf) :x :y :color =
+let cell_set (c, cf) ~x ~y ~color =
   if x >= 0 & y >= 0 & Array.length cf > y & Array.length cf.(y) > x then
     let cur = cf.(y).(x) in
-    if cur#get = color then () else cur#set :color
+    if cur#get = color then () else cur#set ~color
 
-let create_base_matrix :cols :rows =
-  let m = Array.create_matrix dimx:rows dimy:cols (0,0) in
+let create_base_matrix ~cols ~rows =
+  let m = Array.create_matrix ~dimx:rows ~dimy:cols (0,0) in
   for x = 0 to cols - 1 do for y = 0 to rows - 1 do
     m.(y).(x) <- (x,y)
   done done;
@@ -267,81 +267,81 @@ let init fw =
   and levv = Textvariable.create ()
   and namev = Textvariable.create ()
   in
-  let f = Frame.create fw borderwidth: 2 in
-  let c = Canvas.create f width: (block_size * 10)
-                          height: (block_size * 20)
-                          borderwidth: cell_border
-                          relief: `Sunken
-                          background: `Black
+  let f = Frame.create fw ~borderwidth: 2 in
+  let c = Canvas.create f ~width: (block_size * 10)
+                          ~height: (block_size * 20)
+                          ~borderwidth: cell_border
+                          ~relief: `Sunken
+                          ~background: `Black
   and r = Frame.create f
   and r' = Frame.create f in
 
-  let nl = Label.create r text: "Next"  font: "variable" in
-  let nc = Canvas.create r width: (block_size * 4)
-                           height: (block_size * 4)
-                           borderwidth: cell_border
-                           relief: `Sunken
-                           background: `Black in
-  let scl = Label.create r text: "Score" font: "variable" in
-  let sc = Label.create r textvariable: scorev font: "variable" in
-  let lnl = Label.create r text: "Lines" font: "variable" in
-  let ln = Label.create r textvariable: linev font: "variable" in
-  let levl = Label.create r text: "Level" font: "variable" in
-  let lev = Label.create r textvariable: levv font: "variable" in 
-  let newg = Button.create r text: "New Game" font: "variable" in
+  let nl = Label.create r ~text: "Next"  ~font: "variable" in
+  let nc = Canvas.create r ~width: (block_size * 4)
+                           ~height: (block_size * 4)
+                           ~borderwidth: cell_border
+                           ~relief: `Sunken
+                           ~background: `Black in
+  let scl = Label.create r ~text: "Score" ~font: "variable" in
+  let sc = Label.create r ~textvariable: scorev ~font: "variable" in
+  let lnl = Label.create r ~text: "Lines" ~font: "variable" in
+  let ln = Label.create r ~textvariable: linev ~font: "variable" in
+  let levl = Label.create r ~text: "Level" ~font: "variable" in
+  let lev = Label.create r ~textvariable: levv ~font: "variable" in 
+  let newg = Button.create r ~text: "New Game" ~font: "variable" in
 
   pack [f];
-  pack [coe c; coe r; coe r'] side: `Left fill: `Y;
-  pack [coe nl; coe nc] side: `Top;
+  pack [coe c; coe r; coe r'] ~side: `Left ~fill: `Y;
+  pack [coe nl; coe nc] ~side: `Top;
   pack [coe scl; coe sc; coe lnl; coe ln; coe levl; coe lev; coe newg]
-    side: `Top;
+    ~side: `Top;
 
-  let cells_src = create_base_matrix cols:field_width rows:field_height in
+  let cells_src = create_base_matrix ~cols:field_width ~rows:field_height in
   let cells =
-    Array.map cells_src f:
-      (Array.map f:
+    Array.map cells_src ~f:
+      (Array.map ~f:
          begin fun (x,y) ->
            let t1 =
              Canvas.create_rectangle c 
-               x1:(-block_size - 8) y1:(-block_size - 8)
-               x2:(-9)              y2:(-9)
+               ~x1:(-block_size - 8) ~y1:(-block_size - 8)
+               ~x2:(-9)              ~y2:(-9)
            and t2 =
              Canvas.create_rectangle c 
-               x1:(-block_size - 10) y1:(-block_size - 10)
-               x2:(-11)              y2:(-11)
+               ~x1:(-block_size - 10) ~y1:(-block_size - 10)
+               ~x2:(-11)              ~y2:(-11)
            and t3 =
              Canvas.create_rectangle c
-               x1:(-block_size - 12) y1:(-block_size - 12)
-               x2:(-13)              y2:(-13)
+               ~x1:(-block_size - 12) ~y1:(-block_size - 12)
+               ~x2:(-13)              ~y2:(-13)
            in
-           Canvas.raise canvas:c t1;
-           Canvas.raise canvas:c t2;
-           Canvas.lower canvas:c t3;
-           new cell canvas:c :x :y t1 t2 t3
+           Canvas.raise ~canvas:c t1;
+           Canvas.raise ~canvas:c t2;
+           Canvas.lower ~canvas:c t3;
+           new cell ~canvas:c ~x ~y t1 t2 t3
          end)
   in
-  let nexts_src = create_base_matrix cols:4 rows:4 in
+  let nexts_src = create_base_matrix ~cols:4 ~rows:4 in
   let nexts =
-    Array.map nexts_src f:
-      (Array.map f:
+    Array.map nexts_src ~f:
+      (Array.map ~f:
          begin fun (x,y) ->
            let t1 =
              Canvas.create_rectangle nc 
-               x1:(-block_size - 8) y1:(-block_size - 8)
-               x2:(-9)              y2:(-9)
+               ~x1:(-block_size - 8) ~y1:(-block_size - 8)
+               ~x2:(-9)              ~y2:(-9)
            and t2 =
              Canvas.create_rectangle nc 
-               x1:(-block_size - 10) y1:(-block_size - 10)
-               x2:(-11)              y2:(-11)
+               ~x1:(-block_size - 10) ~y1:(-block_size - 10)
+               ~x2:(-11)              ~y2:(-11)
            and t3 =
              Canvas.create_rectangle nc 
-               x1:(-block_size - 12) y1:(-block_size - 12)
-               x2:(-13)              y2:(-13)
+               ~x1:(-block_size - 12) ~y1:(-block_size - 12)
+               ~x2:(-13)              ~y2:(-13)
            in
-           Canvas.raise canvas:nc t1;
-           Canvas.raise canvas:nc t2;
-           Canvas.lower canvas:nc t3;
-           new cell canvas:nc :x :y t1 t2 t3
+           Canvas.raise ~canvas:nc t1;
+           Canvas.raise ~canvas:nc t2;
+           Canvas.lower ~canvas:nc t3;
+           new cell ~canvas:nc ~x ~y t1 t2 t3
          end)
   in
   let game_over () = ()
@@ -352,13 +352,13 @@ let init fw =
   newg, (c, cells), (nc, nexts), scorev, linev, levv, game_over
   
 
-let draw_block field :color :block :x :y =
+let draw_block field ~color ~block ~x ~y =
   for iy = 0 to 3 do
     let base = ref 1 in
     let xd = block.(iy) in
     for ix = 0 to 3 do
       if xd land !base <> 0 then
-        cell_set field x:(ix + x) y:(iy + y) :color;
+        cell_set field ~x:(ix + x) ~y:(iy + y) ~color;
       base := !base lsl 1
     done
   done
@@ -372,8 +372,8 @@ let remove_timer () =
     None -> ()
   | Some t -> Timer.remove t (* ; prerr_endline "removed!" *)
 
-let do_after ms:milli do:f =
-  timer_ref := Some (Timer.add ms: milli callback: f)
+let do_after ~ms ~callback =
+  timer_ref := Some (Timer.add ~ms ~callback)
 
 let copy_block c = 
   { pattern= !c.pattern;
@@ -388,13 +388,13 @@ let _ =
   let lb = Label.create top
   and fw = Frame.create top
   in
-  let set_message s = Label.configure lb text:s in
-  pack [coe lb; coe fw] side: `Top; 
+  let set_message s = Label.configure lb ~text:s in
+  pack [coe lb; coe fw] ~side: `Top; 
   let score = ref 0 in
   let line = ref 0 in
   let level = ref 0 in
   let time = ref 1000 in
-  let blocks = List.map f:(List.map f:decode_block) blocks in
+  let blocks = List.map ~f:(List.map ~f:decode_block) blocks in
   let field = Array.create 26 0 in
   let widgets, button, cell_field, next_field, scorev, linev, levv, game_over
       = init fw in
@@ -407,27 +407,27 @@ let _ =
     field.(23) <- line_full;
     for i = 0 to 19 do
       for j = 0 to 9 do
-        cell_set cell_field x:j y:i color:0
+        cell_set cell_field ~x:j ~y:i ~color:0
       done
     done;
     for i = 0 to 3 do
       for j = 0 to 3 do
-        cell_set next_field x:j y:i color:0
+        cell_set next_field ~x:j ~y:i ~color:0
       done
     done 
   in
   
   let draw_falling_block fb =
-    draw_block cell_field color: fb.bcolor 
-      block: (List.nth fb.pattern fb.d) 
-      x:     (fb.x - 3) 
-      y:     (fb.y - 3)
+    draw_block cell_field ~color: fb.bcolor 
+      ~block: (List.nth fb.pattern fb.d) 
+      ~x:     (fb.x - 3) 
+      ~y:     (fb.y - 3)
     
   and erase_falling_block fb =
-    draw_block cell_field color: 0 
-      block: (List.nth fb.pattern fb.d) 
-      x:     (fb.x - 3) 
-      y:     (fb.y - 3)
+    draw_block cell_field ~color: 0 
+      ~block: (List.nth fb.pattern fb.d) 
+      ~x:     (fb.x - 3) 
+      ~y:     (fb.y - 3)
   in
 
   let stone fb =
@@ -449,7 +449,7 @@ let _ =
             incr l;
             field.(i + fb.y) <- line_empty;
             for j = 0 to 9 do
-              cell_set cell_field x:j y:(i + fb.y - 3) color:0 
+              cell_set cell_field ~x:j ~y:(i + fb.y - 3) ~color:0 
             done
           end  
     done;
@@ -467,8 +467,8 @@ let _ =
         done;
         field.(!cur) <- field.(!eye);
         for j = 0 to 9 do
-          cell_set cell_field x:j y:(!cur-3) 
-            color:(cell_get cell_field j (!eye-3))
+          cell_set cell_field ~x:j ~y:(!cur-3) 
+            ~color:(cell_get cell_field j (!eye-3))
         done;
         decr eye;
         decr cur 
@@ -477,7 +477,7 @@ let _ =
       for i = 3 to !cur do
         field.(i) <- line_empty;
         for j = 0 to 9 do
-          cell_set cell_field x:j y:(i-3) color:0
+          cell_set cell_field ~x:j ~y:(i-3) ~color:0
         done
       done
   in
@@ -488,14 +488,14 @@ let _ =
   in
      
   let draw_next () =
-    draw_block next_field color: (!next+1) 
-      block: (List.hd (List.nth blocks !next)) 
-      x: 0 y: 0 
+    draw_block next_field ~color: (!next+1) 
+      ~block: (List.hd (List.nth blocks !next)) 
+      ~x: 0 ~y: 0 
      
   and erase_next () =
-    draw_block next_field color: 0 
-      block: (List.hd (List.nth blocks !next)) 
-      x: 0 y: 0 
+    draw_block next_field ~color: 0 
+      ~block: (List.hd (List.nth blocks !next)) 
+      ~x: 0 ~y: 0 
   in
 
   let set_nextblock () =
@@ -548,15 +548,15 @@ let _ =
 
   let image_load =
     let i = Canvas.create_image canvas 
-        x: (block_size * 5 + block_size / 2)
-        y: (block_size * 10 + block_size / 2)
-        anchor: `Center in
-    Canvas.lower :canvas i;
+        ~x: (block_size * 5 + block_size / 2)
+        ~y: (block_size * 10 + block_size / 2)
+        ~anchor: `Center in
+    Canvas.lower ~canvas i;
     let img = Imagephoto.create () in
     fun file ->
       try 
-        Imagephoto.configure img file: file;
-        Canvas.configure_image :canvas i image: img 
+        Imagephoto.configure img ~file: file;
+        Canvas.configure_image ~canvas i ~image: img 
       with
         _ -> 
           begin
@@ -603,7 +603,7 @@ let _ =
       begin
         time := 1100 - (!level / 4 * 300) - ((!level mod 4) * 200);
         if !time < 60 - !level * 3 then time := 60 - !level * 3;
-        do_after ms:stop_a_bit do:loop
+        do_after ~ms:stop_a_bit ~callback:loop
       end
    
   and loop () =
@@ -613,15 +613,15 @@ let _ =
       begin
         !current.alive <- false;
         stone !current;
-        do_after ms:stop_a_bit do:
+        do_after ~ms:stop_a_bit ~callback:
           begin fun () ->
             let l = clear !current in
             if l > 0 then
-              do_after ms:stop_a_bit do:
+              do_after ~ms:stop_a_bit ~callback:
                 begin fun () ->
                   fall_lines ();
                   add_score l;
-                  do_after ms:stop_a_bit do:newblock
+                  do_after ~ms:stop_a_bit ~callback:newblock
                 end
             else
               newblock ()
@@ -632,12 +632,12 @@ let _ =
         erase_falling_block !current;
         draw_falling_block m;
         current := m;
-        do_after ms:!time do:loop
+        do_after ~ms:!time ~callback:loop
       end
   in
 
   let bind_game w =
-    bind w events:[`KeyPress] fields:[`KeySymString] action:
+    bind w ~events:[`KeyPress] ~fields:[`KeySymString] ~action:
       begin fun e -> 
         match e.ev_KeySymString with
         | "h" ->
@@ -696,12 +696,12 @@ let _ =
     set_message "Welcome to TETRIS";
     set_nextblock ();
     draw_falling_block !current;
-    do_after ms:!time do:loop
+    do_after ~ms:!time ~callback:loop
   in
     (* As an applet, it was required... *)
     (* List.iter f: bind_game widgets; *)
   bind_game top; 
-  Button.configure button command: game_init;
+  Button.configure button ~command: game_init;
   game_init ()
 
 let _ = Printexc.print mainLoop ()

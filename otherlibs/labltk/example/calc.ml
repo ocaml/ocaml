@@ -24,7 +24,7 @@
 
 open Tk
 
-let mem_string elt:c s =
+let mem_string ~elt:c s =
   try
     for i = 0 to String.length s -1 do
       if s.[i] = c then raise Exit
@@ -56,7 +56,7 @@ class calc () = object (calc)
         if displaying then
           (calc#set "0."; displaying <- false)
         else
-          if not (mem_string elt:'.' calc#get) then calc#insert s
+          if not (mem_string ~elt:'.' calc#get) then calc#insert s
     | '+'|'-'|'*'|'/' as c ->
         displaying <- true;
         begin match op with
@@ -91,36 +91,36 @@ let m =
 
 (* The physical calculator. Inherits from the abstract one *)
 
-class calculator :parent = object
+class calculator ~parent = object
   inherit calc () as calc
 
-  val label = Label.create anchor:`E relief:`Sunken padx:10 parent
+  val label = Label.create ~anchor:`E ~relief:`Sunken ~padx:10 parent
   val frame = Frame.create parent
 
   initializer
     let buttons =
-      Array.map f:
-        (List.map f:
+      Array.map ~f:
+        (List.map ~f:
            (fun text ->
-             Button.create :text command:(fun () -> calc#command text) frame))
+             Button.create ~text ~command:(fun () -> calc#command text) frame))
         m
     in
-    Label.configure textvariable:variable label;
+    Label.configure ~textvariable:variable label;
     calc#set "0";
-    bind events:[`KeyPress] fields:[`Char]
-      action:(fun ev -> calc#command ev.ev_Char)
+    bind ~events:[`KeyPress] ~fields:[`Char]
+      ~action:(fun ev -> calc#command ev.ev_Char)
       parent;
     for i = 0 to Array.length m - 1 do
-      Grid.configure row:i buttons.(i)
+      Grid.configure ~row:i buttons.(i)
     done;
-    pack side:`Top fill:`X [label];
-    pack side:`Bottom fill:`Both expand:true [frame];
+    pack ~side:`Top ~fill:`X [label];
+    pack ~side:`Bottom ~fill:`Both ~expand:true [frame];
 end
 
 (* Finally start everything *)
 
 let top = openTk ()
 
-let applet = new calculator parent:top
+let applet = new calculator ~parent:top
 
 let _ = mainLoop ()
