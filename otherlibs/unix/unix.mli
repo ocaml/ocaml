@@ -510,7 +510,8 @@ external alarm : int -> int = "unix_alarm"
         (* Schedule a [SIGALRM] signals after the given number of seconds. *)
 external sleep : int -> unit = "unix_sleep"
         (* Stop execution for the given number of seconds. *)
-external times : unit -> process_times = "unix_times"
+external times : unit -> process_times =
+              "unix_times_bytecode" "unix_times_native"
         (* Return the execution times of the process. *)
 external utimes : string -> int -> int -> unit = "unix_utimes"
         (* Set the last access time (second arg) and last modification time
