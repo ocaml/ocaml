@@ -124,6 +124,7 @@ let init () =
 
 (* Must use the unsafe String.set here because the block may be
    a "fake" string as returned by Meta.static_alloc. *)
+
 let patch_int buff pos n =
   String.unsafe_set buff pos (Char.unsafe_chr n);
   String.unsafe_set buff (pos + 1) (Char.unsafe_chr (n asr 8));
@@ -220,10 +221,18 @@ and assign_global_value id v =
 type global_map = Ident.t numtable
 
 let current_state () = !global_table
-and restore_state st = global_table := st
 
-(* "Filter" the global List.map according to some predicate.
-   Used to expunge the global List.map for the toplevel. *)
+let restore_state st = global_table := st
+
+let hide_additions st =
+  if st.num_cnt > !global_table.num_cnt then
+    fatal_error "Symtable.hide_additions";
+  global_table :=
+    { num_cnt = !global_table.num_cnt;
+      num_tbl = st.num_tbl }
+
+(* "Filter" the global map according to some predicate.
+   Used to expunge the global map for the toplevel. *)
 
 let filter_global_map p gmap =
   let newtbl = ref Tbl.empty in
