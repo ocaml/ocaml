@@ -277,6 +277,11 @@ let rec jumps_extract i = function
         let r,rem = jumps_extract i rem in
         r,(x::rem)
 
+let rec jumps_remove i = function
+  | [] -> []
+  | (j,_)::rem when i=j -> rem
+  | x::rem -> x::jumps_remove i rem 
+
 let jumps_empty = []
 and jumps_is_empty = function
   |  [] -> true
@@ -659,11 +664,11 @@ let pm_free_variables {cases=cases} =
 let compile_or argo cl clor al def = match clor with
 | [] ->
     {to_match = {cases=cl ; args=al ; default=def} ;
-    to_catch = []}
+      to_catch = []}
 | _  ->
     let rec do_cases = function
       | ({pat_desc=Tpat_or (_,_)} as orp::patl, action)::rem ->
-          let others,rem = get_equiv orp rem in
+          let others,rem = get_equiv orp rem in          
           let orpm =
             {cases =
               (patl, action)::
@@ -672,8 +677,16 @@ let compile_or argo cl clor al def = match clor with
                   | (_::ps,action) -> ps,action
                   | _ -> assert false)
                 others ;
-             args = List.tl al ;
-             default = default_compat orp def} in
+              args = List.tl al ;
+              default = default_compat orp def} in
+          begin match patl,action with
+          | [],Lstaticraise (_,[]) ->
+              let new_ord,new_to_catch = do_cases rem in
+              let mk_new_action _ = action in
+              explode_or_pat
+                argo [] mk_new_action new_ord [] [] orp,
+              new_to_catch
+          | _,_ ->
           let vars =
             IdentSet.elements
               (IdentSet.inter
@@ -690,6 +703,7 @@ let compile_or argo cl clor al def = match clor with
           explode_or_pat
             argo new_patl mk_new_action new_ord vars [] orp,
           (([[orp]], or_num, vars , orpm):: new_to_catch)
+          end
       | cl::rem ->
           let new_ord,new_to_catch = do_cases rem in
           cl::new_ord,new_to_catch
@@ -697,7 +711,7 @@ let compile_or argo cl clor al def = match clor with
 
     let to_match,to_catch = do_cases clor in
     {to_match = {args=al ; cases=cl@to_match ; default=def} ;
-    to_catch = to_catch}
+      to_catch = to_catch}
 
 
 (* Basic grouping predicates *)
@@ -807,7 +821,6 @@ let separe argo pm =
   | [[{pat_desc=Tpat_any}],_] ->
       compile_or argo pm.cases [] pm.args pm.default,[]
   | _ -> 
-
       let next,nexts =
         match ex_pat.pat_desc with
         | Tpat_any -> compile_or argo pm.cases [] pm.args pm.default,[]
@@ -865,13 +878,25 @@ let separe argo pm =
                   compile_or argo yes yesor pm.args pm.default,[]
               | cl::rem ->
                   let matrix,next,nexts = sep_next cl rem in
-                  let idef = next_raise_count () in
-                  let newdef =
-                    cons_default matrix idef next.to_match.default in
-                  as_matrix (yes@yesor),
-                  compile_or argo yes yesor pm.args newdef,
-                  (idef,next)::nexts in
-
+                  begin match next with
+                  (* Optimisation of jumps to jumps *)
+                  | {to_match =
+                      {cases=[ps,Lstaticraise (idef,[])]} ;
+                      to_catch=[]}
+                      when  List.for_all group_var ps ->
+                      let newdef =
+                        cons_default matrix idef next.to_match.default in
+                      as_matrix (yes@yesor),
+                      compile_or argo yes yesor pm.args newdef,
+                      (-1,next)::nexts
+                  | _ -> 
+                      let idef = next_raise_count () in
+                      let newdef =
+                        cons_default matrix idef next.to_match.default in
+                      as_matrix (yes@yesor),
+                      compile_or argo yes yesor pm.args newdef,
+                      (idef,next)::nexts
+                  end in
             match pm.cases with
             | ((_::_),_) as cl::rem ->
                 let _,next,nexts = sep_next cl rem in
@@ -1862,7 +1887,8 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
           | _ ->
               do_rec
                 (Lstaticcatch (r,(i,vars), handler_i))
-                (jumps_union total_r
+                (jumps_union
+                   (jumps_remove i total_r)
                    (jumps_map (ctx_rshift_num (ncols mat)) total_i))
               rem
         with
@@ -1947,6 +1973,8 @@ let comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
   | rem ->
       let rec c_rec body total_body = function
         | [] -> body, total_body
+        (* Hum, -1 means never taken, needed for ``partial'' to be correct *)
+        | (-1,pm)::rem -> c_rec body total_body rem
         | (i,pm)::rem -> 
             let ctx_i,total_rem = jumps_extract i total_body in
             begin match ctx_i with
