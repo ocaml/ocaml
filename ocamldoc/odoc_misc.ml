@@ -297,6 +297,13 @@ let get_titles_in_text t =
   iter_text t;
   List.rev !l
 
+let text_concat (sep : Odoc_types.text) l = 
+  let rec iter = function
+      [] -> []
+    | [last] -> last
+    | h :: q -> h @ sep @ (iter q)
+  in
+  iter l
 
 (*********************************************************)
 let rec get_before_dot s =
@@ -384,6 +391,15 @@ let first_sentence_and_rest_of_text t =
   let (_,t1, t2) = first_sentence_text t in
   (t1, t2)
 
+let remove_ending_newline s =
+  let len = String.length s in
+  if len <= 0 then
+    s
+  else
+    match s.[len-1] with
+      '\n' -> String.sub s 0 (len-1)
+    | _ -> s
+
 (*********************************************************)
 
 let create_index_lists elements string_of_ele =
@@ -415,17 +431,8 @@ let label_name = Btype.label_name
 let remove_option typ =
   let rec iter t =
     match t with
-    | Types.Tconstr (p,tlist,_) ->
-        (
-         match p with
-           Path.Pident id when Ident.name id = "option" ->
-             (
-              match tlist with
-                [t2] -> t2.Types.desc
-              | _ -> t
-             )
-         | _ -> t
-        )
+    | Types.Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty.Types.desc
+    | Types.Tconstr _
     | Types.Tvar
     | Types.Tunivar
     | Types.Tpoly _

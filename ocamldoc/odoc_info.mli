@@ -619,6 +619,10 @@ val string_of_variance : Type.t_type -> (bool * bool) -> string
 (** This function returns a string representing a Types.type_expr. *)
 val string_of_type_expr : Types.type_expr -> string
 
+(** @return a string to display the parameters of the given class,
+   in the same form as the compiler. *)
+val string_of_class_params : Class.t_class -> string
+
 (** This function returns a string to represent the given list of types,
    with a given separator. *)
 val string_of_type_list : ?par: bool -> string -> Types.type_expr list -> string
@@ -684,6 +688,10 @@ val first_sentence_and_rest_of_text : text -> text * text
 
 (** Return the given [text] without any title or list. *)
 val text_no_title_no_list : text -> text
+
+(** [concat sep l] concats the given list of text [l], each separated with
+   the text [sep]. *)
+val text_concat : Odoc_types.text -> Odoc_types.text list -> Odoc_types.text
 
 (** Return the list of titles in a [text]. 
    A title is a title level, an optional label and a text.*)
@@ -765,6 +773,8 @@ val info_string_of_info : info -> string
 *)
 val info_of_comment_file : string -> info
 
+(** [remove_ending_newline s] returns [s] without the optional ending newline. *)
+val remove_ending_newline : string -> string
 
 (** Research in elements *)
 module Search :

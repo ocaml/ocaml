@@ -206,24 +206,30 @@ class virtual to_text =
 
     (** Get a string for a [Types.class_type] where all idents are relative. *)
     method normal_class_type m_name t =
-      (self#relative_idents m_name (Odoc_info.string_of_class_type t))
+      self#relative_idents m_name (Odoc_info.string_of_class_type t)
 
     (** Get a string for a [Types.module_type] where all idents are relative. *)
     method normal_module_type ?code m_name t =
-      (self#relative_module_idents m_name (Odoc_info.string_of_module_type ?code t))
+      self#relative_module_idents m_name (Odoc_info.string_of_module_type ?code t)
 
     (** Get a string for a type where all idents are relative. *)
     method normal_type m_name t =
-      (self#relative_idents m_name (Odoc_info.string_of_type_expr t))
+      self#relative_idents m_name (Odoc_info.string_of_type_expr t)
 
     (** Get a string for a list of types where all idents are relative. *)
     method normal_type_list ?par m_name sep t =
-      (self#relative_idents m_name (Odoc_info.string_of_type_list ?par sep t))
+      self#relative_idents m_name (Odoc_info.string_of_type_list ?par sep t)
 
     (** Get a string for a list of class or class type type parameters
        where all idents are relative. *)
     method normal_class_type_param_list m_name t =
-      (self#relative_idents m_name (Odoc_info.string_of_class_type_param_list t))
+      self#relative_idents m_name (Odoc_info.string_of_class_type_param_list t)
+
+    (** Get a string for the parameters of a class (with arrows) where all idents are relative. *)
+    method normal_class_params m_name c =
+      let s = Odoc_info.string_of_class_params c in
+      self#relative_idents m_name 
+	(Odoc_info.remove_ending_newline s)
 
     (** @return [text] value to represent a [Types.type_expr].*)
     method text_of_type_expr module_name t =
@@ -250,6 +256,17 @@ class virtual to_text =
     method text_of_class_type_param_expr_list module_name l =
       [ Code (self#normal_class_type_param_list module_name l) ]        
 
+    (** @return [text] value to represent parameters of a class (with arraows).*)
+    method text_of_class_params module_name c =
+      let t = Odoc_info.text_concat 
+	  [Newline]
+          (List.map
+             (fun s -> [Code s])
+	     (Str.split (Str.regexp "\n") 
+                (self#normal_class_params module_name c))
+	  )
+      in
+      t
 
     (** @return [text] value to represent a [Types.module_type]. *)
     method text_of_module_type t =

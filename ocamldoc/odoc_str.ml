@@ -115,6 +115,30 @@ let string_of_class_type_param_list l =
     )
     (if par then "]" else "")
 
+let string_of_class_params c =
+  let b = Buffer.create 256 in
+  let rec iter = function
+      Types.Tcty_fun (label, t, ctype) ->
+	Printf.bprintf b "%s%s -> "
+	  (
+	   match label with
+	     "" -> ""
+	   | s -> s^":"
+	  )
+	  (Odoc_print.string_of_type_expr
+	     (if Odoc_misc.is_optional label then
+	       Odoc_misc.remove_option t
+	     else
+	       t
+	     )
+	  );
+	iter ctype
+    | Types.Tcty_signature _ 
+    | Types.Tcty_constr _ -> ()
+  in
+  iter c.Odoc_class.cl_type;
+  Buffer.contents b
+
 let string_of_type t =
   let module M = Odoc_type in
   "type "^
