@@ -10,13 +10,14 @@ Objective Caml 1.06:
   - The macros Push_roots and Pop_roots are superseded by Begin_roots* and
     End_roots.
 
-* Language: a new keyword was added: "assert".
+* Language: two new keywords were added: "assert" and "lazy".
 
 * Standard library:
   - Printexc: added to_string.
   - Filename: is_absolute is superseded by is_implicit and is_relative.
     To adapt old programs, change "is_absolute x" to "not (is_implicit x)"
     (the new is_relative is NOT the opposite of the old is_absolute).
+  - New library: Lazy (delayed computations).
 
 Objective Caml 1.05:
 --------------------
