@@ -110,6 +110,7 @@ static struct error_entry win_error_table[] = {
   { ERROR_WRITE_PROTECT,
     ERROR_SHARING_BUFFER_EXCEEDED - ERROR_WRITE_PROTECT,
     EACCES },
+  { WSAEINVAL, 0, EINVAL },
   { 0, -1, 0 }
 };
 
