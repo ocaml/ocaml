@@ -89,7 +89,7 @@ let closing = function
 (* opening and closing: open and close characters, typically ( and )
    k balance of opening and closing chars
    s the string where we are searching
-   p the index where we start the search *)
+   start the index where we start the search *)
 let advance_to_closing opening closing k s start =
   let rec advance k i lim =
     if i >= lim then raise Not_found else
@@ -110,7 +110,7 @@ let advance_to_non_alpha s start =
     | _ -> i in
   advance start (String.length s);;
 
-(* We are just at the beginning of an ident in s, starting at p *)
+(* We are just at the beginning of an ident in s, starting at start *)
 let find_ident s start =
   match s.[start] with
   (* Parenthesized ident ? *)
@@ -123,8 +123,8 @@ let find_ident s start =
      let stop = advance_to_non_alpha s (start + 1) in
      String.sub s start (stop - start), stop;;
 
-(* Substitute $ident (or $(ident)) in s,
-    according to the function f. *)
+(* Substitute $ident, $(ident), or ${ident} in s,
+    according to the function mapping f. *)
 let add_substitute b f s =
   let lim = String.length s in
   let rec subst previous i =

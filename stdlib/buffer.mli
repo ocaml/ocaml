@@ -64,14 +64,18 @@ val add_substring : t -> string -> int -> int -> unit
    [ofs] in string [s] and appends them at the end of the buffer [b]. *)
 
 val add_substitute : t -> (string -> string) -> string -> unit
-(** [add_substitute b f s] appends the string [s] at the end of the buffer [b]
-   with substitution: variable names in [s] get replaced by their image by [f].
-   A variable name is defined as a non empty sequence of alphanumeric or [_]
-   characters (or alternatively an arbitrary sequence of characters
-   enclosed by a pair of matching parentheses or curly brackets),
-   that immediately follows a (non-escaped) [$] character;
-   an escaped [$] character is a [$] that immediately follows
-   a backslash character; it then stands for a plain [$].
+(** [add_substitute b f s] appends the string pattern [s] at the end
+   of the buffer [b] with substitution.
+   The substitution process looks for variables into
+   the pattern and substitutes each variable name by its value, as
+   obtained by applying the mapping [f] to the variable name. Inside the
+   string pattern, a variable name immediately follows a non-escaped
+   [$] character and is one of the following:
+   - a non empty sequence of alphanumeric or [_] characters,
+   - an arbitrary sequence of characters enclosed by a pair of
+   matching parentheses or curly brackets.
+   An escaped [$] character is a [$] that immediately folows a backslash
+   character; it then stands for a plain [$].
    Raise [Not_found] if the closing character of a parenthesized variable
    cannot be found. *)
 
