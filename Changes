@@ -7,6 +7,7 @@ Objective Caml 2.03:
   - Compatible with threads
   - Handles .mli files, so ocamlcp can be used to replace ocamlc (e.g. in a
     makefile).
+  - Now works on programs that use stream expressions and stream parsers.
 
 
 Objective Caml 2.02:
