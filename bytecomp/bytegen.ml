@@ -113,6 +113,8 @@ let rec size_of_lambda = function
       List.length args
   | Llet(str, id, arg, body) ->
       size_of_lambda body
+  | Lletrec(bindings, body) ->
+      size_of_lambda body
   | _ ->
       fatal_error "Bytegen.size_of_lambda"
 
