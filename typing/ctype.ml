@@ -403,11 +403,12 @@ let generic_abbrev env path =
 let occur env ty0 ty =
   let visited = ref ([] : type_expr list) in
   let rec occur_rec ty =
+    let ty = repr ty in
+    if ty == ty0 then raise (Unify []);
     match ty.desc with
       Tlink ty' ->
         occur_rec ty'
     | Tvar ->
-        if ty == ty0 then raise (Unify []) else
         ()
     | Tarrow(t1, t2) ->
         occur_rec t1; occur_rec t2
@@ -497,7 +498,7 @@ and unify_core env a1 a2 t1 t2 =        (* Other cases *)
   | (Some l1, None) ->
       update_level t2.level t1; t2.desc <- Tlink l1
   | (_, _) ->
-      update_level t1.level t2; t1.desc <- Tlink t2
+      update_level t1.level t2; occur env t1 t2; t1.desc <- Tlink t2
   end;
   try
     match (d1, d2) with
