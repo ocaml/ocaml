@@ -402,7 +402,7 @@ void output_val(struct channel *chan, value v, value flags)
 value output_value(value vchan, value v, value flags) /* ML */
 {
   struct channel * channel = Channel(vchan);
-  Begin_root(v)
+  Begin_roots2(v, flags)
     Lock(channel);
     output_val(channel, v, flags);
     Unlock(channel);
@@ -431,5 +431,13 @@ value output_value_to_buffer(value buf, value ofs, value len, value v, value fla
   extern_block_malloced = 0;
   len_res = extern_value(v, flags);
   return Val_long(len_res);
+}
+
+void output_value_to_malloc(value v, value flags,
+                            /*out*/ char ** buf, /*out*/ long * len)
+{
+  alloc_extern_block();
+  *buf = extern_block;
+  *len = extern_value(v, flags);
 }
 

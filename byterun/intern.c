@@ -335,6 +335,32 @@ value input_value_from_string(value str, value ofs) /* ML */
   return input_val_from_string(str, Long_val(ofs));
 }
 
+value input_value_from_malloc(char * data, long ofs)
+{
+  mlsize_t num_objects, size_32, size_64, whsize;
+  value obj;
+
+  intern_input = (unsigned char *) data;
+  intern_src = intern_input + ofs + 2*4;
+  intern_input_malloced = 1;
+  num_objects = read32u();
+  size_32 = read32u();
+  size_64 = read32u();
+  /* Allocate result */
+#ifdef ARCH_SIXTYFOUR
+  whsize = size_64;
+#else
+  whsize = size_32;
+#endif
+  intern_alloc(whsize, num_objects);
+  /* Fill it in */
+  intern_rec(&obj);
+  /* Free everything */
+  stat_free(intern_input);
+  if (intern_obj_table != NULL) stat_free(intern_obj_table);
+  return obj;
+}
+
 value marshal_data_size(value buff, value ofs) /* ML */
 {
   uint32 magic;
