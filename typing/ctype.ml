@@ -20,12 +20,11 @@ open Types
 (*
    Type manipulation after type inference
    ======================================
-
-   If one want to manipulate some types after type inference (for
+   If one wants to manipulate a type after type inference (for
    instance, during code generation or in the debugger), one must
    first make sure that the type levels are correct, using the
-   function [correct_level]. Then, these types can be correctely
-   manipulated with [substitute], [expand_abbrev] and [moregeneral].
+   function [correct_levels]. Then, this type can be correctely
+   manipulated by [substitute], [expand_abbrev] and [moregeneral].
 *)
 
 (*
@@ -285,6 +284,28 @@ and generalize_expans =
   | Mcons(_, ty, rem) ->  generalize ty; generalize_expans rem
   | Mlink rem         ->  generalize_expans !rem
 
+(*
+   Lower in-place the level of a generic type. That way, [subst] can
+   do "unification" on generic types.
+*)
+let rec ungeneralize ty =
+  let ty = repr ty in
+  if ty.level = generic_level then begin
+    ty.level <- !current_level;
+    begin match ty.desc with
+      Tconstr (_, _, abbrev) ->
+        ungeneralize_expans !abbrev
+    | _ -> ()
+    end;
+    iter_type_expr ungeneralize ty
+  end
+
+and ungeneralize_expans =
+  function
+    Mnil              ->  ()
+  | Mcons(_, ty, rem) ->  ungeneralize ty; ungeneralize_expans rem
+  | Mlink rem         ->  ungeneralize_expans !rem
+
 let expand_abbrev' = (* Forward declaration *)
   ref (fun env path args abbrev level -> raise Cannot_expand)
 
@@ -328,25 +349,9 @@ let rec update_level env level ty =
 *)
 let make_nongen ty = update_level Env.empty !current_level ty
 
-(*
-   Correct the levels of type [ty]. The level of non-variable nodes is
-   set to [generic_level] (ensuring decreasing levels), and the level
-   of non-generic variables is lowered so as to be inferior to the
-   environnement level ([substitute] and [moregeneral] assume this).
-*)
-let correct_level env ty =
-  let rec correct_rec ty =
-    let ty = repr ty in
-    if ty.level >= lowest_level then begin
-      if (ty.desc = Tvar) && (ty.level <> generic_level) then
-        ty.level <- pivot_level - (min ty.level (Env.level env))
-      else
-        ty.level <- pivot_level - generic_level;
-      iter_type_expr correct_rec ty
-    end
-  in
-  correct_rec ty;
-  unmark_type ty
+(* Correct the levels of type [ty]. *)
+let correct_levels env ty =
+  Subst.type_expr (Subst.limit_level (Env.level env) Subst.identity) ty
 
 
                               (*******************)
@@ -360,8 +365,6 @@ let correct_level env ty =
    During instantiation, the description of a generic node is first
    replaced by a link to a stub ([Tlink (newvar ())]). Once the copy
    is made, it replaces the stub.
-   If [pres_var] is true, generic variables are not copied. Instead,
-   their level is lowered to [!current_level] (used by [substitute]).
    After instantiation, the description of generic node, which was
    stored in [saved_desc], must be put back, using [cleanup_types].
 *)
@@ -369,14 +372,11 @@ let correct_level env ty =
 let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
 
-let rec copy pres_var ty =
+let rec copy ty =
   let ty = repr ty in
   if ty.level <> generic_level then
     ty
-  else if pres_var && ty.desc = Tvar then begin
-    ty.level <- !current_level;
-    ty
-  end else begin
+  else begin
     let desc = ty.desc in
     saved_desc := (ty, desc)::!saved_desc;
     let t = newvar () in              (* Stub *)
@@ -386,9 +386,9 @@ let rec copy pres_var ty =
         Tvar ->
           Tvar
       | Tarrow (t1, t2) ->
-          Tarrow (copy pres_var t1, copy pres_var t2)
+          Tarrow (copy t1, copy t2)
       | Ttuple tl ->
-          Ttuple (List.map (copy pres_var) tl)
+          Ttuple (List.map copy tl)
       | Tconstr (p, tl, _) ->
           (*
              One must allocate a new reference, so that abbrevia-
@@ -399,7 +399,7 @@ let rec copy pres_var ty =
              ation can be released by changing the content of just
              one reference.
           *)
-          Tconstr (p, List.map (copy pres_var) tl,
+          Tconstr (p, List.map copy tl,
                    ref (match ! !abbreviations with
                           Mcons _ -> Mlink !abbreviations
                         | abbrev  -> abbrev))
@@ -409,15 +409,15 @@ let rec copy pres_var ty =
               None ->
                 None
             | Some (p, tl) ->
-                Some (p, List.map (copy pres_var)tl)
+                Some (p, List.map copy tl)
           in
-          Tobject (copy pres_var t1, ref name')
+          Tobject (copy t1, ref name')
       | Tfield (label, t1, t2) ->
-          Tfield (label, copy pres_var t1, copy pres_var t2)
+          Tfield (label, copy t1, copy t2)
       | Tnil ->
           Tnil
       | Tlink t -> (* Actually unused *)
-          Tlink (copy pres_var t)
+          Tlink (copy t)
       end;
     t
   end
@@ -425,57 +425,52 @@ let rec copy pres_var ty =
 (**** Variants of instantiations ****)
 
 let instance sch =
-  let ty = copy false sch in
+  let ty = copy sch in
   cleanup_types ();
   ty
 
 let instance_list schl =
-  let tyl = List.map (copy false) schl in
+  let tyl = List.map copy schl in
   cleanup_types ();
   tyl
 
 let instance_constructor cstr =
-  let ty_res = copy false cstr.cstr_res in
-  let ty_args = List.map (copy false) cstr.cstr_args in
+  let ty_res = copy cstr.cstr_res in
+  let ty_args = List.map copy cstr.cstr_args in
   cleanup_types ();
   (ty_args, ty_res)
 
 let instance_label lbl =
-  let ty_res = copy false lbl.lbl_res in
-  let ty_arg = copy false lbl.lbl_arg in
+  let ty_res = copy lbl.lbl_res in
+  let ty_arg = copy lbl.lbl_arg in
   cleanup_types ();
   (ty_arg, ty_res)
 
 let instance_parameterized_type sch_args sch =
-  let ty_args = List.map (copy false) sch_args in
-  let ty = copy false sch in
+  let ty_args = List.map copy sch_args in
+  let ty = copy sch in
   cleanup_types ();
   (ty_args, ty)
 
 let instance_parameterized_type_2 sch_args sch_lst sch =
-  let ty_args = List.map (copy false) sch_args in
-  let ty_lst = List.map (copy false) sch_lst in
-  let ty = copy false sch in
+  let ty_args = List.map copy sch_args in
+  let ty_lst = List.map copy sch_lst in
+  let ty = copy sch in
   cleanup_types ();
   (ty_args, ty_lst, ty)
 
 let instance_class cl =
-  let params = List.map (copy false) cl.cty_params in
-  let args = List.map (copy false) cl.cty_args in
+  let params = List.map copy cl.cty_params in
+  let args = List.map copy cl.cty_args in
   let vars =
     Vars.fold
       (fun lab (mut, ty) ->
-         Vars.add lab (mut, copy false ty))
+         Vars.add lab (mut, copy ty))
       cl.cty_vars
       Vars.empty in
-  let self = copy false cl.cty_self in
+  let self = copy cl.cty_self in
   cleanup_types ();
   (params, args, vars, self)
-
-let instance_gen_list schl =
-  let tyl = List.map (copy true) schl in
-  cleanup_types ();
-  tyl
 
 (**** Instantiation with parameter substitution ****)
 
@@ -499,24 +494,19 @@ let rec subst env level abbrev path params args body =
     current_level := old_level;
     body'
   end else begin
-    (*
-       Generic types need to be "unified" to the parameters. For that,
-       one must make the levels non-generic. Moreover, these types
-       should stay unchanged (no abbreviation propagated). So, one
-       take an instance of these types, preserving generic variables
-       but making them temporarily non-generic. After the unification
-       is done, the variable are made generic again. They aren't be
-       instantiated in the process, as [params] is an instance of
-       [args].
-    *)
+    (* One cannot expand directly to a generic type. *)
+    begin_def ();
     (* Make sure [!current_level] is high enough. *)
     current_level := max !current_level (Env.level env);
-    begin_def ();
-    let args' = instance_gen_list args in
-    let ty = subst env !current_level abbrev path params args' body in
+    (*
+       Arguments cannot be generic either, as they are unified to the
+       parameters.
+    *)
+    List.iter ungeneralize args;
+    let ty = subst env !current_level abbrev path params args body in
     end_def ();
     generalize ty;
-    List.iter generalize args';
+    List.iter generalize args;
     ty
   end
 

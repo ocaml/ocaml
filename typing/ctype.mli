@@ -57,7 +57,7 @@ val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
 val make_nongen: type_expr -> unit
         (* Make non-generalizable the given type *)
-val correct_level: Env.t -> type_expr -> unit
+val correct_levels: Env.t -> type_expr -> type_expr
 
 val instance: type_expr -> type_expr
         (* Take an instance of a type scheme *)
