@@ -5,7 +5,7 @@ case "$1" in
         exec ../boot/ocamlrun  -I ../otherlibs/unix -I ../otherlibs/str ./ocamldoc "$@"
 	;;
      *) shift
-	exec ./ocamldoc $*
+	exec ./ocamldoc "$@"
 	;;
 esac
   
