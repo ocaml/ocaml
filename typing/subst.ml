@@ -223,6 +223,21 @@ let value_description s descr =
 let exception_declaration s tyl =
   List.map (type_expr s) tyl
 
+let rec rename_bound_idents s idents = function
+    [] -> (List.rev idents, s)
+  | Tsig_type(id, d) :: sg ->
+      let id' = Ident.rename id in
+      rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
+  | Tsig_module(id, mty) :: sg ->
+      let id' = Ident.rename id in
+      rename_bound_idents (add_module id (Pident id') s) (id' :: idents) sg
+  | Tsig_modtype(id, d) :: sg ->
+      let id' = Ident.rename id in
+      rename_bound_idents (add_modtype id (Tmty_ident(Pident id')) s)
+                          (id' :: idents) sg
+  | _ :: sg ->
+      rename_bound_idents s idents sg
+
 let rec modtype s = function
     Tmty_ident p as mty ->
       begin match p with
@@ -240,28 +255,32 @@ let rec modtype s = function
       Tmty_functor(id', modtype s arg,
                         modtype (add_module id (Pident id') s) res)
 
-and signature s = function
-    [] -> []
-  | Tsig_value(id, d) :: sg ->
-      Tsig_value(id, value_description s d) :: signature s sg
-  | Tsig_type(id, d) :: sg ->
-      let id' = Ident.rename id in
-      Tsig_type(id', type_declaration s d) ::
-      signature (add_type id (Pident id') s) sg
-  | Tsig_exception(id, d) :: sg ->
-      Tsig_exception(id, exception_declaration s d) :: signature s sg
-  | Tsig_module(id, mty) :: sg ->
-      let id' = Ident.rename id in
-      Tsig_module(id', modtype s mty) ::
-      signature (add_module id (Pident id') s) sg
-  | Tsig_modtype(id, d) :: sg ->
-      let id' = Ident.rename id in
-      Tsig_modtype(id', modtype_declaration s d) ::
-      signature (add_modtype id (Tmty_ident(Pident id')) s) sg
-  | Tsig_class(id, d) :: sg ->
-      Tsig_class(id, class_declaration s d) :: signature s sg
-  | Tsig_cltype(id, d) :: sg ->
-      Tsig_cltype(id, cltype_declaration s d) :: signature s sg
+and signature s sg =
+  (* Components of signature may be mutually recursive (e.g. type declarations
+     or class and type declarations), so first build global renaming
+     substitution... *)
+  let (new_idents, s') = rename_bound_idents s [] sg in
+  (* ... then apply it to each signature component in turn *)
+  signature2 s' sg new_idents
+
+and signature2 s sg idents =
+  match (sg, idents) with
+    ([], []) -> []
+  | (Tsig_value(id, d) :: sg, _) ->
+      Tsig_value(id, value_description s d) :: signature2 s sg idents
+  | (Tsig_type(id, d) :: sg, id' :: rem) ->
+      Tsig_type(id', type_declaration s d) :: signature2 s sg rem
+  | (Tsig_exception(id, d) :: sg, _) ->
+      Tsig_exception(id, exception_declaration s d) :: signature2 s sg idents
+  | (Tsig_module(id, mty) :: sg, id' :: rem) ->
+      Tsig_module(id', modtype s mty) :: signature2 s sg rem
+  | (Tsig_modtype(id, d) :: sg, id' :: rem) ->
+      Tsig_modtype(id', modtype_declaration s d) :: signature2 s sg rem
+  | (Tsig_class(id, d) :: sg, _) ->
+      Tsig_class(id, class_declaration s d) :: signature2 s sg idents
+  | (Tsig_cltype(id, d) :: sg, _) ->
+      Tsig_cltype(id, cltype_declaration s d) :: signature2 s sg idents
+  | (_, _) -> assert false
 
 and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract
