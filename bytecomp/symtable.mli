@@ -33,6 +33,7 @@ val update_global_table: unit -> unit
 val get_global_value: Ident.t -> Obj.t
 val assign_global_value: Ident.t -> Obj.t -> unit
 val get_global_position: Ident.t -> int
+val check_global_initialized: (reloc_info * int) list -> unit
 
 type global_map
 
@@ -47,6 +48,7 @@ type error =
     Undefined_global of string
   | Unavailable_primitive of string
   | Wrong_vm of string
+  | Uninitialized_global of string
 
 exception Error of error
 

@@ -25,6 +25,7 @@ type error =
     Undefined_global of string
   | Unavailable_primitive of string
   | Wrong_vm of string
+  | Uninitialized_global of string
 
 exception Error of error
 
@@ -287,6 +288,27 @@ let get_global_value id =
 let assign_global_value id v =
   (Meta.global_data()).(slot_for_getglobal id) <- v
 
+(* Check that all globals referenced in the given patch list
+   have been initialized already *)
+
+let check_global_initialized patchlist =
+  (* First determine the globals we will define *)
+  let defined_globals =
+    List.fold_left
+      (fun accu rel ->
+        match rel with
+          (Reloc_setglobal id, pos) -> id :: accu
+        | _ -> accu)
+      [] patchlist in
+  (* Then check that all referenced, not defined globals have a value *)
+  let check_reference = function
+      (Reloc_getglobal id, pos) ->
+        if not (List.mem id defined_globals)
+        && Obj.is_int (get_global_value id)
+        then raise (Error(Uninitialized_global(Ident.name id)))
+    | _ -> () in
+  List.iter check_reference patchlist
+
 (* Save and restore the current state *)
 
 type global_map = Ident.t numtable
@@ -323,3 +345,5 @@ let report_error ppf = function
       fprintf ppf "The external function `%s' is not available" s
   | Wrong_vm s ->
       fprintf ppf "Cannot find or execute the runtime system %s" s
+  | Uninitialized_global s ->
+      fprintf ppf "The value of the global `%s' is not yet computed" s
