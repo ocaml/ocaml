@@ -608,8 +608,11 @@ The expression @'(' expr ':>' typexpr ')'@ coerces the expression @expr@
 to type @typexpr@.
 %
 The expression @'(' expr ':' typexpr_1 ':>' typexpr_2 ')'@ coerces the
-expression @expr@ from type @typexpr_1@ to type @typexpr_2@. It is
-more general than the previous one.
+expression @expr@ from type @typexpr_1@ to type @typexpr_2@.
+%
+The former operator will sometimes fail to coerce an expression @expr@
+from a type @t@ to a type @t'@ even if type @t@ is a subtype of type
+@t'@. In this case, the latter operator should be used.
 
 \subsubsection*{Object duplication}
 
