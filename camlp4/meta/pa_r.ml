@@ -359,7 +359,7 @@ EXTEND
       | "["; "]" -> <:expr< [] >>
       | "["; el = LIST1 expr SEP ";"; last = OPT [ "::"; e = expr -> e ];
         "]" ->
-          <:expr< $mklistexp loc last el$ >>
+          mklistexp loc last el
       | "[|"; el = LIST0 expr SEP ";"; "|]" -> <:expr< [| $list:el$ |] >>
       | "{"; lel = LIST1 label_expr SEP ";"; "}" -> <:expr< { $list:lel$ } >>
       | "{"; "("; e = SELF; ")"; "with"; lel = LIST1 label_expr SEP ";";
@@ -467,7 +467,7 @@ EXTEND
       | "["; "]" -> <:patt< [] >>
       | "["; pl = LIST1 patt SEP ";"; last = OPT [ "::"; p = patt -> p ];
         "]" ->
-          <:patt< $mklistpat loc last pl$ >>
+          mklistpat loc last pl
       | "[|"; pl = LIST0 patt SEP ";"; "|]" -> <:patt< [| $list:pl$ |] >>
       | "{"; lpl = LIST1 label_patt SEP ";"; "}" -> <:patt< { $list:lpl$ } >>
       | "("; ")" -> <:patt< () >>
