@@ -24,7 +24,7 @@ CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 
 OBJS=open.o draw.o fill.o color.o text.o \
   image.o make_img.o dump_img.o point_col.o sound.o events.o \
-  subwindow.o extend.o
+  subwindow.o draws.o
 
 all: libgraphics.a graphics.cmi graphics.cma
 
