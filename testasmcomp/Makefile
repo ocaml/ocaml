@@ -23,7 +23,8 @@ OTHEROBJS=../utils/misc.cmo ../utils/tbl.cmo \
   ../utils/clflags.cmo ../utils/config.cmo \
   ../parsing/location.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/subst.cmo \
-  ../typing/predef.cmo ../typing/datarepr.cmo ../typing/env.cmo \
+  ../typing/primitive.cmo ../typing/predef.cmo ../typing/printtyp.cmo \
+  ../typing/datarepr.cmo ../typing/env.cmo \
   ../bytecomp/lambda.cmo \
   ../asmcomp/arch.cmo ../asmcomp/cmm.cmo ../asmcomp/printcmm.cmo \
   ../asmcomp/clambda.cmo ../asmcomp/compilenv.cmo \
@@ -96,7 +97,7 @@ tagged-integr.out: main.c tagged-integr.o $(ARCH).o
 	$(CC) $(CFLAGS) -o tagged-integr.out -DINT_FLOAT -DFUN=test main.c tagged-integr.o $(ARCH).o
 
 .SUFFIXES:
-.SUFFIXES: .cmm .c .o .asm .ml .mli .cmo .cmi
+.SUFFIXES: .cmm .c .o .asm .S .ml .mli .cmo .cmi
 
 .ml.cmo:
 	$(CAMLC) $(COMPFLAGS) -c $<
@@ -110,6 +111,9 @@ tagged-integr.out: main.c tagged-integr.o $(ARCH).o
 
 .asm.o:
 	$(AS) $(ASFLAGS) -o $*.o $*.asm
+
+.S.o:
+	$(CC) -c $(ASFLAGS) $*.S
 
 clean::
 	rm -f *.out *.cm[io] *.s *.o *~
