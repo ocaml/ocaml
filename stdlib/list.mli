@@ -3,6 +3,7 @@
 val length : 'a list -> int
 val hd : 'a list -> 'a
 val tl : 'a list -> 'a list
+val nth : 'a list -> int -> 'a
 val rev : 'a list -> 'a list
 val flatten : 'a list list -> 'a list
 val iter : ('a -> 'b) -> 'a list -> unit

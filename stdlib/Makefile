@@ -1,7 +1,8 @@
 include ../Makefile.config
 
+RUNTIME=../boot/camlrun
 COMPILER=../camlc
-CAMLC=../byterun/camlrun $(COMPILER)
+CAMLC=$(RUNTIME) $(COMPILER)
 CAMLDEP=../tools/camldep
 
 OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
@@ -44,6 +45,7 @@ $(OBJS:.cmo=.cmi): $(COMPILER)
 
 clean:
 	rm -f *.cm[ioa]
+	rm -f cslheader
 	rm -f *~
 
 include .depend

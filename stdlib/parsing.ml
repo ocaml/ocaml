@@ -2,7 +2,8 @@
 
 type parse_tables =
   { actions : (unit -> Obj.t) array;
-    transl : int array;
+    transl_const : int array;
+    transl_block : int array;
     lhs : string;
     len : string;
     defred : string;
@@ -128,7 +129,10 @@ let yyparse tables start lexer lexbuf =
         Obj.magic v
     | _ ->
         current_lookahead_fun :=
-          (fun tok -> tables.transl.(Obj.tag tok) = curr_char);
+          (fun tok ->
+            if Obj.is_block tok
+            then tables.transl_block.(Obj.tag tok) = curr_char
+            else tables.transl_const.(Obj.magic tok) = curr_char);
         raise exn
 
 let peek_val n =

@@ -12,6 +12,11 @@ let tl = function
     [] -> failwith "tl"
   | a::l -> l
 
+let rec nth l n =
+  match l with
+    [] -> failwith "nth"
+  | a::l -> if n <= 0 then a else nth l (n-1)
+
 let rec rev_append accu = function
     [] -> accu
   | a::l -> rev_append (a :: accu) l

@@ -31,7 +31,8 @@ exception Parse_error
 
 type parse_tables =
   { actions : (unit -> Obj.t) array;
-    transl : int array;
+    transl_const : int array;
+    transl_block : int array;
     lhs : string;
     len : string;
     defred : string;
