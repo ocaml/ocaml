@@ -27,7 +27,7 @@ DEPFLAGS=
 OBJS=parser.cmo lexer.cmo lexgen.cmo compact.cmo output.cmo main.cmo
 
 all: ocamllex
-allopt: ocamllex.op
+allopt: ocamllex.opt
 
 ocamllex: $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamllex $(OBJS)
