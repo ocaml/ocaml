@@ -227,7 +227,7 @@ value int32_format(value fmt, value arg)      /* ML */
   char * buffer;
   value res;
 
-  buffer = parse_format(fmt, "l", format_string, default_format_buffer);
+  buffer = parse_format(fmt, "", format_string, default_format_buffer);
   sprintf(buffer, format_string, (long) Int32_val(arg));
   res = copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
@@ -438,8 +438,8 @@ value int64_of_string(value s)
 
 static int nativeint_compare(value v1, value v2)
 {
-  long i1 = Int32_val(v1);
-  long i2 = Int32_val(v2);
+  long i1 = Nativeint_val(v1);
+  long i2 = Nativeint_val(v2);
   return i1 == i2 ? 0 : i1 < i2 ? -1 : 1;
 }
 
@@ -545,7 +545,7 @@ value nativeint_shift_right(value v1, value v2)  /* ML */
 { return copy_nativeint(Nativeint_val(v1) >> Int_val(v2)); }
 
 value nativeint_shift_right_unsigned(value v1, value v2)  /* ML */
-{ return copy_nativeint((uint32)Nativeint_val(v1) >> Int_val(v2)); }
+{ return copy_nativeint((unsigned long)Nativeint_val(v1) >> Int_val(v2)); }
 
 value nativeint_of_int(value v) /* ML */
 { return copy_nativeint(Long_val(v)); }
