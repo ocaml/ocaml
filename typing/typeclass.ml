@@ -26,7 +26,8 @@ type error =
   | Virtual_class of string * string
   | Closed_class of string
   | Closed_ancestor of string * Path.t * string
-  | Non_closed of Ident.t * type_expr list * type_expr
+  | Non_closed of Ident.t * type_expr list * type_expr *
+                  Ctype.closed_schema_result
   | Mutable_var of string
   | Undefined_var of string
   | Variable_type_mismatch of string * (type_expr * type_expr) list
@@ -118,7 +119,9 @@ let make_stub env cl =
   Ctype.generalize concr;
 
   (* Temporary object type *)
-  let temp_obj_params = List.map (fun _ -> Ctype.newvar ()) cl.pcl_param in
+  let temp_obj_params =
+    List.map (fun _ -> Ctype.newvar ()) (fst cl.pcl_param)
+  in
   let temp_obj = Ctype.instance self in
   let obj_temp_abbrev =
     { type_params = temp_obj_params;
@@ -136,7 +139,7 @@ let make_stub env cl =
       (temp_obj_params,
        Ctype.newty (Tconstr(Path.Pident obj_id, temp_obj_params, ref [])))
     else begin
-      let params = List.map (fun _ -> Ctype.newvar ()) cl.pcl_param in
+      let params = List.map (fun _ -> Ctype.newvar ()) (fst cl.pcl_param) in
       let ty = Ctype.instance self in
       Ctype.set_object_name ty params obj_id;
       (params, ty)
@@ -378,16 +381,16 @@ let transl_class temp_env env
 
   (* Introduce parameters *)
   let params =
-    try List.map enter_type_variable cl.pcl_param with Already_bound ->
-      raise(Error(cl.pcl_loc, Repeated_parameter)) in
+    try
+      List.map (enter_type_variable true) (fst cl.pcl_param)
+    with Already_bound ->
+      raise(Error(snd cl.pcl_param, Repeated_parameter))
+  in
 
   (* Bind self type variable *)
-  begin try
-    match cl.pcl_self_ty with
-      Some v -> Ctype.unify temp_env self (enter_type_variable v)
+  begin match cl.pcl_self_ty with
+      Some v -> Ctype.unify temp_env self (enter_type_variable false v)
     | None   -> ()
-  with Already_bound ->
-    raise(Error(cl.pcl_loc, Repeated_parameter))
   end;
 
   (* Add constraints *)
@@ -557,9 +560,12 @@ let make_abbrev env
   Ctype.close_object obj_ty;
   Ctype.end_def ();
   List.iter Ctype.generalize obj_ty_params;
-  if not (Ctype.closed_schema obj_ty) then
-    raise(Error(cl.pcl_loc,
-                Non_closed(obj_id, obj_ty_params, obj_ty)));
+  begin match Ctype.closed_schema_verbose obj_ty with
+    None -> ()
+  | Some v ->
+      raise(Error(cl.pcl_loc,
+                  Non_closed(obj_id, obj_ty_params, obj_ty, v)))
+  end;
   Ctype.generalize obj_ty;
   let obj_abbrev =
     { type_params = obj_ty_params;
@@ -596,7 +602,7 @@ let transl_classes env cl =
 let enter_class env cl =
   let abstr_type =
     { type_params = [];
-      type_arity = List.length cl.pcty_param;
+      type_arity = List.length (fst cl.pcty_param);
       type_kind = Type_abstract;
       type_manifest = None }
   in
@@ -745,17 +751,16 @@ let build_abbrevs temp_env env (cl, obj_id) =
 
   (* Introduce parameters *)
   let params =
-    try List.map enter_type_variable cl.pcty_param with Already_bound ->
-      raise(Error(cl.pcty_loc, Repeated_parameter))
+    try
+      List.map (enter_type_variable true) (fst cl.pcty_param)
+    with Already_bound ->
+      raise(Error(snd cl.pcty_param, Repeated_parameter))
   in
 
   (* Bind self type variable *)
-  begin try
-    match cl.pcty_self with
-      Some v -> Ctype.unify temp_env self (enter_type_variable v)
+  begin match cl.pcty_self with
+      Some v -> Ctype.unify temp_env self (enter_type_variable false v)
     | None   -> ()
-  with Already_bound ->
-    raise(Error(cl.pcty_loc, Repeated_parameter))
   end;
 
   (* Translate argument types *)
@@ -794,9 +799,12 @@ let build_abbrevs temp_env env (cl, obj_id) =
   Ctype.close_object obj_ty;
   Ctype.end_def ();
   List.iter Ctype.generalize obj_params;
-  if not (Ctype.closed_schema obj_ty) then
-    raise(Error(cl.pcty_loc,
-                Non_closed(obj_id, obj_params, obj_ty)));
+  begin match Ctype.closed_schema_verbose obj_ty with
+    None -> ()
+  | Some v ->
+      raise(Error(cl.pcty_loc,
+                  Non_closed(obj_id, obj_params, obj_ty, v)))
+  end;
   Ctype.generalize obj_ty;
   let obj_abbrev =
     { type_params = obj_params;
@@ -872,10 +880,10 @@ let build_class_type env
 
   (* Re-introduce parameters and bind self type variable *)
   List.iter2
-    (fun v ty -> Ctype.unify env (enter_type_variable v) ty)
-    cl.pcty_param params;
+    (fun v ty -> Ctype.unify env (enter_type_variable true v) ty)
+    (fst cl.pcty_param) params;
   begin match cl.pcty_self with
-    Some v -> Ctype.unify env (enter_type_variable v) self
+    Some v -> Ctype.unify env (enter_type_variable false v) self
   | None   -> ()
   end;
 
@@ -976,12 +984,18 @@ let report_error = function
       Printtyp.path anc; print_space ();
       print_string "which has no method"; print_space ();
       print_string met
-  | Non_closed (id, args, typ) ->
+  | Non_closed (id, args, typ, var) ->
       open_hovbox 0;
       Printtyp.reset ();
       Printtyp.mark_loops typ;
-      print_string
-        "Some type variables are not bound in implicit type definition";
+      begin match var with
+        Ctype.Var v ->
+          print_string "The type variable"; print_space ();
+          Printtyp.type_expr v; print_space ();
+          print_string "is not bound in implicit type definition"
+      | _ ->
+          print_string "Unbound row variable in implicit type definition"
+      end;
       print_break 1 2;
       open_hovbox 0;
       Printtyp.type_expr (Ctype.newty (Tconstr(Path.Pident id, args, ref [])));
@@ -990,7 +1004,7 @@ let report_error = function
       close_box ();
       close_box ();
       print_space ();
-      print_string "They should all be captured by a class type parameter."
+      print_string "It should be captured by a class type parameter"
   | Mutable_var v ->
       print_string "The variable"; print_space ();
       print_string v; print_space ();

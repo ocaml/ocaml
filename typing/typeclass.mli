@@ -33,7 +33,8 @@ type error =
   | Virtual_class of string * string
   | Closed_class of string
   | Closed_ancestor of string * Path.t * string
-  | Non_closed of Ident.t * type_expr list * type_expr
+  | Non_closed of Ident.t * type_expr list * type_expr *
+                  Ctype.closed_schema_result
   | Mutable_var of string
   | Undefined_var of string
   | Variable_type_mismatch of string * (type_expr * type_expr) list

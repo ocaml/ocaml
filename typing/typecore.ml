@@ -40,9 +40,10 @@ type error =
   | Virtual_class of Longident.t
   | Unbound_instance_variable of string
   | Instance_variable_not_mutable of string
-  | Not_subtype of type_expr * type_expr
+  | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
   | Value_multiply_overridden of string
+  | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
 
 exception Error of Location.t * error
 
@@ -454,25 +455,32 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = instance Predef.type_unit }
   | Pexp_constraint(sarg, sty, sty') ->
-      let (ty, ty') =
+      let (arg, ty') =
         match (sty, sty') with
-      	  (None, None) ->
-	    none, none
+      	  (None, None) ->               (* Case actually unused *)
+            let arg = type_exp env sarg in
+	    (arg, arg.exp_type)
 	| (Some sty, None) ->
             let ty = Typetexp.transl_simple_type env false sty in
-	    (ty, ty)
+            (type_expect env sarg ty, ty)
 	| (None, Some sty') ->
             let ty' = Typetexp.transl_simple_type env false sty' in
-            (enlarge_type env (Typetexp.type_variable_list ()) ty', ty')
+            let ty = enlarge_type env (Typetexp.type_variable_list ()) ty' in
+            let arg = type_exp env sarg in
+            begin try Ctype.unify env arg.exp_type ty with Unify trace ->
+              raise(Error(sarg.pexp_loc,
+                    Coercion_failure(ty', full_expand env ty', trace)))
+            end;
+            (arg, ty')
 	| (Some sty, Some sty') ->
             let ty = Typetexp.transl_simple_type env false sty in
             let ty' = Typetexp.transl_simple_type env false sty' in
 	    begin try subtype env (Typetexp.type_variable_list ()) ty ty' with
-	      Unify _ ->
-	        raise(Error(sexp.pexp_loc, Not_subtype(ty, ty')))
+	      Subtype (tr1, tr2) ->
+	        raise(Error(sexp.pexp_loc, Not_subtype(tr1, tr2)))
 	    end;
-	    (ty, ty')
-      in let arg = type_expect env sarg ty in
+	    (type_expect env sarg ty, ty')
+      in
       { exp_desc = arg.exp_desc;
         exp_loc = arg.exp_loc;
         exp_type = ty' }
@@ -783,16 +791,30 @@ let report_error = function
   | Instance_variable_not_mutable v ->
       print_string " The instance variable "; print_string v;
       print_string " is not mutable"
-  | Not_subtype(ty, ty') ->
+  | Not_subtype(tr1, tr2) ->
       reset ();
-      mark_loops ty; mark_loops ty';
-      open_hovbox 0;
-      type_expr ty; print_space();
-      print_string "is not a subtype of"; print_space ();
-      type_expr ty';
-      close_box()
+      List.iter
+        (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
+        tr1;
+      List.iter
+        (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
+        tr2;
+      trace true (fun _ -> print_string "is not a subtype of") tr1;
+      trace false (fun _ -> print_string "is not compatible with type") tr2
   | Outside_class ->
       print_string "Object duplication outside a class definition."
   | Value_multiply_overridden v ->
       print_string "The instance variable "; print_string v;
       print_string " is overridden several times"
+  | Coercion_failure (ty, ty', trace) ->
+      unification_error trace
+        (function () ->
+           mark_loops ty; if ty' != ty then mark_loops ty';
+           print_string "This expression cannot be coerced to type";
+           print_break 1 2;
+           type_expansion ty ty';
+           print_string ";";
+           print_space ();
+           print_string "it has type")
+        (function () ->
+           print_string "but is here used with type")

@@ -115,7 +115,7 @@ type class_type_field =
 
 type class_type =
   { pcty_name: string;
-    pcty_param: string list;
+    pcty_param: string list * Location.t;
     pcty_args: core_type list;
     pcty_self: string option;
     pcty_cstr: (string * core_type * Location.t) list;
@@ -134,7 +134,7 @@ type class_field =
 
 type class_def =
   { pcl_name: string;
-    pcl_param: string list;
+    pcl_param: string list * Location.t;
     pcl_args: pattern list;
     pcl_self: string option;
     pcl_self_ty: string option;

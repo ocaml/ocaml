@@ -54,11 +54,13 @@ val instance_class:
       	class_type ->
         type_expr list * type_expr list *
         (mutable_flag * type_expr) Vars.t * type_expr
-val expand_abbrev :
+val expand_abbrev:
         Env.t -> Path.t -> type_expr list -> (Path.t * type_expr) list ref ->
 	int -> type_expr
 	(* Expand an abbreviation *)
-val occur : Env.t -> type_expr -> type_expr -> unit
+val full_expand: Env.t -> type_expr -> type_expr
+val expand_root: Env.t -> type_expr -> type_expr
+val occur: Env.t -> type_expr -> type_expr -> unit
         (* [occur env var ty] Raise [Unify] if [var] occurs in [ty] *)
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
@@ -79,6 +81,8 @@ val enlarge_type: Env.t -> type_expr list -> type_expr -> type_expr
       	(* Make a type larger *)
 val subtype : Env.t -> type_expr list -> type_expr -> type_expr -> unit
 val closed_schema: type_expr -> bool
+type closed_schema_result = Var of type_expr | Row_var of type_expr
+val closed_schema_verbose: type_expr -> closed_schema_result option
         (* Check whether the given type scheme contains no non-generic
            type variables *)
 val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr
@@ -103,7 +107,6 @@ val close_object: type_expr -> unit
 val set_object_name:
       	type_expr -> type_expr list -> Ident.t -> unit
 val remove_object_name: type_expr -> unit
-val expand_root: Env.t -> type_expr -> type_expr
 val correct_abbrev: Env.t -> Ident.t -> type_expr list -> type_expr -> unit
 val unroll_abbrev: Ident.t -> type_expr list -> type_expr -> type_expr
 val is_generic: type_expr -> bool
@@ -114,6 +117,8 @@ val none: type_expr
         (* A dummy type expression *)
 
 exception Unify of (type_expr * type_expr) list
+exception Subtype of
+        (type_expr * type_expr) list * (type_expr * type_expr) list
 exception Cannot_expand
 exception Nonlinear_abbrev
 exception Recursive_abbrev

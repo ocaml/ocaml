@@ -650,13 +650,17 @@ class_list:
 ;
 class_def:
         virtual_flag closed_flag
-      	type_parameters LIDENT simple_pattern_list self self_type EQUAL
+      	class_type_parameters LIDENT simple_pattern_list self self_type EQUAL
         constraints class_fields
 	  { { pcl_name = $4; pcl_param = $3; pcl_args = List.rev $5;
       	      pcl_self = $6; pcl_self_ty = $7; pcl_cstr = List.rev $9;
 	      pcl_field = List.rev $10;
 	      pcl_kind = $1; pcl_closed = $2;
       	      pcl_loc = symbol_loc () } }
+;
+class_type_parameters:
+        type_parameters
+          { $1, symbol_loc () }
 ;
 simple_pattern_list:
         simple_pattern
@@ -711,7 +715,8 @@ class_type_list:
       	  { [$1] }
 ;
 class_type:
-        virtual_flag closed_flag type_parameters LIDENT type_list self_type
+        virtual_flag closed_flag class_type_parameters LIDENT type_list
+        self_type
 	EQUAL
         constraints class_type_fields
 	  { { pcty_name = $4; pcty_param = $3; pcty_args = $5;

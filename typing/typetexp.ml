@@ -40,9 +40,11 @@ let reset_type_variables () =
   reset_global_level ();
   type_variables := Tbl.empty
 
-let enter_type_variable name =
+let enter_type_variable strict name =
   try
-    Tbl.find name !type_variables; raise Already_bound
+    let v = Tbl.find name !type_variables in
+    if strict then raise Already_bound;
+    v
   with Not_found ->
     let v = new_global_var() in
     type_variables := Tbl.add name v !type_variables;

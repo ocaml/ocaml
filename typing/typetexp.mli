@@ -18,7 +18,7 @@ val transl_simple_type:
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Typedtree.type_expr
 val reset_type_variables: unit -> unit
-val enter_type_variable: string -> Typedtree.type_expr
+val enter_type_variable: bool -> string -> Typedtree.type_expr
 val type_variable : Location.t -> string -> Typedtree.type_expr
 val type_variable_list : unit -> Typedtree.type_expr list
 
