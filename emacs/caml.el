@@ -1612,18 +1612,19 @@ by |, insert one."
                              0)
                             abbrev-correct)))))))
 
-(defun caml-indent-phrase ()
-  (interactive "*")
-  (let ((bounds (caml-mark-phrase)))
-    (indent-region (car bounds) (cdr bounds) nil)))
+; (defun caml-indent-phrase ()
+;   (interactive "*")
+;   (let ((bounds (caml-mark-phrase)))
+;     (indent-region (car bounds) (cdr bounds) nil)))
 
-; (defun caml-indent-phrase (arg)
-;   (interactive "p")
-;   (save-excursion
-;     (let ((beg (caml-find-phrase)))
-;     (while (progn (setq arg (- arg 1)) (> arg 0))
-;       (caml-find-region))
-;     (indent-region beg (point) nil))))
+(defun caml-indent-phrase (arg)
+  "Indent current phrase
+with prefix arg, indent that many phrases starting with the current phrase."
+  (interactive "p")
+  (save-excursion
+    (let ((beg (caml-find-phrase)))
+    (while (progn (setq arg (- arg 1)) (> arg 0)) (caml-find-phrase))
+    (indent-region beg (point) nil))))
 
 (defun caml-indent-buffer ()
   (interactive)
