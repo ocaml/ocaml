@@ -22,11 +22,12 @@ static void gr_free_image(im)
   if (Mask_im(im) != None) XFreePixmap(grdisplay, Mask_im(im));
 }
 
+#define Max_image_mem 1000000
+
 value gr_new_image(w, h)
      int w, h;
 {
-  value res = alloc_shr(Grimage_wosize, Final_tag);
-  Final_fun(res) = gr_free_image;
+  value res = alloc_final(Grimage_wosize, gr_free_image, w*h, Max_image_mem);
   Width_im(res) = w;
   Height_im(res) = h;
   Data_im(res) = XCreatePixmap(grdisplay, grwindow.win, w, h, 
