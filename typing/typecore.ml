@@ -1541,7 +1541,7 @@ and type_expect ?in_function env sexp ty_expected =
           exp_loc = sexp.pexp_loc;
           exp_type =
             (* Terrible hack for format strings *)
-            begin match (repr ty_expected).desc with
+            begin match (repr (expand_head env ty_expected)).desc with
               Tconstr(path, _, _) when Path.same path Predef.path_format ->
                 type_format sexp.pexp_loc s
             | _ -> instance Predef.type_string
