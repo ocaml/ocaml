@@ -102,6 +102,10 @@ New or updated ports:
 
 Macintosh port:
 - Implemented the Unix and Thread libraries.
+- The toplevel application does not work on 68k Macintoshes; maybe
+  later if there's a demand.
+- Added a new tool, ocamlmkappli, to build an application from a
+  program written in O'Caml.
 
 
 Objective Caml 2.04:

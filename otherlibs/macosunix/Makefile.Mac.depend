@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 21:24:57 on 17 avr 2000 by MakeDepend
+# These dependencies were produced at 14:24:24 on 24 avr 2000 by MakeDepend
 
 :accept.c.x Ä  ¶
  :accept.c ¶
@@ -433,7 +433,7 @@
  "{CIncludes}"MixedMode.h
 
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 21:25:04 on 17 avr 2000 by MakeDepend
+# These dependencies were produced at 14:24:31 on 24 avr 2000 by MakeDepend
 
 :accept.c.o Ä  ¶
  :accept.c ¶

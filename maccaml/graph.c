@@ -40,15 +40,15 @@ RGBColor fgcolor;
 /* Convert from Caml coordinates to QD coordinates in the off-screen buffer. */
 /* Note: these conversions are self-inverse (see gr_current_point). */
 #define Bx(x) (x)
-#define By(y) (h0 - (y))
+#define By(y) (h0-1 - (y))
 
 /* Convert from Caml coordinates to QD coordinates in the window. */
-#define Wx(x) ((x) + x0)
-#define Wy(y) ((h0 - (y)) + y0)
+#define Wx(x) (Bx(x) + x0)
+#define Wy(y) (By(y) + y0)
 
 /* Convert from QD window coordinates to Caml coordinates. */
 #define Cx(x) ((x) - x0)
-#define Cy(y) (h0 - ((y) - y0))
+#define Cy(y) (h0-1 - ((y) - y0))
 
 
 /***********************************************************************/
@@ -237,18 +237,30 @@ static short cur_width, cur_font, cur_size;
   } \
 }
 
-/* Set up the current port to the off-screen buffer unconditionally.
-   This is for measurement functions that don't draw. */
-#define BeginSilent { \
+/* Set up the current port unconditionally.  This is for functions that
+   don't draw (measurements and setting the graphport state).
+   Usage: BeginOffAlways / EndOffAlways
+      or  BeginOffAlways / OnAlways / EndOffOnAlways
+   */
+#define BeginOffAlways { \
   CGrafPtr _saveport_; \
   GDHandle _savegdev_; \
   GetGWorld (&_saveport_, &_savegdev_); \
   LockPixels (GetGWorldPixMap (gworld)); \
   SetGWorld ((CGrafPtr) gworld, NULL);
 
-#define EndSilent \
+#define EndOffAlways \
   SetGWorld (_saveport_, _savegdev_); \
   UnlockPixels (GetGWorldPixMap (gworld)); \
+}
+
+#define OnAlways \
+  SetGWorld (_saveport_, _savegdev_); \
+  UnlockPixels (GetGWorldPixMap (gworld)); \
+  SetPort (winGraphics); \
+
+#define EndOffOnAlways \
+  SetPort ((GrafPtr) _saveport_); \
 }
 
 /* Convert a red, green, or blue value from 8 bits to 16 bits. */
@@ -284,7 +296,7 @@ static void gr_check_open (void)
    in one major GC cycle.  The GC will speed up to match this allocation
    speed.
 */
-#define Max_image_mem 1000000   /* XXX Should use user pref. */
+#define Max_image_mem 1000000   /*FIXME Should use user pref. */
 
 #define Transparent (-1)
 
@@ -425,12 +437,11 @@ value gr_sigio_handler (value unit)           /* Not used on MacOS */
 value gr_synchronize (value unit)
 {
 #pragma unused (unit)
-  GrafPtr port;
+  GrafPtr saveport;
   
-  GetPort (&port);
-  SetPort (winGraphics);
+  PushWindowPort (winGraphics);
   GraphUpdate ();
-  SetPort (port);
+  PopPort;
   return Val_unit;
 }
 
@@ -480,11 +491,11 @@ value gr_set_color (value vrgb)
   fgcolor.red = RGB8to16 ((rgb >> 16) & 0xFF);
   fgcolor.green = RGB8to16 ((rgb >> 8) & 0xFF);
   fgcolor.blue = RGB8to16 (rgb & 0xFF);
-  BeginOff
+  BeginOffAlways
     RGBForeColor (&fgcolor);
-  On
+  OnAlways
     RGBForeColor (&fgcolor);
-  EndOffOn
+  EndOffOnAlways
   return Val_unit;
 }
 
@@ -494,9 +505,9 @@ value gr_plot (value vx, value vy)
 
   gr_check_open ();
   BeginOff
-    SetCPixel (Bx (x), By (y+1), &fgcolor);
+    SetCPixel (Bx (x), By (y) - 1, &fgcolor);
   On
-    SetCPixel (Wx (x), Wy (y+1), &fgcolor);
+    SetCPixel (Wx (x), Wy (y) - 1, &fgcolor);
   EndOffOn
   return Val_unit;
 }
@@ -508,9 +519,9 @@ value gr_point_color (value vx, value vy)
 
   gr_check_open ();
   if (x < 0 || x >= w0 || y < 0 || y >= h0) return Val_long (-1);
-  BeginSilent
-    GetCPixel (Bx (x), By (y+1), &c);
-  EndSilent
+  BeginOffAlways
+    GetCPixel (Bx (x), By (y) - 1, &c);
+  EndOffAlways
   return Val_long (((c.red & 0xFF00) << 8)
                    | (c.green & 0xFF00)
                    | ((c.blue & 0xFF00) >> 8));
@@ -521,11 +532,6 @@ value gr_moveto (value vx, value vy)
   XY;
 
   gr_check_open ();
-  BeginOff
-    MoveTo (Bx (x), By (y));
-  On
-    MoveTo (Wx (x), Wy (y));
-  EndOffOn
   cur_x = x; cur_y = y;
   return Val_unit;
 }
@@ -549,12 +555,15 @@ value gr_current_y (value unit)
 value gr_lineto (value vx, value vy)
 {
   XY;
+  int delta = cur_width / 2;
 
   gr_check_open ();
   BeginOff
-    LineTo (Bx (x), By (y));
+    MoveTo (Bx (cur_x) - delta, By (cur_y) - delta);
+    LineTo (Bx (x) - delta, By (y) - delta);
   On
-    LineTo (Wx (x), Wy (y));
+    MoveTo (Wx (cur_x) - delta, Wy (cur_y) - delta);
+    LineTo (Wx (x) - delta, Wy (y) - delta);
   EndOffOn
   cur_x = x; cur_y = y;
   return Val_unit;
@@ -565,13 +574,15 @@ value gr_draw_rect (value vx, value vy, value vw, value vh)
   XY;
   long w = Long_val (vw), h = Long_val (vh);
   Rect r;
+  int d1 = cur_width / 2;
+  int d2 = cur_width - d1;
 
   gr_check_open ();
   BeginOff
-    SetRect (&r, Bx (x), By (y+h), Bx (x+w), By (y));
+    SetRect (&r, Bx (x) - d1, By (y+h) - d1, Bx (x+w) + d2, By (y) + d2);
     FrameRect (&r);
   On
-    SetRect (&r, Wx (x), Wy (y+h), Wx (x+w), Wy (y));
+    SetRect (&r, Wx (x) - d1, Wy (y+h) - d1, Wx (x+w) + d2, Wy (y) + d2);
     FrameRect (&r);
   EndOffOn
   return Val_unit;
@@ -591,13 +602,15 @@ value gr_draw_arc_nat (value vx, value vy, value vrx, value vry, value va1,
   long a1 = Long_val (va1), a2 = Long_val (va2);
   Rect r;
   long qda1 = 90 - a1, qda2 = 90 - a2;
+  int d1 = cur_width / 2;
+  int d2 = cur_width - d1;
 
   gr_check_open ();
   BeginOff
-    SetRect (&r, Bx (x-rx), By (y+ry), Bx (x+rx), By (y-ry));
+    SetRect (&r, Bx(x-rx) - d1, By(y+ry) - d1, Bx(x+rx) + d2, By(y-ry) + d2);
     FrameArc (&r, qda1, qda2 - qda1);
   On
-    SetRect (&r, Wx (x-rx), Wy (y+ry), Wx (x+rx), Wy (y-ry));
+    SetRect (&r, Wx(x-rx) - d1, Wy(y+ry) - d1, Wx(x+rx) + d2, Wy(y-ry) + d2);
     FrameArc (&r, qda1, qda2 - qda1);
   EndOffOn
   return Val_unit;
@@ -609,11 +622,11 @@ value gr_set_line_width (value vwidth)
 
   if (width == 0) width = 1;
   gr_check_open ();
-  BeginOff
+  BeginOffAlways
     PenSize (width, width);
-  On
+  OnAlways
     PenSize (width, width);
-  EndOffOn
+  EndOffOnAlways
   cur_width = width;
   return Val_unit;
 }
@@ -640,8 +653,8 @@ value gr_fill_poly (value vpoints)
   long i, n = Wosize_val (vpoints);
   PolyHandle p;
 
-  #define Bxx(i) Bx (Field (Field (vpoints, (i)), 0))
-  #define Byy(i) By (Field (Field (vpoints, (i)), 1))
+  #define Bxx(i) Bx (Int_val (Field (Field (vpoints, (i)), 0)))
+  #define Byy(i) By (Int_val (Field (Field (vpoints, (i)), 1)))
 
   gr_check_open ();
   if (n < 1) return Val_unit;
@@ -686,19 +699,34 @@ value gr_fill_arc_nat (value vx, value vy, value vrx, value vry, value va1,
   return Val_unit;
 }
 
+static void draw_text (char *txt, unsigned long len)
+{
+  FontInfo info;
+  unsigned long w;
+  
+  if (len > 32767) len = 32767;
+
+  BeginOffAlways
+    GetFontInfo (&info);
+    w = TextWidth (txt, 0, len);
+  EndOffAlways
+
+  gr_check_open ();
+  BeginOff
+    MoveTo (Bx (cur_x), By (cur_y) - info.descent);
+    DrawText (txt, 0, len);
+  On
+    MoveTo (Wx (cur_x), Wy (cur_y) - info.descent);
+    DrawText (txt, 0, len);
+  EndOffOn
+  cur_x += w;
+}
+
 value gr_draw_char (value vchr)
 {
   char c = Int_val (vchr);
 
-  gr_check_open ();
-  BeginOff
-    DrawChar (c);
-  On
-    DrawChar (c);
-  EndOffOn
-  BeginSilent
-    cur_x += CharWidth (c);
-  EndSilent
+  draw_text (&c, 1);
   return Val_unit;
 }
 
@@ -707,16 +735,7 @@ value gr_draw_string (value vstr)
   mlsize_t len = string_length (vstr);
   char *str = String_val (vstr);
 
-  gr_check_open ();
-  if (len > 32767) len = 32767;
-  BeginOff
-    DrawText (str, 0, len);
-  On
-    DrawText (str, 0, len);
-  EndOffOn
-  BeginSilent
-    cur_x = TextWidth (str, 0, len);
-  EndSilent
+  draw_text (str, len);
   return Val_unit;
 }
 
@@ -728,11 +747,11 @@ value gr_set_font (value vfontname)
   gr_check_open ();
   CopyCStringToPascal (String_val (vfontname), pfontname);
   GetFNum (pfontname, &fontnum);
-  BeginOff
+  BeginOffAlways
     TextFont (fontnum);
-  On
+  OnAlways
     TextFont (fontnum);
-  EndOffOn
+  EndOffOnAlways
   cur_font = fontnum;
   return Val_unit;
 }
@@ -742,11 +761,11 @@ value gr_set_text_size (value vsz)
   short sz = Int_val (vsz);
 
   gr_check_open ();
-  BeginOff
+  BeginOffAlways
     TextSize (sz);
-  On
+  OnAlways
     TextSize (sz);
-  EndOffOn
+  EndOffOnAlways
   cur_size = sz;
   return Val_unit;
 }
@@ -759,11 +778,11 @@ value gr_text_size (value vstr)
   FontInfo info;
   long w, h;
 
-  BeginSilent
+  BeginOffAlways
     GetFontInfo (&info);
     w = TextWidth (str, 0, len);
     h = info.ascent + info.descent;
-  EndSilent
+  EndOffAlways
   Field (result, 0) = Val_long (w);
   Field (result, 1) = Val_long (h);
   return result;

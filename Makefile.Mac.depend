@@ -6,12 +6,10 @@
 :utils:clflags.cmxÄ :utils:config.cmx 
 :utils:config.cmoÄ :utils:config.cmi 
 :utils:config.cmxÄ :utils:config.cmi 
-:utils:formatmsg.cmoÄ :utils:formatmsg.cmi 
-:utils:formatmsg.cmxÄ :utils:formatmsg.cmi 
 :utils:misc.cmoÄ :utils:misc.cmi 
 :utils:misc.cmxÄ :utils:misc.cmi 
-:utils:tbl.cmoÄ :utils:formatmsg.cmi :utils:tbl.cmi 
-:utils:tbl.cmxÄ :utils:formatmsg.cmx :utils:tbl.cmi 
+:utils:tbl.cmoÄ :utils:tbl.cmi 
+:utils:tbl.cmxÄ :utils:tbl.cmi 
 :utils:terminfo.cmoÄ :utils:terminfo.cmi 
 :utils:terminfo.cmxÄ :utils:terminfo.cmi 
 :utils:warnings.cmoÄ :utils:warnings.cmi 
@@ -47,12 +45,10 @@
 :parsing:parser.cmxÄ :parsing:asttypes.cmi :utils:clflags.cmx ¶
     :parsing:location.cmx :parsing:longident.cmx :parsing:parsetree.cmi ¶
     :parsing:pstream.cmx :parsing:syntaxerr.cmx :parsing:parser.cmi 
-:parsing:printast.cmoÄ :parsing:asttypes.cmi :utils:formatmsg.cmi ¶
-    :parsing:location.cmi :parsing:longident.cmi :parsing:parsetree.cmi ¶
-    :parsing:printast.cmi 
-:parsing:printast.cmxÄ :parsing:asttypes.cmi :utils:formatmsg.cmx ¶
-    :parsing:location.cmx :parsing:longident.cmx :parsing:parsetree.cmi ¶
-    :parsing:printast.cmi 
+:parsing:printast.cmoÄ :parsing:asttypes.cmi :parsing:location.cmi ¶
+    :parsing:longident.cmi :parsing:parsetree.cmi :parsing:printast.cmi 
+:parsing:printast.cmxÄ :parsing:asttypes.cmi :parsing:location.cmx ¶
+    :parsing:longident.cmx :parsing:parsetree.cmi :parsing:printast.cmi 
 :parsing:pstream.cmoÄ :parsing:asttypes.cmi :parsing:location.cmi ¶
     :parsing:longident.cmi :parsing:parsetree.cmi :parsing:pstream.cmi 
 :parsing:pstream.cmxÄ :parsing:asttypes.cmi :parsing:location.cmx ¶
