@@ -41,10 +41,13 @@ let usage speclist errmsg =
   List.iter (function (key, _, doc) -> eprintf "  %s %s\n" key doc) speclist
 ;;
 
+let current = ref 0;;
+
 let parse speclist anonfun errmsg =
+  let initpos = !current in
   let stop error =
     let progname =
-      if Array.length Sys.argv > 0 then Sys.argv.(0) else "(?)" in
+      if initpos < Array.length Sys.argv then Sys.argv.(initpos) else "(?)" in
     begin match error with
       | Unknown s when s = "-help" -> ()
       | Unknown s ->
@@ -58,33 +61,43 @@ let parse speclist anonfun errmsg =
           eprintf "%s: %s.\n" progname s
     end;
     usage speclist errmsg;
-    exit 2
+    exit 2;
   in
-  let rec p = function
-    | [] -> ()
-    | s :: t ->
-        if String.length s >= 1 & String.get s 0 = '-'
-        then do_key s t
-        else begin try (anonfun s); p t with Bad m -> stop (Message m) end
-  and do_key s l =
-    let action =
-      try assoc3 s speclist
-      with Not_found -> stop (Unknown s) in
-    try
-      match (action, l) with
-      | (Unit f, l) -> f (); p l
-      | (Set r, l) -> r := true; p l
-      | (Clear r, l) -> r := false; p l
-      | (String f, arg::t) -> f arg; p t
-      | (Int f, arg::t) ->
-          begin try f (int_of_string arg)
-          with Failure "int_of_string" -> stop (Wrong (s, arg, "an integer"))
-          end;
-          p t
-      | (Float f, arg::t) -> f (float_of_string arg); p t
-      | (_, []) -> stop (Missing s)
-    with Bad m -> stop (Message m)
-  in
-    match Array.to_list Sys.argv with
-    | [] -> ()
-    | a::l -> p l
+  let l = Array.length Sys.argv in
+  incr current;
+  while !current < l do
+    let s = Sys.argv.(!current) in
+    if String.length s >= 1 & String.get s 0 = '-' then begin
+      let action =
+        try assoc3 s speclist
+        with Not_found -> stop (Unknown s)
+      in
+      begin try
+        match action with
+        | Unit f -> f ();
+        | Set r -> r := true;
+        | Clear r -> r := false;
+        | String f when !current + 1 < l ->
+            let arg = Sys.argv.(!current+1) in
+            f arg;
+            incr current;
+        | Int f when !current + 1 < l ->
+            let arg = Sys.argv.(!current+1) in
+            begin try f (int_of_string arg)
+            with Failure "int_of_string" -> stop (Wrong (s, arg, "an integer"))
+            end;
+            incr current;
+        | Float f when !current + 1 < l ->
+            let arg = Sys.argv.(!current+1) in
+            f (float_of_string arg);
+            incr current;
+        | _ -> stop (Missing s)
+      with Bad m -> stop (Message m);
+      end;
+      incr current;
+    end else begin
+      (try anonfun s with Bad m -> stop (Message m));
+      incr current;
+    end;
+  done;
+;;

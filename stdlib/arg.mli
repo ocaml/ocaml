@@ -49,7 +49,7 @@ val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
 (*
     [parse speclist anonfun usage_msg] parses the command line.
     [speclist] is a list of triples [(key, spec, doc)].
-    [key] is the option keyword, it must start with a [-].
+    [key] is the option keyword, it must start with a ['-'] character.
     [spec] gives the option type and the function to call when this option
     is found on the command line.
     [doc] is a one-line description of this option.
@@ -80,6 +80,10 @@ val usage: (string * spec * string) list -> string -> unit
 (*
     [usage speclist usage_msg]
     [speclist] and [usage_msg] are the same as for [parse].  [usage]
-    prints the same error message that [parse] prints in case of
-    error.
+    prints the same error message that [parse] prints in case of error.
+*)
+
+val current: int ref;;
+(*
+    Position (in [Sys.argv]) of the argument being processed.
 *)
