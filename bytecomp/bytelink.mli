@@ -23,6 +23,7 @@ type error =
   | Symbol_error of string * Symtable.error
   | Inconsistent_import of string * string * string
   | Custom_runtime
+  | File_exists of string
 
 exception Error of error
 

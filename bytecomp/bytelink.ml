@@ -24,6 +24,7 @@ type error =
   | Symbol_error of string * Symtable.error
   | Inconsistent_import of string * string * string
   | Custom_runtime
+  | File_exists of string
 
 exception Error of error
 
@@ -131,22 +132,22 @@ let check_consistency file_name cu =
 
 (* Link in a compilation unit *)
 
-let link_compunit outchan inchan file_name compunit =
+let link_compunit output_fun inchan file_name compunit =
   check_consistency file_name compunit;
   seek_in inchan compunit.cu_pos;
   let code_block = String.create compunit.cu_codesize in
   really_input inchan code_block 0 compunit.cu_codesize;
   Symtable.patch_object code_block compunit.cu_reloc;
-  output outchan code_block 0 compunit.cu_codesize;
+  output_fun code_block;
   if !Clflags.link_everything then
     List.iter Symtable.require_primitive compunit.cu_primitives
 
 (* Link in a .cmo file *)
 
-let link_object outchan file_name compunit =
+let link_object output_fun file_name compunit =
   let inchan = open_in_bin file_name in
   try
-    link_compunit outchan inchan file_name compunit;
+    link_compunit output_fun inchan file_name compunit;
     close_in inchan
   with
     Symtable.Error msg ->
@@ -156,10 +157,10 @@ let link_object outchan file_name compunit =
 
 (* Link in a .cma file *)
 
-let link_archive outchan file_name units_required =
+let link_archive output_fun file_name units_required =
   let inchan = open_in_bin file_name in
   try
-    List.iter (link_compunit outchan inchan file_name) units_required;
+    List.iter (link_compunit output_fun inchan file_name) units_required;
     close_in inchan
   with
     Symtable.Error msg ->
@@ -169,20 +170,19 @@ let link_archive outchan file_name units_required =
 
 (* Link in a .cmo or .cma file *)
 
-let link_file outchan = function
-    Link_object(file_name, unit) -> link_object outchan file_name unit
-  | Link_archive(file_name, units) -> link_archive outchan file_name units
+let link_file output_fun = function
+    Link_object(file_name, unit) -> link_object output_fun file_name unit
+  | Link_archive(file_name, units) -> link_archive output_fun file_name units
 
 (* Create a bytecode executable file *)
 
 let openflags =
-  match (Sys.get_config ()).Sys.os_type with
+  match Sys.os_type with
   | "MacOS" -> [Open_wronly; Open_trunc; Open_creat]
   | _ -> [Open_wronly; Open_trunc; Open_creat; Open_binary]
 ;;
 
 let link_bytecode objfiles exec_name copy_header =
-  let objfiles = "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink =
     List.fold_right scan_file objfiles [] in
   let outchan = open_out_gen openflags 0o777 exec_name in
@@ -199,7 +199,7 @@ let link_bytecode objfiles exec_name copy_header =
     let pos1 = pos_out outchan in
     Symtable.init();
     Hashtbl.clear crc_interfaces;
-    List.iter (link_file outchan) tolink;
+    List.iter (link_file (output_string outchan)) tolink;
     (* The final STOP instruction *)
     output_byte outchan Opcodes.opSTOP;
     output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
@@ -222,7 +222,73 @@ let link_bytecode objfiles exec_name copy_header =
     remove_file exec_name;
     raise x
 
-let os_type = (Sys.get_config ()).Sys.os_type;;
+(* Output a string as a C array of unsigned ints *)
+
+let output_code_string_counter = ref 0
+
+let output_code_string outchan code =
+  let pos = ref 0 in
+  let len = String.length code in
+  while !pos < len do
+    let c1 = Char.code(code.[!pos]) in
+    let c2 = Char.code(code.[!pos + 1]) in
+    let c3 = Char.code(code.[!pos + 2]) in
+    let c4 = Char.code(code.[!pos + 3]) in
+    pos := !pos + 4;
+    Printf.fprintf outchan "0x%02x%02x%02x%02x, " c4 c3 c2 c1;
+    incr output_code_string_counter;
+    if !output_code_string_counter >= 6 then begin
+      output_char outchan '\n';
+      output_code_string_counter := 0
+    end
+  done
+
+(* Output a string as a C string *)
+
+let output_data_string outchan data =
+  let counter = ref 0 in
+  output_string outchan "\"";
+  for i = 0 to String.length data - 1 do
+    Printf.fprintf outchan "\\%03o" (Char.code(data.[i]));
+    incr counter;
+    if !counter >= 16 then begin
+      output_string outchan "\\\n";
+      counter := 0
+    end
+  done;
+  output_string outchan "\";\n\n"
+
+(* Output a bytecode executable as a C file *)
+
+let link_bytecode_as_c objfiles outfile =
+  let tolink = List.fold_right scan_file objfiles [] in
+  let outchan = open_out outfile in
+  try
+    (* The bytecode *)
+    output_string outchan "static int caml_code[] = {\n";
+    Symtable.init();
+    Hashtbl.clear crc_interfaces;
+    List.iter (link_file (output_code_string outchan)) tolink;
+    (* The final STOP instruction *)
+    Printf.fprintf outchan "\n0x%x};\n\n" Opcodes.opSTOP;
+    (* The table of global data *)
+    output_string outchan "static char * caml_data =\n";
+    output_data_string outchan
+       (Obj.marshal(Obj.repr(Symtable.initial_global_table())));
+    (* The table of primitives *)
+    Symtable.output_primitives outchan;
+    (* The entry point *)
+    output_string outchan "\n
+void caml_startup(argv)
+        char ** argv;
+{
+  caml_startup_code(caml_code, sizeof(caml_code) / sizeof(int),
+                    caml_data, argv);
+}\n";
+    close_out outchan
+  with x ->
+    close_out outchan;
+    raise x
 
 (* Build a custom runtime *)
 
@@ -234,7 +300,19 @@ let rec extract suffix l =
 ;;
 
 let build_custom_runtime prim_name exec_name =
-  match os_type with
+  match Sys.os_type with
+    "Unix" ->
+      Sys.command
+       (Printf.sprintf
+          "%s -o %s -I%s %s %s -L%s -lcamlrun %s %s"
+          Config.bytecomp_c_compiler
+          exec_name
+          Config.standard_library
+          (String.concat " " (List.rev !Clflags.ccopts))
+          prim_name
+          Config.standard_library
+          (String.concat " " (List.rev !Clflags.ccobjs))
+          Config.c_libraries)
   | "Win32" ->
       Sys.command
        (Printf.sprintf
@@ -297,65 +375,64 @@ let build_custom_runtime prim_name exec_name =
 	(Filename.concat Config.standard_library "libcamlrun.x")
         libsppc)
   | _ ->
-      Sys.command
-       (Printf.sprintf
-          "%s -o %s -I%s %s %s -L%s -lcamlrun %s %s"
-          Config.bytecomp_c_compiler
-          exec_name
-          Config.standard_library
-          (String.concat " " (List.rev !Clflags.ccopts))
-          prim_name
-          Config.standard_library
-          (String.concat " " (List.rev !Clflags.ccobjs))
-          Config.c_libraries)
+    fatal_error "Bytelink.build_custom_runtime"
+
+let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
+  match Sys.os_type with
+    "MacOS" ->
+      Sys.command (Printf.sprintf
+          "mergefragment -c -t Caml \"%s\"" bytecode_name);
+      Sys.command (Printf.sprintf
+          "mergefragment \"%s\" \"%s\"" bytecode_name exec_name);
+      Sys.command (Printf.sprintf
+          "delete -i \"%s\" \"%s\" \"%s.o\" \"%s.x\""
+          bytecode_name prim_name prim_name prim_name);
+      ()
+  | _ ->
+      let oc =
+        open_out_gen [Open_wronly; Open_append; Open_binary] 0
+                                 !Clflags.exec_name in
+      let ic = open_in_bin bytecode_name in
+      copy_file ic oc;
+      close_in ic;
+      close_out oc;
+      remove_file bytecode_name;
+      remove_file prim_name
 
 (* Main entry point (build a custom runtime if needed) *)
 
 let link objfiles =
+  let objfiles = "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   if not !Clflags.custom_runtime then
     link_bytecode objfiles !Clflags.exec_name true
-  else begin
-    match os_type with
-    | "MacOS" ->
-	let bytecode_name = Filename.temp_file "camlcode" "" in
-	let prim_name = Filename.temp_file "camlprim" ".c" in
-	begin try
+  else if not !Clflags.output_c_object then begin
+    let bytecode_name = Filename.temp_file "camlcode" "" in
+    let prim_name = Filename.temp_file "camlprim" ".c" in
+    try
       link_bytecode objfiles bytecode_name false;
-      Symtable.output_primitives prim_name;
+      let poc = open_out prim_name in
+      Symtable.output_primitives poc;
+      close_out poc;
       if build_custom_runtime prim_name !Clflags.exec_name <> 0
       then raise(Error Custom_runtime);
-	  Sys.command ("mergefragment -c -t Caml \""^bytecode_name^"\"");
-	  Sys.command (Printf.sprintf
-	      "mergefragment \"%s\" \"%s\"" bytecode_name !Clflags.exec_name);
-	  Sys.command (Printf.sprintf
-	      "delete -i \"%s\" \"%s\" \"%s.o\" \"%s.x\""
-	      bytecode_name prim_name prim_name prim_name);
+      append_bytecode_and_cleanup bytecode_name !Clflags.exec_name prim_name
     with x ->
       remove_file bytecode_name;
       remove_file prim_name;
       raise x
-  end
-    | _ ->
-      let bytecode_name = Filename.temp_file "camlcode" "" in
-      let prim_name = Filename.temp_file "camlprim" ".c" in
-      try
-	link_bytecode objfiles bytecode_name false;
-	Symtable.output_primitives prim_name;
-	if build_custom_runtime prim_name !Clflags.exec_name <> 0
-	then raise(Error Custom_runtime);
-	let oc =
-	  open_out_gen [Open_wronly; Open_append; Open_binary] 0
-				   !Clflags.exec_name in
-	let ic = open_in_bin bytecode_name in
-	copy_file ic oc;
-	close_in ic;
-	close_out oc;
-	remove_file bytecode_name;
-	remove_file prim_name
-      with x ->
-	remove_file bytecode_name;
-	remove_file prim_name;
-	raise x
+  end else begin
+    let c_file =
+      Filename.chop_suffix !Clflags.object_name Config.ext_obj ^ ".c" in
+    if Sys.file_exists c_file then raise(Error(File_exists c_file));
+    try
+      link_bytecode_as_c objfiles c_file;
+      if Ccomp.compile_file c_file <> 0
+      then raise(Error Custom_runtime);
+      remove_file c_file
+    with x ->
+      remove_file c_file;
+      remove_file !Clflags.object_name;
+      raise x
   end
 
 (* Error report *)
@@ -381,4 +458,5 @@ let report_error = function
       close_box()
   | Custom_runtime ->
       print_string "Error while building custom runtime system"
-
+  | File_exists file ->
+      print_string "Cannot overwrite existing file "; print_string file

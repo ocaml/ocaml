@@ -84,25 +84,23 @@ let require_primitive name =
 
 open Printf
 
-let output_primitives prim_file_name =
-  let oc = open_out prim_file_name in
+let output_primitives outchan =
   let prim = Array.create !c_prim_table.num_cnt "" in
   Tbl.iter (fun name number -> prim.(number) <- name) !c_prim_table.num_tbl;
   for i = 0 to Array.length prim - 1 do
-    fprintf oc "extern long %s();\n" prim.(i)
+    fprintf outchan "extern long %s();\n" prim.(i)
   done;
-  fprintf oc "typedef long (*primitive)();\n";
-  fprintf oc "primitive cprim[] = {\n";
+  fprintf outchan "typedef long (*primitive)();\n";
+  fprintf outchan "primitive cprim[] = {\n";
   for i = 0 to Array.length prim - 1 do
-    fprintf oc "  %s,\n" prim.(i)
+    fprintf outchan "  %s,\n" prim.(i)
   done;
-  fprintf oc "  (primitive) 0 };\n";
-  fprintf oc "char * names_of_cprim[] = {\n";
+  fprintf outchan "  (primitive) 0 };\n";
+  fprintf outchan "char * names_of_cprim[] = {\n";
   for i = 0 to Array.length prim - 1 do
-    fprintf oc "  \"%s\",\n" prim.(i)
+    fprintf outchan "  \"%s\",\n" prim.(i)
   done;
-  fprintf oc "  (char *) 0 };\n";
-  close_out oc
+  fprintf outchan "  (char *) 0 };\n"
 
 (* Initialization for batch linking *)
 
