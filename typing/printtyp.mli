@@ -29,6 +29,10 @@ val reset_and_mark_loops_list: type_expr list -> unit
 val type_expr: formatter -> type_expr -> unit
 val tree_of_type_scheme: type_expr -> out_type
 val type_scheme: formatter -> type_expr -> unit
+(* Maxence *)
+val type_scheme_max: ?b_reset_names: bool ->
+	formatter -> type_expr -> unit
+(* Fin Maxence *)
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit
 val tree_of_type_declaration: Ident.t -> type_declaration -> out_sig_item

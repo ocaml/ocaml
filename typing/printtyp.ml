@@ -436,6 +436,12 @@ and type_sch ppf ty = typexp true 0 ppf ty
 
 and type_scheme ppf ty = reset_and_mark_loops ty; typexp true 0 ppf ty
 
+(* Maxence *)
+let type_scheme_max ?(b_reset_names=true) ppf ty = 
+  if b_reset_names then reset_names () ;
+  typexp true 0 ppf ty
+(* Fin Maxence *)
+
 let tree_of_type_scheme ty = reset_and_mark_loops ty; tree_of_typexp true ty
 
 (* Print modules types and signatures *)
