@@ -39,15 +39,18 @@ value win_create_process_native(value cmd, value cmdline, value env,
   si.hStdInput = Handle_val(fd1);
   si.hStdOutput = Handle_val(fd2);
   si.hStdError = Handle_val(fd3);
-  /* If we do not have a console window, then we must run
-     console mode applications as detached processes.
+  /* If we do not have a console window, then we must create one
+     before running the process (keep it hidden for apparence).
      Otherwise, a new console is created and the redirections
      are ignored.  If we're running a GUI application, the
-     detached / non-detached flag doesn't matter. */
+     newly created console doesn't matter. */
   if (win_has_console())
     flags = 0;
-  else
-    flags = DETACHED_PROCESS;
+  else {
+    flags = CREATE_NEW_CONSOLE;
+    si.dwFlags |= STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+  }
   /* Create the process */
   if (! CreateProcess(exefile, String_val(cmdline), NULL, NULL,
                       TRUE, flags, envp, NULL, &si, &pi)) {
