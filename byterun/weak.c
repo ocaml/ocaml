@@ -14,6 +14,8 @@
 
 /* Operations on weak arrays */
 
+#include <string.h>
+
 #include "alloc.h"
 #include "fail.h"
 #include "memory.h"

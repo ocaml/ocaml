@@ -52,7 +52,7 @@ value alloc_small (mlsize_t wosize, tag_t tag)
 {
   value result;
 
-  Assert (wosize > 0)
+  Assert (wosize > 0);
   Assert (wosize <= Max_young_wosize);
   Assert (tag < 256);
   Alloc_small (result, wosize, tag);
