@@ -1,0 +1,181 @@
+\section{Lexical conventions}
+
+\subsubsection*{Blanks}
+
+The following characters are considered as blanks: space, newline,
+horizontal tabulation, carriage return, line feed and form feed. Blanks are
+ignored, but they separate adjacent identifiers, literals and
+keywords that would otherwise be confused as one single identifier,
+literal or keyword.
+
+\subsubsection*{Comments}
+
+Comments are introduced by the two characters  "(*", with no
+intervening blanks, and terminated by the characters "*)", with
+no intervening blanks. Comments are treated as blank characters.
+Comments do not occur inside string or character literals. Nested
+comments are handled correctly.
+
+\subsubsection*{Identifiers}
+
+\begin{syntax}
+ident: letter { letter||"0"\ldots"9"||"_"||"'" } ;
+letter: "A" \ldots "Z" || "a" \ldots "z"
+\end{syntax}
+
+Identifiers are sequences of letters, digits, "_" (the underscore
+character), and "'" (the single quote), starting with a
+letter. Letters contain at least the 52 lowercase and uppercase
+letters from the ASCII set. The current implementation also recognizes
+as letters all accented characters from the ISO 8859-1 (``ISO Latin
+1'') set. All characters in an identifier are meaningful. The current
+implementation places no limits on the number of characters of an
+identifier.
+
+\subsubsection*{Integer literals}
+
+\begin{syntax}
+integer-literal:
+          ["-"] {{ "0"\ldots"9" }}
+        | ["-"] ("0x"||"0X") {{ "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f" }}
+        | ["-"] ("0o"||"0O") {{ "0"\ldots"7" }}
+        | ["-"] ("0b"||"0B") {{ "0"\ldots"1" }}
+\end{syntax}
+
+An integer literal is a sequence of one or more digits, optionally
+preceded by a minus sign. By default, integer literals are in decimal
+(radix 10). The following prefixes select a different radix:
+\begin{tableau}{|l|l|}{Prefix}{Radix}
+\entree{"0x", "0X"}{hexadecimal (radix 16)}
+\entree{"0o", "0O"}{octal (radix 8)}
+\entree{"0b", "0B"}{binary (radix 2)}
+\end{tableau}
+(The initial "0" is the digit zero; the "O" for octal is the letter O.)
+The interpretation of integer literals that fall outside the range of
+representable integer values is undefined.
+
+\subsubsection*{Floating-point literals}
+
+\begin{syntax}
+float-literal:
+          ["-"] {{ "0"\ldots"9" }} ["." { "0"\ldots"9" }]
+          [("e"||"E") ["+"||"-"] {{ "0"\ldots"9" }}]
+\end{syntax}
+
+Floating-point decimals consist in an integer part, a decimal part and
+an exponent part. The integer part is a sequence of one or more
+digits, optionally preceded by a minus sign. The decimal part is a
+decimal point followed by zero, one or more digits.
+The exponent part is the character "e" or "E" followed by an
+optional "+" or "-" sign, followed by one or more digits.
+The decimal part or the exponent part can be omitted, but not both to
+avoid ambiguity with integer literals.
+The interpretation of floating-point literals that fall outside the
+range of representable floating-point values is undefined.
+
+\subsubsection*{Character literals}
+\label{s:characterliteral}
+
+\begin{syntax}
+char-literal:
+          "'" regular-char "'"
+        | "'" "\" ("\" || "'" || "n" || "t" || "b" || "r") "'"
+        | "'" "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9") "'"
+\end{syntax}
+
+Character literals are delimited by "'" (single quote) characters.
+The two single quotes enclose either one character different from
+"'" and "\\", or one of the escape sequences below:
+\begin{tableau}{|l|l|}{Sequence}{Character denoted}
+\entree{"\\\\"}{backslash ("\\")}
+\entree{"\\'"}{single quote ("'")}
+\entree{"\\n"}{newline (LF)}
+\entree{"\\r"}{return (CR)}
+\entree{"\\t"}{horizontal tabulation (TAB)}
+\entree{"\\b"}{backspace (BS)}
+\entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
+\end{tableau}
+
+\subsubsection*{String literals}
+\label{s:stringliteral}
+
+\begin{syntax}
+string-literal:
+          '"' { string-character } '"'
+;
+string-character:
+          regular-char
+        | "\" ("\" || '"' || "n" || "t" || "b" || "r")
+        | "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9")
+\end{syntax}
+
+String literals are delimited by "\"" (double quote) characters.
+The two double quotes enclose a sequence of either characters
+different from "\"" and "\\", or escape sequences from the
+table below:
+\begin{tableau}{|l|l|}{Sequence}{Character denoted}
+\entree{"\\\\"}{backslash ("\\")}
+\entree{"\\\""}{double quote ("\"")}
+\entree{"\\n"}{newline (LF)}
+\entree{"\\r"}{return (CR)}
+\entree{"\\t"}{horizontal tabulation (TAB)}
+\entree{"\\b"}{backspace (BS)}
+\entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
+\end{tableau}
+
+The current implementation places no restrictions on the length of
+string literals.
+
+\subsubsection*{Prefix and infix symbols}
+
+\begin{syntax}
+infix-symbol:
+        ('=' || '<' || '>' || '@' || '^' || '|' || '&' ||
+         '+' || '-' || '*' || '/' || '$' || '%') { operator-char }
+;
+prefix-symbol:
+        ('!' || '?' || '~') { operator-char }
+;
+operator-char:
+        '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
+         '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
+         '^' || '|' || '~'
+;
+\end{syntax}
+
+Sequences of ``operator characters'', such as "<=>" or "!!",
+are read as a single token from the @infix-symbol@ or @prefix-symbol@
+class. These symbols are parsed as prefix and infix operators inside
+expressions, but otherwise behave much as identifiers.
+
+\subsubsection*{Keywords}
+
+The identifiers below are reserved as keywords, and cannot be employed
+otherwise:
+\begin{verbatim}
+    and         as          asr         begin       do          done        
+    downto      else        end         exception   external    false       
+    for         fun         function    functor     if          in          
+    include     land        let         lor         lsl         lsr         
+    lxor        match       mod         module      mutable     of          
+    open        or          rec         sig         struct      then        
+    to          true        try         type        val         when        
+    while       with
+\end{verbatim}
+%
+The following character sequences are also keywords:
+%
+\begin{verbatim}
+    #     &     '     (     )     *     ,     ->    .     ..    
+    .(    .[    :     ::    :=    ;     ;;    <-    =     [     
+    [|    ]     _     {     |     |]    }
+\end{verbatim}
+
+\subsubsection*{Ambiguities}
+
+Lexical ambiguities are resolved according to the ``longest match''
+rule: when a character sequence can be decomposed into two tokens in
+several different ways, the decomposition retained is the one with the
+longest first token.
+
+

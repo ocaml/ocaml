@@ -1,0 +1,294 @@
+\chapter{The toplevel system (csltop)} \label{c:camllight}
+
+This chapter describes the toplevel system for Caml Special Light,
+that permits interactive use of the Caml Special Light system through a
+read-eval-print loop. In this mode, the system repeatedly reads Caml
+phrases from the input, then typechecks, compile and evaluate
+them, then prints the inferred type and result value, if any. The
+system prints a "#" (sharp) prompt before reading each phrase.
+
+A toplevel phrase can span several lines. It is terminated by ";;" (a
+double-semicolon). The syntax of toplevel phrases is as follows:
+
+\begin{syntax}
+toplevel-phrase:
+          definition ';;'
+        | expr ';;'
+        | '#' ident directive-argument ';;'
+;
+definition:
+          'let' ['rec'] let-binding  { 'and' let-binding }
+        | 'external' value-name ':' typexpr '=' external-declaration
+        | type-definition
+        | exception-definition
+        | 'module' module-name [ ':' module-type ] '=' module-expr
+        | 'module' 'type' modtype-name '=' module-type
+        | 'open' module-path
+;
+directive-argument:
+          nothing
+        | string-literal
+        | integer-literal
+        | value-path
+\end{syntax}
+
+A phrase can consist of a definition, similar to those found in
+implementations of compilation units or in @'struct' \ldots 'end'@
+module expressions. The definition can bind value names, type names,
+an exception, a module name, or a module type name. The toplevel
+system performs the bindings, then prints the types and values (if
+any) for the names thus defined.
+
+A phrase may also consist in a "open" directive (see
+section~\ref{s:module-expr}), or a value expression
+(section~\ref{s:value-expr}). Expressions are simply evaluated,
+without performing any bindings, and the value of the expression is
+printed.
+
+Finally, a phrase can also consist in a toplevel directive,
+starting with "#" (the sharp sign). These directives control the
+behavior of the toplevel; they are listed below in
+section~\ref{s:toplevel-directives}.
+
+\medskip
+
+The toplevel system is started by the command "csltop". Phrases are
+read on standard input, results are printed on standard output, errors
+on standard error. End-of-file on standard input terminates
+"csltop" (see also the "#quit" directive in
+section~\ref{s:toplevel-directives}).
+
+The toplevel system does not perform line editing, but it can
+easily be used in conjunction with an external line editor such as
+"fep"; just run "fep -emacs csltop" or "fep -vi csltop".
+Another option is to use "csltop" under Gnu Emacs, which gives the
+full editing power of Emacs (see the "camlmode" package distributed
+with Caml Light 0.7).
+
+At any point, the parsing, compilation or evaluation of the current
+phrase can be interrupted by pressing "ctrl-C" (or, more precisely,
+by sending the "intr" signal to the "csltop" process). The toplevel
+then immediately returns to the "#" prompt.
+
+\section{Options} \label{s:toplevel-options}
+
+The following command-line options are recognized by the "csltop" command.
+
+\begin{options}
+
+\item["-I" \var{directory}]
+Add the given directory to the list of directories searched for
+source and compiled files. By default, the current directory is
+searched first, then the standard library directory. Directories added
+with "-I" are searched after the current directory, in the order in
+which they were given on the command line, but before the standard
+library directory.
+
+Directories can also be added to the search path once
+the toplevel is running with the "#directory" directive
+(section~\ref{s:toplevel-directives}).
+
+\item["-unsafe"]
+See the corresponding option for "cslc", chapter~\ref{c:camlc}.
+Turn bound checking off on array and string accesses (the "v.(i)" and
+"s.[i]" constructs). Programs compiled with "-unsafe" are therefore
+slightly faster, but unsafe: anything can happen if the program
+accesses an array or string outside of its bounds.
+
+\end{options}
+
+The following environment variables are also consulted:
+\begin{options}
+\item["LC_CTYPE"] If set to "iso_8859_1", accented characters (from the
+ISO Latin-1 character set) in string and character literals are
+printed as is; otherwise, they are printed as decimal escape sequences
+("\\"\var{ddd}).
+
+\item["TERM"] When printing error messages, the toplevel system
+attempts to underline visually the location of the error. It
+consults the "TERM" variable to determines the type of output terminal
+and look up its capabilities in the terminal database.
+\end{options}
+
+\section{Toplevel directives}
+\label{s:toplevel-directives}
+
+The following directives control the toplevel behavior, load files in
+memory, and trace program execution.
+
+\begin{options}
+
+\item["#quit;;"]
+Exit the toplevel loop and terminate the "csltop" command.
+
+\item["#directory \""\var{dir-name}"\";;"]
+Add the given directory to the list of directories searched for
+source and compiled files.
+
+\item["#cd \""\var{dir-name}"\";;"]
+Change the current working directory.
+
+\item["#load \""\var{file-name}"\";;"]
+Load in memory a bytecode object file (".cmo" file) produced by
+the batch compiler "cslc".
+
+\item["#use \""\var{file-name}"\";;"]
+Read, compile and execute source phrases from the given file.
+This is textual inclusion: phrases are processed just as if
+they were typed on standard input. The reading of the file stops at
+the first error encountered.
+
+\item["#install_printer "\var{printer-name}";;"]
+This directive registers the function named \var{printer-name} (a
+value path) as a printer for objects whose types match the argument
+type of the function. That is, the toplevel loop will call
+\var{printer-name} when it has such an object to print.
+The printing function \var{printer-name} must use the "Format" library
+module to produce its output, otherwise its output will not be
+correctly located in the values printed by the toplevel loop.
+
+\item["#remove_printer "\var{printer-name}";;"]
+Remove the named function from the table of toplevel printers.
+
+\item["#trace "\var{function-name}";;"]
+After executing this directive, all calls to the function named
+\var{function-name} will be ``traced''. That is, the argument and the
+result are displayed for each call, as well as the exceptions escaping
+out of the function, raised either by the function itself or by
+another function it calls. If the function is curried, each argument
+is printed as it is passed to the function.
+
+\item["#untrace "\var{function-name}";;"]
+Stop tracing the given function.
+
+\item["#untrace_all;;"]
+Stop tracing all functions traced so far.
+
+\item["#print_depth "\var{n}";;"]
+Limit the printing of values to a maximal depth of \var{n}.
+The parts of values whose depth exceeds \var{n} are printed as "..."
+(ellipsis).
+
+\item["#print_length "\var{n}";;"]
+Limit the number of value nodes printed to at most \var{n}.
+Remaining parts of values are printed as "..." (ellipsis).
+
+\end{options}
+
+\section{The toplevel and the module system} \label{s:toplevel-modules}
+
+Toplevel phrases can refer to identifiers defined in compilation units
+with the same mechanisms as for separately compiled units: either by
+using qualified names ("modulename.localname"), or by using
+the "open" construct and unqualified names (see section~\ref{s:names}).
+
+However, before referencing another compilation unit, an
+implementation of that unit must be present in memory.
+At start-up, the toplevel system contains implementations for all the
+modules in the the standard library. Implementations for user modules
+can be entered with the "#load" directive described above. Referencing
+a unit for which no implementation has been provided
+results in the error ``Reference to undefined global `\ldots'\,''.
+
+Note that entering "open "\var{mod} merely accesses the compiled
+interface (".cmi" file) for \var{mod}, but does not load the
+implementation of \var{mod}, and does not cause any error if no
+implementation of \var{mod} has been loaded. The error 
+``reference to undefined global \var{mod}'' will occur only when
+executing a value or module definition that refers to \var{mod}.
+
+\section{Common errors}
+
+This section describes and explains the most frequently encountered
+error messages.
+
+\begin{options}
+
+\item[Cannot find file \var{filename}]
+The named file could not be found in the current directory, nor in the
+directories of the search path. 
+
+If \var{filename} has the format \var{mod}".cmi", this
+means you have referenced the compilation unit \var{mod}, but its
+compiled interface could not be found. Fix: compile \var{mod}".mli" or
+\var{mod}".ml" first, to create the compiled interface \var{mod}".cmi".
+
+If \var{filename} has the format \var{mod}".cmo", this
+means you are trying to load with "#load" a bytecode object file that
+does not exist yet. Fix: compile \var{mod}".ml" first.
+
+If your program spans several directories, this error can also appear
+because you haven't specified the directories to look into. Fix: use
+the "#directory" directive to add the correct directories to the
+search path.
+
+\item[This expression has type \nth{t}{1}, but is used with type \nth{t}{2}]
+See section~\ref{s:comp-errors}.
+
+\item[Reference to undefined global \var{mod}]
+You have neglected to load in memory an implementation for a module
+with "#load". See section~\ref{s:toplevel-modules} above.
+
+\end{options}
+
+\section{Building custom toplevel systems: "cslmktop"}
+
+The "cslmktop" command builds Caml Special Light toplevels that
+contain user code preloaded at start-up. 
+
+The "cslmktop" command takes as argument a set of ".cmo" files, and
+links them with the object files that implement the Caml Special Light
+toplevel. The typical use is:
+\begin{verbatim}
+        cslmktop -o mytoplevel foo.cmo bar.cmo gee.cmo
+\end{verbatim}
+This creates the bytecode file "mytoplevel", containing the Caml
+Special Light toplevel system, plus the code from the three ".cmo"
+files. This toplevel is directly executable and is started by:
+\begin{verbatim}
+        ./mytoplevel
+\end{verbatim}
+This enters a regular toplevel loop, except that the code from
+"foo.cmo", "bar.cmo" and "gee.cmo" is already loaded in memory, just as
+if you had typed:
+\begin{verbatim}
+        #load "foo.cmo";;
+        #load "bar.cmo";;
+        #load "gee.cmo";;
+\end{verbatim}
+on entrance to the toplevel. The modules "Foo", "Bar" and "Gee" are
+not opened, though; you still have to do
+\begin{verbatim}
+        open Foo;;
+\end{verbatim}
+yourself, if this is what you wish.
+
+\section{Options}
+
+The following command-line options are recognized by "cslmktop".
+
+\begin{options}
+
+\item["-cclib" \var{libname}]
+Pass the "-l"\var{libname} option to the C linker when linking in
+``custom runtime'' mode. See the corresponding option for
+"cslc", in chapter~\ref{c:camlc}.
+
+\item["-ccopt" \var{option}]
+Pass the given option to the C compiler and linker, when linking in
+``custom runtime'' mode. See the corresponding option for
+"cslc", in chapter~\ref{c:camlc}.
+
+\item["-custom"]
+Link in ``custom runtime'' mode. See the corresponding option for
+"cslc", in chapter~\ref{c:camlc}.
+
+\item["-I" \var{directory}]
+Add the given directory to the list of directories searched for
+compiled object code files (".cmo").
+
+\item["-o" \var{exec-file}]
+Specify the name of the toplevel file produced by the linker.
+The default is "a.out".
+
+\end{options}

@@ -1,0 +1,112 @@
+\section{Names} \label{s:names}
+
+Identifiers are used to give names to several classes of language
+objects and refer to these objects by name later:
+\begin{itemize}
+\item value names (syntactic class @value-name@),
+\item value constructors (constant -- class @cconstr-name@ -- or
+non-constant -- class @ncconstr-name@),
+\item type constructors (@typeconstr-name@),
+\item record labels (@label-name@),
+\item module names (@module-name@),
+\item module type names (@modtype-name@).
+\end{itemize}
+These six name spaces are distinguished both by the context and by the
+capitalization of the identifier: whether the first letter of the
+identifier is in lowercase (written @lowercase-ident@ below) or in
+uppercase (written @capitalized-ident@).
+
+\ikwd{false\@\verb`false`}
+\ikwd{true\@\verb`true`}
+
+\subsubsection*{Naming objects}
+
+\begin{syntax}
+value-name:
+        lowercase-ident
+      | '(' operator-name ')'
+;
+operator-name:
+        prefix-symbol || infix-symbol || '*' || '=' || 'or' || '&' || ':='
+;
+cconstr-name:
+        capitalized-ident
+      | 'false'
+      | 'true'
+      | '[' ']'
+      | '(' ')'
+;
+ncconstr-name:
+        capitalized-ident
+      | '::'
+;
+typeconstr-name:
+        lowercase-ident
+;
+label-name:
+        lowercase-ident
+;
+module-name:
+        capitalized-ident
+;
+modtype-name:
+        ident
+\end{syntax}
+As shown above, prefix and infix symbols as well as some keywords can
+be used as value names, provided they are written between parentheses.
+Keywords such as '::' and 'false' are also constructor names. The
+capitalization rules  are summarized in the table
+below.
+
+\begin{tableau}{|l|l|}{Name space}{Case of first letter}
+\entree{Values}{lowercase}
+\entree{Constructors}{uppercase}
+\entree{Type constructors}{lowercase}
+\entree{Record labels}{lowercase}
+\entree{Modules}{uppercase}
+\entree{Module types}{any}
+\end{tableau}
+
+\subsubsection*{Referring to named objects}
+
+\begin{syntax}
+value-path:
+        value-name
+      | module-path '.' lowercase-ident
+;
+cconstr:
+        cconstr-name
+      | module-path '.' capitalized-ident
+;
+ncconstr:
+        ncconstr-name
+      | module-path '.' capitalized-ident
+;
+typeconstr:
+        typeconstr-name
+      | module-path '.' lowercase-ident
+;
+label:
+        label-name
+      | module-path '.' lowercase-ident
+;
+module-path:
+        module-name
+      | module-path '.' capitalized-ident
+      | module-path '(' module-path ')'
+;
+modtype-path:
+        modtype-name
+      | module-path '.' ident
+\end{syntax}
+
+A named object can be referred to either by its name (following the
+usual static scoping rules for names) or by an access path @prefix '.' name@,
+where @prefix@ designates a module and @name@ is the name of an object
+defined in that module. The first component of the path, @prefix@, is
+either a simple module name or an access path @name_1 '.' name_2 \ldots@,
+in case the defining module is itself nested inside other modules. The
+@prefix@ can also contain simple functor applications of the format
+@module-path '(' module-path ')'@, in case the defining module is the
+result of a functor application.
+

@@ -1,0 +1,28 @@
+\chapter{The standard library}
+
+This chapter describes the functions provided by the Caml Light
+standard library. The modules from the standard library are
+automatically linked with the user's object code files by the "cslc"
+command. Hence, these modules can be used in standalone programs without
+having to add any ".cmo" file on the command line for the linking
+phase. Similarly, in interactive use, these globals can be used in
+toplevel phrases without having to load any ".cmo" file in memory.
+
+Unlike the "Pervasive" module from the core library, the modules from the
+standard library are not automatically ``opened'' when a compilation
+starts, or when the toplevel system is launched. Hence it is necessary
+to use qualified identifiers to refer to the functions provided by these
+modules, or to add "open" directives.
+
+\section*{Conventions}
+
+For easy reference, the modules are listed below in alphabetical order
+of module names.
+For each module, the declarations from its signature are printed
+one by one in typewriter font, followed by a short comment.
+All modules and the identifiers they export are indexed at the end of
+this report.
+
+\begin{library}
+\input stdlib-all.tex
+\end{library}

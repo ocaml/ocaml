@@ -1,0 +1,197 @@
+\chapter{Native-code compilation (cslopt)} \label{c:nativecomp}
+
+This chapter describes the Caml Special Light high-performance
+native-code compiler "cslopt", which compiles Caml source files to
+native code object files and link these object files to produce
+standalone executables. 
+
+The native-code compiler is only available on certain platforms.
+It produces code that runs faster than the bytecode produced by
+"cslc", at the cost of increased compilation time and executable code
+size. Compatibility with the bytecode compiler is extremely high: the
+same source code should run identically when compiled with "cslc" and
+"cslopt".
+
+It is not possible to mix native-code object files produced by "cslc"
+with bytecode object files produced by "cslopt": a program must be
+compiled entirely with "cslopt" or entirely with "cslc". Native-code
+object files produced by "cslopt" cannot be loaded in the toplevel
+system "csltop".
+
+\section{Overview of the compiler}
+
+The "cslopt" command has a command-line interface very close to that
+of "cslc". It accepts the same types of arguments:
+
+\begin{itemize}
+\item
+Arguments ending in ".mli" are taken to be source files for
+compilation unit interfaces. Interfaces specify the names exported by
+compilation units: they declare value names with their types, define
+public data types, declare abstract data types, and so on. From the
+file \var{x}".mli", the "cslopt" compiler produces a compiled interface
+in the file \var{x}".cmi". The interface produced is identical to that
+produced by the bytecode compiler "cslc".
+
+\item
+Arguments ending in ".ml" are taken to be source files for compilation
+unit implementations. Implementations provide definitions for the
+names exported by the unit, and also contain expressions to be
+evaluated for their side-effects.  From the file \var{x}".ml", the "cslc"
+compiler produces two files: \var{x}".o", containing native object code,
+and \var{x}".cmx", containing extra information for linking and
+optimization of the clients of the unit. The compiled implementation
+should always be referred to under the name \var{x}".cmx" (when given
+a ".o" file, "cslopt" assumes that it contains code compiled from C,
+not from Caml).
+
+The implementation is checked against the interface file \var{x}".mli"
+(if it exists) as described in the manual for "cslc"
+(chapter~\ref{c:camlc}).
+
+\item
+Arguments ending in ".cmx" are taken to be compiled object code.  These
+files are linked together, along with the object files obtained
+by compiling ".ml" arguments (if any), and the Caml Light standard
+library, to produce a native-code executable program. The order in
+which ".cmx" and ".ml" arguments are presented on the command line is
+relevant: compilation units are initialized in that order at
+run-time, and it is a link-time error to use a component of a unit
+before having initialized it. Hence, a given \var{x}".cmx" file must come
+before all ".cmx" files that refer to the unit \var{x}.
+
+\item
+Arguments ending in ".cmxa" are taken to be libraries of object code.
+Such a library packs in two files (\var{lib}".cmxa" and \var{lib}".a")
+a set of object files (".cmx"/".o" files). Libraries are build with
+"cslopt -a" (see the description of the "-a" option below). The object
+files contained in the library are linked as regular ".cmx" files (see
+above), in the order specified when the library was built. The only
+difference is that if an object file contained in a library is not
+referenced anywhere in the program, then it is not linked in.
+
+\item
+Arguments ending in ".c" are passed to the C compiler, which generates
+a ".o" object file. This object file is linked with the program if the
+"-custom" flag is set (see the description of "-custom" below).
+
+\item
+Arguments ending in ".o" or ".a" are assumed to be C object files and
+libraries. They are passed to the linker when linking in "-custom" mode
+(see the description of "-custom" below).
+
+\end{itemize}
+
+The output of the linking phase is a regular Unix executable file. It
+does not need "cslrun" to run.
+
+\section{Options}
+
+The following command-line options are recognized by "cslopt".
+
+\begin{options}
+
+\item["-a"]
+Build a library (".cmxa"/".a" file) with the object files (".cmx"/".o"
+files) given on the command line, instead of linking them into an
+executable file. The name of the library can be set with the "-o"
+option. The default name is "library.cmxa".
+
+\item["-c"]
+Compile only. Suppress the linking phase of the
+compilation. Source code files are turned into compiled files, but no
+executable file is produced. This option is useful to
+compile modules separately.
+
+\item["-cclib" \var{libname}]
+Pass the "-l"\var{libname} option to the linker. This causes the given
+C library to be linked with the program.
+
+\item["-ccopt" \var{option}]
+Pass the given option to the C compiler and linker. For instance,
+"-ccopt -L"\var{dir} causes the C linker to search for C libraries in
+directory \var{dir}.
+
+\item["-compact"]
+Optimize the produced code for space rather than for time. This
+results in smaller but slightly slower programs. The default is to
+optimize for speed.
+
+\item["-custom"]
+Link in ``custom runtime'' mode, allowing user-defined C functions and
+C libraries to be linked with the Caml code.
+
+\item["-i"]
+Cause the compiler to print all defined names (with their inferred
+types or their definitions) when compiling an implementation (".ml"
+file). This can be useful to check the types inferred by the
+compiler. Also, since the output follows the syntax of interfaces, it
+can help in writing an explicit interface (".mli" file) for a file:
+just redirect the standard output of the compiler to a ".mli" file,
+and edit that file to remove all declarations of unexported names.
+
+\item["-I" \var{directory}]
+Add the given directory to the list of directories searched for
+compiled interface files (".cmi") and compiled object code files
+(".cmo"). By default, the current directory is searched first, then the
+standard library directory. Directories added with "-I" are searched
+after the current directory, in the order in which they were given on
+the command line, but before the standard library directory.
+
+\item["-o" \var{exec-file}]
+Specify the name of the output file produced by the linker. The
+default output name is "a.out", in keeping with the Unix tradition. If
+the "-a" option is given, specify the name of the library produced.
+
+\item["-S"]
+Keep the assembly code produced during the compilation. The assembly
+code for the source file \var{x}".ml" is saved in the file \var{x}".s".
+
+\item["-v"]
+Print the version number of the compiler.
+
+\item["-unsafe"]
+Turn bound checking off on array and string accesses (the "v.(i)" and
+"s.[i]" constructs). Programs compiled with "-unsafe" are therefore
+faster, but unsafe: anything can happen if the program accesses an
+array or string outside of its bounds.
+
+\end{options}
+
+\section{Common errors}
+
+The error messages are almost identical to those of "cslc".
+See section~\ref{s:comp-errors}.
+
+\section{Compatibility with the bytecode compiler}
+
+This section lists the known incompatibilities between the bytecode
+compiler and the native-code compiler. Except on those points, the two
+compilers should generate code that behave the same.
+
+\begin{itemize}
+
+\item The following operations trigger a hardware trap which aborts
+the program instead of raising an exception ("Invalid_argument" and
+"Division_by_zero" respectively):
+\begin{itemize}
+\item accesses to arrays and strings out of bounds;
+\item division by zero, modulus by zero.
+\end{itemize}
+
+\item The following library functions print a fatal error message and
+abort the program instead of raising the "Invalid_argument" exception:
+\begin{itemize}
+\item structural comparisons "(=)", "(<>)", etc., when encountering a
+functional value;
+\item "Array.new" and "String.create" when the requested size is
+negative or exceeds the memory manager limits.
+\end{itemize}
+
+\item The following library functions are not yet implemented and will
+abort the program with a fatal error message:
+\begin{itemize}
+\item "Sys.signal" and "Sys.catch_break".
+\end{itemize}
+
+\end{itemize}

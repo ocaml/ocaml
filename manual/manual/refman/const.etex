@@ -1,0 +1,14 @@
+\section{Constants}
+
+\begin{syntax}
+constant:
+    integer-literal
+  | float-literal
+  | char-literal
+  | string-literal
+  | cconstr
+\end{syntax}
+
+The syntactic class of constants comprises literals from the four
+base types (integers, floating-point numbers, characters, character
+strings), and constant constructors.

@@ -1,0 +1,101 @@
+\section{Type and exception definitions}
+
+\subsection{Type definitions}
+
+Type definitions bind type constructors to data types: either
+variant types, record types, type abbreviations, or abstract data
+types. They also bind the value constructors and record labels
+associated with the definition.
+
+\ikwd{type\@\verb`type`}
+
+\begin{syntax}
+type-definition:
+          'type' typedef { 'and' typedef }
+;
+typedef:
+          type-params typeconstr-name '=' constr-decl { '|' constr-decl }
+        | type-params typeconstr-name '=' '{' label-decl { ';' label-decl } '}'
+        | type-params typeconstr-name '=' typexpr
+        | type-params typeconstr-name
+;
+type-params:
+          nothing
+        | "'" ident
+        | '(' "'" ident { "," "'" ident } ')'
+;
+constr-decl:
+          cconstr-name
+        | ncconstr-name 'of' typexpr
+;
+label-decl:
+          label-name ':' typexpr
+        | 'mutable' label-name ':' typexpr
+\end{syntax}
+\ikwd{mutable\@\verb`mutable`}
+
+Type definitions are introduced by the "type" keyword, and
+consist in one or several simple definitions, possibly mutually
+recursive, separated by the "and" keyword. Each simple definition
+defines one type constructor.
+
+A simple definition consists in a lowercase identifier, possibly preceded by
+one or several type parameters, and followed by a data type
+description. The identifier is the name of the type constructor being defined.
+The optional type parameters are either one type variable @"'" ident@,
+for type constructors with one parameter, or a list of type variables
+@("'"ident_1,\ldots,"'"ident_n)@, for type constructors with several
+parameters. These type parameters can appear in the type expressions
+of the right-hand side of the definition.
+
+\subsubsection*{Variant types}
+
+The type definition
+@type-params typeconstr-name '=' constr-decl { '|' constr-decl }@
+defines a variant type. The constructor declarations
+@constr-decl_1, \ldots, constr-decl_n@ describe the constructors
+associated to this variant type. The constructor
+declaration @ncconstr-name 'of' typexpr@ declares the name
+@ncconstr-name@ as a non-constant constructor, whose
+argument has type @typexpr@. The constructor declaration @cconstr-name@
+declares the name @cconstr-name@ as a constant
+constructor. Constructor names must be capitalized.
+
+\subsubsection*{Record types}
+
+The type definition
+@type-params typeconstr-name '=' '{' label-decl { ';' label-decl } '}'@
+defines a record type. The label declarations @label-decl_1, \ldots,
+label-decl_n@ describe the labels associated to this record type.
+The label declaration @label-name ':' typexpr@ declares @label-name@
+as a label whose argument has type @typexpr@.
+The label declaration @'mutable' label-name ':' typexpr@
+\ikwd{mutable\@\verb`mutable`}
+behaves similarly; in addition, it allows physical modification over
+the argument to this label.
+
+\subsubsection*{Type abbreviations}
+
+The type definition @type-params typeconstr-name '=' typexpr@ defines the type
+constructor @typeconstr-name@ as an abbreviation for the type expression
+@typexpr@. 
+
+\subsubsection*{Abstract types}
+
+The type definition @type-params typeconstr-name@ declares
+@typeconstr-name@ as an abstract type. When appearing in a module
+signature, this declaration allows exporting a type constructor while
+hiding how it is represented in the structure implementing the signature.
+
+\subsection{Exception definitions} \label{s:excdef}
+\ikwd{exception\@\verb`exception`}
+
+\begin{syntax}
+exception-definition:
+        'exception' constr-decl
+\end{syntax}
+
+Exception definitions add new constructors to the built-in variant
+type \verb"exn" of exception values. The constructors are declared as
+for a definition of a variant type.
+

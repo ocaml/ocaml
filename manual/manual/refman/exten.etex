@@ -1,0 +1,356 @@
+\chapter{Language extensions} \label{c:extensions}
+
+This chapter describes the language features that are implemented in
+Caml Light, but not described in the Caml Light reference manual. In
+contrast with the fairly stable kernel language that is described in
+the reference manual, the extensions presented here are still
+experimental, and may be removed or changed in the future.
+
+\section{Streams, parsers, and printers}
+\label{s:streams}
+
+Caml Light comprises a built-in type for {\it streams} (possibly infinite
+sequences of elements, that are evaluated on demand), and associated
+stream expressions, to build streams, and stream patterns, to
+destructure streams. Streams and stream patterns provide a natural
+approach to the writing of recursive-descent parsers.
+
+Streams are presented by the following extensions to the syntactic
+classes of expressions:
+
+\ikwd{function\@\verb`function`}
+\ikwd{match\@\verb`match`}
+
+\begin{syntax}
+expr:
+          \ldots
+        | '[<' '>]'
+        | '[<' stream-component { ';' stream-component } '>]'
+        | 'function' stream-matching
+        | 'match' expr 'with' stream-matching
+;
+stream-component:
+          "'" expr
+        | expr
+;
+stream-matching:
+        stream-pattern '->' expr { '|' stream-pattern '->' expr }
+;
+stream-pattern:
+          '[<' '>]'
+        | '[<' stream-comp-pat { ';' stream-comp-pat }'>]'
+;
+stream-comp-pat:
+          "'" pattern
+        | expr pattern
+        | ident
+;
+\end{syntax}
+
+Stream expressions are bracketed by \verb"[<" and \verb">]". They
+represent the concatenation of their components. The component
+@"'" expr@ represents the one-element stream whose element is the
+value of @expr@. The component @expr@ represents a
+sub-stream. For instance, if both "s" and "t" are streams of integers,
+then \verb"[<'1; s; t; '2>]" is a stream of integers containing the
+element "1", then the elements of "s", then those of "t", and finally
+"2". The empty stream is denoted by \verb"[< >]".
+
+Unlike any other kind of expressions in the language, stream
+expressions are submitted to lazy evaluation: the components are not
+evaluated when the stream is built, but only when they are accessed
+during stream matching. The components are evaluated once, the first
+time they are accessed; the following accesses reuse the value
+computed the first time.
+
+Stream patterns, also bracketed by \verb"[<" and \verb">]", describe
+initial segments of streams. In particular, the stream pattern
+\verb"[< >]" matches all streams. Stream pattern components are
+matched against the corresponding elements of a stream. The component
+@"'" pattern@ matches the corresponding stream element against the
+pattern. The component @expr pattern@ applies the function denoted by
+@expr@ to the current stream, then matches the result of
+the function against @pattern@. Finally, the component @ident@ simply
+binds the identifier to the stream being matched. (The current
+implementation limits @ident@ to appear last in a stream pattern.)
+
+Stream matching proceeds destructively: once a component has been
+matched, it is discarded from the stream (by in-place modification).
+
+Stream matching proceeds in two steps: first, a pattern is selected by
+matching the stream against the first components of the stream
+patterns; then, the following components of the selected pattern are
+checked against the stream. If the following components do not match,
+the exception "Parse_error" is raised. There is no backtracking here:
+stream matching commits to the pattern selected according to the first
+element. If none of the first components of the stream patterns match,
+the exception "Parse_failure" is raised. The "Parse_failure" 
+exception causes the next alternative to be tried, if it occurs during
+the matching of the first element of a stream, before matching has
+committed to one pattern. 
+
+See {\em Functional programming using Caml Light} for a more gentle
+introductions to streams, and for some examples of their use in
+writing parsers. A more formal presentation of streams, and a
+discussion of alternate semantics, can be found in {\em Parsers in ML}
+by Michel Mauny and Daniel de Rauglaudre, in the proceedings of the
+1992 ACM conference on Lisp and Functional Programming.
+
+\section{Guards}
+
+\ikwd{when\@\verb`when`}
+
+Cases of a pattern matching can include guard expressions, which are
+arbitrary boolean expressions that must evaluate to "true" for the
+match case to be selected. Guards occur just before the "->" token and
+are introduced by the "when" keyword:
+\begin{latexonly}
+$$\begin{array}{rlll}
+\token{match} & {\sl expr} \\
+\token{with} & {\sl pattern}_1 [\token{when} {\sl cond}_1] & \token{->} & {\sl expr}_1 \\
+\token{|}     & \ldots \\
+\token{|}     & {\sl pattern}_n  [\token{when} {\sl cond}_n] & \token{->} & {\sl expr}_n
+\end{array}$$
+\end{latexonly}
+\begin{rawhtml}
+<pre>
+match <i>expr</i> with
+      <i>pattern</i>1 [when <i>cond</i>1] -&gt; <i>expr</i>1
+    | ...
+    | <i>pattern</i>N [when <i>cond</i>N] -&gt; <i>expr</i>N
+</pre>
+\end{rawhtml}
+(Same syntax for the "fun", "function", and "try" \ldots "with" constructs.)
+During matching, if the value of @expr@ matches some pattern
+@pattern_i@ which has a guard @cond_i@, then the expression @cond_i@
+is evaluated (in an environment enriched by the bindings performed
+during matching). If @cond_i@ evaluates to "true", then @expr_i@ is
+evaluated and its value returned as the result of the matching, as
+usual. But if @cond_i@ evaluates to "false", the matching is resumed
+against the patterns following @pattern_i@.
+
+\section{Range patterns}
+
+In patterns, Caml Light recognizes the form
+@"`" c "`" ".." "`" d "`"@
+(two character constants separated by~\verb|..|) as a shorthand for
+the pattern
+\begin{center}
+@"`" c "`" "|" "`" c_1 "`" "|" "`" c_2 "`" "|" \ldots
+        "|" "`" c_n "`" "|" "`" d "`"@
+\end{center}
+where $c_1, c_2, \ldots, c_n$ are the characters that occur between
+$c$ and $d$ in the ASCII character set. For instance, 
+the pattern \verb|`0`..`9`| matches all characters that are digits.
+
+\section{Recursive definitions of values}
+
+Besides "let rec" definitions of functional values, as described in
+the reference manual, Caml Light supports a certain class of
+recursive definitions of non-functional values. For instance, the
+following definition is accepted:
+\begin{verbatim}
+        let rec x = 1 :: y and y = 2 :: x;;
+\end{verbatim}
+and correctly binds "x" to the cyclic list "1::2::1::2::"\ldots, and
+"y" to the cyclic list "2::1::2::1::"\ldots
+Informally, the class of accepted definitions consists of those
+definitions where the defined variables occur only inside function
+bodies or as a field of a data structure. Moreover, the patterns in
+the left-hand sides must be identifiers, nothing more complex.
+
+\section{Local definitions using "where"}
+
+\ikwd{where\@\verb`where`}
+A postfix syntax for local definitions is provided:
+\begin{syntax}
+expr:
+        \ldots
+      | expr 'where' ['rec'] let-binding
+;
+\end{syntax}
+The expression @expr 'where' let-binding@ behaves exactly as
+@'let' let-binding 'in' expr@, and similarly for "where rec" and "let
+rec".
+
+\section{Mutable variant types}
+
+\ikwd{mutable\@\verb`mutable`}
+The argument of a value constructor can be declared ``mutable'' when
+the variant type is defined:
+\begin{verbatim}
+        type foo = A of mutable int
+                 | B of mutable int * int
+                 | ...
+\end{verbatim}
+This allows in-place modification of the argument part of a
+constructed value. Modification is performed by a new kind of
+expressions, written @ident "<-" expr@, where @ident@ is an identifier
+bound by pattern-matching to the argument of a mutable constructor,
+and @expr@ denotes the value that must be stored in place of that
+argument. Continuing the example above:
+\begin{verbatim}
+        let x = A 1 in
+          begin match x with A y -> y <- 2 | _ -> () end;
+          x
+\end{verbatim}
+returns the value "A 2". The notation @ident "<-" expr@ works also if
+@ident@ is an identifier bound by pattern-matching to the value of a
+mutable field in a record. For instance,
+\begin{verbatim}
+        type bar = {mutable lbl : int};;
+        let x = {lbl = 1} in
+          begin match x with {lbl = y} -> y <- 2 end;
+          x
+\end{verbatim}
+returns the value \verb|{lbl = 2}|.
+
+\section{String access}
+
+Extra syntactic constructs are provided to access and modify
+characters in strings:
+\begin{syntax}
+expr:
+    \ldots
+  | expr '.[' expr ']'
+  | expr '.[' expr ']' '<-' expr
+\end{syntax}
+
+The expression @expr_1 '.[' expr_2 ']'@ is equivalent to the
+application @'nth_char' expr_1 expr_2@. In the initial environment,
+the identifier @'nth_char'@ resolves to a built-in function that
+returns the character number @expr_2@ in the string denoted by
+@expr_1@. The first element has number 0; the last element has number
+$n-1$, where $n$ is the length of the string. The exception
+"Invalid_argument" is raised if the access is out of bounds.
+
+The expression @expr_1 '.[' expr_2 ']' '<-' expr_3@ is equivalent to
+@'set_nth_char' expr_1 expr_2 expr_3@. In the initial environment,
+the identifier @'set_nth_char'@ resolves to a built-in function that
+modifies in-place the string denoted by @expr_1@, replacing character
+number @expr_2@ by the value of @expr_3@. The exception
+"Invalid_argument" is raised if the access is out of bounds. The
+built-in function returns @'()'@.
+
+\section{Alternate syntax}
+
+The syntax of some constructs has been slightly relaxed:
+
+\begin{itemize}
+
+\item An optional ";" may terminate a sequence, list expression, or
+record expression. For instance, @'begin' e_1 ';' e_2 ';' 'end'@ is
+syntactically correct and synonymous with @'begin' e_1 ';' e_2 'end'@.
+
+\item Similarly, an optional "|" may begin a pattern-matching
+expression. For instance, @'function' '|' pat_1 '->' expr_1 '|' \ldots@
+is syntactically correct and synonymous with
+@'function' pat_1 '->' expr_1 '|' \ldots@.
+
+\item The tokens "&&" and "||" are recognized as synonymous for "&"
+(sequential ``and'') and "or" (sequential ``or''), respectively.
+
+\end{itemize}
+
+\section{Infix symbols}
+
+Sequences of ``operator characters'', such as "<=>" or "!!",
+are read as a single token from the @infix-symbol@ or @prefix-symbol@
+class:
+\begin{syntax}
+infix-symbol:
+        ('=' || '<' || '>' || '@' || '^' || '|' || '&' || '~' ||
+         '+' || '-' || '*' || '/' || '$' || '%') { operator-char }
+;
+prefix-symbol:
+        ('!' || '?') { operator-char }
+;
+operator-char:
+        '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
+         '/' || ':' || ';' || '<' || '=' || '>' || '?' || '@' ||
+         '^' || '|' || '~'
+;
+\end{syntax}
+Tokens from these two classes generalize the built-in infix and prefix
+operators described in chapter~\ref{c:refman}:
+\begin{syntax}
+expr:
+    \ldots
+  | prefix-symbol expr
+  | expr infix-symbol expr
+;
+variable:
+    \ldots
+  | 'prefix' prefix-symbol
+  | 'prefix' infix-symbol
+;
+\end{syntax}
+\ikwd{prefix\@\verb`prefix`}%
+No "#infix" directive (section~\ref{s:exten-directives}) is needed to
+give infix symbols their infix status. The precedences and
+associativities of infix symbols  in expressions are determined by
+their first character(s): symbols beginning with "**" have highest
+precedence (exponentiation), followed by symbols beginning with "*",
+"/" or "%" (multiplication), then "+" and "-" (addition), then all
+others symbols (comparisons). The updated precedence table for
+expressions is shown below. We write ``"*"\ldots'' to mean ``any infix
+symbol starting with "*"''.
+\begin{tableau}{|l|l|}{Construction or operator}{Associativity}
+\entree{"!"\ldots"   ?"\ldots}{--}
+\entree{".   .(   .["}{--}
+\entree{function application}{right}
+\entree{constructor application}{--}
+\entree{"-   -." (prefix)}{--}
+\entree{"**"\ldots}{right}
+\entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod"}{left}
+\entree{"+"\ldots"   -"\ldots}{left}
+\entree{"::"}{right}
+\entree{{\tt \char64} "^"}{right}
+\entree{comparisons ("=  ==  < " etc.), all other infix symbols}{left}
+\entree{"not"}{--}
+\entree{"&   &&"}{left}
+\entree{"or  ||"}{left}
+\entree{","}{--}
+\entree{"<-   :="}{right}
+\entree{"if"}{--}
+\entree{";"}{right}
+\entree{"let  match  fun  function  try"}{--}
+\end{tableau}
+Some infix and prefix symbols are predefined in the default
+environment (see chapters~\ref{c:refman}~and~\ref{c:stdlib} for a
+description of their behavior). The others are initially unbound and
+must be bound before use, with a @'let' 'prefix' infix-symbol '=' expr@ 
+or @'let' 'prefix' prefix-symbol '=' expr@ binding.
+
+\section{Directives} \label{s:exten-directives}
+
+In addition to the standard \verb|#open| and \verb|#close| directives,
+Caml Light provides three additional directives.
+
+\begin{options}
+\item[@'#infix' '"' id '"'@]
+Change the lexical status of the identifier @id@: in the remainder of
+the compilation unit, @id@ is recognized as an infix operator, just
+like @'+'@. The notation @'prefix' id@ can be used to refer to the
+identifier @id@ itself. Expressions of the form @expr_1 id expr_2@ are
+parsed as the application @'prefix' id expr_1 expr_2@. The argument to
+the @'#infix'@ directive must be an identifier, that is, a sequence of
+letters, digits and underscores starting with a letter; otherwise, the
+@'#infix'@ declaration has no effect. Example:
+\begin{verbatim}
+        #infix "union";;
+        let prefix union = fun x y -> ... ;;
+        [1,2] union [3,4];;
+\end{verbatim}
+
+\item[@'#uninfix' '"' id '"'@]
+Remove the infix status attached to the identifier @id@ by a previous
+@'#infix' '"' id '"'@ directive.
+
+\item[@'#directory' '"' dir-name '"'@]
+Add the named directory to the path of directories searched for
+compiled module interface files. This is equivalent to the "-I"
+command-line option to the batch compiler and the toplevel system.
+
+\end{options}
+

@@ -1,0 +1,104 @@
+\chapter{Profiling (camlpro)} \label{c:profiler}
+
+This chapter describes how the execution of Caml Light programs can be
+profiled, by recording how many times functions are called, branches
+of conditionals are taken, \ldots 
+
+\begin{mac} This command is not available. \end{mac}
+\begin{pc} This command is not available. \end{pc}
+
+\section{Compiling for profiling}
+
+Before profiling an execution, the program must be compiled in
+profiling mode, using the "-p" option to the batch compiler "camlc"
+(see chapter~\ref{c:camlc}). When compiling modules separately, the
+"-p" option must be given both when compiling the modules (production
+of ".zo" files) and when linking them together.
+
+The amount of profiling information can be controlled by adding one or
+several letters after the "-p" option, indicating which parts of the
+program should be profiled:
+
+%% description des options
+\begin{options}
+\item["a"] all options
+\item["f"] function calls : a count point is set at the beginning of
+function bodies
+\item["i"] {\bf if \ldots then \ldots else \ldots} : count points are set in
+both {\bf then} branch and {\bf else} branch
+\item["l"] {\bf while, for} loops: a count point is set at the beginning of
+the loop body
+\item["m"] {\bf match} branches: a count point is set at the beginning of the
+body of each branch
+\item["t"] {\bf try \ldots with \ldots} branches: a count point is set at the
+beginning of the body of each branch
+\end{options}
+
+
+For instance, compiling with "-pfilm" profiles function calls, if\ldots then
+\ldots else\ldots, loops and pattern matching.
+
+The "-p" option without additional letters defaults to "-pfm",
+meaning that only function calls and pattern matching are profiled.
+
+\section{Profiling an execution}
+
+Running a bytecode executable file that has been compiled and linked with
+"-p" records the execution counts for the specified parts of the program
+and saves them in a file called "camlpro.dump" in the current directory.
+
+More precisely, the dump file "camlpro.dump" is written when the
+\verb|io__exit| function is called. 
+The linker, called with the {\tt -p} option, adds \verb|io__exit 0| as the last
+phrase of the bytecode executable, in case the original program never calls
+\verb|io__exit|. 
+However, if the program terminates with an "uncaught exception", the dump
+file will not be produced.
+
+If a compatible dump file already exists in the current directory, then the
+profiling information is accumulated in this dump file. This allows, for
+instance, the profiling of several executions of a program on
+different inputs.
+
+\section{Printing profiling information}
+
+The "camlpro" command produces a source listing of the program modules
+where execution counts have been inserted as comments. For instance,
+\begin{verbatim}
+        camlpro foo.ml
+\end{verbatim}
+prints the source code for the "foo" module, with comments indicating
+how many times the functions in this module have been called. Naturally,
+this information is accurate only if the source file has not been modified
+since the profiling execution took place.
+
+The following options are recognized by "camlpro":
+
+\begin{options}
+\item[compiler options {\tt -stdlib, -I, -include, -O, -open, -i, -lang}]
+See chapter~\ref{c:camlc} for the detailed usage.
+\item["-f" \var{dumpfile}] 
+Specifies an alternate dump file of profiling information
+\item["-F" \var{string}]
+Specifies an additional string to be output with profiling information.
+By default, {\sf camlpro} will annotate progams with comments of the form
+{\tt (* n *)} where {\tt n} is the counter value for a profiling point. With
+option {\tt -F s}, the annotation will be {\tt (* sn *)}.
+\end{options}
+
+An additional argument specifies the output file. For instance
+\begin{verbatim}
+	camlpro -f ../test/camlpro.dump foo.ml foo_profiled.ml
+\end{verbatim} 
+will save the annotated program in file {\tt foo_profiled.ml}. Otherwise,
+the annotated program is written on the standard output.
+
+
+\section{Known bugs}
+The following situation (file \verb|x.ml|)
+\begin{verbatim}
+let a = 1;;
+x__a ;;
+\end{verbatim} 
+will break the profiler. More precisely, one should avoid to refer to
+symbols of the current module with the qualified symbol syntax.

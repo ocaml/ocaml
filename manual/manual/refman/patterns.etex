@@ -1,0 +1,119 @@
+\section{Patterns}
+\ikwd{as\@\verb`as`}
+
+\begin{syntax}
+pattern:
+    value-name
+  | '_'
+  | constant
+  | pattern 'as' value-name
+  | '(' pattern ')'
+  | '(' pattern ':' typexpr ')'
+  | pattern '|' pattern
+  | ncconstr pattern
+  | pattern { ',' pattern }
+  | '{' label '=' pattern { ';' label '=' pattern } '}'
+  | '[' pattern { ';' pattern } ']'
+  | pattern '::' pattern
+  | char-literal '..' char-literal
+\end{syntax}
+
+The table below shows the relative precedences and associativity of
+operators and non-closed pattern constructions. The constructions with
+higher precedences come first.
+\ikwd{as\@\verb`as`}
+\begin{tableau}{|l|l|}{Operator}{Associativity}
+\entree{Constructor application}{--}
+\entree{"::"}{right}
+\entree{","}{--}
+\entree{"|"}{left}
+\entree{"as"}{--}
+\end{tableau}
+
+Patterns are templates that allow selecting data structures of a
+given shape, and binding identifiers to components of the data
+structure. This selection operation is called pattern matching; its
+outcome is either ``this value does not match this pattern'', or
+``this value matches this pattern, resulting in the following bindings
+of names to values''.
+
+\subsubsection*{Variable patterns}
+
+A pattern that consists in a value name matches any value,
+binding the name to the value. The pattern @"_"@ also matches
+any value, but does not bind any name.
+
+Patterns are {\em linear\/}: a variable cannot appear several times in
+a given pattern. In particular, there is no way to test for equality
+between two parts of a data structure using only a pattern (but
+@"when"@ guards can be used for this purpose).
+
+\subsubsection*{Constant patterns}
+
+A pattern consisting in a constant matches the values that
+are equal to this constant.
+
+\subsubsection*{Alias patterns}
+\ikwd{as\@\verb`as`}
+
+The pattern @pattern_1 "as" value-name@ matches the same values as
+@pattern_1@. If the matching against @pattern_1@ is successful,
+the name @name@ is bound to the matched value, in addition to the
+bindings performed by the matching against @pattern_1@.
+
+\subsubsection*{Parenthesized patterns}
+
+The pattern @"(" pattern_1 ")"@ matches the same values as
+@pattern_1@. A type constraint can appear in a
+parenthesized patterns, as in @"(" pattern_1 ":" typexpr ")"@. This
+constraint forces the type of @pattern_1@ to be compatible with
+@type@.
+
+\subsubsection*{``Or'' patterns}
+
+The pattern @pattern_1 "|" pattern_2@ represents the logical ``or'' of
+the two patterns @pattern_1@ and @pattern_2@. A value matches
+@pattern_1 "|" pattern_2@ either if it matches @pattern_1@ or if it
+matches @pattern_2@. The two sub-patterns @pattern_1@ and @pattern_2@
+must contain no identifiers. Hence no bindings are returned by
+matching against an ``or'' pattern.
+
+\subsubsection*{Variant patterns}
+
+The pattern @ncconstr pattern_1@ matches all variants whose
+constructor is equal to @ncconstr@, and whose argument matches
+@pattern_1@.
+
+The pattern @pattern_1 "::" pattern_2@ matches non-empty lists whose
+heads match @pattern_1@, and whose tails match @pattern_2@. This
+pattern behaves like @"prefix" "::" "(" pattern_1 "," pattern_2 ")"@.
+
+The pattern @"[" pattern_1 ";" \ldots ";" pattern_n "]"@ matches lists
+of length $n$ whose elements match @pattern_1@ \ldots @pattern_n@,
+respectively. This pattern behaves like
+@pattern_1 "::" \ldots "::" pattern_n "::" "[]"@.
+
+\subsubsection*{Tuple patterns}
+
+The pattern @pattern_1 "," \ldots "," pattern_n@ matches $n$-tuples
+whose components match the patterns @pattern_1@ through @pattern_n@. That
+is, the pattern matches the tuple values @(v_1, \ldots, v_n)@ such that
+@pattern_i@ matches @v_i@ for \fromoneto{i}{n}.
+
+\subsubsection*{Record patterns}
+
+The pattern @"{" label_1 "=" pattern_1 ";" \ldots ";" label_n "="
+pattern_n "}"@ matches records that define at least the labels
+@label_1@ through @label_n@, and such that the value associated to
+@label_i@ match the pattern @pattern_i@, for \fromoneto{i}{n}.
+The record value can define more labels than @label_1@ \ldots
+@label_n@; the values associated to these extra labels are not taken
+into account for matching.
+
+\subsubsection*{Interval patterns}
+
+The pattern @char-literal_1 '..' char-literal_2@ matches all
+characters that belong to the character range between @char-literal_1@
+(included) and @char-literal_2@ (included). Characters are ordered by
+their code.
+

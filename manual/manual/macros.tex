@@ -1,0 +1,191 @@
+\makeatletter
+
+% Notations pour les metavariables
+\def\var#1{{\it#1}}
+\def\nth#1#2{${\it#1}_{#2}$}
+\def\nmth#1#2#3{${\it#1}_{#2}^{#3}$}
+\def\optvar#1{[\var{#1}\/]}
+\def\event{$\bowtie$}
+\def\fromoneto#1#2{$#1 = 1, \ldots, #2$}
+
+% Pour avoir les exposants sur la ligne au-dessus (???)
+
+\ifplaintext
+\fontdimen14\tensy=12pt
+\fi
+
+% Numerotation
+\setcounter{secnumdepth}{2}     % Pour numeroter les \subsection
+\setcounter{tocdepth}{1}        % Pour ne pas mettre les \subsection
+                                % dans la table des matieres
+
+% Pour avoir "_" qui marche en mode math et en mode normal
+\catcode`\_=13
+\catcode`\=8
+\def\_{\hbox{\tt\char95}}
+\def_{\ifmmode\else\_\fi}
+
+\ifplaintext
+\def\ttstretch{\tt}
+\else
+\def\ttstretch{\tt\spaceskip=5.77pt plus 1.83pt minus 1.22pt}
+% La fonte cmr10 a normalement des espaces de 5.25pt non extensibles.
+% En 11 pt ca fait 5.77 pt. On lui ajoute la meme flexibilite que
+% cmr10 agrandie a 11 pt.
+\fi
+
+% Pour la traduction "xxxx" -> {\machine xxxx} faite par texquote2
+\def\machine{\ttstretch}
+
+% Environnements
+
+\newlength{\versionwidth}
+\setbox0=\hbox{\bf Unix:} \setlength{\versionwidth}{\wd0}
+
+\def\versionspecific#1{
+  \list{}{\setlength{\leftmargin}{\versionwidth}
+          \addtolength{\leftmargin}{\labelsep}
+          \setlength{\labelwidth}{\versionwidth}}
+  \item[\bf #1:\hfill]}
+
+\def\unix{\versionspecific{Unix}}
+\def\endunix{\endlist}
+\def\mac{\versionspecific{Mac}}
+\def\endmac{\endlist}
+\def\pc{\versionspecific{PC}}
+\def\endpc{\endlist}
+
+\def\requirements{\trivlist \item[\hskip\labelsep {\bf Requirements.}]}
+\def\endrequirements{\endtrivlist}
+\def\installation{\trivlist \item[\hskip\labelsep {\bf Installation.}]}
+\def\endinstallation{\endtrivlist}
+\def\troubleshooting{\trivlist \item[\hskip\labelsep {\bf Troubleshooting.}]}
+\def\endtroubleshooting{\endtrivlist}
+
+\newtheorem{gcrule}{Rule}
+
+% Pour les tables de priorites et autres tableaux a deux colonnes, encadres
+
+\def\tableau#1#2#3{%
+\begin{center}
+\begin{tabular}{#1}
+\hline
+#2 & #3 \\
+\hline
+}
+\def\endtableau{\hline\end{tabular}\end{center}}
+\def\entree#1#2{#1 & #2 \\}
+
+% L'environnement option
+
+\def\optionitem[#1]{\if@noparitem \@donoparitem
+  \else \if@inlabel \indent \par \fi
+         \ifhmode \unskip\unskip \par \fi
+         \if@newlist \if@nobreak \@nbitem \else
+                        \addpenalty\@beginparpenalty
+                        \addvspace\@topsep \addvspace{-\parskip}\fi
+           \else \addpenalty\@itempenalty \addvspace\itemsep
+          \fi
+    \global\@inlabeltrue
+\fi
+\everypar{\global\@minipagefalse\global\@newlistfalse
+          \if@inlabel\global\@inlabelfalse \hskip -\parindent \box\@labels
+             \penalty\z@ \fi
+          \everypar{}}\global\@nobreakfalse
+\if@noitemarg \@noitemargfalse \if@nmbrlist \refstepcounter{\@listctr}\fi \fi
+\setbox\@tempboxa\hbox{\makelabel{#1}}%
+\global\setbox\@labels
+\ifdim \wd\@tempboxa >\labelwidth
+ \hbox{\unhbox\@labels 
+       \hskip -\leftmargin
+       \box\@tempboxa}\hfil\break
+ \else
+ \hbox{\unhbox\@labels
+       \hskip -\leftmargin
+       \hbox to\leftmargin {\makelabel{#1}\hfil}}
+ \fi
+ \ignorespaces}
+
+\def\optionlabel#1{\bf #1}
+\def\options{\list{}{\let\makelabel\optionlabel\let\@item\optionitem}}
+\def\endoptions{\endlist}
+
+% L'environnement library (pour composer les descriptions des modules
+% de bibliotheque).
+
+\def\comment{\penalty200\list{}{}\item[]}
+\def\endcomment{\endlist\penalty-100}
+
+\def\library{
+\begingroup
+\raggedright
+\let\@savedlistI=\@listI%
+\def\@listI{\leftmargin\leftmargini\parsep 0pt plus 1pt\topsep 0pt plus 2pt}%
+\itemsep 0pt
+\topsep 0pt plus 2pt
+\partopsep 0pt
+}
+
+\def\endlibrary{
+\endgroup
+}
+
+\def\restoreindent{\begingroup\let\@listI=\@savedlistI}
+\def\endrestoreindent{\endgroup}
+
+% ^^A...^^A: compose l'interieur en \tt, comme \verb
+
+\catcode`\^^A=\active
+\def{%
+\begingroup\catcode``=13\@noligs\ttstretch\let\do\@makeother\dospecials%
+\def\@xobeysp{\leavevmode\penalty100\ }%
+\@vobeyspaces\frenchspacing\catcode`\^^A=\active\def{\endgroup}}
+
+% Pour l'index
+
+\newcommand{\ikwd}{\altindex{\jobname.kwd}}
+
+% Les en-tetes personnalises
+
+\pagestyle{myheadings}
+\def\partmark#1{\markboth{Part \thepart. \ #1}{}}
+\def\chaptermark#1{\markright{Chapter \thechapter. \ #1}}
+
+% nth
+
+\def\th{^{\hbox{\scriptsize th}}}
+
+% Pour annuler l'espacement vertical qui suit un "verbatim"
+\def\cancelverbatim{\vspace{-\topsep}\vspace{-\parskip}}% exact.
+
+% Pour annuler l'espacement vertical entre deux \item consecutifs dans \options
+\def\cancelitemspace{\vspace{-8mm}}% determine empiriquement
+
+% Pour faire la cesure apres _ dans les identificateurs
+\def\={\discretionary{}{}{}}
+\def\cuthere{\discretionary{}{}{}}
+
+% Pour la coupure en petits documents
+
+\let\mysection=\section
+
+%%% Augmenter l'espace entre numero de section
+%   et nom de section dans la table des matieres.
+
+\ifplaintext\else
+\def\l@section{\@dottedtocline{1}{1.5em}{2.8em}}  % D'origine: 2.3
+\fi
+
+% Produit un index en deux colonnes equilibrees...
+
+\def\theindex{\bgroup\parindent0pt\parskip\z@ plus .3\p@\relax\let\item\@idxitem}
+\def\endtheindex{\egroup}
+
+\def\myprintindex#1{
+  \begin{multicols}{2}\raggedright
+  \@input{#1}
+  \end{multicols}}
+
+%%% Fin des hacks
+
+\makeatother

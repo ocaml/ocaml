@@ -1,0 +1,25 @@
+\chapter{The core library} \label{c:stdlib}
+
+This chapter describes the functions provided by the Caml Light
+core library module: module "Pervasive". This module is special in two
+ways:
+\begin{itemize}
+\item It is automatically linked with the user's object code files by
+the "cslc" command (chapter~\ref{c:camlc}).
+
+\item It is automatically ``opened'' when a compilation starts, or
+when the toplevel system is launched. Hence, it is possible to use
+unqualified identifiers to refer to the functions provided by the
+"Pervasive" module, without adding a "open Pervasive" directive.
+\end{itemize}
+
+\section*{Conventions}
+
+The declarations from the signature of the "Pervasive" module are
+printed one by one in typewriter font, followed by a short comment.
+All modules and the identifiers they export are indexed at the end of
+this report.
+
+\begin{library}
+\input pervasives.tex
+\end{library}

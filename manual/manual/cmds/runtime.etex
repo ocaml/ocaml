@@ -1,0 +1,137 @@
+\chapter{The runtime system (csllrun)} \label{c:runtime}
+
+The "cslrun" command executes bytecode files produced by the
+linking phase of the "cslc" command.
+
+\section{Overview}
+
+The "cslrun" command comprises three main parts: the bytecode
+interpreter, that actually executes bytecode files; the memory
+allocator and garbage collector; and a set of C functions that
+implement primitive operations such as input/output.
+
+The usage for "cslrun" is:
+\begin{alltt}
+        cslrun \var{options} \var{bytecode-executable} \nth{arg}{1} ... \nth{arg}{n}
+\end{alltt}
+The first non-option argument is taken to be the name of the file
+containing the executable bytecode. (That file is searched in the
+executable path as well as in the current directory.) The remaining
+arguments are passed to the Caml Light program, in the string array
+"Sys.argv". Element 0 of this array is the name of the
+bytecode executable file; elements 1 to \var{n} are the remaining
+arguments \nth{arg}{1} to \nth{arg}{n}.
+
+As mentioned in chapter~\ref{c:camlc}, in most cases, the bytecode
+executable files produced by the "cslc" command are self-executable,
+and manage to launch the "cslrun" command on themselves
+automatically. That is, assuming "caml.out" is a bytecode executable
+file,
+\begin{alltt}
+        caml.out \nth{arg}{1} ... \nth{arg}{n}
+\end{alltt}
+works exactly as
+\begin{alltt}
+        cslrun caml.out \nth{arg}{1} ... \nth{arg}{n}
+\end{alltt}
+Notice that it is not possible to pass options to "cslrun" when
+invoking "caml.out" directly.
+
+\section{Options}
+
+The following command-line option is recognized by "cslrun".
+
+\begin{options}
+
+\item["-v"] 
+When set, the memory manager prints verbose messages on standard error
+to signal garbage collections and heap extensions.
+
+\end{options}
+
+\noindent
+The following environment variable are also consulted:
+
+\begin{options}
+\item["CAMLRUNPARAM"] Set the garbage collection parameters.
+  This variable must be a sequence of parameter specifications.
+  A parameter specification is an option letter followed by an "="
+  sign and a decimal number.  There are four options,
+  corresponding to the four fields of the "control" record
+  documented in section~\ref{s:Gc}:
+  \begin{options}
+  \item[s] ("minor_heap_size")  Size of the minor heap.
+  \item[i] ("major_heap_increment")  Minimum size increment for the
+  major heap.
+  \item[o] ("space_overhead")  The major GC speed setting.
+  \item[v] ("verbose")  Whether to print GC messages or not.  0 is
+  false; 1 is true; other values may give unexpected results.
+  \end{options}
+  For example, under "csh" the command
+\begin{alltt}
+        setenv CAMLRUNPARAM 's=250000 v=1'
+\end{alltt}
+  tells a subsequent "cslrun" to set its initial minor heap size to
+  about 1~megabyte (on a 32-bit machine) and to print its GC messages.
+
+\item["PATH"] List of directories searched to find the bytecode
+executable file.
+\end{options}
+
+\section{Common errors}
+
+This section describes and explains the most frequently encountered
+error messages.
+
+\begin{options}
+
+\item[{\it filename}": no such file or directory"]
+If {\it filename} is the name of a self-executable bytecode file, this
+means that either that file does not exist, or that it failed to run
+the "cslrun" bytecode interpreter on itself. The second possibility
+indicates that Caml Special Light has not been properly installed on your
+system.
+
+\item["Cannot exec camlrun"]
+(When launching a self-executable bytecode file.) The "cslrun"
+ could not be found in the executable path. Check that Caml
+Special Light has been properly installed on your system.
+
+\item["Cannot find the bytecode file"]
+The file that "cslrun" is trying to execute (e.g. the file given as
+first non-option argument to "cslrun") either does not exist, or is
+not a valid executable bytecode file.
+
+\item["Truncated bytecode file"]
+The file that "cslrun" is trying to execute is not a valid executable
+bytecode file. Probably it has been truncated or mangled since
+created. Erase and rebuild it.
+
+\item["Uncaught exception"]
+The program being executed contains a ``stray'' exception. That is,
+it raises an exception at some point, and this exception is never
+caught. This causes immediate termination of the program. The name of
+the exception is printed, but not its arguments.
+
+\item["Out of memory"]
+The program being executed requires more memory than available. Either
+the program builds excessively large data structures; or the program
+contains too many nested function calls, and the stack overflows.  In
+some cases, your program is perfectly correct, it just requires more
+memory than your machine provides. In other cases, the ``out of
+memory'' message reveals an error in your program: non-terminating
+recursive function, allocation of an excessively large array or
+string, attempts to build an infinite list or other data structure,
+\ldots
+
+To help you diagnose this error, run your program with the "-v" option
+to "cslrun". If it displays lots of ``"Growing stack"\ldots''
+messages, this is probably a looping recursive function. If it
+displays lots of ``"Growing heap"\ldots'' messages, with the heap size
+growing slowly, this is probably an attempt to construct a data
+structure with too many (infinitely many?) cells. If it displays few 
+``"Growing heap"\ldots'' messages, but with a huge increment in the
+heap size, this is probably an attempt to build an excessively large
+array or string.
+
+\end{options}

@@ -1,0 +1,57 @@
+\chapter*{Foreword}
+\markboth{Foreword}{}
+
+This manual documents the release \cslversion\ of the Caml Special
+Light system. It is organized as follows.
+\begin{itemize}
+\item Part~\ref{p:refman}, ``The Caml Special Light language'', is the
+reference description of the Caml Special Light language.
+\item Part~\ref{p:commands}, ``The Caml Special Light tools, documents
+the compilers, toplevel system, and programming utilities.
+\item Part~\ref{p:library}, ``The Caml Special Light library'', describes the
+modules provided in the standard library.
+\item Part~\ref{p:appendix}, ``Appendix'', contains an
+index of all identifiers defined in the standard library, and an
+index of keywords.
+\end{itemize}
+
+\section*{License}
+
+The Caml Special Light system is copyright \copyright\ 1995 Institut
+National de Recherche en Informatique et en Automatique (INRIA).
+INRIA holds all ownership rights to the Caml Special Light system. See
+the file "LICENSE" in the distribution for licensing information.
+
+The Caml Special Light system can be freely copied, but not sold. More
+precisely, INRIA grants any user of the Caml Light system the right to
+reproduce it, provided that the copies are distributed free of charge
+and under the conditions given in the "LICENSE" file. The present
+documentation is distributed under the same conditions.
+
+\section*{Availability}
+
+The complete Caml Special Light distribution resides on the machine
+"ftp.inria.fr". The distribution files can be transferred by anonymous FTP:
+\begin{latexonly}
+\begin{center}
+\begin{tabular}{ll}
+Host:       & "ftp.inria.fr" (Internet address "192.93.2.54") \\
+Login name: & "anonymous" \\
+Password:   & your e-mail address \\
+Directory:  & "lang/caml-light" \\
+Files:      & see the index in file "README"
+\end{tabular}
+\end{center}
+\end{latexonly}
+\begin{rawhtml}
+<blockquote>
+<b>Host:</b> <tt>ftp.inria.fr</tt> (Internet address <tt>192.93.2.54</tt>)<br>
+<b>Login name:</b> <tt>anonymous</tt> <br>
+<b>Password:</b> your e-mail address <br>
+<b>Directory:</b> <tt>lang/caml-light</tt><br>
+<b>Files:</b> see the index in file <tt>README</tt>
+</blockquote>
+\end{rawhtml}
+
+More information on Caml Special Light is also available on the World
+Wide Web, "http://pauillac.inria.fr/csl/".

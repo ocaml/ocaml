@@ -1,0 +1,26 @@
+#!/usr/local/bin/perl
+# Expand \input commands
+
+while(<>) {
+  if (/^\\input\s*([^\s]*)/) {
+    do expand($1);
+  } else {
+    print $_;
+  }
+}
+
+sub expand {
+  local ($filename) = @_;
+  local (*INPUT);
+  $filename .= ".tex" if ! -f $filename;
+  open(INPUT, $filename) || (warn("cannot find $filename"), return);
+  print "%%% $filename\n";
+  while(<INPUT>) {
+    if (/^\\input\s*([^\s]*)/) {
+      do expand($1);
+    } else {
+      print $_;
+    }
+  }
+  close(INPUT);
+}

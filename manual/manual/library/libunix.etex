@@ -1,0 +1,30 @@
+\chapter{The unix library: Unix system calls}
+
+The "unix" library (distributed in "contrib/libunix") makes many Unix
+system calls and system-related library functions available to Caml
+Light programs. This chapter describes briefly the functions provided.
+Refer to sections 2~and~3 of the Unix manual for more details on the
+behavior of these functions. 
+
+Not all functions are provided by all Unix variants. If some functions
+are not available, they will raise "Invalid_arg" when called.
+
+Programs that use the "unix" library must be linked in ``custom
+runtime'' mode, as follows:
+\begin{alltt}
+        camlc -custom \var{other options} unix.zo \var{other files} -lunix
+\end{alltt}
+For interactive use of the "unix" library, run "camllight camlunix".
+
+\begin{mac}
+This library is not available.
+\end{mac}
+
+\begin{pc}
+This library is not available.
+\end{pc}
+
+\begin{library}
+\input unix.tex
+\end{library}
+

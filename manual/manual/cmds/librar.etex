@@ -1,0 +1,142 @@
+\chapter{The librarian (camllibr)} \label{c:camllibr}
+
+\begin{mac} This command is a MPW tool, not a standalone Macintosh
+application.
+\end{mac}
+
+\section{Overview}
+
+The "camllibr" program packs in one single file a set of bytecode
+object files (".zo" files). The resulting file is also a
+bytecode object file and also has the ".zo" extension. It can be
+passed to the link phase of the "camlc" compiler in replacement of the
+original set of bytecode object files. That is, after running
+\begin{verbatim}
+        camllibr -o library.zo mod1.zo mod2.zo mod3.zi mod4.zo
+\end{verbatim}
+all calls to the linker with the form
+\begin{verbatim}
+        camlc ... library.zo ...
+\end{verbatim}
+are exactly equivalent to
+\begin{verbatim}
+        camlc ... mod1.zo mod2.zo mod3.zi mod4.zo ...
+\end{verbatim}
+
+The typical use of "camllibr" is to build a library composed of
+several modules: this way, users of the library have only one ".zo"
+file to specify on the command line to "camlc", instead of a bunch of
+".zo" files, one per module contained in the library.
+
+The linking phase of "camlc" is clever enough to discard the code
+corresponding to useless phrases: in particular, definitions for
+global variables that are never used after their definitions. Hence,
+there is no problem with putting many modules, even rarely used ones,
+into one single library: this will not result in bigger executables.
+
+The usage for "camllibr" is:
+\begin{alltt}
+        camllibr \var{options} \nth{file}{1}.zo ... \nth{file}{n}.zo
+\end{alltt}
+where \nth{file}{1}.zo through \nth{file}{n}.zo are the object files to pack
+together. The order in which these file names are presented on the
+command line is relevant: the compiled phrases contained in the
+library will be executed in that order. (Remember that it is a
+link-time error to refer to a global variable that has not yet been
+defined.)
+
+\section{Options}
+
+The following command-line options are recognized by "camllibr".
+
+\begin{options}
+
+\item["-files" {\em response-file}]
+Process the files whose names are listed in file
+{\em response-file}, just as if these names appeared on the command line.
+File names in {\em response-file} are separated by blanks (spaces,
+tabs, newlines). This option allows to overcome silly limitations on
+the length of the command line.
+
+\item["-I" {\em directory}]
+Add the given directory to the list of directories searched for the
+input ".zo" files. By default, the current directory is searched
+first, then the standard library directory. Directories added with
+"-I" are searched after the current directory, but before the standard
+library directory. When several directories are added with several
+"-I" options on the command line, these directories are searched from
+right to left (the rightmost directory is searched first, the leftmost
+is searched last).
+
+\item["-o" {\em library-name}]
+Specify the name of the output file. The default is "library.zo".
+
+\end{options}
+
+\section{Turning code into a library}
+
+To develop a library, it is usually more convenient to split it into
+several modules, that reflect the internal structure of the library.
+From the standpoint of the library users, however, it is preferable to
+view the library as a single module, with only one interface file
+(".zi" file) and one implementation file (".zo" file): linking is easier,
+and there is no need to put a bunch of \verb|#open| directives, nor to
+have to remember the internal structure of the library.
+
+The "camllibr" command allows having a single ".zo" file for the whole
+library. Here is how the Caml Light module system can be used (some
+say ``abused'') to have a single ".zi" file for the whole library. To
+be more concrete, assume that the library comprises three modules,
+"windows", "images" and "buttons". The idea is to add a fourth module,
+"mylib", that re-exports the public parts of "windows", "images" and
+"buttons". The interface "mylib.mli" contains definitions for those
+types that are public (exported with their definitions), declarations
+for those types that are abstract (exported without their
+definitions), and declarations for the functions that can be called
+from the user's code:
+\begin{verbatim}
+(* File mylib.mli *)
+type 'a option = None | Some of 'a;;    (* a public type *)
+type window and image and button;;      (* three abstract types *)
+value new_window : int -> int -> window (* the public functions *)
+  and draw_image : image -> window -> int -> int -> unit
+  and ...
+\end{verbatim}
+The implementation of the "mylib" module simply equates the abstract
+types and the public functions to the corresponding types and
+functions in the modules "windows", "images" and "buttons":
+\begin{verbatim}
+(* File mylib.ml *)
+type window == windows__win
+ and image  == images__pixmap
+ and button == buttons__t;;
+let new_window = windows__open_window
+and draw_image = images__draw
+and ...
+\end{verbatim}
+The files "windows.ml", "images.ml" and "buttons.ml" can open the
+"mylib" module, to access the public types defined in the interface
+"mylib.mli", such as the "option" type. Of course, these modules must
+not reference the abstract types nor the public functions, to avoid
+circularities.
+
+Types such as "windows__win" in the example above can be exported by
+the "windows" module either abstractly or concretely (with their
+definition). Often, it is necessary to export them concretely, because
+the other modules in the library ("images", "buttons") need to build
+or destructure directly values of that type. Even if "windows__win" is
+exported concretely by the "windows" module, that type will remain
+abstract to the library user, since it is abstracted by the public
+interface "mylib".
+
+The actual building of the library "mylib" proceeds as follows:
+\begin{verbatim}
+camlc -c mylib.mli              # create mylib.zi
+camlc -c windows.mli windows.ml images.mli images.ml
+camlc -c buttons.mli buttons.ml
+camlc -c mylib.ml               # create mylib.zo
+mv mylib.zo tmplib.zo           # renaming to avoid overwriting mylib.zo
+camllibr -o mylib.zo windows.zo images.zo buttons.zo tmplib.zo
+\end{verbatim}
+Then, copy "mylib.zi" and "mylib.zo" to a place accessible to the
+library users. The other ".zi" and ".zo" files need not be copied.

@@ -1,0 +1,591 @@
+\chapter{The debugger (camldebug)} \label{c:debugger}
+
+This chapter describes the Caml Light source-level replay debugger
+"camldebug".
+
+\begin{unix} The debugger resides in the directory "contrib/debugger"
+in the distribution. It requires a Unix system that provides BSD sockets.
+\end{unix}
+
+\begin{mac} The debugger is not available. \end{mac}
+
+\begin{pc} The debugger is not available. \end{pc}
+
+\section{Compiling for debugging}
+
+Before the debugger can be used, the program must be compiled and
+linked with the "-g" option: all ".zo" files that are part of the
+program should have been created with "camlc -g", and they must be
+linked together with "camlc -g".
+
+Compiling with "-g" entails no penalty on the running time of
+programs: ".zo" files and bytecode executable files are bigger and
+take slightly longer to produce, but the executable files run at
+exactly the same speed as if they had been compiled without "-g". It
+is therefore perfectly acceptable to compile always in "-g" mode.
+
+\section{Invocation}
+
+\subsection{Starting the debugger}
+
+The Caml Light debugger is invoked by running the program
+"camldebug" with the name of the bytecode executable file as argument:
+\begin{alltt}
+        camldebug \var{program}
+\end{alltt}
+The following command-line options are recognized:
+\begin{options}
+\item["-stdlib "\var{directory}]
+Look for the standard library files in \var{directory} instead of in
+the default directory.
+
+\item["-s "\var{socket}]
+Use \var{socket} for communicating with the debugged program. See the
+description of the command "set socket" (section~\ref{s:communication})
+for the format of \var{socket}.
+
+\item["-c " \var{count}]
+Set the maximum number of checkpoint to \var{count}.
+
+\item["-cd " \var{directory}]
+Run the debugger program from the working directory \var{directory},
+instead of the current directory.
+
+\item["-emacs"]
+Tell the debugger it is executed under Emacs. (See
+section~\ref{s:inf-debugger} for information on how to run the
+debugger under Emacs.)
+\end{options}
+
+\subsection{Quitting the debugger}
+
+The command "quit" exits the debugger. You can also exit the debugger
+by typing an end-of-file character (usually "ctrl-D").
+
+Typing an interrupt character (usually "ctrl-C") will not exit the
+debugger, but will terminate the action of any debugger command that is in
+progress and return to the debugger command level. 
+
+\section{Commands} \label{s:debugger-commands}
+
+A debugger command is a single line of input. It starts with a command
+name, which is followed by arguments depending on this name. Examples:
+\begin{verbatim}
+        run
+        goto 1000
+        set arguments arg1 arg2
+\end{verbatim}
+
+A command name can be truncated as long as there is no ambiguity. For
+instance, "go 1000" is understood as "goto 1000", since there are no
+other commands whose name starts with "go". For the most frequently
+used commands, ambiguous abbreviations are allowed. For instance, "r"
+stands for "run" even though there are others commands starting with
+"r". You can test the validity of an abbreviation using the "help" command.
+
+If the previous command has been successful, a blank line (typing just
+"RET") will repeat it.
+
+\subsection{Getting help}
+
+The Caml Light debugger has a simple on-line help system, which gives
+a brief description of each command and variable.
+
+\begin{options}
+\item["help"]
+Print the list of commands.
+
+\item["help "\var{command}]
+Give help about the command \var{command}.
+
+\item["help set "\var{variable}, "help show "\var{variable}]
+Give help about the variable \var{variable}. The list of all debugger
+variables can be obtained with "help set".
+
+\item["help info "\var{topic}]
+Give help about \var{topic}. Use "help info" to get a list of known topics.
+\end{options}
+
+\subsection{Accessing the debugger state}
+
+\begin{options}
+\item["set "\var{variable} \var{value}]
+Set the debugger variable \var{variable} to the value \var{value}.
+
+\item["show "\var{variable}]
+Print the value of the debugger variable \var{variable}.
+
+\item["info "\var{subject}]
+Give information about the given subject.
+For instance, "info breakpoints" will print the list of all breakpoints.
+\end{options}
+
+\section{Executing a program}
+
+\subsection{Events}
+
+Events are ``interesting'' locations in the source code, corresponding
+to the beginning or end of evaluation of ``interesting''
+sub-expressions. Events are the unit of single-stepping (stepping goes
+to the next or previous event encountered in the program execution).
+Also, breakpoints can only be set at events. Thus, events play the
+role of line numbers in debuggers for conventional languages.
+
+During program execution, a counter is incremented at each event
+encountered. The value of this counter is referred as the {\em current
+time}. Thanks to reverse execution, it is possible to jump back and
+forth to any time of the execution.
+
+Here is where the debugger events (written \event) are located in
+the source code:
+\begin{itemize}
+\item Following a function application:
+\begin{alltt}
+(f arg)\event
+\end{alltt}
+\item After receiving an argument to a function:
+\begin{alltt}
+fun x\event y\event z -> \event ...
+\end{alltt}
+If a curried function is defined by pattern-matching with several
+cases, events corresponding to the passing of arguments are displayed
+on the first case of the function, because pattern-matching has not
+yet determined which case to select:
+\begin{alltt}
+fun pat1\event pat2\event pat3 -> \event ...
+  | ...
+\end{alltt}
+\item On each case of a pattern-matching definition (function,
+"match"\ldots"with" construct, "try"\ldots"with" construct):
+\begin{alltt}
+function pat1 -> \event expr1
+       | ...
+       | patN -> \event exprN
+\end{alltt}
+\item Between subexpressions of a sequence:
+\begin{alltt}
+expr1; \event expr2; \event ...; \event exprN
+\end{alltt}
+\item In the two branches of a conditional expression:
+\begin{alltt}
+if cond then \event expr1 else \event expr2
+\end{alltt}
+\item At the beginning of each iteration of a loop:
+\begin{alltt}
+while cond do \event body done
+for i = a to b do \event body done
+\end{alltt}
+\end{itemize}
+Exceptions: A function application followed by a function return is replaced
+by the compiler by a jump (tail-call optimization). In this case, no
+event is put after the function application. Also, no event is put
+after a function application when the function is a primitive function
+(written in C). Finally, several events may correspond to the same
+location in the compiled program. Then, the debugger cannot
+distinguish them, and selects one of the events to associate with the
+given code location.  The event chosen is a ``function application''
+event if there is one at that location, or otherwise the event which
+appears last in the source. This heuristic generally picks the ``most
+interesting'' event associated with the code location.
+
+\subsection{Starting the debugged program}
+
+The debugger starts executing the debugged program only when needed.
+This allows setting breapoints or assigning debugger variables before
+execution starts. There are several ways to start execution:
+\begin{options}
+\item["run"] Run the program until a breakpoint is hit, or the program
+terminates.
+\item["step 0"] Load the program and stop on the first event.
+\item["goto "\var{time}] Load the program and execute it until the
+given time. Useful when you already know approximately at what time
+the problem appears. Also useful to set breakpoints on function values
+that have not been computed at time 0 (see section~\ref{s:breakpoints}).
+\end{options}
+
+The execution of a program is affected by certain information it
+receives when the debugger starts it, such as the command-line
+arguments to the program and its working directory. The debugger
+provides commands to specify this information ("set arguments" and "cd").
+These commands must be used before program execution starts. If you try
+to change the arguments or the working directory after starting your
+program, the debugger will kill the program (after asking for confirmation).
+
+\subsection{Running the program}
+
+The following commands execute the program forward or backward,
+starting at the current time. The execution will stop either when
+specified by the command or when a breakpoint is encountered.
+
+\begin{options}
+\item["run"] Execute the program forward from current time. Stops at
+next breakpoint or when the program terminates.
+\item["reverse"] Execute the program backward from current time.
+Mostly useful to go to the last breakpoint encountered before the
+current time.
+\item["step "\optvar{count}] Run the program and stop at the next event. With
+an argument, do it \var{count} times.
+\item["backstep "\optvar{count}] Run the program backward and stop at
+the previous event. With an argument, do it \var{count} times.
+\item["next "\optvar{count}] Run the program and stop at the next
+event, skipping over function calls. With an argument, do it
+\var{count} times.
+\item["finish"] Run the program until the current function returns.
+\end{options}
+
+\subsection{Time travel}
+
+You can jump directly to a given time, without stopping on
+breakpoints, using the "goto" command.
+
+As you move through the program, the debugger maintains an history of
+the successive times you stop at. The "last" command can be used to
+revisit these times: each "last" command moves one step back through
+the history. That is useful mainly to undo commands such as "step"
+and "next".
+
+\begin{options}
+\item["goto "\var{time}]
+Jump to the given time.
+\item["last "\optvar{count}]
+Go back to the latest time recorded in the execution history. With an
+argument, do it \var{count} times.
+\item["set history "\var{size}]
+Set the size of the execution history.
+\end{options}
+
+\subsection{Killing the program}
+
+\begin{options}
+\item["kill"] Kill the program being executed. This command is mainly
+useful if you wish to recompile the program without leaving the debugger.
+\end{options}
+
+\section{Breakpoints} \label{s:breakpoints}
+
+A breakpoint causes the program to stop whenever a certain point in
+the program is reached. It can be set in several ways using the
+"break" command. Breakpoints are assigned numbers when set, for
+further reference.
+
+\begin{options}
+\item["break"]
+Set a breakpoint at the current position in the program execution. The
+current position must be on an event (i.e., neither at the beginning,
+nor at the end of the program).
+
+\item["break "\var{function}]
+Set a breakpoint at the beginning of \var{function}. This works only
+when the functional value of the identifier \var{function} has been
+computed and assigned to the identifier. Hence this command cannot be
+used at the very beginning of the program execution, when all
+identifiers are still undefined. Moreover, C functions are not
+recognized by the debugger.
+
+\item["break \@" \optvar{module} \var{line}]
+Set a breakpoint in module \var{module} (or in the current module if
+\var{module} is not given), at the first event of line \var{line}.
+
+\item["break \@" \optvar{module} \var{line} \var{column}]
+Set a breakpoint in module \var{module} (or in the current module if
+\var{module} is not given), at the event closest to line \var{line},
+column \var{column}.
+
+\item["break \@" \optvar{module} "#" \var{character}]
+Set a breakpoint in module \var{module} at the event closest to
+character number \var{character}.
+
+\item["break "\var{address}]
+Set a breakpoint at the code address \var{address}.
+
+\item["delete "\optvar{breakpoint-numbers}]
+Delete the specified breakpoints. Without argument, all breakpoints
+are deleted (after asking for confirmation).
+
+\item["info breakpoints"] Print the list of all breakpoints.
+\end{options}
+
+\section{The call stack}
+
+Each time the program performs a function application, it saves the
+location of the application (the return address) in a block of data
+called a stack frame. The frame also contains the local variables of
+the caller function. All the frames are allocated in a region of
+memory called the call stack. The command "backtrace" (or "bt")
+displays parts of the call stack.
+
+At any time, one of the stack frames is ``selected'' by the debugger; several
+debugger commands refer implicitly to the selected frame. In particular,
+whenever you ask the debugger for the value of a local variable, the
+value is found in the selected frame. The commands "frame", "up" and "down"
+select whichever frame you are interested in.
+
+When the program stops, the debugger automatically selects the
+currently executing frame and describes it briefly as the "frame"
+command does.
+
+\begin{options}
+\item["frame"]
+Describe the currently selected stack frame.
+
+\item["frame" \var{frame-number}]
+Select a stack frame by number and describe it. The frame currently
+executing when the program stopped has number 0; its caller has number
+1; and so on up the call stack.
+
+\item["backtrace "\optvar{count}, "bt "\optvar{count}]
+Print the call stack. This is useful to see which sequence of function
+calls led to the currently executing frame. With a positive argument,
+print only the innermost \var{count} frames.
+With a negative argument, print only the outermost -\var{count} frames.
+
+\item["up" \optvar{count}]
+Select and display the stack frame just ``above'' the selected frame,
+that is, the frame that called the selected frame. An argument says how
+many frames to go up.
+
+\item["down "\optvar{count}]
+Select and display the stack frame just ``below'' the selected frame,
+that is, the frame that was called by the selected frame. An argument
+says how many frames to go down.
+\end{options}
+
+\section{Examining variable values}
+
+The debugger can print the current value of a program variable (either
+a global variable or a local variable relative to the selected stack
+frame). It can also print selected parts of a value by matching it
+against a pattern.
+
+Variable names can be specified either fully qualified
+(\var{module-name}"__"\var{var-name}) or unqualified
+(\var{var-name}). Unqualified names either correspond to local
+variables, or are completed into fully qualified global names
+by looking at a list of ``opened'' modules that define the same name
+(see section~\ref{s:debugger-open} for how to open modules in the debugger.)
+The completion follows the same rules as in the Caml Light language
+(see section~\ref{s:names}).
+
+\begin{options}
+\item["print "\var{variables}]
+Print the values of the given variables.
+\item["match "\var{variable} \var{pattern}]
+Match the value of the given variable against a pattern, and print the
+values bound to the identifiers in the pattern.
+\end{options}
+
+The syntax of patterns for the "match" command extends the one for
+Caml Light patterns:
+
+\begin{syntax}
+pattern:
+    ident
+  | '_'
+  | '(' pattern ')'
+  | ncconstr pattern
+  | pattern ',' pattern { ',' pattern }
+  | '{' label '=' pattern { ';' label '=' pattern } '}'
+  | '[' ']'
+  | '[' pattern { ';' pattern } ']'
+  | pattern '::' pattern
+  | '#' integer-literal pattern
+  | '>' pattern
+\end{syntax}
+
+The pattern @ident@, where @ident@ is an identifier, matches any
+value, and binds the identifier to this value. The pattern
+@'#' n pattern@ matches a list, a vector or a tuple whose @n@-th
+element matches @pattern@.
+The pattern @'>' pattern@ matches any
+constructed value whose argument matches @pattern@, regardless of the
+constructor; it is a shortcut for skipping a constructor.
+
+Example: assuming the value of "a" is "Constr{x = [1;2;3;4]}",
+the command "match a > {x = # 2 k}" prints "k = 3".
+
+\begin{options}
+\item["set print_depth" \var{d}]
+Limit the printing of values to a maximal depth of \var{d}. 
+\item["set print_length" \var{l}]
+Limit the printing of values to at most \var{l} nodes printed.
+\end{options}
+
+\section{Controlling the debugger}
+
+\subsection{Setting the program name and arguments}
+
+\begin{options}
+\item["set program" \var{file}]
+Set the program name to \var{file}.
+\item["set arguments" \var{arguments}]
+Give \var{arguments} as command-line arguments for the program.
+\end{options}
+
+A shell is used to pass the arguments to the debugged program. You can
+therefore use wildcards, shell variables, and file redirections inside
+the arguments. To debug programs that read from standard input, it is
+recommended to redirect their input from a file (using
+"set arguments < input-file"), otherwise input to the program and
+input to the debugger are not properly separated.
+
+
+\subsection{How programs are loaded}
+
+The "loadingmode" variable controls how the program is executed.
+
+\begin{options}
+\item["set loadingmode direct"]
+The program is run directly by the debugger. This is the default mode.
+\item["set loadingmode runtime"]
+The debugger execute the Caml Light runtime "camlrun" on the program.
+Rarely useful; moreover it prevents the debugging of programs compiled
+in ``custom runtime'' mode.
+\item["set loadingmode manual"]
+The user starts manually the program, when asked by the debugger.
+Allows remote debugging (see section~\ref{s:communication}).
+\end{options}
+
+\subsection{Search path for files}
+
+The debugger searches for source files and compiled interface files in
+a list of directories, the search path. The search path initially
+contains the current directory "." and the standard library directory.
+The "directory" command adds directories to the path.
+
+Whenever the search path is modified, the debugger will clear any
+information it may have cached about the files.
+
+\begin{options}
+\item["directory" \var{directorynames}]
+Add the given directories to the search path. These directories are
+added at the front, and will therefore be searched first.
+
+\item["directory"]
+Reset the search path. This requires confirmation.
+\end{options}
+
+\subsection{Working directory}
+
+Each time a program is started in the debugger, it inherits its working
+directory from the current working directory of the debugger.  This
+working directory is initially whatever it inherited from its parent
+process (typically the shell), but you can specify a new working
+directory in the debugger with the "cd" command or the "-cd"
+command-line option.
+
+\begin{options}
+\item["cd" \var{directory}]
+Set the working directory for "camldebug" to \var{directory}.
+
+\item["pwd"]
+Print the working directory for "camldebug".
+\end{options}
+
+\subsection{Module management} \label{s:debugger-open}
+
+Like the Caml Light compiler, the debugger maintains a list of opened
+modules in order to resolves variable name ambiguities. The opened
+modules also affect the printing of values: whether fully qualified
+names or short names are used for constructors and record labels.
+
+When a program is executed, the debugger automatically opens the
+modules of the standard library it uses.
+
+\begin{options}
+\item["open" \var{modules}]
+Open the given modules.
+
+\item["close" \var{modules}]
+Close the given modules.
+
+\item["info modules"]
+List the modules used by the program, and the open modules.
+\end{options}
+
+\subsection{Turning reverse execution on and off}
+
+In some cases, you may want to turn reverse execution off. This speeds
+up the program execution, and is also sometimes useful for interactive
+programs. 
+
+Normally, the debugger takes checkpoints of the program state from
+time to time. That is, it makes a copy of the current state of the
+program (using the Unix system call "fork"). If the variable
+\var{checkpoints} is set to "off", the debugger will not take any
+checkpoints.
+
+\begin{options}
+\item["set checkpoints" \var{on/off}]
+Select whether the debugger makes checkpoints or not.
+\end{options}
+
+\subsection{Communication between the debugger and the program}
+\label{s:communication}
+
+The debugger communicate with the program being debugged through a
+Unix socket. You may need to change the socket name, for example if
+you need to run the debugger on a machine and your program on another.
+
+\begin{options}
+\item["set socket" \var{socket}]
+Use \var{socket} for communication with the program. \var{socket} can be
+either a file name, or an Internet port specification
+\var{host}:\var{port}, where \var{host} is a host name or an Internet
+address in dot notation, and \var{port} is a port number on the host.
+\end{options}
+
+On the debugged program side, the socket name is passed either by the
+"-D" command line option to "camlrun", or through the
+"CAML_DEBUG_SOCKET" environment variable.
+
+\subsection{Fine-tuning the debugger} \label{s:fine-tuning}
+
+Several variables enables to fine-tune the debugger. Reasonable
+defaults are provided, and you should normally not have to change them.
+
+\begin{options}
+\item["set processcount" \var{count}]
+Set the maximum number of checkpoints to \var{count}. More checkpoints
+facilitate going far back in time, but use more memory and create more
+Unix processes.
+\end{options}
+
+As checkpointing is quite expensive, it must not be done too often. On
+the other hand, backward execution is faster when checkpoints are
+taken more often. In particular, backward single-stepping is more
+responsive when many checkpoints have been taken just before the
+current time. To fine-tune the checkpointing strategy, the debugger
+does not take checkpoints at the same frequency for long displacements
+(e.g. "run") and small ones (e.g. "step"). The two variables "bigstep"
+and "smallstep" contain the number of events between two checkpoints
+in each case.
+
+\begin{options}
+\item["set bigstep" \var{count}]
+Set the number of events between two checkpoints for long displacements.
+\item["set smallstep" \var{count}]
+Set the number of events between two checkpoints for small
+displacements.
+\end{options}
+
+The following commands display information on checkpoints and events:
+
+\begin{options}
+\item["info checkpoints"]
+Print a list of checkpoints.
+\item["info events" \optvar{module}]
+Print the list of events in the given module (the current module, by default).
+\end{options}
+
+\section{Miscellaneous commands}
+
+\begin{options}
+\item["list" \optvar{module} \optvar{beginning} \optvar{end}]
+List the source of module \var{module}, from line number
+\var{beginning} to line number \var{end}. By default, 20 lines of the
+current module are displayed, starting 10 lines before the current
+position.
+\item["source" \var{filename}]
+Read debugger commands from the script \var{filename}.
+\end{options}
+

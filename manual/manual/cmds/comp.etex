@@ -1,0 +1,363 @@
+\chapter{Batch compilation (cslc)} \label{c:camlc}
+
+This chapter describes the Caml Special Light batch compiler "cslc",
+which compiles Caml source files to bytecode object files and link
+these object files to produce standalone bytecode executable files.
+These executable files are then run by the bytecode interpreter
+"cslrun".
+
+\section{Overview of the compiler}
+
+The "cslc" command has a command-line interface similar to the one of
+most C compilers. It accepts several types of arguments:
+
+\begin{itemize}
+\item
+Arguments ending in ".mli" are taken to be source files for
+compilation unit interfaces. Interfaces specify the names exported by
+compilation units: they declare value names with their types, define
+public data types, declare abstract data types, and so on. From the
+file \var{x}".mli", the "cslc" compiler produces a compiled interface
+in the file \var{x}".cmi".
+
+\item
+Arguments ending in ".ml" are taken to be source files for compilation
+unit implementations. Implementations provide definitions for the
+names exported by the unit, and also contain expressions to be
+evaluated for their side-effects.  From the file \var{x}".ml", the "cslc"
+compiler produces compiled object bytecode in the file \var{x}".cmo". 
+
+If the interface file \var{x}".mli" exists, the implementation
+\var{x}".ml" is checked against the corresponding compiled interface
+\var{x}".cmi", which is assumed to exist. If no interface
+\var{x}".mli" is provided, the compilation of \var{x}".ml" produces a
+compiled interface file \var{x}".cmi" in addition to the compiled
+object code file \var{x}".cmo". The file \var{x}".cmi" produced
+corresponds to an interface that exports everything that is defined in
+the implementation \var{x}".ml".
+
+\item
+Arguments ending in ".cmo" are taken to be compiled object bytecode.  These
+files are linked together, along with the object files obtained
+by compiling ".ml" arguments (if any), and the Caml Light standard
+library, to produce a standalone executable program. The order in
+which ".cmo" and ".ml" arguments are presented on the command line is
+relevant: compilation units are initialized in that order at
+run-time, and it is a link-time error to use a component of a unit
+before having initialized it. Hence, a given \var{x}".cmo" file must come
+before all ".cmo" files that refer to the unit \var{x}.
+
+\item
+Arguments ending in ".cma" are taken to be libraries of object bytecode.
+A library of object bytecode packs in a single file a set of object
+bytecode files (".cmo" files). Libraries are build with "cslc -a"
+(see the description of the "-a" option below). The object files
+contained in the library are linked as regular ".cmo" files (see
+above), in the order specified when the ".cma" file was built. The
+only difference is that if an object file contained in a library is
+not referenced anywhere in the program, then it is not linked in.
+
+\item
+Arguments ending in ".c" are passed to the C compiler, which generates
+a ".o" object file. This object file is linked with the program if the
+"-custom" flag is set (see the description of "-custom" below).
+
+\item
+Arguments ending in ".o" or ".a" are assumed to be C object files and
+libraries. They are passed to the C linker when linking in "-custom" mode
+(see the description of "-custom" below).
+
+\end{itemize}
+
+The output of the linking phase is a file containing compiled bytecode
+that can be executed by the Caml Special Light bytecode interpreter:
+the command named "cslrun". If "caml.out" is the name of the file
+produced by the linking phase, the command
+\begin{alltt}
+        cslrun caml.out \nth{arg}{1} \nth{arg}{2} \ldots \nth{arg}{n}
+\end{alltt}
+executes the compiled code contained in "caml.out", passing it as
+arguments the character strings \nth{arg}{1} to \nth{arg}{n}.
+(See chapter~\ref{c:runtime} for more details.)
+
+On most Unix systems, the file produced by the linking
+phase can be run directly, as in:
+\begin{alltt}
+        ./caml.out \nth{arg}{1} \nth{arg}{2} \ldots \nth{arg}{n}
+\end{alltt}
+The produced file has the executable bit set, and it manages to launch
+the bytecode interpreter by itself.
+
+\section{Options}
+
+The following command-line options are recognized by "cslc".
+
+\begin{options}
+
+\item["-a"]
+Build a library (".cma" file) with the object files (".cmo" files)
+given on the command line, instead of linking them into an executable
+file. The name of the library can be set with the "-o" option. The
+default name is "library.cma". 
+
+\item["-c"]
+Compile only. Suppress the linking phase of the
+compilation. Source code files are turned into compiled files, but no
+executable file is produced. This option is useful to
+compile modules separately.
+
+\item["-cclib" \var{libname}]
+Pass the "-l"\var{libname} option to the C linker when linking in
+``custom runtime'' mode (see the "-custom" option). This causes the
+given C library to be linked with the program.
+
+\item["-ccopt" \var{option}]
+Pass the given option to the C compiler and linker, when linking in
+``custom runtime'' mode (see the "-custom" option). For instance,
+"-ccopt -L"\var{dir} causes the C linker to search for C libraries in
+directory \var{dir}.
+
+\item["-custom"]
+Link in ``custom runtime'' mode. In the default linking mode, the
+linker produces bytecode that is intended to be executed with the
+shared runtime system, "cslrun". In the custom runtime mode, the
+linker produces an output file that contains both the runtime system
+and the bytecode for the program. The resulting file is larger, but it
+can be executed directly, even if the "cslrun" command is not
+installed. Moreover, the ``custom runtime'' mode enables linking Caml
+code with user-defined C functions, as described in
+chapter~\ref{c:intf-c}.
+
+\item["-i"]
+Cause the compiler to print all defined names (with their inferred
+types or their definitions) when compiling an implementation (".ml"
+file). This can be useful to check the types inferred by the
+compiler. Also, since the output follows the syntax of interfaces, it
+can help in writing an explicit interface (".mli" file) for a file:
+just redirect the standard output of the compiler to a ".mli" file,
+and edit that file to remove all declarations of unexported names.
+
+\item["-I" \var{directory}]
+Add the given directory to the list of directories searched for
+compiled interface files (".cmi") and compiled object code files
+(".cmo"). By default, the current directory is searched first, then the
+standard library directory. Directories added with "-I" are searched
+after the current directory, in the order in which they were given on
+the command line, but before the standard library directory.
+
+\item["-o" \var{exec-file}]
+Specify the name of the output file produced by the linker. The
+default output name is "a.out", in keeping with the Unix tradition. If
+the "-a" option is given, specify the name of the library produced.
+
+\item["-v"]
+Print the version number of the compiler.
+
+\item["-unsafe"]
+Turn bound checking off on array and string accesses (the "v.(i)" and
+"s.[i]" constructs). Programs compiled with "-unsafe" are therefore
+slightly faster, but unsafe: anything can happen if the program
+accesses an array or string outside of its bounds.
+
+\end{options}
+
+\section{Modules and the file system}
+
+This short section is intended to clarify the relationship between the
+names of the modules corresponding to compilation units and the names
+of the files that contain their compiled interface and compiled
+implementation.
+
+The compiler always derives the module name by taking the capitalized
+base name of the source file (".ml" or ".mli" file).  That is, it
+strips the leading directory name, if any, as well as the ".ml" or
+".mli" suffix; then, it set the first letter to uppercase, in order to
+comply with the requirement that module names must be capitalized.
+For instance, compiling the file "mylib/misc.ml" provides an
+implementation for the module named "Misc". Other compilation units
+may refer to components defined in "mylib/misc.ml" under the names
+"Misc."\var{name}; they can also do "open Misc", then use unqualified
+names \var{name}.
+
+The ".cmi" and ".cmo" files produced by the compiler have the same
+base name as the source file. Hence, the compiled files always have
+their base name equal (modulo capitalization of the first letter) to
+the name of the module they describe (for ".cmi" files) or implement
+(for ".cmo" files).
+
+When the compiler encounters a reference to a free module identifier
+"Mod", it looks in the search path for a file "mod.cmi" (note
+lowercasing of first letter) and loads the compiled interface
+contained in that file. As a consequence, renaming ".cmi" files is not
+advised: the name of a ".cmi" file must always correspond to the name
+of the compilation unit it implements. It is admissible to move them
+to another directory, if their base name is preserved, and the correct
+"-I" options are given to the compiler. The compiler will flag an
+error if it loads a ".cmi" file that has been renamed.
+
+Compiled bytecode files (".cmo" files), on the other hand, can be
+freely renamed once created. That's because the linker never attempts
+to find by itself the ".cmo" file that implements a module with a
+given name: it relies instead on the user providing the list of ".cmo"
+files by hand.
+
+\section{Common errors} \label{s:comp-errors}
+
+This section describes and explains the most frequently encountered
+error messages.
+
+\begin{options}
+
+\item[Cannot find file \var{filename}]
+The named file could not be found in the current directory, nor in the
+directories of the search path. The \var{filename} is either a
+compiled interface file (".cmi" file), or a compiled bytecode file
+(".cmo" file). If \var{filename} has the format \var{mod}".cmi", this
+means you are trying to compile a file that references identifiers
+from module \var{mod}, but you have not yet compiled an interface for
+module \var{mod}. Fix: compile \var{mod}".mli" or \var{mod}".ml"
+first, to create the compiled interface \var{mod}".cmi". 
+
+If \var{filename} has the format \var{mod}".cmo", this
+means you are trying to link a bytecode object file that does not
+exist yet. Fix: compile \var{mod}".ml" first.
+
+If your program spans several directories, this error can also appear
+because you haven't specified the directories to look into. Fix: add
+the correct "-I" options to the command line.
+
+\item[Corrupted compiled interface \var{filename}]
+The compiler produces this error when it tries to read a compiled
+interface file (".cmi" file) that has the wrong structure. This means
+something went wrong when this ".cmi" file was written: the disk was
+full, the compiler was interrupted in the middle of the file creation,
+and so on. This error can also appear if a ".cmi" file is modified after
+its creation by the compiler. Fix: remove the corrupted ".cmi" file,
+and rebuild it.
+
+\item[This expression has type \nth{t}{1}, but is used with type \nth{t}{2}]
+This is by far the most common type error in programs. Type \nth{t}{1} is
+the type inferred for the expression (the part of the program that is
+displayed in the error message), by looking at the expression itself.
+Type \nth{t}{2} is the type expected by the context of the expression; it
+is deduced by looking at how the value of this expression is used in
+the rest of the program. If the two types \nth{t}{1} and \nth{t}{2} are not
+compatible, then the error above is produced.
+
+In some cases, it is hard to understand why the two types \nth{t}{1} and
+\nth{t}{2} are incompatible. For instance, the compiler can report that
+``expression of type "foo" cannot be used with type "foo"'', and it
+really seems that the two types "foo" are compatible. This is not
+always true. Two type constructors can have the same name, but
+actually represent different types. This can happen if a type
+constructor is redefined. Example:
+\begin{verbatim}
+        type foo = A | B
+        let f = function A -> 0 | B -> 1
+        type foo = C | D
+        f C
+\end{verbatim}
+This result in the error message ``expression "C" of type "foo" cannot
+be used with type "foo"''. 
+
+\item[The type of this expression, \var{t}, contains type variables
+      that cannot be generalized]
+Type variables ("'a", "'b", \ldots) in a type \var{t} can be in either
+of two states: generalized (which means that the type \var{t} is valid
+for all possible instantiations of the variables) and not generalized
+(which means that the type \var{t} is valid only for one instantiation
+of the variables). In a "let" binding "let "\var{name}" = "\var{expr},
+the type-checker normally generalizes as many type variables as
+possible in the type of \var{expr}. However, this leads to unsoundness
+(a well-typed program can crash) in conjunction with polymorphic
+mutable data structures. To avoid this, generalization is performed at
+"let" bindings only if the bound expression \var{expr} belongs to the
+class of ``syntactic values'', which includes constants, identifiers,
+functions, tuples of syntactic values, etc. In all other cases (for
+instance, \var{expr} is a function application), a polymorphic mutable
+could have been created and generalization is therefore turned off.
+
+Non-generalized type variables in a type cause no difficulties inside
+a given structure or compilation unit (the contents of a ".ml" file,
+or an interactive session), but they cannot be allowed inside
+signatures nor in compiled interfaces (".cmi" file), because they
+could be used inconsistently later. Therefore, the compiler
+flags an error when a structure or compilation unit defines a value
+\var{name} whose type contains non-generalized type variables. There
+are two ways to fix this error:
+\begin{itemize}
+\item Add a type constraint or a ".mli" file to give a monomorphic
+type (without type variables) to \var{name}. For instance, instead of
+writing
+\begin{verbatim}
+    let sort_int_list = Sort.list (<)
+    (* inferred type 'a list -> 'a list, with 'a not generalized *)
+\end{verbatim}
+write
+\begin{verbatim}
+    let sort_int_list = (Sort.list (<) : int list -> int list);;
+\end{verbatim}
+\item If you really need \var{name} to have a polymorphic type, turn
+its defining expression into a function by adding an extra parameter.
+For instance, instead of writing
+\begin{verbatim}
+    let map_length = List.map Array.length
+    (* inferred type 'a array list -> int list, with 'a not generalized *)
+\end{verbatim}
+write
+\begin{verbatim}
+    let map_length lv = List.map Array.length lv
+\end{verbatim}
+\end{itemize}
+
+\item[Reference to undefined global \var{mod}]
+This error appears when trying to link an incomplete or incorrectly
+ordered set of files. Either you have forgotten to provide an
+implementation for the compilation unit named \var{mod} on the command line
+(typically, the file named \var{mod}".cmo", or a library containing
+that file). Fix: add the missing ".ml" or ".cmo" file to the command
+line.  Or, you have provided an implementation for the module named
+\var{mod}, but it comes too late on the command line: the
+implementation of \var{mod} must come before all bytecode object files
+that reference \var{mod}. Fix: change the order of ".ml" and ".cmo"
+files on the command line.
+
+Of course, you will always encounter this error if you have mutually
+recursive functions across modules. That is, function "Mod1.f" calls
+function "Mod2.g", and function "Mod2.g" calls function "Mod1.f".
+In this case, no matter what permutations you perform on the command
+line, the program will be rejected at link-time. Fixes:
+\begin{itemize}
+\item Put "f" and "g" in the same module.
+\item Parameterize one function by the other.
+That is, instead of having
+\begin{verbatim}
+mod1.ml:    let f x = ... Mod2.g ...
+mod2.ml:    let g y = ... Mod1.f ...
+\end{verbatim}
+define
+\begin{verbatim}
+mod1.ml:    let f g x = ... g ...
+mod2.ml:    let rec g y = ... Mod1.f g ...
+\end{verbatim}
+and link "mod1.cmo" before "mod2.cmo".
+\item Use a reference to hold one of the two functions, as in :
+\begin{verbatim}
+mod1.ml:    let forward_g =
+                ref((fun x -> failwith "forward_g") : <type>)
+            let f x = ... !forward_g ...
+mod2.ml:    let g y = ... Mod1.f ...
+            Mod1.forward_g := g
+\end{verbatim}
+This will not work if "g" is a polymorphic function, however.
+\end{itemize}
+
+\item[The external function \var{f} is not available]
+This error appears when trying to link code that calls external
+functions written in C in ``default runtime'' mode. As explained in
+chapter~\ref{c:intf-c}, such code must be linked in ``custom runtime''
+mode. Fix: add the "-custom" option, as well as the C libraries and C
+object files that implement the required external functions.
+
+\end{options}
+

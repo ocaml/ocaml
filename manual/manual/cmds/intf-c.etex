@@ -1,0 +1,629 @@
+\chapter{Interfacing C with Caml Special Light} \label{c:intf-c}
+
+This chapter describes how user-defined primitives, written in C, can
+be linked with Caml code and called from Caml functions.
+
+\section{Overview and compilation information}
+
+\subsection{Declaring primitives}
+
+User primitives are declared in an implementation file or
+"struct"\ldots"end" module expression using the "external" keyword:
+\begin{alltt}
+        external \var{name} : \var{type} = \var{C-function-name}
+\end{alltt}
+This defines the value name \var{name} as a function with type
+\var{type} that executes by calling the given C function.
+For instance, here is how the "input" primitive is declared in the
+standard library module "Pervasives":
+\begin{verbatim}
+        external input : in_channel -> string -> int -> int -> int
+                       = "input"
+\end{verbatim}
+Primitives with several arguments are always curried. The C function
+does not necessarily have the same name as the ML function.
+
+External functions thus defined can be specified in interface files or
+"sig"\ldots"end" signatures either as regular values
+\begin{alltt}
+        val \var{name} : \var{type}
+\end{alltt}
+thus hiding their implementation as a C function, or explicitly as
+``manifest'' external functions
+\begin{alltt}
+        external \var{name} : \var{type} = \var{C-function-name}
+\end{alltt}
+The latter is slightly more efficient, as it allows clients of the
+module to call directly the C function instead of going through the
+corresponding Caml function. 
+
+\subsection{Implementing primitives}
+
+User primitives with arity $n \leq 5$ are implemented by C functions
+that take $n$ arguments of type "value", and return a result of type
+"value". The type "value" is the type of the representations for Caml
+Light values. It encodes objects of several base types (integers,
+floating-point numbers, strings, \ldots), as well as Caml Light data
+structures. The type "value" and the associated conversion
+functions and macros are described in details below.  For instance,
+here is the declaration for the C function implementing the "input"
+primitive:
+\begin{verbatim}
+        value input(channel, buffer, offset, length)
+                value channel, buffer, offset, length;
+        {
+         ...
+        }
+\end{verbatim}
+
+When the primitive function is applied in a Caml Light program, the C
+function is called with the values of the expressions to which the
+primitive is applied as arguments. The value returned by the function is
+passed back to the Caml Light program as the result of the function
+application.
+
+User primitives with arity greater than 5 are implemented by C
+functions that receive two arguments: a pointer to an array of Caml
+Light values (the values for the arguments), and an integer which is
+the number of arguments provided:
+\begin{verbatim}
+        value prim_with_lots_of_args(argv, argn)
+                value * argv;
+                int argn;
+        {
+          ... argv[0] ...;              /* The first argument */
+          ... argv[6] ...;              /* The seventh argument */
+        }
+\end{verbatim}
+
+Implementing a user primitive is actually two separate tasks: on the
+one hand, decoding the arguments to extract C values from the given
+Caml Light values, and encoding the return value as a Caml Light
+value; on the other hand, actually computing the result from the arguments.
+Except for very simple primitives, it is often preferable to have two
+distinct C functions to implement these two tasks. The first function
+actually implements the primitive, taking native C values as
+arguments and returning a native C value. The second function,
+often called the ``stub code'', is a simple wrapper around the first
+function that converts its arguments from Caml Light values to C values,
+call the first function, and convert the returned C value to Caml
+Light value. For instance, here is the stub code for the "input"
+primitive:
+\begin{verbatim}
+        value input(channel, buffer, offset, length)
+                value channel, buffer, offset, length;
+        {
+          return Val_long(getblock((struct channel *) channel,
+                                   &Byte(buffer, Long_val(offset)),
+                                   Long_val(length)));
+        }
+\end{verbatim}
+(Here, "Val_long", "Long_val" and so on are conversion macros for the
+type "value", that will be described later.) The hard work is
+performed by the function  "getblock", which is declared as:
+\begin{verbatim}
+        long getblock(channel, p, n)
+             struct channel * channel;
+             char * p;
+             long n;
+        {
+          ...
+        }
+\end{verbatim}
+
+To write C code that operates on Caml Special Light values, the following
+include files are provided:
+\begin{tableau}{|l|p{12cm}|}{Include file}{Provides}
+\entree{"caml/mlvalues.h"}{definition of the "value" type, and conversion macros}
+\entree{"caml/alloc.h"}{allocation functions (to create structured Caml
+Light objects)}
+\entree{"caml/memory.h"}{miscellaneous memory-related functions (for in-place
+modification of structures, etc).}
+\end{tableau}
+These files reside in the "caml/" subdirectory of the Caml Light
+standard library directory (usually "/usr/local/lib/caml-light").
+
+\subsection{Linking C code with Caml code}
+
+The Caml Special Light runtime system comprises three main parts: the bytecode
+interpreter, the memory manager, and a set of C functions that
+implement the primitive operations. Some bytecode instructions are
+provided to call these C functions, designated by their offset in a
+table of functions (the table of primitives).
+
+In the default mode, the Caml linker produces bytecode for the
+standard runtime system, with a standard set of primitives. References
+to primitives that are not in this standard set result in the
+``unavailable C primitive'' error.
+
+In the ``custom runtime'' mode, the Caml linker scans the
+object files and determines the set of required primitives. Then, it
+builds a suitable runtime system, by calling the native code linker with:
+\begin{itemize}
+\item the table of the required primitives
+\item a library that provides the bytecode interpreter, the
+memory manager, and the standard primitives
+\item libraries and object code files (".o" files) mentioned on the
+command line for the Caml Light linker, that provide implementations
+for the user's primitives.
+\end{itemize}
+This builds a runtime system with the required primitives. The Caml
+linker generates bytecode for this custom runtime system. The
+bytecode is appended to the end of the custom runtime system, so that
+it will be automatically executed when the output file (custom
+runtime + bytecode) is launched.
+
+To link in ``custom runtime'' mode, execute the "cslc" command with:
+\begin{itemize}
+\item the "-custom" option
+\item the names of the desired Caml object files (".cmo" files) 
+\item the names of the C object files and libraries (".o" and ".a"
+files) that implement the required primitives. (Libraries can also be
+specified with the "-cclib" syntax.)
+\end{itemize}
+
+\section{The "value" type}
+
+All Caml objects are represented by the C type "value",
+defined in the include file "caml/mlvalues.h", along with macros to
+manipulate values of that type. An object of type "value" is either:
+\begin{itemize}
+\item an unboxed integer
+\item a pointer to a block inside the heap (such as the blocks
+allocated through one of the \verb"alloc_*" functions below)
+\item a pointer to an object outside the heap (e.g., a pointer to a block
+allocated by "malloc", or to a C variable).
+\end{itemize}
+
+\subsection{Integer values}
+
+Integer values encode 31-bit signed integers (63-bit on 64-bit
+architectures). They are unboxed (unallocated).
+
+\subsection{Blocks}
+
+Blocks in the heap are garbage-collected, and therefore have strict
+structure constraints. Each block includes a header containing the
+size of the block (in words), and the tag of the block.
+The tag governs how the contents of the blocks are structured. A tag
+lower than "No_scan_tag" indicates a structured block, containing
+well-formed values, which is recursively traversed by the garbage
+collector. A tag greater than or equal to "No_scan_tag" indicates a
+raw block, whose contents are not scanned by the garbage collector.
+For the benefits of ad-hoc polymorphic primitives such as equality and
+structured input-output, structured and raw blocks are further
+classified according to their tags as follows:
+\begin{tableau}{|l|p{10cm}|}{Tag}{Contents of the block}
+\entree{0 to $\hbox{"No_scan_tag"}-1$}{A structured block (an array of
+Caml objects). Each field is a "value".}
+\entree{"Closure_tag"}{A closure representing a functional value. The first
+word is a pointer to a piece of bytecode, the remaining words are
+"value" containing the environment.}
+\entree{"String_tag"}{A character string.}
+\entree{"Double_tag"}{A double-precision floating-point number.}
+%% \entree{"Double_array_tag"}{An array of double-precision
+%% floating-point numbers.}
+\entree{"Abstract_tag"}{A block representing an abstract datatype.}
+\entree{"Final_tag"}{A block representing an abstract datatype
+              with a ``finalization'' function, to be called when
+              the block is deallocated.}
+\end{tableau}
+
+\subsection{Pointers to outside the heap}
+
+Any word-aligned pointer to outside the heap can be safely cast to and
+from the type "value". This includes pointers returned by "malloc",
+and pointers to C variables obtained with the \verb'&' operator.
+
+\section{Representation of Caml Light data types}
+
+This section describes how Caml Light data types are encoded in the
+"value" type.
+
+\subsection{Atomic types}
+
+\begin{tableau}{|l|l|}{Caml type}{Encoding}
+\entree{"int"}{Unboxed integer values.}
+\entree{"char"}{Unboxed integer values (ASCII code).}
+\entree{"float"}{Blocks with tag "Double_tag".}
+\entree{"string"}{Blocks with tag "String_tag".}
+\end{tableau}
+
+\subsection{Product types}
+
+Tuples and arrays are represented by pointers to blocks, with tag~0.
+
+Records are also represented by zero-tagged blocks. The ordering of
+labels in the record type declaration determines the layout of
+the record fields: the value associated to the label
+declared first is stored in field~0 of the block, the value associated
+to the label declared next goes in field~1, and so on.
+
+\subsection{Concrete types}
+
+Constructed terms are represented either by unboxed integers (for
+constant constructors) or by blocks whose tag encode the constructor
+(for non-constant constructors). The constant constructors and the
+non-constant constructors for a given concrete type are numbered
+separately, starting from 0, in the order in which they appear in the
+concrete type declaration. Constant constructors are represented by
+unboxed integers equal to the constructor number. Non-constant
+constructors declared with a $n$-tuple as argument are represented by
+a block of size $n$, tagged with the constructor number; the $n$
+fields contain the components of its tuple argument. Other
+non-constant constructors are represented by a block of size~1, tagged
+with the constructor number; the field~0 contains the value of the
+constructor argument. Example:
+
+\begin{tableau}{|l|p{8cm}|}{Constructed term}{Representation}
+\entree{"()"}{"Val_int(0)"}
+\entree{"false"}{"Val_int(0)"}
+\entree{"true"}{"Val_int(1)"}
+\entree{"[]"}{"Val_int(0)"}
+\entree{"h::t"}{Block with size = 2 and tag = 0; first field
+contains "h", second field "t"}
+\end{tableau}
+
+As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
+"Val_false" and "Val_true" to refer to "()", "false" and "true".
+
+\section{Operations on values}
+
+\subsection{Kind tests}
+
+\begin{itemize}
+\item $\hbox{"Is_int"}(v)$ is true if value $v$ is an immediate integer,
+false otherwise
+\item $\hbox{"Is_block"}(v)$ is true if value $v$ is a pointer to a block,
+and false if it is an immediate integer.
+\end{itemize}
+
+\subsection{Operations on integers}
+
+\begin{itemize}
+\item $\hbox{"Val_long"}(l)$ returns the value encoding the "long int" $l$
+\item $\hbox{"Long_val"}(v)$ returns the "long int" encoded in value $v$
+\item $\hbox{"Val_int"}(i)$ returns the value encoding the "int" $i$
+\item $\hbox{"Int_val"}(v)$ returns the "int" encoded in value $v$
+\end{itemize}
+
+\subsection{Accessing blocks}
+
+\begin{itemize}
+\item $\hbox{"Wosize_val"}(v)$ returns the size of value $v$, in words,
+excluding the header.
+\item $\hbox{"Tag_val"}(v)$ returns the tag of value $v$.
+\item $\hbox{"Field"}(v,n)$ returns the value contained in the $n\th$ field
+of the structured block $v$. Fields are numbered from 0 to
+$\hbox{"Wosize_val"}(v)-1$.
+\item $\hbox{"Code_val"}(v)$ returns the code part of the closure $v$.
+\item $\hbox{"string_length"}(v)$ returns the length (number of characters)
+of the string $v$.
+\item $\hbox{"Byte"}(v,n)$ returns the $n\th$ character of the string
+$v$, with type "char". Characters are numbered from 0 to
+$\hbox{"string_length"}(v)-1$.
+\item $\hbox{"Byte_u"}(v,n)$ returns the $n\th$ character of the string
+$v$, with type "unsigned char". Characters are numbered from 0 to
+$\hbox{"string_length"}(v)-1$.
+\item $\hbox{"String_val"}(v)$ returns a pointer to the first byte of the string
+$v$, with type "char *". This pointer is a valid C string: there is a
+null character after the last character in the string. However, Caml
+Light strings can contain embedded null characters, that will confuse
+the usual C functions over strings. 
+\item $\hbox{"Double_val"}(v)$ returns the floating-point number contained in
+value $v$, with type "double".
+\end{itemize}
+The expressions $\hbox{"Field"}(v,n)$, $\hbox{"Code_val"}(v)$,
+$\hbox{"Byte"}(v,n)$, $\hbox{"Byte_u"}(v,n)$ and $\hbox{"Double_val"}(v)$ are valid
+l-values. Hence, they can be assigned to, resulting in an in-place
+modification of value $v$. Assigning directly to $\hbox{"Field"}(v,n)$ must
+be done with care to avoid confusing the garbage collector (see
+below).
+
+\subsection{Allocating blocks}
+
+From the standpoint of the allocation functions, blocks are divided
+according to their size as zero-sized blocks, small blocks (with size
+less than or equal to \verb"Max_young_wosize"), and large blocks (with
+size greater than to \verb"Max_young_wosize"). The constant
+\verb"Max_young_wosize" is declared in the include file "mlvalues.h". It
+is guaranteed to be at least 64 (words), so that any block with
+constant size less than or equal to 64 can be assumed to be small. For
+blocks whose size is computed at run-time, the size must be compared
+against \verb"Max_young_wosize" to determine the correct allocation procedure.
+
+\begin{itemize}
+\item
+$\hbox{"Atom"}(t)$ returns an ``atom'' (zero-sized block) with tag $t$.
+Zero-sized blocks are preallocated outside of the heap. It is
+incorrect to try and allocate a zero-sized block using the functions below.
+For instance, $\hbox{"Atom"}(0)$ represents the empty array.
+\item
+$\hbox{"alloc"}(n,t)$ returns a fresh small block of size
+$n \leq \hbox{"Max_young_wosize"}$ words, with tag $t$. 
+If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
+the fields of the block (initially containing garbage) must be initialized
+with legal values (using direct assignment to the fields of the block)
+before the next allocation.
+\item
+$\hbox{"alloc_tuple"}(n)$ returns a fresh small block of size
+$n \leq \hbox{"Max_young_wosize"}$ words, with
+tag 0. The fields of this block must be filled with legal values
+before the next allocation or modification.
+\item
+$\hbox{"alloc_shr"}(n,t)$ returns a fresh block of size $n$, with tag $t$.
+The size of the block can be greater than \verb"Max_young_wosize". (It
+can also be smaller, but in this case it is more efficient to call
+"alloc" instead of "alloc_shr".) 
+If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
+the fields of the block (initially containing garbage) must be initialized
+with legal values (using the "initialize" function described below)
+before the next allocation.
+\item
+$\hbox{"alloc_string"}(n)$ returns a string value of length $n$ characters.
+The string initially contains garbage.
+\item
+$\hbox{"copy_string"}(s)$ returns a string value containing a copy of
+the null-terminated C string $s$ (a "char *").
+\item
+$\hbox{"copy_double"}(d)$ returns a floating-point value initialized
+with the "double" $d$.
+\item
+$\hbox{"alloc_array"}(f,a)$ allocates an array of values, calling
+function $f$ over each element of the input array $a$ to transform it
+into a value. The array $a$ is an array of pointers terminated by the
+null pointer. The function $f$ receives each pointer as argument, and
+returns a value. The zero-tagged block returned by
+$\hbox{"alloc_array"}(f,a)$ is filled with the values returned by the
+successive calls to $f$.
+\item
+$\hbox{"copy_string_array"}(p)$ allocates an array of strings, copied from
+the pointer to a string array $p$ (a \verb"char **").
+\end{itemize}
+
+\subsection{Raising exceptions}
+
+C functions cannot raise arbitrary exceptions. However, two functions
+are provided to raise two standard exceptions:
+\begin{itemize}
+\item $\hbox{"failwith"}(s)$, where $s$ is a null-terminated C string (with
+type \verb"char *"), raises exception "Failure" with argument $s$.
+\item $\hbox{"invalid_argument"}(s)$, where $s$ is a null-terminated C
+string (with type \verb"char *"), raises exception "Invalid_argument"
+with argument $s$.
+\end{itemize}
+
+\section{Living in harmony with the garbage collector}
+
+Unused blocks in the heap are automatically reclaimed by the garbage
+collector. This requires some cooperation from C code that
+manipulates heap-allocated blocks.
+
+\begin{gcrule} After a structured block (a block with tag less than
+"No_scan_tag") is allocated, all fields of this block must be filled
+with well-formed values before the next allocation operation. If the
+block has been allocated with "alloc" or "alloc_tuple", filling is performed
+by direct assignment to the fields of the block:
+\begin{alltt}
+        Field(\var{v}, \var{n}) = \nth{v}{n};
+\end{alltt}
+If the block has been allocated with "alloc_shr", filling is performed
+through the "initialize" function:
+\begin{alltt}
+        initialize(&Field(\var{v}, \var{n}), \nth{v}{n});
+\end{alltt}
+\end{gcrule}
+
+The next allocation can trigger a garbage collection. The garbage
+collector assumes that all structured blocks contain well-formed
+values. Newly created blocks contain random data, which generally do
+not represent well-formed values.
+
+If you really need to allocate before the fields can receive their
+final value,  first initialize with a constant value (e.g.
+"Val_long(0)"), then allocate, then modify the fields with the correct
+value (see rule~3).
+
+\begin{gcrule} Local variables containing values must be registered
+with the garbage collector (using the "Push_roots" and "Pop_roots"
+macros), if they are to survive a call to an allocation function.
+\end{gcrule}
+
+Registration is performed with the "Push_roots" and "Pop_roots"
+macros. "Push_roots("\var{r}","\var{n}")" declares an array \var{r} of
+\var{n} values and
+registers them with the garbage collector. The values contained in
+\var{r}"[0]" to \var{r}"["\var{n}"-1]" are treated like roots by the
+garbage collector. A 
+root value has the following properties: if it points to a
+heap-allocated block, this block (and its contents) will not be
+reclaimed; moreover, if this block is relocated by the garbage
+collector, the root value is updated to point to the new location for
+the block. "Push_roots("\var{r}","\var{n}")" must occur in a C block
+exactly between the last local variable declaration and the first
+statement in the block. To un-register the roots, "Pop_roots()" must
+be called before the C block containing "Push_roots("\var{r}","\var{n}")"
+is exited. (Roots are automatically un-registered if a Caml exception
+is raised.)
+
+\begin{gcrule} Global variables containing values must be registered
+with the garbage collector using the "register_global_root" function.
+\end{gcrule}
+
+Registration of a global variable "v" is achieved by calling
+"register_global_root(&v)" just before a valid value is stored in "v"
+for the first time. Afterwards, the GC treats the variable "v" as a
+root value, as described above.
+
+\begin{gcrule} Direct assignment to a field of a block, as in
+\begin{alltt}
+        Field(\var{v}, \var{n}) = \var{w};
+\end{alltt}
+is safe only if \var{v} is a block newly allocated by "alloc" or
+"alloc_tuple"; that is, if no allocation took place between the
+allocation of \var{v} and the assignment to the field. In all other cases,
+never assign directly. If the block has just been allocated by "alloc_shr",
+use "initialize" to assign a value to a field for the first time:
+\begin{alltt}
+        initialize(&Field(\var{v}, \var{n}), \var{w});
+\end{alltt}
+Otherwise, you are updating a field that previously contained a
+well-formed value; then, call the "modify" function:
+\begin{alltt}
+        modify(&Field(\var{v}, \var{n}), \var{w});
+\end{alltt}
+\end{gcrule}
+
+To illustrate the rules above, here is a C function that builds and
+returns a list containing the two integers given as parameters:
+\begin{verbatim}
+value alloc_list_int(i1, i2)
+        int i1, i2;
+{
+  value result;
+  Push_roots(r, 1);
+  r[0] = alloc(2, 1);                     /* Allocate a cons cell */
+  Field(r[0], 0) = Val_int(i2);           /* car = the integer i2 */
+  Field(r[0], 1) = Val_int(0);            /* cdr = the empty list [] */
+  result = alloc(2, 1);                   /* Allocate the other cons cell */
+  Field(result, 0) = Val_int(i1);         /* car = the integer i1 */
+  Field(result, 1) = r[0];                /* cdr = the first cons cell */
+  Pop_roots();
+  return result;
+}
+\end{verbatim}
+The ``cons'' cell allocated first needs to survive the allocation of
+the other cons cell; hence, the value returned by the first call to
+"alloc" must be stored in a registered root. The value returned by the
+second call to "alloc" can reside in the un-registered local variable
+"result", since we won't do any further allocation in this function.
+
+In the example above, the list is built bottom-up. Here is an
+alternate way, that proceeds top-down. It is less efficient, but
+illustrates the use of "modify".
+\begin{verbatim}
+value alloc_list_int(i1, i2)
+        int i1, i2;
+{
+  value tail;
+  Push_roots(r, 1);
+  r[0] = alloc(2, 1);                     /* Allocate a cons cell */
+  Field(r[0], 0) = Val_int(i1);           /* car = the integer i1 */
+  Field(r[0], 1) = Val_int(0);            /* A dummy value
+  tail = alloc(2, 1);                     /* Allocate the other cons cell */
+  Field(tail, 0) = Val_int(i2);           /* car = the integer i2 */
+  Field(tail, 1) = Val_int(0);            /* cdr = the empty list [] */
+  modify(&Field(r[0], 1), tail);          /* cdr of the result = tail */
+  Pop_roots();
+  return r[0];
+}
+\end{verbatim}
+It would be incorrect to perform
+"Field(r[0], 1) = tail" directly, because the allocation of "tail"
+has taken place since "r[0]" was allocated.
+
+\section{A complete example}
+
+This section outlines how the functions from the Unix "curses" library
+can be made available to Caml Light programs. First of all, here is
+the interface "curses.mli" that declares the "curses" primitives and
+data types:
+\begin{verbatim}
+type window                   (* The type "window" remains abstract *)
+external initscr: unit -> window = "curses_initscr"
+external endwin: unit -> unit = "curses_endwin"
+external refresh: unit -> unit = "curses_refresh"
+external wrefresh : window -> unit = "curses_wrefresh"
+external newwin: int -> int -> int -> int -> window = "curses_newwin"
+external mvwin: window -> int -> int -> unit = "curses_mvwin"
+external addch: char -> unit = "curses_addch"
+external mvwaddch: window -> int -> int -> char -> unit = "curses_mvwaddch"
+external addstr: string -> unit = "curses_addstr"
+external mvwaddstr: window -> int -> int -> string -> unit = "curses_mvwaddstr"
+(* lots more omitted *)
+\end{verbatim}
+To compile this interface:
+\begin{verbatim}
+        cslc -c curses.mli
+\end{verbatim}
+
+To implement these functions, we just have to provide the stub code;
+the core functions are already implemented in the "curses" library.
+The stub code file, "curses.o", looks like:
+\begin{verbatim}
+#include <curses.h>
+#include <mlvalues.h>
+
+value curses_initscr(unit)
+        value unit;
+{
+  return (value) initscr();     /* OK to coerce directly from WINDOW * to value
+                                   since that's a block created by malloc() */
+}
+
+value curses_wrefresh(win)
+        value win;
+{
+  wrefresh((value) win);
+  return Val_unit;
+}
+
+value curses_newwin(nlines, ncols, x0, y0)
+        value nlines, ncols, x0, y0;
+{
+  return (value) newwin(Int_val(nlines), Int_val(ncols),
+                        Int_val(x0), Int_val(y0));
+}
+
+value curses_addch(c)
+        value c;
+{
+  addch(Int_val(c));            /* Characters are encoded like integers */
+  return Val_unit;
+}
+
+value curses_addstr(s)
+        value s;
+{
+  addstr(String_val(s));
+  return Val_unit;
+}
+
+/* This goes on for pages. */
+\end{verbatim}
+(Actually, it would be better to create a library for the stub code,
+with each stub code function in a separate file, so that linking would
+pick only those functions from the "curses" library that are actually
+used.)
+
+The file "curses.c" can be compiled with:
+\begin{verbatim}
+        cc -c -I/usr/local/lib/caml-light curses.c
+\end{verbatim}
+or, even simpler,
+\begin{verbatim}
+        cslc -c curses.c
+\end{verbatim}
+(When passed a ".c" file, the "cslc" command simply calls "cc" on
+that file, with the right "-I" option.)
+
+Now, here is a sample Caml program "test.ml" that uses the "curses"
+module:
+\begin{verbatim}
+open Curses
+let main_window = initscr () in
+let small_window = newwin 10 5 20 10 in
+  mvwaddstr main_window 10 2 "Hello";
+  mvwaddstr small_window 4 3 "world";
+  refresh();
+  for i = 1 to 100000 do () done;
+  endwin()
+\end{verbatim}
+To compile this program, run:
+\begin{verbatim}
+        cslc -c test.ml
+\end{verbatim}
+Finally, to link everything together:
+\begin{verbatim}
+        cslc -custom -o test test.zo curses.o -cclib curses
+\end{verbatim}

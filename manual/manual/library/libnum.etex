@@ -1,0 +1,34 @@
+\chapter{The num library: arbitrary-precision rational arithmetic}
+
+The "num" library (distributed in "contrib/libnum") implements
+exact-precision rational arithmetic. It is built upon the
+state-of-the-art BigNum arbitrary-precision integer arithmetic
+package, and therefore achieves very high performance.
+
+The functions provided in this library are fully documented in
+{\em The CAML Numbers Reference Manual\/} by 
+Valérie Ménissier-Morain, technical report 141, INRIA, july 1992
+(available by anonymous FTP from "ftp.inria.fr", directory
+"INRIA/publications/RT", file "RT-0141.ps.Z"). A summary of the
+functions is given below.
+
+Programs that use the "num" library must be linked in ``custom
+runtime'' mode, as follows:
+\begin{alltt}
+        camlc -custom \var{other options} nums.zo \var{other files} -lnums
+\end{alltt}
+For interactive use of the "num" library, run "camllight camlnum".
+
+\begin{mac}
+This library is not available.
+\end{mac}
+
+\begin{pc}
+This library is not available.
+\end{pc}
+
+\begin{library}
+\input num.tex
+\input arithstatus.tex
+\end{library}
+

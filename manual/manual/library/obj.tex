@@ -1,0 +1,28 @@
+\section{Module {\tt Obj}: operations on internal representations of values
+}
+
+\label{s:Obj}
+\index{Obj (module)@\verb`Obj` (module)}%
+
+\begin{comment}
+Not for the casual user. 
+\end{comment}
+\begin{verbatim}
+type t
+val repr : 'a -> t
+val magic : 'a -> 'b
+val is_block : t -> bool
+val tag : t -> int
+val size : t -> int
+val field : t -> int -> t
+val set_field : t -> int -> t -> unit
+val new_block : int -> int -> t
+\end{verbatim}
+\index{repr@\verb`repr`}%
+\index{magic@\verb`magic`}%
+\index{is_block@\verb`is_block`}%
+\index{tag@\verb`tag`}%
+\index{size@\verb`size`}%
+\index{field@\verb`field`}%
+\index{set_field@\verb`set_field`}%
+\index{new_block@\verb`new_block`}%

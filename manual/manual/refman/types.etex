@@ -1,0 +1,64 @@
+\section{Type expressions}
+
+\begin{syntax}
+typexpr:
+        "'" ident
+      | '(' typexpr ')'
+      | typexpr '->' typexpr
+      | typexpr {{ '*' typexpr }}
+      | typeconstr
+      | typexpr typeconstr
+      | '(' typexpr { ',' typexpr } ')' typeconstr
+\end{syntax}
+
+The table below shows the relative precedences and associativity of
+operators and non-closed type constructions. The constructions with
+higher precedences come first.
+\begin{tableau}{|l|l|}{Operator}{Associativity}
+\entree{Type constructor application}{--}
+\entree{"*"}{--}
+\entree{"->"}{right}
+\end{tableau}
+
+Type expressions denote types in definitions of data types as well as
+in type constraints over patterns and expressions.
+
+\subsubsection*{Type variables}
+
+The type expression @"'" ident@ stands for the type variable named
+@ident@. In data type definitions, type variables are names for the
+data type parameters. In type constraints, they represent unspecified
+types that can be instantiated by any type to satisfy the type
+constraint.
+
+\subsubsection*{Parenthesized types}
+
+The type expression @"(" typexpr ")"@ denotes the same type as
+@typexpr@.
+
+\subsubsection*{Function types}
+
+The type expression @typexpr_1 '->' typexpr_2@ denotes the type of
+functions mapping arguments of type @typexpr_1@ to results of type
+@typexpr_2@.
+
+\subsubsection*{Tuple types}
+
+The type expression @typexpr_1 '*' \ldots '*' typexpr_n@
+denotes the type of tuples whose elements belong to types @typexpr_1,
+\ldots typexpr_n@ respectively.
+
+\subsubsection*{Constructed types}
+
+Type constructors with no parameter, as in @typeconstr@, are type
+expressions.
+
+The type expression @typexpr typeconstr@, where @typeconstr@ is a type
+constructor with one parameter, denotes the application of the unary type
+constructor @typeconstr@ to the type @typexpr@.
+
+The type expression @(typexpr_1,\ldots,typexpr_n) typeconstr@, where
+@typeconstr@ is a type constructor with $n$ parameters, denotes the
+application of the $n$-ary type constructor @typeconstr@ to the types
+@typexpr_1@ through @typexpr_n@.
+

@@ -1,0 +1,69 @@
+#!/usr/local/bin/perl
+# Split an HTML file into smaller nodes.
+# Split at <H1> headers and also at some <H2> headers.
+
+while ($ARGV[0] =~ /^-([0-9]+)$/) {
+  $split2[$1] = 1;
+  shift(@ARGV);
+}
+$infile = $ARGV[0];
+
+# Find URL's for the links
+
+$level1 = 0;
+open(INPUT, $infile);
+while(<INPUT>) {
+  if (m|^<H1>(.*)</H1>|) {
+    $level1++;
+    $level2 = 0;
+    $currfile = "node$level1.html";
+  }
+  if ($split2[$level1] && m|^<H2>(.*)</H2>|) {
+    $level2++;
+    $currfile = "node$level1.$level2.html";
+  }
+  s|<A NAME="([^"]*)"></A>|do set_url($1)|ige;
+}
+
+sub set_url {
+  local ($lbl) = @_;
+  $url{$lbl} = "$currfile#$lbl";
+#  print STDERR "$lbl -> $currfile#$lbl", "\n";
+}
+
+# Cut the file
+
+$level1 = 0;
+open(INPUT, $infile);
+while(<INPUT>) {
+  if (m|^<H0>(.*)</H0>|) {
+    if ($level2 > 0) { print FILE1 "</UL>\n"; }
+    select(STDOUT);
+    if ($level1 >= 1) { print "</UL>"; }
+    print "<H2>$1</H2>\n";
+    if ($level1 >= 1) { print "<UL>"; }
+    next;
+  }
+  if (m|^<H1>(.*)</H1>|) {
+    if ($level2 > 0) { print FILE1 "</UL>\n"; }
+    $level1++;
+    $level2 = 0;
+    select(STDOUT);
+    if ($level1 == 1) { print "<BR><HR><BR><UL>\n"; }
+    print "<LI><A HREF=\"node$level1.html\">$1</A>\n";
+    open(FILE1, "> node$level1.html");
+    select(FILE1);
+    print "<TITLE>$1</TITLE>\n";
+  }
+  if ($split2[$level1] && m|^<H2>(.*)</H2>|) {
+    $level2++;
+    select(FILE1);
+    if ($level2 == 1) { print "<BR><HR><BR><UL>\n"; }
+    print "<LI><A HREF=\"node$level1.$level2.html\">$1</A>\n";
+    open(FILE2, "> node$level1.$level2.html");
+    select(FILE2);
+    print "<TITLE>$1</TITLE>\n";
+  }
+  s|<A HREF="#([^"]*)">X</A>|'<A HREF="' . $url{$1} . '"><IMG SRC="cross_ref_motif.gif"></A>'|ige;
+  print $_;
+}

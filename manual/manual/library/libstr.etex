@@ -1,0 +1,27 @@
+\chapter{The str library: regular expressions and string processing}
+
+The "str" library (distributed in "contrib/libstr") provides
+high-level string processing functions, some based on regular
+expressions. It is intended to support the kind of file processing
+that is usually performed with scripting languages such as "awk",
+"perl" or "sed".
+
+Programs that use the "str" library must be linked in ``custom
+runtime'' mode, as follows:
+\begin{alltt}
+        camlc -custom \var{other options} str.zo \var{other files} -lstr
+\end{alltt}
+For interactive use of the "str" library, run "camllight camlstr".
+
+\begin{mac}
+This library is not available.
+\end{mac}
+
+\begin{pc}
+This library is not available.
+\end{pc}
+
+\begin{library}
+\input str.tex
+\end{library}
+
