@@ -15,6 +15,12 @@ version 1.0 (included below).
 The Library is distributed under the terms of the GNU Library General
 Public License version 2 (included below).
 
+As a special exception to the Q Public Licence, you may develop
+application programs, reusable components and other software items
+that link with the original or modified versions of the Software
+and are not made available to the general public, without any of the
+additional requirements listed in clause 6c of the Q Public licence.
+
 As a special exception to the GNU Library General Public License, you
 may link, statically or dynamically, a "work that uses the Library"
 with a publicly distributed version of the Library to produce an
@@ -132,8 +138,7 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
                             Choice of Law
 
-This license is governed by the Laws of France. Disputes shall be
-settled by the Court of Versailles.
+This license is governed by the Laws of France.
 
 ----------------------------------------------------------------------
 
