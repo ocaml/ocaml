@@ -159,8 +159,10 @@ bytecclinkopts=""
 if test $gcc = yes; then
   bytecccompopts="-fno-defer-pop -Wall"
   case "$host" in
-    *-*-nextstep*) bytecccompopts="$bytecccompopts -U__GNUC__";;
-    alpha-*-osf*)  bytecclinkopts="-Xlinker -taso";;
+    *-*-nextstep*)
+      bytecccompopts="$bytecccompopts -U__GNUC__ -D_POSIX_SOURCE";;
+    alpha-*-osf*)
+      bytecclinkopts="-Xlinker -taso";;
   esac
 else
   $bytecc=cc
@@ -198,11 +200,12 @@ case "$arch" in
   *) nativecc="$bytecc";;
 esac
 
-case "$arch,$nativecc" in
-  alpha,cc) nativecccompopts=-std1;;
-  mips,cc)  nativecccompopts=-std;;
-  *,gcc)    nativecccompopts=-Wall;;
-  *)        nativecccompopts='';;
+case "$arch,$nativecc,$system" in
+  alpha,cc,*)   nativecccompopts=-std1;;
+  mips,cc,*)    nativecccompopts=-std;;
+  *,*,nextstep) nativecccompopts="-Wall -D_POSIX_SOURCE";;
+  *,gcc,*)      nativecccompopts=-Wall;;
+  *)            nativecccompopts='';;
 esac
 
 nativecclinkopts=''
