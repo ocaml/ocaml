@@ -53,7 +53,7 @@ let rec highlight_locations loc1 loc2 =
         None -> false
       | Some lb ->
           try
-            if Sys.getenv "TERM" = "dumb" then false else raise Not_found
+            if Sys.getenv "TERM" = "character" then false else raise Not_found
           with Not_found ->
           try
             (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
