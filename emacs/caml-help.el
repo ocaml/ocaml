@@ -450,7 +450,7 @@ This uses info files produced by ocamldoc."
     ))
 
 (defun ocaml-buffer-substring (region)
-  (and region (buffer-substring (car region) (cdr region))))
+  (and region (buffer-substring-no-properties (car region) (cdr region))))
 
 ;; Help function. 
 
@@ -467,7 +467,7 @@ current buffer using \\[ocaml-qualified-identifier]."
                   (and (file-exists-p
                         (concat (ocaml-uncapitalize module) ".mli"))
                        (ocaml-get-or-make-module module))))                  
-             (location (cdadr module-info)))
+             (location (cdr (car (cdr module-info)))))
         (cond
          (location
           (view-file (concat location (ocaml-uncapitalize module) ".mli"))

@@ -4,7 +4,7 @@ include ../config/Makefile
 
 # Files to install
 FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \
-	inf-caml.el caml-compat.el
+	inf-caml.el caml-compat.el caml-help.el
 
 # Where to install. If empty, automatically determined.
 #EMACSDIR=
@@ -20,6 +20,7 @@ COMPILECMD=(progn \
               (setq load-path (cons "." load-path)) \
               (byte-compile-file "caml.el") \
               (byte-compile-file "inf-caml.el") \
+              (byte-compile-file "caml-help.el") \
               (byte-compile-file "camldebug.el"))
 
 install:
