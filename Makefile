@@ -10,7 +10,7 @@ LINKFLAGS=
 CAMLYACC=boot/camlyacc
 YACCFLAGS=
 CAMLLEX=boot/camlrun boot/camllex
-CAMLDEP=tools/camldep
+CAMLDEP=boot/camlrun tools/camldep
 DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun/camlrun
 
@@ -75,7 +75,7 @@ PERVASIVES=arg array char filename format hashtbl lexing list map \
   obj parsing pervasives printexc printf queue set sort stack string sys
 
 # Recompile the system using the bootstrap compiler
-all: runtime camlc camllex camlyacc library camltop
+all: runtime camlc camllex camlyacc tools library camltop
 
 # The compilation of camltop will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -374,6 +374,8 @@ realclean::
 
 # Utilities
 
+tools:
+	cd tools; $(MAKE)
 realclean::
 	cd tools; $(MAKE) clean
 alldepend::
@@ -400,10 +402,13 @@ clean::
 	rm -f asmcomp/*.cm[iox] asmcomp/*.[so] asmcomp/*~
 	rm -f driver/*.cm[iox] driver/*.[so] driver/*~
 	rm -f toplevel/*.cm[iox] toplevel/*.[so] toplevel/*~
+	rm -f tools/*.cm[iox] tools/*.[so] tools/*~
 	rm -f *~
 
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) */*.mli */*.ml > .depend
+	(for d in utils parsing typing bytecomp asmcomp driver toplevel; \
+         do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
+         done) > .depend
 
 alldepend:: depend
 
