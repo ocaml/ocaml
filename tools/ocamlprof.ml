@@ -193,21 +193,21 @@ and rw_exp iflag sexp =
     rewrite_exp iflag sbody
 
   | Pexp_function caselist ->
-    if !instr_fun then
+    if !instr_fun && not sexp.pexp_loc.loc_ghost then
       rewrite_function iflag caselist
     else
       rewrite_patlexp_list iflag caselist
 
   | Pexp_match(sarg, caselist) ->
     rewrite_exp iflag sarg;
-    if !instr_match then
+    if !instr_match && not sexp.pexp_loc.loc_ghost then
       rewrite_funmatching caselist
     else
       rewrite_patlexp_list iflag caselist
 
   | Pexp_try(sbody, caselist) ->
     rewrite_exp iflag sbody;
-    if !instr_try then
+    if !instr_try && not sexp.pexp_loc.loc_ghost then
       rewrite_trymatching caselist
     else
       rewrite_patexp_list iflag caselist
@@ -241,11 +241,11 @@ and rw_exp iflag sexp =
 
   | Pexp_ifthenelse(scond, sifso, None) ->
       rewrite_exp iflag scond;
-      rewrite_ifbody iflag sifso
+      rewrite_ifbody iflag sexp.pexp_loc.loc_ghost sifso
   | Pexp_ifthenelse(scond, sifso, Some sifnot) ->
       rewrite_exp iflag scond;
-      rewrite_ifbody iflag sifso;
-      rewrite_ifbody iflag sifnot
+      rewrite_ifbody iflag sexp.pexp_loc.loc_ghost sifso;
+      rewrite_ifbody iflag sexp.pexp_loc.loc_ghost sifnot
       
   | Pexp_sequence(sexp1, sexp2) ->
     rewrite_exp iflag sexp1;
@@ -253,13 +253,15 @@ and rw_exp iflag sexp =
 
   | Pexp_while(scond, sbody) ->
     rewrite_exp iflag scond;
-    if !instr_loops then insert_profile rw_exp sbody
+    if !instr_loops && not sexp.pexp_loc.loc_ghost
+    then insert_profile rw_exp sbody
     else rewrite_exp iflag sbody
 
   | Pexp_for(_, slow, shigh, _, sbody) ->
     rewrite_exp iflag slow;
     rewrite_exp iflag shigh;
-    if !instr_loops then insert_profile rw_exp sbody
+    if !instr_loops && not sexp.pexp_loc.loc_ghost
+    then insert_profile rw_exp sbody
     else rewrite_exp iflag sbody
 
   | Pexp_constraint(sarg, _, _) ->
@@ -284,8 +286,8 @@ and rw_exp iflag sexp =
       rewrite_mod iflag smod;
       rewrite_exp iflag sexp
 
-and rewrite_ifbody iflag sifbody =
-  if !instr_if then
+and rewrite_ifbody iflag ghost sifbody =
+  if !instr_if && not ghost then
     insert_profile rw_exp sifbody
   else
     rewrite_exp iflag sifbody
@@ -293,17 +295,17 @@ and rewrite_ifbody iflag sifbody =
 (* called only when !instr_fun *)
 and rewrite_annotate_exp_list l =
   List.iter
-    (function  {pexp_desc = Pexp_when(scond, sbody)} ->
-      insert_profile rw_exp scond; 
-      insert_profile rw_exp sbody
-    | {pexp_desc = Pexp_constraint(sbody, _, _)} -> (* let f x : t = e *)
-      insert_profile rw_exp sbody
-    | sexp ->
-      insert_profile rw_exp sexp)
+    (function
+     | {pexp_desc = Pexp_when(scond, sbody)}
+        -> insert_profile rw_exp scond; 
+           insert_profile rw_exp sbody;
+     | {pexp_desc = Pexp_constraint(sbody, _, _)} (* let f x : t = e *)
+        -> insert_profile rw_exp sbody
+     | sexp -> insert_profile rw_exp sexp)
     l
 
 and rewrite_function iflag = function
-    [spat, ({pexp_desc = Pexp_function _} as sexp)] -> rewrite_exp iflag sexp
+  | [spat, ({pexp_desc = Pexp_function _} as sexp)] -> rewrite_exp iflag sexp
   | l -> rewrite_funmatching l
 
 and rewrite_funmatching l = 
@@ -320,8 +322,8 @@ and rewrite_class_field iflag =
   | Pcf_val (_, _, sexp, _)  -> rewrite_exp iflag sexp
   | Pcf_meth (_, _, ({pexp_desc = Pexp_function _} as sexp), _) ->
       rewrite_exp iflag sexp
-  | Pcf_meth (_, _, sexp, _) ->
-      if !instr_fun then insert_profile rw_exp sexp
+  | Pcf_meth (_, _, sexp, loc) ->
+      if !instr_fun && not loc.loc_ghost then insert_profile rw_exp sexp
       else rewrite_exp iflag sexp
   | Pcf_let(_, spat_sexp_list, _) ->
       rewrite_patexp_list iflag spat_sexp_list

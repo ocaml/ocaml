@@ -70,7 +70,7 @@ let _ =
        "-p", Arg.String(fun s -> profargs := s :: "-m" :: !profargs),
              "[afilmt]  Profile constructs specified by argument:\n\
           \032     a  Everything\n\
-          \032     f  Function calls\n\
+          \032     f  Function calls and method calls\n\
           \032     i  if ... then ... else\n\
           \032     l  while, for\n\
           \032     m  match ... with\n\

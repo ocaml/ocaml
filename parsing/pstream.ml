@@ -117,10 +117,17 @@ let cparser (bpo, pc) =
 
 (* streams *)
 
-let clazy e = mkexp (Pexp_function [(ghpat Ppat_any, e)])
+let clazy e = ghexp (Pexp_function [(ghpat Ppat_any, e)])
 
-let rec cstream =
-  function
-    [] -> ghexp (Pexp_ident (Ldot (Lident "Stream", "sempty")))
-  | Sexp_term e :: secl -> afun "lcons" [clazy e; cstream secl]
-  | Sexp_nterm e :: secl -> afun "lapp" [clazy e; cstream secl]
+let rec cstream_aux =
+  function 
+  | [] -> ghexp (Pexp_ident (Ldot (Lident "Stream", "sempty")))
+  | Sexp_term e :: secl -> afun "lcons" [clazy e; cstream_aux secl]
+  | Sexp_nterm e :: secl -> afun "lapp" [clazy e; cstream_aux secl]
+;;
+
+let cstream l =
+  match cstream_aux l with
+  | {pexp_desc = d; pexp_loc = l}
+     -> {pexp_desc = d; pexp_loc = {l with loc_ghost = false}}
+;;
