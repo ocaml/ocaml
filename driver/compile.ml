@@ -46,14 +46,15 @@ let initial_env () =
 
 (* Optionally preprocess a source file *)
 
-let preprocess sourcefile tmpfile =
+let preprocess sourcefile =
   match !Clflags.preprocessor with
     None -> sourcefile
   | Some pp ->
-      let comm = pp ^ " " ^ sourcefile ^ " > " ^ tmpfile in
+      let tmpfile = Filename.temp_file "camlpp" "" in
+      let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Ccomp.command comm <> 0 then begin
+        remove_file tmpfile;
         Printf.eprintf "Preprocessing error\n";
-        flush stderr;
         exit 2
       end;
       tmpfile
@@ -103,7 +104,7 @@ let interface ppf sourcefile =
   init_path();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
-  let inputfile = preprocess sourcefile (prefixname ^ ".ppi") in
+  let inputfile = preprocess sourcefile in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
   if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
   let sg = Typemod.transl_signature (initial_env()) ast in
@@ -125,7 +126,7 @@ let implementation ppf sourcefile =
   init_path();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
-  let inputfile = preprocess sourcefile (prefixname ^ ".ppo") in
+  let inputfile = preprocess sourcefile in
   let objfile = prefixname ^ ".cmo" in
   let oc = open_out_bin objfile in
   let env = initial_env() in
