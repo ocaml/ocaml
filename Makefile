@@ -56,7 +56,8 @@ DRIVER=driver/errors.cmo driver/compile.cmo driver/main.cmo
 OPTDRIVER=driver/opterrors.cmo driver/optcompile.cmo driver/optmain.cmo
 
 TOPLEVEL=driver/errors.cmo driver/compile.cmo \
-  toplevel/printval.cmo toplevel/toploop.cmo toplevel/topdirs.cmo
+  toplevel/printval.cmo toplevel/toploop.cmo \
+  toplevel/trace.cmo toplevel/topdirs.cmo
 
 TOPLEVELMAIN=toplevel/topmain.cmo
 
