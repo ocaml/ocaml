@@ -21,7 +21,7 @@ resource 'vers' (1) {
   0,
   VERSIONSTR,
   "Objective Caml version " VERSIONSTR "\n"
-  "Copyright 1991-1998 INRIA"
+  "Copyright 1991-1999 INRIA"
 #undef d
 #undef a
 #undef b
