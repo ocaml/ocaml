@@ -30,8 +30,6 @@ and ident_exn = Ident.create "exn"
 and ident_array = Ident.create "array"
 and ident_list = Ident.create "list"
 and ident_format = Ident.create "format"
-and ident_mutable = Ident.create "(mutable)"
-and ident_immutable = Ident.create "(immutable)"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -43,8 +41,6 @@ and path_exn = Pident ident_exn
 and path_array = Pident ident_array
 and path_list = Pident ident_list
 and path_format = Pident ident_format
-and path_mutable = Pident ident_mutable
-and path_immutable = Pident ident_immutable
 
 let type_int = newgenty (Tconstr(path_int, [], ref []))
 and type_char = newgenty (Tconstr(path_char, [], ref []))
@@ -55,8 +51,6 @@ and type_unit = newgenty (Tconstr(path_unit, [], ref []))
 and type_exn = newgenty (Tconstr(path_exn, [], ref []))
 and type_array t = newgenty (Tconstr(path_array, [t], ref []))
 and type_list t = newgenty (Tconstr(path_list, [t], ref []))
-and type_mutable = newgenty (Tconstr(path_mutable, [], ref []))
-and type_immutable = newgenty (Tconstr(path_immutable, [], ref []))
 
 let ident_match_failure = Ident.create "Match_failure"
 and ident_out_of_memory = Ident.create "Out_of_memory"
@@ -120,8 +114,6 @@ let build_initial_env add_type add_exception empty_env =
   add_exception ident_sys_error [type_string] (
   add_exception ident_end_of_file [] (
   add_exception ident_division_by_zero [] (
-  add_type ident_immutable decl_abstr (
-  add_type ident_mutable decl_abstr (
   add_type ident_format decl_format (
   add_type ident_list decl_list (
   add_type ident_array decl_array (
@@ -132,7 +124,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env))))))))))))))))))))
+    empty_env))))))))))))))))))
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))
