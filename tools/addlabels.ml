@@ -183,6 +183,20 @@ let rec insert_labels_app ~labels ~text args =
   | _ ->
       ()
 
+let insert_labels_app ~labels ~text args =
+  let labels, opt_labels =
+    List.partition labels ~f:(fun l -> l = "" || l.[0] <> '?') in
+  let nopt_labels =
+    List.map opt_labels
+      ~f:(fun l -> String.sub l ~pos:1 ~len:(String.length l - 1)) in
+  (* avoid ambiguous labels *)
+  if List.exists labels ~f:(List.mem ~set:nopt_labels) then () else
+  let aopt_labels = opt_labels @ nopt_labels in
+  let args, lab_args = List.partition args ~f:(fun (l,_) -> l = "") in
+  (* only optional arguments are labeled *)
+  if List.for_all lab_args ~f:(fun (l,_) -> List.mem l ~set:aopt_labels)
+  then insert_labels_app ~labels ~text args
+
 let rec add_labels_expr ~text ~values ~classes expr =
   let add_labels_rec ?(values=values) expr =
     add_labels_expr ~text ~values ~classes expr in
