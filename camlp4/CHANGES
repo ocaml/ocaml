@@ -1,6 +1,8 @@
 Camlp4 Version 3.04+5
 ---------------------
 
+- [05 Feb 02] Added a flag Plexer.no_quotations. When set to True, the
+  quotations are no more lexed in all lexers built by Plexer.make ()
 - [05 Feb 02] Changed the printing of options so that the option -help
   aligns correctly their documentation. One can use now Pcaml.add_option
   without having to calculate that.

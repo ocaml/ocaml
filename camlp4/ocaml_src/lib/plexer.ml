@@ -15,6 +15,8 @@
 open Stdpp;;
 open Token;;
 
+let no_quotations = ref false;;
+
 (* The string buffering machinery *)
 
 let buff = ref (String.create 80);;
@@ -285,37 +287,44 @@ let next_token_fun dfa find_kwd =
         let ep = Stream.count strm__ in
         keyword_or_error (bp, ep) (String.make 1 c)
     | _ -> let _ = Stream.empty strm__ in ("EOI", ""), (bp, succ bp)
-  and less bp (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some '<' ->
-        Stream.junk strm__;
-        let len =
-          try quotation bp 0 strm__ with
-            Stream.Failure -> raise (Stream.Error "")
-        in
-        let ep = Stream.count strm__ in
-        ("QUOTATION", ":" ^ get_buff len), (bp, ep)
-    | Some ':' ->
-        Stream.junk strm__;
-        let i =
-          try let len = ident 0 strm__ in get_buff len with
-            Stream.Failure -> raise (Stream.Error "")
-        in
-        begin match Stream.peek strm__ with
-          Some '<' ->
-            Stream.junk strm__;
-            let len =
-              try quotation bp 0 strm__ with
-                Stream.Failure -> raise (Stream.Error "")
-            in
-            let ep = Stream.count strm__ in
-            ("QUOTATION", i ^ ":" ^ get_buff len), (bp, ep)
-        | _ -> raise (Stream.Error "character '<' expected")
-        end
-    | _ ->
-        let len = ident2 (store 0 '<') strm__ in
-        let ep = Stream.count strm__ in
-        let id = get_buff len in keyword_or_error (bp, ep) id
+  and less bp strm =
+    if !no_quotations then
+      let (strm__ : _ Stream.t) = strm in
+      let len = ident2 (store 0 '<') strm__ in
+      let ep = Stream.count strm__ in
+      let id = get_buff len in keyword_or_error (bp, ep) id
+    else
+      let (strm__ : _ Stream.t) = strm in
+      match Stream.peek strm__ with
+        Some '<' ->
+          Stream.junk strm__;
+          let len =
+            try quotation bp 0 strm__ with
+              Stream.Failure -> raise (Stream.Error "")
+          in
+          let ep = Stream.count strm__ in
+          ("QUOTATION", ":" ^ get_buff len), (bp, ep)
+      | Some ':' ->
+          Stream.junk strm__;
+          let i =
+            try let len = ident 0 strm__ in get_buff len with
+              Stream.Failure -> raise (Stream.Error "")
+          in
+          begin match Stream.peek strm__ with
+            Some '<' ->
+              Stream.junk strm__;
+              let len =
+                try quotation bp 0 strm__ with
+                  Stream.Failure -> raise (Stream.Error "")
+              in
+              let ep = Stream.count strm__ in
+              ("QUOTATION", i ^ ":" ^ get_buff len), (bp, ep)
+          | _ -> raise (Stream.Error "character '<' expected")
+          end
+      | _ ->
+          let len = ident2 (store 0 '<') strm__ in
+          let ep = Stream.count strm__ in
+          let id = get_buff len in keyword_or_error (bp, ep) id
   and string bp len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '"' -> Stream.junk strm__; get_buff len

@@ -42,3 +42,8 @@ val dollar_for_antiquotation : bool ref;;
     (* When True (default), the next call to [Plexer.make ()] returns a
        lexer where the dollar sign is used for antiquotations. If False,
        the dollar sign can be used as token. *)
+
+val no_quotations : bool ref;;
+    (* When True, all lexers built by [Plexer.make ()] do not lex the
+       quotation syntax any more. Default is False (quotations are
+       lexed). *)

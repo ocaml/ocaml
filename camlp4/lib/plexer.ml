@@ -15,6 +15,8 @@
 open Stdpp;
 open Token;
 
+value no_quotations = ref False;
+
 (* The string buffering machinery *)
 
 value buff = ref (String.create 80);
@@ -221,16 +223,22 @@ value next_token_fun dfa find_kwd =
     | [: `'\\'; s :] ep -> (("LIDENT", get_buff (ident3 0 s)), (bp, ep))
     | [: `c :] ep -> keyword_or_error (bp, ep) (String.make 1 c)
     | [: _ = Stream.empty :] -> (("EOI", ""), (bp, succ bp)) ]
-  and less bp =
-    parser
-    [ [: `'<'; len = quotation bp 0 :] ep ->
-        (("QUOTATION", ":" ^ get_buff len), (bp, ep))
-    | [: `':'; i = parser [: len = ident 0 :] -> get_buff len;
-         `'<' ? "character '<' expected"; len = quotation bp 0 :] ep ->
-        (("QUOTATION", i ^ ":" ^ get_buff len), (bp, ep))
-    | [: len = ident2 (store 0 '<') :] ep ->
-        let id = get_buff len in
-        keyword_or_error (bp, ep) id ]
+  and less bp strm =
+    if no_quotations.val then
+      match strm with parser
+      [ [: len = ident2 (store 0 '<') :] ep ->
+           let id = get_buff len in
+           keyword_or_error (bp, ep) id ]
+    else
+      match strm with parser
+      [ [: `'<'; len = quotation bp 0 :] ep ->
+          (("QUOTATION", ":" ^ get_buff len), (bp, ep))
+      | [: `':'; i = parser [: len = ident 0 :] -> get_buff len;
+           `'<' ? "character '<' expected"; len = quotation bp 0 :] ep ->
+          (("QUOTATION", i ^ ":" ^ get_buff len), (bp, ep))
+      | [: len = ident2 (store 0 '<') :] ep ->
+          let id = get_buff len in
+          keyword_or_error (bp, ep) id ]
   and string bp len =
     parser
     [ [: `'"' :] -> get_buff len
