@@ -154,7 +154,7 @@ let handle_unix_error f arg =
     exit 2
 
 external environment : unit -> string array = "unix_environment"
-external getenv: string -> string = "sys_getenv"
+external getenv: string -> string = "caml_sys_getenv"
 external putenv: string -> string -> unit = "unix_putenv"
 
 type interval_timer =
@@ -269,7 +269,8 @@ external link : string -> string -> unit = "unix_link"
 
 module LargeFile =
   struct
-    external lseek : file_descr -> int64 -> seek_command -> int64 = "unix_lseek_64"
+    external lseek : file_descr -> int64 -> seek_command -> int64
+                   = "unix_lseek_64"
     external truncate : string -> int64 -> unit = "unix_truncate_64"
     external ftruncate : file_descr -> int64 -> unit = "unix_ftruncate_64"
     type stats =
@@ -354,7 +355,8 @@ external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
 external _execv : string -> string array -> 'a = "unix_execv"
 external _execve : string -> string array -> string array -> 'a = "unix_execve"
 external _execvp : string -> string array -> 'a = "unix_execvp"
-external _execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
+external _execvpe : string -> string array -> string array -> 'a
+                  = "unix_execvpe"
 
 (* Disable the timer interrupt before doing exec, because some OS
    keep sending timer interrupts to the exec'ed code.
@@ -394,7 +396,8 @@ let execvpe proc args =
   do_exec (fun () -> _execvpe proc args)
 
 external fork : unit -> int = "unix_fork"
-external _waitpid : wait_flag list -> int -> int * process_status = "unix_waitpid"
+external _waitpid : wait_flag list -> int -> int * process_status
+                  = "unix_waitpid"
 
 let wait_pid pid = 
   match wait_pid_aux pid with
@@ -578,7 +581,8 @@ external setsockopt_int : file_descr -> socket_int_option -> int -> unit
                                           = "unix_setsockopt_int"
 external getsockopt_optint : file_descr -> socket_optint_option -> int option
                                           = "unix_getsockopt_optint"
-external setsockopt_optint : file_descr -> socket_optint_option -> int option -> unit
+external setsockopt_optint
+         : file_descr -> socket_optint_option -> int option -> unit
                                           = "unix_setsockopt_optint"
 external getsockopt_float : file_descr -> socket_float_option -> float
                                           = "unix_getsockopt_float"
@@ -717,7 +721,7 @@ external tcgetattr: file_descr -> terminal_io = "unix_tcgetattr"
 type setattr_when = TCSANOW | TCSADRAIN | TCSAFLUSH
 
 external tcsetattr: file_descr -> setattr_when -> terminal_io -> unit
-               = "unix_tcsetattr"
+                  = "unix_tcsetattr"
 external tcsendbreak: file_descr -> int -> unit = "unix_tcsendbreak"
 external tcdrain: file_descr -> unit = "unix_tcdrain"
 

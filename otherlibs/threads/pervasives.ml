@@ -111,25 +111,20 @@ external float : int -> float = "%floatofint"
 external float_of_int : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
 external int_of_float : float -> int = "%intoffloat"
-external float_of_bytes : string -> float = "float_of_bytes"
+external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
 let infinity =
-  float_of_bytes "\127\240\000\000\000\000\000\000"
-              (* 0x7F F0 00 00 00 00 00 00 *)
+  float_of_bits 0x7F_F0_00_00_00_00_00_00L
 let neg_infinity =
-  float_of_bytes "\255\240\000\000\000\000\000\000"
-              (* 0xFF F0 00 00 00 00 00 00 *)
+  float_of_bits 0xFF_F0_00_00_00_00_00_00L
 let nan =
-  float_of_bytes "\127\240\000\000\000\000\000\001"
-              (* 0x7F F0 00 00 00 00 00 01 *)
+  float_of_bits 0x7F_F0_00_00_00_00_00_01L
 let max_float =
-  float_of_bytes "\127\239\255\255\255\255\255\255"
-              (* 0x7f ef ff ff ff ff ff ff *)
+  float_of_bits 0x7F_EF_FF_FF_FF_FF_FF_FFL
 let min_float =
-  float_of_bytes "\000\016\000\000\000\000\000\000"
-              (* 0x00 10 00 00 00 00 00 00 *)
+  float_of_bits 0x00_10_00_00_00_00_00_00L
 let epsilon_float =
-  float_of_bytes "\060\176\000\000\000\000\000\000"
-              (* 0x3c b0 00 00 00 00 00 00 *)
+  float_of_bits 0x3C_B0_00_00_00_00_00_00L
+
 type fpclass =
     FP_normal
   | FP_subnormal
@@ -278,7 +273,7 @@ let rec flush oc =
   if success then () else flush oc
 
 external out_channels_list : unit -> out_channel list 
-                           = "caml_out_channels_list"
+                           = "caml_ml_out_channels_list"
 
 let flush_all () = 
   let rec iter = function
@@ -343,20 +338,20 @@ external marshal_to_string : 'a -> unit list -> string
 
 let output_value oc v = output_string oc (marshal_to_string v [])
 
-external seek_out_blocking : out_channel -> int -> unit = "caml_seek_out"
+external seek_out_blocking : out_channel -> int -> unit = "caml_ml_seek_out"
 
 let seek_out oc pos = flush oc; seek_out_blocking oc pos
 
-external pos_out : out_channel -> int = "caml_pos_out"
-external out_channel_length : out_channel -> int = "caml_channel_size"
-external close_out_channel : out_channel -> unit = "caml_close_channel"
+external pos_out : out_channel -> int = "caml_ml_pos_out"
+external out_channel_length : out_channel -> int = "caml_ml_channel_size"
+external close_out_channel : out_channel -> unit = "caml_ml_close_channel"
 
 let close_out oc = (try flush oc with _ -> ()); close_out_channel oc
 let close_out_noerr oc =
   (try flush oc with _ -> ());
   (try close_out_channel oc with _ -> ())
 external set_binary_mode_out : out_channel -> bool -> unit
-                             = "caml_set_binary_mode"
+                             = "caml_ml_set_binary_mode"
 
 (* General input functions *)
 
@@ -369,8 +364,8 @@ let open_in name =
 let open_in_bin name =
   open_in_gen [Open_rdonly; Open_binary] 0 name
 
-external input_char_blocking : in_channel -> char = "caml_input_char"
-external input_byte_blocking : in_channel -> int = "caml_input_char"
+external input_char_blocking : in_channel -> char = "caml_ml_input_char"
+external input_byte_blocking : in_channel -> int = "caml_ml_input_char"
 
 let rec input_char ic =
   try
@@ -379,7 +374,7 @@ let rec input_char ic =
     wait_inchan ic; input_char ic
 
 external unsafe_input_blocking : in_channel -> string -> int -> int -> int
-                               = "caml_input"
+                               = "caml_ml_input"
 
 let rec unsafe_input ic s ofs len =
   try
@@ -453,13 +448,13 @@ let input_value ic =
   really_input ic buffer 20 bsize;
   unmarshal buffer 0
 
-external seek_in : in_channel -> int -> unit = "caml_seek_in"
-external pos_in : in_channel -> int = "caml_pos_in"
-external in_channel_length : in_channel -> int = "caml_channel_size"
-external close_in : in_channel -> unit = "caml_close_channel"
+external seek_in : in_channel -> int -> unit = "caml_ml_seek_in"
+external pos_in : in_channel -> int = "caml_ml_pos_in"
+external in_channel_length : in_channel -> int = "caml_ml_channel_size"
+external close_in : in_channel -> unit = "caml_ml_close_channel"
 let close_in_noerr ic = (try close_in ic with _ -> ());;
 external set_binary_mode_in : in_channel -> bool -> unit
-                            = "caml_set_binary_mode"
+                            = "caml_ml_set_binary_mode"
 
 (* Output functions on standard output *)
 
@@ -491,12 +486,13 @@ let read_float () = float_of_string(read_line())
 
 module LargeFile =
   struct
-    external seek_out : out_channel -> int64 -> unit = "caml_seek_out_64"
-    external pos_out : out_channel -> int64 = "caml_pos_out_64"
-    external out_channel_length : out_channel -> int64 = "caml_channel_size_64"
-    external seek_in : in_channel -> int64 -> unit = "caml_seek_in_64"
-    external pos_in : in_channel -> int64 = "caml_pos_in_64"
-    external in_channel_length : in_channel -> int64 = "caml_channel_size_64"
+    external seek_out : out_channel -> int64 -> unit = "caml_ml_seek_out_64"
+    external pos_out : out_channel -> int64 = "caml_ml_pos_out_64"
+    external out_channel_length : out_channel -> int64
+                                = "caml_ml_channel_size_64"
+    external seek_in : in_channel -> int64 -> unit = "caml_ml_seek_in_64"
+    external pos_in : in_channel -> int64 = "caml_ml_pos_in_64"
+    external in_channel_length : in_channel -> int64 = "caml_ml_channel_size_64"
   end
 
 (* Formats *)
