@@ -304,7 +304,7 @@ let bv_ops nchans =
   let rec do_to_string slot =
     if slot >= nslots then []
     else
-      Printf.sprintf "%x08" me.(slot)::
+      Printf.sprintf "%08x" me.(slot)::
       do_to_string (slot+1) in
 
   let to_string () = String.concat "" (do_to_string 0) in
@@ -317,7 +317,7 @@ let bv_ops nchans =
   } 
 
 let empty_status nchans =
-  if nchans > 31 then
+  if nchans < 32 then
     Obj.magic (int_ops ())
   else
     Obj.magic (bv_ops nchans)
