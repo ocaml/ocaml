@@ -300,7 +300,7 @@ and expression i ppf x =
       expression i ppf e1;
       expression i ppf e2;
   | Pexp_null ->
-      line i ppf "Pexp_null";
+      line i ppf "Pexp_null\n";
   | Pexp_reply (e, id) ->
       line i ppf "Pexp_reply\n";
       expression i ppf e;

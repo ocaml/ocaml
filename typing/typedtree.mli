@@ -85,13 +85,18 @@ and expression_desc =
   | Texp_loc of joinlocation list * expression
 
 and joinlocation =
-    {jloc_desc : Ident.t * joinautomaton list * expression ;
+    {jloc_desc : joinident * joinautomaton list * expression ;
       jloc_loc : Location.t}
 
 and joinautomaton =
     {jauto_desc : joinclause list ;
-     jauto_names : (Ident.t * bool) list ; (* names defined, sync/async*)
+     jauto_names : (Ident.t * joinchannel) list ;
+     (* names defined, description*)
      jauto_loc : Location.t}
+
+and joinchannel =
+    {jchannel_sync : bool ;
+     jchannel_type : type_expr;}
 
 and joinclause =
     {jclause_desc : joinpattern list * expression ;

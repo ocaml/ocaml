@@ -30,7 +30,6 @@ val type_nativeint: type_expr
 val type_int32: type_expr
 val type_int64: type_expr
 (*> JOCAML *)
-val type_channel : type_expr -> type_expr
 val type_location : type_expr
 val type_process : type_expr
 (*< JOCAML *)

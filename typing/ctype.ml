@@ -1433,12 +1433,14 @@ let rec filter_arrow env t l =
 (*
    Unify [t] and ['a channel]. Return ['a]
 *)
+let make_channel t = newty (Tconstr (Predef.path_channel,[t],ref Mnil))
+
 let filter_channel env t =
   let t = expand_head env t in
   match t.desc with
     Tvar ->
       let t1 = newvar () in
-      let t' = instance (Predef.type_channel t1) in
+      let t' = make_channel t1 in
       update_level env t.level t';
       t.desc <- Tlink t';
       t1

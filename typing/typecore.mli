@@ -30,6 +30,15 @@ val type_let:
           (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
+(*> JOCAML *)
+val type_joindefinition:
+    Env.t -> Parsetree.joinautomaton list ->
+      (Typedtree.joinautomaton list * Env.t)
+val type_joinlocation:
+    Env.t -> Parsetree.joinlocation list ->
+      (Typedtree.joinlocation list * Env.t)
+(*< JOCAML *)
+
 val type_class_arg_pattern:
         string -> Env.t -> Env.t -> label -> Parsetree.pattern ->
         Typedtree.pattern * (Ident.t * Ident.t * type_expr) list *

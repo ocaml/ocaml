@@ -443,14 +443,23 @@ let rec enter_channel all_chans auto_chans cl_ids chan = function
       else
         enter_channel all_chans auto_chans cl_ids chan rem
 
-let enter_jarg all_chans auto_chans cl_ids arg =  
+let enter_location all_chans jid =
+  let name = jid.pjident_desc in
+  if
+    List.exists (fun id -> Ident.name id = name) !all_chans
+  then
+    raise (Error (jid.pjident_loc, Multiply_bound_variable));  
+  let id = Ident.create name
+  and ty = instance (Predef.type_location) in
+  all_chans := id :: !all_chans ;
+  (id, ty)
+
+let enter_jarg cl_ids arg =  
   let name = arg.pjident_desc in
   let p id = Ident.name id = name in
   (* check linearity *)
   if
-    List.exists p all_chans ||
-    List.exists p !cl_ids ||
-    List.exists (fun (id,_,_) -> p id) auto_chans
+    List.exists p !cl_ids
   then
     raise (Error (arg.pjident_loc, Multiply_bound_variable));      
   (* create identifier *)
@@ -485,7 +494,7 @@ let type_auto_lhs all_chans env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
                 List.map
                   (fun jid ->
                     let id =
-                      enter_jarg !all_chans !auto_chans cl_ids jid in
+                      enter_jarg cl_ids jid in
                     mk_jident id jid.pjident_loc (newvar()) env)
                   sargs in
               {jpat_desc = chan, args;
@@ -511,10 +520,22 @@ let type_auto_lhs all_chans env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
 let rec do_type_autos_lhs all_chans env = function
   | [] -> []
   | sauto::rem ->
-      type_auto_lhs all_chans env sauto::
-      do_type_autos_lhs all_chans env rem
+      let r = type_auto_lhs all_chans env sauto in
+      r::do_type_autos_lhs all_chans env rem
 
 let type_autos_lhs env sautos = do_type_autos_lhs (ref []) env sautos
+
+let rec do_type_locs_lhs all_chans env = function
+  | [] -> []
+  | loc_def::rem ->
+      let slocation, sautos, _ = loc_def.pjloc_desc in
+      let id_loc, ty = enter_location all_chans slocation in
+      let location = mk_jident id_loc slocation.pjident_loc ty env in
+      let r = do_type_autos_lhs all_chans env sautos in
+      (location, r)::
+      do_type_locs_lhs all_chans env rem
+
+let type_locs_lhs env sdefs = do_type_locs_lhs (ref []) env sdefs
 (*< JOCAML *)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
@@ -1265,7 +1286,7 @@ let rec do_type_exp ctx env sexp =
          exp_env = env;
        }
   | Pexp_spawn (sarg) ->
-      check_process ctx sexp ;
+      check_expression ctx sexp ;
       let arg = do_type_exp P env sarg in
       {
         exp_desc = Texp_spawn arg;
@@ -1317,7 +1338,15 @@ let rec do_type_exp ctx env sexp =
         exp_type = body.exp_type;
         exp_env  = env
       } 
-  | Pexp_loc (d, sbody) -> assert false
+  | Pexp_loc (sdefs, sbody) ->
+      let (defs, new_env) = type_loc env sdefs in
+      let body = do_type_exp ctx new_env sbody in
+      {
+        exp_desc = Texp_loc (defs, body);
+        exp_loc  = sexp.pexp_loc;
+        exp_type = body.exp_type;
+        exp_env  = env
+      } 
 (*< JOCAML *)
 
 and type_argument env sarg ty_expected =
@@ -1740,12 +1769,12 @@ and type_let env rec_flag spat_sexp_list =
 (* Typing of join definitions *)
 and type_clause env names jpats scl =
   let conts = ref [] in
-  let extend_env env jpat =
+  let extend_env jpat env =
     let chan,args = jpat.jpat_desc in
     let kid = chan.jident_desc
     and kdesc =
       {continuation_type = newvar();
-      continuation_kind = false;} in
+       continuation_kind = false;} in
     conts := kdesc :: !conts;
     List.fold_left
       (fun env jid ->
@@ -1755,7 +1784,7 @@ and type_clause env names jpats scl =
            val_type = jid.jident_type}
           env)
       (Env.add_continuation kid kdesc env) args in
-  let new_env = List.fold_left extend_env env jpats
+  let new_env = List.fold_right extend_env jpats env
   and _,sexp = scl.pjclause_desc in
   let exp = do_type_exp P new_env sexp in
 
@@ -1776,7 +1805,7 @@ and type_clause env names jpats scl =
       let otchan =
         match kdesc with
         | {continuation_kind=false} ->
-            instance (Predef.type_channel targs)
+            Ctype.make_channel targs
         | {continuation_type=tres} ->
             newty (Tarrow ("", targs, tres, Cok)) in
       try
@@ -1795,30 +1824,96 @@ and type_auto env (def_names, auto_lhs) sauto =
   let def_names =
     List.map
       (fun (chan, ty) -> match (expand_head env ty).desc with
-      | Tarrow (_, _, _, _) -> chan, true
-      | Tconstr (p, _, _) when Path.same p Predef.path_channel -> chan, false
+      | Tarrow (_, _, _, _) ->
+          chan, {jchannel_sync=true; jchannel_type=ty}
+      | Tconstr (p, _, _) when Path.same p Predef.path_channel ->
+          chan, {jchannel_sync=false; jchannel_type=ty}
       | _ -> assert false)
       def_names in
   {jauto_desc = cls;
    jauto_names = def_names;
    jauto_loc = sauto.pjauto_loc}
 
+and generalize_auto auto =
+      List.iter
+        (fun cl ->
+          let jpats,_ = cl.jclause_desc in
+          let tys = ref [] in
+          List.iter
+            (fun jpat ->
+              let chan,_ = jpat.jpat_desc in
+              let newtys = ref [] in
+              let rec f ty =
+                if List.memq ty !tys then
+                  make_nongen ty
+                else if not (List.memq ty !newtys) then begin
+                  newtys := ty :: !newtys ;
+                  iter_type_expr f ty
+                end in
+              iter_type_expr f chan.jident_type ;
+              tys := !newtys @ !tys)
+            jpats)
+        auto.jauto_desc;
+      List.iter
+        (fun (id,chan) -> generalize chan.jchannel_type)
+        auto.jauto_names
+
+and add_auto_names env names =
+   List.fold_left
+     (fun env (id,ty) ->
+         Env.add_value id {val_type = ty; val_kind = Val_reg} env)
+      env names
+
 and type_def env sautos =
   begin_def ();
   let names_lhs_list = type_autos_lhs env sautos in
   let new_env =
     List.fold_left
-      (fun env (names,_) ->
-        List.fold_left
-          (fun env (id,ty) ->
-            Env.add_value id {val_type = ty; val_kind = Val_reg} env)
-          env names)
+      (fun env (names,_) -> add_auto_names env names)
       env names_lhs_list in
   let autos =
-    List.map2 (type_auto env) names_lhs_list sautos in
+    List.map2 (type_auto new_env) names_lhs_list sautos in
   end_def () ;
+
+(* Generalization *)
+  List.iter generalize_auto autos ;
+
   autos, new_env
-  
+
+and type_loc env sdefs =
+  begin_def ();
+  let names_lhs_list = type_locs_lhs env sdefs in
+  let new_env =
+    List.fold_left
+      (fun env (jid_loc, autos_lhs) ->
+       List.fold_left
+          (fun env (names,_) -> add_auto_names env names)
+          (Env.add_value
+             jid_loc.jident_desc
+             {val_type = jid_loc.jident_type; val_kind = Val_reg}
+             env)
+          autos_lhs)
+       env  names_lhs_list in
+  let defs =
+    List.map2
+      (fun (location, autos_lhs) loc_def ->
+        let (_, sautos,sexp) = loc_def.pjloc_desc in
+        let autos =
+          List.map2 (type_auto new_env) autos_lhs sautos in
+        let exp = do_type_exp P new_env sexp in
+        {jloc_desc= (location, autos, exp);
+         jloc_loc = loc_def.pjloc_loc})
+      names_lhs_list sdefs in
+  end_def ();
+
+(* Generalization *)
+  List.iter
+    (fun loc_def ->
+      let _,autos,_ = loc_def.jloc_desc in
+      List.iter generalize_auto autos)
+    defs;
+  defs, new_env
+
 (*< JOCAML *)
 
 (* Exported typer for expressions *)
@@ -1841,6 +1936,17 @@ let type_expression env sexp =
   else make_nongen exp.exp_type;
   exp
 
+(*> JOCAML *)
+(* Typing of toplevel join-definition *)
+let type_joindefinition env d =
+  Typetexp.reset_type_variables();
+  type_def env d
+
+let type_joinlocation env d =
+  Typetexp.reset_type_variables();
+  type_loc env d
+
+(*< JOCAML *)
 (* Error report *)
 
 open Format
