@@ -99,7 +99,7 @@ let rec for_all2 p l1 l2 =
 
 let rec exists2 p l1 l2 =
   match (l1, l2) with
-    ([], []) -> true
+    ([], []) -> false
   | (a1::l1, a2::l2) -> p a1 a2 or exists2 p l1 l2
   | (_, _) -> invalid_arg "List.exists2"
 
