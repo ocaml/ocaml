@@ -120,9 +120,9 @@ static void caml_thread_scan_roots(scanning_action action)
     /* Don't rescan the stack of the current thread, it was done already */
     if (th != curr_thread) {
 #ifdef NATIVE_CODE
-      if (th->bottom_of_stack == NULL) continue;
-      do_local_roots(action, th->last_return_address,
-                     th->bottom_of_stack, th->local_roots);
+      if (th->bottom_of_stack != NULL)
+        do_local_roots(action, th->last_return_address,
+                       th->bottom_of_stack, th->local_roots);
 #else
       do_local_roots(action, th->sp, th->stack_high, th->local_roots);
 #endif
@@ -319,12 +319,14 @@ value caml_thread_initialize(value unit)   /* ML */
     channel_mutex_unlock = caml_io_mutex_unlock;
     channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
     /* Fork the tick thread */
+#if 0
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     caml_pthread_check(
         pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL),
         "Thread.init");
     pthread_detach(tick_pthread);
+#endif
   End_roots();
   return Val_unit;
 }
@@ -359,6 +361,7 @@ value caml_thread_new(value clos)          /* ML */
   caml_thread_t th;
   value mu = Val_unit;
   value descr;
+  int err;
 
   Begin_roots2 (clos, mu)
     /* Create and acquire the termination lock */
@@ -394,9 +397,17 @@ value caml_thread_new(value clos)          /* ML */
     /* Fork the new thread */
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    caml_pthread_check(
-        pthread_create(&th->pthread, &attr, caml_thread_start, (void *) th),
-        "Thread.create");
+    err = pthread_create(&th->pthread, &attr, caml_thread_start, (void *) th);
+    if (err != 0) {
+      /* Fork failed, remove thread info block from list of threads */
+      th->next->prev = curr_thread;
+      curr_thread->next = th->next;
+#ifndef NATIVE_CODE
+      stat_free(th->stack_low);
+#endif
+      stat_free(th);
+      caml_pthread_check(err, "Thread.create");
+    }
   End_roots();
   return descr;
 }
