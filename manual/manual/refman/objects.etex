@@ -24,8 +24,8 @@ method-name:
 ;
 \end{syntax}
 
-Instance variable names and method names needs not be qualified: the
-formers are local to a class while the latters are global labels.
+Instance variable names and method names need not be qualified: the
+former are local to a class while the latter are global labels.
 
 \subsection{Type expressions}
 
@@ -51,11 +51,12 @@ method-type:
 \subsubsection*{Recursive types}
 
 \ikwd{as\@\verb`as`}
-Recursives types are allowed as long as any recursion goes through a type
+Recursives types are allowed as long as any recursion crosses a type
 constructor or an object type.
 %
 The type expression @typexpr 'as' "'" ident@ denotes the same type as
-@typexpr@, and also binds the type variable @ident@ to type @typexpr@.
+@typexpr@, and also binds the type variable @ident@ to type @typexpr@
+both in @typexpr@ and in the remaining part of the toplevel phrase. 
 
 \subsubsection*{Object types}
 
@@ -73,7 +74,7 @@ as a type variable.
 \label{s:sharp-types}
 
 The type @'#' class-path@ is a special kind of abbreviation. This
-abbreviation unify with the type of any object belonging to a subclass
+abbreviation unifies with the type of any object belonging to a subclass
 of class @class-path@.
 %
 It is handled in a special way as it usually hides a type variable (an
@@ -112,21 +113,21 @@ The expression @expr '#' method-name@ invocates the method
 
 \subsubsection*{Coercion}
 
-One sometimes need to change the type of an object to a subtype.
+The type of an object can be weakened  to a subtype.
 %
-The expression @'(' expr ':>' typexpr ')'@ coerce expression @expr@
+The expression @'(' expr ':>' typexpr ')'@ coerces expression @expr@
 to type @typexpr@.
 %
-The expression @'(' expr ':' typexpr_1 ':>' typexpr_2 ')'@ coerce
+The expression @'(' expr ':' typexpr_1 ':>' typexpr_2 ')'@ coerces
 expression @expr@ from type @typexpr_1@ to type @typexpr_2@. It is
 more general than the previous one.
 
 \subsubsection*{Object duplication}
 
-One can duplicate an object using the library function "Oo.copy"
+An object can be duplicated using the library function "Oo.copy"
 (see~\ref{s:Oo}).
 
-\subsection{Class definition}
+\subsection{Class definitions}
 
 \ikwd{and\@\verb`and`}
 \ikwd{as\@\verb`as`}
@@ -157,7 +158,9 @@ class-tags:
     ['virtual'] ['closed']
 ;
 parameterized-class-name:
-    ['(' "'" ident { ',' "'" ident } ')'] class-name
+    class-name
+  | "'" ident class-name
+  | '(' "'" ident { ',' "'" ident } ')' class-name
 ;
 class-params:
     {{ pattern }}
@@ -175,8 +178,7 @@ class-fields:
   | 'method' method { 'and' method }
 ;
 ancestor:
-    class-path {{ expr }} ['as' value-name]
-  | '(' typexpr { ',' typexpr } ')' class-path {{ expr }} ['as' value-name]
+    [ '(' typexpr { ',' typexpr } ')' ] class-path {{ expr }} ['as' value-name]
 ;
 value:
     ['private'] ['mutable'] inst-var-name ['=' expr]
@@ -188,6 +190,12 @@ method-type:
     method-name ':' typexpr
 ;
 \end{syntax}
+
+\subsubsection*{Class definitions}
+
+A class definition @'class' class-definition { 'and' class-definition }@
+is recursive. Each @class-definition@ defines a @class-name@ that can be
+used in the whole expression except for inheritance. 
 
 \subsubsection*{Type parameters}
 
@@ -201,7 +209,7 @@ The class type parameters corresponds to the ones of these two
 abbreviations. They must be bound to actual types in the class
 definition using type constraints. The abbreviations are obtained by
 pruning the method types at all occurrences of a type parameter.  So
-that the abbreviations are correct, no type variable must remain in
+that the abbreviations are well-formed, no type variable must remain in
 the pruned types.
 
 \subsubsection*{Class parameters}
@@ -213,16 +221,17 @@ construct.
 \subsubsection*{Self and self type binders}
 
 \ikwd{as\@\verb`as`}
-The binders @class-binders@, @['as' value-name] [':' "'" ident]@, allows
-to bind self (the current object) and its type. The variable
-@value-name@ can then be used as a usual variable in methods body.
+The binders @class-binders@, i.e.  @'as' value-name@ and @':' "'" ident@,
+allow
+to bind self (the current object) and its type, respectively. The variable
+@value-name@ can then be used as any variable in methods body.
 
 \subsubsection*{Constraints on type parameters}
 
 \ikwd{constraint\@\verb`constraint`}
 The construct
 @'constraint' "'" ident '=' typexpr { 'and' "'" ident '=' typexpr }@
-allows to precise type parameters.  The value of the type parameter
+allows to specify type parameters.  The value of the type parameter
 @ident_i@ will be an instance of @typexpr_i@ (more precisely,
 @ident_i@ and @typexpr_i@ are unified).
 
@@ -233,41 +242,42 @@ The construction @'inherit' ancestor { 'then' ancestor }@ allows to
 reuse methods from other classes.
  
 The inheritance construct
-@'inherit' '(' typexpr { ',' typexpr } ')' class-path {{ expr }}@
+@'inherit' [ '(' typexpr { ',' typexpr } ')' ] class-path {{ expr }}@
 adds the instance variables and methods from class @class-path@ into
 the current class, possibly overriding previously defined ones of the
 same name.
 %
-Parent instance variables are initialized with class parameters bound
-to the arguments @{{expr}}@. Parent types parameters are unified with
+Parent instance variables are initialized with parent class parameters bound
+to the arguments @{{expr}}@. Parent type parameters are unified with
 type arguments @typexpr_1, \ldots, typexpr_n@.
 
 \ikwd{inherit\@\verb`as`}
-One can bind an ancestor by prepending the construct @'as' value-name@
+An ancestor can be bound by prepending the construct @'as' value-name@
 to the inheritance construct above.  @value-name@ is not a true
-variable and can only by use to select a method, in an expression
-@value-name '#' method-name@.  Such expression gives access to the
-method @method-name@ as it was defined in the parent even if it has
-been redefined.
+variable and can only be used to select a method, i.e. in an expression
+@value-name '#' method-name@.  This gives access to the
+method @method-name@ as it was defined in the parent class even if it is
+redefined in the current class.
 
 \subsubsection*{Instance variable definition}
 
 \ikwd{val\@\verb`val`}
 \ikwd{mutable\@\verb`mutable`}
 \ikwd{private\@\verb`private`}
-One can define instance variables or change their status using the
+Instance variables can be defined or their status can be changed using the
 construct @'val' value { 'and' value }@.
 
-The definition @'val' inst-var-name '=' expr@ adds an instance variable
+The definition @'val' ['private'] ['mutable'] inst-var-name '=' expr@ adds
+an instance variable 
 @inst-var-name@ whose initial value is the value of expression @expr@.
 If the variable was previously defined, its previous initial value is
 overridden.
 %
-By default, this variable is visible in descendants of current class.
-@'val' 'private' inst-var-name '=' expr@ defines a variable only
-visible in this class.
+By default, this variable is visible in subclasses of current class.
+The flag @'private'@ makes this variable only
+visible in the current class.
 %
-The flag @'mutable'@ allows physical modification of the variable in
+The flag @'mutable'@ allows physical modification of this variable by
 methods.
 
 The construct @'val' ['private'] ['mutable'] inst-var-name@ enables to
@@ -282,16 +292,16 @@ Method definition is written @'method' method { 'and' method }@.  The
 definition of a method overrides any previous definition of this
 method.
 
-Method bodies does not have access to class parameters.  Some special
-expressions are allowed in a method bodies for manipulating instance
+Method bodies do not have access to class parameters, but to instance
+variables.  Some special
+expressions are available in method bodies for manipulating instance
 variables and duplicating self:
 \begin{syntax}
 expr:
     \ldots
   | inst-var-name
   | inst-var-name '<-' expr
-  | '{<' '>}'
-  | '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'
+  | '{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } ] '>}'
 ;
 \end{syntax}
 
@@ -302,30 +312,30 @@ object by replacing the value associated to @inst-var-name@ by the
 value of @expr@. Of course, this instance variable must be mutable.
 
 The expression
-@'{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'@
+@'{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } ] '>}'@
 evaluates to a copy of the current object in which the values of
-instance variables @inst-var-name_1, \ldots, inst-var-name_2@ have
-been replaced by the values of the associated expression @expr_1,
-\ldots, expr_2@.
+instance variables @inst-var-name_1, \ldots, inst-var-name_n@ have
+been replaced by the values of the corresponding expressions @expr_1,
+\ldots, expr_n@.
 
 \subsubsection*{Virtual class}
 
 \ikwd{virtual\@\verb`virtual`}
-One can declare methods without defining them with the construct
+Methods can be declared,  without being defined, with the construct
 \begin{center}
 @'virtual' method-type { 'and' method-type }@
 \end{center}
-Methods required (that is declared that way or used in a method body)
+Methods that are declared in this way or applied to self
 but not actually defined are said to be virtual.
 %
-A class must be flagged virtual if one of its methods is virtual. One
-cannot creates objects of a virtual class.
+A class must be flagged virtual if one of its methods is virtual. 
+Objects cannot be created from a virtual class.
 
 \subsubsection*{Closed class}
 
 \ikwd{closed\@\verb`closed`}
-One can flag a class as @'closed'@.  A closed class is a class
-to which descendants cannot add methods.
+A class can be flagged as @'closed'@.  A closed class is a class
+to which subclasses cannot add methods.
 
 \subsection{Class type}
 
@@ -367,8 +377,7 @@ class-type-fields:
   | 'method' method-type { 'and' method-type }
 ;
 ancestor-type:
-    class-path
-  | '(' typexpr { "," typexpr } ')' class-path
+    [ '(' typexpr { "," typexpr } ')' ] class-path
 ;
 value-type:
     ['private'] ['mutable'] inst-var-name [':' typexpr]
