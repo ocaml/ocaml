@@ -621,7 +621,7 @@ value interprete(code_t prog, asize_t prog_size)
     Instruct(GETFLOATFIELD): {
       double d = Double_field(accu, *pc);
       Alloc_small(accu, Double_wosize, Double_tag);
-      Double_val(accu) = d;
+      Store_double_val(accu, d);
       pc++;
       Next;
     }
