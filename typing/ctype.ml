@@ -1465,9 +1465,9 @@ and unify3 env t1 t1' t2 t2' =
         unify_row env row1 row2
     | (Tfield _, Tfield _) ->           (* Actually unused *)
         unify_fields env t1' t2'
-    | (Tfield(_,kind,_,rem), Tnil) | (Tnil, Tfield(_,kind,_,rem)) ->
+    | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
         begin match field_kind_repr kind with
-          Fvar r -> r := Some Fabsent
+          Fvar r when f <> dummy_method -> set_kind r Fabsent
         | _      -> raise (Unify [])
         end
     | (Tnil, Tnil) ->
