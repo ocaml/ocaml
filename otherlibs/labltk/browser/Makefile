@@ -44,7 +44,8 @@ depend:
 	$(LABLDEP) *.ml *.mli > .depend
 
 dummy.mli:
-	ln -sf dummyUnix.mli dummy.mli
+	rm -f $@
+	ln -s dummyUnix.mli $@
 shell.cmo: dummy.cmi
 
 include	.depend
