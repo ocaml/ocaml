@@ -1,0 +1,8 @@
+stdlib
+*.c.x
+primitives
+prims.c
+Objective*Caml
+OCaml.68k
+OCaml.PPC
+OCaml.bytecode

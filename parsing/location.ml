@@ -18,7 +18,7 @@ type t =
 
 let none = { loc_start = -1; loc_end = -1 }
 
-let symbol_loc () = 
+let symbol_loc () =
   { loc_start = Parsing.symbol_start(); loc_end = Parsing.symbol_end() }
 
 let rhs_loc n =
@@ -60,20 +60,21 @@ let rec highlight_locations loc1 loc2 =
             (* If too many lines, give up *)
             if !lines >= num_lines - 2 then raise Exit;
             (* Move cursor up that number of lines *)
-            Terminfo.backup !lines;
+            flush stdout; Terminfo.backup !lines;
             (* Print the input, switching to standout for the location *)
             let bol = ref false in
-	    print_string "# ";
+            print_string "# ";
             for pos = 0 to String.length lb.lex_buffer - pos0 - 1 do
               if !bol then (print_string "  "; bol := false);
               if pos = loc1.loc_start || pos = loc2.loc_start then
-                Terminfo.standout true;
+                (flush stdout; Terminfo.standout true);
               if pos = loc1.loc_end || pos = loc2.loc_end then
-                Terminfo.standout false;
+                (flush stdout; Terminfo.standout false);
               let c = lb.lex_buffer.[pos + pos0] in
               print_char c;
               bol := (c = '\n')
             done;
+            flush stdout;
             (* Make sure standout mode is over *)
             Terminfo.standout false;
             (* Position cursor back to original location *)
@@ -124,4 +125,3 @@ let print_warning loc msg =
 let echo_eof () =
   print_newline ();
   incr num_loc_lines
-

@@ -5,7 +5,7 @@
 /*            Damien Doligez, projet Para, INRIA Rocquencourt          */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -19,6 +19,8 @@
 #include <Types.h>
 
 #include "rotatecursor.h"
+
+int volatile have_to_interact;
 
 typedef struct {
   TMTask t;
@@ -44,9 +46,9 @@ extern Xtmtask *getparam() ONEWORDINLINE(0x2009);  /* MOVE.L A1, D0 */
 static void mytimerproc (void)
 {
   register Xtmtask *p = getparam ();
-  
-  if (p->p1 != NULL && *(p->p1) == 0) *(p->p1) = 1;
-  if (p->p2 != NULL && *(p->p2) == 0) *(p->p2) = 1;
+
+  if (p->p1 != NULL) *(p->p1) = 1;
+  if (p->p2 != NULL) *(p->p2) = 1;
 }
 
 #endif /* GENERATINGCFM */
@@ -57,14 +59,14 @@ static void remove_task (void)
   RmvTime ((QElemPtr) &mytmtask);
 }
 
-void rotatecursor_init (int volatile *p1, int volatile *p2)
+void rotatecursor_init (int volatile *p1)
 {
   InitCursorCtl (NULL);
   mytmtask.t.tmAddr = NewTimerProc (mytimerproc);
   mytmtask.t.tmWakeUp = 0;
   mytmtask.t.tmReserved = 0;
   mytmtask.p1 = p1;
-  mytmtask.p2 = p2;
+  mytmtask.p2 = &have_to_interact;
   InsTime ((QElemPtr) &mytmtask);
   PrimeTime ((QElemPtr) &mytmtask, 1);
   atexit (remove_task);

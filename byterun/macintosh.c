@@ -5,7 +5,7 @@
 /*            Damien Doligez, projet Para, INRIA Rocquencourt          */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -15,6 +15,7 @@
 
 #include <CursorCtl.h>
 #include <Files.h>
+#include <IntEnv.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <Strings.h>
@@ -23,9 +24,8 @@
 #include <Types.h>
 
 /* The user interface defaults to MPW tool.  The standalone application
-   replaces these functions, as well as [main], [InitCursorCtl],
-   [RotateCursor], [atexit]
-   (see rotatecursor.c).
+   overrides the ui_* functions, as well as [main], [InitCursorCtl],
+   [RotateCursor], [atexit], [getenv], and the terminfo functions.
 */
 
 void ui_exit (int return_code)
@@ -57,6 +57,7 @@ int chdir (char *dir)
 {
   WDPBRec pb;
   int result;
+  short curdir;
 
   pb.ioCompletion = NULL;
   pb.ioNamePtr = c2pstr (dir);
@@ -66,100 +67,66 @@ int chdir (char *dir)
   result = PBOpenWDSync (&pb);
   p2cstr ((unsigned char *) dir);
   if (result != noErr) return -1;
-  result = SetVol (NULL, pb.ioVRefNum);
+  curdir = pb.ioVRefNum;
+  result = SetVol (NULL, curdir);
   if (result != noErr) return -1;
   if (prevdir != 0){
-    prevdir = 0;
     pb.ioVRefNum = prevdir;
     PBCloseWDSync (&pb);
   }
+  prevdir = curdir;
   return 0;
 }
 
-static char *getfullpathid (short wd, long id);
-
-static void cat_cp_str (char **cstr, StringPtr pstr)
+Handle macos_getfullpathname (short vrefnum, long dirid)
 {
-  int l2 = (unsigned char) pstr [0];
-  int l1 = strlen (*cstr);
-  int i;
+  Handle result = NewHandle (0);
+  CInfoPBRec mypb;
+  Str255 dirname;
+  OSErr err;
 
-  *cstr = realloc (*cstr, l1 + l2);
-  if (*cstr == NULL) return;
-  for (i = 0; i < l2; i++){
-    (*cstr)[l1 + i] = pstr [i + 1];
-  }
-  (*cstr)[l1 + l2] = '\0';
-}
+  if (result == NULL) goto failed;
 
-static char *getfullpathpb (CInfoPBPtr pb)
-{
-  char *result;
+  mypb.dirInfo.ioNamePtr = dirname;
+  mypb.dirInfo.ioVRefNum = vrefnum;
+  mypb.dirInfo.ioDrParID = dirid;
+  mypb.dirInfo.ioFDirIndex = -1;
 
-  if (pb->hFileInfo.ioFlParID == fsRtParID){
-    result = malloc (1);
-    if (result == NULL) return NULL;
-    result [0] = '\0';
-  }else{
-    result = getfullpathid (pb->hFileInfo.ioVRefNum, pb->hFileInfo.ioFlParID);
-    if (result == NULL) return NULL;
-  }
-  cat_cp_str (&result, pb->hFileInfo.ioNamePtr);
-  if (pb->hFileInfo.ioFlAttrib & (1<<4)) cat_cp_str (&result, "\p:");
+  do{
+    mypb.dirInfo.ioDrDirID = mypb.dirInfo.ioDrParID;
+    err = PBGetCatInfo (&mypb, false);
+    if (err) goto failed;
+    Munger (result, 0, NULL, 0, ":", 1);
+    Munger (result, 0, NULL, 0, dirname+1, dirname[0]);
+    /* XXX out of memory ?! */
+  }while (mypb.dirInfo.ioDrDirID != fsRtDirID);
   return result;
-}
 
-static char *getfullpathcwd (void)
-{
-  CInfoPBRec pb;
-  Str255 pname;
-
-  pname [0] = 1;
-  pname [1] = ':';
-
-  pb.hFileInfo.ioCompletion = NULL;
-  pb.hFileInfo.ioVRefNum = 0;
-  pb.hFileInfo.ioNamePtr = pname;
-  pb.hFileInfo.ioFRefNum = 0;
-  pb.hFileInfo.ioFVersNum = 0;
-  pb.hFileInfo.ioFDirIndex = 0;
-  pb.hFileInfo.ioDirID = 0;
-  if (PBGetCatInfoSync (&pb) != noErr) return NULL;
-  pb.hFileInfo.ioFDirIndex = -1;
-  if (PBGetCatInfoSync (&pb) != noErr) return NULL;
-  return getfullpathpb (&pb);
-}
-
-static char *getfullpathid (short wd, long id)
-{
-  CInfoPBRec pb;
-  Str255 name;
-
-  pb.hFileInfo.ioCompletion = NULL;
-  pb.hFileInfo.ioNamePtr = name;
-  pb.hFileInfo.ioVRefNum = wd;
-  pb.hFileInfo.ioFRefNum = 0;
-  pb.hFileInfo.ioFVersNum = 0;
-  pb.hFileInfo.ioFDirIndex = -1;
-  pb.hFileInfo.ioDirID = id;
-  if (PBGetCatInfoSync (&pb) != noErr) return NULL;
-  return getfullpathpb (&pb);
+  failed:
+    if (result != NULL) DisposeHandle (result);
+    return NULL;
 }
 
 char *getcwd (char *buf, long size)
 {
-  char *path = getfullpathcwd ();
+  size_t len;
 
+  Handle path = macos_getfullpathname (0, 0);
   if (path == NULL) return NULL;
-  if (strlen (path) >= size){
-    free (path);
+
+  len = GetHandleSize (path);
+
+  if (len+1 >= size){
+    DisposeHandle (path);
     return NULL;
   }
   if (buf == NULL){
-    return path;
+    buf = malloc (len+1);
+    if (buf == NULL) return NULL;
   }
-  strcpy (buf, path);
-  free (path);
+  memcpy (buf, *path, len);
+  buf [len] = '\000';
+  DisposeHandle (path);
   return buf;
 }
 
@@ -167,7 +134,9 @@ int system (char const *cmd)
 {
   char *filename;
   FILE *f;
-  
+
+  if (StandAlone) return -1;
+
   filename = getenv ("ocamlcommands");
   if (filename == NULL) return 1;
   f = fopen (filename, "a");

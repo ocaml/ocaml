@@ -5,7 +5,7 @@
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -27,7 +27,6 @@ extern void expand_command_line (int *, char ***);
 #if macintosh
 #include "rotatecursor.h"
 #include "signals.h"
-int volatile have_to_interact = 0;
 #endif
 
 int main(int argc, char **argv)
@@ -36,8 +35,8 @@ int main(int argc, char **argv)
   expand_command_line(&argc, &argv);
 #endif
 #if macintosh
-  rotatecursor_init (&something_to_do, &have_to_interact);
-#endif
+  rotatecursor_init (&something_to_do);
+#endif /* macintosh */
   caml_main(argv);
   sys_exit(Val_int(0));
   return 0; /* not reached */

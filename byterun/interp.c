@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -32,8 +32,7 @@
 
 #if macintosh
 #include "rotatecursor.h"
-extern int volatile have_to_interact;
-#endif
+#endif /* macintosh */
 
 /* Registers for the abstract machine:
         pc         the code pointer
@@ -182,7 +181,7 @@ value interprete(code_t prog, asize_t prog_size)
 
   if (prog == NULL) {           /* Interpreter is initializing */
 #ifdef THREADED_CODE
-    instr_table = (char **) jumptable; 
+    instr_table = (char **) jumptable;
     instr_base = Jumptbl_base;
 #endif
     return Val_unit;
@@ -226,6 +225,7 @@ value interprete(code_t prog, asize_t prog_size)
     Assert(sp <= stack_high);
 #endif
     curr_instr = *pc++;
+
   dispatch_instr:
     switch(curr_instr) {
 #endif
@@ -516,7 +516,7 @@ value interprete(code_t prog, asize_t prog_size)
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSURE2):
       accu = env + 2 * sizeof(value); Next;
-    
+
 
 /* Access to global variables */
 

@@ -1,0 +1,92 @@
+OCAMLVNUM = {OCAMLMAJOR}{OCAMLMINOR}
+MACVNUM = 0x{MAJOR}{MINOR}
+VERSIONSTR = "¶"{OCAMLMAJOR}.{OCAMLMINOR}/Mac{MAJOR}.{MINOR}{STAGE}{REV}¶""
+
+C = sc
+COptions = -I ::byterun: -model far -w 17
+LinkOptions = -model far -compact -pad 0 -state nouse -br 68k -msg nodup
+SysLibs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
+          "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
+          "{libraries}Interface.o"
+CamlrunLibs = ::byterun:libcamlrun.o
+WELibs = :WASTE-1.2:WASTELib.o
+Libs = {camlrunlibs} {welibs} {syslibs}
+
+PPCC = mrc -proto strict -sym on            # XXX
+PPCCOptions = -I ::byterun: -w 35 -d DEBUG  # XXX
+PPCLinkOptions = -d -sym on                 # XXX
+PPCSysLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
+             "{sharedlibraries}StdCLib" ¶
+             "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib" ¶
+             "{sharedlibraries}DragLib"
+PPCCamlrunLibs = ::byterun:libcamlrun.x
+PPCWELibs = :WASTE-1.2:WASTELib.x
+PPCLibs = {ppccamlrunlibs} {ppcwelibs} {ppcsyslibs}
+
+RezDefs = -d SystemSevenOrLater=1 -d OCAMLVNUM={OCAMLVNUM} ¶
+          -d MACVNUM={MACVNUM} -d STAGE={STAGE} -d DEVVNUM={REV} ¶
+          -d VERSIONSTR={VERSIONSTR}
+RezIncludes = "{rincludes}types.r" "{rincludes}systypes.r" "{rincludes}sound.r"
+
+OBJS = aboutbox.c.o appleevents.c.o clipboard.c.o ¶
+       drag.c.o errors.c.o ¶
+       events.c.o files.c.o glue.c.o ¶
+       graph.c.o lcontrols.c.o lib.c.o main.c.o memory.c.o ¶
+       menus.c.o misc.c.o modalfilter.c.o prefs.c.o prims.c.o ¶
+       scroll.c.o windows.c.o
+
+PPCOBJS = aboutbox.c.x appleevents.c.x clipboard.c.x ¶
+          drag.c.x errors.c.x ¶
+          events.c.x files.c.x glue.c.x ¶
+          graph.c.x lcontrols.c.x lib.c.x main.c.x memory.c.x ¶
+          menus.c.x misc.c.x modalfilter.c.x prefs.c.x prims.c.x ¶
+          scroll.c.x windows.c.x
+
+all Ä appli
+    set status 0
+
+primitives Ä ::byterun:primitives graphprims
+    catenate ::byterun:primitives graphprims >primitives
+
+prims.c Ä primitives
+    echo '#include "mlvalues.h"' > prims.c
+    echo '#include "prims.h"' >> prims.c
+    streamedit -e '1,$ change "extern value " . "();"' primitives >>prims.c
+    echo 'c_primitive cprim [] = {' >> prims.c
+    streamedit -e '1,$ change "  " . ","' primitives >> prims.c
+    echo '0 };' >> prims.c
+    echo 'char * names_of_cprim [] = {' >> prims.c
+    streamedit -e '1,$ change "  ¶"" . "¶","' primitives >> prims.c
+    echo '0 };' >> prims.c
+
+OCaml.68k Ä {OBJS}
+    ilink -o OCaml.68k {linkoptions} {OBJS} {libs}
+
+OCaml.PPC Ä {PPCOBJS}
+    ppclink -o OCaml.PPC {ppclinkoptions} {PPCOBJS} {ppclibs}
+    rename -y OCaml.PPC.xcoff "Objective Caml.xcoff"  # XXX
+
+OCaml.bytecode Ä primitives ::toplevellib.cma ::toplevel:topmain.cmo ¶
+                 ::otherlibs:graph:graphics.cma 
+    ::byterun:ocamlrun ::ocamlc -linkall -use_prims primitives ¶
+       ::toplevellib.cma ::otherlibs:graph:graphics.cma ::toplevel:topmain.cmo ¶
+       -o OCaml.bytecode
+    mergefragment -c -t Caml OCaml.bytecode
+
+appli ÄÄ ocaml.r OCaml.bytecode OCaml.PPC OCaml.68k
+    duplicate -y OCaml.68k "Objective Caml"
+    rez -a -o "Objective Caml" {RezDefs} {rezincludes} ocaml.r
+    mergefragment -a OCaml.PPC "Objective Caml"
+    setfile -t APPL -c Caml -a iB "Objective Caml"
+    mergefragment OCaml.bytecode "Objective Caml"
+
+install Ä
+    duplicate -y "Objective Caml" "{APPLIDIR}"
+
+clean Ä
+    delete -i {OBJS} {PPCOBJS} OCaml.68k OCaml.PPC OCaml.bytecode ¶
+              "Objective Caml" primitives prims.c
+    delete -i "Objective Caml.xcoff" "Objective Caml.dbg"   # XXX
+
+depend Ä prims.c
+    makedepend Å.c > Makefile.Mac.depend

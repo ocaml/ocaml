@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -189,7 +189,7 @@ value log10_float(value f)              /* ML */
 
 value modf_float(value f)              /* ML */
 {
-#if macintosh
+#if __MRC__ || __SC__
   _float_eval frem;
 #else
   double frem;

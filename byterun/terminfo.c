@@ -99,9 +99,9 @@ value terminfo_resume (value lines)    /* ML */
   return Val_unit;
 }
 
-#else
+#else /* HAS_TERMCAP */
 
-value terminfo_setup (value unit)
+value terminfo_setup (value vchan)
 {
   return Bad_term;
 }
@@ -124,4 +124,4 @@ value terminfo_resume (value lines)
   return Val_unit;
 }
 
-#endif
+#endif /* HAS_TERMCAP */

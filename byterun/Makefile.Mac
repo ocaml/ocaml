@@ -1,14 +1,17 @@
 C = sc
 COptions = -model far
-AOptions = -model far -wb
+AOptions = -model far
 LinkOptions = -model far -msg nodup -compact -pad 0 -state nouse -br 68k
-Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
-       "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
-       "{libraries}ToolLibs.o" "{libraries}Interface.o"
+Libs = "{libraries}IntEnv.o" ¶
+       "{libraries}Interface.o" ¶
+       "{libraries}MacRuntime.o" ¶
+       "{libraries}MathLib.o" ¶
+       "{clibraries}StdCLib.o" ¶
+       "{libraries}ToolLibs.o"
 
-PPCC = mrc
+PPCC = mrc -sym on
 PPCCOptions = -w 35
-PPCLinkOptions = -d
+PPCLinkOptions = -d -sym on
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
           "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
@@ -41,7 +44,7 @@ all Ä ocamlrun libcamlrun.o libcamlrun.x
 
 ocamlrun ÄÄ libcamlrun.o prims.c.o
     ilink -c 'MPS ' -t MPST {LinkOptions} -o ocamlrun prims.c.o ¶
-          libcamlrun.o {Libs}
+          libcamlrun.o  {libs}
 
 ocamlrun ÄÄ libcamlrun.x prims.c.x
     ppclink -c 'MPS ' -t MPST {PPCLinkOptions} -o ocamlrun prims.c.x ¶
@@ -83,7 +86,8 @@ clean Ä
     delete -i ocamlrun primitives prims.c opnames.h
 
 primitives Ä {PRIMS}
-    streamedit -d -e "/ ([a-z0-9_]+)¨0 *'('Å'* ML *'/ print ¨0" {PRIMS} > primitives
+    streamedit -d -e "/ ([a-z0-9_]+)¨0 *'('Å'* ML *'/ print ¨0" {PRIMS} ¶
+               > primitives
 
 prims.c Ä primitives
     echo '#include "mlvalues.h"' > prims.c

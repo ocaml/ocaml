@@ -82,6 +82,7 @@ value gr_draw_arc(value *argv, int argc)
 value gr_set_line_width(value vwidth)
 {
   int width = Int_val(vwidth);
+
   gr_check_open();
   XSetLineAttributes(grdisplay, grwindow.gc,
                      width, LineSolid, CapRound, JoinRound);

@@ -1,0 +1,196 @@
+
+"aboutbox.c.x" Ä  aboutbox.c ¶
+                             main.h ¶
+                             ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                             constants.h
+
+"appleevents.c.x" Ä  appleevents.c ¶
+                                main.h ¶
+                                ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                                constants.h
+
+"clipboard.c.x" Ä  clipboard.c ¶
+                              main.h ¶
+                              ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                              constants.h
+
+"drag.c.x" Ä  drag.c ¶
+                         main.h ¶
+                         ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                         constants.h
+
+"errors.c.x" Ä  errors.c ¶
+                           main.h ¶
+                           ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                           constants.h
+
+"events.c.x" Ä  events.c ¶
+                           main.h ¶
+                           ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                           constants.h
+
+"files.c.x" Ä  files.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
+
+"glue.c.x" Ä  glue.c ¶
+                         main.h ¶
+                         ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                         constants.h
+
+"graph.c.x" Ä  graph.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
+
+"lcontrols.c.x" Ä  lcontrols.c ¶
+                              main.h ¶
+                              ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                              constants.h
+
+"lib.c.x" Ä  lib.c ¶
+                        main.h ¶
+                        ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                        constants.h
+
+"main.c.x" Ä  main.c ¶
+                         main.h ¶
+                         ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                         constants.h
+
+"memory.c.x" Ä  memory.c ¶
+                           main.h ¶
+                           ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                           constants.h
+
+"menus.c.x" Ä  menus.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
+
+"misc.c.x" Ä  misc.c ¶
+                         main.h ¶
+                         ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                         constants.h
+
+"modalfilter.c.x" Ä  modalfilter.c ¶
+                                main.h ¶
+                                ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                                constants.h
+
+"prefs.c.x" Ä  prefs.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
+
+"prims.c.x" Ä  prims.c
+
+"scroll.c.x" Ä  scroll.c ¶
+                           main.h ¶
+                           ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                           constants.h
+
+"windows.c.x" Ä  windows.c ¶
+                            main.h ¶
+                            ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                            constants.h
+
+
+"aboutbox.c.o" Ä  aboutbox.c ¶
+                             main.h ¶
+                             ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                             constants.h
+
+"appleevents.c.o" Ä  appleevents.c ¶
+                                main.h ¶
+                                ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                                constants.h
+
+"clipboard.c.o" Ä  clipboard.c ¶
+                              main.h ¶
+                              ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                              constants.h
+
+"drag.c.o" Ä  drag.c ¶
+                         main.h ¶
+                         ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                         constants.h
+
+"errors.c.o" Ä  errors.c ¶
+                           main.h ¶
+                           ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                           constants.h
+
+"events.c.o" Ä  events.c ¶
+                           main.h ¶
+                           ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                           constants.h
+
+"files.c.o" Ä  files.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
+
+"glue.c.o" Ä  glue.c ¶
+                         main.h ¶
+                         ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                         constants.h
+
+"graph.c.o" Ä  graph.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
+
+"lcontrols.c.o" Ä  lcontrols.c ¶
+                              main.h ¶
+                              ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                              constants.h
+
+"lib.c.o" Ä  lib.c ¶
+                        main.h ¶
+                        ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                        constants.h
+
+"main.c.o" Ä  main.c ¶
+                         main.h ¶
+                         ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                         constants.h
+
+"memory.c.o" Ä  memory.c ¶
+                           main.h ¶
+                           ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                           constants.h
+
+"menus.c.o" Ä  menus.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
+
+"misc.c.o" Ä  misc.c ¶
+                         main.h ¶
+                         ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                         constants.h
+
+"modalfilter.c.o" Ä  modalfilter.c ¶
+                                main.h ¶
+                                ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                                constants.h
+
+"prefs.c.o" Ä  prefs.c ¶
+                          main.h ¶
+                          ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                          constants.h
+
+"prims.c.o" Ä  prims.c
+
+"scroll.c.o" Ä  scroll.c ¶
+                           main.h ¶
+                           ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                           constants.h
+
+"windows.c.o" Ä  windows.c ¶
+                            main.h ¶
+                            ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h" ¶
+                            constants.h
+

@@ -1,0 +1,9 @@
+option-click on a scrollbar's arrow -> scroll by one pixel
+
+Enter in the toplevel window -> go to bottom of window and append
+a newline
+
+Drag & drop to the toplevel window -> go to bottom of window and
+append the dragged text
+
+Command-period in the toplevel window -> interrupt O'Caml's computation

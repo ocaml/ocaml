@@ -380,10 +380,11 @@
                         config.h ¶
                         ::config:sm-Mac.h ¶
                         mlvalues.h ¶
+                        fail.h ¶
+                        gc.h ¶
                         major_gc.h ¶
                         freelist.h ¶
                         memory.h ¶
-                        gc.h ¶
                         minor_gc.h ¶
                         prims.h
 
@@ -444,7 +445,8 @@
                             freelist.h ¶
                             minor_gc.h ¶
                             roots.h ¶
-                            signals.h
+                            signals.h ¶
+                            sys.h
 
 "stacks.c.x" Ä  stacks.c ¶
                            config.h ¶
@@ -916,10 +918,11 @@
                         config.h ¶
                         ::config:sm-Mac.h ¶
                         mlvalues.h ¶
+                        fail.h ¶
+                        gc.h ¶
                         major_gc.h ¶
                         freelist.h ¶
                         memory.h ¶
-                        gc.h ¶
                         minor_gc.h ¶
                         prims.h
 
@@ -980,7 +983,8 @@
                             freelist.h ¶
                             minor_gc.h ¶
                             roots.h ¶
-                            signals.h
+                            signals.h ¶
+                            sys.h
 
 "stacks.c.o" Ä  stacks.c ¶
                            config.h ¶

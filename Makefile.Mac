@@ -1,6 +1,6 @@
 # The main Makefile
 
-MacVersion = "Mac0.3"
+MacVersion = "Mac{MAJOR}.{MINOR}{STAGE}{REV}"
 
 CAMLC = :boot:ocamlrun :boot:ocamlc -I :boot:
 COMPFLAGS = {INCLUDES}
@@ -73,7 +73,8 @@ PERVASIVES = arg array callback char digest filename format gc hashtbl ¶
   marshal
 
 # Recompile the system using the bootstrap compiler
-all Ä runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
+all Ä runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml ¶
+      otherlibraries maccaml
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -169,10 +170,10 @@ compare Ä
 cleanboot Ä
     delete -i -y :boot:Saved:Saved.prev:Å || set status 0
 
-# Installation
+
 install Ä $OutOfDate
     flush
-    for i in "{BINDIR}" "{LIBDIR}"
+    for i in "{BINDIR}" "{LIBDIR}" "{APPLIDIR}" "{APPLIDIR}stdlib:"
       if "`exists -d "{i}"`" == ""
         newfolder "{i}"
       end
@@ -199,8 +200,13 @@ install Ä $OutOfDate
       domake install
       directory :::
     end
+    duplicate -y "{LIBDIR}"Å "{APPLIDIR}stdlib:"
+    directory :maccaml:
+    domake install
+    directory ::
 
 clean ÄÄ partialclean
+
 
 # The compiler
 
@@ -209,6 +215,7 @@ ocamlc Ä {COMPOBJS}
 
 partialclean ÄÄ
     delete -i ocamlc
+
 
 # The toplevel
 
@@ -222,6 +229,7 @@ toplevellib.cma Ä {TOPLIB}
 
 partialclean ÄÄ
     delete -i ocaml toplevellib.cma
+
 
 # The configuration file
 
@@ -239,6 +247,7 @@ partialclean ÄÄ
 
 beforedepend ÄÄ :utils:config.ml
 
+
 # The parser
 
 :parsing:parser.mli Ä :parsing:parser.ml
@@ -252,6 +261,7 @@ partialclean ÄÄ
 
 beforedepend ÄÄ :parsing:parser.mli :parsing:parser.ml
 
+
 # The lexer
 
 :parsing:lexer.ml Ä :parsing:lexer.mll
@@ -261,6 +271,7 @@ partialclean ÄÄ
     delete -i :parsing:lexer.ml
 
 beforedepend ÄÄ :parsing:lexer.ml
+
 
 # The auxiliary lexer for counting line numbers
 
@@ -272,6 +283,7 @@ partialclean ÄÄ
 
 beforedepend ÄÄ :parsing:linenum.ml
 
+
 # The numeric opcodes
 
 :bytecomp:opcodes.ml Ä :byterun:instruct.h
@@ -281,6 +293,7 @@ partialclean ÄÄ
     delete -i :bytecomp:opcodes.ml
 
 beforedepend ÄÄ :bytecomp:opcodes.ml
+
 
 # The predefined exceptions and primitives
 
@@ -302,6 +315,7 @@ partialclean ÄÄ
 
 beforedepend ÄÄ :bytecomp:runtimedef.ml
 
+
 # The "expunge" utility
 
 expunge Ä {EXPUNGEOBJS}
@@ -309,6 +323,7 @@ expunge Ä {EXPUNGEOBJS}
 
 partialclean ÄÄ
     delete -i expunge
+
 
 # The runtime system for the bytecode compiler
 
@@ -318,6 +333,7 @@ clean ÄÄ
     directory :byterun:; domake clean; directory ::
 alldepend ÄÄ
     directory :byterun:; domake depend; directory ::
+
 
 # The library
 
@@ -329,6 +345,7 @@ partialclean ÄÄ
     directory :stdlib; domake clean; directory ::
 alldepend ÄÄ
     directory :stdlib; domake depend; directory ::
+
 
 # The lexer and parser generators
 
@@ -344,6 +361,7 @@ ocamlyacc Ä
 clean ÄÄ
     directory :yacc; domake clean; directory ::
 
+
 # Tools
 
 ocamltools Ä ocamlc ocamlyacc ocamllex
@@ -352,6 +370,7 @@ partialclean ÄÄ
     directory :tools; domake clean; directory ::
 alldepend ÄÄ
     directory :tools; domake depend; directory ::
+
 
 # The extra libraries
 
@@ -372,12 +391,24 @@ alldepend ÄÄ
       directory :otherlibs:{i}; domake depend; directory :::
     end
 
+
+# The standalone application
+
+maccaml Ä
+    directory :maccaml:; domake all; directory ::
+clean ÄÄ
+    directory :maccaml:; domake clean; directory ::
+alldepend ÄÄ
+    directory :maccaml:; domake depend; directory ::
+
+
 # Clean up the test directory
 
 clean ÄÄ
-    if `exists :test`
-      directory :test; domake clean; directory ::
+    if `exists :test:`
+      directory :test:; domake clean; directory ::
     end
+
 
 # Default rules
 
@@ -398,6 +429,7 @@ depend Ä beforedepend
     end > Makefile.Mac.depend
 
 alldepend ÄÄ depend
+
 
 # Make sure the config file was executed
 dummy Ä {OTHERLIBRARIES}

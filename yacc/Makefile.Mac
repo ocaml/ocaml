@@ -16,12 +16,12 @@ PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
 
 OBJS = closure.c.o error.c.o lalr.c.o lr0.c.o main.c.o mkpar.c.o output.c.o ¶
        reader.c.o skeleton.c.o symtab.c.o verbose.c.o warshall.c.o ¶
-       ::byterun:rotatecursor.c.o
+       rotatecursor.c.o
 
 PPCOBJS = closure.c.x error.c.x lalr.c.x lr0.c.x main.c.x mkpar.c.x ¶
        output.c.x ¶
        reader.c.x skeleton.c.x symtab.c.x verbose.c.x warshall.c.x ¶
-       ::byterun:rotatecursor.c.x
+       rotatecursor.c.x
 
 all Ä ocamlyacc
 
@@ -35,11 +35,11 @@ clean Ä
     delete -i Å.c.[ox] || set status 0
     delete -i ocamlyacc
 
-::byterun:rotatecursor.c.o Ä ::byterun:rotatecursor.c ::byterun:rotatecursor.h
-    directory ::byterun; domake rotatecursor.c.o; directory ::yacc
+rotatecursor.c.o Ä ::byterun:rotatecursor.c ::byterun:rotatecursor.h
+    {c} {coptions} -I ::byterun: -o rotatecursor.c.o ::byterun:rotatecursor.c
 
-::byterun:rotatecursor.c.x Ä ::byterun:rotatecursor.c ::byterun:rotatecursor.h
-    directory ::byterun; domake rotatecursor.c.x; directory ::yacc
+rotatecursor.c.x Ä ::byterun:rotatecursor.c ::byterun:rotatecursor.h
+    {ppcc} {ppccoptions} -I ::byterun: -o rotatecursor.c.x ::byterun:rotatecursor.c
 
 depend Ä
 

@@ -5,7 +5,7 @@
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -47,6 +47,7 @@
 #endif
 
 header_t atom_table[256];
+long debug_i_counter = 0; /*XXX*/
 
 /* Initialize the atom table */
 
@@ -130,15 +131,15 @@ static void check_primitives(int fd, int prim_size)
   stat_free(prims);
 }
 
-/* Invocation of camlrun: 4 cases.
+/* Invocation of ocamlrun: 4 cases.
 
    1.  runtime + bytecode
-       user types:  camlrun [options] bytecode args...
-       arguments:  camlrun [options] bytecode args...
+       user types:  ocamlrun [options] bytecode args...
+       arguments:  ocamlrun [options] bytecode args...
 
    2.  bytecode script
        user types:  bytecode args...
-   2a  (kernel 1) arguments:  camlrun ./bytecode args...
+   2a  (kernel 1) arguments:  ocamlrun ./bytecode args...
    2b  (kernel 2) arguments:  bytecode bytecode args...
 
    3.  concatenated runtime and bytecode
@@ -148,7 +149,7 @@ static void check_primitives(int fd, int prim_size)
 Algorithm:
   1-  If argument 0 is a valid byte-code file that does not start with #!,
       then we are in case 3 and we pass the same command line to the
-      Caml Light program.
+      Objective Caml program.
   2-  In all other cases, we parse the command line as:
         (whatever) [options] bytecode args...
       and we strip "(whatever) [options]" from the command line.
@@ -342,4 +343,4 @@ void caml_startup_code(code_t code, asize_t code_size, char *data, char **argv)
     fatal_uncaught_exception(exn_bucket);
   }
 }
-  
+

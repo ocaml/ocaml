@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -20,11 +20,11 @@ exception Graphic_failure of string
 
 val open_graph: string -> unit
         (* Show the graphics window or switch the screen to graphic mode.
-           The graphics window is cleared. The string argument is used to
-           pass optional information on the desired graphics mode, the
-           graphics window size, and so on. Its interpretation is
-           implementation-dependent. If the empty string is given, a sensible
-           default is selected. *)
+           The graphics window is cleared and the current point is set
+           to (0, 0). The string argument is used to pass optional
+           information on the desired graphics mode, the graphics window
+           size, and so on. Its interpretation is implementation-dependent.
+           If the empty string is given, a sensible default is selected. *)
 val close_graph: unit -> unit
         (* Delete the graphics window or switch the screen back to
            text mode. *)
@@ -123,7 +123,7 @@ external text_size : string -> int * int = "gr_text_size"
 
 external fill_rect : int -> int -> int -> int -> unit = "gr_fill_rect"
         (* [fill_rect x y w h] fills the rectangle with lower left corner
-           at [x,y], width [w] and heigth [h], with the current color. *)
+           at [x,y], width [w] and height [h], with the current color. *)
 external fill_poly : (int * int) array -> unit = "gr_fill_poly"
         (* Fill the given polygon with the current color. The array
            contains the coordinates of the vertices of the polygon. *)
@@ -167,12 +167,14 @@ val get_image : int -> int -> int -> int -> image
 external create_image : int -> int -> image = "gr_create_image"
         (* [create_image w h] returns a new image [w] pixels wide and [h]
            pixels tall, to be used in conjunction with [blit_image].
-           The initial image contents are random. *)
+           The initial image contents are random, except that no point
+           is transparent. *)
 external blit_image : image -> int -> int -> unit = "gr_blit_image"
         (* [blit_image img x y] copies screen pixels into the image [img],
            modifying [img] in-place. The pixels copied are those inside the
            rectangle with lower left corner at [x,y], and width and height
-           equal to those of the image. *)
+           equal to those of the image. Pixels that were transparent in
+           [img] are left unchanged. *)
 
 (*** Mouse and keyboard events *)
 
