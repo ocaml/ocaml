@@ -865,13 +865,14 @@ let rec type_exp env sexp =
         num_fields := Array.length label.lbl_all;
         (label, arg) in
       let lbl_exp_list = List.map type_label_exp lid_sexp_list in
-      let rec check_duplicates = function
-        [] -> ()
-      | (lid, sarg) :: remainder ->
-          if List.mem_assoc lid remainder
-          then raise(Error(sexp.pexp_loc, Label_multiply_defined lid))
-          else check_duplicates remainder in
-      check_duplicates lid_sexp_list;
+      let rec check_duplicates seen_pos lid_sexp lbl_exp =
+        match (lid_sexp, lbl_exp) with
+          ((lid, _) :: rem1, (lbl, _) :: rem2) ->
+            if List.mem lbl.lbl_pos seen_pos
+            then raise(Error(sexp.pexp_loc, Label_multiply_defined lid))
+            else check_duplicates (lbl.lbl_pos :: seen_pos) rem1 rem2
+        | (_, _) -> () in
+      check_duplicates [] lid_sexp_list lbl_exp_list;
       let opt_exp =
         match opt_sexp, lbl_exp_list with
           None, _ -> None
