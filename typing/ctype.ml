@@ -2120,7 +2120,6 @@ let rec build_subtype env visited t =
               let body =
                 match cl_abbr.type_manifest with Some ty -> ty
                 | None -> assert false in
-              let orig = newvar () in
               let ty =
                 subst env t'.level abbrev None cl_abbr.type_params tl body in
               let ty = repr ty in
@@ -2129,12 +2128,13 @@ let rec build_subtype env visited t =
                   Tobject(ty1,{contents=Some(p',_)}) ->
                     if Path.same p p' then ty1 else raise Not_found
                 | _ -> assert false in
-              ty.desc <- Tlink orig;
+              ty.desc <- Tvar;
               let t'' = newvar () in
-              subtypes := (orig, t'') :: !subtypes;
+              subtypes := (ty, t'') :: !subtypes;
               let (ty1', _) = build_subtype env (t' :: visited) ty1 in
-              (repr t'').desc <- Tobject (ty1', ref None);
-              orig.desc <- Tlink t;
+              assert (t''.desc = Tvar);
+              t''.desc <- Tobject (ty1', ref None);
+              (try unify env ty t with Unify _ -> assert false);
               (t'', true)
             end
         | _ -> raise Not_found
