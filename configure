@@ -391,17 +391,25 @@ esac
 
 # Determine alignment constraints
 
-sh ./runtest dblalign.c
-case $? in
-  0) echo "Doubles can be word-aligned."
-     echo "#undef ARCH_ALIGN_DOUBLE" >> m.h;;
-  1) echo "Doubles must be doubleword-aligned."
-     echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
-  *) echo "Something went wrong during alignment determination for doubles."
-     echo "I'm going to assume this architecture has alignment constraints over doubles."
-     echo "That's a safe bet: Objective Caml will work even if"
-     echo "this architecture has actually no alignment constraints."
-     echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+case "$host" in
+  sparc-*-*)
+    # On Sparc V9 with certain versions of gcc, determination of double
+    # alignment is not reliable (PR#1521), hence force it
+    echo "Doubles must be doubleword-aligned."
+    echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+  *)
+    sh ./runtest dblalign.c
+    case $? in
+      0) echo "Doubles can be word-aligned."
+         echo "#undef ARCH_ALIGN_DOUBLE" >> m.h;;
+      1) echo "Doubles must be doubleword-aligned."
+         echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+      *) echo "Something went wrong during alignment determination for doubles."
+         echo "I'm going to assume this architecture has alignment constraints over doubles."
+         echo "That's a safe bet: Objective Caml will work even if"
+         echo "this architecture has actually no alignment constraints."
+         echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+    esac;;
 esac
 
 if $int64_native; then
