@@ -81,7 +81,7 @@ let parse_options iserr s =
   done
 ;;
 
-let () = parse_options false "l";;
+let () = parse_options false "el";;
 
 let message = function
   | Partial_match "" -> "this pattern-matching is not exhaustive."

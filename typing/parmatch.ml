@@ -114,6 +114,12 @@ let get_type_descr ty tenv =
   | Tconstr (path,_,_) -> Env.find_type path tenv
   | _ -> fatal_error "Parmatch.get_type_descr"
 
+let get_type_path ty tenv =
+  let ty = Ctype.repr (Ctype.expand_head tenv ty) in
+  match ty.desc with
+  | Tconstr (path,_,_) -> path
+  | _ -> fatal_error "Parmatch.get_type_path"
+
 let get_constr tag ty tenv =
   match get_type_descr ty tenv with
   | {type_kind=Type_variant constr_list} ->
@@ -578,6 +584,17 @@ let full_match tdefs force env =  match env with
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | _ -> fatal_error "Parmatch.full_match"
 
+let extendable_match env = match env with
+| ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ -> false
+| ({pat_desc = Tpat_construct(c,_)} as p,_) :: _ ->
+    let path = get_type_path p.pat_type p.pat_env in
+    path <> Predef.path_bool &&
+    path <> Predef.path_list &&
+    path <> Predef.path_unit &&
+    path <> Predef.path_option      
+| _ -> false
+
+
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =
   let seen_const = Array.create nconsts false
@@ -799,30 +816,57 @@ and has_instances = function
 let rec satisfiable pss qs = match pss with
 | [] -> has_instances qs 
 | _  ->
-match qs with
-| [] -> false
+    match qs with
+    | [] -> false
+    | {pat_desc = Tpat_or(q1,q2,_)}::qs -> 
+        satisfiable pss (q1::qs) || satisfiable pss (q2::qs)
+    | {pat_desc = Tpat_alias(q,_)}::qs ->
+          satisfiable pss (q::qs)
+    | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
+        let q0 = discr_pat omega pss in
+        begin match filter_all q0 pss with
+          (* first column of pss is made of variables only *)
+        | [] -> satisfiable (filter_extra pss) qs
+        | constrs  ->
+            (not (full_match Env.empty false constrs) &&
+             satisfiable (filter_extra pss) qs) ||
+             List.exists
+               (fun (p,pss) -> satisfiable pss (simple_match_args p omega @ qs))
+               constrs
+        end
+    | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
+    | q::qs ->
+        let q0 = discr_pat q pss in
+        satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
+
+(*
+  Like satisfiable, looking for a matching value with an extra constructor.
+  That is, look for the situation where adding one constructor
+  would NOT yield a non-exhaustive matching.
+  *)
+
+let rec satisfiable_extra some pss qs = match qs with
+| [] -> some && pss = []
 | {pat_desc = Tpat_or(q1,q2,_)}::qs -> 
-    satisfiable pss (q1::qs) || satisfiable pss (q2::qs)
+    satisfiable_extra some pss (q1::qs) || satisfiable_extra some pss (q2::qs)
 | {pat_desc = Tpat_alias(q,_)}::qs ->
-    satisfiable pss (q::qs)
+      satisfiable_extra some pss (q::qs)
 | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
     let q0 = discr_pat omega pss in
     begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
-    | [] -> satisfiable (filter_extra pss) qs
-    | constrs  ->
-        (not (full_match Env.empty false constrs) &&
-        satisfiable (filter_extra pss) qs) ||
-        List.exists
-          (fun (p,pss) -> satisfiable pss (simple_match_args p omega @ qs))
-          constrs
+    | [] -> satisfiable_extra some (filter_extra pss) qs
+    | constrs ->
+        (extendable_match constrs &&
+         satisfiable_extra true (filter_extra pss) qs) ||
+         List.exists
+           (fun (p,pss) ->
+             satisfiable_extra some pss (simple_match_args p omega @ qs))
+           constrs
     end
-| {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
 | q::qs ->
     let q0 = discr_pat q pss in
-    satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
-
-
+    satisfiable_extra some (filter_one q0 pss) (simple_match_args q0 q @ qs)
 (*
   Now another satisfiable function that additionally
   supplies an example of a matching value.
@@ -967,6 +1011,7 @@ let is_var_column rs =
     | []   -> assert false)
     rs
 
+(* Standard or-args for left-to-right matching *)
 let rec or_args p = match p.pat_desc with
 | Tpat_or (p1,p2,_) -> p1,p2
 | Tpat_alias (p,_)  -> or_args p
@@ -1433,6 +1478,23 @@ let location_of_clause = function
 
 let seen_pat q pss = [q]::pss
 
+(* Extra check
+    Will this clause match if someone adds a constructor somewhere
+*)
+
+let warn_fragile  = Warnings.is_active (Warnings.Fragile_pat "")
+
+let check_used_extra pss qs =
+  if warn_fragile then begin
+    if satisfiable_extra false pss qs then begin
+      Location.prerr_warning
+        (location_of_clause qs)
+        (Warnings.Fragile_pat "")
+    end
+  end
+
+  
+  
 let check_unused tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
     let rec do_rec pref = function
@@ -1452,7 +1514,8 @@ let check_unused tdefs casel =
                       Location.prerr_warning
                         p.pat_loc Warnings.Unused_pat)
                     ps
-              | Used -> ()
+              | Used ->
+                  check_used_extra pss qs
             with e -> (* useless ? *)
               Location.prerr_warning (location_of_clause qs)
                 (Warnings.Other "Fatal Error in Parmatch.check_unused") ;
