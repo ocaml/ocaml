@@ -64,10 +64,10 @@ expr:
 ;
 argument:
     expr
-  | '~' value-name
-  | label expr
-  | '?' value-name
-  | optlabel expr
+  | '~' label-name
+  | '~' label-name ':' expr
+  | '?' label-name
+  | '?' label-name ':' expr
 ;
 \end{syntax}
 \begin{syntax}
@@ -84,13 +84,13 @@ let-binding:
 ;
 parameter:
     pattern
-  | '~' value-name
-  | '~' '(' value-name [':' typexpr] ')'
-  | label pattern
-  | '?' value-name
-  | '?' '(' value-name [':' typexpr] ['=' expr] ')'
-  | optlabel pattern
-  | optlabel '(' pattern [':' typexpr] ['=' expr] ')'
+  | '~' label-name
+  | '~' '(' label-name [':' typexpr] ')'
+  | '~' label-name ':' pattern
+  | '?' label-name
+  | '?' '(' label-name [':' typexpr] ['=' expr] ')'
+  | '?' label-name ':' pattern
+  | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 ;
 infix-op:
     infix-symbol
