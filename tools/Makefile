@@ -44,7 +44,7 @@ ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
 # ocamldep is precious: sometimes we are stuck in the middle of a
 # bootstrap and we need to remake the dependencies
 clean::
-	if test -f ocamldep; then mv -f ocamldep ocamldep.bak; fi
+	if test -f ocamldep; then mv -f ocamldep ocamldep.bak; else :; fi
 	rm -f ocamldep.opt
 
 install::
