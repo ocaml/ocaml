@@ -37,8 +37,8 @@
 
 sp is a local copy of the global variable extern_sp. */
 
-extern value global_data;
 extern code_t start_code;
+int callback_depth = 0;
 
 /* Instruction decoding */
 
@@ -116,6 +116,7 @@ value interprete(prog, prog_size)
   struct longjmp_buffer * initial_external_raise;
   int initial_sp_offset;
   value * initial_local_roots;
+  int initial_callback_depth;
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
 
@@ -140,8 +141,10 @@ value interprete(prog, prog_size)
   initial_local_roots = local_roots;
   initial_sp_offset = stack_high - sp;
   initial_external_raise = external_raise;
+  initial_callback_depth = callback_depth;
   if (sigsetjmp(raise_buf.buf, 1)) {
     local_roots = initial_local_roots;
+    callback_depth = initial_callback_depth;
     accu = exn_bucket;
     goto raise_exception;
   }
@@ -862,29 +865,41 @@ static opcode_t callback3_code[] = { ACC3, APPLY3, POP, 1, STOP };
 value callback(closure, arg)
      value closure, arg;
 {
+  value res;
   extern_sp -= 2;
   extern_sp[0] = arg;
   extern_sp[1] = closure;
-  return interprete(callback1_code, sizeof(callback1_code));
+  callback_depth++;
+  res = interprete(callback1_code, sizeof(callback1_code));
+  callback_depth--;
+  return res;
 }
 
 value callback2(closure, arg1, arg2)
      value closure, arg1, arg2;
 {
+  value res;
   extern_sp -= 3;
   extern_sp[0] = arg1;
   extern_sp[1] = arg2;
   extern_sp[2] = closure;
-  return interprete(callback2_code, sizeof(callback2_code));
+  callback_depth++;
+  res = interprete(callback2_code, sizeof(callback2_code));
+  callback_depth--;
+  return res;
 }
 
 value callback3(closure, arg1, arg2, arg3)
      value closure, arg1, arg2, arg3;
 {
+  value res;
   extern_sp -= 4;
   extern_sp[0] = arg1;
   extern_sp[1] = arg2;
   extern_sp[2] = arg3;
   extern_sp[3] = closure;
-  return interprete(callback3_code, sizeof(callback3_code));
+  callback_depth++;
+  res = interprete(callback3_code, sizeof(callback3_code));
+  callback_depth--;
+  return res;
 }
