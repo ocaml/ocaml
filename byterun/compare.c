@@ -53,7 +53,7 @@ static long compare_val(v1, v2)
   case Double_tag: {
     double d1 = Double_val(v1);
     double d2 = Double_val(v2);
-    if (d1 == d2) return 0; else if (d1 < d2) return -1; else return 1;
+    if (d1 < d2) return -1; else if (d1 > d2) return 1; else return 0;
   }
   case Double_array_tag: {
     mlsize_t sz1 = Wosize_val(v1);
@@ -63,7 +63,7 @@ static long compare_val(v1, v2)
     for (i = 0; i < sz1; i++) {
       double d1 = Double_field(v1, i);
       double d2 = Double_field(v2, i);
-      if (d1 != d2) { if (d1 < d2) return -1; else return 1; }
+      if (d1 < d2) return -1; else if (d1 > d2) return 1;
     }
     return 0;
   }
