@@ -324,3 +324,7 @@ let append (l : 'a #olist) (l' : 'b #olist) =
   l#fold ~init:l' ~f:(fun x acc -> acc#cons x)
 ;;
 
+type 'a t = unit
+;;
+class o = object method x : 'a. ([> `A] as 'a) t -> unit = fun _ -> () end
+;;
