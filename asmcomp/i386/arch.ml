@@ -14,6 +14,8 @@
 
 (* Specific operations for the Intel 386 processor *)
 
+open Format
+
 type addressing_mode =
     Ibased of string * int              (* symbol + displ *)
   | Iindexed of int                     (* reg + displ *)
@@ -67,71 +69,61 @@ let num_args_addressing = function
 
 (* Printing operations and addressing modes *)
 
-open Formatmsg
-
-let print_addressing printreg addr arg =
+let print_addressing printreg addr ppf arg =
   match addr with
-    Ibased(s, 0) ->
-      printf "\"%s\"" s
+  | Ibased(s, 0) ->
+      fprintf ppf "\"%s\"" s
   | Ibased(s, n) ->
-      printf "\"%s\" + %i" s n
+      fprintf ppf "\"%s\" + %i" s n
   | Iindexed n ->
-      printreg arg.(0);
-      if n <> 0 then printf " + %i" n
+      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
+      fprintf ppf "%a%s" printreg arg.(0) idx
   | Iindexed2 n ->
-      printreg arg.(0); print_string " + "; printreg arg.(1);
-      if n <> 0 then printf " + %i" n
+      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
+      fprintf ppf "%a + %a%s" printreg arg.(0) printreg arg.(1) idx
   | Iscaled(scale, n) ->
-      printreg arg.(0); printf " * %i" scale;
-      if n <> 0 then printf " + %i" n
+      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
+      fprintf ppf "%a  * %i%s" printreg arg.(0) scale idx
   | Iindexed2scaled(scale, n) ->
-      printreg arg.(0); print_string " + "; printreg arg.(1);
-      printf " * %i" scale;
-      if n <> 0 then printf " + %i" n
+      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
+      fprintf ppf "%a + %a * %i%s" printreg arg.(0) printreg arg.(1) scale idx
 
-let print_specific_operation printreg op arg =
+let print_specific_operation printreg op ppf arg =
   match op with
-    Ilea addr -> print_addressing printreg addr arg
+  | Ilea addr -> print_addressing printreg addr ppf arg
   | Istore_int(n, addr) ->
-      print_string "["; print_addressing printreg addr arg;
-      print_string "] := "; print_string (Nativeint.to_string n)
+      fprintf ppf "[%a] := %s" (print_addressing printreg addr) arg
+                               (Nativeint.to_string n)
   | Istore_symbol(lbl, addr) ->
-      print_string "["; print_addressing printreg addr arg;
-      print_string "] := \""; print_string lbl; print_string "\""
+      fprintf ppf "[%a] := \"%s\"" (print_addressing printreg addr) arg lbl
   | Ioffset_loc(n, addr) ->
-      print_string "["; print_addressing printreg addr arg;
-      print_string "] +:= "; print_int n
+      fprintf ppf "[%a] +:= %i" (print_addressing printreg addr) arg n
   | Ipush ->
-      print_string "push ";
+      fprintf ppf "push ";
       for i = 0 to Array.length arg - 1 do
-        if i > 0 then print_string ", ";
-        printreg arg.(i)
+        if i > 0 then fprintf ppf ", ";
+        printreg ppf arg.(i)
       done
   | Ipush_int n ->
-      printf "push %s" (Nativeint.to_string n)
+      fprintf ppf "push %s" (Nativeint.to_string n)
   | Ipush_symbol s ->
-      printf "push \"%s\"" s
+      fprintf ppf "push \"%s\"" s
   | Ipush_load addr ->
-      print_string "push ["; print_addressing printreg addr arg;
-      print_string "]"
+      fprintf ppf "push [%a]" (print_addressing printreg addr) arg
   | Ipush_load_float addr ->
-      print_string "pushfloat ["; print_addressing printreg addr arg;
-      print_string "]"
+      fprintf ppf "pushfloat [%a]" (print_addressing printreg addr) arg
   | Isubfrev ->
-      printreg arg.(0); print_string " -f(rev) "; printreg arg.(1)
+      fprintf ppf "%a -f(rev) %a" printreg arg.(0) printreg arg.(1)
   | Idivfrev ->
-      printreg arg.(0); print_string " /f(rev) "; printreg arg.(1)
+      fprintf ppf "%a /f(rev) %a" printreg arg.(0) printreg arg.(1)
   | Ifloatarithmem(double, op, addr) ->
-      printreg arg.(0);
-      begin match op with
-        Ifloatadd -> print_string " +f "
-      | Ifloatsub -> print_string " -f "
-      | Ifloatsubrev -> print_string " -f(rev) "
-      | Ifloatmul -> print_string " *f "
-      | Ifloatdiv -> print_string " /f "
-      | Ifloatdivrev -> print_string " /f(rev) "
-      end;
-      print_string (if double then "float64" else "float32");
-      print_string "[";
-      print_addressing printreg addr (Array.sub arg 1 (Array.length arg - 1));
-      print_string "]"
+      let op_name = function
+      | Ifloatadd -> "+f"
+      | Ifloatsub -> "-f"
+      | Ifloatsubrev -> "-f(rev)"
+      | Ifloatmul -> "*f"
+      | Ifloatdiv -> "/f"
+      | Ifloatdivrev -> "/f(rev)" in
+      let long = if double then "float64" else "float32" in
+      fprintf ppf "%a %s %s[%a]" printreg arg.(0) (op_name op) long
+       (print_addressing printreg addr) (Array.sub arg 1 (Array.length arg - 1))

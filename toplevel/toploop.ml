@@ -317,5 +317,4 @@ let run_script ppf name args =
   Obj.truncate (Obj.repr Sys.argv) len;
   Compile.init_path();
   toplevel_env := Compile.initial_env();
-(*  Formatmsg.set_output Format.err_formatter;*)
   use_silently ppf name

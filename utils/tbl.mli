@@ -24,4 +24,7 @@ val mem: 'a -> ('a, 'b) t -> bool
 val remove: 'a -> ('a,  'b) t -> ('a, 'b) t
 val iter: ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
 
-val print: ('a -> unit) -> ('b -> unit) -> ('a, 'b) t -> unit
+open Format
+
+val print: (formatter -> 'a -> unit) -> (formatter -> 'b -> unit) ->
+           formatter -> ('a, 'b) t -> unit

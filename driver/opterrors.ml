@@ -42,13 +42,13 @@ let report_error ppf exn =
   | Translcore.Error(loc, err) ->
       Location.print ppf loc; Translcore.report_error ppf err
   | Compilenv.Error code ->
-      Compilenv.report_error code
+      Compilenv.report_error ppf code
   | Asmgen.Error code ->
-      Asmgen.report_error code
+      Asmgen.report_error ppf code
   | Asmlink.Error code ->
-      Asmlink.report_error code
+      Asmlink.report_error ppf code
   | Asmlibrarian.Error code ->
-      Asmlibrarian.report_error code
+      Asmlibrarian.report_error ppf code
   | Sys_error msg ->
       fprintf ppf "I/O error: %s" msg
   | Typeclass.Error(loc, err) ->

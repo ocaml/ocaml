@@ -14,7 +14,9 @@
 
 (* Link a set of .cmx/.o files and produce an executable *)
 
-val link: string list -> unit
+open Format
+
+val link: formatter -> string list -> unit
 
 type error =
     File_not_found of string
@@ -27,4 +29,4 @@ type error =
 
 exception Error of error
 
-val report_error: error -> unit
+val report_error: formatter -> error -> unit

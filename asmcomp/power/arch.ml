@@ -14,7 +14,7 @@
 
 (* Specific operations for the PowerPC processor *)
 
-open Formatmsg
+open Format
 
 type specific_operation =
     Imultaddf                           (* multiply and add *)
@@ -52,31 +52,31 @@ let num_args_addressing = function
 
 (* Printing operations and addressing modes *)
 
-let print_addressing printreg addr arg =
+let print_addressing printreg addr ppf arg =
   match addr with
-    Ibased(s, n) ->
-      printf "\"%s\"" s;
-      if n <> 0 then printf " + %i" n
+  | Ibased(s, n) ->
+      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
+      fprintf ppf "\"%s\"%s" s idx
   | Iindexed n ->
-      printreg arg.(0);
-      if n <> 0 then printf " + %i" n
+      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
+      fprintf ppf "%a%s" printreg arg.(0) idx
   | Iindexed2 ->
-      printreg arg.(0); print_string " + "; printreg arg.(1)
+      fprintf ppf "%a + %a" printreg arg.(0) printreg arg.(1)
 
-let print_specific_operation printreg op arg =
+let print_specific_operation printreg op ppf arg =
   match op with
-    Imultaddf ->
-      printreg arg.(0); print_string " *f "; printreg arg.(1);
-      print_string " +f "; printreg arg.(2)
+  | Imultaddf ->
+      fprintf ppf "%a *f %a +f %a"
+        printreg arg.(0) printreg arg.(1) printreg arg.(2)
   | Imultsubf ->
-      printreg arg.(0); print_string " *f "; printreg arg.(1);
-      print_string " -f "; printreg arg.(2)
+      fprintf ppf "%a *f %a -f %a"
+        printreg arg.(0) printreg arg.(1) printreg arg.(2)
 
 (* Distinguish between the PowerPC and the Power/RS6000 submodels *)
 
 let powerpc =
   match Config.model with
-    "ppc" -> true
+  | "ppc" -> true
   | "rs6000" -> false
   | _ -> Misc.fatal_error "wrong $(MODEL)"
 
@@ -86,7 +86,7 @@ let powerpc =
 
 let toc =
   match Config.system with
-    "aix" -> true
+  | "aix" -> true
   | "elf" -> false
   | "rhapsody" -> false
   | _ -> Misc.fatal_error "wrong $(SYSTEM)"

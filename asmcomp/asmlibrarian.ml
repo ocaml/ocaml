@@ -60,11 +60,11 @@ let create_archive file_list lib_name =
     remove_file archive_name;
     raise x
 
-open Formatmsg
+open Format
 
-let report_error = function
-    File_not_found name ->
-      printf "Cannot find file %s" name
+let report_error ppf = function
+  | File_not_found name ->
+      fprintf ppf "Cannot find file %s" name
   | Archiver_error name ->
-      printf "Error while creating the library %s" name
+      fprintf ppf "Error while creating the library %s" name
 

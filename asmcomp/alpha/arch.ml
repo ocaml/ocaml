@@ -14,7 +14,7 @@
 
 (* Specific operations for the Alpha processor *)
 
-open Formatmsg
+open Format
 
 (* Addressing modes *)
 
@@ -52,23 +52,23 @@ let num_args_addressing = function
 
 (* Printing operations and addressing modes *)
 
-let print_addressing printreg addr arg =
+let print_addressing printreg addr ppf arg =
   match addr with
-    Ibased(s, n) ->
-      printf "\"%s\"" s;
-      if n <> 0 then printf " + %i" n
+  | Ibased(s, n) ->
+      fprintf ppf "\"%s\"%s" s
+      (if n <> 0 then Printf.sprintf " + %i" n else "")
   | Iindexed n ->
-      printreg arg.(0);
-      if n <> 0 then printf " + %i" n
+      fprintf ppf "%a%s" printreg arg.(0)
+      (if n <> 0 then Printf.sprintf " + %i" n else "")
 
-let print_specific_operation printreg op arg =
+let print_specific_operation printreg op ppf arg =
   match op with
-    Iadd4 -> printreg arg.(0); print_string " * 4 + "; printreg arg.(1)
-  | Iadd8 -> printreg arg.(0); print_string " * 8 + "; printreg arg.(1)
-  | Isub4 -> printreg arg.(0); print_string " * 4 - "; printreg arg.(1)
-  | Isub8 -> printreg arg.(0); print_string " * 8 - "; printreg arg.(1)
-  | Ireloadgp _ -> print_string "ldgp"
-  | Itrunc32 -> print_string "truncate32 "; printreg arg.(0)
+  | Iadd4 -> fprintf ppf "%a  * 4 + %a" printreg arg.(0) printreg arg.(1)
+  | Iadd8 -> fprintf ppf "%a  * 8 + %a" printreg arg.(0) printreg arg.(1)
+  | Isub4 -> fprintf ppf "%a  * 4 - %a" printreg arg.(0) printreg arg.(1)
+  | Isub8 -> fprintf ppf "%a  * 8 - %a" printreg arg.(0) printreg arg.(1)
+  | Ireloadgp _ -> fprintf ppf "ldgp"
+  | Itrunc32 -> fprintf ppf "truncate32 %a" printreg arg.(0)
 
 (* Distinguish between the Digital assembler and other assemblers (e.g. gas) *)
 

@@ -13,68 +13,67 @@
 (* $Id$ *)
 
 open Asttypes;;
-open Formatmsg;;
+open Format;;
 open Location;;
 open Parsetree;;
 
 let fmt_location f loc =
   if loc.loc_ghost then
-    Format.fprintf f "(%d,%d) ghost" loc.loc_start loc.loc_end
+    fprintf f "(%d,%d) ghost" loc.loc_start loc.loc_end
   else
-    Format.fprintf f "(%d,%d)" loc.loc_start loc.loc_end
+    fprintf f "(%d,%d)" loc.loc_start loc.loc_end
 ;;
 
 let rec fmt_longident_aux f x =
   match x with
-  | Longident.Lident (s) -> Format.fprintf f "%s" s;
-  | Longident.Ldot (y, s) -> Format.fprintf f "%a.%s" fmt_longident_aux y s;
+  | Longident.Lident (s) -> fprintf f "%s" s;
+  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y s;
   | Longident.Lapply (y, z) ->
-      Format.fprintf f "%a(%a)" fmt_longident_aux y fmt_longident_aux z;
+      fprintf f "%a(%a)" fmt_longident_aux y fmt_longident_aux z;
 ;;
 
-let fmt_longident f x = Format.fprintf f "\"%a\"" fmt_longident_aux x;;
+let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x;;
 
 let fmt_constant f x =
   match x with
-  | Const_int (i) -> Format.fprintf f "Const_int %d" i;
-  | Const_char (c) -> Format.fprintf f "Const_char %02x" (Char.code c);
+  | Const_int (i) -> fprintf f "Const_int %d" i;
+  | Const_char (c) -> fprintf f "Const_char %02x" (Char.code c);
   | Const_string (s) ->
-      Format.fprintf f "Const_string \"%s\"" (String.escaped s);
-  | Const_float (s) -> Format.fprintf f "Const_float %s" s;
+      fprintf f "Const_string \"%s\"" (String.escaped s);
+  | Const_float (s) -> fprintf f "Const_float %s" s;
 ;;
 
 let fmt_mutable_flag f x =
   match x with
-  | Immutable -> Format.fprintf f "Immutable";
-  | Mutable -> Format.fprintf f "Mutable";
+  | Immutable -> fprintf f "Immutable";
+  | Mutable -> fprintf f "Mutable";
 ;;
 
 let fmt_virtual_flag f x =
   match x with
-  | Virtual -> Format.fprintf f "Virtual";
-  | Concrete -> Format.fprintf f "Concrete";
+  | Virtual -> fprintf f "Virtual";
+  | Concrete -> fprintf f "Concrete";
 ;;
 
 let fmt_rec_flag f x =
   match x with
-  | Nonrecursive -> Format.fprintf f "Nonrec";
-  | Recursive -> Format.fprintf f "Rec";
-  | Default -> Format.fprintf f "Default";
+  | Nonrecursive -> fprintf f "Nonrec";
+  | Recursive -> fprintf f "Rec";
+  | Default -> fprintf f "Default";
 ;;
 
 let fmt_direction_flag f x =
   match x with
-  | Upto -> Format.fprintf f "Up";
-  | Downto -> Format.fprintf f "Down";
+  | Upto -> fprintf f "Up";
+  | Downto -> fprintf f "Down";
 ;;
 
 let fmt_private_flag f x =
   match x with
-  | Public -> Format.fprintf f "Public";
-  | Private -> Format.fprintf f "Private";
+  | Public -> fprintf f "Public";
+  | Private -> fprintf f "Private";
 ;;
 
-open Format
 let line i f s (*...*) =
   fprintf f "%s" (String.make (2*i) ' ');
   fprintf f s (*...*)

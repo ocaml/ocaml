@@ -67,7 +67,7 @@ clean: partialclean
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
-	gcc -MM $(CFLAGS) *.c > .depend
+	gcc -MM -I../../byterun -I../unix *.c > .depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

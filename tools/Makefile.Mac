@@ -23,7 +23,7 @@ all Ä ocamldep ocamldumpobj objinfo primreq keywords
 
 # The dependency generator
 
-CAMLDEP_IMPORTS = misc.cmo formatmsg.cmo config.cmo clflags.cmo terminfo.cmo ¶
+CAMLDEP_IMPORTS = misc.cmo config.cmo clflags.cmo terminfo.cmo ¶
    linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo ¶
    syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
@@ -41,7 +41,7 @@ install ÄÄ
 # The profiler  (not available on MacOS for the moment)
 #
 #CSLPROF = ocamlprof.cmo
-#CSLPROF_IMPORTS = misc.cmo formatmsg.cmo config.cmo clflags.cmo terminfo.cmo ¶
+#CSLPROF_IMPORTS = misc.cmo config.cmo clflags.cmo terminfo.cmo ¶
 #  linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo ¶
 #  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 #
@@ -67,7 +67,7 @@ DUMPOBJ = opnames.cmo dumpobj.cmo
 
 ocamldumpobj Ä {DUMPOBJ}
     {CAMLC} {LINKFLAGS} -o ocamldumpobj ¶
-            misc.cmo formatmsg.cmo tbl.cmo config.cmo ident.cmo opcodes.cmo ¶
+            misc.cmo tbl.cmo config.cmo ident.cmo opcodes.cmo ¶
             bytesections.cmo {DUMPOBJ}
 
 clean ÄÄ

@@ -57,9 +57,9 @@ freelist.o: freelist.c ../byterun/config.h ../byterun/../config/m.h \
 gc_ctrl.o: gc_ctrl.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/compact.h ../byterun/custom.h \
- ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h \
- ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/stacks.h \
- ../byterun/memory.h
+ ../byterun/finalise.h ../byterun/roots.h ../byterun/memory.h \
+ ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
+ ../byterun/minor_gc.h ../byterun/gc_ctrl.h ../byterun/stacks.h
 hash.o: hash.c ../byterun/mlvalues.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/misc.h \
  ../byterun/custom.h ../byterun/memory.h ../byterun/gc.h \
@@ -131,11 +131,11 @@ parsing.o: parsing.c ../byterun/config.h ../byterun/../config/m.h \
 printexc.o: printexc.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h
-roots.o: roots.c ../byterun/memory.h ../byterun/config.h \
- ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/gc.h \
- ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
- ../byterun/freelist.h ../byterun/minor_gc.h stack.h \
- ../byterun/roots.h
+roots.o: roots.c ../byterun/finalise.h ../byterun/roots.h \
+ ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
+ ../byterun/../config/s.h ../byterun/memory.h ../byterun/gc.h \
+ ../byterun/mlvalues.h ../byterun/major_gc.h ../byterun/freelist.h \
+ ../byterun/minor_gc.h stack.h
 signals.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/callback.h ../byterun/memory.h \
@@ -222,9 +222,9 @@ freelist.d.o: freelist.c ../byterun/config.h ../byterun/../config/m.h \
 gc_ctrl.d.o: gc_ctrl.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/compact.h ../byterun/custom.h \
- ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h \
- ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/stacks.h \
- ../byterun/memory.h
+ ../byterun/finalise.h ../byterun/roots.h ../byterun/memory.h \
+ ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
+ ../byterun/minor_gc.h ../byterun/gc_ctrl.h ../byterun/stacks.h
 hash.d.o: hash.c ../byterun/mlvalues.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/misc.h \
  ../byterun/custom.h ../byterun/memory.h ../byterun/gc.h \
@@ -296,11 +296,11 @@ parsing.d.o: parsing.c ../byterun/config.h ../byterun/../config/m.h \
 printexc.d.o: printexc.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h
-roots.d.o: roots.c ../byterun/memory.h ../byterun/config.h \
- ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/gc.h \
- ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
- ../byterun/freelist.h ../byterun/minor_gc.h stack.h \
- ../byterun/roots.h
+roots.d.o: roots.c ../byterun/finalise.h ../byterun/roots.h \
+ ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
+ ../byterun/../config/s.h ../byterun/memory.h ../byterun/gc.h \
+ ../byterun/mlvalues.h ../byterun/major_gc.h ../byterun/freelist.h \
+ ../byterun/minor_gc.h stack.h
 signals.d.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/callback.h ../byterun/memory.h \
@@ -387,9 +387,9 @@ freelist.p.o: freelist.c ../byterun/config.h ../byterun/../config/m.h \
 gc_ctrl.p.o: gc_ctrl.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/compact.h ../byterun/custom.h \
- ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h \
- ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/stacks.h \
- ../byterun/memory.h
+ ../byterun/finalise.h ../byterun/roots.h ../byterun/memory.h \
+ ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
+ ../byterun/minor_gc.h ../byterun/gc_ctrl.h ../byterun/stacks.h
 hash.p.o: hash.c ../byterun/mlvalues.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/misc.h \
  ../byterun/custom.h ../byterun/memory.h ../byterun/gc.h \
@@ -461,11 +461,11 @@ parsing.p.o: parsing.c ../byterun/config.h ../byterun/../config/m.h \
 printexc.p.o: printexc.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h
-roots.p.o: roots.c ../byterun/memory.h ../byterun/config.h \
- ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/gc.h \
- ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
- ../byterun/freelist.h ../byterun/minor_gc.h stack.h \
- ../byterun/roots.h
+roots.p.o: roots.c ../byterun/finalise.h ../byterun/roots.h \
+ ../byterun/misc.h ../byterun/config.h ../byterun/../config/m.h \
+ ../byterun/../config/s.h ../byterun/memory.h ../byterun/gc.h \
+ ../byterun/mlvalues.h ../byterun/major_gc.h ../byterun/freelist.h \
+ ../byterun/minor_gc.h stack.h
 signals.p.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/callback.h ../byterun/memory.h \

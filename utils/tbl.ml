@@ -95,16 +95,10 @@ let rec iter f = function
   | Node(l, v, d, r, _) ->
       iter f l; f v d; iter f r
 
-open Formatmsg
+open Format
 
-let print print_key print_data tbl =
-  open_hvbox 2;
-  print_string "[[";
-  iter (fun k d ->
-          open_box 2;
-          print_key k; print_string " ->"; print_space();
-          print_data d; print_string ";";
-          close_box(); print_space())
-        tbl;
-  print_string "]]";
-  close_box()
+let print print_key print_data ppf tbl =
+  let print_tbl ppf tbl =
+    iter (fun k d -> fprintf ppf "@[<2>%a ->@ %a;@]@ " print_key k print_data d)
+      tbl in
+  fprintf ppf "@[<hv 2>[[%a]]@]" print_tbl tbl

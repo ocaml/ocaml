@@ -14,7 +14,8 @@
 
 (* Pretty-printing of linearized machine code *)
 
+open Format
 open Linearize
 
-val instr: instruction -> unit
-val fundecl: fundecl -> unit
+val instr: formatter -> instruction -> unit
+val fundecl: formatter -> fundecl -> unit

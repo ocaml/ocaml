@@ -102,7 +102,6 @@ module Options = Main_args.Make_options (struct
 end)
 
 let main () =
-(* A supprimer   Formatmsg.set_output Format.err_formatter;*)
   try
     Arg.parse Options.list anonymous usage;
     if !make_archive then begin

@@ -153,14 +153,15 @@ module IntSet = Set.Make(
     let compare = compare
   end)
 
-let make_startup_file filename info_list =
+let make_startup_file ppf filename info_list =
+  let compile_phrase p = Asmgen.compile_phrase ppf p in
   let oc = open_out filename in
   Emitaux.output_channel := oc;
   Location.input_name := "startup"; (* set the name of the "current" input *)
   Compilenv.reset "startup"; (* set the name of the "current" compunit *)
   Emit.begin_assembly();
   let name_list = List.map (fun ui -> ui.ui_name) info_list in
-  Asmgen.compile_phrase(Cmmgen.entry_point name_list);
+  compile_phrase (Cmmgen.entry_point name_list);
   let apply_functions = ref (IntSet.add 2 (IntSet.add 3 IntSet.empty)) in
   (* The callback functions always reference caml_apply[23] *)
   let curry_functions =
@@ -175,24 +176,24 @@ let make_startup_file filename info_list =
         info.ui_curry_fun)
     info_list;
   IntSet.iter
-    (fun n -> Asmgen.compile_phrase(Cmmgen.apply_function n))
+    (fun n -> compile_phrase (Cmmgen.apply_function n))
     !apply_functions;
   IntSet.iter
-    (fun n -> List.iter Asmgen.compile_phrase (Cmmgen.curry_function n))
+    (fun n -> List.iter (compile_phrase) (Cmmgen.curry_function n))
     !curry_functions;
   Array.iter
-    (fun name -> Asmgen.compile_phrase(Cmmgen.predef_exception name))
+    (fun name -> compile_phrase (Cmmgen.predef_exception name))
     Runtimedef.builtin_exceptions;
-  Asmgen.compile_phrase(Cmmgen.global_table name_list);
-  Asmgen.compile_phrase
+  compile_phrase (Cmmgen.global_table name_list);
+  compile_phrase
     (Cmmgen.globals_map
       (List.map
         (fun name ->
           let (auth_name,crc) = Hashtbl.find crc_interfaces name in (name,crc))
         name_list));
-  Asmgen.compile_phrase(Cmmgen.data_segment_table ("startup" :: name_list));
-  Asmgen.compile_phrase(Cmmgen.code_segment_table ("startup" :: name_list));
-  Asmgen.compile_phrase
+  compile_phrase(Cmmgen.data_segment_table ("startup" :: name_list));
+  compile_phrase(Cmmgen.code_segment_table ("startup" :: name_list));
+  compile_phrase
     (Cmmgen.frame_table("startup" :: "system" :: name_list));
   Emit.end_assembly();
   close_out oc
@@ -269,7 +270,7 @@ let object_file_name name =
 
 (* Main entry point *)
 
-let link objfiles =
+let link ppf objfiles =
   let objfiles =
     if !Clflags.nopervasives then
       objfiles
@@ -286,7 +287,7 @@ let link objfiles =
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
   Clflags.ccopts := !Clflags.ccopts @ !lib_ccopts;
   let startup = Filename.temp_file "camlstartup" ext_asm in
-  make_startup_file startup units_tolink;
+  make_startup_file ppf startup units_tolink;
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
   if Proc.assemble_file startup startup_obj <> 0 then
     raise(Error(Assembler_error startup));
@@ -300,38 +301,38 @@ let link objfiles =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error = function
-    File_not_found name ->
-      printf "Cannot find file %s" name
+let report_error ppf = function
+  | File_not_found name ->
+      fprintf ppf "Cannot find file %s" name
   | Not_an_object_file name ->
-      printf "The file %s is not a compilation unit description" name
+      fprintf ppf "The file %s is not a compilation unit description" name
   | Missing_implementations l ->
-      printf
-       "@[<v 2>No implementations provided for the following modules:%t@]"
-       (fun fmt ->
-          List.iter
-            (fun (md, rq) ->
-              printf "@ @[<hov 2>%s referenced from %t@]"
-                md
-                (fun fmt ->
-                   match rq with
-                     [] -> ()
-                   | r1::rl -> printf "%s" r1;
-                               List.iter (fun r -> printf ",@ %s" r) rl))
-          l)
+     let print_references ppf = function
+       | [] -> ()
+       | r1 :: rl ->
+           fprintf ppf "%s" r1;
+           List.iter (fun r -> fprintf ppf ",@ %s" r) rl in
+      let print_modules ppf =
+        List.iter
+         (fun (md, rq) ->
+            fprintf ppf "@ @[<hov 2>%s referenced from %a@]" md
+            print_references rq) in
+      fprintf ppf
+       "@[<v 2>No implementations provided for the following modules:%a@]"
+       print_modules l
   | Inconsistent_interface(intf, file1, file2) ->
-      printf
+      fprintf ppf
        "@[<hv>Files %s@ and %s@ make inconsistent assumptions \
               over interface %s@]"
        file1 file2 intf
   | Inconsistent_implementation(intf, file1, file2) ->
-      printf
+      fprintf ppf
        "@[<hv>Files %s@ and %s@ make inconsistent assumptions \
               over implementation %s@]"
        file1 file2 intf
   | Assembler_error file ->
-      printf "Error while assembling %s" file
+      fprintf ppf "Error while assembling %s" file
   | Linking_error ->
-      print_string "Error during linking"
+      fprintf ppf "Error during linking"

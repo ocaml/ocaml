@@ -14,9 +14,11 @@
 
 (* From lambda to assembly code *)
 
-val compile_implementation: string -> int * Lambda.lambda -> unit
-val compile_phrase: Cmm.phrase -> unit
+val compile_implementation :
+    string -> Format.formatter -> int * Lambda.lambda -> unit
+val compile_phrase :
+    Format.formatter -> Cmm.phrase -> unit
 
 type error = Assembler_error of string
 exception Error of error
-val report_error: error -> unit
+val report_error: Format.formatter -> error -> unit

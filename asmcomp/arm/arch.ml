@@ -15,7 +15,7 @@
 (* Specific operations for the ARM processor *)
 
 open Misc
-open Formatmsg
+open Format
 
 (* Addressing modes *)
 
@@ -57,29 +57,26 @@ let num_args_addressing (Iindexed n) = 1
 
 (* Printing operations and addressing modes *)
 
-let print_addressing printreg addr arg =
+let print_addressing printreg addr ppf arg =
   match addr with
-    Iindexed n ->
-      printreg arg.(0);
-      if n <> 0 then printf " + %i" n
+  | Iindexed n ->
+      printreg ppf arg.(0);
+      if n <> 0 then fprintf ppf " + %i" n
 
-let print_specific_operation printreg op arg =
+let print_specific_operation printreg op ppf arg =
   match op with
-    Ishiftarith(op, shift) ->
-      printreg arg.(0);
-      begin match op with
-        Ishiftadd -> print_string " + "
-      | Ishiftsub -> print_string " - "
-      | Ishiftsubrev -> print_string " -rev "
-      end;
-      printreg arg.(1);
-      if shift >= 0
-      then printf " << %i" shift
-      else printf " >> %i" (-shift)
+  | Ishiftarith(op, shift) ->
+      let op_name = function
+      | Ishiftadd -> "+"
+      | Ishiftsub -> "-"
+      | Ishiftsubrev -> "-rev" in
+      let shift_mark =
+       if shift >= 0
+       then sprintf "<< %i" shift
+       else sprintf ">> %i" (-shift) in
+      fprintf ppf "%a %s %a %s"
+       printreg arg.(0) (op_name op) printreg arg.(1) shift_mark
   | Ishiftcheckbound n ->
-      print_string "check ";
-      printreg arg.(0);
-      printf " >> %i > " n;
-      printreg arg.(1)
+      fprintf ppf "check %a >> %i > %a" printreg arg.(0) n printreg arg.(1)
   | Irevsubimm n ->
-      print_int n; print_string " - "; printreg arg.(0)
+      fprintf ppf "%i %s %a" n "-" printreg arg.(0)

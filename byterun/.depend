@@ -36,8 +36,8 @@ floats.o: floats.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
 freelist.o: freelist.c config.h ../config/m.h ../config/s.h freelist.h \
  misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h
 gc_ctrl.o: gc_ctrl.c alloc.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h compact.h custom.h gc.h gc_ctrl.h major_gc.h \
- freelist.h minor_gc.h stacks.h memory.h
+ ../config/s.h mlvalues.h compact.h custom.h finalise.h roots.h \
+ memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h stacks.h
 hash.o: hash.c mlvalues.h config.h ../config/m.h ../config/s.h misc.h \
  custom.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 instrtrace.o: instrtrace.c
@@ -106,7 +106,8 @@ terminfo.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
  misc.h mlvalues.h fail.h io.h
 weak.o: weak.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
-wincmdline.o: wincmdline.c
+win32.o: win32.c signals.h misc.h config.h ../config/m.h ../config/s.h \
+ mlvalues.h
 alloc.d.o: alloc.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h custom.h major_gc.h freelist.h memory.h gc.h minor_gc.h \
  stacks.h
@@ -145,8 +146,8 @@ floats.d.o: floats.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
 freelist.d.o: freelist.c config.h ../config/m.h ../config/s.h freelist.h \
  misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h
 gc_ctrl.d.o: gc_ctrl.c alloc.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h compact.h custom.h gc.h gc_ctrl.h major_gc.h \
- freelist.h minor_gc.h stacks.h memory.h
+ ../config/s.h mlvalues.h compact.h custom.h finalise.h roots.h \
+ memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h stacks.h
 hash.d.o: hash.c mlvalues.h config.h ../config/m.h ../config/s.h misc.h \
  custom.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 instrtrace.d.o: instrtrace.c instruct.h misc.h config.h ../config/m.h \
@@ -216,4 +217,5 @@ terminfo.d.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
  misc.h mlvalues.h fail.h io.h
 weak.d.o: weak.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
-wincmdline.d.o: wincmdline.c
+win32.d.o: win32.c signals.h misc.h config.h ../config/m.h ../config/s.h \
+ mlvalues.h

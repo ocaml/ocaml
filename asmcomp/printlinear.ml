@@ -14,7 +14,7 @@
 
 (* Pretty-printing of linearized machine code *)
 
-open Formatmsg
+open Format
 open Mach
 open Printmach
 open Linearize
@@ -22,55 +22,53 @@ open Linearize
 let label ppf l =
   Format.fprintf ppf "L%i" l
 
-let instr i =
+let instr ppf i =
   match i.desc with
-    Lend -> ()
+  | Lend -> ()
   | Lop op ->
       begin match op with
-        Ialloc _ | Icall_ind | Icall_imm _ | Iextcall(_, _) ->
-          printf "@[<1>{";
-          regsetaddr i.live;
-          printf "}@]@,"
+      | Ialloc _ | Icall_ind | Icall_imm _ | Iextcall(_, _) ->
+          fprintf ppf "@[<1>{%a}@]@," regsetaddr i.live
       | _ -> ()
       end;
-      operation op i.arg i.res
+      operation op i.arg ppf i.res
   | Lreloadretaddr ->
-      print_string "reload retaddr"
+      fprintf ppf "reload retaddr"
   | Lreturn ->
-      print_string "return "; regs i.arg
+      fprintf ppf "return %a" regs i.arg
   | Llabel lbl ->
-      printf "%a:" label lbl
+      fprintf ppf "%a:" label lbl
   | Lbranch lbl ->
-      printf "goto %a" label lbl
+      fprintf ppf "goto %a" label lbl
   | Lcondbranch(tst, lbl) ->
-      printf "if "; test tst i.arg; printf " goto %a" label lbl
+      fprintf ppf "if %a goto %a" (test tst) i.arg label lbl
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
-      print_string "switch3 "; reg i.arg.(0);
+      fprintf ppf "switch3 %a" reg i.arg.(0);
       let case n = function
-        None -> ()
+      | None -> ()
       | Some lbl ->
-          printf "@,case %i: goto %a" n label lbl in
+         fprintf ppf "@,case %i: goto %a" n label lbl in
       case 0 lbl0; case 1 lbl1; case 2 lbl2;
-      printf "@,endswitch"
+      fprintf ppf "@,endswitch"
   | Lswitch lblv ->
-      printf "switch "; reg i.arg.(0);
+      fprintf ppf "switch %a" reg i.arg.(0);
       for i = 0 to Array.length lblv - 1 do
-        printf "case %i: goto %a" i label lblv.(i)
+       fprintf ppf "case %i: goto %a" i label lblv.(i)
       done;
-      printf "@,endswitch"
+      fprintf ppf "@,endswitch"
   | Lsetuptrap lbl ->
-      printf "setup trap %a" label lbl
+      fprintf ppf "setup trap %a" label lbl
   | Lpushtrap ->
-      print_string "push trap"
+      fprintf ppf "push trap"
   | Lpoptrap ->
-      print_string "pop trap"
+      fprintf ppf "pop trap"
   | Lraise ->
-      print_string "raise "; reg i.arg.(0)
+      fprintf ppf "raise %a" reg i.arg.(0)
 
 let rec all_instr ppf i =
   match i.desc with
-    Lend -> ()
-  | _ -> instr i; printf "@,%a" all_instr i.next
+  | Lend -> ()
+  | _ -> fprintf ppf "%a@,%a" instr i all_instr i.next
 
-let fundecl f =
-  printf "@[<v 2>%s:@,%a@]" f.fun_name all_instr f.fun_body
+let fundecl ppf f =
+  fprintf ppf "@[<v 2>%s:@,%a@]" f.fun_name all_instr f.fun_body

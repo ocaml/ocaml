@@ -14,7 +14,7 @@
 
 (* From C-- to assembly code *)
 
-open Formatmsg
+open Format
 open Cmm
 
 let dump_cmm = ref false
@@ -43,10 +43,10 @@ let rec regalloc fd =
   then begin Reg.reinit(); Liveness.fundecl newfd; regalloc newfd end
   else newfd
 
-let fundecl fd_cmm =
+let fundecl ppf fd_cmm =
   if !dump_cmm then begin
-    printf "*** C-- code@.";
-    Printcmm.fundecl fd_cmm; print_newline()
+    fprintf ppf "*** C-- code@.";
+    fprintf ppf "%a@." Printcmm.fundecl fd_cmm
   end;
   Reg.reset();
   let fd_sel = Sequence.fundecl fd_cmm in

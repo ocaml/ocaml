@@ -151,7 +151,7 @@ let main () =
     end
     else if not !compile_only && !objfiles <> [] then begin
       Optcompile.init_path();
-      Asmlink.link (List.rev !objfiles)
+      Asmlink.link ppf (List.rev !objfiles)
     end;
     exit 0
   with x ->

@@ -15,7 +15,7 @@
 (* Specific operations for the Mips processor *)
 
 open Misc
-open Formatmsg
+open Format
 
 (* Addressing modes *)
 
@@ -54,14 +54,14 @@ let num_args_addressing = function
 
 (* Printing operations and addressing modes *)
 
-let print_addressing printreg addr arg =
+let print_addressing printreg addr ppf arg =
   match addr with
-    Ibased(s, n) ->
-      printf "\"%s\"" s;
-      if n <> 0 then printf " + %i" n
+  | Ibased(s, n) ->
+      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
+      fprintf ppf "\"%s\"%s" s idx
   | Iindexed n ->
-      printreg arg.(0);
-      if n <> 0 then printf " + %i" n
+      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
+      fprintf ppf "%a%s" printreg arg.(0) idx
 
-let print_specific_operation printreg op arg =
+let print_specific_operation printreg op ppf arg =
   fatal_error "Arch_mips.print_specific_operation"

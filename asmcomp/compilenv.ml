@@ -112,7 +112,7 @@ let global_approx global_ident =
             find_in_path !load_path (String.uncapitalize modname ^ ".cmx") in
           let (ui, crc) = read_unit_info filename in
           if ui.ui_name <> modname then
-            raise(Error(Illegal_renaming(modname, filename)));
+            raise(Error(Illegal_renaming(ui.ui_name, filename)));
           (ui.ui_approx, crc)
         with Not_found ->
           (Value_unknown, cmx_not_found_crc) in
@@ -151,13 +151,13 @@ let save_unit_info filename =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error = function
-    Not_a_unit_info filename ->
-      printf "%s@ is not a compilation unit description." filename
+let report_error ppf = function
+  | Not_a_unit_info filename ->
+      fprintf ppf "%s@ is not a compilation unit description." filename
   | Corrupted_unit_info filename ->
-      printf "Corrupted compilation unit description@ %s" filename
+      fprintf ppf "Corrupted compilation unit description@ %s" filename
   | Illegal_renaming(modname, filename) ->
-      printf "%s@ contains the description for unit@ %s" filename modname
+      fprintf ppf "%s@ contains the description for unit@ %s" filename modname
 

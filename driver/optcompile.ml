@@ -132,7 +132,7 @@ let implementation ppf sourcefile =
   +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
   +++ Simplif.simplify_lambda
   +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-  ++ Asmgen.compile_implementation prefixname;
+  ++ Asmgen.compile_implementation prefixname ppf;
   Compilenv.save_unit_info (prefixname ^ ".cmx");
   remove_preprocessed inputfile
 
