@@ -98,6 +98,7 @@ install Ä
 clean Ä
     delete -i Å.[ox] || set status 0
     delete -i ocamlrun primitives prims.c opnames.h interp.a.lst
+    delete -i ocamlrun.xcoff ocamlrun.dbg
 
 primitives Ä {PRIMS}
     streamedit -d -e "/ ([a-z0-9_]+)¨0 *'('Å'* ML *'/ print ¨0" {PRIMS} ¶
