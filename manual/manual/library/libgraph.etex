@@ -10,11 +10,12 @@ This library is implemented under the X11 windows system.
 Programs that use the "graphics" library must be linked as follows:
 \begin{alltt}
         ocamlc -custom \var{other options} graphics.cma \var{other files} \char92
-                -cclib -lgraphics -cclib -lX11
+               -cclib -lgraphics -cclib -lX11
 \end{alltt}
 For interactive use of the "graphics" library, do:
 \begin{alltt}
-        ocamlmktop -custom -o mytop graphics.cma -cclib -lgraphics -cclib -lX11
+        ocamlmktop -custom -o mytop graphics.cma -cclib -lgraphics \char92
+                   -cclib -lX11
         ./mytop
 \end{alltt}
 Here are the graphics mode specifications supported by "open_graph" on
