@@ -228,10 +228,14 @@ interface:
     signature EOF                        { List.rev $1 }
 ;
 toplevel_phrase:
-    structure_item SEMISEMI              { Ptop_def[$1] }
+    top_structure SEMISEMI               { Ptop_def $1 }
   | expr SEMISEMI                        { Ptop_def[mkstrexp $1] }
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
+;
+top_structure:
+    structure_item                       { [$1] }
+  | structure_item top_structure         { $1 :: $2 }
 ;
 use_file:
     use_file_tail                        { $1 }
