@@ -74,9 +74,10 @@ let output_tables oc tbl =
 (* Output the entries *)
 
 let output_entry ic oc e =
-  fprintf oc "%s lexbuf =\n" e.auto_name;
-  fprintf oc "  match Lexing.engine lex_tables %d lexbuf with\n    "
-             e.auto_initial_state;
+  fprintf oc "%s lexbuf = %s_rec lexbuf %d\n"
+          e.auto_name e.auto_name e.auto_initial_state;
+  fprintf oc "and %s_rec lexbuf state =\n" e.auto_name;
+  fprintf oc "  match Lexing.engine lex_tables state lexbuf with\n    ";
   let first = ref true in
   List.iter
     (fun (num, loc) ->
@@ -85,7 +86,7 @@ let output_entry ic oc e =
       copy_chunk ic oc loc;
       fprintf oc ")\n")
     e.auto_actions;
-  fprintf oc "  | _ -> lexbuf.Lexing.refill_buff lexbuf; %s lexbuf\n\n"
+  fprintf oc "  | n -> lexbuf.Lexing.refill_buff lexbuf; %s_rec lexbuf n\n\n"
           e.auto_name
 
 (* Main output function *)
