@@ -288,6 +288,10 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     exe=".exe"
     ostype="Cygwin";;
+  gcc*,x86_64-*-linux*)
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
+    # Tell gcc that we can use 32-bit code addresses for threaded code
+    echo "#define ARCH_CODE32" >> m.h;;
   gcc*)
     bytecccompopts="-fno-defer-pop $gcc_warnings";;
 esac
@@ -511,7 +515,7 @@ fi
 # Further machine-specific hacks
 
 case "$host" in
-  ia64-*-linux*|alpha*-*-linux*)
+  ia64-*-linux*|alpha*-*-linux*|x86_64-*-linux*)
     echo "Will use mmap() instead of malloc() for allocation of major heap chunks."
     echo "#define USE_MMAP_INSTEAD_OF_MALLOC" >> s.h;;
 esac
@@ -548,6 +552,7 @@ case "$host" in
   powerpc-*-darwin*)            arch=power; model=ppc; system=rhapsody;;
   arm*-*-linux*)                arch=arm; system=linux;;
   ia64-*-linux*)                arch=ia64; system=linux;;
+  x86_64-*-linux*)              arch=amd64; system=linux;;
 esac
 
 if test -z "$ccoption"; then
@@ -610,6 +615,7 @@ case "$arch,$model,$system" in
   arm,*,linux)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   ia64,*,linux)     asflags=-xexplicit
                     aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM) -Wa,-xexplicit';;
+  amd64,*,*)        aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
 esac
 
 cc_profile='-pg'

@@ -79,6 +79,11 @@
 #define Callback_link(sp) ((struct caml_context *)((sp) + 32))
 #endif
 
+#ifdef TARGET_amd64
+#define Saved_return_address(sp) *((long *)((sp) - 8))
+#define Callback_link(sp) ((struct caml_context *)((sp) + 16))
+#endif
+
 /* Structure of Caml callback contexts */
 
 struct caml_context {
