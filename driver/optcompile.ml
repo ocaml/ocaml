@@ -125,8 +125,8 @@ let implementation sourcefile =
       let (dclsig, crc) = Env.read_signature modulename intf_file in
       (Includemod.compunit sourcefile sg intf_file dclsig, crc)
     end else begin
-      let crc = Env.save_signature sg modulename (prefixname ^ ".cmi") in
       Typemod.check_nongen_schemes finalenv str;
+      let crc = Env.save_signature sg modulename (prefixname ^ ".cmi") in
       (Tcoerce_none, crc)
     end in
   Compilenv.reset modulename crc;
