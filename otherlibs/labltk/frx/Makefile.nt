@@ -1,6 +1,6 @@
 !include ..\support\Makefile.common.nt
 
-COMPFLAGS=-I ../lib -I ../support
+COMPFLAGS=-I ../camltk -I ../support
 
 OBJS= frx_misc.cmo frx_widget.cmo frx_font.cmo frx_entry.cmo frx_text.cmo \
       frx_listbox.cmo frx_req.cmo frx_fillbox.cmo frx_focus.cmo \
@@ -21,14 +21,18 @@ libfrx.cmxa: $(OBJSX)
  
 
 install: libfrx.cma
-	cp *.cmi *.mli libfrx.cma $(MLTKDIR)
+	cp *.cmi *.mli libfrx.cma $(INSTALLDIR)
 
 installopt: libfrx.cmxa
-	cp libfrx.cmxa libfrx.lib $(MLTKDIR)
+	cp libfrx.cmxa libfrx.lib $(INSTALLDIR)
  
 
 clean:
-	rm -f *.cm* *.o *.a *~ *test
+	rm -f *.cm* *.obj *.a *~ *test *.lib
+
+$(OBJS) $(OBJS:.cmo=.cmi): ..\lib\$(LIBNAME).cma
+
+$(OBJSX): ..\lib\$(LIBNAME).cmxa
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .cmx

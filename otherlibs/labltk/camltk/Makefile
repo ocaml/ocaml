@@ -23,14 +23,14 @@ clean:
 	$(MAKE) -f Makefile.gen clean
 
 install: $(CAMLTKOBJS)
-	if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
-	cp $(CAMLTKOBJS:.cmo=.cmi) $(CWIDGETOBJS:.cmo=.mli) $(MLTKDIR)
-	chmod 644 $(MLTKDIR)/*.cmi
+	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
+	cp $(CAMLTKOBJS:.cmo=.cmi) $(CWIDGETOBJS:.cmo=.mli) $(INSTALLDIR)
+	chmod 644 $(INSTALLDIR)/*.cmi
 
 installopt: $(CAMLTKOBJSX)
-	@if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
-	cp $(CAMLTKOBJSX) $(MLTKDIR)
-	chmod 644 $(MLTKDIR)/*.cmx
+	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
+	cp $(CAMLTKOBJSX) $(INSTALLDIR)
+	chmod 644 $(INSTALLDIR)/*.cmx
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp

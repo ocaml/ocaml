@@ -1,6 +1,6 @@
 # Top Makefile for LablTk
 
-SUBDIRS=compiler support labltk camltk lib jpf frx tkanim examples_labltk examples_camltk browser
+SUBDIRS=compiler support lib labltk camltk jpf frx tkanim examples_labltk examples_camltk browser
 
 all:
 	cd support; $(MAKE)

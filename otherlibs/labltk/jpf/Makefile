@@ -21,23 +21,27 @@ libjpf.cmxa: $(OBJSX)
 	$(CAMLOPTLIBR) -o libjpf.cmxa $(OBJSX)
 
 install: libjpf.cma
-	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(MLTKDIR)
+	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(INSTALLDIR)
 
 installopt: libjpf.cmxa
-	cp libjpf.cmxa libjpf.a $(OBJS:.cmo=.cmx) $(MLTKDIR)
+	cp libjpf.cmxa libjpf.a $(OBJS:.cmo=.cmx) $(INSTALLDIR)
 
 clean:
 	rm -f *.cm* *.o *.a *~ *test
+
+$(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
+
+$(OBJSX): ../lib/$(LIBNAME).cmxa
 
 ### Tests
 
 balloontest: balloontest.cmo 
 	$(CAMLC) -o balloontest -I ../support -I ../lib \
-	        -custom labltk.cma libjpf.cma balloontest.cmo
+	        -custom $(LIBNAME).cma libjpf.cma balloontest.cmo
 
 balloontest.opt: balloontest.cmx
 	$(CAMLOPT) -o balloontest.opt -I ../support -I ../lib \
-	        labltk.cmxa libjpf.cmxa balloontest.cmx
+	        $(LIBNAME).cmxa libjpf.cmxa balloontest.cmx
 
 balloontest.cmo : balloon.cmo libjpf.cma
 

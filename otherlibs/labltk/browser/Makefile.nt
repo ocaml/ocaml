@@ -34,7 +34,7 @@ all: ocamlbrowser
 ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) winmain.obj
 	$(CAMLC) -o ocamlbrowser -custom $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma threads.cma str.cma labltk.cma jglib.cma $(OBJ) \
+		unix.cma threads.cma str.cma $(LIBNAME).cma jglib.cma $(OBJ) \
 		$(TK_LINK) winmain.obj
 
 jglib.cma: $(JG)
@@ -44,7 +44,7 @@ install:
 	if exist ocamlbrowser.exe cp ocamlbrowser.exe $(BINDIR)
 
 clean:
-	rm -f *.cm? ocamlbrowser dummy.mli *~ *.orig
+	rm -f *.cm? ocamlbrowser.exe dummy.mli *~ *.orig *.obj *.pdb
 
 depend:
 	$(CAMLDEP) *.ml *.mli > .depend

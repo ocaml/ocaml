@@ -28,11 +28,11 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 all: ocamlbrowser$(EXE)
 
 ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
-			../support/liblabltk41.a
+			../support/lib$(LIBNAME).a
 	$(CAMLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
 		$(DLLPATH) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma str.cma labltk.cma jglib.cma $(OBJ)
+		unix.cma str.cma $(LIBNAME).cma jglib.cma $(OBJ)
 
 jglib.cma: $(JG)
 	$(CAMLCOMP) -a -o jglib.cma $(JG)

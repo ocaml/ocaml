@@ -21,14 +21,14 @@ clean:
 	$(MAKE) -f Makefile.gen clean
 
 install: $(LABLTKOBJS)
-	if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
-	cp $(LABLTKOBJS:.cmo=.cmi) $(WIDGETOBJS:.cmo=.mli) $(MLTKDIR)
-	chmod 644 $(MLTKDIR)/*.cmi
+	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
+	cp $(LABLTKOBJS:.cmo=.cmi) $(WIDGETOBJS:.cmo=.mli) $(INSTALLDIR)
+	chmod 644 $(INSTALLDIR)/*.cmi
 
 installopt: $(LABLTKOBJSX)
-	@if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
-	cp $(LABLTKOBJSX) $(MLTKDIR)
-	chmod 644 $(MLTKDIR)/*.cmx
+	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
+	cp $(LABLTKOBJSX) $(INSTALLDIR)
+	chmod 644 $(INSTALLDIR)/*.cmx
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp

@@ -167,7 +167,7 @@ CAMLprim value camltk_opentk(value argv)
   CAMLreturn(Val_unit);
 }
 
-value camltk_finalize(value unit) /* ML */
+CAMLprim value camltk_finalize(value unit) /* ML */
 {
   Tcl_Finalize();
   return Val_unit;

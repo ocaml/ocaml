@@ -21,18 +21,20 @@ lexer.ml: lexer.mll
 parser.ml parser.mli: parser.mly
 	$(CAMLYACC) -v parser.mly
 
-pplex.ml: lexer.mll
-	$(CAMLLEX) lexer.mll
+pplex.ml: pplex.mll
+	$(CAMLLEX) pplex.mll
 
-ppyac.ml parser.mli: parser.mly
-	$(CAMLYACC) -v parser.mly
+pplex.mli: ppyac.cmi
+
+ppyac.ml ppyac.mli: ppyac.mly
+	$(CAMLYACC) -v ppyac.mly
 
 copyright.ml: copyright
 	type << > copyright.ml
-let copyright="\\
+let copyright="
 <<
 	type copyright >> copyright.ml
-	type << > copyright.ml
+	type << >> copyright.ml
 "
 
 let write ~w = w copyright;;
@@ -48,8 +50,8 @@ scratch :
 	rm -f *.cm*  pplex.ml ppyac.ml ppyac.mli pp.exe
 
 install: 
-	cp tkcompiler.exe $(MLTKDIR)
-	cp pp.exe $(MLTKDIR)
+	cp tkcompiler.exe $(INSTALLDIR)
+	cp pp.exe $(INSTALLDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .mlp

@@ -693,14 +693,13 @@ module Focus {
 type font external % builtin/builtin_font.ml
 
 type weight {
-  Weight_Normal			["normal"]
-  Weight_Medium			["medium"]
-  Weight_Bold			["bold"]
+  Weight_Normal(Normal)		["normal"]
+  Weight_Bold(Bold)		["bold"]
 }
 
 type slant {
-  Slant_Roman				["roman"]
-  Slant_Italic			["italic"]
+  Slant_Roman(Roman)		["roman"]
+  Slant_Italic(Italic)		["italic"]
 }
 
 type fontMetrics {
@@ -710,13 +709,13 @@ type fontMetrics {
   Fixed ["-fixed"]
 }
 
-type fontOptions {
-  Font_Family			["-family"; string]
-  Font_Size				["-size"; int]
-  Font_Weight			["-weight"; weight]
-  Font_Slant				["-slant"; slant]
-  Font_Underline			["-underline"; bool]
-  Font_Overstrike			["-overstrike"; bool]
+subtype options(font) {
+  Font_Family	["-family"; string]
+  Font_Size		["-size"; int]
+  Font_Weight	["-weight"; weight]
+  Font_Slant		["-slant"; slant]
+  Font_Underline	["-underline"; bool]
+  Font_Overstrike	["-overstrike"; bool]
 % later, JP only
 % Charset			["-charset"; string]
 %% Beware of the order of Compound ! Put it as the first option
@@ -727,14 +726,14 @@ type fontOptions {
 module Font {
   function (string) actual ["font"; "actual"; font; 
 	                        ?displayof:["-displayof"; widget]; 
-	                        fontOptions list]
+	                        options(font) list]
 ##ifdef CAMLTK
   function (string) actual_displayof ["font"; "actual"; font; 
 					"-displayof"; widget; 
-					fontOptions list]
+					options(font) list]
 ##endif
-  function () configure ["font"; "configure"; font; fontOptions list]
-  function (font) create ["font"; "create"; fontOptions list]
+  function () configure ["font"; "configure"; font; options(font) list]
+  function (font) create ["font"; "create"; options(font) list]
   function () delete ["font"; "delete"; font]
   function (string list) families ["font"; "families";
 	                        ?displayof:["-displayof"; widget]] 

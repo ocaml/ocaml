@@ -32,7 +32,7 @@ lang: lang.cmo
 	$(CAMLC) $(COMPFLAGS) -o lang labltk.cma lang.cmo
 
 clean:
-	rm -f hello demo eyes calc clock tetris *.opt *.o *.cm*
+	rm -f hello demo eyes calc clock tetris lang *.opt *.o *.cm*
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .opt

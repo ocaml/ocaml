@@ -29,7 +29,7 @@
  * 24 bits per pixel
  */
 
-value camltk_getimgdata (value imgname) /* ML */
+CAMLprim value camltk_getimgdata (value imgname) /* ML */
 {
   CAMLparam1(imgname);
   CAMLlocal1(res);
@@ -75,7 +75,7 @@ value camltk_getimgdata (value imgname) /* ML */
   }
 }
 
-void
+CAMLprim void
 camltk_setimgdata_native (value imgname, value pixmap, value x, value y, 
 		   value w, value h) /* ML */
 {
@@ -102,7 +102,7 @@ camltk_setimgdata_native (value imgname, value pixmap, value x, value y,
   Tk_PhotoPutBlock(ph,&pib,Int_val(x),Int_val(y),Int_val(w),Int_val(h)); 
 }
 
-void camltk_setimgdata_bytecode(argv,argn)
+CAMLprim void camltk_setimgdata_bytecode(argv,argn)
      value *argv;
      int argn;
 {

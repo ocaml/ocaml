@@ -7,9 +7,11 @@ EXEDIR=$(TOPDIRNT)
 ## Path to the otherlibs subdirectory
 OTHERS=../..
 
+LIBNAME=labltk
+
 !include $(TOPDIRNT)\config\Makefile.nt
 
-MLTKDIR=$(LIBDIR)\labltk
+INSTALLDIR=$(LIBDIR)\$(LIBNAME)
 TKLINKOPT=$(STATIC)
 
 ## Tools from the Objective Caml distribution

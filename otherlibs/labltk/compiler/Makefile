@@ -24,6 +24,8 @@ parser.ml parser.mli: parser.mly
 pplex.ml: pplex.mll
 	$(CAMLLEX) pplex.mll
 
+pplex.mli: ppyac.cmi
+
 ppyac.ml ppyac.mli: ppyac.mly
 	$(CAMLYACC) -v ppyac.mly
 
@@ -43,8 +45,8 @@ scratch :
 	rm -f *.cm*  pplex.ml ppyac.ml ppyac.mli pp$(EXE)
 
 install: 
-	cp tkcompiler$(EXE) $(MLTKDIR)
-	cp pp$(EXE) $(MLTKDIR)
+	cp tkcompiler$(EXE) $(INSTALLDIR)
+	cp pp$(EXE) $(INSTALLDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .mlp

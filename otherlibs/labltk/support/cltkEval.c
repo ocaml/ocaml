@@ -30,7 +30,7 @@
 #include "camltk.h"
 
 /* The Tcl interpretor */
-Tcl_Interp *cltclinterp = NULL;
+CAMLprim Tcl_Interp *cltclinterp = NULL;
 
 /* Copy a list of strings from the C heap to Caml */
 value copy_string_list(int argc, char **argv)

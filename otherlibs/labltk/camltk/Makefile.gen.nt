@@ -2,12 +2,12 @@
 
 all: cTk.ml camltk.ml .depend
 
-tkgen.ml: ..\Widgets.src ..\compiler\tkcompiler
-	cd .. & ..\..\boot\ocamlrun compiler/tkcompiler -camltk -outdir labltk
+_tkgen.ml: ..\Widgets.src ..\compiler\tkcompiler.exe
+	cd .. & ..\..\boot\ocamlrun compiler/tkcompiler.exe -camltk -outdir camltk
 
 # dependencies are broken: wouldn't work with gmake 3.77
 
-cTk.ml camltk.ml .depend: _tkgen.ml ..\builtin\report.ml ..\compiler\pp #../builtin/builtin_*.ml
+cTk.ml camltk.ml .depend: _tkgen.ml ..\builtin\report.ml ..\compiler\pp.exe #../builtin/builtin_*.ml
 	type << > _cTk.ml
 ##define CAMLTK
 include Camltkwrap
@@ -24,7 +24,7 @@ open Textvariable
 module Tkintf = struct
 <<
 	type ..\builtin\builtini_*.ml >> _cTk.ml
-	type tkigen.ml >> _cTk.ml
+	type _tkigen.ml >> _cTk.ml
 	type << >> _cTk.ml
 end (* module Tkintf *)
 
@@ -34,10 +34,10 @@ open Tkintf
 
 <<
 	type ..\builtin\builtinf_*.ml >> _cTk.ml
-	type tkfgen.ml >> _cTk.ml
-	..\..\..\boot\ocamlrun ..\compiler\pp < _cTk.ml > cTk.ml
+	type _tkfgen.ml >> _cTk.ml
+	..\..\..\boot\ocamlrun ..\compiler\pp.exe < _cTk.ml > cTk.ml
 	rm -f _cTk.ml
-	$(CAMLDEP) -I ..\support ..\support\*.mli [a-z]*.mli [a-z]*.ml > .depend
+	$(CAMLDEP) -I ..\support *.mli *.ml > .depend
 
 clean:
 	rm -f modules .depend

@@ -61,7 +61,7 @@ CAMLprim value camltk_return (value v)
 }
 
 /* Note: raise_with_string WILL copy the error message */
-void tk_error(char *errmsg)
+CAMLprim void tk_error(char *errmsg)
 {
   raise_with_string(*tkerror_exn, errmsg);
 }

@@ -1,6 +1,6 @@
 include ../support/Makefile.common
 
-COMPFLAGS=-I ../support -I ../camltk
+COMPFLAGS=-I ../../../byterun -I ../support -I ../camltk
 
 all: tkanim.cma libtkanim.a
 opt: tkanim.cmxa libtkanim.a
@@ -21,12 +21,16 @@ libtkanim.a: $(COBJS)
 	$(MKLIB) -o tkanim $(COBJS) $(TK_LINK) $(X11_LINK)
 
 gifanimtest: all gifanimtest.cmo
-	$(CAMLC) -o $@ -I ../lib -I ../support -dllpath ../support -dllpath . unix.cma labltk.cma tkanim.cma gifanimtest.cmo
+	$(CAMLC) -o $@ -I ../lib -I ../support -dllpath ../support -dllpath . unix.cma $(LIBNAME).cma tkanim.cma gifanimtest.cmo
 
 animwish: $(TKANIM_LIB) tkAppInit.o
 	$(CC) -o $@  tkAppInit.o $(TK_LINK) $(X11_LINK) \
 		-L. -ltkanim $(LIBS)
 
+$(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
+
+$(OBJS:.cmo=.cmx): ../lib/$(LIBNAME).cmxa
+ 
 clean:
 	rm -f *.cm* *.o libtkanim.a dlltkanim.so animwish gifanimtest
 
@@ -47,13 +51,13 @@ clean:
 
 
 install: tkanim.cma 
-	cp tkanim.cma *.cmi *.mli libtkanim.a $(MLTKDIR)
+	cp tkanim.cma *.cmi *.mli libtkanim.a $(INSTALLDIR)
 	if [ -f dlltkanim.so ]; then \
-		cp dlltkanim.so $(MLTKDIR); \
+		cp dlltkanim.so $(INSTALLDIR); \
 	fi
 
 installopt: tkanim.cmxa
-	cp tkanim.cmxa $(MLTKDIR)
+	cp tkanim.cmxa $(INSTALLDIR)
 
 depend: tkanim.ml
 	$(CAMLDEP) *.mli *.ml > .depend

@@ -6,7 +6,12 @@ all: labltkobjs
 
 opt: labltkobjsx
 
-include ./modules
+# All .{ml,mli} files are generated in this directory
+clean : 
+	rm -f *.cm* *.ml *.mli *.a *.obj
+	$(MAKE) -f Makefile.gen.nt clean
+
+!include .\modules
 
 LABLTKOBJS = $(WIDGETOBJS) tk.cmo labltk.cmo
 LABLTKOBJSX = $(LABLTKOBJS:.cmo=.cmx)
@@ -15,18 +20,13 @@ labltkobjs: $(LABLTKOBJS)
 
 labltkobjsx: $(LABLTKOBJSX)
 
-# All .{ml,mli} files are generated in this directory
-clean : 
-	rm -f *.cm* *.ml *.mli *.o *.a
-	$(MAKE) -f Makefile.gen clean
-
 install: $(LABLTKOBJS)
-	@if not exist $(MLTKDIR) mkdir $(MLTKDIR)
-	cp *.cmi [a-z]*.mli $(MLTKDIR)
+	@if not exist $(INSTALLDIR) mkdir $(INSTALLDIR)
+	cp *.cmi [a-z]*.mli $(INSTALLDIR)
 
 installopt: $(LABLTKOBJSX)
-	@if not exist $(MLTKDIR) mkdir $(MLTKDIR)
-	cp $(LABLTKOBJSX) $(MLTKDIR)
+	@if not exist $(INSTALLDIR) mkdir $(INSTALLDIR)
+	cp $(LABLTKOBJSX) $(INSTALLDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp

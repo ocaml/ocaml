@@ -2,11 +2,11 @@ include Makefile.common
 
 all: support.cmo rawwidget.cmo widget.cmo protocol.cmo \
      textvariable.cmo timer.cmo fileevent.cmo camltkwrap.cmo \
-     liblabltk41.a
+     lib$(LIBNAME).a
 
 opt: support.cmx rawwidget.cmx widget.cmx protocol.cmx \
      textvariable.cmx timer.cmx fileevent.cmx camltkwrap.cmx \
-     liblabltk41.a
+     lib$(LIBNAME).a
 
 COBJS=cltkCaml.o cltkUtf.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o \
       cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o cltkImg.o
@@ -15,8 +15,8 @@ CCFLAGS=-I../../../byterun $(TK_DEFS) $(X11_INCLUDES) $(SHAREDCCCOMPOPTS)
 
 COMPFLAGS=-I $(OTHERS)/unix
 
-liblabltk41.a : $(COBJS)
-	$(MKLIB) -o labltk41 $(COBJS) $(TK_LINK) $(X11_LINK)
+lib$(LIBNAME).a : $(COBJS)
+	$(MKLIB) -o $(LIBNAME) $(COBJS) $(TK_LINK) $(X11_LINK)
 
 PUB=fileevent.cmi fileevent.mli \
     protocol.cmi protocol.mli \
@@ -25,14 +25,14 @@ PUB=fileevent.cmi fileevent.mli \
     rawwidget.cmi rawwidget.mli \
     widget.cmi widget.mli
 
-install: liblabltk41.a $(PUB)
-	if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
-	cp $(PUB) liblabltk41.a $(MLTKDIR)
-	cd $(MLTKDIR); $(RANLIB) liblabltk41.a
-	cd $(MLTKDIR); chmod 644 $(PUB) liblabltk41.a
-	if test -f dlllabltk41.so; then \
-	   cp dlllabltk41.so $(MLTKDIR)/dlllabltk41.so; \
-	   chmod 644 $(MLTKDIR)/dlllabltk41.so; fi
+install: lib$(LIBNAME).a $(PUB)
+	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
+	cp $(PUB) lib$(LIBNAME).a $(INSTALLDIR)
+	cd $(INSTALLDIR); $(RANLIB) lib$(LIBNAME).a
+	cd $(INSTALLDIR); chmod 644 $(PUB) lib$(LIBNAME).a
+	if test -f dll$(LIBNAME).so; then \
+	   cp dll$(LIBNAME).so $(INSTALLDIR)/dll$(LIBNAME).so; \
+	   chmod 644 $(INSTALLDIR)/dll$(LIBNAME).so; fi
 
 clean : 
 	rm -f *.cm* *.o *.a *.so

@@ -13,7 +13,7 @@
 (*  described in file LICENSE found in the Objective Caml source tree. *)
 (*                                                                     *)
 (***********************************************************************)
-open Tk
+open Camltk
 
 let _ =
   let top_w = opentk () in

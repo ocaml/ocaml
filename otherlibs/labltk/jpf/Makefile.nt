@@ -1,6 +1,6 @@
 !include ..\support\Makefile.common.nt
 
-COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/win32unix -I $(OTHERS)/str
+COMPFLAGS=-I ../labltk -I ../support -I $(OTHERS)/win32unix -I $(OTHERS)/str
 
 OBJS= fileselect.cmo balloon.cmo
 
@@ -21,23 +21,27 @@ libjpf.cmxa: $(OBJSX)
 	$(CAMLOPTLIBR) -o libjpf.cmxa $(OBJSX)
 
 install: libjpf.cma
-	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(MLTKDIR)
+	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(INSTALLDIR)
 
 installopt: libjpf.cmxa
-	cp libjpf.cmxa libjpf.lib $(MLTKDIR)
+	cp libjpf.cmxa libjpf.lib $(INSTALLDIR)
 
 clean:
-	rm -f *.cm* *.o *.a *~ *test
+	rm -f *.cm* *.obj *.a *~ *test *.lib
+
+$(OBJS) $(OBJS:.cmo=.cmi): ..\lib\$(LIBNAME).cma
+
+$(OBJSX): ..\lib\$(LIBNAME).cmxa
 
 ### Tests
 
 balloontest: balloontest.cmo 
-	$(CAMLC) -o balloontest -I ../support -I ../lib \
-	        -custom labltk.cma libjpf.cma balloontest.cmo $(TKLINKOPT)
+	$(CAMLC) -o balloontest -I ../support -I ../labltk -I ../lib \
+	        -custom $(LIBNAME).cma libjpf.cma balloontest.cmo $(TKLINKOPT)
 
 balloontest.opt: balloontest.cmx
-	$(CAMLOPT) -o balloontest.opt -I ../support -I ../lib \
-	        labltk.cmxa libjpf.cmxa balloontest.cmx $(TKLINKOPT)
+	$(CAMLOPT) -o balloontest.opt -I ../support -I ../labltk -I ../lib \
+	        $(LIBNAME).cmxa libjpf.cmxa balloontest.cmx $(TKLINKOPT)
 
 balloontest.cmo : balloon.cmo libjpf.cma
 

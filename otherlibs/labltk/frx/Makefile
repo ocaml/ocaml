@@ -20,13 +20,17 @@ libfrx.cmxa: $(OBJSX)
 	$(CAMLOPTLIBR) -o libfrx.cmxa $(OBJSX)
 
 install: libfrx.cma
-	cp *.cmi *.mli libfrx.cma $(MLTKDIR)
+	cp *.cmi *.mli libfrx.cma $(INSTALLDIR)
 
 installopt: libfrx.cmxa
-	cp libfrx.cmxa libfrx.a $(MLTKDIR)
+	cp libfrx.cmxa libfrx.a $(INSTALLDIR)
 
 clean:
 	rm -f *.cm* *.o *.a
+
+$(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
+
+$(OBJSX): ../lib/$(LIBNAME).cmxa
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .cmx
