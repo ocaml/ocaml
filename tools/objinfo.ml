@@ -23,8 +23,6 @@ let print_digest d =
 
 let print_info cu =
   print_string "  Unit name: "; print_string cu.cu_name; print_newline();
-  print_string "  Digest of interface implemented: ";
-  print_digest cu.cu_interface; print_newline();
   print_string "  Interfaces imported:"; print_newline();
   List.iter
     (fun (name, digest) ->
