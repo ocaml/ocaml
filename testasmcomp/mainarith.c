@@ -24,11 +24,23 @@ double f, g;
       printf("Failed test \"%s == %s\" for x=%ld and y=%ld: result %ld, expected %ld\n", \
              #arg, #res, x, y, arg, result); \
   }
+#define INTFLOATTEST(arg,res) \
+  { long result = (res); \
+    if (arg != result) \
+      printf("Failed test \"%s == %s\" for f=%g and g=%g: result %ld, expected %ld\n", \
+             #arg, #res, f, g, arg, result); \
+  }
 #define FLOATTEST(arg,res) \
   { double result = (res); \
     if (arg < result || arg > result) \
       printf("Failed test \"%s == %s\" for f=%g and g=%g: result %e, expected %e\n", \
              #arg, #res, f, g, arg, result); \
+  }
+#define FLOATINTTEST(arg,res) \
+  { double result = (res); \
+    if (arg < result || arg > result) \
+      printf("Failed test \"%s == %s\" for x=%ld and y=%ld: result %e, expected %e\n", \
+             #arg, #res, x, y, arg, result); \
   }
 
 extern void call_gen_code();
@@ -144,26 +156,26 @@ void do_test()
       FLOATTEST(d[5], (f * g));
       FLOATTEST(d[6], (g != 0.0 ? f / g : 0.0));
 
-      INTTEST(r[81], (f == g));
-      INTTEST(r[82], (f != g));
-      INTTEST(r[83], (f < g));
-      INTTEST(r[84], (f > g));
-      INTTEST(r[85], (f <= g));
-      INTTEST(r[86], (f >= g));
+      INTFLOATTEST(r[81], (f == g));
+      INTFLOATTEST(r[82], (f != g));
+      INTFLOATTEST(r[83], (f < g));
+      INTFLOATTEST(r[84], (f > g));
+      INTFLOATTEST(r[85], (f <= g));
+      INTFLOATTEST(r[86], (f >= g));
 
-      FLOATTEST(d[7], (double) x);
-      INTTEST(r[87], (long) f);
+      FLOATINTTEST(d[7], (double) x);
+      INTFLOATTEST(r[87], (long) f);
 
       INTTEST(r[88], (x >= 0) && (x < y));
       INTTEST(r[89], (0 < y));
       INTTEST(r[90], (5 < y));
 
-      INTTEST(r[91], (f == g));
-      INTTEST(r[92], (f != g));
-      INTTEST(r[93], (f < g));
-      INTTEST(r[94], (f > g));
-      INTTEST(r[95], (f <= g));
-      INTTEST(r[96], (f >= g));
+      INTFLOATTEST(r[91], (f == g));
+      INTFLOATTEST(r[92], (f != g));
+      INTFLOATTEST(r[93], (f < g));
+      INTFLOATTEST(r[94], (f > g));
+      INTFLOATTEST(r[95], (f <= g));
+      INTFLOATTEST(r[96], (f >= g));
 }
 
 #ifdef __i386__
