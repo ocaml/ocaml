@@ -186,6 +186,11 @@ if sh hasgot select; then
   echo "#define HAS_SELECT" >> s.h
 fi
 
+if test -f /usr/include/sys/select.h; then
+  echo "/usr/include/sys/select.h found."
+  echo "#define HAS_SYS_SELECT_H" >> s.h
+fi
+
 if sh hasgot symlink readlink lstat;  then
   echo "symlink() found."
   echo "#define HAS_SYMLINK" >> s.h

@@ -111,6 +111,11 @@
 
 /* Define HAS_SELECT if you have select(). */
 
+#define HAS_SYS_SELECT_H
+
+/* Define HAS_SYS_SELECT_H if /usr/include/sys/select.h exists
+   and should be included before using select(). */
+
 #define HAS_SYMLINK
 
 /* Define HAS_SYMLINK if you have symlink() and readlink() and lstat(). */

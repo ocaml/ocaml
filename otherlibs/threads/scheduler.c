@@ -1,7 +1,3 @@
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include "config.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -15,6 +11,22 @@
 #if defined(HAS_SELECT) && defined(HAS_SETITIMER) && defined(HAS_GETTIMEOFDAY)
 #else
 #include "Cannot compile libthreads, system calls missing"
+#endif
+
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#ifdef HAS_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+
+#ifndef FD_ISSET
+typedef int fd_set;
+#define FD_SETSIZE (sizeof(int) * 8)
+#define FD_SET(fd,fds) (*(fds) |= 1 << (fd))
+#define FD_CLR(fd,fds) (*(fds) &= ~(1 << (fd)))
+#define FD_ISSET(fd,fds) (*(fds) & (1 << (fd)))
+#define FD_ZERO(fds) (*(fds) = 0)
 #endif
 
 /* Configuration */

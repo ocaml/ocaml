@@ -20,6 +20,9 @@
 
 #include <sys/types.h>
 #include <sys/time.h>
+#ifdef HAS_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
 #ifdef FD_ISSET
 typedef fd_set file_descr_set;
