@@ -328,3 +328,6 @@ type 'a t = unit
 ;;
 class o = object method x : 'a. ([> `A] as 'a) t -> unit = fun _ -> () end
 ;;
+
+class c = object method m = new d () end and d ?(x=0) () = object end;;
+class d ?(x=0) () = object end and c = object method m = new d () end;;
