@@ -489,9 +489,12 @@ let create_object_and_run_initializers obj_0 table =
     obj
   end
 
+(* Equivalent primitive below
 let send obj lab =
   let (buck, elem) = decode lab in
   (magic obj : (obj -> t) array array array).(0).(buck).(elem) obj
+*)
+external send : obj -> label -> 'a = "%send"
 
 (**** table collection access ****)
 
@@ -541,23 +544,23 @@ let set_var n   = ret (fun obj x -> Array.unsafe_set obj n x)
 let app_const f x = ret (fun obj -> f x)
 let app_var f n   = ret (fun obj -> f (Array.unsafe_get obj n))
 let app_env f e n = ret (fun obj -> f (Obj.field (Array.unsafe_get obj e) n))
-let app_meth f n  = ret (fun obj -> f (repr(send obj n)))
+let app_meth f n  = ret (fun obj -> f (send obj n))
 let app_const_const f x y = ret (fun obj -> f x y)
 let app_const_var f x n   = ret (fun obj -> f x (Array.unsafe_get obj n))
-let app_const_meth f x n = ret (fun obj -> f x (repr(send obj n)))
+let app_const_meth f x n = ret (fun obj -> f x (send obj n))
 let app_var_const f n x = ret (fun obj -> f (Array.unsafe_get obj n) x)
-let app_meth_const f n x = ret (fun obj -> f (repr(send obj n)) x)
+let app_meth_const f n x = ret (fun obj -> f (send obj n) x)
 let app_const_env f x e n =
   ret (fun obj -> f x (Obj.field (Array.unsafe_get obj e) n))
 let app_env_const f e n x =
   ret (fun obj -> f (Obj.field (Array.unsafe_get obj e) n) x)
-let meth_app_const n x = ret (fun obj -> (magic (send obj n)) x)
+let meth_app_const n x = ret (fun obj -> (send obj n) x)
 let meth_app_var n m =
-  ret (fun obj -> (magic (send obj n)) (Array.unsafe_get obj m))
+  ret (fun obj -> (send obj n) (Array.unsafe_get obj m))
 let meth_app_env n e m =
-  ret (fun obj -> (magic (send obj n)) (Obj.field (Array.unsafe_get obj e) m))
+  ret (fun obj -> (send obj n) (Obj.field (Array.unsafe_get obj e) m))
 let meth_app_meth n m =
-  ret (fun obj -> (magic (send obj n)) (send obj m))
+  ret (fun obj -> (send obj n) (send obj m))
 
 type impl =
     GetConst

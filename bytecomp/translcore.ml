@@ -516,7 +516,11 @@ let rec transl_exp e =
 and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, {val_kind = Val_prim p}) ->
-      transl_primitive p
+      if p.prim_name = "%send" then
+	let obj = Ident.create "obj" and meth = Ident.create "meth" in
+	Lfunction(Curried, [obj; meth], Lsend(Lvar meth, Lvar obj, []))
+      else
+	transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, {val_kind = Val_reg | Val_self _}) ->
@@ -538,7 +542,10 @@ and transl_exp0 e =
     when List.length args = p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
-      let prim = transl_prim p args in
+      if p.prim_name = "%send" then
+	let obj = transl_exp (List.hd args) in
+	event_after e (Lsend (transl_exp (List.nth args 1), obj, []))
+      else let prim = transl_prim p args in
       begin match (prim, args) with
         (Praise, [arg1]) ->
           Lprim(Praise, [event_after arg1 (transl_exp arg1)])
