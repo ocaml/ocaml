@@ -14,8 +14,8 @@
 (* Operations on core types *)
 
 open Misc
+open Path
 open Typedtree
-
 
 exception Unify
 
@@ -329,19 +329,25 @@ let rec nondep_type env id ty =
       end else
         Tconstr(p, List.map (nondep_type env id) tl)
 
-let rec free_type_ident env id ty =
+let rec free_type_ident env ids ty =
   match repr ty with
     Tvar _ -> false
   | Tarrow(t1, t2) ->
-      free_type_ident env id t1 or free_type_ident env id t2
+      free_type_ident env ids t1 or free_type_ident env ids t2
   | Ttuple tl ->
-      List.exists (free_type_ident env id) tl
-  | Tconstr(p, tl) ->
-      if Path.isfree id p then true else begin
+      List.exists (free_type_ident env ids) tl
+  | Tconstr((Pident id as p), tl) ->
+      List.exists (Ident.same id) ids or begin
         try
-          free_type_ident env id (expand_abbrev env p tl)
+          free_type_ident env (id::ids) (expand_abbrev env p tl)
         with Cannot_expand ->
-          List.exists (free_type_ident env id) tl
+          List.exists (free_type_ident env ids) tl
+      end
+  | Tconstr(p, tl) ->
+      begin try
+        free_type_ident env ids (expand_abbrev env p tl)
+      with Cannot_expand ->
+        List.exists (free_type_ident env ids) tl
       end
 
 let is_generic ty =

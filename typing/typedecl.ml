@@ -120,7 +120,7 @@ let transl_declaration env (name, sdecl) id =
 let check_recursive_abbrev env (name, sdecl) (id, decl) =
   match decl.type_manifest with
     Some ty ->
-      if Ctype.free_type_ident env id ty
+      if Ctype.free_type_ident env [id] ty
       then raise(Error(sdecl.ptype_loc, Recursive_abbrev name))
   | _ -> ()
 
@@ -130,7 +130,7 @@ let transl_type_decl env name_sdecl_list =
   let decls =
     match name_sdecl_list with
       [(name, {ptype_kind = Ptype_abstract}) as name_sdecl] ->
-        (* No recursion involved, may use original env for translation *)
+        (* No recursion involved, use original env for translation *)
         let id = Ident.new name in
         [transl_declaration env name_sdecl id]
     | _ ->

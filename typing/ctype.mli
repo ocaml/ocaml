@@ -52,8 +52,8 @@ val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr
         (* Return a type equivalent to the given type but without
            references to the given module identifier. Raise [Not_found]
            if no such type List.exists. *)
-val free_type_ident: Env.t -> Ident.t -> type_expr -> bool
-        (* Test whether the given type identifier occurs free
+val free_type_ident: Env.t -> Ident.t list -> type_expr -> bool
+        (* Test whether one of the given type identifiers occur free
            in the given type expression. *)
 val is_generic: type_expr -> bool
         (* Test whether the given type variable is generic *)
