@@ -51,7 +51,7 @@ let show_current_event () =
 	     print_string "Breakpoints : ";
 	     List.iter
                (function x -> print_int x; print_string " ")
-               breakpoints;
+               (Sort.list (<) breakpoints);
       	     print_newline ());
         show_point mdle point (current_event_is_before ()) true
   | Some {rep_type = Exited} ->
@@ -102,7 +102,8 @@ let show_current_frame selected =
           print_string "Breakpoint : "; print_int breakpoint; print_newline ()
       | breakpoints ->
           print_string "Breakpoints : ";
-          List.iter (function x -> print_int x; print_string " ") breakpoints;
+          List.iter (function x -> print_int x; print_string " ")
+            (Sort.list (<) breakpoints);
           print_newline ()
       end;
       show_point sel_ev.ev_module sel_ev.ev_char
