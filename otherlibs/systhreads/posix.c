@@ -25,6 +25,9 @@
 #endif
 #include <signal.h>
 #include <sys/time.h>
+#ifdef __linux__
+#include <unistd.h>
+#endif
 #include "alloc.h"
 #include "backtrace.h"
 #include "callback.h"
@@ -257,8 +260,12 @@ static void * caml_thread_tick(void * arg)
 {
   struct timeval timeout;
   sigset_t mask;
+#ifdef __linux__
+  int tickcount = 0;
+#endif
 
-  /* Block all signals so that we don't try to execute a Caml signal handler */
+  /* Block all signals so that we don't try to execute
+     a Caml signal handler */
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, NULL);
   while(1) {
@@ -274,6 +281,18 @@ static void * caml_thread_tick(void * arg)
     young_limit = young_end;
 #else
     something_to_do = 1;
+#endif
+#ifdef __linux__
+    /* Hack around LinuxThreads' non-standard signal handling:
+       if program is killed on a signal, e.g. SIGINT, the current
+       thread will not die on this signal (because of the signal blocking
+       above).  Hence, periodically check that the thread manager (our
+       parent process) still exists. */
+    tickcount++;
+    if (tickcount >= 2000000 / Thread_timeout) { /* every 2 secs approx */
+      tickcount = 0;
+      if (getppid() == 1) pthread_exit(NULL);
+    }
 #endif
   }
   return NULL;                  /* prevents compiler warning */
