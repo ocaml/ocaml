@@ -36,13 +36,14 @@ value gr_moveto(value vx, value vy)
   return Val_unit;
 }
 
-value gr_current_point(void)
+value gr_current_x(void)
 {
-  value res;
-  res = alloc_small(2, 0);
-  Field(res, 0) = Val_int(grx);
-  Field(res, 1) = Val_int(gry);
-  return res;
+  return Val_int(grx);
+}
+
+value gr_current_y(void)
+{
+  return Val_int(gry);
 }
 
 value gr_lineto(value vx, value vy)
@@ -60,6 +61,25 @@ value gr_lineto(value vx, value vy)
   }
   grx = x;
   gry = y;
+  return Val_unit;
+}
+
+value gr_draw_rect(value vx, value vy, value vw, value vh)
+{
+  int x = Int_val(vx);
+  int y = Int_val(vy);
+  int w = Int_val(vw);
+  int h = Int_val(vh);
+
+  gr_check_open();
+  if(grremember_mode)
+    XDrawRectangle(grdisplay, grbstore.win, grbstore.gc,
+                   x, Bcvt(y) - h + 1, w, h);
+  if(grdisplay_mode) {
+    XDrawRectangle(grdisplay, grwindow.win, grwindow.gc,
+		   x, Wcvt(y) - h + 1, w, h);
+    XFlush(grdisplay);
+  }
   return Val_unit;
 }
 

@@ -80,8 +80,13 @@ and foreground = black
 external plot : int -> int -> unit = "gr_plot"
 external point_color : int -> int -> color = "gr_point_color"
 external moveto : int -> int -> unit = "gr_moveto"
-external current_point : unit -> int * int = "gr_current_point"
+external current_x : unit -> int = "gr_current_x"
+external current_y : unit -> int = "gr_current_y"
+let current_point () = current_x (), current_y ()
 external lineto : int -> int -> unit = "gr_lineto"
+let rlineto x y = lineto (current_x () + x) (current_y () + y)
+let rmoveto x y = moveto (current_x () + x) (current_y () + y)
+external draw_rect : int -> int -> int -> int -> unit = "gr_draw_rect"
 external draw_arc : int -> int -> int -> int -> int -> int -> unit
                = "gr_draw_arc" "gr_draw_arc_nat"
 let draw_ellipse x y rx ry = draw_arc x y rx ry 0 360

@@ -113,11 +113,25 @@ external point_color : x:int -> y:int -> color = "gr_point_color"
         (* Return the color of the given point. *)
 external moveto : x:int -> y:int -> unit = "gr_moveto"
         (* Position the current point. *)
-external current_point : unit -> int * int = "gr_current_point"
+val rmoveto : x:int -> y:int -> unit
+        (* [rmoveto x y] translates the current point of the given vector. *)
+external current_x : unit -> int = "gr_current_x"
+        (* Return the abscissa of the current point. *)
+external current_y : unit -> int = "gr_current_y"
+        (* Return the ordinate of the current point. *)
+val current_point : unit -> int * int
         (* Return the position of the current point. *)
 external lineto : x:int -> y:int -> unit = "gr_lineto"
         (* Draw a line with endpoints the current point and the given point,
            and move the current point to the given point. *)
+val rlineto : x:int -> y:int -> unit
+        (* Draws a line with endpoints the current point and the
+           current point translated of the given vector,
+           and move the current point to this point. *)
+external draw_rect : x:int -> y:int -> w:int -> h:int -> unit = "gr_draw_rect"
+        (* [fill_rect x y w h] draws the rectangle with lower left corner
+           at [x,y], width [w] and height [h].
+           The current point is unchanged. *)
 external draw_arc :
         x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
                = "gr_draw_arc" "gr_draw_arc_nat"
