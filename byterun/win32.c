@@ -345,7 +345,7 @@ int win32_system(char * cmdline)
 
 #ifndef NATIVE_CODE
 
-/* Set up a new thread for control-C emulation */
+/* Set up a new thread for control-C emulation and termination */
 
 void caml_signal_thread(void * lpParam)
 {
@@ -359,15 +359,15 @@ void caml_signal_thread(void * lpParam)
     char iobuf[2];
     /* This shall always return a single character */
     ret = ReadFile(h, iobuf, 1, &numread, NULL);
-    if (!ret || numread != 1) sys_exit(Val_int(0));
+    if (!ret || numread != 1) sys_exit(Val_int(2));
     switch (iobuf[0]) {
     case 'C':
       pending_signal = SIGINT;
       something_to_do = 1;
       break;
     case 'T':
-      exit(0);
-      break;
+      raise(SIGTERM);
+      return;
     }
   }
 }
