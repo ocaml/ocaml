@@ -49,3 +49,15 @@ let create_archive archive file_list =
       if r1 <> 0 or String.length Config.ranlib = 0
       then r1
       else command(Config.ranlib ^ " " ^ archive)
+
+let expand_libname name =
+  if String.length name < 2 || String.sub name 0 2 <> "-l"
+  then name
+  else begin
+    let libname =
+      "lib" ^ String.sub name 2 (String.length name - 2) ^ Config.ext_lib in
+    try
+      Misc.find_in_path !Config.load_path libname
+    with Not_found ->
+      libname
+  end

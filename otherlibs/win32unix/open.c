@@ -53,7 +53,8 @@ value unix_open(value path, value flags, value perm) /* ML */
   attr.lpSecurityDescriptor = NULL;
   attr.bInheritHandle = TRUE;
 
-  h = CreateFile(String_val(path), fileaccess, 0, &attr,
+  h = CreateFile(String_val(path), fileaccess,
+                 FILE_SHARE_READ | FILE_SHARE_WRITE, &attr,
                  filecreate, fileattrib, NULL);
   if (h == INVALID_HANDLE_VALUE) {
     _dosmaperr(GetLastError());

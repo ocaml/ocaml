@@ -360,17 +360,6 @@ let rec extract suffix l =
   | h::t -> extract suffix t
 ;;
 
-let expand_libname name =
-  if String.length name < 2 || String.sub name 0 2 <> "-l"
-  then name
-  else begin
-    let libname = String.sub name 2 (String.length name - 2) ^ ext_lib in
-    try
-      find_in_path !load_path libname
-    with Not_found ->
-      libname
-  end
-
 let build_custom_runtime prim_name exec_name =
   let libname = "libcamlrun" ^ ext_lib in
   let runtime_lib =
@@ -401,8 +390,8 @@ let build_custom_runtime prim_name exec_name =
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccopts))
           prim_name
-          (String.concat " "
-                         (List.map expand_libname (List.rev !Clflags.ccobjs)))
+          (String.concat " " (List.map Ccomp.expand_libname
+                                       (List.rev !Clflags.ccobjs)))
           runtime_lib
           Config.c_libraries)
   | "MacOS" ->

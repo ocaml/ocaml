@@ -70,7 +70,8 @@ int main(int argc, char ** argv)
   int retcode;
 
   GetModuleFileName(NULL, truename, sizeof(truename));
-  h = CreateFile(truename, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+  h = CreateFile(truename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                 NULL, OPEN_EXISTING, 0, NULL);
   if (h == INVALID_HANDLE_VALUE ||
       (runtime_path = read_runtime_path(h)) == NULL) {
     errwrite(truename);
