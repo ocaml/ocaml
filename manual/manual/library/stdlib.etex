@@ -1,4 +1,4 @@
-\chapter{The standard library}
+\chapter{The standard library} \label{c:stdlib}
 \pdfchapterfold{-32}{The standard library}
 
 This chapter describes the functions provided by the Objective Caml

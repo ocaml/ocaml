@@ -1,4 +1,4 @@
-\chapter{The core library} \label{c:stdlib}
+\chapter{The core library} \label{c:corelib}
 \pdfchapterfold{-1}{The core library}
 
 This chapter describes the functions provided by the Objective Caml
