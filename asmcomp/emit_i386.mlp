@@ -235,6 +235,7 @@ let emit_instr i =
           `	call	_caml_c_call\n`;
           record_frame i.live
         end else begin
+          `	finit\n`;
           `	call	{emit_symbol s}\n`
         end;
         if Array.length i.res > 0 & i.res.(0).typ = Float then

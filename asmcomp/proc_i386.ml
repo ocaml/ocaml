@@ -31,15 +31,15 @@ open Mach
     edi         5
     ebp         6
 
-    f0 - f3     100-103         function arguments and results
+    f0 - f5     100-105         function arguments and results
                                 f0: C function results
-                                f1-f3: preserved by C *)
+                                not preserved by C *)
 
 let int_reg_name =
   [| "%eax"; "%ebx"; "%ecx"; "%edx"; "%esi"; "%edi"; "%ebp" |]
 
 let float_reg_name =
-  [| "%st"; "%st(1)"; "%st(2)"; "%st(3)"; "%st(4)" |]
+  [| "%st"; "%st(1)"; "%st(2)"; "%st(3)"; "%st(4)"; "%st(5)"; "%st(6)" |]
 
 let num_register_classes = 2
 
@@ -49,7 +49,7 @@ let register_class r =
   | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 7; 4 |]
+let num_available_registers = [| 7; 6 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -64,8 +64,8 @@ let hard_int_reg =
   v
 
 let hard_float_reg =
-  let v = Array.new 4 Reg.dummy in
-  for i = 0 to 3 do v.(i) <- Reg.at_location Float (Reg(i + 100)) done;
+  let v = Array.new 6 Reg.dummy in
+  for i = 0 to 5 do v.(i) <- Reg.at_location Float (Reg(i + 100)) done;
   v
 
 let all_phys_regs =
@@ -273,7 +273,7 @@ let loc_exn_bucket = phys_reg 0         (* eax *)
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =               (* ebx, esi, edi, ebp preserved *)
-  Array.of_list(List.map phys_reg [0;2;3;100;101;102;103])
+  Array.of_list(List.map phys_reg [0;2;3;100;101;102;103;104;105])
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
@@ -289,14 +289,14 @@ let destroyed_at_raise = all_phys_regs
 
 (* Maximal register pressure *)
 
-let safe_register_pressure op = 4
+let safe_register_pressure op = 6
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 4; 4 |]
-  | Iintop(Idiv | Imod) -> [| 5; 4 |]
+    Iextcall(_, _) -> [| 4; 0 |]
+  | Iintop(Idiv | Imod) -> [| 5; 6 |]
   | Ialloc _ | Iintop(Icomp _) | Iintop_imm(Icomp _, _) |
-    Iintoffloat -> [| 6; 4 |]
-  | _ -> [|7; 4|]
+    Iintoffloat -> [| 6; 6 |]
+  | _ -> [|7; 6|]
 
 (* Reloading of instruction arguments, storing of instruction results *)
 
