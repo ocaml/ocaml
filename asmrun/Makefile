@@ -8,7 +8,7 @@ DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 COBJS=startup.o main.o fail.o roots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
-  gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o
+  gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o
 
 ASMOBJS=$(ARCH).o
 
@@ -82,10 +82,13 @@ printexc.c: ../byterun/printexc.c
 	ln -s ../byterun/printexc.c printexc.c
 callback.c: ../byterun/callback.c
 	ln -s ../byterun/callback.c callback.c
+weak.c: ../byterun/weak.c
+	ln -s ../byterun/weak.c weak.c
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
-  parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c
+  parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
+  weak.c
 
 clean::
 	rm -f $(LINKEDFILES)
