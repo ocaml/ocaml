@@ -201,11 +201,9 @@ let label_constant table constant =
 
 let symbol_constants = (Hashtbl.create 17 : (string, int) Hashtbl.t)
 let float_constants = (Hashtbl.create 11 : (string, int) Hashtbl.t)
-let label_constants = (Hashtbl.create 7 : (int, int) Hashtbl.t)
 
 let label_symbol s = label_constant symbol_constants s
 let label_float  s = label_constant float_constants s
-let label_label lb = label_constant label_constants lb
 
 let emit_symbol_constant symb lbl =
   `{emit_label lbl}:	.tc	{emit_symbol symb}[TC], {emit_symbol symb}\n`
@@ -225,9 +223,6 @@ let emit_float_constant float lbl =
   done;
   `\n`
 
-let emit_label_constant symb lbl =
-  `{emit_label lbl}:	.tc	{emit_label symb}[TC], {emit_label symb}\n`
-
 (* Record floating-point literals (for the ELF model) *)
 
 let float_literals = ref ([] : (string * int) list)
@@ -243,7 +238,46 @@ let name_for_int_comparison = function
     Isigned cmp -> ("cmpw", branch_for_comparison cmp)
   | Iunsigned cmp -> ("cmplw", branch_for_comparison cmp)
 
-(* Output the assembly code for an instruction *)
+(* Names for various instructions *)
+
+let name_for_intop = function
+    Iadd -> "add"
+  | Imul -> "mullw"
+  | Idiv -> if powerpc then "divw" else "divs"
+  | Iand -> "and"
+  | Ior  -> "or"
+  | Ixor -> "xor"
+  | Ilsl -> "slw"
+  | Ilsr -> "srw"
+  | Iasr -> "sraw"
+  | _ -> Misc.fatal_error "Emit.Intop"
+
+let name_for_intop_imm = function
+    Iadd -> "addi"
+  | Imul -> "mulli"
+  | Iand -> "andi."
+  | Ior  -> "ori"
+  | Ixor -> "xori"
+  | Ilsl -> "slwi"
+  | Ilsr -> "srwi"
+  | Iasr -> "srawi"
+  | _ -> Misc.fatal_error "Emit.Intop_imm"
+
+let name_for_floatop1 = function
+    Inegf -> "fneg"
+  | Iabsf -> "fabs"
+  | _ -> Misc.fatal_error "Emit.Iopf1"
+
+let name_for_floatop2 = function
+    Iaddf -> "fadd"
+  | Isubf -> "fsub"
+  | Imulf -> "fmul"
+  | Idivf -> "fdiv"
+  | _ -> Misc.fatal_error "Emit.Iopf2"
+
+let name_for_specific = function
+    Imultaddf -> "fmadd"
+  | Imultsubf -> "fmsub"
 
 (* Name of current function *)
 let function_name = ref ""
@@ -253,6 +287,14 @@ let tailrec_entry_point = ref 0
 let defined_functions = ref StringSet.empty
 (* Label of glue code for calling the GC *)
 let call_gc_label = ref 0
+(* Label of jump table *)
+let lbl_jumptbl = ref 0
+(* List of all labels in jumptable (reverse order) *)
+let jumptbl_entries = ref []
+(* Number of jumptable entries *)
+let num_jumptbl_entries = ref 0
+
+(* Output the assembly code for an instruction *)
 
 let rec emit_instr i dslot =
     match i.desc with
@@ -327,25 +369,16 @@ let rec emit_instr i dslot =
         if toc then begin
           `	lwz	0, 0({emit_reg i.arg.(0)})\n`;
           `	lwz	2, 4({emit_reg i.arg.(0)})\n`;
-          if !contains_calls then begin
-            `	lwz	11, {emit_int(n - 4)}(1)\n`;
-            `	mtctr	0\n`;
-            `	addi	1, 1, {emit_int n}\n`;
-            `	mtlr	11\n`
-          end else begin
-            `	mtctr	0\n`;
-            `	addi	1, 1, {emit_int n}\n`
-          end
+          `	mtctr	0\n`
         end else begin
-          if !contains_calls then begin
-            `	lwz	11, {emit_int(n - 4)}(1)\n`;
-            `	mtctr	{emit_reg i.arg.(0)}\n`;
-            `	addi	1, 1, {emit_int n}\n`;
-            `	mtlr	11\n`
-          end else begin
-            `	mtctr	{emit_reg i.arg.(0)}\n`;
-            `	addi	1, 1, {emit_int n}\n`
-          end
+          `	mtctr	{emit_reg i.arg.(0)}\n`
+        end;
+        if !contains_calls then begin
+          `	lwz	11, {emit_int(n - 4)}(1)\n`;
+          `	addi	1, 1, {emit_int n}\n`;
+          `	mtlr	11\n`
+        end else begin
+          `	addi	1, 1, {emit_int n}\n`
         end;
         `	bctr\n`
     | Lop(Itailcall_imm s) ->
@@ -357,8 +390,9 @@ let rec emit_instr i dslot =
             `	lwz	11, {emit_int(n - 4)}(1)\n`;
             `	addi	1, 1, {emit_int n}\n`;
             `	mtlr	11\n`
-          end else
-            `	addi	1, 1, {emit_int n}\n`;
+          end else begin
+            `	addi	1, 1, {emit_int n}\n`
+          end;
           `	b	{emit_codesymbol s}\n`
         end else begin
           (* Tailcalling a function that has a possibly different TOC
@@ -452,18 +486,7 @@ let rec emit_instr i dslot =
     | Lop(Iintop Icheckbound) ->
         `	twlle   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop op) ->
-        let instr =
-          match op with
-            Iadd -> "add"
-          | Imul -> "mullw"
-          | Idiv -> if powerpc then "divw" else "divs"
-          | Iand -> "and"
-          | Ior  -> "or"
-          | Ixor -> "xor"
-          | Ilsl -> "slw"
-          | Ilsr -> "srw"
-          | Iasr -> "sraw"
-          | _ -> Misc.fatal_error "Emit.Intop" in
+        let instr = name_for_intop op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop_imm(Isub, n)) ->
         `	addi	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int(-n)}\n`
@@ -489,33 +512,13 @@ let rec emit_instr i dslot =
     | Lop(Iintop_imm(Icheckbound, n)) ->
         `	twllei   {emit_reg i.arg.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(op, n)) ->
-        let instr =
-          match op with
-            Iadd -> "addi"
-          | Imul -> "mulli"
-          | Iand -> "andi."
-          | Ior  -> "ori"
-          | Ixor -> "xori"
-          | Ilsl -> "slwi"
-          | Ilsr -> "srwi"
-          | Iasr -> "srawi"
-          | _ -> Misc.fatal_error "Emit.Intop_imm" in
+        let instr = name_for_intop_imm op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}\n`
     | Lop(Inegf | Iabsf as op) ->
-        let instr =
-          match op with
-            Inegf -> "fneg"
-          | Iabsf -> "fabs"
-          | _ -> Misc.fatal_error "Emit.Iopf1" in
+        let instr = name_for_floatop1 op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
-        let instr =
-          match op with
-            Iaddf -> "fadd"
-          | Isubf -> "fsub"
-          | Imulf -> "fmul"
-          | Idivf -> "fdiv"
-          | _ -> Misc.fatal_error "Emit.Iopf2" in
+        let instr = name_for_floatop2 op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Ifloatofint) ->
         if toc then begin
@@ -542,21 +545,14 @@ let rec emit_instr i dslot =
         `	lwz	{emit_reg i.res.(0)}, 4(1)\n`;
         `	addi	1, 1, 8\n`
     | Lop(Ispecific sop) ->
-        let instr =
-          match sop with
-            Imultaddf -> "fmadd"
-          | Imultsubf -> "fmsub" in
+        let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
     | Lreloadretaddr ->
         let n = frame_size() in
-        `	lwz	12, {emit_int(n - 4)}(1)\n`
-        (* This works because the reloadretaddr and the return are in the
-           same basic block, and none of the instructions that can be
-           part of a basic block modify r12 *)
+        `	lwz	11, {emit_int(n - 4)}(1)\n`;
+        `	mtlr	11\n`
     | Lreturn ->
         let n = frame_size() in
-        if !contains_calls then
-          `	mtlr	12\n`;
         `	addi	1, 1, {emit_int n}\n`;
         `	blr\n`
     | Llabel lbl ->
@@ -625,22 +621,22 @@ let rec emit_instr i dslot =
         | Some lbl -> `	bgt	{emit_label lbl}\n`
         end
     | Lswitch jumptbl ->
-        let lbl_table = new_label() in
+        if !lbl_jumptbl = 0 then lbl_jumptbl := new_label();
         if toc then begin
-          let lbl_addr = label_label lbl_table in
-          `	lwz	11, {emit_label lbl_addr}(2)\n`
+          `	lwz	11, {emit_label !lbl_jumptbl}(2)\n`
         end else begin
-          `	addis	11, 0, {emit_label lbl_table}@ha\n`;
-          `	addi	11, 11, {emit_label lbl_table}@l\n`
+          `	addis	11, 0, {emit_label !lbl_jumptbl}@ha\n`;
+          `	addi	11, 11, {emit_label !lbl_jumptbl}@l\n`
         end;
-        `	slwi	0, {emit_reg  i.arg.(0)}, 2\n`;
+        `	addi	0, {emit_reg i.arg.(0)}, {emit_int !num_jumptbl_entries}\n`;
+        `	slwi	0, 0, 2\n`;
         `	lwzx	0, 11, 0\n`;
-        `	add	0, 0, 11\n`;
+        `	add	0, 11, 0\n`;
         `	mtctr	0\n`;
         `	bctr\n`;
-        `{emit_label lbl_table}:\n`;
         for i = 0 to Array.length jumptbl - 1 do
-          `	.long	{emit_label jumptbl.(i)} - {emit_label lbl_table}\n`
+          jumptbl_entries := jumptbl.(i) :: !jumptbl_entries;
+          incr num_jumptbl_entries
         done
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}\n`
@@ -657,10 +653,10 @@ let rec emit_instr i dslot =
         `	addi	1, 1, {emit_int trap_frame_size}\n`;
         stack_offset := !stack_offset - trap_frame_size
     | Lraise ->
+        `	lwz	0, 0(29)\n`;
         `	mr	1, 29\n`;
-        `	lwz	0, 0(1)\n`;
-        `	lwz	29, 4(1)\n`;
         `	mtlr	0\n`;
+        `	lwz	29, 4(1)\n`;
         if toc then
           `	lwz	2, 20(1)\n`;
         `	addi	1, 1, {emit_int trap_frame_size}\n\n`;
@@ -671,7 +667,7 @@ and emit_delay = function
   | Some i -> emit_instr i None
 
 (* Checks if a pseudo-instruction expands to instructions
-   that do not branch and do not affect CR0. *)
+   that do not branch and do not affect CR0 nor R12. *)
 
 let is_simple_instr i =
   match i.desc with
@@ -681,7 +677,8 @@ let is_simple_instr i =
         Iextcall(_, _) -> false
       | Ialloc(_) -> false
       | Iintop(Icomp _) -> false
-      | Iintop_imm((Iand | Icomp _), _) -> false
+      | Iintop_imm(Iand, _) -> false
+      | Iintop_imm(Icomp _, _) -> false
       | _ -> true
       end
   | Lreloadretaddr -> true
@@ -812,8 +809,10 @@ let data l =
 let begin_assembly() =
   Hashtbl.clear symbol_constants;
   Hashtbl.clear float_constants;
-  Hashtbl.clear label_constants;
   defined_functions := StringSet.empty;
+  num_jumptbl_entries := 0;
+  jumptbl_entries := [];
+  lbl_jumptbl := 0;
   (* Emit the beginning of the data segment *)
   let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
   emit_string data_space;
@@ -821,12 +820,30 @@ let begin_assembly() =
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly() =
+  (* Emit the jump table *)
+  if !num_jumptbl_entries > 0 then begin
+    let lbl_tbl =
+      if toc then begin
+        let lbl_tbl = new_label() in
+        `	.toc\n`;
+        `{emit_label !lbl_jumptbl}:	.tc	{emit_label lbl_tbl}[TC], {emit_label lbl_tbl}\n`;
+        `	.csect	.text[PR]\n`;
+        lbl_tbl
+      end else begin
+        `	.section \".text\"\n`;
+        !lbl_jumptbl
+      end in
+    `{emit_label lbl_tbl}:\n`;
+    List.iter
+      (fun lbl -> `	.long	{emit_label lbl} - {emit_label lbl_tbl}\n`)
+      (List.rev !jumptbl_entries);
+    jumptbl_entries := []
+  end;
   if toc then begin
     (* Emit the table of constants *)
     `	.toc\n`;
     Hashtbl.iter emit_symbol_constant symbol_constants;
-    Hashtbl.iter emit_float_constant float_constants;
-    Hashtbl.iter emit_label_constant label_constants
+    Hashtbl.iter emit_float_constant float_constants
   end;
   emit_string data_space;
   (* Emit the end of the data segment *)

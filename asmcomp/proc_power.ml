@@ -323,8 +323,7 @@ let max_register_pressure = function
 let reload_test makereg round tst args = raise Use_default
 let reload_operation makereg round op args res = raise Use_default
 
-(* Latencies (in cycles). 
-   Based on the Motorola 601, with some poetic license. *)
+(* Latencies (in cycles). Based roughly on the "common model". *)
 
 let need_scheduling = true
 
@@ -338,7 +337,7 @@ let oper_latency = function
   | Iintop(Idiv | Imod) -> 36
   | Iaddf | Isubf -> 4
   | Imulf -> 5
-  | Idivf -> 31
+  | Idivf -> 33
   | Ispecific(Imultaddf | Imultsubf) -> 5
   | _ -> 1
 
