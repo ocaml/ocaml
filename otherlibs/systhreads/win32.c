@@ -64,13 +64,10 @@ struct caml_thread_struct {
   struct caml_thread_struct * next;  /* Double linking of running threads */
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
-  char * bottom_of_stack;  /* Saved value of caml_bottom_of_stack */
-  unsigned long last_return_address; /* Saved value of caml_last_return_a */
+  struct caml_context * last_context;
+                                /* Saved value of caml_last_context */
   char * exception_pointer;     /* Saved value of caml_exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
-  value gc_entry_regs[MAX_NUM_GC_REGS]; /* Saved gc_entry_regs */
-  double gc_entry_float_regs[MAX_NUM_GC_FLOAT_REGS];
-                                /* Saved gc_entry_float_regs */
 #else
   value * stack_low;            /* The execution stack for this thread */
   value * stack_high;
@@ -125,9 +122,8 @@ static void caml_thread_scan_roots(scanning_action action)
     /* Don't rescan the stack of the current thread, it was done already */
     if (th != curr_thread) {
 #ifdef NATIVE_CODE
-      if (th->bottom_of_stack != NULL)
-        do_local_roots(action, th->last_return_address, th->bottom_of_stack,
-                       th->local_roots, th->gc_entry_regs);
+      if (th->last_context != NULL)
+        do_local_roots(action, th->last_context, th->local_roots);
 #else
       do_local_roots(action, th->sp, th->stack_high, th->local_roots);
 #endif
@@ -150,13 +146,9 @@ static void caml_thread_enter_blocking_section(void)
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
 #ifdef NATIVE_CODE
-  curr_thread->bottom_of_stack = caml_bottom_of_stack;
-  curr_thread->last_return_address = caml_last_return_address;
+  curr_thread->last_context = caml_last_context;
   curr_thread->exception_pointer = caml_exception_pointer;
   curr_thread->local_roots = local_roots;
-  bcopy(gc_entry_regs, curr_thread->gc_entry_regs, sizeof(gc_entry_regs));
-  bcopy(gc_entry_float_regs, curr_thread->gc_entry_float_regs,
-        sizeof(gc_entry_float_regs));
 #else
   curr_thread->stack_low = stack_low;
   curr_thread->stack_high = stack_high;
@@ -176,13 +168,9 @@ static void caml_thread_leave_blocking_section(void)
   WaitForSingleObject(caml_mutex, INFINITE);
   /* Restore the stack-related global variables */
 #ifdef NATIVE_CODE
-  caml_bottom_of_stack = curr_thread->bottom_of_stack;
-  caml_last_return_address = curr_thread->last_return_address;
+  caml_last_context = curr_thread->last_context;
   caml_exception_pointer = curr_thread->exception_pointer;
   local_roots = curr_thread->local_roots;
-  bcopy(curr_thread->gc_entry_regs, gc_entry_regs, sizeof(gc_entry_regs));
-  bcopy(curr_thread->gc_entry_float_regs, gc_entry_float_regs,
-        sizeof(gc_entry_float_regs));
 #else
   stack_low = curr_thread->stack_low;
   stack_high = curr_thread->stack_high;
@@ -243,22 +231,6 @@ static void * caml_thread_tick(void)
     something_to_do = 1;
 #endif
   }
-}
-
-/* Thread cleanup: remove the descriptor from the list and free
-   the stack space. */
-
-static void caml_thread_cleanup(caml_thread_t th)
-{
-  /* Remove th from the doubly-linked list of threads */
-  th->next->prev = th->prev;
-  th->prev->next = th->next;
-#ifndef NATIVE_CODE
-  /* Free the memory resources */
-  stat_free((char *) th->stack_low);
-#endif
-  /* Free the thread descriptor */
-  stat_free((char *) th);
 }
 
 static void caml_thread_finalize(value vthread)
@@ -338,10 +310,18 @@ static void caml_thread_start(caml_thread_t th)
   clos = Start_closure(th->descr);
   Modify(&(Start_closure(th->descr)), Val_unit);
   callback(clos, Val_unit);
-  /* Cleanup: free the thread resources */
-  caml_thread_cleanup(th);
-  /* Release the main mutex */
+  /* Remove th from the doubly-linked list of threads */
+  th->next->prev = th->prev;
+  th->prev->next = th->next;
+#ifndef NATIVE_CODE
+  /* Free the memory resources */
+  stat_free(th->stack_low);
+#endif
+  /* Free the thread descriptor */
+  stat_free(th);
+  /* Release the main mutex (forever) */
   enter_blocking_section();
+  /* The thread now stops running */
 }  
 
 value caml_thread_new(value clos)          /* ML */
@@ -435,29 +415,6 @@ value caml_thread_join(value th)          /* ML */
   enter_blocking_section();
   WaitForSingleObject(h, INFINITE);
   leave_blocking_section();
-  return Val_unit;
-}
-
-/* Terminate the current thread */
-
-value caml_thread_exit(value unit)       /* ML */
-{
-  caml_thread_cleanup(curr_thread);
-  enter_blocking_section();
-  ExitThread(0);
-  return Val_unit;              /* never reached */
-}
-
-/* Kill another thread */
-
-value caml_thread_kill(value target)       /* ML */
-{
-  caml_thread_t th;
-
-  if (TerminateThread(Threadhandle(target)->handle, 1) == 0)
-    caml_wthread_error("Thread.kill");
-  for (th = curr_thread; th->descr != target; th = th->next) /*nothing*/;
-  caml_thread_cleanup(th);
   return Val_unit;
 }
 

@@ -21,20 +21,30 @@ external thread_new : (unit -> unit) -> t = "caml_thread_new"
 external yield : unit -> unit = "caml_thread_yield"
 external self : unit -> t = "caml_thread_self"
 external id : t -> int = "caml_thread_id"
-external exit : unit -> unit = "caml_thread_exit"
 external join : t -> unit = "caml_thread_join"
-external kill : t -> unit = "caml_thread_kill"
 
 (* For new, make sure the function passed to thread_new never
    raises an exception. *)
+
+exception Thread_exit
 
 let create fn arg =
   thread_new
     (fun () ->
       try
-        Printexc.print fn arg; exit()
-      with x ->
-        flush stdout; flush stderr; exit())
+        fn arg; ()
+      with Thread_exit -> ()
+         | exn ->
+             Printf.eprintf "Uncaught exception in thread %d: %s\n"
+                            (id(self())) (Printexc.to_string exn);
+             flush stderr)
+
+let exit () = raise Thread_exit
+
+(* Thread.kill is currently not implemented because there is no way
+   to do correct cleanup under Win32. *)
+
+let kill th = invalid_arg "Thread.kill: not implemented"
 
 (* Preemption *)
 
