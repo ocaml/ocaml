@@ -283,13 +283,13 @@ type tag = string;;
    those strings is considered as zero for line breaking).
 
    Thus, tag handling is in some sense transparent to pretty-printing
-   and do not interfere with usual pretty-printing. Hence, a single
+   and does not interfere with usual pretty-printing. Hence, a single
    pretty printing routine can output both simple ``verbatim''
    material or richer decorated output depending on the treatment of
-   tags. Default behavior of the pretty printer engine is to consider
-   tags as active, so that output is decorated. Otherwise, if
-   [set_tags] is set to [false], the pretty printer engine just skips
-   tags, and the output is regular.
+   tags. By default, tags are not active, hence the output is not
+   decorated with tag information.  Once [set_tags] is set to [true],
+   the pretty printer engine honors tags and decorates the output
+   accordingly.
 
    When a tag has been opened (or closed), it is both and successively
    ``printed'' and ``marked''. Printing a tag means calling a
