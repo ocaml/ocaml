@@ -179,7 +179,7 @@ CAMLprim value caml_sys_remove(value name)
 CAMLprim value caml_sys_rename(value oldname, value newname)
 {
   if (rename(String_val(oldname), String_val(newname)) != 0)
-    caml_sys_error(oldname);
+    caml_sys_error("Sys.rename");
   return Val_unit;
 }
 

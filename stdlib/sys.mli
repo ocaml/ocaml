@@ -32,7 +32,9 @@ external remove : string -> unit = "caml_sys_remove"
 
 external rename : string -> string -> unit = "caml_sys_rename"
 (** Rename a file. The first argument is the old name and the
-   second is the new name. *)
+   second is the new name. If there is already another file
+   under the new name, [rename] may replace it, or raise an
+   exception, depending on your operating system. *)
 
 external getenv : string -> string = "caml_sys_getenv"
 (** Return the value associated to a variable in the process
