@@ -215,7 +215,10 @@ value rec hprint_pretty tab pos spc =
   | VL [] -> (pos, spc)
   | VL x -> hprint_box tab pos spc x
   | BE x -> hprint_box tab pos spc x
-  | BV x -> invalid_arg "hprint_pretty"
+  | BV x ->
+      (* This should not occur: should be
+         invalid_arg "hprint_pretty" instead *)
+      hprint_box tab pos spc x
   | LI (comm, nl_bef, tab_bef) x ->
       do {
         if lazy_tab.val >= 0 then do {
