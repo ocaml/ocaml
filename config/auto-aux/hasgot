@@ -4,15 +4,9 @@ opts=""
 libs="$cclibs"
 args=$*
 rm -f hasgot.c
-sys_types_included="no"
 while : ; do
   case "$1" in
-    -i) if test "$HAS_SYS_TYPES_H" = "yes" && test "$sys_types_included" = "no"
-        then
-          echo "#include <sys/types.h>" >> hasgot.c;
-          sys_types_included="yes";
-        fi
-        echo "#include <$2>" >> hasgot.c; shift;;
+    -i) echo "#include <$2>" >> hasgot.c; shift;;
     -t) echo "$2 the_$2;" >> hasgot.c; shift;;
     -l*|-L*) libs="$libs $1";;
     -*) opts="$opts $1";;
