@@ -17,7 +17,7 @@ include ../../config/Makefile
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
-MKLIB=../../tools/ocamlmklib
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 C_OBJS=scheduler.o
 
