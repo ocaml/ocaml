@@ -817,14 +817,13 @@ EXTEND
           Qast.Tuple [Qast.Loc; tpl] ] ]
   ;
   class_fun_def:
-    [ [ p = patt LEVEL "simple"; "->"; ce = class_expr ->
-          Qast.Node "CeFun" [Qast.Loc; p; ce]
-      | p = patt LEVEL "simple"; cfd = SELF ->
-          Qast.Node "CeFun" [Qast.Loc; p; cfd] ] ]
+    [ [ p = ipatt; ce = SELF -> Qast.Node "CeFun" [Qast.Loc; p; ce]
+      | "->"; ce = class_expr -> ce ] ]
   ;
   class_expr:
     [ "top"
-      [ "fun"; cfd = class_fun_def -> cfd
+      [ "fun"; p = ipatt; ce = class_fun_def ->
+          Qast.Node "CeFun" [Qast.Loc; p; ce]
       | "let"; rf = rec_flag; lb = SLIST1 let_binding SEP "and"; "in";
         ce = SELF ->
           Qast.Node "CeLet" [Qast.Loc; rf; lb; ce] ]

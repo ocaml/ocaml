@@ -1655,19 +1655,15 @@ Grammar.extend
         (fun (loc : int * int) -> (loc, [] : 'class_type_parameters))]];
     Grammar.Entry.obj (class_fun_def : 'class_fun_def Grammar.Entry.e), None,
     [None, None,
-     [[Gramext.Snterml
-         (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e), "simple");
-       Gramext.Sself],
-      Gramext.action
-        (fun (cfd : 'class_fun_def) (p : 'patt) (loc : int * int) ->
-           (MLast.CeFun (loc, p, cfd) : 'class_fun_def));
-      [Gramext.Snterml
-         (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e), "simple");
-       Gramext.Stoken ("", "->");
+     [[Gramext.Stoken ("", "->");
        Gramext.Snterm
          (Grammar.Entry.obj (class_expr : 'class_expr Grammar.Entry.e))],
       Gramext.action
-        (fun (ce : 'class_expr) _ (p : 'patt) (loc : int * int) ->
+        (fun (ce : 'class_expr) _ (loc : int * int) -> (ce : 'class_fun_def));
+      [Gramext.Snterm (Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (ce : 'class_fun_def) (p : 'ipatt) (loc : int * int) ->
            (MLast.CeFun (loc, p, ce) : 'class_fun_def))]];
     Grammar.Entry.obj (class_expr : 'class_expr Grammar.Entry.e), None,
     [Some "top", None,
@@ -1684,12 +1680,13 @@ Grammar.extend
            (loc : int * int) ->
            (MLast.CeLet (loc, rf, lb, ce) : 'class_expr));
       [Gramext.Stoken ("", "fun");
+       Gramext.Snterm (Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e));
        Gramext.Snterm
          (Grammar.Entry.obj
             (class_fun_def : 'class_fun_def Grammar.Entry.e))],
       Gramext.action
-        (fun (cfd : 'class_fun_def) _ (loc : int * int) ->
-           (cfd : 'class_expr))];
+        (fun (ce : 'class_fun_def) (p : 'ipatt) _ (loc : int * int) ->
+           (MLast.CeFun (loc, p, ce) : 'class_expr))];
      Some "apply", Some Gramext.NonA,
      [[Gramext.Sself;
        Gramext.Snterml

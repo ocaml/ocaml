@@ -2398,19 +2398,15 @@ Grammar.extend
            (Qast.Tuple [Qast.Loc; Qast.List []] : 'class_type_parameters))]];
     Grammar.Entry.obj (class_fun_def : 'class_fun_def Grammar.Entry.e), None,
     [None, None,
-     [[Gramext.Snterml
-         (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e), "simple");
-       Gramext.Sself],
-      Gramext.action
-        (fun (cfd : 'class_fun_def) (p : 'patt) (loc : int * int) ->
-           (Qast.Node ("CeFun", [Qast.Loc; p; cfd]) : 'class_fun_def));
-      [Gramext.Snterml
-         (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e), "simple");
-       Gramext.Stoken ("", "->");
+     [[Gramext.Stoken ("", "->");
        Gramext.Snterm
          (Grammar.Entry.obj (class_expr : 'class_expr Grammar.Entry.e))],
       Gramext.action
-        (fun (ce : 'class_expr) _ (p : 'patt) (loc : int * int) ->
+        (fun (ce : 'class_expr) _ (loc : int * int) -> (ce : 'class_fun_def));
+      [Gramext.Snterm (Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (ce : 'class_fun_def) (p : 'ipatt) (loc : int * int) ->
            (Qast.Node ("CeFun", [Qast.Loc; p; ce]) : 'class_fun_def))]];
     Grammar.Entry.obj (class_expr : 'class_expr Grammar.Entry.e), None,
     [Some "top", None,
@@ -2436,12 +2432,13 @@ Grammar.extend
            (loc : int * int) ->
            (Qast.Node ("CeLet", [Qast.Loc; rf; lb; ce]) : 'class_expr));
       [Gramext.Stoken ("", "fun");
+       Gramext.Snterm (Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e));
        Gramext.Snterm
          (Grammar.Entry.obj
             (class_fun_def : 'class_fun_def Grammar.Entry.e))],
       Gramext.action
-        (fun (cfd : 'class_fun_def) _ (loc : int * int) ->
-           (cfd : 'class_expr))];
+        (fun (ce : 'class_fun_def) (p : 'ipatt) _ (loc : int * int) ->
+           (Qast.Node ("CeFun", [Qast.Loc; p; ce]) : 'class_expr))];
      Some "apply", Some Gramext.NonA,
      [[Gramext.Sself;
        Gramext.Snterml
@@ -2601,7 +2598,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 32506, 32522))
+                  _ -> raise (Match_failure ("q_MLast.ml", 32464, 32480))
             in
             Qast.Node ("CrVal", [Qast.Loc; lab; mf; e]) :
             'class_str_item));
@@ -2996,7 +2993,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 37073, 37089))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37031, 37047))
             in
             Qast.Node ("TyObj", [Qast.Loc; ml; v]) :
             'ctyp));
@@ -3031,7 +3028,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 37420, 37436))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37378, 37394))
             in
             Qast.Tuple [Qast.Cons (f, ml); v] :
             'meth_list))]];

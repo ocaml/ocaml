@@ -426,8 +426,8 @@ EXTEND
   ;
   fun_def:
     [ RIGHTA
-      [ p = ipatt; e = SELF -> <:expr< fun [ $p$ -> $e$ ] >>
-      | "->"; e = expr -> <:expr< $e$ >> ] ]
+      [ p = ipatt; e = SELF -> <:expr< fun $p$ -> $e$ >>
+      | "->"; e = expr -> e ] ]
   ;
   patt:
     [ LEFTA
@@ -576,14 +576,13 @@ EXTEND
       | "["; tpl = LIST1 type_parameter SEP ","; "]" -> (loc, tpl) ] ]
   ;
   class_fun_def:
-    [ [ p = patt LEVEL "simple"; "->"; ce = class_expr ->
-          <:class_expr< fun $p$ -> $ce$ >>
-      | p = patt LEVEL "simple"; cfd = SELF ->
-          <:class_expr< fun $p$ -> $cfd$ >> ] ]
+    [ [ p = ipatt; ce = SELF -> <:class_expr< fun $p$ -> $ce$ >>
+      | "->"; ce = class_expr -> ce ] ]
   ;
   class_expr:
     [ "top"
-      [ "fun"; cfd = class_fun_def -> cfd
+      [ "fun"; p = ipatt; ce = class_fun_def ->
+          <:class_expr< fun $p$ -> $ce$ >>
       | "let"; rf = rec_flag; lb = LIST1 let_binding SEP "and"; "in";
         ce = SELF ->
           <:class_expr< let $rec:rf$ $list:lb$ in $ce$ >> ]
