@@ -48,12 +48,11 @@ external ( = ) : 'a -> 'a -> bool = "%equal"
    Mutable structures (e.g. references and arrays) are equal
    if and only if their current contents are structurally equal,
    even if the two mutable objects are not the same physical object.
-   Equality between functional values raises [Invalid_argument].
+   Equality between functional values may raise [Invalid_argument].
    Equality between cyclic data structures may not terminate. *)
 
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
 (** Negation of {!Pervasives.(=)}. *)
-
 
 external ( < ) : 'a -> 'a -> bool = "%lessthan"
 (** See {!Pervasives.(>=)}. *)
@@ -71,7 +70,7 @@ external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
    total ordering over all types.
    The ordering is compatible with [(=)]. As in the case
    of [(=)], mutable structures are compared by contents.
-   Comparison between functional values raises [Invalid_argument].
+   Comparison between functional values may raise [Invalid_argument].
    Comparison between cyclic structures may not terminate. *)
 
 external compare : 'a -> 'a -> int = "compare"
@@ -88,12 +87,12 @@ val max : 'a -> 'a -> 'a
 
 external ( == ) : 'a -> 'a -> bool = "%eq"
 (** [e1 == e2] tests for physical equality of [e1] and [e2].
-   On integers and characters, it is the same as structural
+   On integers and characters, physical equality is identical to structural
    equality. On mutable structures, [e1 == e2] is true if and only if
    physical modification of [e1] also affects [e2].
    On non-mutable structures, the behavior of [(==)] is
-   implementation-dependent, except that [e1 == e2] implies
-   [e1 = e2]. *)
+   implementation-dependent; however, it is guaranteed that
+   [e1 == e2] implies [e1 = e2]. *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
 (** Negation of {!Pervasives.(==)}. *)
@@ -160,7 +159,7 @@ external ( mod ) : int -> int -> int = "%modint"
    [x = (x / y) * y + x mod y] and
    [abs(x mod y) < abs(y)].
    If [y = 0], [x mod y] raises [Division_by_zero].
-   Notice that [x mod y] is negative if [x < 0]. *)
+   Notice that [x mod y] is negative if and only if [x < 0]. *)
 
 val abs : int -> int
 (** Return the absolute value of the argument. *)
