@@ -390,6 +390,7 @@ Caml_ml_array_bound_error:
         .data
 #endif
         .global Caml_system__frametable
+        .align  4               /* required for gas? */
 Caml_system__frametable:
         .word   1               /* one descriptor */
         .word   L109            /* return address into callback */
