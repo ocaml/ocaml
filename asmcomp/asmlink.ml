@@ -54,10 +54,13 @@ let check_consistency file_name unit crc =
           Consistbl.check crc_implementations name crc file_name)
       unit.ui_imports_cmx
   with Consistbl.Inconsistency(name, user, auth) ->
-    raise(Error(Inconsistent_implementations(name, user, auth)))
+    raise(Error(Inconsistent_implementation(name, user, auth)))
   end;
-  if Consistbl.is_bound crc_implementations unit.ui_name then
-    raise (Error(Multiple_definition(unit.ui_name, file_name, name)));
+  begin try
+    let source = Consistbl.source crc_implementations unit.ui_name in
+    raise (Error(Multiple_definition(unit.ui_name, file_name, source)))
+  with Not_found -> ()
+  end;
   Consistbl.set crc_implementations unit.ui_name crc file_name
 
 let extract_crc_interfaces () =
