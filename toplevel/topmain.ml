@@ -46,6 +46,6 @@ let main () =
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)"
     ] file_argument usage;
-  Toploop.loop Format.err_formatter
+  Toploop.loop Format.std_formatter
 
 let _ = Printexc.catch main ()

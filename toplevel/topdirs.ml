@@ -24,8 +24,8 @@ open Printval
 open Trace
 open Toploop
 
-(* The standard error formatter *)
-let std_err = err_formatter
+(* The standard output formatter *)
+let std_out = std_formatter
 
 (* To quit *)
 
@@ -112,13 +112,13 @@ let dir_load ppf name =
     close_in ic
   with Not_found -> fprintf ppf "Cannot find file %s.@." name
 
-let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_err))
+let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_out))
 
 (* Load commands from a file *)
 
 let dir_use ppf name = ignore(Toploop.use_file ppf name)
 
-let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_err))
+let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_out))
 
 (* Install, remove a printer *)
 
@@ -161,9 +161,9 @@ let dir_remove_printer ppf lid =
   with Exit -> ()
 
 let _ = Hashtbl.add directive_table "install_printer"
-             (Directive_ident (dir_install_printer std_err))
+             (Directive_ident (dir_install_printer std_out))
 let _ = Hashtbl.add directive_table "remove_printer"
-             (Directive_ident (dir_remove_printer std_err))
+             (Directive_ident (dir_remove_printer std_out))
 
 (* The trace *)
 
@@ -238,10 +238,10 @@ let parse_warnings ppf s =
   with Arg.Bad err -> fprintf ppf "%s.@." err
 
 let _ =
-  Hashtbl.add directive_table "trace" (Directive_ident (dir_trace std_err));
-  Hashtbl.add directive_table "untrace" (Directive_ident (dir_untrace std_err));
+  Hashtbl.add directive_table "trace" (Directive_ident (dir_trace std_out));
+  Hashtbl.add directive_table "untrace" (Directive_ident (dir_untrace std_out));
   Hashtbl.add directive_table
-    "untrace_all" (Directive_none (dir_untrace_all std_err));
+    "untrace_all" (Directive_none (dir_untrace_all std_out));
 
 (* Control the printing of values *)
 
@@ -256,4 +256,4 @@ let _ =
              (Directive_bool(fun b -> Clflags.classic := not b));
 
   Hashtbl.add directive_table "warnings"
-             (Directive_string (parse_warnings std_err))
+             (Directive_string (parse_warnings std_out))
