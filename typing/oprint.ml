@@ -40,11 +40,31 @@ let value_ident ppf name =
 
 (* Values *)
 
-let parenthesize_if_neg ppf fmt v zero =
-  let neg = (v < zero) in
-  if neg then pp_print_char ppf '(';
+let valid_float_lexeme s =
+  let l = String.length s in
+  let rec loop i =
+    if i >= l then s ^ "." else
+    match s.[i] with
+    | '0' .. '9' | '-' -> loop (i+1)
+    | _ -> s
+  in loop 0
+
+let float_repres f =
+  match classify_float f with
+    FP_nan -> "nan"
+  | FP_infinite ->
+      if f < 0.0 then "neg_infinity" else "infinity"
+  | _ ->
+      let s1 = Printf.sprintf "%.12g" f in
+      if f = float_of_string s1 then valid_float_lexeme s1 else
+      let s2 = Printf.sprintf "%.15g" f in
+      if f = float_of_string s2 then valid_float_lexeme s2 else
+      Printf.sprintf "%.18g" f
+
+let parenthesize_if_neg ppf fmt v isneg =
+  if isneg then pp_print_char ppf '(';
   fprintf ppf fmt v;
-  if neg then pp_print_char ppf ')'
+  if isneg then pp_print_char ppf ')'
 
 let print_out_value ppf tree =
   let rec print_tree_1 ppf =
@@ -58,11 +78,11 @@ let print_out_value ppf tree =
         fprintf ppf "@[<2>`%s@ %a@]" name print_simple_tree param
     | tree -> print_simple_tree ppf tree
   and print_constr_param ppf = function
-    | Oval_int i -> parenthesize_if_neg ppf "%i" i 0
-    | Oval_int32 i -> parenthesize_if_neg ppf "%lil" i 0l
-    | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i 0L
-    | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i 0n
-    | Oval_float f -> parenthesize_if_neg ppf "%F" f 0.0
+    | Oval_int i -> parenthesize_if_neg ppf "%i" i (i < 0)
+    | Oval_int32 i -> parenthesize_if_neg ppf "%lil" i (i < 0l)
+    | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i (i < 0L)
+    | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i (i < 0n)
+    | Oval_float f -> parenthesize_if_neg ppf "%s" (float_repres f) (f < 0.0)
     | tree -> print_simple_tree ppf tree
   and print_simple_tree ppf =
     function
@@ -70,7 +90,7 @@ let print_out_value ppf tree =
     | Oval_int32 i -> fprintf ppf "%lil" i
     | Oval_int64 i -> fprintf ppf "%LiL" i
     | Oval_nativeint i -> fprintf ppf "%nin" i
-    | Oval_float f -> fprintf ppf "%F" f
+    | Oval_float f -> fprintf ppf "%s" (float_repres f)
     | Oval_char c -> fprintf ppf "%C" c
     | Oval_string s ->
         begin try fprintf ppf "%S" s with
