@@ -32,6 +32,8 @@
 #include "osdeps.h"
 #include "prims.h"
 
+#ifndef NATIVE_CODE
+
 /* The table of primitives */
 struct ext_table prim_table;
 
@@ -158,6 +160,8 @@ void build_primitive_table(char * lib_path,
   ext_table_free(&shared_libs_path, 0);
 }
 
+#endif
+
 /** dlopen interface for the bytecode linker **/
 
 #define Handle_val(v) (*((void **) (v)))
@@ -191,6 +195,8 @@ CAMLprim value dynlink_lookup_symbol(value handle, value symbolname)
   return result;
 }
 
+#ifndef NATIVE_CODE
+
 CAMLprim value dynlink_add_primitive(value handle)
 {
   return Val_int(ext_table_add(&prim_table, Handle_val(handle)));
@@ -210,3 +216,19 @@ CAMLprim value dynlink_get_current_libs(value unit)
   }
   CAMLreturn(res);
 }
+
+#else
+
+value dynlink_add_primitive(value handle)
+{
+  invalid_argument("dynlink_add_primitive");
+  return Val_unit; /* not reached */
+}
+
+value dynlink_get_current_libs(value unit)
+{
+  invalid_argument("dynlink_get_current_libs");
+  return Val_unit; /* not reached */
+}
+
+#endif
