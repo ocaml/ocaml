@@ -35,16 +35,28 @@ val from_string : string -> scanbuf;;
     Reading starts from the first character in the string.
     The end-of-input condition is set when the end of the string is reached. *)
 
-val from_channel : in_channel -> scanbuf;;
-(** [Scanning.from_channel inchan] returns a scanning buffer which reads
-    from the input channel [inchan], at the current reading position. *)
+val from_file : string -> scanbuf;;
+(** Bufferized file reading in text mode. The efficient and usual
+    way to scan text mode files (in effect, [from_file] returns a
+    buffer that reads characters in large chunks, rather than one
+    character at a time as buffers returned by [from_channel] do).
+    [Scanning.from_file fname] returns a scanning buffer which reads
+    from the given file [fname] in text mode. *)
+
+val from_file_bin : string -> scanbuf;;
+(** Bufferized file reading in binary mode. *)
 
 val from_function : (unit -> char) -> scanbuf;;
 (** [Scanning.from_function f] returns a scanning buffer with
     the given function as its reading method.
     When scanning needs one more character, the given function is called.
-    When the function has no more character to provide, it must set
+    When the function has no more character to provide, it must signal
     an end-of-input condition by raising the exception [End_of_file]. *)
+
+val from_channel : in_channel -> scanbuf;;
+(** [Scanning.from_channel inchan] returns a scanning buffer which reads
+    one character at a time from the input channel [inchan], starting at the
+    current reading position. *)
 
 val end_of_input : scanbuf -> bool;;
 (** [Scanning.end_of_input scanbuf] tests the end of input condition
@@ -157,7 +169,10 @@ val bscanf :
    [ocamlyacc]-generated parsers. *)
 
 val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b, 'b) format -> 'a -> 'b;;
-(** Same as {!Scanf.bscanf}, but inputs from the given channel. *)
+(** Same as {!Scanf.bscanf}, but inputs from the given channel.
+    If efficiency is a concern, when scanning a file [fname],
+    consider using [bscanf] in conjonction with fast bufferized reading,
+    as obtained by [bscanf (Scanning.from_file fname)]. *)
 
 val sscanf : string -> ('a, Scanning.scanbuf, 'b, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.bscanf}, but inputs from the given string. *)

@@ -75,6 +75,8 @@ val begin_of_input : scanbuf -> bool;;
 
 val from_string : string -> scanbuf;;
 val from_channel : in_channel -> scanbuf;;
+val from_file : string -> scanbuf;;
+val from_file_bin : string -> scanbuf;;
 val from_function : (unit -> char) -> scanbuf;;
 
 end;;
@@ -136,6 +138,8 @@ let store_char ib c max =
   next_char ib;
   max - 1;;
 
+let default_token_buffer_size = 1024;;
+
 let create next =
   let ib = {
     bof = true;
@@ -143,7 +147,7 @@ let create next =
     cur_char = '\000';
     char_count = 0;
     get_next_char = next;
-    tokbuf = Buffer.create 1024;
+    tokbuf = Buffer.create default_token_buffer_size;
     token_count = 0;
     } in
   ib;;
@@ -163,7 +167,7 @@ let from_function = create;;
 (* Perform bufferized input to improve efficiency. *)
 let file_buffer_size = ref 1024;;
 
-let from_channel ic =
+let from_file_channel ic =
   let len = !file_buffer_size in
   let buf = String.create len in
   let i = ref 0 in
@@ -176,6 +180,13 @@ let from_channel ic =
         buf.[0]
       end
     end in
+  create next;;
+
+let from_file fname = from_file_channel (open_in fname);;
+let from_file_bin fname = from_file_channel (open_in_bin fname);;
+
+let from_channel ic =
+  let next () = input_char ic in
   create next;;
 
 let stdib = from_channel stdin;;
