@@ -59,14 +59,15 @@ val from_channel : in_channel -> scanbuf;;
     current reading position. *)
 
 val end_of_input : scanbuf -> bool;;
-(** [Scanning.end_of_input ib] tests the end of input condition
+(** [Scanning.end_of_input ib] tests the end-of-input condition
     of the given buffer. *)
 val beginning_of_input : scanbuf -> bool;;
 (** [Scanning.beginning_of_input ib] tests the beginning of input
     condition of the given buffer. *)
+
 val name_of_input : scanbuf -> string;;
 (** [Scanning.file_name_of_input ib] returns the name of the character
-    source for input buffer [ib]. *)
+    source for the input buffer [ib]. *)
 
 end;;
 
@@ -83,13 +84,6 @@ val bscanf :
 
    For instance, if [p] is the function [fun s i -> i + 1], then
    [Scanf.sscanf "x = 1" "%s = %i" p] returns [2].
-
-   Raise [Scanf.Scan_failure] if the given input does not match the format.
-
-   Raise [Failure] if a conversion to a number is not possible.
-
-   Raise [End_of_file] if the end of input is encountered while scanning
-   and the input matches the given format so far.
 
    The format is a character string which contains three types of
    objects:
@@ -116,7 +110,11 @@ val bscanf :
    - [u]: reads an unsigned decimal integer.
    - [x] or [X]: reads an unsigned hexadecimal integer.
    - [o]: reads an unsigned octal integer.
-   - [s]: reads a string argument (by default strings end with a space).
+   - [s]: reads a string argument that spreads as much as possible,
+     until the next white space, the next scanning indication, or the
+     end-of-input is reached. Hence, this conversion always succeeds:
+     it returns an empty string if the bounding condition holds
+     when the scan begins.
    - [S]: reads a delimited string argument (delimiters and special
      escaped characters follow the lexical conventions of Caml).
    - [c]: reads a single character. To test the current input character
@@ -193,6 +191,16 @@ val bscanf :
    tabulation character. If a scanning indication [\@c] does not
    follow a string conversion, it is ignored and treated as a plain
    [c] character.
+
+   Raise [Scanf.Scan_failure] if the given input does not match the format.
+
+   Raise [Failure] if a conversion to a number is not possible.
+
+   Raise [End_of_file] if the end of input is encountered while some
+   more characters are needed to read the current conversion
+   specification (this means in particular that scanning a [%s]
+   conversion never raises exception [End_of_file]: if the end of
+   input is reached the conversion succeeds and simply returns [""]).
 
    Notes:
 
