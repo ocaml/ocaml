@@ -28,11 +28,9 @@ let generic_quote quotequote s =
 module Unix = struct
   let current_dir_name = "."
   let parent_dir_name = ".."
-  let concat dirname filename =
-    let l = String.length dirname in
-    if l = 0 || dirname.[l-1] = '/'
-    then dirname ^ filename
-    else dirname ^ "/" ^ filename
+  let dir_sep = "/"
+  let is_dir_sep s i = s.[i] = '/'
+  let rindex_dir_sep s = String.rindex s '/'
   let is_relative n = String.length n < 1 || n.[0] <> '/';;
   let is_implicit n =
     is_relative n
@@ -42,19 +40,6 @@ module Unix = struct
     String.length name >= String.length suff &&
     String.sub name (String.length name - String.length suff)
                     (String.length suff) = suff
-  let basename name =
-    try
-      let p = String.rindex name '/' + 1 in
-      String.sub name p (String.length name - p)
-    with Not_found ->
-      name
-  let dirname name =
-    try
-      match String.rindex name '/' with
-        0 -> "/"
-      | n -> String.sub name 0 n
-    with Not_found ->
-      "."
   let temporary_directory =
     try Sys.getenv "TMPDIR" with Not_found -> "/tmp"
   let quote = generic_quote "'\\''"  
@@ -63,11 +48,14 @@ end
 module Win32 = struct
   let current_dir_name = "."
   let parent_dir_name = ".."
-  let concat dirname filename =
-    let l = String.length dirname in
-    if l = 0 || (let c = dirname.[l-1] in c = '/' || c = '\\' || c = ':')
-    then dirname ^ filename
-    else dirname ^ "\\" ^ filename
+  let dir_sep = "\\"
+  let is_dir_sep s i = let c = s.[i] in c = '/' || c = '\\' || c = ':'
+  let rindex_dir_sep s =
+    let rec pos i =
+      if i < 0 then raise Not_found
+      else if (let c = s.[i] in c = '/' || c = '\\' || c = ':') then i
+      else pos (i - 1)
+    in pos (String.length s - 1)
   let is_relative n =
     (String.length n < 1 || n.[0] <> '/')
     && (String.length n < 1 || n.[0] <> '\\')
@@ -83,29 +71,6 @@ module Win32 = struct
    (let s = String.sub name (String.length name - String.length suff)
                             (String.length suff) in
     String.lowercase s = String.lowercase suff)
-  let rindexsep s =
-    let rec pos i =
-      if i < 0 then raise Not_found
-      else if (let c = s.[i] in c = '/' || c = '\\' || c = ':') then i
-      else pos (i - 1)
-    in pos (String.length s - 1)
-  let basename name =
-    try
-      let p = rindexsep name + 1 in
-      String.sub name p (String.length name - p)
-    with Not_found ->
-      name
-  let dirname name =
-    try
-      match rindexsep name with
-        0 -> "\\"
-      | n ->
-          let n =
-            if name.[n] = ':' || (n > 0 && name.[n-1] = ':')
-            then n+1 else n in
-          String.sub name 0 n
-    with Not_found ->
-      "."
   let temporary_directory =
     try Sys.getenv "TEMP" with Not_found -> "."
   let quote s =
@@ -127,57 +92,67 @@ end
 module Cygwin = struct
   let current_dir_name = "."
   let parent_dir_name = ".."
-  let concat dirname filename =
-    let l = String.length dirname in
-    if l = 0 || (let c = dirname.[l-1] in c = '/' || c = '\\' || c = ':')
-    then dirname ^ filename
-    else dirname ^ "/" ^ filename
+  let dir_sep = "/"
+  let is_dir_sep = Win32.is_dir_sep
+  let rindex_dir_sep = Win32.rindex_dir_sep
   let is_relative = Win32.is_relative
   let is_implicit = Win32.is_implicit
   let check_suffix = Win32.check_suffix
-  let basename = Win32.basename
-  let dirname name =
-    try
-      match Win32.rindexsep name with
-        0 -> "/"
-      | n ->
-          let n =
-            if name.[n] = ':' || (n > 0 && name.[n-1] = ':')
-            then n+1 else n in
-          String.sub name 0 n
-    with Not_found ->
-      "."
   let temporary_directory = Unix.temporary_directory
   let quote = Unix.quote
 end
 
-let (current_dir_name, parent_dir_name, concat, is_relative, is_implicit,
-     check_suffix, basename, dirname, temporary_directory, quote) =
+let (current_dir_name, parent_dir_name, dir_sep, is_dir_sep, rindex_dir_sep,
+     is_relative, is_implicit, check_suffix, temporary_directory, quote) =
   match Sys.os_type with
     "Unix" ->
-      (Unix.current_dir_name, Unix.parent_dir_name, Unix.concat,
+      (Unix.current_dir_name, Unix.parent_dir_name, Unix.dir_sep, 
+       Unix.is_dir_sep, Unix.rindex_dir_sep,
        Unix.is_relative, Unix.is_implicit, Unix.check_suffix,
-       Unix.basename, Unix.dirname, Unix.temporary_directory, Unix.quote)
+       Unix.temporary_directory, Unix.quote)
   | "Win32" ->
-      (Win32.current_dir_name, Win32.parent_dir_name, Win32.concat,
+      (Win32.current_dir_name, Win32.parent_dir_name, Win32.dir_sep, 
+       Win32.is_dir_sep, Win32.rindex_dir_sep,
        Win32.is_relative, Win32.is_implicit, Win32.check_suffix,
-       Win32.basename, Win32.dirname, Win32.temporary_directory, Win32.quote)
+       Win32.temporary_directory, Win32.quote)
   | "Cygwin" ->
-      (Cygwin.current_dir_name, Cygwin.parent_dir_name, Cygwin.concat,
+      (Cygwin.current_dir_name, Cygwin.parent_dir_name, Cygwin.dir_sep, 
+       Cygwin.is_dir_sep, Cygwin.rindex_dir_sep,
        Cygwin.is_relative, Cygwin.is_implicit, Cygwin.check_suffix,
-       Cygwin.basename, Cygwin.dirname, 
        Cygwin.temporary_directory, Cygwin.quote)
   | _ -> assert false
+
+let concat dirname filename =
+  let l = String.length dirname in
+  if l = 0 || is_dir_sep dirname (l-1)
+  then dirname ^ filename
+  else dirname ^ dir_sep ^ filename
+
+let basename name =
+  try
+    let p = rindex_dir_sep name + 1 in
+    String.sub name p (String.length name - p)
+  with Not_found ->
+    name
+
+let dirname name =
+  try
+    match rindex_dir_sep name with
+      0 -> dir_sep
+    | n -> String.sub name 0 n
+  with Not_found ->
+    current_dir_name
 
 let chop_suffix name suff =
   let n = String.length name - String.length suff in
   if n < 0 then invalid_arg "Filename.chop_suffix" else String.sub name 0 n
 
 let chop_extension name =
-  try
-    String.sub name 0 (String.rindex name '.')
-  with Not_found ->
-    invalid_arg "Filename.chop_extension"
+  let rec search_dot i =
+    if i < 0 || is_dir_sep name i then invalid_arg "Filename.chop_extension"
+    else if name.[i] = '.' then String.sub name 0 i
+    else search_dot (i - 1) in
+  search_dot (String.length name - 1)
 
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
