@@ -137,20 +137,20 @@ val putenv : string -> string -> unit
 type process_status =
   Unix.process_status =
       WEXITED of int
-	(** The process terminated normally by [exit]; 
-	   the argument is the return code. *)
+        (** The process terminated normally by [exit]; 
+           the argument is the return code. *)
     | WSIGNALED of int
-	(** The process was killed by a signal;
-	   the argument is the signal number. *)
+        (** The process was killed by a signal;
+           the argument is the signal number. *)
     | WSTOPPED of int
-	(** The process was stopped by a signal; the argument is the
-	   signal number. *)
+        (** The process was stopped by a signal; the argument is the
+           signal number. *)
 (** The termination status of a process. *)
 
 type wait_flag =
   Unix.wait_flag =
       WNOHANG   (** do not block if no child has
-		   died yet, but immediately return with a pid equal to 0.*)
+                    died yet, but immediately return with a pid equal to 0.*)
     | WUNTRACED (** report also the children that receive stop signals. *)
 (** Flags for {!UnixLabels.waitpid}. *)
 

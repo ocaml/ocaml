@@ -64,14 +64,14 @@ let output_entry e =
   let cases = 
     List.map
       (fun (num, (loc,e)) ->
-	 <:patt< $int:string_of_int num$ >>,
-	 None, (* when ... *)
-	 e
+         <:patt< $int:string_of_int num$ >>,
+         None, (* when ... *)
+         e
       ) e.auto_actions @
     [ <:patt< __ocaml_lex_n >>,
       None,
       <:expr< do 
-	{ lexbuf.Lexing.refill_buff lexbuf; $call_f$ __ocaml_lex_n  }>> ]
+        { lexbuf.Lexing.refill_buff lexbuf; $call_f$ __ocaml_lex_n  }>> ]
   in
   [
     <:patt< $lid:e.auto_name$ >>,
@@ -147,9 +147,9 @@ EXTEND
  let_regexp: [
    [ x = LIDENT; "="; r = regexp ->
        if Hashtbl.mem named_regexps x then
-	 Printf.eprintf 
-	   "pa_ocamllex (warning): multiple definition of named regexp '%s'\n"
-	   x;
+         Printf.eprintf 
+           "pa_ocamllex (warning): multiple definition of named regexp '%s'\n"
+           x;
        Hashtbl.add named_regexps x r;
    ]
  ];
@@ -157,11 +157,11 @@ EXTEND
  lexer_def: [
    [ def = LIST0 definition SEP "and" ->
        (try
-	  let (entries, transitions) = make_dfa def in
-	  let tables = compact_tables transitions in
-	  let output = output_lexdef tables entries in
-	  <:str_item< declare $list: output$ end >> 
-       	with Table_overflow ->
+          let (entries, transitions) = make_dfa def in
+          let tables = compact_tables transitions in
+          let output = output_lexdef tables entries in
+          <:str_item< declare $list: output$ end >> 
+        with Table_overflow ->
           failwith "Transition table overflow in lexer, automaton is too big")
    ]
  ];
@@ -182,8 +182,8 @@ EXTEND
  action: [
    [ "{"; e = OPT Pcaml.expr; "}" -> 
        let e = match e with
-	 | Some e -> e
-	 | None -> <:expr< () >>
+         | Some e -> e
+         | None -> <:expr< () >>
        in
        (loc,e)
    ]
@@ -209,8 +209,8 @@ EXTEND
    | x = LIDENT ->
        try  Hashtbl.find named_regexps x
        with Not_found ->
-	 failwith 
-	   ("pa_ocamllex (error): reference to unbound regexp name `"^x^"'")
+         failwith 
+           ("pa_ocamllex (error): reference to unbound regexp name `"^x^"'")
    ]
  ];
 

@@ -63,9 +63,9 @@
 
 (value rec char
        (lambda len
-	 (parser
-	  (((` ''')) len)
-	  (((` x) s) (char (Buff.store len x) s)))))
+         (parser
+          (((` ''')) len)
+          (((` x) s) (char (Buff.store len x) s)))))
 
 (value quote
        (parser

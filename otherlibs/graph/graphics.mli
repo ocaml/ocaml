@@ -159,7 +159,7 @@ external draw_arc :
 (** [draw_arc x y rx ry a1 a2] draws an elliptical arc with center
    [x,y], horizontal radius [rx], vertical radius [ry], from angle
    [a1] to angle [a2] (in degrees). The current point is unchanged. *)
-	    
+
 val draw_ellipse : int -> int -> int -> int -> unit
 (** [draw_ellipse x y rx ry] draws an ellipse with center
    [x,y], horizontal radius [rx] and vertical radius [ry].

@@ -46,7 +46,7 @@ type spec =
   | Int of (int -> unit)       (** Call the function with an int argument *)
   | Float of (float -> unit)   (** Call the function with a float argument *)
   | Rest of (string -> unit)   (** Stop interpreting keywords and call the 
-				  function with each remaining argument *)
+                                   function with each remaining argument *)
 
 (** The concrete type describing the behavior associated
    with a keyword. *)

@@ -89,7 +89,7 @@ let encode_lexdef def =
       (fun ((entry_name,args), casedef) ->
         let (re,actions,_) = encode_casedef casedef in
         { lex_name = entry_name;
-	  lex_args = args;
+          lex_args = args;
           lex_regexp = re;
           lex_actions = List.rev actions })
       def in
@@ -230,7 +230,7 @@ let make_dfa lexdef =
     List.map
       (fun le ->
         { auto_name = le.lex_name;
-	  auto_args = le.lex_args;
+          auto_args = le.lex_args;
           auto_initial_state = get_state(firstpos le.lex_regexp);
           auto_actions = le.lex_actions })
       entry_list in
