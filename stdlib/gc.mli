@@ -81,7 +81,7 @@ type control = {
              The GC will work more (use more CPU time and collect
              objects more eagerly) if [space_overhead] is smaller.
              The computation of the GC speed assumes that the amount
-             of live data is constant.  Default: 40.
+             of live data is constant.  Default: 42.
 -     [max_overhead]  Heap compaction is triggered when the estimated amount
              of free memory is more than [max_overhead] percent of the amount
              of live data.  If [max_overhead] is set to 0, heap
