@@ -266,16 +266,15 @@ void major_collection_slice ()
      Amount of sweeping work for the GC cycle:
                  SW = stat_heap_size
      Amount of marking work for this slice:
-                 MS = MW * 2 * P
-                 MS = 2 * (100 - percent_free)
+                 MS = MW * P
+                 MS = (100 - percent_free)
                       * (allocated_words * 3 / percent_free / 2
 		         + 100 * extra_heap_memory)
      Amount of sweeping work for this slice:
-                 SS = SW * 2 * P
-                 SS = 2 * 100
-		      * (allocated_words * 3 / percent_free / 2
-		         + 100 * extra_heap_memory)
-     This slice will either mark MS words or sweep SS words.
+                 SS = SW * P
+                 SS = 100 * (allocated_words * 3 / percent_free / 2
+		             + 100 * extra_heap_memory)
+     This slice will either mark 2*MS words or sweep 2*SS words.
   */
 
 #define Margin 100  /* Make it a little faster to be on the safe side. */

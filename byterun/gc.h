@@ -17,9 +17,6 @@
 
 #include "mlvalues.h"
 
-/* Defined in [major_gc.c]. */
-extern unsigned free_mem_percent_min, free_mem_percent_max;
-
 #define White (0 << 8)
 #define Gray  (1 << 8)
 #define Blue  (2 << 8)
@@ -33,10 +30,10 @@ extern unsigned free_mem_percent_min, free_mem_percent_max;
 #define Is_blue_hd(hd) (Color_hd (hd) == Blue)
 #define Is_black_hd(hd) (Color_hd (hd) == Black)
 
-#define Whitehd_hd(hd) ((hd) & ~Black)
-#define Grayhd_hd(hd) (((hd) & ~Black) | Gray)
-#define Blackhd_hd(hd) ((hd) | Black)
-#define Bluehd_hd(hd) (((hd) & ~Black) | Blue)
+#define Whitehd_hd(hd) (((hd)  & ~Black)/*| White*/)
+#define Grayhd_hd(hd)  (((hd)  & ~Black)  | Gray)
+#define Blackhd_hd(hd) (((hd)/*& ~Black*/)| Black)
+#define Bluehd_hd(hd)  (((hd)  & ~Black)  | Blue)
 
 /* This depends on the layout of the header.  See [mlvalues.h]. */
 #define Make_header(wosize, tag, color)					      \

@@ -78,8 +78,8 @@ void fixup_endianness(code, len)
 
 #ifdef THREADED_CODE
 
-void ** instr_table;
-void * instr_base;
+char ** instr_table;
+char * instr_base;
 
 void thread_code (code_t code, asize_t len)
 {

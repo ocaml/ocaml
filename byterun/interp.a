@@ -41,7 +41,7 @@
   import (cprim): data
   import (raise_zero_divide, fatal_error_arg): code
   import (thread_code): code
-  import (instr_table): data
+  import (instr_table, instr_base): data
   import (callback_depth): data
 
 msg       record
@@ -114,6 +114,7 @@ initial_callback_depth_  equ      $00
 	  BNE.S      noinit                             ; == NULL => init
           LEA.L      table(PC), A0
           MOVE.L     A0, (instr_table).L
+          CLR.L      (instr_base).L
 	  MOVEQ.L    #1, D0
           Call_setup                                    ; 2eme copie: "lbl_1B88"
           LEA.L      local_var_size_(A7), A7

@@ -132,7 +132,7 @@ value gc_get(v) /* ML */
 static int norm_pfree (p)
      int p;
 {
-  if (p < 1) return p = 1;
+  if (p < 1) p = 1;
   return p;
 }
 
@@ -157,6 +157,8 @@ value gc_set(v) /* ML */
     value v;
 {
   int newpf;
+  asize_t newheapincr;
+  asize_t newminsize;
 
   verb_gc = Bool_val (Field (v, 3));
 
@@ -166,17 +168,18 @@ value gc_set(v) /* ML */
     gc_message ("New space overhead: %d%%\n", percent_free);
   }
 
-  if (Bsize_wsize (Long_val (Field (v, 1))) != major_heap_increment){
-    major_heap_increment = norm_heapincr (Bsize_wsize (Long_val (Field(v,1))));
+  newheapincr = norm_heapincr (Bsize_wsize (Long_val (Field (v, 1))));
+  if (newheapincr != major_heap_increment){
+    major_heap_increment = newheapincr;
     gc_message ("New heap increment size: %ldk\n", major_heap_increment/1024);
   }
 
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
-  if (Bsize_wsize (Long_val (Field (v, 0))) != minor_heap_size){
-    long new_size = norm_minsize (Bsize_wsize (Long_val (Field (v, 0))));
-    gc_message ("New minor heap size: %ldk\n", new_size/1024);
-    set_minor_heap_size (new_size);
+  newminsize = norm_minsize (Bsize_wsize (Long_val (Field (v, 0))));
+  if (newminsize != minor_heap_size){
+    gc_message ("New minor heap size: %ldk\n", newminsize/1024);
+    set_minor_heap_size (newminsize);
   }
   return Val_unit;
 }
@@ -213,7 +216,7 @@ void init_gc (minor_size, major_incr, percent_fr, verb)
 {
 #ifdef DEBUG
   verb_gc = 1;
-  gc_message ("*** camlrun: debug mode ***\n", 0);
+  gc_message ("*** O'Caml runtime: debug mode ***\n", 0);
 #endif
   verb_gc = verb;
   set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));

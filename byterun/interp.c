@@ -50,15 +50,15 @@ sp is a local copy of the global variable extern_sp. */
 #ifdef THREADED_CODE
 #  define Instruct(name) lbl_##name
 #  if defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
-#    define Jumptbl_base &&lbl_ACC0
+#    define Jumptbl_base ((char *) &&lbl_ACC0)
 #  else
-#    define Jumptbl_base ((void *) 0)
-#    define jumptbl_base ((void *) 0)
+#    define Jumptbl_base ((char *) 0)
+#    define jumptbl_base ((char *) 0)
 #  endif
 #  ifdef DEBUG
 #    define Next goto next_instr
 #  else
-#    define Next goto *(jumptbl_base + *pc++)
+#    define Next goto *(void *)(jumptbl_base + *pc++)
 #  endif
 #else
 #  define Instruct(name) case name
@@ -153,9 +153,9 @@ value interprete(prog, prog_size)
 #endif
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
 #ifdef JUMPTBL_BASE_REG
-  register void * jumptbl_base JUMPTBL_BASE_REG;
+  register char * jumptbl_base JUMPTBL_BASE_REG;
 #else
-  register void * jumptbl_base;
+  register char * jumptbl_base;
 #endif
 #endif
   value env;
@@ -176,7 +176,7 @@ value interprete(prog, prog_size)
 
   if (prog == NULL) {           /* Interpreter is initializing */
 #ifdef THREADED_CODE
-    instr_table = jumptable; 
+    instr_table = (char **) jumptable; 
     instr_base = Jumptbl_base;
 #endif
     return Val_unit;
@@ -210,7 +210,7 @@ value interprete(prog, prog_size)
   Assert(sp >= stack_low);
   Assert(sp <= stack_high);
 #endif
-  goto *(jumptbl_base + *pc++); /* Jump to the first instruction */
+  goto *(void *)(jumptbl_base + *pc++); /* Jump to the first instruction */
 #else
   while(1) {
 #ifdef DEBUG
