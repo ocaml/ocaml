@@ -197,7 +197,6 @@ val bscanf :
 *)
 
 val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-
 (** Same as {!Scanf.bscanf}, but inputs from the given channel.
 
     Warning: since all scanning functions operate from a scanning
