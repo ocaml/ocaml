@@ -4,3 +4,4 @@ prims.c
 opnames.h
 ocamlrun
 ocamlrund
+*.x
