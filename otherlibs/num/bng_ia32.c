@@ -310,8 +310,8 @@ static bngdigit bng_ia32sse2_mult_sub_digit
   out = 0;
   if (blen > 0) {
     /* Carry C is represented by ENC(C) = 0xFFFFFFFF - C (one's complement) */
-    asm("movd %5, %%mm0 \n\t"         /* MM0 is carry (initially 0xFFFFFFFF) */
-        "movq %6, %%mm6 \n\t"         /* MM6 is magic constant bias1 */
+    asm("movd %6, %%mm0 \n\t"         /* MM0 is carry (initially 0xFFFFFFFF) */
+        "movq %5, %%mm6 \n\t"         /* MM6 is magic constant bias1 */
         "movd %4, %%mm7 \n\t"         /* MM7 is digit d */
         "1: \n\t"
         "movd (%0), %%mm1 \n\t"       /* MM1 is next digit of a */
