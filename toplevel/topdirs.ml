@@ -40,6 +40,7 @@ let protect r newval body =
 let rec eval_path = function
     Pident id -> Symtable.get_global_value id
   | Pdot(p, s, pos) -> Obj.field (eval_path p) pos
+  | Papply(p1, p2) -> fatal_error "Topdirs.eval_path"
 
 (* To quit *)
 
@@ -192,7 +193,8 @@ let rec trace_closure name clos_typ =
       let starred_name =
         match name with
           Lident s -> Lident(s ^ "*")
-        | Ldot(lid, s) -> Ldot(lid, s ^ "*") in
+        | Ldot(lid, s) -> Ldot(lid, s ^ "*")
+        | Lapply(l1, l2) -> fatal_error "Topdirs.trace_closure" in
       let trace_res = trace_closure starred_name t2 in
       (fun clos_val ->
         Obj.repr(fun arg ->
