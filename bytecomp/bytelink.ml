@@ -282,8 +282,7 @@ let link_bytecode_as_c objfiles outfile =
 void caml_startup(argv)
         char ** argv;
 {
-  caml_startup_code(caml_code, sizeof(caml_code) / sizeof(int),
-                    caml_data, argv);
+  caml_startup_code(caml_code, sizeof(caml_code), caml_data, argv);
 }\n";
     close_out outchan
   with x ->
@@ -304,7 +303,7 @@ let build_custom_runtime prim_name exec_name =
     "Unix" ->
       Sys.command
        (Printf.sprintf
-          "%s -o %s -I%s %s %s -L%s -lcamlrun %s %s"
+          "%s -o %s -I%s %s %s -L%s %s -lcamlrun %s"
           Config.bytecomp_c_compiler
           exec_name
           Config.standard_library
