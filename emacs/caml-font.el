@@ -1,8 +1,9 @@
 ;; useful colors
 
 (cond
- ((and (x-display-color-p)
-       (not (memq 'font-lock-type-face (face-list))))
+ ((x-display-color-p)
+;
+;       (not (memq 'font-lock-type-face (face-list))))
   ; make the necessary faces
   (make-face 'Firebrick)
   (set-face-foreground 'Firebrick "Firebrick")
@@ -18,6 +19,11 @@
   (set-face-foreground 'DarkOliveGreen "DarkOliveGreen4")
   (make-face 'CadetBlue)
   (set-face-foreground 'CadetBlue "CadetBlue")
+  (make-face 'Stop)
+  (set-face-foreground 'Stop "White")
+  (set-face-background 'Stop "Red")
+  (make-face 'Doc)
+  (set-face-foreground 'Doc "Red")
   ; assign them as standard faces
   (setq font-lock-comment-face 'Firebrick)
   (setq font-lock-string-face 'RosyBrown)
@@ -25,7 +31,10 @@
   (setq font-lock-function-name-face 'MidnightBlue)
   (setq font-lock-variable-name-face 'DarkGoldenRod)
   (setq font-lock-type-face 'DarkOliveGreen)
-  (setq font-lock-reference-face 'CadetBlue)))
+  (setq font-lock-reference-face 'CadetBlue)
+  (setq font-lock-stop-face 'Stop)
+  (setq font-lock-doccomment-face 'Doc)
+))
 
 ; The same definition is in caml.el:
 ; we don't know in which order they will be loaded.
@@ -34,6 +43,12 @@
 
 (defconst caml-font-lock-keywords
   (list
+;stop special comments
+   '("\\(^\\|[^\"]\\)\\((\\*\\*/\\*\\*)\\)"
+     2 font-lock-stop-face)
+;doccomments
+   '("\\(^\\|[^\"]\\)\\((\\*\\*[^*]*\\([^)*][^*]*\\*+\\)*)\\)"
+     2 font-lock-doccomment-face)
 ;comments
    '("\\(^\\|[^\"]\\)\\((\\*[^*]*\\*+\\([^)*][^*]*\\*+\\)*)\\)"
      2 font-lock-comment-face)
