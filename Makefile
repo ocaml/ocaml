@@ -249,9 +249,11 @@ clean::
 beforedepend:: parsing/lexer.ml
 
 # The compiler compiled with the native-code compiler
+# Currently not working because it requires C primitives from byterun/meta.c
+# which are not provided by asmrun/libasmrun.a
 
-camlc.opt: $(COMPOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o camlc.opt $(COMPOBJS:.cmo=.cmx)
+# camlc.opt: $(COMPOBJS:.cmo=.cmx)
+#	$(CAMLOPT) $(LINKFLAGS) -o camlc.opt $(COMPOBJS:.cmo=.cmx)
 
 clean::
 	rm -f camlc.opt
