@@ -116,7 +116,8 @@ let rec add_expr bv exp =
     Pexp_ident l -> add bv l
   | Pexp_constant _ -> ()
   | Pexp_let(_, pel, e) -> add_pat_expr_list bv pel; add_expr bv e
-  | Pexp_function (_, _, pel) -> add_pat_expr_list bv pel
+  | Pexp_function (_, opte, pel) ->
+      add_opt add_expr bv opte; add_pat_expr_list bv pel
   | Pexp_apply(e, el) ->
       add_expr bv e; List.iter (fun (_,e) -> add_expr bv e) el
   | Pexp_match(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
