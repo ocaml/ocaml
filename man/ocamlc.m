@@ -29,6 +29,9 @@ ocamlc \- The Objective Caml bytecode compiler
 ]
 .I filename ...
 
+.B ocamlc.opt
+.I (same options)
+
 .SH DESCRIPTION
 
 The Objective Caml bytecode compiler
@@ -121,6 +124,17 @@ libraries. They are passed to the C linker when linking in
 mode (see the description of 
 .B \-custom
 below).
+
+.B ocamlc.opt
+is the same compiler as
+.BR ocamlc ,
+but compiled with the native-code compiler
+.BR ocamlopt (1).
+Thus, it behaves exactly like
+.BR ocamlc ,
+but compiles faster.
+.B ocamlc.opt
+is not available in all installations of Objective Caml.
 
 .SH OPTIONS
 

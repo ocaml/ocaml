@@ -29,6 +29,9 @@ ocamlopt \- The Objective Caml native-code compiler
 ]
 .I filename ...
 
+.B ocamlopt.opt
+.I (same options)
+
 .SH DESCRIPTION
 The Objective Caml high-performance
 native-code compiler 
@@ -121,6 +124,17 @@ does not need
 .BR ocamlrun (1)
 to run.
 
+.B ocamlopt.opt
+is the same compiler as
+.BR ocamlopt ,
+but compiled with itself instead of with the bytecode compiler
+.BR ocamlc (1).
+Thus, it behaves exactly like
+.BR ocamlopt ,
+but compiles faster.
+.B ocamlopt.opt
+is not available in all installations of Objective Caml.
+
 .SH OPTIONS
 
 The following command-line options are recognized by 
@@ -157,6 +171,7 @@ causes the C linker to search for C libraries in
 directory 
 .IR dir .
 
+.TP
 .B \-compact
 Optimize the produced code for space rather than for time. This
 results in smaller but slightly slower programs. The default is to
