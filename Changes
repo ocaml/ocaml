@@ -23,6 +23,10 @@ Type-checking:
     type u = C of int t | D of string t and 'a t = ...
 - Fixed name-capture bug in "include SIG" and "SIG with ..." constructs.
 - Several bug fixes in type-checking of variants.
+- Typing of polymorphic variants is more restrictive:
+   do not allow conjunctive types inside the same pattern matching.
+   a type has either an upper bound, or all its tags are in the lower bound.
+  This may break some programs (this breaks lablgl-0.94).
 
 Both compilers:
 - Revised compilation of pattern matching.
