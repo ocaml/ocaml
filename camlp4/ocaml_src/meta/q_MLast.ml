@@ -2301,7 +2301,7 @@ let _ =
          Gramext.Stoken ("", "}")],
         Gramext.action
           (fun _ (ldl : 'a_list) _ (loc : int * int) ->
-             (Qast.Node ("TyRec", [Qast.Loc; ldl]) : 'ctyp));
+             (Qast.Node ("TyRec", [Qast.Loc; Qast.Bool false; ldl]) : 'ctyp));
         [Gramext.Stoken ("", "[");
          Gramext.srules
            [[Gramext.Slist0sep
@@ -2320,7 +2320,45 @@ let _ =
          Gramext.Stoken ("", "]")],
         Gramext.action
           (fun _ (cdl : 'a_list) _ (loc : int * int) ->
-             (Qast.Node ("TySum", [Qast.Loc; cdl]) : 'ctyp));
+             (Qast.Node ("TySum", [Qast.Loc; Qast.Bool false; cdl]) : 'ctyp));
+        [Gramext.Stoken ("", "private"); Gramext.Stoken ("", "{");
+         Gramext.srules
+           [[Gramext.Slist1sep
+               (Gramext.Snterm
+                  (Grammar.Entry.obj
+                     (label_declaration :
+                      'label_declaration Grammar.Entry.e)),
+                Gramext.Stoken ("", ";"))],
+            Gramext.action
+              (fun (a : 'label_declaration list) (loc : int * int) ->
+                 (Qast.List a : 'a_list));
+            [Gramext.Snterm
+               (Grammar.Entry.obj (a_list : 'a_list Grammar.Entry.e))],
+            Gramext.action
+              (fun (a : 'a_list) (loc : int * int) -> (a : 'a_list))];
+         Gramext.Stoken ("", "}")],
+        Gramext.action
+          (fun _ (ldl : 'a_list) _ _ (loc : int * int) ->
+             (Qast.Node ("TyRec", [Qast.Loc; Qast.Bool true; ldl]) : 'ctyp));
+        [Gramext.Stoken ("", "private"); Gramext.Stoken ("", "[");
+         Gramext.srules
+           [[Gramext.Slist0sep
+               (Gramext.Snterm
+                  (Grammar.Entry.obj
+                     (constructor_declaration :
+                      'constructor_declaration Grammar.Entry.e)),
+                Gramext.Stoken ("", "|"))],
+            Gramext.action
+              (fun (a : 'constructor_declaration list) (loc : int * int) ->
+                 (Qast.List a : 'a_list));
+            [Gramext.Snterm
+               (Grammar.Entry.obj (a_list : 'a_list Grammar.Entry.e))],
+            Gramext.action
+              (fun (a : 'a_list) (loc : int * int) -> (a : 'a_list))];
+         Gramext.Stoken ("", "]")],
+        Gramext.action
+          (fun _ (cdl : 'a_list) _ _ (loc : int * int) ->
+             (Qast.Node ("TySum", [Qast.Loc; Qast.Bool true; cdl]) : 'ctyp));
         [Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
         Gramext.action (fun _ (t : 'ctyp) _ (loc : int * int) -> (t : 'ctyp));
         [Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", "*");

@@ -36,13 +36,13 @@ let rec ctyp floc sh =
     | TyOlb (loc, x1, x2) -> TyOlb (floc loc, x1, self x2)
     | TyPol (loc, x1, x2) -> TyPol (floc loc, x1, self x2)
     | TyQuo (loc, x1) -> TyQuo (floc loc, x1)
-    | TyRec (loc, x1) ->
+    | TyRec (loc, pflag, x1) ->
         TyRec
-          (floc loc,
+          (floc loc, pflag,
            List.map (fun (loc, x1, x2, x3) -> floc loc, x1, x2, self x3) x1)
-    | TySum (loc, x1) ->
+    | TySum (loc, pflag, x1) ->
         TySum
-          (floc loc,
+          (floc loc, pflag,
            List.map (fun (loc, x1, x2) -> floc loc, x1, List.map self x2) x1)
     | TyTup (loc, x1) -> TyTup (floc loc, List.map self x1)
     | TyUid (loc, x1) -> TyUid (floc loc, x1)

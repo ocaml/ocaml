@@ -862,15 +862,19 @@ EXTEND
     [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> (t1, t2) ] ]
   ;
   type_kind:
-    [ [ test_constr_decl; OPT "|";
+    [ [ test_constr_decl; pf = OPT "private"; OPT "|";
         cdl = LIST1 constructor_declaration SEP "|" ->
-          <:ctyp< [ $list:cdl$ ] >>
+          if o2b pf then <:ctyp< private [ $list:cdl$ ] >>
+          else <:ctyp< [ $list:cdl$ ] >>
       | t = ctyp -> <:ctyp< $t$ >>
       | t = ctyp; "="; "{"; ldl = label_declarations; "}" ->
           <:ctyp< $t$ == { $list:ldl$ } >>
       | t = ctyp; "="; OPT "|"; cdl = LIST1 constructor_declaration SEP "|" ->
           <:ctyp< $t$ == [ $list:cdl$ ] >>
-      | "{"; ldl = label_declarations; "}" -> <:ctyp< { $list:ldl$ } >> ] ]
+      | "private"; "{"; ldl = label_declarations; "}" ->
+          <:ctyp< private { $list:ldl$ } >>
+      | "{"; ldl = label_declarations; "}" ->
+          <:ctyp< { $list:ldl$ } >> ] ]
   ;
   type_parameters:
     [ [ -> (* empty *) []

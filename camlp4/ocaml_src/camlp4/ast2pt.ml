@@ -161,8 +161,8 @@ let rec ctyp =
   | TyOlb (loc, lab, _) -> error loc "labeled type not allowed here"
   | TyPol (loc, pl, t) -> mktyp loc (Ptyp_poly (pl, ctyp t))
   | TyQuo (loc, s) -> mktyp loc (Ptyp_var s)
-  | TyRec (loc, _) -> error loc "record type not allowed here"
-  | TySum (loc, _) -> error loc "sum type not allowed here"
+  | TyRec (loc, _, _) -> error loc "record type not allowed here"
+  | TySum (loc, _, _) -> error loc "sum type not allowed here"
   | TyTup (loc, tl) -> mktyp loc (Ptyp_tuple (List.map ctyp tl))
   | TyUid (loc, s) -> mktyp loc (Ptyp_constr (lident s, []))
   | TyVrn (loc, catl, ool) ->
@@ -196,16 +196,20 @@ let mktrecord (_, n, m, t) = n, mkmutable m, ctyp (mkpolytype t)
 let mkvariant (_, c, tl) = c, List.map ctyp tl
 let type_decl tl cl =
   function
-    TyMan (loc, t, TyRec (_, ltl)) ->
-      mktype loc tl cl (Ptype_record (List.map mktrecord ltl, Public))
+    TyMan (loc, t, TyRec (_, pflag, ltl)) ->
+      mktype loc tl cl
+        (Ptype_record (List.map mktrecord ltl, mkprivate pflag))
         (Some (ctyp t))
-  | TyMan (loc, t, TySum (_, ctl)) ->
-      mktype loc tl cl (Ptype_variant (List.map mkvariant ctl, Public))
+  | TyMan (loc, t, TySum (_, pflag, ctl)) ->
+      mktype loc tl cl
+        (Ptype_variant (List.map mkvariant ctl, mkprivate pflag))
         (Some (ctyp t))
-  | TyRec (loc, ltl) ->
-      mktype loc tl cl (Ptype_record (List.map mktrecord ltl, Public)) None
-  | TySum (loc, ctl) ->
-      mktype loc tl cl (Ptype_variant (List.map mkvariant ctl, Public)) None
+  | TyRec (loc, pflag, ltl) ->
+      mktype loc tl cl
+        (Ptype_record (List.map mktrecord ltl, mkprivate pflag)) None
+  | TySum (loc, pflag, ctl) ->
+      mktype loc tl cl
+        (Ptype_variant (List.map mkvariant ctl, mkprivate pflag)) None
   | t ->
       let m =
         match t with

@@ -1472,6 +1472,14 @@ pr_ctyp.pr_levels :=
           fun curr next _ k -> [: `S LR (var_escaped s); k :]
       | <:ctyp< $uid:s$ >> -> fun curr next _ k -> [: `S LR s; k :]
       | <:ctyp< _ >> -> fun curr next _ k -> [: `S LR "_"; k :]
+      | <:ctyp< private { $list: ftl$ } >> as t ->
+          fun curr next _ k ->
+            let loc = MLast.loc_of_ctyp t in
+              [: `HVbox
+                 [: `HVbox [:`S LR "private" :];
+                    `HVbox [: labels loc [:`S LR "{" :]
+                                ftl [: `S LR "}" :] :];
+                     k :] :]
       | <:ctyp< { $list: ftl$ } >> as t ->
           fun curr next _ k ->
             let loc = MLast.loc_of_ctyp t in
@@ -1482,6 +1490,12 @@ pr_ctyp.pr_levels :=
             let loc = MLast.loc_of_ctyp t in
             [: `Vbox
                   [: `HVbox [: :];
+                     variants loc [: `S LR "[" :] ctl [: `S LR "]" :]; k :] :]
+      | <:ctyp< private [ $list:ctl$ ] >> as t ->
+          fun curr next _ k ->
+            let loc = MLast.loc_of_ctyp t in
+            [: `Vbox
+                  [: `HVbox [: `S LR "private" :];
                      variants loc [: `S LR "[" :] ctl [: `S LR "]" :]; k :] :]
       | <:ctyp< [ = $list:rfl$ ] >> ->
           fun curr next _ k ->

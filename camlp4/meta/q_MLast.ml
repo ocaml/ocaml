@@ -805,10 +805,14 @@ EXTEND
       | "("; t = SELF; "*"; tl = SLIST1 ctyp SEP "*"; ")" ->
           Qast.Node "TyTup" [Qast.Loc; Qast.Cons t tl]
       | "("; t = SELF; ")" -> t
+      | "private"; "["; cdl = SLIST0 constructor_declaration SEP "|"; "]" ->
+          Qast.Node "TySum" [Qast.Loc; Qast.Bool True; cdl]
+      | "private"; "{"; ldl = SLIST1 label_declaration SEP ";"; "}" ->
+          Qast.Node "TyRec" [Qast.Loc; Qast.Bool True; ldl]
       | "["; cdl = SLIST0 constructor_declaration SEP "|"; "]" ->
-          Qast.Node "TySum" [Qast.Loc; cdl]
+          Qast.Node "TySum" [Qast.Loc; Qast.Bool False; cdl]
       | "{"; ldl = SLIST1 label_declaration SEP ";"; "}" ->
-          Qast.Node "TyRec" [Qast.Loc; ldl] ] ]
+          Qast.Node "TyRec" [Qast.Loc; Qast.Bool False; ldl] ] ]
   ;
   constructor_declaration:
     [ [ ci = a_UIDENT; "of"; cal = SLIST1 ctyp SEP "and" ->

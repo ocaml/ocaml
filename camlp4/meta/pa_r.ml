@@ -554,6 +554,10 @@ EXTEND
       | "("; t = SELF; "*"; tl = LIST1 ctyp SEP "*"; ")" ->
           <:ctyp< ( $list:[t::tl]$ ) >>
       | "("; t = SELF; ")" -> <:ctyp< $t$ >>
+      | "private"; "["; cdl = LIST0 constructor_declaration SEP "|"; "]" ->
+          <:ctyp< private [ $list:cdl$ ] >>
+      | "private"; "{"; ldl = LIST1 label_declaration SEP ";"; "}" ->
+          <:ctyp< private { $list:ldl$ } >>
       | "["; cdl = LIST0 constructor_declaration SEP "|"; "]" ->
           <:ctyp< [ $list:cdl$ ] >>
       | "{"; ldl = LIST1 label_declaration SEP ";"; "}" ->
