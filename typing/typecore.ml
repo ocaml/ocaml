@@ -587,7 +587,8 @@ and is_nonexpansive_opt = function
 let type_format loc fmt =
   let len = String.length fmt in
   let ty_input = newvar()
-  and ty_result = newvar() in
+  and ty_result = newvar()
+  and ty_aresult = newvar () in
   let ty_arrow gty ty = newty (Tarrow("", instance gty, ty, Cok)) in
   let incomplete i =
     raise (Error (loc, Bad_format (String.sub fmt i (len - i)))) in
@@ -644,7 +645,7 @@ let type_format loc fmt =
         ty_arrow Predef.type_bool (scan_format (j+1))
     | 'a' ->
         let ty_arg = newvar() in
-        ty_arrow (ty_arrow ty_input (ty_arrow ty_arg ty_result))
+        ty_arrow (ty_arrow ty_input (ty_arrow ty_arg ty_aresult))
           (ty_arrow ty_arg (scan_format (j+1)))
     | 't' ->
         ty_arrow (ty_arrow ty_input ty_result) (scan_format (j+1))
@@ -676,7 +677,8 @@ let type_format loc fmt =
         raise(Error(loc, Bad_format(String.sub fmt i (j-i+1))))
   in
   newty
-    (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result],
+    (Tconstr(Predef.path_format,
+             [scan_format 0; ty_input; ty_aresult; ty_result],
              ref Mnil))
 
 (* Approximate the type of an expression, for better recursion *)

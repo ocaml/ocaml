@@ -166,6 +166,19 @@ let char_for_hexadecimal_code lexbuf i =
   in
   Char.chr (val1 * 16 + val2)
 
+(* Remove underscores from float literals *)
+
+let remove_underscores s =
+  let l = String.length s in
+  let rec remove src dst =
+    if src >= l then
+      if dst >= l then s else String.sub s 0 dst
+    else
+      match s.[src] with
+        '_' -> remove (src + 1) dst
+      |  c  -> s.[dst] <- c; remove (src + 1) (dst + 1)
+  in remove 0 0
+
 (* Error report *)
 
 open Format
@@ -239,7 +252,7 @@ rule token = parse
   | decimal_literal | hex_literal | oct_literal | bin_literal
       { INT (int_of_string(Lexing.lexeme lexbuf)) }
   | float_literal
-      { FLOAT (Lexing.lexeme lexbuf) }
+      { FLOAT (remove_underscores (Lexing.lexeme lexbuf)) }
   | "\""
       { reset_string_buffer();
         let string_start = Lexing.lexeme_start lexbuf in
