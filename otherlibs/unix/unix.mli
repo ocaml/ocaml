@@ -237,6 +237,18 @@ external in_channel_of_descr : file_descr -> in_channel
 external out_channel_of_descr : file_descr -> out_channel
                               = "caml_open_descriptor"
         (* Create an output channel writing on the given descriptor. *)
+external in_channel_of_descr_bin : file_descr -> in_channel 
+                             = "caml_open_descriptor"
+external out_channel_of_descr_bin : file_descr -> out_channel
+                              = "caml_open_descriptor"
+        (* Same as [in_channel_of_descr] and
+           [out_channel_of_descr_bin], except that the channel
+           is created in binary mode (no translation).
+           In contrast, [in_channel_of_descr] and [out_channel_of_descr_bin]
+           return channels that are set to text mode (translation of
+           end-of-lines may take place).  This makes no difference under
+           Unix, where text mode and binary mode are identical,
+           but this matters under Windows. *)
 external descr_of_in_channel : in_channel -> file_descr = "channel_descriptor"
         (* Return the descriptor corresponding to an input channel. *)
 external descr_of_out_channel : out_channel -> file_descr
