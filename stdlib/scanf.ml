@@ -173,19 +173,17 @@ let skip_char ib c max =
 
 let default_token_buffer_size = 1024;;
 
-let create fname next =
-  let ib = {
-    bof = true;
-    eof = false;
-    cur_char = '\000';
-    char_count = 0;
-    line_count = 0;
-    get_next_char = next;
-    tokbuf = Buffer.create default_token_buffer_size;
-    token_count = 0;
-    file_name = fname;
-    } in
-  ib;;
+let create fname next = {
+  eof = false;
+  bof = true;
+  cur_char = '\000';
+  char_count = 0;
+  line_count = 0;
+  token_count = 0;
+  get_next_char = next;
+  tokbuf = Buffer.create default_token_buffer_size;
+  file_name = fname;
+};;
 
 let from_string s =
   let i = ref 0 in
@@ -256,9 +254,9 @@ let bad_format fmt i fc =
 let bad_float () = bad_input "no dot or exponent part found in float token";;
 
 (* Checking that the current char is indeed one of range, then skip it. *)
-let check_char_in ib range =
+let check_char_in range ib =
   let ci = Scanning.checked_peek_char ib in
-  if List.mem ci range then Scanning.next_char ib else
+  if List.memq ci range then Scanning.next_char ib else
   let sr = String.concat "" (List.map (String.make 1) range) in
   bad_input
     (Printf.sprintf "looking for one of range %s, found %c" sr ci);;
@@ -464,7 +462,7 @@ let scan_string stp max ib =
     if List.mem c stp then max else
     loop (Scanning.store_char ib c max) in
   let max = loop max in
-  if stp != [] then check_char_in ib stp;
+  if stp != [] then check_char_in stp ib;
   max;;
 
 (* Scan a char: peek strictly one character in the input, whatsoever. *)
@@ -559,38 +557,47 @@ let scan_bool max ib =
     | _ -> 0 in
   scan_string [] (min max m) ib;;
 
+(* Reading char sets in %[...] conversions. *)
 type char_set =
-   | Pos_set of string
-   | Neg_set of string;;
+   | Pos_set of string (* Positive (regular) set. *)
+   | Neg_set of string (* Negative (complementary) set. *);;
 
+(* Char sets are read as sub-strings in the format string. *)
 let read_char_set fmt i =
   let lim = String.length fmt - 1 in
 
-  let rec find_in_set i j =
+  let rec find_in_set j =
     if j > lim then bad_format fmt j fmt.[lim - 1] else
     match fmt.[j] with
-    | ']' -> String.sub fmt i (j - i), j
-    | c -> find_in_set i (j + 1)
-
-  and find_set_sign i =
-    if i > lim then bad_format fmt i fmt.[lim - 1] else
-    match fmt.[i] with
-    | '^' -> let set, i = find_set (i + 1) in i, Neg_set set
-    | _ -> let set, i = find_set i in i, Pos_set set
+    | ']' -> j
+    | c -> find_in_set (j + 1)
 
   and find_set i =
     if i > lim then bad_format fmt i fmt.[lim - 1] else
     match fmt.[i] with
-    | ']' -> find_in_set i (i + 1)
-    | c -> find_in_set i i in
+    | ']' -> find_in_set (i + 1)
+    | c -> find_in_set i in
 
-  find_set_sign i;;
+  if i > lim then bad_format fmt i fmt.[lim - 1] else
+  match fmt.[i] with
+  | '^' ->
+     let i = i + 1 in
+     let j = find_set i in
+     j, Neg_set (String.sub fmt i (j - i))
+  | _ ->
+     let j = find_set i in
+     j, Pos_set (String.sub fmt i (j - i));;
 
+(* Char sets are now represented as bitvects that are represented as
+   byte strings. *)
+
+(* Bit manipulations into bytes. *)
 let set_bit_of_byte byte idx b =
   (b lsl idx) lor (byte land (* mask idx *) (lnot (1 lsl idx)));;
 
 let get_bit_of_byte byte idx = (byte lsr idx) land 1;;
 
+(* Bit manipulations in vectors of bytes represented as strings. *)
 let set_bit_of_range r c b =
   let idx = c land 0x7 in
   let ydx = c lsr 3 in
@@ -603,14 +610,19 @@ let get_bit_of_range r c =
   let byte = r.[ydx] in
   get_bit_of_byte (int_of_char byte) idx;;
 
+(* Char sets represented as bitvects represented as fixed length byte
+   strings. *)
+(* Create a full or empty set of chars. *)
 let make_range bit =
   let c = char_of_int (if bit = 0 then 0 else 0xFF) in
   String.make 32 c;;
 
-let bit_not b = (lnot b) land 1;;
-
+(* Test is a char belongs to a set of chars. *)
 let get_char_in_range r c = get_bit_of_range r (int_of_char c);;
 
+let bit_not b = (lnot b) land 1;;
+
+(* Build the bit vector corresponding to a char set read in the format. *)
 let make_bv bit set =
   let r = make_range (bit_not bit) in
   let lim = String.length set - 1 in
@@ -633,6 +645,7 @@ let make_bv bit set =
   loop bit false 0;
   r;;
 
+(* Compute the predicate on chars corresponding to a char set. *)
 let make_pred bit set stp =
   let r = make_bv bit set in
   List.iter
@@ -650,6 +663,9 @@ let make_setp stp char_set =
       | 2 ->
           let p1 = set.[0] and p2 = set.[1] in
           (fun c -> if c == p1 || c == p2 then 1 else 0)
+      | 3 ->
+          let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
+          (fun c -> if c == p1 || c == p2 || c == p3 then 1 else 0)
       | n -> make_pred 1 set stp
       end
   | Neg_set set ->
@@ -661,6 +677,9 @@ let make_setp stp char_set =
       | 2 ->
           let p1 = set.[0] and p2 = set.[1] in
           (fun c -> if c != p1 && c != p2 then 1 else 0)
+      | 3 ->
+          let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
+          (fun c -> if c != p1 && c != p2 && c != p3 then 1 else 0)
       | n -> make_pred 0 set stp
       end;;
 
@@ -741,7 +760,7 @@ let scan_chars_in_char_set stp char_set max ib =
         | 2 -> loop_neg2 set.[0] set.[1] max
         | 3 -> loop_neg3 set.[0] set.[1] set.[2] max
         | n -> loop (find_setp stp char_set) max end in
-  if stp != [] then check_char_in ib stp;
+  if stp != [] then check_char_in stp ib;
   max;;
 
 let get_count t ib =

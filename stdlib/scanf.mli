@@ -122,7 +122,7 @@ val bscanf :
      specification is greater than 1.
    - [C]: reads a single delimited character (delimiters and special
      escaped characters follow the lexical conventions of Caml).
-   - [f], [e], [E], [g], [G], [F]: reads an optionally signed
+   - [f], [e], [E], [g], [G]: reads an optionally signed
      floating-point number in decimal notation, in the style [dddd.ddd
      e/E+-dd].
    - [F]: reads a floating point number according to the lexical
