@@ -2,7 +2,8 @@ Objective Caml 1.04:
 --------------------
 
 * Replay debugger ported from Caml Light; added debugger support in
-  compiler (option -g) and runtime system.
+  compiler (option -g) and runtime system. Debugger is alpha-quality
+  and needs testing.
 
 * Parsing:
   - Support for "# linenum" directives.
@@ -15,10 +16,10 @@ Objective Caml 1.04:
   - Extensive cleanup of internals of type inference.
 
 * Native-code compilation:
-  - (conservative) inlining of small functions at point of call.
+  - Inlining of small functions at point of call (fairly conservative).
   - MIPS code generator ported to SGI IRIX 6.
-  - better code generated for large integer constants.
-  - check for urgent GC when allocating large objects in major heap.
+  - Better code generated for large integer constants.
+  - Check for urgent GC when allocating large objects in major heap.
   - PowerPC port: better scheduling, reduced TOC consumption.
   - HPPA port: handle long conditional branches gracefully,
     several span-dependent bugs fixed.
@@ -47,7 +48,8 @@ Objective Caml 1.04:
 
 * Ocamlyacc: default error function no longer prevents error recovery.
 
-* Ocamllex: fixed output problem (\r\r\n) under Win32.
+* Ocamllex: fixed reentrancy problem w.r.t. exceptions during refill;
+  fixed output problem (\r\r\n) under Win32.
 
 * Macintosh port:
   - The makefiles are provided for compiling and installing O'Caml on
