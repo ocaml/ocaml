@@ -57,4 +57,4 @@ let eq = (==)
 let eq_int = (==)
 let eq_string = (=)
 
-let sixtyfour = (1 lsl 32) <> 0
+let sixtyfour = (1 lsl 31) <> 0
