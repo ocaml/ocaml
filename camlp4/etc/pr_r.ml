@@ -27,6 +27,7 @@ value not_impl name x =
 value gen_where = ref True;
 value old_sequences = ref False;
 value input_file_ic = ref None;
+value expand_declare = ref False;
 
 external is_printable : char -> bool = "is_printable";
 
@@ -906,10 +907,13 @@ pr_sig_item.pr_levels :=
           fun curr next _ k -> [: `type_list [: `S LR "type" :] stl k :]
       | <:sig_item< declare $list:s$ end >> ->
           fun curr next _ k ->
-            [: `BEbox
-                  [: `S LR "declare";
-                     `HVbox [: `HVbox [: :]; list sig_item s [: :] :];
-                     `HVbox [: `S LR "end"; k :] :] :]
+            if expand_declare.val then
+              [: `HVbox [: :]; list sig_item s [: :] :]
+            else
+              [: `BEbox
+                    [: `S LR "declare";
+                       `HVbox [: `HVbox [: :]; list sig_item s [: :] :];
+                       `HVbox [: `S LR "end"; k :] :] :]
       | MLast.SgDir _ _ _ as si ->
           fun curr next _ k -> [: `not_impl "sig_item1" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
@@ -950,10 +954,13 @@ pr_str_item.pr_levels :=
           fun curr next _ k -> [: `HVbox [: :]; `expr e k :]
       | <:str_item< declare $list:s$ end >> ->
           fun curr next _ k ->
-            [: `BEbox
-                  [: `S LR "declare";
-                     `HVbox [: `HVbox [: :]; list str_item s [: :] :];
-                     `HVbox [: `S LR "end"; k :] :] :]
+            if expand_declare.val then
+              [: `HVbox [: :]; list str_item s [: :] :]
+            else
+              [: `BEbox
+                    [: `S LR "declare";
+                       `HVbox [: `HVbox [: :]; list str_item s [: :] :];
+                       `HVbox [: `S LR "end"; k :] :] :]
       | <:str_item< # $s$ $opt:x$ >> ->
           fun curr next _ k ->
             let s =
@@ -1766,3 +1773,6 @@ Pcaml.add_option "-ca" (Arg.Set comm_after)
 
 Pcaml.add_option "-tc" (Arg.Set type_comm)
   "          Add the comments inside sum and record types.";
+
+Pcaml.add_option "-exp_dcl" (Arg.Set expand_declare)
+  "     Expand the \"declare\" items.";
