@@ -22,6 +22,7 @@ Type-checking:
   mutually-recursive type definition, e.g. the following is again allowed
     type u = C of int t | D of string t and 'a t = ...
 - Fixed name-capture bug in "include SIG" and "SIG with ..." constructs.
+- Improved implicit subtypes built by (... :> ty), closer to intuition.
 - Several bug fixes in type-checking of variants.
 - Typing of polymorphic variants is more restrictive:
    do not allow conjunctive types inside the same pattern matching.
