@@ -837,7 +837,8 @@ let rec transl = function
         (Pgetglobal id, []) ->
           if Ident.is_predef_exn id
           then Cconst_symbol ("caml_exn_" ^ (Ident.name id))
-          else Cconst_symbol ("caml" ^ (Ident.name id))
+          else Cconst_symbol (Compilenv.make_symbol ~unitname:(Ident.name id)
+                                                    None)
       | (Pmakeblock(tag, mut), []) ->
           transl_constant(Const_block(tag, []))
       | (Pmakeblock(tag, mut), args) ->
@@ -1803,7 +1804,8 @@ let entry_point namelist =
   let body =
     List.fold_right
       (fun name next ->
-        Csequence(Cop(Capply typ_void, [Cconst_symbol("caml"^name^"__entry")]),
+        let entry_sym = Compilenv.make_symbol ~unitname:name (Some "entry") in
+        Csequence(Cop(Capply typ_void, [Cconst_symbol entry_sym]),
                   Csequence(incr_global_inited, next)))
       namelist (Cconst_int 1) in
   Cfunction {fun_name = "caml_program";
@@ -1816,9 +1818,12 @@ let entry_point namelist =
 let cint_zero = Cint 0n
 
 let global_table namelist =
+  let mksym name =
+    Csymbol_address (Compilenv.make_symbol ~unitname:name None)
+  in
   Cdata(Cglobal_symbol "caml_globals" ::
         Cdefine_symbol "caml_globals" ::
-        List.map (fun name -> Csymbol_address ("caml" ^ name)) namelist @
+        List.map mksym namelist @
         [cint_zero])
 
 let globals_map namelist =
@@ -1829,29 +1834,31 @@ let globals_map namelist =
 (* Generate the master table of frame descriptors *)
 
 let frame_table namelist =
+  let mksym name =
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some "frametable"))
+  in
   Cdata(Cglobal_symbol "caml_frametable" ::
         Cdefine_symbol "caml_frametable" ::
-        List.map (fun name -> Csymbol_address("caml" ^ name ^ "__frametable"))
-                 namelist
+        List.map mksym namelist
         @ [cint_zero])
 
 (* Generate the table of module data and code segments *)
 
 let segment_table namelist symbol begname endname =
+  let addsyms name lst =
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some begname)) ::
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some endname)) ::
+    lst
+  in
   Cdata(Cglobal_symbol symbol ::
         Cdefine_symbol symbol ::
-        List.fold_right
-          (fun name lst ->
-            Csymbol_address("caml" ^ name ^ begname) ::
-            Csymbol_address("caml" ^ name ^ endname) :: lst)
-          namelist
-          [cint_zero])
+        List.fold_right addsyms namelist [cint_zero])
 
 let data_segment_table namelist =
-  segment_table namelist "caml_data_segments" "__data_begin" "__data_end"
+  segment_table namelist "caml_data_segments" "data_begin" "data_end"
 
 let code_segment_table namelist =
-  segment_table namelist "caml_code_segments" "__code_begin" "__code_end"
+  segment_table namelist "caml_code_segments" "code_begin" "code_end"
 
 (* Initialize a predefined exception *)
 
