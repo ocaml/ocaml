@@ -141,6 +141,13 @@ let rec type_pat env sp =
         pat_type = ty_res;
         pat_env = env }
   | Ppat_record lid_sp_list ->
+      let rec check_duplicates = function
+        [] -> ()
+      | (lid, sarg) :: remainder ->
+          if List.mem_assoc lid remainder
+          then raise(Error(sp.ppat_loc, Label_multiply_defined lid))
+          else check_duplicates remainder in
+      check_duplicates lid_sp_list;
       let ty = newvar() in
       let type_label_pat (lid, sarg) =
         let label =
