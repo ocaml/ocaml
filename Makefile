@@ -545,11 +545,8 @@ alldepend::
 
 # The extra libraries
 
-otherlibs/dyntypes/dynamics.cmo: dyntypes
-otherlibs/dyntypes/dynamics.cmx: dyntypes
-otherlibs/dyntypes/dynamics.o: dyntypes
-dyntypes: ocamlc jocp
-	cd otherlibs/dyntypes && $(MAKE)
+otherlibs/dyntypes/dynamics.cma: ocamlc jocp FORCE
+	cd otherlibs/dyntypes && $(MAKE) dynamics.cma
 dynlink: ocamlc
 	cd otherlibs/dynlink && $(MAKE)
 
