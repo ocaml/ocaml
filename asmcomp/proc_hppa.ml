@@ -168,7 +168,8 @@ let select_store addr exp = raise Use_default
 let pseudoregs_for_operation op arg res =
   match op with
     Iintop(Idiv | Imod) ->       (* handled via calls to millicode *)
-      ([|phys_reg 20; phys_reg 19|], [|phys_reg 22|]) (* %r26, %r25, %r29 *)
+      ([|phys_reg 20; phys_reg 19|], [|phys_reg 22|], true)
+      (* %r26, %r25, %r29 *)
   | _ ->
       raise Use_default
 

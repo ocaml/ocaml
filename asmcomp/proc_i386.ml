@@ -195,10 +195,19 @@ let select_oper op args =
       | (Iindexed2 0, _) -> raise Use_default
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
-  (* Prevent the recognition of (x / cst) and (x % cst),
-     which do not correspond to an addressing mode. *)
-  | Cdivi -> (Iintop Idiv, args)
-  | Cmodi -> (Iintop Imod, args)
+  (* Recognize (x / cst) and (x % cst) only if cst is a power of 2. *)
+  | Cdivi ->
+      begin match args with
+        [arg1; Cconst_int n] when n = 1 lsl (Misc.log2 n) ->
+          (Iintop_imm(Idiv, n), [arg1])
+      | _ -> (Iintop Idiv, args)
+      end
+  | Cmodi ->
+      begin match args with
+        [arg1; Cconst_int n] when n = 1 lsl (Misc.log2 n) ->
+          (Iintop_imm(Imod, n), [arg1])
+      | _ -> (Iintop Imod, args)
+      end
   (* Recognize float arithmetic with memory.
      In passing, change associativity of some float operations *)
   | Caddf -> select_floatarith Iaddf Ifloatadd Ifloatadd
@@ -242,7 +251,7 @@ let pseudoregs_for_operation op arg res =
     Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor) ->
       ([|res.(0); arg.(1)|], res, false)
   (* Two-address unary operations *)
-  | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) ->
+  | Iintop_imm((Iadd|Isub|Imul|Idiv|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) ->
       (res, res, false)
   (* For shifts with variable shift count, second arg must be in ecx *)
   | Iintop(Ilsl|Ilsr|Iasr) ->
@@ -254,6 +263,10 @@ let pseudoregs_for_operation op arg res =
       ([| eax; ecx |], [| eax |], true)
   | Iintop(Imod) ->
       ([| eax; ecx |], [| edx |], true)
+  (* For mod with immediate operand, arg must not be in eax.
+     Keep it simple, force it in edx. *)
+  | Iintop_imm(Imod, _) ->
+      ([| edx |], [| edx |], true)
   (* For floating-point operations, the result is always left at the
      top of the floating-point stack *)
   | Iconst_float _ | Iaddf | Isubf | Imulf | Idivf | Ifloatofint |
@@ -332,6 +345,7 @@ let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) -> [| eax; edx |]
+  | Iop(Iintop_imm(Imod, _)) -> [| eax |]
   | Iop(Ialloc _) -> [| eax |]
   | Iop(Iintop(Icomp _) | Iintop_imm(Icomp _, _)) -> [| eax |]
   | Iop(Iintoffloat) -> [| eax |]
@@ -386,12 +400,13 @@ let reload_operation makereg op arg res =
   | _ -> (* Other operations: all args and results in registers *)
       raise Use_default
 
-(* Scheduling is turned off until I understand better the pipelines
-   of the 486 and Pentium. *)
+(* Scheduling is turned off because our model does not fit the 486
+   nor Pentium very well. In particular, it messes up with the
+   float reg stack. *)
 
 let need_scheduling = false
 
-let oper_latency _ = 1
+let oper_latency _ = 0
 
 (* Layout of the stack frame *)
 

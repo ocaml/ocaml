@@ -198,9 +198,9 @@ let instr_for_intop = function
   | Iand -> "andl"
   | Ior -> "orl"
   | Ixor -> "xorl"
-  | Ilsl -> "sal"
-  | Ilsr -> "shr"
-  | Iasr -> "sar"
+  | Ilsl -> "sall"
+  | Ilsr -> "shrl"
+  | Iasr -> "sarl"
   | _ -> fatal_error "Emit_i386: instr_for_intop"
 
 let instr_for_floatop = function
@@ -276,10 +276,10 @@ let emit_instr i =
               `	movl	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
           | Float ->
               begin match i.arg.(0).loc with
-                Reg 100 ->
+                Reg 100 ->              (* top of FP stack *)
                   `	fstpl	{emit_reg i.res.(0)}\n`;
                   decr fp_offset
-              | Reg 101 when !fp_offset = 0 ->
+              | Reg 101 when !fp_offset = 0 -> (* %st(0) *)
                   `	fstl	{emit_reg i.res.(0)}\n`
               | _ ->
                   `	fldl	{emit_reg i.arg.(0)}\n`;
@@ -373,10 +373,10 @@ let emit_instr i =
             `	movl	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
         | Float ->
             begin match i.arg.(0).loc with
-              Reg 100 ->
+              Reg 100 ->                (* top of FP stack *)
                 `	fstpl	{emit_addressing addr i.arg 1}\n`;
                 decr fp_offset
-            | Reg 101 when !fp_offset = 0 ->
+            | Reg 101 when !fp_offset = 0 -> (* %st(0) *)
                 `	fstl	{emit_addressing addr i.arg 1}\n`
             | _ ->
                 `	fldl	{emit_reg i.arg.(0)}\n`;
@@ -444,6 +444,22 @@ let emit_instr i =
         `	incl	{emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
         `	decl	{emit_reg i.res.(0)}\n`
+    | Lop(Iintop_imm(Idiv, n)) ->
+        let l = Misc.log2 n in
+        let lbl = new_label() in
+        output_test_zero i.arg.(0);
+        `	jge	{emit_label lbl}\n`;
+        `	addl	${emit_int(n-1)}, {emit_reg i.arg.(0)}\n`;
+        `{emit_label lbl}:	sarl	${emit_int l}, {emit_reg i.arg.(0)}\n`
+    | Lop(Iintop_imm(Imod, n)) ->
+        let l = Misc.log2 n in
+        let lbl = new_label() in
+        `	movl	{emit_reg i.arg.(0)}, %eax\n`;
+        `	testl	%eax, %eax\n`;
+        `	jge	{emit_label lbl}\n`;
+        `	addl	${emit_int(n-1)}, %eax\n`;
+        `{emit_label lbl}:	andl	${emit_int(-n)}, %eax\n`;
+        `	subl	%eax, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop_imm(op, n)) ->
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	${emit_int n}, {emit_reg i.res.(0)}\n`
@@ -467,10 +483,8 @@ let emit_instr i =
             `	fildl	{emit_reg i.arg.(0)}\n`
         | _ ->
             `	pushl	{emit_reg i.arg.(0)}\n`;
-            stack_offset := !stack_offset + 4;
             `	fildl	(%esp)\n`;
-            `	addl	$4, %esp\n`;
-            stack_offset := !stack_offset - 4
+            `	addl	$4, %esp\n`
         end;
         incr fp_offset
     | Lop(Iintoffloat) ->
