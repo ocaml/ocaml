@@ -475,9 +475,21 @@ let scan_String max ib =
     | '"', false (* '"' helping Emacs *) ->
        Scanning.next_char ib; max - 1
     | '\\', false ->
-       Scanning.next_char ib; loop false (scan_backslash_char (max - 1) ib)
+       Scanning.next_char ib;
+       skip_spaces true (max - 1)
     | c, false -> loop false (Scanning.store_char ib c max)
-    | c, _ -> bad_input_char c in
+    | c, _ -> bad_input_char c
+  and skip_spaces s max =
+    if max = 0 || Scanning.end_of_input ib then bad_input "a string" else
+    let c = Scanning.checked_peek_char ib in
+    match c, s with
+    | '\n', true ->
+       Scanning.next_char ib;
+       skip_spaces false (max - 1)
+    | ' ', false -> skip_spaces false (max - 1)
+    | '\\', false -> loop true max
+    | c, false -> loop false (Scanning.store_char ib c max)
+    | _ -> loop false (scan_backslash_char (max - 1) ib) in
   loop true max;;
 
 let scan_bool max ib =

@@ -130,7 +130,7 @@ val bscanf :
    - [N]: applies [f] to the number of tokens read so far.
    - [%]: matches one [%] character in the input.
 
-   Following the [%] character introducing a conversion there may be
+   Following the [%] character introducing a conversion, there may be
    the special flag [_]: the conversion that follows occurs as usual,
    but the resulting value is discarded.
 
