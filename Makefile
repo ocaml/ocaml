@@ -108,7 +108,7 @@ PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   lexing list map obj parsing pervasives printexc printf queue random \
   set sort stack string stream sys oo genlex topdirs toploop weak lazy \
   marshal int32 int64 nativeint outcometree \
-  arrayLabels listLabels stringLabels stdLabels
+  arrayLabels listLabels stringLabels stdLabels moreLabels
 
 # For users who don't read the INSTALL file
 defaultentry:
