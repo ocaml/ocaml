@@ -1,15 +1,19 @@
 Release 1.14:
+-------------
 
 * cslopt ported to the PowerPC/RS6000 architecture. Better support for
 AIX in the bytecode system as well.
 
-* cslopt for the Intel: more bug fixes in the floating-point code.
-
 * cslopt, all platforms: fixed bug in live range splitting around catch/exit.
 
-* Several bug fixes in callbacks.
+* cslopt for the Intel (floating-point wars, chapter 4):
+implemented Ershov's algorithm to minimize floating-point stack usage;
+out-of-order pops fixed.
+
+* Several bug fixes in callbacks and signals.
 
 Release 1.13:
+-------------
 
 * Pattern-matching compilation revised to factor out accesses inside
 matched structures.
@@ -33,10 +37,12 @@ Intel decided to organize the floating-point registers as a stack).
 emulation on V7 processors is abysmal.
 
 Release 1.12:
+-------------
 
 * Fixed an embarrassing bug with references to floats.
 
 Release 1.11:
+-------------
 
 * Streams and stream parsers a la Caml Light are back (thanks to
 Daniel de Rauglaudre).
@@ -59,6 +65,7 @@ core on me).
 * Lower memory consumption for the native-code compiler.
 
 Release 1.10:
+-------------
 
 * Many bug fixes (too many to list here).
 
@@ -76,6 +83,7 @@ Malecki and Victor Manuel Gulias Fernandez); better docs for the Unix
 and regexp libraries.
 
 Release 1.07:
+-------------
 
 * Syntax: optional ;; allowed in compilation units and structures
 (back by popular demand)
@@ -92,5 +100,6 @@ no calls to ranlib in Solaris
 * Standard library: added List.memq; documentation of Array fixed.
 
 Release 1.06:
+-------------
 
 * First public release.
