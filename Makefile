@@ -133,6 +133,9 @@ all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
 # Compile everything the first time
 world: coldstart all
 
+# Compile also native code compiler and libraries, fast
+world.opt: coldstart opt.opt
+
 # Complete bootstrapping cycle
 bootstrap:
 # Save the original bootstrap compiler

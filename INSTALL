@@ -173,6 +173,13 @@ to start due to increased code size.  If compilation times are an issue on
 your programs, try the ".opt" compilers to see if they make a
 significant difference.
 
+An alternative, and faster approach to steps 2 to 5 is
+
+        make world.opt          # to build using native-code compilers
+
+The result is equivalent to "make world opt opt.opt", but this may
+fail if anything goes wrong in native-code generation.
+
 6- You can now install the Objective Caml system. This will create the
 following commands (in the binary directory selected during autoconfiguration):
 
