@@ -399,7 +399,7 @@ The operator type can be seen here:
 function x -> (x :> c);;
 \end{caml_example}
 So, as class "c'" inherits from class "c", its method "m" has type
-"c", but then according to the operator type, expression "(self :> c)
+"c", but then according to the operator type, expression "(self :> c)"
 constrains this type to be also the one of "self". This fails, as "c"
 has no method "m'". On the other hand, "#c = < m : c; .. >", so one
 can use the more precise coercion operator:
