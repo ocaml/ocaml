@@ -38,7 +38,8 @@ module type EVALPATH =
 module type S =
   sig
     type t
-    val install_printer : Path.t -> Types.type_expr -> (t -> unit) -> unit
+    val install_printer :
+          Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
     val remove_printer : Path.t -> unit
     val print_untyped_exception : formatter -> t -> unit
     val print_value :

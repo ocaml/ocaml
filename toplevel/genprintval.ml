@@ -41,7 +41,8 @@ module type EVALPATH =
 module type S =
   sig
     type t
-    val install_printer : Path.t -> Types.type_expr -> (t -> unit) -> unit
+    val install_printer :
+          Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
     val remove_printer : Path.t -> unit
     val print_untyped_exception : formatter -> t -> unit
     val print_value :
@@ -114,7 +115,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 
     let install_printer path ty fn =
       let print_val ppf obj =
-        try fn obj with
+        try fn ppf obj with
         | exn ->
            fprintf ppf "<printer %a raised an exception>" Printtyp.path path in
       printers := (path, ty, print_val) :: !printers

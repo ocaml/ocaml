@@ -16,6 +16,7 @@
 
 open Misc
 open Debugger_config
+open Longident
 open Path
 open Types
 
@@ -93,33 +94,51 @@ let rec eval_path = function
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
+let match_printer_type desc typename =
+  let (printer_type, _) =
+    try
+      Env.lookup_type (Ldot(Lident "Topdirs", typename)) Env.empty
+    with Not_found ->
+      raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename)))) in
+  Ctype.init_def(Ident.current_time());
+  Ctype.begin_def();
+  let ty_arg = Ctype.newvar() in
+  Ctype.unify Env.empty
+    (Ctype.newconstr printer_type [ty_arg])
+    (Ctype.instance desc.val_type);
+  Ctype.end_def();
+  Ctype.generalize ty_arg;
+  ty_arg
+
 let find_printer_type lid =
   try
     let (path, desc) = Env.lookup_value lid Env.empty in
-    Ctype.init_def(Ident.current_time());
-    Ctype.begin_def();
-    let ty_arg = Ctype.newvar() in
-    Ctype.unify Env.empty
-      (Ctype.newty (Tarrow("", ty_arg, Ctype.instance Predef.type_unit, Cok)))
-      (Ctype.instance desc.val_type);
-    Ctype.end_def();
-    Ctype.generalize ty_arg;
-    (ty_arg, path)
+    let (ty_arg, is_old_style) =
+      try
+        (match_printer_type desc "printer_type_new", false)
+      with Ctype.Unify _ ->
+        (match_printer_type desc "printer_type_old", true) in
+    (ty_arg, path, is_old_style)
   with 
   | Not_found -> raise(Error(Unbound_identifier lid))
   | Ctype.Unify _ -> raise(Error(Wrong_type lid))
     
 let install_printer ppf lid =
-  let (ty_arg, path) = find_printer_type lid in
+  let (ty_arg, path, is_old_style) = find_printer_type lid in
   let v =
     try
       use_debugger_symtable eval_path path
     with Symtable.Error(Symtable.Undefined_global s) ->
       raise(Error(Unavailable_module(s, lid))) in
-  Printval.install_printer path ty_arg ppf (Obj.magic v : Obj.t -> unit)
+  let print_function =
+    if is_old_style then
+      (fun formatter repr -> (Obj.obj v) (Obj.obj repr))
+    else
+      (fun formatter repr -> (Obj.obj v) formatter (Obj.obj repr)) in
+  Printval.install_printer path ty_arg ppf print_function
 
 let remove_printer lid =
-  let (ty_arg, path) = find_printer_type lid in
+  let (ty_arg, path, is_old_style) = find_printer_type lid in
   try
     Printval.remove_printer path
   with Not_found ->

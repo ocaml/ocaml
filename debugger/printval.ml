@@ -73,9 +73,9 @@ module Printer = Genprintval.Make(Debugcom.Remote_value)(EvalPath)
 
 let install_printer path ty ppf fn =
   Printer.install_printer path ty
-    (function remote_val ->
+    (fun ppf remote_val ->
        try
-         fn (Obj.repr (Debugcom.Remote_value.obj remote_val))
+         fn ppf (Obj.repr (Debugcom.Remote_value.obj remote_val))
        with
          Debugcom.Marshalling_error ->
            fprintf ppf "<cannot fetch remote object>")

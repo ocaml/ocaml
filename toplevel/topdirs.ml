@@ -125,18 +125,35 @@ let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_out))
 
 (* Install, remove a printer *)
 
+type 'a printer_type_new = Format.formatter -> 'a -> unit
+type 'a printer_type_old = 'a -> unit
+
+let match_printer_type ppf desc typename =
+  let (printer_type, _) =
+    try
+      Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
+    with Not_found ->
+      fprintf ppf "Cannot find type Topdirs.%s.@." typename;
+      raise Exit in
+  Ctype.init_def(Ident.current_time());
+  Ctype.begin_def();
+  let ty_arg = Ctype.newvar() in
+  Ctype.unify !toplevel_env
+    (Ctype.newconstr printer_type [ty_arg])
+    (Ctype.instance desc.val_type);
+  Ctype.end_def();
+  Ctype.generalize ty_arg;
+  ty_arg
+
 let find_printer_type ppf lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
-    Ctype.init_def(Ident.current_time());
-    Ctype.begin_def();
-    let ty_arg = Ctype.newvar() in
-    Ctype.unify !toplevel_env
-      (Ctype.newty (Tarrow("", ty_arg, Ctype.instance Predef.type_unit, Cok)))
-      (Ctype.instance desc.val_type);
-    Ctype.end_def();
-    Ctype.generalize ty_arg;
-    (ty_arg, path)
+    let (ty_arg, is_old_style) =
+      try
+        (match_printer_type ppf desc "printer_type_new", false)
+      with Ctype.Unify _ ->
+        (match_printer_type ppf desc "printer_type_old", true) in
+    (ty_arg, path, is_old_style)
   with 
   | Not_found ->
       fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
@@ -148,14 +165,19 @@ let find_printer_type ppf lid =
     
 let dir_install_printer ppf lid =
   try
-    let (ty_arg, path) = find_printer_type ppf lid in
-    let v = (Obj.obj (eval_path path) : 'a -> unit) in
-    install_printer path ty_arg (fun repr -> v (Obj.obj repr))
+    let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
+    let v = eval_path path in
+    let print_function =
+      if is_old_style then
+        (fun formatter repr -> (Obj.obj v) (Obj.obj repr))
+      else
+        (fun formatter repr -> (Obj.obj v) formatter (Obj.obj repr)) in
+    install_printer path ty_arg print_function
   with Exit -> ()
 
 let dir_remove_printer ppf lid =
   try
-    let (ty_arg, path) = find_printer_type ppf lid in
+    let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
     begin try
       remove_printer path
     with Not_found ->
