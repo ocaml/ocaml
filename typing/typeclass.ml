@@ -742,6 +742,35 @@ and class_expr cl_num val_env met_env scl =
 
 (*******************************)
 
+(* Approximate the type of the constructor to allow recursive use *)
+(* of optional parameters                                         *)
+
+let var_option = Predef.type_option (Btype.newgenvar ())
+
+let rec approx_declaration cl =
+  match cl.pcl_desc with
+    Pcl_fun (l, _, _, cl) ->
+      let arg =
+        if Btype.is_optional l then Ctype.instance var_option
+        else Ctype.newvar () in
+      Ctype.newty (Tarrow (l, arg, approx_declaration cl))
+  | Pcl_let (_, _, cl) ->
+      approx_declaration cl
+  | Pcl_constraint (cl, _) ->
+      approx_declaration cl
+  | _ -> Ctype.newvar ()
+
+let rec approx_description ct =
+  match ct.pcty_desc with
+    Pcty_fun (l, _, ct) ->
+      let arg =
+        if Btype.is_optional l then Ctype.instance var_option
+        else Ctype.newvar () in
+      Ctype.newty (Tarrow (l, arg, approx_description ct))
+  | _ -> Ctype.newvar ()
+
+(*******************************)
+
 let temp_abbrev env id arity =
   let params = ref [] in
   for i = 1 to arity do
@@ -758,14 +787,15 @@ let temp_abbrev env id arity =
   in
   (!params, ty, env)
 
-let rec initial_env define_class (res, env) (cl, id, ty_id, obj_id, cl_id) =
+let rec initial_env define_class approx
+    (res, env) (cl, id, ty_id, obj_id, cl_id) =
   (* Temporary abbreviations *)
   let arity = List.length (fst cl.pci_params) in
   let (obj_params, obj_ty, env) = temp_abbrev env obj_id arity in
   let (cl_params, cl_ty, env) = temp_abbrev env cl_id arity in
   
   (* Temporary type for the class constructor *)
-  let constr_type = Ctype.newvar () in
+  let constr_type = approx cl.pci_expr in
   let dummy_cty =
     Tcty_signature
       { cty_self = Ctype.newvar ();
@@ -1000,7 +1030,7 @@ let final_env define_class
 
 (*******************************)
 
-let type_classes define_class kind env cls =
+let type_classes define_class approx kind env cls =
   let cls =
     List.map
       (function cl ->
@@ -1012,7 +1042,7 @@ let type_classes define_class kind env cls =
   Ctype.init_def (Ident.current_time ());
   Ctype.begin_class_def ();
   let (res, env) =
-    List.fold_left (initial_env define_class) ([], env) cls
+    List.fold_left (initial_env define_class approx) ([], env) cls
   in
   let (res, env) =
     List.fold_right (class_infos define_class kind) res ([], env)
@@ -1034,14 +1064,14 @@ let class_description env sexpr =
   (expr, expr)
 
 let class_declarations env cls =
-  type_classes true class_declaration env cls
+  type_classes true approx_declaration class_declaration env cls
 
 let class_descriptions env cls =
-  type_classes true class_description env cls
+  type_classes true approx_description class_description env cls
 
 let class_type_declarations env cls =
   let (decl, env) =
-    type_classes false class_description env cls
+    type_classes false approx_description class_description env cls
   in
   (List.map
      (function
