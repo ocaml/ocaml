@@ -13,14 +13,14 @@
 /* $Id$ */
 
 #include <sys/types.h>
-#include <sys/param.h>
+#include <limits.h>
 
-#ifdef NGROUPS
+#ifdef NGROUPS_MAX
 
 int main(void)
 {
-  int gidset[NGROUPS];
-  if (getgroups(NGROUPS, gidset) == -1) return 1;
+  int gidset[NGROUPS_MAX];
+  if (getgroups(NGROUPS_MAX, gidset) == -1) return 1;
   return 0;
 }
 
