@@ -19,7 +19,7 @@ let output_byte buf b =
   Buffer.add_char buf (Char.chr(48 + (b / 10) mod 10));
   Buffer.add_char buf (Char.chr(48 + b mod 10))
 
-let loc = (-1,-1)
+let loc = (Lexing.dummy_pos,Lexing.dummy_pos)
 
 let output_array v =
   let b = Buffer.create (Array.length v * 3) in
@@ -256,7 +256,7 @@ EXTEND
  ];
  
  definition: [
-   [ x=LIDENT; pl = LIST0 Pcaml.patt; "=";  
+   [ x=LIDENT; pl = LIST0 Pcaml.patt LEVEL "simple"; "=";
      short=[ LIDENT "parse" -> false | LIDENT "shortest" -> true ];
      OPT "|"; l = LIST0 [ r=regexp; a=action -> (r,a) ] SEP "|" ->
      { name=x ; shortest=short ; args=pl ; clauses = l } ]
