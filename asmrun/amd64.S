@@ -252,8 +252,8 @@ FUNCTION(caml_start_program)
 FUNCTION(raise_caml_exception)
         movq    %rdi, %rax
         movq    caml_exception_pointer(%rip), %rsp
-        popq    %r14                 /* Recover previous exception handler */
-        movq    youg_ptr(%rip), %r15 /* Reload alloc ptr */
+        popq    %r14                  /* Recover previous exception handler */
+        movq    young_ptr(%rip), %r15 /* Reload alloc ptr */
         ret
 
 /* Callback from C to Caml */
