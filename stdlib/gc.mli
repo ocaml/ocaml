@@ -95,7 +95,7 @@ type control =
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
-       Default: 42. *)
+       Default: 80. *)
 
     mutable verbose : int;
     (** This value controls the GC messages on standard error output.

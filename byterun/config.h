@@ -138,7 +138,7 @@ typedef struct { uint32 l, h; } uint64, int64;
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
    total size of live objects. */
-#define Percent_free_def 42
+#define Percent_free_def 80
 
 /* Default setting for the compacter: 500%
    (i.e. trigger the compacter when 5/6 of the heap is free or garbage)
