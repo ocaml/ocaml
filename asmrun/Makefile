@@ -12,8 +12,8 @@ OTHEROBJS=../byterun/misc.o ../byterun/freelist.o \
   ../byterun/ints.o ../byterun/floats.o ../byterun/str.o \
   ../byterun/array.o ../byterun/io.o ../byterun/extern.o \
   ../byterun/intern.o ../byterun/hash.o ../byterun/sys.o \
-  ../byterun/parsing.o ../byterun/lexing.o ../byterun/gc_ctrl.o \
-  ../byterun/terminfo.o ../byterun/crc.o
+  ../byterun/parsing.o ../byterun/gc_ctrl.o \
+  ../byterun/terminfo.o ../byterun/crc.o ../byterun/obj.o
 
 OBJS=$(COBJS) $(ASMOBJS) $(OTHEROBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS) $(OTHEROBJS:.o=.d.o)
