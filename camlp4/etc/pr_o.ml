@@ -190,7 +190,7 @@ value private_flag =
   [ True -> [: `S LR "private" :]
   | _ -> [: :] ]
 ;
-  
+
 value rec labels b vl _ k = [: b; listws label (S RO ";") vl "" k :]
 and label (loc, f, m, t) _ k =
   HVbox
