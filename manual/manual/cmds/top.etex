@@ -92,6 +92,8 @@ sequence of Objective Caml phrases and executed, as per the "#use"
 directive (section~\ref{s:toplevel-directives}). The outcome of the
 evaluation is not printed.  On reaching the end of file, the "ocaml"
 command exits immediately.  No commands are read from standard input.
+"Sys.argv" is transformed, ignoring all Objective Caml parameters, and
+starting with the script file name in "Sys.argv.(0)".
 
 In script mode, the first line of the script is ignored if it starts
 with "#!".  Thus, it is theoretically possible to make the script
