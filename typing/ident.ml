@@ -35,6 +35,8 @@ let name i = i.name
 
 let unique_name i = i.name ^ "_" ^ string_of_int i.stamp
 
+let unique_toplevel_name i = i.name ^ "/" ^ string_of_int i.stamp
+
 let persistent i = (i.stamp = 0)
 
 let equal i1 i2 = i1.name = i2.name
