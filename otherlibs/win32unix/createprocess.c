@@ -41,14 +41,15 @@ value win_create_process_native(value cmd, value cmdline, value env,
   si.hStdError = Handle_val(fd3);
   /* If we do not have a console window, then we must create one
      before running the process (keep it hidden for apparence).
-     Otherwise, a new console is created and the redirections
-     are ignored.  If we're running a GUI application, the
-     newly created console doesn't matter. */
+     Also one must suppress spurious flags in si.dwFlags.
+     Otherwise the redirections are ignored.
+     If we are starting a GUI application, the newly created
+     console should not matter. */
   if (win_has_console())
     flags = 0;
   else {
     flags = CREATE_NEW_CONSOLE;
-    si.dwFlags |= STARTF_USESHOWWINDOW;
+    si.dwFlags = (STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES);
     si.wShowWindow = SW_HIDE;
   }
   /* Create the process */
@@ -71,7 +72,8 @@ CAMLprim value win_create_process(value * argv, int argn)
 
 static int win_has_console(void)
 {
-  HANDLE h;
+  HANDLE h, log;
+  int i;
 
   h = CreateFile("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
