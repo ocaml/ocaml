@@ -777,7 +777,7 @@ get_tag(void)
     while (1) {
       c = *++cptr;
       if (c == EOF) unexpected_EOF();
-      if (c == '>') break;
+      if (c == '>' && cptr[-1] != '-') break;
       cachec(c);
     }
     ++cptr;
