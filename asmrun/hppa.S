@@ -274,15 +274,14 @@ G(caml_c_call):
         stw     %r5, LOW(G(caml_exception_pointer))(%r1)
 ; Save the allocation pointer
         LOADHIGH(G(young_ptr))
+        stw     %r3, LOW(G(young_ptr))(%r1)
 ; Call the C function
 #ifdef SYS_hpux
-        bl      $$dyncall, %r2
-        stw     %r3, LOW(G(young_ptr))(%r1)     ; in delay slot
+        bl      $$dyncall, %r31
 #else
-        stw     %r3, LOW(G(young_ptr))(%r1)
         ble     0(4, %r22)
-        copy    %r31, %r2
 #endif
+        copy    %r31, %r2                       ; in delay slot
 ; Reload return address
         LOADHIGH(G(caml_last_return_address))
         ldw     LOW(G(caml_last_return_address))(%r1), %r2
