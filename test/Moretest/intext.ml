@@ -109,6 +109,8 @@ let test_in filename =
   close_in ic
 
 
-let main() = test_out "intext.data"; test_in "intext.data"
+let main() =
+  test_out "intext.data"; test_in "intext.data";
+  test_out "intext.data"; test_in "intext.data"
 
 let _ = Printexc.catch main (); exit 0
