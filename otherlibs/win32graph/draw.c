@@ -86,38 +86,18 @@ CAMLprim value caml_gr_lineto(value vx, value vy)
 
 CAMLprim value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
 {
-#if 0
-        int x = Int_val(vx);
-        int y = Int_val(vy);
-        int w = Int_val(vw);
-        int h = Int_val(vh);
-
-        gr_check_open();
-        if(grdisplay_mode) {
-                Rectangle(grwindow.gc,x, Wcvt(y) , x+w, Wcvt(y+h));
-        }
-        if(grremember_mode) {
-                Rectangle(grwindow.gcBitmap,x, Wcvt(y), x+w, Wcvt(h+y));
-        }
-        return Val_unit;
-#else
         int     x, y, w, h;
         POINT pt[5];
         x=Int_val(vx);
-        y=Int_val(vy);
+        y=Wcvt(Int_val(vy));
         w=Int_val(vw);
         h=Int_val(vh);
 
-        pt[0].x = x;
-        pt[0].y = Wcvt(y-1);
-        pt[1].x = x+w;
-        pt[1].y = pt[0].y;
-        pt[2].x = pt[1].x;
-        pt[2].y = Wcvt(y+h-1);
-        pt[3].x = pt[0].x;
-        pt[3].y = pt[2].y;
-        pt[4].x = pt[0].x;
-        pt[4].y = pt[0].y;
+        pt[0].x = x;         pt[0].y = y - h;
+	pt[1].x = x + w;     pt[1].y = y - h;
+	pt[2].x = x + w;     pt[2].y = y;
+	pt[3].x = x;         pt[3].y = y;
+	pt[4].x = x;         pt[4].y = y - h;
         if (grremember_mode) {
                 Polyline(grwindow.gcBitmap,pt, 5);
         }
@@ -125,7 +105,6 @@ CAMLprim value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
                 Polyline(grwindow.gc,pt, 5);
         }
         return Val_unit;
-#endif
 }
 
 CAMLprim value caml_gr_draw_text(value text,value x)
