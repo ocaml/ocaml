@@ -303,9 +303,9 @@ let mktype_kind pflag kind =
 /* Precedences and associativities.
 
 Tokens and rules have precedences.  A reduce/reduce conflict is resolved
-by comparing the precedences of the two rules.  A shift/reduce conflict
-is resolved by comparing the precedence of the token to be shifted with
-the rule to be reduced.
+in favor of the first rule (in source file order).  A shift/reduce conflict
+is resolved by comparing the precedence and associativity of the token to
+be shifted with those of the rule to be reduced.
 
 By default, a rule has the precedence of its rightmost terminal (if any).
 
