@@ -433,7 +433,7 @@ let simplify_or p =
 exception Not_simple
 
 let rec raw_rec env = function
-  | Llet(Alias,x,ex, body) -> raw_rec ((x,ex)::env) body
+  | Llet(Alias,x,ex, body) -> raw_rec ((x,raw_rec env ex)::env) body
   | Lvar id as l ->
       begin try List.assoc id env with
       | Not_found -> l
@@ -496,7 +496,17 @@ let rec what_is_or = function
   | {pat_desc = (Tpat_alias (p,_))} -> what_is_or p        
   | {pat_desc=(Tpat_var _|Tpat_any)} -> fatal_error "Matching.what_is_or"
   | p -> p
-  
+
+let rec all_record_pat pat = match pat.pat_desc  with
+  | Tpat_alias (p,x) ->
+      {pat with pat_desc = Tpat_alias (all_record_pat p,x)}
+  | Tpat_or (p,q) ->
+      {pat with pat_desc = Tpat_or (all_record_pat p, all_record_pat q)}
+  | Tpat_record lbls ->
+      let all_lbls = all_record_args lbls in
+      {pat with pat_desc=Tpat_record all_lbls}
+  | _ -> assert false
+
 let simplify_matching m = match m.args with
 | [] -> omega,m
 | (arg, _) :: _ ->
@@ -519,17 +529,26 @@ let simplify_matching m = match m.args with
               (omega :: patl, action)::
               simplify rem
           | Tpat_record lbls ->
-              record_ex_pat pat ;
               let all_lbls = all_record_args lbls in
-              ({pat with pat_desc=Tpat_record all_lbls}::patl,action)::
+              let full_pat = {pat with pat_desc=Tpat_record all_lbls} in
+              record_ex_pat full_pat ;
+              (full_pat::patl,action)::
               simplify rem
           | Tpat_or (_,_) ->
               let pat_simple  = simplify_or pat in
               begin match pat_simple.pat_desc with
               | Tpat_or (_,_) ->
-                  record_ex_pat (what_is_or pat_simple) ;
-                  (pat_simple :: patl, action) ::
-                  simplify rem
+                  let ex_pat = what_is_or pat_simple in
+                  begin match ex_pat.pat_desc with
+                  | Tpat_record _ ->
+                      record_ex_pat (all_record_pat ex_pat) ;
+                      (all_record_pat pat_simple :: patl, action) ::
+                      simplify rem
+                  | _ ->
+                      record_ex_pat ex_pat ;
+                      (pat_simple :: patl, action) ::
+                      simplify rem
+                  end
               | _ ->
                   simplify ((pat_simple::patl,action) :: rem)
               end

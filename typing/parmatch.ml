@@ -794,7 +794,7 @@ let rec pretty_val ppf v = match v.pat_desc with
         (pretty_lvals (get_record_labels v.pat_type v.pat_env))
         (List.filter
            (function
-             | (_,{pat_desc=Tpat_any}) -> false
+             | (_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
              | _ -> true) lvs)
   | Tpat_array vs ->
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs

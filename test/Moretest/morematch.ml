@@ -707,3 +707,17 @@ test"vars2" vars2 [1;2] 2 ;
 test"vars2" vars2 [1;2;3] 3 ;
 test"vars2" vars2 [0 ; 0] 0 ; ()
 ;;
+
+(* Bug 342 *)
+type eber = {x:int; y: int; z:bool}
+
+let eber = function
+  | {x=a; z=true}
+  | {y=a; z=false} -> a
+;;
+
+test "eber" eber {x=0 ; y=1 ; z=true} 0 ;
+test "eber" eber {x=1 ; y=0 ; z=false} 0 ; ()
+;;
+
+
