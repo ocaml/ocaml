@@ -68,9 +68,20 @@ and equal_desc d1 d2 =
       l1 = l2 && equal t11 t21 && equal t12 t22
   | Ttuple ts1, Ttuple ts2 when List.length ts1 = List.length ts2 ->
       List.for_all2 equal ts1 ts2
-  | Tconstr (p1, ts1), Tconstr (p2, ts2) ->
-      p1 = p2 && List.for_all2 equal ts1 ts2
+  | Tconstr ((p1,d1), ts1), Tconstr ((p2,d2), ts2) ->
+      if d1 == d2 then p1 = p2 && List.for_all2 equal ts1 ts2
+      else begin
+	(* If the descriptions are different, then at least one of 
+	   the data type comes from somewhere outside of the program *)
+	false
+      end
   | _ -> false
+
+and equal_type_declaration d1 d2 =
+  if d1 == d2 then true
+  else
+    d1.type_arity = d2.type_arity
+      (* ... *)
   
 open Format
 

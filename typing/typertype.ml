@@ -7,7 +7,10 @@ open Parsetree
 open Path
 open Types
 
-type error = Unsupported | Cannot_have_full_path
+type error = 
+    Unsupported 
+  | Cannot_have_full_path 
+  | Multiply_bound_type_variable
 exception Error of Location.t * error
 
 (* rtype type *)
@@ -86,38 +89,46 @@ let pattern_of_longident trans loc lid =
   pattern_of_path path
       
 let pattern_of_type transl_longident t =
- let rec pattern_of_type t =
-   match t.ptyp_desc with
-   | Ptyp_lident lid ->
-       begin match lid with
-       | Lident name -> make_pat t.ptyp_loc (Ppat_var name)
-       | _ -> raise (Error (t.ptyp_loc, Cannot_have_full_path))
-       end
-   | _ ->
-       make_pat t.ptyp_loc 
-	 (Ppat_record [cstr "desc", pattern_of_desc t.ptyp_loc t.ptyp_desc])
-     
- and pattern_of_desc loc = function
-   | Ptyp_var n -> 
-       make_pat_construct loc (cstr "Tvar") [] (*FIXME*)
-   | Ptyp_arrow (l, t1, t2) -> 
-       make_pat_construct loc (cstr "Tarrow")
- 	[ make_pat loc (Ppat_constant (Const_string l));
- 	  pattern_of_type t1;
- 	  pattern_of_type t2 ]
-   | Ptyp_tuple ts ->
-       make_pat_construct loc (cstr "Ttuple") 
-	 [ mktailpat (List.map pattern_of_type ts) ]
-   | Ptyp_constr (lid, ts) ->
-       make_pat_construct loc (cstr "Tconstr")
- 	[ make_pat loc (Ppat_tuple 
-			  [ pattern_of_longident transl_longident loc lid;
-			    make_pat loc Ppat_any ]);
- 	  mktailpat (List.map pattern_of_type ts)]
-   | Ptyp_lident _ -> assert false
-   | _ -> raise (Error (loc, Unsupported))
- in
- pattern_of_type t
+  let tvars = ref [] in
+  let rec pattern_of_type t =
+    match t.ptyp_desc with
+    | Ptyp_lident lid ->
+        begin match lid with
+        | Lident name -> make_pat t.ptyp_loc (Ppat_var name)
+        | _ -> raise (Error (t.ptyp_loc, Cannot_have_full_path))
+        end
+    | _ ->
+        make_pat t.ptyp_loc 
+ 	 (Ppat_record [cstr "desc", pattern_of_desc t.ptyp_loc t.ptyp_desc])
+      
+  and pattern_of_desc loc = function
+    | Ptyp_var n -> 
+	if List.mem n !tvars then
+	  (* as normal pattern variables, a type var cannot appear more than 
+	     once in a pattern *)
+	  raise (Error (loc, Multiply_bound_type_variable))
+	else begin
+	  tvars := n :: !tvars;
+          make_pat_construct loc (cstr "Tvar") []
+	end
+    | Ptyp_arrow (l, t1, t2) -> 
+        make_pat_construct loc (cstr "Tarrow")
+  	[ make_pat loc (Ppat_constant (Const_string l));
+  	  pattern_of_type t1;
+  	  pattern_of_type t2 ]
+    | Ptyp_tuple ts ->
+        make_pat_construct loc (cstr "Ttuple") 
+ 	 [ mktailpat (List.map pattern_of_type ts) ]
+    | Ptyp_constr (lid, ts) ->
+        make_pat_construct loc (cstr "Tconstr")
+  	[ make_pat loc (Ppat_tuple 
+ 			  [ pattern_of_longident transl_longident loc lid;
+ 			    make_pat loc Ppat_any ]);
+  	  mktailpat (List.map pattern_of_type ts)]
+    | Ptyp_lident _ -> assert false
+    | _ -> raise (Error (loc, Unsupported))
+  in
+  pattern_of_type t
 
     
 (* Value *)
@@ -436,3 +447,15 @@ let runtime_type_declaration td =
    dummy_runtime_type_declaration *)
   rdecl, !dummy_runtime_type_declaration_tbl
 
+(* Error reporting *)
+
+open Format
+
+let report_error ppf = function
+  | Cannot_have_full_path ->
+      fprintf ppf "This expression is not permitted inside run time type pattern"
+  | Multiply_bound_type_variable ->
+      fprintf ppf "This type variable is bound several times in this matching"
+  | Unsupported ->
+      fprintf ppf "This type construction is not yet supported in run time types"
+      

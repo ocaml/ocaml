@@ -60,7 +60,6 @@ type error =
   | Less_general of string * (type_expr * type_expr) list
   | Generic_primitive_type_mismatch of type_expr * type_expr
   | Should_not_be_generic of type_expr * type_expr
-  | Cannot_have_full_path
 
 exception Error of Location.t * error
 
@@ -485,7 +484,8 @@ let rec type_pat env sp =
       build_or_pat env sp.ppat_loc lid
   | Ppat_rtype sty ->
       (* translate pattern *)
-      let sp = Typertype.pattern_of_type 
+      let sp = 
+	Typertype.pattern_of_type 
 	  (fun lid -> fst (Env.lookup_type lid env)) sty
       in
       let pat = type_pat env sp in
@@ -2175,5 +2175,3 @@ let report_error ppf = function
 	type_scheme scm;
       fprintf ppf "which cannot be bound to a pattern of type %a."
 	type_expr typ
-  | Cannot_have_full_path ->
-      fprintf ppf "This expression is not permitted inside run time type pattern"

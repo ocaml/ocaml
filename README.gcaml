@@ -68,13 +68,9 @@ Run time type construction syntax
 		| [: float :]] -> ...
 		| [: ^x -> ^y :] -> ...
 
-	As always, you cannot use one pattern variable ^x more than once.
+	As always, you cannot use one pattern variable ^x or one type 
+	variable 'a more than once.
 	
-	*BUG* 	At this moment, identification of type variables inside 
-		run time type patterns do not work correctly. For example,
-		a pattern [: 'a -> 'a :] works as [: 'a -> 'b :], as if 
-		the two occurrences of 'a were different from each other.
-
 Generic primitives
 ==================
 	
