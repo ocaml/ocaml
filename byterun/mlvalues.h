@@ -218,16 +218,26 @@ typedef void (*final_fun) P((value));
 extern header_t first_atoms[];
 #define Atom(tag) (Val_hp (&(first_atoms [tag])))
 
-/* For compatibility with the native-code generator, we define as atoms
-   all data in the statically initialized or statically uninitialized (BSS)
-   zones. */
+/* Is_atom tests whether a well-formed block is statically allocated
+   outside the heap. For the bytecode system, only zero-sized block (Atoms)
+   fall in this class. For the native-code generator, all data in the
+   statically initialized or statically uninitialized (BSS) zones are atoms. */
 
+#ifndef NATIVE_CODE
+#define Is_atom(v) ((v) >= Atom(0) && (v) <= Atom(255))
+#else
 #ifdef __alpha
 extern int _end;
 #define Is_atom(v) ((int *)(v) < &_end)
 #else
+#ifdef __MACH__
+extern int _DATA__end;          /* On NextStep, needs linking with -preload */
+#define Is_atom(v) ((int *)(v) < &_DATA__end)
+#else
 extern int end;
 #define Is_atom(v) ((int *)(v) < &end)
+#endif
+#endif
 #endif
 
 /* Booleans are integers 0 or 1 */

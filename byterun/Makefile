@@ -19,10 +19,10 @@ PRIMS=array.c compare.c crc.c extern.c floats.c gc_ctrl.c hash.c \
 all: camlrun
 
 camlrun: $(OBJS) prims.o
-	$(BYTECC) $(BYTECCCOMPOPTS) $(CCLINKOPTS) $(LOWADDRESSES) -o camlrun prims.o $(OBJS) $(CCLIBS)
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) $(LOWADDRESSES) -o camlrun prims.o $(OBJS) $(CCLIBS)
 
 camlrund: $(DOBJS) prims.o
-	$(BYTECC) -g $(BYTECCCOMPOPTS) $(CCLINKOPTS) $(LOWADDRESSES) -o camlrund prims.o $(DOBJS) $(CCLIBS)
+	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) $(LOWADDRESSES) -o camlrund prims.o $(DOBJS) $(CCLIBS)
 
 install:
 	cp camlrun $(BINDIR)/cslrun
