@@ -273,9 +273,12 @@ installopt:
 	cd stdlib; $(MAKE) installopt
 	cd ocamldoc; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
-	if test -f ocamlc.opt; then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
-	if test -f ocamlopt.opt; then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
-	if test -f lex/ocamllex.opt; then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE); else :; fi
+	if test -f ocamlc.opt; \
+	  then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
+	if test -f ocamlopt.opt; \
+	  then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
+	if test -f lex/ocamllex.opt; \
+	  then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE); else :; fi
 
 clean:: partialclean
 
