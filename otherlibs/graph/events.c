@@ -200,11 +200,6 @@ static value caml_gr_wait_event_in_queue(long mask)
 
 static value caml_gr_wait_event_blocking(long mask)
 {
-#ifdef POSIX_SIGNALS
-  sigset_t sigset;
-#else
-  void (*oldsig)();
-#endif
   XEvent event;
   fd_set readfds;
   value res;
@@ -219,16 +214,8 @@ static value caml_gr_wait_event_blocking(long mask)
     XSelectInput(caml_gr_display, caml_gr_window.win, caml_gr_selected_events);
   }
 
-  /* Block or deactivate the EVENT signal */
-#ifdef POSIX_SIGNALS
-  sigemptyset(&sigset);
-  sigaddset(&sigset, EVENT_SIGNAL);
-  sigprocmask(SIG_BLOCK, &sigset, NULL);
-#else
-  oldsig = signal(EVENT_SIGNAL, SIG_IGN);
-#endif
-
   /* Replenish our event queue from that of X11 */
+  caml_gr_ignore_sigio = True;
   while (1) {
     if (XCheckMaskEvent(caml_gr_display, -1 /*all events*/, &event)) {
       /* One event available: add it to our queue */
@@ -245,13 +232,7 @@ static value caml_gr_wait_event_blocking(long mask)
       leave_blocking_section();
     }
   }
-
-  /* Restore the EVENT signal to its initial state */
-#ifdef POSIX_SIGNALS
-  sigprocmask(SIG_UNBLOCK, &sigset, NULL);
-#else
-  signal(EVENT_SIGNAL, oldsig);
-#endif
+  caml_gr_ignore_sigio = False;
 
   /* Return result */
   return res;

@@ -40,6 +40,7 @@ int caml_gr_x, caml_gr_y;
 int caml_gr_color;
 extern XFontStruct * caml_gr_font;
 long caml_gr_selected_events;
+Bool caml_gr_ignore_sigio = False;
 static Bool caml_gr_initialized = False;
 static char * window_name = NULL;
 
@@ -319,7 +320,7 @@ value caml_gr_sigio_handler(void)
 {
   XEvent grevent;
 
-  if (caml_gr_initialized) {
+  if (caml_gr_initialized && !caml_gr_ignore_sigio) {
     while (XCheckMaskEvent(caml_gr_display, -1 /*all events*/, &grevent)) {
       caml_gr_handle_event(&grevent);
     }
