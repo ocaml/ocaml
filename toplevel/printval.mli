@@ -13,7 +13,7 @@
 
 (* Printing of values *)
 
-open Typedtree
+open Types
 
 val print_exception: Obj.t -> unit
 val print_value: Env.t -> Obj.t -> type_expr -> unit

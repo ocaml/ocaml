@@ -23,6 +23,6 @@ val traced_functions: traced_function list ref
 val is_traced: Obj.t -> Path.t option
 val copy_closure: Obj.t -> Obj.t
 val overwrite_closure: Obj.t -> Obj.t -> unit
-val instrument_closure: 
-      Env.t -> Longident.t -> Typedtree.type_expr -> Obj.t -> Obj.t
+val instrument_closure:
+        Env.t -> Longident.t -> Types.type_expr -> Obj.t -> Obj.t
 val print_trace: Obj.t -> Obj.t -> Obj.t

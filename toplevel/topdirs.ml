@@ -17,7 +17,7 @@ open Format
 open Misc
 open Longident
 open Path
-open Typedtree
+open Types
 open Emitcode
 open Printval
 open Trace

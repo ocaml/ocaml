@@ -18,7 +18,7 @@ open Obj
 open Format
 open Longident
 open Path
-open Typedtree
+open Types
 
 
 (* Given an exception value, we cannot recover its type,

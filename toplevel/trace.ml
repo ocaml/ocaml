@@ -16,7 +16,7 @@
 open Format
 open Misc
 open Longident
-open Typedtree
+open Types
 open Printval
 open Toploop
 

@@ -18,6 +18,7 @@ open Format
 open Config
 open Misc
 open Parsetree
+open Types
 open Typedtree
 open Printval
 
