@@ -53,6 +53,7 @@ module Options = Main_args.Make_options (struct
   let _use_runtime s = option_with_arg "-use-runtime" s
   let _v = option "-v"
   let _verbose = option "-verbose"
+  let _w = option_with_arg "-w"
   let _nopervasives = option "-nopervasives"
   let _drawlambda = option "-drawlambda"
   let _dlambda = option "-dlambda"
