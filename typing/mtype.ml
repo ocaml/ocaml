@@ -107,7 +107,7 @@ let nondep_supertype env mid mty =
           Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
                           val_kind = d.val_kind}) :: rem'
       | Tsig_type(id, d) ->
-          Tsig_type(id, nondep_type_decl va d) :: rem'
+          Tsig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d) :: rem'
       | Tsig_exception(id, d) ->
           Tsig_exception(id, List.map (Ctype.nondep_type env mid) d) :: rem'
       | Tsig_module(id, mty) ->
@@ -122,34 +122,6 @@ let nondep_supertype env mid mty =
           end
       | Tsig_class(id, d) ->
           Tsig_class(id, Ctype.nondep_class_type env mid d) :: rem'
-
-  and nondep_type_decl va d =
-    {type_params = d.type_params;
-     type_arity = d.type_arity;
-     type_kind =
-       begin try
-         match d.type_kind with
-           Type_abstract ->
-             Type_abstract
-         | Type_variant cstrs ->
-             Type_variant(List.map
-               (fun (c, tl) -> (c, List.map (Ctype.nondep_type env mid) tl))
-               cstrs)
-         | Type_record lbls ->
-             Type_record(List.map
-               (fun (c, mut, t) -> (c, mut, Ctype.nondep_type env mid t))
-               lbls)
-       with Not_found ->
-         match va with Co -> Type_abstract | _ -> raise Not_found
-       end;
-     type_manifest =
-       begin try
-         match d.type_manifest with
-           None -> None
-         | Some ty -> Some(Ctype.nondep_type env mid ty)
-       with Not_found ->
-         match va with Co -> None | _ -> raise Not_found
-       end}
 
   and nondep_modtype_decl = function
       Tmodtype_abstract -> Tmodtype_abstract

@@ -106,6 +106,7 @@ let new_global_ty desc = { desc = desc; level = !global_level }
 let newvar ()          = { desc = Tvar; level = !current_level }
 let newgenvar ()       = newgenty Tvar
 let new_global_var ()  = new_global_ty Tvar
+let newmarkedvar ()    = { desc = Tvar; level = pivot_level - generic_level }
 
 let newobj fields      = newty (Tobject (fields, ref None))
 
@@ -124,6 +125,28 @@ let rec repr =
       *)
       repr t'
   | t -> t
+
+
+                  (**********************************)
+                  (*  Utilities for type traversal  *)
+                  (**********************************)
+
+
+let saved_desc = ref []
+  (* Saved association of generic nodes with their description. *)
+
+(* Restored type descriptions *)
+let cleanup_types () =
+  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
+  saved_desc := []
+
+(* Remove marks from a type. *)
+let rec unmark_type ty =
+  let ty = repr ty in
+  if ty.level < lowest_level then begin
+    ty.level <- pivot_level - ty.level;
+    iter_type_expr unmark_type ty
+  end
 
 
                   (**********************************************)
@@ -316,14 +339,6 @@ let rec update_level env level ty =
 *)
 let make_nongen ty = update_level Env.empty !current_level ty
 
-(* Remove marks from a type. *)
-let rec unmark_type ty =
-  let ty = repr ty in
-  if ty.level < lowest_level then begin
-    ty.level <- pivot_level - ty.level;
-    iter_type_expr unmark_type ty
-  end
-
 
                               (*******************)
                               (*  Instantiation  *)
@@ -340,8 +355,6 @@ let rec unmark_type ty =
    stored in [saved_desc], must be put back, using [cleanup_types].
 *)
 
-let saved_desc = ref []
-  (* Saved association of generic node with their description. *)
 let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
 
@@ -394,10 +407,6 @@ let rec copy ty =
       end;
     t
   end
-
-let cleanup_types () =
-  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
-  saved_desc := []
 
 (**** Variants of instantiations ****)
 
@@ -970,7 +979,7 @@ let rec moregen env t1 t2 =
     | (Tconstr(p1, tl1, abbrev1), Tconstr(p2, tl2, abbrev2))
           when Path.same p1 p2 ->
         begin try
-          moregen_list env tl1 tl2;
+          moregen_list env tl1 tl2
         with Unify _ ->
         try
           moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
@@ -1062,11 +1071,12 @@ let moregeneral env sch1 sch2 =
 let equal env rename tyl1 tyl2 =
   let subst = ref [] in
   let type_pairs = ref [] in
+
   let rec eqtype t1 t2 =
     let t1 = repr t1 in
     let t2 = repr t2 in
     List.exists (function (t1', t2') -> t1 == t1' & t2 == t2') !type_pairs
-          (* XXX May be slow... *)
+          (* XXX Possibly slow... *)
       ||
     begin
       type_pairs := (t1, t2) :: !type_pairs;
@@ -1117,26 +1127,23 @@ let equal env rename tyl1 tyl2 =
       | (_, _) ->
           false
     end
+
   and eqtype_list tl1 tl2 =
-    match (tl1, tl2) with
-      ([], []) -> true
-    | (t1::r1, t2::r2) -> eqtype t1 t2 && eqtype_list r1 r2
-    | (_, _) -> false
+    List.length tl1 = List.length tl2
+                    &&
+    List.for_all2 eqtype tl1 tl2
+
   and eqtype_fields ty1 ty2 =           (* Optimization *)
     let (fields1, rest1) = flatten_fields ty1
     and (fields2, rest2) = flatten_fields ty2 in
     let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-    List.length fields1 = List.length fields2
-      &&
     eqtype rest1 rest2
       &&
-    (miss1 = []) & (miss2 = [])
+    (miss1 = []) && (miss2 = [])
       &&
     List.for_all (function (t1, t2) -> eqtype t1 t2) pairs
   in
-    List.length tyl1 = List.length tyl2
-                    &&
-    List.for_all2 eqtype tyl1 tyl2
+    eqtype_list tyl1 tyl2
 
 
                               (***************)
@@ -1228,6 +1235,7 @@ let rec subtype_rec env trace t1 t2 =
   let t2 = repr t2 in
   if t1 == t2 then [] else
   if List.exists (fun (t1', t2') -> t1 == t1' & t2 == t2') !subtypes then
+      (* XXX Possibly slow *)
     []
   else begin
     subtypes := (t1, t2) :: !subtypes;
@@ -1296,30 +1304,72 @@ let subtype env ty1 ty2 =
     subtypes := []
 
 
+                              (*******************)
+                              (*  Miscellaneous  *)
+                              (*******************)
+
+
+let unalias ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tvar ->
+      ty
+  | _ ->
+      {desc = ty.desc; level = ty.level}
+
+let unroll_abbrev id tl ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tvar ->
+      ty
+  | _ ->
+      let ty' = {desc = ty.desc; level = ty.level} in
+      ty.desc <- Tlink {desc = Tconstr (Path.Pident id, tl, ref Mnil);
+                        level = ty.level};
+      ty'
+
+(* Return the arity (as for curried functions) of the given type. *)
+let rec arity ty =
+  match (repr ty).desc with
+    Tarrow(t1, t2) -> 1 + arity t2
+  | _ -> 0
+
+
                               (*************************)
                               (*  Remove dependencies  *)
                               (*************************)
 
 
-let inst_subst = ref ([] : (type_expr * type_expr) list)
-
-(* XXX A voir... *)
 (* XXX Petit probleme... (deroulement) *)
 (*     module F(X : sig type t end) = struct type t = X.t end;;       *)
 (*     module M = F(struct type t = <x : t> end);;                    *)
 (*  -> module M : sig type t = < x : < x : 'a > as 'a > end  *)
+
+(*
+   Variables are left unchanged. Other type nodes are duplicated, with
+   levels set to generic level.
+   During copying, the description of a (non-variable) node is first
+   replaced by a link to a marked stub ([Tlink (newmarkedvar
+   ())]). The mark allows to differentiate the original type from the
+   copy.  Once the copy is made, it replaces the stub.
+   After copying, the description of node, which was stored in
+   [saved_desc], must be put back, using [cleanup_types], and the
+   marks on the copy must be removed.
+*)
+
 let rec nondep_type_rec env id ty =
   let ty = repr ty in
-  if ty.desc = Tvar then ty else
-  try newgenty (Tlink (List.assq ty !inst_subst)) with Not_found ->
-            (* Tlink important permet de ne pas modifier la variable *)
-            (* XXX (???) *)
-    let ty' = newgenvar () in
-    inst_subst := (ty, ty') :: !inst_subst;
+  if (ty.desc = Tvar) || (ty.level < lowest_level) then
+    ty
+  else begin
+    let desc = ty.desc in
+    saved_desc := (ty, desc)::!saved_desc;
+    let ty' = newmarkedvar () in        (* Stub *)
+    ty.desc <- Tlink ty';
     ty'.desc <-
-      begin match ty.desc with
+      begin match desc with
         Tvar ->
-          Tvar
+          fatal_error "Ctype.nondep_type_rec"
       | Tarrow(t1, t2) ->
           Tarrow(nondep_type_rec env id t1, nondep_type_rec env id t2)
       | Ttuple tl ->
@@ -1327,8 +1377,14 @@ let rec nondep_type_rec env id ty =
       | Tconstr(p, tl, abbrev) ->
           if Path.isfree id p then
             begin try
-              (nondep_type_rec env id
-                 (expand_abbrev env p tl abbrev ty.level)).desc
+              Tlink (nondep_type_rec env id
+                       (expand_abbrev env p tl abbrev ty.level))
+              (*
+                 The [Tlink] is important. The expanded type may be a
+                 variable, or may not be completely copied yet
+                 (recursive type), so one cannot just take its
+                 description.
+               *)
             with Cannot_expand ->
               raise Not_found
             end
@@ -1341,40 +1397,105 @@ let rec nondep_type_rec env id ty =
                       | Some (p, tl) ->
                           if Path.isfree id p then None
                           else Some (p, List.map (nondep_type_rec env id) tl)))
-       | Tfield(label, t1, t2) ->
-           Tfield(label, nondep_type_rec env id t1, nondep_type_rec env id t2)
-       | Tnil ->
-           Tnil
-       | Tlink ty ->                    (* Actually unused *)
-           Tlink(nondep_type_rec env id ty)
-       end;
-     ty'
+      | Tfield(label, t1, t2) ->
+          Tfield(label, nondep_type_rec env id t1, nondep_type_rec env id t2)
+      | Tnil ->
+          Tnil
+      | Tlink ty ->                    (* Actually unused *)
+          Tlink(nondep_type_rec env id ty)
+      end;
+    ty'
+  end
 
 let nondep_type env id ty =
-  inst_subst := [];
-  let ty' = nondep_type_rec env id ty in
-  inst_subst := [];
-  ty'
+  try
+    let ty' = nondep_type_rec env id ty in
+    cleanup_types ();
+    unmark_type ty';
+    ty'
+  with Not_found ->
+    cleanup_types ();
+    raise Not_found
+
+let nondep_type_decl env mid id is_covariant decl =
+  try
+    let params = List.map (nondep_type_rec env mid) decl.type_params in
+    let decl =
+      { type_params = params;
+        type_arity = decl.type_arity;
+        type_kind =
+          begin try
+            match decl.type_kind with
+              Type_abstract ->
+                Type_abstract
+            | Type_variant cstrs ->
+                Type_variant(List.map
+                  (fun (c, tl) -> (c, List.map (nondep_type_rec env mid) tl))
+                  cstrs)
+            | Type_record lbls ->
+                Type_record(List.map
+                  (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
+                  lbls)
+          with Not_found when is_covariant ->
+            Type_abstract
+          end;
+        type_manifest =
+          begin try
+            match decl.type_manifest with
+              None -> None
+            | Some ty ->
+                Some (unroll_abbrev id params (nondep_type_rec env mid ty))
+          with Not_found when is_covariant ->
+            None
+          end }
+    in
+    cleanup_types ();
+    List.iter unmark_type params;
+    begin match decl.type_kind with
+      Type_abstract -> ()
+    | Type_variant cstrs ->
+        List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
+    | Type_record lbls ->
+        List.iter (fun (c, mut, t) -> unmark_type t) lbls
+    end;
+    begin match decl.type_manifest with
+      None    -> ()
+    | Some ty -> unmark_type ty
+    end;
+    decl
+  with Not_found ->
+    cleanup_types ();
+    raise Not_found
 
 let nondep_class_type env id decl =
-  inst_subst := [];
-  let decl =
-    { cty_params = List.map (nondep_type_rec env id) decl.cty_params;
-      cty_args = List.map (nondep_type_rec env id) decl.cty_args;
-      cty_vars =
-        Vars.fold (fun l (m, t) -> Vars.add l (m, nondep_type_rec env id t))
-          decl.cty_vars Vars.empty;
-      cty_self = nondep_type_rec env id decl.cty_self;
-      cty_concr = decl.cty_concr;
-      cty_new =
-        begin match decl.cty_new with
-          None    -> None
-        | Some ty -> Some (nondep_type_rec env id ty)
-        end }
-  in
-  inst_subst := [];
-  decl
-
+  try
+    let decl =
+      { cty_params = List.map (nondep_type_rec env id) decl.cty_params;
+        cty_args = List.map (nondep_type_rec env id) decl.cty_args;
+        cty_vars =
+          Vars.fold (fun l (m, t) -> Vars.add l (m, nondep_type_rec env id t))
+            decl.cty_vars Vars.empty;
+        cty_self = nondep_type_rec env id decl.cty_self;
+        cty_concr = decl.cty_concr;
+        cty_new =
+          begin match decl.cty_new with
+            None    -> None
+          | Some ty -> Some (nondep_type_rec env id ty)
+          end }
+    in
+    cleanup_types ();
+    List.iter unmark_type decl.cty_params;
+    List.iter unmark_type decl.cty_args;
+    Vars.iter (fun l (m, t) -> unmark_type t) decl.cty_vars;
+    unmark_type decl.cty_self;
+    begin match decl.cty_new with
+      None    -> ()
+    | Some ty -> unmark_type ty
+    end;
+    decl
+  with Not_found ->
+    cleanup_types ();
+    raise Not_found
 
                               (******************************)
                               (*  Abbreviation correctness  *)
@@ -1474,34 +1595,3 @@ let closed_schema_verbose ty =
   with Failed status ->
     unmark_type ty;
     Some status
-
-
-                              (*******************)
-                              (*  Miscellaneous  *)
-                              (*******************)
-
-
-let unalias ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tvar ->
-      ty
-  | _ ->
-      {desc = ty.desc; level = ty.level}
-
-let unroll_abbrev id tl ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tvar ->
-      ty
-  | _ ->
-      let ty' = {desc = ty.desc; level = ty.level} in
-      ty.desc <- Tlink {desc = Tconstr (Path.Pident id, tl, ref Mnil);
-                        level = ty.level};
-      ty'
-
-(* Return the arity (as for curried functions) of the given type. *)
-let rec arity ty =
-  match (repr ty).desc with
-    Tarrow(t1, t2) -> 1 + arity t2
-  | _ -> 0
