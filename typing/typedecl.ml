@@ -157,6 +157,28 @@ let transl_value_decl env valdecl =
   { val_type = ty;
     val_prim = Primitive.parse_declaration (Ctype.arity ty) valdecl.pval_prim }
 
+(* Translate a "with" constraint -- much simplified version of
+    transl_type_decl. *)
+
+let transl_with_constraint env sdecl =
+  Ctype.begin_def();
+  reset_type_variables();
+  let params =
+    try
+      List.map enter_type_variable sdecl.ptype_params
+    with Already_bound ->
+      raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
+  Ctype.end_def();
+  List.iter Ctype.generalize params;
+  { type_params = params;
+    type_arity = List.length params;
+    type_kind = Type_abstract;
+    type_manifest =
+        begin match sdecl.ptype_manifest with
+          None -> None
+        | Some sty -> Some(transl_simple_type env true sty)
+        end }
+
 (* Error report *)
 
 open Format

@@ -14,6 +14,7 @@
 (* Type-checking of the module language *)
 
 open Misc
+open Longident
 open Path
 open Parsetree
 open Typedtree
@@ -27,47 +28,13 @@ type error =
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
   | Structure_expected of module_type
+  | With_unbound_type of Longident.t
   | With_not_abstract of string
   | With_arity_mismatch of string
   | Repeated_name of string * string
   | Non_generalizable of type_expr
 
 exception Error of Location.t * error
-
-(* Merge a set of type definitions in a signature *)
-
-let merge_constraints loc env sg decls =
-  let sub = ref Subst.identity in
-  let rec merge_one_constraint id decl = function
-    [] ->
-      [Tsig_type(id, decl)]
-  | (Tsig_type(id', decl') as item) :: rem ->
-      if Ident.equal id id' then begin
-        if decl'.type_kind <> Type_abstract or decl'.type_manifest <> None then
-          raise(Error(loc, With_not_abstract(Ident.name id)));
-        if decl'.type_arity <> decl.type_arity then
-          raise(Error(loc, With_arity_mismatch(Ident.name id)));
-        sub := Subst.add_type id (Pident id') !sub;
-        Tsig_type(id', decl) :: rem
-      end else
-        item :: merge_one_constraint id decl rem
-  | item :: rem ->
-      item :: merge_one_constraint id decl rem in
-  let rec merge_all_constraints sg = function
-    [] ->
-      sg
-  | (id, decl) :: rem ->
-      merge_all_constraints (merge_one_constraint id decl sg) rem in
-  let newsig = merge_all_constraints sg decls in
-  Subst.signature !sub newsig
-
-(* Lookup and strengthen the type of a module path *)
-
-let type_module_path env loc lid =
-  try
-    Env.lookup_module lid env
-  with Not_found ->
-    raise(Error(loc, Unbound_module lid))
 
 (* Extract a signature from a module type *)
 
@@ -80,6 +47,35 @@ let extract_sig_open env loc mty =
   match Mtype.scrape env mty with
     Tmty_signature sg -> sg
   | _ -> raise(Error(loc, Structure_expected mty))
+
+(* Merge one "with" constraint in a signature *)
+
+let merge_constraint env loc sg lid sdecl =
+  let rec merge sg namelist =
+    match (sg, namelist) with
+      ([], _) ->
+        raise(Error(loc, With_unbound_type lid))
+    | (Tsig_type(id, decl) :: rem, [s]) when Ident.name id = s ->
+        let newdecl = Typedecl.transl_with_constraint env sdecl in
+        if decl.type_manifest <> None then
+          raise(Error(loc, With_not_abstract s));
+        if newdecl.type_arity <> decl.type_arity then
+          raise(Error(loc, With_arity_mismatch s));
+        Tsig_type(id, newdecl) :: rem
+    | (Tsig_module(id, mty) :: rem, s :: namelist) when Ident.name id = s ->
+        let newsg = merge (extract_sig env loc mty) namelist in
+        Tsig_module(id, Tmty_signature newsg) :: rem
+    | (item :: rem, _) ->
+        item :: merge rem namelist in
+  merge sg (Longident.flatten lid)
+
+(* Lookup and strengthen the type of a module path *)
+
+let type_module_path env loc lid =
+  try
+    Env.lookup_module lid env
+  with Not_found ->
+    raise(Error(loc, Unbound_module lid))
 
 (* Check and translate a module type expression *)
 
@@ -99,12 +95,15 @@ let rec transl_modtype env smty =
       let (id, newenv) = Env.enter_module param arg env in
       let res = transl_modtype newenv sres in
       Tmty_functor(id, arg, res)
-  | Pmty_with(sbody, sdecls) ->
+  | Pmty_with(sbody, constraints) ->
       let body = transl_modtype env sbody in
-      let sg = extract_sig env sbody.pmty_loc body in
-      let (decls, newenv) =
-        Typedecl.transl_type_decl env sdecls in
-      Tmty_signature(merge_constraints smty.pmty_loc env sg decls)
+      let init_sg = extract_sig env sbody.pmty_loc body in
+      let final_sg =
+        List.fold_left
+          (fun sg (lid, sdecl) ->
+            merge_constraint env smty.pmty_loc sg lid sdecl)
+          init_sg constraints in
+      Tmty_signature final_sg
       
 and transl_signature env sg =
   match sg with
@@ -361,8 +360,13 @@ let report_error = function
       print_string "This module is not a structure; it has type";
       print_space(); modtype mty;
       close_box()
+  | With_unbound_type lid ->
+      print_string "The signature constrained by `with' has no type component named";
+      print_space(); longident lid
   | With_not_abstract s ->
-      print_string "The type "; print_string s; print_string " is not abstract"
+      print_string "In `with' constraint over type "; print_string s;
+      print_string ":"; print_space();
+      print_string "this type is already manifest"
   | With_arity_mismatch s ->
       print_string "Arity mismatch in `with' constraint over type ";
       print_string s

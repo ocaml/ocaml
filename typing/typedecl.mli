@@ -23,6 +23,9 @@ val transl_exception:
 
 val transl_value_decl:
         Env.t -> Parsetree.value_description -> value_description
+
+val transl_with_constraint:
+        Env.t -> Parsetree.type_declaration -> type_declaration
     
 type error =
     Repeated_parameter
