@@ -482,12 +482,16 @@ let open_proc cmd proc input output =
 let open_process_in cmd =
   let (in_read, in_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
-  open_proc cmd (Process_in inchan) stdin in_write; inchan
+  open_proc cmd (Process_in inchan) stdin in_write;
+  close in_write;
+  inchan
 
 let open_process_out cmd =
   let (out_read, out_write) = pipe() in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process_out outchan) out_read stdout; outchan
+  open_proc cmd (Process_out outchan) out_read stdout;
+  close out_read;
+  outchan
 
 let open_process cmd =
   let (in_read, in_write) = pipe() in
