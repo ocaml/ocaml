@@ -37,14 +37,6 @@ value macosunix_startup (value unit)  /* ML */
   return Val_unit;
 }
 
-#if 0
-void _exit (int status);
-value unix_exit (value n)             /* ML */
-{
-  ui_exit (Int_val (n));
-}
-#endif
-
 value unix_getlogin (void)            /* ML */
 {
   char **hs = (char **) GetString (-16096);
@@ -52,6 +44,26 @@ value unix_getlogin (void)            /* ML */
     unix_error (ENOENT, "getlogin", Nothing);
   }
   return copy_string (*hs);
+}
+
+value unix_getegid (void) /* ML */
+{
+  return Val_int (1);
+}
+
+value unix_geteuid (void) /* ML */
+{
+  return Val_int (1);
+}
+
+value unix_getgid (void) /* ML */
+{
+  return Val_int (1);
+}
+
+value unix_getuid (void) /* ML */
+{
+  return Val_int (1);
 }
 
 value unix_getpid (void)              /* ML */
@@ -90,15 +102,11 @@ Unimplemented (execve, (value path, value args, value env))
 Unimplemented (execvp, (value path, value args))
 Unimplemented (execvpe, (value path, value args, value env))
 Unimplemented (fork, (value unit))
-Unimplemented (getegid, (void))
-Unimplemented (geteuid, (void))
-Unimplemented (getgid, (void))
 Unimplemented (getgrnam, (value name))
 Unimplemented (getgrgid, (value gid))
 Unimplemented (getppid, (void))
 Unimplemented (getpwnam, (value name))
 Unimplemented (getpwuid, (value uid))
-Unimplemented (getuid, (void))
 Unimplemented (kill, (value pid, value signal))
 Unimplemented (link, (value path1, value path2))
 Unimplemented (mkfifo, (value path, value mode))
