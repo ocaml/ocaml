@@ -30,7 +30,7 @@ type error =
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr
   | Constraint_failed of type_expr * type_expr
-  | Unconsistent_constraint
+  | Unconsistent_constraint of (type_expr * type_expr) list
   | Type_clash of (type_expr * type_expr) list
   | Parameters_differ of type_expr * type_expr
   | Null_arity_external
@@ -151,8 +151,8 @@ let transl_declaration env (name, sdecl) id =
        try
          Ctype.unify env (transl_simple_type env false sty)
                          (transl_simple_type env false sty')
-       with Ctype.Unify _ ->
-         raise(Error(loc, Unconsistent_constraint)))
+       with Ctype.Unify tr ->
+         raise(Error(loc, Unconsistent_constraint tr)))
     sdecl.ptype_cstrs;
 
   (id, decl)
@@ -561,8 +561,8 @@ let transl_with_constraint env sdecl =
        try
          Ctype.unify env (transl_simple_type env false ty)
                          (transl_simple_type env false ty')
-       with Ctype.Unify _ ->
-         raise(Error(loc, Unconsistent_constraint)))
+       with Ctype.Unify tr ->
+         raise(Error(loc, Unconsistent_constraint tr)))
     sdecl.ptype_cstrs;
   let decl =
     { type_params = params;
@@ -617,8 +617,11 @@ let report_error ppf = function
       fprintf ppf
         "@[<hv>In this definition, type@ %a@ should be@ %a@]"
         Printtyp.type_expr ty Printtyp.type_expr ty'
-  | Unconsistent_constraint ->
-      fprintf ppf "The type constraints are not consistent"
+  | Unconsistent_constraint trace ->
+      fprintf ppf "The type constraints are not consistent.@.";
+      Printtyp.report_unification_error ppf trace
+        (fun ppf -> fprintf ppf "Type")
+        (fun ppf -> fprintf ppf "is not compatible with type")
   | Type_clash trace ->
       Printtyp.report_unification_error ppf trace
         (function ppf ->

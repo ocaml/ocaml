@@ -1181,11 +1181,10 @@ let report_error ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
   | Unconsistent_constraint trace ->
+      fprintf ppf "The class constraints are not consistent.@.";
       Printtyp.report_unification_error ppf trace
-        (function ppf ->
-           fprintf ppf "The class constraints are not consistent : type")
-        (function ppf ->
-           fprintf ppf "is not compatible with type")
+        (fun ppf -> fprintf ppf "Type")
+        (fun ppf -> fprintf ppf "is not compatible with type")
   | Method_type_mismatch (m, trace) ->
       Printtyp.report_unification_error ppf trace
         (function ppf ->

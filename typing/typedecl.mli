@@ -46,7 +46,7 @@ type error =
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr
   | Constraint_failed of type_expr * type_expr
-  | Unconsistent_constraint
+  | Unconsistent_constraint of (type_expr * type_expr) list
   | Type_clash of (type_expr * type_expr) list
   | Parameters_differ of type_expr * type_expr
   | Null_arity_external

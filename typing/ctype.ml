@@ -1275,8 +1275,8 @@ and unify_row env row1 row2 =
   in
   let empty fields =
     List.for_all (fun (_,f) -> row_field_repr f = Rabsent) fields in
-  if (row1.row_closed || row2.row_closed)
-  && (empty r1 || row2.row_closed) && (empty r2 || row1.row_closed)
+  (* Check whether we are going to build an empty type *)
+  if closed && (empty r1 || row2.row_closed) && (empty r2 || row1.row_closed)
   && List.for_all
       (fun (_,f1,f2) ->
         row_field_repr f1 = Rabsent || row_field_repr f2 = Rabsent)
