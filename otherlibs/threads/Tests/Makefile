@@ -27,11 +27,11 @@ clean:
 	rm -f *.cm* *.byt
 
 sorts.byt: sorts.ml
-	$(CAMLC) -custom -o sorts.byt -I ../../graph threads.cma graphics.cma sorts.ml $(LIBS) $(X11_LINK)
+	$(CAMLC) -o sorts.byt -I ../../graph threads.cma graphics.cma sorts.ml $(LIBS) $(X11_LINK)
 
 .SUFFIXES: .ml .byt
 
 .ml.byt:
-	$(CAMLC) -custom -o $*.byt unix.cma threads.cma $*.ml $(LIBS)
+	$(CAMLC) -o $*.byt unix.cma threads.cma $*.ml $(LIBS)
 
 $(PROGS): ../threads.cma ../libthreads.a
