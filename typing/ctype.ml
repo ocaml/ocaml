@@ -1549,15 +1549,16 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
+  let l1 = (repr ty1).level and l2 = (repr ty2).level in
   let va =
     if miss1 = [] then rest2
     else if miss2 = [] then rest1
-    else newvar ()
+    else newty2 (min l1 l2) Tvar
   in
   let d1 = rest1.desc and d2 = rest2.desc in
   try
-    unify env (build_fields (repr ty1).level miss1 va) rest2;
-    unify env rest1 (build_fields (repr ty2).level miss2 va);
+    unify env (build_fields l1 miss1 va) rest2;
+    unify env rest1 (build_fields l2 miss2 va);
     List.iter
       (fun (n, k1, t1, k2, t2) ->
         unify_kind k1 k2;
