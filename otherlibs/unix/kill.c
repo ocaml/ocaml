@@ -25,7 +25,7 @@ value unix_kill(pid, signal)     /* ML */
   sig = Int_val(signal);
   if (sig < 0) {
     sig = posix_signals[-sig-1];
-    if (sig == 0) invalid_argument("Unix.kill: unavailable signal");
+    if (sig < 0) invalid_argument("Sys.signal: unavailable signal");
   }
   if (kill(Int_val(pid), sig) == -1)
     uerror("kill", Nothing);

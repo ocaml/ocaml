@@ -36,8 +36,10 @@ static void execute_signal(signal_number)
 void handle_signal(signal_number)
      int signal_number;
 {
+#ifndef POSIX_SIGNALS
 #ifndef BSD_SIGNALS
   signal(signal_number, handle_signal);
+#endif
 #endif
   if (async_signal_mode){
     leave_blocking_section ();
@@ -72,61 +74,61 @@ void leave_blocking_section()
 }
 
 #ifndef SIGABRT
-#define SIGABRT 0
+#define SIGABRT -1
 #endif
 #ifndef SIGALRM
-#define SIGALRM 0
+#define SIGALRM -1
 #endif
 #ifndef SIGFPE
-#define SIGFPE 0
+#define SIGFPE -1
 #endif
 #ifndef SIGHUP
-#define SIGHUP 0
+#define SIGHUP -1
 #endif
 #ifndef SIGILL
-#define SIGILL 0
+#define SIGILL -1
 #endif
 #ifndef SIGINT
-#define SIGINT 0
+#define SIGINT -1
 #endif
 #ifndef SIGKILL
-#define SIGKILL 0
+#define SIGKILL -1
 #endif
 #ifndef SIGPIPE
-#define SIGPIPE 0
+#define SIGPIPE -1
 #endif
 #ifndef SIGQUIT
-#define SIGQUIT 0
+#define SIGQUIT -1
 #endif
 #ifndef SIGSEGV
-#define SIGSEGV 0
+#define SIGSEGV -1
 #endif
 #ifndef SIGTERM
-#define SIGTERM 0
+#define SIGTERM -1
 #endif
 #ifndef SIGUSR1
-#define SIGUSR1 0
+#define SIGUSR1 -1
 #endif
 #ifndef SIGUSR2
-#define SIGUSR2 0
+#define SIGUSR2 -1
 #endif
 #ifndef SIGCHLD
-#define SIGCHLD 0
+#define SIGCHLD -1
 #endif
 #ifndef SIGCONT
-#define SIGCONT 0
+#define SIGCONT -1
 #endif
 #ifndef SIGSTOP
-#define SIGSTOP 0
+#define SIGSTOP -1
 #endif
 #ifndef SIGTSTP
-#define SIGTSTP 0
+#define SIGTSTP -1
 #endif
 #ifndef SIGTTIN
-#define SIGTTIN 0
+#define SIGTTIN -1
 #endif
 #ifndef SIGTTOU
-#define SIGTTOU 0
+#define SIGTTOU -1
 #endif
 
 int posix_signals[] = {
@@ -135,37 +137,52 @@ int posix_signals[] = {
   SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU
 };
 
+#ifndef NSIG
+#define NSIG 32
+#endif
+
 value install_signal_handler(signal_number, action) /* ML */
      value signal_number, action;
 {
-  int sig = Int_val(signal_number);
-  if (sig < 0) {
-    sig = posix_signals[-sig-1];
-    if (sig == 0) invalid_argument("Sys.signal: unavailable signal");
-  }
-  switch(Tag_val(action)) {
-  case 0:                       /* Signal_default */
-    signal(sig, SIG_DFL);
+  int sig;
+  void (*act)();
+#ifdef POSIX_SIGNALS
+  struct sigaction sigact;
+#endif
+
+  sig = Int_val(signal_number);
+  if (sig < 0) sig = posix_signals[-sig-1];
+  if (sig < 0 || sig >= NSIG) 
+    invalid_argument("Sys.signal: unavailable signal");
+  switch(action) {
+  case Val_int(0):              /* Signal_default */
+    act = SIG_DFL;
     break;
-  case 1:                       /* Signal_ignore */
-    signal(sig, SIG_IGN);
+  case Val_int(1):              /* Signal_ignore */
+    act = SIG_IGN;
     break;
-  case 2:                       /* Signal_handle */
+  default:                      /* Signal_handle */
     if (signal_handlers == 0) {
       int i;
       Push_roots(r, 1);
       r[0] = action;
-      signal_handlers = alloc_tuple(32);
+      signal_handlers = alloc_tuple(NSIG);
       action = r[0];
       Pop_roots();
-      for (i = 0; i < 32; i++) Field(signal_handlers, i) = Val_int(0);
+      for (i = 0; i < NSIG; i++) Field(signal_handlers, i) = Val_int(0);
       register_global_root(&signal_handlers);
     }
     modify(&Field(signal_handlers, sig), Field(action, 0));
-    signal(sig, handle_signal);
+    act = handle_signal;
     break;
-  default:
-    Assert(0);
   }
+#ifdef POSIX_SIGNALS
+  sigact.sa_handler = act;
+  sigemptyset(&sigact.sa_mask);
+  sigact.sa_flags = 0;
+  sigaction(sig, &sigact, NULL);
+#else
+  signal(sig, act);
+#endif
   return Val_unit;
 }

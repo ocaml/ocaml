@@ -26,7 +26,7 @@ touch s.h m.h Makefile.h
 # Check the sizes of data types
 
 echo "Checking the sizes of integers and pointers..."
-set `sh ./runtest sizes.c`
+set `sh runtest sizes.c`
 case "$1,$2,$3" in
   4,4,4) echo "OK, this is a regular 32 bit architecture.";;
   4,8,8) echo "Wow! A 64 bit architecture!"
@@ -51,7 +51,7 @@ esac
 
 # Determine endianness
 
-sh ./runtest endian.c
+sh runtest endian.c
 case $? in
   0) echo "This is a big-endian architecture."
      echo "#define BIG_ENDIAN" >> m.h;;
@@ -67,7 +67,7 @@ esac
 
 # Determine alignment constraints
 
-sh ./runtest dblalign.c
+sh runtest dblalign.c
 case $? in
   0) echo "Doubles can be word-aligned.";;
   1) echo "Doubles must be doubleword-aligned."
@@ -81,18 +81,18 @@ esac
 
 # Find a good byte move function
 
-if sh ./runtest -Dcopy=memmove -Dreverse bytecopy.c; then
+if sh runtest -Dcopy=memmove -Dreverse bytecopy.c; then
   echo "Function \"memmove\" is provided and handles overlapping moves correctly."
   echo "#define HAS_MEMMOVE" >> s.h
 fi
-if sh ./runtest -Dcopy=bcopy bytecopy.c; then
+if sh runtest -Dcopy=bcopy bytecopy.c; then
   echo "Function \"bcopy\" is provided and handles overlapping moves correctly."
   echo "#define HAS_BCOPY" >> s.h
 fi
 
 # Check for _longjmp and _setjmp
 
-sh ./runtest setjmp.c
+sh runtest setjmp.c
 case $? in
   0) echo "_setjmp and _longjmp appear to work. Good!"
      echo "#define HAS__SETJMP" >> s.h;;
@@ -101,7 +101,10 @@ esac
 
 # Check the semantics of signal handlers
 
-if sh ./runtest signals.c; then
+if sh hasgot sigaction sigprocmask; then
+  echo "POSIX signal handling found."
+  echo "#define POSIX_SIGNALS" >> s.h
+elif sh runtest signals.c; then
   echo "Signals have the BSD semantics."
   echo "#define BSD_SIGNALS" >> s.h
 else
@@ -203,7 +206,7 @@ if sh hasgot waitpid;  then
   echo "#define HAS_WAITPID" >> s.h
 fi
 
-if test -f /usr/include/sys/param.h && sh ./runtest getgroups.c; then
+if test -f /usr/include/sys/param.h && sh runtest getgroups.c; then
   echo "getgroups() found."
   echo "#define HAS_GETGROUPS" >> s.h
 fi
@@ -221,7 +224,7 @@ if test -f /usr/bin/uname; then
     "OSF1 V3."*) testasyncio=false;;
   esac
 fi
-if $testasyncio && sh ./runtest async_io.c; then
+if $testasyncio && sh runtest async_io.c; then
   echo "Asynchronous I/O are supported."
   echo "#define HAS_ASYNC_IO" >> s.h
 fi

@@ -130,12 +130,14 @@ value gr_open_graph(arg)
     
     /* If possible, request that system calls be restarted after
        the EVENT_SIGNAL signal. */
+#ifdef POSIX_SIGNALS
 #ifdef SA_RESTART
     { struct sigaction action;
       sigaction(EVENT_SIGNAL, NULL, &action);
       action.sa_flags |= SA_RESTART;
       sigaction(EVENT_SIGNAL, &action, NULL);
     }
+#endif
 #endif
 
 #ifdef USE_ASYNC_IO
