@@ -429,7 +429,7 @@ let rec step_forward duration =
 let internal_go_to time =
   let duration = time - current_time () in
     if duration > 0 then
-      step_forward duration
+      execute_without_breakpoints (function () -> step_forward duration)
 
 (* Move to a given time. *)
 let go_to time =
