@@ -444,7 +444,7 @@ let rec transl = function
       return_unit(Cop(Cstore,
                   [if n = 0 then ptr
                             else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
-                   transl newval]))
+                   transl_unbox_float newval]))
 
   (* External call *)
   | Uprim(Pccall prim, args) ->
@@ -1007,17 +1007,30 @@ let entry_point namelist =
              fun_body = body;
              fun_fast = false}
 
-(* Generate the table of globals and the master table of frame descriptors *)
+(* Generate the table of globals *)
 
 let global_table namelist =
   Cdata(Cdefine_symbol "caml_globals" ::
         List.map (fun name -> Csymbol_address name) namelist @
         [Cint 0])
 
+(* Generate the master table of frame descriptors *)
+
 let frame_table namelist =
   Cdata(Cdefine_symbol "caml_frametable" ::
         List.map (fun name -> Csymbol_address(name ^ "_frametable")) namelist @
         [Cint 0])
+
+(* Generate the table of module data segments *)
+
+let data_segment_table namelist =
+  Cdata(Cdefine_symbol "caml_data_segments" ::
+        List.fold_right
+          (fun name lst ->
+            Csymbol_address(name ^ "_begin") ::
+            Csymbol_address(name ^ "_end") :: lst)
+          namelist
+          [Cint 0])
 
 (* Initialize a predefined exception *)
 

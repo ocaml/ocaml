@@ -634,13 +634,22 @@ let begin_assembly() =
   (* The following .file directive is intended to prevent the generation
      of line numbers for the debugger, 'cos they make .o files larger
      and slow down linking. *)
-  `	.file	1 \"{emit_string !Location.input_name}\"\n\n`
+  `	.file	1 \"{emit_string !Location.input_name}\"\n\n`;
+  let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
+  `	.data\n`;
+  `	.globl	{emit_symbol lbl_begin}\n`;
+  `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
-  let lbl = Compilenv.current_unit_name() ^ "_frametable" in
+  let lbl_end = Compilenv.current_unit_name() ^ "_end" in
+  `	.data\n`;
+  `	.globl	{emit_symbol lbl_end}\n`;
+  `{emit_symbol lbl_end}:\n`;
+  `	.quad	0\n`;
+  let lbl_frame = Compilenv.current_unit_name() ^ "_frametable" in
   `	.rdata\n`;
-  `	.globl	{emit_symbol lbl}\n`;
-  `{emit_symbol lbl}:\n`;
+  `	.globl	{emit_symbol lbl_frame}\n`;
+  `{emit_symbol lbl_frame}:\n`;
   `	.quad	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
   frame_descriptors := []

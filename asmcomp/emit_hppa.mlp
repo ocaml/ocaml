@@ -780,12 +780,20 @@ let data l =
 
 let begin_assembly() =
   defined_functions := StringSet.empty;
-  Hashtbl.clear stub_label_table
+  Hashtbl.clear stub_label_table;
+  let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
+  `	.data\n`;
+  `	.globl	{emit_symbol lbl_begin}\n`;
+  `{emit_symbol lbl_begin}:\n`
 
 let end_assembly() =
   emit_stubs();
-  let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   `	.data\n`;
+  let lbl_end = Compilenv.current_unit_name() ^ "_end" in
+  `	.globl	{emit_symbol lbl_end}\n`;
+  `{emit_symbol lbl_end}:\n`;
+  `	.long	0\n`;
+  let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   `	.globl	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;
   `	.long	{emit_int (List.length !frame_descriptors)}\n`;

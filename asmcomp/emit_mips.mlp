@@ -522,7 +522,6 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  `#include <sys/signal.h>\n\n`;
   (* There are really two groups of registers:
       $sp and $30 always point to stack locations
       $2 - $21 never point to stack locations. *)
@@ -535,9 +534,18 @@ let begin_assembly() =
   `	.noalias $14,$sp; .noalias $14,$30; .noalias $15,$sp; .noalias $15,$30\n`;
   `	.noalias $16,$sp; .noalias $16,$30; .noalias $17,$sp; .noalias $17,$30\n`;
   `	.noalias $18,$sp; .noalias $18,$30; .noalias $19,$sp; .noalias $19,$30\n`;
-  `	.noalias $20,$sp; .noalias $20,$30; .noalias $21,$sp; .noalias $21,$30\n\n`
+  `	.noalias $20,$sp; .noalias $20,$30; .noalias $21,$sp; .noalias $21,$30\n\n`;
+  let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
+  `	.data\n`;
+  `	.globl	{emit_symbol lbl_begin}\n`;
+  `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
+  let lbl_end = Compilenv.current_unit_name() ^ "_end" in
+  `	.data\n`;
+  `	.globl	{emit_symbol lbl_end}\n`;
+  `{emit_symbol lbl_end}:\n`;
+  `	.word	0\n`;
   let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   `	.rdata\n`;
   `	.globl	{emit_symbol lbl}\n`;
