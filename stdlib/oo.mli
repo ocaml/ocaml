@@ -26,6 +26,7 @@ type label
 val new_method: string -> label
 
 (* Classes *)
+type t
 type table
 type item
 type obj_init
@@ -38,11 +39,13 @@ val get_method_label: table -> string -> label
 val get_variable: table -> string -> int
 val hide_variable: table -> string -> unit
 val get_private_variable: table -> string -> int
-val create_class: class_info -> string list -> (table -> unit) -> unit
+val create_class:
+        class_info -> string list -> (table -> t) ->
+        (table -> unit) -> unit
 
 (* Objects *)
-type t
 type object
+val create_object: table -> t
 val send:   object -> label -> t
 
 (* Parameters *)

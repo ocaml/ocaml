@@ -132,6 +132,14 @@ let transl_fields tbl public_methods meths fields cl_init =
       Meths.fold (bind_methods tbl public_methods) meths
         (List.fold_right (transl_field_cl tbl meths) fields cl_init)
 
+let creator args =
+  let table = Ident.create "table" in
+  let params =
+    table :: List.map (fun pat -> name_pattern "param" [pat, ()]) args
+  in
+  Lfunction (Curried, params,
+             Lapply (oo_prim "create_object",
+                     List.map (fun p -> Lvar p) params))
 
 let transl_class cl_id cl =
   let public_methods = Lconst (transl_meth_list cl.cl_pub_meths) in
@@ -158,7 +166,8 @@ let transl_class cl_id cl =
                              [Lvar table; obj_init])))
                  cl.cl_field)
   in
-  Lapply (oo_prim "create_class", [Lvar cl_id; public_methods; cl_init])
+  Lapply (oo_prim "create_class",
+          [Lvar cl_id; public_methods; creator cl.cl_args; cl_init])
 
 let class_stub =
   Lprim(Pmakeblock(0, Mutable), [lambda_unit; lambda_unit; lambda_unit])

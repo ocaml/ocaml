@@ -47,10 +47,6 @@ let first_bucket = 0
 let bucket_size = 32                    (* Must be 256 or less *)
 let initial_object_size = 2
 
-(**** Version ****)
-
-let version = ref 0
-
 (**** Index ****)
 
 type label = int
@@ -78,24 +74,30 @@ let dummy_item = (magic () : item)
 
 type bucket = item array
 
+let version = ref 0
+
+let set_bucket_version (bucket : bucket) =
+  bucket.(bucket_size) <- (magic !version : item)
+
+let bucket_version bucket =
+  (magic bucket.(bucket_size) : int)
+
 let bucket_list = ref []
 
 let empty_bucket = [| |]
 
 let new_bucket () =
   let bucket = Array.create (bucket_size + 1) dummy_item in
-  bucket.(bucket_size) <- (magic !version : item);
+  set_bucket_version bucket;
   bucket_list := bucket :: !bucket_list;
   bucket
 
 let copy_bucket bucket =
   let bucket = Array.copy bucket in
+  set_bucket_version bucket;
   bucket.(bucket_size) <- (magic !version : item);
   bucket_list := bucket :: !bucket_list;
   bucket
-
-let bucket_version bucket =
-  (magic bucket.(bucket_size) : int)
 
 (**** Make a clean bucket ****)
 
@@ -209,6 +211,10 @@ let new_method met =
 let new_anonymous_method =
   new_label
 
+(**** Types ****)
+
+type object = t array
+
 (**** Sparse array ****)
 
 module Vars = Map.Make(struct type t = string let compare = compare end)
@@ -290,7 +296,7 @@ let put array label element =
 
 type t
 type class_info =
-  {mutable obj_init: t -> t;
+  {mutable obj_init: t;
    mutable class_init: table -> unit;
    mutable table: table}
 
@@ -432,7 +438,7 @@ let new_object table =
   obj.(0) <- (magic table.buckets : t);
   obj
 
-let create_class class_info public_methods class_init =
+let create_class class_info public_methods creator class_init =
   let table = new_table () in
   List.iter
     (function met ->
@@ -445,26 +451,16 @@ let create_class class_info public_methods class_init =
   inst_var_count := !inst_var_count + table.size - 1;
   class_info.class_init <- class_init;
   class_info.table <- table;
-  let buckets = table.buckets in
-  let initialization = Obj.magic (List.hd (List.hd table.init)) in
-  class_info.obj_init <-
-      (function x -> 
-         let obj = Obj.new_block object_tag table.size in
-         Obj.set_field obj 0 (Obj.repr table.buckets);
-         Obj.set_field obj 1 (Obj.repr (new_id ()));
-         initialization obj x)
+  class_info.obj_init <- creator table
 
 (**** Objects ****)
 
-type object = t array
-
-let inst_var obj lab =
-  let (buck, elem) = decode lab in
-  obj.((magic obj : int array array array).(0).(buck).(elem))
-
-let set_inst_var obj lab value =
-  let (buck, elem) = decode lab in
-  obj.((magic obj : int array array array).(0).(buck).(elem)) <- value
+let create_object table =
+  let obj = Obj.new_block object_tag table.size in
+  Obj.set_field obj 0 (Obj.repr table.buckets);
+  Obj.set_field obj 1 (Obj.repr (new_id ()));
+  let initialization = Obj.magic List.hd (List.hd table.init) in
+  initialization (Obj.obj obj)
 
 let send obj lab =
   let (buck, elem) = decode lab in
