@@ -1318,8 +1318,8 @@ and type_application env funct sargs =
                   else
                     raise(Error(funct.exp_loc, Incoherent_label_order))
               | _ ->
-                  raise(Error(funct.exp_loc,
-                              Apply_non_function funct.exp_type))
+                  raise(Error(funct.exp_loc, Apply_non_function
+                                (expand_head env funct.exp_type)))
         in
         let optional = if is_optional l1 then Optional else Required in
         let arg1 () =
