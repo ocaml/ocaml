@@ -109,9 +109,11 @@ char *aligned_malloc (asize_t, int, void **);
   04 -> fields deallocated by obj_truncate
   10 -> uninitialised fields of minor objects
   11 -> uninitialised fields of major objects
-  12 -> uninitialised words of stat_alloc blocks
   15 -> uninitialised words of aligned_malloc blocks
   85 -> filler bytes of aligned_malloc
+
+  special case (byte by byte):
+  D7 -> uninitialised words of stat_alloc blocks
 */
 #define Debug_free_minor     Debug_tag (0x00)
 #define Debug_free_major     Debug_tag (0x01)
@@ -119,9 +121,10 @@ char *aligned_malloc (asize_t, int, void **);
 #define Debug_free_truncate  Debug_tag (0x04)
 #define Debug_uninit_minor   Debug_tag (0x10)
 #define Debug_uninit_major   Debug_tag (0x11)
-#define Debug_uninit_stat    Debug_tag (0x12)
 #define Debug_uninit_align   Debug_tag (0x15)
 #define Debug_filler_align   Debug_tag (0x85)
+
+#define Debug_uninit_stat    0xD7
 #endif /* DEBUG */
 
 

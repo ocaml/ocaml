@@ -320,12 +320,7 @@ void * stat_alloc (asize_t sz)
   /* malloc() may return NULL if size is 0 */
   if (result == NULL && sz != 0) raise_out_of_memory ();
 #ifdef DEBUG
-  {
-    value *p;
-    for (p = result; p < (value *) ((char *) result + sz); p++){
-      *p = Debug_uninit_stat;
-    }
-  }
+  memset (result, Debug_uninit_stat, sz);
 #endif
   return result;
 }
