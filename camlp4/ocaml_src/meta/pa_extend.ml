@@ -572,12 +572,6 @@ module MetaAction =
   end
 ;;
 
-let rec expr_fa al =
-  function
-    MLast.ExApp (_, f, a) -> expr_fa (a :: al) f
-  | f -> f, al
-;;
-
 let mklistexp loc =
   let rec loop top =
     function
@@ -600,6 +594,12 @@ let mklistpat loc =
           (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), p1), loop false pl)
   in
   loop true
+;;
+
+let rec expr_fa al =
+  function
+    MLast.ExApp (_, f, a) -> expr_fa (a :: al) f
+  | f -> f, al
 ;;
 
 let rec quot_expr e =

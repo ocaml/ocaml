@@ -65,6 +65,21 @@ let o2b =
   | None -> false
 ;;
 
+let mksequence loc =
+  function
+    [e] -> e
+  | el -> MLast.ExSeq (loc, el)
+;;
+
+let mkmatchcase loc p aso w e =
+  let p =
+    match aso with
+      Some p2 -> MLast.PaAli (loc, p, p2)
+    | _ -> p
+  in
+  p, w, e
+;;
+
 let mkumin loc f arg =
   match arg with
     MLast.ExInt (_, n) when int_of_string n > 0 ->
@@ -72,6 +87,15 @@ let mkumin loc f arg =
   | MLast.ExFlo (_, n) when float_of_string n > 0.0 ->
       let n = "-" ^ n in MLast.ExFlo (loc, n)
   | _ -> let f = "~" ^ f in MLast.ExApp (loc, MLast.ExLid (loc, f), arg)
+;;
+
+let mkuminpat loc f arg =
+  match arg with
+    MLast.PaInt (_, n) when int_of_string n > 0 ->
+      let n = "-" ^ n in MLast.PaInt (loc, n)
+  | MLast.PaFlo (_, n) when float_of_string n > 0.0 ->
+      let n = "-" ^ n in MLast.PaFlo (loc, n)
+  | _ -> let f = "~" ^ f in MLast.PaApp (loc, MLast.PaLid (loc, f), arg)
 ;;
 
 let mklistexp loc last =
@@ -681,10 +705,7 @@ Grammar.extend
        Gramext.Stoken ("", "}")],
       Gramext.action
         (fun _ (seq : 'sequence) _ _ (loc : int * int) ->
-           (match seq with
-              [e] -> e
-            | _ -> MLast.ExSeq (loc, seq) :
-            'expr));
+           (mksequence loc seq : 'expr));
       [Gramext.Stoken ("", "if"); Gramext.Sself; Gramext.Stoken ("", "then");
        Gramext.Sself; Gramext.Stoken ("", "else"); Gramext.Sself],
       Gramext.action
@@ -1132,13 +1153,7 @@ Grammar.extend
       Gramext.action
         (fun (el : 'sequence) _ (l : 'let_binding list) (o : string option) _
            (loc : int * int) ->
-           (let e =
-              match el with
-                [e] -> e
-              | _ -> MLast.ExSeq (loc, el)
-            in
-            [MLast.ExLet (loc, o2b o, l, e)] :
-            'sequence))]];
+           ([MLast.ExLet (loc, o2b o, l, mksequence loc el)] : 'sequence))]];
     Grammar.Entry.obj (let_binding : 'let_binding Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e));
@@ -1187,13 +1202,7 @@ Grammar.extend
       Gramext.action
         (fun (e : 'expr) _ (w : 'e__8 option) (aso : 'e__7 option) (p : 'patt)
            (loc : int * int) ->
-           (let p =
-              match aso with
-                Some p2 -> MLast.PaAli (loc, p, p2)
-              | _ -> p
-            in
-            p, w, e :
-            'match_case))]];
+           (mkmatchcase loc p aso w e : 'match_case))]];
     Grammar.Entry.obj (label_expr : 'label_expr Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm
@@ -1344,6 +1353,14 @@ Grammar.extend
       [Gramext.Stoken ("", "["); Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ _ (loc : int * int) -> (MLast.PaUid (loc, "[]") : 'patt));
+      [Gramext.Stoken ("", "-"); Gramext.Stoken ("FLOAT", "")],
+      Gramext.action
+        (fun (s : string) _ (loc : int * int) ->
+           (mkuminpat loc "-" (MLast.PaFlo (loc, s)) : 'patt));
+      [Gramext.Stoken ("", "-"); Gramext.Stoken ("INT", "")],
+      Gramext.action
+        (fun (s : string) _ (loc : int * int) ->
+           (mkuminpat loc "-" (MLast.PaInt (loc, s)) : 'patt));
       [Gramext.Stoken ("CHAR", "")],
       Gramext.action
         (fun (s : string) (loc : int * int) ->
@@ -1356,14 +1373,6 @@ Grammar.extend
       Gramext.action
         (fun (s : string) (loc : int * int) ->
            (MLast.PaFlo (loc, s) : 'patt));
-      [Gramext.Stoken ("", "-"); Gramext.Stoken ("FLOAT", "")],
-      Gramext.action
-        (fun (s : string) _ (loc : int * int) ->
-           (MLast.PaFlo (loc, ("-" ^ s)) : 'patt));
-      [Gramext.Stoken ("", "-"); Gramext.Stoken ("INT", "")],
-      Gramext.action
-        (fun (s : string) _ (loc : int * int) ->
-           (MLast.PaInt (loc, ("-" ^ s)) : 'patt));
       [Gramext.Stoken ("INT", "")],
       Gramext.action
         (fun (s : string) (loc : int * int) ->

@@ -233,12 +233,6 @@ module MetaAction =
   end
 ;
 
-value rec expr_fa al =
-  fun
-  [ <:expr< $f$ $a$ >> -> expr_fa [a :: al] f
-  | f -> (f, al) ]
-;
-
 value mklistexp loc =
   loop True where rec loop top =
     fun
@@ -259,6 +253,12 @@ value mklistpat loc =
           if top then loc else (fst (MLast.loc_of_patt p1), snd loc)
         in
         <:patt< [$p1$ :: $loop False pl$] >> ]
+;
+
+value rec expr_fa al =
+  fun
+  [ <:expr< $f$ $a$ >> -> expr_fa [a :: al] f
+  | f -> (f, al) ]
 ;
 
 value rec quot_expr e =

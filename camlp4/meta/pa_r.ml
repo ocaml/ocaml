@@ -69,6 +69,21 @@ value o2b =
   | None -> False ]
 ;
 
+value mksequence loc =
+  fun
+  [ [e] -> e
+  | el -> <:expr< do { $list:el$ } >> ]
+;
+
+value mkmatchcase loc p aso w e =
+  let p =
+    match aso with
+    [ Some p2 -> <:patt< ($p$ as $p2$) >>
+    | _ -> p ]
+  in
+  (p, w, e)
+;
+
 value mkumin loc f arg =
   match arg with
   [ <:expr< $int:n$ >> when int_of_string n > 0 ->
@@ -80,6 +95,19 @@ value mkumin loc f arg =
   | _ ->
       let f = "~" ^ f in
       <:expr< $lid:f$ $arg$ >> ]
+;
+
+value mkuminpat loc f arg =
+  match arg with
+  [ <:patt< $int:n$ >> when int_of_string n > 0 ->
+      let n = "-" ^ n in
+      <:patt< $int:n$ >>
+  | <:patt< $flo:n$ >> when float_of_string n > 0.0 ->
+      let n = "-" ^ n in
+      <:patt< $flo:n$ >>
+  | _ ->
+      let f = "~" ^ f in
+      <:patt< $lid:f$ $arg$ >> ]
 ;
 
 value mklistexp loc last =
@@ -297,10 +325,7 @@ EXTEND
           <:expr< try $e$ with $p1$ -> $e1$ >>
       | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
           <:expr< if $e1$ then $e2$ else $e3$ >>
-      | "do"; "{"; seq = sequence; "}" ->
-          match seq with
-          [ [e] -> e
-          | _ -> <:expr< do { $list:seq$ } >> ]
+      | "do"; "{"; seq = sequence; "}" -> mksequence loc seq
       | "for"; i = LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
         "do"; "{"; seq = sequence; "}" ->
           <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:seq$ } >>
@@ -407,12 +432,7 @@ EXTEND
   sequence:
     [ [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; [ "in" | ";" ];
         el = SELF ->
-          let e =
-            match el with
-            [ [e] -> e
-            | _ -> <:expr< do { $list:el$ } >> ]
-          in
-          [ <:expr< let $rec:o2b o$ $list:l$ in $e$ >>]
+          [ <:expr< let $rec:o2b o$ $list:l$ in $mksequence loc el$ >>]
       | e = expr; ";"; el = SELF -> [e :: el]
       | e = expr; ";" -> [e]
       | e = expr -> [e] ] ]
@@ -429,12 +449,7 @@ EXTEND
   match_case:
     [ [ p = patt; aso = OPT [ "as"; p = patt -> p ];
         w = OPT [ "when"; e = expr -> e ]; "->"; e = expr ->
-          let p =
-            match aso with
-            [ Some p2 -> <:patt< ($p$ as $p2$) >>
-            | _ -> p ]
-          in
-          (p, w, e) ] ]
+          mkmatchcase loc p aso w e ] ]
   ;
   label_expr:
     [ [ i = patt_label_ident; e = fun_binding -> (i, e) ] ]
@@ -469,11 +484,11 @@ EXTEND
       [ s = LIDENT -> <:patt< $lid:s$ >>
       | s = UIDENT -> <:patt< $uid:s$ >>
       | s = INT -> <:patt< $int:s$ >>
-      | "-"; s = INT -> <:patt< $int:"-" ^ s$ >>
-      | "-"; s = FLOAT -> <:patt< $flo:"-" ^ s$ >>
       | s = FLOAT -> <:patt< $flo:s$ >>
       | s = STRING -> <:patt< $str:s$ >>
       | s = CHAR -> <:patt< $chr:s$ >>
+      | "-"; s = INT -> mkuminpat loc "-" <:patt< $int:s$ >>
+      | "-"; s = FLOAT -> mkuminpat loc "-" <:patt< $flo:s$ >>
       | "["; "]" -> <:patt< [] >>
       | "["; pl = LIST1 patt SEP ";"; last = OPT [ "::"; p = patt -> p ];
         "]" ->
