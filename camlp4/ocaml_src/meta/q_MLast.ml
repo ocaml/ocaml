@@ -35,7 +35,6 @@ let str_item = Grammar.Entry.create gram "structure item";;
 let ctyp = Grammar.Entry.create gram "type";;
 let patt = Grammar.Entry.create gram "pattern";;
 let expr = Grammar.Entry.create gram "expression";;
-let directive = Grammar.Entry.create gram "directive";;
 
 let module_type = Grammar.Entry.create gram "module type";;
 let module_expr = Grammar.Entry.create gram "module expression";;
@@ -118,7 +117,6 @@ Grammar.extend
    and _ = (ctyp : 'ctyp Grammar.Entry.e)
    and _ = (patt : 'patt Grammar.Entry.e)
    and _ = (expr : 'expr Grammar.Entry.e)
-   and _ = (directive : 'directive Grammar.Entry.e)
    and _ = (module_type : 'module_type Grammar.Entry.e)
    and _ = (module_expr : 'module_expr Grammar.Entry.e)
    and _ = (class_type : 'class_type Grammar.Entry.e)
@@ -420,7 +418,7 @@ Grammar.extend
                 Tuple [x1; x2; x3] -> x1, x2, x3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 4588, 4604))
+                  _ -> raise (Match_failure ("q_MLast.ml", 4521, 4537))
             in
             Node ("StExc", [Loc; c; tl; b]) :
             'str_item));
@@ -664,7 +662,7 @@ Grammar.extend
               Tuple [Loc; c; tl] -> Node ("SgExc", [Loc; c; tl])
             | _ ->
                 match () with
-                _ -> raise (Match_failure ("q_MLast.ml", 6805, 6821)) :
+                _ -> raise (Match_failure ("q_MLast.ml", 6738, 6754)) :
             'sig_item));
       [Gramext.Stoken ("", "#");
        Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e));
@@ -3379,17 +3377,6 @@ Grammar.extend
        (fun _ (x : 'module_expr) (loc : int * int) ->
           (x : 'module_expr_eoi))]]];
 Quotation.add "module_expr" (apply_entry module_expr_eoi);;
-
-let directive_eoi = Grammar.Entry.create gram "directive" in
-Grammar.extend
-  [Grammar.Entry.obj (directive_eoi : 'directive_eoi Grammar.Entry.e), None,
-   [None, None,
-    [[Gramext.Snterm
-        (Grammar.Entry.obj (directive : 'directive Grammar.Entry.e));
-      Gramext.Stoken ("EOI", "")],
-     Gramext.action
-       (fun _ (x : 'directive) (loc : int * int) -> (x : 'directive_eoi))]]];
-Quotation.add "directive" (apply_entry directive_eoi);;
 
 let class_type_eoi = Grammar.Entry.create gram "class_type" in
 Grammar.extend

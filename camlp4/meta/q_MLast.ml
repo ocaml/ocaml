@@ -35,7 +35,6 @@ value str_item = Grammar.Entry.create gram "structure item";
 value ctyp = Grammar.Entry.create gram "type";
 value patt = Grammar.Entry.create gram "pattern";
 value expr = Grammar.Entry.create gram "expression";
-value directive = Grammar.Entry.create gram "directive";
 
 value module_type = Grammar.Entry.create gram "module type";
 value module_expr = Grammar.Entry.create gram "module expression";
@@ -107,7 +106,7 @@ value warning_seq () =
 ;
 
 EXTEND
-  GLOBAL: sig_item str_item ctyp patt expr directive module_type module_expr
+  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr
     class_type class_expr class_sig_item class_str_item;
   module_expr:
     [ [ "functor"; "("; i = anti_UIDENT; ":"; t = module_type; ")"; "->";
@@ -971,16 +970,6 @@ do {
     ;
   END;
   Quotation.add "module_expr" (apply_entry module_expr_eoi)
-};
-
-let directive_eoi = Grammar.Entry.create gram "directive" in
-do {
-  EXTEND
-    directive_eoi:
-      [ [ x = directive; EOI -> x ] ]
-    ;
-  END;
-  Quotation.add "directive" (apply_entry directive_eoi)
 };
 
 let class_type_eoi = Grammar.Entry.create gram "class_type" in

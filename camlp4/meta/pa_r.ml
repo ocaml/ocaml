@@ -133,9 +133,7 @@ value direction_flag = Grammar.Entry.create gram "direction_flag";
 value mod_ident = Grammar.Entry.create gram "mod_ident";
 
 EXTEND
-  GLOBAL: interf implem top_phrase use_file sig_item str_item ctyp patt expr
-    module_type module_expr let_binding type_parameter fun_binding ipatt
-    direction_flag mod_ident;
+  GLOBAL: interf implem use_file top_phrase;
   interf:
     [ [ si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | "#"; n = LIDENT; dp = OPT expr; ";" ->
@@ -169,6 +167,11 @@ EXTEND
       | "#"; n = LIDENT; dp = OPT expr; ";" ->
           <:str_item< # $n$ $opt:dp$ >> ] ]
   ;
+END;
+
+EXTEND
+  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr
+    let_binding type_parameter fun_binding ipatt direction_flag mod_ident;
   module_expr:
     [ [ "functor"; "("; i = UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->

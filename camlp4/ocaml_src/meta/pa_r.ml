@@ -131,21 +131,8 @@ let mod_ident = Grammar.Entry.create gram "mod_ident";;
 Grammar.extend
   (let _ = (interf : 'interf Grammar.Entry.e)
    and _ = (implem : 'implem Grammar.Entry.e)
-   and _ = (top_phrase : 'top_phrase Grammar.Entry.e)
    and _ = (use_file : 'use_file Grammar.Entry.e)
-   and _ = (sig_item : 'sig_item Grammar.Entry.e)
-   and _ = (str_item : 'str_item Grammar.Entry.e)
-   and _ = (ctyp : 'ctyp Grammar.Entry.e)
-   and _ = (patt : 'patt Grammar.Entry.e)
-   and _ = (expr : 'expr Grammar.Entry.e)
-   and _ = (module_type : 'module_type Grammar.Entry.e)
-   and _ = (module_expr : 'module_expr Grammar.Entry.e)
-   and _ = (let_binding : 'let_binding Grammar.Entry.e)
-   and _ = (type_parameter : 'type_parameter Grammar.Entry.e)
-   and _ = (fun_binding : 'fun_binding Grammar.Entry.e)
-   and _ = (ipatt : 'ipatt Grammar.Entry.e)
-   and _ = (direction_flag : 'direction_flag Grammar.Entry.e)
-   and _ = (mod_ident : 'mod_ident Grammar.Entry.e) in
+   and _ = (top_phrase : 'top_phrase Grammar.Entry.e) in
    let grammar_entry_create s =
      Grammar.Entry.create (Grammar.of_entry interf) s
    in
@@ -153,41 +140,7 @@ Grammar.extend
      grammar_entry_create "sig_item_semi"
    and str_item_semi : 'str_item_semi Grammar.Entry.e =
      grammar_entry_create "str_item_semi"
-   and phrase : 'phrase Grammar.Entry.e = grammar_entry_create "phrase"
-   and rebind_exn : 'rebind_exn Grammar.Entry.e =
-     grammar_entry_create "rebind_exn"
-   and module_binding : 'module_binding Grammar.Entry.e =
-     grammar_entry_create "module_binding"
-   and module_declaration : 'module_declaration Grammar.Entry.e =
-     grammar_entry_create "module_declaration"
-   and with_constr : 'with_constr Grammar.Entry.e =
-     grammar_entry_create "with_constr"
-   and dummy : 'dummy Grammar.Entry.e = grammar_entry_create "dummy"
-   and sequence : 'sequence Grammar.Entry.e = grammar_entry_create "sequence"
-   and match_case : 'match_case Grammar.Entry.e =
-     grammar_entry_create "match_case"
-   and label_expr : 'label_expr Grammar.Entry.e =
-     grammar_entry_create "label_expr"
-   and expr_ident : 'expr_ident Grammar.Entry.e =
-     grammar_entry_create "expr_ident"
-   and fun_def : 'fun_def Grammar.Entry.e = grammar_entry_create "fun_def"
-   and label_patt : 'label_patt Grammar.Entry.e =
-     grammar_entry_create "label_patt"
-   and patt_label_ident : 'patt_label_ident Grammar.Entry.e =
-     grammar_entry_create "patt_label_ident"
-   and label_ipatt : 'label_ipatt Grammar.Entry.e =
-     grammar_entry_create "label_ipatt"
-   and type_declaration : 'type_declaration Grammar.Entry.e =
-     grammar_entry_create "type_declaration"
-   and type_patt : 'type_patt Grammar.Entry.e =
-     grammar_entry_create "type_patt"
-   and constrain : 'constrain Grammar.Entry.e =
-     grammar_entry_create "constrain"
-   and constructor_declaration : 'constructor_declaration Grammar.Entry.e =
-     grammar_entry_create "constructor_declaration"
-   and label_declaration : 'label_declaration Grammar.Entry.e =
-     grammar_entry_create "label_declaration"
-   and ident : 'ident Grammar.Entry.e = grammar_entry_create "ident" in
+   and phrase : 'phrase Grammar.Entry.e = grammar_entry_create "phrase" in
    [Grammar.Entry.obj (interf : 'interf Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("EOI", "")],
@@ -278,8 +231,60 @@ Grammar.extend
          (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e));
        Gramext.Stoken ("", ";")],
       Gramext.action
-        (fun _ (sti : 'str_item) (loc : int * int) -> (sti : 'phrase))]];
-    Grammar.Entry.obj (module_expr : 'module_expr Grammar.Entry.e), None,
+        (fun _ (sti : 'str_item) (loc : int * int) -> (sti : 'phrase))]]]);;
+
+Grammar.extend
+  (let _ = (sig_item : 'sig_item Grammar.Entry.e)
+   and _ = (str_item : 'str_item Grammar.Entry.e)
+   and _ = (ctyp : 'ctyp Grammar.Entry.e)
+   and _ = (patt : 'patt Grammar.Entry.e)
+   and _ = (expr : 'expr Grammar.Entry.e)
+   and _ = (module_type : 'module_type Grammar.Entry.e)
+   and _ = (module_expr : 'module_expr Grammar.Entry.e)
+   and _ = (let_binding : 'let_binding Grammar.Entry.e)
+   and _ = (type_parameter : 'type_parameter Grammar.Entry.e)
+   and _ = (fun_binding : 'fun_binding Grammar.Entry.e)
+   and _ = (ipatt : 'ipatt Grammar.Entry.e)
+   and _ = (direction_flag : 'direction_flag Grammar.Entry.e)
+   and _ = (mod_ident : 'mod_ident Grammar.Entry.e) in
+   let grammar_entry_create s =
+     Grammar.Entry.create (Grammar.of_entry sig_item) s
+   in
+   let rebind_exn : 'rebind_exn Grammar.Entry.e =
+     grammar_entry_create "rebind_exn"
+   and module_binding : 'module_binding Grammar.Entry.e =
+     grammar_entry_create "module_binding"
+   and module_declaration : 'module_declaration Grammar.Entry.e =
+     grammar_entry_create "module_declaration"
+   and with_constr : 'with_constr Grammar.Entry.e =
+     grammar_entry_create "with_constr"
+   and dummy : 'dummy Grammar.Entry.e = grammar_entry_create "dummy"
+   and sequence : 'sequence Grammar.Entry.e = grammar_entry_create "sequence"
+   and match_case : 'match_case Grammar.Entry.e =
+     grammar_entry_create "match_case"
+   and label_expr : 'label_expr Grammar.Entry.e =
+     grammar_entry_create "label_expr"
+   and expr_ident : 'expr_ident Grammar.Entry.e =
+     grammar_entry_create "expr_ident"
+   and fun_def : 'fun_def Grammar.Entry.e = grammar_entry_create "fun_def"
+   and label_patt : 'label_patt Grammar.Entry.e =
+     grammar_entry_create "label_patt"
+   and patt_label_ident : 'patt_label_ident Grammar.Entry.e =
+     grammar_entry_create "patt_label_ident"
+   and label_ipatt : 'label_ipatt Grammar.Entry.e =
+     grammar_entry_create "label_ipatt"
+   and type_declaration : 'type_declaration Grammar.Entry.e =
+     grammar_entry_create "type_declaration"
+   and type_patt : 'type_patt Grammar.Entry.e =
+     grammar_entry_create "type_patt"
+   and constrain : 'constrain Grammar.Entry.e =
+     grammar_entry_create "constrain"
+   and constructor_declaration : 'constructor_declaration Grammar.Entry.e =
+     grammar_entry_create "constructor_declaration"
+   and label_declaration : 'label_declaration Grammar.Entry.e =
+     grammar_entry_create "label_declaration"
+   and ident : 'ident Grammar.Entry.e = grammar_entry_create "ident" in
+   [Grammar.Entry.obj (module_expr : 'module_expr Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "struct");
        Gramext.Slist0
