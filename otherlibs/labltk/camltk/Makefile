@@ -17,9 +17,7 @@ camltkobjs: $(CAMLTKOBJS)
 
 camltkobjsx: $(CAMLTKOBJSX)
 
-# All .{ml,mli} files are generated in this directory
-clean: 
-	rm -f *.cm* *.ml *.mli *.o *.a
+clean:
 	$(MAKE) -f Makefile.gen clean
 
 install: $(CAMLTKOBJS)

@@ -15,11 +15,6 @@ labltkobjs: $(LABLTKOBJS)
 
 labltkobjsx: $(LABLTKOBJSX)
 
-# All .{ml,mli} files are generated in this directory
-clean: 
-	rm -f *.cm* *.ml *.mli *.o *.a
-	$(MAKE) -f Makefile.gen clean
-
 install: $(LABLTKOBJS)
 	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	cp $(LABLTKOBJS:.cmo=.cmi) $(WIDGETOBJS:.cmo=.mli) $(INSTALLDIR)
@@ -29,6 +24,9 @@ installopt: $(LABLTKOBJSX)
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	cp $(LABLTKOBJSX) $(INSTALLDIR)
 	chmod 644 $(INSTALLDIR)/*.cmx
+
+clean:
+	$(MAKE) -f Makefile.gen clean
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
