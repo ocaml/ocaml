@@ -3,7 +3,7 @@
 #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
 #   Free Software Foundation, Inc.
 
-timestamp='2001-06-12'
+timestamp='2001-06-25'
 
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -756,6 +756,9 @@ EOF
     arm*:Linux:*:*)
 	echo ${UNAME_MACHINE}-unknown-linux-gnu
 	exit 0 ;;
+    sa110:Linux:*:*)
+	echo arm-unknown-linux-gnu
+	exit 0 ;;
     ia64:Linux:*:*)
 	echo ${UNAME_MACHINE}-unknown-linux
 	exit 0 ;;
@@ -1096,6 +1099,9 @@ EOF
     SX-5:SUPER-UX:*:*)
 	echo sx5-nec-superux${UNAME_RELEASE}
 	exit 0 ;;
+    osfmach3_ppc:*:*:*)
+        echo powerpc-unknown-linux
+        exit 0 ;;
     Power*:Rhapsody:*:*)
 	echo powerpc-apple-rhapsody${UNAME_RELEASE}
 	exit 0 ;;
@@ -1198,15 +1204,16 @@ main ()
 #endif
 
 #if defined (NeXT)
-#if !defined (__ARCHITECTURE__)
-#define __ARCHITECTURE__ "m68k"
-#endif
+  char * arch;
   int version;
+#if !defined (__ARCHITECTURE__)
+  arch = "m68k";
+#else
+  arch = __ARCHITECTURE__;
+  if (strcmp(arch, "hppa") == 0) arch = "hppa1.1";
+#endif
   version=`(hostinfo | sed -n 's/.*NeXT Mach \([0-9]*\).*/\1/p') 2>/dev/null`;
-  if (version < 4)
-    printf ("%s-next-nextstep%d\n", __ARCHITECTURE__, version);
-  else
-    printf ("%s-next-openstep%d\n", __ARCHITECTURE__, version);
+  printf ("%s-next-nextstep%d\n", arch, version);
   exit (0);
 #endif
 
