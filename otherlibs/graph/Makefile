@@ -3,7 +3,7 @@
 include ../../Makefile.config
 
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
+CFLAGS=-I../../byterun -I$(X11_INCLUDES) -O $(BYTECCCOMPOPTS)
 
 CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot
 
@@ -11,6 +11,8 @@ OBJS=open.o draw.o fill.o color.o text.o \
   image.o make_img.o dump_img.o point_col.o sound.o events.o
 
 all: libgraph.a graphics.cmi graphics.cma
+
+allopt:
 
 libgraph.a: $(OBJS)
 	rm -f libgraph.a
@@ -20,13 +22,18 @@ libgraph.a: $(OBJS)
 graphics.cma: graphics.cmo
 	$(CAMLC) -a -o graphics.cma graphics.cmo
 
-clean::
-	rm -f libgraph.a $(GENFILES) *.o *.cm[ioa]
+clean:
+	rm -f *.cm*
+
+realclean: clean
+	rm -f *.a *.o $(GENFILES)
 
 install:
 	cp libgraph.a $(LIBDIR)/libgraph.a
 	cd $(LIBDIR); $(RANLIB) libgraph.a
 	cp graphics.cm[ia] $(LIBDIR)
+
+installopt:
 
 .SUFFIXES: .ml .mli .cmo .cmi
 

@@ -29,7 +29,10 @@ $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
 	cd $(REGEXLIB); CC="$(CC)" sh configure; make
 
 clean:
-	rm -f libstr.a *.o *.cm* cslstr
+	rm -f *.cm*
+
+realclean: clean
+	rm -f *.a *.o
 	cd $(REGEXLIB); if test -f Makefile; then make distclean; else exit 0; fi
 
 install:

@@ -39,7 +39,10 @@ unix.cmxa: unix.cmx
 	$(CAMLOPT) -a -o unix.cmxa unix.cmx
 
 clean:
-	rm -f libunix.a *.o *.cm*
+	rm -f *.cm*
+
+realclean: clean
+	rm -f *.a *.o
 
 install:
 	cp libunix.a $(LIBDIR)/libunix.a

@@ -43,7 +43,10 @@ installopt:
 	cd $(LIBDIR); $(RANLIB) nums.a
 
 clean:
-	rm -f *.a *.o *.cm*
+	rm -f *.cm*
+
+realclean: clean
+	rm -f *.a *.o
 	rm -f nat.ml int_misc.ml
 	cd bignum; make scratch
 	cd test; make clean
