@@ -1316,7 +1316,9 @@ and unify_row env row1 row2 =
               row_closed = closed; row_name = name} in
   let more row rest =
     let rest =
-      if closed then filter_row_fields row.row_closed rest else rest in
+      if closed then
+        filter_row_fields (row.row_closed && !allow_conjunctive) rest
+      else rest in
     if rest <> [] && row.row_closed then raise (Unify []);
     let ty =
       newty2 generic_level (Tvariant {row0 with row_fields = rest}) in
@@ -1362,8 +1364,8 @@ and unify_row env row1 row2 =
              with exn -> e2 := None; raise exn)
         | Reither(true, [], e1), Rpresent None -> e1 := Some f2
         | Rpresent None, Reither(true, [], e2) -> e2 := Some f1
-        | Reither(_, _, e1), Rabsent -> e1 := Some f2
-        | Rabsent, Reither(_, _, e2) -> e2 := Some f1
+        | Reither(_, _, e1), Rabsent when !allow_conjunctive -> e1 := Some f2
+        | Rabsent, Reither(_, _, e2) when !allow_conjunctive -> e2 := Some f1
         | Rabsent, Rabsent -> ()
         | _ -> raise (Unify []))
       pairs

@@ -100,6 +100,13 @@ let unify_pat env pat expected_ty =
   with Unify trace ->
     raise(Error(pat.pat_loc, Pattern_type_clash(trace)))
 
+(* This one allows conjonctive types *)
+let unify_pat' env pat expected_ty =
+  try
+    unify env pat.pat_type expected_ty
+  with Unify trace ->
+    raise(Error(pat.pat_loc, Pattern_type_clash(trace)))
+
 let pattern_variables = ref ([]: (Ident.t * type_expr) list)
 
 let enter_variable loc name ty =
@@ -1185,13 +1192,23 @@ and type_statement env sexp =
 (* Typing of match cases *)
 
 and type_cases env ty_arg ty_res caselist =
-  List.map
-    (fun (spat, sexp) ->
-      let (pat, ext_env) = type_pattern env spat in
-      unify_pat env pat ty_arg;
+  let ty_arg' = newvar () in
+  let pat_env_list =
+    List.map
+      (fun (spat, sexp) ->
+        let (pat, ext_env) = type_pattern env spat in
+        unify_pat env pat ty_arg';
+        (pat, ext_env))
+      caselist in
+  (* Delay other unifications until after the use of unify_pat *)
+  begin match pat_env_list with [] -> ()
+  | (pat, _) :: _ -> unify_pat' env pat ty_arg
+  end;
+  List.map2
+    (fun (pat, ext_env) (spat, sexp) ->
       let exp = type_expect ext_env sexp ty_res in
       (pat, exp))
-    caselist
+    pat_env_list caselist
 
 (* Typing of let bindings *)
 
@@ -1202,7 +1219,7 @@ and type_let env rec_flag spat_sexp_list =
   in
   if rec_flag = Recursive then
     List.iter2
-      (fun pat (_, sexp) -> unify_pat env pat (type_approx env sexp))
+      (fun pat (_, sexp) -> unify_pat' env pat (type_approx env sexp))
       pat_list spat_sexp_list;
   let exp_env =
     match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
