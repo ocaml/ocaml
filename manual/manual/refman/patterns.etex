@@ -93,8 +93,7 @@ constructor is equal to @constr@, and whose argument matches
 @pattern_1@.
 
 The pattern @pattern_1 "::" pattern_2@ matches non-empty lists whose
-heads match @pattern_1@, and whose tails match @pattern_2@. This
-pattern behaves like @"(" "::" ")" "(" pattern_1 "," pattern_2 ")"@.
+heads match @pattern_1@, and whose tails match @pattern_2@.
 
 The pattern @"[" pattern_1 ";" \ldots ";" pattern_n "]"@ matches lists
 of length $n$ whose elements match @pattern_1@ \ldots @pattern_n@,

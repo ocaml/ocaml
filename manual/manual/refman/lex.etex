@@ -32,7 +32,7 @@ letters from the ASCII set. The current implementation (except on
 MacOS 9) also recognizes as letters all accented characters from the ISO
 8859-1 (``ISO Latin 1'') set. All characters in an identifier are
 meaningful. The current implementation accepts identifiers up to
-a length of at least 16000000 characters.
+16000000 characters in length.
 
 \subsubsection*{Integer literals}
 

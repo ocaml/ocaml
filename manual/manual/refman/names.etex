@@ -42,14 +42,6 @@ infix-op:
 ;
 constr-name:
         capitalized-ident
-      | 'false'
-      | 'true'
-      | '[' ']'
-      | '(' ')'
-      | '::'
-;
-exception-name:
-        capitalized-ident
 ;
 label-name:
         lowercase-ident
@@ -80,9 +72,7 @@ method-name:
 \end{syntax}
 As shown above, prefix and infix symbols as well as some keywords can
 be used as value names, provided they are written between parentheses.
-Keywords such as '()' and 'false' are also constructor names. The
-capitalization rules  are summarized in the table
-below.
+The capitalization rules  are summarized in the table below.
 
 \begin{tableau}{|l|l|}{Name space}{Case of first letter}
 \entree{Values}{lowercase}
@@ -112,7 +102,7 @@ value-path:
 ;
 constr:
         constr-name
-      | module-path '.' capitalized-ident
+      | module-path '.' constr-name
 ;
 typeconstr:
         typeconstr-name

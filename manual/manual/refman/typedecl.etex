@@ -181,15 +181,15 @@ appear in the type equation and the type declaration.
 
 \begin{syntax}
 exception-definition:
-        'exception' exception-name ['of' typexpr]
-      | 'exception' exception-name '=' constr
+        'exception' constr-name ['of' typexpr]
+      | 'exception' constr-name '=' constr
 \end{syntax}
 
 Exception definitions add new constructors to the built-in variant
 type \verb"exn" of exception values. The constructors are declared as
 for a definition of a variant type.
 
-The form @'exception' exception-name ['of' typexpr]@
+The form @'exception' constr-name ['of' typexpr]@
 generates a new exception, distinct from all other exceptions in the system.
-The form @'exception' exception-name '=' constr@
+The form @'exception' constr-name '=' constr@
 gives an alternate name to an existing exception.

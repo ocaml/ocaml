@@ -8,10 +8,15 @@ constant:
   | char-literal
   | string-literal
   | constr
+  | "false"
+  | "true"
+  | "[]"
+  | "()"
   | "`"tag-name
 \end{syntax}
 
 The syntactic class of constants comprises literals from the four
 base types (integers, floating-point numbers, characters, character
 strings), and constant constructors from both normal and polymorphic
-variants.
+variants, as well as the special constants "false", "true", "[]",
+and "()", which behave like constant constructors.
