@@ -2,13 +2,10 @@
 
 \typeout{Document Style option `caml-sl' <7 Apr 92>.}
 
-\def\@magscale#1{ scaled \magstep #1}
-\def\@halfmag{ scaled \magstephalf}
-
 \ifcase\@ptsize
     \font\sltt = cmsltt10
-\or \font\sltt = cmsltt10 \@halfmag
-\or \font\sltt = cmsltt10 \@magscale1
+\or \font\sltt = cmsltt10 scaled \magstephalf
+\or \font\sltt = cmsltt10 scaled \magstep1
 \fi
 
 {\catcode`\^^M=\active %
