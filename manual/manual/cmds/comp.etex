@@ -50,7 +50,7 @@ before all ".cmo" files that refer to the unit \var{x}.
 \item
 Arguments ending in ".cma" are taken to be libraries of object bytecode.
 A library of object bytecode packs in a single file a set of object
-bytecode files (".cmo" files). Libraries are build with "cslc -a"
+bytecode files (".cmo" files). Libraries are built with "cslc -a"
 (see the description of the "-a" option below). The object files
 contained in the library are linked as regular ".cmo" files (see
 above), in the order specified when the ".cma" file was built. The
@@ -106,7 +106,7 @@ compilation. Source code files are turned into compiled files, but no
 executable file is produced. This option is useful to
 compile modules separately.
 
-\item["-cclib" \var{libname}]
+\item["-cclib" "-l"\var{libname}]
 Pass the "-l"\var{libname} option to the C linker when linking in
 ``custom runtime'' mode (see the "-custom" option). This causes the
 given C library to be linked with the program.

@@ -53,6 +53,7 @@ def_macro "\\/" [];
 def_macro "\\newpage" [];
 def_macro "\\label" [Print "<A name=\""; Print_arg; Print "\"></A>"];
 def_macro "\\ref" [Print "<A href=\"#"; Print_arg; Print "\">X</A>"];
+def_macro "\\pageref" [Print "<A href=\"#"; Print_arg; Print "\">X</A>"];
 def_macro "\\index" [Skip_arg];
 def_macro "\\oe" [Print "oe"];
 def_macro "\\&" [Print "&amp;"];

@@ -72,13 +72,11 @@ referenced anywhere in the program, then it is not linked in.
 
 \item
 Arguments ending in ".c" are passed to the C compiler, which generates
-a ".o" object file. This object file is linked with the program if the
-"-custom" flag is set (see the description of "-custom" below).
+a ".o" object file. This object file is linked with the program.
 
 \item
 Arguments ending in ".o" or ".a" are assumed to be C object files and
-libraries. They are passed to the linker when linking in "-custom" mode
-(see the description of "-custom" below).
+libraries. They are linked with the program.
 
 \end{itemize}
 
@@ -103,7 +101,7 @@ compilation. Source code files are turned into compiled files, but no
 executable file is produced. This option is useful to
 compile modules separately.
 
-\item["-cclib" \var{libname}]
+\item["-cclib" "-l"\var{libname}]
 Pass the "-l"\var{libname} option to the linker. This causes the given
 C library to be linked with the program.
 
@@ -116,10 +114,6 @@ directory \var{dir}.
 Optimize the produced code for space rather than for time. This
 results in smaller but slightly slower programs. The default is to
 optimize for speed.
-
-\item["-custom"]
-Link in ``custom runtime'' mode, allowing user-defined C functions and
-C libraries to be linked with the Caml code.
 
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred

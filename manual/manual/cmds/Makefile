@@ -1,4 +1,5 @@
-FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex depend.tex
+FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
+  depend.tex profil.tex
 
 TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2

@@ -1,4 +1,4 @@
-\chapter{The runtime system (csllrun)} \label{c:runtime}
+\chapter{The runtime system (cslrun)} \label{c:runtime}
 
 The "cslrun" command executes bytecode files produced by the
 linking phase of the "cslc" command.

@@ -40,7 +40,7 @@
 \input lexyacc.tex
 \input depend.tex
 % \input debugger.tex
-% \input profil.tex
+\input profil.tex
 % \input emacs.tex
 \input intf-c.tex
 
@@ -48,10 +48,10 @@
 \label{p:library}
 \input core.tex
 \input stdlib.tex
-% \input graph.tex
-% \input libunix.tex
-% \input libnum.tex
-% \input libstr.tex
+\input libunix.tex
+\input libnum.tex
+\input libstr.tex
+\input libgraph.tex
 
 \part{Appendix}
 \label{p:appendix}

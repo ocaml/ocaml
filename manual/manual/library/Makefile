@@ -5,24 +5,26 @@ STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
   printexc.tex printf.tex queue.tex set.tex sort.tex \
   stack.tex string.tex sys.tex
 
-INTF=$(CORE_INTF) $(STDLIB_INTF)
-FILES=core.tex core.htex stdlib.tex stdlib.htex stdlib-all.tex $(INTF) $(INTF:.tex=.htex)
+OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex
+
+INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
+
+BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex
+
+FILES=$(BLURB) $(INTF) $(BLURB:.tex=.htex) $(INTF:.tex=.htex)
 
 FORMAT=../../tools/format-intf
 
 CSLDIR=../../../csl
 
-VPATH=$(CSLDIR)/stdlib
+VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph
 
 all: $(FILES)
 
 clean:
-	rm -f $(FILES)
+	rm -f $(FILES) arithstatus.mli
 
 $(INTF) $(INTF:.tex=.htex): $(FORMAT)
-
-stdlib-all.tex: $(STDLIB_INTF)
-	@ (for i in $(STDLIB_INTF); do echo "\\input $$i"; done) | sort > stdlib-all.tex
 
 .SUFFIXES:
 .SUFFIXES: .tex .etex .mli .htex
@@ -39,3 +41,6 @@ stdlib-all.tex: $(STDLIB_INTF)
 .mli.htex:
 	$(FORMAT) -html $< > $*.htex
 
+# TeX hates underscores in file names
+arithstatus.mli: $(CSLDIR)/otherlibs/num/arith_status.mli
+	cp $(CSLDIR)/otherlibs/num/arith_status.mli arithstatus.mli
