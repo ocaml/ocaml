@@ -265,6 +265,7 @@ static void intern_rec(value *dest)
         size = ops->deserialize((void *) (intern_dest + 2));
         size = 1 + (size + sizeof(value) - 1) / sizeof(value);
         v = Val_hp(intern_dest);
+        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         *intern_dest = Make_header(size, Custom_tag, intern_color);
         Custom_ops_val(v) = ops;
         intern_dest += 1 + size;

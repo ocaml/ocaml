@@ -279,7 +279,7 @@ static void int64_serialize(value v, unsigned long * wsize_32,
                             unsigned long * wsize_64)
 {
   serialize_int_8(Int64_val(v));
-  *wsize_64 = *wsize_64 = 8;
+  *wsize_32 = *wsize_64 = 8;
 }
 
 static unsigned long int64_deserialize(void * dst)

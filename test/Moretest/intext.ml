@@ -60,6 +60,7 @@ let test_out filename =
   output_value oc (Nativeint.of_string "-123456");
   output_value oc (Nativeint.shift_left (Nativeint.of_string "123456789") 32);
   output_value oc (Nativeint.shift_left (Nativeint.of_string "-123456789") 32);
+  let i = Int64.of_string "123456789123456" in output_value oc (i,i);
   close_out oc
 
 
@@ -139,6 +140,10 @@ let test_in filename =
              Nativeint.shift_left (Nativeint.of_string "123456789") 32);
   test 36 (input_value ic =
              Nativeint.shift_left (Nativeint.of_string "-123456789") 32);
+  let ((i, j) : int64 * int64) = input_value ic in
+  test 37 (i = Int64.of_string "123456789123456");
+  test 38 (j = Int64.of_string "123456789123456");
+  test 39 (i == j);
   close_in ic
 
 let test_string () =
