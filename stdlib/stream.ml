@@ -20,8 +20,11 @@ and 'a data =
     Sempty
   | Scons of 'a * 'a data
   | Sapp of 'a data * 'a data
-  | Sfunc of (int -> 'a data)
+  | Slazy of (unit -> 'a data)
+  | Sgen of 'a gen
   | Sbuffio of buffio
+and 'a gen =
+  {mutable curr : 'a option option; func : int -> 'a option}
 and buffio =
   {ic : in_channel; buff : string; mutable len : int; mutable ind : int}
 exception Parse_failure
@@ -33,26 +36,24 @@ let fill_buff b =
   b.len <- input b.ic b.buff 0 (String.length b.buff);
   b.ind <- 0
 
-let rec get_data cnt =
+let rec get_data =
   function
     Sempty -> None
   | Scons (a, d) -> Some (a, d)
   | Sapp (d1, d2) ->
-      begin match get_data cnt d1 with
+      begin match get_data d1 with
         Some (a, d) -> Some (a, Sapp (d, d2))
-      | None -> get_data cnt d2
+      | None -> get_data d2
       end
-  | Sfunc f -> get_data cnt (f cnt)
-  | Sbuffio b as s ->
-      if b.ind >= b.len then fill_buff b;
-      if b.len == 0 then None else Some (Obj.magic b.buff.[b.ind], s)
+  | Slazy f -> get_data (f ())
+  | _ -> failwith "illegal stream concatenation"
 
 let rec peek s =
   match s.data with
     Sempty -> None
   | Scons (a, _) -> Some a
   | Sapp (d1, d2) ->
-      begin match get_data s.count d1 with
+      begin match get_data d1 with
         Some (a, d) ->
           Obj.set_field (Obj.repr s) 1 (Obj.repr (Scons (a, Sapp (d, d2))));
           Some a
@@ -60,9 +61,13 @@ let rec peek s =
           Obj.set_field (Obj.repr s) 1 (Obj.repr d2);
           peek s
       end
-  | Sfunc f ->
-      Obj.set_field (Obj.repr s) 1 (Obj.repr (f s.count));
-      peek s
+  | Slazy f ->
+      begin match f () with
+        Sgen _ | Sbuffio _ -> failwith "illegal stream concatenation"
+      | x -> Obj.set_field (Obj.repr s) 1 (Obj.repr x); peek s
+      end
+  | Sgen {curr = Some a} -> a
+  | Sgen g -> let x = g.func s.count in g.curr <- Some x; x
   | Sbuffio b ->
       if b.ind >= b.len then fill_buff b;
       if b.len == 0 then begin
@@ -75,6 +80,9 @@ let rec junk s =
     Scons (_, s') ->
       Obj.set_field (Obj.repr s) 0 (Obj.repr (succ s.count));
       Obj.set_field (Obj.repr s) 1 (Obj.repr s')
+  | Sgen {curr=Some None} -> ()
+  | Sgen ({curr=Some _} as g) ->
+      Obj.set_field (Obj.repr s) 0 (Obj.repr (succ s.count)); g.curr <- None
   | Sbuffio b ->
       Obj.set_field (Obj.repr s) 0 (Obj.repr (succ s.count));
       b.ind <- succ b.ind
@@ -100,13 +108,7 @@ let iter f strm =
 
 (* Stream building functions *)
 
-let from f =
-  let rec g c =
-    match f c with
-      Some a -> Scons (a, Sfunc g)
-    | None -> Sempty
-  in
-  {count = 0; data = Sfunc g}
+let from f = {count = 0; data = Sgen {curr = None; func = f}}
 
 let of_list l =
   {count = 0; data = List.fold_right (fun x l -> Scons (x, l)) l Sempty}
@@ -121,11 +123,11 @@ let of_channel ic =
 (* Stream expressions builders *)
 
 let sempty = {count = 0; data = Sempty}
-let scons f s = {count = 0; data = Sfunc (fun _ -> Scons (f (), s.data))}
+let scons f s = {count = 0; data = Slazy (fun _ -> Scons (f (), s.data))}
 let sapp f s =
   match s.data with
-    Sempty -> {count = 0; data = Sfunc (fun _ -> (f ()).data)}
-  | d -> {count = 0; data = Sfunc (fun _-> Sapp ((f ()).data, d))}
+    Sempty -> {count = 0; data = Slazy (fun _ -> (f ()).data)}
+  | d -> {count = 0; data = Slazy (fun _-> Sapp ((f ()).data, d))}
 
 (* For debugging use *)
 
@@ -141,5 +143,6 @@ and dump_data f =
   | Sapp (d1, d2) ->
       print_string "Sapp ("; dump_data f d1; print_string ", ";
       dump_data f d2; print_string ")"
-  | Sfunc f -> print_string "Sfunc"
+  | Slazy f -> print_string "Slazy"
+  | Sgen _ -> print_string "Sgen"
   | Sbuffio b -> print_string "Sbuffio"

@@ -24,6 +24,9 @@ exception Parse_error of string
 	   accepted, but one of the following components is rejected. *)
 
 (** Stream builders *)
+(* Warning: these functions create streams with fast access; it is illegal
+   to mix them with streams built with [[: :]]; would raise [Failure]
+   when accessing such mixed streams. *)
 
 val from : (int -> 'a option) -> 'a t
   	(* [Stream.from f] returns a stream built from the function [f].
