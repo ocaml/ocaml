@@ -376,14 +376,28 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-type socket_option =
+type socket_bool_option =
     SO_DEBUG
   | SO_BROADCAST
   | SO_REUSEADDR
   | SO_KEEPALIVE
   | SO_DONTROUTE
   | SO_OOBINLINE
+  | SO_ACCEPTCONN
+
+type socket_int_option =
+    SO_SNDBUF
+  | SO_RCVBUF
   | SO_ERROR
+  | SO_TYPE
+  | SO_RCVLOWAT
+  | SO_SNDLOWAT
+
+type socket_optint_option = SO_LINGER
+
+type socket_float_option =
+    SO_RCVTIMEO
+  | SO_SNDTIMEO
 
 external socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
@@ -428,9 +442,23 @@ let sendto fd buf ofs len flags addr =
   then invalid_arg "Unix.sendto"
   else unsafe_sendto fd buf ofs len flags addr
 
-external getsockopt : file_descr -> socket_option -> bool = "unix_getsockopt"
-external setsockopt : file_descr -> socket_option -> bool -> unit
-                                                          = "unix_setsockopt"
+external getsockopt : file_descr -> socket_bool_option -> bool
+                                          = "unix_getsockopt_bool"
+external setsockopt : file_descr -> socket_bool_option -> bool -> unit
+                                          = "unix_setsockopt_bool"
+external getsockopt_int : file_descr -> socket_int_option -> int
+                                          = "unix_getsockopt_int"
+external setsockopt_int : file_descr -> socket_int_option -> int -> unit
+                                          = "unix_setsockopt_int"
+external getsockopt_optint : file_descr -> socket_optint_option -> int option
+                                          = "unix_getsockopt_optint"
+external setsockopt_optint : file_descr -> socket_optint_option -> int option -> unit
+                                          = "unix_setsockopt_optint"
+external getsockopt_float : file_descr -> socket_float_option -> float
+                                          = "unix_getsockopt_float"
+external setsockopt_float : file_descr -> socket_float_option -> float -> unit
+                                          = "unix_setsockopt_float"
+
 type host_entry =
   { h_name : string;
     h_aliases : string array;
