@@ -1,3 +1,7 @@
+2001-11-17:
+  * Added indirection in accesses to locations, threads and automata.
+  * Added weak structures from CDK.
+
 2001-11-15:
   * Implemented simple local operations:
     - create_location

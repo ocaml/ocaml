@@ -11,6 +11,11 @@
 (***********************************************************************)
 
 (*
+TODO:
+  - remove location spools, use weak sets instead.
+*)
+
+(*
   Abstract type of join-definitions.
   Basically, a join-definition contains
     * Some messages queues, one per defined channel, sorted by
@@ -33,7 +38,7 @@ type automaton
             channel indexes.
           - ii is the index of te match guard
 *)
-type matches
+type matches = int array
 
 (* Guards are functions.
 Given a clause
@@ -52,6 +57,8 @@ type continuation
 
 type thread
 
+type message
+  
 type internal_thread = {
     condition : Condition.t;
     mutable body : unit -> unit;
@@ -59,6 +66,7 @@ type internal_thread = {
     mutable running : bool;
     mutable thread : Thread.t;
   }
+
   
 type internal_location = {
     mutable father : location;
@@ -72,6 +80,10 @@ type internal_location = {
 
 type internal_automaton = {
     mutable auto_loc : location;  
+    mutable state : int;
+    mutable matches : int array array;
+    mutable processes : guard array;
+    mutable queues : message list array;
   }
   
 (* Functions to swap between stubs and local objects. Maybe this should

@@ -44,7 +44,7 @@ partialclean:
 	/bin/rm -f *~ *.cm? *.cmxa
 
 clean: partialclean
-	/bin/rm -f *.o *.a
+	/bin/rm -f *.o *.a *.so
 
 installopt:
 
