@@ -1872,12 +1872,6 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               moregen_fields inst_nongen type_pairs env fi1 fi2
           | (Tfield _, Tfield _) ->           (* Actually unused *)
               moregen_fields inst_nongen type_pairs env t1' t2'
-          | (Tfield (_, kind, _, t1''), _)
-                when field_kind_repr kind = Fabsent ->
-              moregen inst_nongen type_pairs env t1'' t2'
-          | (_, Tfield (_, kind, _, t2''))
-                when field_kind_repr kind = Fabsent ->
-              moregen inst_nongen type_pairs env t1' t2''
           | (Tnil, Tnil) ->
               ()
 	  | (Tpoly (t1, []), Tpoly (t2, [])) ->
@@ -2058,12 +2052,6 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               eqtype_fields rename type_pairs subst env fi1 fi2
           | (Tfield _, Tfield _) ->       (* Actually unused *)
               eqtype_fields rename type_pairs subst env t1' t2'
-          | (Tfield (_, kind, _, t1''), _)
-                when field_kind_repr kind = Fabsent ->
-              eqtype rename type_pairs subst env t1'' t2'
-          | (_, Tfield (_, kind, _, t2''))
-                when field_kind_repr kind = Fabsent ->
-              eqtype rename type_pairs subst env t1' t2''
           | (Tnil, Tnil) ->
               ()
 	  | (Tpoly (t1, []), Tpoly (t2, [])) ->
