@@ -649,6 +649,7 @@ case "$arch,$model,$system" in
   sparc,*,solaris)
     profiling='prof'
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
+  amd64,*,linux) profiling='prof';;
   *) profiling='noprof';;
 esac
 
@@ -743,11 +744,6 @@ else
 fi
 
 # For the sys module
-
-if sh ./hasgot strerror; then
-  echo "strerror() found."
-  echo "#define HAS_STRERROR" >> s.h
-fi
 
 if sh ./hasgot times; then
   echo "times() found."
