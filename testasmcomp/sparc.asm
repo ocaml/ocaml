@@ -28,5 +28,5 @@ _call_gen_code:
 
         .global _caml_c_call
 _caml_c_call:
-        jmp     %g1
+        jmp     %g4
         nop

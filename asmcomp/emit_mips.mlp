@@ -353,10 +353,11 @@ let emit_instr i =
         fatal_error "Emit_mips: Ispecific"
     | Lreturn ->
         let n = frame_size() in
-        if !contains_calls then begin
+        if !contains_calls then
           `	lw	$31, {emit_int(n - 4)}($sp)\n`;
-          `	and	$31, $31, -2\n`
-        end;
+        (* Must and the return address even if this is a leaf routine,
+           because it may have been tail-called with a marked retaddr. *)
+        `	and	$31, $31, -2\n`;
         if n > 0 then
           `	addu	$sp, $sp, {emit_int n}\n`;
         liveregs i 0;

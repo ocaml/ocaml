@@ -61,6 +61,7 @@ let symbol_prefix =
   match Config.system with
     "sunos" -> "_"
   | "solaris" -> ""
+  | _ -> fatal_error "Emit_sparc.symbol_prefix"
 
 let emit_symbol s =
   emit_string symbol_prefix; Emitaux.emit_symbol s
@@ -71,6 +72,7 @@ let label_prefix =
   match Config.system with
     "sunos" -> "L"
   | "solaris" -> ".L"
+  | _ -> fatal_error "Emit_sparc.label_prefix"
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
@@ -213,7 +215,7 @@ let name_for_int_operation = function
 
 let name_for_float_operation = function
     Iaddf -> "faddd"
-  | Isbuf -> "fsubd"
+  | Isubf -> "fsubd"
   | Imulf -> "fmuld"
   | Idivf -> "fdivd"
   | _ -> Misc.fatal_error "Emit.name_for_float_operation"
@@ -447,7 +449,7 @@ let rec emit_instr i dslot =
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
-    | Lop(Iaddf | Isubf | Imulf | Idivf) ->
+    | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
         let instr = name_for_float_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
     | Lop(Ifloatofint) ->
@@ -466,54 +468,48 @@ let rec emit_instr i dslot =
         fatal_error "Emit: specific"
     | Lreturn ->
         let n = frame_size() in
-        if !contains_calls then begin
+        if !contains_calls then
           `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-          emit_delay_slot dslot;
-          `	andn	%o7, 1, %o7\n`
-        end else
-          emit_delay_slot dslot;
+        emit_delay_slot dslot;
+        (* Must and the return address even if this is a leaf routine,
+           because it may have been tail-called with a marked retaddr. *)
+        `	andn	%o7, 1, %o7\n`;
         `	retl\n`;
         `	add	%sp, {emit_int n}, %sp\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
     | Lbranch lbl ->
         `	b	{emit_label lbl}\n`;
-        `	nop\n`
+        fill_delay_slot dslot
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->
             `	tst	{emit_reg i.arg.(0)}\n`;
-            `	bne	{emit_label lbl}\n`;
-            fill_delay_slot dslot
+            `	bne	{emit_label lbl}\n`
         | Ifalsetest ->
             `	tst	{emit_reg i.arg.(0)}\n`;
-            `	be	{emit_label lbl}\n`;
-            fill_delay_slot dslot
+            `	be	{emit_label lbl}\n`
         | Iinttest cmp ->
             let comp = name_for_int_comparison cmp in
             `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            `	{emit_string comp}	{emit_label lbl}\n`;
-            fill_delay_slot dslot
+            `	{emit_string comp}	{emit_label lbl}\n`
         | Iinttest_imm(cmp, n) ->
             let comp = name_for_int_comparison cmp in
             `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
-            `	{emit_string comp}	{emit_label lbl}\n`;
-            fill_delay_slot dslot
+            `	{emit_string comp}	{emit_label lbl}\n`
         | Ifloattest cmp ->
             let comp = name_for_float_comparison cmp in
             `	fcmpd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	nop\n`;
-            `	{emit_string comp}	{emit_label lbl}\n`;
-            fill_delay_slot dslot
+            `	{emit_string comp}	{emit_label lbl}\n`
         | Ioddtest ->
             `	andcc	{emit_reg i.arg.(0)}, 1, %g0\n`;
-            `	bne	{emit_label lbl}\n`;
-            fill_delay_slot dslot
+            `	bne	{emit_label lbl}\n`
         | Ieventest ->
             `	andcc	{emit_reg i.arg.(0)}, 1, %g0\n`;
-            `	be	{emit_label lbl}\n`;
-            fill_delay_slot dslot
-        end
+            `	be	{emit_label lbl}\n`
+        end;
+        fill_delay_slot dslot
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
         `	cmp	{emit_reg i.arg.(0)}, 1\n`;
         begin match lbl0 with
@@ -529,6 +525,7 @@ let rec emit_instr i dslot =
         | Some lbl -> `	bg	{emit_label lbl}\n	nop\n`
         end
     | Lswitch jumptbl ->
+        let lbl_jumptbl = new_label() in
         `	sethi	%hi({emit_label lbl_jumptbl}), %g1\n`;
         `	or	%g1, %lo({emit_label lbl_jumptbl}), %g1\n`;
         `	sll	{emit_reg i.arg.(0)}, 2, %g4\n`;
@@ -559,50 +556,68 @@ let rec emit_instr i dslot =
 
 and emit_delay_slot = function
     None -> ()
-  | Some i -> emit i None
+  | Some i -> emit_instr i None
 
 and fill_delay_slot = function
     None -> `	nop\n`
-  | Some i -> emit i None
+  | Some i -> emit_instr i None
 
-(* Checks if a pseudo-instruction expands to exactly one machine instruction *)
+(* Checks if a pseudo-instruction expands to exactly one machine instruction
+   that does not branch. *)
 
 let is_one_instr_op = function
     Idiv | Imod | Icomp _ | Icheckbound -> false
   | _ -> true
 
-let is_one_instr = function
-    Imove | Ispill | Ireload -> i.arg.(0).typ = i.res.(0).typ
-  | Iconst_int n -> is_immediate n
-  | Istackoffset _ -> true
-  | Iload(_, Iindexed n) -> is_immediate n
-  | Iload(_, Iindexed2 n) -> n = 0
-  | Istore(_, Iindexed n) -> is_immediate n
-  | Istore(_, Iindexed2 n) -> n = 0
-  | Iintop(op) -> is_one_instr_op op
-  | Iintop_imm(op, _) -> is_one_instr_op op
-  | Iaddf | Isubf | Imulf | Idivf -> true
+let is_one_instr i =
+  match i.desc with
+    Lop op ->
+      begin match op with
+        Imove | Ispill | Ireload -> i.arg.(0).typ = i.res.(0).typ
+      | Iconst_int n -> is_immediate n
+      | Istackoffset _ -> true
+      | Iload(_, Iindexed n) -> is_immediate n
+      | Iload(_, Iindexed2 n) -> n = 0
+      | Istore(_, Iindexed n) -> is_immediate n
+      | Istore(_, Iindexed2 n) -> n = 0
+      | Iintop(op) -> is_one_instr_op op
+      | Iintop_imm(op, _) -> is_one_instr_op op
+      | Iaddf | Isubf | Imulf | Idivf -> true
+      | _ -> false
+      end
   | _ -> false
+
+let no_interference res arg =
+  try
+    for i = 0 to Array.length arg - 1 do
+      for j = 0 to Array.length res - 1 do
+        if arg.(i).loc = res.(j).loc then raise Exit
+      done
+    done;
+    true
+  with Exit ->
+    false
 
 (* Emit a sequence of instructions, trying to fill delay slots for branches *)
 
 let rec emit_all i =
   match i with
     {desc = Lend} -> ()
-  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false)) | Lbranch _}}
-    when is_one_instr i.desc ->
+  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false))
+                  | Lbranch _ | Lreturn}}
+    when is_one_instr i ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | {next = {desc = Lop(Itailcall_imm s)}}
-    when s = !function_name & is_one_instr i.desc ->
+    when s = !function_name & is_one_instr i ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | {next = {desc = Lop(Icall_ind)}}
-    when is_one_instr i.desc & i.res.(0).loc <> i.next.arg.(0).loc ->
+    when is_one_instr i & no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
-  | {next = {desc = Lcondbranch _ | Lreturn}}
-    when is_one_instr i.desc & no_interference i.res.(0).loc i.next.arg ->
+  | {next = {desc = Lcondbranch(_, _)}}
+    when is_one_instr i & no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | _ ->
