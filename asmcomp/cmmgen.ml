@@ -346,7 +346,6 @@ let lookup_tag_cache obj tag cache n =
     in
     Cop(Cextcall("oo_cache_public_method2", typ_addr, false),
 	[Cop(Cload Word, [obj]); tag; cache n]))
-*)
 
 let lookup_tag_cache obj tag cache n =
   Compilenv.need_apply_fun 1;
@@ -355,6 +354,7 @@ let lookup_tag_cache obj tag cache n =
       Cop(Cadda, [cache; Cconst_int (n * size_addr)]) ]
   in
   Cop(Capply typ_addr, cargs)
+*)
 
 let lookup_tag obj tag =
   bind "tag" tag (fun tag ->
@@ -370,6 +370,7 @@ let call_cached_method obj tag cache n args =
   let cache =
     if n = 0 then cache else Cop(Cadda, [cache; Cconst_int (n * size_addr)]) in
   Compilenv.need_apply_fun (-arity);
+  Compilenv.need_apply_fun 1;
   Cop(Capply typ_addr,
       Cconst_symbol("caml_cached_method" ^ string_of_int arity) ::
       obj :: tag :: cache :: args)
@@ -1738,6 +1739,7 @@ let compunit size ulam =
          Cdefine_symbol glob;
          Cskip(size * size_addr)] :: c3
 
+(*
 let get_cached_method () =
   let cache = Ident.create "cache"
   and obj = Ident.create "obj"
@@ -1765,6 +1767,7 @@ let get_cached_method () =
     fun_args = [obj, typ_addr; tag, typ_int; cache, typ_addr];
     fun_body = body;
     fun_fast = true}  
+*)
 
 (*
 CAMLprim value oo_cache_public_method (value meths, value tag, value *cache)
@@ -1817,6 +1820,17 @@ let cache_public_method meths tag cache =
       [Cop(Cadda, [Cop(Cadda,
 		       [meths; lsl_const (Cvar li) log2_size_addr]);
 		   Cconst_int(-size_addr)])])))))
+
+let get_cached_method () =
+  let cache = Ident.create "cache"
+  and meths = Ident.create "meths"
+  and tag = Ident.create "tag" in
+  let body = cache_public_method (Cvar meths) (Cvar tag) (Cvar cache) in
+  Cfunction
+   {fun_name = "caml_cache_method";
+    fun_args = [meths, typ_addr; tag, typ_int; cache, typ_addr];
+    fun_body = body;
+    fun_fast = true}  
 
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
@@ -1874,7 +1888,10 @@ let call_cached_method arity =
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
 		(* Cop(Cextcall("oo_cache_public_method", typ_addr, false),
 		    [Cvar meths; tag; cache]), *)
-		cache_public_method (Cvar meths) tag cache,
+		(* cache_public_method (Cvar meths) tag cache, *)
+		Cop(Capply typ_addr,
+		    [Cconst_symbol "caml_cache_method";
+		     Cvar meths; tag; cache]),
                 Cop(Cload Word, [meth_pos]))
         ))
   in
