@@ -19,6 +19,7 @@ let dump_lambda = ref false             (* -dlambda *)
 and dump_instr = ref false              (* -dinstr *)
 
 let assembler_only = ref false          (* -S *)
+let optimize_for_speed = ref true       (* -compact *)
 
 and dump_cmm = ref false                (* -dcmm *)
 let dump_selection = ref false          (* -dsel *)
