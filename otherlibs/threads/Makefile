@@ -48,15 +48,15 @@ UNIXLIB=../unix
 
 UNIXLIB_OBJS=unix.cmo $(UNIXLIB)/unixLabels.cmo
 
-all: libthreads.a threads.cma stdlib.cma unix.cma
+all: libvmthreads.a threads.cma stdlib.cma unix.cma
 
 allopt:
 
-libthreads.a: $(C_OBJS)
-	$(MKLIB) -o threads $(C_OBJS)
+libvmthreads.a: $(C_OBJS)
+	$(MKLIB) -o threads -oc vmthreads $(C_OBJS)
 
 threads.cma: $(CAML_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(CAML_OBJS)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o threads -oc vmthreads $(CAML_OBJS)
 
 stdlib.cma: $(LIB_OBJS)
 	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)
@@ -95,16 +95,16 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f libthreads.a dllthreads.so *.o
+	rm -f libvmthreads.a dllvmthreads.so *.o
 	rm -f pervasives.mli marshal.mli unix.mli
 
 install:
-	if test -f dllthreads.so; then cp dllthreads.so $(STUBLIBDIR)/dllthreads.so; fi
-	cp libthreads.a $(LIBDIR)/libthreads.a
-	cd $(LIBDIR); $(RANLIB) libthreads.a
-	if test -d $(LIBDIR)/threads; then : ; else mkdir $(LIBDIR)/threads; fi
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/threads
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
+	if test -f dllvmthreads.so; then cp dllvmthreads.so $(STUBLIBDIR)/.; fi
+	mkdir -p $(LIBDIR)/vmthreads
+	cp libvmthreads.a $(LIBDIR)/vmthreads/libvmthreads.a
+	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
 
 installopt:
 

@@ -34,7 +34,6 @@ tk_defs=''
 tk_libs=''
 tk_x11=yes
 dl_defs=''
-posix_threads=no
 verbose=no
 withcurses=yes
 withsharedlibs=yes
@@ -81,7 +80,7 @@ while : ; do
     -x11lib*|--x11lib*)
         x11_lib_dir=$2; shift;;
     -with-pthread*|--with-pthread*)
-        posix_threads=yes;;
+        ;; # Ignored for backward compatibility
     -no-tk|--no-tk)
         tk_wanted=no;;
     -tkdefs*|--tkdefs*)
@@ -1037,38 +1036,45 @@ if sh ./searchpath as; then :; else bignum_arch=C; fi
 
 echo "BIGNUM_ARCH=$bignum_arch" >> Makefile
 
-# Determine if the threads library is supported
+# Determine if the POSIX threads library is supported
 
-if test "$posix_threads" = "yes"; then
-  echo "Threads library supported (using POSIX system threads)."
+case "$host" in
+  *-*-solaris*)  pthread_link="-lpthread -lposix4";;
+  *-*-freebsd*)  pthread_link="-pthread";;
+  *-*-openbsd*)  pthread_link="-pthread";;
+  *)             pthread_link="-lpthread";;
+esac
+
+if ./hasgot -i pthread.h $pthread_link pthread_self; then
+  echo "POSIX threads library supported."
   otherlibraries="$otherlibraries systhreads"
   bytecccompopts="$bytecccompopts -D_REENTRANT"
   nativecccompopts="$nativecccompopts -D_REENTRANT"
   case "$host" in
-    *-*-solaris*)
-        pthread_link="-lpthread -lposix4";;
     *-*-freebsd*)
-        pthread_link="-pthread"
         bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
         nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
     *-*-openbsd*)
-        pthread_link="-pthread"
         bytecccompopts="$bytecccompopts -pthread"
         asppflags="$asppflags -pthread"
         nativecccompopts="$nativecccompopts -pthread";;
-    *)
-        pthread_link="-lpthread";;
   esac
   echo "Options for linking with POSIX threads: $pthread_link"
   echo "PTHREAD_LINK=$pthread_link" >> Makefile
-elif test "$has_select" = "yes" \
+else
+  echo "POSIX threads not found."
+fi
+
+# Determine if the bytecode thread library is supported
+
+if test "$has_select" = "yes" \
 && test "$has_setitimer" = "yes" \
 && test "$has_gettimeofday" = "yes" \
 && test "$has_wait" = "yes"; then
-  echo "Threads library supported (using bytecode-level scheduling)."
+  echo "Bytecode threads library supported."
   otherlibraries="$otherlibraries threads"
 else
-  echo "No threads library (missing system calls)"
+  echo "Bytecode threads library not supported (missing system calls)"
 fi
 
 # Determine the location of X include files and libraries

@@ -26,7 +26,7 @@ open Typedtree
 
 let init_path () =
   let dirs =
-    if !Clflags.thread_safe
+    if !Clflags.use_threads
     then "+threads" :: !Clflags.include_dirs
     else !Clflags.include_dirs in
   let exp_dirs =

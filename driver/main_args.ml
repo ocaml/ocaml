@@ -43,6 +43,7 @@ module Make_options (F :
      val _principal : unit -> unit
      val _rectypes : unit -> unit
      val _thread : unit -> unit
+     val _vmthread : unit -> unit
      val _unsafe : unit -> unit
      val _use_prims : string -> unit
      val _use_runtime : string -> unit
@@ -108,7 +109,7 @@ struct
     "-principal", Arg.Unit F._principal,
            " Check principality of type inference";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
-    "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
+    "-thread", Arg.Unit F._thread, " Generate code that supports the system threads library";
     "-unsafe", Arg.Unit F._unsafe,
            " No bounds checking on array and string access";
     "-use-runtime", Arg.String F._use_runtime,
@@ -119,6 +120,7 @@ struct
            " Print compiler version and location of standard library and exit";
     "-version", Arg.Unit F._version, " Print compiler version and exit";
     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
+    "-vmthread", Arg.Unit F._vmthread, " Generate code that supports the threads library with VM-level scheduling";
     "-w", Arg.String F._w,
       "<flags>  Enable or disable warnings according to <flags>:\n\
       \032    A/a enable/disable all warnings\n\

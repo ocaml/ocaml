@@ -73,6 +73,7 @@ module Options = Main_args.Make_options (struct
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
   let _thread () = ismultithreaded := "-thread"; option "-thread" ()
+  let _vmthread () = ismultithreaded := "-vmthread"; option "-vmthread" ()
   let _unsafe = option "-unsafe"
   let _use_prims s = option_with_arg "-use-prims" s
   let _use_runtime s = option_with_arg "-use-runtime" s

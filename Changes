@@ -49,6 +49,10 @@ Both compilers:
 - Added warning "E" for "fragile patterns": pattern matchings that would
   not be flagged as partial if new constructors were added to the data type.
 
+Bytecode compiler:
+- Added option -vmthread to select the threads library with VM-level
+  scheduling.  The -thread option now selects the system threads library.
+
 Native-code compiler:
 - New port: AMD64 (Opteron).
 - Fixed instruction selection bug on expressions of the kind (raise Exn)(arg).
@@ -108,12 +112,11 @@ Other libraries:
 - Str: reimplemented regexp matching engine, now less buggy, faster,
     and LGPL instead of GPL.
 - Graphics: fixed draw_rect and fill_rect bug under X11.
+- System threads and bytecode threads libraries can be both installed.
 - System threads: better implementation of Thread.exit.
 - Bytecode threads: fixed two library initialization bugs.
-- Unix:
-     Make Unix.openfile blocking to account for named pipes.
-     GC bug in Unix.*stat fixed.
-     Fixed problem with Unix.dup2 on Windows.
+- Unix: make Unix.openfile blocking to account for named pipes;
+  GC bug in Unix.*stat fixed; fixed problem with Unix.dup2 on Windows.
 
 Ocamllex:
 - Can name parts of the matched input text, e.g.
