@@ -42,7 +42,7 @@
 #define Caml_apply2 _caml_apply2
 #define Caml_apply3 _caml_apply3
 #define Caml_raise _caml_raise
-#define System_frametable _system__frametable
+#define Caml_system__frametable _caml_system__frametable
 
 #else
 
@@ -68,7 +68,7 @@
 #define Caml_apply2 caml_apply2
 #define Caml_apply3 caml_apply3
 #define Caml_raise caml_raise
-#define System_frametable system__frametable
+#define Caml_system__frametable caml_system__frametable
 
 #endif
 
@@ -305,8 +305,8 @@ L110:
 
 /* Raise an exception from C */
 
-        .global Raise_caml_exception
-Raise_caml_exception:
+        .global Caml_raise_exception
+Caml_raise_exception:
     /* Save exception bucket in a register outside the reg windows */
         mov     %o0, %g2
     /* Load exception pointer in a register outside the reg windows */
@@ -381,8 +381,8 @@ Callback3_exn:
 #else
         .data
 #endif
-        .global System_frametable
-System_frametable:
+        .global Caml_system__frametable
+Caml_system__frametable:
         .word   1               /* one descriptor */
         .word   L109            /* return address into callback */
         .half   -1              /* negative frame size => use callback link */
@@ -393,6 +393,6 @@ System_frametable:
 	.type Caml_call_gc, #function
         .type Caml_c_call, #function
         .type Caml_start_program, #function
-        .type Raise_caml_exception, #function
-	.type System_frametable, #object
+        .type Caml_raise_exception, #function
+	.type Caml_system__frametable, #object
 #endif

@@ -26,10 +26,17 @@
    g       --> ident global C
 */
 
-/* FIXME a faire:
-   system__frametable dans <arch>.s
-   supprimer lazy_is_forward dans obj.c
+/* a faire:
+   - supprimer le portage Mac OS 9 (?)
+   - exceptions predefinies en natif: ajouter caml_exn_
+   - ui_*   (dans ui.h, definies ou ?)
 */
+
+/* a supprimer (support Mac OS 9): */
+/* **** macintosh.c */
+/* **** mpwtool.c */
+/* **** rotatecursor.c */
+
 
 /* **** alloc.c */
 #define alloc caml_alloc
@@ -535,7 +542,6 @@
 /*      obj_block -> caml_obj_block */
 /*      obj_dup -> caml_obj_dup */
 /*      obj_truncate -> caml_obj_truncate */
-/*      lazy_is_forward  FIXME primitive a supprimer */
 /*      lazy_follow_forward -> caml_lazy_follow_forward */
 /*      lazy_make_forward -> caml_lazy_make_forward */
 
@@ -669,13 +675,14 @@
 /*      weak_get_copy -> caml_weak_get_copy */
 /*      weak_check -> caml_weak_check */
 
+/* **** asmcomp/cmmgen.ml */
+/*    g bucket_* -> caml_bucket_* */
+/*    g globals_map -> caml_globals_map   FIXME a quoi ca sert ? */
 
-/* a supprimer (support Mac OS 9): */
-/* **** macintosh.c */
-/* **** mpwtool.c */
-/* **** rotatecursor.c */
-
-/* a faire: supprimer les Begin_roots/End_roots dans asmrun */
+/* **** asmcomp/asmlink.ml */
+/*    g startup -> caml_startup */
+/*    g startup__frametable -> caml_startup_frametable */
+/*    g system__frametable -> caml_system__frametable */
 
 
 #endif /* CAML_NAME_SPACE */

@@ -35,7 +35,7 @@ extern caml_generated_constant Out_of_memory, Sys_error, Failure,
   Invalid_argument, End_of_file, Division_by_zero, Not_found,
   Match_failure, Sys_blocked_io, Stack_overflow;
 extern caml_generated_constant
-  bucket_Out_of_memory, bucket_Stack_overflow;
+  caml_bucket_Out_of_memory, caml_bucket_Stack_overflow;
 
 /* Exception raising */
 
@@ -64,22 +64,22 @@ void caml_raise(value v)
 
 void caml_raise_constant(value tag)
 {
-  value bucket;
-  Begin_root (tag);
-    bucket = caml_alloc_small (1, 0);
-    Field(bucket, 0) = tag;
-  End_roots ();
+  CAMLparam1 (tag);
+  CAMLlocal1 (bucket);
+
+  bucket = caml_alloc_small (1, 0);
+  Field(bucket, 0) = tag;
   caml_raise(bucket);
 }
 
 void caml_raise_with_arg(value tag, value arg)
 {
-  value bucket;
-  Begin_roots2 (tag, arg);
-    bucket = caml_alloc_small (2, 0);
-    Field(bucket, 0) = tag;
-    Field(bucket, 1) = arg;
-  End_roots ();
+  CAMLparam2 (tag, arg);
+  CAMLlocal1 (bucket);
+
+  bucket = caml_alloc_small (2, 0);
+  Field(bucket, 0) = tag;
+  Field(bucket, 1) = arg;
   caml_raise(bucket);
 }
 
@@ -108,12 +108,12 @@ void caml_invalid_argument (char *msg)
 
 void caml_raise_out_of_memory(void)
 {
-  caml_raise((value) &bucket_Out_of_memory);
+  caml_raise((value) &caml_bucket_Out_of_memory);
 }
 
 void caml_raise_stack_overflow(void)
 {
-  caml_raise((value) &bucket_Stack_overflow);
+  caml_raise((value) &caml_bucket_Stack_overflow);
 }
 
 void caml_raise_sys_error(value msg)

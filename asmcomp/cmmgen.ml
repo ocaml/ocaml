@@ -166,7 +166,7 @@ let safe_divmod op c1 c2 =
     bind "divisor" c2 (fun c2 ->
       Cifthenelse(c2,
                   Cop(op, [c1; c2]),
-                  Cop(Craise, [Cconst_symbol "bucket_Division_by_zero"])))
+                  Cop(Craise, [Cconst_symbol "caml_bucket_Division_by_zero"])))
 
 (* Bool *)
 
@@ -1819,8 +1819,8 @@ let global_table namelist =
         [cint_zero])
 
 let globals_map namelist =
-  Cdata(Cglobal_symbol "globals_map" ::
-        emit_constant "globals_map"
+  Cdata(Cglobal_symbol "caml_globals_map" ::
+        emit_constant "caml_globals_map"
           (Const_base (Const_string (Marshal.to_string namelist []))) [])
 
 (* Generate the master table of frame descriptors *)
@@ -1852,7 +1852,7 @@ let code_segment_table namelist =
 (* Initialize a predefined exception *)
 
 let predef_exception name =
-  let bucketname = "bucket_" ^ name in
+  let bucketname = "caml_bucket_" ^ name in
   Cdata(Cglobal_symbol name ::
         emit_constant name (Const_block(0,[Const_base(Const_string name)]))
         [ Cglobal_symbol bucketname;

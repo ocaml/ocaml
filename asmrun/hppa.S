@@ -542,8 +542,8 @@ G(caml_ml_array_bound_error):
         ENDPROC
 
         .data
-        EXPORT_DATA(G(system__frametable))
-G(system__frametable):
+        EXPORT_DATA(G(caml_system__frametable))
+G(caml_system__frametable):
         .long   1               /* one descriptor */
         .long   L104 + 3        /* return address into callback */
         .short  -1              /* negative frame size => use callback link */

@@ -167,8 +167,8 @@ let make_startup_file ppf filename units_list =
   let compile_phrase p = Asmgen.compile_phrase ppf p in
   let oc = open_out filename in
   Emitaux.output_channel := oc;
-  Location.input_name := "startup"; (* set the name of the "current" input *)
-  Compilenv.reset "startup"; (* set the name of the "current" compunit *)
+  Location.input_name := "caml_startup"; (* set name of "current" input *)
+  Compilenv.reset "caml_startup"; (* set the name of the "current" compunit *)
   Emit.begin_assembly();
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
@@ -203,10 +203,10 @@ let make_startup_file ppf filename units_list =
           try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi)
           with Not_found -> assert false)
         units_list));
-  compile_phrase(Cmmgen.data_segment_table ("startup" :: name_list));
-  compile_phrase(Cmmgen.code_segment_table ("startup" :: name_list));
+  compile_phrase(Cmmgen.data_segment_table ("caml_startup" :: name_list));
+  compile_phrase(Cmmgen.code_segment_table ("caml_startup" :: name_list));
   compile_phrase
-    (Cmmgen.frame_table("startup" :: "system" :: name_list));
+    (Cmmgen.frame_table("caml_startup" :: "caml_system" :: name_list));
   Emit.end_assembly();
   close_out oc
 

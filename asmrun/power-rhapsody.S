@@ -407,8 +407,8 @@ _caml_callback3_exn:
 /* Frame table */
 
         .const
-        .globl  _system__frametable
-_system__frametable:
+        .globl  _caml_system__frametable
+_caml_system__frametable:
         .long   1               /* one descriptor */
         .long   L105 + 4       /* return address into callback */
         .short  -1              /* negative size count => use callback link */

@@ -313,10 +313,10 @@ FUNCTION(caml_ml_array_bound_error)
 	jmp	caml_array_bound_error	
 
         .data
-        .globl  system__frametable
-        .type   system__frametable,@object
+        .globl  caml_system__frametable
+        .type   caml_system__frametable,@object
         .align  8
-system__frametable:
+caml_system__frametable:
         .quad   1           /* one descriptor */
         .quad   .L107       /* return address into callback */
         .value  -1          /* negative frame size => use callback link */

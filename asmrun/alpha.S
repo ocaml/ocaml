@@ -431,8 +431,8 @@ $111:   ldgp    $gp, 0($27)
 #else
         .section .rodata
 #endif
-        .globl  system__frametable
-system__frametable:
+        .globl  caml_system__frametable
+caml_system__frametable:
         .quad   1               /* one descriptor */
         .quad   $108 + 4        /* return address into callback */
         .word   -1              /* negative frame size => use callback link */

@@ -411,9 +411,9 @@ caml_callback3_exn:
 /* Frame table */
 
         .section ".data"
-        .globl  system__frametable
-        .type   system__frametable, @object
-system__frametable:
+        .globl  caml_system__frametable
+        .type   caml_system__frametable, @object
+caml_system__frametable:
         .long   1               /* one descriptor */
         .long   .L105 + 4       /* return address into callback */
         .short  -1              /* negative size count => use callback link */
