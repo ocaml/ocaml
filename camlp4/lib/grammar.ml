@@ -761,8 +761,7 @@ value extend_entry entry position rules =
   with
   [ Token.Error s ->
       do {
-        Printf.eprintf "Lexer initialization error.\n%s\n"
-          (String.capitalize s);
+        Printf.eprintf "Lexer initialization error.\n%s\n" s;
         flush stderr;
         failwith "Grammar.extend"
       } ]

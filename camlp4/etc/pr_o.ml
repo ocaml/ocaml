@@ -115,7 +115,8 @@ value has_special_chars v =
 ;
 
 value var_escaped v =
-  if has_special_chars v || is_infix v then "( " ^ v ^ " )"
+  if v = "" then "$lid:\"\"$"
+  else if has_special_chars v || is_infix v then "( " ^ v ^ " )"
   else if is_keyword v then v ^ "__"
   else v
 ;
@@ -786,7 +787,7 @@ and class_expr ce k =
         [: `S LR "fun"; `simple_patt p "" [: `S LR "->" :];
            `class_expr ce k :]
   | MLast.CeLet _ rf lb ce ->
-      HVbox
+      Vbox
         [: `HVbox [: :];
            `bind_list [: `S LR "let"; rec_flag rf :] lb "" [: `S LR "in" :];
            `class_expr ce k :]
