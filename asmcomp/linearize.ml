@@ -25,7 +25,7 @@ let new_label() = incr label_counter; !label_counter
 
 type instruction =
   { mutable desc: instruction_desc;
-    next: instruction;
+    mutable next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
     live: Reg.Set.t }

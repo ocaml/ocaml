@@ -349,6 +349,7 @@ let name_for_floatop2 = function
 let name_for_specific = function
     Imultaddf -> "fmadd"
   | Imultsubf -> "fmsub"
+  | _ -> Misc.fatal_error "Emit.Ispecific"
 
 (* Name of current function *)
 let function_name = ref ""
@@ -364,6 +365,132 @@ let lbl_jumptbl = ref 0
 let jumptbl_entries = ref []
 (* Number of jumptable entries *)
 let num_jumptbl_entries = ref 0
+
+(* Fixup conditional branches that exceed hardware allowed range *)
+
+let load_store_size = function
+    Ibased(s, d) -> 2
+  | Iindexed ofs -> if is_immediate ofs then 1 else 3
+  | Iindexed2 -> 1
+
+let instr_size = function
+    Lend -> 0
+  | Lop(Imove | Ispill | Ireload) -> 1
+  | Lop(Iconst_int n) -> if is_native_immediate n then 1 else 2
+  | Lop(Iconst_float s) -> if toc then 1 else 2
+  | Lop(Iconst_symbol s) -> if toc then 1 else 2
+  | Lop(Icall_ind) -> if toc then 6 else 2
+  | Lop(Icall_imm s) ->
+      if toc && not (StringSet.mem s !defined_functions) then 2 else 1
+  | Lop(Itailcall_ind) -> if toc then 7 else 5
+  | Lop(Itailcall_imm s) ->
+      if s = !function_name then 1
+      else if  not toc || StringSet.mem s !defined_functions then 4
+      else 8
+  | Lop(Iextcall(s, true)) -> if toc then 2 else 3
+  | Lop(Iextcall(s, false)) -> if pic_externals then 4 else 1
+  | Lop(Istackoffset n) -> 1
+  | Lop(Iload(chunk, addr)) ->
+      if chunk = Byte_signed
+      then load_store_size addr + 1
+      else load_store_size addr
+  | Lop(Istore(chunk, addr)) -> load_store_size addr
+  | Lop(Ialloc n) -> 4
+  | Lop(Ispecific(Ialloc_far n)) -> 5
+  | Lop(Iintop Imod) -> if powerpc then 3 else 2
+  | Lop(Iintop(Icomp cmp)) -> 4
+  | Lop(Iintop op) -> 1
+  | Lop(Iintop_imm(Idiv, n)) -> 2
+  | Lop(Iintop_imm(Imod, n)) -> 4
+  | Lop(Iintop_imm(Icomp cmp, n)) -> 4
+  | Lop(Iintop_imm(op, n)) -> 1
+  | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf) -> 1
+  | Lop(Ifloatofint) -> 9
+  | Lop(Iintoffloat) -> 4
+  | Lop(Ispecific sop) -> 1
+  | Lreloadretaddr -> 2
+  | Lreturn -> 2
+  | Llabel lbl -> 0
+  | Lbranch lbl -> 1
+  | Lcondbranch(tst, lbl) -> 2
+  | Lcondbranch3(lbl0, lbl1, lbl2) ->
+      1 + (if lbl0 = None then 0 else 1)
+        + (if lbl1 = None then 0 else 1)
+        + (if lbl2 = None then 0 else 1)
+  | Lswitch jumptbl -> 8
+  | Lsetuptrap lbl -> 1
+  | Lpushtrap -> if toc then 5 else 4
+  | Lpoptrap -> 2
+  | Lraise -> if toc then 7 else 6
+
+let label_map code =
+  let map = Hashtbl.create 37 in
+  let rec fill_map pc instr =
+    match instr.desc with
+      Lend -> (pc, map)
+    | Llabel lbl -> Hashtbl.add map lbl pc; fill_map pc instr.next
+    | op -> fill_map (pc + instr_size op) instr.next
+  in fill_map 0 code
+
+let max_branch_offset = 8180
+(* 14-bit signed offset in words.  Remember to cut some slack
+   for multi-word instructions where the branch can be anywhere in
+   the middle.  12 words of slack is plenty. *)
+
+let branch_overflows map pc_branch lbl_dest =
+  let pc_dest = Hashtbl.find map lbl_dest in
+  let delta = pc_dest - (pc_branch + 1) in
+  delta <= -max_branch_offset || delta >= max_branch_offset
+
+let opt_branch_overflows map pc_branch opt_lbl_dest =
+  match opt_lbl_dest with
+    None -> false
+  | Some lbl_dest -> branch_overflows map pc_branch lbl_dest
+
+let fixup_branches codesize map code =
+  let expand_optbranch lbl n arg next =
+    match lbl with
+      None -> next
+    | Some l ->
+        instr_cons (Lcondbranch(Iinttest_imm(Isigned Ceq, n), l))
+                   arg [||] next in
+  let rec fixup did_fix pc instr =
+    match instr.desc with
+      Lend -> did_fix
+    | Lcondbranch(test, lbl) when branch_overflows map pc lbl ->
+        let lbl2 = new_label() in
+        let cont =
+          instr_cons (Lbranch lbl) [||] [||]
+            (instr_cons (Llabel lbl2) [||] [||] instr.next) in
+        instr.desc <- Lcondbranch(invert_test test, lbl2);
+        instr.next <- cont;
+        fixup true (pc + 2) instr.next
+    | Lcondbranch3(lbl0, lbl1, lbl2)
+      when opt_branch_overflows map pc lbl0
+        || opt_branch_overflows map pc lbl1
+        || opt_branch_overflows map pc lbl2 ->
+        let cont =
+          expand_optbranch lbl0 0 instr.arg
+            (expand_optbranch lbl1 1 instr.arg
+              (expand_optbranch lbl2 2 instr.arg instr.next)) in
+        instr.desc <- cont.desc;
+        instr.next <- cont.next;
+        fixup true pc instr
+    | Lop(Ialloc n) when codesize - pc >= max_branch_offset ->
+        instr.desc <- Lop(Ispecific(Ialloc_far n));
+        fixup true (pc + 4) instr.next
+    | op ->
+        fixup did_fix (pc + instr_size op) instr.next
+  in fixup false 0 code
+
+(* Iterate branch expansion till all conditional branches are OK *)
+
+let rec branch_normalization code =
+  let (codesize, map) = label_map code in
+  if codesize >= max_branch_offset && fixup_branches codesize map code
+  then branch_normalization code
+  else ()
+
 
 (* Output the assembly code for an instruction *)
 
@@ -551,6 +678,15 @@ let rec emit_instr i dslot =
         `	addi	{emit_reg i.res.(0)}, {emit_gpr 31}, 4\n`;
         record_frame i.live;
         `	bltl	{emit_label !call_gc_label}\n`
+    | Lop(Ispecific(Ialloc_far n)) ->
+        if !call_gc_label = 0 then call_gc_label := new_label();
+        let lbl = new_label() in
+        `	addi    {emit_gpr 31}, {emit_gpr 31}, {emit_int(-n)}\n`;
+        `	cmplw	{emit_gpr 31}, {emit_gpr 30}\n`;
+        `	bge	{emit_label lbl}\n`;
+        record_frame i.live;
+        `	bl	{emit_label !call_gc_label}\n`;
+        `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, {emit_gpr 31}, 4\n`
     | Lop(Iintop Isub) ->               (* subf has swapped arguments *)
         (* Use subfc instead of subf for RS6000 compatibility. *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
@@ -749,7 +885,7 @@ let rec emit_instr i dslot =
         `	lwz	{emit_gpr 29}, 4({emit_gpr 1})\n`;
         if toc then
           `	lwz	{emit_gpr 2}, 20({emit_gpr 1})\n`;
-        `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int trap_frame_size}\n\n`;
+        `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int trap_frame_size}\n`;
         `	blr\n`
 
 and emit_delay = function
@@ -831,6 +967,7 @@ let fundecl fundecl =
       `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int(-n)}\n`
   end;
   `{emit_label !tailrec_entry_point}:\n`;
+  branch_normalization fundecl.fun_body;
   emit_all fundecl.fun_body;
   (* Emit the glue code to call the GC *)
   if !call_gc_label > 0 then begin
