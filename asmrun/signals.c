@@ -13,6 +13,9 @@
 
 #include <signal.h>
 #include <stdio.h>
+#ifdef __linux
+#include <asm/sigcontext.h>
+#endif
 #include "alloc.h"
 #include "memory.h"
 #include "minor_gc.h"
@@ -87,10 +90,15 @@ void leave_blocking_section()
   async_signal_mode = 0;
 }
 
-#if defined(TARGET_alpha) || defined(TARGET_mips) || defined(TARGET_power)
+#if defined(TARGET_alpha) || defined(TARGET_mips) || \
+    (defined(TARGET_power) && defined(_AIX))
 void handle_signal(sig, code, context)
      int sig, code;
      struct sigcontext * context;
+#elif defined(TARGET_power) && defined(__linux)
+void handle_signal(sig, context)
+     int sig;
+     struct pt_regs * context;
 #else
 void handle_signal(sig)
      int sig;
@@ -131,6 +139,10 @@ void handle_signal(sig)
 #ifdef _AIX
       if (caml_last_return_address == NULL)
         context->sc_jmpbuf.jmp_context.gpr[31] = (ulong_t) young_limit;
+#endif
+#ifdef __linux
+      if (caml_last_return_address == NULL)
+        context->gpr[31] = (unsigned long) young_limit;
 #endif
 #endif
   }
