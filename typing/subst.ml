@@ -16,59 +16,45 @@
 open Misc
 open Path
 open Types
-
+open Btype
 
 type t = 
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
-    modtypes: (Ident.t, module_type) Tbl.t;
-    max_level: int }
+    modtypes: (Ident.t, module_type) Tbl.t }
 
 let identity =
-  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
-    max_level = -1 }
+  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty }
 
 let add_type id p s =
   { types = Tbl.add id p s.types;
     modules = s.modules;
-    modtypes = s.modtypes;
-    max_level = s.max_level }
+    modtypes = s.modtypes }
 
 let add_module id p s =
   { types = s.types;
     modules = Tbl.add id p s.modules;
-    modtypes = s.modtypes;
-    max_level = s.max_level }
+    modtypes = s.modtypes }
 
 let add_modtype id ty s =
   { types = s.types;
     modules = s.modules;
-    modtypes = Tbl.add id ty s.modtypes;
-    max_level = s.max_level }
+    modtypes = Tbl.add id ty s.modtypes }
 
 let remove_type id s =
   { types = Tbl.remove id s.types;
     modules = s.modules;
-    modtypes = s.modtypes;
-    max_level = s.max_level }
+    modtypes = s.modtypes }
 
 let remove_module id s =
   { types = s.types;
     modules = Tbl.remove id s.modules;
-    modtypes = s.modtypes;
-    max_level = s.max_level }
+    modtypes = s.modtypes }
 
 let remove_modtype id s =
   { types = s.types;
     modules = s.modules;
-    modtypes = Tbl.remove id s.modtypes;
-    max_level = s.max_level }
-
-let limit_level lev s =
-  { types = s.types;
-    modules = s.modules;
-    modtypes = s.modtypes;
-    max_level = if s.max_level = -1 then lev else min s.max_level lev }
+    modtypes = Tbl.remove id s.modtypes }
 
 let rec module_path s = function
     Pident id as p ->
@@ -86,63 +72,15 @@ let type_path s = function
   | Papply(p1, p2) ->
       fatal_error "Subst.type_path"
 
-(**** From Ctype... ****)
-
-let generic_level = (-1)
-(* Used to mark a type during a traversal. *)
-let lowest_level = generic_level
-let pivot_level = 2 * lowest_level - 1
-    (* pivot_level - lowest_level < lowest_level *)
-
-let newmarkedvar () =
-  { desc = Tvar; level = pivot_level - generic_level }
-
-let rec repr =
-  function
-    {desc = Tlink t'} ->
-      (* 
-         We do no path compression. Path compression does not seem to
-         improve notably efficiency, and it prevents from changing a
-         [Tlink] into another type (for instance, for undoing a
-         unification).
-      *)
-      repr t'
-  | t -> t
-
-let saved_desc = ref []
-  (* Saved association of generic nodes with their description. *)
-
-(* Restored type descriptions *)
-let cleanup_types () =
-  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
-  saved_desc := []
-
-(* Remove marks from a type. *)
-let rec unmark_type ty =
-  let ty = repr ty in
-  if ty.level < lowest_level then begin
-    ty.level <- pivot_level - ty.level;
-    iter_type_expr unmark_type ty
-  end
-
-(**** Not from Ctype... ****)
-
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
   let ty = repr ty in
-  if ty.level < lowest_level then
+  if (ty.desc = Tvar) || (ty.level < lowest_level) then
     ty
-  else if ty.desc = Tvar then begin
-    if
-      (ty.level <> generic_level) && (s.max_level <> -1)
-      && (ty.level > s.max_level)
-    then
-      ty.level <- s.max_level;
-    ty
-  end else begin
+  else begin
     let desc = ty.desc in
-    saved_desc := (ty, desc)::!saved_desc;
-    let ty' = newmarkedvar () in        (* Stub *)
+    save_desc ty desc;
+    let ty' = newmarkedgenvar () in     (* Stub *)
     ty.desc <- Tlink ty';
     ty'.desc <-
       begin match desc with

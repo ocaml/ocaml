@@ -48,7 +48,6 @@ type t = {
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
   components: (Path.t * module_components) Ident.tbl;
   classes: (Path.t * class_type) Ident.tbl;
-  level: int;
   summary: summary
 }
 
@@ -79,7 +78,7 @@ let empty = {
   labels = Ident.empty; types = Ident.empty;
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
-  level = 0; summary = Env_empty }
+  summary = Env_empty }
 
 (* Persistent structure descriptions *)
 
@@ -329,8 +328,7 @@ let constructors_of_type ty_path decl =
   match decl.type_kind with
     Type_variant cstrs ->
       Datarepr.constructor_descrs
-        {desc = Tconstr(ty_path, decl.type_params, ref Mnil);
-      	 Types.level = -1 (* generic_level *)}
+        (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         cstrs
   | _ -> []
 
@@ -340,8 +338,7 @@ let labels_of_type ty_path decl =
   match decl.type_kind with
     Type_record labels ->
       Datarepr.label_descrs
-        {desc = Tconstr(ty_path, decl.type_params, ref Mnil);
-         Types.level = -1 (* generic_level *)}
+        (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels
   | _ -> []
 
@@ -467,7 +464,6 @@ and store_value id path decl env =
     modtypes = env.modtypes;
     components = env.components;
     classes = env.classes;
-    level = env.level;
     summary = Env_value(env.summary, id, decl) }
 
 and store_type id path info env =
@@ -489,7 +485,6 @@ and store_type id path info env =
     modtypes = env.modtypes;
     components = env.components;
     classes = env.classes;
-    level = max env.level (Path.binding_time path);
     summary = Env_type(env.summary, id, info) }
 
 and store_exception id path decl env =
@@ -501,7 +496,6 @@ and store_exception id path decl env =
     modtypes = env.modtypes;
     components = env.components;
     classes = env.classes;
-    level = env.level;
     summary = Env_exception(env.summary, id, decl) }
 
 and store_module id path mty env =
@@ -515,7 +509,6 @@ and store_module id path mty env =
       Ident.add id (path, components_of_module env Subst.identity path mty)
                    env.components;
     classes = env.classes;
-    level = env.level;
     summary = Env_module(env.summary, id, mty) }
 
 and store_modtype id path info env =
@@ -527,7 +520,6 @@ and store_modtype id path info env =
     modtypes = Ident.add id (path, info) env.modtypes;
     components = env.components;
     classes = env.classes;
-    level = env.level;
     summary = Env_modtype(env.summary, id, info) }
 
 and store_components id path comps env =
@@ -539,7 +531,6 @@ and store_components id path comps env =
     modtypes = env.modtypes;
     components = Ident.add id (path, comps) env.components;
     classes = env.classes;
-    level = env.level;
     summary = env.summary }
 
 and store_class id path desc env =
@@ -551,7 +542,6 @@ and store_class id path desc env =
     modtypes = env.modtypes;
     components = env.components;
     classes = Ident.add id (path, desc) env.classes;
-    level = env.level;
     summary = Env_class(env.summary, id, desc) }
 
 (* Memoized function to compute the components of a functor application
@@ -658,7 +648,6 @@ let open_signature root sg env =
     modtypes = newenv.modtypes;
     components = newenv.components;
     classes = newenv.classes;
-    level = env.level;
     summary = Env_open(env.summary, root) }
   
 (* Open a signature from a file *)
@@ -675,7 +664,7 @@ let read_signature modname filename =
 (* Save a signature to a file *)
 
 let save_signature sg modname filename =
-  Types.cleanup_abbrev ();
+  Btype.cleanup_abbrev ();
   let ps =
     { ps_name = modname;
       ps_sig = sg;
@@ -702,10 +691,6 @@ let imported_units() = !imported_units
 (* Return the environment summary *)
 
 let summary env = env.summary
-
-(* Return the environment level *)
-
-let level env = env.level
 
 (* Error report *)
 
