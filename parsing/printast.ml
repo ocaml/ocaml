@@ -627,7 +627,7 @@ and label_x_expression i ppf (l,e) =
 
 and label_x_bool_x_core_type_list i ppf x =
   match x with
-    Rtag (l, b, ctl) ->
+    Rtag (l, b, ctl, cstr) ->
       line i ppf "Rtag \"%s\" %s\n" l (string_of_bool b);
       list (i+1) core_type ppf ctl
   | Rinherit (ct) ->

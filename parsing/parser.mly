@@ -1296,10 +1296,10 @@ row_field:
   | simple_core_type2                           { Rinherit $1 }
 ;
 tag_field:
-    name_tag OF opt_ampersand amper_type_list
-      { Rtag ($1, $3, List.rev $4) }
-  | name_tag
-      { Rtag ($1, true, []) }
+    name_tag OF opt_ampersand amper_type_list amper_type_pair_list
+      { Rtag ($1, $3, List.rev $4, $5) }
+  | name_tag amper_type_pair_list
+      { Rtag ($1, true, [], $2) }
 ;
 opt_ampersand:
     AMPERSAND                                   { true }
@@ -1309,6 +1309,11 @@ amper_type_list:
     core_type                                   { [$1] }
   | amper_type_list AMPERSAND core_type         { $3 :: $1 }
 ;
+amper_type_pair_list:
+    AMPERSAND core_type EQUAL core_type amper_type_pair_list
+      { ($2, $4) :: $5 }
+  | /* empty */
+      { [] }
 opt_present:
     LBRACKET GREATER name_tag_list RBRACKET     { List.rev $3 }
   | /* empty */                                 { [] }

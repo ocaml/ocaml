@@ -1986,10 +1986,19 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       | Reither(false, tl1, _, [], e1), Rpresent(Some t2) when not univ ->
           e1 := Some f2;
           List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
-      | Reither(c1, tl1, _, [], e1), Reither(c2, tl2, m2, tpl2, e2) ->
+      | Reither(c1, tl1, _, tpl1, e1), Reither(c2, tl2, m2, tpl2, e2) ->
           if e1 != e2 then begin
             if c1 && not c2 then raise(Unify []);
+            let tpl' = if tpl1 = [] then tpl2 else [] in
             e1 := Some (Reither (c2, [], m2, tpl2, e2));
+            if tpl1 = [] then ()
+            else if List.length tpl1 = List.length tpl2 then
+              List.iter2
+                (fun (t1,t1') (t2,t2') ->
+                  moregen inst_nongen type_pairs env t1 t2;
+                  moregen inst_nongen type_pairs env t1' t2')
+                tpl1 tpl2
+            else raise(Unify []);
             if List.length tl1 = List.length tl2 then
               List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
             else match tl2 with
@@ -2893,16 +2902,24 @@ let rec normalize_type_rec env ty =
       let fields = List.map
           (fun (l,f) ->
             let f = row_field_repr f in l,
-            match f with Reither(b, ty::(_::_ as tyl), m, tp, e) ->
+            match f with Reither(b, tyl, m, tp, e) ->
               let tyl' =
-                List.fold_left
-                  (fun tyl ty ->
-                    if List.exists (fun ty' -> equal env false [ty] [ty']) tyl
-                    then tyl else ty::tyl)
-                  [ty] tyl
+                match tyl with
+                  ty :: (_ :: _ as tyl) ->
+                    List.fold_left
+                      (fun tyl ty ->
+                        if List.exists
+                            (fun ty' -> equal env false [ty] [ty']) tyl
+                        then tyl else ty::tyl)
+                      [ty] tyl
+                | _ -> tyl
+              and tp' =
+                List.filter
+                  (fun (ty1,ty2) -> not (equal env false [ty1] [ty2])) tp
               in
-              if List.length tyl' < List.length tyl + 1 then
-                let f = Reither(b, List.rev tyl', m, tp, ref None) in
+              if List.length tyl' < List.length tyl + 1
+              || List.length tp' < List.length tp then
+                let f = Reither(b, List.rev tyl', m, tp', ref None) in
                 e := Some f;
                 f
               else f

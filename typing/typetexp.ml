@@ -347,13 +347,16 @@ let rec transl_type env policy rowvar styp =
       (* closed and only one field: make it present anyway *)
       let single = closed && List.length fields = 1 in
       let rec add_field fields = function
-          Rtag (l, c, stl) ->
+          Rtag (l, c, stl, stpl) ->
             name := None;
             let f = match present with
               Some present when not (single || List.mem l present) ->
-                let tl = List.map (transl_type env policy None) stl in
-                bound := tl @ !bound;
-                Reither(c, tl, fixed, [], ref None)
+                let transl_list = List.map (transl_type env policy None) in
+                let tl = transl_list stl in
+                let stpl1, stpl2 = List.split stpl in
+                let tpl1 = transl_list stpl1 and tpl2 = transl_list stpl2 in
+                bound := tl @ tpl1 @ tpl2 @ !bound;
+                Reither(c, tl, fixed, List.combine tpl1 tpl2, ref None)
             | _ ->
                 if List.length stl > 1 || c && stl <> [] then
                   raise(Error(styp.ptyp_loc, Present_has_conjunction l));
