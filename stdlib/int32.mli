@@ -18,7 +18,7 @@
    of signed 32-bit integers.  Unlike the built-in [int] type,
    the type [int32] is guaranteed to be exactly 32-bit wide on all
    platforms.  All arithmetic operations over [int32] are taken
-   modulo $2^{32}$.
+   modulo 2{^32}.
 
    Performance notice: values of type [int32] occupy more memory
    space than values of type [int], and arithmetic operations on
@@ -68,10 +68,10 @@ val pred : int32 -> int32
 (** Return the absolute value of its argument. *)
 val abs : int32 -> int32
 
-(** The greatest representable 32-bit integer, $2^{31} - 1$. *)
+(** The greatest representable 32-bit integer, 2{^31} - 1. *)
 val max_int : int32
 
-(** The smallest representable 32-bit integer, $-2^{31}$. *)
+(** The smallest representable 32-bit integer, -2{^31}. *)
 val min_int : int32
 
 
@@ -108,7 +108,7 @@ external of_int : int -> int32 = "%int32_of_int"
 
 (** Convert the given 32-bit integer (type [int32]) to an
    integer (type [int]).  On 32-bit platforms, the 32-bit integer
-   is taken modulo $2^{31}$, i.e. the high-order bit is lost
+   is taken modulo 2{^31}, i.e. the high-order bit is lost
    during the conversion.  On 64-bit platforms, the conversion
    is exact. *)
 external to_int : int32 -> int = "%int32_to_int"

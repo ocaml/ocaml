@@ -12,13 +12,13 @@
 
 (* $Id$ *)
 
-(** Module [Int64]: 64-bit integers.
+(** 64-bit integers.
 
    This module provides operations on the type [int64] of
    signed 64-bit integers.  Unlike the built-in [int] type,
    the type [int64] is guaranteed to be exactly 64-bit wide on all
    platforms.  All arithmetic operations over [int64] are taken
-   modulo $2^{64}$.  
+   modulo 2{^64} 
 
    The type [int64] is supported on all 64-bit platforms, as well as
    on all 32-bit platforms for which the C compiler supports 64-bit
@@ -74,10 +74,10 @@ val pred : int64 -> int64
 (** Return the absolute value of its argument. *)
 val abs : int64 -> int64
 
-(** The greatest representable 64-bit integer, $2^{63} - 1$. *)
+(** The greatest representable 64-bit integer, 2{^63} - 1. *)
 val max_int : int64
 
-(** The smallest representable 64-bit integer, $-2^{63}$. *)
+(** The smallest representable 64-bit integer, -2{^63}. *)
 val min_int : int64
 
 (** Bitwise logical and. *)
@@ -113,16 +113,16 @@ external of_int : int -> int64 = "%int64_of_int"
 
 (** Convert the given 64-bit integer (type [int64]) to an
    integer (type [int]).  On 64-bit platforms, the 64-bit integer
-   is taken modulo $2^{63}$, i.e. the high-order bit is lost
+   is taken modulo 2{^63}, i.e. the high-order bit is lost
    during the conversion.  On 32-bit platforms, the 64-bit integer
-   is taken modulo $2^{31}$, i.e. the top 33 bits are lost
+   is taken modulo 2{^31}, i.e. the top 33 bits are lost
    during the conversion. *)
 external to_int : int64 -> int = "%int64_to_int"
 
 (** Convert the given floating-point number to a 64-bit integer,
    discarding the fractional part (truncate towards 0).
    The result of the conversion is undefined if, after truncation,
-   the number is outside the range \[{![Int64.min_int}, {!Int64.max_int]\]. *)
+   the number is outside the range \[{!Int64.min_int}, {!Int64.max_int}\]. *)
 external of_float : float -> int64 = "int64_of_float"
 
 (** Convert the given 64-bit integer to a floating-point number. *)
@@ -135,7 +135,7 @@ external of_int32 : int32 -> int64 = "%int64_of_int32"
 
 (** Convert the given 64-bit integer (type [int64]) to a
    32-bit integer (type [int32]). The 64-bit integer
-   is taken modulo $2^{32}$, i.e. the top 32 bits are lost
+   is taken modulo 2{^32}, i.e. the top 32 bits are lost
    during the conversion.  *)
 external to_int32 : int64 -> int32 = "%int64_to_int32"
 
@@ -145,7 +145,7 @@ external of_nativeint : nativeint -> int64 = "%int64_of_nativeint"
 
 (** Convert the given 64-bit integer (type [int64]) to a
    native integer.  On 32-bit platforms, the 64-bit integer
-   is taken modulo $2^{32}$.  On 64-bit platforms,
+   is taken modulo 2{^32}.  On 64-bit platforms,
    the conversion is exact. *)
 external to_nativeint : int64 -> nativeint = "%int64_to_nativeint"
 

@@ -19,7 +19,7 @@
    signed 64-bit integers (on 64-bit platforms).
    This integer type has exactly the same width as that of a [long]
    integer type in the C compiler.  All arithmetic operations over
-   [nativeint] are taken modulo $2^{32}$ or $2^{64}$ depending
+   [nativeint] are taken modulo 2{^32} or 2{^64} depending
    on the word size of the architecture.
 
    Performance notice: values of type [nativeint] occupy more memory
@@ -79,13 +79,13 @@ val abs: nativeint -> nativeint
 val size: int
 
 (** The greatest representable native integer,
-   either $2^{31} - 1$ on a 32-bit platform,
-   or $2^{63} - 1$ on a 64-bit platform. *)
+   either 2{^31} - 1 on a 32-bit platform,
+   or 2{^63} - 1 on a 64-bit platform. *)
 val max_int: nativeint
 
 (** The greatest representable native integer,
-   either $-2^{31}$ on a 32-bit platform,
-   or $-2^{63}$ on a 64-bit platform. *)
+   either -2{^31} on a 32-bit platform,
+   or -2{^63} on a 64-bit platform. *)
 val min_int: nativeint
 
 (** Bitwise logical and. *)
@@ -145,7 +145,7 @@ external of_int32: int32 -> nativeint = "%nativeint_of_int32"
 
 (** Convert the given native integer to a
    32-bit integer (type [int32]).  On 64-bit platforms,
-   the 64-bit native integer is taken modulo $2^{32}$,
+   the 64-bit native integer is taken modulo 2{^32},
    i.e. the top 32 bits are lost.  On 32-bit platforms,
    the conversion is exact. *)
 external to_int32: nativeint -> int32 = "%nativeint_to_int32"

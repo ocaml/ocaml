@@ -30,7 +30,7 @@ val bits : unit -> int
 
 (** [Random.int bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be more than 0 and less
-     than $2^{30}$. *)
+     than 2{^30}. *)
 val int : int -> int
 
 (** [Random.float bound] returns a random floating-point number
