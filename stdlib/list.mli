@@ -206,6 +206,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list;;
         *)
 val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list;;
         (* Same as [List.sort], but the sorting algorithm is stable.
+
            The current implementation is Merge Sort. It runs in constant
-           heap space.
+           heap space and logarithmic stack space.
         *)
