@@ -9,19 +9,19 @@ OBJS=pervasives.cmo string.cmo char.cmo list.cmo array.cmo sys.cmo \
   baltree.cmo set.cmo stack.cmo queue.cmo \
   printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo
 
-all: stdlib.cma header.exe
+all: stdlib.cma cslheader
 
 install:
-	cp stdlib.cma *.cmi *.mli header.exe $(LIBDIR)
+	cp stdlib.cma *.cmi *.mli cslheader $(LIBDIR)
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
 
-header.exe: header.c ../Makefile.config
+cslheader: header.c ../Makefile.config
 	if $(SHARPBANGSCRIPTS); \
-	then echo "#!$(BINDIR)/cslrun" > header.exe; \
-	else $(CC) $(CCCOMPOPTS) $(CCLINKOPTS) header.c -o header.exe; \
-	     strip header.exe; fi
+	then echo "#!$(BINDIR)/cslrun" > cslheader; \
+	else $(CC) $(CCCOMPOPTS) $(CCLINKOPTS) header.c -o cslheader; \
+	     strip cslheader; fi
 
 pervasives.cmi: pervasives.mli
 	$(CAMLC) -nopervasives -c pervasives.mli

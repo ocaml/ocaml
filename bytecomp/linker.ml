@@ -154,7 +154,7 @@ let link_bytecode objfiles exec_name copy_header =
     (* Copy the header *)
     if copy_header then begin
       try
-        let inchan = open_in_bin (find_in_path !load_path "header_exe") in
+        let inchan = open_in_bin (find_in_path !load_path "cslheader") in
         copy_file inchan outchan;
         close_in inchan
       with Not_found | Sys_error _ -> ()

@@ -68,7 +68,7 @@ coldstart:
 	cd yacc; $(MAKE) all
 	cp yacc/camlyacc boot/camlyacc
 	cd stdlib; $(MAKE) COMPILER=../boot/camlc all
-	cp stdlib/stdlib.cma stdlib/*.cmi stdlib/header.exe boot
+	cp stdlib/stdlib.cma stdlib/*.cmi stdlib/cslheader boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
 promote:
@@ -77,12 +77,12 @@ promote:
 	mkdir boot/Saved
 	mv boot/Saved.prev boot/Saved/Saved.prev
 	mv boot/camlrun boot/camlc boot/camllex boot/camlyacc boot/Saved
-	mv boot/*.cmi boot/stdlib.cma boot/header.exe boot/Saved
+	mv boot/*.cmi boot/stdlib.cma boot/cslheader boot/Saved
 	cp byterun/camlrun boot/camlrun
 	cp camlc boot/camlc
 	cp lex/camllex boot/camllex
 	cp yacc/camlyacc boot/camlyacc
-	cp stdlib/stdlib.cma stdlib/*.cmi stdlib/header.exe boot
+	cp stdlib/stdlib.cma stdlib/*.cmi stdlib/cslheader boot
 
 # Restore the saved bootstrap compiler if a problem arises
 restore:
@@ -92,13 +92,17 @@ restore:
 
 # Check if fixpoint reached
 compare:
-	@if cmp -s boot/camlc camlc && cmp -s boot/camllex lex/camllex; \
+	@if cmp boot/camlc camlc && cmp boot/camllex lex/camllex; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
         else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
 	fi
 
 # Complete bootstrapping cycle
 bootstrap: promote clean all compare
+
+# Remove old bootstrap compilers
+cleanboot:
+	rm -rf boot/Saved/Saved.prev/*
 
 # Installation
 install:
