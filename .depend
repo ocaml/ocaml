@@ -66,9 +66,9 @@ typing/typeclass.cmi: parsing/asttypes.cmi typing/ctype.cmi typing/env.cmi \
     typing/ident.cmi parsing/location.cmi parsing/longident.cmi \
     parsing/parsetree.cmi typing/path.cmi typing/typedtree.cmi \
     typing/types.cmi 
-typing/typecore.cmi: parsing/asttypes.cmi typing/env.cmi parsing/location.cmi \
-    parsing/longident.cmi parsing/parsetree.cmi typing/typedtree.cmi \
-    typing/types.cmi 
+typing/typecore.cmi: parsing/asttypes.cmi typing/env.cmi typing/ident.cmi \
+    parsing/location.cmi parsing/longident.cmi parsing/parsetree.cmi \
+    typing/typedtree.cmi typing/types.cmi 
 typing/typedecl.cmi: typing/env.cmi typing/ident.cmi parsing/location.cmi \
     parsing/parsetree.cmi typing/types.cmi 
 typing/typedtree.cmi: parsing/asttypes.cmi typing/env.cmi typing/ident.cmi \
@@ -143,16 +143,18 @@ typing/subst.cmo: typing/btype.cmi typing/ident.cmi utils/misc.cmi \
     typing/path.cmi utils/tbl.cmi typing/types.cmi typing/subst.cmi 
 typing/subst.cmx: typing/btype.cmx typing/ident.cmx utils/misc.cmx \
     typing/path.cmx utils/tbl.cmx typing/types.cmx typing/subst.cmi 
-typing/typeclass.cmo: parsing/asttypes.cmi typing/ctype.cmi typing/env.cmi \
-    typing/ident.cmi parsing/location.cmi parsing/longident.cmi \
-    utils/misc.cmi parsing/parsetree.cmi typing/path.cmi typing/printtyp.cmi \
-    typing/subst.cmi typing/typecore.cmi typing/typedtree.cmi \
-    typing/types.cmi typing/typetexp.cmi typing/typeclass.cmi 
-typing/typeclass.cmx: parsing/asttypes.cmi typing/ctype.cmx typing/env.cmx \
-    typing/ident.cmx parsing/location.cmx parsing/longident.cmx \
-    utils/misc.cmx parsing/parsetree.cmi typing/path.cmx typing/printtyp.cmx \
-    typing/subst.cmx typing/typecore.cmx typing/typedtree.cmx \
-    typing/types.cmx typing/typetexp.cmx typing/typeclass.cmi 
+typing/typeclass.cmo: parsing/asttypes.cmi typing/btype.cmi typing/ctype.cmi \
+    typing/env.cmi typing/ident.cmi parsing/location.cmi \
+    parsing/longident.cmi utils/misc.cmi parsing/parsetree.cmi \
+    typing/path.cmi typing/printtyp.cmi typing/subst.cmi typing/typecore.cmi \
+    typing/typedtree.cmi typing/types.cmi typing/typetexp.cmi \
+    typing/typeclass.cmi 
+typing/typeclass.cmx: parsing/asttypes.cmi typing/btype.cmx typing/ctype.cmx \
+    typing/env.cmx typing/ident.cmx parsing/location.cmx \
+    parsing/longident.cmx utils/misc.cmx parsing/parsetree.cmi \
+    typing/path.cmx typing/printtyp.cmx typing/subst.cmx typing/typecore.cmx \
+    typing/typedtree.cmx typing/types.cmx typing/typetexp.cmx \
+    typing/typeclass.cmi 
 typing/typecore.cmo: parsing/asttypes.cmi typing/btype.cmi typing/ctype.cmi \
     typing/env.cmi typing/ident.cmi parsing/location.cmi \
     parsing/longident.cmi utils/misc.cmi typing/parmatch.cmi \
@@ -356,8 +358,6 @@ asmcomp/scheduling.cmi: asmcomp/linearize.cmi
 asmcomp/selection.cmi: asmcomp/cmm.cmi asmcomp/mach.cmi 
 asmcomp/spill.cmi: asmcomp/mach.cmi 
 asmcomp/split.cmi: asmcomp/mach.cmi 
-asmcomp/arch.cmo: utils/misc.cmi 
-asmcomp/arch.cmx: utils/misc.cmx 
 asmcomp/arch_mips.cmo: utils/config.cmi utils/misc.cmi 
 asmcomp/arch_mips.cmx: utils/config.cmx utils/misc.cmx 
 asmcomp/arch_power.cmo: utils/misc.cmi 
@@ -435,11 +435,11 @@ asmcomp/compilenv.cmo: asmcomp/clambda.cmi utils/config.cmi typing/env.cmi \
 asmcomp/compilenv.cmx: asmcomp/clambda.cmx utils/config.cmx typing/env.cmx \
     typing/ident.cmx utils/misc.cmx asmcomp/compilenv.cmi 
 asmcomp/emit.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/compilenv.cmi \
-    utils/config.cmi asmcomp/emitaux.cmi asmcomp/linearize.cmi \
+    asmcomp/emitaux.cmi asmcomp/linearize.cmi parsing/location.cmi \
     asmcomp/mach.cmi utils/misc.cmi utils/nativeint.cmi asmcomp/proc.cmi \
     asmcomp/reg.cmi asmcomp/emit.cmi 
 asmcomp/emit.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/compilenv.cmx \
-    utils/config.cmx asmcomp/emitaux.cmx asmcomp/linearize.cmx \
+    asmcomp/emitaux.cmx asmcomp/linearize.cmx parsing/location.cmx \
     asmcomp/mach.cmx utils/misc.cmx utils/nativeint.cmx asmcomp/proc.cmx \
     asmcomp/reg.cmx asmcomp/emit.cmi 
 asmcomp/emitaux.cmo: utils/nativeint.cmi asmcomp/emitaux.cmi 
