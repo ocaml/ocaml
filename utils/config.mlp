@@ -62,3 +62,9 @@ let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
 let ext_lib = "%%EXT_LIB%%"
 let ext_dll = "%%EXT_DLL%%"
+
+let default_executable_name =
+  match Sys.os_type with
+    "Unix" -> "a.out"
+  | "Win32" | "Cygwin" -> "camlprog.exe"
+  | _ -> "camlprog"

@@ -510,7 +510,7 @@ let fix_exec_name name =
 
 (* Main entry point (build a custom runtime if needed) *)
 
-let link objfiles =
+let link objfiles output_name =
   let objfiles =
     if !Clflags.nopervasives then objfiles
     else if !Clflags.output_c_object then "stdlib.cma" :: objfiles
@@ -520,7 +520,7 @@ let link objfiles =
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
   Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)
   if not !Clflags.custom_runtime then
-    link_bytecode tolink !Clflags.exec_name true
+    link_bytecode tolink output_name true
   else if not !Clflags.output_c_object then begin
     let bytecode_name = Filename.temp_file "camlcode" "" in
     let prim_name = Filename.temp_file "camlprim" ".c" in
@@ -529,7 +529,7 @@ let link objfiles =
       let poc = open_out prim_name in
       Symtable.output_primitive_table poc;
       close_out poc;
-      let exec_name = fix_exec_name !Clflags.exec_name in
+      let exec_name = fix_exec_name output_name in
       if build_custom_runtime prim_name exec_name <> 0
       then raise(Error Custom_runtime);
       if !Clflags.make_runtime
@@ -541,7 +541,7 @@ let link objfiles =
       raise x
   end else begin
     let c_file =
-      Filename.chop_suffix !Clflags.object_name Config.ext_obj ^ ".c" in
+      Filename.chop_suffix output_name Config.ext_obj ^ ".c" in
     if Sys.file_exists c_file then raise(Error(File_exists c_file));
     try
       link_bytecode_as_c tolink c_file;
@@ -550,7 +550,7 @@ let link objfiles =
       remove_file c_file
     with x ->
       remove_file c_file;
-      remove_file !Clflags.object_name;
+      remove_file output_name;
       raise x
   end
 

@@ -54,6 +54,17 @@ let print_version_number () =
 let print_standard_library () =
   print_string Config.standard_library; print_newline(); exit 0
 
+let extract_output = function
+  | Some s -> s
+  | None ->
+      prerr_endline
+        "Please specify the name of the output file, using option -o";
+      exit 2
+
+let default_output = function
+  | Some s -> s
+  | None -> Config.default_executable_name
+
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
 let main () =
@@ -96,9 +107,7 @@ let main () =
        "-nolabels", Arg.Set classic, " Ignore non-optional labels in types";
        "-nostdlib", Arg.Set no_std_include,
            " do not add standard directory to the list of include directories";
-       "-o", Arg.String(fun s -> exec_name := s;
-                                 archive_name := s;
-                                 object_name := s),
+       "-o", Arg.String(fun s -> output_name := Some s),
              "<file>  Set output file name to <file>";
        "-output-obj", Arg.Unit(fun () -> output_c_object := true),
              " Output a C object file instead of an executable";
@@ -164,15 +173,17 @@ let main () =
       ] (process_file ppf) usage;
     if !make_archive then begin
       Optcompile.init_path();
-      Asmlibrarian.create_archive (List.rev !objfiles) !archive_name
+      Asmlibrarian.create_archive (List.rev !objfiles)
+                                  (extract_output !output_name)
     end
     else if !make_package then begin
       Optcompile.init_path();
-      Asmpackager.package_files ppf (List.rev !objfiles) !object_name
+      Asmpackager.package_files ppf (List.rev !objfiles)
+                                    (extract_output !output_name)
     end
     else if not !compile_only && !objfiles <> [] then begin
       Optcompile.init_path();
-      Asmlink.link ppf (List.rev !objfiles)
+      Asmlink.link ppf (List.rev !objfiles) (default_output !output_name)
     end;
     exit 0
   with x ->

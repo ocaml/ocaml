@@ -91,7 +91,7 @@ module Options = Main_args.Make_options (struct
   let _nolabels = set classic
   let _noautolink = set no_auto_link
   let _nostdlib = set no_std_include
-  let _o s = exec_name := s; archive_name := s; object_name := s
+  let _o s = output_name := Some s
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _pack = set make_package
   let _pp s = preprocessor := Some s
@@ -114,20 +114,33 @@ module Options = Main_args.Make_options (struct
   let anonymous = anonymous
 end)
 
+let extract_output = function
+  | Some s -> s
+  | None ->
+      prerr_endline
+        "Please specify the name of the output file, using option -o";
+      exit 2
+
+let default_output = function
+  | Some s -> s
+  | None -> Config.default_executable_name
+
 let main () =
   try
     Arg.parse Options.list anonymous usage;
     if !make_archive then begin
       Compile.init_path();
-      Bytelibrarian.create_archive (List.rev !objfiles) !archive_name
+      Bytelibrarian.create_archive (List.rev !objfiles)
+                                   (extract_output !output_name)
     end
     else if !make_package then begin
       Compile.init_path();
-      Bytepackager.package_files (List.rev !objfiles) !object_name
+      Bytepackager.package_files (List.rev !objfiles)
+                                 (extract_output !output_name)
     end
     else if not !compile_only && !objfiles <> [] then begin
       Compile.init_path();
-      Bytelink.link (List.rev !objfiles)
+      Bytelink.link (List.rev !objfiles) (default_output !output_name)
     end;
     exit 0
   with x ->

@@ -98,3 +98,7 @@ val ext_lib: string
         (* Extension for library files, e.g. [.a] under Unix. *)
 val ext_dll: string
         (* Extension for dynamically-loaded libraries, e.g. [.so] under Unix.*)
+
+val default_executable_name: string
+        (* Name of executable produced by linking if none is given with -o,
+           e.g. [a.out] under Unix. *)

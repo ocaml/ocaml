@@ -209,7 +209,7 @@ let make_startup_file ppf filename units_list =
   Emit.end_assembly();
   close_out oc
 
-let call_linker file_list startup_file =
+let call_linker file_list startup_file output_name =
   let libname =
     if !Clflags.gprofile
     then "libasmrunp" ^ ext_lib
@@ -220,14 +220,15 @@ let call_linker file_list startup_file =
       else find_in_path !load_path libname
     with Not_found ->
       raise(Error(File_not_found libname)) in
-  let c_lib = if !Clflags.nopervasives then "" else Config.native_c_libraries in
+  let c_lib =
+    if !Clflags.nopervasives then "" else Config.native_c_libraries in
   let cmd =
     match Config.system with
       "win32" ->
         if not !Clflags.output_c_object then
           Printf.sprintf "%s /Fe%s %s %s %s %s %s %s %s"
             !Clflags.c_linker
-            (Filename.quote !Clflags.exec_name)
+            (Filename.quote output_name)
             (Clflags.std_include_flag "-I")
             (String.concat " " (List.rev !Clflags.ccopts))
             (Filename.quote startup_file)
@@ -239,7 +240,7 @@ let call_linker file_list startup_file =
         else
           Printf.sprintf "%s /out:%s %s %s"
             Config.native_partial_linker
-            (Filename.quote !Clflags.object_name)
+            (Filename.quote output_name)
             (Filename.quote startup_file)
             (Ccomp.quote_files (List.rev file_list))
     | _ ->
@@ -247,7 +248,7 @@ let call_linker file_list startup_file =
           Printf.sprintf "%s %s -o %s %s %s %s %s %s %s %s %s"
             !Clflags.c_linker
             (if !Clflags.gprofile then "-pg" else "")
-            (Filename.quote !Clflags.exec_name)
+            (Filename.quote output_name)
             (Clflags.std_include_flag "-I")
             (String.concat " " (List.rev !Clflags.ccopts))
             (Filename.quote startup_file)
@@ -261,7 +262,7 @@ let call_linker file_list startup_file =
         else
           Printf.sprintf "%s -o %s %s %s"
             Config.native_partial_linker
-            (Filename.quote !Clflags.object_name)
+            (Filename.quote output_name)
             (Filename.quote startup_file)
             (Ccomp.quote_files (List.rev file_list))
   in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
@@ -281,7 +282,7 @@ let object_file_name name =
 
 (* Main entry point *)
 
-let link ppf objfiles =
+let link ppf objfiles output_name =
   let stdlib =
     if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
   let stdexit =
@@ -307,7 +308,7 @@ let link ppf objfiles =
   if Proc.assemble_file startup startup_obj <> 0 then
     raise(Error(Assembler_error startup));
   try
-    call_linker (List.map object_file_name objfiles) startup_obj;
+    call_linker (List.map object_file_name objfiles) startup_obj output_name;
     if not !Clflags.keep_startup_file then remove_file startup;
     remove_file startup_obj
   with x ->
