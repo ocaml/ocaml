@@ -255,7 +255,7 @@ value alloc_shr (mlsize_t wosize, tag_t tag)
 }
 
 /* Use this function to tell the major GC to speed up when you use
-   finalized objects to automatically deallocate extra-heap objects.
+   finalized blocks to automatically deallocate extra-heap stuff.
    The GC will do at least one cycle every [max] allocated words;
    [mem] is the number of words allocated this time.
    Note that only [mem/max] is relevant.  You can use numbers of bytes
