@@ -501,26 +501,37 @@ final value,  first initialize with a constant value (e.g.
 value (see rule~3).
 
 \begin{gcrule} Local variables containing values must be registered
-with the garbage collector (using the "Push_roots" and "Pop_roots"
+with the garbage collector (using the "Begin_roots" and "End_roots"
 macros), if they are to survive a call to an allocation function.
 \end{gcrule}
 
-Registration is performed with the "Push_roots" and "Pop_roots"
-macros. "Push_roots("\var{r}","\var{n}")" declares an array \var{r} of
-\var{n} values and
-registers them with the garbage collector. The values contained in
-\var{r}"[0]" to \var{r}"["\var{n}"-1]" are treated like roots by the
-garbage collector. A 
-root value has the following properties: if it points to a
+Registration is performed with the "Begin_roots" set of macros.
+"Begin_roots1("\var{v}")" registers variable \var{v} with the garbage
+collector.  Generally, \var{v} will be a local variable or a
+parameter of your function.  It must be initialized to a valid value
+(e.g. "Val_unit") before the first allocation.  Likewise,
+"Begin_roots2", \ldots, "Begin_roots5"
+let you register up to 5 variables at the same time.  "Begin_root" is
+the same as "Begin_roots1".  "Begin_roots_block("\var{ptr}","\var{size}")"
+allows you to register an array of roots.  \var{ptr} is a pointer to
+the first element, and \var{size} is the number of elements in the
+array.  Once registered, each of your variables (or array element) has
+the following properties: if it points to a
 heap-allocated block, this block (and its contents) will not be
 reclaimed; moreover, if this block is relocated by the garbage
-collector, the root value is updated to point to the new location for
-the block. "Push_roots("\var{r}","\var{n}")" must occur in a C block
-exactly between the last local variable declaration and the first
-statement in the block. To un-register the roots, "Pop_roots()" must
-be called before the C block containing "Push_roots("\var{r}","\var{n}")"
-is exited. (Roots are automatically un-registered if a Caml exception
-is raised.)
+collector, the variable is updated to point to the new location for
+the block.
+
+Each of the "Begin_roots" macros open a C block that must be closed
+with a matching "End_roots" at the same nesting level.  The block must
+be exited normally (i.e. not with "return" or "goto").  However, the
+roots are automatically un-registered if a Caml exception is raised,
+so you can exit the block with "failwith", "invalid_argument", or one
+of the "raise" functions.
+
+{\bf Note:} The "Begin_roots" macros use a local variable and a
+structure tag named "caml__roots_block".  Do not use this identifier
+in your programs.
 
 \begin{gcrule} Global variables containing values must be registered
 with the garbage collector using the "register_global_root" function.
@@ -528,8 +539,7 @@ with the garbage collector using the "register_global_root" function.
 
 Registration of a global variable "v" is achieved by calling
 "register_global_root(&v)" just before a valid value is stored in "v"
-for the first time. Afterwards, the GC treats the variable "v" as a
-root value, as described above.
+for the first time. 
 
 A registered global variable "v" can be un-registered by calling
 "remove_global_root(&v)".
@@ -559,23 +569,23 @@ returns a list containing the two integers given as parameters:
 value alloc_list_int(i1, i2)
         int i1, i2;
 {
-  value result;
-  Push_roots(r, 1);
-  r[0] = alloc(2, 0);                     /* Allocate a cons cell */
-  Field(r[0], 0) = Val_int(i2);           /* car = the integer i2 */
-  Field(r[0], 1) = Val_int(0);            /* cdr = the empty list [] */
-  result = alloc(2, 0);                   /* Allocate the other cons cell */
-  Field(result, 0) = Val_int(i1);         /* car = the integer i1 */
-  Field(result, 1) = r[0];                /* cdr = the first cons cell */
-  Pop_roots();
+  value result = Val_unit;
+  value r = Val_unit;
+
+  Begin_roots2 (r, result);
+    r = alloc(2, 0);                        /* Allocate a cons cell */
+    Field(r, 0) = Val_int(i2);              /* car = the integer i2 */
+    Field(r, 1) = Val_int(0);               /* cdr = the empty list [] */
+    result = alloc(2, 0);                   /* Allocate the other cons cell */
+    Field(result, 0) = Val_int(i1);         /* car = the integer i1 */
+    Field(result, 1) = r;                   /* cdr = the first cons cell */
+  End_roots ();
   return result;
 }
 \end{verbatim}
-The ``cons'' cell allocated first needs to survive the allocation of
-the other cons cell; hence, the value returned by the first call to
-"alloc" must be stored in a registered root. The value returned by the
-second call to "alloc" can reside in the un-registered local variable
-"result", since we won't do any further allocation in this function.
+Here, the registering of "result" is not strictly needed, because no
+allocation takes place after it gets its value, but it's easier and
+safer to simply register all the local variables that have type "value".
 
 In the example above, the list is built bottom-up. Here is an
 alternate way, that proceeds top-down. It is less efficient, but
@@ -585,21 +595,25 @@ value alloc_list_int(i1, i2)
         int i1, i2;
 {
   value tail;
-  Push_roots(r, 1);
-  r[0] = alloc(2, 0);                     /* Allocate a cons cell */
-  Field(r[0], 0) = Val_int(i1);           /* car = the integer i1 */
-  Field(r[0], 1) = Val_int(0);            /* A dummy value
-  tail = alloc(2, 0);                     /* Allocate the other cons cell */
-  Field(tail, 0) = Val_int(i2);           /* car = the integer i2 */
-  Field(tail, 1) = Val_int(0);            /* cdr = the empty list [] */
-  modify(&Field(r[0], 1), tail);          /* cdr of the result = tail */
-  Pop_roots();
-  return r[0];
+  value r = Val_unit;
+
+  Begin_root (r);
+    r = alloc(2, 0);                        /* Allocate a cons cell */
+    Field(r, 0) = Val_int(i1);              /* car = the integer i1 */
+    Field(r, 1) = Val_int(0);               /* A dummy value
+    tail = alloc(2, 0);                     /* Allocate the other cons cell */
+    Field(tail, 0) = Val_int(i2);           /* car = the integer i2 */
+    Field(tail, 1) = Val_int(0);            /* cdr = the empty list [] */
+    modify(&Field(r, 1), tail);             /* cdr of the result = tail */
+  End_roots ();
+  return r;
 }
 \end{verbatim}
 It would be incorrect to perform
-"Field(r[0], 1) = tail" directly, because the allocation of "tail"
-has taken place since "r[0]" was allocated.
+"Field(r, 1) = tail" directly, because the allocation of "tail"
+has taken place since "r" was allocated.  "tail" is not registered as
+a root because there is no allocation between the assignment where it
+takes its value and the "modify" statement that uses the value.
 
 \section{Callbacks from C to Caml} \label{s:callback}
 
