@@ -46,8 +46,8 @@ BYTECCLINKOPTS=/MT
 DLLCCCOMPOPTS=/Ox /MD
 
 ### Libraries needed
-BYTECCLIBS=wsock32.lib
-NATIVECCLIBS=wsock32.lib
+BYTECCLIBS=advapi32.lib
+NATIVECCLIBS=advapi32.lib
 
 ### How to invoke the C preprocessor
 CPP=cl /nologo /EP

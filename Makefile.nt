@@ -40,7 +40,7 @@ PARSING=parsing\linenum.cmo parsing\location.cmo parsing\longident.cmo \
 
 TYPING=typing\ident.cmo typing\path.cmo \
   typing\primitive.cmo typing\types.cmo \
-  typing\btype.cmo \
+  typing\btype.cmo typing\oprint.cmo \
   typing\subst.cmo typing\predef.cmo \
   typing\datarepr.cmo typing\env.cmo \
   typing\typedtree.cmo typing\ctype.cmo \
@@ -60,7 +60,7 @@ COMP=bytecomp\lambda.cmo bytecomp\printlambda.cmo \
 BYTECOMP=bytecomp\meta.cmo bytecomp\instruct.cmo bytecomp\bytegen.cmo \
   bytecomp\printinstr.cmo bytecomp\opcodes.cmo bytecomp\emitcode.cmo \
   bytecomp\bytesections.cmo bytecomp\dll.cmo bytecomp\symtable.cmo \
-  bytecomp\bytelibrarian.cmo bytecomp\bytelink.cmo
+  bytecomp\bytelibrarian.cmo bytecomp\bytelink.cmo bytecomp\bytepackager.cmo
 
 ASMCOMP=asmcomp\arch.cmo asmcomp\cmm.cmo asmcomp\printcmm.cmo \
   asmcomp\reg.cmo asmcomp\mach.cmo asmcomp\proc.cmo \
@@ -74,13 +74,15 @@ ASMCOMP=asmcomp\arch.cmo asmcomp\cmm.cmo asmcomp\printcmm.cmo \
   asmcomp\printlinear.cmo asmcomp\linearize.cmo \
   asmcomp\schedgen.cmo asmcomp\scheduling.cmo \
   asmcomp\emitaux.cmo asmcomp\emit.cmo asmcomp\asmgen.cmo \
-  asmcomp\asmlink.cmo asmcomp\asmlibrarian.cmo
+  asmcomp\asmlink.cmo asmcomp\asmlibrarian.cmo asmcomp\asmpackager.cmo
 
-DRIVER=driver\errors.cmo driver\compile.cmo driver\main_args.cmo driver\main.cmo
+DRIVER=driver\pparse.cmo driver\errors.cmo driver\compile.cmo \
+  driver\main_args.cmo driver\main.cmo
 
-OPTDRIVER=driver\opterrors.cmo driver\optcompile.cmo driver\optmain.cmo
+OPTDRIVER=driver\pparse.cmo driver\opterrors.cmo driver\optcompile.cmo \
+  driver\optmain.cmo
 
-TOPLEVEL=driver\errors.cmo driver\compile.cmo \
+TOPLEVEL=driver\pparse.cmo driver\errors.cmo driver\compile.cmo \
   toplevel\genprintval.cmo toplevel\toploop.cmo \
   toplevel\trace.cmo toplevel\topdirs.cmo
 
