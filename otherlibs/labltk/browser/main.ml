@@ -49,7 +49,8 @@ let _ =
     (fun name -> raise(Arg.Bad("don't know what to do with " ^ name)))
     "ocamlbrowser :";
   Config.load_path :=
-    List.rev_map ~f:(Misc.expand_directory Config.standard_library) !path
+    Sys.getcwd ()
+    :: List.rev_map ~f:(Misc.expand_directory Config.standard_library) !path
     @ [Config.standard_library];
   Warnings.parse_options false !Shell.warnings;
   Unix.putenv "TERM" "noterminal";
