@@ -229,12 +229,16 @@ let check_recursive_lambda idlist lam =
     | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
     | Lprim(Pmakearray kind, args) -> List.for_all check args
     | Llet(str, id, arg, body) -> check arg & check_top body
+    | Lletrec(bindings, body) ->
+        List.for_all (fun (id, arg) -> check arg) bindings & check_top body
     | _ -> false
   and check = function
       Lvar _ -> true
     | Lconst cst -> true
     | Lfunction(params, body) -> true
-    | Llet(_, _, arg, body) -> check arg & check body
+    | Llet(str, id, arg, body) -> check arg & check body
+    | Lletrec(bindings, body) ->
+        List.for_all (fun (id, arg) -> check arg) bindings & check body
     | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
     | Lprim(Pmakearray kind, args) -> List.for_all check args
     | lam ->
