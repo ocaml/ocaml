@@ -554,17 +554,18 @@ let transl_class ids cl_id arity pub_meths cl =
               ltable table (
               lclass (
               Lsequence(
-              lset cached 0 (Lapply(Lvar class_init, [Lvar table])),
+              lset cached 1 (Lapply(Lvar class_init, [Lvar table])),
               Lsequence (
               Lapply (oo_prim "init_class", [Lvar table]),
-              lset cached 1 (Lvar class_init)
+              (* field 0 must be set last to avoid race conditions *)
+              lset cached 0 (Lvar class_init)
              ))))),
   make_envs (
   if ids = [] then Lapply(lfield cached 0, [lenvs]) else
   Lprim(Pmakeblock(0, Immutable),
-        [Lapply(lfield cached 0, [lenvs]);
-         lfield cached 1;
+        [Lapply(lfield cached 1, [lenvs]);
          lfield cached 0;
+         lfield cached 1;
          lenvs]))))
 
 (* example:
