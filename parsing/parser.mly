@@ -229,7 +229,7 @@ interface:
 ;
 toplevel_phrase:
     top_structure SEMISEMI               { Ptop_def $1 }
-  | expr SEMISEMI                        { Ptop_def[mkstrexp $1] }
+  | seq_expr SEMISEMI                    { Ptop_def[mkstrexp $1] }
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
 ;
@@ -239,12 +239,12 @@ top_structure:
 ;
 use_file:
     use_file_tail                        { $1 }
-  | expr use_file_tail                   { Ptop_def[mkstrexp $1] :: $2 }
+  | seq_expr use_file_tail               { Ptop_def[mkstrexp $1] :: $2 }
 ;
 use_file_tail:
     EOF                                         { [] }
   | SEMISEMI EOF                                { [] }
-  | SEMISEMI expr use_file_tail                 { Ptop_def[mkstrexp $2] :: $3 }
+  | SEMISEMI seq_expr use_file_tail             { Ptop_def[mkstrexp $2] :: $3 }
   | SEMISEMI structure_item use_file_tail       { Ptop_def[$2] :: $3 }
   | SEMISEMI toplevel_directive use_file_tail   { $2 :: $3 }
   | structure_item use_file_tail                { Ptop_def[$1] :: $2 }
@@ -270,12 +270,12 @@ module_expr:
 ;
 structure:
     structure_tail                              { $1 }
-  | expr structure_tail                         { mkstrexp $1 :: $2 }
+  | seq_expr structure_tail                     { mkstrexp $1 :: $2 }
 ;
 structure_tail:
     /* empty */                                 { [] }
   | SEMISEMI                                    { [] }
-  | SEMISEMI expr structure_tail                { mkstrexp $2 :: $3 }
+  | SEMISEMI seq_expr structure_tail            { mkstrexp $2 :: $3 }
   | SEMISEMI structure_item structure_tail      { $2 :: $3 }
   | structure_item structure_tail               { $1 :: $2 }
 ;
@@ -360,12 +360,17 @@ module_declaration:
 
 /* Core expressions */
 
+seq_expr:
+  | expr                          { $1 }
+  | expr SEMI                     { $1 }
+  | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
+;
 expr:
     simple_expr
       { $1 }
   | simple_expr simple_expr_list %prec prec_appl
       { mkexp(Pexp_apply($1, List.rev $2)) }
-  | LET rec_flag let_bindings IN expr %prec prec_let
+  | LET rec_flag let_bindings IN seq_expr %prec prec_let
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
   | PARSER opt_pat opt_bar parser_cases %prec prec_fun
       { Pstream.cparser ($2, List.rev $4) }
@@ -373,27 +378,23 @@ expr:
       { mkexp(Pexp_function(List.rev $3)) }
   | FUN simple_pattern fun_def %prec prec_fun
       { mkexp(Pexp_function([$2, $3])) }
-  | MATCH expr WITH opt_bar match_cases %prec prec_match
+  | MATCH seq_expr WITH opt_bar match_cases %prec prec_match
       { mkexp(Pexp_match($2, List.rev $5)) }
-  | MATCH expr WITH PARSER opt_pat opt_bar parser_cases %prec prec_match
+  | MATCH seq_expr WITH PARSER opt_pat opt_bar parser_cases %prec prec_match
       { mkexp(Pexp_apply(Pstream.cparser ($5, List.rev $7), [$2])) }
-  | TRY expr WITH opt_bar match_cases %prec prec_try
+  | TRY seq_expr WITH opt_bar match_cases %prec prec_try
       { mkexp(Pexp_try($2, List.rev $5)) }
   | expr_comma_list
       { mkexp(Pexp_tuple(List.rev $1)) }
   | constr_longident simple_expr %prec prec_constr_appl
       { mkexp(Pexp_construct($1, Some $2)) }
-  | IF expr THEN expr ELSE expr %prec prec_if
+  | IF seq_expr THEN expr ELSE expr %prec prec_if
       { mkexp(Pexp_ifthenelse($2, $4, Some $6)) }
-  | IF expr THEN expr %prec prec_if
+  | IF seq_expr THEN expr %prec prec_if
       { mkexp(Pexp_ifthenelse($2, $4, None)) }
-  | expr SEMI expr
-      { mkexp(Pexp_sequence($1, $3)) }
-  | expr SEMI
-      { mkexp(Pexp_sequence($1, mkexp(Pexp_construct(Lident "()", None)))) }
-  | WHILE expr DO expr DONE
+  | WHILE seq_expr DO seq_expr DONE
       { mkexp(Pexp_while($2, $4)) }
-  | FOR val_ident EQUAL expr direction_flag expr DO expr DONE
+  | FOR val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
       { mkexp(Pexp_for($2, $4, $6, $5, $8)) }
   | expr COLONCOLON expr
       { mkexp(Pexp_construct(Lident "::", Some(mkexp(Pexp_tuple[$1;$3])))) }
@@ -431,10 +432,10 @@ expr:
       { mkuminus $1 $2 }
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, $3, $5)) }
-  | simple_expr DOT LPAREN expr RPAREN LESSMINUS expr
+  | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
       { mkexp(Pexp_apply(mkexp(Pexp_ident(array_function "Array" "set")),
                          [$1; $4; $7])) }
-  | simple_expr DOT LBRACKET expr RBRACKET LESSMINUS expr
+  | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
       { mkexp(Pexp_apply(mkexp(Pexp_ident(array_function "String" "set")),
                          [$1; $4; $7])) }
   | label LESSMINUS expr
@@ -447,21 +448,21 @@ simple_expr:
       { mkexp(Pexp_constant $1) }
   | constr_longident
       { mkexp(Pexp_construct($1, None)) }
-  | LPAREN expr RPAREN
+  | LPAREN seq_expr RPAREN
       { $2 }
-  | BEGIN expr END
+  | BEGIN seq_expr END
       { $2 }
-  | LPAREN expr type_constraint RPAREN
+  | LPAREN seq_expr type_constraint RPAREN
       { let (t, t') = $3 in mkexp(Pexp_constraint($2, t, t')) }
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, $3)) }
-  | simple_expr DOT LPAREN expr RPAREN
+  | simple_expr DOT LPAREN seq_expr RPAREN
       { mkexp(Pexp_apply(mkexp(Pexp_ident(array_function "Array" "get")),
                          [$1; $4])) }
-  | simple_expr DOT LBRACKET expr RBRACKET
+  | simple_expr DOT LBRACKET seq_expr RBRACKET
       { mkexp(Pexp_apply(mkexp(Pexp_ident(array_function "String" "get")),
                          [$1; $4])) }
-  | LBRACE lbl_expr_list RBRACE
+  | LBRACE lbl_expr_list opt_semi RBRACE
       { mkexp(Pexp_record(List.rev $2)) }
   | LBRACKETLESS stream_expr GREATERRBRACKET
       { Pstream.cstream (List.rev $2) }
@@ -471,7 +472,7 @@ simple_expr:
       { mkexp(Pexp_array(List.rev $2)) }
   | LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_array []) }
-  | LBRACKET expr_semi_list RBRACKET
+  | LBRACKET expr_semi_list opt_semi RBRACKET
       { mklistexp(List.rev $2) }
   | PREFIXOP simple_expr
       { mkexp(Pexp_apply(mkoperator $1 1, [$2])) }
@@ -500,13 +501,13 @@ let_bindings:
 let_binding:
     val_ident fun_binding
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
-  | pattern EQUAL expr
+  | pattern EQUAL seq_expr %prec prec_let
       { ($1, $3) }
 ;
 fun_binding:
-    EQUAL expr %prec prec_let
+    EQUAL seq_expr %prec prec_let
       { $2 }
-  | type_constraint EQUAL expr %prec prec_let
+  | type_constraint EQUAL seq_expr %prec prec_let
       { let (t, t') = $1 in mkexp(Pexp_constraint($3, t, t')) }
   | simple_pattern fun_binding
       { mkexp(Pexp_function[$1,$2]) }
@@ -516,9 +517,9 @@ parser_cases:
   | parser_cases BAR parser_case                { $3 :: $1 }
 ;
 parser_case:
-    LBRACKETLESS stream_pattern GREATERRBRACKET opt_pat MINUSGREATER expr
+    LBRACKETLESS stream_pattern GREATERRBRACKET opt_pat MINUSGREATER seq_expr
       { (List.rev $2, $4, $6) }
-  | LBRACKETLESS GREATERRBRACKET opt_pat MINUSGREATER expr
+  | LBRACKETLESS GREATERRBRACKET opt_pat MINUSGREATER seq_expr
       { ([], $3, $5) }
 ;
 stream_pattern:
@@ -560,8 +561,8 @@ fun_def:
   | simple_pattern fun_def                      { mkexp(Pexp_function[$1,$2]) }
 ;
 match_action:
-    MINUSGREATER expr                           { $2 }
-  | WHEN expr MINUSGREATER expr                 { mkexp(Pexp_when($2, $4)) }
+    MINUSGREATER seq_expr                       { $2 }
+  | WHEN seq_expr MINUSGREATER seq_expr         { mkexp(Pexp_when($2, $4)) }
 ;
 expr_comma_list:
     expr_comma_list COMMA expr                  { $3 :: $1 }
@@ -619,9 +620,9 @@ simple_pattern:
       { mkrangepat $1 $3 }
   | constr_longident
       { mkpat(Ppat_construct($1, None)) }
-  | LBRACE lbl_pattern_list RBRACE
+  | LBRACE lbl_pattern_list opt_semi RBRACE
       { mkpat(Ppat_record(List.rev $2)) }
-  | LBRACKET pattern_semi_list RBRACKET
+  | LBRACKET pattern_semi_list opt_semi RBRACKET
       { mklistpat(List.rev $2) }
   | LPAREN pattern RPAREN
       { $2 }
@@ -705,7 +706,7 @@ ancestor:
           { $1, [], List.rev $2, $3, symbol_loc () }
 ;
 value:
-        private_flag mutable_flag label EQUAL expr
+        private_flag mutable_flag label EQUAL seq_expr
           { $3, $1, $2, Some $5, symbol_loc () }
       | private_flag mutable_flag label
           { $3, $1, $2, None, symbol_loc () }
@@ -817,13 +818,12 @@ type_kind:
       { (Ptype_variant(List.rev $2), None) }
   | EQUAL BAR constructor_declarations
       { (Ptype_variant(List.rev $3), None) }
-  | EQUAL LBRACE label_declarations RBRACE
+  | EQUAL LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $3), None) }
-  | EQUAL core_type EQUAL constructor_declarations %prec prec_type_def
-      { (Ptype_variant(List.rev $4), Some $2) }
-  | EQUAL core_type EQUAL BAR constructor_declarations %prec prec_type_def
+  | EQUAL core_type EQUAL opt_bar constructor_declarations %prec prec_type_def
       { (Ptype_variant(List.rev $5), Some $2) }
-  | EQUAL core_type EQUAL LBRACE label_declarations RBRACE %prec prec_type_def
+  | EQUAL core_type EQUAL LBRACE label_declarations opt_semi RBRACE
+    %prec prec_type_def
       { (Ptype_record(List.rev $5), Some $2) }
 ;
 type_parameters:
@@ -1071,5 +1071,9 @@ closed_flag:
 opt_bar:
     /* empty */                                 { () }
   | BAR                                         { () }
+;
+opt_semi:
+  | /* empty */                                 { () }
+  | SEMI                                        { () }
 ;
 %%
