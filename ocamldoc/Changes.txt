@@ -59,6 +59,7 @@ TODO:
  - latex: types variant polymorphes dépassent de la page quand ils sont trop longs
  - ajout à la doc de Module_list et Index_list (utilisé dans le html seulement)
  - ajout ds la doc: fichier de l'option -intro utilisé pour l'index en html
+ - utilisation nouvelles infos de Xavier: "début de rec", etc.
 
 ======
 
