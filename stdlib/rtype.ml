@@ -112,6 +112,21 @@ let rec raw_subst s t =
 
 let subst = raw_subst
 
+(* extraction of attached information (i.e. paths) *)
+let attached_info t = 
+  let lst = ref [] in
+  let rec aux t =
+    match t.desc with
+    | Tvar -> ()
+    | Tarrow (_,t1,t2) -> aux t1; aux t2
+    | Ttuple ts -> List.iter aux ts
+    | Tconstr (p, ts) -> 
+	if not (List.mem p !lst) then lst := p :: !lst;
+	List.iter aux ts
+  in
+  aux t;
+  !lst
+
 (* Print a type expression *)
 
 open Format
@@ -140,8 +155,8 @@ let name_of_type (t : 'a raw_type_expr) =
     name
 
 let rec print_path ppf = function
-  | Path.Pident (name,pos) -> fprintf ppf "%s_%d" name pos
-  | Path.Pdot (p, name, n) -> fprintf ppf "%a.%s_%d" print_path p name n
+  | Path.Pident (name,pos) -> fprintf ppf "%s(*%d*)" name pos
+  | Path.Pdot (p, name, n) -> fprintf ppf "%a.%s(*%d*)" print_path p name n
   | Path.Papply (p1, p2) -> fprintf ppf "%a(%a)" print_path p1 print_path p2
 
 (* From: Oprint.print_out_type *)

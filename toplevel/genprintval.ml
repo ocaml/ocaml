@@ -232,6 +232,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
               then let v = tree_of_val depth (Lazy.force (O.obj obj)) ty_arg in
                    Oval_constr (Oide_ident "lazy", [v])
               else Oval_stuff "<lazy>"
+
+          | Tconstr(path, [], _)
+            when 
+	      Path.same path (Typertype.get_rtype_path ()) &&
+	      List.for_all (Typertype.path_is_in_scope env) 
+		(List.map fst (Rtype.attached_info (O.obj obj))) ->
+		  Oval_printer (fun ppf -> 
+		    Rtype.reset_names ();
+		    fprintf ppf "@[<3>[: %a :]@]" Rtype.print (O.obj obj))
+	      
           | Tconstr(path, ty_list, _) ->
               begin try
                 let decl = Env.find_type path env in

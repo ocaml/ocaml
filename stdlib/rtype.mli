@@ -70,6 +70,9 @@ val raw_equal : ('a -> 'a -> bool) -> 'a raw_type_expr -> 'a raw_type_expr -> bo
 val raw_subst : ('a raw_type_expr * 'a raw_type_expr) list -> 'a raw_type_expr -> 'a raw_type_expr
 val subst : (type_expr * type_expr) list -> type_expr -> type_expr
 
+(* extraction of attached information (i.e. paths) *)
+val attached_info : 'a raw_type_expr -> 'a list
+
 (* printers *)
 val reset_names : unit -> unit
 val print_path : Format.formatter -> Path.t -> unit

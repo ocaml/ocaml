@@ -60,6 +60,7 @@ type error =
   | Less_general of string * (type_expr * type_expr) list
   | Generic_primitive_type_mismatch of type_expr * type_expr
   | Should_not_be_generic of type_expr * type_expr
+  | Orpat_with_non_linear_tvar of string
 
 exception Error of Location.t * error
 
@@ -339,7 +340,6 @@ let build_or_pat env loc lid =
       rp { r with pat_loc = loc }
 
 let type_pat ?(nonlinear=false) env sp =
-  let implicit_whens = ref [] in
   let rec type_pat0 env sp =
     match sp.ppat_desc with
       Ppat_any ->
@@ -347,7 +347,8 @@ let type_pat ?(nonlinear=false) env sp =
           pat_desc = Tpat_any;
           pat_loc = sp.ppat_loc;
           pat_type = newvar();
-          pat_env = env }
+          pat_env = env },
+	[]
     | Ppat_var name ->
         let ty = newvar() in
         let id = enter_variable sp.ppat_loc name ty in
@@ -355,9 +356,10 @@ let type_pat ?(nonlinear=false) env sp =
           pat_desc = Tpat_var id;
           pat_loc = sp.ppat_loc;
           pat_type = ty;
-          pat_env = env }
+          pat_env = env },
+	[]
     | Ppat_alias(sq, name) ->
-        let q = type_pat0 env sq in
+        let q, nonlinears = type_pat0 env sq in
         begin_def ();
         let ty_var = build_as_type env q in
         end_def ();
@@ -367,20 +369,27 @@ let type_pat ?(nonlinear=false) env sp =
           pat_desc = Tpat_alias(q, id);
           pat_loc = sp.ppat_loc;
           pat_type = q.pat_type;
-          pat_env = env }
+          pat_env = env },
+	nonlinears
     | Ppat_constant cst ->
         rp {
           pat_desc = Tpat_constant cst;
           pat_loc = sp.ppat_loc;
           pat_type = type_constant cst;
-          pat_env = env }
+          pat_env = env },
+	[]
     | Ppat_tuple spl ->
-        let pl = List.map (type_pat0 env) spl in
+        let pl,nonlinearsl = 
+	  let pnonlinearsl = List.map (type_pat0 env) spl in
+	  List.map fst pnonlinearsl,
+	  List.map snd pnonlinearsl
+	in
         rp {
           pat_desc = Tpat_tuple pl;
           pat_loc = sp.ppat_loc;
           pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
-          pat_env = env }
+          pat_env = env },
+	List.flatten nonlinearsl
     | Ppat_construct(lid, sarg, explicit_arity) ->
         let constr =
           try
@@ -398,16 +407,25 @@ let type_pat ?(nonlinear=false) env sp =
         if List.length sargs <> constr.cstr_arity then
           raise(Error(sp.ppat_loc, Constructor_arity_mismatch(lid,
                                        constr.cstr_arity, List.length sargs)));
-        let args = List.map (type_pat0 env) sargs in
+        let args, nonlinearsl = 
+	  let argnonlinearsl = List.map (type_pat0 env) sargs in
+	  List.map fst argnonlinearsl,
+	  List.map snd argnonlinearsl
+	in
         let (ty_args, ty_res) = instance_constructor constr in
         List.iter2 (unify_pat env) args ty_args;
         rp {
           pat_desc = Tpat_construct(constr, args);
           pat_loc = sp.ppat_loc;
           pat_type = ty_res;
-          pat_env = env }
+          pat_env = env },
+	List.flatten nonlinearsl
     | Ppat_variant(l, sarg) ->
-        let arg = may_map (type_pat0 env) sarg in
+        let arg, nonlinears = 
+	  match may_map (type_pat0 env) sarg with
+	  | None -> None, []
+	  | Some (arg, nonlinears) -> Some arg, nonlinears
+	in
         let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
         let row = { row_fields =
                       [l, Reither(arg = None, arg_type, true, ref None)];
@@ -420,7 +438,8 @@ let type_pat ?(nonlinear=false) env sp =
           pat_desc = Tpat_variant(l, arg, row);
           pat_loc = sp.ppat_loc;
           pat_type = newty (Tvariant row);
-          pat_env = env }
+          pat_env = env },
+	nonlinears
     | Ppat_record lid_sp_list ->
         let rec check_duplicates = function
           [] -> ()
@@ -442,30 +461,47 @@ let type_pat ?(nonlinear=false) env sp =
           with Unify trace ->
             raise(Error(sp.ppat_loc, Label_mismatch(lid, trace)))
           end;
-          let arg = type_pat0 env sarg in
+          let arg, nonlinears = type_pat0 env sarg in
           unify_pat env arg ty_arg;
-          (label, arg)
+          (label, arg), nonlinears
         in
+	let label_pat_list, nonlinearsl =
+	  let l = List.map type_label_pat lid_sp_list in
+	  List.map fst l, List.map snd l
+	in
         rp {
-          pat_desc = Tpat_record(List.map type_label_pat lid_sp_list);
+          pat_desc = Tpat_record label_pat_list;
           pat_loc = sp.ppat_loc;
           pat_type = ty;
-          pat_env = env }
+          pat_env = env },
+	List.flatten nonlinearsl 
     | Ppat_array spl ->
-        let pl = List.map (type_pat0 env) spl in
+        let pl, nonlinearsl = 
+	  let l = List.map (type_pat0 env) spl in
+	  List.map fst l, List.map snd l
+	in
         let ty_elt = newvar() in
         List.iter (fun p -> unify_pat env p ty_elt) pl;
         rp {
           pat_desc = Tpat_array pl;
           pat_loc = sp.ppat_loc;
           pat_type = instance (Predef.type_array ty_elt);
-          pat_env = env }
+          pat_env = env },
+	List.flatten nonlinearsl
     | Ppat_or(sp1, sp2) ->
+	let implicit_when_empty_check loc nonlinears =
+	  match nonlinears with
+	  | {Typertype.varinfo_name=n} :: _ ->
+	      raise (Error(loc, Orpat_with_non_linear_tvar n))
+	  | _ -> ()
+	in
         let initial_pattern_variables = !pattern_variables in
-        let p1 = type_pat0 env sp1 in
+        let p1,nonlinears1 = type_pat0 env sp1 in
+	implicit_when_empty_check sp1.ppat_loc nonlinears1;
         let p1_variables = !pattern_variables in
         pattern_variables := initial_pattern_variables ;
-        let p2 = type_pat0 env sp2 in
+        let p2,nonlinears2 = type_pat0 env sp2 in
+	implicit_when_empty_check sp2.ppat_loc nonlinears2;
         let p2_variables = !pattern_variables in
         unify_pat env p2 p1.pat_type;
         let alpha_env =
@@ -475,28 +511,28 @@ let type_pat ?(nonlinear=false) env sp =
           pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
           pat_loc = sp.ppat_loc;
           pat_type = p1.pat_type;
-          pat_env = env }
+          pat_env = env },
+	[] (* must be empty! *)
     | Ppat_constraint(sp, sty) ->
-        let p = type_pat0 env sp in
+        let p, nonlinears = type_pat0 env sp in
         let ty, force = Typetexp.transl_simple_type_delayed env sty in
         unify_pat env p ty;
         pattern_force := force :: !pattern_force;
-        p
+        p, nonlinears
     | Ppat_type lid ->
-        build_or_pat env sp.ppat_loc lid
+        build_or_pat env sp.ppat_loc lid, []
     | Ppat_rtype sty ->
         (* translate pattern *)
-        let sp, eqs = 
+        let sp, nonlinears = 
 	  Typertype.pattern_of_type nonlinear
 	    (fun lid -> fst (Env.lookup_type lid env)) sty 
 	in
-        let pat = type_pat0 env sp in
+        let pat, internal_nonlinears = type_pat0 env sp in
+	assert (internal_nonlinears=[]);
         unify_pat env pat (Typertype.get_rtype_type ());
-	implicit_whens := eqs @ !implicit_whens;
-        pat
+        pat, nonlinears
   in
-  let pat = type_pat0 env sp in
-  pat, !implicit_whens
+  type_pat0 env sp
 
 let get_ref r =
   let v = !r in r := []; v
@@ -511,17 +547,17 @@ let add_pattern_variables env =
 
 let type_pattern env spat =
   reset_pattern ();
-  let pat, impwhen = type_pat ~nonlinear: true env spat in
+  let pat, nonlinear = type_pat ~nonlinear: true env spat in
   let new_env = add_pattern_variables env in
-  (pat, new_env, get_ref pattern_force, impwhen)
+  (pat, new_env, get_ref pattern_force, nonlinear)
 
 let type_pattern_list env spatl =
   reset_pattern ();
   let patl = 
-    let patimpwhenl = List.map (type_pat env) spatl in
+    let patnonlinearl = List.map (type_pat env) spatl in
     List.map (function 
       | pat,[] -> pat
-      | _, _ -> fatal_error "noempty impwhen") patimpwhenl
+      | _, _ -> fatal_error "noempty nonlinear") patnonlinearl
   in
   let new_env = add_pattern_variables env 
   in
@@ -529,8 +565,8 @@ let type_pattern_list env spatl =
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern ();
-  let pat, impwhen = type_pat val_env spat in
-  if impwhen <> [] then fatal_error "nonempty impwhen";
+  let pat, nonlinear = type_pat val_env spat in
+  if nonlinear <> [] then fatal_error "nonempty nonlinear";
   if has_variants pat then begin
     Parmatch.pressure_variants val_env [pat];
     iter_pattern finalize_variant pat
@@ -558,8 +594,8 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
                        "selfpat-" ^ cl_num))
   in
   reset_pattern ();
-  let pat, impwhen = type_pat val_env spat in
-  if impwhen <> [] then fatal_error "nonempty impwhen";
+  let pat, nonlinear = type_pat val_env spat in
+  if nonlinear <> [] then fatal_error "nonempty nonlinear";
   List.iter (fun f -> f()) (get_ref pattern_force);
   let meths = ref Meths.empty in
   let vars = ref Vars.empty in
@@ -1894,12 +1930,12 @@ and type_statement env kset sexp =
 and type_cases ?in_function env kset ty_arg ty_res partial_loc caselist =
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
-  let pat_env_list, impwhen_list =
-    let pat_env_impwhen_list =
+  let pat_env_list, nonlinears_list =
+    let pat_env_nonlinears_list =
       List.map
 	(fun (spat, sexp) ->
           if !Clflags.principal then begin_def ();
-          let (pat, ext_env, force, impwhen) = type_pattern env spat in
+          let (pat, ext_env, force, nonlinear) = type_pattern env spat in
           pattern_force := force @ !pattern_force;
           let pat =
             if !Clflags.principal then begin
@@ -1909,11 +1945,11 @@ and type_cases ?in_function env kset ty_arg ty_res partial_loc caselist =
             end else pat
           in
           unify_pat env pat ty_arg';
-          (pat, ext_env, impwhen))
+          (pat, ext_env, nonlinear))
 	caselist 
     in
-    List.map (fun (p,e,_) -> (p,e)) pat_env_impwhen_list,
-    List.map (fun (_,_,impwhen) -> impwhen) pat_env_impwhen_list
+    List.map (fun (p,e,_) -> (p,e)) pat_env_nonlinears_list,
+    List.map (fun (_,_,nonlinears) -> nonlinears) pat_env_nonlinears_list
   in
   (* Check for polymorphic variants to close *)
   let patl = List.map fst pat_env_list in
@@ -1929,7 +1965,7 @@ and type_cases ?in_function env kset ty_arg ty_res partial_loc caselist =
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
     List.map2
-      (fun (pat, ext_env) ((spat, sexp), impwhen) ->
+      (fun (pat, ext_env) ((spat, sexp), nonlinears) ->
 	  let make_op_app op e1 e2 =
 	    { pexp_desc= Pexp_apply (op, ["", e1; "", e2]);
 	      pexp_loc= Location.none }
@@ -1949,14 +1985,13 @@ and type_cases ?in_function env kset ty_arg ty_res partial_loc caselist =
 	      pexp_loc= Location.none }
 	  in
 
-	let impwhen_code equiv_vars =
+	let nonlinear_code {Typertype.varinfo_name=varname; 
+			    Typertype.varinfo_variables= equiv_vars} =
 	  let hd = List.hd equiv_vars in
 	  let tl = List.tl equiv_vars in
 	  List.map (fun x -> make_peq (make_var hd) (make_var x)) tl
 	in
-	let conds = 
-	  List.flatten (List.map impwhen_code impwhen) 
-	in
+	let conds = List.flatten (List.map nonlinear_code nonlinears) in
 	let sexp =
 	  match conds with
 	  | [] -> sexp
@@ -1969,7 +2004,7 @@ and type_cases ?in_function env kset ty_arg ty_res partial_loc caselist =
 	let bound_idents = pat_bound_idents pat in
         let exp = type_expect ?in_function ext_env kset sexp ty_res in
         (pat, exp))
-      pat_env_list (List.combine caselist impwhen_list)
+      pat_env_list (List.combine caselist nonlinears_list)
   in
   let partial =
     match partial_loc with None -> Partial
@@ -2243,3 +2278,6 @@ let report_error ppf = function
 	type_scheme scm;
       fprintf ppf "which cannot be bound to a pattern of type %a."
 	type_expr typ
+  | Orpat_with_non_linear_tvar n ->
+      fprintf ppf "This | connected pattern cannot have non-linear type variables '%s" n
+      
