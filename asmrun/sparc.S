@@ -47,7 +47,7 @@
 
 #else
 
-        .common gc_entry_regs, 20 * 4, 8
+        .common gc_entry_regs, 19 * 4, 8
         .common gc_entry_float_regs, 30 * 4, 8
         .common caml_required_size, 4, 4
 
