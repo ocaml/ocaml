@@ -122,10 +122,10 @@ and camlprog = parse
   | ">"         { print_string "&gt;"; camlprog lexbuf }
   | "&"         { print_string "&amp;"; camlprog lexbuf }
   | "\\?"       { if !first_caml_line then begin
-                    print_string "# <FONT COLOR=\"red\">";
+                    print_string "# <FONT COLOR=\"blue\">";
                     first_caml_line := false
                   end else
-                    print_string "  <FONT COLOR=\"red\">";
+                    print_string "  <FONT COLOR=\"blue\">";
                   in_caml := true;
                   camlprog lexbuf }
   | "\\:"       { print_string "<FONT SIZE=-1 COLOR=\"green\">";
