@@ -46,7 +46,7 @@ while :; do
     -cclib)
         caml_libs="$caml_libs $1 $2"
         shift;;
-    -ccopt|-dllpath)
+    -ccopt)
         caml_opts="$caml_opts $1 $2"
         shift;;
     -custom)
@@ -76,10 +76,17 @@ while :; do
         shift;;
     -pthread)
         c_opts_caml="$c_opts_caml -ccopt $1";;
+    -R|-rpath)
+        c_opts="$c_opts $1 $2"
+        c_opts_caml="$c_opts_caml -ccopt $1 -ccopt $2"
+        shift;;
+    -R*)
+        c_opts="$c_opts $1"
+        c_opts_caml="$c_opts_caml -ccopt $1";;
     -Wl,-rpath)
         case $2 in
         -Wl,*)
-            rpatharg=`echo $2 | sed "s/-Wl,//"`
+            rpatharg=`echo $2 | sed "s/^-Wl,//"`
             if test "$sharedldtype" = "ld"; then
                 c_opts="$c_opts -rpath $rpatharg"
             else
@@ -92,7 +99,7 @@ while :; do
         esac;;
     -Wl,-rpath,*)
         if test "$sharedldtype" = "ld"; then
-            rpatharg=`echo $1 | sed "s/-Wl,-rpath,//"`
+            rpatharg=`echo $1 | sed "s/^-Wl,-rpath,//"`
             c_opts="$c_opts -rpath $rpatharg"
         else
             c_opts="$c_opts $1"
@@ -100,7 +107,7 @@ while :; do
         c_opts_caml="$c_opts_caml -ccopt $1";;
     -Wl,-R*)
         if test "$sharedldtype" = "ld"; then
-            rpatharg=`echo $1 | sed "s/-Wl,-R//"`
+            rpatharg=`echo $1 | sed "s/^-Wl,-R//"`
             c_opts="$c_opts -R$rpatharg"
         else
             c_opts="$c_opts $1"
