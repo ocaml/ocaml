@@ -106,9 +106,9 @@ The following environment variables are also consulted:
         "ocamlyacc"-generated parsers.  When this option is on,
         the pushdown automaton that executes the parsers prints a
         trace of its actions.  This option takes no argument.
-  \item[s] ("minor_heap_size")  Size of the minor heap.
-  \item[i] ("major_heap_increment")  Minimum size increment for the
-  major heap.
+  \item[s] ("minor_heap_size")  Size of the minor heap. (in words)
+  \item[i] ("major_heap_increment")  Default size increment for the
+  major heap. (in words)
   \item[o] ("space_overhead")  The major GC speed setting.
   \item[O] ("max_overhead")  The heap compaction trigger setting.
   \item[v] ("verbose")  What GC messages to print to stderr.  This
