@@ -200,7 +200,7 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
         build_object_init cl_table obj params (envs,[]) (copy_env env) cl in
       let obj_init =
 	if ids = [] then obj_init else lfunction [self] obj_init in
-      (inh_init, lfunction [env] (subst_env env obj_init))
+      (inh_init, lfunction [env] (subst_env env inh_init obj_init))
 
 
 let bind_method tbl public_methods lab id cl_init =
@@ -375,9 +375,6 @@ let rec transl_class_rebind obj_init cl =
   | Tclass_let (rec_flag, defs, vals, cl) ->
       let path, obj_init = transl_class_rebind obj_init cl in
       (path, Translcore.transl_let rec_flag defs obj_init)
-  | Tclass_structure {cl_field = [Cf_inher(cl, _, _)]} ->
-      let path, obj_init = transl_class_rebind obj_init cl in
-      (path, obj_init)
   | Tclass_structure _ -> raise Exit
   | Tclass_constraint (cl', _, _, _) ->
       let path, obj_init = transl_class_rebind obj_init cl' in
@@ -585,15 +582,19 @@ let transl_class ids cl_id arity pub_meths cl =
       | _ -> assert false
   in
   let new_ids_init = ref [] in
-  let env1 = Ident.create "env" in
+  let env1 = Ident.create "env" and env1' = Ident.create "env'" in
   let copy_env envs self =
     if top then lambda_unit else
     Lifused(env2, Lprim(Parraysetu Paddrarray,
-                        [Lvar self; Lvar env2; lfield env1 0]))
-  and subst_env envs lam =
+                        [Lvar self; Lvar env2; Lvar env1']))
+  and subst_env envs l lam =
     if top then lam else
-    Llet(Alias, env1, lfield envs 0,
-	 subst_lambda (subst env1 lam 1 new_ids_init) lam)
+    (* must be called only once! *)
+    let lam = subst_lambda (subst env1 lam 1 new_ids_init) lam in
+    Llet(Alias, env1, (if l = [] then Lvar envs else lfield envs 0),
+    Llet(Alias, env1',
+         (if !new_ids_init = [] then Lvar env1 else lfield env1 0),
+         lam))
   in
 
   (* Now we start compiling the class *)
@@ -657,19 +658,21 @@ let transl_class ids cl_id arity pub_meths cl =
     then lambda_unit
     else Lvar envs in
   let lenv =
-    if !new_ids_meths = [] && !new_ids_init = [] then lambda_unit else
+    let menv =
+      if !new_ids_meths = [] then lambda_unit else
+      Lprim(Pmakeblock(0, Immutable),
+            List.map (fun id -> Lvar id) !new_ids_meths) in
+    if !new_ids_init = [] then menv else
     Lprim(Pmakeblock(0, Immutable),
-          (if !new_ids_meths = [] then lambda_unit else
-           Lprim(Pmakeblock(0, Immutable),
-                 List.map (fun id -> Lvar id) !new_ids_meths)) ::
-          List.map (fun id -> Lvar id) !new_ids_init)
+          menv :: List.map (fun id -> Lvar id) !new_ids_init)
   and linh_envs =
     List.map (fun (_, p) -> Lprim(Pfield 3, [transl_path p]))
       (List.rev inh_init)
   in
   let make_envs lam =
     Llet(StrictOpt, envs,
-         Lprim(Pmakeblock(0, Immutable), lenv :: linh_envs),
+         (if linh_envs = [] then lenv else
+         Lprim(Pmakeblock(0, Immutable), lenv :: linh_envs)),
          lam)
   and def_ids cla lam =
     Llet(StrictOpt, env2,
