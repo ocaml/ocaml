@@ -314,20 +314,21 @@ let rec emit_instr i dslot =
              standard glue code. Here, we just proceed as in tailcall_ind. *)
           let lbl = label_symbol s in
           let n = frame_size() in
-          `	lwz	28, {emit_label lbl}(2) # {emit_symbol s}\n`;
-          `	lwz	0, 0(28)\n`;
-          `	lwz	2, 4(28)\n`;
+          `	lwz	11, {emit_label lbl}(2) # {emit_symbol s}\n`;
           if !contains_calls then begin
             `	lwz	28, {emit_int(n - 4)}(1)\n`;
+            `	lwz	0, 0(11)\n`;
+            `	lwz	2, 4(11)\n`;
             `	mtctr	0\n`;
             `	addi	1, 1, {emit_int n}\n`;
             `	mtlr	28\n`
           end else begin
+            `	lwz	0, 0(11)\n`;
+            `	lwz	2, 4(11)\n`;
             `	mtctr	0\n`;
             `	addi	1, 1, {emit_int n}\n`
           end;
           `	bctr\n`
-          end
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
