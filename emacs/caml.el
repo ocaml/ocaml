@@ -1198,8 +1198,9 @@ the line where the governing keyword occurs.")
                    (progn (beginning-of-line) (point)))))
         kwop done matching-fun)
     (while (not done)
-      (setq kwop (caml-find-kwop
-                  "\\<\\(e\\(nd\\|lse\\)\\|done\\|then\\|if\\)\\>\\|[])};]"))
+      (setq kwop
+            (caml-find-kwop
+             "\\<\\(e\\(nd\\|lse\\)\\|done\\|then\\|if\\|with\\)\\>\\|[])};]"))
       (cond
        ((not kwop) (setq done t))
        ((caml-at-sexp-close-p)
@@ -1208,9 +1209,7 @@ the line where the governing keyword occurs.")
        ((string= kwop "then")
         (if (not from-else) (setq kwop (caml-find-then-match))))
        ((setq matching-fun (cdr-safe (assoc kwop caml-matching-kw-alist)))
-        (setq kwop (funcall matching-fun)))
-       ((string= kwop "then")
-        (if (not from-else) (setq kwop (caml-find-then-match))))))
+        (setq kwop (funcall matching-fun)))))
     (if (and bol (>= (point) bol))
         "if-else"
       kwop)))
