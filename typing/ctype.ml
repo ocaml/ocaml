@@ -2383,6 +2383,7 @@ let subtype env ty1 ty2 =
   TypePairs.clear subtypes;
   (* Build constraint set. *)
   let cstrs = subtype_rec env [(ty1, ty2)] ty1 ty2 [] in
+  TypePairs.clear subtypes;
   (* Enforce constraints. *)
   function () ->
     List.iter
@@ -2390,9 +2391,7 @@ let subtype env ty1 ty2 =
          try unify env t1 t2 with Unify trace ->
            raise (Subtype (expand_trace env (List.rev trace0),
                            List.tl (List.tl trace))))
-      (List.rev cstrs);
-    TypePairs.clear subtypes
-
+      (List.rev cstrs)
 
                               (*******************)
                               (*  Miscellaneous  *)
