@@ -81,4 +81,5 @@ extern unsigned long gr_pixel_rgb(int rgb);
 extern int gr_rgb_pixel(long unsigned int pixel);
 extern void gr_handle_event(XEvent *e);
 extern void gr_init_color_cache(void);
+extern void gr_init_direct_rgb_to_pixel(void);
 extern value id_of_window( Window w );
