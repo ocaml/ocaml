@@ -43,17 +43,22 @@ let show_no_point () =
 
 (* Print the line containing the point *)
 let show_point mdle point before selected =
-  if !emacs & selected then begin
-    let source = source_of_module mdle in
-      print_string "\026\026M";
-      print_string source;
-      print_string ":";
-      print_int point;
-      print_string (if before then ":before" else ":after");
-      print_newline ()
-      end
-  else begin
-    try
+  if !emacs & selected then
+    begin try
+      let source = source_of_module mdle in
+	print_string "\026\026M";
+	print_string source;
+	print_string ":";
+	print_int point;
+	print_string (if before then ":before" else ":after");
+	print_newline ()
+    with
+      Not_found    -> (* get_buffer *)
+        prerr_endline ("No source file for " ^ mdle ^ ".");
+	show_no_point ()
+    end
+  else
+    begin try
       let buffer = get_buffer mdle in
       let (start, line_number) = line_of_pos buffer point in
         print_line buffer line_number start point before; ()
