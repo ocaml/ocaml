@@ -42,11 +42,6 @@ if\ldots then\ldots else\ldots, loops and pattern matching.
 Calling "ocamlcp" without the "-p" option defaults to "-p fm", meaning
 that only function calls and pattern matching are profiled.
 
-{\bf Warning:} Although it is possible to use profiling and the
-"-thread" option together, in most cases the combination prevents
-tail-call optimisations.  As a result, some programs may fail with a
-"Stack_overflow" exception.
-
 \section{Profiling an execution}
 
 Running a bytecode executable file that has been compiled with "ocamlcp"
