@@ -199,7 +199,7 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
     mathlib="";;
-  gcc,alpha-*-osf*)
+  gcc,alpha*-*-osf*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     if cc="$bytecc" sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
@@ -208,7 +208,7 @@ case "$bytecc,$host" in
     bytecclinkopts="-Wl,-T,12000000 -Wl,-D,14000000"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     echo "#define ARCH_CODE32" >> m.h;;
-  cc,alpha-*-osf*)
+  cc,alpha*-*-osf*)
     bytecccompopts="-std1 -ieee";;
   cc,mips-*-irix6*)
     # Add -n32 flag to ensure compatibility with native-code compiler
@@ -361,11 +361,11 @@ model=default
 system=unknown
 
 case "$host" in
-  alpha-*-osf*)                 arch=alpha; system=digital;;
-  alpha-*-linux*)               arch=alpha; system=linux;;
-  alpha-*-freebsd*)             arch=alpha; system=freebsd;;
-  alpha-*-netbsd*)              arch=alpha; system=netbsd;;
-  alpha-*-openbsd*)             arch=alpha; system=openbsd;;
+  alpha*-*-osf*)                arch=alpha; system=digital;;
+  alpha*-*-linux*)              arch=alpha; system=linux;;
+  alpha*-*-freebsd*)            arch=alpha; system=freebsd;;
+  alpha*-*-netbsd*)             arch=alpha; system=netbsd;;
+  alpha*-*-openbsd*)            arch=alpha; system=openbsd;;
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
   sparc-*-solaris2.*)           arch=sparc; system=solaris;;
   sparc-*-*bsd*)                arch=sparc; system=bsd;;
