@@ -18,6 +18,7 @@ PROGS=test1.byt test2.byt test3.byt test4.byt test5.byt test6.byt \
   testsieve.byt token1.byt token2.byt
 
 CAMLC=../../../boot/ocamlrun ../../../ocamlc -I .. -I ../../../stdlib -I ../../unix
+LIBS=-ccopt -L.. -ccopt -L../../unix -ccopt -L../../graphics
 
 include ../../../config/Makefile
 
@@ -27,11 +28,11 @@ clean:
 	rm -f *.cm* *.byt
 
 sorts.byt: sorts.ml
-	$(CAMLC) -custom -o sorts.byt -I ../../graph threads.cma graphics.cma sorts.ml ../libthreads.a ../../graph/libgraphics.a $(X11_LINK)
+	$(CAMLC) -custom -o sorts.byt -I ../../graph threads.cma graphics.cma sorts.ml $(LIBS) $(X11_LINK)
 
 .SUFFIXES: .ml .byt
 
 .ml.byt:
-	$(CAMLC) -custom -o $*.byt unix.cma threads.cma $*.ml ../libthreads.a ../../unix/libunix.a
+	$(CAMLC) -custom -o $*.byt unix.cma threads.cma $*.ml $(LIBS)
 
 $(PROGS): ../threads.cma ../libthreads.a
