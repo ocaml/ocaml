@@ -124,14 +124,24 @@ method select_operation op args =
         (Iindexed d, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
-  | _ ->
-      super#select_operation op args
+  (* Recognize immediate shifts only if 1 <= count <= 8 *)
+  | Clsl -> self#select_shift op Ilsl args
+  | Clsr -> self#select_shift op Ilsr args
+  | Casr -> self#select_shift op Iasr args
+  | _ -> super#select_operation op args
 
 (* Selection of immediate shifts -- only if count is between 1 and 8 *)
 
-method select_shift op = function
-    [arg1; Cconst_int n] when n >= 1 && n <= 8 -> (Iintop_imm(op, n), [arg1])
-  | args -> (Iintop op, args)
+method select_shift cop iop args =
+  match args with
+    [arg1; Cconst_int n] ->
+      if n >= 1 && n <= 8 then
+        (Iintop_imm(iop, n), [arg1])
+      else if n >= 9 && n <= 16 then
+        (Iintop_imm(iop, n - 8), [Cop(cop, [arg1; Cconst_int 8])])
+      else
+        (Iintop iop, args)
+  | args -> (Iintop iop, args)
 
 (* Select store operations *)
 
