@@ -204,11 +204,11 @@ let contains_calls = ref false
 
 (* Calling the assembler *)
 
-let as_cmd =
-  if digital_asm
-  then "as -O2 -nocpp -o "
-  else "as -o "
-
 let assemble_file infile outfile =
+  let as_cmd =
+    if digital_asm
+    then if !Clflags.gprofile then "as -O2 -nocpp -pg -o "
+                              else "as -O2 -nocpp -o "
+    else "as -o " in
   Ccomp.command (as_cmd ^ outfile ^ " " ^ infile)
 

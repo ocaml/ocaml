@@ -429,8 +429,8 @@ let emit_instr i =
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          `	lda	$27, {emit_symbol s}\n`;
-          liveregs i live_27;
+          `	lda	$25, {emit_symbol s}\n`;
+          liveregs i live_25;
           `{record_frame i.live}	bsr	$26, caml_c_call\n`
         end else begin
           `	jsr	{emit_symbol s}\n`
@@ -674,17 +674,6 @@ let emit_instr i =
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
 
-(* Emission of profiling prelude *)
-
-let emit_profile() =
-  match Config.system with
-    "digital" ->
-      `	nop\n`;
-      `	unop\n`;
-      `	nop\n`;
-      `	unop\n`
-  | _ -> () (*not supported yet*)
-
 (* Emission of a function declaration *)
 
 let emit_fundecl (fundecl, needs_gp) =
@@ -699,7 +688,6 @@ let emit_fundecl (fundecl, needs_gp) =
   `	.align	4\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.ent	{emit_symbol fundecl.fun_name}\n`;
-  if !Clflags.gprofile then emit_profile();
   `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() in
   if n > 0 then
