@@ -28,15 +28,15 @@ WIN_OBJS = accept.obj bind.obj channels.obj close.obj \
   getpeername.obj getpid.obj getsockname.obj gettimeofday.obj \
   link.obj listen.obj lseek.obj \
   mkdir.obj open.obj pipe.obj read.obj select.obj sendrecv.obj \
-  shutdown.obj sleep.obj socket.obj sockopt.obj startup.obj system.obj \
-  unixsupport.obj windir.obj winwait.obj write.obj
+  shutdown.obj sleep.obj socket.obj sockopt.obj startup.obj stat.obj \
+  system.obj unixsupport.obj windir.obj winwait.obj write.obj
 
 # Files from the ..\unix directory
 UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   cstringv.c envir.c execv.c execve.c execvp.c \
   exit.c getcwd.c gethost.c gethostname.c getproto.c \
   getserv.c gmtime.c putenv.c rename.c rmdir.c \
-  socketaddr.c stat.c strofaddr.c time.c unlink.c utimes.c
+  socketaddr.c strofaddr.c time.c unlink.c utimes.c
 
 UNIX_OBJS = $(UNIX_FILES:.c=.obj)
 

@@ -92,6 +92,7 @@ type error =
   | EHOSTDOWN           (* Host is down *)
   | EHOSTUNREACH        (* No route to host *)
   | ELOOP               (* Too many levels of symbolic links *)
+  | EOVERFLOW
   (* All other errors are mapped to EUNKNOWNERR *)
   | EUNKNOWNERR of int  (* Unknown error *)
 
@@ -253,6 +254,32 @@ let fstat fd = invalid_arg "Unix.fstat not implemented"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
 external link : string -> string -> unit = "unix_link"
+
+(* Operations on large files *)
+
+module LargeFile =
+  struct
+    external lseek : file_descr -> int64 -> seek_command -> int64 = "unix_lseek_64"
+    let truncate name len = invalid_arg "Unix.LargeFile.truncate not implemented"
+    let ftruncate name len = invalid_arg "Unix.LargeFile.ftruncate not implemented"
+    type stats =
+      { st_dev : int;
+        st_ino : int;
+        st_kind : file_kind;
+        st_perm : file_perm;
+        st_nlink : int;
+        st_uid : int;
+        st_gid : int;
+        st_rdev : int;
+        st_size : int64;
+        st_atime : float;
+        st_mtime : float;
+        st_ctime : float;
+      }
+    external stat : string -> stats = "unix_stat_64"
+    let lstat = stat
+    let fstat fd = invalid_arg "Unix.LargeFile.fstat not implemented"
+  end
 
 (* File permissions and ownership *)
 
