@@ -341,7 +341,7 @@ let emit_instr i =
               `	movsx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
           | Single ->
             `	fld	REAL4 PTR {emit_addressing addr i.arg 0}\n`
-          | Double ->
+          | Double | Double_u ->
             `	fld	REAL8 PTR {emit_addressing addr i.arg 0}\n`
           | _ (* Word | Thirtytwo_signed | Thirtytwo_unsigned *) ->
             `	mov	{emit_reg dest}, DWORD PTR {emit_addressing addr i.arg 0}\n`
@@ -361,7 +361,7 @@ let emit_instr i =
                 `	fld	{emit_reg i.arg.(0)}\n`;
                 `	fstp	REAL4 PTR {emit_addressing addr i.arg 1}\n`
               end
-          | Double ->
+          | Double | Double_u ->
               if i.arg.(0) = tos then
                 `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`
               else begin
@@ -536,10 +536,11 @@ let emit_instr i =
         `	push	DWORD PTR {emit_addressing (offset_addressing addr 4) i.arg 0}\n`;
         `	push	DWORD PTR {emit_addressing addr i.arg 0}\n`;
         stack_offset := !stack_offset + 8
-    | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
+    | Lop(Ispecific(Ifloatarithmem(double, op, addr))) ->
         if i.arg.(0) <> tos then
           `	fld	{emit_reg i.arg.(0)}\n`;
-        `	{emit_string(instr_for_floatarithmem op)}	REAL8 PTR {emit_addressing addr i.arg 1}\n`
+        let size = if double then "REAL8" else "REAL4" in
+        `	{emit_string(instr_for_floatarithmem op)}	{emit_string size} PTR {emit_addressing addr i.arg 1}\n`
     | Lreloadretaddr ->
         ()
     | Lreturn ->

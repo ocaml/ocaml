@@ -32,8 +32,9 @@ type specific_operation =
   | Ipush_load of addressing_mode       (* Load a scalar and push *)
   | Ipush_load_float of addressing_mode (* Load a float and push *)
   | Isubfrev | Idivfrev                 (* Reversed float sub and div *)
-  | Ifloatarithmem of float_operation * addressing_mode (* float arith w/mem *)
-
+  | Ifloatarithmem of bool * float_operation * addressing_mode
+                                        (* Float arith operation with memory *)
+                                        (* bool: true=64 bits, false=32 *)
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatsubrev | Ifloatmul | Ifloatdiv | Ifloatdivrev
 
@@ -120,7 +121,7 @@ let print_specific_operation printreg op arg =
       printreg arg.(0); print_string " -f(rev) "; printreg arg.(1)
   | Idivfrev ->
       printreg arg.(0); print_string " /f(rev) "; printreg arg.(1)
-  | Ifloatarithmem(op, addr) ->
+  | Ifloatarithmem(double, op, addr) ->
       printreg arg.(0);
       begin match op with
         Ifloatadd -> print_string " +f "
@@ -130,6 +131,7 @@ let print_specific_operation printreg op arg =
       | Ifloatdiv -> print_string " /f "
       | Ifloatdivrev -> print_string " /f(rev) "
       end;
+      print_string (if double then "float64" else "float32");
       print_string "[";
       print_addressing printreg addr (Array.sub arg 1 (Array.length arg - 1));
       print_string "]"

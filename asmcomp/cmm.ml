@@ -64,6 +64,7 @@ type memory_chunk =
   | Word
   | Single
   | Double
+  | Double_u
 
 type operation =
     Capply of machtype

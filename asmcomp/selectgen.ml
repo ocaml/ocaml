@@ -30,7 +30,7 @@ let oper_result_type = function
   | Cload c ->
       begin match c with
         Word -> typ_addr
-      | Single | Double -> typ_float
+      | Single | Double | Double_u -> typ_float
       | _ -> typ_int
       end
   | Calloc -> typ_addr
@@ -571,7 +571,7 @@ method private emit_stores env data regs_addr addr =
         Istore(_, _) ->
           for i = 0 to Array.length regs - 1 do
             let r = regs.(i) in
-            let kind = if r.typ = Float then Double else Word in
+            let kind = if r.typ = Float then Double_u else Word in
             self#insert (Iop(Istore(kind, !a)))
                         (Array.append [|r|] regs_addr) [||];
             a := Arch.offset_addressing !a (size_component r.typ)

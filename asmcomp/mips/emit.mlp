@@ -302,9 +302,8 @@ let emit_instr i =
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
         begin match chunk with
-          Double ->
-            (* Destination is not necessarily 8-aligned,
-               hence better not use l.d *)
+          Double_u ->
+            (* Destination is not 8-aligned, hence cannot use l.d *)
             `	ldl	$24, {emit_addressing addr i.arg 0}\n`;
             `	ldr	$24, {emit_addressing (offset_addressing addr 7) i.arg 0}\n`;
             `	dmtc1	$24, {emit_reg dest}\n`
@@ -318,15 +317,15 @@ let emit_instr i =
               | Byte_signed -> "lb"
               | Sixteen_unsigned -> "lhu"
               | Sixteen_signed -> "lh"
+              | Double -> "l.d"
               | _ -> "lw" in
             `	{emit_string load_instr}	{emit_reg dest}, {emit_addressing addr i.arg 0}\n`
         end
     | Lop(Istore(chunk, addr)) ->
         let src = i.arg.(0) in
         begin match chunk with
-          Double ->
-            (* Destination is not necessarily 8-aligned,
-               hence better not use s.d *)
+          Double_u ->
+            (* Destination is not 8-aligned, hence cannot use l.d *)
             `	dmfc1	$24, {emit_reg src}\n`;
             `	sdl	$24, {emit_addressing addr i.arg 1}\n`;
             `	sdr	$24, {emit_addressing (offset_addressing addr 7) i.arg 1}\n`
@@ -338,6 +337,7 @@ let emit_instr i =
               match chunk with
                 Byte_unsigned | Byte_signed -> "sb"
               | Sixteen_unsigned | Sixteen_signed -> "sh"
+              | Double -> "s.d"
               | _ -> "sw" in
             `	{emit_string store_instr}	{emit_reg src}, {emit_addressing addr i.arg 1}\n`
         end

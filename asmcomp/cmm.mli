@@ -49,7 +49,8 @@ type memory_chunk =
   | Thirtytwo_signed
   | Word
   | Single
-  | Double
+  | Double                              (* 64-bit-aligned 64-bit float *)
+  | Double_u                            (* word-aligned 64-bit float *)
 
 type operation =
     Capply of machtype

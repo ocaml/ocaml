@@ -453,7 +453,8 @@ let emit_instr i =
           | Thirtytwo_signed -> "ldl"
           | Word -> "ldq"
           | Single -> "lds"
-          | Double -> "ldt" in
+          | Double -> "ldt"
+          | Double_u -> "ldt" in
         `	{emit_string load_instr}	{emit_reg dest}, {emit_addressing addr i.arg 0}\n`;
         if chunk = Thirtytwo_unsigned then
           `	zapnot	{emit_reg dest}, 15, {emit_reg dest}\n`
@@ -465,7 +466,8 @@ let emit_instr i =
           | Thirtytwo_unsigned | Thirtytwo_signed -> "stl"
           | Word -> "stq"
           | Single -> "sts"
-          | Double -> "stt" in
+          | Double -> "stt"
+          | Double_u -> "stt" in
         `	{emit_string store_instr}	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin

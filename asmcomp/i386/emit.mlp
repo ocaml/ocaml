@@ -236,13 +236,13 @@ let instr_for_floatop_pop = function
   | Ispecific Idivfrev -> "fdivrp"
   | _ -> fatal_error "Emit_i386: instr_for_floatop_pop"
 
-let instr_for_floatarithmem = function
-    Ifloatadd -> "faddl"
-  | Ifloatsub -> "fsubl"
-  | Ifloatsubrev -> "fsubrl"
-  | Ifloatmul -> "fmull"
-  | Ifloatdiv -> "fdivl"
-  | Ifloatdivrev -> "fdivrl"
+let instr_for_floatarithmem double = function
+    Ifloatadd -> if double then "faddl" else "fadds"
+  | Ifloatsub -> if double then "fsubl" else "fsubs"
+  | Ifloatsubrev -> if double then "fsubrl" else "fsubrs"
+  | Ifloatmul -> if double then "fmull" else "fmuls"
+  | Ifloatdiv -> if double then "fdivl" else "fdivs"
+  | Ifloatdivrev -> if double then "fdivrl" else "fdivrs"
 
 let name_for_cond_branch = function
     Isigned Ceq -> "e"     | Isigned Cne -> "ne"
@@ -356,7 +356,7 @@ let emit_instr i =
               `	movswl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
           | Single ->
             `	flds	{emit_addressing addr i.arg 0}\n`
-          | Double ->
+          | Double | Double_u ->
             `	fldl	{emit_addressing addr i.arg 0}\n`
           | _ (* Word | Thirtytwo_signed | Thirtytwo_unsigned *) ->
               `	movl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
@@ -376,7 +376,7 @@ let emit_instr i =
                 `	fldl	{emit_reg i.arg.(0)}\n`;
                 `	fstps	{emit_addressing addr i.arg 1}\n`
               end
-          | Double ->
+          | Double | Double_u ->
               if i.arg.(0) = tos then
                 `	fstpl	{emit_addressing addr i.arg 1}\n`
               else begin
@@ -549,10 +549,10 @@ let emit_instr i =
         `	pushl	{emit_addressing (offset_addressing addr 4) i.arg 0}\n`;
         `	pushl	{emit_addressing addr i.arg 0}\n`;
         stack_offset := !stack_offset + 8
-    | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
+    | Lop(Ispecific(Ifloatarithmem(double, op, addr))) ->
         if i.arg.(0) <> tos then
           `	fldl	{emit_reg i.arg.(0)}\n`;
-        `	{emit_string(instr_for_floatarithmem op)}	{emit_addressing addr i.arg 1}\n`
+        `	{emit_string(instr_for_floatarithmem double op)}	{emit_addressing addr i.arg 1}\n`
     | Lreloadretaddr ->
         ()
     | Lreturn ->

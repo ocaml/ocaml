@@ -170,7 +170,7 @@ let box_float c = Cop(Calloc, [alloc_float_header; c])
 
 let unbox_float = function
     Cop(Calloc, [header; c]) -> c
-  | c -> Cop(Cload Double, [c])
+  | c -> Cop(Cload Double_u, [c])
 
 let is_unboxed_float = function
     Uconst(Const_base(Const_float f)) -> true
@@ -302,7 +302,7 @@ let array_indexing log2size ptr ofs =
 let addr_array_ref arr ofs =
   Cop(Cload Word, [array_indexing log2_size_addr arr ofs])
 let unboxed_float_array_ref arr ofs =
-  Cop(Cload Double, [array_indexing log2_size_float arr ofs])
+  Cop(Cload Double_u, [array_indexing log2_size_float arr ofs])
 let float_array_ref arr ofs =
   box_float(unboxed_float_array_ref arr ofs)
 
@@ -312,7 +312,7 @@ let addr_array_set arr ofs newval =
 let int_array_set arr ofs newval =
   Cop(Cstore Word, [array_indexing log2_size_addr arr ofs; newval])
 let float_array_set arr ofs newval =
-  Cop(Cstore Double, [array_indexing log2_size_float arr ofs; newval])
+  Cop(Cstore Double_u, [array_indexing log2_size_float arr ofs; newval])
 
 (* String length *)
 
@@ -829,7 +829,7 @@ and transl_prim_1 p arg =
   | Pfloatfield n ->
       let ptr = transl arg in
       box_float(
-        Cop(Cload Double,
+        Cop(Cload Double_u,
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
   (* Exceptions *)
@@ -905,7 +905,7 @@ and transl_prim_2 p arg1 arg2 =
   | Psetfloatfield n ->
       let ptr = transl arg1 in
       return_unit(
-        Cop(Cstore Double,
+        Cop(Cstore Double_u,
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
                    transl_unbox_float arg2]))

@@ -530,7 +530,7 @@ let rec emit_instr i dslot =
           | Sixteen_unsigned -> "lhz"
           | Sixteen_signed -> "lha"
           | Single -> "lfs"
-          | Double -> "lfd"
+          | Double | Double_u -> "lfd"
           | _ -> "lwz" in
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
         if chunk = Byte_signed then
@@ -541,7 +541,7 @@ let rec emit_instr i dslot =
             Byte_unsigned | Byte_signed -> "stb"
           | Sixteen_unsigned | Sixteen_signed -> "sth"
           | Single -> "stfs"
-          | Double -> "stfd"
+          | Double | Double_u -> "stfd"
           | _ -> "stw" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
     | Lop(Ialloc n) ->

@@ -48,6 +48,7 @@ let chunk = function
   | Word -> ()
   | Single -> print_string "float32"
   | Double -> print_string "float64"
+  | Double_u -> print_string "float64u"
 
 let operation = function
     Capply ty -> print_string "app"

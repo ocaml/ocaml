@@ -118,8 +118,8 @@ let pseudoregs_for_operation op arg res =
   (* For floating-point operations and floating-point loads,
      the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-  | Ifloatofint | Iload((Single | Double), _)
-  | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _)) ->
+  | Ifloatofint | Iload((Single | Double | Double_u), _)
+  | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _, _)) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* For storing a byte, the argument must be in eax...edx.
      (But for a short, any reg will do!)
@@ -130,6 +130,12 @@ let pseudoregs_for_operation op arg res =
       (newarg, res, false)
   (* Other instructions are regular *)
   | _ -> raise Use_default
+
+let chunk_double = function
+    Single -> false
+  | Double -> true
+  | Double_u -> true
+  | _ -> assert false
 
 (* The selector class *)
 
@@ -213,12 +219,14 @@ method select_operation op args =
 
 method select_floatarith regular_op reversed_op mem_op mem_rev_op args =
   match args with
-    [arg1; Cop(Cload Double, [loc2])] ->
+    [arg1; Cop(Cload chunk, [loc2])] ->
       let (addr, arg2) = self#select_addressing loc2 in
-      (Ispecific(Ifloatarithmem(mem_op, addr)), [arg1; arg2])
-  | [Cop(Cload Double, [loc1]); arg2] ->
+      (Ispecific(Ifloatarithmem(chunk_double chunk, mem_op, addr)),
+                 [arg1; arg2])
+  | [Cop(Cload chunk, [loc1]); arg2] ->
       let (addr, arg1) = self#select_addressing loc1 in
-      (Ispecific(Ifloatarithmem(mem_rev_op, addr)), [arg2; arg1])
+      (Ispecific(Ifloatarithmem(chunk_double chunk, mem_rev_op, addr)),
+                 [arg2; arg1])
   | [arg1; arg2] ->
       (* Evaluate bigger subexpression first to minimize stack usage.
          Because of right-to-left evaluation, rightmost arg is evaluated
@@ -255,7 +263,7 @@ method select_push exp =
   | Cop(Cload Word, [loc]) ->
       let (addr, arg) = self#select_addressing loc in
       (Ispecific(Ipush_load addr), arg)
-  | Cop(Cload Double, [loc]) ->
+  | Cop(Cload Double_u, [loc]) ->
       let (addr, arg) = self#select_addressing loc in
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)

@@ -541,7 +541,7 @@ let rec emit_instr i dslot =
         | Single ->
             emit_float_load addr i.arg dest false;
             `	fcnvff,sgl,dbl {emit_reg dest}L, {emit_reg dest}\n`
-        | Double ->
+        | Double | Double_u ->
             emit_float_load addr i.arg dest true
         | _ ->
             emit_load "ldw" addr i.arg dest
@@ -556,7 +556,7 @@ let rec emit_instr i dslot =
         | Single ->
             `	fcnvff,dbl,sgl	{emit_reg src}, %fr31L\n`;
             emit_float_store addr i.arg (phys_reg 127) (* %fr31 *) false
-        | Double ->
+        | Double | Double_u ->
             emit_float_store addr i.arg src true
         | _ ->
             emit_store "stw" addr i.arg src
