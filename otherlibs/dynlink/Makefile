@@ -16,7 +16,7 @@
 
 include ../../config/Makefile
 
-CAMLC=../../boot/ocamlrun ../../boot/ocamlc
+CAMLC=../../boot/ocamlrun ../../ocamlc
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
 COMPFLAGS=-I ../../stdlib $(INCLUDES)
 

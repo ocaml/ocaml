@@ -19,7 +19,7 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-O -I./bignum/h -I../../byterun $(BYTECCCOMPOPTS)
-CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib -w s
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -w s
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -w s
 
 CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \

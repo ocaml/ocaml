@@ -16,7 +16,7 @@
 
 !include ..\..\config\Makefile.nt
 
-CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc
+CAMLC=..\..\boot\ocamlrun ..\..\camlc
 INCLUDES=-I ..\..\utils -I ..\..\typing -I ..\..\bytecomp
 COMPFLAGS=-I ..\..\stdlib $(INCLUDES)
 

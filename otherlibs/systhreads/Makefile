@@ -14,7 +14,7 @@
 
 include ../../config/Makefile
 
-CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib -I ../unix
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
 
 BYTECODE_C_OBJS=posix_b.o

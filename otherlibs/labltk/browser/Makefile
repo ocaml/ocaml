@@ -4,7 +4,7 @@ LABLTKLIB=-I ../lib -I ../support
 OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
-CLIBS=-L../support -llabltk41 -L$(OTHERS)/str -lstr -L$(OTHERS)/unix -lunix
+CLIBS=../support/liblabltk41.a $(OTHERS)/str/libstr.a $(OTHERS)/unix/libunix.a
 
 OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
 	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\

@@ -15,7 +15,7 @@
 include ../../config/Makefile.nt
 
 # Compilation options
-CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\stdlib -I ..\win32unix
+CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\stdlib -I ..\win32unix
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib -I ..\win32unix
 
 BYTECODE_C_OBJS=win32_b.obj

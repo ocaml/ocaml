@@ -12,7 +12,7 @@
 
 # $Id$
 
-CAMLC = :::boot:ocamlrun :::boot:ocamlc -I :::stdlib:
+CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib:
 
 all Ä graphics.cmi graphics.cma
     set status 0

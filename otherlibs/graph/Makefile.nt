@@ -16,7 +16,7 @@
 
 !include ..\..\config\Makefile.nt
 
-CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot
+CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\boot
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
 
 all: graphics.cmi graphics.cmo graphics.cma

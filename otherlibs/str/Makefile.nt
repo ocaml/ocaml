@@ -19,7 +19,7 @@
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-I$(REGEXLIB) -I..\..\byterun $(BYTECCCOMPOPTS)
-CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot
+CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\boot
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
 REGEXLIB=regex-0.12
 REGEXFLAGS=-DREGEX_MALLOC -DSTDC_HEADERS $(BYTECCCOMPOPTS)

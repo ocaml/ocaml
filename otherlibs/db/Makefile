@@ -18,7 +18,7 @@ include ../../config/Makefile
 
 # Compilation optiosn
 CC=$(BYTECC) -g
-CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
 COBJS=dbstubs.o

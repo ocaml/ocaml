@@ -17,7 +17,7 @@
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-I..\..\byterun -I..\unix $(BYTECCCOMPOPTS)
-CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\stdlib
+CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\stdlib
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
 
 # Files in this directory
