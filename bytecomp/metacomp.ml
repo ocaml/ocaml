@@ -66,18 +66,23 @@ let scan v =
 (* Only for immutable constant without functions *)
 let transl_constant overrides v =
   let shared_blocks = 
-    List.map (fun (v,_) -> v, Ident.create "x")
+    List.map (fun (v,_) -> v, Ident.create "share")
       (List.filter (fun (v,numref) -> !numref > 1) (scan v))
   in
   let rec transl share v =
     if Obj.is_int v then
       Lconst (Const_base (Const_int (Obj.obj v)))
     else if Obj.is_block v then 
-      try List.assq v overrides with Not_found ->
-      try 
-	if share then Lvar (List.assq v shared_blocks) 
-	else raise Not_found
-      with Not_found ->
+      try
+	let find_overrides () = List.assq v overrides in
+	if share then begin
+	  try
+	    Lvar (List.assq v shared_blocks)
+	  with
+	  | Not_found -> find_overrides ()
+	end else find_overrides ()
+      with
+      | Not_found ->
 	let tag = Obj.tag v in
 	if tag >= no_scan_tag then 
 	  if tag = string_tag then 
