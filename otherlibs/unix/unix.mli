@@ -541,8 +541,8 @@ external getitimer: interval_timer -> interval_timer_status = "unix_getitimer"
 external setitimer:
   interval_timer -> interval_timer_status -> interval_timer_status
   = "unix_setitimer"
-        (* [setitimer t s] set the interval timer [t] and return its previous
-           status. The [s] argument is interpreted as follows:
+        (* [setitimer t s] sets the interval timer [t] and returns
+           its previous status. The [s] argument is interpreted as follows:
            [s.it_value], if nonzero, is the time to the next timer expiration;
            [s.it_interval], if nonzero, specifies a value to
            be used in reloading it_value when the timer expires.
