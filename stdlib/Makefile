@@ -6,7 +6,7 @@ CAMLDEP=../tools/camldep
 
 OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
   hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \
-  baltree.cmo set.cmo stack.cmo queue.cmo \
+  set.cmo map.cmo stack.cmo queue.cmo \
   printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo
 
 all: stdlib.cma cslheader

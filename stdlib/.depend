@@ -1,4 +1,3 @@
-baltree.cmi: list.cmi 
 format.cmi: list.cmi 
 gc.cmi: 
 lexing.cmi: obj.cmi 
@@ -6,7 +5,6 @@ parsing.cmi: lexing.cmi obj.cmi
 printexc.cmi: 
 arg.cmo: arg.cmi sys.cmi string.cmi list.cmi array.cmi printf.cmi 
 array.cmo: array.cmi list.cmi array.cmi 
-baltree.cmo: baltree.cmi baltree.cmi list.cmi 
 char.cmo: char.cmi char.cmi string.cmi 
 filename.cmo: filename.cmi string.cmi 
 format.cmo: format.cmi queue.cmi string.cmi list.cmi 
@@ -14,14 +12,15 @@ gc.cmo: gc.cmi printf.cmi
 hashtbl.cmo: hashtbl.cmi array.cmi 
 lexing.cmo: lexing.cmi string.cmi obj.cmi 
 list.cmo: list.cmi list.cmi 
+map.cmo: map.cmi 
 obj.cmo: obj.cmi 
 parsing.cmo: parsing.cmi array.cmi lexing.cmi obj.cmi 
 pervasives.cmo: pervasives.cmi 
 printexc.cmo: printexc.cmi obj.cmi 
-printf.cmo: printf.cmi string.cmi obj.cmi 
+printf.cmo: printf.cmi string.cmi list.cmi obj.cmi 
 queue.cmo: queue.cmi 
-set.cmo: set.cmi baltree.cmi 
+set.cmo: set.cmi 
 sort.cmo: sort.cmi 
 stack.cmo: stack.cmi list.cmi 
-string.cmo: string.cmi char.cmi string.cmi 
+string.cmo: string.cmi char.cmi string.cmi list.cmi 
 sys.cmo: sys.cmi 

@@ -23,6 +23,7 @@ module type S =
     val iter: (elt -> 'a) -> t -> unit
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     val elements: t -> elt list
+    val choose: t -> elt
   end
 
 module Make(Ord: OrderedType): (S with elt = Ord.t)
