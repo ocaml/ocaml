@@ -47,8 +47,8 @@ INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
 
 # Compilation
 #############
-OCAMLSRCDIR:=..
-INCLUDES=  -I $(OCAMLSRCDIR)/parsing \
+OCAMLSRCDIR=..
+INCLUDES=-I $(OCAMLSRCDIR)/parsing \
 	-I $(OCAMLSRCDIR)/utils \
 	-I $(OCAMLSRCDIR)/typing \
 	-I $(OCAMLSRCDIR)/driver \
@@ -60,9 +60,9 @@ INCLUDES=  -I $(OCAMLSRCDIR)/parsing \
 	-I $(OCAMLSRCDIR)/otherlibs/unix \
 	-I $(OCAMLSRCDIR)/otherlibs/num \
 	-I $(OCAMLSRCDIR)/otherlibs/graph \
-	-I $(OCAMLSRCDIR)/toplevel/ \
+	-I $(OCAMLSRCDIR)/toplevel/
 
-COMPFLAGS=$(INCLUDES)
+COMPFLAGS=$(INCLUDES) -warn-error A
 LINKFLAGS=$(INCLUDES)
 
 CMOFILES= odoc_global.cmo\
@@ -111,7 +111,7 @@ EXECMOFILES=$(CMOFILES)\
 	odoc_man.cmo\
 	odoc_latex.cmo\
 	odoc_texi.cmo\
-	odoc_dot.cmo\
+	odoc_dot.cmo
 
 EXECMXFILES= $(EXECMOFILES:.cmo=.cmx)
 EXECMIFILES= $(EXECMOFILES:.cmo=.cmi)
@@ -170,7 +170,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
-all: exe lib #manpages
+all: exe lib manpages
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) 
 
@@ -302,6 +302,9 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLLEX) $<
 
 .mly.ml:
+	$(OCAMLYACC) -v $<
+
+.mly.mli:
 	$(OCAMLYACC) -v $<
 
 # Installation targets
