@@ -21,6 +21,15 @@
 #include <errno.h>
 #include <winsock.h>
 
+/* Heap-allocation of Windows file handles */
+
+value win_alloc_handle(HANDLE h)
+{
+  value res = alloc(sizeof(HANDLE) / sizeof(value), Abstract_tag);
+  Handle_val(res) = h;
+  return res;
+}
+
 /* Windows socket errors */
 
 #define EWOULDBLOCK             WSAEWOULDBLOCK

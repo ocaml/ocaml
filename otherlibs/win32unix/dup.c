@@ -2,7 +2,7 @@
 /*                                                                     */
 /*                           Objective Caml                            */
 /*                                                                     */
-/*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  Automatique.  Distributed only by permission.                      */
@@ -13,19 +13,16 @@
 
 #include <mlvalues.h>
 #include "unixsupport.h"
-#include <winsock.h>
 
-static int shutdown_command_table[] = {
-  0, 1, 2
-};
-
-value unix_shutdown(sock, cmd)   /* ML */
-     value sock, cmd;
+value unix_dup(value fd)               /* ML */
 {
-  if (shutdown((SOCKET) Handle_val(sock),
-               shutdown_command_table[Int_val(cmd)]) == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("shutdown", Nothing);
+  HANDLE newh;
+  if (! DuplicateHandle(GetCurrentProcess(), Handle_val(fd),
+                        GetCurrentProcess(), &newh,
+                        0L, inherit, DUPLICATE_SAME_ACCESS)) {
+    _dosmaperr(GetLastError());
+    return -1;
   }
-  return Val_unit;
+  return win_alloc_handle(newh);
 }
+

@@ -16,22 +16,37 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-static int open_flag_table[] = {
-  O_RDONLY, O_WRONLY, O_RDWR, 0, O_APPEND, O_CREAT, O_TRUNC, O_EXCL, 0, 0
+static int open_access_flags[10] = {
+  GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE, 0, 0, 0, 0, 0, 0, 0
 };
 
-static int open_text_flag_table[] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+static int open_create_flags[10] = {
+  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0
 };
 
-value unix_open(path, flags, perm) /* ML */
-     value path, flags, perm;
+value unix_open(value path, value flags, value perm) /* ML */
 {
-  int fl, ret;
+  int fileaccess, createflags, fileattrib;
+  HANDLE h;
 
-  fl = convert_flag_list(flags, open_flag_table);
-  if (convert_flag_list(flags, open_text_flag_table) == 0) fl |= O_BINARY;
-  ret = open(String_val(path), fl, Int_val(perm));
-  if (ret == -1) uerror("open", path);
-  return Val_int(ret);
+  fileaccess = convert_flag_list(flags, open_access_flags);
+  createflags = convert_flag_list(flags, open_create_flags);
+  if ((createflags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))
+    filecreate = CREATE_NEW;
+  else if ((createflags & (O_CREAT | O_TRUNC)) == (O_CREAT | O_TRUNC))
+    filecreate = CREATE_ALWAYS;
+  else if (createflags & O_TRUNC)
+    filecreate = TRUNCATE_EXISTING;
+  else if (createflags & O_CREAT)
+    filecreate = OPEN_ALWAYS;
+  else
+    filecreate = OPEN_EXISTING;
+  if ((createflags & O_CREAT) && (Int_val(perm) & 0200) == 0)
+    fileattrib = FILE_ATTRIBUTE_READONLY;
+  else
+    fileattrib = FILE_ATTRIBUTE_NORMAL;
+  h = CreateFile(String_val(path), fileaccess, 0, NULL,
+                 filecreate, fileattrib, NULL);
+  if (h == INVALID_HANDLE_VALUE) uerror("open", path);
+  return win_alloc_handle(h);
 }

@@ -181,7 +181,8 @@ type open_flag =
   | O_EXCL                              (* Fail if existing *)
   | O_BINARY                            (* No translation (default) *)
   | O_TEXT                              (* Translate as a text file *)
-        (* The flags to [open]. *)
+        (* The flags to [openfile], [in_channel_of_descr_gen] and
+           [out_channel_of_descr_gen]. *)
 
 type file_perm = int
         (* The type of file access rights. *)
@@ -190,7 +191,9 @@ external openfile : string -> open_flag list -> file_perm -> file_descr
    = "unix_open"
         (* Open the named file with the given flags. Third argument is
            the permissions to give to the file if it is created. Return
-           a file descriptor on the named file. *)
+           a file descriptor on the named file.
+           The flags [O_NONBLOCK], [O_APPEND], [O_BINARY] and [O_TEXT]
+           are ignored by [openfile]. *)
 external close : file_descr -> unit = "unix_close"
         (* Close a file descriptor. *)
 val read : file_descr -> string -> int -> int -> int
@@ -206,18 +209,25 @@ val write : file_descr -> string -> int -> int -> int
 
 (*** Interfacing with the standard input/output library. *)
 
-external in_channel_of_descr : file_descr -> in_channel 
-                             = "caml_open_descriptor"
-        (* Create an input channel reading from the given descriptor. *)
-external out_channel_of_descr : file_descr -> out_channel
-                              = "caml_open_descriptor"
-        (* Create an output channel writing on the given descriptor. *)
-external descr_of_in_channel : in_channel -> file_descr = "channel_descriptor"
-        (* Return the descriptor corresponding to an input channel. *)
-external descr_of_out_channel : out_channel -> file_descr
-                              = "channel_descriptor"
-        (* Return the descriptor corresponding to an output channel. *)
+value in_channel_of_descr : file_descr -> in_channel 
+        (* Create an input channel reading from the given descriptor.
+           The input channel is opened in text mode. *)
+value out_channel_of_descr : file_descr -> out_channel
+        (* Create an output channel writing on the given descriptor.
+           The output channel is opened in text mode. *)
+value in_channel_of_descr_gen : open_flags list -> file_descr -> in_channel 
+value out_channel_of_descr_gen : open_flags list -> file_descr -> out_channel
+        (* Same as [in_channel_of_descr] and [out_channel_of_descr],
+           except that the first argument (a list of flags) specifies
+           the opening mode.  The following flags are recognized:
+           [O_TEXT] (open in text mode), [O_BINARY] (open in binary mode),
+           and [O_APPEND] (all writes go at the end of the file).
+           Other flags are ignored. *)
 
+value descr_of_in_channel : in_channel -> file_descr
+        (* Return the descriptor corresponding to an input channel. *)
+value descr_of_out_channel : out_channel -> file_descr
+        (* Return the descriptor corresponding to an output channel. *)
 
 (*** Seeking and truncating *)
 

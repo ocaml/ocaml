@@ -1,6 +1,7 @@
 This is a partial port of the Unix system interface to Win32.
 It was done as a summer project by Pascal Cuoq (ENS Lyon),
-supervised by Xavier Leroy and Francois Rouaix (INRIA).
+supervised by Xavier Leroy and Francois Rouaix (INRIA), then heavily
+hacked by Xavier Leroy.
 
 See the interface file unix.mli in this directory for more
 documentation on the functions implemented.
@@ -17,6 +18,12 @@ work around the following problems:
   classifies them as "pipes". Thus, opening a file descriptor on a
   socket handle fails under Windows 95. We've just removed the check
   on the handle type in the library.
+
+The first problem no longer affects the Win32unix library.
+
+The second problem makes it impoosible, under Windows 95, to create an
+in_channel or out_channel on a file descriptor opened on a socket,
+using the in_channel_of_descr* and out_channel_of_descr*.
 
 The diffs are included at the end of this file. They must be applied
 against a local copy of the libc sources found on the Visual C++ CD-ROM

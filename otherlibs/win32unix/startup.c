@@ -40,3 +40,7 @@ value win_cleanup(unit)         /* ML */
   return Val_unit;
 }
 
+value win_stdhandle(value nhandle) /* ML */
+{
+  return win_alloc_handle(GetStdHandle(Int_val(nhandle)));
+}

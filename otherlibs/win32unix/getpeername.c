@@ -21,7 +21,7 @@ value unix_getpeername(sock)          /* ML */
   int retcode;
 
   sock_addr_len = sizeof(sock_addr);
-  retcode = getpeername(_get_osfhandle(Int_val(sock)), 
+  retcode = getpeername((SOCKET) Handle_val(sock),
                         &sock_addr.s_gen, &sock_addr_len);
   if (retcode == -1) {
     _dosmaperr(WSAGetLastError());

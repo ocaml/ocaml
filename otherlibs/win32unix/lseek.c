@@ -2,7 +2,7 @@
 /*                                                                     */
 /*                           Objective Caml                            */
 /*                                                                     */
-/*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  Automatique.  Distributed only by permission.                      */
@@ -13,19 +13,27 @@
 
 #include <mlvalues.h>
 #include "unixsupport.h"
-#include <winsock.h>
 
-static int shutdown_command_table[] = {
-  0, 1, 2
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#else
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+#endif
+
+static int seek_command_table[] = {
+  FILE_BEGIN, FILE_CURRENT, FILE_END
 };
 
-value unix_shutdown(sock, cmd)   /* ML */
-     value sock, cmd;
+value unix_lseek(value fd, value ofs, value cmd)   /* ML */
 {
-  if (shutdown((SOCKET) Handle_val(sock),
-               shutdown_command_table[Int_val(cmd)]) == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("shutdown", Nothing);
+  long ret;
+  ret = SetFilePointer(Handle_val(fd), Long_val(ofs), NULL,
+                       seek_command_table[Int_val(cmd)]);
+  if (ret == -1) {
+    _dosmaperr(GetLastError());
+    uerror("lseek", Nothing);
   }
-  return Val_unit;
+  return Val_long(ret);
 }

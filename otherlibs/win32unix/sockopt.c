@@ -25,9 +25,11 @@ value unix_getsockopt(socket, option) /* ML */
 {
   int optval, optsize;
   optsize = sizeof(optval);
-  if (getsockopt(_get_osfhandle(Int_val(socket)), SOL_SOCKET, 
-                 sockopt[Int_val(option)], (char *) &optval, &optsize) == -1)
+  if (getsockopt((SOCKET) Handle_val(socket), SOL_SOCKET, 
+                 sockopt[Int_val(option)], (char *) &optval, &optsize) == -1) {
+    _dosmaperr(WSAGetLastError());
     uerror("getsockopt", Nothing);
+  }
   return Val_int(optval);
 }
 
@@ -35,9 +37,11 @@ value unix_setsockopt(socket, option, status) /* ML */
      value socket, option, status;
 {
   int optval = Int_val(status);
-  if (setsockopt(_get_osfhandle(Int_val(socket)), SOL_SOCKET,
+  if (setsockopt((SOCKET) Handle_val(socket), SOL_SOCKET,
                  sockopt[Int_val(option)],
-                 (char *) &optval, sizeof(optval)) == -1)
+                 (char *) &optval, sizeof(optval)) == -1) {
+    _dosmaperr(WSAGetLastError());
     uerror("setsockopt", Nothing);
+  }
   return Val_unit;
 }

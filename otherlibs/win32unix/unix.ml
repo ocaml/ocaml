@@ -125,7 +125,7 @@ type wait_flag =
     WNOHANG
   | WUNTRACED
 
-type file_descr = int
+type file_descr
 
 external execv : string -> string array -> unit = "unix_execv"
 external execve : string -> string array -> string array -> unit = "unix_execve"
@@ -135,9 +135,11 @@ external waitpid : wait_flag list -> int -> int * process_status
                  = "win_waitpid"
 external getpid : unit -> int = "unix_getpid"
 
-let stdin = 0
-let stdout = 1
-let stderr = 2
+external stdhandle : int -> file_descr = "win_stdhandle"
+
+let stdin = stdhandle 0
+let stdout = stdhandle 1
+let stderr = stdhandle 2
 
 type open_flag =
     O_RDONLY
@@ -170,13 +172,27 @@ let write fd buf ofs len =
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
 
-external in_channel_of_descr : file_descr -> in_channel
-                             = "caml_open_descriptor"
-external out_channel_of_descr : file_descr -> out_channel
-                              = "caml_open_descriptor"
-external descr_of_in_channel : in_channel -> file_descr = "channel_descriptor"
-external descr_of_out_channel : out_channel -> file_descr
-                              = "channel_descriptor"
+external open_read_descriptor : int -> in_channel = "caml_open_descriptor"
+external open_write_descriptor : int -> out_channel = "caml_open_descriptor"
+external fd_of_in_channel : in_channel -> file_descr = "channel_descriptor"
+external fd_of_out_channel : out_channel -> file_descr = "channel_descriptor"
+
+external open_handle : file_descr -> open_flags list -> int = "win_fd_handle"
+external filedescr_of_fd : int -> file_descr = "win_handle_fd"
+
+let in_channel_of_descr_gen flags handle =
+  open_read_descriptor(open_handle handle flags)
+let in_channel_of_descr handle = in_channel_of_descr_gen [O_TEXT]
+
+let out_channel_of_descr_gen flags handle =
+  open_write_descriptor(open_handle handle flags)
+let out_channel_of_descr handle = out_channel_of_descr_gen [O_TEXT]
+
+let descr_of_in_channel inchan =
+  filedescr_of_fd(fd_of_in_channel inchan)
+
+let descr_of_out_channel outchan =
+  filedescr_of_fd(fd_of_out_channel outchan)
 
 type seek_command =
     SEEK_SET

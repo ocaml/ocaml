@@ -18,8 +18,8 @@
 /* From the Caml runtime */
 extern char * searchpath(char * name);
 
-value win_create_process_native(cmd, cmdline, env, fd1, fd2, fd3)
-     value cmd, cmdline, env, fd1, fd2, fd3;
+value win_create_process_native(value cmd, value cmdline, value env,
+                                value fd1, value fd2, value fd3)
 {
   PROCESS_INFORMATION pi;
   STARTUPINFO si;
@@ -34,10 +34,9 @@ value win_create_process_native(cmd, cmdline, env, fd1, fd2, fd3)
   }
   GetStartupInfo(&si);
   si.dwFlags |= STARTF_USESTDHANDLES;
-
-  si.hStdInput = (HANDLE) _get_osfhandle(Int_val(fd1));
-  si.hStdOutput = (HANDLE) _get_osfhandle(Int_val(fd2));
-  si.hStdError = (HANDLE) _get_osfhandle(Int_val(fd3));
+  si.hStdInput = Handle_val(fd1);
+  si.hStdOutput = Handle_val(fd2);
+  si.hStdError = Handle_val(fd3);
   if (! CreateProcess(exefile, String_val(cmdline), NULL, NULL,
                       TRUE, 0, envp, NULL, &si, &pi)) {
     _dosmaperr(GetLastError());
@@ -46,9 +45,7 @@ value win_create_process_native(cmd, cmdline, env, fd1, fd2, fd3)
   return Val_int(pi.hProcess);
 }
 
-value win_create_process(argv, argn) /* ML */
-     value * argv;
-     int argn;
+value win_create_process(value * argv, int argn) /* ML */
 {
   return win_create_process_native(argv[0], argv[1], argv[2],
                                    argv[3], argv[4], argv[5]);

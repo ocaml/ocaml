@@ -2,7 +2,7 @@
 /*                                                                     */
 /*                           Objective Caml                            */
 /*                                                                     */
-/*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  Automatique.  Distributed only by permission.                      */
@@ -13,19 +13,19 @@
 
 #include <mlvalues.h>
 #include "unixsupport.h"
-#include <winsock.h>
+#include <fcntl.h>
 
-static int shutdown_command_table[] = {
-  0, 1, 2
+static int open_descr_flags[10] = {
+  0, 0, 0, 0, O_APPEND, 0, 0, 0, O_BINARY, O_TEXT
 };
 
-value unix_shutdown(sock, cmd)   /* ML */
-     value sock, cmd;
+value win_fd_handle(value handle, value flags) /* ML */
 {
-  if (shutdown((SOCKET) Handle_val(sock),
-               shutdown_command_table[Int_val(cmd)]) == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("shutdown", Nothing);
-  }
-  return Val_unit;
+  return Val_int(_open_osfhandle(Handle_val(handle),
+                                 convert_flag_list(open_descr_flags, flags)));
+}
+
+value win_handle_fd(value fd)   /* ML */
+{
+  return win_alloc_handle((HANDLE) _get_osfhandle(Int_val(fd)));
 }

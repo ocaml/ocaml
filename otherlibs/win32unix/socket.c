@@ -42,5 +42,5 @@ value unix_socket(domain, type, proto) /* ML */
     _dosmaperr(WSAGetLastError());
     uerror("socket", Nothing);
   }
-  return Val_int(_open_osfhandle(s, 0));
+  return win_alloc_handle((HANDLE) s);
 }

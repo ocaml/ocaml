@@ -22,11 +22,18 @@
 static value alloc_process_status(pid, status)
      int pid, status;
 {
-  value res;
-  value st = alloc(1, 0);
+  value res, st;
 
+  if ((status & 0xFF) == 0) {
+    /* Normal termination: lo-byte = 0, hi-byte = child exit code */
+    st = alloc(1, 0);
+    Field(st, 0) = Val_int(status >> 8);
+  } else {
+    /* Abnormal termination: lo-byte = term status, hi-byte = 0 */
+    st = alloc(1, 1);
+    Field(st, 0) = Val_int(status & 0xFF);
+  }
   Begin_root (st);
-    Field(st, 0) = Val_int(status);
     res = alloc_tuple(2);
     Field(res, 0) = Val_int(pid);
     Field(res, 1) = st;

@@ -21,7 +21,7 @@ value unix_getsockname(sock)          /* ML */
   int retcode;
 
   sock_addr_len = sizeof(sock_addr);
-  retcode = getsockname((SOCKET) _get_osfhandle(Int_val(sock)),
+  retcode = getsockname((SOCKET) Handle_val(sock),
                         &sock_addr.s_gen, &sock_addr_len);
   if (retcode == -1) uerror("getsockname", Nothing);
   return alloc_sockaddr();

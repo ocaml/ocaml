@@ -8,18 +8,19 @@ CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\stdlib
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
 
 # Files in this directory
-WIN_OBJS = accept.obj bind.obj close_on.obj connect.obj \
-  createprocess.obj getpeername.obj getpid.obj \
-  getsockname.obj listen.obj mkdir.obj open.obj pipe.obj sendrecv.obj \
+WIN_OBJS = accept.obj bind.obj channels.obj close.obj \
+  close_on.obj connect.obj createprocess.obj dup.obj dup2.obj \
+  getpeername.obj getpid.obj getsockname.obj listen.obj lseek.obj \
+  mkdir.obj open.obj pipe.obj read.obj sendrecv.obj \
   shutdown.obj sleep.obj socket.obj sockopt.obj startup.obj system.obj \
-  unixsupport.obj windir.obj winwait.obj
+  unixsupport.obj windir.obj winwait.obj write.obj
 
 # Files from the ..\unix directory
-UNIX_FILES = access.c addrofstr.c chdir.c close.c cst2constr.c \
-  cstringv.c dup.c dup2.c envir.c errmsg.c execv.c execve.c execvp.c \
+UNIX_FILES = access.c addrofstr.c chdir.c cst2constr.c \
+  cstringv.c envir.c errmsg.c execv.c execve.c execvp.c \
   exit.c getcwd.c gethost.c gethostname.c getproto.c \
-  getserv.c gmtime.c lseek.c read.c rename.c rmdir.c \
-  socketaddr.c stat.c strofaddr.c time.c unlink.c utimes.c write.c
+  getserv.c gmtime.c rename.c rmdir.c \
+  socketaddr.c stat.c strofaddr.c time.c unlink.c utimes.c
 
 UNIX_OBJS = $(UNIX_FILES:.c=.obj)
 

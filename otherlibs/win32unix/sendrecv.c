@@ -31,10 +31,13 @@ value unix_recv(value sock, value buff, value ofs, value len, value flags)
     numbytes = Long_val(len);
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
     enter_blocking_section();
-    ret = recv((SOCKET) _get_osfhandle(Int_val(sock)), iobuf, (int) numbytes,
+    ret = recv((SOCKET) Handle_val(sock), iobuf, (int) numbytes,
 	       convert_flag_list(flags, msg_flag_table));
     leave_blocking_section();
-    if (ret == -1) uerror("recv", Nothing);
+    if (ret == -1) {
+      _dosmaperr(WSAGetLastError());
+      uerror("recv", Nothing);
+    }
     bcopy(iobuf, &Byte(buff, Long_val(ofs)), ret);
   End_roots();
   return Val_int(ret);
@@ -53,12 +56,15 @@ value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
     sock_addr_len = sizeof(sock_addr);
     enter_blocking_section();
-    ret = recvfrom((SOCKET) _get_osfhandle(Int_val(sock)),
+    ret = recvfrom((SOCKET) Handle_val(sock),
 		   iobuf, (int) numbytes,
 		   convert_flag_list(flags, msg_flag_table),
 		   &sock_addr.s_gen, &sock_addr_len);
     leave_blocking_section();
-    if (ret == -1) uerror("recvfrom", Nothing);
+    if (ret == -1) {
+      _dosmaperr(WSAGetLastError());
+      uerror("recvfrom", Nothing);
+    }
     bcopy(iobuf, &Byte(buff, Long_val(ofs)), ret);
     adr = alloc_sockaddr();
     res = alloc_tuple(2);
@@ -78,10 +84,13 @@ value unix_send(value sock, value buff, value ofs, value len, value flags) /* ML
   if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
   bcopy(&Byte(buff, Long_val(ofs)), iobuf, numbytes);
   enter_blocking_section();
-  ret = send((SOCKET) _get_osfhandle(Int_val(sock)), iobuf, (int) numbytes,
+  ret = send((SOCKET) Handle_val(sock), iobuf, (int) numbytes,
              convert_flag_list(flags, msg_flag_table));
   leave_blocking_section();
-  if (ret == -1) uerror("send", Nothing);
+  if (ret == -1) {
+    _dosmaperr(WSAGetLastError());
+    uerror("send", Nothing);
+  }
   return Val_int(ret);
 }
 
@@ -96,12 +105,15 @@ value unix_sendto_native(value sock, value buff, value ofs, value len, value fla
   if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
   bcopy(&Byte(buff, Long_val(ofs)), iobuf, numbytes);
   enter_blocking_section();
-  ret = sendto((SOCKET) _get_osfhandle(Int_val(sock)),
+  ret = sendto((SOCKET) Handle_val(sock),
 	       iobuf, (int) numbytes,
                convert_flag_list(flags, msg_flag_table),
                &sock_addr.s_gen, sock_addr_len);
   leave_blocking_section();
-  if (ret == -1) uerror("sendto", Nothing);
+  if (ret == -1) {
+    _dosmaperr(WSAGetLastError());
+    uerror("sendto", Nothing);
+  }
   return Val_int(ret);
 }
 

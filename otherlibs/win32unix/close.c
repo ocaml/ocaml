@@ -2,7 +2,7 @@
 /*                                                                     */
 /*                           Objective Caml                            */
 /*                                                                     */
-/*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  Automatique.  Distributed only by permission.                      */
@@ -13,19 +13,12 @@
 
 #include <mlvalues.h>
 #include "unixsupport.h"
-#include <winsock.h>
 
-static int shutdown_command_table[] = {
-  0, 1, 2
-};
-
-value unix_shutdown(sock, cmd)   /* ML */
-     value sock, cmd;
+value unix_close(value fd)             /* ML */
 {
-  if (shutdown((SOCKET) Handle_val(sock),
-               shutdown_command_table[Int_val(cmd)]) == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("shutdown", Nothing);
+  if (! CloseHandle(Handle_val(fd))) {
+    _dosmaperr(GetLastError());
+    uerror("close", Nothing);
   }
   return Val_unit;
 }

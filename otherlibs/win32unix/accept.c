@@ -20,33 +20,29 @@
 value unix_accept(sock)          /* ML */
      value sock;
 {
-  SOCKET s;
-  value res;
-  int fd;
+  SOCKET sconn = (SOCKET) Handle_val(sock);
+  SOCKET snew;
+  value fd = Val_unit, adr = Val_unit, res;
   int optionValue;
-  HANDLE h;
-  value adr = Val_unit;
 
   /* Set sockets to synchronous mode  */
   optionValue = SO_SYNCHRONOUS_NONALERT;
   setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
              (char *)&optionValue, sizeof(optionValue));
 
-  Begin_root (adr);
-    sock_addr_len = sizeof(sock_addr);
-    enter_blocking_section();
-    s = accept((SOCKET) _get_osfhandle(Int_val(sock)),
-               &sock_addr.s_gen, &sock_addr_len);
-    leave_blocking_section();
-    if (s == INVALID_SOCKET) {
-      _dosmaperr(WSAGetLastError());
-      uerror("accept", Nothing);
-    }
+  sock_addr_len = sizeof(sock_addr);
+  enter_blocking_section();
+  snew = accept(sconn, &sock_addr.s_gen, &sock_addr_len);
+  leave_blocking_section();
+  if (snew == INVALID_SOCKET) {
+    _dosmaperr(WSAGetLastError());
+    uerror("accept", Nothing);
+  }
+  Begin_roots2 (fd, adr)
+    fd = win_alloc_handle((HANDLE) snew);
     adr = alloc_sockaddr();
     res = alloc_tuple(2);
-    fd = _open_osfhandle(s, 0);
-    if (fd == -1) uerror("accept", Nothing);
-    Field(res, 0) = Val_int(fd);
+    Field(res, 0) = fd;
     Field(res, 1) = adr;
   End_roots();
   return res;
