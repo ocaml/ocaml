@@ -68,14 +68,16 @@ let main_loop () =
       continue_main_loop := true;
       while !continue_main_loop do
       	try
-          let (input, _, _) = select (List.map fst !active_files) [] [] (-1.) in
+          let (input, _, _) =
+            select (List.map fst !active_files) [] [] (-1.)
+          in
             List.iter
               (function fd ->
                  let (funct, iochan) = (List.assoc fd !active_files) in
       	       	   funct iochan)
               input
 	with
-      	  Unix_error (EINTR, _, _) -> prerr_endline "EINTR";()
+      	  Unix_error (EINTR, _, _) -> ()
       done;
       continue_main_loop := old_state
     with
