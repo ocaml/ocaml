@@ -223,19 +223,23 @@ let transl_primitive p =
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
-let check_recursive_lambda id lam =
+let check_recursive_lambda idlist lam =
   let rec check_top = function
       Lfunction(params, body) as funct -> true
-    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check_comp args
-    | Llet(str, id, arg, body) -> check_comp arg & check_top body
+    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
+    | Lprim(Pmakearray kind, args) -> List.for_all check args
+    | Llet(str, id, arg, body) -> check arg & check_top body
     | _ -> false
-  and check_comp = function
-      Lvar v -> true
+  and check = function
+      Lvar _ -> true
     | Lconst cst -> true
-    | Lfunction(params, body) as funct -> true
-    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check_comp args
-    | Llet(str, id, arg, body) -> check_comp arg & check_comp body
-    | _ -> false
+    | Lfunction(params, body) -> true
+    | Llet(_, _, arg, body) -> check arg & check body
+    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
+    | Lprim(Pmakearray kind, args) -> List.for_all check args
+    | lam ->
+        let fv = free_variables lam in
+        List.for_all (fun id -> not(IdentSet.mem id fv)) idlist
   in check_top lam
 
 (* To propagate structured constants *)
@@ -435,16 +439,19 @@ and transl_let rec_flag pat_expr_list body =
           Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
-      let transl_case (pat, expr) =
-        let id = 
-          match pat.pat_desc with
-            Tpat_var id -> id
-          | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)) in
+      let idlist =
+        List.map
+          (fun (pat, expr) -> 
+            match pat.pat_desc with
+              Tpat_var id -> id
+            | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
+        pat_expr_list in
+      let transl_case (pat, expr) id =
         let lam = transl_exp expr in
-        if not (check_recursive_lambda id lam) then
+        if not (check_recursive_lambda idlist lam) then
           raise(Error(expr.exp_loc, Illegal_letrec_expr));
         (id, lam) in
-      Lletrec(List.map transl_case pat_expr_list, body)
+      Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 
 and transl_setinstvar self var expr =
   Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
