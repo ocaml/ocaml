@@ -31,7 +31,7 @@ $(CAMLP4): $(OBJS) ../odyl/odyl.cmo
 	$(OCAMLC) -linkall -o $@ $(OBJS) $(CAMLP4M) ../odyl/odyl.cmo
 
 $(CAMLP4OPT): $(OBJS:.cma=.cmxa) ../odyl/odyl.cmx
-	$(OCAMLOPT) -o $@ $(OBJS:.cma=.cmxa) $(CAMLP4M) ../odyl/odyl.cmx
+	$(OCAMLOPT) -linkall -o $@ $(OBJS:.cma=.cmxa) $(CAMLP4M) ../odyl/odyl.cmx
 
 $(OTOP)/utils/config.cmx: $(OTOP)/utils/config.ml
 	$(OCAMLOPT) -I $(OTOP)/utils -c $(OTOP)/utils/config.ml
