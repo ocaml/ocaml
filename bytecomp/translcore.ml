@@ -439,6 +439,7 @@ let primitive_is_ccall = function
 (* Assertions *)
 
 let assert_failed loc =
+  (* [Location.get_pos_info] is too expensive *)
   let fname = match loc.Location.loc_start.Lexing.pos_fname with
               | "" -> !Location.input_name
               | x -> x

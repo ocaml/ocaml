@@ -193,27 +193,31 @@ let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
   | "MacOS" -> ("File \"", "\"; line ", "; characters ", " to ", "", "### ")
   | _ -> ("File \"", "\", line ", ", characters ", "-", ":", "")
 
+(* return file, line, char from the given position *)
+let get_pos_info pos =
+  let fname = if pos.pos_fname <> "" then pos.pos_fname else !input_name in
+  let (filename, linenum, linebeg) =
+    if fname = "" then
+      ("", -1, 0)
+    else if pos.pos_lnum = -1 then
+      Linenum.for_position fname pos.pos_cnum
+    else
+      (fname, pos.pos_lnum, pos.pos_bol)
+  in
+  (filename, linenum, pos.pos_cnum - linebeg)
+;;
+
 let print ppf loc =
-  if !input_name = "" then begin
+  let (file, line, startchar) = get_pos_info loc.loc_start in
+  let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
+  if file = "" then begin
     if highlight_locations ppf loc none then () else
       fprintf ppf "Characters %i-%i:@."
               loc.loc_start.pos_cnum loc.loc_end.pos_cnum
-  end else if loc.loc_start.pos_fname <> "" then begin
-    let filename = loc.loc_start.pos_fname in
-    let linenum = loc.loc_start.pos_lnum in
-    let linebeg = loc.loc_start.pos_bol in
-    let startchar = loc.loc_start.pos_cnum - linebeg in
-    let endchar = loc.loc_end.pos_cnum - linebeg in
-    fprintf ppf "%s%s%s%i" msg_file filename msg_line linenum;
+  end else begin
+    fprintf ppf "%s%s%s%i" msg_file file msg_line line;
     fprintf ppf "%s%i" msg_chars startchar;
     fprintf ppf "%s%i%s@.%s" msg_to endchar msg_colon msg_head;
-  end else begin
-    let (filename, linenum, linebeg) =
-            Linenum.for_position !input_name loc.loc_start.pos_cnum in
-    fprintf ppf "%s%s%s%i" msg_file filename msg_line linenum;
-    fprintf ppf "%s%i" msg_chars (loc.loc_start.pos_cnum - linebeg);
-    fprintf ppf "%s%i%s@.%s"
-     msg_to (loc.loc_end.pos_cnum - linebeg) msg_colon msg_head;
   end
 
 let print_warning loc ppf w =

@@ -2209,6 +2209,7 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
       lambda
 
 let partial_function loc () =
+  (* [Location.get_pos_info] is too expensive *)
   let fname = match loc.Location.loc_start.Lexing.pos_fname with
               | "" -> !Location.input_name
               | x -> x
