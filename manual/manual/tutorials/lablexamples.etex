@@ -308,7 +308,7 @@ Variants as presented in section~\ref{s:tut-recvariants} are a
 powerful tool to build data structures and algorithms. However they
 sometimes lack flexibility when used in modular programming. This is
 due to the fact every constructor reserves a name to be used with a
-unique type. On cannot use the same name in another type, or consider
+unique type. One cannot use the same name in another type, or consider
 a value of some type to belong to some other type with more
 constructors.
 
