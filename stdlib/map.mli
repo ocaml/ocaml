@@ -66,6 +66,6 @@ module type S =
            not specified. *)
   end
 
-module Make(Ord: OrderedType): (S with key = Ord.t)
+module Make(Ord: OrderedType): (S with type key = Ord.t)
         (* Functor building an implementation of the map structure
            given a totally ordered type. *)

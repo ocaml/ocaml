@@ -576,13 +576,15 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    type_parameters label_longident EQUAL core_type
-      { ($2, {ptype_params = $1;
-              ptype_kind = Ptype_abstract;
-              ptype_manifest = Some $4;
-              ptype_loc = symbol_loc()}) }
+    TYPE type_parameters label_longident EQUAL core_type
+      { ($3, Pwith_type {ptype_params = $2;
+                         ptype_kind = Ptype_abstract;
+                         ptype_manifest = Some $5;
+                         ptype_loc = symbol_loc()}) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
+  | MODULE mod_longident EQUAL mod_ext_longident
+      { ($2, Pwith_module $4) }
 ;
 
 /* Core types */

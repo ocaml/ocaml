@@ -84,6 +84,6 @@ module type S =
            but equal elements will be chosen for equal sets. *)
   end
 
-module Make(Ord: OrderedType): (S with elt = Ord.t)
+module Make(Ord: OrderedType): (S with type elt = Ord.t)
         (* Functor building an implementation of the set structure
            given a totally ordered type. *)

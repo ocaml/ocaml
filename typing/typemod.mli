@@ -30,7 +30,7 @@ type error =
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
   | Structure_expected of module_type
-  | With_unbound_type of Longident.t
+  | With_no_component of Longident.t
   | With_not_abstract of string
   | With_arity_mismatch of string
   | Repeated_name of string * string

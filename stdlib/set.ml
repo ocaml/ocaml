@@ -40,7 +40,7 @@ module type S =
     val choose: t -> elt
   end
 
-module Make(Ord: OrderedType): (S with elt = Ord.t) =
+module Make(Ord: OrderedType) =
   struct
     type elt = Ord.t
     type t = Empty | Node of t * elt * t * int

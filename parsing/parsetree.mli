@@ -100,7 +100,7 @@ and module_type_desc =
     Pmty_ident of Longident.t
   | Pmty_signature of signature
   | Pmty_functor of string * module_type * module_type
-  | Pmty_with of module_type * (Longident.t * type_declaration) list
+  | Pmty_with of module_type * (Longident.t * with_constraint) list
 
 and signature = signature_item list
 
@@ -116,6 +116,10 @@ and signature_item =
 and modtype_declaration =
     Pmodtype_abstract
   | Pmodtype_manifest of module_type
+
+and with_constraint =
+    Pwith_type of type_declaration
+  | Pwith_module of Longident.t
 
 (* Value expressions for the module language *)
 
