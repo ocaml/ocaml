@@ -87,7 +87,7 @@ let pseudoregs_for_operation op arg res =
     Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor) | Iaddf|Isubf|Imulf|Idivf ->
       ([|res.(0); arg.(1)|], res)
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
-  | Iintop_imm((Iadd|Isub|Imul|Idiv|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) 
+  | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) 
   | Iabsf | Inegf ->
       (res, res)
   | Ispecific(Ifloatarithmem(_,_)) -> 
@@ -104,9 +104,9 @@ let pseudoregs_for_operation op arg res =
       ([| rax; rcx |], [| rax |])
   | Iintop(Imod) ->
       ([| rax; rcx |], [| rdx |])
-  (* For mod with immediate operand, arg must not be in rax.
+  (* For div and mod with immediate operand, arg must not be in rax.
      Keep it simple, force it in rdx. *)
-  | Iintop_imm(Imod, _) ->
+  | Iintop_imm((Idiv|Imod), _) ->
       ([| rdx |], [| rdx |])
   (* Other instructions are regular *)
   | _ -> raise Use_default
