@@ -256,7 +256,10 @@ value test_ctyp_minusgreater =
          | Some _ -> ignore_upto end_kwd (n + 1)
          | None -> raise Stream.Failure ]
        in
-       skip_simple_ctyp 1)
+       match Stream.peek strm with
+       [ Some (("", "[") | ("LIDENT" | "UIDENT", _)) -> skip_simple_ctyp 1
+       | Some ("", "object") -> raise Stream.Failure
+       | _ -> 1 ])
 ;
 
 value test_label_eq =
