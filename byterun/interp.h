@@ -27,6 +27,6 @@
 value caml_interprete (code_t prog, asize_t prog_size);
 
 /* tell the runtime that a bytecode program is no more needed */
-void caml_clear_bytecode(code_t prog, asize_t prog_size);
+void caml_release_bytecode(code_t prog, asize_t prog_size);
 
 #endif /* CAML_INTERP_H */
