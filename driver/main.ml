@@ -51,7 +51,7 @@ let main () =
        "-nopervasives", Arg.Set nopervasives;
        "-custom", Arg.Set custom_runtime;
        "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts);
-       "-cclib", Arg.String(fun s -> ccobjs := ("-l" ^ s) :: !ccobjs);
+       "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs);
        "-linkall", Arg.Set link_everything;
        "-dlambda", Arg.Set dump_lambda;
        "-dinstr", Arg.Set dump_instr;

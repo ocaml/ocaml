@@ -52,7 +52,7 @@ let main () =
        "-compact", Arg.Clear optimize_for_speed;
        "-nopervasives", Arg.Set nopervasives;
        "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts);
-       "-cclib", Arg.String(fun s -> ccobjs := ("-l" ^ s) :: !ccobjs);
+       "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs);
        "-dlambda", Arg.Set dump_lambda;
        "-dcmm", Arg.Set dump_cmm;
        "-dsel", Arg.Set dump_selection;
