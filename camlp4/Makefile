@@ -6,6 +6,7 @@ DIRS=odyl camlp4 meta etc top ocpp lib man
 FDIRS=odyl camlp4 meta lib
 OPTDIRS=lib odyl camlp4 meta etc
 SHELL=/bin/sh
+COLD_FILES=ocaml_src/camlp4/argl.ml ocaml_src/camlp4/ast2pt.ml ocaml_src/camlp4/ast2pt.mli ocaml_src/camlp4/mLast.mli ocaml_src/camlp4/pcaml.ml ocaml_src/camlp4/pcaml.mli ocaml_src/camlp4/quotation.ml ocaml_src/camlp4/quotation.mli ocaml_src/camlp4/reloc.ml ocaml_src/camlp4/reloc.mli ocaml_src/camlp4/spretty.ml ocaml_src/camlp4/spretty.mli ocaml_src/lib/extfun.ml ocaml_src/lib/extfun.mli ocaml_src/lib/fstream.ml ocaml_src/lib/fstream.mli ocaml_src/lib/gramext.ml ocaml_src/lib/gramext.mli ocaml_src/lib/grammar.ml ocaml_src/lib/grammar.mli ocaml_src/lib/plexer.ml ocaml_src/lib/plexer.mli ocaml_src/lib/stdpp.ml ocaml_src/lib/stdpp.mli ocaml_src/lib/token.ml ocaml_src/lib/token.mli ocaml_src/meta/pa_extend.ml ocaml_src/meta/pa_extend_m.ml ocaml_src/meta/pa_ifdef.ml ocaml_src/meta/pa_r.ml ocaml_src/meta/pa_rp.ml ocaml_src/meta/pr_dump.ml ocaml_src/meta/q_MLast.ml ocaml_src/odyl/odyl_main.ml ocaml_src/odyl/odyl_main.mli ocaml_src/odyl/odyl.ml
 
 all: boot/camlp4$(EXE)
 	set -e; for i in $(DIRS); do cd $$i; $(MAKE) all; cd ..; done
@@ -16,7 +17,7 @@ opt:
 optp4:
 	set -e; for i in $(OPTDIRS); do cd $$i; $(MAKE) opt; cd ..; done
 
-boot/camlp4$(EXE): ocaml_src/lib/stdpp.mli
+boot/camlp4$(EXE): $(COLD_FILES)
 	$(MAKE) clean_cold library_cold compile_cold
 	$(MAKE) promote_cold
 	$(MAKE) clean_cold clean_hot library
