@@ -56,7 +56,7 @@ value realloc_global(value size)      /* ML */
   actual_size = Wosize_val(global_data);
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
-    gc_message ("Growing global data to %lu entries.\n", requested_size);
+    gc_message (0x08, "Growing global data to %lu entries\n", requested_size);
     new_global_data = alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)
       initialize(&Field(new_global_data, i), Field(global_data, i));

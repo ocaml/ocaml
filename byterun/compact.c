@@ -137,7 +137,7 @@ void compact_heap (void)
 {
   char *ch, *chend;
                                                Assert (gc_phase == Phase_idle);
-  gc_message ("Compacting heap...\n", 0);
+  gc_message (0x10, "Compacting heap...\n", 0);
   /* First pass: encode all noninfix headers. */
   {
     ch = heap_start;
@@ -373,7 +373,7 @@ void compact_heap (void)
     }
   }
   ++ stat_compactions;
-  gc_message ("done.\n", 0);
+  gc_message (0x10, "done.\n", 0);
 }
 
 unsigned long percent_max;

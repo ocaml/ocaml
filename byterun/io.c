@@ -387,7 +387,7 @@ static void finalize_channel(value vchan)
 
 static value alloc_channel(struct channel *chan)
 {
-  value res = alloc_final(2, finalize_channel, 1, 32);
+  value res = alloc_final(2, finalize_channel, 1, 1000);
   Field(res, 1) = (value) chan;
   return res;
 }

@@ -180,7 +180,7 @@ static int parse_command_line(char **argv)
       break;
 #endif
     case 'v':
-      verbose_init = 1;
+      verbose_init = 1+4+8+16+32;
       break;
     case 'p':
       for (j = 0; names_of_cprim[j] != NULL; j++)

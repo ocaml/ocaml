@@ -37,7 +37,7 @@ unsigned long percent_free;
 long major_heap_increment;
 char *heap_start, *heap_end;
 page_table_entry *page_table;
-asize_t page_table_size;
+asize_t page_low, page_high;
 char *gc_sweep_hp;
 int gc_phase;
 static value *gray_vals;
@@ -46,7 +46,7 @@ static asize_t gray_vals_size;
 static int heap_is_pure;   /* The heap is pure if the only gray objects
                               below [markhp] are also in [gray_vals]. */
 unsigned long allocated_words;
-unsigned long extra_heap_memory;
+double extra_heap_memory;
 extern char *fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
@@ -59,12 +59,12 @@ static void realloc_gray_vals (void)
 
   Assert (gray_vals_cur == gray_vals_end);
   if (gray_vals_size < stat_heap_size / 128){
-    gc_message ("Growing gray_vals to %luk bytes\n",
+    gc_message (0x08, "Growing gray_vals to %luk bytes\n",
                 (long) gray_vals_size * sizeof (value) / 512);
     new = (value *) realloc ((char *) gray_vals,
                              2 * gray_vals_size * sizeof (value));
     if (new == NULL){
-      gc_message ("No room for growing gray_vals\n", 0);
+      gc_message (0x08, "No room for growing gray_vals\n", 0);
       gray_vals_cur = gray_vals;
       heap_is_pure = 0;
     }else{
@@ -79,9 +79,7 @@ static void realloc_gray_vals (void)
   }
 }
 
-void darken (value v, value *p)
-             
-                /* not used */
+void darken (value v, value *p /* not used */)
 {
   if (Is_block (v) && Is_in_heap (v)) {
     if (Tag_val(v) == Infix_tag) v -= Infix_offset_val(v);
@@ -97,12 +95,13 @@ static void start_cycle (void)
 {
   Assert (gc_phase == Phase_idle);
   Assert (gray_vals_cur == gray_vals);
+  gc_message (0x01, "Starting new major GC cycle\n", 0);
   darken_all_roots();
   gc_phase = Phase_mark;
   markhp = NULL;
 }
 
-static void mark_slice (long int work)
+static void mark_slice (long work)
 {
   value *gray_vals_ptr;  /* Local copy of gray_vals_cur */
   value v, child;
@@ -255,6 +254,7 @@ static void sweep_slice (long int work)
 /* The main entry point for the GC.  Called at each minor GC. */
 void major_collection_slice (void)
 {
+  double p;
   /* 
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = stat_heap_size * percent_free / (100 + percent_free)
@@ -262,22 +262,22 @@ void major_collection_slice (void)
                  G = FM * 2/3
      Proportion of free memory consumed since the previous slice:
                  PH = allocated_words / G
+                    = 3 * allocated_words * (100 + percent_free)
+                      / (2 * stat_heap_size * percent_free)
      Proportion of extra-heap memory consumed since the previous slice:
-                 PE = extra_heap_memory / stat_heap_size
+                 PE = extra_heap_memory
      Proportion of total work to do in this slice:
-                 P  = PH + PE
+                 P  = max (PH, PE)
      Amount of marking work for the GC cycle:
                  MW = stat_heap_size * 100 / (100 + percent_free)
      Amount of sweeping work for the GC cycle:
                  SW = stat_heap_size
      Amount of marking work for this slice:
-                 MS = MW * P
-                 MS = 3/2 * 100 * allocated_words / percent_free
-                      + extra_heap_memory * 100 / (100 + percent_free)
+                 MS = P * MW
+                 MS = P * stat_heap_size * 100 / (100 + percent_free)
      Amount of sweeping work for this slice:
-                 SS = SW * P
-                 SS = 3/2 * (100 + percent_free)/percent_free * allocated_words
-                      + extra_heap_memory
+                 SS = P * SW
+                 SS = P * stat_heap_size
      This slice will either mark 2*MS words or sweep 2*SS words.
   */
 
@@ -285,24 +285,38 @@ void major_collection_slice (void)
 
   if (gc_phase == Phase_idle) start_cycle ();
 
+  p = 1.5 * allocated_words * (100 + percent_free)
+      / stat_heap_size / percent_free;
+  if (p < extra_heap_memory) p = extra_heap_memory;
+
+  gc_message (0x40, "allocated_words = %lu\n", allocated_words);
+  gc_message (0x40, "extra_heap_memory = %luu\n",
+              (unsigned long) (extra_heap_memory * 1000000));
+  gc_message (0x40, "amount of work to do = %luu\n",
+              (unsigned long) (p * 1000000));
+
   if (gc_phase == Phase_mark){
-    mark_slice (300 * (allocated_words / percent_free + 1)
-                + 200 * (extra_heap_memory / (100 + percent_free) + 1)
-		+ Margin);
-    gc_message ("!", 0);
+    long work = (long) (p * stat_heap_size * 100 / (100+percent_free)) + Margin;
+    if (verb_gc & 0x40){
+      gc_message (0x40, "Marking %lu words\n", work);
+    }
+    mark_slice (work);
+    gc_message (0x02, "!", 0);
   }else{
+    long work = (long) (p * stat_heap_size) + Margin;
     Assert (gc_phase == Phase_sweep);
-    sweep_slice (3 * (100 + percent_free) * (allocated_words / percent_free + 1)
-                 + 2 * extra_heap_memory
-                 + Margin);
-    gc_message ("$", 0);
+    if (verb_gc & 0x40){
+      gc_message (0x40, "Sweeping %lu words\n", work);
+    }
+    sweep_slice (work);
+    gc_message (0x02, "$", 0);
   }
 
   if (gc_phase == Phase_idle) compact_heap_maybe ();
 
   stat_major_words += allocated_words;
   allocated_words = 0;
-  extra_heap_memory = 0;
+  extra_heap_memory = 0.0;
 }
 
 /* The minor heap must be empty when this function is called. */
@@ -338,6 +352,8 @@ void init_major_heap (asize_t heap_size)
 {
   asize_t i;
   void *block;
+  asize_t page_table_size;
+  page_table_entry *page_table_block;
 
   stat_heap_size = round_heap_chunk_size (heap_size);
   Assert (stat_heap_size % Page_size == 0);
@@ -352,17 +368,21 @@ void init_major_heap (asize_t heap_size)
   Chunk_block (heap_start) = block;
   heap_end = heap_start + stat_heap_size;
   Assert ((unsigned long) heap_end % Page_size == 0);
-  page_table_size = 4 * stat_heap_size / Page_size;
-  page_table = 
-    (page_table_entry *) malloc (page_table_size * sizeof(page_table_entry));
-  if (page_table == NULL)
+
+  page_low = Page (heap_start);
+  page_high = Page (heap_end);
+
+  page_table_size = page_high - page_low;
+  page_table_block = 
+    (page_table_entry *) malloc (page_table_size * sizeof (page_table_entry));
+  if (page_table_block == NULL){
     fatal_error ("Fatal error: not enough memory for the initial heap.\n");
-  for (i = 0; i < page_table_size; i++){
-    page_table [i] = Not_in_heap;
   }
+  page_table = page_table_block - page_low;
   for (i = Page (heap_start); i < Page (heap_end); i++){
     page_table [i] = In_heap;
   }
+
   Hd_hp (heap_start) = Make_header (Wosize_bhsize (stat_heap_size), 0, Blue);
   fl_init_merge ();
   fl_merge_block (Bp_hp (heap_start));
@@ -375,5 +395,5 @@ void init_major_heap (asize_t heap_size)
   gray_vals_end = gray_vals + gray_vals_size;
   heap_is_pure = 1;
   allocated_words = 0;
-  extra_heap_memory = 0;
+  extra_heap_memory = 0.0;
 }

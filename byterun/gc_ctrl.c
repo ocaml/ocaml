@@ -130,13 +130,13 @@ value gc_get(value v) /* ML */
 
   Assert (v == Val_unit);
   res = alloc (6, 0);
-  Field (res, 0) = Wsize_bsize (Val_long (minor_heap_size));
-  Field (res, 1) = Wsize_bsize (Val_long (major_heap_increment));
-  Field (res, 2) = Val_long (percent_free);
-  Field (res, 3) = Val_bool (verb_gc);
-  Field (res, 4) = Val_long (percent_max);
+  Field (res, 0) = Wsize_bsize (Val_long (minor_heap_size));        /* s */
+  Field (res, 1) = Wsize_bsize (Val_long (major_heap_increment));   /* i */
+  Field (res, 2) = Val_long (percent_free);                         /* o */
+  Field (res, 3) = Val_long (verb_gc);                              /* v */
+  Field (res, 4) = Val_long (percent_max);                          /* O */
 #ifndef NATIVE_CODE
-  Field (res, 5) = Val_long (max_stack_size);
+  Field (res, 5) = Val_long (max_stack_size);                       /* l */
 #else
   Field (res, 5) = 0;
 #endif
@@ -177,7 +177,7 @@ value gc_set(value v) /* ML */
   asize_t newheapincr;
   asize_t newminsize;
 
-  verb_gc = Bool_val (Field (v, 3));
+  verb_gc = Long_val (Field (v, 3));
 
 #ifndef NATIVE_CODE
   change_max_stack_size (Long_val (Field (v, 5)));
@@ -186,19 +186,19 @@ value gc_set(value v) /* ML */
   newpf = norm_pfree (Long_val (Field (v, 2)));
   if (newpf != percent_free){
     percent_free = newpf;
-    gc_message ("New space overhead: %d%%\n", percent_free);
+    gc_message (0x20, "New space overhead: %d%%\n", percent_free);
   }
 
   newpm = norm_pmax (Long_val (Field (v, 4)));
   if (newpm != percent_max){
     percent_max = newpm;
-    gc_message ("New max overhead: %d%%\n", percent_max);
+    gc_message (0x20, "New max overhead: %d%%\n", percent_max);
   }
 
   newheapincr = norm_heapincr (Bsize_wsize (Long_val (Field (v, 1))));
   if (newheapincr != major_heap_increment){
     major_heap_increment = newheapincr;
-    gc_message ("New heap increment size: %luk bytes\n",
+    gc_message (0x20, "New heap increment size: %luk bytes\n",
                 major_heap_increment/1024);
   }
 
@@ -206,7 +206,7 @@ value gc_set(value v) /* ML */
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminsize = norm_minsize (Bsize_wsize (Long_val (Field (v, 0))));
   if (newminsize != minor_heap_size){
-    gc_message ("New minor heap size: %luk bytes\n", newminsize/1024);
+    gc_message (0x20, "New minor heap size: %luk bytes\n", newminsize/1024);
     set_minor_heap_size (newminsize);
   }
   return Val_unit;
@@ -242,12 +242,14 @@ value gc_compaction(value v) /* ML */
   return Val_unit;
 }
 
-void init_gc (long unsigned int minor_size, long unsigned int major_size, long unsigned int major_incr, long unsigned int percent_fr, long unsigned int percent_m, long unsigned int verb)
+void init_gc (unsigned long minor_size, unsigned long major_size,
+              unsigned long major_incr, unsigned long percent_fr,
+              unsigned long percent_m,  unsigned long verb)
 {
   unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 #ifdef DEBUG
-  verb_gc = 1;
-  gc_message ("*** O'Caml runtime: debug mode ***\n", 0);
+  verb_gc = 0xFFF;
+  gc_message (0xFFF, "*** O'Caml runtime: debug mode ***\n", 0);
 #endif
   verb_gc = verb;
   set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
@@ -255,10 +257,12 @@ void init_gc (long unsigned int minor_size, long unsigned int major_size, long u
   percent_free = norm_pfree (percent_fr);
   percent_max = norm_pmax (percent_m);
   init_major_heap (major_heap_size);
-  gc_message ("Initial minor heap size: %luk bytes\n", minor_heap_size / 1024);
-  gc_message ("Initial major heap size: %luk bytes\n", major_heap_size / 1024);
-  gc_message ("Initial space overhead: %lu%%\n", percent_free);
-  gc_message ("Initial max overhead: %lu%%\n", percent_max);
-  gc_message ("Initial heap increment: %luk bytes\n",
+  gc_message (0x20, "Initial minor heap size: %luk bytes\n",
+              minor_heap_size / 1024);
+  gc_message (0x20, "Initial major heap size: %luk bytes\n",
+              major_heap_size / 1024);
+  gc_message (0x20, "Initial space overhead: %lu%%\n", percent_free);
+  gc_message (0x20, "Initial max overhead: %lu%%\n", percent_max);
+  gc_message (0x20, "Initial heap increment: %luk bytes\n",
               major_heap_increment / 1024);
 }

@@ -24,83 +24,102 @@
 #include "mlvalues.h"
 #include "signals.h"
 
-/* Allocate more memory from malloc for the heap.
-   Return a block of at least the requested size (in words).
-   Return NULL when out of memory.
-
-   Faudrait nettoyer tout ca pour decoupler heap_start de heap_base
-   et pour simplifier l'agrandissement de page_table.
+/* Allocate a block of the requested size, which will be passed to
+   [add_to_heap] later.
+   [request] must be a multiple of [Page_size].
+   [alloc_for_heap] returns NULL if the request cannot be satisfied.
+   The returned pointer is a hp, but the header must be initialized by
+   the caller.
 */
-static char *expand_heap (mlsize_t request)
+header_t *alloc_for_heap (asize_t request)
 {
   char *mem;
-  page_table_entry *new_page_table;
-  asize_t new_page_table_size;
-  asize_t malloc_request;
-  asize_t i, more_pages;
   void *block;
-
-  malloc_request = round_heap_chunk_size (Bhsize_wosize (request));
-  gc_message ("Growing heap to %luk bytes\n",
-              (stat_heap_size + malloc_request) / 1024);
-  mem = aligned_malloc (malloc_request + sizeof (heap_chunk_head),
+                                              Assert (request % Page_size == 0);
+  mem = aligned_malloc (request + sizeof (heap_chunk_head),
                         sizeof (heap_chunk_head), &block);
-  if (mem == NULL){
-    gc_message ("No room for growing heap\n", 0);
-    return NULL;
-  }
+  if (mem == NULL) return NULL;
   mem += sizeof (heap_chunk_head);
-  Chunk_size (mem) = malloc_request;
+  Chunk_size (mem) = request;
   Chunk_block (mem) = block;
-  Assert (Wosize_bhsize (malloc_request) >= request);
-  Hd_hp (mem) = Make_header (Wosize_bhsize (malloc_request), 0, Blue);
+  return (header_t *) mem;
+}
 
-  if (mem < heap_start){
-    more_pages = -Page (mem);
-  }else if (Page (mem + malloc_request) > page_table_size){
-    more_pages = Page (mem + malloc_request) - page_table_size;
-  }else{
-    more_pages = 0;
-  }
+/* Take a block of memory as argument, which must be the result of a
+   call to [alloc_for_heap], and insert it into the heap chaining.
+   The contents of the block must be a sequence of valid objects and
+   fragments: no space between objects and no trailing garbage.  If
+   some objects are blue, they must be added to the free list by the
+   caller.  All other objects must have the color [allocation_color(mem)].
+   The caller must update [allocated_words] if applicable.
+   Return value: 0 if no error; -1 in case of error.
+*/
+int add_to_heap (header_t *arg_mem)
+{
+  asize_t i;
+  char *mem = (char *) arg_mem;
+                                     Assert (Chunk_size (mem) % Page_size == 0);
+#ifdef DEBUG
+  /* Should check the contents of the block. */
+#endif /* debug */
 
-  if (more_pages != 0){
-    new_page_table_size = page_table_size + more_pages;
-    new_page_table =
-      (page_table_entry *) 
-        malloc(new_page_table_size * sizeof(page_table_entry));
-    if (new_page_table == NULL){
-      gc_message ("No room for growing page table\n", 0);
-      free (mem);
-      return NULL;
+  /* Extend the page table as needed. */
+  if (Page (mem) < page_low){
+    page_table_entry *block, *new_page_table;
+    asize_t new_page_low = Page (mem);
+    asize_t new_size = page_high - new_page_low;
+    
+    gc_message (0x08, "Growing page table to %lu entries\n", new_size);
+    block = malloc (new_size * sizeof (page_table_entry));
+    if (block == NULL){
+      gc_message (0x08, "No room for growing page table\n", 0);
+      return -1;
     }
-  } else {
-    new_page_table = NULL;
-    new_page_table_size = 0;
+    new_page_table = block - new_page_low;
+    for (i = new_page_low; i < page_low; i++) new_page_table [i] = Not_in_heap;
+    for (i = page_low; i < page_high; i++) new_page_table [i] = page_table [i];
+    free (page_table + page_low);
+    page_table = new_page_table;
+    page_low = new_page_low;
   }
-
-  if (mem < heap_start){
-    Assert (more_pages != 0);
-    for (i = 0; i < more_pages; i++){
+  if (Page (mem + Chunk_size (mem)) > page_high){
+    page_table_entry *block, *new_page_table;
+    asize_t new_page_high = Page (mem + Chunk_size (mem));
+    asize_t new_size = new_page_high - page_low;
+    
+    gc_message (0x08, "Growing page table to %lu entries\n", new_size);
+    block = malloc (new_size * sizeof (page_table_entry));
+    if (block == NULL){
+      gc_message (0x08, "No room for growing page table\n", 0);
+      return -1;
+    }
+    new_page_table = block - page_low;
+    for (i = page_low; i < page_high; i++) new_page_table [i] = page_table [i];
+    for (i = page_high; i < new_page_high; i++){
       new_page_table [i] = Not_in_heap;
     }
-    bcopy (page_table, new_page_table + more_pages,
-           page_table_size * sizeof(page_table_entry));
+    free (page_table + page_low);
+    page_table = new_page_table;
+    page_high = new_page_high;
+  }
+
+  /* Update the heap bounds as needed. */
+  if (mem < heap_start) heap_start = mem;
+  if (mem + Chunk_size (mem) > heap_end) heap_end = mem + Chunk_size (mem);
+
+  /* Mark the pages as being in the heap. */
+  for (i = Page (mem); i < Page (mem + Chunk_size (mem)); i++){
+    page_table [i] = In_heap;
+  }
+
+  /* Chain this heap block. */
+  if (mem < heap_start){
     Chunk_next (mem) = heap_start;
     heap_start = mem;
   }else{
-    char **last;
-    char *cur;
+    char **last = &heap_start;
+    char *cur = *last;
 
-    if (mem + malloc_request > heap_end) heap_end = mem + malloc_request;
-    if (more_pages != 0){
-      for (i = page_table_size; i < new_page_table_size; i++){
-        new_page_table [i] = Not_in_heap;
-      }
-      bcopy (page_table, new_page_table, 
-             page_table_size * sizeof(page_table_entry));
-    }
-    last = &heap_start;
-    cur = *last;
     while (cur != NULL && cur < mem){
       last = &(Chunk_next (cur));
       cur = *last;
@@ -108,22 +127,40 @@ static char *expand_heap (mlsize_t request)
     Chunk_next (mem) = cur;
     *last = mem;
   }
+  stat_heap_size += Chunk_size (mem);
+  return 0;
+}
 
-  if (more_pages != 0){
-    free ((char *) page_table);
-    page_table = new_page_table;
-    page_table_size = new_page_table_size;
-  }
+/* Allocate more memory from malloc for the heap.
+   Return a blue block of at least the requested size (in words).
+   The caller must insert the block into the free list.
+   Return NULL when out of memory.
+*/
+static char *expand_heap (mlsize_t request)
+{
+  header_t *mem;
+  asize_t malloc_request;
 
-  for (i = Page (mem); i < Page (mem + malloc_request); i++){
-    page_table [i] = In_heap;
+  malloc_request = round_heap_chunk_size (Bhsize_wosize (request));
+  gc_message (0x04, "Growing heap to %luk bytes\n",
+              (stat_heap_size + malloc_request) / 1024);
+  mem = alloc_for_heap (malloc_request);
+  if (mem == NULL){
+    gc_message (0x04, "No room for growing heap\n", 0);
+    return NULL;
   }
-  stat_heap_size += malloc_request;
+  Assert (Wosize_bhsize (malloc_request) >= request);
+  Hd_hp (mem) = Make_header (Wosize_bhsize (malloc_request), 0, Blue);
+
+  if (add_to_heap (mem) != 0){
+    free (mem);
+    return NULL;
+  }
   return Bp_hp (mem);
 }
 
 /* Remove the heap chunk [chunk] from the heap and give the memory back
-   to [malloc].
+   to [free].
 */
 void shrink_heap (char *chunk)
 {
@@ -139,7 +176,7 @@ void shrink_heap (char *chunk)
   if (chunk == heap_start) return;
 
   stat_heap_size -= Chunk_size (chunk);
-  gc_message ("Shrinking heap to %luk bytes\n", stat_heap_size / 1024);
+  gc_message (0x04, "Shrinking heap to %luk bytes\n", stat_heap_size / 1024);
 
 #ifdef DEBUG
   {
@@ -164,6 +201,18 @@ void shrink_heap (char *chunk)
   free (Chunk_block (chunk));
 }
 
+color_t allocation_color (void *hp)
+{
+  if (gc_phase == Phase_mark
+      || (gc_phase == Phase_sweep && (addr)hp >= (addr)gc_sweep_hp)){
+    return Black;
+  }else{
+    Assert (gc_phase == Phase_idle
+            || (gc_phase == Phase_sweep && (addr)hp < (addr)gc_sweep_hp));
+    return White;
+  }
+}
+
 value alloc_shr (mlsize_t wosize, tag_t tag)
 {
   char *hp, *new_block;
@@ -183,6 +232,7 @@ value alloc_shr (mlsize_t wosize, tag_t tag)
 
   Assert (Is_in_heap (Val_hp (hp)));
 
+  /* Inline expansion of allocation_color. */
   if (gc_phase == Phase_mark
       || (gc_phase == Phase_sweep && (addr)hp >= (addr)gc_sweep_hp)){
     Hd_hp (hp) = Make_header (wosize, tag, Black);
@@ -191,6 +241,7 @@ value alloc_shr (mlsize_t wosize, tag_t tag)
             || (gc_phase == Phase_sweep && (addr)hp < (addr)gc_sweep_hp));
     Hd_hp (hp) = Make_header (wosize, tag, White);
   }
+  Assert (Hd_hp (hp) == Make_header (wosize, tag, allocation_color (hp)));
   allocated_words += Whsize_wosize (wosize);
   if (allocated_words > Wsize_bsize (minor_heap_size)) urge_major_slice ();
   return Val_hp (hp);
@@ -202,18 +253,21 @@ value alloc_shr (mlsize_t wosize, tag_t tag)
    [mem] is the number of words allocated this time.
    Note that only [mem/max] is relevant.  You can use numbers of bytes
    (or kilobytes, ...) instead of words.  You can change units between
-   calls to [adjust_collector_speed].
+   calls to [adjust_gc_speed].
 */
 void adjust_gc_speed (mlsize_t mem, mlsize_t max)
 {
   if (max == 0) max = 1;
   if (mem > max) mem = max;
-  extra_heap_memory += ((float) mem / max) * stat_heap_size;
-  if (extra_heap_memory > stat_heap_size){
-    extra_heap_memory = stat_heap_size;
-  }
-  if (extra_heap_memory > Wsize_bsize (minor_heap_size) / 2) 
+  extra_heap_memory += (double) mem / (double) max;
+  if (extra_heap_memory > 1.0){
+    extra_heap_memory = 1.0;
     urge_major_slice ();
+  }
+  if (extra_heap_memory > (double) Wsize_bsize (minor_heap_size)
+                          / 2.0 / (double) stat_heap_size) {
+    urge_major_slice ();
+  }
 }
 
 /* You must use [initialize] to store the initial value in a field of

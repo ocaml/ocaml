@@ -39,7 +39,7 @@ void init_stack (long unsigned int initial_max_size)
   trapsp = stack_high;
   trap_barrier = stack_high + 1;
   max_stack_size = initial_max_size;
-  gc_message ("Initial stack limit: %luk bytes\n",
+  gc_message (0x08, "Initial stack limit: %luk bytes\n",
 	      max_stack_size / 1024 * sizeof (value));
 }
 
@@ -53,7 +53,7 @@ void realloc_stack(void)
   size = stack_high - stack_low;
   if (size >= max_stack_size) raise_stack_overflow();
   size *= 2;
-  gc_message ("Growing stack to %luk bytes\n",
+  gc_message (0x08, "Growing stack to %luk bytes\n",
               (unsigned long) size * sizeof(value) / 1024);
   new_low = (value *) stat_alloc(size * sizeof(value));
   new_high = new_low + size;
@@ -84,7 +84,7 @@ void change_max_stack_size (long unsigned int new_max_size)
 
   if (new_max_size < size) new_max_size = size;
   if (new_max_size != max_stack_size){
-    gc_message ("Changing stack limit to %luk bytes\n",
+    gc_message (0x08, "Changing stack limit to %luk bytes\n",
                 new_max_size * sizeof (value) / 1024);
   }
   max_stack_size = new_max_size;

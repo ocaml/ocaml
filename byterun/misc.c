@@ -39,9 +39,9 @@ unsigned long not_random (void)
 
 int verb_gc;
 
-void gc_message (char *msg, long unsigned int arg)
+void gc_message (int level, char *msg, unsigned long arg)
 {
-  if (verb_gc){
+  if (verb_gc & level){
 #ifdef HAS_UI
     ui_print_stderr(msg, (void *) arg);
 #else
@@ -151,9 +151,6 @@ void memmov (char * dst, char * src, unsigned long length)
 #endif /* USING_MEMMOV */
 
 char *aligned_malloc (asize_t size, int modulo, void **block)
-                  
-                
-                        /* output */
 {
   char *raw_mem;
   unsigned long aligned_mem;

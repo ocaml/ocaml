@@ -123,14 +123,14 @@ void minor_collection (void)
   long prev_alloc_words = allocated_words;
 
   in_minor_collection = 1;
-  gc_message ("<", 0);
+  gc_message (0x02, "<", 0);
   oldify_local_roots();
   for (r = ref_table; r < ref_table_ptr; r++) oldify (**r, *r);
   stat_minor_words += Wsize_bsize (young_end - young_ptr);
   young_ptr = young_end;
   ref_table_ptr = ref_table;
   ref_table_limit = ref_table_threshold;
-  gc_message (">", 0);
+  gc_message (0x02, ">", 0);
   in_minor_collection = 0;
 
   stat_promoted_words += allocated_words - prev_alloc_words;
@@ -155,7 +155,7 @@ void realloc_ref_table (void)
                             Assert (ref_table_limit >= ref_table_threshold);
 
   if (ref_table_limit == ref_table_threshold){
-    gc_message ("ref_table threshold crossed\n", 0);
+    gc_message (0x08, "ref_table threshold crossed\n", 0);
     ref_table_limit = ref_table_end;
     urge_major_slice ();
   }else{ /* This will almost never happen with the bytecode interpreter. */
@@ -165,7 +165,7 @@ void realloc_ref_table (void)
 
     ref_table_size *= 2;
     sz = (ref_table_size + ref_table_reserve) * sizeof (value *);
-    gc_message ("Growing ref_table to %ldk bytes\n", (long) sz / 1024);
+    gc_message (0x08, "Growing ref_table to %ldk bytes\n", (long) sz / 1024);
     ref_table = (value **) realloc ((char *) ref_table, sz);
     if (ref_table == NULL) fatal_error ("Fatal error: ref_table overflow\n");
     ref_table_end = ref_table + ref_table_size + ref_table_reserve;
