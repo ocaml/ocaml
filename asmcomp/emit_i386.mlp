@@ -653,11 +653,12 @@ let emit_instr i =
     | Lswitch jumptbl ->
         let lbl = new_label() in
         `	jmp	*{emit_label lbl}(, {emit_reg i.arg.(0)}, 4)\n`;
-        emit_align 4;
+        `	.data\n`;
         `{emit_label lbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
           `	.long	{emit_label jumptbl.(i)}\n`
-        done
+        done;
+        `	.text\n`
     | Lsetuptrap lbl ->
         `	call	{emit_label lbl}\n`
     | Lpushtrap ->
