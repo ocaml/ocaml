@@ -8,7 +8,7 @@ system. It is organized as follows.
 gives an overview of the language.
 \item Part~\ref{p:refman}, ``The Objective Caml language'', is the
 reference description of the language.
-\item Part~\ref{p:commands}, ``The Objective Caml tools, documents
+\item Part~\ref{p:commands}, ``The Objective Caml tools'', documents
 the compilers, toplevel system, and programming utilities.
 \item Part~\ref{p:library}, ``The Objective Caml library'', describes the
 modules provided in the standard library.
@@ -60,12 +60,12 @@ Files:      & see the index in file "README"
 \end{tabular}
 \end{center}
 More information on the Caml family of languages is also available on
-the World Wide Web, "http://pauillac.inria.fr/caml/".
+the World Wide Web, "http://caml.inria.fr/".
 \end{latexonly}
 \begin{rawhtml}
 Follow <A HREF="ftp://ftp.inria.fr/lang/caml-light/">this link</A>
 to access the distribution.
 More information on the Caml family of languages is also available
-<A HREF="http://pauillac.inria.fr/caml/">here</A>.
+<A HREF="http://caml.inria.fr/">here</A>.
 \end{rawhtml}
 

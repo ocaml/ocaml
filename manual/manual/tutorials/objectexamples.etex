@@ -849,7 +849,7 @@ class ['observer, 'event] subject =
         List.iter (fun x -> x#notify self e) observers
   end;;
 \end{caml_example}
-The difficulty usually relies  in defining instances of the above pattern
+The difficulty usually relies  in defining instances of the pattern above
 by inheritance. This can be done in a natural and obvious manner in
 Ocaml, as shown on the following example manipulating windows.
 \begin{caml_example}
@@ -864,7 +864,7 @@ class ['observer] window_subject =
     val mutable position = 0
     method identity = id
     method move x = position <- position + x; self#notify_observers Move
-    method draw = Printf.printf "{Postion = %d}\n"  position;
+    method draw = Printf.printf "{Position = %d}\n"  position;
   end;;
 class ['subject] window_observer =
   object
@@ -895,7 +895,7 @@ class ['observer] richer_window_subject =
     method resize x = size <- size + x; self#notify_observers Resize
     val mutable top = false
     method raise = top <- true; self#notify_observers Raise
-    method draw = Printf.printf "{Postion = %d; Size = %d}\n"  position size;
+    method draw = Printf.printf "{Position = %d; Size = %d}\n"  position size;
   end;;
 class ['subject] richer_window_observer =
   object 

@@ -44,9 +44,9 @@ geometry.
 This library is available only under the toplevel application
 "ocamlwin.exe". Before using it, the Caml part of this library must be
 loaded in-core, either by typing
-\begin{alltt}
+\begin{verbatim}
         #load "graphics.cmo";;
-\end{alltt}
+\end{verbatim}
 in the input windows or by using the ``Load'' entry of the ``File''
 menu.
 \end{windows}
