@@ -59,7 +59,8 @@ $(INTF): $(MLIS)
 	-I +labltk \
 	$(MLIS) \
 	-sepfiles \
-	-latextitle "2,subsection*"
+	-latextitle "6,subsection*" \
+	-latextitle "7,subsubsection*"
 	mv -f Arith_status.tex Arithstatus.tex
 	mv -f Big_int.tex Bigint.tex
 
