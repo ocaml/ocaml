@@ -37,7 +37,7 @@ extract_crc: dynlink.cma extract_crc.cmo
 	$(CAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
 
 install:
-	cp dynlink.cmi dynlink.cma extract_crc $(LIBDIR)
+	cp dynlink.cmi dynlink.cma dynlink.mli extract_crc $(LIBDIR)
 
 installopt:
 
