@@ -308,8 +308,9 @@ let check_recursive_abbrev env (name, sdecl) (id, decl) =
 let rec check_expansion_rec env id args loc id_check_list visited ty =
   let ty = Ctype.repr ty in
   if List.memq ty visited then () else
-  let visited = ty :: visited in
-  begin match ty.desc with
+  let check_rec =
+    check_expansion_rec env id args loc id_check_list (ty :: visited) in
+  match ty.desc with
   | Tconstr(Path.Pident id' as path, args', _) ->
       if Ident.same id id' then begin
         if not (Ctype.equal env false args args') then
@@ -326,14 +327,16 @@ let rec check_expansion_rec env id args loc id_check_list visited ty =
             try List.iter2 (Ctype.unify env) params args'
             with Ctype.Unify _ -> assert false
           end;
-          check_expansion_rec env id args loc id_check_list visited body
+          check_rec body
         end
       with Not_found -> ()
-      end
-  | _ -> ()
-  end;
-  Btype.iter_type_expr
-    (check_expansion_rec env id args loc id_check_list visited) ty
+      end;
+      List.iter check_rec args'
+  | Tpoly (ty, tl) ->
+      let _, ty = Ctype.instance_poly false tl ty in
+      check_rec ty
+  | _ ->
+      Btype.iter_type_expr check_rec ty
 
 let check_expansion env id_loc_list (id, decl) =
   if decl.type_params = [] then () else

@@ -362,7 +362,7 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
       fprintf ppf "@[<2>@[<hv 2>%t@]%a@]" print_name_args print_constraints
         constraints
   | Otyp_record lbls ->
-      fprintf ppf "@[<2>@[<hv 2>%t = %a{%a@;<1 -2>}@]@ %a@]" print_name_args
+      fprintf ppf "@[<2>@[<hv 2>%t = %a{%a@;<1 -2>}@]%a@]" print_name_args
         print_virtual v
         (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
         print_constraints constraints

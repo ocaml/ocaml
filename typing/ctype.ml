@@ -929,7 +929,7 @@ let rec copy_sep fixed free bound visited ty =
           let bound = tl @ bound in
           let visited =
             List.map2 (fun ty t -> ty,(t,bound)) tl tl' @ visited in
-          Tpoly (copy_rec t1, tl')
+          Tpoly (copy_sep fixed free bound visited t1, tl')
       | _ -> copy_type_desc copy_rec ty.desc
       end;
     t
