@@ -131,10 +131,8 @@ again:
       /* We couldn't do a partial write here, probably because
          n <= PIPE_BUF and POSIX says that writes of less than
          PIPE_BUF characters must be atomic.
-         So, we force a partial write of 1 character.
-         This should always succeed if we've done a select
-         on writing just before. */
-      if (n > 1) { n = 1; goto again; }
+         So, we force a partial write of 1 character. */
+      n = 1; goto again;
     }
   }
 #endif
