@@ -2,8 +2,8 @@ include ../config/Makefile.h
 include ../Makefile.config
 
 CC=$(NATIVECC)
-CFLAGS=-I../byterun -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -O $(NATIVECCCOMPOPTS)
-DFLAGS=-I../byterun -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -g -DDEBUG $(NATIVECCCOMPOPTS)
+CFLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -O $(NATIVECCCOMPOPTS)
+DFLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -g -DDEBUG $(NATIVECCCOMPOPTS)
 
 COBJS=main.o fail.o roots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \

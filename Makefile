@@ -215,8 +215,8 @@ clean::
 utils/config.ml: utils/config.mlp Makefile.config
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
-            -e 's|%%BYTECC%%|$(BYTECC) $(CCLINKFLAGS) $(LOWADDRESSES)|' \
-            -e 's|%%NATIVECC%%|$(NATIVECC) $(CCLINKFLAGS)|' \
+            -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCLINKFLAGS) $(LOWADDRESSES)|' \
+            -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCLINKFLAGS)|' \
             -e 's|%%CCLIBS%%|$(CCLIBS)|' \
             -e 's|%%ARCH%%|$(ARCH)|' \
             -e 's|%%SYSTEM%%|$(SYSTEM)|' \
