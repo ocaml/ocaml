@@ -26,10 +26,6 @@ camlp4r Ä ::camlp4:camlp4 {CAMLP4RM}
       domake -d CAMLP4=::meta:camlp4r -d CAMLP4M="-I ::meta {CAMLP4RM}"
     directory ::meta:
 
-steal Ä
-
-compare_stolen Ä
-
 clean ÄÄ
     delete -i {OUT}
 
