@@ -1075,7 +1075,7 @@ let rec matcher_const cst p rem = match p.pat_desc with
 | _ -> raise NoMatch
 
 let get_key_constant caller = function
-  | {pat_desc= Tpat_constant cst} as p -> cst
+  | {pat_desc= Tpat_constant cst} -> cst
   | p ->
       prerr_endline ("BAD: "^caller) ;
       pretty_pat p ;
@@ -1241,7 +1241,7 @@ let get_key_variant p = match p.pat_desc with
 | Tpat_variant(lab, None , _) -> Cstr_constant (Btype.hash_variant lab)
 |  _ -> assert false
 
-let divide_variant row ctx ({cases = cl; args = al; default=def} as pm) =
+let divide_variant row ctx {cases = cl; args = al; default=def} =
   let row = Btype.row_repr row in
   let rec divide = function
       ({pat_desc = Tpat_variant(lab, pato, _)} as p:: patl, action) :: rem ->
@@ -1486,7 +1486,7 @@ let as_int_list cases acts =
   let default = max_vals cases acts in
   let min_key,_,_ = cases.(0)
   and _,max_key,_ = cases.(Array.length cases-1) in
-  let offset = max_key-min_key in
+
   let rec do_rec i k =
     if i >= 0 then
       let low, high, act =  cases.(i) in
@@ -1636,7 +1636,7 @@ let as_interval_canfail fail low high l =
 
   let rec init_rec = function
     | [] -> []
-    | (i,act_i)::rem as all ->
+    | (i,act_i)::rem ->
         let index = store.act_store act_i in
         if index=0 then
           fail_rec low i rem
@@ -1894,7 +1894,6 @@ let combine_constructor arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   if cstr.cstr_consts < 0 then begin
     (* Special cases for exceptions *)    
-    let cstrs = List.map fst tag_lambda_list in
     let fail, to_add, local_jumps =
       mk_failaction_neg partial ctx def in
     let tag_lambda_list = to_add@tag_lambda_list in
@@ -1921,8 +1920,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
     (* Regular concrete type *)
     let ncases = List.length tag_lambda_list
     and nconstrs =  cstr.cstr_consts + cstr.cstr_nonconsts in
-    let sig_complete = ncases = nconstrs
-    and cstrs = List.map fst tag_lambda_list in
+    let sig_complete = ncases = nconstrs in
     let fails,local_jumps =
       if sig_complete then [],jumps_empty
       else

@@ -696,7 +696,7 @@ let build_other_constant proj make first next p env =
 *)
 
 let build_other env =  match env with
-| ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _} as c,_)},_) as p
+| ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _} as c,_)},_)
   ::_ ->
     make_pat
       (Tpat_construct
@@ -1584,7 +1584,7 @@ let check_unused tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
     let rec do_rec pref = function
       | [] -> ()
-      | (q,act as clause)::rem ->
+      | (q,act)::rem ->
           let qs = [q] in
             begin try
               let pss =
