@@ -90,7 +90,7 @@ and joinlocation =
 
 and joinautomaton =
     {jauto_desc : joinclause list ;
-     jauto_names : (Ident.t * type_expr) list ; (* names defined *)
+     jauto_names : (Ident.t * bool) list ; (* names defined, sync/async*)
      jauto_loc : Location.t}
 
 and joinclause =

@@ -1317,6 +1317,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = body.exp_type;
         exp_env  = env
       } 
+  | Pexp_loc (d, sbody) -> assert false
 (*< JOCAML *)
 
 and type_argument env sarg ty_expected =
@@ -1737,29 +1738,71 @@ and type_let env rec_flag spat_sexp_list =
 
 (*> JOCAML *)
 (* Typing of join definitions *)
-and type_jclause env jpats scl =
+and type_clause env names jpats scl =
+  let conts = ref [] in
   let extend_env env jpat =
     let chan,args = jpat.jpat_desc in
-    let kid = chan.jident_desc in    
+    let kid = chan.jident_desc
+    and kdesc =
+      {continuation_type = newvar();
+      continuation_kind = false;} in
+    conts := kdesc :: !conts;
     List.fold_left
       (fun env jid ->
-        add_value
+        Env.add_value
           jid.jident_desc
           {val_kind = Val_reg ;
-           val_type = jident_type}
+           val_type = jid.jident_type}
           env)
-      (add_continuation kid (newvar()) env) in
-  let new_env =
-    List.fold_left extend_env jpats
-  let _,sexp = scl.pjclause_desc in
+      (Env.add_continuation kid kdesc env) args in
+  let new_env = List.fold_left extend_env env jpats
+  and _,sexp = scl.pjclause_desc in
   let exp = do_type_exp P new_env sexp in
-  (* Now type defined names *)
-  List.iter
-    (fun jpat ->
-      let chan, args = 
 
-and type_auto env (_, auto_lhs) sauto =
- 
+  (* Now type defined names *)
+  List.iter2
+    (fun jpat kdesc ->
+      let chan, args = jpat.jpat_desc in
+      let tchan =
+        try
+          List.assoc chan.jident_desc names
+        with Not_found -> assert false in
+      let targs = match args with
+      | [] -> instance (Predef.type_unit)
+      | [jid] -> jid.jident_type
+      | _ ->
+          newty
+            (Ttuple (List.map (fun jid -> jid.jident_type) args)) in
+      let otchan =
+        match kdesc with
+        | {continuation_kind=false} ->
+            instance (Predef.type_channel targs)
+        | {continuation_type=tres} ->
+            newty (Tarrow ("", targs, tres, Cok)) in
+      try
+        unify env tchan otchan
+      with Unify trace ->
+        raise(Error(jpat.jpat_loc, Pattern_type_clash(trace))))
+    jpats !conts ;
+
+  { jclause_loc = scl.pjclause_loc;
+    jclause_desc = (jpats, exp);}
+  
+
+and type_auto env (def_names, auto_lhs) sauto =
+  let cls =
+    List.map2 (type_clause env def_names) auto_lhs sauto.pjauto_desc in
+  let def_names =
+    List.map
+      (fun (chan, ty) -> match (expand_head env ty).desc with
+      | Tarrow (_, _, _, _) -> chan, true
+      | Tconstr (p, _, _) when Path.same p Predef.path_channel -> chan, false
+      | _ -> assert false)
+      def_names in
+  {jauto_desc = cls;
+   jauto_names = def_names;
+   jauto_loc = sauto.pjauto_loc}
+
 and type_def env sautos =
   begin_def ();
   let names_lhs_list = type_autos_lhs env sautos in
@@ -1772,16 +1815,9 @@ and type_def env sautos =
           env names)
       env names_lhs_list in
   let autos =
-    List.map2
-      (fun (_, auto_lhs) sauto ->
-        List.map2
-          (fun jpats cl ->)
-          auto_lhs sauto
-      )
-      names_lhs_list
-      sautos
+    List.map2 (type_auto env) names_lhs_list sautos in
   end_def () ;
-  ()
+  autos, new_env
   
 (*< JOCAML *)
 

@@ -623,11 +623,8 @@ and add_cltype id ty env =
   store_cltype id (Pident id) ty env
 
 (*> JOCAML *)
-and add_continuation id ty env  =
-  let desc =
-      {continuation_type = ty;
-      continuation_kind = false;} in
-  let new_cont = 
+and add_continuation id desc env  =
+  let new_conts = 
     Ident.add id (Pident id, desc) env.continuations in
   {env with continuations = new_conts}
 
