@@ -134,8 +134,10 @@ let divide_constructor {cases = cl; args = al} =
 
 (* Matching against a variant *)
 
-let make_variant_matching_constant argl =
-  { cases = []; args = argl }
+let make_variant_matching_constant = function
+    [] -> fatal_error "Matching.make_variant_matching_constant"
+  | ((arg, mut) :: argl) ->
+      { cases = []; args = argl }
 
 let make_variant_matching_nonconst = function
     [] -> fatal_error "Matching.make_variant_matching_nonconst"
@@ -147,7 +149,9 @@ let divide_variant row {cases = cl; args = al} =
   let rec divide = function
       ({pat_desc = Tpat_variant(lab, pato, _)} :: patl, action) :: rem ->
         let (variants, others) = divide rem in
-        if Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent then
+        if try Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent
+           with Not_found -> true
+        then
           (variants, others)
         else begin
           let tag = Btype.hash_variant lab in
