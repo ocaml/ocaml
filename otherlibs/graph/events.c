@@ -77,7 +77,8 @@ value gr_wait_event(value eventlist)
       mouse_x = win_x;
       mouse_y = win_y;
     }
-    button = modifiers & Button1Mask;
+    button = modifiers & (Button1Mask | Button2Mask | Button3Mask 
+                          | Button4Mask | Button5Mask);
     if (!QueueIsEmpty) key = gr_queue[gr_head];
   } else {
     if ((mask & KeyPressMask) && !QueueIsEmpty) {
@@ -99,12 +100,14 @@ value gr_wait_event(value eventlist)
       case ButtonRelease:
         mouse_x = event.xbutton.x;
         mouse_y = event.xbutton.y;
-        button = event.type == ButtonPress;
+        button = (event.type == ButtonPress);
         break;
       case MotionNotify:
         mouse_x = event.xmotion.x;
         mouse_y = event.xmotion.y;
-        button = event.xmotion.state & Button1Mask;
+        button = event.xmotion.state &
+                 (Button1Mask | Button2Mask | Button3Mask
+                  | Button4Mask | Button5Mask);
         break;
       case KeyPress:
         gr_handle_simple_event(&event);
