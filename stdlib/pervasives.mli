@@ -462,6 +462,15 @@ val close_out : out_channel -> unit
         (* Close the given channel, flushing all buffered write operations.
            The behavior is unspecified if any of the functions above is
            called on a closed channel. *)
+val set_binary_mode_out : out_channel -> bool -> unit
+        (* [set_binary_mode_out oc true] sets the channel [oc] to binary
+           mode: no translations take place during output.
+           [set_binary_mode_out oc false] sets the channel [oc] to text
+           mode: depending on the operating system, some translations
+           may take place during output.  For instance, under Windows,
+           end-of-lines will be translated from [\n] to [\r\n].
+           This function has no effect under operating systems that
+           do not distinguish between text mode and binary mode. *)
 
 (** General input functions *)
 
@@ -534,6 +543,15 @@ val in_channel_length : in_channel -> int
 val close_in : in_channel -> unit
         (* Close the given channel. Anything can happen if any of the
            functions above is called on a closed channel. *)
+val set_binary_mode_in : in_channel -> bool -> unit
+        (* [set_binary_mode_in ic true] sets the channel [ic] to binary
+           mode: no translations take place during input.
+           [set_binary_mode_out ic false] sets the channel [ic] to text
+           mode: depending on the operating system, some translations
+           may take place during input.  For instance, under Windows,
+           end-of-lines will be translated from [\r\n] to [\n].
+           This function has no effect under operating systems that
+           do not distinguish between text mode and binary mode. *)
 
 (*** References *)
 

@@ -416,6 +416,16 @@ value caml_channel_size(value vchannel)      /* ML */
   return Val_long(channel_size(Channel(vchannel)));
 }
 
+value caml_set_binary_mode(value vchannel, value mode) /* ML */
+{
+#ifdef _WIN32
+  struct channel * channel = Channel(vchannel);
+  if (setmode(channel->fd, Bool_val(mode) ? O_BINARY : O_TEXT) == -1)
+    sys_error(NO_ARG);
+#endif
+  return Val_unit;
+}
+
 value caml_flush_partial(value vchannel)            /* ML */
 {
   struct channel * channel = Channel(vchannel);
