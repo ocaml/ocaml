@@ -75,7 +75,6 @@ let catch_break on =
     set_signal sigint Signal_default
 
 
-(* OCaml version string, moved from utils/config.mlp.
-   Must be in the format described in sys.mli. *)
+(* OCaml version string, must be in the format described in sys.mli. *)
 
-let ocaml_version = "3.06+10 (2002-10-28)"
+let ocaml_version = "3.06+11 (2002-10-29)";;

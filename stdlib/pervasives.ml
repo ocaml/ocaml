@@ -271,9 +271,10 @@ external seek_out : out_channel -> int -> unit = "caml_seek_out"
 external pos_out : out_channel -> int = "caml_pos_out"
 external out_channel_length : out_channel -> int = "caml_channel_size"
 external close_out_channel : out_channel -> unit = "caml_close_channel"
-let close_out oc =
-  begin try flush oc with _ -> () end;
-  close_out_channel oc
+let close_out oc = (try flush oc with _ -> ()); close_out_channel oc
+let close_out_noerr oc =
+  (try flush oc with _ -> ());
+  (try close_out_channel oc with _ -> ())
 external set_binary_mode_out : out_channel -> bool -> unit
                              = "caml_set_binary_mode"
 
@@ -348,6 +349,7 @@ external seek_in : in_channel -> int -> unit = "caml_seek_in"
 external pos_in : in_channel -> int = "caml_pos_in"
 external in_channel_length : in_channel -> int = "caml_channel_size"
 external close_in : in_channel -> unit = "caml_close_channel"
+let close_in_noerr ic = (try close_in ic with _ -> ());;
 external set_binary_mode_in : in_channel -> bool -> unit
                             = "caml_set_binary_mode"
 

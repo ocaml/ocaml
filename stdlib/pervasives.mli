@@ -617,7 +617,13 @@ val close_out : out_channel -> unit
 (** Close the given channel, flushing all buffered write operations.
    Output functions raise a [Sys_error] exception when they are
    applied to a closed output channel, except [close_out] and [flush],
-   which do nothing when applied to an already closed channel. *)
+   which do nothing when applied to an already closed channel.
+   Note that [close_out] may raise [Sys_error] if the operating
+   system signals an error when closing the underlying file descriptor. *)
+
+val close_out_noerr : out_channel -> unit
+(** Same as [close_out], but ignore all errors and never raise
+    [Sys_error]. *)
 
 val set_binary_mode_out : out_channel -> bool -> unit
 (** [set_binary_mode_out oc true] sets the channel [oc] to binary
@@ -720,7 +726,13 @@ val close_in : in_channel -> unit
 (** Close the given channel.  Input functions raise a [Sys_error]
   exception when they are applied to a closed input channel,
   except [close_in], which does nothing when applied to an already
-  closed channel. *)
+  closed channel.  Note that [close_in] may raise [Sys_error] if
+  the operating system signals an error when closing the underlying
+  file descriptor. *)
+
+val close_in_noerr : in_channel -> unit
+(** Same as [close_in], but ignore any errors and never raise
+    [Sys_error]. *)
 
 val set_binary_mode_in : in_channel -> bool -> unit
 (** [set_binary_mode_in ic true] sets the channel [ic] to binary

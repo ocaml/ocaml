@@ -485,14 +485,17 @@ CAMLprim value channel_descriptor(value vchannel)
 
 CAMLprim value caml_close_channel(value vchannel)
 {
+  int result;
+
   /* For output channels, must have flushed before */
   struct channel * channel = Channel(vchannel);
-  close(channel->fd);
+  result = close(channel->fd);
   channel->fd = -1;
   /* Ensure that every read or write on the channel will cause an
      immediate flush_partial or refill, thus raising a Sys_error
      exception */
   channel->curr = channel->max = channel->end;
+  if (result == -1) sys_error (NO_ARG);
   return Val_unit;
 }
 

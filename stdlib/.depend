@@ -41,8 +41,8 @@ int64.cmo: int32.cmi obj.cmi pervasives.cmi int64.cmi
 int64.cmx: int32.cmx obj.cmx pervasives.cmx int64.cmi 
 lazy.cmo: obj.cmi lazy.cmi 
 lazy.cmx: obj.cmx lazy.cmi 
-lexing.cmo: string.cmi sys.cmi lexing.cmi 
-lexing.cmx: string.cmx sys.cmx lexing.cmi 
+lexing.cmo: array.cmi string.cmi sys.cmi lexing.cmi 
+lexing.cmx: array.cmx string.cmx sys.cmx lexing.cmi 
 list.cmo: list.cmi 
 list.cmx: list.cmi 
 listLabels.cmo: list.cmi listLabels.cmi 
@@ -65,8 +65,10 @@ pervasives.cmo: pervasives.cmi
 pervasives.cmx: pervasives.cmi 
 printexc.cmo: obj.cmi printf.cmi sys.cmi printexc.cmi 
 printexc.cmx: obj.cmx printf.cmx sys.cmx printexc.cmi 
-printf.cmo: buffer.cmi char.cmi list.cmi obj.cmi string.cmi printf.cmi 
-printf.cmx: buffer.cmx char.cmx list.cmx obj.cmx string.cmx printf.cmi 
+printf.cmo: buffer.cmi char.cmi list.cmi obj.cmi string.cmi sys.cmi \
+    printf.cmi 
+printf.cmx: buffer.cmx char.cmx list.cmx obj.cmx string.cmx sys.cmx \
+    printf.cmi 
 queue.cmo: obj.cmi queue.cmi 
 queue.cmx: obj.cmx queue.cmi 
 random.cmo: array.cmi char.cmi digest.cmi string.cmi random.cmi 
