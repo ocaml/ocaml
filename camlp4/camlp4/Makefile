@@ -48,7 +48,7 @@ depend:
 	> .depend
 	@for i in *.mli *.ml; do \
 	  ../tools/apply.sh pr_depend.cmo -- $(INCLUDES) $$i | \
-	  sed 's|$(OTOP)|$$(OTOP)|g' >> .depend; \
+	  sed -e 's| \.\./\.\.| $$(OTOP)|g' >> .depend; \
 	done
 
 promote:
