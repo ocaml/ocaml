@@ -24,7 +24,7 @@ open Ratio
 type num = Int of int | Big_int of big_int | Ratio of ratio
         (* The type of numbers. *)
 
-(* Arithmetic operations *)
+(*** Arithmetic operations *)
 
 val (+/) : num -> num -> num
 val add_num : num -> num -> num
@@ -92,7 +92,7 @@ val incr_num: num ref -> unit
 val decr_num: num ref -> unit
         (* [decr r] is [r:=!r-1], where [r] is a reference to a number. *)
 
-(* Coercions with strings *)
+(*** Coercions with strings *)
 
 val string_of_num : num -> string
         (* Convert a number to a string, using fractional notation. *)
@@ -107,7 +107,7 @@ val approx_num_exp : int -> num -> string
 val num_of_string : string -> num
         (* Convert a string to a number. *)
 
-(* Coercions between numerical types *)
+(*** Coercions between numerical types *)
 
 val int_of_num : num -> int
 val num_of_int : int -> num
