@@ -114,7 +114,7 @@ let rec size_of_lambda = function
   | Llet(str, id, arg, body) ->
       size_of_lambda body
   | _ ->
-      fatal_error "Codegen.size_of_lambda"
+      fatal_error "Bytegen.size_of_lambda"
 
 (**** Compilation of a lambda expression ****)
 
@@ -148,7 +148,7 @@ let rec comp_expr env exp sz cont =
         Kenvacc(pos) :: cont
       with Not_found ->
         Ident.print id; print_newline();
-        fatal_error "Codegen.comp_expr: var"
+        fatal_error "Bytegen.comp_expr: var"
       end
   | Lconst cst ->
       Kconst cst :: cont
@@ -316,7 +316,7 @@ let rec comp_expr env exp sz cont =
         | Parrayrefu kind -> Kgetvectitem
         | Parraysetu kind -> Ksetvectitem
         | Pbittest -> Kccall("bitvect_test", 2)
-        | _ -> fatal_error "Codegen.comp_expr: prim" in
+        | _ -> fatal_error "Bytegen.comp_expr: prim" in
       comp_args env args sz (instr :: cont)
   | Lcatch(body, Lstaticfail) ->
       comp_expr env body sz cont
@@ -395,7 +395,7 @@ let rec comp_expr env exp sz cont =
         let pos = Ident.find_same id env.ce_stack in
         comp_expr env expr sz (Kassign(sz - pos) :: cont)
       with Not_found ->
-        fatal_error "Codegen.comp_expr: assign"
+        fatal_error "Bytegen.comp_expr: assign"
       end
 
 

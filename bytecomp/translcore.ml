@@ -226,16 +226,16 @@ let transl_primitive p =
 let check_recursive_lambda id lam =
   let rec check_top = function
       Lfunction(params, body) as funct -> true
-    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
-    | Llet(str, id, arg, body) -> check arg & check_top body
+    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check_comp args
+    | Llet(str, id, arg, body) -> check_comp arg & check_top body
     | _ -> false
-  and check = function
-      Lvar _ -> true
+  and check_comp = function
+      Lvar v -> true
     | Lconst cst -> true
-    | Lfunction(params, body) -> true
-    | Llet(_, _, arg, body) -> check arg & check body
-    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
-    | lam -> not(IdentSet.mem id (free_variables lam))
+    | Lfunction(params, body) as funct -> true
+    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check_comp args
+    | Llet(str, id, arg, body) -> check_comp arg & check_comp body
+    | _ -> false
   in check_top lam
 
 (* To propagate structured constants *)
