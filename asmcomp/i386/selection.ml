@@ -277,9 +277,12 @@ method emit_extcall_args env args =
   | e :: el ->
       let ofs = emit_pushes el in
       let (op, arg) = self#select_push e in
-      let r = self#emit_expr env arg in
-      self#insert (Iop op) r [||];
-      ofs + Selectgen.size_expr env e
+      begin match self#emit_expr env arg with
+        None -> ofs
+      | Some r ->
+          self#insert (Iop op) r [||];
+          ofs + Selectgen.size_expr env e
+      end
   in ([||], emit_pushes args)
 
 end
