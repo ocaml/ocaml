@@ -104,7 +104,8 @@ value is_keyword =
 
 value has_special_chars v =
   match v.[0] with
-  [ 'a'..'z' | 'A'..'Z' | '_' -> False
+  [ 'a'..'z' | 'A'..'Z' | '\192'..'\214' | '\216'..'\246'
+  | '\248'..'\255' | '_' -> False
   | _ ->
       if String.length v >= 2 && v.[0] == '<' &&
          (v.[1] == '<' || v.[1] == ':')
