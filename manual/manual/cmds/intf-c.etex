@@ -532,15 +532,18 @@ before the next allocation.
 
 Blocks with tag "Final_tag" have an attached C finalization function
 that is called when the block becomes unreachable and is about to be
-reclaimed.  The finalization function occupies the first word of the
+reclaimed.  A pointer to the finalization function occupies the first
+word of the
 allocated block; the remaining words can contain arbitrary raw data
 (but not Caml pointers, since "Final_tag" is greater than
-"No_scan_tag".
+"No_scan_tag").
 
 Finalized blocks must be allocated via the "alloc_final" function.
 "alloc_final("\var{n}", "\var{f}", "\var{used}", "\var{max}")"
 returns a fresh finalized block of size \var{n} words, with
-finalization function \var{f}.
+finalization function \var{f}.  The pointer to the finalization
+function uses the first word, the other \var{n}-1 are available for
+your data.
 
 The two parameters \var{used} and \var{max} are used to control the
 speed of garbage collection when the finalized object contains
