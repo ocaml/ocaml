@@ -132,7 +132,7 @@ void set_signals()
 
 void usage()
 {
-    fprintf(stderr, "usage: %s [-vs] [-b file_prefix] filename\n",
+    fprintf(stderr, "usage: %s [-v] [-b file_prefix] filename\n",
             myname);
     exit(1);
 }
@@ -168,10 +168,6 @@ void getargs(argc, argv)
 	    else
 		usage();
 	    continue;
-
-	case 'v':
-	    vflag = 1;
-	    break;
 
 	case 's':
 	    sflag = 1;
