@@ -36,6 +36,9 @@ call_gen_code:
         move    $8, $5
         move    $9, $6
         move    $10, $7
+#ifdef _PIC
+        move    $25, $4
+#endif
         jal     $4
     /* Restore registers */
         lw      $31, 84($sp)
@@ -64,5 +67,8 @@ call_gen_code:
         .globl  caml_c_call
         .ent    caml_c_call
 caml_c_call:
+#ifdef _PIC
+        move    $25, $24
+#endif
         j       $24
         .end    caml_c_call
