@@ -14,6 +14,9 @@
 
 /* The thread scheduler */
 
+/* <string.h> must be included before we rededfine bcopy. */
+#include <string.h>
+
 #include "callback.h"
 #include "config.h"
 #include "misc.h"
@@ -34,7 +37,6 @@
 #include "Cannot compile libthreads, system calls missing"
 #endif
 
-#include <string.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/types.h>
