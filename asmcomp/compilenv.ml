@@ -41,7 +41,8 @@ type unit_infos =
     mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
     mutable ui_approx: value_approximation;     (* Approx of the structure *)
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
-    mutable ui_apply_fun: int list }            (* Apply functions needed *)
+    mutable ui_apply_fun: int list;             (* Apply functions needed *)
+    mutable ui_force_link: bool }               (* Always linked *)
 
 let global_approx_table =
   (Hashtbl.new 17 : (string, value_approximation) Hashtbl.t)
@@ -53,7 +54,8 @@ let current_unit =
     ui_imports_cmx = [];
     ui_approx = Value_unknown;
     ui_curry_fun = [];
-    ui_apply_fun = [] }
+    ui_apply_fun = [];
+    ui_force_link = false }
 
 let reset name crc_intf =
   Hashtbl.clear global_approx_table;
@@ -62,7 +64,8 @@ let reset name crc_intf =
   current_unit.ui_imports_cmi <- [];
   current_unit.ui_imports_cmx <- [];
   current_unit.ui_curry_fun <- [];
-  current_unit.ui_apply_fun <- []
+  current_unit.ui_apply_fun <- [];
+  current_unit.ui_force_link <- false
 
 let current_unit_name () =
   current_unit.ui_name

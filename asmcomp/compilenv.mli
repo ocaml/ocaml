@@ -22,7 +22,8 @@ type unit_infos =
     mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
     mutable ui_approx: value_approximation;     (* Approx of the structure *)
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
-    mutable ui_apply_fun: int list }            (* Apply functions needed *)
+    mutable ui_apply_fun: int list;             (* Apply functions needed *)
+    mutable ui_force_link: bool }               (* Always linked *)
 
 val reset: string -> Digest.t -> unit
         (* Reset the environment and record the name of the unit being
