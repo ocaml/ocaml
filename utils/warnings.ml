@@ -91,11 +91,11 @@ let message = function
   | Unused_match -> "this match case is unused."
   | Unused_pat   -> "this pattern is unused."
   | Fragile_pat "" ->
-      "this pattern is fragile: it would not cause a warning \n\
-       in case of modification of the data types it matches."
+      "this pattern is fragile. It would hide\n\
+       the addition of new constructors to the data types it matches."
   | Fragile_pat s ->
-      "this pattern is fragile: it would not cause a warning \n\
-       in case of modification of the data types it matches.\n\
+      "this pattern is fragile. It would hide\n\
+       the addition of new constructors to the data types it matches.\n\
        Here is an example of a more robust pattern:\n" ^ s
   | Labels_omitted ->
       "labels were omitted in the application of this function."
