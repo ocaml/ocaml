@@ -617,6 +617,15 @@ checkstack:
 	fi
 	@rm -f tools/checkstack
 
+# Make MacOS X package
+
+package-macosx: FORCE
+	make BINDIR="`pwd`"/package-macosx/root$(BINDIR) \
+	     LIBDIR="`pwd`"/package-macosx/root$(LIBDIR) \
+	     MANDIR="`pwd`"/package-macosx/root$(MANDIR) install
+	cd package-macosx; package root ocaml.info; \
+	                   tar cvf ocaml-macosx.tar ocaml.pkg
+
 # Default rules
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
