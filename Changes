@@ -1,5 +1,66 @@
-Objective Caml 3.03:
+Objective Caml 3.04:
 --------------------
+
+Type-checker:
+- Allowed coercing self to the type of the current class, avoiding
+  an obscure error message about "Self type cannot be unified..."
+
+Both compilers:
+- Use OCAMLLIB environment variable to find standard library, falls
+  back on CAMLLIB if not defined.
+- Report out-of-range ASCII escapes in character or string literals
+  such as "\256".
+
+Byte-code compiler:
+- The -use-runtime and -make-runtime flags are back by popular demand
+  (same behavior as in 3.02).
+- Dynamic loading (of the C part of mixed Caml/C libraries): arrange that
+  linking in -custom mode uses the static libraries for the C parts,
+  not the shared libraries, for maximal robustness and compatibility with
+  3.02.
+
+Native-code compiler:
+- Fixed bug in link-time consistency checking.
+
+Tools:
+- ocamlyacc: added parser debugging support (set OCAMLRUNPARAM=p to get
+  a trace of the pushdown automaton actions).
+- ocamlcp: was broken in 3.03 (Sys_error), fixed.
+
+Run-time system:
+- More work on  dynamic loading of the C part of mixed Caml/C libraries.
+- On uncaught exception, flush output channels before printing exception
+  message and backtrace.
+- Corrected several errors in exception backtraces.
+
+Standard library:
+- Pervasives: integer division and modulus are now fully specified
+  on negative arguments (with round-towards-zero semantics).
+- Pervasives.float_of_string: now raises Failure on ill-formed input.
+- Pervasives: added useful float constants max_float, min_float, epsilon_float.
+- printf functions in Printf and Format: added % formats for int32, nativeint,
+  int64; "*" in width and precision specifications now supported 
+  (contributed by Thorsten Ohl).
+- Added Hashtbl.copy, Stack.copy.
+- Hashtbl: revised resizing strategy to avoid quadratic behavior 
+  on Hashtbl.add.
+- New module MoreLabels providing labelized versions of modules
+  Hashtbl, Map and Set.
+- Pervasives.output_value and Marshal.to_* : improved hashing strategy
+  for internal data structures, avoid excessive slowness on 
+  quasi-linearly-allocated inputs.
+
+Other libraries:
+
+Windows port:
+- New GUI for interactive toplevel (Jacob Navia).
+- The Graphics library is now available for stand-alone executables
+  (Jacob Navia).
+- Unix library: improved reporting of system error codes.
+- Fixed error in "globbing" of * and ? patterns on command line.
+
+Objective Caml 3.03 ALPHA:
+--------------------------
 
 Language:
 - Removed built-in syntactic sugar for streams and stream patterns
@@ -12,10 +73,9 @@ Language:
 - Removed all labels in the standard libraries, except labltk.
   Labelized versions are kept for ArrayLabels, ListLabels, StringLabels
   and UnixLabels. "open StdLabels" gives access to the first three.
-  To help porting, Hashtbl, Map and Set are also available in MoreLabels.
 - Extended polymorphic variant type syntax, allowing union types and
   row abbreviations for both sub- and super-types. #t deprecated in types.
-- See the "Upgrading" file for how to adapt to all the changes above.
+- See the Upgrading file for how to adapt to all the changes above.
 
 Type-checker:
 - Fixed obscure bug in module typing causing the type-checker to loop
@@ -26,8 +86,6 @@ Type-checker:
 - Improved efficiency of module type-checking via lazy computation of
   certain signature summary information.
 - An empty polymorphic variant type is now an error.
-- Allowed coercing self to the type of the current class, avoiding
-  an obscure error message about "Self type cannot be unified..."
 
 Both compilers:
 - Fixed wrong code generated for "struct include M ... end" when M
@@ -37,6 +95,8 @@ Byte-code compiler:
 - Protect against VM stack overflow caused by module initialization code
   with many local variables.
 - Support for dynamic loading of the C part of mixed Caml/C libraries.
+- Removed the -use-runtime and -make-runtime flags, obsoleted by dynamic
+  loading of C libraries.
 
 Native-code compiler:
 - Attempt to recover gracefully from system stack overflow.  Currently
@@ -56,8 +116,6 @@ Tools:
   They provide easy transition from classic mode ocaml 3.02 sources,
   depending on whether you want to keep labels or not.
 - ocamldep: added -pp option to handle preprocessed source files.
-- ocamlyacc: added parser debugging support (set OCAMLRUNPARAM=p to get
-  a trace of the pushdown automaton actions).
 
 Run-time system:
 - Support for dynamic loading of the C part of mixed Caml/C libraries.
@@ -66,19 +124,9 @@ Run-time system:
   runs much faster when there are many global C roots.
 - Autoconfiguration script: fixed wrong detection of Mac OS X; problem
   with the Sparc, gcc 3.0, and float alignment fixed.
-- On uncaught exception, flush output channels before printing exception
-  message and backtrace.
 
 Standard library:
 - Added Pervasives.flush_all to flush all opened output channels.
-- Pervasives.float_of_string: now raises Failure on ill-formed input.
-- Pervasives: added useful float constants max_float, min_float, epsilon_float.
-- printf functions in Printf and Format: added % formats for int32, nativeint,
-  int64; "*" in width and precision specifications now supported 
-  (contributed by Thorsten Ohl).
-- Added Hashtbl.copy, Stack.copy.
-- Hashtbl: revised resizing strategy to avoid quadratic behavior 
-  on Hashtbl.add.
 
 Other libraries:
 - All libraries revised to allow dynamic loading of the C part.
@@ -89,6 +137,8 @@ Other libraries:
 
 Windows port:
 - Fixed broken Unix.{get,set}sockopt*
+
+
 
 Objective Caml 3.02:
 --------------------
