@@ -58,7 +58,7 @@ let infix_header ofs = block_header 249 ofs
 let float_header = block_header 253 (size_float / size_addr)
 let floatarray_header len = block_header 254 (len * size_float / size_addr)
 let string_header len = block_header 252 ((len + size_addr) / size_addr)
-let boxedint_header = block_header 255 1
+let boxedint_header = block_header 255 2
 
 let alloc_block_header tag sz = Cconst_natint(block_header tag sz)
 let alloc_float_header = Cconst_natint(float_header)
@@ -73,7 +73,7 @@ let max_repr_int = max_int asr 1
 let min_repr_int = min_int asr 1
 
 let int_const n =
-  if n <= max_repr_int & n >= min_repr_int
+  if n <= max_repr_int && n >= min_repr_int
   then Cconst_int((n lsl 1) + 1)
   else Cconst_natint(Nativeint.add
                        (Nativeint.shift_left (Nativeint.of_int n) 1)
