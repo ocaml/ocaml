@@ -655,13 +655,12 @@ let kscanf ib ef fmt f =
     | 'B' ->
         let x = scan_bool max ib in
         scan_fmt (stack f (token_bool ib)) (i + 1)
-    | 'n' when i = lim ->
-        let x = Scanning.char_count ib in
-        scan_fmt (stack f x) (i + 1)
     | 'l' | 'n' | 'L' as t ->
         let i = i + 1 in
-        if i > lim then bad_format fmt (i - 1) t else
-        begin match fmt.[i] with
+        if i > lim then
+          let x = Scanning.char_count ib in
+          scan_fmt (stack f x) i else begin
+        match fmt.[i] with
         | 'b' | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
             let x = scan_int conv max ib in
             begin match t with
@@ -670,8 +669,7 @@ let kscanf ib ef fmt f =
             | _ -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1) end
         | c ->
             let x = Scanning.char_count ib in
-            scan_fmt (stack f x) i
-        end
+            scan_fmt (stack f x) i end
     | 'N' ->
         let x = Scanning.token_count ib in
         scan_fmt (stack f x) (i + 1)
