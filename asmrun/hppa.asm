@@ -12,50 +12,90 @@
 ; $Id$
 
 ; Asm part of the suntime system for the HP PA-RISC processor.
+; Must be preprocessed by cpp
 
-	.comm	_young_limit, 8
-	.comm	_young_ptr, 8
-	.comm	_gc_entry_regs, 32 * 4
-	.comm	_gc_entry_float_regs, 32 * 8
-	.comm	_caml_top_of_stack, 8
-	.comm	_caml_bottom_of_stack, 8
-	.comm	_caml_last_return_address, 8
-	.comm	_caml_exception_pointer, 8
-	.comm	_caml_required_size, 8
+#ifdef SYS_hpux
+#define G(x) x
+#define CODE .code
+#define CODE_ALIGN 4
+#define EXPORT_CODE(x) .export x, entry, priv_lev=3
+#define EXPORT_DATA(x) .export x, data
+#define COMM(x,size) x .comm size
+#define STARTPROC .proc ! .callinfo frame=0, no_calls ! .entry
+#define ENDPROC .exit ! .procend
+#define LOADHIGH(x) addil LR%x-$global$, %r27
+#define LOW(x) RR%x-$global
+#define LOADHIGHLABEL(x) addil LR%x, %r27
+#define LOWLABEL(x) RR%x
+#define CALL(x) bl x, %r2 ! nop
+#endif
+
+#ifdef SYS_nextstep
+#define G(x) _##x
+#define CODE .text
+#define CODE_ALIGN 2
+#define EXPORT_CODE(x) .globl x
+#define EXPORT_DATA(x) .globl x
+#define COMM(x,size) .comm x, size
+#define STARTPROC
+#define ENDPROC
+#define LOADHIGH(x) ldil L`x, %r1
+#define LOW(x) R`x
+#define LOADHIGHLABEL(x) ldil L`x, %r1
+#define LOWLABEL(x) R`x
+#define CALL(x) ldil L`x, %r1; ble R`x(4, %r1); copy %r31, %r2
+#endif
+
+COMM(G(young_limit), 8)
+COMM(G(young_ptr), 8)
+COMM(G(gc_entry_regs), 32 * 4)
+COMM(G(gc_entry_float_regs), 32 * 8)
+COMM(G(caml_top_of_stack), 8)
+COMM(G(caml_bottom_of_stack), 8)
+COMM(G(caml_last_return_address), 8)
+COMM(G(caml_exception_pointer), 8)
+COMM(G(caml_required_size), 8)
+
+#ifdef SYS_hpux
+        .import $$dyncall, MILLICODE
 
 ; Allocation functions
 
-        .text
-	.align	2
-        .globl  _caml_alloc
-_caml_alloc:
+        CODE
+	.align	CODE_ALIGN
+        EXPORT_CODE(G(caml_alloc))
+G(caml_alloc):
+        STARTPROC
 ; Required size in %r1
         ldw     0(%r4), %r31
         sub     %r3, %r1, %r3
-        comb,<<,n %r3, %r31, _caml_call_gc ; nullify if taken (forward branch)
+        comb,<<,n %r3, %r31, G(caml_call_gc) ; nullify if taken (forward br.)
         bv      0(%r2)
         nop
+        ENDPROC
 
-        .globl  _caml_call_gc
-_caml_call_gc:
+        EXPORT_CODE(G(caml_call_gc))
+G(caml_call_gc):
+        STARTPROC
 ; Save required size (%r1)
-        ldil    L`_caml_required_size, %r31
-        stw     %r1, R`_caml_required_size(%r31)
+        copy    %r1, %r31
+        LOADHIGH(G(caml_required_size))
+        stw     %r31, LOW(G(caml_required_size))(%r1)
 ; Save current allocation pointer for debugging purposes
-        ldil    L`_young_ptr, %r1
-        stw     %r3, R`_young_ptr(%r1)
+        LOADHIGH(G(young_ptr))
+        stw     %r3, LOW(G(young_ptr))(%r1)
 ; Record lowest stack address
-        ldil    L`_caml_bottom_of_stack, %r1
-        stw     %r30, R`_caml_bottom_of_stack(%r1)
+        LOADHIGH(G(caml_bottom_of_stack))
+        stw     %r30, LOW(G(caml_bottom_of_stack))(%r1)
 ; Record return address
-        ldil    L`_caml_last_return_address, %r1
-        stw     %r2, R`_caml_last_return_address(%r1)
+        LOADHIGH(G(caml_last_return_address))
+        stw     %r2, LOW(G(caml_last_return_address))(%r1)
 ; Save the exception handler (if e.g. a sighandler raises)
-        ldil    L`_caml_exception_pointer, %r1
-        stw     %r5, R`_caml_exception_pointer(%r1)
+        LOADHIGH(G(caml_exception_pointer))
+        stw     %r5, LOW(G(caml_exception_pointer))(%r1)
 ; Save all regs used by the code generator
-        ldil	L`_gc_entry_regs, %r1
-        ldo     R`_gc_entry_regs(%r1), %r1
+        LOADHIGH(G(gc_entry_regs))
+        ldo     LOW(G(gc_entry_regs))(%r1), %r1
         stws,ma %r6, 4(%r1)
         stws,ma %r7, 4(%r1)
         stws,ma %r8, 4(%r1)
@@ -79,8 +119,8 @@ _caml_call_gc:
         stws,ma %r26, 4(%r1)
         stws,ma %r28, 4(%r1)
         stws,ma %r29, 4(%r1)
-        ldil	L`_gc_entry_float_regs, %r1
-        ldo     R`_gc_entry_float_regs(%r1), %r1
+        LOADHIGH(G(gc_entry_float_regs))
+        ldo     LOW(G(gc_entry_float_regs))(%r1), %r1
         fstds,ma %fr4, 8(%r1)
         fstds,ma %fr5, 8(%r1)
         fstds,ma %fr6, 8(%r1)
@@ -111,14 +151,12 @@ _caml_call_gc:
 
 ; Call the garbage collector
         ldo     64(%r30), %r30
-        ldil    L`_garbage_collection, %r1
-        ble     R`_garbage_collection(4, %r1)
-        copy    %r31, %r2
+        CALL(G(garbage_collection))
         ldo     -64(%r30), %r30
 
 ; Restore all regs used by the code generator
-        ldil	L`_gc_entry_regs, %r1
-        ldo     R`_gc_entry_regs(%r1), %r1
+        LOADHIGH(G(gc_entry_regs))
+        ldo     LOW(G(gc_entry_regs))(%r1), %r1
         ldws,ma 4(%r1), %r6
         ldws,ma 4(%r1), %r7
         ldws,ma 4(%r1), %r8
@@ -142,8 +180,8 @@ _caml_call_gc:
         ldws,ma 4(%r1), %r26
         ldws,ma 4(%r1), %r28
         ldws,ma 4(%r1), %r29
-        ldil	L`_gc_entry_float_regs, %r1
-        ldo     R`_gc_entry_float_regs(%r1), %r1
+        LOADHIGH(G(gc_entry_float_regs))
+        ldo     LOW(G(gc_entry_float_regs))(%r1), %r1
         fldds,ma 8(%r1), %fr4
         fldds,ma 8(%r1), %fr5
         fldds,ma 8(%r1), %fr6
@@ -173,53 +211,62 @@ _caml_call_gc:
         fldds,ma 8(%r1), %fr30
 
 ; Reload the allocation pointer
-        ldil    L`_young_ptr, %r1
-        ldw     R`_young_ptr(%r1), %r3
+        LOADHIGH(G(young_ptr))
+        ldw     LOW(G(young_ptr))(%r1), %r3
 ; Allocate space for block
-        ldil    L`_caml_required_size, %r1
-        ldw     R`_caml_required_size(%r1), %r1
+        LOADHIGH(G(caml_required_size))
+        ldw     LOW(G(caml_required_size))(%r1), %r1
         sub     %r3, %r1, %r3
 ; Return to caller
-        ldil    L`_caml_last_return_address, %r1
-        ldw     R`_caml_last_return_address(%r1), %r2
+        LOADHIGH(G(caml_last_return_address))
+        ldw     LOW(G(caml_last_return_address))(%r1), %r2
         bv      0(%r2)
         nop
+        ENDPROC
 
 ; Call a C function from Caml
 ; Function to call is in %r22
 
-	.align	2
-	.globl  _caml_c_call
-_caml_c_call:
+	.align	CODE_ALIGN
+	EXPORT_CODE(G(caml_c_call))
+G(caml_c_call):
+        STARTPROC
 ; Record lowest stack address
-        ldil    L`_caml_bottom_of_stack, %r1
-        stw     %r30, R`_caml_bottom_of_stack(%r1)
+        LOADHIGH(G(caml_bottom_of_stack))
+        stw     %r30, LOW(G(caml_bottom_of_stack))(%r1)
 ; Record return address
-        ldil    L`_caml_last_return_address, %r1
-        stw     %r2, R`_caml_last_return_address(%r1)
+        LOADHIGH(G(caml_last_return_address))
+        stw     %r2, LOW(G(caml_last_return_address))(%r1)
 ; Save the exception handler
-        ldil    L`_caml_exception_pointer, %r1
-        stw     %r5, R`_caml_exception_pointer(%r1)
+        LOADHIGH(G(caml_exception_pointer))
+        stw     %r5, LOW(G(caml_exception_pointer))(%r1)
 ; Save the allocation pointer
-        ldil    L`_young_ptr, %r1
-        stw     %r3, R`_young_ptr(%r1)   ; in delay slot
+        LOADHIGH(G(young_ptr))
 ; Call the C function
+#ifdef SYS_hpux
+        bl      $$dyncall, %r2
+        stw     %r3, LOW(G(young_ptr))(%r1)     ; in delay slot
+#else
+        stw     %r3, LOW(G(young_ptr))(%r1)
         ble     0(4, %r22)
-        copy    %r31, %r2        
+        copy    %r31, %r2
+#endif
 ; Reload return address
-        ldil    L`_caml_last_return_address, %r1
-        ldw     R`_caml_last_return_address(%r1), %r2
+        LOADHIGH(G(caml_last_return_address))
+        ldw     LOW(G(caml_last_return_address))(%r1), %r2
 ; Reload allocation pointer
-        ldil    L`_young_ptr, %r1
+        LOADHIGH(G(young_ptr))
 ; Return to caller
         bv      0(%r2)
-        ldw     R`_young_ptr(%r1), %r3   ; in delay slot
+        ldw     LOW(G(young_ptr))(%r1), %r3   ; in delay slot
+        ENDPROC
 
 ; Start the Caml program
 
-	.align	2
-	.globl  _caml_start_program
-_caml_start_program:
+	.align	CODE_ALIGN
+	EXPORT_CODE(G(caml_start_program))
+G(caml_start_program):
+        STARTPROC
 	stw     %r2,-20(%r30)
         ldo	256(%r30), %r30
 ; Save the callee-save registers
@@ -272,17 +319,15 @@ L100:
         stw     %r1, -4(%r30)
         copy    %r30, %r5
 ; Record highest stack address
-        ldil    L`_caml_top_of_stack, %r1
-        stw     %r30, R`_caml_top_of_stack(%r1)
+        LOADHIGH(G(caml_top_of_stack))
+        stw     %r30, LOW(G(caml_top_of_stack))(%r1)
 ; Initialize allocation registers
-        ldil    L`_young_ptr, %r1
-        ldw     R`_young_ptr(%r1), %r3
-        ldil    L`_young_limit, %r1
-        ldo     R`_young_limit(%r1), %r4
+        LOADHIGH(G(young_ptr))
+        ldw     LOW(G(young_ptr))(%r1), %r3
+        LOADHIGH(G(young_limit))
+        ldo     LOW(G(young_limit))(%r1), %r4
 ; Go for it
-        ldil    L`_caml_program, %r1
-        ble     R`_caml_program(4, %r1)
-        copy    %r31, %r2
+	CALL(G(caml_program))
 ; Pop handler
         ldo     -8(%r30), %r30
 ; Return with zero result
@@ -331,31 +376,35 @@ L101:
 	ldw     -20(%r30), %r2
         bv      0(%r2)
         nop
+        ENDPROC
 
 ; Raise an exception from C
 
-	.align	2
-	.globl  _raise_caml_exception
-_raise_caml_exception:
+	.align	CODE_ALIGN
+	EXPORT_CODE(G(raise_caml_exception))
+G(raise_caml_exception):
+        STARTPROC
 ; Cut the stack
-        ldil    L`_caml_exception_pointer, %r1
-        ldw     R`_caml_exception_pointer(%r1), %r30
+        LOADHIGH(G(caml_exception_pointer))
+        ldw     LOW(G(caml_exception_pointer))(%r1), %r30
 ; Reload allocation registers
-        ldil    L`_young_ptr, %r1
-        ldw     R`_young_ptr(%r1), %r3
-        ldil    L`_young_limit, %r1
-        ldo     R`_young_limit(%r1), %r4
+        LOADHIGH(G(young_ptr))
+        ldw     LOW(G(young_ptr))(%r1), %r3
+        LOADHIGH(G(young_limit))
+        ldo     LOW(G(young_limit))(%r1), %r4
 ; Raise the exception
         ldw     -4(%r30), %r1
         ldw     -8(%r30), %r5
         bv      0(%r1)
         ldo     -8(%r30), %r30  ; in delay slot
+        ENDPROC
 
 ; Callbacks C -> ML
 
-        .align  2
-        .globl  _callback
-_callback:
+        .align	CODE_ALIGN
+        EXPORT_CODE(G(callback))
+G(callback):
+        STARTPROC
 ; Initial shuffling of arguments
         copy    %r26, %r1       ; Closure
         copy    %r25, %r26      ; Argument
@@ -405,46 +454,46 @@ L102:
 	fstds,ma %fr31, -8(%r1)
 ; Set up a callback link
         ldo     8(%r30), %r30
-        ldil    L`_caml_bottom_of_stack, %r1
-        ldw     R`_caml_bottom_of_stack(%r1), %r1
+        LOADHIGH(G(caml_bottom_of_stack))
+        ldw     LOW(G(caml_bottom_of_stack))(%r1), %r1
         stw     %r1, -8(%r30)
-        ldil    L`_caml_last_return_address, %r1
-        ldw     R`_caml_last_return_address(%r1), %r1
+        LOADHIGH(G(caml_last_return_address))
+        ldw     LOW(G(caml_last_return_address))(%r1), %r1
         stw     %r1, -4(%r30)
 ; Set up a trap frame to catch exceptions escaping the Caml code
         ldo     8(%r30), %r30
-        ldil    L`_caml_exception_pointer, %r1
-        ldw     R`_caml_exception_pointer(%r1), %r1
+        LOADHIGH(G(caml_exception_pointer))
+        ldw     LOW(G(caml_exception_pointer))(%r1), %r1
         stw     %r1, -8(%r30)
-        ldil    L`L103, %r1
-        ldo     R`L103(%r1), %r1
+        LOADHIGHLABEL(L103)
+        ldo     LOWLABEL(L103)(%r1), %r1
         stw     %r1, -4(%r30)
         copy    %r30, %r5
 ; Reload allocation pointers
-        ldil    L`_young_ptr, %r1
-        ldw     R`_young_ptr(%r1), %r3
-        ldil    L`_young_limit, %r1
-        ldo     R`_young_limit(%r1), %r4
+        LOADHIGH(G(young_ptr))
+        ldw     LOW(G(young_ptr))(%r1), %r3
+        LOADHIGH(G(young_limit))
+        ldo     LOW(G(young_limit))(%r1), %r4
 ; Call the Caml code
         ble     0(4, %r22)
         copy    %r31, %r2        
 L104:
 ; Pop the trap frame
         ldw     -8(%r30), %r31
-        ldil    L`_caml_exception_pointer, %r1
-        stw     %r31, R`_caml_exception_pointer(%r1)
+        LOADHIGH(G(caml_exception_pointer))
+        stw     %r31, LOW(G(caml_exception_pointer))(%r1)
         ldo     -8(%r30), %r30
 ; Pop the callback link
         ldw     -8(%r30), %r31
-        ldil    L`_caml_bottom_of_stack, %r1
-        stw     %r31, R`_caml_bottom_of_stack(%r1)
+        LOADHIGH(G(caml_bottom_of_stack))
+        stw     %r31, LOW(G(caml_bottom_of_stack))(%r1)
         ldw     -4(%r30), %r31
-        ldil    L`_caml_last_return_address, %r1
-        stw     %r31, R`_caml_last_return_address(%r1)
+        LOADHIGH(G(caml_last_return_address))
+        stw     %r31, LOW(G(caml_last_return_address))(%r1)
         ldo     -8(%r30), %r30
 ; Save allocation pointer
-        ldil    L`_young_ptr, %r1
-        stw     %r3, R`_young_ptr(%r1)
+        LOADHIGH(G(young_ptr))
+        stw     %r3, LOW(G(young_ptr))(%r1)
 ; Move result where C function expects it
         copy    %r26, %r28
 ; Reload callee-save registers
@@ -494,49 +543,52 @@ L104:
 L103:
 ; Pop the callback link
         ldw     -8(%r30), %r31
-        ldil    L`_caml_bottom_of_stack, %r1
-        stw     %r31, R`_caml_bottom_of_stack(%r1)
+        LOADHIGH(G(caml_bottom_of_stack))
+        stw     %r31, LOW(G(caml_bottom_of_stack))(%r1)
         ldw     -4(%r30), %r31
-        ldil    L`_caml_last_return_address, %r1
-        stw     %r31, R`_caml_last_return_address(%r1)
+        LOADHIGH(G(caml_last_return_address))
+        stw     %r31, LOW(G(caml_last_return_address))(%r1)
         ldo     -8(%r30), %r30
 ; Save allocation pointer and exception pointer
-        ldil    L`_young_ptr, %r1
-        stw     %r3, R`_young_ptr(%r1)
-        ldil    L`_caml_exception_pointer, %r1
-        stw     %r5, R`_caml_exception_pointer(%r1)
+        LOADHIGH(G(young_ptr))
+        stw     %r3, LOW(G(young_ptr))(%r1)
+        LOADHIGH(G(caml_exception_pointer))
+        stw     %r5, LOW(G(caml_exception_pointer))(%r1)
 ; Re-raise the exception through mlraise, to clean up local C roots
         ldo     64(%r30), %r30
-        ldil    L`_mlraise, %r1
-        ble     R`_mlraise(4, %r1)
-        copy    %r31, %r2               ; actually, never returns
+	CALL(G(mlraise))        ; never returns
+        ENDPROC
 
-        .align  2
-        .globl  _callback2
-_callback2:
+        .align	CODE_ALIGN
+        EXPORT_CODE(G(callback2))
+G(callback2):
+        STARTPROC
         copy    %r26, %r1       ; Closure
         copy    %r25, %r26      ; First argument
         copy    %r24, %r25      ; Second argument
         copy    %r1, %r24
-        ldil    L`_caml_apply2, %r22
+        LOADHIGH(G(caml_apply2))
         b       L102
-        ldo     R`_caml_apply2(%r22), %r22
+        ldo     LOW(G(caml_apply2))(%r1), %r22
+        ENDPROC
 
-        .align  2
-        .globl  _callback3
-_callback3:
+        .align	CODE_ALIGN
+        EXPORT_CODE(G(callback3))
+G(callback3):
+        STARTPROC
         copy    %r26, %r1       ; Closure
         copy    %r25, %r26      ; First argument
         copy    %r24, %r25      ; Second argument
         copy    %r23, %r24      ; Third argument
         copy    %r1, %r23
-        ldil    L`_caml_apply3, %r22
+        LOADHIGH(G(caml_apply3))
         b       L102
-        ldo     R`_caml_apply3(%r22), %r22
+        ldo     LOW(G(caml_apply3))(%r1), %r22
+        ENDPROC
 
         .data
-        .globl  _system_frametable
-_system_frametable:
+        EXPORT_DATA(G(system_frametable))
+G(system_frametable):
         .long   1               /* one descriptor */
         .long   L104 + 3        /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
