@@ -310,11 +310,12 @@ and transl_structure fields cc rootpath = function
            transl_module Tcoerce_none (field_path rootpath id) modl,
            transl_structure (id :: fields) cc rootpath rem)
   | Tstr_recmodule bindings :: rem ->
+      let ext_fields = List.rev_append (List.map fst bindings) fields in
       compile_recmodule
         (fun id modl ->
           transl_module Tcoerce_none (field_path rootpath id) modl)
         bindings
-        (transl_structure (map_end fst bindings fields) cc rootpath rem)
+        (transl_structure ext_fields cc rootpath rem)
   | Tstr_modtype(id, decl) :: rem ->
       transl_structure fields cc rootpath rem
   | Tstr_open path :: rem ->
