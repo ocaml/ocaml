@@ -15,6 +15,8 @@ starts, or when the toplevel system is launched. Hence it is necessary
 to use qualified identifiers to refer to the functions provided by these
 modules, or to add "open" directives.
 
+\label{stdlib:top}
+
 \section*{Conventions}
 
 For easy reference, the modules are listed below in alphabetical order
@@ -71,6 +73,7 @@ be called from C \\
 "Sys" & p.~\pageref{s:Sys} & system interface \\
 \end{tabular}
 \end{latexonly}
+
 
 \begin{library}
 \input arg.tex
