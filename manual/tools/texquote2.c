@@ -53,6 +53,8 @@ int main(argc, argv)
   incaml = 0;
   inquote = 0;
 
+  puts ("% THIS FILE IS GENERATED.\n");
+
   while(fgets(line, LINE_LENGTH, stdin) != NULL) {
     if (inverbatim) {
       fputs(line, stdout);
