@@ -55,8 +55,14 @@ while : ; do
     -libdir|--libdir)
         libdir=$2; shift;;
     -mandir|--mandir)
-        mandir=$2
-        manext=`echo $mandir | sed -e 's/^.*\(.\)$/\1/'`
+        case "$2" in
+          */man[1-9ln])
+            mandir=`echo $2 | sed -e 's|^\(.*\)/man.$|\1|'`
+            manext=`echo $2 | sed -e 's/^.*\(.\)$/\1/'`;;
+          *)
+            mandir=$2
+            manext=1;;
+        esac
         shift;;
     -host*|--host*)
         host_type=$2; shift;;
@@ -135,8 +141,8 @@ case "$libdir" in
    *) echo "LIBDIR=$libdir" >> Makefile;;
 esac
 case "$mandir" in
-  "") echo 'MANDIR=$(PREFIX)/man/man1' >> Makefile
-      mandir="$prefix/man/man1";;
+  "") echo 'MANDIR=$(PREFIX)/man' >> Makefile
+      mandir="$prefix/man";;
    *) echo "MANDIR=$mandir" >> Makefile;;
 esac
 echo "MANEXT=$manext" >> Makefile
@@ -1270,7 +1276,7 @@ fi
 
 (
 cd ../../camlp4/config
-EXE=$exe ./configure_batch -bindir "$bindir" -libdir "$libdir" -mandir "$mandir" -ocaml-top ../.. > /dev/null
+EXE=$exe ./configure_batch -bindir "$bindir" -libdir "$libdir" -mandir "$mandir/man$manext" -ocaml-top ../.. > /dev/null
 )
 
 # Final twiddling of compiler options to work around known bugs

@@ -24,7 +24,9 @@ BINDIR=/usr/local/bin
 LIBDIR=/usr/local/lib/camlsl
 
 ### Where to install the man pages
-MANDIR=/usr/local/man/man1
+# Man pages for commands go in $(MANDIR)/man$(MANEXT)
+# Man pages for the library go in $(MANDIR)/mano
+MANDIR=/usr/local/man
 MANEXT=1
 
 ### Do #! scripts work on your system?
