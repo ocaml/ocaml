@@ -40,16 +40,16 @@ let parse_filter s =
   (* replace // by / *)
   let s = global_replace ~!"/+" "/" s in
   (* replace /./ by / *)
-  let s = global_replace ~!"/\./" "/" s in
+  let s = global_replace ~!"/\\./" "/" s in
   (* replace hoge/../ by "" *)
-  let s = global_replace ~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./"
-                         "" s in
+  let s = global_replace
+          ~!"\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\./" "" s in
   (* replace hoge/..$ by *)
-  let s = global_replace ~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$"
-                         "" s in
+  let s = global_replace
+          ~!"\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\.$" "" s in
   (* replace ^/hoge/../ by / *)
-  let s = global_replace ~!"^\(/\.\.\)+/" "/" s in
-  if string_match ~!"^\([^\*?[]*[/:]\)\(.*\)" s 0 then 
+  let s = global_replace ~!"^\\(/\\.\\.\\)+/" "/" s in
+  if string_match ~!"^\\([^\\*?[]*[/:]\\)\\(.*\\)" s 0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in

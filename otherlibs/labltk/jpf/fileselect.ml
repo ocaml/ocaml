@@ -70,25 +70,25 @@ let subshell cmd =
 (***************************************************************** Path name *)
 
 (* find directory name which doesn't contain "?*[" *)
-let dirget = regexp "^\([^\*?[]*/\)\(.*\)"
+let dirget = regexp "^\\([^\\*?[]*/\\)\\(.*\\)"
 
 let parse_filter src = 
   (* replace // by / *)
   let s = global_replace (regexp "/+") "/" src in
   (* replace /./ by / *)
-  let s = global_replace (regexp "/\./") "/" s in
+  let s = global_replace (regexp "/\\./") "/" s in
   (* replace ????/../ by "" *)
   let s = global_replace
-      (regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./") 
+      (regexp "\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\./") 
       ""
       s in
   (* replace ????/..$ by "" *)
   let s = global_replace
-      (regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$") 
+      (regexp "\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\.$") 
       ""
       s in
   (* replace ^/../../ by / *)
-  let s = global_replace (regexp "^\(/\.\.\)+/") "/" s in
+  let s = global_replace (regexp "^\\(/\\.\\.\\)+/") "/" s in
   if string_match dirget s 0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
