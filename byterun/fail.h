@@ -57,5 +57,6 @@ void raise_end_of_file (void) Noreturn;
 void raise_zero_divide (void) Noreturn;
 void raise_not_found (void) Noreturn;
 void fatal_uncaught_exception (value) Noreturn;
+void init_exceptions (void);
 
 #endif /* _fail_ */

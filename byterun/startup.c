@@ -291,7 +291,8 @@ void caml_main(char **argv)
     close_channel(chan);
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);
-    /* Record the command-line arguments */
+    /* Initialize system libraries */
+    init_exceptions();
     sys_init(argv + pos);
     /* Execute the program */
     debugger(PROGRAM_START);
@@ -334,6 +335,7 @@ void caml_startup_code(code_t code, asize_t code_size, char *data, char **argv)
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);
     /* Run the code */
+    init_exceptions();
     sys_init(argv);
     interprete(start_code, code_size);
   } else {

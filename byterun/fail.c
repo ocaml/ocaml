@@ -18,6 +18,7 @@
 #include "io.h"
 #include "gc.h"
 #include "memory.h"
+#include "misc.h"
 #include "mlvalues.h"
 #include "signals.h"
 #include "stacks.h"
@@ -74,20 +75,18 @@ void invalid_argument (char *msg)
 }
 
 /* Problem: we can't use raise_constant, because it allocates and
-   we're out of memory... The following is a terrible hack that works
-   because global_data[OUT_OF_MEMORY_EXN] is in the old generation
-   (because global_data was read with intern_val), hence stays at
-   a fixed address */
+   we're out of memory... Here, we allocate statically the exn bucket
+   for Out_of_memory. */
 
 static struct {
   header_t hdr;
   value exn;
-} out_of_memory_bucket;
+} out_of_memory_bucket = { 0, 0 };
 
 void raise_out_of_memory(void)
 {
-  out_of_memory_bucket.hdr = Make_header(1, 0, White);
-  out_of_memory_bucket.exn = Field(global_data, OUT_OF_MEMORY_EXN);
+  if (out_of_memory_bucket.exn == 0) 
+    fatal_error("Fatal eror: out of memory while raising Out_of_memory\n");
   mlraise((value) &(out_of_memory_bucket.exn));
 }
 
@@ -116,3 +115,11 @@ void raise_not_found(void)
   raise_constant(Field(global_data, NOT_FOUND_EXN));
 }
 
+/* Initialization of statically-allocated exception buckets */
+
+void init_exceptions(void)
+{
+  out_of_memory_bucket.hdr = Make_header(1, 0, White);
+  out_of_memory_bucket.exn = Field(global_data, OUT_OF_MEMORY_EXN);
+  register_global_root(&out_of_memory_bucket.exn);
+}
