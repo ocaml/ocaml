@@ -414,6 +414,7 @@ fi
 
 if sh ./hasgot sigaction sigprocmask; then
   echo "POSIX signal handling found."
+  echo "#define POSIX_SIGNALS" >> s.h
 else
   if sh ./runtest signals.c; then
     echo "Signals have the BSD semantics."
