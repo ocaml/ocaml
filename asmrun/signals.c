@@ -291,6 +291,7 @@ static void trap_handler(int sig, int code,
                          struct sigcontext * context, char * address)
 {
   int * sp;
+
   if (code != ILL_TRAP_FAULT(5)) {
     fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n", code);
     exit(100);
@@ -308,6 +309,8 @@ static void trap_handler(int sig, int code,
 static void trap_handler(int sig, siginfo_t * info, void * arg)
 {
   ucontext_t * context;
+  int * sp;
+
   if (info->si_code != ILL_ILLTRP) {
     fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n",
             info->si_code);
