@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -41,8 +41,8 @@ extern XFontStruct * grfont;    /* Current font */
 #define DEFAULT_SCREEN_WIDTH 600
 #define DEFAULT_SCREEN_HEIGHT 450
 #define BORDER_WIDTH 2
-#define WINDOW_NAME "Caml Light graphics"
-#define ICON_NAME "Caml Light graphics"
+#define WINDOW_NAME "Caml graphics"
+#define ICON_NAME "Caml graphics"
 #define DEFAULT_EVENT_MASK \
           (ExposureMask | KeyPressMask | StructureNotifyMask)
 #define DEFAULT_FONT "fixed"
