@@ -512,37 +512,47 @@ open Printtyp
 let report_error ppf = function
   | Unbound_module lid -> fprintf ppf "Unbound module %a" longident lid
   | Unbound_modtype lid -> fprintf ppf "Unbound module type %a" longident lid
-  | Cannot_apply mty -> fprintf ppf
-      "@[This module is not a functor; it has type@ %a@]" modtype mty
-  | Not_included errs -> fprintf ppf
-      "@[<v>Signature mismatch:@ %a]" Includemod.report_error errs
-  | Cannot_eliminate_dependency mty -> fprintf ppf
-      "@[This functor has type@ %a@ \
-         The parameter cannot be eliminated in the result type.@  \
-         Please bind the argument to a module identifier.@]" modtype mty
+  | Cannot_apply mty ->
+      fprintf ppf
+        "@[This module is not a functor; it has type@ %a@]" modtype mty
+  | Not_included errs ->
+      fprintf ppf
+        "@[<v>Signature mismatch:@ %a@]" Includemod.report_error errs
+  | Cannot_eliminate_dependency mty ->
+      fprintf ppf
+        "@[This functor has type@ %a@ \
+           The parameter cannot be eliminated in the result type.@  \
+           Please bind the argument to a module identifier.@]" modtype mty
   | Signature_expected -> fprintf ppf "This module type is not a signature"
-  | Structure_expected mty -> fprintf ppf
-      "@[This module is not a structure; it has type@ %a" modtype mty
-  | With_no_component lid -> fprintf ppf
-      "@[The signature constrained by `with' has no component named %a@]"
-      longident lid
-  | With_mismatch(lid, explanation) -> fprintf ppf
-      "@[<v>
-         @[In this `with' constraint, the new definition of %a@ \
-           does not match its original definition@ \
-           in the constrained signature:@]@ \
-         %a@]"
-      longident lid Includemod.report_error explanation
-  | Repeated_name(kind, name) -> fprintf ppf
-      "@[Multiple definition of the %s name %s.@ \
-         Names must be unique in a given structure or signature.@]" kind name
-  | Non_generalizable typ -> fprintf ppf
-      "@[The type of this expression,@ %a,@ \
-         contains type variables that cannot be generalized@]" type_scheme typ
-  | Non_generalizable_class (id, desc) -> fprintf ppf
-      "@[The type of this class,@ %a,@ \
-         contains type variables that cannot be generalized@]"
-      (class_declaration id) desc
-  | Non_generalizable_module mty -> fprintf ppf
-      "@[The type of this module,@ %a,@ \
-         contains type variables that cannot be generalized@]" modtype mty
+  | Structure_expected mty ->
+      fprintf ppf
+        "@[This module is not a structure; it has type@ %a" modtype mty
+  | With_no_component lid ->
+      fprintf ppf
+        "@[The signature constrained by `with' has no component named %a@]"
+        longident lid
+  | With_mismatch(lid, explanation) ->
+      fprintf ppf
+        "@[<v>
+           @[In this `with' constraint, the new definition of %a@ \
+             does not match its original definition@ \
+             in the constrained signature:@]@ \
+           %a@]"
+        longident lid Includemod.report_error explanation
+  | Repeated_name(kind, name) ->
+      fprintf ppf
+        "@[Multiple definition of the %s name %s.@ \
+           Names must be unique in a given structure or signature.@]" kind name
+  | Non_generalizable typ ->
+      fprintf ppf
+        "@[The type of this expression,@ %a,@ \
+           contains type variables that cannot be generalized@]" type_scheme typ
+  | Non_generalizable_class (id, desc) ->
+      fprintf ppf
+        "@[The type of this class,@ %a,@ \
+           contains type variables that cannot be generalized@]"
+        (class_declaration id) desc
+  | Non_generalizable_module mty ->
+      fprintf ppf
+        "@[The type of this module,@ %a,@ \
+           contains type variables that cannot be generalized@]" modtype mty
