@@ -153,6 +153,12 @@ value neg_float(f)              /* ML */
   return copy_double(- Double_val(f));
 }
 
+value abs_float(f)              /* ML */
+     value f;
+{
+  return copy_double(fabs(Double_val(f)));
+}
+
 value add_float(f, g)         /* ML */
      value f, g;
 {
