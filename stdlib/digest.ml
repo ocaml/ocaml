@@ -23,7 +23,7 @@ let string str =
 
 let substring str ofs len =
   if ofs < 0 or ofs + len > String.length str
-  then invalid_arg "Digest.string"
+  then invalid_arg "Digest.substring"
   else unsafe_string str ofs len
 
 let file filename =
