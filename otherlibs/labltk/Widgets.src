@@ -60,6 +60,7 @@ type Relief {
    Sunken ["sunken"]
    Flat   ["flat"]
    Ridge  ["ridge"]
+   Solid  ["solid"]
    Groove ["groove"]
 }
 
