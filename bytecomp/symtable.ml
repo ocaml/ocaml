@@ -205,9 +205,10 @@ let init_toplevel () =
   (* Read back the known global symbols from the executable file *)
   let ic = open_in_bin Sys.argv.(0) in
   let pos_trailer =
-    in_channel_length ic - 16 - String.length Config.exec_magic_number in
+    in_channel_length ic - 20 - String.length Config.exec_magic_number in
   seek_in ic pos_trailer;
   let code_size = input_binary_int ic in
+  let prim_size = input_binary_int ic in
   let data_size = input_binary_int ic in
   let symbol_size = input_binary_int ic in
   let debug_size = input_binary_int ic in

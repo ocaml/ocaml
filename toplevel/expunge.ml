@@ -41,9 +41,10 @@ let main () =
   done;
   let ic = open_in_bin input_name in
   let pos_trailer =
-    in_channel_length ic - 16 - String.length Config.exec_magic_number in
+    in_channel_length ic - 20 - String.length Config.exec_magic_number in
   seek_in ic pos_trailer;
   let code_size = input_binary_int ic in
+  let prim_size = input_binary_int ic in
   let data_size = input_binary_int ic in
   let symbol_size = input_binary_int ic in
   let debug_size = input_binary_int ic in
@@ -70,6 +71,7 @@ let main () =
   let pos2 = pos_out oc in
   (* Rewrite the trailer *)
   output_binary_int oc code_size;
+  output_binary_int oc prim_size;
   output_binary_int oc data_size;
   output_binary_int oc (pos2 - pos1);
   output_binary_int oc 0;
@@ -79,6 +81,3 @@ let main () =
   close_out oc
 
 let _ = Printexc.catch main (); exit 0
-
-  
-  
