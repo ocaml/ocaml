@@ -146,7 +146,7 @@ static unsigned long norm_pfree (p)
 static unsigned long norm_pmax (p)
      unsigned long p;
 {
-  return Max (p, 0);
+  return p;
 }
 
 static long norm_heapincr (i)
