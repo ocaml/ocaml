@@ -180,6 +180,23 @@ let type_pattern_list env spatl =
   let new_env = add_pattern_variables env in
   (patl, new_env)
 
+let rec iter_pattern f p =
+  f p;
+  match p.pat_desc with
+    Tpat_any | Tpat_var _ | Tpat_constant _ ->
+      ()
+  | Tpat_alias (p, _) ->
+      iter_pattern f p
+  | Tpat_tuple pl ->
+      List.iter (iter_pattern f) pl
+  | Tpat_construct (_, pl) ->
+      List.iter (iter_pattern f) pl
+  | Tpat_record fl ->
+      List.iter (fun (_, p) -> iter_pattern f p) fl
+  | Tpat_or (p, p') ->
+      iter_pattern f p;
+      iter_pattern f p'
+
 (* Generalization criterion for expressions *)
 
 let rec is_nonexpansive exp =
@@ -704,12 +721,14 @@ and type_let env rec_flag spat_sexp_list =
     (fun pat exp -> Parmatch.check_partial pat.pat_loc [pat, exp])
     pat_list exp_list;
   end_def();
+  List.iter2
+    (fun pat exp ->
+       if not (is_nonexpansive exp) then
+         iter_pattern (fun pat ->make_nongen pat.pat_type) pat)
+    pat_list exp_list;
   List.iter
-    (fun exp -> if not (is_nonexpansive exp) then make_nongen exp.exp_type)
-    exp_list;
-  List.iter
-    (fun exp -> generalize exp.exp_type)
-    exp_list;
+    (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
+    pat_list;
   (List.combine pat_list exp_list, new_env)
 
 (* Typing of toplevel bindings *)
