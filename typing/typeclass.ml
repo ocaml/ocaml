@@ -504,7 +504,7 @@ and class_structure cl_num val_env met_env (spat, str) =
       (Ctype.newty (Ttuple []));
   begin try Ctype.unify val_env self_type ty with
     Ctype.Unify _ ->
-      raise(Error(pat.pat_loc, Pattern_type_clash self_type))
+      raise(Error(spat.ppat_loc, Pattern_type_clash self_type))
   end;
 
   (* Class fields *)
