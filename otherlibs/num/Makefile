@@ -42,7 +42,7 @@ libnums.a: bignum/libbignum.a $(COBJS)
 	$(RANLIB) libnums.a
 
 bignum/libbignum.a:
-	cd bignum; $(MAKE) $(BIGNUM_ARCH) CC="$(CC)"
+	cd bignum; $(MAKE) $(BIGNUM_ARCH) CC="$(CC) $(BYTECCCOMPOPTS)"
 
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 

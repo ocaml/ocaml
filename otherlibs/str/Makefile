@@ -26,7 +26,7 @@ str.cmxa: str.cmx
 	$(CAMLOPT) -a -o str.cmxa str.cmx
 
 $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
-	cd $(REGEXLIB); CC="$(CC)" sh configure; $(MAKE)
+	cd $(REGEXLIB); CC="$(CC) $(BYTECCCOMPOPTS)" sh configure; $(MAKE)
 
 str.cmx: ../../ocamlopt
 
