@@ -54,6 +54,7 @@ let main () =
        "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts);
        "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs);
        "-linkall", Arg.Set link_everything;
+       "-drawlambda", Arg.Set dump_rawlambda;
        "-dlambda", Arg.Set dump_lambda;
        "-dinstr", Arg.Set dump_instr;
        "-v", Arg.Unit print_version_number;

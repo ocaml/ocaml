@@ -88,7 +88,9 @@ let implementation sourcefile =
     Compilenv.reset modulename crc;
     Asmgen.compile_implementation prefixname
       (print_if Clflags.dump_lambda Printlambda.lambda
-        (Translmod.transl_implementation modulename str coercion));
+        (Simplif.simplify_lambda
+          (print_if Clflags.dump_rawlambda Printlambda.lambda
+            (Translmod.transl_implementation modulename str coercion))));
     Compilenv.save_unit_info (prefixname ^ ".cmx");
     close_in ic
   with x ->

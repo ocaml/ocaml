@@ -91,7 +91,9 @@ let implementation sourcefile =
       (print_if Clflags.dump_instr Printinstr.instrlist
         (Bytegen.compile_implementation
           (print_if Clflags.dump_lambda Printlambda.lambda
-            (Translmod.transl_implementation modulename str coercion))));
+            (Simplif.simplify_lambda
+              (print_if Clflags.dump_rawlambda Printlambda.lambda
+                (Translmod.transl_implementation modulename str coercion))))));
     close_in ic;
     close_out oc
   with x ->
