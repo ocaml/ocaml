@@ -567,10 +567,11 @@ let pp_get_formatter_output_functions state () =
 
 let pp_set_all_formatter_output_functions state f g h i =
   pp_set_formatter_output_functions state f g;
-  state.pp_output_newline <- h; state.pp_output_spaces <- i;;
+  state.pp_output_newline <- (function _ -> function () -> h ());
+  state.pp_output_spaces <- (function _ -> function n -> i n);;
 let pp_get_all_formatter_output_functions state () = 
   (state.pp_output_function, state.pp_flush_function,
-   state.pp_output_newline, state.pp_output_spaces);;
+   state.pp_output_newline state, state.pp_output_spaces state);;
 
 let pp_set_formatter_out_channel state os =
   state.pp_output_function <- output os;
@@ -607,21 +608,25 @@ let pp_make_formatter f g h i =
 
 (* Default function to output spaces *)
 let blank_line = String.make 80 ' ';;
-let display_blanks state n =
+let rec display_blanks state n =
     if n > 0 then
-    if n <= 80 then state.pp_output_function blank_line 0 n
-    else pp_output_string state (String.make n ' ');;
+    if n <= 80 then state.pp_output_function blank_line 0 n else
+     begin
+      state.pp_output_function blank_line 0 80;
+      display_blanks state (n - 80)
+     end;;
 
 (* Default function to output new lines *)
 let display_newline state () = state.pp_output_function "\n" 0  1;;
 
 let make_formatter f g = pp_make_formatter f g display_newline display_blanks;;
 
-let formatter_of_channel oc = make_formatter (output oc) (fun () -> flush oc);;
+let formatter_of_out_channel oc =
+ make_formatter (output oc) (fun () -> flush oc);;
 
-let std_formatter = formatter_of_channel stdout;;
+let std_formatter = formatter_of_out_channel stdout;;
 
-let err_formatter = formatter_of_channel stderr;;
+let err_formatter = formatter_of_out_channel stderr;;
 
 let open_hbox = pp_open_hbox std_formatter
 and open_vbox = pp_open_vbox std_formatter
@@ -671,12 +676,10 @@ and set_formatter_output_functions =
 and get_formatter_output_functions =
     pp_get_formatter_output_functions std_formatter
 
-and set_all_formatter_output_functions f g h i =
+and set_all_formatter_output_functions =
     pp_set_all_formatter_output_functions std_formatter
-    f g (fun _ -> h) (fun _ -> i)
-and get_all_formatter_output_functions () =
-    let f, g, h, i = pp_get_all_formatter_output_functions std_formatter () in
-    (f, g, h std_formatter, i std_formatter);;
+and get_all_formatter_output_functions =
+    pp_get_all_formatter_output_functions std_formatter;;
 
 external format_int: string -> int -> string = "format_int"
 external format_float: string -> float -> string = "format_float"

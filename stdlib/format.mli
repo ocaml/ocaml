@@ -18,7 +18,23 @@
    at specified break hints, and indents lines according to the box
    structure. *)
 
-(* Rule of thumb for casual users:
+(* You may consider this module as providing an extension to the
+   [printf] facility to provide automatic line breaking. The addition of
+   pretty-printing annotations to your regular printf formats gives you
+   fancy indentation and line breaks.
+   Pretty-printing annotations are described below in the documentation of
+   the function [fprintf].
+
+   You may also use the explicit box management and printing functions
+   provided by this module. This style is more basic but more verbose
+   than the [fprintf] concise formats.
+
+   For instance, the sequence 
+   [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()]
+   that prints [x = 1] within a pretty-printing box, can be
+   abbreviated as [printf "@\[%s@ %i@\]" "x =" 1]. *)
+
+(* Rule of thumb for casual users of this library:
 -   use simple boxes (as obtained by [open_box 0]);
 -   use simple break hints (as obtained by [print_cut ()] that outputs a
    simple break hint, or by [print_space ()] that outputs a space
@@ -29,11 +45,6 @@
    close the box;
 -   at the end of your routine, evaluate [print_newline ()] to close
    all remaining boxes and flush the pretty-printer. *)
-
-(* You may alternatively consider this module as providing an extension to the
-   [printf] facility: you can simply add pretty-printing annotations to your
-   regular printf formats, as explained below in the documentation of
-   the function [fprintf]. *)
 
 (* The behaviour of pretty-printing commands is unspecified
    if there is no opened pretty-printing box. Each box opened via
@@ -260,25 +271,29 @@ type formatter;;
            margin, maximum indentation limit, maximum number of boxes
            simultaneously opened, ellipsis, and so on, are specific to
            each pretty-printer and may be fixed independently.
-           A new formatter is obtained by calling the [make_formatter]
-           function. *)
+           Given an output channel [oc], a new formatter writing to
+           that channel is obtained by calling [formatter_of_out_channel oc].
+           Alternatively the [make_formatter] function allocates a new
+           formatter with explicit output and flushing functions
+           (convenient to output material to strings for instance). *)
+
+val formatter_of_out_channel : out_channel -> formatter;;
+        (* [formatter_of_out_channel oc] returns a new formatter that
+           writes to the corresponding channel [oc]. *)
 
 val std_formatter : formatter;;
         (* The standard formatter used by the formatting functions
-           above. It is defined using [make_formatter] with
-           output function [output stdout] and flushing function
-           [fun () -> flush stdout]. *)
+           above. It is defined as [formatter_of_out_channel stdout]. *)
 
 val err_formatter : formatter;;
         (* A formatter to use with formatting functions below for
-           output to standard error. It is defined using [make_formatter] with
-           output function [output stderr] and flushing function
-           [fun () -> flush stderr]. *)
+           output to standard error. It is defined as
+           [formatter_of_out_channel stderr]. *)
 
 val make_formatter :
         (string -> int -> int -> unit) -> (unit -> unit) -> formatter;;
         (* [make_formatter out flush] returns a new formatter that
-           writes according to the output function [out], and flushing
+           writes according to the output function [out], and the flushing
            function [flush]. Hence, a formatter to out channel [oc]
            is returned by [make_formatter (output oc) (fun () -> flush oc)]. *)
 
@@ -322,10 +337,10 @@ val pp_get_formatter_output_functions :
         formatter -> unit -> (string -> int -> int -> unit) * (unit -> unit);;
 val pp_set_all_formatter_output_functions : formatter ->
       (string -> int -> int -> unit) -> (unit -> unit) ->
-      (formatter -> unit -> unit) -> (formatter -> int -> unit) -> unit;;
+      (unit -> unit) -> (int -> unit) -> unit;;
 val pp_get_all_formatter_output_functions : formatter -> unit ->
       (string -> int -> int -> unit) * (unit -> unit) *
-      (formatter -> unit -> unit) * (formatter -> int -> unit);;
+      (unit -> unit) * (int -> unit);;
         (* The basic functions to use with formatters.
            These functions are the basic ones: usual functions
            operating on the standard formatter are defined via partial
@@ -368,7 +383,11 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
            If [@<n>] is not followed by a conversion specification,
            then the following character of the format is printed as if
            it were of length [n].
--          [@@]: print a plain [@] character. *)
+-          [@@]: print a plain [@] character.
+
+           Example: [printf "@\[%s@ %i@\]" "x =" 1] is equivalent to 
+           [open_box (); print_string "x ="; print_space (); print_int
+           1; close_box ()]. It prints [x = 1] within a pretty-printing box. *)
 
 val printf : ('a, formatter, unit) format -> 'a;;
         (* Same as [fprintf], but output on [std_formatter]. *)
