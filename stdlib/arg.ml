@@ -100,7 +100,9 @@ let parse speclist anonfun errmsg =
             incr current;
         | Float f when !current + 1 < l ->
             let arg = Sys.argv.(!current+1) in
-            f (float_of_string arg);
+            begin try f (float_of_string arg);
+            with Failure "float_of_string" -> stop (Wrong (s, arg, "a float"))
+            end;
             incr current;
         | Rest f ->
             while !current < l-1 do
