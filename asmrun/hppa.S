@@ -87,10 +87,10 @@ caml_required_size           .comm 8
         EXPORT_CODE(G(caml_alloc))
 G(caml_alloc):
         STARTPROC
-; Required size in %r1
-        ldw     0(%r4), %r31
-        sub     %r3, %r1, %r3
-        comb,<<,n %r3, %r31, G(caml_call_gc) ; nullify if taken (forward br.)
+; Required size in %r29
+        ldw     0(%r4), %r1
+        sub     %r3, %r29, %r3
+        comb,<<,n %r3, %r1, G(caml_call_gc) ; nullify if taken (forward br.)
         bv      0(%r2)
         nop
         ENDPROC
@@ -98,10 +98,9 @@ G(caml_alloc):
         EXPORT_CODE(G(caml_call_gc))
 G(caml_call_gc):
         STARTPROC
-; Save required size (%r1)
-        copy    %r1, %r31
+; Save required size (%r29)
         LOADHIGH(G(caml_required_size))
-        stw     %r31, LOW(G(caml_required_size))(%r1)
+        stw     %r29, LOW(G(caml_required_size))(%r1)
 ; Save current allocation pointer for debugging purposes
         LOADHIGH(G(young_ptr))
         stw     %r3, LOW(G(young_ptr))(%r1)
@@ -139,7 +138,7 @@ G(caml_call_gc):
         stws,ma %r25, 4(%r1)
         stws,ma %r26, 4(%r1)
         stws,ma %r28, 4(%r1)
-        stws,ma %r29, 4(%r1)
+;;        stws,ma %r29, 4(%r1)   %r29 is clobbered
         LOADHIGH(G(gc_entry_float_regs))
         ldo     LOW(G(gc_entry_float_regs))(%r1), %r1
         fstds,ma %fr4, 8(%r1)
@@ -207,7 +206,7 @@ G(caml_call_gc):
         ldws,ma 4(%r1), %r25
         ldws,ma 4(%r1), %r26
         ldws,ma 4(%r1), %r28
-        ldws,ma 4(%r1), %r29
+;;        ldws,ma 4(%r1), %r29    %r29 is clobbered
         LOADHIGH(G(gc_entry_float_regs))
         ldo     LOW(G(gc_entry_float_regs))(%r1), %r1
         fldds,ma 8(%r1), %fr4

@@ -544,13 +544,15 @@ let rec emit_instr i dslot =
           `	comb,>>= %r3, %r1, {emit_label lbl_cont}\n`;
           `	addi	4, %r3, {emit_reg i.res.(0)}\n`; (* in delay slot *)
           emit_call "caml_call_gc" "%r2";
-          `	ldi	{emit_int n}, %r1\n`; (* in delay slot *)
+          (* Cannot use %r1 to pass size, since clobbered by glue call code *)
+          `	ldi	{emit_int n}, %r29\n`; (* in delay slot *)
           record_frame i.live;
           `	addi	4, %r3, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl_cont}:\n`
         end else begin
           emit_call "caml_alloc" "%r2";
-          `	ldi	{emit_int n}, %r1\n`; (* in delay slot *)
+          (* Cannot use %r1 either *)
+          `	ldi	{emit_int n}, %r29\n`; (* in delay slot *)
           record_frame i.live;
           `	addi	4, %r3, {emit_reg i.res.(0)}\n` (* in delay slot *)
         end

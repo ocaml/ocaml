@@ -269,10 +269,13 @@ let destroyed_at_c_call = (* %r3 - %r18, %fr12 - %fr21 preserved *)
 let destroyed_by_millicode = (* %r25, %r26, %r28, %r29 -- more? *)
   [| phys_reg 19; phys_reg 20; phys_reg 21; phys_reg 22 |]
 
+let destroyed_by_alloc = [| phys_reg 22 |] (* %r29 *)
+
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) -> destroyed_by_millicode
+  | Iop(Ialloc _) -> destroyed_by_alloc
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
