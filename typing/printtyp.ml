@@ -412,11 +412,12 @@ let rec tree_of_type_decl id decl =
   in
   let type_defined decl =
     if decl.type_kind = Type_abstract && decl.type_manifest = None
-       && List.exists (fun x -> x <> (true, true)) decl.type_variance then
+       && List.exists (fun x -> x <> (true,true,true)) decl.type_variance then
+      let vari = List.map (fun (co,cn,ct) -> (co,cn)) decl.type_variance in
       (Ident.name id,
        List.combine
          (List.map (fun ty -> type_param (tree_of_typexp false ty)) params)
-         decl.type_variance)
+         vari)
     else
       let ty =
         tree_of_typexp false

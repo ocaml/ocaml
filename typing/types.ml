@@ -133,7 +133,7 @@ type type_declaration =
     type_arity: int;
     type_kind: type_kind;
     type_manifest: type_expr option;
-    type_variance: (bool * bool) list }
+    type_variance: (bool * bool * bool) list }
 
 and type_kind =
     Type_abstract

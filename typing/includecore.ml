@@ -78,7 +78,7 @@ let type_declarations env id decl1 decl2 =
   end &&
   begin decl2.type_kind <> Type_abstract || decl2.type_manifest <> None ||
   List.for_all2
-    (fun (co1,cn1) (co2,cn2) -> (not co1 || co2) && (not cn1 || cn2))
+    (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2) && (not cn1 || cn2))
     decl1.type_variance decl2.type_variance
   end
 

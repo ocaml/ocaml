@@ -629,11 +629,11 @@ let rec generalize_expansive env var_level ty =
         Tconstr (path, tyl, abbrev) ->
           let variance =
             try (Env.find_type path env).type_variance
-            with Not_found -> List.map (fun _ -> (true,true)) tyl in
+            with Not_found -> List.map (fun _ -> (true,true,true)) tyl in
           abbrev := Mnil;
           List.iter2
-            (fun (co,cn) t ->
-              if cn then update_level env var_level t
+            (fun (co,cn,ct) t ->
+              if ct then update_level env var_level t
               else generalize_expansive env var_level t)
             variance tyl
       | Tarrow (_, t1, t2, _) ->
@@ -2607,7 +2607,7 @@ let rec build_subtype env visited loops posi level t =
         if level = 0 && generic_abbrev env p then warn := true;
         let tl' =
           List.map2
-            (fun (co,cn) t ->
+            (fun (co,cn,_) t ->
               if cn then
                 if co then (t, Unchanged)
                 else build_subtype env visited loops (not posi) level t
@@ -2744,7 +2744,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
         begin try
           let decl = Env.find_type p1 env in
           List.fold_left2
-            (fun cstrs (co, cn) (t1, t2) ->
+            (fun cstrs (co, cn, _) (t1, t2) ->
               if co then
                 if cn then
                   (trace, newty2 t1.level (Ttuple[t1]),

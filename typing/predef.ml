@@ -111,34 +111,35 @@ let build_initial_env add_type add_exception empty_env =
      type_arity = 1;
      type_kind = Type_abstract;
      type_manifest = None;
-     type_variance = [true, true]}
+     type_variance = [true, true, true]}
   and decl_list =
     let tvar = newgenvar() in
     {type_params = [tvar];
      type_arity = 1;
      type_kind = Type_variant["[]", []; "::", [tvar; type_list tvar]];
      type_manifest = None;
-     type_variance = [true, false]}
+     type_variance = [true, false, false]}
   and decl_format =
     {type_params = [newgenvar(); newgenvar(); newgenvar(); newgenvar()];
      type_arity = 4;
      type_kind = Type_abstract;
      type_manifest = None;
-     type_variance = [true, true; true, true; true, true; true, true]}
+     type_variance = [true, true, true; true, true, true;
+		      true, true, true; true, true, true]}
   and decl_option =
     let tvar = newgenvar() in
     {type_params = [tvar];
      type_arity = 1;
      type_kind = Type_variant["None", []; "Some", [tvar]];
      type_manifest = None;
-     type_variance = [true, false]}
+     type_variance = [true, false, false]}
   and decl_lazy_t =
     let tvar = newgenvar() in
     {type_params = [tvar];
      type_arity = 1;
      type_kind = Type_abstract;
      type_manifest = None;
-     type_variance = [true, false]}
+     type_variance = [true, false, false]}
   in
 
   add_exception ident_match_failure
