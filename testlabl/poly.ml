@@ -409,3 +409,7 @@ type 'a u = 'a and 'a v = 'a u t constraint 'a = int;;
 
 (* Example of wrong expansion *)
 type 'a u = < m : 'a v > and 'a v = 'a list u;;
+
+(* PR#1744: Ctype.matches *)
+type 'a t = 'a
+type 'a u = A of 'a t;;

@@ -2092,11 +2092,11 @@ let rigidify ty =
   unmark_type ty;
   !vars
 
-let all_distinct_vars vars =
+let all_distinct_vars env vars =
   let tyl = ref [] in
   List.for_all
     (fun ty ->
-      let ty = repr ty in
+      let ty = expand_head env ty in
       if List.memq ty !tyl then false else
       (tyl := ty :: !tyl; ty.desc = Tvar))
     vars
@@ -2105,7 +2105,7 @@ let matches env ty ty' =
   let snap = snapshot () in
   let vars = rigidify ty in
   let ok =
-    try unify env ty ty'; all_distinct_vars vars
+    try unify env ty ty'; all_distinct_vars env vars
     with Unify _ -> false
   in
   backtrack snap;

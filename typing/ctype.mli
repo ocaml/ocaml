@@ -153,7 +153,7 @@ val moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
 
 val rigidify: type_expr -> type_expr list
         (* "Rigidify" a type and return its type variable *)
-val all_distinct_vars: type_expr list -> bool
+val all_distinct_vars: Env.t -> type_expr list -> bool
         (* Check those types are all distinct type variables *)
 val matches : Env.t -> type_expr -> type_expr -> bool
         (* Same as [moregeneral false], implemented using the two above
