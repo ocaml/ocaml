@@ -292,7 +292,7 @@ let filter_global_map p gmap =
 
 (* Error report *)
 
-open Format
+open Formatmsg
 
 let report_error = function
     Undefined_global s ->

@@ -15,7 +15,7 @@
 
 open Misc
 open Arch
-open Format
+open Formatmsg
 open Cmm
 open Reg
 open Mach

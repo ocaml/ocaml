@@ -602,7 +602,7 @@ let transl_exception id path decl =
 
 (* Error report *)
 
-open Format
+open Formatmsg
 
 let report_error = function
     Illegal_letrec_pat ->

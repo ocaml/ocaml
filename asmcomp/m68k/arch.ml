@@ -59,7 +59,7 @@ let num_args_addressing = function
 
 (* Printing operations and addressing modes *)
 
-open Format
+open Formatmsg
 
 let print_addressing printreg addr arg =
   match addr with

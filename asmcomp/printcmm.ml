@@ -13,7 +13,7 @@
 
 (* Pretty-printing of C-- code *)
 
-open Format
+open Formatmsg
 open Cmm
 
 let machtype_component = function

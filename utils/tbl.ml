@@ -94,7 +94,7 @@ let rec iter f = function
   | Node(l, v, d, r, _) ->
       iter f l; f v d; iter f r
 
-open Format
+open Formatmsg
 
 let print print_key print_data tbl =
   open_hvbox 2;

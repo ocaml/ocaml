@@ -232,7 +232,7 @@ let transl_type_scheme env styp =
 
 (* Error report *)
 
-open Format
+open Formatmsg
 open Printtyp
 
 let report_error = function

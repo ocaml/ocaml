@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-open Format
+open Formatmsg
 
 type t = { stamp: int; name: string; mutable global: bool }
 

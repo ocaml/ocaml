@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-open Format
+open Formatmsg
 open Asttypes
 open Primitive
 open Types

@@ -142,7 +142,7 @@ let save_unit_info filename =
 
 (* Error report *)
 
-open Format
+open Formatmsg
 
 let report_error = function
     Not_a_unit_info filename ->

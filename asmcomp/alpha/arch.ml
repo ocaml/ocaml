@@ -13,7 +13,7 @@
 
 (* Specific operations for the Alpha processor *)
 
-open Format
+open Formatmsg
 
 (* Addressing modes *)
 

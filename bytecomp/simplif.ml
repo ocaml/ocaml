@@ -82,7 +82,6 @@ let rec eliminate_ref id = function
 
 (* Simplification of lets *)
 
-open Format
 let simplify_lambda lam =
   (* First pass: count the occurrences of all identifiers *)
   let occ = Hashtbl.create 83 in

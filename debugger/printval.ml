@@ -16,7 +16,7 @@
 
 open Misc
 open Obj
-open Format
+open Formatmsg
 open Parser_aux
 open Path
 open Types

@@ -141,13 +141,13 @@ typing/mtype.cmo: typing/btype.cmi typing/ctype.cmi typing/env.cmi \
 typing/mtype.cmx: typing/btype.cmx typing/ctype.cmx typing/env.cmx \
     typing/ident.cmx typing/path.cmx typing/types.cmx typing/mtype.cmi 
 typing/parmatch.cmo: parsing/asttypes.cmi typing/ctype.cmi \
-    typing/datarepr.cmi typing/env.cmi utils/formatmsg.cmi typing/ident.cmi \
-    parsing/location.cmi utils/misc.cmi typing/path.cmi typing/typedtree.cmi \
-    typing/types.cmi utils/warnings.cmi typing/parmatch.cmi 
+    typing/datarepr.cmi typing/env.cmi typing/ident.cmi parsing/location.cmi \
+    utils/misc.cmi typing/path.cmi typing/typedtree.cmi typing/types.cmi \
+    utils/warnings.cmi typing/parmatch.cmi 
 typing/parmatch.cmx: parsing/asttypes.cmi typing/ctype.cmx \
-    typing/datarepr.cmx typing/env.cmx utils/formatmsg.cmx typing/ident.cmx \
-    parsing/location.cmx utils/misc.cmx typing/path.cmx typing/typedtree.cmx \
-    typing/types.cmx utils/warnings.cmx typing/parmatch.cmi 
+    typing/datarepr.cmx typing/env.cmx typing/ident.cmx parsing/location.cmx \
+    utils/misc.cmx typing/path.cmx typing/typedtree.cmx typing/types.cmx \
+    utils/warnings.cmx typing/parmatch.cmi 
 typing/path.cmo: typing/ident.cmi typing/path.cmi 
 typing/path.cmx: typing/ident.cmx typing/path.cmi 
 typing/predef.cmo: typing/btype.cmi typing/ident.cmi typing/path.cmi \
@@ -511,10 +511,12 @@ asmcomp/linearize.cmo: asmcomp/cmm.cmi asmcomp/mach.cmi asmcomp/proc.cmi \
     asmcomp/reg.cmi asmcomp/linearize.cmi 
 asmcomp/linearize.cmx: asmcomp/cmm.cmx asmcomp/mach.cmx asmcomp/proc.cmx \
     asmcomp/reg.cmx asmcomp/linearize.cmi 
-asmcomp/liveness.cmo: asmcomp/mach.cmi utils/misc.cmi asmcomp/printmach.cmi \
-    asmcomp/proc.cmi asmcomp/reg.cmi asmcomp/liveness.cmi 
-asmcomp/liveness.cmx: asmcomp/mach.cmx utils/misc.cmx asmcomp/printmach.cmx \
-    asmcomp/proc.cmx asmcomp/reg.cmx asmcomp/liveness.cmi 
+asmcomp/liveness.cmo: utils/formatmsg.cmi asmcomp/mach.cmi utils/misc.cmi \
+    asmcomp/printmach.cmi asmcomp/proc.cmi asmcomp/reg.cmi \
+    asmcomp/liveness.cmi 
+asmcomp/liveness.cmx: utils/formatmsg.cmx asmcomp/mach.cmx utils/misc.cmx \
+    asmcomp/printmach.cmx asmcomp/proc.cmx asmcomp/reg.cmx \
+    asmcomp/liveness.cmi 
 asmcomp/mach.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi utils/nativeint.cmi \
     asmcomp/reg.cmi asmcomp/mach.cmi 
 asmcomp/mach.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx utils/nativeint.cmx \

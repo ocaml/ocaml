@@ -273,7 +273,7 @@ let link objfiles =
 
 (* Error report *)
 
-open Format
+open Formatmsg
 
 let report_error = function
     File_not_found name ->

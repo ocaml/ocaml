@@ -14,7 +14,7 @@
 (* Specific operations for the ARM processor *)
 
 open Misc
-open Format
+open Formatmsg
 
 (* Addressing modes *)
 

@@ -7,7 +7,8 @@ INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
 COMPFLAGS=-I ../../stdlib $(INCLUDES)
 
 OBJS=dynlink.cmo
-COMPILEROBJS=misc.cmo config.cmo tbl.cmo clflags.cmo ident.cmo path.cmo \
+COMPILEROBJS=misc.cmo config.cmo formatmsg.cmo tbl.cmo clflags.cmo \
+  ident.cmo path.cmo \
   types.cmo btype.cmo predef.cmo runtimedef.cmo symtable.cmo \
   opcodes.cmo meta.cmo
 

@@ -13,7 +13,7 @@
 
 (* Specific operations for the HP PA-RISC processor *)
 
-open Format
+open Formatmsg
 
 type specific_operation =
     Ishift1add

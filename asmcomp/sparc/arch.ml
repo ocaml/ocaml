@@ -13,7 +13,7 @@
 
 (* Specific operations for the Sparc processor *)
 
-open Format
+open Formatmsg
 
 type specific_operation = unit          (* None worth mentioning *)
 

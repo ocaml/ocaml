@@ -13,7 +13,7 @@
 
 (* Pretty-print lists of instructions *)
 
-open Format
+open Formatmsg
 open Lambda
 open Instruct
 

@@ -13,7 +13,7 @@
 
 (* The "trace" facility *)
 
-open Format
+open Formatmsg
 open Misc
 open Longident
 open Types

@@ -13,7 +13,7 @@
 
 (* From lambda to assembly code *)
 
-open Format
+open Formatmsg
 open Config
 open Clflags
 open Misc

@@ -14,7 +14,7 @@
 (* To print values *)
 
 open Misc
-open Format
+open Formatmsg
 open Longident
 open Path
 open Types

@@ -13,7 +13,7 @@
 
 (* Pretty-printing of pseudo machine code *)
 
-open Format
+open Formatmsg
 open Cmm
 open Reg
 open Mach

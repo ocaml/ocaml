@@ -55,7 +55,7 @@ let use_debugger_symtable fn arg =
 
 (* Load a .cmo or .cma file *)
 
-open Format
+open Formatmsg
 
 let rec loadfiles name =
   try
@@ -127,7 +127,7 @@ let remove_printer lid =
 
 (* Error report *)
 
-open Format
+open Formatmsg
 
 let report_error error =
   open_box 0;

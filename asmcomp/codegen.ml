@@ -13,7 +13,7 @@
 
 (* From C-- to assembly code *)
 
-open Format
+open Formatmsg
 open Cmm
 
 let dump_cmm = ref false

@@ -319,7 +319,7 @@ let transl_with_constraint env sdecl =
 
 (**** Error report ****)
 
-open Format
+open Formatmsg
 
 let report_error = function
     Repeated_parameter ->

@@ -82,7 +82,7 @@ let create_archive file_list lib_name =
     remove_file lib_name;
     raise x
 
-open Format
+open Formatmsg
 
 let report_error = function
     File_not_found name ->

@@ -13,7 +13,7 @@
 
 (* Specific operations for the PowerPC processor *)
 
-open Format
+open Formatmsg
 
 type specific_operation =
     Imultaddf                           (* multiply and add *)

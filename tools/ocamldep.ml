@@ -11,6 +11,7 @@
 
 (* $Id$ *)
 
+open Formatmsg
 open Location
 open Longident
 open Parsetree
@@ -328,8 +329,8 @@ let file_dependencies source_file =
       with x ->
         close_in ic; raise x
     with x ->
-      Format.set_formatter_out_channel stderr;
-      Format.open_box 0;
+      set_output Format.err_formatter;
+      open_box 0;
       begin match x with
         Lexer.Error(err, start, stop) ->
           Location.print {loc_start = start; loc_end = stop; loc_ghost = false};
@@ -337,11 +338,11 @@ let file_dependencies source_file =
       | Syntaxerr.Error err ->
           Syntaxerr.report_error err
       | Sys_error msg ->
-          Format.print_string "I/O error: "; Format.print_string msg
+          print_string "I/O error: "; print_string msg
       | _ ->
-          Format.close_box(); raise x
+          close_box(); raise x
       end;
-      Format.close_box(); Format.print_newline();
+      close_box(); print_newline();
       error_occurred := true
   end
 

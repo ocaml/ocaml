@@ -13,7 +13,7 @@
 
 (* Pretty-printing of linearized machine code *)
 
-open Format
+open Formatmsg
 open Mach
 open Printmach
 open Linearize

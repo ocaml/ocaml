@@ -13,7 +13,7 @@ all: ocamldep ocamlprof ocamlcp ocamlmktop
 # The dependency generator
 
 CAMLDEP=ocamldep.cmo
-CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
+CAMLDEP_IMPORTS=misc.cmo formatmsg.cmo config.cmo clflags.cmo terminfo.cmo \
   linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
@@ -29,7 +29,7 @@ install::
 # The profiler
 
 CSLPROF=ocamlprof.cmo
-CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
+CSLPROF_IMPORTS=misc.cmo formatmsg.cmo config.cmo clflags.cmo terminfo.cmo \
   linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 

@@ -314,7 +314,7 @@ let type_declarations env id decl1 decl2 =
 
 (* Error report *)
 
-open Format
+open Formatmsg
 open Printtyp
 
 let include_err = function
