@@ -448,7 +448,8 @@ let rec emit_instr i dslot =
           `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int n}\n`;
           `	mtlr	{emit_gpr 11}\n`
         end else begin
-          `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int n}\n`
+          if n > 0 then
+            `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int n}\n`
         end;
         `	bctr\n`
     | Lop(Itailcall_imm s) ->
@@ -461,7 +462,8 @@ let rec emit_instr i dslot =
             `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int n}\n`;
             `	mtlr	{emit_gpr 11}\n`
           end else begin
-            `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int n}\n`
+            if n > 0 then
+              `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int n}\n`
           end;
           `	b	{emit_codesymbol s}\n`
         end else begin
@@ -484,7 +486,8 @@ let rec emit_instr i dslot =
             `	lwz	0, 0(12)\n`;
             `	lwz	2, 4(12)\n`;
             `	mtctr	0\n`;
-            `	addi	1, 1, {emit_int n}\n`
+            if n > 0 then
+              `	addi	1, 1, {emit_int n}\n`
           end;
           `	bctr\n`
         end
@@ -634,7 +637,8 @@ let rec emit_instr i dslot =
         `	mtlr	{emit_gpr 11}\n`
     | Lreturn ->
         let n = frame_size() in
-        `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int n}\n`;
+        if n > 0 then
+          `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int n}\n`;
         `	blr\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
@@ -817,8 +821,10 @@ let fundecl fundecl =
     `	mflr	{emit_gpr 0}\n`;
     `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int(-n)}\n`;
     `	stw	{emit_gpr 0}, {emit_int(n - 4)}({emit_gpr 1})\n`
-  end else
-    `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int(-n)}\n`;
+  end else begin
+    if n > 0 then
+      `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int(-n)}\n`
+  end;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   (* Emit the glue code to call the GC *)
