@@ -123,9 +123,9 @@ supersparc-solaris: scratch
 	     OBJECT="$(OBJECT)" all
 
 x86: scratch
-        as s/x86KerN.s -o o/KerN.o
-        make CC="$(CC)" CFLAGS="$(CFLAGS)" \
-             OBJECT="$(OBJECT)" all
+	as s/x86KerN.s -o o/KerN.o
+	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	     OBJECT="$(OBJECT)" all
 
 # Construct VMS assembler from UNIX version
 
