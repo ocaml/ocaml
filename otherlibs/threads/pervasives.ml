@@ -177,10 +177,11 @@ type out_channel
 
 external open_descriptor_out: int -> out_channel = "caml_open_descriptor"
 external open_descriptor_in: int -> in_channel = "caml_open_descriptor"
+external set_nonblock: int -> unit = "thread_set_nonblock"
 
-let stdin = open_descriptor_in 0
-let stdout = open_descriptor_out 1
-let stderr = open_descriptor_out 2
+let stdin = set_nonblock 0; open_descriptor_in 0
+let stdout = set_nonblock 1; open_descriptor_out 1
+let stderr = set_nonblock 2; open_descriptor_out 2
 
 (* Non-blocking stuff *)
 

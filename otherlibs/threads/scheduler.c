@@ -781,3 +781,20 @@ static value alloc_process_status(int pid, int status)
   End_roots();
   return res;
 }
+
+/* Set the given file descriptor to non-blocking mode */
+
+#ifndef O_NONBLOCK
+#define O_NONBLOCK O_NDELAY
+#endif
+
+value thread_set_nonblock(value fd) /* ML */
+{
+  int retcode;
+  /* Fail silently if fcntl returns an error; the error will presumably
+     be caught when the file descriptor is operated on. */
+  retcode = fcntl(Int_val(fd), F_GETFL, 0);
+  if (retcode != -1)
+    fcntl(Int_val(fd), F_SETFL, retcode | O_NONBLOCK);
+  return Val_unit;
+}
