@@ -134,13 +134,13 @@ program_loading.cmo: debugger_config.cmi input_handling.cmi ../utils/misc.cmi \
 program_loading.cmx: debugger_config.cmx input_handling.cmx ../utils/misc.cmx \
     parameters.cmx primitives.cmx ../otherlibs/unix/unix.cmx unix_tools.cmx \
     program_loading.cmi 
-program_management.cmo: debugcom.cmi debugger_config.cmi history.cmi \
-    input_handling.cmi ../bytecomp/instruct.cmi ../utils/misc.cmi \
+program_management.cmo: breakpoints.cmi debugcom.cmi debugger_config.cmi \
+    history.cmi input_handling.cmi ../bytecomp/instruct.cmi ../utils/misc.cmi \
     parameters.cmi primitives.cmi program_loading.cmi symbols.cmi \
     time_travel.cmi ../otherlibs/unix/unix.cmi unix_tools.cmi \
     program_management.cmi 
-program_management.cmx: debugcom.cmx debugger_config.cmx history.cmx \
-    input_handling.cmx ../bytecomp/instruct.cmx ../utils/misc.cmx \
+program_management.cmx: breakpoints.cmx debugcom.cmx debugger_config.cmx \
+    history.cmx input_handling.cmx ../bytecomp/instruct.cmx ../utils/misc.cmx \
     parameters.cmx primitives.cmx program_loading.cmx symbols.cmx \
     time_travel.cmx ../otherlibs/unix/unix.cmx unix_tools.cmx \
     program_management.cmi 

@@ -115,9 +115,7 @@ let main () =
          Options are:";
       exit 2
     with Found_program_name ->
-      let i = ref 1 in
-      while Sys.argv.(!i) != !program_name do incr i done;
-      for j = !i + 1 to Array.length Sys.argv - 1 do
+      for j = !Arg.current + 1 to Array.length Sys.argv - 1 do
         arguments := Printf.sprintf "%s '%s'" !arguments Sys.argv.(j)
       done
     end;
