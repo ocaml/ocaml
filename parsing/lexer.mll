@@ -191,8 +191,8 @@ rule token = parse
   | ':' lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
       	let l = String.length s - 1 in
-      	lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - l;
-	LABEL (String.sub s 1 l) }
+      	(* lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - l; *)
+	LABELID (String.sub s 1 l) }
   | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
           try

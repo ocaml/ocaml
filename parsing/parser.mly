@@ -198,6 +198,7 @@ let unclosed opening_name opening_num closing_name closing_num =
 %token INITIALIZER
 %token <int> INT
 %token <string> LABEL
+%token <string> LABELID
 %token LAZY
 %token LBRACE
 %token LBRACEEQUAL
@@ -654,12 +655,21 @@ seq_expr:
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
 labeled_simple_pattern:
-    QUESTION LABEL simple_pattern LBRACEEQUAL seq_expr RBRACE
-      { ("?" ^ $2, Some $5, $3) }
-  | QUESTION LABEL simple_pattern
-      { ("?" ^ $2, None, $3) }
-  | labeled simple_pattern
-      { ($1, None, $2) }
+    QUESTION label_pattern LBRACEEQUAL seq_expr RBRACE
+      { ("?" ^ fst $2, Some $4, snd $2) }
+  | QUESTION label_pattern
+      { ("?" ^ fst $2, None, snd $2) }
+  | label_pattern
+      { (fst $1, None, snd $1) }
+  | simple_pattern
+      { ("", None, $1) }
+;
+label_pattern:
+    LABEL simple_pattern
+      { ($1, $2) }
+  | LABELID
+      { ($1, mkpat(Ppat_var $1)) }
+;
 expr:
     simple_expr
       { $1 }
@@ -823,12 +833,24 @@ simple_expr:
       { mkexp(Pexp_send($1, $3)) }
 ;
 simple_labeled_expr_list:
-    labeled simple_expr
-      { [$1, $2] }
-  | QUESTION LABEL simple_expr
-      { ["?" ^ $2, $3] }
-  | simple_labeled_expr_list labeled simple_expr
-      { ($2,$3) :: $1 }
+    labeled_simple_expr
+      { [$1] }
+  | simple_labeled_expr_list labeled_simple_expr
+      { $2 :: $1 }
+;
+labeled_simple_expr:
+    simple_expr
+      { ("", $1) }
+  | label_expr
+      { $1 }
+  | QUESTION label_expr
+      { ("?" ^ fst $2, snd $2) }
+;
+label_expr:
+    LABEL simple_expr
+      { ($1, $2) }
+  | LABELID
+      { ($1, mkexp(Pexp_ident(Lident $1))) }
 ;
 /*
 simple_expr_list:
