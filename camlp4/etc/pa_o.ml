@@ -1126,11 +1126,17 @@ EXTEND
     [ [ i = TILDEIDENTCOLON; p = patt LEVEL "simple" -> <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT -> <:patt< ~ $i$ >>
       | i = QUESTIONIDENTCOLON; j = LIDENT -> <:patt< ? $i$ : $lid:j$ >>
-      | i = QUESTIONIDENTCOLON; "("; j = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $lid:j$ = $e$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; lp = let_pattern; "="; e = expr; ")" ->
+          <:patt< ? $i$ : ( $lp$ = $e$ ) >>
       | i = QUESTIONIDENT -> <:patt< ? $i$ : $lid:i$ >>
       | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? ( $i$ = $e$ ) >> ] ]
+          <:patt< ? $i$ : ( $lid:i$ = $e$ ) >>
+      | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
+          <:patt< ? $i$ : ( ($lid:i$ : $t$) = $e$ ) >> ] ]
+  ;
+  let_pattern:
+    [ [ p = patt -> p
+      | p = patt; ":"; t = ctyp -> <:patt< ($p$ : $t$) >> ] ]
   ;
   class_type:
     [ [ i = LIDENT; ":"; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->

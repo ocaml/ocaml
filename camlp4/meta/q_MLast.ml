@@ -389,8 +389,6 @@ EXTEND
       | "?"; i = lident; ":"; p = SELF -> Node "PaOlb" [i; p; Option None]
       | "?"; i = lident; ":"; "("; p = SELF; "="; e = expr; ")" ->
           Node "PaOlb" [i; p; Option (Some e)]
-      | "?"; "("; j = lident; "="; e = expr; ")" ->
-          Node "PaOlb" [j; Node "PaLid" [j]; Option (Some e)]
       | "?"; i = lident -> Node "PaOlb" [i; Node "PaLid" [i]; Option None] ]
     | "simple"
       [ v = LIDENT -> Node "PaLid" [Str v]

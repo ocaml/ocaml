@@ -781,7 +781,7 @@ EXTEND
           <:patt< ? $i$ : ( $lid:j$ = $e$ ) >>
       | i = QUESTIONIDENT -> <:patt< ? $i$ : $lid:i$ >>
       | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? ( $i$ = $e$ ) >> ] ]
+          <:patt< ? $i$ : ( $lid:i$ = $e$ ) >> ] ]
   ;
   expr: AFTER "apply"
     [ "label"

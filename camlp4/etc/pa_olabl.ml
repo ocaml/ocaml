@@ -1678,7 +1678,7 @@ EXTEND
           <:patt< ? $i$ : ( $lid:j$ = $e$ ) >>
       | "?"; i = ELABEL -> <:patt< ? $i$ : $lid:i$ >>
       | "?"; "("; i = ELABEL; "="; e = expr; ")" ->
-          <:patt< ? ( $i$ = $e$ ) >> ] ]
+          <:patt< ? $i$ : ( $lid:i$ = $e$ ) >> ] ]
   ;
   class_type:
     [ [ i = LABEL; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
