@@ -72,6 +72,11 @@ module Genarray = struct
      = "bigarray_set_generic"
   external num_dims: ('a, 'b, 'c) t -> int = "bigarray_num_dims"
   external nth_dim: ('a, 'b, 'c) t -> int -> int = "bigarray_dim"
+  let dims a =
+    let n = num_dims a in
+    let d = Array.make n 0 in
+    for i = 0 to n-1 do d.(i) <- nth_dim a i done;
+    d
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
 

@@ -234,6 +234,10 @@ module Genarray :
   external num_dims: ('a, 'b, 'c) t -> int = "bigarray_num_dims"
   (** Return the number of dimensions of the given big array. *)
 
+  val dims : ('a, 'b, 'c) t -> int array
+  (** [Genarray.dims a] returns all dimensions of the big array [a],
+     as an array of integers of length [Genarray.num_dims a]. *)
+
   external nth_dim: ('a, 'b, 'c) t -> int -> int = "bigarray_dim"
   (** [Genarray.nth_dim a n] returns the [n]-th dimension of the
      big array [a].  The first dimension corresponds to [n = 0];
