@@ -172,6 +172,12 @@ and pattern i ppf x =
   | Ppat_type li ->
       line i ppf "PPat_type";
       longident i ppf li
+(* GENERIC
+  | Ppat_dynamic (p, ct) ->
+      line i ppf "Ppat_dynamic";
+      pattern i ppf p;
+      core_type i ppf ct;
+/GENERIC *)
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.pexp_loc;
@@ -275,11 +281,16 @@ and expression i ppf x =
   | Pexp_dynamic (e) ->
       line i ppf "Pexp_dynamic";
       expression i ppf e;
+  | Pexp_coerce (e) ->
+      line i ppf "Pexp_coerce";
+      expression i ppf e;
+(* /DYN *)
+(* GENERIC
   | Pexp_coerce (e, pexps) ->
       line i ppf "Pexp_coerce";
       expression i ppf e;
       list i pattern_x_expression_case ppf pexps;
-(* /DYN *)
+/GENERIC *)
 
 and value_description i ppf x =
   line i ppf "value_description\n";
