@@ -130,7 +130,7 @@ exception Assert_failure of (string * int * int)
 \index{Assertfailure@\verb`Assert_failure`}
 \begin{ocamldocdescription}
    Exception raised when an assertion fails.  The arguments are
-   the location of the pattern-matching in the source code
+   the location of the assertion in the source code
    (file name, position of first character, position of last
    character).
 \end{ocamldocdescription}
