@@ -12,12 +12,6 @@ open Printf;;
   3. vitesse.
 *)
 
-(* FIXME: faire des tests sur des longueurs non puissances de 2 *)
-(* FIXME: faire des tests sur des flottants avec une machine 32 bits *)
-
-(* FIXME: merge sort avec listes mutables *)
-(* FIXME: merge sort avec listes initiales maximales *)
-
 (************************************************************************)
 (* auxiliary functions *)
 
@@ -110,6 +104,16 @@ let mkrand_nodup n =
 
 let chkrand_nodup rstate n a =
   chkgen (fun i -> Random.bits ()) compare rstate n a
+;;
+
+let mkfloats n =
+  let a = Array.make n 0.0 in
+  for i = 0 to (n-1) do a.(i) <- Random.float 1.0; done;
+  a
+;;
+
+let chkfloats rstate n a =
+  chkgen (fun i -> Random.float 1.0) compare rstate n a
 ;;
 
 type record = {
@@ -227,6 +231,10 @@ let test name stable f1 f2 aux1 aux2 =
   t cmp "reverse-sorted ints" mkrev chkrev;
   t cmp "random ints (many dups)" mkrand_dup chkrand_dup;
   t cmp "random ints (few dups)" mkrand_nodup chkrand_nodup;
+(*
+  let t a b c d = test1 name f3 aux3.prepd aux3.postd a b c d in
+  t cmp "random floats" mkfloats chkfloats;
+*)
   let t a b c d = test1 name f2 aux2.prepd aux2.postd a b c d in
   let cmp = aux2.prepf cmpstr lestr in
   t cmp "records (str)" (mkrecs 1) (chkstr 1);
@@ -242,31 +250,32 @@ let test name stable f1 f2 aux1 aux2 =
 
 (************************************************************************)
 
-(* bug: effet de bord sur l'argument: on ne peut pas repeter la fonction. *)
-(*
-let timer1 repeat f x =
-  Gc.full_major ();
+(* Warning: rpt_timer cannot be used for the array sorts because
+   the sorting functions have effects.
+*)
+
+let rpt_timer1 repeat f x =
+  Gc.compact ();
   ignore (f x);
-  let st = Unix.times().tms_utime in
+  let st = Sys.time () in
   for i = 1 to repeat do ignore (f x); done;
-  let en = Unix.times().tms_utime in
+  let en = Sys.time () in
   en -. st
 ;;
 
-let timer f x =
+let rpt_timer f x =
   let repeat = ref 1 in
-  let t = ref (timer1 !repeat f x) in
+  let t = ref (rpt_timer1 !repeat f x) in
   while !t < 0.2 do
     repeat := 10 * !repeat;
-    t := timer1 !repeat f x;
+    t := rpt_timer1 !repeat f x;
   done;
   if !t < 2.0 then begin
     repeat := (int_of_float (10. *. (float !repeat) /. !t) + 1);
-    t := timer1 !repeat f x;
+    t := rpt_timer1 !repeat f x;
   end;
   !t /. (float !repeat)
 ;;
-*)
 
 let timer f x =
   let st = Sys.time () in
@@ -276,12 +285,12 @@ let timer f x =
 ;;
 
 let table1 limit f mkarg =
-  printf "  %10s  %9s  %9s  %9s\n" "n" "t1" "t2" "t3";
+  printf "  %10s  %9s  %9s  %9s  %9s  %9s\n" "n" "t1" "t2" "t3" "t4" "t5";
   let sz = ref 49151 in
   while !sz < int_of_float (2. ** float limit) do
     begin try
       printf "  %10d  " !sz; flush stdout;
-      for i = 0 to 2 do
+      for i = 0 to 4 do
         let arg = mkarg !sz in
         let t = timer f arg in
         printf " %.2e   " t; flush stdout;
@@ -290,7 +299,7 @@ let table1 limit f mkarg =
     with e -> printf "*** %s\n" (Printexc.to_string e);
     end;
     flush stdout;
-    sz := (3 * !sz + 1) / 2
+    sz := 2 * !sz + 1;
   done;
 ;;
 
@@ -298,7 +307,7 @@ let table2 limit f mkarg =
   printf "  %10s  %9s  %9s  %9s  %9s  %9s\n"
          " n" "t" "t/n" "t/nlogn" "t/nlog^2n" "t/n^2";
   let sz = ref 49151 in
-  while !sz < int_of_float (2. ** float limit) do
+  while float !sz < 2. ** float limit do
     begin try
       printf "  %10d   " !sz; flush stdout;
       Gc.compact ();
@@ -311,27 +320,79 @@ let table2 limit f mkarg =
     with e -> printf "*** %s\n" (Printexc.to_string e);
     end;
     flush stdout;
-    sz := (3 * !sz + 1) / 2
+    sz := 2 * !sz + 1;
+  done;
+;;
+
+let table3 limit f mkarg =
+  printf "  %10s  %9s  %9s  %9s  %9s  %9s\n" "n" "t1" "t2" "t3" "t4" "t5";
+  let sz = ref 2 in
+  while float !sz < 2. ** float limit do
+    begin try
+      printf "  %10d  " !sz; flush stdout;
+      for i = 0 to 4 do
+        let arg = mkarg !sz in
+        let t = rpt_timer f arg in
+        printf " %.2e   " t; flush stdout;
+      done;
+      printf "\n";
+    with e -> printf "*** %s\n" (Printexc.to_string e);
+    end;
+    flush stdout;
+    sz := 2 * !sz + 1;
   done;
 ;;
 
 (************************************************************************)
 
 (* benchmarks:
-   1. random records, sorted with two keys
+   1a. random records, sorted with two keys
+   1b. random integers
+   1c. random floats
+
    2a. integers, constant
    2b. integers, already sorted
    2c. integers, reverse sorted
+
+   only for short lists:
+   3a. random records, sorted with two keys
+   3b. random integers
+   3c. random floats
 *)
-let bench1 limit name f aux =
+let bench1a limit name f aux =
 
   (* Don't do benchmarks with assertions enabled. *)
   assert (not true);
 
-  printf "\n%s with random records [1000000000]:\n" name;
   random_reinit ();
-  let cmp = aux.prepf cmpstr lestr in
-  table1 limit (f cmp) (fun n -> aux.prepd (mkrecs 1000000000 n));
+
+  printf "\n%s with random records [10]:\n" name;
+  let cmp = aux.prepf cmplex lelex in
+  table1 limit (f cmp) (fun n -> aux.prepd (mkrecs 10 n));
+;;
+
+let bench1b limit name f aux =
+
+  (* Don't do benchmarks with assertions enabled. *)
+  assert (not true);
+
+  random_reinit ();
+
+  printf "\n%s with random integers:\n" name;
+  let cmp = aux.prepf (-) (<=) in
+  table1 limit (f cmp) (fun n -> aux.prepd (mkrand_nodup n));
+;;
+
+let bench1c limit name f aux =
+
+  (* Don't do benchmarks with assertions enabled. *)
+  assert (not true);
+
+  random_reinit ();
+
+  printf "\n%s with random floats:\n" name;
+  let cmp = aux.prepf compare (<=) in
+  table1 limit (f cmp) (fun n -> aux.prepd (mkfloats n));
 ;;
 
 let bench2 limit name f aux =
@@ -350,6 +411,42 @@ let bench2 limit name f aux =
   printf "\n%s with reverse-sorted integers:\n" name;
   let cmp = aux.prepf compare (<=) in
   table2 limit (f cmp) (fun n -> aux.prepd (mkrev n));
+;;
+
+let bench3a limit name f aux =
+
+  (* Don't do benchmarks with assertions enabled. *)
+  assert (not true);
+
+  random_reinit ();
+
+  printf "\n%s with random records [10]:\n" name;
+  let cmp = aux.prepf cmplex lelex in
+  table3 limit (f cmp) (fun n -> aux.prepd (mkrecs 10 n));
+;;
+
+let bench3b limit name f aux =
+
+  (* Don't do benchmarks with assertions enabled. *)
+  assert (not true);
+
+  random_reinit ();
+
+  printf "\n%s with random integers:\n" name;
+  let cmp = aux.prepf (-) (<=) in
+  table3 limit (f cmp) (fun n -> aux.prepd (mkrand_nodup n));
+;;
+
+let bench3c limit name f aux =
+
+  (* Don't do benchmarks with assertions enabled. *)
+  assert (not true);
+
+  random_reinit ();
+
+  printf "\n%s with random floats:\n" name;
+  let cmp = aux.prepf compare (<=) in
+  table3 limit (f cmp) (fun n -> aux.prepd (mkfloats n));
 ;;
 
 (************************************************************************)
@@ -604,6 +701,473 @@ let lmerge_1d cmp l =
     mergeall false (initlist l [])
 
 (* END code contributed by Yann Coscoy *)
+
+(************************************************************************)
+(* merge sort on short lists, Francois Pottier *)
+
+(* BEGIN code contributed by Francois Pottier *)
+
+  (* [chop k l] returns the list [l] deprived of its [k] first
+     elements. The length of the list [l] must be [k] at least. *)
+
+  let rec chop k l =
+    match k, l with
+    | 0, _ -> l
+    | _, x :: l -> chop (k-1) l
+    | _, _ -> assert false
+  ;;
+
+  let rec merge order l1 l2 =
+    match l1 with
+      [] -> l2
+    | h1 :: t1 ->
+        match l2 with
+          [] -> l1
+        | h2 :: t2 ->
+            if order h1 h2
+            then h1 :: merge order t1 l2
+            else h2 :: merge order l1 t2
+  ;;
+
+  let rec lmerge_4a order l =
+    match l with
+    | []
+    | [ _ ] -> l
+    | _ ->
+        let rec sort k l = (* k > 1 *)
+          match k, l with
+          | 2, x1 :: x2 :: _ ->
+              if order x1 x2 then [ x1; x2 ] else [ x2; x1 ]
+          | 3, x1 :: x2 :: x3 :: _ ->
+              if order x1 x2 then
+                if order x2 x3 then
+                  [ x1 ; x2 ; x3 ]
+                else
+                  if order x1 x3 then [ x1 ; x3 ; x2 ] else [ x3; x1; x2 ]
+              else
+                if order x1 x3 then
+                  [ x2; x1; x3 ]
+                else
+                  if order x2 x3 then [ x2; x3; x1 ] else [ x3; x2; x1 ]
+          | _, _ ->
+              let k1 = k / 2 in
+              let k2 = k - k1 in
+              merge order (sort k1 l) (sort k2 (chop k1 l))
+        in
+        sort (List.length l) l
+  ;;
+(* END code contributed by Francois Pottier *)
+
+(************************************************************************)
+(* merge sort on short lists, Francois Pottier,
+   adapted to new-style interface *)
+
+(* BEGIN code contributed by Francois Pottier *)
+
+  (* [chop k l] returns the list [l] deprived of its [k] first
+     elements. The length of the list [l] must be [k] at least. *)
+
+  let rec chop k l =
+    match k, l with
+    | 0, _ -> l
+    | _, x :: l -> chop (k-1) l
+    | _, _ -> assert false
+  ;;
+
+  let rec merge order l1 l2 =
+    match l1 with
+      [] -> l2
+    | h1 :: t1 ->
+        match l2 with
+          [] -> l1
+        | h2 :: t2 ->
+            if order h1 h2 <= 0
+            then h1 :: merge order t1 l2
+            else h2 :: merge order l1 t2
+  ;;
+
+  let rec lmerge_4b order l =
+    match l with
+    | []
+    | [ _ ] -> l
+    | _ ->
+        let rec sort k l = (* k > 1 *)
+          match k, l with
+          | 2, x1 :: x2 :: _ ->
+              if order x1 x2 <= 0 then [ x1; x2 ] else [ x2; x1 ]
+          | 3, x1 :: x2 :: x3 :: _ ->
+              if order x1 x2 <= 0 then
+                if order x2 x3 <= 0 then
+                  [ x1 ; x2 ; x3 ]
+                else
+                  if order x1 x3 <= 0 then [ x1 ; x3 ; x2 ] else [ x3; x1; x2 ]
+              else
+                if order x1 x3 <= 0 then
+                  [ x2; x1; x3 ]
+                else
+                  if order x2 x3 <= 0 then [ x2; x3; x1 ] else [ x3; x2; x1 ]
+          | _, _ ->
+              let k1 = k / 2 in
+              let k2 = k - k1 in
+              merge order (sort k1 l) (sort k2 (chop k1 l))
+        in
+        sort (List.length l) l
+  ;;
+(* END code contributed by Francois Pottier *)
+
+(************************************************************************)
+(* merge sort on short lists a la Pottier, modified merge *)
+
+let rec chop k l =
+  if k = 0 then l else begin
+    match l with
+    | x::t -> chop (k-1) t
+    | _ -> assert false
+  end
+;;
+
+let lmerge_4c cmp l =
+  let rec merge1 h1 t1 l2 =
+    match l2 with
+    | [] -> h1 :: t1
+    | h2 :: t2 ->
+        if cmp h1 h2 <= 0
+        then h1 :: (merge2 t1 h2 t2)
+        else h2 :: (merge1 h1 t1 t2)
+  and merge2 l1 h2 t2 =
+    match l1 with
+    | [] -> h2 :: t2
+    | h1 :: t1 ->
+        if cmp h1 h2 <= 0
+        then h1 :: (merge2 t1 h2 t2)
+        else h2 :: (merge1 h1 t1 t2)
+  in
+  let merge l1 = function
+    | [] -> l1
+    | h2 :: t2 -> merge2 l1 h2 t2
+  in
+  let rec sort n l =
+    match n, l with
+    | 2, x1 :: x2 :: _ ->
+       if cmp x1 x2 <= 0 then [x1; x2] else [x2; x1]
+    | 3, x1 :: x2 :: x3 :: _ ->
+       if cmp x1 x2 <= 0 then begin
+         if cmp x2 x3 <= 0 then [x1; x2; x3]
+         else if cmp x1 x3 <= 0 then [x1; x3; x2]
+         else [x3; x1; x2]
+       end else begin
+         if cmp x1 x3 <= 0 then [x2; x1; x3]
+         else if cmp x2 x3 <= 0 then [x2; x3; x1]
+         else [x3; x2; x1]
+       end
+    | n, l ->
+       let n1 = n asr 1 in
+       let n2 = n - n1 in
+       merge (sort n1 l) (sort n2 (chop n1 l))
+  in
+  let len = List.length l in
+  if len < 2 then l else sort len l
+;;
+
+(************************************************************************)
+(* merge sort on short lists a la Pottier, logarithmic stack space *)
+
+let rec chop k l =
+  if k = 0 then l else begin
+    match l with
+    | x::t -> chop (k-1) t
+    | _ -> assert false
+  end
+;;
+
+let lmerge_4d cmp l =
+  let rec rev_merge l1 l2 accu =
+    match l1, l2 with
+    | [], l2 -> l2 @@ accu
+    | l1, [] -> l1 @@ accu
+    | h1::t1, h2::t2 ->
+        if cmp h1 h2 <= 0
+        then rev_merge t1 l2 (h1::accu)
+        else rev_merge l1 t2 (h2::accu)
+  in
+  let rec rev_merge_rev l1 l2 accu =
+    match l1, l2 with
+    | [], l2 -> l2 @@ accu
+    | l1, [] -> l1 @@ accu
+    | h1::t1, h2::t2 ->
+        if cmp h1 h2 > 0
+        then rev_merge_rev t1 l2 (h1::accu)
+        else rev_merge_rev l1 t2 (h2::accu)
+  in
+  let rec sort n l =
+    match n, l with
+    | 2, x1 :: x2 :: _ ->
+       if cmp x1 x2 <= 0 then [x1; x2] else [x2; x1]
+    | 3, x1 :: x2 :: x3 :: _ ->
+       if cmp x1 x2 <= 0 then begin
+         if cmp x2 x3 <= 0 then [x1; x2; x3]
+         else if cmp x1 x3 <= 0 then [x1; x3; x2]
+         else [x3; x1; x2]
+       end else begin
+         if cmp x1 x3 <= 0 then [x2; x1; x3]
+         else if cmp x2 x3 <= 0 then [x2; x3; x1]
+         else [x3; x2; x1]
+       end
+    | n, l ->
+       let n1 = n asr 1 in
+       let n2 = n - n1 in
+       rev_merge_rev (rev_sort n1 l) (rev_sort n2 (chop n1 l)) []
+  and rev_sort n l =
+    match n, l with
+    | 2, x1 :: x2 :: _ ->
+       if cmp x1 x2 > 0 then [x1; x2] else [x2; x1]
+    | 3, x1 :: x2 :: x3 :: _ ->
+       if cmp x1 x2 > 0 then begin
+         if cmp x2 x3 > 0 then [x1; x2; x3]
+         else if cmp x1 x3 > 0 then [x1; x3; x2]
+         else [x3; x1; x2]
+       end else begin
+         if cmp x1 x3 > 0 then [x2; x1; x3]
+         else if cmp x2 x3 > 0 then [x2; x3; x1]
+         else [x3; x2; x1]
+       end
+    | n, l ->
+       let n1 = n asr 1 in
+       let n2 = n - n1 in
+       rev_merge (sort n1 l) (sort n2 (chop n1 l)) []
+  in
+  let len = List.length l in
+  if len < 2 then l else sort len l
+;;
+
+
+(************************************************************************)
+(* merge sort on short lists a la Pottier, logarithmic stack space,
+   in place: input list is freed as the output is being computed. *)
+
+let rec chop k l =
+  if k = 0 then l else begin
+    match l with
+    | x::t -> chop (k-1) t
+    | _ -> assert false
+  end
+;;
+
+let lmerge_4e cmp l =
+  let rec rev_merge l1 l2 accu =
+    match l1, l2 with
+    | [], l2 -> l2 @@ accu
+    | l1, [] -> l1 @@ accu
+    | h1::t1, h2::t2 ->
+        if cmp h1 h2 <= 0
+        then rev_merge t1 l2 (h1::accu)
+        else rev_merge l1 t2 (h2::accu)
+  in
+  let rec rev_merge_rev l1 l2 accu =
+    match l1, l2 with
+    | [], l2 -> l2 @@ accu
+    | l1, [] -> l1 @@ accu
+    | h1::t1, h2::t2 ->
+        if cmp h1 h2 > 0
+        then rev_merge_rev t1 l2 (h1::accu)
+        else rev_merge_rev l1 t2 (h2::accu)
+  in
+  let rec sort n l =
+    match n, l with
+    | 2, x1 :: x2 :: _ ->
+       if cmp x1 x2 <= 0 then [x1; x2] else [x2; x1]
+    | 3, x1 :: x2 :: x3 :: _ ->
+       if cmp x1 x2 <= 0 then begin
+         if cmp x2 x3 <= 0 then [x1; x2; x3]
+         else if cmp x1 x3 <= 0 then [x1; x3; x2]
+         else [x3; x1; x2]
+       end else begin
+         if cmp x1 x3 <= 0 then [x2; x1; x3]
+         else if cmp x2 x3 <= 0 then [x2; x3; x1]
+         else [x3; x2; x1]
+       end
+    | n, l ->
+       let n1 = n asr 1 in
+       let n2 = n - n1 in
+       let l2 = chop n1 l in
+       let s1 = rev_sort n1 l in
+       let s2 = rev_sort n2 l2 in
+       rev_merge_rev s1 s2 []
+  and rev_sort n l =
+    match n, l with
+    | 2, x1 :: x2 :: _ ->
+       if cmp x1 x2 > 0 then [x1; x2] else [x2; x1]
+    | 3, x1 :: x2 :: x3 :: _ ->
+       if cmp x1 x2 > 0 then begin
+         if cmp x2 x3 > 0 then [x1; x2; x3]
+         else if cmp x1 x3 > 0 then [x1; x3; x2]
+         else [x3; x1; x2]
+       end else begin
+         if cmp x1 x3 > 0 then [x2; x1; x3]
+         else if cmp x2 x3 > 0 then [x2; x3; x1]
+         else [x3; x2; x1]
+       end
+    | n, l ->
+       let n1 = n asr 1 in
+       let n2 = n - n1 in
+       let l2 = chop n1 l in
+       let s1 = sort n1 l in
+       let s2 = sort n2 l2 in
+       rev_merge s1 s2 []
+  in
+  let len = List.length l in
+  if len < 2 then l else sort len l
+;;
+
+(************************************************************************)
+(* chop-free version of Pottier's code, binary version *)
+
+let rec merge cmp l1 l2 =
+  match l1, l2 with
+  | [], l2 -> l2
+  | l1, [] -> l1
+  | h1 :: t1, h2 :: t2 ->
+      if cmp h1 h2 <= 0
+      then h1 :: merge cmp t1 l2
+      else h2 :: merge cmp l1 t2
+;;
+
+let lmerge_5a cmp l =
+  let rem = ref l in
+  let rec sort_prefix n =
+    if n <= 1 then begin
+      match !rem with
+      | [] -> []
+      | [x] as l -> rem := []; l
+      | x::y::t -> rem := t; if cmp x y <= 0 then [x;y] else [y;x]
+    end else if !rem = [] then []
+    else begin
+      let l1 = sort_prefix (n-1) in
+      let l2 = sort_prefix (n-1) in
+      merge cmp l1 l2
+    end
+  in
+  let len = ref (List.length l) in
+  let i = ref 0 in
+  while !len > 0 do incr i; len := !len lsr 1; done;
+  sort_prefix !i
+;;
+
+(************************************************************************)
+(* chop-free version of Pottier's code, dichotomic version,
+   ground cases 1 & 2 *)
+
+let rec merge cmp l1 l2 =
+  match l1, l2 with
+  | [], l2 -> l2
+  | l1, [] -> l1
+  | h1 :: t1, h2 :: t2 ->
+      if cmp h1 h2 <= 0
+      then h1 :: merge cmp t1 l2
+      else h2 :: merge cmp l1 t2
+;;
+
+let lmerge_5b cmp l =
+  let rem = ref l in
+  let rec sort_prefix n =
+    match n, !rem with
+    | 1, x::t -> rem := t; [x]
+    | 2, x::y::t -> rem := t; if cmp x y <= 0 then [x;y] else [y;x]
+    | n, _ ->
+       let n1 = n/2 in
+       let n2 = n - n1 in
+       let l1 = sort_prefix n1 in
+       let l2 = sort_prefix n2 in
+       merge cmp l1 l2
+  in
+  let len = List.length l in
+  if len <= 1 then l else sort_prefix len
+;;
+
+(************************************************************************)
+(* chop-free version of Pottier's code, dichotomic version,
+   ground cases 2 & 3 *)
+
+let rec merge cmp l1 l2 =
+  match l1, l2 with
+  | [], l2 -> l2
+  | l1, [] -> l1
+  | h1 :: t1, h2 :: t2 ->
+      if cmp h1 h2 <= 0
+      then h1 :: merge cmp t1 l2
+      else h2 :: merge cmp l1 t2
+;;
+
+let lmerge_5c cmp l =
+  let rem = ref l in
+  let rec sort_prefix n =
+    match n, !rem with
+    | 2, x::y::t -> rem := t; if cmp x y <= 0 then [x;y] else [y;x]
+    | 3, x::y::z::t ->
+       rem := t;
+       if cmp x y <= 0 then
+         if cmp y z <= 0 then [x; y; z]
+         else if cmp x z <= 0 then [x; z; y]
+         else [z; x; y]
+       else
+         if cmp x z <= 0 then [y; x; z]
+         else if cmp y z <= 0 then [y; z; x]
+         else [z; y; x]
+    | n, _ ->
+       let n1 = n/2 in
+       let n2 = n - n1 in
+       let l1 = sort_prefix n1 in
+       let l2 = sort_prefix n2 in
+       merge cmp l1 l2
+  in
+  let len = List.length l in
+  if len <= 1 then l else sort_prefix len
+;;
+
+(************************************************************************)
+(* chop-free, ref-free version of Pottier's code, dichotomic version,
+   ground cases 2 & 3, modified merge *)
+
+let lmerge_5d cmp l =
+  let rec merge1 h1 t1 l2 =
+    match l2 with
+    | [] -> h1::t1
+    | h2 :: t2 ->
+        if cmp h1 h2 <= 0
+        then h1 :: merge2 t1 h2 t2
+        else h2 :: merge1 h1 t1 t2
+  and merge2 l1 h2 t2 =
+    match l1 with
+    | [] -> h2::t2
+    | h1 :: t1 ->
+        if cmp h1 h2 <= 0
+        then h1 :: merge2 t1 h2 t2
+        else h2 :: merge1 h1 t1 t2
+  in
+  let rec sort_prefix n l =
+    match n, l with
+    | 2, x::y::t -> ((if cmp x y <= 0 then [x;y] else [y;x]), t)
+    | 3, x::y::z::t ->
+       ((if cmp x y <= 0 then
+           if cmp y z <= 0 then [x; y; z]
+           else if cmp x z <= 0 then [x; z; y]
+           else [z; x; y]
+         else
+           if cmp x z <= 0 then [y; x; z]
+           else if cmp y z <= 0 then [y; z; x]
+           else [z; y; x]),
+        t)
+    | n, _ ->
+       let n1 = n/2 in
+       let n2 = n - n1 in
+       let (l1, rest1) = sort_prefix n1 l in
+       match sort_prefix n2 rest1 with
+       | (h2::t2, rest2) -> ((merge2 l1 h2 t2), rest2)
+       | _ -> assert false
+  in
+  let len = List.length l in
+  if len <= 1 then l else fst (sort_prefix len l)
+;;
 
 (************************************************************************)
 (* merge sort on arrays, merge with tail-rec function *)
@@ -1134,10 +1698,11 @@ let amerge_1j cmp a =
   end;
 ;;
 
-(* FIXME: list->array->list direct and array->list->array direct *)
-(* FIXME: overhead = 1/3, 1/4, etc. *)
-(* FIXME: overhead = sqrt (n) *)
-(* FIXME: overhead = n/3 jusqu'a 30k, 30k jusqu'a 900M, sqrt (n) au-dela *)
+(* FIXME a essayer: *)
+(* list->array->list direct et array->list->array direct *)
+(* overhead = 1/3, 1/4, etc. *)
+(* overhead = sqrt (n) *)
+(* overhead = n/3 jusqu'a 30k, 30k jusqu'a 900M, sqrt (n) au-dela *)
 
 (************************************************************************)
 (* merge sort on arrays, merge with loop *)
@@ -1688,8 +2253,7 @@ let amerge_3j cmp a =
   end;
 ;;
 
-(* FIXME: bottom-up merge on arrays ? *)
-(* FIXME: top-down merge on lists ? *)
+(* FIXME essayer bottom-up merge on arrays ? *)
 
 (************************************************************************)
 (* Shell sort on arrays *)
@@ -3350,8 +3914,8 @@ let aheap_1 cmp a =
 (************************************************************************)
 (* Heap sort on arrays (top-down, binary) *)
 
-(* FIXME to do: application partielle de trickledown (merge avec down) *)
-(* FIXME to do: expanser maxson dans trickledown; supprimer l'exception. *)
+(* FIXME essayer application partielle de trickledown (merge avec down) *)
+(* FIXME essayer expanser maxson dans trickledown; supprimer l'exception. *)
 
 let aheap_2 cmp a =
   let maxson l i e =
@@ -3573,7 +4137,7 @@ let aheap_6 cmp a =
   if l > 1 then (let e = a.(1) in a.(1) <- a.(0); a.(0) <- e);
 ;;
 
-(* FIXME cutoff pour heapsort ? *)
+(* FIXME essayer cutoff pour heapsort *)
 
 (************************************************************************)
 (* Insertion sort with dichotomic search *)
@@ -3613,8 +4177,30 @@ let array_to_list_in_place a =
   loop [] l l
 ;;
 
-let lmerge_0 cmp l =
+let array_of_list l len =
+  match l with
+  | [] -> [| |]
+  | h::t ->
+      let a = Array.make len h in
+      let rec loop i l =
+        match l with
+        | [] -> ()
+        | h::t -> a.(i) <- h; loop (i+1) t
+      in
+      loop 1 t;
+      a
+;;
+
+let lmerge_0a cmp l =
   let a = Array.of_list l in
+  amerge_1e cmp a;
+  array_to_list_in_place a
+;;
+
+let lmerge_0b cmp l =
+  let len = List.length l in
+  if len > 256 then Gc.minor ();
+  let a = array_of_list l len in
   amerge_1e cmp a;
   array_to_list_in_place a
 ;;
@@ -3635,7 +4221,7 @@ let lquick_0 cmp l =
 (* merge sort on arrays via lists *)
 
 let amerge_0 cmp a =    (* cutoff is not yet used *)
-  let l = lmerge_1a cmp (Array.to_list a) in
+  let l = lmerge_4e cmp (Array.to_list a) in
   let rec loop i = function
   | [] -> ()
   | h::t -> a.(i) <- h; loop (i + 1) t
@@ -3645,28 +4231,46 @@ let amerge_0 cmp a =    (* cutoff is not yet used *)
 
 (************************************************************************)
 
+let lold = [
+  "Sort.list", Sort.list, true;
+  "lmerge_3", lmerge_3, false;
+  "lmerge_4a", lmerge_4a, true;
+];;
+
 let lnew = [
-  "lmerge_0", lmerge_0, true;
-(*
+  "List.stable_sort", List.stable_sort, true;
+
+  "lmerge_0a", lmerge_0a, true;
+  "lmerge_0b", lmerge_0b, true;
   "lshell_0", lshell_0, false;
   "lquick_0", lquick_0, false;
+
   "lmerge_1a", lmerge_1a, true;
   "lmerge_1b", lmerge_1b, true;
   "lmerge_1c", lmerge_1c, true;
   "lmerge_1d", lmerge_1d, true;
-*)
+
+  "lmerge_4b", lmerge_4b, true;
+  "lmerge_4c", lmerge_4c, true;
+  "lmerge_4d", lmerge_4d, true;
+  "lmerge_4e", lmerge_4e, true;
+
+  "lmerge_5a", lmerge_5a, true;
+  "lmerge_5b", lmerge_5b, true;
+  "lmerge_5c", lmerge_5c, true;
+  "lmerge_5d", lmerge_5d, true;
 ];;
 let anew = [
-(*
+  "Array.stable_sort", Array.stable_sort, true;
+  "Array.sort", Array.sort, false;
+
   "amerge_0", amerge_0, true;
 
   "amerge_1a", amerge_1a, true;
   "amerge_1b", amerge_1b, true;
   "amerge_1c", amerge_1c, true;
   "amerge_1d", amerge_1d, true;
-*)
   "amerge_1e", amerge_1e, true;
-(*
   "amerge_1f", amerge_1f, true;
   "amerge_1g", amerge_1g, true;
   "amerge_1h", amerge_1h, true;
@@ -3676,7 +4280,6 @@ let anew = [
   "amerge_3a", amerge_3a, true;
   "amerge_3b", amerge_3b, true;
   "amerge_3c", amerge_3c, true;
-
   "amerge_3d", amerge_3d, true;
   "amerge_3e", amerge_3e, true;
   "amerge_3f", amerge_3f, true;
@@ -3719,25 +4322,23 @@ let anew = [
 
   "aheap_1", aheap_1, false;
   "aheap_2", aheap_2, false;
-*)
   "aheap_3", aheap_3, false;
-(*
   "aheap_4", aheap_4, false;
   "aheap_5", aheap_5, false;
   "aheap_6", aheap_6, false;
 
   "ainsertion_1", ainsertion_1, true;
-*)
 ];;
 
 (************************************************************************)
 (* main program *)
 
-type mode = Test_std | Test | Bench1 | Bench2;;
+type mode = Test_std | Test | Bench1 | Bench2 | Bench3;;
 
 let size = ref 22
 and mem = ref 0
 and mode = ref Test_std
+and only = ref []
 ;;
 
 let usage = "Usage: sorts [-size <table size>] [-mem <memory size>]\n\
@@ -3752,6 +4353,9 @@ let options = [
   "-test", Arg.Unit (fun () -> mode := Test), "   Select test mode";
   "-bench1", Arg.Unit (fun () -> mode := Bench1), "  Select bench mode 1";
   "-bench2", Arg.Unit (fun () -> mode := Bench2), "  Select bench mode 2";
+  "-bench3", Arg.Unit (fun () -> mode := Bench3), "  Select bench mode 3";
+  "-fn", Arg.String (fun x -> only := x :: !only),
+                         " <function>  Test/Bench this function (default all)";
 ];;
 let anonymous x = raise (Arg.Bad ("unrecognised option "^x));;
 
@@ -3766,67 +4370,101 @@ let main () =
 
   ignore (String.create (1048576 * !mem));
   Gc.full_major ();
-  let limit = !size in
   let a2l = Array.to_list in
   let l2ak x y = Array.of_list x in
   let id = fun x -> x in
   let fst x y = x in
   let snd x y = y in
+  let benchonly f x y z t =
+    match !only with
+    | [] -> f x y z t
+    | l -> if List.mem y l then f x y z t
+  in
+  let testonly x1 x2 x3 x4 x5 x6 =
+    match !only with
+    | [] -> test x1 x2 x3 x4 x5 x6
+    | l -> if List.mem x1 l then test x1 x2 x3 x4 x5 x6
+  in
 
   match !mode with
   | Test_std -> begin
-      test "List.sort" false List.sort List.sort lc lc;
-      test "List.stable_sort" true List.stable_sort List.stable_sort lc lc;
-      test "Array.sort" false Array.sort Array.sort ac ac;
-      test "Array.stable_sort" true Array.stable_sort Array.stable_sort ac ac;
+      testonly "List.sort" false List.sort List.sort lc lc;
+      testonly "List.stable_sort" true List.stable_sort List.stable_sort lc lc;
+      testonly "Array.sort" false Array.sort Array.sort ac ac;
+      testonly "Array.stable_sort" true Array.stable_sort Array.stable_sort
+               ac ac;
       printf "Number of tests failed: %d\n" !numfailed;
     end;
   | Test -> begin
-      test "Sort.list" true Sort.list Sort.list ll ll;
-      test "Sort.array" false Sort.array Sort.array al al;
-      test "lmerge_3" false lmerge_3 lmerge_3 ll ll;
+      for i = 0 to List.length lold - 1 do
+        let (name, f1, stable) = List.nth lold i in
+        let (_, f2, _) = List.nth lold i in
+        testonly name stable f1 f2 ll ll;
+      done;
+      testonly "Sort.array" false Sort.array Sort.array al al;
       for i = 0 to List.length lnew - 1 do
         let (name, f1, stable) = List.nth lnew i in
         let (_, f2, _) = List.nth lnew i in
-        test name stable f1 f2 lc lc;
+        testonly name stable f1 f2 lc lc;
       done;
       for i = 0 to List.length anew - 1 do
         let (name, f1, stable) = List.nth anew i in
         let (_, f2, _) = List.nth anew i in
-        test name stable f1 f2 ac ac;
+        testonly name stable f1 f2 ac ac;
       done;
       printf "Number of tests failed: %d\n" !numfailed;
     end;
   | Bench1 -> begin
-      let b = bench1 in
-    (*
-      b limit "Sort.list" Sort.list ll;
-      b limit "Sort.array" Sort.array al;
-      b limit "lmerge_3" lmerge_3 ll;
-    *)
+      let ba = fun x y z -> benchonly bench1a !size x y z
+      and bb = fun x y z -> benchonly bench1b !size x y z
+      and bc = fun x y z -> benchonly bench1c !size x y z
+      in
+      for i = 0 to List.length lold - 1 do
+        let (name, f, stable) = List.nth lold i in ba name f ll;
+        let (name, f, stable) = List.nth lold i in bb name f ll;
+        let (name, f, stable) = List.nth lold i in bc name f ll;
+      done;
+      ba "Sort.array" Sort.array al;
+      bb "Sort.array" Sort.array al;
+      bc "Sort.array" Sort.array al;
       for i = 0 to List.length lnew - 1 do
-        let (name, f, stable) = List.nth lnew i in
-        b limit name f lc;
+        let (name, f, stable) = List.nth lnew i in ba name f lc;
+        let (name, f, stable) = List.nth lnew i in bb name f lc;
+        let (name, f, stable) = List.nth lnew i in bc name f lc;
       done;
       for i = 0 to List.length anew - 1 do
-        let (name, f, stable) = List.nth anew i in
-        b limit name f ac;
+        let (name, f, stable) = List.nth anew i in ba name f ac;
+        let (name, f, stable) = List.nth anew i in bb name f ac;
+        let (name, f, stable) = List.nth anew i in bc name f ac;
       done;
     end;
   | Bench2 -> begin
-      let b = bench2 in
-    (*
-      b limit "Sort.list" Sort.list ll;
-      b limit "Sort.array" Sort.array al;
-      b limit "lmerge_3" lmerge_3 ll;
-    *)
+      let b = fun x y z -> benchonly bench2 !size x y z in
+      for i = 0 to List.length lold - 1 do
+        let (name, f, stable) = List.nth lold i in b name f ll;
+      done;
+      b "Sort.array" Sort.array al;
       for i = 0 to List.length lnew - 1 do
-        let (name, f, stable) = List.nth lnew i in
-        b limit name f lc;
+        let (name, f, stable) = List.nth lnew i in b name f lc;
       done;
       for i = 0 to List.length anew - 1 do
-        let (name, f, stable) = List.nth anew i in
-        b limit name f ac;
+        let (name, f, stable) = List.nth anew i in b name f ac;
+      done;
+    end;
+  | Bench3 -> begin
+      let ba = fun x y z -> benchonly bench3a !size x y z
+      and bb = fun x y z -> benchonly bench3b !size x y z
+      and bc = fun x y z -> benchonly bench3c !size x y z
+      in
+      for i = 0 to List.length lold - 1 do
+        let (name, f, stable) = List.nth lold i in ba name f ll;
+        let (name, f, stable) = List.nth lold i in bb name f ll;
+        let (name, f, stable) = List.nth lold i in bc name f ll;
+      done;
+      for i = 0 to List.length lnew - 1 do
+        let (name, f, stable) = List.nth lnew i in ba name f lc;
+        let (name, f, stable) = List.nth lnew i in bb name f lc;
+        let (name, f, stable) = List.nth lnew i in bc name f lc;
       done;
     end;
 ;;
