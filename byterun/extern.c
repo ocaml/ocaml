@@ -245,6 +245,10 @@ static void extern_rec(value v)
     mlsize_t sz = Wosize_hd(hd);
     asize_t h;
 
+    if (tag == Forward_tag) {
+      v = Forward_val (v);
+      goto tailcall;
+    }
     /* Atoms are treated specially for two reasons: they are not allocated
        in the externed block, and they are automatically shared. */
     if (sz == 0) {
@@ -325,9 +329,6 @@ static void extern_rec(value v)
       writecode32(CODE_INFIXPOINTER, Infix_offset_hd(hd));
       extern_rec(v - Infix_offset_hd(hd));
       break;
-    case Forward_tag:
-      v = Forward_val (v);
-      goto tailcall;
     case Object_tag:
       extern_invalid_argument("output_value: object value");
       break;
@@ -345,6 +346,9 @@ static void extern_rec(value v)
       size_64 += 2 + ((sz_64 + 7) >> 3);
       break;
     }
+    case Forward_tag:
+      Assert(0);
+      /*fallthrough*/
     default: {
       mlsize_t i;
       if (tag < 16 && sz < 8) {
