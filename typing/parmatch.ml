@@ -588,10 +588,10 @@ let extendable_match env = match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ -> false
 | ({pat_desc = Tpat_construct(c,_)} as p,_) :: _ ->
     let path = get_type_path p.pat_type p.pat_env in
-    path <> Predef.path_bool &&
-    path <> Predef.path_list &&
-    path <> Predef.path_unit &&
-    path <> Predef.path_option      
+    not
+      (Path.same path Predef.path_bool ||
+      Path.same path Predef.path_list ||
+      Path.same path Predef.path_option)
 | _ -> false
 
 
@@ -845,28 +845,56 @@ let rec satisfiable pss qs = match pss with
   would NOT yield a non-exhaustive matching.
   *)
 
+let relevant_location loc r = match r with
+  | None -> None
+  | Some rloc ->
+      if rloc = Location.none then
+        Some loc
+      else
+        r
+        
 let rec satisfiable_extra some pss qs = match qs with
-| [] -> some && pss = []
-| {pat_desc = Tpat_or(q1,q2,_)}::qs -> 
-    satisfiable_extra some pss (q1::qs) || satisfiable_extra some pss (q2::qs)
-| {pat_desc = Tpat_alias(q,_)}::qs ->
-      satisfiable_extra some pss (q::qs)
-| {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
-    let q0 = discr_pat omega pss in
-    begin match filter_all q0 pss with
-          (* first column of pss is made of variables only *)
-    | [] -> satisfiable_extra some (filter_extra pss) qs
-    | constrs ->
-        (extendable_match constrs &&
-         satisfiable_extra true (filter_extra pss) qs) ||
-         List.exists
-           (fun (p,pss) ->
-             satisfiable_extra some pss (simple_match_args p omega @ qs))
-           constrs
+| [] -> if pss = [] then some else None
+| {pat_desc = Tpat_or(q1,q2,_)}::qs ->
+    let r1 = satisfiable_extra some pss (q1::qs) in
+    begin match r1 with
+    | Some _ -> r1
+    | None -> satisfiable_extra some pss (q2::qs)
     end
+| {pat_desc = Tpat_alias(q,_)}::qs ->
+    satisfiable_extra some pss (q::qs)
+| {pat_desc = (Tpat_any | Tpat_var(_))} as q::qs ->
+    let q0 = discr_pat omega pss in
+    let r =
+      match filter_all q0 pss with
+          (* first column of pss is made of variables only *)
+      | [] -> satisfiable_extra some (filter_extra pss) qs
+      | constrs ->
+          if extendable_match constrs then
+            let rloc =
+              satisfiable_extra (Some q.pat_loc) (filter_extra pss) qs in
+            match rloc with
+            | Some loc -> rloc
+            | None -> try_many_extra some qs constrs
+          else
+            try_many_extra some qs constrs in
+    relevant_location q.pat_loc r
 | q::qs ->
     let q0 = discr_pat q pss in
-    satisfiable_extra some (filter_one q0 pss) (simple_match_args q0 q @ qs)
+    relevant_location
+      q.pat_loc
+      (satisfiable_extra
+         some (filter_one q0 pss) (simple_match_args q0 q @ qs))
+
+and try_many_extra some qs = function
+  | [] -> None
+  | (p,pss)::rem ->
+      let rloc = satisfiable_extra some pss (simple_match_args p omega @ qs) in
+      match rloc with
+      | Some _ -> rloc
+      | None -> try_many_extra some qs rem
+
+
 (*
   Now another satisfiable function that additionally
   supplies an example of a matching value.
@@ -1482,15 +1510,16 @@ let seen_pat q pss = [q]::pss
     Will this clause match if someone adds a constructor somewhere
 *)
 
-let warn_fragile  = Warnings.is_active (Warnings.Fragile_pat "")
+let warn_fragile () = Warnings.is_active (Warnings.Fragile_pat "")
 
 let check_used_extra pss qs =
-  if warn_fragile then begin
-    if satisfiable_extra false pss qs then begin
-      Location.prerr_warning
-        (location_of_clause qs)
-        (Warnings.Fragile_pat "")
-    end
+  if warn_fragile () then begin
+    match satisfiable_extra None pss qs with
+    | Some location ->
+        Location.prerr_warning
+          location
+          (Warnings.Fragile_pat "")
+    | None -> ()
   end
 
   
