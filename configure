@@ -33,6 +33,7 @@ tk_wanted=yes
 tk_defs=''
 tk_libs=''
 tk_x11=yes
+dl_defs=''
 posix_threads=no
 verbose=no
 withcurses=yes
@@ -89,6 +90,10 @@ while : ; do
         tk_libs=$2; shift;;
     -tk-no-x11|--tk-no-x11)
         tk_x11=no;;
+    -dldefs*|--dldefs*)
+        dl_defs="$2"; shift;;
+    -dllibs*|--dllibs*)
+        dllib="$2"; shift;;
     -binutils*|--binutils*)
         binutils_dir=$2; shift;;
     -verbose|--verbose)
@@ -218,7 +223,8 @@ of gcc, such as 2.95.3 or 3.0.4.
 
 EOF
         buggycc="gcc.2.96";;
-    esac;;
+
+            esac;;
 esac
 
 # Configure the bytecode compiler
@@ -430,6 +436,7 @@ esac
 # Shared library support
 
 shared_libraries_supported=false
+dl_needs_underscore=false
 sharedcccompopts=''
 mksharedlib=''
 byteccrpath=''
@@ -484,12 +491,24 @@ if test $withsharedlibs = "yes"; then
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
+    powerpc-apple-darwin*)
+      if sh ./hasgot $dl_defs -i dlfcn.h; then
+        mksharedlib="cc -bundle -flat_namespace -undefined suppress -o"
+        bytecccompopts="$dl_defs $bytecccompopts"
+        #sharedcccompopts="-fnocommon"
+        dl_needs_underscore=true
+        shared_libraries_supported=true;
+      fi
+      ;;
   esac
 fi
 
 if $shared_libraries_supported; then
   echo "Dynamic loading of shared libraries is supported."
   echo "#define SUPPORT_DYNAMIC_LINKING" >> s.h
+  if $dl_needs_underscore; then
+    echo '#define DL_NEEDS_UNDERSCORE' >>s.h
+  fi
 fi
 
 # Further machine-specific hacks
@@ -558,7 +577,8 @@ case "$arch,$nativecc,$system,$host_type" in
                        nativecccompopts="-D_XOPEN_SOURCE=500";;
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
-  *,*,rhapsody,*darwin6*) nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6";;
+  *,*,rhapsody,*darwin6*)
+                 nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6 $dl_defs";;
   *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
   *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
@@ -918,9 +938,9 @@ if sh ./hasgot -i locale.h && sh ./hasgot setlocale; then
   echo "#define HAS_LOCALE" >> s.h
 fi
 
-if sh ./hasgot -ldl dlopen; then
+if sh ./hasgot $dllib -ldl dlopen; then
   echo "dlopen() found."
-  dllib=-ldl
+  dllib="$dllib -ldl"
 fi
 
 if sh ./hasgot -i sys/types.h -i sys/mman.h && sh ./hasgot mmap munmap; then
