@@ -311,6 +311,7 @@ value input_val(struct channel *chan)
 {
   uint32 magic;
   mlsize_t block_len, num_objects, size_32, size_64, whsize;
+  char * block;
   value res;
 
   if (! channel_binary_mode(chan))
@@ -322,12 +323,17 @@ value input_val(struct channel *chan)
   size_32 = getword(chan);
   size_64 = getword(chan);
   /* Read block from channel */
-  intern_input = (unsigned char *) stat_alloc(block_len);
-  intern_input_malloced = 1;
-  if (really_getblock(chan, (char *)intern_input, block_len) == 0) {
-    stat_free(intern_input);
+  block = stat_alloc(block_len);
+  /* During really_gutblock, concurrent input_val operations can take
+     place (via signal handlers or context switching in systhreads),
+     and intern_input may change.  So, wait until really_getblock
+     is over before using intern_input and the other global vars. */
+  if (really_getblock(chan, block, block_len) == 0) {
+    stat_free(block);
     failwith("input_value: truncated object");
   }
+  intern_input = (unsigned char *) block;
+  intern_input_malloced = 1;
   intern_src = intern_input;
   /* Allocate result */
 #ifdef ARCH_SIXTYFOUR

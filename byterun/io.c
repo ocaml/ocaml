@@ -284,7 +284,7 @@ int getblock(struct channel *channel, char *p, long int len)
     bcopy(channel->curr, p, avail);
     channel->curr += avail;
     return avail;
-  } else if (n < IO_BUFFER_SIZE) {
+  } else {
     nread = do_read(channel->fd, channel->buff, IO_BUFFER_SIZE);
     channel->offset += nread;
     channel->max = channel->buff + nread;
@@ -292,10 +292,6 @@ int getblock(struct channel *channel, char *p, long int len)
     bcopy(channel->buff, p, n);
     channel->curr = channel->buff + n;
     return n;
-  } else {
-    nread = do_read(channel->fd, p, n);
-    channel->offset += nread;
-    return nread;
   }
 }
 
@@ -369,7 +365,7 @@ long input_scan_line(struct channel *channel)
 }
 
 /* Caml entry points for the I/O functions.  Wrap struct channel *
-   objects into a heap-allocated, finalized object.  Perform locking
+   objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
 
 static void finalize_channel(value vchan)
@@ -527,16 +523,36 @@ value caml_input_int(value vchannel)        /* ML */
   return Val_long(i);
 }
 
-value caml_input(value vchannel, value buff, value start, value length) /* ML */
+value caml_input(value vchannel, value buff, value vstart, value vlength) /* ML */
 {
-  CAMLparam4 (vchannel, buff, start, length);
+  CAMLparam4 (vchannel, buff, vstart, vlength);
   struct channel * channel = Channel(vchannel);
-  long res;
+  long start, len;
+  int n, avail, nread;
 
   Lock(channel);
-  res = getblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
+  /* We cannot call getblock here because buff may move during do_read */
+  start = Long_val(vstart);
+  len = Long_val(vlength);
+  n = len >= INT_MAX ? INT_MAX : (int) len;
+  avail = channel->max - channel->curr;
+  if (n <= avail) {
+    bcopy(channel->curr, &Byte(buff, start), n);
+    channel->curr += n;
+  } else if (avail > 0) {
+    bcopy(channel->curr, &Byte(buff, start), avail);
+    channel->curr += avail;
+    n = avail;
+  } else {
+    nread = do_read(channel->fd, channel->buff, IO_BUFFER_SIZE);
+    channel->offset += nread;
+    channel->max = channel->buff + nread;
+    if (n > nread) n = nread;
+    bcopy(channel->buff, &Byte(buff, start), n);
+    channel->curr = channel->buff + n;
+  }
   Unlock(channel);
-  CAMLreturn (Val_long(res));
+  CAMLreturn (Val_long(n));
 }
 
 value caml_seek_in(value vchannel, value pos)     /* ML */
