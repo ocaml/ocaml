@@ -110,11 +110,13 @@ let load_modules = Odoc_analyse.load_modules
 
 let reset_type_names = Printtyp.reset
 
+let string_of_variance t (co,cn) = Odoc_str.string_of_variance t (co, cn)
+
 let string_of_type_expr t = Odoc_misc.string_of_type_expr t
 
-(** This function returns a string to represent the given list of types,
-   with a given separator. *)
-let string_of_type_list sep type_list = Odoc_misc.string_of_type_list sep type_list
+let string_of_type_list sep type_list = Odoc_str.string_of_type_list sep type_list
+
+let string_of_type_param_list t = Odoc_str.string_of_type_param_list t
 
 let string_of_module_type = Odoc_misc.string_of_module_type
 

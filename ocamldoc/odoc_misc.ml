@@ -36,44 +36,12 @@ let input_file_as_string nom =
 let string_of_longident li = String.concat "." (Longident.flatten li)
 
 let string_of_type_expr t =
+  let b = Buffer.create 256 in
+  let fmt = Format.formatter_of_buffer b in
   Printtyp.mark_loops t;
-  Printtyp.type_scheme_max ~b_reset_names: false Format.str_formatter t;
-  let s = Format.flush_str_formatter () in
-  s
-
-let string_of_type_list sep type_list =
-  let rec need_parent t =
-    match t.Types.desc with
-      Types.Tarrow _ | Types.Ttuple _ -> true
-    | Types.Tlink t2 | Types.Tsubst t2 -> need_parent t2
-    | Types.Tconstr _ ->
-        false
-    | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
-    | Types.Tfield _ | Types.Tnil | Types.Tvariant _ -> false
-  in
-  let print_one_type t =
-    Printtyp.mark_loops t;
-    if need_parent t then
-      ( 
-       Format.fprintf Format.str_formatter "(" ;
-       Printtyp.type_scheme_max ~b_reset_names: false Format.str_formatter t;
-       Format.fprintf Format.str_formatter ")"
-      )
-    else
-      Printtyp.type_scheme_max ~b_reset_names: false Format.str_formatter t
-  in
-  begin match type_list with
-    [] -> ()
-  | [ty] -> print_one_type ty
-  | ty :: tyl ->
-      Format.fprintf Format.str_formatter "@[<hov 2>";
-      print_one_type ty;
-      List.iter
-        (fun t -> Format.fprintf Format.str_formatter "@,%s" sep; print_one_type t)
-        tyl;
-      Format.fprintf Format.str_formatter "@]"
-  end;
-  Format.flush_str_formatter()
+  Printtyp.type_scheme_max ~b_reset_names: false fmt t;
+  Format.pp_print_flush fmt () ;
+  Buffer.contents b
 
 (** Return the given module type where methods and vals have been removed
    from the signatures. Used when we don't want to print a too long module type.*)

@@ -214,7 +214,8 @@ module Type :
         {
           ty_name : Name.t ; (** Complete name of the type. *)
           mutable ty_info : info option ; (** Information found in the optional associated comment. *)
-          ty_parameters : Types.type_expr list ; (** Type parameters. *)
+          ty_parameters : (Types.type_expr * bool * bool) list ; 
+                    (** type parameters: (type, covariant, contravariant) *)
           ty_kind : type_kind ; (** Type kind. *)
           ty_manifest : Types.type_expr option; (** Type manifest. *)
           mutable ty_loc : location ;
@@ -596,6 +597,13 @@ val load_modules : string -> Odoc_module.t_module list
    classes (call it) and methods and attributes (don't call it).*)
 val reset_type_names : unit -> unit
 
+(** [string_of_variance t (covariant, invariant)] returns ["+"] if
+   the given information means "covariant", ["-"] if the it means
+   "contravariant", orelse [""], and always [""] if the given
+   type is not an abstract type with no manifest (i.e. no need
+   for the variance to be printed.*)
+val string_of_variance : Type.t_type -> (bool * bool) -> string
+
 (** This function returns a string representing a Types.type_expr. 
    It writes in and flushes [Format.str_formatter]. *)
 val string_of_type_expr : Types.type_expr -> string
@@ -603,6 +611,10 @@ val string_of_type_expr : Types.type_expr -> string
 (** This function returns a string to represent the given list of types,
    with a given separator. It writes in and flushes [Format.str_formatter].*)
 val string_of_type_list : string -> Types.type_expr list -> string
+
+(** This function returns a string to represent the list of type parameters
+   for the given type. It writes in and flushes [Format.str_formatter].*)
+val string_of_type_param_list : Type.t_type -> string
 
 (** This function returns a string representing a [Types.module_type]. 
    @param complete indicates if we must print complete signatures

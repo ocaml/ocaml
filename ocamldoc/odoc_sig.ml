@@ -625,7 +625,13 @@ module Analyser =
                     {
                       ty_name = Name.concat current_module_name name ;
                       ty_info = assoc_com ;
-                      ty_parameters = List.map (Odoc_env.subst_type new_env) sig_type_decl.Types.type_params ;
+                      ty_parameters = 
+		        List.map2 (fun p (co,cn,_) ->
+			             (Odoc_env.subst_type new_env p,
+				      co, cn)
+				  ) 
+			sig_type_decl.Types.type_params 
+			sig_type_decl.Types.type_variance;
                       ty_kind = type_kind ;
                       ty_manifest = 
                       (match sig_type_decl.Types.type_manifest with

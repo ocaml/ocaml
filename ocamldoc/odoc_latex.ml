@@ -374,6 +374,20 @@ class latex =
         ((Latex (self#make_label (self#method_label m.met_value.val_name))) :: 
          (to_text#text_of_method m))
 
+    (** Return LaTeX code for the parameters of a type. *)
+    method latex_of_type_params m_name t =
+      let f (p, co, cn) =
+	Printf.sprintf "%s%s"
+	  (Odoc_info.string_of_variance t (co,cn))
+	  (self#normal_type m_name p)
+      in
+      match t.ty_parameters with
+        [] -> ""
+      | [(p,co,cn)] -> f (p, co, cn)
+      | l -> 
+	  Printf.sprintf "(%s)"
+	    (String.concat ", " (List.map f t.ty_parameters))
+
     (** Return LaTeX code for a type. *)
     method latex_of_type t =
       let s_name = Name.simple t.ty_name in
@@ -381,15 +395,11 @@ class latex =
         Odoc_info.reset_type_names () ;
         let mod_name = Name.father t.ty_name in
         let s_type1 = 
-          Format.fprintf Format.str_formatter 
-            "@[<hov 2>type ";
-          match t.ty_parameters with
-            [] -> Format.flush_str_formatter ()
-          | [p] -> self#normal_type mod_name p
-          | l -> 
-              Format.fprintf Format.str_formatter "(" ;
-              let s = self#normal_type_list mod_name ", " l in
-              s^")"
+          Format.fprintf Format.str_formatter "@[<hov 2>type ";
+          Format.fprintf Format.str_formatter "%s%s" 
+	    (self#latex_of_type_params mod_name t)
+	    (match t.ty_parameters with [] -> "" | _ -> " ");
+	  Format.flush_str_formatter ()
         in
         Format.fprintf Format.str_formatter 
           ("@[<hov 2>%s %s")

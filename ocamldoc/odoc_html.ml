@@ -805,14 +805,15 @@ class html =
       in
       s2
 
-    (** Return html code to display a [Types.type_expr].*)
+    (** Return html code to display a [Types.type_expr]. *)
     method html_of_type_expr m_name t =
       let s = String.concat "\n"
           (Str.split (Str.regexp "\n") (Odoc_info.string_of_type_expr t))
       in
       let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
-      "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
-
+      Printf.sprintf 
+	"<code class=\"type\">%s</code>"
+	(self#create_fully_qualified_idents_links m_name s2)
 
     (** Return html code to display a [Types.class_type].*)
     method html_of_class_type_expr m_name t =
@@ -829,6 +830,12 @@ class html =
       print_DEBUG "html#html_of_type_expr_list: 1";
       let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
       print_DEBUG "html#html_of_type_expr_list: 2";
+      "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
+
+    (** Return html code to display a list of type parameters for the given type.*)
+    method html_of_type_expr_param_list m_name t =
+      let s = Odoc_info.string_of_type_param_list t in
+      let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
       "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
 
     (** Return html code to display a [Types.module_type]. *)
@@ -915,11 +922,8 @@ class html =
       (self#keyword "type")^" "^
       (* html mark *)
       "<a name=\""^(Naming.type_target t)^"\"></a>"^
-      (match t.ty_parameters with
-        [] -> ""
-      | tp :: [] -> (self#html_of_type_expr father tp)^" "
-      | l -> "("^(self#html_of_type_expr_list father ", " l)^") "
-      )^
+      (self#html_of_type_expr_param_list father t)^
+      (match t.ty_parameters with [] -> "" | _ -> " ")^
       (Name.simple t.ty_name)^" "^
       (match t.ty_manifest with None -> "" | Some typ -> "= "^(self#html_of_type_expr father typ)^" ")^
       (match t.ty_kind with

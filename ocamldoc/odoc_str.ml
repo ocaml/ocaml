@@ -14,12 +14,76 @@
 
 module Name = Odoc_name
 
+let string_of_variance t (co,cn) =
+  if t.Odoc_type.ty_kind = Odoc_type.Type_abstract &&
+    t.Odoc_type.ty_manifest = None
+  then
+    match (co, cn) with
+      (true, false) -> "+"
+    | (false, true) -> "-"
+    | _ -> ""
+  else
+    ""
+
+let raw_string_of_type_list sep type_list =
+  let rec need_parent t =
+    match t.Types.desc with
+      Types.Tarrow _ | Types.Ttuple _ -> true
+    | Types.Tlink t2 | Types.Tsubst t2 -> need_parent t2
+    | Types.Tconstr _ ->
+        false
+    | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
+    | Types.Tfield _ | Types.Tnil | Types.Tvariant _ -> false
+  in
+  let print_one_type variance t =
+    Printtyp.mark_loops t;
+    if need_parent t then
+      ( 
+       Format.fprintf Format.str_formatter "(%s" variance;
+       Printtyp.type_scheme_max ~b_reset_names: false Format.str_formatter t;
+       Format.fprintf Format.str_formatter ")"
+      )
+    else
+      (
+       Format.fprintf Format.str_formatter "%s" variance;
+       Printtyp.type_scheme_max ~b_reset_names: false Format.str_formatter t
+      )
+  in
+  begin match type_list with
+    [] -> ()
+  | [(variance, ty)] -> print_one_type variance ty
+  | (variance, ty) :: tyl ->
+      Format.fprintf Format.str_formatter "@[<hov 2>(";
+      print_one_type variance ty;
+      List.iter
+        (fun (variance, t) -> 
+	  Format.fprintf Format.str_formatter "@,%s" sep; 
+	  print_one_type variance t
+	)
+        tyl;
+      Format.fprintf Format.str_formatter ")@]"
+  end;
+  Format.flush_str_formatter()
+
+let string_of_type_list sep type_list =
+  raw_string_of_type_list sep (List.map (fun t -> ("", t)) type_list)
+
+let string_of_type_param_list t =
+  raw_string_of_type_list ", "
+    (List.map 
+       (fun (typ, co, cn) -> (string_of_variance t (co, cn), typ))
+       t.Odoc_type.ty_parameters
+    )
+
 let string_of_type t =
   let module M = Odoc_type in
   "type "^
   (String.concat ""
      (List.map 
-        (fun p -> (Odoc_misc.string_of_type_expr p)^" ")
+        (fun (p, co, cn) -> 
+	  (string_of_variance t (co, cn))^
+	  (Odoc_misc.string_of_type_expr p)^" "
+	)
         t.M.ty_parameters
      )
   )^

@@ -12,6 +12,17 @@
 
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
+(** @return the variance string for the given type and (covariant, contravariant) information. *)
+val string_of_variance : Odoc_type.t_type -> (bool * bool) -> string
+
+(** This function returns a string to represent the given list of types,
+   with a given separator. It writes in and flushes [Format.str_formatter].*)
+val string_of_type_list : string -> Types.type_expr list -> string
+
+(** This function returns a string to represent the list of type parameters
+   for the given type. It writes in and flushes [Format.str_formatter].*)
+val string_of_type_param_list : Odoc_type.t_type -> string
+
 (** @return a string to describe the given type. *)
 val string_of_type : Odoc_type.t_type -> string
 

@@ -1008,9 +1008,14 @@ module Analyser =
                   {
                     ty_name = complete_name ;
                     ty_info = com_opt ;
-                    ty_parameters = List.map
-                      (Odoc_env.subst_type new_env) 
-                      tt_type_decl.Types.type_params ;
+                    ty_parameters = 
+		      List.map2
+		        (fun p (co,cn,_) ->
+			  (Odoc_env.subst_type new_env p,
+			   co, cn)
+			)
+		      tt_type_decl.Types.type_params
+		      tt_type_decl.Types.type_variance ;
                     ty_kind = kind ;
                     ty_manifest =
                     (match tt_type_decl.Types.type_manifest with
