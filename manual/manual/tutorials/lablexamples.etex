@@ -60,7 +60,7 @@ default {\em classic} mode, or the {\em commuting label} mode.
 You need do nothing special to be in classic mode, and legacy programs
 written for previous versions of Objective Caml will work with no
 modifications in this mode, except for the problem mentioned in the
-above warning.
+above warning. Indeed, all the first chapter was written in this mode.
 
 In the classic mode, labels need not be explicitly written in
 function applications, but whenever they are given they are checked
@@ -87,55 +87,11 @@ let print_all tbl =
   Hashtbl.iter f:(fun :data :key -> Printf.printf "%s: %s\n" key data) tbl;;
 \end{caml_example}
 
-\subsection{Commuting label mode}
-
-You can switch to {\em commuting label} mode giving the "-labels" flag to the
-various Objective Caml compilers. You can also switch from classic
-mode to commuting label mode, and back, with the "#labels" pragma.
-
-\begin{caml_example}
-#labels true;;
-\end{caml_example}
-
-The commuting label mode allows a freer syntax, at the constraint that you must
-write all labels both in function definition and application, and that
-labels must match in all types.
-
-In commuting label mode, formal parameters and arguments are only matched
-according to their respective labels. This allows commuting arguments
-in applications. One can also partially apply a function on any
-argument, creating a new function of the remaining parameters.
-
-\begin{caml_example}
-f y:2 x:3;;
-List.fold_left [1;2;3] init:0 f:(+);;
-List.fold_left [1;2;3];;
-\end{caml_example}
-
-For such out-of-order applications, the type of the function must be
-known previous to the application, otherwise an incompatible
-out-of-order type will be generated. See
-section~\ref{ss:label-inference} for more details.
-
-\begin{caml_example}
-let h g = g y:2 x:3;;
-h f;;
-\end{caml_example}
-
-If in a function several arguments bear the same label (or no label),
-they will not commute among themselves, and order matters. But they
-can still commute with other arguments.
-
-\begin{caml_example}
-let hline x:x1 x:x2 :y = (x1, x2, y);;
-hline x:3 y:2 x:5;;
-\end{caml_example} 
-
 \subsection{Optional arguments}
 
 An interesting feature of labeled arguments is that they can be made
 optional. An optional parameter is prefixed by a question mark "?" in
-the function definition, and it the function type.
+the function definition, and in the function type.
 Default values may be given for such optional parameters.
 
 \begin{caml_example}
@@ -159,12 +115,10 @@ test x:2 () z:3 ();;
 Optional arguments behave similarly in classic and commuting label
 mode. Omitting the label of an optional argument is not allowed,
 and in both cases commutation between differently labeled optional
-arguments may occur. However commutation between an optional argument
-and other labeled or non-labeled arguments is only allowed in commuting label
-mode.
+arguments may occur.
 
 \begin{caml_example}
-test y:2 () ();;
+test y:2 x:3 () ();;
 \end{caml_example}
 
 Optional arguments are actually implemented as option types. If
@@ -192,6 +146,10 @@ test2 ?x:None;;
 
 \subsection{Labels and type inference}
 \label{ss:label-inference}
+%FIXME
+\begin{caml_eval}
+#labels true;;
+\end{caml_eval}
 
 While they provide an increased comfort for writing function
 applications, labels and optional arguments have the pitfall that they
@@ -228,9 +186,9 @@ In practive, such problems appear mostly when using objects whose
 methods have optional arguments, so that writing the type of object
 arguments is often a good idea.
 
-Normally the compiler will report a type error if you attempt to pass
+Normally the compiler only reports a type error if you attempt to pass
 to a function a parameter whose type is different from the expected
-one, even if the difference is only in the order of labels. However,
+one. However,
 in the specific case where the expected type is a non-labeled function
 type, and the argument is a function expecting optional parameters,
 the compiler will attempt to transform the argument to have it match
@@ -245,6 +203,69 @@ This transformation is coherent with the intended semantics,
 includeing side-effects. That is, if the application of optional
 parameters shall produce side-effects, these are delayed until the
 received function is really applied to a non-labeled argument.
+
+\subsection{Commuting label mode}
+
+The {\em commuting label} mode allows a freer syntax, at the
+constraint that you must write all labels both in function definition
+and application, and that labels must match in all types.
+
+If this is your first reading of this tutorial, or if you are
+satisfied with classic mode, you can probably skip the rest of this
+section.  You need not know anything more on labels.
+In particular, you should not be bothered by the fact that
+some libraries are written in commuting label mode: the mode in which
+a library is written and the mode in which one uses it are completely
+independent.
+
+\medskip
+
+You can switch to commuting label mode giving the "-labels" flag to the
+various Objective Caml compilers. At the toplevel, you can also switch
+from classic mode to commuting label mode, and back, with the
+"#labels" pragma.
+
+\begin{caml_example}
+#labels true;;
+\end{caml_example}
+
+In commuting label mode, formal parameters and arguments are only matched
+according to their respective labels. This allows commuting arguments
+in applications. One can also partially apply a function on any
+argument, creating a new function of the remaining parameters.
+
+\begin{caml_example}
+let f :x :y = x - y;;
+f y:2 x:3;;
+List.fold_left [1;2;3] init:0 f:(+);;
+List.fold_left [1;2;3];;
+\end{caml_example}
+
+Optional parameters may also commute with non-optional or unlabelled
+ones.
+\begin{caml_example}
+test () () z:1 y:2 x:3;;
+\end{caml_example}
+
+As described in section~\ref{ss:label-inference}, for
+out-of-order applications, the type of the function must be known
+previous to the application, otherwise an incompatible
+out-of-order type will be generated.
+
+\begin{caml_example}
+let h g = g y:2 x:3;;
+h f;;
+\end{caml_example}
+
+If in a function several arguments bear the same label (or no label),
+they will not commute among themselves, and order matters. But they
+can still commute with other arguments.
+
+\begin{caml_example}
+let hline x:x1 x:x2 :y = (x1, x2, y);;
+hline x:3 y:2 x:5;;
+\end{caml_example} 
+
 
 \subsection{Suggestions for labeling}
 
@@ -355,7 +376,7 @@ List.map :f [`On; `Off];;
 \end{caml_example}
 "[>`Off|`On] list" means that to match this list, you should at
 least be able to match "`Off" and "`On", without argument.
-"[<`On|`Off|`Number int]" means that "f" may be applied to "`Off",
+"[<`On|`Off|`Number of int]" means that "f" may be applied to "`Off",
 "`On" (both without argument), or "`Number" $n$ where 
 $n$ is an integer.
 The ">" and "<" inside the variant type shows that they may still be
@@ -372,7 +393,7 @@ also the case for type abbreviations. Such types do not contain "<" or
 just like in a normal datatype definition. For conciseness, "of" is
 omitted in polymorphic variant types.
 \begin{caml_example}
-type 'a vlist = [`Nil | `Cons 'a * 'a vlist];;
+type 'a vlist = [`Nil | `Cons of 'a * 'a vlist];;
 let rec map :f : 'a vlist -> 'b vlist = function
   | `Nil -> `Nil
   | `Cons(a, l) -> `Cons(f a, map :f l)
@@ -410,7 +431,7 @@ larger type through coercions. Coercions are normally written with
 both the source type and the destination type, but in simple cases the
 source type may be omitted.
 \begin{caml_example}
-type 'a wlist = [`Nil | `Cons 'a * 'a wlist | `Snoc 'a wlist * 'a];;
+type 'a wlist = [`Nil | `Cons of 'a * 'a wlist | `Snoc of 'a wlist * 'a];;
 let wlist_of_vlist  l = (l : 'a vlist :> 'a wlist);;
 fun x -> (x :> [`A|`B|`C]);;
 \end{caml_example}
@@ -443,7 +464,7 @@ abbreviations for or-patterns. That is, if you have defined "type
 myvariant = [`Tag1 int | `Tag2 bool]", then the pattern "#myvariant" is
 equivalent to writing "(`Tag1(_ : int) | `Tag2(_ : bool))".
 \begin{caml_eval}
-type myvariant = [`Tag1 int | `Tag2 bool];;
+type myvariant = [`Tag1 of int | `Tag2 of bool];;
 \end{caml_eval}
 
 Such abbreviations may be used alone,
