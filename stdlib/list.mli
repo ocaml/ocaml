@@ -238,21 +238,23 @@ val sort : ('a -> 'a -> int) -> 'a list -> 'a list
 (** Sort a list in increasing order according to a comparison
    function.  The comparison function must return 0 if it arguments
    compare as equal, a positive integer if the first is greater,
-   and a negative integer if the first is smaller.  For example,
-   the [compare] function is a suitable comparison function.
+   and a negative integer if the first is smaller (see Array.sort for
+   a complete specification).  For example,
+   {!Pervasives.compare} is a suitable comparison function.
    The resulting list is sorted in increasing order.
    [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
    stack space.
    
-   The current implementation uses Merge Sort and is the same as
-   {!List.stable_sort}.
-*)
-
-val stable_sort : ('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!List.sort}, but the sorting algorithm is stable.
-   
-   The current implementation is Merge Sort. It runs in constant
+   The current implementation uses Merge Sort. It runs in constant
    heap space and logarithmic stack space.
 *)
 
+val stable_sort : ('a -> 'a -> int) -> 'a list -> 'a list
+(** Same as {!List.sort}, but the sorting algorithm is guaranteed to
+   be stable (i.e. elements that compare equal are kept in their
+   original order) .
+   
+   The current implementation uses Merge Sort. It runs in constant
+   heap space and logarithmic stack space.
+*)

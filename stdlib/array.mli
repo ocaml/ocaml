@@ -156,23 +156,35 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit
 (** Sort an array in increasing order according to a comparison
    function.  The comparison function must return 0 if its arguments
    compare as equal, a positive integer if the first is greater,
-   and a negative integer if the first is smaller.  For example,
-   the {!Pervasives.compare} function is a suitable comparison function.
-   After calling [Array.sort], the array is sorted in place in
-   increasing order.
+   and a negative integer if the first is smaller (see below for a
+   complete specification).  For example, {!Pervasives.compare} is
+   a suitable comparison function.  After calling [Array.sort], the
+   array is sorted in place in increasing order.
    [Array.sort] is guaranteed to run in constant heap space
-   and logarithmic stack space.
+   and (at most) logarithmic stack space.
 
    The current implementation uses Heap Sort.  It runs in constant
    stack space.
+
+   Specification of the comparison function:
+   Let [a] be the array and [cmp] the comparison function.  The following
+   must be true for all x, y, z in a :
+-   [cmp x y] > 0 if and only if [cmp y x] < 0
+-   if [cmp x y] >= 0 and [cmp y z] >= 0 then [cmp x z] >= 0
+
+   When [Array.sort] returns, [a] contains the same elements as before,
+   reordered in such a way that for all i and j valid indices of [a] :
+-   [cmp a.(i) a.(j)] >= 0 if and only if i >= j
 *)
 
 val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
-(** Same as {!Array.sort}, but the sorting algorithm is stable and
-   not guaranteed to use a fixed amount of heap memory.
-   The current implementation is Merge Sort. It uses [n/2]
+(** Same as {!Array.sort}, but the sorting algorithm is stable (i.e.
+   elements that compare equal are kept in their original order) and
+   not guaranteed to run in constant heap space.
+
+   The current implementation uses Merge Sort. It uses [n/2]
    words of heap space, where [n] is the length of the array.
-   It is faster than the current implementation of {!Array.sort}.
+   It is usually faster than the current implementation of {!Array.sort}.
 *)
 
 (**/**)
