@@ -108,13 +108,13 @@ oo.cmi: oo.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c oo.mli
 
 # labelled modules require the -nolabels flag
-labelled.cmo: $(LABELLED)
+labelled.cmo:
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmo)
 	touch $@
-labelled.cmx: $(LABELLED)
+labelled.cmx:
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
 	touch $@
-labelled.p.cmx: $(LABELLED)
+labelled.p.cmx:
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.p.cmx)
 	touch $@
 
@@ -138,10 +138,11 @@ labelled.p.cmx: $(LABELLED)
 	@if test -f $*.n.cmx; then mv $*.n.cmx $*.cmx; else :; fi
 	@if test -f $*.n.o; then mv $*.n.o $*.o; else :; fi
 
-$(OBJS) std_exit.cmo: pervasives.cmi $(COMPILER)
-$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi $(OPTCOMPILER)
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi $(OPTCOMPILER)
-$(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
+$(ALLOBJS) labelled.cmo std_exit.cmo: pervasives.cmi $(COMPILER)
+$(ALLOBJS:.cmo=.cmx) labelled.cmx std_exit.cmx: pervasives.cmi $(OPTCOMPILER)
+$(ALLOBJS:.cmo=.p.cmx) labelled.p.cmx std_exit.p.cmx: pervasives.cmi $(OPTCOMPILER)
+$(ALLOBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
+labelled.cmo labelled.cmx labelled.p.cmx: $(LABELLED) $(LABELLED:.ml=.mli)
 
 clean::
 	rm -f *.cm* *.o *.a
