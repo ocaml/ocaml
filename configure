@@ -942,8 +942,13 @@ if sh ./hasgot -i locale.h && sh ./hasgot setlocale; then
   echo "#define HAS_LOCALE" >> s.h
 fi
 
-if sh ./hasgot $dllib -ldl dlopen; then
+if sh ./hasgot -i mach-o/dyld.h && sh ./hasgot NSLinkModule; then
+  echo "NSLinkModule() found. Using darwin dynamic loading."
+  echo "#define HAS_NSLINKMODULE" >> s.h
+elif sh ./hasgot $dllib dlopen; then
   echo "dlopen() found."
+elif sh ./hasgot $dllib -ldl dlopen; then
+  echo "dlopen() found in -ldl."
   dllib="$dllib -ldl"
 fi
 

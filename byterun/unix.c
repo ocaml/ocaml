@@ -23,7 +23,11 @@
 #include <fcntl.h>
 #include "config.h"
 #ifdef SUPPORT_DYNAMIC_LINKING
+#ifdef HAS_NSLINKMODULE
+#include <mach-o/dyld.h>
+#else
 #include <dlfcn.h>
+#endif
 #endif
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -156,6 +160,63 @@ char * search_dll_in_path(struct ext_table * path, char * name)
 }
 
 #ifdef SUPPORT_DYNAMIC_LINKING
+#ifdef HAS_NSLINKMODULE
+/* Use MacOSX bundles */
+
+static char *dlerror_string = "No error";
+
+void * caml_dlopen(char * libname)
+{
+  NSObjectFileImage image;
+  NSObjectFileImageReturnCode retCode =
+    NSCreateObjectFileImageFromFile(libname, &image);
+  switch (retCode) {
+  case NSObjectFileImageSuccess:
+    dlerror_string = NULL;
+    return (void*)NSLinkModule(image, libname, NSLINKMODULE_OPTION_BINDNOW
+			       | NSLINKMODULE_OPTION_RETURN_ON_ERROR);
+  case NSObjectFileImageAccess:
+    dlerror_string = "cannot access this bundle"; break;
+  case NSObjectFileImageArch:
+    dlerror_string = "this bundle has wrong CPU architecture"; break;
+  case NSObjectFileImageFormat:
+  case NSObjectFileImageInappropriateFile:
+    dlerror_string = "this file is not a proper bundle"; break;
+  default:
+    dlerror_string = "could not read object file"; break;
+  }
+  return NULL;
+}
+
+void caml_dlclose(void * handle)
+{
+  dlerror_string = NULL;
+  NSUnLinkModule((NSModule)handle, NSUNLINKMODULE_OPTION_NONE);
+}
+
+void * caml_dlsym(void * handle, char * name)
+{
+  NSSymbol sym;
+  char _name[1000] = "_";
+  strncat (_name, name, 998);
+  dlerror_string = NULL;
+  sym = NSLookupSymbolInModule((NSModule)handle, _name);
+  if (sym != NULL) return NSAddressOfSymbol(sym);
+  else return NULL;
+}
+
+char * caml_dlerror(void)
+{
+  NSLinkEditErrors c;
+  int errnum;
+  const char *fileName, *errorString;
+  if (dlerror_string != NULL) return dlerror_string;
+  NSLinkEditError(&c,&errnum,&fileName,&errorString);
+  return errorString;
+}
+
+#else
+/* Use normal dlopen */
 
 #ifndef RTLD_GLOBAL
 #define RTLD_GLOBAL 0
@@ -189,6 +250,7 @@ char * caml_dlerror(void)
   return dlerror();
 }
 
+#endif
 #else
 
 void * caml_dlopen(char * libname)
