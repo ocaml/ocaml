@@ -181,7 +181,7 @@ let print_comment () =
 	     "</code><table><tr><td>"^(make_margin ())^"</td><td>"^
 	     "<span class=\""^comment_class^"\">"^
 	     "(**"^html^"*)"^
-	     "</span></td></tr></table><code>"
+	     "</span></td></tr></table><code class=\""^code_class^"\">"
 	   with
 	     e ->
 	       prerr_endline (Printexc.to_string e);
@@ -506,8 +506,8 @@ let html_of_code ?(with_pre=true) code =
   margin := 0;
   
 
-  let start = "<span class=\""^code_class^"\"><code>" in
-  let ending = "</code></span>" in
+  let start = "<code class=\""^code_class^"\">" in
+  let ending = "</code>" in
   let html = 
     (
      try
