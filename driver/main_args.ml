@@ -78,7 +78,8 @@ struct
      "-use_runtime", Arg.String F._use_runtime, "<path>  same as -use-runtime";
      "-v", Arg.Unit F._v, " Print compiler version number";
      "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
-     "-w", Arg.String F._w, "<flags>  Enable warnings according to <flags>:\n\
+     "-w", Arg.String F._w,
+           "<flags>  Enable or disable warnings according to <flags>:\n\
        \032    A/a enable/disable all warnings\n\
        \032    F/f enable/disable partially applied function\n\
        \032    M/m enable/disable overriden methods\n\
@@ -87,7 +88,7 @@ struct
        \032    U/u enable/disable unused match case\n\
        \032    V/v enable/disable hidden instance variables\n\
        \032    X/x enable/disable all other warnings\n\
-       \032    default setting is A";
+       \032    default setting is A (all warnings enabled)";
 
      "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
      "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";

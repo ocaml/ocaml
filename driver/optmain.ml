@@ -96,7 +96,8 @@ let main () =
              " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_number, " Print compiler version number";
        "-verbose", Arg.Set verbose, " Print calls to external commands";
-       "-w", Arg.String F._w, "<flags>  Enable warnings according to <flags>:\n\
+       "-w", Arg.String Warnings.parse_options,
+             "<flags>  Enable or disable warnings according to <flags>:\n\
          \032    A/a enable/disable all warnings\n\
          \032    F/f enable/disable partially applied function\n\
          \032    M/m enable/disable overriden methods\n\
@@ -105,7 +106,7 @@ let main () =
          \032    U/u enable/disable unused match case\n\
          \032    V/v enable/disable hidden instance variables\n\
          \032    X/x enable/disable all other warnings\n\
-         \032    default setting is A";
+         \032    default setting is A (all warnings enabled)";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
