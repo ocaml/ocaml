@@ -526,9 +526,9 @@ seen as a colored point.
 \begin{caml_example}
 (p : point :> colored_point);;
 \end{caml_example}
-Indeed, backward coercions are unsafe, and should be combined with a type case,
-possibly raising a runtime error.  However, there is no such operation
-available in the language. 
+Indeed, backward coercions would be unsafe, and could only be combined with
+a type case, possibly raising a runtime error.  However, there is no such
+operation available in the language. 
 
 Be aware that subtyping and inheritance are not related.  Inheritance is a
 syntactic relation between classes while subtyping is a semantic relation
@@ -550,18 +550,63 @@ let to_point cp = (cp :> point);;
 In this case, the function "colored_point_to_point" is an instance of the 
 function "to_point". This is not always true, however. The fully
 explicit coercion  is more precise and is sometimes  unavoidable. 
-Here is an example where the shorter form fails:
+Consider, for example, the following class:
 \begin{caml_example}
-class virtual c  = object method virtual m : c end;;
+class c0 = object method m = {< >} method n = 0 end;;
+\end{caml_example}
+The object type "c" is an abbreviation for "<m : 'a; n : int> as 'a". 
+Consider now the type declaration 
+\begin{caml_example}
+class type c1 =  object method m : c1 end;;
+\end{caml_example}
+The object type "c1" is an abbreviation for the type "<m : 'a> as 'a". 
+The coercion from an object of type "c0" to an object of type "c1" is
+correct: 
+\begin{caml_example}
+fun (x:c0) -> (x : c0 :> c1);;
+\end{caml_example}
+However, the domain of the coercion cannot be omitted here: 
+\begin{caml_example}
+fun (x:c0) -> (x :> c1);;
+\end{caml_example}
+The solution is to use the explicit form. 
+
+Sometimes, a change in the class-type definition can also solve the problem
+\begin{caml_example}
+class type c2 =  object ('a) method m : 'a end;;
+fun (x:c0) -> (x :> c2);;
+\end{caml_example}
+Note that, while classe types "c1" and "c2" are different, both object types
+"c1" and "c2" define the same abbreviation. When the domain of a coercion is
+left implicit and its co-domain is an abbreviation of a known class type,
+then the class type, rather than the object type, is used to derive the
+coercion function. The type of a coercion can always be seen as below: 
+\begin{caml_example}
+let to_c1 x = (x :> c1);;
+let to_c2 x = (x :> c2);;
+\end{caml_example}
+Note the difference between the two coercions: in the second case, the type
+"c2" has been unfolded once (according to the explicit recursion in the class
+type of "c2"); hence the success of applying this coercion to an object of
+class "c0".  You may also note that the type of "to_c1" is "#c1 -> c1" while
+the type of "to_c2" is more general than "#c2 -> c2". 
+
+
+\iffalse
+It can also be obtained by using a fully explicit coercion:
+\begin{caml_example}
+function x -> (x : #c :> c);;
+\end{caml_example}
+Thus one can define class c' as follows:
+\begin{caml_example}
 class c'  =
   object (self)
     inherit c 
-    method m = (self :> c)
+    method m = (self : #c :> c)
     method m' = 1
-end;;
+  end;;
 \end{caml_example}
-
-The  type of the coercion to type "c" can be seen here:
+XXX
 \begin{caml_example}
 function x -> (x :> c);;
 \end{caml_example}
@@ -576,19 +621,6 @@ function x -> (x :> c);;
 % The desired coercion of type "<m : c;..> -> c" can 
 % be obtained by
 % using a fully explicit coercion:
-It can also be obtained by using a fully explicit coercion:
-\begin{caml_example}
-function x -> (x : #c :> c);;
-\end{caml_example}
-Thus one can define class c' as follows:
-\begin{caml_example}
-class c'  =
-  object (self)
-    inherit c 
-    method m = (self : #c :> c)
-    method m' = 1
-  end;;
-\end{caml_example}
 An alternative is to define class "c" this way (of course
 this definition is not equivalent to the previous one):
 \begin{caml_example}
@@ -606,11 +638,11 @@ as to work correctly with classes returning "self".
 \begin{caml_example}
 (new c' :> c);;
 \end{caml_example}
-
-Another common problem may occur when one tries to define a coercion to a
+\fi
+A common problem may occur when one tries to define a coercion to a
 class "c" inside the definition of class "c". The problem is due to the type
 abbreviation not being completely defined yet, and so its subtypes are not
-clearly known.  Then, a coercion "(_ : #c :> c)" is taken to be 
+clearly known.  Then, a coercion "(_ :> c)" or "(_ : #c :> c)" is taken to be 
 the identity function, as in
 \begin{caml_example}
 function x -> (x :> 'a);;
@@ -975,3 +1007,4 @@ representation abstract outside of the module.
 % LocalWords:  typecheck monomorphic uncaptured Subtyping subtyping leq repr Oo
 % LocalWords:  val sig bool Euro struct Caml Vouillon Didier int ref incr init
 % LocalWords:  succ mytype rec
+
