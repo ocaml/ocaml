@@ -55,6 +55,7 @@ type terminal_info_status = Unknown | Bad_term | Good_term
 let status = ref Unknown
 and num_lines = ref 0
 and cursor_up = ref ""
+and cursor_down = ref ""
 and start_standout = ref ""
 and end_standout = ref ""
 
@@ -63,6 +64,7 @@ let setup_terminal_info() =
     Terminfo.setupterm();
     num_lines := Terminfo.getnum "li";
     cursor_up := Terminfo.getstr "up";
+    cursor_down := Terminfo.getstr "do";
     begin try
       start_standout := Terminfo.getstr "us";
       end_standout := Terminfo.getstr "ue"
@@ -75,6 +77,8 @@ let setup_terminal_info() =
     status := Bad_term
 
 (* Print the location using standout mode. *)
+
+let num_loc_lines = ref 0 (* number of lines already printed after input *)
 
 let rec highlight_location loc =
   match !status with
@@ -91,7 +95,7 @@ let rec highlight_location loc =
           (* Do nothing if the buffer does not contain the whole phrase. *)
           if pos0 < 0 then false else begin
             (* Count number of lines in phrase *)
-            let lines = ref 0 in
+            let lines = ref !num_loc_lines in
             for i = pos0 to String.length lb.lex_buffer - 1 do
               if lb.lex_buffer.[i] = '\n' then incr lines
             done;
@@ -113,6 +117,10 @@ let rec highlight_location loc =
                 print_char c;
                 bol := (c = '\n') 
               done;
+              (* Position cursor back to original location *)
+              for i = 1 to !num_loc_lines do
+                Terminfo.puts stdout !cursor_down 1
+              done;
               true
             end
           end
@@ -120,6 +128,9 @@ let rec highlight_location loc =
 (* Print the location in some way or another *)
 
 open Format
+
+let reset () =
+  num_loc_lines := 0
 
 let print loc =
   if String.length !input_name = 0 then
@@ -141,4 +152,6 @@ let print loc =
 
 let print_warning loc msg =
   print loc;
-  print_string "Warning: "; print_string msg; print_newline()
+  print_string "Warning: "; print_string msg; print_newline();
+  incr num_loc_lines
+

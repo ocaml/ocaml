@@ -25,4 +25,4 @@ val input_lexbuf: Lexing.lexbuf option ref
 
 val print: t -> unit
 val print_warning: t -> string -> unit
-
+val reset: unit -> unit
