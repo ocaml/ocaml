@@ -4,7 +4,8 @@ scheduler.o: scheduler.c ../../byterun/callback.h \
  ../../byterun/misc.h ../../byterun/stacks.h ../../byterun/memory.h \
  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
  ../../byterun/minor_gc.h ../../byterun/fail.h ../../byterun/io.h \
- ../../byterun/roots.h ../../byterun/alloc.h ../../byterun/signals.h
+ ../../byterun/roots.h ../../byterun/alloc.h ../../byterun/signals.h \
+ ../../byterun/sys.h
 condition.cmi: mutex.cmi 
 condition.cmo: mutex.cmi thread.cmi condition.cmi 
 condition.cmx: mutex.cmx thread.cmx condition.cmi 
@@ -14,8 +15,6 @@ mutex.cmo: thread.cmi mutex.cmi
 mutex.cmx: thread.cmx mutex.cmi 
 pervasives.cmo: pervasives.cmi 
 pervasives.cmx: pervasives.cmi 
-semaphore.cmo: condition.cmi mutex.cmi semaphore.cmi 
-semaphore.cmx: condition.cmx mutex.cmx semaphore.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
 threadUnix.cmo: thread.cmi threadUnix.cmi 
