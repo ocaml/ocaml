@@ -430,11 +430,10 @@ case "$arch,$model,$system" in
                       gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
                          *) asppflags='-P -DSYS_$(SYSTEM)';;
                     esac;;
-  i386,*,solaris)   case "$cc" in
+  i386,*,solaris)   # case "$cc" in
                     # Intel/solaris assembler doesn't like GNU cpp output
                     # gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-                         *) asppflags='-P -DSYS_$(SYSTEM)';;
-                    esac;;
+                    aspp='/usr/ccs/bin/as'; asppflags='-P -DSYS_$(SYSTEM)';;
   i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   hppa,*,*)         aspp="$cc"; asppflags='-traditional -c -DSYS_$(SYSTEM)';;
   power,rs6000,aix) asflags='-u -m pwr -w'; asppflags="$asflags";;
