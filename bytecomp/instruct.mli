@@ -41,8 +41,9 @@ type debug_event =
 
 and debug_event_kind =
     Event_before
-  | Event_after of Types.type_expr
+  | Event_after of Types.type_expr * int
   | Event_function
+  | Event_return of int
 
 and debug_event_repr =
     Event_none

@@ -397,15 +397,11 @@ let rec comp_expr env exp sz cont =
         fatal_error "Bytegen.comp_expr: assign"
       end
   | Levent(lam, lev) ->
-      let ev =
+      let event kind =
         { ev_pos = 0;                   (* patched in emitcode *)
           ev_module = !compunit_name;
           ev_char = lev.lev_loc;
-          ev_kind = begin match lev.lev_kind with
-                      Lev_before   -> Event_before
-                    | Lev_after ty -> Event_after ty
-                    | Lev_function -> Event_function
-                    end;
+          ev_kind = kind;
           ev_typenv = lev.lev_env;
           ev_compenv = env;
           ev_stacksize = sz;
@@ -426,6 +422,7 @@ let rec comp_expr env exp sz cont =
       begin match lev.lev_kind with
         Lev_before ->
           let c = comp_expr env lam sz cont in
+          let ev = event Event_before in
           begin match c with
             (* Keep following event, supposedly more informative *)
             Kevent ev' :: _ -> ev'.ev_repr <- ev.ev_repr; c
@@ -436,19 +433,36 @@ let rec comp_expr env exp sz cont =
           begin match c with
             (* Only keep following event (its a real one) *)
             Kevent ev' :: _ -> ev'.ev_repr <- Event_none; c
-          | _             -> Kevent ev :: c
+          | _               -> Kevent (event Event_function) :: c
           end
       | Lev_after ty ->
           if is_tailcall cont then      (* don't destroy tail call opt *)
             comp_expr env lam sz cont
           else begin
+            let offset =
+              match lam with
+                Lapply(_, args)   when List.length args     < 4 ->  1
+              | Lsend(_, _, args) when List.length args + 1 < 4 ->  1
+              | Lapply _ | Lsend _                              ->  2
+              | _                                               -> -1
+            in
             let cont1 =
               match cont with
               (* Discard following events, supposedly less informative *)
-                         Kevent _ :: c -> Kevent ev :: c
-              (* Keep event following Kpush, supposedly equivalent *)
-              | Kpush :: Kevent _ :: _ -> cont
-              | _                      -> Kevent ev :: cont
+                Kevent _ :: c ->
+                  Kevent (event (Event_after (ty, offset))) :: c
+              (* Weaken event *)
+              | Kpush :: Kevent ev' :: _ when offset >= 0 ->
+                  let repr = ref 1 in
+                  let ev = event (Event_return offset) in
+                  ev.ev_repr <- Event_parent repr;
+                  ev'.ev_repr <- Event_child repr;
+                  Kevent ev :: cont
+              (* Only keep following event, equivalent *)
+              | Kpush :: Kevent _ :: _ ->
+                  cont
+              | _  ->
+                  Kevent (event (Event_after (ty, offset))):: cont
             in
             comp_expr env lam sz cont1
           end
