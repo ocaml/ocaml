@@ -92,5 +92,5 @@ Drawing is clipped to the screen.
 %
 
 \begin{library}
-\input{graphics.tex}
+\input{Graphics.tex}
 \end{library}

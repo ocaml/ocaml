@@ -36,15 +36,15 @@ more information on the functions that are not supported under Windows.
 \end{windows}
 
 \begin{library}
-\input{unix.tex}
+\input{Unix.tex}
 \end{library}
 
 \section{Module "UnixLabels": labelized version of the interface}
-\label{s:UnixLabels}
+\label{UnixLabels}
 \index{UnixLabels (module)@\verb~UnixLabels~ (module)}%
 \pdfsection{Module UnixLabels: labelized version of the interface}
 
-This module is identical to "Unix"~(\ref{s:Unix}), and only differs by
+This module is identical to "Unix"~(\ref{Unix}), and only differs by
 the addition of labels. You may see these labels directly by looking
 at "unixLabels.mli", or by using the "ocamlbrowser" tool.
 

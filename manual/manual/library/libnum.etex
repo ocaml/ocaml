@@ -24,8 +24,8 @@ or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"nums.cma\";;".
 
 \begin{library}
-\input{num.tex}
-\input{bigint.tex}
-\input{arithstatus.tex}
+\input{Num.tex}
+\input{Bigint.tex}
+\input{Arithstatus.tex}
 \end{library}
 

@@ -1,17 +1,30 @@
-CORE_INTF=pervasives.tex
+CORE_INTF=Pervasives.tex
 
-STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
-  gc.tex genlex.tex hashtbl.tex int32.tex int64.tex \
-  lazy.tex lexing.tex list.tex map.tex marshal.tex nativeint.tex oo.tex \
-  parsing.tex printexc.tex printf.tex queue.tex random.tex set.tex sort.tex \
-  stack.tex stream.tex string.tex sys.tex weak.tex callback.tex lazy.tex \
-  buffer.tex stdLabels.tex
+STDLIB_INTF=Arg.tex Array.tex Char.tex Digest.tex Filename.tex Format.tex \
+  Gc.tex Genlex.tex Hashtbl.tex Int32.tex Int64.tex \
+  Lazy.tex Lexing.tex List.tex Map.tex Marshal.tex Nativeint.tex Oo.tex \
+  Parsing.tex Printexc.tex Printf.tex Queue.tex Random.tex Set.tex Sort.tex \
+  Stack.tex Stream.tex String.tex Sys.tex Weak.tex Callback.tex \
+  Buffer.tex StdLabels.tex
 
-OTHERLIB_INTF=unix.tex str.tex num.tex bigint.tex arithstatus.tex \
-  graphics.tex thread.tex mutex.tex condition.tex event.tex \
-  dbm.tex dynlink.tex tk.tex bigarray.tex
+OTHERLIB_INTF=Unix.tex Str.tex Num.tex Bigint.tex Arithstatus.tex \
+  Graphics.tex Thread.tex Mutex.tex Condition.tex Event.tex \
+  Dbm.tex Dynlink.tex Tk.tex Bigarray.tex
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
+
+MLIS=$(CSLDIR)/stdlib/*.mli \
+	$(CSLDIR)/otherlibs/bigarray/bigarray.mli \
+	$(CSLDIR)/otherlibs/dbm/dbm.mli \
+	$(CSLDIR)/otherlibs/dynlink/dynlink.mli \
+	$(CSLDIR)/otherlibs/graph/graphics.mli \
+	$(CSLDIR)/otherlibs/graph/graphicsX11.mli \
+	$(CSLDIR)/otherlibs/num/num.mli \
+	$(CSLDIR)/otherlibs/num/arith_status.mli \
+	$(CSLDIR)/otherlibs/num/big_int.mli \
+	$(CSLDIR)/otherlibs/str/*.mli \
+	$(CSLDIR)/otherlibs/systhreads/*.mli \
+	$(CSLDIR)/otherlibs/unix/*.mli
 
 BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex \
   libthreads.tex libdbm.tex libdynlink.tex liblabltk.tex libbigarray.tex
@@ -25,12 +38,28 @@ CSLDIR=../../../csl
 
 VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dbm:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 
-all: $(FILES)
+all: libs 
+
+libs: $(FILES)
+
+$(INTF): $(MLIS)
+	ocamldoc -latex -I $(CSLDIR)/stdlib  \
+	-I $(CSLDIR)/otherlibs/bigarray \
+	-I $(CSLDIR)/otherlibs/dbm \
+	-I $(CSLDIR)/otherlibs/dynlink \
+	-I $(CSLDIR)/otherlibs/graph \
+	-I $(CSLDIR)/otherlibs/num \
+	-I $(CSLDIR)/otherlibs/str \
+	-I $(CSLDIR)/otherlibs/systhreads \
+	-I $(CSLDIR)/otherlibs/unix \
+	$(MLIS) \
+	-sepfiles
+	mv -f Arith_status.tex Arithstatus.tex
+	mv -f Big_int.tex Bigint.tex
 
 clean:
-	rm -f $(FILES) arithstatus.mli bigint.mli
+	rm -f $(FILES) 
 
-$(INTF): $(FORMAT)
 
 .SUFFIXES:
 .SUFFIXES: .tex .etex .mli
@@ -39,7 +68,7 @@ $(INTF): $(FORMAT)
 	$(TEXQUOTE) < $*.etex > $*.tex
 
 .mli.tex: $(FORMAT)
-	$(FORMAT) $< > $*.tex
+	$(FORMAT) $< > $*.tex < $<
 
 # TeX hates underscores in file names
 arithstatus.mli: $(CSLDIR)/otherlibs/num/arith_status.mli

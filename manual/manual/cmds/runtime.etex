@@ -88,7 +88,7 @@ The following environment variables are also consulted:
   A parameter specification is an option letter followed by an "="
   sign, a decimal number, and an optional multiplier.  There are
   eight options, six of which correspond to the fields of the
-  "control" record documented in section~\ref{s:Gc}.
+  "control" record documented in section~\ref{Gc}.
   \begin{options}
   \item[b] (backtrace) Control the printing of a stack backtrace 
         when an uncaught exception aborts the program.  A non-zero

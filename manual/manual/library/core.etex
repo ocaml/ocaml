@@ -22,5 +22,5 @@ All modules and the identifiers they export are indexed at the end of
 this report.
 
 \begin{library}
-\input{pervasives.tex}
+\input{Pervasives.tex}
 \end{library}

@@ -21,6 +21,6 @@ start "ocaml" and type "#load \"str.cma\";;".
 
 
 \begin{library}
-\input{str.tex}
+\input{Str.tex}
 \end{library}
 

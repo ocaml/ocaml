@@ -3,7 +3,7 @@
 
 The "bigarray" library implements large, multi-dimensional, numerical
 arrays.  These arrays are called ``big arrays'' to distinguish them
-from the standard Caml arrays described in section~\ref{s:Array}.
+from the standard Caml arrays described in section~\ref{Array}.
 The main differences between ``big arrays''  and standard Caml arrays
 are as follows:
 \begin{itemize}
@@ -45,7 +45,7 @@ or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"bigarray.cma\";;".
 
 \begin{library}
-\input{bigarray.tex}
+\input{Bigarray.tex}
 \end{library}
 
 \section{Big arrays in the Caml-C interface}

@@ -51,9 +51,9 @@ the standard library (see chapter~\ref{c:camlc}).
 \end{windows}
 
 \begin{library}
-\input{thread.tex}
-\input{mutex.tex}
-\input{condition.tex}
-\input{event.tex}
-\input{threadUnix.tex}
+\input{Thread.tex}
+\input{Mutex.tex}
+\input{Condition.tex}
+\input{Event.tex}
+\input{ThreadUnix.tex}
 \end{library}

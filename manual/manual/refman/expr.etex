@@ -670,7 +670,7 @@ identity, as this type abbreviation is not yet completely defined.
 \subsubsection*{Object duplication}
 
 An object can be duplicated using the library function "Oo.copy"
-(see section~\ref{s:Oo}). Inside a method, the expression
+(see section~\ref{Oo}). Inside a method, the expression
 @ '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'@
 returns a copy of self with the given instance variables replaced by
 the values of the associated expressions; other instance variables
