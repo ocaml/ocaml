@@ -39,7 +39,7 @@ let _ =
     ~others:(fun name -> raise(Arg.Bad("don't know what to do with " ^ name)))
     ~errmsg:"ocamlbrowser :";
   Config.load_path := List.rev !path @ [Config.standard_library];
-  Warnings.parse_options !Shell.warnings;
+  Warnings.parse_options ~iserror:false !Shell.warnings;
   Unix.putenv "TERM" "noterminal";
   begin
     try Searchid.start_env := Env.open_pers_signature "Pervasives" Env.initial
