@@ -205,7 +205,11 @@ void sys_init(char **argv)
 
 value sys_system_command(value command)   /* ML */
 {
+#ifndef _WIN32
   int retcode = system(String_val(command));
+#else
+  int retcode = win32_system(String_val(command));
+#endif
   if (retcode == -1) sys_error(command);
   return Val_int(retcode);
 }
@@ -302,3 +306,45 @@ char * searchpath(char * name)
 }
 
 #endif /* _WIN32, macintosh, ... */
+
+#ifdef _WIN32
+
+#include <ctype.h>
+extern char * mktemp(char *);
+
+int win32_system(char * cmdline)
+{
+#define MAX_CMD_LENGTH 256
+  char cmd[MAX_CMD_LENGTH + 16];
+  char template[9];
+  char * tempfile;
+  int len, i, j, fd, retcode;
+
+  len = strlen(cmdline);
+  if (len < 1000) {
+    return system(cmdline);
+  } else {
+    /* Copy command name to buffer, stop at first blank */
+    for (i = 0, j = 0;
+	 cmdline[i] != 0 && ! isspace(cmdline[i]);
+	 i++) {
+      if (j < MAX_CMD_LENGTH) cmd[j++] = cmdline[i];
+    }
+    /* Save remainder of command line to temp file */
+    strcpy(template, "cmXXXXXX");
+    tempfile = mktemp(template);
+    fd = open(tempfile, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT, 0666);
+    if (fd == -1) return -1;
+    write(fd, cmdline + i, len - i);
+    close(fd);
+    /* Add " @tempfile" to the command line */
+    sprintf(cmd + j, " @%s", tempfile);
+    /* Run command */
+    retcode = system(cmd);
+    /* Remove temp file and exit */
+    unlink(tempfile);
+    return retcode;
+  }
+}
+
+#endif
