@@ -479,6 +479,9 @@ simple_expr:
       { mkexp(Pexp_override(List.rev $2)) }
   | LBRACELESS GREATERRBRACE
       { mkexp(Pexp_override []) }
+  | LPAREN SHARP label RPAREN
+      { mkexp(Pexp_function [mkpat(Ppat_var "x"),
+                mkexp(Pexp_send(mkexp(Pexp_ident (Lident"x")), $3))]) }
 ;
 simple_expr_list:
     simple_expr
