@@ -157,7 +157,7 @@ module Genarray: sig
          Caml type [float]. *)
 
   external create:
-    ('a, 'b) kind -> 'c layout -> dims:int array -> ('a, 'b, 'c) t
+    kind:('a, 'b) kind -> layout:'c layout -> dims:int array -> ('a, 'b, 'c) t
     = "bigarray_create"
       (* [Genarray.create kind layout dimensions] returns a new big array
          whose element kind is determined by the parameter [kind] (one of
@@ -310,8 +310,9 @@ module Genarray: sig
          the big array [a].  Setting only some elements of [a] to [v]
          can be achieved by applying [Genarray.fill] to a sub-array
          or a slice of [a]. *)
-  external map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
-                     shared:bool -> dims:int array -> ('a, 'b, 'c) t = "bigarray_map_file"
+  external map_file:
+    Unix.file_descr -> kind:('a, 'b) kind -> layout:'c layout ->
+    shared:bool -> dims:int array -> ('a, 'b, 'c) t = "bigarray_map_file"
       (* Memory mapping of a file as a big array.
          [Genarray.map_file fd kind layout shared dims]
          returns a big array of kind [kind], layout [layout],
@@ -359,7 +360,8 @@ module Array1: sig
   type ('a, 'b, 'c) t
         (* The type of one-dimensional big arrays whose elements have
            Caml type ['a], representation kind ['b], and memory layout ['c]. *)
-  val create: ('a, 'b) kind -> 'c layout -> dim:int -> ('a, 'b, 'c) t
+  val create:
+    kind:('a, 'b) kind -> layout:'c layout -> dim:int -> ('a, 'b, 'c) t
         (* [Array1.create kind layout dim] returns a new bigarray of
            one dimension, whose size is [dim].  [kind] and [layout]
            determine the array element kind and the array layout
@@ -390,10 +392,11 @@ module Array1: sig
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
         (* Fill the given big array with the given value.
            See [Genarray.fill] for more details. *)
-  val of_array: ('a, 'b) kind -> 'c layout -> 'a array -> ('a, 'b, 'c) t
+  val of_array:
+    kind:('a, 'b) kind -> layout:'c layout -> 'a array -> ('a, 'b, 'c) t
         (* Build a one-dimensional big array initialized from the
            given array.  *)
-  val map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+  val map_file: Unix.file_descr -> kind:('a, 'b) kind -> layout:'c layout ->
                 shared:bool -> dim:int -> ('a, 'b, 'c) t
         (* Memory mapping of a file as a one-dimensional big array.
            See [Genarray.map_file] for more details. *)
@@ -409,7 +412,8 @@ module Array2: sig
         (* The type of two-dimensional big arrays whose elements have
            Caml type ['a], representation kind ['b], and memory layout ['c]. *)
   val create:
-    ('a, 'b) kind -> 'c layout -> dim1:int -> dim2:int -> ('a, 'b, 'c) t
+    kind:('a, 'b) kind ->
+    layout:'c layout -> dim1:int -> dim2:int -> ('a, 'b, 'c) t
         (* [Array2.create kind layout dim1 dim2] returns a new bigarray of
            two dimension, whose size is [dim1] in the first dimension
            and [dim2] in the second dimension.  [kind] and [layout]
@@ -467,10 +471,11 @@ module Array2: sig
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
         (* Fill the given big array with the given value.
            See [Genarray.fill] for more details. *)
-  val of_array: ('a, 'b) kind -> 'c layout -> 'a array array -> ('a, 'b, 'c) t
+  val of_array:
+    kind:('a, 'b) kind -> layout:'c layout -> 'a array array -> ('a, 'b, 'c) t
         (* Build a two-dimensional big array initialized from the
            given array of arrays.  *)
-  val map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+  val map_file: Unix.file_descr -> kind:('a, 'b) kind -> layout:'c layout ->
                 shared:bool -> dim1:int -> dim2:int -> ('a, 'b, 'c) t
         (* Memory mapping of a file as a two-dimensional big array.
            See [Genarray.map_file] for more details. *)
@@ -486,7 +491,7 @@ module Array3: sig
         (* The type of three-dimensional big arrays whose elements have
            Caml type ['a], representation kind ['b], and memory layout ['c]. *)
   val create:
-    ('a, 'b) kind -> 'c layout ->
+    kind:('a, 'b) kind -> layout:'c layout ->
     dim1:int -> dim2:int -> dim3:int -> ('a, 'b, 'c) t
         (* [Array3.create kind layout dim1 dim2 dim3] returns a new bigarray of
            three dimension, whose size is [dim1] in the first dimension,
@@ -515,7 +520,8 @@ module Array3: sig
            as described for [Genarray.set];
            otherwise, [Invalid_arg] is raised. *)
   external sub_left:
-    ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t = "bigarray_sub"
+    ('a, 'b, c_layout) t -> pos:int -> len:int -> ('a, 'b, c_layout) t
+    = "bigarray_sub"
         (* Extract a three-dimensional sub-array of the given
            three-dimensional big array by restricting the first dimension.
            See [Genarray.sub_left] for more details.  [Array3.sub_left]
@@ -567,10 +573,11 @@ module Array3: sig
         (* Fill the given big array with the given value.
            See [Genarray.fill] for more details. *)
   val of_array:
-        ('a, 'b) kind -> 'c layout -> 'a array array array -> ('a, 'b, 'c) t
+        kind:('a, 'b) kind -> layout:'c layout ->
+        'a array array array -> ('a, 'b, 'c) t
         (* Build a three-dimensional big array initialized from the
            given array of arrays of arrays.  *)
-  val map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+  val map_file: Unix.file_descr -> kind:('a, 'b) kind -> layout:'c layout ->
              shared:bool -> dim1:int -> dim2:int -> dim3:int -> ('a, 'b, 'c) t
         (* Memory mapping of a file as a three-dimensional big array.
            See [Genarray.map_file] for more details. *)
