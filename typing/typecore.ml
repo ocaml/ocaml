@@ -93,9 +93,10 @@ let extract_option_type env ty =
 
 (* Typing of patterns *)
 
+(* Creating new conjunctive types is not allowed when typing patterns *)
 let unify_pat env pat expected_ty =
   try
-    unify env pat.pat_type expected_ty
+    unify_strict env pat.pat_type expected_ty
   with Unify trace ->
     raise(Error(pat.pat_loc, Pattern_type_clash(trace)))
 
@@ -261,7 +262,7 @@ let rec type_pat env sp =
             raise(Error(sp.ppat_loc, Unbound_label lid)) in
         let (ty_arg, ty_res) = instance_label label in
         begin try
-          unify env ty_res ty
+          unify_strict env ty_res ty
         with Unify trace ->
           raise(Error(sp.ppat_loc, Label_mismatch(lid, trace)))
         end;

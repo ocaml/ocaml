@@ -1079,6 +1079,14 @@ let deep_occur t0 ty =
     unmark_type ty; true
 
 (*
+   This flag indicates whether unification should allow conjunctive
+   types in variants or not. They are allowed when typing expressions,
+   but not when typing patterns. This avoids some silly bug, and strange
+   error messages.
+*)
+let allow_conjunctive = ref true
+
+(*
    1. When unifying two non-abbreviated types, one type is made a link
       to the other. When unifying an abbreviated type with a
       non-abbreviated type, the non-abbreviated type is made a link to
@@ -1330,10 +1338,18 @@ and unify_row env row1 row2 =
             if e1 == e2 then () else
             let tl = tl1 @ tl2 in
             let tl =
-              List.fold_right
-                (fun t tl ->
-                  let t = repr t in if List.memq t tl then tl else t::tl)
-                tl [] in
+              if !allow_conjunctive then
+                List.fold_right
+                  (fun t tl ->
+                    let t = repr t in if List.memq t tl then tl else t::tl)
+                  tl []
+              else match tl with
+              | [] -> []
+              | t1 :: tl ->
+                  if c1 || c2 then raise (Unify []);
+                  List.iter (unify env t1) tl;
+                  [t1]
+            in
             let f = Reither(c1 or c2, tl, ref None) in
             e1 := Some f; e2 := Some f
         | Reither(false, tl, e1), Rpresent(Some t2) ->
@@ -1355,10 +1371,24 @@ and unify_row env row1 row2 =
     rm1.desc <- md1; rm2.desc <- md2; raise exn
   end
 
-let unify env ty1 ty2 =
+let unify_strict env ty1 ty2 =
+  let old = !allow_conjunctive in
   try
-    unify env ty1 ty2
+    allow_conjunctive := false;
+    unify env ty1 ty2;
+    allow_conjunctive := old
   with Unify trace ->
+    allow_conjunctive := old;
+    raise (Unify (expand_trace env trace))
+
+let unify env ty1 ty2 =
+  let old = !allow_conjunctive in
+  try
+    allow_conjunctive := true;
+    unify env ty1 ty2;
+    allow_conjunctive := old
+  with Unify trace ->
+    allow_conjunctive := old;
     raise (Unify (expand_trace env trace))
 
 let _ = unify' := unify
