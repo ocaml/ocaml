@@ -630,9 +630,9 @@ val pos_out : out_channel -> int
     unspecified results). *)
 
 val out_channel_length : out_channel -> int
-(** Return the total length (number of characters) of the
-   given channel.  This works only for regular files. On files of
-   other kinds, the result is meaningless. *)
+(** Return the size (number of characters) of the regular file
+   on which the given channel is opened.  If the channel is opened
+    on a file that is not a regular file, the result is meaningless. *)
 
 val close_out : out_channel -> unit
 (** Close the given channel, flushing all buffered write operations.
@@ -738,9 +738,12 @@ val pos_in : in_channel -> int
 (** Return the current reading position for the given channel. *)
 
 val in_channel_length : in_channel -> int
-(** Return the total length (number of characters) of the
-   given channel. This works only for regular files. On files of
-   other kinds, the result is meaningless. *)
+(** Return the size (number of characters) of the regular file
+    on which the given channel is opened.  If the channel is opened
+    on a file that is not a regular file, the result is meaningless.
+    The returned size does not take into account the end-of-line
+    translations that can be performed when reading from a channel
+    opened in text mode. *)
 
 val close_in : in_channel -> unit
 (** Close the given channel.  Input functions raise a [Sys_error]
