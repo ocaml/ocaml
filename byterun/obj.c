@@ -43,7 +43,9 @@ CAMLprim value caml_static_free(value blk)
 
 CAMLprim value caml_static_release_bytecode(value blk, value size)
 {
+#ifndef NATIVE_CODE
   caml_release_bytecode((code_t) blk, (asize_t) Long_val(size));
+#endif
   return Val_unit;
 }
 
