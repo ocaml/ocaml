@@ -72,6 +72,7 @@ Toplevel interactive system:
 - Tightened interface consistency checks between .cmi files, .cm[oa] files
   loaded by #load, and the running toplevel.
 - #trace on mutually-recursive functions was broken, works again.
+- Look for .ocamlinit file in home directory in addition to the current dir.
 
 Standard library:
 - Match_failure and Assert_failure exceptions now report
@@ -82,7 +83,7 @@ Standard library:
 - Module Arg: added new option handlers Set_string, Set_int, Set_float,
     Symbol, Tuple.
 - Modules Lexing and Parsing: added better handling of positions
-    in source file.
+    in source file.  Added function Lexing.flush_input.
 - Module Scanf: %n and %N formats to count characters / items read so far;
     assorted bug fixes.
 - Modules Set and Map: fixed bugs causing trees to become unbalanced.
