@@ -284,7 +284,7 @@ let camltk_write_type ~intf:w ~impl:w' name ~def:typdef =
   w ("type " ^ name ^ " =\n");
   w "  | ";
   write_constructors ~w (sort_components typdef.constructors);
-  w "\n\n";
+  w "\n(* /type *)\n\n";
   (* Dynamic Subtyping *)
   if typdef.subtypes <> [] then begin
     (* The set of its constructors *)
