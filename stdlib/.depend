@@ -1,6 +1,5 @@
 format.cmi: buffer.cmi 
 genlex.cmi: stream.cmi 
-int64.cmi: int32.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
 printf.cmi: buffer.cmi 
 arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
@@ -27,8 +26,8 @@ hashtbl.cmo: array.cmi sys.cmi hashtbl.cmi
 hashtbl.cmx: array.cmx sys.cmx hashtbl.cmi 
 int32.cmo: int32.cmi 
 int32.cmx: int32.cmi 
-int64.cmo: int32.cmi int64.cmi 
-int64.cmx: int32.cmx int64.cmi 
+int64.cmo: int32.cmi obj.cmi int64.cmi 
+int64.cmx: int32.cmx obj.cmx int64.cmi 
 lazy.cmo: lazy.cmi 
 lazy.cmx: lazy.cmi 
 lexing.cmo: string.cmi lexing.cmi 
