@@ -190,7 +190,7 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMIFILES) $(LIBCMXFILES)
 odoc_crc.ml: $(CMIFILES)
 	$(EXTRAC_CRC) $(INCLUDES)\
 	Arg Arith_status Array Big_int Buffer Callback Char Digest Dynlink \
-	Filename Format Gc Genlex Graphics Hashtbl \
+	Filename Format Gc Genlex Hashtbl \
 	Lazy Lexing List Map Marshal Nat\
 	Num Obj Oo Outcometree Parsing Pervasives Printexc\
 	Printf Profiling Queue Random Ratio\
