@@ -30,18 +30,21 @@ type stat = {
   compactions : int
 }
   (* The memory management counters are returned in a [stat] record.
-     All the numbers are computed since the start of the program.
      The fields of this record are:
--     [minor_words]  Number of words allocated in the minor heap.
+-     [minor_words]  Number of words allocated in the minor heap since
+             the program was started.
 -     [promoted_words] Number of words allocated in the minor heap that
-             survived a minor collection and were moved to the major heap.
+             survived a minor collection and were moved to the major heap
+             since the program was started.
 -     [major_words]  Number of words allocated in the major heap, including
-             the promoted words.
--     [minor_collections]  Number of minor collections.
+             the promoted words, since the program was started.
+-     [minor_collections]  Number of minor collections since the program
+             was started.
 -     [major_collections]  Number of major collection cycles, not counting
-             the current cycle.
+             the current cycle, since the program was started.
 -     [heap_words]  Total number of words in the major heap.
--     [heap_chunks]  Number of times the major heap size was increased.
+-     [heap_chunks]  Number of times the major heap size was increased
+             since the program was started.
 -     [live_words]  Number of words of live data in the major heap, including
              the header words.
 -     [live_blocks]  Number of live objects in the major heap.
@@ -52,10 +55,10 @@ type stat = {
              1-words free blocks placed between two live objects.  They
              cannot be inserted in the free list, thus they are not available
              for allocation.
--     [compactions]  Number of heap compactions.
+-     [compactions]  Number of heap compactions since the program was started.
 
-     The total amount of memory allocated by the program is (in words)
-     [minor_words + major_words - promoted_words].  Multiply by
+     The total amount of memory allocated by the program since it was started
+     is (in words) [minor_words + major_words - promoted_words].  Multiply by
      the word size (4 on a 32-bit machine, 8 on a 64-bit machine) to get
      the number of bytes.
   *)
