@@ -434,6 +434,7 @@ CAMLprim value caml_gc_compaction(value v)
   caml_finish_major_cycle ();
   caml_finish_major_cycle ();
   caml_compact_heap ();
+  caml_final_do_calls ();
   return Val_unit;
 }
 
