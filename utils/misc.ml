@@ -123,3 +123,4 @@ let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
 
 let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
+let no_overflow_lsl a = min_int asr 1 <= a && a <= max_int asr 1

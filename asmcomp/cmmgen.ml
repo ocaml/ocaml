@@ -960,7 +960,10 @@ and transl_prim_1 p arg =
   | Pnegint ->
       Cop(Csubi, [Cconst_int 2; transl arg])
   | Poffsetint n ->
-      add_const (transl arg) (n lsl 1)
+      if no_overflow_lsl n then
+        add_const (transl arg) (n lsl 1)
+      else
+        transl_prim_2 Paddint arg (Uconst (Const_base(Const_int n)))
   | Poffsetref n ->
       return_unit
         (bind "ref" (transl arg) (fun arg ->

@@ -67,3 +67,6 @@ val no_overflow_add: int -> int -> bool
 val no_overflow_sub: int -> int -> bool
         (* [no_overflow_add n1 n2] returns [true] if the computation of
            [n1 - n2] does not overflow. *)
+val no_overflow_lsl: int -> bool
+        (* [no_overflow_add n] returns [true] if the computation of
+           [n lsl 1] does not overflow. *)
