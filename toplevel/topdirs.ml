@@ -66,42 +66,56 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 
 (* Load in-core a .cmo file *)
 
+exception Load_failed
+
+let load_compunit ic filename compunit =
+  Bytelink.check_consistency filename compunit;
+  seek_in ic compunit.cu_pos;
+  let code_size = compunit.cu_codesize + 4 in
+  let code = Meta.static_alloc code_size in
+  unsafe_really_input ic code 0 compunit.cu_codesize;
+  String.unsafe_set code compunit.cu_codesize
+                             (Char.chr Opcodes.opSTOP);
+  String.unsafe_set code (compunit.cu_codesize + 1) '\000';
+  String.unsafe_set code (compunit.cu_codesize + 2) '\000';
+  String.unsafe_set code (compunit.cu_codesize + 3) '\000';
+  let initial_symtable = Symtable.current_state() in
+  Symtable.patch_object code compunit.cu_reloc;
+  Symtable.update_global_table();
+  begin try
+    Meta.execute_bytecode code code_size; ()
+  with exn ->
+    Symtable.restore_state initial_symtable;
+    print_exception_outcome exn;
+    raise Load_failed
+  end
+
 let dir_load name =
   try
     let filename = find_in_path !Config.load_path name in
     let ic = open_in_bin filename in
     let buffer = String.create (String.length Config.cmo_magic_number) in
     really_input ic buffer 0 (String.length Config.cmo_magic_number);
-    if buffer <> Config.cmo_magic_number then begin
-      print_string "File "; print_string name;
-      print_string " is not a bytecode object file."; print_newline()
-    end else begin
-      let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
-      seek_in ic compunit_pos;
-      let compunit = (input_value ic : compilation_unit) in
-      Bytelink.check_consistency filename compunit;
-      seek_in ic compunit.cu_pos;
-      let code_size = compunit.cu_codesize + 4 in
-      let code = Meta.static_alloc code_size in
-      unsafe_really_input ic code 0 compunit.cu_codesize;
-      String.unsafe_set code compunit.cu_codesize
-                                 (Char.chr Opcodes.opSTOP);
-      String.unsafe_set code (compunit.cu_codesize + 1) '\000';
-      String.unsafe_set code (compunit.cu_codesize + 2) '\000';
-      String.unsafe_set code (compunit.cu_codesize + 3) '\000';
-      let initial_symtable = Symtable.current_state() in
-      Symtable.patch_object code compunit.cu_reloc;
-      Symtable.update_global_table();
-      begin try
-        Meta.execute_bytecode code code_size; ()
-      with exn ->
-        Symtable.restore_state initial_symtable;
-        print_exception_outcome exn
+    begin try
+      if buffer = Config.cmo_magic_number then begin
+        let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
+        seek_in ic compunit_pos;
+        load_compunit ic filename (input_value ic : compilation_unit)
+      end else
+      if buffer = Config.cma_magic_number then begin
+        let toc_pos = input_binary_int ic in  (* Go to table of contents *)
+        seek_in ic toc_pos;
+        List.iter (load_compunit ic filename)
+                  (input_value ic : compilation_unit list)
+      end else begin
+        print_string "File "; print_string name;
+        print_string " is not a bytecode object file."; print_newline()
       end
+    with Load_failed -> ()
     end;
     close_in ic
   with Not_found ->
-    print_string "Cannot find file "; print_string name; print_newline()
+         print_string "Cannot find file "; print_string name; print_newline()
 
 let _ = Hashtbl.add directive_table "load" (Directive_string dir_load)
 
