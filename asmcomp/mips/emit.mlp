@@ -84,7 +84,9 @@ let emit_addressing addr r n =
   | Ibased(s, 0) ->
       `{emit_symbol s}`
   | Ibased(s, ofs) ->
-      `{emit_symbol s} + {emit_int ofs}`
+      `{emit_symbol s}`;
+      if ofs > 0 then ` + {emit_int ofs}`;
+      if ofs < 0 then ` - {emit_int(-ofs)}`
 
 (* Communicate live registers at call points to the assembler *)
 
