@@ -28,6 +28,9 @@ clock.opt: clock.cmx
 tetris: tetris.cmo
 	$(CAMLC) $(COMPFLAGS) -o tetris $(LIBNAME).cma tetris.cmo
 
+taquin: taquin.cmo
+	$(CAMLC) $(COMPFLAGS) -o taquin $(LIBNAME).cma taquin.cmo
+
 lang: lang.cmo
 	$(CAMLC) $(COMPFLAGS) -o lang $(LIBNAME).cma lang.cmo
 
