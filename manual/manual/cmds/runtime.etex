@@ -56,23 +56,29 @@ The following environment variable are also consulted:
 \item["CAMLRUNPARAM"] Set the garbage collection parameters.
   This variable must be a sequence of parameter specifications.
   A parameter specification is an option letter followed by an "="
-  sign and a decimal number.  There are four options,
-  corresponding to the four fields of the "control" record
+  sign and a decimal number.  There are seven options,
+  the first six correspond to the fields of the "control" record
   documented in section~\ref{s:Gc}:
   \begin{options}
   \item[s] ("minor_heap_size")  Size of the minor heap.
   \item[i] ("major_heap_increment")  Minimum size increment for the
   major heap.
   \item[o] ("space_overhead")  The major GC speed setting.
+  \item[O] ("max_overhead")  The heap compaction trigger setting.
   \item[v] ("verbose")  Whether to print GC messages or not.  0 is
   false; 1 is true; other values may give unexpected results.
+  \item[l] ("stack_limit") The limit (in words) of the stack size.
+  \item[h] The initial size of the heap (in words).
   \end{options}
-  For example, under "csh" the command
+  The number in options "s", "i", "l", and "h" may be followed by "k", "M",
+  or "G", for multiplication by $10^{10}$, $10^{20}$, and $10^{30}$
+  respectively.
+  For example, on a 32-bit machine, under "bash" the command
 \begin{alltt}
-        setenv CAMLRUNPARAM 's=250000 v=1'
+        export CAMLRUNPARAM='s=256k,v=1'
 \end{alltt}
   tells a subsequent "ocamlrun" to set its initial minor heap size to
-  about 1~megabyte (on a 32-bit machine) and to print its GC messages.
+  1~megabyte and to print its GC messages.
 
 \item["PATH"] List of directories searched to find the bytecode
 executable file.
