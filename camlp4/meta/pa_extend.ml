@@ -399,22 +399,21 @@ value rec make_expr gmod tvar =
                     ($n.expr$ : $uid:gmod$.Entry.e '$n.tvar$)) >> ]
   | TXopt loc t -> <:expr< Gramext.Sopt $make_expr gmod "" t$ >>
   | TXrules loc rl ->
-      let e =
-        List.fold_left
-          (fun txt (sl, ac) ->
-             let sl =
-               List.fold_right
-                 (fun t txt ->
-                    let x = make_expr gmod "" t in
-                    <:expr< [$x$ :: $txt$] >>)
-                 sl <:expr< [] >>
-             in
-             <:expr< [($sl$, $ac$) :: $txt$] >>)
-          <:expr< [] >> rl
-      in
-      <:expr< Gramext.srules $e$ >>
+      <:expr< Gramext.srules $make_expr_rules loc gmod rl ""$ >>
   | TXself loc -> <:expr< Gramext.Sself >>
   | TXtok loc s e -> <:expr< Gramext.Stoken ($str:s$, $e$) >> ]
+and make_expr_rules loc gmod rl tvar =
+  List.fold_left
+    (fun txt (sl, ac) ->
+       let sl =
+         List.fold_right
+           (fun t txt ->
+              let x = make_expr gmod tvar t in
+              <:expr< [$x$ :: $txt$] >>)
+           sl <:expr< [] >>
+       in
+       <:expr< [($sl$, $ac$) :: $txt$] >>)
+    <:expr< [] >> rl
 ;
 
 value text_of_action loc psl rtvar act tvar =
@@ -449,32 +448,13 @@ value text_of_action loc psl rtvar act tvar =
   <:expr< Gramext.action $txt$ >>
 ;
 
-value text_of_psymbol_list loc gmod psl tvar =
-  List.fold_right
-    (fun ps txt ->
-       let x = make_expr gmod tvar ps.symbol.text in <:expr< [$x$ :: $txt$] >>)
-    psl <:expr< [] >>
-;
-
-value text_of_rule_list loc gmod rtvar rl tvar =
-  List.fold_left
-    (fun txt r ->
-       let sl = text_of_psymbol_list loc gmod r.prod tvar in
-       let ac = text_of_action loc r.prod rtvar r.action tvar in
-       <:expr< [($sl$, $ac$) :: $txt$] >>)
-    <:expr< [] >> rl
-;
-
-value srules loc t rl =
-  let v =
-    List.map
-      (fun r ->
-         let sl = List.map (fun ps -> ps.symbol.text) r.prod in
-         let ac = text_of_action loc r.prod t r.action "" in
-         (sl, ac))
-      rl
-  in
-  TXrules loc v
+value srules loc t rl tvar =
+  List.map
+    (fun r ->
+       let sl = List.map (fun ps -> ps.symbol.text) r.prod in
+       let ac = text_of_action loc r.prod t r.action tvar in
+       (sl, ac))
+    rl
 ;
 
 value expr_of_delete_rule loc gmod n sl =
@@ -546,7 +526,7 @@ value ssopt loc symb =
               let action = Some <:expr< Str x >> in
               {prod = [psymbol]; action = action}
             in
-            let text = srules loc "ast" [rule] in
+            let text = TXrules loc (srules loc "ast" [rule] "") in
             let styp = STlid loc "ast" in
             {used = []; text = text; styp = styp}
         | _ -> symb ]
@@ -564,7 +544,7 @@ value ssopt loc symb =
     in
     [r1; r2]
   in
-  srules loc "anti" rl
+  TXrules loc (srules loc "anti" rl "")
 ;
 
 value sslist_aux loc min sep s =
@@ -595,7 +575,7 @@ value sslist_aux loc min sep s =
     in
     [r1; r2]
   in
-  srules loc "anti" rl
+  TXrules loc (srules loc "anti" rl "")
 ;
 
 value sslist loc min sep s =
@@ -660,10 +640,9 @@ value text_of_entry loc gmod gl e =
            | None -> <:expr< None >> ]
          in
          let txt =
-           let rl =
-             text_of_rule_list loc gmod e.name.tvar level.rules e.name.tvar
-           in
-           <:expr< [($lab$, $ass$, $rl$) :: $txt$] >>
+           let rl = srules loc e.name.tvar level.rules e.name.tvar in
+           let e = make_expr_rules loc gmod rl e.name.tvar in
+           <:expr< [($lab$, $ass$, $e$) :: $txt$] >>
          in
          txt)
       levels <:expr< [] >>
@@ -885,7 +864,8 @@ EXTEND
       | "["; rl = LIST0 rule SEP "|"; "]" ->
           let rl = retype_rule_list_without_patterns loc rl in
           let t = new_type_var () in
-          {used = used_of_rule_list rl; text = srules loc t rl;
+          {used = used_of_rule_list rl;
+           text = TXrules loc (srules loc t rl "");
            styp = STquo loc t}
       | x = UIDENT ->
           let text =

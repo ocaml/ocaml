@@ -857,30 +857,11 @@ let rec make_expr gmod tvar =
            (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sopt")),
          make_expr gmod "" t)
   | TXrules (loc, rl) ->
-      let e =
-        List.fold_left
-          (fun txt (sl, ac) ->
-             let sl =
-               List.fold_right
-                 (fun t txt ->
-                    let x = make_expr gmod "" t in
-                    MLast.ExApp
-                      (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), x),
-                       txt))
-                 sl (MLast.ExUid (loc, "[]"))
-             in
-             MLast.ExApp
-               (loc,
-                MLast.ExApp
-                  (loc, MLast.ExUid (loc, "::"), MLast.ExTup (loc, [sl; ac])),
-                txt))
-          (MLast.ExUid (loc, "[]")) rl
-      in
       MLast.ExApp
         (loc,
          MLast.ExAcc
            (loc, MLast.ExUid (loc, "Gramext"), MLast.ExLid (loc, "srules")),
-         e)
+         make_expr_rules loc gmod rl "")
   | TXself loc ->
       MLast.ExAcc
         (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sself"))
@@ -890,6 +871,23 @@ let rec make_expr gmod tvar =
          MLast.ExAcc
            (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Stoken")),
          MLast.ExTup (loc, [MLast.ExStr (loc, s); e]))
+and make_expr_rules loc gmod rl tvar =
+  List.fold_left
+    (fun txt (sl, ac) ->
+       let sl =
+         List.fold_right
+           (fun t txt ->
+              let x = make_expr gmod tvar t in
+              MLast.ExApp
+                (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), x), txt))
+           sl (MLast.ExUid (loc, "[]"))
+       in
+       MLast.ExApp
+         (loc,
+          MLast.ExApp
+            (loc, MLast.ExUid (loc, "::"), MLast.ExTup (loc, [sl; ac])),
+          txt))
+    (MLast.ExUid (loc, "[]")) rl
 ;;
 
 let text_of_action loc psl rtvar act tvar =
@@ -940,36 +938,12 @@ let text_of_action loc psl rtvar act tvar =
      txt)
 ;;
 
-let text_of_psymbol_list loc gmod psl tvar =
-  List.fold_right
-    (fun ps txt ->
-       let x = make_expr gmod tvar ps.symbol.text in
-       MLast.ExApp (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), x), txt))
-    psl (MLast.ExUid (loc, "[]"))
-;;
-
-let text_of_rule_list loc gmod rtvar rl tvar =
-  List.fold_left
-    (fun txt r ->
-       let sl = text_of_psymbol_list loc gmod r.prod tvar in
-       let ac = text_of_action loc r.prod rtvar r.action tvar in
-       MLast.ExApp
-         (loc,
-          MLast.ExApp
-            (loc, MLast.ExUid (loc, "::"), MLast.ExTup (loc, [sl; ac])),
-          txt))
-    (MLast.ExUid (loc, "[]")) rl
-;;
-
-let srules loc t rl =
-  let v =
-    List.map
-      (fun r ->
-         let sl = List.map (fun ps -> ps.symbol.text) r.prod in
-         let ac = text_of_action loc r.prod t r.action "" in sl, ac)
-      rl
-  in
-  TXrules (loc, v)
+let srules loc t rl tvar =
+  List.map
+    (fun r ->
+       let sl = List.map (fun ps -> ps.symbol.text) r.prod in
+       let ac = text_of_action loc r.prod t r.action tvar in sl, ac)
+    rl
 ;;
 
 let expr_of_delete_rule loc gmod n sl =
@@ -1063,7 +1037,7 @@ let ssopt loc symb =
               in
               {prod = [psymbol]; action = action}
             in
-            let text = srules loc "ast" [rule] in
+            let text = TXrules (loc, srules loc "ast" [rule] "") in
             let styp = STlid (loc, "ast") in
             {used = []; text = text; styp = styp}
         | _ -> symb
@@ -1083,7 +1057,7 @@ let ssopt loc symb =
     in
     [r1; r2]
   in
-  srules loc "anti" rl
+  TXrules (loc, srules loc "anti" rl "")
 ;;
 
 let sslist_aux loc min sep s =
@@ -1116,7 +1090,7 @@ let sslist_aux loc min sep s =
     in
     [r1; r2]
   in
-  srules loc "anti" rl
+  TXrules (loc, srules loc "anti" rl "")
 ;;
 
 let sslist loc min sep s =
@@ -1194,14 +1168,13 @@ let text_of_entry loc gmod gl e =
            | None -> MLast.ExUid (loc, "None")
          in
          let txt =
-           let rl =
-             text_of_rule_list loc gmod e.name.tvar level.rules e.name.tvar
-           in
+           let rl = srules loc e.name.tvar level.rules e.name.tvar in
+           let e = make_expr_rules loc gmod rl e.name.tvar in
            MLast.ExApp
              (loc,
               MLast.ExApp
                 (loc, MLast.ExUid (loc, "::"),
-                 MLast.ExTup (loc, [lab; ass; rl])),
+                 MLast.ExTup (loc, [lab; ass; e])),
               txt)
          in
          txt)
@@ -1859,7 +1832,8 @@ Grammar.extend
         (fun _ (rl : 'rule list) _ (loc : int * int) ->
            (let rl = retype_rule_list_without_patterns loc rl in
             let t = new_type_var () in
-            {used = used_of_rule_list rl; text = srules loc t rl;
+            {used = used_of_rule_list rl;
+             text = TXrules (loc, srules loc t rl "");
              styp = STquo (loc, t)} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "NEXT")],
