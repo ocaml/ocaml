@@ -500,11 +500,11 @@ class_structure:
 ;
 class_self_pattern:
     LPAREN pattern RPAREN
-      { mkpat(Ppat_alias($2, "*self_pat*")) }
+      { $2 }
   | LPAREN pattern COLON core_type RPAREN
-      { mkpat(Ppat_alias(mkpat(Ppat_constraint($2, $4)), "*self_pat*")) }
+      { mkpat(Ppat_constraint($2, $4)) }
   | /* empty */
-      { mkpat(Ppat_var "*self_pat*") }
+      { mkpat(Ppat_any) }
 ;
 class_fields:
     /* empty */
@@ -525,7 +525,7 @@ class_fields:
         Pcf_let ($3, List.rev bindings, loc) :: $1 }
 */
   | class_fields INITIALIZER seq_expr
-      { Pcf_init (mkexp(Pexp_function[mkpat(Ppat_var "*self*"), $3])) :: $1 }
+      { Pcf_init $3 :: $1 }
 ;
 /*
 class_let_bindings: let_bindings
@@ -553,8 +553,7 @@ virtual_method:
 ;
 concrete_method :
     METHOD private_flag label fun_binding
-      { $3, $2, mkexp(Pexp_function[mkpat(Ppat_var "*self*"), $4]),
-        symbol_loc () }
+      { $3, $2, $4, symbol_loc () }
 ;
 
 /* Class types */

@@ -214,7 +214,7 @@ let type_pattern_list env spatl =
   let new_env = add_pattern_variables env in
   (patl, new_env)
 
-let type_class_arg_pattern val_env met_env spat =
+let type_class_arg_pattern cl_num val_env met_env spat =
   pattern_variables := [];
   let pat = type_pat val_env spat in
   let (pv, met_env) =
@@ -222,14 +222,20 @@ let type_class_arg_pattern val_env met_env spat =
       (fun (id, ty) (pv, env) ->
          let id' = Ident.create (Ident.name id) in
          ((id', id, ty)::pv,
-          Env.add_value id' {val_type = ty; val_kind = Val_ivar Immutable}
+          Env.add_value id' {val_type = ty;
+                             val_kind = Val_ivar (Immutable, cl_num)}
             env))
       !pattern_variables ([], met_env)
   in
   let val_env = add_pattern_variables val_env in
   (pat, pv, val_env, met_env)
 
-let type_self_pattern val_env met_env par_env spat =
+let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
+let type_self_pattern cl_num val_env met_env par_env spat =
+  let spat = 
+    mkpat (Ppat_alias (mkpat(Ppat_alias (spat, "selfpat-*")),
+                       "selfpat-" ^ cl_num))
+  in
   pattern_variables := [];
   let pat = type_pat val_env spat in
   let meths = ref Meths.empty in
@@ -240,7 +246,8 @@ let type_self_pattern val_env met_env par_env spat =
     List.fold_right
       (fun (id, ty) (val_env, met_env, par_env) ->
          (Env.add_value id {val_type = ty; val_kind = Val_unbound} val_env,
-          Env.add_value id {val_type = ty; val_kind = Val_self (meths, vars)}
+          Env.add_value id {val_type = ty;
+                            val_kind = Val_self (meths, vars, cl_num)}
             met_env,
           Env.add_value id {val_type = ty; val_kind = Val_unbound} par_env))
       pv (val_env, met_env, par_env)
@@ -351,14 +358,14 @@ let rec type_exp env sexp =
         let (path, desc) = Env.lookup_value lid env in
         { exp_desc =
             begin match desc.val_kind with
-              Val_ivar _ ->
+              Val_ivar (_, cl_num) ->
                 let (self_path, _) =
-                  Env.lookup_value (Longident.Lident "*self*") env
+                  Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
                 in
                 Texp_instvar(self_path, path)
-            | Val_self _ ->
+            | Val_self (_, _, cl_num) ->
                 let (path, _) =
-                  Env.lookup_value (Longident.Lident "*self*") env
+                  Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
                 in
                 Texp_ident(path, desc)
             | Val_unbound ->
@@ -624,22 +631,22 @@ let rec type_exp env sexp =
       begin try
         let (exp, typ) =
           match obj.exp_desc with
-            Texp_ident(path, {val_kind = Val_self (meths, _)}) ->
+            Texp_ident(path, {val_kind = Val_self (meths, _, _)}) ->
               let (id, typ) =
                 filter_self_method env met Private meths obj.exp_type
               in
               (Texp_send(obj, Tmeth_val id), typ)
-          | Texp_ident(path, {val_kind = Val_anc methods}) ->
+          | Texp_ident(path, {val_kind = Val_anc (methods, cl_num)}) ->
               let method_id =
                 begin try List.assoc met methods with Not_found ->
                   raise(Error(e.pexp_loc, Undefined_inherited_method met))
                 end
               in
               begin match
-                Env.lookup_value (Longident.Lident "*self_pat*") env,
-                Env.lookup_value (Longident.Lident "*self*") env
+                Env.lookup_value (Longident.Lident ("selfpat-" ^ cl_num)) env,
+                Env.lookup_value (Longident.Lident ("self-" ^cl_num)) env
               with
-                (_, ({val_kind = Val_self (meths, _)} as desc)),
+                (_, ({val_kind = Val_self (meths, _, _)} as desc)),
                 (path, _) ->
                   let (_, typ) =
                     filter_self_method env met Private meths obj.exp_type
@@ -691,10 +698,10 @@ let rec type_exp env sexp =
       begin try
         let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
         match desc.val_kind with
-          Val_ivar Mutable ->
+          Val_ivar (Mutable, cl_num) ->
             let newval = type_expect env snewval desc.val_type in
             let (path_self, _) =
-              Env.lookup_value (Longident.Lident "*self*") env
+              Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
             in
             { exp_desc = Texp_setinstvar(path_self, path, newval);
               exp_loc = sexp.pexp_loc;
@@ -720,12 +727,12 @@ let rec type_exp env sexp =
         [] in
       begin match
         try
-          Env.lookup_value (Longident.Lident "*self_pat*") env,
-          Env.lookup_value (Longident.Lident "*self*") env
+          Env.lookup_value (Longident.Lident "selfpat-*") env,
+          Env.lookup_value (Longident.Lident "self-*") env
         with Not_found ->
           raise(Error(sexp.pexp_loc, Outside_class))
       with
-        (_, {val_type = self_ty; val_kind = Val_self (_, vars)}),
+        (_, {val_type = self_ty; val_kind = Val_self (_, vars, _)}),
         (path_self, _) ->
           let type_override (lab, snewval) =
             begin try

@@ -172,9 +172,9 @@ let enter_met_env lab kind ty val_env met_env par_env =
    Env.add_value id {val_type = ty; val_kind = Val_unbound} par_env)
 
 (* Enter an instance variable in the environment *)
-let enter_val vars lab mut ty val_env met_env par_env =
+let enter_val cl_num vars lab mut ty val_env met_env par_env =
   let (id, val_env, met_env, par_env) as result =
-    enter_met_env lab (Val_ivar mut) ty val_env met_env par_env
+    enter_met_env lab (Val_ivar (mut, cl_num)) ty val_env met_env par_env
   in
   vars := Vars.add lab (id, mut, ty) !vars;
   result
@@ -221,6 +221,14 @@ let type_constraint val_env sty sty' loc =
   let ty' = transl_simple_type val_env false sty' in
   try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
     raise(Error(loc, Unconsistent_constraint trace))
+
+let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
+let make_method cl_num expr =
+  { pexp_desc =
+      Pexp_function [mkpat (Ppat_alias (mkpat(Ppat_var "self-*"),
+                                        "self-" ^ cl_num)),
+                     expr];
+    pexp_loc = Location.none }
 
 (*******************************)
 
@@ -324,11 +332,11 @@ and class_type env scty =
 
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 
-let rec class_field self_type meths vars
+let rec class_field cl_num self_type meths vars
     (val_env, met_env, par_env, fields, concr_meths, inh_vals) =
   function
     Pcf_inher (sparent, super) ->
-      let parent = class_expr val_env par_env sparent in
+      let parent = class_expr cl_num val_env par_env sparent in
       let (cl_sig, concr_meths) =
         inheritance true self_type val_env concr_meths sparent.pcl_loc
           parent.cl_type
@@ -338,7 +346,7 @@ let rec class_field self_type meths vars
         Vars.fold
           (fun lab (mut, ty) (val_env, met_env, par_env, inh_vars, inh_vals) ->
              let (id, val_env, met_env, par_env) =
-               enter_val vars lab mut ty val_env met_env par_env
+               enter_val cl_num vars lab mut ty val_env met_env par_env
              in
              if StringSet.mem lab inh_vals then
                Location.print_warning sparent.pcl_loc
@@ -359,7 +367,7 @@ let rec class_field self_type meths vars
             (val_env, met_env, par_env)
         | Some name ->
             let (id, val_env, met_env, par_env) =
-              enter_met_env name (Val_anc inh_meths) self_type
+              enter_met_env name (Val_anc (inh_meths, cl_num)) self_type
                 val_env met_env par_env
             in
             (val_env, met_env, par_env)
@@ -373,7 +381,7 @@ let rec class_field self_type meths vars
         Location.print_warning loc (Warnings.Hide_instance_variable lab);
       let exp = type_exp val_env sexp in
       let (id, val_env, met_env, par_env) =
-        enter_val vars lab mut exp.exp_type val_env met_env par_env
+        enter_val cl_num vars lab mut exp.exp_type val_env met_env par_env
       in
       (val_env, met_env, par_env, Cf_val (lab, id, exp) :: fields,
        concr_meths, inh_vals)
@@ -383,6 +391,7 @@ let rec class_field self_type meths vars
       (val_env, met_env, par_env, fields, concr_meths, inh_vals)
 
   | Pcf_meth (lab, priv, expr, loc)  ->
+      let expr = make_method cl_num expr in
       Ctype.raise_nongen_level ();
       let (_, ty) =
         Ctype.filter_self_method val_env lab priv meths self_type
@@ -416,7 +425,8 @@ let rec class_field self_type meths vars
                   pexp_loc = Location.none}
              in
              let desc =
-               {val_type = expr.exp_type; val_kind = Val_ivar Immutable}
+               {val_type = expr.exp_type;
+                val_kind = Val_ivar (Immutable, cl_num)}
              in
              let id' = Ident.create (Ident.name id) in
              ((id', expr)
@@ -430,6 +440,7 @@ let rec class_field self_type meths vars
        concr_meths, inh_vals)
 
   | Pcf_init expr ->
+      let expr = make_method cl_num expr in
       Ctype.raise_nongen_level ();
       let meth_type = Ctype.newvar () in
       let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type in
@@ -439,13 +450,13 @@ let rec class_field self_type meths vars
       Ctype.end_def ();
       (val_env, met_env, par_env, Cf_init texp::fields, concr_meths, inh_vals)
 
-and class_structure val_env met_env (spat, str) =
+and class_structure cl_num val_env met_env (spat, str) =
   (* Environment for substructures *)
   let par_env = met_env in
 
   (* Self binder *)
   let (pat, meths, vars, val_env, meth_env, par_env) =
-    type_self_pattern val_env met_env par_env spat
+    type_self_pattern cl_num val_env met_env par_env spat
   in
   let self_type = pat.pat_type in
 
@@ -460,7 +471,7 @@ and class_structure val_env met_env (spat, str) =
 
   (* Class fields *)
   let (_, _, _, fields, concr_meths, _) =
-    List.fold_left (class_field self_type meths vars)
+    List.fold_left (class_field cl_num self_type meths vars)
       (val_env, meth_env, par_env, [], Concr.empty, StringSet.empty)
       str
   in
@@ -472,7 +483,7 @@ and class_structure val_env met_env (spat, str) =
    cty_vars = Vars.map (function (id, mut, ty) -> (mut, ty)) !vars;
    cty_concr = concr_meths }
 
-and class_expr val_env met_env scl =
+and class_expr cl_num val_env met_env scl =
   match scl.pcl_desc with
     Pcl_constr (lid, styl) ->
       let (path, decl) =
@@ -506,13 +517,13 @@ and class_expr val_env met_env scl =
        cl_loc = scl.pcl_loc;
        cl_type = clty'}
   | Pcl_structure cl_str ->
-      let (desc, ty) = class_structure val_env met_env cl_str in
+      let (desc, ty) = class_structure cl_num val_env met_env cl_str in
       {cl_desc = Tclass_structure desc;
        cl_loc = scl.pcl_loc;
        cl_type = Tcty_signature ty}
   | Pcl_fun (spat, scl') ->
       let (pat, pv, val_env, met_env) =
-        Typecore.type_class_arg_pattern val_env met_env spat
+        Typecore.type_class_arg_pattern cl_num val_env met_env spat
       in
       let pv =
         List.map
@@ -530,13 +541,13 @@ and class_expr val_env met_env scl =
                exp_type = Ctype.none;
                exp_env = Env.empty }];
       Ctype.raise_nongen_level ();
-      let cl = class_expr val_env met_env scl' in
+      let cl = class_expr cl_num val_env met_env scl' in
       Ctype.end_def ();
       {cl_desc = Tclass_fun (pat, pv, cl);
        cl_loc = scl.pcl_loc;
        cl_type = Tcty_fun (pat.pat_type, cl.cl_type)}
   | Pcl_apply (scl', sargs) ->
-      let cl = class_expr val_env met_env scl' in
+      let cl = class_expr cl_num val_env met_env scl' in
       let rec type_args ty_fun =
         function
           [] ->
@@ -574,7 +585,8 @@ and class_expr val_env met_env scl =
              Ctype.end_def ();
              Ctype.generalize expr.exp_type;
              let desc =
-               {val_type = expr.exp_type; val_kind = Val_ivar Immutable}
+               {val_type = expr.exp_type; val_kind = Val_ivar (Immutable,
+                                                               cl_num)}
              in
              let id' = Ident.create (Ident.name id) in
              ((id', expr)
@@ -583,14 +595,14 @@ and class_expr val_env met_env scl =
           (let_bound_idents defs)
           ([], met_env)
       in
-      let cl = class_expr val_env met_env scl' in
+      let cl = class_expr cl_num val_env met_env scl' in
       {cl_desc = Tclass_let (rec_flag, defs, vals, cl);
        cl_loc = scl.pcl_loc;
        cl_type = cl.cl_type}
   | Pcl_constraint (scl', scty) ->
       Ctype.begin_class_def ();
       Typetexp.narrow ();
-      let cl = class_expr val_env met_env scl' in
+      let cl = class_expr cl_num val_env met_env scl' in
       Typetexp.widen ();
       Typetexp.narrow ();
       let clty = class_type val_env scty in
@@ -902,8 +914,10 @@ let type_classes define_class kind env cls =
   in
   (List.rev res, env)
 
+let class_num = ref 0
 let class_declaration env sexpr =
-  let expr = class_expr env env sexpr in
+  incr class_num;
+  let expr = class_expr (string_of_int !class_num) env env sexpr in
   (expr, expr.cl_type)
 
 let class_description env sexpr =
