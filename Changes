@@ -1,5 +1,5 @@
-Objective Caml 3.03 ALPHA:
---------------------------
+Objective Caml 3.03:
+--------------------
 
 Language:
 - Removed built-in syntactic sugar for streams and stream patterns
@@ -63,9 +63,17 @@ Run-time system:
   runs much faster when there are many global C roots.
 - Autoconfiguration script: fixed wrong detection of Mac OS X; problem
   with the Sparc, gcc 3.0, and float alignment fixed.
+- On uncaught exception, flush output channels before printing exception
+  message and backtrace.
 
 Standard library:
 - Added Pervasives.flush_all to flush all opened output channels.
+- printf functions in Printf and Format: added % formats for int32, nativeint,
+  int64; "*" in width and precision specifications now supported 
+  (contributed by Thorsten Ohl).
+- Added Hashtbl.copy, Stack.copy.
+- Hashtbl: revised resizing strategy to avoid quadratic behavior 
+  on Hashtbl.add.
 
 Other libraries:
 - All libraries revised to allow dynamic loading of the C part.
