@@ -11,15 +11,16 @@
 
 /* $Id$ */
 
+#include <stdlib.h>
+#include <string.h>
+
 #include <memory.h>
 #include <mlvalues.h>
 #include <str.h>
+
 #include "unixsupport.h"
 
 #ifdef HAS_PUTENV
-
-#include <stdlib.h>
-#include <string.h>
 
 value unix_putenv(value name, value val) /* ML */
 {
