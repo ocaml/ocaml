@@ -52,12 +52,8 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
    - [c]: reads a single character.
    - [C]: reads a single delimited character (delimitors and special
      escaped characters follow the lexical conventions of Objective Caml).
-   - [f]: reads a floating-point number in decimal notation,
-     in the style [dddd.ddd].
-   - [e] or [E]: reads a floating-point argument in decimal notation,
-     in the style [d.ddd e+-dd] (mantissa and exponent).
-   - [g] or [G]: reads a floating-point argument in decimal notation,
-     in style [f] or [e], [E].
+   - [f], [e], [E], [g], [G]: reads an optionally signed floating-point number
+     in decimal notation, in the style [dddd.ddd e/E+-dd].
    - [b]: reads a boolean argument ([true] or [false]).
    - [ld], [li], [lu], [lx], [lX], [lo]: reads an [int32] argument to
      the format specified by the second letter (decimal, hexadecimal, etc).
