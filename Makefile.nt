@@ -196,7 +196,8 @@ installbyt:
 	cd tools & $(MAKEREC) install
 	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) install & cd ..\..)
 	cd wingui & $(MAKE) -nologo install
-	copy /a README.win32 $(DISTRIB)\Readme.txt
+	copy /a README $(DISTRIB)\Readme.gen
+	copy /a README.win32 $(DISTRIB)\Readme.win
 	copy /a LICENSE $(DISTRIB)\License.txt
 	copy /a Changes $(DISTRIB)\Changes.txt
 

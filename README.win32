@@ -16,6 +16,9 @@ Microsoft Visual C++ compiler.
 The native-code compiler (ocamlopt) requires Visual C++ and the
 Microsoft assembler MASM version 6.
 
+The CamlTk GUI requires Tcl 7.6 and Tk 4.2.  Windows binaries are
+available from ftp://ftp.sunlabs.com/pub/tcl/win76p2.exe.
+
 
 INSTALLATION:
 
@@ -36,10 +39,9 @@ directories and files:
 
 Installing the toplevel application:
 
-  Copy the file ocaml\ocamlwin.ini to the Windows system directory
-  (e.g. C:\windows). This file assumes that the Caml distribution
-  resides in C:\ocaml. If this is not the case, edit the file ocamlwin.ini
-  and change the line that says
+  The file ocaml\ocamlwin.ini assumes that the Caml distribution
+  resides in C:\ocaml. If this is not the case, edit the file
+  ocaml\ocamlwin.ini and change the line that says
 
           CmdLine=ocamlrun c:\ocaml\bin\ocaml.exe -I c:\ocaml\lib
   to
@@ -89,9 +91,8 @@ Win32 is sufficiently complete, robust and stable to compile Objective
 Caml.
 
 * Libraries available under Win32: "num", "str", "threads", "graph",
-and large parts of "unix". 
+"camltk41", and large parts of "unix". 
 "graph" works only under the toplevel application.
-"camltk4" still requires some work to run under Win32.
 
 
 CREDITS:

@@ -22,26 +22,52 @@ cc=''
 cclibs=''
 x11_include_dir=''
 x11_lib_dir=''
+posix_threads=no
 
 # Parse command-line arguments
 
 while : ; do
   case "$1" in
     "") break;;
-    -bindir|--bindir) bindir=$2;;
-    -libdir|--libdir) libdir=$2;;
-    -mandir|--mandir) mandir=$2
-                      manext=`echo $mandir | sed -e 's/^.*\(.\)$/\1/'`;;
-    -host*|--host*) host_type=$2;;
-    -cc*) cc="$2";;
-    -lib*) cclibs="$2 ";;
-    -x11include*|--x11include*) x11_include_dir=$2;;
-    -x11lib*|--x11lib*) x11_lib_dir=$2;;
+    -bindir|--bindir)
+        bindir=$2; shift;;
+    -libdir|--libdir)
+        libdir=$2; shift;;
+    -mandir|--mandir)
+        mandir=$2
+        manext=`echo $mandir | sed -e 's/^.*\(.\)$/\1/'`
+        shift;;
+    -host*|--host*)
+        host_type=$2; shift;;
+    -cc*)
+        cc="$2"; shift;;
+    -lib*)
+        cclibs="$2 "; shift;;
+    -x11include*|--x11include*)
+        x11_include_dir=$2; shift;;
+    -x11lib*|--x11lib*)
+        x11_lib_dir=$2; shift;;
+    -with-pthread|--with-pthread)
+        posix_threads=yes;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
-  shift
 done
+
+# Sanity checks
+
+case "$bindir" in
+  /*) ;;
+   *) echo "The -bindir directory must be absolute." 1>&2; exit 2;;
+esac
+case "$libdir" in
+  /*) ;;
+   *) echo "The -libdir directory must be absolute." 1>&2; exit 2;;
+esac
+case "$mandir" in
+  /*) ;;
+   *) echo "The -mandir directory must be absolute." 1>&2; exit 2;;
+esac
 
 # Generate the files
 
@@ -574,7 +600,10 @@ echo "BIGNUM_ARCH=$bignum_arch" >> Makefile
 
 # Determine if the threads library is supported
 
-if test "$has_select" = "yes" \
+if test "$posix_threads" = "yes"; then
+  echo "Threads library supported (using POSIX system threads)."
+  otherlibraries="$otherlibraries systhreads"
+elif test "$has_select" = "yes" \
 && test "$has_setitimer" = "yes" \
 && test "$has_gettimeofday" = "yes" \
 && test "$has_wait" = "yes"; then

@@ -1,10 +1,13 @@
+            Installing Objective Caml on a Unix machine
+            -------------------------------------------
+
 PREREQUISITES
 
 * The GNU C compiler gcc is recommended, as the bytecode
   interpreter takes advantage of gcc-specific features to enhance
   performance. Versions 2.5.8, 2.6.3, 2.7.0, 2.7.2 and 2.7.2.2 have
   all been tested at some point and appear to work.
-  2.7.2.1 has known problems, at least under Linux; use some other version.
+  2.7.2.1 for Intel under Linux has known problems; use some other version.
 
 * Under HP/UX, gcc, the GNU binutils, and GNU make are all required.
   The native cc, as, and make have major problems.
@@ -30,7 +33,7 @@ The "configure" script accepts the following options:
 -mandir <dir>                   (default: /usr/local/man/man1)
         Directory where the manual pages will be installed
 
--cc <C compiler and options>    (default: gcc or cc, depending on availability)
+-cc <C compiler and options>    (default: gcc if available, cc otherwise)
         C compiler to use for building the system
 
 -libs <extra libraries>         (default: none)
@@ -47,6 +50,18 @@ The "configure" script accepts the following options:
 -x11lib     <lib_dir>           (default: determined automatically)
         Location of the X11 include directory (e.g. /usr/X11R6/include)
         and the X11 library directory (e.g. /usr/X11R6/lib).
+
+-with-pthread
+        Use POSIX threads for the OCaml thread library instead of
+        the default bytecode-level threading.  POSIX threads
+        support threading with native-code programs (ocamlopt)
+        as well as bytecode (ocamlc), and also allow more flexibility
+        in interfacing with C.  However, you need a strictly
+        conformant POSIX 1003.1c implementation on your system.
+        As a rule of thumb, this option works under Solaris 2.5 and later,
+        Digital Unix 4.0, and Linux with the LinuxThreads library.
+        It will *not* work under Digital Unix 3.2 or earlier, HPUX,
+        AIX, nor Linux without LinuxThreads.
 
 Examples:
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
@@ -112,7 +127,7 @@ following commands (in the binary directory selected during autoconfiguration):
         ocamlmktop       a tool to make toplevel systems that integrate
                          user-defined C primitives and Caml code
         ocamldebug       the source-level replay debugger
-        ocamldep         output "make" dependencies for Caml sources
+        ocamldep         generator of "make" dependencies for Caml sources
         ocamlprof        execution count profiler
         ocamlcp          the bytecode compiler in profiling mode
 
@@ -171,10 +186,10 @@ all versions of make. Use GNU make if this is a problem.
 won't work if /bin/csh is called instead. You may have to unset the SHELL
 environment variable, or set it to /bin/sh.
 
-* gcc 2.7.2.1 generates incorrect code for the runtime system in -O mode,
-at least on some Intel x86 platforms (e.g. Linux RedHat 4.1).
+* gcc 2.7.2.1 generates incorrect code for the runtime system in -O mode
+on some Intel x86 platforms (e.g. Linux RedHat 4.1 and 4.2).
 If this causes a problem, the solution is to downgrade to 2.7.2, or
-upgrade to 2.7.2.2; both work all right.
+upgrade to 2.7.2.2 or above; both work all right.
 
 * gcc 2.6.0 has been reported to generate incorrect code for the
 runtime system in -O mode. Upgrade to a newer version.
