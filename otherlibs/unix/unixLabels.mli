@@ -156,19 +156,22 @@ type wait_flag =
 (** Flags for {!UnixLabels.waitpid}. *)
 
 
-val execv : prog:string -> args:string array -> unit
+val execv : prog:string -> args:string array -> 'a
 (** [execv prog args] execute the program in file [prog], with
-   the arguments [args], and the current process environment. *)
+   the arguments [args], and the current process environment. 
+   These [execv*] functions never return: on success, the current 
+   program is replaced by the new one; 
+   on failure, a {!UnixLabels.Unix_error} exception is raised. *)
 
-val execve : prog:string -> args:string array -> env:string array -> unit
+val execve : prog:string -> args:string array -> env:string array -> 'a
 (** Same as {!UnixLabels.execv}, except that the third argument provides the
    environment to the program executed. *)
 
-val execvp : prog:string -> args:string array -> unit
+val execvp : prog:string -> args:string array -> 'a
 (** Same as {!UnixLabels.execv} respectively, except that
    the program is searched in the path. *)
 
-val execvpe : prog:string -> args:string array -> env:string array -> unit
+val execvpe : prog:string -> args:string array -> env:string array -> 'a
 (** Same as {!UnixLabels.execvp} respectively, except that
    the program is searched in the path. *)
 
