@@ -109,7 +109,8 @@ CAMLprim value setsockopt_int(int *sockopt, value socket, int level,
 }
 
 CAMLprim value unix_getsockopt_bool(value socket, value option) {
-  return getsockopt_int(sockopt_bool, socket, SOL_SOCKET, option);
+  value res = getsockopt_int(sockopt_bool, socket, SOL_SOCKET, option);
+  return Val_bool(Int_val(res));
 }
 
 CAMLprim value unix_setsockopt_bool(value socket, value option, value status)
