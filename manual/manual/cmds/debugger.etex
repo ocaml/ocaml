@@ -4,7 +4,7 @@
 This chapter describes the Objective Caml source-level replay debugger
 "ocamldebug".
 
-\begin{unix} The debugger is available on Unix systems that provides
+\begin{unix} The debugger is available on Unix systems that provide
 BSD sockets.
 \end{unix}
 
