@@ -44,7 +44,7 @@ val from_function : (unit -> char) -> scanbuf;;
 
 end;;
 
-exception Scan_failure of string;;
+exception Scan_failure of Scanning.scanbuf * string;;
 (** The exception that formatted input functions raise when the input
    cannot be read according to the given format. *)
 
@@ -129,3 +129,6 @@ val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 
 val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.bscanf}, but inputs from [stdin]. *)
+
+val kscanf : Scanning.scanbuf -> ('a, 'b, 'c) format ->
+  'a -> (Scanning.scanbuf -> string -> 'c) -> 'c;;
