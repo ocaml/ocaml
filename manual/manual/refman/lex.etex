@@ -136,8 +136,8 @@ string literals.
 \subsubsection*{Labels}
 
 \begin{syntax}
-label: ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" } ":" ;
-labelid: ":" ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" }
+label : ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" } ":" ;
+labelid : ":" ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" }
 \end{syntax}
 
 Labels can be used to differentiate arguments in function definition

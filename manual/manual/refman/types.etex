@@ -8,7 +8,7 @@ typexpr:
         "'" ident
       | "_" 
       | '(' typexpr ')'
-      | typexpr '->' typexpr
+      | [[?]label] typexpr '->' typexpr
       | typexpr {{ '*' typexpr }}
       | typeconstr
       | typexpr typeconstr
@@ -20,9 +20,15 @@ typexpr:
       | '#' class-path
       | typexpr '#' class-path
       | '(' typexpr { ',' typexpr } ) '#' class-path
+      | '#' typeconstr-path [ tag-list ]
+      | typexpr '#' typeconstr-path [ tag-list ]
+      | '(' typexpr { ',' typexpr } ) '#' typeconstr-path [ tag-list ]
 ;
 method-type:
     method-name ':' typexpr
+;
+tag-list:
+    '[>' {{'`'tag-name}} ']' ]
 \end{syntax}
 
 The table below shows the relative precedences and associativity of
@@ -59,6 +65,13 @@ The type expression @typexpr_1 '->' typexpr_2@ denotes the type of
 functions mapping arguments of type @typexpr_1@ to results of type
 @typexpr_2@.
 
+@label typexpr_1 '->' typexpr_2@ denotes the same function type, but
+the argument is labeled @label@.
+
+@'?'label typexpr_1 '->' typexpr_2@ denotes the type of functions
+mapping an optional labeled argument of type @typexpr_1@ to results of
+type @typexpr_2@.
+
 \subsubsection*{Tuple types}
 
 The type expression @typexpr_1 '*' \ldots '*' typexpr_n@
@@ -94,15 +107,15 @@ an object type constructor are rejected.
 
 \begin{syntax}
 variant-type:
-        [ tag-desc { '|' tag-desc } ]
-      | '>' tag-desc { '|' tag-desc }
+        [ tag-spec { '|' tag-spec } ]
+      | '>' tag-spec { '|' tag-spec }
       | '<' '..'
-      | '<' tag-desc-full { '|' tag-desc-full } ['|' '..'] [ '>' {{ '`'tag-name }} ]
+      | '<' tag-spec-full { '|' tag-spec-full } ['|' '..'] [ '>' {{ '`'tag-name }} ]
 ;
-tag-desc:
+tag-spec:
         '`'tag-name [ typexpr ]
 ;
-tag-desc-full:
+tag-spec-full:
         '`'tag-name [ typexpr ] { '&' typexpr }
 \end{syntax}
 
@@ -126,6 +139,16 @@ all the possible tags and their associated types, whether more tags
 are allowed or not (with the ellipsis '..'), and which tags are known
 to potentially appear in values.
 
+Full specification of variant tags are only used in this last
+form. They can be understood as a conjunctive type for the argument:
+it is intended to have all the types enumerated in the
+specification. If the first ampersand "&" appears just after the tag
+name, or no type at all is given, then no argument is allowed.
+
+Such conjunctive constraints may be unsatisfiable. In such a case the
+corresponding tag may not be used in a value of this type. This
+does not mean that the whole type is not valid: one can still use
+other available tags.
 
 \subsubsection*{Object types}
 
@@ -156,8 +179,11 @@ type @'#' class-path '->' '#' class-path@ is usually not the same as
 type @'#' class-path 'as' "'" ident '->' "'" ident@.
 %
 
+\#-types can also be used to abbreviate variant types.
+
 \subsubsection*{Variant and record types}
 
-There are no type expressions describing variant types nor record types,
-since those are always named, i.e. defined before use and referred to
-by name.  Type definitions are described in section~\ref{s:type-defs}.
+There are no type expressions describing (defined) variant types nor
+record types, since those are always named, i.e. defined before use
+and referred to by name.  Type definitions are described in
+section~\ref{s:type-defs}.
