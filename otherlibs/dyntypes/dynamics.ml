@@ -54,6 +54,14 @@ let get_interesting_type env module_ident =
   | None -> assert false
   | Some ty -> ty
 
+let compare_types env received_type expected_type =
+  try let _ = Ctype.subtype env expected_type received_type in true
+  with Ctype.Subtype _ -> false
+(*
+let compare_types env received_type expected_type =
+  Ctype.moregeneral env true received_type expected_type
+*)
+
 let coerce_internal d expected_type_bytes =
   let (received_type_bytes, v : type_bytes * anything) = Obj.magic (d : dyn) in
   let (received_sig : type_data) =
@@ -76,7 +84,7 @@ let coerce_internal d expected_type_bytes =
   Format.pp_force_newline Format.err_formatter ();
   Format.pp_print_flush Format.err_formatter ();
   flush stderr;
-  if false
+  if compare_types env received_type expected_type
   then v
   else raise (Type_error (received_sig, expected_sig))
 
