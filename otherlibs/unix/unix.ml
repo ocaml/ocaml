@@ -263,6 +263,11 @@ external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
 external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
 external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
 
+(* FD_CLOEXEC should be supported on all Unix systems these days,
+   but just in case... *)
+let try_set_close_on_exec fd =
+  try set_close_on_exec fd; true with Invalid_argument _ -> false
+
 external mkdir : string -> file_perm -> unit = "unix_mkdir"
 external rmdir : string -> unit = "unix_rmdir"
 external chdir : string -> unit = "unix_chdir"
@@ -786,10 +791,11 @@ type popen_process =
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
 let open_proc cmd proc input output toclose =
+  let cloexec = List.for_all try_set_close_on_exec toclose in
   match fork() with
      0 -> if input <> stdin then begin dup2 input stdin; close input end;
           if output <> stdout then begin dup2 output stdout; close output end;
-          List.iter close toclose;
+          if not cloexec then List.iter close toclose;
           execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
           exit 127
   | id -> Hashtbl.add popen_processes proc id
@@ -820,11 +826,12 @@ let open_process cmd =
   (inchan, outchan)
 
 let open_proc_full cmd env proc input output error toclose =
+  let cloexec = List.for_all try_set_close_on_exec toclose in
   match fork() with
      0 -> dup2 input stdin; close input;
           dup2 output stdout; close output;
           dup2 error stderr; close error;
-          List.iter close toclose;
+          if not cloexec then List.iter close toclose;
           execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env;
           exit 127
   | id -> Hashtbl.add popen_processes proc id
@@ -883,6 +890,7 @@ let open_connection sockaddr =
     socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
   try
     connect sock sockaddr;
+    ignore(try_set_close_on_exec sock);
     (in_channel_of_descr sock, out_channel_of_descr sock)
   with exn ->
     close sock; raise exn
@@ -902,6 +910,7 @@ let establish_server server_fun sockaddr =
        leave a zombie process *)
     match fork() with
        0 -> if fork() <> 0 then exit 0; (* The son exits, the grandson works *)
+            ignore(try_set_close_on_exec s);
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
             server_fun inchan outchan;
