@@ -1,6 +1,7 @@
-Camlp4 Version 3.07 beta2
-________________________
+Camlp4 Version 3.07
+___________________
 
+- [29 Sep 03] Camlp4 code now licensed under the LGPL minus clause 6.
 - [09 Sep 03] Added tokens LABEL and OPTLABEL in plexer, and use them in
   both parsers (ocaml and revised). There was, afaik, no other way to fix
   ambiguities (bugs) in parsing labels and type constraints.
