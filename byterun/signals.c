@@ -15,7 +15,6 @@
 #include "alloc.h"
 #include "config.h"
 #include "fail.h"
-#include "interp.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
