@@ -95,21 +95,15 @@ void get_line()
     for (;;)
     {
 	line[i]  =  c;
-	if (c == '\n') { cptr = line; return; }
 	if (++i >= linesize)
 	{
 	    linesize += LINESIZE;
 	    line = REALLOC(line, linesize);
 	    if (line ==  0) no_space();
 	}
+	if (c == '\n') { line[i] = '\0'; cptr = line; return; }
 	c = getc(f);
-	if (c ==  EOF)
-	{
-	    line[i] = '\n';
-	    saw_eof = 1;
-	    cptr = line;
-	    return;
-	}
+	if (c ==  EOF) { saw_eof = 1; c = '\n'; }
     }
 }
 
@@ -1218,12 +1212,25 @@ void copy_action()
     fprintf(f, "(* Rule %d, file %s, line %d *)\n",
             nrules-2, input_file_name, lineno);
     if (sflag)
-      fprintf(f, "yyact.(%d) <- (fun parser_env -> Obj.repr((", nrules-2);
+      fprintf(f, "yyact.(%d) <- (fun parser_env ->\n", nrules-2);
     else
-      fprintf(f, "; (fun parser_env -> Obj.repr((");
+      fprintf(f, "; (fun parser_env ->\n");
 
     n = 0;
     for (i = nitems - 1; pitem[i]; --i) ++n;
+
+    for (i = 1; i <= n; i++) {
+      item = pitem[nitems + i - n - 1];
+      if (item->class == TERM && !item->tag) continue;
+      fprintf(f, "\tlet dollar__%d = ", i);
+      if (item->tag)
+        fprintf(f, "(peek_val parser_env %d : %s) in\n", n - i, item->tag);
+      else if (sflag)
+        fprintf(f, "peek_val parser_env %d in\n", n - i);
+      else
+        fprintf(f, "(peek_val parser_env %d : '%s) in\n", n - i, item->name);
+    }
+    fprintf(f, "\tObj.repr((");
 
     depth = 1;
     cptr++;
@@ -1240,17 +1247,9 @@ loop:
             if (i <= 0 || i > n)
               unknown_rhs(i);
             item = pitem[nitems + i - n - 1];
-            if (item->tag) {
-              fprintf(f, "(peek_val parser_env %d : %s)", n - i, item->tag);
-            } else {
-              if (item->class == TERM)
-                illegal_token_ref(i, item->name);
-              if (sflag)
-                fprintf(f, "(peek_val parser_env %d)", n - i);
-              else
-                fprintf(f, "(peek_val parser_env %d : '%s)",
-                        n - i, item->name);
-            }
+            if (item->class == TERM && !item->tag)
+              illegal_token_ref(i, item->name);
+            fprintf(f, "dollar__%d", i);
 	    goto loop;
 	}
     }
