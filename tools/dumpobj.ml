@@ -227,6 +227,7 @@ type shape =
   | Uint_Uint
   | Disp
   | Uint_Disp
+  | Sint_Disp
   | Getglobal
   | Getglobal_Uint
   | Setglobal
@@ -367,6 +368,16 @@ let op_shapes = [
   opOFFSETINT, Sint;
   opOFFSETREF, Sint;
   opGETMETHOD, Nothing;
+  opBEQ, Sint_Disp;
+  opBNEQ, Sint_Disp;
+  opBLTINT, Sint_Disp;
+  opBLEINT, Sint_Disp;
+  opBGTINT, Sint_Disp;
+  opBGEINT, Sint_Disp;
+  opULTINT, Nothing;
+  opUGEINT, Nothing;
+  opBULTINT, Uint_Disp;
+  opBUGEINT, Uint_Disp;
   opSTOP, Nothing;
   opEVENT, Nothing;
   opBREAK, Nothing;
@@ -392,6 +403,9 @@ let print_instr ic =
   | Disp -> let p = currpc ic in print_int (p + inputs ic)
   | Uint_Disp
      -> print_int (inputu ic); print_string ", ";
+        let p = currpc ic in print_int (p + inputs ic)
+  | Sint_Disp
+     -> print_int (inputs ic); print_string ", ";
         let p = currpc ic in print_int (p + inputs ic)
   | Getglobal -> print_getglobal_name ic
   | Getglobal_Uint
