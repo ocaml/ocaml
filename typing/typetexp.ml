@@ -171,7 +171,7 @@ let rec transl_simple_type env fixed styp =
 	    end;
 	    let tl = List.map (transl_simple_type env fixed) stl in
 	    let cstr = expand_abbrev env path tl (ref []) v.level in
-	    v.desc <- cstr.desc;
+	    v.desc <- Tlink cstr;
 	    (v, tl)
         end
       in
