@@ -22,6 +22,7 @@ external remove: string -> unit = "sys_remove"
 external getenv: string -> string = "sys_getenv"
 external command: string -> int = "sys_system_command"
 external chdir: string -> unit = "sys_chdir"
+external getcwd: unit -> string = "sys_getcwd"
 
 type signal_behavior =
     Signal_default

@@ -28,6 +28,8 @@ external command: string -> int = "sys_system_command"
         (* Execute the given shell command and return its exit code. *)
 external chdir: string -> unit = "sys_chdir"
         (* Change the current working directory of the process. *)
+external getcwd: unit -> string = "sys_getcwd"
+	(* Return the current working directory of the process. *)
 
 (*** Signal handling *)
 
