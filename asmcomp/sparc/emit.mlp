@@ -622,7 +622,7 @@ let emit_item = function
       `	.global	{emit_symbol s}\n`;
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
-      `{emit_label (lbl + 10000)}:\n`
+      `{emit_label (lbl + 100000)}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -634,7 +634,7 @@ let emit_item = function
   | Csymbol_address s ->
       `	.word	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.word	{emit_label (lbl + 10000)}\n`
+      `	.word	{emit_label (lbl + 100000)}\n`
   | Cstring s ->
       let l = String.length s in
       if l = 0 then ()

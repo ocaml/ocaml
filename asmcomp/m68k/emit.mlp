@@ -676,7 +676,7 @@ let emit_item = function
       `	.globl	{emit_symbol s}\n`;
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
-      `{emit_label (10000 + lbl)}:\n`
+      `{emit_label (100000 + lbl)}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -688,7 +688,7 @@ let emit_item = function
   | Csymbol_address s ->
       `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.long	{emit_label (10000 + lbl)}\n`
+      `	.long	{emit_label (100000 + lbl)}\n`
   | Cstring s ->
       emit_string_directive "	.ascii	" s
   | Cskip n ->

@@ -775,7 +775,7 @@ let emit_item = function
       `{emit_symbol s}:\n`;
       declare_global_data s
   | Cdefine_label lbl ->
-      `{emit_label (lbl + 10000)}:\n`
+      `{emit_label (lbl + 100000)}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -787,7 +787,7 @@ let emit_item = function
   | Csymbol_address s ->
       `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.long	{emit_label (lbl + 10000)}\n`
+      `	.long	{emit_label (lbl + 100000)}\n`
   | Cstring s ->
       emit_bytes_directive "	.byte	" s
   | Cskip n ->
