@@ -23,7 +23,13 @@ type error =
 
 exception Error of error
 
-let copy_object_file outchan name =
+let copy_compunit ic oc compunit =
+  seek_in ic compunit.cu_pos;
+  compunit.cu_pos <- pos_out oc;
+  compunit.cu_force_link <- !Clflags.link_everything;
+  copy_file_chunk ic oc compunit.cu_codesize
+
+let copy_object_file oc name =
   let file_name =
     try
       find_in_path !load_path name
@@ -33,17 +39,23 @@ let copy_object_file outchan name =
   try
     let buffer = String.create (String.length cmo_magic_number) in
     really_input ic buffer 0 (String.length cmo_magic_number);
-    if buffer <> cmo_magic_number then
-      raise(Error(Not_an_object_file file_name));
-    let compunit_pos = input_binary_int ic in
-    seek_in ic compunit_pos;
-    let compunit = (input_value ic : compilation_unit) in
-    seek_in ic compunit.cu_pos;
-    compunit.cu_pos <- pos_out outchan;
-    compunit.cu_force_link <- !Clflags.link_everything;
-    copy_file_chunk ic outchan compunit.cu_codesize;
-    close_in ic;
-    compunit
+    if buffer = cmo_magic_number then begin
+      let compunit_pos = input_binary_int ic in
+      seek_in ic compunit_pos;
+      let compunit = (input_value ic : compilation_unit) in
+      copy_compunit ic oc compunit;
+      close_in ic;
+      [compunit]
+    end else
+    if buffer = cma_magic_number then begin
+      let toc_pos = input_binary_int ic in
+      seek_in ic toc_pos;
+      let toc = (input_value ic : compilation_unit list) in
+      List.iter (copy_compunit ic oc) toc;
+      close_in ic;
+      toc
+    end else
+      raise(Error(Not_an_object_file file_name))
   with x ->
     close_in ic;
     raise x
@@ -54,7 +66,7 @@ let create_archive file_list lib_name =
     output_string outchan cma_magic_number;
     let ofs_pos_toc = pos_out outchan in
     output_binary_int outchan 0;
-    let toc = List.map (copy_object_file outchan) file_list in
+    let toc = List.flatten(List.map (copy_object_file outchan) file_list) in
     let pos_toc = pos_out outchan in
     output_value outchan toc;
     seek_out outchan ofs_pos_toc;
