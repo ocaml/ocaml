@@ -739,9 +739,10 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-    Cdefine_symbol s ->
-      add_def_symbol s ;
+    Cglobal_symbol s ->
       `	PUBLIC	{emit_symbol s}\n`;
+  | Cdefine_symbol s ->
+      add_def_symbol s ;
       `{emit_symbol s} LABEL DWORD\n`
   | Cdefine_label lbl ->
       `{emit_label (100000 + lbl)} `

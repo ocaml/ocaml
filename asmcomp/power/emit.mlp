@@ -1000,9 +1000,10 @@ let declare_global_data s =
     `	.type	{emit_symbol s}, @object\n`
 
 let emit_item = function
-    Cdefine_symbol s ->
-      `{emit_symbol s}:\n`;
+    Cglobal_symbol s ->
       declare_global_data s
+  | Cdefine_symbol s ->
+      `{emit_symbol s}:\n`;
   | Cdefine_label lbl ->
       `{emit_label (lbl + 100000)}:\n`
   | Cint8 n ->

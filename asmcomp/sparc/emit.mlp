@@ -608,8 +608,9 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-    Cdefine_symbol s ->
+    Cglobal_symbol s ->
       `	.global	{emit_symbol s}\n`;
+  | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
       `{emit_label (lbl + 100000)}:\n`

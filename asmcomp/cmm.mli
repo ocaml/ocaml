@@ -99,6 +99,7 @@ type fundecl =
 type data_item =
     Cdefine_symbol of string
   | Cdefine_label of int
+  | Cglobal_symbol of string
   | Cint8 of int
   | Cint16 of int
   | Cint32 of nativeint

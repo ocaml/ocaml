@@ -1603,6 +1603,7 @@ let compunit size ulam =
   let c2 = transl_all_functions StringSet.empty c1 in
   let c3 = emit_all_constants c2 in
   Cdata [Cint(block_header 0 size);
+         Cglobal_symbol glob;
          Cdefine_symbol glob;
          Cskip(size * size_addr)] :: c3
 
@@ -1610,6 +1611,7 @@ let compunit size ulam =
 
 let package unit_names target =
   [Cdata (Cint(block_header 0 (List.length unit_names)) ::
+          Cglobal_symbol target ::
           Cdefine_symbol target ::
           List.map (fun s -> Csymbol_address s) unit_names);
    Cfunction {fun_name = target ^ "__entry"; fun_args = [];
@@ -1756,25 +1758,29 @@ let entry_point namelist =
 let cint_zero = Cint(Nativeint.zero)
 
 let global_table namelist =
-  Cdata(Cdefine_symbol "caml_globals" ::
+  Cdata(Cglobal_symbol "caml_globals" ::
+        Cdefine_symbol "caml_globals" ::
         List.map (fun name -> Csymbol_address name) namelist @
         [cint_zero])
 
 let globals_map namelist =
-  Cdata(emit_constant "globals_map"
+  Cdata(Cglobal_symbol "globals_map" ::
+        emit_constant "globals_map"
           (Const_base (Const_string (Marshal.to_string namelist []))) [])
 
 (* Generate the master table of frame descriptors *)
 
 let frame_table namelist =
-  Cdata(Cdefine_symbol "caml_frametable" ::
+  Cdata(Cglobal_symbol "caml_frametable" ::
+        Cdefine_symbol "caml_frametable" ::
         List.map (fun name -> Csymbol_address(name ^ "__frametable")) namelist
                               @ [cint_zero])
 
 (* Generate the table of module data and code segments *)
 
 let segment_table namelist symbol begname endname =
-  Cdata(Cdefine_symbol symbol ::
+  Cdata(Cglobal_symbol symbol ::
+        Cdefine_symbol symbol ::
         List.fold_right
           (fun name lst ->
             Csymbol_address(name ^ begname) ::
@@ -1791,4 +1797,5 @@ let code_segment_table namelist =
 (* Initialize a predefined exception *)
 
 let predef_exception name =
-  Cdata(emit_constant name (Const_block(0,[Const_base(Const_string name)])) [])
+  Cdata(Cglobal_symbol name ::
+        emit_constant name (Const_block(0,[Const_base(Const_string name)])) [])

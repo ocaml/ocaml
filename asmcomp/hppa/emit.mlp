@@ -1010,15 +1010,17 @@ let fundecl fundecl =
 
 (* Emission of data *)
 
-let emit_global s =
+let declare_global s =
   define_symbol s;
   if hpux
   then `	.export	{emit_symbol s}, data\n`
   else `	.globl	{emit_symbol s}\n`
 
 let emit_item = function
-    Cdefine_symbol s ->
-      emit_global s;
+    Cglobal_symbol s ->
+      declare_global s
+  | Cdefine_symbol s ->
+      define_symbol s;
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
       `{emit_label (lbl + 100000)}:\n`

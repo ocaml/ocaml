@@ -181,6 +181,7 @@ let fundecl ppf f =
 let data_item ppf = function
   | Cdefine_symbol s -> fprintf ppf "\"%s\":" s
   | Cdefine_label l -> fprintf ppf "L%i:" l
+  | Cglobal_symbol s -> fprintf ppf "global \"%s\"" s
   | Cint8 n -> fprintf ppf "byte %i" n
   | Cint16 n -> fprintf ppf "int16 %i" n
   | Cint32 n -> fprintf ppf "int32 %s" (Nativeint.to_string n)
