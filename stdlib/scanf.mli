@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id *)
+(* $Id$ *)
 
 (** Formatted input functions. *)
 
@@ -49,6 +49,12 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> ('a -> 'b);;
    - [g] or [G]: reads a floating-point argument in decimal notation,
      in style [f] or [e], [E].
    - [b]: reads a boolean argument ([true] or [false]).
+   - [ld], [li], [lu], [lx], [lX], [lo]: reads an [int32] argument to
+     the format specified by the second letter (decimal, hexadecimal, etc).
+   - [nd], [ni], [nu], [nx], [nX], [no]: reads a [nativeint] argument to
+     the format specified by the second letter.
+   - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
+     the format specified by the second letter.
    - [\[ range \]]: reads characters that maches one of the characters
      mentioned in the range of characters [range] (or not mentioned in
      it, if the range started by [^]).
