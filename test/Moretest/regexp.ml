@@ -207,7 +207,7 @@ let automated_test() =
   test_search_forward r n "ArkA"
     [|"rkA"; "k"; "k"|];
   test_search_forward r n "AryA"
-    [|"ryA"; "y"; "y"|];
+    [|"ryA"; "y"; ""|];
   test_search_forward r n "ArgggkyggkA"
     [|"rgggkyggkA"; "k"; "k"|];
 
