@@ -362,7 +362,7 @@ callback3_exn:
         la      $24, caml_apply3        /* code pointer */
         b       $103
 
-        .end    callback3
+        .end    callback3_exn
 
 /* Glue code to call array_bound_error */
 
