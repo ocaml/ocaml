@@ -1590,10 +1590,12 @@ let report_error ppf = function
   | Apply_wrong_label (l, ty) ->
       let print_label ppf = function
         | "" -> fprintf ppf "without label"
-        | l -> fprintf ppf "with label ~%s" l in
+        | l ->
+            fprintf ppf "with label %s%s" (if is_optional l then "" else "~") l
+      in
       reset_and_mark_loops ty;
       fprintf ppf
-        "@[<v>@[<2>Expecting function has type@ %a@]@,\
+        "@[<v>@[<2>Expecting function has type@ %a@]@.\
           This argument cannot be applied %a@]"
         type_expr ty print_label l
   | Label_multiply_defined lid ->
