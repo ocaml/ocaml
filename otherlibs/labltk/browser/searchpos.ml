@@ -50,22 +50,12 @@ let rec list_of_path = function
   | Pdot (path, s, _) -> list_of_path path @ [s]
   | Papply (path, _) -> list_of_path path (* wrong, but ... *)
 
-(* a standard (diposable) buffer class *)
+(* a simple wrapper *)
 
 class buffer :len = object
-  val mutable buffer = String.create :len
-  val mutable length = len
-  val mutable current = 0
-  method out buffer:b :pos :len =
-    while len + current > length do
-      let newbuf = String.create len:(length * 2) in
-      String.blit buffer pos:0 len:current to:newbuf to_pos:0;
-      buffer <- newbuf;
-      length <- 2 * length
-    done;
-    String.blit b :pos to:buffer to_pos:current :len;
-    current <- current + len
-  method get = String.sub buffer pos:0 len:current
+  val buffer = Buffer.create len
+  method out :buf = Buffer.add_substring buffer buf
+  method get = Buffer.contents buffer
 end
 
 (* Search in a signature *)
@@ -270,7 +260,7 @@ let edit_source :file :path :sign =
 (* List of windows to destroy by Close All *)
 let top_widgets = ref []
 
-let rec view_signature ?:title ?:path ?:env{= !start_env} sign =
+let rec view_signature ?:title ?:path ?:env[= !start_env] sign =
   let env =
     match path with None -> env
     | Some path -> Env.open_signature path sign env in
@@ -408,7 +398,7 @@ and view_modtype_id li :env =
   view_signature_item :path :env
     [Tsig_modtype(ident_of_path path default:"S", td)]
 
-and view_expr_type ?:title ?:path ?:env ?:name{="noname"} t =
+and view_expr_type ?:title ?:path ?:env ?:name[="noname"] t =
   let title =
     match title, path with Some title, _ -> title
     | None, Some path -> string_of_path path

@@ -29,7 +29,8 @@ class shell :textw :prog :args :env =
   and (in1,out2) = Unix.pipe ()
   and (err1,err2) = Unix.pipe () in
 object (self)
-  val pid = Unix.create_process_env :prog :args :env in:in2 out:out2 err:err2
+  val pid = Unix.create_process_env name:prog :args :env
+      stdin:in2 stdout:out2 stderr:err2
   val out = Unix.out_channel_of_descr out1
   val h = new history ()
   val mutable alive = true
@@ -45,7 +46,7 @@ object (self)
         Fileevent.remove_fileinput fd:in1;
         Fileevent.remove_fileinput fd:err1;
         Unix.kill :pid signal:Sys.sigkill;
-        Unix.waitpid flags:[] pid; ()
+        Unix.waitpid mode:[] pid; ()
       with _ -> ()
     end
   method interrupt =
@@ -60,9 +61,9 @@ object (self)
     with Sys_error _ -> ()
   method private read :fd :len =
     try
-      let buffer = String.create :len in
-      let len = Unix.read fd :buffer pos:0 :len in
-      self#insert (String.sub buffer pos:0 :len);
+      let buf = String.create :len in
+      let len = Unix.read fd :buf pos:0 :len in
+      self#insert (String.sub buf pos:0 :len);
       Text.mark_set textw mark:"input" index:(`Mark"insert",[`Char(-1)])
     with Unix.Unix_error _ -> ()
   method history (dir : [`next|`previous]) =
@@ -77,8 +78,8 @@ object (self)
       end;
       self#insert (if dir = `previous then h#previous else h#next)
     end
-  method private lex ?:start{= `Mark"insert",[`Linestart]}
-      ?end:endx{= `Mark"insert",[`Lineend]} () =
+  method private lex ?:start[=`Mark"insert",[`Linestart]]
+      ?end:endx[=`Mark"insert",[`Lineend]] () =
     Lexical.tag textw :start end:endx
   method insert text =
     let idx = Text.index textw
@@ -152,7 +153,7 @@ let get_all () =
   all
 
 let may_exec prog =
-  try Unix.access file:prog perm:[Unix.X_OK]; true
+  try Unix.access name:prog perm:[Unix.X_OK]; true
   with Unix.Unix_error _ -> false
 
 let f :prog :title =
@@ -183,7 +184,7 @@ let f :prog :title =
   let reg = Str.regexp "TERM=" in
   let env = Array.map (Unix.environment ()) fun:
       begin fun s ->
-        if Str.string_match reg s pos:0 then "TERM=dumb" else s
+        if Str.string_match pat:reg s pos:0 then "TERM=dumb" else s
       end in
   let load_path =
     List2.flat_map !Config.load_path fun:(fun dir -> ["-I"; dir]) in

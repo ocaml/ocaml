@@ -49,7 +49,7 @@ let reset_string_buffer () =
 let store_string_char c =
   if !string_index >= String.length (!string_buff) then begin
     let new_buff = String.create len:(String.length (!string_buff) * 2) in
-      String.blit (!string_buff) pos:0 to:new_buff to_pos:0
+      String.blit src:(!string_buff) src_pos:0 dst:new_buff dst_pos:0
                   len:(String.length (!string_buff));
       string_buff := new_buff
   end;

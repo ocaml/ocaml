@@ -47,12 +47,12 @@ let cCAMLtoTKmodifier : modifier -> string = function
 (* type event = modifier list * xEvent *)
 let cCAMLtoTKevent : (modifier list * xEvent) -> string = 
  function (ml, xe) ->
-  "<" ^ (catenate_sep " " (List.map fun:cCAMLtoTKmodifier ml))  
+  "<" ^ (String.concat sep:" " (List.map fun:cCAMLtoTKmodifier ml))  
       ^ (cCAMLtoTKxEvent xe) ^ ">"
   
 (* type eventSequence == (modifier list * xEvent) list *)
 let cCAMLtoTKeventSequence : (modifier list * xEvent) list -> tkArgs = 
  function l ->
-  TkToken(catenate_sep "" (List.map fun:cCAMLtoTKevent l))
+  TkToken(String.concat sep:"" (List.map fun:cCAMLtoTKevent l))
 
 

@@ -235,7 +235,7 @@ let rec has_callback = function
 
 (*** Returned types ***)
 let really_add ty = 
-  if List.mem item:ty !types_returned then ()
+  if List.mem key:ty !types_returned then ()
   else types_returned := ty :: !types_returned
 
 let rec add_return_type = function
@@ -283,7 +283,7 @@ let rec find_constructor cname = function
            else find_constructor cname l
 
 (* Enter a type, must not be previously defined *)
-let enter_type typname ?:variant{=false} arity constructors =
+let enter_type typname ?:variant[=false] arity constructors =
   try
       Hashtbl.find types_table key:typname;
       raise (Duplicate_Definition ("type", typname))

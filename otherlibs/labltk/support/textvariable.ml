@@ -82,12 +82,12 @@ let add w v =
         let r = ref StringSet.empty in
           Hashtbl.add memo key:w data:r;
           r in
-   r := StringSet.add !r elt:v
+   r := StringSet.add !r key:v
 
 (* to be used with care ! *)
 let free v =
   rem_all_handles v;
-  freelist := StringSet.add elt:v !freelist
+  freelist := StringSet.add key:v !freelist
 
 (* Free variables associated with a widget *)
 let freew w =
@@ -110,7 +110,7 @@ let getv () =
       end
     else
       let v = StringSet.choose !freelist in
-        freelist := StringSet.remove elt:v !freelist;
+        freelist := StringSet.remove key:v !freelist;
         v in
     set v to:"";
     v
@@ -126,7 +126,7 @@ let create ?on: w () =
 
 (* to be used with care ! *)
 let free v =
-  freelist := StringSet.add elt:v !freelist
+  freelist := StringSet.add key:v !freelist
 
 let cCAMLtoTKtextVariable s = TkToken s
 

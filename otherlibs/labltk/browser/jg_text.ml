@@ -13,8 +13,8 @@ let tag_and_see tw :tag :start end:e =
     Text.mark_set tw mark:"insert" index:(`Tagfirst tag, [])
   with Protocol.TkError _ -> ()
 
-let output tw :buffer :pos :len =
-  Text.insert tw index:tend text:(String.sub buffer :pos :len)
+let output tw :buf :pos :len =
+  Text.insert tw index:tend text:(String.sub buf :pos :len)
 
 let add_scrollbar tw =
   let sb = Scrollbar.create (Winfo.parent tw) command:(Text.yview tw)
@@ -62,6 +62,7 @@ let search_string tw =
       let dir, ofs = match Textvariable.get direction with
           "forward" -> `Forwards, 1
         | "backward" -> `Backwards, -1
+        | _ -> assert false
       and mode = match Textvariable.get mode with "exact" -> [`Exact]
                  | "nocase" -> [`Nocase] | "regexp" -> [`Regexp] | _ -> []
       in

@@ -6,16 +6,6 @@ open Tables
 (* if you set it true, ImagePhoto and ImageBitmap will annoy you... *)
 let safetype = false 
 
-let lowercase s =
-  let r = String.create len:(String.length s) in
-  String.blit s pos:0 to:r to_pos:0 len:(String.length s);
-  for i = 0 to String.length s - 1 
-  do
-    let c = s.[i] in
-    if c >= 'A' & c <= 'Z' then r.[i] <- Char.chr(Char.code c + 32)
-  done;
-  r
-
 let labeloff :at l = match l with
   "",t -> t
 | l ,t -> raise (Failure ("labeloff : " ^ l ^ " at " ^ at))
@@ -42,7 +32,7 @@ let small_ident s =
   let idents = ["to"; "raise"; "in"; "class"; "new"]
   in
   let s = small s in
-  if List.mem item:s idents then (String.make len:1 s.[0])^s
+  if List.mem key:s idents then (String.make len:1 s.[0])^s
   else s
 
 let gettklabel fc = 
@@ -54,15 +44,10 @@ let gettklabel fc =
         if s = "" then small fc.ml_name else small s
   | _ -> raise (Failure "gettklabel")
 
-let count item:x l =
+let count key:x l =
   let count = ref 0 in
   List.iter fun:(fun y -> if x = y then incr count) l;
   !count
-
-let catenate_sep :sep =
-  function 
-    [] -> ""
-  | x::l -> List.fold_left fun:(fun :acc s' -> acc ^ sep ^ s') acc:x l
 
 (* Extract all types from a template *)
 let rec types_of_template = function
@@ -81,7 +66,7 @@ let rec types_of_template = function
  * Pretty print a type
  *  used to write ML type definitions
  *)
-let ppMLtype ?:any{=false} ?:return{=false} ?:def{=false} ?:counter{=ref 0} =
+let ppMLtype ?:any[=false] ?:return[=false] ?:def[=false] ?:counter[=ref 0] =
   let rec ppMLtype =
   function
     Unit -> "unit"
@@ -103,7 +88,7 @@ let ppMLtype ?:any{=false} ?:return{=false} ?:def{=false} ?:counter{=ref 0} =
         let l = List.map fcl fun:
           begin fun fc ->
             "?" ^ begin let p = gettklabel fc in
-                  if count item:p tklabels > 1 then small fc.ml_name else p
+                  if count key:p tklabels > 1 then small fc.ml_name else p
                   end
             ^ ":" ^ 
             let l = types_of_template fc.template in
@@ -111,19 +96,19 @@ let ppMLtype ?:any{=false} ?:return{=false} ?:def{=false} ?:counter{=ref 0} =
               [] -> "unit"
             | [lt] -> ppMLtype (labeloff lt at:"ppMLtype")
             | l ->
-                "(" ^ catenate_sep sep:"*" 
+                "(" ^ String.concat sep:"*" 
                   (List.map l
                      fun:(fun lt -> ppMLtype (labeloff lt at:"ppMLtype")))
                 ^ ")"
           end in
-        catenate_sep sep:"   ->\n" l
+        String.concat sep:"   ->\n" l
       with
         Not_found -> Printf.eprintf "ppMLtype %s/%s\n" sup sub; exit (-1)
      end
   | List ty -> (ppMLtype ty) ^ " list"
-  | Product tyl -> catenate_sep sep:" * " (List.map fun:ppMLtype tyl)
+  | Product tyl -> String.concat sep:" * " (List.map fun:ppMLtype tyl)
   | Record tyl -> 
-      catenate_sep sep:" * "
+      String.concat sep:" * "
         (List.map tyl fun:(fun (l,t) -> labelstring l ^ ppMLtype t))
   | Subtype ("widget", sub) -> sub ^ " widget"
   | UserDefined "widget" -> 
@@ -140,7 +125,7 @@ let ppMLtype ?:any{=false} ?:return{=false} ?:def{=false} ?:counter{=ref 0} =
         if typdef.variant then
           if return then try
             "[>" ^
-            catenate_sep sep:"|" 
+            String.concat sep:"|" 
               (List.map typdef.constructors fun:
                 begin
                   fun c ->
@@ -163,7 +148,7 @@ let ppMLtype ?:any{=false} ?:return{=false} ?:def{=false} ?:counter{=ref 0} =
   | Function (Product tyl) -> 
         raise (Failure "Function (Product tyl) ? ppMLtype")
   | Function (Record tyl) -> 
-        "(" ^ catenate_sep sep:" -> " 
+        "(" ^ String.concat sep:" -> " 
           (List.map tyl fun:(fun (l,t) -> labelstring l ^ ppMLtype t))
         ^ " -> unit)"
   | Function ty ->
@@ -176,13 +161,13 @@ let ppMLtype ?:any{=false} ?:return{=false} ?:def{=false} ?:counter{=ref 0} =
 let rec ppTemplate = function
     StringArg s -> s
   | TypeArg (l,t) -> "<" ^ ppMLtype t ^ ">"
-  | ListArg l -> "{" ^ catenate_sep sep:" " (List.map fun:ppTemplate l) ^ "}"
+  | ListArg l -> "{" ^ String.concat sep:" " (List.map fun:ppTemplate l) ^ "}"
   | OptionalArgs (l,tl,d) ->
-      "?" ^ l ^ "{" ^ catenate_sep sep:" " (List.map fun:ppTemplate tl)
-      ^ "}[<" ^ catenate_sep sep:" " (List.map fun:ppTemplate d) ^ ">]"
+      "?" ^ l ^ "{" ^ String.concat sep:" " (List.map fun:ppTemplate tl)
+      ^ "}[<" ^ String.concat sep:" " (List.map fun:ppTemplate d) ^ ">]"
 
 let doc_of_template = function
-    ListArg l -> catenate_sep sep:" " (List.map fun:ppTemplate l)
+    ListArg l -> String.concat sep:" " (List.map fun:ppTemplate l)
   | t -> ppTemplate t
 
 (*
@@ -341,8 +326,8 @@ let rec wrapper_code fname of:ty =
                   converterTKtoCAML "args"  as:ty ^
                   " in\n        "
             end in
-          catenate_sep sep:"" readarg ^ fname ^ " " ^
-          catenate_sep sep:" " 
+          String.concat sep:"" readarg ^ fname ^ " " ^
+          String.concat sep:" " 
             (List.map2 fun:(fun v (l,_) -> labelstring l^v) vnames tyl)
 
         (* all other types are read in one operation *)
@@ -507,7 +492,7 @@ let rec converterCAMLtoTK :context_widget argname as:ty =
  *
  *)
  
-let code_of_template :context_widget ?func:funtemplate{=false} template =
+let code_of_template :context_widget ?func:funtemplate[=false] template =
   let catch_opts = ref ("","") in (* class name and first option *)
   let variables = ref [] in
   let variables2 = ref [] in
@@ -549,12 +534,12 @@ let code_of_template :context_widget ?func:funtemplate{=false} template =
   | TypeArg (l,ty) -> converterCAMLtoTK :context_widget (!newvar l) as:ty
   | ListArg l ->
       "TkQuote (TkTokenList ["
-      ^ catenate_sep sep:";\n    " (List.map fun:coderec l) ^ "])" 
+      ^ String.concat sep:";\n    " (List.map fun:coderec l) ^ "])" 
   | OptionalArgs (l,tl,d) -> 
       let nv = !newvar ("?"^l) in
       optionvar := Some nv; (* Store *)
-      let argstr = catenate_sep sep:"; " (List.map fun:coderec tl) in 
-      let defstr = catenate_sep sep:"; " (List.map fun:coderec d) in
+      let argstr = String.concat sep:"; " (List.map fun:coderec tl) in 
+      let defstr = String.concat sep:"; " (List.map fun:coderec d) in
       "TkTokenList (match "^ nv ^" with\n"
       ^ "   Some " ^ nv ^ " -> [" ^ argstr ^ "]\n"
       ^ " | None -> [" ^ defstr ^ "])"
@@ -563,14 +548,14 @@ let code_of_template :context_widget ?func:funtemplate{=false} template =
     if funtemplate then 
     match template with
       ListArg l ->
-        "[|" ^ catenate_sep sep:";\n    " (List.map fun:coderec l) ^ "|]"
+        "[|" ^ String.concat sep:";\n    " (List.map fun:coderec l) ^ "|]"
     | _ -> "[|" ^ coderec template ^ "|]"
     else
     match template with
       ListArg [x] -> coderec x
     | ListArg l ->
         "TkTokenList ["
-        ^ catenate_sep sep:";\n    " (List.map fun:coderec l) ^ "]"
+        ^ String.concat sep:";\n    " (List.map fun:coderec l) ^ "]"
     | _ -> coderec template
     in
     code , List.rev !variables, List.rev !variables2, !catch_opts
@@ -598,7 +583,7 @@ let write_clause :w :context_widget comp =
   | [x] -> w " "; w (labeloff x at:"write_clause"); warrow()
   | l ->
       w " ( ";
-      w (catenate_sep sep:", " (List.map fun:(labeloff at:"write_clause") l));
+      w (String.concat sep:", " (List.map fun:(labeloff at:"write_clause") l));
       w ")";
       warrow()
   end;
@@ -606,7 +591,7 @@ let write_clause :w :context_widget comp =
 
 
 (* The full converter *)         
-let write_CAMLtoTK :w def:typdef ?safetype:st{=true} name =
+let write_CAMLtoTK :w def:typdef ?safetype:st[=true] name =
   let write_one name constrs =
     w ("let cCAMLtoTK"^name);
     let context_widget = 
@@ -656,7 +641,7 @@ let rec write_result_parsing :w = function
           end;
           w (" in\n")
         end;
-      w (catenate_sep sep:"," rnames)
+      w (String.concat sep:"," rnames)
   | String ->
       w (converterTKtoCAML "res" as:String)
   | As (ty, _) -> write_result_parsing :w ty
@@ -761,7 +746,7 @@ let write_catch_optionals :w clas def:typdef =
         (* used as names of variants *)
         fc.var_name,
         begin let p = gettklabel fc in
-          if count item:p tklabels > 1 then small fc.ml_name else p
+          if count key:p tklabels > 1 then small fc.ml_name else p
         end,
         small_ident fc.ml_name (* used as labels *)
       end in
@@ -782,7 +767,7 @@ let write_catch_optionals :w clas def:typdef =
           for i=1 to i do
             s := !s @ ["x" ^ string_of_int i]
           done;
-          "(" ^ catenate_sep sep:"," !s ^ ")"
+          "(" ^ String.concat sep:"," !s ^ ")"
         in
         let apvars = 
           if i = 0 then "" 
@@ -793,10 +778,10 @@ let write_catch_optionals :w clas def:typdef =
         in  
         "(maycons (fun " ^ vars ^ " -> " ^ "`" ^ c ^ " " ^ apvars ^ ") " ^ si
       end in
-    w (catenate_sep sep:"\n" p);
+    w (String.concat sep:"\n" p);
     w " ->\n";
     w "    f ";
-    w (catenate_sep sep:"\n      " v);
+    w (String.concat sep:"\n      " v);
     w "\n       []";
     w (String.make len:(List.length v) ')');
     w "\n\n"

@@ -16,18 +16,20 @@ let regexp = (new Jg_memo.c fun:Str.regexp)#get
 
 let parse_filter src = 
   (* replace // by / *)
-  let s = global_replace (regexp "/+") with:"/" src in
+  let s = global_replace pat:(regexp "/+") with:"/" src in
   (* replace /./ by / *)
-  let s = global_replace (regexp "/\./") with:"/" s in
+  let s = global_replace pat:(regexp "/\./") with:"/" s in
   (* replace hoge/../ by "" *)
-  let s = global_replace
-     (regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./") with:"" s in
+  let s = global_replace s
+      pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./")
+      with:"" in
   (* replace hoge/..$ by *)
-  let s = global_replace
-     (regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$") with:"" s in
+  let s = global_replace s
+      pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$")
+      with:"" in
   (* replace ^/../../ by / *)
-  let s = global_replace (regexp "^\(/\.\.\)+/") with:"/" s in
-  if string_match (regexp "^\([^\*?[]*/\)\(.*\)") s pos:0 then 
+  let s = global_replace pat:(regexp "^\(/\.\.\)+/") with:"/" s in
+  if string_match s pat:(regexp "^\([^\*?[]*/\)\(.*\)") pos:0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in
@@ -40,24 +42,27 @@ let fixpoint fun:f v =
   !v1
 
 let unix_regexp s =
-  let s = Str.global_replace (regexp "[$^.+]") with:"\\\\\\0" s in
-  let s = Str.global_replace (regexp "\\*") with:".*" s in
-  let s = Str.global_replace (regexp "\\?") with:".?" s in
+  let s = Str.global_replace pat:(regexp "[$^.+]") with:"\\\\\\0" s in
+  let s = Str.global_replace pat:(regexp "\\*") with:".*" s in
+  let s = Str.global_replace pat:(regexp "\\?") with:".?" s in
   let s =
-    fixpoint s fun:(fun s ->
-      Str.global_replace (regexp "\\({.*\\),\\(.*}\\)") s
-        with:"\\1\\|\\2") in
+    fixpoint s fun:
+      begin fun s ->
+        Str.global_replace s
+          pat:(regexp "\\({.*\\),\\(.*}\\)")
+          with:"\\1\\|\\2"
+      end in
   let s =
-    Str.global_replace (regexp "{\\(.*\\)}") with:"\\(\\1\\)" s in
+    Str.global_replace pat:(regexp "{\\(.*\\)}") with:"\\(\\1\\)" s in
   Str.regexp s
 
-let exact_match s :regexp =
-  Str.string_match regexp s pos:0 & Str.match_end () = String.length s
+let exact_match s :pat =
+  Str.string_match :pat s pos:0 & Str.match_end () = String.length s
 
 let ls :dir :pattern =
   let files = get_files_in_directory dir in
   let regexp = unix_regexp pattern in
-  List.filter files pred:(exact_match :regexp)
+  List.filter files pred:(exact_match pat:regexp)
 
 (*
 let ls :dir :pattern =
@@ -69,9 +74,9 @@ let load_in_path = ref false
 
 let search_in_path :name = Misc.find_in_path !Config.load_path name
 
-let f :title action:proc ?:dir{=Unix.getcwd ()}
-    ?filter:deffilter{="*"} ?file:deffile{=""}
-    ?:multi{=false} ?:sync{=false} ?:usepath{=true} () =
+let f :title action:proc ?:dir[=Unix.getcwd ()]
+    ?filter:deffilter[="*"] ?file:deffile[=""]
+    ?:multi[=false] ?:sync[=false] ?:usepath[=true] () =
 
   let current_pattern = ref ""
   and current_dir = ref dir in
@@ -99,7 +104,7 @@ let f :title action:proc ?:dir{=Unix.getcwd ()}
 
   let configure :filter =
     let filter =
-      if string_match  (regexp "^/.*") filter pos:0
+      if string_match pat:(regexp "^/.*") filter pos:0
       then filter
       else !current_dir ^ "/" ^ filter
     in

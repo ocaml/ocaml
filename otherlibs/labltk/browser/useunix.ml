@@ -17,7 +17,7 @@ let get_files_in_directory dir =
 
 let is_directory name =
   try
-    (stat file:name).st_kind = S_DIR
+    (stat :name).st_kind = S_DIR
   with _ -> false
 
 let get_directories_in_files :path =

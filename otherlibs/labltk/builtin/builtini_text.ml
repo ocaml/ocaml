@@ -24,13 +24,13 @@ let ppTextIndex = function
    `None -> ""
  | `Index (base, ml) -> 
      let (TkToken ppbase) = cCAMLtoTKtext_index base in 
-       catenate_sep "" (ppbase :: List.map fun:ppTextModifier ml)
+       String.concat sep:"" (ppbase :: List.map fun:ppTextModifier ml)
 *)
 
 let ppTextIndex = function
   (base, ml) -> 
      let (TkToken ppbase) = cCAMLtoTKtext_index base in 
-       catenate_sep "" (ppbase :: List.map fun:ppTextModifier ml)
+       String.concat sep:"" (ppbase :: List.map fun:ppTextModifier ml)
 
 let cCAMLtoTKtextIndex : textIndex -> tkArgs = function i -> 
   TkToken (ppTextIndex i)

@@ -38,9 +38,9 @@ let compiler_preferences () =
   pack [ok;cancel] side:`Left fill:`X expand:true;
   pack [buttons] side:`Bottom fill:`X
 
-let rec exclude item:txt = function
+let rec exclude key:txt = function
     [] -> []
-  | x :: l -> if txt.number = x.number then l else x :: exclude item:txt l
+  | x :: l -> if txt.number = x.number then l else x :: exclude key:txt l
 
 let goto_line tw =
   let tl = Jg_toplevel.titled "Go to" in
@@ -178,7 +178,7 @@ let indent_line =
   fun tw ->
     let `Linechar(l,c) = Text.index tw index:(ins,[])
     and line = Text.get tw start:(ins,[`Linestart]) end:(ins,[]) in
-    Str.string_match reg line pos:0;
+    Str.string_match pat:reg line pos:0;
     if Str.match_end () < c then
       Text.insert tw index:(ins,[]) text:"\t"
     else let indent =
@@ -186,7 +186,7 @@ let indent_line =
       let previous =
         Text.get tw start:(ins,[`Line(-1);`Linestart])
           end:(ins,[`Line(-1);`Lineend]) in
-      Str.string_match reg previous pos:0;
+      Str.string_match pat:reg previous pos:0;
       let previous = Str.matched_string previous in
       let width = string_width line
       and width_previous = string_width previous in
@@ -228,7 +228,7 @@ class editor :top :menus = object (self)
   method set_edit txt  =
     if windows <> [] then
       Pack.forget [(List.hd windows).frame];
-    windows <- txt :: exclude item:txt windows;
+    windows <- txt :: exclude key:txt windows;
     self#reset_window_menu;
     current_tw <- txt.tw;
     Checkbutton.configure label text:(Filename.basename txt.name)
@@ -255,7 +255,7 @@ class editor :top :menus = object (self)
       action:(`Set ([`Char], fun ev ->
         if ev.ev_Char <> "" &
           (ev.ev_Char.[0] >= ' ' or
-           List.mem item:ev.ev_Char.[0]
+           List.mem key:ev.ev_Char.[0]
              (List.map fun:control ['d'; 'h'; 'i'; 'k'; 'o'; 't'; 'w'; 'y']))
         then Textvariable.set txt.modified to:"modified"));
     bind tw events:[[],`KeyPressDetail"Tab"]
@@ -267,7 +267,7 @@ class editor :top :menus = object (self)
       action:(`Set ([], fun _ ->
         let text =
           Text.get tw start:(`Mark"insert",[]) end:(`Mark"insert",[`Lineend])
-        in Str.string_match (Str.regexp "[ \t]*") text pos:0;
+        in Str.string_match pat:(Str.regexp "[ \t]*") text pos:0;
         if Str.match_end () <> String.length text then begin
           Clipboard.clear ();
           Clipboard.append data:text ()
@@ -357,13 +357,13 @@ class editor :top :menus = object (self)
       let file = open_in name
       and tw = current_tw
       and len = ref 0
-      and buffer = String.create len:4096 in
+      and buf = String.create len:4096 in
       Text.delete tw start:tstart end:tend;
       while
-        len := input file :buffer pos:0 len:4096;
+        len := input file :buf pos:0 len:4096;
         !len > 0
       do
-        Jg_text.output tw :buffer pos:0 len:!len
+        Jg_text.output tw :buf pos:0 len:!len
       done;
       close_in file;
       Text.mark_set tw mark:"insert" :index;
@@ -386,7 +386,7 @@ class editor :top :menus = object (self)
         | `no -> ()
         | `cancel -> raise Exit
         end;
-      windows <- exclude item:txt windows;
+      windows <- exclude key:txt windows;
       if windows = [] then
         self#new_window (current_dir ^ "/untitled")
       else self#set_edit (List.hd windows);
@@ -522,7 +522,7 @@ end
 
 let already_open : editor option ref = ref None
 
-let editor ?:file ?:pos{= 0} () =
+let editor ?:file ?:pos[=0] () =
 
   if match !already_open with None -> false
   | Some ed ->
@@ -535,7 +535,7 @@ let editor ?:file ?:pos{= 0} () =
     already_open := Some ed;
     if file <> None then ed#reopen :file :pos
 
-let f ?:file ?:pos ?:opendialog{=false} () =
+let f ?:file ?:pos ?:opendialog[=false] () =
   if opendialog then
     Fileselect.f title:"Open File"
       action:(function [file] -> editor :file () | _ -> ())

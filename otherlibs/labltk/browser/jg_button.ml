@@ -2,7 +2,7 @@
 
 open Tk
 
-let create_destroyer :parent ?:text{="Ok"} tl =
+let create_destroyer :parent ?:text[="Ok"] tl =
     Button.create parent :text command:(fun () -> destroy tl)
 
 let add_destroyer ?:text tl =

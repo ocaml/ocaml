@@ -1,5 +1,5 @@
 let create :parent :title :message :buttons ?:name
-    ?:bitmap{=`Predefined ""} ?:default{= -1} () =
+    ?:bitmap[=`Predefined ""] ?:default[= -1] () =
   let w = Widget.new_atom "toplevel" ?:name :parent in
   let res = tkEval [|TkToken"tk_dialog";
                      cCAMLtoTKwidget w;

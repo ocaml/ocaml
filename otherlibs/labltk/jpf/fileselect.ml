@@ -36,8 +36,8 @@ let myentry_create p :variable =
 let subshell cmd = 
   let r,w = pipe () in
     match fork () with
-      0 -> close r; dup2 w stdout; 
-           execv prog:"/bin/sh" args:[| "/bin/sh"; "-c"; cmd |]; 
+      0 -> close r; dup2 src:w dst:stdout; 
+           execv name:"/bin/sh" args:[| "/bin/sh"; "-c"; cmd |]; 
            exit 127
     | id -> 
         close w; 
@@ -48,7 +48,7 @@ let subshell cmd =
         in 
           let answer = it() in
           close_in rc;  (* because of finalize_channel *)
-          let p, st = waitpid flags:[] id in answer
+          let p, st = waitpid mode:[] id in answer
 
 (***************************************************************** Path name *)
 
@@ -57,20 +57,20 @@ let dirget = regexp "^\([^\*?[]*/\)\(.*\)"
 
 let parse_filter src = 
   (* replace // by / *)
-  let s = global_replace (regexp "/+") with:"/" src in
+  let s = global_replace pat:(regexp "/+") with:"/" src in
   (* replace /./ by / *)
-  let s = global_replace (regexp "/\./") with:"/" s in
+  let s = global_replace pat:(regexp "/\./") with:"/" s in
   (* replace ????/../ by "" *)
-  let s = global_replace 
-    (regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./") 
-      with:""  s in
+  let s = global_replace s
+      pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./") 
+      with:"" in
   (* replace ????/..$ by "" *)
-  let s = global_replace 
-    (regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$") 
-      with:"" s in
+  let s = global_replace s
+      pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$") 
+      with:"" in
   (* replace ^/../../ by / *)
-  let s = global_replace (regexp "^\(/\.\.\)+/") with:"/" s in
-  if string_match dirget s pos:0 then 
+  let s = global_replace pat:(regexp "^\(/\.\.\)+/") with:"/" s in
+  if string_match pat:dirget s pos:0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in
@@ -96,7 +96,7 @@ let get_files_in_directory dir =
 let rec get_directories_in_files path = function
     [] -> []
   | x::xs -> 
-      if try (stat file:(path ^ x)).st_kind = S_DIR with _ -> false then
+      if try (stat name:(path ^ x)).st_kind = S_DIR with _ -> false then
         x::(get_directories_in_files path xs)
       else get_directories_in_files path xs
 
@@ -104,7 +104,7 @@ let remove_directories dirname =
   let rec remove = function
     [] -> []
   | x :: xs ->
-    if try (stat file:(dirname ^ x)).st_kind = S_DIR with _ -> true then 
+    if try (stat name:(dirname ^ x)).st_kind = S_DIR with _ -> true then 
       remove xs
     else  
       x :: (remove xs)
@@ -213,7 +213,7 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
     (* OLDER let curdir = getcwd () in *)
 (* Printf.eprintf "CURDIR %s\n" curdir; *)
     let filter =
-      if string_match  (regexp "^/.*") filter pos:0 then filter
+      if string_match pat:(regexp "^/.*") filter pos:0 then filter
       else 
         if filter = "" then !global_dir ^ "/*"
         else !global_dir ^ "/" ^ filter in

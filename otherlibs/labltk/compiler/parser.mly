@@ -4,13 +4,6 @@
 
 open Tables
 
-let lowercase s =
-  let r = String.create len:(String.length s) in
-  String.blit s pos:0 to:r to_pos:0 len:(String.length s);
-  let c = s.[0] in
-  if c >= 'A' & c <= 'Z' then r.[0] <- Char.chr(Char.code c + 32);
-  r
-
 %}
 
 /* Tokens */
@@ -53,7 +46,7 @@ let lowercase s =
 
 %%
 TypeName:
-   IDENT { lowercase $1 }
+   IDENT { String.uncapitalize $1 }
  | WIDGET { "widget" }
 ;
 
@@ -306,7 +299,7 @@ entry :
 | WIDGET IDENT LBRACE WidgetComponents RBRACE
     { enter_widget $2 $4 }
 | MODULE IDENT LBRACE ModuleComponents RBRACE
-    { enter_module (lowercase $2) $4 }
+    { enter_module (String.uncapitalize $2) $4 }
 | EOF
     { raise End_of_file }
 ;

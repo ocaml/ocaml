@@ -15,10 +15,10 @@ let write_create_p :w wname =
       let l = List.map classdefs fun:
         begin fun fc ->
           begin let p = gettklabel fc in
-            if count item:p tklabels > 1 then small fc.ml_name else p
+            if count key:p tklabels > 1 then small fc.ml_name else p
           end, fc.template
         end in
-      w (catenate_sep sep:" ->\n" 
+      w (String.concat sep:" ->\n" 
          (List.map l fun:
           begin fun (s,t) ->
             "  ?" ^ s ^ ":"

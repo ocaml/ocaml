@@ -106,7 +106,7 @@ verbose_string "type ";
 verbose_string "C2T ";
     write_CAMLtoTK w:(output_string to:oc') typname def:typdef;
 verbose_string "T2C ";
-    if List.mem item:typname !types_returned then
+    if List.mem key:typname !types_returned then
     write_TKtoCAML w:(output_string to:oc') typname def:typdef;
 verbose_string "CO ";
     write_catch_optionals w:(output_string to:oc') typname def:typdef;

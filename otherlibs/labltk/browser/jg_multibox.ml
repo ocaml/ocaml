@@ -67,7 +67,7 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
   method parent = parent'
   method boxes = boxes
   method current = current
-  method recenter?:aligntop{=false} n =
+  method recenter?:aligntop[=false] n =
     current <-
        if n < 0 then 0 else
        if n < length then n else length - 1;

@@ -34,7 +34,7 @@ let renew_path box =
   Listbox.insert box index:`End texts:!Config.load_path;
   Jg_box.recenter box index:(`Num 0)
 
-let add_to_path :dirs ?:base{=""} box =
+let add_to_path :dirs ?:base[=""] box =
   let dirs =
     if base = "" then dirs else
     if dirs = [] then [base] else
