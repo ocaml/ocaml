@@ -29,6 +29,7 @@
 #include "stack.h"
 #include "sys.h"
 #ifdef HAS_STACK_OVERFLOW_DETECTION
+#include <sys/time.h>
 #include <sys/resource.h>
 #endif
 
