@@ -145,7 +145,8 @@ let make_lexer keywords =
   | [< '  't' >] -> '\t'
   | [< '  '0'..'9' as c1; '  '0'..'9' as c2; '  '0'..'9' as c3 >] ->
       Char.chr((Char.code c1 - 48) * 100 +
-               (Char.code c2 - 48) * 10 + (Char.code c3))
+               (Char.code c2 - 48) * 10 +
+               (Char.code c3 - 48))
   | [< ' c >] -> c
 
   and maybe_comment = parser
@@ -163,6 +164,7 @@ let make_lexer keywords =
 
   and maybe_end_comment = parser
     [< '  ')' >] -> ()
+  | [< '  '*'; s >] -> maybe_end_comment s
   | [< ' c; s >] -> comment s
 
   in fun input -> Stream.from (fun count -> next_token input)
