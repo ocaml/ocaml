@@ -146,8 +146,11 @@ let rec typexp s ty =
     ty'
   end
 
+(*
+   Always make a copy of the type (generation of abbreviations from
+   class definitions relies on this).
+*)
 let type_expr s ty =
-  if s = identity then ty else
   let ty' = typexp s ty in
   cleanup_types ();
   unmark_type ty';
