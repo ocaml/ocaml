@@ -145,7 +145,31 @@ let init () =
       literal_table := (c, cst) :: !literal_table)
     Runtimedef.builtin_exceptions;
   (* Initialize the known C primitives *)
-  Array.iter set_prim_table Runtimedef.builtin_primitives
+  if String.length !Clflags.use_prims > 0 then begin
+      let ic = open_in !Clflags.use_prims in
+      try
+        while true do
+          set_prim_table (input_line ic)
+        done
+      with End_of_file -> close_in ic
+         | x -> close_in ic; raise x
+  end else if String.length !Clflags.use_runtime > 0 then begin
+    let primfile = Filename.temp_file "camlprims" "" in
+    try
+      if Sys.command(Printf.sprintf "%s -p > %s"
+                                    !Clflags.use_runtime primfile) <> 0
+      then raise(Error(Wrong_vm !Clflags.use_runtime));
+      let ic = open_in primfile in
+      try
+        while true do
+          set_prim_table (input_line ic)
+        done
+      with End_of_file -> close_in ic; remove_file primfile
+         | x -> close_in ic; raise x
+    with x -> remove_file primfile; raise x
+  end else begin
+    Array.iter set_prim_table Runtimedef.builtin_primitives
+  end
 
 (* Relocate a block of object bytecode *)
 

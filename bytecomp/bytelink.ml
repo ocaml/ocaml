@@ -28,7 +28,6 @@ type error =
   | Custom_runtime
   | File_exists of string
   | Cannot_open_dll of string
-  | Require_custom
 
 exception Error of error
 
@@ -39,14 +38,17 @@ type link_action =
       (* Name of .cma file and descriptors of the units to be linked. *)
 
 (* Add C objects and options from a library descriptor *)
-(* Ignore them if -noautolink was given *)
+(* Ignore them if -noautolink or -use-runtime or -use-prim was given *)
 
 let lib_ccobjs = ref []
 let lib_ccopts = ref []
 let lib_dllibs = ref []
 
 let add_ccobjs l =
-  if not !Clflags.no_auto_link then begin
+  if not !Clflags.no_auto_link
+      && String.length !Clflags.use_runtime = 0
+      && String.length !Clflags.use_prims = 0
+  then begin
     if l.lib_custom then Clflags.custom_runtime := true;
     lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
     lib_ccopts := l.lib_ccopts @ !lib_ccopts;
@@ -256,6 +258,13 @@ let output_debug_info oc =
 let output_stringlist oc l =
   List.iter (fun s -> output_string oc s; output_byte oc 0) l
 
+(* Transform a file name into an absolute file name *)
+
+let make_absolute file =
+  if Filename.is_relative file
+  then Filename.concat (Sys.getcwd()) file
+  else file
+
 (* Create a bytecode executable file *)
 
 let link_bytecode tolink exec_name standalone =
@@ -270,12 +279,21 @@ let link_bytecode tolink exec_name standalone =
     if standalone then begin
       (* Copy the header *)
       try
-        let inchan = open_in_bin (find_in_path !load_path "camlheader") in
+        let header =
+          if String.length !Clflags.use_runtime > 0
+          then "camlheader_ur" else "camlheader" in
+        let inchan = open_in_bin (find_in_path !load_path header) in
         copy_file inchan outchan;
         close_in inchan
       with Not_found | Sys_error _ -> ()
     end;
     Bytesections.init_record outchan;
+    (* The path to the bytecode interpreter (in use_runtime mode) *)
+    if String.length !Clflags.use_runtime > 0 then begin
+      output_string outchan (make_absolute !Clflags.use_runtime);
+      output_char outchan '\n';
+      Bytesections.record outchan "RNTM"
+    end;
     (* The bytecode *)
     let start_code = pos_out outchan in
     Symtable.init();
@@ -552,5 +570,3 @@ let report_error ppf = function
       fprintf ppf "Cannot overwrite existing file %s" file
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %s" file
-  | Require_custom ->
-      fprintf ppf "Linking with non-Caml, non-shared object files requires the -custom flag"

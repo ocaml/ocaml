@@ -79,10 +79,10 @@ struct
            "<file>  (deprecated) same as -intf-suffix";
     "-labels", Arg.Unit F._labels, " Use commuting label mode";
     "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
-    (* "-make-runtime", Arg.Unit F._make_runtime,
-           " Build a runtime system with given C objects and libraries"; *)
-    (* "-make_runtime", Arg.Unit F._make_runtime,
-           " (deprecated) same as -make-runtime"; *)
+    "-make-runtime", Arg.Unit F._make_runtime,
+           " Build a runtime system with given C objects and libraries";
+    "-make_runtime", Arg.Unit F._make_runtime,
+           " (deprecated) same as -make-runtime";
     "-modern", Arg.Unit F._labels, " (deprecated) same as -labels";
     "-noassert", Arg.Unit F._noassert, " Don't compile assertion checks";
     "-noautolink", Arg.Unit F._noautolink,
@@ -97,10 +97,10 @@ struct
     "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
     "-unsafe", Arg.Unit F._unsafe,
                             " No bounds checking on array and string access";
-    (* "-use-runtime", Arg.String F._use_runtime,
-                  "<path>  Generate bytecode for the given runtime system"; *)
-    (* "-use_runtime", Arg.String F._use_runtime,
-                  "<path>  (deprecated) same as -use-runtime"; *)
+    "-use-runtime", Arg.String F._use_runtime,
+                  "<path>  Generate bytecode for the given runtime system";
+    "-use_runtime", Arg.String F._use_runtime,
+                  "<path>  (deprecated) same as -use-runtime";
     "-v", Arg.Unit F._v, " Print compiler version number and exit";
     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
     "-w", Arg.String F._w,
