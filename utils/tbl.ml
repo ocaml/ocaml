@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -63,6 +63,12 @@ let rec find x = function
       let c = compare x v in
       if c = 0 then d
       else find x (if c < 0 then l else r)
+
+let rec mem x = function
+    Empty -> false
+  | Node(l, v, d, r, _) ->
+      let c = compare x v in
+      c = 0 || mem x (if c < 0 then l else r)
 
 let rec merge t1 t2 =
   match (t1, t2) with

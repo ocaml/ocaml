@@ -2,25 +2,27 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*            Pierre Weis && Damien Doligez, INRIA Rocquencourt        *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
 
-(* Association tables from any ordered type to any type.
-   We use the generic ordering to compare keys. *)
+type t =
+  | Partial_match                    (* P *)
+  | Unused_match                     (* U *)
+  | Method_override of string list   (* M *)
+  | Hide_instance_variable of string (* V *)
+  | Partial_application              (* F *)
+  | Statement_type                   (* S *)
+  | Other of string                  (* X *)
+;;
 
-type ('a, 'b) t
+val parse_options : string -> unit;;
 
-val empty: ('a, 'b) t
-val add: 'a -> 'b -> ('a, 'b) t -> ('a, 'b) t
-val find: 'a -> ('a, 'b) t -> 'b
-val mem: 'a -> ('a, 'b) t -> bool
-val remove: 'a -> ('a,  'b) t -> ('a, 'b) t
-val iter: ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
+val is_active : t -> bool;;
 
-val print: ('a -> unit) -> ('b -> unit) -> ('a, 'b) t -> unit
+val message : t -> string;;
