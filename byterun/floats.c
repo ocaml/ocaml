@@ -299,7 +299,7 @@ void init_ieee_floats()
 {
 #ifdef __i386__
 #ifdef __linux__
-  __setfpucw(0x137E);           /* _FPU_IEEE with IM bit clear */
+  __setfpucw(_FPU_IEEE);
 #endif
 #ifdef __FreeBSD__
   fpsetmask(0);
