@@ -291,8 +291,6 @@ let rec lam ppf = function
 and sequence ppf = function
   | Lsequence(l1, l2) ->
       fprintf ppf "%a@ %a" sequence l1 sequence l2
-  | Llet(str, id, arg, body) ->
-      fprintf ppf "@[<2>let@ %a@ %a@]@ %a" Ident.print id lam arg sequence body
   | l ->
       lam ppf l
 
