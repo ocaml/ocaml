@@ -97,11 +97,11 @@ and joinlocation =
 
 and 'a joinautomaton_gen =
     {jauto_desc : 'a array ;
-     jauto_name : Ident.t;
-     jauto_names : (Ident.t * joinchannel) list ;
-      mutable jauto_nchans: int;
+      jauto_name : Ident.t;
+      jauto_names : (Ident.t * joinchannel) list ;
+      jauto_nchans : int;
      (* names defined, description *)
-     jauto_loc : Location.t}
+      jauto_loc : Location.t}
 
 and joinautomaton = joinclause joinautomaton_gen
 
