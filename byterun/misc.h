@@ -70,7 +70,7 @@ char *aligned_malloc (asize_t, int, void **);
                       | ((unsigned long) (x) << 48))
 #else
 #define Debug_tag(x) (0xD700D6D7ul | ((unsigned long) (x) << 16))
-#endif
+#endif /* ARCH_SIXTYFOUR */
 
 /*
   00 -> free words in minor heap
@@ -92,7 +92,7 @@ char *aligned_malloc (asize_t, int, void **);
 #define Debug_uninit_stat    Debug_tag (0x12)
 #define Debug_uninit_align   Debug_tag (0x15)
 #define Debug_filler_align   Debug_tag (0x85)
-#endif
+#endif /* DEBUG */
 
 
 #ifndef CAML_AVOID_CONFLICTS
