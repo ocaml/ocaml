@@ -179,6 +179,7 @@ let empty_lexbuf lb =
 
 let _ =
   Symtable.init_toplevel();
+  Compile.init_path();
   Sys.interactive := true
 
 (* The loop *)
