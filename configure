@@ -1010,13 +1010,9 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,*)
-    if ./runtest -DTARGET_$arch -DSYS_$system stackov.c; then
-      echo "System stack overflow can be detected."
-      echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h
-    else
-      echo "Cannot detect system stack overflow."
-    fi;;
+  i386,linux_elf)
+    echo "System stack overflow can be detected."
+    echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)
     echo "Cannot detect system stack overflow.";;
 esac
