@@ -20,6 +20,63 @@ open Location
 open Jg_tk
 open Mytypes
 
+(* Optionally preprocess a source file *)
+
+let preprocess ~pp ~ext text =
+  let sourcefile = Filename.temp_file "caml" ext in
+  begin try
+    let oc = open_out_bin sourcefile in
+    output_string oc text;
+    flush oc;
+    close_out oc
+  with _ ->
+    failwith "Preprocessing error"
+  end;
+  let tmpfile = Filename.temp_file "camlpp" ext in
+  let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
+  if Ccomp.command comm <> 0 then begin
+    Sys.remove sourcefile;
+    Sys.remove tmpfile;
+    failwith "Preprocessing error"
+  end;
+  Sys.remove sourcefile;
+  tmpfile
+
+exception Outdated_version
+
+let parse_pp ~parse ~wrap ~ext text =
+  match !Clflags.preprocessor with
+    None -> parse (Lexing.from_string text)
+  | Some pp ->
+      let tmpfile = preprocess ~pp ~ext text in
+      let ast_magic =
+        if ext = ".ml" then Config.ast_impl_magic_number
+        else Config.ast_intf_magic_number in
+      let ic = open_in_bin tmpfile in
+      let ast =
+        try
+          let buffer = String.create (String.length ast_magic) in
+          really_input ic buffer 0 (String.length ast_magic);
+          if buffer = ast_magic then begin
+            ignore (input_value ic);
+            wrap (input_value ic)
+          end else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
+            raise Outdated_version
+          else
+            raise Exit
+        with
+          Outdated_version ->
+            close_in ic;
+            Sys.remove tmpfile;
+            failwith "Ocaml and preprocessor have incompatible versions"
+        | _ ->
+            seek_in ic 0;
+            parse (Lexing.from_channel ic)
+      in
+      close_in ic;
+      Sys.remove tmpfile;
+      ast
+
 let nowarnings = ref false
 
 let f txt =
@@ -36,13 +93,15 @@ let f txt =
   try
 
     if Filename.check_suffix txt.name ".mli" then
-    let psign = Parse.interface (Lexing.from_string text) in
+    let psign = parse_pp text ~ext:".mli"
+        ~parse:Parse.interface ~wrap:(fun x -> x) in
     txt.psignature <- psign;
     txt.signature <- Typemod.transl_signature !env psign
 
     else (* others are interpreted as .ml *)
 
-    let psl = Parse.use_file (Lexing.from_string text) in
+    let psl = parse_pp text ~ext:".ml"
+        ~parse:Parse.use_file ~wrap:(fun x -> [Parsetree.Ptop_def x]) in
     List.iter psl ~f:
     begin function
       Ptop_def pstr ->
@@ -58,7 +117,7 @@ let f txt =
   | Typecore.Error _ | Typemod.Error _
   | Typeclass.Error _ | Typedecl.Error _
   | Typetexp.Error _ | Includemod.Error _
-  | Env.Error _ | Ctype.Tags _ as exn ->
+  | Env.Error _ | Ctype.Tags _ | Failure _ as exn ->
       let et, ew, end_message = Jg_message.formatted ~title:"Error !" () in
       error_messages := et :: !error_messages;
       let s, e = match exn with
@@ -90,6 +149,8 @@ let f txt =
           Env.report_error Format.std_formatter err; 0, 0
       | Ctype.Tags(l, l') ->
           Format.printf "In this program,@ variant constructors@ `%s and `%s@ have same hash value.@." l l'; 0, 0
+      | Failure s ->
+          Format.printf "%s.@." s; 0, 0
       | _ -> assert false
       in
       end_message ();

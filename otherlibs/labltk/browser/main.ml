@@ -26,6 +26,8 @@ let _ =
       "-labels", Arg.Clear Clflags.classic, " <obsolete>";
       "-nolabels", Arg.Set Clflags.classic,
       " Ignore non-optional labels in types";
+      "-pp", Arg.String (fun s -> Clflags.preprocessor := Some s),
+      "<command>  Pipe sources through preprocessor <command>";
       "-rectypes", Arg.Set Clflags.recursive_types,
       " Allow arbitrary recursive types";
       "-oldui", Arg.Clear st, " Revert back to old UI";

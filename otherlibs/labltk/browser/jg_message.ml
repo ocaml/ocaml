@@ -46,7 +46,12 @@ let formatted ~title ?on ?(ppf = Format.std_formatter)
   ?(width=60) ?(maxheight=10) ?(minheight=0) () =
   let tl, frame =
     match on with
-      Some frame -> coe frame, frame
+      Some frame ->
+(*        let label = Label.create frame ~anchor:`W ~padx:10 ~text:title in
+        pack [label] ~side:`Top ~fill:`X;
+        let frame2 = Frame.create frame in
+        pack [frame2] ~side:`Bottom ~fill:`Both ~expand:true; *)
+        coe frame, frame
     | None ->
         let tl = Jg_toplevel.titled title in
         Jg_bind.escape_destroy tl;

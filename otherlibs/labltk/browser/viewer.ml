@@ -141,7 +141,7 @@ let choose_symbol ~title ~env ?signature ?path l =
       let frame = Frame.create tl in
       pack [frame] ~side:`Bottom ~fill:`X;
       add_shown_module path
-        ~widgets:{ mw_frame = frame; mw_detach = detach;
+        ~widgets:{ mw_frame = frame; mw_title = None; mw_detach = detach;
                    mw_edit = edit; mw_intf = intf }
   end
 
@@ -402,8 +402,10 @@ class st_viewer ?(dir=Unix.getcwd()) ?on () =
   let menus = Frame.create tl ~name:"menubar" in
   let filemenu = new Jg_menu.c "File" ~parent:menus
   and modmenu = new Jg_menu.c "Modules" ~parent:menus
+  and viewmenu = new Jg_menu.c "View" ~parent:menus
   and helpmenu = new Jg_menu.c "Help" ~parent:menus in
   let boxes_frame = Frame.create tl ~name:"boxes" in
+  let label = Label.create tl ~anchor:`W ~padx:10 in
   let view = Frame.create tl in
   let buttons = Frame.create tl in
   let all = Button.create buttons ~text:"Show all" ~padx:20
@@ -413,6 +415,7 @@ class st_viewer ?(dir=Unix.getcwd()) ?on () =
   and intf = Button.create buttons ~text:"Intf" in
 object (self)
   val mutable boxes = []
+  val mutable show_all = fun () -> ()
 
   method create_box =
     let fmbox, mbox, sb = Jg_box.create_with_scrollbar boxes_frame in
@@ -429,10 +432,13 @@ object (self)
       begin fun index ->
         view_defined (Lident (Listbox.get mbox ~index)) ~env:!start_env
       end;
+    bind mbox ~events:[`Modified([`Double], `ButtonPressDetail 1)]
+      ~action:(fun _ -> show_all ());
     Setpath.add_update_hook (fun () -> reset_modules mbox; self#hide_after 1);
     List.iter [1;2] ~f:(fun _ -> ignore self#create_box);
     Searchpos.default_frame := Some
-      { mw_frame = view; mw_detach = detach; mw_edit = edit; mw_intf = intf };
+        { mw_frame = view; mw_title = Some label;
+          mw_detach = detach; mw_edit = edit; mw_intf = intf };
 
     (* Buttons *)
     pack [close] ~side:`Right ~fill:`X ~expand:true;
@@ -453,16 +459,20 @@ object (self)
       ~command:(fun () -> reset_modules mbox; Env.reset_cache ());
     modmenu#add_command "Search symbol..." ~command:search_symbol;
 
+    (* View menu *)
+    viewmenu#add_command "Show all" ~command:(fun () -> show_all ());
+
     (* Help menu *)
     helpmenu#add_command "Manual..." ~command:show_help;
 
-    pack [filemenu#button; modmenu#button] ~side:`Left ~ipadx:5 ~anchor:`W;
+    pack [filemenu#button; modmenu#button; viewmenu#button]
+      ~side:`Left ~ipadx:5 ~anchor:`W;
     pack [helpmenu#button] ~side:`Right ~anchor:`E ~ipadx:5;
     pack [menus] ~side:`Top ~fill:`X;      
     (* pack [close; search] ~fill:`X ~side:`Right ~expand:true; *)
     pack [boxes_frame] ~fill:`Both ~expand:true;
-    pack [view] ~fill:`X ~expand:false;
     pack [buttons] ~fill:`X ~side:`Bottom ~expand:false;
+    pack [view] ~fill:`Both ~side:`Bottom ~expand:true;
     reset_modules mbox
 
   val mutable shown_paths = []
@@ -539,12 +549,11 @@ object (self)
     begin match signature with
       None -> ()
     | Some signature ->
-        Button.configure all ~command:
+        show_all <-
           begin fun () ->
             current := None;
             view_signature signature ~title ~env ?path
-          end;
-        pack [all] ~side:`Right ~fill:`X ~expand:true
+          end
     end
 end
 

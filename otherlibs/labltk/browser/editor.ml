@@ -34,6 +34,7 @@ let compiler_preferences () =
     (fun () ->
       ref := Textvariable.get variable = (if invert then "0" else "1"))
   in
+  let use_pp = ref (!Clflags.preprocessor <> None) in
   let chkbuttons, setflags = List.split
       (List.map
          ~f:(fun (text, ref, invert) -> mk_chkbutton ~text ~ref ~invert)
@@ -42,17 +43,25 @@ let compiler_preferences () =
            "No labels", Clflags.classic, false;
            "Recursive types", Clflags.recursive_types, false;
            "Lex on load", lex_on_load, false;
-           "Type on load", type_on_load, false ])
+           "Type on load", type_on_load, false;
+           "Preprocessor", use_pp, false ])
   in
+  let pp_command = Entry.create tl (* ~state:(if !use_pp then `Normal else`Disabled) *) in
+  begin match !Clflags.preprocessor with None -> ()
+  | Some pp -> Entry.insert pp_command ~index:(`Num 0) ~text:pp
+  end;
   let buttons = Frame.create tl in
   let ok = Button.create buttons ~text:"Ok" ~padx:20 ~command:
       begin fun () ->
         List.iter ~f:(fun f -> f ()) setflags;
+        Clflags.preprocessor :=
+          if !use_pp then Some (Entry.get pp_command) else None;
         destroy tl
       end
   and cancel = Jg_button.create_destroyer tl ~parent:buttons ~text:"Cancel"
   in
   pack chkbuttons ~side:`Top ~anchor:`W;
+  pack [pp_command] ~side:`Top ~anchor:`E;
   pack [ok;cancel] ~side:`Left ~fill:`X ~expand:true;
   pack [buttons] ~side:`Bottom ~fill:`X
 
@@ -205,16 +214,16 @@ let search_pos_window txt ~x ~y =
   let `Linechar (l, c) = Text.index txt.tw ~index:(`Atxy(x,y), []) in
   let text = Jg_text.get_all txt.tw in
   let pos = Searchpos.lines_to_chars l ~text + c in
-  try if txt.structure <> [] then
-    try Searchpos.search_pos_structure txt.structure ~pos
-    with Searchpos.Found_str (kind, env) ->
-      Searchpos.view_type kind ~env
-  else
-    try Searchpos.search_pos_signature
-        txt.psignature ~pos ~env:!Searchid.start_env;
-      ()
-    with Searchpos.Found_sig (kind, lid, env) ->
+  try if txt.structure <> [] then begin match
+    Searchpos.search_pos_structure txt.structure ~pos
+  with [] -> ()
+  | (kind, env, loc) :: _ -> Searchpos.view_type kind ~env
+  end else begin match
+    Searchpos.search_pos_signature txt.psignature ~pos ~env:!Searchid.start_env
+  with [] -> ()
+  | ((kind, lid), env, loc) :: _ ->
       Searchpos.view_decl lid ~kind ~env
+  end
   with Not_found -> ()
 
 let search_pos_menu txt ~x ~y =
@@ -222,20 +231,21 @@ let search_pos_menu txt ~x ~y =
   let `Linechar (l, c) = Text.index txt.tw ~index:(`Atxy(x,y), []) in
   let text = Jg_text.get_all txt.tw in
   let pos = Searchpos.lines_to_chars l ~text + c in
-  try if txt.structure <> [] then
-    try Searchpos.search_pos_structure txt.structure ~pos
-    with Searchpos.Found_str (kind, env) ->
+  try if txt.structure <> [] then begin match
+    Searchpos.search_pos_structure txt.structure ~pos
+  with [] -> ()
+  | (kind, env, loc) :: _ ->
       let menu = Searchpos.view_type_menu kind ~env ~parent:txt.tw in
       let x = x + Winfo.rootx txt.tw and y = y + Winfo.rooty txt.tw - 10 in
       Menu.popup menu ~x ~y
-  else
-    try Searchpos.search_pos_signature
-        txt.psignature ~pos ~env:!Searchid.start_env;
-      ()
-    with Searchpos.Found_sig (kind, lid, env) ->
+  end else begin match
+    Searchpos.search_pos_signature txt.psignature ~pos ~env:!Searchid.start_env
+  with [] -> ()
+  | ((kind, lid), env, loc) :: _ ->
       let menu = Searchpos.view_decl_menu lid ~kind ~env ~parent:txt.tw in
       let x = x + Winfo.rootx txt.tw and y = y + Winfo.rooty txt.tw - 10 in
       Menu.popup menu ~x ~y
+  end
   with Not_found -> ()
 
 let string_width s =

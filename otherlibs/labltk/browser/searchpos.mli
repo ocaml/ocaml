@@ -19,6 +19,7 @@ val top_widgets : any widget list ref
 
 type module_widgets =
     { mw_frame: frame widget;
+      mw_title: label widget option;
       mw_detach: button widget;
       mw_edit: button widget;
       mw_intf: button widget }
@@ -45,10 +46,9 @@ val view_modtype_id : Longident.t -> env:Env.t -> unit
 val view_type_decl : Path.t -> env:Env.t -> unit
 
 type skind = [`Type|`Class|`Module|`Modtype]
-exception Found_sig of skind * Longident.t * Env.t
 val search_pos_signature :
-  Parsetree.signature -> pos:int -> env:Env.t -> unit
-      (* raises Found_sig to return its result, or Not_found *)
+    Parsetree.signature -> pos:int -> env:Env.t ->
+    ((skind * Longident.t) * Env.t * Location.t) list
 val view_decl : Longident.t -> kind:skind -> env:Env.t -> unit
 val view_decl_menu :
     Longident.t ->
@@ -61,10 +61,9 @@ type fkind = [
   | `Class of Path.t * Types.class_type
   | `Module of Path.t * Types.module_type
 ]
-exception Found_str of fkind * Env.t
 val search_pos_structure :
-  pos:int -> Typedtree.structure_item list -> unit
-      (* raises Found_str to return its result *)
+    pos:int -> Typedtree.structure_item list ->
+    (fkind * Env.t * Location.t) list
 val view_type : fkind -> env:Env.t -> unit
 val view_type_menu : fkind -> env:Env.t -> parent:'a widget -> menu widget
 
