@@ -56,7 +56,7 @@ let end_test () =
     exit 2
   end
 
-let _ =
+let automated_test() =
 
   (** Forward searches *)
   start_test "Search for /the quick brown fox/";
@@ -203,7 +203,7 @@ let _ =
   let r = Str.regexp "r\\(\\(g*\\|k\\)y?\\)*A" in
   let n = 2 in
   test_search_forward r n "ArA"
-    [|"rA"; ""; ""|];
+    [|"rA"; "~"; "~"|];
   test_search_forward r n "ArkA"
     [|"rkA"; ""; ""|];
   test_search_forward r n "AryA"
@@ -217,6 +217,12 @@ let _ =
   test_search_forward r n "AvA"
     [|"AvA"; "v"; "v"; ""|];
 
+  start_test "Search for /A\\(\\(b\\(\\(d\\|l*\\)?\\|w\\)\\)*a\\)A/";
+  let r = Str.regexp "A\\(\\(b\\(\\(d\\|l*\\)?\\|w\\)\\)*a\\)A" in
+  let n = 4 in
+  test_search_forward r n "AbbaA"
+    [|"AbbaA"; "bba"; "b"; ""; ""|];
+
   start_test "Search for /\\(\\|f\\)*x/";
   let r = Str.regexp "\\(\\|f\\)*x" in
   let n = 1 in
@@ -226,6 +232,30 @@ let _ =
     [||];
   test_search_forward r n "fffxab"
     [|"fffx"; ""|];
+  test_search_forward r n "zzzxab"
+    [|"x"; "~"|];
+
+  start_test "Search for /\\(\\|f\\)+x/";
+  let r = Str.regexp "\\(\\|f\\)+x" in
+  let n = 1 in
+  test_search_forward r n "abcd"
+    [||];
+  test_search_forward r n "fffff"
+    [||];
+  test_search_forward r n "fffxab"
+    [|"fffx"; ""|];
+  test_search_forward r n "zzzxab"
+    [|"x"; ""|];
+
+  start_test "Search for /\\([ab]*\\)\\1+c/";
+  let r = Str.regexp "\\([ab]*\\)\\1+c" in
+  let n = 1 in
+  test_search_forward r n "abababc"
+    [| "abababc"; "ab" |];
+  test_search_forward r n "abbc"
+    [| "bbc"; "b" |];
+  test_search_forward r n "abc"
+    [| "c"; "" |];
 
   start_test "Search for /^\\(\\(b+\\|a\\)\\(b+\\|a\\)?\\)?bc/";
   let r = Str.regexp "^\\(\\(b+\\|a\\)\\(b+\\|a\\)?\\)?bc" in
@@ -907,3 +937,27 @@ escaped text]]>
   end;
 
   end_test()
+
+let manual_test regexp text =
+  try
+    ignore (Str.search_forward (Str.regexp regexp) text 0);
+    printf "Matched,";
+    begin try
+      for i = 0 to 31 do
+        try
+          let s = Str.matched_group i text in
+          printf " \\%d=%s" i s
+        with Not_found ->
+          ()
+      done
+    with Invalid_argument "Str.matched_group" -> (*yuck*)
+      ()
+    end;
+    print_newline()
+  with Not_found ->
+    printf "Not matched\n"
+
+let _ =
+  if Array.length Sys.argv >= 3
+  then manual_test Sys.argv.(1) Sys.argv.(2)
+  else automated_test()
