@@ -1,18 +1,16 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
-(*          Xavier Leroy and Pascal Cuoq, INRIA Rocquencourt           *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
 
-type t
-external create: unit -> t = "caml_mutex_new"
-external lock: t -> unit = "caml_mutex_lock"
-external try_lock: t -> bool = "caml_mutex_try_lock"
-external unlock: t -> unit = "caml_mutex_unlock"
+value add : 'a -> 'a
+value remove : 'a -> unit
+value find : 'a -> Mutex.t

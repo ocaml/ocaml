@@ -26,18 +26,18 @@
 
 type t
         (* The type of mutexes. *)
-external create: unit -> t = "csl_mutex_new"
+external create: unit -> t = "caml_mutex_new"
         (* Return a new mutex. *)
-external lock: t -> unit = "csl_mutex_lock"
+external lock: t -> unit = "caml_mutex_lock"
         (* Lock the given mutex. Only one thread can have the mutex locked
            at any time. A thread that attempts to lock a mutex already locked
            by another thread will suspend until the other thread unlocks
            the mutex. *)
-external try_lock: t -> bool = "csl_mutex_try_lock"
+external try_lock: t -> bool = "caml_mutex_try_lock"
         (* Same as [try_lock], but does not suspend the calling thread if
            the mutex is already locked: just return [false] immediately
            in that case. If the mutex is unlocked, lock it and
            return [true]. *)
-external unlock: t -> unit = "csl_mutex_unlock"
+external unlock: t -> unit = "caml_mutex_unlock"
         (* Unlock the given mutex. Other threads suspended trying to lock
            the mutex will restart. *)

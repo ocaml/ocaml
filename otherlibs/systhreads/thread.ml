@@ -17,19 +17,17 @@ open ThreadIO
 
 type t
 
-external thread_initialize : unit -> unit = "csl_thread_initialize"
-external thread_new : (unit -> unit) -> t = "csl_thread_new"
+external thread_initialize : unit -> unit = "caml_thread_initialize"
+external thread_new : (unit -> unit) -> t = "caml_thread_new"
 
-external yield : unit -> unit = "csl_thread_yield"
-external self : unit -> t = "csl_thread_self"
-external id : t -> int = "csl_thread_id"
-external exit : unit -> unit = "csl_thread_exit"
-external join : t -> unit = "csl_thread_join"
-external detach : t -> unit = "csl_thread_detach"
-external delay: float -> unit = "csl_thread_delay"
-external kill : t -> unit = "csl_thread_kill"
-external sleep : unit -> unit = "csl_thread_sleep"
-external wakeup : t -> unit = "csl_thread_wakeup"
+external yield : unit -> unit = "caml_thread_yield"
+external self : unit -> t = "caml_thread_self"
+external id : t -> int = "caml_thread_id"
+external exit : unit -> unit = "caml_thread_exit"
+external join : t -> unit = "caml_thread_join"
+external detach : t -> unit = "caml_thread_detach"
+external delay: float -> unit = "caml_thread_delay"
+external kill : t -> unit = "caml_thread_kill"
 
 (* For new, make sure the function passed to thread_new never
    raises an exception. *)

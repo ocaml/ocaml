@@ -50,7 +50,7 @@ struct win32_thread_struct {
   HANDLE wakeup_event;          /* Win32 event for sleep/wakeup */
 };
 
-struct csl_thread_struct {
+struct caml_thread_struct {
   struct win32_thread_struct * win32;
   value ident;                  /* Unique id */
   value * stack_low;            /* The execution stack for this thread */
@@ -60,24 +60,24 @@ struct csl_thread_struct {
   value * trapsp;               /* Saved value of trapsp for this thread */
   struct longjmp_buffer * external_raise; /* Saved value of external_raise */
   value * local_roots;          /* Saved value of local_roots */
-  struct csl_thread_struct * next;  /* Double linking of threads */
-  struct csl_thread_struct * prev;
+  struct caml_thread_struct * next;  /* Double linking of threads */
+  struct caml_thread_struct * prev;
 };
 
-typedef struct csl_thread_struct * csl_thread_t;
+typedef struct caml_thread_struct * caml_thread_t;
 
 #define Assign(dst,src) modify((value *)&(dst), (value)(src))
 
 /* The global mutex used to ensure that at most one thread is running
    Caml code */
-HANDLE csl_mutex;
+HANDLE caml_mutex;
 
 /* Head of the list of thread descriptors */
-csl_thread_t thread_list = NULL;
+caml_thread_t thread_list = NULL;
 
 /* Thread-specific variable holding the thread descriptor for the current
    thread. */
-__declspec( thread ) csl_thread_t curr_thread;
+__declspec( thread ) caml_thread_t curr_thread;
 
 /* Identifier for next thread creation */
 static long thread_next_ident = 0;
@@ -86,10 +86,10 @@ static long thread_next_ident = 0;
 
 static void (*prev_scan_roots_hook) P((scanning_action)); 
 
-static void csl_thread_scan_roots(action)
+static void caml_thread_scan_roots(action)
      scanning_action action;
 {
-  csl_thread_t th;
+  caml_thread_t th;
   register value * sp;
   value * block;
 
@@ -119,7 +119,7 @@ static void csl_thread_scan_roots(action)
 static void (*prev_enter_blocking_section_hook) ();
 static void (*prev_leave_blocking_section_hook) ();
 
-static void csl_thread_enter_blocking_section()
+static void caml_thread_enter_blocking_section()
 {
   if (prev_enter_blocking_section_hook != NULL)
     (*prev_enter_blocking_section_hook)();
@@ -133,14 +133,14 @@ static void csl_thread_enter_blocking_section()
   curr_thread->external_raise = external_raise;
   curr_thread->local_roots = local_roots;
   /* Release the global mutex */
-  AssertEv(ReleaseMutex(csl_mutex));
+  AssertEv(ReleaseMutex(caml_mutex));
 }
 
 
-static void csl_thread_leave_blocking_section()
+static void caml_thread_leave_blocking_section()
 {
   /* Re-acquire the global mutex */
-  AssertEv(WaitForSingleObject(csl_mutex, INFINITE) == WAIT_OBJECT_0);
+  AssertEv(WaitForSingleObject(caml_mutex, INFINITE) == WAIT_OBJECT_0);
   /* Restore the stack-related global variables */
   stack_low = curr_thread->stack_low;
   stack_high = curr_thread->stack_high;
@@ -155,7 +155,7 @@ static void csl_thread_leave_blocking_section()
 
 /* The "tick" thread fakes a SIGTIMER signal at regular intervals. */
 
-static void* csl_thread_tick()
+static void* caml_thread_tick()
 {
   while(1) {
     Sleep(Thread_timeout);
@@ -167,8 +167,8 @@ static void* csl_thread_tick()
 /* Thread cleanup: remove the descriptor from the list and
    free the stack space and the descriptor itself. */
 
-static void csl_thread_cleanup(th)
-     csl_thread_t th;
+static void caml_thread_cleanup(th)
+     caml_thread_t th;
 {
   /* Remove th from the doubly-linked list of threads */
   if (th == thread_list) {
@@ -192,7 +192,7 @@ static void csl_thread_cleanup(th)
   th->local_roots = NULL;
 }
 
-static void csl_thread_finalize(vfin)
+static void caml_thread_finalize(vfin)
      value vfin;
 {
   struct win32_thread_struct * win32 = (struct win32_thread_struct *) vfin;
@@ -204,16 +204,16 @@ static void csl_thread_finalize(vfin)
 
 #define Max_thread_number 100
 
-static csl_thread_t csl_alloc_thread()
+static caml_thread_t caml_alloc_thread()
 {
-  csl_thread_t th;
+  caml_thread_t th;
   Push_roots(root, 1);
 
   root[0] =
     alloc_final(sizeof(struct win32_thread_struct) / sizeof(value),
-                csl_thread_finalize, 1, Max_thread_number);
-  th = (csl_thread_t)
-    alloc_shr(sizeof(struct csl_thread_struct) / sizeof(value), 0);
+                caml_thread_finalize, 1, Max_thread_number);
+  th = (caml_thread_t)
+    alloc_shr(sizeof(struct caml_thread_struct) / sizeof(value), 0);
   th->win32 = (struct win32_thread_struct *) root[0];
   th->win32->wakeup_event = CreateEvent(NULL, FALSE, FALSE, NULL);
   th->ident = Val_long(thread_next_ident);
@@ -225,17 +225,17 @@ static csl_thread_t csl_alloc_thread()
 
 /* Initialize the thread machinery */
 
-value csl_thread_initialize(unit)   /* ML */
+value caml_thread_initialize(unit)   /* ML */
      value unit;
 {
   unsigned long th_id;
   HANDLE tick_thread;
 
   /* Initialize the master mutex */
-  csl_mutex = CreateMutex(NULL, TRUE, NULL);
-  if (csl_mutex == NULL) sys_error("Thread.init");
+  caml_mutex = CreateMutex(NULL, TRUE, NULL);
+  if (caml_mutex == NULL) sys_error("Thread.init");
   /* Build a descriptor for the initial thread */
-  thread_list = csl_alloc_thread();
+  thread_list = caml_alloc_thread();
   DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
                   GetCurrentProcess(), &(thread_list->win32->thread),
                   0, FALSE, DUPLICATE_SAME_ACCESS);
@@ -253,14 +253,14 @@ value csl_thread_initialize(unit)   /* ML */
   curr_thread = thread_list;
   /* Set up the hooks */
   prev_scan_roots_hook = scan_roots_hook;
-  scan_roots_hook = csl_thread_scan_roots;
+  scan_roots_hook = caml_thread_scan_roots;
   prev_enter_blocking_section_hook = enter_blocking_section_hook;
-  enter_blocking_section_hook = csl_thread_enter_blocking_section;
+  enter_blocking_section_hook = caml_thread_enter_blocking_section;
   prev_leave_blocking_section_hook = leave_blocking_section_hook;
-  leave_blocking_section_hook = csl_thread_leave_blocking_section;
+  leave_blocking_section_hook = caml_thread_leave_blocking_section;
   /* Fork the tick thread */
   tick_thread =
-    CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&csl_thread_tick,
+    CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&caml_thread_tick,
                  NULL, 0, &th_id);
   if (tick_thread == NULL) sys_error("Thread.init");
   AssertEv(CloseHandle(tick_thread));
@@ -270,15 +270,15 @@ value csl_thread_initialize(unit)   /* ML */
 
 /* Create a thread */
 
-static void csl_thread_start(th)
-     csl_thread_t th;
+static void caml_thread_start(th)
+     caml_thread_t th;
 {
   value clos;
   /* Associate the thread descriptor with the thread */
   curr_thread = th;
 
   /* Acquire the global mutex before running the thread */
-  AssertEv(WaitForSingleObject(csl_mutex,INFINITE) == WAIT_OBJECT_0);  
+  AssertEv(WaitForSingleObject(caml_mutex,INFINITE) == WAIT_OBJECT_0);  
   /* Set up the stack variables */
   stack_low = th->stack_low;
   stack_high = th->stack_high;
@@ -291,21 +291,21 @@ static void csl_thread_start(th)
   clos = *extern_sp++;
   callback(clos, Val_unit);
   /* Cleanup: free the thread resources */
-  csl_thread_cleanup(th);
+  caml_thread_cleanup(th);
   /* Release the mutex and die quietly */
-  ReleaseMutex(csl_mutex);
+  ReleaseMutex(caml_mutex);
 }  
 
-value csl_thread_new(clos)          /* ML */
+value caml_thread_new(clos)          /* ML */
      value clos;
 {
-  csl_thread_t th;
+  caml_thread_t th;
   unsigned long th_id;
   Push_roots(root, 1);
 
   root[0] = clos;
   /* Allocate the thread and its stack */
-  th = csl_alloc_thread();
+  th = caml_alloc_thread();
   th->stack_low = (value *) stat_alloc(Thread_stack_size);
   th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
   th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
@@ -322,7 +322,7 @@ value csl_thread_new(clos)          /* ML */
   *--(th->sp) = root[0];
   /* Fork the new thread */
   th->win32->thread =
-    CreateThread(NULL,0, (LPTHREAD_START_ROUTINE) csl_thread_start,
+    CreateThread(NULL,0, (LPTHREAD_START_ROUTINE) caml_thread_start,
                  (void *) th, 0, &th_id);
   if (th->win32->thread == NULL || th->win32->wakeup_event == NULL)
     sys_error("Thread.new");
@@ -332,7 +332,7 @@ value csl_thread_new(clos)          /* ML */
 
 /* Return the current thread */
 
-value csl_thread_self(unit)         /* ML */
+value caml_thread_self(unit)         /* ML */
      value unit;
 {
    return (value) curr_thread;
@@ -340,15 +340,15 @@ value csl_thread_self(unit)         /* ML */
 
 /* Return the identifier of a thread */
 
-value csl_thread_id(th)          /* ML */
-     csl_thread_t th;
+value caml_thread_id(th)          /* ML */
+     caml_thread_t th;
 {
   return th->ident;
 }
 
 /* Allow re-scheduling */
 
-value csl_thread_yield(unit)        /* ML */
+value caml_thread_yield(unit)        /* ML */
      value unit;
 {
   enter_blocking_section();
@@ -359,8 +359,8 @@ value csl_thread_yield(unit)        /* ML */
 
 /* Detach a thread */
 
-value csl_thread_detach(th)         /* ML */
-     csl_thread_t th;
+value caml_thread_detach(th)         /* ML */
+     caml_thread_t th;
 {
   if (CloseHandle(th->win32->thread) == 0) sys_error("Thread.detach");
   return Val_unit;
@@ -368,8 +368,8 @@ value csl_thread_detach(th)         /* ML */
 
 /* Suspend the current thread until another thread terminates */
 
-value csl_thread_join(th)          /* ML */
-     csl_thread_t th;
+value caml_thread_join(th)          /* ML */
+     caml_thread_t th;
 {
   int retcode;
   enter_blocking_section();
@@ -381,19 +381,19 @@ value csl_thread_join(th)          /* ML */
 
 /* Terminate the current thread */
 
-value csl_thread_exit(unit)       /* ML */
+value caml_thread_exit(unit)       /* ML */
      value unit;
 {
-  csl_thread_cleanup(curr_thread);
+  caml_thread_cleanup(curr_thread);
   enter_blocking_section();
   ExitThread(0);
   return Val_unit;              /* never reached */
 }
 
-value csl_thread_kill(th)
-        csl_thread_t th;
+value caml_thread_kill(th)
+        caml_thread_t th;
 {
-  csl_thread_cleanup(th);
+  caml_thread_cleanup(th);
   if (TerminateThread(th->win32->thread, 1) == 0) sys_error("Thread.kill");
   return Val_unit;
 }
@@ -403,24 +403,24 @@ value csl_thread_kill(th)
 #define Mutex_val(v) (*((HANDLE *)(&Field(v, 1))))
 #define Max_mutex_number 1000
 
-static void csl_mutex_finalize(mut)
+static void caml_mutex_finalize(mut)
      value mut;
 {
   AssertEv(CloseHandle(Mutex_val(mut)));
 }
 
-value csl_mutex_new(unit)        /* ML */
+value caml_mutex_new(unit)        /* ML */
      value unit;
 {
   value mut;
   mut = alloc_final(1 + sizeof(HANDLE) / sizeof(value),
-                    csl_mutex_finalize, 1, Max_mutex_number);
+                    caml_mutex_finalize, 1, Max_mutex_number);
   Mutex_val(mut) = CreateMutex(0, FALSE, NULL);
   if (Mutex_val(mut) == NULL) sys_error("Mutex.new");
   return mut;
 }
 
-value csl_mutex_lock(mut)           /* ML */
+value caml_mutex_lock(mut)           /* ML */
      value mut;
 {
   int retcode;
@@ -431,7 +431,7 @@ value csl_mutex_lock(mut)           /* ML */
   return Val_unit;
 }
 
-value csl_mutex_unlock(mut)           /* ML */
+value caml_mutex_unlock(mut)           /* ML */
      value mut;
 {
   BOOL retcode;
@@ -442,7 +442,7 @@ value csl_mutex_unlock(mut)           /* ML */
   return Val_unit;
 }
 
-value csl_mutex_try_lock(mut)           /* ML */
+value caml_mutex_try_lock(mut)           /* ML */
      value mut;
 {
   int retcode;
@@ -454,7 +454,7 @@ value csl_mutex_try_lock(mut)           /* ML */
 
 /* Delay */
 
-value csl_thread_delay(val)        /* ML */
+value caml_thread_delay(val)        /* ML */
      value val;
 {
   enter_blocking_section();
@@ -465,7 +465,7 @@ value csl_thread_delay(val)        /* ML */
 
 /* Sleep and wakeup */
 
-value csl_thread_sleep(value unit) /* ML */
+value caml_thread_sleep(value unit) /* ML */
 {
   enter_blocking_section();
   AssertEv(WaitForSingleObject(curr_thread->win32->wakeup_event, INFINITE) ==
@@ -474,7 +474,7 @@ value csl_thread_sleep(value unit) /* ML */
   return Val_unit;
 }
 
-value csl_thread_wakeup(csl_thread_t th) /* ML */
+value caml_thread_wakeup(caml_thread_t th) /* ML */
 {
   AssertEv(SetEvent(th->win32->wakeup_event));
   return Val_unit;

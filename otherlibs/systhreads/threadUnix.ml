@@ -29,9 +29,9 @@ let read = Unix.read
 let write = Unix.write
 
 let in_channel_of_descr fd =
-  ThreadIO.add_input_lock(Unix.in_channel_of_descr fd)
+  Iolock.add(Unix.in_channel_of_descr fd)
 let out_channel_of_descr fd =
-  ThreadIO.add_output_lock(Unix.out_channel_of_descr fd)
+  Iolock.add(Unix.out_channel_of_descr fd)
 
 let timed_read fd buff ofs len timeout =
   if Thread.wait_timed_read fd timeout
@@ -46,12 +46,12 @@ let timed_write fd buff ofs len timeout =
 let pipe = Unix.pipe
 
 let open_process_in cmd =
-  ThreadIO.add_input_lock(Unix.open_process_in cmd)
+  Iolock.add(Unix.open_process_in cmd)
 let open_process_out cmd =
-  ThreadIO.add_output_lock(Unix.open_process_out cmd)
+  Iolock.add(Unix.open_process_out cmd)
 let open_process cmd =
   let (ic, oc) = Unix.open_process cmd in
-  (ThreadIO.add_input_lock ic, ThreadIO.add_output_lock oc)
+  (Iolock.add ic, Iolock.add oc)
 
 external sleep : int -> unit = "unix_sleep"
 
@@ -65,4 +65,4 @@ let sendto = Unix.sendto
 
 let open_connection addr =
   let (ic, oc) = Unix.open_connection addr in
-  (ThreadIO.add_input_lock ic, ThreadIO.add_output_lock oc)
+  (Iolock.add ic, Iolock.add oc)

@@ -29,20 +29,20 @@ val create : ('a -> 'b) -> 'a -> t
            but not propagated back to the parent thread. Similarly, the
            result of the application [funct arg] is discarded and not
            directly accessible to the parent thread. *)
-external self : unit -> t = "csl_thread_self"
+external self : unit -> t = "caml_thread_self"
         (* Return the thread currently executing. *)
-external id : t -> int = "csl_thread_id"
+external id : t -> int = "caml_thread_id"
         (* Return the identifier of the given thread. A thread identifier
            is an integer that identifies uniquely the thread.
            It can be used to build data structures indexed by threads. *)
-external exit : unit -> unit = "csl_thread_exit"
+external exit : unit -> unit = "caml_thread_exit"
         (* Terminate prematurely the currently executing thread. *)
-external kill : t -> unit = "csl_thread_kill"
+external kill : t -> unit = "caml_thread_kill"
         (* Terminate prematurely the thread whose handle is given. *)
 
 (** Thread synchronization *)
 
-external join : t -> unit = "csl_thread_join"
+external join : t -> unit = "caml_thread_join"
         (* [join th] suspends the execution of the calling thread
            until the thread [th] has terminated. *)
 
@@ -65,21 +65,4 @@ val wait_pid : int -> int * Unix.process_status
            until the process specified by the process identifier [p]
            terminates. Returns the pid of the child caught and
            its termination status, as per [Unix.wait]. *)
-(*--*)
-
-(* The following primitives provide the basis for implementing 
-   synchronization functions between threads. Their direct use is
-   discouraged, as they are very low-level and prone to race conditions
-   and deadlocks. The modules [Mutex], [Condition] and [Event]
-   provide higher-level synchronization primitives. *)
-
-external sleep : unit -> unit = "csl_thread_sleep"
-        (* Suspend the calling thread until another thread reactivates it
-           using [wakeup]. Just before suspending the thread,
-           [critical_section] is reset to [false]. Resetting
-           [critical_section] and suspending the calling thread is an
-           atomic operation. *)
-external wakeup : t -> unit = "csl_thread_wakeup"
-        (* Reactivate the given thread. After the call to [wakeup],
-           the suspended thread will resume execution at some future time. *)
 

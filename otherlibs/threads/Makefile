@@ -1,15 +1,25 @@
 include ../../config/Makefile
 
-# Compilation options
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib -I ../unix
 
 C_OBJS=scheduler.o
-CAML_OBJS=thread.cmo threadIO.cmo threadUnix.cmo \
-  mutex.cmo condition.cmo event.cmo
 
-all: libthreads.a threads.cma
+CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
+
+LIB=../../stdlib
+
+LIB_OBJS=pervasives.cmo \
+  $(LIB)/list.cmo $(LIB)/string.cmo $(LIB)/char.cmo \
+  $(LIB)/array.cmo $(LIB)/sys.cmo $(LIB)/hashtbl.cmo $(LIB)/sort.cmo \
+  $(LIB)/filename.cmo $(LIB)/obj.cmo $(LIB)/lexing.cmo $(LIB)/parsing.cmo \
+  $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo \
+  $(LIB)/stream.cmo $(LIB)/printf.cmo $(LIB)/format.cmo $(LIB)/arg.cmo \
+  $(LIB)/printexc.cmo $(LIB)/gc.cmo $(LIB)/digest.cmo $(LIB)/random.cmo \
+  $(LIB)/oo.cmo $(LIB)/genlex.cmo
+
+all: libthreads.a threads.cma stdlib.cma
 
 allopt:
 
@@ -21,8 +31,21 @@ libthreads.a: $(C_OBJS)
 threads.cma: $(CAML_OBJS)
 	$(CAMLC) -a -o threads.cma $(CAML_OBJS)
 
+stdlib.cma: $(LIB_OBJS)
+	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)
+
+pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
+	$(CAMLC) -nopervasives -c pervasives.ml
+
+pervasives.mli: $(LIB)/pervasives.mli
+	ln -s $(LIB)/pervasives.mli pervasives.mli
+
+pervasives.cmi: $(LIB)/pervasives.cmi
+	ln -s $(LIB)/pervasives.cmi pervasives.cmi
+
 clean:
 	rm -f libthreads.a *.o *.cm*
+	rm -f pervasives.mli
 
 realclean:
 
