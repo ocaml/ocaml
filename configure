@@ -833,14 +833,14 @@ if test $has_tk = true; then
     has_tk=false
   fi
 fi
-if test $has_tk = true && \
-  sh ./hasgot $tk_libs $x11_libs -lX11 $tkauxlibs Tk_SetGrid
-then
-  echo "Tcl/Tk libraries found."
-else
-  echo "Tcl library found."
-  echo "Tk library not found."
-  has_tk=false
+if test $has_tk = true; then
+  if sh ./hasgot $tk_libs $x11_libs -lX11 $tkauxlibs Tk_SetGrid; then
+    echo "Tcl/Tk libraries found."
+  else
+    echo "Tcl library found."
+    echo "Tk library not found."
+    has_tk=false
+  fi
 fi
 
 if test $has_tk = true; then
@@ -939,7 +939,7 @@ fi
 
 if test $has_tk = true; then
 echo "The \"labltk\" library:"
-echo "  use tcl/tk version ....... $tcl_version"
+echo "	use tcl/tk version ....... $tcl_version"
 echo "	options for compiling .... $tk_defs"
 echo "	options for linking ...... $tk_libs"
 else
