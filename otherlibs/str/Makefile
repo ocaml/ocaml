@@ -28,6 +28,8 @@ str.cmxa: str.cmx
 $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
 	cd $(REGEXLIB); CC="$(CC)" sh configure; $(MAKE)
 
+str.cmx: ../../cslopt
+
 clean:
 	rm -f *.cm*
 

@@ -64,7 +64,7 @@ $(OBJS:.cmo=.cmi): $(COMPILER)
 $(OBJS:.cmo=.cmx): $(OPTCOMPILER)
 
 clean:
-	rm -f *.cm*
+	rm -f *.cm* *.o *.a
 	rm -f cslheader
 	rm -f *~
 

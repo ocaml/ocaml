@@ -24,7 +24,7 @@ nums.cma: $(CAMLOBJS)
 
 nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx)
- 
+
 libnums.a: bignum/libbignum.a $(COBJS)
 	cp bignum/libbignum.a libnums.a
 	ar r libnums.a $(COBJS)
@@ -32,6 +32,8 @@ libnums.a: bignum/libbignum.a $(COBJS)
 
 bignum/libbignum.a:
 	cd bignum; make $(BIGNUM_ARCH) CC="$(CC)"
+
+$(CAMLOBJS:.cmo=.cmx): ../../cslopt
 
 install:
 	cp libnums.a $(LIBDIR)/libnums.a

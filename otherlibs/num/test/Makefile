@@ -16,6 +16,8 @@ test.byt: $(TESTFILES) ../nums.cma ../libnums.a
 test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.a
 	$(CAMLOPT) -o test.opt ../nums.cmxa $(TESTOPTFILES) ../libnums.a
 
+$(TESTOPTFILES): ../../../cslopt
+
 .SUFFIXES: .ml .cmo .cmx
 
 .ml.cmo:

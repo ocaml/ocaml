@@ -38,6 +38,8 @@ unix.cma: unix.cmo
 unix.cmxa: unix.cmx
 	$(CAMLOPT) -a -o unix.cmxa unix.cmx
 
+unix.cmx: ../../cslopt
+
 clean:
 	rm -f *.cm*
 
