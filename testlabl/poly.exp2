@@ -1,4 +1,4 @@
-        Objective Caml version 3.09+dev9 (2004-11-29)
+        Objective Caml version 3.09+dev14 (2005-01-21)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -163,9 +163,17 @@ The type abbreviation foo is cyclic
   (< m : 'b. 'a * (< n : 'b; .. > as 'b) > as 'a) ->
   (< m : 'd. 'c * (< n : 'd; .. > as 'd) > as 'c) * (< n : 'e; .. > as 'e) =
   <fun>
-#   - : (< p : 'b. < m : 'b; n : 'a; .. > as 'b > as 'a) ->
+# - : (< p : 'b. < m : 'b; n : 'a; .. > as 'b > as 'a) ->
     (< m : 'c; n : < p : 'e. < m : 'e; n : 'd; .. > as 'e > as 'd; .. > as 'c)
 = <fun>
+# - : (< m : 'b. 'b * < p : 'd. 'd * 'c * 'a > as 'c > as 'a) ->
+    ('f *
+     < p : 'g.
+             'g * 'e *
+             (< m : 'i. 'i * < p : 'k. 'k * 'j * 'h > as 'j > as 'h) >
+     as 'e)
+= <fun>
+#   - : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
 #   type sum = T of < id : 'a. 'a -> 'a >
 # - : sum -> 'a -> 'a = <fun>
 #   type record = { r : < id : 'a. 'a -> 'a >; }
@@ -326,7 +334,7 @@ type bt = 'a ca cb as 'a
 # val f : unit -> c = <fun>
 # Characters 11-60:
 Warning X: the following private methods were made public implicitly:
-  n .
+ n.
 val f : unit -> < m : int; n : int > = <fun>
 # Characters 11-56:
 This object is expected to have type c but has actually type
@@ -368,6 +376,9 @@ Types for method m are incompatible
 This expression has type < m : 'b. 'b * ('b * 'a) > as 'a
 but is here used with type < m : 'b. 'b * ('b * < m : 'd. 'd * 'c > as 'c) >
 Types for method m are incompatible
+#     Characters 14-115:
+Type < m : 'a. 'a -> ('a * (< m : 'e. 'e -> 'b as 'd > as 'c) as 'b) >
+is not a subtype of type < m : 'a. 'a -> ('a * 'f as 'h) as 'g > as 'f 
 #       Characters 88-150:
 Signature mismatch:
 Modules do not match:
@@ -378,6 +389,16 @@ Values do not match:
   val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit
 is not included in
   val f : < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > -> unit
+#     Characters 78-132:
+Signature mismatch:
+Modules do not match:
+  sig type t = < m : 'b. 'b * ('b * 'a) > as 'a end
+is not included in
+  sig type t = < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > end
+Type declarations do not match:
+  type t = < m : 'b. 'b * ('b * 'a) > as 'a
+is not included in
+  type t = < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >
 #     module M : sig type 'a t type u = < m : 'a. 'a t > end
 #   module M : sig type 'a t val f : < m : 'a. 'a t > -> int end
 #     module M : sig type 'a t val f : < m : 'a. 'a t > -> int end

@@ -265,8 +265,10 @@ type 'a foo = 'a foo bar
 fun x -> (x : < m : 'a. 'a * 'b > as 'b)#m;;
 fun x -> (x : < m : 'a. 'b * 'a list> as 'b)#m;;
 let f x = (x : < m : 'a. 'b * (< n : 'a; .. > as 'a) > as 'b)#m;;
-
 fun (x : < p : 'a. < m : 'a ; n : 'b ; .. > as 'a > as 'b) -> x#p;;
+fun (x : <m:'a. 'a * <p:'b. 'b * 'c * 'd> as 'c> as 'd) -> x#m;;
+(* printer is wrong on the next (no official syntax) *)
+fun (x : <m:'a.<p:'a;..> >) -> x#m;;
 
 type sum = T of < id: 'a. 'a -> 'a > ;;
 fun (T x) -> x#id;;
@@ -493,10 +495,16 @@ fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
   (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('b * 'bar)>)> as 'bar);;
 fun (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) ->
   (x : <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>);;
+let f x =
+    (x : <m : 'a. 'a -> ('a * <m:'c. 'c -> 'bar> as 'bar)>
+       :> <m : 'a. 'a -> ('a * 'foo)> as 'foo);;
 
 module M
 : sig val f : (<m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>) -> unit end
 = struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
+module M
+: sig type t = <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)> end
+= struct type t = <m : 'a. 'a * ('a * 'foo)> as 'foo end;;
 
 module M : sig type 'a t type u = <m: 'a. 'a t> end
 = struct type 'a t = int type u = <m: int> end;;
