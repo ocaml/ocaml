@@ -389,3 +389,12 @@ test 3
 eq_big_int (base_power_big_int 10 1 (big_int_of_int 123), big_int_of_int 1230)
 ;;
 
+testing_function "square_big_int";;
+test 1 eq
+ (square_big_int (big_int_of_string "0"), big_int_of_string"0");;
+test 2 eq_big_int
+ (square_big_int (big_int_of_string "1"), big_int_of_string"1");;
+test 3 eq_big_int
+ (square_big_int (big_int_of_string "-1"), big_int_of_string"1");;
+test 4 eq_big_int
+ (square_big_int (big_int_of_string "-7"), big_int_of_string"49");;

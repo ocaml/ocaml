@@ -14,7 +14,8 @@ let test test_number eq_fun (answer, correct_answer) =
  flush stdout;
  flush stderr;
  if not (eq_fun answer correct_answer) then begin
-   fprintf stderr ">>> Bad result (%s, test %d)\n" !function_tested test_number;
+   fprintf stderr "*** Bad result (%s, test %d)\n" !function_tested test_number;
+   flush stderr;
    error_occurred := true;
    false
  end else begin
@@ -27,8 +28,9 @@ let failure_test test_number fun_to_test arg =
  flush stderr;
  try
    fun_to_test arg;
-   fprintf stderr ">>> Failure expected (%s, test %d)\n"
+   fprintf stderr "*** Failure expected (%s, test %d)\n"
                   !function_tested test_number;
+   flush stderr;
    error_occurred := true;
    false
   with _ ->
@@ -38,8 +40,9 @@ let failure_test test_number fun_to_test arg =
 let failwith_test test_number fun_to_test arg correct_failure =
  try
    fun_to_test arg;
-   fprintf stderr ">>> Failure expected (%s, test %d)\n"
+   fprintf stderr "*** Failure expected (%s, test %d)\n"
                   !function_tested test_number;
+   flush stderr;
    error_occurred := true;
    false
   with x ->
@@ -47,8 +50,9 @@ let failwith_test test_number fun_to_test arg correct_failure =
      printf " %d..." test_number;
      true
    end else begin
-     fprintf stderr ">>> Bad failure (%s, test %d)\n"
+     fprintf stderr "*** Bad failure (%s, test %d)\n"
                     !function_tested test_number;
+     flush stderr;
      error_occurred := true;
      false
    end   
