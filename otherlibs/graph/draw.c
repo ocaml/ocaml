@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -35,7 +35,7 @@ value gr_moveto(value vx, value vy)
 value gr_current_point(void)
 {
   value res;
-  res = alloc_tuple(2);
+  res = alloc_small(2, 0);
   Field(res, 0) = Val_int(grx);
   Field(res, 1) = Val_int(gry);
   return res;

@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -354,7 +354,7 @@ try_again:
 	    w = inter_fdlist_set(th->writefds, &writefds);
 	    e = inter_fdlist_set(th->exceptfds, &exceptfds);
 	    if (r != NO_FDS || w != NO_FDS || e != NO_FDS) {
-	      value retval = alloc(3, TAG_RESUMED_IO);
+	      value retval = alloc_small(3, TAG_RESUMED_IO);
 	      Field(retval, 0) = r;
 	      Field(retval, 1) = w;
 	      Field(retval, 2) = e;
@@ -588,7 +588,7 @@ static value inter_fdlist_set(value fdl, fd_set *set)
     for (res = NO_FDS; fdl != NO_FDS; fdl = Field(fdl, 1)) {
       int fd = Int_val(Field(fdl, 0));
       if (FD_ISSET(fd, set)) {
-        cons = alloc(2, 0);
+        cons = alloc_small(2, 0);
 	Field(cons, 0) = Val_int(fd);
 	Field(cons, 1) = res;
 	res = cons;
@@ -620,19 +620,19 @@ static value alloc_process_status(int pid, int status)
   value st, res;
 
   if (WIFEXITED(status)) {
-    st = alloc(1, TAG_WEXITED);
+    st = alloc_small(1, TAG_WEXITED);
     Field(st, 0) = Val_int(WEXITSTATUS(status));
   }
   else if (WIFSTOPPED(status)) {
-    st = alloc(1, TAG_WSTOPPED);
+    st = alloc_small(1, TAG_WSTOPPED);
     Field(st, 0) = Val_int(WSTOPSIG(status));
   }
   else {
-    st = alloc(1, TAG_WSIGNALED);
+    st = alloc_small(1, TAG_WSIGNALED);
     Field(st, 0) = Val_int(WTERMSIG(status));
   }
   Begin_root(st);
-    res = alloc(2, TAG_RESUMED_WAIT);
+    res = alloc_small(2, TAG_RESUMED_WAIT);
     Field(res, 0) = Val_int(pid);
     Field(res, 1) = st;
   End_roots();

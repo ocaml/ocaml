@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -275,7 +275,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
   if (oldact == SIG_ERR) sys_error(NO_ARG);
 #endif
   if (oldact == (void (*)(int)) handle_signal) {
-    res = alloc(1, 0);          /* Signal_handle */
+    res = alloc_small(1, 0);          /* Signal_handle */
     Field(res, 0) = Field(signal_handlers, sig);
   }
   else if (oldact == SIG_IGN)

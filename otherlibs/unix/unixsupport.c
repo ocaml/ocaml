@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -254,7 +254,7 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
     errconstr =
       cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
     if (errconstr == Val_int(-1)) {
-      err = alloc(1, 0);
+      err = alloc_small(1, 0);
       Field(err, 0) = Val_int(errcode);
     } else {
       err = errconstr;
@@ -264,7 +264,7 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
       if (unix_error_exn == NULL)
         invalid_argument("Exception Unix.Unix_error not initialized, please link unix.cma");
     }
-    res = alloc(4, 0);
+    res = alloc_small(4, 0);
     Field(res, 0) = *unix_error_exn;
     Field(res, 1) = err;
     Field(res, 2) = name;

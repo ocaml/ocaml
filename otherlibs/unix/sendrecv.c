@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -64,7 +64,7 @@ value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /
     if (ret == -1) uerror("recvfrom", Nothing);
     bcopy(iobuf, &Byte(buff, Long_val(ofs)), ret);
     adr = alloc_sockaddr();
-    res = alloc_tuple(2);
+    res = alloc_small(2, 0);
     Field(res, 0) = Val_int(ret);
     Field(res, 1) = adr;
   End_roots();

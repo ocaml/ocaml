@@ -5,7 +5,7 @@
 /*             Pascal Cuoq, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -34,7 +34,7 @@ value win_findfirst(name)             /* ML */
         uerror("opendir", Nothing);
     }
     valname = copy_string(fileinfo.name);
-    v = alloc_tuple(2);
+    v = alloc_small(2, 0);
     Field(v,0) = valname;
     Field(v,1) = Val_int(h);
   End_roots();

@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -50,10 +50,10 @@ static value alloc_host_entry(struct hostent *entry)
     addr_list = alloc_array(alloc_one_addr, entry->h_addr_list);
 #else
     adr = alloc_one_addr(entry->h_addr);
-    addr_list = alloc_tuple(1);
+    addr_list = alloc_small(1, 0);
     Field(addr_list, 0) = adr;
 #endif
-    res = alloc_tuple(4);
+    res = alloc_small(4, 0);
     Field(res, 0) = name;
     Field(res, 1) = aliases;
     Field(res, 2) = entry->h_addrtype == PF_UNIX ? Val_int(0) : Val_int(1);

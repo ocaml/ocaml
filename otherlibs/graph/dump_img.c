@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -15,22 +15,6 @@
 #include "image.h"
 #include <alloc.h>
 #include <memory.h>
-
-static value gr_alloc_int_vect(mlsize_t size)
-{
-  value res;
-  mlsize_t i;
-  
-  if (size <= Max_young_wosize) {
-    res = alloc(size, 0);
-  } else {
-    res = alloc_shr(size, 0);
-  }
-  for (i = 0; i < size; i++) {
-    Field(res, i) = Val_long(0);
-  }
-  return res;
-}
 
 value gr_dump_image(value image)
 {
@@ -42,9 +26,9 @@ value gr_dump_image(value image)
     gr_check_open();
     width = Width_im(image);
     height = Height_im(image);
-    m = gr_alloc_int_vect(height);
+    m = alloc(height, 0);
     for (i = 0; i < height; i++) {
-      value v = gr_alloc_int_vect(width);
+      value v = alloc(width, 0);
       modify(&Field(m, i), v);
     }
 

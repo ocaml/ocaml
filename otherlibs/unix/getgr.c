@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -28,7 +28,7 @@ static value alloc_group_entry(struct group *entry)
     name = copy_string(entry->gr_name);
     pass = copy_string(entry->gr_passwd);
     mem = copy_string_array(entry->gr_mem);
-    res = alloc_tuple(4);
+    res = alloc_small(4, 0);
     Field(res,0) = name;
     Field(res,1) = pass;
     Field(res,2) = Val_int(entry->gr_gid);

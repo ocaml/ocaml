@@ -5,7 +5,7 @@
 /*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -35,7 +35,7 @@ value unix_pipe(value unit)                /* ML */
   Begin_roots2(readfd, writefd)
     readfd = win_alloc_handle(readh);
     writefd = win_alloc_handle(writeh);
-    res = alloc_tuple(2);
+    res = alloc_small(2, 0);
     Field(res, 0) = readfd;
     Field(res, 1) = writefd;
   End_roots();

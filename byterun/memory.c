@@ -286,8 +286,7 @@ void adjust_gc_speed (mlsize_t mem, mlsize_t max)
 void initialize (value *fp, value val)
 {
   *fp = val;
-  Assert (Is_in_heap (fp));
-  if (Is_block (val) && Is_young (val)){
+  if (Is_in_heap (fp) && Is_block (val) && Is_young (val)){
     *ref_table_ptr++ = fp;
     if (ref_table_ptr >= ref_table_limit){
       realloc_ref_table ();

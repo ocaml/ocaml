@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -39,7 +39,7 @@ value unix_accept(sock)          /* ML */
   Begin_roots2 (fd, adr)
     fd = win_alloc_handle((HANDLE) snew);
     adr = alloc_sockaddr();
-    res = alloc_tuple(2);
+    res = alloc_small(2, 0);
     Field(res, 0) = fd;
     Field(res, 1) = adr;
   End_roots();

@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -34,7 +34,7 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
     for (/*nothing*/; fdlist != Val_int(0); fdlist = Field(fdlist, 1)) {
       value s = Field(fdlist, 0);
       if (FD_ISSET((SOCKET) Handle_val(s), fdset)) {
-	value newres = alloc(2, 0);
+	value newres = alloc_small(2, 0);
 	Field(newres, 0) = s;
 	Field(newres, 1) = res;
 	res = newres;
@@ -74,7 +74,7 @@ value unix_select(value readfds, value writefds, value exceptfds, value timeout)
     read_list = fdset_to_fdlist(readfds, &read);
     write_list = fdset_to_fdlist(writefds, &write);
     except_list = fdset_to_fdlist(exceptfds, &except);
-    res = alloc_tuple(3);
+    res = alloc_small(3, 0);
     Field(res, 0) = read_list;
     Field(res, 1) = write_list;
     Field(res, 2) = except_list;

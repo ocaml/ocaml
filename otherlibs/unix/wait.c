@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -39,19 +39,19 @@ static value alloc_process_status(int pid, int status)
   value st, res;
 
   if (WIFEXITED(status)) {
-    st = alloc(1, TAG_WEXITED);
+    st = alloc_small(1, TAG_WEXITED);
     Field(st, 0) = Val_int(WEXITSTATUS(status));
   }
   else if (WIFSTOPPED(status)) {
-    st = alloc(1, TAG_WSTOPPED);
+    st = alloc_small(1, TAG_WSTOPPED);
     Field(st, 0) = Val_int(WSTOPSIG(status));
   }
   else {
-    st = alloc(1, TAG_WSIGNALED);
+    st = alloc_small(1, TAG_WSIGNALED);
     Field(st, 0) = Val_int(WTERMSIG(status));
   }
   Begin_root (st);
-    res = alloc_tuple(2);
+    res = alloc_small(2, 0);
     Field(res, 0) = Val_int(pid);
     Field(res, 1) = st;
   End_roots();

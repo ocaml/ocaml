@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -30,7 +30,7 @@ static value alloc_passwd_entry(struct passwd *entry)
     gecos = copy_string(entry->pw_gecos);
     dir = copy_string(entry->pw_dir);
     shell = copy_string(entry->pw_shell);
-    res = alloc_tuple(7);
+    res = alloc_small(7, 0);
     Field(res,0) = name;
     Field(res,1) = passwd;
     Field(res,2) = Val_int(entry->pw_uid);

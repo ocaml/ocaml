@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -28,7 +28,7 @@
 
 static value unix_convert_itimer(struct itimerval *tp)
 {
-  value res = alloc(Double_wosize * 2, Double_array_tag);
+  value res = alloc_small(Double_wosize * 2, Double_array_tag);
   Store_double_field(res, 0, Get_timeval(tp->it_interval));
   Store_double_field(res, 1, Get_timeval(tp->it_value));
   return res;

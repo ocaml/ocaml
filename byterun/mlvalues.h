@@ -5,7 +5,7 @@
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -26,21 +26,21 @@
   val: The ML representation of something.  A long or a block or a pointer
        outside the heap.  If it is a block, it is the (encoded) address
        of an object.  If it is a long, it is encoded as well.
-  object: Something allocated.  It always has a header and some
+  block: Something allocated.  It always has a header and some
           fields or some number of bytes (a multiple of the word size).
-  field: A word-sized val which is part of an object.
-  bp: Pointer to the first byte of an object.  (a char *)
-  op: Pointer to the first field of an object.  (a value *)
-  hp: Pointer to the header of an object.  (a char *)
+  field: A word-sized val which is part of a block.
+  bp: Pointer to the first byte of a block.  (a char *)
+  op: Pointer to the first field of a block.  (a value *)
+  hp: Pointer to the header of a block.  (a char *)
   int32: Four bytes on all architectures.
 
-  Remark: An object size is always a multiple of the word size, and at least
+  Remark: A block size is always a multiple of the word size, and at least
           one word plus the header.
 
   bosize: Size (in bytes) of the "bytes" part.
   wosize: Size (in words) of the "fields" part.
-  bhsize: Size (in bytes) of the object with its header.
-  whsize: Size (in words) of the object with its header.
+  bhsize: Size (in bytes) of the block with its header.
+  whsize: Size (in words) of the block with its header.
 
   hd: A header.
   tag: The value of the tag field of the header.
@@ -173,7 +173,7 @@ typedef opcode_t * code_t;
 
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
-/* Infix_tag must be 1 modulo 4 and infix headers can only occur in objects
+/* Infix_tag must be 1 modulo 4 and infix headers can only occur in blocks
    with tag Closure_tag (see compact.c). */
 
 #define Infix_tag 249

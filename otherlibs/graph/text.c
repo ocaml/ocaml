@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -73,7 +73,7 @@ value gr_text_size(value str)
   gr_check_open();
   if (grfont == NULL) gr_font(DEFAULT_FONT);
   width = XTextWidth(grfont, String_val(str), string_length(str));
-  res = alloc_tuple(2);
+  res = alloc_small(2, 0);
   Field(res, 0) = Val_int(width);
   Field(res, 1) = Val_int(grfont->ascent + grfont->descent);
   return res;

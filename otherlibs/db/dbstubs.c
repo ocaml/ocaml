@@ -5,7 +5,7 @@
 /*            Francois Rouaix, projet Cristal, INRIA Rocquencourt      */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -163,7 +163,7 @@ value caml_db_seq(value cdb, value vkey, value vflags)	/* ML */
       Begin_roots3(reskey, resdata, res);
       reskey = alloc_string(key.size);
       resdata = alloc_string(data.size);
-      res = alloc_tuple(2);
+      res = alloc_small(2, 0);
       bcopy(key.data, String_val(reskey), key.size);
       bcopy(data.data, String_val(resdata), data.size);
       Field(res, 0) = reskey;

@@ -5,7 +5,7 @@
 /*   Pascal Cuoq and Xavier Leroy, projet Cristal, INRIA Rocquencourt  */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -25,7 +25,7 @@ static value alloc_process_status(HANDLE pid, int status)
   st = alloc(1, 0);
   Field(st, 0) = Val_int(status);
   Begin_root (st);
-    res = alloc_tuple(2);
+    res = alloc_small(2, 0);
     Field(res, 0) = Val_long((long) pid);
     Field(res, 1) = st;
   End_roots();

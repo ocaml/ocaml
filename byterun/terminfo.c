@@ -62,7 +62,7 @@ value terminfo_setup (value vchan)      /* ML */
       || standout == NULL || standend == NULL){
     return Bad_term;
   }
-  result = alloc (1, Good_term_tag);
+  result = alloc_small (1, Good_term_tag);
   Field (result, 0) = Val_int (num_lines);
   return result;
 }

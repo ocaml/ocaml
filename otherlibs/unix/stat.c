@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -45,7 +45,7 @@ static value stat_aux(struct stat *buf)
     atime = copy_double((double) buf->st_atime);
     mtime = copy_double((double) buf->st_mtime);
     ctime = copy_double((double) buf->st_ctime);
-    v = alloc_tuple(12);
+    v = alloc_small(12, 0);
     Field (v, 0) = Val_int (buf->st_dev);
     Field (v, 1) = Val_int (buf->st_ino);
     Field (v, 2) = cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,

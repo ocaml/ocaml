@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1998 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -38,7 +38,7 @@ static value encode_sigset(sigset_t * set)
   Begin_root(res)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i)) {
-        value newcons = alloc(2, 0);
+        value newcons = alloc_small(2, 0);
         Field(newcons, 0) = Val_int(i);
         Field(newcons, 1) = res;
         res = newcons;

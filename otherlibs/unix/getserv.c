@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -38,7 +38,7 @@ static value alloc_service_entry(struct servent *entry)
     name = copy_string(entry->s_name);
     aliases = copy_string_array(entry->s_aliases);
     proto = copy_string(entry->s_proto);
-    res = alloc_tuple(4);
+    res = alloc_small(4, 0);
     Field(res,0) = name;
     Field(res,1) = aliases;
     Field(res,2) = Val_int(ntohs(entry->s_port));

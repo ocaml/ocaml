@@ -5,7 +5,7 @@
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -19,6 +19,7 @@
 #include "mlvalues.h"
 
 value alloc (mlsize_t, tag_t);
+value alloc_small (mlsize_t, tag_t);
 value alloc_tuple (mlsize_t);
 value alloc_string (mlsize_t);
 value alloc_final (mlsize_t, final_fun, mlsize_t, mlsize_t);

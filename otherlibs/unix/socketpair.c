@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -29,7 +29,7 @@ value unix_socketpair(value domain, value type, value proto) /* ML */
                  socket_type_table[Int_val(type)],
                  Int_val(proto), sv) == -1)
     uerror("socketpair", Nothing);
-  res = alloc_tuple(2);
+  res = alloc_small(2, 0);
   Field(res,0) = Val_int(sv[0]);
   Field(res,1) = Val_int(sv[1]);
   return res;

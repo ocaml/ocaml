@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -129,7 +129,7 @@ value gr_wait_event(value eventlist)
       XFlush(grdisplay);
     }
   }
-  res = alloc_tuple(5);
+  res = alloc_small(5, 0);
   Field(res, 0) = Val_int(mouse_x);
   Field(res, 1) = Val_int(mouse_y == -1 ? -1 : Wcvt(mouse_y));
   Field(res, 2) = Val_bool(button);

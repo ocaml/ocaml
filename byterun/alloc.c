@@ -5,7 +5,7 @@
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -27,6 +27,25 @@
 #define Restore_after_gc
 
 value alloc (mlsize_t wosize, tag_t tag)
+{
+  value result;
+  mlsize_t i;
+
+  Assert (wosize > 0);
+  if (wosize <= Max_young_wosize){
+    Alloc_small (result, wosize, tag);
+    if (tag < No_scan_tag){
+      for (i = 0; i < wosize; i++) Field (result, i) = 0;
+    }
+  }else{
+    result = alloc_shr (wosize, tag);
+    if (tag < No_scan_tag) memset (Bp_val (result), 0, Bsize_wsize (wosize));
+    result = check_urgent_gc (result);
+  }
+  return result;
+}
+
+value alloc_small (mlsize_t wosize, tag_t tag)
 {
   value result;
   
@@ -89,8 +108,7 @@ value alloc_array(value (*funct)(char *), char ** arr)
   if (nbr == 0) {
     return Atom(0);
   } else {
-    result = nbr < Max_young_wosize ? alloc(nbr, 0) : alloc_shr(nbr, 0);
-    for (n = 0; n < nbr; n++) Field(result, n) = Val_int(0);
+    result = alloc (nbr, 0);
     Begin_root(result);
       for (n = 0; n < nbr; n++) {
 	/* The two statements below must be separate because of evaluation
@@ -125,13 +143,9 @@ int convert_flag_list(value list, int *flags)
 value alloc_dummy(value size) /* ML */
 {
   mlsize_t wosize = Int_val(size);
-  value result;
-  mlsize_t i;
 
   if (wosize == 0) return Atom(0);
-  result = alloc(wosize, 0);
-  for (i = 0; i < wosize; i++) Field(result, i) = Val_int(0);
-  return result;
+  return alloc (wosize, 0);
 }
 
 value update_dummy(value dummy, value newval) /* ML */

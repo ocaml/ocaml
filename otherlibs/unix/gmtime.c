@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -20,7 +20,7 @@
 static value alloc_tm(struct tm *tm)
 {
   value res;
-  res = alloc_tuple(9);
+  res = alloc_small(9, 0);
   Field(res,0) = Val_int(tm->tm_sec);
   Field(res,1) = Val_int(tm->tm_min);
   Field(res,2) = Val_int(tm->tm_hour);
@@ -69,7 +69,7 @@ value unix_mktime(value t)            /* ML */
     clock = mktime(&tm);
     tmval = alloc_tm(&tm);
     clkval = copy_double((double) clock);
-    res = alloc_tuple(2);
+    res = alloc_small(2, 0);
     Field(res, 0) = clkval;
     Field(res, 1) = tmval;
   End_roots ();

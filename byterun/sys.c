@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -244,7 +244,7 @@ value sys_get_config(value unit)  /* ML */
 
   ostype = copy_string(OCAML_OS_TYPE);
   Begin_root(ostype);
-    result = alloc_tuple(2);
+    result = alloc_small (2, 0);
     Field(result, 0) = ostype;
     Field(result, 1) = Val_long (8 * sizeof(value));
   End_roots ();

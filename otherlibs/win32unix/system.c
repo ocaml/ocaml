@@ -5,7 +5,7 @@
 /*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -29,7 +29,7 @@ value win_system(cmd)           /* ML */
   ret = system(String_val(cmd));;
   leave_blocking_section();
   if (ret == -1) uerror("system", Nothing);
-  st = alloc(1, 0); /* Tag 0: Exited */
+  st = alloc_small(1, 0); /* Tag 0: Exited */
   Field(st, 0) = Val_int(ret);
   return st;
 }
