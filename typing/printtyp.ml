@@ -130,6 +130,7 @@ let rec mark_loops_rec visited ty =
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Tnil                -> ()
     | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
+    | _ -> assert false
 
 let mark_loops ty = mark_loops_rec [] ty
 
@@ -322,6 +323,7 @@ let rec type_declaration id decl =
       List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
   | Type_record (lbl1 :: lbls as l) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
+  | _ -> assert false
   end;
 
   open_hvbox 2;
@@ -349,6 +351,7 @@ let rec type_declaration id decl =
         (fun lbl -> print_string ";"; print_break 1 2; label lbl)
         lbls;
       print_string " }"
+  | _ -> assert false
   end;
   List.iter constrain params;
   close_box()

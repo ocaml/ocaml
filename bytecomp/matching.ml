@@ -261,11 +261,13 @@ let combine_constant arg cst (const_lambda_list, total1) (lambda2, total2) =
     match cst with
       Const_int _ ->
         let int_lambda_list =
-          List.map (fun (Const_int n, l) -> (n, l)) const_lambda_list in
+          List.map (function Const_int n, l -> n,l | _ -> assert false)
+                   const_lambda_list in
         make_switch_or_test_sequence arg const_lambda_list int_lambda_list
     | Const_char _ ->
         let int_lambda_list =
-          List.map (fun (Const_char c, l) -> (Char.code c, l))
+          List.map (function Const_char c, l -> (Char.code c, l)
+                           | _ -> assert false)
                    const_lambda_list in
         if List.for_all (fun (c, l) -> l = lambda_unit) const_lambda_list then
           make_bitvect_check arg int_lambda_list 
@@ -282,10 +284,13 @@ let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
     (* Special cases for exceptions *)
     let lambda1 =
       List.fold_right
-        (fun (Cstr_exception path, act) rem ->
-          Lifthenelse(Lprim(Pintcomp Ceq, 
-                            [Lprim(Pfield 0, [arg]); transl_path path]),
-                      act, rem))
+        (fun (ex, act) rem ->
+           match ex with
+           | Cstr_exception path ->
+               Lifthenelse(Lprim(Pintcomp Ceq, 
+                                 [Lprim(Pfield 0, [arg]); transl_path path]),
+                           act, rem)
+           | _ -> assert false)
         tag_lambda_list Lstaticfail
     in (Lcatch(lambda1, lambda2), total2)
   end else begin
@@ -296,7 +301,8 @@ let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
         let (consts, nonconsts) = split_cases rem in
         match cstr with
           Cstr_constant n -> ((n, act) :: consts, nonconsts)
-        | Cstr_block n    -> (consts, (n, act) :: nonconsts) in
+        | Cstr_block n    -> (consts, (n, act) :: nonconsts)
+        | _ -> assert false in
     let (consts, nonconsts) = split_cases tag_lambda_list in
     let lambda1 =
       match (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts) with
@@ -412,6 +418,7 @@ let rec compile_match repr m =
             end
         | _ -> fatal_error "Matching.compile_match2" in
       (Llet(str, v, arg, lam), total)
+  | _ -> assert false
 
 (* The entry points *)
 
@@ -450,7 +457,9 @@ let flatten_pattern size p =
   | _ -> raise Cannot_flatten
 
 let flatten_cases size cases =
-  List.map (fun (pat :: _, act) -> (flatten_pattern size pat, act)) cases
+  List.map (function (pat :: _, act) -> (flatten_pattern size pat, act)
+                   | _ -> assert false)
+           cases
 
 let for_tupled_function loc paraml pats_act_list =
   let pm =
