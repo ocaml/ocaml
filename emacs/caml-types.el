@@ -207,8 +207,7 @@ See `caml-types-location-re' for annotation file format.
             (r-line (string-to-int (match-string 8)))
             (r-bol (string-to-int (match-string 9)))
             (r-cnum (string-to-int (match-string 10))))
-        (unless (not (and (string= l-file target-file)
-                          (string= r-file target-file)))
+        (unless (caml-types-not-in-file l-file r-file target-file)
           (while (and (re-search-forward "^" () t)
                       (not (looking-at "type"))
                       (not (looking-at "\\\"")))
@@ -234,6 +233,12 @@ See `caml-types-location-re' for annotation file format.
         (if (null (cdr stack))
             (car stack)
           (caml-types-make-node left-pos right-pos () (nreverse stack)))))))
+
+(defun caml-types-not-in-file (l-file r-file target-file)
+  (or (and (not (string= l-file target-file))
+           (not (string= l-file "")))
+      (and (not (string= r-file target-file))
+           (not (string= r-file "")))))
 
 (defun caml-types-make-node (left-pos right-pos type-info children)
   (let ((result (make-vector (+ 3 (length children)) ()))
