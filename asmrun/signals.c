@@ -238,13 +238,8 @@ value install_signal_handler(signal_number, action) /* ML */
 #ifndef POSIX_SIGNALS
   signal(sig, act);
 #else
-#if defined(TARGET_sparc) && defined(SYS_solaris)
-  sigact.sa_sigaction = act;
-  sigact.sa_flags = SIGINFO;
-#else
   sigact.sa_handler = act;
   sigact.sa_flags = 0;
-#endif
   sigemptyset(&sigact.sa_mask);
   sigaction(sig, &sigact, NULL);
 #endif
