@@ -70,10 +70,10 @@ queue.cmo: obj.cmi queue.cmi
 queue.cmx: obj.cmx queue.cmi 
 random.cmo: array.cmi char.cmi digest.cmi string.cmi random.cmi 
 random.cmx: array.cmx char.cmx digest.cmx string.cmx random.cmi 
-scanf.cmo: array.cmi list.cmi obj.cmi pervasives.cmi printf.cmi \
-    string.cmi scanf.cmi 
-scanf.cmx: array.cmx list.cmx obj.cmx pervasives.cmx printf.cmx \
-    string.cmx scanf.cmi 
+scanf.cmo: array.cmi buffer.cmi list.cmi obj.cmi pervasives.cmi printf.cmi \
+    string.cmi sys.cmi scanf.cmi 
+scanf.cmx: array.cmx buffer.cmx list.cmx obj.cmx pervasives.cmx printf.cmx \
+    string.cmx sys.cmx scanf.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
 sort.cmo: array.cmi sort.cmi 
