@@ -158,14 +158,28 @@ let from_string s =
     c in
   create next;;
 
+let from_function = create;;
+
+(* Perform bufferized input to improve efficiency. *)
+let file_buffer_size = ref 1024;;
+
 let from_channel ic =
-  let next () = input_char ic in
+  let len = !file_buffer_size in
+  let buf = String.create len in
+  let i = ref 0 in
+  let lim = ref 0 in
+  let next () =
+    if !i < !lim then begin let c = buf.[!i] in incr i; c end else begin
+      lim := input ic buf 0 len;
+      if !lim = 0 then raise End_of_file else begin
+        i := 1;
+        buf.[0]
+      end
+    end in
   create next;;
 
-let from_function f = create f;;
-
 let stdib = from_channel stdin;;
-(** The scanning buffer reading form [stdin].*)
+(** The scanning buffer reading from [stdin].*)
 
 end;;
 
