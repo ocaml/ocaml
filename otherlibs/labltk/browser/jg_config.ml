@@ -13,13 +13,13 @@
 
 (* $Id$ *)
 
-let fixed =
-  if Sys.os_type = "Win32" then "{Courier New} 8" else "fixed"
-let variable =
-  if Sys.os_type = "Win32" then "Arial 9" else "variable"
+open Jg_tk
+
+let fixed = if wingui then "{Courier New} 8" else "fixed"
+let variable = if wingui then "Arial 9" else "variable"
 
 let init () =
-  if Sys.os_type = "Win32" then Option.add ~path:"*font" fixed;
+  if wingui then Option.add ~path:"*font" fixed;
   let font =
     let font =
       Option.get Widget.default_toplevel ~name:"variableFont" ~clas:"Font" in
