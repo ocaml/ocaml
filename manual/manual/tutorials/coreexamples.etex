@@ -152,6 +152,7 @@ let rec map f l =
 
 \section{Records and variants}
 \pdfsection{Records and variants}
+\label{s:tut-recvariants}
 
 User-defined data structures include records and variants. Both are
 defined with the "type" declaration. Here, we declare a record type to

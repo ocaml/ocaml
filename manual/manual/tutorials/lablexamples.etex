@@ -1,0 +1,317 @@
+\chapter{Labels and variants} \label{c:labl-examples}
+\pdfchapterfold{-9}{Tutorial: Labels and variants}
+
+{\it (Chapter written by Jacques Garrigue)}
+
+\bigskip
+
+\noindent This chapter gives an overview of the new features in
+Objective Caml 3: labels, and polymorphic variants.
+
+\section{Labels}
+\pdfsection{Labels}
+
+If you have a look at the standard library, you will see that function
+types have annotations you did not see in the functions you defined
+yourself.
+
+\begin{caml_example}
+List.map;;
+String.sub;;
+\end{caml_example}
+
+Such annotations of the form "name:" are called {\em labels}. They are
+meant to document the code, and allow more checking where needed.
+You can add them in interfaces, just like they appear in the above
+types, and also write them directly in your programs.
+
+\begin{caml_example}
+let f x:x y:y = x - y;;
+f x:3 y:2;;
+\end{caml_example}
+
+In order to lighten the notations, the expression "name: name", where
+"name" is either a pattern variable or an identifier, can be
+abbreviated in ":name".
+
+\begin{caml_example}
+let f :x :y = x - y;;
+let pred x = f :x y:1;;
+\end{caml_example}
+
+\paragraph{Warning}
+Since the colon ":" is used inside labels, you must be careful to put
+spaces around it in type annotations. You must write "(x : int)" and
+not "(x:int)". You may omit the space before the colon in type
+definitions and interface declarations, like in "val x: int".
+
+\subsection{Classic mode}
+
+In Objective Caml, there are two ways of using labels, either the
+default {\em classic} mode, or the {\em modern} mode.
+
+You need do nothing special to be in classic mode, and legacy programs
+written for previous versions of Objective Caml will work with no
+modifications in this mode, except for the problem mentioned in the
+above warning.
+
+In the classic mode, labels need not be explicitely written in
+function applications, but whenever they are given they are checked
+against the labels in the function type.
+
+\def\myerror{3}
+\begin{caml_example}
+f 3 2;;
+f x:3 z:2;;
+\end{caml_example}
+The above error message gives the the type of the function applied to
+its previous arguments (here "x"), and the position of the unexpected
+argument.
+
+Similar processing is done for functions defined inside an application.
+If you define inline a function with labels, they are checked against the
+labels expected by the enclosing function.
+
+\begin{caml_example}
+List.fold_left;;
+let sum = List.fold_left fun:(fun :acc x -> acc + x) acc:0;;
+let sum = List.fold_left fun:(fun x :acc -> acc + x) acc:0;;
+\end{caml_example}
+
+\subsection{Modern mode}
+
+You can switch to {\em modern} mode giving the "-modern" flag to the
+various Objective Caml compilers. You can also switch from classic
+mode to modern mode, and back, with the "#modern" pragma.
+
+\begin{caml_example}
+#modern true;;
+\end{caml_example}
+
+The modern mode allows a freer syntax, at the constraint that you must
+write all labels both in function definition and application, and that
+labels must match in all types.
+
+In modern mode, formal parameters and arguments are only matched
+according to their respective labels. This allows commuting arguments
+in applications. One can also partially apply a function on any
+argument, creating a new function of the remaining parameters.
+
+\begin{caml_example}
+f y:2 x:3;;
+List.fold_left [1;2;3] acc:0 fun:(fun :acc x -> acc + x);;
+List.fold_left [1;2;3];;
+\end{caml_example}
+
+For such out-of-order applications, the type of the function must be
+known previous to the application, otherwise an incompatible
+out-of-order type will be generated.
+
+\begin{caml_example}
+let h g = g y:2 x:3;;
+h f;;
+\end{caml_example}
+
+If in a function several arguments bear the same label (or no label),
+they will not commute among themselves, and order matters. But they
+can still commute with other arguments.
+
+\begin{caml_example}
+let hline x:x1 x:x2 :y = (x1, x2, y);;
+hline x:3 y:2 x:5;;
+\end{caml_example} 
+
+\subsection{Optional arguments}
+
+An interesting feature of labeled arguments is that they can be made
+optional. An optional parameter is prefixed by a question mark "?" in
+the function definition, and it the function type.
+Default values may be given for such optional parameters.
+
+\begin{caml_example}
+let bump ?(:step = 1) x = x + step;;
+bump 2;;
+bump step:3 2;;
+\end{caml_example}
+
+A function taking some optional arguments must also take at least one
+non-labeled argument. This is because the criterion for deciding
+whether an optional has been omitted is the application on a
+non-labeled argument appearing after this optional argument in the
+function type.
+
+\begin{caml_example}
+let test ?(:x = 0) ?(:y = 0) () ?(:z = 0) () = (x, y, z);;
+test ();;
+test x:2 () z:3 ();;
+\end{caml_example}
+
+Optional arguments behave similarly in classic and modern
+mode. Omitting the label of an optional argument is not allowed,
+and in both cases commutation between differently labeled optional
+arguments may occur. However commutation between an optional argument
+and other labeled or non-labeled arguments is only allowed in modern
+mode.
+
+\begin{caml_example}
+test y:2 () ();;
+\end{caml_example}
+
+Optional arguments are actually implemented as option types. If
+you do not give a default value, you have access to their internal
+representation, "type 'a option = None | Some of 'a". You can then
+provide different behaviours when an argument is present or not.
+
+\begin{caml_example}
+let bump ?:step x =
+  match step with
+  | None -> x * 2
+  | Some y -> x + y
+;;
+\end{caml_example}
+
+It may also be useful to relay a functional argument from a function
+call to another. This can be done by prefixing the applied argument
+with "?". This question mark disables the wrapping of optional
+argument in an option type.
+
+\begin{caml_example}
+let test2 ?:x ?:y () = test ?:x ?:y () ();;
+test2 ?x:None;;
+\end{caml_example}
+
+\subsection{Suggestions for labeling}
+
+Like for names, choosing labels for functions is not an easy task. A
+good labeling is a labeling which
+
+\begin{itemize}
+\item makes programs more readable,
+\item is easy to remember,
+\item when possible, allows useful partial applications.
+\end{itemize}
+
+We explain here the rules we applied when labeling the standard library.
+
+To speak in an ``object-oriented'' way, one can consider that each
+function has a main argument, its {\em object}, and other arguments
+related with its action, the {\em parameters}. To permit the
+combination of functions through functionals in modern mode, the
+object will not be labeled. Its role is clear by the function
+itself. The parameters are labeled with keywords reminding either of
+their nature or role. Best labels combine in their meaning nature and
+role. When this is not possible the role is to prefer, since the nature will
+often be given by the type itself. Obscure abbreviations should be
+avoided.
+\caml
+\:List.map : fun:('a -> 'b) -> 'a list -> 'b list
+\:output : out_channel -> buf:string -> pos:int -> len:int -> unit
+\endcaml
+
+When there are several objects of same nature and role, they are all
+left unlabeled.
+\caml
+\:List.iter2 : fun:('a -> 'b -> 'c) -> 'a list -> 'b list -> unit
+\endcaml
+
+When there is no preferable object, all arguments are labeled.
+\caml
+\:Sys.rename : old:string -> new:string -> unit
+\:String.blit :
+\:  src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int -> unit
+\endcaml
+
+However, when there is only one argument, it is often left unlabeled.
+\caml
+\:Format.open_hvbox : int -> unit
+\endcaml
+
+Here are some of the label names you will find throughout the standard
+library.
+
+\begin{tableau}{|l|l|}{Label}{Meaning}
+\entree{"pos:"}{a position in a list, string or array}
+\entree{"len:"}{a length}
+\entree{"buf:"}{a string used as buffer}
+\entree{"src:"}{the source of an operation}
+\entree{"dst:"}{the destination of an operation}
+\entree{"fun:"}{a function to be applied}
+\entree{"pred:"}{a boolean predicate}
+\entree{"acc:"}{the accumulator}
+\entree{"to:"}{an output channel}
+\entree{"key:"}{a value used as index}
+\entree{"data:"}{a value associated to an index}
+\entree{"mode:"}{an operation mode or a flag list}
+\entree{"perm:"}{file permissions}
+\end{tableau}
+
+All these are only suggestions, but one shall keep in mind that the
+choice of labels is essential for readability. Omissions or bizarre
+choices will make the program difficult to maintain.
+
+In the ideal, the right function name with right labels shall be
+enough to understand the function's meaning. Since one can get this
+information with OCamlBrowser or the ocaml toplevel, the documentation
+is only used when a more detailed specification is needed.
+
+\section{Polymorphic variants}
+\pdfsection{Polymorphic variants}
+
+Variants as presented in section~\ref{s:tut-recvariants} are a
+powerful tool to build data structures and algorithms. However they
+sometimes lack flexibility when used in modular programming. This is
+due to the fact every constructor reserves a name to be used with a
+unique type. On cannot use the same name in another type, or consider
+a value of some type to belong to some other type with more
+constructors.
+
+With polymorphic variants, this original assumption is removed. That
+is, a variant tag does not belong to any type in particular, the type
+system will just check that it is an admissible value according to its
+use. You need not define a type before using a variant tag. A variant
+type will be infered independently for each of its uses.
+
+In programs, polymorphic variants work like usual ones. You just have
+to prefix their names with a backquote character "`".
+\begin{caml_example}
+[`On; `Off];;
+`Number 1;;
+let f = function `On -> 1 | `Off -> 0 | `Number n -> n;;
+List.map fun:f [`On; `Off];;
+\end{caml_example}
+"[>`Off|`On] list" means that to match this list, you should at
+least be able to match "`Off" and "`On", without argument.
+"[<`On|`Off|`Number int]" means that "f" may be applied to "`Off",
+"`On" (both without argument), or "`Number" $n$ where 
+$n$ is an integer.
+The ">" and "<" inside the variant type shows that they may still be
+refined, either by defining more tags or allowing less. As such they
+contain an implicit type variable. Both variant types appearing only
+once in the type, the implicit type variables they constrain are not
+shown.
+
+More complex expressions may result in more type information.
+\begin{caml_example}
+function `A -> `B | x -> x;;
+\end{caml_example}
+Here the ".." means that we know that "`A" and "`B" may not have an
+argument, but there is no specified upper bound on the number of
+variant tags in this variant type. We know also that "`B" can appear
+in the result, and input and output types have to be kept equal
+because "x" is returned as is.
+
+All the above variant types were polymorphic, allowing further refinement.
+When writing type annotations, one will most often describe fixed
+variant types, that is types that can be no longer refined. This is
+also the case for type abbreviations. Such types do not contain "<" or
+">", but just an enumeration of the tags and their associated types,
+just like in a normal datatype definition. For conciseness, "of" is
+omitted in polymorphic variant types.
+\begin{caml_example}
+type 'a vlist = [`Nil | `Cons 'a * 'a vlist];;
+let map' : fun:('a -> 'b) -> 'a vlist -> 'b vlist = map;;
+\end{caml_example}
+
+\begin{caml_eval}
+#modern false;;
+\end{caml_eval}

@@ -137,6 +137,8 @@ def_macro "\\fromoneto"
    Print_arg; Print "</i>"];
 def_macro "\\caml" [Print "<pre>"];
 def_macro "\\endcaml" [Print "</pre>"];
+def_macro "\\<" [Print "<u>"];
+def_macro "\\>" [Print "</u>"];
 def_macro "\\rminalltt" [Print_arg];
 def_macro "\\event" [Print "<font color=\"red\">*</font>"];
 def_macro "\\pdfchapter" [Skip_arg];
