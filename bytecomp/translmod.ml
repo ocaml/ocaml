@@ -84,7 +84,7 @@ let rec transl_module env cc mexp =
           Lfunction(param',
             Llet(param, apply_coercion ccarg (Lvar param'),
               transl_module env ccres body))
-      | Tcoerce_structure _ ->
+      | _ ->
           fatal_error "Translmod.transl_module"
       end
   | Tmod_apply(funct, arg, ccarg) ->
@@ -103,9 +103,12 @@ and transl_structure env fields cc = function
       | Tcoerce_structure pos_cc_list ->
           let v = Array.of_list (List.rev fields) in
           Lprim(Pmakeblock 0,
-                List.map (fun (pos, cc) ->
-                        apply_coercion cc (transl_access env v.(pos)))
-                    pos_cc_list)
+                List.map
+                  (fun (pos, cc) ->
+                    match cc with
+                      Tcoerce_primitive p -> transl_primitive p
+                    | _ -> apply_coercion cc (transl_access env v.(pos)))
+                  pos_cc_list)
       | Tcoerce_functor(_, _) ->
           fatal_error "Translmod.transl_structure"
       end
