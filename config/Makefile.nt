@@ -50,7 +50,7 @@ NATIVECCLINKOPTS=
 
 ### Flags for the assembler
 AS=ml /nologo
-ASFLAGS=/coff /Cp
+AFLAGS=/coff /Cp
 
 ############# Configuration for the contributed libraries
 

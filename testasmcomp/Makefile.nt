@@ -107,7 +107,7 @@ checkbound.exe: main.c checkbound.obj $(ARCH).obj
 	$(CC) $(CFLAGS) -o checkbound.exe -DCHECKBOUND main.c checkbound.obj $(ARCH).obj
 
 $(ARCH).obj: $(ARCH)nt.asm
-	$(AS) $(ASFLAGS) /c /Fo$(ARCH).obj $(ARCH)nt.asm
+	$(AS) $(AFLAGS) /c /Fo$(ARCH).obj $(ARCH)nt.asm
 
 .SUFFIXES:
 .SUFFIXES: .cmm .obj .ml .mli .cmo .cmi
@@ -120,7 +120,7 @@ $(ARCH).obj: $(ARCH)nt.asm
 
 .cmm.obj:
 	$(CAMLRUN) $(CODEGEN) $*.cmm > $*.asm
-	$(AS) $(ASFLAGS) /c $*.asm
+	$(AS) $(AFLAGS) /c $*.asm
 
 clean::
 	rm -f *.exe *.cm* *.obj *~
