@@ -32,9 +32,9 @@ III Label changes
 
 Q4: I was using labels before, and now I get lots of type errors.
 
-A4: The handling of labels changed with 3.03-beta. The new default
+A4: The handling of labels changed with 3.03-alpha. The new default
     is a more flexible version of the commuting label mode, allowing
-    one to ommit labels in total applications. There is still a
+    one to omit labels in total applications. There is still a
     -nolabels mode, but it does not allow non-optional labels in
     applications (this was unsound).
     To keep full compatibility with Objective Caml 2, labels were
