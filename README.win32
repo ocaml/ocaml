@@ -1,30 +1,30 @@
        Release notes on the MS Windows ports of Objective Caml
        -------------------------------------------------------
 
-Starting with OCaml 3.05, there are now no less than three ports of
+Starting with OCaml 3.05, there are no less than three ports of
 Objective Caml for MS Windows available:
-  - a native Win32 port, built with the Microsoft development tools (non-free);
-  - a native Win32 port, built with the MinGW development tools (free);
+  - a native Win32 port, built with the Microsoft development tools;
+  - a native Win32 port, built with the MinGW development tools;
   - a port consisting of the Unix sources compiled under the Cygwin
-    Unix-like environment for Windows (free).
+    Unix-like environment for Windows.
 
 Here is a summary of the main differences between these ports:
 
-				      Native MS	    Native MinGW	Cygwin
+                                      Native MS     Native MinGW        Cygwin
 Third-party software required
-  - for base bytecode system		none		none		none
-  - for ocamlc -custom			MSVC	     MinGW or Cygwin	Cygwin
-  - for native-code generation		MSVC+MASM    MinGW or Cygwin	Cygwin
+  - for base bytecode system            none            none            none
+  - for ocamlc -custom                  MSVC         MinGW or Cygwin    Cygwin
+  - for native-code generation          MSVC+MASM    MinGW or Cygwin    Cygwin
 
-Speed of bytecode interpreter  		70%		100%		100%
+Speed of bytecode interpreter           70%             100%            100%
 
-Replay debugger				no		no		yes
+Replay debugger                         no              no              yes
 
-The Unix library			partial		partial		full
+The Unix library                        partial         partial         full
 
-The Threads library			yes		yes		no
+The Threads library                     yes             yes             no
 
-The Graphics library			yes		yes		no
+The Graphics library                    yes             yes             no
 
 Restrictions on generated executables?  none            none            yes (*)
 
@@ -42,7 +42,7 @@ The remainder of this document gives more information on each port.
 
 REQUIREMENTS:
 
-This port runs under MS Windows 95, 98, ME, NT and 2000 on Intel IA32
+This port runs under MS Windows 95, 98, ME, NT, 2000 and XP on Intel IA32
 machines.  Windows 3.1 and Windows for Workgroups are not
 supported. Windows NT on non-Intel processors has not been tested.
 
@@ -50,13 +50,12 @@ The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
 Statically linking Caml bytecode with C code (ocamlc -custom) requires the
-Microsoft Visual C++ compiler version 6.  Dynamic loading of DLLs is
+Microsoft Visual C++ compiler.  Dynamic loading of DLLs is
 supported out of the box, without additional software.
 
-The native-code compiler (ocamlopt) requires Visual C++ version 6
-and the Microsoft assembler MASM version 6.11 or later.
-MASM can be downloaded for free from Microsoft's Web site;
-for directions, see
+The native-code compiler (ocamlopt) requires Visual C++ and the
+Microsoft assembler MASM version 6.11 or later.  MASM can be
+downloaded for free from Microsoft's Web site; for directions, see
 	http://www.easystreet.com/~jkirwan/pctools.html
     or  http://www2.dgsys.com/~raymoon/faq/masm.html
     or  the comp.lang.asm.x86 FAQ.
@@ -82,11 +81,11 @@ Installing the command-line tools:
   and the other tools will be unable to find the Caml runtime system
   ocamlrun.exe.
 
-  To use the LablTK GUI, the directory where the libraries tk83.lib
-  and tcl83.lib were installed (by the Tcl/Tk installer)
-  must be added to the library search path in the LIB environment variable.
-  E.g. if Tcl/Tk was installed in C:\tcl, add "C:\tcl\lib" to the LIB
-  environment variable.
+  To compile programs that use the LablTK GUI, the directory where the
+  libraries tk83.lib and tcl83.lib were installed (by the Tcl/Tk
+  installer) must be added to the library search path in the LIB
+  environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
+  "C:\tcl\lib" to the LIB environment variable.
 
 
 RECOMPILATION FROM THE SOURCES:
@@ -97,7 +96,7 @@ for Windows.
 
 You will need the following software components to perform the recompilation:
 - Windows NT, 2000, or XP (we advise against compiling under Windows 95/98/ME)
-- Visual C++ version 6
+- Visual C++ version 6 or 7
 - MASM version 6.11 (see above)
 - The CygWin port of GNU tools, available from
       http://sourceware.cygnus.com/cygwin/
@@ -126,8 +125,8 @@ Finally, use "make -f Makefile.nt" to build the system, e.g.
 NOTES:
 
 * The VC++ compiler does not implement "computed gotos", and therefore
-doesn't generate very efficient code for byterun/interp.c. Consequently,
-the performance of bytecode programs is about 2/3 of that obtained under
+generates inefficient code for byterun/interp.c. Consequently, the
+performance of bytecode programs is about 2/3 of that obtained under
 Unix/GCC or Cygwin or Mingw on similar hardware.
 
 * Libraries available in this port: "num", "str", "threads", "graphics",
@@ -150,7 +149,7 @@ The graphical user interface for the toplevel is due to Jacob Navia.
 
 REQUIREMENTS:
 
-This port runs under MS Windows 95, 98, ME, NT and 2000 on Intel IA32
+This port runs under MS Windows 95, 98, ME, NT, 2000 and XP on Intel IA32
 machines.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
@@ -160,7 +159,7 @@ The native-code compiler (ocamlopt), as well as static linking of
 Caml bytecode with C code (ocamlc -custom), require either the MinGW
 development tools, which is free software available at
 	http://www.mingw.org/
-or the Cygwin development toos, available at
+or the Cygwin development tools (also free software), available at
         http://sources.redhat.com/cygwin/
 
 The LablTk GUI requires Tcl/Tk 8.3.  Windows binaries are
@@ -221,7 +220,7 @@ is freely available at:
           http://sources.redhat.com/cygwin/
 
 This port runs under all versions of MS Windows supported by Cygwin,
-i.e. Windows 95, 98, ME, NT and 2000 on Intel IA32 machines.
+i.e. Windows 95, 98, ME, NT, 2000 and XP on Intel IA32 machines.
 
 
 INSTALLATION:
