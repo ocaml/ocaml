@@ -105,7 +105,6 @@ let load_compunit ic file_name compunit =
   let code_size = compunit.cu_codesize + 8 in
   let code = Meta.static_alloc code_size in
   unsafe_really_input ic code 0 compunit.cu_codesize;
-  close_in ic;
   String.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
   String.unsafe_set code (compunit.cu_codesize + 1) '\000';
   String.unsafe_set code (compunit.cu_codesize + 2) '\000';
@@ -130,20 +129,24 @@ let load_compunit ic file_name compunit =
 
 let loadfile file_name =
   let ic = open_in_bin file_name in
-  let buffer = String.create (String.length Config.cmo_magic_number) in
-  really_input ic buffer 0 (String.length Config.cmo_magic_number);
-  if buffer = Config.cmo_magic_number then begin
-    let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
-    seek_in ic compunit_pos;
-    load_compunit ic file_name (input_value ic : compilation_unit)
-  end else
-  if buffer = Config.cmo_magic_number then begin
-    let toc_pos = input_binary_int ic in  (* Go to table of contents *)
-    seek_in ic toc_pos;
-    List.iter (load_compunit ic file_name)
-              (input_value ic : compilation_unit list)
-  end else
-    raise(Error(Not_a_bytecode_file file_name))
+  try
+    let buffer = String.create (String.length Config.cmo_magic_number) in
+    really_input ic buffer 0 (String.length Config.cmo_magic_number);
+    if buffer = Config.cmo_magic_number then begin
+      let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
+      seek_in ic compunit_pos;
+      load_compunit ic file_name (input_value ic : compilation_unit)
+    end else
+    if buffer = Config.cma_magic_number then begin
+      let toc_pos = input_binary_int ic in  (* Go to table of contents *)
+      seek_in ic toc_pos;
+      List.iter (load_compunit ic file_name)
+                (input_value ic : compilation_unit list)
+    end else
+      raise(Error(Not_a_bytecode_file file_name));
+    close_in ic
+  with exc ->
+    close_in ic; raise exc
 
 (* Error report *)
 
