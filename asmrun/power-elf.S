@@ -35,17 +35,17 @@ caml_call_gc:
         mflr    0
         Storeglobal(0, caml_last_return_address, 11)
     /* Record lowest stack address */
-        addic   0, 1, 32
+        addi    0, 1, 32
         Storeglobal(0, caml_bottom_of_stack, 11)
     /* Record pointer to register array */
-        addic   0, 1, 8*32 + 32
+        addi    0, 1, 8*32 + 32
         Storeglobal(0, caml_gc_regs, 11)
     /* Save current allocation pointer for debugging purposes */
         Storeglobal(31, young_ptr, 11)
     /* Save exception pointer (if e.g. a sighandler raises) */
         Storeglobal(29, caml_exception_pointer, 11)
     /* Save all registers used by the code generator */
-        addic   11, 1, 8*32 + 32 - 4
+        addi    11, 1, 8*32 + 32 - 4
         stwu    3, 4(11)
         stwu    4, 4(11)
         stwu    5, 4(11)
@@ -69,7 +69,7 @@ caml_call_gc:
         stwu    26, 4(11)
         stwu    27, 4(11)
         stwu    28, 4(11)
-        addic   11, 1, 32 - 8
+        addi    11, 1, 32 - 8
         stfdu   1, 8(11)
         stfdu   2, 8(11)
         stfdu   3, 8(11)
@@ -107,7 +107,7 @@ caml_call_gc:
         Loadglobal(31, young_ptr, 11)
         Loadglobal(30, young_limit, 11)
     /* Restore all regs used by the code generator */
-        addic   11, 1, 8*32 + 32 - 4
+        addi    11, 1, 8*32 + 32 - 4
         lwzu    3, 4(11)
         lwzu    4, 4(11)
         lwzu    5, 4(11)
@@ -131,7 +131,7 @@ caml_call_gc:
         lwzu    26, 4(11)
         lwzu    27, 4(11)
         lwzu    28, 4(11)
-        addic   11, 1, 32 - 8
+        addi    11, 1, 32 - 8
         lfdu    1, 8(11)
         lfdu    2, 8(11)
         lfdu    3, 8(11)
@@ -201,7 +201,7 @@ caml_c_call:
         li      12, 0
         Storeglobal(12, caml_last_return_address, 11)
     /* Return to caller */
-        addic   1, 8, 1
+        addi    1, 8, 1
         blr
         
 /* Raise an exception from C */
@@ -241,7 +241,7 @@ caml_start_program:
     /* Save all callee-save registers */
     /* GPR 14 at sp+16 ... GPR 31 at sp+84
        FPR 14 at sp+92 ... FPR 31 at sp+228 */
-        addic   11, 1, 16-4
+        addi    11, 1, 16-4
         stwu    14, 4(11)
         stwu    15, 4(11)
         stwu    16, 4(11)
@@ -321,7 +321,7 @@ caml_start_program:
     /* Update allocation pointer */
         Storeglobal(31, young_ptr, 11)
     /* Restore callee-save registers */
-        addic   11, 1, 16-4
+        addi    11, 1, 16-4
         lwzu    14, 4(11)
         lwzu    15, 4(11)
         lwzu    16, 4(11)
