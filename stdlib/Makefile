@@ -31,13 +31,13 @@ cslheader: header.c ../Makefile.config
 	     strip cslheader; fi
 
 pervasives.cmi: pervasives.mli
-	$(CAMLC) -nopervasives -c pervasives.mli
+	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.mli
 
 pervasives.cmo: pervasives.ml
-	$(CAMLC) -nopervasives -c pervasives.ml
+	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.ml
 
 pervasives.cmx: pervasives.ml
-	$(CAMLOPT) -nopervasives -c pervasives.ml
+	$(CAMLOPT) $(COMPFLAGS) -nopervasives -c pervasives.ml
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx
 
