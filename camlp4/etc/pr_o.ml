@@ -79,7 +79,7 @@ value is_infix =
       ["=="; "!="; "+"; "+."; "-"; "-."; "*"; "*."; "/"; "/."; "**"; "**.";
        "="; "=."; "<>"; "<>."; "<"; "<."; ">"; ">."; "<="; "<=."; ">="; ">=.";
        "^"; "@"; "asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or";
-       "quo"; "&&"; "||"; "~-"; "~-."];
+       "&&"; "||"; "~-"; "~-."];
     fun s -> try Hashtbl.find infixes s with [ Not_found -> False ]
   }
 ;
@@ -91,7 +91,7 @@ value is_keyword =
       ["!"; "!="; "#"; "$"; "%"; "&"; "&&"; "'"; "("; ")"; "*"; "**"; "+";
        ","; "-"; "-."; "->"; "."; ".."; "/"; ":"; "::"; ":="; ":>"; ";"; ";;";
        "<"; "<-"; "<="; "<>"; "="; "=="; ">"; ">="; ">]"; ">}"; "?"; "??";
-       "@"; "["; "[<"; "[|"; "]"; "^"; "_"; "`"; "and"; "as"; "asr"; "assert";
+       "@"; "["; "[<"; "[|"; "]"; "^"; "_"; "`"; "and"; "as"; "assert"; "asr";
        "begin"; "class"; "constraint"; "do"; "done"; "downto"; "else"; "end";
        "exception"; "external"; "false"; "for"; "fun"; "function"; "functor";
        "if"; "in"; "include"; "inherit"; "initializer"; "land"; "lazy"; "let";
