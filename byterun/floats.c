@@ -23,30 +23,6 @@
 
 #ifdef ALIGN_DOUBLE
 
-#if defined(__GNUC__) && defined(__sparc__)
-
-/* GCC for the Sparc is the major offender here, since it uses ldd and std
-   to operate on doubles, therefore requiring 8-alignment of doubles.
-   This is a hack to coerce GCC into generating the right code: two ld
-   or two st. */
-
-inline double Double_val(val)
-     value val;
-{
-  double result;
-  asm("ld [%1], %0; ld [%1+4], %R0" : "=f" (result) : "r" (val));
-  return result;
-}
-
-inline void Store_double_val(val, dbl)
-     value val;
-     double dbl;
-{
-  asm("st %0, [%1]; st %R0, [%1+4]" : : "r" (dbl), "r" (val));
-}
-
-#else
-
 double Double_val(val)
      value val;
 {
@@ -70,7 +46,6 @@ void Store_double_val(val, dbl)
   Field(val, 1) = buffer.v[1];
 }
 
-#endif
 #endif
 
 value copy_double(d)
