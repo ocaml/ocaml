@@ -87,9 +87,10 @@ let add_superpressure_regs op live_regs res_regs spilled =
       let lru_date = ref 1000000 and lru_reg = ref Reg.dummy in
       Reg.Set.iter
         (fun r ->
-          if Proc.register_class r = cl &
-             not (Reg.Set.mem r spilled) &
-             r.loc = Unknown then begin
+          if Proc.register_class r = cl &&
+             not (Reg.Set.mem r spilled) &&
+             r.loc = Unknown
+          then begin
             try
               let d = Reg.Map.find r !use_date in
               if d < !lru_date then begin
@@ -100,8 +101,12 @@ let add_superpressure_regs op live_regs res_regs spilled =
               ()
           end)
         live_regs;
-      pressure.(cl) <- pressure.(cl) - 1;
-      check_pressure cl (Reg.Set.add !lru_reg spilled)
+      if !lru_reg != Reg.dummy then begin
+        pressure.(cl) <- pressure.(cl) - 1;
+        check_pressure cl (Reg.Set.add !lru_reg spilled)
+      end else
+        (* Couldn't find any spillable register, give up for this class *)
+        check_pressure (cl+1) spilled
     end in
   check_pressure 0 spilled
 
