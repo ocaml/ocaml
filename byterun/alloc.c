@@ -60,16 +60,6 @@ value alloc_final (len, fun, mem, max)
   return result;
 }
 
-value copy_double(d)
-     double d;
-{
-  value res;
-
-  Alloc_small(res, Double_wosize, Double_tag);
-  Store_double_val(res, d);
-  return res;
-}
-
 value copy_string(s)
      char * s;
 {

@@ -132,7 +132,7 @@ bits  63    10 9     8 7   0
 #endif
 
 /* The lowest tag for blocks containing no value. */
-#define No_scan_tag (Num_tags - 5)
+#define No_scan_tag (Num_tags - 6)
 
 
 /* 1- If tag < No_scan_tag : a tuple of fields.  */
@@ -177,17 +177,23 @@ typedef opcode_t * code_t;
 #define Double_tag (No_scan_tag + 3)
 #define Double_wosize ((sizeof(double) / sizeof(value)))
 #ifndef ALIGN_DOUBLE
-#define Double_val(v) (* (double *) (v))
-#define Store_double_val(v,d) (* (double *) (v) = (d))
+#define Double_val(v) (* (double *)(v))
+#define Store_double_val(v,d) (* (double *)(v) = (d))
 #else
 double Double_val P((value));
 void Store_double_val P((value,double));
 #endif
 
+/* Arrays of floating-point numbers. */
+#define Double_array_tag (No_scan_tag + 4)
+#define Double_field(v,i) Double_val((value)((double *)(v) + (i)))
+#define Store_double_field(v,i,d) \
+  Store_double_val((value)((double *)(v) + (i)),d)
+
 /* Finalized things.  Just like abstract things, but the GC will call the
    [Final_fun] before deallocation.
 */
-#define Final_tag (No_scan_tag + 4)
+#define Final_tag (No_scan_tag + 5)
 typedef void (*final_fun) P((value));
 #define Final_fun(val) (((final_fun *) (val)) [0]) /* Also an l-value. */
 

@@ -34,6 +34,13 @@
 #else
 #define CODE_DOUBLE_NATIVE CODE_DOUBLE_LITTLE
 #endif
+#define CODE_DOUBLE_ARRAY_BIG 0xD
+#define CODE_DOUBLE_ARRAY_LITTLE 0xE
+#ifdef BIG_ENDIAN
+#define CODE_DOUBLE_ARRAY_NATIVE CODE_DOUBLE_ARRAY_BIG
+#else
+#define CODE_DOUBLE_ARRAY_NATIVE CODE_DOUBLE_ARRAY_LITTLE
+#endif
 
 /* Initial sizes of data structures for extern */
 

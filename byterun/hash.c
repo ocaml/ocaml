@@ -30,7 +30,7 @@ static void hash_aux(obj)
      value obj;
 {
   unsigned char * p;
-  mlsize_t i;
+  mlsize_t i, j;
   tag_t tag;
 
   hash_univ_limit--;
@@ -68,6 +68,21 @@ static void hash_aux(obj)
            p++, i--)
 #endif
         Combine_small(*p);
+      break;
+    case Double_array_tag:
+      hash_univ_count--;
+      for (j = 0; j < Bosize_val(obj); j += sizeof(double)) {
+#ifdef BIG_ENDIAN
+      for (p = &Byte_u(obj, j + sizeof(double) - 1), i = sizeof(double);
+           i > 0;
+           p--, i--)
+#else
+      for (p = &Byte_u(obj, j), i = sizeof(double);
+           i > 0;
+           p++, i--)
+#endif
+        Combine_small(*p);
+      }
       break;
     case Abstract_tag:
     case Final_tag:

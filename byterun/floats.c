@@ -60,6 +60,20 @@ void Store_double_val(val, dbl)
 #endif
 #endif
 
+value copy_double(d)
+     double d;
+{
+  value res;
+
+#define Setup_for_gc
+#define Restore_after_gc
+  Alloc_small(res, Double_wosize, Double_tag);
+#undef Setup_for_gc
+#undef Restore_after_gc
+  Store_double_val(res, d);
+  return res;
+}
+
 value format_float(fmt, arg)    /* ML */
      value fmt, arg;
 {

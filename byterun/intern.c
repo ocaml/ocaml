@@ -188,6 +188,25 @@ static void read_compact(chan, dest)
         really_getblock(chan, (char *) v, 8);
         if (code != CODE_DOUBLE_NATIVE) Reverse_double(v);
         break;
+      case CODE_DOUBLE_ARRAY_LITTLE:
+      case CODE_DOUBLE_ARRAY_BIG:
+        if (sizeof(double) != 8) {
+          stat_free((char *) intern_obj_table);
+          Hd_val(intern_block) = intern_header; /* Don't confuse the GC */
+          invalid_argument("input_value: non-standard floats");
+        }
+        len = input32u(chan);
+        size = len * Double_wosize;
+        v = Val_hp(intern_ptr);
+        intern_obj_table[obj_counter++] = v;
+        *intern_ptr = Make_header(size, Double_array_tag, intern_color);
+        intern_ptr += 1 + size;
+        really_getblock(chan, (char *) v, len * 8);
+        if (code != CODE_DOUBLE_NATIVE) {
+          mlsize_t i;
+          for (i = 0; i < len; i++) Reverse_double((value)((double *)v + i));
+        }
+        break;
       }
     }
   }

@@ -175,14 +175,23 @@ static void emit_compact(chan, v)
         break;
       }
       case Double_tag: {
-        double buffer;
         if (sizeof(double) != 8)
           invalid_argument("output_value: non-standard floats");
         putch(chan, CODE_DOUBLE_NATIVE);
-        buffer = Double_val(v);
-        putblock(chan, (char *) &buffer, 8);
-        size_32 += 1 + sizeof(double) / 4;
-        size_64 += 1 + sizeof(double) / 8;
+        putblock(chan, (char *) v, 8);
+        size_32 += 1 + 2;
+        size_64 += 1 + 1;
+        break;
+      }
+      case Double_array_tag: {
+        mlsize_t nfloats;
+        if (sizeof(double) != 8)
+          invalid_argument("output_value: non-standard floats");
+        nfloats = Wosize_val(v) / Double_wosize;
+        output32(chan, CODE_DOUBLE_ARRAY_NATIVE, nfloats);
+        putblock(chan, (char *) v, Bosize_val(v));
+        size_32 += 1 + nfloats * 2;
+        size_64 += 1 + nfloats;
         break;
       }
       case Abstract_tag:
