@@ -15,6 +15,9 @@ open Clflags
 
 let usage = "Usage: ocaml <options>\noptions are:"
 
+let file_argument name =
+  exit (if Toploop.run_script name then 0 else 2)
+
 let main () =
   Arg.parse [
      "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
@@ -23,8 +26,7 @@ let main () =
      "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)"
-    ] (fun name -> raise(Arg.Bad("don't know what to do with " ^ name)))
-      usage;
+    ] file_argument usage;
   Toploop.loop()
 
 let _ = Printexc.catch main ()

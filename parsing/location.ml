@@ -140,12 +140,13 @@ let print loc =
   end
 
 let print_warning loc msg =
+  let (f1, f2) = Format.get_formatter_output_functions() in
   if not !Sys.interactive then Format.set_formatter_out_channel stderr;
   print loc;
   print_string warn_head;
   print_string "Warning: "; print_string msg; print_newline();
   incr num_loc_lines;
-  if not !Sys.interactive then Format.set_formatter_out_channel stdout
+  Format.set_formatter_output_functions f1 f2
 
 let echo_eof () =
   print_newline ();

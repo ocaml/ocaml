@@ -23,27 +23,6 @@ open Printval
 open Trace
 open Toploop
 
-(* Hooks for parsing functions *)
-
-let parse_toplevel_phrase = Toploop.parse_toplevel_phrase
-let parse_use_file = ref Parse.use_file
-let print_location = Location.print
-let print_warning = Location.print_warning
-let input_name = Location.input_name
-
-(* Temporary assignment to a reference *)
-
-let protect r newval body =
-  let oldval = !r in
-  try
-    r := newval; 
-    let res = body() in
-    r := oldval;
-    res
-  with x ->
-    r := oldval;
-    raise x
-
 (* Return the value referred to by a path *)
 
 let rec eval_path = function
@@ -83,13 +62,8 @@ let load_compunit ic filename compunit =
   let code = Meta.static_alloc code_size in
   unsafe_really_input ic code 0 compunit.cu_codesize;
   String.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  String.unsafe_set code (compunit.cu_codesize + 1) '\000';
-  String.unsafe_set code (compunit.cu_codesize + 2) '\000';
-  String.unsafe_set code (compunit.cu_codesize + 3) '\000';
-  String.unsafe_set code (compunit.cu_codesize + 4) '\001';
-  String.unsafe_set code (compunit.cu_codesize + 5) '\000';
-  String.unsafe_set code (compunit.cu_codesize + 6) '\000';
-  String.unsafe_set code (compunit.cu_codesize + 7) '\000';
+  String.unsafe_blit "\000\000\000\001\000\000\000" 0
+                     code (compunit.cu_codesize + 1) 7;
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
@@ -132,25 +106,7 @@ let _ = Hashtbl.add directive_table "load" (Directive_string dir_load)
 
 (* Load commands from a file *)
 
-let dir_use name =
-  try
-    let filename = find_in_path !Config.load_path name in
-    let ic = open_in_bin filename in
-    let lb = Lexing.from_channel ic in
-    protect Location.input_name filename (fun () ->
-      try
-        List.iter
-          (fun ph -> if execute_phrase ph then () else raise Exit)
-          (!parse_use_file lb)
-      with
-        Exit -> ()
-      | Sys.Break ->
-          print_string "Interrupted."; print_newline()
-      | x ->
-          Errors.report_error x);
-    close_in ic
-  with Not_found ->
-    print_string "Cannot find file "; print_string name; print_newline()
+let dir_use name = Toploop.use_file name; ()
 
 let _ = Hashtbl.add directive_table "use" (Directive_string dir_use)
 

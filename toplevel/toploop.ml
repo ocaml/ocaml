@@ -28,6 +28,14 @@ type directive_fun =
   | Directive_int of (int -> unit)
   | Directive_ident of (Longident.t -> unit)
 
+(* Hooks for parsing functions *)
+
+let parse_toplevel_phrase = ref Parse.toplevel_phrase
+let parse_use_file = ref Parse.use_file
+let print_location = Location.print
+let print_warning = Location.print_warning
+let input_name = Location.input_name
+
 (* Load in-core and execute a lambda term *)
 
 type evaluation_outcome = Result of Obj.t | Exception of exn
@@ -106,8 +114,11 @@ let print_exception_outcome = function
       print_string "Interrupted."; print_newline()
   | Out_of_memory ->
       Gc.full_major();
-      print_string "Out of memory during evaluation";
+      print_string "Out of memory during evaluation.";
       print_newline()
+  | Stack_overflow ->
+      print_string "Stack overflow during evaluation (looping recursion?).";
+      print_newline();
   | exn ->
       open_box 0;
       print_string "Uncaught exception: ";
@@ -123,7 +134,7 @@ let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
 
 let toplevel_env = ref Env.empty
 
-let execute_phrase phr =
+let execute_phrase print_outcome phr =
   match phr with
     Ptop_def sstr ->
       let (str, sg, newenv) = Typemod.type_structure !toplevel_env sstr in
@@ -131,20 +142,21 @@ let execute_phrase phr =
       let res = load_lambda lam in
       begin match res with
         Result v ->
-          begin match str with
-            [Tstr_eval exp] ->
-              open_box 0;
-              print_string "- : ";
-              Printtyp.type_scheme exp.exp_type;
-              print_space(); print_string "="; print_space();
-              print_value newenv v exp.exp_type;
-              close_box();
-              print_newline()
-          | _ ->
-              open_vbox 0;
-              print_items newenv sg;
-              close_box();
-              print_flush()
+          if print_outcome then begin
+            match str with
+              [Tstr_eval exp] ->
+                open_box 0;
+                print_string "- : ";
+                Printtyp.type_scheme exp.exp_type;
+                print_space(); print_string "="; print_space();
+                print_value newenv v exp.exp_type;
+                close_box();
+                print_newline()
+            | _ ->
+                open_vbox 0;
+                print_items newenv sg;
+                close_box();
+                print_flush()
           end;
           toplevel_env := newenv;
           true
@@ -168,7 +180,57 @@ let execute_phrase phr =
         print_string "'"; print_newline();
         false
 
-(* Reading function *)
+(* Temporary assignment to a reference *)
+
+let protect r newval body =
+  let oldval = !r in
+  try
+    r := newval; 
+    let res = body() in
+    r := oldval;
+    res
+  with x ->
+    r := oldval;
+    raise x
+
+(* Read and execute commands from a file *)
+
+let use_print_results = ref true
+
+let use_file name =
+  try
+    let filename = find_in_path !Config.load_path name in
+    let ic = open_in_bin filename in
+    let lb = Lexing.from_channel ic in
+    (* Skip initial #! line if any *)
+    let buffer = String.create 2 in
+    if input ic buffer 0 2 = 2 && buffer = "#!"
+    then begin input_line ic; () end
+    else seek_in ic 0;
+    let success =
+      protect Location.input_name filename (fun () ->
+        try
+          List.iter
+            (fun ph ->
+              if execute_phrase !use_print_results ph then () else raise Exit)
+            (!parse_use_file lb);
+          true
+        with
+          Exit -> false
+        | Sys.Break ->
+            print_string "Interrupted."; print_newline(); false
+        | x ->
+            Errors.report_error x; false) in
+    close_in ic;
+    success
+  with Not_found ->
+    print_string "Cannot find file "; print_string name; print_newline();
+    false
+
+let use_silently name =
+  protect use_print_results false (fun () -> use_file name)
+
+(* Reading function for interactive use *)
 
 let first_line = ref true
 let got_eof = ref false;;
@@ -203,15 +265,14 @@ let empty_lexbuf lb =
 let _ =
   Symtable.init_toplevel();
   Clflags.thread_safe := true;
-  Compile.init_path();
-  Sys.interactive := true
+  Compile.init_path()
 
-(* The loop *)
+(* The interactive loop *)
 
-let parse_toplevel_phrase = ref Parse.toplevel_phrase
 exception PPerror
 
 let loop() =
+  Sys.interactive := true;
   print_string "        Objective Caml version ";
   print_string Config.version;
   print_newline(); print_newline();
@@ -224,13 +285,14 @@ let loop() =
   Location.input_name := "";
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
+  if Sys.file_exists ".ocamlinit" then begin use_silently ".ocamlinit"; () end;
   while true do
     try
       empty_lexbuf lb;
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      execute_phrase phr; ()
+      execute_phrase true phr; ()
     with
       End_of_file -> exit 0
     | Sys.Break ->
@@ -239,3 +301,12 @@ let loop() =
     | x ->
         Errors.report_error x
   done
+
+(* Execute a script *)
+
+let run_script name =
+  Compile.init_path();
+  toplevel_env := Compile.initial_env();
+  Format.set_formatter_out_channel stderr;
+  use_print_results := false;
+  use_file name
