@@ -117,6 +117,7 @@ let main () =
        "-dlambda", Arg.Set dump_lambda, " (undocumented)";
        "-dcmm", Arg.Set dump_cmm, " (undocumented)";
        "-dsel", Arg.Set dump_selection, " (undocumented)";
+       "-dcombine", Arg.Set dump_combine, " (undocumented)";
        "-dlive", Arg.Unit(fun () -> dump_live := true;
                                     Printmach.print_live := true),
              " (undocumented)";
