@@ -458,8 +458,7 @@ let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
           bytecode_name prim_name prim_name prim_name)
   | _ ->
       let oc =
-        open_out_gen [Open_wronly; Open_append; Open_binary] 0
-                                 !Clflags.exec_name in
+        open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in
       let ic = open_in_bin bytecode_name in
       copy_file ic oc;
       close_in ic;
