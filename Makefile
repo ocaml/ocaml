@@ -627,7 +627,9 @@ checkstack:
 
 # Make MacOS X package
 
-package-macosx: FORCE
+.PHONY: package-macosx
+
+package-macosx:
 	make BINDIR="`pwd`"/package-macosx/root$(BINDIR) \
 	     LIBDIR="`pwd`"/package-macosx/root$(LIBDIR) \
 	     MANDIR="`pwd`"/package-macosx/root$(MANDIR) install

@@ -15,14 +15,20 @@
 # $Id$
 
 cd package-macosx
-rm -rf ocaml.pkg ocaml-rw.dmg ocaml.dmg
+rm -rf ocaml.pkg ocaml-rw.dmg
+
+VERSION=`sed -n -e '/ocaml_version/s/.*"\([^"]*\)".*/\1/p' ../stdlib/sys.ml`
+VERSION_MAJOR=`sed -n -e '/ocaml_version/s/.*"\([0-9]*\)\..*/\1/p' \
+                   ../stdlib/sys.ml`
+VERSION_MINOR=`sed -n -e '/ocaml_version/s/.*"[0-9]*\.\([0-9]*\)[.+].*/\1/p' \
+                   ../stdlib/sys.ml`
 
 # Worked in 10.2:
 
 # cat >ocaml.info <<EOF
 #   Title Objective Caml
-#   Version 3.06
-#   Description This package installs Objective Caml version 3.06
+#   Version ${VERSION}
+#   Description This package installs Objective Caml version ${VERSION}
 #   DefaultLocation /
 #   Relocatable no
 #   NeedsAuthorization yes
@@ -31,12 +37,6 @@ rm -rf ocaml.pkg ocaml-rw.dmg ocaml.dmg
 #   DisableStop no
 # EOF
 #package root ocaml.info
-
-VERSION=`sed -n -e '/ocaml_version/s/.*"\([^"]*\)".*/\1/p' ../stdlib/sys.ml`
-VERSION_MAJOR=`sed -n -e '/ocaml_version/s/.*"\([0-9]*\)\..*/\1/p' \
-                   ../stdlib/sys.ml`
-VERSION_MINOR=`sed -n -e '/ocaml_version/s/.*"[0-9]*\.\([0-9]*\)[.+].*/\1/p' \
-                   ../stdlib/sys.ml`
 
 cat >Description.plist <<EOF
   <?xml version="1.0" encoding="UTF-8"?>
@@ -100,6 +100,13 @@ EOF
 
 mkdir -p resources
 
+#                                         stop here -> |
+cat >resources/ReadMe.txt <<EOF
+This package installs Objective Caml version ${VERSION}.
+You need Mac OS X 10.3 (panther), with X11 and the
+XCode tools installed.
+EOF
+
 /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker \
   -build -p "`pwd`/ocaml.pkg" -f "`pwd`/root" -i "`pwd`/Info.plist" \
   -d "`pwd`/Description.plist" -r "`pwd`/resources"
@@ -115,6 +122,7 @@ hdiutil detach $name
 name=`hdid ocaml-rw.dmg | grep Apple_HFS | cut -d ' ' -f 1`
 if test -d '/Volumes/Objective Caml'; then
   ditto -rsrcFork ocaml.pkg "/Volumes/Objective Caml/ocaml.pkg"
+  cp resources/ReadMe.txt "/Volumes/Objective Caml/"
 else
   echo 'Unable to mount the disk image as "/Volumes/Objective Caml"' >&2
   exit 3
@@ -122,4 +130,5 @@ fi
 open "/Volumes/Objective Caml"
 hdiutil detach $name
 
+rm -rf "ocaml${VERSION}.dmg"
 hdiutil convert ocaml-rw.dmg -format UDZO -o "ocaml${VERSION}.dmg"
