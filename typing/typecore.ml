@@ -486,19 +486,8 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
         exp_env = env }
-  | Pexp_function (_, Some _, _) ->     (* defined in type_expect *)
+  | Pexp_function _ ->     (* defined in type_expect *)
       type_expect env sexp (newvar())
-  | Pexp_function (l, None, caselist) ->
-      let ty_arg =
-        if is_optional l then type_option(newvar()) else newvar()
-      and ty_res = newvar() in
-      let cases = type_cases env ty_arg ty_res caselist in
-      Parmatch.check_unused env cases;
-      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
-      { exp_desc = Texp_function(cases, partial);
-        exp_loc = sexp.pexp_loc;
-        exp_type = newty (Tarrow(l, ty_arg, ty_res));
-        exp_env = env }
   | Pexp_apply(sfunct, sargs) ->
       let funct = type_exp env sfunct in
       let (args, ty_res) = type_application env funct sargs in
@@ -1082,15 +1071,7 @@ and type_expect env sexp ty_expected =
         try unify env ty_arg (type_option(newvar()))
         with Unify _ -> assert false
       end;
-      let cases =
-        List.map
-          (fun (spat, sexp) ->
-             let (pat, ext_env) = type_pattern env spat in
-             unify_pat env pat ty_arg;
-             let exp = type_expect ext_env sexp ty_res in
-             (pat, exp))
-          caselist
-      in
+      let cases = type_cases env ty_arg ty_res caselist in
       let rec all_labeled ty =
         match (repr ty).desc with
           Tarrow ("", _, _) | Tvar -> false
