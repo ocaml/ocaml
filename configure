@@ -95,7 +95,8 @@ fi
 echo "Checking the sizes of integers and pointers..."
 set `sh runtest sizes.c`
 case "$1,$2,$3" in
-  4,4,4) echo "OK, this is a regular 32 bit architecture.";;
+  4,4,4) echo "OK, this is a regular 32 bit architecture."
+         echo "#undef SIXTYFOUR" >> m.h;;
   4,8,8) echo "Wow! A 64 bit architecture!"
          echo "#define SIXTYFOUR" >> m.h;;
   8,*,*) echo "Wow! A 64 bit architecture!"
@@ -136,7 +137,8 @@ esac
 
 sh runtest dblalign.c
 case $? in
-  0) echo "Doubles can be word-aligned.";;
+  0) echo "Doubles can be word-aligned."
+     echo "#undef ALIGN_DOUBLE" >> m.h;;
   1) echo "Doubles must be doubleword-aligned."
      echo "#define ALIGN_DOUBLE" >> m.h;;
   *) echo "Something went wrong during alignment determination for doubles."
@@ -244,6 +246,26 @@ else
   echo "	options for compiling..... $nativecccompopts"
   echo "	options for linking....... $nativecclinkopts $cclibs"
   echo "	assembler flags........... $asflags"
+fi
+
+# Checking how to invoke cpp
+
+if sh ./searchpath cpp; then
+  cpp="cpp -P"
+elif test -f /lib/cpp; then
+  cpp="/lib/cpp -P"
+elif test -f /usr/ccs/lib/cpp; then
+  cpp="/usr/ccs/lib/cpp -P"
+else
+  cpp="not found"
+fi
+
+echo "CPP=$cpp" >> Makefile
+
+echo "How to invoke the C preprocessor: $cpp"
+
+if test "$cpp" = "not found"; then
+  echo "(Please edit the generated config/Makefile to set CPP correctly)"
 fi
 
 # Where is ranlib?
@@ -448,26 +470,6 @@ fi
 if sh hasgot gettimeofday; then
   echo "gettimeofday() found."
   echo "#define HAS_GETTIMEOFDAY" >> s.h
-fi
-
-# Checking how to invoke cpp
-
-if sh ./searchpath cpp; then
-  cpp="cpp -P"
-elif test -f /lib/cpp; then
-  cpp="/lib/cpp -P"
-elif test -f /usr/ccs/lib/cpp; then
-  cpp="/usr/ccs/lib/cpp -P"
-else
-  cpp="not found"
-fi
-
-echo "CPP=$cpp" >> Makefile
-
-echo "How to invoke the C preprocessor: $cpp"
-
-if test "$cpp" = "not found"; then
-  echo "(Please edit the generated config/Makefile to set CPP correctly)"
 fi
 
 # Determine the target architecture for the "num" library

@@ -36,6 +36,9 @@ cslheader: header.c ../config/Makefile
 	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) header.c -o cslheader; \
 	     strip cslheader; fi
 
+clean::
+	rm -f cslheader
+
 pervasives.cmi: pervasives.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.mli
 
@@ -44,6 +47,17 @@ pervasives.cmo: pervasives.ml
 
 pervasives.cmx: pervasives.ml
 	$(CAMLOPT) $(COMPFLAGS) -nopervasives -c pervasives.ml
+
+filename.ml: filename.mlp ../config/Makefile
+	@rm -f filename.ml
+	$(CPP) -DUNIX filename.mlp > filename.ml || \
+        { rm -f filename.ml; exit 2; }
+	@chmod -w filename.ml
+
+clean::
+	rm -f filename.ml
+
+beforedepend:: filename.ml
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx
 
@@ -63,12 +77,11 @@ $(OBJS) std_exit.cmo: $(COMPILER)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 
-clean:
+clean::
 	rm -f *.cm* *.o *.a
-	rm -f cslheader
 	rm -f *~
 
 include .depend
 
-depend:
+depend: beforedepend
 	$(CAMLDEP) *.mli *.ml > .depend

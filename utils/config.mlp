@@ -11,15 +11,19 @@
 
 (* $Id$ *)
 
-let standard_library = "%%LIBDIR%%"
+let version = "1.15"
+
+let standard_library =
+  try
+    Sys.getenv "CAMLLIB"
+  with Not_found ->
+    "%%LIBDIR%%"
 
 let bytecomp_c_compiler = "%%BYTECC%%"
 
 let native_c_compiler = "%%NATIVECC%%"
 
 let c_libraries = "%%CCLIBS%%"
-
-let version = "1.14"
 
 let exec_magic_number = "Caml1999X001"
 and cmi_magic_number = "Caml1999I002"
@@ -34,7 +38,14 @@ let max_tag = 248
 let max_young_wosize = 256
 
 let architecture = "%%ARCH%%"
-
 let model = "%%MODEL%%"
-
 let system = "%%SYSTEM%%"
+
+let ext_obj = "%%EXT_OBJ%%"
+let ext_asm = "%%EXT_ASM%%"
+let ext_lib = "%%EXT_LIB%%"
+
+let standard_includes =
+  match system with
+    "win32" -> "-I" ^ standard_library
+  | _       -> "-I" ^ standard_library ^ " -L" ^ standard_library

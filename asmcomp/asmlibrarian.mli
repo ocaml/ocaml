@@ -17,7 +17,7 @@ val create_archive: string list -> string -> unit
 
 type error =
     File_not_found of string
-  | Archiver_error
+  | Archiver_error of string
 
 exception Error of error
 

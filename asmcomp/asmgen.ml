@@ -14,6 +14,7 @@
 (* From lambda to assembly code *)
 
 open Format
+open Config
 open Clflags
 open Misc
 open Cmm
@@ -80,8 +81,8 @@ let compile_phrase p =
 let compile_implementation prefixname lam =
   let asmfile =
     if !keep_asm_file
-    then prefixname ^ ".s"
-    else Filename.temp_file "camlasm" ".s" in
+    then prefixname ^ ext_asm
+    else Filename.temp_file "camlasm" ext_asm in
   let oc = open_out asmfile in
   begin try
     Emitaux.output_channel := oc;
@@ -94,7 +95,7 @@ let compile_implementation prefixname lam =
     if !keep_asm_file then () else remove_file asmfile;
     raise x
   end;
-  if Proc.assemble_file asmfile (prefixname ^ ".o") <> 0
+  if Proc.assemble_file asmfile (prefixname ^ ext_obj) <> 0
   then raise(Error(Assembler_error asmfile));
   if !keep_asm_file then () else remove_file asmfile
 

@@ -11,6 +11,7 @@
 
 (* $Id$ *)
 
+open Config
 open Clflags
 
 let process_file name =
@@ -24,12 +25,12 @@ let process_file name =
   else if Filename.check_suffix name ".cmo" 
        or Filename.check_suffix name ".cma" then
     objfiles := name :: !objfiles
-  else if Filename.check_suffix name ".o"
-       or Filename.check_suffix name ".a" then
+  else if Filename.check_suffix name ext_obj
+       or Filename.check_suffix name ext_lib then
     ccobjs := name :: !ccobjs
   else if Filename.check_suffix name ".c" then begin
     Compile.c_file name;
-    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ".o")
+    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
     :: !ccobjs
   end
   else

@@ -164,25 +164,40 @@ let make_startup_file filename info_list =
   close_out oc
 
 let call_linker file_list startup_file =
+  let libname = "libasmrun" ^ ext_lib in
   let runtime_lib =
     try
-      find_in_path !load_path "libasmrun.a"
+      find_in_path !load_path libname
     with Not_found ->
-      raise(Error(File_not_found "libasmrun.a")) in
-  if Sys.command
-   (Printf.sprintf
-      "%s -I%s -o %s %s %s %s -L%s %s %s %s"
-      Config.native_c_compiler
-      Config.standard_library
-      !Clflags.exec_name
-      (String.concat " " (List.rev !Clflags.ccopts))
-      (String.concat " " (List.rev file_list))
-      startup_file
-      Config.standard_library
-      (String.concat " " (List.rev !Clflags.ccobjs))
-      runtime_lib
-      Config.c_libraries) <> 0
-  then raise(Error Linking_error)
+      raise(Error(File_not_found libname)) in
+  let cmd =
+    match Config.system with
+      "win32" ->
+        Printf.sprintf
+          "%s -Fe %s -I%s %s %s %s %s %s %s"
+          Config.native_c_compiler
+          !Clflags.exec_name
+          Config.standard_library
+          (String.concat " " (List.rev !Clflags.ccopts))
+          (String.concat " " (List.rev file_list))
+          startup_file
+          (String.concat " " (List.rev !Clflags.ccobjs))
+          runtime_lib
+          Config.c_libraries
+    | _ ->
+        Printf.sprintf
+          "%s -o %s -I%s %s %s %s -L%s %s %s %s"
+          Config.native_c_compiler
+          !Clflags.exec_name
+          Config.standard_library
+          (String.concat " " (List.rev !Clflags.ccopts))
+          (String.concat " " (List.rev file_list))
+          startup_file
+          Config.standard_library
+          (String.concat " " (List.rev !Clflags.ccobjs))
+          runtime_lib
+          Config.c_libraries in
+  if Sys.command cmd <> 0 then raise(Error Linking_error)
 
 let object_file_name name =
   let file_name =
@@ -191,9 +206,9 @@ let object_file_name name =
     with Not_found ->
       fatal_error "Asmlink.object_file_name: not found" in
   if Filename.check_suffix file_name ".cmx" then
-    Filename.chop_suffix file_name ".cmx" ^ ".o"
+    Filename.chop_suffix file_name ".cmx" ^ ext_obj
   else if Filename.check_suffix file_name ".cmxa" then
-    Filename.chop_suffix file_name ".cmxa" ^ ".a"
+    Filename.chop_suffix file_name ".cmxa" ^ ext_lib
   else
     fatal_error "Asmlink.object_file_name: bad ext"
 
@@ -205,9 +220,9 @@ let link objfiles =
   Array.iter remove_required Runtimedef.builtin_exceptions;
   if not (StringSet.is_empty !missing_globals) then
     raise(Error(Missing_implementations(StringSet.elements !missing_globals)));
-  let startup = Filename.temp_file "camlstartup" ".s" in
+  let startup = Filename.temp_file "camlstartup" ext_asm in
   make_startup_file startup units_tolink;
-  let startup_obj = Filename.temp_file "camlstartup" ".o" in
+  let startup_obj = Filename.temp_file "camlstartup" ext_obj in
   if Proc.assemble_file startup startup_obj <> 0 then
     raise(Error(Assembler_error startup));
   try

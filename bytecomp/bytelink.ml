@@ -200,7 +200,7 @@ let link_bytecode objfiles exec_name copy_header =
     (* The table of global data *)
     let pos2 = pos_out outchan in
     output_value outchan (Symtable.initial_global_table());
-    (* The List.map of global identifiers *)
+    (* The map of global identifiers *)
     let pos3 = pos_out outchan in
     Symtable.output_global_map outchan;
     (* The trailer *)
@@ -216,6 +216,35 @@ let link_bytecode objfiles exec_name copy_header =
     remove_file exec_name;
     raise x
 
+(* Build a custom runtime *)
+
+let build_custom_runtime prim_name exec_name =
+  match Config.system with
+    "win32" ->
+      Sys.command
+       (Printf.sprintf
+          "%s -Fe %s -I%s %s %s %s %s\\libcamlrun.lib %s"
+          Config.bytecomp_c_compiler
+          exec_name
+          Config.standard_library
+          (String.concat " " (List.rev !Clflags.ccopts))
+          prim_name
+          (String.concat " " (List.rev !Clflags.ccobjs))
+          Config.standard_library
+          Config.c_libraries)
+  | _ ->
+      Sys.command
+       (Printf.sprintf
+          "%s -o %s -I%s %s %s -L%s %s -lcamlrun %s"
+          Config.bytecomp_c_compiler
+          exec_name
+          Config.standard_library
+          (String.concat " " (List.rev !Clflags.ccopts))
+          prim_name
+          Config.standard_library
+          (String.concat " " (List.rev !Clflags.ccobjs))
+          Config.c_libraries)
+
 (* Main entry point (build a custom runtime if needed) *)
 
 let link objfiles =
@@ -227,18 +256,7 @@ let link objfiles =
     try
       link_bytecode objfiles bytecode_name false;
       Symtable.output_primitives prim_name;
-      if Sys.command
-          (Printf.sprintf
-           "%s -I%s -o %s %s %s -L%s %s -lcamlrun %s"
-           Config.bytecomp_c_compiler
-           Config.standard_library
-           !Clflags.exec_name
-           (String.concat " " (List.rev !Clflags.ccopts))
-           prim_name
-           Config.standard_library
-           (String.concat " " (List.rev !Clflags.ccobjs))
-           Config.c_libraries)
-         <> 0
+      if build_custom_runtime prim_name !Clflags.exec_name <> 0
       then raise(Error Custom_runtime);
       let oc =
         open_out_gen [Open_wronly; Open_append; Open_binary] 0

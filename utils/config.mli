@@ -25,6 +25,9 @@ val native_c_compiler: string
         (* The C compiler to use for the native code compiler *)
 val c_libraries: string
         (* The C libraries to link with custom runtimes *)
+val standard_includes: string
+        (* Options to pass to the C compiler for including the standard
+           library directory. *)
 
 val load_path: string list ref
         (* Directories in the search path for .cmi and .cmo files *)
@@ -53,3 +56,10 @@ val model: string
         (* Name of processor submodel for the native-code compiler *)
 val system: string
         (* Name of operating system for the native-code compiler *)
+
+val ext_obj: string
+        (* Extension for object files, e.g. [.o] under Unix. *)
+val ext_asm: string
+        (* Extension for assembler files, e.g. [.s] under Unix. *)
+val ext_lib: string
+        (* Extension for library files, e.g. [.a] under Unix. *)

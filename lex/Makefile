@@ -18,7 +18,7 @@ csllex: $(OBJS)
 
 clean::
 	rm -f csllex
-	rm -f *.cmo *.cmi csllex
+	rm -f *.cmo *.cmi
 
 parser.ml parser.mli: parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parser.mly

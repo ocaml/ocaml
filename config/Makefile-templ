@@ -48,6 +48,14 @@ SHARPBANGSCRIPTS=true
 # On most platforms:
 #CCLIBS=-lcurses -ltermcap -lm
 
+### How to invoke the C preprocessor
+# On most machines:
+#CPP=/lib/cpp -P
+# Under Solaris:
+#CPP=/usr/ccs/lib/cpp -P
+# Under FreeBSD:
+#CPP=cpp -P
+
 ### How to invoke ranlib
 # BSD-style:
 #RANLIB=ranlib
@@ -152,14 +160,6 @@ SHARPBANGSCRIPTS=true
 #ASFLAGS=-u -m pwr -w
 
 ############# Configuration for the contributed libraries
-
-### How to invoke the C preprocessor
-# On most machines:
-#CPP=/lib/cpp -P
-# Under Solaris:
-#CPP=/usr/ccs/lib/cpp -P
-# Under FreeBSD:
-#CPP=cpp -P
 
 ### Name of the target architecture for the "num" library
 # Known targets:
