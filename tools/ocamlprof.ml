@@ -178,7 +178,7 @@ and rw_exp iflag sexp =
     rewrite_exp iflag sbody
 
   | Pexp_function (_, _, caselist) ->
-    if !instr_fun && not sexp.pexp_loc.loc_ghost then
+    if !instr_fun then
       rewrite_function iflag caselist
     else
       rewrite_patlexp_list iflag caselist
