@@ -965,6 +965,65 @@ let rec initial_matrix = function
        else
          [pat] :: initial_matrix rem
 
+exception NoGuard
+
+let rec initial_all no_guard = function
+  | [] ->
+      if no_guard then
+        raise NoGuard
+      else
+       []
+  | (pat, act) :: rem ->
+      ([pat], pat.pat_loc) :: initial_all (no_guard && not (has_guard act)) rem
+
+
+let rec do_filter_var = function
+  | (_::ps,loc)::rem -> (ps,loc)::do_filter_var rem
+  | _ -> []
+
+let do_filter_one q pss =
+  let rec filter_rec = function
+    | ({pat_desc = Tpat_alias(p,_)}::ps,loc)::pss -> 
+        filter_rec ((p::ps,loc)::pss)
+    | ({pat_desc = Tpat_or(p1,p2,_)}::ps,loc)::pss ->
+          filter_rec ((p1::ps,loc)::(p2::ps,loc)::pss)
+    | (p::ps,loc)::pss ->
+          if simple_match q p
+          then (simple_match_args q p @ ps, loc) :: filter_rec pss
+          else filter_rec pss
+    | _ -> [] in
+    filter_rec pss
+
+(* Check whether value v can be matched, considering guarded clauses *) 
+let rec do_match pss qs = match qs with
+| [] ->
+    begin match pss  with
+    | ([],loc)::_ -> Some loc
+    | _ -> None
+    end
+| q::qs -> match q with
+  | {pat_desc = Tpat_or (q1,q2,_)} ->
+      begin match do_match pss (q1::qs) with
+      | None -> do_match pss (q2::qs)
+      | r -> r
+      end
+  | {pat_desc = Tpat_any} ->
+      do_match (do_filter_var pss) qs
+  | _ ->
+      let q0 = normalize_pat q in
+      do_match (do_filter_one q0 pss) (simple_match_args q0 q @ qs)
+
+    
+let check_partial_all v casel =
+  try
+    let pss =
+      get_mins
+        (fun (p,_) (q,_) -> le_pats p q)
+        (initial_all true casel) in
+    do_match pss [v]
+  with
+  | NoGuard -> None
+
 let check_partial tdefs loc casel =
   let pss = get_mins le_pats (initial_matrix casel) in    
   match pss with
@@ -996,10 +1055,20 @@ let check_partial tdefs loc casel =
               let buf = Buffer.create 16 in
               let fmt = formatter_of_buffer buf in
               top_pretty fmt v;
+              begin match check_partial_all v casel with
+              | None -> ()
+              | Some _ ->
+                  (* This is ``Some l'', where l is the location of
+                     a possibly matching clause.
+                     I forget about l, because printing two locations
+                     is a plain in the top-level *)                  
+                  Buffer.add_string buf
+                   "\n(However, some guarded clause may match this value.)"
+              end ;
               Buffer.contents buf
             with _ ->
-              "" in
-          Location.prerr_warning loc (Warnings.Partial_match errmsg);
+              "" in          
+          Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
           Partial
       | _ ->
           fatal_error "Parmatch.check_partial"
