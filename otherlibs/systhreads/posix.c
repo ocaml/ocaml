@@ -568,14 +568,9 @@ static int * wait_signal_received[NSIG];
 
 static void caml_wait_signal_handler(int signo)
 {
-  char buf[100];
-  sprintf(buf, "Got signal %d\n", signo);
-  write(2, buf, strlen(buf));
   *(wait_signal_received[signo]) = signo;
   sem_post(wait_signal_sem[signo]);
 }
-
-extern int posix_signals[];     /* from byterun/sys.c */
 
 value caml_wait_signal(value sigs)
 {
@@ -592,8 +587,7 @@ value caml_wait_signal(value sigs)
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = 0;
   for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
-    s = Int_val(Field(l, 0));
-    if (s < 0) s = posix_signals[-s-1];
+    s = convert_signal_number(Int_val(Field(l, 0)));
     if (sigaction(s, &sa, &oldsignals[s]) == -1) {
       sem_destroy(&sem);
       caml_pthread_check(errno, "Thread.wait_signal (sigaction)");
@@ -609,7 +603,7 @@ value caml_wait_signal(value sigs)
   leave_blocking_section();
   caml_pthread_check(retcode, "Thread.wait_signal (sem_wait)");
   for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
-    s = Int_val(Field(l, 0));
+    s = convert_signal_number(Int_val(Field(l, 0)));
     sigaction(s, &oldsignals[s], NULL);
   }
   sem_destroy(&sem);

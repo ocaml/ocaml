@@ -15,17 +15,12 @@
 #include <fail.h>
 #include "unixsupport.h"
 #include <signal.h>
-
-extern int posix_signals[];     /* defined in byterun/signals.c */
+#include <signals.h>
 
 value unix_kill(value pid, value signal)     /* ML */
 {
   int sig;
-  sig = Int_val(signal);
-  if (sig < 0) {
-    sig = posix_signals[-sig-1];
-    if (sig < 0) invalid_argument("Sys.signal: unavailable signal");
-  }
+  sig = convert_signal_number(Int_val(signal));
   if (kill(Int_val(pid), sig) == -1)
     uerror("kill", Nothing);
   return Val_unit;

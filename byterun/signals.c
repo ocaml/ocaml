@@ -148,11 +148,19 @@ void leave_blocking_section(void)
 #define SIGPROF -1
 #endif
 
-int posix_signals[] = {
+static int posix_signals[] = {
   SIGABRT, SIGALRM, SIGFPE, SIGHUP, SIGILL, SIGINT, SIGKILL, SIGPIPE,
   SIGQUIT, SIGSEGV, SIGTERM, SIGUSR1, SIGUSR2, SIGCHLD, SIGCONT,
   SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM, SIGPROF
 };
+
+int convert_signal_number(int signo)
+{
+  if (signo < 0 && signo >= -(sizeof(posix_signals) / sizeof(int)))
+    return posix_signals[-signo-1];
+  else
+    return signo;
+}
 
 #ifndef NSIG
 #define NSIG 32
@@ -167,8 +175,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
 #endif
   value res;
 
-  sig = Int_val(signal_number);
-  if (sig < 0) sig = posix_signals[-sig-1];
+  sig = convert_signal_number(Int_val(signal_number));
   if (sig < 0 || sig >= NSIG) 
     invalid_argument("Sys.signal: unavailable signal");
   switch(action) {
