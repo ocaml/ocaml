@@ -32,8 +32,9 @@ let all_events_by_module =
 let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
   let pos_trailer =
-    in_channel_length ic - 20 - String.length Config.exec_magic_number in
+    in_channel_length ic - 24 - String.length Config.exec_magic_number in
   seek_in ic pos_trailer;
+  let path_size = input_binary_int ic in
   let code_size = input_binary_int ic in
   let prim_size = input_binary_int ic in
   let data_size = input_binary_int ic in
