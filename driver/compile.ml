@@ -40,7 +40,7 @@ let initial_env () =
     then Env.initial
     else Env.open_pers_signature "Pervasives" Env.initial
   with Not_found ->
-    fatal_error "cannot open Pervasives.cmi"
+    fatal_error "cannot open pervasives.cmi"
 
 (* Optionally preprocess a source file *)
 
