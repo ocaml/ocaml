@@ -1,0 +1,36 @@
+#!/usr/local/bin/perl
+
+while(<>) {
+  if (/`/) {
+    print $`;
+    $_ = $';
+    print "(";
+    $first = 1;
+# Split into literal strings and {...} blocks
+    while(1) {
+      if (/^`/) {
+        $_ = $';
+        last;
+      }
+      elsif (/^{([^}]*)}/) {
+        $_ = $';
+        if ($first) { $first = 0; } else { print "; "; }
+        print $1;
+      }
+      elsif (/^(([^`{\\]|\\[`"ntbr{\\]|\\[0-9][0-9][0-9])*)/) {
+        $_ = $';
+        $string = $1;
+        $string =~ s/\\([`{])/\1/g;
+        if ($first) { $first = 0; } else { print "; "; }
+        print "emit_string \"", $string, "\"";
+      }
+      else {
+        print STDERR "Unterminated `...` at line $.\n";
+        exit(2);
+      }
+    }
+    print ")", $_;
+  } else {
+    print $_;
+  }
+}
