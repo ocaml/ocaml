@@ -21,7 +21,8 @@ char *define_tables[] =
   "    gindex=yygindex;",
   "    tablesize=yytablesize;",
   "    table=yytable;",
-  "    check=yycheck }",
+  "    check=yycheck;",
+  "    error_function=parse_error }",
   0
 };
 

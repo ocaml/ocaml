@@ -2,7 +2,8 @@
 
 include ../../Makefile.config
 
-CFLAGS=$(CCCOMPOPTS) -I../../byterun -O
+CC=$(BYTECC)
+CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
 
 CAMLC=../../boot/camlrun ../../boot/camlc -I ../../boot
 

@@ -44,11 +44,13 @@ type parse_tables =
     gindex : string;
     tablesize : int;
     table : string;
-    check : string }
+    check : string;
+    error_function : string -> unit }
 
 exception YYexit of Obj.t
 
 val yyparse :
       parse_tables -> int -> (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'b
 val peek_val : parser_env -> int -> 'a
-val is_current_lookahead: 'a -> bool
+val is_current_lookahead : 'a -> bool
+val parse_error : string -> unit

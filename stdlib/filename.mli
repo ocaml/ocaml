@@ -22,6 +22,6 @@ val dirname : string -> string
         (* Split a file name into directory name / base file name.
            [concat (dirname name) (basename name)] returns a file name
            which is equivalent to [name]. Moreover, after setting the
-           current directory to [dirname name] (with [sys__chdir]),
+           current directory to [dirname name] (with [Sys.chdir]),
            references to [basename name] (which is a relative file name)
 	   designate the same file as [name] before the call to [chdir]. *)

@@ -10,6 +10,7 @@ type parser_env =
     mutable symb_start_stack : int array; (* Start positions *)
     mutable symb_end_stack : int array;   (* End positions *)
     mutable stacksize : int;            (* Size of the stacks *)
+    mutable stackbase : int;            (* Base sp for current parse *)
     mutable curr_char : int;            (* Last token read *)
     mutable lval : Obj.t;               (* Its semantic attribute *)
     mutable symb_start : int;           (* Start pos. of the current symbol*)
@@ -18,7 +19,8 @@ type parser_env =
     mutable rule_len : int;             (* Number of rhs items in the rule *)
     mutable rule_number : int;          (* Rule number to reduce by *)
     mutable sp : int;                   (* Saved sp for parse_engine *)
-    mutable state : int }               (* Saved state for parse_engine *)
+    mutable state : int;                (* Saved state for parse_engine *)
+    mutable errflag : int }             (* Saved error flag for parse_engine *)
 
 type parse_tables =
   { actions : (parser_env -> Obj.t) array;
@@ -33,7 +35,8 @@ type parse_tables =
     gindex : string;
     tablesize : int;
     table : string;
-    check : string }
+    check : string;
+    error_function : string -> unit }
 
 exception YYexit of Obj.t
 exception Parse_error
@@ -44,6 +47,7 @@ type parser_input =
   | Stacks_grown_1
   | Stacks_grown_2
   | Semantic_action_computed
+  | Error_detected
 
 type parser_output =
     Read_token
@@ -51,6 +55,7 @@ type parser_output =
   | Grow_stacks_1
   | Grow_stacks_2
   | Compute_semantic_action
+  | Call_error_function
 
 external parse_engine :
     parse_tables -> parser_env -> parser_input -> Obj.t -> parser_output
@@ -62,6 +67,7 @@ let env =
     symb_start_stack = Array.new 100 0;
     symb_end_stack = Array.new 100 0;
     stacksize = 100;
+    stackbase = 0;
     curr_char = 0;
     lval = Obj.repr ();
     symb_start = 0;
@@ -70,7 +76,8 @@ let env =
     rule_len = 0;
     rule_number = 0;
     sp = 0;
-    state = 0 }
+    state = 0;
+    errflag = 0 }
 
 let grow_stacks() =
   let oldsize = env.stacksize in
@@ -106,15 +113,24 @@ let yyparse tables start lexer lexbuf =
     | Raise_parse_error ->
         raise Parse_error
     | Compute_semantic_action ->
-        loop Semantic_action_computed (tables.actions.(env.rule_number) env)
+        let (action, value) =
+          try
+            (Semantic_action_computed, tables.actions.(env.rule_number) env)
+          with Parse_error ->
+            (Error_detected, Obj.repr ()) in
+        loop action value
     | Grow_stacks_1 ->
         grow_stacks(); loop Stacks_grown_1 (Obj.repr ())
     | Grow_stacks_2 ->
-        grow_stacks(); loop Stacks_grown_2 (Obj.repr ()) in
+        grow_stacks(); loop Stacks_grown_2 (Obj.repr ())
+    | Call_error_function ->
+        tables.error_function "syntax error";
+        loop Error_detected (Obj.repr ()) in
   let init_asp = env.asp
   and init_sp = env.sp
   and init_state = env.state
   and init_curr_char = env.curr_char in
+  env.stackbase <- env.sp + 1;
   env.curr_char <- start;
   try
     loop Start (Obj.repr ())
@@ -150,3 +166,6 @@ let rhs_end n =
 
 let is_current_lookahead tok =
   (!current_lookahead_fun)(Obj.repr tok)
+
+let parse_error (msg: string) =
+  raise Parse_error

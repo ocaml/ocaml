@@ -6,6 +6,8 @@
 #include "memory.h"
 #include "alloc.h"
 
+#define ERRCODE 256
+
 struct parser_tables {    /* Mirrors parse_tables in ../stdlib/parsing.mli */
   value actions;
   value transl_const;
@@ -20,6 +22,7 @@ struct parser_tables {    /* Mirrors parse_tables in ../stdlib/parsing.mli */
   value tablesize;
   char * table;
   char * check;
+  value error_function;
 };
 
 struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
@@ -28,6 +31,7 @@ struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
   value symb_start_stack;
   value symb_end_stack;
   value stacksize;
+  value stackbase;
   value curr_char;
   value lval;
   value symb_start;
@@ -37,6 +41,7 @@ struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
   value rule_number;
   value sp;
   value state;
+  value errflag;
 };
 
 #ifdef BIG_ENDIAN
@@ -61,6 +66,7 @@ int parser_trace = 0;
 #define STACKS_GROWN_1 2
 #define STACKS_GROWN_2 3
 #define SEMANTIC_ACTION_COMPUTED 4
+#define ERROR_DETECTED 5
 
 /* Output codes */
 /* Mirrors parser_output in ../stdlib/parsing.ml */
@@ -69,6 +75,19 @@ int parser_trace = 0;
 #define GROW_STACKS_1 Val_int(2)
 #define GROW_STACKS_2 Val_int(3)
 #define COMPUTE_SEMANTIC_ACTION Val_int(4)
+#define CALL_ERROR_FUNCTION Val_int(5)
+
+/* To preserve local variables when communicating with the ML code */
+
+#define SAVE \
+  env->sp = Val_int(sp), \
+  env->state = Val_int(state), \
+  env->errflag = Val_int(errflag)
+
+#define RESTORE \
+  sp = Int_val(env->sp), \
+  state = Int_val(env->state), \
+  errflag = Int_val(env->errflag)
 
 /* The pushdown automata */
 
@@ -80,6 +99,7 @@ value parse_engine(tables, env, cmd, arg) /* ML */
 {
   int state;
   mlsize_t sp;
+  int errflag;
   int n, n1, n2, m, state1;
 
   switch(Int_val(cmd)) {
@@ -87,20 +107,19 @@ value parse_engine(tables, env, cmd, arg) /* ML */
   case START:
     state = 0;
     sp = Int_val(env->sp);
+    errflag = 0;
 
   loop:
     Trace(printf("Loop %d\n", state));
     n = Short(tables->defred, state);
     if (n != 0) goto reduce;
     if (Int_val(env->curr_char) >= 0) goto testshift;
-    env->sp = Val_int(sp);
-    env->state = Val_int(state);
+    SAVE;
     return READ_TOKEN;
                                 /* The ML code calls the lexer and updates */
                                 /* symb_start and symb_end */
   case TOKEN_READ:
-    sp = Int_val(env->sp);
-    state = Int_val(env->state);
+    RESTORE;
     if (Is_block(arg)) {
       env->curr_char = Field(tables->transl_block, Tag_val(arg));
       modify(&env->lval, Field(arg, 0));
@@ -122,28 +141,59 @@ value parse_engine(tables, env, cmd, arg) /* ML */
       n = Short(tables->table, n2);
       goto reduce;
     }
-    env->sp = Val_int(sp);
-    env->state = Val_int(state);
-    return RAISE_PARSE_ERROR;
-                                /* The ML code raises the Parse_error exn */
+    if (errflag > 0) goto recover;
+    SAVE;
+    return CALL_ERROR_FUNCTION;
+                                /* The ML code calls the error function */
+  case ERROR_DETECTED:
+    RESTORE;
+  recover:
+    if (errflag < 3) {
+      errflag = 3;
+      while (1) {
+        state1 = Int_val(Field(env->s_stack, sp));
+        n1 = Short(tables->sindex, state1);
+        n2 = n1 + ERRCODE;
+        if (n1 != 0 && n2 >= 0 && n2 <= Int_val(tables->tablesize) &&
+            Short(tables->check, n2) == ERRCODE) {
+          Trace(printf("Recovering in state %d\n", state1));
+          goto shift_recover;
+        } else {
+          Trace(printf("Discarding state %d\n", state1));
+          if (sp <= Int_val(env->stackbase)) {
+            Trace(printf("Fallen off bottom\n"));
+            return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
+          }
+          sp--;
+        }
+      }
+    } else {
+      if (Int_val(env->curr_char) == 0)
+        return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
+      Trace(printf("Discarding token %d (0x%lx)\n",
+                   Int_val(env->curr_char), env->lval));
+      env->curr_char = Val_int(-1);
+      goto loop;
+    }
+    
   shift:
+    env->curr_char = Val_int(-1);
+    if (errflag > 0) errflag--;
+  shift_recover:
     state = Short(tables->table, n2);
     Trace(printf("Shift %d\n", state));
     sp++;
     if (sp < Long_val(env->stacksize)) goto push;
-    env->sp = Val_int(sp);
-    env->state = Val_int(state);
+    SAVE;
     return GROW_STACKS_1;
-                                /* The ML code resizes the stacks */
+                                 /* The ML code resizes the stacks */
   case STACKS_GROWN_1:
-    sp = Int_val(env->sp);
-    state = Int_val(env->state);
+    RESTORE;
   push:
     Field(env->s_stack, sp) = Val_int(state);
     modify(&Field(env->v_stack, sp), env->lval);
     Field(env->symb_start_stack, sp) = env->symb_start;
     Field(env->symb_end_stack, sp) = env->symb_end;
-    env->curr_char = Val_int(-1);
     goto loop;
 
   reduce:
@@ -164,25 +214,26 @@ value parse_engine(tables, env, cmd, arg) /* ML */
       state = Short(tables->dgoto, m);
     }
     if (sp < Long_val(env->stacksize)) goto semantic_action;
-    env->sp = Val_int(sp);
-    env->state = Val_int(state);
+    SAVE;
     return GROW_STACKS_2;
                                 /* The ML code resizes the stacks */
   case STACKS_GROWN_2:
-    sp = Int_val(env->sp);
-    state = Int_val(env->state);
+    RESTORE;
   semantic_action:
-    env->sp = Val_int(sp);
-    env->state = Val_int(state);
+    SAVE;
     return COMPUTE_SEMANTIC_ACTION;
                                 /* The ML code calls the semantic action */
   case SEMANTIC_ACTION_COMPUTED:
-    sp = Int_val(env->sp);
-    state = Int_val(env->state);
+    RESTORE;
     Field(env->s_stack, sp) = Val_int(state);
     modify(&Field(env->v_stack, sp), arg);
     Field(env->symb_end_stack, sp) =
       Field(env->symb_end_stack, Int_val(env->asp));
     goto loop;
+
+  default:                      /* Should not happen */
+    Assert(0);
+    return RAISE_PARSE_ERROR;   /* Keeps gcc -Wall happy */
   }
+  
 }
