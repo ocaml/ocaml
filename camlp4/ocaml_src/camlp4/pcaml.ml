@@ -377,7 +377,7 @@ let pr_fun name pr lab =
 ;;
 
 pr_str_item.pr_fun <- pr_fun "str_item" pr_str_item;;
-pr_sig_item.pr_fun <- pr_fun "str_item" pr_sig_item;;
+pr_sig_item.pr_fun <- pr_fun "sig_item" pr_sig_item;;
 pr_expr.pr_fun <- pr_fun "expr" pr_expr;;
 pr_patt.pr_fun <- pr_fun "patt" pr_patt;;
 
