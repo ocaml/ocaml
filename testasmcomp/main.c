@@ -51,6 +51,9 @@ int main(argc, argv)
 #endif
 #ifdef INT_FLOAT
   { extern double FUN();
+#ifdef __mc68020__
+#define call_gen_code call_gen_code_float
+#endif
     extern double call_gen_code();
     printf("%f\n", call_gen_code(FUN, atoi(argv[1])));
   }

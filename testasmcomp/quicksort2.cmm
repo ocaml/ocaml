@@ -18,28 +18,28 @@
   (if (< lo hi)
       (let (i lo
             j hi
-            pivot (addraref a hi))
+            pivot (intaref a hi))
         (while (< i j)
           (catch
             (while 1
               (if (>= i hi) exit [])
-              (if (> (app cmp [(addraref a i) pivot] int) 0) exit [])
+              (if (> (app cmp [(intaref a i) pivot] int) 0) exit [])
               (assign i (+ i 1)))
             with [])
           (catch
             (while 1
               (if (<= j lo) exit [])
-              (if (< (app cmp [(addraref a j) pivot] int) 0) exit [])
+              (if (< (app cmp [(intaref a j) pivot] int) 0) exit [])
               (assign j (- j 1)))
            with [])
           (if (< i j)
-              (let temp (addraref a i)
-                   (addraset a i (addraref a j))
-                   (addraset a j temp))
+              (let temp (intaref a i)
+                   (intaset a i (intaref a j))
+                   (intaset a j temp))
             []))
-        (let temp (addraref a i)
-             (addraset a i (addraref a hi))
-             (addraset a hi temp))
+        (let temp (intaref a i)
+             (intaset a i (intaref a hi))
+             (intaset a hi temp))
         (app "quick" [lo (- i 1) a cmp] unit)
         (app "quick" [(+ i 1) hi a cmp] unit))
     []))
