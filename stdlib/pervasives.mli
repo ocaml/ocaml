@@ -131,11 +131,11 @@ external not : bool -> bool = "%boolnot"
         (* The boolean negation. *)
 external (&) : bool -> bool -> bool = "%sequand"
         (* The boolean ``and''. Evaluation is sequential, left-to-right:
-           in [e1 & e2], [e1] is eavaluated first, and if it returns [false],
+           in [e1 & e2], [e1] is evaluated first, and if it returns [false],
            [e2] is not evaluated at all. *)
 external (or) : bool -> bool -> bool = "%sequor"
         (* The boolean ``or''. Evaluation is sequential, left-to-right:
-           in [e1 or e2], [e1] is eavaluated first, and if it returns [true],
+           in [e1 or e2], [e1] is evaluated first, and if it returns [true],
            [e2] is not evaluated at all. *)
 
 (*** Integer arithmetic *)
