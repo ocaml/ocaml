@@ -175,7 +175,7 @@ let call_linker file_list startup_file =
     match Config.system with
       "win32" ->
         Printf.sprintf
-          "%s -Fe %s -I%s %s %s %s %s %s %s"
+          "%s /Fe%s -I%s %s %s %s %s %s %s"
           Config.native_c_compiler
           !Clflags.exec_name
           Config.standard_library

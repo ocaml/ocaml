@@ -1,0 +1,66 @@
+!include ..\config\Makefile.nt
+
+CC=$(BYTECC)
+CFLAGS=$(BYTECCCOMPOPTS)
+
+OBJS=interp.obj misc.obj stacks.obj fix_code.obj main.obj fail.obj signals.obj \
+  freelist.obj major_gc.obj minor_gc.obj memory.obj alloc.obj roots.obj \
+  compare.obj ints.obj floats.obj str.obj array.obj io.obj extern.obj intern.obj \
+  hash.obj sys.obj meta.obj parsing.obj gc_ctrl.obj terminfo.obj md5.obj obj.obj
+
+PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
+  intern.c interp.c ints.c io.c md5.c meta.c obj.c parsing.c \
+  signals.c str.c sys.c terminfo.c
+
+all: cslrun.exe
+
+cslrun.exe: $(OBJS) prims.obj
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) /Fecslrun.exe prims.obj $(OBJS) $(CCLIBS)
+
+install:
+	cp cslrun.exe $(BINDIR)\cslrun.exe
+	rm -f $(LIBDIR)\libcamlrun.lib
+	$(MKLIB)$(LIBDIR)\libcamlrun.lib $(OBJS)
+	if not exist $(LIBDIR)\caml mkdir $(LIBDIR)\caml
+	cp mlvalues.h alloc.h misc.h $(LIBDIR)\caml
+	sed -e "/#include .*\/m.h\r ..\config\m.h" \
+            -e "/#include .*\/s.h\r ..\config\s.h" \
+            -e "/#include /d" config.h > $(LIBDIR)\caml\config.h
+	sed -e "/#include .*gc\.h"/d" \
+	    -e "/#define Alloc_small/,/^}/d" \
+	    -e "/Modify/,/^}/d" memory.h > $(LIBDIR)\caml\memory.h
+
+clean:
+	rm -f cslrun.exe *.obj *.lib
+	rm -f primitives prims.c opnames.h jumptbl.h
+
+primitives : $(PRIMS)
+	sed -n -e "/\/\* ML \*\//s/.* \([a-z0-9_]*\)(.*/\1/p" \
+	    $(PRIMS) > primitives
+
+prims.c : primitives
+        echo #include "mlvalues.h" > prims.c
+        echo #include "prims.h" >> prims.c
+        sed -e "s/.*/extern value &();/" primitives >> prims.c
+        echo c_primitive cprim[] = { >> prims.c
+        sed -e "s/.*/   &,/" primitives >> prims.c
+        echo     0 }; >> prims.c
+        echo char * names_of_cprim[] = { >> prims.c
+        sed -e "s/.*/   \"^&\",/" primitives >> prims.c
+        echo     0 }; >> prims.c
+
+opnames.h : instruct.h
+	sed -e "/\/\*/d" \
+	    -e "s\enum /char * names_of_/" \
+	    -e "s/{$$/[] = {/" \
+	    -e "s/\([A-Z][A-Z_0-9]*\)/"\1"/g" instruct.h > opnames.h
+
+# jumptbl.h is required only if you have GCC 2.0 or later
+jumptbl.h : instruct.h
+	sed -n -e "/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp" \
+	       -e "/^}/q" instruct.h > jumptbl.h
+
+depend:
+	sed -e "s/\.o/.obj/g" .depend > .depend.nt
+
+!include .depend.nt

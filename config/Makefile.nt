@@ -1,0 +1,62 @@
+# Configuration for Windows NT/95, Visual C++ 4.0
+
+######### General configuration
+
+### Where to install the binaries
+BINDIR=c:\camlsl\bin
+
+### Where to install the standard library
+LIBDIR=c:\camlsl\lib
+
+########## Configuration for the bytecode compiler
+
+### Which C compiler to use for the bytecode interpreter.
+BYTECC=cl /nologo
+
+### Additional compile-time options for $(BYTECC).
+BYTECCCOMPOPTS=/Ox
+
+### Additional link-time options for $(BYTECC)
+BYTECCLINKOPTS=
+
+### Libraries needed
+CCLIBS=
+
+### How to invoke the C preprocessor
+CPP=cl /nologo /EP
+
+### How to invoke the librarian
+MKLIB=lib /nologo /debugtype:CV /out:
+
+############# Configuration for the native-code compiler
+
+### Name of architecture for the native-code compiler
+ARCH=i386
+
+### Name of architecture model for the native-code compiler.
+MODEL=default
+
+### Name of operating system family for the native-code compiler.
+SYSTEM=win32
+
+### Which C compiler to use for the native-code compiler.
+NATIVECC=cl /nologo
+
+### Additional compile-time options for $(NATIVECC).
+NATIVECCCOMPOPTS=/Ox
+
+### Additional link-time options for $(NATIVECC)
+NATIVECCLINKOPTS=
+
+### Flags for the assembler
+AS=ml /nologo
+ASFLAGS=/coff /Cp
+
+############# Configuration for the contributed libraries
+
+### Name of the target architecture for the "num" library
+BIGNUM_ARCH=C
+
+############# Aliases for common commands
+
+MAKEREC=$(MAKE) -nologo -f Makefile.nt 

@@ -311,11 +311,17 @@ fi
 if sh hasgot sigaction sigprocmask; then
   echo "POSIX signal handling found."
   echo "#define POSIX_SIGNALS" >> s.h
-elif sh runtest signals.c; then
-  echo "Signals have the BSD semantics."
-  echo "#define BSD_SIGNALS" >> s.h
 else
-  echo "Signals have the System V semantics."
+  if sh runtest signals.c; then
+    echo "Signals have the BSD semantics."
+    echo "#define BSD_SIGNALS" >> s.h
+  else
+    echo "Signals have the System V semantics."
+  fi
+  if sh hasgot sigsetmask; then
+    echo "sigsetmask() found"
+    echo "#define HAS_SIGSETMASK" >> s.h
+  fi
 fi
 
 # For the sys module

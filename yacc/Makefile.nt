@@ -1,0 +1,32 @@
+# Makefile for the parser generator.
+
+!include ..\config\Makefile.nt
+
+CC=$(BYTECC)
+CFLAGS=-DNDEBUG -DNO_UNIX $(BYTECCCOMPOPTS)
+
+OBJS= closure.obj error.obj lalr.obj lr0.obj main.obj mkpar.obj output.obj reader.obj \
+  skeleton.obj symtab.obj verbose.obj warshall.obj
+
+all: cslyacc.exe
+
+cslyacc.exe: $(OBJS)
+	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o cslyacc.exe $(OBJS)
+
+clean:
+	rm -f *.obj cslyacc.exe *~
+
+depend:
+
+closure.obj: defs.h
+error.obj: defs.h
+lalr.obj: defs.h
+lr0.obj: defs.h
+main.obj: defs.h
+mkpar.obj: defs.h
+output.obj: defs.h
+reader.obj: defs.h
+skeleton.obj: defs.h
+symtab.obj: defs.h
+verbose.obj: defs.h
+warshall.obj: defs.h

@@ -284,9 +284,9 @@ int main(argc, argv)
     }
   }
   weird[0] = 0.0;
-  weird[1] = 1.0 / 0.0;         /* +infty */
-  weird[2] = -1.0 / 0.0;        /* -infty */
-  weird[3] = 0.0 / 0.0;         /* NaN */
+  weird[1] = 1.0 / weird[0];         /* +infty */
+  weird[2] = -1.0 / weird[0];        /* -infty */
+  weird[3] = 0.0 / weird[0];         /* NaN */
   for (x = 0; x < 4; x++) {
     for (y = 0; y < 4; y++) {
       f = weird[x]; g = weird[y]; do_test();

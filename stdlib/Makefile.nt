@@ -31,7 +31,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 cslheader: header.c ..\config\Makefile.nt
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) header.c -Fe cslheader.
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -Fecslheader. header.c
 
 clean::
 	rm -f cslheader
@@ -47,7 +47,7 @@ pervasives.cmx: pervasives.ml
 
 filename.ml: filename.mlp ..\config\Makefile.nt
 	@rm -f filename.ml
-	$(CPP) -DUNIX filename.mlp > filename.ml
+	$(CPP) -DWIN32 filename.mlp > filename.ml
 	@attrib +r filename.ml
 
 clean::

@@ -1,0 +1,134 @@
+!include ..\config\Makefile.nt
+
+CAMLC=..\boot\cslrun ..\boot\cslc -I ..\boot
+COMPFLAGS=$(INCLUDES)
+LINKFLAGS=
+CAMLYACC=..\boot\cslyacc
+YACCFLAGS=
+CAMLLEX=..\boot\cslrun ..\boot\csllex
+CAMLDEP=..\boot\cslrun ..\tools\csldep
+DEPFLAGS=$(INCLUDES)
+CAMLRUN=..\boot\cslrun
+
+CODEGEN=.\codegen
+CC=$(NATIVECC)
+CFLAGS=
+
+PROGS=fib.exe tak.exe quicksort.exe quicksort2.exe soli.exe integr.exe \
+      arith.exe checkbound.exe
+
+all: codegen $(PROGS)
+
+INCLUDES=-I ..\utils -I ..\typing -I ..\asmcomp
+
+OTHEROBJS=..\utils\misc.cmo ..\utils\tbl.cmo \
+  ..\utils\clflags.cmo ..\utils\config.cmo \
+  ..\parsing\location.cmo \
+  ..\typing\ident.cmo ..\typing\path.cmo ..\typing\subst.cmo \
+  ..\typing\primitive.cmo ..\typing\predef.cmo ..\typing\printtyp.cmo \
+  ..\typing\datarepr.cmo ..\typing\env.cmo \
+  ..\bytecomp\lambda.cmo \
+  ..\asmcomp\arch.cmo ..\asmcomp\cmm.cmo ..\asmcomp\printcmm.cmo \
+  ..\asmcomp\clambda.cmo ..\asmcomp\compilenv.cmo \
+  ..\asmcomp\reg.cmo ..\asmcomp\mach.cmo ..\asmcomp\proc.cmo \
+  ..\asmcomp\closure.cmo ..\asmcomp\cmmgen.cmo \
+  ..\asmcomp\printmach.cmo ..\asmcomp\selection.cmo ..\asmcomp\liveness.cmo \
+  ..\asmcomp\spill.cmo ..\asmcomp\split.cmo \
+  ..\asmcomp\interf.cmo ..\asmcomp\coloring.cmo ..\asmcomp\reload.cmo \
+  ..\asmcomp\linearize.cmo ..\asmcomp\scheduling.cmo \
+  ..\asmcomp\printlinear.cmo ..\asmcomp\emitaux.cmo \
+  ..\asmcomp\emit.cmo ..\asmcomp\asmgen.cmo
+
+OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo main.cmo
+
+codegen: $(OTHEROBJS) $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS)
+clean::
+	rm -f codegen
+
+# The parser
+
+parsecmm.mli parsecmm.ml: parsecmm.mly
+	$(CAMLYACC) $(YACCFLAGS) parsecmm.mly
+
+clean::
+	rm -f parsecmm.mli parsecmm.ml parsecmm.output
+
+beforedepend:: parsecmm.mli parsecmm.ml
+
+# The lexer
+
+lexcmm.ml: lexcmm.mll
+	$(CAMLLEX) lexcmm.mll
+
+clean::
+	rm -f lexcmm.ml
+
+beforedepend:: lexcmm.ml
+
+# The test programs
+
+$(PROGS:.exe=.obj): codegen
+
+fib.exe: main.c fib.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o fib.exe -DINT_INT -DFUN=fib main.c fib.obj $(ARCH).obj
+
+tak.exe: main.c tak.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o tak.exe -DUNIT_INT -DFUN=takmain main.c tak.obj $(ARCH).obj
+
+quicksort.exe: main.c quicksort.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o quicksort.exe -DSORT -DFUN=quicksort main.c quicksort.obj $(ARCH).obj
+
+quicksort2.exe: main.c quicksort2.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o quicksort2.exe -DSORT -DFUN=quicksort main.c quicksort2.obj $(ARCH).obj
+
+soli.exe: main.c soli.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o soli.exe -DUNIT_INT -DFUN=solitaire main.c soli.obj $(ARCH).obj
+
+integr.exe: main.c integr.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o integr.exe -DINT_FLOAT -DFUN=test main.c integr.obj $(ARCH).obj
+
+tagged-fib.exe: main.c tagged-fib.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o tagged-fib.exe -DINT_INT -DFUN=fib main.c tagged-fib.obj $(ARCH).obj
+
+tagged-tak.exe: main.c tagged-tak.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o tagged-tak.exe -DUNIT_INT -DFUN=takmain main.c tagged-tak.obj $(ARCH).obj
+
+tagged-quicksort.exe: main.c tagged-quicksort.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o tagged-quicksort.exe -DSORT -DFUN=quicksort main.c tagged-quicksort.obj $(ARCH).obj
+
+tagged-integr.exe: main.c tagged-integr.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o tagged-integr.exe -DINT_FLOAT -DFUN=test main.c tagged-integr.obj $(ARCH).obj
+
+arith.exe: mainarith.c arith.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o arith.exe mainarith.c arith.obj $(ARCH).obj
+
+checkbound.exe: main.c checkbound.obj $(ARCH).obj
+	$(CC) $(CFLAGS) -o checkbound.exe -DCHECKBOUND main.c checkbound.obj $(ARCH).obj
+
+$(ARCH).obj: $(ARCH)nt.asm
+	$(AS) $(ASFLAGS) /c /Fo$(ARCH).obj $(ARCH)nt.asm
+
+.SUFFIXES:
+.SUFFIXES: .cmm .obj .ml .mli .cmo .cmi
+
+.ml.cmo:
+	$(CAMLC) $(COMPFLAGS) -c $<
+
+.mli.cmi:
+	$(CAMLC) $(COMPFLAGS) -c $<
+
+.cmm.obj:
+	$(CAMLRUN) $(CODEGEN) $*.cmm > $*.asm
+	$(AS) $(ASFLAGS) /c $*.asm
+
+clean::
+	rm -f *.exe *.cm* *.obj *~
+	rm -f $(PROGS:.exe=.asm)
+
+$(PROGS:.exe=.obj): $(CODEGEN)
+
+depend: beforedepend
+	$(CAMLDEP) $(DEPFLAGS) *.mli *.ml > .depend
+
+!include .depend

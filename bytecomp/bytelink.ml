@@ -223,7 +223,7 @@ let build_custom_runtime prim_name exec_name =
     "win32" ->
       Sys.command
        (Printf.sprintf
-          "%s -Fe %s -I%s %s %s %s %s\\libcamlrun.lib %s"
+          "%s /Fe%s -I%s %s %s %s %s\\libcamlrun.lib %s"
           Config.bytecomp_c_compiler
           exec_name
           Config.standard_library

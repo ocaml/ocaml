@@ -20,8 +20,10 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include "config.h"
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
 #include "alloc.h"
 #include "fail.h"
 #include "instruct.h"

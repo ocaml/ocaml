@@ -44,6 +44,10 @@
    undefined if signal handlers have the System V semantics: the signal
    resets the behavior to default. */
 
+#define HAS_SIGSETMASK
+
+/* Define HAS_SIGSETMASK if you have sigsetmask(), as in BSD. */
+
 #define HAS_TERMCAP
 
 /* Define HAS_TERMCAP if you have the termcap functions to read the

@@ -1,0 +1,175 @@
+!include ..\config\Makefile.nt
+
+CAMLC=..\boot\cslrun ..\cslc -I ..\stdlib -I KB -I Lex
+CAMLOPT=..\boot\cslrun ..\cslopt -I ..\stdlib -I KB -I Lex
+OPTFLAGS=-S
+CAMLYACC=..\yacc\cslyacc
+CAMLLEX=..\boot\cslrun ..\lex\csllex
+CAMLDEP=..\boot\cslrun ..\tools\csldep
+CAMLRUN=..\byterun\cslrun
+CODERUNPARAMS=CAMLRUNPARAM='o=100'
+
+BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
+  fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt \
+  nucleic.byt genlex.byt
+
+CODE_EXE=$(BYTE_EXE:.byt=.exe)
+
+all: $(BYTE_EXE) $(CODE_EXE)
+
+# Nucleic
+
+nucleic.exe: nucleic.ml
+!if "$(ARCH)" == "i386"
+	sed -e "/<HAND_CSE>/,/<\/HAND_CSE>/d" -e "/NO_CSE>/d" nucleic.ml > nucleic.mlt
+	$(CAMLOPT) $(OPTFLAGS) -o nucleic.exe nucleic.mlt
+	rm -f nucleic.mlt
+!else
+	$(CAMLOPT) $(OPTFLAGS) -o nucleic.exe nucleic.ml
+!endif
+
+# KB
+
+BYTE_KB=KB\terms.cmo KB\equations.cmo KB\kb.cmo KB\orderings.cmo KB\kbmain.cmo
+CODE_KB=$(BYTE_KB:.cmo=.cmx)
+
+kb.byt: $(BYTE_KB)
+	$(CAMLC) -I KB $(BYTE_KB) -o kb.byt
+kb.exe: $(CODE_KB)
+	$(CAMLOPT) $(OPTFLAGS) -I KB $(CODE_KB) -o kb.exe
+
+clean::
+	rm -f KB\*.cm* KB\*.obj KB\*.asm
+
+# Genlex
+
+BYTE_GENLEX=Lex\syntax.cmo Lex\scan_aux.cmo Lex\scanner.cmo Lex\gram_aux.cmo \
+  Lex\grammar.cmo Lex\lexgen.cmo Lex\output.cmo Lex\main.cmo
+CODE_GENLEX=$(BYTE_GENLEX:.cmo=.cmx)
+
+genlex.byt: $(BYTE_GENLEX)
+	$(CAMLC) -I Lex $(BYTE_GENLEX) -o genlex.byt
+genlex.exe: $(CODE_GENLEX)
+	$(CAMLOPT) $(OPTFLAGS) -I Lex $(CODE_GENLEX) -o genlex.exe
+
+clean::
+	rm -f Lex\*.cm* Lex\*.obj Lex\*.asm
+
+Lex\grammar.ml Lex\grammar.mli: Lex\grammar.mly
+	$(CAMLYACC) $(YACCFLAGS) Lex\grammar.mly
+
+clean::
+	rm -f Lex\grammar.ml Lex\grammar.mli
+beforedepend:: Lex\grammar.ml Lex\grammar.mli
+
+Lex\scanner.ml: Lex\scanner.mll
+	$(CAMLLEX) Lex\scanner.mll
+
+clean::
+	rm -f Lex\scanner.ml
+beforedepend:: Lex\scanner.ml
+
+# "Fast" stuff
+
+quicksort.fast.byt: quicksort.ml
+	cp quicksort.ml quicksort.fast.ml
+	$(CAMLC) -unsafe -o quicksort.fast.byt quicksort.fast.ml
+	rm -f quicksort.fast.ml
+
+soli.fast.byt: soli.ml
+	cp soli.ml soli.fast.ml
+	$(CAMLC) -unsafe -o soli.fast.byt soli.fast.ml
+	rm -f soli.fast.ml
+
+fft.fast.byt: fft.ml
+	cp fft.ml fft.fast.ml
+	$(CAMLC) -unsafe -o fft.fast.byt fft.fast.ml
+	rm -f fft.fast.ml
+
+quicksort.fast.exe: quicksort.ml
+	cp quicksort.ml quicksort.fast.ml
+	$(CAMLOPT) $(OPTFLAGS) -unsafe -o quicksort.fast.exe quicksort.fast.ml
+	rm -f quicksort.fast.ml
+
+soli.fast.exe: soli.ml
+	cp soli.ml soli.fast.ml
+	$(CAMLOPT) $(OPTFLAGS) -unsafe -o soli.fast.exe soli.fast.ml
+	rm -f soli.fast.ml
+
+fft.fast.exe: fft.ml
+	cp fft.ml fft.fast.ml
+	$(CAMLOPT) $(OPTFLAGS) -unsafe -o fft.fast.exe fft.fast.ml
+	rm -f fft.fast.ml
+
+# Common rules
+
+.SUFFIXES:
+.SUFFIXES: .mli .ml .cmi .cmo .cmx .byt .exe
+
+.ml.byt:
+	$(CAMLC) -o $*.byt $<
+
+.ml.exe:
+	$(CAMLOPT) $(OPTFLAGS) -o $*.exe $<
+
+.mli.cmi:
+	$(CAMLC) -c $<
+
+.ml.cmo:
+	$(CAMLC) -c $<
+
+.ml.cmx:
+	$(CAMLOPT) $(OPTFLAGS) -c $<
+
+$(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ..\cslc
+$(BYTE_EXE): ..\stdlib\stdlib.cma
+$(CODE_EXE) $(CODE_KB) $(CODE_GENLEX): ..\cslopt
+$(CODE_EXE): ..\stdlib\stdlib.cmxa ..\stdlib\libasmrun.lib
+
+clean::
+	rm -f *.byt *.exe
+	rm -f *.cm* *.obj *.asm
+
+# Regression test
+
+.SUFFIXES: .btst .etst
+
+.byt.btst:
+	$(CAMLRUN) $*.byt > %temp%\test.out
+	fc /l %temp%\test.out Results\$*.out
+.exe.etst:
+	$*.exe > %temp%\test.out
+	fc /l %temp%\test.out Results\$*.out
+
+clean::
+	rm -f %temp%\test.out
+
+genlex.btst:
+	$(CAMLRUN) genlex.byt Lex/testscanner.mll
+genlex.etst:
+	genlex.exe Lex/testscanner.mll
+
+FFT_TEST=gawk "$$2 >= 1e-9 { exit 2; }"
+fft.btst:
+	$(CAMLRUN) fft.byt | $(FFT_TEST)
+fft.fast.btst:
+	$(CAMLRUN) fft.fast.byt | $(FFT_TEST)
+fft.etst:
+	fft.exe | $(FFT_TEST)
+fft.fast.etst:
+	fft.fast.exe | $(FFT_TEST)
+
+test: codetest
+bytetest: $(BYTE_EXE:.byt=.btst)
+codetest: $(CODE_EXE:.exe=.etst)
+
+clean::
+	rm -f Lex\testscanner.ml
+
+# Dependencies
+
+depend: beforedepend
+	$(CAMLDEP) -I KB -I Lex *.mli *.ml KB\*.mli KB\*.ml Lex\*.mli Lex\*.ml > .depend
+
+!include .depend
+

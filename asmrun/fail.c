@@ -46,7 +46,9 @@ void mlraise(v)
   sigemptyset(&mask);
   sigprocmask(SIG_SETMASK, &mask, NULL);
 #else
+#ifdef HAS_SIGSETMASK
   sigsetmask(0);
+#endif
 #endif
   leave_blocking_section();
 #ifndef Stack_grows_upwards

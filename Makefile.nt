@@ -1,0 +1,453 @@
+# The main Makefile
+
+!include config\Makefile.nt
+
+### Which libraries to compile and install
+OTHERLIBRARIES=str num dynlink
+
+CAMLC=boot\cslrun boot\cslc -I boot
+CAMLOPT=boot\cslrun .\cslopt -I stdlib
+COMPFLAGS=$(INCLUDES)
+LINKFLAGS=
+CAMLYACC=boot\cslyacc
+YACCFLAGS=
+CAMLLEX=boot\cslrun boot\csllex
+CAMLDEP=boot\cslrun tools\csldep
+DEPFLAGS=$(INCLUDES)
+CAMLRUN=byterun\cslrun
+
+INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
+
+UTILS=utils\misc.cmo utils\tbl.cmo utils\config.cmo \
+  utils\clflags.cmo utils\terminfo.cmo
+
+PARSING=parsing\location.cmo parsing\longident.cmo \
+  parsing\pstream.cmo parsing\parser.cmo parsing\lexer.cmo parsing\parse.cmo
+
+TYPING=typing\ident.cmo typing\path.cmo \
+  typing\primitive.cmo typing\typedtree.cmo \
+  typing\subst.cmo typing\printtyp.cmo \
+  typing\predef.cmo typing\datarepr.cmo typing\env.cmo \
+  typing\ctype.cmo typing\mtype.cmo \
+  typing\includecore.cmo typing\includemod.cmo typing\parmatch.cmo \
+  typing\typetexp.cmo typing\typecore.cmo \
+  typing\typedecl.cmo typing\typemod.cmo
+
+COMP=bytecomp\lambda.cmo bytecomp\printlambda.cmo \
+  bytecomp\dectree.cmo bytecomp\matching.cmo \
+  bytecomp\translcore.cmo bytecomp\translmod.cmo \
+  bytecomp\simplif.cmo bytecomp\runtimedef.cmo
+
+BYTECOMP=bytecomp\meta.cmo bytecomp\instruct.cmo bytecomp\bytegen.cmo \
+  bytecomp\printinstr.cmo bytecomp\opcodes.cmo bytecomp\emitcode.cmo \
+  bytecomp\symtable.cmo bytecomp\bytelibrarian.cmo bytecomp\bytelink.cmo
+
+ASMCOMP=asmcomp\arch.cmo asmcomp\cmm.cmo asmcomp\printcmm.cmo \
+  asmcomp\reg.cmo asmcomp\mach.cmo asmcomp\proc.cmo \
+  asmcomp\clambda.cmo asmcomp\compilenv.cmo \
+  asmcomp\closure.cmo asmcomp\cmmgen.cmo \
+  asmcomp\printmach.cmo asmcomp\selection.cmo asmcomp\liveness.cmo \
+  asmcomp\spill.cmo asmcomp\split.cmo \
+  asmcomp\interf.cmo asmcomp\coloring.cmo asmcomp\reload.cmo \
+  asmcomp\printlinear.cmo asmcomp\linearize.cmo asmcomp\scheduling.cmo \
+  asmcomp\emitaux.cmo asmcomp\emit.cmo asmcomp\asmgen.cmo \
+  asmcomp\asmlink.cmo asmcomp\asmlibrarian.cmo
+
+DRIVER=driver\errors.cmo driver\compile.cmo driver\main.cmo
+
+OPTDRIVER=driver\opterrors.cmo driver\optcompile.cmo driver\optmain.cmo
+
+TOPLEVEL=driver\errors.cmo driver\compile.cmo \
+  toplevel\printval.cmo toplevel\toploop.cmo \
+  toplevel\trace.cmo toplevel\topdirs.cmo
+
+TOPLEVELMAIN=toplevel\topmain.cmo
+
+COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
+
+TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
+
+TOPOBJS=$(TOPLIB) $(TOPLEVELMAIN)
+
+OPTOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
+
+EXPUNGEOBJS=utils\misc.cmo utils\tbl.cmo \
+  utils\config.cmo utils\clflags.cmo \
+  typing\ident.cmo typing\predef.cmo \
+  bytecomp\runtimedef.cmo bytecomp\symtable.cmo \
+  toplevel\expunge.cmo
+
+PERVASIVES=arg array char digest filename format gc hashtbl lexing list map \
+  obj parsing pervasives printexc printf queue random set sort \
+  stack string stream sys
+
+# Recompile the system using the bootstrap compiler
+all: runtime cslc csllex cslyacc csltools library csltop otherlibraries
+
+# The compilation of csltop will fail if the runtime has changed.
+# Never mind, just do make bootstrap to reach fixpoint again.
+
+# Compile everything the first time
+world: coldstart clean all
+
+# Set up the configuration files
+configure:
+	cp config\m-nt.h config\m.h
+	cp config\s-nt.h config\s.h
+
+# Complete bootstrapping cycle
+bootstrap:
+# Save the original bootstrap compiler
+	$(MAKEREC) backup
+# Promote the new compiler but keep the old runtime
+# This compiler runs on boot\cslrun and produces bytecode for byterun\cslrun
+	$(MAKEREC) promote-cross
+# Rebuild cslc and csllex (run on byterun\cslrun)
+	$(MAKEREC) clean
+	$(MAKEREC) cslc csllex
+# Rebuild the library (using byterun\cslrun .\cslc)
+	$(MAKEREC) library-cross
+# Promote the new compiler and the new runtime
+	$(MAKEREC) promote
+# Rebuild everything, including csltop and the tools
+	$(MAKEREC) clean
+	$(MAKEREC) all
+# Check if fixpoint reached
+	$(MAKEREC) compare
+
+LIBFILES=stdlib.cma std_exit.cmo *.cmi cslheader
+
+# Start up the system from the distribution compiler
+coldstart:
+	cd byterun & $(MAKEREC) all
+	cp byterun\cslrun.exe boot\cslrun.exe
+	cd yacc & $(MAKEREC) all
+	cp yacc\cslyacc.exe boot\cslyacc.exe
+	cd stdlib & $(MAKEREC) COMPILER=..\boot\cslc all
+	cd stdlib & cp $(LIBFILES) ..\boot
+
+# Save the current bootstrap compiler
+backup:
+	if not exist boot\Saved mkdir boot\Saved
+	mv boot\Saved boot\Saved.prev
+	mkdir boot\Saved
+	mv boot\Saved.prev boot\Saved\Saved.prev
+	cp boot\cslrun.exe boot\Saved
+	mv boot\cslc boot\csllex boot\cslyacc.exe boot\Saved
+	cd boot & cp $(LIBFILES) Saved
+
+# Promote the newly compiled system to the rank of cross compiler
+# (Runs on the old runtime, produces code for the new runtime)
+promote-cross:
+	cp cslc boot\cslc
+	cp lex\csllex boot\csllex
+	cp yacc\cslyacc boot\cslyacc
+	cd stdlib & cp $(LIBFILES) ..\boot
+
+# Promote the newly compiled system to the rank of bootstrap compiler
+# (Runs on the new runtime, produces code for the new runtime)
+promote: promote-cross
+	cp byterun\cslrun.exe boot\cslrun.exe
+
+# Restore the saved bootstrap compiler if a problem arises
+restore:
+	mv boot\Saved\* boot
+	rmdir boot\Saved
+	mv boot\Saved.prev boot\Saved
+
+# Check if fixpoint reached
+compare:
+	fc /b boot\cslc cslc
+	fc /b boot\csllex lex\csllex
+	echo "Fixpoint reached, bootstrap succeeded."
+
+# Remove old bootstrap compilers
+cleanboot:
+	rm -rf boot\Saved\Saved.prev\*
+
+# Compile the native-code compiler
+opt: runtimeopt cslopt libraryopt otherlibrariesopt
+
+# Installation
+install:
+	if not exist $(BINDIR) mkdir $(BINDIR)
+	if not exist $(LIBDIR) mkdir $(LIBDIR)
+	if not exist $(MANDIR) mkdir $(MANDIR)
+	cd byterun & $(MAKEREC) install
+	cp cslc $(BINDIR)\cslc.exe
+	cp csltop $(BINDIR)\csltop.exe
+	cd stdlib & $(MAKEREC) install
+	cp lex\csllex $(BINDIR)\csllex.exe
+	cp yacc\cslyacc.exe $(BINDIR)\cslyacc.exe
+	$(CAMLC) -a -o $(LIBDIR)\toplevellib.cma $(TOPLIB)
+	cp toplevel\topmain.cmo $(LIBDIR)
+	cp toplevel\toploop.cmi toplevel\topdirs.cmi $(LIBDIR)
+	cd tools & $(MAKEREC) install
+	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) install)
+
+# Installation of the native-code compiler
+installopt:
+	cd asmrun & $(MAKEREC) install
+	cp cslopt $(BINDIR)\cslopt
+	cd stdlib & $(MAKEREC) installopt
+	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) installopt)
+
+realclean:: clean
+
+# The compiler
+
+cslc: $(COMPOBJS)
+	$(CAMLC) $(LINKFLAGS) -o cslc $(COMPOBJS)
+
+clean::
+	rm -f cslc
+
+# The native-code compiler
+
+cslopt: $(OPTOBJS)
+	$(CAMLC) $(LINKFLAGS) -o cslopt $(OPTOBJS)
+
+clean::
+	rm -f cslopt
+
+# The toplevel
+
+csltop: $(TOPOBJS) expunge
+	$(CAMLC) $(LINKFLAGS) -linkall -o csltop.tmp $(TOPOBJS)
+	- $(CAMLRUN) .\expunge csltop.tmp csltop $(PERVASIVES)
+	rm -f csltop.tmp
+
+clean::
+	rm -f csltop
+
+# The configuration file
+
+utils\config.ml: utils\config.mlp config\Makefile.nt
+	@rm -f utils\config.ml
+	sed -e "s|%%%%LIBDIR%%%%|$(LIBDIR:\=/)|" \
+            -e "s|%%%%BYTECC%%%%|$(BYTECC) $(BYTECCLINKOPTS)|" \
+            -e "s|%%%%NATIVECC%%%%|$(NATIVECC) $(NATIVECCLINKOPTS)|" \
+            -e "s|%%%%CCLIBS%%%%|$(CCLIBS)|" \
+            -e "s|%%%%ARCH%%%%|$(ARCH)|" \
+            -e "s|%%%%MODEL%%%%|$(MODEL)|" \
+            -e "s|%%%%SYSTEM%%%%|$(SYSTEM)|" \
+            -e "s|%%%%EXT_OBJ%%%%|.obj|" \
+            -e "s|%%%%EXT_ASM%%%%|.asm|" \
+            -e "s|%%%%EXT_LIB%%%%|.lib|" \
+            utils\config.mlp > utils\config.ml
+	@attrib +r utils\config.ml
+
+clean::
+	rm -f utils\config.ml
+
+beforedepend:: utils\config.ml
+
+# The parser generator
+
+parsing\parser.mli parsing\parser.ml: parsing\parser.mly
+	$(CAMLYACC) $(YACCFLAGS) parsing\parser.mly
+
+clean::
+	rm -f parsing\parser.mli parsing\parser.ml parsing\parser.output
+
+beforedepend:: parsing\parser.mli parsing\parser.ml
+
+# The lexer generator
+
+parsing\lexer.ml: parsing\lexer.mll
+	$(CAMLLEX) parsing\lexer.mll
+
+clean::
+	rm -f parsing\lexer.ml
+
+beforedepend:: parsing\lexer.ml
+
+# The compiler compiled with the native-code compiler
+# Currently not working because it requires C primitives from byterun\meta.c
+# which are not provided by asmrun\libasmrun.lib
+
+# cslc.opt: $(COMPOBJS:.cmo=.cmx)
+#	$(CAMLOPT) $(LINKFLAGS) -o cslc.opt $(COMPOBJS:.cmo=.cmx)
+
+clean::
+	rm -f cslc.opt
+
+# The native-code compiler compiled with itself
+
+cslopt.opt: $(OPTOBJS:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o cslopt.opt $(OPTOBJS:.cmo=.cmx)
+
+clean::
+	rm -f cslopt.opt
+
+$(OPTOBJS:.cmo=.cmx): cslopt
+
+# The numeric opcodes
+
+bytecomp\opcodes.ml: byterun\instruct.h
+	sed -n -e "/^enum/p" -e "s|,||g" -e "/^  /p" byterun\instruct.h | \
+        gawk -f tools\make-opcodes > bytecomp\opcodes.ml
+
+clean::
+	rm -f bytecomp\opcodes.ml
+
+beforedepend:: bytecomp\opcodes.ml
+
+# The predefined exceptions and primitives
+
+runtime\primitives:
+	cd runtime & $(MAKEREC) primitives
+
+bytecomp\runtimedef.ml: byterun\primitives byterun\fail.h
+        echo let builtin_exceptions = ^[^| > bytecomp\runtimedef.ml
+        sed -n -e "s|.*/\* \(\"[A-Za-z_]*\"\) \*/$$|  \1;|p" byterun\fail.h | \
+        sed -e "$$s|;$$||" >> bytecomp\runtimedef.ml
+        echo ^|^] >> bytecomp\runtimedef.ml
+        echo let builtin_primitives = ^[^| >> bytecomp\runtimedef.ml
+        sed -e "s|.*|  \"^&\";|" -e "$$s|;$$||" byterun\primitives \
+        >> bytecomp\runtimedef.ml
+        echo ^|^] >> bytecomp\runtimedef.ml
+
+clean::
+	rm -f bytecomp\runtimedef.ml
+
+beforedepend:: bytecomp\runtimedef.ml
+
+# Choose the right arch, emit and proc files
+
+asmcomp\arch.ml: asmcomp\arch_$(ARCH).ml
+	cp asmcomp\arch_$(ARCH).ml asmcomp\arch.ml
+
+clean::
+	rm -f asmcomp\arch.ml
+
+beforedepend:: asmcomp\arch.ml
+
+asmcomp\proc.ml: asmcomp\proc_$(ARCH).ml
+	cp asmcomp\proc_$(ARCH)nt.ml asmcomp\proc.ml
+
+clean::
+	rm -f asmcomp\proc.ml
+
+beforedepend:: asmcomp\proc.ml
+
+# Preprocess the code emitters
+
+asmcomp\emit.ml: asmcomp\emit_$(ARCH)nt.mlp tools\cvt_emit
+	perl tools\cvt_emit asmcomp\emit_$(ARCH)nt.mlp > asmcomp\emit.ml
+
+clean::
+	rm -f asmcomp\emit.ml
+
+beforedepend:: asmcomp\emit.ml
+
+# The "expunge" utility
+
+expunge: $(EXPUNGEOBJS)
+	$(CAMLC) $(LINKFLAGS) -o expunge $(EXPUNGEOBJS)
+
+clean::
+	rm -f expunge
+
+# The runtime system for the bytecode compiler
+
+runtime:
+	cd byterun & $(MAKEREC) all
+realclean::
+	cd byterun & $(MAKEREC) clean
+alldepend::
+	cd byterun & $(MAKEREC) depend
+
+# The runtime system for the native-code compiler
+
+runtimeopt: makeruntimeopt stdlib\libasmrun.lib
+
+makeruntimeopt:
+	cd asmrun & $(MAKEREC) all
+stdlib\libasmrun.lib: asmrun\libasmrun.lib
+	cp asmrun\libasmrun.lib stdlib\libasmrun.lib
+realclean::
+	cd asmrun & $(MAKEREC) clean
+alldepend::
+	cd asmrun & $(MAKEREC) depend
+
+# The library
+
+library:
+	cd stdlib & $(MAKEREC) all
+library-cross:
+	cd stdlib & $(MAKEREC) RUNTIME=..\byterun\cslrun all
+libraryopt:
+	cd stdlib & $(MAKEREC) allopt
+clean::
+	cd stdlib & $(MAKEREC) clean
+alldepend::
+	cd stdlib & $(MAKEREC) depend
+
+# The lexer and parser generators
+
+csllex:
+	cd lex & $(MAKEREC) all
+clean::
+	cd lex & $(MAKEREC) clean
+alldepend::
+	cd lex & $(MAKEREC) depend
+
+cslyacc:
+	cd yacc & $(MAKEREC) all
+realclean::
+	cd yacc & $(MAKEREC) clean
+
+# Tools
+
+csltools:
+	cd tools & $(MAKEREC) all
+realclean::
+	cd tools & $(MAKEREC) clean
+alldepend::
+	cd tools & $(MAKEREC) depend
+
+# The extra libraries
+
+otherlibraries:
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) all)
+otherlibrariesopt:
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) allopt)
+clean::
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) clean)
+realclean::
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) realclean)
+alldepend::
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) depend)
+
+# Default rules
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.ml.cmo:
+	$(CAMLC) $(COMPFLAGS) -c $<
+
+.mli.cmi:
+	$(CAMLC) $(COMPFLAGS) -c $<
+
+.ml.cmx:
+	$(CAMLOPT) $(COMPFLAGS) -c $<
+
+clean::
+	rm -f utils\*.cm[iox] utils\*.[so] utils\*~
+	rm -f parsing\*.cm[iox] parsing\*.[so] parsing\*~
+	rm -f typing\*.cm[iox] typing\*.[so] typing\*~
+	rm -f bytecomp\*.cm[iox] bytecomp\*.[so] bytecomp\*~
+	rm -f asmcomp\*.cm[iox] asmcomp\*.[so] asmcomp\*~
+	rm -f driver\*.cm[iox] driver\*.[so] driver\*~
+	rm -f toplevel\*.cm[iox] toplevel\*.[so] toplevel\*~
+	rm -f tools\*.cm[iox] tools\*.[so] tools\*~
+	rm -f *~
+
+depend: beforedepend
+	echo > .depend
+	for %d in (utils parsing typing bytecomp asmcomp driver toplevel) do $(CAMLDEP) $(DEPFLAGS) %d\*.mli %d\*.ml >> .depend
+
+alldepend:: depend
+
+!include .depend

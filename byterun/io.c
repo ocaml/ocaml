@@ -16,7 +16,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
+#include "config.h"
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #ifdef __STDC__
 #include <limits.h>
 #endif
