@@ -158,14 +158,6 @@ in a slight expansion in code size. Higher values for the "-inline"
 option cause larger and larger functions to become candidate for
 inlining, but can result in a serious increase in code size.
 
-\item["-labels"]
-Switch to the {\em commuting label} mode of compilation, meaning that labeling
-rules are applied strictly, and commutation between labeled arguments
-is allowed. (See section~\ref{s:commuting-mode}.)
-This mode cannot be used to compile a program written in
-the default {\em classic} style, but modules written in the two styles
-can be mixed in the same application.
-
 \item["-linkall"]
 Forces all modules contained in libraries to be linked in. If this
 flag is not given, unreferenced modules are not linked in. When
@@ -184,6 +176,10 @@ given when building the libraries).  This can be useful if a library
 contains incorrect specifications of C libraries or C options; in this
 case, during linking, set "-noautolink" and pass the correct C
 libraries and options on the command line.
+
+\item["-nolabels"]
+Ignore non-optional labels in types. Labels cannot be used in
+applications, and parameter order becomes strict.
 
 \item["-o" \var{exec-file}]
 Specify the name of the output file produced by the linker. The
@@ -258,20 +254,23 @@ Enable or disable warnings according to the argument
 \var{warning-list}.  The argument is a string of one or several
 characters, with the following meaning for each character:
 \begin{options}
-\item["A"/"a"] enable/disable all warnings
-\item[F/f] enable/disable warnings for partially applied functions
+\item["A"/"a"] enable/disable all warnings.
+\item["C"/"c"] enable/disable warnings for suspicious comments.
+\item["D"/"d"] enable/disable warnings for deprecated features.
+\item["F"/"f"] enable/disable warnings for partially applied functions
 (i.e. "f x; "\var{expr} where the application "f x" has a function type).
-\item[M/m] enable/disable warnings for overriden methods.
-\item[P/p] enable/disable warnings for partial matches (missing cases
+\item["L"/"l"] enable/disable warnings for labels omitted in application.
+\item["M"/"m"] enable/disable warnings for overriden methods.
+\item["P"/"p"] enable/disable warnings for partial matches (missing cases
 in pattern matchings).
-\item[S/s] enable/disable warnings for statements that do not have
+\item["S"/"s"] enable/disable warnings for statements that do not have
 type "unit" (e.g. \var{expr1}"; "\var{expr2} when \var{expr1} does not
 have type "unit").
-\item[U/u] enable/disable warnings for unused (redundant) match cases.
-\item[V/v] enable/disable warnings for hidden instance variables.
-\item[X/x] enable/disable all other warnings.
+\item["U"/"u"] enable/disable warnings for unused (redundant) match cases.
+\item["V"/"v"] enable/disable warnings for hidden instance variables.
+\item["X"/"x"] enable/disable all other warnings.
 \end{options}
-The default setting is "-w A" (all warnings enabled).
+The default setting is "-w Al" (all warnings but labels enabled).
 
 \item["-warn-error" \var{warning-list}]
 Turn the warnings indicated in the argument \var{warning-list} into

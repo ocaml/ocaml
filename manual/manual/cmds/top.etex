@@ -153,10 +153,9 @@ Directories can also be added to the search path once
 the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
 
-\item["-labels"]
-Switch to the {\em commuting label} mode of compilation, meaning that
-labeling rules are applied strictly, and commutation between arguments
-is allowed. (See section~\ref{s:commuting-mode}.)
+\item["-nolabels"]
+Ignore non-optional labels in types. Labels cannot be used in
+applications, and parameter order becomes strict.
 
 \item["-rectypes"]
 Allow arbitrary recursive types during type-checking.  By default,

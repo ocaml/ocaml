@@ -178,14 +178,6 @@ extension is not ".ml".
 Compile the file \var{filename} as an interface file, even if its
 extension is not ".mli".
 
-\item["-labels"]
-Switch to the {\em commuting label} mode of compilation, meaning that labeling
-rules are applied strictly, and commutation between labeled arguments
-is allowed. (See section~\ref{s:commuting-mode}.)
-This mode cannot be used to compile a program written in
-the default {\em classic} style, but modules written in the two styles
-can be mixed in the same application.
-
 \item["-linkall"]
 Force all modules contained in libraries to be linked in. If this
 flag is not given, unreferenced modules are not linked in. When
@@ -212,6 +204,10 @@ given when building the libraries).  This can be useful if a library
 contains incorrect specifications of C libraries or C options; in this
 case, during linking, set "-noautolink" and pass the correct C
 libraries and options on the command line.
+
+\item["-nolabels"]
+Ignore non-optional labels in types. Labels cannot be used in
+applications, and parameter order becomes strict.
 
 \item["-o" \var{exec-file}]
 Specify the name of the output file produced by the linker. The
@@ -267,9 +263,12 @@ Enable or disable warnings according to the argument
 \var{warning-list}.  The argument is a string of one or several
 characters, with the following meaning for each character:
 \begin{options}
-\item["A"/"a"] enable/disable all warnings
+\item["A"/"a"] enable/disable all warnings.
+\item["C"/"c"] enable/disable warnings for suspicious comments.
+\item["D"/"d"] enable/disable warnings for deprecated features.
 \item["F"/"f"] enable/disable warnings for partially applied functions
 (i.e. "f x; "\var{expr} where the application "f x" has a function type).
+\item["L"/"l"] enable/disable warnings for labels omitted in application.
 \item["M"/"m"] enable/disable warnings for overriden methods.
 \item["P"/"p"] enable/disable warnings for partial matches (missing cases
 in pattern matchings).
@@ -280,7 +279,7 @@ have type "unit").
 \item["V"/"v"] enable/disable warnings for hidden instance variables.
 \item["X"/"x"] enable/disable all other warnings.
 \end{options}
-The default setting is "-w A" (all warnings enabled).
+The default setting is "-w Al" (all warnings but labels enabled).
 
 \item["-warn-error" \var{warning-list}]
 Turn the warnings indicated in the argument \var{warning-list} into
