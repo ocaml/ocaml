@@ -186,43 +186,6 @@ Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
   " No warning when using old syntax for sequences.";
 
 EXTEND
-  GLOBAL: interf implem use_file top_phrase;
-  interf:
-    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
-          ([(<:sig_item< # $n$ $opt:dp$ >>, loc)], True)
-      | si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | EOI -> ([], False) ] ]
-  ;
-  sig_item_semi:
-    [ [ si = sig_item; ";" -> (si, loc) ] ]
-  ;
-  implem:
-    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
-          ([(<:str_item< # $n$ $opt:dp$ >>, loc)], True)
-      | si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | EOI -> ([], False) ] ]
-  ;
-  str_item_semi:
-    [ [ si = str_item; ";" -> (si, loc) ] ]
-  ;
-  top_phrase:
-    [ [ ph = phrase -> Some ph
-      | EOI -> None ] ]
-  ;
-  use_file:
-    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
-          ([ <:str_item< # $n$ $opt:dp$ >>], True)
-      | si = str_item; ";"; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | EOI -> ([], False) ] ]
-  ;
-  phrase:
-    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
-          <:str_item< # $n$ $opt:dp$ >>
-      | sti = str_item; ";" -> sti ] ]
-  ;
-END;
-
-EXTEND
   GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
     class_expr class_sig_item class_str_item let_binding ipatt;
   module_expr:
@@ -883,6 +846,40 @@ EXTEND
 END;
 
 EXTEND
+  GLOBAL: interf implem use_file top_phrase expr patt;
+  interf:
+    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
+          ([(<:sig_item< # $n$ $opt:dp$ >>, loc)], True)
+      | si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
+      | EOI -> ([], False) ] ]
+  ;
+  sig_item_semi:
+    [ [ si = sig_item; ";" -> (si, loc) ] ]
+  ;
+  implem:
+    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
+          ([(<:str_item< # $n$ $opt:dp$ >>, loc)], True)
+      | si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
+      | EOI -> ([], False) ] ]
+  ;
+  str_item_semi:
+    [ [ si = str_item; ";" -> (si, loc) ] ]
+  ;
+  top_phrase:
+    [ [ ph = phrase -> Some ph
+      | EOI -> None ] ]
+  ;
+  use_file:
+    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
+          ([ <:str_item< # $n$ $opt:dp$ >>], True)
+      | si = str_item; ";"; (sil, stopped) = SELF -> ([si :: sil], stopped)
+      | EOI -> ([], False) ] ]
+  ;
+  phrase:
+    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
+          <:str_item< # $n$ $opt:dp$ >>
+      | sti = str_item; ";" -> sti ] ]
+  ;
   expr: LEVEL "simple"
     [ [ x = LOCATE ->
           let x =

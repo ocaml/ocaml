@@ -189,111 +189,6 @@ Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
   " No warning when using old syntax for sequences.";;
 
 Grammar.extend
-  (let _ = (interf : 'interf Grammar.Entry.e)
-   and _ = (implem : 'implem Grammar.Entry.e)
-   and _ = (use_file : 'use_file Grammar.Entry.e)
-   and _ = (top_phrase : 'top_phrase Grammar.Entry.e) in
-   let grammar_entry_create s =
-     Grammar.Entry.create (Grammar.of_entry interf) s
-   in
-   let sig_item_semi : 'sig_item_semi Grammar.Entry.e =
-     grammar_entry_create "sig_item_semi"
-   and str_item_semi : 'str_item_semi Grammar.Entry.e =
-     grammar_entry_create "str_item_semi"
-   and phrase : 'phrase Grammar.Entry.e = grammar_entry_create "phrase" in
-   [Grammar.Entry.obj (interf : 'interf Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Stoken ("EOI", "")],
-      Gramext.action (fun _ (loc : int * int) -> ([], false : 'interf));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (sig_item_semi : 'sig_item_semi Grammar.Entry.e));
-       Gramext.Sself],
-      Gramext.action
-        (fun (sil, stopped : 'interf) (si : 'sig_item_semi)
-           (loc : int * int) ->
-           (si :: sil, stopped : 'interf));
-      [Gramext.Stoken ("", "#"); Gramext.Stoken ("LIDENT", "");
-       Gramext.Sopt
-         (Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e)));
-       Gramext.Stoken ("", ";")],
-      Gramext.action
-        (fun _ (dp : 'expr option) (n : string) _ (loc : int * int) ->
-           ([MLast.SgDir (loc, n, dp), loc], true : 'interf))]];
-    Grammar.Entry.obj (sig_item_semi : 'sig_item_semi Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Snterm
-         (Grammar.Entry.obj (sig_item : 'sig_item Grammar.Entry.e));
-       Gramext.Stoken ("", ";")],
-      Gramext.action
-        (fun _ (si : 'sig_item) (loc : int * int) ->
-           (si, loc : 'sig_item_semi))]];
-    Grammar.Entry.obj (implem : 'implem Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Stoken ("EOI", "")],
-      Gramext.action (fun _ (loc : int * int) -> ([], false : 'implem));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (str_item_semi : 'str_item_semi Grammar.Entry.e));
-       Gramext.Sself],
-      Gramext.action
-        (fun (sil, stopped : 'implem) (si : 'str_item_semi)
-           (loc : int * int) ->
-           (si :: sil, stopped : 'implem));
-      [Gramext.Stoken ("", "#"); Gramext.Stoken ("LIDENT", "");
-       Gramext.Sopt
-         (Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e)));
-       Gramext.Stoken ("", ";")],
-      Gramext.action
-        (fun _ (dp : 'expr option) (n : string) _ (loc : int * int) ->
-           ([MLast.StDir (loc, n, dp), loc], true : 'implem))]];
-    Grammar.Entry.obj (str_item_semi : 'str_item_semi Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Snterm
-         (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e));
-       Gramext.Stoken ("", ";")],
-      Gramext.action
-        (fun _ (si : 'str_item) (loc : int * int) ->
-           (si, loc : 'str_item_semi))]];
-    Grammar.Entry.obj (top_phrase : 'top_phrase Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Stoken ("EOI", "")],
-      Gramext.action (fun _ (loc : int * int) -> (None : 'top_phrase));
-      [Gramext.Snterm (Grammar.Entry.obj (phrase : 'phrase Grammar.Entry.e))],
-      Gramext.action
-        (fun (ph : 'phrase) (loc : int * int) -> (Some ph : 'top_phrase))]];
-    Grammar.Entry.obj (use_file : 'use_file Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Stoken ("EOI", "")],
-      Gramext.action (fun _ (loc : int * int) -> ([], false : 'use_file));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e));
-       Gramext.Stoken ("", ";"); Gramext.Sself],
-      Gramext.action
-        (fun (sil, stopped : 'use_file) _ (si : 'str_item)
-           (loc : int * int) ->
-           (si :: sil, stopped : 'use_file));
-      [Gramext.Stoken ("", "#"); Gramext.Stoken ("LIDENT", "");
-       Gramext.Sopt
-         (Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e)));
-       Gramext.Stoken ("", ";")],
-      Gramext.action
-        (fun _ (dp : 'expr option) (n : string) _ (loc : int * int) ->
-           ([MLast.StDir (loc, n, dp)], true : 'use_file))]];
-    Grammar.Entry.obj (phrase : 'phrase Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Snterm
-         (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e));
-       Gramext.Stoken ("", ";")],
-      Gramext.action
-        (fun _ (sti : 'str_item) (loc : int * int) -> (sti : 'phrase));
-      [Gramext.Stoken ("", "#"); Gramext.Stoken ("LIDENT", "");
-       Gramext.Sopt
-         (Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e)));
-       Gramext.Stoken ("", ";")],
-      Gramext.action
-        (fun _ (dp : 'expr option) (n : string) _ (loc : int * int) ->
-           (MLast.StDir (loc, n, dp) : 'phrase))]]]);;
-
-Grammar.extend
   (let _ = (sig_item : 'sig_item Grammar.Entry.e)
    and _ = (str_item : 'str_item Grammar.Entry.e)
    and _ = (ctyp : 'ctyp Grammar.Entry.e)
@@ -2649,61 +2544,166 @@ Grammar.extend
         (fun (loc : int * int) -> (warning_seq () : 'warning_sequence))]]]);;
 
 Grammar.extend
-  [Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
-   Some (Gramext.Level "simple"),
-   [None, None,
-    [[Gramext.Stoken ("QUOTATION", "")],
-     Gramext.action
-       (fun (x : string) (loc : int * int) ->
-          (let x =
-             try
-               let i = String.index x ':' in
-               String.sub x 0 i,
-               String.sub x (i + 1) (String.length x - i - 1)
-             with
-               Not_found -> "", x
-           in
-           Pcaml.handle_expr_quotation loc x :
-           'expr));
-     [Gramext.Stoken ("LOCATE", "")],
-     Gramext.action
-       (fun (x : string) (loc : int * int) ->
-          (let x =
-             try
-               let i = String.index x ':' in
-               int_of_string (String.sub x 0 i),
-               String.sub x (i + 1) (String.length x - i - 1)
-             with
-               Not_found | Failure _ -> 0, x
-           in
-           Pcaml.handle_expr_locate loc x :
-           'expr))]];
-   Grammar.Entry.obj (patt : 'patt Grammar.Entry.e),
-   Some (Gramext.Level "simple"),
-   [None, None,
-    [[Gramext.Stoken ("QUOTATION", "")],
-     Gramext.action
-       (fun (x : string) (loc : int * int) ->
-          (let x =
-             try
-               let i = String.index x ':' in
-               String.sub x 0 i,
-               String.sub x (i + 1) (String.length x - i - 1)
-             with
-               Not_found -> "", x
-           in
-           Pcaml.handle_patt_quotation loc x :
-           'patt));
-     [Gramext.Stoken ("LOCATE", "")],
-     Gramext.action
-       (fun (x : string) (loc : int * int) ->
-          (let x =
-             try
-               let i = String.index x ':' in
-               int_of_string (String.sub x 0 i),
-               String.sub x (i + 1) (String.length x - i - 1)
-             with
-               Not_found | Failure _ -> 0, x
-           in
-           Pcaml.handle_patt_locate loc x :
-           'patt))]]];;
+  (let _ = (interf : 'interf Grammar.Entry.e)
+   and _ = (implem : 'implem Grammar.Entry.e)
+   and _ = (use_file : 'use_file Grammar.Entry.e)
+   and _ = (top_phrase : 'top_phrase Grammar.Entry.e)
+   and _ = (expr : 'expr Grammar.Entry.e)
+   and _ = (patt : 'patt Grammar.Entry.e) in
+   let grammar_entry_create s =
+     Grammar.Entry.create (Grammar.of_entry interf) s
+   in
+   let sig_item_semi : 'sig_item_semi Grammar.Entry.e =
+     grammar_entry_create "sig_item_semi"
+   and str_item_semi : 'str_item_semi Grammar.Entry.e =
+     grammar_entry_create "str_item_semi"
+   and phrase : 'phrase Grammar.Entry.e = grammar_entry_create "phrase" in
+   [Grammar.Entry.obj (interf : 'interf Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Stoken ("EOI", "")],
+      Gramext.action (fun _ (loc : int * int) -> ([], false : 'interf));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (sig_item_semi : 'sig_item_semi Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (sil, stopped : 'interf) (si : 'sig_item_semi)
+           (loc : int * int) ->
+           (si :: sil, stopped : 'interf));
+      [Gramext.Stoken ("", "#"); Gramext.Stoken ("LIDENT", "");
+       Gramext.Sopt
+         (Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e)));
+       Gramext.Stoken ("", ";")],
+      Gramext.action
+        (fun _ (dp : 'expr option) (n : string) _ (loc : int * int) ->
+           ([MLast.SgDir (loc, n, dp), loc], true : 'interf))]];
+    Grammar.Entry.obj (sig_item_semi : 'sig_item_semi Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Snterm
+         (Grammar.Entry.obj (sig_item : 'sig_item Grammar.Entry.e));
+       Gramext.Stoken ("", ";")],
+      Gramext.action
+        (fun _ (si : 'sig_item) (loc : int * int) ->
+           (si, loc : 'sig_item_semi))]];
+    Grammar.Entry.obj (implem : 'implem Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Stoken ("EOI", "")],
+      Gramext.action (fun _ (loc : int * int) -> ([], false : 'implem));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (str_item_semi : 'str_item_semi Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (sil, stopped : 'implem) (si : 'str_item_semi)
+           (loc : int * int) ->
+           (si :: sil, stopped : 'implem));
+      [Gramext.Stoken ("", "#"); Gramext.Stoken ("LIDENT", "");
+       Gramext.Sopt
+         (Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e)));
+       Gramext.Stoken ("", ";")],
+      Gramext.action
+        (fun _ (dp : 'expr option) (n : string) _ (loc : int * int) ->
+           ([MLast.StDir (loc, n, dp), loc], true : 'implem))]];
+    Grammar.Entry.obj (str_item_semi : 'str_item_semi Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Snterm
+         (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e));
+       Gramext.Stoken ("", ";")],
+      Gramext.action
+        (fun _ (si : 'str_item) (loc : int * int) ->
+           (si, loc : 'str_item_semi))]];
+    Grammar.Entry.obj (top_phrase : 'top_phrase Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Stoken ("EOI", "")],
+      Gramext.action (fun _ (loc : int * int) -> (None : 'top_phrase));
+      [Gramext.Snterm (Grammar.Entry.obj (phrase : 'phrase Grammar.Entry.e))],
+      Gramext.action
+        (fun (ph : 'phrase) (loc : int * int) -> (Some ph : 'top_phrase))]];
+    Grammar.Entry.obj (use_file : 'use_file Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Stoken ("EOI", "")],
+      Gramext.action (fun _ (loc : int * int) -> ([], false : 'use_file));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e));
+       Gramext.Stoken ("", ";"); Gramext.Sself],
+      Gramext.action
+        (fun (sil, stopped : 'use_file) _ (si : 'str_item)
+           (loc : int * int) ->
+           (si :: sil, stopped : 'use_file));
+      [Gramext.Stoken ("", "#"); Gramext.Stoken ("LIDENT", "");
+       Gramext.Sopt
+         (Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e)));
+       Gramext.Stoken ("", ";")],
+      Gramext.action
+        (fun _ (dp : 'expr option) (n : string) _ (loc : int * int) ->
+           ([MLast.StDir (loc, n, dp)], true : 'use_file))]];
+    Grammar.Entry.obj (phrase : 'phrase Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Snterm
+         (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e));
+       Gramext.Stoken ("", ";")],
+      Gramext.action
+        (fun _ (sti : 'str_item) (loc : int * int) -> (sti : 'phrase));
+      [Gramext.Stoken ("", "#"); Gramext.Stoken ("LIDENT", "");
+       Gramext.Sopt
+         (Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e)));
+       Gramext.Stoken ("", ";")],
+      Gramext.action
+        (fun _ (dp : 'expr option) (n : string) _ (loc : int * int) ->
+           (MLast.StDir (loc, n, dp) : 'phrase))]];
+    Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
+    Some (Gramext.Level "simple"),
+    [None, None,
+     [[Gramext.Stoken ("QUOTATION", "")],
+      Gramext.action
+        (fun (x : string) (loc : int * int) ->
+           (let x =
+              try
+                let i = String.index x ':' in
+                String.sub x 0 i,
+                String.sub x (i + 1) (String.length x - i - 1)
+              with
+                Not_found -> "", x
+            in
+            Pcaml.handle_expr_quotation loc x :
+            'expr));
+      [Gramext.Stoken ("LOCATE", "")],
+      Gramext.action
+        (fun (x : string) (loc : int * int) ->
+           (let x =
+              try
+                let i = String.index x ':' in
+                int_of_string (String.sub x 0 i),
+                String.sub x (i + 1) (String.length x - i - 1)
+              with
+                Not_found | Failure _ -> 0, x
+            in
+            Pcaml.handle_expr_locate loc x :
+            'expr))]];
+    Grammar.Entry.obj (patt : 'patt Grammar.Entry.e),
+    Some (Gramext.Level "simple"),
+    [None, None,
+     [[Gramext.Stoken ("QUOTATION", "")],
+      Gramext.action
+        (fun (x : string) (loc : int * int) ->
+           (let x =
+              try
+                let i = String.index x ':' in
+                String.sub x 0 i,
+                String.sub x (i + 1) (String.length x - i - 1)
+              with
+                Not_found -> "", x
+            in
+            Pcaml.handle_patt_quotation loc x :
+            'patt));
+      [Gramext.Stoken ("LOCATE", "")],
+      Gramext.action
+        (fun (x : string) (loc : int * int) ->
+           (let x =
+              try
+                let i = String.index x ':' in
+                int_of_string (String.sub x 0 i),
+                String.sub x (i + 1) (String.length x - i - 1)
+              with
+                Not_found | Failure _ -> 0, x
+            in
+            Pcaml.handle_patt_locate loc x :
+            'patt))]]]);;

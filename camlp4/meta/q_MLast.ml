@@ -57,6 +57,17 @@ value class_str_item = Grammar.Entry.create gram "class structure item";
 value ipatt = Grammar.Entry.create gram "ipatt";
 value let_binding = Grammar.Entry.create gram "let_binding";
 
+value a_list = Grammar.Entry.create gram "a_list";
+value a_opt = Grammar.Entry.create gram "a_opt";
+value a_UIDENT = Grammar.Entry.create gram "a_UIDENT";
+value a_LIDENT = Grammar.Entry.create gram "a_LIDENT";
+value a_INT = Grammar.Entry.create gram "a_INT";
+value a_FLOAT = Grammar.Entry.create gram "a_FLOAT";
+value a_STRING = Grammar.Entry.create gram "a_STRING";
+value a_CHAR = Grammar.Entry.create gram "a_CHAR";
+value a_TILDEIDENT = Grammar.Entry.create gram "a_TILDEIDENT";
+value a_QUESTIONIDENT = Grammar.Entry.create gram "a_QUESTIONIDENT";
+
 value o2b =
   fun
   [ Qast.Option (Some _) -> Qast.Bool True
@@ -1067,7 +1078,54 @@ EXTEND
   warning_sequence:
     [ [ -> warning_seq () ] ]
   ;
-  (* Antiquotations *)
+  (* Antiquotations for local entries *)
+  sequence:
+    [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
+  ;
+  expr_ident:
+    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+  ;
+  patt_label_ident: LEVEL "simple"
+    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+  ;
+  when_expr_opt:
+    [ [ a = ANTIQUOT "when" -> antiquot "when" loc a ] ]
+  ;
+  mod_ident:
+    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+  ;
+  as_lident_opt:
+    [ [ a = ANTIQUOT "as" -> antiquot "as" loc a ] ]
+  ;
+  meth_list:
+    [ [ a = a_list -> Qast.Tuple [a; Qast.Bool False]
+      | a = a_list; b = ANTIQUOT -> Qast.Tuple [a; antiquot "" loc b] ] ]
+  ;
+  clty_longident:
+    [ [ a = a_list -> a ] ]
+  ;
+  class_longident:
+    [ [ a = a_list -> a ] ]
+  ;
+  rec_flag:
+    [ [ a = ANTIQUOT "rec" -> antiquot "rec" loc a ] ]
+  ;
+  direction_flag:
+    [ [ a = ANTIQUOT "to" -> antiquot "to" loc a ] ]
+  ;
+  mutable_flag:
+    [ [ a = ANTIQUOT "mut" -> antiquot "mut" loc a ] ]
+  ;
+  virtual_flag:
+    [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]
+  ;
+  amp_flag:
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
+  ;
+END;
+
+EXTEND
+  GLOBAL: str_item sig_item;
   str_item:
     [ [ "#"; n = a_LIDENT; dp = dir_param ->
           Qast.Node "StDir" [Qast.Loc; n; dp] ] ]
@@ -1081,6 +1139,11 @@ EXTEND
       | e = expr -> Qast.Option (Some e)
       | -> Qast.Option None ] ]
   ;
+END;
+
+(* Antiquotations *)
+
+EXTEND
   module_expr: LEVEL "simple"
     [ [ a = ANTIQUOT "mexp" -> antiquot "mexp" loc a
       | a = ANTIQUOT -> antiquot "" loc a ] ]
@@ -1104,24 +1167,12 @@ EXTEND
           Qast.Node "ExAnt" [Qast.Loc; antiquot "anti" loc a]
       | "("; el = a_list; ")" -> Qast.Node "ExTup" [Qast.Loc; el] ] ]
   ;
-  sequence:
-    [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
-  ;
-  expr_ident:
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
-  ;
   patt: LEVEL "simple"
     [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
       | a = ANTIQUOT -> antiquot "" loc a
       | a = ANTIQUOT "anti" ->
           Qast.Node "PaAnt" [Qast.Loc; antiquot "anti" loc a]
       | "("; pl = a_list; ")" -> Qast.Node "PaTup" [Qast.Loc; pl] ] ]
-  ;
-  patt_label_ident: LEVEL "simple"
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
-  ;
-  when_expr_opt:
-    [ [ a = ANTIQUOT "when" -> antiquot "when" loc a ] ]
   ;
   ipatt:
     [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
@@ -1135,9 +1186,6 @@ EXTEND
       | a = ANTIQUOT -> antiquot "" loc a
       | "("; tl = a_list; ")" -> Qast.Node "TyTup" [Qast.Loc; tl] ] ]
   ;
-  mod_ident:
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
-  ;
   class_expr: LEVEL "simple"
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
@@ -1150,21 +1198,8 @@ EXTEND
   class_type:
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
-  as_lident_opt:
-    [ [ a = ANTIQUOT "as" -> antiquot "as" loc a ] ]
-  ;
-  meth_list:
-    [ [ a = a_list -> Qast.Tuple [a; Qast.Bool False]
-      | a = a_list; b = ANTIQUOT -> Qast.Tuple [a; antiquot "" loc b] ] ]
-  ;
   expr: LEVEL "simple"
     [ [ "{<"; fel = a_list; ">}" -> Qast.Node "ExOvr" [Qast.Loc; fel] ] ]
-  ;
-  clty_longident:
-    [ [ a = a_list -> a ] ]
-  ;
-  class_longident:
-    [ [ a = a_list -> a ] ]
   ;
   patt: LEVEL "simple"
     [ [ "#"; a = a_list -> Qast.Node "PaTyp" [Qast.Loc; a] ] ]
@@ -1212,21 +1247,6 @@ EXTEND
   a_QUESTIONIDENT:
     [ [ "?"; a = ANTIQUOT -> antiquot "" loc a
       | s = QUESTIONIDENT -> Qast.Str s ] ]
-  ;
-  rec_flag:
-    [ [ a = ANTIQUOT "rec" -> antiquot "rec" loc a ] ]
-  ;
-  direction_flag:
-    [ [ a = ANTIQUOT "to" -> antiquot "to" loc a ] ]
-  ;
-  mutable_flag:
-    [ [ a = ANTIQUOT "mut" -> antiquot "mut" loc a ] ]
-  ;
-  virtual_flag:
-    [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]
-  ;
-  amp_flag:
-    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
 END;
 
