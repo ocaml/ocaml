@@ -328,7 +328,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
     try match path, !default_frame with
       None, Some ({mw_title=Some label} as mw) when not detach ->
         Button.configure mw.mw_detach
-          ~command:(fun () -> view_signature sign ~title ~env);
+          ~command:(fun () -> view_signature sign ~title ~env ~detach:true);
         pack [mw.mw_detach] ~side:`Left;
         Pack.forget [mw.mw_edit; mw.mw_intf];
         List.iter ~f:destroy (Winfo.children mw.mw_frame);
