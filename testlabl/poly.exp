@@ -374,4 +374,7 @@ is not included in
 #     module M : sig type 'a t type u = < m : 'a. 'a t > end
 #   module M : sig type 'a t val f : < m : 'a. 'a t > -> int end
 #     module M : sig type 'a t val f : < m : 'a. 'a t > -> int end
+#         val f :
+  (< m : 'b. 'b -> (< m : 'b. 'b -> 'c * <  > > as 'c) * < .. >; .. > as 'a) ->
+  'a -> bool = <fun>
 # 

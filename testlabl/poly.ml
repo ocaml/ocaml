@@ -505,3 +505,8 @@ module M : sig type 'a t val f : <m: 'a. 'a t> -> int end
 (* The following should be accepted too! *)
 module M : sig type 'a t val f : <m: 'a. 'a t> -> int end
 = struct type 'a t = int let f x = x#m end;;
+
+let f x y =
+  ignore (x :> <m:'a.'a -> 'c * < > > as 'c);
+  ignore (y :> <m:'b.'b -> 'd * < > > as 'd);
+  x = y;;

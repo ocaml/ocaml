@@ -1312,7 +1312,8 @@ let get_univar_family univar_pairs univars =
   in List.fold_left insert s univar_pairs
 
 (* Whether a family of univars escapes from a type *)
-let univars_escape env family ty =
+let univars_escape env univar_pairs vl ty =
+  let family = get_univar_family univar_pairs vl in
   let visited = ref TypeSet.empty in
   let rec occur t =
     let t = repr t in
@@ -1340,16 +1341,15 @@ let univars_escape env family ty =
 (* Wrapper checking that no variable escapes and updating univar_pairs *)
 let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
   let old_univars = !univar_pairs in
-  let f1 = get_univar_family old_univars tl1
-  and f2 = get_univar_family old_univars tl2 in
   let known_univars =
     List.fold_left (fun s (cl,_) -> add_univars s cl)
       TypeSet.empty old_univars
   in
-  if tl1 <> [] && TypeSet.mem (TypeSet.choose f1) known_univars &&
-    univars_escape env f1 t2 then raise (Unify []);
-  if tl2 <> [] && TypeSet.mem (TypeSet.choose f2) known_univars &&
-    univars_escape env f2 t1 then raise (Unify []);
+  if tl1 <> [] && TypeSet.mem (List.hd tl1) known_univars &&
+    univars_escape env old_univars tl1 (newty(Tpoly(t2,tl2)))
+  || tl2 <> [] && TypeSet.mem (List.hd tl2) known_univars &&
+    univars_escape env old_univars tl2 (newty(Tpoly(t1,tl1)))
+  then raise (Unify []);
   let cl1 = List.map (fun t -> t, ref None) tl1
   and cl2 = List.map (fun t -> t, ref None) tl2 in
   univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
