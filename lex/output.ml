@@ -20,16 +20,11 @@ open Compact
 
 (* To copy the ML code fragments *)
 
-let copy_buffer = String.create 1024
-
 let copy_chunk ic oc (Location(start,stop)) =
   seek_in ic start;
-  let n = ref (stop - start) in
-  while !n > 0 do
-    let m = input ic copy_buffer 0 (min !n 1024) in
-    output oc copy_buffer 0 m;
-    n := !n - m
-  done
+  let buffer = String.create (stop - start) in
+  let r = input ic buffer 0 (stop - start) in
+  output oc buffer 0 r
 
 (* To output an array of short ints, encoded as a string *)
 
