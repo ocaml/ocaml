@@ -292,63 +292,66 @@ let print_dependencies target_file deps =
         end in
     print_items (String.length target_file + 2) deps
 
+(* Process one file *)
+
+let error_occurred = ref false
+
 let file_dependencies source_file =
   Location.input_name := source_file;
-  try
-    free_structure_names := StringSet.empty;
-    let ic = open_in source_file in
-    let lb = Lexing.from_channel ic in
-    if Filename.check_suffix source_file ".ml" then begin
-      add_structure StringSet.empty (Parse.implementation lb);
-      let basename = Filename.chop_suffix source_file ".ml" in
-      let init_deps =
-        if Sys.file_exists (basename ^ ".mli")
-        then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
-        else ([], []) in
-      let (byt_deps, opt_deps) =
-        StringSet.fold find_dependency !free_structure_names init_deps in
-      print_dependencies (basename ^ ".cmo") byt_deps;
-      print_dependencies (basename ^ ".cmx") opt_deps
-    end else
-    if Filename.check_suffix source_file ".mli" then begin
-      add_signature StringSet.empty (Parse.interface lb);
-      let basename = Filename.chop_suffix source_file ".mli" in
-      let (byt_deps, opt_deps) =
-        StringSet.fold find_dependency !free_structure_names ([], []) in
-      print_dependencies (basename ^ ".cmi") byt_deps
-    end else
-      ();
-    close_in ic
-  with Sys_error msg ->
-    ()
+  if Sys.file_exists source_file then begin
+    try
+      free_structure_names := StringSet.empty;
+      let ic = open_in source_file in
+      try
+        let lb = Lexing.from_channel ic in
+        if Filename.check_suffix source_file ".ml" then begin
+          add_structure StringSet.empty (Parse.implementation lb);
+          let basename = Filename.chop_suffix source_file ".ml" in
+          let init_deps =
+            if Sys.file_exists (basename ^ ".mli")
+            then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
+            else ([], []) in
+          let (byt_deps, opt_deps) =
+            StringSet.fold find_dependency !free_structure_names init_deps in
+          print_dependencies (basename ^ ".cmo") byt_deps;
+          print_dependencies (basename ^ ".cmx") opt_deps
+        end else
+        if Filename.check_suffix source_file ".mli" then begin
+          add_signature StringSet.empty (Parse.interface lb);
+          let basename = Filename.chop_suffix source_file ".mli" in
+          let (byt_deps, opt_deps) =
+            StringSet.fold find_dependency !free_structure_names ([], []) in
+          print_dependencies (basename ^ ".cmi") byt_deps
+        end else
+          ();
+        close_in ic
+      with x ->
+        close_in ic; raise x
+    with x ->
+      Format.set_formatter_out_channel stderr;
+      Format.open_box 0;
+      begin match x with
+        Lexer.Error(err, start, stop) ->
+          Location.print {loc_start = start; loc_end = stop};
+          Lexer.report_error err
+      | Syntaxerr.Error err ->
+          Syntaxerr.report_error err
+      | Sys_error msg ->
+          Format.print_string "I/O error: "; Format.print_string msg
+      | _ ->
+          Format.close_box(); raise x
+      end;
+      Format.close_box(); Format.print_newline();
+      error_occurred := true
+  end
 
 (* Entry point *)
-
-open Format
 
 let usage = "Usage: ocamldep [-I <dir>] <files>"
 
 let _ =
-  try
-    Arg.parse [
-       "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
-             "<dir>  Add <dir> to the list of include directories"
-      ] file_dependencies usage;
-    exit 0
-  with x ->
-    set_formatter_out_channel stderr;
-    open_box 0;
-    begin match x with
-      Lexer.Error(err, start, stop) ->
-        Location.print {loc_start = start; loc_end = stop};
-        Lexer.report_error err
-    | Syntaxerr.Error err ->
-        Syntaxerr.report_error err
-    | Sys_error msg ->
-        print_string "I/O error: "; print_string msg
-    | _ ->
-        close_box(); raise x
-    end;
-    close_box(); print_newline(); exit 2
-
-
+  Arg.parse [
+     "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
+           "<dir>  Add <dir> to the list of include directories"
+    ] file_dependencies usage;
+  exit (if !error_occurred then 2 else 0)
