@@ -18,7 +18,7 @@
 type lexbuf =
   { refill_buff : lexbuf -> unit;
     mutable lex_buffer : string;
-    mutable lex_buffer_len : int;
+    mutable lex_buffer_end : int;
     mutable lex_abs_pos : int;
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;
@@ -42,33 +42,51 @@ let lex_refill read_fun aux_buffer lexbuf =
     if read > 0
     then read
     else (lexbuf.lex_eof_reached <- true; 0) in
-  if lexbuf.lex_start_pos < n then begin
-    let oldlen = lexbuf.lex_buffer_len in
-    let newlen = oldlen * 2 in
-    let newbuf = String.create newlen in
-    String.unsafe_blit lexbuf.lex_buffer 0 newbuf oldlen oldlen;
-    lexbuf.lex_buffer <- newbuf;
-    lexbuf.lex_buffer_len <- newlen;
-    lexbuf.lex_abs_pos <- lexbuf.lex_abs_pos - oldlen;
-    lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos + oldlen;
-    lexbuf.lex_start_pos <- lexbuf.lex_start_pos + oldlen;
-    lexbuf.lex_last_pos <- lexbuf.lex_last_pos + oldlen
+  (* Current state of the buffer:
+        <-------|---------------------|----------->
+        |  junk |      valid data     |   junk    |
+        ^       ^                     ^           ^
+        0    start_pos             buffer_end    String.length buffer
+  *)
+  if lexbuf.lex_buffer_end + n > String.length lexbuf.lex_buffer then begin
+    (* There is not enough space at the end of the buffer *)
+    if lexbuf.lex_buffer_end - lexbuf.lex_start_pos + n 
+       <= String.length lexbuf.lex_buffer
+    then begin
+      (* But there is enough space if we reclaim the junk at the beginning
+         of the buffer *)
+      String.blit lexbuf.lex_buffer lexbuf.lex_start_pos
+                  lexbuf.lex_buffer 0
+                  (lexbuf.lex_buffer_end - lexbuf.lex_start_pos)
+    end else begin
+      (* We must grow the buffer.  Doubling its size will provide enough
+         space since n <= String.length aux_buffer <= String.length buffer *)
+      let newbuf = String.create (2 * String.length lexbuf.lex_buffer) in
+      (* Copy the valid data to the beginning of the new buffer *)
+      String.blit lexbuf.lex_buffer lexbuf.lex_start_pos
+                  newbuf 0
+                  (lexbuf.lex_buffer_end - lexbuf.lex_start_pos);
+      lexbuf.lex_buffer <- newbuf
+    end;
+    (* Reallocation or not, we have shifted the data left by
+       start_pos characters; update the positions *)
+    let s = lexbuf.lex_start_pos in
+    lexbuf.lex_abs_pos <- lexbuf.lex_abs_pos + s;
+    lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - s;
+    lexbuf.lex_start_pos <- 0;
+    lexbuf.lex_last_pos <- lexbuf.lex_last_pos - s;
+    lexbuf.lex_buffer_end <- lexbuf.lex_buffer_end - s
   end;
-  String.unsafe_blit lexbuf.lex_buffer n
-                     lexbuf.lex_buffer 0 
-                     (lexbuf.lex_buffer_len - n);
-  String.unsafe_blit aux_buffer 0
-                     lexbuf.lex_buffer (lexbuf.lex_buffer_len - n)
-                     n;
-  lexbuf.lex_abs_pos <- lexbuf.lex_abs_pos + n;
-  lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - n;
-  lexbuf.lex_start_pos <- lexbuf.lex_start_pos - n;
-  lexbuf.lex_last_pos <- lexbuf.lex_last_pos - n
+  (* There is now enough space at the end of the buffer *)
+  String.blit aux_buffer 0
+              lexbuf.lex_buffer lexbuf.lex_buffer_end
+              n;
+  lexbuf.lex_buffer_end <- lexbuf.lex_buffer_end + n
 
 let from_function f =
   { refill_buff = lex_refill f (String.create 512);
     lex_buffer = String.create 1024;
-    lex_buffer_len = 1024;
+    lex_buffer_end = 1024;
     lex_abs_pos = - 1024;
     lex_start_pos = 1024;
     lex_curr_pos = 1024;
@@ -82,7 +100,7 @@ let from_channel ic =
 let from_string s =
   { refill_buff = (fun lexbuf -> lexbuf.lex_eof_reached <- true);
     lex_buffer = s ^ "";
-    lex_buffer_len = String.length s;
+    lex_buffer_end = String.length s;
     lex_abs_pos = 0;
     lex_start_pos = 0;
     lex_curr_pos = 0;
