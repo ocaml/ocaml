@@ -16,7 +16,8 @@ manifest module type specifications.
 
 * Native-code compiler, all platforms:
         toplevel "let"s with refutable patterns now working;
-        fixed bug in assignment to float record fields.
+        fixed bug in assignment to float record fields;
+        direct support for floating-point negation and absolute value.
 
 * Native-code compiler, x86: fixed bug with tail calls (with more than
 4 arguments) from a function with a one-word stack frame.
@@ -24,6 +25,9 @@ manifest module type specifications.
 * Native-code compiler, Sparc: problem with -compact fixed.
 
 * Thread library: support for non-blocking writes; scheduler revised.
+
+* Unix library: bug in gethostbyaddr fixed; bounds checking for read,
+write, etc.
 
 Release 1.14:
 -------------
