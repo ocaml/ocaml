@@ -5,7 +5,7 @@ Objective Caml 3.08:
 
 Language features:
 - Support for immediate objects, i.e. objects defined without going
-  through a class.  (Syntax is "object <field and methods> end".)
+  through a class.  (Syntax is "object <fields and methods> end".)
 
 Type-checking:
 - When typing record construction and record patterns, can omit
@@ -23,12 +23,12 @@ Both compilers:
   Recursion between type, class, class type and module definitions is now
   correctly printed.
 - The -pack option now accepts compiled interfaces (.cmi files) in addition
-  to compiled implementations.
+  to compiled implementations (.cmo or .cmx).
 * A compile-time error is signaled if an integer literal exceeds the
   range of representable integers.
 - Fixed code generation error for "module rec" definitions.
 - The combination of options -c -o sets the name of the generated
-  .cm[iox] files.
+  .cmi / .cmo / .cmx files.
 
 Bytecode compiler:
 - Option -output-obj is now compatible with Dynlink and 
@@ -67,6 +67,7 @@ Other libraries:
 - The Num library: complete reimplementation of the C/asm lowest
   layer to work around potential licensing problems.
   Improved speed on the PowerPC and AMD64 architectures.
+- The Graphics library: improved event handling under MS Windows.
 - The Str library: fixed bug in "split" functions with nullable regexps.
 - The Unix library:
    . Added Unix.single_write.
