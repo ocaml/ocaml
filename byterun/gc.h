@@ -25,7 +25,7 @@
 #define Caml_black (3 << 8)
 
 #define Color_hd(hd) ((color_t) ((hd) & Caml_black))
-#define Color_hp(hp) Color_hd (Hd_hp (hp))
+#define Color_hp(hp) (Color_hd (Hd_hp (hp)))
 #define Color_val(val) (Color_hd (Hd_val (val)))
 
 #define Is_white_hd(hd) (Color_hd (hd) == Caml_white)

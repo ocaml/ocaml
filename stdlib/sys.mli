@@ -57,8 +57,11 @@ val interactive : bool ref
    the interactive toplevel system [ocaml]. *)
 
 val os_type : string
-(** Operating system currently executing the Caml program.
-   One of ["Unix"], ["Win32"], ["Cygwin"] or ["MacOS"]. *)
+(** Operating system currently executing the Caml program. One of
+   ["Unix"] (for all Unix versions, including Linux and Mac OS X),
+   ["Win32"] (for MS-Windows, OCaml compiled with MSVC++),
+   ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin),
+   ["MacOS"] (for MacOS 9). *)
 
 val word_size : int
 (** Size of one word on the machine currently executing the Caml
