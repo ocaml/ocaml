@@ -634,8 +634,9 @@ package-macosx:
 	     MANDIR="`pwd`"/package-macosx/root/man \
              install
 	tools/make-package-macosx
-clean::
 	sudo rm -rf package-macosx/root
+
+clean::
 	rm -rf package-macosx/*.pkg package-macosx/*.dmg
 
 # Default rules
