@@ -18,9 +18,9 @@
 
 if : == x
 then # Bourne Shell or zsh
-     exec %%BINDIR%%/ocamlc -linkall toplevellib.cma "$@" topmain.cmo
+     exec %%BINDIR%%/ocamlc -linkall toplevellib.cma "$@" topstart.cmo
 else # MPW Shell
-     ocamlc -linkall toplevellib.cma {"parameters"} topmain.cmo
+     ocamlc -linkall toplevellib.cma {"parameters"} topstart.cmo
      exit {status}
 End # uppercase E because "end" is a keyword in zsh
 fi
