@@ -189,8 +189,10 @@ case "$bytecc,$host" in
     mathlib="";;
   gcc,alpha-*-osf*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
-    # -taso puts code in lower 4GB
-    bytecclinkopts="-Xlinker -taso";;
+    # Put code and static data in lower 4GB
+    bytecclinkopts="-Wl,-T,12000000 -Wl,-D,14000000"
+    # Tell gcc that we can use 32-bit code addresses for threaded code
+    echo "#define ARCH_CODE32" >> m.h;;
   gcc*)
     bytecccompopts="-fno-defer-pop $gcc_warnings";;
   cc,mips-*-irix6*)
@@ -233,11 +235,7 @@ case "$2,$3" in
   4,4) echo "OK, this is a regular 32 bit architecture."
        echo "#undef ARCH_SIXTYFOUR" >> m.h;;
   8,8) echo "Wow! A 64 bit architecture!"
-       echo "#define ARCH_SIXTYFOUR" >> m.h
-       case "$bytecc,$host" in
-         gcc,alpha-*-osf*) echo "#define ARCH_CODE32" >> m.h;;
-         *)                echo "#undef ARCH_CODE32" >> m.h;;
-       esac;;
+       echo "#define ARCH_SIXTYFOUR" >> m.h;;
   *,8) echo "Wow! A 64 bit architecture!"
        echo "Unfortunately, Objective Caml cannot work in the case"
        echo "sizeof(long) != sizeof(long *)."
