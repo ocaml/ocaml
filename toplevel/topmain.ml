@@ -66,6 +66,7 @@ let main () =
        \032    D/d enable/disable deprecated features\n\
        \032    E/e enable/disable fragile match\n\
        \032    F/f enable/disable partially applied function\n\
+       \032    L/l enable/disable labels omitted in application\n\
        \032    M/m enable/disable overriden method\n\
        \032    P/p enable/disable partial match\n\
        \032    S/s enable/disable non-unit statement\n\
