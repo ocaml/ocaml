@@ -104,16 +104,36 @@ let extract_type_definitions whole_env ty0 =
                       row_name = None;
                     } in
                     Some (Btype.newgenty (Tvariant row))
-                | Type_record (fields, representation) ->
-                    raise (Unimplemented
-                             ("Dynamicisation involving a record type: " ^
-                              name))
+                | Type_record (record_fields, _) ->
+                    let get_name (name, mutabl, _) =
+                      match mutabl with
+                      | Asttypes.Mutable -> "!" ^ name
+                      | Asttypes.Immutable -> name
+                    in
+                    let field_names = List.map get_name record_fields in
+                    let prefix = String.concat "+" field_names ^ "-" in
+                    let empty = Btype.newgenty Tnil in
+                    let object_fields =
+                      object_of_record prefix 0 empty record_fields
+                    in
+                    Some (Btype.newgenty (Tobject (object_fields, ref None)))
             end;
           type_variance = decl.type_variance }
       in
       r_sig := Tsig_type (id, decl') :: !r_sig
     end;
     path'
+  and object_of_record prefix n object_type = function
+    | [] -> object_type
+    | (_, _, ty) :: tail ->
+        let ty' = all ty in
+        let new_object_type =
+          Btype.newgenty (Tfield (prefix ^ string_of_int n,
+                                  Fpresent,
+                                  ty',
+                                  object_type))
+        in
+        object_of_record prefix (n + 1) new_object_type tail
   and polymorphise_variants prefix n acc = function
     | [] -> acc
     | (_, args_list) :: tail ->
