@@ -69,19 +69,25 @@ let output_tables oc tbl =
 
   output_string oc "}\n\n"
 
+
 (* Output the entries *)
 
 let output_entry sourcefile ic oc oci e =
   let init_num, init_moves = e.auto_initial_state in
-  fprintf oc "%s lexbuf =
-  %a%a  __ocaml_lex_%s_rec lexbuf %d\n"
+  fprintf oc "%s %a lexbuf =
+  %a%a  __ocaml_lex_%s_rec %alexbuf %d\n"
     e.auto_name
+    output_args  e.auto_args 
     (fun oc x ->
       if x > 0 then
         fprintf oc "lexbuf.Lexing.lex_mem <- Array.create %d (-1) ; " x)
     e.auto_mem_size
-    (output_memory_actions "  ") init_moves e.auto_name init_num;
-  fprintf oc "and __ocaml_lex_%s_rec lexbuf state =\n" e.auto_name;
+    (output_memory_actions "  ") init_moves
+    e.auto_name
+    output_args e.auto_args
+    init_num;
+  fprintf oc "and __ocaml_lex_%s_rec %alexbuf state =\n"
+    e.auto_name output_args e.auto_args ;
   fprintf oc "  match Lexing.%sengine lex_tables state lexbuf with\n    "
     (if e.auto_mem_size == 0 then "" else "new_") ;
   List.iter
@@ -93,8 +99,8 @@ let output_entry sourcefile ic oc oci e =
       fprintf oc ")\n")
     e.auto_actions;
   fprintf oc "  | n -> lexbuf.Lexing.refill_buff lexbuf; \
-                                __ocaml_lex_%s_rec lexbuf n\n\n"
-          e.auto_name
+                                __ocaml_lex_%s_rec %alexbuf n\n\n"
+          e.auto_name output_args e.auto_args
 
 (* Main output function *)
 

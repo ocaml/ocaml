@@ -114,7 +114,7 @@ let rec output_env e = function
 
 let output_entry e =
   let init_num, init_moves = e.auto_initial_state in
-  let args = make_alias 0 (<:patt< lexbuf >> :: e.auto_args) in
+  let args = make_alias 0 (e.auto_args @ [ <:patt< lexbuf >> ]) in
   let f = "__ocaml_lex_rec_" ^ e.auto_name ^ "_rec" in
   let call_f = application <:expr< $lid:f$ >> args in
   let body_wrapper = 

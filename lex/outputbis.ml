@@ -155,9 +155,10 @@ let output_automata oc auto =
 
 let output_entry sourcefile ic oc tr e =
   let init_num, init_moves = e.auto_initial_state in
-  fprintf oc "%s lexbuf =
+  fprintf oc "%s %alexbuf =
   __init_lexbuf lexbuf %d; %a  match __state%d lexbuf with\n"
-      e.auto_name e.auto_mem_size (output_memory_actions "  ") init_moves init_num ;
+      e.auto_name output_args e.auto_args
+      e.auto_mem_size (output_memory_actions "  ") init_moves init_num ;
   List.iter
     (fun (num, env, loc) ->
       fprintf oc "  | ";

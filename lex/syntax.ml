@@ -40,5 +40,5 @@ type ('arg,'action) entry =
 
 type  lexer_definition =
     { header: location;
-      entrypoints: ((unit, location) entry) list;
+      entrypoints: ((string list, location) entry) list;
       trailer: location }

@@ -87,11 +87,18 @@ other_definitions:
         { [] }
 ;
 definition:
-    Tident Tequal entry
-        { {name=$1 ; shortest=false ; args=() ; clauses=$3} }
-  |  Tident Tequal entry_shortest
-        { {name=$1 ; shortest=true ; args=() ; clauses=$3} }
+    Tident arguments Tequal entry
+        { {name=$1 ; shortest=false ; args=$2 ; clauses=$4} }
+  |  Tident arguments Tequal entry_shortest
+        { {name=$1 ; shortest=true ; args=$2 ; clauses=$4} }
 ;
+
+arguments:
+    Tident arguments        { $1::$2 }
+|     /*epsilon*/           { [] }
+;
+
+
 entry:
     Tparse case rest_of_entry
         { $2::List.rev $3 }

@@ -20,3 +20,4 @@ val output_mem_access : out_channel -> int -> unit
 val output_memory_actions :
   string -> out_channel -> Lexgen.memory_action list -> unit
 val output_env : out_channel -> (string * Lexgen.ident_info) list -> unit
+val output_args : out_channel -> string list -> unit
