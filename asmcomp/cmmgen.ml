@@ -154,6 +154,20 @@ let ignore_low_bit_int = function
   | Cop(Cor, [c; Cconst_int 1]) -> c
   | c -> c
 
+let is_nonzero_constant = function
+    Cconst_int n -> n <> 0
+  | Cconst_natint n -> n <> 0n
+  | _ -> false
+
+let safe_divmod op c1 c2 =
+  if !Clflags.fast || is_nonzero_constant c2 then
+    Cop(op, [c1; c2])
+  else
+    bind "divisor" c2 (fun c2 ->
+      Cifthenelse(c2,
+                  Cop(op, [c1; c2]),
+                  Cop(Craise, [Cconst_symbol "bucket_Division_by_zero"])))
+
 (* Bool *)
 
 let test_bool = function
@@ -1093,9 +1107,9 @@ and transl_prim_2 p arg1 arg2 =
   | Pmulint ->
       incr_int(Cop(Cmuli, [decr_int(transl arg1); untag_int(transl arg2)]))
   | Pdivint ->
-      tag_int(Cop(Cdivi, [untag_int(transl arg1); untag_int(transl arg2)]))
+      tag_int(safe_divmod Cdivi (untag_int(transl arg1)) (untag_int(transl arg2)))
   | Pmodint ->
-      tag_int(Cop(Cmodi, [untag_int(transl arg1); untag_int(transl arg2)]))
+      tag_int(safe_divmod Cmodi (untag_int(transl arg1)) (untag_int(transl arg2)))
   | Pandint ->
       Cop(Cand, [transl arg1; transl arg2])
   | Porint ->
@@ -1205,11 +1219,11 @@ and transl_prim_2 p arg1 arg2 =
       box_int bi (Cop(Cmuli, 
                       [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
   | Pdivbint bi ->
-      box_int bi (Cop(Cdivi,
-                      [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
+      box_int bi (safe_divmod Cdivi
+                      (transl_unbox_int bi arg1) (transl_unbox_int bi arg2))
   | Pmodbint bi ->
-      box_int bi (Cop(Cmodi,
-                     [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
+      box_int bi (safe_divmod Cmodi
+                      (transl_unbox_int bi arg1) (transl_unbox_int bi arg2))
   | Pandbint bi ->
       box_int bi (Cop(Cand,
                      [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
@@ -1835,5 +1849,10 @@ let code_segment_table namelist =
 (* Initialize a predefined exception *)
 
 let predef_exception name =
+  let bucketname = "bucket_" ^ name in
   Cdata(Cglobal_symbol name ::
-        emit_constant name (Const_block(0,[Const_base(Const_string name)])) [])
+        emit_constant name (Const_block(0,[Const_base(Const_string name)]))
+        [ Cglobal_symbol bucketname;
+          Cint(block_header 0 1);
+          Cdefine_symbol bucketname;
+          Csymbol_address name ])
