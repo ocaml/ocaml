@@ -2335,9 +2335,8 @@ let rec normalize_type_rec env ty =
             | _ -> f)
           row.row_fields
       and bound = List.fold_left
-          (fun tyl ty ->
-            let ty = repr ty in if List.memq ty tyl then tyl else ty :: tyl)
-          [] row.row_bound
+          (fun tyl ty -> if List.memq ty tyl then tyl else ty :: tyl)
+          [] (List.map repr row.row_bound)
       in ty.desc <- Tvariant {row with row_fields = fields; row_bound = bound}
     | Tobject (_, nm) ->
         begin match !nm with

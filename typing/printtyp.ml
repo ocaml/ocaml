@@ -123,7 +123,7 @@ let rec mark_loops_rec visited ty =
           | Some(p, tyl) when namable_row row ->
               List.iter (mark_loops_rec visited) tyl
           | _ ->
-              iter_row (mark_loops_rec visited) row
+              iter_row (mark_loops_rec visited) {row with row_bound = []}
          end
     | Tobject (fi, nm) ->
         if List.memq px !visited_objects then add_alias px else
