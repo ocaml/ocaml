@@ -120,13 +120,13 @@ let rec extract_label_names sexp env ty =
   match ty.desc with
   | Tconstr (path, _, _) ->
       let td = Env.find_type path env in
-      let rec extract = function
+      begin match td.type_kind with
       | Type_record (fields, _, _) ->
           List.map (fun (name, _, _) -> name) fields
       | Type_abstract when td.type_manifest <> None ->
           extract_label_names sexp env (expand_head env ty)
-      | _ -> assert false in
-      extract td.type_kind
+      | _ -> assert false
+      end
   | _ ->
       assert false
 
