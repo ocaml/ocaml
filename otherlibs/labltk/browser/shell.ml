@@ -55,7 +55,7 @@ let dump_mem ?(pos = 0) ?len obj =
 
 let protect f x = try f x with _ -> ()
 
-class shell ~textw ~prog ~args ~env =
+class shell ~textw ~prog ~args ~env ~history =
   let (in2,out1) = Unix.pipe ()
   and (in1,out2) = Unix.pipe ()
   and (err1,err2) = Unix.pipe ()
@@ -71,7 +71,7 @@ object (self)
     Unix.create_process_env ~prog ~args ~env
       ~stdin:in2 ~stdout:out2 ~stderr:err2
   val out = Unix.out_channel_of_descr out1
-  val h = new history ()
+  val h : _ history = history
   val mutable alive = true
   val mutable reading = false
   val ibuffer = Buffer.create 1024
@@ -292,8 +292,23 @@ let f ~prog ~title =
   in
   let args =
     Array.of_list (progargs @ labels @ warnings @ rectypes @ load_path) in
-  let sh = new shell ~textw:tw ~prog ~env ~args in
+  let history = new history () in
+  let start_shell () =
+    let sh = new shell ~textw:tw ~prog ~env ~args ~history in
+    shells := (title, sh) :: !shells;
+    sh
+  in
+  let sh = ref (start_shell ()) in
   let current_dir = ref (Unix.getcwd ()) in
+  file_menu#add_command "Restart" ~command:
+    begin fun () ->
+      (!sh)#kill;
+      Text.configure tw ~state:`Normal;
+      Text.insert tw ~index:(`End,[]) ~text:"\n";
+      Text.see tw ~index:(`End,[]);
+      Text.mark_set tw ~mark:"insert" ~index:(`End,[]);
+      sh := start_shell ();
+    end;
   file_menu#add_command "Use..." ~command:
     begin fun () ->
       Fileselect.f ~title:"Use File" ~filter:"*.ml"
@@ -305,7 +320,7 @@ let f ~prog ~title =
           if Filename.check_suffix name ".ml"
           then
             let cmd = "#use \"" ^ name ^ "\";;\n" in
-            sh#insert cmd; sh#send cmd)
+            (!sh)#insert cmd; (!sh)#send cmd)
     end;
   file_menu#add_command "Load..." ~command:
     begin fun () ->
@@ -319,19 +334,18 @@ let f ~prog ~title =
             Filename.check_suffix name ".cma"
           then
             let cmd = "#load \"" ^ name ^ "\";;\n" in
-            sh#insert cmd; sh#send cmd)
+            (!sh)#insert cmd; (!sh)#send cmd)
     end;
   file_menu#add_command "Import path" ~command:
     begin fun () ->
       List.iter (List.rev !Config.load_path)
-        ~f:(fun dir -> sh#send ("#directory \"" ^ dir ^ "\";;\n"))
+        ~f:(fun dir -> (!sh)#send ("#directory \"" ^ dir ^ "\";;\n"))
     end;
   file_menu#add_command "Close" ~command:(fun () -> destroy tl);
   history_menu#add_command "Previous  " ~accelerator:"M-p"
-    ~command:(fun () -> sh#history `previous);
+    ~command:(fun () -> (!sh)#history `previous);
   history_menu#add_command "Next" ~accelerator:"M-n"
-    ~command:(fun () -> sh#history `next);
+    ~command:(fun () -> (!sh)#history `next);
   signal_menu#add_command "Interrupt  " ~accelerator:"C-c"
-    ~command:(fun () -> sh#interrupt);
-  signal_menu#add_command "Kill" ~command:(fun () -> sh#kill);
-  shells := (title, sh) :: !shells
+    ~command:(fun () -> (!sh)#interrupt);
+  signal_menu#add_command "Kill" ~command:(fun () -> (!sh)#kill)

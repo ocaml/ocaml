@@ -13,11 +13,22 @@
 
 (* $Id$ *)
 
+class ['a] history :
+  unit ->
+  object
+    val mutable count : int
+    val mutable history : 'a list
+    method add : 'a -> unit
+    method empty : bool
+    method next : 'a
+    method previous : 'a
+  end
+
 (* toplevel shell *)
 
 class shell :
   textw:Widget.text Widget.widget -> prog:string ->
-  args:string array -> env:string array ->
+  args:string array -> env:string array -> history:string history ->
   object
     method alive : bool
     method kill : unit
