@@ -1,3 +1,13 @@
+Objective Caml 3.01:
+--------------------
+
+Standard library:
+- Added Weak.get_copy.
+
+Both compilers:
+- Option -warn-error to turn warnings into errors.
+
+
 Objective Caml 3.00:
 --------------------
 
