@@ -13,6 +13,7 @@
 (* $Id$ *)
 
 open Misc
+open Primitive
 open Asttypes
 open Longident
 open Lambda
@@ -44,23 +45,55 @@ let share c =
 
 (* Collect labels *)
 
-let used_methods = ref ([] : (string * Ident.t) list);;
+let cache_required = ref false
+let method_cache = ref lambda_unit
+let method_count = ref 0
+let method_table = ref []
 
-let meth lab =
+let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
+
+let next_cache tag =
+  let n = !method_count in
+  incr method_count;
+  (tag, [!method_cache; Lconst(Const_base(Const_int n))])
+
+let rec is_path = function
+    Lvar _ | Lprim (Pgetglobal _, []) | Lconst _ -> true
+  | Lprim (Pfield _, [lam]) -> is_path lam
+  | Lprim ((Parrayrefu _ | Parrayrefs _), [lam1; lam2]) ->
+      is_path lam1 && is_path lam2
+  | _ -> false
+
+let meth obj lab =
+  let tag = meth_tag lab in
+  if not (!cache_required && !Clflags.native_code) then (tag, []) else
+  if not (is_path obj) then next_cache tag else
   try
-    List.assoc lab !used_methods
+    let r = List.assoc obj !method_table in
+    try
+      (tag, List.assoc tag !r)
+    with Not_found ->
+      let p = next_cache tag in
+      r := p :: !r;
+      p
   with Not_found ->
-    let id = Ident.create lab in
-    used_methods := (lab, id)::!used_methods;
-    id
+    let p = next_cache tag in
+    method_table := (obj, ref [p]) :: !method_table;
+    p
 
 let reset_labels () =
   Hashtbl.clear consts;
-  used_methods := []
+  method_count := 0;
+  method_table := []
 
 (* Insert labels *)
 
 let string s = Lconst (Const_base (Const_string s))
+let int n = Lconst (Const_base (Const_int n))
+
+let prim_makearray =
+  { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
+    prim_native_name = ""; prim_native_float = false }
 
 let transl_label_init expr =
   let expr =
@@ -68,39 +101,41 @@ let transl_label_init expr =
       (fun c id expr -> Llet(Alias, id, Lconst c, expr))
       consts expr
   in
-  let expr =
-    if !used_methods = [] then expr else
-    let init = Ident.create "new_method" in
-    Llet(StrictOpt, init, oo_prim "new_method",
-         List.fold_right
-           (fun (lab, id) expr ->
-             Llet(StrictOpt, id, Lapply(Lvar init, [string lab]), expr))
-           !used_methods
-           expr)
-  in
   reset_labels ();
   expr
 
+let transl_store_label_init glob size f arg =
+  method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
+  let expr = f arg in
+  let (size, expr) =
+    if !method_count = 0 then (size, expr) else
+    (size+1,
+     Lsequence(
+     Lprim(Psetfield(size, false),
+	   [Lprim(Pgetglobal glob, []);
+	    Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
+     expr))
+  in
+  (size, transl_label_init expr)
 
 (* Share classes *)
 
 let wrapping = ref false
-let required = ref true
 let top_env = ref Env.empty
 let classes = ref []
 
 let oo_add_class id =
   classes := id :: !classes;
-  (!top_env, !required)
+  (!top_env, !cache_required)
 
 let oo_wrap env req f x =
   if !wrapping then
-    if !required then f x else
-    try required := true; let lam = f x in required := false; lam
-    with exn -> required := false; raise exn
+    if !cache_required then f x else
+    try cache_required := true; let lam = f x in cache_required := false; lam
+    with exn -> cache_required := false; raise exn
   else try
     wrapping := true;
-    required := req;
+    cache_required := req;
     top_env := env;
     classes := [];
     let lambda = f x in

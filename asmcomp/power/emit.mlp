@@ -831,6 +831,7 @@ let rec emit_instr i dslot =
             `	andi.	{emit_gpr 0}, {emit_reg i.arg.(0)}, 1\n`;
             emit_delay dslot;
             `	beq	{emit_label lbl}\n`
+	| Ispectest () -> ()
         end
     | Lcondbranch3(lbl0, lbl1, lbl2) ->
         `	cmpwi	{emit_reg i.arg.(0)}, 1\n`;

@@ -28,6 +28,8 @@ type specific_operation =
   | Imultsubf                           (* multiply and subtract *)
   | Ialloc_far of int                   (* allocation in large functions *)
 
+type 'a specific_test = unit
+
 (* Addressing modes *)
 
 type addressing_mode =
@@ -81,6 +83,10 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
   | Ialloc_far n ->
       fprintf ppf "alloc_far %d" n
+
+let print_specific_test r c t p a = ()
+
+let invert_specific_test i () = ()
 
 (* Distinguish between the PowerPC and the Power/RS6000 submodels *)
 

@@ -518,9 +518,16 @@ let rec transl_exp e =
 and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, {val_kind = Val_prim p}) ->
-      if p.prim_name = "%send" then
+      let public_send = p.prim_name = "%send" in
+      if public_send || p.prim_name = "%sendself" then
+        let kind = if public_send then Public else Self in
 	let obj = Ident.create "obj" and meth = Ident.create "meth" in
-	Lfunction(Curried, [obj; meth], Lsend(Lvar meth, Lvar obj, []))
+	Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, []))
+      else if p.prim_name = "%sendcache" then
+	let obj = Ident.create "obj" and meth = Ident.create "meth" in
+        let cache = Ident.create "cache" and pos = Ident.create "pos" in
+	Lfunction(Curried, [obj; meth; cache; pos],
+                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos]))
       else
 	transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
@@ -544,17 +551,26 @@ and transl_exp0 e =
     when List.length args = p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
-      if p.prim_name = "%send" then
-	let obj = transl_exp (List.hd args) in
-	event_after e (Lsend (transl_exp (List.nth args 1), obj, []))
-      else let prim = transl_prim p args in
-      begin match (prim, args) with
-        (Praise, [arg1]) ->
-          Lprim(Praise, [event_after arg1 (transl_exp arg1)])
-      | (_, _) ->
-          if primitive_is_ccall prim
-          then event_after e (Lprim(prim, transl_list args))
-          else Lprim(prim, transl_list args)
+      let argl = transl_list args in
+      let public_send = p.prim_name = "%send"
+        || not !Clflags.native_code && p.prim_name = "%sendcache"in
+      if public_send || p.prim_name = "%sendself" then
+        let kind = if public_send then Public else Self in
+	let obj = List.hd argl in
+	event_after e (Lsend (kind, List.nth argl 1, obj, []))
+      else if p.prim_name = "%sendcache" then
+        match argl with [obj; meth; cache; pos] ->
+          event_after e (Lsend(Cached, meth, obj, [cache; pos]))
+        | _ -> assert false
+      else begin
+        let prim = transl_prim p args in
+        match (prim, args) with
+          (Praise, [arg1]) ->
+            Lprim(Praise, [event_after arg1 (List.hd argl)])
+        | (_, _) ->
+            if primitive_is_ccall prim
+            then event_after e (Lprim(prim, argl))
+            else Lprim(prim, argl)
       end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs)
@@ -657,12 +673,16 @@ and transl_exp0 e =
         (Lifthenelse(transl_exp cond, event_before body (transl_exp body),
                      staticfail))
   | Texp_send(expr, met) ->
-      let met_id =
-        match met with
-          Tmeth_name nm -> Translobj.meth nm
-        | Tmeth_val id  -> id
+      let obj = transl_exp expr in
+      let lam =
+        match met with 
+          Tmeth_val id -> Lsend (Self, Lvar id, obj, [])
+        | Tmeth_name nm ->
+            let (tag, cache) = Translobj.meth obj nm in
+	    let kind = if cache = [] then Public else Cached in
+            Lsend (kind, tag, obj, cache)
       in
-      event_after e (Lsend(Lvar met_id, transl_exp expr, []))
+      event_after e lam
   | Texp_new (cl, _) ->
       Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit])
   | Texp_instvar(path_self, path) ->
@@ -710,10 +730,10 @@ and transl_tupled_cases patl_expr_list =
 and transl_apply lam sargs =
   let lapply funct args =
     match funct with
-      Lsend(lmet, lobj, largs) ->
-        Lsend(lmet, lobj, largs @ args)
-    | Levent(Lsend(lmet, lobj, largs), _) ->
-        Lsend(lmet, lobj, largs @ args)
+      Lsend(k, lmet, lobj, largs) ->
+        Lsend(k, lmet, lobj, largs @ args)
+    | Levent(Lsend(k, lmet, lobj, largs), _) ->
+        Lsend(k, lmet, lobj, largs @ args)
     | Lapply(lexp, largs) ->
         Lapply(lexp, largs @ args)
     | lexp ->

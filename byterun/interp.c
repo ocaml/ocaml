@@ -1032,13 +1032,43 @@ value caml_interprete(code_t prog, asize_t prog_size)
     
 /* Object-oriented operations */
 
+/*
 #define Lookup(obj, lab) \
   Field (Field (Field (obj, 0), ((lab) >> 16) / sizeof (value)), \
          ((lab) / sizeof (value)) & 0xFF)
+*/
+#define Lookup(obj, lab) Field (Field (obj, 0), Int_val(lab))
 
     Instruct(GETMETHOD):
       accu = Lookup(sp[0], accu);
       Next;
+
+#define CAML_NO_METHOD_CACHE
+    Instruct(GETPUBMET): {
+      /* accu == tag, sp[0] == object, *pc == cache */
+      value meths = Field (sp[0], 0);
+#ifndef CAML_NO_METHOD_CACHE
+      value ofs = *pc & Field(meths,1);
+      if (*(value*)(((char*)&Field(meths,2)) + ofs) == accu) {
+        accu = *(value*)(((char*)&Field(meths,1)) + ofs);
+      }
+      else
+#endif
+      {
+        int li = 3, hi = Field(meths,0), mi;
+        while (li < hi) {
+          mi = ((li+hi) >> 1) | 1;
+          if (accu < Field(meths,mi)) hi = mi-2;
+          else li = mi;
+        }
+#ifndef CAML_NO_METHOD_CACHE
+        *pc = (li-2)*sizeof(value);
+#endif
+        accu = Field (meths, li-1);
+      }
+      pc++;
+      Next;
+    }
 
 /* Debugging and machine control */
 
