@@ -8,3 +8,4 @@ objinfo
 cvt_emit
 cvt_emit.ml
 ocamlcp
+ocamlmktop
