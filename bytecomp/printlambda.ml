@@ -274,6 +274,13 @@ let rec lambda = function
 and sequence = function
     Lsequence(l1, l2) ->
       sequence l1; print_space(); sequence l2
+  | Llet(str, id, arg, body) ->
+      open_box 2;
+      print_string "let"; print_space();
+      Ident.print id; print_space(); lambda arg;
+      close_box();
+      print_space();
+      sequence body
   | l ->
       lambda l
 
