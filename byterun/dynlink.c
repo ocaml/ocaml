@@ -38,6 +38,11 @@
 /* The table of primitives */
 struct ext_table prim_table;
 
+#ifdef DEBUG
+/* The names of primitives (for instrtrace.c) */
+struct ext_table prim_name_table;
+#endif
+
 /* The table of shared libraries currently opened */
 static struct ext_table shared_libs;
 
@@ -151,11 +156,17 @@ void build_primitive_table(char * lib_path,
       open_shared_lib(p);
   /* Build the primitive table */
   ext_table_init(&prim_table, 0x180);
+#ifdef DEBUG
+  ext_table_init(&prim_name_table, 0x180);
+#endif
   for (p = req_prims; *p != 0; p += strlen(p) + 1) {
     c_primitive prim = lookup_primitive(p);
     if (prim == NULL)
       fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
     ext_table_add(&prim_table, (void *) prim);
+#ifdef DEBUG
+    ext_table_add(&prim_name_table, strdup(p));
+#endif
   }
   /* Clean up */
   stat_free(tofree1);

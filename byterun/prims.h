@@ -24,6 +24,9 @@ extern c_primitive builtin_cprim[];
 extern char * names_of_builtin_cprim[];
 
 extern struct ext_table prim_table;
+#ifdef DEBUG
+extern struct ext_table prim_name_table;
+#endif
 
 #define Primitive(n) ((c_primitive)(prim_table.contents[n]))
 
