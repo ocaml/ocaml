@@ -572,5 +572,5 @@ value compile () =
 Pcaml.parse_implem.val := fun _ -> compile ();
 
 Pcaml.add_option "-strict_parsing" (Arg.Set strict_parsing)
-  " don't generate error recovering by trying continuations or first levels"
+  "Don't generate error recovering by trying continuations or first levels"
 ;

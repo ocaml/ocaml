@@ -78,8 +78,8 @@ EXTEND
 END;
 
 Pcaml.add_option "-D" (Arg.String define)
-  "<string>   Define for ifdef instruction."
+  "<string> Define for ifdef instruction."
 ;
 Pcaml.add_option "-U" (Arg.String undef)
-  "<string>   Undefine for ifdef instruction."
+  "<string> Undefine for ifdef instruction."
 ;

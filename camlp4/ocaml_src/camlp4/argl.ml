@@ -149,6 +149,40 @@ let print_version () =
   eprintf "Camlp4 version %s\n" Pcaml.version; flush stderr; exit 0
 ;;
 
+let align_doc key s =
+  let s =
+    let rec loop i =
+      if i = String.length s then ""
+      else if s.[i] = ' ' then loop (i + 1)
+      else String.sub s i (String.length s - i)
+    in
+    loop 0
+  in
+  let (p, s) =
+    if String.length s > 0 then
+      if s.[0] = '<' then
+        let rec loop i =
+          if i = String.length s then "", s
+          else if s.[i] <> '>' then loop (i + 1)
+          else
+            let p = String.sub s 0 (i + 1) in
+            let rec loop i =
+              if i >= String.length s then p, ""
+              else if s.[i] = ' ' then loop (i + 1)
+              else p, String.sub s i (String.length s - i)
+            in
+            loop (i + 1)
+        in
+        loop 0
+      else "", s
+    else "", ""
+  in
+  let tab =
+    String.make (max 1 (13 - String.length key - String.length p)) ' '
+  in
+  p ^ tab ^ s
+;;
+
 let usage ini_sl ext_sl =
   eprintf "\
 Usage: camlp4 [load-options] [--] [other-options]
@@ -159,7 +193,8 @@ Load options:
   <object-file> Load this file in Camlp4 core.
 Other options:
   <file>        Parse this file.\n";
-  List.iter (fun (key, _, doc) -> eprintf "  %s %s\n" key doc) ini_sl;
+  List.iter (fun (key, _, doc) -> eprintf "  %s %s\n" key (align_doc key doc))
+    ini_sl;
   begin
     let rec loop =
       function
@@ -172,7 +207,9 @@ Other options:
   if ext_sl <> [] then
     begin
       eprintf "Options added by loaded object files:\n";
-      List.iter (fun (key, _, doc) -> eprintf "  %s %s\n" key doc) ext_sl
+      List.iter
+        (fun (key, _, doc) -> eprintf "  %s %s\n" key (align_doc key doc))
+        ext_sl
     end
 ;;
 

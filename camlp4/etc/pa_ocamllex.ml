@@ -256,5 +256,5 @@ let standalone =
 
 let () =
   Pcaml.add_option "-ocamllex" (Arg.Unit standalone)
-    "    Activate (standalone) ocamllex emulation mode."
+    "Activate (standalone) ocamllex emulation mode."
 

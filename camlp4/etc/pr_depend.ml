@@ -316,4 +316,4 @@ Pcaml.print_implem.val := depend_str;
 
 Pcaml.add_option "-I"
   (Arg.String (fun dir -> load_path.val := load_path.val @ [dir]))
-  "<dir>      Add <dir> to the list of include directories.";
+  "<dir> Add <dir> to the list of include directories.";

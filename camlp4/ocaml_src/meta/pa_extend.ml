@@ -17,10 +17,10 @@ open Stdpp;;
 let split_ext = ref false;;
 
 Pcaml.add_option "-split_ext" (Arg.Set split_ext)
-  "   Split EXTEND by functions to turn around a PowerPC problem.";;
+  "Split EXTEND by functions to turn around a PowerPC problem.";;
 
 Pcaml.add_option "-split_gext" (Arg.Set split_ext)
-  "  Old name for the option -split_ext.";;
+  "Old name for the option -split_ext.";;
 
 type loc = int * int;;
 
@@ -1918,7 +1918,6 @@ Grammar.extend
         (fun (s : string) (loc : int * int) ->
            (MLast.ExStr (loc, s) : 'string))]]]);;
 
-Pcaml.add_option "-quotify" (Arg.Set quotify)
-  "     Generate code for quotations";;
+Pcaml.add_option "-quotify" (Arg.Set quotify) "Generate code for quotations";;
 
-Pcaml.add_option "-meta_action" (Arg.Set meta_action) " Undocumented";;
+Pcaml.add_option "-meta_action" (Arg.Set meta_action) "Undocumented";;

@@ -1726,28 +1726,28 @@ Pcaml.print_interf.val := apply_printer sig_item;
 Pcaml.print_implem.val := apply_printer str_item;
 
 Pcaml.add_option "-l" (Arg.Int (fun x -> maxl.val := x))
-  "<length>   Maximum line length for pretty printing.";
+  "<length> Maximum line length for pretty printing.";
 
 Pcaml.add_option "-sep_src" (Arg.Unit (fun () -> sep.val := None))
-  "     Read source file for text between phrases.";
+  "Read source file for text between phrases.";
 
 Pcaml.add_option "-sep" (Arg.String (fun x -> sep.val := Some x))
   "<string> Use this string between phrases instead of reading source.";
 
 Pcaml.add_option "-no_where" (Arg.Clear gen_where)
-  "    Dont generate \"where\" statements";
+  "Dont generate \"where\" statements";
 
 Pcaml.add_option "-cip" (Arg.Clear ncip)
-   "         Add comments in phrases.";
+   "Add comments in phrases.";
 
 Pcaml.add_option "-ncip" (Arg.Set ncip)
-   "        No comments in phrases (default).";
+   "No comments in phrases (default).";
 
 Pcaml.add_option "-old_seq" (Arg.Set old_sequences)
-  "     Pretty print with old syntax for sequences.";
+  "Pretty print with old syntax for sequences.";
 
 Pcaml.add_option "-tc" (Arg.Set type_comm)
-  "          Add the comments inside sum and record types.";
+  "Add the comments inside sum and record types.";
 
 Pcaml.add_option "-exp_dcl" (Arg.Set expand_declare)
-  "     Expand the \"declare\" items.";
+  "Expand the \"declare\" items.";

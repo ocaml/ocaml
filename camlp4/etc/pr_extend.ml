@@ -510,4 +510,4 @@ lev.pr_rules :=
       fun curr next _ k -> [: `gextend e "" k :] ];
 
 Pcaml.add_option "-no_slist" (Arg.Set no_slist)
-  "    Don't reconstruct SLIST and SOPT";
+  "Don't reconstruct SLIST and SOPT";

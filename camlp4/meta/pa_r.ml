@@ -35,7 +35,7 @@ To avoid compilation warning use the new syntax.
   }
 ;
 Pcaml.add_option "-help_seq" (Arg.Unit help_sequences)
-  "    Print explanations about new sequences and exit.";
+  "Print explanations about new sequences and exit.";
 
 do {
   let odfa = Plexer.dollar_for_antiquotation.val in
@@ -183,7 +183,7 @@ value warning_seq () =
   else ()
 ;
 Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
-  " No warning when using old syntax for sequences.";
+  "No warning when using old syntax for sequences.";
 
 EXTEND
   GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type

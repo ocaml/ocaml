@@ -33,7 +33,7 @@ To avoid compilation warning use the new syntax.
   exit 1
 ;;
 Pcaml.add_option "-help_seq" (Arg.Unit help_sequences)
-  "    Print explanations about new sequences and exit.";;
+  "Print explanations about new sequences and exit.";;
 
 let odfa = !(Plexer.dollar_for_antiquotation) in
 Plexer.dollar_for_antiquotation := false;
@@ -186,7 +186,7 @@ let warning_seq () =
     end
 ;;
 Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
-  " No warning when using old syntax for sequences.";;
+  "No warning when using old syntax for sequences.";;
 
 Grammar.extend
   (let _ = (sig_item : 'sig_item Grammar.Entry.e)

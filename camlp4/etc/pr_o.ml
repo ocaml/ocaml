@@ -1893,16 +1893,16 @@ Pcaml.print_interf.val := apply_printer sig_item;
 Pcaml.print_implem.val := apply_printer str_item;
 
 Pcaml.add_option "-l" (Arg.Int (fun x -> maxl.val := x))
-  "<length>   Maximum line length for pretty printing.";
+  "<length> line length for pretty printing.";
 
 Pcaml.add_option "-no_ss" (Arg.Set no_ss)
-  "       Do not print double semicolons.";
+  "Do not print double semicolons.";
 
 Pcaml.add_option "-sep_src" (Arg.Unit (fun () -> sep.val := None))
-  "     Read source file for text between phrases.";
+  "Read source file for text between phrases.";
 
 Pcaml.add_option "-sep" (Arg.String (fun x -> sep.val := Some x))
   "<string> Use this string between phrases instead of reading source.";
 
 Pcaml.add_option "-tc" (Arg.Set type_comm)
-  "          Add the comments inside sum and record types.";
+  "Add the comments inside sum and record types.";
