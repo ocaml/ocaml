@@ -15,11 +15,11 @@
 include ../config/Makefile
 
 CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot -warn-error A
+CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../driver
-COMPFLAGS=$(INCLUDES)
+COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels
