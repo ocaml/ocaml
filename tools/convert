@@ -186,7 +186,7 @@ sub convert {
 # Identifiers that have been renamed
     s/([A-Za-z][A-Za-z0-9'_]*(__[A-Za-z][A-Za-z0-9'_]*)?)/$conv{$1} || $1/eg;
 # 'type glop == tau'
-    s/^((type|and)\s+(\(.*\)\s+)?[a-z][A-Za-z0-9'_]*\s+)==/\1=/;
+    s/((type|and)\s+(\(.*\)\s+|'[a-z]\s+)?[A-Za-z][A-Za-z0-9'_]*\s+)==/\1=/;
 # 'and' for values in .mli files -- what a terrible hack!
     if ($interface) { s/^  and\b/val/; }
 # Open
