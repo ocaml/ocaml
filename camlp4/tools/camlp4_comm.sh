@@ -22,7 +22,7 @@ if test "$2" = "camlp4r" -o "$2" = "camlp4"; then
 	shift; shift
 	ARGS2=`echo $* | sed -e "s/[()*]//g"`
 #	ARGS1="$ARGS1 -verbose"
-	echo $COMM $ARGS2 $ARGS1 $FILE 1>&2
+	echo $COMM $ARGS2 $ARGS1 $FILE
 	$COMM $ARGS2 $ARGS1 $FILE
 else
 	if test "`basename $FILE .mli`.mli" = "$FILE"; then
@@ -30,6 +30,6 @@ else
 	else
 		OFILE=`basename $FILE .ml`.ppo
 	fi
-	echo cp $FILE $OFILE 1>&2
+	echo cp $FILE $OFILE
 	cp $FILE $OFILE
 fi
