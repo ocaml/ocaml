@@ -58,7 +58,9 @@ let primitive = function
   | Pmakeblock(tag, Immutable) -> print_string "makeblock "; print_int tag
   | Pmakeblock(tag, Mutable) -> print_string "makemutable "; print_int tag
   | Pfield n -> print_string "field "; print_int n
-  | Psetfield(n, _) -> print_string "setfield "; print_int n
+  | Psetfield(n, ptr) ->
+      print_string (if ptr then "setfield_ptr " else "setfield_imm ");
+      print_int n
   | Pfloatfield n -> print_string "floatfield "; print_int n
   | Psetfloatfield n -> print_string "setfloatfield "; print_int n
   | Pccall p -> print_string p.prim_name
