@@ -20,6 +20,10 @@
 /* copy a Caml string to the C heap. Must be deallocated with stat_free */
 extern char *string_to_c(value s);
 
+/* cltkUtf.c */
+extern value tcl_string_to_caml( char * );
+extern char * caml_string_to_tcl( value );
+
 /* cltkEval.c */
 extern Tcl_Interp *cltclinterp; /* The Tcl interpretor */
 extern value copy_string_list(int argc, char ** argv);

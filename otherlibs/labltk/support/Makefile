@@ -8,7 +8,7 @@ opt: support.cmx rawwidget.cmx widget.cmx protocol.cmx \
      textvariable.cmx timer.cmx fileevent.cmx camltkwrap.cmx \
      liblabltk41.a
 
-COBJS=cltkCaml.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o \
+COBJS=cltkCaml.o cltkUtf.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o \
       cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o cltkImg.o
 
 CCFLAGS=-I../../../byterun $(TK_DEFS) $(X11_INCLUDES) $(SHAREDCCCOMPOPTS)
