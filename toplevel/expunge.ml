@@ -47,7 +47,7 @@ let main () =
   (* Read, expunge and rewrite the symbol section *)
   let global_map = (input_value ic : Symtable.global_map) in
   let pos1 = pos_out oc in
-  output_compact_value oc (expunge_map global_map);
+  output_value oc (expunge_map global_map);
   let pos2 = pos_out oc in
   (* Rewrite the trailer *)
   output_binary_int oc code_size;

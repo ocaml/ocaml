@@ -181,7 +181,7 @@ let link_bytecode objfiles exec_name copy_header =
     output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
     (* The table of global data *)
     let pos2 = pos_out outchan in
-    output_compact_value outchan (Symtable.initial_global_table());
+    output_value outchan (Symtable.initial_global_table());
     (* The List.map of global identifiers *)
     let pos3 = pos_out outchan in
     Symtable.output_global_map outchan;
