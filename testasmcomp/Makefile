@@ -12,7 +12,7 @@ CAMLRUN=../boot/ocamlrun
 
 CODEGEN=./codegen
 CC=$(NATIVECC)
-CFLAGS=-g
+CFLAGS=$(NATIVECCCOMPOPTS) -g
 
 PROGS=fib.out tak.out quicksort.out quicksort2.out soli.out integr.out \
       arith.out checkbound.out

@@ -25,6 +25,43 @@
         .comm   remembered_ptr, 4
         .comm   remembered_end, 4
 
+/* Save all callee-save registers in the stack frame */
+#define SAVE_CALLEE_SAVE_REGS \
+        sw      $16, 0($sp); \
+        sw      $17, 4($sp); \
+        sw      $18, 8($sp); \
+        sw      $19, 12($sp); \
+        sw      $20, 16($sp); \
+        sw      $21, 20($sp); \
+        sw      $22, 24($sp); \
+        sw      $23, 28($sp); \
+        sw      $30, 32($sp); \
+        s.d     $f20, 40($sp); \
+        s.d     $f22, 48($sp); \
+        s.d     $f24, 56($sp); \
+        s.d     $f26, 64($sp); \
+        s.d     $f28, 72($sp); \
+        s.d     $f30, 80($sp)
+
+#define RELOAD_CALLEE_SAVE_REGS \
+        lw      $16, 0($sp); \
+        lw      $17, 4($sp); \
+        lw      $18, 8($sp); \
+        lw      $19, 12($sp); \
+        lw      $20, 16($sp); \
+        lw      $21, 20($sp); \
+        lw      $22, 24($sp); \
+        lw      $23, 28($sp); \
+        lw      $30, 32($sp); \
+        l.d     $f20, 40($sp); \
+        l.d     $f22, 48($sp); \
+        l.d     $f24, 56($sp); \
+        l.d     $f26, 64($sp); \
+        l.d     $f28, 72($sp); \
+        l.d     $f30, 80($sp)
+
+/* Save and reload registers from gc_entry_regs and gc_entry_float_regs */
+
 #define SAVE(r) sw $/**/r, gc_entry_regs + r * 4
 #define LOAD(r) lw $/**/r, gc_entry_regs + r * 4
 #define FSAVE(r) s.d $f/**/r, gc_entry_float_regs + r * 4
@@ -33,11 +70,13 @@
 /* Allocation */
 
         .text
+        .globl  caml_call_gc
+#ifndef _PIC
         .globl  caml_alloc1
         .globl  caml_alloc2
         .globl  caml_alloc3
         .globl  caml_alloc
-        .globl  caml_call_gc
+#endif
         .ent    caml_call_gc
 
 caml_call_gc:
@@ -49,10 +88,12 @@ caml_call_gc:
     /* Record return address and adjust it to point back to
        the beginning of the allocation sequence */
         sw      $31, caml_last_return_address
-        subu    $31, $31, 32
+        subu    $31, $31, 16
     /* Don't request any allocation, will be redone at return */
         li      $24, 0
 	b	$110
+
+#ifndef _PIC
 
 /* caml_alloc* : all code generator registers preserved. */
 
@@ -85,6 +126,8 @@ caml_alloc:
 caml_call_gc_internal:
     /* Record return address */
         sw      $31, caml_last_return_address
+
+#endif
 
 $110:
     /* Record lowest stack address */
@@ -243,24 +286,9 @@ caml_start_program:
         .cpload $25
         .set    reorder
 #endif
-	subu    $sp, $sp, 88
-        sw      $31, 84($sp)
-    /* Save all callee-save registers */
-        sw      $16, 0($sp)
-        sw      $17, 4($sp)
-        sw      $18, 8($sp)
-        sw      $19, 12($sp)
-        sw      $20, 16($sp)
-        sw      $21, 20($sp)
-        sw      $22, 24($sp)
-        sw      $23, 28($sp)
-        sw      $30, 32($sp)
-        s.d     $f20, 36($sp)
-        s.d     $f22, 44($sp)
-        s.d     $f24, 52($sp)
-        s.d     $f26, 60($sp)
-        s.d     $f28, 68($sp)
-        s.d     $f30, 76($sp)
+	subu    $sp, $sp, 96
+        sw      $31, 88($sp)
+	SAVE_CALLEE_SAVE_REGS
     /* Build an exception handler */
 	subu    $sp, $sp, 8
 	la	$2, stray_exn_handler
@@ -276,25 +304,11 @@ caml_start_program:
         addu    $sp, $sp, 8
     /* Return with zero code */
         li      $2, 0
-    /* Restore registers */
 stray_exn_handler:
-        lw      $31, 84($sp)
-        lw      $16, 0($sp)
-        lw      $17, 4($sp)
-        lw      $18, 8($sp)
-        lw      $19, 12($sp)
-        lw      $20, 16($sp)
-        lw      $21, 20($sp)
-        lw      $22, 24($sp)
-        lw      $23, 28($sp)
-        lw      $30, 32($sp)
-        l.d     $f20, 36($sp)
-        l.d     $f22, 44($sp)
-        l.d     $f24, 52($sp)
-        l.d     $f26, 60($sp)
-        l.d     $f28, 68($sp)
-        l.d     $f30, 76($sp)
-        addu    $sp, $sp, 88
+    /* Restore registers */
+        lw      $31, 88($sp)
+	RELOAD_CALLEE_SAVE_REGS
+        addu    $sp, $sp, 96
         j       $31
 
         .end    caml_start_program
@@ -336,24 +350,10 @@ callback:
         lw      $24, 0($4)      /* code pointer */
 $103:
     /* Save return address */
-	subu    $sp, $sp, 88
-        sw      $31, 84($sp)
+	subu    $sp, $sp, 96
+        sw      $31, 88($sp)
     /* Save all callee-save registers */
-        sw      $16, 0($sp)
-        sw      $17, 4($sp)
-        sw      $18, 8($sp)
-        sw      $19, 12($sp)
-        sw      $20, 16($sp)
-        sw      $21, 20($sp)
-        sw      $22, 24($sp)
-        sw      $23, 28($sp)
-        sw      $30, 32($sp)
-        s.d     $f20, 36($sp)
-        s.d     $f22, 44($sp)
-        s.d     $f24, 52($sp)
-        s.d     $f26, 60($sp)
-        s.d     $f28, 68($sp)
-        s.d     $f30, 76($sp)
+	SAVE_CALLEE_SAVE_REGS
     /* Set up a callback link on the stack. */
         subu    $sp, $sp, 8
         lw      $2, caml_bottom_of_stack
@@ -397,23 +397,9 @@ $104:   jal     $24
     /* Update allocation pointer */
         sw      $22, young_ptr
     /* Reload callee-save registers and return */
-        lw      $31, 84($sp)
-        lw      $16, 0($sp)
-        lw      $17, 4($sp)
-        lw      $18, 8($sp)
-        lw      $19, 12($sp)
-        lw      $20, 16($sp)
-        lw      $21, 20($sp)
-        lw      $22, 24($sp)
-        lw      $23, 28($sp)
-        lw      $30, 32($sp)
-        l.d     $f20, 36($sp)
-        l.d     $f22, 44($sp)
-        l.d     $f24, 52($sp)
-        l.d     $f26, 60($sp)
-        l.d     $f28, 68($sp)
-        l.d     $f30, 76($sp)
-        addu    $sp, $sp, 88
+        lw      $31, 88($sp)
+	RELOAD_CALLEE_SAVE_REGS
+        addu    $sp, $sp, 96
         j       $31
         
     /* The trap handler: re-raise the exception through mlraise,

@@ -31,6 +31,14 @@ let pic =
   | "irix" -> true
   | _ -> fatal_error "Emit_mips.pic"
 
+(* Determine the endianness in which the procesor is running *)
+
+let big_endian =
+  match Config.system with
+    "ultrix" -> false
+  | "irix" -> true
+  | _ -> fatal_error "Emit_mips.big_endian"
+
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -63,6 +71,9 @@ let float_reg_twin_name = [|
 let emit_twin_reg = function
     { loc = Reg r; typ = Float } -> emit_string (float_reg_twin_name.(r - 100))
   | _ -> fatal_error "Emit_mips.emit_twin_reg"
+
+let emit_lower_reg = if big_endian then emit_twin_reg else emit_reg
+let emit_upper_reg = if big_endian then emit_reg else emit_twin_reg
 
 (* Record if $gp is needed (in PIC mode) *)
 
@@ -183,10 +194,12 @@ let rec instr_uses_gp i =
   | Lop(Iconst_symbol s) -> true
   | Lop(Icall_imm s) -> true
   | Lop(Itailcall_imm s) -> true
-  | Lop(Iconst_symbol s) -> true
   | Lop(Iextcall(_, _)) -> true
   | Lop(Iload(_, Ibased(_, _))) -> true
   | Lop(Istore(_, Ibased(_, _))) -> true
+  | Lop(Ialloc _) -> true
+  | Lop(Iintop(Icheckbound)) -> true
+  | Lop(Iintop_imm(Icheckbound, _)) -> true
   | Lswitch jumptbl -> true
   | _ -> instr_uses_gp i.next
 
@@ -196,14 +209,15 @@ let reload_gp () =
   if !uses_gp then
     `	lw	$gp, {emit_int(frame_size() - 8)}($sp)\n`
 
-(* Initialize $gp ``out of nowhere'' in rarely-executed code *)
+(* Emit a branch to an external symbol. *)
 
-let reinit_gp () =
-  let lbl = new_label() in
-  `	bal	{emit_label lbl}, $25\n`;
-  `{emit_label lbl}:	.set	noreorder\n`;
-  `	.cpload	$25\n`;
-  `	.set	reorder\n`
+let emit_branch_symbol s =
+  if not pic then
+    `	j	{emit_symbol s}\n`
+  else begin
+    `	la	$25, {emit_symbol s}\n`;
+    `	j	$25\n`
+  end
 
 (* Names of various instructions *)
 
@@ -304,7 +318,7 @@ let emit_instr i =
           `	addu	$sp, $sp, {emit_int n}\n`;
         liveregs i 0;
         if pic then
-          `	mov	$25, {emit_reg i.arg.(0)}\n`;
+          `	move	$25, {emit_reg i.arg.(0)}\n`;
         `	j	{emit_reg i.arg.(0)}\n`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
@@ -316,11 +330,7 @@ let emit_instr i =
           if n > 0 then
             `	addu	$sp, $sp, {emit_int n}\n`;
           liveregs i 0;
-          if pic then begin
-            `	la	$25, {emit_symbol s}\n`;
-            `	j	$25\n`
-          end else
-            `	j	{emit_symbol s}\n`
+          emit_branch_symbol s
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
@@ -350,8 +360,8 @@ let emit_instr i =
             `	{emit_string load_instr}	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
         | Float ->
             (* Destination is not necessarily 8-aligned, hence better not use l.d *)
-            `	lwc1	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`;
-            `	lwc1	{emit_twin_reg i.res.(0)}, {emit_addressing (offset_addressing addr 4) i.arg 0}\n`
+            `	lwc1	{emit_lower_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`;
+            `	lwc1	{emit_upper_reg i.res.(0)}, {emit_addressing (offset_addressing addr 4) i.arg 0}\n`
         end
     | Lop(Istore(chunk, addr)) ->
         begin match i.arg.(0).typ with
@@ -364,8 +374,8 @@ let emit_instr i =
             `	{emit_string store_instr}	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
         | Float ->
             (* Destination is not necessarily 8-aligned, hence better not use s.d *)
-            `	swc1	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`;
-            `	swc1	{emit_twin_reg i.arg.(0)}, {emit_addressing (offset_addressing addr 4) i.arg 1}\n`
+            `	swc1	{emit_lower_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`;
+            `	swc1	{emit_upper_reg i.arg.(0)}, {emit_addressing (offset_addressing addr 4) i.arg 1}\n`
         end
     | Lop(Ialloc n) ->
         if pic or !fastcode_flag then begin
@@ -539,13 +549,11 @@ let fundecl fundecl =
   emit_all fundecl.fun_body;
   if !call_gc_label > 0 then begin
     `{emit_label !call_gc_label}:\n`;
-    if pic && not !uses_gp then reinit_gp();
-    `	j	caml_call_gc\n`
+    emit_branch_symbol "caml_call_gc"
   end;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    if pic && not !uses_gp then reinit_gp();
-    `	j	array_bound_error\n`
+    emit_branch_symbol "array_bound_error"
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`
 

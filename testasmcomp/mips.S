@@ -14,8 +14,8 @@
         .globl  call_gen_code
         .ent    call_gen_code
 call_gen_code:
-	subu    $sp, $sp, 88
-        sw      $31, 84($sp)
+	subu    $sp, $sp, 96
+        sw      $31, 88($sp)
     /* Save all callee-save registers */
         sw      $16, 0($sp)
         sw      $17, 4($sp)
@@ -26,12 +26,12 @@ call_gen_code:
         sw      $22, 24($sp)
         sw      $23, 28($sp)
         sw      $30, 32($sp)
-        s.d     $f20, 36($sp)
-        s.d     $f22, 44($sp)
-        s.d     $f24, 52($sp)
-        s.d     $f26, 60($sp)
-        s.d     $f28, 68($sp)
-        s.d     $f30, 76($sp)
+        s.d     $f20, 40($sp)
+        s.d     $f22, 48($sp)
+        s.d     $f24, 56($sp)
+        s.d     $f26, 64($sp)
+        s.d     $f28, 72($sp)
+        s.d     $f30, 80($sp)
     /* Shuffle arguments */
         move    $8, $5
         move    $9, $6
@@ -41,7 +41,7 @@ call_gen_code:
 #endif
         jal     $4
     /* Restore registers */
-        lw      $31, 84($sp)
+        lw      $31, 88($sp)
         lw      $16, 0($sp)
         lw      $17, 4($sp)
         lw      $18, 8($sp)
@@ -51,13 +51,13 @@ call_gen_code:
         lw      $22, 24($sp)
         lw      $23, 28($sp)
         lw      $30, 32($sp)
-        l.d     $f20, 36($sp)
-        l.d     $f22, 44($sp)
-        l.d     $f24, 52($sp)
-        l.d     $f26, 60($sp)
-        l.d     $f28, 68($sp)
-        l.d     $f30, 76($sp)
-        addu    $sp, $sp, 88
+        l.d     $f20, 40($sp)
+        l.d     $f22, 48($sp)
+        l.d     $f24, 56($sp)
+        l.d     $f26, 64($sp)
+        l.d     $f28, 72($sp)
+        l.d     $f30, 80($sp)
+        addu    $sp, $sp, 96
         j       $31
 
         .end    call_gen_code

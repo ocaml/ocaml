@@ -164,8 +164,6 @@ if test $gcc = yes; then
     alpha-*-osf*)
       bytecclinkopts="-Xlinker -taso";;
   esac
-else
-  $bytecc=cc
 fi
 
 echo "BYTECC=$bytecc" >> Makefile
@@ -206,7 +204,7 @@ esac
 
 case "$arch,$nativecc,$system" in
   alpha,cc,*)     nativecccompopts=-std1;;
-  mips,cc,irix)   nativecccompopts="-32 -std";;
+  mips,cc,irix)   nativecccompopts=-32; nativecclinkopts=-32;;
   mips,cc,ultrix) nativecccompopts=-std;;
   *,*,nextstep)   nativecccompopts="-Wall -D_POSIX_SOURCE";;
   *,gcc,*)        nativecccompopts=-Wall;;
