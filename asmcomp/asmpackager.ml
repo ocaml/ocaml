@@ -80,6 +80,8 @@ let extract_symbols units symbolfile =
   end;
   !symbs
 
+let max_cmdline_length = 3500 (* safe approximation *)
+
 let rename_in_object_file units pref objfile =
   let symbolfile = Filename.temp_file "camlsymbols" "" in
   try
@@ -90,16 +92,27 @@ let rename_in_object_file units pref objfile =
     if Ccomp.command nm_cmdline <> 0 then raise(Error Linking_error);
     let symbols_to_rename =
       extract_symbols units symbolfile in
-    let objcopy_cmdline =
-      sprintf "%s %s %s"
-        Config.binutils_objcopy
-        (String.concat " "
-          (List.map
-            (fun s -> sprintf "--redefine-sym '%s=%s__%s'" s pref s)
-            symbols_to_rename))
-        (Filename.quote objfile) in
-    (* FIXME: what if the command line is too long? *)
-    if Ccomp.command objcopy_cmdline <> 0 then raise(Error Linking_error);
+    let cmdline =
+      Buffer.create max_cmdline_length in
+    let rec call_objcopy = function
+      [] ->
+        Buffer.add_char cmdline ' ';
+        Buffer.add_string cmdline (Filename.quote objfile);
+        if Ccomp.command (Buffer.contents cmdline) <> 0
+        then raise(Error Linking_error)
+    | s :: rem ->
+        if Buffer.length cmdline >= max_cmdline_length then begin
+          Buffer.add_char cmdline ' ';
+          Buffer.add_string cmdline (Filename.quote objfile);
+          if Ccomp.command (Buffer.contents cmdline) <> 0
+          then raise(Error Linking_error);
+          Buffer.reset cmdline;
+          Buffer.add_string cmdline Config.binutils_objcopy
+        end;
+        bprintf cmdline " --redefine-sym '%s=%s__%s'" s pref s;
+        call_objcopy rem in
+    Buffer.add_string cmdline Config.binutils_objcopy;
+    call_objcopy symbols_to_rename;
     remove_file symbolfile;
     symbols_to_rename
   with x ->
