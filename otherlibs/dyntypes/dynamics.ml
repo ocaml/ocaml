@@ -56,13 +56,14 @@ let get_interesting_type env module_ident =
   | None -> assert false
   | Some ty -> ty
 
+(*
 let compare_types env received_type expected_type =
   try let _ = Ctype.subtype env expected_type received_type in true
   with Ctype.Subtype _ -> false
-(*
+*)
 let compare_types env received_type expected_type =
   Ctype.moregeneral env true received_type expected_type
-*)
+
 
 let coerce_internal d expected_type_bytes =
   let (received_type_bytes, v : type_bytes * anything) = Obj.magic (d : dyn) in
@@ -74,15 +75,15 @@ let coerce_internal d expected_type_bytes =
   let env =
     Env.add_module received_ident (Types.Tmty_signature received_sig)
         (Env.add_module expected_ident (Types.Tmty_signature expected_sig)
-            Env.empty)
+            Env.initial)
   in
   let received_type = get_interesting_type env received_ident
   and expected_type = get_interesting_type env expected_ident in
   Format.pp_print_string Format.err_formatter "%% RECEIVED ";
-  Printtyp.type_expr Format.err_formatter received_type;
+  Printtyp.modtype Format.err_formatter (Types.Tmty_signature received_sig);
   Format.pp_force_newline Format.err_formatter ();
   Format.pp_print_string Format.err_formatter "%% EXPECTED ";
-  Printtyp.type_expr Format.err_formatter expected_type;
+  Printtyp.modtype Format.err_formatter (Types.Tmty_signature expected_sig);
   Format.pp_force_newline Format.err_formatter ();
   Format.pp_print_flush Format.err_formatter ();
   flush stderr;
