@@ -243,7 +243,7 @@ int atexit (void (*f) (void))
   return 0;
 
   failed:
-    /* errno = ENOMEM;    est-ce que malloc positionne errno ? */
+    /* errno = ENOMEM;    FIXME: does malloc set errno ? */
     return -1;
 }
 
@@ -265,8 +265,10 @@ int ui_read (int file_desc, char *buf, unsigned int length)
     Caml_working (0);
 
     while (1){
-      char *p = *htext;    /* The Handle is not locked.  Be careful with p. */
+      char *p;
+
       len = WEGetTextLength (we);
+      p = *htext;
       for (i = wintopfrontier; i < len; i++){
         if (p[i] == '\n') goto gotit;
       }
@@ -382,13 +384,14 @@ typedef struct {
   } frames [1];
 } **AnimCursHandle;
 
-static AnimCursHandle acurh;
+static AnimCursHandle acurh = NULL;
 
 pascal void InitCursorCtl (acurHandle newCursors)
 {
 #pragma unused (newCursors)
   long i;
 
+  if (acurh != NULL) return;
   acurh = (AnimCursHandle) GetResource ('acur', 0);
   for (i = 0; i < (*acurh)->nframes; i++){
     (*acurh)->frames[i].h = GetCursor ((*acurh)->frames[i].i.id);
@@ -403,6 +406,7 @@ pascal void InitCursorCtl (acurHandle newCursors)
 /* In O'Caml, counter is always a multiple of 32. */
 pascal void RotateCursor (long counter)
 {
+  if (acurh == NULL) InitCursorCtl (NULL);
   (*acurh)->current += (*acurh)->nframes + (counter >= 0 ? 1 : -1);
   (*acurh)->current %= (*acurh)->nframes;
   GetAndProcessEvents (noWait, 0, 0);

@@ -21,7 +21,7 @@ resource 'vers' (1) {
 #define d development
 #define a alpha
 #define b beta
-  OCAMLVNUM, MACVNUM, STAGE, DEVVNUM,
+  MAJORVNUM, MINORVNUM, STAGE, DEVVNUM,
   0,
   VERSIONSTR,
   "Objective Caml version " VERSIONSTR "\n"

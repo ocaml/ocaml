@@ -290,7 +290,7 @@ void GetAndProcessEvents (WaitEventOption wait, short oldx, short oldy)
   EventRecord evt;
   long dummysleep;
   RgnHandle dummyregion;
-  UInt32 cursleep = wait != noWait ? evtSleep : 0;
+  UInt32 cursleep = (wait == noWait) ? 0 : evtSleep;
   RgnHandle currgn;
   
   if (wait == waitMove){

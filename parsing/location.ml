@@ -96,7 +96,7 @@ open Formatmsg
 let reset () =
   num_loc_lines := 0
 
-let (msg_file, msg_line, msg_chars, msg_to, msg_colon, warn_head) =
+let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
   match Sys.os_type with
   | "MacOS" -> ("File \"", "\"; line ", "; characters ", " to ", "", "### ")
   | _ -> ("File \"", "\", line ", ", characters ", "-", ":", "")
@@ -117,15 +117,17 @@ let print loc =
     print_string msg_chars; print_int (loc.loc_start - linebeg);
     print_string msg_to; print_int (loc.loc_end - linebeg);
     print_string msg_colon;
-    force_newline()
+    force_newline();
+    print_string msg_head;
   end
 
 let print_warning loc w =
  if Warnings.is_active w then begin
   print loc;
-  print_string warn_head;
-  print_string "Warning: "; print_string (Warnings.message w); print_newline();
-  incr num_loc_lines
+  print_string "Warning: ";
+  print_string (Warnings.message w);
+  force_newline();
+  incr num_loc_lines;
  end
 ;;
 

@@ -12,9 +12,8 @@
 
 # $Id$
 
-OCAMLVNUM = {OCAMLMAJOR}{OCAMLMINOR}
-MACVNUM = 0x{MAJOR}{MINOR}
-VERSIONSTR = "¶"{OCAMLMAJOR}.{OCAMLMINOR}/Mac{MAJOR}.{MINOR}{STAGE}{REV}¶""
+VERSIONSTR = ¶
+  "¶"{OCAMLMAJOR}.{OCAMLMINOR}/Mac{MAJOR}.{MINOR}.{BUGFIX}{STAGE}{REV}¶""
 
 XIncludes = -i ::byterun: ¶
             -i ":WASTE:WASTE 1.3 Distribution:WASTE C/C++ Headers:"
@@ -40,8 +39,8 @@ PPCCamlrunLibs = ::byterun:libcamlrun.x ::otherlibs:num:libnums.x
 PPCWELibs = ":WASTE:WASTE 1.3 Distribution:WASTELib.x"
 PPCLibs = {ppccamlrunlibs} {ppcwelibs} {ppcsyslibs}
 
-RezDefs = -d SystemSevenOrLater=1 -d OCAMLVNUM={OCAMLVNUM} ¶
-          -d MACVNUM={MACVNUM} -d STAGE={STAGE} -d DEVVNUM={REV} ¶
+RezDefs = -d SystemSevenOrLater=1 -d MAJORVNUM={MAJOR} ¶
+          -d MINORVNUM=0x{MINOR}{BUGFIX} -d STAGE={STAGE} -d DEVVNUM={REV} ¶
           -d VERSIONSTR={VERSIONSTR}
 
 OBJS = aboutbox.c.o appleevents.c.o clipboard.c.o ¶

@@ -233,8 +233,7 @@
                            minor_gc.h ¶
                            prims.h ¶
                            signals.h ¶
-                           stacks.h ¶
-                           rotatecursor.h
+                           stacks.h
 
 "ints.c.x" Ä  ints.c ¶
                          alloc.h ¶
@@ -445,7 +444,8 @@
                             minor_gc.h ¶
                             roots.h ¶
                             signals.h ¶
-                            sys.h
+                            sys.h ¶
+                            rotatecursor.h
 
 "stacks.c.x" Ä  stacks.c ¶
                            config.h ¶
@@ -771,8 +771,7 @@
                            minor_gc.h ¶
                            prims.h ¶
                            signals.h ¶
-                           stacks.h ¶
-                           rotatecursor.h
+                           stacks.h
 
 "ints.c.o" Ä  ints.c ¶
                          alloc.h ¶
@@ -983,7 +982,8 @@
                             minor_gc.h ¶
                             roots.h ¶
                             signals.h ¶
-                            sys.h
+                            sys.h ¶
+                            rotatecursor.h
 
 "stacks.c.o" Ä  stacks.c ¶
                            config.h ¶

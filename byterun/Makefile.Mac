@@ -24,8 +24,8 @@ Libs = "{libraries}IntEnv.o" ¶
        "{libraries}ToolLibs.o"
 
 PPCC = mrc
-PPCCOptions = -w 35 -sym on # -d DEBUG
-PPCLinkOptions = -d -sym on
+PPCCOptions = -w 35 # -sym on -d DEBUG # beware: "-sym on" => "-opt off"
+PPCLinkOptions = -d # -sym on
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
           "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"

@@ -128,7 +128,7 @@ clean ÄÄ
 # Resources for keyword-coloring for MPW Shell
 
 keywords Ä keywords.r
-    rez keywords.r -o keywords
+    rez -t rsrc -c RSED -o keywords keywords.r
 
 clean ÄÄ
     delete -i keywords

@@ -26,7 +26,7 @@ set -e LIBDIR "{mpw}User Commands:ocaml-lib:"
 set -e HELPFILE "{mpw}OCaml.help"
 
 ### Where to install the application and the standard library
-set -e APPLIDIR "{mpw}::OCaml:distrib:"
+set -e APPLIDIR "{mpw}:OCaml-distrib:"
 
 
 ############# Configuration for the contributed libraries
@@ -42,7 +42,7 @@ set -e OTHERLIBRARIES "num str dynlink graph"
 
 
 ############# Configuration for the native-code compiler
-# (not used)
+# (not used for the moment)
 
 set -e ARCH none
 set -e MODEL ppc
@@ -53,8 +53,9 @@ set -e NATIVECC MrC
 ############# Version numbers (do not change)
 
 set -e OCAMLMAJOR 2
-set -e OCAMLMINOR 04
+set -e OCAMLMINOR 99
 set -e MAJOR 1
 set -e MINOR 0
+set -e BUGFIX 0
 set -e STAGE a
 set -e REV 8
