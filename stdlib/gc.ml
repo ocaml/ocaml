@@ -75,19 +75,22 @@ let allocated_bytes () =
 external finalise : ('a -> unit) -> 'a -> unit = "final_register";;
 
 
-type alarm = {mutable active : bool; f : unit -> unit};;
+type alarm_rec = {active : alarm; f : unit -> unit}
+and alarm = bool ref
+;;
 
-let rec call_alarm a =
-  if a.active then begin
-    finalise call_alarm a;
-    a.f ();
+let rec call_alarm arec =
+  if !(arec.active) then begin
+    finalise call_alarm arec;
+    arec.f ();
   end;
 ;;
 
 let create_alarm f =
-  let a = { active = true; f = f } in
-  finalise call_alarm a;
+  let a = ref true in
+  let arec = { active = ref true; f = f } in
+  finalise call_alarm arec;
   a
 ;;
 
-let delete_alarm a = a.active <- false;;
+let delete_alarm a = a := false;;
