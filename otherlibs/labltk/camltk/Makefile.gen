@@ -41,6 +41,6 @@ cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp #../buil
 
 # All .{ml,mli} files are generated in this directory
 clean:
-	rm -f *.cm* *.ml *.mli *.o *.a
+	rm -f *.cm* *.ml *.mli *.o *.a .depend
 
-#	rm -f modules .depend
+#	rm -f modules

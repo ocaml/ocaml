@@ -27,7 +27,6 @@ installopt: $(LABLTKOBJSX)
 
 clean:
 	$(MAKE) -f Makefile.gen clean
-	-rm -f .depend
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
