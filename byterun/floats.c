@@ -128,7 +128,7 @@ value neg_float(f)              /* ML */
   return copy_double(- Double_val(f));
 }
 
-value fabs_float(f)              /* ML */
+value abs_float(f)              /* ML */
      value f;
 {
   return copy_double(fabs(Double_val(f)));
