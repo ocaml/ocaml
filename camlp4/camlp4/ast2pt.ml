@@ -701,9 +701,7 @@ and sig_item s l =
   | SgInc loc mt -> [mksig loc (Psig_include (module_type mt)) :: l]
   | SgMod loc n mt -> [mksig loc (Psig_module n (module_type mt)) :: l]
   | SgRecMod loc nmts ->
-      List.fold_right 
-        (fun (n, mt) l -> [mksig loc (Psig_module n (module_type mt)) :: l])
-        nmts l
+      [mksig loc (Psig_recmodule (List.map (fun (n,mt) -> (n, module_type mt)) nmts)) :: l]
   | SgMty loc n mt ->
       let si =
         match mt with
