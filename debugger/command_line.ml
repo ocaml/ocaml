@@ -1058,3 +1058,5 @@ It can be either :
      { info_name = "events";
        info_action = info_events ppf;
        info_help = "list events in MODULE (default is current module)." }]
+
+let _ = init std_formatter
