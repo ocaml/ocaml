@@ -27,12 +27,6 @@ let rec split_list n l =
     | a::l -> let (l1, l2) = split_list (n-1) l in (a::l1, l2)
   end
 
-let rec uncurry_fun = function
-    Lfunction(param, body) ->
-      let (params, final_body) = uncurry_fun body in
-      (param :: params, final_body)
-  | lam -> ([], lam)
-
 let rec build_closure_env env_param pos = function
     [] -> Tbl.empty
   | id :: rem ->
@@ -101,7 +95,7 @@ let rec close fenv cenv = function
       (close_var cenv id, approx_var fenv id)
   | Lconst cst ->
       (Uconst cst, Value_unknown)
-  | Lfunction(param, body) as funct ->
+  | Lfunction(params, body) as funct ->
       close_one_function fenv cenv (Ident.new "fun") funct
   | Lapply(funct, args) ->
       let nargs = List.length args in
@@ -231,7 +225,7 @@ and close_list fenv cenv = function
       ulam :: close_list fenv cenv rem
 
 and close_named fenv cenv id = function
-    Lfunction(param, body) as funct ->
+    Lfunction(params, body) as funct ->
       close_one_function fenv cenv id funct
   | lam ->
       close fenv cenv lam
@@ -242,21 +236,21 @@ and close_functions fenv cenv fun_defs =
   (* Determine the free variables of the functions *)
   let fv =
     IdentSet.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
-  (* Uncurry the definitions and build their fundesc *)
-  (* Initially all functions are assumed not to need their environment
+  (* Build the function descriptors for the functions.
+     Initially all functions are assumed not to need their environment
      parameter. *)
   let uncurried_defs =
     List.map
-      (fun (id, def) ->
-        let label =
-          Compilenv.current_unit_name() ^ "_" ^ Ident.unique_name id in
-        let (params, body) = uncurry_fun def in
-        let fundesc =
-          {fun_label = Compilenv.current_unit_name() ^ "_" ^
-                       Ident.unique_name id;
-           fun_arity = List.length params;
-           fun_closed = true } in
-        (id, params, body, fundesc))
+      (function
+          (id, (Lfunction(params, body) as def)) ->
+            let label =
+              Compilenv.current_unit_name() ^ "_" ^ Ident.unique_name id in
+            let fundesc =
+              {fun_label = label;
+               fun_arity = List.length params;
+               fun_closed = true } in
+            (id, params, body, fundesc)
+        | (_, _) -> fatal_error "Closure.close_functions")
       fun_defs in
   (* Build an approximate fenv for compiling the functions *)
   let fenv_rec =

@@ -166,25 +166,6 @@ let emit_call_gc gc =
   `{emit_label gc.gc_frame}:	bsr	caml_call_gc\n`;
   `	br	{emit_label gc.gc_return_lbl}\n`
 
-(* Return the label occurring most frequently in an array of labels *)
-
-let most_frequent_element v =
-  let freq = Array.new (Array.length v) 0 in
-  for i = 0 to Array.length v - 1 do
-    try
-      for j = 0 to i - 1 do
-        if v.(i) = v.(j) then (freq.(j) <- freq.(j) + 1; raise Exit)
-      done;
-      freq.(i) <- 1
-    with Exit ->
-      ()
-  done;
-  let max_freq = ref 1 and max_freq_pos = ref 0 in
-  for i = 1 to Array.length v - 1 do
-    if freq.(i) > !max_freq then (max_freq := freq.(i); max_freq_pos := i)
-  done;
-  v.(!max_freq_pos)
-
 (* Determine if $gp is used in the function *)
 
 let rec instr_uses_gp i =
@@ -201,7 +182,6 @@ let rec instr_uses_gp i =
   | Lop(Iintop_imm((Idiv | Imod), _)) -> true (* a function call *)
   | Lop(Iintop_imm(_, n)) ->
       if n < -0x8000000 or n > 0x7FFFFFFF then true else instr_uses_gp i.next
-  | Lswitch(jumptbl) -> true
   | _ ->
       instr_uses_gp i.next
 
@@ -518,20 +498,13 @@ let emit_instr i =
             end
         end
     | Lswitch jumptbl ->
-        let lbl_jumptbl = new_label() in
-        `	lda     $25, {emit_label lbl_jumptbl}\n`;
-        `	s4addq	{emit_reg i.arg.(0)}, $25, $25\n`;
-        `	ldl	$25, 0($25)\n`;
-        `	addq	$25, $gp, $25\n`;
-        let likely_target = most_frequent_element jumptbl in
-        liveregs i live_25;
-        `	jmp	($25), {emit_label likely_target}\n`;
-        `	.rdata\n`;
-        `{emit_label lbl_jumptbl}:\n`;
+        let lbl_jump = new_label() in
+        `	br	$25, {emit_label lbl_jump}\n`;
         for i = 0 to Array.length jumptbl - 1 do
-          `	.gprel32	{emit_label jumptbl.(i)}\n`
+          `	br	{emit_label jumptbl.(i)}\n`
         done;
-        `	.text\n`
+        `{emit_label lbl_jump}:	s4addq	{emit_reg i.arg.(0)}, $25, $25\n`;
+        `	jmp	($25)\n`
     | Lsetuptrap lbl ->
         `	br	$25, {emit_label lbl}\n`;
         if !uses_gp then
