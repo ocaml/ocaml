@@ -72,9 +72,11 @@ val concat : sep:string -> string list -> string
            inserting the separator string [sep] between each. *)
 
 val escaped: string -> string
-        (* Return a copy of the argument, with special characters represented
-           by escape sequences, following the lexical conventions of
-           Objective Caml. *)
+        (* Return a copy of the argument, with special characters
+           represented by escape sequences, following the lexical
+           conventions of Objective Caml.  If there is no special
+           character in the argument, return the original string itself,
+           not a copy. *)
 
 val index: string -> char -> int
         (* [String.index s c] returns the position of the leftmost
