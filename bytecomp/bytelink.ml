@@ -129,6 +129,7 @@ let scan_file obj_name tolink =
       seek_in ic pos_toc;
       let toc = (input_value ic : library) in
       close_in ic;
+      add_ccobjs toc;
       let required =
         List.fold_right
           (fun compunit reqd ->
@@ -142,7 +143,6 @@ let scan_file obj_name tolink =
             end else
               reqd)
           toc.lib_units [] in
-      if required <> [] then add_ccobjs toc;
       Link_archive(file_name, required) :: tolink
     end
     else raise(Error(Not_an_object_file file_name))
