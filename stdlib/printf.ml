@@ -108,8 +108,8 @@ let sub_format conv fmt i =
 
 (* Returns a string that summarizes the typing information that a given
    format string contains.
-   It also check the well-formedness of the string format.
-   For instance [format_type "A number %d\n"] is "%i". *)
+   It also checks the well-formedness of the string format.
+   For instance, [format_type "A number %d\n"] is "%i". *)
 let summarize_format fmt =
   let len = String.length fmt in
   let b = Buffer.create len in
