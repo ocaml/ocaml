@@ -47,7 +47,7 @@ let parse_filter s =
       ~pat:~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$" ~templ:"" in
   (* replace ^/hoge/../ by / *)
   let s = global_replace ~pat:~!"^\(/\.\.\)+/" ~templ:"/" s in
-  if string_match s ~pat:~!"^\([^\*?[]*/\)\(.*\)" ~pos:0 then 
+  if string_match s ~pat:~!"^\([^\*?[]*[/:]\)\(.*\)" ~pos:0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in
@@ -112,10 +112,11 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
 
   let configure ~filter =
     let filter =
-      if string_match ~pat:~!"^/.*" filter ~pos:0
-      then filter
-      else !current_dir ^ "/" ^ filter
+      if Filename.is_relative filter
+      then !current_dir ^ "/" ^ filter
+      else filter
     in
+    prerr_endline filter;
     let dir, pattern = parse_filter filter in
     let dir = if !load_in_path & usepath then "" else
               (current_dir := Filename.dirname dir; dir)
@@ -162,14 +163,18 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       if !load_in_path & usepath then
         List.fold_right l ~init:[] ~f:
         begin fun name acc ->
-          if name <> "" & name.[0] = '/' then name :: acc else
-          try search_in_path ~name :: acc with Not_found -> acc
+          if not (Filename.is_implicit name) then
+            if Filename.is_relative name
+            then (!current_dir ^ "/" ^ name) :: acc
+            else name :: acc
+          else try search_in_path ~name :: acc with Not_found -> acc
         end
       else
         List.map l ~f:
         begin fun x ->
-          if x <> "" & x.[0] = '/' then x
-          else !current_dir ^ "/" ^ x
+          if Filename.is_relative x
+          then !current_dir ^ "/" ^ x
+          else x
         end
     in
     if sync then 
