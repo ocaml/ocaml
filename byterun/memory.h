@@ -134,14 +134,14 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 
 #define CAMLparam5(x, y, z, t, u) \
   CAMLparam0 (); \
-  CAMLxparam4 (x, y, z, t, u)
+  CAMLxparam5 (x, y, z, t, u)
 
 #define CAMLxparam1(x) \
   caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
-    (local_roots = &caml__roots##x), \
+    (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables [0] = &x), \
@@ -152,7 +152,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
-    (local_roots = &caml__roots##x), \
+    (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 2), \
     (caml__roots_##x.tables [0] = &x), \
@@ -164,7 +164,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
-    (local_roots = &caml__roots##x), \
+    (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 3), \
     (caml__roots_##x.tables [0] = &x), \
@@ -177,7 +177,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
-    (local_roots = &caml__roots##x), \
+    (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 4), \
     (caml__roots_##x.tables [0] = &x), \
@@ -191,7 +191,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
   void *caml__dummy_##x = ( \
     caml__frame, \
     (caml__roots_##x.next = local_roots), \
-    (local_roots = &caml__roots##x), \
+    (local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 5), \
     (caml__roots_##x.tables [0] = &x), \
@@ -202,40 +202,40 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
     NULL)
 
 #define CAMLlocal1(x) \
-  value x = Val_unit; \
+  value x = 0; \
   CAMLxparam1 (x)
 
 #define CAMLlocal2(x, y) \
-  value x = Val_unit, y = Val_unit; \
-  CAMLxparam1 (x, y)
+  value x = 0, y = 0; \
+  CAMLxparam2 (x, y)
 
 #define CAMLlocal3(x, y, z) \
-  value x = Val_unit, y = Val_unit, z = Val_unit; \
-  CAMLxparam1 (x, y, z)
+  value x = 0, y = 0, z = 0; \
+  CAMLxparam3 (x, y, z)
 
 #define CAMLlocal4(x, y, z, t) \
-  value x = Val_unit, y = Val_unit, z = Val_unit, t = Val_unit; \
-  CAMLxparam1 (x, y, z, t)
+  value x = 0, y = 0, z = 0, t = 0; \
+  CAMLxparam4 (x, y, z, t)
 
 #define CAMLlocal5(x, y, z, t, u) \
-  value x = Val_unit, y = Val_unit, z = Val_unit, t = Val_unit, u = Val_unit; \
-  CAMLxparam1 (x, y, z, t, u)
+  value x = 0, y = 0, z = 0, t = 0, u = 0; \
+  CAMLxparam5 (x, y, z, t, u)
 
 #define CAMLlocalN(x, size) \
-  value x [(size)] = { NULL }; \
+  value x [(size)] = { 0 /* , 0, 0, ... */ }; \
   caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
   caml_frame, \
   (caml_roots_##x.next = local_roots), \
-  (local_roots = &caml__roots##x), \
+  (local_roots = &caml__roots_##x), \
   (caml__roots_##x.nitems = (size)), \
   (caml__roots_##x.ntables = 1), \
   (caml__roots_##x.tables [0] = &(x [0])), \
   NULL)
 
-#define CAMLreturn(x) \
+#define CAMLreturn /*argument*/\
   local_roots = caml__frame; \
-  return (x)
+  return /*argument*/
 
 /* convenience macro */
 #define Store_field(block, offset, val) modify (&Field (block, offset), val)
