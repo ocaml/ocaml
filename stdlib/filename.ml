@@ -43,34 +43,50 @@ let concat =
   | "MacOS" -> mac_concat
   | _ -> invalid_arg "Filename.concat: unknown system"
 
-let unix_is_absolute n =
-     (String.length n >= 1 && String.sub n 0 1 = "/")
-  || (String.length n >= 2 && String.sub n 0 2 = "./")
-  || (String.length n >= 3 && String.sub n 0 3 = "../")
+let unix_is_relative n = String.length n < 1 || n.[0] <> '/';;
 
-let wnt_is_absolute n =
-     (String.length n >= 1 &&
-       (let s = String.sub n 0 1 in s = "/" || s = "\\"))
-  || (String.length n >= 2 &&
-       (let s = String.sub n 0 2 in s = "./" || s = ".\\"))
-  || (String.length n >= 3 &&
-       (let s = String.sub n 0 3 in s = "../" || s = "..\\"))
-  || (String.length n >= 2 && String.get n 1 = ':')
+let unix_is_implicit n =
+  unix_is_relative n
+  && (String.length n < 2 || String.sub n 0 2 <> "./")
+  && (String.length n < 3 || String.sub n 0 3 <> "../")
+;;
 
-let mac_is_absolute n =
+let wnt_is_relative n =
+  (String.length n < 1 || n.[0] <> '/')
+  && (String.length n < 1 || n.[0] <> '\\')
+  && (String.length n < 2 || n.[1] <> ':')
+;;
+
+let wnt_is_implicit n =
+  wnt_is_relative n
+  && (String.length n < 2 || String.sub n 0 2 <> "./")
+  && (String.length n < 2 || String.sub n 0 2 <> ".\\")
+  && (String.length n < 3 || String.sub n 0 3 <> "../")
+  && (String.length n < 3 || String.sub n 0 3 <> "..\\")
+;;
+
+let contains_colon n =
   try
     for i = 0 to String.length n - 1 do
       if n.[i] = ':' then raise Exit
     done;
     false
   with Exit -> true
+;;
 
-let is_absolute =
+let mac_is_relative n =
+  (String.length n >= 1 && n.[0] = ':')
+  || not (contains_colon n)
+;;
+
+let mac_is_implicit n = not (contains_colon n);;
+
+let (is_relative, is_implicit) =
   match Sys.os_type with
-  | "Unix" -> unix_is_absolute
-  | "Win32" -> wnt_is_absolute
-  | "MacOS" -> mac_is_absolute
-  | _ -> invalid_arg "Filename.is_absolute: unknown system"
+  | "Unix" -> (unix_is_relative, unix_is_implicit)
+  | "Win32" -> (wnt_is_relative, wnt_is_implicit)
+  | "MacOS" -> (mac_is_relative, mac_is_implicit)
+  | _ -> invalid_arg "Filename.is_relative: unknown system"
 
 let unix_check_suffix name suff =
  String.length name >= String.length suff &&
