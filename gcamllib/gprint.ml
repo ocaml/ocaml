@@ -29,7 +29,6 @@ let printers =
 generic val print : {'a} => formatter -> 'a -> unit =
   let rec print =
     fun ty ppf v ->
-      Rtype.print ppf ty;
       match ty.desc with
       | Tvar -> fprintf ppf "<poly>"
       | Tarrow (_,_,_) -> fprintf ppf "<fun>"

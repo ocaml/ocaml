@@ -11,13 +11,12 @@ type error =
     Unsupported 
   | Cannot_have_full_path 
   | Multiply_bound_type_variable
+
 exception Error of Location.t * error
 
-(* rtype type *)
-
+(* type of rtype must be got dynamically, 
+   since Rtype is not available in the compilation of stdlib *)
 let get_rtype_type () =
-  (* must be got dynamically, since Rtype is not available in the compilation
-     of stdlib *)
   let rtype_path = 
     try
       fst (Env.lookup_type (Ldot (Lident "Rtype", "type_expr")) Env.empty)
@@ -27,12 +26,12 @@ let get_rtype_type () =
   in
   Btype.newgenty (Tconstr (rtype_path, [], ref Mnil))
 
+(* type declaration of rtype *)
 let get_rtype_type_declaration () =
-  (* must be got dynamically, since Rtype is not available in the compilation
-     of stdlib *)
   let rtypedecl_path = 
     try
-      fst (Env.lookup_type (Ldot (Lident "Rtype", "type_declaration")) Env.empty)
+      fst (Env.lookup_type (Ldot (Lident "Rtype", "type_declaration")) 
+	     Env.empty)
     with
     | Not_found ->
 	Misc.fatal_error ("Primitive type Rtype.type_declaration not found.")
@@ -41,7 +40,6 @@ let get_rtype_type_declaration () =
 
 (* Longidents *)
 
-let some = Lident "Some"
 let cstr name = Ldot (Lident "Rtype", name)
 let cstr_path name = Ldot (Ldot (Lident "Rtype", "Path"), name)
 
@@ -71,7 +69,10 @@ let rec mktailpat = function
 
 let pattern_of_longident trans loc lid = 
   (* first of all, we have to translate the longident to a path! *)
-  let path = trans lid in
+  let path = 
+    try trans lid with Not_found ->
+      raise (Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
+  in
   let rec pattern_of_path = function
     | Pident id ->
 	make_pat_construct loc (cstr_path "Pident")
@@ -88,7 +89,39 @@ let pattern_of_longident trans loc lid =
   in
   pattern_of_path path
       
-let pattern_of_type transl_longident t =
+(* find non linear pattern type variables *)
+let non_linear_vars t =
+  let tbl = Hashtbl.create 17 in
+  let rec scan_rec t =
+    match t.ptyp_desc with
+    | Ptyp_lident _ -> ()
+    | Ptyp_var n -> 
+	begin
+	  let cntr = 
+	    try Hashtbl.find tbl n with 
+	    | Not_found ->
+		let cntr = ref 0 in
+		Hashtbl.add tbl n cntr;
+		cntr
+	  in
+	  incr cntr
+	end
+    | Ptyp_arrow (_,t1,t2) -> scan_rec t1; scan_rec t2
+    | Ptyp_tuple ts -> List.iter scan_rec ts
+    | Ptyp_constr (_,ts) -> List.iter scan_rec ts
+    | _ -> raise (Error (t.ptyp_loc, Unsupported))
+  in
+  scan_rec t;
+  Hashtbl.fold (fun n cntr st -> if !cntr > 1 then n :: st else st) tbl []
+
+let get_pattern_id =
+  let cntr = ref 0 in
+  fun () -> incr cntr; !cntr
+
+let pattern_of_type non_linear transl_longident t =
+  let pattern_id = get_pattern_id () in
+  let non_linear_tvars = non_linear_vars t in
+  let alias_tbl = Hashtbl.create 17 in
   let tvars = ref [] in
   let rec pattern_of_type t =
     match t.ptyp_desc with
@@ -98,14 +131,30 @@ let pattern_of_type transl_longident t =
         | _ -> raise (Error (t.ptyp_loc, Cannot_have_full_path))
         end
     | _ ->
-        make_pat t.ptyp_loc 
- 	 (Ppat_record [cstr "desc", pattern_of_desc t.ptyp_loc t.ptyp_desc])
+        let pat = 
+	  make_pat t.ptyp_loc 
+ 	    (Ppat_record [cstr "desc", pattern_of_desc t.ptyp_loc t.ptyp_desc])
+	in
+	match t.ptyp_desc with
+	| Ptyp_var n when non_linear && List.mem n non_linear_tvars ->
+prerr_endline ("NONLINEAR VAR " ^ n);
+	    (* ({desc= Ptyp_var n} as nx) *)
+	    let cntr, aliases = 
+	      try Hashtbl.find alias_tbl n with
+	      | Not_found ->
+		  let info = ref 0, ref [] in
+		  Hashtbl.add alias_tbl n info;
+		  info
+	    in
+	    incr cntr;
+	    let name = Printf.sprintf "'%s*%d*%d" n !cntr pattern_id in
+	    aliases := name :: !aliases;
+	    make_pat t.ptyp_loc (Ppat_alias (pat, name))
+	| _ -> pat
       
   and pattern_of_desc loc = function
     | Ptyp_var n -> 
-	if List.mem n !tvars then
-	  (* as normal pattern variables, a type var cannot appear more than 
-	     once in a pattern *)
+	if not non_linear && List.mem n !tvars then 
 	  raise (Error (loc, Multiply_bound_type_variable))
 	else begin
 	  tvars := n :: !tvars;
@@ -128,10 +177,13 @@ let pattern_of_type transl_longident t =
     | Ptyp_lident _ -> assert false
     | _ -> raise (Error (loc, Unsupported))
   in
-  pattern_of_type t
-
+  let pat = pattern_of_type t in
+  let aliases = 
+    Hashtbl.fold (fun n (cntr, aliases) st -> !aliases :: st) alias_tbl []
+  in
+  pat, aliases
     
-(**
+(****
 (* Value *)
 
 let make_exp loc desc = { pexp_desc= desc; pexp_loc= loc }
@@ -338,7 +390,7 @@ let to_core_types vartbl typs =
   in
   let core_types = List.map to_core typs in
   core_types, !path_lid_tbl, !type_abstractions
-***)
+****)
 
 (* rtype -> type_expr *)
 

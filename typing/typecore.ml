@@ -338,159 +338,165 @@ let build_or_pat env loc lid =
           pat pats in
       rp { r with pat_loc = loc }
 
-let rec type_pat env sp =
-  match sp.ppat_desc with
-    Ppat_any ->
-      rp {
-        pat_desc = Tpat_any;
-        pat_loc = sp.ppat_loc;
-        pat_type = newvar();
-        pat_env = env }
-  | Ppat_var name ->
-      let ty = newvar() in
-      let id = enter_variable sp.ppat_loc name ty in
-      rp {
-        pat_desc = Tpat_var id;
-        pat_loc = sp.ppat_loc;
-        pat_type = ty;
-        pat_env = env }
-  | Ppat_alias(sq, name) ->
-      let q = type_pat env sq in
-      begin_def ();
-      let ty_var = build_as_type env q in
-      end_def ();
-      generalize ty_var;
-      let id = enter_variable sp.ppat_loc name ty_var in
-      rp {
-        pat_desc = Tpat_alias(q, id);
-        pat_loc = sp.ppat_loc;
-        pat_type = q.pat_type;
-        pat_env = env }
-  | Ppat_constant cst ->
-      rp {
-        pat_desc = Tpat_constant cst;
-        pat_loc = sp.ppat_loc;
-        pat_type = type_constant cst;
-        pat_env = env }
-  | Ppat_tuple spl ->
-      let pl = List.map (type_pat env) spl in
-      rp {
-        pat_desc = Tpat_tuple pl;
-        pat_loc = sp.ppat_loc;
-        pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
-        pat_env = env }
-  | Ppat_construct(lid, sarg, explicit_arity) ->
-      let constr =
-        try
-          Env.lookup_constructor lid env
-        with Not_found ->
-          raise(Error(sp.ppat_loc, Unbound_constructor lid)) in
-      let sargs =
-        match sarg with
-          None -> []
-        | Some {ppat_desc = Ppat_tuple spl} when explicit_arity -> spl
-        | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
-        | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity > 1 ->
-            replicate_list sp constr.cstr_arity
-        | Some sp -> [sp] in
-      if List.length sargs <> constr.cstr_arity then
-        raise(Error(sp.ppat_loc, Constructor_arity_mismatch(lid,
-                                     constr.cstr_arity, List.length sargs)));
-      let args = List.map (type_pat env) sargs in
-      let (ty_args, ty_res) = instance_constructor constr in
-      List.iter2 (unify_pat env) args ty_args;
-      rp {
-        pat_desc = Tpat_construct(constr, args);
-        pat_loc = sp.ppat_loc;
-        pat_type = ty_res;
-        pat_env = env }
-  | Ppat_variant(l, sarg) ->
-      let arg = may_map (type_pat env) sarg in
-      let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
-      let row = { row_fields =
-                    [l, Reither(arg = None, arg_type, true, ref None)];
-                  row_bound = arg_type;
-                  row_closed = false;
-                  row_more = newvar ();
-                  row_fixed = false;
-                  row_name = None } in
-      rp {
-        pat_desc = Tpat_variant(l, arg, row);
-        pat_loc = sp.ppat_loc;
-        pat_type = newty (Tvariant row);
-        pat_env = env }
-  | Ppat_record lid_sp_list ->
-      let rec check_duplicates = function
-        [] -> ()
-      | (lid, sarg) :: remainder ->
-          if List.mem_assoc lid remainder
-          then raise(Error(sp.ppat_loc, Label_multiply_defined lid))
-          else check_duplicates remainder in
-      check_duplicates lid_sp_list;
-      let ty = newvar() in
-      let type_label_pat (lid, sarg) =
-        let label =
+let type_pat ?(nonlinear=false) env sp =
+  let implicit_whens = ref [] in
+  let rec type_pat0 env sp =
+    match sp.ppat_desc with
+      Ppat_any ->
+        rp {
+          pat_desc = Tpat_any;
+          pat_loc = sp.ppat_loc;
+          pat_type = newvar();
+          pat_env = env }
+    | Ppat_var name ->
+        let ty = newvar() in
+        let id = enter_variable sp.ppat_loc name ty in
+        rp {
+          pat_desc = Tpat_var id;
+          pat_loc = sp.ppat_loc;
+          pat_type = ty;
+          pat_env = env }
+    | Ppat_alias(sq, name) ->
+        let q = type_pat0 env sq in
+        begin_def ();
+        let ty_var = build_as_type env q in
+        end_def ();
+        generalize ty_var;
+        let id = enter_variable sp.ppat_loc name ty_var in
+        rp {
+          pat_desc = Tpat_alias(q, id);
+          pat_loc = sp.ppat_loc;
+          pat_type = q.pat_type;
+          pat_env = env }
+    | Ppat_constant cst ->
+        rp {
+          pat_desc = Tpat_constant cst;
+          pat_loc = sp.ppat_loc;
+          pat_type = type_constant cst;
+          pat_env = env }
+    | Ppat_tuple spl ->
+        let pl = List.map (type_pat0 env) spl in
+        rp {
+          pat_desc = Tpat_tuple pl;
+          pat_loc = sp.ppat_loc;
+          pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
+          pat_env = env }
+    | Ppat_construct(lid, sarg, explicit_arity) ->
+        let constr =
           try
-            Env.lookup_label lid env
+            Env.lookup_constructor lid env
           with Not_found ->
-            raise(Error(sp.ppat_loc, Unbound_label lid)) in
-        let (_, ty_arg, ty_res) = instance_label false label in
-        begin try
-          unify env ty_res ty
-        with Unify trace ->
-          raise(Error(sp.ppat_loc, Label_mismatch(lid, trace)))
-        end;
-        let arg = type_pat env sarg in
-        unify_pat env arg ty_arg;
-        (label, arg)
-      in
-      rp {
-        pat_desc = Tpat_record(List.map type_label_pat lid_sp_list);
-        pat_loc = sp.ppat_loc;
-        pat_type = ty;
-        pat_env = env }
-  | Ppat_array spl ->
-      let pl = List.map (type_pat env) spl in
-      let ty_elt = newvar() in
-      List.iter (fun p -> unify_pat env p ty_elt) pl;
-      rp {
-        pat_desc = Tpat_array pl;
-        pat_loc = sp.ppat_loc;
-        pat_type = instance (Predef.type_array ty_elt);
-        pat_env = env }
-  | Ppat_or(sp1, sp2) ->
-      let initial_pattern_variables = !pattern_variables in
-      let p1 = type_pat env sp1 in
-      let p1_variables = !pattern_variables in
-      pattern_variables := initial_pattern_variables ;
-      let p2 = type_pat env sp2 in
-      let p2_variables = !pattern_variables in
-      unify_pat env p2 p1.pat_type;
-      let alpha_env =
-        enter_orpat_variables sp.ppat_loc env p1_variables p2_variables in
-      pattern_variables := p1_variables ;
-      rp {
-        pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
-        pat_loc = sp.ppat_loc;
-        pat_type = p1.pat_type;
-        pat_env = env }
-  | Ppat_constraint(sp, sty) ->
-      let p = type_pat env sp in
-      let ty, force = Typetexp.transl_simple_type_delayed env sty in
-      unify_pat env p ty;
-      pattern_force := force :: !pattern_force;
-      p
-  | Ppat_type lid ->
-      build_or_pat env sp.ppat_loc lid
-  | Ppat_rtype sty ->
-      (* translate pattern *)
-      let sp = 
-	Typertype.pattern_of_type 
-	  (fun lid -> fst (Env.lookup_type lid env)) sty
-      in
-      let pat = type_pat env sp in
-      unify_pat env pat (Typertype.get_rtype_type ());
-      pat
+            raise(Error(sp.ppat_loc, Unbound_constructor lid)) in
+        let sargs =
+          match sarg with
+            None -> []
+          | Some {ppat_desc = Ppat_tuple spl} when explicit_arity -> spl
+          | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
+          | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity > 1 ->
+              replicate_list sp constr.cstr_arity
+          | Some sp -> [sp] in
+        if List.length sargs <> constr.cstr_arity then
+          raise(Error(sp.ppat_loc, Constructor_arity_mismatch(lid,
+                                       constr.cstr_arity, List.length sargs)));
+        let args = List.map (type_pat0 env) sargs in
+        let (ty_args, ty_res) = instance_constructor constr in
+        List.iter2 (unify_pat env) args ty_args;
+        rp {
+          pat_desc = Tpat_construct(constr, args);
+          pat_loc = sp.ppat_loc;
+          pat_type = ty_res;
+          pat_env = env }
+    | Ppat_variant(l, sarg) ->
+        let arg = may_map (type_pat0 env) sarg in
+        let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
+        let row = { row_fields =
+                      [l, Reither(arg = None, arg_type, true, ref None)];
+                    row_bound = arg_type;
+                    row_closed = false;
+                    row_more = newvar ();
+                    row_fixed = false;
+                    row_name = None } in
+        rp {
+          pat_desc = Tpat_variant(l, arg, row);
+          pat_loc = sp.ppat_loc;
+          pat_type = newty (Tvariant row);
+          pat_env = env }
+    | Ppat_record lid_sp_list ->
+        let rec check_duplicates = function
+          [] -> ()
+        | (lid, sarg) :: remainder ->
+            if List.mem_assoc lid remainder
+            then raise(Error(sp.ppat_loc, Label_multiply_defined lid))
+            else check_duplicates remainder in
+        check_duplicates lid_sp_list;
+        let ty = newvar() in
+        let type_label_pat (lid, sarg) =
+          let label =
+            try
+              Env.lookup_label lid env
+            with Not_found ->
+              raise(Error(sp.ppat_loc, Unbound_label lid)) in
+          let (_, ty_arg, ty_res) = instance_label false label in
+          begin try
+            unify env ty_res ty
+          with Unify trace ->
+            raise(Error(sp.ppat_loc, Label_mismatch(lid, trace)))
+          end;
+          let arg = type_pat0 env sarg in
+          unify_pat env arg ty_arg;
+          (label, arg)
+        in
+        rp {
+          pat_desc = Tpat_record(List.map type_label_pat lid_sp_list);
+          pat_loc = sp.ppat_loc;
+          pat_type = ty;
+          pat_env = env }
+    | Ppat_array spl ->
+        let pl = List.map (type_pat0 env) spl in
+        let ty_elt = newvar() in
+        List.iter (fun p -> unify_pat env p ty_elt) pl;
+        rp {
+          pat_desc = Tpat_array pl;
+          pat_loc = sp.ppat_loc;
+          pat_type = instance (Predef.type_array ty_elt);
+          pat_env = env }
+    | Ppat_or(sp1, sp2) ->
+        let initial_pattern_variables = !pattern_variables in
+        let p1 = type_pat0 env sp1 in
+        let p1_variables = !pattern_variables in
+        pattern_variables := initial_pattern_variables ;
+        let p2 = type_pat0 env sp2 in
+        let p2_variables = !pattern_variables in
+        unify_pat env p2 p1.pat_type;
+        let alpha_env =
+          enter_orpat_variables sp.ppat_loc env p1_variables p2_variables in
+        pattern_variables := p1_variables ;
+        rp {
+          pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
+          pat_loc = sp.ppat_loc;
+          pat_type = p1.pat_type;
+          pat_env = env }
+    | Ppat_constraint(sp, sty) ->
+        let p = type_pat0 env sp in
+        let ty, force = Typetexp.transl_simple_type_delayed env sty in
+        unify_pat env p ty;
+        pattern_force := force :: !pattern_force;
+        p
+    | Ppat_type lid ->
+        build_or_pat env sp.ppat_loc lid
+    | Ppat_rtype sty ->
+        (* translate pattern *)
+        let sp, eqs = 
+	  Typertype.pattern_of_type nonlinear
+	    (fun lid -> fst (Env.lookup_type lid env)) sty 
+	in
+        let pat = type_pat0 env sp in
+        unify_pat env pat (Typertype.get_rtype_type ());
+	implicit_whens := eqs @ !implicit_whens;
+        pat
+  in
+  let pat = type_pat0 env sp in
+  pat, !implicit_whens
 
 let get_ref r =
   let v = !r in r := []; v
@@ -505,19 +511,26 @@ let add_pattern_variables env =
 
 let type_pattern env spat =
   reset_pattern ();
-  let pat = type_pat env spat in
+  let pat, impwhen = type_pat ~nonlinear: true env spat in
   let new_env = add_pattern_variables env in
-  (pat, new_env, get_ref pattern_force)
+  (pat, new_env, get_ref pattern_force, impwhen)
 
 let type_pattern_list env spatl =
   reset_pattern ();
-  let patl = List.map (type_pat env) spatl in
-  let new_env = add_pattern_variables env in
+  let patl = 
+    let patimpwhenl = List.map (type_pat env) spatl in
+    List.map (function 
+      | pat,[] -> pat
+      | _, _ -> fatal_error "noempty impwhen") patimpwhenl
+  in
+  let new_env = add_pattern_variables env 
+  in
   (patl, new_env, get_ref pattern_force)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern ();
-  let pat = type_pat val_env spat in
+  let pat, impwhen = type_pat val_env spat in
+  if impwhen <> [] then fatal_error "nonempty impwhen";
   if has_variants pat then begin
     Parmatch.pressure_variants val_env [pat];
     iter_pattern finalize_variant pat
@@ -545,7 +558,8 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
                        "selfpat-" ^ cl_num))
   in
   reset_pattern ();
-  let pat = type_pat val_env spat in
+  let pat, impwhen = type_pat val_env spat in
+  if impwhen <> [] then fatal_error "nonempty impwhen";
   List.iter (fun f -> f()) (get_ref pattern_force);
   let meths = ref Meths.empty in
   let vars = ref Vars.empty in
@@ -1880,22 +1894,27 @@ and type_statement env kset sexp =
 and type_cases ?in_function env kset ty_arg ty_res partial_loc caselist =
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
-  let pat_env_list =
-    List.map
-      (fun (spat, sexp) ->
-        if !Clflags.principal then begin_def ();
-        let (pat, ext_env, force) = type_pattern env spat in
-        pattern_force := force @ !pattern_force;
-        let pat =
-          if !Clflags.principal then begin
-            end_def ();
-            iter_pattern (fun {pat_type=t} -> generalize_structure t) pat;
-            { pat with pat_type = instance pat.pat_type }
-          end else pat
-        in
-        unify_pat env pat ty_arg';
-        (pat, ext_env))
-      caselist in
+  let pat_env_list, impwhen_list =
+    let pat_env_impwhen_list =
+      List.map
+	(fun (spat, sexp) ->
+          if !Clflags.principal then begin_def ();
+          let (pat, ext_env, force, impwhen) = type_pattern env spat in
+          pattern_force := force @ !pattern_force;
+          let pat =
+            if !Clflags.principal then begin
+              end_def ();
+              iter_pattern (fun {pat_type=t} -> generalize_structure t) pat;
+              { pat with pat_type = instance pat.pat_type }
+            end else pat
+          in
+          unify_pat env pat ty_arg';
+          (pat, ext_env, impwhen))
+	caselist 
+    in
+    List.map (fun (p,e,_) -> (p,e)) pat_env_impwhen_list,
+    List.map (fun (_,_,impwhen) -> impwhen) pat_env_impwhen_list
+  in
   (* Check for polymorphic variants to close *)
   let patl = List.map fst pat_env_list in
   if List.exists has_variants patl then begin
@@ -1910,11 +1929,47 @@ and type_cases ?in_function env kset ty_arg ty_res partial_loc caselist =
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
     List.map2
-      (fun (pat, ext_env) (spat, sexp) ->
+      (fun (pat, ext_env) ((spat, sexp), impwhen) ->
+	  let make_op_app op e1 e2 =
+	    { pexp_desc= Pexp_apply (op, ["", e1; "", e2]);
+	      pexp_loc= Location.none }
+	  in
+	  let make_peq =
+	    make_op_app 
+	      { pexp_desc= Pexp_ident (Longident.Ldot (Longident.Lident "Pervasives", "=="));
+		pexp_loc= Location.none }
+	  in
+	  let make_and =
+	    make_op_app
+	      { pexp_desc= Pexp_ident (Longident.Ldot (Longident.Lident "Pervasives", "&&"));
+		pexp_loc= Location.none }
+	  in
+	  let make_var s =
+	    { pexp_desc= Pexp_ident (Longident.Lident s);
+	      pexp_loc= Location.none }
+	  in
+
+	let impwhen_code equiv_vars =
+	  let hd = List.hd equiv_vars in
+	  let tl = List.tl equiv_vars in
+	  List.map (fun x -> make_peq (make_var hd) (make_var x)) tl
+	in
+	let conds = 
+	  List.flatten (List.map impwhen_code impwhen) 
+	in
+	let sexp =
+	  match conds with
+	  | [] -> sexp
+	  | [c] -> {sexp with pexp_desc= Pexp_when(c,sexp)}
+	  | _ -> 
+	      {sexp with pexp_desc= Pexp_when(
+		List.fold_left make_and (List.hd conds) (List.tl conds),
+		sexp) }
+	in
 	let bound_idents = pat_bound_idents pat in
         let exp = type_expect ?in_function ext_env kset sexp ty_res in
         (pat, exp))
-      pat_env_list caselist
+      pat_env_list (List.combine caselist impwhen_list)
   in
   let partial =
     match partial_loc with None -> Partial
