@@ -19,24 +19,25 @@ open Cmm
 open Reg
 open Mach
 
-let reg r =
+let register ppf r =
   if String.length r.name > 0 then
     print_string r.name
   else
     print_string(match r.typ with Addr -> "A" | Int -> "I" | Float -> "F");
-  print_string "/";
-  print_int r.stamp;
+  printf "/%i" r.stamp;
   begin match r.loc with
     Unknown -> ()
   | Reg r -> 
-      print_string "["; print_string(Proc.register_name r); print_string "]"
+      printf "[%s]" (Proc.register_name r)
   | Stack(Local s) ->
-      print_string "[s"; print_int s; print_string "]"
+      printf "[s%i]" s
   | Stack(Incoming s) ->
-      print_string "[si"; print_int s; print_string "]"
+      printf "[si%i]" s
   | Stack(Outgoing s) ->
-      print_string "[so"; print_int s; print_string "]"
+      printf "[so%i]" s
   end
+
+let reg r = printf "%a" register r
 
 let regs v =
   match Array.length v with
@@ -106,21 +107,21 @@ let operation op arg res =
   | Ireload -> regs arg; print_string " (reload)"
   | Iconst_int n -> print_string(Nativeint.to_string n)
   | Iconst_float s -> print_string s
-  | Iconst_symbol s -> print_string "\""; print_string s; print_string "\""
+  | Iconst_symbol s -> printf "\"%s\"" s
   | Icall_ind -> print_string "call "; regs arg
   | Icall_imm lbl ->
-      print_string "call \""; print_string lbl;
-      print_string "\" "; regs arg
+      printf "call \"%s\" " lbl;
+      regs arg
   | Itailcall_ind -> print_string "tailcall "; regs arg
   | Itailcall_imm lbl ->
-      print_string "tailcall \""; print_string lbl;
-      print_string "\" "; regs arg
+      printf "tailcall \"%s\" " lbl;
+      regs arg
   | Iextcall(lbl, alloc) ->
-      print_string "extcall \""; print_string lbl;
-      print_string "\" "; regs arg;
+      printf "extcall \"%s\" " lbl;
+      regs arg;
       if not alloc then print_string " (noalloc)"
   | Istackoffset n ->
-      print_string "offset stack "; print_int n
+      printf "offset stack %i" n
   | Iload(chunk, addr) ->
       Printcmm.chunk chunk;
       print_string "[";
@@ -132,7 +133,7 @@ let operation op arg res =
       Arch.print_addressing reg addr (Array.sub arg 1 (Array.length arg - 1));
       print_string "] := ";
       reg arg.(0)
-  | Ialloc n -> print_string "alloc "; print_int n
+  | Ialloc n -> printf "alloc %i" n
   | Iintop(op) -> reg arg.(0); intop op; reg arg.(1)
   | Iintop_imm(op, n) -> reg arg.(0); intop op; print_int n
   | Inegf -> print_string "-f "; reg arg.(0)
@@ -146,17 +147,14 @@ let operation op arg res =
   | Ispecific op ->
       Arch.print_specific_operation reg op arg
 
-let rec instr i =
+let rec instruction ppf i =
   if !print_live then begin
-    open_box 1;
-    print_string "{";
+    printf "@[<1>{";
     regsetaddr i.live;
     if Array.length i.arg > 0 then begin
-      print_space(); print_string "+"; print_space(); regs i.arg
+      printf "@ +@ "; regs i.arg
     end;
-    print_string "}";
-    close_box();
-    print_cut()
+    printf "}@]@,";
   end;
   begin match i.desc with
     Iend -> ()
@@ -165,98 +163,70 @@ let rec instr i =
   | Ireturn ->
       print_string "return "; regs i.arg
   | Iifthenelse(tst, ifso, ifnot) ->
-      open_vbox 2;
-      print_string "if "; test tst i.arg; print_string " then"; print_cut();
-      instr ifso;
+      printf "@[<v 2>if "; test tst i.arg;
+      printf " then@,%a" instruction ifso;
       begin match ifnot.desc with
         Iend -> ()
-      | _ -> print_break 0 (-2); print_string "else"; print_cut(); instr ifnot
+      | _ -> printf "@;<0 -2>else@,%a" instruction ifnot
       end;
-      print_break 0 (-2); print_string "endif";
-      close_box()
+      printf "@;<0 -2>endif@]"
   | Iswitch(index, cases) ->
-      print_string "switch "; reg i.arg.(0);
+      printf "switch %a" register i.arg.(0);
       for i = 0 to Array.length cases - 1 do
-        print_cut();
-        open_vbox 2;
-        open_box 0;
+        printf "@,@[<v 2>@[";
         for j = 0 to Array.length index - 1 do
-          if index.(j) = i then begin
-            print_string "case "; print_int j; print_string ":";
-            print_cut()
-          end
+          if index.(j) = i then printf "case %i:@," j
         done;
-        close_box(); print_cut();
-        instr cases.(i);
-        close_box()
+        printf "@]@,%a@]" instruction cases.(i)
       done;
-      print_cut(); print_string "endswitch"
+      printf "@,endswitch"
   | Iloop(body) ->
-      open_vbox 2;
-      print_string "loop"; print_cut();
-      instr body; print_break 0 (-2); 
-      print_string "endloop ";
-      close_box()
+      printf "@[<v 2>loop@,%a@;<0 -2>endloop@]" instruction body
   | Icatch(body, handler) ->
-      open_vbox 2;
-      print_string "catch"; print_cut();
-      instr body;
-      print_break 0 (-2);  print_string "with"; print_cut();
-      instr handler;
-      print_break 0 (-2); print_string "endcatch";
-      close_box()
+      printf "@[<v 2>catch@,%a@;<0 -2>with@,%a@;<0 -2>endcatch@]"
+             instruction body instruction handler
   | Iexit ->
       print_string "exit"
   | Itrywith(body, handler) ->
-      open_vbox 2;
-      print_string "try"; print_cut();
-      instr body;
-      print_break 0 (-2);  print_string "with"; print_cut();
-      instr handler;
-      print_break 0 (-2); print_string "endtry";
-      close_box()
+      printf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
+             instruction body instruction handler
   | Iraise ->
-      print_string "raise "; reg i.arg.(0)
+      printf "raise %a" register i.arg.(0)
   end;
   begin match i.next.desc with
     Iend -> ()
-  | _ -> print_cut(); instr i.next
+  | _ -> printf "@,%a" instruction i.next
   end
 
-let fundecl f =
-  open_vbox 2;
-  print_string f.fun_name;
-  print_string "("; regs f.fun_args; print_string ")";
-  print_cut();
-  instr f.fun_body;
-  close_box()
+let functiondecl ppf f =
+  printf "@[<v 2>%s(" f.fun_name;
+  regs f.fun_args;
+  printf ")@,%a@]" instruction f.fun_body
 
 let phase msg f =
-  print_string "*** "; print_string msg; print_newline(); 
-  fundecl f; print_newline()
+  printf "*** %s@.%a@." msg functiondecl f
 
 let interference r =
-  open_box 2;
-  reg r; print_string ":";
-  List.iter
-    (fun r -> print_space(); reg r)
-    r.interf;
-  close_box();
-  print_newline()
+  let interf ppf =
+   List.iter
+    (fun r -> printf "@ %a" register r)
+    r.interf in
+  printf "@[<2>%a:%t@]@." register r interf
 
 let interferences () =
-  print_string "*** Interferences"; print_newline();
+  printf "*** Interferences@.";
   List.iter interference (Reg.all_registers())
 
 let preference r =
-  open_box 2;
-  reg r; print_string ": ";
-  List.iter
-    (fun (r, w) -> print_space(); reg r; print_string " weight " ; print_int w)
-    r.prefer;
-  close_box();
-  print_newline()
+  let prefs ppf =
+    List.iter
+      (fun (r, w) -> printf "@ %a weight %i" register r w)
+      r.prefer in
+  printf "@[<2>%a: %t@]@." register r prefs
 
 let preferences () =
-  print_string "*** Preferences"; print_newline();
+  printf "*** Preferences@.";
   List.iter preference (Reg.all_registers())
+
+let fundecl d = printf "%a" functiondecl d
+let instr i = printf "%a" instruction i

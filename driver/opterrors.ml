@@ -50,7 +50,7 @@ let report_error exn =
   | Asmlibrarian.Error code ->
       Asmlibrarian.report_error code
   | Sys_error msg ->
-      print_string "I/O error: "; print_string msg
+      printf "I/O error: %s" msg
   | Typeclass.Error(loc, err) ->
       Location.print loc; Typeclass.report_error err
   | x ->

@@ -35,7 +35,7 @@ let pass_dump_if flag message phrase =
 
 let pass_dump_linear_if flag message phrase =
   if !flag then begin
-    print_string "*** "; print_string message; print_newline();
+    printf "*** %s@." message;
     Printlinear.fundecl phrase; print_newline()
   end;
   phrase
@@ -113,5 +113,4 @@ let compile_implementation prefixname (size, lam) =
 
 let report_error = function
     Assembler_error file ->
-      print_string "Assembler error, input left in file ";
-      print_string file
+      printf "Assembler error, input left in file %s" file

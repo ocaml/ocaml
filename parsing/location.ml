@@ -103,12 +103,8 @@ let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
 
 let print loc =
   if String.length !input_name = 0 then
-    if highlight_locations loc none then () else begin
-      print_string "Characters ";
-      print_int loc.loc_start; print_string "-";
-      print_int loc.loc_end; print_string ":";
-      force_newline()
-    end
+    if highlight_locations loc none then () else
+      printf "Characters %i-%i:@?" loc.loc_start loc.loc_end
   else begin
     let (filename, linenum, linebeg) =
             Linenum.for_position !input_name loc.loc_start in
@@ -124,9 +120,7 @@ let print loc =
 let print_warning loc w =
  if Warnings.is_active w then begin
   print loc;
-  print_string "Warning: ";
-  print_string (Warnings.message w);
-  force_newline();
+  printf "Warning: %s@?" (Warnings.message w);
   incr num_loc_lines;
  end
 ;;

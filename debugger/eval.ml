@@ -166,42 +166,37 @@ let report_error error =
   open_box 0;
   begin match error with
     Unbound_identifier id ->
-      print_string "Unbound identifier "; print_string (Ident.name id)
+      printf "Unbound identifier %s" (Ident.name id)
   | Not_initialized_yet path ->
       print_string "The module path "; Printtyp.path path;
-      print_string " is not yet initialized."; print_space();
+      printf " is not yet initialized.@ ";
       print_string "Please run program forward until its initialization code is executed."
   | Unbound_long_identifier lid ->
       print_string "Unbound identifier "; Printtyp.longident lid
   | Unknown_name n ->
-      print_string "Unknown value name $"; print_int n
+      printf "Unknown value name $%i" n
   | Tuple_index(ty, len, pos) ->
-      print_string "Cannot extract field number "; print_int pos;
-      print_string " from a "; print_int len;
+      printf "Cannot extract field number %i from a %i" pos len;
       print_string "-components tuple of type ";
       Printtyp.reset (); Printtyp.mark_loops ty;
       print_space(); Printtyp.type_expr ty
   | Array_index(len, pos) ->
-      print_string "Cannot extract element number "; print_int pos;
-      print_string " from array of length "; print_int len
+      printf "Cannot extract element number %i from array of length %i" pos len
   | List_index(len, pos) ->
-      print_string "Cannot extract element number "; print_int pos;
-      print_string " from list of length "; print_int len
+      printf "Cannot extract element number %i from list of length %i" pos len
   | String_index(s, len, pos) ->
-      print_string "Cannot extract character number "; print_int pos;
-      print_string " from the following string of length "; print_int len;
-      print_string ":"; print_space();
-      print_char '"'; print_string(String.escaped s); print_char '"'
+      printf "Cannot extract character number %i" pos;
+      printf " from the following string of length %i:@ \"%s\""
+        len (String.escaped s)
   | Wrong_item_type(ty, pos) ->
-      print_string "Cannot extract item number "; print_int pos;
-      print_string " from a value of type"; print_space();
+      printf "Cannot extract item number %i from a value of type@ " pos;
       Printtyp.type_expr ty
   | Wrong_label(ty, lbl) ->
-      print_string "The record type"; print_space(); Printtyp.type_expr ty;
-      print_space(); print_string " has no label named "; print_string lbl
+      printf "The record type@ "; Printtyp.type_expr ty;
+      printf "@ has no label named %s" lbl
   | Not_a_record ty ->
-      print_string "The type"; print_space(); Printtyp.type_expr ty;
-      print_space(); print_string " is not a record type"
+      printf "The type@ "; Printtyp.type_expr ty;
+      print_string "@ is not a record type"
   | No_result ->
       print_string "No result available at current program event"
   end;

@@ -297,11 +297,8 @@ open Formatmsg
 
 let report_error = function
     Undefined_global s ->
-      print_string "Reference to undefined global `"; print_string s;
-      print_string "'"
+      printf "Reference to undefined global `%s'" s
   | Unavailable_primitive s ->
-      print_string "The external function `"; print_string s;
-      print_string "' is not available"
+      printf "The external function `%s' is not available" s
   | Wrong_vm s ->
-      print_string "Cannot find or execute the runtime system ";
-      print_string s
+      printf "Cannot find or execute the runtime system %s" s

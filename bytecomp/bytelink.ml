@@ -515,22 +515,18 @@ open Formatmsg
 
 let report_error = function
     File_not_found name ->
-      print_string "Cannot find file "; print_string name
+      printf "Cannot find file %s" name
   | Not_an_object_file name ->
-      print_string "The file "; print_string name;
-      print_string " is not a bytecode object file"
+      printf "The file %s is not a bytecode object file" name
   | Symbol_error(name, err) ->
-      print_string "Error while linking "; print_string name; print_string ":";
-      print_space();
+      printf "Error while linking %s:@ " name;
       Symtable.report_error err
   | Inconsistent_import(intf, file1, file2) ->
-      open_hvbox 0;
-      print_string "Files "; print_string file1; print_string " and ";
-      print_string file2; print_space();
-      print_string "make inconsistent assumptions over interface ";
-      print_string intf;
-      close_box()
+      printf
+        "@[<hv 0>Files %s and %s@ \
+                 make inconsistent assumptions over interface %s@]"
+        file1 file2 intf
   | Custom_runtime ->
       print_string "Error while building custom runtime system"
   | File_exists file ->
-      print_string "Cannot overwrite existing file "; print_string file
+      printf "Cannot overwrite existing file %s" file

@@ -87,8 +87,7 @@ open Formatmsg
 
 let report_error = function
     File_not_found name ->
-      print_string "Cannot find file "; print_string name
+      printf "Cannot find file %s" name
   | Not_an_object_file name ->
-      print_string "The file "; print_string name;
-      print_string " is not a bytecode object file"
+      printf "The file %s is not a bytecode object file" name
 

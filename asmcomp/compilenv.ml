@@ -147,13 +147,9 @@ open Formatmsg
 
 let report_error = function
     Not_a_unit_info filename ->
-      print_string filename; print_space();
-      print_string "is not a compilation unit description."
+      printf "%s@ is not a compilation unit description." filename
   | Corrupted_unit_info filename ->
-      print_string "Corrupted compilation unit description"; print_space();
-      print_string filename
+      printf "Corrupted compilation unit description@ %s" filename
   | Illegal_renaming(modname, filename) ->
-      print_string filename; print_space();
-      print_string "contains the description for unit"; print_space();
-      print_string modname
+      printf "%s@ contains the description for unit@ %s" filename modname
 

@@ -18,14 +18,14 @@ open Parameters
 open Misc
 open Primitives
 open Source
+open Printf
 
 (* Print a line; return the beginning of the next line *)
 let print_line buffer line_number start point before =
   let next = next_linefeed buffer start
   and content = buffer_content buffer
   in
-    print_int line_number;
-    print_string " ";
+    printf "%i " line_number;
     if (point <= next) & (point >= start) then
       (print_string (String.sub content start (point - start));
        print_string (if before then event_mark_before else event_mark_after);
@@ -37,22 +37,15 @@ let print_line buffer line_number start point before =
 
 (* Tell Emacs we are nowhere in the source. *)
 let show_no_point () =
-  if !emacs then begin
-    print_string "\026\026H";
-    print_newline ()
-    end
+  if !emacs then printf "\026\026H@."
 
 (* Print the line containing the point *)
 let show_point mdle point before selected =
   if !emacs & selected then
     begin try
       let source = source_of_module mdle in
-        print_string "\026\026M";
-        print_string source;
-        print_string ":";
-        print_int point;
-        print_string (if before then ":before" else ":after");
-        print_newline ()
+        printf "\026\026M%s:%i" source point;
+        printf "%s@." (if before then ":before" else ":after")
     with
       Not_found    -> (* get_buffer *)
         prerr_endline ("No source file for " ^ mdle ^ ".");

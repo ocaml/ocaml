@@ -19,69 +19,47 @@ open Format
 open Clambda
 open Compilenv
 
-let print_digest d =
+let print_digest ppf d =
   for i = 0 to String.length d - 1 do
     print_string(Printf.sprintf "%02x" (Char.code d.[i]))
   done
 
-let rec print_approx = function
+let rec print_approx ppf = function
     Value_closure(fundesc, approx) ->
-      open_box 2;
-      print_string "function "; print_string fundesc.fun_label;
-      print_space(); print_string "arity "; print_int fundesc.fun_arity;
+      printf "@[<2>function %s@ arity %i" fundesc.fun_label fundesc.fun_arity;
       if fundesc.fun_closed then begin
-        print_space(); print_string "(closed)"
+        printf "@ (closed)"
       end;
       if fundesc.fun_inline <> None then begin
-        print_space(); print_string "(inline)"
+        printf "@ (inline)"
       end;
-      print_space(); print_string "->"; print_space();
-      print_approx approx;
-      close_box()
+      printf "@ -> @ %a@]" print_approx approx
   | Value_tuple approx ->
-      open_hvbox 1;
-      print_string "[";
-      for i = 0 to Array.length approx - 1 do
-        if i > 0 then (print_string ";"; print_space());
-        print_int i; print_string ": "; print_approx approx.(i)
-      done;
-      print_string "]";
-      close_box()
+      let tuple ppf approx =
+        for i = 0 to Array.length approx - 1 do
+          if i > 0 then printf ";@ ";
+          printf "%i: %a" i print_approx approx.(i)
+        done in
+      printf "@[<hov 1[%a]@]" tuple approx
   | Value_unknown ->
       print_string "_"
   | Value_integer n ->
       print_int n
 
 let print_name_crc (name, crc) =
-  print_space(); print_string name;
-  print_string " ("; print_digest crc; print_string ")"
+  printf "@ %s (%a)" name print_digest crc
 
 let print_infos (ui, crc) =
-  print_string "Name: "; print_string ui.ui_name; print_newline();
-  print_string "CRC of implementation: "; print_digest crc; print_newline();
-  open_vbox 2;
-  print_string "Interfaces imported:";
-  List.iter print_name_crc ui.ui_imports_cmi;
-  close_box(); print_newline();
-  open_vbox 2;
-  print_string "Implementations imported:";
-  List.iter print_name_crc ui.ui_imports_cmx;
-  close_box(); print_newline();
-  open_vbox 2;
-  print_string "Approximation:"; print_space(); print_approx ui.ui_approx;
-  close_box(); print_newline();
-  open_box 2;
-  print_string "Currying functions:";
-  List.iter
-    (fun arity -> print_space(); print_int arity)
-    ui.ui_curry_fun;
-  close_box(); print_newline();
-  open_box 2;
-  print_string "Apply functions:";
-  List.iter
-    (fun arity -> print_space(); print_int arity)
-    ui.ui_apply_fun;
-  close_box(); print_newline()
+  printf "Name: %s@." ui.ui_name;
+  printf "CRC of implementation: %a@." print_digest crc;
+  let pr_imports ppf imps = List.iter print_name_crc imps in
+  printf "@[<v 2>Interfaces imported:%a2]@." pr_imports ui.ui_imports_cmi;
+  printf "@[<v 2>Implementations imported:%a@]@." pr_imports ui.ui_imports_cmx;
+  printf "@[<v 2>Approximation:@ %a@]@." print_approx ui.ui_approx;
+  let pr_funs ppf fns =
+    List.iter (fun arity -> printf "@ %i" arity) fns in
+  printf "@[<2>Currying functions:%a@]@." pr_funs ui.ui_curry_fun;
+  printf "@[<2>Apply functions:%a@]@." pr_funs ui.ui_apply_fun
 
 let print_unit_info filename =
   let ic = open_in_bin filename in

@@ -723,10 +723,10 @@ open Formatmsg
 let report_error = function
     Illegal_letrec_pat ->
       print_string
-      "Only variables are allowed as left-hand side of `let rec'"
+        "Only variables are allowed as left-hand side of `let rec'"
   | Illegal_letrec_expr ->
       print_string
-      "This kind of expression is not allowed as right-hand side of `let rec'"
+        "This kind of expression is not allowed as right-hand side of `let rec'"
   | Free_super_var ->
       print_string
         "Ancestor names can only be used to select inherited methods"

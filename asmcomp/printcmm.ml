@@ -51,8 +51,7 @@ let chunk = function
 
 let operation = function
     Capply ty -> print_string "app"
-  | Cextcall(lbl, ty, alloc) ->
-      print_string "extcall \""; print_string lbl; print_string "\""
+  | Cextcall(lbl, ty, alloc) -> printf "extcall \"%s\"" lbl
   | Cload Word -> print_string "load"
   | Cload c -> print_string "load "; chunk c
   | Calloc -> print_string "alloc"
@@ -85,165 +84,111 @@ let operation = function
   | Craise -> print_string "raise"
   | Ccheckbound -> print_string "checkbound"
 
-let rec expression = function
+let print_id ppf id = Ident.print id;;
+
+let rec expr ppf = function
     Cconst_int n -> print_int n
   | Cconst_natint n -> print_string(Nativeint.to_string n)
   | Cconst_float s -> print_string s
-  | Cconst_symbol s -> print_string "\""; print_string s; print_string "\""
-  | Cconst_pointer n -> print_int n; print_string "a"
+  | Cconst_symbol s -> printf "\"%s\"" s
+  | Cconst_pointer n -> printf "%ia" n
   | Cvar id -> Ident.print id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
-      open_box 2;
-      print_string "(let"; print_space();
-      open_box 1;
-      print_string "(";
-      open_box 2;
-      Ident.print id; print_space(); expression def;
-      close_box();
-      let rec letdef = function
-        Clet(id, def, body) ->
-          print_space();
-          open_box 2;
-          Ident.print id; print_space(); expression def;
-          close_box();
-          letdef body
-      | exp ->
-          print_string ")"; close_box();
-          print_space(); sequence exp
-      in letdef body;
-      print_string ")"; close_box()
+      let print_binding id ppf def =
+        printf "@[<2>%a@ %a@]" print_id id expr def in
+      let rec in_part ppf = function
+        | Clet(id, def, body) ->
+            printf "@ %a" (print_binding id) def;
+            in_part ppf body
+        | exp -> exp in
+      printf "@[<2>(let@ @[<1>(%a" (print_binding id) def;
+      let exp = in_part ppf body in
+      printf ")@]@ %a)@]" sequence exp
   | Clet(id, def, body) ->
-      open_box 2;
-      print_string "(let"; print_space();
-      open_box 2;
-      Ident.print id; print_space(); expression def;
-      close_box(); print_space();
-      sequence body;
-      print_string ")"; close_box()
+     printf "@[<2>(let@ @[<2>%a@ %a@]@ %a)@]" print_id id expr def sequence body
   | Cassign(id, exp) ->
-      open_box 2;
-      print_string "(assign ";
-      open_box 2;
-      Ident.print id; print_space(); expression exp;
-      close_box();
-      print_string ")"; close_box()
+      printf "@[<2>(assign @[<2>%a@ %a@])@]" print_id id expr exp
   | Ctuple el ->
-      open_box 1;
-      print_string "[";
-      let first = ref true in
-      List.iter
+      let tuple ppf el =
+       let first = ref true in
+       List.iter
         (fun e ->
           if !first then first := false else print_space();
-          expression e)
-        el;
-      print_string "]";
-      close_box()
+          expr ppf e)
+        el in
+      printf "@[<1>[%a]@]" tuple el
   | Cop(op, el) ->
-      open_box 2;
-      print_string "("; operation op;
-      List.iter (fun e -> print_space(); expression e) el;
+      printf "@[<2>(";
+      operation op;
+      List.iter (fun e -> printf "@ %a" expr e) el;
       begin match op with
         Capply mty -> print_space(); machtype mty
       | Cextcall(_, mty, _) -> print_space(); machtype mty
       | _ -> ()
       end;
-      print_string ")";
-      close_box()
+      printf ")@]"
   | Csequence(e1, e2) ->
-      open_box 2;
-      print_string "(seq "; print_space();
-      sequence e1; print_space();
-      sequence e2; print_string ")"; close_box()
+      printf "@[<2>(seq@ %a@ %a)@]" sequence e1 sequence e2
   | Cifthenelse(e1, e2, e3) ->
-      open_box 2;
-      print_string "(if";
-      print_space(); expression e1;
-      print_space(); expression e2;
-      print_space(); expression e3;
-      print_string ")"; close_box()
+      printf "@[<2>(if@ %a@ %a@ %a)@]" expr e1 expr e2 expr e3
   | Cswitch(e1, index, cases) ->
-      open_vbox 0;
-      open_box 2;
-      print_string "(switch"; print_space(); expression e1; print_space();
-      close_box();
-      for i = 0 to Array.length cases - 1 do
-        print_space();
-        open_box 2;
+      let print_case i ppf =
         for j = 0 to Array.length index - 1 do
-          if index.(j) = i then begin
-            print_string "case "; print_int j; print_string ":"; print_space()
-          end
-        done;
-        sequence cases.(i);
-        close_box()
-      done;
-      close_box()
+          if index.(j) = i then printf "case %i:" j
+        done in
+      let print_cases ppf =
+       for i = 0 to Array.length cases - 1 do
+        printf "@ @[<2>%t@ %a@]" (print_case i) sequence cases.(i)
+       done in
+      printf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases 
   | Cloop e ->
-      open_box 2;
-      print_string "(loop";
-      print_space(); sequence e;
-      print_string ")"; close_box()
+      printf "@[<2>(loop@ %a)@]" sequence e
   | Ccatch(e1, e2) ->
-      open_box 2;
-      print_string "(catch";
-      print_space(); sequence e1;
-      print_break 1 (-2); print_string "with";
-      print_space(); sequence e2;
-      print_string ")"; close_box()
+      printf "@[<2>(catch@ %a@;<1 -2>with@ %a)@]" sequence e1 sequence e2
   | Cexit ->
       print_string "exit"
   | Ctrywith(e1, id, e2) ->
-      open_box 2;
-      print_string "(try";
-      print_space(); sequence e1;
-      print_break 1 (-2); print_string "with "; Ident.print id;
-      print_space(); sequence e2;
-      print_string ")"; close_box()
+      printf "@[<2>(try@ %a@;<1 -2>with@ %a@ %a)@]"
+             sequence e1 print_id id sequence e2
 
-and sequence = function
+and sequence ppf = function
     Csequence(e1, e2) ->
-      sequence e1; print_space(); sequence e2
+      printf "%a@ %a" sequence e1 sequence e2
   | e ->
       expression e
 
+and expression e = printf "%a" expr e
+
 let fundecl f =
-  open_box 1;
-  print_string "(function "; print_string f.fun_name; print_break 1 4;
-  open_box 1;
-  print_string "(";
-  let first = ref true in
-  List.iter
-    (fun (id, ty) -> 
-      if !first then first := false else print_space();
-      Ident.print id; print_string ": "; machtype ty)
-    f.fun_args;
-  print_string ")"; close_box(); print_space();
-  open_box 0;
-  sequence f.fun_body;
-  print_string ")";
-  close_box(); close_box(); print_newline()
+  let print_cases ppf cases =
+    let first = ref true in
+    List.iter
+     (fun (id, ty) -> 
+       if !first then first := false else print_space();
+       printf "%a: " print_id id;
+       machtype ty)
+     cases in
+  printf "@[<1>(function %s@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
+         f.fun_name print_cases f.fun_args sequence f.fun_body
 
 let data_item = function
-    Cdefine_symbol s -> print_string "\""; print_string s; print_string "\":"
-  | Cdefine_label l -> print_string "L"; print_int l; print_string ":"
-  | Cint8 n -> print_string "byte "; print_int n
-  | Cint16 n -> print_string "int16 "; print_int n
-  | Cint32 n -> print_string "int32 "; print_string(Nativeint.to_string n)
-  | Cint n -> print_string "int "; print_string(Nativeint.to_string n)
-  | Csingle f -> print_string "single "; print_string f
-  | Cdouble f -> print_string "double "; print_string f
-  | Csymbol_address s ->
-      print_string "addr \""; print_string s; print_string "\""
-  | Clabel_address l -> print_string "addr L"; print_int l
-  | Cstring s -> print_string "string \""; print_string s; print_string "\""
-  | Cskip n -> print_string "skip "; print_int n
-  | Calign n -> print_string "align "; print_int n
+    Cdefine_symbol s -> printf "\"%s\":" s
+  | Cdefine_label l -> printf "L%i:" l
+  | Cint8 n -> printf "byte %i" n
+  | Cint16 n -> printf "int16 %i" n
+  | Cint32 n -> printf "int32 %s" (Nativeint.to_string n)
+  | Cint n -> printf "int %s" (Nativeint.to_string n)
+  | Csingle f -> printf "single %s" f
+  | Cdouble f -> printf "double %s" f
+  | Csymbol_address s -> printf "addr \"%s\"" s
+  | Clabel_address l -> printf "addr L%i" l
+  | Cstring s -> printf "string \"%s\"" s
+  | Cskip n -> printf "skip %i" n
+  | Calign n -> printf "align %i" n
 
 let data dl =
-  open_hvbox 1;
-  print_string "(data";
-  List.iter (fun d -> print_space(); data_item d) dl;
-  print_string ")"; close_box()
+  let items ppf = List.iter (fun d -> print_space(); data_item d) dl in
+  printf "@[<hv 1>(data%t)@]" items
 
 let phrase = function
     Cfunction f -> fundecl f

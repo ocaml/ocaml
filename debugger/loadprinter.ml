@@ -62,8 +62,7 @@ let rec loadfiles name =
   try
     let filename = find_in_path !Config.load_path name in
     use_debugger_symtable Dynlink.loadfile filename;
-    print_string "File "; print_string filename; print_string " loaded";
-    print_newline ();
+    printf "File %s loaded@." filename;
     true
   with
     Dynlink.Error (Dynlink.Unavailable_unit unit) ->
@@ -71,7 +70,7 @@ let rec loadfiles name =
         &&
       loadfiles name
   | Not_found ->
-      print_string "Cannot find file "; print_string name; print_newline();
+      printf "Cannot find file %s@." name;
       false
   | Dynlink.Error e ->
       raise(Error(Load_failure e))
@@ -134,16 +133,14 @@ let report_error error =
   open_box 0;
   begin match error with
     Load_failure e ->
-      print_string "Error during code loading: ";
-      print_string (Dynlink.error_message e)
+      printf "Error during code loading: %s" (Dynlink.error_message e)
   | Unbound_identifier lid ->
       print_string "Unbound identifier ";
       Printtyp.longident lid
   | Unavailable_module(md, lid) ->
-      print_string "The debugger does not contain the code for";
-      print_space(); Printtyp.longident lid; print_string "."; print_space();
-      print_string "Please load an implementation of ";
-      print_string md; print_string " first."
+      printf "The debugger does not contain the code for@ ";
+      Printtyp.longident lid; printf ".@ ";
+      printf "Please load an implementation of %s first." md
   | Wrong_type lid ->
       Printtyp.longident lid;
       print_string " has the wrong type for a printing function."

@@ -19,52 +19,43 @@ open Types
 open Lambda
 
 
-let rec structured_constant = function
+let rec struct_const ppf = function
     Const_base(Const_int n) -> print_int n
   | Const_base(Const_char c) ->
-      print_string "'"; print_string(Char.escaped c); print_string "'"
+      printf "'%s'" (Char.escaped c)
   | Const_base(Const_string s) ->
-      print_string "\""; print_string(String.escaped s); print_string "\""
+      printf "\"%s\"" (String.escaped s)
   | Const_base(Const_float s) ->
       print_string s
-  | Const_pointer n -> print_int n; print_string "a"
+  | Const_pointer n -> printf "%ia" n
   | Const_block(tag, []) ->
-      print_string "["; print_int tag; print_string "]"
+      printf "[%i]" tag
   | Const_block(tag, sc1::scl) ->
-      open_box 1;
-      print_string "["; print_int tag; print_string ":";
-      print_space();
-      open_box 0;
-      structured_constant sc1;
-      List.iter (fun sc -> print_space(); structured_constant sc) scl;
-      close_box();
-      print_string "]";
-      close_box()
+      let sconsts ppf scl =
+        List.iter (fun sc -> printf "@ %a" struct_const sc) scl in
+      printf "@[<1>[%i:@ @[%a%a@]]@]" tag struct_const sc1 sconsts scl
   | Const_float_array [] ->
       print_string "[| |]"
   | Const_float_array (f1 :: fl) ->
-      open_box 1;
-      print_string "[|";
-      open_box 0;
-      print_string f1;
-      List.iter (fun f -> print_space(); print_string f) fl;
-      close_box();
-      print_string "|]";
-      close_box()
+      let floats ppf fl =
+        List.iter (fun f -> print_space(); print_string f) fl in
+      printf "@[<1[|@[%s%a@]|]@]" f1 floats fl
 
-let primitive = function
+let print_id ppf id = Ident.print id
+
+let primitive ppf = function
     Pidentity -> print_string "id"
   | Pignore -> print_string "ignore"
-  | Pgetglobal id -> print_string "global "; Ident.print id
-  | Psetglobal id -> print_string "setglobal "; Ident.print id
-  | Pmakeblock(tag, Immutable) -> print_string "makeblock "; print_int tag
-  | Pmakeblock(tag, Mutable) -> print_string "makemutable "; print_int tag
-  | Pfield n -> print_string "field "; print_int n
+  | Pgetglobal id -> printf "global %a" print_id id
+  | Psetglobal id -> printf "setglobal %a" print_id id
+  | Pmakeblock(tag, Immutable) -> printf "makeblock %i" tag
+  | Pmakeblock(tag, Mutable) -> printf "makemutable %i" tag
+  | Pfield n -> printf "field %i" n
   | Psetfield(n, ptr) ->
       print_string (if ptr then "setfield_ptr " else "setfield_imm ");
       print_int n
-  | Pfloatfield n -> print_string "floatfield "; print_int n
-  | Psetfloatfield n -> print_string "setfloatfield "; print_int n
+  | Pfloatfield n -> printf "floatfield %i" n
+  | Psetfloatfield n -> printf "setfloatfield %i" n
   | Pccall p -> print_string p.prim_name
   | Praise -> print_string "raise"
   | Psequand -> print_string "&&"
@@ -118,191 +109,111 @@ let primitive = function
   | Pisint -> print_string "isint"
   | Pbittest -> print_string "testbit"
 
-let rec lambda = function
+let rec lam ppf = function
     Lvar id ->
-      Ident.print id
+      print_id ppf id
   | Lconst cst ->
-      structured_constant cst
+      struct_const ppf cst
   | Lapply(lfun, largs) ->
-      open_box 2;
-      print_string "(apply"; print_space();
-      lambda lfun;
-      List.iter (fun l -> print_space(); lambda l) largs;
-      print_string ")";
-      close_box()
+      let lams ppf largs =
+        List.iter (fun l -> printf "@ %a" lam l) largs in
+      printf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
   | Lfunction(kind, params, body) ->
-      open_box 2;
-      print_string "(function";
-      begin match kind with
-        Curried ->
-          List.iter (fun param -> print_space(); Ident.print param) params
-      | Tupled ->
-          print_string " (";
-          let first = ref true in
-          List.iter
-            (fun param ->
-              if !first
-              then first := false
-              else begin print_string ",";print_space() end;
-              Ident.print param)
-            params
-      end;
-      print_space(); lambda body; print_string ")"; close_box()
+      let pr_params ppf params =
+        match kind with
+        | Curried ->
+            List.iter (fun param -> printf "@ %a" print_id param) params
+        | Tupled ->
+            print_string " (";
+            let first = ref true in
+            List.iter
+              (fun param ->
+                if !first then first := false else printf ",@ ";
+                print_id ppf param)
+              params;
+            print_string ")" in
+      printf "@[<2>(function%a@ %a)@]" pr_params params lam body
   | Llet(str, id, arg, body) ->
-      open_box 2;
-      print_string "(let"; print_space();
-      open_hvbox 1;
-      print_string "(";
-      open_box 2; Ident.print id; print_space(); lambda arg; close_box();
-      letbody body;
-      print_string ")";
-      close_box()
+      let rec letbody = function
+        | Llet(str, id, arg, body) ->
+            printf "@ @[<2>%a@ %a@]" print_id id lam arg;
+            letbody body
+        | expr -> expr in
+      printf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" print_id id lam arg;
+      let expr = letbody body in
+      printf ")@]@ %a)@]" lam expr
   | Lletrec(id_arg_list, body) ->
-      open_box 2;
-      print_string "(letrec"; print_space();
-      print_string "(";
-      open_hvbox 1;
-      let spc = ref false in
-      List.iter
-        (fun (id, l) ->
-          if !spc then print_space() else spc := true;
-          open_box 2;
-          Ident.print id; print_space(); lambda l;
-          close_box())
-        id_arg_list;
-      close_box();
-      print_string ")";
-      print_space(); lambda body;
-      print_string ")"; close_box()
+      let bindings ppf id_arg_list =
+        let spc = ref false in
+        List.iter
+          (fun (id, l) ->
+            if !spc then print_space() else spc := true;
+            printf "@[<2>%a@ %a@]" print_id id lam l)
+          id_arg_list in
+      printf "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
   | Lprim(prim, largs) ->
-      open_box 2;
-      print_string "("; primitive prim;
-      List.iter (fun l -> print_space(); lambda l) largs;
-      print_string ")";
-      close_box()
+      let lams ppf largs =
+        List.iter (fun l -> printf "@ %a" lam l) largs in
+      printf "@[<2>(%a%a)@]" primitive prim lams largs
   | Lswitch(larg, sw) ->
-      open_box 1;
-      print_string (if sw.sw_checked then "(switch-checked " else "(switch ");
-      lambda larg; print_space();
-      open_vbox 0;
-      let spc = ref false in
-      List.iter
-        (fun (n, l) ->
-          if !spc then print_space() else spc := true;
-          open_hvbox 1;
-          print_string "case int "; print_int n;
-          print_string ":"; print_space();
-          lambda l;
-          close_box())
-        sw.sw_consts;
-      List.iter
-        (fun (n, l) ->
-          if !spc then print_space() else spc := true;
-          open_hvbox 1;
-          print_string "case tag "; print_int n;
-          print_string ":"; print_space();
-          lambda l;
-          close_box())
-        sw.sw_blocks;
-      print_string ")"; close_box(); close_box()
+      let switch ppf sw =
+        let spc = ref false in
+        List.iter
+         (fun (n, l) ->
+           if !spc then print_space() else spc := true;
+           printf "@[<hv 1>case int %i:@ %a@]" n lam l)
+         sw.sw_consts;
+       List.iter
+         (fun (n, l) ->
+           if !spc then print_space() else spc := true;
+           printf "@[<hv 1>case tag %i:@ %a@]" n lam l)
+         sw.sw_blocks in
+      printf
+       "@[<1>(%s%a@ @[<v 0>%a@])@]"
+       (if sw.sw_checked then "switch-checked " else "switch ")
+       lam larg switch sw
   | Lstaticfail ->
       print_string "exit"
   | Lcatch(lbody, lhandler) ->
-      open_box 2;
-      print_string "(catch"; print_space();
-      lambda lbody; print_break 1 (-1);
-      print_string "with"; print_space(); lambda lhandler;
-      print_string ")";
-      close_box()
+      printf "@[<2>(catch@ %a@;<1 -1>with@ %a)@]" lam lbody lam lhandler
   | Ltrywith(lbody, param, lhandler) ->
-      open_box 2;
-      print_string "(try"; print_space();
-      lambda lbody; print_break 1 (-1);
-      print_string "with "; Ident.print param; print_space();
-      lambda lhandler;
-      print_string ")";
-      close_box()
+      printf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
+        lam lbody print_id param lam lhandler
   | Lifthenelse(lcond, lif, lelse) ->
-      open_box 2;
-      print_string "(if"; print_space();
-      lambda lcond; print_space();
-      lambda lif; print_space();
-      lambda lelse; print_string ")";
-      close_box()
+      printf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Lsequence(l1, l2) ->
-      open_box 2;
-      print_string "(seq"; print_space();
-      lambda l1; print_space(); sequence l2; print_string ")";
-      close_box()
+      printf "@[<2>(seq@ %a@ %a)@]" lam l1 sequence l2
   | Lwhile(lcond, lbody) ->
-      open_box 2;
-      print_string "(while"; print_space();
-      lambda lcond; print_space();
-      lambda lbody; print_string ")";
-      close_box()
+      printf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
   | Lfor(param, lo, hi, dir, body) ->
-      open_box 2;
-      print_string "(for "; Ident.print param; print_space();
-      lambda lo; print_space();
-      print_string(match dir with Upto -> "to" | Downto -> "downto");
-      print_space();
-      lambda hi; print_space();
-      lambda body; print_string ")";
-      close_box()
+      printf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
+       print_id param lam lo
+       (match dir with Upto -> "to" | Downto -> "downto")
+       lam hi lam body
   | Lassign(id, expr) ->
-      open_box 2;
-      print_string "(assign"; print_space();
-      Ident.print id; print_space();
-      lambda expr; print_string ")";
-      close_box()
+      printf "@[<2>(assign@ %a@ %a)@]" print_id id lam expr
   | Lsend (met, obj, largs) ->
-      open_box 2;
-      print_string "(send"; print_space();
-      lambda obj; print_space();
-      lambda met;
-      List.iter (fun l -> print_space(); lambda l) largs;
-      print_string ")";
-      close_box()
-  | Levent(lam, ev) ->
-      open_box 2;
-      begin match ev.lev_kind with
-        Lev_before   -> print_string "(before "
-      | Lev_after _  -> print_string "(after "
-      | Lev_function -> print_string "(funct-body "
-      end;
-      print_int ev.lev_loc;
-      print_space();
-      lambda lam;
-      print_string ")";
-      close_box()
+      let args ppf largs =
+        List.iter (fun l -> printf "@ %a" lam l) largs in
+      printf "@[<2>(send@ %a@ %a%a)@]" lam obj lam met args largs
+  | Levent(expr, ev) ->
+      let kind = 
+       match ev.lev_kind with
+       | Lev_before -> "before"
+       | Lev_after _  -> "after"
+       | Lev_function -> "funct-body" in
+      printf "@[<2>(%s %i@ %a)@]" kind ev.lev_loc lam expr
   | Lifused(id, expr) ->
-      open_box 2;
-      print_string "(ifused"; print_space();
-      Ident.print id; print_space();
-      lambda expr; print_string ")";
-      close_box()
+      printf "@[<2>(ifused@ %a@ %a)@]" print_id id lam expr
 
-and sequence = function
+and sequence ppf = function
     Lsequence(l1, l2) ->
-      sequence l1; print_space(); sequence l2
+      printf "%a@ %a" sequence l1 sequence l2
   | Llet(str, id, arg, body) ->
-      open_box 2;
-      print_string "let"; print_space();
-      Ident.print id; print_space(); lambda arg;
-      close_box();
-      print_space();
-      sequence body
+      printf "@[<2>let@ %a@ %a@]@ %a" print_id id lam arg sequence body
   | l ->
-      lambda l
+      lam ppf l
 
-and letbody = function
-    Llet(str, id, arg, body) ->
-      print_space();
-      open_box 2; Ident.print id; print_space(); lambda arg;
-      close_box();
-      letbody body
-  | l ->
-      print_string ")";
-      close_box();
-      print_space();
-      lambda l
+let structured_constant cst = printf "%a" struct_const cst
+
+let lambda l = printf "%a" lam l

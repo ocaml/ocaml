@@ -19,8 +19,8 @@ open Mach
 open Printmach
 open Linearize
 
-let label l =
-  print_string "L"; print_int l
+let label ppf l =
+  Format.fprintf ppf "L%i" l
 
 let instr i =
   match i.desc with
@@ -28,12 +28,9 @@ let instr i =
   | Lop op ->
       begin match op with
         Ialloc _ | Icall_ind | Icall_imm _ | Iextcall(_, _) ->
-          open_box 1;
-          print_string "{";
+          printf "@[<1>{";
           regsetaddr i.live;
-          print_string "}";
-          close_box();
-          print_cut()
+          printf "}@]@,"
       | _ -> ()
       end;
       operation op i.arg i.res
@@ -42,31 +39,27 @@ let instr i =
   | Lreturn ->
       print_string "return "; regs i.arg
   | Llabel lbl ->
-      label lbl; print_string ":"
+      printf "%a:" label lbl
   | Lbranch lbl ->
-      print_string "goto "; label lbl
+      printf "goto %a" label lbl
   | Lcondbranch(tst, lbl) ->
-      print_string "if "; test tst i.arg; print_string " goto "; label lbl
+      printf "if "; test tst i.arg; printf " goto %a" label lbl
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
       print_string "switch3 "; reg i.arg.(0);
       let case n = function
         None -> ()
       | Some lbl ->
-          print_cut();
-          print_string "case "; print_int n;
-          print_string ": goto "; label lbl in
+          printf "@,case %i: goto %a" n label lbl in
       case 0 lbl0; case 1 lbl1; case 2 lbl2;
-      print_cut(); print_string "endswitch"
+      printf "@,endswitch"
   | Lswitch lblv ->
-      print_string "switch "; reg i.arg.(0);
+      printf "switch "; reg i.arg.(0);
       for i = 0 to Array.length lblv - 1 do
-        print_cut();
-        print_string "case "; print_int i;
-        print_string ": goto "; label lblv.(i)
+        printf "case %i: goto %a" i label lblv.(i)
       done;
-      print_cut(); print_string "endswitch"
+      printf "@,endswitch"
   | Lsetuptrap lbl ->
-      print_string "setup trap "; label lbl
+      printf "setup trap %a" label lbl
   | Lpushtrap ->
       print_string "push trap"
   | Lpoptrap ->
@@ -74,13 +67,10 @@ let instr i =
   | Lraise ->
       print_string "raise "; reg i.arg.(0)
 
-let rec all_instr i =
+let rec all_instr ppf i =
   match i.desc with
     Lend -> ()
-  | _ -> instr i; print_cut(); all_instr i.next
+  | _ -> instr i; printf "@,%a" all_instr i.next
 
 let fundecl f =
-  open_vbox 2;
-  print_string f.fun_name; print_string ":"; print_cut();
-  all_instr f.fun_body;
-  close_box()
+  printf "@[<v 2>%s:@,%a@]" f.fun_name all_instr f.fun_body

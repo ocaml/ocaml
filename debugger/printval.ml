@@ -71,7 +71,7 @@ let print_value max_depth obj ty env =
     check_depth env obj ty
 
 let print_named_value max_depth exp obj ty env =
-  open_box 2;
+  printf "@[<2>";
   begin match exp with
     E_ident lid ->
       Printtyp.longident lid
@@ -82,8 +82,7 @@ let print_named_value max_depth exp obj ty env =
       print_char '$'; print_int n
   end;
   Printtyp.reset (); Printtyp.mark_loops ty;
-  print_string " :"; print_space(); Printtyp.type_expr ty;
-  print_space(); print_string "="; print_space();
+  printf " :@ "; Printtyp.type_expr ty;
+  printf "@ =@ ";
   print_value max_depth obj ty env;
-  close_box();
-  print_newline()
+  printf "@]@."

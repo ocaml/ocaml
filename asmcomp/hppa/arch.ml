@@ -53,11 +53,11 @@ let num_args_addressing = function
 let print_addressing printreg addr arg =
   match addr with
     Ibased(s, n) ->
-      print_string "\""; print_string s; print_string "\"";
-      if n <> 0 then begin print_string " + "; print_int n end
+      printf "\"%s\"" s;
+      if n <> 0 then printf " + %i" n
   | Iindexed n ->
       printreg arg.(0);
-      if n <> 0 then begin print_string " + "; print_int n end
+      if n <> 0 then printf " + %i" n
 
 let print_specific_operation printreg op arg =
   match op with

@@ -45,7 +45,7 @@ let rec regalloc fd =
 
 let fundecl fd_cmm =
   if !dump_cmm then begin
-    print_string "*** C-- code"; print_newline();
+    printf "*** C-- code@.";
     Printcmm.fundecl fd_cmm; print_newline()
   end;
   Reg.reset();
@@ -65,7 +65,7 @@ let fundecl fd_cmm =
   let fd_reload = regalloc fd_split in
   let fd_linear = Linearize.fundecl fd_reload in
   if !dump_linear then begin
-    print_string "*** Linearized code"; print_newline();
+    printf "*** Linearized code@.";
     Printlinear.fundecl fd_linear; print_newline()
   end;
   Emit.fundecl fd_linear

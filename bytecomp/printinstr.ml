@@ -19,65 +19,62 @@ open Lambda
 open Instruct
 
 
-let instruction = function
-    Klabel lbl -> print_string "L"; print_int lbl; print_string ":"
-  | Kacc n -> print_string "\tacc "; print_int n
-  | Kenvacc n -> print_string "\tenvacc "; print_int n
+let instruct ppf = function
+    Klabel lbl -> printf "L%i:" lbl
+  | Kacc n -> printf "\tacc %i" n
+  | Kenvacc n -> printf "\tenvacc %i" n
   | Kpush -> print_string "\tpush"
-  | Kpop n -> print_string "\tpop "; print_int n
-  | Kassign n -> print_string "\tassign "; print_int n
-  | Kpush_retaddr lbl -> print_string "\tpush_retaddr L"; print_int lbl
-  | Kapply n -> print_string "\tapply "; print_int n
+  | Kpop n -> printf "\tpop %i" n
+  | Kassign n -> printf "\tassign %i" n
+  | Kpush_retaddr lbl -> printf "\tpush_retaddr L%i" lbl
+  | Kapply n -> printf "\tapply %i" n
   | Kappterm(n, m) ->
-      print_string "\tappterm "; print_int n; print_string ", "; print_int m
-  | Kreturn n -> print_string "\treturn "; print_int n
+      printf "\tappterm %i, %i" n m
+  | Kreturn n -> printf "\treturn %i" n
   | Krestart -> print_string "\trestart"
-  | Kgrab n -> print_string "\tgrab "; print_int n
+  | Kgrab n -> printf "\tgrab %i" n
   | Kclosure(lbl, n) ->
-      print_string "\tclosure L"; print_int lbl; print_string ", "; print_int n
+      printf "\tclosure L%i, %i" lbl n
   | Kclosurerec(lbls, n) ->
       print_string "\tclosurerec";
-      List.iter (fun lbl -> print_string " "; print_int lbl) lbls;
-      print_string ", "; print_int n
-  | Koffsetclosure n -> print_string "\toffsetclosure "; print_int n
+      List.iter (fun lbl -> printf " %i" lbl) lbls;
+      printf ", %i" n
+  | Koffsetclosure n -> printf "\toffsetclosure %i" n
   | Kgetglobal id -> print_string "\tgetglobal "; Ident.print id
   | Ksetglobal id -> print_string "\tsetglobal "; Ident.print id
   | Kconst cst ->
-      open_box 10; print_string "\tconst"; print_space();
-      Printlambda.structured_constant cst; close_box()
+      let pr_constant ppf cst = Printlambda.structured_constant cst in
+      printf "@[<10>\tconst@ %a@]" pr_constant cst
   | Kmakeblock(n, m) ->
-      print_string "\tmakeblock "; print_int n; print_string ", "; print_int m
+      printf "\tmakeblock %i, %i" n m
   | Kmakefloatblock(n) ->
-      print_string "\tmakefloatblock "; print_int n
-  | Kgetfield n -> print_string "\tgetfield "; print_int n
-  | Ksetfield n -> print_string "\tsetfield "; print_int n
-  | Kgetfloatfield n -> print_string "\tgetfloatfield "; print_int n
-  | Ksetfloatfield n -> print_string "\tsetfloatfield "; print_int n
+      printf "\tmakefloatblock %i" n
+  | Kgetfield n -> printf "\tgetfield %i" n
+  | Ksetfield n -> printf "\tsetfield %i" n
+  | Kgetfloatfield n -> printf "\tgetfloatfield %i" n
+  | Ksetfloatfield n -> printf "\tsetfloatfield %i" n
   | Kvectlength -> print_string "\tvectlength"
   | Kgetvectitem -> print_string "\tgetvectitem"
   | Ksetvectitem -> print_string "\tsetvectitem"
   | Kgetstringchar -> print_string "\tgetstringchar"
   | Ksetstringchar -> print_string "\tsetstringchar"
-  | Kbranch lbl -> print_string "\tbranch L"; print_int lbl
-  | Kbranchif lbl -> print_string "\tbranchif L"; print_int lbl
-  | Kbranchifnot lbl -> print_string "\tbranchifnot L"; print_int lbl
-  | Kstrictbranchif lbl -> print_string "\tstrictbranchif L"; print_int lbl
+  | Kbranch lbl -> printf "\tbranch L%i" lbl
+  | Kbranchif lbl -> printf "\tbranchif L%i" lbl
+  | Kbranchifnot lbl -> printf "\tbranchifnot L%i" lbl
+  | Kstrictbranchif lbl -> printf "\tstrictbranchif L%i" lbl
   | Kstrictbranchifnot lbl ->
-      print_string "\tstrictbranchifnot L"; print_int lbl
+      printf "\tstrictbranchifnot L%i" lbl
   | Kswitch(consts, blocks) ->
-      open_box 10;
-      print_string "\tswitch";
-      Array.iter (fun lbl -> print_space(); print_int lbl) consts;
-      print_string "/";
-      Array.iter (fun lbl -> print_space(); print_int lbl) blocks;
-      close_box()
+      let labels ppf labs =
+        Array.iter (fun lbl -> printf "@ %i" lbl) labs in
+      printf "@[<10>\tswitch%a/%a@]" labels consts labels blocks
   | Kboolnot -> print_string "\tboolnot"
-  | Kpushtrap lbl -> print_string "\tpushtrap L"; print_int lbl
+  | Kpushtrap lbl -> printf "\tpushtrap L%i" lbl
   | Kpoptrap -> print_string "\tpoptrap"
   | Kraise -> print_string "\traise"
   | Kcheck_signals -> print_string "\tcheck_signals"
   | Kccall(s, n) ->
-      print_string "\tccall "; print_string s; print_string ", "; print_int n
+      printf "\tccall %s, %i" s n
   | Knegint -> print_string "\tnegint"
   | Kaddint -> print_string "\taddint"
   | Ksubint -> print_string "\tsubint"
@@ -96,21 +93,21 @@ let instruction = function
   | Kintcomp Cgt -> print_string "\tgtint"
   | Kintcomp Cle -> print_string "\tleint"
   | Kintcomp Cge -> print_string "\tgeint"
-  | Koffsetint n -> print_string "\toffsetint "; print_int n
-  | Koffsetref n -> print_string "\toffsetref "; print_int n
+  | Koffsetint n -> printf "\toffsetint %i" n
+  | Koffsetref n -> printf "\toffsetref %i" n
   | Kisint -> print_string "\tisint"
   | Kgetmethod -> print_string "\tgetmethod"
   | Kstop -> print_string "\tstop"
-  | Kevent ev -> print_string "\tevent "; print_int ev.ev_char
+  | Kevent ev -> printf "\tevent %i" ev.ev_char
 
-let rec instruction_list = function
+let rec instruction_list ppf = function
     [] -> ()
   | Klabel lbl :: il ->
-      print_string "L"; print_int lbl; print_string ":"; instruction_list il
+      printf "L%i:%a" lbl instruction_list il
   | instr :: il ->
-      instruction instr; print_space(); instruction_list il
+      printf "%a@ %a" instruct instr instruction_list il
  
 let instrlist il =
-  open_vbox 0;
-  instruction_list il;
-  close_box()
+  printf "@[<v 0>%a@]" instruction_list il
+
+let instruction i = printf "%a" instruct i

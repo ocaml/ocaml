@@ -278,31 +278,24 @@ open Formatmsg
 
 let report_error = function
     File_not_found name ->
-      print_string "Cannot find file "; print_string name
+      printf "Cannot find file %s" name
   | Not_an_object_file name ->
-      print_string "The file "; print_string name;
-      print_string " is not a compilation unit description"
+      printf "The file %s is not a compilation unit description" name
   | Missing_implementations l ->
-      open_box 0;
-      print_string
-        "No implementation(s) provided for the following module(s):";
-      List.iter (fun s -> print_space(); print_string s) l;
-      close_box()
+      printf
+       "@[No implementation(s) provided for the following module(s):%a@]"
+       (fun fmt -> List.iter (fun s -> Format.fprintf fmt "@ %s" s)) l
   | Inconsistent_interface(intf, file1, file2) ->
-      open_hvbox 0;
-      print_string "Files "; print_string file1; print_string " and ";
-      print_string file2; print_space();
-      print_string "make inconsistent assumptions over interface ";
-      print_string intf;
-      close_box()
+      printf
+       "@[<hv>Files %s@ and %s@ make inconsistent assumptions \
+              over interface %s@]"
+       file1 file2 intf
   | Inconsistent_implementation(intf, file1, file2) ->
-      open_hvbox 0;
-      print_string "Files "; print_string file1; print_string " and ";
-      print_string file2; print_space();
-      print_string "make inconsistent assumptions over implementation ";
-      print_string intf;
-      close_box()
+      printf
+       "@[<hv>Files %s@ and %s@ make inconsistent assumptions \
+              over implementation %s@]"
+       file1 file2 intf
   | Assembler_error file ->
-      print_string "Error while assembling "; print_string file
+      printf "Error while assembling %s" file
   | Linking_error ->
       print_string "Error during linking"

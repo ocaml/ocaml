@@ -60,8 +60,7 @@ open Formatmsg
 
 let report_error = function
     File_not_found name ->
-      print_string "Cannot find file "; print_string name
+      printf "Cannot find file %s" name
   | Archiver_error name ->
-      print_string "Error while creating the library ";
-      print_string name
+      printf "Error while creating the library %s" name
 

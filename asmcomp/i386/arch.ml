@@ -71,22 +71,22 @@ open Formatmsg
 let print_addressing printreg addr arg =
   match addr with
     Ibased(s, 0) ->
-      print_string "\""; print_string s; print_string "\""
+      printf "\"%s\"" s
   | Ibased(s, n) ->
-      print_string "\""; print_string s; print_string "\" + "; print_int n
+      printf "\"%s\" + %i" s n
   | Iindexed n ->
       printreg arg.(0);
-      if n <> 0 then begin print_string " + "; print_int n end
+      if n <> 0 then printf " + %i" n
   | Iindexed2 n ->
       printreg arg.(0); print_string " + "; printreg arg.(1);
-      if n <> 0 then begin print_string " + "; print_int n end
+      if n <> 0 then printf " + %i" n
   | Iscaled(scale, n) ->
-      printreg arg.(0); print_string " * "; print_int scale;
-      if n <> 0 then begin print_string " + "; print_int n end
+      printreg arg.(0); printf " * %i" scale;
+      if n <> 0 then printf " + %i" n
   | Iindexed2scaled(scale, n) ->
       printreg arg.(0); print_string " + "; printreg arg.(1);
-      print_string " * "; print_int scale;
-      if n <> 0 then begin print_string " + "; print_int n end
+      printf " * %i" scale;
+      if n <> 0 then printf " + %i" n
 
 let print_specific_operation printreg op arg =
   match op with
@@ -107,9 +107,9 @@ let print_specific_operation printreg op arg =
         printreg arg.(i)
       done
   | Ipush_int n ->
-      print_string "push "; print_string (Nativeint.to_string n)
+      printf "push %s" (Nativeint.to_string n)
   | Ipush_symbol s ->
-      print_string "push \""; print_string s; print_string "\""
+      print_string "push \"%s\"" s
   | Ipush_load addr ->
       print_string "push ["; print_addressing printreg addr arg;
       print_string "]"

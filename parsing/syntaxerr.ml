@@ -27,21 +27,13 @@ let report_error = function
     Unclosed(opening_loc, opening, closing_loc, closing) ->
       if String.length !Location.input_name = 0
       && Location.highlight_locations opening_loc closing_loc
-      then begin
-        print_string "Syntax error: '";
-        print_string closing;
-        print_string "' expected, the highlighted '";
-        print_string opening;
-        print_string "' might be unmatched"
-      end else begin
+      then printf "Syntax error: '%s' expected, \
+                   the highlighted '%s' might be unmatched" closing opening
+      else begin
         Location.print closing_loc;
-        print_string "Syntax error: '";
-        print_string closing;
-        print_string "' expected"; force_newline();
+        printf "Syntax error: '%s' expected@?" closing;
         Location.print opening_loc;
-        print_string "This '";
-        print_string opening;
-        print_string "' might be unmatched"
+        printf "This '%s' might be unmatched" opening
       end
   | Other loc ->
       Location.print loc;
