@@ -40,7 +40,7 @@ open Source
 open Breakpoints
 open Checkpoints
 open Frames
-(*open Pattern_matching*)
+open Printval
 
 (** Instructions, variables and infos lists. **)
 type dbg_instruction =
@@ -227,12 +227,14 @@ let instr_kill lexbuf =
 let instr_run lexbuf =
   eol lexbuf;
   ensure_loaded ();
+  reset_named_values();
   run ();
   show_current_event ()
 
 let instr_reverse lexbuf =
   eol lexbuf;
   ensure_loaded ();
+  reset_named_values();
   back_run ();
   show_current_event ()
 
@@ -243,6 +245,7 @@ let instr_step lexbuf =
     | Some x -> x
   in
     ensure_loaded ();
+    reset_named_values();
     step step_count;
     show_current_event ()
 
@@ -253,12 +256,14 @@ let instr_back lexbuf =
     | Some x -> x
   in
     ensure_loaded ();
+    reset_named_values();
     step (-step_count);
     show_current_event ()
 
 let instr_finish lexbuf =
   eol lexbuf;
   ensure_loaded ();
+  reset_named_values();
   finish ();
   show_current_event ()
 
@@ -269,12 +274,14 @@ let instr_next lexbuf =
     | Some x -> x
   in
     ensure_loaded ();
+    reset_named_values();
     next step_count;
     show_current_event ()
 
 let instr_goto lexbuf =
   let time = integer_eol Lexer.lexeme lexbuf in
     ensure_loaded ();
+    reset_named_values();
     go_to time;
     show_current_event ()
 
@@ -392,64 +399,31 @@ let instr_help lexbuf =
         !instruction_list;
       print_newline ()
 
-let longident idlist =
-  let rec longid = function
-      [] -> fatal_error "Debugger.longident"
-    | [s] -> Longident.Lident s
-    | f::l -> Longident.Ldot(longid l, f) in
-  longid (List.rev idlist)
+(* Printing values *)
 
-let print_val valu var typ env =
-  (* prints the classic "var : typ = val" message *)
-  print_string var;
-  print_string " : ";
-  Printtyp.type_scheme typ;
-  print_string " = ";
-  Printval.print_value valu typ env;
-  Format.print_newline()
+let print_expr depth ev env expr =
+  try
+    let (v, ty) = Eval.expression ev env expr in
+    match expr with
+      E_ident lid -> print_ident_value depth lid v ty env
+    | _           -> print_named_value depth v ty env
+  with Eval.Error msg ->
+    Eval.report_error msg;
+    raise Toplevel
 
-let instr_print lexbuf =
-  let e = match !selected_event with
-    None -> raise Toplevel
-  | Some x -> x in
-  let variables = variable_list_eol Lexer.lexeme lexbuf in
-    ensure_loaded ();
-    List.iter
-      (function vari ->
-        open_hovbox 0;
-        let lid = longident(split_string '.' vari) in
-        let env = Envaux.env_from_summary e.ev_typenv in
-        begin try
-          let (path, valdesc) = Env.lookup_value lid env in
-          let exp_type = (Ctype.instance valdesc.Types.val_type)
-          and valu = Eval.path e.ev_compenv e.ev_stacksize path in
-          print_val valu vari exp_type env
-        with Not_found ->
-          print_string "Unbound identifier "; print_string vari
-        end;
-        close_box();
-        print_newline ())
-      variables
+let print_command depth lexbuf =
+  let e =
+    match !selected_event with
+      None -> raise Toplevel
+    | Some x -> x in
+  let exprs = expression_list_eol Lexer.lexeme lexbuf in
+  ensure_loaded ();
+  let env = Envaux.env_from_summary e.ev_typenv in
+  List.iter (print_expr depth e env) exprs
 
-let instr_match lexbuf =
-  ()
-(***
-  let (var, pattern) = match_arguments_eol Lexer.lexeme lexbuf in
-    ensure_loaded ();
-    let (valu, typ) = variable var in
-      List.iter
-        (function
-           (name, valu, typ) ->
-             open_hovbox 0;
-             print_string name;
-             print_string " :"; print_space();
-             print_one_type typ;
-             print_string " ="; print_space();
-             print_value valu typ;
-            close_box();
-            print_newline ())
-        (pattern_matching pattern valu typ)
-***)
+let instr_print lexbuf = print_command !max_printer_depth lexbuf
+
+let instr_display lexbuf = print_command 1 lexbuf
 
 let instr_source lexbuf =
   let file = argument_eol argument lexbuf
@@ -522,16 +496,15 @@ let instr_break lexbuf =
              raise Toplevel)
     | BA_pc pc ->                               (* break PC *)
         add_breakpoint_at_pc pc
-    | BA_function vari ->                       (* break FUNCTION *)
+    | BA_function lid ->                       (* break FUNCTION *)
         let e = match !current_event with
             None -> raise Toplevel
           | Some x -> x in
-        let lid = longident(split_string '.' vari) in
         let env = Envaux.env_from_summary e.ev_typenv in
         (try
           let (path, valdesc) = Env.lookup_value lid env in
           let typ = (Ctype.instance valdesc.Types.val_type)
-          and valu = Eval.path e.ev_compenv e.ev_stacksize path in
+          and valu = Eval.path e path in
             match (Ctype.repr typ).desc with
               Tarrow (_, _) ->
                 prerr_endline "Not Yet Implemented"
@@ -679,6 +652,7 @@ let instr_last lexbuf =
       None -> 1
     | Some x -> x
   in
+    reset_named_values();
     go_to (History.previous_time count);
     show_current_event ()
 
@@ -923,19 +897,13 @@ Skip over function calls.\n\
 Argument N means do this N times (or till program stops for another reason)." };
      { instr_name = "print"; instr_prio = true;
        instr_action = instr_print; instr_repeat = true; instr_help =
-"print value of variables (`*' stand for the accumulator)." };
-     { instr_name = "match"; instr_prio = false;
-       instr_action = instr_match; instr_repeat = true; instr_help =
-"match the value of a variable against a pattern." };
+"print value of expressions (deep printing)." };
+     { instr_name = "display"; instr_prio = true;
+       instr_action = instr_print; instr_repeat = true; instr_help =
+"print value of expressions (shallow printing)." };
      { instr_name = "source"; instr_prio = false;
        instr_action = instr_source; instr_repeat = true; instr_help =
 "read command from file FILE." };
-     { instr_name = "open"; instr_prio = false;
-       instr_action = instr_open; instr_repeat = false; instr_help =
-"open modules." };
-     { instr_name = "close"; instr_prio = false;
-       instr_action = instr_close; instr_repeat = false; instr_help =
-"close modules." };
      (* Breakpoints *)
      { instr_name = "break"; instr_prio = false;
        instr_action = instr_break; instr_repeat = false; instr_help =
@@ -1031,12 +999,12 @@ It can be either :
 "history size." };
      { var_name = "print_depth";
        var_action = integer_variable false 1 "Must be at least 1"
-                                     Printval.max_printer_depth;
+                                     max_printer_depth;
        var_help =
 "maximal depth for printing of values." };
      { var_name = "print_length";
        var_action = integer_variable false 1 "Must be at least 1"
-                                     Printval.max_printer_steps;
+                                     max_printer_steps;
        var_help =
 "maximal number of value nodes printed." }];
 

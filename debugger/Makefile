@@ -1,4 +1,4 @@
-CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
+CAMLC=../boot/ocamlrun ../ocamlc -I ../stdlib
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=-custom
 CAMLYACC=../boot/ocamlyacc
@@ -39,8 +39,8 @@ OBJS=\
 	trap_barrier.cmo \
 	history.cmo \
 	program_loading.cmo \
-	eval.cmo \
 	printval.cmo \
+	eval.cmo \
 	show_source.cmo \
 	time_travel.cmo \
 	program_management.cmo \
@@ -49,17 +49,6 @@ OBJS=\
 	parser.cmo \
 	command_line_interpreter.cmo \
 	main.cmo
-#	debugger.cmo
-
-xOBJS=\
-	debugcom.cmo \
-	symbols.cmo \
-	envaux.cmo \
-	eval.cmo \
-	printval.cmo \
-	source.cmo \
-	show_source.cmo \
-	debugger.cmo
 
 all: ocamldebug
 
@@ -69,7 +58,6 @@ ocamldebug: $(OBJS)
 clean::
 	rm -f ocamldebug
 	rm -f *.cmo *.cmi
-	rm -f lexer.ml parser.ml parser.mli
 
 .SUFFIXES:
 .SUFFIXES: .ml .cmo .mli .cmi
@@ -80,16 +68,19 @@ clean::
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-depend: lexer.ml parser.ml parser.mli
+depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) *.mli *.ml > .depend
 
 lexer.ml: lexer.mll
 	$(CAMLLEX) lexer.mll
+clean::
+	rm -f lexer.ml
+beforedepend:: lexer.ml
 
 parser.ml parser.mli: parser.mly
 	$(CAMLYACC) parser.mly
-
-sharfile: Makefile *.ml *.mli *.mll *.mly
-	shar -o $@ $^
+clean::
+	rm -f parser.ml parser.mli
+beforedepend:: parser.ml parser.mli
 
 include .depend

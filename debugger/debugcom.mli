@@ -78,6 +78,7 @@ val set_trap_barrier : int -> unit
 type remote_value
 val remote_value_is_int : remote_value -> bool
 val int_value : remote_value -> int
+val value_int : int -> remote_value
 val get_local : int -> remote_value
 val get_environment : int -> remote_value
 val get_global : int -> remote_value

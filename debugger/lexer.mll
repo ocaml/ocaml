@@ -22,10 +22,8 @@ open Parser
 rule line =	(* Read a whole line *)
   parse
     [ ^ '\n' ]* '\n'
-      { let line =
-          Lexing.lexeme lexbuf
-        in
-          String.sub line 0 (String.length line - 1) }
+      { let line = Lexing.lexeme lexbuf in
+        String.sub line 0 (String.length line - 1) }
   | [ ^ '\n' ]*
       { Lexing.lexeme lexbuf }
   | eof
@@ -44,7 +42,7 @@ and argument =	(* Read a raw argument *)
 
 and line_argument =
   parse
-    _*
+    _ *
       { ARGUMENT (Lexing.lexeme lexbuf) }
   | eof
       { EOL }
@@ -53,14 +51,14 @@ and lexeme =	(* Read a lexeme *)
   parse
     [' ' '\t'] +
       { lexeme lexbuf }
-  | "prefix"
-      { PREFIX }
-  | ['A'-'Z' 'a'-'z' '\192'-'\214' '\216'-'\246' '\248'-'\255' ]
-    ( '_' ? ['A'-'Z' 'a'-'z' '\192'-'\214' '\216'-'\246' '\248'-'\255' ''' '0'-'9' ] ) *
-      { IDENTIFIER (Lexing.lexeme lexbuf) }
-  | '"' [^ '"']* "\""
-      { let s = Lexing.lexeme lexbuf in
-        IDENTIFIER (String.sub s 1 (String.length s - 2)) }
+  | ['a'-'z' '\223'-'\246' '\248'-'\255' ]
+    (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
+      '\'' '0'-'9' ]) *
+      { LIDENT(Lexing.lexeme lexbuf) }
+  | ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
+    (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
+      '\'' '0'-'9' ]) *
+      { UIDENT(Lexing.lexeme lexbuf) }
   | ['0'-'9']+
     | '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
     | '0' ['o' 'O'] ['0'-'7']+
@@ -70,18 +68,16 @@ and lexeme =	(* Read a lexeme *)
       { STAR }
   | "-"
       { MINUS }
-  | "__"
-      { UNDERUNDER }
+  | "."
+      { DOT }
   | "#"
       { SHARP }
   | "@"
       { AT }
-  | "::"
-      { COLONCOLON }
-  | ","
-      { COMMA }
-  | "_"
-      { UNDERSCORE }
+  | "$"
+      { DOLLAR }
+  | "!"
+      { BANG }
   | "("
       { LPAREN }
   | ")"
@@ -90,19 +86,8 @@ and lexeme =	(* Read a lexeme *)
       { LBRACKET }
   | "]"
       { RBRACKET }
-  | "{"
-      { LBRACE }
-  | "}"
-      { RBRACE }
-  | ";"
-      { SEMI }
-  | "="
-      { EQUAL }
-  | ">"
-      { SUPERIOR }
-  | [ '!' '?' '=' '<' '>' '@' '^' '|' '&' '~' '+' '-' '*' '/' '%' ]
-    [ '!' '$' '%' '&' '*' '+' '-' '.' '/' ':' ';' 
-      '<' '=' '>' '?' '@' '^' '|' '~'] *
+  | ['!' '?' '~' '=' '<' '>' '|' '&' '$' '@' '^' '+' '-' '*' '/' '%']
+    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
       { OPERATOR (Lexing.lexeme lexbuf) }
   | eof
       { EOL }

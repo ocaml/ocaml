@@ -161,10 +161,6 @@ let set_trap_barrier pos =
 type remote_value = string
 
 let value_size = if 1 lsl 31 = 0 then 4 else 8
-let big_endian =
-  let s = (Obj.magic [|0|] : string) in
-  String.unsafe_get s 0 = '\000'
-let lsb_pos = if big_endian then value_size - 1 else 0
 
 let input_remote_value ic =
   let v = String.create value_size in
@@ -178,6 +174,11 @@ let remote_value_is_int v =
 
 let int_value v =
   Array.unsafe_get (Obj.magic v : int array) 0
+
+let value_int n =
+  let v = String.create value_size in
+  Array.unsafe_set (Obj.magic v : int array) 0 n;
+  v
 
 let get_local pos =
   output_char !conn.io_out 'L';

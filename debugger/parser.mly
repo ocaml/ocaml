@@ -16,37 +16,31 @@
 
 open Primitives
 open Input_handling
+open Longident
 open Parser_aux
 
 %}
 
 %token <string>	ARGUMENT
-%token <string>	IDENTIFIER
+%token <string>	LIDENT
+%token <string>	UIDENT
+%token <string>	OPERATOR
 %token <int>	INTEGER
 %token		STAR			/* *  */
 %token		MINUS			/* -  */
-%token		UNDERUNDER		/* __ */
+%token		DOT		        /* . */
 %token		SHARP			/* #  */
 %token		AT			/* @  */
-%token		COLONCOLON		/* :: */
-%token		COMMA			/* ,  */
-%token		UNDERSCORE		/* _  */
+%token		DOLLAR		        /* $ */
+%token		BANG		        /* ! */
 %token		LPAREN			/* (  */
 %token		RPAREN			/* )  */
 %token		LBRACKET		/* [  */
 %token		RBRACKET		/* ]  */
-%token		LBRACE			/* {  */
-%token		RBRACE			/* }  */
-%token		SEMI			/* ;  */
-%token		EQUAL			/* =  */
-%token		SUPERIOR		/* >  */
-%token		PREFIX			/* prefix */
-%token <string>	OPERATOR          	/* infix/prefix symbols */
 %token		EOL
 
-%right COMMA
-%right sharp
-%right COLONCOLON
+%right DOT
+%right BANG
 
 %start argument_list_eol
 %type <string list> argument_list_eol
@@ -78,17 +72,17 @@ open Parser_aux
 %start identifier_or_eol
 %type <string option> identifier_or_eol
 
+%start opt_identifier
+%type <string option> opt_identifier
+
 %start opt_identifier_eol
 %type <string option> opt_identifier_eol
 
-%start variable_list_eol
-%type <string list> variable_list_eol
+%start expression_list_eol
+%type <Parser_aux.expression list> expression_list_eol
 
 %start break_argument_eol
 %type <Parser_aux.break_arg> break_argument_eol
-
-%start match_arguments_eol
-%type <string * Parser_aux.pattern> match_arguments_eol
 
 %start list_arguments_eol
 %type <string option * int option * int option> list_arguments_eol
@@ -138,84 +132,70 @@ opt_signed_integer_eol :
   | opt_integer_eol
       { $1 };
 
-/* Identifier */
+/* Identifiers and long identifiers */
+
+longident :
+    LIDENT                      { Lident $1 }
+  | module_path DOT LIDENT      { Ldot($1, $3) }
+  | OPERATOR                    { Lident $1 }
+;
+
+module_path :
+    UIDENT                      { Lident $1 }
+  | module_path DOT UIDENT      { Ldot($1, $3) }
+;
+
+longident_eol :
+    longident end_of_line      { $1 };
 
 identifier :
-    IDENTIFIER
-      { $1 };
+    LIDENT                      { $1 }
+  | UIDENT                      { $1 };
 
 identifier_eol :
-    IDENTIFIER end_of_line
-      { $1 };
+    identifier end_of_line      { $1 };
 
 identifier_or_eol :
-    IDENTIFIER
-      { Some $1 }
-  | end_of_line
-      { None };
+    identifier                  { Some $1 }
+  | end_of_line                 { None };
 
 opt_identifier :
-    IDENTIFIER
-      { Some $1 }
-  |
-      { None };
+    identifier                  { Some $1 }
+  |                             { None };
 
 opt_identifier_eol :
-    IDENTIFIER end_of_line
-      { Some $1 }
-  | end_of_line
-      { None };
+    opt_identifier end_of_line  { $1 };
 
-/* Variables list */
+/* Expressions */
 
-variable_list_eol :
-    variable variable_list_eol
-      { $1::$2 }
-  | end_of_line
-      { [] };
+expression:
+    longident                                  { E_ident $1 }
+  | STAR                                        { E_result }
+  | DOLLAR INTEGER                              { E_name $2 }
+  | expression DOT INTEGER                      { E_item($1, $3) }
+  | expression DOT LBRACKET INTEGER RBRACKET    { E_item($1, $4) }
+  | expression DOT LPAREN INTEGER RPAREN        { E_item($1, $4) }
+  | expression DOT LIDENT                       { E_field($1, $3) }
+  | BANG expression                             { E_field($2, "contents") }
+  | LPAREN expression RPAREN                    { $2 }
+;
 
-variable_eol :
-  variable end_of_line
-    { $1 };
+/* Lists of expressions */
 
-local_name :
-    IDENTIFIER
-      { $1 }
-  | PREFIX STAR
-      { "*" };
-  | PREFIX MINUS
-      { "-" }
-  | PREFIX AT
-      { "@" }
-  | PREFIX EQUAL
-      { "=" }
-  | PREFIX SUPERIOR
-      { ">" }
-  | PREFIX OPERATOR
-      { $2 };
-
-variable :
-    local_name
-      { $1 }
-  | IDENTIFIER UNDERUNDER local_name
-      { $1 ^ "." ^ $3 }
-  | STAR
-      { "" };
-
+expression_list_eol :
+    expression expression_list_eol              { $1::$2 }
+  | end_of_line                                 { [] }
+;
 
 /* Arguments for breakpoint */
 
 break_argument_eol :
-    end_of_line
-      { BA_none }
-  | integer_eol
-      { BA_pc $1 }
-  | variable_eol
-      { BA_function $1 }
-  | AT opt_identifier INTEGER opt_integer_eol
-      { BA_pos1 ($2, $3, $4) }
-  | AT opt_identifier SHARP integer_eol
-      { BA_pos2 ($2, $4) };
+    end_of_line                                 { BA_none }
+  | integer_eol                                 { BA_pc $1 }
+  | longident_eol                               { BA_function $1 }
+  | AT opt_identifier INTEGER opt_integer_eol   { BA_pos1 ($2, $3, $4) }
+  | AT opt_identifier SHARP integer_eol         { BA_pos2 ($2, $4) }
+;
 
 /* Arguments for list */
 
@@ -225,70 +205,8 @@ list_arguments_eol :
   | opt_identifier_eol
       { ($1, None, None) };
 
-/* Pattern */
-
-match_arguments_eol :
-    variable pattern end_of_line
-      { ($1, $2) }
-
-pattern_sm_list :
-    pattern SEMI pattern_sm_list
-      { $1::$3 }
-  | pattern
-      { [$1] }
-;
-
-pattern_label_list :
-    pattern_label SEMI pattern_label_list
-      { $1::$3 }
-  | pattern_label
-      { [$1] }
-;
-
-pattern_label :
-    variable EQUAL pattern
-      { ($1, $3) }
-;
-
-pattern_comma_list :
-        pattern_comma_list COMMA pattern
-          { $3 :: $1 }
-      | pattern COMMA pattern
-          { [$3; $1] }
-;
-  
-pattern :
-    simple_pattern
-      { $1 }
-  | pattern COLONCOLON pattern
-      { P_concat ($1, $3) }
-  | pattern_comma_list
-      { P_tuple (List.rev $1) }
-  | variable simple_pattern
-      { P_constr ($1, $2) }
-  | SUPERIOR simple_pattern
-      { P_constr ("", $2) }
-;
-
-simple_pattern :
-    UNDERSCORE
-      { P_dummy }
-  | identifier
-      { P_variable $1 }
-  | LBRACKET RBRACKET
-      { P_list [] }
-  | LBRACKET pattern_sm_list RBRACKET
-      { P_list $2 }
-  | LBRACE pattern_label_list RBRACE
-      { P_record $2 }
-  | LPAREN pattern RPAREN
-      { $2 }
-  | SHARP INTEGER pattern %prec sharp
-      { P_nth ($2, $3) }
-;
-
 /* End of line */
 
 end_of_line :
-    EOL
-      { stop_user_input () };
+    EOL { stop_user_input () }
+;
