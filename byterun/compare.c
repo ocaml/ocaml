@@ -44,15 +44,11 @@ static void compare_free_stack(void)
   }
 }
 
-/* Same, then raise Stack_overflow */
+/* Same, then raise Out_of_memory */
 static void compare_stack_overflow(void)
 {
   compare_free_stack();
-#if 0
-  raise_stack_overflow();
-#else
   raise_out_of_memory();
-#endif
 }
 
 /* Grow the compare stack */
