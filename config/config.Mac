@@ -6,7 +6,7 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
+#   under the terms of the GNU Library General Public License.          #
 #                                                                       #
 #########################################################################
 
@@ -53,7 +53,7 @@ set -e NATIVECC MrC
 ############# Version numbers (do not change)
 
 set -e OCAMLMAJOR 2
-set -e OCAMLMINOR 03
+set -e OCAMLMINOR 04
 set -e MAJOR 1
 set -e MINOR 0
 set -e STAGE a

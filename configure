@@ -1,16 +1,16 @@
 #! /bin/sh
 
-#*********************************************************************#
-#                                                                     #
-#                           Objective Caml                            #
-#                                                                     #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt         #
-#                                                                     #
-#  Copyright 1995 Institut National de Recherche en Informatique et   #
-#  en Automatique.  All rights reserved.  This file is distributed    #
-#  under the terms of the Q Public License version 1.0.               #
-#                                                                     #
-#*********************************************************************#
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 1999 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the GNU Library General Public License.          #
+#                                                                       #
+#########################################################################
 
 # $Id$
 
@@ -29,6 +29,8 @@ tk_defs=''
 tk_libs=''
 posix_threads=no
 verbose=no
+
+gcc_warnings="-Wall -Wno-unused"
 
 # Parse command-line arguments
 
@@ -175,22 +177,22 @@ bytecclinkopts=""
 case "$bytecc,$host" in
   cc,*-*-nextstep*)
     # GNU C extensions disabled, but __GNUC__ still defined!
-    bytecccompopts="-fno-defer-pop -Wall -U__GNUC__ -posix"
+    bytecccompopts="-fno-defer-pop $gcc_warnings -U__GNUC__ -posix"
     bytecclinkopts="-posix";;
   cc,*-*-rhapsody*)
     # Almost the same as NeXTStep
-    bytecccompopts="-fno-defer-pop -Wall -DSHRINKED_GNUC"
+    bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-beos*)
-    bytecccompopts="-fno-defer-pop -Wall"
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
     mathlib="";;
   gcc,alpha-*-osf*)
-    bytecccompopts="-fno-defer-pop -Wall"
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
     # -taso puts code in lower 4GB
     bytecclinkopts="-Xlinker -taso";;
   gcc*)
-    bytecccompopts="-fno-defer-pop -Wall";;
+    bytecccompopts="-fno-defer-pop $gcc_warnings";;
   cc,mips-*-irix6*)
     # Add -n32 flag to ensure compatibility with native-code compiler
     bytecccompopts="-n32"
@@ -334,10 +336,10 @@ case "$arch,$nativecc,$system" in
   alpha,cc*,digital) nativecccompopts=-std1;;
   mips,cc*,irix)     nativecccompopts=-n32
                      nativecclinkopts="-n32 -Wl,-woff,84";;
-  *,*,nextstep)      nativecccompopts="-Wall -U__GNUC__ -posix"
+  *,*,nextstep)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                      nativecclinkopts="-posix";;
-  *,*,rhapsody)      nativecccompopts="-Wall -DSHRINKED_GNUC";;
-  *,gcc*,*)          nativecccompopts=-Wall;;
+  *,*,rhapsody)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
+  *,gcc*,*)          nativecccompopts="$gcc_warnings";;
 esac
 
 asflags=''

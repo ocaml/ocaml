@@ -2,7 +2,7 @@ All files marked "Copyright INRIA" in the following directories and
 their sub-directories are distributed under the terms of the GNU
 Library General Public License (included below):
 
-            asmrun, byterun, maccaml, otherlibs, stdlib
+            asmrun, byterun, config, maccaml, otherlibs, stdlib
 
 All files marked "Copyright INRIA" in the other directories and their
 sub-directories are distributed under the terms of the Q Public
