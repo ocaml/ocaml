@@ -1423,12 +1423,17 @@ else
   echo "Configuration failed, LablTk will not be built."
 fi
 
-# Camlp4
-
+# Begin Camlp4
 (
 cd ../../camlp4/config
 EXE=$exe ./configure_batch -prefix "$prefix" -bindir "$bindir" -libdir "$libdir" -mandir "$mandir" -ocaml-top ../.. > /dev/null
 )
+
+case $? in
+    0) echo "Camlp4 correctly configured.";;
+    *) echo "Warning: Camlp4 configuration terminated with error code $?";;
+esac
+# End Camlp4
 
 # Final twiddling of compiler options to work around known bugs
 
