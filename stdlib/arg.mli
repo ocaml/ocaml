@@ -19,8 +19,8 @@
 (* Syntax of command lines:
     A keyword is a character string starting with a [-].
     An option is a keyword alone or followed by an argument.
-    There are four types of keywords: [Unit], [String], [Int], and [Float].
-    [Unit] keywords do not take an argument.
+    There are six types of keywords: [Unit], [String], [Int], and [Float].
+    [Unit], [Set_flag] and [Clear_flag] keywords do not take an argument.
     [String], [Int], and [Float] keywords take the following word on the
     command line as an argument.
     Arguments not preceded by a keyword are called anonymous arguments. *)
@@ -34,10 +34,12 @@
 *)
 
 type spec =
-    String of (string -> unit)
-  | Int of (int -> unit)
-  | Unit of (unit -> unit)
-  | Float of (float -> unit)
+    Unit of (unit -> unit)     (* Call the function with no argument *)
+  | Set of bool ref            (* Set the reference to true *)
+  | Clear of bool ref          (* Set the reference to false *)
+  | String of (string -> unit) (* Call the function with a string argument *)
+  | Int of (int -> unit)       (* Call the function with an int argument *)
+  | Float of (float -> unit)   (* Call the function with a float argument *)
         (* The concrete type describing the behavior associated
            with a keyword. *)
 

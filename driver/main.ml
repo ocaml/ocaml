@@ -43,18 +43,18 @@ let main () =
   try
     Arg.parse
       ["-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs);
-       "-c", Arg.Unit(fun () -> compile_only := true);
+       "-c", Arg.Set compile_only;
        "-o", Arg.String(fun s -> exec_name := s; archive_name := s);
-       "-i", Arg.Unit(fun () -> print_types := true);
-       "-a", Arg.Unit(fun () -> make_archive := true);
-       "-unsafe", Arg.Unit(fun () -> fast := true);
-       "-nopervasives", Arg.Unit(fun () -> nopervasives := true);
-       "-custom", Arg.Unit(fun () -> custom_runtime := true);
+       "-i", Arg.Set print_types;
+       "-a", Arg.Set make_archive;
+       "-unsafe", Arg.Set fast;
+       "-nopervasives", Arg.Set nopervasives;
+       "-custom", Arg.Set custom_runtime;
        "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts);
        "-cclib", Arg.String(fun s -> ccobjs := ("-l" ^ s) :: !ccobjs);
-       "-linkall", Arg.Unit(fun s -> link_everything := true);
-       "-dlambda", Arg.Unit(fun () -> dump_lambda := true);
-       "-dinstr", Arg.Unit(fun () -> dump_instr := true);
+       "-linkall", Arg.Set link_everything;
+       "-dlambda", Arg.Set dump_lambda;
+       "-dinstr", Arg.Set dump_instr;
        "-v", Arg.Unit print_version_number;
        "-", Arg.String process_file]
       process_file;

@@ -164,8 +164,8 @@ let file_dependencies source_file =
 let _ =
   Arg.parse
     ["-I", Arg.String(fun dir -> load_path := dir :: !load_path);
-     "-opt", Arg.Unit(fun () -> opt_flag := true);
-     "-noopt", Arg.Unit(fun () -> opt_flag := false)]
+     "-opt", Arg.Set opt_flag;
+     "-noopt", Arg.Clear opt_flag]
     file_dependencies;
   exit 0
     

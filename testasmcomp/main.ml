@@ -37,18 +37,18 @@ let compile_file filename =
 
 let main() =
   Arg.parse
-    ["-dcmm", Arg.Unit(fun () -> dump_cmm := true);
-     "-dsel", Arg.Unit(fun () -> dump_selection := true);
+    ["-dcmm", Arg.Set dump_cmm;
+     "-dsel", Arg.Set dump_selection;
      "-dlive", Arg.Unit(fun () -> dump_live := true;
                                   Printmach.print_live := true);
-     "-dspill", Arg.Unit(fun () -> dump_spill := true);
-     "-dsplit", Arg.Unit(fun () -> dump_split := true);
-     "-dinterf", Arg.Unit(fun () -> dump_interf := true);
-     "-dprefer", Arg.Unit(fun () -> dump_prefer := true);
-     "-dalloc", Arg.Unit(fun () -> dump_regalloc := true);
-     "-dreload", Arg.Unit(fun () -> dump_reload := true);
-     "-dscheduling", Arg.Unit(fun () -> dump_scheduling := true);
-     "-dlinear", Arg.Unit(fun () -> dump_linear := true)]
+     "-dspill", Arg.Set dump_spill;
+     "-dsplit", Arg.Set dump_split;
+     "-dinterf", Arg.Set dump_interf;
+     "-dprefer", Arg.Set dump_prefer;
+     "-dalloc", Arg.Set dump_regalloc;
+     "-dreload", Arg.Set dump_reload;
+     "-dscheduling", Arg.Set dump_scheduling;
+     "-dlinear", Arg.Set dump_linear]
     compile_file
 
 let _ = Printexc.catch main (); exit 0

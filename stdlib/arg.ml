@@ -12,10 +12,12 @@
 (* $Id$ *)
 
 type spec =
-    String of (string -> unit)
-  | Int of (int -> unit)
-  | Unit of (unit -> unit)
-  | Float of (float -> unit)
+    Unit of (unit -> unit)     (* Call the function with no argument *)
+  | Set of bool ref            (* Set the reference to true *)
+  | Clear of bool ref          (* Set the reference to false *)
+  | String of (string -> unit) (* Call the function with a string argument *)
+  | Int of (int -> unit)       (* Call the function with an int argument *)
+  | Float of (float -> unit)   (* Call the function with a float argument *)
 
 exception Bad of string
 
@@ -59,6 +61,8 @@ let parse speclist anonfun =
     try
       match (action, l) with
         (Unit f, l) -> f (); p l
+      | (Set r, l) -> r := true; p l
+      | (Clear r, l) -> r := false; p l
       | (String f, arg::t) -> f arg; p t
       | (Int f, arg::t) ->
           begin try f (int_of_string arg)
