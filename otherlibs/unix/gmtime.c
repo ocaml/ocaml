@@ -36,14 +36,14 @@ static value alloc_tm(struct tm *tm)
 value unix_gmtime(value t)             /* ML */
 {
   time_t clock;
-  clock = Long_val(t);
+  clock = (time_t) Double_val(t);
   return alloc_tm(gmtime(&clock));
 }
 
 value unix_localtime(value t)          /* ML */
 {
   time_t clock;
-  clock = Long_val(t);
+  clock = (time_t) Double_val(t);
   return alloc_tm(localtime(&clock));
 }
 
@@ -54,9 +54,9 @@ value unix_mktime(value t)            /* ML */
   struct tm tm;
   time_t clock;
   value res;
-  value tmval = Val_unit;
+  value tmval = Val_unit, clkval = Val_unit;
 
-  Begin_root (tmval);
+  Begin_roots2(tmval, clkval);
     tm.tm_sec = Int_val(Field(t, 0));
     tm.tm_min = Int_val(Field(t, 1));
     tm.tm_hour = Int_val(Field(t, 2));
@@ -68,8 +68,9 @@ value unix_mktime(value t)            /* ML */
     tm.tm_isdst = -1; /* tm.tm_isdst = Bool_val(Field(t, 8)); */
     clock = mktime(&tm);
     tmval = alloc_tm(&tm);
+    clkval = copy_double((double) clock);
     res = alloc_tuple(2);
-    Field(res, 0) = Val_long(clock);
+    Field(res, 0) = clkval;
     Field(res, 1) = tmval;
   End_roots ();
   return res;

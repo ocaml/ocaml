@@ -12,6 +12,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <memory.h>
 #include <alloc.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
@@ -38,21 +39,27 @@ static int file_kind_table[] = {
 static value stat_aux(struct stat *buf)
 {
   value v;
+  value atime = Val_unit, mtime = Val_unit, ctime = Val_unit;
 
-  v = alloc_tuple(12);
-  Field (v, 0) = Val_int (buf->st_dev);
-  Field (v, 1) = Val_int (buf->st_ino);
-  Field (v, 2) = cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,
-                               sizeof(file_kind_table) / sizeof(int), 0);
-  Field (v, 3) = Val_int(buf->st_mode & 07777);
-  Field (v, 4) = Val_int (buf->st_nlink);
-  Field (v, 5) = Val_int (buf->st_uid);
-  Field (v, 6) = Val_int (buf->st_gid);
-  Field (v, 7) = Val_int (buf->st_rdev);
-  Field (v, 8) = Val_int (buf->st_size);
-  Field (v, 9) = Val_int (buf->st_atime);
-  Field (v, 10) = Val_int (buf->st_mtime);
-  Field (v, 11) = Val_int (buf->st_ctime);
+  Begin_roots3(atime,mtime,ctime)
+    atime = copy_double((double) buf->st_atime);
+    mtime = copy_double((double) buf->st_mtime);
+    ctime = copy_double((double) buf->st_ctime);
+    v = alloc_tuple(12);
+    Field (v, 0) = Val_int (buf->st_dev);
+    Field (v, 1) = Val_int (buf->st_ino);
+    Field (v, 2) = cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,
+                                 sizeof(file_kind_table) / sizeof(int), 0);
+    Field (v, 3) = Val_int(buf->st_mode & 07777);
+    Field (v, 4) = Val_int (buf->st_nlink);
+    Field (v, 5) = Val_int (buf->st_uid);
+    Field (v, 6) = Val_int (buf->st_gid);
+    Field (v, 7) = Val_int (buf->st_rdev);
+    Field (v, 8) = Val_int (buf->st_size);
+    Field (v, 9) = atime;
+    Field (v, 10) = ctime;
+    Field (v, 11) = mtime;
+  End_roots();
   return v;
 }
 

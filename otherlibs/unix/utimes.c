@@ -26,8 +26,8 @@
 value unix_utimes(value path, value atime, value mtime) /* ML */
 {
   struct utimbuf times, * t;
-  times.actime = Int_val(atime);
-  times.modtime = Int_val(mtime);
+  times.actime = Double_val(atime);
+  times.modtime = Double_val(mtime);
   if (times.actime || times.modtime)
     t = &times;
   else
@@ -46,15 +46,17 @@ value unix_utimes(value path, value atime, value mtime) /* ML */
 value unix_utimes(value path, value atime, value mtime) /* ML */
 {
   struct timeval tv[2], * t;
-  tv[0].tv_sec = Int_val(atime);
-  tv[0].tv_usec = 0;
-  tv[1].tv_sec = Int_val(mtime);
-  tv[1].tv_usec = 0;
+  double at = Double_val(atime);
+  double mt = Double_val(mtime);
+  tv[0].tv_sec = at;
+  tv[0].tv_usec = (at - tv[0].tv_sec) * 1000000;
+  tv[1].tv_sec = mt;
+  tv[1].tv_usec = (mt - tv[1].tv_sec) * 1000000;
   if (tv[0].tv_sec || tv[1].tv_sec)
     t = tv;
   else
     t = (struct timeval *) NULL;
-  if (utimes(String_val(path),  t) == -1) uerror("utime", path);
+  if (utimes(String_val(path),  t) == -1) uerror("utimes", path);
   return Val_unit;
 }
 

@@ -204,9 +204,9 @@ type stats =
     st_gid : int;
     st_rdev : int;
     st_size : int;
-    st_atime : int;
-    st_mtime : int;
-    st_ctime : int }
+    st_atime : float;
+    st_mtime : float;
+    st_ctime : float }
 
 external stat : string -> stats = "unix_stat"
 external lstat : string -> stats = "unix_lstat"
@@ -282,15 +282,15 @@ type tm =
     tm_yday : int;
     tm_isdst : bool }
 
-external time : unit -> int = "unix_time"
+external time : unit -> float = "unix_time"
 external gettimeofday : unit -> float = "unix_gettimeofday"
-external gmtime : int -> tm = "unix_gmtime"
-external localtime : int -> tm = "unix_localtime"
-external mktime : tm -> int * tm = "unix_mktime"
+external gmtime : float -> tm = "unix_gmtime"
+external localtime : float -> tm = "unix_localtime"
+external mktime : tm -> float * tm = "unix_mktime"
 external alarm : int -> int = "unix_alarm"
 external sleep : int -> unit = "unix_sleep"
 external times : unit -> process_times = "unix_times"
-external utimes : string -> int -> int -> unit = "unix_utimes"
+external utimes : string -> float -> float -> unit = "unix_utimes"
 
 type interval_timer =
     ITIMER_REAL

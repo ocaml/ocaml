@@ -291,9 +291,9 @@ type stats =
     st_gid : int;                       (* Group id of the owner *)
     st_rdev : int;                      (* Device minor number *)
     st_size : int;                      (* Size in bytes *)
-    st_atime : int;                     (* Last access time *)
-    st_mtime : int;                     (* Last modification time *)
-    st_ctime : int }                    (* Last status change time *)
+    st_atime : float;                   (* Last access time *)
+    st_mtime : float;                   (* Last modification time *)
+    st_ctime : float }                  (* Last status change time *)
 
         (* The informations returned by the [stat] calls. *)
 
@@ -525,18 +525,18 @@ type tm =
 
         (* The type representing wallclock time and calendar date. *)
 
-val time : unit -> int
+val time : unit -> float
         (* Return the current time since 00:00:00 GMT, Jan. 1, 1970,
            in seconds. *)
 val gettimeofday : unit -> float
         (* Same as [time], but with resolution better than 1 second. *)
-val gmtime : int -> tm
+val gmtime : float -> tm
         (* Convert a time in seconds, as returned by [time], into a date and
            a time. Assumes Greenwich meridian time zone, also known as UTC. *)
-val localtime : int -> tm
+val localtime : float -> tm
         (* Convert a time in seconds, as returned by [time], into a date and
            a time. Assumes the local time zone. *)
-val mktime : tm -> int * tm
+val mktime : tm -> float * tm
         (* Convert a date and time, specified by the [tm] argument, into
            a time in seconds, as returned by [time]. Also return a normalized
            copy of the given [tm] record, with the [tm_wday], [tm_yday],
@@ -548,7 +548,7 @@ val sleep : int -> unit
         (* Stop execution for the given number of seconds. *)
 val times : unit -> process_times
         (* Return the execution times of the process. *)
-val utimes : string -> int -> int -> unit
+val utimes : string -> float -> float -> unit
         (* Set the last access time (second arg) and last modification time
            (third arg) for a file. Times are expressed in seconds from
            00:00:00 GMT, Jan. 1, 1970. *)

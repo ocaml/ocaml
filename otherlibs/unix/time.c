@@ -13,9 +13,10 @@
 
 #include <time.h>
 #include <mlvalues.h>
+#include <alloc.h>
 #include "unixsupport.h"
 
 value unix_time(void)                /* ML */
 {
-  return Val_long(time((time_t *) NULL));
+  return copy_double((double) time((time_t *) NULL));
 }
