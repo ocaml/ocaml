@@ -91,9 +91,8 @@ RANDOM NOTES:
 * The VC++ compiler does a poor job on byterun/interp.c. Consequently,
 the performance of bytecode programs is about half of that obtained
 under Unix/GCC on similar hardware. GCC would give much better
-performance, but none of the currently available ports of GCC for
-Win32 is sufficiently complete, robust and stable to compile Objective
-Caml.
+performance, but the currently available ports of GCC for
+Win32 lack crucial features such as thread support.
 
 * Libraries available under Win32: "num", "str", "threads", "graph",
 "camltk41", and large parts of "unix". 
