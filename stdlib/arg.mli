@@ -75,3 +75,11 @@ val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
 exception Bad of string
         (* Functions in [spec] or [anonfun] can raise [Bad] with
            an error message to reject invalid arguments. *)
+
+val usage: (string * spec * string) list -> string -> unit
+(*
+    [usage speclist errmsg]
+    [speclist] and [errmsg] are the same as for [parse].  [usage]
+    prints the same error message that [parse] prints in case of
+    error.
+*)

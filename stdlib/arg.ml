@@ -36,13 +36,13 @@ let rec assoc3 x l =
   | _::t -> assoc3 x t
 ;;
 
-let print_doc =
-  function (key, _, doc) -> eprintf "  %s %s\n" key doc
+let usage speclist errmsg =
+  eprintf "%s\n" errmsg;
+  List.iter (function (key, _, doc) -> eprintf "  %s %s\n" key doc) speclist
 ;;
 
 let parse speclist anonfun errmsg =
   let stop error =
-    (* Print the reason for the error *)
     let progname =
       if Array.length Sys.argv > 0 then Sys.argv.(0) else "(?)" in
     begin match error with
@@ -57,9 +57,7 @@ let parse speclist anonfun errmsg =
       | Message s ->
           eprintf "%s: %s.\n" progname s
     end;
-    (* Print the usage message *)
-    eprintf "%s\n" errmsg;
-    List.iter print_doc speclist;
+    usage speclist errmsg;
     exit 2
   in
   let rec p = function
