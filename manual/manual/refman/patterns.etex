@@ -18,6 +18,7 @@ pattern:
   | '{' field '=' pattern { ';' field '=' pattern } '}'
   | '[' pattern { ';' pattern } ']'
   | pattern '::' pattern
+  | '[|' pattern { ';' pattern } '|]'
 \end{syntax}
 
 The table below shows the relative precedences and associativity of
@@ -125,8 +126,14 @@ is, the pattern matches the tuple values @(v_1, \ldots, v_n)@ such that
 The pattern @"{" field_1 "=" pattern_1 ";" \ldots ";" field_n "="
 pattern_n "}"@ matches records that define at least the fields
 @field_1@ through @field_n@, and such that the value associated to
-@field_i@ match the pattern @pattern_i@, for \fromoneto{i}{n}.
+@field_i@ matches the pattern @pattern_i@, for \fromoneto{i}{n}.
 The record value can define more fields than @field_1@ \ldots
 @field_n@; the values associated to these extra fields are not taken
 into account for matching.
+
+\subsubsection*{Array patterns}
+
+The pattern @"[|" pattern_1 ";" \ldots ";" pattern_n "|]"@
+matches arrays of length @n@ such that the @i@-th array element
+matches the pattern @pattern_i@, for \fromoneto{i}{n}.
 
