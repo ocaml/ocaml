@@ -23,11 +23,15 @@ libgraphics.a: $(OBJS)
 graphics.cma: graphics.cmo
 	$(CAMLC) -a -o graphics.cma graphics.cmo
 
+graphics.ml: graphics.mlp
+	$(CPP) -DUSE_ASYNC_IO graphics.mlp > graphics.ml
+
 clean:
 	rm -f *.cm*
+	rm -f graphics.ml
 
 realclean: clean
-	rm -f *.a *.o $(GENFILES)
+	rm -f *.a *.o
 
 install:
 	cp libgraphics.a $(LIBDIR)/libgraphics.a
@@ -45,7 +49,7 @@ installopt:
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-depend:
+depend: graphics.ml
 	gcc -MM $(CFLAGS) *.c > .depend
 	../../tools/csldep *.mli *.ml >> .depend
 
