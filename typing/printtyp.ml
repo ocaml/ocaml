@@ -236,11 +236,10 @@ let rec typexp sch prio0 ppf ty =
                | _ -> false)
             fields in
         let all_present = List.length present = List.length fields in
-        let pr_present ppf l =
-          fprintf ppf "@[<hov>%a@]"
-            (print_list (fun ppf (s, _) -> fprintf ppf "`%s" s)
-                        (fun () -> fprintf ppf "@ | "))
-            l in
+        let pr_present =
+	  print_list (fun ppf (s, _) -> fprintf ppf "`%s" s)
+                     (fun () -> fprintf ppf "@ |")
+        in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
             let sharp_mark =
@@ -248,7 +247,8 @@ let rec typexp sch prio0 ppf ty =
             let print_present ppf = function
               | [] -> ()
               | l ->
-                 if not all_present then fprintf ppf "[>%a]" pr_present l in
+                 if not all_present then
+		   fprintf ppf "@[<hov>[>%a]@]" pr_present l in
             fprintf ppf "@[%a%s%a%a@]"
               (typargs sch) tyl sharp_mark path p print_present present
         | _ ->
@@ -258,19 +258,20 @@ let rec typexp sch prio0 ppf ty =
               else "" in
             let close_mark =
               if not all_present then "<" else
-              if row.row_closed then " " else
+              if row.row_closed then "" else
               if fields = [] then "< .." else ">" in
             let pr_ellipsis ppf =
               if not (row.row_closed || all_present)
-              then fprintf ppf "| .." in
+              then fprintf ppf "@ | .." in
             let print_present ppf = function
               | [] -> ()
               | l ->
-                 if not all_present then fprintf ppf "@ > %a" pr_present l in
+                 if not all_present then
+		   fprintf ppf "@ @[<hov>>%a@]" pr_present l in
             let print_fields =
-              print_list (row_field sch) (fun () -> fprintf ppf "@ | ") in
+              print_list (row_field sch) (fun () -> fprintf ppf "@ |") in
 
-            fprintf ppf "%s@[<hov>[%s%a%t%a@ ]@]"
+            fprintf ppf "%s@[<hv>@[<hv>[%s%a%t@]%a]@]"
               gen_mark close_mark print_fields fields pr_ellipsis
               print_present present
         end
@@ -407,7 +408,7 @@ let rec type_decl kwd id ppf decl =
 
   begin match decl.type_kind with
   | Type_abstract ->
-      fprintf ppf "@[<2>@[<hv 4>%a@]%a@]"
+      fprintf ppf "@[<2>@[<hv 2>%a@]%a@]"
         print_name_args decl print_constraints params
   | Type_variant [] -> ()
       (* A fatal error actually, except when printing type exn... *)
@@ -417,7 +418,8 @@ let rec type_decl kwd id ppf decl =
         (print_list constructor (fun () -> fprintf ppf "@ | ")) cstrs
         print_constraints params
   | Type_record lbls ->
-      fprintf ppf "@[<2>@[@[<hv 2>%a = {%a@]@ }@]@ %a@]" print_name_args decl
+      fprintf ppf "@[<2>@[<hv 2>%a = {%a@;<1 -2>}@]@ %a@]"
+	print_name_args decl
         (print_list_init label (fun () -> fprintf ppf "@ ")) lbls
         print_constraints params
   end

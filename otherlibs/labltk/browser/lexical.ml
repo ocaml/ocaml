@@ -83,6 +83,7 @@ let tag ?(:start=tstart) ?(:end=tend) tw =
       | PARSER
       | PRIVATE
       | REC
+      | SHARP
       | TYPE
       | VAL
       | VIRTUAL
@@ -105,7 +106,6 @@ let tag ?(:start=tstart) ?(:end=tend) tw =
       | INFIXOP4 _
       | PREFIXOP _
       | QUESTION2
-      | SHARP
           -> "infix"
       | LABEL _
       | LABELID _
