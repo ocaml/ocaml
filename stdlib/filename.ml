@@ -182,19 +182,40 @@ let chop_extension name =
 
 external open_desc: string -> open_flag list -> int -> int = "sys_open"
 external close_desc: int -> unit = "sys_close"
+external random_seed: unit -> int = "sys_random_seed"
+
+let temp_file_counter = ref 0
+
+let temp_file_name prefix suffix =
+  if !temp_file_counter = 0 then temp_file_counter := random_seed();
+  let name =
+    concat temporary_directory
+           (Printf.sprintf "%s%06x%s"
+                           prefix (!temp_file_counter land 0xFFFFFF) suffix) in
+  (* Linear congruential PRNG *)
+  temp_file_counter := !temp_file_counter * 69069 + 25173;
+  name
 
 let temp_file prefix suffix =
   let rec try_name counter =
     if counter >= 1000 then
-      invalid_arg "Filename.temp_file: temp dir nonexistent or full"
-    else begin
-      let name =
-        concat temporary_directory (prefix ^ string_of_int counter ^ suffix) in
-      try
-        close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o666);
-        name
-      with Sys_error _ ->
-        try_name (counter + 1)
-    end
+      invalid_arg "Filename.temp_file: temp dir nonexistent or full";
+    let name = temp_file_name prefix suffix in
+    try
+      close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o600);
+      name
+    with Sys_error _ ->
+      try_name (counter + 1)
   in try_name 0
 
+let open_temp_file ?(mode = [Open_text]) prefix suffix =
+  let rec try_name counter =
+    if counter >= 1000 then
+      invalid_arg "Filename.open_temp_file: temp dir nonexistent or full";
+    let name = temp_file_name prefix suffix in
+    try
+      (name,
+       open_out_gen (Open_wronly::Open_creat::Open_excl::mode) 0o600 name)
+    with Sys_error _ ->
+      try_name (counter + 1)
+  in try_name 0

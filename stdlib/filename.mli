@@ -69,9 +69,10 @@ val temp_file : string -> string -> string
    fresh temporary file in the temporary directory.
    The base name of the temporary file is formed by concatenating
    [prefix], then a suitably chosen integer number, then [suffix].
-   The temporary file is created empty, and is guaranteed to be
-   different from any other file that existed when [temp_file]
-   was called.
+   The temporary file is created empty, with permissions [0o600]
+   (readable and writable only by the file owner).  The file is
+   guaranteed to be different from any other file that existed when
+   [temp_file] was called.
    Under Unix, the temporary directory is [/tmp] by default; if set,
    the value of the environment variable [TMPDIR] is used instead.
    Under Windows, the name of the temporary directory is the
@@ -80,6 +81,17 @@ val temp_file : string -> string -> string
    Under MacOS, the name of the temporary directory is given
    by the environment variable [TempFolder]; if not set,
    temporary files are created in the current directory. *)
+
+val open_temp_file :
+      ?mode: open_flag list -> string -> string -> string * out_channel
+(** Same as {!temp_file}, but returns both the name of a fresh
+   temporary file, and an output channel opened (atomically) on
+   this file.  This function is more secure than [temp_file]: there
+   is no risk that the temporary file will be modified (e.g. replaced
+   by a symbolic link) before the program opens it.  The optional argument
+   [mode] is a list of additional flags to control the opening of the file.
+   It can contain one or several of [Open_append], [Open_binary],
+   and [Open_text].  The default is [[Open_text]] (open in text mode). *)
 
 val quote : string -> string
 (** Return a quoted version of a file name, suitable for use as
