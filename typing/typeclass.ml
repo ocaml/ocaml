@@ -286,7 +286,7 @@ and class_signature env sty sign =
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
   begin try
-    Ctype.filter_method env dummy_method Private self_type
+    Ctype.check_filter_method env dummy_method Private self_type
   with Ctype.Unify _ ->
     raise(Error(sty.ptyp_loc, Pattern_type_clash self_type))
   end;
@@ -473,7 +473,7 @@ and class_structure val_env met_env (spat, str) =
   (* Check that the binder has a correct type, and introduce a dummy
      method preventing self type from being closed. *)
   let ty = Ctype.newvar () in
-  Ctype.filter_method val_env dummy_method Private ty;
+  Ctype.check_filter_method val_env dummy_method Private ty;
   begin try Ctype.unify val_env self_type ty with
     Ctype.Unify _ ->
       raise(Error(pat.pat_loc, Pattern_type_clash self_type))

@@ -5,7 +5,7 @@
 (* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -1263,6 +1263,9 @@ let rec filter_method env name priv ty =
       filter_method_field env name priv f
   | _ ->
       raise (Unify [])
+
+let check_filter_method env name priv ty =
+ let _ = filter_method env name priv ty in ()
 
 let filter_self_method env lab priv meths ty =
   let ty' = filter_method env lab priv ty in

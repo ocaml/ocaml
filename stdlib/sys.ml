@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -40,6 +40,9 @@ type signal_behavior =
 external signal: int -> signal_behavior -> signal_behavior
         = "install_signal_handler"
 
+let set_signal sig_num sig_beh =
+  let _ = signal sig_num sig_beh in ()
+
 let sigabrt = -1
 let sigalrm = -2
 let sigfpe = -3
@@ -66,7 +69,6 @@ exception Break
 
 let catch_break on =
   if on then
-    signal sigint (Signal_handle(fun _ -> raise Break))
+    set_signal sigint (Signal_handle(fun _ -> raise Break))
   else
-    signal sigint Signal_default;
-  ()
+    set_signal sigint Signal_default

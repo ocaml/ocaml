@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -85,6 +85,20 @@ val rindex_from: string -> int -> char -> int
            [String.index s c] is equivalent to [String.index_from s 0 c],
            and [String.rindex s c] to
            [String.rindex_from s (String.length s - 1) c]. *)
+
+val contains : string -> char -> bool
+        (* [String.contains s c] tests if character [c]
+           appears in the string [s]. *)
+val contains_from : string -> int -> char -> bool
+        (* [String.contains_from s start c] tests if character [c]
+           appears in the substring of [s] starting from [start] to the end
+           of [s].
+           Raise [Invalid_argument] if [start] is not a valid index of [s]. *)
+val rcontains_from : string -> int -> char -> bool
+        (* [String.rcontains_from s stop c] tests if character [c]
+           appears in the substring of [s] starting from the beginning
+           of [s] to index [stop].
+           Raise [Invalid_argument] if [stop] is not a valid index of [s]. *)
 
 val uppercase: string -> string
         (* Return a copy of the argument, with all lowercase letters

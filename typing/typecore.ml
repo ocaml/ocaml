@@ -709,14 +709,15 @@ let rec type_exp env sexp =
           raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
       end        
   | Pexp_override lst ->
-      List.fold_right
+      let _ = 
+       List.fold_right
         (fun (lab, _) l ->
            if List.exists ((=) lab) l then
              raise(Error(sexp.pexp_loc,
                          Value_multiply_overridden lab));
            lab::l)
         lst
-        [];
+        [] in
       begin match
         try
           Env.lookup_value (Longident.Lident "*self_pat*") env,

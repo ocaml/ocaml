@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -112,6 +112,8 @@ val filter_arrow: Env.t -> type_expr -> type_expr * type_expr
         (* A special case of unification (with 'a -> 'b). *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}). *)
+val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit
+        (* A special case of unification (with {m : 'a; 'b}), returning unit. *)
 val filter_self_method:
         Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ref ->
         type_expr -> Ident.t * type_expr

@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -70,6 +70,8 @@ external signal: int -> signal_behavior -> signal_behavior
         (* Set the behavior of the system on receipt of a given signal.
            The first argument is the signal number.  Return the behavior
            previously associated with the signal. *)
+val set_signal: int -> signal_behavior -> unit
+        (* Same as [signal] but return value is ignored. *)
 
 val sigabrt: int   (* Abnormal termination *)
 val sigalrm: int   (* Timeout *)

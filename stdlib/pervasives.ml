@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -251,12 +251,12 @@ let rec input_line chan =
     raise End_of_file
   else if n > 0 then begin              (* n > 0: newline found in buffer *)
     let res = string_create (n-1) in
-    unsafe_input chan res 0 (n-1);
-    input_char chan;                    (* skip the newline *)
+    let _ = unsafe_input chan res 0 (n-1) in
+    let _ = input_char chan in          (* skip the newline *)
     res
   end else begin                        (* n < 0: newline not found *)
     let beg = string_create (-n) in
-    unsafe_input chan beg 0 (-n);
+    let _ = unsafe_input chan beg 0 (-n) in
     try
       beg ^ input_line chan
     with End_of_file ->

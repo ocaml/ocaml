@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -161,3 +161,12 @@ let rindex_from s i c =
   then invalid_arg "String.rindex_from"
   else rindex_rec s i c
 
+let contains_from s i c =
+  if i < 0 || i >= length s then invalid_arg "String.contains_from" else
+  try let _ = index_rec s i c in true with Not_found -> false;;
+
+let rcontains_from s i c =
+  if i < 0 || i >= length s then invalid_arg "String.rcontains_from" else
+  try let _ = rindex_rec s i c in true with Not_found -> false;;
+
+let contains s c = contains_from s 0 c;;
