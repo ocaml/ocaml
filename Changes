@@ -6,7 +6,7 @@ Language features:
 - Allows _ separators in integer and float literals, e.g. 1_000_000.
 
 Type-checker:
-- New -principal option to enforce principality of type inference.
+- New flag -principal to enforce principality of type inference.
 - Fixed subtle typing bug with higher-order functors.
 - Fixed several complexity problems; changed (again) the  behaviour of
   simple coercions.
