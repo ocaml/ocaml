@@ -22,24 +22,25 @@
 \cleardoublepage
 \setcounter{page}{1}
 
-\tableofcontents
 
 \begin{htmlonly}
 \begin{quote}
 \rule{}{}
 This manual is also available in
-\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.pdf}{PDF}.
-\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.ps.gz}{Postscript},
-\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.dvi.gz}{DVI},
-\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.txt}{plain
+\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.pdf}{PDF}.
+\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.ps.gz}{Postscript},
+\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.dvi.gz}{DVI},
+\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.txt}{plain
 text},
 as a
-\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.html.tar.gz}{bundle of HTML files},
+\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.html.tar.gz}{bundle of HTML files},
 and as a
-\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.info.tar.gz}{bundle of Emacs Info files}.
+\ahref{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.info.tar.gz}{bundle of Emacs Info files}.
 \rule{}{}
 \end{quote}
 \end{htmlonly}
+
+\tableofcontents
 
 \input{foreword.tex}
 
