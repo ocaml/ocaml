@@ -26,10 +26,11 @@ let bad_format fmt i fc =
     (Printf.sprintf
        "scanf: bad format %c, at char number %i of format %s" fc i fmt);;
 
+(* Extracting tokens from ouput token buffer. *)
 let token_int ib =
- let s = Scanning.token ib in
- try Pervasives.int_of_string s
- with Failure "int_of_string" -> bad_input ib s;;
+  let s = Scanning.token ib in
+  try Pervasives.int_of_string s
+  with Failure "int_of_string" -> bad_input ib s;;
 
 let token_bool ib =
   match Scanning.token ib with
@@ -43,6 +44,28 @@ let token_char ib =
 let token_float ib =
   let s = Scanning.token ib in
   float_of_string s;;
+
+(* To scan native ints, int32 and int64 integers.
+We cannot access to convertion to from strings: Nativeint.of_string,
+Int32.of_string, and Int64.of_string, since those module are not
+available to scanf. However, we can bind and use the primitives that are
+available in the runtime. *)
+
+external nativeint_of_string: string -> nativeint = "nativeint_of_string";;
+external int32_of_string : string -> int32 = "int32_of_string";;
+external int64_of_string : string -> int64 = "int64_of_string";;
+
+let token_nativeint ib =
+  let s = Scanning.token ib in
+  nativeint_of_string s;;
+
+let token_int32 ib =
+  let s = Scanning.token ib in
+  int32_of_string s;;
+
+let token_int64 ib =
+  let s = Scanning.token ib in
+  int64_of_string s;;
 
 (* Scanning numbers. *)
 
@@ -127,6 +150,16 @@ let scan_optionally_signed_int max ib =
   if max = 0 || Scanning.end_of_input ib then bad_input ib "an int" else
   scan_unsigned_int max ib;;
 
+let scan_int c max ib =
+  match c with
+  | 'd' -> scan_optionally_signed_decimal_int max ib
+  | 'i' -> scan_optionally_signed_int max ib
+  | 'o' -> scan_octal_digits max ib 
+  | 'u' -> scan_unsigned_decimal_int max ib
+  | 'x' -> scan_hexadecimal_digits max ib
+  | 'X' -> scan_Hexadecimal_digits max ib
+  | c -> assert false;;
+
 let read_optionally_signed_decimal_int max ib =
   let max = scan_optionally_signed_decimal_int max ib in
   token_int ib;;
@@ -140,16 +173,16 @@ let read_optionally_signed_int max ib =
   token_int ib;;
 
 let read_unsigned_octal_int max ib =
- let max = scan_octal_digits max ib in
- token_int ib;;
+  let max = scan_octal_digits max ib in
+  token_int ib;;
 
 let read_unsigned_hexadecimal_int max ib =
   let max = scan_hexadecimal_digits max ib in
   token_int ib;;
 
 let read_unsigned_Hexadecimal_int max ib =
- let max = scan_Hexadecimal_digits max ib in
- token_int ib;;
+  let max = scan_Hexadecimal_digits max ib in
+  token_int ib;;
 
 (* Scanning floating point numbers. *)
 let scan_frac_part max ib = scan_unsigned_decimal_int max ib;;
@@ -168,9 +201,9 @@ let scan_float max ib =
   let c = Scanning.peek_char ib in
   match c with
   | '.' ->
-       let max = Scanning.store_char ib c max in
-       let max = scan_frac_part max ib in
-       scan_exp_part max ib
+     let max = Scanning.store_char ib c max in
+     let max = scan_frac_part max ib in
+     scan_exp_part max ib
   | c -> scan_exp_part max ib;;
 
 let read_float max ib =
@@ -266,21 +299,12 @@ let scan_chars_in_char_set char_set max ib =
     if max = 0 || Scanning.end_of_input ib then max else
     let c = Scanning.peek_char ib in
     if setp c then loop (Scanning.store_char ib c max) ib else max in
-  loop max ib
-;;
+  loop max ib;;
 
 let read_chars_in_char_set char_set max ib =
   let max = scan_chars_in_char_set char_set max ib in
   Scanning.token ib;;
    
-(* To scan native ints, int32 and int64 integers.
-Nativeint.of_string
-Int32.of_string
-Int64.of_string
- *)
-let scan_int_long t c max ib =
-  failwith "Not yet impmented";;
-
 let rec skip_whites ib =
   if not (Scanning.end_of_input ib) then
   match Scanning.peek_char ib with
@@ -360,11 +384,14 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
            scan (Obj.magic f x) (j + 1)
        | 'l' | 'n' | 'L' as t ->
            let i = i + 1 in
-           if i >= lim then bad_format fmt i t else begin
+           if i >= lim then bad_format fmt (i - 1) t else begin
            match fmt.[i] with
-           | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' as c ->
-              let x = scan_int_long t c max ib in
-              scan (Obj.magic f x) (i + 1)
+           | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as c ->
+              let x = scan_int c max ib in
+              begin match t with
+              | 'l' -> scan (Obj.magic f (token_int32 ib)) (i + 1)
+              | 'L' -> scan (Obj.magic f (token_int64 ib)) (i + 1)
+              | _ -> scan (Obj.magic f (token_nativeint ib)) (i + 1) end
            | _ -> bad_format fmt i end
        | 'N' ->
            let x = Scanning.char_count ib in
