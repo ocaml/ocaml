@@ -189,11 +189,13 @@ let pseudoregs_for_operation op arg res =
     (* For shifts with variable shift count, second arg must be in ecx *)
   | Iintop(Ilsl|Ilsr|Iasr) ->
       ([|res.(0); phys_reg 2|], res)
-    (* For div and mod, first arg must be in eax, result is in eax or edx *)
+    (* For div and mod, first arg must be in eax, edx is clobbered,
+       and result is in eax or edx respectively.
+       Keep it simple, just force second argument in ecx. *)
   | Iintop(Idiv) ->
-      ([|phys_reg 0; arg.(1)|], [|phys_reg 0|])
+      ([|phys_reg 0; phys_reg 2|], [|phys_reg 0|])
   | Iintop(Imod) ->
-      ([|phys_reg 0; arg.(1)|], [|phys_reg 3|])
+      ([|phys_reg 0; phys_reg 2|], [|phys_reg 3|])
     (* For storing a byte, the argument must be in eax...edx.
        For storing a halfword, any reg is ok.
        Keep it simple, just force it to be in edx in both cases. *)

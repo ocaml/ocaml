@@ -225,7 +225,7 @@ let emit_instr i =
                 `	ldd	[%sp + 96], {emit_reg dst}\n`
               else begin
                 `	ld	[%sp + 96], {emit_reg dst}\n`;
-                `	ld	[%sp + 96], {emit_reg(next_in_pair dst)}\n`
+                `	ld	[%sp + 100], {emit_reg(next_in_pair dst)}\n`
               end;
               `	add	%sp, 8, %sp\n`
           | {loc = Reg rs; typ = (Int | Addr)}, {loc = Stack sd} ->

@@ -144,6 +144,13 @@ let name_for_cond_branch = function
   | Iunsigned Cle -> "be"  | Iunsigned Cgt -> "a"
   | Iunsigned Clt -> "b"  | Iunsigned Cge -> "ae"
     
+(* Output a comparison with a constant *)
+
+let output_comparison arg n =
+  match arg.loc with
+    Reg r when n = 0 -> `	testl	{emit_reg arg}, {emit_reg arg}\n`
+  | _                -> `	cmpl	${emit_int n}, {emit_reg arg}\n`
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -216,7 +223,9 @@ let emit_instr i =
           record_frame i.live
         end else begin
           `	call	{emit_symbol s}\n`
-        end
+        end;
+        if Array.length i.res > 0 & i.res.(0).typ = Float then
+          `	fstpl	{emit_shift i.res.(0)}\n`
     | Lop(Istackoffset n) ->
         if n >= 0
         then `	subl	${emit_int n}, %esp\n`
@@ -266,8 +275,8 @@ let emit_instr i =
           `	cmpl	_young_start, %eax\n`;
           let lbl_cont = record_frame_label i.live in
           `	jae	{emit_label lbl_cont}\n`;
-          `	movl	${emit_int n}, %eax\n`;
           `	call	_caml_call_gc\n`;
+          `	.word	{emit_int n}\n`;
           `{emit_label lbl_cont}:	leal	4(%eax), {emit_reg i.res.(0)}\n`
         end else begin
           begin match n with
@@ -285,7 +294,7 @@ let emit_instr i =
         `	set{emit_string b}	%al\n`;
         `	movzbl	%al, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
-        `	cmpl	${emit_int n}, {emit_reg i.arg.(0)}\n`;
+        output_comparison i.arg.(0) n;
         let b = name_for_cond_branch cmp in
         `	set{emit_string b}	%al\n`;
         `	movzbl	%al, {emit_reg i.res.(0)}\n`
@@ -380,17 +389,17 @@ let emit_instr i =
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->
-            `	cmpl	$0, {emit_reg i.arg.(0)}\n`;
+            output_comparison i.arg.(0) 0;
             `	jne	{emit_label lbl}\n`
         | Ifalsetest ->
-            `	cmpl	$0, {emit_reg i.arg.(0)}\n`;
+            output_comparison i.arg.(0) 0;
             `	je	{emit_label lbl}\n`
         | Iinttest cmp ->
             `	cmpl	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
         | Iinttest_imm(cmp, n) ->
-            `	cmpl	${emit_int n}, {emit_reg i.arg.(0)}\n`;
+            output_comparison i.arg.(0) n;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
         | Ifloattest cmp ->

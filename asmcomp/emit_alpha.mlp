@@ -515,9 +515,8 @@ let emit_instr i =
         begin match Array.length jumptbl with
           3 ->
             (* Should eliminate the branches that just fall through *)
-            `	subq	{emit_reg i.arg.(0)}, 1, $25\n`;
-            `	blt	$25, {emit_label jumptbl.(0)}\n`;
-            `	beq	$25, {emit_label jumptbl.(1)}\n`;
+            `	beq	{emit_reg i.arg.(0)}, {emit_label jumptbl.(0)}\n`;
+            `	blbs	{emit_reg i.arg.(0)}, {emit_label jumptbl.(1)}\n`;
             `	br	{emit_label jumptbl.(2)}\n`
         | 4 ->
             `	beq	{emit_reg i.arg.(0)}, {emit_label jumptbl.(0)}\n`;
