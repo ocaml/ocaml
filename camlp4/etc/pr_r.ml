@@ -745,7 +745,7 @@ and fun_binding b fb k =
   | e -> HVbox [: `HVbox [: b; `S LR "=" :]; `expr e k :] ]
 and simple_patt p k =
   match p with
-  [ <:patt< $lid:_$ >> -> patt p k
+  [ <:patt< $lid:_$ >> | <:patt< ~ $_$ : $_$ >> | <:patt< ~ $_$ >> -> patt p k
   | _ -> HVbox [: `S LO "("; `patt p [: `S RO ")"; k :] :] ]
 and class_type ct k =
   match ct with

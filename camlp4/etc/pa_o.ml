@@ -1156,6 +1156,8 @@ EXTEND
            <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT ->
            <:patt< ~ $i$ >>
+      | "~"; "("; i = LIDENT; ")" ->
+           <:patt< ~ $i$ >>
       | "~"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
            <:patt< ~ $i$ : ($lid:i$ : $t$) >>
       | i = QUESTIONIDENTCOLON; j = LIDENT ->
