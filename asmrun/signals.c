@@ -21,7 +21,7 @@
 #include "fail.h"
 #include "signals.h"
 
-static Volatile int async_signal_mode = 0;
+Volatile int async_signal_mode = 0;
 Volatile int pending_signal = 0;
 Volatile int force_major_slice = 0;
 value signal_handlers = 0;
