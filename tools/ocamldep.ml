@@ -100,7 +100,8 @@ let rec add_pattern bv pat =
   | Ppat_constant _ -> ()
   | Ppat_tuple pl -> List.iter (add_pattern bv) pl
   | Ppat_construct(c, op, _) -> add bv c; add_opt add_pattern bv op
-  | Ppat_record pl -> List.iter (fun (_, p) -> add_pattern bv p) pl
+  | Ppat_record pl ->
+      List.iter (fun (lbl, p) -> add bv lbl; add_pattern bv p) pl
   | Ppat_array pl -> List.iter (add_pattern bv) pl
   | Ppat_or(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
@@ -121,7 +122,7 @@ let rec add_expr bv exp =
   | Pexp_construct(c, opte, _) -> add bv c; add_opt add_expr bv opte
   | Pexp_variant(_, opte) -> add_opt add_expr bv opte
   | Pexp_record(lblel, opte) ->
-      List.iter (fun (lbl, e) -> add_expr bv e) lblel;
+      List.iter (fun (lbl, e) -> add bv lbl; add_expr bv e) lblel;
       add_opt add_expr bv opte
   | Pexp_field(e, fld) -> add_expr bv e; add bv fld
   | Pexp_setfield(e1, fld, e2) -> add_expr bv e1; add bv fld; add_expr bv e2
@@ -230,6 +231,14 @@ and add_struct_item bv item =
   | Pstr_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; bv
 
+and add_use_file bv = function
+  | [] -> ()
+  | top_phrs -> List.iter (add_top_phrase bv) top_phrs
+
+and add_top_phrase bv = function
+  | Ptop_def str -> add_structure bv str
+  | Ptop_dir (_, _) -> ()
+
 and add_class_expr bv ce =
   match ce.pcl_desc with
     Pcl_constr(l, tyl) ->
@@ -317,7 +326,7 @@ let file_dependencies source_file =
       try
         let lb = Lexing.from_channel ic in
         if Filename.check_suffix source_file ".ml" then begin
-          add_structure StringSet.empty (Parse.implementation lb);
+          add_use_file StringSet.empty (Parse.use_file lb);
           let basename = Filename.chop_suffix source_file ".ml" in
           let init_deps =
             if Sys.file_exists (basename ^ ".mli")
