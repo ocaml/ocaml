@@ -68,7 +68,7 @@ beforedepend:: Lex/scanner.ml
 
 .ml.fast.byt:
 	cp $*.ml $*_fast.ml
-	$(CAMLC) -fast -o $*.fast.byt $*_fast.ml
+	$(CAMLC) -unsafe -o $*.fast.byt $*_fast.ml
 	rm -f $*_fast.ml
 
 .ml.out:
@@ -76,7 +76,7 @@ beforedepend:: Lex/scanner.ml
 
 .ml.fast.out:
 	cp $*.ml $*_fast.ml
-	$(CAMLOPT) $(OPTFLAGS) -fast -o $*.fast.out $*_fast.ml
+	$(CAMLOPT) $(OPTFLAGS) -unsafe -o $*.fast.out $*_fast.ml
 	rm -f $*_fast.ml
 
 .mli.cmi:
