@@ -21,6 +21,7 @@ open Asttypes
 open Lambda
 open Emitcode
 open Opcodes
+open Instruct
 open Opnames
 
 (* Read signed and unsigned integers *)
@@ -51,7 +52,24 @@ let start = ref 0                              (* Position of beg. of code *)
 let reloc = ref ([] : (reloc_info * int) list) (* Relocation table *)
 let globals = ref ([||] : global_table_entry array) (* Global map *)
 let primitives = ref ([||] : string array)     (* Table of primitives *)
-let objfile = ref false                        (* true if dumping a .zo *)
+let objfile = ref false                        (* true if dumping a .cmo *)
+
+(* Events (indexed by PC) *)
+
+let event_table = (Hashtbl.create 253 : (int, debug_event) Hashtbl.t)
+
+let relocate_event orig ev =
+  ev.ev_pos <- orig + ev.ev_pos;
+  match ev.ev_repr with
+    Event_parent repr -> repr := ev.ev_pos
+  | _                 -> ()
+
+let record_events orig evl =
+  List.iter 
+    (fun ev ->
+      relocate_event orig ev;
+      Hashtbl.add event_table ev.ev_pos ev)
+    evl
 
 (* Print a structured constant *)
 
@@ -354,8 +372,13 @@ let op_shapes = [
   opBREAK, Nothing;
 ];;
 
+let print_event ev =
+  printf "%s, char %d:\n" ev.ev_module ev.ev_char
+
 let print_instr ic =
-  printf "%8d  " (currpc ic);
+  let pos = currpos ic in
+  List.iter print_event (Hashtbl.find_all event_table pos);
+  printf "%8d  " (pos / 4);
   let op = inputu ic in
   if op >= Array.length names_of_instructions || op < 0
   then (print_string "*** unknown opcode : "; print_int op)
@@ -420,7 +443,7 @@ let print_reloc (info, pos) =
   | Reloc_setglobal id -> printf "provide    %s\n" (Ident.name id)
   | Reloc_primitive s -> printf "prim    %s\n" s
 
-(* Print a .zo file *)
+(* Print a .cmo file *)
 
 let dump_obj filename ic =
   let buffer = String.create (String.length cmo_magic_number) in
@@ -432,6 +455,11 @@ let dump_obj filename ic =
   seek_in ic cu_pos;
   let cu = (input_value ic : compilation_unit) in
   reloc := cu.cu_reloc;
+  if cu.cu_debug > 0 then begin
+    seek_in ic cu.cu_debug;
+    let evl = (input_value ic : debug_event list) in
+    record_events 0 evl
+  end;
   seek_in ic cu.cu_pos;
   print_code ic cu.cu_codesize
 
@@ -450,8 +478,6 @@ let read_primitive_table ic len =
 
 (* Print an executable file *)
 
-exception Not_exec
-
 let dump_exe ic =
   Bytesections.read_toc ic;
   let prim_size = Bytesections.seek_section ic "PRIM" in
@@ -465,6 +491,16 @@ let dump_exe ic =
   ignore(Bytesections.seek_section ic "SYMB");
   let (_, sym_table) = (input_value ic : int * (Ident.t, int) Tbl.t) in
   Tbl.iter (fun id pos -> !globals.(pos) <- Global id) sym_table;
+  begin try
+    ignore (Bytesections.seek_section ic "DBUG");
+    let num_eventlists = input_binary_int ic in
+    for i = 1 to num_eventlists do
+      let orig = input_binary_int ic in
+      let evl = (input_value ic : debug_event list) in
+      record_events orig evl
+    done
+  with Not_found -> ()
+  end;
   let code_size = Bytesections.seek_section ic "CODE" in
   print_code ic code_size
 
