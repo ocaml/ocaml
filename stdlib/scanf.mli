@@ -42,6 +42,10 @@ val from_function : (unit -> char) -> scanbuf;;
     When the function has no more character to provide, it must set
     an end-of-input condition by raising the exception [End_of_file]. *)
 
+val end_of_input : scanbuf -> bool;;
+(** [Scanning.end_of_input scanbuf] tests the end of input condition
+    of the given buffer. *)
+
 end;;
 
 exception Scan_failure of string;;
@@ -76,7 +80,7 @@ val bscanf :
    matches any amount of whitespace in the input.
 
    Conversion specifications consist in the [%] character, followed
-   by optional field width, followed by one or two conversion
+   by an optional field width, followed by one or two conversion
    characters. The conversion characters and their meanings are:
    - [d]: reads an optionally signed decimal integer.
    - [i]: reads an optionally signed integer
@@ -116,7 +120,7 @@ val bscanf :
    The field widths are composed of an optional integer literal
    indicating the maximal width of the token to read.
    For instance, [%6d] reads an integer, having at most 6 decimal digits;
-   and [%4f] reads a float with 4 characters.
+   and [%4f] reads a float with at most 4 characters.
 
    Scanning indications appear just after string conversions [s] and
    [\[ range \]] to delimit the end of the token. A scanning

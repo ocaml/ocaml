@@ -357,7 +357,8 @@ let scan_float max ib =
   | c -> scan_exp_part max ib;;
 
 (* Scan a regular string: it stops with a space or one of the
-   characters in stp. *)
+   characters in stp. It also stops when the maximum number of
+   characters has been read.*)
 let scan_string stp max ib =
   let rec loop max =
     if max = 0 || Scanning.end_of_input ib then max else
@@ -568,7 +569,7 @@ let kscanf ib ef fmt f =
   let rec scan_fmt f i =
     if i > lim then f else
     match fmt.[i] with
-    | ' ' | '\t' | '\n' | '\r' -> skip_whites ib; scan_fmt f (i + 1)
+    | ' ' -> skip_whites ib; scan_fmt f (i + 1)
     | '%' -> scan_fmt_width f (i + 1)
     | '@' as t ->
         let i = i + 1 in
