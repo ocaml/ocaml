@@ -168,54 +168,6 @@ type wait_flag =
     WNOHANG
   | WUNTRACED
 
-external _execv : string -> string array -> 'a = "unix_execv"
-external _execve : string -> string array -> string array -> 'a = "unix_execve"
-external _execvp : string -> string array -> 'a = "unix_execvp"
-external _execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
-
-(* Disable the timer interrupt before doing exec, because some OS
-   keep sending timer interrupts to the exec'ed code. *)
-
-let do_exec fn =
-  let oldtimer =
-    setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0} in
-  try
-    fn ()
-  with Unix_error(_,_,_) as exn ->
-    ignore(setitimer ITIMER_VIRTUAL oldtimer);
-    raise exn
-
-let execv proc args =
-  do_exec (fun () -> _execv proc args)
-
-let execve proc args env =
-  do_exec (fun () -> _execve proc args env)
-
-let execvp proc args =
-  do_exec (fun () -> _execvp proc args)
-
-let execvpe proc args =
-  do_exec (fun () -> _execvpe proc args)
-
-external fork : unit -> int = "unix_fork"
-external _waitpid : wait_flag list -> int -> int * process_status = "unix_waitpid"
-
-let wait_pid pid = 
-  match wait_pid_aux pid with
-    Resumed_wait(pid, status) -> (pid, status)
-  | _ -> invalid_arg "Thread.wait_pid"
-
-let wait () = wait_pid (-1)
-  
-let waitpid flags pid =
-  if List.mem WNOHANG flags
-  then _waitpid flags pid
-  else wait_pid pid
-
-external getpid : unit -> int = "unix_getpid"
-external getppid : unit -> int = "unix_getppid"
-external nice : int -> int = "unix_nice"
-
 let stdin = 0
 let stdout = 1
 let stderr = 2
@@ -362,6 +314,68 @@ type lock_command =
   | F_TRLOCK
 
 external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
+
+external _execv : string -> string array -> 'a = "unix_execv"
+external _execve : string -> string array -> string array -> 'a = "unix_execve"
+external _execvp : string -> string array -> 'a = "unix_execvp"
+external _execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
+
+(* Disable the timer interrupt before doing exec, because some OS
+   keep sending timer interrupts to the exec'ed code.
+   Also restore blocking mode on stdin, stdout and stderr,
+   since this is what most programs expect! *)
+
+let safe_clear_nonblock fd =
+  try clear_nonblock fd with Unix_error(_,_,_) -> ()
+let safe_set_nonblock fd =
+  try set_nonblock fd with Unix_error(_,_,_) -> ()
+
+let do_exec fn =
+  let oldtimer =
+    setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0} in
+  safe_clear_nonblock stdin;
+  safe_clear_nonblock stdout;
+  safe_clear_nonblock stderr;
+  try
+    fn ()
+  with Unix_error(_,_,_) as exn ->
+    ignore(setitimer ITIMER_VIRTUAL oldtimer);
+    safe_set_nonblock stdin;
+    safe_set_nonblock stdout;
+    safe_set_nonblock stderr;
+    raise exn
+
+let execv proc args =
+  do_exec (fun () -> _execv proc args)
+
+let execve proc args env =
+  do_exec (fun () -> _execve proc args env)
+
+let execvp proc args =
+  do_exec (fun () -> _execvp proc args)
+
+let execvpe proc args =
+  do_exec (fun () -> _execvpe proc args)
+
+external fork : unit -> int = "unix_fork"
+external _waitpid : wait_flag list -> int -> int * process_status = "unix_waitpid"
+
+let wait_pid pid = 
+  match wait_pid_aux pid with
+    Resumed_wait(pid, status) -> (pid, status)
+  | _ -> invalid_arg "Thread.wait_pid"
+
+let wait () = wait_pid (-1)
+  
+let waitpid flags pid =
+  if List.mem WNOHANG flags
+  then _waitpid flags pid
+  else wait_pid pid
+
+external getpid : unit -> int = "unix_getpid"
+external getppid : unit -> int = "unix_getppid"
+external nice : int -> int = "unix_nice"
+
 external kill : int -> int -> unit = "unix_kill"
 type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
 external sigprocmask: sigprocmask_command -> int list -> int list
