@@ -27,12 +27,19 @@ static long compare_val(v1, v2)
 
  tailcall:
   if (v1 == v2) return 0;
-  if (Is_long(v1) || Is_long(v2)) return Long_val(v1) - Long_val(v2);
+  if (Is_long(v1)) {
+    if (Is_long(v2))
+      return Long_val(v1) - Long_val(v2);
+    else
+      return -1;
+  }
+  if (Is_long(v2)) return 1;
   /* If one of the objects is outside the heap (but is not an atom),
-     use address comparison. */
+     use address comparison. Since both addresses are 2-aligned,
+     shift lsb off to avoid overflow in subtraction. */
   if ((!Is_atom(v1) && !Is_young(v1) && !Is_in_heap(v1)) ||
       (!Is_atom(v2) && !Is_young(v2) && !Is_in_heap(v2)))
-      return v1 - v2;
+      return (v1 >> 1) - (v2 >> 1);
   t1 = Tag_val(v1);
   t2 = Tag_val(v2);
   if (t1 != t2) return (long)t1 - (long)t2;
@@ -96,7 +103,13 @@ static long compare_val(v1, v2)
 value compare(v1, v2)           /* ML */
      value v1, v2;
 {
-  return Val_long(compare_val(v1, v2));
+  long res = compare_val(v1, v2);
+  if (res < 0) 
+    return Val_int(-1);
+  else if (res > 0)
+    return Val_int(1);
+  else
+    return Val_int(0);
 }
 
 value equal(v1, v2)            /* ML */
