@@ -37,18 +37,21 @@
                            two arguments)
 *)
 
-(** The concrete type describing the behavior associated
-   with a keyword. *)
 type spec =
-  | Unit of (unit -> unit)     (** Call the function with unit argument *)
+    Unit of (unit -> unit)     (** Call the function with unit argument *)
   | Set of bool ref            (** Set the reference to true *)
   | Clear of bool ref          (** Set the reference to false *)
   | String of (string -> unit) (** Call the function with a string argument *)
   | Int of (int -> unit)       (** Call the function with an int argument *)
   | Float of (float -> unit)   (** Call the function with a float argument *)
-  | Rest of (string -> unit)   (** Stop interpreting keywords and call the
-                                  function with each remaining argument *)
+  | Rest of (string -> unit)   (** Stop interpreting keywords and call the 
+				  function with each remaining argument *)
 
+(** The concrete type describing the behavior associated
+   with a keyword. *)
+
+val parse :
+  (string * spec * string) list -> (string -> unit) -> string -> unit
 (** [Arg.parse speclist anonfun usage_msg] parses the command line.
     [speclist] is a list of triples [(key, spec, doc)].
     [key] is the option keyword, it must start with a ['-'] character.
@@ -73,19 +76,17 @@ type spec =
     the program.  You can override this behaviour by specifying your
     own [-help] and [--help] options in [speclist].
 *)
-val parse : (string * spec * string) list ->
-            (string -> unit) -> string -> unit
 
+exception Bad of string
 (** Functions in [spec] or [anonfun] can raise [Arg.Bad] with an error
    message to reject invalid arguments. *)
-exception Bad of string
 
+val usage : (string * spec * string) list -> string -> unit
 (** [Arg.usage speclist usage_msg] prints an error message including
     the list of valid options.  This is the same message that
     {!Arg.parse} prints in case of error.
     [speclist] and [usage_msg] are the same as for [Arg.parse]. *)
-val usage : (string * spec * string) list -> string -> unit
 
+val current : int ref
 (** Position (in {!Sys.argv}) of the argument being processed.  You can
     change this value, e.g. to force {!Arg.parse} to skip some arguments.*)
-val current : int ref;;

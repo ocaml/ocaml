@@ -18,9 +18,10 @@
    concatenated pairwise). 
 *)
 
-(** The abstract type of buffers. *)
 type t
+(** The abstract type of buffers. *)
 
+val create : int -> t
 (** [create n] returns a fresh buffer, initially empty.
    The [n] parameter is the initial size of the internal string
    that holds the buffer contents.  That string is automatically
@@ -33,46 +34,45 @@ type t
    limit, however.  In doubt, take [n = 16] for instance.
    If [n] is not between 1 and {!Sys.max_string_length}, it will
    be clipped to that interval. *)
-val create : int -> t
 
+val contents : t -> string
 (** Return a copy of the current contents of the buffer.
    The buffer itself is unchanged. *)
-val contents : t -> string
 
-(** Return the number of characters currently contained in the buffer. *)
 val length : t -> int
+(** Return the number of characters currently contained in the buffer. *)
 
-(** Empty the buffer. *)
 val clear : t -> unit
+(** Empty the buffer. *)
 
+val reset : t -> unit
 (** Empty the buffer and deallocate the internal string holding the
    buffer contents, replacing it with the initial internal string
    of length [n] that was allocated by {!Buffer.create} [n].
    For long-lived buffers that may have grown a lot, [reset] allows
    faster reclaimation of the space used by the buffer. *)
-val reset : t -> unit
 
-(** [add_char b c] appends the character [c] at the end of the buffer [b]. *)
 val add_char : t -> char -> unit
+(** [add_char b c] appends the character [c] at the end of the buffer [b]. *)
 
-(** [add_string b s] appends the string [s] at the end of the buffer [b]. *)
 val add_string : t -> string -> unit
+(** [add_string b s] appends the string [s] at the end of the buffer [b]. *)
 
+val add_substring : t -> string -> int -> int -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset
    [ofs] in string [s] and appends them at the end of the buffer [b]. *)
-val add_substring : t -> string -> int -> int -> unit
 
+val add_buffer : t -> t -> unit
 (** [add_buffer b1 b2] appends the current contents of buffer [b2]
    at the end of buffer [b1].  [b2] is not modified. *)
-val add_buffer : t -> t -> unit
 
+val add_channel : t -> in_channel -> int -> unit
 (** [add_channel b ic n] reads exactly [n] character from the
    input channel [ic] and stores them at the end of buffer [b].
    Raise [End_of_file] if the channel contains fewer than [n]
    characters. *)
-val add_channel : t -> in_channel -> int -> unit
 
+val output_buffer : out_channel -> t -> unit
 (** [output_buffer oc b] writes the current contents of buffer [b]
    on the output channel [oc]. *)
-val output_buffer : out_channel -> t -> unit
 

@@ -21,61 +21,62 @@
 (** {2 Generic interface} *)
 
 
-(** The type of hash tables from type ['a] to type ['b]. *)
 type ('a, 'b) t
+(** The type of hash tables from type ['a] to type ['b]. *)
 
+val create : int -> ('a, 'b) t
 (** [Hashtbl.create n] creates a new, empty hash table, with
    initial size [n].  For best results, [n] should be on the
    order of the expected number of elements that will be in
    the table.  The table grows as needed, so [n] is just an
    initial guess. *)
-val create : int -> ('a,'b) t
 
-(** Empty a hash table. *)
 val clear : ('a, 'b) t -> unit
+(** Empty a hash table. *)
 
+val add : ('a, 'b) t -> 'a -> 'b -> unit
 (** [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
    Previous bindings for [x] are not removed, but simply
    hidden. That is, after performing {!Hashtbl.remove}[ tbl x],
    the previous binding for [x], if any, is restored.
    (Same behavior as with association lists.) *)
-val add : ('a, 'b) t -> 'a -> 'b -> unit
 
-(** Return a copy of the given hashtable. *)
 val copy : ('a, 'b) t -> ('a, 'b) t
+(** Return a copy of the given hashtable. *)
 
+val find : ('a, 'b) t -> 'a -> 'b
 (** [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],
    or raises [Not_found] if no such binding exists. *)
-val find : ('a, 'b) t -> 'a -> 'b
 
+val find_all : ('a, 'b) t -> 'a -> 'b list
 (** [Hashtbl.find_all tbl x] returns the list of all data
    associated with [x] in [tbl].
    The current binding is returned first, then the previous
    bindings, in reverse order of introduction in the table. *)
-val find_all : ('a, 'b) t -> 'a -> 'b list
 
+val mem : ('a, 'b) t -> 'a -> bool
 (** [Hashtbl.mem tbl x] checks if [x] is bound in [tbl]. *)
-val mem :  ('a, 'b) t -> 'a -> bool
 
+val remove : ('a, 'b) t -> 'a -> unit
 (** [Hashtbl.remove tbl x] removes the current binding of [x] in [tbl],
    restoring the previous binding if it exists.
    It does nothing if [x] is not bound in [tbl]. *)
-val remove : ('a, 'b) t -> 'a -> unit
 
+val replace : ('a, 'b) t -> 'a -> 'b -> unit
 (** [Hashtbl.replace tbl x y] replaces the current binding of [x]
    in [tbl] by a binding of [x] to [y].  If [x] is unbound in [tbl],
    a binding of [x] to [y] is added to [tbl].
    This is functionally equivalent to {!Hashtbl.remove}[ tbl x]
    followed by {!Hashtbl.add}[ tbl x y]. *)
-val replace : ('a, 'b) t -> 'a -> 'b -> unit
 
+val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
    [f] receives the key as first argument, and the associated value
    as second argument. The order in which the bindings are passed to
    [f] is unspecified. Each binding is presented exactly once
    to [f]. *)
-val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 
+val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 (** [Hashtbl.fold f tbl init] computes
    [(f kN dN ... (f k1 d1 init)...)],
    where [k1 ... kN] are the keys of all bindings in [tbl],
@@ -83,12 +84,13 @@ val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
    The order in which the bindings are passed to
    [f] is unspecified. Each binding is presented exactly once
    to [f]. *)
-val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 
 
 (** {2 Functorial interface} *)
 
 
+module type HashedType =
+  sig type t val equal : t -> t -> bool val hash : t -> int end
 (** The input signature of the functor {!Hashtbl.Make}.
    [t] is the type of keys.
    [equal] is the equality predicate used to compare keys.
@@ -101,31 +103,26 @@ val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
    ([(=)], {!Hashtbl.hash}) for comparing objects by structure, and
    ([(==)], {!Hashtbl.hash}) for comparing objects by addresses
    (e.g. for mutable or cyclic keys). *)
-module type HashedType =
-  sig
-    type t
-    val equal: t -> t -> bool
-    val hash: t -> int
-  end
 
 
 module type S =
   sig
     type key
     type 'a t
-    val create: int -> 'a t
-    val clear: 'a t -> unit
-    val copy: 'a t -> 'a t
-    val add: 'a t -> key -> 'a -> unit
-    val remove: 'a t -> key -> unit
-    val find: 'a t -> key -> 'a
-    val find_all: 'a t -> key -> 'a list
-    val replace: 'a t -> key -> 'a -> unit
-    val mem: 'a t -> key -> bool
-    val iter: (key -> 'a -> unit) -> 'a t -> unit
-    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val create : int -> 'a t
+    val clear : 'a t -> unit
+    val copy : 'a t -> 'a t
+    val add : 'a t -> key -> 'a -> unit
+    val remove : 'a t -> key -> unit
+    val find : 'a t -> key -> 'a
+    val find_all : 'a t -> key -> 'a list
+    val replace : 'a t -> key -> 'a -> unit
+    val mem : 'a t -> key -> bool
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
+    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   end
 
+module Make (H : HashedType) : S with type key = H.t
 (** The functor [Hashtbl.Make] returns a structure containing
    a type [key] of keys and a type ['a t] of hash tables
    associating data of type ['a] to keys of type [key].
@@ -133,19 +130,19 @@ module type S =
    interface, but use the hashing and equality functions
    specified in the functor argument [H] instead of generic
    equality and hashing. *)
-module Make (H : HashedType): (S with type key = H.t)
 
 
 (** {2 The polymorphic hash primitive} *)
 
 
+val hash : 'a -> int
 (** [Hashtbl.hash x] associates a positive integer to any value of
    any type. It is guaranteed that
    if [x = y], then [hash x = hash y]. 
    Moreover, [hash] always terminates, even on cyclic
    structures. *)
-val hash : 'a -> int
 
+external hash_param : int -> int -> 'a -> int = "hash_univ_param" "noalloc"
 (** [Hashtbl.hash_param n m x] computes a hash value for [x], with the
    same properties as for [hash]. The two extra parameters [n] and
    [m] give more precise control over hashing. Hashing performs a
@@ -158,5 +155,4 @@ val hash : 'a -> int
    value, and therefore collisions are less likely to happen.
    However, hashing takes longer. The parameters [m] and [n]
    govern the tradeoff between accuracy and speed. *)
-external hash_param : int -> int -> 'a -> int = "hash_univ_param" "noalloc"
 

@@ -14,9 +14,10 @@
 
 (** Array operations. *)
 
-(** Return the length (number of elements) of the given array. *)
 external length : 'a array -> int = "%array_length"
+(** Return the length (number of elements) of the given array. *)
 
+external get : 'a array -> int -> 'a = "%array_safe_get"
 (** [Array.get a n] returns the element number [n] of array [a].
    The first element has number 0.
    The last element has number [Array.length a - 1].
@@ -24,16 +25,16 @@ external length : 'a array -> int = "%array_length"
    Raise [Invalid_argument "Array.get"]  if [n] is outside the range
    0 to [(Array.length a - 1)].
    You can also write [a.(n)] instead of [Array.get a n]. *)
-external get: 'a array -> int -> 'a = "%array_safe_get"
 
+external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
 (** [Array.set a n x] modifies array [a] in place, replacing
    element number [n] with [x].
 
    Raise [Invalid_argument "Array.set"] if [n] is outside the range
    0 to [Array.length a - 1].
    You can also write [a.(n) <- x] instead of [Array.set a n x]. *)
-external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
         
+external make : int -> 'a -> 'a array = "make_vect"
 (** [Array.make n x] returns a fresh array of length [n],
    initialized with [x].
    All the elements of this new array are initially
@@ -45,17 +46,17 @@ external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
    Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
    If the value of [x] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2].*)
-external make: int -> 'a -> 'a array = "make_vect"
 
+external create : int -> 'a -> 'a array = "make_vect"
 (** @deprecated [Array.create] is an alias for {!Array.make}. *)
-external create: int -> 'a -> 'a array = "make_vect"
 
+val init : int -> (int -> 'a) -> 'a array
 (** [Array.init n f] returns a fresh array of length [n],
    with element number [i] initialized to the result of [f i].
    In other terms, [Array.init n f] tabulates the results of [f]
    applied to the integers [0] to [n-1]. *)
-val init: int -> (int -> 'a) -> 'a array
 
+val make_matrix : int -> int -> 'a -> 'a array array
 (** [Array.make_matrix dimx dimy e] returns a two-dimensional array
    (an array of arrays) with first dimension [dimx] and
    second dimension [dimy]. All the elements of this new matrix
@@ -67,18 +68,18 @@ val init: int -> (int -> 'a) -> 'a array
    greater than [Sys.max_array_length].
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
-val make_matrix: int -> int -> 'a -> 'a array array
 
+val create_matrix : int -> int -> 'a -> 'a array array
 (** @deprecated [Array.create_matrix] is an alias for {!Array.make_matrix}. *)
-val create_matrix: int -> int -> 'a -> 'a array array
 
+val append : 'a array -> 'a array -> 'a array
 (** [Array.append v1 v2] returns a fresh array containing the
    concatenation of the arrays [v1] and [v2]. *)
-val append: 'a array -> 'a array -> 'a array
 
+val concat : 'a array list -> 'a array
 (** Same as [Array.append], but catenates a list of arrays. *)
-val concat: 'a array list -> 'a array
 
+val sub : 'a array -> int -> int -> 'a array
 (** [Array.sub a start len] returns a fresh array of length [len],
    containing the elements number [start] to [start + len - 1]
    of array [a].
@@ -86,19 +87,19 @@ val concat: 'a array list -> 'a array
    Raise [Invalid_argument "Array.sub"] if [start] and [len] do not
    designate a valid subarray of [a]; that is, if
    [start < 0], or [len < 0], or [start + len > Array.length a]. *)
-val sub: 'a array -> int -> int -> 'a array
 
+val copy : 'a array -> 'a array
 (** [Array.copy a] returns a copy of [a], that is, a fresh array
    containing the same elements as [a]. *)
-val copy: 'a array -> 'a array
 
+val fill : 'a array -> int -> int -> 'a -> unit
 (** [Array.fill a ofs len x] modifies the array [a] in place,
    storing [x] in elements number [ofs] to [ofs + len - 1].
 
    Raise [Invalid_argument "Array.fill"] if [ofs] and [len] do not
    designate a valid subarray of [a]. *)
-val fill: 'a array -> int -> int -> 'a -> unit
 
+val blit : 'a array -> int -> 'a array -> int -> int -> unit
 (** [Array.blit v1 o1 v2 o2 len] copies [len] elements
    from array [v1], starting at element number [o1], to array [v2],
    starting at element number [o2]. It works correctly even if
@@ -108,49 +109,49 @@ val fill: 'a array -> int -> int -> 'a -> unit
    Raise [Invalid_argument "Array.blit"] if [o1] and [len] do not
    designate a valid subarray of [v1], or if [o2] and [len] do not
    designate a valid subarray of [v2]. *)
-val blit: 'a array -> int -> 'a array -> int -> int -> unit
 
+val to_list : 'a array -> 'a list
 (** [Array.to_list a] returns the list of all the elements of [a]. *)
-val to_list: 'a array -> 'a list
 
+val of_list : 'a list -> 'a array
 (** [Array.of_list l] returns a fresh array containing the elements
    of [l]. *)
-val of_list: 'a list -> 'a array
 
+val iter : ('a -> unit) -> 'a array -> unit
 (** [Array.iter f a] applies function [f] in turn to all
    the elements of [a].  It is equivalent to
    [f a.(0); f a.(1); ...; f a.(Array.length a - 1); ()]. *)
-val iter: ('a -> unit) -> 'a array -> unit
 
+val map : ('a -> 'b) -> 'a array -> 'b array
 (** [Array.map f a] applies function [f] to all the elements of [a],
    and builds an array with the results returned by [f]:
    [[| f a.(0); f a.(1); ...; f a.(Array.length a - 1) |]]. *)
-val map: ('a -> 'b) -> 'a array -> 'b array
 
+val iteri : (int -> 'a -> unit) -> 'a array -> unit
 (** Same as {!Array.iter}, but the
    function is applied to the index of the element as first argument,
    and the element itself as second argument. *)
-val iteri: (int -> 'a -> unit) -> 'a array -> unit
 
+val mapi : (int -> 'a -> 'b) -> 'a array -> 'b array
 (** Same as {!Array.map}, but the
    function is applied to the index of the element as first argument,
    and the element itself as second argument. *)
-val mapi: (int -> 'a -> 'b) -> 'a array -> 'b array
 
+val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 (** [Array.fold_left f x a] computes
    [f (... (f (f x a.(0)) a.(1)) ...) a.(n-1)],
    where [n] is the length of the array [a]. *)
-val fold_left: ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 
+val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 (** [Array.fold_right f a x] computes
    [f a.(0) (f a.(1) ( ... (f a.(n-1) x) ...))],
    where [n] is the length of the array [a]. *)
-val fold_right: ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 
 
 (** {2 Sorting} *)
 
 
+val sort : ('a -> 'a -> int) -> 'a array -> unit
 (** Sort an array in increasing order according to a comparison
    function.  The comparison function must return 0 if its arguments
    compare as equal, a positive integer if the first is greater,
@@ -161,22 +162,20 @@ val fold_right: ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
    [Array.sort] is guaranteed to run in constant heap space
    and logarithmic stack space.
 
-   
    The current implementation uses Heap Sort.  It runs in constant
    stack space.
 *)
-val sort : ('a -> 'a -> int) -> 'a array -> unit;;
 
+val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
 (** Same as {!Array.sort}, but the sorting algorithm is stable and
    not guaranteed to use a fixed amount of heap memory.
    The current implementation is Merge Sort. It uses [n/2]
    words of heap space, where [n] is the length of the array.
    It is faster than the current implementation of {!Array.sort}.
 *)
-val stable_sort : ('a -> 'a -> int) -> 'a array -> unit;;
 
 (**/**)
 (** {2 Undocumented functions} *)
 
-external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
-external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
+external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
+external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
