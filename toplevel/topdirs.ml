@@ -20,6 +20,7 @@ open Path
 open Typedtree
 open Emitcode
 open Printval
+open Trace
 open Toploop
 
 (* Temporary assignment to a reference *)
@@ -174,52 +175,9 @@ let _ = Hashtbl.add directive_table "install_printer"
 let _ = Hashtbl.add directive_table "remove_printer"
              (Directive_ident dir_remove_printer)
 
-(* Make a copy of a closure *)
-
-let copy_closure cls =
-  let sz = Obj.size cls in
-  let new = Obj.new_block 250 sz in
-  for i = 0 to sz - 1 do Obj.set_field new i (Obj.field cls i) done;
-  new
-
-(* Overwrite a closure by another *)
-
-let overwrite_closure dst src =
-  for i = 0 to Obj.size src - 1 do
-    Obj.set_field dst i (Obj.field src i)
-  done
-
 (* The trace *)
 
-let rec trace_closure name clos_typ =
-  match Ctype.repr clos_typ with
-    Tarrow(t1, t2) ->
-      let starred_name =
-        match name with
-          Lident s -> Lident(s ^ "*")
-        | Ldot(lid, s) -> Ldot(lid, s ^ "*")
-        | Lapply(l1, l2) -> fatal_error "Topdirs.trace_closure" in
-      let trace_res = trace_closure starred_name t2 in
-      (fun clos_val ->
-        Obj.repr(fun arg ->
-          open_hovbox 2;
-          Printtyp.longident name; print_string " <--"; print_space();
-          print_value !toplevel_env arg t1; close_box(); print_newline();
-          try
-            let res = (Obj.magic clos_val : Obj.t -> Obj.t)(arg) in
-            open_hovbox 2;
-            Printtyp.longident name; print_string " -->"; print_space();
-            print_value !toplevel_env res t2; close_box(); print_newline();
-            trace_res res
-          with exn ->
-            open_hovbox 2;
-            Printtyp.longident name; print_string " raises"; print_space();
-            print_exception (Obj.repr exn); close_box(); print_newline();
-            raise exn))
-  | _ ->
-      (fun v -> v)
-
-let trace_env = ref ([] : (Path.t * Obj.t) list)
+external current_environment: unit -> Obj.t = "get_current_environment"
 
 let dir_trace lid =
   try
@@ -229,11 +187,17 @@ let dir_trace lid =
     if Obj.is_block clos & Obj.tag clos = 250 then begin
       let old_clos = copy_closure clos in
       (* Instrument the old closure *)
-      let new_clos =
-        trace_closure lid (Ctype.instance desc.val_type) old_clos in
-      trace_env := (path, old_clos) :: !trace_env;
-      (* Overwrite the old closure *)
-      overwrite_closure clos new_clos;
+      traced_functions :=
+        { path = path; 
+          closure = clos;
+          initial_closure = old_clos;
+          instrumented_fun =
+            instrument_closure lid (Ctype.instance desc.val_type) old_clos}
+        :: !traced_functions;
+      (* Redirect the code field of the old closure *)
+      overwrite_closure clos
+        (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg));
+      (* Warn if this is a primitive *)
       match desc.val_prim with
         None ->
           Printtyp.longident lid; print_string " is now traced.";
@@ -260,26 +224,26 @@ let dir_untrace lid =
         Printtyp.longident lid; print_string " was not traced.";
         print_newline();
         []
-    | (p, oldval) :: rem ->
-        if Path.same p path then begin
-          overwrite_closure (eval_path path) oldval;
+    | f :: rem ->
+        if Path.same f.path path then begin
+          overwrite_closure (eval_path path) f.initial_closure;
           Printtyp.longident lid; print_string " is no longer traced.";
           print_newline();
           rem
-        end else remove rem in
-    trace_env := remove !trace_env
+        end else f :: remove rem in
+    traced_functions := remove !traced_functions
   with Not_found ->
     print_string "Unbound value "; Printtyp.longident lid;
     print_newline()
 
 let dir_untrace_all () =
   List.iter
-    (fun (path, oldval) ->
-        overwrite_closure (eval_path path) oldval;
-        Printtyp.path path; print_string " is no longer traced.";
+    (fun f ->
+        overwrite_closure (eval_path f.path) f.initial_closure;
+        Printtyp.path f.path; print_string " is no longer traced.";
         print_newline())
-    !trace_env;
-  trace_env := []
+    !traced_functions;
+  traced_functions := []
 
 let _ = Hashtbl.add directive_table "trace" (Directive_ident dir_trace)
 let _ = Hashtbl.add directive_table "untrace" (Directive_ident dir_untrace)
