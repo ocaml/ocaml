@@ -55,19 +55,6 @@ typedef uint64 int64;
 
 /* Library dependencies */
 
-#ifdef HAS_MEMMOVE
-/* nothing to do */
-#else
-#ifdef HAS_BCOPY
-#undef memmove
-#define memmove(dst,src,len) bcopy((src), (dst), (len))
-#else
-#undef memmove
-#define memmove(dst,src,len) memmov((dst), (src), (len))
-#define USING_MEMMOV
-#endif
-#endif
-
 /* We use threaded code interpretation if the compiler provides labels
    as first-class values (GCC 2.x).
    Macintosh 68k also uses threaded code, with the assembly-language

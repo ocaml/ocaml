@@ -22,22 +22,6 @@
 
 /* 1. For the runtime system. */
 
-#define HAS_MEMMOVE
-
-/* Define HAS_MEMMOVE if you have `memmove', and if
-  `memmove' is guaranteed to work even on overlapping areas.
-  That's the case if your library is ANSI C compliant. */
-
-#define HAS_BCOPY
-
-/* Define HAS_BCOPY if you have `bcopy', and if
-   `bcopy' is guaranteed to work even on overlapping areas. */
-
-/* If none of HAS_MEMMOVE and HAS_BCOPY is defined, then we'll
-   use our own memory copy routine. It might be slightly slower than the
-   routines provided in the standard library, but at least it is guaranteed
-   to work. So, in doubt, don't define anything. */
-
 #define POSIX_SIGNALS
 
 /* Define POSIX_SIGNALS if signal handling is POSIX-compliant.

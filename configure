@@ -478,17 +478,6 @@ fi
 
 echo "#define OCAML_OS_TYPE \"$ostype\"" >> s.h
 
-# Find a good byte move function
-
-if sh ./runtest -Dcopy=memmove -Dreverse bytecopy.c; then
-  echo "Function \"memmove\" is provided and handles overlapping moves correctly."
-  echo "#define HAS_MEMMOVE" >> s.h
-fi
-if sh ./runtest -Dcopy=bcopy bytecopy.c; then
-  echo "Function \"bcopy\" is provided and handles overlapping moves correctly."
-  echo "#define HAS_BCOPY" >> s.h
-fi
-
 # Check the semantics of signal handlers
 
 if sh ./hasgot sigaction sigprocmask; then

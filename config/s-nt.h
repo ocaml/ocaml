@@ -16,7 +16,6 @@
 
 #define OCAML_OS_TYPE "Win32"
 
-#define HAS_MEMMOVE
 #undef BSD_SIGNALS
 #define HAS_STRERROR
 #define HAS_SOCKETS

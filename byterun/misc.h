@@ -61,7 +61,6 @@ void gc_message (int, char *, unsigned long);
 
 /* Memory routines */
 
-void memmov (char *, char *, unsigned long);
 char *aligned_malloc (asize_t, int, void **);
 
 #ifdef DEBUG

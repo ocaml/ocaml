@@ -13,8 +13,6 @@
 /* $Id$ */
 
 #define OCAML_OS_TYPE "MacOS"
-#define HAS_MEMMOVE
-#define HAS_BCOPY
 #define HAS_STRERROR
 #define HAS_GETCWD
 
