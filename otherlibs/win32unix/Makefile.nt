@@ -1,0 +1,75 @@
+!include ../../config/Makefile.nt
+
+# Compilation options
+SYSTEM_INCLUDES=\msdev\include
+CC=$(BYTECC)
+CFLAGS=-I $(SYSTEM_INCLUDES) -I..\..\byterun $(BYTECCCOMPOPTS)
+CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot
+CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
+
+# Files in this directory
+WIN_OBJS = accept.obj bind.obj close_on.obj connect.obj \
+  createprocess.obj cst2constr.obj getpeername.obj getpid.obj \
+  getsockname.obj listen.obj mkdir.obj open.obj pipe.obj sendrecv.obj \
+  shutdown.obj socket.obj sockopt.obj startup.obj system.obj windir.obj \
+  winwait.obj
+
+# Files from the ..\unix directory
+UNIX_FILES = access.c addrofstr.c chdir.c close.c cst2constr.c
+  cstringv.c dup.c dup2.c envir.c errmsg.c execv.c execve.c execvp.c
+  exit.c getcwd.c gethost.c gethostname.c getpeername.c getproto.c
+  getserv.c getsockname.c gmtime.c lseek.c read.c rename.c rmdir.c
+  sleep.c socketaddr.c stat.c strofaddr.c time.c times.c unixsupport.c
+  unlink.c utimes.c write.c
+UNIX_OBJS = $(UNIX_FILES:.c=.obj)
+
+C_OBJS=$(WIN_OBJS) $(UNIX_OBJS)
+
+CAML_OBJS=unix.cmo
+
+all: libunix.lib unix.cma
+
+allopt:
+
+libunix.lib: copy_unix_files $(C_OBJS)
+	rm -f libthreads.lib
+	$(MKLIB)libunix.lib $(C_OBJS)
+
+copy_unix_files:
+	cd ..\unix & xcopy /D $(UNIX_FILES) ..\win32unix
+
+unix.cma: $(CAML_OBJS)
+	$(CAMLC) -a -linkall -o unix.cma $(CAML_OBJS)
+
+clean:
+	rm -f libthreads.lib *.obj *.cm*
+
+realclean:
+	rm -f $(UNIX_FILES)
+
+install:
+	cp libthreads.lib $(LIBDIR)/libthreads.lib
+	cd $(LIBDIR); $(RANLIB) libthreads.lib
+	cp *.cmi threads.cma $(LIBDIR)
+
+installopt:
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.mli.cmi:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+depend:
+	gcc -MM $(CFLAGS) *.c > .depend
+	../../tools/ocamldep *.mli *.ml >> .depend
+
+unix.cmi: unix.mli
+unix.cmo: unix.cmi
+
+!include .depend

@@ -1,0 +1,56 @@
+include ../../config/Makefile.nt
+
+# Compilation options
+CC=$(BYTECC)
+CFLAGS=-I..\..\byterun -O $(BYTECCCOMPOPTS)
+CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot
+
+C_OBJS=threadstubs.obj
+CAML_OBJS=mutex.cmo condition.cmo threadIO.cmo threadPrintexc.cmo \
+  thread.cmo event.cmo threadUnix.cmo threadPrintf.cmo 
+
+all: libthreads.lib threads.cma
+
+allopt:
+
+libthreads.lib: $(C_OBJS)
+	rm -f libthreads.lib
+	$(MKLIB)libthreads.lib $(C_OBJS)
+
+threads.cma: $(CAML_OBJS)
+	$(CAMLC) -a -linkall -o threads.cma $(CAML_OBJS)
+
+clean:
+	rm -f libthreads.lib *.obj *.cm*
+
+realclean:
+
+install:
+	cp libthreads.lib $(LIBDIR)/libthreads.lib
+	cd $(LIBDIR); $(RANLIB) libthreads.lib
+	cp *.cmi threads.cma $(LIBDIR)
+
+installopt:
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.mli.cmi:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+depend:
+	gcc -MM $(CFLAGS) *.c > .depend
+	../../tools/csldep *.mli *.ml >> .depend
+
+threadstubs.obj: threadstubs.c
+	$(CC) $(CFLAGS) -c threadstubs.c
+
+win.obj: win.c
+	$(CC) $(CFLAGS) -c win.c
+
+include .depend
