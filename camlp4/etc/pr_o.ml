@@ -1544,6 +1544,8 @@ pr_patt.pr_levels :=
       | <:patt< ~ $i$ : $p$ >> ->
           fun curr next dg k ->
             [: `S LO ("~" ^ i ^ ":"); `simple_patt p "" k :]
+      | <:patt< ? $i$ >> ->
+          fun curr next _ k -> [: `S LR ("?" ^ i); k :]
       | <:patt< ? $i$ : ($p$) >> ->
           fun curr next dg k ->
             if i = "" then [: `S LO "?"; `simple_patt p "" k :]
