@@ -1135,7 +1135,8 @@ let emit_instr i =
         | Some lbl ->
            `  (p{emit_int p})	br {emit_label lbl}\n` in
         emit_compare 0 5 lbl0; emit_compare 1 6 lbl1; emit_compare 2 7 lbl2;
-        emit_branch 5 lbl0; emit_branch 6 lbl1; emit_branch 7 lbl2
+        emit_branch 5 lbl0; emit_branch 6 lbl1; emit_branch 7 lbl2;
+        `  ;;\n`
     | Lswitch jumptbl ->
         end_basic_block();
         let numcases = Array.length jumptbl in

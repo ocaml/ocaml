@@ -310,7 +310,7 @@ caml_start_program:
         ST8OFF(r2, r3, 8)
 .L110:	mov	r3 = ip ;;
 	add	r3 = .L101 - .L110, r3 ;;
-        ST8OFF(r2, r3, 8)
+        ST8OFF(r2, r3, 8) ;;
 
         /* Save ar.bsp, flush register window, and save ar.rnat */
         mov     r2 = ar.bsp ;;
