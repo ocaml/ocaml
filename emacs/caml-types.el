@@ -54,13 +54,18 @@ For the moment, the only possible keyword is \"type\"."
                 caml-types-number-re " "
                 caml-types-number-re " "
                 caml-types-number-re)))
-  (setq caml-types-location-re 
-        (concat "^" caml-types-position-re " " caml-types-position-re)
-        ))
+  (setq caml-types-location-re
+        (concat "^" caml-types-position-re " " caml-types-position-re)))
+
 (defvar caml-types-expr-ovl (make-overlay 1 1))
-(overlay-put caml-types-expr-ovl 'face 'region)
-(defvar caml-types-type-ovl (make-overlay 1 1))
-(overlay-put caml-types-type-ovl 'face 'region)
+
+(make-face 'caml-types-face)
+(set-face-doc-string 'caml-types-face
+                     "face for hilighting expressions and types")
+(if (not (face-differs-from-default-p 'caml-types-face))
+    (set-face-background 'caml-types-face "#88FF44"))
+
+(overlay-put caml-types-expr-ovl 'face 'caml-types-face)
 
 (defun caml-types-show-type (arg)
   "Show the type of expression or pattern at point.
@@ -104,11 +109,9 @@ See `caml-types-location-re' for annotation file format.
           (if (null loc)
               (progn
                 (delete-overlay caml-types-expr-ovl)
-                (delete-overlay caml-types-type-ovl)
                 (message
                  "Point is not within a typechecked expression or pattern.")
-                (narrow-to-region 1 1)
-                )
+                (narrow-to-region 1 1))
             (let ((left (caml-types-get-pos target-buf (nth 0 loc) (nth 1 loc)))
                   (right (caml-types-get-pos target-buf
                                              (nth 2 loc) (nth 3 loc))))
@@ -116,24 +119,11 @@ See `caml-types-location-re' for annotation file format.
             ;; not strictly correct
             (re-search-forward
              "^type(\n  \\(\\([^\n)]\\|.)\\|\n[^)]\\)*\\)\n)")
-             ;; (move-overlay caml-types-type-ovl
-             ;; (match-beginning 1) (match-end 1)
-             ;;   type-buf)
             (message (format "type: %s" (match-string 1)))
-            (narrow-to-region (match-beginning 0) (match-end 0))
-            ; (set-mark (match-beginning 1))
-            )))
+            (narrow-to-region (match-beginning 1) (match-end 1)))))
       (if (and (= arg 4)
                (not (window-live-p (get-buffer-window type-buf))))
           (display-buffer type-buf))
- ;       (let
- ;           ((window (get-buffer-window type-buf))
- ;            (this-window (selected-window)))
- ;         (if window
- ;             (progn
- ;               (select-window window)
- ;               (goto-char (mark))
- ;               (select-window this-window))))
       (unwind-protect
           (sit-for 60)
         (delete-overlay caml-types-expr-ovl)))))
@@ -319,24 +309,5 @@ and its type is displayed in the minibuffer, until the move is released."
           )
     (delete-overlay caml-types-expr-ovl))
     ))
-
-
-
-;; bindings
-
-;; now in caml.el
-; (and
-;  (boundp 'caml-mode-map)
-;  (keymapp caml-mode-map)
-;  (progn 
-;    (define-key caml-mode-map [?\C-c?\C-t] 'caml-types-show-type)
-;    (define-key caml-mode-map [down-mouse-2] 'caml-types-explore)
-;    (let ((map (lookup-key caml-mode-map [menu-bar caml])))
-;      (and
-;       (keymapp map)
-;       (progn
-;         (define-key map [separator-types] '("---"))
-;         (define-key map [show-type]
-;           '("Show type at point" . caml-types-show-type )))))))
 
 (provide 'caml-types)
