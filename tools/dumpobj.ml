@@ -108,12 +108,12 @@ let rec print_struct_const = function
 
 let rec print_obj x =
   if Obj.is_block x then begin
-    match Obj.tag x with
-      252 ->                            (* string *)
+    let tag = Obj.tag x in
+    if tag = Obj.string_tag then
         printf "%S" (Obj.magic x : string)
-    | 253 ->                            (* float *)
+    else if tag = Obj.double_tag then
         printf "%.12g" (Obj.magic x : float)
-    | 254 ->                            (* float array *)
+    else if tag = Obj.double_array_tag then begin
         let a = (Obj.magic x : float array) in
         printf "[|";
         for i = 0 to Array.length a - 1 do
@@ -121,9 +121,9 @@ let rec print_obj x =
           printf "%.12g" a.(i)
         done;
         printf "|]"
-    | _ ->
+    end else if tag < Obj.no_scan_tag then begin
         printf "<%d>" (Obj.tag x);
-        begin match Obj.size x with
+        match Obj.size x with
           0 -> ()
         | 1 ->
             printf "("; print_obj (Obj.field x 0); printf ")"
@@ -133,7 +133,8 @@ let rec print_obj x =
               printf ", "; print_obj (Obj.field x i)
             done;
             printf ")"
-        end
+    end else
+        printf "<tag %d>" tag
   end else
     printf "%d" (Obj.magic x : int)
 
