@@ -97,9 +97,15 @@ extern value *local_roots;
 #define Pop_roots() {local_roots = (value *) local_roots [1]; }
 
 /* [register_global_root] registers a global C variable as a memory root
-   for the duration of the program. */
+   for the duration of the program, or until [remove_global_root] is
+   called. */
 
 void register_global_root P((value *));
+
+/* [remove_global_root] removes a memory root registered on a global C
+   variable with [register_global_root]. */
+
+void remove_global_root P((value *));
 
 
 #endif /* _memory_ */
