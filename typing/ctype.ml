@@ -23,7 +23,7 @@ open Types
    - As much sharing as possible should be kept : it makes types
      smaller and better abbreviated.
      When necessary, some sharing can be lost. Types will still be
-     printed correctly (XXX TO DO...), and types defined by a class do
+     printed correctly (+++ TO DO...), and types defined by a class do
      not depend on sharing thanks to constrained abbreviations. (Of
      course, typing will still be correct.)
    - All nodes of a type have a level : that way, one know whether a
@@ -39,7 +39,6 @@ open Types
 (*
    A faire
    =======
-   - XXX Se debarasser de [Ident.identify] (utiliser plutot des substitutions).
    - Revoir affichage des types.
    - Types recursifs sans limitation.
    - Etendre la portee d'un alias [... as 'a] a tout le type englobant.
@@ -323,7 +322,7 @@ let rec update_level env level ty =
           ty.desc <- Tlink (!expand_abbrev' env p tl abbrev old_level);
           update_level env level ty
         with Cannot_expand ->
-          (* XXX Levels should be restored... *)
+          (* +++ Levels should be restored... *)
           raise (Unify [])
         end
     | _ ->
@@ -556,8 +555,6 @@ let expand_abbrev env path args abbrev level =
            (+++ actually, it is still true for the moment, due to the
            strong constraint on type levels and constructor binding
            time.)
-           (XXX except that moregeneral can bind variables to out of
-           context types...)
         *)
         try Env.find_type path env with Not_found -> raise Cannot_expand in
       match decl.type_manifest with
@@ -1062,7 +1059,7 @@ let moregeneral env sch1 sch2 =
                  (*********************************************)
 
 
-(* XXX A voir... *)
+(* +++ A voir... *)
 
 (* Deux modes : avec ou sans subtitution *)
 (* Equalite de deux listes de types :    *)
@@ -1235,7 +1232,7 @@ let rec subtype_rec env trace t1 t2 =
   let t2 = repr t2 in
   if t1 == t2 then [] else
   if List.exists (fun (t1', t2') -> t1 == t1' & t2 == t2') !subtypes then
-      (* XXX Possibly slow *)
+      (* +++ Possibly slow *)
     []
   else begin
     subtypes := (t1, t2) :: !subtypes;
@@ -1339,11 +1336,6 @@ let rec arity ty =
                               (*  Remove dependencies  *)
                               (*************************)
 
-
-(* XXX Petit probleme... (deroulement) *)
-(*     module F(X : sig type t end) = struct type t = X.t end;;       *)
-(*     module M = F(struct type t = <x : t> end);;                    *)
-(*  -> module M : sig type t = < x : < x : 'a > as 'a > end  *)
 
 (*
    Variables are left unchanged. Other type nodes are duplicated, with
