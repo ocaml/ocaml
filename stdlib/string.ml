@@ -155,7 +155,7 @@ let rec rindex_rec s i c =
 let rindex s c = rindex_rec s (length s - 1) c;;
 
 let rindex_from s i c =
-  if i < 0 || i >= length s then invalid_arg "String.rindex_from" else
+  if i < -1 || i >= length s then invalid_arg "String.rindex_from" else
   rindex_rec s i c;;
 
 let contains_from s i c =
