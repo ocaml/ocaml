@@ -170,34 +170,40 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
   | Tclass_constraint (cl, vals, pub_meths, concr_meths) ->
       build_object_init cl_table obj params inh_init obj_init cl
 
-let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
+let rec build_object_init_0 cl_table params cl copy_env top ids =
   match cl.cl_desc with
     Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, obj_init) =
-        build_object_init_0 cl_table (vals @ params) cl
-	  copy_env subst_env top ids
+        build_object_init_0 cl_table (vals @ params) cl copy_env top ids
       in
       (inh_init, Translcore.transl_let rec_flag defs obj_init)
   | _ ->
-      let self = Ident.create "self" and env = Ident.create "env" in
+      let self = Ident.create "self" in
       let obj = if ids = [] then lambda_unit else Lvar self in
       let (inh_init, obj_init) =
-        build_object_init cl_table obj params [] (copy_env env) cl in
-      let obj_init = subst_env env obj_init in
+        build_object_init cl_table obj params [] copy_env cl in
       let obj_init =
 	if ids = [] then obj_init else lfunction [self] obj_init in
-      let obj_init =
-	if top then obj_init else
-	let i = ref 0 in
-	List.fold_left
-	  (fun init (obj_init, env_init, _) ->
-	    incr i;
-	    Llet(Strict, obj_init,
-		 Lapply(Lvar env_init, [Lprim(Pfield !i, [Lvar env])]),
-		 init))
-	  obj_init inh_init in
-      let obj_init = lfunction [env] obj_init in
       (inh_init, obj_init)
+
+let build_object_init_0 cl_table params cl copy_env subst_env top ids =
+  let env = Ident.create "env" in
+  let (inh_init, obj_init) =
+    build_object_init_0 cl_table params cl (copy_env env) top ids in
+  let obj_init = subst_env env obj_init in
+  let obj_init =
+    if top then obj_init else
+    let i = ref 0 in
+    List.fold_left
+      (fun init (obj_init, env_init, _) ->
+	incr i;
+	Llet(Strict, obj_init,
+	     Lapply(Lvar env_init, [Lprim(Pfield !i, [Lvar env])]),
+	     init))
+      obj_init inh_init
+  in
+  (inh_init, lfunction [env] obj_init)
+
 
 let bind_method tbl public_methods lab id cl_init =
   if List.mem lab public_methods then
