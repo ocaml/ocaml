@@ -19,36 +19,64 @@ open Misc
 open Reg
 open Mach
 
+module BitMatrix =
+  struct
+    type bucket = Nil | Cons of int * int * bucket
+    type t = {
+      mutable tbl: bucket array;
+      mutable capacity: int;
+      mutable numelts: int
+    }
+    let create log2_sz =
+      let sz = 1 lsl log2_sz in
+      { tbl = Array.create sz Nil; capacity = 4 * sz; numelts = 0 }
+
+    let resize mat =
+      let len = Array.length mat.tbl in
+      let newtbl = Array.make (len * 2) mat.tbl.(0) in
+      Array.blit mat.tbl 0 newtbl 0 len;
+      Array.blit mat.tbl 0 newtbl len len;
+      mat.tbl <- newtbl;
+      mat.capacity <- mat.capacity * 4
+
+    let rec find_in_bucket i j = function
+        Nil -> false
+      | Cons(x, y, rem) -> (x = i && y = j) || find_in_bucket i j rem
+
+    let rec testandset mat i j =
+      if j > i then testandset mat j i else begin
+        let hash = (i lxor j) land (Array.length mat.tbl - 1) in
+        let bucket = mat.tbl.(hash) in
+        find_in_bucket i j bucket ||
+        begin
+          mat.tbl.(hash) <- Cons(i, j, bucket);
+          mat.numelts <- mat.numelts + 1;
+          if mat.numelts >= mat.capacity then resize mat;
+          false
+        end
+      end
+
+    let rec isset mat i j =
+      if j > i then
+        isset mat j i
+      else
+        find_in_bucket i j mat.tbl.((i lxor j) land (Array.length mat.tbl - 1))
+  end
+
 let build_graph fundecl =
 
   (* The interference graph is represented in two ways:
      - by adjacency lists for each register
-     - by a triangular bit matrix *)
+     - by a (triangular) bit matrix *)
 
-  let num_regs = Reg.num_registers() in
-  let mat_len = (((num_regs * (num_regs + 1)) lsr 1 + 7) lsr 3) in
-  if mat_len > Sys.max_string_length then
-    fatal_error("Interf.build_graph: too many pseudo-registers in function " ^
-                fundecl.fun_name);
-  let mat = String.make mat_len '\000' in
+  let mat = BitMatrix.create 6 in
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
     let i = ri.stamp and j = rj.stamp in
-    if i = j then () else begin
-      let n = if i < j then ((j * (j + 1)) lsr 1) + i
-                       else ((i * (i + 1)) lsr 1) + j in
-      let b = Char.code(mat.[n lsr 3]) in
-      let msk = 1 lsl (n land 7) in
-      if b land msk = 0 then begin
-        mat.[n lsr 3] <- Char.unsafe_chr(b lor msk);
-        begin match ri.loc with
-          Unknown -> ri.interf <- rj :: ri.interf | _ -> ()
-        end;
-        begin match rj.loc with
-          Unknown -> rj.interf <- ri :: rj.interf | _ -> ()
-        end
-      end
+    if i = j || BitMatrix.testandset mat i j then () else begin
+      if ri.loc = Unknown then ri.interf <- rj :: ri.interf;
+      if rj.loc = Unknown then rj.interf <- ri :: rj.interf
     end in
 
   (* Record interferences between a register array and a set of registers *)
@@ -118,16 +146,10 @@ let build_graph fundecl =
   let add_pref weight r1 r2 =
     if weight > 0 then begin
       let i = r1.stamp and j = r2.stamp in
-      if i = j then () else begin
-        match r1.loc with
-          Unknown ->
-            let n = if i < j then ((j * (j + 1)) lsr 1) + i
-                             else ((i * (i + 1)) lsr 1) + j in
-            let b = Char.code(mat.[n lsr 3]) in
-            let msk = 1 lsl (n land 7) in
-            if b land msk = 0 then r1.prefer <- (r2, weight) :: r1.prefer
-        | _ -> ()
-      end
+      if i <> j
+      && r1.loc = Unknown
+      && not (BitMatrix.isset mat i j)
+      then r1.prefer <- (r2, weight) :: r1.prefer
     end in
 
   (* Add a mutual preference between two regs *)
@@ -185,4 +207,3 @@ let build_graph fundecl =
   in
 
   interf fundecl.fun_body; prefer 8 fundecl.fun_body
-
