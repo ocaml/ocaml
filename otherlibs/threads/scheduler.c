@@ -24,6 +24,7 @@
 #include "alloc.h"
 #include "memory.h"
 #include "signals.h"
+#include "sys.h"
 
 #if ! (defined(HAS_SELECT) && \
        defined(HAS_SETITIMER) && \
@@ -36,9 +37,11 @@
 #include <string.h>
 #endif
 
+#include <errno.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -246,6 +249,7 @@ static double timeofday(void)
 static value alloc_process_status(int pid, int status);
 static void add_fdlist_to_set(value fdl, fd_set *set);
 static value inter_fdlist_set(value fdl, fd_set *set);
+static void find_bad_fds(value fdl, fd_set *set);
 
 static value schedule_thread(void)
 {
@@ -343,6 +347,26 @@ try_again:
     enter_blocking_section();
     retcode = select(FD_SETSIZE, &readfds, &writefds, &exceptfds, delay_ptr);
     leave_blocking_section();
+    if (retcode == -1)
+      switch (errno) {
+      case EINTR:
+        break;
+      case EBADF:
+        /* One of the descriptors in the sets was closed or is bad.
+           Find it using fstat() and wake up the threads waiting on it
+           so that they'll get an error when operating on it. */
+        FOREACH_THREAD(th)
+          if (th->status & (BLOCKED_IO - 1)) {
+            find_bad_fds(th->readfds, &readfds);
+            find_bad_fds(th->writefds, &writefds);
+            find_bad_fds(th->exceptfds, &exceptfds);
+          }
+        END_FOREACH(th);
+        retcode = 1;
+        break;
+      default:
+        sys_error(NO_ARG);
+      }
     if (retcode > 0) {
       /* Some descriptors are ready. 
          Mark the corresponding threads runnable. */
@@ -572,7 +596,9 @@ value thread_kill(value thread)       /* ML */
 static void add_fdlist_to_set(value fdl, fd_set *set)
 {
   for (/*nothing*/; fdl != NO_FDS; fdl = Field(fdl, 1)) {
-    FD_SET(Int_val(Field(fdl, 0)), set);
+    int fd = Int_val(Field(fdl, 0));
+    /* Ignore funky file descriptors, which can cause crashes */
+    if (fd >= 0 && fd < FD_SETSIZE) FD_SET(fd, set);
   }
 }
 
@@ -597,6 +623,20 @@ static value inter_fdlist_set(value fdl, fd_set *set)
     }
   End_roots();
   return res;
+}
+
+/* Find closed file descriptors in a waiting list and set them to 1 in
+   the given fdset */
+
+static void find_bad_fds(value fdl, fd_set *set)
+{
+  struct stat s;
+
+  for (/*nothing*/; fdl != NO_FDS; fdl = Field(fdl, 1)) {
+    int fd = Int_val(Field(fdl, 0));
+    if (fd >= 0 && fd < FD_SETSIZE && fstat(fd, &s) == -1 && errno == EBADF)
+      FD_SET(fd, set);
+  }
 }
 
 /* Auxiliary function for allocating the result of a waitpid() call */
