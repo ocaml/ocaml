@@ -18,8 +18,9 @@
 #ifndef CAML_MISC_H
 #define CAML_MISC_H
 
-
+#ifndef CAML_NAME_SPACE
 #include "compatibility.h"
+#endif
 #include "config.h"
 
 /* Standard definitions */
@@ -73,10 +74,10 @@ int caml_failed_assert (char *, char *, int);
 #define CAMLassert(x) 0
 #endif
 
-void fatal_error (char *msg) Noreturn;
-void fatal_error_arg (char *fmt, char *arg) Noreturn;
-void fatal_error_arg2 (char *fmt1, char *arg1, 
-                       char *fmt2, char *arg2) Noreturn;
+void caml_fatal_error (char *msg) Noreturn;
+void caml_fatal_error_arg (char *fmt, char *arg) Noreturn;
+void caml_fatal_error_arg2 (char *fmt1, char *arg1, 
+                            char *fmt2, char *arg2) Noreturn;
 
 /* Data structures */
 
@@ -86,18 +87,18 @@ struct ext_table {
   void ** contents;
 };
 
-extern void ext_table_init(struct ext_table * tbl, int init_capa);
-extern int ext_table_add(struct ext_table * tbl, void * data);
-extern void ext_table_free(struct ext_table * tbl, int free_entries);
+extern void caml_ext_table_init(struct ext_table * tbl, int init_capa);
+extern int caml_ext_table_add(struct ext_table * tbl, void * data);
+extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 
 /* GC flags and messages */
 
-extern unsigned long verb_gc;
-void gc_message (int, char *, unsigned long);
+extern unsigned long caml_verb_gc;
+void caml_gc_message (int, char *, unsigned long);
 
 /* Memory routines */
 
-char *aligned_malloc (asize_t, int, void **);
+char *caml_aligned_malloc (asize_t, int, void **);
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
@@ -115,8 +116,8 @@ char *aligned_malloc (asize_t, int, void **);
   04 -> fields deallocated by obj_truncate
   10 -> uninitialised fields of minor objects
   11 -> uninitialised fields of major objects
-  15 -> uninitialised words of aligned_malloc blocks
-  85 -> filler bytes of aligned_malloc
+  15 -> uninitialised words of caml_aligned_malloc blocks
+  85 -> filler bytes of caml_aligned_malloc
 
   special case (byte by byte):
   D7 -> uninitialised words of stat_alloc blocks

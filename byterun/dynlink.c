@@ -90,23 +90,24 @@ static char * parse_ld_conf(void)
   }
   ldconf = open(ldconfname, O_RDONLY, 0);
   if (ldconf == -1)
-    fatal_error_arg("Fatal error: cannot read loader config file %s\n",
-                    ldconfname);
+    caml_fatal_error_arg("Fatal error: cannot read loader config file %s\n",
+                         ldconfname);
   config = stat_alloc(st.st_size + 1);
   nread = read(ldconf, config, st.st_size);
   if (nread == -1) 
-    fatal_error_arg("Fatal error: error while reading loader config file %s\n",
-                    ldconfname);
+    caml_fatal_error_arg
+      ("Fatal error: error while reading loader config file %s\n",
+       ldconfname);
   config[nread] = 0;
   q = config;
   for (p = config; *p != 0; p++) {
     if (*p == '\n') {
       *p = 0;
-      ext_table_add(&shared_libs_path, q);
+      caml_ext_table_add(&shared_libs_path, q);
       q = p + 1;
     }
   }
-  if (q < p) ext_table_add(&shared_libs_path, q);
+  if (q < p) caml_ext_table_add(&shared_libs_path, q);
   close(ldconf);
   stat_free(ldconfname);
   return config;
@@ -120,12 +121,13 @@ static void open_shared_lib(char * name)
   void * handle;
 
   realname = search_dll_in_path(&shared_libs_path, name);
-  gc_message(0x100, "Loading shared library %s\n", (unsigned long) realname);
+  caml_gc_message(0x100, "Loading shared library %s\n",
+                  (unsigned long) realname);
   handle = caml_dlopen(realname);
   if (handle == NULL)
-    fatal_error_arg2("Fatal error: cannot load shared library %s\n", name,
-                     "Reason: %s\n", caml_dlerror());
-  ext_table_add(&shared_libs, handle);
+    caml_fatal_error_arg2("Fatal error: cannot load shared library %s\n", name,
+                          "Reason: %s\n", caml_dlerror());
+  caml_ext_table_add(&shared_libs, handle);
   stat_free(realname);
 }
 
@@ -147,31 +149,31 @@ void build_primitive_table(char * lib_path,
   tofree1 = decompose_path(&shared_libs_path, getenv("CAML_LD_LIBRARY_PATH"));
   if (lib_path != NULL)
     for (p = lib_path; *p != 0; p += strlen(p) + 1)
-      ext_table_add(&shared_libs_path, p);
+      caml_ext_table_add(&shared_libs_path, p);
   tofree2 = parse_ld_conf();
   /* Open the shared libraries */
-  ext_table_init(&shared_libs, 8);
+  caml_ext_table_init(&shared_libs, 8);
   if (libs != NULL)
     for (p = libs; *p != 0; p += strlen(p) + 1)
       open_shared_lib(p);
   /* Build the primitive table */
-  ext_table_init(&prim_table, 0x180);
+  caml_ext_table_init(&prim_table, 0x180);
 #ifdef DEBUG
-  ext_table_init(&prim_name_table, 0x180);
+  caml_ext_table_init(&prim_name_table, 0x180);
 #endif
   for (p = req_prims; *p != 0; p += strlen(p) + 1) {
     c_primitive prim = lookup_primitive(p);
     if (prim == NULL)
-      fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
-    ext_table_add(&prim_table, (void *) prim);
+      caml_fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
+    caml_ext_table_add(&prim_table, (void *) prim);
 #ifdef DEBUG
-    ext_table_add(&prim_name_table, strdup(p));
+    caml_ext_table_add(&prim_name_table, strdup(p));
 #endif
   }
   /* Clean up */
   stat_free(tofree1);
   stat_free(tofree2);
-  ext_table_free(&shared_libs_path, 0);
+  caml_ext_table_free(&shared_libs_path, 0);
 }
 
 #endif
@@ -187,7 +189,7 @@ CAMLprim value dynlink_open_lib(value filename)
 
   handle = caml_dlopen(String_val(filename));
   if (handle == NULL) failwith(caml_dlerror());
-  result = alloc_small(1, Abstract_tag);
+  result = caml_alloc_small(1, Abstract_tag);
   Handle_val(result) = handle;
   return result;
 }
@@ -207,7 +209,7 @@ CAMLprim value dynlink_lookup_symbol(value handle, value symbolname)
   /* printf("%s = 0x%lx\n", String_val(symbolname), symb);
      fflush(stdout); */
   if (symb == NULL) return Val_unit /*failwith(caml_dlerror())*/;
-  result = alloc_small(1, Abstract_tag);
+  result = caml_alloc_small(1, Abstract_tag);
   Handle_val(result) = symb;
   return result;
 }
@@ -216,7 +218,7 @@ CAMLprim value dynlink_lookup_symbol(value handle, value symbolname)
 
 CAMLprim value dynlink_add_primitive(value handle)
 {
-  return Val_int(ext_table_add(&prim_table, Handle_val(handle)));
+  return Val_int(caml_ext_table_add(&prim_table, Handle_val(handle)));
 }
 
 CAMLprim value dynlink_get_current_libs(value unit)
@@ -225,9 +227,9 @@ CAMLprim value dynlink_get_current_libs(value unit)
   CAMLlocal1(res);
   int i;
 
-  res = alloc_tuple(shared_libs.size);
+  res = caml_alloc_tuple(shared_libs.size);
   for (i = 0; i < shared_libs.size; i++) {
-    value v = alloc_small(1, Abstract_tag);
+    value v = caml_alloc_small(1, Abstract_tag);
     Handle_val(v) = shared_libs.contents[i];
     Store_field(res, i, v);
   }

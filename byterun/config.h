@@ -28,7 +28,9 @@
 #endif
 /* </private> */
 
+#ifndef CAML_NAME_SPACE
 #include "compatibility.h"
+#endif
 
 /* Types for signed chars, 16-bit integers, 32-bit integers, 64-bit integers */
 

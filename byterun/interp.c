@@ -1044,8 +1044,8 @@ value interprete(code_t prog, asize_t prog_size)
 #if _MSC_VER >= 1200
       __assume(0);
 #else
-      fatal_error_arg("Fatal error: bad opcode (%lx)\n",
-                      (char *)(long)(*(pc-1)));
+      caml_fatal_error_arg("Fatal error: bad opcode (%lx)\n",
+                           (char *)(long)(*(pc-1)));
 #endif
     }
   }

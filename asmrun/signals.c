@@ -62,7 +62,7 @@ extern sighandler win32_signal(int sig, sighandler action);
         ctx_version = 2;
       }
     }else{
-      fatal_error ("cannot determine SIGCONTEXT format");
+      caml_fatal_error ("cannot determine SIGCONTEXT format");
     }
   }
 
@@ -440,14 +440,14 @@ value install_signal_handler(value signal_number, value action) /* ML */
 #else
   sigact.sa_flags = 0;
 #endif
-  if (sigaction(sig, &sigact, &oldsigact) == -1) sys_error(NO_ARG);
+  if (sigaction(sig, &sigact, &oldsigact) == -1) caml_sys_error(NO_ARG);
   oldact = oldsigact.sa_handler;
 #else
   oldact = signal(sig, act);
-  if (oldact == SIG_ERR) sys_error(NO_ARG);
+  if (oldact == SIG_ERR) caml_sys_error(NO_ARG);
 #endif
   if (oldact == (void (*)(int)) handle_signal) {
-    res = alloc_small(1, 0);          /* Signal_handle */
+    res = caml_alloc_small(1, 0);          /* Signal_handle */
     Field(res, 0) = Field(signal_handlers, sig);
   }
   else if (oldact == SIG_IGN)
@@ -456,7 +456,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
     res = Val_int(0);           /* Signal_default */
   if (Is_block(action)) {
     if (signal_handlers == 0) {
-      signal_handlers = alloc(NSIG, 0);
+      signal_handlers = caml_alloc(NSIG, 0);
       register_global_root(&signal_handlers);
     }
     modify(&Field(signal_handlers, sig), Field(action, 0));
@@ -510,7 +510,7 @@ static void trap_handler(int sig, siginfo_t * info, void * context)
 static void trap_handler(int sig)
 {
   /* TODO: recover registers from context and call array_bound_error */
-  fatal_error("Fatal error: out-of-bound access in array or string\n");
+  caml_fatal_error("Fatal error: out-of-bound access in array or string\n");
 }
 #endif
 

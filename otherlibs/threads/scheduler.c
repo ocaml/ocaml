@@ -514,7 +514,7 @@ try_again:
 static void check_callback(void)
 {
   if (callback_depth > 1)
-    fatal_error("Thread: deadlock during callback");
+    caml_fatal_error("Thread: deadlock during callback");
 }
 
 /* Reschedule without suspending the current thread */

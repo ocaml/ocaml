@@ -55,6 +55,8 @@ CAMLprim value weak_set (value ar, value n, value el)
     v = Field (el, 0);
     if (Is_block (v) && (Is_young (v) || Is_in_heap (v))){
       Modify (&Field (ar, offset), v);
+    }else{
+      Field (ar, offset) = v;
     }
   }
   return Val_unit;
@@ -77,7 +79,7 @@ CAMLprim value weak_get (value ar, value n)
     if (gc_phase == Phase_mark && Is_block (elt) && Is_in_heap (elt)){
       darken (elt, NULL);
     }
-    res = alloc_small (1, Some_tag);
+    res = caml_alloc_small (1, Some_tag);
     Field (res, 0) = elt;
   }
   CAMLreturn (res);
@@ -98,7 +100,8 @@ CAMLprim value weak_get_copy (value ar, value n)
   v = Field (ar, offset);
   if (v == weak_none) CAMLreturn (None_val);
   if (Is_block (v) && (Is_young (v) || Is_in_heap (v))){
-    elt = alloc (Wosize_val (v), Tag_val (v)); /* The GC may erase or move v. */
+    elt = caml_alloc (Wosize_val (v), Tag_val (v));
+          /* The GC may erase or move v during this call to caml_alloc. */
     v = Field (ar, offset);
     if (v == weak_none) CAMLreturn (None_val);
     if (Tag_val (v) < No_scan_tag){
@@ -112,7 +115,7 @@ CAMLprim value weak_get_copy (value ar, value n)
   }else{
     elt = v;
   }
-  res = alloc_small (1, Some_tag);
+  res = caml_alloc_small (1, Some_tag);
   Field (res, 0) = elt;
 
   CAMLreturn (res);

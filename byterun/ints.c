@@ -183,7 +183,7 @@ CAMLprim value format_int(value fmt, value arg)
     sprintf(buffer, format_string, Long_val(arg));
     break;
   }
-  res = copy_string(buffer);
+  res = caml_copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
   return res;
 }
@@ -313,7 +313,7 @@ CAMLprim value int32_format(value fmt, value arg)
 
   buffer = parse_format(fmt, "", format_string, default_format_buffer, &conv);
   sprintf(buffer, format_string, (long) Int32_val(arg));
-  res = copy_string(buffer);
+  res = caml_copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
   return res;
 }
@@ -508,7 +508,7 @@ CAMLprim value int64_format(value fmt, value arg)
   buffer = parse_format(fmt, ARCH_INT64_PRINTF_FORMAT,
                         format_string, default_format_buffer, &conv);
   I64_format(buffer, format_string, Int64_val(arg));
-  res = copy_string(buffer);
+  res = caml_copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
   return res;
 }
@@ -714,7 +714,7 @@ CAMLprim value nativeint_format(value fmt, value arg)
 
   buffer = parse_format(fmt, "l", format_string, default_format_buffer, &conv);
   sprintf(buffer, format_string, (long) Nativeint_val(arg));
-  res = copy_string(buffer);
+  res = caml_copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
   return res;
 }

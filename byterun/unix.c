@@ -56,7 +56,7 @@ char * decompose_path(struct ext_table * tbl, char * path)
   q = p;
   while (1) {
     for (n = 0; q[n] != 0 && q[n] != ':'; n++) /*nothing*/;
-    ext_table_add(tbl, q);
+    caml_ext_table_add(tbl, q);
     q = q + n;
     if (*q == 0) break;
     *q = 0;
@@ -141,7 +141,7 @@ char * search_exe_in_path(char * name)
   char * tofree;
   char * res;
 
-  ext_table_init(&path, 8);
+  caml_ext_table_init(&path, 8);
   tofree = decompose_path(&path, getenv("PATH"));
 #ifndef __CYGWIN32__
   res = search_in_path(&path, name);
@@ -149,7 +149,7 @@ char * search_exe_in_path(char * name)
   res = cygwin_search_exe_in_path(&path, name);
 #endif
   stat_free(tofree);
-  ext_table_free(&path, 0);
+  caml_ext_table_free(&path, 0);
   return res;
 }
 
@@ -349,7 +349,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
     if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) continue;
     p = stat_alloc(strlen(e->d_name) + 1);
     strcpy(p, e->d_name);
-    ext_table_add(contents, p);
+    caml_ext_table_add(contents, p);
   }
   closedir(d);
   return 0;

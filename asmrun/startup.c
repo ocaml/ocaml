@@ -104,7 +104,7 @@ static void parse_camlrunparam(void)
       case 'l': scanmult (opt, &max_stack_init); break;
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
-      case 'v': scanmult (opt, &verb_gc); break;
+      case 'v': scanmult (opt, &caml_verb_gc); break;
       case 'p': parser_trace = 1; break;
       }
     }
@@ -130,7 +130,7 @@ void caml_main(char **argv)
   init_ieee_floats();
   init_custom_operations();
 #ifdef DEBUG
-  verb_gc = 63;
+  caml_verb_gc = 63;
 #endif
   parse_camlrunparam();
   init_gc (minor_heap_init, heap_size_init, heap_chunk_init,

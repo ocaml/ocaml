@@ -332,7 +332,7 @@ let make_alloc_generic set_fn tag wordsize args =
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1,
                           fill_fields (idx + 2) el) in
     Clet(id, 
-         Cop(Cextcall("alloc", typ_addr, true),
+         Cop(Cextcall("caml_alloc", typ_addr, true),
                  [Cconst_int wordsize; Cconst_int tag]),
          fill_fields 1 args)
   end
@@ -1451,7 +1451,8 @@ and transl_letrec bindings cont =
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
     | (id, exp, RHS_block sz) :: rem ->
-        Clet(id, Cop(Cextcall("alloc_dummy", typ_addr, true), [int_const sz]),
+        Clet(id, Cop(Cextcall("caml_alloc_dummy", typ_addr, true),
+                     [int_const sz]),
              init_blocks rem)
     | (id, exp, RHS_nonrec) :: rem ->
         Clet (id, Cconst_int 0, init_blocks rem)
@@ -1463,7 +1464,7 @@ and transl_letrec bindings cont =
   and fill_blocks = function
     | [] -> cont
     | (id, exp, RHS_block _) :: rem ->
-        Csequence(Cop(Cextcall("update_dummy", typ_void, false),
+        Csequence(Cop(Cextcall("caml_update_dummy", typ_void, false),
                       [Cvar id; transl exp]),
                   fill_blocks rem)
     | (id, exp, RHS_nonrec) :: rem ->

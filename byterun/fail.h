@@ -20,7 +20,9 @@
 #include <setjmp.h>
 /* </private> */
 
+#ifndef CAML_NAME_SPACE
 #include "compatibility.h"
+#endif
 #include "misc.h"
 #include "mlvalues.h"
 

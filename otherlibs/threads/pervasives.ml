@@ -221,8 +221,8 @@ let rec (@) l1 l2 =
 type in_channel
 type out_channel
 
-external open_descriptor_out: int -> out_channel = "caml_open_descriptor_out"
-external open_descriptor_in: int -> in_channel = "caml_open_descriptor_in"
+external open_descriptor_out: int -> out_channel = "caml_ml_open_descriptor_out"
+external open_descriptor_in: int -> in_channel = "caml_ml_open_descriptor_in"
 
 let stdin = open_descriptor_in 0
 let stdout = open_descriptor_out 1
@@ -238,8 +238,10 @@ let thread_wait_write fd = thread_wait_write_prim fd
 
 external inchan_ready : in_channel -> bool = "thread_inchan_ready"
 external outchan_ready : out_channel -> int -> bool = "thread_outchan_ready"
-external descr_inchan : in_channel -> Unix.file_descr = "channel_descriptor"
-external descr_outchan : out_channel -> Unix.file_descr = "channel_descriptor"
+external descr_inchan : in_channel -> Unix.file_descr
+                      = "caml_channel_descriptor"
+external descr_outchan : out_channel -> Unix.file_descr
+                       = "caml_channel_descriptor"
 
 let wait_inchan ic =
   if not (inchan_ready ic) then thread_wait_read(descr_inchan ic)
@@ -265,7 +267,7 @@ let open_out name =
 let open_out_bin name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
 
-external flush_partial : out_channel -> bool = "caml_flush_partial"
+external flush_partial : out_channel -> bool = "caml_ml_flush_partial"
 
 let rec flush oc =
   let success =
@@ -291,7 +293,7 @@ let flush_all () =
   in iter (out_channels_list ())
 
 external unsafe_output_partial : out_channel -> string -> int -> int -> int
-                        = "caml_output_partial"
+                        = "caml_ml_output_partial"
 
 let rec unsafe_output oc buf pos len =
   if len > 0 then begin
@@ -304,8 +306,9 @@ let rec unsafe_output oc buf pos len =
   end
 
 external output_char_blocking : out_channel -> char -> unit 
-                              = "caml_output_char"
-external output_byte_blocking : out_channel -> int -> unit = "caml_output_char"
+                              = "caml_ml_output_char"
+external output_byte_blocking : out_channel -> int -> unit
+                              = "caml_ml_output_char"
 
 let rec output_char oc c =
   try

@@ -119,11 +119,11 @@ static value read_debug_info(void)
     close(fd);
     CAMLreturn(Val_false);
   }
-  chan = open_descriptor_in(fd);
-  num_events = getword(chan);
-  events = alloc(num_events, 0);
+  chan = caml_open_descriptor_in(fd);
+  num_events = caml_getword(chan);
+  events = caml_alloc(num_events, 0);
   for (i = 0; i < num_events; i++) {
-    orig = getword(chan);
+    orig = caml_getword(chan);
     evl = input_val(chan);
     /* Relocate events in event list */
     for (l = evl; l != Val_int(0); l = Field(l, 1)) {
@@ -133,7 +133,7 @@ static value read_debug_info(void)
     /* Record event list */
     Store_field(events, i, evl);
   }
-  close_channel(chan);
+  caml_close_channel(chan);
   CAMLreturn(events);
 }
 

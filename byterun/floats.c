@@ -99,7 +99,7 @@ CAMLprim value format_float(value fmt, value arg)
     dest = stat_alloc(prec);
   }
   sprintf(dest, String_val(fmt), Double_val(arg));
-  res = copy_string(dest);
+  res = caml_copy_string(dest);
   if (dest != format_buffer) {
     stat_free(dest);
   }
@@ -191,7 +191,7 @@ CAMLprim value frexp_float(value f)
   int exponent;
 
   mantissa = copy_double(frexp (Double_val(f), &exponent));
-  res = alloc_tuple(2);
+  res = caml_alloc_tuple(2);
   Field(res, 0) = mantissa;
   Field(res, 1) = Val_int(exponent);
   CAMLreturn (res);
@@ -224,7 +224,7 @@ CAMLprim value modf_float(value f)
 
   quo = copy_double(modf (Double_val(f), &frem));
   rem = copy_double(frem);
-  res = alloc_tuple(2);
+  res = caml_alloc_tuple(2);
   Field(res, 0) = quo;
   Field(res, 1) = rem;
   CAMLreturn (res);

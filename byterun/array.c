@@ -144,14 +144,14 @@ CAMLprim value make_vect(value len, value init)
     d = Double_val(init);
     wsize = size * Double_wosize;
     if (wsize > Max_wosize) invalid_argument("Array.make");
-    res = alloc(wsize, Double_array_tag);
+    res = caml_alloc(wsize, Double_array_tag);
     for (i = 0; i < size; i++) {
       Store_double_field(res, i, d);
     }
   } else {
     if (size > Max_wosize) invalid_argument("Array.make");
     if (size < Max_young_wosize) {
-      res = alloc_small(size, 0);
+      res = caml_alloc_small(size, 0);
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (Is_block(init) && Is_young(init)) {
@@ -187,7 +187,7 @@ CAMLprim value make_array(value init)
     } else {
       Assert(size < Max_young_wosize);
       wsize = size * Double_wosize;
-      res = alloc_small(wsize, Double_array_tag);
+      res = caml_alloc_small(wsize, Double_array_tag);
       for (i = 0; i < size; i++) {
         Store_double_field(res, i, Double_val(Field(init, i)));
       }

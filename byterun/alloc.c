@@ -29,7 +29,7 @@
 #define Setup_for_gc
 #define Restore_after_gc
 
-CAMLexport value alloc (mlsize_t wosize, tag_t tag)
+CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 {
   value result;
   mlsize_t i;
@@ -51,7 +51,7 @@ CAMLexport value alloc (mlsize_t wosize, tag_t tag)
   return result;
 }
 
-CAMLexport value alloc_small (mlsize_t wosize, tag_t tag)
+CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
   value result;
 
@@ -62,12 +62,12 @@ CAMLexport value alloc_small (mlsize_t wosize, tag_t tag)
   return result;
 }
 
-CAMLexport value alloc_tuple(mlsize_t n)
+CAMLexport value caml_alloc_tuple(mlsize_t n)
 {
-  return alloc(n, 0);
+  return caml_alloc(n, 0);
 }
 
-CAMLexport value alloc_string (mlsize_t len)
+CAMLexport value caml_alloc_string (mlsize_t len)
 {
   value result;
   mlsize_t offset_index;
@@ -85,25 +85,26 @@ CAMLexport value alloc_string (mlsize_t len)
   return result;
 }
 
-CAMLexport value alloc_final (mlsize_t len, final_fun fun,
-                              mlsize_t mem, mlsize_t max)
+CAMLexport value caml_alloc_final (mlsize_t len, final_fun fun,
+                                   mlsize_t mem, mlsize_t max)
 {
   return alloc_custom(final_custom_operations(fun),
                       len * sizeof(value), mem, max);
 }
 
-CAMLexport value copy_string(char const *s)
+CAMLexport value caml_copy_string(char const *s)
 {
   int len;
   value res;
 
   len = strlen(s);
-  res = alloc_string(len);
+  res = caml_alloc_string(len);
   memmove(String_val(res), s, len);
   return res;
 }
 
-CAMLexport value alloc_array(value (*funct)(char const *), char const ** arr)
+CAMLexport value caml_alloc_array(value (*funct)(char const *),
+                                  char const ** arr)
 {
   CAMLparam0 ();
   mlsize_t nbr, n;
@@ -114,7 +115,7 @@ CAMLexport value alloc_array(value (*funct)(char const *), char const ** arr)
   if (nbr == 0) {
     CAMLreturn (Atom(0));
   } else {
-    result = alloc (nbr, 0);
+    result = caml_alloc (nbr, 0);
     for (n = 0; n < nbr; n++) {
       /* The two statements below must be separate because of evaluation
          order (don't take the address &Field(result, n) before
@@ -126,12 +127,12 @@ CAMLexport value alloc_array(value (*funct)(char const *), char const ** arr)
   }
 }
 
-CAMLexport value copy_string_array(char const ** arr)
+CAMLexport value caml_copy_string_array(char const ** arr)
 {
-  return alloc_array(copy_string, arr);
+  return caml_alloc_array(caml_copy_string, arr);
 }
 
-CAMLexport int convert_flag_list(value list, int *flags)
+CAMLexport int caml_convert_flag_list(value list, int *flags)
 {
   int res;
   res = 0;
@@ -144,15 +145,15 @@ CAMLexport int convert_flag_list(value list, int *flags)
 
 /* For compiling let rec over values */
 
-CAMLprim value alloc_dummy(value size)
+CAMLprim value caml_alloc_dummy(value size)
 {
   mlsize_t wosize = Int_val(size);
 
   if (wosize == 0) return Atom(0);
-  return alloc (wosize, 0);
+  return caml_alloc (wosize, 0);
 }
 
-CAMLprim value update_dummy(value dummy, value newval)
+CAMLprim value caml_update_dummy(value dummy, value newval)
 {
   mlsize_t size, i;
   size = Wosize_val(newval);

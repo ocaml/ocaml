@@ -85,7 +85,8 @@ static void check_block (char *hp)
   switch (Tag_hp (hp)){
   case Abstract_tag: break;
   case String_tag:
-    /* not true when check_urgent_gc is called by alloc or alloc_string:
+    /* not true when check_urgent_gc is called by caml_alloc
+       or caml_alloc_string:
        lastbyte = Bosize_val (v) - 1;
        i = Byte (v, lastbyte);
        Assert (i >= 0);
@@ -133,7 +134,7 @@ static value heap_stats (int returnstats)
   header_t cur_hd;
 
 #ifdef DEBUG
-  gc_message (-1, "### O'Caml runtime: heap check ###\n", 0);
+  caml_gc_message (-1, "### O'Caml runtime: heap check ###\n", 0);
 #endif
 
   while (chunk != NULL){
@@ -217,7 +218,7 @@ static value heap_stats (int returnstats)
     long cpct = stat_compactions;
     long top_heap_words = Wsize_bsize (stat_top_heap_size);
 
-    res = alloc_tuple (15);
+    res = caml_alloc_tuple (15);
     Store_field (res, 0, copy_double (minwords));
     Store_field (res, 1, copy_double (prowords));
     Store_field (res, 2, copy_double (majwords));
@@ -263,7 +264,7 @@ CAMLprim value gc_counters(value v)
   double prowords = stat_promoted_words;
   double majwords = stat_major_words + (double) allocated_words;
 
-  res = alloc_tuple (3);
+  res = caml_alloc_tuple (3);
   Store_field (res, 0, copy_double (minwords));
   Store_field (res, 1, copy_double (prowords));
   Store_field (res, 2, copy_double (majwords));
@@ -275,11 +276,11 @@ CAMLprim value gc_get(value v)
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = alloc_tuple (6);
+  res = caml_alloc_tuple (6);
   Store_field (res, 0, Val_long (Wsize_bsize (minor_heap_size)));       /* s */
   Store_field (res, 1, Val_long (Wsize_bsize (major_heap_increment)));  /* i */
   Store_field (res, 2, Val_long (percent_free));                        /* o */
-  Store_field (res, 3, Val_long (verb_gc));                             /* v */
+  Store_field (res, 3, Val_long (caml_verb_gc));                        /* v */
   Store_field (res, 4, Val_long (percent_max));                         /* O */
 #ifndef NATIVE_CODE
   Store_field (res, 5, Val_long (max_stack_size));                      /* l */
@@ -322,7 +323,7 @@ CAMLprim value gc_set(value v)
   asize_t newheapincr;
   asize_t newminsize;
 
-  verb_gc = Long_val (Field (v, 3));
+  caml_verb_gc = Long_val (Field (v, 3));
 
 #ifndef NATIVE_CODE
   change_max_stack_size (Long_val (Field (v, 5)));
@@ -331,27 +332,28 @@ CAMLprim value gc_set(value v)
   newpf = norm_pfree (Long_val (Field (v, 2)));
   if (newpf != percent_free){
     percent_free = newpf;
-    gc_message (0x20, "New space overhead: %d%%\n", percent_free);
+    caml_gc_message (0x20, "New space overhead: %d%%\n", percent_free);
   }
 
   newpm = norm_pmax (Long_val (Field (v, 4)));
   if (newpm != percent_max){
     percent_max = newpm;
-    gc_message (0x20, "New max overhead: %d%%\n", percent_max);
+    caml_gc_message (0x20, "New max overhead: %d%%\n", percent_max);
   }
 
   newheapincr = Bsize_wsize (norm_heapincr (Long_val (Field (v, 1))));
   if (newheapincr != major_heap_increment){
     major_heap_increment = newheapincr;
-    gc_message (0x20, "New heap increment size: %luk bytes\n",
-                major_heap_increment/1024);
+    caml_gc_message (0x20, "New heap increment size: %luk bytes\n",
+                     major_heap_increment/1024);
   }
 
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminsize = norm_minsize (Bsize_wsize (Long_val (Field (v, 0))));
   if (newminsize != minor_heap_size){
-    gc_message (0x20, "New minor heap size: %luk bytes\n", newminsize/1024);
+    caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
+                     newminsize/1024);
     set_minor_heap_size (newminsize);
   }
   return Val_unit;
@@ -405,7 +407,7 @@ void init_gc (unsigned long minor_size, unsigned long major_size,
   unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 
 #ifdef DEBUG
-  gc_message (-1, "### O'Caml runtime: debug mode "
+  caml_gc_message (-1, "### O'Caml runtime: debug mode "
 #ifdef CPU_TYPE_STRING
                                "(" CPU_TYPE_STRING ") "
 #endif
@@ -417,12 +419,12 @@ void init_gc (unsigned long minor_size, unsigned long major_size,
   percent_free = norm_pfree (percent_fr);
   percent_max = norm_pmax (percent_m);
   init_major_heap (major_heap_size);
-  gc_message (0x20, "Initial minor heap size: %luk bytes\n",
-              minor_heap_size / 1024);
-  gc_message (0x20, "Initial major heap size: %luk bytes\n",
-              major_heap_size / 1024);
-  gc_message (0x20, "Initial space overhead: %lu%%\n", percent_free);
-  gc_message (0x20, "Initial max overhead: %lu%%\n", percent_max);
-  gc_message (0x20, "Initial heap increment: %luk bytes\n",
-              major_heap_increment / 1024);
+  caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
+                   minor_heap_size / 1024);
+  caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
+                   major_heap_size / 1024);
+  caml_gc_message (0x20, "Initial space overhead: %lu%%\n", percent_free);
+  caml_gc_message (0x20, "Initial max overhead: %lu%%\n", percent_max);
+  caml_gc_message (0x20, "Initial heap increment: %luk bytes\n",
+                   major_heap_increment / 1024);
 }

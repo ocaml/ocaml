@@ -23,5 +23,5 @@ end
 
 module Thread : sig
   type t
-  external create : ('a -> 'b) -> 'a -> t = "caml_input"
+  external create : ('a -> 'b) -> 'a -> t = "caml_ml_input"
 end

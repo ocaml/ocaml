@@ -72,19 +72,19 @@ static void open_connection(void)
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
-    fatal_error("cannot connect to debugger");
-  dbg_in = open_descriptor_in(dbg_socket);
-  dbg_out = open_descriptor_out(dbg_socket);
-  if (!debugger_in_use) putword(dbg_out, -1); /* first connection */
-  putword(dbg_out, getpid());
-  flush(dbg_out);
+    caml_fatal_error("cannot connect to debugger");
+  dbg_in = caml_open_descriptor_in(dbg_socket);
+  dbg_out = caml_open_descriptor_out(dbg_socket);
+  if (!debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
+  caml_putword(dbg_out, getpid());
+  caml_flush(dbg_out);
 }
 
 static void close_connection(void)
 {
-  close_channel(dbg_in);
-  close_channel(dbg_out);
-  dbg_socket = -1;              /* was closed by close_channel */
+  caml_close_channel(dbg_in);
+  caml_close_channel(dbg_out);
+  dbg_socket = -1;              /* was closed by caml_close_channel */
 }
 
 void debugger_init(void)
@@ -121,7 +121,7 @@ void debugger_init(void)
     if (sock_addr.s_inet.sin_addr.s_addr == -1) {
       host = gethostbyname(address);
       if (host == NULL)
-        fatal_error_arg("Unknown debugging host %s\n", address);
+        caml_fatal_error_arg("Unknown debugging host %s\n", address);
       memmove(&sock_addr.s_inet.sin_addr, host->h_addr, host->h_length);
     }
     sock_addr.s_inet.sin_port = htons(atoi(port));
@@ -135,14 +135,14 @@ void debugger_init(void)
 static value getval(struct channel *chan)
 {
   value res;
-  if (really_getblock(chan, (char *) &res, sizeof(res)) == 0)
-    raise_end_of_file(); /* Bad, but consistent with getword */
+  if (caml_really_getblock(chan, (char *) &res, sizeof(res)) == 0)
+    raise_end_of_file(); /* Bad, but consistent with caml_getword */
   return res;
 }
 
 static void putval(struct channel *chan, value val)
 {
-  really_putblock(chan, (char *) &val, sizeof(val));
+  caml_really_putblock(chan, (char *) &val, sizeof(val));
 }
 
 static void safe_output_value(struct channel *chan, value val)
@@ -156,7 +156,7 @@ static void safe_output_value(struct channel *chan, value val)
     output_val(chan, val, Val_unit);
   } else {
     /* Send wrong magic number, will cause input_value to fail */
-    really_putblock(chan, "\000\000\000\000", 4);
+    caml_really_putblock(chan, "\000\000\000\000", 4);
   }
   external_raise = saved_external_raise;
 }
@@ -199,16 +199,16 @@ void debugger(enum event_kind event)
     putch(dbg_out, REP_UNCAUGHT_EXC);
     break;
   }
-  putword(dbg_out, event_count);
+  caml_putword(dbg_out, event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
-    putword(dbg_out, stack_high - frame);
-    putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+    caml_putword(dbg_out, stack_high - frame);
+    caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
   } else {
     /* No PC and no stack frame associated with other events */
-    putword(dbg_out, 0);
-    putword(dbg_out, 0);
+    caml_putword(dbg_out, 0);
+    caml_putword(dbg_out, 0);
   }
-  flush(dbg_out);
+  caml_flush(dbg_out);
 
  command_loop:
   
@@ -216,19 +216,19 @@ void debugger(enum event_kind event)
   while(1) {
     switch(getch(dbg_in)) {
     case REQ_SET_EVENT:
-      pos = getword(dbg_in);
+      pos = caml_getword(dbg_in);
       Assert (pos >= 0);
       Assert (pos < code_size);
       set_instruction(start_code + pos / sizeof(opcode_t), EVENT);
       break;
     case REQ_SET_BREAKPOINT:
-      pos = getword(dbg_in);
+      pos = caml_getword(dbg_in);
       Assert (pos >= 0);
       Assert (pos < code_size);
       set_instruction(start_code + pos / sizeof(opcode_t), BREAK);
       break;
     case REQ_RESET_INSTR:
-      pos = getword(dbg_in);
+      pos = caml_getword(dbg_in);
       Assert (pos >= 0);
       Assert (pos < code_size);
       pos = pos / sizeof(opcode_t);
@@ -240,12 +240,12 @@ void debugger(enum event_kind event)
         close_connection();     /* Close parent connection. */
         open_connection();      /* Open new connection with debugger */
       } else {
-        putword(dbg_out, i);
-        flush(dbg_out);
+        caml_putword(dbg_out, i);
+        caml_flush(dbg_out);
       }
       break;
     case REQ_GO:
-      event_count = getword(dbg_in);
+      event_count = caml_getword(dbg_in);
       return;
     case REQ_STOP:
       exit(0);
@@ -257,79 +257,79 @@ void debugger(enum event_kind event)
       frame = extern_sp + 1;
       /* Fall through */
     case REQ_GET_FRAME:
-      putword(dbg_out, stack_high - frame);
+      caml_putword(dbg_out, stack_high - frame);
       if (frame < stack_high){
-        putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+        caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
       }else{
-        putword (dbg_out, 0);
+        caml_putword (dbg_out, 0);
       }
-      flush(dbg_out);
+      caml_flush(dbg_out);
       break;
     case REQ_SET_FRAME:
-      i = getword(dbg_in);
+      i = caml_getword(dbg_in);
       frame = stack_high - i;
       break;
     case REQ_UP_FRAME:
-      i = getword(dbg_in);
+      i = caml_getword(dbg_in);
       if (frame + Extra_args(frame) + i + 3 >= stack_high) {
-        putword(dbg_out, -1);
+        caml_putword(dbg_out, -1);
       } else {
         frame += Extra_args(frame) + i + 3;
-        putword(dbg_out, stack_high - frame);
-        putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+        caml_putword(dbg_out, stack_high - frame);
+        caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
       }
-      flush(dbg_out);
+      caml_flush(dbg_out);
       break;
     case REQ_SET_TRAP_BARRIER:
-      i = getword(dbg_in);
+      i = caml_getword(dbg_in);
       trap_barrier = stack_high - i;
       break;
     case REQ_GET_LOCAL:
-      i = getword(dbg_in);
+      i = caml_getword(dbg_in);
       putval(dbg_out, Locals(frame)[i]);
-      flush(dbg_out);
+      caml_flush(dbg_out);
       break;
     case REQ_GET_ENVIRONMENT:
-      i = getword(dbg_in);
+      i = caml_getword(dbg_in);
       putval(dbg_out, Field(Env(frame), i));
-      flush(dbg_out);
+      caml_flush(dbg_out);
       break;
     case REQ_GET_GLOBAL:
-      i = getword(dbg_in);
+      i = caml_getword(dbg_in);
       putval(dbg_out, Field(global_data, i));
-      flush(dbg_out);
+      caml_flush(dbg_out);
       break;
     case REQ_GET_ACCU:
       putval(dbg_out, *extern_sp);
-      flush(dbg_out);
+      caml_flush(dbg_out);
       break;
     case REQ_GET_HEADER:
       val = getval(dbg_in);
-      putword(dbg_out, Hd_val(val));
-      flush(dbg_out);
+      caml_putword(dbg_out, Hd_val(val));
+      caml_flush(dbg_out);
       break;
     case REQ_GET_FIELD:
       val = getval(dbg_in);
-      i = getword(dbg_in);
+      i = caml_getword(dbg_in);
       if (Tag_val(val) != Double_array_tag) {
         putch(dbg_out, 0);
         putval(dbg_out, Field(val, i));
       } else {
         double d = Double_field(val, i);
         putch(dbg_out, 1);
-        really_putblock(dbg_out, (char *) &d, 8);
+        caml_really_putblock(dbg_out, (char *) &d, 8);
       }
-      flush(dbg_out);
+      caml_flush(dbg_out);
       break;
     case REQ_MARSHAL_OBJ:
       val = getval(dbg_in);
       safe_output_value(dbg_out, val);
-      flush(dbg_out);
+      caml_flush(dbg_out);
       break;
     case REQ_GET_CLOSURE_CODE:
       val = getval(dbg_in);
-      putword(dbg_out, (Code_val(val) - start_code) * sizeof(opcode_t));
-      flush(dbg_out);
+      caml_putword(dbg_out, (Code_val(val) - start_code) * sizeof(opcode_t));
+      caml_flush(dbg_out);
       break;
     }
   }

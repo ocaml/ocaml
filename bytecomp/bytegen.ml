@@ -467,7 +467,7 @@ let rec comp_expr env exp sz cont =
           | [] -> comp_nonrec new_env sz ndecl decl_size
           | (id, exp, RHS_block blocksize) :: rem ->
               Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("alloc_dummy", 1) :: Kpush ::
+              Kccall("caml_alloc_dummy", 1) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
           | (id, exp, RHS_nonrec) :: rem ->
               Kconst(Const_base(Const_int 0)) :: Kpush ::
@@ -483,7 +483,7 @@ let rec comp_expr env exp sz cont =
           | [] -> comp_expr new_env body sz (add_pop ndecl cont)
           | (id, exp, RHS_block blocksize) :: rem ->
               comp_expr new_env exp sz
-                (Kpush :: Kacc i :: Kccall("update_dummy", 2) ::
+                (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
                  comp_rec new_env sz (i-1) rem)
           | (id, exp, RHS_nonrec) :: rem ->
               comp_rec new_env sz (i-1) rem

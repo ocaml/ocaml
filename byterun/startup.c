@@ -104,25 +104,25 @@ int attempt_open(char **name, struct exec_trailer *trail,
 
   truename = search_exe_in_path(*name);
   *name = truename;
-  gc_message(0x100, "Opening bytecode executable %s\n",
-             (unsigned long) truename);
+  caml_gc_message(0x100, "Opening bytecode executable %s\n",
+                  (unsigned long) truename);
   fd = open(truename, O_RDONLY | O_BINARY);
   if (fd == -1) {
-    gc_message(0x100, "Cannot open file\n", 0);
+    caml_gc_message(0x100, "Cannot open file\n", 0);
     return FILE_NOT_FOUND;
   }
   if (!do_open_script) {
     err = read (fd, buf, 2);
     if (err < 2 || (buf [0] == '#' && buf [1] == '!')) {
       close(fd);
-      gc_message(0x100, "Rejected #! script\n", 0);
+      caml_gc_message(0x100, "Rejected #! script\n", 0);
       return BAD_BYTECODE;
     }
   }
   err = read_trailer(fd, trail);
   if (err != 0) {
     close(fd);
-    gc_message(0x100, "Not a bytecode executable\n", 0);
+    caml_gc_message(0x100, "Not a bytecode executable\n", 0);
     return err;
   }
   return fd;
@@ -138,7 +138,7 @@ void read_section_descriptors(int fd, struct exec_trailer *trail)
   trail->section = stat_alloc(toc_size);
   lseek(fd, - (long) (TRAILER_SIZE + toc_size), SEEK_END);
   if (read(fd, (char *) trail->section, toc_size) != toc_size)
-    fatal_error("Fatal error: cannot read section table\n");
+    caml_fatal_error("Fatal error: cannot read section table\n");
   /* Fixup endianness of lengths */
   for (i = 0; i < trail->num_sections; i++)
     fixup_endianness_trailer(&(trail->section[i].len));
@@ -171,7 +171,7 @@ int32 seek_section(int fd, struct exec_trailer *trail, char *name)
 {
   int32 len = seek_optional_section(fd, trail, name);
   if (len == -1) 
-    fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
+    caml_fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
   return len;
 }
 
@@ -187,7 +187,7 @@ static char * read_section(int fd, struct exec_trailer *trail, char *name)
   if (len == -1) return NULL;
   data = stat_alloc(len + 1);
   if (read(fd, data, len) != len)
-    fatal_error_arg("Fatal error: error reading section %s\n", name);
+    caml_fatal_error_arg("Fatal error: error reading section %s\n", name);
   data[len] = 0;
   return data;
 }
@@ -240,7 +240,7 @@ static int parse_command_line(char **argv)
       break;
 #endif
     case 'v':
-      verb_gc = 0x001+0x004+0x008+0x010+0x020;
+      caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
       break;
     case 'p':
       for (j = 0; names_of_builtin_cprim[j] != NULL; j++)
@@ -252,12 +252,12 @@ static int parse_command_line(char **argv)
       break;
     case 'I':
       if (argv[i + 1] != NULL) {
-        ext_table_add(&shared_libs_path, argv[i + 1]);
+        caml_ext_table_add(&shared_libs_path, argv[i + 1]);
         i++;
       }
       break;
     default:
-      fatal_error_arg("Unknown option %s.\n", argv[i]);
+      caml_fatal_error_arg("Unknown option %s.\n", argv[i]);
     }
   }
   return i;
@@ -296,7 +296,7 @@ static void parse_camlrunparam(void)
       case 'l': scanmult (opt, &max_stack_init); break;
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
-      case 'v': scanmult (opt, &verb_gc); break;
+      case 'v': scanmult (opt, &caml_verb_gc); break;
       case 'b': init_backtrace(); break;
       case 'p': parser_trace = 1; break;
       }
@@ -328,11 +328,11 @@ CAMLexport void caml_main(char **argv)
      so that it behaves as much as possible as specified in IEEE */
   init_ieee_floats();
   init_custom_operations();
-  ext_table_init(&shared_libs_path, 8);
+  caml_ext_table_init(&shared_libs_path, 8);
   external_raise = NULL;
   /* Determine options and position of bytecode file */
 #ifdef DEBUG
-  verb_gc = 63;
+  caml_verb_gc = 63;
 #endif
   parse_camlrunparam();
   pos = 0;
@@ -345,15 +345,15 @@ CAMLexport void caml_main(char **argv)
   if (fd < 0) {
     pos = parse_command_line(argv);
     if (argv[pos] == 0)
-      fatal_error("No bytecode file specified.\n");
+      caml_fatal_error("No bytecode file specified.\n");
     exe_name = argv[pos];
     fd = attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
+      caml_fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
       break;
     case BAD_BYTECODE:
-      fatal_error_arg(
+      caml_fatal_error_arg(
         "Fatal error: the file %s is not a bytecode executable file\n",
         argv[pos]);
       break;
@@ -377,16 +377,16 @@ CAMLexport void caml_main(char **argv)
   shared_lib_path = read_section(fd, &trail, "DLPT");
   shared_libs = read_section(fd, &trail, "DLLS");
   req_prims = read_section(fd, &trail, "PRIM");
-  if (req_prims == NULL) fatal_error("Fatal error: no PRIM section\n");
+  if (req_prims == NULL) caml_fatal_error("Fatal error: no PRIM section\n");
   build_primitive_table(shared_lib_path, shared_libs, req_prims);
   stat_free(shared_lib_path);
   stat_free(shared_libs);
   stat_free(req_prims);
   /* Load the globals */
   seek_section(fd, &trail, "DATA");
-  chan = open_descriptor_in(fd);
+  chan = caml_open_descriptor_in(fd);
   global_data = input_val(chan);
-  close_channel(chan); /* this also closes fd */
+  caml_close_channel(chan); /* this also closes fd */
   stat_free(trail.section);
   /* Ensure that the globals are in the major heap. */
   oldify_one (global_data, &global_data);
@@ -422,7 +422,7 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   init_ieee_floats();
   init_custom_operations();
 #ifdef DEBUG
-  verb_gc = 63;
+  caml_verb_gc = 63;
 #endif
   parse_camlrunparam();
   external_raise = NULL;

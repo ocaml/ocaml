@@ -44,7 +44,7 @@ CAMLprim value reify_bytecode(value prog, value len)
 #ifdef THREADED_CODE
   thread_code((code_t) prog, (asize_t) Long_val(len));
 #endif
-  clos = alloc_small (1, Closure_tag);
+  clos = caml_alloc_small (1, Closure_tag);
   Code_val(clos) = (code_t) prog;
   return clos;
 }
@@ -58,7 +58,8 @@ CAMLprim value realloc_global(value size)
   actual_size = Wosize_val(global_data);
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
-    gc_message (0x08, "Growing global data to %lu entries\n", requested_size);
+    caml_gc_message (0x08, "Growing global data to %lu entries\n",
+                     requested_size);
     new_global_data = alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)
       initialize(&Field(new_global_data, i), Field(global_data, i));

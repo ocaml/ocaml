@@ -31,7 +31,7 @@ CAMLextern value alloc_custom(struct custom_operations * ops,
 
   wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
   if (ops->finalize == NULL && wosize <= Max_young_wosize) {
-    result = alloc_small(wosize, Custom_tag);
+    result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
   } else {
     result = alloc_shr(wosize, Custom_tag);

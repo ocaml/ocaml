@@ -34,11 +34,11 @@ int caml_failed_assert (char * expr, char * file, int line)
 
 #endif
 
-unsigned long verb_gc = 0;
+unsigned long caml_verb_gc = 0;
 
-void gc_message (int level, char *msg, unsigned long arg)
+void caml_gc_message (int level, char *msg, unsigned long arg)
 {
-  if (level < 0 || (verb_gc & level) != 0){
+  if (level < 0 || (caml_verb_gc & level) != 0){
 #ifdef HAS_UI
     ui_print_stderr(msg, (void *) arg);
 #else
@@ -48,7 +48,7 @@ void gc_message (int level, char *msg, unsigned long arg)
   }
 }
 
-void fatal_error (char *msg)
+void caml_fatal_error (char *msg)
 {
 #ifdef HAS_UI
   ui_print_stderr("%s", msg);
@@ -59,7 +59,7 @@ void fatal_error (char *msg)
 #endif
 }
 
-void fatal_error_arg (char *fmt, char *arg)
+void caml_fatal_error_arg (char *fmt, char *arg)
 {
 #ifdef HAS_UI
   ui_print_stderr(fmt, arg);
@@ -70,7 +70,7 @@ void fatal_error_arg (char *fmt, char *arg)
 #endif
 }
 
-void fatal_error_arg2 (char *fmt1, char *arg1, char *fmt2, char *arg2)
+void caml_fatal_error_arg2 (char *fmt1, char *arg1, char *fmt2, char *arg2)
 {
 #ifdef HAS_UI
   ui_print_stderr(fmt1, arg1);
@@ -83,7 +83,7 @@ void fatal_error_arg2 (char *fmt1, char *arg1, char *fmt2, char *arg2)
 #endif
 }
 
-char *aligned_malloc (asize_t size, int modulo, void **block)
+char *caml_aligned_malloc (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
   unsigned long aligned_mem;
@@ -109,14 +109,14 @@ char *aligned_malloc (asize_t size, int modulo, void **block)
   return (char *) (aligned_mem - modulo);
 }
 
-void ext_table_init(struct ext_table * tbl, int init_capa)
+void caml_ext_table_init(struct ext_table * tbl, int init_capa)
 {
   tbl->size = 0;
   tbl->capacity = init_capa;
   tbl->contents = stat_alloc(sizeof(void *) * init_capa);
 }
 
-int ext_table_add(struct ext_table * tbl, void * data)
+int caml_ext_table_add(struct ext_table * tbl, void * data)
 {
   int res;
   if (tbl->size >= tbl->capacity) {
@@ -130,7 +130,7 @@ int ext_table_add(struct ext_table * tbl, void * data)
   return res;
 }
 
-void ext_table_free(struct ext_table * tbl, int free_entries)
+void caml_ext_table_free(struct ext_table * tbl, int free_entries)
 {
   int i;
   if (free_entries)

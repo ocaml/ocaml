@@ -47,8 +47,8 @@ char *alloc_for_heap (asize_t request)
   mem = aligned_mmap (request + sizeof (heap_chunk_head),
                       sizeof (heap_chunk_head), &block);
 #else
-  mem = aligned_malloc (request + sizeof (heap_chunk_head),
-                        sizeof (heap_chunk_head), &block);
+  mem = caml_aligned_malloc (request + sizeof (heap_chunk_head),
+                             sizeof (heap_chunk_head), &block);
 #endif
   if (mem == NULL) return NULL;
   mem += sizeof (heap_chunk_head);
@@ -93,10 +93,10 @@ int add_to_heap (char *m)
     asize_t new_page_low = Page (m);
     asize_t new_size = page_high - new_page_low;
     
-    gc_message (0x08, "Growing page table to %lu entries\n", new_size);
+    caml_gc_message (0x08, "Growing page table to %lu entries\n", new_size);
     block = malloc (new_size * sizeof (page_table_entry));
     if (block == NULL){
-      gc_message (0x08, "No room for growing page table\n", 0);
+      caml_gc_message (0x08, "No room for growing page table\n", 0);
       return -1;
     }
     new_page_table = block - new_page_low;
@@ -111,10 +111,10 @@ int add_to_heap (char *m)
     asize_t new_page_high = Page (m + Chunk_size (m));
     asize_t new_size = new_page_high - page_low;
     
-    gc_message (0x08, "Growing page table to %lu entries\n", new_size);
+    caml_gc_message (0x08, "Growing page table to %lu entries\n", new_size);
     block = malloc (new_size * sizeof (page_table_entry));
     if (block == NULL){
-      gc_message (0x08, "No room for growing page table\n", 0);
+      caml_gc_message (0x08, "No room for growing page table\n", 0);
       return -1;
     }
     new_page_table = block - page_low;
@@ -168,11 +168,11 @@ static char *expand_heap (mlsize_t request)
   asize_t malloc_request;
 
   malloc_request = round_heap_chunk_size (Bhsize_wosize (request));
-  gc_message (0x04, "Growing heap to %luk bytes\n",
-              (stat_heap_size + malloc_request) / 1024);
+  caml_gc_message (0x04, "Growing heap to %luk bytes\n",
+                   (stat_heap_size + malloc_request) / 1024);
   mem = alloc_for_heap (malloc_request);
   if (mem == NULL){
-    gc_message (0x04, "No room for growing heap\n", 0);
+    caml_gc_message (0x04, "No room for growing heap\n", 0);
     return NULL;
   }
   Assert (Wosize_bhsize (malloc_request) >= request);
@@ -202,7 +202,7 @@ void shrink_heap (char *chunk)
   if (chunk == heap_start) return;
 
   stat_heap_size -= Chunk_size (chunk);
-  gc_message (0x04, "Shrinking heap to %luk bytes\n", stat_heap_size / 1024);
+  caml_gc_message (0x04, "Shrinking heap to %luk bytes\n", stat_heap_size/1024);
 
 #ifdef DEBUG
   {
@@ -251,7 +251,7 @@ value alloc_shr (mlsize_t wosize, tag_t tag)
     new_block = expand_heap (wosize);
     if (new_block == NULL) {
       if (in_minor_collection)
-        fatal_error ("Fatal error: out of memory.\n");
+        caml_fatal_error ("Fatal error: out of memory.\n");
       else
         raise_out_of_memory ();
     }

@@ -67,7 +67,7 @@ CAMLprim value terminfo_setup (value vchan)
       || standout == NULL || standend == NULL){
     return Bad_term;
   }
-  result = alloc_small (1, Good_term_tag);
+  result = caml_alloc_small (1, Good_term_tag);
   Field (result, 0) = Val_int (num_lines);
   return result;
 }

@@ -84,12 +84,12 @@ void final_do_calls (void)
   
   Assert (active <= size);
   if (active < size){
-    gc_message (0x80, "Calling finalisation functions.\n", 0);
+    caml_gc_message (0x80, "Calling finalisation functions.\n", 0);
     while (active < size){
       f = final_table[active++];
       callback (f.fun, f.val);
     }
-    gc_message (0x80, "Done calling finalisation functions.\n", 0);
+    caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);
   }
 }
 

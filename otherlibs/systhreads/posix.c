@@ -353,10 +353,10 @@ value caml_thread_initialize(value unit)   /* ML */
 #ifdef NATIVE_CODE
     caml_termination_hook = pthread_exit;
 #endif
-    channel_mutex_free = caml_io_mutex_free;
-    channel_mutex_lock = caml_io_mutex_lock;
-    channel_mutex_unlock = caml_io_mutex_unlock;
-    channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
+    caml_channel_mutex_free = caml_io_mutex_free;
+    caml_channel_mutex_lock = caml_io_mutex_lock;
+    caml_channel_mutex_unlock = caml_io_mutex_unlock;
+    caml_channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
     /* Fork the tick thread */
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);

@@ -48,7 +48,7 @@ char * decompose_path(struct ext_table * tbl, char * path)
   q = p;
   while (1) {
     for (n = 0; q[n] != 0 && q[n] != ';'; n++) /*nothing*/;
-    ext_table_add(tbl, q);
+    caml_ext_table_add(tbl, q);
     q = q + n;
     if (*q == 0) break;
     *q = 0;
@@ -72,12 +72,12 @@ char * search_in_path(struct ext_table * path, char * name)
     strcpy(fullname, (char *)(path->contents[i]));
     strcat(fullname, "\\");
     strcat(fullname, name);
-    gc_message(0x100, "Searching %s\n", (unsigned long) fullname);
+    caml_gc_message(0x100, "Searching %s\n", (unsigned long) fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
     stat_free(fullname);
   }
  not_found:
-  gc_message(0x100, "%s not found in search path\n", (unsigned long) name);
+  caml_gc_message(0x100, "%s not found in search path\n", (unsigned long) name);
   fullname = stat_alloc(strlen(name) + 1);
   strcpy(fullname, name);
   return fullname;
@@ -353,7 +353,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
     if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
       p = stat_alloc(strlen(fileinfo.name) + 1);
       strcpy(p, fileinfo.name);
-      ext_table_add(contents, p);
+      caml_ext_table_add(contents, p);
     }
   } while (_findnext(h, &fileinfo) == 0);
   _findclose(h);

@@ -394,7 +394,7 @@ static long extern_value(value v, value flags)
   long res_len;
   int fl;
   /* Parse flag list */
-  fl = convert_flag_list(flags, extern_flags);
+  fl = caml_convert_flag_list(flags, extern_flags);
   extern_ignore_sharing = fl & NO_SHARING;
   extern_closures = fl & CLOSURES;
   /* Allocate hashtable of objects already seen, if needed */
@@ -444,15 +444,15 @@ void output_val(struct channel *chan, value v, value flags)
   long len;
   char * block;
 
-  if (! channel_binary_mode(chan))
+  if (! caml_channel_binary_mode(chan))
     failwith("output_value: not a binary channel");
   alloc_extern_block();
   len = extern_value(v, flags);
-  /* During really_putblock, concurrent output_val operations can take
+  /* During caml_really_putblock, concurrent output_val operations can take
      place (via signal handlers or context switching in systhreads),
      and extern_block may change.  So, save the pointer in a local variable. */
   block = extern_block;
-  really_putblock(chan, extern_block, len);
+  caml_really_putblock(chan, extern_block, len);
   stat_free(block);
 }
 
@@ -473,7 +473,7 @@ CAMLprim value output_value_to_string(value v, value flags)
   value res;
   alloc_extern_block();
   len = extern_value(v, flags);
-  res = alloc_string(len);
+  res = caml_alloc_string(len);
   memmove(String_val(res), extern_block, len);
   stat_free(extern_block);
   return res;

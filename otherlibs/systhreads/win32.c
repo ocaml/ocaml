@@ -319,10 +319,10 @@ CAMLprim value caml_thread_initialize(value unit)
     enter_blocking_section_hook = caml_thread_enter_blocking_section;
     prev_leave_blocking_section_hook = leave_blocking_section_hook;
     leave_blocking_section_hook = caml_thread_leave_blocking_section;
-    channel_mutex_free = caml_io_mutex_free;
-    channel_mutex_lock = caml_io_mutex_lock;
-    channel_mutex_unlock = caml_io_mutex_unlock;
-    channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
+    caml_channel_mutex_free = caml_io_mutex_free;
+    caml_channel_mutex_lock = caml_io_mutex_lock;
+    caml_channel_mutex_unlock = caml_io_mutex_unlock;
+    caml_channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
     /* Fork the tick thread */
     tick_thread = (HANDLE) _beginthread(caml_thread_tick, 0, NULL);
     if (tick_thread == (HANDLE)(-1)) caml_wthread_error("Thread.init");

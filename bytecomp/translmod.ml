@@ -198,7 +198,7 @@ let reorder_rec_bindings bindings =
 (* Generate lambda-code for a reordered list of bindings *)
 
 let prim_update =
-  { prim_name = "update_dummy";
+  { prim_name = "caml_update_dummy";
     prim_arity = 2;
     prim_alloc = true;
     prim_native_name = "";

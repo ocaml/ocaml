@@ -16,7 +16,9 @@
 #ifndef CAML_SIGNALS_H
 #define CAML_SIGNALS_H
 
+#ifndef CAML_NAME_SPACE
 #include "compatibility.h"
+#endif
 #include "misc.h"
 #include "mlvalues.h"
 

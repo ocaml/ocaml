@@ -18,7 +18,9 @@
 #ifndef CAML_CALLBACK_H
 #define CAML_CALLBACK_H
 
+#ifndef CAML_NAME_SPACE
 #include "compatibility.h"
+#endif
 #include "mlvalues.h"
 
 CAMLextern value callback (value closure, value arg);

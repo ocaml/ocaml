@@ -73,7 +73,7 @@ CAMLprim value obj_block(value tag, value size)
   sz = Long_val(size);
   tg = Long_val(tag);
   if (sz == 0) return Atom(tg);
-  res = alloc(sz, tg);
+  res = caml_alloc(sz, tg);
   for (i = 0; i < sz; i++)
     Field(res, i) = Val_long(0);
 
@@ -91,10 +91,10 @@ CAMLprim value obj_dup(value arg)
   if (sz == 0) return arg;
   tg = Tag_val(arg);
   if (tg >= No_scan_tag) {
-    res = alloc(sz, tg);
+    res = caml_alloc(sz, tg);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
-    res = alloc_small(sz, tg);
+    res = caml_alloc_small(sz, tg);
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
     res = alloc_shr(sz, tg);
@@ -173,7 +173,7 @@ CAMLprim value lazy_make_forward (value v)
   CAMLparam1 (v);
   CAMLlocal1 (res);
 
-  res = alloc_small (1, Forward_tag);
+  res = caml_alloc_small (1, Forward_tag);
   Modify (&Field (res, 0), v);
   CAMLreturn (res);
 }

@@ -148,7 +148,7 @@ void compact_heap (void)
 {
   char *ch, *chend;
                                                Assert (gc_phase == Phase_idle);
-  gc_message (0x10, "Compacting heap...\n", 0);
+  caml_gc_message (0x10, "Compacting heap...\n", 0);
 
 #ifdef DEBUG
   heap_check ();
@@ -390,7 +390,7 @@ void compact_heap (void)
     }
   }
   ++ stat_compactions;
-  gc_message (0x10, "done.\n", 0);
+  caml_gc_message (0x10, "done.\n", 0);
 }
 
 unsigned long percent_max;
@@ -418,17 +418,17 @@ void compact_heap_maybe (void)
     fp = 100.0 * fw / (Wsize_bsize (stat_heap_size) - fw);
     if (fp > 1000000.0) fp = 1000000.0;
   }
-  gc_message (0x200, "FL size at phase change = %lu\n",
-              (unsigned long) fl_size_at_phase_change);
-  gc_message (0x200, "Estimated overhead = %lu%%\n", (unsigned long) fp);
+  caml_gc_message (0x200, "FL size at phase change = %lu\n",
+                   (unsigned long) fl_size_at_phase_change);
+  caml_gc_message (0x200, "Estimated overhead = %lu%%\n", (unsigned long) fp);
   if (fp >= percent_max){
-    gc_message (0x200, "Automatic compaction triggered.\n", 0);
+    caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
     finish_major_cycle ();
 
     /* We just did a complete GC, so we can measure the overhead exactly. */
     fw = fl_cur_size;
     fp = 100.0 * fw / (Wsize_bsize (stat_heap_size) - fw);
-    gc_message (0x200, "Measured overhead: %lu%%\n", (unsigned long) fp);
+    caml_gc_message (0x200, "Measured overhead: %lu%%\n", (unsigned long) fp);
 
     compact_heap ();
   }

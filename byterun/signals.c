@@ -277,7 +277,7 @@ CAMLprim value install_signal_handler(value signal_number, value action)
   if (oldact == SIG_ERR) caml_sys_error(NO_ARG);
 #endif
   if (oldact == handle_signal) {
-    res = alloc_small (1, 0);          /* Signal_handle */
+    res = caml_alloc_small (1, 0);          /* Signal_handle */
     Field(res, 0) = Field(signal_handlers, sig);
   }
   else if (oldact == SIG_IGN)
@@ -286,7 +286,7 @@ CAMLprim value install_signal_handler(value signal_number, value action)
     res = Val_int(0);           /* Signal_default */
   if (Is_block(action)) {
     if (signal_handlers == 0) {
-      signal_handlers = alloc(NSIG, 0);
+      signal_handlers = caml_alloc(NSIG, 0);
       register_global_root(&signal_handlers);
     }
     modify(&Field(signal_handlers, sig), Field(action, 0));

@@ -45,7 +45,7 @@ void load_code(int fd, asize_t len)
   code_size = len;
   start_code = (code_t) stat_alloc(code_size);
   if (read(fd, (char *) start_code, code_size) != code_size)
-    fatal_error("Fatal error: truncated bytecode file.\n");
+    caml_fatal_error("Fatal error: truncated bytecode file.\n");
   MD5Init(&ctx);
   MD5Update(&ctx, (unsigned char *) start_code, code_size);
   MD5Final(code_md5, &ctx);
@@ -118,9 +118,9 @@ void thread_code (code_t code, asize_t len)
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;
     if (instr < 0 || instr > STOP){
-      /*
-      fatal_error_arg ("Fatal error in fix_code: bad opcode (%lx)\n",
-                       (char *)(long)instr);
+      /* FIXME -- should Assert(false) ?
+      caml_fatal_error_arg ("Fatal error in fix_code: bad opcode (%lx)\n",
+                            (char *)(long)instr);
       */
       instr = STOP;
     }

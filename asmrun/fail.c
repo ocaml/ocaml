@@ -66,7 +66,7 @@ void raise_constant(value tag)
 {
   value bucket;
   Begin_root (tag);
-    bucket = alloc_small (1, 0);
+    bucket = caml_alloc_small (1, 0);
     Field(bucket, 0) = tag;
   End_roots ();
   mlraise(bucket);
@@ -76,7 +76,7 @@ void raise_with_arg(value tag, value arg)
 {
   value bucket;
   Begin_roots2 (tag, arg);
-    bucket = alloc_small (2, 0);
+    bucket = caml_alloc_small (2, 0);
     Field(bucket, 0) = tag;
     Field(bucket, 1) = arg;
   End_roots ();
@@ -85,7 +85,7 @@ void raise_with_arg(value tag, value arg)
 
 void raise_with_string(value tag, char *msg)
 {
-  raise_with_arg(tag, copy_string(msg));
+  raise_with_arg(tag, caml_copy_string(msg));
 }
 
 void failwith (char *msg)

@@ -103,11 +103,11 @@ CAMLexport void caml_sys_error(value arg)
   } else {
     err = error_message();
     if (arg == NO_ARG) {
-      str = copy_string(err);
+      str = caml_copy_string(err);
     } else {
       int err_len = strlen(err);
       int arg_len = caml_string_length(arg);
-      str = alloc_string(arg_len + 2 + err_len);
+      str = caml_alloc_string(arg_len + 2 + err_len);
       memmove(&Byte(str, 0), String_val(arg), arg_len);
       memmove(&Byte(str, arg_len), ": ", 2);
       memmove(&Byte(str, arg_len + 2), err, err_len);
@@ -158,7 +158,7 @@ CAMLprim value caml_sys_open(value path, value flags, value perm)
   strcpy(p, String_val(path));
   /* open on a named FIFO can block (PR#1533) */
   enter_blocking_section();
-  fd = open(p, convert_flag_list(flags, sys_open_flags)
+  fd = open(p, caml_convert_flag_list(flags, sys_open_flags)
 #if !macintosh
              , Int_val(perm)
 #endif
@@ -221,7 +221,7 @@ CAMLprim value caml_sys_getcwd(value unit)
 #else
   if (getwd(buff) == 0) caml_sys_error(NO_ARG);
 #endif /* HAS_GETCWD */
-  return copy_string(buff);
+  return caml_copy_string(buff);
 }
 
 CAMLprim value caml_sys_getenv(value var)
@@ -230,7 +230,7 @@ CAMLprim value caml_sys_getenv(value var)
 
   res = getenv(String_val(var));
   if (res == 0) raise_not_found();
-  return copy_string(res);
+  return caml_copy_string(res);
 }
 
 char * caml_exe_name;
@@ -240,9 +240,9 @@ CAMLprim value caml_sys_get_argv(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal3 (exe_name, argv, res);
-  exe_name = copy_string(caml_exe_name);
-  argv = copy_string_array((char const **) caml_main_argv);
-  res = alloc_small(2, 0);
+  exe_name = caml_copy_string(caml_exe_name);
+  argv = caml_copy_string_array((char const **) caml_main_argv);
+  res = caml_alloc_small(2, 0);
   Field(res, 0) = exe_name;
   Field(res, 1) = argv;
   CAMLreturn(res);
@@ -327,8 +327,8 @@ CAMLprim value caml_sys_get_config(value unit)
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal2 (result, ostype);
 
-  ostype = copy_string(OCAML_OS_TYPE);
-  result = alloc_small (2, 0);
+  ostype = caml_copy_string(OCAML_OS_TYPE);
+  result = caml_alloc_small (2, 0);
   Field(result, 0) = ostype;
   Field(result, 1) = Val_long (8 * sizeof(value));
   CAMLreturn (result);
@@ -340,10 +340,10 @@ CAMLprim value caml_sys_read_directory(value path)
   CAMLlocal1(result);
   struct ext_table tbl;
 
-  ext_table_init(&tbl, 50);
+  caml_ext_table_init(&tbl, 50);
   if (caml_read_directory(String_val(path), &tbl) == -1) caml_sys_error(path);
-  ext_table_add(&tbl, NULL);
-  result = copy_string_array((char const **) tbl.contents);
-  ext_table_free(&tbl, 1);
+  caml_ext_table_add(&tbl, NULL);
+  result = caml_copy_string_array((char const **) tbl.contents);
+  caml_ext_table_free(&tbl, 1);
   CAMLreturn(result);
 }

@@ -46,7 +46,7 @@ CAMLexport void raise_constant(value tag)
   CAMLparam1 (tag);
   CAMLlocal1 (bucket);
 
-  bucket = alloc_small (1, 0);
+  bucket = caml_alloc_small (1, 0);
   Field(bucket, 0) = tag;
   mlraise(bucket);
 }
@@ -56,7 +56,7 @@ CAMLexport void raise_with_arg(value tag, value arg)
   CAMLparam2 (tag, arg);
   CAMLlocal1 (bucket);
 
-  bucket = alloc_small (2, 0);
+  bucket = caml_alloc_small (2, 0);
   Field(bucket, 0) = tag;
   Field(bucket, 1) = arg;
   mlraise(bucket);
@@ -67,7 +67,7 @@ CAMLexport void raise_with_string(value tag, char *msg)
   CAMLparam1 (tag);
   CAMLlocal1 (vmsg);
 
-  vmsg = copy_string(msg);
+  vmsg = caml_copy_string(msg);
   raise_with_arg(tag, vmsg);
 }
 
@@ -98,7 +98,8 @@ static struct {
 CAMLexport void raise_out_of_memory(void)
 {
   if (out_of_memory_bucket.exn == 0) 
-    fatal_error("Fatal error: out of memory while raising Out_of_memory\n");
+    caml_fatal_error
+      ("Fatal error: out of memory while raising Out_of_memory\n");
   mlraise((value) &(out_of_memory_bucket.exn));
 }
 

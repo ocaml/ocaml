@@ -61,12 +61,12 @@ static void realloc_gray_vals (void)
 
   Assert (gray_vals_cur == gray_vals_end);
   if (gray_vals_size < stat_heap_size / 128){
-    gc_message (0x08, "Growing gray_vals to %luk bytes\n",
-                (long) gray_vals_size * sizeof (value) / 512);
+    caml_gc_message (0x08, "Growing gray_vals to %luk bytes\n",
+                     (long) gray_vals_size * sizeof (value) / 512);
     new = (value *) realloc ((char *) gray_vals,
                              2 * gray_vals_size * sizeof (value));
     if (new == NULL){
-      gc_message (0x08, "No room for growing gray_vals\n", 0);
+      caml_gc_message (0x08, "No room for growing gray_vals\n", 0);
       gray_vals_cur = gray_vals;
       heap_is_pure = 0;
     }else{
@@ -97,7 +97,7 @@ static void start_cycle (void)
 {
   Assert (gc_phase == Phase_idle);
   Assert (gray_vals_cur == gray_vals);
-  gc_message (0x01, "Starting new major GC cycle\n", 0);
+  caml_gc_message (0x01, "Starting new major GC cycle\n", 0);
   darken_all_roots();
   gc_phase = Phase_mark;
   gc_subphase = Subphase_main;
@@ -114,7 +114,7 @@ static void mark_slice (long work)
   header_t hd;
   mlsize_t size, i;
 
-  gc_message (0x40, "Marking %ld words\n", work);
+  caml_gc_message (0x40, "Marking %ld words\n", work);
   gray_vals_ptr = gray_vals_cur;
   while (work > 0){
     if (gray_vals_ptr > gray_vals){
@@ -248,7 +248,7 @@ static void sweep_slice (long work)
   char *hp;
   header_t hd;
 
-  gc_message (0x40, "Sweeping %ld words\n", work);
+  caml_gc_message (0x40, "Sweeping %ld words\n", work);
   while (work > 0){
     if (gc_sweep_hp < limit){
       hp = gc_sweep_hp;
@@ -333,11 +333,11 @@ long major_collection_slice (long howmuch)
       / Wsize_bsize (stat_heap_size) / percent_free / 2.0;
   if (p < extra_heap_memory) p = extra_heap_memory;
 
-  gc_message (0x40, "allocated_words = %lu\n", allocated_words);
-  gc_message (0x40, "extra_heap_memory = %luu\n",
-              (unsigned long) (extra_heap_memory * 1000000));
-  gc_message (0x40, "amount of work to do = %luu\n",
-              (unsigned long) (p * 1000000));
+  caml_gc_message (0x40, "allocated_words = %lu\n", allocated_words);
+  caml_gc_message (0x40, "extra_heap_memory = %luu\n",
+                   (unsigned long) (extra_heap_memory * 1000000));
+  caml_gc_message (0x40, "amount of work to do = %luu\n",
+                   (unsigned long) (p * 1000000));
 
   if (gc_phase == Phase_mark){
     computed_work = 2 * (long) (p * Wsize_bsize (stat_heap_size) * 100
@@ -345,16 +345,16 @@ long major_collection_slice (long howmuch)
   }else{
     computed_work = 2 * (long) (p * Wsize_bsize (stat_heap_size));
   }
-  gc_message (0x40, "ordered work = %ld words\n", howmuch);
-  gc_message (0x40, "computed work = %ld words\n", computed_work);
+  caml_gc_message (0x40, "ordered work = %ld words\n", howmuch);
+  caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
   if (howmuch == 0) howmuch = computed_work;
   if (gc_phase == Phase_mark){
     mark_slice (howmuch);
-    gc_message (0x02, "!", 0);
+    caml_gc_message (0x02, "!", 0);
   }else{
     Assert (gc_phase == Phase_sweep);
     sweep_slice (howmuch);
-    gc_message (0x02, "$", 0);
+    caml_gc_message (0x02, "$", 0);
   }
 
   if (gc_phase == Phase_idle) compact_heap_maybe ();
@@ -425,7 +425,7 @@ void init_major_heap (asize_t heap_size)
   Assert (stat_heap_size % Page_size == 0);
   heap_start = (char *) alloc_for_heap (stat_heap_size);
   if (heap_start == NULL)
-    fatal_error ("Fatal error: not enough memory for the initial heap.\n");
+    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   Chunk_next (heap_start) = NULL;
   heap_end = heap_start + stat_heap_size;
   Assert ((unsigned long) heap_end % Page_size == 0);
@@ -439,7 +439,7 @@ void init_major_heap (asize_t heap_size)
   page_table_block =
     (page_table_entry *) malloc (page_table_size * sizeof (page_table_entry));
   if (page_table_block == NULL){
-    fatal_error ("Fatal error: not enough memory for the initial heap.\n");
+    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   }
   page_table = page_table_block - page_low;
   for (i = Page (heap_start); i < Page (heap_end); i++){
@@ -452,7 +452,7 @@ void init_major_heap (asize_t heap_size)
   gray_vals_size = 2048;
   gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
   if (gray_vals == NULL)
-    fatal_error ("Fatal error: not enough memory for the initial heap.\n");
+    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   gray_vals_cur = gray_vals;
   gray_vals_end = gray_vals + gray_vals_size;
   heap_is_pure = 1;

@@ -344,11 +344,11 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_color = allocation_color(intern_extra_block);
     intern_dest = (header_t *) intern_extra_block;
   } else {
-    /* this is a specialised version of alloc from alloc.c */
+    /* this is a specialised version of caml_alloc from alloc.c */
     if (wosize == 0){
       intern_block = Atom (String_tag);
     }else if (wosize <= Max_young_wosize){
-      intern_block = alloc_small (wosize, String_tag);
+      intern_block = caml_alloc_small (wosize, String_tag);
     }else{
       intern_block = alloc_shr (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
@@ -392,21 +392,21 @@ value input_val(struct channel *chan)
   char * block;
   value res;
 
-  if (! channel_binary_mode(chan))
+  if (! caml_channel_binary_mode(chan))
     failwith("input_value: not a binary channel");
-  magic = getword(chan);
+  magic = caml_getword(chan);
   if (magic != Intext_magic_number) failwith("input_value: bad object");
-  block_len = getword(chan);
-  num_objects = getword(chan);
-  size_32 = getword(chan);
-  size_64 = getword(chan);
+  block_len = caml_getword(chan);
+  num_objects = caml_getword(chan);
+  size_32 = caml_getword(chan);
+  size_64 = caml_getword(chan);
   /* Read block from channel */
   block = stat_alloc(block_len);
-  /* During really_getblock, concurrent input_val operations can take
+  /* During caml_really_getblock, concurrent input_val operations can take
      place (via signal handlers or context switching in systhreads),
-     and intern_input may change.  So, wait until really_getblock
+     and intern_input may change.  So, wait until caml_really_getblock
      is over before using intern_input and the other global vars. */
-  if (really_getblock(chan, block, block_len) == 0) {
+  if (caml_really_getblock(chan, block, block_len) == 0) {
     stat_free(block);
     failwith("input_value: truncated object");
   }

@@ -45,7 +45,7 @@ CAMLprim value caml_create_string(value len)
 {
   mlsize_t size = Long_val(len);
   if (size > Bsize_wsize (Max_wosize) - 1) invalid_argument("String.create");
-  return alloc_string(size);
+  return caml_alloc_string(size);
 }
 
 CAMLprim value caml_string_get(value str, value index)
