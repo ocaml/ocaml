@@ -118,7 +118,7 @@ CAMLprim value lex_engine(struct lexing_table *tbl, value start_state,
 /* New lexer engine, with memory of positions  */
 /***********************************************/
 
-void run_mem(unsigned char *pc, value mem, value curr_pos) {
+static void run_mem(char *pc, value mem, value curr_pos) {
   for (;;) {
     unsigned char dst, src ;
 
@@ -136,7 +136,7 @@ void run_mem(unsigned char *pc, value mem, value curr_pos) {
   }
 }
 
-void run_tag(unsigned char *pc, value mem) {
+static void run_tag(char *pc, value mem) {
   for (;;) {
     unsigned char dst, src ;
 

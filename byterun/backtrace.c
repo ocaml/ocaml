@@ -51,7 +51,7 @@ enum {
   POS_FNAME = 0,
   POS_LNUM = 1,
   POS_BOL = 2,
-  POS_CNUM = 3,
+  POS_CNUM = 3
 };
 
 /* Initialize the backtrace machinery */
