@@ -69,20 +69,12 @@ let label_prefix = if hpux then "L$" else "L"
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
-let emit_deflabel lbl =
-  emit_label lbl;
-  if not hpux then `:`
-
 (* Output a symbol *)
 
 let symbol_prefix = if hpux then "" else "_"
 
 let emit_symbol s =
   emit_string symbol_prefix; Emitaux.emit_symbol '$' s
-
-let emit_defsymbol s =
-  emit_symbol s;
-  if not hpux then `:`
 
 (* Output a pseudo-register *)
 
@@ -258,11 +250,6 @@ let emit_align n =
 
 (* Directoves to emit data *)
 
-let dir_word = if hpux then ".word" else ".long"
-let dir_half = if hpux then ".half" else ".short"
-let dir_string = if hpux then ".string" else ".ascii"
-let dir_skip = if hpux then ".blockz" else ".space"
-
 (* Record live pointers at call points *)
 
 type frame_descr =
@@ -287,15 +274,15 @@ let record_frame live =
     { fd_lbl = lbl;
       fd_frame_size = frame_size();
       fd_live_offset = !live_offset } :: !frame_descriptors;
-  `{emit_deflabel lbl}\n`
+  `{emit_label lbl}:\n`
 
 let emit_frame fd =
-  `	{emit_string dir_word}	{emit_label fd.fd_lbl} + 3\n`;
-  `	{emit_string dir_half}	{emit_int fd.fd_frame_size}\n`;
-  `	{emit_string dir_half}	{emit_int (List.length fd.fd_live_offset)}\n`;
+  `	.word	{emit_label fd.fd_lbl} + 3\n`;
+  `	.short	{emit_int fd.fd_frame_size}\n`;
+  `	.short	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
     (fun n ->
-      `	{emit_string dir_half}	{emit_int n}\n`)
+      `	.short	{emit_int n}\n`)
     fd.fd_live_offset;
   emit_align 4
 
@@ -308,7 +295,7 @@ let emit_float_constant (lbl, cst) =
   then `	.lit\n`
   else `	.literal8\n`;
   emit_align 8;
-  `{emit_deflabel lbl}	.double	{emit_string cst}\n`
+  `{emit_label lbl}:	.double	{emit_string cst}\n`
 
 (* Record external calls and generate stub code for these *)
 
@@ -323,7 +310,7 @@ let stub_label symb =
     lbl
 
 let emit_stub symb lbl =
-  `{emit_deflabel lbl}	ldil	L\`{emit_symbol symb}, %r1\n`;
+  `{emit_label lbl}:	ldil	L\`{emit_symbol symb}, %r1\n`;
   `	ble,n	{emit_symbol_low symb}(4, %r1)\n`
 
 let emit_stubs () =
@@ -335,7 +322,6 @@ let emit_stubs () =
 
 let emit_call s retreg =
   if hpux then begin
-(*    `	.call\n`; *)
     `	bl	{emit_symbol s}, {emit_string retreg}\n`;
     call_symbol s
   end else
@@ -538,7 +524,7 @@ let rec emit_instr i dslot =
           `	ldi	{emit_int n}, %r1\n`; (* in delay slot *)
           record_frame i.live;
           `	addi	4, %r3, {emit_reg i.res.(0)}\n`;
-          `{emit_deflabel lbl_cont}\n`
+          `{emit_label lbl_cont}:\n`
         end else begin
           emit_call "caml_alloc" "%r2";
           `	ldi	{emit_int n}, %r1\n`; (* in delay slot *)
@@ -658,7 +644,7 @@ let rec emit_instr i dslot =
         `	bv	0(%r2)\n`;
         `	ldo	{emit_int(-n)}(%r30), %r30\n` (* in delay slot *)
     | Llabel lbl ->
-        `{emit_deflabel lbl}\n`
+        `{emit_label lbl}:\n`
     | Lbranch lbl ->
         begin match dslot with
             None ->
@@ -802,8 +788,8 @@ let fundecl fundecl =
   if hpux then begin
     `	.code\n`;
     `	.align	4\n`;
-    `	.export	{emit_symbol fundecl.fun_name}, ENTRY, PRIV_LEV=3\n`;
-    `{emit_defsymbol fundecl.fun_name}\n`;
+    `	.export	{emit_symbol fundecl.fun_name}, entry, priv_lev=3\n`;
+    `{emit_symbol fundecl.fun_name}:\n`;
     `	.proc\n`;
     if !contains_calls then
       `	.callinfo frame={emit_int n}, calls, save_rp\n`
@@ -814,16 +800,16 @@ let fundecl fundecl =
     `	.text\n`;
     `	.align	2\n`;
     `	.globl	{emit_symbol fundecl.fun_name}\n`;
-    `{emit_defsymbol fundecl.fun_name}\n`
+    `{emit_symbol fundecl.fun_name}:\n`
   end;
   if !contains_calls then
     `	stwm	%r2, {emit_int n}(%r30)\n`
   else if n > 0 then
     `	ldo	{emit_int n}(%r30), %r30\n`;
-  `{emit_deflabel !tailrec_entry_point}\n`;
+  `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   if !range_check_trap > 0 then begin
-    `{emit_deflabel !range_check_trap}\n`;
+    `{emit_label !range_check_trap}:\n`;
     if hpux then begin
       emit_call "array_bound_error" "%r31";
       `	nop\n`
@@ -849,38 +835,40 @@ let emit_global s =
 let emit_item = function
     Cdefine_symbol s ->
       emit_global s;
-      `{emit_defsymbol s}\n`
+      `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
-      `{emit_deflabel (lbl + 10000)}\n`
+      `{emit_label (lbl + 10000)}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
-      `	{emit_string dir_half}	{emit_int n}\n`
+      `	.short	{emit_int n}\n`
   | Cint n ->
-      `	{emit_string dir_word}	{emit_int n}\n`
+      `	.word	{emit_int n}\n`
   | Cintlit s ->
-      `	{emit_string dir_word}	{emit_string s}\n`
+      `	.word	{emit_string s}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
-      `	{emit_string dir_word}	{emit_symbol s}\n`
+      `	.word	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	{emit_string dir_word}	{emit_label(lbl + 10000)}\n`
+      `	.word	{emit_label(lbl + 10000)}\n`
   | Cstring s ->
       let l = String.length s in
       if l = 0 then ()
       else if l < 80 then
-        `	{emit_string dir_string}	{emit_string_literal s}\n`
+        `	.ascii	{emit_string_literal s}\n`
       else begin
         let i = ref 0 in
         while !i < l do
           let n = min (l - !i) 80 in
-          `	{emit_string dir_string}	{emit_string_literal(String.sub s !i n)}\n`;
+          `	.ascii	{emit_string_literal(String.sub s !i n)}\n`;
           i := !i + n
         done
       end
   | Cskip n ->
-      if n > 0 then `	{emit_string dir_skip}	{emit_int n}\n`
+      if n > 0 then
+        if hpux then `	.block	{emit_int n}\n`
+                else `	.space	{emit_int n}\n`
   | Calign n ->
       emit_align n
 
@@ -909,19 +897,19 @@ let begin_assembly() =
   let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
   `	.data\n`;
   emit_global lbl_begin;
-  `{emit_defsymbol lbl_begin}\n`
+  `{emit_symbol lbl_begin}:\n`
 
 let end_assembly() =
   if not hpux then emit_stubs();
   `	.data\n`;
   let lbl_end = Compilenv.current_unit_name() ^ "_end" in
   emit_global lbl_end;
-  `{emit_defsymbol lbl_end}\n`;
-  `	{emit_string dir_word}	0\n`;
+  `{emit_symbol lbl_end}:\n`;
+  `	.word	0\n`;
   let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   emit_global lbl;
-  `{emit_defsymbol lbl}\n`;
-  `	{emit_string dir_word}	{emit_int (List.length !frame_descriptors)}\n`;
+  `{emit_symbol lbl}:\n`;
+  `	.word	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
   frame_descriptors := [];
   if hpux then emit_imports()

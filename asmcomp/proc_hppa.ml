@@ -315,12 +315,14 @@ let contains_calls = ref false
 (* Calling the assembler and the archiver *)
 
 let assemble_file infile outfile =
-  Sys.command ("as -o " ^ outfile ^ " " ^ infile)
+  if Config.system = "hpux"
+  (* Use the GNU assembler, since /bin/as is too buggy *)
+  then Sys.command ("gcc -c -o " ^ outfile ^ " " ^ infile)
+  else Sys.command ("as -o " ^ outfile ^ " " ^ infile)
 
 let create_archive archive file_list =
   Misc.remove_file archive;
-  if Config.system = "hpux" then
-    Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list)
-  else
-    Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list ^
-                 " && ranlib " ^ archive)
+  let ar = "ar rc " ^ archive ^ " " ^ String.concat " " file_list in
+  if Config.system = "hpux"
+  then Sys.command ar
+  else Sys.command (ar ^ " && ranlib " ^ archive)

@@ -14,18 +14,15 @@
 
 #ifdef SYS_hpux
 #define G(x) x
-#define DEFG(x) x
 #define CODE .code
 #define CODE_ALIGN 4
 #define EXPORT_CODE(x) .export x, entry, priv_lev=3
 #define STARTPROC .proc ! .callinfo frame=0, no_calls ! .entry
 #define ENDPROC .exit ! .procend
-        .import $$dyncall, MILLICODE
 #endif
 
 #ifdef SYS_nextstep
 #define G(x) _##x
-#define DEFG(x) _##x:
 #define CODE .text
 #define CODE_ALIGN 2
 #define EXPORT_CODE(x) .globl x
@@ -33,10 +30,21 @@
 #define ENDPROC
 #endif
 
+#ifdef SYS_hpux
+	.space $PRIVATE$
+	.subspa $DATA$,quad=1,align=8,access=31
+	.subspa $BSS$,quad=1,align=8,access=31,zero,sort=82
+	.space $TEXT$
+	.subspa $LIT$,quad=0,align=8,access=44
+	.subspa $CODE$,quad=0,align=8,access=44,code_only
+	.import $global$, data
+        .import $$dyncall, millicode
+#endif
+
         CODE
         .align  CODE_ALIGN
         EXPORT_CODE(G(call_gen_code))
-DEFG(call_gen_code)
+G(call_gen_code):
         STARTPROC
 	stw     %r2,-20(%r30)
         ldo	256(%r30), %r30
@@ -139,9 +147,9 @@ DEFG(call_gen_code)
         nop
         ENDPROC
 
-	.align	ALIGN_CODE
+	.align	CODE_ALIGN
 	EXPORT_CODE(caml_c_call)
-DEFG(caml_c_call)
+G(caml_c_call):
         STARTPROC
 #ifdef SYS_hpux
         bl $$dyncall, %r0

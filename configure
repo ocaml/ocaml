@@ -186,7 +186,8 @@ case "$host" in
   i[3456]86-*-*bsd*)            arch=i386; system=bsd;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   mips-*-ultrix*)               arch=mips;;
-  hppa1.1-*-nextstep*)          arch=hppa;;
+  hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
+  hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
   rs6000-*-aix*)                arch=power; model=rs6000;;
   powerpc-*-aix*)               arch=power; model=ppc;;
 esac
@@ -215,7 +216,7 @@ case "$arch" in
         *)      asflags='-P -DSYS_$(SYSTEM)';;
     esac;;
   i386)         asflags='-DSYS_$(SYSTEM)';;
-  hppa)         asflags='';;
+  hppa)         as='gcc'; asflags='-DSYS_$(SYSTEM)';;
   power)
     case "$model" in
       rs6000)   asflags='-u -m pwr -w';;
