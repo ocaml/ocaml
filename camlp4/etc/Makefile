@@ -78,7 +78,7 @@ depend:
 get_promote:
 
 install:
-	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDI1R)"
+	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"
 	cp $(OBJS) "$(LIBDIR)/camlp4/."
 	cp $(INTF) "$(LIBDIR)/camlp4/."
 	cp lib.sml "$(LIBDIR)/camlp4/."
