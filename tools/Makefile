@@ -3,11 +3,12 @@ include ../config/Makefile
 CAMLRUN=../boot/ocamlrun
 CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
-INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp
+INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
+         -I ../driver
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof
+all: ocamldep ocamlprof ocamlcp
 
 # The dependency generator
 
@@ -40,13 +41,16 @@ CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
 ocamlprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
+ocamlcp: ocamlcp.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlcp main_args.cmo ocamlcp.cmo
+
 install::
 	cp ocamlprof $(BINDIR)/ocamlprof
 	cp ocamlcp $(BINDIR)/ocamlcp
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
-	rm -f ocamlprof
+	rm -f ocamlprof ocamlcp
 
 # To make custom toplevels
 
