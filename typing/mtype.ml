@@ -22,7 +22,7 @@ let rec scrape env mty =
   match mty with
     Tmty_ident p ->
       begin try
-        Env.find_modtype_expansion p env
+        scrape env (Env.find_modtype_expansion p env)
       with Not_found ->
         mty
       end
