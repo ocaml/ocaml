@@ -296,6 +296,9 @@ install: dummy
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
 installopt:
+	if test -f $(OCAMLDOC_OPT) ; then $(MAKE) installopt_really ; fi
+
+installopt_really:
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
 	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)
