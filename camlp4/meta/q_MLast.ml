@@ -1042,6 +1042,13 @@ EXTEND
              Qast.Option (Some (Qast.Option (Some (Qast.List []))))]
       | "["; "<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag; "]" ->
           Qast.Node "TyVrn"
+            [Qast.Loc; rfl; Qast.Option (Some (Qast.Option (Some ntl)))]
+      | "[<"; rfl = row_field_list; "]" ->
+          Qast.Node "TyVrn"
+            [Qast.Loc; rfl;
+             Qast.Option (Some (Qast.Option (Some (Qast.List []))))]
+      | "[<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag; "]" ->
+          Qast.Node "TyVrn"
             [Qast.Loc; rfl; Qast.Option (Some (Qast.Option (Some ntl)))] ] ]
   ;
   row_field_list:

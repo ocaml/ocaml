@@ -3771,7 +3771,46 @@ Grammar.extend
     Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
     Some (Gramext.Level "simple"),
     [None, None,
-     [[Gramext.Stoken ("", "["); Gramext.Stoken ("", "<");
+     [[Gramext.Stoken ("", "[<");
+       Gramext.Snterm
+         (Grammar.Entry.obj
+            (row_field_list : 'row_field_list Grammar.Entry.e));
+       Gramext.Stoken ("", ">");
+       Gramext.srules
+         [[Gramext.Slist1
+             (Gramext.Snterm
+                (Grammar.Entry.obj (name_tag : 'name_tag Grammar.Entry.e)))],
+          Gramext.action
+            (fun (a : 'name_tag list)
+               (loc : Lexing.position * Lexing.position) ->
+               (Qast.List a : 'a_list));
+          [Gramext.Snterm
+             (Grammar.Entry.obj (a_list : 'a_list Grammar.Entry.e))],
+          Gramext.action
+            (fun (a : 'a_list) (loc : Lexing.position * Lexing.position) ->
+               (a : 'a_list))];
+       Gramext.Stoken ("", "]")],
+      Gramext.action
+        (fun _ (ntl : 'a_list) _ (rfl : 'row_field_list) _
+           (loc : Lexing.position * Lexing.position) ->
+           (Qast.Node
+              ("TyVrn",
+               [Qast.Loc; rfl; Qast.Option (Some (Qast.Option (Some ntl)))]) :
+            'ctyp));
+      [Gramext.Stoken ("", "[<");
+       Gramext.Snterm
+         (Grammar.Entry.obj
+            (row_field_list : 'row_field_list Grammar.Entry.e));
+       Gramext.Stoken ("", "]")],
+      Gramext.action
+        (fun _ (rfl : 'row_field_list) _
+           (loc : Lexing.position * Lexing.position) ->
+           (Qast.Node
+              ("TyVrn",
+               [Qast.Loc; rfl;
+                Qast.Option (Some (Qast.Option (Some (Qast.List []))))]) :
+            'ctyp));
+      [Gramext.Stoken ("", "["); Gramext.Stoken ("", "<");
        Gramext.Snterm
          (Grammar.Entry.obj
             (row_field_list : 'row_field_list Grammar.Entry.e));

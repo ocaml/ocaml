@@ -768,6 +768,10 @@ EXTEND
       | "["; "<"; rfl = row_field_list; "]" ->
           <:ctyp< [ < $list:rfl$ ] >>
       | "["; "<"; rfl = row_field_list; ">"; ntl = LIST1 name_tag; "]" ->
+          <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >>
+      | "[<"; rfl = row_field_list; "]" ->
+          <:ctyp< [ < $list:rfl$ ] >>
+      | "[<"; rfl = row_field_list; ">"; ntl = LIST1 name_tag; "]" ->
           <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
   ;
   row_field_list:

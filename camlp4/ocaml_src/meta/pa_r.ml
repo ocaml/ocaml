@@ -2531,7 +2531,29 @@ Grammar.extend
     Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
     Some (Gramext.Level "simple"),
     [None, None,
-     [[Gramext.Stoken ("", "["); Gramext.Stoken ("", "<");
+     [[Gramext.Stoken ("", "[<");
+       Gramext.Snterm
+         (Grammar.Entry.obj
+            (row_field_list : 'row_field_list Grammar.Entry.e));
+       Gramext.Stoken ("", ">");
+       Gramext.Slist1
+         (Gramext.Snterm
+            (Grammar.Entry.obj (name_tag : 'name_tag Grammar.Entry.e)));
+       Gramext.Stoken ("", "]")],
+      Gramext.action
+        (fun _ (ntl : 'name_tag list) _ (rfl : 'row_field_list) _
+           (loc : Lexing.position * Lexing.position) ->
+           (MLast.TyVrn (loc, rfl, Some (Some ntl)) : 'ctyp));
+      [Gramext.Stoken ("", "[<");
+       Gramext.Snterm
+         (Grammar.Entry.obj
+            (row_field_list : 'row_field_list Grammar.Entry.e));
+       Gramext.Stoken ("", "]")],
+      Gramext.action
+        (fun _ (rfl : 'row_field_list) _
+           (loc : Lexing.position * Lexing.position) ->
+           (MLast.TyVrn (loc, rfl, Some (Some [])) : 'ctyp));
+      [Gramext.Stoken ("", "["); Gramext.Stoken ("", "<");
        Gramext.Snterm
          (Grammar.Entry.obj
             (row_field_list : 'row_field_list Grammar.Entry.e));
