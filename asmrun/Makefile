@@ -1,22 +1,20 @@
 include ../config/Makefile.h
 include ../Makefile.config
 
-CFLAGS=-I../byterun -DTARGET_$(ARCH) -O $(CCCOMPOPTS)
-DFLAGS=-I../../byterun -DTARGET_$(ARCH) -g -DDEBUG $(CCCOMPOPTS)
+CC=$(NATIVECC)
+CFLAGS=-I../byterun -DTARGET_$(ARCH) -O $(NATIVECCCOMPOPTS)
+DFLAGS=-I../byterun -DTARGET_$(ARCH) -g -DDEBUG $(NATIVECCCOMPOPTS)
 
-COMMONOBJS=../byterun/misc.o ../byterun/freelist.o \
-  ../byterun/major_gc.o ../byterun/minor_gc.o ../byterun/memory.o \
-  ../byterun/alloc.o ../byterun/compare.o ../byterun/ints.o \
-  ../byterun/floats.o ../byterun/str.o ../byterun/array.o \
-  ../byterun/io.o ../byterun/extern.o ../byterun/intern.o \
-  ../byterun/hash.o ../byterun/sys.o ../byterun/parsing.o \
-  ../byterun/gc_ctrl.o ../byterun/terminfo.o ../byterun/crc.o \
-  ../byterun/obj.o
-OWNOBJS=main.o fail.o roots.o signals.o
+VPATH=.:../byterun
+
+COBJS=main.o fail.o roots.o signals.o \
+  misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
+  floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
+  gc_ctrl.o terminfo.o crc.o obj.o
 ASMOBJS=$(ARCH).o
 
-OBJS=$(OWNOBJS) $(ASMOBJS) $(COMMONOBJS)
-DOBJS=$(OWNOBJS:.o=.d.o) $(ASMOBJS) $(COMMONOBJS:.o=.d.o) 
+OBJS=$(COBJS) $(ASMOBJS)
+DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 
 all: libasmrun.a libasmrund.a
 
@@ -36,8 +34,10 @@ libasmrund.a: $(DOBJS)
 	$(AS) $(ASFLAGS) -o $*.o $*.asm
 
 .c.d.o:
-	cd .debugobj; $(CC) -c $(DFLAGS) -I.. ../$<
-	mv .debugobj/$*.o $*.d.o
+	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
+	$(CC) -c $(DFLAGS) $<
+	mv $*.o $*.d.o
+	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
 clean::
 	rm -f *.o *.s *.a *~

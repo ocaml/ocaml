@@ -45,7 +45,6 @@ int main(argc, argv)
   }
   init_gc (minor_heap_init, heap_chunk_init, percent_free_init, verbose_init);
   init_atoms();
-  init_exceptions();
   sys_init(argv);
   retcode = caml_start_program();
   if (retcode == 0) {
