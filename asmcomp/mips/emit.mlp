@@ -318,7 +318,7 @@ let emit_instr i =
               | Byte_signed -> "lb"
               | Sixteen_unsigned -> "lhu"
               | Sixteen_signed -> "lh"
-              | Word -> "lw" in
+              | _ -> "lw" in
             `	{emit_string load_instr}	{emit_reg dest}, {emit_addressing addr i.arg 0}\n`
         end
     | Lop(Istore(chunk, addr)) ->
@@ -340,7 +340,6 @@ let emit_instr i =
               | Sixteen_unsigned | Sixteen_signed -> "sh"
               | _ -> "sw" in
             `	{emit_string store_instr}	{emit_reg src}, {emit_addressing addr i.arg 1}\n`
-        | Float ->
         end
     | Lop(Ialloc n) ->
         if !call_gc_label = 0 then call_gc_label := new_label();
@@ -521,6 +520,8 @@ let emit_item = function
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
       `	.half	{emit_int n}\n`
+  | Cint32 n ->
+      `	.word	{emit_nativeint n}\n`
   | Cint n ->
       `	.word	{emit_nativeint n}\n`
   | Csingle f ->
