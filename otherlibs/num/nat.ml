@@ -11,10 +11,6 @@
 
 (* $Id$ *)
 
-(*
-#include "../../config/m.h"
-*)
-
 open Int_misc
 
 type nat;;
@@ -48,11 +44,7 @@ external land_digit_nat: nat -> int -> nat -> int -> unit = "land_digit_nat"
 external lor_digit_nat: nat -> int -> nat -> int -> unit = "lor_digit_nat"
 external lxor_digit_nat: nat -> int -> nat -> int -> unit = "lxor_digit_nat"
 
-#ifdef SIXTYFOUR
-let length_of_digit = 64
-#else
-let length_of_digit = 32
-#endif
+let length_of_digit = (Sys.get_config ()).Sys.word_size;;
 
 let make_nat len =
   if len < 0 then invalid_arg "make_nat" else
@@ -206,31 +198,42 @@ let sqrt_nat nat off len =
    done;
  candidate
 
-let power_base_max = make_nat 2
+let power_base_max = make_nat 2;;
 
-#ifdef SIXTYFOUR
-let _ =
-  set_digit_nat power_base_max 0 1000000000000000000;
-  mult_digit_nat power_base_max 0 2 
-                 power_base_max 0 1 (nat_of_int 9) 0
-let pmax = 19
-#else
-let _ = set_digit_nat power_base_max 0 1000000000
-let pmax = 9
-#endif
+match length_of_digit with
+  | 64 -> 
+      set_digit_nat power_base_max 0 1000000000000000000;
+      mult_digit_nat power_base_max 0 2 
+                     power_base_max 0 1 (nat_of_int 9) 0;
+      ()
+  | 32 -> set_digit_nat power_base_max 0 1000000000
+  | _ -> failwith "Nat.power_base_max: unknown word size"
+;;
+
+let pmax =
+  match length_of_digit with
+  | 64 -> 19
+  | 32 -> 9
+  | _ -> failwith "Nat.pmax: unknown word size"
+;;
 
 (* Nat temporaries *)
 let a_2 = make_nat 2
 and a_1 = make_nat 1 
 and b_2 = make_nat 2 
 
-#ifdef SIXTYFOUR
-let max_superscript_10_power_in_int = 18
-let max_power_10_power_in_int = nat_of_int 1000000000000000000
-#else
-let max_superscript_10_power_in_int = 9
-let max_power_10_power_in_int = nat_of_int 1000000000
-#endif
+let max_superscript_10_power_in_int =
+  match length_of_digit with
+  | 64 -> 18
+  | 32 -> 9
+  | _ -> failwith "Nat.max_superscript_10_power_in_int: unknown word size"
+;;
+let max_power_10_power_in_int =
+  match length_of_digit with
+  | 64 -> nat_of_int 1000000000000000000
+  | 32 -> nat_of_int 1000000000
+  | _ -> failwith "Nat.max_power_10_power_in_int: unknown word size"
+;;
 
 let raw_string_of_digit nat off =
   if is_nat_int nat off 1 

@@ -49,11 +49,10 @@ clean:
 
 realclean: clean
 	rm -f *.a *.o
-	rm -f nat.ml int_misc.ml
 	cd bignum; $(MAKE) scratch
 	cd test; $(MAKE) clean
 
-.SUFFIXES: .ml .mli .mlp .cmi .cmo .cmx
+.SUFFIXES: .ml .mli .cmi .cmo .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -64,16 +63,9 @@ realclean: clean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-.mlp.ml:
-	@rm -f $@
-	$(CPP) $< > $@
-	@chmod a-w $@
-
-int_misc.ml: int_misc.mlp
-nat.ml: nat.mlp
 nat_stubs.o: nat.h
 
-depend: nat.ml int_misc.ml
+depend:
 	gcc -MM $(CFLAGS) *.c > .depend
 	../../tools/ocamldep *.mli *.ml >> .depend
 

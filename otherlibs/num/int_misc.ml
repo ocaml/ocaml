@@ -13,10 +13,6 @@
 
 (* Some extra operations on integers *)
 
-(*
-#include "../../config/m.h"
-*)
-
 let rec gcd_int i1 i2 =
   if i2 = 0 then abs i1 else gcd_int i2 (i1 mod i2)
 ;;
@@ -28,11 +24,8 @@ let num_bits_int n = num_bits_int_aux (abs n);;
 
 let sign_int i = if i = 0 then 0 else if i > 0 then 1 else -1;;
 
-#ifdef SIXTYFOUR
-let length_of_int = 62;;
-#else
-let length_of_int = 30;;
-#endif
+let length_of_int = (Sys.get_config()).Sys.word_size - 2;;
+
 let monster_int = 1 lsl length_of_int;;
 let biggest_int = monster_int - 1;;
 let least_int = - biggest_int;;

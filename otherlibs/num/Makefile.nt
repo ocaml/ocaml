@@ -45,11 +45,10 @@ clean:
 
 realclean: clean
 	rm -f *.lib *.obj
-	rm -f nat.ml int_misc.ml
 	cd bignum & $(MAKEREC) clean
 	cd test & $(MAKEREC) clean
 
-.SUFFIXES: .ml .mli .mlp .cmi .cmo .cmx
+.SUFFIXES: .ml .mli .cmi .cmo .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -60,11 +59,6 @@ realclean: clean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-.mlp.ml:
-	$(CPP) $< > $@
-
-int_misc.ml: int_misc.mlp
-nat.ml: nat.mlp
 nat_stubs.obj: nat.h
 
 depend:

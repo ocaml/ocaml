@@ -23,12 +23,8 @@ libgraphics.a: $(OBJS)
 graphics.cma: graphics.cmo
 	$(CAMLC) -a -o graphics.cma graphics.cmo
 
-graphics.ml: graphics.mlp
-	$(CPP) -DUSE_ASYNC_IO graphics.mlp > graphics.ml
-
 clean:
 	rm -f *.cm*
-	rm -f graphics.ml
 
 realclean: clean
 	rm -f *.a *.o
@@ -49,7 +45,7 @@ installopt:
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-depend: graphics.ml
+depend:
 	gcc -MM $(CFLAGS) *.c > .depend
 	../../tools/ocamldep *.mli *.ml >> .depend
 
