@@ -55,6 +55,7 @@ static void thread_callback(void)
 CAMLexport value callbackN_exn(value closure, int narg, value args[])
 {
   int i;
+  value res;
 
   Assert(narg + 4 <= 256);
   Init_callback();
@@ -66,7 +67,9 @@ CAMLexport value callbackN_exn(value closure, int narg, value args[])
   extern_sp[narg + 3] = closure;
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
-  return interprete(callback_code, sizeof(callback_code));
+  res = interprete(callback_code, sizeof(callback_code));
+  if (Is_exception_result(res)) extern_sp += narg + 4; /* PR#1228 */
+  return res;
 }
 
 CAMLexport value callback_exn(value closure, value arg1)
