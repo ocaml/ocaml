@@ -251,7 +251,7 @@ let fstat fd = invalid_arg "Unix.fstat not implemented"
 
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
-let link f1 f2 = invalid_arg "Unix.link not implemented"
+external link : string -> string -> unit = "unix_link"
 
 (* File permissions and ownership *)
 
