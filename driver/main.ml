@@ -80,6 +80,7 @@ module Options = Main_args.Make_options (struct
   let _w = Warnings.parse_options
   let _verbose = set verbose
   let _nopervasives = set nopervasives
+  let _dparsetree = set dump_parsetree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr

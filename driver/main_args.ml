@@ -39,6 +39,7 @@ module Make_options (F :
      val _verbose : unit -> unit
      val _w : string -> unit
      val _nopervasives : unit -> unit
+     val _dparsetree : unit -> unit
      val _drawlambda : unit -> unit
      val _dlambda : unit -> unit
      val _dinstr : unit -> unit
@@ -97,6 +98,7 @@ struct
        \032    default setting is A (all warnings enabled)";
 
      "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
+     "-dparsetree", Arg.Unit F._dparsetree, " (undocumented)";
      "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";
      "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
      "-dinstr", Arg.Unit F._dinstr, " (undocumented)";

@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -22,7 +22,7 @@ let report_error exn =
   open_box 0;
   begin match exn with
     Lexer.Error(err, start, stop) ->
-      Location.print {loc_start = start; loc_end = stop};
+      Location.print {loc_start = start; loc_end = stop; loc_ghost = false};
       Lexer.report_error err
   | Syntaxerr.Error err ->
       Syntaxerr.report_error err
