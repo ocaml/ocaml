@@ -30,6 +30,12 @@ let bind name arg fn =
   | Cconst_pointer _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
+let bind_nonvar name arg fn =
+  match arg with
+    Cconst_int _ | Cconst_natint _ | Cconst_symbol _ | Cconst_pointer _ ->
+      fn arg
+  | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
+
 (* Block headers. Meaning of the tag field:
        0 - 248: regular blocks
        249: infix closure
@@ -810,7 +816,7 @@ let rec transl = function
       let inc = match dir with Upto -> Caddi | Downto -> Csubi in
       return_unit
         (Clet(id, transl low,
-          bind "bound" (transl high) (fun high ->
+          bind_nonvar "bound" (transl high) (fun high ->
             Ccatch(
               Cifthenelse(Cop(Ccmpi tst, [Cvar id; high]), Cexit,
                 Cloop(
