@@ -71,8 +71,10 @@ let rec expression event env = function
       begin try
         let (p, valdesc) = Env.lookup_value lid env in
         (begin match valdesc.val_kind with
-           Val_ivar _ ->
-             let (p0, _) = Env.lookup_value (Longident.Lident "*self*") env in
+           Val_ivar (_, cl_num) ->
+             let (p0, _) =
+               Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
+             in
              let v = path event p0 in
              let i = path event p in
              Debugcom.Remote_value.field v (Debugcom.Remote_value.obj i)
