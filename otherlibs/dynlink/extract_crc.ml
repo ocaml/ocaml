@@ -33,7 +33,9 @@ let print_crc unit =
     prerr_endline unit;
     begin match exn with
       Sys_error msg -> prerr_endline msg
-    | Dynlink.Error _ -> prerr_endline "Ill formed .cmi file"
+    | Dynlink.Error(Dynlink.File_not_found name) ->
+        prerr_string "Cannot find file "; prerr_endline name
+    | Dynlink.Error _ -> prerr_endline "Ill-formed .cmi file"
     | _ -> raise exn
     end;
     exit 2
