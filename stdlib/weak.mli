@@ -95,7 +95,7 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
     is [true].
 
     The [equal] relation must be able to work on a shallow copy of
-    the values and give the same result as with the value itself.
+    the values and give the same result as with the values themselves.
     *)
 
 module type S = sig
