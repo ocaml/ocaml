@@ -79,7 +79,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
 
 PERVASIVES=arg array char digest filename format gc hashtbl lexing list map \
   obj parsing pervasives printexc printf queue random set sort \
-  stack string stream sys oo genlex
+  stack string stream sys oo genlex topdirs
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries

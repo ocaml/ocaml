@@ -544,7 +544,8 @@ driver/optmain.cmx: asmcomp/asmlibrarian.cmx asmcomp/asmlink.cmx \
     utils/clflags.cmx utils/config.cmx driver/optcompile.cmx \
     driver/opterrors.cmx asmcomp/printmach.cmx 
 toplevel/printval.cmi: typing/env.cmi typing/path.cmi typing/typedtree.cmi 
-toplevel/topdirs.cmi: parsing/longident.cmi 
+toplevel/topdirs.cmi: parsing/location.cmi parsing/longident.cmi \
+    parsing/parsetree.cmi 
 toplevel/toploop.cmi: typing/env.cmi parsing/longident.cmi \
     parsing/parsetree.cmi 
 toplevel/trace.cmi: parsing/longident.cmi typing/path.cmi \

@@ -23,6 +23,12 @@ open Printval
 open Trace
 open Toploop
 
+(* Hooks for parsing functions *)
+
+let parse_toplevel_phrase = Toploop.parse_toplevel_phrase
+let parse_use_file = ref Parse.use_file
+let print_location = Location.print
+
 (* Temporary assignment to a reference *)
 
 let protect r newval body =
@@ -129,7 +135,7 @@ let dir_use name =
       try
         List.iter
           (fun ph -> if execute_phrase ph then () else raise Exit)
-          (Parse.use_file lb)
+          (!parse_use_file lb)
       with
         Exit -> ()
       | Sys.Break ->

@@ -32,3 +32,4 @@ val print_exception_outcome: exn -> unit
         (* Print an exception resulting from the evaluation of user code. *)
 val toplevel_env: Env.t ref
         (* Typing environment for the toplevel *)
+val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref

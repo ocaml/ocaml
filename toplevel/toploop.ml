@@ -195,6 +195,8 @@ let _ =
 
 (* The loop *)
 
+let parse_toplevel_phrase = ref Parse.toplevel_phrase
+
 let loop() =
   print_string "\tObjective Caml version ";
   print_string Config.version;
@@ -211,7 +213,7 @@ let loop() =
   while true do
     try
       empty_lexbuf lb;
-      execute_phrase (Parse.toplevel_phrase lb); ()
+      execute_phrase (!parse_toplevel_phrase lb); ()
     with
       End_of_file ->
         print_newline(); exit 0
