@@ -46,10 +46,10 @@ let rec assoc3 x l =
   | _::t -> assoc3 x t
 ;;
 
-let make_symlist prefix separator suffix l =
+let make_symlist prefix sep suffix l =
   match l with
   | [] -> "<none>"
-  | h::t -> (List.fold_left (fun x y -> x ^ "|" ^ y) (prefix ^ h) t) ^ suffix
+  | h::t -> (List.fold_left (fun x y -> x ^ sep ^ y) (prefix ^ h) t) ^ suffix
 ;;
 
 let print_spec (key, spec, doc) =
@@ -115,7 +115,7 @@ let parse_argv argv speclist anonfun errmsg =
               f argv.(!current+1);
               incr current;
             end else begin
-              stop (Wrong (s, arg, "one of " ^ (make_symlist "" " " "" symb)))
+              stop (Wrong (s, arg, "one of: " ^ (make_symlist "" " " "" symb)))
             end
         | Set_string r when !current + 1 < l ->
             r := argv.(!current+1);
