@@ -27,8 +27,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(if (and (boundp 'running-xemacs) running-xemacs) 
-    (require 'caml-xemacs))
+(eval-and-compile
+  (if (and (boundp 'running-xemacs) running-xemacs) 
+      (require 'caml-xemacs)
+    (require 'caml-emacs)))
 
 ;; Loading or building databases.
 ;; 
@@ -566,7 +568,7 @@ current buffer using \\[ocaml-qualified-identifier]."
   (let ((window (selected-window))
         (info-section (assoc module (ocaml-info-alist))))
     (if info-section
-        (info-other-window (cdr info-section))
+        (caml-info-other-window (cdr info-section))
       (ocaml-visible-modules)
       (let* ((module-info
               (or (assoc module (ocaml-module-alist))
@@ -717,9 +719,8 @@ buffer positions."
 
 (defun ocaml-link-goto (click)
   (interactive "e")
-  (let* ((start  (event-start click))
-         (pos (posn-point start))
-         (buf (window-buffer (posn-window start)))
+  (let* ((pos (caml-event-point-start click))
+         (buf (caml-event-window click))
          (window (selected-window))
          (link))
     (setq link

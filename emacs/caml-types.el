@@ -15,9 +15,11 @@
 ; An emacs-lisp complement to the "-dtypes" option of ocamlc and ocamlopt.
 
 ;; XEmacs compatibility
-(if (and (boundp 'running-xemacs) running-xemacs) 
-    (require 'caml-xemacs))
 
+(eval-and-compile
+  (if (and (boundp 'running-xemacs) running-xemacs) 
+      (require 'caml-xemacs)
+    (require 'caml-emacs)))
 
 (defvar caml-types-location-re nil "Regexp to parse *.annot files.
 
@@ -108,8 +110,9 @@ See `caml-types-location-re' for annotation file format.
   (interactive "p")
   (let* ((target-buf (current-buffer))
          (target-file (file-name-nondirectory (buffer-file-name)))
-         (target-line (1+ (count-lines (point-min) (line-beginning-position))))
-         (target-bol (line-beginning-position))
+         (target-line (1+ (count-lines (point-min)
+                                       (caml-line-beginning-position))))
+         (target-bol (caml-line-beginning-position))
          (target-cnum (point))
          (type-file (concat (file-name-sans-extension (buffer-file-name))
                             ".annot")))
@@ -362,7 +365,7 @@ See `caml-types-location-re' for annotation file format.
 The expression under the mouse is highlighted
 and its type is displayed in the minibuffer, until the move is released."
   (interactive "e")
-  (set-buffer (window-buffer (posn-window (event-start event))))
+  (set-buffer (window-buffer (caml-event-window event)))
   (let* ((target-buf (current-buffer))
          (target-file (file-name-nondirectory (buffer-file-name)))
          (type-file (concat (file-name-sans-extension (buffer-file-name))
@@ -377,15 +380,15 @@ and its type is displayed in the minibuffer, until the move is released."
       (setq caml-types-buffer (get-buffer-create caml-types-buffer-name)))
     ; (message "Drag the mouse to explore types")
     (unwind-protect
-        (track-mouse
+        (caml-track-mouse
           (while (and event
                       (integer-or-marker-p
-                       (setq cnum (posn-point (event-end event)))))
+                       (setq cnum (caml-event-point-end event))))
             (if (and limits (>= cnum (car limits)) (< cnum (cdr limits)))
                 (message mes)
               (setq target-bol
                     (save-excursion (goto-char cnum)
-                                    (line-beginning-position)))
+                                    (caml-line-beginning-position)))
               (setq target-line
                     (1+ (count-lines (point-min) target-bol)))
               (setq target-pos (vector target-file target-line target-bol cnum))
@@ -411,7 +414,7 @@ and its type is displayed in the minibuffer, until the move is released."
                 (message (format "type: %s" type))
                 (insert type)
                 ))
-              (setq event (read-event))
+              (setq event (caml-read-event))
               (unless (mouse-movement-p event) (setq event nil))
             )
           )
