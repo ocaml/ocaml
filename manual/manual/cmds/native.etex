@@ -96,6 +96,12 @@ files) given on the command line, instead of linking them into an
 executable file. The name of the library can be set with the "-o"
 option. The default name is "library.cmxa".
 
+If "-cclib" or "-ccopt" options are passed on the command
+line, these options are stored in the resulting ".cmxa" library.  Then,
+linking with this library automatically adds back the 
+"-cclib" and "-ccopt" options as if they had been provided on the
+command line, unless the "-noautolink" option is given.
+
 \item["-c"]
 Compile only. Suppress the linking phase of the
 compilation. Source code files are turned into compiled files, but no
@@ -160,6 +166,18 @@ flag is not given, unreferenced modules are not linked in. When
 building a library ("-a" flag), setting the "-linkall" flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
+
+\item["-noassert"]
+Turn assertion checking off: assertions are not compiled.
+This flag has no effect when linking already compiled files.
+
+\item["-noautolink"]
+When linking ".cmxa" libraries, ignore "-cclib" and "-ccopt"
+options potentially contained in the libraries (if these options were
+given when building the libraries).  This can be useful if a library
+contains incorrect specifications of C libraries or C options; in this
+case, during linking, set "-noautolink" and pass the correct C
+libraries and options on the command line.
 
 \item["-o" \var{exec-file}]
 Specify the name of the output file produced by the linker. The
