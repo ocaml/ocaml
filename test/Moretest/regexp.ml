@@ -205,11 +205,11 @@ let automated_test() =
   test_search_forward r n "ArA"
     [|"rA"; "~"; "~"|];
   test_search_forward r n "ArkA"
-    [|"rkA"; ""; ""|];
+    [|"rkA"; "k"; "k"|];
   test_search_forward r n "AryA"
-    [|"ryA"; ""; ""|];
+    [|"ryA"; "y"; "y"|];
   test_search_forward r n "ArgggkyggkA"
-    [|"rgggkyggkA"; ""; ""|];
+    [|"rgggkyggkA"; "k"; "k"|];
 
   start_test "Search for /A\\(\\(t\\|v\\)\\(q?\\|n\\)\\)*A/";
   let r = Str.regexp "A\\(\\(t\\|v\\)\\(q?\\|n\\)\\)*A" in
@@ -231,7 +231,7 @@ let automated_test() =
   test_search_forward r n "fffff"
     [||];
   test_search_forward r n "fffxab"
-    [|"fffx"; ""|];
+    [|"fffx"; "f"|];
   test_search_forward r n "zzzxab"
     [|"x"; "~"|];
 
@@ -243,9 +243,21 @@ let automated_test() =
   test_search_forward r n "fffff"
     [||];
   test_search_forward r n "fffxab"
-    [|"fffx"; ""|];
+    [|"fffx"; "f"|];
   test_search_forward r n "zzzxab"
     [|"x"; ""|];
+
+  start_test "Search for /A\\(.?\\)*A/";
+  let r = Str.regexp "A\\(.?\\)*A" in
+  let n = 1 in
+  test_search_forward r n "AA"
+    [|"AA"; "~"|];
+  test_search_forward r n "AAA"
+    [|"AAA"; "A"|];
+  test_search_forward r n "AbA"
+    [|"AbA"; "b"|];
+  test_search_forward r n "A"
+    [||];
 
   start_test "Search for /\\([ab]*\\)\\1+c/";
   let r = Str.regexp "\\([ab]*\\)\\1+c" in
