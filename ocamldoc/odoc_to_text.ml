@@ -269,7 +269,7 @@ class virtual to_text =
 	Format.flush_str_formatter ()
       in
       [ CodePre s ] @ 
-      [Latex ("\\index{"^(self#label name)^"@\\verb`"^(self#label ~no_:false name)^"`}\n")] @
+      [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
       (self#text_of_info v.val_info)
 
     (** @return [text] value for a class attribute. *)
