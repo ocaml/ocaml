@@ -492,23 +492,12 @@ if test $withsharedlibs = "yes"; then
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     powerpc-apple-darwin*)
-      if sh ./hasgot $dl_defs -i dlfcn.h; then
-        mksharedlib="cc -bundle -flat_namespace -undefined suppress -o"
-        bytecccompopts="$dl_defs $bytecccompopts"
-        #sharedcccompopts="-fnocommon"
-        dl_needs_underscore=true
-        shared_libraries_supported=true;
-      fi
-      ;;
+      mksharedlib="cc -bundle -flat_namespace -undefined suppress -o"
+      bytecccompopts="$dl_defs $bytecccompopts"
+      #sharedcccompopts="-fnocommon"
+      dl_needs_underscore=true
+      shared_libraries_supported=true;;
   esac
-fi
-
-if $shared_libraries_supported; then
-  echo "Dynamic loading of shared libraries is supported."
-  echo "#define SUPPORT_DYNAMIC_LINKING" >> s.h
-  if $dl_needs_underscore; then
-    echo '#define DL_NEEDS_UNDERSCORE' >>s.h
-  fi
 fi
 
 # Further machine-specific hacks
@@ -950,6 +939,16 @@ elif sh ./hasgot $dllib dlopen; then
 elif sh ./hasgot $dllib -ldl dlopen; then
   echo "dlopen() found in -ldl."
   dllib="$dllib -ldl"
+else
+  shared_libraries_supported=no
+fi
+
+if $shared_libraries_supported; then
+  echo "Dynamic loading of shared libraries is supported."
+  echo "#define SUPPORT_DYNAMIC_LINKING" >> s.h
+  if $dl_needs_underscore; then
+    echo '#define DL_NEEDS_UNDERSCORE' >>s.h
+  fi
 fi
 
 if sh ./hasgot -i sys/types.h -i sys/mman.h && sh ./hasgot mmap munmap; then
