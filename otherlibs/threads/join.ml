@@ -37,8 +37,7 @@ let exit_hook () =
 let _ = at_exit exit_hook
 
 external thread_new : (unit -> unit) -> Thread.t = "thread_new"
-external thread_uncaught_exception : exn -> unit =
-  "thread_uncaught_exception"
+external thread_uncaught_exception : exn -> unit = "thread_uncaught_exception"
 
 (* To be called whenever a join-thread exits *)
 let exit_thread () =
