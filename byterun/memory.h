@@ -79,12 +79,12 @@ color_t allocation_color (void *hp);
 }                                                                           \
 
 
-struct caml__roots_block {
+typedef struct caml__roots_block {
   struct caml__roots_block *next;
   long ntables;
   long nitems;
   value *tables [5];
-};
+} caml__roots_block;
 
 extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 
