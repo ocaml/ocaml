@@ -63,6 +63,9 @@ let array cmp arr =
       end;
       let pivot = unsafe_get arr mid in
       let i = ref (lo + 1) and j = ref (hi - 1) in
+      if not (cmp pivot (unsafe_get arr hi))
+         || not (cmp (unsafe_get arr lo) pivot)
+      then raise (Invalid_argument "Sort.array");
       while !i < !j do
         while not (cmp pivot (unsafe_get arr !i)) do incr i done;
         while not (cmp (unsafe_get arr !j) pivot) do decr j done;
