@@ -343,6 +343,8 @@ module Make(O : OBJ) = struct
 	      end
           | Tobject (_, _) ->
               print_string "<obj>"
+	  | Tsubst ty ->
+	      print_val prio (depth - 1) obj ty
           | Tfield(_, _, _, _) | Tnil | Tlink _ ->
               fatal_error "Printval.print_value"
 

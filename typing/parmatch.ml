@@ -347,7 +347,6 @@ let full_match tdefs force env =  match env with
 	      begin try
 		(tag, Btype.row_field_repr (List.assoc tag row.row_fields))
 	      with Not_found ->
-		prerr_endline ("Hidden tag " ^ tag ^ "\n\n");
 		(tag, Rabsent)
 	      end
           | _ -> fatal_error "Parmatch.full_match")
@@ -356,7 +355,6 @@ let full_match tdefs force env =  match env with
       let bound =
 	List.fold_left
 	  (fun bound (tag,f) ->
-	    if f = Rabsent then prerr_endline ("Hidden tag " ^ tag ^ "\n\n");
 	    match f with Reither(_,tl,_) -> tl @ bound | _ -> bound)
 	[] fields in
       if force then

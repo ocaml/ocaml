@@ -138,13 +138,14 @@ let map_variant_matching row pm =
   let consts = ref 0 and nonconsts = ref 0 in
   if row.row_closed then
     List.iter
-      (fun (lab', f) ->
+      (fun (_, f) ->
 	match Btype.row_field_repr f with
 	  Rabsent | Reither(true, _::_, _) -> ()
 	| Reither(true, _, _) | Rpresent None -> incr consts
 	| Reither _ | Rpresent _ -> incr nonconsts)
       row.row_fields
   else (consts := 100000; nonconsts := 100000);
+  flush stderr;
   let const_cstr =
     { cstr_res = Ctype.newty (Tvariant row);
       cstr_args = [];
@@ -164,20 +165,16 @@ let map_variant_matching row pm =
     match pat.pat_desc with Tpat_variant (lab, pato, _) ->
       if Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent
       then raise Not_found;
+      let tag = Cstr_constant (Btype.hash_variant lab) in
       { pat with pat_desc =
 	match pato with
-	  None -> Tpat_construct
-	      ({ const_cstr with
-		 cstr_tag = Cstr_constant (Btype.hash_variant lab) }, [])
-	| Some pat -> Tpat_construct
+	  None -> Tpat_construct({const_cstr with cstr_tag = tag}, [])
+	| Some pat' -> Tpat_construct
 	      ({ const_cstr with cstr_arity = 2 },
-               [{ pat with
-		  pat_desc = Tpat_construct
-                    ({ nonconst_cstr with
-                       cstr_tag = Cstr_constant (Btype.hash_variant lab) },
-		     []);
+               [{ pat with pat_desc =
+		    Tpat_construct ({nonconst_cstr with cstr_tag = tag}, []);
 		  pat_type = Predef.type_int };
-		pat])
+		pat'])
       }
     | _ -> pat
   in
@@ -429,9 +426,9 @@ let combine_constructor arg cstr partial
     and total = total1 &
       (partial = Total or
        List.length tag_lambda_list = cstr.cstr_consts + cstr.cstr_nonconsts) in
-    let mkifthenelse arg act2 act1 = match cstr.cstr_res.desc with
-      	Tconstr _ when cstr.cstr_consts = 1 ->  Lifthenelse(arg, act2, act1)
-      | _ -> Lifthenelse
+    let mkifthenelse arg act2 n act1 =
+      if n = 0 then Lifthenelse(arg, act2, act1) else
+      Lifthenelse
         (Lprim (Pandint, [arg; Lconst (Const_pointer 0)]), act2, act1) in
     let lambda1 =
       if total &
@@ -443,15 +440,15 @@ let combine_constructor arg cstr partial
         (_, _, [n, act], []) when total -> act
       | (_, _, [], [n, act]) when total -> act
       | (_, _, [n, act1], [m, act2]) when total ->
-          mkifthenelse arg act2 act1
+          mkifthenelse arg act2 n act1
       |	(1, 0, [n, act], []) -> act
       | (0, 1, [], [0, act]) -> act
       | (1, 1, [n, act1], [0, act2]) ->
-          mkifthenelse arg act2 act1
+          mkifthenelse arg act2 n act1
       | (1, 1, [n, act1], []) ->
-          mkifthenelse arg Lstaticfail act1
+          mkifthenelse arg Lstaticfail n act1
       | (n, 1, [], [0, act2]) ->
-          mkifthenelse arg act2 Lstaticfail
+          mkifthenelse arg act2 1 Lstaticfail
       | (_, _, _, _) ->
 	  if List.for_all (fun (n,_) -> n < cstr.cstr_consts & n >= 0) consts
 	  && List.for_all (fun (n,_) -> n < cstr.cstr_nonconsts & n >= 0)
@@ -467,7 +464,7 @@ let combine_constructor arg cstr partial
 	  match nonconsts with
       	    [] -> make_switch_or_test_sequence (not total) arg cases consts
       	  | [0, act] ->
-	      mkifthenelse arg act
+	      mkifthenelse arg act 1
       	       	(make_switch_or_test_sequence (not total) arg cases consts)
 	  | _ -> fatal_error "Matching.combine_constructor"
     in

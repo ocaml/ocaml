@@ -68,7 +68,8 @@ let rec row_field_repr = function
 let rec row_repr row =
   match (repr row.row_more).desc with
   | Tvariant row' ->
-      {(row_repr row') with row_fields = row.row_fields @ row'.row_fields}
+      let row' = row_repr row' in
+      {row' with row_fields = row.row_fields @ row'.row_fields}
   | _ -> row
 
 let rec row_more row =
