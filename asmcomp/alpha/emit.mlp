@@ -11,10 +11,10 @@
 
 (* $Id$ *)
 
-(* Emission of Alpha assembly code *)
-
 module LabelSet =
   Set.Make(struct type t = Linearize.label let compare = compare end)
+
+(* Emission of Alpha assembly code *)
 
 open Misc
 open Cmm
@@ -27,8 +27,11 @@ open Emitaux
 
 (* First pass: insert Iloadgp instructions where needed *)
 
-let instr_copy i next =
-  { desc = i.desc; next = next; arg = i.arg; res = i.res; live = i.live }
+let multiple_gp =
+  match Config.system with
+    "digital" -> true
+  | "linux" -> false
+  | _ -> assert false
 
 let insert_load_gp f =
 
@@ -59,11 +62,11 @@ let insert_load_gp f =
     | Lop(Iconst_float s) -> true       (* turned into ldq ($gp) *)
     | Lop(Iconst_symbol s) -> true      (* turned into ldq ($gp) *)
     | Lop(Icall_ind) -> false           (* does ldgp if needed afterwards *)
-    | Lop(Icall_imm s) -> false         (* does ldgp if needed afterwards *)
+    | Lop(Icall_imm s) -> true          (* does lda $27, <s> *)
     | Lop(Itailcall_ind) -> false
     | Lop(Itailcall_imm s) ->
-        if s = f.fun_name then label_needs_gp tailrec_entry_point else false
-    | Lop(Iextcall(_, _)) -> true       (* loads $27 from ($gp) *)
+        if s = f.fun_name then label_needs_gp tailrec_entry_point else true
+    | Lop(Iextcall(_, _)) -> true       (* does lda $27, <s> *)
     | Lop(Iload(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
     | Lop(Istore(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
     | Lop(Iintop(Idiv | Imod)) -> true  (* divq and remq can be turned into *)
@@ -105,19 +108,18 @@ let insert_load_gp f =
           (* If the instruction destroys $gp and $gp is needed afterwards,
              insert a ldgp after the instructions. *)
           Lop(Icall_ind | Icall_imm _) when needs_next ->
-            instr_copy i
-              (instr_cons (Lop(Ispecific(Ireloadgp true))) [||] [||] new_next)
+            {i with next =
+              instr_cons (Lop(Ispecific(Ireloadgp true))) [||] [||] new_next }
         | Lop(Iextcall(_, false)) | Lsetuptrap _ when needs_next ->
-            instr_copy i
-              (instr_cons (Lop(Ispecific(Ireloadgp false))) [||] [||] new_next)
+            {i with next =
+              instr_cons (Lop(Ispecific(Ireloadgp false))) [||] [||] new_next }
         | _ ->
-            instr_copy i new_next in
+            {i with next = new_next} in
       (new_instr, instr_needs_gp needs_next i.desc)
     end in
 
   let (new_body, uses_gp) = insert_reload_gp f.fun_body in
-  ({fun_body = new_body; fun_name = f.fun_name; fun_fast = f.fun_fast},
-   uses_gp)
+  ({f with fun_body = new_body}, uses_gp)
 
 (* Second pass: code generation proper *)
 
@@ -246,7 +248,7 @@ let record_frame live =
   let lbl = record_frame_label live in `{emit_label lbl}:`
 
 let emit_frame fd =
-  `	.quad	{emit_label fd.fd_lbl} + 4\n`;
+  `	.quad	{emit_label fd.fd_lbl}\n`;
   `	.word	{emit_int fd.fd_frame_size}\n`;
   `	.word	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
@@ -268,9 +270,9 @@ let call_gc_sites = ref ([] : gc_call list)
 let emit_call_gc gc =
   `{emit_label gc.gc_lbl}:`;
   liveregs gc.gc_instr 0;
-  `{emit_label gc.gc_frame}:	bsr	$26, caml_call_gc\n`;
+  `	bsr	$26, caml_call_gc\n`;
   (* caml_call_gc preserves $gp *)
-  `	br	{emit_label gc.gc_return_lbl}\n`
+  `{emit_label gc.gc_frame}:	br	{emit_label gc.gc_return_lbl}\n`
 
 (* Name of readonly data section *)
 
@@ -403,17 +405,26 @@ let emit_instr i =
         `	lda	{emit_reg i.res.(0)}, {emit_symbol s}\n`
     | Lop(Icall_ind) ->
         liveregs i 0;
-        `{record_frame i.live}	jsr	({emit_reg i.arg.(0)})\n`
+        if multiple_gp then
+          `	mov	{emit_reg i.arg.(0)}, $27\n`;
+        `	jsr	({emit_reg i.arg.(0)})\n`;
+        `{record_frame i.live}\n`
     | Lop(Icall_imm s) ->
         liveregs i 0;
-        `{record_frame i.live}	bsr	$26, {emit_symbol s}\n`
+        if multiple_gp then
+          `	jsr	{emit_symbol s}\n`
+        else
+          `	bsr	$26, {emit_symbol s}\n`;
+        `{record_frame i.live}\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
         if !contains_calls then
           `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
         if n > 0 then
           `	lda	$sp, {emit_int n}($sp)\n`;
-        liveregs i live_26;
+        if multiple_gp then
+          `	mov	{emit_reg i.arg.(0)}, $27\n`;
+        liveregs i (live_26 + live_27);
         `	jmp	({emit_reg i.arg.(0)})\n`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
@@ -424,16 +435,21 @@ let emit_instr i =
             `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
           if n > 0 then
             `	lda	$sp, {emit_int n}($sp)\n`;
-          liveregs i live_26;
+          if multiple_gp then
+            `	lda	$27, {emit_symbol s}\n`;
+          liveregs i (live_26 + live_27);
           `	br	{emit_symbol s}\n`
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           `	lda	$25, {emit_symbol s}\n`;
           liveregs i live_25;
-          `{record_frame i.live}	bsr	$26, caml_c_call\n`
+          `	bsr	$26, caml_c_call\n`;
+          `{record_frame i.live}\n`
         end else begin
-          `	jsr	{emit_symbol s}\n`
+          `	jsr	{emit_symbol s}\n`;
+          if not multiple_gp then
+            `	ldgp	$gp, 0($26)\n`
         end
     | Lop(Istackoffset n) ->
         `	lda	$sp, {emit_int (-n)}($sp)\n`;
@@ -471,17 +487,17 @@ let emit_instr i =
         end else begin
           begin match n with
             16 -> liveregs i 0;
-                  `{record_frame i.live}	bsr	$26, caml_alloc1\n`
+                  `	bsr	$26, caml_alloc1\n`
           | 24 -> liveregs i 0;
-                  `{record_frame i.live}	bsr	$26, caml_alloc2\n`
+                  `	bsr	$26, caml_alloc2\n`
           | 32 -> liveregs i 0;
-                  `{record_frame i.live}	bsr	$26, caml_alloc3\n`
+                  `	bsr	$26, caml_alloc3\n`
           | _  -> `	ldiq	$25, {emit_int n}\n`;
                   liveregs i live_25;
-                  `{record_frame i.live}	bsr	$26, caml_alloc\n`
+                  `	bsr	$26, caml_alloc\n`
           end;
           (* $gp preserved by caml_alloc* *)
-          `	addq	$13, 8, {emit_reg i.res.(0)}\n`
+          `{record_frame i.live}	addq	$13, 8, {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop(Icomp cmp)) ->
         let (comp, test) = name_for_int_comparison cmp in
@@ -556,12 +572,9 @@ let emit_instr i =
         `	lda	$sp, 8($sp)\n`;
         `	.set	at\n`
     | Lop(Ispecific(Ireloadgp marked_r26)) ->
-        if marked_r26 then begin
-          `	bic	$26, 1, $26\n`;
-          `	ldgp	$gp, 4($26)\n`
-        end else begin
-          `	ldgp	$gp, 0($26)\n`
-        end
+        `	ldgp	$gp, 0($26)\n`;
+        if marked_r26 then
+          `	bic	$gp, 1, $gp\n`
     | Lop(Ispecific sop) ->
         let instr = name_for_specific_operation sop in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
@@ -689,21 +702,21 @@ let emit_fundecl (fundecl, needs_gp) =
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.ent	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
+  if needs_gp then begin
+    `	.set	noreorder\n`;
+    `	ldgp	$gp, 0($27)\n`;
+    `	.set	reorder\n`
+  end;
   let n = frame_size() in
   if n > 0 then
     `	lda	$sp, -{emit_int n}($sp)\n`;
-  if needs_gp then begin
-    let lbl = new_label() in
-    `	br	$27, {emit_label lbl}\n`;
-    `{emit_label lbl}:	ldgp	$gp, 0($27)\n`
-  end;
   if !contains_calls then begin
     `	stq	$26, {emit_int(n - 8)}($sp)\n`;
     `	.mask	0x04000000, -8\n`;
     `	.fmask	0x0, 0\n`
   end;
   `	.frame	$sp, {emit_int n}, $26\n`;
-  `	.prologue 0\n`;
+  `	.prologue {if needs_gp then 1 else 0}\n`;
   tailrec_entry_point := new_label();
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
@@ -730,7 +743,7 @@ let emit_fundecl (fundecl, needs_gp) =
   end
 
 let fundecl f =
-  emit_fundecl (insert_load_gp f)
+  emit_fundecl (if multiple_gp then insert_load_gp f else (f, false))
 
 (* Emission of data *)
 
