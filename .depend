@@ -155,7 +155,6 @@ typing/typetexp.cmx: typing/ctype.cmx typing/env.cmx parsing/location.cmx \
     utils/tbl.cmx typing/typedtree.cmx typing/typetexp.cmi 
 bytecomp/bytegen.cmi: bytecomp/instruct.cmi bytecomp/lambda.cmi 
 bytecomp/bytelink.cmi: bytecomp/emitcode.cmi bytecomp/symtable.cmi 
-bytecomp/dectree.cmi: bytecomp/lambda.cmi 
 bytecomp/emitcode.cmi: typing/ident.cmi bytecomp/instruct.cmi \
     bytecomp/lambda.cmi 
 bytecomp/instruct.cmi: typing/ident.cmi bytecomp/lambda.cmi 
@@ -187,8 +186,6 @@ bytecomp/bytelink.cmo: utils/clflags.cmo utils/config.cmi \
 bytecomp/bytelink.cmx: utils/clflags.cmx utils/config.cmx \
     bytecomp/emitcode.cmx typing/ident.cmx utils/misc.cmx \
     bytecomp/opcodes.cmx bytecomp/symtable.cmx bytecomp/bytelink.cmi 
-bytecomp/dectree.cmo: bytecomp/lambda.cmi bytecomp/dectree.cmi 
-bytecomp/dectree.cmx: bytecomp/lambda.cmx bytecomp/dectree.cmi 
 bytecomp/emitcode.cmo: parsing/asttypes.cmi utils/config.cmi typing/env.cmi \
     typing/ident.cmi bytecomp/instruct.cmi bytecomp/lambda.cmi \
     bytecomp/meta.cmi utils/misc.cmi bytecomp/opcodes.cmo \
@@ -207,13 +204,11 @@ bytecomp/lambda.cmo: parsing/asttypes.cmi typing/ident.cmi utils/misc.cmi \
 bytecomp/lambda.cmx: parsing/asttypes.cmi typing/ident.cmx utils/misc.cmx \
     typing/path.cmx typing/primitive.cmx typing/typedtree.cmx \
     bytecomp/lambda.cmi 
-bytecomp/matching.cmo: parsing/asttypes.cmi typing/ctype.cmi \
-    bytecomp/dectree.cmi typing/ident.cmi bytecomp/lambda.cmi \
-    parsing/location.cmi utils/misc.cmi typing/predef.cmi \
+bytecomp/matching.cmo: parsing/asttypes.cmi typing/ctype.cmi typing/ident.cmi \
+    bytecomp/lambda.cmi parsing/location.cmi utils/misc.cmi typing/predef.cmi \
     typing/primitive.cmi typing/typedtree.cmi bytecomp/matching.cmi 
-bytecomp/matching.cmx: parsing/asttypes.cmi typing/ctype.cmx \
-    bytecomp/dectree.cmx typing/ident.cmx bytecomp/lambda.cmx \
-    parsing/location.cmx utils/misc.cmx typing/predef.cmx \
+bytecomp/matching.cmx: parsing/asttypes.cmi typing/ctype.cmx typing/ident.cmx \
+    bytecomp/lambda.cmx parsing/location.cmx utils/misc.cmx typing/predef.cmx \
     typing/primitive.cmx typing/typedtree.cmx bytecomp/matching.cmi 
 bytecomp/meta.cmo: bytecomp/meta.cmi 
 bytecomp/meta.cmx: bytecomp/meta.cmi 

@@ -53,7 +53,7 @@ let rec name_pattern default = function
       end
   | _ -> Ident.new default
 
-(* To expand "or" patterns, remove aliases, and bind named components *)
+(* To remove aliases and bind named components *)
 
 let any_pat =
   {pat_desc = Tpat_any; pat_loc = Location.none; pat_type = Ctype.none}
@@ -70,10 +70,6 @@ let simplify_matching m =
               simplify rem
           | Tpat_alias(p, id) ->
               simplify ((p :: patl, Llet(Alias, id, arg, action)) :: rem)
-          | Tpat_or(p1, p2) ->
-              let shared_action = share_lambda action in
-              simplify ((p1 :: patl, shared_action) ::
-                        (p2 :: patl, shared_action) :: rem)
           | _ ->
               patl_action :: simplify rem
           end
@@ -146,11 +142,13 @@ let make_tuple_matching num_comps = function
 let divide_tuple arity {cases = cl; args = al} =
   let rec divide = function
       ({pat_desc = Tpat_tuple args} :: patl, action) :: rem ->
-        add_line (args @ patl, action) (divide rem)
+        let (tuples, others) = divide rem in
+        (add_line (args @ patl, action) tuples, others)
     | ({pat_desc = Tpat_any} :: patl, action) :: rem ->
-        add_line (replicate_list any_pat arity @ patl, action) (divide rem)
-    | _ ->
-        make_tuple_matching arity al
+        let (tuples, others) = divide rem in
+        (add_line (replicate_list any_pat arity @ patl, action) tuples, others)
+    | cl ->
+        (make_tuple_matching arity al, {cases = cl; args = al})
   in divide cl
 
 (* Matching against a record pattern *)
@@ -181,18 +179,37 @@ let divide_record all_labels {cases = cl; args = al} =
     Array.to_list patv in
   let rec divide = function
       ({pat_desc = Tpat_record lbl_pat_list} :: patl, action) :: rem ->
-        add_line (record_matching_line lbl_pat_list @ patl, action)
-                 (divide rem)
+        let (records, others) = divide rem in
+        (add_line (record_matching_line lbl_pat_list @ patl, action) records,
+         others)
     | ({pat_desc = Tpat_any} :: patl, action) :: rem ->
-        add_line (record_matching_line [] @ patl, action) (divide rem)
-    | _ ->
-        make_record_matching all_labels al
+        let (records, others) = divide rem in
+        (add_line (record_matching_line [] @ patl, action) records, others)
+    | cl ->
+        (make_record_matching all_labels al, {cases = cl; args = al})
   in divide cl
+
+(* Matching against an or pattern. *)
+
+let rec flatten_orpat_match pat =
+  match pat.pat_desc with
+    Tpat_or(p1, p2) -> flatten_orpat_match p1 @ flatten_orpat_match p2
+  | _ -> [[pat], lambda_unit]
+
+let divide_orpat = function
+    {cases = (orpat :: patl, act) :: casel; args = arg1 :: argl as args} ->
+      ({cases = flatten_orpat_match orpat; args = [arg1]},
+       {cases = [patl, act]; args = argl},
+       {cases = casel; args = args})
+  | _ ->
+    fatal_error "Matching.divide_orpat"
 
 (* To combine sub-matchings together *)
 
 let combine_var (lambda1, total1) (lambda2, total2) =
-  if total1 then (lambda1, true) else (Lcatch(lambda1, lambda2), total2)
+  if total1 then (lambda1, true)
+  else if lambda2 = Lstaticfail then (lambda1, total1)
+  else (Lcatch(lambda1, lambda2), total2)
 
 let make_test_sequence tst arg const_lambda_list =
   List.fold_right
@@ -200,31 +217,59 @@ let make_test_sequence tst arg const_lambda_list =
       Lifthenelse(Lprim(tst, [arg; Lconst(Const_base c)]), act, rem))
     const_lambda_list Lstaticfail
 
-let make_translated_switch arg int_lambda_list =
-  let (transl_table, actions, num_actions) =
-    Dectree.make_decision_tree int_lambda_list in
-  Lswitch(Lprim(Ptranslate transl_table, [arg]), num_actions, actions, 0, [])
+let make_switch_or_test_sequence arg const_lambda_list int_lambda_list =
+  let min_key =
+    List.fold_right (fun (k, l) m -> min k m) int_lambda_list max_int in
+  let max_key =
+    List.fold_right (fun (k, l) m -> max k m) int_lambda_list min_int in
+  if 4 * List.length int_lambda_list <= 4 + max_key - min_key then
+    (* Sparse matching -- use a sequence of tests
+       (4 bytecode instructions per test)  *)
+    make_test_sequence (Pintcomp Ceq) arg const_lambda_list
+  else begin
+    (* Dense matching -- use a jump table
+       (2 bytecode instructions + 1 word per entry in the table) *)
+    let numcases = max_key - min_key + 1 in
+    let cases =
+      List.map (fun (key, l) -> (key - min_key, l)) int_lambda_list in
+    let offsetarg =
+      if min_key = 0 then arg else Lprim(Poffsetint(-min_key), [arg]) in
+    Lswitch(offsetarg,
+            {sw_numconsts = numcases; sw_consts = cases;
+             sw_numblocks = 0; sw_blocks = []; sw_checked = true})
+  end
+
+let make_bitvect_check arg int_lambda_list =
+  let bv = String.make 32 '\000' in
+  List.iter
+    (fun (n, l) ->
+      bv.[n lsr 3] <- Char.chr(Char.code bv.[n lsr 3] lor (1 lsl (n land 7))))
+    int_lambda_list;
+  Lifthenelse(Lprim(Pbittest, [Lconst(Const_base(Const_string bv)); arg]),
+              lambda_unit, Lstaticfail)
+
+let prim_string_equal =
+  Pccall{prim_name = "string_equal";
+         prim_arity = 2; prim_alloc = false;
+         prim_native_name = ""; prim_native_float = false}
 
 let combine_constant arg cst (const_lambda_list, total1) (lambda2, total2) =
   let lambda1 =
     match cst with
       Const_int _ ->
-      	let caselist =
-      	  List.map (fun (Const_int n, l) -> (n, l)) const_lambda_list in
-	if List.for_all (fun (n, l) -> n >= 0 & n <= 0xFF) caselist then
-          make_translated_switch arg caselist
-	else
-	  make_test_sequence (Pintcomp Ceq) arg const_lambda_list
+        let int_lambda_list =
+          List.map (fun (Const_int n, l) -> (n, l)) const_lambda_list in
+        make_switch_or_test_sequence arg const_lambda_list int_lambda_list
     | Const_char _ ->
-        make_translated_switch arg
-          (List.map (fun (Const_char c, l) -> (Char.code c, l))
-                    const_lambda_list)
+        let int_lambda_list =
+          List.map (fun (Const_char c, l) -> (Char.code c, l))
+                   const_lambda_list in
+        if List.for_all (fun (c, l) -> l = lambda_unit) const_lambda_list then
+          make_bitvect_check arg int_lambda_list 
+        else
+          make_switch_or_test_sequence arg const_lambda_list int_lambda_list
     | Const_string _ ->
-        make_test_sequence
-          (Pccall{prim_name = "string_equal";
-                  prim_arity = 2; prim_alloc = false;
-                  prim_native_name = ""; prim_native_float = false})
-          arg const_lambda_list
+        make_test_sequence prim_string_equal arg const_lambda_list
     | Const_float _ ->
         make_test_sequence (Pfloatcomp Ceq) arg const_lambda_list
   in (Lcatch(lambda1, lambda2), total2)
@@ -261,13 +306,19 @@ let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
       | (1, 1, [], [0, act2]) ->
           Lifthenelse(arg, act2, Lstaticfail)
       | (_, _, _, _) ->
-          Lswitch(arg, cstr.cstr_consts, consts,
-                       cstr.cstr_nonconsts, nonconsts) in
+          Lswitch(arg, {sw_numconsts = cstr.cstr_consts;
+                        sw_consts = consts;
+                        sw_numblocks = cstr.cstr_nonconsts;
+                        sw_blocks = nonconsts;
+                        sw_checked = false}) in
     if total1
      & List.length tag_lambda_list = cstr.cstr_consts + cstr.cstr_nonconsts
     then (lambda1, true)
     else (Lcatch(lambda1, lambda2), total2)
   end
+
+let combine_orpat (lambda1, total1) (lambda2, total2) (lambda3, total3) =
+  (Lcatch(Lsequence(lambda1, lambda2), lambda3), total3)
 
 (* The main compilation function.
    Input: a pattern matching.
@@ -310,13 +361,21 @@ let rec compile_match m =
                 combine_constant newarg cst
                   (compile_list constants) (compile_match others)
             | Tpat_tuple patl ->
-                compile_match (divide_tuple (List.length patl) pm)
+                let (tuples, others) = divide_tuple (List.length patl) pm in
+                combine_var (compile_match tuples) (compile_match others)
             | Tpat_construct(cstr, patl) ->
                 let (constrs, others) = divide_constructor pm in
                 combine_constructor newarg cstr
                   (compile_list constrs) (compile_match others)
             | Tpat_record((lbl, _) :: _) ->
-                compile_match (divide_record lbl.lbl_all pm)
+                let (records, others) = divide_record lbl.lbl_all pm in
+                combine_var (compile_match records) (compile_match others)
+            | Tpat_or(pat1, pat2) ->
+                (* Avoid duplicating the code of the action *)
+                let (or_match, remainder_line, others) = divide_orpat pm in
+                combine_orpat (compile_match or_match)
+                              (compile_match remainder_line)
+                              (compile_match others)
             | _ ->
                 fatal_error "Matching.compile_match1"
             end

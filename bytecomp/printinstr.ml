@@ -66,15 +66,6 @@ let instruction = function
       print_string "/";
       Array.iter (fun lbl -> print_space(); print_int lbl) blocks;
       close_box()
-  | Ktranslate tbl ->
-      open_hovbox 10;
-      print_string "\ttranslate";
-      Array.iter
-        (fun (lo, hi, ofs) ->
-          print_space(); print_int lo; print_string "/";
-          print_int hi; print_string "/"; print_int ofs)
-        tbl;
-      close_box()
   | Kboolnot -> print_string "\tboolnot"
   | Kpushtrap lbl -> print_string "\tpushtrap L"; print_int lbl
   | Kpoptrap -> print_string "\tpoptrap"

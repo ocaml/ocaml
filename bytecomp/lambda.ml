@@ -54,8 +54,8 @@ type primitive =
   | Parraysetu of array_kind
   | Parrayrefs of array_kind
   | Parraysets of array_kind
-  (* Compaction of sparse switches *)
-  | Ptranslate of (int * int * int) array
+  (* Bitvect operations *)
+  | Pbittest
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -71,8 +71,6 @@ type structured_constant =
 
 type let_kind = Strict | Alias
 
-type shared_code = (int * int) list
-
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -81,7 +79,7 @@ type lambda =
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
-  | Lswitch of lambda * int * (int * lambda) list * int * (int * lambda) list
+  | Lswitch of lambda * lambda_switch
   | Lstaticfail
   | Lcatch of lambda * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -89,16 +87,18 @@ type lambda =
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
-  | Lshared of lambda * shared_code option ref
   | Lassign of Ident.t * lambda
+
+and lambda_switch =
+  { sw_numconsts: int;
+    sw_consts: (int * lambda) list;
+    sw_numblocks: int;
+    sw_blocks: (int * lambda) list;
+    sw_checked: bool }
 
 let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
-
-let share_lambda = function
-    Lshared(_, _) as l -> l
-  | l -> Lshared(l, ref None)
 
 let name_lambda arg fn =
   match arg with
@@ -140,10 +140,10 @@ let free_variables l =
       List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
   | Lprim(p, args) ->
       List.iter freevars args
-  | Lswitch(arg, num_cases1, cases1, num_cases2, cases2) ->
+  | Lswitch(arg, sw) ->
       freevars arg; 
-      List.iter (fun (key, case) -> freevars case) cases1;
-      List.iter (fun (key, case) -> freevars case) cases2
+      List.iter (fun (key, case) -> freevars case) sw.sw_consts;
+      List.iter (fun (key, case) -> freevars case) sw.sw_blocks
   | Lstaticfail -> ()
   | Lcatch(e1, e2) ->
       freevars e1; freevars e2
@@ -157,8 +157,6 @@ let free_variables l =
       freevars e1; freevars e2
   | Lfor(v, e1, e2, dir, e3) -> 
       freevars e1; freevars e2; freevars e3; fv := IdentSet.remove v !fv
-  | Lshared(e, lblref) ->
-      freevars e
   | Lassign(id, e) ->
       fv := IdentSet.add id !fv; freevars e
   in freevars l; !fv
@@ -167,7 +165,6 @@ let free_variables l =
 
 let rec is_guarded = function
     Lifthenelse(cond, body, Lstaticfail) -> true
-  | Lshared(lam, lbl) -> is_guarded lam
   | Llet(str, id, lam, body) -> is_guarded body
   | _ -> false
 

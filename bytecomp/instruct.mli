@@ -51,7 +51,6 @@ type instruction =
   | Kstrictbranchif of label
   | Kstrictbranchifnot of label
   | Kswitch of label array * label array
-  | Ktranslate of (int * int * int) array
   | Kboolnot
   | Kpushtrap of label
   | Kpoptrap

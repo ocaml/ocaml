@@ -213,11 +213,6 @@ let emit_instr = function
       let org = !out_position in
       Array.iter (out_label_with_orig org) tbl_const;
       Array.iter (out_label_with_orig org) tbl_block
-  | Ktranslate tbl ->
-      out opTRANSLATE; out_int (Array.length tbl);
-      Array.iter
-        (fun (lo, hi, ofs) -> out_int (lo + (hi lsl 8) + (ofs lsl 16)))
-        tbl
   | Kboolnot -> out opBOOLNOT
   | Kpushtrap lbl -> out opPUSHTRAP; out_label lbl
   | Kpoptrap -> out opPOPTRAP

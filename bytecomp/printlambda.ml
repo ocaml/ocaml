@@ -111,16 +111,7 @@ let primitive = function
   | Parraysetu _ -> print_string "array.unsafe_set"
   | Parrayrefs _ -> print_string "array.get"
   | Parraysets _ -> print_string "array.set"
-  | Ptranslate tbl ->
-      print_string "translate [";
-      open_hvbox 0;
-      for i = 0 to Array.length tbl - 1 do
-        if i > 0 then print_space();
-        let (lo, hi, ofs) = tbl.(i) in
-        print_space(); print_int lo; print_string "/";
-        print_int hi; print_string "/"; print_int ofs
-      done;
-      print_string "]"; close_box()
+  | Pbittest -> print_string "testbit"
 
 let rec lambda = function
     Lvar id ->
@@ -171,9 +162,10 @@ let rec lambda = function
       List.iter (fun l -> print_space(); lambda l) largs;
       print_string ")";
       close_box()
-  | Lswitch(larg, num_cases1, cases1, num_cases2, cases2) ->
+  | Lswitch(larg, sw) ->
       open_hovbox 1;
-      print_string "(switch "; lambda larg; print_space();
+      print_string (if sw.sw_checked then "(switch-checked " else "(switch ");
+      lambda larg; print_space();
       open_vbox 0;
       let spc = ref false in
       List.iter
@@ -184,7 +176,7 @@ let rec lambda = function
           print_string ":"; print_space();
           lambda l;
           close_box())
-        cases1;
+        sw.sw_consts;
       List.iter
         (fun (n, l) ->
           if !spc then print_space() else spc := true;
@@ -193,7 +185,7 @@ let rec lambda = function
           print_string ":"; print_space();
           lambda l;
           close_box())
-        cases2;
+        sw.sw_blocks;
       print_string ")"; close_box(); close_box()
   | Lstaticfail ->
       print_string "exit"
@@ -239,8 +231,6 @@ let rec lambda = function
       lambda hi; print_space();
       lambda body; print_string ")";
       close_box()
-  | Lshared(l, lbl) ->
-      lambda l
   | Lassign(id, expr) ->
       open_hovbox 2;
       print_string "(assign"; print_space();
@@ -260,8 +250,6 @@ and letbody = function
       open_hovbox 2; Ident.print id; print_space(); lambda arg;
       close_box();
       letbody body
-  | Lshared(l, lbl) ->
-      letbody l
   | l ->
       print_string ")";
       close_box();

@@ -44,10 +44,15 @@ let rec eliminate_ref id = function
       Lassign(id, Lprim(Poffsetint delta, [Lvar id]))
   | Lprim(p, el) ->
       Lprim(p, List.map (eliminate_ref id) el)
-  | Lswitch(e, n1, cases1, n2, cases2) ->
+  | Lswitch(e, sw) ->
       Lswitch(eliminate_ref id e,
-        n1, List.map (fun (n, e) -> (n, eliminate_ref id e)) cases1,
-        n2, List.map (fun (n, e) -> (n, eliminate_ref id e)) cases2)
+        {sw_numconsts = sw.sw_numconsts;
+         sw_consts =
+            List.map (fun (n, e) -> (n, eliminate_ref id e)) sw.sw_consts;
+         sw_numblocks = sw.sw_numblocks;
+         sw_blocks =
+            List.map (fun (n, e) -> (n, eliminate_ref id e)) sw.sw_blocks;
+         sw_checked = sw.sw_checked})
   | Lstaticfail ->
       Lstaticfail
   | Lcatch(e1, e2) ->
@@ -65,8 +70,6 @@ let rec eliminate_ref id = function
   | Lfor(v, e1, e2, dir, e3) ->
       Lfor(v, eliminate_ref id e1, eliminate_ref id e2,
            dir, eliminate_ref id e3)
-  | Lshared(e, lbl) ->
-      Lshared(eliminate_ref id e, lbl)
   | Lassign(v, e) ->
       Lassign(v, eliminate_ref id e)
 
@@ -108,10 +111,10 @@ let simplify_lambda lam =
       List.iter (fun (v, l) -> count l) bindings;
       count body
   | Lprim(p, ll) -> List.iter count ll
-  | Lswitch(l, n1, cases1, n2, cases2) ->
+  | Lswitch(l, sw) ->
       count l;
-      List.iter (fun (n, l) -> count l) cases1;
-      List.iter (fun (n, l) -> count l) cases2
+      List.iter (fun (n, l) -> count l) sw.sw_consts;
+      List.iter (fun (n, l) -> count l) sw.sw_blocks
   | Lstaticfail -> ()
   | Lcatch(l1, l2) -> count l1; count l2
   | Ltrywith(l1, v, l2) -> count l1; count l2
@@ -119,7 +122,6 @@ let simplify_lambda lam =
   | Lsequence(l1, l2) -> count l1; count l2
   | Lwhile(l1, l2) -> count l1; count l2
   | Lfor(v, l1, l2, dir, l3) -> count l1; count l2; count l3
-  | Lshared(l, lblref) -> count l
   | Lassign(v, l) ->
       (* Lalias-bound variables are never assigned, so don't increase
          v's refcount *)
@@ -160,9 +162,13 @@ let simplify_lambda lam =
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
-  | Lswitch(l, n1, cases1, n2, cases2) ->
-      Lswitch(simplif l, n1, List.map (fun (n, l) -> (n, simplif l)) cases1,
-                         n2, List.map (fun (n, l) -> (n, simplif l)) cases2)
+  | Lswitch(l, sw) ->
+      Lswitch(simplif l,
+        {sw_numconsts = sw.sw_numconsts;
+         sw_consts = List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts;
+         sw_numblocks = sw.sw_numblocks;
+         sw_blocks = List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks;
+         sw_checked = sw.sw_checked})
   | Lstaticfail -> Lstaticfail
   | Lcatch(l1, l2) -> Lcatch(simplif l1, simplif l2)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
@@ -171,7 +177,6 @@ let simplify_lambda lam =
   | Lwhile(l1, l2) -> Lwhile(simplif l1, simplif l2)
   | Lfor(v, l1, l2, dir, l3) ->
       Lfor(v, simplif l1, simplif l2, dir, simplif l3)
-  | Lshared(l, lblref) -> Lshared(simplif l, lblref)
   | Lassign(v, l) -> Lassign(v, simplif l)
   in
   simplif lam

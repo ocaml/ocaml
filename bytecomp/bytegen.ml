@@ -300,7 +300,7 @@ let rec comp_expr env exp sz cont =
         | Parraysets kind -> Kccall("array_set", 3)
         | Parrayrefu kind -> Kgetvectitem
         | Parraysetu kind -> Ksetvectitem
-        | Ptranslate tbl -> Ktranslate tbl
+        | Pbittest -> Kccall("bitvect_test", 2)
         | _ -> fatal_error "Codegen.comp_expr: prim" in
       comp_args env args sz (instr :: cont)
   | Lcatch(body, Lstaticfail) ->
@@ -352,44 +352,29 @@ let rec comp_expr env exp sz cont =
               Kacc 0 :: Kpush :: Kacc 2 :: Kintcomp comp ::
               Kbranchif lbl_loop ::
               add_const_unit (add_pop 2 cont))))
-  | Lswitch(arg, num_consts, consts, num_blocks, blocks) ->
+  | Lswitch(arg, sw) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
-      let act_consts = Array.new num_consts Lstaticfail in
-      List.iter (fun (n, act) -> act_consts.(n) <- act) consts;
-      let act_blocks = Array.new num_blocks Lstaticfail in
-      List.iter (fun (n, act) -> act_blocks.(n) <- act) blocks;
-      let lbl_consts = Array.new num_consts 0 in
-      let lbl_blocks = Array.new num_blocks 0 in
-      for i = num_blocks - 1 downto 0 do
+      let act_consts = Array.new sw.sw_numconsts Lstaticfail in
+      List.iter (fun (n, act) -> act_consts.(n) <- act) sw.sw_consts;
+      let act_blocks = Array.new sw.sw_numblocks Lstaticfail in
+      List.iter (fun (n, act) -> act_blocks.(n) <- act) sw.sw_blocks;
+      let lbl_consts = Array.new sw.sw_numconsts 0 in
+      let lbl_blocks = Array.new sw.sw_numblocks 0 in
+      for i = sw.sw_numblocks - 1 downto 0 do
         let (lbl, c1) =
           label_code(comp_expr env act_blocks.(i) sz (branch :: !c)) in
         lbl_blocks.(i) <- lbl;
         c := discard_dead_code c1
       done;
-      for i = num_consts - 1 downto 0 do
+      for i = sw.sw_numconsts - 1 downto 0 do
         let (lbl, c1) =
           label_code(comp_expr env act_consts.(i) sz (branch :: !c)) in
         lbl_consts.(i) <- lbl;
         c := discard_dead_code c1
       done;
+      if sw.sw_checked then c := comp_expr env Lstaticfail sz !c;        
       comp_expr env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
-  | Lshared(expr, lblref) ->
-      begin match !lblref with
-        None ->
-          let (lbl, cont1) = label_code(comp_expr env expr sz cont) in
-          lblref := Some [sz, lbl];
-          cont1
-      | Some specializations ->
-          begin try
-            let lbl = List.assoc sz specializations in
-            Kbranch lbl :: discard_dead_code cont
-          with Not_found ->
-            let (lbl, cont1) = label_code(comp_expr env expr sz cont) in
-            lblref := Some ((sz, lbl) :: specializations);
-            cont1
-          end
-      end
   | Lassign(id, expr) ->
       begin try
         let pos = Ident.find_same id env.ce_stack in

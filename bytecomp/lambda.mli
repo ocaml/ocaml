@@ -54,8 +54,8 @@ type primitive =
   | Parraysetu of array_kind
   | Parrayrefs of array_kind
   | Parraysets of array_kind
-  (* Compaction of sparse switches *)
-  | Ptranslate of (int * int * int) array
+  (* Bitvect operations *)
+  | Pbittest
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -71,8 +71,6 @@ type structured_constant =
 
 type let_kind = Strict | Alias
 
-type shared_code = (int * int) list     (* stack size -> code label *)
-
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -81,7 +79,7 @@ type lambda =
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
-  | Lswitch of lambda * int * (int * lambda) list * int * (int * lambda) list
+  | Lswitch of lambda * lambda_switch
   | Lstaticfail
   | Lcatch of lambda * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -89,12 +87,17 @@ type lambda =
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
-  | Lshared of lambda * shared_code option ref
   | Lassign of Ident.t * lambda
+
+and lambda_switch =
+  { sw_numconsts: int;                  (* Number of integer cases *)
+    sw_consts: (int * lambda) list;     (* Integer cases *)
+    sw_numblocks: int;                  (* Number of tag block cases *)
+    sw_blocks: (int * lambda) list;     (* Tag block cases *)
+    sw_checked: bool }                  (* True if bound checks needed *)
 
 val const_unit: structured_constant
 val lambda_unit: lambda
-val share_lambda: lambda -> lambda
 val name_lambda: lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 val is_guarded: lambda -> bool
