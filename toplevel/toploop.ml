@@ -378,6 +378,7 @@ let loop ppf =
   Sys.catch_break true;
   load_ocamlinit ppf;
   while true do
+    let snap = Btype.snapshot () in
     try
       empty_lexbuf lb;
       Location.reset();
@@ -387,9 +388,9 @@ let loop ppf =
       ignore(execute_phrase true ppf phr)
     with
     | End_of_file -> exit 0
-    | Sys.Break -> fprintf ppf "Interrupted.@."
+    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
     | PPerror -> ()
-    | x -> Errors.report_error ppf x
+    | x -> Errors.report_error ppf x; Btype.backtrack snap
   done
 
 (* Execute a script *)
