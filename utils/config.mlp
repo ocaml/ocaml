@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-let version = "3.02+4 (2001-09-06)"
+let version = "3.02+5 (2001-09-07)"
 
 let standard_library =
   try
@@ -31,6 +31,7 @@ let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_c_rpath = "%%NATIVECCRPATH%%"
 let native_partial_linker = "%%PARTIALLD%%"
 let ranlib = "%%RANLIBCMD%%"
+let systhreads_link = "%%PTHREADLINK%%"
 
 let exec_magic_number = "Caml1999X006"
 and cmi_magic_number = "Caml1999I008"

@@ -162,6 +162,8 @@ let main () =
     end
     else if not !compile_only && !objfiles <> [] then begin
       Optcompile.init_path();
+      if !thread_safe && systhreads_link <> "" then
+        ccopts := systhreads_link :: !ccopts;
       Asmlink.link ppf (List.rev !objfiles)
     end;
     exit 0

@@ -281,6 +281,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
             -e 's|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
             -e 's|%%BYTECCRPATH%%|$(BYTECCRPATH)|' \
+	    -e 's|%%PTHREADLINK%%|$(PTHREAD_LINK)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
             -e 's|%%NATIVELINK%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
             -e 's|%%PARTIALLD%%|ld -r $(NATIVECCLINKOPTS)|' \

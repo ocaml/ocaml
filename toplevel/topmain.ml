@@ -19,14 +19,18 @@ let usage = "Usage: ocaml <options> [script-file]\noptions are:"
 let file_argument name =
   exit (if Toploop.run_script Format.err_formatter name Sys.argv then 0 else 2)
 
+let object_argument name =
+  Topdirs.dir_load
+
 let main () =
   Arg.parse [
      "-I", Arg.String(fun dir ->
        let dir = Misc.expand_directory Config.standard_library dir in
        include_dirs := dir :: !include_dirs),
            "<dir>  Add <dir> to the list of include directories";
-     "-labels", Arg.Clear classic, " Use commuting label mode";
+     "-labels", Arg.Clear classic, " Labels commute (default)";
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
+     "-nolabels", Arg.Set classic, " Ignore labels and do not commute";
      "-rectypes", Arg.Set recursive_types, " Allow arbitrary recursive types";
      "-unsafe", Arg.Set fast, " No bound checking on array and string access";
      "-w", Arg.String (Warnings.parse_options false),

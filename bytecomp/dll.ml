@@ -20,17 +20,11 @@ type dll_address
 external dll_open: string -> dll_handle = "dynlink_open_lib"
 external dll_close: dll_handle -> unit = "dynlink_close_lib"
 external dll_sym: dll_handle -> string -> dll_address = "dynlink_lookup_symbol"
+         (* returned dll_address may be Val_unit *)
 external add_primitive: dll_address -> int = "dynlink_add_primitive"
 external get_current_dlls: unit -> dll_handle array
                                            = "dynlink_get_current_libs"
-(*
-external dll_open: string -> dll_handle = "%identity"
-external dll_close: dll_handle -> unit = "%identity"
-external dll_sym: dll_handle -> string -> dll_address = "%equal"
-external add_primitive: dll_address -> int = "%identity"
-external get_current_dlls: unit -> dll_handle array
-                                           = "%identity"
-*)
+
 (* Current search path for DLLs *)
 let search_path = ref ([] : string list)
 
@@ -64,6 +58,11 @@ let open_dll name =
   let name = name ^ Config.ext_dll in
   let fullname =
     try Misc.find_in_path !search_path name with Not_found -> name in
+  let fullname =
+    if Filename.is_implicit fullname then
+      Filename.concat Filename.current_dir_name fullname
+    else fullname
+  in
   if not (List.mem fullname !names_of_opened_dlls) then begin
     let dll = dll_open fullname in
     names_of_opened_dlls := fullname :: !names_of_opened_dlls;
@@ -71,7 +70,7 @@ let open_dll name =
   end
 
 let open_dlls names =
-  List.iter open_dll (List.rev names)
+  List.iter open_dll names
 
 (* Close all DLLs *)
 
@@ -88,7 +87,8 @@ let find_primitive prim_name =
     [] ->
       raise Not_found
   | dll :: rem ->
-      try dll_sym dll prim_name with Failure _ -> find rem in
+      let addr = dll_sym dll prim_name in
+      if addr == Obj.magic () then find rem else addr in
   find !opened_dlls
 
 (* If linking in core (dynlink or toplevel), synchronize the VM

@@ -47,6 +47,8 @@ val native_c_rpath: string
            directory to search shared libraries at run-time *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
+val systhreads_link: string
+        (* Linker options for an executable using system threads *)
 
 val load_path: string list ref
         (* Directories in the search path for .cmi and .cmo files *)

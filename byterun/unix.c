@@ -155,7 +155,7 @@ char * search_dll_in_path(struct ext_table * path, char * name)
 
 void * caml_dlopen(char * libname)
 {
-  return dlopen(libname, RTLD_NOW);
+  return dlopen(libname, RTLD_NOW|RTLD_GLOBAL);
 }
 
 void caml_dlclose(void * handle)

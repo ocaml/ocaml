@@ -99,6 +99,7 @@ static char * parse_ld_conf(void)
       q = p + 1;
     }
   }
+  if (q < p) ext_table_add(&shared_libs_path, q);
   close(ldconf);
   stat_free(ldconfname);
   return config;
@@ -184,12 +185,15 @@ CAMLprim value dynlink_close_lib(value handle)
   return Val_unit;
 }
 
+#include <stdio.h>
 CAMLprim value dynlink_lookup_symbol(value handle, value symbolname)
 {
   void * symb;
   value result;
   symb = caml_dlsym(Handle_val(handle), String_val(symbolname));
-  if (symb == NULL) failwith(caml_dlerror());
+  /* printf("%s = 0x%lx\n", String_val(symbolname), symb);
+     fflush(stdout); */
+  if (symb == NULL) return Val_unit /*failwith(caml_dlerror())*/;
   result = alloc_small(1, Abstract_tag);
   Handle_val(result) = symb;
   return result;
