@@ -573,13 +573,16 @@ class latex =
 
     (** Return the LaTeX code for the given included module. *)
     method latex_of_included_module im =
-      (self#latex_of_text [ Code "include module " ; 
-                            Code 
+      (self#latex_of_text ((Code "include ") ::
+                           (Code 
                               (match im.im_module with
                                 None -> im.im_name
                               | Some (Mod m) -> m.m_name
                               | Some (Modtype mt) -> mt.mt_name)
-                          ] )
+			   ) ::
+			   (self#text_of_info im.im_info)
+                          )
+      )
 
     (** Return the LaTeX code for the given class. 
        @param for_detail indicate if we must print the type ([false]) or just ["object"] ([true]).*)

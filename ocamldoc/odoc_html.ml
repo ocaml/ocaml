@@ -1235,7 +1235,8 @@ class html =
            in
            "<a href=\""^file^"\">"^(Name.simple name)^"</a>"
       )^
-      "</pre>\n"
+      "</pre>\n"^
+      (self#html_of_info im.im_info)
 
     (** Return html code for a class. *)
     method html_of_class ?(complete=true) ?(with_link=true) c =

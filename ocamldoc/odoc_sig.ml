@@ -872,6 +872,7 @@ module Analyser =
               {
                 im_name = Odoc_env.full_module_or_module_type_name env (f module_type.Parsetree.pmty_desc) ;
                 im_module = None ;
+		im_info = comment_opt;
               } 
             in
             (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)

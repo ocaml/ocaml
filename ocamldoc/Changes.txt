@@ -1,5 +1,7 @@
 Current :
-OK - fix bad display of type parameters for class and class types
+OK - fix: display "include Foo" instead of "include module Foo" in Latex, Man, Texi
+OK - fix: not display comments associated to include directives
+OK - fix: bad display of type parameters for class and class types
 - need to fix display of type parameters for inherited classes/class types
 
 

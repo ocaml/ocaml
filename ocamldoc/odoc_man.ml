@@ -527,6 +527,8 @@ class man =
            in
            self#relative_idents m_name name
       )^
+      "\n.sp\n"^
+      (self#man_of_info im.im_info)^
       "\n.sp\n"
 
     (** Generate the man page for the given class.*)

@@ -407,6 +407,7 @@ module Module :
         {
           im_name : Name.t ; (** Complete name of the included module. *)
           mutable im_module : mmt option ; (** The included module or module type, if we found it. *)
+	  mutable im_info : Odoc_types.info option ; (** comment associated to the includ directive *)
         } 
           
     and module_alias = Odoc_module.module_alias = 

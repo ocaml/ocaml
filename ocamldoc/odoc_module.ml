@@ -36,6 +36,7 @@ and mmt =
 and included_module = {
     im_name : Name.t ; (** the name of the included module *)
     mutable im_module : mmt option ; (** the included module or module type *)
+    mutable im_info : Odoc_types.info option ; (** comment associated to the includ directive *)
   } 
 
 and module_alias = {
@@ -214,7 +215,9 @@ let rec module_elements ?(trans=true) m =
   | Module_constraint (k, tk) ->
       (* A VOIR : utiliser k ou tk ? *)
       module_elements ~trans: trans
-        { m_name = "" ; m_info = None ; m_type = Types.Tmty_signature [] ;
+        { m_name = "" ; 
+	  m_info = None ; 
+	  m_type = Types.Tmty_signature [] ;
           m_is_interface = false ; m_file = "" ; m_kind = k ;
           m_loc = Odoc_types.dummy_loc ;
           m_top_deps = [] ;

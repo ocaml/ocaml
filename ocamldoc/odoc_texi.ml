@@ -741,7 +741,7 @@ class texi =
     (** Return the Texinfo code for the given included module. *)
     method texi_of_included_module im =
       let t = [ self#fixedblock
-                  ( Newline :: minus :: (Raw "include module ") ::
+                  ( Newline :: minus :: (Raw "include ") ::
                     ( match im.im_module with
                     | None -> 
                         [ Raw im.im_name ]
@@ -751,7 +751,12 @@ class texi =
                     | Some (Modtype { mt_name = name }) ->
                         [ Raw name ; Raw "\n     " ; 
                           Ref (name, Some RK_module_type) ]
-                     ) ) ] in
+                    ) @ 
+		   [ Newline ] @
+		   (self#text_of_info im.im_info)
+		  ) 
+	      ] 
+      in
       self#texi_of_text t
 
     (** Return the Texinfo code for the given class. *)

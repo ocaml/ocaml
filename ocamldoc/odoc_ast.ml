@@ -384,6 +384,17 @@ module Analyser =
     (** This function takes a Typedtree.class_expr and returns a string which can stand for the class name.
        The name can be "object ... end" if the class expression is not an ident or a class constraint or a class apply. *)
     let rec tt_name_of_class_expr clexp =
+(*
+      (
+       match clexp.Typedtree.cl_desc with
+	 Tclass_ident _ -> prerr_endline "Tclass_ident"
+       | Tclass_structure _ -> prerr_endline "Tclass_structure"
+       | Tclass_fun _ -> prerr_endline "Tclass_fun"
+       | Tclass_apply _ -> prerr_endline "Tclass_apply"
+       | Tclass_let _ -> prerr_endline "Tclass_let"
+       | Tclass_constraint _ -> prerr_endline "Tclass_constraint"
+      );
+*)
       match clexp.Typedtree.cl_desc with
         Typedtree.Tclass_ident p -> Name.from_path p
       | Typedtree.Tclass_constraint (class_expr, _, _, _)
@@ -494,10 +505,19 @@ module Analyser =
               try Typedtree_search.get_nth_inherit_class_expr tt_cls n
               with Not_found -> raise (Failure (Odoc_messages.inherit_classexp_not_found_in_typedtree n))
             in
-            let (info_opt, ele_comments) = get_comments_in_class last_pos p_clexp.Parsetree.pcl_loc.Location.loc_start.Lexing.pos_cnum in
+            let (info_opt, ele_comments) =
+	      get_comments_in_class last_pos 
+		p_clexp.Parsetree.pcl_loc.Location.loc_start.Lexing.pos_cnum 
+	    in
             let text_opt = match info_opt with None -> None | Some i -> i.Odoc_types.i_desc in
             let name = tt_name_of_class_expr tt_clexp in
-            let inher = { ic_name = Odoc_env.full_class_or_class_type_name env name ; ic_class = None ; ic_text = text_opt }  in
+            let inher =
+	      { 
+		ic_name = Odoc_env.full_class_or_class_type_name env name ; 
+		ic_class = None ; 
+		ic_text = text_opt ;
+	      }  
+	    in
             iter (acc_inher @ [ inher ]) (acc_fields @ ele_comments)
               p_clexp.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
               q
@@ -804,6 +824,7 @@ module Analyser =
                   { (* A VOIR : chercher dans les modules et les module types, avec quel env ? *)
                     im_name = tt_name_from_module_expr mod_expr ;
                     im_module = None ;
+		    im_info = None ;
                   } 
                 ] 
         | _ ->
@@ -818,7 +839,8 @@ module Analyser =
         | ([], _) ->
             []
         | ((Element_included_module im) :: q, (im_repl :: im_q)) ->
-            (Element_included_module im_repl) :: (f (q, im_q))
+            (Element_included_module { im_repl with im_info = im.im_info }) 
+	    :: (f (q, im_q))
         | ((Element_included_module im) :: q, []) ->
             (Element_included_module im) :: q
         | (ele :: q, l) ->
@@ -1338,6 +1360,7 @@ module Analyser =
             {
               im_name = "dummy" ;
               im_module = None ;
+	      im_info = comment_opt ;
             } 
           in
           (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)
