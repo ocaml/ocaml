@@ -14,15 +14,21 @@
 open Lexing
 
 type t =
-  { loc_start: int; loc_end: int }
+  { loc_start: int; loc_end: int; loc_ghost: bool }
 
-let none = { loc_start = -1; loc_end = -1 }
+let none = { loc_start = -1; loc_end = -1; loc_ghost = true }
 
-let symbol_loc () =
-  { loc_start = Parsing.symbol_start(); loc_end = Parsing.symbol_end() }
+let symbol_rloc () =
+  { loc_start = Parsing.symbol_start(); loc_end = Parsing.symbol_end();
+    loc_ghost = false }
+
+let symbol_gloc () =
+  { loc_start = Parsing.symbol_start(); loc_end = Parsing.symbol_end();
+    loc_ghost = true }
 
 let rhs_loc n =
-  { loc_start = Parsing.rhs_start n; loc_end = Parsing.rhs_end n }
+  { loc_start = Parsing.rhs_start n; loc_end = Parsing.rhs_end n;
+    loc_ghost = false }
 
 let input_name = ref ""
 

@@ -14,10 +14,11 @@
 (* Source code locations, used in parsetree *)
 
 type t =
-  { loc_start: int; loc_end: int }
+  { loc_start: int; loc_end: int; loc_ghost: bool }
 
 val none: t
-val symbol_loc: unit -> t
+val symbol_rloc: unit -> t
+val symbol_gloc: unit -> t
 val rhs_loc: int -> t
 
 val input_name: string ref

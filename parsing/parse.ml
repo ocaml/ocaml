@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -49,7 +49,8 @@ let wrap parsing_fun lexbuf =
         raise err
     | Parsing.Parse_error | Syntaxerr.Escape_error ->
         let loc = { loc_start = Lexing.lexeme_start lexbuf;
-                    loc_end = Lexing.lexeme_end lexbuf } in
+                    loc_end = Lexing.lexeme_end lexbuf;
+                    loc_ghost = false } in
         if !Location.input_name = "" 
         then maybe_skip_phrase lexbuf;
         raise(Syntaxerr.Error(Syntaxerr.Other loc))

@@ -5,7 +5,7 @@
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -24,53 +24,54 @@ type stream_expr_component =
     Sexp_term of expression
   | Sexp_nterm of expression
 
-let mktyp d = { ptyp_desc = d; ptyp_loc = symbol_loc() }
-let mkpat d = { ppat_desc = d; ppat_loc = symbol_loc() }
-let mkexp d = { pexp_desc = d; pexp_loc = symbol_loc() }
-let eloc loc e = { pexp_desc = e; pexp_loc = loc }
-let ploc loc p = { ppat_desc = p; ppat_loc = loc }
+(* Important: see parser.mly for the difference between "mk" and "gh". *)
+
+let mktyp d = { ptyp_desc = d; ptyp_loc = symbol_rloc() }
+let mkpat d = { ppat_desc = d; ppat_loc = symbol_rloc() }
+let mkexp d = { pexp_desc = d; pexp_loc = symbol_rloc() }
+
+let ghtyp d = { ptyp_desc = d; ptyp_loc = symbol_gloc() }
+let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc() }
+let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc() }
 
 let spat = Ppat_var "%strm"
 let sexp = Pexp_ident (Lident "%strm")
-let eval x = mkexp (Pexp_ident (Ldot (Lident "Stream", x)))
-let econ c x = mkexp (Pexp_construct (Ldot (Lident "Stream", c), x, false))
-let pcon c x = mkpat (Ppat_construct (Ldot (Lident "Stream", c), x, false))
+let econ c x = ghexp (Pexp_construct (Ldot (Lident "Stream", c), x, false))
+let pcon c x = ghpat (Ppat_construct (Ldot (Lident "Stream", c), x, false))
 let afun f x =
-  mkexp (Pexp_apply (mkexp (Pexp_ident (Ldot (Lident "Stream", f))), x))
+  ghexp (Pexp_apply (ghexp (Pexp_ident (Ldot (Lident "Stream", f))), x))
 let araise c x =
-  mkexp (Pexp_apply (mkexp (Pexp_ident (Lident "raise")), [econ c x]))
-let esome x = mkexp (Pexp_construct (Lident "Some", Some x, false))
+  ghexp (Pexp_apply (ghexp (Pexp_ident (Lident "raise")), [econ c x]))
+let esome x = ghexp (Pexp_construct (Lident "Some", Some x, false))
 
 
 (* parsers *)
 
 let stream_pattern_component skont =
-  let elock = eloc skont.pexp_loc in
   function
     Spat_term (p, None) ->
-      (afun "peek" [mkexp sexp],
-       p, elock (Pexp_sequence (afun "junk" [mkexp sexp], skont)))
+      (afun "peek" [ghexp sexp],
+       p, ghexp (Pexp_sequence (afun "junk" [ghexp sexp], skont)))
   | Spat_term (p, Some e) ->
-      (afun "peek" [mkexp sexp],
+      (afun "peek" [ghexp sexp],
        p,
-       elock
+       ghexp
          (Pexp_when
-            (e, elock(Pexp_sequence (afun "junk" [mkexp sexp], skont)))))
+            (e, ghexp(Pexp_sequence (afun "junk" [ghexp sexp], skont)))))
   | Spat_nterm (p, e) ->
-      let eloce = eloc e.pexp_loc in
-      (eloce
+      (ghexp
          (Pexp_try
-            (esome (eloce (Pexp_apply (e, [mkexp sexp]))),
+            (esome (ghexp (Pexp_apply (e, [ghexp sexp]))),
              [(pcon "Failure" None,
-               mkexp (Pexp_construct (Lident "None", None, false)))])),
+               ghexp (Pexp_construct (Lident "None", None, false)))])),
        p, skont)
   | Spat_sterm p ->
-      (esome (mkexp sexp), p, skont)
+      (esome (ghexp sexp), p, skont)
 
 (* error continuation for 2nd to last component of a stream pattern *)
 let ekont1 = function
   | Some _ as estr -> araise "Error" estr
-  | None -> araise "Error" (Some (mkexp (Pexp_constant (Const_string ""))))
+  | None -> araise "Error" (Some (ghexp (Pexp_constant (Const_string ""))))
 ;;
 
 let rec stream_pattern epo e ekont =
@@ -78,8 +79,8 @@ let rec stream_pattern epo e ekont =
     [] ->
       begin match epo with
         Some ep ->
-          let countexpr = afun "count" [mkexp sexp] in
-          eloc e.pexp_loc (Pexp_match (countexpr, [(ep, e)]))
+          let countexpr = afun "count" [ghexp sexp] in
+          ghexp (Pexp_match (countexpr, [(ep, e)]))
       | _ -> e
       end
   | (spc, err) :: spcl ->
@@ -87,12 +88,11 @@ let rec stream_pattern epo e ekont =
       let skont = stream_pattern epo e ekont1 spcl in
       let (tst, p, e) = stream_pattern_component skont spc in
       let ckont = ekont err in
-      eloc e.pexp_loc
+      ghexp
         (Pexp_match
            (tst,
-            [(ploc p.ppat_loc (Ppat_construct (Lident "Some", Some p, false)),
-              e);
-             (mkpat Ppat_any, ckont)]))
+            [(ghpat (Ppat_construct (Lident "Some", Some p, false)), e);
+             (ghpat Ppat_any, ckont)]))
 
 let rec parser_cases =
   function
@@ -103,24 +103,24 @@ let cparser (bpo, pc) =
   let pc = parser_cases pc in
   let e =
     match bpo with
-      Some bp -> mkexp (Pexp_match (afun "count" [mkexp sexp], [(bp, pc)]))
+      Some bp -> ghexp (Pexp_match (afun "count" [ghexp sexp], [(bp, pc)]))
     | None -> pc
   in
   let p =
     let t =
-      mktyp (Ptyp_constr (Ldot (Lident "Stream", "t"), [mktyp Ptyp_any]))
+      ghtyp (Ptyp_constr (Ldot (Lident "Stream", "t"), [ghtyp Ptyp_any]))
     in
-    mkpat (Ppat_constraint (mkpat spat, t))
+    ghpat (Ppat_constraint (ghpat spat, t))
   in
   mkexp (Pexp_function [(p, e)])
 
 
 (* streams *)
 
-let clazy e = mkexp (Pexp_function [(mkpat Ppat_any, e)])
+let clazy e = mkexp (Pexp_function [(ghpat Ppat_any, e)])
 
 let rec cstream =
   function
-    [] -> eval "sempty"
+    [] -> ghexp (Pexp_ident (Ldot (Lident "Stream", "sempty")))
   | Sexp_term e :: secl -> afun "lcons" [clazy e; cstream secl]
   | Sexp_nterm e :: secl -> afun "lapp" [clazy e; cstream secl]
