@@ -217,7 +217,7 @@ let rec typexp sch prio0 ppf ty =
         let all_present = List.length present = List.length fields in
         let pr_present =
           print_list (fun ppf (s, _) -> fprintf ppf "`%s" s)
-                     (fun () -> fprintf ppf "@;<1 -2>| ")
+                     (fun () -> fprintf ppf "@ ")
         in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
