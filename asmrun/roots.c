@@ -36,8 +36,7 @@ void (*scan_roots_hook) (scanning_action) = NULL;
 
 /* Register a global C root */
 
-void register_global_root(r)
-     value * r;
+void register_global_root(value * r)
 {
   struct global_root * gr;
   gr = (struct global_root *) stat_alloc(sizeof(struct global_root));
@@ -48,8 +47,7 @@ void register_global_root(r)
 
 /* Un-register a global C root */
 
-void remove_global_root(r)
-     value * r;
+void remove_global_root(value * r)
 {
   struct global_root ** gp, * gr;
   for (gp = &global_roots; *gp != NULL; gp = &(*gp)->next) {
@@ -77,7 +75,7 @@ static int frame_descriptors_mask;
 #define Hash_retaddr(addr) \
   (((unsigned long)(addr) >> 3) & frame_descriptors_mask)
 
-static void init_frame_descriptors()
+static void init_frame_descriptors(void)
 {
   long num_descr, tblsize, i, j, len;
   long * tbl;
@@ -128,7 +126,7 @@ value * caml_gc_regs;
 
 /* Call [oldify] on all stack roots, C roots and global roots */
 
-void oldify_local_roots ()
+void oldify_local_roots (void)
 {
   char * sp;
   unsigned long retaddr;
@@ -216,13 +214,12 @@ void oldify_local_roots ()
 
 /* Call [darken] on all roots */
 
-void darken_all_roots ()
+void darken_all_roots (void)
 {
   do_roots (darken);
 }
 
-void do_roots (f)
-     scanning_action f;
+void do_roots (scanning_action f)
 {
   int i, j;
   value glob;
