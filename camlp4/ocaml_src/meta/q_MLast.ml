@@ -2347,7 +2347,7 @@ Grammar.extend
      [[Gramext.Stoken ("ANTIQUOT", "opt")],
       Gramext.action
         (fun (a : string) (loc : int * int) ->
-           (antiquot "mut" loc a : 'anti_opt))]];
+           (antiquot "opt" loc a : 'anti_opt))]];
     Grammar.Entry.obj (anti_rec : 'anti_rec Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("ANTIQUOT", "rec")],

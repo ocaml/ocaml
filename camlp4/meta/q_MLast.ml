@@ -622,7 +622,7 @@ EXTEND
     [ [ a = ANTIQUOT "mut" -> antiquot "mut" loc a ] ]
   ;
   anti_opt:
-    [ [ a = ANTIQUOT "opt" -> antiquot "mut" loc a ] ]
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
   anti_rec:
     [ [ a = ANTIQUOT "rec" -> antiquot "rec" loc a ] ]
