@@ -618,19 +618,25 @@ CAMLexport void caml_serialize_block_8(void * data, long len)
 
 CAMLexport void caml_serialize_block_float_8(void * data, long len)
 {
-  unsigned char * p;
-  char * q;
   if (extern_ptr + 8 * len > extern_limit) resize_extern_block(8 * len);
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567
   memmove(extern_ptr, data, len * 8);
   extern_ptr += len * 8;
 #elif ARCH_FLOAT_ENDIANNESS == 0x76543210
-  for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
-    Reverse_64(q, p);
-  extern_ptr = q;
+  { 
+    unsigned char * p;
+    char * q;
+    for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
+      Reverse_64(q, p);
+    extern_ptr = q;
+  }
 #else
-  for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
-    Permute_64(q, 0x01234567, p, ARCH_FLOAT_ENDIANNESS);
-  extern_ptr = q;
+  { 
+    unsigned char * p;
+    char * q;
+    for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
+      Permute_64(q, 0x01234567, p, ARCH_FLOAT_ENDIANNESS);
+    extern_ptr = q;
+  }
 #endif
 }

@@ -690,15 +690,16 @@ CAMLexport void caml_deserialize_block_8(void * data, long len)
 
 CAMLexport void caml_deserialize_block_float_8(void * data, long len)
 {
-  unsigned char * p, * q;
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567
   memmove(data, intern_src, len * 8);
   intern_src += len * 8;
 #elif ARCH_FLOAT_ENDIANNESS == 0x76543210
+  unsigned char * p, * q;
   for (p = intern_src, q = data; len > 0; len--, p += 8, q += 8)
     Reverse_64(q, p);
   intern_src = p;
 #else
+  unsigned char * p, * q;
   for (p = intern_src, q = data; len > 0; len--, p += 8, q += 8)
     Permute_64(q, ARCH_FLOAT_ENDIANNESS, p, 0x01234567);
   intern_src = p;
