@@ -107,7 +107,7 @@ EXTEND
   GLOBAL: sig_item str_item ctyp patt expr directive module_type module_expr
     class_type class_expr class_sig_item class_str_item;
   module_expr:
-    [ [ "functor"; "("; i = uident; ":"; t = module_type; ")"; "->";
+    [ [ "functor"; "("; i = anti_UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
           Node "MeFun" [i; t; me]
       | "struct"; st = SLIST0 [ s = str_item; ";" -> s ]; "end" ->
@@ -125,14 +125,17 @@ EXTEND
           Node "StDcl" [st]
       | "#"; n = lident; dp = dir_param -> Node "StDir" [n; dp]
       | "exception"; ctl = constructor_declaration; b = rebind_exn ->
-          match ctl with
-          [ Tuple [Loc; c; tl] -> Node "StExc" [c; tl; b]
-          | _ -> match () with [] ]
+          let (_, c, tl) =
+            match ctl with
+            [ Tuple [x1; x2; x3] -> (x1, x2, x3)
+            | _ -> match () with [] ]
+          in
+          Node "StExc" [c; tl; b]
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "StExt" [i; t; p]
       | "include"; me = module_expr -> Node "StInc" [me]
-      | "module"; i = uident; mb = module_binding -> Node "StMod" [i; mb]
-      | "module"; "type"; i = uident; "="; mt = module_type ->
+      | "module"; i = anti_UIDENT; mb = module_binding -> Node "StMod" [i; mb]
+      | "module"; "type"; i = anti_UIDENT; "="; mt = module_type ->
           Node "StMty" [i; mt]
       | "open"; m = mod_ident -> Node "StOpn" [m]
       | "type"; l = SLIST1 type_declaration SEP "and" -> Node "StTyp" [l]
@@ -148,13 +151,13 @@ EXTEND
   ;
   module_binding:
     [ RIGHTA
-      [ "("; m = uident; ":"; mt = module_type; ")"; mb = SELF ->
+      [ "("; m = anti_UIDENT; ":"; mt = module_type; ")"; mb = SELF ->
           Node "MeFun" [m; mt; mb]
       | ":"; mt = module_type; "="; me = module_expr -> Node "MeTyc" [me; mt]
       | "="; me = module_expr -> me ] ]
   ;
   module_type:
-    [ [ "functor"; "("; i = uident; ":"; t = SELF; ")"; "->"; mt = SELF ->
+    [ [ "functor"; "("; i = anti_UIDENT; ":"; t = SELF; ")"; "->"; mt = SELF ->
           Node "MtFun" [i; t; mt] ]
     | [ mt = SELF; "with"; wcl = SLIST1 with_constr SEP "and" ->
           Node "MtWit" [mt; wcl] ]
@@ -180,8 +183,9 @@ EXTEND
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "SgExt" [i; t; p]
       | "include"; mt = module_type -> Node "SgInc" [mt]
-      | "module"; i = uident; mt = module_declaration -> Node "SgMod" [i; mt]
-      | "module"; "type"; i = uident; "="; mt = module_type ->
+      | "module"; i = anti_UIDENT; mt = module_declaration ->
+          Node "SgMod" [i; mt]
+      | "module"; "type"; i = anti_UIDENT; "="; mt = module_type ->
           Node "SgMty" [i; mt]
       | "open"; m = mod_ident -> Node "SgOpn" [m]
       | "type"; l = SLIST1 type_declaration SEP "and" -> Node "SgTyp" [l]
@@ -191,7 +195,7 @@ EXTEND
   module_declaration:
     [ RIGHTA
       [ ":"; mt = module_type -> mt
-      | "("; i = uident; ":"; t = module_type; ")"; mt = SELF ->
+      | "("; i = anti_UIDENT; ":"; t = module_type; ")"; mt = SELF ->
           Node "MtFun" [i; t; mt] ] ]
   ;
   with_constr:
@@ -210,7 +214,8 @@ EXTEND
       [ "let"; r = rec_flag; l = SLIST1 let_binding SEP "and"; "in";
         x = SELF ->
           Node "ExLet" [r; l; x]
-      | "let"; "module"; m = uident; mb = module_binding; "in"; x = SELF ->
+      | "let"; "module"; m = anti_UIDENT; mb = module_binding; "in";
+        x = SELF ->
           Node "ExLmd" [m; mb; x]
       | "fun"; "["; l = SLIST0 match_case SEP "|"; "]" -> Node "ExFun" [l]
       | "fun"; p = ipatt; e = fun_def ->
@@ -532,9 +537,9 @@ EXTEND
       | -> List [] ] ]
   ;
   constructor_declaration:
-    [ [ ci = uident; "of"; cal = SLIST1 ctyp SEP "and" ->
+    [ [ ci = anti_UIDENT; "of"; cal = SLIST1 ctyp SEP "and" ->
           Tuple [Loc; ci; cal]
-      | ci = uident -> Tuple [Loc; ci; List []] ] ]
+      | ci = anti_UIDENT -> Tuple [Loc; ci; List []] ] ]
   ;
   label_declaration:
     [ [ i = lident; ":"; mf = mutable_flag; t = ctyp ->
@@ -549,7 +554,7 @@ EXTEND
     [ [ i = LIDENT -> Str i
       | a = anti_ -> a ] ]
   ;
-  uident:
+  anti_UIDENT:
     [ [ i = UIDENT -> Str i
       | a = anti_ -> a ] ]
   ;
@@ -825,7 +830,7 @@ EXTEND
   (* Identifiers *)
 
   longid:
-    [ [ m = uident; "."; l = SELF -> [m :: l]
+    [ [ m = anti_UIDENT; "."; l = SELF -> [m :: l]
       | i = lident -> [i] ] ]
   ;
   clty_longident:

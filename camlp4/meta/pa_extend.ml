@@ -137,6 +137,7 @@ value text_of_psymbol_list loc gmod psl tvar =
     psl <:expr< [] >>
 ;
 
+value quotify = ref False;
 value meta_action = ref False;
 
 module MetaAction =
@@ -232,11 +233,104 @@ module MetaAction =
   end
 ;
 
+value rec expr_fa al =
+  fun
+  [ <:expr< $f$ $a$ >> -> expr_fa [a :: al] f
+  | f -> (f, al) ]
+;
+
+value mklistexp loc =
+  loop True where rec loop top =
+    fun
+    [ [] -> <:expr< [] >>
+    | [e1 :: el] ->
+        let loc =
+          if top then loc else (fst (MLast.loc_of_expr e1), snd loc)
+        in
+        <:expr< [$e1$ :: $loop False el$] >> ]
+;
+
+value mklistpat loc =
+  loop True where rec loop top =
+    fun
+    [ [] -> <:patt< [] >>
+    | [p1 :: pl] ->
+        let loc =
+          if top then loc else (fst (MLast.loc_of_patt p1), snd loc)
+        in
+        <:patt< [$p1$ :: $loop False pl$] >> ]
+;
+
+value rec quot_act e =
+  let loc = MLast.loc_of_expr e in
+  match e with
+  [ <:expr< None >> -> <:expr< Option None >>
+  | <:expr< Some $e$ >> -> <:expr< Option (Some $quot_act e$) >>
+  | <:expr< False >> -> <:expr< Bool False >>
+  | <:expr< True >> -> <:expr< Bool True >>
+  | <:expr< [] >> -> <:expr< List [] >>
+  | <:expr< [$e$] >> -> <:expr< List [$quot_act e$] >>
+  | <:expr< [$e1$ :: $e2$] >> -> <:expr< Cons $quot_act e1$  $quot_act e2$ >>
+  | <:expr< $_$ $_$ >> ->
+      let (f, al) = expr_fa [] e in
+      let al = List.map quot_act al in
+      match f with
+      [ <:expr< $uid:c$ >> -> <:expr< Node $str:c$ $mklistexp loc al$ >>
+      | <:expr< $_$.$uid:c$ >> -> <:expr< Node $str:c$ $mklistexp loc al$ >>
+      | _ -> e ]
+  | <:expr< $lid:s$ >> -> if s = Stdpp.loc_name.val then <:expr< Loc >> else e
+  | <:expr< $str:s$ >> -> <:expr< Str $str:s$ >>
+  | <:expr< ($list:el$) >> ->
+      let el = List.map quot_act el in
+      <:expr< Tuple $mklistexp loc el$ >>
+  | _ -> e ]
+;
+
+value symgen = "xx";
+
+value pname_of_ptuple pl =
+  List.fold_left
+    (fun pname p ->
+       match p with
+       [ <:patt< $lid:s$ >> -> pname ^ s
+       | _ -> pname ])
+    "" pl
+;
+
+value quotify_action psl act =
+  let e = quot_act act in
+  List.fold_left
+    (fun e ps ->
+       match ps.pattern with
+       [ Some <:patt< ($list:pl$) >> ->
+           let loc = (0, 0) in
+           let pname = pname_of_ptuple pl in
+           let (pl1, el1) =
+             let (l, _) =
+               List.fold_left
+                 (fun (l, cnt) _ ->
+                    ([symgen ^ string_of_int cnt :: l], cnt + 1))
+                 ([], 1) pl
+             in
+             let l = List.rev l in
+             (List.map (fun s -> <:patt< $lid:s$ >>) l,
+              List.map (fun s -> <:expr< $lid:s$ >>) l)
+           in
+           <:expr<
+              let ($list:pl$) =
+                match $lid:pname$ with
+                [ Tuple $mklistpat loc pl1$ -> ($list:el1$)
+                | _ -> match () with [] ]
+              in $e$ >>
+       | _ -> e ])
+    e psl
+;
+
 value text_of_action loc psl rtvar act tvar =
   let locid = <:patt< $lid:Stdpp.loc_name.val$ >> in
   let act =
     match act with
-    [ Some act -> act
+    [ Some act -> if quotify.val then quotify_action psl act else act
     | None -> <:expr< () >> ]
   in
   let e = <:expr< fun [ ($locid$ : (int * int)) -> ($act$ : '$rtvar$) ] >> in
@@ -247,7 +341,13 @@ value text_of_action loc psl rtvar act tvar =
          [ None -> <:expr< fun _ -> $txt$ >>
          | Some p ->
              let t = ps.symbol.styp tvar in
-             <:expr< fun [ ($p$ : $t$) -> $txt$ ] >> ])
+             let p =
+               match p with
+               [ <:patt< ($list:pl$) >> when quotify.val ->
+                   <:patt< $lid:pname_of_ptuple pl$ >>
+               | _ -> p ]
+             in
+             <:expr< fun ($p$ : $t$) -> $txt$ >> ])
       e psl
   in
   let txt =
@@ -416,6 +516,7 @@ value mk_name loc e = {expr = e; tvar = ident_of_expr e; loc = loc};
 
 value sself loc gmod n = <:expr< Gramext.Sself >>;
 value snext loc gmod n = <:expr< Gramext.Snext >>;
+value stoken loc s e gmod n = <:expr< Gramext.Stoken ($str:s$, $e$) >>;
 value snterm loc n lev gmod tvar =
   match lev with
   [ Some lab ->
@@ -449,7 +550,43 @@ value srules loc t rl gmod tvar =
   <:expr< Gramext.srules $e$ >>
 ;
 
-value sslist loc min sep s gmod n =
+value sstoken loc s =
+  let n = mk_name loc <:expr< $lid:"anti_" ^ s$ >> in
+  snterm loc n None
+;
+
+value ssopt loc symb =
+  let psymbol p s t =
+    let symb = {used = []; text = s; styp = fun _ -> t} in
+    {pattern = Some p; symbol = symb}
+  in
+  let rl =
+    let r1 =
+      let prod =
+        let n = mk_name loc <:expr< anti_opt >> in
+        [psymbol <:patt< a >> (snterm loc n None) <:ctyp< 'anti_opt >>]
+      in
+      let act = <:expr< a >> in
+      {prod = prod; action = Some act}
+    in
+    let r2 =
+      let psymb =
+        let symb =
+          {used = []; text = sopt loc symb;
+           styp = fun n -> <:ctyp< option $symb.styp n$ >>}
+        in
+        let patt = <:patt< o >> in
+        {pattern = Some patt; symbol = symb}
+      in
+      let act = <:expr< option o >> in
+      {prod = [psymb]; action = Some act}
+    in
+    [r1; r2]
+  in
+  srules loc "pouet" rl
+;
+
+value sslist_aux loc min sep s =
   let psymbol p s t =
     let symb = {used = []; text = s; styp = fun _ -> t} in
     {pattern = Some p; symbol = symb}
@@ -458,10 +595,10 @@ value sslist loc min sep s gmod n =
     let r1 =
       let prod =
         let n = mk_name loc <:expr< anti_list >> in
-        [psymbol <:patt< a >> (snterm loc n None)
-           <:ctyp< 'anti_list >>]
+        [psymbol <:patt< a >> (snterm loc n None) <:ctyp< 'anti_list >>]
       in
-      let act = <:expr< a >> in {prod = prod; action = Some act}
+      let act = <:expr< a >> in
+      {prod = prod; action = Some act}
     in
     let r2 =
       let psymb =
@@ -477,7 +614,13 @@ value sslist loc min sep s gmod n =
     in
     [r1; r2]
   in
-  srules loc "anti" rl gmod n
+  srules loc "anti" rl
+;
+
+value sslist loc min sep s =
+  match s.text "" "" with
+  [ <:expr< Gramext.$uid:"Sself" | "Snext"$ >> -> slist loc min sep s
+  | _ -> sslist_aux loc min sep s ]
 ;
 
 open Pcaml;
@@ -572,7 +715,10 @@ EXTEND
             | None -> s.used ]
           in
           let styp n = let t = s.styp n in <:ctyp< list $t$ >> in
-          let text = slist loc False sep s in
+          let text =
+            if quotify.val then sslist loc False sep s
+            else slist loc False sep s
+          in
           {used = used; text = text; styp = styp}
       | UIDENT "LIST1"; s = SELF;
         sep = OPT [ UIDENT "SEP"; t = symbol -> t ] ->
@@ -582,11 +728,18 @@ EXTEND
             | None -> s.used ]
           in
           let styp n = let t = s.styp n in <:ctyp< list $t$ >> in
-          let text = slist loc True sep s in
+          let text =
+            if quotify.val then sslist loc True sep s
+            else slist loc True sep s
+          in
           {used = used; text = text; styp = styp}
       | UIDENT "OPT"; s = SELF ->
           let styp n = let t = s.styp n in <:ctyp< option $t$ >> in
-          {used = s.used; text = sopt loc s; styp = styp} ]
+          let text =
+            if quotify.val then ssopt loc s
+            else sopt loc s
+          in
+          {used = s.used; text = text; styp = styp} ]
     | [ UIDENT "SELF" ->
           let styp n =
             if n = "" then
@@ -609,16 +762,17 @@ EXTEND
           {used = used_of_rule_list rl; text = srules loc t rl;
            styp = fun _ -> <:ctyp< '$t$ >>}
       | x = UIDENT ->
-          {used = [];
-           text = fun _ _ -> <:expr< Gramext.Stoken ($str:x$, "") >>;
-           styp = fun _ -> <:ctyp< string >>}
+          let text =
+            if quotify.val then sstoken loc x
+            else stoken loc x <:expr< "" >>
+          in
+          {used = []; text = text; styp = fun _ -> <:ctyp< string >>}
       | x = UIDENT; e = string ->
-          {used = [];
-           text = fun _ _ -> <:expr< Gramext.Stoken ($str:x$, $e$) >>;
-           styp = fun _ -> <:ctyp< string >>}
+          let text = stoken loc x e in
+          {used = []; text = text; styp = fun _ -> <:ctyp< string >>}
       | e = string ->
-          {used = []; text = fun _ _ -> <:expr< Gramext.Stoken ("", $e$) >>;
-           styp = fun _ -> <:ctyp< string >>}
+          let text = stoken loc "" e in
+          {used = []; text = text; styp = fun _ -> <:ctyp< string >>}
       | i = UIDENT; "."; e = qualid;
         lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
           let n = mk_name loc <:expr< $uid:i$ . $e$ >> in
@@ -660,6 +814,9 @@ EXTEND
           Pcaml.expr_reloc (fun (bp, ep) -> (shift + bp, shift + ep)) 0 e ] ]
   ;
 END;
+
+Pcaml.add_option "-quotify" (Arg.Set quotify)
+  "     Generate code for quotations";
 
 Pcaml.add_option "-meta_action" (Arg.Set meta_action)
   " Undocumented";

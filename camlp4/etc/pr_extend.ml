@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -14,6 +14,8 @@
 
 open Pcaml;
 open Spretty;
+
+value no_slist = ref False;
 
 value expr e dg k = pr_expr.pr_fun "top" e dg k;
 value patt e dg k = pr_patt.pr_fun "top" e dg k;
@@ -296,12 +298,12 @@ value rec symbol s k =
   | Sself -> HVbox [: `S LR "SELF"; k :]
   | Snext -> HVbox [: `S LR "NEXT"; k :]
   | Stoken tok -> token tok k
-(**)
   | Srules
       [([(Some <:patt< a >>, Snterm <:expr< anti_list >>)], Some <:expr< a >>);
        ([(Some <:patt< l >>,
           ((Slist0 _ | Slist1 _ | Slist0sep _ _ | Slist1sep _ _) as s))],
           Some <:expr< list l >>)]
+    when not no_slist.val
     ->
       match s with
       [ Slist0 s -> HVbox [: `S LR "SLIST0"; `simple_symbol s k :]
@@ -315,7 +317,6 @@ value rec symbol s k =
             [: `S LR "SLIST1"; `simple_symbol s [: :]; `S LR "SEP";
                `simple_symbol sep k :]
       | _ -> assert False ]
-(**)
   | Srules rl ->
       let rl = simplify_rules rl in
       HVbox [: `HVbox [: :]; rule_list  rl k :] ]
@@ -435,3 +436,6 @@ lev.pr_rules :=
   extfun lev.pr_rules with
   [ <:expr< Grammar.extend $_$ >> as e ->
       fun curr next _ k -> [: `extend e "" k :] ];
+
+Pcaml.add_option "-no_slist" (Arg.Set no_slist)
+  "    Don't reconstruct SLIST";

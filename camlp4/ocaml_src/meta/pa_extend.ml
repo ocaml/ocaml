@@ -134,6 +134,7 @@ let text_of_psymbol_list loc gmod psl tvar =
     psl (MLast.ExUid (loc, "[]"))
 ;;
 
+let quotify = ref false;;
 let meta_action = ref false;;
 
 module MetaAction =
@@ -571,11 +572,141 @@ module MetaAction =
   end
 ;;
 
+let rec expr_fa al =
+  function
+    MLast.ExApp (_, f, a) -> expr_fa (a :: al) f
+  | f -> f, al
+;;
+
+let mklistexp loc =
+  let rec loop top =
+    function
+      [] -> MLast.ExUid (loc, "[]")
+    | e1 :: el ->
+        let loc = if top then loc else fst (MLast.loc_of_expr e1), snd loc in
+        MLast.ExApp
+          (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), e1), loop false el)
+  in
+  loop true
+;;
+
+let mklistpat loc =
+  let rec loop top =
+    function
+      [] -> MLast.PaUid (loc, "[]")
+    | p1 :: pl ->
+        let loc = if top then loc else fst (MLast.loc_of_patt p1), snd loc in
+        MLast.PaApp
+          (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), p1), loop false pl)
+  in
+  loop true
+;;
+
+let rec quot_act e =
+  let loc = MLast.loc_of_expr e in
+  match e with
+    MLast.ExUid (_, "None") ->
+      MLast.ExApp
+        (loc, MLast.ExUid (loc, "Option"), MLast.ExUid (loc, "None"))
+  | MLast.ExApp (_, MLast.ExUid (_, "Some"), e) ->
+      MLast.ExApp
+        (loc, MLast.ExUid (loc, "Option"),
+         MLast.ExApp (loc, MLast.ExUid (loc, "Some"), quot_act e))
+  | MLast.ExUid (_, "False") ->
+      MLast.ExApp (loc, MLast.ExUid (loc, "Bool"), MLast.ExUid (loc, "False"))
+  | MLast.ExUid (_, "True") ->
+      MLast.ExApp (loc, MLast.ExUid (loc, "Bool"), MLast.ExUid (loc, "True"))
+  | MLast.ExUid (_, "[]") ->
+      MLast.ExApp (loc, MLast.ExUid (loc, "List"), MLast.ExUid (loc, "[]"))
+  | MLast.ExApp
+      (_, MLast.ExApp (_, MLast.ExUid (_, "::"), e), MLast.ExUid (_, "[]")) ->
+      MLast.ExApp
+        (loc, MLast.ExUid (loc, "List"),
+         MLast.ExApp
+           (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), quot_act e),
+            MLast.ExUid (loc, "[]")))
+  | MLast.ExApp (_, MLast.ExApp (_, MLast.ExUid (_, "::"), e1), e2) ->
+      MLast.ExApp
+        (loc, MLast.ExApp (loc, MLast.ExUid (loc, "Cons"), quot_act e1),
+         quot_act e2)
+  | MLast.ExApp (_, _, _) ->
+      let (f, al) = expr_fa [] e in
+      let al = List.map quot_act al in
+      begin match f with
+        MLast.ExUid (_, c) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc, MLast.ExUid (loc, "Node"), MLast.ExStr (loc, c)),
+             mklistexp loc al)
+      | MLast.ExAcc (_, _, MLast.ExUid (_, c)) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc, MLast.ExUid (loc, "Node"), MLast.ExStr (loc, c)),
+             mklistexp loc al)
+      | _ -> e
+      end
+  | MLast.ExLid (_, s) ->
+      if s = !(Stdpp.loc_name) then MLast.ExUid (loc, "Loc") else e
+  | MLast.ExStr (_, s) ->
+      MLast.ExApp (loc, MLast.ExUid (loc, "Str"), MLast.ExStr (loc, s))
+  | MLast.ExTup (_, el) ->
+      let el = List.map quot_act el in
+      MLast.ExApp (loc, MLast.ExUid (loc, "Tuple"), mklistexp loc el)
+  | _ -> e
+;;
+
+let symgen = "xx";;
+
+let pname_of_ptuple pl =
+  List.fold_left
+    (fun pname p ->
+       match p with
+         MLast.PaLid (_, s) -> pname ^ s
+       | _ -> pname)
+    "" pl
+;;
+
+let quotify_action psl act =
+  let e = quot_act act in
+  List.fold_left
+    (fun e ps ->
+       match ps.pattern with
+         Some (MLast.PaTup (_, pl)) ->
+           let loc = 0, 0 in
+           let pname = pname_of_ptuple pl in
+           let (pl1, el1) =
+             let (l, _) =
+               List.fold_left
+                 (fun (l, cnt) _ ->
+                    (symgen ^ string_of_int cnt) :: l, cnt + 1)
+                 ([], 1) pl
+             in
+             let l = List.rev l in
+             List.map (fun s -> MLast.PaLid (loc, s)) l,
+             List.map (fun s -> MLast.ExLid (loc, s)) l
+           in
+           MLast.ExLet
+             (loc, false,
+              [MLast.PaTup (loc, pl),
+               MLast.ExMat
+                 (loc, MLast.ExLid (loc, pname),
+                  [MLast.PaApp
+                     (loc, MLast.PaUid (loc, "Tuple"), mklistpat loc pl1),
+                   None, MLast.ExTup (loc, el1);
+                   MLast.PaAny loc, None,
+                   MLast.ExMat (loc, MLast.ExUid (loc, "()"), [])])],
+              e)
+       | _ -> e)
+    e psl
+;;
+
 let text_of_action loc psl rtvar act tvar =
   let locid = MLast.PaLid (loc, !(Stdpp.loc_name)) in
   let act =
     match act with
-      Some act -> act
+      Some act -> if !quotify then quotify_action psl act else act
     | None -> MLast.ExUid (loc, "()")
   in
   let e =
@@ -594,6 +725,12 @@ let text_of_action loc psl rtvar act tvar =
            None -> MLast.ExFun (loc, [MLast.PaAny loc, None, txt])
          | Some p ->
              let t = ps.symbol.styp tvar in
+             let p =
+               match p with
+                 MLast.PaTup (_, pl) when !quotify ->
+                   MLast.PaLid (loc, pname_of_ptuple pl)
+               | _ -> p
+             in
              MLast.ExFun (loc, [MLast.PaTyc (loc, p, t), None, txt]))
       e psl
   in
@@ -899,6 +1036,13 @@ let sself loc gmod n =
 let snext loc gmod n =
   MLast.ExAcc (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Snext"))
 ;;
+let stoken loc s e gmod n =
+  MLast.ExApp
+    (loc,
+     MLast.ExAcc
+       (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Stoken")),
+     MLast.ExTup (loc, [MLast.ExStr (loc, s); e]))
+;;
 let snterm loc n lev gmod tvar =
   match lev with
     Some lab ->
@@ -1010,7 +1154,46 @@ let srules loc t rl gmod tvar =
      e)
 ;;
 
-let sslist loc min sep s gmod n =
+let sstoken loc s =
+  let n = mk_name loc (MLast.ExLid (loc, ("anti_" ^ s))) in snterm loc n None
+;;
+
+let ssopt loc symb =
+  let psymbol p s t =
+    let symb = {used = []; text = s; styp = fun _ -> t} in
+    {pattern = Some p; symbol = symb}
+  in
+  let rl =
+    let r1 =
+      let prod =
+        let n = mk_name loc (MLast.ExLid (loc, "anti_opt")) in
+        [psymbol (MLast.PaLid (loc, "a")) (snterm loc n None)
+           (MLast.TyQuo (loc, "anti_opt"))]
+      in
+      let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
+    in
+    let r2 =
+      let psymb =
+        let symb =
+          {used = []; text = sopt loc symb;
+           styp =
+             fun n ->
+               MLast.TyApp (loc, MLast.TyLid (loc, "option"), symb.styp n)}
+        in
+        let patt = MLast.PaLid (loc, "o") in
+        {pattern = Some patt; symbol = symb}
+      in
+      let act =
+        MLast.ExApp (loc, MLast.ExLid (loc, "option"), MLast.ExLid (loc, "o"))
+      in
+      {prod = [psymb]; action = Some act}
+    in
+    [r1; r2]
+  in
+  srules loc "pouet" rl
+;;
+
+let sslist_aux loc min sep s =
   let psymbol p s t =
     let symb = {used = []; text = s; styp = fun _ -> t} in
     {pattern = Some p; symbol = symb}
@@ -1041,7 +1224,15 @@ let sslist loc min sep s gmod n =
     in
     [r1; r2]
   in
-  srules loc "anti" rl gmod n
+  srules loc "anti" rl
+;;
+
+let sslist loc min sep s =
+  match s.text "" "" with
+    MLast.ExAcc
+      (_, MLast.ExUid (_, "Gramext"), MLast.ExUid (_, ("Sself" | "Snext"))) ->
+      slist loc min sep s
+  | _ -> sslist_aux loc min sep s
 ;;
 
 open Pcaml;;
@@ -1391,7 +1582,8 @@ Grammar.extend
               let t = s.styp n in
               MLast.TyApp (loc, MLast.TyLid (loc, "option"), t)
             in
-            {used = s.used; text = sopt loc s; styp = styp} :
+            let text = if !quotify then ssopt loc s else sopt loc s in
+            {used = s.used; text = text; styp = styp} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "LIST1"); Gramext.Sself;
        Gramext.Sopt
@@ -1412,7 +1604,9 @@ Grammar.extend
               let t = s.styp n in
               MLast.TyApp (loc, MLast.TyLid (loc, "list"), t)
             in
-            let text = slist loc true sep s in
+            let text =
+              if !quotify then sslist loc true sep s else slist loc true sep s
+            in
             {used = used; text = text; styp = styp} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "LIST0"); Gramext.Sself;
@@ -1434,7 +1628,10 @@ Grammar.extend
               let t = s.styp n in
               MLast.TyApp (loc, MLast.TyLid (loc, "list"), t)
             in
-            let text = slist loc false sep s in
+            let text =
+              if !quotify then sslist loc false sep s
+              else slist loc false sep s
+            in
             {used = used; text = text; styp = styp} :
             'symbol))];
      None, None,
@@ -1473,45 +1670,26 @@ Grammar.extend
       [Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'string) (loc : int * int) ->
-           ({used = [];
-             text =
-               (fun _ _ ->
-                  MLast.ExApp
-                    (loc,
-                     MLast.ExAcc
-                       (loc, MLast.ExUid (loc, "Gramext"),
-                        MLast.ExUid (loc, "Stoken")),
-                     MLast.ExTup (loc, [MLast.ExStr (loc, ""); e])));
+           (let text = stoken loc "" e in
+            {used = []; text = text;
              styp = fun _ -> MLast.TyLid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'string) (x : string) (loc : int * int) ->
-           ({used = [];
-             text =
-               (fun _ _ ->
-                  MLast.ExApp
-                    (loc,
-                     MLast.ExAcc
-                       (loc, MLast.ExUid (loc, "Gramext"),
-                        MLast.ExUid (loc, "Stoken")),
-                     MLast.ExTup (loc, [MLast.ExStr (loc, x); e])));
+           (let text = stoken loc x e in
+            {used = []; text = text;
              styp = fun _ -> MLast.TyLid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "")],
       Gramext.action
         (fun (x : string) (loc : int * int) ->
-           ({used = [];
-             text =
-               (fun _ _ ->
-                  MLast.ExApp
-                    (loc,
-                     MLast.ExAcc
-                       (loc, MLast.ExUid (loc, "Gramext"),
-                        MLast.ExUid (loc, "Stoken")),
-                     MLast.ExTup
-                       (loc, [MLast.ExStr (loc, x); MLast.ExStr (loc, "")])));
+           (let text =
+              if !quotify then sstoken loc x
+              else stoken loc x (MLast.ExStr (loc, ""))
+            in
+            {used = []; text = text;
              styp = fun _ -> MLast.TyLid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("", "[");
@@ -1619,5 +1797,8 @@ Grammar.extend
       Gramext.action
         (fun (s : string) (loc : int * int) ->
            (MLast.ExStr (loc, s) : 'string))]]]);;
+
+Pcaml.add_option "-quotify" (Arg.Set quotify)
+  "     Generate code for quotations";;
 
 Pcaml.add_option "-meta_action" (Arg.Set meta_action) " Undocumented";;
