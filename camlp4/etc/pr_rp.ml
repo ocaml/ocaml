@@ -94,6 +94,12 @@ value rec is_free v =
   | _ -> raise NotImpl ]
 ;
 
+value gensym =
+  let cnt = ref 0 in
+  fun () ->
+    do { incr cnt; "pr_rp_symb_" ^ string_of_int cnt.val }
+;
+
 value free_var_in_expr c e =
   let rec loop_alpha v =
     let x = String.make 1 v in
@@ -110,7 +116,7 @@ value free_var_in_expr c e =
     [ Some v -> v
     | None -> loop_count 1 ]
   with
-  [ NotImpl -> "\\%a" ]
+  [ NotImpl -> gensym () ]
 ;
 
 value parserify =
