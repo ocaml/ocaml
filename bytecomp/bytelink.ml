@@ -225,19 +225,19 @@ let build_custom_runtime prim_name exec_name =
     "win32" ->
       Sys.command
        (Printf.sprintf
-          "%s /Fe%s -I%s %s %s %s\\libcamlrun.lib %s %s"
+          "%s /Fe%s -I%s %s %s %s %s\\libcamlrun.lib %s"
           Config.bytecomp_c_compiler
           exec_name
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccopts))
           prim_name
-          Config.standard_library
           (String.concat " " (List.rev !Clflags.ccobjs))
+          Config.standard_library
           Config.c_libraries)
   | _ ->
       Sys.command
        (Printf.sprintf
-          "%s -o %s -I%s %s %s -L%s -lcamlrun %s %s"
+          "%s -o %s -I%s %s %s -L%s %s -lcamlrun %s"
           Config.bytecomp_c_compiler
           exec_name
           Config.standard_library
