@@ -304,6 +304,7 @@ value caml_thread_self(unit)         /* ML */
 {
   caml_thread_t curr_thread;
   curr_thread = pthread_getspecific(thread_descriptor_key);
+  if (curr_thread == NULL) invalid_argument("Thread.self: not initialized");
   return (value) curr_thread;
 }
 
