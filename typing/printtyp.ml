@@ -301,10 +301,9 @@ let rec type_declaration id decl =
     Type_abstract -> ()
   | Type_variant [] -> ()
       (* A fatal error actually, except when printing type exn... *)
-  | Type_variant (cstr1 :: cstrs as cstrs0) ->
-      List.iter (fun (_, args) -> List.iter mark_loops args) cstrs0;
-      print_string " ="; print_break 1 2;
-      constructor cstr1;
+  | Type_variant cstrs ->
+      List.iter (fun (_, args) -> List.iter mark_loops args) cstrs;
+      print_string " =";
       List.iter
         (fun cstr -> print_space(); print_string "| "; constructor cstr)
         cstrs
