@@ -360,9 +360,11 @@ let rec transl = function
   | Uprim(Plslint, [arg1; arg2]) ->
       incr_int(Cop(Clsl, [decr_int(transl arg1); untag_int(transl arg2)]))
   | Uprim(Plsrint, [arg1; arg2]) ->
-      incr_int(Cop(Clsr, [decr_int(transl arg1); untag_int(transl arg2)]))
+      Cop(Cor, [Cop(Clsr, [decr_int(transl arg1); untag_int(transl arg2)]);
+                Cconst_int 1])
   | Uprim(Pasrint, [arg1; arg2]) ->
-      incr_int(Cop(Casr, [decr_int(transl arg1); untag_int(transl arg2)]))
+      Cop(Cor, [Cop(Casr, [decr_int(transl arg1); untag_int(transl arg2)]);
+                Cconst_int 1])
   | Uprim(Pintcomp cmp, [arg1; arg2]) ->
       tag_int(Cop(Ccmpi(transl_comparison cmp), [transl arg1; transl arg2]))
   | Uprim(Poffsetint n, [arg]) ->
@@ -480,17 +482,18 @@ let rec transl = function
       Ccatch(transl body, transl handler)
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl body, exn, transl handler)
+  | Uifthenelse(Uprim(Pnot, [arg]), ifso, ifnot) ->
+      transl (Uifthenelse(arg, ifnot, ifso))
+  | Uifthenelse(cond, ifso, Ustaticfail) ->
+      exit_if_false cond (transl ifso)
+  | Uifthenelse(cond, Ustaticfail, ifnot) ->
+      exit_if_true cond (transl ifnot)
+  | Uifthenelse(Uprim(Psequand, _) as cond, ifso, ifnot) ->
+      Ccatch(exit_if_false cond (transl ifso), transl ifnot)
+  | Uifthenelse(Uprim(Psequor, _) as cond, ifso, ifnot) ->
+      Ccatch(exit_if_true cond (transl ifnot), transl ifso)
   | Uifthenelse(cond, ifso, ifnot) ->
-      begin match cond with
-        Uprim(Pnot, [arg]) ->
-          transl (Uifthenelse(arg, ifnot, ifso))
-      | Uprim(Psequand, _) ->
-          Ccatch(exit_if_false cond (transl ifso), transl ifnot)
-      | Uprim(Psequor, _) ->
-          Ccatch(exit_if_true cond (transl ifnot), transl ifso)
-      | _ ->
-          Cifthenelse(test_bool(transl cond), transl ifso, transl ifnot)
-      end
+      Cifthenelse(test_bool(transl cond), transl ifso, transl ifnot)
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl exp1), transl exp2)
   | Uwhile(cond, body) ->

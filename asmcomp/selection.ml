@@ -249,17 +249,23 @@ let join r1 seq1 r2 seq2 =
 (* Same, for N branches *)
 
 let join_array rs =
-  let dest = ref [||] in
+  let some_res = ref [||] in
   for i = 0 to Array.length rs - 1 do
     let (r, s) = rs.(i) in
-    if Array.length r > 0 then dest := r
+    if Array.length r > 0 then some_res := r
   done;
-  if Array.length !dest > 0 then
+  let size_res = Array.length !some_res in
+  if size_res = 0 then [||] else begin
+    let res = Array.new size_res Reg.dummy in
+    for i = 0 to size_res - 1 do
+      res.(i) <- Reg.new (!some_res).(i).typ
+    done;
     for i = 0 to Array.length rs - 1 do
       let (r, s) = rs.(i) in
-      if Array.length r > 0 then insert_moves r !dest s
+      if Array.length r > 0 then insert_moves r res s
     done;
-  !dest
+    res
+  end
 
 (* Add the instructions for the given expression
    at the end of the given sequence *)
