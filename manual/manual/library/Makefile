@@ -5,11 +5,13 @@ STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
   printexc.tex printf.tex queue.tex set.tex sort.tex \
   stack.tex stream.tex string.tex sys.tex
 
-OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex
+OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex \
+  thread.tex mutex.tex condition.tex event.tex
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
 
-BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex
+BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex \
+  libthreads.tex
 
 FILES=$(BLURB) $(INTF) $(BLURB:.tex=.htex) $(INTF:.tex=.htex)
 
@@ -17,7 +19,7 @@ FORMAT=../../tools/format-intf
 
 CSLDIR=../../../csl
 
-VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph
+VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads
 
 all: $(FILES)
 
