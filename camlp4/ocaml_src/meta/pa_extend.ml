@@ -314,6 +314,19 @@ module MetaAction =
                    MLast.ExUid (loc, "ExSeq")),
                 mloc),
              mlist mexpr el)
+      | MLast.ExSte (loc, e1, e2) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "ExSte")),
+                   mloc),
+                mexpr e1),
+             mexpr e2)
       | MLast.ExStr (loc, s) ->
           MLast.ExApp
             (loc,

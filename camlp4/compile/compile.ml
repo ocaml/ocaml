@@ -129,6 +129,19 @@ value parse_standard_symbol e rkont fkont ending_act =
   >>
 ;
 
+value rec contain_loc =
+  fun
+  [ <:expr< $lid:s$ >> -> s = "loc"
+  | <:expr< $uid:_$ >> -> False
+  | <:expr< ($list:el$) >> -> List.exists contain_loc el
+  | <:expr< $e1$ $e2$ >> -> contain_loc e1 || contain_loc e2
+  | _ -> True ]
+;
+
+value gen_let_loc loc e =
+  if contain_loc e then <:expr< let loc = P.gloc bp strm__ in $e$ >> else e
+;
+
 value phony_entry = Grammar.Entry.obj Pcaml.implem;
 
 value rec parse_tree entry nlevn alevn (tree, fst_symb) act_kont kont =
@@ -201,10 +214,7 @@ and parse_symbol entry nlevn s rkont fkont ending_act =
       parse_standard_symbol e rkont fkont ending_act
   | Stree tree ->
       let kont = <:expr< raise Stream.Failure >> in
-      let act_kont _ act =
-        let e = final_action act in
-        <:expr< let loc = P.gloc bp strm__ in $e$ >>
-      in
+      let act_kont _ act = gen_let_loc loc (final_action act) in
       let e = parse_tree phony_entry 0 0 (tree, True) act_kont kont in
       parse_standard_symbol <:expr< fun strm__ -> $e$ >> rkont fkont ending_act
   | Snterm e ->
@@ -321,14 +331,11 @@ value rec start_parser_of_levels entry clevn levs =
                 (e, pel) ]
           in
           let act_kont end_with_self act =
-            if lev.lsuffix = DeadEnd then
-              <:expr< let loc = P.gloc bp strm__ in $final_action act$ >>
+            if lev.lsuffix = DeadEnd then gen_let_loc loc (final_action act)
             else
               let ncont = entry.ename ^ "_" ^ string_of_int clevn ^ "_cont" in
-              <:expr<
-                let loc = P.gloc bp strm__ in
-                $lid:ncont$ bp $final_action act$ strm__
-              >>
+              gen_let_loc loc
+                <:expr< $lid:ncont$ bp $final_action act$ strm__ >>
           in
           let curr =
             parse_tree entry (succ clevn) alevn (tree, True) act_kont kont
@@ -370,18 +377,17 @@ value rec continue_parser_of_levels entry clevn levs =
             [ RightA | NonA ->
                 <:expr<
                   let $p$ = a__ in
-                  let loc = P.gloc bp strm__ in
-                  $final_action act$
+                  $gen_let_loc loc (final_action act)$
                 >>
             | LeftA ->
                 let ncont =
                   entry.ename ^ "_" ^ string_of_int clevn ^ "_cont"
                 in
-                <:expr<
-                  let $p$ = a__ in
-                  let loc = P.gloc bp strm__ in
-                  $lid:ncont$ bp $final_action act$ strm__
-                >> ]
+                gen_let_loc loc
+                  <:expr<
+                    let $p$ = a__ in
+                    $lid:ncont$ bp $final_action act$ strm__
+                  >> ]
           in
           let curr =
             parse_tree entry (succ clevn) alevn (tree, True) act_kont kont
@@ -559,5 +565,5 @@ value compile () =
 Pcaml.parse_implem.val := fun _ -> compile ();
 
 Pcaml.add_option "-strict_parsing" (Arg.Set strict_parsing)
-  ": don't generate error recovering by trying continuations or first levels"
+  " don't generate error recovering by trying continuations or first levels"
 ;

@@ -186,6 +186,8 @@ module MetaAction =
       | MLast.ExRec loc pel eo ->
           <:expr< MLast.ExRec $mloc$ $mlist mpe pel$ $moption mexpr eo$ >>
       | MLast.ExSeq loc el -> <:expr< MLast.ExSeq $mloc$ $mlist mexpr el$ >>
+      | MLast.ExSte loc e1 e2 ->
+          <:expr< MLast.ExSte $mloc$ $mexpr e1$ $mexpr e2$ >>
       | MLast.ExStr loc s -> <:expr< MLast.ExStr $mloc$ $str:s$ >>
       | MLast.ExTry loc e pwel ->
           <:expr< MLast.ExTry $mloc$ $mexpr e$ $mlist mpwe pwel$ >>
