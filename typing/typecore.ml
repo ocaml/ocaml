@@ -287,6 +287,7 @@ let rec is_nonexpansive exp =
       (match opt_init_exp with None -> true | Some e -> is_nonexpansive e)
   | Texp_field(exp, lbl) -> is_nonexpansive exp
   | Texp_array [] -> true
+  | Texp_new (_, arity) when arity > 0 -> true
   | _ -> false
 
 (* Typing of printf formats *)
