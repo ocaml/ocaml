@@ -31,11 +31,11 @@ method select_addressing = function
        this allows our scheduler to do a better job. *)
     Cconst_symbol s when digital_asm ->
       (Ibased(s, 0), Ctuple [])
-  | Cop(Cadda, [Cconst_symbol s; Cconst_int n]) when digital_asm ->
+  | Cop((Cadda | Caddi), [Cconst_symbol s; Cconst_int n]) when digital_asm ->
       (Ibased(s, n), Ctuple [])
-  | Cop(Cadda, [arg; Cconst_int n]) ->
+  | Cop((Cadda | Caddi), [arg; Cconst_int n]) ->
       (Iindexed n, arg)
-  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
+  | Cop((Cadda | Caddi), [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
       (Iindexed n, Cop(Cadda, [arg1; arg2]))
   | arg ->
       (Iindexed 0, arg)
