@@ -24,6 +24,7 @@ exception Already_bound
 type error =
     Unbound_type_variable of string
   | Unbound_type_constructor of Longident.t
+  | Unbound_type_constructor_2 of Path.t
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
   | Recursive_type
@@ -263,16 +264,20 @@ let rec transl_type env policy styp =
             add_typed_field styp.ptyp_loc l f fields
         | Rinherit sty ->
             let ty = transl_type env policy sty in
-            if fields <> [] then name := None else begin
+            let nm =
               match repr ty with
-                {desc=Tconstr(p, tl, _)} -> name := Some(p, tl)
-              | _                        -> ()
-            end;
-            let fl = match expand_head env ty with
-              {desc=Tvariant row} when Btype.static_row row ->
+                {desc=Tconstr(p, tl, _)} -> Some(p, tl)
+              | _                        -> None
+            in
+            name := if fields = [] then nm else None;
+            let fl = match expand_head env ty, nm with
+              {desc=Tvariant row}, _ when Btype.static_row row ->
                 let row = Btype.row_repr row in
                 row.row_fields
-            | _ -> raise(Error(sty.ptyp_loc, Not_a_variant ty))
+            | {desc=Tvar}, Some(p, _) ->
+                raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p)) 
+            | _ ->
+                raise(Error(sty.ptyp_loc, Not_a_variant ty))
             in
             List.fold_left
               (fun fields (l, f) ->
@@ -369,6 +374,9 @@ let report_error ppf = function
       fprintf ppf "Unbound type parameter %s" name
   | Unbound_type_constructor lid ->
       fprintf ppf "Unbound type constructor %a" longident lid
+  | Unbound_type_constructor_2 p ->
+      fprintf ppf "The type constructor@ %a@ is not yet completely defined"
+        path p
   | Type_arity_mismatch(lid, expected, provided) ->
       fprintf ppf
        "@[The type constructor %a@ expects %i argument(s),@ \
