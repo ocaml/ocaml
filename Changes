@@ -60,6 +60,9 @@ Windows port:
 - Fixed broken Unix.waitpid.
 - Toplevel application: issue with spaces in name of stdlib directory fixed.
 
+MacOS 9 port:
+- removed the last traces of support for 68k
+
 
 Objective Caml 3.01:
 --------------------
