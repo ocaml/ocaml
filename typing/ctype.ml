@@ -1896,6 +1896,11 @@ let moregen_occur env level ty =
   occur_univar ty;
   update_level env level ty
 
+(* Forward declaration (order should be reversed...) *)
+let equal' = ref (fun _ -> failwith "Ctype.equal'")
+
+let delayed_conditionals = ref []
+
 let rec moregen inst_nongen type_pairs env t1 t2 =
   if t1 == t2 then () else
   let t1 = repr t1 in
@@ -2037,23 +2042,17 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
           if e1 != e2 then begin
             if c1 && not c2 then raise(Unify []);
             let tpl' = if tpl1 = [] then tpl2 else [] in
-            set_row_field e1 (Reither (c2, [], m2, tpl2, e2));
-            if tpl1 = [] then ()
-            else if List.length tpl1 = List.length tpl2 then
-              List.iter2
-                (fun (t1,t1') (t2,t2') ->
-                  moregen inst_nongen type_pairs env t1 t2;
-                  moregen inst_nongen type_pairs env t1' t2')
-                tpl1 tpl2
-            else raise(Unify []);
-            if List.length tl1 = List.length tl2 then
-              List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
-            else match tl2 with
-              t2 :: _ ->
+            set_row_field e1 (Reither (c2, [], m2, tpl', e2));
+            begin match tl2 with
+              [t2] ->
                 List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2)
                   tl1
-            | [] ->
-                if tl1 <> [] then raise (Unify [])
+            | _ ->
+                if List.length tl1 <> List.length tl2 then raise (Unify []);
+                List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
+            end;
+            if tpl1 <> [] then
+              delayed_conditionals := (tpl1, f2) :: !delayed_conditionals
           end
       | Reither(true, [], _, [], e1), Rpresent None when not univ ->
           set_row_field e1 f2
@@ -2063,10 +2062,68 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       | _ -> raise (Unify []))
     pairs
 
+let check_conditional env tpl1 f2 tpls cont =
+  let tpl1 =
+    List.filter (fun (t1,t2) -> not (!equal' env false [t1] [t2])) tpl1 in
+  let included =
+    List.for_all
+      (fun (t1,t2) ->
+        List.exists (fun (t1',t2') -> !equal' env false [t1;t2] [t1';t2'])
+          tpls)
+      tpl1 in
+  if tpl1 = [] || included then cont tpls else
+  match row_field_repr f2 with
+    Rpresent _ -> cont (tpl1 @ tpls)
+  | Rabsent -> cont tpls
+  | Reither (c, tl2, _, tpl2, e2) ->
+      if not c || tl2 = [] then begin
+        let snap = Btype.snapshot () in
+        let ok =
+          try
+            begin match tl2 with
+              [] ->
+                set_row_field e2 (Rpresent None)
+            | t::tl ->
+                set_row_field e2 (Rpresent (Some t));
+                List.iter (unify env t) tl
+            end;
+            List.iter (fun (t1,t2) -> unify env t1 t2) tpl2;
+            true
+          with Unify _ -> false
+        in
+        if ok then cont (tpl1 @ tpls);
+        Btype.backtrack snap
+      end;
+      cont tpls
+
+let rec check_conditionals inst_nongen tp env cdtls tpls =
+  match cdtls with
+    [] ->
+      let tpls =
+        List.filter (fun (t1,t2) -> not (!equal' env false [t1] [t2])) tpls in
+      if tpls = [] then () else begin
+        delayed_conditionals := [];
+        List.iter (fun (t1, t2) -> moregen inst_nongen tp env t2 t1) tpls;
+        check_conditionals inst_nongen tp env !delayed_conditionals []
+      end
+  | (tpl1, f2) :: cdtls ->
+      check_conditional env tpl1 f2 tpls
+        (check_conditionals inst_nongen tp env cdtls)
+
+
 (* Must empty univar_pairs first *)
 let moregen inst_nongen type_pairs env patt subj =
   univar_pairs := [];
-  moregen inst_nongen type_pairs env patt subj
+  delayed_conditionals := [];
+  try
+    moregen inst_nongen type_pairs env patt subj;
+    check_conditionals inst_nongen type_pairs env !delayed_conditionals [];
+    univar_pairs := [];
+    delayed_conditionals := []
+  with exn ->
+    univar_pairs := [];
+    delayed_conditionals := [];
+    raise exn
 
 (*
    Non-generic variable can be instanciated only if [inst_nongen] is
@@ -2244,6 +2301,8 @@ let equal env rename tyl1 tyl2 =
     eqtype_list rename (TypePairs.create 11) (ref []) env tyl1 tyl2; true
   with
     Unify _ -> false
+
+let () = equal' := equal
 
 (* Must empty univar_pairs first *)  
 let eqtype rename type_pairs subst env t1 t2 =
