@@ -11,6 +11,8 @@
 
 /* $Id$ */
 
+#include <wtypes.h>
+#include <winbase.h>
 #include <process.h>
 
 char * runtime_name = "ocamlrun.exe";
@@ -19,7 +21,8 @@ char * errmsg = "Cannot find ocamlrun.exe\n";
 int main(int argc, char ** argv)
 {
   int retcode;
-  retcode = spawnvp(P_WAIT, runtime_name, argv);
+  char * cmdline = GetCommandLine();
+  retcode = spawnlp(P_WAIT, runtime_name, cmdline, NULL);
   /* We use P_WAIT instead of P_OVERLAY here because under NT,
      P_OVERLAY returns to the command interpreter, displaying the prompt
      before executing the command. */
@@ -29,3 +32,8 @@ int main(int argc, char ** argv)
   }
   return retcode;
 }
+
+/* Prevent VC++ from linking its own _setargv function, which
+   performs command-line processing (we don't need it) */
+
+static void _setargv() { }
