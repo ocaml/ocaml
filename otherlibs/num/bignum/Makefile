@@ -120,7 +120,7 @@ sparcfpu-solaris: scratch
 
 supersparc-solaris: scratch
 	sed -e 's/_Bnn/Bnn/g' s/supersparcKerN.s > s/KerN.s
-	as s/KerN.s -o o/KerN.o
+	as -K pic s/KerN.s -o o/KerN.o
 	rm -f s/KerN.s
 	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all

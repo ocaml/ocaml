@@ -270,6 +270,7 @@ L77114:
 	.proc	14
 	.global	_BnnAddCarry		! (mm, ml, car)
 _BnnAddCarry:
+LBAddCarry:     
 	tst	%o2
 	be	LBACX0			! if(car == 0) return(0);
 	tst	%o1
@@ -292,9 +293,10 @@ LBACX0:
 	.proc	14
 	.global	_BnnAdd			! (mm ml nn nl car)
 _BnnAdd:
+LBAdd:
 	sub	%o1,%o3,%o1		! ml -= nl
 	tst	%o3
-	be,a	_BnnAddCarry		! if (nl == 0) %o2 = car; goto AddCarry
+	be,a	LBAddCarry		! if (nl == 0) %o2 = car; goto AddCarry
 	mov	%o4,%o2
 LBAD1:
 	ld	[%o2],%o5		! o5 = *nn
@@ -307,11 +309,12 @@ LBAD1:
 	deccc	%o3
 	bne	LBAD1
 	inc	4,%o0
-	b	_BnnAddCarry
+	b	LBAddCarry
 	mov	%o4,%o2
 	.proc	14
 	.global	_BnnSubtractBorrow	! (mm, ml, car)
 _BnnSubtractBorrow:
+LBSubtractBorrow:
 	tst	%o2
 	bne	LSBBX1			! if(car == 1) return(1);
 	tst	%o1
@@ -336,7 +339,7 @@ LSBBX1:
 _BnnSubtract:
 	sub	%o1,%o3,%o1		! ml -= nl
 	tst	%o3
-	be,a	_BnnSubtractBorrow	! if (nl == 0) %o2 = car; goto SubBorrow
+	be,a	LBSubtractBorrow	! if (nl == 0) %o2 = car; goto SubBorrow
 	mov	%o4,%o2
 LSUB1:
 	ld	[%o2],%o5		! o5 = *nn
@@ -350,7 +353,7 @@ LSUB1:
 	deccc	%o3
 	bne	LSUB1
 	inc	4,%o0
-	b	_BnnSubtractBorrow
+	b	LBSubtractBorrow
 	mov	%o4,%o2
 	.proc	14
 	.global	_BnnMultiplyDigit
@@ -365,7 +368,7 @@ _BnnMultiplyDigit:
 LMDnonzero:
 	bne	LMD0
 	mov	0,%o5
-	b	_BnnAdd		! shortcut to BnnAdd
+	b	LBAdd		! shortcut to BnnAdd
 	mov	0,%o4		! carry in = 0
 LMD0:
 	save	%sp,-96,%sp
