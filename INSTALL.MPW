@@ -1,16 +1,36 @@
+# $Id$
+
+
+        ### Installing Objective Caml on a Macintosh with MPW ###
+
+
+
+# This file describes how to install and recompile Objective Caml
+# in the MPW environment under MacOS 7, 8, 9.  For MacOS X, see
+# the instructions for Unix machines in the file INSTALL.
+
+
 # PREREQUISITES
-#
-# You need MPW 3.4.3 (with MrC) and Universal Interfaces version 3.2.
+
+# You need MPW 3.4.4 (with MrC) and Universal Interfaces version 3.2
+# You need ToolServer (which comes with MPW by default).
+# You need WASTE version 1.3
 #
 # MPW is available from Apple's FTP site at:
 # <ftp://ftp.apple.com/devworld/Tool_Chest/Core_Mac_OS_Tools/MPW_etc./>
 #
-#
+# WASTE 1.3 is available from:
+# <XXX some URL XXX>
+
+
 # INSTALLATION INSTRUCTIONS
 #
 # To install Objective Caml in your MPW environment, follow this script.
 # Read the comments and execute the commands.  If you run the commands
 # without changing anything, you'll get a reasonable default configuration.
+
+# Before you start, you should put the WASTE 1.3 distribution folder
+# into the :maccaml:WASTE: folder.
 
 # Go to the directory where you found this file.
 
@@ -22,6 +42,12 @@ Directory "`echo "{active}" | streamedit -e '1 replace /[Â:]*°/ ""'`"
 #   MakeDepend is only needed if you rebuild the dependency makefiles
 
 Duplicate :tools:DoMake :tools:Characters :tools:MakeDepend "{MPW}User Commands:"
+
+# Build the WASTE libraries:
+
+Directory ":maccaml:WASTE:WASTE 1.3 Distribution:"
+DoMake -f ::Makefile WASTELib.o WASTELib.x ·· "{worksheet}"
+Directory ::::
 
 # Edit ":config:config.Mac" to change the configuration.
 #   (mostly, the destination folders for installation)
@@ -39,15 +65,23 @@ Set -e CAMLLIB "{LIBDIR}"
 
 # Make it persistent.
 
-Quote Set -e CAMLLIB "{CAMLLIB}" >"{MPW}Startup Items:OCaml"
+Set CAMLLIB > "{MPW}Startup Items:OCaml"
+
+# Launch ToolServer and make sure it gets launched each time MPW is started.
+
+rshell -b ''
+echo "rshell -b ''" >> "{MPW}Startup Items:OCaml"
+echo "rshell -b -q" >> "{MPW}Quit Items:OCaml"
 
 # Now you're all set.  Build the files and install everything.
 # For more explanations on these steps, see the file INSTALL.
-#
-# These commands produce a lot of output, so you may want to copy
-# them to the worksheet for execution.
 
-DoMake world
-DoMake bootstrap
-DoMake install
-DoMake clean
+begin
+  DoMake world
+  DoMake bootstrap
+  DoMake install
+  DoMake clean
+end ·· "{worksheet}"
+
+# If you want syntax coloring in MPW Shell, use ResEdit to copy the
+# resources from :tools:keywords into the shell.
