@@ -222,15 +222,13 @@ let open_out_bin name =
 
 external flush_partial : out_channel -> bool = "caml_flush_partial"
 
-let rec fflush oc =
+let rec flush oc =
   let success =
     try
       flush_partial oc
     with Sys_blocked_io ->
       wait_outchan oc (-1); false in
-  if success then () else fflush oc
-
-let flush = fflush;;
+  if success then () else flush oc
 
 external unsafe_output_partial : out_channel -> string -> int -> int -> int
                         = "caml_output_partial"
