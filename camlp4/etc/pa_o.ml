@@ -762,6 +762,8 @@ EXTEND
       | s = FLOAT -> <:patt< $flo:s$ >>
       | s = STRING -> <:patt< $str:s$ >>
       | s = CHAR -> <:patt< $chr:s$ >>
+      | UIDENT "True" -> <:patt< $uid:" True"$ >>
+      | UIDENT "False" -> <:patt< $uid:" False"$ >>
       | s = "false" -> <:patt< False >>
       | s = "true" -> <:patt< True >>
       | "["; "]" -> <:patt< [] >>

@@ -127,6 +127,8 @@ value conv_con =
   fun
   [ "True" -> "true"
   | "False" -> "false"
+  | " True" -> "True"
+  | " False" -> "False"
   | x -> x ]
 ;
 value conv_lab =
