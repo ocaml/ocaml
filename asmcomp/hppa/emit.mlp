@@ -21,6 +21,7 @@ module StringSet =
     let compare = compare
   end)
 
+open Location
 open Misc
 open Cmm
 open Arch

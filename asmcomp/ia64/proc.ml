@@ -211,3 +211,6 @@ let contains_calls = ref false
 
 let assemble_file infile outfile =
   Ccomp.command ("as -xexplicit -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
+
+open Clflags;;
+open Config;;

@@ -14,6 +14,7 @@
 
 (* Specific operations for the HP PA-RISC processor *)
 
+open Misc
 open Format
 
 type specific_operation =

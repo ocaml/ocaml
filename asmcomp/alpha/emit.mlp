@@ -17,6 +17,7 @@ module LabelSet =
 
 (* Emission of Alpha assembly code *)
 
+open Location
 open Misc
 open Cmm
 open Arch

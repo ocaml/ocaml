@@ -14,6 +14,7 @@
 
 (* Emission of IA64 assembly code *)
 
+open Location
 open Printf
 open Misc
 open Cmm

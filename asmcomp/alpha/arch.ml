@@ -14,6 +14,7 @@
 
 (* Specific operations for the Alpha processor *)
 
+open Misc
 open Format
 
 (* Addressing modes *)

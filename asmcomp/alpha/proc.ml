@@ -213,3 +213,5 @@ let assemble_file infile outfile =
     else "as -o " in
   Ccomp.command (as_cmd ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 
+open Clflags;;
+open Config;;

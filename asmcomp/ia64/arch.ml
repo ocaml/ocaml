@@ -14,6 +14,7 @@
 
 (* Specific operations for the IA64 processor *)
 
+open Misc
 open Format
 
 (* Addressing modes -- only one! (register with no displacement) *)

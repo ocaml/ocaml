@@ -247,3 +247,6 @@ let assemble_file infile outfile =
   | "rhapsody" ->
       Ccomp.command ("as -o " ^ outfile ^ " " ^ infile)
   | _ -> assert false
+
+open Clflags;;
+open Config;;

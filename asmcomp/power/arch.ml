@@ -14,6 +14,7 @@
 
 (* Specific operations for the PowerPC processor *)
 
+open Misc
 open Format
 
 type specific_operation =
@@ -93,4 +94,3 @@ let toc =
   | "elf" -> false
   | "rhapsody" -> false
   | _ -> Misc.fatal_error "wrong $(SYSTEM)"
-

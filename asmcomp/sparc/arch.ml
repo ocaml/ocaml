@@ -14,6 +14,7 @@
 
 (* Specific operations for the Sparc processor *)
 
+open Misc
 open Format
 
 type specific_operation = unit          (* None worth mentioning *)
