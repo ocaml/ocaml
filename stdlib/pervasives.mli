@@ -247,7 +247,7 @@ external acos : float -> float = "acos_float" "acos" "float"
 external asin : float -> float = "asin_float" "asin" "float"
 external atan : float -> float = "atan_float" "atan" "float"
 external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
-        (* The usual trignonmetric functions *)
+        (* The usual trigonometric functions *)
 external cosh : float -> float = "cosh_float" "cosh" "float"
 external sinh : float -> float = "sinh_float" "sinh" "float"
 external tanh : float -> float = "tanh_float" "tanh" "float"
