@@ -46,11 +46,11 @@ let lsequence l1 l2 =
 
 let lfield v i = Lprim(Pfield i, [Lvar v])
 
-let transl_label l = Lconst (Const_base (Const_string l))
+let transl_label l = share (Const_base (Const_string l))
 
 let rec transl_meth_list lst =
   if lst = [] then Lconst (Const_pointer 0) else
-  Lconst (Const_block
+  share (Const_block
             (0, List.map (fun lab -> Const_base (Const_string lab)) lst))
 
 let set_inst_var obj id expr =
@@ -174,10 +174,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
 let rec build_object_init_0 cl_table params cl copy_env top ids =
   match cl.cl_desc with
     Tclass_let (rec_flag, defs, vals, cl) ->
-      let (inh_init, obj_init) =
-        build_object_init_0 cl_table (vals @ params) cl copy_env top ids
-      in
-      (inh_init, Translcore.transl_let rec_flag defs obj_init)
+      build_object_init_0 cl_table (vals @ params) cl copy_env top ids
   | _ ->
       let self = Ident.create "self" in
       let obj = if ids = [] then lambda_unit else Lvar self in
@@ -187,10 +184,10 @@ let rec build_object_init_0 cl_table params cl copy_env top ids =
 	if ids = [] then obj_init else lfunction [self] obj_init in
       (inh_init, obj_init)
 
-let build_object_init_0 cl_table params cl copy_env subst_env top ids =
+let build_object_init_0 cl_table cl copy_env subst_env top ids =
   let env = Ident.create "env" in
   let (inh_init, obj_init) =
-    build_object_init_0 cl_table params cl (copy_env env) top ids in
+    build_object_init_0 cl_table [] cl (copy_env env) top ids in
   let obj_init =
     if top then obj_init else
     let i = ref (List.length inh_init + 1) in
@@ -341,6 +338,13 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
            Lsequence(Lapply (oo_prim "narrow", narrow_args), cl_init))
       end
 
+let rec build_class_lets cl =
+  match cl.cl_desc with
+    Tclass_let (rec_flag, defs, vals, cl) ->
+      let env, wrap = build_class_lets cl in
+      (env, fun x -> Translcore.transl_let rec_flag defs (wrap x))
+  | _ ->
+      (cl.cl_env, fun x -> x)
 
 (*
    XXX Il devrait etre peu couteux d'ecrire des classes :
@@ -530,7 +534,8 @@ let transl_class ids cl_id arity pub_meths cl =
   let tables = Ident.create (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
   let top = not req in
-  let new_ids = if top then [] else Env.diff top_env cl.cl_env in
+  let cl_env, llets = build_class_lets cl in
+  let new_ids = if top then [] else Env.diff top_env cl_env in
   let env2 = Ident.create "env" in
   let subst env lam i0 new_ids' =
     let fv = free_variables lam in
@@ -579,7 +584,7 @@ let transl_class ids cl_id arity pub_meths cl =
   (* Now we start compiling the class *)
   let cla = Ident.create "class" in
   let (inh_init, obj_init) =
-    build_object_init_0 cla [] cl copy_env subst_env top ids in
+    build_object_init_0 cla cl copy_env subst_env top ids in
   if not (Translcore.check_recursive_lambda ids obj_init) then
     raise(Error(cl.cl_loc, Illegal_class_expr));
   let (inh_init', cl_init) =
@@ -600,7 +605,7 @@ let transl_class ids cl_id arity pub_meths cl =
                    Lapply(Lvar obj_init, [lambda_unit])))
   in
   (* Simplest case: an object defined at toplevel (ids=[]) *)
-  if top && ids = [] then ltable cla (ldirect obj_init) else
+  if top && ids = [] then llets (ltable cla (ldirect obj_init)) else
 
   let lclass lam =
     Llet(Strict, class_init, Lfunction(Curried, [cla], cl_init), lam)
@@ -609,7 +614,7 @@ let transl_class ids cl_id arity pub_meths cl =
             [transl_meth_list pub_meths; Lvar class_init])
   in
   (* Still easy: a class defined at toplevel *)
-  if top then lclass lbody else
+  if top then llets (lclass lbody) else
 
   (* Now for the hard stuff: prepare for table cacheing *)
   let env_index = Ident.create "env_index"
@@ -662,6 +667,7 @@ let transl_class ids cl_id arity pub_meths cl =
             Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
                       lset cached 0 (Lvar env_init))))
   in
+  llets (
   lcache (
   Lsequence(
   Lifthenelse(lfield cached 0, lambda_unit,
@@ -676,7 +682,7 @@ let transl_class ids cl_id arity pub_meths cl =
         [Lapply(lfield cached 0, [lenvs]);
          lfield cached 1;
          lfield cached 0;
-         lenvs]))))
+         lenvs])))))
 
 (* example:
 module M(X : sig val x : int end) = struct
@@ -692,6 +698,10 @@ module M0 = struct class c = object method x = 0 end end;;
 module M2 = struct class c = object method x = 2 end end;;
 let f x = object method x = x end;;
 let f x y z = object method x = x method s = object method y = y end end;;
+module F(X:sig end) = struct
+  class c = let () = prerr_endline "Hello" in let x = 1 in
+   object method m = x end
+end;;
 *)
 
 let class_stub =

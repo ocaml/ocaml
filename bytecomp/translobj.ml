@@ -26,6 +26,22 @@ let oo_prim name =
   with Not_found ->
     fatal_error ("Primitive " ^ name ^ " not found.")
 
+(* Share blocks *)
+
+let consts : (structured_constant, Ident.t) Hashtbl.t = Hashtbl.create 17
+
+let share c =
+  match c with
+    Const_block (n, l) when l <> [] ->
+      begin try
+        Lvar (Hashtbl.find consts c)
+      with Not_found ->
+        let id = Ident.create "shared" in
+        Hashtbl.add consts c id;
+        Lvar id
+      end
+  | _ -> Lconst c
+
 (* Collect labels *)
 
 let used_methods = ref ([] : (string * Ident.t) list);;
@@ -39,6 +55,7 @@ let meth lab =
     id
 
 let reset_labels () =
+  Hashtbl.clear consts;
   used_methods := []
 
 (* Insert labels *)
@@ -46,20 +63,23 @@ let reset_labels () =
 let string s = Lconst (Const_base (Const_string s))
 
 let transl_label_init expr =
-  if !used_methods = [] then
-    expr
-  else
+  let expr =
+    Hashtbl.fold
+      (fun c id expr -> Llet(Alias, id, Lconst c, expr))
+      consts expr
+  in
+  let expr =
+    if !used_methods = [] then expr else
     let init = Ident.create "new_method" in
-    let expr' =
-      Llet(StrictOpt, init, oo_prim "new_method",
-      List.fold_right
-        (fun (lab, id) expr ->
-           Llet(StrictOpt, id, Lapply(Lvar init, [string lab]), expr))
-        !used_methods
-        expr)
-    in
-    reset_labels ();
-    expr'
+    Llet(StrictOpt, init, oo_prim "new_method",
+         List.fold_right
+           (fun (lab, id) expr ->
+             Llet(StrictOpt, id, Lapply(Lvar init, [string lab]), expr))
+           !used_methods
+           expr)
+  in
+  reset_labels ();
+  expr
 
 
 (* Share classes *)
