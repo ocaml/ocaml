@@ -605,9 +605,15 @@ value interprete(code_t prog, asize_t prog_size)
       tag_t tag = *pc++;
       mlsize_t i;
       value block;
-      Alloc_small(block, wosize, tag);
-      Field(block, 0) = accu;
-      for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
+      if (wosize <= Max_young_wosize) {
+        Alloc_small(block, wosize, tag);
+        Field(block, 0) = accu;
+        for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
+      } else {
+        block = alloc_shr(wosize, tag);
+        initialize(&Field(block, 0), accu);
+        for (i = 1; i < wosize; i++) initialize(&Field(block, i), *sp++);
+      }
       accu = block;
       Next;
     }
@@ -644,7 +650,11 @@ value interprete(code_t prog, asize_t prog_size)
       mlsize_t size = *pc++;
       mlsize_t i;
       value block;
-      Alloc_small(block, size * Double_wosize, Double_array_tag);
+      if (size <= Max_young_wosize / Double_wosize) {
+        Alloc_small(block, size * Double_wosize, Double_array_tag);
+      } else {
+        block = alloc_shr(size * Double_wosize, Double_array_tag);
+      }
       Store_double_field(block, 0, Double_val(accu));
       for (i = 1; i < size; i++){
         Store_double_field(block, i, Double_val(*sp));

@@ -307,6 +307,29 @@ let lookup_label obj lab =
     let item_index = Cop(Cand, [lab; Cconst_int (255 * size_addr)]) in
     Cop (Cload Word, [Cop (Cadda, [bucket; item_index])]))
 
+(* Allocation *)
+
+let make_alloc_generic set_fn tag wordsize args =
+  if wordsize <= Config.max_young_wosize then
+    Cop(Calloc, Cconst_natint(block_header tag wordsize) :: args)
+  else begin
+    let id = Ident.create "alloc" in
+    let rec fill_fields idx = function
+      [] -> Cvar id
+    | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1,
+                          fill_fields (idx + 2) el) in
+    Clet(id, 
+         Cop(Cextcall("alloc", typ_addr, true),
+                 [Cconst_int wordsize; Cconst_int tag]),
+         fill_fields 1 args)
+  end
+
+let make_alloc tag args =
+  make_alloc_generic addr_array_set tag (List.length args) args
+let make_float_alloc tag args =
+  make_alloc_generic float_array_set tag
+                     (List.length args * size_float / size_addr) args
+
 (* To compile "let rec" over values *)
 
 let fundecls_size fundecls =
@@ -812,8 +835,7 @@ let rec transl = function
       | (Pmakeblock(tag, mut), []) ->
           transl_constant(Const_block(tag, []))
       | (Pmakeblock(tag, mut), args) ->
-          Cop(Calloc, alloc_block_header tag (List.length args) ::
-              List.map transl args)
+          make_alloc tag (List.map transl args)
       | (Pccall prim, args) ->
           if prim.prim_native_float then
             box_float
@@ -833,14 +855,12 @@ let rec transl = function
           begin match kind with
             Pgenarray ->
               Cop(Cextcall("make_array", typ_addr, true),
-                  [Cop(Calloc, alloc_block_header 0 (List.length args) ::
-                       List.map transl args)])
+                  [make_alloc 0 (List.map transl args)])
           | Paddrarray | Pintarray ->
-              Cop(Calloc, alloc_block_header 0 (List.length args) ::
-                  List.map transl args)
+              make_alloc 0 (List.map transl args)
           | Pfloatarray ->
-              Cop(Calloc, alloc_floatarray_header (List.length args) ::
-                  List.map transl_unbox_float args)
+              make_float_alloc Obj.double_array_tag
+                              (List.map transl_unbox_float args)
           end
       | (Pbigarrayref(num_dims, elt_kind, layout), arg1 :: argl) ->
           let elt =
