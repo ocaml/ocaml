@@ -420,6 +420,7 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   value res;
 
   init_ieee_floats();
+  init_custom_operations();
 #ifdef DEBUG
   verb_gc = 63;
 #endif
