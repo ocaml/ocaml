@@ -180,14 +180,14 @@ libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 debug: 
 	make OCAMLPP=""
 
-$(OCAMLDOC): $(EXECMIFILES) $(EXECMOFILES) odoc_crc.cmo odoc.cmo
+$(OCAMLDOC): $(EXECMOFILES) odoc_crc.cmo odoc.cmo
 	$(OCAMLC) -o $@ unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES) odoc_crc.cmo odoc.cmo
-$(OCAMLDOC_OPT): $(EXECMIFILES) $(EXECMXFILES) odoc_opt.cmx
+$(OCAMLDOC_OPT): $(EXECMXFILES) odoc_opt.cmx
 	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES) odoc_opt.cmx
 
-$(OCAMLDOC_LIBCMA): $(LIBCMIFILES) $(LIBCMOFILES)
+$(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLCMOFILES) $(LIBCMOFILES)
-$(OCAMLDOC_LIBCMXA): $(LIBCMIFILES) $(LIBCMXFILES)
+$(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
 
 manpages: stdlib_man
@@ -267,27 +267,41 @@ odoc_crc.ml: $(CMIFILES)
 	Odoc_dag2html Odoc_ocamlhtml Odoc_html\
 	Odoc_latex Odoc_man Odoc_texi Odoc_scan > $@
 
+# Parsers and lexers dependencies :
+###################################
+odoc_text_parser.ml: odoc_text_parser.mly
+odoc_text_parser.mli: odoc_text_parser.mly
+
+odoc_parser.ml:	odoc_parser.mly
+odoc_parser.mli:odoc_parser.mly
+
+odoc_text_lexer.ml: odoc_text_lexer.mll
+
+odoc_lexer.ml:odoc_lexer.mll
+
+odoc_ocamlhtml.ml: odoc_ocamlhtml.mll
+
+odoc_see_lexer.ml: odoc_see_lexer.mll
+
+
 # generic rules :
 #################
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx .mll .mly
+.SUFFIXES: .mll .mly .ml .mli .cmo .cmi .cmx
 
-%.cmi:%.mli
+.ml.cmo:
 	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
 
-%.cmo:%.ml
+.mli.cmi:
 	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
 
-%.cmi %.cmo:%.ml
-	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
-
-%.cmx %.o:%.ml
+.ml.cmx:
 	$(OCAMLOPT) $(OCAMLPP) $(COMPFLAGS) -c $<
 
-%.ml:%.mll
+.mll.ml:
 	$(OCAMLLEX) $<
 
-%.mli %.ml:%.mly
+.mly.ml:
 	$(OCAMLYACC) -v $<
 
 # Installation targets

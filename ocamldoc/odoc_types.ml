@@ -10,9 +10,6 @@
 (***********************************************************************)
 
 
-(** Types for the information collected in comments. *)
-
-(** The differents kinds of element references. *)
 type ref_kind = 
     RK_module
   | RK_module_type
@@ -26,62 +23,53 @@ type ref_kind =
   | RK_section
 
 type text_element = 
-  | Raw of string (** Raw text. *)
-  | Code of string (** The string is source code. *)
-  | CodePre of string (** The string is pre-formatted source code. *)
-  | Verbatim of string (** String 'as is'. *)
-  | Bold of text (** Text in bold style. *)
-  | Italic of text (** Text in italic. *)
-  | Emphasize of text (** Emphasized text. *)
-  | Center of text (** Centered text. *)
-  | Left of text (** Left alignment. *)
-  | Right of text (** Right alignment. *)
-  | List of text list (** A list. *)
-  | Enum of text list (** An enumerated list. *)
-  | Newline   (** To force a line break. *)
-  | Block of text (** Like html's block quote. *)
+  | Raw of string
+  | Code of string
+  | CodePre of string
+  | Verbatim of string
+  | Bold of text
+  | Italic of text
+  | Emphasize of text
+  | Center of text
+  | Left of text
+  | Right of text
+  | List of text list
+  | Enum of text list
+  | Newline
+  | Block of text
   | Title of int * string option * text
-              (** Style number, optional label, and text. *)
-  | Latex of string (** A string for latex. *)
-  | Link of string * text (** A reference string and the link text. *)
+  | Latex of string
+  | Link of string * text
   | Ref of string * ref_kind option
-       (** A reference to an element. Complete name and kind. *)
-  | Superscript of text (** Superscripts. *)
-  | Subscript of text (** Subscripts. *)
+  | Superscript of text
+  | Subscript of text
 
-(** [text] is a list of text_elements. The order matters. *)
 and text = text_element list
 
-(** The different forms of references in \@see tags. *)
 type see_ref = 
     See_url of string
   | See_file of string
   | See_doc of string
 
-(** The information in a \@see tag. *)
 type see = see_ref * text
 
-(** Parameter name and description. *)
 type param = (string * text)
 
-(** Raised exception name and description. *)
 type raised_exception = (string * text)
 
-(** Information in a special comment. *)
 type info = {
-    i_desc : text option; (** The description text. *)
-    i_authors : string list; (** The list of authors in \@author tags. *)
-    i_version : string option; (** The string in the \@version tag. *)
-    i_sees : see list; (** The list of \@see tags. *)
-    i_since : string option; (** The string in the \@since tag. *)
-    i_deprecated : text option; (** The of the \@deprecated tag. *)
-    i_params : param list; (** The list of parameter descriptions. *)
-    i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
-    i_return_value : text option ; (** The description text of the return value. *)
-    i_custom : (string * text) list ; (** A text associated to a custom @-tag. *)
+    i_desc : text option;
+    i_authors : string list;
+    i_version : string option;
+    i_sees : see list;
+    i_since : string option;
+    i_deprecated : text option;
+    i_params : param list; 
+    i_raised_exceptions : raised_exception list;
+    i_return_value : text option ;
+    i_custom : (string * text) list ;
   } 
 
-(** An empty info structure. *)
 let dummy_info = {
   i_desc = None ;
   i_authors = [] ;
@@ -95,31 +83,25 @@ let dummy_info = {
   i_custom = [] ;
 } 
 
-(** Location of elements in implementation and interface files. *)
 type location = {
-    loc_impl : (string * int) option ; (** implementation file name and position *)
-    loc_inter : (string * int) option ; (** interface file name and position *)
+    loc_impl : (string * int) option ;
+    loc_inter : (string * int) option ;
   } 
 
-(** A dummy location. *)
 let dummy_loc = { loc_impl = None ; loc_inter = None }
 
-(** The information to merge from two elements when they both have some information. *)
 type merge_option =
-  | Merge_description (** Descriptions are concatenated. *)
-  | Merge_author (** Lists of authors are concatenated. *)
-  | Merge_version (** Versions are concatenated. *)
-  | Merge_see (** See references are concatenated. *)
-  | Merge_since (** Since information are concatenated. *)
-  | Merge_deprecated (** Deprecated information are concatenated. *)
-  | Merge_param (** Information on each parameter is concatenated,
-		    and all parameters are kept. *)
-  | Merge_raised_exception (** Information on each raised_exception is concatenated,
-			       and all raised exceptions are kept. *)
-  | Merge_return_value (** Information on return value are concatenated. *)
-  | Merge_custom (** Merge custom tags (all pairs (tag, text) are kept). *)
+  | Merge_description
+  | Merge_author
+  | Merge_version
+  | Merge_see
+  | Merge_since
+  | Merge_deprecated
+  | Merge_param
+  | Merge_raised_exception
+  | Merge_return_value
+  | Merge_custom
   
-(** The list with all merge options. *)
 let all_merge_options = [
   Merge_description ;
   Merge_author ;
@@ -133,20 +115,14 @@ let all_merge_options = [
   Merge_custom ;
 ] 
 
-(** Type of magic numbers. *)
 type magic = string
 
-(** The magic number for the dumps of this version of ocamldoc. *)
 let magic = Odoc_messages.magic
 
-(** A dump of a structure. *)
 type 'a dump = Dump of magic * 'a
 
-(** Create a dump structure. *)
 let make_dump a = Dump (magic, a)
 
-(** Verify that a dump has the correct magic number
-   and return its content. *)
 let open_dump = function
     Dump (m, a) ->
       if m = magic then a
