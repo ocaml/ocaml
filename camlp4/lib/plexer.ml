@@ -483,8 +483,7 @@ value using_token kwd_table (p_con, p_prm) =
   | _ ->
       raise
         (Token.Error
-           ("\
-the constructor \"" ^ p_con ^
+           ("the constructor \"" ^ p_con ^
               "\" is not recognized by Plexer")) ]
 ;
 

@@ -98,7 +98,7 @@ value rec subst v e =
   | _ -> raise Not_found ]
 and subst_pe v (p, e) =
   match p with
-  [ <:patt< $lid:v'$ >> -> if v = v' then (p, e) else (p, subst v e)
+  [ <:patt< $lid:v'$ >> when v <> v' -> (p, subst v e)
   | _ -> raise Not_found ]
 ;
 

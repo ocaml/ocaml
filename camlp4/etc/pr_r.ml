@@ -1748,6 +1748,9 @@ Pcaml.add_option "-l" (Arg.Int (fun x -> maxl.val := x))
 Pcaml.add_option "-sep" (Arg.String (fun x -> sep.val := Some x))
   "<string> Use this string between phrases instead of reading source.";
 
+Pcaml.add_option "-no_where" (Arg.Clear gen_where)
+  "    Dont generate \"where\" statements";
+
 Pcaml.add_option "-ncip" (Arg.Set ncip) "        No comments in phrases.";
 
 Pcaml.add_option "-old_seq" (Arg.Set old_sequences)
