@@ -39,7 +39,7 @@ OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.a
 INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
 INSTALL_BINDIR=$(OCAMLBIN)
-INSTALL_MANDIR=$(PREFIX)/man
+INSTALL_MANODIR=$(MANDIR)/mano
 
 INSTALL_MLIS=odoc_info.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
@@ -297,8 +297,8 @@ install: dummy
 	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)
 	$(CP) ocamldoc.sty ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
-	if test -d $(INSTALL_MANDIR)/mano; then : ; else $(MKDIR) $(INSTALL_MANDIR)/mano; fi
-	$(CP) stdlib_man/* $(INSTALL_MANDIR)/mano
+	if test -d $(INSTALL_MANODIR); then : ; else $(MKDIR) $(INSTALL_MANODIR); fi
+	$(CP) stdlib_man/* $(INSTALL_MANODIR)
 
 installopt:
 	if test -f $(OCAMLDOC_OPT) ; then $(MAKE) installopt_really ; fi
