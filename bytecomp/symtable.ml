@@ -72,6 +72,10 @@ let slot_for_literal cst =
 
 let c_prim_table = ref(empty_numtable : string numtable)
 
+let set_prim_table name =
+ let _ = enter_numtable c_prim_table name in
+ ()
+
 let num_of_prim name =
   try
     find_numtable !c_prim_table name
@@ -81,7 +85,7 @@ let num_of_prim name =
     else raise(Error(Unavailable_primitive name))
 
 let require_primitive name =
-  if name.[0] <> '%' then begin num_of_prim name; () end
+  if name.[0] <> '%' then begin let _ = num_of_prim name in () end
 
 let all_primitives () =
   let prim = Array.create !c_prim_table.num_cnt "" in
@@ -131,7 +135,7 @@ let init () =
       let ic = open_in !Clflags.use_prims in
       try
         while true do
-          enter_numtable c_prim_table (input_line ic)
+          set_prim_table (input_line ic)
         done
       with End_of_file -> close_in ic
          | x -> close_in ic; raise x
@@ -144,13 +148,13 @@ let init () =
       let ic = open_in primfile in
       try
         while true do
-          enter_numtable c_prim_table (input_line ic)
+          set_prim_table (input_line ic)
         done
       with End_of_file -> close_in ic
          | x -> close_in ic; raise x
     with x -> remove_file primfile; raise x
   end else begin
-    Array.iter (fun x -> enter_numtable c_prim_table x; ())
+    Array.iter set_prim_table
                Runtimedef.builtin_primitives
   end
 
@@ -242,7 +246,7 @@ let init_toplevel () =
   global_table := (input_value ic : Ident.t numtable);
   close_in ic;
   (* Enter the known C primitives *)
-  Array.iter (fun x -> enter_numtable c_prim_table x; ())
+  Array.iter set_prim_table
              (Meta.available_primitives())
 
 (* Find the value of a global identifier *)
