@@ -38,6 +38,7 @@ let instruction = function
       print_string "\tclosurerec";
       List.iter (fun lbl -> print_string " "; print_int lbl) lbls;
       print_string ", "; print_int n
+  | Koffsetclosure n -> print_string "\toffsetclosure "; print_int n
   | Kgetglobal id -> print_string "\tgetglobal "; Ident.print id
   | Ksetglobal id -> print_string "\tsetglobal "; Ident.print id
   | Kconst cst ->
