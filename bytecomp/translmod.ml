@@ -148,7 +148,8 @@ and transl_structure fields cc = function
            (fun (id, cl) re ->
               Lsequence(transl_class id cl, re))
            cl_list
-	 (transl_structure ((List.map fst cl_list) @ fields) cc rem))
+	 (transl_structure
+            ((List.rev (List.map fst cl_list)) @ fields) cc rem))
 
 (* Compile an implementation *)
 
