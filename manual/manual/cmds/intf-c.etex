@@ -211,7 +211,7 @@ system) that can run on this custom runtime.  This is achieved by the
 to build a custom runtime system integrating the C parts of the
 ``unix'' and ``threads'' libraries, do:
 \begin{verbatim}
-        ocamlc -make_runtime /home/me/ocamlunixrun unix.cma threads.cma \
+        ocamlc -make_runtime -o /home/me/ocamlunixrun unix.cma threads.cma \
                 -cclib -lunix -cclib -lthreads
 \end{verbatim}
 To generate a bytecode executable that runs on this runtime system,

@@ -166,8 +166,8 @@ building a library ("-a" flag), setting the "-linkall" flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
 
-\item["-make_runtime" \var{runtime-name}]
-Build a custom runtime system (in the file \var{runtime-name})
+\item["-make_runtime"]
+Build a custom runtime system (in the file specified by option "-o")
 incorporating the C object files and libraries given on the command
 line.  This custom runtime system can be used later to execute
 bytecode executables produced with the

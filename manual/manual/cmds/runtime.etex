@@ -45,8 +45,8 @@ The following command-line option is recognized by "ocamlrun".
 \begin{options}
 
 \item["-v"] 
-When set, the memory manager prints verbose messages on standard error
-to signal garbage collections and heap extensions.
+When set, the memory manager prints some verbose messages on
+standard error.
 
 \end{options}
 
@@ -66,8 +66,17 @@ The following environment variables are also consulted:
   major heap.
   \item[o] ("space_overhead")  The major GC speed setting.
   \item[O] ("max_overhead")  The heap compaction trigger setting.
-  \item[v] ("verbose")  Whether to print GC messages or not.  0 is
-  false; 1 is true; other values may give unexpected results.
+  \item[v] ("verbose")  What GC messages to print to stderr.  This
+  is a sum of values selected from the following:
+  \begin{options}
+        \item[1] Start of major GC cycle.
+        \item[2] Minor collection and major GC slice.
+        \item[4] Growing and shrinking of the heap.
+        \item[8] Resizing of stacks and memory manager tables.
+        \item[16] Heap compaction.
+        \item[32] Change of GC parameters.
+        \item[64] Computation of major GC slice size.
+  \end{options}
   \item[l] ("stack_limit") The limit (in words) of the stack size.
   \item[h] The initial size of the major heap (in words).
   \end{options}
@@ -78,7 +87,7 @@ The following environment variables are also consulted:
         export CAMLRUNPARAM='s=256k,v=1'
 \end{alltt}
   tells a subsequent "ocamlrun" to set its initial minor heap size to
-  1~megabyte and to print its GC messages.
+  1~megabyte and to print a message at the start of each major GC cycle.
 
 \item["PATH"] List of directories searched to find the bytecode
 executable file.
@@ -100,7 +109,8 @@ system.
 
 \item["Cannot exec camlrun"]
 (When launching a self-executable bytecode file.) The "ocamlrun"
- could not be found in the executable path. Check that Objective Caml has been properly installed on your system.
+ could not be found in the executable path. Check that Objective Caml
+ has been properly installed on your system.
 
 \item["Cannot find the bytecode file"]
 The file that "ocamlrun" is trying to execute (e.g. the file given as
