@@ -316,6 +316,7 @@ system=unknown
 case "$host" in
   alpha-*-osf*)                 arch=alpha; system=digital;;
   alpha-*-linux*)               arch=alpha; system=linux;;
+  alpha-*-freebsd*)		arch=alpha; system=freebsd;;
   alpha-*-netbsd*)              arch=alpha; system=netbsd;;
   alpha-*-openbsd*)             arch=alpha; system=openbsd;;
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
@@ -369,6 +370,7 @@ case "$arch,$model,$system" in
   alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
                     asppprofflags='-pg -DPROFILING';;
   alpha,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  alpha,*,freebsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,netbsd)   aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,openbsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   mips,*,irix)      asflags='-n32 -O2'; asppflags="$asflags";;
@@ -394,6 +396,7 @@ esac
 case "$arch,$model,$system" in
   alpha,*,digital) profiling='prof';;
   i386,*,linux_elf) profiling='prof';;
+  i386,*,bsd_elf) profiling='prof';;
   *) profiling='noprof';;
 esac
 
@@ -428,16 +431,6 @@ fi
 # This is obviously a Unix system
 
 echo '#define OCAML_OS_TYPE "Unix"' >> s.h
-
-# If this system has <sys/types.h>, include it in all hasgot tests
-# (FreeBSD 3.x requires it for many headers)
-
-if sh ./hasgot -i sys/types.h; then
-  echo "sys/types.h found."
-  echo "#define HAS_SYS_TYPES_H" >> s.h
-  HAS_SYS_TYPES_H=yes
-  export HAS_SYS_TYPES_H
-fi
 
 # Find a good byte move function
 
@@ -519,7 +512,7 @@ if sh ./hasgot -i unistd.h; then
   echo "#define HAS_UNISTD" >> s.h
 fi
 
-if sh ./hasgot -i dirent.h; then
+if sh ./hasgot -i sys/types.h -i dirent.h; then
   echo "dirent.h found."
   echo "#define HAS_DIRENT" >> s.h
 fi
@@ -554,7 +547,7 @@ if sh ./hasgot getpriority setpriority; then
   echo "#define HAS_GETPRIORITY" >> s.h
 fi
 
-if sh ./hasgot -i utime.h && sh ./hasgot utime; then
+if sh ./hasgot -i sys/types.h -i utime.h && sh ./hasgot utime; then
   echo "utime() found."
   echo "#define HAS_UTIME" >> s.h
 fi
@@ -586,7 +579,7 @@ if sh ./hasgot select; then
   has_select=yes
 fi
 
-if sh ./hasgot -i sys/select.h; then
+if sh ./hasgot -i sys/types.h -i sys/select.h; then
   echo "sys/select.h found."
   echo "#define HAS_SYS_SELECT_H" >> s.h
 fi
@@ -609,7 +602,7 @@ if sh ./hasgot wait4;  then
   has_wait=yes
 fi
 
-if sh ./hasgot -i sys/param.h && sh ./runtest getgroups.c; then
+if sh ./hasgot -i limits.h && sh ./runtest getgroups.c; then
   echo "getgroups() found."
   echo "#define HAS_GETGROUPS" >> s.h
 fi
@@ -681,7 +674,7 @@ if sh ./hasgot -ldl dlopen; then
   dllib=-ldl
 fi
 
-if sh ./hasgot -i sys/mman.h && sh ./hasgot mmap munmap; then
+if sh ./hasgot -i sys/types.h -i sys/mman.h && sh ./hasgot mmap munmap; then
   echo "mmap() found."
   echo "#define HAS_MMAP" >> s.h
 fi
@@ -703,6 +696,7 @@ case "$host" in
   alpha-*-osf*) bignum_arch=alpha;;
   i[3456]86-*-linux) bignum_arch=x86;;
   i[3456]86-*-beos) bignum_arch=x86;;
+  i[3456]86-*-*bsd*) bignum_arch=x86;;
   sparc-*-sunos*) bignum_arch=supersparc;;
   sparc-*-solaris*) bignum_arch=supersparc-solaris;;
   sparc-*-*bsd*) bignum_arch=sparc;;
