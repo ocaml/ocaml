@@ -53,6 +53,7 @@ install:
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
 	rm -f $(LIBDIR)/threads/stdlib.cma
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
 
 installopt:
 	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
