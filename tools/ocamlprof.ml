@@ -6,7 +6,7 @@
 (*          Ported to Caml Special Light by John Malecki               *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -20,8 +20,15 @@ open Location
 open Misc
 open Parsetree
 
+(* User programs must not use identifiers that start with this prefix. *)
+let idprefix = "__ocaml_prof";;
+
+
 (* Errors specific to the profiler *)
 exception Profiler of string
+
+(* For use with the thread package *)
+let multithreaded = ref false
 
 (* Modes *)
 let instr_fun    = ref false
@@ -73,9 +80,16 @@ let insert_action = ref (function x -> () : int -> unit)
 
 (* Producing instrumented code *)
 let add_incr_counter mod_name prof_counter =
+   if !multithreaded then begin
+     fprintf !outchan "Mutex.lock %s_lck_%s_;" idprefix mod_name
+   end;
    fprintf !outchan
-           "profile_%s_.(%d) <- Pervasives.succ profile_%s_.(%d); "
-           mod_name prof_counter mod_name prof_counter
+           "%s_cnt_%s_.(%d) <- Pervasives.succ %s_cnt_%s_.(%d); "
+           idprefix mod_name prof_counter idprefix mod_name prof_counter;
+   if !multithreaded then begin
+     fprintf !outchan "Mutex.unlock %s_lck_%s_;" idprefix mod_name
+   end
+
 
 let counters = ref (Array.create 0 0)
 
@@ -118,11 +132,15 @@ let init_rewrite modes mod_name =
   cur_point := 0;
   profile_counter := 0;
   if !instr_mode then begin
-    fprintf !outchan "let profile_%s_ = Array.create 000000" mod_name;
+    if !multithreaded then begin
+      fprintf !outchan "let %s_lck_%s_ = Mutex.create ();;" idprefix mod_name
+    end;
+    fprintf !outchan "let %s_cnt_%s_ = Array.create 000000" idprefix mod_name;
     pos_len := pos_out !outchan;
     fprintf !outchan 
-            " 0;; Profiling.counters := (\"%s\", (\"%s\", profile_%s_)) :: !Profiling.counters;; "
-            mod_name modes mod_name
+            " 0;; Profiling.counters := \
+              (\"%s\", (\"%s\", %s_cnt_%s_)) :: !Profiling.counters;; "
+            mod_name modes idprefix mod_name
   end
 
 let final_rewrite () =
@@ -336,6 +354,13 @@ let rewrite_file srcfile =
   final_rewrite();
   close_in !inchan
 
+(* Copy a non-.ml file without change *)
+let null_rewrite srcfile =
+  inchan := open_in_bin srcfile;
+  copy (in_channel_length !inchan);
+  close_in !inchan
+;;
+
 (* Setting flags from saved config *)
 let set_flags s =
   for i = 0 to String.length s - 1 do
@@ -360,32 +385,33 @@ let dumpfile = ref "ocamlprof.dump"
 
 let process_file filename =
   if not (Filename.check_suffix filename ".ml") then
-    raise(Profiler(filename ^ " is not a .ml file"));
-  let modname = Filename.basename(Filename.chop_suffix filename ".ml") in
-  if !instr_mode then begin
-    (* Instrumentation mode *)
-    insert_action := add_incr_counter modname;
-    set_flags !modes;
-    init_rewrite !modes modname;
-    rewrite_file filename
-  end else begin
-    (* Results mode *)
-    insert_action := add_val_counter;
-    let ic = open_in_bin !dumpfile in
-    let allcounters =
-      (input_value ic : (string * (string * int array)) list) in
-    close_in ic;
-    let (modes, cv) =
-      try
-        List.assoc modname allcounters
-      with Not_found ->
-        raise(Profiler("Module " ^ modname ^ " not used in this profile."))
-    in
-    counters := cv;
-    set_flags modes;
-    init_rewrite modes modname;
-    rewrite_file filename
-  end
+    null_rewrite filename
+  else
+   let modname = Filename.basename(Filename.chop_suffix filename ".ml") in
+   if !instr_mode then begin
+     (* Instrumentation mode *)
+     insert_action := add_incr_counter modname;
+     set_flags !modes;
+     init_rewrite !modes modname;
+     rewrite_file filename
+   end else begin
+     (* Results mode *)
+     insert_action := add_val_counter;
+     let ic = open_in_bin !dumpfile in
+     let allcounters =
+       (input_value ic : (string * (string * int array)) list) in
+     close_in ic;
+     let (modes, cv) =
+       try
+         List.assoc modname allcounters
+       with Not_found ->
+         raise(Profiler("Module " ^ modname ^ " not used in this profile."))
+     in
+     counters := cv;
+     set_flags modes;
+     init_rewrite modes modname;
+     rewrite_file filename
+   end
 
 (* Main function *)
 
@@ -400,6 +426,7 @@ let main () =
              "<file>  Use <file> as dump file (default ocamlprof.dump)";
        "-F", Arg.String (fun s -> special_id := s),
              "<s>  Insert string <s> with the counts";
+       "-thread", Arg.Set multithreaded,  " (undocumented)";
        "-instrument", Arg.Set instr_mode, " (undocumented)";
        "-m", Arg.String (fun s -> modes := s), "<flags>  (undocumented)"
       ] process_file usage;
