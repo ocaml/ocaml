@@ -340,6 +340,6 @@ module Make(Obj : Obj) = struct
             print_list (i + 1) ty_list in
       cautious (print_list 0) ty_list
 
-    in print_val 0 max_depth obj ty
+    in cautious (print_val 0 max_depth obj) ty
 
 end
