@@ -2419,36 +2419,27 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
    [loops] is a mapping from variables to variables, to reproduce
      positive loops in a class type
    [posi] true if the current variance is positive
-   [onlyloop] does not open types, only build loops
-     true on the left side of an arrow, for efficiency reasons *)
+   [level] number of expansions/enlargement allowed on this branch *)
 
 let warn = ref false
 let pred_expand n = if n mod 2 = 0 && n > 0 then pred n else n
 let pred_enlarge n = if n mod 2 = 1 then pred n else n
 
-type change = Unchanged | Ignored | Changed
+type change = Unchanged | Equiv | Changed
 let collect l = List.fold_left (fun c1 (_, c2) -> max c1 c2) Unchanged l
-
-let rec filter_loops t = function
-    [] -> []
-  | (ty,_) :: r as l -> if deep_occur ty t then l else filter_loops t r
 
 let rec filter_visited = function
     [] -> []
-  | t :: r ->
-      match repr t with
-        {desc = Tobject _ | Tvariant _} -> []
-      | _ -> t :: filter_visited r
+  | {desc=Tobject _|Tvariant _} :: _ as l -> l
+  | _ :: l -> filter_visited l
 
-let rec build_subtype env visited loops posi onlyloop t =
+let rec build_subtype env visited loops posi level t =
   let t = repr t in
-  let loops = if onlyloop < 0 then filter_loops t loops else loops in
-  if onlyloop < 0 && loops = [] then (t, Unchanged) else
   match t.desc with
     Tvar ->
       if posi then
         try
-          (List.assq t loops, Ignored)
+          (List.assq t loops, Equiv)
         with Not_found ->
           (t, Unchanged)
       else
@@ -2457,9 +2448,8 @@ let rec build_subtype env visited loops posi onlyloop t =
       if List.memq t visited then (t, Unchanged) else
       let visited =
         if !Clflags.recursive_types then t :: visited else visited in
-      let (t1', c1) = build_subtype env visited loops (not posi) onlyloop t1 in
-      (* let (t1', c1) = (t1, Unchanged) in *)
-      let (t2', c2) = build_subtype env visited loops posi onlyloop t2 in
+      let (t1', c1) = build_subtype env visited loops (not posi) level t1 in
+      let (t2', c2) = build_subtype env visited loops posi level t2 in
       let c = max c1 c2 in
       if c > Unchanged then (newty (Tarrow(l, t1', t2', Cok)), c)
       else (t, Unchanged)
@@ -2468,18 +2458,16 @@ let rec build_subtype env visited loops posi onlyloop t =
       let visited =
         if !Clflags.recursive_types then t :: visited else visited in
       let tlist' =
-        List.map (build_subtype env visited loops posi onlyloop) tlist
+        List.map (build_subtype env visited loops posi level) tlist
       in
       let c = collect tlist' in
       if c > Unchanged then (newty (Ttuple (List.map fst tlist')), c)
       else (t, Unchanged)
-  | Tconstr(p, tl, abbrev) when onlyloop > 0 && generic_abbrev env p ->
+  | Tconstr(p, tl, abbrev) when level > 0 && generic_abbrev env p ->
       let t' = repr (expand_abbrev env t) in
-      let visited =
-        if !Clflags.recursive_types then filter_visited visited else [] in
+      let level' = pred_expand level in
       begin try match t'.desc with
         Tobject _ when posi && not (opened_object t') ->
-          (* if List.memq t' visited then (t, Unchanged) else *)
           let rec lid_of_path sharp = function
               Path.Pident id ->
                 Longident.Lident (sharp ^ Ident.name id)
@@ -2503,20 +2491,19 @@ let rec build_subtype env visited loops posi onlyloop t =
           in
           ty.desc <- Tvar;
           let t'' = newvar () in
-          let visited = t' :: visited and loops = (ty, t'') :: loops in
+          let loops = (ty, t'') :: loops in
+          (* May discard [visited] as level is going down *)
           let (ty1', c) =
-	    build_subtype env visited loops posi
-	      (pred_enlarge (pred_expand onlyloop)) ty1 in
+            build_subtype env [t'] loops posi (pred_enlarge level') ty1 in
           assert (t''.desc = Tvar);
           let nm =
-            if c > Ignored || deep_occur ty ty1' then None else Some(p,tl1) in
+            if c > Equiv || deep_occur ty ty1' then None else Some(p,tl1) in
           t''.desc <- Tobject (ty1', ref nm);
           (try unify_var env ty t with Unify _ -> assert false);
           (t'', Changed)
       | _ -> raise Not_found
       with Not_found ->
-	let (t'',c) =
-          build_subtype env visited loops posi (pred_expand onlyloop) t' in
+	let (t'',c) = build_subtype env visited loops posi level' t' in
         if c > Unchanged then (t'',c)
         else (t, Unchanged)
       end
@@ -2527,15 +2514,15 @@ let rec build_subtype env visited loops posi onlyloop t =
       let visited = t :: visited in
       begin try
         let decl = Env.find_type p env in
-        if onlyloop = 0 && generic_abbrev env p then warn := true;
+        if level = 0 && generic_abbrev env p then warn := true;
         let tl' =
           List.map2
             (fun (co,cn) t ->
               if cn then
                 if co then (t, Unchanged)
-                else build_subtype env visited loops (not posi) onlyloop t
+                else build_subtype env visited loops (not posi) level t
               else
-                if co then build_subtype env visited loops posi onlyloop t
+                if co then build_subtype env visited loops posi level t
                 else (newvar(), Changed))
             decl.type_variance tl
         in
@@ -2546,10 +2533,11 @@ let rec build_subtype env visited loops posi onlyloop t =
         (t, Unchanged)
       end
   | Tvariant row ->
-      if List.memq t visited then (t, Unchanged) else
-      let visited = t :: visited in
       let row = row_repr row in
-      if not (static_row row) then (t, Unchanged) else
+      if List.memq t visited || not (static_row row) then (t, Unchanged) else
+      let level' = pred_enlarge level in
+      let visited =
+        t :: if level' < level then [] else filter_visited visited in
       let bound = ref row.row_bound in
       let fields = filter_row_fields false row.row_fields in
       let short = posi && List.length fields <= 1 in
@@ -2562,10 +2550,8 @@ let rec build_subtype env visited loops posi onlyloop t =
               else
                 orig, Unchanged
           | Rpresent(Some t) ->
-              let (t', c) =
-                build_subtype env visited loops posi (pred_enlarge onlyloop) t
-	      in
-              if posi && onlyloop > 0 && not short then begin
+              let (t', c) = build_subtype env visited loops posi level' t in
+              if posi && level > 0 && not short then begin
                 bound := t' :: !bound;
                 (l, Reither(false, [t'], false, ref None)), c
               end else
@@ -2581,18 +2567,17 @@ let rec build_subtype env visited loops posi onlyloop t =
           row_name = if c > Unchanged then None else row.row_name }
       in
       (newty (Tvariant row), Changed)
-  | Tobject (t1, _) when opened_object t1 ->
-      (t, Unchanged)
   | Tobject (t1, _) ->
-      if List.memq t visited then (t, Unchanged) else
-      let (t1', c) =
-        build_subtype env (t :: visited) loops posi (pred_enlarge onlyloop) t1
-      in
+      if List.memq t visited || opened_object t1 then (t, Unchanged) else
+      let level' = pred_enlarge level in
+      let visited =
+        t :: if level' < level then [] else filter_visited visited in
+      let (t1', c) = build_subtype env visited loops posi level' t1 in
       if c > Unchanged then (newty (Tobject (t1', ref None)), c)
       else (t, Unchanged)
   | Tfield(s, _, t1, t2) (* Always present *) ->
-      let (t1', c1) = build_subtype env visited loops posi onlyloop t1 in
-      let (t2', c2) = build_subtype env visited loops posi onlyloop t2 in
+      let (t1', c1) = build_subtype env visited loops posi level t1 in
+      let (t2', c2) = build_subtype env visited loops posi level t2 in
       let c = max c1 c2 in
       if c > Unchanged then (newty (Tfield(s, Fpresent, t1', t2')), c)
       else (t, Unchanged)
@@ -2605,7 +2590,7 @@ let rec build_subtype env visited loops posi onlyloop t =
   | Tsubst _ | Tlink _ ->
       assert false
   | Tpoly(t1, tl) ->
-      let (t1', c) = build_subtype env visited loops posi onlyloop t1 in
+      let (t1', c) = build_subtype env visited loops posi level t1 in
       if c > Unchanged then (newty (Tpoly(t1', tl)), c)
       else (t, Unchanged)
   | Tunivar ->
@@ -2613,7 +2598,7 @@ let rec build_subtype env visited loops posi onlyloop t =
 
 let enlarge_type env ty =
   warn := false;
-  (* onlyloop = 4 allows 2 expansions involving objects/variants *)
+  (* [level = 4] allows 2 expansions involving objects/variants *)
   let (ty', _) = build_subtype env [] [] true 4 ty in
   (ty', !warn)
 
