@@ -15,7 +15,6 @@
 (* Compilation of pattern matching *)
 
 open Misc
-open Location
 open Asttypes
 open Primitive
 open Types
@@ -1282,8 +1281,8 @@ let partial_function loc () =
           [transl_path Predef.path_match_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string !Location.input_name);
-               Const_base(Const_int loc.loc_start);
-               Const_base(Const_int loc.loc_end)]))])])
+               Const_base(Const_int loc.Location.loc_start);
+               Const_base(Const_int loc.Location.loc_end)]))])])
 
 let for_function loc repr param pat_act_list partial =
   compile_matching loc repr (partial_function loc) param pat_act_list partial

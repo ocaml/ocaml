@@ -12,17 +12,17 @@
 
 (* $Id$ *)
 
-(* Error report *)
-
 open Format
-open Location
+
 
 (* Report an error *)
 
 let report_error ppf exn =
   let report ppf = function
   | Lexer.Error(err, start, stop) ->
-      Location.print ppf {loc_start = start; loc_end = stop; loc_ghost = false};
+      Location.print ppf {Location.loc_start = start;
+                          Location.loc_end = stop;
+                          Location.loc_ghost = false};
       Lexer.report_error ppf err
   | Syntaxerr.Error err ->
       Syntaxerr.report_error ppf err
