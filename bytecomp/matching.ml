@@ -220,17 +220,23 @@ let divide_orpat = function
 
 (* Matching against an array pattern *)
 
-let make_array_matching len = function
+let make_array_matching kind len = function
     [] -> fatal_error "Matching.make_array_matching"
   | ((arg, mut) :: argl) ->
-      {cases = []; args = make_field_args StrictOpt arg 0 (len - 1) argl}
+      let rec make_args pos =
+        if pos >= len
+        then argl
+        else (Lprim(Parrayrefu kind, [arg; Lconst(Const_base(Const_int pos))]),
+              StrictOpt) :: make_args (pos + 1) in
+      {cases = []; args = make_args 0}
 
-let divide_array {cases = cl; args = al} =
+let divide_array kind {cases = cl; args = al} =
   let rec divide = function
       ({pat_desc = Tpat_array(args)} :: patl, action) :: rem ->
         let len = List.length args in
         let (constructs, others) = divide rem in
-        (add (make_array_matching len) constructs len (args @ patl, action) al,
+        (add (make_array_matching kind len) constructs len
+             (args @ patl, action) al,
          others)
     | cl ->
       ([], {cases = cl; args = al})
@@ -456,10 +462,10 @@ let rec compile_match repr m =
                 combine_var (compile_match repr records)
                             (compile_match repr others)
             | Tpat_array(patl) ->
-                let (arrays, others) = divide_array pm in
-                combine_array (Typeopt.array_pattern_kind pat) newarg
-                              (compile_list arrays)
-                              (compile_match repr others)
+                let kind = Typeopt.array_pattern_kind pat in
+                let (arrays, others) = divide_array kind pm in
+                combine_array kind newarg (compile_list arrays)
+                                          (compile_match repr others)
             | Tpat_or(pat1, pat2) ->
                 (* Avoid duplicating the code of the action *)
                 let (or_match, remainder_line, others) = divide_orpat pm in

@@ -25,12 +25,26 @@ let h = function
 (* Matching with orpats *)
 
 let k = function
-    ' ' | '\t' | '\n' | '\r' -> "blank"
-  | 'A'..'Z' | 'a'..'z' | '\192'..'\255' -> "letter"
-  | '0'..'9' -> "digit"
+    ' ' | '\t' | '\n' | '\r' -> "blk"
+  | 'A'..'Z' | 'a'..'z' | '\192'..'\255' -> "letr"
+  | '0'..'9' -> "dig"
   | '!'|'%'|'&'|'$'|'#'|'+'|'/'|':'|'<'|'='|'>'|'?'|'@'|'\\'|
-             '~'|'^'|'|'|'*' -> "operator"
-  | _ -> "other"
+             '~'|'^'|'|'|'*' -> "oper"
+  | _ -> "othr"
+
+(* Matching on arrays *)
+
+let p = function [| x |] -> x | _ -> assert false
+
+let q = function [| x |] -> x | _ -> 0
+
+let r = function [| x |] -> x | _ -> 0.0
+
+let l = function
+    [||] -> 0
+  | [|x|] -> x + 1
+  | [|x;y|] -> x + y
+  | [|x;y;z|] -> x + y + z
 
 (* The test *)
 
@@ -47,8 +61,17 @@ let _ =
   done;
   for i = 0 to 255 do
     let c = Char.chr i in
-    printf "k(%s) = %s\n" (Char.escaped c) (k c)
+    printf "k(%s) = %s\t" (Char.escaped c) (k c)
   done;
+  printf "\n";
+  printf "p([|\"hello\"|]) = %s\n" (p [|"hello"|]);
+  printf "p([|1.0|]) = %f\n" (p [|1.0|]);
+  printf "q([|2|]) = %d\n" (q [|2|]);
+  printf "r([|3.0|]) = %f\n" (r [|3.0|]);
+  printf "l([||]) = %d\n" (l [||]);
+  printf "l([|1|]) = %d\n" (l [|1|]);
+  printf "l([|2;3|]) = %d\n" (l [|2;3|]);
+  printf "l([|4;5;6|]) = %d\n" (l [|4;5;6|]);
   exit 0
 
 
