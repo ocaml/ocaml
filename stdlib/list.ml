@@ -103,7 +103,8 @@ let rec split = function
   | (x,y)::l ->
       let (rx, ry) = split l in (x::rx, y::ry)
 
-let rec combine = function
+let rec combine l1 l2 =
+  match (l1, l2) with
     ([], []) -> []
-  | (a1::l1, a2::l2) -> (a1, a2) :: combine(l1, l2)
+  | (a1::l1, a2::l2) -> (a1, a2) :: combine l1 l2
   | (_, _) -> invalid_arg "List.combine"

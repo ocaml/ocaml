@@ -54,11 +54,11 @@ external (asr) : int -> int -> int = "%asrint"
 
 (* Floating-point operations *)
 
-external (~-.) : float -> float = "neg_float"
-external (+.) : float -> float -> float = "add_float"
-external (-.) : float -> float -> float = "sub_float"
-external ( *. ) : float -> float -> float = "mul_float"
-external (/.) : float -> float -> float = "div_float"
+external (~-.) : float -> float = "%negfloat"
+external (+.) : float -> float -> float = "%addfloat"
+external (-.) : float -> float -> float = "%subfloat"
+external ( *. ) : float -> float -> float = "%mulfloat"
+external (/.) : float -> float -> float = "%divfloat"
 external ( ** ) : float -> float -> float = "power_float"
 external exp : float -> float = "exp_float"
 external log : float -> float = "log_float"

@@ -21,5 +21,5 @@ val assoc : 'a -> ('a * 'b) list -> 'b
 val mem_assoc : 'a -> ('a * 'b) list -> bool
 val assq : 'a -> ('a * 'b) list -> 'b
 val split : ('a * 'b) list -> 'a list * 'b list
-val combine : 'a list * 'b list -> ('a * 'b) list
+val combine : 'a list -> 'b list -> ('a * 'b) list
 
