@@ -118,9 +118,9 @@ type nativeint
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
-type ('a, 'b, 'c, 'd) format
+type ('a, 'b, 'c, 'd) format4
 \end{ocamldoccode}
-\index{format@\verb`format`}
+\index{format4@\verb`format4`}
 \begin{ocamldocdescription}
   The type of format strings. "'a" is the type of the parameters
   of the format, "'d" is the result type for the "printf"-style
