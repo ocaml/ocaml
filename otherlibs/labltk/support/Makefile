@@ -28,10 +28,8 @@ PUB=fileevent.cmi fileevent.mli \
 
 install: liblabltk41.a $(PUB)
 	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	cp $(PUB) $(LABLTKDIR)
-	cd $(LABLTKDIR); chmod 644 $(PUB)
-	cp liblabltk41.a $(LIBDIR)
-	chmod 644 $(LIBDIR)/liblabltk41.a
+	cp $(PUB) liblabltk41.a $(LABLTKDIR)
+	cd $(LABLTKDIR); chmod 644 $(PUB) liblabltk41.a
 
 clean : 
 	rm -f *.cm* *.o *.a

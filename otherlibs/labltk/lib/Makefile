@@ -26,7 +26,7 @@ labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
           -cclib -llabltk41 $(TK_LINK) $(X11_LINK)
 
 labltktop : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
-	$(LABLC) -custom -linkall -o labltktop -I ../support $(TKLINKOPT) \
+	$(LABLC) -custom -linkall -o labltktop -I ../support \
 	       -I $(TOPDIR)/toplevel toplevellib.cma labltk.cma \
 	       -I $(OTHERS)/unix unix.cma \
 	       -I $(OTHERS)/str str.cma \

@@ -7,9 +7,6 @@ OTHERS=../..
 include $(TOPDIR)/config/Makefile
 
 LABLTKDIR=$(LIBDIR)/labltk
-TKLINKOPT=$(STATIC) \
-          -ccopt -L../support -ccopt -L$(OTHERS)/str -ccopt -L$(OTHERS)/unix
-
 
 ## Tools from the Objective Caml distribution
 
