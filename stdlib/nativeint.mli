@@ -89,6 +89,16 @@ external to_int: nativeint -> int = "%nativeint_to_int"
          integer (type [int]).  The high-order bit is lost during
          the conversion. *)
 
+external of_int32: int32 -> nativeint = "%nativeint_of_int32"
+      (* Convert the given 32-bit integer (type [int32])
+         to a native integer. *)
+external to_int32: nativeint -> int32 = "%nativeint_to_int32"
+      (* Convert the given native integer to a
+         32-bit integer (type [int32]).  On 64-bit platforms,
+         the 64-bit native integer is taken modulo $2^{32}$,
+         i.e. the top 32 bits are lost.  On 32-bit platforms,
+         the conversion is exact. *)
+
 external of_string: string -> nativeint = "nativeint_of_string"
       (* Convert the given string to a native integer.
          The string is read in decimal (by default) or in hexadecimal,

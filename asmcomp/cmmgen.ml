@@ -559,6 +559,10 @@ let default_prim name =
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "int64_of_int")
   | Pintofbint Pint64 -> Pccall (default_prim "int64_to_int")
+  | Pcvtbint(Pint32, Pint64) -> Pccall (default_prim "int64_of_int32")
+  | Pcvtbint(Pint64, Pint32) -> Pccall (default_prim "int64_to_int32")
+  | Pcvtbint(Pnativeint, Pint64) -> Pccall (default_prim "int64_of_nativeint")
+  | Pcvtbint(Pint64, Pnativeint) -> Pccall (default_prim "int64_to_nativeint")
   | Pnegbint Pint64 -> Pccall (default_prim "int64_neg")
   | Paddbint Pint64 -> Pccall (default_prim "int64_add")
   | Psubbint Pint64 -> Pccall (default_prim "int64_sub")
@@ -882,6 +886,8 @@ and transl_prim_1 p arg =
       box_int bi (untag_int (transl arg))
   | Pintofbint bi ->
       tag_int (transl_unbox_int bi arg)
+  | Pcvtbint(bi1, bi2) ->
+      box_int bi2 (transl_unbox_int bi1 arg)
   | Pnegbint bi ->
       box_int bi (Cop(Csubi, [Cconst_int 0; transl_unbox_int bi arg]))
   | _ ->

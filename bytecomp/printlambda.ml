@@ -43,11 +43,16 @@ let rec struct_const ppf = function
 
 let print_id ppf id = Ident.print id
 
+let boxed_integer_name = function
+    Pnativeint -> "nativeint"
+  | Pint32 -> "int32"
+  | Pint64 -> "int64"
+
 let print_boxed_integer name bi =
-  match bi with
-    Pnativeint -> printf "Nativeint.%s" name
-  | Pint32 -> printf "Int32.%s" name
-  | Pint64 -> printf "Int64.%s" name
+  printf "%s_%s" (boxed_integer_name bi) name
+
+let print_boxed_integer_conversion bi1 bi2 =
+  printf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
 
 let print_bigarray name kind layout =
   printf "Bigarray.%s[%s,%s]"
@@ -136,6 +141,7 @@ let primitive ppf = function
   | Pbittest -> print_string "testbit"
   | Pbintofint bi -> print_boxed_integer "of_int" bi
   | Pintofbint bi -> print_boxed_integer "to_int" bi
+  | Pcvtbint(bi1, bi2) -> print_boxed_integer_conversion bi1 bi2
   | Pnegbint bi -> print_boxed_integer "neg" bi
   | Paddbint bi -> print_boxed_integer "add" bi
   | Psubbint bi -> print_boxed_integer "sub" bi

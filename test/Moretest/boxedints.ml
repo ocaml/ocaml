@@ -498,7 +498,7 @@ let _ =
                                module Ops = Int64
                                let testcomp = testcomp_int64 end) in
   print_newline(); testing_function "-------- Nativeint --------";
-  match Sys.word_size with
+  begin match Sys.word_size with
     32 ->
       let module C =
         Test32(struct type t = nativeint 
@@ -513,6 +513,33 @@ let _ =
       in ()
   | _ ->
       assert false
+  end;
+  print_newline(); testing_function "--------- Conversions -----------";
+  testing_function "nativeint of/to int32";
+  test 1 (Nativeint.of_int32 (Int32.of_string "0x12345678"))
+         (Nativeint.of_string "0x12345678");
+  test 2 (Nativeint.to_int32 (Nativeint.of_string "0x12345678"))
+         (Int32.of_string "0x12345678");
+  test 3 (Nativeint.to_int32 (Nativeint.of_string "0x123456789ABCDEF0"))
+         (Int32.of_string "0x9ABCDEF0");
+  testing_function "int64 of/to int32";
+  test 1 (Int64.of_int32 (Int32.of_string "-0x12345678"))
+         (Int64.of_string "-0x12345678");
+  test 2 (Int64.to_int32 (Int64.of_string "-0x12345678"))
+         (Int32.of_string "-0x12345678");
+  test 3 (Int64.to_int32 (Int64.of_string "0x123456789ABCDEF0"))
+         (Int32.of_string "0x9ABCDEF0");
+  testing_function "int64 of/to nativeint";
+  test 1 (Int64.of_nativeint (Nativeint.of_string "0x12345678"))
+         (Int64.of_string "0x12345678");
+  test 2 (Int64.to_nativeint (Int64.of_string "-0x12345678"))
+         (Nativeint.of_string "-0x12345678");
+  test 3 (Int64.to_nativeint (Int64.of_string "0x123456789ABCDEF0"))
+         (Nativeint.of_string "0x123456789ABCDEF0");
+  test 4 (Int64.of_nativeint (Nativeint.of_string "0x9ABCDEF012345678"))
+         (if Sys.word_size = 64
+          then Int64.of_string "0x9ABCDEF012345678"
+          else Int64.of_string "0x12345678")
 
 (********* End of test *********)
 

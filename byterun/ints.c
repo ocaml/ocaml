@@ -340,6 +340,12 @@ value int64_of_int32(value v) /* ML */
 value int64_to_int32(value v) /* ML */
 { return copy_int32((int32) Int64_val(v)); }
 
+value int64_of_nativeint(value v) /* ML */
+{ return copy_int64(Nativeint_val(v)); }
+
+value int64_to_nativeint(value v) /* ML */
+{ return copy_nativeint((long) Int64_val(v)); }
+
 value int64_format(value fmt, value arg)      /* ML */
 {
   char format_string[64], default_format_buffer[64];
@@ -424,6 +430,12 @@ value int64_of_int32(value v)
 { invalid_argument(int64_error); }
 
 value int64_to_int32(value v)
+{ invalid_argument(int64_error); }
+
+value int64_of_nativeint(value v)
+{ invalid_argument(int64_error); }
+
+value int64_to_nativeint(value v)
 { invalid_argument(int64_error); }
 
 value int64_format(value fmt, value arg)
@@ -552,6 +564,12 @@ value nativeint_of_int(value v) /* ML */
 
 value nativeint_to_int(value v) /* ML */
 { return Val_long(Nativeint_val(v)); }
+
+value nativeint_of_int32(value v) /* ML */
+{ return copy_nativeint(Int32_val(v)); }
+
+value nativeint_to_int32(value v) /* ML */
+{ return copy_int32(Nativeint_val(v)); }
 
 value nativeint_format(value fmt, value arg)      /* ML */
 {

@@ -28,8 +28,10 @@ external shift_right: int64 -> int -> int64 = "%int64_asr"
 external shift_right_logical: int64 -> int -> int64 = "%int64_lsr"
 external of_int: int -> int64 = "%int64_of_int"
 external to_int: int64 -> int = "%int64_to_int"
-external of_int32: int32 -> int64 = "int64_of_int32"
-external to_int32: int64 -> int32 = "int64_to_int32"
+external of_int32: int32 -> int64 = "%int64_of_int32"
+external to_int32: int64 -> int32 = "%int64_to_int32"
+external of_nativeint: nativeint -> int64 = "%int64_of_nativeint"
+external to_nativeint: int64 -> nativeint = "%int64_to_nativeint"
 
 let zero = try of_int 0 with Invalid_argument _ -> Obj.magic Int32.zero
 let one = try of_int 1 with Invalid_argument _ -> Obj.magic Int32.one
