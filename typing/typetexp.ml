@@ -36,9 +36,12 @@ exception Error of Location.t * error
 
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 
+let true_type_variables = ref []
+
 let reset_type_variables () =
   reset_global_level ();
-  type_variables := Tbl.empty
+  type_variables := Tbl.empty;
+  true_type_variables := []
 
 let enter_type_variable strict name =
   try
@@ -57,9 +60,7 @@ let type_variable loc name =
     raise(Error(loc, Unbound_type_variable name))
 
 let type_variable_list () =
-  let l = ref [] in
-  Tbl.iter (fun _ v -> l := v::!l) !type_variables;
-  !l
+  !true_type_variables
 
 let rec transl_simple_type env fixed styp =
   match styp.ptyp_desc with
@@ -72,6 +73,7 @@ let rec transl_simple_type env fixed styp =
         else begin
           let v = new_global_var() in
           type_variables := Tbl.add name v !type_variables;
+          true_type_variables := v :: !true_type_variables;
           v
         end
       end
