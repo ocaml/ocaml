@@ -32,11 +32,6 @@
 /* The Tcl interpretor */
 Tcl_Interp *cltclinterp = NULL;
 
-CAMLexport Tcl_Interp * get_cltclinterp(void)
-{
-  return cltclinterp;
-}
-
 /* Copy a list of strings from the C heap to Caml */
 value copy_string_list(int argc, char **argv)
 {

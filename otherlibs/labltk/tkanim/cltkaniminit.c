@@ -22,7 +22,7 @@ extern int Tkanim_Init(Tcl_Interp *);
 CAMLprim value tkanim_init (rien) /* ML */
      value rien;
 {
-  if (Tkanim_Init(get_cltclinterp()) != TCL_OK)
+  if (Tkanim_Init(cltclinterp) != TCL_OK)
     tk_error ("Can't initialize TkAnim");
   return Val_unit;
 }

@@ -16,6 +16,12 @@
 
 /* $Id$ */
 
+#if defined(_WIN32) && defined(CAML_DLL) && defined(IN_CAMLTKSUPPORT)
+#define CAMLTKextern CAMLexport
+#else
+#define CAMLTKextern CAMLextern
+#endif
+
 /* cltkMisc.c */
 /* copy a Caml string to the C heap. Must be deallocated with stat_free */
 extern char *string_to_c(value s);
@@ -25,8 +31,7 @@ extern value tcl_string_to_caml( char * );
 extern char * caml_string_to_tcl( value );
 
 /* cltkEval.c */
-extern Tcl_Interp *cltclinterp; /* The Tcl interpretor */
-extern Tcl_Interp * get_cltclinterp(void);
+CAMLTKextern Tcl_Interp *cltclinterp; /* The Tcl interpretor */
 extern value copy_string_list(int argc, char ** argv);
 
 /* cltkCaml.c */
@@ -35,7 +40,7 @@ extern value *tkerror_exn;
 extern value *handler_code;
 extern int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp,
                      int argc, char *argv[]);
-extern void tk_error(char * errmsg) Noreturn;
+CAMLTKextern void tk_error(char * errmsg) Noreturn;
 
 /* cltkMain.c */
 extern int signal_events;

@@ -13,7 +13,7 @@ COBJS=cltkCaml.o cltkUtf.o cltkEval.o cltkEvent.o cltkFile.o \
 DCOBJS=$(COBJS:.o=.$(DO))
 SCOBJS=$(COBJS:.o=.$(SO))
 
-CCFLAGS=-I../../../byterun -I../../win32unix $(TK_DEFS)
+CCFLAGS=-I../../../byterun -I../../win32unix $(TK_DEFS) -DIN_CAMLTKSUPPORT
 
 COMPFLAGS=-I $(OTHERS)/win32unix
 
