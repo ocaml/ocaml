@@ -629,9 +629,20 @@ let transl_class ids cl_id arity pub_meths cl =
     Llet(Strict, class_init, Lfunction(Curried, [cla], cl_init),
          lam class_init)
   and lbody class_init =
-    Lapply (oo_prim "make_class",
-            [transl_meth_list pub_meths; Lvar class_init])
-  and lbody_virt lenvs =
+    let fv = free_variables cl_init in
+    if List.for_all (fun id -> not (IdentSet.mem id fv)) ids then
+      Lapply (oo_prim "make_class",
+	      [transl_meth_list pub_meths; Lvar class_init])
+    else
+      ltable table (
+      Llet(
+      Strict, env_init, Lapply(Lvar class_init, [Lvar table]),
+      Lsequence(
+      Lapply (oo_prim "init_class", [Lvar table]),
+      Lprim(Pmakeblock(0, Immutable),
+	    [Lapply(Lvar env_init, [lambda_unit]);
+	     Lvar class_init; Lvar env_init; lambda_unit]))))
+    and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
           [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])
   in
