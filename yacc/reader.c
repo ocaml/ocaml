@@ -345,7 +345,6 @@ loop:
 	if (line) goto loop;
 	unterminated_text(t_lineno, t_line, t_cptr);
 
-    case '`':
     case '"':
 	{
 	    int s_lineno = lineno;
@@ -379,6 +378,23 @@ loop:
 		}
 	    }
 	}
+
+    case '\'':
+	putc(c, f);
+        if (cptr[0] != 0 && cptr[0] != '\\' && cptr[1] == '\'') {
+          fwrite(cptr, 1, 2, f);
+          cptr += 2;
+        } else
+        if (cptr[0] == '\\' && isdigit(cptr[1]) && isdigit(cptr[2]) &&
+            isdigit(cptr[3]) && cptr[4] == '\'') {
+          fwrite(cptr, 1, 5, f);
+          cptr += 5;
+        } else
+        if (cptr[0] == '\\' && cptr[2] == '\'') {
+          fwrite(cptr, 1, 3, f);
+          cptr += 3;
+        }
+        goto loop;
 
     case '(':
 	putc(c, f);
@@ -1277,7 +1293,6 @@ loop:
 	--depth;
         goto loop;
 
-    case '`':
     case '"':
 	{
 	    int s_lineno = lineno;
@@ -1309,6 +1324,22 @@ loop:
 		}
 	    }
 	}
+
+    case '\'':
+        if (cptr[0] != 0 && cptr[0] != '\\' && cptr[1] == '\'') {
+          fwrite(cptr, 1, 2, f);
+          cptr += 2;
+        } else
+        if (cptr[0] == '\\' && isdigit(cptr[1]) && isdigit(cptr[2]) &&
+            isdigit(cptr[3]) && cptr[4] == '\'') {
+          fwrite(cptr, 1, 5, f);
+          cptr += 5;
+        } else
+        if (cptr[0] == '\\' && cptr[2] == '\'') {
+          fwrite(cptr, 1, 3, f);
+          cptr += 3;
+        }
+        goto loop;
 
     case '(':
 	c = *cptr;
