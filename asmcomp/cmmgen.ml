@@ -324,14 +324,16 @@ let lookup_tag_cache obj tag cache n =
     let mask = get_field (Cvar meths) 1 in
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [cached_pos; Cconst_int(2*size_addr)]) in
-    let tag' = Cop(Cload Word, [Cop(Cadda, [Cvar meths; tag_pos])]) in
+    let tag' = Cop(Cload Word, [tag_pos]) in
     let meth_pos = Cop(Cadda, [cached_pos; Cconst_int size_addr]) in
     Clet(meths, Cop(Cload Word, [obj]),
-    Clet(cached, Cop(Cand, [Cop(Cload Word, [cache n]); mask]),
+    Clet(cached,
+	 Cop(Cadda,
+	     [Cop(Cand, [Cop(Cload Word, [cache n]); mask]); Cvar meths]),
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
 		Cop(Cextcall("oo_cache_public_method", typ_addr, false),
 		    [Cvar meths; tag; cache n]),
-                Cop(Cload Word, [Cop(Cadda, [Cvar meths; meth_pos])]))
+                Cop(Cload Word, [meth_pos]))
 	))))
 
 let lookup_tag obj tag =
