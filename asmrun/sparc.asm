@@ -44,6 +44,12 @@
 #define Caml_start_program _caml_start_program
 #define Caml_program _caml_program
 #define Raise_caml_exception _raise_caml_exception
+#define Callback _callback
+#define Callback2 _callback2
+#define Callback3 _callback3
+#define Caml_apply2 _caml_apply2
+#define Caml_apply3 _caml_apply3
+#define System_frametable _system_frametable
 
 #endif
 
@@ -76,6 +82,12 @@
 #define Caml_start_program caml_start_program
 #define Caml_program caml_program
 #define Raise_caml_exception raise_caml_exception
+#define Callback callback
+#define Callback2 callback2
+#define Callback3 callback3
+#define Caml_apply2 caml_apply2
+#define Caml_apply3 caml_apply3
+#define System_frametable system_frametable
 
 #endif
 
@@ -266,3 +278,72 @@ L107:   mov     %g5, %sp
         jmp     %g4 + 8
     /* Restore bucket, in delay slot */
 	mov     %g1, %o0
+
+/* Callbacks C -> ML */
+
+        .global Callback
+Callback:
+    /* Save callee-save registers and return address */
+        save    %sp, -104, %sp
+    /* Initial shuffling of arguments */
+        mov     %i0, %g1
+        mov     %i1, %i0        /* first arg */
+        mov     %g1, %i1        /* environment */
+        ld      [%g1], %l2      /* code pointer */
+L108:
+    /* Set up a callback link on the stack. */
+        Load(Caml_bottom_of_stack, %l0)
+        Load(Caml_last_return_address, %l1)
+        std     %l0, [%sp + 96]
+    /* Reload allocation pointers and trap pointer */
+        Load(Caml_exception_pointer, %g5)
+        Load(Young_ptr, %g6)
+        Load(Young_start, %g7)
+    /* Call the Caml code */
+L109:   call    %l2
+        nop
+    /* Restore the global variables used by caml_c_call */
+        Store(%g5, Caml_exception_pointer)
+        Store(%g6, Young_ptr)
+        ld      [%sp + 100], %l0
+        Store(%l0, Caml_last_return_address)
+    /* Move result where the C function expects it */
+        mov     %o0, %i0        /* %i0 will become %o0 after restore */
+    /* Reload callee-save registers and return */
+        ret
+        restore
+
+        .global Callback2
+Callback2:
+    /* Save callee-save registers and return address */
+        save    %sp, -104, %sp
+    /* Initial shuffling of arguments */
+        mov     %i0, %g1
+        mov     %i1, %i0        /* first arg */
+        mov     %i2, %i1        /* second arg */
+        mov     %g1, %i2        /* environment */
+        sethi   %hi(Caml_apply2), %l2
+        b       L108
+        or      %l2, %lo(Caml_apply2), %l2
+
+        .global Callback3
+Callback3:
+    /* Save callee-save registers and return address */
+        save    %sp, -104, %sp
+    /* Initial shuffling of arguments */
+        mov     %i0, %g1
+        mov     %i1, %i0        /* first arg */
+        mov     %i2, %i1        /* second arg */
+        mov     %i3, %i2        /* third arg */
+        mov     %g1, %i3        /* environment */
+        sethi   %hi(Caml_apply3), %l2
+        b       L108
+        or      %l2, %lo(Caml_apply3), %l2
+
+        .data
+        .global System_frametable
+System_frametable:
+        .word   1               /* one descriptor */
+        .word   L109            /* return address into callback */
+        .half   -1              /* negative frame size => use callback link */
+        .half   0               /* no roots */

@@ -28,6 +28,7 @@
 #define Already_scanned(sp, retaddr) (retaddr & 1)
 #define Mark_scanned(sp, retaddr) (*((long *)(sp - 8)) = retaddr | 1)
 #define Mask_already_scanned(retaddr) (retaddr & ~1)
+#define Callback_link(sp) ((struct callback_link *)sp)
 #endif
 
 #ifdef TARGET_mips
@@ -42,6 +43,7 @@
 #define Already_scanned(sp, retaddr) (retaddr & 1)
 #define Mark_scanned(sp, retaddr) (*((long *)(sp + 92)) = retaddr | 1)
 #define Mask_already_scanned(retaddr) (retaddr & ~1)
+#define Callback_link(sp) ((struct callback_link *)(sp + 96))
 #endif
 
 #ifdef TARGET_i386
@@ -193,10 +195,9 @@ void oldify_local_roots ()
       if (d->retaddr == retaddr) break;
       h = (h+1) & frame_descriptors_mask;
     }
-    n = d->num_live;
-    if (n >= 0) {
+    if (d->frame_size >= 0) {
       /* Scan the roots in this frame */
-      for (p = d->live_ofs; n > 0; n--, p++) {
+      for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
         ofs = *p;
         if (ofs & 1) {
           root = &gc_entry_regs[ofs >> 1];
@@ -221,8 +222,8 @@ void oldify_local_roots ()
     } else {
       /* This marks the top of a stack chunk for an ML callback.
          Skip C portion of stack and continue with next ML stack chunk. */
-      retaddr = ((struct callback_link *) sp)->return_address;
-      sp = ((struct callback_link *) sp)->bottom_of_stack;
+      retaddr = Callback_link(sp)->return_address;
+      sp = Callback_link(sp)->bottom_of_stack;
     }
   }
   /* Local C roots */
@@ -276,10 +277,9 @@ void darken_all_roots ()
       if (d->retaddr == retaddr) break;
       h = (h+1) & frame_descriptors_mask;
     }
-    n = d->num_live;
-    if (n >= 0) {
+    if (d->frame_size >= 0) {
       /* Scan the roots in this frame */
-      for (p = d->live_ofs; n > 0; n--, p++) {
+      for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
         ofs = *p;
         if (ofs & 1) {
           darken(gc_entry_regs[ofs >> 1]);
@@ -300,8 +300,8 @@ void darken_all_roots ()
     } else {
       /* This marks the top of a stack chunk for an ML callback.
          Skip C portion of stack and continue with next ML stack chunk. */
-      retaddr = ((struct callback_link *) sp)->return_address;
-      sp = ((struct callback_link *) sp)->bottom_of_stack;
+      retaddr = Callback_link(sp)->return_address;
+      sp = Callback_link(sp)->bottom_of_stack;
     }
   }
   Assert(sp == caml_top_of_stack);
