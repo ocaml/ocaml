@@ -1053,6 +1053,12 @@ let occur env ty0 ty =
 
 
 
+let rec has_cached_expansion p abbrev =
+  match abbrev with
+    Mnil                   -> false
+  | Mcons(p', _, _, rem)   -> Path.same p p' || has_cached_expansion p rem
+  | Mlink rem              -> has_cached_expansion p !rem
+
 (**** Transform error trace ****)
 (* +++ Move it to some other place ? *)
 
@@ -1131,7 +1137,13 @@ let rec unify env t1 t2 =
         occur env t2 t1;
         update_level env t2.level t1;
         t2.desc <- Tlink t1
-    | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
+    | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
+          when Path.same p1 p2
+            (* This optimization assumes that t1 does not expand to t2
+               (and conversely), so we fall back to the general case
+               when any of the types has a cached expansion. *)
+            && not (has_cached_expansion p1 !a1
+                 || has_cached_expansion p2 !a2) ->
         update_level env t1.level t2;
         t1.desc <- Tlink t2
     | _ ->
