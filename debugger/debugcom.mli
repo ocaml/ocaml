@@ -58,6 +58,7 @@ val wait_child : Primitives.io_channel -> unit
 (* Move to initial frame (that of current function). *)
 (* Return stack position and current pc *)
 val initial_frame : unit -> int * int
+val set_initial_frame : unit -> unit
 
 (* Get the current frame position *)
 (* Return stack position and current pc *)

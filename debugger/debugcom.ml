@@ -118,6 +118,9 @@ let initial_frame () =
   let pc = input_binary_int !conn.io_in in
   (stack_pos, pc)
 
+let set_initial_frame () =
+ let _ = initial_frame () in ()
+
 (* Move up one frame *)
 (* Return stack position and current pc.
    If there's no frame above, return (-1, 0). *)

@@ -517,7 +517,7 @@ let finish () =
       prerr_endline "`finish' not meaningful in outermost frame.";
       raise Toplevel
   | Some curr_event ->
-      initial_frame();
+      set_initial_frame();
       let (frame, pc) = up_frame curr_event.ev_stacksize in
       if frame < 0 then begin
         prerr_endline "`finish' not meaningful in outermost frame.";

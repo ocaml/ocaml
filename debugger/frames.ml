@@ -71,7 +71,7 @@ let select_frame frame_number =
               Some(move_up (frame_number - !current_frame) sel_event);
             current_frame := frame_number
         | _ ->
-            initial_frame();
+            set_initial_frame();
             selected_event := Some(move_up frame_number curr_event);
             current_frame := frame_number          
   with Not_found ->
@@ -90,7 +90,7 @@ let try_select_frame frame_number =
 
 (* Return to default frame (frame 0). *)
 let reset_frame () =
-  initial_frame();
+  set_initial_frame();
   selected_event := !current_event;
   current_frame := 0
 
@@ -105,7 +105,7 @@ let do_backtrace action =
     None -> Misc.fatal_error "Frames.do_backtrace"
   | Some curr_ev ->
       let (initial_sp, _) = get_frame() in
-      initial_frame();
+      set_initial_frame();
       let event = ref curr_ev in
       begin try
         while action (Some !event) do

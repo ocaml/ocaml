@@ -648,6 +648,6 @@ let establish_server server_fun sockaddr =
             server_fun inchan outchan;
             close_in inchan;
             close_out outchan
-    | id -> close s; waitpid [] id (* Reclaim the son *); ()
+    | id -> close s; let _ = waitpid [] id (* Reclaim the son *) in ()
   done
 
