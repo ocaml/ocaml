@@ -40,6 +40,7 @@ type resumption_status =
 external thread_initialize : unit -> unit = "thread_initialize"
 external thread_new : (unit -> unit) -> t = "thread_new"
 external thread_yield : unit -> unit = "thread_yield"
+external thread_request_reschedule : unit -> unit = "thread_request_reschedule"
 external thread_sleep : unit -> unit = "thread_sleep"
 external thread_wait_read : Unix.file_descr -> unit = "thread_wait_read"
 external thread_wait_write : Unix.file_descr -> unit = "thread_wait_write"
@@ -66,6 +67,7 @@ external id : t -> int = "thread_id"
    only at function applications and beginning of loops,
    making all other operations atomic. *)
 
+let yield () = thread_yield()
 let sleep () = critical_section := false; thread_sleep()
 let delay duration = thread_delay duration
 let join th = thread_join th
@@ -124,7 +126,7 @@ let create fn arg =
 (* Preemption *)
 
 let preempt signal =
-  if !critical_section then () else thread_yield()
+  if !critical_section then () else thread_request_reschedule()
 
 (* Initialization of the scheduler *)
 
