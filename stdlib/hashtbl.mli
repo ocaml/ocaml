@@ -56,6 +56,13 @@ val remove : ('a, 'b) t -> 'a -> unit
            restoring the previous binding if it exists.
            It does nothing if [x] is not bound in [tbl]. *)
 
+val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
+        (* [Hashtbl.replace tbl x y] replaces the current binding of [x]
+           in [tbl] by a binding of [x] to [y].  If [x] is unbound in [tbl],
+           a binding of [x] to [y] is added to [tbl].
+           This is functionally equivalent to [Hashtbl.remove tbl x]
+           followed by [Hashtbl.add tbl x y]. *)
+
 val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
         (* [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
            [f] receives the key as first argument, and the associated value
@@ -94,6 +101,7 @@ module type S =
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
     val find_all: 'a t -> key -> 'a list
+    val replace : 'a t -> key:key -> data:'a -> unit
     val mem: 'a t -> key -> bool
     val iter: f:(key:key -> data:'a -> unit) -> 'a t -> unit
   end

@@ -79,6 +79,12 @@ let remove h key =
   let i = (hash key) mod (Array.length h.data) in
   h.data.(i) <- remove_bucket h.data.(i)
 
+let rec find_rec key = function
+    Empty ->
+      raise Not_found
+  | Cons(k, d, rest) ->
+      if key = k then d else find_rec key rest
+
 let find h key =
   match h.data.((hash key) mod (Array.length h.data)) with
     Empty -> raise Not_found
@@ -91,14 +97,7 @@ let find h key =
           match rest2 with
             Empty -> raise Not_found
           | Cons(k3, d3, rest3) ->
-              if key = k3 then d3 else begin
-                let rec find = function
-                    Empty ->
-                      raise Not_found
-                  | Cons(k, d, rest) ->
-                      if key = k then d else find rest
-                in find rest3
-              end
+              if key = k3 then d3 else find_rec key rest3
 
 let find_all h key =
   let rec find_in_bucket = function
@@ -107,6 +106,21 @@ let find_all h key =
   | Cons(k, d, rest) ->
       if k = key then d :: find_in_bucket rest else find_in_bucket rest in
   find_in_bucket h.data.((hash key) mod (Array.length h.data))
+
+let replace h key info =
+  let rec replace_bucket = function
+      Empty ->
+        raise Not_found
+    | Cons(k, i, next) ->
+        if k = key
+        then Cons(k, info, next)
+        else Cons(k, i, replace_bucket next) in
+  let i = (hash key) mod (Array.length h.data) in
+  let l = h.data.(i) in
+  try
+    h.data.(i) <- replace_bucket l
+  with Not_found ->
+    h.data.(i) <- Cons(key, info, l)
 
 let mem h key =
   let rec mem_in_bucket = function
@@ -146,6 +160,7 @@ module type S =
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
     val find_all: 'a t -> key -> 'a list
+    val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
   end
@@ -175,6 +190,12 @@ module Make(H: HashedType): (S with type key = H.t) =
       let i = (H.hash key) mod (Array.length h.data) in
       h.data.(i) <- remove_bucket h.data.(i)
 
+    let rec find_rec key = function
+        Empty ->
+          raise Not_found
+      | Cons(k, d, rest) ->
+          if H.equal key k then d else find_rec key rest
+
     let find h key =
       match h.data.((H.hash key) mod (Array.length h.data)) with
         Empty -> raise Not_found
@@ -187,14 +208,7 @@ module Make(H: HashedType): (S with type key = H.t) =
               match rest2 with
                 Empty -> raise Not_found
               | Cons(k3, d3, rest3) ->
-                  if H.equal key k3 then d3 else begin
-                    let rec find = function
-                        Empty ->
-                          raise Not_found
-                      | Cons(k, d, rest) ->
-                          if H.equal key k then d else find rest
-                    in find rest3
-                  end
+                  if H.equal key k3 then d3 else find_rec key rest3
 
     let find_all h key =
       let rec find_in_bucket = function
@@ -205,6 +219,21 @@ module Make(H: HashedType): (S with type key = H.t) =
           then d :: find_in_bucket rest
           else find_in_bucket rest in
       find_in_bucket h.data.((H.hash key) mod (Array.length h.data))
+
+    let replace h key info =
+      let rec replace_bucket = function
+          Empty ->
+            raise Not_found
+        | Cons(k, i, next) ->
+            if H.equal k key
+            then Cons(k, info, next)
+            else Cons(k, i, replace_bucket next) in
+      let i = (H.hash key) mod (Array.length h.data) in
+      let l = h.data.(i) in
+      try
+        h.data.(i) <- replace_bucket l
+      with Not_found ->
+        h.data.(i) <- Cons(key, info, l)
 
     let mem h key =
       let rec mem_in_bucket = function
