@@ -187,6 +187,7 @@ static value gr_reset(void)
         grwindow.CurrentBrush = SelectObject(grwindow.gc,GetStockObject(WHITE_BRUSH));
         SelectObject(grwindow.gc,grwindow.CurrentBrush);
         SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
+	gr_set_color(Val_long(0));
         SelectObject(grwindow.gc,grwindow.CurrentFont);
         SelectObject(grwindow.gcBitmap,grwindow.CurrentFont);
         grdisplay_mode = grremember_mode = 1;

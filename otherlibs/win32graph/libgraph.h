@@ -74,10 +74,7 @@ extern int bits_per_pixel;
 
 void gr_fail(char *fmt, char *arg);
 void gr_check_open(void);
-unsigned long gr_pixel_rgb(int rgb);
-int gr_rgb_pixel(long unsigned int pixel);
-void gr_enqueue_char(unsigned char c);
-void gr_init_color_cache(void);
+CAMLprim value gr_set_color(value vcolor);
 
 // Windows specific definitions
 extern RECT WindowRect;
