@@ -177,6 +177,9 @@ let join_array rs =
 (* Registers for catch contructs *)
 let catch_regs = ref []
 
+(* Name of function being compiled *)
+let current_function_name = ref ""
+
 (* The default instruction selection class *)
 
 class virtual selector_generic = object (self)
@@ -660,6 +663,10 @@ method emit_tail env exp =
           if stack_ofs = 0 then begin
             self#insert_moves r1 loc_arg;
             self#insert (Iop(Itailcall_imm lbl)) loc_arg [||]
+          end else if lbl = !current_function_name then begin
+            let loc_arg' = Proc.loc_parameters r1 in
+            self#insert_moves r1 loc_arg';
+            self#insert (Iop(Itailcall_imm lbl)) loc_arg' [||]
           end else begin
             Proc.contains_calls := true;
             let rd = Reg.createv ty in
@@ -732,6 +739,7 @@ method private emit_tail_sequence env exp =
 
 method emit_fundecl f =
   Proc.contains_calls := false;
+  current_function_name := f.Cmm.fun_name;
   let rargs =
     List.map
       (fun (id, ty) -> let r = Reg.createv ty in name_regs id r; r)
