@@ -366,8 +366,7 @@ value print_out_exception ppf exn outv =
   | Stack_overflow ->
       fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
   | _ ->
-      fprintf ppf "@[Uncaught exception:@ %a.@]@." Toploop.print_out_value.val
-        outv ]
+      fprintf ppf "@[Exception:@ %a.@]@." Toploop.print_out_value.val outv ]
 ;
 
 value rec print_items ppf =
