@@ -35,7 +35,7 @@ install: liblabltk41.a $(PUB)
 	   chmod 644 $(LABLTKDIR)/dlllabltk41.so; fi
 
 clean : 
-	rm -f *.cm* *.o *.a
+	rm -f *.cm* *.o *.a *.so
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .cmx .mlp .c .o
