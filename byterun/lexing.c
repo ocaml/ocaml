@@ -40,8 +40,8 @@ struct lexing_table {
 
 #ifdef ARCH_BIG_ENDIAN
 #define Short(tbl,n) \
-  (*((unsigned char *)((tbl) + (n) * sizeof(short))) + \
-          (*((schar *)((tbl) + (n) * sizeof(short) + 1)) << 8))
+  (*((unsigned char *)((tbl) + (n) * 2)) + \
+          (*((schar *)((tbl) + (n) * 2 + 1)) << 8))
 #else
 #define Short(tbl,n) (((short *)(tbl))[n])
 #endif

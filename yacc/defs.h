@@ -15,9 +15,10 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #if macintosh
 #include "::config:sm-Mac.h"
 #else
@@ -44,15 +45,15 @@ extern int volatile have_to_interact;
 /*	from r (0-indexed)				*/
 /*  SETBIT sets the n-th bit starting from r		*/
 
-#define	MAXCHAR		255
-#define	MAXSHORT	32767
-#define MINSHORT	-32768
+#define	MAXCHAR		UCHAR_MAX
+#define	MAXSHORT	SHRT_MAX
+#define MINSHORT	SHRT_MIN
 #define MAXTABLE	32500
 
-#define BITS_PER_WORD	32
+#define BITS_PER_WORD	(8*sizeof(unsigned))
 #define	WORDSIZE(n)	(((n)+(BITS_PER_WORD-1))/BITS_PER_WORD)
-#define	BIT(r, n)	((((r)[(n)>>5])>>((n)&31))&1)
-#define	SETBIT(r, n)	((r)[(n)>>5]|=((unsigned)1<<((n)&31)))
+#define	BIT(r, n)	((((r)[(n)/BITS_PER_WORD])>>((n)%BITS_PER_WORD))&1)
+#define	SETBIT(r, n)	((r)[(n)/BITS_PER_WORD]|=(1<<((n)%BITS_PER_WORD)))
 
 /*  character names  */
 
