@@ -22,7 +22,8 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
 PARSING=parsing/location.cmo parsing/parser.cmo parsing/lexer.cmo \
   parsing/parse.cmo
 
-TYPING=typing/ident.cmo typing/path.cmo typing/typedtree.cmo \
+TYPING=typing/ident.cmo typing/path.cmo \
+  typing/primitive.cmo typing/typedtree.cmo \
   typing/subst.cmo typing/printtyp.cmo \
   typing/predef.cmo typing/datarepr.cmo typing/env.cmo \
   typing/ctype.cmo typing/mtype.cmo \
