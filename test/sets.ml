@@ -22,7 +22,11 @@ let _ =
     Printf.printf "%d  %b  %b\n" i (IntSet.mem i even) (IntSet.mem i odd)
   done
 
-module IntSetSet = Set.Make(IntSet)
+module PowerSet(BaseSet: Set.S)
+               (SetOrd: functor(S: Set.S) -> Set.OrderedType) =
+  Set.Make(SetOrd(BaseSet))
+
+module IntSetSet = PowerSet(IntSet)(functor (S: Set.S) -> S)
 
 let setofset = List.fold_right IntSetSet.add [even; odd] IntSetSet.empty
 
