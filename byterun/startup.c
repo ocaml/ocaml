@@ -161,7 +161,7 @@ static void check_primitives(int fd, int prim_size)
        p = p + strlen(p) + 1, idx++) {
     if (names_of_cprim[idx] == NULL ||
         strcmp(p, names_of_cprim[idx]) != 0)
-      fatal_error_arg("Fatal error: this bytecode file cannot run"
+      fatal_error_arg("Fatal error: this bytecode file cannot run "
                       "on this bytecode interpreter\n"
                       "Mismatch on primitive `%s'\n", p);
   }
