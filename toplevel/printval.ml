@@ -22,11 +22,11 @@ let print_exception obj =
       let arg = Obj.field obj i in
       if not (Obj.is_block arg) then
         print_int(Obj.magic arg : int)  (* Note: this could be a char! *)
-      else if Obj.tag arg = 253 then begin
+      else if Obj.tag arg = 252 then begin
         print_string "\"";
         print_string (String.escaped (Obj.magic arg : string));
         print_string "\""
-      end else if Obj.tag arg = 254 then
+      end else if Obj.tag arg = 253 then
         print_float (Obj.magic arg : float)
       else
         print_string "_"
