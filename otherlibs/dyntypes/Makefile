@@ -38,6 +38,10 @@ default: all
 dyntypes_compiler_bits.ml: gather_compiler_bits
 	$(CAMLRUN) ./gather_compiler_bits $(ROOT)/utils $(ROOT)/parsing $(ROOT)/typing - $(IMPORTED_MODULES) >$@
 
+import:
+	rm -f dyntypes_compiler_bits.ml
+	$(MAKE) dyntypes_compiler_bits.ml
+
 all: dynamics.cma $(CMIFILES)
 
 allopt: dynamics.cmxa $(CMIFILES)
