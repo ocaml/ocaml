@@ -1,21 +1,17 @@
 Objective Caml 3.02:
 --------------------
 
-Syntactic sugar:
-- Haskell-style infix identifiers `ident` supported, i.e. 
-  arg1 `ident` arg2 is equivalent to ident arg1 arg2.
-
 Both compilers:
 - Fixed embarrassing bug in pattern-matching compilation
   (affected or-patterns containing variable bindings).
 - More optimizations in pattern-matching compilation.
 
 Byte-code compiler:
-- Protect against VM stack overflow caused by function with many local
+- Protect against VM stack overflow caused by functions with many local
   variables.
 
 Native-code compiler:
-- Removed re-sharing of string literals, caused too many surprises with 
+- Removed re-sharing of string literals, causes too many surprises with 
   in-place string modifications.
 - Corrected wrong compilation of toplevel "include" statements.
 - Fixed bug in runtime function "callbackN_exn".
@@ -31,7 +27,7 @@ Toplevel environment:
   compatibility.
 
 Standard library:
-- Module Hashtbl: added Hashtbl.fold
+- Module Hashtbl: added Hashtbl.fold.
 
 Other libraries:
 - Dynlink: better error reporting in add_interfaces for missing .cmi files.
@@ -39,9 +35,13 @@ Other libraries:
     multiple lines, splines).
 - Bytecode threads: the module Unix is now thread-safe, ThreadUnix is
     deprecated.  Unix.exec* now resets standard descriptors to blocking mode.
+- Native threads: fixed a context-switch-during-GC problem causing
+    certain C runtime functions to fail, most notably input_value.
 - Unix.inet_addr_of_string: call inet_aton() when available so as to
     handle correctly the address 255.255.255.255.
-- Unix.getsockopt: added the SO_ERROR option.
+- Unix: added more getsockopt and setsockopt functions to get/set
+    options that have values other than booleans.
+- Num: added documentation for the Big_int module.
 
 Tools:
 - ocamldep: fixed wrong dependency issue with nested modules.
@@ -57,11 +57,11 @@ Auto-configuration:
   number of recent platform.
 
 Windows port:
-- Fixed broken Unix.waitpid.
+- Fixed broken Unix.waitpid.  Unix.file_descr can now be compared or hashed.
 - Toplevel application: issue with spaces in name of stdlib directory fixed.
 
 MacOS 9 port:
-- removed the last traces of support for 68k
+- Removed the last traces of support for 68k
 
 
 Objective Caml 3.01:
