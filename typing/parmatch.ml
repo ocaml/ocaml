@@ -403,9 +403,10 @@ let full_match tdefs force env =  match env with
         (fun ok (tag,f) ->
           match Btype.row_field_repr f with
             Rabsent -> ok
-          | Reither(_, _, e) ->
+          (* | Reither(_, _, e) ->
               if not (List.mem_assoc tag fields) then e := Some Rabsent;
-              ok
+              ok *)
+          | Reither _
           | Rpresent _ ->
               ok && List.mem_assoc tag fields)
         true row.row_fields
@@ -515,7 +516,8 @@ let build_other env =  match env with
         (fun others (tag,f) ->
           if List.mem tag tags then others else
           match Btype.row_field_repr f with
-            Rabsent | Reither _ -> others
+            Rabsent (* | Reither _ *) -> others
+          | Reither (c, _, _) -> make_other_pat tag c :: others
           | Rpresent arg -> make_other_pat tag (arg = None) :: others)
         [] row.row_fields
     with [] -> assert false
