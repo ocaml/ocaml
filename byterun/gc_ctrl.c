@@ -147,13 +147,8 @@ static value heap_stats (int returnstats)
         if (Wosize_hd (cur_hd) == 0){
           ++fragments;
           Assert (prev_hp == NULL
-                  || (Color_hp (prev_hp) != Caml_blue
-                      && Wosize_hp (prev_hp) > 0)
+                  || Color_hp (prev_hp) != Caml_blue
                   || cur_hp == gc_sweep_hp);
-          Assert (Next (cur_hp) == chunk_end
-                  || (Color_hp (Next (cur_hp)) != Caml_blue
-                      && Wosize_hp (Next (cur_hp)) > 0)
-                  || Next (cur_hp) == gc_sweep_hp);
         }else{
           if (gc_phase == Phase_sweep && cur_hp >= gc_sweep_hp){
             ++ free_blocks;

@@ -26,6 +26,7 @@
 
 #define Color_hd(hd) ((color_t) ((hd) & Caml_black))
 #define Color_hp(hp) Color_hd (Hd_hp (hp))
+#define Color_val(val) (Color_hd (Hd_val (val)))
 
 #define Is_white_hd(hd) (Color_hd (hd) == Caml_white)
 #define Is_gray_hd(hd) (Color_hd (hd) == Caml_gray)
@@ -42,8 +43,6 @@
        ((header_t) (((header_t) (wosize) << 10)                               \
                     + (color)                                                 \
                     + (tag_t) (tag)))
-
-#define Color_val(val) (Color_hd (Hd_val (val)))
 
 #define Is_white_val(val) (Color_val(val) == Caml_white)
 #define Is_gray_val(val) (Color_val(val) == Caml_gray)
