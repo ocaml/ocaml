@@ -536,13 +536,13 @@ alldepend::
 # OCamldoc
 
 ocamldoc: ocamlc ocamlyacc ocamllex
-	cd ocamldoc ; $(MAKE) all
+	cd ocamldoc && $(MAKE) all
 ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
-	cd ocamldoc ; $(MAKE) opt.opt
+	cd ocamldoc && $(MAKE) opt.opt
 partialclean::
-	cd ocamldoc; $(MAKE) clean
+	cd ocamldoc && $(MAKE) clean
 alldepend::
-	cd ocamldoc; $(MAKE) depend
+	cd ocamldoc && $(MAKE) depend
 
 # The extra libraries
 
