@@ -18,15 +18,13 @@ open Misc
 open Parser
 
 type error =
-    Illegal_character
+  | Illegal_character
   | Unterminated_comment
   | Unterminated_string
+  | Unterminated_string_in_comment
+;;
 
 exception Error of error * int * int
-
-(* For nested comments *)
-
-let comment_depth = ref 0
 
 (* The table of keywords *)
 
@@ -145,7 +143,8 @@ let char_for_decimal_code lexbuf i =
 
 (* To store the position of the beginning of a string and comment *)
 let string_start_pos = ref 0
-and comment_start_pos = ref 0
+and comment_start_pos = ref []
+;;
 
 (* Error report *)
 
@@ -158,6 +157,9 @@ let report_error = function
       print_string "Comment not terminated"
   | Unterminated_string ->
       print_string "String literal not terminated"
+  | Unterminated_string_in_comment ->
+      print_string "This comment contains an unterminated string literal"
+;;
 
 }
 
@@ -207,8 +209,7 @@ rule token = parse
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { CHAR(char_for_decimal_code lexbuf 2) }
   | "(*"
-      { comment_depth := 1;
-        comment_start_pos := Lexing.lexeme_start lexbuf;
+      { comment_start_pos := [Lexing.lexeme_start lexbuf];
         comment lexbuf;
         token lexbuf }
   | "#" ("line")? [' ' '\t']* ['0'-'9']+ [^ '\n' '\r'] *
@@ -273,14 +274,24 @@ rule token = parse
 
 and comment = parse
     "(*"
-      { comment_depth := succ !comment_depth; comment lexbuf }
+      { comment_start_pos := Lexing.lexeme_start lexbuf :: !comment_start_pos;
+        comment lexbuf;
+      }
   | "*)"
-      { comment_depth := pred !comment_depth;
-        if !comment_depth > 0 then comment lexbuf }
+      { match !comment_start_pos with
+        | [] -> assert false
+        | [x] -> ()
+        | _ :: l -> comment_start_pos := l;
+                    comment lexbuf;
+       }
   | "\""
       { reset_string_buffer();
         string_start_pos := Lexing.lexeme_start lexbuf;
-        string lexbuf;
+        begin try string lexbuf
+        with Error (Unterminated_string, _, _) ->
+          let st = List.hd !comment_start_pos in
+          raise (Error (Unterminated_string_in_comment, st, st + 2))
+        end;
         string_buff := initial_string_buffer;
         comment lexbuf }
   | "''"
@@ -292,8 +303,9 @@ and comment = parse
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
   | eof
-      { raise (Error (Unterminated_comment,
-                      !comment_start_pos, !comment_start_pos+2)) }
+      { let st = List.hd !comment_start_pos in
+        raise (Error (Unterminated_comment, st, st + 2));
+      }
   | _
       { comment lexbuf }
 
