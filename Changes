@@ -1,11 +1,22 @@
 Objective Caml 3.08:
 --------------------
 
+Language features:
+- Support for immediate objects, i.e. objects defined without going
+  through a class.
+
+Both compilers:
+- Compacter compilation of classes.
+- Much more efficient handling of class definitions inside functors
+  or local modules.
+- Simpler represention for method tables. Objects can now be marshalled
+  between identical programs with the flag Marshal.Closures.
+
 Ocamllex:
-- #line directives in the input file are now accepted
+- #line directives in the input file are now accepted.
 
 Ocamlyacc:
-- #line directives in the input file are now accepted
+- #line directives in the input file are now accepted.
 
 Runtime System:
 - All global identifiers are now prefixed with "caml" to avoid name clashes
