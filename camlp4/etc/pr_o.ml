@@ -334,10 +334,16 @@ pr_expr_fun_args.val :=
   | ge -> ([], ge) ];
 
 value raise_match_failure (bp, ep) k =
+  let (line, char, _) =
+    if Pcaml.input_file.val <> "-" then
+      Stdpp.line_of_loc Pcaml.input_file.val (bp, ep)
+    else
+      (1, bp, ep)
+  in
   HOVbox
     [: `S LR "raise"; `S LO "("; `S LR "Match_failure"; `S LO "(";
        `S LR ("\"" ^ Pcaml.input_file.val ^ "\""); `S RO ",";
-       `S LR (string_of_int bp); `S RO ","; `S LR (string_of_int ep);
+       `S LR (string_of_int line); `S RO ","; `S LR (string_of_int char);
        `S RO ")"; `S RO ")"; k :]
 ;
 

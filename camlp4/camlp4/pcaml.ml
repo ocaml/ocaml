@@ -254,14 +254,14 @@ value print_format str =
 value print_exn =
   fun
   [ Out_of_memory -> Format.print_string "Out of memory\n"
-  | Match_failure (file, first_char, last_char) ->
+  | Match_failure (file, line, char) ->
       do {
         Format.print_string "Pattern matching failed, file ";
         Format.print_string file;
-        Format.print_string ", chars ";
-        Format.print_int first_char;
-        Format.print_char '-';
-        Format.print_int last_char
+        Format.print_string ", line ";
+        Format.print_int line;
+        Format.print_string ", char ";
+        Format.print_int char
       }
   | Stream.Error str -> print_format ("Parse error: " ^ str)
   | Stream.Failure -> Format.print_string "Parse failure"
