@@ -1496,14 +1496,6 @@ pr_patt.pr_levels :=
                            (S RO ",") al "" [: `S RO ")"; k :] :] :]
             | _ -> [: curr x "" [: :]; `next y "" k :] ]
       | p -> fun curr next dg k -> [: `next p "" k :] ]};
-(*
-   {pr_label = ""; pr_box _ x = HOVbox x;
-    pr_rules =
-      extfun Extfun.empty with
-      [ <:patt< $x$ . $y$ >> ->
-          fun curr next dg k -> [: curr x "" [: :]; `S NO "."; `next y "" k :]
-      | p -> fun curr next dg k -> [: `next p "" k :] ]};
-*)
    {pr_label = "simple";
     pr_box p x = LocInfo (MLast.loc_of_patt p) (HOVbox x);
     pr_rules =
