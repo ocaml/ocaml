@@ -159,9 +159,7 @@ void debugger(event)
   int frame_number;
   value * frame;
   long i, pos;
-  mlsize_t size;
   value val;
-  value * p;
   struct longjmp_buffer raise_buf, * saved_external_raise;
 
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */

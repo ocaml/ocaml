@@ -30,11 +30,12 @@
 typedef unsigned long byteoffset_t;
 
 struct extern_obj {
-  value obj;
   byteoffset_t ofs;
+  value obj;
 };
 
-static struct extern_obj * extern_table;
+static byteoffset_t initial_ofs = 1;
+static struct extern_obj * extern_table = NULL;
 static unsigned long extern_table_size;
 
 #ifdef ARCH_SIXTYFOUR
@@ -43,20 +44,22 @@ static unsigned long extern_table_size;
 #define Hash(v) (((unsigned long) ((v) >> 2)) % extern_table_size)
 #endif
 
+/* Allocate a new extern table */
 static void alloc_extern_table()
 {
   asize_t i;
-
   extern_table = (struct extern_obj *)
-    stat_alloc(extern_table_size * sizeof(struct extern_obj));
-  for (i = 0; i < extern_table_size; i++) extern_table[i].obj = 0;
+                 stat_alloc(extern_table_size * sizeof(struct extern_obj));
+  for (i = 0; i < extern_table_size; i++) extern_table[i].ofs = 0;
 }
 
+/* Grow the extern table */
 static void resize_extern_table()
 {
   asize_t oldsize;
   struct extern_obj * oldtable;
   value obj;
+  byteoffset_t ofs;
   asize_t i, h;
 
   oldsize = extern_table_size;
@@ -64,18 +67,31 @@ static void resize_extern_table()
   extern_table_size = 2 * extern_table_size;
   alloc_extern_table();
   for (i = 0; i < oldsize; i++) {
-    obj = oldtable[i].obj;
-    if (obj != 0) {
+    ofs = oldtable[i].ofs;
+    if (ofs >= initial_ofs) {
+      obj = oldtable[i].obj;
       h = Hash(obj);
-      while (extern_table[h].obj != 0) {
+      while (extern_table[h].ofs >= initial_ofs) {
         h++;
         if (h >= extern_table_size) h = 0;
       }
+      extern_table[h].ofs = ofs;
       extern_table[h].obj = obj;
-      extern_table[h].ofs = oldtable[i].ofs;
     }
   }
   stat_free((char *) oldtable);
+}
+
+/* Free the extern table. We keep it around for next call if
+   it's still small (we did not grow it) and the initial offset
+   does not risk running over next time. */
+static void free_extern_table()
+{
+  if (extern_table_size > INITIAL_EXTERN_TABLE_SIZE ||
+      initial_ofs >= INITIAL_OFFSET_MAX) {
+    stat_free((char *) extern_table);
+    extern_table = NULL;
+  }
 }
 
 /* To buffer the output */
@@ -181,10 +197,13 @@ static byteoffset_t obj_counter;    /* Number of objects emitted so far */
 static unsigned long size_32;  /* Size in words of 32-bit block for struct. */
 static unsigned long size_64;  /* Size in words of 64-bit block for struct. */
 
-static void extern_cleanup()
+static void extern_invalid_argument(msg)
+     char * msg;
 {
   stat_free(extern_block);
-  stat_free((char *) extern_table);
+  initial_ofs += obj_counter;
+  free_extern_table();
+  invalid_argument(msg);
 }
 
 static void extern_rec(v)
@@ -206,8 +225,7 @@ static void extern_rec(v)
     } else
       writecode32(CODE_INT32, n);
   } else if (!Is_atom(v) && !Is_young(v) && !Is_in_heap(v)) {
-    extern_cleanup();
-    invalid_argument("output_value: abstract value");
+    extern_invalid_argument("output_value: abstract value");
   } else {
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
@@ -225,9 +243,9 @@ static void extern_rec(v)
       /* Check if already seen */
       if (2 * obj_counter >= extern_table_size) resize_extern_table();
       h = Hash(v);
-      while (extern_table[h].obj != 0) {
+      while (extern_table[h].ofs >= initial_ofs) {
         if (extern_table[h].obj == v) {
-          byteoffset_t d = obj_counter - extern_table[h].ofs;
+          byteoffset_t d = obj_counter - (extern_table[h].ofs - initial_ofs);
           if (d < 0x100) {
             writecode8(CODE_SHARED8, d);
           } else if (d < 0x10000) {
@@ -241,8 +259,8 @@ static void extern_rec(v)
         if (h >= extern_table_size) h = 0;
       }
       /* Not seen yet. Record the object and output its contents. */
+      extern_table[h].ofs = initial_ofs + obj_counter;
       extern_table[h].obj = v;
-      extern_table[h].ofs = obj_counter;
       obj_counter++;
       switch(tag) {
       case String_tag: {
@@ -260,10 +278,8 @@ static void extern_rec(v)
         break;
       }
       case Double_tag: {
-        if (sizeof(double) != 8) {
-          extern_cleanup();
-          invalid_argument("output_value: non-standard floats");
-        }
+        if (sizeof(double) != 8)
+          extern_invalid_argument("output_value: non-standard floats");
         Write(CODE_DOUBLE_NATIVE);
         writeblock((char *) v, 8);
         size_32 += 1 + 2;
@@ -272,10 +288,8 @@ static void extern_rec(v)
       }
       case Double_array_tag: {
         mlsize_t nfloats;
-        if (sizeof(double) != 8) {
-          extern_cleanup();
-          invalid_argument("output_value: non-standard floats");
-        }
+        if (sizeof(double) != 8)
+          extern_invalid_argument("output_value: non-standard floats");
         nfloats = Wosize_val(v) / Double_wosize;
         if (nfloats < 0x100) {
           writecode8(CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
@@ -289,13 +303,11 @@ static void extern_rec(v)
       }
       case Abstract_tag:
       case Final_tag:
-        extern_cleanup();
-        invalid_argument("output_value: abstract value");
+        extern_invalid_argument("output_value: abstract value");
         break;
       case Closure_tag:
       case Infix_tag:
-        extern_cleanup();
-        invalid_argument("output_value: functional value");
+        extern_invalid_argument("output_value: functional value");
         break;
       default: {
         mlsize_t i;
@@ -319,9 +331,15 @@ static long extern_value(v)
      value v;
 {
   long res_len;
+
+  /* Allocate buffer for holding the result */
   alloc_extern_block();
+  /* Allocate hashtable of objects already seen, if needed */
   extern_table_size = INITIAL_EXTERN_TABLE_SIZE;
-  alloc_extern_table();
+  if (extern_table == NULL) {
+    alloc_extern_table();
+    initial_ofs = 1;
+  }
   obj_counter = 0;
   size_32 = 0;
   size_64 = 0;
@@ -331,8 +349,11 @@ static long extern_value(v)
   extern_ptr += 4*4;
   /* Marshal the object */
   extern_rec(v);
-  /* Free the table of shared objects */
-  stat_free((char *) extern_table);
+  /* Update initial offset for next call to extern_value(),
+     if we decide to keep the table of shared objects. */
+  initial_ofs += obj_counter;
+  /* Free the table of shared objects (if needed) */
+  free_extern_table();
   /* Write the sizes */
 #ifdef ARCH_SIXTYFOUR
   if (size_32 >= (1L << 32) || size_64 >= (1L << 32)) {
