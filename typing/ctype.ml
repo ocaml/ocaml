@@ -1701,7 +1701,7 @@ let unify_var env t1 t2 =
         update_level env t1.level t2;
         t1.desc <- Tlink t2
       with Unify trace ->
-        raise (Unify ((t1,t2)::trace))
+        raise (Unify (expand_trace env ((t1,t2)::trace)))
       end
   | _ ->
       unify env t1 t2
