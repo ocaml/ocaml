@@ -32,10 +32,55 @@ n+291; n+292; n+293; n+294; n+295; n+296; n+297; n+298; n+299
 
 let test1 () =
   let a = bigarray 12345 in
+  Gc.full_major();
   for i = 0 to Array.length a - 1 do
     if a.(i) <> 12345 + i then print_string "Test1: error\n"
   done
 
+let testcopy a =
+  Array.copy a = a
+
+let test2 () =
+  if not (testcopy [|1;2;3;4;5|]) then
+    print_string "Test2: failed on int array\n";
+  if not (testcopy [|1.2;2.3;3.4;4.5|]) then
+    print_string "Test2: failed on float array\n";
+  if not (testcopy [|"un"; "deux"; "trois"|]) then
+    print_string "Test2: failed on string array\n"
+
+module AbstractFloat =
+  (struct
+    type t = float
+    let to_float x = x
+    let from_float x = x
+   end :
+   sig
+    type t
+    val to_float: t -> float
+    val from_float: float -> t
+   end)
+
+let test3 () =
+  let t1 = AbstractFloat.from_float 1.0
+  and t2 = AbstractFloat.from_float 2.0
+  and t3 = AbstractFloat.from_float 3.0 in
+  let v = [|t1;t2;t3|] in
+  let w = Array.create 2 t1 in
+  let u = Array.copy v in
+  if not (AbstractFloat.to_float v.(0) = 1.0 &&
+          AbstractFloat.to_float v.(1) = 2.0 &&
+          AbstractFloat.to_float v.(2) = 3.0) then
+    print_string "Test3: failed on v\n";
+  if not (AbstractFloat.to_float w.(0) = 1.0 &&
+          AbstractFloat.to_float w.(1) = 1.0) then
+    print_string "Test3: failed on w\n";
+  if not (AbstractFloat.to_float u.(0) = 1.0 &&
+          AbstractFloat.to_float u.(1) = 2.0 &&
+          AbstractFloat.to_float u.(2) = 3.0) then
+    print_string "Test3: failed on u\n"
+
 let _ =
   test1();
+  test2();
+  test3();
   exit 0
