@@ -86,16 +86,16 @@ OPTDRIVER= driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
 
 TOPLEVEL=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
   toplevel/genprintval.cmo toplevel/toploop.cmo \
-  toplevel/trace.cmo toplevel/topdirs.cmo
+  toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
 
 TOPLEVELLIB=toplevel/toplevellib.cma
-TOPLEVELMAIN=toplevel/topmain.cmo
+TOPLEVELSTART=toplevel/topstart.cmo
 
 COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 
 TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
-TOPOBJS=toplevel/toplevellib.cma $(TOPLEVELMAIN)
+TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
@@ -237,8 +237,8 @@ install: FORCE
 	cp toplevel/toplevellib.cma $(LIBDIR)/toplevellib.cma
 	cp expunge $(LIBDIR)/expunge$(EXE)
 	cp typing/outcometree.cmi typing/outcometree.mli $(LIBDIR)
-	cp toplevel/topmain.cmo $(LIBDIR)
-	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
+	cp toplevel/topstart.cmo $(LIBDIR)
+	cp toplevel/toploop.cmi toplevel/topdirs.cmi toplevel/topmain.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
 	-cd man; $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \

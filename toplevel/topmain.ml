@@ -74,4 +74,3 @@ let main () =
   if not (prepare Format.err_formatter) then exit 2;
   Toploop.loop Format.std_formatter
 
-let _ = main ()
