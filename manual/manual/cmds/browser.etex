@@ -29,10 +29,13 @@ source and compiled files. By default, only the standard library
 directory is searched.  The standard library can also be changed by
 setting the "CAMLLIB" environment variable.
 
-\item["-labels"]
-Switch to the {\em commuting label} mode of compilation, meaning that
-labeling rules are applied strictly, and commutation between
-arguments is allowed. (See section~\ref{s:commuting-mode}.)
+\item["-nolabels"]
+Ignore non-optional labels in types. Labels cannot be used in
+applications, and parameter order becomes strict.
+
+\item["-oldui"]
+Old multi-window interface. The default is now more like Smalltalk's
+class browser.
 
 \item["-rectypes"]
 Allow arbitrary recursive types during type-checking.  By default,
@@ -44,29 +47,26 @@ Enable or disable warnings according to the argument \var{warning-list}.
 
 \end{options}
 
-All options can also be modified inside the application by the {\bf
+Most options can also be modified inside the application by the {\bf
   Modules - Path editor} and {\bf Compiler - Preferences} commands.
 They are inherited when you start a toplevel shell.
 
 \section{Viewer}
 This is the first window you get when you start OCamlBrowser.
-It displays the list of modules in the load path. Click on one to
-start your trip.
+It displays a search window, and the list of modules in the load path.
+At the top a row of menus.
 
 \begin{itemize}
-\item The entry line at the bottom allows one to search for an
-  identifier in all modules (wildcards ``?'' and ``*'' allowed). If
-  the input contains an arrow (``"->"''), the search is done by
-  type inclusion ({\em cf.} Search Symbol - Included type).
-
-\item The {\bf Close all} button is there to dismiss the windows
-  created during you trip (every click creates one\dots) By
-  double-clicking on it you will quit the browser.
-
 \item {\bf File - Open} and {\bf File - Editor} give access to the
   editor.
 
 \item {\bf File - Shell} creates an Objective Caml subprocess in a shell.
+
+\item {\bf View - Show all defs} displays the signature of the currently
+  selected module.
+
+\item {\bf View - Search entry} shows/hides the search entry just
+  below the menu bar.
 
 \item {\bf Modules - Path editor} changes the load path.  {\bf Modules
     - Reset cache} rescans the load path and resets the module cache.
@@ -85,27 +85,39 @@ start your trip.
     the actual type are ignored in the actual if (1) there are too many
     of them, and (2) they do not appear explicitly in the pattern.},
   and unlabeled arguments in the pattern match any label.
+
+\item The {\bf Search entry} just below the menu bar allows one to
+  search for an identifier in all modules (wildcards ``?'' and ``*''
+  allowed). If you choose the "type" option, the search is done by type
+  inclusion ({\em cf.} Search Symbol - Included type).
+
+\item The {\bf Close all} button is there to dismiss the windows
+  created by the Detach button.
+  By double-clicking on it you will quit the browser.
+
 \end{itemize}
 
-\section{Module walking}
+\section{Module browsing}
 
-Each module is displayed in its own window.
+You select a module in the leftmost box by either cliking on it or
+pressing return when it is selected. Fast access is available in all
+boxes pressing the first few letter of the desired name.
+Double-clicking / double-return displays the whole signature for the
+module.
 
-At the top, a scrollable list of the defined identifiers. If you click
-on one, this will either create a new window (if this is a sub-module)
-or display the signature for this identifier below.
+Defined identifiers inside the module are displayed in a box to the
+right of the previous one. If you click on one, this will either
+display its contents in another box (if this is a sub-module) or
+display the signature for this identifier below.
 
-Signatures are clickable. Double clicking with the left mouse button
-on an identifier in a signature brings you to its signature, inside
-its module box.
-
-A single click on the right button pops up a menu displaying the type
-declaration for the selected identifier. Its title, when selectable,
-also brings you to its signature.
+Signatures are clickable. Double clicking with the left mouse
+button on an identifier in a signature brings you to its signature.
+A single click on the right button pops up a menu displaying the
+type declaration for the selected identifier. Its title, when
+selectable, also brings you to its signature.
 
 At the bottom, a series of buttons, depending on the context.
 \begin{itemize}
-\item {\bf Show all} displays the signature of the whole module.
 \item {\bf Detach} copies the currently displayed signature in a new window,
   to keep it.
 \item {\bf Impl} and {\bf Intf} bring you to the implementation or
