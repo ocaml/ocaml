@@ -264,7 +264,7 @@ let bigarray_set arr arg newval =
 %token OPEN
 %token <string> OPTLABEL
 %token OR
-%token PARSER
+/* %token PARSER */
 %token PLUS
 %token <string> PREFIXOP
 %token PRIVATE
