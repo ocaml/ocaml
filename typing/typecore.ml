@@ -486,7 +486,7 @@ let check_unused_variant pat =
       | _ -> ()
       end;
       (* Force check of well-formedness *)
-      unify_pat pat.pat_env pat
+      unify_pat pat.pat_env {pat with pat_type = newty(Tvariant row)}
         (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
                         row_bound=[]; row_fixed=false; row_name=None}));
       (* Eventually post a delayed warning check *)
