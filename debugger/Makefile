@@ -1,13 +1,15 @@
-CAMLC=../boot/ocamlrun ../ocamlc -I ../stdlib
+include ../config/Makefile
+
+CAMLC=../boot/ocamlrun ../ocamlc -I ../boot
 COMPFLAGS=$(INCLUDES)
-LINKFLAGS=-custom
+LINKFLAGS=-custom -linkall
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
 CAMLLEX=../boot/ocamlrun ../boot/ocamllex
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 
-INCLUDES=-I ../otherlibs/unix -I ../utils -I ../parsing -I ../typing -I ../bytecomp
+INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../otherlibs/unix -I ../otherlibs/dynlink
 
 OTHEROBJS=\
   ../otherlibs/unix/unix.cma \
@@ -58,7 +60,7 @@ ocamldebug: $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug $(OTHEROBJS) $(OBJS) ../otherlibs/unix/libunix.a
 
 install:
-	cp ocamldebug $(BINDIR)
+	cp ocamldebug $(BINDIR)/ocamldebug
 
 clean::
 	rm -f ocamldebug

@@ -8,7 +8,7 @@ eval.cmi: debugcom.cmi ../typing/env.cmi ../typing/ident.cmi \
 events.cmi: ../bytecomp/instruct.cmi 
 frames.cmi: ../bytecomp/instruct.cmi primitives.cmi 
 input_handling.cmi: primitives.cmi 
-loadprinter.cmi: ../parsing/longident.cmi 
+loadprinter.cmi: ../otherlibs/dynlink/dynlink.cmi ../parsing/longident.cmi 
 parser.cmi: ../parsing/longident.cmi parser_aux.cmi 
 parser_aux.cmi: ../parsing/longident.cmi primitives.cmi 
 pattern_matching.cmi: debugcom.cmi parser_aux.cmi ../typing/typedtree.cmi 
@@ -28,22 +28,22 @@ checkpoints.cmo: debugcom.cmi primitives.cmi checkpoints.cmi
 checkpoints.cmx: debugcom.cmx primitives.cmx checkpoints.cmi 
 command_line_interpreter.cmo: breakpoints.cmi checkpoints.cmi \
     ../utils/config.cmi ../typing/ctype.cmi debugcom.cmi debugger_config.cmi \
-    ../typing/env.cmi envaux.cmi eval.cmi events.cmi frames.cmi history.cmi \
-    input_handling.cmi ../bytecomp/instruct.cmi ../parsing/lexer.cmi \
-    loadprinter.cmi ../utils/misc.cmi parameters.cmi parser.cmi \
-    parser_aux.cmi primitives.cmi printval.cmi program_loading.cmi \
-    program_management.cmi show_information.cmi show_source.cmi source.cmi \
-    symbols.cmi time_travel.cmi ../typing/types.cmi \
-    ../otherlibs/unix/unix.cmi unix_tools.cmi command_line_interpreter.cmi 
+    envaux.cmi eval.cmi events.cmi frames.cmi history.cmi input_handling.cmi \
+    ../bytecomp/instruct.cmi ../parsing/lexer.cmi loadprinter.cmi \
+    ../utils/misc.cmi parameters.cmi parser.cmi parser_aux.cmi primitives.cmi \
+    printval.cmi program_loading.cmi program_management.cmi \
+    show_information.cmi show_source.cmi source.cmi symbols.cmi \
+    time_travel.cmi ../typing/types.cmi ../otherlibs/unix/unix.cmi \
+    unix_tools.cmi command_line_interpreter.cmi 
 command_line_interpreter.cmx: breakpoints.cmx checkpoints.cmx \
     ../utils/config.cmx ../typing/ctype.cmx debugcom.cmx debugger_config.cmx \
-    ../typing/env.cmx envaux.cmx eval.cmx events.cmx frames.cmx history.cmx \
-    input_handling.cmx ../bytecomp/instruct.cmx ../parsing/lexer.cmx \
-    loadprinter.cmx ../utils/misc.cmx parameters.cmx parser.cmx \
-    parser_aux.cmi primitives.cmx printval.cmx program_loading.cmx \
-    program_management.cmx show_information.cmx show_source.cmx source.cmx \
-    symbols.cmx time_travel.cmx ../typing/types.cmx \
-    ../otherlibs/unix/unix.cmx unix_tools.cmx command_line_interpreter.cmi 
+    envaux.cmx eval.cmx events.cmx frames.cmx history.cmx input_handling.cmx \
+    ../bytecomp/instruct.cmx ../parsing/lexer.cmx loadprinter.cmx \
+    ../utils/misc.cmx parameters.cmx parser.cmx parser_aux.cmi primitives.cmx \
+    printval.cmx program_loading.cmx program_management.cmx \
+    show_information.cmx show_source.cmx source.cmx symbols.cmx \
+    time_travel.cmx ../typing/types.cmx ../otherlibs/unix/unix.cmx \
+    unix_tools.cmx command_line_interpreter.cmi 
 debugcom.cmo: ../utils/misc.cmi primitives.cmi debugcom.cmi 
 debugcom.cmx: ../utils/misc.cmx primitives.cmx debugcom.cmi 
 debugger_config.cmo: debugger_config.cmi 
@@ -83,15 +83,15 @@ input_handling.cmx: ../parsing/lexer.cmx primitives.cmx \
 lexer.cmo: parser.cmi primitives.cmi 
 lexer.cmx: parser.cmx primitives.cmx 
 loadprinter.cmo: ../utils/config.cmi ../typing/ctype.cmi debugger_config.cmi \
-    ../typing/env.cmi ../typing/ident.cmi ../parsing/longident.cmi \
-    ../utils/misc.cmi ../typing/path.cmi ../typing/predef.cmi \
-    ../typing/printtyp.cmi printval.cmi ../bytecomp/symtable.cmi \
-    ../typing/types.cmi loadprinter.cmi 
+    ../otherlibs/dynlink/dynlink.cmi ../typing/env.cmi ../typing/ident.cmi \
+    ../parsing/longident.cmi ../utils/misc.cmi ../typing/path.cmi \
+    ../typing/predef.cmi ../typing/printtyp.cmi printval.cmi \
+    ../bytecomp/symtable.cmi ../typing/types.cmi loadprinter.cmi 
 loadprinter.cmx: ../utils/config.cmx ../typing/ctype.cmx debugger_config.cmx \
-    ../typing/env.cmx ../typing/ident.cmx ../parsing/longident.cmx \
-    ../utils/misc.cmx ../typing/path.cmx ../typing/predef.cmx \
-    ../typing/printtyp.cmx printval.cmx ../bytecomp/symtable.cmx \
-    ../typing/types.cmx loadprinter.cmi 
+    ../otherlibs/dynlink/dynlink.cmx ../typing/env.cmx ../typing/ident.cmx \
+    ../parsing/longident.cmx ../utils/misc.cmx ../typing/path.cmx \
+    ../typing/predef.cmx ../typing/printtyp.cmx printval.cmx \
+    ../bytecomp/symtable.cmx ../typing/types.cmx loadprinter.cmi 
 main.cmo: checkpoints.cmi command_line_interpreter.cmi ../utils/config.cmi \
     debugger_config.cmi exec.cmi frames.cmi input_handling.cmi \
     ../utils/misc.cmi parameters.cmi primitives.cmi program_management.cmi \

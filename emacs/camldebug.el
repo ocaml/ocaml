@@ -42,8 +42,8 @@
 (defvar camldebug-last-frame-displayed-p)
 (defvar camldebug-filter-function)
 
-(defvar camldebug-prompt-pattern "^(cdb) *"
-  "A regexp to recognize the prompt for camldebug.") 
+(defvar camldebug-prompt-pattern "^(ocd) *"
+  "A regexp to recognize the prompt for ocamldebug.") 
 
 (defvar camldebug-overlay-event nil
   "Overlay for displaying the current event.")
@@ -160,7 +160,8 @@ representation is simply concatenated with the COMMAND."
 		(concat "\C-x\C-a" key)
 		(list 'quote fun)))))
 
-(def-camldebug "step"	"\C-s"	"Step one source line with display.")
+(def-camldebug "step"	"\C-s"	"Step one event forward.")
+(def-camldebug "backstep" "\C-k" "Step one event backward.")
 (def-camldebug "run"	"\C-r"	"Run the program.")
 (def-camldebug "reverse" "\C-v" "Run the program in reverse.")
 (def-camldebug "last"   "\C-l"  "Go to latest time in execution history.")
@@ -168,22 +169,25 @@ representation is simply concatenated with the COMMAND."
 (def-camldebug "finish" "\C-f"	"Finish executing current function.")
 (def-camldebug "print"	"\C-p"	"Print value of symbol at point."	"%e")
 (def-camldebug "display" "\C-d"	"Display value of symbol at point."	"%e")
-(def-camldebug "next"   "\C-n"	"Step one source line (skip functions)")
+(def-camldebug "next"   "\C-n"	"Step one event forward (skip functions)")
 (def-camldebug "up"     "<"  "Go up N stack frames (numeric arg) with display")
 (def-camldebug "down"  ">" "Go down N stack frames (numeric arg) with display")
 (def-camldebug "break"  "\C-b"	"Set breakpoint at current line."
   "@ \"%m\" # %c")
 
 (defun camldebug-mouse-display (click)
-  "Display value of symbol clicked on."
+  "Display value of $NNN clicked on."
   (interactive "e")
   (let* ((start (event-start click))
 	 (window (car start))
-	 (pos (car (cdr start))))
+	 (pos (car (cdr start)))
+         symb)
     (save-excursion
       (select-window window)
       (goto-char pos)
-      (camldebug-call "display" "%e"))))
+      (setq symb (thing-at-point 'symbol))
+      (if (string-match "^\\$[0-9]+$" symb)
+          (camldebug-call "display" symb)))))
 
 (define-key camldebug-mode-map [mouse-2] 'camldebug-mouse-display)
 
@@ -467,7 +471,7 @@ around point."
 The directory containing FILE becomes the initial working directory
 and source-file directory for camldebug.  If you wish to change this, use
 the camldebug commands `cd DIR' and `directory'."
-  (interactive "fRun camldebug on file: ")
+  (interactive "fRun ocamldebug on file: ")
   (setq path (expand-file-name path))
   (let ((file (file-name-nondirectory path)))
     (pop-to-buffer (concat "*camldebug-" file "*"))

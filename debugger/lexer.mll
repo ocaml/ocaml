@@ -59,6 +59,9 @@ and lexeme =	(* Read a lexeme *)
     (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
       '\'' '0'-'9' ]) *
       { UIDENT(Lexing.lexeme lexbuf) }
+  | '"' [^ '"']* "\""
+      { let s = Lexing.lexeme lexbuf in
+        LIDENT(String.sub s 1 (String.length s - 2)) }
   | ['0'-'9']+
     | '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
     | '0' ['o' 'O'] ['0'-'7']+

@@ -17,7 +17,7 @@
 open Misc
 open Obj
 open Format
-open Longident
+open Parser_aux
 open Path
 open Types
 
@@ -298,19 +298,17 @@ let print_value max_depth obj ty env =
 
 in print_val 0 max_depth obj ty
 
-let print_named_value max_depth obj ty env =
+let print_named_value max_depth exp obj ty env =
   open_hovbox 2;
-  let n = name_value obj ty in
-  print_char '$'; print_int n;
-  print_string " :"; print_space(); Printtyp.type_expr ty;
-  print_space(); print_string "="; print_space();
-  print_value max_depth obj ty env;
-  close_box();
-  print_newline()
-
-let print_ident_value max_depth lid obj ty env =
-  open_hovbox 2;
-  Printtyp.longident lid;
+  begin match exp with
+    E_ident lid ->
+      Printtyp.longident lid
+  | E_name n ->
+      print_char '$'; print_int n
+  | _ ->
+      let n = name_value obj ty in
+      print_char '$'; print_int n
+  end;
   print_string " :"; print_space(); Printtyp.type_expr ty;
   print_space(); print_string "="; print_space();
   print_value max_depth obj ty env;

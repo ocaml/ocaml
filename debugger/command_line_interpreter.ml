@@ -81,10 +81,12 @@ let all_matching_instructions =
   matching_elements instruction_list (fun i -> i.instr_name)
 
 (* itz 04-21-96 don't do priority completion in emacs mode *)
+(* XL 25-02-97 why? I find it very confusing. *)
+
 let matching_instructions instr =
   let all = all_matching_instructions instr in
   let prio = filter (fun i -> i.instr_prio) all in
-  if prio = [] || !emacs then all else prio
+  if prio = [] then all else prio
 
 let matching_variables =
   matching_elements variable_list (fun v -> v.var_name)
@@ -128,17 +130,16 @@ let add_breakpoint_after_pc pc =
       with Not_found ->
         try_add (n+1)
     end else begin
-      prerr_string "Can't add breakpoint at pc ";
-      prerr_int pc;
-      prerr_endline " : no event there.";
+      prerr_endline "Can't add breakpoint at beginning of function: no event there";
       raise Toplevel
     end
   in try_add 0
 
 let convert_module mdle =
   match mdle with
-    Some x ->
-      x
+    Some m ->
+      (* Strip .ml extension if any, and capitalize *)
+      String.capitalize(Filename.chop_extension m)
   | None ->
       try
         let (x, _) = current_point () in x
@@ -420,9 +421,7 @@ let instr_help lexbuf =
 let print_expr depth ev env expr =
   try
     let (v, ty) = Eval.expression ev env expr in
-    match expr with
-      E_ident lid -> print_ident_value depth lid v ty env
-    | _           -> print_named_value depth v ty env
+    print_named_value depth expr v ty env
   with Eval.Error msg ->
     Eval.report_error msg;
     raise Toplevel
