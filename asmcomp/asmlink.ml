@@ -176,6 +176,17 @@ let make_startup_file filename info_list =
   Emit.end_assembly();
   close_out oc
 
+let expand_libname name =
+  if String.length name < 2 || String.sub name 0 2 <> "-l"
+  then name
+  else begin
+    let libname = String.sub name 2 (String.length name - 2) ^ ext_lib in
+    try
+      find_in_path !load_path libname
+    with Not_found ->
+      libname
+  end
+
 let call_linker file_list startup_file =
   let libname =
     if !Clflags.gprofile
@@ -197,7 +208,8 @@ let call_linker file_list startup_file =
             (String.concat " " (List.rev !Clflags.ccopts))
             startup_file
             (String.concat " " (List.rev file_list))
-            (String.concat " " (List.rev !Clflags.ccobjs))
+            (String.concat " "
+                          (List.map expand_libname (List.rev !Clflags.ccobjs)))
             runtime_lib
             Config.c_libraries
         else
