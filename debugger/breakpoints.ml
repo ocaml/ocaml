@@ -48,21 +48,29 @@ let copy_breakpoints () =
 (* Announce a new version of the breakpoint list. *)
 let new_version () =
   incr max_version;
-  current_version := !max_version;
-  copy_breakpoints ()
+  current_version := !max_version
 
 (*** Information about breakpoints. ***)
 
 let breakpoints_count () =
   List.length !breakpoints
 
+(* List of breakpoints at `pc'. *)
+let rec breakpoints_at_pc pc =
+  begin try
+    let ev = Symbols.event_at_pc pc in
+    match ev.ev_repr with
+      Event_child {contents = pc'} -> breakpoints_at_pc pc'
+    | _                            -> []
+  with Not_found ->
+   []
+  end
+    @
+  List.map fst (filter (function (_, {ev_pos = pos}) -> pos = pc) !breakpoints)
+
 (* Is there a breakpoint at `pc' ? *)
 let breakpoint_at_pc pc =
-  List.mem_assoc pc !positions
-
-(* List of breakpoints at `pc'. *)
-let breakpoints_at_pc pc =
-  List.map fst (filter (function (_, {ev_pos = pos}) -> pos = pc) !breakpoints)
+  breakpoints_at_pc pc <> []
 
 (*** Set and remove breakpoints ***)
 
@@ -77,7 +85,7 @@ let remove_breakpoints pos =
          print_newline()
        end;
        reset_instr pos;
-       set_event pos)
+       try Symbols.event_at_pc pos; set_event pos with Not_found -> ())
     pos
 
 (* Set all breakpoints. *)
@@ -95,6 +103,13 @@ let set_breakpoints pos =
 
 (* Ensure the current version in installed in current checkpoint. *)
 let update_breakpoints () =
+  if !debug_breakpoints then begin
+    prerr_string "Updating breakpoints... ";
+    prerr_int !current_checkpoint.c_breakpoint_version;
+    prerr_string " ";
+    prerr_int !current_version;
+    prerr_endline ""
+  end;
   if !current_checkpoint.c_breakpoint_version <> !current_version then
     Exec.protected
       (function () ->
@@ -129,7 +144,6 @@ let insert_position pos =
     incr (List.assoc pos !positions)
   with
     Not_found ->
-      set_breakpoint pos;
       positions := (pos, ref 1) :: !positions;
       new_version ()
 
@@ -140,9 +154,7 @@ let remove_position pos =
     decr count;
     if !count = 0 then begin
       positions := assoc_remove !positions pos;
-      new_version ();
-      reset_instr pos;
-      set_event pos
+      new_version ()
     end
 
 (* Insert a new breakpoint in lists. *)
@@ -159,6 +171,7 @@ let new_breakpoint event =
   print_string " : file ";
   print_string event.ev_module;
   print_string ", line ";
+(* XXX Que faire si fichier non trouve ? *)
   let (start, line) = line_of_pos (get_buffer event.ev_module) event.ev_char in
   print_int line;
   print_string " column ";
