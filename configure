@@ -295,10 +295,8 @@ case "$host" in
   sparc-*-solaris2.*)           arch=sparc; system=solaris;;
   sparc-*-*bsd*)                arch=sparc; system=bsd;;
   sparc-*-linux)                arch=sparc; system=linux;;
-  i[3456]86-*-linuxaout)        arch=i386; system=linux_aout;;
-  i[3456]86-*-linuxoldld)       arch=i386; system=linux_aout;;
-  i[3456]86-*-linux)            arch=i386; system=linux_elf;;
-  i[3456]86-*-*bsd*)            arch=i386; system=bsd;;
+  i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
+  i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         arch=i386; system=solaris;;
   i[3456]86-*-beos*)            arch=i386; system=beos;;
