@@ -37,9 +37,10 @@ val set: t -> string -> Digest.t -> string -> unit
          [crc] in [tbl], even if [name] already had a different CRC
          associated with [name] in [tbl]. *)
 
-val is_bound: t -> string -> bool
-      (* [is_bound tbl name] returns [true] if [name] has an associated
-         CRC in [tbl], [false] otherwise. *)
+val source: t -> string -> string
+      (* [source tbl name] returns the file name associated with [name]
+         if the latter has an associated CRC in [tbl].
+         Raise [Not_found] otherwise. *)
 
 val extract: t -> (string * Digest.t) list
       (* Return all bindings ([name], [crc]) contained in the given

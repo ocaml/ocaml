@@ -40,7 +40,7 @@ let check_noadd tbl name crc source =
 
 let set tbl name crc source = Hashtbl.add tbl name (crc, source)
 
-let is_bound = Hashtbl.mem
+let source tbl name = snd (Hashtbl.find tbl name)
 
 let extract tbl =
   Hashtbl.fold (fun name (crc, auth) accu -> (name, crc) :: accu) tbl []
