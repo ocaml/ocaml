@@ -213,12 +213,7 @@ int putblock(channel, p, len)
 
   n = len >= INT_MAX ? INT_MAX : (int) len;
   free = channel->end - channel->curr;
-  if (channel->curr == channel->buff && n >= free) {
-    /* Empty buffer and big write request: bypass the buffer. */
-    written = do_write(channel->fd, p, n);
-    channel->offset += written;
-    return written;
-  } else if (n <= free) {
+  if (n <= free) {
     /* Write request small enough to fit in buffer: transfer to buffer. */
     bcopy(p, channel->curr, n);
     channel->curr += n;
