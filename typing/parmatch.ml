@@ -372,55 +372,42 @@ let full_match tdefs force env =  match env with
     false
 | ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
     List.length env = c.cstr_consts + c.cstr_nonconsts
-| ({pat_desc = Tpat_variant(c,_,row); pat_type = ty},_) :: _ ->
+| ({pat_desc = Tpat_variant(_,_,row)},_) :: _ ->
     let fields =
       List.map
-        (function ({pat_desc = Tpat_variant (tag, _, row)}, _) ->
-            (* You must get a tag's type inside its own row *)
-            tag, List.assoc tag (Btype.row_repr row).row_fields
+        (function ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag
           | _ -> assert false)
         env
     in
     let row = Btype.row_repr row in
     if force then begin
-      if not row.row_closed then begin
-        let more_fields =
-          List.fold_left
-            (fun acc (tag, f) ->
-              if List.mem_assoc tag acc || List.mem_assoc tag row.row_fields
-              then acc
-              else (print_endline tag; (tag, f)::acc))
-            [] fields
-        in
-        let closed =
-          { row_fields = more_fields; row_more = Btype.newgenvar();
-            row_bound = row.row_bound; row_closed = true;
-            row_name = if more_fields = [] then row.row_name else None }
-         (* Cannot fail *)
-        in Ctype.unify tdefs row.row_more (Btype.newgenty (Tvariant closed))
-      end;
-      List.fold_left
-        (fun ok (tag,f) ->
-          match Btype.row_field_repr f with
-            Rabsent -> ok
-          | Reither(_, _, false, e) ->
-              if not (List.mem_assoc tag fields) then e := Some Rabsent;
-              let row = Btype.row_repr row in
-              if row.row_name <> None then
-                Ctype.unify tdefs row.row_more
-                  (Btype.newgenty
-                     (Tvariant {row with row_fields = []; row_name = None;
-                                row_more = Btype.newgenvar ()}));
-              ok
-          | Reither (_, _, true, _)
-          | Rpresent _ ->
-              ok && List.mem_assoc tag fields)
-        true row.row_fields
+      (* force=true, we are called from check_partial, and must close *)
+      let (ok, nm) =
+        List.fold_left
+          (fun (ok,nm) (tag,f) ->
+            match Btype.row_field_repr f with
+              Rabsent -> (ok, nm)
+            | Reither(_, _, false, e) ->
+                (* m=false means that this tag is not explicitly matched *)
+                e := Some Rabsent;
+                (ok, None)
+            | Reither (_, _, true, _)
+                (* m=true, do not discard matched tags, rather warn *)
+            | Rpresent _ ->
+                (ok && List.mem tag fields, nm))
+          (true, row.row_name) row.row_fields in
+      if not row.row_closed || nm != row.row_name then
+        (* this unification cannot fail *)
+        Ctype.unify tdefs row.row_more
+          (Btype.newgenty
+             (Tvariant {row with row_fields = []; row_more = Btype.newgenvar();
+                        row_closed = true; row_name = nm}));
+      ok
     end else
       row.row_closed &&
       List.for_all
         (fun (tag,f) ->
-          Btype.row_field_repr f = Rabsent || List.mem_assoc tag fields)
+          Btype.row_field_repr f = Rabsent || List.mem tag fields)
         row.row_fields
 | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
     List.length env = 256
@@ -675,6 +662,7 @@ let rec satisfiable tdefs build pss qs =
               | Rnone -> try_many try_non_omega constrs
               | Rok -> Rok
               | Rsome r ->
+                  ignore (try_many try_non_omega constrs);
                   try
                     Rsome (build_other constrs::r)
                   with
