@@ -46,6 +46,8 @@ let report_error ppf exn =
       Location.print ppf loc; Typemod.report_error ppf err
   | Translcore.Error(loc, err) ->
       Location.print ppf loc; Translcore.report_error ppf err
+  | Transldyn.Unimplemented text ->
+      fprintf ppf "Unimplemented dynamic typing feature:@ %s" text
   | Compilenv.Error code ->
       Compilenv.report_error ppf code
   | Asmgen.Error code ->
