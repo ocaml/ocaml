@@ -215,6 +215,15 @@ value gr_close_graph(void)
   return Val_unit;
 }
 
+value gr_window_id(void)
+{
+  char tmp[256];
+
+  gr_check_open();
+  sprintf(tmp, "%lu", grwindow.win);
+  return copy_string( tmp );
+}
+
 value gr_clear_graph(void)
 {
   gr_check_open();

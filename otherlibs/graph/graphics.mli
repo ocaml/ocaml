@@ -38,6 +38,8 @@ external size_y : unit -> int = "gr_size_y"
            Drawings outside of this rectangle are clipped, without causing
            an error. The origin (0,0) is at the lower left corner. *)
 
+external window_id : unit -> string = "gr_window_id"
+
 (*** Colors *)
 
 type color = int

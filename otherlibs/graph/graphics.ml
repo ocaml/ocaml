@@ -39,6 +39,15 @@ let (open_graph, close_graph) =
   | "MacOS" -> (raw_open_graph, raw_close_graph)
   | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)
 
+external window_id : unit -> string = "gr_window_id"
+
+let window_id = 
+  match Sys.os_type with
+  | "Unix" -> window_id
+  | "Win32" -> (fun () -> "unknown") 
+  | "MacOS" -> (fun () -> "unknown")
+  | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)
+
 external clear_graph : unit -> unit = "gr_clear_graph"
 external size_x : unit -> int = "gr_size_x"
 external size_y : unit -> int = "gr_size_y"
