@@ -67,6 +67,7 @@ module Make :
   functor (Arg : S) ->
     sig
       val zyva :
+          (int * int) -> 
           (int -> Arg.act) ->
            Arg.act ->
            (int * int * int) array ->

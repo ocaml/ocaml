@@ -974,5 +974,55 @@ test "habert" habert (A ex0) 1 ;
 test "habert" habert (B ex0) 1 ;
 test "habert" habert (A ex1) 2 ;
 test "habert" habert (B ex1) 3 ;
-()
+
+(* Problems with interval test in arithmetic mod 2^31, bug #359 *)
+(* From manuel Fahndrich *)
+
+type type_expr = [
+  | `TTuple of type_expr list
+  | `TConstr of type_expr list
+  | `TVar of string
+  | `TVariant of string list
+  | `TBlock of int
+  | `TCopy of type_expr
+  ] 
+
+and recurs_type_expr = [
+  | `TTuple of type_expr list
+  | `TConstr of type_expr list
+  | `TVariant of string list
+  ] 
+
+
+let rec maf te =
+    match te with
+    | `TCopy te -> 1
+    | `TVar _ -> 2
+    | `TBlock _ -> 2
+    | #recurs_type_expr as desc ->
+
+        let te =
+          (match desc with
+            `TTuple tl ->
+              4
+          | `TConstr tl ->
+              5
+          | `TVariant (row) ->
+              6
+                )
+        in
+
+        te
 ;;
+
+let base = `TBlock 0
+;;
+
+test "maf" maf (`TCopy base) 1 ;
+test "maf" maf (`TVar "test") 2 ;
+test "maf" maf (`TBlock 0) 2 ;
+test "maf" maf (`TTuple []) 4 ;
+test "maf" maf (`TConstr []) 5 ;
+test "maf" maf (`TVariant []) 6
+;;
+

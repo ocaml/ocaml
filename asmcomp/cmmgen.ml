@@ -1370,10 +1370,10 @@ and transl_switch arg index cases = match Array.length cases with
       end
     done ;
     inters := (0, !this_high, !this_act) :: !inters ;
-
     bind "switcher" arg
       (fun a ->
         SwitcherBlocks.zyva
+          (0,n_index-1)
           (fun i -> Cconst_int i)
           a
           (Array.of_list !inters) actions)

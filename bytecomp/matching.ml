@@ -1409,6 +1409,15 @@ open Switch
 
 let lambda_of_int i =  Lconst (Const_base (Const_int i))
 
+let rec last def = function
+| [] -> def
+| [x,_] -> x
+| _::rem -> last def rem
+
+let get_edges low high l = match l with
+| [] -> low, high
+| (x,_)::_ -> x, last high l
+
   
 let as_interval_canfail fail low high l =
   let store = mk_store equal_action in
@@ -1453,7 +1462,7 @@ let as_interval_canfail fail low high l =
             nofail_rec i i index rem in
 
   ignore (store.act_store fail) ; (* fail has action index 0 *)
-  let r = init_rec (sort_lambda_list l) in
+  let r = init_rec l in
   Array.of_list r,  store.act_get ()
 
 let as_interval_nofail l =
@@ -1469,21 +1478,25 @@ let as_interval_nofail l =
         else
           (cur_low, cur_high, cur_act)::
           i_rec i i act_index rem in
-  let inters = match sort_lambda_list l with
+  let inters = match l with
   | (i,act)::rem ->
       let act_index = store.act_store act in
       i_rec i i act_index rem
   | _ -> assert false in
+
   Array.of_list inters, store.act_get ()
 
-let as_interval fail low high l = match fail with
-| None -> as_interval_nofail l
-| Some act -> as_interval_canfail act low high l
+let as_interval fail low high l =
+  let l = sort_lambda_list l in
+  get_edges low high l,
+  (match fail with
+  | None -> as_interval_nofail l
+  | Some act -> as_interval_canfail act low high l)
 
 let call_switcher konst fail arg low high int_lambda_list =
-  let cases, actions =
+  let edges, (cases, actions) =
     as_interval fail low high int_lambda_list in
-  Switcher.zyva konst arg cases actions
+  Switcher.zyva edges konst arg cases actions
 
 
 let exists_ctx ok ctx =
@@ -1735,7 +1748,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
   end
 
 let make_test_sequence_variant_constant fail arg int_lambda_list =
-  let cases, actions =
+  let _, (cases, actions) =
     as_interval fail min_int max_int int_lambda_list in
   Switcher.test_sequence
     (fun i -> Lconst (Const_base (Const_int i))) arg cases actions
@@ -1744,6 +1757,7 @@ let call_switcher_variant_constant fail arg int_lambda_list =
   call_switcher
     (fun i -> Lconst (Const_base (Const_int i)))
     fail arg min_int max_int int_lambda_list
+
 
 let call_switcher_variant_constr fail arg int_lambda_list =
   let v = Ident.create "variant" in
