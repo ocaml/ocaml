@@ -240,7 +240,7 @@ module Genarray: sig
 
          [Genarray.sub_left] applies only to big arrays in C layout.
          Raise [Invalid_arg] if [ofs] and [len] do not designate
-         a valid sub-array of [a], that is, if [ofs] < 0, or [len] < 0,
+         a valid sub-array of [a], that is, if [ofs < 0], or [len < 0],
          or [ofs + len > Genarray.nth_dim a 0]. *)
   external sub_right:
     ('a, 'b, fortran_layout) t ->
@@ -260,7 +260,7 @@ module Genarray: sig
 
          [Genarray.sub_right] applies only to big arrays in Fortran layout.
          Raise [Invalid_arg] if [ofs] and [len] do not designate
-         a valid sub-array of [a], that is, if [ofs] < 1, or [len] < 0,
+         a valid sub-array of [a], that is, if [ofs < 1], or [len < 0],
          or [ofs + len > Genarray.nth_dim a (Genarray.num_dims a - 1)]. *)
   external slice_left:
     ('a, 'b, c_layout) t -> int array -> ('a, 'b, c_layout) t
