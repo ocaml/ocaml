@@ -493,3 +493,8 @@ fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
   (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('b * 'bar)>)> as 'bar);;
 fun (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) ->
   (x : <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>);;
+
+module M = struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
+module N :
+  sig val f : (<m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>) -> unit end
+  = M;;

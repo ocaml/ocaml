@@ -1317,6 +1317,25 @@ let univars_escape family ty =
   in
   try occur ty; false with Occur -> true
 
+(* Wrapper checking that no variable escapes and updating univar_pairs *)
+let enter_poly univar_pairs t1 tl1 t2 tl2 f =
+  let old_univars = !univar_pairs in
+  let f1 = get_univar_family old_univars tl1
+  and f2 = get_univar_family old_univars tl2 in
+  let known_univars =
+    List.fold_left (fun s (cl,_) -> add_univars s cl)
+      TypeSet.empty old_univars
+  in
+  if TypeSet.mem (TypeSet.choose f1) known_univars &&
+    univars_escape f1 t2 then raise (Unify []);
+  if TypeSet.mem (TypeSet.choose f2) known_univars &&
+    univars_escape f2 t1 then raise (Unify []);
+  let cl1 = List.map (fun t -> t, ref None) tl1
+  and cl2 = List.map (fun t -> t, ref None) tl2 in
+  univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
+  try let res = f t1 t2 in univar_pairs := old_univars; res
+  with exn -> univar_pairs := old_univars; raise exn
+
 let univar_pairs = ref []
 
 
@@ -1516,36 +1535,19 @@ and unify3 env t1 t1' t2 t2' =
         unify env t1 t2
     | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
         if List.length tl1 <> List.length tl2 then raise (Unify []);
-        let old_univars = !univar_pairs in
-        let f1 = get_univar_family old_univars tl1
-        and f2 = get_univar_family old_univars tl2 in
-        let known_univars =
-          List.fold_left (fun s (cl,_) -> add_univars s cl)
-            TypeSet.empty old_univars
-        in
-        if TypeSet.mem (TypeSet.choose f1) known_univars &&
-          univars_escape f1 t2 then raise (Unify []);
-        if TypeSet.mem (TypeSet.choose f2) known_univars &&
-          univars_escape f2 t1 then raise (Unify []);
-        let cl1 = List.map (fun t -> t, ref None) tl1
-        and cl2 = List.map (fun t -> t, ref None) tl2 in
-        univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
-        begin try
-          unify env t1 t2;
-          let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
-          List.iter
-            (fun t1 ->
-              if List.memq t1 tl2 then () else
-              try
-                let t2 =
-                  List.find (fun t2 -> not (List.memq (repr t2) tl1)) tl2 in
-                link_type t2 t1
-              with Not_found -> assert false)
-            tl1;
-          univar_pairs := old_univars
-        with exn ->
-          univar_pairs := old_univars; raise exn
-        end
+        enter_poly univar_pairs t1 tl1 t2 tl2
+          (fun t1 t2 ->
+            unify env t1 t2;
+            let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
+            List.iter
+              (fun t1 ->
+                if List.memq t1 tl2 then () else
+                try
+                  let t2 =
+                    List.find (fun t2 -> not (List.memq (repr t2) tl1)) tl2 in
+                  link_type t2 t1
+                with Not_found -> assert false)
+              tl1)
     | (_, _) ->
         raise (Unify [])
     end;
@@ -1976,16 +1978,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
               moregen inst_nongen type_pairs env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              let old_univars = !univar_pairs in
-              let cl1 = List.map (fun t -> t, ref None) tl1
-              and cl2 = List.map (fun t -> t, ref None) tl2 in
-              univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
-              begin try
-                moregen inst_nongen type_pairs env t1 t2;
-                univar_pairs := old_univars
-              with exn ->
-                univar_pairs := old_univars; raise exn
-              end
+              enter_poly univar_pairs t1 tl1 t2 tl2
+                (moregen inst_nongen type_pairs env)
           | (_, _) ->
               raise (Unify [])
         end
@@ -2234,16 +2228,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
               eqtype rename type_pairs subst env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              let old_univars = !univar_pairs in
-              let cl1 = List.map (fun t -> t, ref None) tl1
-              and cl2 = List.map (fun t -> t, ref None) tl2 in
-              univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
-              begin try eqtype rename type_pairs subst env t1 t2
-              with exn ->
-                univar_pairs := old_univars;
-                raise exn
-              end;
-              univar_pairs := old_univars
+              enter_poly univar_pairs t1 tl1 t2 tl2
+                (eqtype rename type_pairs subst env)
           | (Tunivar, Tunivar) ->
               unify_univar t1 t2 !univar_pairs
           | (_, _) ->
@@ -2902,13 +2888,8 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env trace u1 u2 cstrs
     | (Tpoly (t1, tl1), Tpoly (t2,tl2)) ->
-        let old_univars = !univar_pairs in
-        let cl1 = List.map (fun t -> t, ref None) tl1
-        and cl2 = List.map (fun t -> t, ref None) tl2 in
-        univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
-        let cstrs = subtype_rec env trace t1 t2 cstrs in
-        univar_pairs := old_univars;
-        cstrs
+        enter_poly univar_pairs t1 tl1 t2 tl2
+          (fun t1 t2 -> subtype_rec env trace t1 t2 cstrs)
     | (_, _) ->
         (trace, t1, t2, !univar_pairs)::cstrs
   end

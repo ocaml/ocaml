@@ -1,4 +1,4 @@
-        Objective Caml version 3.09+dev3 (2004-10-06)
+        Objective Caml version 3.09+dev4 (2004-10-13)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -361,4 +361,15 @@ Types for method m are incompatible
 This expression has type < m : 'b. 'b * ('b * 'a) > as 'a
 but is here used with type < m : 'b. 'b * ('b * < m : 'd. 'd * 'c > as 'c) >
 Types for method m are incompatible
+#   module M : sig val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit end
+#     Characters 91-92:
+Signature mismatch:
+Modules do not match:
+  sig val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit end
+is not included in
+  sig val f : < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > -> unit end
+Values do not match:
+  val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit
+is not included in
+  val f : < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > -> unit
 # 
