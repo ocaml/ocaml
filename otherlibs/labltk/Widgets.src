@@ -1176,7 +1176,7 @@ module Imagephoto {
   function () blank [ImagePhoto; "blank"]
   function () configure [ImagePhoto; "configure"; option(photoimage) list]
   function (string) configure_get [ImagePhoto; "configure"]
-  function () copy [src: ImagePhoto; "copy"; dst: ImagePhoto; photo(copy) list]
+  function () copy [ImagePhoto; "copy"; src: ImagePhoto; photo(copy) list]
   function (int, int, int) get [ImagePhoto; "get"; x: int; y: int]
 # can't express nested lists ?
 #  function () put [ImagePhoto; "put"; [[Color list] list]; photo(put) list]

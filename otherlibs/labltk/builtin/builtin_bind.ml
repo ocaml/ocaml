@@ -9,7 +9,7 @@ type event = [
   | `ButtonRelease
   | `ButtonReleaseDetail of int
   | `Circulate
-  | `ColorMap
+  | `Colormap
   | `Configure
   | `Destroy
   | `Enter

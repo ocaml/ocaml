@@ -24,7 +24,7 @@ let cCAMLtoTKevent (ev : event) =
   | `ButtonRelease -> "ButtonRelease"
   | `ButtonReleaseDetail n -> "ButtonRelease-"^string_of_int n
   | `Circulate -> "Circulate"
-  | `ColorMap -> "ColorMap"
+  | `Colormap -> "Colormap"
   | `Configure -> "Configure"
   | `Destroy -> "Destroy"
   | `Enter -> "Enter"
