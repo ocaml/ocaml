@@ -188,3 +188,13 @@ let array2_of_genarray a =
 let array3_of_genarray a =
   if Genarray.num_dims a = 3 then a else invalid_arg "Bigarray.array3_of_genarray"
 
+(* Force bigarray_get_{1,2,3,N} to be linked in, since we don't refer
+   to those primitives directly in this file *)
+
+let _ =
+  let getN = Genarray.get in
+  let get1 = Array1.get in
+  let get2 = Array2.get in
+  let get3 = Array3.get in
+  ()
+
