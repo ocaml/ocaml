@@ -61,10 +61,8 @@ let load_lambda lam =
 
 (* Print the outcome of an evaluation *)
 
-let hidden = ref 0
-
-let print_item env = function
-    Tsig_value(id, decl) ->
+let rec print_items env = function
+    Tsig_value(id, decl)::rem ->
       open_hovbox 2;
       begin match decl.val_kind with
         Val_prim p ->
@@ -79,19 +77,26 @@ let print_item env = function
           print_string " ="; print_space();
           print_value env (Symtable.get_global_value id) decl.val_type
       end;
-      close_box()
-  | Tsig_type(id, decl) ->
-      Printtyp.type_declaration id decl
-  | Tsig_exception(id, decl) ->
-      Printtyp.exception_declaration id decl
-  | Tsig_module(id, mty) ->
+      close_box();
+      print_space (); print_items env rem
+  | Tsig_type(id, decl)::rem ->
+      Printtyp.type_declaration id decl;
+      print_space (); print_items env rem
+  | Tsig_exception(id, decl)::rem ->
+      Printtyp.exception_declaration id decl;
+      print_space (); print_items env rem
+  | Tsig_module(id, mty)::rem ->
       open_hovbox 2; print_string "module "; Printtyp.ident id;
-      print_string " :"; print_space(); Printtyp.modtype mty; close_box()
-  | Tsig_modtype(id, decl) ->
-      Printtyp.modtype_declaration id decl
-  | Tsig_class(id, decl) ->
-      hidden := 2;
-      Printtyp.class_type id decl
+      print_string " :"; print_space(); Printtyp.modtype mty; close_box();
+      print_space (); print_items env rem
+  | Tsig_modtype(id, decl)::rem ->
+      Printtyp.modtype_declaration id decl;
+      print_space (); print_items env rem
+  | Tsig_class(id, decl)::tydecl1::tydecl2::rem ->
+      Printtyp.class_type id decl;
+      print_space (); print_items env rem
+  | _ ->
+      ()
 
 (* Print an exception produced by an evaluation *)
 
@@ -137,12 +142,7 @@ let execute_phrase phr =
               print_newline()
           | _ ->
               open_vbox 0;
-	      hidden := 0;
-              List.iter
-                (fun item ->
-		   if !hidden > 0 then decr hidden
-      	       	   else begin print_item newenv item; print_space() end)
-      	        sg;
+              print_items newenv sg;
               close_box();
               print_flush()
           end;
