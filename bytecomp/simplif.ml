@@ -83,10 +83,182 @@ let rec eliminate_ref id = function
   | Lifused(v, e) ->
       Lifused(v, eliminate_ref id e)
 
+(* Simplification of exits *)
+
+let simplify_exits lam = 
+
+  (* Count occurrences of (exit n ...) statements *)
+  let exits = Hashtbl.create 17 in
+
+  let count_exit i =
+    try
+      !(Hashtbl.find exits i)
+    with
+    | Not_found -> 0
+
+  and incr_exit i =
+    try
+      incr (Hashtbl.find exits i)
+    with
+    | Not_found -> Hashtbl.add exits i (ref 1) in
+  
+  let rec count = function
+  | (Lvar _| Lconst _) -> ()
+  | Lapply(l1, ll) -> count l1; List.iter count ll
+  | Lfunction(kind, params, l) -> count l
+  | Llet(str, v, l1, l2) ->
+      count l2; count l1
+  | Lletrec(bindings, body) ->
+      List.iter (fun (v, l) -> count l) bindings;
+      count body
+  | Lprim(p, ll) -> List.iter count ll
+  | Lswitch(l, sw) ->
+      count_default sw ;
+      count l;
+      List.iter (fun (_, l) -> count l) sw.sw_consts;
+      List.iter (fun (_, l) -> count l) sw.sw_blocks
+  | Lstaticraise (i,ls) -> incr_exit i ; List.iter count ls
+  | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[])) ->
+      (* i will be replaced by j in l1, so each occurence of i in l1
+         increases j's ref count *)
+      count l1 ;
+      let ic = count_exit i in
+      begin try
+        let r = Hashtbl.find exits j in r := !r + ic
+      with
+      | Not_found ->
+          Hashtbl.add exits j (ref ic)
+      end
+  | Lstaticcatch(l1, (i,_), l2) ->
+      count l1;
+      (* If l1 does not contain (exit i),
+         l2 will be removed, so don't count its exits *)
+      if count_exit i > 0 then
+        count l2
+  | Ltrywith(l1, v, l2) -> count l1; count l2
+  | Lifthenelse(l1, l2, l3) -> count l1; count l2; count l3
+  | Lsequence(l1, l2) -> count l1; count l2
+  | Lwhile(l1, l2) -> count l1; count l2
+  | Lfor(_, l1, l2, dir, l3) -> count l1; count l2; count l3
+  | Lassign(v, l) ->
+      (* Lalias-bound variables are never assigned, so don't increase
+         v's refcount *)
+      count l
+  | Lsend(m, o, ll) -> List.iter count (m::o::ll)
+  | Levent(l, _) -> count l
+  | Lifused(v, l) -> count l
+
+  and count_default sw = match sw.sw_failaction with
+  | None -> ()
+  | Some al ->
+      let nconsts = List.length sw.sw_consts
+      and nblocks = List.length sw.sw_blocks in
+      if
+        nconsts < sw.sw_numconsts && nblocks < sw.sw_numblocks
+      then begin (* default action will occur twice in native code *)
+        count al ; count al
+      end else begin (* default action will occur once *)
+        assert (nconsts < sw.sw_numconsts || nblocks < sw.sw_numblocks) ;
+        count al
+      end
+  in
+  count lam;
+
+  (*
+     Second pass simplify  ``catch body with (i ...) handler''
+      - if (exit i ...) does not occur in body, suppress catch
+      - if (exit i ...) occurs exactly once in body,
+        substitute it with handler
+      - If handler is a single variable, replace (exit i ..) with it
+   Note:
+    In ``catch body with (i x1 .. xn) handler''
+     Substituted expression is
+      let y1 = x1 and ... yn = xn in
+      handler[x1 <- y1 ; ... ; xn <- yn]
+     For the sake of preserving the uniqueness  of bound variables.
+     (No alpha conversion of ``handler'' is presently needed, since
+     substitution of several ``(exit i ...)''
+     occurs only when ``handler'' is a variable.)
+  *)
+
+  let subst = Hashtbl.create 17 in
+
+  let rec simplif = function
+  | (Lvar _|Lconst _) as l -> l
+  | Lapply(l1, ll) -> Lapply(simplif l1, List.map simplif ll)
+  | Lfunction(kind, params, l) -> Lfunction(kind, params, simplif l)
+  | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
+  | Lletrec(bindings, body) ->
+      Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
+  | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
+  | Lswitch(l, sw) ->
+      let new_l = simplif l
+      and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
+      and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
+      and new_fail = match sw.sw_failaction with
+      | None -> None
+      | Some l -> Some (simplif l) in
+      Lswitch
+        (new_l,
+         {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
+                  sw_failaction = new_fail})
+  | Lstaticraise (i,[]) as l ->
+      begin try
+        let _,handler =  Hashtbl.find subst i in
+        handler
+      with
+      | Not_found -> l
+      end
+  | Lstaticraise (i,ls) as l ->
+      let ls = List.map simplif ls in
+      begin try
+        let xs,handler =  Hashtbl.find subst i in
+        let ys = List.map Ident.rename xs in
+        let env =
+          List.fold_right2
+            (fun x y t -> Ident.add x (Lvar y) t)
+            xs ys Ident.empty in
+        List.fold_right2
+          (fun y l r -> Llet (Alias, y, l, r))
+          ys ls (Lambda.subst_lambda env handler)
+      with
+      | Not_found -> l
+      end
+  | Lstaticcatch (l1,(i,[]),(Lstaticraise (j,[]) as l2)) ->
+      Hashtbl.add subst i ([],simplif l2) ;
+      simplif l1
+  | Lstaticcatch (l1,(i,xs), (Lvar _ as l2)) ->
+      begin match count_exit i with
+      | 0 -> simplif l1
+      | _ ->
+          Hashtbl.add subst i (xs,l2) ;
+          simplif l1
+      end
+  | Lstaticcatch (l1,(i,xs),l2) ->
+      begin match count_exit i with
+      | 0 -> simplif l1
+      | 1 ->
+          Hashtbl.add subst i (xs,simplif l2) ;
+          simplif l1
+      | _ ->
+          Lstaticcatch (simplif l1, (i,xs), simplif l2)
+      end
+  | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
+  | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
+  | Lsequence(l1, l2) -> Lsequence(simplif l1, simplif l2)
+  | Lwhile(l1, l2) -> Lwhile(simplif l1, simplif l2)
+  | Lfor(v, l1, l2, dir, l3) ->
+      Lfor(v, simplif l1, simplif l2, dir, simplif l3)
+  | Lassign(v, l) -> Lassign(v, simplif l)
+  | Lsend(m, o, ll) -> Lsend(simplif m, simplif o, List.map simplif ll)
+  | Levent(l, ev) -> Levent(simplif l, ev)
+  | Lifused(v, l) -> Lifused (v,simplif l)
+  in
+  simplif lam
 
 (* Simplification of lets *)
 
-let simplify_lambda lam =
+let simplify_lets lam =
 
   (* First pass: count the occurrences of all identifiers *)
   let occ = Hashtbl.create 83 in
@@ -101,20 +273,6 @@ let simplify_lambda lam =
     with Not_found ->
       Hashtbl.add occ v (ref 1) in
 
-  (* Also count occurrences of (exit n) statements *)
-  let exits = Hashtbl.create 17 in
-  let count_exit i =
-    try
-      !(Hashtbl.find exits i)
-    with
-    | Not_found -> 0
-
-  and incr_exit i =
-    try
-      incr(Hashtbl.find exits i)
-    with
-    | Not_found -> Hashtbl.add exits i (ref 1) in
-  
   let rec count = function
   | Lvar v -> incr_var v
   | Lconst cst -> ()
@@ -143,24 +301,9 @@ let simplify_lambda lam =
       count l;
       List.iter (fun (_, l) -> count l) sw.sw_consts;
       List.iter (fun (_, l) -> count l) sw.sw_blocks
-  | Lstaticraise (i,ls) -> incr_exit i ; List.iter count ls
-  | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[])) ->
-      (* i will be replaced by j in l1, so each occurence of i in l1
-         increases j's ref count *)
-      count l1 ;
-      let ic = count_exit i in
-      begin try
-        let r = Hashtbl.find exits j in r := !r + ic
-      with
-      | Not_found ->
-          Hashtbl.add exits j (ref ic)
-      end
+  | Lstaticraise (i,ls) -> List.iter count ls
   | Lstaticcatch(l1, (i,_), l2) ->
-      count l1;
-      (* If l1 does not contain (exit i),
-         l2 will be removed, so don't count its variables *)
-      if count_exit i > 0 then
-        count l2
+      count l1; count l2
   | Ltrywith(l1, v, l2) -> count l1; count l2
   | Lifthenelse(l1, l2, l3) -> count l1; count l2; count l3
   | Lsequence(l1, l2) -> count l1; count l2
@@ -192,13 +335,8 @@ let simplify_lambda lam =
   count lam;
   (* Second pass: remove Lalias bindings of unused variables,
      and substitute the bindings of variables used exactly once. *)
-  (* Also treat  ``catch body with (i) handler''
-      - if (exit i) does not occur in body, suppress catch
-      - if (exit i) occurs exactly once in body,
-        substitute it with handler *)  
-  let subst = Hashtbl.create 83
-  and subst_exit = Hashtbl.create 17 in
 
+  let subst = Hashtbl.create 83 in
 
   let rec simplif = function
     Lvar v as l ->
@@ -249,32 +387,10 @@ let simplify_lambda lam =
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
                   sw_failaction = new_fail})
-  | Lstaticraise (i,[]) as l ->
-      begin try
-        Hashtbl.find subst_exit i
-      with
-      | Not_found -> l
-      end
   | Lstaticraise (i,ls) ->
       Lstaticraise (i, List.map simplif ls)   
-  | Lstaticcatch (l1,(i,[]),(Lstaticraise (j,[]) as l2)) ->
-      Hashtbl.add subst_exit i (simplif l2) ;
-      simplif l1
-  | Lstaticcatch (l1,(i,[]),l2) ->
-      begin match count_exit i with
-      | 0 -> simplif l1
-      | 1 ->
-          Hashtbl.add subst_exit i (simplif l2) ;
-          simplif l1
-      | _ ->
-          Lstaticcatch (simplif l1, (i,[]), simplif l2)
-      end
   | Lstaticcatch(l1, (i,args), l2) ->
-      begin match count_exit i with
-      | 0 -> simplif l1
-      | _ ->
-          Lstaticcatch (simplif l1, (i,args), simplif l2)
-      end
+      Lstaticcatch (simplif l1, (i,args), simplif l2)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
   | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
   | Lsequence(Lifused(v, l1), l2) ->
@@ -292,3 +408,5 @@ let simplify_lambda lam =
       if count_var v > 0 then simplif l else lambda_unit
   in
   simplif lam
+
+let simplify_lambda lam = simplify_lets (simplify_exits lam)
