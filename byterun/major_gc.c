@@ -205,7 +205,6 @@ static void mark_slice (long work)
         }
         work -= Whsize_hd (hd);
       }else{
-        Assert (weak_prev == NULL);
         /* Subphase_weak is done.  Handle finalised values. */
         gray_vals_cur = gray_vals_ptr;
         final_update ();
