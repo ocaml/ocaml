@@ -22,6 +22,10 @@
 
 #include "socketaddr.h"
 
+#ifdef _WIN32
+#define EAFNOSUPPORT WSAEAFNOSUPPORT
+#endif
+
 value alloc_inet_addr(a)
      unsigned int a;
 {
