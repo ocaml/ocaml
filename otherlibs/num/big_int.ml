@@ -370,7 +370,7 @@ let power_base_nat base nat off len =
   if n = 0 then copy_nat power_base (pred rem) 1 else
    begin
     let res = make_nat n
-    and res2 = make_nat n
+    and res2 = make_nat (succ n)
     and l = num_bits_int n - 2 in
     let p = ref (1 lsl l) in
       blit_nat res 0 power_base pmax 1;
@@ -391,7 +391,7 @@ let power_base_nat base nat off len =
           p := !p lsr 1
       done;
     if rem > 0
-     then (mult_digit_nat res2 0 n 
+     then (mult_digit_nat res2 0 (succ n)
                           res 0 n power_base (pred rem);
            res2)
      else res
@@ -470,7 +470,7 @@ let power_big_int_positive_big_int bi1 bi2 =
          let p = ref (1 lsl l) in
            blit_nat res 0 (bi1.abs_value) 0 bi1_len;
            for i = l downto 0 do
-             let nat = bi2.abs_value in
+             let nat = copy_nat bi2.abs_value 0 len_bi2 in
              let len = num_digits_nat res 0 res_len in
              let len2 = min res_len (2 * len) in
              let succ_len2 = succ len2 in
