@@ -350,7 +350,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 
     exception Ellipsis
 
-    let cautious f ppf arg = try f arg with Ellipsis -> fprintf ppf "..."
+    let cautious f ppf arg = try f ppf arg with Ellipsis -> fprintf ppf "..."
 
     let print_outval ppf tree =
       let rec print_ident ppf =
@@ -390,29 +390,29 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
         | Oval_variant (name, None) -> fprintf ppf "`%s" name
         | Oval_stuff s -> fprintf ppf "%s" s
         | Oval_record fel ->
-            fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true ppf)) fel
+            fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true)) fel
         | Oval_ellipsis -> raise Ellipsis
         | Oval_printer f -> f ppf
-        | tree -> fprintf ppf "@[<1>(%a)@]" print_tree tree
+        | tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree) tree
       and print_fields first ppf =
         function
           [] -> ()
         | (name, tree) :: fields ->
             if not first then fprintf ppf ";@ ";
             fprintf ppf "@[<1>%a=@,%a@]" print_ident name
-              (cautious (print_tree ppf)) tree;
+              (cautious print_tree) tree;
             print_fields false ppf fields
       and print_tree_list print_item sep ppf tree_list =
-        let rec print_list first =
+        let rec print_list first ppf =
           function
             [] -> ()
           | tree :: tree_list ->
               if not first then fprintf ppf "%s@ " sep;
               print_item ppf tree;
-              print_list false tree_list
+              print_list false ppf tree_list
         in
         cautious (print_list true) ppf tree_list
       in
-      cautious (print_tree ppf) ppf tree
+      cautious print_tree ppf tree
 
 end
