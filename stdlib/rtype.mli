@@ -15,6 +15,10 @@ type label = string
 
 type private_flag = Private | Public
 
+type record_representation =
+    Record_regular                      (* All fields are boxed / tagged *)
+  | Record_float                        (* All fields are floats *)
+
 type type_expr =
   { (* mutable *) desc: type_desc; 
     (* mutable level: int; *)
@@ -24,7 +28,7 @@ and type_desc =
     Tvar
   | Tarrow of label * type_expr * type_expr (* * commutable *)
   | Ttuple of type_expr list
-  | Tconstr of Path.t * type_expr list (* * abbrev_memo ref *)
+  | Tconstr of (Path.t * type_declaration) * type_expr list (* * abbrev_memo ref *)
 (*
   | Tobject of type_expr * (Path.t * type_expr list) option ref
   | Tfield of string * field_kind * type_expr * type_expr
@@ -36,13 +40,9 @@ and type_desc =
   | Tpoly of type_expr * type_expr list
 *)
 
-type record_representation =
-    Record_regular                      (* All fields are boxed / tagged *)
-  | Record_float                        (* All fields are floats *)
-
 (* Type definitions *)
 
-type type_declaration =
+and type_declaration =
   { type_params: type_expr list;
     type_arity: int;
     type_kind: type_kind;

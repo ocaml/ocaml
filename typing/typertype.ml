@@ -38,6 +38,7 @@ let get_rtype_type_declaration () =
 
 (* Longidents *)
 
+let some = Lident "Some"
 let cstr name = Ldot (Lident "Rtype", name)
 let cstr_path name = Ldot (Ldot (Lident "Rtype", "Path"), name)
 
@@ -109,8 +110,10 @@ let pattern_of_type transl_longident t =
 	 [ mktailpat (List.map pattern_of_type ts) ]
    | Ptyp_constr (lid, ts) ->
        make_pat_construct loc (cstr "Tconstr")
- 	[pattern_of_longident transl_longident loc lid;
- 	 mktailpat (List.map pattern_of_type ts)]
+ 	[ make_pat loc (Ppat_tuple 
+			  [ pattern_of_longident transl_longident loc lid;
+			    make_pat loc Ppat_any ]);
+ 	  mktailpat (List.map pattern_of_type ts)]
    | Ptyp_lident _ -> assert false
    | _ -> raise (Error (loc, Unsupported))
  in
@@ -214,7 +217,9 @@ let value_of_type transl_longident t =
 	  [ mktailexp (List.map value_of_type ts) ]
     | Ptyp_constr (lid, ts) ->
 	make_exp_construct loc (cstr "Tconstr")
- 	  [value_of_longident transl_longident loc lid;
+ 	  [make_exp loc (Pexp_tuple
+			   [ value_of_longident transl_longident loc lid;
+			     make_exp loc (Pexp_typedecl lid) ]);
  	   mktailexp (List.map value_of_type ts)]
     | Ptyp_lident _ -> assert false
     | _ -> raise (Error (loc, Unsupported))
@@ -338,7 +343,7 @@ let recover_type_expr t =
 	Tarrow (l, recover_type_expr t1, recover_type_expr t2, Cunknown)
     | Rtype.Ttuple ts ->
 	Ttuple (List.map recover_type_expr ts)
-    | Rtype.Tconstr(p, ts) ->
+    | Rtype.Tconstr((p,_), ts) ->
 	Tconstr(recover_path p, List.map recover_type_expr ts, ref Mnil)
   in
   recover_type_expr t
@@ -346,8 +351,20 @@ let recover_type_expr t =
 (* type declarations *)
 
 let cached_runtime_type_tbl = ref []
-let reset_cached_runtime_type_tbl =
+let reset_cached_runtime_type_tbl () =
   cached_runtime_type_tbl := []
+
+let dummy_runtime_type_declaration_tbl = ref []
+let reset_dummy_runtime_type_declaration_tbl () =
+  dummy_runtime_type_declaration_tbl := []
+
+(* empty type declaration for compilation hacks *)
+let dummy_runtime_type_declaration () =
+  { Rtype.type_params = [];
+    Rtype.type_arity= 0;
+    Rtype.type_kind= Rtype.Type_abstract;
+    Rtype.type_manifest= None;
+    Rtype.type_variance= [] }
 
 let rec runtime_path = function
   | Pident id -> Rtype.Path.Pident (Ident.name id, Ident.stamp id)
@@ -370,7 +387,11 @@ and runtime_type_desc = function
       Rtype.Tarrow (l,runtime_type_expr t1, runtime_type_expr t2)
   | Ttuple ts -> Rtype.Ttuple (List.map runtime_type_expr ts)
   | Tconstr (p, ts, _) ->
-      Rtype.Tconstr (runtime_path p, List.map runtime_type_expr ts)
+      let dummy = dummy_runtime_type_declaration () in
+      dummy_runtime_type_declaration_tbl :=
+	(dummy, p) :: !dummy_runtime_type_declaration_tbl;
+      Rtype.Tconstr ((runtime_path p, dummy), 
+		     List.map runtime_type_expr ts)
   | _ -> raise (Error (Location.none, Unsupported))
 
 let runtime_private_flag = function
@@ -399,54 +420,19 @@ let runtime_type_kind = function
 	 runtime_private_flag p)
 
 let runtime_type_declaration td =
-  { Rtype.type_params= List.map runtime_type_expr td.type_params;
-    Rtype.type_arity= td.type_arity;
-    Rtype.type_kind= runtime_type_kind td.type_kind;
-    Rtype.type_manifest= 
-      (match td.type_manifest with 
-       | None -> None
-       | Some m -> Some (runtime_type_expr m));
-    Rtype.type_variance= td.type_variance }
+  reset_cached_runtime_type_tbl ();
+  reset_dummy_runtime_type_declaration_tbl ();
+  let rdecl = 
+    { Rtype.type_params= List.map runtime_type_expr td.type_params;
+      Rtype.type_arity= td.type_arity;
+      Rtype.type_kind= runtime_type_kind td.type_kind;
+      Rtype.type_manifest= 
+        (match td.type_manifest with 
+	| None -> None
+	| Some m -> Some (runtime_type_expr m));
+      Rtype.type_variance= td.type_variance }
+  in
+  (* note that rdecl is computed before we return the content of the reference
+   dummy_runtime_type_declaration *)
+  rdecl, !dummy_runtime_type_declaration_tbl
 
-(*
-let makeexp desc = { pexp_desc= desc; pexp_loc= Location.none }
-
-(* type var sharing is lost! *)
-let value_of_type_kind = function
-  | Type_abstract -> 
-      make_exp_construct Location.none (cstr "Type_abstract") []
-  | Type_variant (v,p) -> 
-      make_exp_construct Location.none (cstr "Type_variant")
-	[mktailexp (List.map (fun (n,args) ->
-	  makeexp (Pexp_tuple 
-		     [makeexp (Pexp_constant (Const_string n));
-   		      mktailexp (List.map value_of_type args)])) v);
-	 value_of_private_flag p]
-  | Type_record (defs, repl, p) ->
-      make_exp_construct Location.none (cstr "Type_record")
-	[mktailexp (List.map (fun (l,mut,t) ->
-	  makeexp (Pexp_tuple 
-		     [makeexp (Pexp_constant (Const_string l));
-		      value_of_mutable_flag mut;
-		      value_of_type t])) defs);
-         value_of_mutable_flag mut;
-         value_of_type t]		    
-
-let value_of_type_declaration tdecl =
-  makeexp 
-    (Pexp_record [ 
-      cstr "type_params", 
-      mktailexp (List.map value_of_type tdecl.type_params);
-		   
-      cstr "type_arity",
-      makeexp (Pexp_constant (Const_int tdec.type_arity));
-		   
-      cstr "type_kind",
-      value_of_type_kind tdecl.type_kind;
-
-      cstr "type_manifest",
-      make_opt_exp value_of_type tdecl.type_manifest;
-
-      cstr "type_variance",
-      mktailexp (List.map value_of_variance_flags tdecl.type_variance) ])
-*)

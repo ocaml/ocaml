@@ -55,6 +55,7 @@ module Make_options (F :
      val _where : unit -> unit
 
      val _nopervasives : unit -> unit
+     val _nobuiltintypes : unit -> unit
      val _dparsetree : unit -> unit
      val _drawlambda : unit -> unit
      val _dlambda : unit -> unit
@@ -144,6 +145,7 @@ struct
     "-where", Arg.Unit F._where,
            " Print location of standard library and exit";
     "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
+    "-nobuiltintypes", Arg.Unit F._nobuiltintypes, " (undocumented)";
     "-dparsetree", Arg.Unit F._dparsetree, " (undocumented)";
     "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";
     "-dlambda", Arg.Unit F._dlambda, " (undocumented)";

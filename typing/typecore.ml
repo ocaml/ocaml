@@ -1406,20 +1406,43 @@ Format.fprintf Format.err_formatter "funct=%a@."
       begin try
 	let path, decl = Env.lookup_type lid env in
 	let t = Typertype.get_rtype_type_declaration () in
-	if List.mem path Predef.builtin_types then begin
-          re {
-            exp_desc = Texp_typedecl path;
-            exp_loc = sexp.pexp_loc;
-            exp_type = t;
-            exp_env = env }
-	end else begin
+
+	let make_ident path =
 	  let desc = { val_type= t; val_kind= Val_reg } in
           re {
             exp_desc = Texp_ident(path, desc);
             exp_loc = sexp.pexp_loc;
             exp_type = t;
             exp_env = env }
-        end
+	in
+
+  	if List.mem path Predef.builtin_types then
+	  if not !Clflags.nobuiltintypes then begin
+	    (* the type decl infos of builtin types are stored inside
+	       stdlib/builtintypes.ml. *)
+	    let path =
+  	      let lid = 
+  		let id = 
+		  match path with Path.Pident id -> id | _ -> assert false 
+		in
+  		Longident.Ldot (Longident.Lident "Builtintypes", 
+				Ident.name id)
+  	      in
+  	      fst (Env.lookup_value lid Env.empty)
+	    in
+	    make_ident path
+	  end else begin
+	    (* When we compile stdlib/builtintypes.ml with -nobuiltintypes switch,
+	       we ask the compiler to build the type decl value.
+	     *)
+            re {
+              exp_desc = Texp_typedecl path;
+              exp_loc = sexp.pexp_loc;
+              exp_type = t;
+              exp_env = env }
+	  end
+	else
+	  make_ident path
       with Not_found ->
         raise(Error(sexp.pexp_loc, Unbound_value lid))
       end

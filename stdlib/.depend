@@ -6,6 +6,7 @@ oo.cmi: camlinternalOO.cmi
 parsing.cmi: lexing.cmi obj.cmi 
 printf.cmi: buffer.cmi 
 random.cmi: int32.cmi int64.cmi nativeint.cmi 
+rtype.cmi: format.cmi 
 weak.cmi: hashtbl.cmi 
 arg.cmo: array.cmi buffer.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
 arg.cmx: array.cmx buffer.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
@@ -15,6 +16,8 @@ arrayLabels.cmo: array.cmi arrayLabels.cmi
 arrayLabels.cmx: array.cmx arrayLabels.cmi 
 buffer.cmo: string.cmi sys.cmi buffer.cmi 
 buffer.cmx: string.cmx sys.cmx buffer.cmi 
+builtintypes.cmo: rtype.cmi 
+builtintypes.cmx: rtype.cmx 
 callback.cmo: obj.cmi callback.cmi 
 callback.cmx: obj.cmx callback.cmi 
 camlinternalOO.cmo: array.cmi hashtbl.cmi list.cmi map.cmi obj.cmi random.cmi \
@@ -67,8 +70,8 @@ parsing.cmo: array.cmi lexing.cmi obj.cmi parsing.cmi
 parsing.cmx: array.cmx lexing.cmx obj.cmx parsing.cmi 
 pervasives.cmo: pervasives.cmi 
 pervasives.cmx: pervasives.cmi 
-printexc.cmo: obj.cmi printf.cmi sys.cmi printexc.cmi 
-printexc.cmx: obj.cmx printf.cmx sys.cmx printexc.cmi 
+printexc.cmo: obj.cmi printf.cmi printexc.cmi 
+printexc.cmx: obj.cmx printf.cmx printexc.cmi 
 printf.cmo: buffer.cmi char.cmi list.cmi obj.cmi string.cmi printf.cmi 
 printf.cmx: buffer.cmx char.cmx list.cmx obj.cmx string.cmx printf.cmi 
 queue.cmo: obj.cmi queue.cmi 
@@ -77,12 +80,12 @@ random.cmo: array.cmi char.cmi digest.cmi int32.cmi int64.cmi nativeint.cmi \
     pervasives.cmi string.cmi random.cmi 
 random.cmx: array.cmx char.cmx digest.cmx int32.cmx int64.cmx nativeint.cmx \
     pervasives.cmx string.cmx random.cmi 
-rtype.cmo: rtype.cmi 
-rtype.cmx: rtype.cmi 
+rtype.cmo: char.cmi format.cmi list.cmi string.cmi rtype.cmi 
+rtype.cmx: char.cmx format.cmx list.cmx string.cmx rtype.cmi 
 scanf.cmo: buffer.cmi hashtbl.cmi list.cmi obj.cmi printf.cmi string.cmi \
-    sys.cmi scanf.cmi 
+    scanf.cmi 
 scanf.cmx: buffer.cmx hashtbl.cmx list.cmx obj.cmx printf.cmx string.cmx \
-    sys.cmx scanf.cmi 
+    scanf.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
 sort.cmo: array.cmi sort.cmi 

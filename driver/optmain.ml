@@ -161,6 +161,7 @@ let main () =
          " Print location of standard library and exit";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
+       "-nobuiltintypes", Arg.Set nobuiltintypes, " (undocumented)";
        "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
        "-dlambda", Arg.Set dump_lambda, " (undocumented)";

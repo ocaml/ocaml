@@ -506,6 +506,47 @@ let assert_failed loc =
 
 (* Translation of expressions *)
 
+let transl_type_declaration env decl =
+  (* Translation of type declaration *)
+  (* We need the current env to find recursive reference inside 
+     builtintypes.ml *)
+  let rdecl, dummy_tbl = Typertype.runtime_type_declaration decl in
+  let overrides = 
+    List.map (fun (d,p) ->
+      (* if the path is one of builtin types, 
+	 it must be redirected to those of builtintypes.ml *)
+      let p = 
+	if not (List.mem p Predef.builtin_types) then p
+	else begin
+	  (* FIXME typecore has the same code *)
+	  let redirect_to_builtintypes = function
+	    | Path.Pident id -> 
+  		let lid = 
+		  if not !Clflags.nobuiltintypes then
+		    Longident.Ldot (Longident.Lident "Builtintypes", 
+				    Ident.name id)
+		  else begin (* inside builtintypes.ml *)
+		    Longident.Lident (Ident.name id)
+		  end
+		in
+		begin try
+		  fst (Env.lookup_value lid env)
+		with
+		| Not_found ->
+		    Format.fprintf Format.err_formatter 
+		      "Failed to resolve %a in builtintypes.ml"
+		      Printtyp.longident lid;
+		    raise Not_found
+		end
+	    | _ -> assert false
+	  in
+	  redirect_to_builtintypes p
+	end
+      in
+      Obj.repr d, transl_path p) dummy_tbl 
+  in
+  Metacomp.transl_constant overrides (Obj.repr rdecl)
+
 let rec transl_exp e =
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
@@ -715,14 +756,10 @@ and transl_exp0 e =
 	  raise (Error (loc, Unsupported_type_constructor))
       end
   | Texp_typedecl path ->
-      (* path should be one of predefined types. Since they have no
-         corresponding embeded type decl codes, we create them here. *)
-      let transl_type_declaration decl =
-	(* Translation of type declaration *)
-	Lconst (Metacomp.transl_constant 
-		  (Obj.repr (Typertype.runtime_type_declaration decl)))
-      in
-      transl_type_declaration (Env.find_type path Env.initial)
+      (* This is a very special case. It happens only in the compilation
+	 of stdlib/builtintypes.ml, where we have to build the type
+	 declaration code on the fly. *)
+      transl_type_declaration e.exp_env (Env.find_type path Env.initial)
       
 
 and transl_list expr_list =

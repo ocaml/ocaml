@@ -241,10 +241,7 @@ let compile_recmodule compile_rhs bindings cont =
 (* Compile a module expression *)
 
 let transl_type_declarations decls =
-  List.map (fun (id, desc) -> 
-    id, 
-    Lconst (Metacomp.transl_constant 
-	      (Obj.repr (Typertype.runtime_type_declaration desc)))) decls
+  List.map (fun (id, decl) -> id, transl_type_declaration Env.initial decl) decls
 
 let rec transl_module cc rootpath mexp =
   match mexp.mod_desc with
@@ -309,9 +306,7 @@ and transl_structure fields cc rootpath = function
   | Tstr_type(decls) :: rem ->
       let idents = List.map fst decls in
       let defs = transl_type_declarations decls in
-      List.fold_right (fun (id,def) st ->
-	Llet(Strict, id, def, st)) defs
-	(transl_structure (idents @ fields) cc rootpath rem)
+      Lletrec (defs, (transl_structure (idents @ fields) cc rootpath rem))
   | Tstr_exception(id, decl) :: rem ->
       Llet(Strict, id, transl_exception id (field_path rootpath id) decl,
            transl_structure (id :: fields) cc rootpath rem)
@@ -398,10 +393,7 @@ let transl_store_structure glob map prims str =
   | Tstr_type(decls) :: rem ->
       let idents = List.map fst decls in
       let defs = transl_type_declarations decls in
-      let lam = 
-	List.fold_right (fun (id,def) st ->
-	  Llet(Strict, id, def, st)) defs (store_idents idents)
-      in
+      let lam = Lletrec (defs, store_idents idents) in
       Lsequence(subst_lambda subst lam,
 		transl_store (add_idents false idents subst) rem)
   | Tstr_exception(id, decl) :: rem ->
@@ -603,14 +595,12 @@ let transl_toplevel_item = function
       lambda_unit
   | Tstr_type(decls) ->
       let idents = List.map fst decls in
-      (* idents must be global before we create lambda *)
-      List.iter (fun id -> Ident.make_global id) idents;
       let defs = transl_type_declarations decls in
-      let lam = 
-	make_sequence (fun (id,def) ->
-	  Llet (Strict, id, def, Lprim(Psetglobal id, [Lvar id]))) defs
-      in
-      lam
+(*
+      List.iter (fun id -> Ident.make_global id) idents;
+*)
+      Lletrec (defs,
+	       make_sequence toploop_setvalue_id (List.map fst decls))
   | Tstr_exception(id, decl) ->
       toploop_setvalue id (transl_exception id None decl)
   | Tstr_exn_rebind(id, path) ->

@@ -22,6 +22,8 @@ open Lambda
 
 val name_pattern: string -> (pattern * 'a) list -> Ident.t
 
+val transl_type_declaration : Env.t -> type_declaration -> lambda
+
 val transl_exp: expression -> lambda
 val transl_apply: lambda -> (expression option * optional) list -> lambda
 val transl_let:

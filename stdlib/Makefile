@@ -24,7 +24,8 @@ CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 OPTCOMPFLAGS=-warn-error A -nostdlib
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
+BASIC=builtintypes.cmo \
+  pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
   int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
@@ -115,6 +116,28 @@ pervasives.p.cmx: pervasives.ml
            then mv pervasives.n.cmx pervasives.cmx; else :; fi
 	@if test -f pervasives.n.o; \
            then mv pervasives.n.o pervasives.o; else :; fi
+
+builtintypes.cmi: builtintypes.mli
+	$(CAMLC) $(COMPFLAGS) -nobuiltintypes -c builtintypes.mli
+
+builtintypes.cmo: builtintypes.ml
+	$(CAMLC) $(COMPFLAGS) -nobuiltintypes -c builtintypes.ml
+
+builtintypes.cmx: builtintypes.ml
+	$(CAMLOPT) $(OPTCOMPFLAGS) -nobuiltintypes -c builtintypes.ml
+
+builtintypes.p.cmx: builtintypes.ml
+	@if test -f builtintypes.cmx; \
+           then mv builtintypes.cmx builtintypes.n.cmx; else :; fi
+	@if test -f builtintypes.o; \
+           then mv builtintypes.o builtintypes.n.o; else :; fi
+	$(CAMLOPT) $(OPTCOMPFLAGS) -p -nobuiltintypes -c builtintypes.ml
+	mv builtintypes.cmx builtintypes.p.cmx
+	mv builtintypes.o builtintypes.p.o
+	@if test -f builtintypes.n.cmx; \
+           then mv builtintypes.n.cmx builtintypes.cmx; else :; fi
+	@if test -f builtintypes.n.o; \
+           then mv builtintypes.n.o builtintypes.o; else :; fi
 
 # camlinternalOO.cmi must be compiled with -nopervasives for applets
 camlinternalOO.cmi: camlinternalOO.mli

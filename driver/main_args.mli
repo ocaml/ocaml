@@ -55,6 +55,7 @@ module Make_options (F :
       val _where : unit -> unit
 
       val _nopervasives : unit -> unit
+      val _nobuiltintypes : unit -> unit
       val _dparsetree : unit -> unit
       val _drawlambda : unit -> unit
       val _dlambda : unit -> unit

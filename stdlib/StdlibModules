@@ -45,5 +45,5 @@ STDLIB_MODULES=\
   stringLabels \
   sys \
   weak \
-  rtype
-
+  rtype \
+  builtintypes

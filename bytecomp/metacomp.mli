@@ -1,1 +1,1 @@
-val transl_constant : Obj.t -> Lambda.structured_constant
+val transl_constant : (Obj.t * Lambda.lambda) list -> Obj.t -> Lambda.lambda
