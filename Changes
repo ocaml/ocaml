@@ -1,13 +1,88 @@
 Objective Caml 2.03:
+--------------------
 
-* Bug fixes:
-  - Big_int.square_big_int now gives the proper sign to its result.
+New ports:
+- Ported to BeOS / Intel x86 (bytecode and native-code).
+- BSD / Intel x86 port now supports both a.out and ELF binary formats.
+- Added support for {Net,Open}BSD / Alpha.
+- Revamped Rhapsody port, now works on MacOS X server.
 
-* Profiler:
-  - Compatible with threads
-  - Handles .mli files, so ocamlcp can be used to replace ocamlc (e.g. in a
-    makefile).
-  - Now works on programs that use stream expressions and stream parsers.
+Syntax:
+- Warning for "*)" outside comment.
+- Removed "#line LINENO", too ambiguous with a method invocation;
+  the equivalent "# LINENO" is still supported.
+
+Typing:
+- When an incomplete pattern-matching is detected, report also a 
+  value or value template that is not covered by the cases of 
+  the pattern-matching.
+- Several bugs in class type matching and in type error reporting fixed.
+- Added an option -rectypes to support general recursive types,
+  not just those that involve through object types.
+
+Bytecode compiler:
+- Minor cleanups in the bytecode emitter.
+- Do not remove "let x = y" bindings in -g mode; makes it easier to
+  debug the code.
+
+Native-code compiler:
+- Fixed bug in grouping of allocations performed in the same basic block.
+- Fixed bug in constant propagation involving expressions containing
+  side-effects.
+- Fixed incorrect code generation for "for" loops whose upper bound is
+  a reference assigned inside the loop.
+- MIPS code generator: work around a bug in the IRIX 6 assembler.
+
+Toplevel:
+- Fixed incorrect redirection of standard formatter to stderr
+  while executing toplevel scripts.
+
+Standard library:
+- Added List.rev_map, List.rev_map2.
+- Documentation of List functions now says which functions are
+  tail-rec, and how much stack space is needed for non-tailrec functions.
+- Wrong type for Printf.bprintf fixed.
+- Fixed weird behavior of Printf.sprintf and Printf.bprintf in case of
+  partial applications.
+- Added Random.self_init, which initializes the PRNG from the system date.
+- Sort.array: serious bugs fixed.
+- Stream.count: fixed incorrect behavior with ocamlopt.
+- Added Sys.date.
+
+Run-time system and external interface:
+- Fixed weird behavior of signal handlers w.r.t. signal masks and exceptions
+  raised from the signal handler.
+- Fixed bug in the callback*_exn() functions.
+
+Debugger:
+- Fixed wrong printing of float record fields and elements of float arrays.
+- Supports identifiers starting with '_'.
+
+Profiler:
+- Handles .mli files, so ocamlcp can be used to replace ocamlc (e.g. in a
+  makefile).
+- Now works on programs that use stream expressions and stream parsers.
+
+Other libraries:
+- Graphics: under X11, treat all mouse buttons equally; fixed problem
+  with current font reverting to the default font when the graphics
+  window is resized.
+- Str: fixed reentrancy bugs in Str.replace and Str.full_split.
+- Bytecode threads: set standard I/O descriptors to non-blocking mode.
+- OS threads: revised implementation of Thread.wait_signal.
+- All threads: added Event.wrap_abort, Event.choose [].
+- Unix.localtime, Unix.gmtime: check for errors.
+- Unix.create_process: now supports arbitrary redirections of std descriptors.
+- Added Unix.open_process_full.
+- Implemented Unix.chmod under Windows.
+- Big_int.square_big_int now gives the proper sign to its result.
+
+Others:
+- ocamldep: don't stop at first error, skip to next file.
+- Emacs mode: updated with Garrigue and Zimmerman's snapshot of 1999/10/18.
+- configure script: added -prefix option.
+- Windows toplevel application: fixed problem with graphics library
+  not loading properly.
 
 
 Objective Caml 2.02:
