@@ -36,8 +36,8 @@ parsing.cmo: array.cmi lexing.cmi obj.cmi parsing.cmi
 parsing.cmx: array.cmx lexing.cmx obj.cmx parsing.cmi 
 pervasives.cmo: pervasives.cmi 
 pervasives.cmx: pervasives.cmi 
-printexc.cmo: obj.cmi printexc.cmi 
-printexc.cmx: obj.cmx printexc.cmi 
+printexc.cmo: obj.cmi printf.cmi sys.cmi printexc.cmi 
+printexc.cmx: obj.cmx printf.cmx sys.cmx printexc.cmi 
 printf.cmo: list.cmi obj.cmi string.cmi printf.cmi 
 printf.cmx: list.cmx obj.cmx string.cmx printf.cmi 
 queue.cmo: queue.cmi 

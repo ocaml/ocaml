@@ -26,5 +26,5 @@ val print: ('a -> 'b) -> 'a -> 'b
         (* Same as [catch], but re-raise the stray exception after
            printing it, instead of aborting the program. *)
 
-val print_exn: exn -> unit
-        (* [print_exn e] prints [e] on standard error output. *)
+val to_string : exn -> string
+        (* [Printexc.to_string e] returns a string representation of [e]. *)
