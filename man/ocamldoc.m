@@ -301,6 +301,13 @@ Use
 as the title for the generated documentation.
 
 .TP
+.BI \-intro \ file
+Use content of
+.I file
+as ocamldoc text to use as introduction (HTML, \LaTeX and TeXinfo only).
+For HTML, the file is used to create the whole "index.html" file.
+
+.TP
 .B \-v
 Verbose mode. Display progress information.
 
