@@ -566,14 +566,19 @@ method private emit_stores env data regs_addr addr =
   List.iter
     (fun e ->
       let (op, arg) = self#select_store !a e in
-      let r = self#emit_expr env arg in
-      let op' =
-        match op with
-        | Istore(_, addr) when Array.length r > 0 && r.(0).typ = Float
-            -> Istore(Double, addr)
-        | _ -> op in
-      self#insert (Iop op') (Array.append r regs_addr) [||];
-      a := Arch.offset_addressing !a (size_expr env e))
+      let regs = self#emit_expr env arg in
+      match op with
+        Istore(_, _) ->
+          for i = 0 to Array.length regs - 1 do
+            let r = regs.(i) in
+            let kind = if r.typ = Float then Double else Word in
+            self#insert (Iop(Istore(kind, !a)))
+                        (Array.append [|r|] regs_addr) [||];
+            a := Arch.offset_addressing !a (size_component r.typ)
+          done
+      | _ ->
+          self#insert (Iop op) (Array.append regs regs_addr) [||];
+          a := Arch.offset_addressing !a (size_expr env e))
     data
 
 (* Same, but in tail position *)
