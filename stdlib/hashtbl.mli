@@ -23,9 +23,10 @@ type ('a, 'b) t
 
 val create : int -> ('a,'b) t
         (* [Hashtbl.create n] creates a new, empty hash table, with
-           initial size [n].  The table grows as needed, so [n] is
-           just an initial guess.  Better results are said to be
-           achieved when [n] is a prime number. *)
+           initial size [n].  For best results, [n] should be on the
+           order of the expected number of elements that will be in
+           the table.  The table grows as needed, so [n] is just an
+           initial guess. *)
 
 val clear : ('a, 'b) t -> unit
         (* Empty a hash table. *)
