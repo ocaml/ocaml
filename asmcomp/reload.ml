@@ -44,6 +44,11 @@ let makeregs rv =
   for i = 0 to n-1 do newv.(i) <- makereg rv.(i) done;
   newv
 
+let makereg1 rv =
+  let newv = Array.copy rv in
+  newv.(0) <- makereg rv.(0);
+  newv
+
 let insert_move src dst next =
   if src.loc = dst.loc
   then next
@@ -58,13 +63,24 @@ let insert_moves src dst next =
 
 let reload_round = ref 0
 
+
 let rec reload i =
   match i.desc with
-    Iend | Ireturn | Iop Itailcall_ind | Iop(Itailcall_imm _) | Iraise -> i
-  | Iop(Icall_ind | Icall_imm _ | Iextcall(_, _)) ->
-      (* Don't do anything, the arguments and results are already at
-         the correct position (e.g. on stack for some arguments). *)
+    (* For function calls, returns, etc: the arguments and results are
+       already at the correct position (e.g. on stack for some arguments).
+       However, something needs to be done for the function pointer in
+       indirect calls. *)
+    Iend | Ireturn | Iop(Itailcall_imm _) | Iraise -> i
+  | Iop(Itailcall_ind) ->
+      let newarg = makereg1 i.arg in
+      insert_moves i.arg newarg
+        (instr_cons_live i.desc newarg i.res i.live i.next)
+  | Iop(Icall_imm _ | Iextcall(_, _)) ->
       instr_cons_live i.desc i.arg i.res i.live (reload i.next)
+  | Iop(Icall_ind) ->
+      let newarg = makereg1 i.arg in
+      insert_moves i.arg newarg
+        (instr_cons_live i.desc newarg i.res i.live (reload i.next))
   | Iop op ->
       (* Let the machine description tell us whether some arguments / results
          can reside on the stack *)
