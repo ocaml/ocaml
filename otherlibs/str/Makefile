@@ -5,7 +5,7 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-O -I$(REGEXLIB) -I../../byterun $(BYTECCCOMPOPTS)
-CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../boot
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 REGEXLIB=regex-0.12
 COBJS=strstubs.o $(REGEXLIB)/regex.o

@@ -3,7 +3,7 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
-CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../boot -I ../unix
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib -I ../unix
 
 C_OBJS=scheduler.o
 CAML_OBJS=thread.cmo threadIO.cmo threadUnix.cmo \

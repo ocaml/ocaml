@@ -5,7 +5,7 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
-CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../boot
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 
 OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \

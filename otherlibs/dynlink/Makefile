@@ -4,7 +4,7 @@ include ../../config/Makefile
 
 CAMLC=../../boot/ocamlrun ../../boot/ocamlc
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
-COMPFLAGS=-I ../../boot $(INCLUDES)
+COMPFLAGS=-I ../../stdlib $(INCLUDES)
 
 OBJS=dynlink.cmo
 COMPILEROBJS=misc.cmo tbl.cmo clflags.cmo config.cmo ident.cmo \
