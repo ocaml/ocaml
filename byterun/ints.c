@@ -2,7 +2,9 @@
 #include "alloc.h"
 #include "fail.h"
 #include "memory.h"
+#include "misc.h"
 #include "mlvalues.h"
+#include "str.h"
 
 value int_of_string(s)          /* ML */
      value s;
@@ -54,10 +56,11 @@ value int_of_string(s)          /* ML */
 value format_int(fmt, arg)      /* ML */
      value fmt, arg;
 {
-  char format_buffer[32];
+  char format_string[32], format_buffer[32];
   int prec;
   char * p;
   char * dest;
+  mlsize_t len;
   value res;
 
   prec = 32;
@@ -72,7 +75,14 @@ value format_int(fmt, arg)      /* ML */
   } else {
     dest = stat_alloc(prec);
   }
-  sprintf(dest, String_val(fmt), Long_val(arg));
+  len = string_length(fmt);
+  if (len >= sizeof(format_string) - 1)
+    invalid_argument("format_int: format too long");
+  bcopy(String_val(fmt), format_string, len);
+  format_string[len + 1] = 0;
+  format_string[len] = format_string[len - 1];
+  format_string[len - 1] = 'l';
+  sprintf(dest, format_string, Long_val(arg));
   res = copy_string(dest);
   if (dest != format_buffer) {
     stat_free(dest);

@@ -42,10 +42,10 @@ static void hash_aux(obj)
     return;
   }
 
-  /* Pointers into the heap are well-structured blocks.
+  /* Pointers into the heap are well-structured blocks. So are atoms.
      We can inspect the block contents. */
   
-  if (Is_in_heap(obj) || Is_young(obj)) {
+  if (Is_atom(obj) || Is_young(obj) || Is_in_heap(obj)) {
     tag = Tag_val(obj);
     switch (tag) {
     case String_tag:

@@ -17,11 +17,9 @@ static long compare_val(v1, v2)
   if (Is_long(v1) || Is_long(v2)) return Long_val(v1) - Long_val(v2);
   /* If one of the objects is outside the heap (but is not an atom),
      use address comparison. */
-  /* Does not work with the native-code generator !
-     Removed, but need to find something */
-  /*  if ((!Is_atom(v1) && !Is_young(v1) && !Is_in_heap(v1)) ||
-         (!Is_atom(v2) && !Is_young(v2) && !Is_in_heap(v2)))
-      return v1 - v2; */
+  if ((!Is_atom(v1) && !Is_young(v1) && !Is_in_heap(v1)) ||
+      (!Is_atom(v2) && !Is_young(v2) && !Is_in_heap(v2)))
+      return v1 - v2;
   t1 = Tag_val(v1);
   t2 = Tag_val(v2);
   if (t1 != t2) return (long)t1 - (long)t2;

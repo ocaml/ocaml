@@ -196,7 +196,13 @@ typedef void (*final_fun) P((value));
 
 extern header_t first_atoms[];
 #define Atom(tag) (Val_hp (&(first_atoms [tag])))
-#define Is_atom(v) (v >= Atom(0) && v <= Atom(255))
+
+/* For the benefits of the native-code generator, we define as atoms
+   all data in the statically initialized or statically uninitialized (BSS)
+   zones. */
+
+extern int end;
+#define Is_atom(v) ((int *)(v) < &end)
 
 /* Booleans are integers 0 or 1 */
 
