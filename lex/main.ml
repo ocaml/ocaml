@@ -79,7 +79,13 @@ let main () =
     Common.close_tracker tr;
     Sys.remove dest_name;
     begin match exn with
-      Parsing.Parse_error ->
+    | Cset.Bad ->
+        let p = Lexing.lexeme_start_p lexbuf in
+        Printf.fprintf stderr
+          "File \"%s\", line %d, character %d: character set expected.\n"
+          p.Lexing.pos_fname p.Lexing.pos_lnum
+          (p.Lexing.pos_cnum - p.Lexing.pos_bol)
+    | Parsing.Parse_error ->
         let p = Lexing.lexeme_start_p lexbuf in
         Printf.fprintf stderr
           "File \"%s\", line %d, character %d: syntax error.\n"
