@@ -28,6 +28,7 @@ compiler currently runs on the following platforms:
     HP PA-RISC processors: HP 9000/700 under HPUX 9 and NextStep
     PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 3.2,
                         PowerMacintosh under MkLinux
+    Motorola 680x0 processors: Sun 3 under SunOS
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
