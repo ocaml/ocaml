@@ -36,6 +36,7 @@ module Make_options (F :
      val _use_runtime : string -> unit
      val _v : unit -> unit
      val _verbose : unit -> unit
+     val _w : string -> unit
      val _nopervasives : unit -> unit
      val _drawlambda : unit -> unit
      val _dlambda : unit -> unit
@@ -77,6 +78,16 @@ struct
      "-use_runtime", Arg.String F._use_runtime, "<path>  same as -use-runtime";
      "-v", Arg.Unit F._v, " Print compiler version number";
      "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
+     "-w", Arg.String F._w, "<flags>  Enable warnings according to <flags>:\n\
+       \032    A/a enable/disable all warnings\n\
+       \032    F/f enable/disable partially applied function\n\
+       \032    M/m enable/disable overriden methods\n\
+       \032    P/p enable/disable partial match\n\
+       \032    S/s enable/disable non-unit statement\n\
+       \032    U/u enable/disable unused match case\n\
+       \032    V/v enable/disable hidden instance variables\n\
+       \032    X/x enable/disable all other warnings\n\
+       \032    default setting is A";
 
      "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
      "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";

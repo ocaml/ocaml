@@ -96,6 +96,16 @@ let main () =
              " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_number, " Print compiler version number";
        "-verbose", Arg.Set verbose, " Print calls to external commands";
+       "-w", Arg.String F._w, "<flags>  Enable warnings according to <flags>:\n\
+         \032    A/a enable/disable all warnings\n\
+         \032    F/f enable/disable partially applied function\n\
+         \032    M/m enable/disable overriden methods\n\
+         \032    P/p enable/disable partial match\n\
+         \032    S/s enable/disable non-unit statement\n\
+         \032    U/u enable/disable unused match case\n\
+         \032    V/v enable/disable hidden instance variables\n\
+         \032    X/x enable/disable all other warnings\n\
+         \032    default setting is A";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";

@@ -36,6 +36,7 @@ module Make_options (F :
       val _use_runtime : string -> unit
       val _v : unit -> unit
       val _verbose : unit -> unit
+      val _w : string -> unit
       val _nopervasives : unit -> unit
       val _drawlambda : unit -> unit
       val _dlambda : unit -> unit

@@ -76,6 +76,7 @@ module Options = Main_args.Make_options (struct
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
   let _v = print_version_number
+  let _w = Warnings.parse_options
   let _verbose = set verbose
   let _nopervasives = set nopervasives
   let _drawlambda = set dump_rawlambda
