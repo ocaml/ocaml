@@ -434,7 +434,10 @@ let emit_instr i =
         `	{emit_string name}	{emit_reg i.res.(0)} = {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
     | Lop(Ispecific (Istoreincr n)) ->
         let op = if i.arg.(0).typ = Float then "stfd" else "st8" in
-        `	{emit_string op}	[{emit_reg i.arg.(1)}] = {emit_reg i.arg.(0)}, {emit_int n}\n`
+(* GNU as bug *)
+(*        `	{emit_string op}	[{emit_reg i.arg.(1)}] = {emit_reg i.arg.(0)}, {emit_int n}\n` *)
+          `	{emit_string op}	[{emit_reg i.arg.(1)}] = {emit_reg i.arg.(0)}\n`;
+          `	add	{emit_reg i.arg.(1)} = {emit_int n}, {emit_reg i.arg.(1)}\n`
     | Lop(Ispecific Istackaddr) ->
         let slot =
           match i.arg.(0).loc with Stack s -> s | _ -> assert false in
@@ -544,7 +547,10 @@ let emit_instr i =
            and decrement sp by 16.  Remember, the bottom 16 bytes
            of the stack must be left free. *)
         `	add     r3 = 8, sp\n`;
-        `	st8	[sp] = r6, -16\n`;
+(* GNU as bug
+        `	st8	[sp] = r6, -16\n`; *)
+        `	st8	[sp] = r6\n`;
+        `	add	sp = -16, sp\n`;
         `	st8	[r3] = r2\n`;
         `	add	r6 = 16, sp\n`
     | Lpoptrap ->
@@ -577,9 +583,10 @@ let fundecl f =
   if !contains_calls then begin
     `	mov	r2 = b0\n`;
     `	add	r3 = 8, sp\n`;
+    `	add	sp = -{emit_int n}, sp\n`;
     `	st8	[r3] = r2\n`
-  end;
-  if n > 0 then
+  end
+  else if n > 0 then
     `	add	sp = -{emit_int n}, sp\n`;
   tailrec_entry_point := new_label();
   `{emit_label !tailrec_entry_point}:\n`;

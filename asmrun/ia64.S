@@ -14,6 +14,8 @@
 
 /* Asm part of the runtime system, Alpha processor */
 
+#define BROKEN_POSTINCREMENT
+
 #define ADDRGLOBAL(reg,symb) \
   add reg = @ltoff(symb), gp; ld8 reg = [reg]
 #define LOADGLOBAL(reg,symb) \
@@ -21,27 +23,43 @@
 #define STOREGLOBAL(reg,symb) \
   add r3 = @ltoff(symb), gp; ld8 r3 = [r3]; st8 [r3] = reg
 
-#define SAVE2(a,b) st8 [r2] = a, 16; st8 [r3] = b, 16
+#ifdef BROKEN_POSTINCREMENT
+#define ST8OFF(a,b,d) st8 [a] = b; add a = d, a
+#define LD8OFF(a,b,d) ld8 a = [b]; add b = d, b
+#define STFDOFF(a,b,d) stfd [a] = b; add a = d, a
+#define LDFDOFF(a,b,d) ldfd a = [b]; add b = d, b
+#define STFSPILLOFF(a,b,d) stf.spill [a] = b; add a = d, a
+#define LDFFILLOFF(a,b,d) ldf.fill a = [b]; add b = d, b
+#else
+#define ST8OFF(a,b,d) st8 [a] = b, d
+#define LD8OFF(a,b,d) ld8 a = [b], d
+#define STFDOFF(a,b,d) stfd [a] = b, d
+#define LDFDOFF(a,b,d) ldfd a = [b], d
+#define STFSPILLOFF(a,b,d) stf.spill [a] = b, d
+#define LDFFILLOFF(a,b,d) ldf.fill a = [b], d
+#endif
+
+#define SAVE2(a,b) ST8OFF(r2, a, 16); ST8OFF(r3, b, 16)
 #define SAVE4(a,b,c,d) SAVE2(a,b); SAVE2(c,d)
 #define SAVE8(a,b,c,d,e,f,g,h) SAVE4(a,b,c,d); SAVE4(e,f,g,h)
 
-#define LOAD2(a,b) ld8 a = [r2], 16; ld8 b = [r3], 16
+#define LOAD2(a,b) LD8OFF(a, r2, 16); LD8OFF(b, r3, 16)
 #define LOAD4(a,b,c,d) LOAD2(a,b); LOAD2(c,d)
 #define LOAD8(a,b,c,d,e,f,g,h) LOAD4(a,b,c,d); LOAD4(e,f,g,h)
 
-#define FSAVE2(a,b) stfd [r2] = a, 16; stfd [r3] = b, 16
+#define FSAVE2(a,b) STFDOFF(r2, a, 16); STFDOFF(r3, b, 16)
 #define FSAVE4(a,b,c,d) FSAVE2(a,b); FSAVE2(c,d)
 #define FSAVE8(a,b,c,d,e,f,g,h) FSAVE4(a,b,c,d); FSAVE4(e,f,g,h)
 
-#define FLOAD2(a,b) ldfd a = [r2], 16; ldfd b = [r3], 16
+#define FLOAD2(a,b) LDFDOFF(a, r2, 16); LDFDOFF(b, r3, 16)
 #define FLOAD4(a,b,c,d) FLOAD2(a,b); FLOAD2(c,d)
 #define FLOAD8(a,b,c,d,e,f,g,h) FLOAD4(a,b,c,d); FLOAD4(e,f,g,h)
 
-#define FSPILL2(a,b) stf.spill [r2] = a, 32; stf.spill [r3] = b, 32
+#define FSPILL2(a,b) STFSPILLOFF(r2, a, 32); STFSPILLOFF(r3, b, 32)
 #define FSPILL4(a,b,c,d) FSPILL2(a,b); FSPILL2(c,d)
 #define FSPILL8(a,b,c,d,e,f,g,h) FSPILL4(a,b,c,d); FSPILL4(e,f,g,h)
 
-#define FFILL2(a,b) ldf.fill a = [r2], 32; ldf.fill b = [r3], 32
+#define FFILL2(a,b) LDFFILLOFF(a, r2, 32); LDFFILLOFF(b, r3, 32)
 #define FFILL4(a,b,c,d) FFILL2(a,b); FFILL2(c,d)
 #define FFILL8(a,b,c,d,e,f,g,h) FFILL4(a,b,c,d); FFILL4(e,f,g,h)
 
@@ -244,14 +262,14 @@ caml_start_program:
         /* Save PFS, return address and GP on stack */
         add     sp = -(20 * 16 + 4 * 8 + 4 * 8), sp
         add     r2 = 16, sp
-        st8     [r2] = r3, 8
+	ST8OFF(r2, r3, 8)
         mov     r3 = b0
-        st8     [r2] = r3, 8
-        st8     [r2] = gp, 8
+        ST8OFF(r2, r3, 8)
+        ST8OFF(r2, gp, 8)
 
         /* Save predicates on stack */
         mov     r3 = pr
-        st8     [r2] = r3, 8
+        ST8OFF(r2, r3, 8)
 
         /* Save callee-save integer registers on stack */
         add     r3 = 8, r2
@@ -267,20 +285,20 @@ caml_start_program:
         add     sp = -32, sp
         LOADGLOBAL(r3, caml_bottom_of_stack#)
         add     r2 = 16, sp
-        st8     [r2] = r3, 8
+        ST8OFF(r2, r3, 8)
         LOADGLOBAL(r3, caml_last_return_address#)
-        st8     [r2] = r3, 8
+        ST8OFF(r2, r3, 8)
         LOADGLOBAL(r3, caml_gc_regs#)
-        st8     [r2] = r3, 8
+        ST8OFF(r2, r3, 8)
 
         /* Set up a trap frame to catch exceptions escaping the Caml code */
         mov     r6 = sp
         add     sp = -16, sp
         LOADGLOBAL(r3, caml_exception_pointer#)
         add     r2 = 16, sp
-        st8     [r2] = r3, 8
+        ST8OFF(r2, r3, 8)
         LOADGLOBAL(r3, .L101)
-        st8     [r2] = r3, 8
+        ST8OFF(r2, r3, 8)
 
         /* Reload allocation pointers */
         LOADGLOBAL(r4, young_ptr#)
@@ -301,11 +319,11 @@ caml_start_program:
 .L104:
         /* Pop the callback link, restoring the global variables */
         add     r14 = 16, sp
-        ld8     r2 = [r14], 8
+        LD8OFF(r2, r14, 8)
         STOREGLOBAL(r2, caml_bottom_of_stack#)
-        ld8     r2 = [r14], 8
+        LD8OFF(r2, r14, 8)
         STOREGLOBAL(r2, caml_last_return_address#)
-        ld8     r2 = [r14], 8
+        LD8OFF(r2, r14, 8)
         STOREGLOBAL(r2, caml_gc_regs#)
         add     sp = 32, sp
 
@@ -314,14 +332,14 @@ caml_start_program:
 
         /* Restore PFS, return address and GP from stack */
         add     r2 = 16, sp
-        ld8     r3 = [r2], 8
+        LD8OFF(r3, r2, 8)
         mov     ar.pfs = r3
-        ld8     r3 = [r2], 8
+        LD8OFF(r3, r2, 8)
         mov     b0 = r3
-        ld8     gp = [r2], 8
+        LD8OFF(gp, r2, 8)
 
         /* Restore the predicates */
-        ld8     r3 = [r2], 8
+        LD8OFF(r3, r2, 8)
         mov     pr = r3, -1
 
         /* Restore the saved integer register */
