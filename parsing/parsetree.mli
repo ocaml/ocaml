@@ -111,8 +111,8 @@ and expression_desc =
   | Pexp_assert of expression
   | Pexp_assertfalse
 (* DYN *)  
-  | Pexp_dynamic of expression 
-  | Pexp_coerce of expression 
+  | Pexp_dynamic of expression * core_type option
+  | Pexp_coerce of expression * core_type option
 (* /DYN *)  
 (* GENERIC
   | Pexp_coerce of expression * (pattern * expression) list

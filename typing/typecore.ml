@@ -1166,10 +1166,21 @@ let rec type_exp env sexp =
          exp_env = env;
        }
 (* DYN *)
-  | Pexp_dynamic (se) ->
-      begin_def ();
-      let e = type_exp env se in
-      end_def ();
+  | Pexp_dynamic (se,stopt) ->
+      let e =
+	match stopt with
+	| Some st ->
+	    let t_expected = Typetexp.transl_type_scheme_for_dynamic env st in
+	    begin_def ();
+	    let e = type_expect env se t_expected in
+	    end_def ();
+	    e
+	| None -> 
+	    begin_def ();
+	    let e = type_exp env se in
+	    end_def ();
+	    e
+      in
       (* We do not generalize the type here. The generalization
 	 and closedness check will be done after all the types
 	 become stable (i.e. at the compilation) *)
@@ -1187,9 +1198,14 @@ let rec type_exp env sexp =
 	exp_type= Predef.type_dyn;
 	exp_env= env;
       }	
-  | Pexp_coerce (sarg) ->
+  | Pexp_coerce (sarg,stopt) ->
       let arg = type_expect env sarg Predef.type_dyn in
-      let ty_res = newvar () in
+      let ty_res =
+	match stopt with
+	| Some st ->
+	    Typetexp.transl_type_scheme_for_dynamic env st
+	| None -> newvar ()
+      in
       { exp_desc = Texp_coerce (arg);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;

@@ -278,12 +278,14 @@ and expression i ppf x =
   | Pexp_assertfalse ->
       line i ppf "Pexp_assertfalse";
 (* DYN *)
-  | Pexp_dynamic (e) ->
+  | Pexp_dynamic (e,topt) ->
       line i ppf "Pexp_dynamic";
       expression i ppf e;
-  | Pexp_coerce (e) ->
+      option i core_type ppf topt
+  | Pexp_coerce (e,topt) ->
       line i ppf "Pexp_coerce";
       expression i ppf e;
+      option i core_type ppf topt
 (* /DYN *)
 (* GENERIC
   | Pexp_coerce (e, pexps) ->
