@@ -14,9 +14,8 @@
 include ../../config/Makefile
 
 INCLUDES=-I ../../stdlib
-RUNTIME=../../boot/ocamlrun
-COMPILER=../../ocamlc $(INCLUDES)
-CAMLC=$(RUNTIME) $(COMPILER) $(INCLUDES)
+COMPILER=../../ocamlc
+CAMLC=../../boot/ocamlrun $(COMPILER) $(INCLUDES)
 
 all: jprims.cmi
 

@@ -21,6 +21,12 @@ open Typedtree
 open Env
 open Lambda
 
+(*
+  This first section builds lambda expr needed by jocaml constructs.
+  These are calls to functions or primitives defined in the
+  Jprims module.
+*)
+
 let env = lazy begin
   try
     Env.open_pers_signature "Jprims" Env.empty
@@ -98,6 +104,86 @@ let do_spawn some_loc p =
     | Some id_loc ->
         create_process_location id_loc (Lfunction (Curried, [], p))
 
+
+(*
+
+  All about synchronous threads.
+
+  Synchronous threads are guarded processes, when one of matched names
+  at least is synchronous.
+    In such case the guarded process is compliled into a function,
+    whose result is the answer to a distinguished synchronous name
+    (principal name)
+*)
+let id_lt x y = Ident.name x < Ident.name y
+
+(* Symetrical difference, catches double answers  *)
+let rec delta xs ys = match xs, ys with
+| [],_  -> ys
+| _, [] -> xs
+| x::rx, y::ry ->
+    if id_lt x y then
+      x::delta rx ys
+    else if id_lt y x then
+      y::delta xs ry
+    else (* x=y *)
+      delta rx ry
+
+let rec inter xs ys = match xs, ys with
+| [],_  -> []
+| _, [] -> []
+| x::rx, y::ry ->
+    if id_lt x y then
+      inter rx ys
+    else if id_lt y x then
+      inter xs ry
+    else (* x=y *)
+      x::inter rx ry
+
+
+
+  
+let rec do_principal p = match p.exp_desc with
+(* Base cases processes *)
+| Texp_asyncsend (_,_) | Texp_exec (_) | Texp_null 
+  -> []
+| Texp_reply (_, Path.Pident id) -> [id]
+(* Recursion *)
+| Texp_par (p1, p2) -> delta (do_principal p1) (do_principal p2)
+| Texp_let (_,_,p) | Texp_def (_,p) | Texp_loc (_,p)
+| Texp_sequence (_,p) | Texp_when (_,p)
+  -> do_principal p
+| Texp_match (_,(_,p)::cls,_) ->
+    List.fold_right
+      (fun (_, p) r -> inter (do_principal p) r)
+      cls (do_principal p)
+| Texp_ifthenelse (_,pifso, Some pifno) ->
+    inter (do_principal pifso) (do_principal pifno)
+| Texp_ifthenelse (_,_,None) -> []
+(* Errors *)
+| _ -> assert false
+
+let principal p = match do_principal p with
+| x::_ -> Some x
+| [] -> None  
+
+(* Once again for finding back parts of princpal threads *)
+let rec is_principal id p = match p.exp_desc with
+|  Texp_asyncsend (_,_) | Texp_exec (_) | Texp_null 
+  -> false
+| Texp_reply (_, Path.Pident kont) -> kont=id
+| Texp_par (p1, p2) ->
+    is_principal id p1 || is_principal id p2
+| Texp_let (_,_,p) | Texp_def (_,p) | Texp_loc (_,p)
+| Texp_sequence (_,p) | Texp_when (_,p) -> 
+    is_principal id p
+| Texp_match (_,(_,p)::cls,_) ->
+    is_principal id p &&
+    List.for_all (fun (_,p) -> is_principal id p) cls
+| Texp_ifthenelse (_,pifso, Some pifno) ->
+    is_principal id pifso && is_principal id pifno
+| Texp_ifthenelse (_,_,None) -> false
+| _ -> assert false
 
 (*
   The simple_proc predicates decides whether a new thread is needed
@@ -214,26 +300,34 @@ let rec do_as_procs r e = match e.exp_desc with
     do_as_procs (do_as_procs r e2) e1
 | _ -> e::r
 
-let as_procs e =
-  let seqs, forks = partition_procs (do_as_procs [] e) in
+let rec get_principal id = function
+  | [] -> assert false (* one thread must be principal *)
+  | p::rem ->
+      if is_principal id p then
+        p,rem
+      else
+        let r,rrem = get_principal id rem in
+        r,p::rrem
+
+let as_procs sync e =
+  let ps = do_as_procs [] e in
+  let psync,  ps = match sync with
+  | None -> None, ps
+  | Some id ->
+      let psync, ps = get_principal id ps in
+      Some psync, ps in
+  let seqs, forks = partition_procs ps in
+  psync,
   List.map
     (fun p -> match p.exp_desc with
     | Texp_exec e -> e
     | _ -> p) seqs,
   forks
 
-(* Automaton build *)
-(* Check usage of reply to *)
-(* PAS FINI
-exception Bad
 
-let rec dsj_union xs ys = match xs,ys with
-| [],_ -> ys
-| _,[] -> xs
-| x::rx, y::ry ->
-    if Ident.name 
-  
-let check_names 
+(*
+  This section is for compiling automata.
+  Most material is here, other is in Translcore
 *)
 
 let get_num names id =
@@ -243,10 +337,15 @@ let get_num names id =
   with
   | Not_found -> assert false
 
+(* Not so nice way to supress the continuation argument for principal names *)
 
-let transl_jpat {jpat_desc=_,arg} = arg
+let transl_jpat sync {jpat_desc=_,arg} = match sync,arg.pat_desc with
+| Some id, Tpat_tuple [{pat_desc = Tpat_var oid} ; true_arg]
+    when oid = id -> true_arg
+| _,_ -> arg
+      
 
-let transl_jpats jpats = List.map transl_jpat jpats
+let transl_jpats sync jpats = List.map (transl_jpat sync) jpats
          
 
 let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
@@ -255,6 +354,8 @@ let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
   let rec build_clauses i = function
     | [] -> []
     | {jclause_desc = (jpats,e); jclause_loc=cl_loc}::rem ->
+        (* compute principal name *)
+        let sync = principal e in
         (* Sort jpats by channel indexes *)
         let jpats =
           List.sort
@@ -273,14 +374,18 @@ let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
           List.fold_left
             (fun r num -> r lor (1 lsl num))
             0
-            nums in
+            nums
+        and principal_pat =  match sync with
+        | None -> 0
+        | Some id -> 1 lsl get_num names id in
+          
         (* add automaton entries for jpats *)
         List.iter
           (fun num ->
             r.(num) <-
-               i :: base_pat :: r.(num))
+               i :: principal_pat :: base_pat :: r.(num))
           nums ;
-        (cl_loc,transl_jpats jpats, e)::build_clauses (i+1) rem in
+        (cl_loc, sync, transl_jpats sync jpats, e)::build_clauses (i+1) rem in
 
   let guarded = build_clauses 0 cls in
   for i = 0 to Array.length r-1 do
@@ -328,9 +433,9 @@ let build_guards comp_fun (name,_,guards) k =
     if i >= nguards then
       k
     else
-      let cl_loc, jpats, e = guards.(i) in
+      let cl_loc, sync, jpats, e = guards.(i) in
       Lsequence
         (patch_guard name i
-           (comp_fun cl_loc jpats e),
+           (comp_fun cl_loc sync jpats e),
          do_rec (i+1)) in
   do_rec 0

@@ -98,7 +98,9 @@ EXTEND
     ]];
 
  expr: LEVEL "simple"
-    [[ e=nullproc -> e]];
+    [[
+       "{" ; "}" ->  ExNul (loc)
+    ]];
 
  expr: BEFORE "expr1" 
     ["top" RIGHTA [

@@ -32,21 +32,23 @@ val do_spawn : Ident.t option -> Lambda.lambda -> Lambda.lambda
 (* Is an expression simple enough (no exception, guaranteed to terminate) ? *)
 val simple_exp : Typedtree.expression -> bool
 
-(* Partition an proc expression into simple, non_simple expressions *)
+(* Partition a proc expression into
+   principal thread, simple, non_simple expressions *)
 val as_procs :
+  Ident.t option ->
   Typedtree.expression ->
-  Typedtree.expression list * Typedtree.expression list
+  Typedtree.expression option * Typedtree.expression list * Typedtree.expression list
 
 (* Building definitions and locations *)
 val build_matches :
   Typedtree.joinautomaton ->
   Ident.t * int list array *
-  (Location.t * Typedtree.pattern list * Typedtree.expression) array
+  (Location.t * Ident.t option * Typedtree.pattern list * Typedtree.expression) array
 val build_auto :
   Ident.t option ->
   Ident.t * int list array * 'a array -> Lambda.lambda -> Lambda.lambda
 val build_channels :
   Typedtree.joinautomaton -> Lambda.lambda -> Lambda.lambda
 val build_guards :
-  ('a -> 'b -> 'c -> Lambda.lambda) ->
-  Ident.t * 'd * ('a * 'b * 'c) array -> Lambda.lambda -> Lambda.lambda
+  ('a -> 'b -> 'c -> 'd -> Lambda.lambda) ->
+  Ident.t * 'e * ('a * 'b * 'c * 'd) array -> Lambda.lambda -> Lambda.lambda

@@ -656,129 +656,143 @@ let rec transl_exp e =
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
   | Texp_assertfalse -> assert_failed e.exp_loc
 (*> JOCAML *)
-(*
-  proc constructs are compiled here when they have been spotted to terminate
-*)
-  | Texp_spawn (e) -> transl_spawn None e
+  | Texp_spawn (e) -> transl_spawn None None e
 (*< JOCAML *)
   | _ ->
       Location.print Format.err_formatter e.exp_loc ;
       fatal_error "Translcore.transl_exp"
 
 (*> JOCAML *)
-and transl_proc p = match p.exp_desc with
+(* sync is None of asynchronous threads and Some id where id
+   is the principal name *)
+
+and transl_proc sync p = match p.exp_desc with
 (* Mixed constructs *)
 | Texp_let(rec_flag, pat_expr_list, body) ->
-    transl_let rec_flag pat_expr_list (transl_proc body)
+    transl_let rec_flag pat_expr_list (transl_proc sync body)
 | Texp_def (d,body) ->
-    do_transl_def None d (transl_proc body)
+    do_transl_def None d (transl_proc sync body)
 | Texp_loc (d,body) ->
-    transl_loc d (transl_proc body)
+    transl_loc d (transl_proc sync body)
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
-    Lifthenelse(transl_exp cond, transl_proc ifso, transl_proc ifnot)
+    Lifthenelse(transl_exp cond, transl_proc sync ifso, transl_proc sync ifnot)
 | Texp_ifthenelse(cond, ifso, None) ->
-    Lifthenelse(transl_exp cond, transl_proc ifso, lambda_unit)
+    assert (sync = None) ;
+    Lifthenelse(transl_exp cond, transl_proc sync ifso, lambda_unit)
 | Texp_sequence(e1, p2) ->
-    make_sequence (transl_exp e1) (transl_proc p2)
+    make_sequence (transl_exp e1) (transl_proc sync p2)
 | Texp_when(cond, body) ->
     Lifthenelse
-       (transl_exp cond, transl_proc body, staticfail)
+       (transl_exp cond, transl_proc sync body, staticfail)
 | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
     Matching.for_multiple_match p.exp_loc
       (transl_list argl)
-      (transl_cases no_event transl_proc pat_expr_list) partial
+      (transl_cases no_event (transl_proc sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
     Matching.for_function p.exp_loc None
       (transl_exp arg)
-      (transl_cases no_event transl_proc pat_expr_list) partial
+      (transl_cases no_event (transl_proc sync) pat_expr_list) partial
 (* Proc constructs *)
 | Texp_par (e1,e2) ->
-      let seqs, forks = Transljoin.as_procs p in
-      begin match forks, seqs with
-      | [],[] ->  lambda_unit
-      | fst::rem,_ ->
+      let psync, seqs, forks = Transljoin.as_procs sync p in
+      begin match psync with
+      | None ->
+          begin match forks, seqs with
+          | [],[] ->  lambda_unit
+          | fst::rem,_ ->
+              List.fold_right transl_seq seqs
+                (List.fold_right (transl_fork None) rem (transl_proc None fst))
+          | [],_ ->
+              List.fold_right transl_seq seqs lambda_unit
+          end
+      | Some psync ->
           List.fold_right transl_seq seqs
-            (List.fold_right (transl_fork None) rem (transl_proc fst))
-      | [],_ ->
-          List.fold_right transl_seq seqs lambda_unit
+            (List.fold_right (transl_fork None) forks (transl_proc sync psync))
       end
 | Texp_asyncsend (_,_) | Texp_reply (_,_) | Texp_null | Texp_exec (_) ->
-    transl_simple_proc p
+    transl_simple_proc sync p
 | _ ->
     Location.print Format.err_formatter p.exp_loc ;
     fatal_error "Translcore.transl_proc"
 
-and transl_simple_proc p = match p.exp_desc with
+and transl_simple_proc sync p = match p.exp_desc with
 (* Mixed constructs *)
 | Texp_let(rec_flag, pat_expr_list, body) ->
-    transl_let rec_flag pat_expr_list (transl_simple_proc body)
+    transl_let rec_flag pat_expr_list (transl_simple_proc sync body)
 | Texp_def (d,body) ->
-    do_transl_def None d (transl_simple_proc body)
+    do_transl_def None d (transl_simple_proc sync body)
 | Texp_loc (d,body) ->
-    transl_loc d (transl_simple_proc body)
+    transl_loc d (transl_simple_proc sync body)
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
-      (transl_exp cond, transl_simple_proc ifso, transl_simple_proc ifnot)
+      (transl_exp cond, transl_simple_proc sync ifso, transl_simple_proc sync ifnot)
 | Texp_ifthenelse(cond, ifso, None) ->
-    Lifthenelse(transl_exp cond, transl_proc ifso, lambda_unit)
+    Lifthenelse(transl_exp cond, transl_proc sync ifso, lambda_unit)
 | Texp_sequence(e, p) ->
-    make_sequence (transl_exp e) (transl_simple_proc p)
+    make_sequence (transl_exp e) (transl_simple_proc sync p)
 | Texp_when(cond, body) ->
       (Lifthenelse
-         (transl_exp cond, transl_simple_proc body,
+         (transl_exp cond, transl_simple_proc sync body,
           staticfail))
 | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
     Matching.for_multiple_match p.exp_loc
       (transl_list argl)
-      (transl_cases no_event transl_simple_proc pat_expr_list) partial
+      (transl_cases no_event (transl_simple_proc sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
     Matching.for_function p.exp_loc None
       (transl_exp arg)
-      (transl_cases no_event transl_simple_proc pat_expr_list) partial
+      (transl_cases no_event (transl_simple_proc sync) pat_expr_list) partial
 (* Proc constructs *)
 | Texp_exec  (e) -> transl_exp e
-| Texp_par (_,_) -> transl_spawn None p
+| Texp_par (_,_) -> transl_spawn sync None p
 | Texp_asyncsend
     ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
         Transljoin.send_async auto num (transl_exp e2)
 | Texp_asyncsend (e1,e2) -> Lapply (transl_exp e1,[transl_exp e2])
-| Texp_reply (e,id) ->
-    Transljoin.reply_to (transl_exp e) (transl_path id)
+| Texp_reply (e, (Pident id as path)) ->
+    begin match sync with
+    | Some main_id when main_id = id -> transl_exp e
+    | _ -> Transljoin.reply_to (transl_exp e) (transl_path path)
+    end
 | Texp_null -> lambda_unit
 (* Plain expression are errors *)
 | _ -> fatal_error "Translcore.transl_simple_proc"
 
 
-and transl_guarded_proc loc pats p = match pats with
+and transl_guarded_proc loc sync pats p = match pats with
 | []     -> assert false
 | [pat]  ->
     let param = name_join_pattern "param" pat in
     ([param],
      Matching.for_function
        loc None (Lvar param)
-           (transl_cases no_event transl_proc [pat,p] ) Total)
+           (transl_cases no_event (transl_proc sync) [pat,p] ) Total)
 | pat::rem ->
     let param = name_join_pattern "param" pat in
-    let (params, body) = transl_guarded_proc loc rem p in
+    let (params, body) = transl_guarded_proc loc sync rem p in
     (param::params,
      Matching.for_function loc None (Lvar param) [pat,body] Total)
       
-and guarded_proc_as_fun cl_loc jpats p =
-  let params, body = transl_guarded_proc cl_loc jpats p in
+and guarded_proc_as_fun cl_loc sync jpats p =
+  let params, body = transl_guarded_proc cl_loc sync jpats p in
   Lfunction (Curried, params, body)
 
 (* transl_spawn separetes e into a forked part and a part to execute now *)
-and transl_spawn some_loc e =
-  let seqs, forks = Transljoin.as_procs e in
-  let lforks = List.fold_right (transl_fork some_loc) forks lambda_unit in
+and transl_spawn sync some_loc e =
+  let psync, seqs, forks = Transljoin.as_procs sync e in
+  let lam_end = match psync with
+  | None -> lambda_unit
+  | Some p -> transl_proc sync p in
+  let lforks =
+    List.fold_right (transl_fork some_loc) forks lam_end in
   List.fold_right transl_seq seqs lforks
 
 (* Do perform a fork *)
 and transl_fork some_loc e k = 
-  make_sequence (Transljoin.do_spawn some_loc (transl_proc e)) k
+  make_sequence (Transljoin.do_spawn some_loc (transl_proc None e)) k
 
 (* Sequence for processes *)    
-and transl_seq e k =  make_sequence (transl_simple_proc e) k
+and transl_seq e k =  make_sequence (transl_simple_proc None e) k
 (*< JOCAML *)
 and transl_list expr_list =  List.map transl_exp expr_list
 
