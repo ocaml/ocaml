@@ -39,14 +39,14 @@ let transl_module =
 
 let comparisons_table = create_hashtable 11 [
   "%equal",
-      (Pccall{prim_name = "equal"; prim_arity = 2; prim_alloc = false;
+      (Pccall{prim_name = "equal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Ceq,
        Pfloatcomp Ceq,
        Pccall{prim_name = "string_equal"; prim_arity = 2; prim_alloc = false;
               prim_native_name = ""; prim_native_float = false});
   "%notequal",
-      (Pccall{prim_name = "notequal"; prim_arity = 2; prim_alloc = false;
+      (Pccall{prim_name = "notequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cneq,
        Pfloatcomp Cneq,
@@ -54,28 +54,28 @@ let comparisons_table = create_hashtable 11 [
               prim_alloc = false; prim_native_name = ""; 
               prim_native_float = false});
   "%lessthan",
-      (Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = false; 
+      (Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = true; 
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Clt,
        Pfloatcomp Clt,
        Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = false;
               prim_native_name = ""; prim_native_float = false});
   "%greaterthan",
-      (Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = false;
+      (Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cgt,
        Pfloatcomp Cgt,
        Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = false;
               prim_native_name = ""; prim_native_float = false});
   "%lessequal",
-      (Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = false;
+      (Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cle,
        Pfloatcomp Cle,
        Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = false;
               prim_native_name = ""; prim_native_float = false});
   "%greaterequal",
-      (Pccall{prim_name = "greaterequal"; prim_arity = 2; prim_alloc = false;
+      (Pccall{prim_name = "greaterequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cge,
        Pfloatcomp Cge,

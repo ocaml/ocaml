@@ -107,17 +107,9 @@ void failwith (char *msg)
   raise_with_string((value) Failure, msg);
 }
 
-/* We chose to abort the program if a C primitive raises Invalid_argument.
-   Rationale: nobody should trap Invalid_argument, and we're not running
-   under a toplevel, so this will provide the same feedback to the user.
-   Moreover, divisions by zero or out-of-bounds accesses also abort the
-   program, and there's no way we can turn them into exceptions.
-   Finally, this allows a number of C primitives to be declared "noalloc",
-   and this makes calling them much more efficient. */
-   
 void invalid_argument (char *msg)
 {
-  fatal_error_arg("Fatal_error: Invalid_argument \"%s\"\n", msg);
+  raise_with_string((value) Invalid_argument, msg);
 }
 
 /* To raise Out_of_memory, we can't use raise_constant,
@@ -156,4 +148,34 @@ void raise_zero_divide(void)
 void raise_not_found(void)
 {
   raise_constant((value) Not_found);
+}
+
+/* We allocate statically the bucket for the exception because we can't
+   do a GC before the exception is raised (lack of stack descriptors
+   for the ccall to array_bound_error  */
+
+#define BOUND_MSG "out-of-bound array or string access"
+#define BOUND_MSG_LEN (sizeof(BOUND_MSG) - 1)
+
+static struct {
+  header_t hdr;
+  value exn;
+  value arg;
+} array_bound_error_bucket;
+
+static struct {
+  header_t hdr;
+  char data[BOUND_MSG_LEN + sizeof(value)];
+} array_bound_error_msg = { 0, BOUND_MSG };
+
+void array_bound_error(void)
+{
+  mlsize_t wosize = (BOUND_MSG_LEN + sizeof(value)) / sizeof(value);
+  mlsize_t offset_index = Bsize_wsize(wosize) - 1;
+  array_bound_error_msg.hdr = Make_header(wosize, String_tag, White);
+  array_bound_error_msg.data[offset_index] = offset_index - BOUND_MSG_LEN;
+  array_bound_error_bucket.hdr = Make_header(2, 0, White);
+  array_bound_error_bucket.exn = (value) Invalid_argument;
+  array_bound_error_bucket.arg = (value) array_bound_error_msg.data;
+  mlraise((value) &array_bound_error_bucket.exn);
 }

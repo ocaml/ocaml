@@ -426,6 +426,21 @@ callback3:
 
         .end    callback3
 
+/* Glue code to call array_bound_error */
+
+        .globl  caml_array_bound_error
+        .ent    caml_array_bound_error
+
+caml_array_bound_error:
+#ifdef PIC
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
+        la      $24, array_bound_error
+        b       caml_c_call             /* never returns */
+        .end    caml_array_bound_error
+
         .rdata
         .globl  system_frametable
 system_frametable:

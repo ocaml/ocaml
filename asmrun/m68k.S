@@ -230,6 +230,15 @@ _callback3:
         lea     _caml_apply3, a5 | code pointer
         bra     L106
 
+        .globl  _caml_array_bound_error
+_caml_array_bound_error:
+    | Save allocation pointer and exception pointer
+        movel   d6, _young_ptr
+        movel   d7, _caml_exception_pointer
+    | Load address of array_bound_error in a0 and call it
+        lea     _array_bound_error, a0
+        bra     _caml_c_call
+
         .data
         .globl  _system_frametable
 _system_frametable:

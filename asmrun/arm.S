@@ -312,6 +312,18 @@ callback3:
         ldr     r10, .Lcaml_apply3
         b       .Ljump_to_caml
 
+        .global caml_array_bound_error
+array_bound_error:
+    /* Save the exception handler and alloc ptr */
+        ldr     r6, .Lyoung_ptr
+        ldr     r7, .Lcaml_exception_pointer
+        str     alloc_ptr, [r6, #0]
+        str     trap_ptr, [r7, #0]
+    /* Load address of array_bound_error in r10 */
+        ldr     r10, .Larray_bound_error
+    /* Call that function */
+        b       caml_c_call
+
 /* Global references */
 
 .Lcaml_last_return_address:     .word caml_last_return_address
@@ -325,6 +337,7 @@ callback3:
 .Lcaml_apply2:                  .word caml_apply2
 .Lcaml_apply3:                  .word caml_apply3
 .Lcaml_requested_size:		.word 0
+.Larray_bound_error:            .word array_bound_error
 
 /* GC roots for callback */
 

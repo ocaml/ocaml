@@ -191,12 +191,3 @@ value make_array(value init)    /* ML */
     }
   }
 }
-
-#ifdef NATIVE_CODE
-
-void array_bound_error(void)
-{
-  fatal_error("Fatal error: out-of-bound access in array or string\n");
-}
-
-#endif

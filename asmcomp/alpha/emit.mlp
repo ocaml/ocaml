@@ -709,8 +709,8 @@ let emit_fundecl (fundecl, needs_gp) =
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    `	br	$25, call_array_bound_error\n`
-    (* Keep retaddr in $25 for debugging *)
+    `	br	$26, caml_array_bound_error\n`
+    (* Keep retaddr in $26 for debugging *)
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`;
   if !bigint_constants <> [] then begin

@@ -13,8 +13,11 @@
 
 #include <signal.h>
 #include <stdio.h>
-#if defined(__linux) && defined(TARGET_power)
+#if defined(TARGET_power) && defined(__linux)
 #include <asm/sigcontext.h>
+#endif
+#if defined(TARGET_sparc) && defined(SYS_solaris)
+#include <ucontext.h>
 #endif
 #include "alloc.h"
 #include "callback.h"
@@ -96,8 +99,9 @@ void leave_blocking_section(void)
   async_signal_mode = 0;
 }
 
-#if defined(TARGET_alpha) || defined(TARGET_mips) || \
-    (defined(TARGET_power) && defined(_AIX))
+#if defined(TARGET_alpha) || defined(TARGET_mips)
+void handle_signal(int sig, int code, struct sigcontext * context)
+#elif defined(TARGET_power) && defined(_AIX)
 void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(__linux)
 void handle_signal(int sig, struct pt_regs * context)
@@ -105,10 +109,8 @@ void handle_signal(int sig, struct pt_regs * context)
 void handle_signal(int sig)
 #endif
 {
-#ifndef POSIX_SIGNALS
-#ifndef BSD_SIGNALS
+#if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(sig, handle_signal);
-#endif
 #endif
   if (async_signal_mode) {
     /* We are interrupting a C function blocked on I/O.
@@ -125,27 +127,24 @@ void handle_signal(int sig)
     /* Some ports cache young_limit in a register.
        Use the signal context to modify that register too, but not if
        we are inside C code (i.e. caml_last_return_address != 0). */
-#ifdef TARGET_alpha
-    /* Cached in register $14 */
-    if (caml_last_return_address == 0)
+    if (caml_last_return_address == 0) {
+#if defined(TARGET_alpha)
+      /* Cached in register $14 */
       context->sc_regs[14] = (long) young_limit;
 #endif
-#ifdef TARGET_mips
+#if defined(TARGET_mips)
       /* Cached in register $23 */
-      if (caml_last_return_address == 0)
-        context->sc_regs[23] = (int) young_limit;
+      context->sc_regs[23] = (int) young_limit;
 #endif
-#ifdef TARGET_power
+#if defined(TARGET_power) && defined(_AIX)
       /* Cached in register 30 */
-#ifdef _AIX
-      if (caml_last_return_address == 0)
-        context->sc_jmpbuf.jmp_context.gpr[30] = (ulong_t) young_limit;
+      context->sc_jmpbuf.jmp_context.gpr[30] = (ulong_t) young_limit;
 #endif
-#ifdef __linux
-      if (caml_last_return_address == 0)
-        context->gpr[30] = (unsigned long) young_limit;
+#if defined(TARGET_power) && defined(__linux)
+      /* Cached in register 30 */
+      context->gpr[30] = (unsigned long) young_limit;
 #endif
-#endif
+    }
   }
 }
 
@@ -291,38 +290,63 @@ value install_signal_handler(value signal_number, value action) /* ML */
 static void trap_handler(int sig, int code, 
                          struct sigcontext * context, char * address)
 {
-  if (code == ILL_TRAP_FAULT(5)) {
-    array_bound_error();
-  } else {
+  int * sp;
+  if (code != ILL_TRAP_FAULT(5)) {
     fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n", code);
     exit(100);
   }
+  /* Recover young_ptr and caml_exception_pointer from the %l5 and %l6 regs */
+  Assert(context->sc_wbcnt == 0);
+  sp = (int *) scp->sc_sp;
+  caml_exception_pointer = (char *) sp[5];
+  young_ptr = (char *) sp[6];
+  array_bound_error();
 }
 #endif
 
 #if defined(TARGET_sparc) && defined(SYS_solaris)
-static void trap_handler(int sig, siginfo_t * info, void * context)
+static void trap_handler(int sig, siginfo_t * info, void * arg)
 {
-  if (info->si_code == ILL_ILLTRP) {
-    array_bound_error();
-  } else {
+  ucontext_t * context;
+  if (info->si_code != ILL_ILLTRP) {
     fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n",
             info->si_code);
     exit(100);
   }
+  /* Recover young_ptr and caml_exception_pointer from the %l5 and %l6 regs */
+  context = (ucontext_t *) arg;
+  Assert(context->uc_mcontext.gwins == NULL);
+  sp = (int *) context->uc_mcontext.gregs[REG_SP];
+  caml_exception_pointer = (char *) sp[5];
+  young_ptr = (char *) sp[6];
+  array_bound_error();
 }
 #endif
 
 #if defined(TARGET_sparc) && (defined(SYS_bsd) || defined(SYS_linux))
 static void trap_handler(int sig)
 {
+  /* TODO: recover registers from context and call array_bound_error */
+  fatal_error("Fatal error: out-of-bound access in array or string\n");
+}
+#endif
+
+#if defined(TARGET_power) && defined(_AIX)
+static void trap_handler(int sig, int code, struct sigcontext * context)
+{
+  /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
+  caml_exception_pointer = (char *) context->sc_jmpbuf.jmp_context.gpr[29];
+  young_ptr = (char *) context->sc_jmpbuf.jmp_context.gpr[31];
   array_bound_error();
 }
 #endif
 
-#if defined(TARGET_power)
-static void trap_handler(int sig)
+#if defined(TARGET_power) && defined(__linux)
+static void trap_handler(int sig, struct pt_regs * context)
 {
+  /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
+  caml_exception_pointer = (char *) context->gpr[29];
+  young_ptr = (char *) context->gpr[31];
   array_bound_error();
 }
 #endif
@@ -333,7 +357,11 @@ void init_signals(void)
 {
 #if defined(TARGET_sparc) && \
       (defined(SYS_sunos) || defined(SYS_bsd) || defined(SYS_linux))
-  signal(SIGILL, trap_handler);
+  struct sigaction act;
+  act.sa_handler = (void (*)(int)) trap_handler;
+  sigemptyset(&act.sa_mask);
+  act.sa_flags = 0;
+  sigaction(SIGILL, &act, NULL);
 #endif
 #if defined(TARGET_sparc) && defined(SYS_solaris)
   struct sigaction act;
@@ -343,7 +371,11 @@ void init_signals(void)
   sigaction(SIGILL, &act, NULL);
 #endif
 #if defined(TARGET_power)
-  signal(SIGTRAP, trap_handler);
+  struct sigaction act;
+  act.sa_handler = (void (*)(int)) trap_handler;
+  sigemptyset(&act.sa_mask);
+  act.sa_flags = 0;
+  sigaction(SIGTRAP, &act, NULL);
 #endif
 }
 

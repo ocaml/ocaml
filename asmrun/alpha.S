@@ -418,16 +418,17 @@ callback3:
         br      $107
         .end    callback3
 
-/* Glue code to call array_bound_error after reinitializing $gp */
+/* Glue code to call array_bound_error */
 
-        .globl  call_array_bound_error
-        .ent    call_array_bound_error
+        .globl  caml_array_bound_error
+        .ent    caml_array_bound_error
         .align  3
-call_array_bound_error:
+caml_array_bound_error:
         br      $27, $111
 $111:   ldgp    $gp, 0($27)
-        jsr     array_bound_error       /* never returns */
-        .end    call_array_bound_error
+        lda     $25, array_bound_error
+        br      caml_c_call             /* never returns */
+        .end    caml_array_bound_error
 
 #ifdef SYS_digital	
         .rdata

@@ -551,7 +551,7 @@ let fundecl fundecl =
   end;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    emit_branch_symbol "array_bound_error"
+    emit_branch_symbol "caml_array_bound_error"
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`
 

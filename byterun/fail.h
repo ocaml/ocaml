@@ -58,6 +58,7 @@ void raise_zero_divide (void) Noreturn;
 void raise_not_found (void) Noreturn;
 void fatal_uncaught_exception (value) Noreturn;
 void init_exceptions (void);
+void array_bound_error (void);
 
 extern void (*caml_reset_sigmask)(void);
 

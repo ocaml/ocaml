@@ -382,7 +382,7 @@ let emit_instr i =
         `	mov{emit_string comp}	{emit_reg i.res.(0)}, #1\n`; 3
     | Lop(Iintop(Icheckbound)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-        `	blls	array_bound_error\n`; 2
+        `	blls	caml_array_bound_error\n`; 2
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
@@ -419,7 +419,7 @@ let emit_instr i =
         `	mov{emit_string comp}	{emit_reg i.res.(0)}, #1\n`; 3
     | Lop(Iintop_imm(Icheckbound, n)) ->
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
-        `	blls	array_bound_error\n`; 2
+        `	blls	caml_array_bound_error\n`; 2
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
@@ -438,7 +438,7 @@ let emit_instr i =
         1
     | Lop(Ispecific(Ishiftcheckbound shift)) ->
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
-        `	blcs	array_bound_error\n`; 2
+        `	blcs	caml_array_bound_error\n`; 2
     | Lop(Ispecific(Irevsubimm n)) ->
 	`	rsb	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
     | Lreloadretaddr ->

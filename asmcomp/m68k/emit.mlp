@@ -667,7 +667,7 @@ let fundecl fundecl =
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	jbsr	{emit_symbol "array_bound_error"}\n`
+    `{emit_label !range_check_trap}:	jbsr	{emit_symbol "caml_array_bound_error"}\n`
 
 (* Emission of data *)
 
