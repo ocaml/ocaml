@@ -1,6 +1,13 @@
 Camlp4 Version ....
 -------------------
 
+- [04 Jan 02] Alain Frisch's contribution:
+  Added pa_ocamllex.cma, syntax for ocamllex files. The command:
+      camlp4 pa_ocamllex.cmo pr_o.cmo -ocamllex -impl foo.mll > foo.ml
+  does the same thing as:
+      ocamllex foo.mll
+  Allow to compile directly mll files. Without option -ocamllex, allow
+  to insert lex rules in a ml file.
 - [29 Dec 01] Added variable "inter_phrases" in Pcaml, of type ref (option
   string) to specify the string to print between phrases in pretty printers.
   The default is None, meaning to copy the inter phrases from the source
