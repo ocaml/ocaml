@@ -29,14 +29,10 @@ val new_method: string -> label
 (* Classes *)
 type table
 type meth
-type obj_init
-type class_info
 type t
 type obj
-val get_class: table -> class_info -> obj_init
 val new_variable: table -> string -> int
 val get_variable: table -> string -> int
-val copy_variables: class_info -> table -> unit -> obj -> unit
 val get_method_label: table -> string -> label
 val get_method: table -> label -> meth
 val set_method: table -> label -> meth -> unit
@@ -49,7 +45,6 @@ val init_class: table -> unit
 (* Objects *)
 val create_object: table -> obj
 val run_initializers: obj -> table -> unit
-val object_from_struct: class_info -> obj
 val send:   obj -> label -> t
 
 (* Parameters *)

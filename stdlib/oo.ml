@@ -237,7 +237,6 @@ type meths = label Meths.t
 module Labs = Map.Make(struct type t = label let compare = compare end)
 type labs = bool Labs.t
 
-type obj_init
 (* The compiler assumes that the first field of this structure is [size]. *)
 type table =
  { mutable size: int;
@@ -289,10 +288,6 @@ let inst_var_count = ref 0
 
 type t
 type meth = item
-type class_info =
-  {mutable obj_init: t;
-   mutable class_init: table -> bool -> obj_init;
-   mutable table: table}
 
 let get_method_label table name =
   try
@@ -317,6 +312,7 @@ let get_method table label =
 
 let narrow table vars virt_meths concr_meths =
   let virt_meth_labs = List.map (get_method_label table) virt_meths in
+  let concr_meth_labs = List.map (get_method_label table) concr_meths in
   table.previous_states <-
      (table.methods_by_name, table.methods_by_label, table.hidden_meths,
       table.vars, virt_meth_labs, vars)
@@ -324,15 +320,14 @@ let narrow table vars virt_meths concr_meths =
   table.vars <- Vars.empty;
   let by_name = ref Meths.empty in
   let by_label = ref Labs.empty in
-  List.iter
-    (function met ->
-       let label = get_method_label table met in
+  List.iter2
+    (fun met label ->
        by_name := Meths.add met label !by_name;
        by_label :=
           Labs.add label
             (try Labs.find label table.methods_by_label with Not_found -> true)
             !by_label)
-    concr_meths;
+    concr_meths concr_meth_labs;
   List.iter2
     (fun met label ->
        by_name := Meths.add met label !by_name;
@@ -365,8 +360,6 @@ let widen table =
        table.hidden_meths
        saved_hidden_meths
 
-let get_class table cl = cl.class_init table false
-
 let new_slot table =
   let index = table.size in
   table.size <- index + 1;
@@ -379,20 +372,6 @@ let new_variable table name =
 
 let get_variable table name =
   Vars.find name table.vars
-
-let copy_variables class_info table =
-  ();
-  function () ->
-  let template = class_info.obj_init in
-  let max = class_info.table.size - 1 in
-  let max' = table.size - 1 in
-  let offset = max' - max in
-  function obj ->
-    for i = initial_object_size to max do
-      (* XXX Hack *)
-      Array.unsafe_set (Obj.magic obj : string array) (i + offset)
-        (Array.unsafe_get (Obj.magic template : string array) i)
-    done
 
 let add_initializer table f =
   table.initializers <- f::table.initializers
@@ -432,13 +411,6 @@ let run_initializers obj table =
   let inits = table.initializers in
   if inits <> [] then
     iter_f obj inits
-
-let object_from_struct cl_inf =
-  (* XXX Appel de [obj_dup] *)
-  let obj = (Obj.obj (Obj.dup (Obj.repr cl_inf.obj_init))) in
-  set_id obj last_id;
-  run_initializers (Obj.magic obj) cl_inf.table;
-  obj
 
 let send obj lab =
   let (buck, elem) = decode lab in
