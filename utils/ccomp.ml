@@ -24,9 +24,27 @@ let command cmdline =
 
 let run_command cmdline = ignore(command cmdline)
 
+(* Build @responsefile to work around Windows limitations on 
+   command-length line *)
+let build_diversion lst =
+  let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
+  List.iter
+    (fun f ->
+      if f <> "" then begin
+        output_string oc (Filename.quote f); output_char oc '\n'
+      end)
+    lst;
+  close_out oc;
+  at_exit (fun () -> Misc.remove_file responsefile);
+  "@" ^ responsefile
+
 let quote_files lst =
-  String.concat " "
-    (List.map (fun f -> if f = "" then f else Filename.quote f) lst)
+  let s =
+    String.concat " "
+      (List.map (fun f -> if f = "" then f else Filename.quote f) lst) in
+  if Sys.os_type = "Win32" && String.length s >= 256
+  then build_diversion lst
+  else s
 
 let compile_file name =
   match Config.ccomp_type with
