@@ -236,7 +236,7 @@ value input_value(chan)         /* ML */
      struct channel * chan;
 {
   uint32 magic;
-  mlsize_t num_objects, size_32, size_64, whsize;
+  mlsize_t num_objects, size_32, size_64, whsize, wosize;
   value res;
 
   magic = getword(chan);
@@ -252,9 +252,12 @@ value input_value(chan)         /* ML */
   if (whsize == 0) {
     read_compact(chan, &res);
   } else {
-    if (Wosize_whsize(whsize) > Max_wosize)
-      failwith("intern: structure too big");
-    intern_block = alloc_shr(Wosize_whsize(whsize), String_tag);
+    wosize = Wosize_whsize(whsize);
+    if (wosize > Max_wosize) failwith("intern: structure too big");
+    if (wosize < Max_young_wosize)
+      intern_block = alloc(wosize, String_tag);
+    else
+      intern_block = alloc_shr(wosize, String_tag);
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);
     Assert (intern_color == White || intern_color == Black);

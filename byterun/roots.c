@@ -30,6 +30,8 @@ struct global_root {
   
 static struct global_root * global_roots = NULL;
 
+void (*scan_roots_hook) P((scanning_action)) = NULL;
+
 /* Register a global C root */
 
 void register_global_root(r)
@@ -52,18 +54,20 @@ void oldify_local_roots ()
 
   /* The stack */
   for (sp = extern_sp; sp < stack_high; sp++) {
-    oldify (sp, *sp);
+    oldify (*sp, sp);
   }
   /* Local C roots */
   for (block = local_roots; block != NULL; block = (value *) block [1]){
     for (sp = block - (long) block [0]; sp < block; sp++){
-      oldify (sp, *sp);
+      oldify (*sp, sp);
     }
   }
   /* Global C roots */
   for (gr = global_roots; gr != NULL; gr = gr->next) {
-    oldify(gr->root, *(gr->root));
+    oldify(*(gr->root), gr->root);
   }
+  /* Hook */
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(oldify);
 }
 
 /* Call [darken] on all roots */
@@ -91,6 +95,8 @@ void darken_all_roots ()
   for (gr = global_roots; gr != NULL; gr = gr->next) {
     darken (*(gr->root));
   }
+  /* Hook */
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(darken);
 }
 
 

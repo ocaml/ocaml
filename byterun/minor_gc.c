@@ -62,7 +62,7 @@ void set_minor_heap_size (size)
   ref_table_end = ref_table + ref_table_size + ref_table_reserve;
 }
 
-void oldify (p, v)
+void oldify (v, p)
      value *p;
      value v;
 {
@@ -80,7 +80,7 @@ void oldify (p, v)
       *p = Field (v, 0);     /* Then the forward pointer is the first field. */
     }else if (tag == Infix_tag) {
       mlsize_t offset = Infix_offset_hd (hd);
-      oldify(p, v - offset);
+      oldify(v - offset, p);
       *p += offset;
     }else if (tag >= No_scan_tag){
       sz = Wosize_hd (hd);
@@ -103,9 +103,9 @@ void oldify (p, v)
         v = field0;
         goto tail_call;
       } else {
-        oldify (&Field (result, 0), field0);
+        oldify (field0, &Field (result, 0));
         for (i = 1; i < sz - 1; i++){
-          oldify (&Field (result, i), Field (v, i));
+          oldify (Field(v, i), &Field (result, i));
         }
         p = &Field (result, i);
         v = Field (v, i);
@@ -125,7 +125,7 @@ void minor_collection ()
   in_minor_collection = 1;
   gc_message ("<", 0);
   oldify_local_roots();
-  for (r = ref_table; r < ref_table_ptr; r++) oldify (*r, **r);
+  for (r = ref_table; r < ref_table_ptr; r++) oldify (**r, *r);
   stat_minor_words += Wsize_bsize (young_end - young_ptr);
   young_ptr = young_end;
   ref_table_ptr = ref_table;

@@ -19,5 +19,7 @@
 void oldify_local_roots P((void));
 void darken_all_roots P((void));
 
+typedef void (*scanning_action) ();
+extern void (*scan_roots_hook) P((scanning_action));
 
 #endif /* _roots_ */
