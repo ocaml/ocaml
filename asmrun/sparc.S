@@ -47,7 +47,7 @@
 
 #else
 
-        .common gc_entry_regs, 22 * 4, 8
+        .common gc_entry_regs, 20 * 4, 8
         .common gc_entry_float_regs, 30 * 4, 8
         .common caml_required_size, 4, 4
 
@@ -134,17 +134,16 @@ Caml_call_gc:
         Store(%o7, Caml_last_return_address)
     /* Save all regs used by the code generator */
         Address(Gc_entry_regs, %g1)
-        std     %l0, [%g1]
-        std     %l2, [%g1 + 0x8]
-        std     %l4, [%g1 + 0x10]
-        std     %l6, [%g1 + 0x18]
-        std     %o0, [%g1 + 0x20]
-        std     %o2, [%g1 + 0x28]
-        std     %o4, [%g1 + 0x30]
-        std     %i0, [%g1 + 0x38]
-        std     %i2, [%g1 + 0x40]
-        std     %i4, [%g1 + 0x48]
-        std     %g2, [%g1 + 0x50]
+        std     %o0, [%g1]
+        std     %o2, [%g1 + 0x8]
+        std     %o4, [%g1 + 0x10]
+        std     %i0, [%g1 + 0x18]
+        std     %i2, [%g1 + 0x20]
+        std     %i4, [%g1 + 0x28]
+        std     %l0, [%g1 + 0x30]
+        std     %l2, [%g1 + 0x38]
+        std     %l4, [%g1 + 0x40]
+        st      %l6, [%g1 + 0x48]
         Address(Gc_entry_float_regs, %g1)
         std     %f0, [%g1]
         std     %f2, [%g1 + 0x8]
@@ -166,17 +165,16 @@ Caml_call_gc:
         nop
     /* Restore all regs used by the code generator */
         Address(Gc_entry_regs, %g1)
-        ldd     [%g1], %l0
-        ldd     [%g1 + 0x8], %l2
-        ldd     [%g1 + 0x10], %l4
-        ldd     [%g1 + 0x18], %l6
-        ldd     [%g1 + 0x20], %o0
-        ldd     [%g1 + 0x28], %o2
-        ldd     [%g1 + 0x30], %o4
-        ldd     [%g1 + 0x38], %i0
-        ldd     [%g1 + 0x40], %i2
-        ldd     [%g1 + 0x48], %i4
-        ldd     [%g1 + 0x50], %g2
+        ldd     [%g1], %o0
+        ldd     [%g1 + 0x8], %o2
+        ldd     [%g1 + 0x10], %o4
+        ldd     [%g1 + 0x18], %i0
+        ldd     [%g1 + 0x20], %i2
+        ldd     [%g1 + 0x28], %i4
+        ldd     [%g1 + 0x30], %l0
+        ldd     [%g1 + 0x38], %l2
+        ldd     [%g1 + 0x40], %l4
+        ld      [%g1 + 0x48], %l6
         Address(Gc_entry_float_regs, %g1)
         ldd     [%g1], %f0
         ldd     [%g1 + 0x8], %f2
@@ -198,8 +196,8 @@ Caml_call_gc:
         Load(Young_ptr, Alloc_ptr)
         Address(Young_limit, Alloc_limit)
     /* Allocate space for block */
-        Load(Caml_required_size, %g1)
-        sub     Alloc_ptr, %g1, Alloc_ptr
+        Load(Caml_required_size, %l7)
+        sub     Alloc_ptr, %l7, Alloc_ptr
     /* Return to caller */
         Load(Caml_last_return_address, %o7)
         retl
