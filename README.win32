@@ -16,8 +16,8 @@ Microsoft Visual C++ compiler.
 The native-code compiler (ocamlopt) requires Visual C++ and the
 Microsoft assembler MASM version 6.
 
-The CamlTk GUI requires Tcl 7.6 and Tk 4.2.  Windows binaries are
-available from ftp://ftp.scriptics.com/pub/tcl/tcl7_6/win76p2.exe.
+The CamlTk GUI requires Tcl/Tk 8.0.  Windows binaries are
+available from ftp://ftp.scriptics.com/pub/tcl/tcl8_0/tcl804.exe
 
 
 INSTALLATION:
@@ -77,10 +77,9 @@ The command-line tools can be recompiled from the Unix source
 distribution (ocaml-X.YZ.tar.gz), which also contains the files modified
 for Windows.
 
-In addition to Visual C++ 4.0 and MASM 6, you will also need a healthy
-set of Unix / GNU utilities that understands long file names
-(see e.g. http://www.cygnus.com/misc/gnu-win32/ or
-ftp://ftp.cc.utexas.edu/microlib/nt/gnu/).
+In addition to Visual C++ (version 4, 5 or 6) and MASM 6, you will
+need the CygWin port of GNU tools, available from
+http://sourceware.cygnus.com/cygwin/
 
 The sources for the toplevel graphical user interface are not currently
 available to the general public.  Contact us if you think you need them.

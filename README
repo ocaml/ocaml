@@ -23,8 +23,7 @@ compiler currently runs on the following platforms:
     Alpha processors: all Digital Alpha machines under Digital Unix or Linux
     Sparc processors: Sun Sparc under SunOS 4.1, Solaris 2, NetBSD, Linux
     Intel Pentium processors: PCs under Linux, NextStep, FreeBSD, Solaris 2
-    Mips processors: SGI workstations and mainframes under IRIX 6,
-                     DecStation 3100 and 5000 under Ultrix 4
+    Mips processors: SGI workstations and mainframes under IRIX 6
     HP PA-RISC processors: HP 9000/700 under HPUX 9 and NextStep
     PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 3.2,
                         PowerMacintosh under MkLinux, LinuxPPC, Rhapsody
