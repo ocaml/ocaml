@@ -79,13 +79,13 @@ let get_fields type_expr =
     fields
 
 let rec string_of_text t =
-  let rec iter t_ele = 
+  let rec iter t_ele =
     match t_ele with
       | Odoc_types.Raw s
       | Odoc_types.Code s
       | Odoc_types.CodePre s
       | Odoc_types.Verbatim s -> s
-      | Odoc_types.Bold t 
+      | Odoc_types.Bold t
       | Odoc_types.Italic t
       | Odoc_types.Center t
       | Odoc_types.Left t
@@ -121,7 +121,7 @@ let rec string_of_text t =
 	       (List.map (fun s -> Odoc_types.Code s) l)
 	    )
       |	Odoc_types.Index_list ->
-	  "" 
+	  ""
   in
   String.concat "" (List.map iter t)
 
@@ -158,7 +158,7 @@ let string_of_raised_exceptions l =
       )^"\n"
 
 let string_of_see (see_ref, t) =
-  let t_ref = 
+  let t_ref =
     match see_ref with
       Odoc_types.See_url s -> [ Odoc_types.Link (s, t) ]
     | Odoc_types.See_file s -> (Odoc_types.Code s) :: (Odoc_types.Raw " ") :: t
@@ -190,7 +190,7 @@ let string_of_info i =
     None -> ""
   | Some d -> Odoc_messages.deprecated^"! "^(string_of_text d)^"\n")^
   (match i.M.i_desc with
-    None -> "" 
+    None -> ""
   | Some d when d = [Odoc_types.Raw ""] -> ""
   | Some d -> (string_of_text d)^"\n"
   )^
@@ -205,14 +205,14 @@ let apply_opt f v_opt =
     None -> None
   | Some v -> Some (f v)
 
-let string_of_date ?(hour=true) d = 
+let string_of_date ?(hour=true) d =
   let add_0 s = if String.length s < 2 then "0"^s else s in
   let t = Unix.localtime d in
   (string_of_int (t.Unix.tm_year + 1900))^"-"^
   (add_0 (string_of_int (t.Unix.tm_mon + 1)))^"-"^
   (add_0 (string_of_int t.Unix.tm_mday))^
   (
-   if hour then 
+   if hour then
      " "^
      (add_0 (string_of_int t.Unix.tm_hour))^":"^
      (add_0 (string_of_int t.Unix.tm_min))
@@ -229,14 +229,14 @@ let rec text_list_concat sep l =
       t @ (sep :: (text_list_concat sep q))
 
 let rec text_no_title_no_list t =
-  let rec iter t_ele = 
+  let rec iter t_ele =
     match t_ele with
     | Odoc_types.Title (_,_,t) -> text_no_title_no_list t
     | Odoc_types.List l
-    | Odoc_types.Enum l -> 
+    | Odoc_types.Enum l ->
         (Odoc_types.Raw " ") ::
         (text_list_concat
-           (Odoc_types.Raw ", ") 
+           (Odoc_types.Raw ", ")
            (List.map text_no_title_no_list l))
     | Odoc_types.Raw _
     | Odoc_types.Code _
@@ -256,7 +256,7 @@ let rec text_no_title_no_list t =
     | Odoc_types.Superscript t -> [Odoc_types.Superscript (text_no_title_no_list t)]
     | Odoc_types.Subscript t -> [Odoc_types.Subscript (text_no_title_no_list t)]
     | Odoc_types.Module_list l ->
-	list_concat (Odoc_types.Raw ", ") 
+	list_concat (Odoc_types.Raw ", ")
 	  (List.map
 	     (fun s -> Odoc_types.Ref (s, Some Odoc_types.RK_module))
 	     l
@@ -271,7 +271,7 @@ let get_titles_in_text t =
     match ele with
     | Odoc_types.Title (n,lopt,t) -> l := (n,lopt,t) :: !l
     | Odoc_types.List l
-    | Odoc_types.Enum l -> List.iter iter_text l        
+    | Odoc_types.Enum l -> List.iter iter_text l
     | Odoc_types.Raw _
     | Odoc_types.Code _
     | Odoc_types.CodePre _
@@ -287,17 +287,17 @@ let get_titles_in_text t =
     | Odoc_types.Emphasize t -> iter_text t
     | Odoc_types.Latex s -> ()
     | Odoc_types.Link (_, t)
-    | Odoc_types.Superscript t 
+    | Odoc_types.Superscript t
     | Odoc_types.Subscript t  -> iter_text t
     | Odoc_types.Module_list _ -> ()
     | Odoc_types.Index_list -> ()
-  and iter_text te = 
+  and iter_text te =
     List.iter iter_ele te
   in
   iter_text t;
   List.rev !l
 
-let text_concat (sep : Odoc_types.text) l = 
+let text_concat (sep : Odoc_types.text) l =
   let rec iter = function
       [] -> []
     | [last] -> last
@@ -329,8 +329,8 @@ let rec first_sentence_text t =
     [] -> (false, [], [])
   | ele :: q ->
       let (stop, ele2, ele3_opt) = first_sentence_text_ele ele in
-      if stop then 
-        (stop, [ele2], 
+      if stop then
+        (stop, [ele2],
          match ele3_opt with None -> q | Some e -> e :: q)
       else
         let (stop2, q2, rest) = first_sentence_text q in
@@ -339,11 +339,11 @@ let rec first_sentence_text t =
 
 and first_sentence_text_ele text_ele =
   match text_ele with
-  | Odoc_types.Raw s -> 
+  | Odoc_types.Raw s ->
       let b, s2, s_after = get_before_dot s in
       (b, Odoc_types.Raw s2, Some (Odoc_types.Raw s_after))
-  | Odoc_types.Code _ 
-  | Odoc_types.CodePre _ 
+  | Odoc_types.Code _
+  | Odoc_types.CodePre _
   | Odoc_types.Verbatim _ -> (false, text_ele, None)
   | Odoc_types.Bold t ->
       let (b, t2, t3) = first_sentence_text t in
@@ -363,28 +363,28 @@ and first_sentence_text_ele text_ele =
   | Odoc_types.Emphasize t ->
       let (b, t2, t3) = first_sentence_text t in
       (b, Odoc_types.Emphasize t2, Some (Odoc_types.Emphasize t3))
-  | Odoc_types.Block t -> 
+  | Odoc_types.Block t ->
       let (b, t2, t3) = first_sentence_text t in
       (b, Odoc_types.Block t2, Some (Odoc_types.Block t3))
   | Odoc_types.Title (n, l_opt, t) ->
       let (b, t2, t3) = first_sentence_text t in
-      (b, 
-       Odoc_types.Title (n, l_opt, t2), 
+      (b,
+       Odoc_types.Title (n, l_opt, t2),
        Some (Odoc_types.Title (n, l_opt, t3)))
   | Odoc_types.Newline ->
       (true, Odoc_types.Raw "", Some Odoc_types.Newline)
   | Odoc_types.List _
   | Odoc_types.Enum _
   | Odoc_types.Latex _
-  | Odoc_types.Link _ 
-  | Odoc_types.Ref _ 
-  | Odoc_types.Superscript _ 
-  | Odoc_types.Subscript _ 
-  | Odoc_types.Module_list _ 
+  | Odoc_types.Link _
+  | Odoc_types.Ref _
+  | Odoc_types.Superscript _
+  | Odoc_types.Subscript _
+  | Odoc_types.Module_list _
   | Odoc_types.Index_list -> (false, text_ele, None)
 
-let first_sentence_of_text t = 
-  let (_,t2,_) = first_sentence_text t in 
+let first_sentence_of_text t =
+  let (_,t2,_) = first_sentence_text t in
   t2
 
 let first_sentence_and_rest_of_text t =
@@ -399,6 +399,25 @@ let remove_ending_newline s =
     match s.[len-1] with
       '\n' -> String.sub s 0 (len-1)
     | _ -> s
+
+let search_string_backward ~pat =
+  let lenp = String.length pat in
+  let rec iter s =
+    let len = String.length s in
+    match compare len lenp with
+      -1 -> raise Not_found
+    | 0 -> if pat = s then 0 else raise Not_found
+    | _ ->
+	let pos = len - lenp in
+	let s2 = String.sub s pos lenp in
+	if s2 = pat then
+	  pos
+	else
+	  iter (String.sub s 0 pos)
+  in
+  fun ~s -> iter s
+
+
 
 (*********************************************************)
 
@@ -436,11 +455,11 @@ let remove_option typ =
     | Types.Tvar
     | Types.Tunivar
     | Types.Tpoly _
-    | Types.Tarrow _ 
-    | Types.Ttuple _ 
+    | Types.Tarrow _
+    | Types.Ttuple _
     | Types.Tobject _
     | Types.Tfield _
-    | Types.Tnil 
+    | Types.Tnil
     | Types.Tvariant _ -> t
     | Types.Tlink t2
     | Types.Tsubst t2 -> iter t2.Types.desc
