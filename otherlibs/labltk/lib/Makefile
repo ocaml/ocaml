@@ -21,7 +21,7 @@ tk41.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo
 tk41.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
 	$(CAMLOPTLIBR) -o tk41.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX)
 
-labltktop : $(WIDGETOBJS) $(SUPPORT)
+labltktop : $(TOPDIR)/toplevel/toplevellib.cma $(WIDGETOBJS) $(SUPPORT)
 	$(LABLC) -custom -linkall -o labltktop -I ../support $(TKLINKOPT) \
 	       -I $(TOPDIR)/toplevel toplevellib.cma tk41.cma topmain.cmo
 

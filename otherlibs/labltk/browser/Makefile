@@ -27,7 +27,7 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 
 all: lablbrowser
 
-lablbrowser: jglib.cma $(OBJ)
+lablbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ)
 	$(LABLC) -custom -o lablbrowser $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma str.cma tk41.cma jglib.cma $(OBJ) \
