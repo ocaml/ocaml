@@ -27,6 +27,7 @@ let error_occurred = ref false
 
 let add_to_load_path dir =
   try
+    let dir = Misc.expand_directory Config.standard_library dir in
     let contents = Sys.readdir dir in
     load_path := !load_path @ [dir, contents]
   with Sys_error msg ->
