@@ -5,7 +5,7 @@
 (*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -213,8 +213,7 @@ let inheritance impl self_type env concr_meths loc parent =
         let overridings = Concr.inter cl_sig.cty_concr concr_meths in
         if not (Concr.is_empty overridings) then begin
           Location.print_warning loc
-            ("the following methods are overriden by the inherited class:\n  "
-               ^ (String.concat " " (Concr.elements overridings)))
+            (Warnings.Method_override (Concr.elements overridings))
         end
       end;
       let concr_meths = Concr.union cl_sig.cty_concr concr_meths in
@@ -358,9 +357,7 @@ let rec class_field self_type meths vars
              in
              if StringSet.mem lab inh_vals then
                Location.print_warning sparent.pcl_loc
-                 ("this definition of an instance variable " ^ lab ^
-                  " hides a previously\ndefined instance variable of \
-                    the same name");
+                 (Warnings.Hide_instance_variable lab);
              (val_env, met_env, par_env, (lab, id) :: inh_vars,
               StringSet.add lab inh_vals))
           cl_sig.cty_vars (val_env, met_env, par_env, [], inh_vals)
@@ -388,9 +385,7 @@ let rec class_field self_type meths vars
 
   | Pcf_val (lab, mut, sexp, loc) ->
       if StringSet.mem lab inh_vals then
-        Location.print_warning loc
-          ("this definition of an instance variable " ^ lab ^
-           " hides a previously\ndefined instance variable of the same name");
+        Location.print_warning loc (Warnings.Hide_instance_variable lab);
       let exp = type_exp val_env sexp in
       if not (Typecore.is_nonexpansive exp) then
         begin try

@@ -130,7 +130,7 @@ let rec transl_type env policy styp =
       let args = List.map (transl_type env policy) stl in
       let params = List.map (fun _ -> Ctype.newvar ()) args in
       let cstr = newty (Tconstr(path, params, ref Mnil)) in
-      Ctype.expand_head env cstr;
+      let _ = Ctype.expand_head env cstr in
       List.iter2
         (fun (sty, ty) ty' ->
            try unify env ty ty' with Unify trace ->
@@ -166,13 +166,9 @@ let rec transl_type env policy styp =
         (List.combine stl args) params;
       ty
   | Ptyp_alias(st, alias) ->
-      begin try
-        Tbl.find alias !type_variables;
+      if Tbl.mem alias !type_variables || Tbl.mem alias !aliases then
         raise(Error(styp.ptyp_loc, Bound_type_variable alias))
-      with Not_found -> try
-        Tbl.find alias !aliases;
-        raise(Error(styp.ptyp_loc, Bound_type_variable alias))
-      with Not_found ->
+      else
         let ty' = newvar () in
         aliases := Tbl.add alias ty' !aliases;
         let ty = transl_type env policy st in
@@ -180,7 +176,6 @@ let rec transl_type env policy styp =
           raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
         end;
         ty
-      end 
 
 and transl_fields env policy =
   function

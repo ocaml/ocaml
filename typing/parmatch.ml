@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -260,7 +260,7 @@ let check_partial loc casel =
   if match pss with
       []     -> if casel = [] then false else true
     | ps::_  -> satisfiable pss (List.map (fun _ -> omega) ps)
-  then Location.print_warning loc "this pattern-matching is not exhaustive"
+  then Location.print_warning loc Warnings.Partial_match
 
 let location_of_clause = function
     pat :: _ -> pat.pat_loc
@@ -278,6 +278,5 @@ let check_unused casel =
   List.iter
     (fun (pss, ((qs, _) as clause)) ->
       if not (satisfiable pss qs) then
-        Location.print_warning (location_of_clause qs)
-                                "this match case is unused.")
+        Location.print_warning (location_of_clause qs) Warnings.Unused_match)
     prefs

@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -826,11 +826,12 @@ and type_expect env sexp ty_expected =
 
 and type_statement env sexp =
     let exp = type_exp env sexp in
-    match (repr exp.exp_type).desc with
-      Tarrow(_, _) ->
-        Location.print_warning sexp.pexp_loc
-          "this function application is partial,\n\
-           maybe some arguments are missing.";
+    match (expand_head env exp.exp_type).desc with
+    | Tarrow(_, _) ->
+        Location.print_warning sexp.pexp_loc Warnings.Partial_application;
+        exp
+    | Tconstr (p, _, _) when not (Path.same p Predef.path_unit) ->
+        Location.print_warning sexp.pexp_loc Warnings.Statement_type;
         exp
     | _ -> exp
 

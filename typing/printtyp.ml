@@ -5,7 +5,7 @@
 (* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -72,15 +72,14 @@ let name_of_type t =
     names := (t, name) :: !names;
     name
 
-let rec list_removeq a =
-  function
-    [] ->
-      []
-  | (b, _) as e::l ->
-      if a == b then l else e::list_removeq a l
+let print_name_of_type t =
+  print_string (name_of_type t)
+
+let check_name_of_type t =
+  let _ = name_of_type t in ()
 
 let remove_name_of_type t =
-  names := list_removeq t !names
+  names := List.removeq t !names
 
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)
@@ -143,16 +142,15 @@ let reset () =
 
 let rec typexp sch prio0 ty =
   let ty = repr ty in
-  try
-    List.assq ty !names;
+  if List.mem_assq ty !names then begin
     if (ty.desc = Tvar) && sch && (ty.level <> generic_level)
     then print_string "'_"
     else print_string "'";
-    print_string (name_of_type ty)
-  with Not_found ->
+    print_name_of_type ty
+  end else begin
     let alias = List.memq ty !aliased in
     if alias then begin
-      name_of_type ty;
+      check_name_of_type ty;
       if prio0 >= 1 then begin open_box 1; print_string "(" end
       else open_box 0
     end;
@@ -162,7 +160,7 @@ let rec typexp sch prio0 ty =
         if (not sch) or ty.level = generic_level
         then print_string "'"
         else print_string "'_";
-        print_string(name_of_type ty)
+        print_name_of_type ty
     | Tarrow(ty1, ty2) ->
         if prio >= 2 then begin open_box 1; print_string "(" end
                      else open_box 0;
@@ -201,12 +199,13 @@ let rec typexp sch prio0 ty =
     if alias then begin
       print_string " as ";
       print_string "'";
-      print_string (name_of_type ty);
+      print_name_of_type ty;
       if not (opened_object ty) then
         remove_name_of_type ty;
       if prio0 >= 1 then print_string ")";
       close_box()
     end
+  end
 (*; print_string "["; print_int ty.level; print_string "]"*)
 
 and typlist sch prio sep = function
@@ -313,7 +312,7 @@ let rec type_decl kwd id decl =
 
   aliased := params @ !aliased;
   List.iter mark_loops params;
-  List.iter (fun x -> name_of_type x; ()) params;
+  List.iter check_name_of_type params;
   begin match decl.type_manifest with
     None    -> ()
   | Some ty -> mark_loops ty
@@ -469,7 +468,7 @@ let rec perform_class_type sch p params =
         print_space ();
         open_box 0;
         print_string "['";
-        print_string (name_of_type sty);
+        print_name_of_type sty;
         print_string "]";
         close_box ()
       end;
@@ -483,7 +482,7 @@ let rec perform_class_type sch p params =
         print_space ();
         open_box 0;
         print_string "('";
-        print_string (name_of_type sty);
+        print_name_of_type sty;
         print_string ")";
         close_box ()
       end;
@@ -529,9 +528,9 @@ let class_declaration id cl =
   let sty = self_type cl.cty_type in
   List.iter mark_loops params;
 
-  List.iter (fun x -> name_of_type x; ()) params;
+  List.iter check_name_of_type params;
   if List.memq sty !aliased then
-    (name_of_type sty; ());
+    check_name_of_type sty;
 
   open_box 2;
   print_string "class";
@@ -563,9 +562,9 @@ let cltype_declaration id cl =
   let sty = self_type cl.clty_type in
   List.iter mark_loops params;
 
-  List.iter (fun x -> name_of_type x; ()) params;
+  List.iter check_name_of_type params;
   if List.memq sty !aliased then
-    (name_of_type sty; ());
+    check_name_of_type sty;
 
   let sign = Ctype.signature_of_class_type cl.clty_type in
   let virt =
