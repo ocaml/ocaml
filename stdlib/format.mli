@@ -155,7 +155,7 @@ val open_vbox : int -> unit;;
            When a new line is printed in the box, [d] is added to the
            current indentation. *)
 val open_hvbox : int -> unit;;
-        (* [open_hovbox d] opens a new pretty-printing box
+        (* [open_hvbox d] opens a new pretty-printing box
            with offset [d]. 
            This box is ``horizontal-vertical'': it behaves as an
            ``horizontal'' box if it fits on a single line,
