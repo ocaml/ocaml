@@ -22,7 +22,7 @@ let update_hooks = ref []
 let add_update_hook f = update_hooks := f :: !update_hooks
 
 let exec_update_hooks () =
-    update_hooks := List.filter !update_hooks pred:
+    update_hooks := List.filter !update_hooks f:
       begin fun f ->
         try f (); true
         with Protocol.TkError _ -> false
@@ -35,7 +35,7 @@ let set_load_path l =
 let get_load_path () = !Config.load_path
 
 let renew_dirs box :var :dir =
-  Textvariable.set var to:dir;
+  Textvariable.set var dir;
   Listbox.delete box first:(`Num 0) last:`End;
   Listbox.insert box index:`End
     texts:(Useunix.get_directories_in_files path:dir
@@ -51,7 +51,7 @@ let add_to_path :dirs ?(:base="") box =
   let dirs =
     if base = "" then dirs else
     if dirs = [] then [base] else
-    List.map dirs fun:
+    List.map dirs f:
       begin function
           "." -> base 
         | ".." -> Filename.dirname base
@@ -59,13 +59,13 @@ let add_to_path :dirs ?(:base="") box =
       end
   in
   set_load_path
-    (dirs @ List.fold_left dirs acc:(get_load_path ())
-              fun:(fun :acc x -> List2.exclude item:x acc))
+    (dirs @ List.fold_left dirs init:(get_load_path ())
+              f:(fun acc x -> List2.exclude x acc))
 
 let remove_path box :dirs =
   set_load_path
-    (List.fold_left dirs acc:(get_load_path ())
-       fun:(fun :acc x -> List2.exclude item:x acc))
+    (List.fold_left dirs init:(get_load_path ())
+       f:(fun acc x -> List2.exclude x acc))
 
 (* main function *)
 
@@ -118,12 +118,12 @@ let f :dir =
   let add_paths _ =
     add_to_path pathbox base:!current_dir
       dirs:(List.map (Listbox.curselection dirbox)
-              fun:(fun x -> Listbox.get dirbox index:x));
+              f:(fun x -> Listbox.get dirbox index:x));
     Listbox.selection_clear dirbox first:(`Num 0) last:`End
   and remove_paths _ =
     remove_path pathbox
       dirs:(List.map (Listbox.curselection pathbox)
-              fun:(fun x -> Listbox.get pathbox index:x))
+              f:(fun x -> Listbox.get pathbox index:x))
   in
   bind dirbox events:[`KeyPressDetail "Insert"] action:add_paths;
   bind pathbox events:[`KeyPressDetail "Delete"] action:remove_paths;

@@ -46,14 +46,14 @@ module type S =
           (* The empty set. *)
     val is_empty: t -> bool
         (* Test whether a set is empty or not. *)
-    val mem: item:elt -> t -> bool
+    val mem: elt -> t -> bool
         (* [mem x s] tests whether [x] belongs to the set [s]. *)
-    val add: item:elt -> t -> t
+    val add: elt -> t -> t
         (* [add x s] returns a set containing all elements of [s],
            plus [x]. If [x] was already in [s], [s] is returned unchanged. *)
     val singleton: elt -> t
         (* [singleton x] returns the one-element set containing only [x]. *)
-    val remove: item:elt -> t -> t
+    val remove: elt -> t -> t
         (* [remove x s] returns a set containing all elements of [s],
            except [x]. If [x] was not in [s], [s] is returned unchanged. *)
     val union: t -> t -> t
@@ -69,11 +69,11 @@ module type S =
     val subset: t -> t -> bool
         (* [subset s1 s2] tests whether the set [s1] is a subset of
            the set [s2]. *)
-    val iter: fun:(elt -> unit) -> t -> unit
+    val iter: f:(elt -> unit) -> t -> unit
         (* [iter f s] applies [f] in turn to all elements of [s].
            The order in which the elements of [s] are presented to [f]
            is unspecified. *)
-    val fold: fun:(elt -> acc:'a -> 'a) -> t -> acc:'a -> 'a
+    val fold: f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
         (* [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
            where [x1 ... xN] are the elements of [s].
            The order in which elements of [s] are presented to [f] is

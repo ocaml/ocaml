@@ -23,7 +23,7 @@ let cCAMLtoTKtextIndex (i : textIndex) =
   let ppTextIndex (base, ml : textIndex) =
     match cCAMLtoTKtext_index base with
       TkToken ppbase ->
-        String.concat sep:"" (ppbase :: List.map fun:ppTextModifier ml)
+        String.concat sep:"" (ppbase :: List.map f:ppTextModifier ml)
     | _ -> assert false
   in
   TkToken (ppTextIndex i)

@@ -114,27 +114,28 @@ val group_end: int -> int
 
 (*** Replacement *)
 
-val global_replace: pat:regexp -> with:string -> string -> string
-        (* [global_replace regexp repl s] returns a string identical to [s],
+val global_replace: pat:regexp -> templ:string -> string -> string
+        (* [global_replace regexp templ s] returns a string identical to [s],
            except that all substrings of [s] that match [regexp] have been
-           replaced by [repl]. The replacement text [repl] can contain
+           replaced by [templ]. The replacement template [templ] can contain
            [\1], [\2], etc; these sequences will be replaced by the text
            matched by the corresponding group in the regular expression.
            [\0] stands for the text matched by the whole regular expression. *)
-val replace_first: pat:regexp -> with:string -> string -> string
+val replace_first: pat:regexp -> templ:string -> string -> string
         (* Same as [global_replace], except that only the first substring
            matching the regular expression is replaced. *)
 val global_substitute:
-          pat:regexp -> with:(string -> string) -> string -> string
+          pat:regexp -> subst:(string -> string) -> string -> string
         (* [global_substitute regexp subst s] returns a string identical
            to [s], except that all substrings of [s] that match [regexp]
            have been replaced by the result of function [subst]. The
            function [subst] is called once for each matching substring,
            and receives [s] (the whole text) as argument. *)
-val substitute_first: pat:regexp -> with:(string -> string) -> string -> string
+val substitute_first:
+          pat:regexp -> subst:(string -> string) -> string -> string
         (* Same as [global_substitute], except that only the first substring
            matching the regular expression is replaced. *)
-val replace_matched : string -> string -> string
+val replace_matched : templ:string -> string -> string
         (* [replace_matched repl s] returns the replacement text [repl]
            in which [\1], [\2], etc. have been replaced by the text
            matched by the corresponding groups in the most recent matching
@@ -175,16 +176,16 @@ val bounded_full_split: sep:regexp -> string -> int -> split_result list
 
 (*** Extracting substrings *)
 
-val string_before: string -> pos:int -> string
+val string_before: string -> int -> string
         (* [string_before s n] returns the substring of all characters of [s]
            that precede position [n] (excluding the character at
            position [n]). *)
-val string_after: string -> pos:int -> string
+val string_after: string -> int -> string
         (* [string_after s n] returns the substring of all characters of [s]
            that follow position [n] (including the character at
            position [n]). *)
-val first_chars: string -> pos:int -> string
+val first_chars: string -> len:int -> string
         (* [first_chars s n] returns the first [n] characters of [s].
            This is the same function as [string_before]. *)
-val last_chars: string -> pos:int -> string
+val last_chars: string -> len:int -> string
         (* [last_chars s n] returns the last [n] characters of [s]. *)

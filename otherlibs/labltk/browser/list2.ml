@@ -13,8 +13,8 @@
 
 (* $Id$ *)
 
-let exclude item:x l = List.filter l pred:((<>) x)
+let exclude x l = List.filter l f:((<>) x)
 
-let rec flat_map fun:f = function
+let rec flat_map :f = function
     [] -> []
-  | x :: l -> f x @ flat_map fun:f l
+  | x :: l -> f x @ flat_map :f l

@@ -25,7 +25,7 @@ and colors =
      "indianred4"; "saddlebrown"; "midnightblue"]
 
 let init_tags tw =
-  List.iter2 tags colors fun:
+  List.iter2 tags colors f:
   begin fun tag col ->
     Text.tag_configure tw :tag foreground:(`Color col)
   end;
@@ -38,7 +38,7 @@ let tag ?(:start=tstart) ?(:end=tend) tw =
   let text = Text.get tw :start :end in
   let buffer = Lexing.from_string text in
   List.iter tags
-    fun:(fun tag -> Text.tag_remove tw :start :end :tag);
+    f:(fun tag -> Text.tag_remove tw :start :end :tag);
   try
     while true do
     let tag =

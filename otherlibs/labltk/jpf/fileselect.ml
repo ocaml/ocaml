@@ -72,19 +72,19 @@ let dirget = regexp "^\([^\*?[]*/\)\(.*\)"
 
 let parse_filter src = 
   (* replace // by / *)
-  let s = global_replace pat:(regexp "/+") with:"/" src in
+  let s = global_replace pat:(regexp "/+") templ:"/" src in
   (* replace /./ by / *)
-  let s = global_replace pat:(regexp "/\./") with:"/" s in
+  let s = global_replace pat:(regexp "/\./") templ:"/" s in
   (* replace ????/../ by "" *)
   let s = global_replace s
       pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./") 
-      with:"" in
+      templ:"" in
   (* replace ????/..$ by "" *)
   let s = global_replace s
       pat:(regexp "\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$") 
-      with:"" in
+      templ:"" in
   (* replace ^/../../ by / *)
-  let s = global_replace pat:(regexp "^\(/\.\.\)+/") with:"/" s in
+  let s = global_replace pat:(regexp "^\(/\.\.\)+/") templ:"/" s in
   if string_match pat:dirget s pos:0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
@@ -112,11 +112,11 @@ let get_files_in_directory dir =
       
 let rec get_directories_in_files path =
   List.filter
-    pred:(fun x -> try (stat (path ^ x)).st_kind = S_DIR with _ -> false)
+    f:(fun x -> try (stat (path ^ x)).st_kind = S_DIR with _ -> false)
 
 let remove_directories path = 
   List.filter
-    pred:(fun x -> try (stat (path ^ x)).st_kind <> S_DIR with _ -> false)
+    f:(fun x -> try (stat (path ^ x)).st_kind <> S_DIR with _ -> false)
 
 (************************* a nice interface to listbox - from frx_listbox.ml *)
 
@@ -238,8 +238,8 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
       (* get matched file by subshell call. *)
       let matched_files = remove_directories dirname (ls dirname patternname) 
       in
-        Textvariable.set filter_var to:filter;
-        Textvariable.set selection_var to:(dirname ^ deffile); 
+        Textvariable.set filter_var filter;
+        Textvariable.set selection_var (dirname ^ deffile); 
         Listbox.delete directory_listbox first:(`Num 0) last:`End;
         Listbox.insert directory_listbox index:`End texts:directories;
         Listbox.delete filter_listbox first:(`Num 0) last:`End;
@@ -259,7 +259,7 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
     if sync then 
       begin
         selected_files := l;
-        Textvariable.set sync_var to:"1"
+        Textvariable.set sync_var "1"
       end
     else 
       begin
@@ -273,7 +273,7 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
       begin fun () -> 
         let files = 
           List.map (Listbox.curselection filter_listbox) 
-            fun:(fun x -> !current_dir ^ (Listbox.get filter_listbox index:x))
+            f:(fun x -> !current_dir ^ (Listbox.get filter_listbox index:x))
         in
         let files = if files = [] then [Textvariable.get selection_var] 
                                   else files in
@@ -294,7 +294,7 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
   let action _ = 
       let files = 
         List.map (Listbox.curselection filter_listbox)
-          fun:(fun x -> !current_dir ^ (Listbox.get filter_listbox index:x)) 
+          f:(fun x -> !current_dir ^ (Listbox.get filter_listbox index:x)) 
       in
         activate files () 
   in

@@ -47,7 +47,7 @@ type extern_flags =
   | Closures                            (* Send function closures *)
         (* The flags to the [Marshal.to_*] functions below. *)
 
-external to_channel: out_channel -> data:'a -> flags:extern_flags list -> unit
+external to_channel: out_channel -> 'a -> mode:extern_flags list -> unit
     = "output_value"
         (* [Marshal.to_channel chan v flags] writes the representation
            of [v] on channel [chan]. The [flags] argument is a
@@ -78,7 +78,7 @@ external to_channel: out_channel -> data:'a -> flags:extern_flags list -> unit
            at un-marshaling time, using an MD5 digest of the code
            transmitted along with the code position.) *)
 
-external to_string: data:'a -> flags:extern_flags list -> string
+external to_string: 'a -> mode:extern_flags list -> string
     = "output_value_to_string"
         (* [Marshal.to_string v flags] returns a string containing
            the representation of [v] as a sequence of bytes.
@@ -86,7 +86,7 @@ external to_string: data:'a -> flags:extern_flags list -> string
            [Marshal.to_channel]. *)
 
 val to_buffer: string -> pos:int -> len:int ->
-               data:'a -> flags:extern_flags list -> int
+               'a -> mode:extern_flags list -> int
         (* [Marshal.to_buffer buff ofs len v flags] marshals the value [v],
            storing its byte representation in the string [buff],
            starting at character number [ofs], and writing at most

@@ -52,11 +52,13 @@ val view_decl_menu :
     Longident.t ->
     kind:skind -> env:Env.t -> parent:text widget -> menu widget
 
-type fkind =
-    [ `Exp [`Expr|`Pat|`Const|`Val Path.t|`Var Path.t|`New Path.t]
+type fkind = [
+    `Exp of
+      [`Expr|`Pat|`Const|`Val of Path.t|`Var of Path.t|`New of Path.t]
         * Types.type_expr
-    | `Class Path.t * Types.class_type
-    | `Module Path.t * Types.module_type ]
+  | `Class of Path.t * Types.class_type
+  | `Module of Path.t * Types.module_type
+]
 exception Found_str of fkind * Env.t
 val search_pos_structure :
   pos:int -> Typedtree.structure_item list -> unit

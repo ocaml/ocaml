@@ -5,9 +5,9 @@ open Widget
 (* type *)
 type event = [
   | `ButtonPress (* also Button, but we omit it *)
-  | `ButtonPressDetail (int)
+  | `ButtonPressDetail of int
   | `ButtonRelease
-  | `ButtonReleaseDetail (int)
+  | `ButtonReleaseDetail of int
   | `Circulate
   | `ColorMap
   | `Configure
@@ -18,9 +18,9 @@ type event = [
   | `FocusOut
   | `Gravity
   | `KeyPress (* also Key, but we omit it *)
-  | `KeyPressDetail (string)      (* /usr/include/X11/keysymdef.h *)
+  | `KeyPressDetail of string      (* /usr/include/X11/keysymdef.h *)
   | `KeyRelease
-  | `KeyReleaseDetail (string)
+  | `KeyReleaseDetail of string
   | `Leave
   | `Map
   | `Motion
@@ -28,7 +28,7 @@ type event = [
   | `Reparent
   | `Unmap
   | `Visibility
-  | `Modified modifier list * event
+  | `Modified of modifier list * event
 ]
 
 and modifier = [
@@ -178,7 +178,7 @@ let wrapeventInfo f (what : eventField list) =
     ev_RootY = 0 } in
      function args ->
        let l = ref args in
-         List.iter fun:(function field ->
+         List.iter f:(function field ->
                     match !l with
                     | [] -> ()
                     | v :: rest -> filleventInfo ev v field; l := rest)

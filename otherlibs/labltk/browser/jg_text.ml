@@ -92,8 +92,8 @@ let search_string tw =
   Focus.set text;
   Jg_bind.return_invoke text button:search;
   Jg_bind.escape_destroy tl;
-  Textvariable.set direction to:"forward";
-  Textvariable.set mode to:"nocase";
+  Textvariable.set direction "forward";
+  Textvariable.set mode "nocase";
   pack [label] side:`Left;
   pack [text] side:`Right fill:`X expand:true;
   pack [back; forw] side:`Left;

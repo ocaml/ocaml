@@ -33,7 +33,7 @@ val hd : 'a list -> 'a
 val tl : 'a list -> 'a list
         (* Return the given list without its first element. Raise
            [Failure "tl"] if the list is empty. *)
-val nth : 'a list -> pos:int -> 'a
+val nth : 'a list -> int -> 'a
         (* Return the n-th element of the given list.
            The first element (head of the list) is at position 0.
            Raise [Failure "nth"] if the list is too short. *)
@@ -54,49 +54,49 @@ val flatten : 'a list list -> 'a list
 
 (** Iterators *)
 
-val iter : fun:('a -> unit) -> 'a list -> unit
+val iter : f:('a -> unit) -> 'a list -> unit
         (* [List.iter f [a1; ...; an]] applies function [f] in turn to
            [a1; ...; an]. It is equivalent to
            [begin f a1; f a2; ...; f an; () end]. *)
-val map : fun:('a -> 'b) -> 'a list -> 'b list
+val map : f:('a -> 'b) -> 'a list -> 'b list
         (* [List.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
            and builds the list [[f a1; ...; f an]]
            with the results returned by [f].  Not tail-recursive. *)
-val rev_map : fun:('a -> 'b) -> 'a list -> 'b list
+val rev_map : f:('a -> 'b) -> 'a list -> 'b list
         (* [List.rev_map f l] gives the same result as
            [List.rev (List.map f l)], but is tail-recursive and
            more efficient. *)
-val fold_left : fun:(acc:'a -> 'b -> 'a) -> acc:'a -> 'b list -> 'a
+val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
         (* [List.fold_left f a [b1; ...; bn]] is
            [f (... (f (f a b1) b2) ...) bn]. *)
-val fold_right : fun:('a -> acc:'b -> 'b) -> 'a list -> acc:'b -> 'b
+val fold_right : f:('a -> 'b -> 'b) -> 'a list -> init:'b -> 'b
         (* [List.fold_right f [a1; ...; an] b] is
            [f a1 (f a2 (... (f an b) ...))].  Not tail-recursive. *)
 
 (** Iterators on two lists *)
 
-val iter2 : fun:('a -> 'b -> unit) -> 'a list -> 'b list -> unit
+val iter2 : f:('a -> 'b -> unit) -> 'a list -> 'b list -> unit
         (* [List.iter2 f [a1; ...; an] [b1; ...; bn]] calls in turn
            [f a1 b1; ...; f an bn].
            Raise [Invalid_argument] if the two lists have
            different lengths. *)
-val map2 : fun:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
+val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
         (* [List.map2 f [a1; ...; an] [b1; ...; bn]] is
            [[f a1 b1; ...; f an bn]].
            Raise [Invalid_argument] if the two lists have
            different lengths.  Not tail-recursive. *)
-val rev_map2 : fun:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
+val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
         (* [List.rev_map2 f l] gives the same result as
            [List.rev (List.map2 f l)], but is tail-recursive and
            more efficient. *)
 val fold_left2 :
-        fun:(acc:'a -> 'b -> 'c -> 'a) -> acc:'a -> 'b list -> 'c list -> 'a
+        f:('a -> 'b -> 'c -> 'a) -> init:'a -> 'b list -> 'c list -> 'a
         (* [List.fold_left2 f a [b1; ...; bn] [c1; ...; cn]] is
            [f (... (f (f a b1 c1) b2 c2) ...) bn cn].
            Raise [Invalid_argument] if the two lists have
            different lengths. *)
 val fold_right2 :
-        fun:('a -> 'b -> acc:'c -> 'c) -> 'a list -> 'b list -> acc:'c -> 'c
+        f:('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> init:'c -> 'c
         (* [List.fold_right2 f [a1; ...; an] [b1; ...; bn] c] is
            [f a1 b1 (f a2 b2 (... (f an bn c) ...))].
            Raise [Invalid_argument] if the two lists have
@@ -104,42 +104,42 @@ val fold_right2 :
 
 (** List scanning *)
 
-val for_all : pred:('a -> bool) -> 'a list -> bool
+val for_all : f:('a -> bool) -> 'a list -> bool
         (* [for_all p [a1; ...; an]] checks if all elements of the list
            satisfy the predicate [p]. That is, it returns
            [(p a1) && (p a2) && ... && (p an)]. *)
-val exists : pred:('a -> bool) -> 'a list -> bool
+val exists : f:('a -> bool) -> 'a list -> bool
         (* [exists p [a1; ...; an]] checks if at least one element of
            the list satisfies the predicate [p]. That is, it returns
            [(p a1) || (p a2) || ... || (p an)]. *)
-val for_all2 : pred:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-val exists2 : pred:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+val for_all2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+val exists2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
         (* Same as [for_all] and [exists], but for a two-argument predicate.
            Raise [Invalid_argument] if the two lists have
            different lengths. *)
-val mem : item:'a -> 'a list -> bool
+val mem : 'a -> 'a list -> bool
         (* [mem a l] is true if and only if [a] is equal
            to an element of [l]. *)
-val memq : item:'a -> 'a list -> bool
+val memq : 'a -> 'a list -> bool
         (* Same as [mem], but uses physical equality instead of structural
            equality to compare list elements. *)
 
 (** List searching *)
 
-val find : pred:('a -> bool) -> 'a list -> 'a
+val find : f:('a -> bool) -> 'a list -> 'a
         (* [find p l] returns the first element of the list [l]
            that satisfies the predicate [p].
            Raise [Not_found] if there is no value that satisfies [p] in the
            list [l]. *)
 
-val filter : pred:('a -> bool) -> 'a list -> 'a list
-val find_all : pred:('a -> bool) -> 'a list -> 'a list
+val filter : f:('a -> bool) -> 'a list -> 'a list
+val find_all : f:('a -> bool) -> 'a list -> 'a list
         (* [filter p l] returns all the elements of the list [l]
            that satisfies the predicate [p].  The order of the elements
            in the input list is preserved.  [find_all] is another name
            for [filter]. *)
 
-val partition : pred:('a -> bool) -> 'a list -> 'a list * 'a list
+val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
         (* [partition p l] returns a pair of lists [(l1, l2)], where
            [l1] is the list of all the elements of [l] that
            satisfy the predicate [p], and [l2] is the list of all the
@@ -148,30 +148,30 @@ val partition : pred:('a -> bool) -> 'a list -> 'a list * 'a list
 
 (** Association lists *)
 
-val assoc : key:'a -> ('a * 'b) list -> 'b
+val assoc : 'a -> ('a * 'b) list -> 'b
         (* [assoc a l] returns the value associated with key [a] in the list of
            pairs [l]. That is,
              [assoc a [ ...; (a,b); ...] = b]
            if [(a,b)] is the leftmost binding of [a] in list [l].
            Raise [Not_found] if there is no value associated with [a] in the
            list [l]. *)
-val assq : key:'a -> ('a * 'b) list -> 'b
+val assq : 'a -> ('a * 'b) list -> 'b
         (* Same as [assoc], but uses physical equality instead of structural
            equality to compare keys. *)
 
-val mem_assoc : key:'a -> ('a * 'b) list -> bool
+val mem_assoc : 'a -> ('a * 'b) list -> bool
         (* Same as [assoc], but simply return true if a binding exists,
            and false if no bindings exist for the given key. *)
-val mem_assq : key:'a -> ('a * 'b) list -> bool
+val mem_assq : 'a -> ('a * 'b) list -> bool
         (* Same as [mem_assoc], but uses physical equality instead of
            structural equality to compare keys. *)
 
-val remove_assoc : key:'a -> ('a * 'b) list -> ('a * 'b) list
+val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
         (* [remove_assoc a l] returns the list of
            pairs [l] without the first pair with key [a], if any.
            Not tail-recursive. *)
 
-val remove_assq : key:'a -> ('a * 'b) list -> ('a * 'b) list
+val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
         (* Same as [remove_assq], but uses physical equality instead
            of structural equality to compare keys.  Not tail-recursive. *)
 

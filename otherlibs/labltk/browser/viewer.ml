@@ -24,17 +24,18 @@ open Searchpos
 open Searchid
 
 let list_modules :path =
-  List.fold_left path acc:[] fun:
-  begin fun :acc dir ->
+  List.fold_left path init:[] f:
+  begin fun modules dir ->
     let l = 
       List.filter (Useunix.get_files_in_directory dir)
-        pred:(fun x -> Filename.check_suffix x suff:".cmi") in
-    let l = List.map l fun:
+        f:(fun x -> Filename.check_suffix x ".cmi") in
+    let l = List.map l f:
     begin fun x ->
-      String.capitalize (Filename.chop_suffix x suff:".cmi")
+      String.capitalize (Filename.chop_suffix x ".cmi")
     end in
-    List.fold_left l :acc
-     fun:(fun :acc item -> if List.mem acc :item then acc else item :: acc)
+    List.fold_left l init:modules
+     f:(fun modules item ->
+          if List.mem item modules then modules else item :: modules)
   end
 
 let reset_modules box =
@@ -93,7 +94,7 @@ let choose_symbol :title :env ?:signature ?:path l =
       (fun (li1, _) (li2,_) ->
         string_of_longident li1 < string_of_longident li2)
   in
-  let nl = List.map l fun:
+  let nl = List.map l f:
     begin fun (li, k) ->
       string_of_longident li ^ " (" ^ string_of_kind k ^ ")"
     end in
@@ -106,7 +107,7 @@ let choose_symbol :title :env ?:signature ?:path l =
   if List.length nl > 9 then ignore (Jg_multibox.add_scrollbar box);
   Jg_multibox.add_completion box action:
     begin fun pos ->
-      let li, k = List.nth l :pos in
+      let li, k = List.nth l pos in
       let path =
         match path, li with
           None, Ldot (lip, _) ->
@@ -177,7 +178,7 @@ let search_symbol () =
 
   Focus.set ew;
   Jg_bind.return_invoke ew button:search;
-  Textvariable.set which to:!search_which;
+  Textvariable.set which !search_which;
   pack [itself; extype; iotype] side:`Left anchor:`W;
   pack [search; ok] side:`Left fill:`X expand:true;
   pack [coe ew; coe choice; coe buttons]
@@ -217,7 +218,7 @@ let view_defined modlid :env =
 
 let close_all_views () =
     List.iter !top_widgets
-      fun:(fun tl -> try destroy tl with Protocol.TkError _ -> ());
+      f:(fun tl -> try destroy tl with Protocol.TkError _ -> ());
     top_widgets := []
 
 
@@ -239,14 +240,15 @@ let start_shell () =
     Jg_entry.create entries command:(fun _ -> Button.invoke ok)
   and e2 =
     Jg_entry.create entries command:(fun _ -> Button.invoke ok)
-  and names = List.map fun:fst (Shell.get_all ()) in
+  and names = List.map f:fst (Shell.get_all ()) in
   Entry.insert e1 index:`End text:!default_shell;
-  while List.mem names item:("Shell #" ^ string_of_int !shell_counter) do
+  let shell_name () = "Shell #" ^ string_of_int !shell_counter in
+  while List.mem (shell_name ()) names do
     incr shell_counter
   done;
-  Entry.insert e2 index:`End text:("Shell #" ^ string_of_int !shell_counter);
+  Entry.insert e2 index:`End text:(shell_name ());
   Button.configure ok command:(fun () ->
-      if not (List.mem names item:(Entry.get e2)) then begin
+      if not (List.mem (Entry.get e2) names) then begin
         default_shell := Entry.get e1;
         Shell.f prog:!default_shell title:(Entry.get e2);
         destroy tl

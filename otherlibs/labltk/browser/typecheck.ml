@@ -34,7 +34,7 @@ let f txt =
   txt.psignature <- [];
   try
 
-    if Filename.check_suffix txt.name suff:".mli" then
+    if Filename.check_suffix txt.name ".mli" then
     let psign = Parse.interface (Lexing.from_string text) in
     txt.psignature <- psign;
     txt.signature <- Typemod.transl_signature !env psign
@@ -42,7 +42,7 @@ let f txt =
     else (* others are interpreted as .ml *)
 
     let psl = Parse.use_file (Lexing.from_string text) in
-    List.iter psl fun:
+    List.iter psl f:
     begin function
       Ptop_def pstr ->
         let str, sign, env' = Typemod.type_structure !env pstr in

@@ -22,7 +22,7 @@ type 'a t;;
            empty if the object was erased by the GC.
          *)
 
-val create : len:int -> 'a t;;
+val create : int -> 'a t;;
         (* [Weak.create n] returns a new weak array of length [n].
            All the pointers are initially empty.
          *)
@@ -30,20 +30,20 @@ val length : 'a t -> int;;
         (* [Weak.length ar] returns the length (number of elements) of
            [ar].
          *)
-val set : 'a t -> pos:int -> 'a option -> unit;;
+val set : 'a t -> int -> 'a option -> unit;;
         (* [Weak.set ar n (Some el)] sets the [n]th cell of [ar] to be a
            (full) pointer to [el]; [Weak.set ar n None] sets the [n]th
            cell of [ar] to empty.
            Raise [Invalid_argument "Weak.set"] if [n] is not in the range
            0 to [Weak.length a - 1].
          *)
-val get : 'a t -> pos:int -> 'a option;;
+val get : 'a t -> int -> 'a option;;
         (* [Weak.get ar n] returns None if the [n]th cell of [ar] is
            empty, [Some x] (where [x] is the object) if it is full.
            Raise [Invalid_argument "Weak.get"] if [n] is not in the range
            0 to [Weak.length a - 1].
          *)
-val check: 'a t -> pos:int -> bool;;
+val check: 'a t -> int -> bool;;
         (* [Weak.check ar n] returns [true] if the [n]th cell of [ar] is
            full, [false] if it is empty.  Note that even if [Weak.check ar n]
            returns [true], a subsequent [Weak.get ar n] can return [None].

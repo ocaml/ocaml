@@ -32,10 +32,10 @@ val is_implicit : string -> bool
            with an explicit reference to the current directory ([./] or
            [../] in Unix), [false] if it starts with an explicit reference
            to the root directory or the current directory. *)
-val check_suffix : string -> suff:string -> bool
+val check_suffix : string -> string -> bool
         (* [check_suffix name suff] returns [true] if the filename [name]
            ends with the suffix [suff]. *)
-val chop_suffix : string -> suff:string -> string
+val chop_suffix : string -> string -> string
         (* [chop_suffix name suff] removes the suffix [suff] from
            the filename [name]. The behavior is undefined if [name] does not
            end with the suffix [suff]. *)

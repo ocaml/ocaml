@@ -13,8 +13,8 @@
 
 (* $Id$ *)
 
-let rec gen_list fun:f :len =
-  if len = 0 then [] else f () :: gen_list fun:f len:(len - 1)
+let rec gen_list f:f :len =
+  if len = 0 then [] else f () :: gen_list f:f len:(len - 1)
 
 let rec make_list :len :fill =
   if len = 0 then [] else fill :: make_list len:(len - 1) :fill
@@ -54,7 +54,7 @@ let rec split l :len =
   if l = [] then make_list :len fill:[] else
   let (cars,r) = first l :len in
   let cdrs = split r :len in
-  List.map2 cars cdrs fun:(fun a l -> a::l)
+  List.map2 cars cdrs f:(fun a l -> a::l)
   
 
 open Tk
@@ -68,7 +68,7 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
       match maxheight with None -> height
       | Some max -> min max height
     in
-    gen_list len:cols fun:
+    gen_list len:cols f:
       begin fun () ->
         Listbox.create parent :height ?:width
           highlightthickness:0
@@ -86,9 +86,9 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
        if n < length then n else length - 1;
     (* Activate it, to keep consistent with Up/Down.
        You have to be in Extended or Browse mode *)
-    let box = List.nth boxes pos:(current mod cols)
+    let box = List.nth boxes (current mod cols)
     and index = `Num (current / cols) in
-    List.iter boxes fun:
+    List.iter boxes f:
       begin fun box ->
         Listbox.selection_clear box first:(`Num 0) last:`End;
         Listbox.selection_anchor box :index;
@@ -98,10 +98,10 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
     if aligntop then Listbox.yview_index box :index
     else Listbox.see box :index;
     let (first,last) = Listbox.yview_get box in
-    List.iter boxes fun:(Listbox.yview scroll:(`Moveto first))
+    List.iter boxes f:(Listbox.yview scroll:(`Moveto first))
   method init =
     let textl = split len:cols texts in
-    List.iter2 boxes textl fun:
+    List.iter2 boxes textl f:
       begin fun box texts ->
         Jg_bind.enter_focus box;
         Listbox.insert box :texts index:`End
@@ -123,14 +123,14 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
         "Next", (fun n -> n + current_height () * cols);
         "Home", (fun _ -> 0);
         "End", (fun _ -> List.length texts) ]
-      fun:begin fun (key,f) ->
+      f:begin fun (key,f) ->
         self#bind_kbd events:[`KeyPressDetail key]
           action:(fun _ index:n -> self#recenter (f n); break ())
       end;
     self#recenter 0
   method bind_mouse :events :action =
     let i = ref 0 in
-    List.iter boxes fun:
+    List.iter boxes f:
       begin fun box ->
         let b = !i in
         bind box :events breakable:true fields:[`MouseX;`MouseY]
@@ -141,7 +141,7 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
       end
   method bind_kbd :events :action =
     let i = ref 0 in
-    List.iter boxes fun:
+    List.iter boxes f:
       begin fun box ->
         let b = !i in
         bind box :events breakable:true fields:[`Char]
@@ -156,9 +156,9 @@ let add_scrollbar (box : c) =
   let boxes = box#boxes in
   let sb =
     Scrollbar.create (box#parent)
-      command:(fun :scroll -> List.iter boxes fun:(Listbox.yview :scroll)) in
+      command:(fun :scroll -> List.iter boxes f:(Listbox.yview :scroll)) in
   List.iter boxes
-    fun:(fun lb -> Listbox.configure lb yscrollcommand:(Scrollbar.set sb));
+    f:(fun lb -> Listbox.configure lb yscrollcommand:(Scrollbar.set sb));
   pack [sb] before:(List.hd boxes) side:`Right fill:`Y;
   sb
 

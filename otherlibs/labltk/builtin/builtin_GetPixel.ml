@@ -1,11 +1,11 @@
 (* Tk_GetPixels emulation *)
 (* type *)
 type units = [
-  | `Pix int
-  | `Cm float
-  | `In float
-  | `Mm float
-  | `Pt float
+  | `Pix of int
+  | `Cm of float
+  | `In of float
+  | `Mm of float
+  | `Pt of float
 ]
 (* /type *)
 

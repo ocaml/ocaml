@@ -10,8 +10,8 @@ type textTag = string
 
 (* type *)
 type textModifier = [
-  | `Char(int)          (* tk keyword: +/- Xchars *)
-  | `Line(int)          (* tk keyword: +/- Xlines *)
+  | `Char of int                (* tk keyword: +/- Xchars *)
+  | `Line of int                (* tk keyword: +/- Xlines *)
   | `Linestart                  (* tk keyword: linestart *)
   | `Lineend                    (* tk keyword: lineend *)
   | `Wordstart                  (* tk keyword: wordstart *)

@@ -1,7 +1,7 @@
 (* type *)
 type bindings = [
-  | `Tag(string)                (* tk option: <string> *)
-  | `Widget(any widget)         (* tk option: <widget> *)
+  | `Tag of string                (* tk option: <string> *)
+  | `Widget of any widget         (* tk option: <widget> *)
 ]
 (* /type *)
 

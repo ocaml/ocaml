@@ -28,14 +28,14 @@ let compiler_preferences () =
   let mk_chkbutton :text :ref :invert =
     let variable = Textvariable.create on:tl () in
     if (if invert then not !ref else !ref) then
-      Textvariable.set variable to:"1";
+      Textvariable.set variable "1";
     Checkbutton.create tl :text :variable,
     (fun () ->
       ref := Textvariable.get variable = (if invert then "0" else "1"))
   in
   let chkbuttons, setflags = List.split
       (List.map
-         fun:(fun (text, ref, invert) -> mk_chkbutton :text :ref :invert)
+         f:(fun (text, ref, invert) -> mk_chkbutton :text :ref :invert)
          [ "No pervasives", Clflags.nopervasives, false;
            "No warnings", Typecheck.nowarnings, false;
            "Modern", Clflags.classic, true;
@@ -45,7 +45,7 @@ let compiler_preferences () =
   let buttons = Frame.create tl in
   let ok = Button.create buttons text:"Ok" padx:20 command:
       begin fun () ->
-        List.iter fun:(fun f -> f ()) setflags;
+        List.iter f:(fun f -> f ()) setflags;
         destroy tl
       end
   and cancel = Jg_button.create_destroyer tl parent:buttons text:"Cancel"
@@ -54,9 +54,9 @@ let compiler_preferences () =
   pack [ok;cancel] side:`Left fill:`X expand:true;
   pack [buttons] side:`Bottom fill:`X
 
-let rec exclude key:txt = function
+let rec exclude txt = function
     [] -> []
-  | x :: l -> if txt.number = x.number then l else x :: exclude key:txt l
+  | x :: l -> if txt.number = x.number then l else x :: exclude txt l
 
 let goto_line tw =
   let tl = Jg_toplevel.titled "Go to" in
@@ -85,7 +85,7 @@ let goto_line tw =
   and cancel = Jg_button.create_destroyer tl parent:buttons text:"Cancel" in
 
   Focus.set il;
-  List.iter [il; ic] fun:
+  List.iter [il; ic] f:
   begin fun w ->
     Jg_bind.enter_focus w;
     Jg_bind.return_invoke w button:ok
@@ -111,12 +111,12 @@ let select_shell txt =
       begin fun () ->
         try
           let name = Listbox.get box index:`Active in
-          txt.shell <- Some (name, List.assoc key:name shells);
+          txt.shell <- Some (name, List.assoc name shells);
           destroy tl
         with Not_found -> txt.shell <- None; destroy tl
       end
   in
-  Listbox.insert box index:`End texts:(List.map fun:fst shells);
+  Listbox.insert box index:`End texts:(List.map f:fst shells);
   Listbox.configure box height:(List.length shells);
   bind box events:[`KeyPressDetail"Return"] breakable:true
     action:(fun _ -> Button.invoke ok; break ());
@@ -166,7 +166,7 @@ let send_phrase txt =
           then begin
             after := true;
             let anon, real =
-              List.partition !block_start pred:(fun x -> x = -1) in
+              List.partition !block_start f:(fun x -> x = -1) in
             block_start := anon;
             if real <> [] then start := List.hd real;
           end;
@@ -264,7 +264,7 @@ let indent_line =
       let width_previous = string_width previous in
       if  width_previous <= width then 2 else width_previous - width
     in
-    Text.insert tw index:(ins,[]) text:(String.make len:indent ' ')
+    Text.insert tw index:(ins,[]) text:(String.make indent ' ')
 
 (* The editor class *)
 
@@ -289,7 +289,7 @@ class editor :top :menus = object (self)
     List.iter
       (Sort.list windows order:
          (fun w1 w2 -> Filename.basename w1.name < Filename.basename w2.name))
-      fun:
+      f:
       begin fun txt ->
         Menu.add_radiobutton window_menu#menu
           label:(Filename.basename txt.name)
@@ -300,12 +300,12 @@ class editor :top :menus = object (self)
   method set_edit txt  =
     if windows <> [] then
       Pack.forget [(List.hd windows).frame];
-    windows <- txt :: exclude key:txt windows;
+    windows <- txt :: exclude txt windows;
     self#reset_window_menu;
     current_tw <- txt.tw;
     Checkbutton.configure label text:(Filename.basename txt.name)
       variable:txt.modified;
-    Textvariable.set vwindow to:txt.number;
+    Textvariable.set vwindow txt.number;
     Text.yview txt.tw scroll:(`Page 0);
     pack [txt.frame] fill:`Both expand:true side:`Bottom
 
@@ -327,13 +327,13 @@ class editor :top :menus = object (self)
       action:(fun ev ->
         if ev.ev_Char <> "" &
           (ev.ev_Char.[0] >= ' ' or
-           List.mem item:ev.ev_Char.[0]
-             (List.map fun:control ['d'; 'h'; 'i'; 'k'; 'o'; 't'; 'w'; 'y']))
-        then Textvariable.set txt.modified to:"modified");
+           List.mem ev.ev_Char.[0]
+             (List.map f:control ['d'; 'h'; 'i'; 'k'; 'o'; 't'; 'w'; 'y']))
+        then Textvariable.set txt.modified "modified");
     bind tw events:[`KeyPressDetail"Tab"] breakable:true
       action:(fun _ ->
         indent_line tw;
-        Textvariable.set txt.modified to:"modified";
+        Textvariable.set txt.modified "modified";
         break ());
     bind tw events:[`Modified([`Control],`KeyPressDetail"k")]
       action:(fun _ ->
@@ -352,7 +352,7 @@ class editor :top :menus = object (self)
     bind tw events:[`Motion] action:(fun _ -> Focus.set tw);
     bind tw events:[`ButtonPressDetail 2]
       action:(fun _ ->
-        Textvariable.set txt.modified to:"modified";
+        Textvariable.set txt.modified "modified";
         Lexical.tag txt.tw start:(`Mark"insert", [`Linestart])
           end:(`Mark"insert", [`Lineend]));
     bind tw events:[`Modified([`Double], `ButtonPressDetail 1)]
@@ -370,7 +370,7 @@ class editor :top :menus = object (self)
   method clear_errors () =
     Text.tag_remove current_tw tag:"error" start:tstart end:tend;
     List.iter error_messages
-      fun:(fun tl -> try destroy tl with Protocol.TkError _ -> ());
+      f:(fun tl -> try destroy tl with Protocol.TkError _ -> ());
     error_messages <- []
 
   method typecheck () =
@@ -397,7 +397,7 @@ class editor :top :menus = object (self)
         end;
       let file = open_out name in
       let text = Text.get txt.tw start:tstart end:(tposend 1) in
-      output_string text to:file;
+      output_string file text;
       close_out file;
       Checkbutton.configure label text:(Filename.basename name);
       Checkbutton.deselect label;
@@ -411,7 +411,7 @@ class editor :top :menus = object (self)
     try
       let index =
         try
-          self#set_edit (List.find windows pred:(fun x -> x.name = name));
+          self#set_edit (List.find windows f:(fun x -> x.name = name));
           let txt = List.hd windows in
           if Textvariable.get txt.modified = "modified" then
             begin match Jg_message.ask master:top title:"Open"
@@ -428,7 +428,7 @@ class editor :top :menus = object (self)
       let file = open_in name
       and tw = current_tw
       and len = ref 0
-      and buf = String.create len:4096 in
+      and buf = String.create 4096 in
       Text.delete tw start:tstart end:tend;
       while
         len := input file :buf pos:0 len:4096;
@@ -439,8 +439,8 @@ class editor :top :menus = object (self)
       close_in file;
       Text.mark_set tw mark:"insert" :index;
       Text.see tw :index;
-      if Filename.check_suffix name suff:".ml" or
-        Filename.check_suffix name suff:".mli"
+      if Filename.check_suffix name ".ml" or
+        Filename.check_suffix name ".mli"
       then begin
         if !lex_on_load then self#lex ();
         if !type_on_load then self#typecheck ()
@@ -457,7 +457,7 @@ class editor :top :menus = object (self)
         | `no -> ()
         | `cancel -> raise Exit
         end;
-      windows <- exclude key:txt windows;
+      windows <- exclude txt windows;
       if windows = [] then
         self#new_window (current_dir ^ "/untitled")
       else self#set_edit (List.hd windows);
@@ -474,7 +474,7 @@ class editor :top :menus = object (self)
 
   method quit () =
     try
-      List.iter windows fun:
+      List.iter windows f:
         begin fun txt ->
           if Textvariable.get txt.modified = "modified" then
             match Jg_message.ask master:top title:"Quit"
@@ -508,7 +508,7 @@ class editor :top :menus = object (self)
         [`Alt], "x", (fun () -> send_phrase (List.hd windows));
         [`Alt], "l", self#lex;
         [`Alt], "t", self#typecheck ]
-      fun:begin fun (modi,key,act) ->
+      f:begin fun (modi,key,act) ->
         bind top events:[`Modified(modi, `KeyPressDetail key)] breakable:true
           action:(fun _ -> act (); break ())
       end;
@@ -585,7 +585,7 @@ class editor :top :menus = object (self)
       command:Viewer.close_all_views;
 
     (* pack everything *)
-    pack (List.map fun:(fun m -> coe m#button)
+    pack (List.map f:(fun m -> coe m#button)
             [file_menu; edit_menu; compiler_menu; module_menu; window_menu]
           @ [coe label])
       side:`Left ipadx:5 anchor:`W;

@@ -5,51 +5,51 @@
 *)
 
 type canvas_index = [
-  | `Num(int)           
-  | `End                        
-  | `Insert             
-  | `Selfirst           
-  | `Sellast            
-  | `Atxy(int * int)         
+  | `Num of int
+  | `End
+  | `Insert
+  | `Selfirst
+  | `Sellast
+  | `Atxy of int * int
 ]
 
 type entry_index = [
-  | `Num(int)           
+  | `Num of int
   | `End
-  | `Insert             
-  | `Selfirst           
-  | `Sellast            
-  | `At(int)
+  | `Insert
+  | `Selfirst
+  | `Sellast
+  | `At of int
   | `Anchor
 ]
 
 type listbox_index = [
-  | `Num(int)           
+  | `Num of int
   | `Active
   | `Anchor
   | `End
-  | `Atxy(int * int)
+  | `Atxy of int * int
 ]
 
 type menu_index = [
-  | `Num(int)           
+  | `Num of int
   | `Active
   | `End
-  | `Last                       
-  | `None               
-  | `At(int)
-  | `Pattern(string)
+  | `Last
+  | `None
+  | `At of int
+  | `Pattern of string
 ]
 
 type text_index = [
-  | `Linechar(int * int)   
-  | `Atxy(int * int)
+  | `Linechar of int * int
+  | `Atxy of int * int
   | `End
-  | `Mark(string)
-  | `Tagfirst(string)
-  | `Taglast(string)
-  | `Window(any widget)
-  | `Image(string) 
+  | `Mark of string
+  | `Tagfirst of string
+  | `Taglast of string
+  | `Window of any widget
+  | `Image of string
 ]
 
 type linechar_index = int * int

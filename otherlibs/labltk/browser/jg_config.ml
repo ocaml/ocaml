@@ -26,7 +26,7 @@ let init () =
     if font = "" then variable else font
   in
   List.iter ["Button"; "Label"; "Menu"; "Menubutton"; "Radiobutton"]
-    fun:(fun cl -> Option.add path:("*" ^ cl ^ ".font") font);
+    f:(fun cl -> Option.add path:("*" ^ cl ^ ".font") font);
   Option.add path:"*Menu.tearOff" "0" priority:`StartupFile;
   Option.add path:"*Button.padY" "0" priority:`StartupFile;
   Option.add path:"*Text.highlightThickness" "0" priority:`StartupFile;

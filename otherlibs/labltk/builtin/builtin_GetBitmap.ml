@@ -1,8 +1,8 @@
 (* Tk_GetBitmap emulation *)
 (* type *)
 type bitmap = [
-  | `File string                 (* path of file *)
-  | `Predefined string           (* bitmap  name *)
+  | `File of string                 (* path of file *)
+  | `Predefined of string           (* bitmap  name *)
 ]
 (* /type *)
 

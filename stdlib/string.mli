@@ -31,12 +31,12 @@ external set : string -> int -> char -> unit = "%string_safe_set"
            0 to [(String.length s - 1)].
            You can also write [s.[n] <- c] instead of [String.set s n c]. *)
 
-external create : len:int -> string = "create_string"
+external create : int -> string = "create_string"
         (* [String.create n] returns a fresh string of length [n].
            The string initially contains arbitrary characters.
            Raise [Invalid_argument] if [n <= 0] or [n > Sys.max_string_length].
            *)
-val make : len:int -> char -> string
+val make : int -> char -> string
         (* [String.make n c] returns a fresh string of length [n],
            filled with the character [c].
            Raise [Invalid_argument] if [n <= 0] or [n > Sys.max_string_length].
@@ -76,31 +76,31 @@ val escaped: string -> string
            by escape sequences, following the lexical conventions of
            Objective Caml. *)
 
-val index: string -> char:char -> int
+val index: string -> char -> int
         (* [String.index s c] returns the position of the leftmost
            occurrence of character [c] in string [s].
            Raise [Not_found] if [c] does not occur in [s]. *)
-val rindex: string -> char:char -> int
+val rindex: string -> char -> int
         (* [String.rindex s c] returns the position of the rightmost
            occurrence of character [c] in string [s].
            Raise [Not_found] if [c] does not occur in [s]. *)
-val index_from: string -> pos:int -> char:char -> int
-val rindex_from: string -> pos:int -> char:char -> int
+val index_from: string -> int -> char -> int
+val rindex_from: string -> int -> char -> int
         (* Same as [String.index] and [String.rindex], but start
            searching at the character position given as second argument.
            [String.index s c] is equivalent to [String.index_from s 0 c],
            and [String.rindex s c] to
            [String.rindex_from s (String.length s - 1) c]. *)
 
-val contains : string -> char:char -> bool
+val contains : string -> char -> bool
         (* [String.contains s c] tests if character [c]
            appears in the string [s]. *)
-val contains_from : string -> pos:int -> char:char -> bool
+val contains_from : string -> int -> char -> bool
         (* [String.contains_from s start c] tests if character [c]
            appears in the substring of [s] starting from [start] to the end
            of [s].
            Raise [Invalid_argument] if [start] is not a valid index of [s]. *)
-val rcontains_from : string -> pos:int -> char:char -> bool
+val rcontains_from : string -> int -> char -> bool
         (* [String.rcontains_from s stop c] tests if character [c]
            appears in the substring of [s] starting from the beginning
            of [s] to index [stop].

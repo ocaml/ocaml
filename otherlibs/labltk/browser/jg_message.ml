@@ -87,7 +87,7 @@ let ask :title ?:master text =
   and cancel = Jg_button.create_destroyer tl parent:fw text:"Cancel"
   in
   bind tl events:[`Destroy] extend:true
-    action:(fun _ -> Textvariable.set sync to:"1");
+    action:(fun _ -> Textvariable.set sync "1");
   pack [accept; refuse; cancel] side:`Left fill:`X expand:true;
   pack [mw] side:`Top fill:`Both;
   pack [fw] side:`Bottom fill:`X expand:true;

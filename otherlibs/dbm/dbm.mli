@@ -35,7 +35,7 @@ val opendbm : string -> mode:open_flag list -> perm:int -> t
            files, if the database is created. *)
 external close : t -> unit = "caml_dbm_close"
         (* Close the given descriptor. *)
-external find : t -> key:string -> string = "caml_dbm_fetch"
+external find : t -> string -> string = "caml_dbm_fetch"
         (* [find db key] returns the data associated with the given
            [key] in the database opened for the descriptor [db].
            Raise [Not_found] if the [key] has no associated data. *)
@@ -48,7 +48,7 @@ external replace : t -> key:string -> data:string -> unit = "caml_dbm_replace"
            the database [db]. If the database already contains data
            associated with [key], that data is discarded and silently
            replaced by the new [data]. *)
-external remove : t -> key:string -> unit = "caml_dbm_delete"
+external remove : t -> string -> unit = "caml_dbm_delete"
         (* [remove db key data] removes the data associated with [key]
            in [db]. If [key] has no associated data, raise
            [Dbm_error "dbm_delete"]. *)
@@ -58,7 +58,7 @@ external nextkey : t -> string = "caml_dbm_nextkey"
            [firstkey db] returns the first key, and repeated calls
            to [nextkey db] return the remaining keys. [Not_found] is raised
            when all keys have been enumerated. *)
-val iter : fun:(key:string -> data:string -> 'a) -> t -> unit
+val iter : f:(key:string -> data:string -> 'a) -> t -> unit
         (* [iter f db] applies [f] to each ([key], [data]) pair in
            the database [db]. [f] receives [key] as first argument
            and [data] as second argument. *)

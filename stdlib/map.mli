@@ -48,31 +48,31 @@ module type S =
         (* [add x y m] returns a map containing the same bindings as
            [m], plus a binding of [x] to [y]. If [x] was already bound
            in [m], its previous binding disappears. *)
-    val find: key:key -> 'a t -> 'a
+    val find: key -> 'a t -> 'a
         (* [find x m] returns the current binding of [x] in [m],
            or raises [Not_found] if no such binding exists. *)
-    val remove: key:key -> 'a t -> 'a t
+    val remove: key -> 'a t -> 'a t
         (* [remove x m] returns a map containing the same bindings as
            [m], except for [x] which is unbound in the returned map. *)
-    val mem:  key:key -> 'a t -> bool
+    val mem:  key -> 'a t -> bool
         (* [mem x m] returns [true] if [m] contains a binding for [m],
            and [false] otherwise. *)
-    val iter: fun:(key:key -> data:'a -> unit) -> 'a t -> unit
+    val iter: f:(key:key -> data:'a -> unit) -> 'a t -> unit
         (* [iter f m] applies [f] to all bindings in map [m].
            [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
            [f] is unspecified. Only current bindings are presented to [f]:
            bindings hidden by more recent bindings are not passed to [f]. *)
-    val map: fun:('a -> 'b) -> 'a t -> 'b t
+    val map: f:('a -> 'b) -> 'a t -> 'b t
         (* [map f m] returns a map with same domain as [m], where the
            associated value [a] of all bindings of [m] has been
            replaced by the result of the application of [f] to [a].
            The order in which the associated values are passed to [f]
            is unspecified. *)
-    val mapi: fun:(key:key -> data:'a -> 'b) -> 'a t -> 'b t
+    val mapi: f:(key -> 'a -> 'b) -> 'a t -> 'b t
         (* Same as [map], but the function receives as arguments both the
            key and the associated value for each binding of the map. *)
-    val fold: fun:(key:key -> data:'a -> acc:'b -> 'b) -> 'a t -> acc:'b -> 'b
+    val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
         (* [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
            where [k1 ... kN] are the keys of all bindings in [m],
            and [d1 ... dN] are the associated data.

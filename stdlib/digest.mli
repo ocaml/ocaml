@@ -32,7 +32,7 @@ external channel: in_channel -> len:int -> t = "md5_chan"
            and returns their digest. *)
 val file: string -> t
         (* Return the digest of the file whose name is given. *)
-val output: to:out_channel -> t -> unit
+val output: out_channel -> t -> unit
         (* Write a digest on the given output channel. *)
 val input: in_channel -> t
         (* Read a digest from the given input channel. *)

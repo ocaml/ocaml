@@ -29,7 +29,7 @@ external rem_file_output : file_descr -> unit
 
 (* File input handlers *)
 
-let fd_table = Hashtbl.create size:37 (* Avoid space leak in callback table *)
+let fd_table = Hashtbl.create 37 (* Avoid space leak in callback table *)
 
 let add_fileinput :fd callback:f =
   let id = new_function_id () in
@@ -42,9 +42,9 @@ let add_fileinput :fd callback:f =
 
 let remove_fileinput :fd =
   try
-    let id = Hashtbl.find fd_table key:(fd, 'r') in
+    let id = Hashtbl.find fd_table (fd, 'r') in
     clear_callback id;
-    Hashtbl.remove fd_table key:(fd, 'r');
+    Hashtbl.remove fd_table (fd, 'r');
     if !Protocol.debug then begin
       prerr_string "clear "; 
       Protocol.prerr_cbid id;
@@ -65,9 +65,9 @@ let add_fileoutput :fd callback:f =
 
 let remove_fileoutput :fd =
   try
-    let id = Hashtbl.find fd_table key:(fd, 'w') in
+    let id = Hashtbl.find fd_table (fd, 'w') in
     clear_callback id;
-    Hashtbl.remove fd_table key:(fd, 'w');
+    Hashtbl.remove fd_table (fd, 'w');
     if !Protocol.debug then begin
       prerr_string "clear "; 
       Protocol.prerr_cbid id;

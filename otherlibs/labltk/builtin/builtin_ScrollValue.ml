@@ -1,8 +1,8 @@
 (* type *)
 type scrollValue = [
-  | `Page(int)          (* tk option: scroll <int> page *)
-  | `Unit(int)          (* tk option: scroll <int> unit *)
-  | `Moveto(float)      (* tk option: moveto <float> *)
+  | `Page of int          (* tk option: scroll <int> page *)
+  | `Unit of int          (* tk option: scroll <int> unit *)
+  | `Moveto of float      (* tk option: moveto <float> *)
 ]
 (* /type *)
 

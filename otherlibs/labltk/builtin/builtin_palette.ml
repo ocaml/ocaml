@@ -1,7 +1,7 @@
 (* type *)
 type paletteType = [
-  | `Gray (int)
-  | `Rgb (int * int * int)
+  | `Gray of int
+  | `Rgb of int * int * int
 ]
 (* /type *)
 

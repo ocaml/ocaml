@@ -38,7 +38,7 @@ let is_directory name =
   with _ -> false
 
 let get_directories_in_files :path =
-  List.filter pred:(fun x -> is_directory  (path ^ "/" ^ x))
+  List.filter f:(fun x -> is_directory  (path ^ "/" ^ x))
 
 (************************************************** Subshell call *)
 let subshell :cmd =

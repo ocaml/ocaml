@@ -451,36 +451,36 @@ val flush : out_channel -> unit
            performing all pending writes on that channel.
            Interactive programs must be careful about flushing standard
            output and standard error at the right time. *)
-val output_char : to:out_channel -> char -> unit
+val output_char : out_channel -> char -> unit
         (* Write the character on the given output channel. *)
-val output_string : to:out_channel -> string -> unit
+val output_string : out_channel -> string -> unit
         (* Write the string on the given output channel. *)
 val output : out_channel -> buf:string -> pos:int -> len:int -> unit
         (* Write [len] characters from string [buf], starting at offset
            [pos], to the given output channel.
            Raise [Invalid_argument "output"] if [pos] and [len] do not
            designate a valid substring of [buf]. *)
-val output_byte : to:out_channel -> int -> unit
+val output_byte : out_channel -> int -> unit
         (* Write one 8-bit integer (as the single character with that code)
            on the given output channel. The given integer is taken modulo
            256. *)
-val output_binary_int : to:out_channel -> int -> unit
+val output_binary_int : out_channel -> int -> unit
         (* Write one integer in binary format on the given output channel.
            The only reliable way to read it back is through the
            [input_binary_int] function. The format is compatible across
            all machines for a given version of Objective Caml. *)
-val output_value : to:out_channel -> 'a -> unit
+val output_value : out_channel -> 'a -> unit
         (* Write the representation of a structured value of any type
            to a channel. Circularities and sharing inside the value
            are detected and preserved. The object can be read back,
            by the function [input_value]. See the description of module
            [Marshal] for more information. [output_value] is equivalent
            to [Marshal.to_channel] with an empty list of flags. *)
-val seek_out : out_channel -> pos:int -> unit
-        (* Set the current writing position to [pos] for the given channel.
-           This works only for regular files. On files of other kinds
-           (such as terminals, pipes and sockets), the behavior is
-           unspecified. *)
+val seek_out : out_channel -> int -> unit
+        (* [seek_out chan pos] sets the current writing position to [pos]
+           for channel [chan]. This works only for regular files. On
+           files of other kinds (such as terminals, pipes and sockets),
+           the behavior is unspecified. *)
 val pos_out : out_channel -> int
         (* Return the current writing position for the given channel. *)
 val out_channel_length : out_channel -> int
@@ -562,10 +562,10 @@ val input_value : in_channel -> 'a
            This function is identical to [Marshal.from_channel];
            see the description of module [Marshal] for more information,
            in particular concerning the lack of type safety. *)
-val seek_in : in_channel -> pos:int -> unit
-        (* Set the current reading position to [pos] for the given channel.
-           This works only for regular files. On files of other kinds,
-           the behavior is unspecified. *)
+val seek_in : in_channel -> int -> unit
+        (* [seek_in chan pos] sets the current reading position to [pos]
+           for channel [chan]. This works only for regular files. On
+           files of other kinds, the behavior is unspecified. *)
 val pos_in : in_channel -> int
         (* Return the current reading position for the given channel. *)
 val in_channel_length : in_channel -> int

@@ -26,7 +26,7 @@ val execv : prog:string -> args:string array -> unit
 val execve : prog:string -> args:string array -> env:string array -> unit
 val execvp : prog:string -> args:string array -> unit
 val wait : unit -> int * Unix.process_status
-val waitpid : flags:Unix.wait_flag list -> int -> int * Unix.process_status
+val waitpid : mode:Unix.wait_flag list -> int -> int * Unix.process_status
 val system : string -> Unix.process_status
 
 (*** Basic input/output *)
@@ -72,11 +72,11 @@ val socket : domain:Unix.socket_domain ->
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 val connect : Unix.file_descr -> Unix.sockaddr -> unit
 val recv : Unix.file_descr -> buf:string ->
-           pos:int -> len:int -> flags:Unix.msg_flag list -> int
+           pos:int -> len:int -> mode:Unix.msg_flag list -> int
 val recvfrom : Unix.file_descr -> buf:string -> pos:int -> len:int ->
-               flags:Unix.msg_flag list -> int * Unix.sockaddr
+               mode:Unix.msg_flag list -> int * Unix.sockaddr
 val send : Unix.file_descr -> buf:string -> pos:int -> len:int ->
-           flags:Unix.msg_flag list -> int
+           mode:Unix.msg_flag list -> int
 val sendto : Unix.file_descr -> buf:string -> pos:int -> len:int ->
-             flags:Unix.msg_flag list -> addr:Unix.sockaddr -> int
+             mode:Unix.msg_flag list -> addr:Unix.sockaddr -> int
 val open_connection : Unix.sockaddr -> in_channel * out_channel

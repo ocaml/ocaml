@@ -56,18 +56,18 @@ external dbopen :
 external close : t -> unit
     = "caml_db_close"
 
-external del : t -> key:key -> mode:routine_flag list -> unit
+external del : t -> key -> mode:routine_flag list -> unit
     = "caml_db_del"
     (* raise Not_found if the key was not in the file *)
 
-external get : t -> key:key -> mode:routine_flag list -> data
+external get : t -> key -> mode:routine_flag list -> data
     = "caml_db_get"
     (* raise Not_found if the key was not in the file *)
 
-external put : t -> key:key -> data:data -> mode:routine_flag list -> unit
+external put : t -> key -> data:data -> mode:routine_flag list -> unit
     = "caml_db_put"
 
-external seq : t -> key:key -> mode:routine_flag list -> (key * data)
+external seq : t -> key -> mode:routine_flag list -> (key * data)
     = "caml_db_seq"
 
 external sync : t -> unit
@@ -75,7 +75,7 @@ external sync : t -> unit
 
 
 val add : t -> key:key -> data:data -> unit
-val find : t -> key:key -> data
-val find_all : t -> key:key -> data list
-val remove : t -> key:key -> unit
+val find : t -> key -> data
+val find_all : t -> key -> data list
+val remove : t -> key -> unit
 val iter : fun:(key:string -> data:string -> unit) -> t -> unit

@@ -256,9 +256,9 @@ type seek_command =
            the current position, [SEEK_END] relative to the end of the
            file. *)
 
-val lseek : file_descr -> pos:int -> mode:seek_command -> int
+val lseek : file_descr -> int -> mode:seek_command -> int
         (* Set the current position for a file descriptor *)
-val truncate : name:string -> len:int -> unit
+val truncate : file:string -> len:int -> unit
         (* Truncates the named file to the given size. *)
 val ftruncate : file_descr -> len:int -> unit
         (* Truncates the file corresponding to the given descriptor
@@ -780,9 +780,9 @@ type socket_option =
   | SO_OOBINLINE           (* Leave out-of-band data in line *)
         (* The socket options settable with [setsockopt]. *)
 
-val getsockopt : file_descr -> key:socket_option -> bool
+val getsockopt : file_descr -> socket_option -> bool
         (* Return the current status of an option in the given socket. *)
-val setsockopt : file_descr -> key:socket_option -> bool -> unit
+val setsockopt : file_descr -> socket_option -> bool -> unit
         (* Set or clear an option in the given socket. *)
 
 (*** High-level network connection functions *)
@@ -796,7 +796,7 @@ val shutdown_connection : in_channel -> unit
         (* ``Shut down'' a connection established with [open_connection];
            that is, transmit an end-of-file condition to the server reading
            on the other side of the connection. *)
-val establish_server : fun:(in:in_channel -> out:out_channel -> unit) ->
+val establish_server : (in_channel -> out_channel -> unit) ->
                        addr:sockaddr -> unit
         (* Establish a server on the given address.
            The function given as first argument is called for each connection

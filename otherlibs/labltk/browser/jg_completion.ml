@@ -24,13 +24,13 @@ class completion ?:nocase texts = object
   method add c =
     prefix <- prefix ^ c;
     while current < List.length texts - 1 &
-      lt_string (List.nth texts pos:current) prefix ?:nocase
+      lt_string (List.nth texts current) prefix ?:nocase
     do
       current <- current + 1
     done;
     current
   method current = current
-  method get_current = List.nth texts pos:current
+  method get_current = List.nth texts current
   method reset =
     prefix <- "";
     current <- 0

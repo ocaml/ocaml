@@ -1,7 +1,7 @@
 (* Color *)
 (* type *)
 type color = [
-  | `Color string
+  | `Color of string
   | `Black                      (* tk keyword: black *)
   | `White                      (* tk keyword: white *)
   | `Red                        (* tk keyword: red *)
@@ -14,11 +14,11 @@ type color = [
 (* Tk_GetCursor emulation *)
 (* type *)
 type cursor = [
-  | `Xcursor string
-  | `Xcursorfg string * color
-  | `Xcursorfgbg string * color * color
-  | `Cursorfilefg string * color
-  | `Cursormaskfile string * string * color * color
+  | `Xcursor of string
+  | `Xcursorfg of string * color
+  | `Xcursorfgbg of string * color * color
+  | `Cursorfilefg of string * color
+  | `Cursormaskfile of string * string * color * color
 ]
 (* /type *)
 

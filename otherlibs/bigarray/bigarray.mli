@@ -263,7 +263,7 @@ module Genarray: sig
          a valid sub-array of [a], that is, if [ofs] < 1, or [len] < 0,
          or [ofs + len > Genarray.nth_dim a (Genarray.num_dims a - 1)]. *)
   external slice_left:
-    ('a, 'b, c_layout) t -> pos:int array -> ('a, 'b, c_layout) t
+    ('a, 'b, c_layout) t -> int array -> ('a, 'b, c_layout) t
     = "bigarray_slice"
       (* Extract a sub-array of lower dimension from the given big array
          by fixing one or several of the first (left-most) coordinates.
@@ -280,7 +280,7 @@ module Genarray: sig
          Raise [Invalid_arg] if [M >= N], or if [[|i1; ... ; iM|]]
          is outside the bounds of [a]. *)
   external slice_right:
-    ('a, 'b, fortran_layout) t -> pos:int array -> ('a, 'b, fortran_layout) t
+    ('a, 'b, fortran_layout) t -> int array -> ('a, 'b, fortran_layout) t
     = "bigarray_slice"
       (* Extract a sub-array of lower dimension from the given big array
          by fixing one or several of the last (right-most) coordinates.

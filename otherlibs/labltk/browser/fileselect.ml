@@ -23,23 +23,23 @@ open Tk
 
 (**** Memoized rexgexp *)
 
-let (~) = Jg_memo.fast fun:Str.regexp
+let (~) = Jg_memo.fast f:Str.regexp
 
 (************************************************************ Path name *)
 
 let parse_filter src = 
   (* replace // by / *)
-  let s = global_replace pat:~"/+" with:"/" src in
+  let s = global_replace pat:~"/+" templ:"/" src in
   (* replace /./ by / *)
-  let s = global_replace pat:~"/\./" with:"/" s in
+  let s = global_replace pat:~"/\./" templ:"/" s in
   (* replace hoge/../ by "" *)
   let s = global_replace s
-      pat:~"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./" with:"" in
+      pat:~"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./" templ:"" in
   (* replace hoge/..$ by *)
   let s = global_replace s
-      pat:~"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$" with:"" in
+      pat:~"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$" templ:"" in
   (* replace ^/../../ by / *)
-  let s = global_replace pat:~"^\(/\.\.\)+/" with:"/" s in
+  let s = global_replace pat:~"^\(/\.\.\)+/" templ:"/" s in
   if string_match s pat:~"^\([^\*?[]*/\)\(.*\)" pos:0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
@@ -47,19 +47,19 @@ let parse_filter src =
       dirs, ptrn
   else "", s
 
-let rec fixpoint fun:f v =
+let rec fixpoint :f v =
   let v' = f v in
-  if v = v' then v else fixpoint fun:f v'
+  if v = v' then v else fixpoint :f v'
 
 let unix_regexp s =
-  let s = Str.global_replace pat:~"[$^.+]" with:"\\\\\\0" s in
-  let s = Str.global_replace pat:~"\\*" with:".*" s in
-  let s = Str.global_replace pat:~"\\?" with:".?" s in
+  let s = Str.global_replace pat:~"[$^.+]" templ:"\\\\\\0" s in
+  let s = Str.global_replace pat:~"\\*" templ:".*" s in
+  let s = Str.global_replace pat:~"\\?" templ:".?" s in
   let s =
     fixpoint s
-      fun:(Str.replace_first pat:~"\\({.*\\),\\(.*}\\)" with:"\\1\\|\\2") in
+      f:(Str.replace_first pat:~"\\({.*\\),\\(.*}\\)" templ:"\\1\\|\\2") in
   let s =
-    Str.global_replace pat:~"{\\(.*\\)}" with:"\\(\\1\\)" s in
+    Str.global_replace pat:~"{\\(.*\\)}" templ:"\\(\\1\\)" s in
   Str.regexp s
 
 let exact_match s :pat =
@@ -68,7 +68,7 @@ let exact_match s :pat =
 let ls :dir :pattern =
   let files = get_files_in_directory dir in
   let regexp = unix_regexp pattern in
-  List.filter files pred:(exact_match pat:regexp)
+  List.filter files f:(exact_match pat:regexp)
 
 (*
 let ls :dir :pattern =
@@ -94,7 +94,7 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
   let filter_var = new_var ()
   and selection_var = new_var ()
   and sync_var = new_var () in
-  Textvariable.set filter_var to:deffilter;
+  Textvariable.set filter_var deffilter;
 
   let frm = Frame.create tl borderwidth:1 relief:`Raised in
     let df = Frame.create frm in
@@ -125,19 +125,19 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
           (get_files_in_directory dir) in
     let matched_files = (* get matched file by subshell call. *)
       if !load_in_path & usepath then
-      List.fold_left !Config.load_path acc:[] fun:
-      begin fun :acc dir ->
+      List.fold_left !Config.load_path init:[] f:
+      begin fun acc dir ->
         let files = ls :dir :pattern in
         Sort.merge order:(<) files
-          (List.fold_left files :acc
-           fun:(fun :acc name -> List2.exclude item:name acc))
+          (List.fold_left files init:acc
+           f:(fun acc name -> List2.exclude name acc))
       end
       else
-        List.fold_left directories acc:(ls :dir :pattern)
-          fun:(fun :acc dir -> List2.exclude item:dir acc)
+        List.fold_left directories init:(ls :dir :pattern)
+          f:(fun acc dir -> List2.exclude dir acc)
     in
-      Textvariable.set filter_var to:filter;
-      Textvariable.set selection_var to:(dir ^ deffile); 
+      Textvariable.set filter_var filter;
+      Textvariable.set selection_var (dir ^ deffile); 
       Listbox.delete filter_listbox first:(`Num 0) last:`End;
       Listbox.insert filter_listbox index:`End texts:matched_files;
       Jg_box.recenter filter_listbox index:(`Num 0);
@@ -158,13 +158,13 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
     destroy tl;
     let l =
       if !load_in_path & usepath then
-        List.fold_right l acc:[] fun:
-        begin fun name :acc ->
+        List.fold_right l init:[] f:
+        begin fun name acc ->
           if name <> "" & name.[0] = '/' then name :: acc else
           try search_in_path :name :: acc with Not_found -> acc
         end
       else
-        List.map l fun:
+        List.map l f:
         begin fun x ->
           if x <> "" & x.[0] = '/' then x
           else !current_dir ^ "/" ^ x
@@ -173,7 +173,7 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
     if sync then 
       begin
         selected_files := l;
-        Textvariable.set sync_var to:"1"
+        Textvariable.set sync_var "1"
       end
     else proc l 
   in
@@ -207,7 +207,7 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
   and okb = Button.create cfrm text:"Ok" command:
     begin fun () -> 
       let files = 
-        List.map (Listbox.curselection filter_listbox) fun:
+        List.map (Listbox.curselection filter_listbox) f:
         begin fun x ->
           !current_dir ^ Listbox.get filter_listbox index:x
         end
@@ -231,9 +231,9 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
       let name = Listbox.get filter_listbox
           index:(Listbox.nearest filter_listbox y:ev.ev_MouseY) in
       if !load_in_path & usepath then
-        try Textvariable.set selection_var to:(search_in_path :name)
+        try Textvariable.set selection_var (search_in_path :name)
         with Not_found -> ()
-      else Textvariable.set selection_var to:(!current_dir ^ "/" ^ name));
+      else Textvariable.set selection_var (!current_dir ^ "/" ^ name));
 
   Jg_box.add_completion directory_listbox action:
     begin fun index ->
