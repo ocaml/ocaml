@@ -1430,6 +1430,23 @@ let rec filter_arrow env t l =
   | _ ->
       raise (Unify [])
 
+(*
+   Unify [t] and ['a channel]. Return ['a]
+*)
+let filter_channel env t =
+  let t = expand_head env t in
+  match t.desc with
+    Tvar ->
+      let t1 = newvar () in
+      let t' = instance (Predef.type_channel t1) in
+      update_level env t.level t';
+      t.desc <- Tlink t';
+      t1
+  | Tconstr(p, [t1], _) when Path.same p Predef.path_channel ->
+      t1
+  | _ ->
+      raise (Unify [])
+
 (* Used by [filter_method]. *)
 let rec filter_method_field env name priv ty =
   let ty = repr ty in

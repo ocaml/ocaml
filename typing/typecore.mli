@@ -88,8 +88,9 @@ type error =
 (*> JOCAML *)
   | Expr_as_proc
   | Proc_as_expr
-  | Garrigue_illegal od string (* merci Jacques ! *)
+  | Garrigue_illegal of string (* merci Jacques ! *)
   | Vouillon_illegal of string (* merci Jerome ! *)
+  | Send_non_channel of type_expr
 (*< JOCAML *)
 
 exception Error of Location.t * error

@@ -51,6 +51,9 @@ type t = {
   components: (Path.t * module_components) Ident.tbl;
   classes: (Path.t * class_declaration) Ident.tbl;
   cltypes: (Path.t * cltype_declaration) Ident.tbl;
+(*> JOCAML *)
+  continuations : (Path.t * continuation_description) Ident.tbl;
+(*< JOCAML *)
   summary: summary
 }
 
@@ -86,6 +89,7 @@ let empty = {
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty;
+  continuations = Ident.empty;
   summary = Env_empty }
 
 (* Forward declarations *)
@@ -348,7 +352,13 @@ and lookup_class =
   lookup (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
-  
+
+(*> JOCAML *)
+let lookup_continuation lid env = match lid with
+| Lident name -> Ident.find_name name env.continuations
+| _           -> raise Not_found
+(*< JOCAML *)  
+
 (* Expand manifest module type names at the top of the given module type *)
 
 let rec scrape_modtype mty env =
@@ -611,6 +621,22 @@ and add_class id ty env =
 
 and add_cltype id ty env =
   store_cltype id (Pident id) ty env
+
+(*> JOCAML *)
+and add_continuation id ty env  =
+  let desc =
+      {continuation_type = ty;
+      continuation_kind = false;} in
+  let new_cont = 
+    Ident.add id (Pident id, desc) env.continuations in
+  {env with continuations = new_conts}
+
+and remove_continuations t =
+  if Ident.is_empty t.continuations then
+    t
+  else
+    {t with continuations = Ident.empty}
+(*< JOCAML *)
 
 (* Insertion of bindings by name *)
 

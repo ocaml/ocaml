@@ -49,6 +49,9 @@ type 'a tbl
         (* Association tables from identifiers to type 'a. *)
 
 val empty: 'a tbl
+(*> JOCAML *)
+val is_empty: 'a tbl -> bool
+(*< JOCAML *)
 val add: t -> 'a -> 'a tbl -> 'a tbl
 val find_same: t -> 'a tbl -> 'a
 val find_name: string -> 'a tbl -> 'a

@@ -122,6 +122,8 @@ val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val filter_arrow: Env.t -> type_expr -> label -> type_expr * type_expr
         (* A special case of unification (with l:'a -> 'b). *)
+val filter_channel: Env.t -> type_expr -> type_expr
+        (* A special case of unification (with 'a channel). *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}). *)
 val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit

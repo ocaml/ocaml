@@ -117,6 +117,12 @@ and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
 
+(*> JOCAML *)
+type continuation_description =
+  {continuation_type : type_expr;
+  mutable continuation_kind : bool;}
+(*< JOCAML *)
+
 (* Type definitions *)
 
 type type_declaration =

@@ -77,11 +77,11 @@ and expression_desc =
   | Texp_assert of expression
   | Texp_assertfalse
 (*> JOCAML *)
-  | Texp_jsend of expression * expression
+  | Texp_asend of expression * expression
   | Texp_spawn of expression
   | Texp_par of expression * expression
   | Texp_null
-  | Texp_reply of expression * Ident.t
+  | Texp_reply of expression * Path.t
   | Texp_def of joinautomaton list * expression
   | Texp_loc of joinlocation list * expression
 
@@ -91,15 +91,23 @@ and joinlocation =
 
 and joinautomaton =
     {jauto_desc : joinclause list ;
-      jauto_loc : Location.t}
+     jauto_names : (Ident.t * type_expr) list ;
+     jauto_loc : Location.t}
 
 and joinclause =
     {jclause_desc : joinpattern list * expression ;
       jclause_loc : Location.t}
 
 and joinpattern =
-    { jpat_desc: Ident.t * Ident.t list ;
+    { jpat_desc: joinident * joinident list ;
       jpat_loc: Location.t}
+
+and joinident =
+    { jident_desc : Ident.t ;
+      jident_loc  : Location.t;
+      jident_type : type_expr;
+      jident_env : Env.t;}
+
 (*< JOCAML *)
 
 and meth =

@@ -76,6 +76,12 @@ and 'a data =
 
 let empty = Empty
 
+(*> JOCAML *)
+and is_empty = function
+  | Empty -> true
+  | _     -> false
+(*< JOCAML *)
+
 (* Inline expansion of height for better speed
  * let height = function
  *     Empty -> 0

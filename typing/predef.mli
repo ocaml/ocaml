@@ -51,6 +51,7 @@ val path_int32: Path.t
 val path_int64: Path.t
 (*> JOCAML *)
 val path_process : Path.t
+val path_channel : Path.t
 (*< JOCAML *)
 val path_match_failure: Path.t
 val path_assert_failure : Path.t

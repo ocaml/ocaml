@@ -60,6 +60,7 @@ type error =
   | Proc_as_expr
   | Garrigue_illegal of string (* merci Jacques ! *)
   | Vouillon_illegal of string (* merci Jerome ! *)
+  | Send_non_channel of type_expr
 (*< JOCAML *)
 
 exception Error of Location.t * error
@@ -414,6 +415,108 @@ let type_pattern_list env spatl =
   let new_env = add_pattern_variables env in
   (patl, new_env)
 
+(*> JOCAML *)
+
+(**************************)
+(* Collecting port names  *)
+(* + linearity is checked *)
+(**************************)
+
+let rec enter_channel all_chans auto_chans cl_ids chan = function
+  | [] ->
+      (* check linearity *)
+      let name = chan.pjident_desc in
+      let p id = Ident.name id = name in  
+      if
+        List.exists p all_chans ||
+        List.exists p !cl_ids
+      then
+        raise (Error (chan.pjident_loc, Multiply_bound_variable));      
+      (* create and register id *)
+      let (id, ty) as r = (Ident.create  chan.pjident_desc, newvar()) in
+      auto_chans := (id, ty, chan.pjident_loc) :: !auto_chans ;
+      cl_ids := id :: !cl_ids ;
+      r
+  | (id, ty, _)::rem ->
+      if Ident.name id = chan.pjident_desc then
+        (id, ty)
+      else
+        enter_channel all_chans auto_chans cl_ids chan rem
+
+let enter_jarg all_chans auto_chans cl_ids arg =  
+  let name = arg.pjident_desc in
+  let p id = Ident.name id = name in
+  (* check linearity *)
+  if
+    List.exists p all_chans ||
+    List.exists p !cl_ids ||
+    List.exists (fun (id,_,_) -> p id) auto_chans
+  then
+    raise (Error (arg.pjident_loc, Multiply_bound_variable));      
+  (* create identifier *)
+  let id = Ident.create name in
+  cl_ids := id :: !cl_ids ;
+  id
+
+let mk_jident id loc ty env =
+  {
+    jident_desc = id;
+    jident_loc  = loc;
+    jident_type = ty;
+    jident_env  = env;
+  } 
+
+let type_auto_lhs all_chans env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
+  let auto_chans = ref [] in
+  let auto =
+    List.map
+      (fun cl ->
+        let sjpats, _ = cl.pjclause_desc in
+        let cl_ids = ref [] in
+        let jpat =
+          List.map
+            (fun sjpat ->
+              let schan, sargs = sjpat.pjpat_desc in
+              let (id, ty) =
+                enter_channel
+                  !all_chans auto_chans cl_ids schan !auto_chans in
+              let chan = mk_jident id schan.pjident_loc ty env
+              and args =
+                List.map
+                  (fun jid ->
+                    let id =
+                      enter_jarg !all_chans !auto_chans cl_ids jid in
+                    mk_jident id jid.pjident_loc (newvar()) env)
+                  sargs in
+              {jpat_desc = chan, args;
+               jpat_loc  = sjpat.pjpat_loc;})
+            sjpats in
+        jpat)
+      sauto in
+
+  (* check linearity and collect defined channel names *)
+  let old_all_chans = !all_chans in
+  let names_defined =
+    List.map
+      (fun (id,ty,loc) ->
+        if
+          List.exists (fun oid -> Ident.equal oid id) old_all_chans
+        then
+          raise (Error (loc, Multiply_bound_variable));
+        all_chans := id :: !all_chans;
+        (id,ty))
+      !auto_chans in
+  (names_defined, auto)
+
+let rec do_type_autos_lhs all_chans env = function
+  | [] -> []
+  | sauto::rem ->
+      type_auto_lhs all_chans env sauto::
+      do_type_autos_lhs all_chans env rem
+
+let type_autos_lhs env sautos = do_type_autos_lhs (ref []) env sautos
+(*< JOCAML *)
+
 let type_class_arg_pattern cl_num val_env met_env l spat =
   pattern_variables := [];
   let pat = type_pat val_env spat in
@@ -624,7 +727,17 @@ let unify_exp env exp expected_ty =
 (*> JOCAML *)
 type ctx = E | P (* Expression or Process *)
 
-(* split n-1 first argyuments / last argument *)
+(* Check the expression/process nature of parsed expressions *)
+let check_expression ctx sexp = match ctx with
+| E -> ()
+| P ->  raise (Error (sexp.pexp_loc, Expr_as_proc))
+
+and check_process ctx sexp = match ctx with
+| E ->  raise (Error (sexp.pexp_loc, Proc_as_expr))
+| P -> ()
+
+
+(* split n-1 first arguments / last argument *)
 let rec last_arg = function
   | [] -> assert false
   | [x] -> [],x
@@ -649,8 +762,9 @@ let mk_sapp f args = match args with
 
 
 let rec do_type_exp ctx env sexp =
-  let texp =  match sexp.pexp_desc with
+  match sexp.pexp_desc with
   | Pexp_ident lid ->
+      check_expression ctx sexp ;
       begin try
         let (path, desc) = Env.lookup_value lid env in
         { exp_desc =
@@ -677,6 +791,7 @@ let rec do_type_exp ctx env sexp =
         raise(Error(sexp.pexp_loc, Unbound_value lid))
       end
   | Pexp_constant cst ->
+      check_expression ctx sexp ;
       { exp_desc = Texp_constant cst;
         exp_loc = sexp.pexp_loc;
         exp_type = type_constant cst;
@@ -689,6 +804,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_function _ ->     (* defined in type_expect *)
+      check_expression ctx sexp ;
       type_expect env sexp (newvar())
   | Pexp_apply(sfunct, sargs) ->
       begin match ctx with
@@ -703,13 +819,24 @@ let rec do_type_exp ctx env sexp =
           let spref, sarg = last_arg sargs in
           let sfunct = mk_sapp sfunct spref in
           let funct = do_type_exp E env sfunct in
-          let arg = match sarg with
-          | "", sarg -> do_type_exp E env sarg
-          | _, sarg  ->
-              raise (Error (sarg.pexp_loc,
-                            Garrigue_illegal "in message sending")) in
-          unify_exp env funct (instance (Predef.type_channel arg.exp_type)) ;
-          { exp_desc = Texp_apply (funct, [Some arg, Required]);
+          let ty =
+            try
+              filter_channel env funct.exp_type
+            with
+            | Unify _ ->
+                raise
+                  (Error
+                     (sfunct.pexp_loc, Send_non_channel funct.exp_type)) in
+          let arg = 
+            type_expect env
+              (match sarg with
+              | "",sarg -> sarg
+              | _, sarg ->
+                  raise
+                    (Error
+                       (sarg.pexp_loc, Garrigue_illegal "message")))
+              ty in
+          { exp_desc = Texp_asend (funct, arg);
             exp_loc = sexp.pexp_loc;
             exp_type = instance Predef.type_process;
             exp_env = env }
@@ -724,6 +851,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = ty_res;
         exp_env = env }
   | Pexp_try(sbody, caselist) ->
+      check_expression ctx sexp ;
       let body = do_type_exp ctx env sbody in
       let cases, _ =
         type_cases E env (instance Predef.type_exn) body.exp_type None
@@ -733,14 +861,17 @@ let rec do_type_exp ctx env sexp =
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_tuple sexpl ->
+      check_expression ctx sexp ;
       let expl = List.map (do_type_exp E env) sexpl in
       { exp_desc = Texp_tuple expl;
         exp_loc = sexp.pexp_loc;
         exp_type = newty (Ttuple(List.map (fun exp -> exp.exp_type) expl));
         exp_env = env }
   | Pexp_construct(lid, sarg, explicit_arity) ->
+      check_expression ctx sexp ;
       type_construct env sexp.pexp_loc lid sarg explicit_arity (newvar ())
   | Pexp_variant(l, sarg) ->
+      check_expression ctx sexp ;
       let arg = may_map (do_type_exp E env) sarg in
       let arg_type = may_map (fun arg -> arg.exp_type) arg in
       { exp_desc = Texp_variant(l, arg);
@@ -752,6 +883,7 @@ let rec do_type_exp ctx env sexp =
                                   row_name = None});
         exp_env = env }
   | Pexp_record(lid_sexp_list, opt_sexp) ->
+      check_expression ctx sexp ;
       let ty = newvar() in
       let num_fields = ref 0 in
       let type_label_exp (lid, sarg) =
@@ -814,6 +946,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = ty;
         exp_env = env }
   | Pexp_field(sarg, lid) ->
+      check_expression ctx sexp ;
       let arg = do_type_exp E env sarg in
       let label =
         try
@@ -827,6 +960,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = ty_arg;
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
+      check_expression ctx sexp ;
       let record = do_type_exp E env srecord in
       let label =
         try
@@ -843,6 +977,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = instance Predef.type_unit;
         exp_env = env }
   | Pexp_array(sargl) ->
+      check_expression ctx sexp ;
       let ty = newvar() in
       let argl = List.map (fun sarg -> type_expect env sarg ty) sargl in
       { exp_desc = Texp_array argl;
@@ -893,6 +1028,8 @@ let rec do_type_exp ctx env sexp =
         exp_type = exp2.exp_type;
         exp_env = env }
   | Pexp_while(scond, sbody) ->
+      check_expression ctx sexp;
+      let env = Env.remove_continuations env in
       let cond = type_expect env scond (instance Predef.type_bool) in
       let body = type_statement env sbody in
       { exp_desc = Texp_while(cond, body);
@@ -900,6 +1037,8 @@ let rec do_type_exp ctx env sexp =
         exp_type = instance Predef.type_unit;
         exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
+      check_expression ctx sexp;
+      let env = Env.remove_continuations env in
       let low = type_expect env slow (instance Predef.type_int) in
       let high = type_expect env shigh (instance Predef.type_int) in
       let (id, new_env) =
@@ -911,6 +1050,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = instance Predef.type_unit;
         exp_env = env }
   | Pexp_constraint(sarg, sty, sty') ->
+      check_expression ctx sexp;
       let (arg, ty') =
         match (sty, sty') with
           (None, None) ->               (* Case actually unused *)
@@ -957,6 +1097,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_send (e, met) ->
+      check_expression ctx sexp ;
       let obj = do_type_exp E env e in
       begin try
         let (exp, typ) =
@@ -1012,6 +1153,7 @@ let rec do_type_exp ctx env sexp =
         raise(Error(e.pexp_loc, Undefined_method (obj.exp_type, met)))
       end
   | Pexp_new cl ->
+      check_expression ctx sexp ;
       let (cl_path, cl_decl) =
         try Env.lookup_class cl env with Not_found ->
           raise(Error(sexp.pexp_loc, Unbound_class cl))
@@ -1026,6 +1168,7 @@ let rec do_type_exp ctx env sexp =
               exp_env = env }
         end
   | Pexp_setinstvar (lab, snewval) ->
+      check_expression ctx sexp ;
       begin try
         let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
         match desc.val_kind with
@@ -1047,6 +1190,7 @@ let rec do_type_exp ctx env sexp =
           raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
       end        
   | Pexp_override lst ->
+      check_expression ctx sexp ;
       let _ = 
        List.fold_right
         (fun (lab, _) l ->
@@ -1104,6 +1248,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = ty;
         exp_env = env }
   | Pexp_assert (e) ->
+      check_expression ctx sexp ;
        let cond = type_expect env e (instance Predef.type_bool) in
        {
          exp_desc = Texp_assert (cond);
@@ -1112,6 +1257,7 @@ let rec do_type_exp ctx env sexp =
          exp_env = env;
        }
   | Pexp_assertfalse ->
+      check_expression ctx sexp ;
        {
          exp_desc = Texp_assertfalse;
          exp_loc = sexp.pexp_loc;
@@ -1119,6 +1265,7 @@ let rec do_type_exp ctx env sexp =
          exp_env = env;
        }
   | Pexp_spawn (sarg) ->
+      check_process ctx sexp ;
       let arg = do_type_exp P env sarg in
       {
         exp_desc = Texp_spawn arg;
@@ -1127,6 +1274,7 @@ let rec do_type_exp ctx env sexp =
         exp_env = env;
       } 
   | Pexp_par (se1, se2) ->
+      check_process ctx sexp ;
       let e1 = do_type_exp P env se1
       and e2 = do_type_exp P env se2 in
       {
@@ -1136,37 +1284,39 @@ let rec do_type_exp ctx env sexp =
         exp_env = env;
       } 
   | Pexp_null ->
+      check_process ctx sexp ;
       {
         exp_desc = Texp_null;
         exp_loc = sexp.pexp_loc;
         exp_type =  instance Predef.type_process;
         exp_env = env;
       } 
-  | Pexp_reply (sres, (id_loc, id)) ->
-      let res = do_type_exp E env sres in
-      let lid = Longident.parse id in
-      begin try
-        let (path, desc) = Env.lookup_value lid env in
-        match desc with
-        | Val_ivar (_,_)|Val_self (_, _, _)|Val_unbound ->
-            raise
-              (Error (id_loc, Vouillon_illegal "not a synchronous name"))
-      with
-      | Not_found ->
-          raise(Error(id_loc, Unbound_value lid))
-      
-  match ctx with
-  | E ->
-      begin match (expand_head env texp.exp_type).desc with
-      | Tconstr (p, _, _) when  Path.same p Predef.path_process ->
-          raise (Error (sexp.pexp_loc, Proc_as_expr))
-      | _ -> texp
-      end
-  | P ->
-      begin match (expand_head env texp.exp_type).desc with
-      | Tconstr (p, _, _) when  Path.same p Predef.path_process -> texp
-      | _ -> raise (Error (sexp.pexp_loc, Expr_as_proc))
-      end
+  | Pexp_reply (sres, jid) ->
+      check_process ctx sexp ;
+      let lid = Longident.parse jid.pjident_desc in
+      let path,ty =
+        try
+          let path,desc = Env.lookup_continuation lid env in
+          desc.continuation_kind <- true ;
+          path, desc.continuation_type
+        with Not_found ->
+          raise(Error(jid.pjident_loc, Unbound_value lid)) in
+      let res = type_expect env sres ty in
+      {
+        exp_desc = Texp_reply (res, path);
+        exp_loc  = sexp.pexp_loc;
+        exp_type = instance Predef.type_process;
+        exp_env  = env;
+      }
+  | Pexp_def (sautos, sbody) ->
+      let (autos, new_env) = type_def env sautos in
+      let body = do_type_exp ctx new_env sbody in
+      {
+        exp_desc = Texp_def (autos, body);
+        exp_loc  = sexp.pexp_loc;
+        exp_type = body.exp_type;
+        exp_env  = env
+      } 
 (*< JOCAML *)
 
 and type_argument env sarg ty_expected =
@@ -1469,8 +1619,11 @@ and type_expect env sexp ty_expected =
         try unify env ty_arg (type_option(newvar()))
         with Unify _ -> assert false
       end;
+(*> JOCAML *)
+      let env_noconts = Env.remove_continuations env in
+(*< JOCAML *)      
       let cases, partial =
-        type_cases E env ty_arg ty_res (Some sexp.pexp_loc) caselist in
+        type_cases E env_noconts ty_arg ty_res (Some sexp.pexp_loc) caselist in
       let rec all_labeled ty =
         match (repr ty).desc with
           Tarrow ("", _, _, _) | Tvar -> false
@@ -1581,6 +1734,56 @@ and type_let env rec_flag spat_sexp_list =
     (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
     pat_list;
   (List.combine pat_list exp_list, new_env)
+
+(*> JOCAML *)
+(* Typing of join definitions *)
+and type_jclause env jpats scl =
+  let extend_env env jpat =
+    let chan,args = jpat.jpat_desc in
+    let kid = chan.jident_desc in    
+    List.fold_left
+      (fun env jid ->
+        add_value
+          jid.jident_desc
+          {val_kind = Val_reg ;
+           val_type = jident_type}
+          env)
+      (add_continuation kid (newvar()) env) in
+  let new_env =
+    List.fold_left extend_env jpats
+  let _,sexp = scl.pjclause_desc in
+  let exp = do_type_exp P new_env sexp in
+  (* Now type defined names *)
+  List.iter
+    (fun jpat ->
+      let chan, args = 
+
+and type_auto env (_, auto_lhs) sauto =
+ 
+and type_def env sautos =
+  begin_def ();
+  let names_lhs_list = type_autos_lhs env sautos in
+  let new_env =
+    List.fold_left
+      (fun env (names,_) ->
+        List.fold_left
+          (fun env (id,ty) ->
+            Env.add_value id {val_type = ty; val_kind = Val_reg} env)
+          env names)
+      env names_lhs_list in
+  let autos =
+    List.map2
+      (fun (_, auto_lhs) sauto ->
+        List.map2
+          (fun jpats cl ->)
+          auto_lhs sauto
+      )
+      names_lhs_list
+      sautos
+  end_def () ;
+  ()
+  
+(*< JOCAML *)
 
 (* Exported typer for expressions *)
 let type_exp  env sexp = do_type_exp E env sexp 
@@ -1737,4 +1940,6 @@ let report_error ppf = function
       fprintf ppf "Illegal label in jocaml: %s" msg
   | Vouillon_illegal msg ->
       fprintf ppf "Illegal object in jocaml: %s" msg
+  | Send_non_channel typ ->
+      fprintf ppf "This expression is not a channel"
 (*< JOCAML *)      
