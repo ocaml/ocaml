@@ -367,7 +367,7 @@ let scan_push state b tok =
 (*
   To open a new block :
   the user may set the depth bound pp_max_boxes
-  any text nested deeper is printed as the character the ellipsis
+  any text nested deeper is printed as the ellipsis string
 *)
 let pp_open_box_gen state indent br_ty =
     state.pp_curr_depth <- state.pp_curr_depth + 1;
@@ -385,7 +385,7 @@ let pp_open_sys_box state =
      {elem_size = (- state.pp_right_total);
       token = Pp_begin (0, Pp_hovbox); length = 0};;
 
-(* close a block, setting sizes of its subblocks *)
+(* Close a block, setting sizes of its subblocks *)
 let pp_close_box state () =
     if state.pp_curr_depth > 1 then
      begin
@@ -452,7 +452,7 @@ and pp_open_hovbox state indent = pp_open_box_gen state indent Pp_hovbox
 and pp_open_box state indent = pp_open_box_gen state indent Pp_box;;
 
 (* Print a new line after printing all queued text
-   (same for print_flush but without a newline)    *)
+   (same for print_flush but without a newline).    *)
 let pp_print_newline state () =
     pp_flush_queue state true; state.pp_flush_function ()
 and pp_print_flush state () =
@@ -537,8 +537,7 @@ let pp_set_min_space_left state n =
 
 (* Initially we have :
   pp_max_indent = pp_margin - pp_min_space_left, and
-  pp_space_left = pp_margin
-*)
+  pp_space_left = pp_margin *)
 let pp_set_max_indent state n =
   pp_set_min_space_left state (state.pp_margin - n);;
 let pp_get_max_indent state () = state.pp_max_indent;;
@@ -625,27 +624,20 @@ let make_formatter f g = pp_make_formatter f g display_newline display_blanks;;
 let formatter_of_out_channel oc =
  make_formatter (output oc) (fun () -> flush oc);;
 
-let get_out b =
- let s = Buffer.contents b in
- Buffer.reset b;
- s;;
-
-let string_out b ppf () =
- pp_flush_queue ppf false;
- get_out b;;
-
 let formatter_of_buffer b =
- let ppf =
-  make_formatter (Buffer.output b) (fun () -> ()) in
- pp_set_formatter_output_functions
-  ppf (Buffer.output b) (fun () -> pp_flush_queue ppf false);
- ppf, string_out b ppf;;
+  make_formatter (Buffer.output b) (fun () -> Buffer.flush b);;
 
-let stdbuf = Buffer.create 1024;;
+let stdbuf = Buffer.create 512;;
 
-let str_formatter, flush_str_formatter = formatter_of_buffer stdbuf;;
+let str_formatter = formatter_of_buffer stdbuf;;
 let std_formatter = formatter_of_out_channel stdout;;
 let err_formatter = formatter_of_out_channel stderr;;
+
+let flush_str_formatter () =
+ pp_flush_queue str_formatter false;
+ let s = Buffer.contents stdbuf in
+ Buffer.reset stdbuf;
+ s;;
 
 let open_hbox = pp_open_hbox std_formatter
 and open_vbox = pp_open_vbox std_formatter
@@ -705,7 +697,7 @@ external format_float: string -> float -> string = "format_float"
 
 let format_invalid_arg s c = invalid_arg (s ^ String.make 1 c);;
 
-let fprintf_out out ppf format =
+let fprintf_out str out ppf format =
   let format = (Obj.magic format : string) in
   let limit = String.length format in
 
@@ -816,11 +808,21 @@ let fprintf_out out ppf format =
                 pp_print_as_string ppf (string_of_bool b);
                 doprn(succ j))
           | 'a' ->
-              Obj.magic(fun printer arg ->
+              if str then
+               Obj.magic(fun printer arg ->
+                pp_print_as_string ppf (printer () arg);
+                doprn(succ j))
+              else
+               Obj.magic(fun printer arg ->
                 printer ppf arg;
                 doprn(succ j))
           | 't' ->
-              Obj.magic(fun printer ->
+              if str then
+               Obj.magic(fun printer ->
+                pp_print_as_string ppf (printer ());
+                doprn(succ j))
+              else
+               Obj.magic(fun printer ->
                 printer ppf;
                 doprn(succ j))
           | c ->
@@ -894,14 +896,29 @@ let fprintf_out out ppf format =
      j
    | c ->  pp_open_box_gen ppf 0 Pp_box; i
 
-  in doprn 0
-;;
+  in doprn 0;;
 
 let unit_out () = ();;
 
-let fprintf ppf = fprintf_out unit_out ppf;;
-let printf f = fprintf_out unit_out std_formatter f;;
-let eprintf f = fprintf_out unit_out err_formatter f;;
-let sprintf f = fprintf_out flush_str_formatter str_formatter f;;
+let get_buffer_out b =
+ let s = Buffer.contents b in
+ Buffer.reset b;
+ s;;
+
+let string_out b ppf () =
+ pp_flush_queue ppf false;
+ get_buffer_out b;;
+
+let fprintf ppf = fprintf_out false unit_out ppf;;
+let printf f = fprintf_out false unit_out std_formatter f;;
+let eprintf f = fprintf_out false unit_out err_formatter f;;
+let sprintf f =
+ let b = Buffer.create 512 in
+ let ppf = formatter_of_buffer b in
+ fprintf_out true (string_out b ppf) ppf f;;
+
+let bprintf b =
+ let ppf = formatter_of_buffer b in
+ fprintf_out false (fun () -> pp_flush_queue ppf false) ppf;;
 
 let _ = at_exit print_flush;;
