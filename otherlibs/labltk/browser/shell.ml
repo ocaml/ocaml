@@ -92,7 +92,7 @@ object (self)
           Fileevent.remove_fileinput fd:in1;
           Fileevent.remove_fileinput fd:err1;
           Unix.kill :pid signal:Sys.sigkill;
-          Unix.waitpid mode:[] pid; ()
+          ignore (Unix.waitpid mode:[] pid)
         end
       with _ -> ()
     end
@@ -210,7 +210,7 @@ object (self)
 	  Text.mark_set textw mark:"input" index:(`Mark"insert",[`Char(-1)])
         end;
         Mutex.unlock imutex;
-        ignore (Timer.add ms:100 callback:read_buffer)
+        Timer.set ms:100 callback:read_buffer
       in
       read_buffer ()
     end else begin

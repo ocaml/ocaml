@@ -156,3 +156,5 @@ let f :dir =
   pack [dir_name] side:`Top anchor:`W fill:`X;
   pack [browse] side:`Bottom expand:true fill:`Both;
   tl
+
+let set :dir = ignore (f :dir);;

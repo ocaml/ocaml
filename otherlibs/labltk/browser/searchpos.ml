@@ -155,6 +155,7 @@ let search_pos_type_decl td :pos :env =
   end
   
 let rec search_pos_signature l :pos :env =
+  ignore (
   List.fold_left l acc:env fun:
   begin fun acc:env pt ->
     let env = match pt.psig_desc with
@@ -195,13 +196,13 @@ let rec search_pos_signature l :pos :env =
       raise Not_found
     end;
     env
-  end
+  end)
 
 and search_pos_module m :pos :env =
   if in_loc m.pmty_loc :pos then begin
     begin match m.pmty_desc with
       Pmty_ident lid -> raise (Found_sig (`Modtype, lid, env))
-    | Pmty_signature sg -> let _ = search_pos_signature sg :pos :env in ()
+    | Pmty_signature sg -> search_pos_signature sg :pos :env
     | Pmty_functor (_ , m1, m2) ->
         search_pos_module m1 :pos :env;
         search_pos_module m2 :pos :env
@@ -236,6 +237,10 @@ let add_shown_module path :widgets =
 and find_shown_module path =
   filter_modules ();
   Hashtbl.find shown_modules key:path
+
+let is_shown_module path =
+  filter_modules ();
+  Hashtbl.mem shown_modules key:path
 
 (* Viewing a signature *)
 

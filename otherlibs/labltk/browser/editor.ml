@@ -141,11 +141,8 @@ let send_phrase txt =
         let i1,i2 = Text.tag_nextrange txt.tw tag:"sel" start:tstart in
         let phrase = Text.get txt.tw start:(i1,[]) end:(i2,[]) in
         sh#send phrase;
-        try
-          ignore(Str.search_forward phrase pat:(Str.regexp ";;") pos:0);
-          sh#send "\n"
-        with Not_found ->
-          sh#send ";;\n"
+        if Str.string_match phrase pat:(Str.regexp ";;") pos:0)
+        then sh#send "\n" else sh#send ";;\n"
       with Not_found | Protocol.TkError _ ->
         let text = Text.get txt.tw start:tstart end:tend in
         let buffer = Lexing.from_string text in
@@ -249,7 +246,7 @@ let indent_line =
   fun tw ->
     let `Linechar(l,c) = Text.index tw index:(ins,[])
     and line = Text.get tw start:(ins,[`Linestart]) end:(ins,[`Lineend]) in
-    Str.string_match pat:reg line pos:0;
+    ignore (Str.string_match pat:reg line pos:0);
     let len = Str.match_end () in
     if len < c then Text.insert tw index:(ins,[]) text:"\t" else
     let width = string_width (Str.matched_string line) in
@@ -259,7 +256,7 @@ let indent_line =
       let previous =
         Text.get tw start:(ins,[`Line(-1);`Linestart])
           end:(ins,[`Line(-1);`Lineend]) in
-      Str.string_match pat:reg previous pos:0;
+      ignore (Str.string_match pat:reg previous pos:0);
       let previous = Str.matched_string previous in
       let width_previous = string_width previous in
       if  width_previous <= width then 2 else width_previous - width
@@ -339,7 +336,7 @@ class editor :top :menus = object (self)
       action:(fun _ ->
         let text =
           Text.get tw start:(`Mark"insert",[]) end:(`Mark"insert",[`Lineend])
-        in Str.string_match pat:(Str.regexp "[ \t]*") text pos:0;
+        in ignore (Str.string_match pat:(Str.regexp "[ \t]*") text pos:0);
         if Str.match_end () <> String.length text then begin
           Clipboard.clear ();
           Clipboard.append data:text ()
@@ -576,7 +573,7 @@ class editor :top :menus = object (self)
 
     (* Modules *)
     module_menu#add_command "Path editor..."
-      command:(fun () -> Setpath.f dir:current_dir; ());
+      command:(fun () -> Setpath.set dir:current_dir);
     module_menu#add_command "Reset cache"
       command:(fun () -> Setpath.exec_update_hooks (); Env.reset_cache ());
     module_menu#add_command "Search symbol..."

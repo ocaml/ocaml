@@ -78,8 +78,7 @@ let view_symbol :kind :env ?:path id =
 let choose_symbol :title :env ?:signature ?:path l =
   if match path with
     None -> false
-  | Some path ->
-      try find_shown_module path; true with Not_found -> false
+  | Some path -> is_shown_module path
   then () else
   let tl = Jg_toplevel.titled title in
   Jg_bind.escape_destroy tl;
@@ -104,7 +103,7 @@ let choose_symbol :title :env ?:signature ?:path l =
   box#init;
   box#bind_kbd events:[`KeyPressDetail"Escape"]
     action:(fun _ :index -> destroy tl; break ());
-  if List.length nl > 9 then (Jg_multibox.add_scrollbar box; ());
+  if List.length nl > 9 then ignore (Jg_multibox.add_scrollbar box);
   Jg_multibox.add_completion box action:
     begin fun pos ->
       let li, k = List.nth l :pos in
@@ -262,7 +261,7 @@ let f ?(:dir=Unix.getcwd()) ?:on () =
   let tl = match on with
     None ->
       let tl = Jg_toplevel.titled "Module viewer" in
-      Jg_bind.escape_destroy tl; coe tl
+      ignore (Jg_bind.escape_destroy tl); coe tl
   | Some top ->
       Wm.title_set top title:"OCamlBrowser";
       Wm.iconname_set top name:"OCamlBrowser";
@@ -321,7 +320,8 @@ let f ?(:dir=Unix.getcwd()) ?:on () =
   filemenu#add_command "Quit" command:(fun () -> destroy tl);
 
   (* modules menu *)
-  modmenu#add_command "Path editor..." command:(fun () -> Setpath.f :dir; ());
+  modmenu#add_command "Path editor..."
+    command:(fun () -> Setpath.set :dir);
   modmenu#add_command "Reset cache"
     command:(fun () -> reset_modules mbox; Env.reset_cache ());
   modmenu#add_command "Search symbol..." command:search_symbol;

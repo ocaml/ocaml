@@ -25,6 +25,7 @@ type module_widgets =
 
 val add_shown_module : Path.t -> widgets:module_widgets -> unit
 val find_shown_module : Path.t -> module_widgets
+val is_shown_module : Path.t -> bool
 
 val view_defined_ref : (Longident.t -> env:Env.t -> unit) ref
 val editor_ref :
@@ -44,7 +45,7 @@ val view_type_decl : Path.t -> env:Env.t -> unit
 type skind = [`Type|`Class|`Module|`Modtype]
 exception Found_sig of skind * Longident.t * Env.t
 val search_pos_signature :
-  Parsetree.signature -> pos:int -> env:Env.t -> Env.t
+  Parsetree.signature -> pos:int -> env:Env.t -> unit
       (* raises Found_sig to return its result, or Not_found *)
 val view_decl : Longident.t -> kind:skind -> env:Env.t -> unit
 val view_decl_menu :
