@@ -41,6 +41,7 @@ method select_addressing = function
 
 method select_operation op args =
   match (op, args) with
+    (* Recognize shift-add operations *)
     ((Caddi|Cadda),
      [arg2; Cop(Clsl, [arg1; Cconst_int(2|3 as shift)])]) ->
       (Ispecific(if shift = 2 then Iadd4 else Iadd8), [arg1; arg2])
@@ -60,6 +61,7 @@ method select_operation op args =
       (Ispecific(if shift = 2 then Isub4 else Isub8), [arg1; arg2])
   | (Csubi, [Cop(Cmuli, [Cconst_int(4|8 as mult); arg1]); arg2]) ->
       (Ispecific(if mult = 4 then Isub4 else Isub8), [arg1; arg2])
+    (* Work around various limitations of the GNU assembler *)
   | ((Caddi|Cadda), [arg1; Cconst_int n]) when self#is_immediate (-n) ->
       (Iintop_imm(Isub, -n), [arg1])
   | (Cdivi, [arg1; Cconst_int n])

@@ -552,10 +552,10 @@ let rec transl = function
   | Uprim(Plslint, [arg1; arg2]) ->
       incr_int(Cop(Clsl, [decr_int(transl arg1); untag_int(transl arg2)]))
   | Uprim(Plsrint, [arg1; arg2]) ->
-      Cop(Cor, [Cop(Clsr, [decr_int(transl arg1); untag_int(transl arg2)]);
+      Cop(Cor, [Cop(Clsr, [transl arg1; untag_int(transl arg2)]);
                 Cconst_int 1])
   | Uprim(Pasrint, [arg1; arg2]) ->
-      Cop(Cor, [Cop(Casr, [decr_int(transl arg1); untag_int(transl arg2)]);
+      Cop(Cor, [Cop(Casr, [transl arg1; untag_int(transl arg2)]);
                 Cconst_int 1])
   | Uprim(Pintcomp cmp, [arg1; arg2]) ->
       tag_int(Cop(Ccmpi(transl_comparison cmp), [transl arg1; transl arg2]))
