@@ -606,7 +606,7 @@ and module_expr me _ k =
   match me with
   [ <:module_expr< struct $list:s$ end >> ->
       let s = HVbox [: `S LR "struct"; list str_item s "" [: :] :] in
-      HVbox [: `HVbox [: :]; `s; `S LR "end"; k :]
+      HVbox [: `HVbox [: :]; `s; `HVbox [: `S LR "end"; k :] :]
   | <:module_expr< functor ($s$ : $mt$) -> $me$ >> ->
       let head =
         HVbox
