@@ -38,3 +38,6 @@ val cmp: t -> int -> int
         (* [cmp n1 i2] is [compare n1 (from i2)]. *)
 val to_string: t -> string
         (* Return the signed decimal representation of a native integer. *)
+val to_hexa_string: t -> string
+        (* Return the signed hexadecimal representation of a native integer,
+           in 0x notation. *)

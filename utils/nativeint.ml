@@ -52,3 +52,12 @@ let to_string n =
   (if n.msw >= 0 then "" else "-") ^
   (if q > 0 then string_of_int q else "") ^
   string_of_int (r * 2 + a.lsb)
+
+let to_hexa_string n =
+  let a = if n.msw >= 0 then n else sub (from 0) n in
+  let q = a.msw lsr 3 in
+  let r = a.msw land 0x7 in
+  Printf.sprintf "%s0x%x%x"
+    (if n.msw >= 0 then "" else "-")
+    q
+    (r * 2 + a.lsb)
