@@ -55,7 +55,7 @@ written for previous versions of Objective Caml will work with no
 modifications in this mode, except for the problem mentioned in the
 above warning.
 
-In the classic mode, labels need not be explicitely written in
+In the classic mode, labels need not be explicitly written in
 function applications, but whenever they are given they are checked
 against the labels in the function type.
 
@@ -160,7 +160,7 @@ test y:2 () ();;
 Optional arguments are actually implemented as option types. If
 you do not give a default value, you have access to their internal
 representation, "type 'a option = None | Some of 'a". You can then
-provide different behaviours when an argument is present or not.
+provide different behaviors when an argument is present or not.
 
 \begin{caml_example}
 let bump ?:step x =
@@ -237,7 +237,7 @@ library.
 \entree{"dst:"}{the destination of an operation}
 \entree{"fun:"}{a function to be applied}
 \entree{"pred:"}{a boolean predicate}
-\entree{"acc:"}{the accumulator}
+\entree{"acc:"}{an accumulator}
 \entree{"to:"}{an output channel}
 \entree{"key:"}{a value used as index}
 \entree{"data:"}{a value associated to an index}
@@ -254,6 +254,10 @@ enough to understand the function's meaning. Since one can get this
 information with OCamlBrowser or the ocaml toplevel, the documentation
 is only used when a more detailed specification is needed.
 
+\begin{caml_eval}
+#modern false;;
+\end{caml_eval}
+
 \section{Polymorphic variants}
 \pdfsection{Polymorphic variants}
 
@@ -269,7 +273,9 @@ With polymorphic variants, this original assumption is removed. That
 is, a variant tag does not belong to any type in particular, the type
 system will just check that it is an admissible value according to its
 use. You need not define a type before using a variant tag. A variant
-type will be infered independently for each of its uses.
+type will be inferred independently for each of its uses.
+
+\subsection*{Basic use}
 
 In programs, polymorphic variants work like usual ones. You just have
 to prefix their names with a backquote character "`".
@@ -290,7 +296,25 @@ contain an implicit type variable. Both variant types appearing only
 once in the type, the implicit type variables they constrain are not
 shown.
 
-More complex expressions may result in more type information.
+The above variant types were polymorphic, allowing further refinement.
+When writing type annotations, one will most often describe fixed
+variant types, that is types that can be no longer refined. This is
+also the case for type abbreviations. Such types do not contain "<" or
+">", but just an enumeration of the tags and their associated types,
+just like in a normal datatype definition. For conciseness, "of" is
+omitted in polymorphic variant types.
+\begin{caml_example}
+type 'a vlist = [`Nil | `Cons 'a * 'a vlist];;
+let rec map fun:f : 'a vlist -> 'b vlist = function
+  | `Nil -> `Nil
+  | `Cons(a, l) -> `Cons(f a, map fun:f l)
+;;
+\end{caml_example}
+
+\subsection*{Advanced use}
+
+Type-checking polymorphic variants is a subtle thing, and some
+expressions may result in more complex type information.
 \begin{caml_example}
 function `A -> `B | x -> x;;
 \end{caml_example}
@@ -300,18 +324,49 @@ variant tags in this variant type. We know also that "`B" can appear
 in the result, and input and output types have to be kept equal
 because "x" is returned as is.
 
-All the above variant types were polymorphic, allowing further refinement.
-When writing type annotations, one will most often describe fixed
-variant types, that is types that can be no longer refined. This is
-also the case for type abbreviations. Such types do not contain "<" or
-">", but just an enumeration of the tags and their associated types,
-just like in a normal datatype definition. For conciseness, "of" is
-omitted in polymorphic variant types.
 \begin{caml_example}
-type 'a vlist = [`Nil | `Cons 'a * 'a vlist];;
-let map' : fun:('a -> 'b) -> 'a vlist -> 'b vlist = map;;
+let f1 = function `A x -> x = 1 | `B -> true | `C -> false
+let f2 = function `A x -> x = "a" | `B -> true ;;
+let f x = f1 x && f2 x;;
+\end{caml_example}
+Here "f1" and "f2" both accept the variant tags "`A" and "`B", but the
+argument of "`A" is "int" for "f1" and "string" for "f2". In "f"'s
+type "`C", only accepted by "f1", disappears, but both argument types
+appear for "`A" as "int & string". This means that if we
+pass the variant tag "`A" to "f", its argument should be {\em both}
+"int" and "string". Since there is no such value, "f" cannot be
+applied to "`A", and "`B" is the only accepted input.
+
+Even if a value has a fixed variant type, one can still give it a
+larger type through coercions. Coercions are normally written with
+both the source type and the destination type, but in simple cases the
+source type may be omitted.
+\begin{caml_example}
+type 'a wlist = [`Nil | `Cons 'a * 'a wlist | `Snoc 'a wlist * 'a];;
+let wlist_of_vlist  l = (l : 'a vlist :> 'a wlist);;
+fun x -> (x :> [`A|`B|`C]);;
 \end{caml_example}
 
-\begin{caml_eval}
-#modern false;;
-\end{caml_eval}
+You may also selectively coerce values through pattern matching.
+\begin{caml_example}
+let split_cases = function
+  | `Nil | `Cons _ as x -> `A x
+  | `Snoc _ as x -> `B x
+;;
+\end{caml_example}
+When an or-pattern composed of variant tags is wrapped inside an
+alias-pattern, the alias is given a type containing only the tags
+enumerated in the or-pattern. this allows for many useful idioms, like
+incremental definition of functions.
+
+\begin{caml_example}
+let num x = `Num x
+let eval1 eval (`Num x) = x
+let rec eval x = eval1 eval x ;;
+let plus x y = `Plus(x,y)
+let eval2 eval = function
+  | `Plus(x,y) -> eval x + eval y
+  | `Num _ as x -> eval1 eval x
+let rec eval x = eval2 eval x ;;
+\end{caml_example}
+
