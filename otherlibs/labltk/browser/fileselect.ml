@@ -17,11 +17,11 @@
 (* file selection box *)
 
 open StdLabels
-open Useunix
 open Str
 open Filename
-
 open Tk
+
+open Useunix
 
 (**** Memoized rexgexp *)
 
@@ -55,12 +55,6 @@ let parse_filter s =
     in
       dirs, ptrn
   else "", s
-
-let concat dir name =
-  let len = String.length dir in
-  if len = 0 then name else
-  if dir.[len-1] = '/' then dir ^ name
-  else dir ^ "/" ^ name
 
 let rec fixpoint ~f v =
   let v' = f v in

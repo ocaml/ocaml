@@ -18,7 +18,13 @@ open StdLabels
 open UnixLabels
 
 let get_files_in_directory dir =
-  match
+  let len = String.length dir in
+  let dir =
+    if len > 0 && Sys.os_type = "Win32" &&
+     (dir.[len-1] = '/' || dir.[len-1] = '\\')
+    then String.sub dir ~pos:0 ~len:(len-1)
+    else dir
+  in match
     try Some(opendir dir) with Unix_error _ -> None
   with
     None -> []
@@ -39,8 +45,14 @@ let is_directory name =
     (stat name).st_kind = S_DIR
   with _ -> false
 
+let concat dir name =
+  let len = String.length dir in
+  if len = 0 then name else
+  if dir.[len-1] = '/' then dir ^ name
+  else dir ^ "/" ^ name
+
 let get_directories_in_files ~path =
-  List.filter ~f:(fun x -> is_directory  (path ^ "/" ^ x))
+  List.filter ~f:(fun x -> is_directory  (concat path x))
 
 (************************************************** Subshell call *)
 let subshell ~cmd =

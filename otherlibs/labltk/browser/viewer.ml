@@ -263,9 +263,9 @@ let close_all_views () =
 let shell_counter = ref 1
 let default_shell = ref "ocaml"
 
-let start_shell () =
+let start_shell master =
   let tl = Jg_toplevel.titled "Start New Shell" in
-  Wm.transient_set tl ~master:Widget.default_toplevel;
+  Wm.transient_set tl ~master;
   let input = Frame.create tl
   and buttons = Frame.create tl in
   let ok = Button.create buttons ~text:"Ok"
@@ -356,7 +356,7 @@ let f ?(dir=Unix.getcwd()) ?on () =
   filemenu#add_command "Open..."
     ~command:(fun () -> !editor_ref ~opendialog:true ());
   filemenu#add_command "Editor..." ~command:(fun () -> !editor_ref ());
-  filemenu#add_command "Shell..." ~command:start_shell;
+  filemenu#add_command "Shell..." ~command:(fun () -> start_shell tl);
   filemenu#add_command "Quit" ~command:(fun () -> destroy tl);
 
   (* modules menu *)
@@ -463,7 +463,7 @@ object (self)
     filemenu#add_command "Open..."
       ~command:(fun () -> !editor_ref ~opendialog:true ());
     filemenu#add_command "Editor..." ~command:(fun () -> !editor_ref ());
-    filemenu#add_command "Shell..." ~command:start_shell;
+    filemenu#add_command "Shell..." ~command:(fun () -> start_shell tl);
     filemenu#add_command "Quit" ~command:(fun () -> destroy tl);
 
     (* View menu *)
