@@ -19,15 +19,30 @@ OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
-allopt: stdlib.cmxa std_exit.cmx stdlib.p.cmxa std_exit.p.cmx
+allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILING)
+
+allopt-noprof:
+
+allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 
 install:
 	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur $(LIBDIR)
 
-installopt:
+installopt: installopt-default installopt-$(PROFILING)
+
+installopt-default:
 	cp stdlib.cmxa stdlib.a std_exit.o *.cmx $(LIBDIR)
-	cp stdlib.p.cmxa stdlib.p.a std_exit.p.o $(LIBDIR)
-	cd $(LIBDIR); $(RANLIB) stdlib.a; $(RANLIB) stdlib.p.a
+	cd $(LIBDIR); $(RANLIB) stdlib.a
+
+installopt-noprof:
+	ln -s stdlib.cmxa $(LIBDIR)/stdlib.p.cmxa
+	ln -s stdlib.a $(LIBDIR)/stdlib.p.a
+	ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
+	ln -s std_exit.o $(LIBDIR)/std_exit.p.o
+
+installopt-prof:
+	cp stdlib.p.cmxa stdlib.p.a std_exit.p.cmx std_exit.p.o $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) stdlib.p.a
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)

@@ -328,6 +328,12 @@ case "$arch,$model,$system" in
   arm,*,linux)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
 esac
 
+case "$arch,$model,$system" in
+  alpha,*,digital) profiling='prof';;
+  i386,*,linux_elf) profiling='prof';;
+  *) profiling='noprof';;
+esac
+
 # Where is ranlib?
 
 if sh ./searchpath ranlib; then
@@ -721,6 +727,7 @@ echo "ASFLAGS=$asflags" >> Makefile
 echo "ASPP=$aspp" >> Makefile
 echo "ASPPFLAGS=$asppflags" >> Makefile
 echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
+echo "PROFILING=$profiling" >> Makefile
 
 echo "CCLIBS=$cclibs" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
@@ -762,6 +769,11 @@ else
   echo "	options for linking....... $nativecclinkopts $cclibs"
   echo "        assembler ................ \$(AS) $asflags"
   echo "        preprocessed assembler ... $aspp $asppflags"
+  if test "$profiling" = "prof"; then
+  echo "        profiling with gprof ..... supported"
+  else
+  echo "        profiling with gprof ..... not supported"
+  fi
 fi
 
 if test "$debugger" = "ocamldebugger"; then

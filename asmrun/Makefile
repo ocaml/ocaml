@@ -4,7 +4,7 @@ CC=$(NATIVECC)
 FLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) 
 CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
-PFLAGS=$(FLAGS) -pg -DPROFILING $(NATIVECCCOMPOPTS)
+PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCCOMPOPTS)
 
 COBJS=startup.o main.o fail.o roots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
@@ -18,7 +18,7 @@ OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 
-all: libasmrun.a libasmrunp.a
+all: libasmrun.a all-$(PROFILING)
 
 libasmrun.a: $(OBJS)
 	rm -f libasmrun.a
@@ -30,14 +30,27 @@ libasmrund.a: $(DOBJS)
 	ar rc libasmrund.a $(DOBJS)
 	$(RANLIB) libasmrund.a
 
+all-noprof:
+
+all-prof: libasmrunp.a
+
 libasmrunp.a: $(POBJS)
 	rm -f libasmrunp.a
 	ar rc libasmrunp.a $(POBJS)
 	$(RANLIB) libasmrunp.a
 
-install:
-	cp libasmrun.a libasmrunp.a $(LIBDIR)
-	cd $(LIBDIR); $(RANLIB) libasmrun.a libasmrunp.a
+install: install-default install-$(PROFILING)
+
+install-default:
+	cp libasmrun.a $(LIBDIR)/libasmrun.a
+	cd $(LIBDIR); $(RANLIB) libasmrun.a
+
+install-noprof:
+	ln -s libasmrun.a $(LIBDIR)/libasmrunp.a
+
+install-prof:
+	cp libasmrunp.a $(LIBDIR)/libasmrunp.a
+	cd $(LIBDIR); $(RANLIB) libasmrunp.a
 
 power.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.o
@@ -136,6 +149,7 @@ clean::
 depend: $(COBJS:.o=.c)
 	gcc -MM $(FLAGS) *.c > .depend
 	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.p.o/' >> .depend
 
 include .depend
 

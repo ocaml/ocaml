@@ -172,6 +172,12 @@ SHARPBANGSCRIPTS=true
 # Otherwise:
 #ASPPPROFFLAGS=-DPROFILING
 
+### Whether profiling with gprof is supported
+# If yes: (x86/Linux, Alpha/Digital Unix):
+#PROFILING=prof
+# If no: (all others)
+#PROFILING=noprof
+
 ############# Configuration for the contributed libraries
 
 ### Which libraries to compile and install
