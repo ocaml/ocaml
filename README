@@ -29,7 +29,6 @@ compiler currently runs on the following platforms:
     HP PA-RISC processors: HP 9000/700 under HPUX 9
     PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 3.2,
                         PowerMacintosh under MkLinux, LinuxPPC, MacOS X Server
-    Motorola 680x0 processors: Sun 3 under SunOS
     Strong ARM processors: Corel Netwinder under Linux
 
 Other operating systems for the processors above have not been tested,
@@ -72,9 +71,9 @@ CONTENTS:
 COPYRIGHT:
 
 All files marked "Copyright INRIA" in this distribution are copyright
-1996, 1997, 1998, 1999 Institut National de Recherche en Informatique et
-en Automatique (INRIA) and distributed under the conditions stated in
-file LICENSE.
+1996, 1997, 1998, 1999, 2000 Institut National de Recherche en
+Informatique et en Automatique (INRIA) and distributed under the
+conditions stated in file LICENSE.
 
 INSTALLATION:
 
@@ -88,7 +87,7 @@ DVI, and Emacs Info files.  It can be obtained by anonymous FTP from
 ftp.inria.fr as described below. It is also available on the World
 Wide Web, at
 
-        http://caml.inria.fr/ocaml/
+        http://caml.inria.fr/
 
 AVAILABILITY:
 
@@ -99,6 +98,7 @@ and can be accessed by anonymous FTP:
         directory:  lang/caml-light
 
 or through a Web browser at ftp://ftp.inria.fr/lang/caml-light/
+                         or http://caml.inria.fr/
 
 KEEPING IN TOUCH WITH THE CAML COMMUNITY:
 

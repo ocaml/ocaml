@@ -11,7 +11,7 @@ PREREQUISITES
   2.7.2.1 for Intel as found in Linux/RedHat 4.1 and 4.2 has known problems;
   upgrade to something more recent.
 
-* Under HP/UX, the GNU C compiler gcc, the GNU assembler as, and GNU make
+* Under HP/UX, the GNU C compiler gcc, the GNU assembler gas, and GNU make
   are all *required*.  The vendor-provided compiler, assembler and make
   have major problems.
 

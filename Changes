@@ -8,8 +8,10 @@ Language:
   See tutorial (chapter 2 of the OCaml manual) for more information.
 - Syntactic change: "?" in stream error handlers changed to "??".
 - Added exception renaming in structures (exception E = F).
-- (OCaml 2.99/OLabl users only) Label syntax has changed. A tool
-  is provided to help convert labelized programs to OCaml 3.00.
+- (OCaml 2.99/OLabl users only) Label syntax changed to preserve
+  backward compatibility with 2.0x (labeled function application
+  is f ~lbl:arg instead of f lbl:arg).  A tool is provided to help
+  convert labelized programs to OCaml 3.00.
 
 Both compilers:
 - Option -labels to select commuting label mode (labels are mandatory,
@@ -29,7 +31,7 @@ Both compilers:
 Bytecode compiler:
 - New "modular" format for bytecode executables; no visible differences
   for users, but will facilitate further extensions later.
-- Revised treatment of signals.
+- Fixed problems in signal handling.
 
 Native-code compiler:
 - Profiling support on x86 under FreeBSD
@@ -57,24 +59,19 @@ Run-time system:
 Standard library:
 - New modules Int32, Int64, Nativeint for 32-bit, 64-bit and
   platform-native integers
+- Module Array: added Array.sort, Array.stable_sort.
 - Module Gc: added Gc.finalise to attach Caml finalisation functions to
   arbitrary heap-allocated data.
 - Module Hashtbl: do not bomb when resizing very large table.
 - Module Lazy: raise Lazy.Undefined when a lazy evaluation needs itself.
-- Module List: fixed bug in List.rev_map2.
+- Module List: added List.sort, List.stable_sort; fixed bug in List.rev_map2.
 - Module Map: added mapi (iteration with key and data).
 - Module Set: added iterators for_all, exists, filter, partition.
-- Module Sort: ???
+- Module Sort: still here but deprecated in favor of new sorting functions
+  in Array and List.
 - Module Stack: added Stack.top
 - Module String: fixed boundary condition on String.rindex_from
 - Added labels on function arguments where appropriate.
-
-New or updated ports:
-- Alpha/Digital Unix: lifted 256M limitation on total memory space 
-  induced by -taso
-- Port to AIX 4.3 on PowerPC
-- Port to HPUX 11 on HPPA
-- Deprecated 680x0 / SunOS port
 
 New libraries and tools:
 - ocamlbrowser: graphical browser for OCaml sources and compiled interfaces,
@@ -95,6 +92,13 @@ Other libraries:
 - Num: fixed bug in Num.float_of_num.
 - Str: worked around potential symbol conflicts with C standard library.
 - Dbm: fixed bug with Dbm.iter on empty database.
+
+New or updated ports:
+- Alpha/Digital Unix: lifted 256M limitation on total memory space 
+  induced by -taso
+- Port to AIX 4.3 on PowerPC
+- Port to HPUX 10 on HPPA
+- Deprecated 680x0 / SunOS port
 
 Macintosh port:
 - Implemented the Unix and Thread libraries.
