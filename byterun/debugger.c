@@ -161,6 +161,7 @@ void debugger(event)
   mlsize_t size;
   value val;
   value * p;
+  struct longjmp_buffer raise_buf, * saved_external_raise;
 
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
@@ -299,7 +300,16 @@ void debugger(event)
       break;
     case REQ_MARSHAL_OBJ:
       val = getval(dbg_in);
-      output_value(dbg_out, val);
+      /* Catch exceptions raised by output_value */
+      saved_external_raise = external_raise;
+      if (sigsetjmp(raise_buf.buf, 1) == 0) {
+        external_raise = &raise_buf;
+        output_value(dbg_out, val);
+      } else {
+        /* Send wrong magic number, will cause input_value to fail */
+        really_putblock(dbg_out, "\000\000\000\000", 4);
+      }
+      external_raise = saved_external_raise;
       flush(dbg_out);
       break;
     case REQ_GET_CLOSURE_CODE:
