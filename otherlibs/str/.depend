@@ -1,8 +1,0 @@
-strstubs.o: strstubs.c regex-0.12/regex.h ../../byterun/mlvalues.h \
-  ../../byterun/config.h ../../config/m.h ../../config/s.h \
-  ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/custom.h \
-  ../../byterun/fail.h ../../byterun/memory.h ../../byterun/gc.h \
-  ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h
-str.cmo: str.cmi 
-str.cmx: str.cmi 

@@ -1,7 +1,0 @@
-#!/bin/sh
-# Determine if gcc calls the Solaris ld or the GNU ld
-# Exit code is 0 for Solaris ld, 1 for GNU ld
-
-echo "int main() { return 0; }" > hasgot.c
-$cc -v -o tst hasgot.c 2>&1 | grep -s '^ld:' > /dev/null
-exit $?
