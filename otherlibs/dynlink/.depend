@@ -1,4 +1,8 @@
-dynlink.cmo: dynlink.cmi 
-dynlink.cmx: dynlink.cmi 
+dynlink.cmo: ../../utils/config.cmi ../../bytecomp/emitcode.cmi \
+    ../../bytecomp/meta.cmi ../../utils/misc.cmi ../../bytecomp/opcodes.cmo \
+    ../../bytecomp/symtable.cmi dynlink.cmi 
+dynlink.cmx: ../../utils/config.cmx ../../bytecomp/emitcode.cmx \
+    ../../bytecomp/meta.cmx ../../utils/misc.cmx ../../bytecomp/opcodes.cmx \
+    ../../bytecomp/symtable.cmx dynlink.cmi 
 extract_crc.cmo: dynlink.cmi 
 extract_crc.cmx: dynlink.cmx 
