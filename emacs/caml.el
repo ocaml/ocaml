@@ -1598,7 +1598,7 @@ matching nodes to determine KEYWORD's final indentation.")
            (cond
             (closing 1)
             (comment-mark 1)
-            (t caml-comment-indent)))))
+            (t (- (match-end 0) (match-beginning 0)))))))
      (t (let* ((leading (looking-at caml-leading-kwops-regexp))
                (assoc-val (if leading (assoc (caml-match-string 0)
                                              caml-leading-kwops-alist)))
