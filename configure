@@ -602,16 +602,19 @@ if sh ./hasgot truncate ftruncate; then
   echo "#define HAS_TRUNCATE" >> s.h
 fi
 
-has_select=no
-if sh ./hasgot select; then
-  echo "select() found."
-  echo "#define HAS_SELECT" >> s.h
-  has_select=yes
-fi
-
+select_include=''
 if sh ./hasgot -i sys/types.h -i sys/select.h; then
   echo "sys/select.h found."
   echo "#define HAS_SYS_SELECT_H" >> s.h
+  select_include='-i sys/select.h'
+fi
+
+has_select=no
+if sh ./hasgot select && \
+   sh ./hasgot -i sys/types.h $select_include -t fd_set ; then
+  echo "select() found."
+  echo "#define HAS_SELECT" >> s.h
+  has_select=yes
 fi
 
 if sh ./hasgot symlink readlink lstat;  then
