@@ -20,6 +20,13 @@ value print_string(s)
   return 1;
 }
 
+value print_char(c)
+     value c;
+{
+  printf("%c", c>>1);
+  return 1;
+}
+
 static struct {
   value header;
   char data[16];

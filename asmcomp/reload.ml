@@ -46,7 +46,7 @@ let rec reload i =
   | Iop(Icall_ind | Icall_imm _ | Iextcall _) ->
       (* Don't do anything, the arguments and results are already at
          the correct position (e.g. on stack for some arguments). *)
-      instr_cons_live i.desc i.arg i.res (reload i.next)
+      instr_cons_live i.desc i.arg i.res i.live (reload i.next)
   | Iop(Imove | Ireload | Ispill) ->
       (* Do something if this is a stack-to-stack move *)
       begin match i.arg.(0), i.res.(0) with

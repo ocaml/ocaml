@@ -49,12 +49,9 @@ val reload_operation:
       (Reg.t -> Reg.t) -> Mach.operation -> Reg.t array -> Reg.t array ->
         Reg.t array * Reg.t array
 
-(* Layout of the stack frame *)
+(* Info for laying out the stack frame *)
 val num_stack_slots: int array
-val stack_offset: int ref
 val contains_calls: bool ref
-val frame_size: unit -> int
-val slot_offset: Reg.stack_location -> int -> int
 
 (* Calling the assembler *)
 val assemble_file: string -> string -> int

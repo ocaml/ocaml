@@ -147,15 +147,12 @@ void copy_obj(addr)
 
 /* Machine-dependent stack frame accesses */
 
-#ifdef __alpha__
+#ifdef alpha
 #define Saved_return_address(sp) *((long *)(sp - 8))
-#if 0
 #define Already_scanned(sp, retaddr) (retaddr & 1)
 #define Mark_scanned(sp, retaddr) (*((long *)(sp - 8)) = retaddr | 1)
-#else
-#define Already_scanned(sp, retaddr) 0
-#define Mark_scanned(sp, retaddr)
-#endif
+/** #define Already_scanned(sp, retaddr) 0 **/
+/** #define Mark_scanned(sp, retaddr) **/
 #endif
 
 extern value * caml_globals[];

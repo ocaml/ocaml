@@ -93,8 +93,8 @@ caml_call_gc:
         stq     $26, 0($sp)
         stq     $gp, 8($sp)
     /* Rebuild $gp */
-        br      $26, $103
-$103:   ldgp    $gp, 0($26)
+        br      $27, $103
+$103:   ldgp    $gp, 0($27)
     /* Record lowest stack address and return address */
         ldq     $24, 0($sp)
         stq     $24, caml_last_return_address
@@ -132,21 +132,24 @@ $103:   ldgp    $gp, 0($26)
         .align  3
 caml_modify:
     /* Pointer to block in $25 */
-        ldgp    $gp, 0($27)
         ldq     $24, -8($25)
         .set    noat
         and     $24, 1024, $at
-        beq     $at, $104
+        beq     $at, caml_fast_modify
         .set    at
         ret     ($26)
 
         .align  3
 caml_fast_modify:
     /* Pointer to block in $25, header in $24 */
-        ldgp    $gp, 0($27)
     /* Set "modified" bit in header */
-$104:   or      $24, 1024, $24
+        or      $24, 1024, $24
         stq     $24, -8($25)
+    /* Save $gp */
+        mov     $gp, $27
+    /* Rebuild $gp */
+        br      $24, $104
+$104:   ldgp    $gp, 0($24)
     /* Store address of object in remembered set */
         ldq     $24, remembered_ptr
         stq     $25, 0($24)
@@ -155,17 +158,21 @@ $104:   or      $24, 1024, $24
         ldq     $24, remembered_end
         cmplt   $25, $24, $25
         beq     $25, caml_modify_realloc
+    /* Restore $gp */
+        mov     $27, $gp
         ret     ($26)
         .set    at
 
     /* Reallocate the remembered set, while preserving all regs */
 caml_modify_realloc:
         lda     $sp, -16($sp)
+        stq     $27, 8($sp)             /* Saved $gp */
         stq     $26, 0($sp)
         SAVE_ALL_REGS
         jsr     realloc_remembered
         LOAD_ALL_REGS
         ldq     $26, 0($sp)
+        ldq     $gp, 8($sp)
         lda     $sp, 16($sp)
         ret     ($26)
 
@@ -178,23 +185,29 @@ caml_modify_realloc:
 
         .align  3
 caml_c_call:
-    /* Function to call in $25 */
-        ldgp    $gp, 0($27)
+    /* Function to call is in $25 */
+        lda     $sp, -16($sp)
+        stq     $26, 0($sp)
+        stq     $gp, 8($sp)
+    /* Rebuild $gp */
+        br      $27, $105
+$105:   ldgp    $gp, 0($27)
     /* Record lowest stack address and return address */
         stq     $26, caml_last_return_address
         stq     $sp, caml_bottom_of_stack
     /* Make the exception handler and alloc ptr available to the C code */
         stq     $13, young_ptr
         stq     $15, caml_exception_pointer
-    /* Preserve return address */
-        mov     $26, $13
     /* Call the function */
         mov     $25, $27
         jsr     ($25)
-    /* Restore return address and alloc ptr */
+    /* Reload alloc ptr */
         ldgp    $gp, 0($26)
-        mov     $13, $26
         ldq     $13, young_ptr
+    /* Restore $gp and return */
+        ldq     $26, 0($sp)
+        ldq     $gp, 8($sp)
+        lda     $sp, 16($sp)
         ret     ($26)
 
         .end    caml_c_call

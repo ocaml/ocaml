@@ -1,9 +1,9 @@
 ARCH=alpha
 CC=gcc
-CFLAGS=-O2 -Wall
+CFLAGS=-O2 -D$(ARCH) -Wall
 #CFLAGS=-g -DDEBUG -Wall
 AS=as
-ASFLAGS=-O2 -g
+ASFLAGS=-O2
 
 OBJS=runtime.o gc.o debug.o compare.o $(ARCH).o
 

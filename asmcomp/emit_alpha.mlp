@@ -25,6 +25,28 @@ let emit_reg r =
     Reg r -> emit_string (register_name r)
   | _ -> fatal_error "Emit_alpha.emit_reg"
 
+(* Layout of the stack frame *)
+
+let stack_offset = ref 0
+let uses_gp = ref false
+
+let frame_size () =
+  let size =
+    !stack_offset +
+    8 * (num_stack_slots.(0) + num_stack_slots.(1)) +
+    (if !contains_calls then 8 else 0) +
+    (if !uses_gp then 8 else 0) in
+  Misc.align size 16
+
+let slot_offset loc class =
+  match loc with
+    Incoming n -> frame_size() + n
+  | Local n ->
+      if class = 0
+      then !stack_offset + n * 8
+      else !stack_offset + (num_stack_slots.(0) + n) * 8
+  | Outgoing n -> n
+
 (* Output a stack reference *)
 
 let emit_stack r =
@@ -143,8 +165,7 @@ let emit_modify mc =
   let i = mc.mod_instr in
   `{emit_label mc.mod_lbl}:	mov	{emit_reg i.arg.(0)}, $25\n`;
   liveregs i (live_24 + live_25);
-  `	jsr	caml_fast_modify\n`; (* Pointer to block in $25, header in $24 *)
-  `	ldgp	$gp, 0($26)\n`;
+  `	bsr	caml_fast_modify\n`; (* Pointer to block in $25, header in $24 *)
   `	br	{emit_label mc.mod_return_lbl}\n`
 
 (* Return the label occurring most frequently in an array of labels *)
@@ -165,7 +186,25 @@ let most_frequent_element v =
     if freq.(i) > !max_freq then (max_freq := freq.(i); max_freq_pos := i)
   done;
   v.(!max_freq_pos)
-    
+
+(* Determine if $gp is used in the function *)
+
+let rec instr_uses_gp i =
+  match i.desc with
+    Lend -> false
+  | Lop(Iconst_int n) ->
+      if n < -0x8000000 or n > 0x7FFFFFFF then true else instr_uses_gp i.next
+  | Lop(Iconst_float s) -> true
+  | Lop(Iconst_symbol s) -> true
+  | Lop(Iload(_, Ibased(_, _))) -> true
+  | Lop(Istore(_, Ibased(_, _))) -> true
+  | Lop(Iintop_imm(_, n)) ->
+      if n < -0x8000000 or n > 0x7FFFFFFF then true else instr_uses_gp i.next
+  | Lswitch(jumptbl) ->
+      let l = Array.length jumptbl in
+      if l < 3 or l > 4 then true else instr_uses_gp i.next
+  | _ ->
+      instr_uses_gp i.next
 
 (* Names of various instructions *)
 
@@ -254,29 +293,20 @@ let emit_instr i =
     | Lop(Iconst_symbol s) ->
         `	lda	{emit_reg i.res.(0)}, {emit_symbol s}\n`
     | Lop(Icall_ind) ->
-        `	mov	{emit_reg i.arg.(0)}, $27\n`;
-        liveregs i live_27;
-        `{record_frame i.live}	jsr	({emit_reg i.arg.(0)})\n`;
-        `	ldgp	$gp, 0($26)\n`
+        liveregs i 0;
+        `{record_frame i.live}	jsr	({emit_reg i.arg.(0)})\n`
     | Lop(Icall_imm s) ->
-        begin try
-          let entry_point = Hashtbl.find nogp_entry_points s in
-          liveregs i 0;
-          `{record_frame i.live}	bsr	{emit_label entry_point} # {emit_symbol s}\n`
-        with Not_found ->
-          `	lda	$27, {emit_symbol s}\n`;
-          liveregs i live_27;
-          `{record_frame i.live}	bsr	{emit_symbol s}\n`;
-          `	ldgp	$gp, 0($26)\n`
-        end
+        liveregs i 0;
+        `{record_frame i.live}	bsr	{emit_symbol s}\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
         if !contains_calls then
           `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
+        if !uses_gp then
+          `	ldq	$gp, {emit_int(n - 16)}($sp)\n`;
         if n > 0 then
           `	lda	$sp, {emit_int n}($sp)\n`;
-        `	mov	{emit_reg i.arg.(0)}, $27\n`;
-        liveregs i live_27;
+        liveregs i 0;
         `	jmp	({emit_reg i.arg.(0)})\n`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
@@ -285,23 +315,17 @@ let emit_instr i =
           let n = frame_size() in
           if !contains_calls then
             `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
+          if !uses_gp then
+            `	ldq	$gp, {emit_int(n - 16)}($sp)\n`;
           if n > 0 then
             `	lda	$sp, {emit_int n}($sp)\n`;
-          try
-            let entry_point = Hashtbl.find nogp_entry_points s in
-            liveregs i 0;
-            `	br	{emit_label entry_point} # {emit_symbol s}\n`
-          with Not_found ->
-            `	lda	$27, {emit_symbol s}\n`;
-            liveregs i live_27;
-            `	br      {emit_symbol s}\n`
+          liveregs i 0;
+          `	br	{emit_symbol s}\n`
         end
     | Lop(Iextcall s) ->
         `	lda	$25, {emit_symbol s}\n`;
-        `	lda	$27, caml_c_call\n`;
-        liveregs i (live_25 + live_27);
-        `{record_frame i.live}	bsr	caml_c_call\n`;
-        `	ldgp	$gp, 0($26)\n`
+        liveregs i live_25;
+        `{record_frame i.live}	bsr	caml_c_call\n`
     | Lop(Istackoffset n) ->
         `	lda	$sp, {emit_int (-n)}($sp)\n`;
         stack_offset := !stack_offset + n
@@ -365,8 +389,7 @@ let emit_instr i =
         end else begin
           `	mov	{emit_reg i.arg.(0)}, $25\n`;
           liveregs i live_25;
-          `	jsr	caml_modify\n`;  (* Pointer in $25 *)
-          `	ldgp	$gp, 0($26)\n`
+          `	jsr	caml_modify\n`   (* Pointer in $25 *)
         end
     | Lop(Iintop(Icomp cmp)) ->
         let (comp, test) = name_for_int_comparison cmp in
@@ -411,6 +434,8 @@ let emit_instr i =
         let n = frame_size() in
         if !contains_calls then
           `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
+        if !uses_gp then
+          `	ldq	$gp, {emit_int(n - 16)}($sp)\n`;
         if n > 0 then
           `	lda	$sp, {emit_int n}($sp)\n`;
         liveregs i 0;
@@ -484,12 +509,8 @@ let emit_instr i =
         end
     | Lsetuptrap lbl ->
         `	br	$25, {emit_label lbl}\n`;
-        (* This global label helps pixie understand what's going up *)
-        let handler_label =
-          Compilenv.current_unit_name() ^ "_exception_" ^ string_of_int lbl in
-        `	.globl	{emit_symbol handler_label}\n`;
-        `{emit_symbol handler_label}:\n`;
-        `	ldgp	$gp, 0($27)\n`
+        if !uses_gp then
+          `	ldgp	$gp, 0($27)\n`
     | Lpushtrap ->
         stack_offset := !stack_offset + 16;
         `	lda	$sp, -16($sp)\n`;
@@ -517,27 +538,27 @@ let rec emit_all i =
 let fundecl fundecl =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
-  let noldgp_entry_point = new_label() in
   tailrec_entry_point := new_label();
   stack_offset := 0;
   call_gc_sites := [];
   modify_sites := [];
-  Hashtbl.add nogp_entry_points fundecl.fun_name noldgp_entry_point;
+  uses_gp := instr_uses_gp fundecl.fun_body;
   `	.text\n`;
   `	.align	4\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.ent	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
-  `	ldgp	$gp, 0($27)\n`;
-  `{emit_label noldgp_entry_point}:`;
   let n = frame_size() in
   if n > 0 then
-    `	lda	$sp, -{emit_int n}($sp)\n`
-  else
-    `\n`;
+    `	lda	$sp, -{emit_int n}($sp)\n`;
   if !contains_calls then
     `	stq	$26, {emit_int(n - 8)}($sp)\n`;
-  `	.prologue 1\n`;
+  if !uses_gp then begin
+    `	stq	$gp, {emit_int(n - 16)}($sp)\n`;
+    let lbl = new_label() in
+    `	br	$27, {emit_label lbl}\n`;
+    `{emit_label lbl}:	ldgp	$gp, 0($27)\n`
+  end;
   `{emit_label !tailrec_entry_point}:`;
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;

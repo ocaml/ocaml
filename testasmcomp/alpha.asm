@@ -35,7 +35,14 @@ call_gen_code:
         .globl  caml_c_call
         .ent    caml_c_call
 caml_c_call:
+        lda     $sp, -16($sp)
+        stq     $26, 0($sp)
+        stq     $gp, 8($sp)
         mov     $25, $27
-        jmp     ($25)
+        jsr     ($25)
+        ldq     $26, 0($sp)
+        ldq     $gp, 8($sp)
+        lda     $sp, 16($sp)
+        ret     ($26)
 
         .end    caml_c_call
