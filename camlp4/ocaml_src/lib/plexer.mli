@@ -37,3 +37,8 @@ val make : unit -> Token.lexer;;
 
        The lexer do not use global (mutable) variables: instantiations
        of [Plexer.make ()] do not perturb each other.  *)
+
+val dollar_for_antiquotation : bool ref;;
+    (* When True (default), the next call to [Plexer.make ()] returns a
+       lexer where the dollar sign is used for antiquotations. If False,
+       the dollar sign can be used as token. *)

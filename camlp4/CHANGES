@@ -1,6 +1,9 @@
 Camlp4 Version 3.04
 -------------------
 
+- [07 Nov 01] Added the ability to use $ as token: was impossible so far,
+  because of AST quotation uses it for its antiquotation. The fix is just
+  a little (invisible) change in Plexer.
 - [05 Nov 01] Added option -tc (types comment) when using pr_o or pr_r
   try to print comments inside sum and record types like they are in
   the source (not by default, because may work incorrectly).

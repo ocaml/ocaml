@@ -18,7 +18,10 @@ open Pcaml;
 Pcaml.no_constructors_arity.val := True;
 
 do {
+  let odfa = Plexer.dollar_for_antiquotation.val in
+  Plexer.dollar_for_antiquotation.val := False;
   Grammar.Unsafe.reinit_gram gram (Plexer.make ());
+  Plexer.dollar_for_antiquotation.val := odfa;
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
   Grammar.Unsafe.clear_entry top_phrase;
@@ -90,7 +93,7 @@ value is_operator =
       ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"];
     List.iter (fun x -> Hashtbl.add ct x True)
       ['!'; '&'; '*'; '+'; '-'; '/'; ':'; '<'; '='; '>'; '@'; '^'; '|'; '~';
-       '?'; '%'; '.'];
+       '?'; '%'; '.'; '$'];
     fun x ->
       try Hashtbl.find ht x with
       [ Not_found -> try Hashtbl.find ct x.[0] with _ -> False ]
@@ -154,7 +157,7 @@ value infixop0 =
     (parser
        [: `("", x)
            when
-             not (List.mem x excl) && String.length x >= 2 &&
+             not (List.mem x excl) && String.length x >= 1 &&
              List.mem x.[0] list && symbolchar x 1 :] ->
          x)
 ;
