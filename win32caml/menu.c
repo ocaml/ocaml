@@ -10,6 +10,11 @@
 /*                                                                     */
 /***********************************************************************/
 
+/***********************************************************************/
+/* Changes made by Chris Watford to enhance the source editor          */
+/* Began 14 Sept 2003 - watford@uiuc.edu                               */
+/***********************************************************************/
+
 /* $Id$ */
 
 #include <stdio.h>
@@ -17,12 +22,13 @@
 #include <Richedit.h>
 #include "inria.h"
 #include "inriares.h"
+#include "history.h"
 
-void InterruptOcaml(void);
 LOGFONT CurrentFont;
 int CurrentFontFamily = (FIXED_PITCH | FF_MODERN);
 int CurrentFontStyle;
 char CurrentFontName[64] = "Courier";
+
 /*------------------------------------------------------------------------
  Procedure:     OpenMlFile ID:1
  Purpose:       Opens a file, either a source file (*.ml) or an *.cmo
@@ -68,6 +74,7 @@ int OpenMlFile(char *fname,int lenbuf)
         }
         return r;
 }
+
 /*------------------------------------------------------------------------
  Procedure:     GetSaveName ID:1
  Purpose:       Get a name to save the current session (Save as menu
@@ -111,6 +118,51 @@ int GetSaveName(char *fname,int lenbuf)
                 return 0;
         else return 1;
 }
+
+/*------------------------------------------------------------------------
+ Procedure:     GetSaveMLName ID:1
+ Purpose:       Get a name to save the current OCaml code to (Save as menu
+                item)
+ Input:         A buffer where the name of the file will be stored,
+                and its length
+ Output:        The name of the file choosen by the user will be
+                stored in the buffer
+ Errors:        none
+------------------------------------------------------------------------*/
+int GetSaveMLName(char *fname, int lenbuf)
+{
+        OPENFILENAME ofn;
+        int r;
+        char *p,defext[5],tmp[512];
+
+        memset(&ofn,0,sizeof(OPENFILENAME));
+        memset(tmp,0,sizeof(tmp));
+        fname[0] = 0;
+        strcpy(tmp,"OCaml Source Files|*.ml");
+        p = tmp;
+        while (*p) {
+                if (*p == '|')
+                        *p = 0;
+                p++;
+        }
+        strcpy(defext,"ml");
+        ofn.lStructSize = sizeof(OPENFILENAME);
+        ofn.hwndOwner = hwndMain;
+        ofn.lpstrFilter = tmp;
+        ofn.nFilterIndex = 1;
+        ofn.hInstance = hInst;
+        ofn.lpstrFile = fname;
+        ofn.lpstrTitle = "Save as";
+        ofn.lpstrInitialDir = LibDir;
+        ofn.nMaxFile = lenbuf;
+        ofn.Flags =  OFN_NOCHANGEDIR | OFN_LONGNAMES |
+                OFN_HIDEREADONLY |OFN_EXPLORER;
+        r = GetSaveFileName(&ofn);
+        if (r == 0)
+                return 0;
+        else return 1;
+}
+
 /*------------------------------------------------------------------------
  Procedure:     BrowseForFile ID:1
  Purpose:       Let's the user browse for a certain kind of file.
@@ -304,6 +356,13 @@ void ForceRepaint(void)
         InvalidateRect(hwndEdit,NULL,1);
 }
 
+/*------------------------------------------------------------------------
+ Procedure:     Add_Char_To_Queue ID:1
+ Purpose:       Puts a character onto the buffer
+ Input:         The char to be added
+ Output:        None
+ Errors:
+------------------------------------------------------------------------*/
 static void Add_Char_To_Queue(int c)
 {
         HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
@@ -326,10 +385,44 @@ void AddLineToControl(char *buf)
 
         if (*buf == 0)
                 return;
+
         hEditCtrl = (HWND)GetWindowLong(hwndSession,DWL_USER);
+
         GotoEOF();
+
         SendMessage(hEditCtrl,EM_REPLACESEL,0,(LPARAM)buf);
         SendMessage(hEditCtrl,WM_CHAR,'\r',0);
+}
+
+/*------------------------------------------------------------------------
+ Procedure:     AddStringToControl ID:1
+ Author:		Chris Watford watford@uiuc.edu
+ Purpose:       It will ad the given text at the end of the edit
+                control. This simulates user input. The history will not
+				be modified by this procedure.
+ Input:         The text to be added
+ Output:        None
+ Errors:        If the line is empty, nothing will be done
+--------------------------------------------------------------------------
+Edit History:
+	16 Sept 2003 - Chris Watford watford@uiuc.edu
+		- Basically this is AddLineToControl, but without appending a
+		  newline
+------------------------------------------------------------------------*/
+void AddStringToControl(char* buf)
+{
+        HWND hEditCtrl;
+
+		if(buf == NULL)
+			return;
+
+        if((*buf) == 0)
+            return;
+
+        hEditCtrl = (HWND)GetWindowLong(hwndSession, DWL_USER);
+        GotoEOF();
+
+        SendMessage(hEditCtrl ,EM_REPLACESEL, (WPARAM)FALSE, (LPARAM)buf);
 }
 
 /*------------------------------------------------------------------------
@@ -345,6 +438,7 @@ static BOOL CALLBACK AboutDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
                 EndDialog(hDlg,1);
         return 0;
 }
+
 /*------------------------------------------------------------------------
  Procedure:     HistoryDlgProc ID:1
  Purpose:       Shows the history of the session. Only input lines
@@ -355,24 +449,33 @@ static BOOL CALLBACK AboutDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
  Input:         Normal windows callback
  Output:
  Errors:
+--------------------------------------------------------------------------
+Edit History:
+	15 Sept 2003 - Chris Watford watford@uiuc.edu
+		- Added support for my StatementHistory structure
+		- Added the ability to export it as its exact entry, rather than
+		  just a 1 liner
 ------------------------------------------------------------------------*/
 static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-        HISTORYLINE *rvp;
+        StatementHistory *histentry;
         int idx;
         RECT rc;
 
         switch (message) {
                 case WM_INITDIALOG:
                         SendDlgItemMessage(hDlg,IDLIST,WM_SETFONT,(WPARAM)ProgramParams.hFont,0);
-                        rvp = History;
+                        histentry = History; // get our statement history object
                         idx = 0;
-                        while (rvp) {
-                                SendDlgItemMessage(hDlg,IDLIST,LB_INSERTSTRING,0,(LPARAM)rvp->Text);
+
+						// loop through each history entry adding it to the dialog
+                        while (histentry != NULL) {
+                                SendDlgItemMessage(hDlg,IDLIST,LB_INSERTSTRING,0,(LPARAM)editbuffer_getasline(histentry->Statement));
                                 SendDlgItemMessage(hDlg,IDLIST,LB_SETITEMDATA,0,(LPARAM)idx);
-                                rvp = rvp->Next;
+                                histentry = histentry->Next;
                                 idx++;
                         }
+
                         SendDlgItemMessage(hDlg,IDLIST,LB_SETCURSEL,(LPARAM)idx-1,0);
                         return 1;
                 case WM_COMMAND:
@@ -401,6 +504,7 @@ static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
         }
         return 0;
 }
+
 /*------------------------------------------------------------------------
  Procedure:     SaveText ID:1
  Purpose:       Saves the contents of the session transcript. It will
@@ -409,6 +513,10 @@ static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
  Output:        The session is saved
  Errors:        If it can't open the file for writing it will show an
                 error box
+--------------------------------------------------------------------------
+ Edit History:
+	06 Oct  2003 - Chris Watford watford@uiuc.edu
+		- Corrected wsprintf error
 ------------------------------------------------------------------------*/
 static void SaveText(char *fname)
 {
@@ -419,54 +527,155 @@ static void SaveText(char *fname)
         char *buf = SafeMalloc(8192);
 
         f = fopen(fname,"wb");
-        if (f == NULL) {
-                wsprintf("Impossible to open %s for writing",fname);
-                ShowDbgMsg(buf);
-                return;
+        if (f == NULL)
+		{
+			// corrected error using wsprintf
+            wsprintf(buf, "Impossible to open %s for writing", fname);
+
+            ShowDbgMsg(buf);
+            return;
         }
-        for (i=0; i<linesCount;i++) {
+
+        for (i = 0; i < linesCount; i++)
+		{
                 *(unsigned short *)buf = 8100;
-                len = SendMessage(hEdit,EM_GETLINE,i,(LPARAM)buf);
-                buf[len] = 0;
-                strcat(buf,"\r\n");
-                fwrite(buf,1,len+2,f);
+                len = SendMessage(hEdit, EM_GETLINE, i, (LPARAM)buf);
+                buf[len] = '\0';
+				fprintf(f, "%s\r\n", buf+1);
+                //fwrite(buf,1,len+2,f);
         }
+
         fclose(f);
         free(buf);
 }
 
+/*------------------------------------------------------------------------
+ Procedure:     SaveML ID:1
+ Author:		Chris Watford watford@uiuc.edu
+ Purpose:       Saves the ML source to a file, commenting out functions
+				that contained errors
+ Input:         The name of the file where the session will be saved
+ Output:        The session is saved
+ Errors:        If it can't open the file for writing it will show an
+                error box
+------------------------------------------------------------------------*/
+static void SaveML(char *fname)
+{
+        FILE *f;
+        char *buf = SafeMalloc(8192);
 
+        f = fopen(fname, "wb");
+
+        if(f == NULL)
+		{
+                wsprintf(buf, "Impossible to open %s for writing", fname);
+                ShowDbgMsg(buf);
+                return;
+        }
+
+		fprintf(f, "(* %s *)\r\n\r\n", fname);
+
+		if(History != NULL)
+		{
+			StatementHistory *h = NULL;
+			EditBuffer *stmt = NULL;
+
+			// get to the end
+			for(h = History; h->Next != NULL; h = h->Next);
+
+			// go back :(
+			// this is NOT the fastest method, BUT this is the easiest
+			// on the subsystem
+			for(; h != NULL; h = h->Prev)
+			{
+				stmt = h->Statement;
+
+				if(stmt != NULL)
+				{
+					// comment out incorrect lines
+					if(stmt->isCorrect)
+					{
+						char *buff = editbuffer_getasbuffer(stmt);
+						fprintf(f, "%s\r\n", buff);
+						free(buff);
+					} else {
+						char *buff = editbuffer_getasbuffer(stmt);
+						fprintf(f, "(* Syntax Error or Unbound Value\r\n%s\r\n *)\r\n", buff);
+						free(buff);
+					}
+				}
+
+				fprintf(f, "\r\n");
+			}
+		}
+
+        fclose(f);
+        free(buf);
+}
+
+/*------------------------------------------------------------------------
+ Procedure:     Add_Clipboard_To_Queue ID:1
+ Author:		Chris Watford watford@uiuc.edu
+ Purpose:       Adds the clipboard text to the control
+ Input:
+ Output:
+ Errors:
+--------------------------------------------------------------------------
+ Edit History:
+	16 Sept 2003 - Chris Watford watford@uiuc.edu
+		- Added method to update edit buffer with paste contents
+------------------------------------------------------------------------*/
 static void Add_Clipboard_To_Queue(void)
 {
-    if (IsClipboardFormatAvailable(CF_TEXT) &&
-        OpenClipboard(hwndMain))
+    if (IsClipboardFormatAvailable(CF_TEXT) && OpenClipboard(hwndMain))
     {
         HANDLE hClipData = GetClipboardData(CF_TEXT);
 
-        if (hClipData)
+        if (hClipData != NULL)
         {
             char *str = GlobalLock(hClipData);
 
-            if (str)
-                while (*str)
+            if (str != NULL)
+			{
+                while ((*str) != 0)
                 {
                     if (*str != '\r')
                         Add_Char_To_Queue(*str);
+
                     str++;
                 }
+
+				// added to fix odd errors
+				RefreshCurrentEditBuffer();
+			}
+
             GlobalUnlock(hClipData);
         }
+
         CloseClipboard();
     }
-
 }
 
+/*------------------------------------------------------------------------
+ Procedure:     CopyToClipboard ID:1
+ Purpose:       Copies text to the clipboard
+ Input:			Window with the edit control
+ Output:
+ Errors:
+------------------------------------------------------------------------*/
 static void CopyToClipboard(HWND hwnd)
 {
         HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
         SendMessage(hwndEdit,WM_COPY,0,0);
 }
 
+/*------------------------------------------------------------------------
+ Procedure:     ResetText ID:1
+ Purpose:       Resets the text? I'm not really sure
+ Input:
+ Output:		Always returns 0
+ Errors:
+------------------------------------------------------------------------*/
 int ResetText(void)
 {
         HWND hwndEdit = (HWND) GetWindowLong(hwndSession,DWL_USER);
@@ -495,6 +704,12 @@ int ResetText(void)
  Input:
  Output:
  Errors:
+--------------------------------------------------------------------------
+ Edit History:
+	06 Oct  2003 - Chris Watford watford@uiuc.edu
+		- Removed entries that crashed OCaml
+		- Removed useless entries
+		- Added Save ML and Save Transcript
 ------------------------------------------------------------------------*/
 void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
 {
@@ -508,11 +723,11 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
                                 char *buf = SafeMalloc(512);
                                 char *p = strrchr(fname,'.');
                                 if (p && !stricmp(p,".ml")) {
-                                        wsprintf(buf,"#use \"%s\";;",fname);
+                                        wsprintf(buf, "#use \"%s\";;", fname);
                                         AddLineToControl(buf);
                                 }
                                 else if (p && !stricmp(p,".cmo")) {
-                                        wsprintf(buf,"#load \"%s\";;",fname);
+                                        wsprintf(buf, "#load \"%s\";;", fname);
                                         AddLineToControl(buf);
                                 }
                                 free(buf);
@@ -531,22 +746,42 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
                 case IDM_EDITCOPY:
                         CopyToClipboard(hwnd);
                         break;
-                case IDM_SAVE:
+
+				// updated to save a transcript
+                case IDM_SAVEAS:
                         fname = SafeMalloc(512);
                         if (GetSaveName(fname,512)) {
                                 SaveText(fname);
                         }
                         free(fname);
                         break;
+
+				// updated to save an ML file
+				case IDM_SAVE:
+                        fname = SafeMalloc(512);
+                        if (GetSaveMLName(fname,512))
+						{
+                                SaveML(fname);
+                        }
+                        free(fname);
+                        break;
+
+				// updated to work with new history system
                 case IDM_HISTORY:
                         r = CallDlgProc(HistoryDlgProc,IDD_HISTORY);
-                        if (r) {
+
+                        if (r)
+						{
                                 AddLineToControl(GetHistoryLine(r-1));
                         }
                         break;
+
                 case IDM_PRINTSU:
-                        CallPrintSetup();
+						// Removed by Chris Watford
+						// seems to die
+                        // CallPrintSetup();
                         break;
+
                 case IDM_FONT:
                         CallChangeFont(hwndMain);
                         break;
@@ -563,6 +798,8 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
                 case IDM_EDITUNDO:
                         Undo(hwnd);
                         break;
+
+				/* Removed, really not very useful in this IDE
                 case IDM_WINDOWTILE:
                         SendMessage(hwndMDIClient,WM_MDITILE,0,0);
                         break;
@@ -572,6 +809,8 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
                 case IDM_WINDOWICONS:
                         SendMessage(hwndMDIClient,WM_MDIICONARRANGE,0,0);
                         break;
+				*/
+
                 case IDM_EXIT:
                         PostMessage(hwnd,WM_CLOSE,0,0);
                         break;
@@ -589,4 +828,3 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
                         break;
         }
 }
-
