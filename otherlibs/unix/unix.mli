@@ -109,7 +109,7 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
 
 external environment : unit -> string array = "unix_environment"
         (* Return the process environment, as an array of strings
-           with the format ``variable=value''. See also [sys__getenv]. *)
+           with the format ``variable=value''. See also [Sys.getenv]. *)
 
 (*** Process handling *)
 
