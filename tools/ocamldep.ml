@@ -230,6 +230,8 @@ and add_struct_item bv item =
       List.iter (add_class_declaration bv) cdl; bv
   | Pstr_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; bv
+  | Pstr_include modl ->
+      add_module bv modl; bv
 
 and add_use_file bv = function
   | [] -> ()

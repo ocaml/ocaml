@@ -136,6 +136,7 @@ and structure_item =
   | Tstr_open of Path.t
   | Tstr_class of (Ident.t * int * string list * class_expr) list
   | Tstr_cltype of (Ident.t * cltype_declaration) list
+  | Tstr_include of module_expr * Ident.t list
 
 and module_coercion =
     Tcoerce_none

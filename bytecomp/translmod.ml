@@ -171,6 +171,16 @@ and transl_structure fields cc rootpath = function
               transl_structure (List.rev ids @ fields) cc rootpath rem)
   | Tstr_cltype cl_list :: rem ->
       transl_structure fields cc rootpath rem
+  | Tstr_include(modl, ids) :: rem ->
+      let mid = Ident.create "include" in
+      let rec rebind_idents pos newfields = function
+        [] ->
+          transl_structure newfields cc rootpath rem
+      | id :: ids ->
+          Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
+               rebind_idents (pos + 1) (id :: newfields) ids) in
+      Llet(Strict, mid, transl_module Tcoerce_none None modl,
+           rebind_idents 0 fields ids)
 
 (* Update forward declaration in Translcore *)
 let _ =
@@ -206,7 +216,7 @@ let transl_store_structure glob map prims str =
       let ids = let_bound_idents pat_expr_list in
       let lam = transl_let rec_flag pat_expr_list (store_idents ids) in
       Lsequence(subst_lambda subst lam,
-                transl_store (add_idents ids subst) rem)
+                transl_store (add_idents false ids subst) rem)
   | Tstr_primitive(id, descr) :: rem ->
       begin match descr.val_kind with
         Val_prim p -> primitive_declarations :=
@@ -248,9 +258,18 @@ let transl_store_structure glob map prims str =
                   cl_list,
                 store_idents ids) in
       Lsequence(subst_lambda subst lam,
-                transl_store (add_idents ids subst) rem)
+                transl_store (add_idents false ids subst) rem)
   | Tstr_cltype cl_list :: rem ->
       transl_store subst rem
+  | Tstr_include(modl, ids) :: rem ->
+      let mid = Ident.create "include" in
+      let rec store_idents pos = function
+        [] -> transl_store (add_idents true ids subst) rem
+      | id :: idl ->
+          Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
+               Lsequence(store_ident id, store_idents (pos + 1) idl)) in
+      Llet(Strict, mid, transl_module Tcoerce_none None modl,
+           store_idents 0 ids)
 
   and store_ident id =
     try
@@ -274,8 +293,8 @@ let transl_store_structure glob map prims str =
     with Not_found ->
       assert false
 
-  and add_idents idlist subst =
-    List.fold_right (add_ident false) idlist subst
+  and add_idents may_coerce idlist subst =
+    List.fold_right (add_ident may_coerce) idlist subst
 
   and store_primitive (pos, prim) cont =
     Lsequence(Lprim(Psetfield(pos, false),
@@ -302,6 +321,7 @@ let rec defined_idents = function
   | Tstr_class cl_list :: rem ->
       List.map (fun (i, _, _, _) -> i) cl_list @ defined_idents rem
   | Tstr_cltype cl_list :: rem -> defined_idents rem
+  | Tstr_include(modl, ids) :: rem -> ids @ defined_idents rem
 
 (* Transform a coercion and the list of value identifiers defined by
    a toplevel structure into a table [id -> (pos, coercion)],
@@ -416,6 +436,15 @@ let transl_toplevel_item = function
                 cl_list)
   | Tstr_cltype cl_list ->
       lambda_unit
+  | Tstr_include(modl, ids) ->
+      let mid = Ident.create "include" in
+      let rec set_idents pos = function
+        [] ->
+          lambda_unit
+      | id :: ids ->
+          Lsequence(toploop_setvalue id (Lprim(Pfield pos, [Lvar mid])),
+                    set_idents (pos + 1) ids) in
+      Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
 
 let transl_toplevel_item_and_close itm =
   close_toplevel_term (transl_label_init (transl_toplevel_item itm))

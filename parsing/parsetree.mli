@@ -244,7 +244,7 @@ and structure_item_desc =
   | Pstr_open of Longident.t
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
-
+  | Pstr_include of module_expr
 
 (* Toplevel phrases *)
 

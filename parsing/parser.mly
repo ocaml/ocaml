@@ -432,6 +432,8 @@ structure_item:
       { mkstr(Pstr_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mkstr(Pstr_class_type (List.rev $3)) }
+  | INCLUDE module_expr
+      { mkstr(Pstr_include $2) }
 ;
 module_binding:
     EQUAL module_expr
