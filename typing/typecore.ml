@@ -547,7 +547,7 @@ let rec is_nonexpansive exp =
   | Texp_new (_, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
       true
 (* DYN *)
-  | Texp_coerce _ -> true
+  | Texp_import _ -> true
 (* /DYN *)
 (* GENERIC with its more complex expression, 
    Texp_coerce will be expansive... *)
@@ -1198,7 +1198,7 @@ let rec type_exp env sexp =
 	exp_type= Predef.type_dyn;
 	exp_env= env;
       }	
-  | Pexp_coerce (sarg,stopt) ->
+  | Pexp_import (sarg,stopt) ->
       let arg = type_expect env sarg Predef.type_dyn in
       let ty_res =
 	match stopt with
@@ -1206,7 +1206,7 @@ let rec type_exp env sexp =
 	    Typetexp.transl_type_scheme_for_dynamic env st
 	| None -> newvar ()
       in
-      { exp_desc = Texp_coerce (arg);
+      { exp_desc = Texp_import (arg);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
         exp_env = env }

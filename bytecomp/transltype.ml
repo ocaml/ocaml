@@ -64,75 +64,6 @@ let rec tree_of_run_ident = function
       Oide_apply(tree_of_run_ident r1, tree_of_run_ident r2)
 ;;	
 
-(********************************************************* data type digests *)
-
-(*********
-let names = ref [] (* type variable indices *)
-let name_counter = ref 0
-
-let reset_names () = names := []; name_counter := 0 ;;
-
-let push_names () =
-  let old_names = !names, !name_counter in
-  reset_names ();
-  old_names
-;;
-
-let pop_names old_names =
-  names := fst old_names;
-  name_counter := snd old_names
-;;
-
-let name_of_type ty =
-  try List.assq ty !names with Not_found ->
-    let name = !name_counter in
-    incr name_counter;
-    name
-;;    
-
-let rec val_type_of_typexp of_path ty =
-  let ty = repr ty in
-
-  match ty.desc with
-  | Tvar ->
-      Rtyp_var (name_of_type ty)
-  | Tarrow(l, ty1, ty2, _) ->
-      let rty1 =
-        if is_optional l then
-          match (repr ty1).desc with
-          | Tconstr(path, [ty], _)
-            when Path.same path Predef.path_option ->
-              val_type_of_typexp of_path ty
-          | _ -> raise Exit (* <hidden> *)
-        else val_type_of_typexp of_path ty1 
-      in
-      Rtyp_arrow (l, rty1, val_type_of_typexp of_path ty2)
-  | Ttuple tyl ->
-      Rtyp_tuple (val_type_of_typlist of_path tyl)
-  | Tconstr(p, tyl, _) ->
-      Rtyp_constr (of_path p, val_type_of_typlist of_path tyl)
-  | Tsubst ty -> 
-      val_type_of_typexp of_path ty
-  | Tlink _ | Tnil | Tfield _ ->
-      fatal_error "Transltype.val_type_of_typexp"
-  | _ -> 
-      fatal_error "Transltype.val_type_of_typexp: non supported type"
-
-and val_type_of_typlist of_path = function
-  | [] -> []
-  | ty :: tyl ->
-      let tr = val_type_of_typexp of_path ty in
-      tr :: val_type_of_typlist of_path tyl
-
-and val_type_of_type_scheme of_path ty = 
-  (* escape name space *)
-  let old_names = push_names () in
-  let rt = val_type_of_typexp of_path ty in
-  (* restore name space *)
-  pop_names old_names;
-  rt
-*******)
-
 (* We have a type expression, compile the runtime representation for it *)
  
 let rec transl_run_type = function
@@ -805,5 +736,6 @@ let run_type_of_typexp env ty =
 ;;
 
 let transl_run_type_of_typexp env ty =
+  reset ();
   transl_run_type (run_type_of_typexp env ty)
 ;;

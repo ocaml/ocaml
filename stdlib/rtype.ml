@@ -153,13 +153,11 @@ let fail t t' m s e =
   raise (Type_match_failure ( t, t', m, s, e ))
 ;;    
 
-(*
 let coerce_comp = fun (m,ls,le) [|ty1|] ((v, ty2) as d) ->
   if is_instance (=) ty2 ty1 then (v : 'a)
   else fail ty2 ty1 m ls le
-*)
 
-let coerce_comp = fun (m,ls,le) [|ty1|] ((v, ty2) as d) ->
+let import_comp = fun (m,ls,le) [|ty1|] ((v, ty2) as d) ->
   if is_instance (fun rp1 rp2 -> snd rp1 = snd rp2) ty2 ty1 then (v : 'a)
   else fail ty2 ty1 m ls le
 

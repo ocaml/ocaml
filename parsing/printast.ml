@@ -282,8 +282,8 @@ and expression i ppf x =
       line i ppf "Pexp_dynamic";
       expression i ppf e;
       option i core_type ppf topt
-  | Pexp_coerce (e,topt) ->
-      line i ppf "Pexp_coerce";
+  | Pexp_import (e,topt) ->
+      line i ppf "Pexp_import";
       expression i ppf e;
       option i core_type ppf topt
 (* /DYN *)

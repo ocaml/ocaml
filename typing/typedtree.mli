@@ -80,7 +80,7 @@ and expression_desc =
   | Texp_assertfalse
 (* DYN *)
   | Texp_dynamic of expression
-  | Texp_coerce of expression
+  | Texp_import of expression
 (* /DYN *)
 (* GENERIC
   | Texp_coerce of expression * (pattern * Types.type_expr * expression) list

@@ -218,6 +218,7 @@ let bigarray_set arr arg newval =
 %token GREATERRBRACE
 %token GREATERRBRACKET
 %token IF
+%token IMPORT /* DYN */
 %token IN
 %token INCLUDE
 %token <string> INFIXOP0
@@ -838,12 +839,12 @@ expr:
   | LAZY simple_expr %prec prec_appl
       { mklazy $2 }
 /* DYN */
- | DYNAMIC seq_expr OF core_type END
+ | DYNAMIC seq_expr COLON core_type END
       { mkexp(Pexp_dynamic($2,Some $4)) }
  | DYNAMIC seq_expr END
       { mkexp(Pexp_dynamic($2,None)) }
- | COERCE seq_expr AS core_type END { mkexp(Pexp_coerce($2,Some $4)) } 
- | COERCE simple_expr END { mkexp(Pexp_coerce($2,None)) } 
+ | IMPORT seq_expr COLONGREATER core_type END { mkexp(Pexp_import($2,Some $4)) } 
+ | IMPORT simple_expr END { mkexp(Pexp_import($2,None)) } 
 /* /DYN */
 /* GENERIC
  | COERCE seq_expr WITH opt_bar coerce_cases %prec prec_match

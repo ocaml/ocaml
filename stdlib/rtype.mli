@@ -29,6 +29,4 @@ exception Type_match_failure of run_type * run_type * string * int * int
 val dynamic_comp : run_type array -> 'a -> 'a * run_type
 val fail : run_type -> run_type -> string -> int -> int -> 'a
 val coerce_comp : string * int * int -> run_type array -> 'a * run_type -> 'a
-(*
 val import_comp : string * int * int -> run_type array -> 'a * run_type -> 'a
-*)

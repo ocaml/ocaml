@@ -630,9 +630,9 @@ let rec transl_exp e =
 	  | Transltype.Contains_abstract_type (t,p) ->
 	      raise (Error (exp.exp_loc, Contains_abstract_type (t,p))) 
       end
-  | Texp_coerce (exp) ->
+  | Texp_import (exp) ->
       begin try 
-	Lapply(Transltype.rtype_prim "coerce_comp", 
+	Lapply(Transltype.rtype_prim "import_comp", 
 	       [ Lconst(Const_block(0, 
 		  [Const_base(Const_string !Location.input_name);
 		   Const_base(Const_int e.exp_loc.Location.loc_start);

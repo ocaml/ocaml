@@ -112,7 +112,7 @@ and expression_desc =
   | Pexp_assertfalse
 (* DYN *)  
   | Pexp_dynamic of expression * core_type option
-  | Pexp_coerce of expression * core_type option
+  | Pexp_import of expression * core_type option
 (* /DYN *)  
 (* GENERIC
   | Pexp_coerce of expression * (pattern * expression) list
