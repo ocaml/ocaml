@@ -190,7 +190,7 @@ debug:
 	make OCAMLPP=""
 
 $(OCAMLDOC): $(EXECMOFILES) odoc_crc.cmo odoc.cmo
-	$(OCAMLC) -o $@ unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES) odoc_crc.cmo odoc.cmo
+	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES) odoc_crc.cmo odoc.cmo
 $(OCAMLDOC_OPT): $(EXECMXFILES) odoc_opt.cmx
 	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES) odoc_opt.cmx
 
@@ -205,7 +205,7 @@ odoc_crc.ml: $(CMIFILES)
 	$(EXTRAC_CRC) $(INCLUDES) \
 	Arg Arith_status Array Big_int Buffer Callback Char Digest Dynlink \
 	Filename Format Gc Genlex Hashtbl \
-	Lazy Lexing List Map Marshal Nat \
+	Lazy Lexing List Map Marshal Nat Nativeint \
 	Num Obj CamlinternalOO Outcometree Parsing Pervasives Printexc \
 	Printf Profiling Queue Random Ratio \
 	Set Sort Stack Std_exit Str Stream \
