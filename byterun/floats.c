@@ -362,6 +362,16 @@ value classify_float(value vd)   /* ML */
    of signalling exceptions.  Currently, everyone is in IEEE mode
    at program startup. */
 
+#ifdef __FreeBSD__
+#include <osreldate.h>
+#if (__FreeBSD_version < 310000)
+#include <floatingpoint.h>
+#endif
+#endif
+
 void init_ieee_floats(void)
 {
+#if defined(__FreeBSD__) && (__FreeBSD_version < 310000)
+  fpsetmask(fpgetmask() & ~(FP_X_DZ | FP_X_INV));
+#endif
 }
