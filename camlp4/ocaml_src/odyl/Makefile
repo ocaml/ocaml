@@ -37,7 +37,7 @@ odyl_config.ml:
         | sed -e 's|\\|/|g' > odyl_config.ml
 
 clean::
-	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt *.a
+	rm -f *.cm* *.pp[io] *.$(O) *.bak .*.bak *.out *.opt *.$(A)
 	rm -f odyl_config.ml odyl$(EXE)
 
 depend:
@@ -56,6 +56,6 @@ compare:
 install:
 	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"
 	cp odyl.cmo odyl.cma odyl_main.cmi $(LIBDIR)/camlp4/.
-	if test -f odyl.cmxa; then cp odyl.cmxa odyl.a $(LIBDIR)/camlp4/.; fi
+	if test -f odyl.cmxa; then cp odyl.cmxa odyl.$(A) $(LIBDIR)/camlp4/.; fi
 
 include .depend

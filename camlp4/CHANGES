@@ -1,4 +1,11 @@
-Camlp4 Version 3.07 beta
+Camlp4 Version 3.07 beta2
+________________________
+
+- [09 Sep 03] Added tokens LABEL and OPTLABEL in plexer, and use them in
+  both parsers (ocaml and revised). There was, afaik, no other way to fix
+  ambiguities (bugs) in parsing labels and type constraints.
+
+Camlp4 Version 3.07 beta1
 ________________________
 
 - [July 03] Updated the ocaml/camlp4 CVS tree with the camlp4

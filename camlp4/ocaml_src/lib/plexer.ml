@@ -483,6 +483,13 @@ let next_token_fun dfa ssd find_kwd bolpos glexr =
         if !error_on_unknown_keywords then err loc ("illegal token: " ^ s)
         else ("", s), loc
   in
+  let error_if_keyword ((_, id), loc as a) =
+    try
+      ignore (find_kwd id);
+      err loc ("illegal use of a keyword as a label: " ^ id)
+    with
+      Not_found -> a
+  in
   let rec next_token after_space (strm__ : _ Stream.t) =
     let bp = Stream.count strm__ in
     match Stream.peek strm__ with
@@ -553,8 +560,17 @@ let next_token_fun dfa ssd find_kwd bolpos glexr =
                 try ident (store 0 c) strm__ with
                   Stream.Failure -> raise (Stream.Error "")
               in
+              let s = strm__ in
               let ep = Stream.count strm__ in
-              ("TILDEIDENT", get_buff len), (bp, ep)
+              let id = get_buff len in
+              let (strm__ : _ Stream.t) = s in
+              begin match Stream.peek strm__ with
+                Some ':' ->
+                  Stream.junk strm__;
+                  let eb = Stream.count strm__ in
+                  error_if_keyword (("LABEL", id), (bp, ep))
+              | _ -> error_if_keyword (("TILDEIDENT", id), (bp, ep))
+              end
           | _ ->
               let id = get_buff (ident2 (store 0 c) strm__) in
               keyword_or_error (bp, Stream.count strm__) id
@@ -571,8 +587,17 @@ let next_token_fun dfa ssd find_kwd bolpos glexr =
                 try ident (store 0 c) strm__ with
                   Stream.Failure -> raise (Stream.Error "")
               in
+              let s = strm__ in
               let ep = Stream.count strm__ in
-              ("QUESTIONIDENT", get_buff len), (bp, ep)
+              let id = get_buff len in
+              let (strm__ : _ Stream.t) = s in
+              begin match Stream.peek strm__ with
+                Some ':' ->
+                  Stream.junk strm__;
+                  let eb = Stream.count strm__ in
+                  error_if_keyword (("OPTLABEL", id), (bp, ep))
+              | _ -> error_if_keyword (("QUESTIONIDENT", id), (bp, ep))
+              end
           | _ ->
               let id = get_buff (ident2 (store 0 c) strm__) in
               keyword_or_error (bp, Stream.count strm__) id
@@ -1109,9 +1134,9 @@ let using_token kwd_table ident_table (p_con, p_prm) =
               error_ident_and_keyword p_con p_prm
             else Hashtbl.add ident_table p_prm p_con
         end
-  | "TILDEIDENT" | "QUESTIONIDENT" | "INT" | "INT32" | "INT64" | "NATIVEINT" |
-    "FLOAT" | "CHAR" | "STRING" | "QUOTATION" | "ANTIQUOT" | "LOCATE" |
-    "EOI" ->
+  | "INT" | "INT32" | "INT64" | "NATIVEINT" | "FLOAT" | "CHAR" | "STRING" |
+    "TILDEIDENT" | "QUESTIONIDENT" | "LABEL" | "OPTLABEL" | "QUOTATION" |
+    "ANTIQUOT" | "LOCATE" | "EOI" ->
       ()
   | _ ->
       raise
@@ -1184,11 +1209,11 @@ let gmake () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("plexer.ml", 959, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("plexer.ml", 959, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("plexer.ml", 959, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("plexer.ml", 960, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("plexer.ml", 960, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("plexer.ml", 972, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("plexer.ml", 972, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("plexer.ml", 972, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("plexer.ml", 973, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("plexer.ml", 973, 37)));
        tok_comm = None}
   in
   let glex =
@@ -1218,11 +1243,12 @@ let make () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("plexer.ml", 988, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("plexer.ml", 988, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("plexer.ml", 988, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("plexer.ml", 989, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("plexer.ml", 989, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("plexer.ml", 1001, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("plexer.ml", 1001, 37)));
+       tok_removing =
+         (fun _ -> raise (Match_failure ("plexer.ml", 1001, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("plexer.ml", 1002, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("plexer.ml", 1002, 37)));
        tok_comm = None}
   in
   {func = func kwd_table glexr; using = using_token kwd_table id_table;

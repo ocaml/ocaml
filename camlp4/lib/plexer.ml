@@ -462,7 +462,12 @@ value next_token_fun dfa ssd find_kwd bolpos glexr =
     try (("", find_kwd s), loc) with
     [ Not_found ->
         if error_on_unknown_keywords.val then err loc ("illegal token: " ^ s)
-        else (("", s), loc) ]
+        else (("", s), loc) ] in
+  let error_if_keyword ( ((_,id), loc) as a) =
+    try do {
+      ignore(find_kwd id);
+      err loc ("illegal use of a keyword as a label: " ^ id) }
+    with [ Not_found -> a ]
   in
   let rec next_token after_space =
     parser bp
@@ -511,17 +516,24 @@ value next_token_fun dfa ssd find_kwd bolpos glexr =
     | [: `('~' as c);
          a =
            parser
-           [ [: `('a'..'z' as c); len = ident (store 0 c) :] ep ->
-               (("TILDEIDENT", get_buff len), (bp, ep))
+           [ [: `('a'..'z' as c); len = ident (store 0 c); s :] ep ->
+               let id = get_buff len in
+               match s with parser
+               [ [: `':' :] eb -> error_if_keyword (("LABEL", id), (bp,ep))
+               | [: :] -> error_if_keyword (("TILDEIDENT", id), (bp, ep)) ]
            | [: s :] ->
                let id = get_buff (ident2 (store 0 c) s) in
                keyword_or_error (bp, Stream.count s) id ] :] ->
         a
+          
     | [: `('?' as c);
          a =
            parser
-           [ [: `('a'..'z' as c); len = ident (store 0 c) :] ep ->
-               (("QUESTIONIDENT", get_buff len), (bp, ep))
+           [ [: `('a'..'z' as c); len = ident (store 0 c); s :] ep ->
+               let id = get_buff len in
+               match s with parser
+               [ [: `':' :] eb -> error_if_keyword (("OPTLABEL", id), (bp,ep))
+               | [: :] -> error_if_keyword (("QUESTIONIDENT", id), (bp, ep)) ]
            | [: s :] ->
                let id = get_buff (ident2 (store 0 c) s) in
                keyword_or_error (bp, Stream.count s) id ] :] ->
@@ -883,9 +895,10 @@ value using_token kwd_table ident_table (p_con, p_prm) =
             if Hashtbl.mem kwd_table p_prm then
               error_ident_and_keyword p_con p_prm
             else Hashtbl.add ident_table p_prm p_con ]
-  | "TILDEIDENT" | "QUESTIONIDENT" | "INT" | "INT32" | "INT64" | "NATIVEINT"
-  | "FLOAT" | "CHAR" | "STRING" |
-    "QUOTATION" | "ANTIQUOT" | "LOCATE" | "EOI" ->
+  | "INT" | "INT32" | "INT64" | "NATIVEINT"
+  | "FLOAT" | "CHAR" | "STRING"
+  | "TILDEIDENT" | "QUESTIONIDENT" | "LABEL" | "OPTLABEL"
+  | "QUOTATION" | "ANTIQUOT" | "LOCATE" | "EOI" ->
       ()
   | _ ->
       raise

@@ -48,8 +48,8 @@ install:
 	cp pa_macro.cmi pa_extend.cmi "$(LIBDIR)/camlp4/."
 	cp camlp4r$(EXE) "$(BINDIR)/."
 	if test -f camlp4r.opt; then \
-	  cp camlp4r.opt "$(BINDIR)/." ;\
-	  for target in $(OBJSX) $(OBJSX:.cmx=.o) ; do \
+	  cp camlp4r.opt "$(BINDIR)/camlp4r.opt$(EXE)" ;\
+	  for target in $(OBJSX) $(OBJSX:.cmx=.$(O)) ; do \
 	    if test -f $$target; then \
 	      cp $$target "$(LIBDIR)/camlp4/."; \
 	    fi; \

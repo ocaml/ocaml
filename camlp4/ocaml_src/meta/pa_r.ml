@@ -2243,11 +2243,19 @@ Grammar.extend
     Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
     Some (Gramext.After "arrow"),
     [None, Some Gramext.NonA,
-     [[Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+     [[Gramext.Stoken ("OPTLABEL", ""); Gramext.Sself],
+      Gramext.action
+        (fun (t : 'ctyp) (i : string) (loc : int * int) ->
+           (MLast.TyOlb (loc, i, t) : 'ctyp));
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
        Gramext.Sself],
       Gramext.action
         (fun (t : 'ctyp) _ (i : string) (loc : int * int) ->
            (MLast.TyOlb (loc, i, t) : 'ctyp));
+      [Gramext.Stoken ("LABEL", ""); Gramext.Sself],
+      Gramext.action
+        (fun (t : 'ctyp) (i : string) (loc : int * int) ->
+           (MLast.TyLab (loc, i, t) : 'ctyp));
       [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
        Gramext.Sself],
       Gramext.action
@@ -2347,6 +2355,17 @@ Grammar.extend
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, None) : 'patt));
+      [Gramext.Stoken ("OPTLABEL", ""); Gramext.Stoken ("", "(");
+       Gramext.Snterm
+         (Grammar.Entry.obj (patt_tcon : 'patt_tcon Grammar.Entry.e));
+       Gramext.Sopt
+         (Gramext.Snterm
+            (Grammar.Entry.obj (eq_expr : 'eq_expr Grammar.Entry.e)));
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (eo : 'eq_expr option) (p : 'patt_tcon) _ (i : string)
+           (loc : int * int) ->
+           (MLast.PaOlb (loc, i, Some (p, eo)) : 'patt));
       [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
        Gramext.Stoken ("", "(");
        Gramext.Snterm
@@ -2363,6 +2382,10 @@ Grammar.extend
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaLab (loc, i, None) : 'patt));
+      [Gramext.Stoken ("LABEL", ""); Gramext.Sself],
+      Gramext.action
+        (fun (p : 'patt) (i : string) (loc : int * int) ->
+           (MLast.PaLab (loc, i, Some p) : 'patt));
       [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
        Gramext.Sself],
       Gramext.action
@@ -2406,6 +2429,17 @@ Grammar.extend
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, None) : 'ipatt));
+      [Gramext.Stoken ("OPTLABEL", ""); Gramext.Stoken ("", "(");
+       Gramext.Snterm
+         (Grammar.Entry.obj (ipatt_tcon : 'ipatt_tcon Grammar.Entry.e));
+       Gramext.Sopt
+         (Gramext.Snterm
+            (Grammar.Entry.obj (eq_expr : 'eq_expr Grammar.Entry.e)));
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (eo : 'eq_expr option) (p : 'ipatt_tcon) _ (i : string)
+           (loc : int * int) ->
+           (MLast.PaOlb (loc, i, Some (p, eo)) : 'ipatt));
       [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
        Gramext.Stoken ("", "(");
        Gramext.Snterm
@@ -2422,6 +2456,10 @@ Grammar.extend
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaLab (loc, i, None) : 'ipatt));
+      [Gramext.Stoken ("LABEL", ""); Gramext.Sself],
+      Gramext.action
+        (fun (p : 'ipatt) (i : string) (loc : int * int) ->
+           (MLast.PaLab (loc, i, Some p) : 'ipatt));
       [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
        Gramext.Sself],
       Gramext.action
@@ -2451,6 +2489,10 @@ Grammar.extend
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.ExOlb (loc, i, None) : 'expr));
+      [Gramext.Stoken ("OPTLABEL", ""); Gramext.Sself],
+      Gramext.action
+        (fun (e : 'expr) (i : string) (loc : int * int) ->
+           (MLast.ExOlb (loc, i, Some e) : 'expr));
       [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
        Gramext.Sself],
       Gramext.action
@@ -2460,6 +2502,10 @@ Grammar.extend
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.ExLab (loc, i, None) : 'expr));
+      [Gramext.Stoken ("LABEL", ""); Gramext.Sself],
+      Gramext.action
+        (fun (e : 'expr) (i : string) (loc : int * int) ->
+           (MLast.ExLab (loc, i, Some e) : 'expr));
       [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
        Gramext.Sself],
       Gramext.action

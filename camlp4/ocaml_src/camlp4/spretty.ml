@@ -222,7 +222,7 @@ let rec hprint_pretty tab pos spc =
   | VL [] -> pos, spc
   | VL x -> hprint_box tab pos spc x
   | BE x -> hprint_box tab pos spc x
-  | BV x -> hprint_box tab pos spc x (* invalid_arg "hprint_pretty" *)
+  | BV x -> hprint_box tab pos spc x
   | LI ((comm, nl_bef, tab_bef), x) ->
       if !lazy_tab >= 0 then
         begin

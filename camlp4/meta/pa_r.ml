@@ -751,7 +751,9 @@ EXTEND
   ctyp: AFTER "arrow"
     [ NONA
       [ i = TILDEIDENT; ":"; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
-      | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
+      | i = LABEL; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
+      | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >> 
+      | i = OPTLABEL; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "["; "="; rfl = row_field_list; "]" ->
@@ -779,8 +781,11 @@ EXTEND
     [ [ "`"; s = ident -> <:patt< ` $s$ >>
       | "#"; sl = mod_ident -> <:patt< # $list:sl$ >>
       | i = TILDEIDENT; ":"; p = SELF -> <:patt< ~ $i$ : $p$ >>
+      | i = LABEL; p = SELF -> <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT -> <:patt< ~ $i$ >>
       | i = QUESTIONIDENT; ":"; "("; p = patt_tcon; eo = OPT eq_expr; ")" ->
+          <:patt< ? $i$ : ($p$ $opt:eo$) >>
+      | i = OPTLABEL; "("; p = patt_tcon; eo = OPT eq_expr; ")" ->
           <:patt< ? $i$ : ($p$ $opt:eo$) >>
       | i = QUESTIONIDENT ->
           <:patt< ? $i$ >>
@@ -793,8 +798,11 @@ EXTEND
   ;
   ipatt:
     [ [ i = TILDEIDENT; ":"; p = SELF -> <:patt< ~ $i$ : $p$ >>
+      | i = LABEL; p = SELF -> <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT -> <:patt< ~ $i$ >>
       | i = QUESTIONIDENT; ":"; "("; p = ipatt_tcon; eo = OPT eq_expr; ")" ->
+          <:patt< ? $i$ : ($p$ $opt:eo$) >>
+      | i = OPTLABEL; "("; p = ipatt_tcon; eo = OPT eq_expr; ")" ->
           <:patt< ? $i$ : ($p$ $opt:eo$) >>
       | i = QUESTIONIDENT ->
           <:patt< ? $i$ >>
@@ -811,8 +819,10 @@ EXTEND
   expr: AFTER "apply"
     [ "label" NONA
       [ i = TILDEIDENT; ":"; e = SELF -> <:expr< ~ $i$ : $e$ >>
+      | i = LABEL; e = SELF -> <:expr< ~ $i$ : $e$ >>
       | i = TILDEIDENT -> <:expr< ~ $i$ >>
       | i = QUESTIONIDENT; ":"; e = SELF -> <:expr< ? $i$ : $e$ >>
+      | i = OPTLABEL; e = SELF -> <:expr< ? $i$ : $e$ >>
       | i = QUESTIONIDENT -> <:expr< ? $i$ >> ] ]
   ;
   expr: LEVEL "simple"

@@ -1150,8 +1150,14 @@ EXTEND
   (* Labels *)
   ctyp: AFTER "arrow"
     [ NONA
-      [ i = lident_colon; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
-      | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
+      [ i = lident_colon; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+          <:ctyp< ~ $i$ : $t1$ -> $t2$ >>
+      | i = OPTLABEL; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+          <:ctyp< ? $i$ : $t1$ -> $t2$ >>
+      | i = QUESTIONIDENT; ":"; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+          <:ctyp< ? $i$ : $t1$ -> $t2$ >>
+      | "?"; i=lident_colon;t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+          <:ctyp< ? $i$ : $t1$ -> $t2$ >> ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "["; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
@@ -1179,10 +1185,12 @@ EXTEND
   ;
   expr: AFTER "apply"
     [ "label"
-      [ i = TILDEIDENT; ":"; e = SELF -> <:expr< ~ $i$ : $e$ >>
+      [ i = LABEL; e = SELF -> <:expr< ~ $i$ : $e$ >>
       | i = TILDEIDENT -> <:expr< ~ $i$ >>
-      | i = QUESTIONIDENT; ":"; e = SELF -> <:expr< ? $i$ : $e$ >>
-      | i = QUESTIONIDENT -> <:expr< ? $i$ >> ] ]
+      | "~"; i = LIDENT -> <:expr< ~ $i$ >>
+      | i = OPTLABEL; e = SELF -> <:expr< ? $i$ : $e$ >>
+      | i = QUESTIONIDENT -> <:expr< ? $i$ >> 
+      | "?"; i = LIDENT -> <:expr< ? $i$ >> ] ]
   ;
   expr: LEVEL "simple"
     [ [ "`"; s = ident -> <:expr< ` $s$ >> ] ]
@@ -1198,24 +1206,26 @@ EXTEND
       | "#"; t = mod_ident -> <:patt< # $list:t$ >> ] ]
   ;
   labeled_patt:
-    [ [ i = TILDEIDENT; ":"; p = patt LEVEL "simple" ->
+    [ [ i = LABEL; p = patt LEVEL "simple" ->
            <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT ->
            <:patt< ~ $i$ >>
+      | "~"; i=LIDENT -> <:patt< ~ $i$ >>
       | "~"; "("; i = LIDENT; ")" ->
            <:patt< ~ $i$ >>
       | "~"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
            <:patt< ~ $i$ : ($lid:i$ : $t$) >>
-      | i = QUESTIONIDENT; ":"; j = LIDENT ->
+      | i = OPTLABEL; j = LIDENT ->
            <:patt< ? $i$ : ($lid:j$) >>
-      | i = QUESTIONIDENT; ":"; "("; p = patt; "="; e = expr; ")" ->
+      | i = OPTLABEL; "("; p = patt; "="; e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ = $e$ ) >>
-      | i = QUESTIONIDENT; ":"; "("; p = patt; ":"; t = ctyp; ")" ->
+      | i = OPTLABEL; "("; p = patt; ":"; t = ctyp; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ ) >>
-      | i = QUESTIONIDENT; ":"; "("; p = patt; ":"; t = ctyp; "=";
+      | i = OPTLABEL; "("; p = patt; ":"; t = ctyp; "=";
         e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
       | i = QUESTIONIDENT -> <:patt< ? $i$ >>
+      | "?"; i = LIDENT -> <:patt< ? $i$ >>
       | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
           <:patt< ? ( $lid:i$ = $e$ ) >>
       | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
@@ -1226,9 +1236,13 @@ EXTEND
           <:patt< ? ( $lid:i$ : $t$ ) >> ] ]
   ;
   class_type:
-    [ [ i = lident_colon; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+    [ [ i = lident_colon; t = ctyp LEVEL "star"; "->"; ct = SELF ->
           <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
-      | i = QUESTIONIDENT; ":"; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+      | i = OPTLABEL; t = ctyp LEVEL "star"; "->"; ct = SELF ->
+          <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> 
+      | i = QUESTIONIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
+          <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> 
+      | "?"; i = LIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
           <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> ] ]
   ;
   class_fun_binding:
