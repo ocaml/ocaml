@@ -35,6 +35,10 @@ The "configure" script accepts the following options:
 -mandir <dir>                   (default: /usr/local/man/man1)
         Directory where the manual pages will be installed
 
+-prefix <dir>                   (default: /usr/local)
+        Set bindir, libdir and mandir to
+        <dir>/bin, <dir>/lib/ocaml, <dir>/man/man1 respectively.
+
 -cc <C compiler and options>    (default: gcc if available, cc otherwise)
         C compiler to use for building the system
 
@@ -66,6 +70,7 @@ The "configure" script accepts the following options:
         HPUX, AIX, nor Linux without LinuxThreads.
 
 Examples:
+    ./configure -prefix /usr/bin
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
     ./configure -cc "acc -fast" -libs "-lucb"
 

@@ -13,9 +13,10 @@
 
 # $Id$
 
-bindir=/usr/local/bin
-libdir=/usr/local/lib/ocaml
-mandir=/usr/local/man/man1
+prefix=/usr/local
+bindir=''
+libdir=''
+mandir=''
 manext=1
 host_type=unknown
 cc=''
@@ -30,6 +31,8 @@ posix_threads=no
 while : ; do
   case "$1" in
     "") break;;
+    -prefix|--prefix)
+        prefix=$2; shift;;
     -bindir|--bindir)
         bindir=$2; shift;;
     -libdir|--libdir)
@@ -57,16 +60,23 @@ done
 
 # Sanity checks
 
+case "$prefix" in
+  /*) ;;
+   *) echo "The -prefix directory must be absolute." 1>&2; exit 2;;
+esac
 case "$bindir" in
   /*) ;;
+  "") ;;
    *) echo "The -bindir directory must be absolute." 1>&2; exit 2;;
 esac
 case "$libdir" in
   /*) ;;
+  "") ;;
    *) echo "The -libdir directory must be absolute." 1>&2; exit 2;;
 esac
 case "$mandir" in
   /*) ;;
+  "") ;;
    *) echo "The -mandir directory must be absolute." 1>&2; exit 2;;
 esac
 
@@ -78,9 +88,22 @@ touch s.h m.h Makefile
 
 # Where to install
 
-echo "BINDIR=$bindir" >> Makefile
-echo "LIBDIR=$libdir" >> Makefile
-echo "MANDIR=$mandir" >> Makefile
+echo "PREFIX=$prefix" >> Makefile
+case "$bindir" in
+  "") echo 'BINDIR=$(PREFIX)/bin' >> Makefile
+      bindir="$prefix/bin";;
+   *) echo "BINDIR=$bindir" >> Makefile;;
+esac
+case "$libdir" in
+  "") echo 'LIBDIR=$(PREFIX)/lib/ocaml' >> Makefile
+      libdir="$prefix/lib/ocaml";;
+   *) echo "LIBDIR=$libdir" >> Makefile;;
+esac
+case "$mandir" in
+  "") echo 'MANDIR=$(PREFIX)/man/man1' >> Makefile
+      mandir="$prefix/man/man1";;
+   *) echo "MANDIR=$mandir" >> Makefile;;
+esac
 echo "MANEXT=$manext" >> Makefile
 
 # Determine the system type
