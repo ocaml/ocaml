@@ -12,79 +12,79 @@ let top = openTk () in
 Wm.title_set top title:"LablTk demo";
 
 (* Base frame *)
-let base = Frame.create parent:top () in
+let base = Frame.create top in
 pack [base];
 
 (* Menu bar *)
 let bar =
-  Frame.create parent: base borderwidth: (`Pix 2) relief: `Raised  () in 
+  Frame.create base borderwidth: (`Pix 2) relief: `Raised  in 
 pack [bar] fill: `X;
 
   (* Menu and Menubutton *)
-  let meb = Menubutton.create parent: bar text: "Menu" () in
-  let men = Menu.create parent: meb () in
+  let meb = Menubutton.create bar text: "Menu" in
+  let men = Menu.create meb in
   Menu.add_command men label: "Quit" command: (fun () -> closeTk (); exit 0);
   Menubutton.configure meb menu: men; 
   
   (* Frames *)
-  let base2 = Frame.create parent:base () in
-  let left = Frame.create parent:base2 () in
-  let right = Frame.create parent:base2 () in
+  let base2 = Frame.create base in
+  let left = Frame.create base2 in
+  let right = Frame.create base2 in
   pack [base2];
   pack [left; right] side: `Left;
   
     (* Widgets on left and right *)
     
     (* Button *)
-    let but = Button.create parent: left text: "Welcome to LablTk" () in
+    let but = Button.create left text: "Welcome to LablTk" in
     
     (* Canvas *)
-    let can = Canvas.create parent: left width: (`Pix 100) 
-      height: (`Pix 100) borderwidth: (`Pix 1) relief: `Sunken ()
+    let can = Canvas.create left width: (`Pix 100) 
+      height: (`Pix 100) borderwidth: (`Pix 1) relief: `Sunken
     in
     Canvas.create_oval can x1:(`Pix 10) y1:(`Pix 10) 
                            x2:(`Pix 90) y2:(`Pix 90)
       	                   fill:`Red; 
 
     (* Check button *)
-    let che = Checkbutton.create parent: left text: "Check" () in
+    let che = Checkbutton.create left text: "Check" in
     
     (* Entry *)
-    let ent = Entry.create parent: left width: 10 () in 
+    let ent = Entry.create left width: 10 in 
     
     (* Label *)
-    let lab = Label.create parent: left text: "Welcome to LablTk" () in
+    let lab = Label.create left text: "Welcome to LablTk" in
     
     (* Listbox *)
-    let lis = Listbox.create parent: left () in
+    let lis = Listbox.create left in
     Listbox.insert lis index: `End texts: ["This"; "is"; "Listbox"];
     
     (* Message *)
-    let mes = Message.create parent: left ()
+    let mes = Message.create left
       text: "Hello this is a message widget with very long text, but ..." in
     
     (* Radio buttons *)
     let tv = Textvariable.create () in
     Textvariable.set tv to: "One";
-    let radf = Frame.create parent: right () in
-    let rads = List.map fun:(fun t ->
-      Radiobutton.create parent: radf text: t value: t variable: tv ())
+    let radf = Frame.create right in
+    let rads = List.map
+	fun:(fun t -> Radiobutton.create radf text: t value: t variable: tv)
   	["One"; "Two"; "Three"] in
     
     (* Scale *)
-    let sca = Scale.create parent:right label: "Scale" length: (`Pix 100) 
-      showvalue: true () in
+    let sca = Scale.create right label: "Scale" length: (`Pix 100) 
+      showvalue: true in
     
     (* Text and scrollbar *)
-    let texf = Frame.create parent:right () in 
+    let texf = Frame.create right in 
     
       (* Text *)
-      let tex = Text.create parent:texf width: 20 height: 8 () in
+      let tex = Text.create texf width: 20 height: 8 in
       Text.insert tex text: "This is a text widget." index: (`End,[])
       	 tags: [];
       
       (* Scrollbar *)
-      let scr = Scrollbar.create parent:texf () in
+      let scr = Scrollbar.create texf in
       
       (* Text and Scrollbar widget link *)
       let scroll_link sb tx =
@@ -102,13 +102,13 @@ pack [bar] fill: `X;
     pack rads;
 
   (* Toplevel *)
-  let top2 = Toplevel.create parent:top () in
+  let top2 = Toplevel.create top in
   Wm.title_set top2 title:"LablTk demo control";
   let defcol = `Color "#dfdfdf" in
   let selcol = `Color "#ffdfdf" in
   let buttons = 
     List.map fun:(fun (w, t, c, a) ->
-        let b = Button.create parent:top2 text:t command:c () in
+        let b = Button.create top2 text:t command:c in
         bind b events: [[], `Enter] 
                action:(`Set ([], fun _ -> a selcol));
         bind b events: [[], `Leave] 

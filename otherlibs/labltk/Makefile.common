@@ -6,15 +6,11 @@ OTHERS=../..
 
 include $(TOPDIR)/config/Makefile
 
-### What to use to link with X
-X11_LIBS=-cclib "@X_LIBS@ @THE_X_LIBS@"
+LABLTKDIR=$(LIBDIR)/labltk
+TKLINKOPT=$(STATIC) -ccopt -L../support -cclib -llabltk41 \
+	  -cclib "$(TK_LINK)" $(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"
 
-### What to use to compile and link with Tcl/Tk
-TKINCLUDES=-ccopt "@CPPFLAGS@"
-TKLIBS=-cclib "@LDFLAGS@ @LIBS@"
-
-### Shouldn't need to change anything below
-## Tools from the Objective Label distribution
+## Tools from the Objective Caml distribution
 
 CAMLRUN=$(TOPDIR)/boot/ocamlrun
 LABLC=$(CAMLRUN) $(TOPDIR)/boot/ocamlc -I $(TOPDIR)/boot
@@ -26,7 +22,5 @@ LABLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
 COMPFLAGS=
 LINKFLAGS=
 
-CAMLOPT==$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib
+CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib -modern -w s
 CAMLOPTLIBR=$(CAMLOPT) -a
-
-## End of configuration section

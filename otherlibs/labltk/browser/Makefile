@@ -1,4 +1,4 @@
-include ../Makefile.config
+include ../Makefile.common
 
 LABLTKLIB=-I ../lib -I ../support
 OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str
@@ -31,13 +31,13 @@ lablbrowser: jglib.cma $(OBJ)
 	$(LABLC) -custom -o lablbrowser $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma str.cma tk41.cma jglib.cma $(OBJ) \
-		-cclib "$(CLIBS)" $(TKLIBS) $(X11_LIBS)
+		-cclib "$(CLIBS)" $(TKLINKOPT)
 
 jglib.cma: $(JG)
 	$(LABLCOMP) -a -o jglib.cma $(JG) 
 
 install:
-	if test -f lablbrowser; then : ; cp lablbrowser $(INSTALLBINDIR); fi
+	if test -f lablbrowser; then : ; cp lablbrowser $(BINDIR); fi
 
 clean:
 	rm -f *.cm? lablbrowser *~ *.orig

@@ -21,7 +21,7 @@ let pi = acos (-1.)
 class clock :parent = object (self)
 
   (* Instance variables *)
-  val canvas = Canvas.create :parent width:(`Pix 100) height:(`Pix 100) ()
+  val canvas = Canvas.create parent width:(`Pix 100) height:(`Pix 100)
   val mutable height = 100
   val mutable width = 100
   val mutable rflag = -1

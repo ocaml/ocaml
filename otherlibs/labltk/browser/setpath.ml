@@ -61,14 +61,13 @@ let f :dir =
   let tl = Jg_toplevel.titled "Edit Load Path" in
   Jg_bind.escape_destroy tl;
   let var_dir = Textvariable.create on:tl () in
-  let caplab = Label.create parent:tl text:"Path" ()
-  and dir_name =
-      Entry.create parent:tl textvariable:var_dir ()
-  and browse = Frame.create parent:tl () in
-  let dirs = Frame.create parent:browse ()
-  and path = Frame.create parent:browse () in
-  let dirframe, dirbox, dirsb = Jg_box.create_with_scrollbar parent:dirs ()
-  and pathframe, pathbox, pathsb = Jg_box.create_with_scrollbar parent:path ()
+  let caplab = Label.create tl text:"Path"
+  and dir_name = Entry.create tl textvariable:var_dir
+  and browse = Frame.create tl in
+  let dirs = Frame.create browse
+  and path = Frame.create browse in
+  let dirframe, dirbox, dirsb = Jg_box.create_with_scrollbar dirs
+  and pathframe, pathbox, pathsb = Jg_box.create_with_scrollbar path
   in
   add_update_hook (fun () -> renew_path pathbox);
   Listbox.configure pathbox width:40 selectmode:`Multiple;
@@ -117,14 +116,12 @@ let f :dir =
   bind pathbox events:[[], `KeyPressDetail "Delete"]
     action:(`Set ([], remove_paths));
   
-  let dirlab = Label.create parent:dirs text:"Directories" ()
-  and pathlab = Label.create parent:path text:"Load path" ()
-  and addbutton =
-    Button.create parent:dirs text:"Add to path" command:add_paths ()
-  and pathbuttons = Frame.create parent:path () in
+  let dirlab = Label.create dirs text:"Directories"
+  and pathlab = Label.create path text:"Load path"
+  and addbutton = Button.create dirs text:"Add to path" command:add_paths
+  and pathbuttons = Frame.create path in
   let removebutton =
-    Button.create parent:pathbuttons text:"Remove from path"
-      command:remove_paths ()
+    Button.create pathbuttons text:"Remove from path" command:remove_paths
   and ok =
     Jg_button.create_destroyer tl parent:pathbuttons
   in

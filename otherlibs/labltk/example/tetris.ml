@@ -251,28 +251,28 @@ let init fw =
   and levv = Textvariable.create ()
   and namev = Textvariable.create ()
   in
-  let f = Frame.create parent: fw borderwidth: (`Pix 2) () in
-  let c = Canvas.create parent: f width: (`Pix (block_size * 10))
-			          height: (`Pix (block_size * 20))
-				  borderwidth: (`Pix cell_border)
-				  relief: `Sunken
-				  background: `Black ()
-  and r = Frame.create parent:f ()
-  and r' = Frame.create parent:f () in
+  let f = Frame.create fw borderwidth: (`Pix 2) in
+  let c = Canvas.create f width: (`Pix (block_size * 10))
+                          height: (`Pix (block_size * 20))
+			  borderwidth: (`Pix cell_border)
+			  relief: `Sunken
+			  background: `Black
+  and r = Frame.create f
+  and r' = Frame.create f in
 
-  let nl = Label.create parent:r text: "Next"  font: "variable" () in
-  let nc = Canvas.create parent:r width: (`Pix (block_size * 4))
-                                  height: (`Pix (block_size * 4))
-				  borderwidth: (`Pix cell_border)
-				  relief: `Sunken
-                                  background: `Black () in
-  let scl = Label.create parent: r text: "Score" font: "variable" () in
-  let sc = Label.create parent:r textvariable: scorev font: "variable" () in
-  let lnl = Label.create parent:r text: "Lines" font: "variable" () in
-  let ln = Label.create parent: r textvariable: linev font: "variable" () in
-  let levl = Label.create parent: r text: "Level" font: "variable" () in
-  let lev = Label.create parent: r textvariable: levv font: "variable" () in 
-  let newg = Button.create parent: r text: "New Game" font: "variable" () in
+  let nl = Label.create r text: "Next"  font: "variable" in
+  let nc = Canvas.create r width: (`Pix (block_size * 4))
+                           height: (`Pix (block_size * 4))
+			   borderwidth: (`Pix cell_border)
+			   relief: `Sunken
+                           background: `Black in
+  let scl = Label.create r text: "Score" font: "variable" in
+  let sc = Label.create r textvariable: scorev font: "variable" in
+  let lnl = Label.create r text: "Lines" font: "variable" in
+  let ln = Label.create r textvariable: linev font: "variable" in
+  let levl = Label.create r text: "Level" font: "variable" in
+  let lev = Label.create r textvariable: levv font: "variable" in 
+  let newg = Button.create r text: "New Game" font: "variable" in
 
   pack [f];
   pack [coe c; coe r; coe r'] side: `Left fill: `Y;
@@ -369,8 +369,8 @@ let copy_block c =
 
 let _ =
   let top = openTk () in
-  let lb = Label.create parent:top ()
-  and fw = Frame.create parent:top ()
+  let lb = Label.create top
+  and fw = Frame.create top
   in
   let set_message s = Label.configure lb text:s in
   pack [coe lb; coe fw] side: `Top; 

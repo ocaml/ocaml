@@ -1,11 +1,6 @@
-include ../Makefile.config
+include ../Makefile.common
 
 COMPFLAGS= -I ../support
-
-TKLINKOPT=$(STATIC) \
-          -ccopt -L../support -cclib -llabltk41 \
-	  $(TKLIBS) $(X11_LIBS)
-
 
 SUPPORT=../support/support.cmo ../support/widget.cmo ../support/protocol.cmo \
         ../support/textvariable.cmo ../support/timer.cmo \
@@ -13,7 +8,7 @@ SUPPORT=../support/support.cmo ../support/widget.cmo ../support/protocol.cmo \
 
 SUPPORTX = $(SUPPORT:.cmo=.cmx)
 
-all : tk41.cma labltktop
+all : tk41.cma labltktop labltk labltklink labltkopt
 
 opt : tk41.cmxa
 
@@ -26,29 +21,52 @@ tk41.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo
 tk41.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
 	$(CAMLOPTLIBR) -o tk41.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX)
 
-## Until olabltktop is fixed (next release), we in-line it
-## (otherwise our trick with -ccopt is broken)
-
 labltktop : $(WIDGETOBJS) $(SUPPORT)
 	$(LABLC) -custom -linkall -o labltktop -I ../support $(TKLINKOPT) \
 	       -I $(TOPDIR)/toplevel toplevellib.cma tk41.cma topmain.cmo
+
+labltk: Makefile $(TOPDIR)/config/Makefile
+	@echo Generate $@
+	@echo "#!/bin/sh" > $@
+	@echo "exec $(LABLTKDIR)/labltktop -I $(LABLTKDIR) $$""*" >> $@
+
+labltklink: Makefile $(TOPDIR)/config/Makefile
+	@echo Generate $@
+	@echo "#!/bin/sh" > $@
+	@echo "exec ocamlc -custom -I $(LABLTKDIR) tk41.cma $$""*" >> $@
+	@echo "	-cclib \"-L$(LABLTKDIR) -llabltk41 $(TK_LINK)\"" >> $@
+	@echo "	$(X11_LINK) -cclib \"$(CCLIBS) $(DLLIB)\"" >> $@
+
+labltkopt: Makefile $(TOPDIR)/config/Makefile
+	@echo Generate $@
+	@echo "#!/bin/sh" > $@
+	@echo "exec ocamlopt -custom -I $(LABLTKDIR) tk41.cmxa $$""*" >> $@
+	@echo "	-cclib \"-L$(LABLTKDIR) -llabltk41 $(TK_LINK)\"" >> $@
+	@echo "	$(X11_LINK) -cclib \"$(CCLIBS) $(DLLIB)\"" >> $@
 
 # All .{ml,mli} files are generated in this directory
 clean : 
 	rm -f *.cm* *.ml *.mli *.o *.a labltktop
 
-install: tk41.cma labltktop
-	cp *.cmi tk41.cma labltktop $(INSTALLDIR)
-	chmod 644 $(INSTALLDIR)/*.cmi
-	chmod 644 $(INSTALLDIR)/tk41.cma
-	chmod 755 $(INSTALLDIR)/labltktop
+install: tk41.cma labltktop labltk labltklink
+	@if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
+	cp *.cmi tk41.cma labltktop $(LABLTKDIR)
+	chmod 644 $(LABLTKDIR)/*.cmi
+	chmod 644 $(LABLTKDIR)/tk41.cma
+	chmod 755 $(LABLTKDIR)/labltktop
+	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
+	cp labltk labltklink $(BINDIR)
+	chmod 755 $(BINDIR)/labltk $(BINDIR)/labltklink
 
 
 installopt: tk41.cmxa
-	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
-	cp tk41.cmxa tk41.a $(INSTALLDIR)
-	chmod 644 $(INSTALLDIR)/tk41.cmxa
-	chmod 644 $(INSTALLDIR)/tk41.a
+	@if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
+	cp tk41.cmxa tk41.a $(LABLTKDIR)
+	chmod 644 $(LABLTKDIR)/tk41.cmxa
+	chmod 644 $(LABLTKDIR)/tk41.a
+	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
+	cp labltkopt $(BINDIR)
+	chmod 755 $(BINDIR)/labltkopt
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp

@@ -1,4 +1,4 @@
-include ../Makefile.config
+include ../Makefile.common
 
 all: support.cmo widget.cmo protocol.cmo \
      textvariable.cmo timer.cmo fileevent.cmo \
@@ -11,7 +11,7 @@ opt: support.cmx widget.cmx protocol.cmx \
 COBJS=cltkCaml.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o \
       cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o
 
-CCFLAGS=$(TKINCLUDES)
+CCFLAGS=-ccopt "$(TK_DEFS) $(X11_INCLUDES)"
 
 COMPFLAGS=-I $(OTHERS)/unix
 
@@ -27,11 +27,11 @@ PUB=fileevent.cmi fileevent.mli \
     widget.cmi widget.mli
 
 install: liblabltk41.a $(PUB)
-	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
-	cp $(PUB) $(INSTALLDIR)
-	cp liblabltk41.a $(INSTALLDIR)
-	cd $(INSTALLDIR); chmod 644 $(PUB) liblabltk41.a
-	$(RANLIB) $(INSTALLDIR)/liblabltk41.a
+	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
+	cp $(PUB) $(LABLTKDIR)
+	cp liblabltk41.a $(LABLTKDIR)
+	cd $(LABLTKDIR); chmod 644 $(PUB) liblabltk41.a
+	$(RANLIB) $(LABLTKDIR)/liblabltk41.a
 
 clean : 
 	rm -f *.cm* *.o *.a

@@ -85,17 +85,17 @@ let f :title action:proc ?:dir{=Unix.getcwd ()}
   and sync_var = new_var () in
   Textvariable.set filter_var to:deffilter;
 
-  let frm = Frame.create parent:tl borderwidth:(`Pix 1) relief:`Raised () in
-    let df = Frame.create parent:frm () in
-      let dfl = Frame.create parent:df () in
-        let dfll = Label.create parent:dfl text:"Directories" () in
+  let frm = Frame.create tl borderwidth:(`Pix 1) relief:`Raised in
+    let df = Frame.create frm in
+      let dfl = Frame.create df in
+        let dfll = Label.create dfl text:"Directories" in
 	let dflf, directory_listbox, directory_scrollbar =
-	    Jg_box.create_with_scrollbar parent:dfl () in
-      let dfr = Frame.create parent:df () in
-        let dfrl = Label.create parent:dfr text:"Files" () in
+	    Jg_box.create_with_scrollbar dfl in
+      let dfr = Frame.create df in
+        let dfrl = Label.create dfr text:"Files" in
 	let dfrf, filter_listbox, filter_scrollbar =
-	    Jg_box.create_with_scrollbar parent:dfr () in
-  let cfrm = Frame.create parent:tl borderwidth:(`Pix 1) relief:`Raised () in
+	    Jg_box.create_with_scrollbar dfr in
+  let cfrm = Frame.create tl borderwidth:(`Pix 1) relief:`Raised in
 
   let configure :filter =
     let filter =
@@ -168,15 +168,15 @@ let f :title action:proc ?:dir{=Unix.getcwd ()}
   in
   
   (* entries *)
-  let fl = Label.create parent:frm text:"Filter" () in
-  let sl = Label.create parent:frm text:"Selection" () in
-  let filter_entry = Jg_entry.create parent:frm textvariable:filter_var ()
+  let fl = Label.create frm text:"Filter" in
+  let sl = Label.create frm text:"Selection" in
+  let filter_entry = Jg_entry.create frm textvariable:filter_var
       command:(fun filter -> configure :filter) in
-  let selection_entry = Jg_entry.create parent:frm textvariable:selection_var
-      command:(fun file -> activate [file]) () in
+  let selection_entry = Jg_entry.create frm textvariable:selection_var
+      command:(fun file -> activate [file]) in
 
   (* and buttons *)
-  let set_path = Button.create parent:dfl text:"Path editor" () command:
+  let set_path = Button.create dfl text:"Path editor" command:
     begin fun () ->
       Setpath.add_update_hook (fun () -> configure filter:!current_pattern);
       let w = Setpath.f dir:!current_dir in
@@ -184,7 +184,7 @@ let f :title action:proc ?:dir{=Unix.getcwd ()}
       bind w events:[[], `Destroy]
         action:(`Extend ([], fun _ -> Grab.set tl))
     end in
-  let toggle_in_path = Checkbutton.create parent:dfl text:"Use load path" ()
+  let toggle_in_path = Checkbutton.create dfl text:"Use load path"
     command:
     begin fun () ->
       load_in_path := not !load_in_path;
@@ -194,7 +194,7 @@ let f :title action:proc ?:dir{=Unix.getcwd ()}
       	Pack.forget [set_path];
       configure filter:(Textvariable.get filter_var)
     end
-  and okb = Button.create parent:cfrm text:"Ok" () command:
+  and okb = Button.create cfrm text:"Ok" command:
     begin fun () -> 
       let files = 
       	List.map (Listbox.curselection filter_listbox) fun:
@@ -206,9 +206,9 @@ let f :title action:proc ?:dir{=Unix.getcwd ()}
                                 else files in
       activate [Textvariable.get selection_var]
     end
-  and flb = Button.create parent:cfrm text:"Filter" ()
+  and flb = Button.create cfrm text:"Filter"
       command:(fun () -> configure filter:(Textvariable.get filter_var))
-  and ccb = Button.create parent:cfrm text:"Cancel" ()
+  and ccb = Button.create cfrm text:"Cancel"
       command:(fun () -> activate []) in
 
   (* binding *)

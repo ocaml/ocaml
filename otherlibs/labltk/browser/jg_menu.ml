@@ -5,8 +5,8 @@ open Tk
 class c :parent ?underline:n{=0} text = object (self)
   val pair =
     let button =
-      Menubutton.create :parent :text underline:n  () in
-    let menu =  Menu.create parent:button () in
+      Menubutton.create parent :text underline:n in
+    let menu =  Menu.create button in
     Menubutton.configure button :menu;
     button, menu
   method button = fst pair

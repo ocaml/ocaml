@@ -1,8 +1,8 @@
 (* $Id$ *)
 
 class c :
-  parent:'a Widget.widget -> cols:int ->
-  texts:string list -> ?maxheight:int -> ?width:int -> unit ->
+  cols:int -> texts:string list ->
+  ?maxheight:int -> ?width:int -> 'a Widget.widget ->
 object
   method cols : int
   method texts : string list

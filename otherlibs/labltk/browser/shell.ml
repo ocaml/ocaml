@@ -173,14 +173,14 @@ let f :prog :title =
       pred:(fun dir -> may_exec (Filename.concat dir prog)) in
   if not exists then () else
   let tl = Jg_toplevel.titled title in
-  let menus = Frame.create parent:tl name:"menubar" () in
+  let menus = Frame.create tl name:"menubar" in
   let file_menu = new Jg_menu.c "File" parent:menus
   and history_menu = new Jg_menu.c "History" parent:menus
   and signal_menu = new Jg_menu.c "Signal" parent:menus in
   pack [menus] side:`Top fill:`X;
   pack [file_menu#button; history_menu#button; signal_menu#button]
     side:`Left ipadx:(`Pix 5) anchor:`W;
-  let frame, tw, sb = Jg_text.create_with_scrollbar parent:tl in
+  let frame, tw, sb = Jg_text.create_with_scrollbar tl in
   Text.configure tw background:`White;
   pack [sb] fill:`Y side:`Right;
   pack [tw] fill:`Both expand:true side:`Left;

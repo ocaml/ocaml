@@ -1,4 +1,4 @@
-include ../Makefile.config
+include ../Makefile.common
 
 OBJS=tsort.cmo tables.cmo lexer.cmo parser.cmo  compile.cmo intf.cmo \
      maincompile.cmo
@@ -19,7 +19,7 @@ scratch :
 	rm -f *.cm*  parser.ml parser.mli lexer.ml tkcompiler
 
 install: 
-	cp tkcompiler $(INSTALLDIR)
+	cp tkcompiler $(LABLTKDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .mlp

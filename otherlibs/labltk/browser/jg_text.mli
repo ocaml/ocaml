@@ -9,6 +9,6 @@ val tag_and_see :
 val output : text widget -> buffer:string -> pos:int -> len:int -> unit
 val add_scrollbar : text widget -> scrollbar widget
 val create_with_scrollbar :
-  parent:'a widget -> frame widget * text widget * scrollbar widget
+  'a widget -> frame widget * text widget * scrollbar widget
 val goto_tag : text widget -> tag:string -> unit
 val search_string : text widget -> unit

@@ -71,12 +71,12 @@ let choose_symbol :title :env ?:signature ?:path l =
   let tl = Jg_toplevel.titled title in
   Jg_bind.escape_destroy tl;
   top_widgets := coe tl :: !top_widgets;
-  let buttons = Frame.create parent:tl () in
-  let all = Button.create parent:buttons text:"Show all" padx:(`Pix 20) ()
+  let buttons = Frame.create tl in
+  let all = Button.create buttons text:"Show all" padx:(`Pix 20)
   and ok = Jg_button.create_destroyer tl parent:buttons
-  and detach = Button.create parent:buttons text:"Detach" ()
-  and edit = Button.create parent:buttons text:"Impl" ()
-  and intf = Button.create parent:buttons text:"Intf" () in
+  and detach = Button.create buttons text:"Detach"
+  and edit = Button.create buttons text:"Impl"
+  and intf = Button.create buttons text:"Intf" in
   let l = Sort.list l order:
       (fun (li1, _) (li2,_) ->
 	string_of_longident li1 < string_of_longident li2)
@@ -85,9 +85,9 @@ let choose_symbol :title :env ?:signature ?:path l =
     begin fun (li, k) ->
       string_of_longident li ^ " (" ^ string_of_kind k ^ ")"
     end in
-  let fb = Frame.create parent:tl () in
+  let fb = Frame.create tl in
   let box =
-    new Jg_multibox.c parent:fb cols:3 texts:nl maxheight:3 width:21 () in
+    new Jg_multibox.c fb cols:3 texts:nl maxheight:3 width:21 in
   box#init;
   box#bind_kbd events:[[],`KeyPressDetail"Escape"]
     action:(fun _ :index -> destroy tl; break ());
@@ -118,7 +118,7 @@ let choose_symbol :title :env ?:signature ?:path l =
   end;
   begin match path with None -> ()
   | Some path ->
-      let frame = Frame.create parent:tl () in
+      let frame = Frame.create tl in
       pack [frame] side:`Bottom fill:`X;
       add_shown_module path
 	widgets:{ mw_frame = frame; mw_detach = detach;
@@ -132,17 +132,17 @@ let search_symbol () =
   module_list := Sort.list order:(<) (list_modules path:!Config.load_path);
   let tl = Jg_toplevel.titled "Search symbol" in
   Jg_bind.escape_destroy tl;
-  let ew = Entry.create parent:tl width:30 () in
-  let choice = Frame.create parent:tl ()
+  let ew = Entry.create tl width:30 in
+  let choice = Frame.create tl
   and which = Textvariable.create on:tl () in
-  let itself = Radiobutton.create parent:choice text:"Itself"
-        variable:which value:"itself" ()
-  and extype = Radiobutton.create parent:choice text:"Exact type"
-        variable:which value:"exact" ()
-  and iotype = Radiobutton.create parent:choice text:"Included type"
-      	variable:which value:"iotype" ()
-  and buttons = Frame.create parent:tl () in
-  let search = Button.create parent:buttons text:"Search" () command:
+  let itself = Radiobutton.create choice text:"Itself"
+        variable:which value:"itself"
+  and extype = Radiobutton.create choice text:"Exact type"
+        variable:which value:"exact"
+  and iotype = Radiobutton.create choice text:"Included type"
+      	variable:which value:"iotype"
+  and buttons = Frame.create tl in
+  let search = Button.create buttons text:"Search" command:
     begin fun () ->
       search_which := Textvariable.get which;
       let text = Entry.get ew in
@@ -213,18 +213,18 @@ let default_shell = ref "ocaml"
 let start_shell () =
   let tl = Jg_toplevel.titled "Start New Shell" in
   Wm.transient_set tl master:Widget.default_toplevel;
-  let input = Frame.create parent:tl ()
-  and buttons = Frame.create parent:tl () in
-  let ok = Button.create parent:buttons text:"Ok" ()
+  let input = Frame.create tl
+  and buttons = Frame.create tl in
+  let ok = Button.create buttons text:"Ok"
   and cancel = Jg_button.create_destroyer tl parent:buttons text:"Cancel"
-  and labels = Frame.create parent:input ()
-  and entries = Frame.create parent:input () in
-  let l1 = Label.create parent:labels text:"Command:" ()
-  and l2 = Label.create parent:labels text:"Title:" ()
+  and labels = Frame.create input
+  and entries = Frame.create input in
+  let l1 = Label.create labels text:"Command:"
+  and l2 = Label.create labels text:"Title:"
   and e1 =
-    Jg_entry.create parent:entries command:(fun _ -> Button.invoke ok) ()
+    Jg_entry.create entries command:(fun _ -> Button.invoke ok)
   and e2 =
-    Jg_entry.create parent:entries command:(fun _ -> Button.invoke ok) ()
+    Jg_entry.create entries command:(fun _ -> Button.invoke ok)
   and names = List.map fun:fst (Shell.get_all ()) in
   Entry.insert e1 index:`End text:!default_shell;
   while List.mem names elt:("Shell #" ^ string_of_int !shell_counter) do
@@ -251,14 +251,14 @@ let f ?:dir{= Unix.getcwd()} ?:on () =
   | Some top ->
       Wm.title_set top title:"LablBrowser";
       Wm.iconname_set top name:"LablBrowser";
-      let tl = Frame.create parent:top () in
+      let tl = Frame.create top in
       pack [tl] expand:true fill:`Both;
       coe tl
   in
-  let menus = Frame.create parent:tl name:"menubar" () in
+  let menus = Frame.create tl name:"menubar" in
   let filemenu = new Jg_menu.c "File" parent:menus
   and modmenu = new Jg_menu.c "Modules" parent:menus in
-  let fmbox, mbox, msb = Jg_box.create_with_scrollbar parent:tl () in
+  let fmbox, mbox, msb = Jg_box.create_with_scrollbar tl in
 
   Jg_box.add_completion mbox nocase:true action:
     begin fun index ->
@@ -266,9 +266,9 @@ let f ?:dir{= Unix.getcwd()} ?:on () =
     end;
   Setpath.add_update_hook (fun () -> reset_modules mbox);
 
-  let ew = Entry.create parent:tl () in
-  let buttons = Frame.create parent:tl () in
-  let search = Button.create parent:buttons text:"Search" pady:(`Pix 1) ()
+  let ew = Entry.create tl in
+  let buttons = Frame.create tl in
+  let search = Button.create buttons text:"Search" pady:(`Pix 1)
     command:
     begin fun () ->
       let s = Entry.get ew in
@@ -291,8 +291,8 @@ let f ?:dir{= Unix.getcwd()} ?:on () =
       |	_ -> choose_symbol title:"Choose symbol" env:!start_env l
     end
   and close =
-    Button.create parent:buttons text:"Close all" pady:(`Pix 1) ()
-                  command:close_all_views
+    Button.create buttons text:"Close all" pady:(`Pix 1)
+      command:close_all_views
   in
   (* bindings *)
   Jg_bind.enter_focus ew;

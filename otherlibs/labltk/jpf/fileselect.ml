@@ -28,7 +28,7 @@ let bind_enter_focus w =
          action: (`Set ([], fun _ -> Focus.set w));;
 
 let myentry_create p :variable =
-  let w = Entry.create parent:p relief: `Sunken textvariable: variable () in
+  let w = Entry.create p relief: `Sunken textvariable: variable in
   bind_enter_focus w; w
 
 (************************************************************* Subshell call *)
@@ -176,7 +176,7 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
   let filter_init_completion = ref (fun _ -> ())
   and directory_init_completion = ref (fun _ -> ()) in
   
-  let tl = Toplevel.create parent:default_toplevel () in
+  let tl = Toplevel.create default_toplevel in
   Focus.set tl;
   Wm.title_set tl :title;
 
@@ -184,30 +184,30 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
   and selection_var = Textvariable.create on:tl ()
   and sync_var = Textvariable.create on:tl () in
 
-  let frm' = Frame.create parent:tl borderwidth: (`Pix 1) relief: `Raised () in
-    let frm = Frame.create parent:frm' borderwidth: (`Pix 8) () in
-    let fl = Label.create parent: frm text: "Filter" () in
-    let df = Frame.create parent:frm () in
-      let dfl = Frame.create parent:df () in
-        let dfll = Label.create parent:dfl text: "Directories" () in
-	let dflf = Frame.create parent:dfl () in
-          let directory_listbox = Listbox.create parent:dflf relief: `Sunken ()
-          and directory_scrollbar = Scrollbar.create parent:dflf () in
+  let frm' = Frame.create tl borderwidth: (`Pix 1) relief: `Raised in
+    let frm = Frame.create frm' borderwidth: (`Pix 8) in
+    let fl = Label.create  frm text: "Filter" in
+    let df = Frame.create frm in
+      let dfl = Frame.create df in
+        let dfll = Label.create dfl text: "Directories" in
+	let dflf = Frame.create dfl in
+          let directory_listbox = Listbox.create dflf relief: `Sunken
+          and directory_scrollbar = Scrollbar.create dflf in
             scroll_link directory_scrollbar directory_listbox; 
-      let dfr = Frame.create parent:df () in
-        let dfrl = Label.create parent:dfr text: "Files" () in
-	let dfrf = Frame.create parent:dfr () in
-	  let filter_listbox = Listbox.create parent:dfrf relief: `Sunken () in
-	  let filter_scrollbar = Scrollbar.create parent:dfrf () in
+      let dfr = Frame.create df in
+        let dfrl = Label.create dfr text: "Files" in
+	let dfrf = Frame.create dfr in
+	  let filter_listbox = Listbox.create dfrf relief: `Sunken in
+	  let filter_scrollbar = Scrollbar.create dfrf in
 	    scroll_link filter_scrollbar filter_listbox;
-    let sl = Label.create parent:frm text: "Selection" () in
+    let sl = Label.create frm text: "Selection" in
     let filter_entry = myentry_create frm variable: filter_var in
     let selection_entry = myentry_create frm variable: selection_var
     in
-  let cfrm' = Frame.create parent:tl borderwidth: (`Pix 1) relief: `Raised () in
-    let cfrm = Frame.create parent:cfrm' borderwidth: (`Pix 8) () in
-    let dumf = Frame.create parent:cfrm () in
-    let dumf2 = Frame.create parent:cfrm () in
+  let cfrm' = Frame.create tl borderwidth: (`Pix 1) relief: `Raised in
+    let cfrm = Frame.create cfrm' borderwidth: (`Pix 8) in
+    let dumf = Frame.create cfrm in
+    let dumf2 = Frame.create cfrm in
 
   let configure filter =
     (* OLDER let curdir = getcwd () in *)
@@ -264,7 +264,7 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
   in
   
   (* and buttons *)
-    let okb = Button.create parent:cfrm text: "OK" () command:
+    let okb = Button.create cfrm text: "OK" command:
       begin fun () -> 
       	let files = 
       	  List.map (Listbox.curselection filter_listbox) 
@@ -275,9 +275,9 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
       	activate files ()
       end
     in
-    let flb = Button.create parent:cfrm text: "Filter" ()
+    let flb = Button.create cfrm text: "Filter"
       command: (fun () -> configure (Textvariable.get filter_var)) in
-    let ccb = Button.create parent:cfrm text: "Cancel" ()
+    let ccb = Button.create cfrm text: "Cancel"
       command: (fun () -> activate [] ()) in
 
   (* binding *)

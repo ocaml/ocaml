@@ -1,8 +1,6 @@
-include ../Makefile.config
+include ../Makefile.common
 
 COMPFLAGS=-I ../lib -I ../support 
-
-TKLINKOPT= -ccopt -L../support -cclib -llabltk41 $(TKLIBS) $(X11_LIBS)
 
 all: hello demo eyes calc clock tetris
 

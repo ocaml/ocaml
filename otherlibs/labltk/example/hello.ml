@@ -9,7 +9,7 @@ let top = openTk ()
 (* create a button on top *)
 (* Button.create : use of create function defined in button.ml *)
 (* But you shouldn't open Button module for other widget class modules use *)
-let b = Button.create parent: top text: "Hello, LablTk!" ()
+let b = Button.create text: "Hello, LablTk!" top
 
 (* Lack of toplevel expressions in lsl, you must use dummy let exp. *)
 let _ = pack [coe b] 

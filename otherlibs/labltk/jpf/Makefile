@@ -1,4 +1,4 @@
-include ../Makefile.config
+include ../Makefile.common
 
 COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/unix -I $(OTHERS)/str
 
@@ -6,9 +6,8 @@ OBJS= fileselect.cmo balloon.cmo
 
 OBJSX = $(OBJS:.cmo=.cmx)
 
-TKLINKOPT=$(STATIC) \
-	  -ccopt -L../support -cclib -llabltk41 \
-	  $(TKLIBS) $(X11_LIBS)
+TKLINKOPT=$(STATIC) -ccopt -L../support -cclib -llabltk41 \
+	  -cclib "$(TK_LINK)" $(X11_LINK)
 
 all: libjpf.cma
 
@@ -25,10 +24,10 @@ libjpf.cmxa: $(OBJSX)
 	$(CAMLOPTLIBR) -o libjpf.cmxa $(OBJSX)
 
 install: libjpf.cma
-	cp *.cmi *.mli libjpf.cma $(INSTALLDIR)
+	cp *.cmi *.mli libjpf.cma $(LABLTKDIR)
 
 installopt: libjpf.cmxa
-	cp libjpf.cmxa libjpf.a $(INSTALLDIR)
+	cp libjpf.cmxa libjpf.a $(LABLTKDIR)
 
 clean:
 	rm -f *.cm* *.o *.a *~ *test

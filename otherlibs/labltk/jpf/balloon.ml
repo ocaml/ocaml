@@ -83,10 +83,10 @@ let init () =
   let t = Hashtbl.create 101 in
   Protocol.add_destroy_hook (fun w ->
     Hashtbl.remove t key:w);
-  topw := Toplevel.create parent:default_toplevel ();
+  topw := Toplevel.create default_toplevel;
   Wm.overrideredirect_set !topw to: true;
   Wm.withdraw !topw;
-  popupw := Message.create parent:!topw name: "balloon" ()
+  popupw := Message.create !topw name: "balloon"
 	      background: (`Color "yellow") aspect: 300;
   pack [!popupw];
   class_bind "all" 

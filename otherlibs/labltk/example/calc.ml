@@ -80,16 +80,15 @@ let m =
 class calculator :parent = object
   inherit calc () as calc
 
-  val label = Label.create :parent anchor:`E relief:`Sunken padx:(`Pix 10) ()
-  val frame = Frame.create :parent ()
+  val label = Label.create anchor:`E relief:`Sunken padx:(`Pix 10) parent
+  val frame = Frame.create parent
 
   initializer
     let buttons =
       Array.map fun:
 	(List.map fun:
 	   (fun text ->
-	     Button.create parent:frame :text
-	       command:(fun () -> calc#command text) ()))
+	     Button.create :text command:(fun () -> calc#command text) frame))
 	m
     in
     Label.configure textvariable:variable label;

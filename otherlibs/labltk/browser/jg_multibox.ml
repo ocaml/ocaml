@@ -46,7 +46,7 @@ let rec split l :len =
 
 open Tk
 
-class c :parent :cols :texts ?:maxheight ?:width () = object (self)
+class c :cols :texts ?:maxheight ?:width parent = object (self)
   val parent' = coe parent
   val length = List.length texts
   val boxes =
@@ -57,9 +57,9 @@ class c :parent :cols :texts ?:maxheight ?:width () = object (self)
     in
     gen_list len:cols fun:
       begin fun () ->
- 	Listbox.create :parent :height ?:width
+ 	Listbox.create parent :height ?:width
 	  highlightthickness:(`Pix 0)
-	  borderwidth:(`Pix 1) ()
+	  borderwidth:(`Pix 1)
       end
   val mutable current = 0
   method cols = cols
@@ -142,7 +142,7 @@ end
 let add_scrollbar (box : c) =
   let boxes = box#boxes in
   let sb =
-    Scrollbar.create parent:(box#parent) ()
+    Scrollbar.create (box#parent)
       command:(fun :scroll -> List.iter boxes fun:(Listbox.yview :scroll)) in
   List.iter boxes
     fun:(fun lb -> Listbox.configure lb yscrollcommand:(Scrollbar.set sb));

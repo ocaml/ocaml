@@ -6,7 +6,7 @@ open Tables
 open Compile
 
 let write_create_p :w wname =
-  w "val create :\n  parent:'a widget ->\n  ?name:string ->\n";
+  w "val create :\n  ?name:string ->\n";
   begin
     try 
       let option = Hashtbl.find types_table key:"options" in
@@ -30,7 +30,7 @@ let write_create_p :w wname =
 	  end))
     with Not_found -> fatal_error "in write_create_p"
   end;
-  w (" ->\n  unit -> "^wname^" widget\n");
+  w (" ->\n  'a widget -> "^wname^" widget\n");
   w "             (* [create p options ?name] creates a new widget with\n";
   w "                parent p and new patch component name.\n";
   w "                Options are restricted to the widget class subset,\n";

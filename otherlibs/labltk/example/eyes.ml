@@ -2,9 +2,9 @@ open Tk
 
 let _ =
  let top = openTk () in
- let fw = Frame.create parent: top () in
+ let fw = Frame.create top in
    pack [fw];
-   let c = Canvas.create parent: fw width: (`Pix 200) height: (`Pix 200) () in
+   let c = Canvas.create fw width: (`Pix 200) height: (`Pix 200) in
    let create_eye cx cy wx wy ewx ewy bnd =
      let o2 = Canvas.create_oval c 
        x1:(`Pix (cx - wx)) y1:(`Pix (cy - wy)) 

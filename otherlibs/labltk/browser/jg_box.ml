@@ -4,12 +4,12 @@ open Tk
 
 let add_scrollbar lb  =
   let sb =
-    Scrollbar.create parent:(Winfo.parent lb) command:(Listbox.yview lb) () in
+    Scrollbar.create (Winfo.parent lb) command:(Listbox.yview lb) in
   Listbox.configure lb yscrollcommand:(Scrollbar.set sb); sb
 
-let create_with_scrollbar :parent ?:selectmode () =
-  let frame = Frame.create :parent () in
-  let lb = Listbox.create parent:frame ?:selectmode () in
+let create_with_scrollbar ?:selectmode parent =
+  let frame = Frame.create parent in
+  let lb = Listbox.create frame ?:selectmode in
   frame, lb, add_scrollbar lb
 
 (* from frx_listbox,adapted *)

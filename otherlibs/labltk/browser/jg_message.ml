@@ -35,11 +35,11 @@ let formatted :title ?:on ?:width{=60} ?:maxheight{=10} ?:minheight{=0} () =
     | None ->
  	let tl = Jg_toplevel.titled title in
   	Jg_bind.escape_destroy tl;
-	let frame = Frame.create parent:tl () in
+	let frame = Frame.create tl in
 	pack [frame] side:`Top fill:`Both expand:true;
 	coe tl, frame
   in
-  let tw = Text.create parent:frame :width wrap:`Word  () in
+  let tw = Text.create frame :width wrap:`Word  in
   pack [tw] side:`Left fill:`Both expand:true;
   Format.print_flush ();
   Format.set_margin (width - 2);
@@ -61,14 +61,14 @@ let ask :title ?:master text =
   begin match master with None -> ()
   | Some master -> Wm.transient_set tl :master
   end;
-  let mw = Message.create parent:tl :text padx:(`Pix 20) pady:(`Pix 10)
-      	   width:(`Pix 250) justify:`Left aspect:400 anchor:`W ()
-  and fw = Frame.create parent:tl ()
+  let mw = Message.create tl :text padx:(`Pix 20) pady:(`Pix 10)
+      	   width:(`Pix 250) justify:`Left aspect:400 anchor:`W
+  and fw = Frame.create tl
   and sync = Textvariable.create on:tl ()
   and r = ref (`cancel : [`yes|`no|`cancel]) in
-  let accept = Button.create parent:fw text:"Yes" ()
+  let accept = Button.create fw text:"Yes"
       command:(fun () -> r := `yes; destroy tl) 
-  and refuse = Button.create parent:fw text:"No" ()
+  and refuse = Button.create fw text:"No"
       command:(fun () -> r := `no; destroy tl)
   and cancel = Jg_button.create_destroyer tl parent:fw text:"Cancel"
   in

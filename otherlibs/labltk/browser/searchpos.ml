@@ -436,7 +436,7 @@ and view_decl_menu lid :kind :env :parent =
     | `Modtype -> fst (lookup_modtype lid env), "Module type"
     with Env.Error _ -> raise Not_found
   in
-  let menu = Menu.create :parent tearoff:false () in
+  let menu = Menu.create parent tearoff:false in
   let label = kname ^ " " ^ string_of_path path in
   begin match path with
     Pident _ ->
@@ -531,7 +531,7 @@ let view_type_menu kind :env :parent =
     | `Exp (`New path, _) -> "Class " ^ string_of_path path ^ " :"
     | `Class (path, _) -> "Class " ^ string_of_path path ^ " :"
     | `Module (path,_) -> "Module " ^ string_of_path path in
-  let menu = Menu.create :parent tearoff:false () in
+  let menu = Menu.create parent tearoff:false in
   begin match kind with
     `Exp((`Expr | `Pat | `Const | `Val (Pident _)),_)  ->
       Menu.add_command menu label:title state:`Disabled

@@ -17,12 +17,12 @@ let output tw :buffer :pos :len =
   Text.insert tw index:tend text:(String.sub buffer :pos :len)
 
 let add_scrollbar tw =
-  let sb = Scrollbar.create parent:(Winfo.parent tw) command:(Text.yview tw) ()
+  let sb = Scrollbar.create (Winfo.parent tw) command:(Text.yview tw)
   in Text.configure tw yscrollcommand:(Scrollbar.set sb); sb
 
-let create_with_scrollbar :parent =
-  let frame = Frame.create :parent () in
-  let tw = Text.create parent:frame () in
+let create_with_scrollbar parent =
+  let frame = Frame.create parent in
+  let tw = Text.create frame in
   frame, tw, add_scrollbar tw
 
 let goto_tag tw :tag =
@@ -34,28 +34,28 @@ let goto_tag tw :tag =
 let search_string tw =
   let tl = Jg_toplevel.titled "Search" in
   Wm.transient_set tl master:Widget.default_toplevel;
-  let fi = Frame.create parent:tl ()
-  and fd = Frame.create parent:tl ()
-  and fm = Frame.create parent:tl ()
-  and buttons = Frame.create parent:tl ()
+  let fi = Frame.create tl
+  and fd = Frame.create tl
+  and fm = Frame.create tl
+  and buttons = Frame.create tl
   and direction = Textvariable.create on:tl ()
   and mode = Textvariable.create on:tl ()
   and count = Textvariable.create on:tl ()
   in
-  let label = Label.create parent:fi text:"Pattern:" ()
-  and text = Entry.create parent:fi width:20 ()
-  and back = Radiobutton.create parent:fd variable:direction
-      	       text:"Backwards" value:"backward" ()
-  and forw = Radiobutton.create parent:fd variable:direction
-               text:"Forwards" value:"forward" ()
-  and exact = Radiobutton.create parent:fm variable:mode
-                text:"Exact" value:"exact" ()
-  and nocase = Radiobutton.create parent:fm variable:mode
-                 text:"No case" value:"nocase" ()
-  and regexp =  Radiobutton.create parent:fm variable:mode
-                 text:"Regexp" value:"regexp" ()
+  let label = Label.create fi text:"Pattern:"
+  and text = Entry.create fi width:20
+  and back = Radiobutton.create fd variable:direction
+      	       text:"Backwards" value:"backward"
+  and forw = Radiobutton.create fd variable:direction
+               text:"Forwards" value:"forward"
+  and exact = Radiobutton.create fm variable:mode
+                text:"Exact" value:"exact"
+  and nocase = Radiobutton.create fm variable:mode
+                 text:"No case" value:"nocase"
+  and regexp =  Radiobutton.create fm variable:mode
+                 text:"Regexp" value:"regexp"
   in
-  let search = Button.create parent:buttons text:"Search" () command:
+  let search = Button.create buttons text:"Search" command:
     begin fun () ->
     try
       let pattern = Entry.get text in

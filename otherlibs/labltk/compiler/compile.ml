@@ -714,8 +714,8 @@ let write_function :w def =
   w "\n\n"
 
 let write_create :w clas =
-  (w  "let create :parent ?:name =\n" : unit);
-  w ("  "^ clas ^ "_options_optionals (fun options () ->\n");
+  (w  "let create ?:name =\n" : unit);
+  w ("  "^ clas ^ "_options_optionals (fun options parent ->\n");
   w ("     let w = new_atom \"" ^ clas ^ "\" :parent ?:name in\n");
   w  "     tkEval [|";
   w ("TkToken \"" ^ clas ^ "\";\n");

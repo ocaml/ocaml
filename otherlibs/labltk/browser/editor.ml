@@ -15,7 +15,7 @@ let compiler_preferences () =
   let mk_chkbutton :text :ref =
     let variable = Textvariable.create on:tl () in
     if !ref then Textvariable.set variable to:"1";
-    Checkbutton.create parent:tl :text :variable (),
+    Checkbutton.create tl :text :variable,
     (fun () -> ref := Textvariable.get variable = "1")
   in
   let chkbuttons, setflags = List.split
@@ -26,8 +26,8 @@ let compiler_preferences () =
 	 "Lex on load", lex_on_load;
 	 "Type on load", type_on_load])
   in
-  let buttons = Frame.create parent:tl () in
-  let ok = Button.create parent:buttons text:"Ok" padx:(`Pix 20) () command:
+  let buttons = Frame.create tl in
+  let ok = Button.create buttons text:"Ok" padx:(`Pix 20) command:
       begin fun () ->
       	List.iter fun:(fun f -> f ()) setflags;
 	destroy tl
@@ -46,19 +46,19 @@ let goto_line tw =
   let tl = Jg_toplevel.titled "Go to" in
   Wm.transient_set tl master:Widget.default_toplevel;
   Jg_bind.escape_destroy tl;
-  let ef = Frame.create parent:tl () in
-  let fl = Frame.create parent:ef ()
-  and fi = Frame.create parent:ef () in
-  let ll = Label.create parent:fl text:"Line number:" ()
-  and il = Entry.create parent:fi width:10 ()
-  and lc = Label.create parent:fl text:"Col number:" ()
-  and ic = Entry.create parent:fi width:10 ()
+  let ef = Frame.create tl in
+  let fl = Frame.create ef
+  and fi = Frame.create ef in
+  let ll = Label.create fl text:"Line number:"
+  and il = Entry.create fi width:10
+  and lc = Label.create fl text:"Col number:"
+  and ic = Entry.create fi width:10
   and get_int ew =
       try int_of_string (Entry.get ew)
       with Failure "int_of_string" -> 0
   in
-  let buttons = Frame.create parent:tl () in
-  let ok = Button.create parent:buttons text:"Ok" () command:
+  let buttons = Frame.create tl in
+  let ok = Button.create buttons text:"Ok" command:
     begin fun () ->
       let l = get_int il
       and c = get_int ic in
@@ -86,12 +86,12 @@ let select_shell txt =
   let tl = Jg_toplevel.titled "Select Shell" in
   Jg_bind.escape_destroy tl;
   Wm.transient_set tl master:(Winfo.toplevel txt.tw);
-  let label = Label.create parent:tl text:"Send to:" ()
-  and box = Listbox.create parent:tl ()
-  and frame = Frame.create parent:tl () in
+  let label = Label.create tl text:"Send to:"
+  and box = Listbox.create tl
+  and frame = Frame.create tl in
   Jg_bind.enter_focus box;
   let cancel = Jg_button.create_destroyer tl parent:frame text:"Cancel"
-  and ok = Button.create parent:frame text:"Ok" () command:
+  and ok = Button.create frame text:"Ok" command:
       begin fun () ->
 	try
 	  let name = Listbox.get box index:`Active in
@@ -203,12 +203,12 @@ class editor :top :menus = object (self)
   val module_menu = new Jg_menu.c "Modules" parent:menus
   val window_menu = new Jg_menu.c "Windows" parent:menus
   val label =
-    Checkbutton.create parent:menus state:`Disabled
-      onvalue:"modified" offvalue:"unchanged" ()
+    Checkbutton.create menus state:`Disabled
+      onvalue:"modified" offvalue:"unchanged"
   val mutable current_dir = Unix.getcwd ()
   val mutable error_messages = []
   val mutable windows = []
-  val mutable current_tw = Text.create parent:top ()
+  val mutable current_tw = Text.create top
   val vwindow = Textvariable.create on:top ()
   val mutable window_counter = 0
 
@@ -238,7 +238,7 @@ class editor :top :menus = object (self)
     pack [txt.frame] fill:`Both expand:true side:`Bottom
 
   method new_window name =
-    let tl, tw, sb = Jg_text.create_with_scrollbar parent:top in
+    let tl, tw, sb = Jg_text.create_with_scrollbar top in
     Text.configure tw background:`White;
     Jg_bind.enter_focus tw;
     window_counter <- window_counter + 1;
@@ -530,7 +530,7 @@ let editor ?:file ?:pos{= 0} () =
       with Protocol.TkError _ -> already_open := None; false
   then () else
     let top = Jg_toplevel.titled "Editor" in
-    let menus = Frame.create parent:top name:"menubar" () in
+    let menus = Frame.create top name:"menubar" in
     let ed = new editor :top :menus in
     already_open := Some ed;
     if file <> None then ed#reopen :file :pos
