@@ -151,6 +151,7 @@ let rec mkrangepat c1 c2 =
 /* Precedences and associativities. Lower precedences come first. */
 
 %right prec_let                         /* let ... in ... */
+%right prec_type_def                    /* = in type definitions */
 %right SEMI                             /* e1; e2 (sequence) */
 %right prec_fun prec_match prec_try     /* match ... with ... */
 %right prec_list                        /* e1; e2 (list, array, record) */
@@ -526,15 +527,15 @@ type_declaration:
 type_kind:
     /*empty*/
       { (Ptype_abstract, None) }
-  | EQUAL core_type
+  | EQUAL core_type %prec prec_type_def
       { (Ptype_abstract, Some $2) }
   | EQUAL constructor_declarations
       { (Ptype_variant(List.rev $2), None) }
   | EQUAL LBRACE label_declarations RBRACE
       { (Ptype_record(List.rev $3), None) }
-  | EQUAL core_type EQUAL constructor_declarations
+  | EQUAL core_type EQUAL constructor_declarations %prec prec_type_def
       { (Ptype_variant(List.rev $4), Some $2) }
-  | EQUAL core_type EQUAL LBRACE label_declarations RBRACE
+  | EQUAL core_type EQUAL LBRACE label_declarations RBRACE %prec prec_type_def
       { (Ptype_record(List.rev $5), Some $2) }
 ;
 type_parameters:
