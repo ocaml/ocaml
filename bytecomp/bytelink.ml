@@ -234,7 +234,6 @@ let link objfiles =
            (String.concat " " (List.rev !Clflags.ccobjs))
            Config.c_libraries)
          <> 0
-      or Sys.command ("strip " ^ !Clflags.exec_name) <> 0
       then raise(Error Custom_runtime);
       let oc =
         open_out_gen [Open_wronly; Open_append; Open_binary] 0
