@@ -253,7 +253,7 @@ CAMLexport long pos_out(struct channel *channel)
 
 /* Input */
 
-static int do_read(int fd, char *p, unsigned int n)
+CAMLexport int do_read(int fd, char *p, unsigned int n)
 {
   int retcode;
 
