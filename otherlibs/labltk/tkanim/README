@@ -1,0 +1,5 @@
+This ML code is an interface for Tkanim Tcl/Tk extension. Unfortunately
+it is still test implementation. Look example directory for an example.
+
+The codes under this directory are mainly written by Jun Furuse 
+(Jun.Furuse@inria.fr).

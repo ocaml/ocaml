@@ -1,0 +1,43 @@
+include ../support/Makefile.common.nt
+
+COMPFLAGS= -I ../support
+
+all: camltkobjs
+
+opt: camltkobjsx
+
+# All .{ml,mli} files are generated in this directory
+clean : 
+	rm -f *.cm* *.ml *.mli *.$(A) *.$(O)
+	$(MAKE) -f Makefile.gen.nt clean
+
+include ./modules
+
+CAMLTKOBJS = $(WIDGETOBJS) cTk.cmo camltk.cmo
+CAMLTKOBJSX = $(CAMLTKOBJS:.cmo=.cmx)
+
+camltkobjs: $(CAMLTKOBJS)
+
+camltkobjsx: $(CAMLTKOBJSX)
+
+install: $(CAMLTKOBJS)
+	mkdir -p $(INSTALLDIR)
+	cp *.cmi [a-z]*.mli $(INSTALLDIR)
+
+installopt: $(CAMLTKOBJSX)
+	mkdir -p $(INSTALLDIR)
+	cp $(CAMLTKOBJSX) $(INSTALLDIR)
+
+.SUFFIXES :
+.SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
+
+.mli.cmi:
+	$(CAMLCOMP) $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLCOMP) $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+include .depend

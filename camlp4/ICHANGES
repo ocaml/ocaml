@@ -1,0 +1,27 @@
+Internal, very small, undocumented, or invisible changes
+********************************************************
+
+- [april-may 04] the following interface files changed in order to
+  implement OCaml style locations:
+        camlp4/camlp4/{ast2pt.mli,pcaml.mli,reloc.mli,grammar.mli}
+        camlp4/lib/{stdpp.mli,token.mli}
+  The main changes are occurrences of "int" changed into
+  "Lexing.position" and "int * int" changed into
+  "Lexing.position * Lexing.position" (or an equivalent type).
+- [20 nov 03], token.mli: eval_string takes a location as a extra
+  argument (needed to issue a warning).
+
+Camlp4s Version 3.06+19
+-----------------------
+
+- [28 Oct 02] Changed and simplified local entry of pa_o.ml from "cvalue"
+  to "cvalue_binding".
+- [18 Oct 02] The standard syntax for antiquotations in object class_types
+  and object class_expr are now: <:class_type< $opt:x$ $list:y$ >> and
+  <:class_expr< $opt:x$ $list:y$ >>: the syntax without the "opt" is
+  accepted but deprecated (a warning is displayed).
+- [15 Oct 02] Changed Plexer which now manages better the line directives
+  (applied only on begin of lines, no error if parsing error in the
+  directive).
+- [14 Sep 02] Grammar.print_entry does not end any more with
+  Format.print_flush. The "flush" is done by Grammar.Entry.print.

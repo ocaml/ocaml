@@ -1,0 +1,46 @@
+include ../support/Makefile.common.nt
+
+all: cTk.ml camltk.ml .depend
+
+_tkgen.ml: ../Widgets.src ../compiler/tkcompiler.exe
+	cd .. ; ../../boot/ocamlrun compiler/tkcompiler.exe -camltk -outdir camltk
+
+# dependencies are broken: wouldn't work with gmake 3.77
+
+cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp.exe #../builtin/builtin_*.ml
+	(echo '##define CAMLTK'; \
+         echo 'include Camltkwrap'; \
+	 echo 'open Widget'; \
+         echo 'open Protocol'; \
+	 echo 'open Textvariable'; \
+	 echo ; \
+	 cat ../builtin/report.ml; \
+	 echo ; \
+	 cat ../builtin/builtin_*.ml; \
+	 echo ; \
+	 cat _tkgen.ml; \
+	 echo ; \
+	 echo ; \
+	 echo 'module Tkintf = struct'; \
+	 cat ../builtin/builtini_*.ml; \
+	 cat _tkigen.ml; \
+	 echo 'end (* module Tkintf *)'; \
+	 echo ; \
+	 echo ; \
+	 echo 'open Tkintf' ;\
+	 echo ; \
+	 echo ; \
+	 cat ../builtin/builtinf_*.ml; \
+	 cat _tkfgen.ml; \
+	 echo ; \
+	) > _cTk.ml
+	../../../boot/ocamlrun ../compiler/pp < _cTk.ml > cTk.ml
+	rm -f _cTk.ml
+	$(CAMLDEP) -slash -I ../support [a-z]*.mli [a-z]*.ml > .depend
+
+../compiler/pp.exe:
+	cd ../compiler; $(MAKEREC) pp.exe
+
+clean:
+	rm -f *.cm* *.ml *.mli *.$(O) *.$(A)
+#	rm -f modules .depend

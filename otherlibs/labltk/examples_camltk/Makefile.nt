@@ -1,0 +1,38 @@
+include ../support/Makefile.common.nt
+
+# We are using the non-installed library !
+COMPFLAGS= -I ../lib -I ../camltk -I ../support
+LINKFLAGS= -I ../lib -I ../camltk -I ../support
+
+# Use pieces of Makefile.config
+TKLINKOPT=$(LIBNAME).cma $(TKLIBS)
+
+all: addition.exe helloworld.exe winskel.exe socketinput.exe
+
+addition.exe: addition.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+		-o $@ addition.cmo 
+
+helloworld.exe: helloworld.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+		-o $@ helloworld.cmo 
+
+winskel.exe: winskel.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+		-o $@ winskel.cmo
+
+socketinput.exe: socketinput.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) unix.cma \
+		-o $@ socketinput.cmo
+
+clean : 
+	rm -f *.cm? *.exe
+
+.SUFFIXES :
+.SUFFIXES : .mli .ml .cmi .cmo
+
+.mli.cmi:
+	$(CAMLCOMP) $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLCOMP) $(COMPFLAGS) $<

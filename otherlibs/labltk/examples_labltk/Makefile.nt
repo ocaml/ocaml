@@ -1,0 +1,50 @@
+include ../support/Makefile.common.nt
+
+# We are using the non-installed library !
+COMPFLAGS= -I ../lib -I ../labltk -I ../support
+LINKFLAGS= -I ../lib -I ../labltk -I ../support
+
+# Use pieces of Makefile.config
+TKLINKOPT=$(LIBNAME).cma $(TKLIBS) 
+
+all: hello.exe demo.exe eyes.exe calc.exe clock.exe tetris.exe lang.exe
+
+hello.exe: hello.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+		-o $@ hello.cmo 
+
+demo.exe: demo.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+		-o $@ demo.cmo 
+
+eyes.exe: eyes.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+		-o $@ eyes.cmo 
+
+calc.exe: calc.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+		-o $@ calc.cmo 
+
+clock.exe: clock.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) unix.cma \
+		-o $@ clock.cmo 
+
+tetris.exe: tetris.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+		-o $@ tetris.cmo 
+
+lang.exe: lang.cmo
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+		-o $@ lang.cmo 
+
+clean : 
+	rm -f *.cm? *.exe
+
+.SUFFIXES :
+.SUFFIXES : .mli .ml .cmi .cmo
+
+.mli.cmi:
+	$(CAMLCOMP) $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLCOMP) $(COMPFLAGS) $<

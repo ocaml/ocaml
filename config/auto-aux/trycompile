@@ -1,0 +1,7 @@
+#!/bin/sh
+if test "$verbose" = yes; then
+echo "trycompile: $cc -o tst $* $cclibs" >&2
+$cc -o tst $* $cclibs || exit 100
+else
+$cc -o tst $* $cclibs 2> /dev/null || exit 100
+fi

@@ -1,0 +1,15 @@
+#!/bin/sed -f
+# Remove private parts from runtime include files, before installation
+# in /usr/local/lib/ocaml/caml
+
+/\/\* <include \.\.\/config\/m\.h> \*\// {
+  r ../config/m.h
+  d
+}
+/\/\* <include \.\.\/config\/s\.h> \*\// {
+  r ../config/s.h
+  d
+}
+/\/\* <private> \*\//,/\/\* <\/private> \*\//d
+
+
