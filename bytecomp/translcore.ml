@@ -219,7 +219,8 @@ let array_kind arg =
             Paddrarray
       | _ -> Paddrarray
       end
-  | _ -> fatal_error "Translcore.array_kind"
+  | _ -> Pgenarray (* This can happen with abbreviations taht we can't expand
+                      here because the typing environment is lost *)
 
 let transl_prim prim args =
   try
