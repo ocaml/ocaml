@@ -831,7 +831,7 @@ in the case of the bytecode compiler.
 \paragraph{Warning:} On some ports, special options are required on the final
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
-are shows in the configuration file "config/Makefile" generated during
+are shown in the configuration file "config/Makefile" generated during
 compilation of Objective Caml, as the variables "BYTECCLINKOPTS"
 (for object files produced by "ocamlc -output-obj") and
 "NATIVECCLINKOPTS" (for object files produced by "ocamlopt

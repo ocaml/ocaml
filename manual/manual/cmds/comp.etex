@@ -166,12 +166,12 @@ building a library ("-a" flag), setting the "-linkall" flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
 
-\item["-make_runtime"]
+\item["-make-runtime"]
 Build a custom runtime system (in the file specified by option "-o")
 incorporating the C object files and libraries given on the command
 line.  This custom runtime system can be used later to execute
 bytecode executables produced with the
-"ocamlc -use_runtime" \var{runtime-name} option.
+"ocamlc -use-runtime" \var{runtime-name} option.
 See section~\ref{s:custom-runtime} for more information.
 
 \item["-noassert"]
@@ -213,10 +213,10 @@ Turn bound checking off on array and string accesses (the "v.(i)" and
 slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
 
-\item["-use_runtime" \var{runtime-name}]
+\item["-use-runtime" \var{runtime-name}]
 Generate a bytecode executable file that can be executed on the custom
 runtime system \var{runtime-name}, built earlier with
-"ocamlc -make_runtime" \var{runtime-name}.  
+"ocamlc -make-runtime" \var{runtime-name}.  
 See section~\ref{s:custom-runtime} for more information.
 
 \item["-v"]
