@@ -271,6 +271,8 @@ cslopt.opt: $(OPTOBJS:.cmo=.cmx)
 clean::
 	rm -f cslopt.opt
 
+$(OPTOBJS:.cmo=.cmx): cslopt
+
 # The numeric opcodes
 
 bytecomp/opcodes.ml: byterun/instruct.h
