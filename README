@@ -21,7 +21,7 @@ moderate memory requirements of the bytecode compiler. The native-code
 compiler currently runs on the following platforms:
 
     Alpha processors: all Digital Alpha machines under Digital Unix or Linux
-    Sparc processors: Sun Sparcstation under SunOS 4.1, Solaris 2, NetBSD
+    Sparc processors: Sun Sparc under SunOS 4.1, Solaris 2, NetBSD, Linux
     Intel Pentium processors: PCs under Linux, NextStep, FreeBSD, Solaris 2
     Mips processors: SGI workstations and mainframes under IRIX 6,
                      DecStation 3100 and 5000 under Ultrix 4
@@ -36,9 +36,7 @@ but the compiler may work under other operating systems with little work.
 Before the introduction of objects, Objective Caml was known as Caml
 Special Light. Objective Caml is almost upwards compatible with Caml
 Special Light, except for a few additional reserved keywords that have
-forced some renamings of standard library functions. The script
-tools/csl2ocaml in the distribution can be used to automate the
-conversion from Caml Special Light to Objective Caml.
+forced some renamings of standard library functions.
 
 CONTENTS:
 

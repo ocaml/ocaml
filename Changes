@@ -1,3 +1,100 @@
+Objective Caml 2.00:
+--------------------
+
+* Language:
+  - New class language.  See http://...
+    for an overview, and the manual for reference.
+  - Local module definitions "let module X = <module-expr> in <expr>".
+  - Record copying with update "{r with lbl1 = expr1; ...}".
+  - Array patterns "[|pat1; ...;patN|]" in pattern-matchings.
+  - New reserved keywords: "object", "initializer".
+  - No longer reserved: "closed", "protected".
+
+* Bytecode compiler:
+  - Use the same compact memory representations for float arrays, float
+    records and recursive closures as the native-code compiler.
+  - More type-dependent optimizations.
+  - Added the -use_runtime and -make_runtime flags to build separately
+    and reuse afterwards custom runtime systems
+    (inspired by Fabrice Le Fessant's patch).
+
+* Native-code compiler:
+  - Cross-module constant propagation of integer constants.
+  - More type-dependent optimizations.
+  - More compact code generated for "let rec" over data structures.
+  - Better code generated for "for" loops (test at bottom of code).
+  - More aggressive scheduling of stores.
+  - Added -p option for time profiling with gprof
+    (fully supported on Intel x86/Linux and Alpha/Digital Unix only)
+    (inspired by Aleksey Nogin's patch).
+  - A case of bad spilling with high register pressure fixed.
+  - Fixed GC bug when GC called from C without active Caml code.
+  - Alpha: simplified code generation for jump tables.
+  - Intel x86: use movzbl and movsbl systematically to load 8-bit and 16-bit
+    quantities, no more hacks with partial registers (better for the
+    Pentium Pro, worse for the Pentium)
+  - PowerPC: more aggressive scheduling of return address reloading.
+  - Sparc: scheduling bug with register pairs fixed.
+
+* Runtime system:
+  - Better printing of uncaught exceptions (print a fully qualified
+    name whenever possible).
+
+* New ports:
+  - Cray T3E (bytecode only) (in collaboration with CEA).
+  - PowerMac under Rhapsody.
+  - SparcStations under Linux.
+
+* Standard library:
+  - Added set_binary_mode_in and set_binary_mode_out in Pervasives
+    to toggle open channels between text and binary modes.
+  - output_value and input_value check that the given channel is in
+    binary mode.
+  - Module Arg: added option Rest.
+  - Module Filename: temp_file no longer loops if temp dir doesn't exist.
+  - Module List: added rev_append (tail-rec alternative to @).
+  - Oo.copy removed.
+  - Module Set: tell the truth about elements returning a sorted list;
+    added min_elt, max_elt, singleton.
+  - Module Sys: added Sys.time for simple measuring of CPU time.
+
+* ocamllex:
+  - Check for overflow when generating the tables for the automaton.
+  - Error messages in generated .ml file now point to .mll source.
+  - Added "let <id> = <regexp>" to name regular expressions
+    (inspired by Christian Lindig's patch).
+
+* ocamlyacc:
+  - Better error recovery in presence of EOF tokens.
+  - Error messages in generated .ml file now point to .mly source.
+  - Generated .ml file now type-safe even without the generated .mli file.
+
+* The Unix library:
+  - Use float instead of int to represent Unix times (number of seconds
+    from the epoch).  This fixes a year 2005 problem on 32-bit platforms.
+    Functions affected: stat, lstat, fstat, tie, gmtime, localtime,
+    mktime, utimes.
+  - Added putenv.
+  - Better handling of "unknown" error codes (EUNKNOWNERR).
+  - Fixed endianness bug in getservbyport.
+  - win32unix (the Win32 implementation of the Unix library) now has
+    the same interface as the unix implementation, this allows exchange
+    of compiled .cmo and .cmi files between Unix and Win32.
+
+* The thread libraries:
+  - Bytecode threads: bug with escaping exceptions fixed.
+  - System threads (POSIX, Win32): malloc/free bug fixed; signal bug fixed.
+
+* The graph library: bigger color cache.
+
+* The str library: added Str.quote, Str.regexp_string,
+  Str.regexp_string_case_fold.
+
+* Emacs mode:
+  - Fixed bug with paragraph fill.
+  - Fixed bug with next-error under Emacs 20.
+
+
 Objective Caml 1.07:
 --------------------
 
