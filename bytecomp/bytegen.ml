@@ -765,6 +765,19 @@ and comp_binary_test env cond ifso ifnot sz cont =
 
   comp_expr env cond sz cont_cond
 
+(**** Compilation of a code block (with tracking of stack usage) ****)
+
+let comp_block env exp sz cont =
+  max_stack_used := 0;
+  let code = comp_expr env exp sz cont in
+  (* +1 because comp_expr may have pushed one more word *)
+  if !max_stack_used + 1 > Config.stack_threshold then
+    Kconst(Const_base(Const_int(!max_stack_used + 1))) ::
+    Kccall("ensure_stack_capacity", 1) ::
+    code
+  else
+    code
+
 (**** Compilation of functions ****)
 
 let comp_function tc cont =
@@ -776,22 +789,12 @@ let comp_function tc cont =
     { ce_stack = positions arity (-1) tc.params;
       ce_heap = positions (2 * (tc.num_defs - tc.rec_pos) - 1) 1 tc.free_vars;
       ce_rec = positions (-2 * tc.rec_pos) 2 tc.rec_vars } in
-  max_stack_used := 0;
-  let cont1 =
-    comp_expr env tc.body arity (Kreturn arity :: cont) in
-  let cont2 =
-    if !max_stack_used + 1 (* may have pushed one more word *)
-       > Config.stack_threshold
-    then
-      Kconst(Const_base(Const_int(!max_stack_used + 1))) ::
-      Kccall("ensure_stack_capacity", 1) ::
-      cont1
-    else
-      cont1 in
+  let cont =
+    comp_block env tc.body arity (Kreturn arity :: cont) in
   if arity > 1 then
-    Krestart :: Klabel tc.label :: Kgrab(arity - 1) :: cont2
+    Krestart :: Klabel tc.label :: Kgrab(arity - 1) :: cont
   else
-    Klabel tc.label :: cont2
+    Klabel tc.label :: cont
 
 let comp_remainder cont =
   let c = ref cont in
@@ -811,7 +814,7 @@ let compile_implementation modulename expr =
   label_counter := 0;
   sz_static_raises := [] ;
   compunit_name := modulename;
-  let init_code = comp_expr empty_env expr 0 [] in
+  let init_code = comp_block empty_env expr 0 [] in
   if Stack.length functions_to_compile > 0 then begin
     let lbl_init = new_label() in
     Kbranch lbl_init :: comp_remainder (Klabel lbl_init :: init_code)
@@ -822,7 +825,7 @@ let compile_phrase expr =
   Stack.clear functions_to_compile;
   label_counter := 0;
   sz_static_raises := [] ;
-  let init_code = comp_expr empty_env expr 1 [Kreturn 1] in
+  let init_code = comp_block empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code)
 
