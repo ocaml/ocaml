@@ -240,8 +240,9 @@ let rec typexp sch prio0 ppf ty =
             fields in
         let all_present = List.length present = List.length fields in
         let pr_present ppf l =
-          fprintf ppf "@[%a@]"
-            (print_list_init (fun ppf (s, _) -> fprintf ppf "@ | `%s" s) ignore)
+          fprintf ppf "@[<hv>%a@]"
+            (print_list_init (fun ppf (s, _) -> fprintf ppf "`%s" s)
+                             (fun () -> fprintf ppf "@ | "))
             l in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
@@ -264,18 +265,17 @@ let rec typexp sch prio0 ppf ty =
               if fields = [] then "< .." else ">" in
             let pr_ellipsis ppf =
               if not (row.row_closed || all_present)
-              then fprintf ppf "@ | .." in
+              then fprintf ppf "| .." in
             let print_present ppf = function
               | [] -> ()
               | l ->
-                 if not all_present then fprintf ppf "@ >%a" pr_present l in
-            let print_fields ppf fields =
-              print_list_init (row_field sch)
-                         (fun () -> fprintf ppf "@ | ") ppf fields in
-              
-            fprintf ppf "@[<hov>%s[%s%a%t%a]@]"
-              gen_mark close_mark print_fields fields
-              pr_ellipsis print_present present
+                 if not all_present then fprintf ppf "@ > %a" pr_present l in
+            let print_fields =
+              print_list_init (row_field sch) (fun () -> fprintf ppf "@ | ") in
+
+            fprintf ppf "%s@[<hv>[%s%a%t%a@ ]@]"
+              gen_mark close_mark print_fields fields pr_ellipsis
+              print_present present
         end
     | Tobject (fi, nm) ->
         typobject sch ty fi ppf nm
@@ -301,7 +301,7 @@ and row_field sch ppf (l, f) =
         then fprintf ppf "@ &@ %a" (typlist sch 0 " &") tyl
         else fprintf ppf "@ %a" (typlist sch 0 " &") tyl
     | Rabsent -> fprintf ppf "@ []" in
-  fprintf ppf "@[<2>`%s%a@]" l pr_field f
+  fprintf ppf "@[<hv 2>`%s%a@]" l pr_field f
 
 (* typlist is simply 
    print_list (typexp sch prio) (fun () -> fprintf ppf "%s@ " sep) *)
@@ -395,32 +395,43 @@ let rec type_decl kwd id ppf decl =
       List.iter (fun (_, _, ty) -> mark_loops ty) l
   end;
 
-  fprintf ppf "%s%a"
-    kwd type_expr (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)));
-  begin match decl.type_manifest with
-  | None -> ()
-  | Some ty -> fprintf ppf " =%a" type_expr ty
-  end;
+  let print_constraints ppf params =
+    List.iter (constrain ppf) params in
+
+  let print_manifest ppf decl =
+    match decl.type_manifest with
+    | None -> ()
+    | Some ty -> fprintf ppf " =@ %a" type_expr ty in
+
+  let print_name_args ppf decl =
+    fprintf ppf "%s%a%a"
+      kwd type_expr (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)))
+      print_manifest decl in
+
   begin match decl.type_kind with
-  | Type_abstract -> ()
+  | Type_abstract ->
+      fprintf ppf "@[<2>@[<hv 3>%a@]@ %a@]"
+        print_name_args decl print_constraints params
   | Type_variant [] -> ()
       (* A fatal error actually, except when printing type exn... *)
   | Type_variant cstrs ->
-      fprintf ppf " =@ @[<hv 2>%a@]"
-       (print_list_init constructor (fun () -> fprintf ppf "@ | ")) cstrs
+      fprintf ppf "@[<2>@[<hv 3>%a =%a@]@ %a@]"
+        print_name_args decl
+        (print_list_init constructor (fun () -> fprintf ppf "@ | ")) cstrs
+        print_constraints params
   | Type_record lbls ->
-      fprintf ppf " = {@;<0 2>@[<hv>%a@]@,}"
-       (print_list_term label (fun () -> fprintf ppf ";@ ")) lbls
-  end;
-  fprintf ppf "%a" (fun ppf l -> List.iter (constrain ppf) l) params
+      fprintf ppf "@[<2>@[@[<hv 2>%a = {%a@]@ }@]@ %a@]" print_name_args decl
+        (print_list_init label (fun () -> fprintf ppf "@ ")) lbls
+        print_constraints params
+  end
 
 and constructor ppf (name, args) =
   match args with
   | [] -> fprintf ppf "%s" name
-  | _ -> fprintf ppf "%s of @[<2>%a@]" name (typlist false 3 " *") args
+  | _ -> fprintf ppf "@[<2>%s of@ %a@]" name (typlist false 3 " *") args
 
 and label ppf (name, mut, arg) =
-  fprintf ppf "%s%s: %a" (string_of_mutable mut) name type_expr arg
+  fprintf ppf "@[<2>%s%s :@ %a@];" (string_of_mutable mut) name type_expr arg
 
 and string_of_mutable = function
   | Immutable -> ""
@@ -635,7 +646,7 @@ and modtype_declaration id ppf decl =
   let pr_decl ppf = function
     | Tmodtype_abstract -> ()
     | Tmodtype_manifest mty -> fprintf ppf " =@ %a" modtype mty in
-  fprintf ppf "@[<2>module type %a%a" ident id pr_decl decl
+  fprintf ppf "@[<2>module type %a%a@]" ident id pr_decl decl
 
 (* Print a signature body (used by -i when compiling a .ml) *)
 
