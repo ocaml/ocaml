@@ -76,7 +76,7 @@ value highlight_locations lb loc1 loc2 =
         }
         else print_char c
       };
-      flush stdout;
+      flush stdout
     }
   with
   [ Exit -> () ]
@@ -96,7 +96,7 @@ value wrap f lb =
            while
              lb.lex_curr_pos >= String.length lb.lex_buffer &&
              not lb.lex_eof_reached
-             do {
+           do {
              lb.refill_buff lb
            };
            if lb.lex_eof_reached then None
@@ -152,10 +152,7 @@ value use_file cs =
                   List.rev_append rpl (loop ())
                 }
             | [MLast.StDir _ "directory" (Some <:expr< $str:s$ >>) :: rpl] ->
-                do {
-                  Topdirs.dir_directory s;
-                  List.rev_append rpl (loop ())
-                }
+                do { Topdirs.dir_directory s; List.rev_append rpl (loop ()) }
             | _ -> pl @ loop () ]
           else pl
       in
