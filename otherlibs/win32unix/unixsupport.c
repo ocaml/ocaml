@@ -17,6 +17,7 @@
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
+#include <custom.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
@@ -24,9 +25,31 @@
 
 /* Heap-allocation of Windows file handles */
 
+static int win_handle_compare(value v1, value v2)
+{
+  HANDLE h1 = Handle_val(v1);
+  HANDLE h2 = Handle_val(v2);
+  return h1 == h2 ? 0 : h1 < h2 ? -1 : 1;
+}
+
+static long win_handle_hash(value v)
+{
+  return (long) Handle_val(v);
+}
+
+static struct custom_operations win_handle_ops = {
+  "_handle",
+  custom_finalize_default,
+  win_handle_compare,
+  win_handle_hash,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
 value win_alloc_handle(HANDLE h)
 {
-  value res = alloc_small(sizeof(HANDLE) / sizeof(value), Abstract_tag);
+  value res = 
+    alloc_custom(&win_handle_ops, sizeof(HANDLE), 0, 1);
   Handle_val(res) = h;
   return res;
 }

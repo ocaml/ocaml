@@ -21,7 +21,7 @@
 #include <direct.h>
 #include <process.h>
 
-#define Handle_val(v) (*((HANDLE *)(v)))
+#define Handle_val(v) (*((HANDLE *) Data_custom_val(v)))
 
 extern value win_alloc_handle(HANDLE);
 
