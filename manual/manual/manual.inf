@@ -123,8 +123,8 @@
 \newcommand{\jobname}{manual}
 \newcommand{\vfill}{}
 
-\def\number{}
-\def\year{2003}
+%\def\number{}
+%\def\year{2003}
 
 % Pour alltt
 
