@@ -1591,7 +1591,9 @@ value copy_source ic oc first bp ep =
 ;
 
 value copy_to_end ic oc first bp =
-  copy_source ic oc first bp (in_channel_length ic)
+  let ilen = in_channel_length ic in
+  if bp < ilen then copy_source ic oc first bp ilen
+  else output_string oc "\n"
 ;
 
 module Buff =
