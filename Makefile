@@ -23,7 +23,8 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
 OPTUTILS=$(UTILS) utils/nativeint.cmo
 
 PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
-  parsing/pstream.cmo parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
+  parsing/syntaxerr.cmo parsing/pstream.cmo parsing/parser.cmo \
+  parsing/lexer.cmo parsing/parse.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \

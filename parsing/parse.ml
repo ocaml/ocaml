@@ -13,7 +13,8 @@
 
 (* Entry points in the parser *)
 
-exception Error of int * int        (* Syntax error *)
+open Location
+
 (* Skip tokens to the end of the phrase *)
 
 let rec skip_phrase lexbuf =
@@ -43,12 +44,15 @@ let wrap parsing_fun lexbuf =
     | Lexer.Error(_, _, _) as err ->
         if !Location.input_name = "" then skip_phrase lexbuf;
         raise err
+    | Syntaxerr.Error _ as err ->
+        if !Location.input_name = "" then maybe_skip_phrase lexbuf;
+        raise err
     | Parsing.Parse_error ->
-        let start = Lexing.lexeme_start lexbuf
-        and stop  = Lexing.lexeme_end lexbuf in
+        let loc = { loc_start = Lexing.lexeme_start lexbuf;
+                    loc_end = Lexing.lexeme_end lexbuf } in
         if !Location.input_name = "" 
         then maybe_skip_phrase lexbuf;
-        raise(Error(start, stop))
+        raise(Syntaxerr.Error(Syntaxerr.Other loc))
 
 let implementation = wrap Parser.implementation
 and interface = wrap Parser.interface

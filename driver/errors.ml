@@ -24,9 +24,8 @@ let report_error exn =
     Lexer.Error(err, start, stop) ->
       Location.print {loc_start = start; loc_end = stop};
       Lexer.report_error err
-  | Parse.Error(start, stop) ->
-      Location.print {loc_start = start; loc_end = stop};
-      print_string "Syntax error"
+  | Syntaxerr.Error err ->
+      Syntaxerr.report_error err
   | Env.Error err ->
       Env.report_error err
   | Typecore.Error(loc, err) ->
