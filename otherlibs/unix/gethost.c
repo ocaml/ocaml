@@ -33,8 +33,9 @@ extern int socket_domain_table[];
 
 static value alloc_one_addr(char *a)
 {
-  bcopy(a, &sock_addr.s_inet.sin_addr, entry_h_length);
-  return alloc_inet_addr(sock_addr.s_inet.sin_addr.s_addr);
+  struct in_addr addr;
+  bcopy(a, &addr, entry_h_length);
+  return alloc_inet_addr(addr.s_addr);
 }
 
 static value alloc_host_entry(struct hostent *entry)
