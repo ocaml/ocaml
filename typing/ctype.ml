@@ -2440,7 +2440,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
    [posi] true if the current variance is positive
    [level] number of expansions/enlargement allowed on this branch *)
 
-let warn = ref false
+let warn = ref false  (* whether double coercion might do better *)
 let pred_expand n = if n mod 2 = 0 && n > 0 then pred n else n
 let pred_enlarge n = if n mod 2 = 1 then pred n else n
 
@@ -2452,19 +2452,24 @@ let rec filter_visited = function
   | {desc=Tobject _|Tvariant _} :: _ as l -> l
   | _ :: l -> filter_visited l
 
+let memq_warn t visited =
+  if List.memq t visited then (warn := true; true) else false
+
 let rec build_subtype env visited loops posi level t =
   let t = repr t in
   match t.desc with
     Tvar ->
       if posi then
         try
+          let t' = List.assq t loops in
+          warn := true;
           (List.assq t loops, Equiv)
         with Not_found ->
           (t, Unchanged)
       else
         (t, Unchanged)
   | Tarrow(l, t1, t2, _) ->
-      if List.memq t visited then (t, Unchanged) else
+      if memq_warn t visited then (t, Unchanged) else
       let visited = t :: visited in
       let (t1', c1) = build_subtype env visited loops (not posi) level t1 in
       let (t2', c2) = build_subtype env visited loops posi level t2 in
@@ -2472,7 +2477,7 @@ let rec build_subtype env visited loops posi level t =
       if c > Unchanged then (newty (Tarrow(l, t1', t2', Cok)), c)
       else (t, Unchanged)
   | Ttuple tlist ->
-      if List.memq t visited then (t, Unchanged) else
+      if memq_warn t visited then (t, Unchanged) else
       let visited = t :: visited in
       let tlist' =
         List.map (build_subtype env visited loops posi level) tlist
@@ -2527,7 +2532,7 @@ let rec build_subtype env visited loops posi level t =
   | Tconstr(p, tl, abbrev) ->
       (* Must check recursion on constructors, since we do not always
          expand them *)
-      if List.memq t visited then (t, Unchanged) else
+      if memq_warn t visited then (t, Unchanged) else
       let visited = t :: visited in
       begin try
         let decl = Env.find_type p env in
@@ -2551,7 +2556,7 @@ let rec build_subtype env visited loops posi level t =
       end
   | Tvariant row ->
       let row = row_repr row in
-      if List.memq t visited || not (static_row row) then (t, Unchanged) else
+      if memq_warn t visited || not (static_row row) then (t, Unchanged) else
       let level' = pred_enlarge level in
       let visited =
         t :: if level' < level then [] else filter_visited visited in
@@ -2585,7 +2590,7 @@ let rec build_subtype env visited loops posi level t =
       in
       (newty (Tvariant row), Changed)
   | Tobject (t1, _) ->
-      if List.memq t visited || opened_object t1 then (t, Unchanged) else
+      if memq_warn t visited || opened_object t1 then (t, Unchanged) else
       let level' = pred_enlarge level in
       let visited =
         t :: if level' < level then [] else filter_visited visited in
@@ -2602,8 +2607,10 @@ let rec build_subtype env visited loops posi level t =
       if posi then
         let v = newvar () in
         (v, Changed)
-      else
+      else begin
+        warn := true;
         (t, Unchanged)
+      end
   | Tsubst _ | Tlink _ ->
       assert false
   | Tpoly(t1, tl) ->

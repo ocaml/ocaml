@@ -84,7 +84,8 @@ type error =
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
   | Value_multiply_overridden of string
-  | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
+  | Coercion_failure of
+      type_expr * type_expr * (type_expr * type_expr) list * bool
   | Too_many_arguments of bool * type_expr
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr

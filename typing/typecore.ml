@@ -48,7 +48,8 @@ type error =
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
   | Value_multiply_overridden of string
-  | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
+  | Coercion_failure of
+      type_expr * type_expr * (type_expr * type_expr) list * bool
   | Too_many_arguments of bool * type_expr
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
@@ -1016,14 +1017,10 @@ let rec type_exp env sexp =
                 force ()
             | _ ->
                 let ty, b = enlarge_type env ty' in
-		if b then Location.prerr_warning sexp.pexp_loc
-		    (Warnings.Other "Simple coercions only expand up to 2 \
-		       levels of abbreviations\ninvolving objects/variants. \
-                       Consider using double coercions.");
                 force ();
                 begin try Ctype.unify env arg.exp_type ty with Unify trace ->
                   raise(Error(sarg.pexp_loc,
-                        Coercion_failure(ty', full_expand env ty', trace)))
+                        Coercion_failure(ty', full_expand env ty', trace, b)))
                 end
             end;
             (arg, ty')
@@ -1860,7 +1857,7 @@ let report_error ppf = function
       fprintf ppf "This object duplication occurs outside a method definition"
   | Value_multiply_overridden v ->
       fprintf ppf "The instance variable %s is overridden several times" v
-  | Coercion_failure (ty, ty', trace) ->
+  | Coercion_failure (ty, ty', trace, b) ->
       report_unification_error ppf trace
         (function ppf ->
            let ty, ty' = prepare_expansion (ty, ty') in
@@ -1869,9 +1866,10 @@ let report_error ppf = function
            (type_expansion ty) ty')
         (function ppf ->
            fprintf ppf "but is here used with type");
-      fprintf ppf ".@.@[<hov>%s@ %s@]"
-        "Simple coercions are not complete."
-        "Consider using a double coercion."
+      if b then
+        fprintf ppf ".@.@[<hov>%s@ %s@]"
+          "This simple coercion was not fully general."
+          "Consider using a double coercion."
   | Too_many_arguments (in_function, ty) ->
       reset_and_mark_loops ty;
       if in_function then begin

@@ -587,6 +587,8 @@ let transl_with_constraint env sdecl =
       type_variance = [];
     }
   in
+  if Ctype.closed_type_decl decl <> None then
+    raise(Error(sdecl.ptype_loc, Unbound_type_var));
   let decl =
     {decl with type_variance =
      compute_variance_decl env decl (sdecl.ptype_variance, sdecl.ptype_loc)} in
