@@ -39,8 +39,8 @@ set -e NATIVECC MrC
 ############# Version numbers (do not change)
 
 set -e OCAMLMAJOR 2
-set -e OCAMLMINOR 02
+set -e OCAMLMINOR 03
 set -e MAJOR 1
 set -e MINOR 0
 set -e STAGE a
-set -e REV 4
+set -e REV 5
