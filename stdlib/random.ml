@@ -53,7 +53,7 @@ let rec intaux n =
   let r = raw () in
   if r >= n then intaux n else r
 let int bound =
-  (intaux (0x4000000 / bound * bound)) mod bound
+  (intaux (0x3FFFFFFF / bound * bound)) mod bound
 
 let float bound = rawfloat () *. bound
 
@@ -91,34 +91,34 @@ let full_init seed =
    If low <= actual <= high, the [g] function passed the test,
    otherwise it failed.
 
-  Some results (obtained on a 64-bit DEC Alpha):
+  Some results:
 
-#Random.init 27182818; chisquare Random.int 100000 1000;;
-- : float * float * float = 936.754446797, 992.84, 1063.2455532
-#Random.init 27182818; chisquare Random.int 100000 100;;
-- : float * float * float = 80, 103.404, 120
-#Random.init 27182818; chisquare Random.int 100000 5000;;
-- : float * float * float = 4858.57864376, 5004, 5141.42135624
-#Random.init 27182818; chisquare Random.int 1000000 1000;;
-- : float * float * float = 936.754446797, 975.256, 1063.2455532
-#Random.init 27182818; chisquare Random.int 100000 1024;;
-- : float * float * float = 960, 1002.93632, 1088
-#Random.init 299792643; chisquare Random.int 100000 1024;;
-- : float * float * float = 960, 1050.55232, 1088
-#Random.init 14142136; chisquare Random.int 100000 1024;;
-- : float * float * float = 960, 1074.98496, 1088
-#Random.init 27182818; init_diff 1024; chisquare diff 100000 1024;;
-- : float * float * float = 960, 1000.94976, 1088
-#Random.init 27182818; init_diff 100; chisquare diff 100000 100;;
-- : float * float * float = 80, 98.644, 120
-#Random.init 27182818; init_diff2 1024; chisquare diff2 100000 1024;;
-- : float * float * float = 960, 1008.0768, 1088
-#Random.init 27182818; init_diff2 100; chisquare diff2 100000 100;;
-- : float * float * float = 80, 110.872, 120
-#Random.init 14142136; init_diff2 100; chisquare diff2 100000 100;;
-- : float * float * float = 80, 85.412, 120
-#Random.init 299792643; init_diff2 100; chisquare diff2 100000 100;;
-- : float * float * float = 80, 92.192, 120
+Random.init 27182818; chisquare Random.int 100000 1000;;
+Random.init 27182818; chisquare Random.int 100000 100;;
+Random.init 27182818; chisquare Random.int 100000 5000;;
+Random.init 27182818; chisquare Random.int 1000000 1000;;
+Random.init 27182818; chisquare Random.int 100000 1024;;
+Random.init 299792643; chisquare Random.int 100000 1024;;
+Random.init 14142136; chisquare Random.int 100000 1024;;
+Random.init 27182818; init_diff 1024; chisquare diff 100000 1024;;
+Random.init 27182818; init_diff 100; chisquare diff 100000 100;;
+Random.init 27182818; init_diff2 1024; chisquare diff2 100000 1024;;
+Random.init 27182818; init_diff2 100; chisquare diff2 100000 100;;
+Random.init 14142136; init_diff2 100; chisquare diff2 100000 100;;
+Random.init 299792643; init_diff2 100; chisquare diff2 100000 100;;
+- : float * float * float = 936.754446797, 948.8, 1063.2455532
+#- : float * float * float = 80, 80.076, 120
+#- : float * float * float = 4858.57864376, 4767.5, 5141.42135624 <==
+#- : float * float * float = 936.754446797, 951.2, 1063.2455532
+#- : float * float * float = 960, 1028.31104, 1088
+#- : float * float * float = 960, 1012.64384, 1088
+#- : float * float * float = 960, 970.25024, 1088
+#- : float * float * float = 960, 982.29248, 1088
+#- : float * float * float = 80, 110.418, 120
+#- : float * float * float = 960, 1022.76096, 1088
+#- : float * float * float = 80, 96.894, 120
+#- : float * float * float = 80, 83.864, 120
+#- : float * float * float = 80, 89.956, 120
 
 *)
 
