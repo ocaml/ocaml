@@ -158,8 +158,21 @@ val get_ellipsis_text : unit -> string
         (* Return the text of the ellipsis. *)
 
 (*** Redirecting formatter output *)
+
 val set_formatter_output : out_channel -> unit
         (* Redirect the pretty-printer output to the given channel. *)
-val get_formatter_output : unit -> out_channel
-        (* Return the channel connected to the pretty-printer. *)
 
+type formatter_output =
+  { mutable output_function: string -> int -> int -> unit;
+    mutable flush_function: unit -> unit }
+        (* The output of the formatter goes through a pair of functions.
+           The [output_function] is called with a string [s], a start
+           position [p] and a number of characters [n]; it is supposed
+           to output characters [p] to [p+n-1] of [s]. 
+           The [flush_function] is called whenever the pretty-printer
+           is flushed using [print_flush] or [print_newline]. *)
+
+val set_formatter_output_functions : formatter_output -> unit
+        (* Redirect the pretty-printer output to the given functions. *)
+val get_formatter_output_functions : unit -> formatter_output
+        (* Return the current output functions of the pretty-printer. *)

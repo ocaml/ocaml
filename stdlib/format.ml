@@ -82,12 +82,20 @@ and pp_curr_depth = ref 0	  (* current number of opened blocks *)
 and pp_max_boxes = ref 35	  (* maximum number of blocks which can be
                                      opened at the same time *)
 and pp_ellipsis = ref "."         (* ellipsis string *)
-and pp_out_channel = ref stdout   (* out_channel of the pretty_printer *)
+
+(* Current outputs *)
+
+type formatter_output =
+  { mutable output_function: string -> int -> int -> unit;
+    mutable flush_function: unit -> unit }
+
+let current_output =
+  { output_function = output stdout;
+    flush_function = fun () -> flush stdout }
 
 (* Output functions for the formatter *)
-let pp_output s = output !pp_out_channel s
-and pp_output_string s = output_string !pp_out_channel s
-and pp_output_newline () = output_char !pp_out_channel '\n'
+let pp_output_string s = current_output.output_function s 0 (String.length s)
+and pp_output_newline () = current_output.output_function "\n" 0 1
 
 (* The pretty-printer queue *)
 let pp_queue = (Queue.new () : pp_queue_elem Queue.t)
@@ -105,8 +113,9 @@ let pp_enqueue ({length=len} as token) =
 let blank_line = String.make 80 ' '
 let display_blanks n =
     if n > 0 then
-    if n <= 80 then pp_output blank_line 0 n
-    else pp_output_string (String.make n ' ')
+      if n <= 80
+      then current_output.output_function blank_line 0 n
+      else pp_output_string (String.make n ' ')
 
 (* To format a break, indenting a new line *)
 let break_new_line offset width =
@@ -353,7 +362,7 @@ let pp_flush b =
     done;
     pp_right_total := pp_infinity; advance_left ();
     if b then pp_output_newline ();
-    flush !pp_out_channel;
+    current_output.flush_function ();
     pp_rinit()
 
 (**************************************************************
@@ -477,8 +486,15 @@ let set_min_space_left n =
 let set_max_indent n = set_min_space_left (!pp_margin - n)
 let get_max_indent () = !pp_max_indent
 
-let set_formatter_output os = pp_out_channel := os
-let get_formatter_output () = !pp_out_channel
+let set_formatter_output_functions f =
+  current_output.output_function <- f.output_function;
+  current_output.flush_function <- f.flush_function
+let get_formatter_output_functions () =
+  { output_function = current_output.output_function;
+    flush_function = current_output.flush_function }
+let set_formatter_output os =
+  current_output.output_function <- output os;
+  current_output.flush_function <- (fun () -> flush os)
 
-(* Initializing formatter *)
+(* Initialize the formatter *)
 let _ = pp_rinit()
