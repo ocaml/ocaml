@@ -62,11 +62,13 @@ struct
      "-intf", Arg.String F._intf, "<file>  Compile <file> as a .mli file";
      "-intf-suffix", Arg.String F._intf_suffix,
             "<file>  Suffix for interface file (default: .mli)";
-     "-intf_suffix", Arg.String F._intf_suffix, "<file>  same as -intf-suffix";
+     "-intf_suffix", Arg.String F._intf_suffix,
+            "<file>  (deprecated) same as -intf-suffix";
      "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
      "-make-runtime", Arg.Unit F._make_runtime,
             " Build a runtime system with given C objects and libraries";
-     "-make_runtime", Arg.Unit F._make_runtime, " same as -make-runtime";
+     "-make_runtime", Arg.Unit F._make_runtime,
+            " (deprecated) same as -make-runtime";
      "-noassert", Arg.Unit F._noassert, " Do not compile assertion checks";
      "-o", Arg.String F._o, "<file>  Set output file name to <file>";
      "-output-obj", Arg.Unit F._output_obj,
@@ -78,7 +80,8 @@ struct
                              " No bounds checking on array and string access";
      "-use-runtime", Arg.String F._use_runtime,
                    "<path>  Generate bytecode for the given runtime system";
-     "-use_runtime", Arg.String F._use_runtime, "<path>  same as -use-runtime";
+     "-use_runtime", Arg.String F._use_runtime,
+                   "<path>  (deprecated) same as -use-runtime";
      "-v", Arg.Unit F._v, " Print compiler version number";
      "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
      "-w", Arg.String F._w,
