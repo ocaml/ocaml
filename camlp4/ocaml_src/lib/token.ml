@@ -36,23 +36,26 @@ let lexer_text (con, prm) =
 ;;
 
 let locerr () = invalid_arg "Lexer: location function";;
-let loct_create () = ref (Array.create 1024 None);;
-let loct_func loct i =
+let loct_create () = ref (Array.create 1024 None), ref false;;
+let loct_func (loct, ov) i =
   match
-    if i < 0 || i >= Array.length !loct then None
+    if i < 0 || i >= Array.length !loct then
+      if !ov then Array.unsafe_get !loct (Array.length !loct - 1) else None
     else Array.unsafe_get !loct i
   with
     Some loc -> loc
   | _ -> locerr ()
 ;;
-let loct_add loct i loc =
+let loct_add (loct, ov) i loc =
   if i >= Array.length !loct then
-    begin
-      let new_tmax = Array.length !loct * 2 in
+    let new_tmax = Array.length !loct * 2 in
+    if new_tmax < Sys.max_array_length then
       let new_loct = Array.create new_tmax None in
-      Array.blit !loct 0 new_loct 0 (Array.length !loct); loct := new_loct
-    end;
-  !loct.(i) <- Some loc
+      Array.blit !loct 0 new_loct 0 (Array.length !loct);
+      loct := new_loct;
+      !loct.(i) <- Some loc
+    else ov := true
+  else !loct.(i) <- Some loc
 ;;
 
 let make_stream_and_location next_token_loc =
