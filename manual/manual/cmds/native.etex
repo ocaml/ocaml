@@ -153,7 +153,7 @@ in a slight expansion in code size. Higher values for the "-inline"
 option cause larger and larger functions to become candidate for
 inlining, but can result in a serious increase in code size.
 
-\item["-label"]
+\item["-labels"]
 Switch to the {\em commuting label} mode of compilation, meaning that labeling
 rules are applied strictly, and commutation between labeled arguments
 is allowed. (See section~\ref{s:commuting-mode}.)
