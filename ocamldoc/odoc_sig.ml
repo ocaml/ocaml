@@ -517,7 +517,11 @@ module Analyser =
 	pos_start_ele pos_end_ele pos_limit comment_opt sig_item_desc =
 	match sig_item_desc with
 	  Parsetree.Psig_value (name_pre, value_desc) ->
-	    let type_expr = Signature_search.search_value table name_pre  in
+	    let type_expr = 
+	      try Signature_search.search_value table name_pre
+	      with Not_found ->
+		raise (Failure (Odoc_messages.value_not_found current_module_name name_pre))
+	    in
 	    let name = Name.parens_if_infix name_pre in
 	    let subst_typ = Odoc_env.subst_type env type_expr in
 	    let v =  
@@ -544,7 +548,11 @@ module Analyser =
 	    (maybe_more, new_env, [ Element_value v ])
 
 	| Parsetree.Psig_exception (name, exception_decl) ->
-	    let types_excep_decl = Signature_search.search_exception table name  in
+	    let types_excep_decl = 
+	      try Signature_search.search_exception table name  
+	      with Not_found -> 
+		raise (Failure (Odoc_messages.exception_not_found current_module_name name))
+	    in
 	    let e =
 	      { 
 		ex_name = Name.concat current_module_name name ;
@@ -603,7 +611,11 @@ module Analyser =
 		  let f_DEBUG (name, c_opt) = print_DEBUG ("constructor/field "^name^": "^(match c_opt with None -> "sans commentaire" | Some c -> Odoc_misc.string_of_info c)) in
 		  List.iter f_DEBUG name_comment_list;
 		  (* get the information for the type in the signature *)
-		  let sig_type_decl = Signature_search.search_type table name in
+		  let sig_type_decl = 
+		    try Signature_search.search_type table name 
+		    with Not_found ->
+		      raise (Failure (Odoc_messages.type_not_found current_module_name name))
+		  in
 		  (* get the type kind with the associated comments *)
 		  let type_kind = get_type_kind new_env name_comment_list sig_type_decl.Types.type_kind in
 	          (* associate the comments to each constructor and build the [Type.t_type] *)
@@ -800,7 +812,11 @@ module Analyser =
 		  in
 		  let name = class_desc.Parsetree.pci_name in
 		  let complete_name = Name.concat current_module_name name in
-		  let sig_class_decl = Signature_search.search_class table name in
+		  let sig_class_decl = 
+		    try Signature_search.search_class table name
+		    with Not_found ->
+		      raise (Failure (Odoc_messages.class_not_found current_module_name name))
+		  in
 		  let sig_class_type = sig_class_decl.Types.cty_type in
 		  let (parameters, class_kind) = 
 		    analyse_class_kind
@@ -872,7 +888,11 @@ module Analyser =
 		  in
 		  let name = ct_decl.Parsetree.pci_name in
 		  let complete_name = Name.concat current_module_name name in
-		  let sig_cltype_decl = Signature_search.search_class_type table name in
+		  let sig_cltype_decl = 
+		    try Signature_search.search_class_type table name
+		    with Not_found ->
+		      raise (Failure (Odoc_messages.class_type_not_found current_module_name name))
+		  in
 		  let sig_class_type = sig_cltype_decl.Types.clty_type in
 		  let kind = analyse_class_type_kind
 		      new_env
