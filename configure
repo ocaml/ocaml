@@ -191,7 +191,7 @@ case "$bytecc,$host" in
     # GNU C extensions disabled, but __GNUC__ still defined!
     bytecccompopts="-fno-defer-pop $gcc_warnings -U__GNUC__ -posix"
     bytecclinkopts="-posix";;
-  cc,*-*-rhapsody*)
+  *,*-*-rhapsody*)
     # Almost the same as NeXTStep
     bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
     mathlib="";;

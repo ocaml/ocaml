@@ -201,11 +201,12 @@ void unused_rules(void)
     for (i = 3; i < nrules; ++i)
 	if (!rules_used[i]) ++nunused;
 
-    if (nunused)
+    if (nunused){
 	if (nunused == 1)
 	    fprintf(stderr, "1 rule never reduced\n");
 	else
 	    fprintf(stderr, "%d rules never reduced\n", nunused);
+    }
 }
 
 
