@@ -77,7 +77,7 @@ let usage speclist errmsg =
 
 let current = ref 0;;
 
-let parse_argv_internal argv speclist anonfun errmsg =
+let parse_argv argv speclist anonfun errmsg =
   let stop error =
     let progname = if Array.length argv > 0 then argv.(0) else "(?)" in
     begin match error with
@@ -176,13 +176,7 @@ let parse_argv_internal argv speclist anonfun errmsg =
   done;
 ;;
 
-let parse_argv argv speclist anonfun errmsg =
-  let save_current = !current in
+let parse =
   current := 0;
-  try
-    parse_argv_internal argv speclist anonfun errmsg;
-    current := save_current;
-  with ex -> current := save_current; raise ex
+  parse_argv Sys.argv;
 ;;
-
-let parse = parse_argv Sys.argv;;

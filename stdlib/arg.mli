@@ -97,8 +97,9 @@ val parse :
 val parse_argv : string array ->
   (key * spec * doc) list -> anon_fun -> usage_msg -> unit
 (** [Arg.parse_argv args speclist anon_fun usage_msg] parses the array
-  [args] as if it were the command line.  It saves the value of
-  [Arg.current] before starting and restores it before returning. *)
+  [args] as if it were the command line.  It uses and updates the
+  value of [Arg.current].  You must set [Arg.current] before calling
+  [parse_argv], and restore it afterward if needed. *)
 
 exception Bad of string
 (** Functions in [spec] or [anon_fun] can raise [Arg.Bad] with an error
