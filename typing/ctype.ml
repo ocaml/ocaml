@@ -25,6 +25,7 @@ let current_level = ref 0
 let global_level = ref 1
 let generic_level = (-1)
 
+let init_def level = current_level := level
 let begin_def () = incr current_level
 let end_def () = decr current_level
 
@@ -406,27 +407,34 @@ let occur env ty0 ty =
     let ty = repr ty in
     if ty == ty0 then raise (Unify []);
     match ty.desc with
-      Tlink ty' ->
-        occur_rec ty'
-    | Tvar ->
+      Tvar ->
         ()
     | Tarrow(t1, t2) ->
         occur_rec t1; occur_rec t2
     | Ttuple tl ->
         List.iter occur_rec tl
-    | Tconstr(p, [], _) ->
-        ()
+    | Tconstr(p, [], abbrev) ->
+        if ty0.level < Path.binding_time p then begin
+          let ty' =
+            try expand_abbrev env p [] abbrev ty.level
+            with Cannot_expand -> raise (Unify []) in
+          occur_rec ty'
+        end
     | Tconstr(p, tl, abbrev) ->
         if not (List.memq ty !visited) then begin
           visited := ty :: !visited;
-          try List.iter occur_rec tl with Unify _ ->
-          try occur_rec (expand_abbrev env p tl abbrev ty.level)
-          with Cannot_expand ->
-          ()
+          try
+            if ty0.level < Path.binding_time p then raise(Unify []);
+            List.iter occur_rec tl
+          with Unify lst ->
+            let ty' =
+              try expand_abbrev env p tl abbrev ty.level
+              with Cannot_expand -> raise (Unify lst) in
+            occur_rec ty'
         end
     | Tobject (_, _) ->
         ()
-    | Tfield (_, _, _) | Tnil ->
+    | _ (* Tfield (_, _, _) | Tnil | Tlink _ *) ->
         fatal_error "Ctype.occur"
   in
     occur_rec ty
@@ -1373,40 +1381,10 @@ let unroll_abbrev id tl ty =
   | _ ->
       ty
 
-let visited = ref []
-
-let closed_schema ty =
-  let rec closed_schema_rec ty =
-    let ty = repr ty in
-    match ty.desc with
-      Tvar -> ty.level = generic_level
-    | Tarrow(t1, t2) -> closed_schema_rec t1 & closed_schema_rec t2
-    | Ttuple tl -> List.for_all closed_schema_rec tl
-    | Tconstr(p, tl, _) ->
-        if not (List.memq ty !visited) then begin
-          visited := ty::!visited;
-          List.for_all closed_schema_rec tl
-        end else
-          true
-    | Tobject(f, _) ->
-        if not (List.memq ty !visited) then begin
-          visited := ty::!visited;
-          closed_schema_rec f
-        end else
-          true
-    | Tfield(_, t1, t2) ->
-        closed_schema_rec t1 & closed_schema_rec t2
-    | Tnil ->
-        true
-    | Tlink _           -> fatal_error "Ctype.closed_schema"
-  in
-    visited := [];
-    let res = closed_schema_rec ty in
-    visited := [];
-    res
-
 type closed_schema_result = Var of type_expr | Row_var of type_expr
 exception Failed of closed_schema_result
+
+let visited = ref []
 
 let rec closed_schema_rec ty =
   let ty = repr ty in

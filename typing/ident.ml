@@ -40,6 +40,10 @@ let same i1 i2 = i1 = i2
        then i1.stamp = i2.stamp
        else i2.stamp = 0 & i1.name = i2.name *)
 
+let binding_time i = i.stamp
+
+let current_time() = !currentstamp
+
 let identify i1 i2 f =
   let name1 = i1.name and stamp1 = i1.stamp in
   try
@@ -154,21 +158,22 @@ let rec find_name name = function
       else
         find_name name (if c < 0 then l else r)
 
+let rec iter fn = function
+    Empty -> ()
+  | Node(l, k, r, _) ->
+      iter fn l; iter_node fn k; iter fn r
+and iter_node fn k =
+  fn k.ident k.data;
+  match k.previous with None -> () | Some prev_k -> iter_node fn prev_k
+
 let print_tbl print_elt tbl =
   open_hovbox 2;
   print_string "[[";
-  let rec print_tbl = function
-      Empty -> ()
-    | Node(l, k, r, _) ->
-        print_tbl l;
-        print_entry k;
-        print_tbl r
-  and print_entry k =
-    open_hovbox 2;
-    print k.ident; print_string " ->"; print_space(); print_elt k.data;
-    print_string ";"; close_box(); print_space();
-    match k.previous with None -> () | Some k -> print_entry k in
-  print_tbl tbl;
+  iter (fun id data -> 
+          open_hovbox 2;
+          print id; print_string " ->"; print_space(); print_elt data;
+          print_string ";"; close_box(); print_space())
+       tbl;
   print_string "]]";
   close_box()
 

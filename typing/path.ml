@@ -29,3 +29,8 @@ let rec isfree id = function
     Pident id' -> Ident.same id id'
   | Pdot(p, s, pos) -> isfree id p
   | Papply(p1, p2) -> isfree id p1 or isfree id p2
+
+let rec binding_time = function
+    Pident id -> Ident.binding_time id
+  | Pdot(p, s, pos) -> binding_time p
+  | Papply(p1, p2) -> max (binding_time p1) (binding_time p2)

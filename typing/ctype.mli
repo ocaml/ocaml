@@ -17,6 +17,8 @@ open Asttypes
 open Typedtree
 
 val generic_level: int
+val init_def: int -> unit
+        (* Set the initial variable level *)
 val begin_def: unit -> unit
         (* Raise the variable level by one at the beginning of a definition. *)
 val end_def: unit -> unit

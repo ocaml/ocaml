@@ -310,7 +310,9 @@ and type_structure env sstr =
   check_unique_names sstr;
   type_struct env sstr
 
-and type_struct env = function
+and type_struct env sstr =
+  Ctype.init_def(Ident.current_time());
+  match sstr with
     [] ->
       ([], [], env)
   | {pstr_desc = Pstr_eval sexpr} :: srem ->

@@ -20,5 +20,6 @@ type t =
 
 val same: t -> t -> bool
 val isfree: Ident.t -> t -> bool
+val binding_time: t -> int
 
 val nopos: int

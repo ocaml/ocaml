@@ -40,6 +40,9 @@ val hide: t -> t
 val make_global: t -> unit
 val global: t -> bool
 
+val binding_time: t -> int
+val current_time: unit -> int
+
 val print: t -> unit
 
 type 'a tbl
@@ -50,4 +53,5 @@ val add: t -> 'a -> 'a tbl -> 'a tbl
 val find_same: t -> 'a tbl -> 'a
 val find_name: string -> 'a tbl -> 'a
 
+val iter: (t -> 'a -> unit) -> 'a tbl -> unit
 val print_tbl: ('a -> unit) -> 'a tbl -> unit
