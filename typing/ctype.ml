@@ -493,16 +493,6 @@ let rec iter_generalize tyl ty =
     begin match ty.desc with
       Tconstr (_, _, abbrev) ->
         generalize_expans tyl !abbrev
-    | Tvariant row
-      when (repr row.row_more).level > !current_level || static_row row ->
-        let row = row_repr row in
-        let bound =
-          List.fold_left
-            (fun acc (_,f) ->
-              match row_field_repr f with Reither(_,l,_) -> l@acc | _ -> acc)
-            [] row.row_fields in
-        let row = {row with row_bound = bound} in
-        ty.desc <- Tvariant row;
     | _ -> ()
     end;
     iter_type_expr (iter_generalize tyl) ty
@@ -2291,20 +2281,28 @@ let rec normalize_type_rec env ty =
     mark_type_node ty;
     begin match ty.desc with Tvariant row ->
       let row = row_repr row in
-      List.iter
-        (fun (_,f) ->
-          match row_field_repr f with Reither(b, ty::(_::_ as tyl), e) ->
-            let tyl' =
-              List.fold_left
-                (fun tyl ty ->
-                  if List.exists (fun ty' -> equal env false [ty] [ty']) tyl
-                  then tyl else ty::tyl)
-                [ty] tyl
-            in
-            if List.length tyl' < List.length tyl + 1 then
-              e := Some(Reither(b, List.rev tyl', ref None))
-          | _ -> ())
-        row.row_fields
+      let fields = List.map
+          (fun (l,f) ->
+	    let f = row_field_repr f in
+	    begin match f with Reither(b, ty::(_::_ as tyl), e) ->
+              let tyl' =
+		List.fold_left
+                  (fun tyl ty ->
+                    if List.exists (fun ty' -> equal env false [ty] [ty']) tyl
+                    then tyl else ty::tyl)
+                  [ty] tyl
+              in
+              if List.length tyl' < List.length tyl + 1 then
+		e := Some(Reither(b, List.rev tyl', ref None))
+            | _ -> ()
+	    end;
+	    l,f)
+          row.row_fields
+      and bound = List.fold_left
+	  (fun tyl ty ->
+	    let ty = repr ty in if List.memq ty tyl then tyl else ty :: tyl)
+	  [] row.row_bound
+      in ty.desc <- Tvariant {row with row_fields = fields; row_bound = bound}
     | _ -> ()
     end;
     iter_type_expr (normalize_type_rec env) ty
