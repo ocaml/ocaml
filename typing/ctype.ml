@@ -33,9 +33,10 @@ open Types
    - As much sharing as possible should be kept : it makes types
      smaller and better abbreviated.
      When necessary, some sharing can be lost. Types will still be
-     printed correctly (+++ TO DO...), and types defined by a class do
-     not depend on sharing thanks to constrained abbreviations. (Of
-     course, typing will still be correct.)
+     printed correctly (+++ TO DO...), and abbreviations defined by a
+     class do not depend on sharing thanks to constrained
+     abbreviations. (Of course, even if some sharing is lost, typing
+     will still be correct.)
    - All nodes of a type have a level : that way, one know whether a
      node need to be duplicated or not when instantiating a type.
    - Levels of a type are decreasing (generic level being considered
@@ -43,7 +44,9 @@ open Types
    - The level of a type constructor is superior to the binding
      time of its path.
    - Recursive types without limitation should be handled (even if
-     there is still an occur check.
+     there is still an occur check). This avoid treating specially the
+     case for objects, for instance. Furthermore, the occur check
+     policy can then be easily changed.
 *)
 
 (*
@@ -86,6 +89,8 @@ exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 
 exception Cannot_expand
+
+exception Cannot_apply
 
 exception Recursive_abbrev
 
@@ -319,7 +324,7 @@ let expand_abbrev' = (* Forward declaration *)
     definition, as would be the case in
       let x = ref []
       module M = struct type t let _ = (x : t list ref) end
-    (without this constraint, the type system would even be unsafe.)
+    (without this constraint, the type system would actually be unsound.)
 *)
 let rec update_level env level ty =
   let ty = repr ty in
@@ -516,8 +521,11 @@ let rec subst env level abbrev path params args body =
    invariants on types are enforced (decreasing levels.), and we don't
    care about efficiency here.
 *)
-let substitute env params args body =
-  subst env generic_level (ref Mnil) None params args body
+let apply env params body args =
+  try
+    subst env generic_level (ref Mnil) None params args body
+  with
+    Unify _ -> raise Cannot_apply
 
 
                               (****************************)
@@ -544,6 +552,19 @@ let previous_env = ref Env.empty
    Assume the level is greater than the path binding time of the
    expanded abbreviation.
 *)
+(*
+   An abbreviation expansion will fail in either of these cases:
+   1. The type constructor does not correspond to a manifest type.
+   2. The type constructor is defined in an external file, and this
+      file is not in the path (missing -I options).
+   3. The type constructor is not in the "local" environment. This can
+      happens when a non-generic type variable has been instantiated
+      afterwards to the not yet defined type constructor. (Actually,
+      this cannot happen at the moment due to the strong constraints
+      between type levels and constructor binding time.)
+   4. The expansion requires the expansion of another abbreviation,
+      and this other expansion fails.
+*)
 let expand_abbrev env path args abbrev level =
   (* 
      If the environnement has changed, memorized expansions might not
@@ -563,20 +584,12 @@ let expand_abbrev env path args abbrev level =
       ty
   | None ->
       let decl =
-        (*
-           The type constructor is always in the environnement during
-           typing. This is not true anymore at a latter stage (code
-           generation and debugger), as a non-generic type variable
-           can be instanciated afterwards to a previously undefined
-           type constructor.
-           (+++ actually, it is still true for the moment, due to the
-           strong constraint on type levels and constructor binding
-           time.)
-        *)
         try Env.find_type path env with Not_found -> raise Cannot_expand in
       match decl.type_manifest with
         Some body ->
-          subst env level abbrev (Some path) decl.type_params args body
+          begin try
+            subst env level abbrev (Some path) decl.type_params args body
+          with Unify _ -> raise Cannot_expand end
       | None ->
           raise Cannot_expand
 
@@ -622,16 +635,42 @@ let generic_abbrev env path =
 
 
                               (*****************)
-                              (*  Unification  *)
+                              (*  Occur check  *)
                               (*****************)
 
 
-
-(**** Occur check ****)
-
 exception Occur
 
-(* +++ A supprimer (?) *)
+let marked_types = ref []
+
+let rec non_recursive_abbrev env path ty =
+  let ty = repr ty in
+  if ty.level >= lowest_level then begin
+    let level = ty.level in
+    ty.level <- pivot_level - level;
+    match ty.desc with
+      Tconstr(p, _, _) when Path.same path p ->
+        raise Recursive_abbrev
+    | Tconstr(p, args, abbrev) ->
+        begin try
+          let ty' = repr (expand_abbrev env p args abbrev level) in
+          if ty'.level >= lowest_level then begin
+            marked_types := ty' :: !marked_types;
+            non_recursive_abbrev env path ty'
+          end
+        with Cannot_expand -> () end
+    | Tobject (_, _) ->
+        ()
+    | _ ->
+        iter_type_expr (non_recursive_abbrev env path) ty
+  end
+
+let correct_abbrev env ident params ty =
+  marked_types := [ty];
+  non_recursive_abbrev env (Path.Pident ident) ty;
+  List.iter unmark_type !marked_types;
+  marked_types := []
+
 let occur env ty0 ty =
   let visited = ref ([] : type_expr list) in
   let rec occur_rec ty =
@@ -652,6 +691,13 @@ let occur env ty0 ty =
         iter_type_expr occur_rec ty
   in
     occur_rec ty
+
+
+                              (*****************)
+                              (*  Unification  *)
+                              (*****************)
+
+
 
 (**** Transform error trace ****)
 (* +++ Move it to some other place ? *)
@@ -940,9 +986,10 @@ let rec filter_method env name ty =
    A generic variable from the subject cannot be instantiated, and its
    level must remain unchanged.  A generic variable from the pattern
    can be instantiated to anything.
-
    Usually, the subject is given by the user, and the pattern is
    unimportant. So, no need to propagate abbreviations.
+   A non-generic variable can occur in both types, so the occur-check
+   is required.
 *)
 
 (*
@@ -974,16 +1021,22 @@ let rec moregen env t1 t2 =
   let t2 = repr t2 in
   if t1 == t2 then () else
   let d2 = ref t2.desc in
-  moregen_occur env t1.level t2;
+  moregen_occur env t2.level t1;
   (* Ensure termination *)
   t2.desc <- Tlink t1;
   try
     begin match (t1.desc, !d2) with
       (Tvar, _) when t1.level <> !current_level - 1 ->
         t2.desc <- !d2;
+        begin try occur env t1 t2 with Occur ->
+            raise (Unify [])
+        end;
         moregen_occur env t1.level t2;
         t1.desc <- Tlink t2
     | (_, Tvar) when t2.level <> !current_level - 1 ->
+        begin try occur env t2 t1 with Occur ->
+          raise (Unify [])
+        end;
         moregen_occur env t2.level t1;
         d2 := Tlink t1
     | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
@@ -1081,7 +1134,7 @@ let moregeneral env sch1 sch2 =
 
 (* +++ A voir... *)
 
-(* Deux modes : avec ou sans subtitution *)
+(* Deux modes : avec ou sans substitution *)
 (* Equalite de deux listes de types :    *)
 (*   [Ctype.equal env rename tyl1 tyl2]  *)
 
@@ -1511,43 +1564,6 @@ let nondep_class_type env id decl =
     cleanup_types ();
     raise Not_found
 
-                              (******************************)
-                              (*  Abbreviation correctness  *)
-                              (******************************)
-
-
-(* +++ A supprimer... (occur-check) *)
-
-let marked_types = ref []
-
-let rec non_recursive_abbrev env path ty =
-  let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    let level = ty.level in
-    ty.level <- pivot_level - level;
-    match ty.desc with
-      Tconstr(p, _, _) when Path.same path p ->
-        raise Recursive_abbrev
-    | Tconstr(p, args, abbrev) ->
-        begin try
-          let ty' = repr (expand_abbrev env p args abbrev level) in
-          if ty'.level >= lowest_level then begin
-            marked_types := ty' :: !marked_types;
-            non_recursive_abbrev env path ty'
-          end
-        with Cannot_expand -> () end
-    | Tobject (_, _) ->
-        ()
-    | _ ->
-        iter_type_expr (non_recursive_abbrev env path) ty
-  end
-
-let correct_abbrev env ident params ty =
-  marked_types := [ty];
-  non_recursive_abbrev env (Path.Pident ident) ty;
-  List.iter unmark_type !marked_types;
-  marked_types := []
-
 
                     (**************************************)
                     (*  Check genericity of type schemes  *)
@@ -1557,39 +1573,30 @@ let correct_abbrev env ident params ty =
 type closed_schema_result = Var of type_expr | Row_var of type_expr
 exception Failed of closed_schema_result
 
-let rec closed_schema_rec fullgen row ty =
+let rec closed_schema_rec row ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
     let level = ty.level in
-    if fullgen then
-      ty.level <- pivot_level - generic_level   (* Generalize type *)
-    else
-      ty.level <- pivot_level - level;
+    ty.level <- pivot_level - level;
     match ty.desc with
       Tvar when level != generic_level ->
         raise (Failed (if row then Row_var ty else Var ty))
     | Tobject(f, {contents = Some (_, p)}) ->
-        closed_schema_rec fullgen true f;
-        List.iter (closed_schema_rec fullgen false) p
+        closed_schema_rec true f;
+        List.iter (closed_schema_rec false) p
     | Tobject(f, _) ->
-        closed_schema_rec fullgen true f
+        closed_schema_rec true f
     | Tfield(_, t1, t2) ->
-        closed_schema_rec fullgen false t1;
-        closed_schema_rec fullgen true t2
+        closed_schema_rec false t1;
+        closed_schema_rec true t2
     | _ ->
-        iter_type_expr (closed_schema_rec fullgen false) ty
+        iter_type_expr (closed_schema_rec false) ty
   end
 
-(*
-    Return whether all variables of type [ty] are generic. The type is
-    also generalized if [fullgen] is true.
-    A file interface should be fully generic. On the other hand, class
-    abbreviation expansion cannot be made fully generic (this could
-    break type level invariant).
-*)
-let closed_schema fullgen ty =
+(* Return whether all variables of type [ty] are generic. *)
+let closed_schema ty =
   try
-    closed_schema_rec fullgen false ty;
+    closed_schema_rec false ty;
     unmark_type ty;
     true
   with Failed _ ->
@@ -1603,7 +1610,7 @@ let closed_schema fullgen ty =
 *)
 let closed_schema_verbose ty =
   try
-    closed_schema_rec false false ty;
+    closed_schema_rec false ty;
     unmark_type ty;
     None
   with Failed status ->
