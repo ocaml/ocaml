@@ -1,3 +1,101 @@
+Objective Caml 3.00:
+--------------------
+
+Language:
+- OCaml/OLabl merger:
+  * Support for labeled and optional arguments for functions and classes.
+  * Support for variant types (sum types compared by structure).
+  See tutorial (chapter 2 of the OCaml manual) for more infos.
+- Added exception renaming in structures (exception E = F).
+
+Both compilers:
+- Option -labels to select commuting label mode (labels are mandatory,
+  but labeled arguments can be passed in a different order than in
+  the definition of the function; in default mode, labels are optional,
+  but no argument reordering is possible).
+- Libraries (.cma and .cmxa files) now "remember" C libraries given
+  at library construction time, and add them back at link time.
+  Allows linking with e.g. just unix.cma instead of
+  unix.cma -custom -cclib -lunix
+- Revised printing of error messages, now use Format.fprintf; no visible
+  difference for users, but could facilitate internationalization later.
+- Fixed bug in unboxing of records containing only floats.
+- Fixed typing bug involving applicative functors as components of modules.
+- Better error message for inconsistencies between compiled interfaces.
+
+Bytecode compiler:
+- New "modular" format for bytecode executables; no visible differences
+  for users, but will facilitate further extensions later.
+- Revised treatment of signals.
+
+Native-code compiler:
+- Profiling support on x86 under FreeBSD
+- Open-coding and unboxing optimizations for the new integer types
+  int32, int64, nativeint, and for bigarrays.
+- Fixed instruction selection bug with "raise" appearing in arguments
+  of strict operators, e.g. "1 + raise E".
+- Better error message when linking incomplete/incorrectly ordered set
+  of .cmx files.
+- Optimized scanning of global roots during GC, can reduce total running
+  time by up to 5% on GC-intensive programs.
+
+Interactive toplevel:
+- Better printing of exceptions, including arguments, when possible.
+- Fixed rare GC bug occurring during interpretation of scripts.
+- Added consistency checks between interfaces and implementations
+  during #load.
+
+Run-time system:
+- Added support for "custom" heap blocks (heap blocks carrying
+  C functions for finalization, comparison, hashing, serialization
+  and deserialization).
+- Support for finalization functions written in Caml.
+
+Standard library:
+- New modules Int32, Int64, Nativeint for 32-bit, 64-bit and
+  platform-native integers
+- Module Gc: added Gc.finalise to attach Caml finalisation functions to
+  arbitrary heap-allocated data.
+- Module Hashtbl: do not bomb when resizing very large table.
+- Module Lazy: raise Lazy.Undefined when a lazy evaluation needs itself.
+- Module List: fixed bug in List.rev_map2.
+- Module Map: added mapi (iteration with key and data).
+- Module Set: added iterators for_all, exists, filter, partition.
+- Module Sort: ???
+- Module Stack: added Stack.top
+- Module String: fixed boundary condition on String.rindex_from
+- Added labels on function arguments where appropriate.
+
+New or updated ports:
+- Alpha/Digital Unix: lifted 256M limitation on total memory space 
+  induced by -taso
+- Port to AIX 4.3 on PowerPC
+- Port to HPUX 11 on HPPA
+- Deprecated 680x0 / SunOS port
+
+New libraries and tools:
+- ocamlbrowser: graphical browser for OCaml sources and compiled interfaces,
+  supports cross-referencing, editing, running the toplevel.
+- LablTK: GUI toolkit based on TK, using labeled and optional arguments,
+  easier to use than CamlTK.
+- Bigarray: large, multi-dimensional numerical arrays, facilitate
+  interfacing with C/Fortran numerical code, efficient support for
+  advanced array operations such as slicing and memory-mapping of files.
+
+Other libraries:
+- Bytecode threads: timer-based preemption was broken, works back again;
+  fixed bug in Pervasives.input_line; exported Thread.yield.
+- System threads: several GC / reentrancy bugs fixed in buffered I/O
+  and Unix I/O; revised Thread.join implementation for strict POSIX
+  conformance; exported Thread.yield.
+- Graphics: added support for double buffering; added rmoveto, rlineto.
+- Num: fixed bug in Num.float_of_num.
+- Str: worked around potential symbol conflicts with C standard library.
+
+Macintosh port:
+- Implemented the Unix and Thread libraries.
+
+
 Objective Caml 2.04:
 --------------------
 
