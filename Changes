@@ -3,8 +3,8 @@ Objective Caml 2.01:
 
 * Typing:
   - Added warning for expressions of the form "a; b" where a does not have
-    type "unit"; catches silly mistake such as "rec.lbl = newval; ..."
-    instead of "rec.lbl <- newval; ...".
+    type "unit"; catches silly mistake such as
+    "record.lbl = newval; ..." instead of "record.lbl <- newval; ...".
   - Typing bug in "let module" fixed.
 
 * Compilation:
@@ -24,6 +24,7 @@ Objective Caml 2.01:
   - Corrected scheduling of bound checks.
   - Port to the StrongARM under Linux (e.g. Corel Netwinder).
   - I386: fixed bug in profiled code (ocamlopt -p).
+  - Mips: switched to -n32 model under IRIX; dropped the Ultrix port.
   - Sparc: simplified the addressing modes, allows for better scheduling.
 
 * Toplevel:
