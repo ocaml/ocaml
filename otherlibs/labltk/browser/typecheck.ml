@@ -87,11 +87,14 @@ let f txt =
   let tl, ew, end_message =
     Jg_message.formatted ~title:"Warnings" ~ppf:Format.err_formatter () in
   Text.tag_remove txt.tw ~tag:"error" ~start:tstart ~stop:tend;
-  begin
   txt.structure <- [];
+  txt.type_info <- [];
   txt.signature <- [];
   txt.psignature <- [];
-  try
+  ignore (Stypes.get_info ());
+  Clflags.save_types := true;
+
+  begin try
 
     if Filename.check_suffix txt.name ".mli" then
     let psign = parse_pp text ~ext:".mli"
@@ -111,7 +114,8 @@ let f txt =
         txt.signature <- txt.signature @ sign;
         env := env'
     | Ptop_dir _ -> ()
-    end
+    end;
+    txt.type_info <- Stypes.get_info ();
 
   with
     Lexer.Error _ | Syntaxerr.Error _
@@ -119,6 +123,7 @@ let f txt =
   | Typeclass.Error _ | Typedecl.Error _
   | Typetexp.Error _ | Includemod.Error _
   | Env.Error _ | Ctype.Tags _ | Failure _ as exn ->
+      txt.type_info <- Stypes.get_info ();
       let et, ew, end_message = Jg_message.formatted ~title:"Error !" () in
       error_messages := et :: !error_messages;
       let range = match exn with

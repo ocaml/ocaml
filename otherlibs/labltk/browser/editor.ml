@@ -211,12 +211,12 @@ let send_phrase txt =
         sh#send ";;\n"
 
 let search_pos_window txt ~x ~y =
-  if txt.structure = [] && txt.psignature = [] then () else
+  if txt.type_info = [] && txt.psignature = [] then () else
   let `Linechar (l, c) = Text.index txt.tw ~index:(`Atxy(x,y), []) in
   let text = Jg_text.get_all txt.tw in
   let pos = Searchpos.lines_to_chars l ~text + c in
-  try if txt.structure <> [] then begin match
-    Searchpos.search_pos_structure txt.structure ~pos
+  try if txt.type_info <> [] then begin match
+    Searchpos.search_pos_info txt.type_info ~pos
   with [] -> ()
   | (kind, env, loc) :: _ -> Searchpos.view_type kind ~env
   end else begin match
@@ -228,12 +228,12 @@ let search_pos_window txt ~x ~y =
   with Not_found -> ()
 
 let search_pos_menu txt ~x ~y =
-  if txt.structure = [] && txt.psignature = [] then () else
+  if txt.type_info = [] && txt.psignature = [] then () else
   let `Linechar (l, c) = Text.index txt.tw ~index:(`Atxy(x,y), []) in
   let text = Jg_text.get_all txt.tw in
   let pos = Searchpos.lines_to_chars l ~text + c in
-  try if txt.structure <> [] then begin match
-    Searchpos.search_pos_structure txt.structure ~pos
+  try if txt.type_info <> [] then begin match
+    Searchpos.search_pos_info txt.type_info ~pos
   with [] -> ()
   | (kind, env, loc) :: _ ->
       let menu = Searchpos.view_type_menu kind ~env ~parent:txt.tw in
@@ -336,7 +336,7 @@ class editor ~top ~menus = object (self)
         number = string_of_int window_counter;
         modified = Textvariable.create ~on:tw ();
         shell = None;
-        structure = []; signature = []; psignature = [] }
+        structure = []; type_info = []; signature = []; psignature = [] }
     in
     let control c = Char.chr (Char.code c - 96) in
     bind tw ~events:[`Modified([`Alt], `KeyPress)] ~action:ignore;

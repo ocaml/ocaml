@@ -850,3 +850,18 @@ and search_pos_module_expr ~pos m =
 
 let search_pos_structure ~pos str =
   observe ~ref:found_str (search_pos_structure ~pos) str
+
+open Stypes
+
+let search_pos_ti ~pos = function
+    Ti_pat p   -> search_pos_pat ~pos ~env:p.pat_env p
+  | Ti_expr e  -> search_pos_expr ~pos e
+  | Ti_class c -> search_pos_class_expr ~pos c
+  | Ti_mod m   -> search_pos_module_expr ~pos m
+
+let rec search_pos_info ~pos = function
+    [] -> []
+  | ti :: l ->
+      if in_loc ~pos (get_location ti)
+      then observe ~ref:found_str (search_pos_ti ~pos) ti
+      else  search_pos_info ~pos l
