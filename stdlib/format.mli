@@ -19,16 +19,21 @@
    structure. *)
 
 (* Rule of thumb for casual users:
-   use simple boxes (as obtained by [open_box 0]);
-   use simple break hints (as obtained by [print_cut ()] that outputs a
+-   use simple boxes (as obtained by [open_box 0]);
+-   use simple break hints (as obtained by [print_cut ()] that outputs a
    simple break hint, or by [print_space ()] that ouputs a space
    indicating a break hint);
-   once a box is opened, display its material with basic printing
+-   once a box is opened, display its material with basic printing
    functions (e. g. [print_int] and [print_string]);
-   when the material for a box has been printed, call [close_box ()] to
+-   when the material for a box has been printed, call [close_box ()] to
    close the box;
-   at the end of your routine, evaluate [print_newline ()] to close
+-   at the end of your routine, evaluate [print_newline ()] to close
    all remaining boxes and flush the pretty-printer. *) 
+
+(* You may alternatively consider this module as providing an extension to the
+   [printf] facility: you can simply add pretty-printing annotations to your
+   regular printf formats, as explained below in the documentation of
+   the function [fprintf]. *)
 
 (* The behaviour of pretty-printing commands is unspecified
    if there is no opened pretty-printing box. Each box opened via
@@ -291,3 +296,33 @@ val pp_get_formatter_output_functions :
            operating on the standard formatter are defined via partial
            evaluation of these primitives. For instance,
            [print_string] is equal to [pp_print_string std_formatter]. *)
+
+val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
+        (* [fprintf ff format arg1 ... argN] formats the arguments
+           [arg1] to [argN] according to the format string [format],
+           and outputs the resulting string on the formatter [ff].
+           The format is a character string which contains three types of
+           objects: plain characters and conversion specifications as
+           specified in the [printf] module, and pretty-printing
+           indications.
+           The pretty-printing indication characters are introduced by
+           a [@] character, and their meanings are:
+-          [\[]: open a pretty-printing box. The type and offset of the
+           box may be optionally specified with the following syntax:
+           the [<] character, followed by an optional box type indication,
+           then an optional integer offset, and the closing [>] character. 
+           Box type is one of [h], [v], [hv], or [hov],
+           which stand respectively for an horizontal, vertical,
+           ``horizontal-vertical'' and ``horizontal or vertical'' box.
+-          [\]]: close the most recently opened pretty-printing box.
+-          [,]: output a good break as with [print_cut ()].
+-          [ ]: output a space, as with [print_space ()].
+-          [;]: force a newline, as with [force_newline ()].
+-          [.]: flush the pretty printer as with [print_newline ()].
+-          [@]: a plain [@] character. *)
+
+val printf : ('a, formatter, unit) format -> 'a;;
+        (* Same as [fprintf], but output on [std_formatter]. *)
+val eprintf: ('a, formatter, unit) format -> 'a;;
+        (* Same as [fprintf], but output on [err_formatter]. *)
+
