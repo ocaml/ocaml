@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Module [Stack]: stacks *)
+(* Module [Stack]: last-in first-out stacks *)
 
 (* This modl implements stacks (LIFOs), with in-place modification. *)
 
@@ -33,6 +33,6 @@ val clear : 'a t -> unit
 val length: 'a t -> int
         (* Return the number of elements in a stack. *)
 val iter: ('a -> 'b) -> 'a t -> unit
-        (* [Stack.iter f s] applies [f] in turn to all elements of [s],
+        (* [iter f s] applies [f] in turn to all elements of [s],
            from the element at the top of the stack to the element at the
            bottom of the stack. The stack itself is unchanged. *)

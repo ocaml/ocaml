@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Module [Queues]: queues *)
+(* Module [Queue]: first-in first-out queues *)
 
 (* This module implements queues (FIFOs), with in-place modification. *)
 
@@ -36,6 +36,6 @@ val clear : 'a t -> unit
 val length: 'a t -> int
         (* Return the number of elements in a queue. *)
 val iter: ('a -> 'b) -> 'a t -> unit
-        (* [Queue.iter f q] applies [f] in turn to all elements of [q],
+        (* [iter f q] applies [f] in turn to all elements of [q],
            from the least recently entered to the most recently entered.
            The queue itself is unchanged. *)

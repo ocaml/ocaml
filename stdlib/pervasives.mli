@@ -141,7 +141,7 @@ external (or) : bool -> bool -> bool = "%sequor"
 (*** Integer arithmetic *)
 
 (* Integers are 31 bits wide (or 63 bits on 64-bit processors).
-   All operations are taken modulo @math{2^{31}} (or @math{2^{63}}).
+   All operations are taken modulo $2^{31}$ (or $2^{63}$).
    They do not fail on overflow. *)
 
 external (~-) : int -> int = "%negint"

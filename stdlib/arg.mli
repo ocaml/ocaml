@@ -26,15 +26,11 @@
     Arguments not preceded by a keyword are called anonymous arguments. *)
 
 (*  Examples ([cmd] is assumed to be the command name):
-
 -   [cmd -flag           ](a unit option)
 -   [cmd -int 1          ](an int option with argument [1])
 -   [cmd -string foobar  ](a string option with argument ["foobar"])
 -   [cmd -float 12.34    ](a float option with argument [12.34])
 -   [cmd 1 2 3           ](three anonymous arguments: ["1"], ["2"], and ["3"])
--   [cmd 1 2 -flag 3 -string bar 4]
--   [                    ](four anonymous arguments, a unit option, and
--   [                    ] a string option with argument ["bar"])
 *)
 
 type spec =
