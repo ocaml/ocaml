@@ -92,9 +92,9 @@ let rec sel_operation op args =
   | (Cstore, arg1 :: rem) ->
       let (addr, eloc) = Proc.select_addressing arg1 in
       (Istore(Word, addr), eloc :: rem)
-  | (Cstorechunk chunk, arg1 :: rem) ->
+  | (Cstorechunk chunk, [arg1; arg2]) ->
       let (addr, eloc) = Proc.select_addressing arg1 in
-      (Istore(chunk, addr), eloc :: rem)
+      (Istore(chunk, addr), [arg2; eloc]) (* Inversion addr/datum in Istore *)
   | (Calloc, _) -> (Ialloc 0, args)
   | (Caddi, _) -> sel_arith_comm Iadd args
   | (Csubi, _) -> sel_arith Isub args
@@ -404,15 +404,6 @@ let rec emit_expr env exp seq =
               let ra = emit_expr env arg_addr seq in
               emit_stores env args_data seq ra addr;
               [||]
-          end
-      | Istore(chunk, addr) ->
-          begin match new_args with
-            [arg_addr; arg_data] ->
-              let ra = emit_expr env arg_addr seq in
-              let rd = emit_expr env arg_data seq in
-              insert (Iop(Istore(chunk, addr))) (Array.append rd ra) [||] seq;
-              [||]
-          | _ -> fatal_error "Selection.Istorechunk"
           end
       | Ialloc _ ->
           Proc.contains_calls := true;
