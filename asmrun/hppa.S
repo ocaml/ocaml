@@ -11,7 +11,7 @@
 
 ; $Id$
 
-; Asm part of the suntime system for the HP PA-RISC processor.
+; Asm part of the runtime system for the HP PA-RISC processor.
 ; Must be preprocessed by cpp
 
 #ifdef SYS_hpux
