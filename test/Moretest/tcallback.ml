@@ -32,8 +32,10 @@ let tripwire () =
 (* Test callbacks performed to handle signals *)
 
 let sighandler signo =
+(*
   print_string "Got signal, triggering garbage collection...";
   print_newline();
+*)
   (* Thoroughly wipe the minor heap *)
   tak (18, 12, 6);
   ()
