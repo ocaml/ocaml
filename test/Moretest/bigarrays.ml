@@ -533,6 +533,27 @@ let _ =
   test 6 (Array3.slice_right_1 a 1 2) (from_list_fortran int [112;212;312]);
   test 7 (Array3.slice_right_1 a 3 1) (from_list_fortran int [131;231;331]);
 
+(* Reshaping *)
+  print_newline();
+  testing_function "------ Reshaping --------";
+  testing_function "reshape_1";
+  let a = make_array2 int c_layout 0 3 4 id in
+  let b = make_array2 int fortran_layout 1 3 4 id in
+  let c = reshape_1 (genarray_of_array2 a) 12 in
+  test 1 c (from_list int [0;1;2;3;1000;1001;1002;1003;2000;2001;2002;2003]);
+  let d = reshape_1 (genarray_of_array2 b) 12 in
+  test 2 d (from_list_fortran int [1001;2001;3001;1002;2002;3002;1003;2003;3003;1004;2004;3004]);
+  testing_function "reshape_2";
+  let c = reshape_2 (genarray_of_array2 a) 4 3 in
+  test 1 (Array2.slice_left c 0) (from_list int [0;1;2]);
+  test 2 (Array2.slice_left c 1) (from_list int [3;1000;1001]);
+  test 3 (Array2.slice_left c 2) (from_list int [1002;1003;2000]);
+  test 4 (Array2.slice_left c 3) (from_list int [2001;2002;2003]);
+  let d = reshape_2 (genarray_of_array2 b) 4 3 in
+  test 5 (Array2.slice_right d 1) (from_list_fortran int [1001;2001;3001;1002]);
+  test 6 (Array2.slice_right d 2) (from_list_fortran int [2002;3002;1003;2003]);
+  test 7 (Array2.slice_right d 3) (from_list_fortran int [3003;1004;2004;3004]);
+
 (* I/O *)
 
   print_newline();

@@ -405,7 +405,7 @@ end
 (*** Two-dimensional arrays *)
 
 (* The [Array2] structure provides operations similar to those of
-   [Genarray], but specialized to the case of three-dimensional arrays. *)
+   [Genarray], but specialized to the case of two-dimensional arrays. *)
 
 module Array2: sig
   type ('a, 'b, 'c) t
@@ -602,3 +602,35 @@ val array3_of_genarray: ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array3.t
         (* Return the three-dimensional big array corresponding to the given
            generic big array.  Raise [Invalid_arg] if the generic big array
            does not have exactly three dimensions. *)
+
+(*** Re-shaping big arrays *)
+
+val reshape:
+      ('a, 'b, 'c) Genarray.t -> dims:int array -> ('a, 'b, 'c) Genarray.t
+        (* [reshape b [|d1;...;dN|]] converts the big array [b] to a
+           [N]-dimensional array of dimensions [d1]...[dN].  The returned
+           array and the original array [b] share their data
+           and have the same layout.  For instance, assuming that [b]
+           is a one-dimensional array of dimension 12, [reshape b [|3;4|]]
+           returns a two-dimensional array [b'] of dimensions 3 and 4.
+           If [b] has C layout, the element [(x,y)] of [b'] corresponds
+           to the element [x * 3 + y] of [b].  If [b] has Fortran layout,
+           the element [(x,y)] of [b'] corresponds to the element
+           [x + (y - 1) * 4] of [b].
+           The returned big array must have exactly the same number of
+           elements as the original big array [b].  That is, the product
+           of the dimensions of [b] must be equal to [i1 * ... * iN].
+           Otherwise, [Invalid_arg] is raised. *)
+val reshape_1:
+      ('a, 'b, 'c) Genarray.t -> dim:int -> ('a, 'b, 'c) Array1.t
+        (* Specialized version of [reshape] for reshaping to one-dimensional
+           arrays. *)
+val reshape_2:
+      ('a, 'b, 'c) Genarray.t -> dim1:int -> dim2:int -> ('a, 'b, 'c) Array2.t
+        (* Specialized version of [reshape] for reshaping to two-dimensional
+           arrays. *)
+val reshape_3:
+      ('a, 'b, 'c) Genarray.t -> dim1:int -> dim2:int -> dim3:int ->
+      ('a, 'b, 'c) Array3.t
+        (* Specialized version of [reshape] for reshaping to three-dimensional
+           arrays. *)

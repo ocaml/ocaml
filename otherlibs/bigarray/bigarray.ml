@@ -188,6 +188,13 @@ let array2_of_genarray a =
 let array3_of_genarray a =
   if Genarray.num_dims a = 3 then a else invalid_arg "Bigarray.array3_of_genarray"
 
+external reshape:
+   ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
+   = "bigarray_reshape"
+let reshape_1 a dim1 = reshape a [|dim1|]
+let reshape_2 a dim1 dim2 = reshape a [|dim1;dim2|]
+let reshape_3 a dim1 dim2 dim3 = reshape a [|dim1;dim2;dim3|]
+
 (* Force bigarray_get_{1,2,3,N} to be linked in, since we don't refer
    to those primitives directly in this file *)
 

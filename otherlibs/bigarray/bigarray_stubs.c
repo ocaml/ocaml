@@ -400,7 +400,7 @@ static void bigarray_finalize(value v)
       free(b->data);
     } else {
       if (-- b->proxy->refcount == 0) {
-        stat_free(b->proxy->data);
+        free(b->proxy->data);
         stat_free(b->proxy);
       }
     }
@@ -866,6 +866,39 @@ value bigarray_fill(value vb, value vinit)
   }
   }
   return Val_unit;
+}
+
+/* Reshape an array: change dimensions and number of dimensions, preserving
+   array contents */
+
+value bigarray_reshape(value vb, value vdim)
+{
+  struct caml_bigarray * b = Bigarray_val(vb);
+  long dim[MAX_NUM_DIMS];
+  mlsize_t num_dims;
+  unsigned long num_elts;
+  int i;
+  value res;
+
+  num_dims = Wosize_val(vdim);
+  if (num_dims < 1 || num_dims > MAX_NUM_DIMS)
+    invalid_argument("Bigarray.reshape: bad number of dimensions");
+  num_elts = 1;
+  for (i = 0; i < num_dims; i++) {
+    dim[i] = Long_val(Field(vdim, i));
+    if (dim[i] < 0 || dim[i] > 0x7FFFFFFFL)
+      invalid_argument("Bigarray.reshape: negative dimension");
+    num_elts *= dim[i];
+  }
+  /* Check that sizes agree */
+  if (num_elts != bigarray_num_elts(b))
+    invalid_argument("Bigarray.reshape: size mismatch");
+  /* Create bigarray with same data and new dimensions */
+  res = alloc_bigarray(b->flags, num_dims, b->data, dim);
+  /* Create or update proxy in case of managed bigarray */
+  bigarray_update_proxy(b, Bigarray_val(res));
+  /* Return result */
+  return res;
 }
 
 /* Initialization */
