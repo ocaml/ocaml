@@ -17,17 +17,17 @@ The native-code compiler (ocamlopt) requires Visual C++ and the
 Microsoft assembler MASM version 6.
 
 The CamlTk GUI requires Tcl 7.6 and Tk 4.2.  Windows binaries are
-available from ftp://ftp.sunlabs.com/pub/tcl/win76p2.exe.
+available from ftp://ftp.scriptics.com/pub/tcl/tcl7_6/win76p2.exe.
 
 
 INSTALLATION:
 
 The binary distribution consists in a .zip archive file. This .zip
-contains long filenames and cannot therefore be unpacked with pkunzip
-version 2. Use either Winzip (shareware) or the NT/95 version of unzip
-(freeware):
+contains long filenames and therefore cannot be unpacked with pkunzip.
+Use either Winzip (shareware) or the NT/95 version of unzip (freeware):
+
         ftp://ftp.winsite.com/pub/pc/winnt/misc/wznt56.exe
-        ftp://ftp.uu.net/pub/archiving/zip/WIN32/unz512xN.exe
+        ftp://ftp.uu.net/pub/archiving/zip/WIN32/unz531xN.exe
 
 Unzipping the distribution creates (among others) the following
 directories and files:
