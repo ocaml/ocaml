@@ -1,11 +1,11 @@
 all:
-	cd manual; make all
-#	cd fpcl; make all
+	cd manual; ${MAKE} all
+#	cd fpcl; ${MAKE} all
 
 clean:
-	cd manual; make clean
-#	cd fpcl; make clean
+	cd manual; ${MAKE} clean
+#	cd fpcl; ${MAKE} clean
 
 release:
-	cd manual; make release
-#	cd fpcl; make release
+	cd manual; ${MAKE} release
+#	cd fpcl; ${MAKE} release

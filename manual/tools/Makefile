@@ -3,7 +3,7 @@ CFLAGS=-g -O
 all: texquote2 transf htmlquote htmlgen dvi2txt
 
 dvi2txt:
-	cd dvi_to_txt; make
+	cd dvi_to_txt; ${MAKE}
 
 transf: transf.zo htmltransf.zo transfmain.zo
 	camlc -o transf -g transf.zo htmltransf.zo transfmain.zo
@@ -37,7 +37,7 @@ clean:
 	rm -f transf.ml latex.ml
 	rm -f *.o *.zi *.zo *.zix
 	rm -f *~ #*#
-	cd dvi_to_txt; make clean
+	cd dvi_to_txt; ${MAKE} clean
 
 latexmacros.zo: latexmacros.zi 
 latexmain.zo: latexscan.zo 
