@@ -1,0 +1,27 @@
+(function "cmp" (i: int j: int)
+  (- i j))
+
+(function "quick" (lo: int hi: int a: addr cmp: addr)
+  (if (< lo hi)
+      (let (i lo
+            j hi
+            pivot (addraref a hi))
+        (while (< i j)
+          (while (if (< i hi) (<= (app cmp [(addraref a i) pivot] int) 0) 0)
+            (assign i (+ i 1)))
+          (while (if (> j lo) (>= (app cmp [(addraref a j) pivot] int) 0) 0)
+            (assign j (- j 1)))
+          (if (< i j)
+              (let temp (addraref a i)
+                   (addraset a i (addraref a j))
+                   (addraset a j temp))
+            []))
+        (let temp (addraref a i)
+             (addraset a i (addraref a hi))
+             (addraset a hi temp))
+        (app "quick" [lo (- i 1) a cmp] unit)
+        (app "quick" [(+ i 1) hi a cmp] unit))
+    []))
+
+(function "quicksort" (lo: int hi: int a: addr)
+  (app "quick" [lo hi a "cmp"] unit))
