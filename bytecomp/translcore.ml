@@ -52,10 +52,10 @@ let comparisons_table = create_hashtable 11 [
        Pintcomp Cneq,
        Pfloatcomp Cneq,
        Pccall{prim_name = "string_notequal"; prim_arity = 2;
-              prim_alloc = false; prim_native_name = ""; 
+              prim_alloc = false; prim_native_name = "";
               prim_native_float = false});
   "%lessthan",
-      (Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = true; 
+      (Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Clt,
        Pfloatcomp Clt,
@@ -293,10 +293,10 @@ let rec push_defaults loc bindings pat_expr_list partial =
       push_defaults loc (cases :: bindings) [pat, e2] partial
   | [pat, exp] ->
       let exp =
-	List.fold_left
-	  (fun exp cases ->
-	    {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
-	  exp bindings
+        List.fold_left
+          (fun exp cases ->
+            {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
+          exp bindings
       in
       [pat, exp]
   | (pat, exp) :: _ when bindings <> [] ->
@@ -409,13 +409,13 @@ let rec transl_exp e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-	None -> Lconst(Const_pointer tag)
-      |	Some arg ->
-	  let lam = transl_exp arg in
-	  try
-	    Lconst(Const_block(0,[Const_pointer tag; extract_constant lam]))
-	  with Not_constant ->
-	    Lprim(Pmakeblock(0, Immutable), [Lconst(Const_pointer tag); lam])
+        None -> Lconst(Const_pointer tag)
+      | Some arg ->
+          let lam = transl_exp arg in
+          try
+            Lconst(Const_block(0,[Const_pointer tag; extract_constant lam]))
+          with Not_constant ->
+            Lprim(Pmakeblock(0, Immutable), [Lconst(Const_pointer tag); lam])
       end
   | Texp_record ((lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
       transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
@@ -526,34 +526,34 @@ and transl_apply lam sargs =
       None :: l ->
         let defs = ref [] in
         let protect name lam =
-	  match lam with
-	    Lvar _ | Lconst _ -> lam
-	  | _ ->
-	      let id = Ident.create name in
+          match lam with
+            Lvar _ | Lconst _ -> lam
+          | _ ->
+              let id = Ident.create name in
               defs := (id, lam) :: !defs;
               Lvar id
         in
-	let lam =
-	  if args = [] then lam else lapply lam (List.rev args) in
-	let handle = protect "func" lam
+        let lam =
+          if args = [] then lam else lapply lam (List.rev args) in
+        let handle = protect "func" lam
         and l = List.map (may_map (protect "arg")) l
-	and id_arg = Ident.create "param" in
-	let body =
-	  match build_apply handle [Lvar id_arg] l with
-	    Lfunction(Curried, ids, lam) ->
-	      Lfunction(Curried, id_arg::ids, lam)
-	  | Levent(Lfunction(Curried, ids, lam), _) ->
-	      Lfunction(Curried, id_arg::ids, lam)
-	  | lam ->
-	      Lfunction(Curried, [id_arg], lam)
-	in
+        and id_arg = Ident.create "param" in
+        let body =
+          match build_apply handle [Lvar id_arg] l with
+            Lfunction(Curried, ids, lam) ->
+              Lfunction(Curried, id_arg::ids, lam)
+          | Levent(Lfunction(Curried, ids, lam), _) ->
+              Lfunction(Curried, id_arg::ids, lam)
+          | lam ->
+              Lfunction(Curried, [id_arg], lam)
+        in
         List.fold_left
           (fun body (id, lam) -> Llet(Strict, id, lam, body))
           body !defs
     | Some arg :: l ->
-	build_apply lam (arg :: args) l
+        build_apply lam (arg :: args) l
     | [] ->
-	lapply lam (List.rev args)
+        lapply lam (List.rev args)
   in
   build_apply lam [] (List.map (may_map transl_exp) sargs)
 
@@ -562,21 +562,21 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
     [pat, ({exp_desc = Texp_function(pl,partial')} as exp)] ->
       let param = name_pattern "param" pat_expr_list in
       let ((_, params), body) =
-	transl_function exp.exp_loc false repr partial' pl in
+        transl_function exp.exp_loc false repr partial' pl in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
 (*
   | [({pat_desc = Tpat_var id} as pat),
      ({exp_desc = Texp_let(Nonrecursive, cases,
-			  ({exp_desc = Texp_function _} as e2))} as e1)]
+                          ({exp_desc = Texp_function _} as e2))} as e1)]
     when Ident.name id = "*opt*" ->
       transl_function loc untuplify_fn repr (cases::bindings) partial [pat, e2]
   | [pat, exp] when bindings <> [] ->
       let exp =
-	List.fold_left
-	  (fun exp cases ->
-	    {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
-	  exp bindings
+        List.fold_left
+          (fun exp cases ->
+            {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
+          exp bindings
       in
       transl_function loc untuplify_fn repr [] partial [pat, exp]
   | (pat, exp)::_ when bindings <> [] ->
@@ -627,7 +627,7 @@ and transl_let rec_flag pat_expr_list body =
   | Recursive ->
       let idlist =
         List.map
-          (fun (pat, expr) -> 
+          (fun (pat, expr) ->
             match pat.pat_desc with
               Tpat_var id -> id
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))

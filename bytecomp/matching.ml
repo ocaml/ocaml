@@ -134,7 +134,7 @@ let divide_constructor {cases = cl; args = al} =
 
 (* Matching against a variant *)
 
-let make_variant_matching_constant argl = 
+let make_variant_matching_constant argl =
   { cases = []; args = argl }
 
 let make_variant_matching_nonconst = function
@@ -296,16 +296,16 @@ let make_test_sequence check tst lt_tst arg const_lambda_list =
       split_sequence const_lambda_list
     else
       List.fold_right
-      	(fun (c, act) rem ->
-      	 if rem = Lstaticfail && not check then act else
-      	 Lifthenelse(Lprim(tst, [arg; Lconst(Const_base c)]), act, rem))
-      	const_lambda_list
+        (fun (c, act) rem ->
+         if rem = Lstaticfail && not check then act else
+         Lifthenelse(Lprim(tst, [arg; Lconst(Const_base c)]), act, rem))
+        const_lambda_list
         Lstaticfail
   and split_sequence const_lambda_list =
     let list1, list2 =
-      	  cut (List.length const_lambda_list / 2) const_lambda_list in
+          cut (List.length const_lambda_list / 2) const_lambda_list in
     Lifthenelse(Lprim(lt_tst,[arg; Lconst(Const_base (fst(List.hd list2)))]),
-      	       	make_test_sequence list1, make_test_sequence list2)
+                make_test_sequence list1, make_test_sequence list2)
   in make_test_sequence
       (Sort.list (fun (c1,_) (c2,_) -> c1 < c2) const_lambda_list)
 
@@ -374,15 +374,15 @@ let combine_constant arg cst (const_lambda_list, total1) (lambda2, total2) =
                            | _ -> assert false)
                    const_lambda_list in
         if List.for_all (fun (c, l) -> l = lambda_unit) const_lambda_list then
-          make_bitvect_check arg int_lambda_list 
+          make_bitvect_check arg int_lambda_list
         else
           make_switch_or_test_sequence true arg
-      	    const_lambda_list int_lambda_list
+            const_lambda_list int_lambda_list
     | Const_string _ ->
         make_test_sequence true prim_string_equal Praise arg const_lambda_list
     | Const_float _ ->
         make_test_sequence true (Pfloatcomp Ceq) (Pfloatcomp Clt)
-      	    arg const_lambda_list
+            arg const_lambda_list
   in (Lcatch(lambda1, lambda2), total2)
 
 let rec split_cases = function
@@ -402,7 +402,7 @@ let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
         (fun (ex, act) rem ->
            match ex with
            | Cstr_exception path ->
-               Lifthenelse(Lprim(Pintcomp Ceq, 
+               Lifthenelse(Lprim(Pintcomp Ceq,
                                  [Lprim(Pfield 0, [arg]); transl_path path]),
                            act, rem)
            | _ -> assert false)
@@ -440,8 +440,8 @@ let combine_variant row arg partial (tag_lambda_list, total1)
   if row.row_closed then
     List.iter
       (fun (_, f) ->
-	match Btype.row_field_repr f with
-	  Rabsent | Reither(true, _::_, _) -> ()
+        match Btype.row_field_repr f with
+          Rabsent | Reither(true, _::_, _) -> ()
         | _ -> incr num_constr)
       row.row_fields
   else
@@ -548,7 +548,7 @@ let rec compile_match repr partial m =
   | { cases = ([], action) :: rem; args = argl } ->
       if is_guarded action then begin
         let (lambda, total) =
-	  compile_match None partial { cases = rem; args = argl } in
+          compile_match None partial { cases = rem; args = argl } in
         (Lcatch(event_branch repr action, lambda), total)
       end else
         (event_branch repr action, true)
@@ -564,43 +564,43 @@ let rec compile_match repr partial m =
             begin match pat.pat_desc with
               Tpat_any ->
                 let (vars, others) = divide_var pm in
-		let partial' =
-		  if others.cases = [] then partial else Partial in
+                let partial' =
+                  if others.cases = [] then partial else Partial in
                 combine_var (compile_match repr partial' vars)
-			    (compile_match repr partial others)
+                            (compile_match repr partial others)
             | Tpat_constant cst ->
                 let (constants, others) = divide_constant pm in
-		let partial' =
-		  if others.cases = [] then partial else Partial in
+                let partial' =
+                  if others.cases = [] then partial else Partial in
                 combine_constant newarg cst
                   (compile_list partial' constants)
-		  (compile_match repr partial others)
+                  (compile_match repr partial others)
             | Tpat_tuple patl ->
                 let (tuples, others) = divide_tuple (List.length patl) pm in
-		let partial' =
-		  if others.cases = [] then partial else Partial in
+                let partial' =
+                  if others.cases = [] then partial else Partial in
                 combine_var (compile_match repr partial' tuples)
-			    (compile_match repr partial others)
+                            (compile_match repr partial others)
             | Tpat_construct(cstr, patl) ->
                 let (constrs, others) = divide_constructor pm in
-		let partial' =
-		  if others.cases = [] then partial else Partial in
+                let partial' =
+                  if others.cases = [] then partial else Partial in
                 combine_constructor newarg cstr
                   (compile_list partial' constrs)
-		  (compile_match repr partial others)
+                  (compile_match repr partial others)
             | Tpat_variant(lab, _, row) ->
                 let (constrs, others) = divide_variant row pm in
-		let partial' =
-		  if others.cases = [] then partial else Partial in
+                let partial' =
+                  if others.cases = [] then partial else Partial in
                 combine_variant row newarg partial'
                   (compile_list partial' constrs)
-		  (compile_match repr partial others)
+                  (compile_match repr partial others)
             | Tpat_record((lbl, _) :: _) ->
                 let (records, others) = divide_record lbl.lbl_all pm in
-		let partial' =
-		  if others.cases = [] then partial else Partial in
+                let partial' =
+                  if others.cases = [] then partial else Partial in
                 combine_var (compile_match repr partial' records)
-			    (compile_match repr partial others)
+                            (compile_match repr partial others)
             | Tpat_array(patl) ->
                 let kind = Typeopt.array_pattern_kind pat in
                 let (arrays, others) = divide_array kind pm in
@@ -610,14 +610,14 @@ let rec compile_match repr partial m =
             | Tpat_or(pat1, pat2) ->
                 (* Avoid duplicating the code of the action *)
                 let (or_match, remainder_line, others) = divide_orpat pm in
-		let partial' =
-		  if others.cases = [] then partial else Partial in
-		if partial' = Total then
-		  or_match.cases <- [[{ pat_desc = Tpat_any;
-					pat_loc = pat.pat_loc;
-					pat_type = pat.pat_type;
-					pat_env = pat.pat_env }],
-				      lambda_unit];
+                let partial' =
+                  if others.cases = [] then partial else Partial in
+                if partial' = Total then
+                  or_match.cases <- [[{ pat_desc = Tpat_any;
+                                        pat_loc = pat.pat_loc;
+                                        pat_type = pat.pat_type;
+                                        pat_env = pat.pat_env }],
+                                      lambda_unit];
                 combine_orpat (compile_match None Partial or_match)
                               (compile_match repr partial' remainder_line)
                               (compile_match repr partial others)
