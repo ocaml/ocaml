@@ -1009,9 +1009,10 @@ class texi =
       let filename =
 	if texi_filename <> "ocamldoc.texi"
 	then 
-	  (if Filename.check_suffix texi_filename ".texi"
-	  then Filename.chop_suffix texi_filename ".texi"
-	  else texi_filename) ^ ".info"
+	  let fn = Filename.basename texi_filename in
+	  (if Filename.check_suffix fn ".texi"
+	  then Filename.chop_suffix fn ".texi"
+	  else fn) ^ ".info"
 	else
 	  if title <> ""
 	  then title ^ ".info"
