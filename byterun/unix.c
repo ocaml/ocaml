@@ -176,6 +176,11 @@ void caml_dlclose(void * handle)
 
 void * caml_dlsym(void * handle, char * name)
 {
+#if DL_NEEDS_UNDERSCORE
+  char _name[1000] = "_";
+  strncat (_name, name, 998);
+  name = _name;
+#endif
   return dlsym(handle, name);
 }
 
