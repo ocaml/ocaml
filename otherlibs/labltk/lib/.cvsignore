@@ -3,3 +3,6 @@ labltktop labltk mltktop mltk
 *.ml
 *.mli
 modules
+labltk.cma
+labltk.cmxa
+
