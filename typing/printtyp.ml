@@ -108,7 +108,7 @@ let rec mark_loops_rec visited ty =
     if not (List.memq px !aliased) then
       aliased := px :: !aliased
   end else
-    let visited = ty :: visited in
+    let visited = px :: visited in
     match ty.desc with
       Tvar                -> ()
     | Tarrow(_, ty1, ty2) ->

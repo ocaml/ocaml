@@ -1038,7 +1038,7 @@ let rec occur_rec env visited ty0 ty =
            (see change in rev. 1.58) *)
         if ty' == ty0 || List.memq ty' visited then raise Occur;
         match ty'.desc with
-          Tobject _ -> ()
+          Tobject _ | Tvariant _ -> ()
         | _         -> iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
         raise Occur
@@ -1307,7 +1307,7 @@ and unify_row env row1 row2 =
     then row1.row_name
     else if row2.row_name <> None && (row2.row_closed || empty r1) &&
       (not row1.row_closed || keep (fun f1 f2 -> f2, f1) && empty r2)
-    then row1.row_name
+    then row2.row_name
     else None
   in
   let bound = row1.row_bound @ row2.row_bound in
