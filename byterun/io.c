@@ -67,7 +67,7 @@ CAMLexport struct channel * open_descriptor_in(int fd)
 
   channel = (struct channel *) stat_alloc(sizeof(struct channel));
   channel->fd = fd;
-  channel->offset = 0;
+  channel->offset = lseek (fd, 0, SEEK_CUR);
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   channel->mutex = NULL;
@@ -253,7 +253,7 @@ CAMLexport void really_putblock(struct channel *channel, char *p, long int len)
 CAMLexport void seek_out(struct channel *channel, file_offset dest)
 {
   flush(channel);
-  if (lseek(channel->fd, dest, 0) != dest) sys_error(NO_ARG);
+  if (lseek(channel->fd, dest, SEEK_SET) != dest) sys_error(NO_ARG);
   channel->offset = dest;
 }
 
@@ -264,11 +264,11 @@ CAMLexport long pos_out(struct channel *channel)
 
 /* Input */
 
-CAMLexport int do_read(int fd, char *p, unsigned int n)
+static int do_read(int fd, char *p, unsigned int n)
 {
   int retcode;
 
-  Assert(!Is_young((value) p));
+  /*Assert(!Is_young((value) p)); ** Is_young only applies to a true value */
   enter_blocking_section();
 #ifdef HAS_UI
   retcode = ui_read(fd, p, n);

@@ -63,7 +63,7 @@ struct channel {
 #define getch(channel)                                                      \
   ((channel)->curr >= (channel)->max                                        \
    ? refill(channel)                                                        \
-   : (unsigned char) *((channel))->curr++)
+   : (unsigned char) *((channel)->curr)++)
 
 CAMLextern struct channel * open_descriptor_in (int);
 CAMLextern struct channel * open_descriptor_out (int);
