@@ -543,6 +543,16 @@ else
   otherlibraries="$otherlibraries graph"
 fi
 
+# See if we can compile the dbm library
+
+if test -f /usr/include/ndbm.h
+then
+  echo "NDBM library found."
+  otherlibraries="$otherlibraries dbm"
+else
+  echo "NDBM not found, the \"dbm\" library will not be supported"
+fi
+
 # Finish generated files
 
 cclibs="$cclibs -lm"
