@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-value version = "3.02.1-exp";
+value version = Config.version;
 
 value gram =
   Grammar.create
