@@ -1005,9 +1005,18 @@ let rec occur_rec env visited ty0 ty =
   | _ ->
       iter_type_expr (occur_rec env visited ty0) ty
 
+let type_changed = ref false (* trace possible changes to the studied type *)
+
 let occur env ty0 ty =
-  if not !Clflags.recursive_types then 
-    try occur_rec env [] ty0 ty with Occur -> raise (Unify [])
+  if not !Clflags.recursive_types then
+    let old = !type_changed in
+    try
+      while type_changed := false; occur_rec env [] ty0 ty; !type_changed
+      do () (* prerr_endline "changed" *) done;
+      type_changed := old
+    with exn ->
+      type_changed := old;
+      raise (match exn with Occur -> Unify [] | _ -> exn)
 
 
                               (*****************)
@@ -1079,6 +1088,7 @@ let rec unify env t1 t2 =
   if t1 == t2 then () else
 
   try
+    type_changed := true;
     match (t1.desc, t2.desc) with
       (Tvar, Tconstr _) when deep_occur t1 t2 ->
         unify2 env t1 t2
