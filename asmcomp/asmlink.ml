@@ -35,6 +35,7 @@ exception Error of error
 
 let crc_interfaces = Consistbl.create ()
 let crc_implementations = Consistbl.create ()
+let extra_implementations = ref []
 
 let check_consistency file_name unit crc =
   begin try
@@ -50,7 +51,9 @@ let check_consistency file_name unit crc =
   begin try
     List.iter
       (fun (name, crc) ->
-        if crc <> cmx_not_found_crc then
+        if crc = cmx_not_found_crc then
+          extra_implementations := name :: !extra_implementations
+        else
           Consistbl.check crc_implementations name crc file_name)
       unit.ui_imports_cmx
   with Consistbl.Inconsistency(name, user, auth) ->
@@ -66,7 +69,11 @@ let check_consistency file_name unit crc =
 let extract_crc_interfaces () =
   Consistbl.extract crc_interfaces
 let extract_crc_implementations () = 
-  Consistbl.extract crc_implementations
+  List.fold_left
+    (fun ncl n ->
+      if List.mem_assoc n ncl then ncl else (n, cmx_not_found_crc) :: ncl)
+    (Consistbl.extract crc_implementations)
+    !extra_implementations
 
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
