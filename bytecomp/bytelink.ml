@@ -44,6 +44,7 @@ let lib_ccopts = ref []
 
 let add_ccobjs l =
   if not !Clflags.no_auto_link && String.length !Clflags.use_runtime = 0
+     && String.length !Clflags.use_prims = 0
   then begin
     if l.lib_custom then Clflags.custom_runtime := true;
     lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
