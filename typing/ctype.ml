@@ -852,6 +852,7 @@ let rec inv_type hash pty ty =
     iter_type_expr (inv_type hash [inv]) ty
 
 let compute_univars env tyl =
+  (* prerr_endline "computing"; *)
   let inverted = TypeHash.create 17 in
   List.iter (inv_type inverted []) tyl;
   let node_univars = TypeHash.create 17 in
@@ -880,18 +881,23 @@ let compute_univars env tyl =
                   let env =
                     match env with None -> assert false | Some e -> e in
                   begin try
+                    (* possible unification: perte de l'unicite' *)
                     let ty = !try_expand_head' env invp.inv_type in
-                    inv_type inverted [] ty
+                    (* prerr_endline "expanding"; *)
+                    inv_type inverted [] ty;
+                    compute ()
                   with Cannot_expand -> ()
                   end
               | _ -> ())
             inv.inv_parents;
         if ok then
           List.iter (add_univar univ) inv.inv_parents
+  and compute () =
+    TypeHash.iter
+      (fun ty inv -> if ty.desc = Tunivar then add_univar ty inv)
+      inverted
   in
-  TypeHash.iter
-    (fun ty inv -> if ty.desc = Tunivar then add_univar ty inv)
-    inverted;
+  compute ();
   node_univars
 
 let get_univars node_univars ty =
@@ -1301,20 +1307,23 @@ let occur_univar ty =
 
 let univar_pairs = ref ([], TypeHash.create 1)
 
+let count_univars ts =
+  TypeSet.fold (fun ty n -> if ty.desc = Tunivar then n+1 else n) ts 0
+
 let get_update_univars env free ty =
-  let n = TypeSet.cardinal (get_univars free ty) in
+  let n = count_univars (get_univars free ty) in
   if n <> 0 then n else
   let new_free = compute_univars (Some env) [ty] in
   TypeHash.iter (fun a b -> TypeHash.add free a b) new_free;
-  TypeSet.cardinal (get_univars new_free ty)
+  count_univars (get_univars new_free ty)
 
 let add_univars env (old_univars, old_free) t1 t2 tl1 tl2 =
   if List.length tl1 <> List.length tl2 then raise (Unify []);
-  let old_univars, old_free = !univar_pairs in
   let free =
     if old_univars = [] then compute_univars (Some env) [t1; t2] else
     let n1 = get_update_univars env old_free t1
     and n2 = get_update_univars env old_free t2 in
+    (* Printf.eprintf "(Tpoly %d, Tpoly %d)\n" n1 n2; flush stderr; *)
     if n1 <> n2 then raise (Unify[]) else old_free
   in
   let cl1 = List.map (fun t -> t, ref None) tl1
