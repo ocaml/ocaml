@@ -50,7 +50,7 @@ EXE=.exe
 BYTECC=gcc -mno-cygwin
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-O -fnative-struct -Wall -Wno-unused
+BYTECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
@@ -92,7 +92,7 @@ SYSTEM=mingw
 NATIVECC=$(BYTECC)
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-O -fnative-struct -Wall -Wno-unused
+NATIVECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=
@@ -113,6 +113,7 @@ BIGNUM_ARCH=C
 
 ### Configuration for LablTk
 # Set TK_ROOT to the directory where you installed TCL/TK 8.3
+# There must be no spaces or special characters in $(TK_ROOT)
 TK_ROOT=c:/tcl
 TK_DEFS=-I$(TK_ROOT)/include
 TK_LINK=$(TK_ROOT)/lib/tk83.lib $(TK_ROOT)/lib/tcl83.lib
