@@ -10,7 +10,7 @@ CAMLP4RM=pa_r.cmo pa_rp.cmo pr_dump.cmo
 CAMLP4RMX=$(CAMLP4RM:.cmo=.cmx)
 SHELL=/bin/sh
 COUT=$(OBJS) camlp4r$(EXE)
-COPT=camlp4r.opt
+COPT=$(OBJSX) camlp4r.opt
 
 all: $(COUT)
 opt: $(COPT)

@@ -8,7 +8,6 @@ OBJS=q_phony.cmo pa_o.cmo pa_op.cmo pa_oop.cmo pa_ru.cmo pa_format.cmo pa_olabl.
 OBJSX=$(OBJS:.cmo=.cmx)
 INTF=pa_o.cmi
 CAMLP4OM=pa_o.cmo pa_op.cmo ../meta/pr_dump.cmo
-#CAMLP4OMX=pa_o.cmx pa_op.cmx ../meta/pr_dump.cmx
 CAMLP4OMX=$(CAMLP4OM:.cmo=.cmx)
 CAMLP4SCHM=pa_scheme.cmo ../meta/pr_dump.cmo
 SHELL=/bin/sh
@@ -26,6 +25,15 @@ pr_op.cmo: parserify.cmo pr_op_main.cmo
 
 pr_schemep.cmo: parserify.cmo pr_schp_main.cmo
 	$(OCAMLC) parserify.cmo pr_schp_main.cmo -a -o $@
+
+pr_rp.cmx: parserify.cmx pr_rp_main.cmx
+	$(OCAMLOPT) parserify.cmx pr_rp_main.cmx -a -o $@
+
+pr_op.cmx: parserify.cmx pr_op_main.cmx
+	$(OCAMLOPT) parserify.cmx pr_op_main.cmx -a -o $@
+
+pr_schemep.cmx: parserify.cmx pr_schp_main.cmx
+	$(OCAMLOPT) parserify.cmx pr_schp_main.cmx -a -o $@
 
 camlp4o$(EXE): ../camlp4/camlp4$(EXE) $(CAMLP4OM)
 	rm -f camlp4o$(EXE)

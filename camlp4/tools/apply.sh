@@ -11,7 +11,7 @@ while test "" != "$1"; do
         shift
 done
 
-head -1 $FILE >/dev/null || exit 1
+head -1 $FILE >/dev/null 2>&1 || exit 1
 
 set - `head -1 $FILE`
 if test "$2" = "camlp4r" -o "$2" = "camlp4"; then

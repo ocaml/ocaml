@@ -1,4 +1,4 @@
-
+(* camlp4r pa_extend.cmo *)
 (****************************************)
 
 value interf_p =
