@@ -45,6 +45,9 @@ val from_function : (unit -> char) -> scanbuf;;
 val end_of_input : scanbuf -> bool;;
 (** [Scanning.end_of_input scanbuf] tests the end of input condition
     of the given buffer. *)
+val begin_of_input : scanbuf -> bool;;
+(** [Scanning.begin_of_input scanbuf] tests the begin of input condition
+    of the given buffer. *)
 
 end;;
 
@@ -114,7 +117,8 @@ val bscanf :
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
      [\[^\]\]] matches any character that is not [\]].
-   - [N]: applies [f] to the number of characters read so far.
+   - [n]: applies [f] to the number of characters read so far.
+   - [N]: applies [f] to the number of tokens read so far.
    - [%]: matches one [%] character in the input.
 
    The field widths are composed of an optional integer literal

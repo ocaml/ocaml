@@ -65,6 +65,10 @@ val end_of_input : scanbuf -> bool;;
 (** [Scanning.end_of_input scanbuf] tests the end of input condition
     of the given buffer. *)
 
+val begin_of_input : scanbuf -> bool;;
+(** [Scanning.begin_of_input scanbuf] tests the begin of input condition
+    of the given buffer. *)
+
 val from_string : string -> scanbuf;;
 val from_channel : in_channel -> scanbuf;;
 val from_function : (unit -> char) -> scanbuf;;
@@ -110,6 +114,7 @@ let cautious_peek_char ib =
 
 let peek_char ib = ib.cur_char;;
 let end_of_input ib = ib.eof;;
+let begin_of_input ib = ib.bof;;
 let char_count ib = ib.char_count;;
 let reset_token ib = Buffer.reset ib.tokbuf;;
 
@@ -134,7 +139,7 @@ let create next =
     cur_char = '\000';
     char_count = 0;
     get_next_char = next;
-    tokbuf = Buffer.create 10;
+    tokbuf = Buffer.create 1024;
     token_count = 0;
     } in
   ib;;
@@ -182,15 +187,14 @@ let bad_format fmt i fc =
 (* Checking that the current char is indeed one of range, then skip it. *)
 let check_char_in ib range =
   let ci = Scanning.checked_peek_char ib in
-  if List.mem ci range then Scanning.next_char ib
-  else bad_input
-        (Printf.sprintf "looking for one of %s, found %c" "a range" ci);;
+  if List.mem ci range then Scanning.next_char ib else
+  bad_input (Printf.sprintf "looking for one of %s, found %c" "a range" ci);;
 
 (* Checking that [c] is indeed in the input, then skip it. *)
 let check_char ib c =
   let ci = Scanning.checked_peek_char ib in
-  if ci = c then Scanning.next_char ib
-  else bad_input (Printf.sprintf "looking for %c, found %c" c ci);;
+  if ci = c then Scanning.next_char ib else
+  bad_input (Printf.sprintf "looking for %c, found %c" c ci);;
 
 (* Extracting tokens from ouput token buffer. *)
 
@@ -371,8 +375,7 @@ let scan_string stp max ib =
     loop (Scanning.store_char ib c max) in
   let max = loop max in
   if stp <> [] then check_char_in ib stp;
-  max
-;;
+  max;;
 
 (* Scan a char: peek strictly one character in the input, whatsoever. *)
 let scan_char max ib =
@@ -623,19 +626,25 @@ let kscanf ib ef fmt f =
     | 'B' ->
         let x = scan_bool max ib in
         scan_fmt (stack f (token_bool ib)) (i + 1)
+    | 'n' when i = lim ->
+        let x = Scanning.char_count ib in
+        scan_fmt (stack f x) (i + 1)
     | 'l' | 'n' | 'L' as t ->
         let i = i + 1 in
-        if i > lim then bad_format fmt (i - 1) t else begin
-        match fmt.[i] with
+        if i > lim then bad_format fmt (i - 1) t else
+        begin match fmt.[i] with
         | 'b' | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
             let x = scan_int conv max ib in
             begin match t with
             | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
             | 'L' -> scan_fmt (stack f (token_int64 conv ib)) (i + 1)
             | _ -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1) end
-        | c -> bad_format fmt i c end
+        | c ->
+            let x = Scanning.char_count ib in
+            scan_fmt (stack f x) i
+        end
     | 'N' ->
-        let x = Scanning.char_count ib in
+        let x = Scanning.token_count ib in
         scan_fmt (stack f x) (i + 1)
     | 'r' ->
         Obj.magic (fun reader arg ->

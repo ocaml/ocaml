@@ -138,6 +138,12 @@ let extract_format fmt start stop widths =
               Buffer.add_char b c; fill_format (succ i) w
       in fill_format start (List.rev widths)
 
+let format_int_with_conv conv fmt i =
+   match conv with
+   | 'b' -> format_binary_int fmt i
+   | 'n' | 'N' -> fmt.[String.length fmt - 1] <- 'u'; format_int fmt i
+   | _ -> format_int fmt i
+
 (* Decode a %format and act on it.
    [fmt] is the printf format style, and [pos] points to a [%] character.
    After consuming the appropriate number of arguments and formatting
@@ -178,13 +184,11 @@ let scan_format fmt pos cont_s cont_a cont_t =
           if conv = 'c'
           then cont_s (String.make 1 c) (succ i)
           else cont_s ("'" ^ Char.escaped c ^ "'") (succ i))
-    | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' as conv ->
+    | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' as conv ->
         Obj.magic(fun (n: int) ->
-          cont_s (
-            if conv = 'b'
-            then format_binary_int (extract_format fmt pos i widths) n
-            else format_int (extract_format fmt pos i widths) n)
-            (succ i))
+          cont_s (format_int_with_conv conv
+                    (extract_format fmt pos i widths) n)
+                 (succ i))
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' as conv ->
         Obj.magic(fun (f: float) ->
           let s =
@@ -218,7 +222,11 @@ let scan_format fmt pos cont_s cont_a cont_t =
                         n)
                      (i + 2))
         | _ ->
-            bad_format fmt pos
+            Obj.magic(fun (n: int) ->
+              cont_s (format_int_with_conv 'n'
+                        (extract_format fmt pos i widths)
+                        n)
+                     (succ i))
         end
     | 'L' ->
         begin match String.unsafe_get fmt (succ i) with
