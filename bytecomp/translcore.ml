@@ -371,6 +371,17 @@ let rec transl_exp e =
       | Cstr_exception path ->
           Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
       end
+  | Texp_variant(l, arg) ->
+      let tag = Btype.hash_variant l in
+      begin match arg with
+	None -> Lconst(Const_pointer tag)
+      |	Some arg ->
+	  let lam = transl_exp arg in
+	  try
+	    Lconst(Const_block(0,[Const_pointer tag; extract_constant lam]))
+	  with Not_constant ->
+	    Lprim(Pmakeblock(0, Immutable), [Lconst(Const_pointer tag); lam])
+      end
   | Texp_record ((lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
       transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
   | Texp_field(arg, lbl) ->

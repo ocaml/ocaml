@@ -490,6 +490,16 @@ let rec iter_generalize tyl ty =
     begin match ty.desc with
       Tconstr (_, _, abbrev) ->
         generalize_expans tyl !abbrev
+    | Tvariant row
+      when (repr row.row_more).level > !current_level || static_row row ->
+	let row = row_repr row in
+	let bound =
+	  List.fold_left
+	    (fun acc (_,f) ->
+	      match row_field_repr f with Reither(l,_) -> l@acc | _ -> acc)
+	    [] row.row_fields in
+	let row = {row with row_bound = bound} in
+	ty.desc <- Tvariant row;
     | _ -> ()
     end;
     iter_type_expr (iter_generalize tyl) ty
@@ -712,12 +722,13 @@ let rec copy ty =
 		may_map (fun (p,l) -> p, List.map copy l) row.row_name in
 	      let var = newty (
 		Tvariant { row_fields = fields; row_more = newvar();
+			   row_bound = List.map copy row.row_bound;
 			   row_closed = row.row_closed; row_name = name }
 	       ) in
 	      (* Remember it for other occurences *)
 	      save_desc more more.desc;
 	      more.desc <- Tsubst var;
-	      Tsubst var
+	      Tlink var
 	  end
       | Tfield (label, kind, t1, t2) ->
           begin match field_kind_repr kind with
@@ -1242,34 +1253,35 @@ and unify_kind k1 k2 =
 
 and unify_row env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
-  let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   let rm1 = row_more row1 and rm2 =row_more row2 in
+  if rm1 == rm2 then () else
+  let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   let more = newty2 (min rm1.level rm2.level) Tvar
   and closed = row1.row_closed || row2.row_closed in
   let name =
     if r1 = [] && row2.row_name <> None then row2.row_name else
     if r2 = [] then row1.row_name else None
   in
-  let row0 = {row_fields = []; row_more = more;
+  let bound = row1.row_bound @ row2.row_bound in
+  let row0 = {row_fields = []; row_more = more; row_bound = bound;
 	      row_closed = closed; row_name = name} in
-  let more row rm rest =
+  let more row rest =
     let rest =
       if closed then filter_row_fields row.row_closed rest else rest in
-    if rest = [] && row.row_closed == closed && row.row_name == name then
-      more
-    else if rest <> [] && row.row_closed then raise (Unify []) else
+    if rest <> [] && row.row_closed then raise (Unify []);
     let ty =
       newty2 generic_level (Tvariant {row0 with row_fields = rest}) in
-    update_level env rm.level ty;
+    update_level env (repr row.row_more).level ty;
     ty
   in
   let md1 = rm1.desc and md2 = rm2.desc in
   begin try
-    rm1.desc <- Tlink (more row1 rm1 r2);
-    rm2.desc <- Tlink (more row2 rm2 r1);
+    rm1.desc <- Tlink (more row1 r2);
+    rm2.desc <- Tlink (more row2 r1);
     List.iter
-      (fun (_,f1,f2) ->
+      (fun (l,f1,f2) ->
 	let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
+	if f1 == f2 then () else
 	match f1, f2 with
 	  Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
 	| Rpresent None, Rpresent None -> ()
@@ -1283,13 +1295,14 @@ and unify_row env row1 row2 =
 		tl [] in
 	    let f = Reither(tl, ref None) in
 	    e1 := Some f; e2 := Some f
-	| Reither([], e1), Reither([], _) -> e1 := Some f2
+	| Reither([], e1), Reither([], e2) -> e1 := Some f2
 	| Reither(_, e1), Reither(_, e2) ->
 	    e1 := Some Rabsent; e2 := Some Rabsent
 	| Reither(_::_ as tl, e1), Rpresent(Some t2) ->
 	    e1 := Some f2; List.iter (fun t1 -> unify env t1 t2) tl
 	| Rpresent(Some t), Reither(_::_ as tl, e2) ->
-	    e2 := Some f1; List.iter (unify env t) tl
+	    e2 := Some f1;
+	    (try List.iter (unify env t) tl with exn -> e2 := None; raise exn)
 	| Reither([], e1), Rpresent None -> e1 := Some f2
 	| Rpresent None, Reither([], e2) -> e2 := Some f1
 	| Reither(_, e1), Rabsent -> e1 := Some f2
@@ -2240,6 +2253,7 @@ let rec nondep_type_rec env id ty =
 	      Tlink ty2
 	  | _ ->
 	      (* We create a new copy *)
+	      let bound = ref [] in
 	      let fields =
 		List.map
 		  (fun (l,fi) -> l,
@@ -2247,7 +2261,9 @@ let rec nondep_type_rec env id ty =
 		      Rpresent (Some ty) ->
 			Rpresent(Some (nondep_type_rec env id ty))
 		    | Reither(l, _) ->
-			Reither(List.map (nondep_type_rec env id) l, ref None)
+			let l = List.map (nondep_type_rec env id) l in
+			bound := l @ !bound;
+			Reither(l, ref None)
 		    | fi -> fi)
 		  row.row_fields
 	      and name =
@@ -2258,6 +2274,7 @@ let rec nondep_type_rec env id ty =
 	      in
 	      let var = newgenty (
 		Tvariant { row_fields = fields; row_more = newgenvar();
+			   row_bound = !bound;
 			   row_closed = row.row_closed; row_name = name }
 	       ) in
 	      (* Remember it for other occurences *)

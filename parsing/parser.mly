@@ -955,6 +955,8 @@ pattern:
       { mkpat(Ppat_tuple(List.rev $1)) }
   | constr_longident pattern %prec prec_constr_appl
       { mkpat(Ppat_construct($1, Some $2, false)) }
+  | name_tag pattern %prec prec_constr_appl
+      { mkpat(Ppat_variant($1, Some $2)) }
   | pattern COLONCOLON pattern
       { mkpat(Ppat_construct(Lident "::", Some(ghpat(Ppat_tuple[$1;$3])),
                              false)) }
@@ -972,6 +974,8 @@ simple_pattern:
       { mkrangepat $1 $3 }
   | constr_longident
       { mkpat(Ppat_construct($1, None, false)) }
+  | name_tag
+      { mkpat(Ppat_variant($1, None)) }
   | LBRACE lbl_pattern_list opt_semi RBRACE
       { mkpat(Ppat_record(List.rev $2)) }
   | LBRACE lbl_pattern_list opt_semi error

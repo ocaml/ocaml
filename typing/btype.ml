@@ -106,7 +106,9 @@ let rec iter_row f row =
     row.row_fields;
   match (repr row.row_more).desc with
     Tvariant row -> iter_row f row
-  | Tvar -> Misc.may (fun (_,l) -> List.iter f l) row.row_name
+  | Tvar ->
+      Misc.may (fun (_,l) -> List.iter f l) row.row_name;
+      List.iter f row.row_bound
   | _ -> assert false
 
 let iter_type_expr f ty =
@@ -122,7 +124,7 @@ let iter_type_expr f ty =
   | Tfield (_, _, ty1, ty2) -> f ty1; f ty2
   | Tnil                -> ()
   | Tlink ty            -> f ty
-  | Tsubst _		-> assert false
+  | Tsubst ty		-> assert false; f ty
 
 let saved_desc = ref []
   (* Saved association of generic nodes with their description. *)

@@ -112,18 +112,23 @@ let rec typexp s ty =
 	      Tlink ty2
 	  | _ ->
 	      (* We create a new copy *)
+	      let bound = ref [] in
 	      let fields =
 		List.map
 		  (fun (l,fi) -> l,
 		    match row_field_repr fi with
 		      Rpresent (Some ty) -> Rpresent(Some (typexp s ty))
-		    | Reither(l, _) -> Reither(List.map (typexp s) l, ref None)
+		    | Reither(l, _) ->
+			let l = List.map (typexp s) l in
+			bound := l @ !bound;
+			Reither(l, ref None)
 		    | fi -> fi)
 		  row.row_fields
 	      and name =
 		may_map (fun (p,l) -> p, List.map (typexp s) l) row.row_name in
 	      let var =	newgenty (
 		Tvariant { row_fields = fields; row_more = newgenvar();
+			   row_bound = !bound;
 			   row_closed = row.row_closed; row_name = name }
 	       ) in
 	      (* Remember it for other occurences *)

@@ -150,6 +150,7 @@ let rec type_pat env sp =
       let arg = may_map (type_pat env) sarg in
       let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
       let row = { row_fields = [l, Reither(arg_type,ref None)];
+		  row_bound = arg_type;
 		  row_closed = false;
 		  row_more = newvar ();
 		  row_name = None } in
@@ -486,6 +487,7 @@ let rec type_exp env sexp =
 	exp_loc = sexp.pexp_loc;
 	exp_type= newty (Tvariant{row_fields = [l, Rpresent arg_type];
 				  row_more = newvar ();
+				  row_bound = [];
 				  row_closed = false;
 				  row_name = None});
 	exp_env = env }

@@ -84,11 +84,18 @@ let remove_name_of_type t =
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)
 
+let proxy ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tvariant row -> Btype.row_more row
+  | _ -> ty
+
 let rec mark_loops_rec visited ty =
   let ty = repr ty in
-  if List.memq ty visited then begin
-    if not (List.memq ty !aliased) then
-      aliased := ty :: !aliased
+  let px = proxy ty in
+  if List.memq px visited then begin
+    if not (List.memq px !aliased) then
+      aliased := px :: !aliased
   end else
     let visited = ty :: visited in
     match ty.desc with
@@ -99,26 +106,24 @@ let rec mark_loops_rec visited ty =
     | Tconstr(_, tyl, _)  ->
         List.iter (mark_loops_rec visited) tyl
     | Tvariant row	  ->
-	let row = row_repr row in
-	let rm = row_more row in
-        if List.memq rm !visited_objects then begin
-          if not (List.memq ty !aliased) then
-            aliased := ty :: !aliased
+        if List.memq px !visited_objects then begin
+          if not (List.memq px !aliased) then
+            aliased := px :: !aliased
         end else begin
           if not (static_row row) then
-            visited_objects := rm :: !visited_objects;
-	  (* match row.row_name with
+            visited_objects := px :: !visited_objects;
+	  match row.row_name with
 	    Some(p, tyl) -> List.iter (mark_loops_rec visited) tyl
-	  | None -> *)
-	  iter_row (mark_loops_rec visited) row
+	  | None ->
+	      iter_row (mark_loops_rec visited) row
 	end
     | Tobject (fi, nm)    ->
-        if List.memq ty !visited_objects then begin
-          if not (List.memq ty !aliased) then
-            aliased := ty :: !aliased
+        if List.memq px !visited_objects then begin
+          if not (List.memq px !aliased) then
+            aliased := px :: !aliased
         end else begin
           if opened_object ty then
-            visited_objects := ty :: !visited_objects;
+            visited_objects := px :: !visited_objects;
           let name =
             match !nm with
               None -> None
@@ -144,7 +149,8 @@ let rec mark_loops_rec visited ty =
     | Tfield(_, _, _, ty2) ->
         mark_loops_rec visited ty2
     | Tnil                -> ()
-    | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
+    | Tsubst ty		  ->  mark_loops_rec visited ty
+    | Tlink _		  -> fatal_error "Printtyp.mark_loops_rec (2)"
 
 let mark_loops ty = mark_loops_rec [] ty
 
@@ -167,15 +173,16 @@ let rec print_list pr sep = function
 
 let rec typexp sch prio0 ty =
   let ty = repr ty in
-  if List.mem_assq ty !names then begin
-    if (ty.desc = Tvar) && sch && (ty.level <> generic_level)
+  let px = proxy ty in
+  if List.mem_assq px !names then begin
+    if (px.desc = Tvar) && sch && (px.level <> generic_level)
     then print_string "'_"
     else print_string "'";
-    print_name_of_type ty
+    print_name_of_type px
   end else begin
-    let alias = List.memq ty !aliased in
+    let alias = List.memq px !aliased in
     if alias then begin
-      check_name_of_type ty;
+      check_name_of_type px;
       if prio0 >= 1 then begin open_box 1; print_string "(" end
       else open_box 0
     end;
@@ -219,56 +226,56 @@ let rec typexp sch prio0 ty =
         end;
         path p;
         close_box()
+    | Tvariant ({row_name=Some(p,tyl)} as row) when static_row row ->
+	typexp sch prio (newty(Tconstr(p, tyl, ref Mnil)))
     | Tvariant row ->
 	let row = row_repr row in
-	if static_row row then begin
-	  let fields =
+	let fields =
+	  if row.row_closed then
 	    List.filter (fun (_,f) -> row_field_repr f <> Rabsent)
 	      row.row_fields
-	  in
-	  open_hvbox 0;
-	  print_char '[';
-	  print_list (row_field sch) (fun () -> printf "@ | ") fields;
-	  print_char ']';
+	  else row.row_fields
+	in
+	let present =
+	  List.filter
+	    (fun (_,f) -> match row_field_repr f with
+	    | Rpresent _ -> true
+	    | _ -> false)
+	    fields in
+	let all_present = List.length present = List.length fields in
+	open_hovbox 0;
+	print_char '[';
+	if row.row_closed && all_present then () else
+	if row.row_closed then print_char '<' else
+	if all_present then print_char '>';
+	print_list (row_field sch) (fun () -> printf "@ |") fields;
+	if present <> [] && not all_present then begin
+	  print_space ();
+	  open_hovbox 2;
+	  print_string "|>";
+	  print_list (fun (s,_) -> print_char '`'; print_string s)
+	    print_space present;
 	  close_box ()
-	end else if row.row_closed then begin
-	  let fields =
-	    List.filter (fun (_,f) -> row_field_repr f <> Rabsent)
-	      row.row_fields
-	  in
-	  open_hvbox 0;
-	  print_string "[<";
-	  print_list (row_field sch) (fun () -> printf "@ | ") fields;
-	  let present =
-	    List.filter
-	      (fun (_,f) -> match row_field_repr f with
-	      |	Rpresent _ -> true
-	      | _ -> false)
-	      fields in
-	  if present <> [] then begin
-	    print_space ();
-	    print_string "> ";
-	    print_list (fun (s,_) -> print_char '`'; print_string s)
-	      print_space present;
-	  end;
-	  print_char ']';
-	  close_box ()
-	end
+	end;
+	print_char ']';
+	close_box ()
     | Tobject (fi, nm) ->
         typobject sch ty fi nm
 (*
 | Tfield _ -> typobject sch ty ty (ref None)
 | Tnil -> typobject sch ty ty (ref None)
 *)
+    | Tsubst ty ->
+	typexp sch prio ty
     | _ ->
         fatal_error "Printtyp.typexp"
     end;
     if alias then begin
       print_string " as ";
       print_string "'";
-      print_name_of_type ty;
-      if not (opened_object ty) then
-        remove_name_of_type ty;
+      print_name_of_type px;
+      (* if not (opened_object ty) then
+        remove_name_of_type px; *)
       if prio0 >= 1 then print_string ")";
       close_box()
     end
@@ -279,11 +286,13 @@ and row_field sch (l,f) =
   open_box 2;
   print_char '`';
   print_string l;
-  match row_field_repr f with
+  begin match row_field_repr f with
     Rpresent None | Reither([], _) -> ()
   | Rpresent(Some ty) -> print_space (); typexp sch 0 ty
   | Reither(tyl,_) -> print_space (); typlist sch 0 " &" tyl
   | Rabsent -> print_space (); print_string "[]"
+  end;
+  close_box ()
 
 and typlist sch prio sep = function
     [] -> ()

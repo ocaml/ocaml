@@ -181,15 +181,26 @@ let full_match tdefs force env =
       let fields =
 	List.map
           (fun (pat,_) -> match pat.pat_desc with
-	    Tpat_variant (tag, opt, _) ->
-	      let tl =
-		if opt = None then [] else [Ctype.newvar()] in
-	      (tag, Reither(tl, ref None))
+	    Tpat_variant (tag, _, row) ->
+	      let row = Btype.row_repr row in
+	      begin try
+		(tag, Btype.row_field_repr (List.assoc tag row.row_fields))
+	      with Not_found ->
+		prerr_endline ("Hidden tag " ^ tag ^ "\n\n");
+		(tag, Rabsent)
+	      end
           | _ -> fatal_error "Parmatch.full_match")
 	  env
       in
+      let bound =
+	List.fold_left
+	  (fun bound (tag,f) ->
+	    if f = Rabsent then prerr_endline ("Hidden tag " ^ tag ^ "\n\n");
+	    match f with Reither(tl,_) -> tl @ bound | _ -> bound)
+	[] fields in
       if force then
 	let row = { row_fields = fields; row_more = Ctype.newvar();
+		    row_bound = bound;
 		    row_closed = true; row_name = None }
 	in
 	try  Ctype.unify tdefs ty (Ctype.newty (Tvariant row)); true
