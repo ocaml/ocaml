@@ -198,6 +198,17 @@ static void intern_rec(value *dest)
         tag = Tag_hd(header);
         size = Wosize_hd(header);
         goto read_block;
+      case CODE_BLOCK64:
+#ifdef ARCH_SIXTYFOUR
+        header = (header_t) read64s();
+        tag = Tag_hd(header);
+        size = Wosize_hd(header);
+        goto read_block;
+#else
+        intern_cleanup();
+        failwith("input_value: data block too large");
+        break;
+#endif
       case CODE_STRING8:
         len = read8u();
         goto read_string;

@@ -353,6 +353,10 @@ static void extern_rec(value v)
       mlsize_t i;
       if (tag < 16 && sz < 8) {
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
+#ifdef ARCH_SIXTYFOUR
+      } else if (hd >= (1UL << 32)) {
+        writecode64(CODE_BLOCK64, Whitehd_hd (hd));
+#endif
       } else {
         writecode32(CODE_BLOCK32, Whitehd_hd (hd));
       }
@@ -409,15 +413,16 @@ static long extern_value(value v, value flags)
   /* Free the table of shared objects (if needed) */
   free_extern_table();
   /* Write the sizes */
+  res_len = extern_ptr - extern_block;
 #ifdef ARCH_SIXTYFOUR
-  if (size_32 >= (1L << 32) || size_64 >= (1L << 32)) {
+  if (res_len >= (1L << 32) ||
+      size_32 >= (1L << 32) || size_64 >= (1L << 32)) {
     /* The object is so big its size cannot be written in the header.
-       Besides, some of the block sizes or string lengths or shared offsets
+       Besides, some of the array lengths or string lengths or shared offsets
        it contains may have overflowed the 32 bits used to write them. */
     failwith("output_value: object too big");
   }
 #endif
-  res_len = extern_ptr - extern_block;
   extern_ptr = extern_block + 4;
   write32(res_len - 5*4);
   write32(obj_counter);

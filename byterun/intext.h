@@ -41,6 +41,7 @@
 #define CODE_SHARED16 0x5
 #define CODE_SHARED32 0x6
 #define CODE_BLOCK32 0x8
+#define CODE_BLOCK64 0x13
 #define CODE_STRING8 0x9
 #define CODE_STRING32 0xA
 #define CODE_DOUBLE_BIG 0xB
