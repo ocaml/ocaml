@@ -73,7 +73,8 @@ let output_entry ic oc e =
       copy_chunk ic oc loc;
       fprintf oc ")\n")
     e.auto_actions;
-  fprintf oc "  | _ -> failwith \"%s: empty token\"\n\n" e.auto_name
+  fprintf oc "  | _ -> lexbuf.Lexing.refill_buff lexbuf; %s lexbuf\n\n"
+          e.auto_name
 
 (* Main output function *)
 
