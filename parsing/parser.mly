@@ -569,7 +569,7 @@ class_type:
 ;
 class_signature:
     LBRACKET core_type_comma_list RBRACKET clty_longident
-      { mkcty(Pcty_constr ($4, $2)) }
+      { mkcty(Pcty_constr ($4, List.rev $2)) }
   | LBRACKET core_type RBRACKET clty_longident
       { mkcty(Pcty_constr ($4, [$2])) }
   | clty_longident
