@@ -150,6 +150,17 @@ and transl_modtype_info env sinfo =
   | Pmodtype_manifest smty ->
       Tmodtype_manifest(transl_modtype env smty)
 
+(* Try to convert a module expression to a module path. *)
+
+exception Not_a_path
+
+let rec path_of_module mexp =
+  match mexp.mod_desc with
+    Tmod_ident p -> p
+  | Tmod_apply(funct, arg, coercion) ->
+      Papply(path_of_module funct, path_of_module arg)
+  | _ -> raise Not_a_path
+
 (* Type a module value expression *)
 
 let rec type_module env smod =
@@ -182,11 +193,11 @@ let rec type_module env smod =
             with Includemod.Error msg ->
               raise(Error(sarg.pmod_loc, Not_included msg)) in
           let mty_appl =
-            match arg with
-              {mod_desc = Tmod_ident path} ->
-                Subst.modtype (Subst.add_module param path Subst.identity)
-                               mty_res
-            | _ ->
+	    try
+	      let path = path_of_module arg in
+              Subst.modtype (Subst.add_module param path Subst.identity)
+      	       	       	    mty_res
+	    with Not_a_path ->
               try
                 Mtype.nondep_supertype
                   (Env.add_module param arg.mod_type env) param mty_res

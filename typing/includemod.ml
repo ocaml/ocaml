@@ -211,6 +211,16 @@ and modtype_infos env id info1 info2 =
   with Error reasons ->
     raise(Error(Modtype_infos(id, info1, info2) :: reasons))
 
+(* Simplified inclusion check between module types *)
+
+let check_modtype_inclusion env mty1 mty2 =
+  try
+    modtypes env mty1 mty2; ()
+  with Error reasons ->
+    raise Not_found
+
+let _ = Env.check_modtype_inclusion := check_modtype_inclusion
+
 (* Error report *)
 
 open Format

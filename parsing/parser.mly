@@ -212,8 +212,8 @@ module_expr:
   | FUNCTOR LPAREN UIDENT COLON module_type RPAREN MINUSGREATER module_expr
     %prec prec_fun
       { mkmod(Pmod_functor($3, $5, $8)) }
-  | module_expr module_expr %prec prec_appl
-      { mkmod(Pmod_apply($1, $2)) }
+  | module_expr LPAREN module_expr RPAREN
+      { mkmod(Pmod_apply($1, $3)) }
   | LPAREN module_expr COLON module_type RPAREN
       { mkmod(Pmod_constraint($2, $4)) }
   | LPAREN module_expr RPAREN
@@ -662,16 +662,20 @@ label_longident:
 ;
 type_longident:
     LIDENT                                      { Lident $1 }
-  | mod_longident DOT LIDENT                    { Ldot($1, $3) }
+  | mod_ext_longident DOT LIDENT                { Ldot($1, $3) }
 ;
 mod_longident:
     UIDENT                                      { Lident $1 }
   | mod_longident DOT UIDENT                    { Ldot($1, $3) }
 ;
+mod_ext_longident:
+    UIDENT                                      { Lident $1 }
+  | mod_ext_longident DOT UIDENT                { Ldot($1, $3) }
+  | mod_ext_longident LPAREN mod_ext_longident RPAREN { Lapply($1, $3) }
+;
 mty_longident:
     ident                                       { Lident $1 }
-  | mod_longident DOT ident                     { Ldot($1, $3) }
-;
+  | mod_ext_longident DOT ident                 { Ldot($1, $3) }
 
 /* Miscellaneous */
 

@@ -13,6 +13,7 @@
 
 (* Substitutions *)
 
+open Misc
 open Path
 open Typedtree
 
@@ -45,12 +46,16 @@ let rec module_path s = function
       begin try Ident.find_same id s.modules with Not_found -> p end
   | Pdot(p, n, pos) ->
       Pdot(module_path s p, n, pos)
+  | Papply(p1, p2) ->
+      Papply(module_path s p1, module_path s p2)
 
 let type_path s = function
     Pident id as p ->
       begin try Ident.find_same id s.types with Not_found -> p end
   | Pdot(p, n, pos) ->
       Pdot(module_path s p, n, pos)
+  | Papply(p1, p2) ->
+      fatal_error "Subst.type_path"
 
 let rec type_expr s = function
     Tvar{tvar_link = None} as ty -> ty
@@ -89,6 +94,8 @@ let rec modtype s = function
           begin try Ident.find_same id s.modtypes with Not_found -> mty end
       | Pdot(p, n, pos) ->
           Tmty_ident(Pdot(module_path s p, n, pos))
+      | Papply(p1, p2) ->
+          fatal_error "Subst.modtype"
       end
   | Tmty_signature sg ->
       Tmty_signature(signature s sg)

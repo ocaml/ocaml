@@ -90,3 +90,6 @@ exception Error of error
 
 val report_error: error -> unit
 
+(* Forward declaration to break mutual recursion with Includemod. *)
+
+val check_modtype_inclusion: (t -> module_type -> module_type -> unit) ref

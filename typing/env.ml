@@ -36,8 +36,12 @@ type t = {
   types: (Path.t * type_declaration) Ident.tbl;
   modules: (Path.t * module_type) Ident.tbl;
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
-  components: (Path.t * structure_components) Ident.tbl
+  components: (Path.t * module_components) Ident.tbl
 }
+
+and module_components =
+    Structure_comps of structure_components
+  | Functor_comps of functor_components
 
 and structure_components = {
   mutable comp_values: (string, (value_description * int)) Tbl.t;
@@ -46,7 +50,14 @@ and structure_components = {
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
   mutable comp_modules: (string, (module_type * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
-  mutable comp_components: (string, (structure_components * int)) Tbl.t
+  mutable comp_components: (string, (module_components * int)) Tbl.t
+}
+
+and functor_components = {
+  fcomp_param: Ident.t;
+  fcomp_arg: module_type;
+  fcomp_res: module_type;
+  fcomp_env: t
 }
 
 let empty = {
@@ -60,7 +71,7 @@ let empty = {
 type pers_struct =
   { ps_name: string;
     ps_sig: signature;
-    ps_comps: structure_components }
+    ps_comps: module_components }
 
 let persistent_structures =
   (Hashtbl.new 17 : (string, pers_struct) Hashtbl.t)
@@ -101,6 +112,17 @@ let reset_cache() =
   Hashtbl.clear persistent_structures;
   imported_units := []
 
+(* Forward declarations *)
+
+let components_of_functor_appl =
+  ref ((fun f p1 p2 -> fatal_error "Env.components_of_functor_appl") :
+       functor_components -> Path.t -> Path.t -> module_components)
+
+let check_modtype_inclusion =
+  (* to be filled with includemod.check_modtype_inclusion *)
+  ref ((fun env mty1 mty2 -> fatal_error "Env.include_modtypes") :
+       t -> module_type -> module_type -> unit)
+
 (* Lookup by identifier *)
 
 let rec find_module_descr path env =
@@ -115,9 +137,20 @@ let rec find_module_descr path env =
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
-      let descr_p = find_module_descr p env in
-      let (descr, pos) = Tbl.find s descr_p.comp_components in
-      descr
+      begin match find_module_descr p env with
+      	Structure_comps c ->
+	  let (descr, pos) = Tbl.find s c.comp_components in
+          descr
+      | Functor_comps f ->
+      	 raise Not_found
+      end
+  | Papply(p1, p2) ->
+      begin match find_module_descr p1 env with
+      	Functor_comps f ->
+          !components_of_functor_appl f p1 p2
+      | Structure_comps c ->
+      	  raise Not_found
+      end
 
 let find proj1 proj2 path env =
   try
@@ -126,8 +159,14 @@ let find proj1 proj2 path env =
         let (p, data) = Ident.find_same id (proj1 env)
         in data
     | Pdot(p, s, pos) ->
-        let (data, pos) = Tbl.find s (proj2 (find_module_descr p env))
-        in data
+        begin match find_module_descr p env with
+      	  Structure_comps c ->
+      	    let (data, pos) = Tbl.find s (proj2 c) in data
+        | Functor_comps f ->
+      	    fatal_error "Env.find"
+	end
+    | Papply(p1, p2) ->
+      	fatal_error "Env.find"
   with Not_found ->
     fatal_error "Env.find"
 
@@ -145,28 +184,86 @@ let rec lookup_module_descr lid env =
       with Not_found ->
         (Pident(Ident.new_persistent s), (find_pers_struct s).ps_comps)
       end
-  | Ldot(p, s) ->
-      let (path, descr_p) = lookup_module_descr p env in
-      let (descr, pos) = Tbl.find s descr_p.comp_components in
-      (Pdot(path, s, pos), descr)
+  | Ldot(l, s) ->
+      let (p, descr) = lookup_module_descr l env in
+      begin match descr with
+      	Structure_comps c ->
+	  let (descr, pos) = Tbl.find s c.comp_components in
+          (Pdot(p, s, pos), descr)
+      | Functor_comps f ->
+      	  raise Not_found
+      end
+  | Lapply(l1, l2) ->
+      let (p1, desc1) = lookup_module_descr l1 env in
+      let (p2, mty2) = lookup_module l2 env in
+      begin match desc1 with
+      	Functor_comps f ->
+          !check_modtype_inclusion env mty2 f.fcomp_arg;
+          (Papply(p1, p2), !components_of_functor_appl f p1 p2)
+      | Structure_comps c ->
+      	  raise Not_found
+      end
+
+and lookup_module lid env =
+  match lid with
+    Lident s ->
+      begin try
+        Ident.find_name s env.modules
+      with Not_found ->
+        (Pident(Ident.new_persistent s), 
+         Tmty_signature(find_pers_struct s).ps_sig)
+      end
+  | Ldot(l, s) ->
+      let (p, descr) = lookup_module_descr l env in
+      begin match descr with
+      	Structure_comps c ->
+          let (data, pos) = Tbl.find s c.comp_modules in
+          (Pdot(p, s, pos), data)
+      | Functor_comps f ->
+      	  raise Not_found
+      end
+  | Lapply(l1, l2) ->
+      let (p1, desc1) = lookup_module_descr l1 env in
+      let (p2, mty2) = lookup_module l2 env in
+      let p = Papply(p1, p2) in
+      begin match desc1 with
+      	Functor_comps f ->
+          !check_modtype_inclusion env mty2 f.fcomp_arg;
+          (p, Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
+      	                    f.fcomp_res)
+      | Structure_comps c ->
+      	  raise Not_found
+      end
 
 let lookup proj1 proj2 lid env =
   match lid with
     Lident s ->
       Ident.find_name s (proj1 env)
-  | Ldot(p, s) ->
-      let (path, descr) = lookup_module_descr p env in
-      let (data, pos) = Tbl.find s (proj2 descr) in
-      (Pdot(path, s, pos), data)
+  | Ldot(l, s) ->
+      begin match lookup_module_descr l env with
+      	(p, Structure_comps c) ->
+	  let (data, pos) = Tbl.find s (proj2 c) in
+          (Pdot(p, s, pos), data)
+      | (p, Functor_comps f) ->
+      	  raise Not_found
+      end
+  | Lapply(l1, l2) ->
+      raise Not_found
 
 let lookup_simple proj1 proj2 lid env =
   match lid with
     Lident s ->
       Ident.find_name s (proj1 env)
-  | Ldot(p, s) ->
-      let (path, descr) = lookup_module_descr p env in
-      let (data, pos) = Tbl.find s (proj2 descr) in
-      data
+  | Ldot(l, s) ->
+      begin match lookup_module_descr l env with
+      	(p, Structure_comps c) ->
+	  let (data, pos) = Tbl.find s (proj2 c) in
+          data
+      | (p, Functor_comps f) ->
+      	  raise Not_found
+      end
+  | Lapply(l1, l2) ->
+      raise Not_found
 
 let lookup_value =
   lookup (fun env -> env.values) (fun sc -> sc.comp_values)
@@ -178,20 +275,6 @@ and lookup_type =
   lookup (fun env -> env.types) (fun sc -> sc.comp_types)
 and lookup_modtype =
   lookup (fun env -> env.modtypes) (fun sc -> sc.comp_modtypes)
-
-let lookup_module lid env =
-  match lid with
-    Lident s ->
-      begin try
-        Ident.find_name s env.modules
-      with Not_found ->
-        (Pident(Ident.new_persistent s), 
-         Tmty_signature(find_pers_struct s).ps_sig)
-      end
-    | Ldot(p, s) ->
-        let (path, descr) = lookup_module_descr p env in
-        let (data, pos) = Tbl.find s descr.comp_modules in
-        (Pdot(path, s, pos), data)
 
 (* Scrape a module type *)
 
@@ -253,13 +336,13 @@ let rec prefix_idents root pos sub = function
 (* Compute structure descriptions *)
 
 let rec components_of_module env path mty =
-  let c =
-    { comp_values = Tbl.empty; comp_constrs = Tbl.empty;
-      comp_labels = Tbl.empty; comp_types = Tbl.empty;
-      comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
-      comp_components = Tbl.empty } in
-  begin match scrape_modtype mty env with
+  match scrape_modtype mty env with
     Tmty_signature sg ->
+      let c =
+        { comp_values = Tbl.empty; comp_constrs = Tbl.empty;
+          comp_labels = Tbl.empty; comp_types = Tbl.empty;
+          comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
+          comp_components = Tbl.empty } in
       let (pl, sub) = prefix_idents path 0 Subst.identity sg in
       let env = ref env in
       let pos = ref 0 in
@@ -302,10 +385,20 @@ let rec components_of_module env path mty =
             c.comp_modtypes <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_modtypes;
             env := store_modtype id path decl' !env)
-        sg pl
-  | _ -> ()
-  end;
-  c
+        sg pl;
+	Structure_comps c
+  | Tmty_functor(param, ty_arg, ty_res) ->
+      	Functor_comps {
+	  fcomp_param = param;
+	  fcomp_arg = ty_arg;
+	  fcomp_res = ty_res;
+	  fcomp_env = env }
+  | Tmty_ident p ->
+      	Structure_comps {
+      	  comp_values = Tbl.empty; comp_constrs = Tbl.empty;
+          comp_labels = Tbl.empty; comp_types = Tbl.empty;
+          comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
+          comp_components = Tbl.empty }
 
 (* Insertion of bindings by identifier + path *)
 
@@ -373,6 +466,26 @@ and store_components id path comps env =
     modules = env.modules;
     modtypes = env.modtypes;
     components = Ident.add id (path, comps) env.components }
+
+(* Memoized function to compute the components of a functor application
+   in a path. *)
+
+let funappl_memo =
+  (Hashtbl.new 17 : (Path.t, module_components) Hashtbl.t)
+
+let _ =
+  components_of_functor_appl :=
+    (fun f p1 p2 ->
+      let p = Papply(p1, p2) in
+      try
+        Hashtbl.find funappl_memo p
+      with Not_found ->
+        let mty = 
+          Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
+                        f.fcomp_res in
+        let comps = components_of_module f.fcomp_env p mty in
+        Hashtbl.add funappl_memo p comps;
+        comps)
 
 (* Insertion of bindings by identifier *)
 
