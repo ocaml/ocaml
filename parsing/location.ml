@@ -60,10 +60,10 @@ let setup_terminal_info() =
 
 let num_loc_lines = ref 0 (* number of lines already printed after input *)
 
-let rec highlight_location loc =
+let rec highlight_locations loc1 loc2 =
   match !status with
     Unknown ->
-      setup_terminal_info(); highlight_location loc
+      setup_terminal_info(); highlight_locations loc1 loc2
   | Bad_term ->
       false
   | Good_term ->
@@ -90,9 +90,9 @@ let rec highlight_location loc =
 	      print_string "# ";
               for pos = 0 to String.length lb.lex_buffer - pos0 - 1 do
                 if !bol then (print_string "  "; bol := false);
-                if pos = loc.loc_start then
+                if pos = loc1.loc_start || pos = loc2.loc_start then
                   Terminfo.puts stdout !start_standout 1;
-                if pos = loc.loc_end then
+                if pos = loc1.loc_end || pos = loc2.loc_end then
                   Terminfo.puts stdout !end_standout 1;
                 let c = lb.lex_buffer.[pos + pos0] in
                 print_char c;
@@ -122,7 +122,7 @@ let (msg_file, msg_line, msg_chars, msg_to, msg_colon, warn_head) =
 
 let print loc =
   if String.length !input_name = 0 then
-    if highlight_location loc then () else begin
+    if highlight_locations loc none then () else begin
       print_string "Characters ";
       print_int loc.loc_start; print_string "-";
       print_int loc.loc_end; print_string ":";

@@ -105,6 +105,9 @@ let rec mkrangepat c1 c2 =
   mkpat(Ppat_or(mkpat(Ppat_constant(Const_char c1)),
                 mkrangepat (Char.chr(Char.code c1 + 1)) c2))
 
+let syntax_error () =
+  raise Syntaxerr.Escape_error
+
 let unclosed opening_name opening_num closing_name closing_num =
   raise(Syntaxerr.Error(Syntaxerr.Unclosed(rhs_loc opening_num, opening_name,
                                            rhs_loc closing_num, closing_name)))
@@ -419,6 +422,8 @@ expr:
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN seq_expr %prec prec_let
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
+  | LET rec_flag let_bindings IN error %prec prec_let
+      { syntax_error() }
   | LET rec_flag let_bindings error %prec prec_let
       { unclosed "let" 1 "in" 4 }
   | PARSER opt_pat opt_bar parser_cases %prec prec_fun
@@ -433,6 +438,8 @@ expr:
       { mkexp(Pexp_apply(Pstream.cparser ($5, List.rev $7), [$2])) }
   | TRY seq_expr WITH opt_bar match_cases %prec prec_try
       { mkexp(Pexp_try($2, List.rev $5)) }
+  | TRY seq_expr WITH error %prec prec_try
+      { syntax_error() }
   | TRY seq_expr error %prec prec_try
       { unclosed "try" 1 "with" 3 }
   | expr_comma_list
@@ -517,8 +524,6 @@ simple_expr:
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
       { let (t, t') = $3 in mkexp(Pexp_constraint($2, t, t')) }
-  | LPAREN seq_expr type_constraint error
-      { unclosed "(" 1 ")" 4 }
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, $3)) }
   | simple_expr DOT LPAREN seq_expr RPAREN
@@ -670,6 +675,8 @@ type_constraint:
     COLON core_type                             { (Some $2, None) }
   | COLON core_type COLONGREATER core_type      { (Some $2, Some $4) }
   | COLONGREATER core_type                      { (None, Some $2) }
+  | COLON error                                 { syntax_error() }
+  | COLONGREATER error                          { syntax_error() }
 ;
 
 /* Patterns */

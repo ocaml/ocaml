@@ -18,5 +18,6 @@ type error =
   | Other of Location.t
 
 exception Error of error
+exception Escape_error
 
 val report_error: error -> unit

@@ -27,3 +27,5 @@ val print: t -> unit
 val print_warning: t -> string -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
+
+val highlight_locations: t -> t -> bool
