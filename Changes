@@ -8,7 +8,6 @@ New features:
 - camlp4: install argl.* files (PR#3439)
 - ocamldoc: add -man-section option
 - labltk: add the "solid" relief option (PR#3343)
-- compiler: ocamlc -i now prints variance annotations
 
 Bug fixes:
 - typing: fix unsoundness in type declaration variance inference.
