@@ -26,7 +26,12 @@ union sock_addr_union {
 };
 
 extern union sock_addr_union sock_addr;
+
+#ifdef HAS_SOCKLEN_T
+extern socklen_t sock_addr_len;
+#else
 extern int sock_addr_len;
+#endif
 
 void get_sockaddr (value);
 value alloc_sockaddr (void);

@@ -33,7 +33,12 @@ static int sockopt[] = {
 
 value unix_getsockopt(value socket, value option)
 {
-  int optval, optsize;
+  int optval;
+#ifdef HAS_SOCKLEN_T
+  socklen_t optsize;
+#else
+  int optsize;
+#endif
   optsize = sizeof(optval);
   if (getsockopt(Int_val(socket), SOL_SOCKET, sockopt[Int_val(option)],
                  (void *) &optval, &optsize) == -1)

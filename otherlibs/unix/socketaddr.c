@@ -28,7 +28,12 @@
 #endif
 
 union sock_addr_union sock_addr;
+
+#ifdef HAS_SOCKLEN_T
+socklen_t sock_addr_len;
+#else
 int sock_addr_len;
+#endif
 
 value alloc_inet_addr(unsigned int a)
 {
