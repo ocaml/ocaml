@@ -692,6 +692,7 @@ let establish_server server_fun sockaddr =
     match sockaddr with ADDR_UNIX _ -> PF_UNIX | ADDR_INET(_,_) -> PF_INET in
   let sock =
     socket domain SOCK_STREAM 0 in
+  setsockopt sock SO_REUSEADDR true;
   bind sock sockaddr;
   listen sock 3;
   while true do
