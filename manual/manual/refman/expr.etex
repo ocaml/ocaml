@@ -72,7 +72,7 @@ argument:
 \end{syntax}
 \begin{syntax}
 pattern-matching:
-    pattern ['when' expr] '->' expr
+    [ '|' ] pattern ['when' expr] '->' expr
     { '|' pattern ['when' expr] '->' expr }
 ;
 multiple-matching:
@@ -621,9 +621,9 @@ details). Their meaning may be changed at any time using
 \entree{">=" }{Test ``greater than or equal''.}
 \end{tableau}
 
-\subsection{Objects}
+\subsection{Objects}  \label{s:objects}
 
-\subsubsection*{Object creation} \label{s:objects}
+\subsubsection*{Object creation}
 
 \ikwd{new\@\texttt{new}}
 
