@@ -175,7 +175,7 @@ let find_all p =
 
 let filter = find_all
 
-let rec partition p l =
+let partition p l =
   let rec part yes no = function
   | [] -> (rev yes, rev no)
   | x :: l -> if p x then part (x :: yes) no l else part yes (x :: no) l in
