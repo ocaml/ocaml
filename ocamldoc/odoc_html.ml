@@ -507,6 +507,7 @@ class html =
         "body { background-color : White }" ;
         "tr { background-color : White }" ;
 	"td.typefieldcomment { background-color : #FFFFFF }" ;
+	"pre { margin-bottom: 4px }" ;
       ] 
       
     (** The style file for all pages. *)
@@ -896,7 +897,8 @@ class html =
     method html_of_type t =
       Odoc_info.reset_type_names ();
       let father = Name.father t.ty_name in
-      "<br><code>"^(self#keyword "type")^" "^
+      "<pre>"^
+      (self#keyword "type")^" "^
       (* html mark *)
       "<a name=\""^(Naming.type_target t)^"\"></a>"^
       (match t.ty_parameters with
@@ -907,10 +909,10 @@ class html =
       (Name.simple t.ty_name)^" "^
       (match t.ty_manifest with None -> "" | Some typ -> "= "^(self#html_of_type_expr father typ)^" ")^
       (match t.ty_kind with
-        Type_abstract -> "</code>"
+        Type_abstract -> "</pre>"
       | Type_variant l ->
-          "=<br>"^
-          "</code><table class=\"typetable\">\n"^ 
+          "="^
+          "</pre><table class=\"typetable\">\n"^ 
           (String.concat "\n"
              (List.map 
                 (fun constr ->
@@ -953,8 +955,8 @@ class html =
           "</table>\n"
 
       | Type_record l ->
-          "= {<br>"^
-          "</code><table class=\"typetable\">\n"^ 
+          "= {"^
+          "</pre><table class=\"typetable\">\n"^ 
           (String.concat "\n"
              (List.map 
                 (fun r ->
@@ -991,7 +993,7 @@ class html =
           "}\n"
       )^"\n"^
       (self#html_of_info t.ty_info)^
-      "<br>\n"
+      "\n"
 
     (** Return html code for a class attribute. *)
     method html_of_attribute a =
