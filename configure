@@ -240,24 +240,24 @@ echo "ASPP=$aspp" >> Makefile
 echo "ASPPFLAGS=$asppflags" >> Makefile
 
 # Checking how to invoke cpp
-
-if sh ./searchpath cpp; then
-  cpp="cpp -P"
-elif test -f /lib/cpp; then
-  cpp="/lib/cpp -P"
-elif test -f /usr/ccs/lib/cpp; then
-  cpp="/usr/ccs/lib/cpp -P"
-else
-  cpp="not found"
-fi
-
-echo "CPP=$cpp" >> Makefile
-
-echo "How to invoke the C preprocessor: $cpp"
-
-if test "$cpp" = "not found"; then
-  echo "(Please edit the generated config/Makefile to set CPP correctly)"
-fi
+# We don't need cpp anymore
+#if sh ./searchpath cpp; then
+#  cpp="cpp -P"
+#elif test -f /lib/cpp; then
+#  cpp="/lib/cpp -P"
+#elif test -f /usr/ccs/lib/cpp; then
+#  cpp="/usr/ccs/lib/cpp -P"
+#else
+#  cpp="not found"
+#fi
+#
+#echo "CPP=$cpp" >> Makefile
+#
+#echo "How to invoke the C preprocessor: $cpp"
+#
+#if test "$cpp" = "not found"; then
+#  echo "(Please edit the generated config/Makefile to set CPP correctly)"
+#fi
 
 # Where is ranlib?
 

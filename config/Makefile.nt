@@ -26,7 +26,8 @@ BYTECCLINKOPTS=/MT
 CCLIBS=
 
 ### How to invoke the C preprocessor
-CPP=cl /nologo /EP
+# We don't need it anymore
+#CPP=cl /nologo /EP
 
 ### How to invoke the librarian
 MKLIB=lib /nologo /debugtype:CV /out:

@@ -49,6 +49,7 @@ SHARPBANGSCRIPTS=true
 #CCLIBS=-lcurses -ltermcap -lm
 
 ### How to invoke the C preprocessor
+# This is not needed anymore.  Leave these lines commented out.
 # On most machines:
 #CPP=/lib/cpp -P
 # Under Solaris:
