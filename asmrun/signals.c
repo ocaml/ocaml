@@ -450,17 +450,15 @@ static void trap_handler(int sig, int code, struct sigcontext * context)
 static char * system_stack_top;
 static char sig_alt_stack[SIGSTKSZ];
 
-static int is_stack_overflow(char * fault_addr, unsigned long in_c_code)
+static int is_stack_overflow(char * fault_addr)
 {
   struct rlimit limit;
   struct sigaction act;
 
   /* Sanity checks:
      - faulting address is word-aligned
-     - faulting address is within the stack
-     - we are not inside C code */
-  if (in_c_code == 0 &&
-      ((long) fault_addr & (sizeof(long) - 1)) == 0 &&
+     - faulting address is within the stack */
+  if (((long) fault_addr & (sizeof(long) - 1)) == 0 &&
       getrlimit(RLIMIT_STACK, &limit) == 0 &&
       fault_addr < system_stack_top &&
       fault_addr >= system_stack_top - limit.rlim_cur - 0x2000) {
@@ -480,7 +478,7 @@ static int is_stack_overflow(char * fault_addr, unsigned long in_c_code)
 #if defined(TARGET_i386) && defined(SYS_linux_elf)
 static void segv_handler(int signo, struct sigcontext sc)
 {
-  if (is_stack_overflow((char *) sc.cr2, 0))
+  if (is_stack_overflow((char *) sc.cr2))
     raise_stack_overflow();
 }
 #endif
@@ -488,7 +486,7 @@ static void segv_handler(int signo, struct sigcontext sc)
 #if defined(TARGET_i386) && !defined(SYS_linux_elf)
 static void segv_handler(int signo, siginfo_t * info, void * arg)
 {
-  if (is_stack_overflow((char *) info->si_addr, 0))
+  if (is_stack_overflow((char *) info->si_addr))
     raise_stack_overflow();
 }
 #endif
