@@ -37,12 +37,16 @@ let frame_size () =                     (* includes return address *)
 
 let slot_offset loc cl =
   match loc with
-    Incoming n -> frame_size() + n
+    Incoming n ->
+      assert (n >= 0);
+      frame_size() + n
   | Local n ->
       if cl = 0
       then !stack_offset + n * 4
       else !stack_offset + num_stack_slots.(0) * 4 + n * 8
-  | Outgoing n -> n
+  | Outgoing n ->
+      assert (n >= 0);
+      n
 
 (* Prefixing of symbols with "_" *)
 
@@ -107,6 +111,8 @@ let emit_Llabel fallthrough lbl =
 let emit_reg = function
     { loc = Reg r } ->
       emit_string (register_name r)
+  | { loc = Stack(Incoming n | Outgoing n) } when n < 0 ->
+      `caml_extra_params + {emit_int (n + 64)}`
   | { loc = Stack s } as r ->
       let ofs = slot_offset s (register_class r) in
       `{emit_int ofs}(%esp)`
