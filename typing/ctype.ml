@@ -633,7 +633,7 @@ let rec copy ty =
           Ttuple (List.map copy tl)
       | Tconstr (p, tl, _) ->
           begin match find_repr p !(!abbreviations) with
-            Some ty when repr ty != t -> (* XXX Commentaire *)
+            Some ty when repr ty != t -> (* XXX Commentaire... *)
               Tlink ty
           | _ ->
           (*
@@ -1683,13 +1683,13 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
                                   (lab, expand_trace env trace)]))
           sign2.cty_vars
     | _ ->
-        raise (Failure [])
+        if not trace then
+          raise (Failure [CM_Class_type_mismatch (cty1, cty2)])
   with
     Failure error when trace ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
 (* XXX On pourrait autoriser l'instantiation du type des parametres... *)
-(* XXX Bug quand la classe n'est pas completement generalisee *)
 let match_class_declarations env patt_params patt_type subj_params subj_type =
   let type_pairs = TypePairs.create 53 in
   let subst = ref [] in
@@ -1772,7 +1772,6 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         Failure r -> r
       end
   | error ->
-(* XXX Trace plus precise : afficher les signatures (???) *)
       error
 
 
@@ -1785,7 +1784,6 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
 
 let subtypes = ref []
 
-(* XXX Types récursifs ? *)
 let rec build_subtype env t =
   let t = repr t in
   match t.desc with
@@ -1880,15 +1878,9 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_list env trace tl1 tl2 cstrs
     | (Tconstr(p1, [], _), Tconstr(p2, [], _)) when Path.same p1 p2 ->
         cstrs
-    | (Tconstr(p1, tl1, abbrev1), Tconstr _) when generic_abbrev env p1 ->
-        subtype_rec env trace (expand_abbrev env t1) t2 cstrs
-    | (Tconstr _, Tconstr(p2, tl2, abbrev2)) when generic_abbrev env p2 ->
-        subtype_rec env trace t1 (expand_abbrev env t2) cstrs
-    | (Tconstr _, Tconstr _) ->
-        (trace, t1, t2)::cstrs
     | (Tconstr(p1, tl1, abbrev1), _) when generic_abbrev env p1 ->
         subtype_rec env trace (expand_abbrev env t1) t2 cstrs
-    | (_, Tconstr (p2, tl2, abbrev2)) when generic_abbrev env p2 ->
+    | (_, Tconstr(p2, tl2, abbrev2)) when generic_abbrev env p2 ->
         subtype_rec env trace t1 (expand_abbrev env t2) cstrs
     | (Tobject (f1, _), Tobject (f2, _))
               when opened_object f1 & opened_object f2 ->
@@ -1897,7 +1889,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tobject (f1, _), Tobject (f2, _)) ->
         subtype_fields env trace f1 f2 cstrs
     | (_, _) ->
-        subtype_error env trace
+        (trace, t1, t2)::cstrs
   end
 
 and subtype_list env trace tl1 tl2 cstrs =
