@@ -678,7 +678,13 @@ let limited_generalize ty0 ty =
     let idx = ty.level in
     if idx <> generic_level then begin
       set_level ty generic_level;
-      List.iter generalize_parents !(snd (Hashtbl.find graph idx))
+      List.iter generalize_parents !(snd (Hashtbl.find graph idx));
+      (* Special case for rows: must generalize the row variable *)
+      match ty.desc with
+        Tvariant row ->
+          let more = row_more row in
+          if more.level <> generic_level then generalize_parents more
+      | _ -> ()
     end
   in
 
