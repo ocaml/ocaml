@@ -30,6 +30,7 @@ type error =
   | Constraint_failed of type_expr * type_expr
   | Unconsistent_constraint
   | Type_clash of (type_expr * type_expr) list
+  | Parameters_differ of type_expr * type_expr
   | Null_arity_external
   | Unbound_type_var
   | Unbound_exception of Longident.t
@@ -169,7 +170,7 @@ let rec check_constraints_rec env loc visited ty =
   | Tconstr (path, args, _) ->
       Ctype.begin_def ();
       let args' = List.map (fun _ -> Ctype.newvar ()) args in
-      let ty' = Ctype.newty (Tconstr(path, args', ref Mnil)) in
+      let ty' = Ctype.newconstr path args' in
       begin try Ctype.enforce_constraints env ty'
       with Ctype.Unify _ -> assert false
       end;
@@ -262,6 +263,43 @@ let check_recursive_abbrev env (name, sdecl) (id, decl) =
   | _ ->
       ()
 
+(* Recursive expansion check *)
+
+let rec check_expansion_rec env id args loc id_loc_list visited ty =
+  let ty = Ctype.repr ty in
+  if List.memq ty visited then () else
+  let visited = ty :: visited in
+  begin match ty.desc with
+  | Tconstr(Path.Pident id' as path, args', _) ->
+      if Ident.same id id' then begin
+        if not (Ctype.equal env false args args') then
+          raise (Error(loc, Parameters_differ(ty, Ctype.newconstr path args)))
+      end else begin try
+        let loc = List.assoc id' id_loc_list
+        and id_loc_list = List.remove_assoc id' id_loc_list in
+        let (params, body) = Env.find_type_expansion path env in
+        let (params, body) = Ctype.instance_parameterized_type params body in
+        begin
+          try List.iter2 (Ctype.unify env) params args'
+          with Ctype.Unify _ -> assert false
+        end;
+        check_expansion_rec env id args loc id_loc_list visited body
+      with Not_found -> ()
+      end
+  | _ -> ()
+  end;
+  Btype.iter_type_expr
+    (check_expansion_rec env id args loc id_loc_list visited) ty
+
+let check_expansion env id_loc_list (id, decl) =
+  match decl.type_manifest with
+  | None -> ()
+  | Some body ->
+      let (args, body) =
+        Ctype.instance_parameterized_type decl.type_params body in
+      check_expansion_rec env id args
+        (List.assoc id id_loc_list) id_loc_list [] body
+
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
   (* Create identifiers. *)
@@ -303,6 +341,15 @@ let transl_type_decl env name_sdecl_list =
   List.iter2 (check_abbrev newenv) name_sdecl_list decls;
   (* Check that constraints are enforced *)
   List.iter2 (check_constraints newenv) name_sdecl_list decls;
+  (* Check that abbreviations have same parameters *)
+  let id_loc_list =
+    List.map2
+      (fun id (_,sdecl) ->
+        match sdecl.ptype_manifest with None -> []
+        | Some {ptyp_loc=loc} -> [id, loc])
+      id_list name_sdecl_list
+  in
+  List.iter (check_expansion newenv (List.flatten id_loc_list)) decls;
   (* Done *)
   (decls, newenv)
 
@@ -398,6 +445,12 @@ let report_error ppf = function
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
       fprintf ppf "@[<hv>Type@ %a@ should be an instance of@ %a@]"
+        Printtyp.type_expr ty Printtyp.type_expr ty'
+  | Parameters_differ (ty, ty') ->
+      Printtyp.reset_and_mark_loops ty;
+      Printtyp.mark_loops ty';
+      fprintf ppf
+        "@[<hv>In this definition, type@ %a@ should be@ %a@]"
         Printtyp.type_expr ty Printtyp.type_expr ty'
   | Unconsistent_constraint ->
       fprintf ppf "The type constraints are not consistent"

@@ -42,6 +42,7 @@ type error =
   | Constraint_failed of type_expr * type_expr
   | Unconsistent_constraint
   | Type_clash of (type_expr * type_expr) list
+  | Parameters_differ of type_expr * type_expr
   | Null_arity_external
   | Unbound_type_var
   | Unbound_exception of Longident.t
