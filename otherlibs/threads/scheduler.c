@@ -553,6 +553,7 @@ value thread_kill(thread)       /* ML */
 {
   value retval = Val_unit;
   thread_t th = (thread_t) thread;
+  if (th->status == KILLED) failwith("Thread.kill: killed thread");
   /* Don't paint ourselves in a corner */
   if (th == th->next) failwith("Thread.kill: cannot kill the last thread");
   /* This thread is no longer waiting on anything */
