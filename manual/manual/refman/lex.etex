@@ -28,10 +28,10 @@ Identifiers are sequences of letters, digits, "_" (the underscore
 character), and "'" (the single quote), starting with a
 letter or an underscore.
 Letters contain at least the 52 lowercase and uppercase
-letters from the ASCII set. The current implementation also recognizes
-as letters all accented characters from the ISO 8859-1 (``ISO Latin
-1'') set, and also allows an underscore "_" as the first character of
-an identifier. All characters in an identifier are meaningful. The
+letters from the ASCII set. The current implementation (except on
+MacOS) also recognizes as letters all accented characters from the ISO
+8859-1 (``ISO Latin 1'') set. All characters in an identifier are
+meaningful. The
 current implementation places no limits on the number of characters of
 an identifier.
 
