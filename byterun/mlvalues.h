@@ -214,7 +214,7 @@ void Store_double_val (value,double);
 #define Double_field(v,i) Double_val((value)((double *)(v) + (i)))
 #define Store_double_field(v,i,d) do{ \
   mlsize_t caml__temp_i = (i); \
-  value caml__temp_d = (d); \
+  double caml__temp_d = (d); \
   Store_double_val((value)((double *) v + caml__temp_i), caml__temp_d); \
 }while(0)
 
