@@ -65,7 +65,7 @@ clean: partialclean
 	rm -f $(GENFILES)
 
 install:
-	if test -f libthreads.so; cp libthreads.so $(LIBDIR)/libthreads.so; fi
+	if test -f libthreads.so; then cp libthreads.so $(LIBDIR)/libthreads.so; fi
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
