@@ -63,12 +63,9 @@ let create_process f =
       exit_thread () in
 
 (* use thread_new, to short-circuit handling of exceptions by Thread *)
-  ignore (thread_new g) ;
-  
+  ignore (thread_new g)
 
-type argument
-
-type queue = argument list
+type queue = Obj.t list
 
 type status = int
 
@@ -108,15 +105,84 @@ let create_automaton nchans nmatches =
 
 let patch_table auto t = auto.matches <- t
 
-(* Can be called by compiled code, just before firing guarded process *)
-let unlock_automaton a = Mutex.unlock a.mutex
+type kval = Start | Go of (unit -> Obj.t) | Ret of Obj.t
+
+type continuation =
+  { kmutex : Mutex.t ;
+    kcondition : Condition.t ;
+    mutable kval : kval }
+
+let kont_create mtx =
+  {kmutex = mtx ;
+   kcondition = Condition.create () ;
+   kval = Start}
+
+(* mutex is locked *)
+let kont_suspend k =
+  Condition.wait k.kcondition k.kmutex ;
+  Mutex.unlock k.kmutex ;
+  match k.kval with
+  | Go f -> f ()
+  | Ret v -> v
+  | Start -> assert false
+
+(* Those function are called from compiled code,
+   in all cases auto's mutex is locked *)
+
+(* Transfert control to frozen principal thread,
+   called from asynchronous sends when one principal exists *)
+let kont_go k f =
+  k.kval <- Go f ;
+  Condition.signal k.kcondition ;
+  Mutex.unlock k.kmutex
+
+(* Spawn new process
+   called from asynchronous sends when no principal exists *)
+let fire_go auto f =
+  create_process f ;
+  Mutex.unlock auto.mutex
+
+(* Transfert control to frozen principal thread and suspend current thread *)
+let kont_go_suspend kme k f =
+(* awake principal *)
+  k.kval <- Go f ;
+  Condition.signal k.kcondition ;
+(* suspend current, which will normally be signaled by guarded executed
+   on principal *)
+  Condition.wait kme.kcondition k.kmutex ;
+  Mutex.unlock kme.kmutex ;
+  match kme.kval with
+  | Ret v -> v
+  | Start|Go _ -> assert false
+
+(* Transfer control to current thread
+    called when current thread is principal *)
+let just_go k f =
+  Mutex.unlock k.kmutex ;
+  f ()
+
+(* Fire process and suspend
+   called from synchronous, when there is no principal name *)
+let fire_suspend k auto f =
+  create_process f ;
+  Condition.wait k.kcondition k.kmutex ;
+  Mutex.unlock k.kmutex ;
+  match k.kval with
+  | Ret v -> v
+  | Start|Go _ -> assert false
+    
 
 let rec attempt_match auto reactions i =
   if i >= Obj.size reactions then Mutex.unlock auto.mutex
   else begin
-    let (ipat, f) = Obj.magic (Obj.field reactions i) in
-    if ipat=auto.status then f auto (* f will unlock auto.mutex *)
-    else attempt_match auto reactions (i+1)
+    let (ipat, iprim, f) = Obj.magic (Obj.field reactions i) in
+    if ipat land auto.status = ipat then
+      if iprim < 0 then
+        f auto fire_go (* f will unlock auto's mutex *)
+      else
+        f auto kont_go
+    else
+      attempt_match auto reactions (i+1)
   end
 
 let send_async auto idx a =
@@ -134,5 +200,45 @@ let send_async auto idx a =
     attempt_match auto (Obj.magic auto.matches) 0
   end
 
-let send_sync auto idx a = failwith "not_implemented"
   
+let reply_to v k =
+  debug "REPLY" (sprintf "%i" (Obj.magic v)) ;
+  Mutex.lock k.kmutex ;
+  k.kval <- Ret v ;
+  Condition.signal k.kcondition ;
+  Mutex.unlock k.kmutex 
+
+
+
+let rec attempt_match_sync idx kont auto reactions i =
+  if i >= Obj.size reactions then
+    kont_suspend kont
+  else begin
+    let (ipat, ipri, f) = Obj.magic (Obj.field reactions i) in
+    if ipat land auto.status = ipat then begin
+      if ipri < 0 then
+        f auto (fire_suspend kont)   (* will create other thread *)
+      else if ipri = idx then
+        f auto just_go                (* will continue evaluation *)
+      else begin
+        f auto (kont_go_suspend kont) (* will awake principal thread *)
+      end
+    end else attempt_match_sync idx kont auto reactions (i+1)
+  end
+
+let send_sync auto idx a =
+  debug "SEND_SYNC" (sprintf "channel %i" idx) ;
+(* Acknowledge new message by altering queue and status *)
+  Mutex.lock auto.mutex ;
+  let old_status = auto.status in
+  let new_status = old_status lor (1 lsl idx) in
+  let kont = kont_create auto.mutex in
+  put_queue auto idx (Obj.magic (kont,a)) ;
+  auto.status <- new_status ;
+  if old_status = new_status then begin
+    debug "SEND_SYNC" (sprintf "Return: %i" auto.status) ;
+    kont_suspend kont
+  end else begin
+    attempt_match_sync idx kont auto (Obj.magic auto.matches) 0
+  end
+

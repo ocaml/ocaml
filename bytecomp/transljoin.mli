@@ -50,6 +50,10 @@ type comp_guard =
     Typedtree.expression -> (* guarded process *)
     Ident.t list * Lambda.lambda
 
+val create_auto : 
+  Ident.t option ->
+    phase1 -> Lambda.lambda -> Lambda.lambda
+
 val build_matches : Typedtree.joinautomaton -> phase1
 
 val build_auto :

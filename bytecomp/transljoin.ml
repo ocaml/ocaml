@@ -60,7 +60,7 @@ let lambda_get_queue = mk_lambda env_join "get_queue"
 let lambda_unlock_automaton = mk_lambda env_join "unlock_automaton"
 let lambda_patch_match = mk_lambda env_jprims "patch_match"
 let lambda_patch_guard = mk_lambda env_jprims "patch_guard"
-let lambda_reply_to = mk_lambda env_jprims "reply_to"
+let lambda_reply_to = mk_lambda env_join "reply_to"
 
 let mk_apply f args = match Lazy.force f with
 | _,{val_kind=Val_prim p}  -> Lprim (Pccall p,args)
@@ -177,7 +177,7 @@ let rec do_principal p = match p.exp_desc with
 | _ -> assert false
 
 let principal p = match do_principal p with
-| x::_ -> None (* Some x *)
+| x::_ -> Some x
 | []   -> None  
 
 (* Once again for finding back parts of princpal threads *)
@@ -343,20 +343,30 @@ let as_procs sync e =
   Most material is here, other is in Translcore
 *)
 
+let rec get_num_rec name = function
+  | [] -> raise Not_found
+  | (id,x)::rem ->
+      if Ident.name id = name then x else get_num_rec name rem
+
 let get_num names id =
   try
-    let {jchannel_id=num} = List.assoc id names in
+    let {jchannel_id=num} = get_num_rec (Ident.name id) names in
     num
   with
-  | Not_found -> assert false
+  | Not_found ->
+      fatal_error
+        (Printf.sprintf "Transljoin.get_num: %s" (Ident.unique_name id))
 
 (* Not so nice way to supress the continuation argument for principal names *)
 
 let transl_jpat sync {jpat_desc=_,arg} = match sync,arg.pat_desc with
+(*
 | Some id, Tpat_tuple [{pat_desc = Tpat_var oid} ; true_arg]
     when oid = id -> true_arg
+*)
 | _,_ -> arg
       
+
 
 let transl_jpats sync jpats = List.map (transl_jpat sync) jpats
 
@@ -411,13 +421,27 @@ let patch_table auto t =
     lambda_patch_table
     [Lvar auto ; Lprim (Pmakeblock (0,Immutable), t)]
 
-let build_auto comp_fun some_loc (auto_name, names, cls) k =
+let rec principal_param ipri params nums = match params, nums with
+| param::params, num::nums ->
+    if num=ipri then param
+    else principal_param ipri params nums
+| _,_ -> assert false
+
+let some_sync names =
+  List.exists
+    (fun (_,{jchannel_sync=b}) -> b)
+    names
+
+let create_auto some_loc (auto_name, names, cls) k =
   let nguards = Array.length cls
   and nchans = List.length names in
+  Llet
+    (Strict, auto_name , create_automaton some_loc nchans nguards, k)
 
+let build_auto comp_fun some_loc (auto_name, names, cls) k =
+  let nguards = Array.length cls in
   let rec params_from_queues bauto params nums k = match params, nums with
-  | [],[] ->
-      Lsequence (unlock_automaton (Lvar bauto), k)
+  | [],[] -> k      
   | param::params, num::nums ->
       Llet
         (Strict,
@@ -425,25 +449,34 @@ let build_auto comp_fun some_loc (auto_name, names, cls) k =
          params_from_queues bauto params nums k)
   | _,_ -> assert false in
 
+
   let rec build_table i = 
     if i >= nguards then []
     else
       let cl_loc, sync, ipat, nums, jpats, e = cls.(i) in
       let params, body = comp_fun cl_loc sync jpats e in
-      let body =
-        match sync with
-        | None -> do_spawn some_loc body
-        | Some id -> body in            
       let bauto = Ident.create "_bauto" in
+      let iprincipal =
+        match sync with Some id -> get_num names id | None -> -1 in
+      let bgo = Ident.create "_go" in          
+      let body =
+        if iprincipal >= 0 then
+          Lapply (Lvar bgo,
+                  [Lprim
+                      (Pfield 0,
+                       [Lvar (principal_param iprincipal params nums)]) ;
+                    Lfunction (Curried, [Ident.create "_x"], body)])
+        else
+          Lapply (Lvar bgo,
+                  [Lvar bauto ;
+                   Lfunction (Curried, [Ident.create "_x"], body)]) in
       let body = params_from_queues bauto params nums  body in
       Lprim
         (Pmakeblock (0, Immutable),
-         [lambda_int ipat ; Lfunction (Curried, [bauto] , body)])::
-      build_table (i+1) in
-  Llet
-    (Strict, auto_name ,
-     create_automaton some_loc nchans nguards,
-     Lsequence (patch_table auto_name (build_table 0), k))
+         [lambda_int ipat ; lambda_int iprincipal ;
+           Lfunction (Curried, [bauto; bgo] , body)])::
+          build_table (i+1) in
+  Lsequence (patch_table auto_name (build_table 0), k)
 
 let build_channels {jauto_name=name ; jauto_names=names} k =
   List.fold_right

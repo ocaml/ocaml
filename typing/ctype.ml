@@ -618,6 +618,19 @@ let rec update_level env level ty =
         iter_type_expr (update_level env level) ty
     end
   end
+(* 
+   Function [update_level] will never try to expand an abbreviation in
+   this case ([current_level] is greater than the binding time of any
+   type constructor path). So, it can be called with the empty
+   environnement.
+      This fuction was removed by Jacques.
+      I put it again for Jocaml. (Luc)
+*)
+let make_nongen ty =
+  try
+    update_level Env.empty !nongen_level ty
+  with Unify [_, ty'] ->
+    raise (Unify [ty, ty'])
 
 (* Generalize and lower levels of contravariant branches simultaneously *)
 

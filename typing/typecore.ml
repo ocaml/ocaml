@@ -2308,7 +2308,7 @@ and generalize_auto env auto =
           let newtys = ref [] in
           let rec f ty =
             if List.memq ty !tys then
-              generalize_expansive env ty
+              make_nongen ty
             else if not (List.memq ty !newtys) then begin
               newtys := ty :: !newtys ;
               iter_type_expr f ty

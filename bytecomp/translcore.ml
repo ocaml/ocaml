@@ -1015,6 +1015,11 @@ and transl_let rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 (*> JOCAML *)
 
+and create_autos some_loc cautos k =
+  List.fold_right
+    (Transljoin.create_auto some_loc)
+    cautos k
+  
 and  build_autos some_loc cautos k =
   List.fold_right
     (Transljoin.build_auto guarded_proc_as_fun some_loc)
@@ -1024,10 +1029,11 @@ and  build_channels autos k =
   List.fold_right Transljoin.build_channels autos k
 
 and do_transl_def some_loc autos body =
-    let cautos = List.map Transljoin.build_matches autos in
-    build_autos some_loc cautos
-      (build_channels autos body)
-        
+    let cautos = List.map Transljoin.build_matches autos in    
+    create_autos some_loc cautos
+      (build_channels autos
+         (build_autos some_loc cautos body))
+
 and transl_loc locs body =
   let clocs =
     List.map
