@@ -14,9 +14,10 @@
 open Clflags
 
 let process_file name =
-  if Filename.check_suffix name ".ml" then begin
+  if Filename.check_suffix name ".ml"
+  or Filename.check_suffix name ".mlt" then begin
     Optcompile.implementation name;
-    objfiles := (Filename.chop_suffix name ".ml" ^ ".cmx") :: !objfiles
+    objfiles := (Filename.chop_extension name ^ ".cmx") :: !objfiles
   end
   else if Filename.check_suffix name ".mli" then
     Optcompile.interface name

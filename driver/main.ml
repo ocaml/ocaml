@@ -14,9 +14,10 @@
 open Clflags
 
 let process_file name =
-  if Filename.check_suffix name ".ml" then begin
+  if Filename.check_suffix name ".ml"
+  or Filename.check_suffix name ".mlt" then begin
     Compile.implementation name;
-    objfiles := (Filename.chop_suffix name ".ml" ^ ".cmo") :: !objfiles
+    objfiles := (Filename.chop_extension name ^ ".cmo") :: !objfiles
   end
   else if Filename.check_suffix name ".mli" then
     Compile.interface name

@@ -42,7 +42,7 @@ let initial_env () =
 (* Compile a .mli file *)
 
 let interface sourcefile =
-  let prefixname = Filename.chop_suffix sourcefile ".mli" in
+  let prefixname = Filename.chop_extension sourcefile in
   let modulename = capitalize(Filename.basename prefixname) in
   let ic = open_in_bin sourcefile in
   let lb = Lexing.from_channel ic in
@@ -64,7 +64,7 @@ let print_if flag printer arg =
   arg
 
 let implementation sourcefile =
-  let prefixname = Filename.chop_suffix sourcefile ".ml" in
+  let prefixname = Filename.chop_extension sourcefile in
   let modulename = capitalize(Filename.basename prefixname) in
   let objfile = prefixname ^ ".cmo" in
   let ic = open_in_bin sourcefile in
