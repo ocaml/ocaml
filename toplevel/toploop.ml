@@ -123,7 +123,6 @@ let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
 let toplevel_env = ref Env.empty
 
 let execute_phrase phr =
-  Location.reset();
   match phr with
     Ptop_def sstr ->
       let (str, sg, newenv) = Typemod.type_structure !toplevel_env sstr in
@@ -213,6 +212,7 @@ let loop() =
   while true do
     try
       empty_lexbuf lb;
+      Location.reset();
       execute_phrase (!parse_toplevel_phrase lb); ()
     with
       End_of_file ->

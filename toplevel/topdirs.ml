@@ -28,6 +28,7 @@ open Toploop
 let parse_toplevel_phrase = Toploop.parse_toplevel_phrase
 let parse_use_file = ref Parse.use_file
 let print_location = Location.print
+let print_warning = Location.print_warning
 
 (* Temporary assignment to a reference *)
 
