@@ -34,6 +34,7 @@ value alloc (mlsize_t wosize, tag_t tag)
   mlsize_t i;
 
   Assert (wosize > 0);
+  Assert (tag < 256);
   if (wosize <= Max_young_wosize){
     Alloc_small (result, wosize, tag);
     if (tag < No_scan_tag){
@@ -52,6 +53,7 @@ value alloc_small (mlsize_t wosize, tag_t tag)
   value result;
 
   Assert (wosize > 0 && wosize <= Max_young_wosize);
+  Assert (tag < 256);
   Alloc_small (result, wosize, tag);
   return result;
 }
