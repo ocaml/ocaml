@@ -557,7 +557,6 @@ let emit_instr fallthrough i =
         `	addl	${emit_int(n-1)}, {emit_reg i.arg.(0)}\n`;
         `{emit_label lbl}:	sarl	${emit_int l}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop_imm(Imod, n)) ->
-        let l = Misc.log2 n in
         let lbl = new_label() in
         `	movl	{emit_reg i.arg.(0)}, %eax\n`;
         `	testl	%eax, %eax\n`;
