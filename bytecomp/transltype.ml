@@ -66,12 +66,13 @@ let rec tree_of_run_ident = function
 
 (* We have a type expression, compile the runtime representation for it *)
  
-let rec transl_run_type = function
+let rec transl_val_type transl_val = function
   | Rtyp_var i -> Lconst (Const_block (0, [Const_base (Const_int i)]))
   | Rtyp_arrow (l,t1,t2) ->
       begin
 	let ll = [ Lconst (Const_base (Const_string l)); 
-		   transl_run_type t1; transl_run_type t2] in
+		   transl_val_type transl_val t1; 
+		   transl_val_type transl_val t2] in
 	try
 	  Lconst (Const_block (1, List.map extract_constant ll))
 	with
@@ -79,24 +80,36 @@ let rec transl_run_type = function
       end
   | Rtyp_tuple rts ->
       begin
-	let ll = [transl_list transl_run_type rts] in
+	let ll = [transl_list (transl_val_type transl_val) rts] in
 	try
 	  Lconst (Const_block (2, List.map extract_constant ll))
 	with
 	  _ -> Lprim(Pmakeblock(2, Immutable), ll)
       end
-  | Rtyp_constr ((rp,digest), tl) ->
+  | Rtyp_constr (v, tl) ->
       begin
-	let rpcomp = transl_run_ident rp in
-	let digestcomp = Const_base (Const_string digest) in
-	let rpdigest = Const_block (0, [rpcomp; digestcomp]) in
-	let ll = [ Lconst rpdigest; transl_list transl_run_type tl ]
+	let v_comp = transl_val v in
+	let ll = [ v_comp; transl_list (transl_val_type transl_val) tl ]
 	in
 	try
 	  Lconst (Const_block (3, List.map extract_constant ll))
 	with
 	  _ -> Lprim(Pmakeblock(3, Immutable), ll)
       end
+;;
+
+let transl_digest_type = 
+  transl_val_type (fun digest -> Lconst (Const_base (Const_string digest)))
+;;
+
+let transl_run_type =
+  transl_val_type (fun (rp,dt) ->
+    let rp_comp = transl_run_ident rp in
+    let dt_comp = transl_digest_type dt in
+    try
+      Lconst (Const_block (0, [rp_comp; extract_constant dt_comp]))
+    with
+      _ -> Lprim (Pmakeblock (0, Immutable), [Lconst rp_comp; dt_comp]))
 ;;
 
 let snames = ref []
@@ -262,7 +275,72 @@ type 'a val_type_declaration =
       ('a val_type * 'a val_type) list
 ;;
 
-let rec val_type_of_typexp of_path ty =
+let get_ident_of_path = function
+  | Pident i -> i
+  | Pdot (_,s,i) -> Ident.create_with_stamp s i
+  | _ -> assert false
+;;
+
+exception Cyclic of Path.t
+
+let cyclic_types = ref []
+
+(* borrwed from Ctype.try_expand_head *)
+let recursive_full_expand env ty =
+(*
+  Format.pp_print_string Format.err_formatter "REC FULL EXPAND: ";
+  Printtyp.type_expr Format.err_formatter ty;
+  Format.pp_print_string Format.err_formatter " => ...";
+  Format.pp_print_newline Format.err_formatter ();
+*)
+  let make_type ty desc' = Btype.newty2 ty.level desc' in
+
+  let rec aux visited ty =
+    let ty = repr ty in
+    match ty.desc with
+    | Tconstr (p,args,_) ->
+	let args' = List.map (aux visited) args in
+	let ty' = 
+	  if List.for_all2 (==) args args' then ty
+	  else make_type ty (Tconstr (p,args',ref Mnil))
+	in
+	if List.mem p !cyclic_types then ty'
+	else begin
+	  if List.mem p visited then begin
+	    cyclic_types := p :: !cyclic_types;
+	    raise (Cyclic p); (* cyclic type *)
+	  end;
+	  try
+	    aux (p::visited) (Ctype.full_expand env ty')
+	  with
+	  | Cyclic p' when Path.same p p' -> ty'
+	end
+    | Tarrow (l,ty1,ty2,com) ->
+	let ty1' = aux visited ty1 in
+	let ty2' = aux visited ty2 in
+	if ty1 == ty1' && ty2 == ty2' then ty
+	else make_type ty (Tarrow(l,ty1',ty2',com))
+    | Ttuple typs ->
+	let typs' = List.map (aux visited) typs in
+	if List.for_all2 (==) typs typs' then ty
+	else make_type ty (Ttuple typs')
+    | Tvar -> ty
+    | _ -> assert false
+  in
+
+  let ty' = aux [] ty in
+
+(*
+  Format.pp_print_string Format.err_formatter "REC FULL EXPAND: ";
+  Printtyp.type_expr Format.err_formatter ty;
+  Format.pp_print_string Format.err_formatter " => ";
+  Printtyp.type_expr Format.err_formatter ty';
+  Format.pp_print_newline Format.err_formatter ();
+*)
+  ty'
+;;
+
+let rec val_type_of_typexp env of_tconstr ty =
   let ty = repr ty in
   let px = proxy ty in
   if List.mem_assq px !names then
@@ -271,74 +349,75 @@ let rec val_type_of_typexp of_path ty =
   let pr_typ () =
    (match ty.desc with
     | Tvar ->
-        Rtyp_var (name_of_type ty)
+	  Rtyp_var (name_of_type ty)
     | Tarrow(l, ty1, ty2, _) ->
-        let pr_arrow l ty1 ty2 =
-          let lab =
-            if l <> "" || is_optional l then l else ""
-          in
-          let t1 =
-            if is_optional l then
-              match (repr ty1).desc with
-              | Tconstr(path, [ty], _)
-                when Path.same path Predef.path_option ->
-                  val_type_of_typexp of_path ty
-              | _ -> raise (Failure "<hidden>")
-            else val_type_of_typexp of_path ty1 in
-          Rtyp_arrow (lab, t1, val_type_of_typexp of_path ty2) in
-        pr_arrow l ty1 ty2
+	  let pr_arrow l ty1 ty2 =
+	    let lab =
+	      if l <> "" || is_optional l then l else ""
+	    in
+	    let t1 =
+	      if is_optional l then
+		match (repr ty1).desc with
+		| Tconstr(path, [ty], _)
+		  when Path.same path Predef.path_option ->
+		    val_type_of_typexp env of_tconstr ty
+		| _ -> raise (Failure "<hidden>")
+	      else val_type_of_typexp env of_tconstr ty1 in
+	    Rtyp_arrow (lab, t1, val_type_of_typexp env of_tconstr ty2) in
+	  pr_arrow l ty1 ty2
     | Ttuple tyl ->
-        Rtyp_tuple (val_types_of_typlist of_path tyl)
+	  Rtyp_tuple (val_types_of_typlist env of_tconstr tyl)
     | Tconstr(p, tyl, abbrev) ->
-        Rtyp_constr (of_path p, val_types_of_typlist of_path tyl)
+	Rtyp_constr (of_tconstr p ty, val_types_of_typlist env of_tconstr tyl)
+
 (*
     | Tvariant row ->
-        let row = row_repr row in
-        let fields =
-          if row.row_closed then
-            List.filter (fun (_, f) -> row_field_repr f <> Rabsent)
-              row.row_fields
-          else row.row_fields in
-        let present =
-          List.filter
-            (fun (_, f) ->
-               match row_field_repr f with
-               | Rpresent _ -> true
-               | _ -> false)
-            fields in
-        let all_present = List.length present = List.length fields in
-        begin match row.row_name with
-        | Some(p, tyl) when namable_row row ->
-            let id = tree_of_path p in
-            let args = val_types_of_typlist of_path sch tyl in
-            if row.row_closed && all_present then
-              Otyp_constr (id, args)
-            else
-              let non_gen = is_non_gen sch px in
-              let tags =
-                if all_present then None else Some (List.map fst present) in
-              Otyp_variant (non_gen, Ovar_name(tree_of_path p, args),
-                            row.row_closed, tags)
-        | _ ->
-            let non_gen =
-              not (row.row_closed && all_present) && is_non_gen sch px in
-            let fields = List.map (tree_of_row_field sch) fields in
-            let tags =
-              if all_present then None else Some (List.map fst present) in
-            Otyp_variant (non_gen, Ovar_fields fields, row.row_closed, tags)
-        end
+	  let row = row_repr row in
+	  let fields =
+	    if row.row_closed then
+	      List.filter (fun (_, f) -> row_field_repr f <> Rabsent)
+		row.row_fields
+	    else row.row_fields in
+	  let present =
+	    List.filter
+	      (fun (_, f) ->
+		 match row_field_repr f with
+		 | Rpresent _ -> true
+		 | _ -> false)
+	      fields in
+	  let all_present = List.length present = List.length fields in
+	  begin match row.row_name with
+	  | Some(p, tyl) when namable_row row ->
+	      let id = tree_of_path p in
+	      let args = val_types_of_typlist env of_tconstr sch tyl in
+	      if row.row_closed && all_present then
+		Otyp_constr (id, args)
+	      else
+		let non_gen = is_non_gen sch px in
+		let tags =
+		  if all_present then None else Some (List.map fst present) in
+		Otyp_variant (non_gen, Ovar_name(tree_of_path p, args),
+			      row.row_closed, tags)
+	  | _ ->
+	      let non_gen =
+		not (row.row_closed && all_present) && is_non_gen sch px in
+	      let fields = List.map (tree_of_row_field sch) fields in
+	      let tags =
+		if all_present then None else Some (List.map fst present) in
+	      Otyp_variant (non_gen, Ovar_fields fields, row.row_closed, tags)
+	  end
     | Tobject (fi, nm) ->
-        tree_of_typobject sch ty fi nm
+	  tree_of_typobject sch ty fi nm
 *)
     | Tsubst ty ->
-        val_type_of_typexp of_path ty
-      |	Tvariant _ | Tobject (_,_) | Tlink _ | Tnil | Tfield _ ->
-        fatal_error "Transltype.val_type_of_typexp"
+	  val_type_of_typexp env of_tconstr ty
+	|	Tvariant _ | Tobject (_,_) | Tlink _ | Tnil | Tfield _ ->
+	  fatal_error "Transltype.val_type_of_typexp"
    ) in
   if is_aliased px then begin
     raise (Failure "alias type is not supported")
     (* check_name_of_type px;
-       Otyp_alias (pr_typ (), name_of_type px) *)
+	 Otyp_alias (pr_typ (), name_of_type px) *)
   end
   else pr_typ ()
 
@@ -346,19 +425,19 @@ let rec val_type_of_typexp of_path ty =
 and tree_of_row_field sch (l, f) =
   match row_field_repr f with
   | Rpresent None | Reither(true, [], _, _) -> (l, false, [])
-  | Rpresent(Some ty) -> (l, false, [val_type_of_typexp sch ty])
+  | Rpresent(Some ty) -> (l, false, [val_type_of_typexp env of_tconstr ty])
   | Reither(c, tyl, _, _) ->
       if c (* contradiction: un constructeur constant qui a un argument *)
-      then (l, true, val_types_of_typlist of_path sch tyl)
-      else (l, false, val_types_of_typlist of_path sch tyl)
+      then (l, true, val_types_of_typlist env of_tconstr sch tyl)
+      else (l, false, val_types_of_typlist env of_tconstr tyl)
   | Rabsent -> (l, false, [] (* une erreur, en fait *))
 *)
 
-and val_types_of_typlist of_path = function
+and val_types_of_typlist env of_tconstr = function
   | [] -> []
   | ty :: tyl ->
-      let tr = val_type_of_typexp of_path ty in
-      tr :: val_types_of_typlist of_path tyl
+      let tr = val_type_of_typexp env of_tconstr ty in
+      tr :: val_types_of_typlist env of_tconstr tyl
 
 (*
 and tree_of_typobject sch ty fi nm =
@@ -380,7 +459,7 @@ and tree_of_typobject sch ty fi nm =
       Otyp_object (fields, rest)
   | Some (p, {desc = Tvar} :: tyl) ->
       let non_gen = is_non_gen sch ty in
-      let args = val_types_of_typlist of_path sch tyl in
+      let args = val_types_of_typlist env of_tconstr tyl in
       Otyp_class (non_gen, tree_of_path p, args)
   | _ ->
       fatal_error "Transltype.tree_of_typobject"
@@ -396,21 +475,24 @@ and tree_of_typfields sch rest = function
       in
       ([], rest)
   | (s, t) :: l ->
-      let field = (s, val_type_of_typexp sch t) in
+      let field = (s, val_type_of_typexp env of_tconstr t) in
       let (fields, rest) = tree_of_typfields sch rest l in
       (field :: fields, rest)
 *)
 ;;
 
-let val_type_of_type_scheme of_path ty = reset_and_mark_loops ty; val_type_of_typexp of_path ty
+let val_type_of_type_scheme env of_tconstr ty = 
+  reset_and_mark_loops ty; 
+  val_type_of_typexp env of_tconstr ty
+;;
 
-let rec val_of_constraints of_path params =
+let rec val_of_constraints env of_tconstr params =
   List.fold_right
     (fun ty list ->
        let ty' = unalias ty in
        if ty != ty' then
-         let tr = val_type_of_typexp of_path ty in
-         (tr, val_type_of_typexp of_path ty') :: list
+         let tr = val_type_of_typexp env of_tconstr ty in
+         (tr, val_type_of_typexp env of_tconstr ty') :: list
        else list)
     params []
 
@@ -424,8 +506,29 @@ and filter_params tyl =
       [] tyl
   in List.rev params
 
-and val_of_type_declaration of_path id decl =
+and val_of_type_declaration env of_tconstr id decl =
 
+  (* we expand decl first *)
+  let decl =
+    { type_params = List.map (recursive_full_expand env) decl.type_params;
+      type_arity = decl.type_arity;
+      type_kind = begin
+	match decl.type_kind with
+	| Type_abstract -> Type_abstract
+	| Type_variant c_and_ts_s ->
+	    Type_variant (List.map (fun (c,ts) -> 
+	      c, List.map (recursive_full_expand env) ts) c_and_ts_s)
+	| Type_record (l_m_t_s, rrepr) ->
+	    Type_record (List.map (fun (l,m,t) -> 
+	      (l,m, recursive_full_expand env t)) l_m_t_s, rrepr)
+	end;
+      type_manifest = begin
+	match decl.type_manifest with
+	| None -> None
+	| Some t -> Some (recursive_full_expand env t)
+      end;
+      type_variance = decl.type_variance }
+  in
   reset();
 
   let params = filter_params decl.type_params in
@@ -456,11 +559,12 @@ and val_of_type_declaration of_path id decl =
        && List.exists (fun x -> x <> (true, true)) decl.type_variance then
       (Ident.name id,
        List.combine
-         (List.map (fun ty -> type_param (val_type_of_typexp of_path ty)) params)
+         (List.map (fun ty -> 
+	   type_param (val_type_of_typexp env of_tconstr ty)) params)
          decl.type_variance)
     else
       let ty =
-        val_type_of_typexp run_ident_of_path
+        val_type_of_typexp env (fun p _ -> run_ident_of_path)
           (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)))
       in
       match ty with
@@ -471,31 +575,36 @@ and val_of_type_declaration of_path id decl =
   let val_type_of_manifest decl ty1 =
     match decl.type_manifest with
     | None -> ty1
-    | Some ty -> Rdecl_manifest (val_type_of_typexp of_path ty, ty1)
+    | Some ty -> 
+	prerr_endline "Rdecl_manifest ???";
+	Rdecl_manifest (val_type_of_typexp env of_tconstr ty, ty1)
   in
   let (name, args) = type_defined decl in
-  let constraints = val_of_constraints of_path params in
+  let constraints = val_of_constraints env of_tconstr params in
   let ty =
     match decl.type_kind with
     | Type_abstract ->
         begin match decl.type_manifest with
         | None -> Rdecl_abstract
-        | Some ty -> Rdecl_manifest (val_type_of_typexp of_path ty, Rdecl_abstract)
+        | Some ty -> 
+	    prerr_endline "Rdecl_manifest2???";
+	    Rdecl_manifest (val_type_of_typexp env of_tconstr ty, Rdecl_abstract)
         end
     | Type_variant cstrs ->
-        val_type_of_manifest decl (Rdecl_sum (List.map (val_type_of_constructor of_path) cstrs))
+        val_type_of_manifest decl 
+	  (Rdecl_sum (List.map (val_type_of_constructor env of_tconstr) cstrs))
     | Type_record(lbls, rep) ->
-        val_type_of_manifest decl (Rdecl_record (List.map (val_type_of_label of_path) lbls))
+        val_type_of_manifest decl 
+	  (Rdecl_record (List.map (val_type_of_label env of_tconstr) lbls))
   in
   (name, args, ty, constraints)
 
-and val_type_of_constructor of_path (name, args) =
-  (name, val_types_of_typlist of_path args)
+and val_type_of_constructor env of_tconstr (name, args) =
+  (name, val_types_of_typlist env of_tconstr args)
 
-and val_type_of_label of_path (name, mut, arg) =
-  (name, mut = Mutable, val_type_of_typexp of_path arg)
+and val_type_of_label env of_tconstr (name, mut, arg) =
+  (name, mut = Mutable, val_type_of_typexp env of_tconstr arg)
 ;;
-
 
 let detect_mutual_recursives get_subnodes start =
   let loop = ref [start] in
@@ -512,12 +621,6 @@ let detect_mutual_recursives get_subnodes start =
   in
   List.iter (aux []) (get_subnodes start);
   !loop
-;;
-
-let get_ident_of_path = function
-  | Pident i -> i
-  | Pdot (_,s,i) -> Ident.create_with_stamp s i
-  | _ -> assert false
 ;;
 
 let extract_used_paths_and_decls env path =
@@ -571,7 +674,8 @@ Format.pp_print_newline Format.err_formatter ();
 	let decl = 
 	  Env.find_type path env 
 	in
-	val_of_type_declaration (fun x -> x) (get_ident_of_path path) decl
+	val_of_type_declaration env (fun p _ -> p) 
+	  (get_ident_of_path path) decl
       with
       |	Not_found ->
 (*
@@ -634,11 +738,11 @@ let rec type_digest env path =
     let digest = Hashtbl.find digest_cache path in
     digest
   with Not_found ->
-    let path_decls, recursives = extract_used_paths_and_decls env path in
     if List.mem path Predef.builtin_abstract_types then begin
       Digest (Ident.name (get_ident_of_path path))
     end else begin
       Format.printf "TYPE DIGEST of %a\n" Printtyp.path path;
+      let path_decls, recursives = extract_used_paths_and_decls env path in
       Format.printf "used paths: ";
       List.iter (fun (p,_) ->
   	Format.printf "%a " Printtyp.path p) path_decls;
@@ -727,15 +831,24 @@ type error = Contains_abstract_type of type_expr * Path.t
 exception Error of error
 
 let run_type_of_typexp env ty =
-  val_type_of_typexp (fun p -> 
-    let ri = run_ident_of_path p
-    and digest = type_digest env p in
-    match digest with
-    | Digest d -> ri, d
-    | _ -> raise (Error (Contains_abstract_type (ty, p)))) ty
+  val_type_of_typexp env (fun p ty -> 
+    let ri = run_ident_of_path p in
+    let ty' = recursive_full_expand env ty in
+    let dty = val_type_of_typexp env (fun p _ ->
+      let digest = type_digest env p in
+      match digest with
+      | Digest d -> d
+      | _ -> raise (Error (Contains_abstract_type (ty, p)))) ty'
+    in
+    ri, dty) ty
+;;
+
+let run_type_of_type_scheme env ty = 
+  reset_and_mark_loops ty; 
+  run_type_of_typexp env ty
 ;;
 
 let transl_run_type_of_typexp env ty =
   reset ();
-  transl_run_type (run_type_of_typexp env ty)
+  transl_run_type (run_type_of_type_scheme env ty)
 ;;

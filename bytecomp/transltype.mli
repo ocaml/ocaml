@@ -4,8 +4,6 @@ val run_ident_of_path : Path.t -> Rtype.run_ident
 val tree_of_run_ident : Rtype.run_ident -> Outcometree.out_ident
 val transl_run_ident_of_path : Path.t -> Lambda.structured_constant
 
-val val_type_of_typexp : (Path.t -> 'a) -> Types.type_expr -> 'a Rtype.val_type
-
 type digest = Abstract | Digest of string
 val type_digest : Env.t -> Path.t -> digest
 
