@@ -322,14 +322,14 @@ expr:
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN expr %prec prec_let
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
-  | FUNCTION match_cases %prec prec_fun
-      { mkexp(Pexp_function(List.rev $2)) }
+  | FUNCTION opt_bar match_cases %prec prec_fun
+      { mkexp(Pexp_function(List.rev $3)) }
   | FUN simple_pattern fun_def %prec prec_fun
       { mkexp(Pexp_function([$2, $3])) }
-  | MATCH expr WITH match_cases %prec prec_match
-      { mkexp(Pexp_match($2, List.rev $4)) }
-  | TRY expr WITH match_cases %prec prec_try
-      { mkexp(Pexp_try($2, List.rev $4)) }
+  | MATCH expr WITH opt_bar match_cases %prec prec_match
+      { mkexp(Pexp_match($2, List.rev $5)) }
+  | TRY expr WITH opt_bar match_cases %prec prec_try
+      { mkexp(Pexp_try($2, List.rev $5)) }
   | expr_comma_list
       { mkexp(Pexp_tuple(List.rev $1)) }
   | constr_longident simple_expr %prec prec_constr_appl
@@ -538,10 +538,14 @@ type_kind:
       { (Ptype_abstract, Some $2) }
   | EQUAL constructor_declarations
       { (Ptype_variant(List.rev $2), None) }
+  | EQUAL BAR constructor_declarations
+      { (Ptype_variant(List.rev $3), None) }
   | EQUAL LBRACE label_declarations RBRACE
       { (Ptype_record(List.rev $3), None) }
   | EQUAL core_type EQUAL constructor_declarations %prec prec_type_def
       { (Ptype_variant(List.rev $4), Some $2) }
+  | EQUAL core_type EQUAL BAR constructor_declarations %prec prec_type_def
+      { (Ptype_variant(List.rev $5), Some $2) }
   | EQUAL core_type EQUAL LBRACE label_declarations RBRACE %prec prec_type_def
       { (Ptype_record(List.rev $5), Some $2) }
 ;
@@ -724,5 +728,7 @@ mutable_flag:
     /* empty */                                 { Immutable }
   | MUTABLE                                     { Mutable }
 ;
-
+opt_bar:
+    /* empty */                                 { () }
+  | BAR                                         { () }
 %%
