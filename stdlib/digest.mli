@@ -12,27 +12,35 @@
 
 (* $Id$ *)
 
-(* Module [Digest]: MD5 message digest *)
+(** MD5 message digest.
 
-(* This module provides functions to compute 128-bit ``digests'' of
+   This module provides functions to compute 128-bit ``digests'' of
    arbitrary-length strings or files. The digests are of cryptographic
    quality: it is very hard, given a digest, to forge a string having
-   that digest. The algorithm used is MD5. *)
+   that digest. The algorithm used is MD5. 
+*)
 
+(** The type of digests: 16-character strings. *)
 type t = string
-        (* The type of digests: 16-character strings. *)
+
+(** Return the digest of the given string. *)
 val string: string -> t
-        (* Return the digest of the given string. *)
+
+(** [Digest.substring s ofs len] returns the digest of the substring
+   of [s] starting at character number [ofs] and containing [len]
+   characters. *)
 val substring: string -> int -> int -> t
-        (* [Digest.substring s ofs len] returns the digest of the substring
-           of [s] starting at character number [ofs] and containing [len]
-           characters. *)
+
+(** [Digest.channel ic len] reads [len] characters from channel [ic]
+   and returns their digest. *)
 external channel: in_channel -> int -> t = "md5_chan"
-        (* [Digest.channel ic len] reads [len] characters from channel [ic]
-           and returns their digest. *)
+
+(** Return the digest of the file whose name is given. *)
 val file: string -> t
-        (* Return the digest of the file whose name is given. *)
+
+(** Write a digest on the given output channel. *)
 val output: out_channel -> t -> unit
-        (* Write a digest on the given output channel. *)
+
+(** Read a digest from the given input channel. *)
 val input: in_channel -> t
-        (* Read a digest from the given input channel. *)
+
