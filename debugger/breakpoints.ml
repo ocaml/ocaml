@@ -111,14 +111,14 @@ let update_breakpoints () =
     prerr_endline ""
   end;
   if !current_checkpoint.c_breakpoint_version <> !current_version then
-    Exec.protected
+    Exec.protect
       (function () ->
          remove_breakpoints !current_checkpoint.c_breakpoints;
          set_breakpoints !positions;
          copy_breakpoints ())
 
 let change_version version pos =
-  Exec.protected
+  Exec.protect
     (function () ->
        current_version := version;
        positions := pos)
@@ -163,7 +163,7 @@ let rec new_breakpoint =
     {ev_repr = Event_child pc} ->
       new_breakpoint (Symbols.any_event_at_pc !pc)
   | event ->
-      Exec.protected
+      Exec.protect
         (function () ->
            incr breakpoint_number;
            insert_position event.ev_pos;
@@ -192,7 +192,7 @@ let rec new_breakpoint =
 let remove_breakpoint number =
   try
     let pos = (List.assoc number !breakpoints).ev_pos in
-      Exec.protected
+      Exec.protect
         (function () ->
            breakpoints := assoc_remove !breakpoints number;
            remove_position pos)
@@ -225,12 +225,12 @@ let exec_with_temporary_breakpoint pc funct =
         end
 
     in
-      Exec.protected (function () -> insert_position pc);
+      Exec.protect (function () -> insert_position pc);
       temporary_breakpoint_position := Some pc;
       try
         funct ();
-        Exec.protected remove
+        Exec.protect remove
       with
         x ->
-          Exec.protected remove;
+          Exec.protect remove;
           raise x

@@ -69,7 +69,7 @@ let remove_checkpoint checkpoint =
  *)
 let wait_for_connection checkpoint =
   try
-    Exec.unprotected
+    Exec.unprotect
       (function () ->
          let old_controller = Input_handling.current_controller !connection in
            execute_with_other_controller
@@ -288,7 +288,7 @@ let internal_step duration =
   match current_report () with
     Some {rep_type = Exited | Uncaught_exc} -> ()
   | _ ->
-      Exec.protected
+      Exec.protect
         (function () ->
            if !make_checkpoints then
              duplicate_current_checkpoint ()

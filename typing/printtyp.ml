@@ -416,9 +416,9 @@ let class_var l (m, t) =
 let metho public concrete lab ty =
   print_space ();
   open_box 2;
-  if not (List.mem_assoc lab public) then print_string "private ";
   if Concr.mem lab concrete then print_string "method "
   else print_string "virtual ";
+  if not (List.mem_assoc lab public) then print_string "protected ";
   print_string lab;
   print_string " :";
   print_space ();

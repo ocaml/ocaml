@@ -187,6 +187,7 @@ let unclosed opening_name opening_num closing_name closing_num =
 %token PARSER
 %token <string> PREFIXOP
 %token PRIVATE
+%token PROTECTED
 %token QUESTION
 %token QUOTE
 %token RBRACE
@@ -795,12 +796,12 @@ value:
           { $3, $1, $2, None, symbol_loc () }
 ;
 virtual_method:
-        private_flag VIRTUAL label COLON core_type
-          { $3, $1, $5, symbol_loc () }
+        VIRTUAL protected_flag label COLON core_type
+          { $3, $2, $5, symbol_loc () }
 
 method_def :
-        private_flag METHOD label fun_binding
-          { $3, $1, $4, symbol_loc () }
+        METHOD protected_flag label fun_binding
+          { $3, $2, $4, symbol_loc () }
 ;
 
 /* Class type definitions */
@@ -857,10 +858,10 @@ value_type :
           { $3, $1, $2, None, symbol_loc () }
 ;
 method_type :
-        private_flag METHOD label COLON core_type
-          { $3, $1, $5, symbol_loc () }
-      | private_flag METHOD label
-          { $3, $1, mktyp(Ptyp_any), symbol_loc () }
+        METHOD protected_flag label COLON core_type
+          { $3, $2, $5, symbol_loc () }
+      | METHOD protected_flag label
+          { $3, $2, mktyp(Ptyp_any), symbol_loc () }
 ;
 
 /* Type declarations */
@@ -1117,6 +1118,10 @@ direction_flag:
 private_flag:
     /* empty */                                 { Public }
   | PRIVATE                                     { Private }
+;
+protected_flag:
+    /* empty */                                 { Public }
+  | PROTECTED                                   { Private }
 ;
 mutable_flag:
     /* empty */                                 { Immutable }

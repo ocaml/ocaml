@@ -14,5 +14,5 @@
 
 (* Handling of keyboard interrupts *)
 
-val protected : (unit -> unit) -> unit
-val unprotected : (unit -> unit) -> unit
+val protect : (unit -> unit) -> unit
+val unprotect : (unit -> unit) -> unit

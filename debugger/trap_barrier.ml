@@ -28,7 +28,7 @@ let remove_trap_barrier () =
 (* Ensure the trap barrier state is up to date in current checkpoint. *)
 let update_trap_barrier () =
   if !current_checkpoint.c_trap_barrier <> !current_trap_barrier then
-    Exec.protected
+    Exec.protect
       (function () ->
          set_trap_barrier !current_trap_barrier;
          !current_checkpoint.c_trap_barrier <- !current_trap_barrier)

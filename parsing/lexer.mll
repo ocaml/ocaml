@@ -67,6 +67,7 @@ let keyword_table =
     "or", OR;
     "parser", PARSER;
     "private", PRIVATE;
+    "protected", PROTECTED;
     "rec", REC;
     "sig", SIG;
     "struct", STRUCT;

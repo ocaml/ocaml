@@ -52,7 +52,7 @@ let rec protect cont =
   | Sys.Break ->
       protect (function () ->
         print_endline "Interrupted.";
-        Exec.protected (function () ->
+        Exec.protect (function () ->
           flush stdout;
           stop_user_input ();
           if !loaded then begin

@@ -16,10 +16,10 @@
 
 let interrupted = ref false
 
-let protect = ref false
+let is_protected = ref false
 
 let break signum =
-  if !protect
+  if !is_protected
   then interrupted := true
   else raise Sys.Break
 
@@ -27,23 +27,23 @@ let _ =
   Sys.signal Sys.sigint (Sys.Signal_handle break);
   Sys.signal Sys.sigpipe (Sys.Signal_handle (fun _ -> raise End_of_file))
 
-let protected f =
-  if !protect then
+let protect f =
+  if !is_protected then
     f ()
   else begin
-    protect := true;
+    is_protected := true;
     if not !interrupted then
        f ();
-    protect := false;
+    is_protected := false;
     if !interrupted then begin interrupted := false; raise Sys.Break end
   end
 
-let unprotected f =
-  if not !protect then
+let unprotect f =
+  if not !is_protected then
     f ()
   else begin
-    protect := false;
+    is_protected := false;
     if !interrupted then begin interrupted := false; raise Sys.Break end;
     f ();
-    protect := true
+    is_protected := true
   end
