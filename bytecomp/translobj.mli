@@ -12,9 +12,15 @@
 
 (* $Id$ *)
 
-val oo_prim: string -> Lambda.lambda
+open Lambda
 
+val oo_prim: string -> lambda
+
+val share: structured_constant -> lambda
 val meth: string -> Ident.t
 
 val reset_labels: unit -> unit
-val transl_label_init: Lambda.lambda -> Lambda.lambda
+val transl_label_init: lambda -> lambda
+
+val oo_wrap: Env.t -> bool -> ('a -> lambda) -> 'a -> lambda
+val oo_add_class: Ident.t -> Env.t * bool

@@ -31,8 +31,8 @@ BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo buffer.cmo \
   printf.cmo format.cmo scanf.cmo \
   arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo camlinternalOO.cmo oo.cmo \
-  genlex.cmo callback.cmo weak.cmo \
+  digest.cmo random.cmo callback.cmo camlinternalOO.cmo oo.cmo \
+  genlex.cmo weak.cmo \
   lazy.cmo filename.cmo complex.cmo
 LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml moreLabels.ml
 
@@ -118,6 +118,9 @@ pervasives.p.cmx: pervasives.ml
 # camlinternalOO.cmi must be compiled with -nopervasives for applets
 camlinternalOO.cmi: camlinternalOO.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c camlinternalOO.mli
+
+camlinternalOO.cmx: camlinternalOO.ml
+	$(CAMLOPT) $(OPTCOMPFLAGS) -inline 0 camlinternalOO.ml
 
 # labelled modules require the -nolabels flag
 labelled.cmo:

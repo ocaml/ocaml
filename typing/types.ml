@@ -91,7 +91,7 @@ and value_kind =
   | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
   | Val_self of (Ident.t * type_expr) Meths.t ref *
                 (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
-                string
+                string * type_expr
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)

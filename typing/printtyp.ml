@@ -615,7 +615,7 @@ let class_var sch ppf l (m, t) =
     "@ @[<2>val %s%s :@ %a@]" (string_of_mutable m) l (typexp sch 0) t
 
 let metho sch concrete ppf (lab, kind, ty) =
-  if lab <> "*dummy method*" then begin
+  if lab <> dummy_method then begin
     let priv =
       match field_kind_repr kind with
       | Fvar _ (* {contents = None} *) -> "private "
@@ -632,7 +632,7 @@ let method_type ty =
   | _            -> ty
 
 let tree_of_metho sch concrete csil (lab, kind, ty) =
-  if lab <> "*dummy method*" then begin
+  if lab <> dummy_method then begin
     let priv =
       match field_kind_repr kind with
       | Fvar _ (* {contents = None} *) -> true
@@ -765,7 +765,7 @@ let tree_of_cltype_declaration id cl =
       Ctype.flatten_fields (Ctype.object_fields sign.cty_self) in
     List.exists
       (fun (lab, _, ty) ->
-         not (lab = "*dummy method*" || Concr.mem lab sign.cty_concr))
+         not (lab = dummy_method || Concr.mem lab sign.cty_concr))
       fields in
 
   Osig_class_type
@@ -918,8 +918,8 @@ let explanation unif t3 t4 ppf =
   | Tvar, Tunivar | Tunivar, Tvar ->
       fprintf ppf "@,The universal variable %a would escape its scope"
         type_expr (if t3.desc = Tunivar then t3 else t4)
-  | Tfield ("*dummy method*", _, _, _), _
-  | _, Tfield ("*dummy method*", _, _, _) ->
+  | Tfield (lab, _, _, _), _
+  | _, Tfield (lab, _, _, _) when lab = dummy_method ->
       fprintf ppf
         "@,Self type cannot be unified with a closed object type"
   | Tfield (l, _, _, _), _ ->

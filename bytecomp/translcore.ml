@@ -36,6 +36,10 @@ let transl_module =
   ref((fun cc rootpath modl -> assert false) :
       module_coercion -> Path.t option -> module_expr -> lambda)
 
+let transl_object =
+  ref (fun id s cl -> assert false :
+       Ident.t -> string list -> class_expr -> lambda)
+
 (* Translation of primitives *)
 
 let comparisons_table = create_hashtable 11 [
@@ -500,9 +504,23 @@ let assert_failed loc =
 (* Translation of expressions *)
 
 let rec transl_exp e =
+  let eval_once =
+    (* Whether classes for immediate objects must be cached *)
+    match e.exp_desc with
+      Texp_function _ | Texp_for _ | Texp_while _ -> false
+    | _ -> true
+  in
+  if eval_once then transl_exp0 e else
+  Translobj.oo_wrap e.exp_env true transl_exp0 e
+
+and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, {val_kind = Val_prim p}) ->
-      transl_primitive p
+      if p.prim_name = "%send" then
+	let obj = Ident.create "obj" and meth = Ident.create "meth" in
+	Lfunction(Curried, [obj; meth], Lsend(Lvar meth, Lvar obj, []))
+      else
+	transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, {val_kind = Val_reg | Val_self _}) ->
@@ -524,7 +542,10 @@ let rec transl_exp e =
     when List.length args = p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
-      let prim = transl_prim p args in
+      if p.prim_name = "%send" then
+	let obj = transl_exp (List.hd args) in
+	event_after e (Lsend (transl_exp (List.nth args 1), obj, []))
+      else let prim = transl_prim p args in
       begin match (prim, args) with
         (Praise, [arg1]) ->
           Lprim(Praise, [event_after arg1 (transl_exp arg1)])
@@ -665,6 +686,13 @@ let rec transl_exp e =
   | Texp_lazy e ->
       let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
       Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
+  | Texp_object (cs, cty, meths) ->
+      let cl = Ident.create "class" in
+      !transl_object cl meths
+        { cl_desc = Tclass_structure cs;
+          cl_loc = e.exp_loc;
+          cl_type = Tcty_signature cty;
+          cl_env = e.exp_env }
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -735,33 +763,6 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
         transl_function exp.exp_loc false repr partial' pl in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
-(*
-  | [({pat_desc = Tpat_var id} as pat),
-     ({exp_desc = Texp_let(Nonrecursive, cases,
-                          ({exp_desc = Texp_function _} as e2))} as e1)]
-    when Ident.name id = "*opt*" ->
-      transl_function loc untuplify_fn repr (cases::bindings) partial [pat, e2]
-  | [pat, exp] when bindings <> [] ->
-      let exp =
-        List.fold_left
-          (fun exp cases ->
-            {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
-          exp bindings
-      in
-      transl_function loc untuplify_fn repr [] partial [pat, exp]
-  | (pat, exp)::_ when bindings <> [] ->
-      let param = name_pattern "param" pat_expr_list in
-      let exp =
-        { exp with exp_loc = loc; exp_desc =
-          Texp_match
-            ({exp with exp_type = pat.pat_type; exp_desc =
-              Texp_ident (Path.Pident param,
-                          {val_type = pat.pat_type; val_kind = Val_reg})},
-             pat_expr_list, partial) }
-      in
-      transl_function loc untuplify_fn repr bindings Total
-        [{pat with pat_desc = Tpat_var param}, exp]
-*)
   | ({pat_desc = Tpat_tuple pl}, _) :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
@@ -876,6 +877,19 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
              List.fold_right update_field lbl_expr_list (Lvar copy_id))
     end
   end
+
+(* Wrapper for class compilation *)
+
+(*
+let transl_exp = transl_exp_wrap
+
+let transl_let rec_flag pat_expr_list body =
+  match pat_expr_list with
+    [] -> body
+  | (_, expr) :: _ ->
+      Translobj.oo_wrap expr.exp_env false
+        (transl_let rec_flag pat_expr_list) body
+*)
 
 (* Compile an exception definition *)
 

@@ -248,19 +248,22 @@ let rec transl_module cc rootpath mexp =
       transl_structure [] cc rootpath str
   | Tmod_functor(param, mty, body) ->
       let bodypath = functor_path rootpath param in
-      begin match cc with
-        Tcoerce_none ->
-          Lfunction(Curried, [param], transl_module Tcoerce_none bodypath body)
-      | Tcoerce_functor(ccarg, ccres) ->
-          let param' = Ident.create "funarg" in
-          Lfunction(Curried, [param'],
-            Llet(Alias, param, apply_coercion ccarg (Lvar param'),
-              transl_module ccres bodypath body))
-      | _ ->
-          fatal_error "Translmod.transl_module"
-      end
+      oo_wrap mexp.mod_env true
+        (function
+        | Tcoerce_none ->
+            Lfunction(Curried, [param],
+                      transl_module Tcoerce_none bodypath body)
+        | Tcoerce_functor(ccarg, ccres) ->
+            let param' = Ident.create "funarg" in
+            Lfunction(Curried, [param'],
+                      Llet(Alias, param, apply_coercion ccarg (Lvar param'),
+                           transl_module ccres bodypath body))
+        | _ ->
+            fatal_error "Translmod.transl_module")
+        cc
   | Tmod_apply(funct, arg, ccarg) ->
-      apply_coercion cc
+      oo_wrap mexp.mod_env true
+        (apply_coercion cc)
         (Lapply(transl_module Tcoerce_none None funct,
                 [transl_module ccarg None arg]))
   | Tmod_constraint(arg, mty, ccarg) ->

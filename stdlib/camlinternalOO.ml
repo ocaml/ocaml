@@ -327,7 +327,13 @@ let get_method table label =
   let (buck, elem) = decode label in
   table.buckets.(buck).(elem)
 
+let to_list arr =
+  if arr == magic 0 then [] else Array.to_list arr
+
 let narrow table vars virt_meths concr_meths =
+  let vars = to_list vars
+  and virt_meths = to_list virt_meths
+  and concr_meths = to_list concr_meths in
   let virt_meth_labs = List.map (get_method_label table) virt_meths in
   let concr_meth_labs = List.map (get_method_label table) concr_meths in
   table.previous_states <-
@@ -387,6 +393,13 @@ let new_variable table name =
   table.vars <- Vars.add name index table.vars;
   index
 
+let new_variables table names =
+  let index = new_variable table names.(0) in
+  for i = 1 to Array.length names - 1 do
+    ignore (new_variable table names.(i))
+  done;
+  index
+
 let get_variable table name =
   Vars.find name table.vars
 
@@ -395,12 +408,13 @@ let add_initializer table f =
 
 let create_table public_methods =
   let table = new_table () in
-  List.iter
-    (function met ->
-       let lab = new_method met in
-       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
-       table.methods_by_label <- Labs.add lab true table.methods_by_label)
-    public_methods;
+  if public_methods != magic 0 then
+    Array.iter
+      (function met ->
+        let lab = new_method met in
+        table.methods_by_name  <- Meths.add met lab table.methods_by_name;
+        table.methods_by_label <- Labs.add lab true table.methods_by_label)
+      public_methods;
   table
 
 let init_class table =
@@ -408,6 +422,28 @@ let init_class table =
   if params.compact_table then
     compact_buckets table.buckets;
   table.initializers <- List.rev table.initializers
+
+let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
+  narrow cla vals virt_meths concr_meths;
+  let init =
+    if top then super cla env else Obj.repr (super cla) in
+  widen cla;
+  init
+
+let make_class pub_meths class_init =
+  let table = create_table pub_meths in
+  let env_init = class_init table in
+  init_class table;
+  (env_init (Obj.repr 0), class_init, env_init, Obj.repr 0)
+
+type init_table = { mutable env_init: t; mutable class_init: table -> t }
+
+let make_class_store pub_meths class_init init_table =
+  let table = create_table pub_meths in
+  let env_init = class_init table in
+  init_class table;
+  init_table.class_init <- class_init;
+  init_table.env_init <- env_init
 
 (**** Objects ****)
 
@@ -453,9 +489,148 @@ let create_object_and_run_initializers obj_0 table =
     obj
   end
 
+(* Equivalent primitive below
 let send obj lab =
   let (buck, elem) = decode lab in
   (magic obj : (obj -> t) array array array).(0).(buck).(elem) obj
+*)
+external send : obj -> label -> 'a = "%send"
+
+(**** table collection access ****)
+
+type tables = Empty | Cons of table * tables * tables
+type mut_tables =
+    {key: table; mutable data: tables; mutable next: tables}
+external mut : tables -> mut_tables = "%identity"
+
+let build_path n keys tables =
+  let res = Cons (Obj.magic 0, Empty, Empty) in
+  let r = ref res in
+  for i = 0 to n do
+    r := Cons (keys.(i), !r, Empty)
+  done;
+  tables.data <- !r;
+  res
+
+let rec lookup_keys i keys tables =
+  if i < 0 then tables else
+  let key = keys.(i) in
+  let rec lookup_key tables =
+    if tables.key == key then lookup_keys (i-1) keys tables.data else
+    if tables.next <> Empty then lookup_key (mut tables.next) else
+    let next = Cons (key, Empty, Empty) in
+    tables.next <- next;
+    build_path (i-1) keys (mut next)
+  in
+  lookup_key (mut tables)
+
+let lookup_tables root keys =
+  let root = mut root in
+  if root.data <> Empty then
+    lookup_keys (Array.length keys - 1) keys root.data
+  else
+    build_path (Array.length keys - 1) keys root
+
+(**** builtin methods ****)
+
+type closure = item
+external ret : (obj -> 'a) -> closure = "%identity"
+
+let get_const x = ret (fun obj -> x)
+let get_var n   = ret (fun obj -> Array.unsafe_get obj n)
+let get_env e n = ret (fun obj -> Obj.field (Array.unsafe_get obj e) n)
+let get_meth n  = ret (fun obj -> send obj n)
+let set_var n   = ret (fun obj x -> Array.unsafe_set obj n x)
+let app_const f x = ret (fun obj -> f x)
+let app_var f n   = ret (fun obj -> f (Array.unsafe_get obj n))
+let app_env f e n = ret (fun obj -> f (Obj.field (Array.unsafe_get obj e) n))
+let app_meth f n  = ret (fun obj -> f (send obj n))
+let app_const_const f x y = ret (fun obj -> f x y)
+let app_const_var f x n   = ret (fun obj -> f x (Array.unsafe_get obj n))
+let app_const_meth f x n = ret (fun obj -> f x (send obj n))
+let app_var_const f n x = ret (fun obj -> f (Array.unsafe_get obj n) x)
+let app_meth_const f n x = ret (fun obj -> f (send obj n) x)
+let app_const_env f x e n =
+  ret (fun obj -> f x (Obj.field (Array.unsafe_get obj e) n))
+let app_env_const f e n x =
+  ret (fun obj -> f (Obj.field (Array.unsafe_get obj e) n) x)
+let meth_app_const n x = ret (fun obj -> (send obj n) x)
+let meth_app_var n m =
+  ret (fun obj -> (send obj n) (Array.unsafe_get obj m))
+let meth_app_env n e m =
+  ret (fun obj -> (send obj n) (Obj.field (Array.unsafe_get obj e) m))
+let meth_app_meth n m =
+  ret (fun obj -> (send obj n) (send obj m))
+
+type impl =
+    GetConst
+  | GetVar
+  | GetEnv
+  | GetMeth
+  | SetVar
+  | AppConst
+  | AppVar
+  | AppEnv
+  | AppMeth
+  | AppConstConst
+  | AppConstVar
+  | AppConstEnv
+  | AppConstMeth
+  | AppVarConst
+  | AppEnvConst
+  | AppMethConst
+  | MethAppConst
+  | MethAppVar
+  | MethAppEnv
+  | MethAppMeth
+  | Closure of Obj.t
+
+let method_impl i arr =
+  let next () = incr i; magic arr.(!i) in
+  match next() with
+    GetConst -> let x : t = next() in ret (fun obj -> x)
+  | GetVar   -> let n = next() in get_var n
+  | GetEnv   -> let e = next() and n = next() in get_env e n
+  | GetMeth  -> let n = next() in get_meth n
+  | SetVar   -> let n = next() in set_var n
+  | AppConst -> let f = next() and x = next() in ret (fun obj -> f x)
+  | AppVar   -> let f = next() and n = next () in app_var f n
+  | AppEnv   ->
+      let f = next() and e = next() and n = next() in app_env f e n
+  | AppMeth  -> let f = next() and n = next () in app_meth f n
+  | AppConstConst ->
+      let f = next() and x = next() and y = next() in ret (fun obj -> f x y)
+  | AppConstVar ->
+      let f = next() and x = next() and n = next() in app_const_var f x n
+  | AppConstEnv ->
+      let f = next() and x = next() and e = next () and n = next() in
+      app_const_env f x e n
+  | AppConstMeth ->
+      let f = next() and x = next() and n = next() in app_const_meth f x n
+  | AppVarConst ->
+      let f = next() and n = next() and x = next() in app_var_const f n x
+  | AppEnvConst ->
+      let f = next() and e = next () and n = next() and x = next() in
+      app_env_const f e n x
+  | AppMethConst ->
+      let f = next() and n = next() and x = next() in app_meth_const f n x
+  | MethAppConst ->
+      let n = next() and x = next() in meth_app_const n x
+  | MethAppVar ->
+      let n = next() and m = next() in meth_app_var n m
+  | MethAppEnv ->
+      let n = next() and e = next() and m = next() in meth_app_env n e m
+  | MethAppMeth ->
+      let n = next() and m = next() in meth_app_meth n m
+  | Closure _ as clo -> magic clo
+
+let set_methods table methods =
+  let len = Array.length methods and i = ref 0 in
+  while !i < len do
+    let label = methods.(!i) and clo = method_impl i methods in
+    set_method table label clo;
+    incr i
+  done
 
 (**** Statistics ****)
 

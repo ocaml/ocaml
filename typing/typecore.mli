@@ -35,7 +35,7 @@ val type_class_arg_pattern:
         Typedtree.pattern * (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
-        string -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
+        string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
         Typedtree.pattern *
         (Ident.t * type_expr) Meths.t ref *
         (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
@@ -102,3 +102,7 @@ val report_error: formatter -> error -> unit
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
+(* Forward declaration, to be filled in by Typeclass.class_structure *)
+val type_object:
+  (Env.t -> Location.t -> Parsetree.class_structure ->
+   Typedtree.class_structure * class_signature * string list) ref

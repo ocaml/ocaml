@@ -76,6 +76,7 @@ and expression_desc =
   | Texp_assert of expression
   | Texp_assertfalse
   | Texp_lazy of expression
+  | Texp_object of class_structure * class_signature * string list
 
 and meth =
     Tmeth_name of string
@@ -86,7 +87,8 @@ and meth =
 and class_expr =
   { cl_desc: class_expr_desc;
     cl_loc: Location.t;
-    cl_type: class_type }
+    cl_type: class_type;
+    cl_env: Env.t }
 
 and class_expr_desc =
     Tclass_ident of Path.t

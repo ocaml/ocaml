@@ -46,3 +46,5 @@ val report_error: formatter -> error -> unit
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 val transl_module :
       (module_coercion -> Path.t option -> module_expr -> lambda) ref
+val transl_object :
+      (Ident.t -> string list -> class_expr -> lambda) ref

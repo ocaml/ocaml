@@ -159,3 +159,14 @@ let rec find_name name = function
         k.data
       else
         find_name name (if c < 0 then l else r)
+
+let rec keys_aux stack accu = function
+    Empty ->
+      begin match stack with
+        [] -> accu
+      | a :: l -> keys_aux l accu a
+      end
+  | Node(l, k, r, _) ->
+      keys_aux (l :: stack) (k.ident :: accu) r
+
+let keys tbl = keys_aux [] [] tbl

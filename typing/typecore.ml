@@ -67,6 +67,11 @@ let type_module =
   ref ((fun env md -> assert false) :
        Env.t -> Parsetree.module_expr -> Typedtree.module_expr)
 
+(* Forward declaration, to be filled in by Typeclass.class_structure *)
+let type_object =
+  ref (fun env s -> assert false :
+       Env.t -> Location.t -> Parsetree.class_structure ->
+	 class_structure * class_signature * string list)
 
 (*
   Saving and outputting type information.
@@ -523,7 +528,8 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   (pat, pv, val_env, met_env)
 
 let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
-let type_self_pattern cl_num val_env met_env par_env spat =
+
+let type_self_pattern cl_num privty val_env met_env par_env spat =
   let spat = 
     mkpat (Ppat_alias (mkpat(Ppat_alias (spat, "selfpat-*")),
                        "selfpat-" ^ cl_num))
@@ -540,7 +546,7 @@ let type_self_pattern cl_num val_env met_env par_env spat =
       (fun (id, ty) (val_env, met_env, par_env) ->
          (Env.add_value id {val_type = ty; val_kind = Val_unbound} val_env,
           Env.add_value id {val_type = ty;
-                            val_kind = Val_self (meths, vars, cl_num)}
+                            val_kind = Val_self (meths, vars, cl_num, privty)}
             met_env,
           Env.add_value id {val_type = ty; val_kind = Val_unbound} par_env))
       pv (val_env, met_env, par_env)
@@ -583,7 +589,20 @@ let rec is_nonexpansive exp =
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_new (_, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
       true
-  | Texp_lazy e -> true
+  (* Note: nonexpansive only means no _observable_ side effects *)
+  | Texp_lazy e -> is_nonexpansive e
+  | Texp_object ({cl_field=fields}, {cty_vars=vars}, _) ->
+      let count = ref 0 in
+      List.for_all
+        (function
+            Cf_meth _ -> true
+          | Cf_val (_,_,e) -> incr count; is_nonexpansive e
+          | Cf_init e -> is_nonexpansive e
+          | Cf_inher _ | Cf_let _ -> false)
+        fields &&
+      Vars.fold (fun _ (mut,_) b -> decr count; b && mut = Immutable)
+        vars true &&
+      !count = 0
   | _ -> false
 
 and is_nonexpansive_opt = function
@@ -796,7 +815,7 @@ let rec type_exp env sexp =
                   Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
                 in
                 Texp_instvar(self_path, path)
-            | Val_self (_, _, cl_num) ->
+            | Val_self (_, _, cl_num, _) ->
                 let (path, _) =
                   Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
                 in
@@ -1123,9 +1142,9 @@ let rec type_exp env sexp =
       begin try
         let (exp, typ) =
           match obj.exp_desc with
-            Texp_ident(path, {val_kind = Val_self (meths, _, _)}) ->
+            Texp_ident(path, {val_kind = Val_self (meths, _, _, privty)}) ->
               let (id, typ) =
-                filter_self_method env met Private meths obj.exp_type
+                filter_self_method env met Private meths privty
               in
               (Texp_send(obj, Tmeth_val id), typ)
           | Texp_ident(path, {val_kind = Val_anc (methods, cl_num)}) ->
@@ -1138,10 +1157,10 @@ let rec type_exp env sexp =
                 Env.lookup_value (Longident.Lident ("selfpat-" ^ cl_num)) env,
                 Env.lookup_value (Longident.Lident ("self-" ^cl_num)) env
               with
-                (_, ({val_kind = Val_self (meths, _, _)} as desc)),
+                (_, ({val_kind = Val_self (meths, _, _, privty)} as desc)),
                 (path, _) ->
                   let (_, typ) =
-                    filter_self_method env met Private meths obj.exp_type
+                    filter_self_method env met Private meths privty
                   in
                   let method_type = newvar () in
                   let (obj_ty, res_ty) = filter_arrow env method_type "" in
@@ -1251,7 +1270,7 @@ let rec type_exp env sexp =
         with Not_found ->
           raise(Error(sexp.pexp_loc, Outside_class))
       with
-        (_, {val_type = self_ty; val_kind = Val_self (_, vars, _)}),
+        (_, {val_type = self_ty; val_kind = Val_self (_, vars, _, _)}),
         (path_self, _) ->
           let type_override (lab, snewval) =
             begin try
@@ -1318,6 +1337,14 @@ let rec type_exp env sexp =
          exp_type = instance (Predef.type_lazy_t arg.exp_type);
          exp_env = env;
        }
+  | Pexp_object s ->
+      let desc, sign, meths = !type_object env sexp.pexp_loc s in
+      re {
+        exp_desc = Texp_object (desc, sign, meths);
+        exp_loc = sexp.pexp_loc;
+        exp_type = sign.cty_self;
+        exp_env = env;
+      }
   | Pexp_poly _ ->
       assert false
 
