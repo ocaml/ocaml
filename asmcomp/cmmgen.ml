@@ -1786,7 +1786,7 @@ CAMLprim value oo_cache_public_method (value meths, value tag, value *cache)
 let cache_public_method meths tag cache =
   let raise_num = next_raise_count () in
   let li = Ident.create "li" and hi = Ident.create "hi"
-  and mi = Ident.create "mi"in
+  and mi = Ident.create "mi" and tagged = Ident.create "tagged" in
   Clet (
   li, Cconst_int 3,
   Clet (
@@ -1813,13 +1813,11 @@ let cache_public_method meths tag cache =
 	  (Cop(Ccmpi Cge, [Cvar li; Cvar hi]), Cexit (raise_num, []),
 	   Ctuple [])))),
      Ctuple []),
-  Csequence(
-  Cop (Cstore Word, [cache; Cop(Cadda, [lsl_const (Cvar li) log2_size_addr;
-					Cconst_int(1 - 2 * size_addr)])]),
-  Cop(Cload Word,
-      [Cop(Cadda, [Cop(Cadda,
-		       [meths; lsl_const (Cvar li) log2_size_addr]);
-		   Cconst_int(-size_addr)])])))))
+  Clet (
+  tagged, Cop(Cadda, [lsl_const (Cvar li) log2_size_addr;
+                      Cconst_int(1 - 2 * size_addr)]),
+  Csequence(Cop (Cstore Word, [cache; Cvar tagged]),
+            Cvar tagged)))))
 
 let get_cached_method () =
   let cache = Ident.create "cache"
@@ -1876,24 +1874,29 @@ let call_cached_method arity =
   let clos =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
     let meths = Ident.create "meths" and cached = Ident.create "cached" in
+    let real = Ident.create "real" in
     let mask = get_field (Cvar meths) 1 in
     let cached_pos = Cvar cached in
-    let tag_pos = Cop(Cadda, [cached_pos; Cconst_int(2*size_addr-1)]) in
+    let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths]);
+                              Cconst_int(2*size_addr-1)]) in
     let tag' = Cop(Cload Word, [tag_pos]) in
-    let meth_pos = Cop(Cadda, [cached_pos; Cconst_int(size_addr-1)]) in
-    Clet(meths, Cop(Cload Word, [obj]),
-    Clet(cached,
-	 Cop(Cadda,
-	     [Cop(Cand, [Cop(Cload Word, [cache]); mask]); Cvar meths]),
+    Clet (
+    meths, Cop(Cload Word, [obj]),
+    Clet (
+    cached, Cop(Cand, [Cop(Cload Word, [cache]); mask]),
+    Clet (
+    real,     
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
-		(* Cop(Cextcall("oo_cache_public_method", typ_addr, false),
-		    [Cvar meths; tag; cache]), *)
-		(* cache_public_method (Cvar meths) tag cache, *)
-		Cop(Capply typ_addr,
-		    [Cconst_symbol "caml_cache_method";
-		     Cvar meths; tag; cache]),
-                Cop(Cload Word, [meth_pos]))
-        ))
+                (* Cop(Cextcall("oo_cache_public_method", typ_addr, false),
+	           [Cvar meths; tag; cache]), *)
+	        cache_public_method (Cvar meths) tag cache,
+	        (* Cop(Capply typ_addr,
+	           [Cconst_symbol "caml_cache_method";
+                    Cvar meths; tag; cache]), *)
+                cached_pos),
+    Cop(Cload Word, [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths]);
+                                 Cconst_int(size_addr-1)])]))))
+    
   in
   let body = Clet(clos', clos, body) in
   let fun_args =
