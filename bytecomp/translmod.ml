@@ -405,7 +405,9 @@ let transl_toplevel_item = function
   | Tstr_cltype cl_list ->
       lambda_unit
 
+let transl_toplevel_item_and_close itm =
+  close_toplevel_term (transl_label_init (transl_toplevel_item itm))
+
 let transl_toplevel_definition str =
   reset_labels ();
-  close_toplevel_term
-    (transl_label_init (make_sequence transl_toplevel_item str))
+  make_sequence transl_toplevel_item_and_close str
