@@ -39,6 +39,12 @@
 #define INT_MAX 0x7FFFFFFF
 #endif
 
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+#endif
+
 /* Common functions. */
 
 struct channel * open_descr(fd)
@@ -49,8 +55,8 @@ struct channel * open_descr(fd)
   channel = (struct channel *) stat_alloc(sizeof(struct channel));
   channel->fd = fd;
   channel->offset = 0;
-  channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
+  channel->curr = channel->max = channel->buff;
   return channel;
 }
 
@@ -66,56 +72,77 @@ value channel_descriptor(channel)   /* ML */
   return Val_long(channel->fd);
 }
 
+value close_channel(channel)      /* ML */
+     struct channel * channel;
+{
+  /* For output channels, must have flushed before */
+  close(channel->fd);
+  stat_free((char *) channel);
+  return Val_unit;
+}  
+
 value channel_size(channel)      /* ML */
      struct channel * channel;
 {
   long end;
 
-  end = lseek(channel->fd, 0, 2);
+  end = lseek(channel->fd, 0, SEEK_END);
   if (end == -1) sys_error(NULL);
-  if (lseek(channel->fd, channel->offset, 0) != channel->offset) 
+  if (lseek(channel->fd, channel->offset, SEEK_SET) != channel->offset) 
     sys_error(NULL);
   return Val_long(end);
 }
 
 /* Output */
 
-static void really_write(fd, p, n)
+static int do_write(fd, p, n)
      int fd;
      char * p;
      int n;
 {
   int retcode;
+
   Assert(!Is_young(p));
   enter_blocking_section();
-  while (n > 0) {
 #ifdef HAS_UI
-    retcode = ui_write(fd, p, n);
+  retcode = ui_write(fd, p, n);
 #else
 #ifdef EINTR
-    do { retcode = write(fd, p, n); } while (retcode == -1 && errno == EINTR);
+  do { retcode = write(fd, p, n); } while (retcode == -1 && errno == EINTR);
 #else
-    retcode = write(fd, p, n);
+  retcode = write(fd, p, n);
 #endif
 #endif
-    if (retcode == -1) sys_error(NULL);
-    p += retcode;
-    n -= retcode;
-  }
   leave_blocking_section();
-}   
+  if (retcode == -1) sys_error(NULL);
+  return retcode;
+}
+
+/* Attempt to flush the buffer. This will make room in the buffer for
+   at least one character. Returns true if the buffer is empty at the
+   end of the flush, or false if some data remains in the buffer. */
+
+value flush_partial(channel)            /* ML */
+     struct channel * channel;
+{
+  int towrite, written;
+  towrite = channel->curr - channel->buff;
+  if (towrite > 0) {
+    written = do_write(channel->fd, channel->buff, towrite);
+    channel->offset += written;
+    if (written < towrite)
+      bcopy(channel->buff + written, channel->buff, towrite - written);
+    channel->curr -= written;
+  }
+  return Val_bool(channel->max == channel->buff);
+}
+
+/* Flush completely the buffer. */
 
 value flush(channel)            /* ML */
      struct channel * channel;
 {
-  int n;
-  n = channel->max - channel->buff;
-  if (n > 0) {
-    really_write(channel->fd, channel->buff, n);
-    channel->offset += n;
-    channel->curr = channel->buff;
-    channel->max  = channel->buff;
-  }
+  while (flush_partial(channel) == Val_false) /*nothing*/;
   return Val_unit;
 }
 
@@ -145,46 +172,74 @@ value output_int(channel, w)    /* ML */
   return Val_unit;
 }
 
-void putblock(channel, p, len)
+int putblock(channel, p, len)
      struct channel * channel;
      char * p;
      long len;
 {
-  int n, m;
+  int n, free, towrite, written;
 
   n = len >= INT_MAX ? INT_MAX : (int) len;
-  m = channel->end - channel->curr;
-  if (channel->curr == channel->buff && n >= m) {
-    really_write(channel->fd, p, n);
-    channel->offset += n;
-  } else if (n <= m) {
+  free = channel->end - channel->curr;
+  if (channel->curr == channel->buff && n >= free) {
+    /* Empty buffer and big write request: bypass the buffer. */
+    written = do_write(channel->fd, p, n);
+    channel->offset += written;
+    return written;
+  } else if (n <= free) {
+    /* Write request small enough to fit in buffer: transfer to buffer. */
     bcopy(p, channel->curr, n);
     channel->curr += n;
-    if (channel->curr > channel->max) channel->max = channel->curr;
+    return n;
   } else {
-    bcopy(p, channel->curr, m);
-    p += m;
-    n -= m;
-    m = channel->end - channel->buff;
-    really_write(channel->fd, channel->buff, m);
-    channel->offset += m;
-    if (n <= m) {
-      bcopy(p, channel->buff, n);
-      channel->curr = channel->max = channel->buff + n;
-    } else {
-      really_write(channel->fd, p, n);
-      channel->offset += n;
-      channel->curr = channel->max = channel->buff;
-    }
+    /* Write request overflows buffer: transfer whatever fits to buffer
+       and write the buffer */
+    bcopy(p, channel->curr, free);
+    towrite = channel->end - channel->buff;
+    written = do_write(channel->fd, channel->buff, towrite);
+    if (written < towrite)
+      bcopy(channel->buff + written, channel->buff, towrite - written);
+    channel->offset += written;
+    channel->curr = channel->end - written;
+    channel->max = channel->end - written;
+    return free;
   }
+}
+
+void really_putblock(channel, p, len)
+     struct channel * channel;
+     char * p;
+     long len;
+{
+  int written;
+  while (len > 0) {
+    written = putblock(channel, p, len);
+    p += written;
+    len -= written;
+  }
+}
+
+value output_partial(channel, buff, start, length) /* ML */
+     value channel, buff, start, length;
+{
+  return Val_int(putblock((struct channel *) channel,
+                          &Byte(buff, Long_val(start)),
+                          Long_val(length)));
 }
 
 value output(channel, buff, start, length) /* ML */
      value channel, buff, start, length;
 {
-  putblock((struct channel *) channel,
-           &Byte(buff, Long_val(start)),
-           Long_val(length));
+  long pos = Long_val(start);
+  long len = Long_val(length);
+  Push_roots(r, 1);
+  r[0] = buff;
+  while (len > 0) {
+    int written = putblock((struct channel *) channel, &Byte(r[0], pos), len);
+    pos += written;
+    len -= written;
+  }
+  Pop_roots();
   return Val_unit;
 }
 
@@ -193,16 +248,10 @@ value seek_out(channel, pos)    /* ML */
      value pos;
 {
   long dest;
-
   dest = Long_val(pos);
-  if (dest >= channel->offset &&
-      dest <= channel->offset + channel->max - channel->buff) {
-    channel->curr = channel->buff + dest - channel->offset;
-  } else {
-    flush(channel);
-    if (lseek(channel->fd, dest, 0) != dest) sys_error(NULL);
-    channel->offset = dest;
-  }
+  flush(channel);
+  if (lseek(channel->fd, dest, 0) != dest) sys_error(NULL);
+  channel->offset = dest;
   return Val_unit;
 }
 
@@ -212,18 +261,9 @@ value pos_out(channel)          /* ML */
   return Val_long(channel->offset + channel->curr - channel->buff);
 }
 
-value close_out(channel)     /* ML */
-     struct channel * channel;
-{
-  flush(channel);
-  close(channel->fd);
-  stat_free((char *) channel);
-  return Val_unit;
-}
-
 /* Input */
 
-static int really_read(fd, p, n)
+static int do_read(fd, p, n)
      int fd;
      char * p;
      unsigned n;
@@ -251,7 +291,7 @@ unsigned char refill(channel)
 {
   int n;
 
-  n = really_read(channel->fd, channel->buff, IO_BUFFER_SIZE);
+  n = do_read(channel->fd, channel->buff, IO_BUFFER_SIZE);
   if (n == 0) raise_end_of_file();
   channel->offset += n;
   channel->max = channel->buff + n;
@@ -296,32 +336,30 @@ int getblock(channel, p, len)
      char * p;
      long len;
 {
-  int n, m, l;
+  int n, avail, nread;
 
   n = len >= INT_MAX ? INT_MAX : (int) len;
-  m = channel->max - channel->curr;
-  if (n <= m) {
+  avail = channel->max - channel->curr;
+  if (n <= avail) {
     bcopy(channel->curr, p, n);
     channel->curr += n;
     return n;
-  } else if (m > 0) {
-    bcopy(channel->curr, p, m);
-    channel->curr += m;
-    return m;
+  } else if (avail > 0) {
+    bcopy(channel->curr, p, avail);
+    channel->curr += avail;
+    return avail;
   } else if (n < IO_BUFFER_SIZE) {
-    l = really_read(channel->fd, channel->buff, IO_BUFFER_SIZE);
-    channel->offset += l;
-    channel->max = channel->buff + l;
-    if (n > l) n = l;
+    nread = do_read(channel->fd, channel->buff, IO_BUFFER_SIZE);
+    channel->offset += nread;
+    channel->max = channel->buff + nread;
+    if (n > nread) n = nread;
     bcopy(channel->buff, p, n);
     channel->curr = channel->buff + n;
     return n;
   } else {
-    channel->curr = channel->buff;
-    channel->max = channel->buff;
-    l = really_read(channel->fd, p, n);
-    channel->offset += l;
-    return l;
+    nread = do_read(channel->fd, p, n);
+    channel->offset += nread;
+    return nread;
   }
 }
 
@@ -359,7 +397,7 @@ value seek_in(channel, pos)     /* ML */
       dest <= channel->offset) {
     channel->curr = channel->max - (channel->offset - dest);
   } else {
-    if (lseek(channel->fd, dest, 0) != dest) sys_error(NULL);
+    if (lseek(channel->fd, dest, SEEK_SET) != dest) sys_error(NULL);
     channel->offset = dest;
     channel->curr = channel->max = channel->buff;
   }
@@ -370,14 +408,6 @@ value pos_in(channel)           /* ML */
      struct channel * channel;
 {
   return Val_long(channel->offset - (channel->max - channel->curr));
-}
-
-value close_in(channel)     /* ML */
-     struct channel * channel;
-{
-  close(channel->fd);
-  stat_free((char *) channel);
-  return Val_unit;
 }
 
 value input_scan_line(channel)       /* ML */
@@ -406,7 +436,7 @@ value input_scan_line(channel)       /* ML */
         return Val_long(-(channel->max - channel->curr));
       }
       /* Fill the buffer as much as possible */
-      n = really_read(channel->fd, channel->max, channel->end - channel->max);
+      n = do_read(channel->fd, channel->max, channel->end - channel->max);
       if (n == 0) {
         /* End-of-file encountered. Return the number of characters in the
            buffer, with negative sign since we haven't encountered 

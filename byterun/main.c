@@ -233,7 +233,7 @@ int main(argc, argv)
 
     chan = open_descr(fd);
     global_data = input_value(chan);
-    close_in(chan);
+    close_channel(chan);
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);
 

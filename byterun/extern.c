@@ -357,7 +357,7 @@ value output_value(chan, v) /* ML */
 {
   long len;
   len = extern_value(v);
-  putblock(chan, extern_block, len);
+  really_putblock(chan, extern_block, len);
   stat_free(extern_block);
   return Val_unit;
 }
