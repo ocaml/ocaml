@@ -14,5 +14,19 @@
 
 (* Recording and dumping (partial) type information *)
 
-val record : Location.t -> Types.type_expr -> unit;;
+(* Clflags.save_types must be true *)
+
+open Typedtree;;
+
+type type_info =
+    Ti_pat   of pattern
+  | Ti_expr  of expression
+  | Ti_class of class_expr
+  | Ti_mod   of module_expr
+;;
+
+val record : type_info -> unit;;
 val dump : string -> unit;;
+
+val get_location : type_info -> Location.t;;
+val get_info : unit -> type_info list;;

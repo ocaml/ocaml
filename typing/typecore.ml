@@ -75,11 +75,11 @@ let type_module =
   or [Typedtree.pattern] that will end up in the typed AST.
 *)
 let re node =
-  Stypes.record node.exp_loc node.exp_type;
+  Stypes.record (Stypes.Ti_expr node);
   node
 ;;
 let rp node =
-  Stypes.record node.pat_loc node.pat_type;
+  Stypes.record (Stypes.Ti_pat node);
   node
 ;;
 

@@ -176,6 +176,12 @@ let rec limited_generalize rv =
       Ctype.limited_generalize rv ty;
       limited_generalize rv cty
 
+(* Record a class type *)
+let rc node =
+  Stypes.record (Stypes.Ti_class node);
+  node
+
+
                 (***********************************)
                 (*  Primitives for typing classes  *)
                 (***********************************)
@@ -597,19 +603,19 @@ and class_expr cl_num val_env met_env scl =
              raise(Error(loc, Parameter_mismatch trace)))
         tyl params;
       let cl =        
-        {cl_desc = Tclass_ident path;
-         cl_loc = scl.pcl_loc;
-         cl_type = clty'}
+        rc {cl_desc = Tclass_ident path;
+            cl_loc = scl.pcl_loc;
+            cl_type = clty'}
       in
       let (vals, meths, concrs) = extract_constraints clty in
-      {cl_desc = Tclass_constraint (cl, vals, meths, concrs);
-       cl_loc = scl.pcl_loc;
-       cl_type = clty'}
+      rc {cl_desc = Tclass_constraint (cl, vals, meths, concrs);
+          cl_loc = scl.pcl_loc;
+          cl_type = clty'}
   | Pcl_structure cl_str ->
       let (desc, ty) = class_structure cl_num val_env met_env cl_str in
-      {cl_desc = Tclass_structure desc;
-       cl_loc = scl.pcl_loc;
-       cl_type = Tcty_signature ty}
+      rc {cl_desc = Tclass_structure desc;
+          cl_loc = scl.pcl_loc;
+          cl_type = Tcty_signature ty}
   | Pcl_fun (l, Some default, spat, sbody) ->
       let loc = default.pexp_loc in
       let scases =
@@ -669,9 +675,9 @@ and class_expr cl_num val_env met_env scl =
       if Btype.is_optional l && all_labeled cl.cl_type then
         Location.prerr_warning pat.pat_loc
           (Warnings.Other "This optional argument cannot be erased");
-      {cl_desc = Tclass_fun (pat, pv, cl, partial);
-       cl_loc = scl.pcl_loc;
-       cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type)}
+      rc {cl_desc = Tclass_fun (pat, pv, cl, partial);
+          cl_loc = scl.pcl_loc;
+          cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type)}
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
       let rec nonopt_labels ls ty_fun =
@@ -756,9 +762,9 @@ and class_expr cl_num val_env met_env scl =
         else
           type_args [] [] cl.cl_type sargs []
       in
-      {cl_desc = Tclass_apply (cl, args);
-       cl_loc = scl.pcl_loc;
-       cl_type = cty}
+      rc {cl_desc = Tclass_apply (cl, args);
+          cl_loc = scl.pcl_loc;
+          cl_type = cty}
   | Pcl_let (rec_flag, sdefs, scl') ->
       let (defs, val_env) =
         try
@@ -789,9 +795,9 @@ and class_expr cl_num val_env met_env scl =
           ([], met_env)
       in
       let cl = class_expr cl_num val_env met_env scl' in
-      {cl_desc = Tclass_let (rec_flag, defs, vals, cl);
-       cl_loc = scl.pcl_loc;
-       cl_type = cl.cl_type}
+      rc {cl_desc = Tclass_let (rec_flag, defs, vals, cl);
+          cl_loc = scl.pcl_loc;
+          cl_type = cl.cl_type}
   | Pcl_constraint (scl', scty) ->
       Ctype.begin_class_def ();
       let context = Typetexp.narrow () in
@@ -811,9 +817,9 @@ and class_expr cl_num val_env met_env scl =
       | error -> raise(Error(cl.cl_loc, Class_match_failure error))
       end;
       let (vals, meths, concrs) = extract_constraints clty in
-      {cl_desc = Tclass_constraint (cl, vals, meths, concrs);
-       cl_loc = scl.pcl_loc;
-       cl_type = snd (Ctype.instance_class [] clty)}
+      rc {cl_desc = Tclass_constraint (cl, vals, meths, concrs);
+          cl_loc = scl.pcl_loc;
+          cl_type = snd (Ctype.instance_class [] clty)}
 
 (*******************************)
 

@@ -59,6 +59,11 @@ let type_module_path env loc lid =
   with Not_found ->
     raise(Error(loc, Unbound_module lid))
 
+(* Record a module type *)
+let rm node =
+  Stypes.record (Stypes.Ti_mod node);
+  node
+
 (* Merge one "with" constraint in a signature *)
 
 let merge_constraint initial_env loc sg lid constr =
@@ -281,24 +286,24 @@ let rec type_module env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let (path, mty) = type_module_path env smod.pmod_loc lid in
-      { mod_desc = Tmod_ident path;
-        mod_type = Mtype.strengthen env mty path;
-        mod_env = env;
-        mod_loc = smod.pmod_loc }
+      rm { mod_desc = Tmod_ident path;
+           mod_type = Mtype.strengthen env mty path;
+           mod_env = env;
+           mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
       let (str, sg, finalenv) = type_structure env sstr in
-      { mod_desc = Tmod_structure str;
-        mod_type = Tmty_signature sg;
-        mod_env = env;
-        mod_loc = smod.pmod_loc }
+      rm { mod_desc = Tmod_structure str;
+           mod_type = Tmty_signature sg;
+           mod_env = env;
+           mod_loc = smod.pmod_loc }
   | Pmod_functor(name, smty, sbody) ->
       let mty = transl_modtype env smty in
       let (id, newenv) = Env.enter_module name mty env in
       let body = type_module newenv sbody in
-      { mod_desc = Tmod_functor(id, mty, body);
-        mod_type = Tmty_functor(id, mty, body.mod_type);
-        mod_env = env;
-        mod_loc = smod.pmod_loc }
+      rm { mod_desc = Tmod_functor(id, mty, body);
+           mod_type = Tmty_functor(id, mty, body.mod_type);
+           mod_env = env;
+           mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
       let funct = type_module env sfunct in
       let arg = type_module env sarg in
@@ -321,10 +326,10 @@ let rec type_module env smod =
               with Not_found ->
                 raise(Error(smod.pmod_loc,
                             Cannot_eliminate_dependency mty_functor)) in
-          { mod_desc = Tmod_apply(funct, arg, coercion);
-            mod_type = mty_appl;
-            mod_env = env;
-            mod_loc = smod.pmod_loc }
+          rm { mod_desc = Tmod_apply(funct, arg, coercion);
+               mod_type = mty_appl;
+               mod_env = env;
+               mod_loc = smod.pmod_loc }
       | _ ->
           raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
       end        
@@ -336,10 +341,10 @@ let rec type_module env smod =
           Includemod.modtypes env arg.mod_type mty
         with Includemod.Error msg ->
           raise(Error(sarg.pmod_loc, Not_included msg)) in
-      { mod_desc = Tmod_constraint(arg, mty, coercion);
-        mod_type = mty;
-        mod_env = env;
-        mod_loc = smod.pmod_loc }
+      rm { mod_desc = Tmod_constraint(arg, mty, coercion);
+           mod_type = mty;
+           mod_env = env;
+           mod_loc = smod.pmod_loc }
 
 and type_structure env sstr =
   let type_names = ref StringSet.empty
