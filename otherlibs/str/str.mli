@@ -90,9 +90,7 @@ val matched_group: int -> string -> string
            by the [n]th group [\(...\)] of the regular expression during
            the latest [string_match], [search_forward] or [search_backward].
            The user must make sure that the parameter [s] is the same string
-that was passed to the matching or searching function. *)
-    
-val replace_matched : string -> string -> string
+           that was passed to the matching or searching function. *)
 val group_beginning: int -> int
 val group_end: int -> int
         (* [group_beginning n] returns the position of the first character
@@ -122,6 +120,12 @@ val global_substitute: regexp -> (string -> string) -> string -> string
 val substitute_first: regexp -> (string -> string) -> string -> string
         (* Same as [global_substitute], except that only the first substring
            matching the regular expression is replaced. *)
+val replace_matched : string -> string -> string
+        (* [replace_matched repl s] returns the replacement text [repl]
+           in which [\1], [\2], etc. have been replaced by the text
+           matched by the corresponding groups in the most recent matching
+           operation.  [s] must be the same string that was matched during
+           this matching operation. *)
 
 (*** Splitting *)
 
