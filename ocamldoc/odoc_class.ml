@@ -36,7 +36,7 @@ and class_apply = {
     capp_name : Name.t ; (** The complete name of the applied class *)
     mutable capp_class : t_class option;  (** The associated t_class if we found it *)
     capp_params : Types.type_expr list; (** The type of expressions the class is applied to *)
-    capp_params_code : string list ; (** The code of these exprssions *)
+    capp_params_code : string list ; (** The code of these expressions *)
   } 
 
 and class_constr = {

@@ -321,6 +321,14 @@ test_latex: dummy
 	$(MKDIR) $@ 
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml odoc*.mli ../stdlib/*.mli ../otherlibs/unix/unix.mli
 
+test_latex_simple: dummy
+	$(MKDIR) $@ 
+	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) \
+	../stdlib/hashtbl.mli \
+	../stdlib/arg.mli \
+	../otherlibs/unix/unix.mli \
+	../stdlib/map.mli
+
 test_man: dummy
 	$(MKDIR) $@ 
 	$(OCAMLDOC_RUN) -man -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli

@@ -420,18 +420,21 @@ let rec module_type_is_functor mt =
   iter mt.mt_kind
 
 (** The module is a functor if is defined as a functor or if it is an alias for a functor. *)
-let rec module_is_functor m = 
-  match m.m_kind with
-    Module_functor _ -> true
-  | Module_alias ma ->
-      (
-       match ma.ma_module with
-         None -> false 
-       | Some (Mod mo) -> module_is_functor mo
-       | Some (Modtype mt) -> module_type_is_functor mt
-      )
-  | _ -> false
-
+let module_is_functor m = 
+  let rec iter = function
+      Module_functor _ -> true
+    | Module_alias ma ->
+	(
+	 match ma.ma_module with
+           None -> false 
+	 | Some (Mod mo) -> iter mo.m_kind
+	 | Some (Modtype mt) -> module_type_is_functor mt
+	)
+    | Module_constraint (k, _) ->
+	iter k
+    | _ -> false
+  in
+  iter m.m_kind
 
 (** Returns the list of values of a module type. 
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)

@@ -188,13 +188,29 @@ class virtual to_text =
       in
       s2
 
+    (** Take a string and return the string where fully qualified idents 
+       have been replaced by idents relative to the given module name.
+       Also remove the "hidden modules".*)
+    method relative_module_idents m_name s =
+      let f str_t = 
+        let match_s = Str.matched_string str_t in
+        let rel = Name.get_relative m_name match_s in
+        Odoc_info.apply_if_equal Odoc_info.use_hidden_modules match_s rel
+      in
+      let s2 = Str.global_substitute
+          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([A-Z][a-zA-Z_'0-9]*\\)")
+          f
+          s
+      in
+      s2
+
     (** Get a string for a [Types.class_type] where all idents are relative. *)
     method normal_class_type m_name t =
       (self#relative_idents m_name (Odoc_info.string_of_class_type t))
 
     (** Get a string for a [Types.module_type] where all idents are relative. *)
-    method normal_module_type m_name t =
-      (self#relative_idents m_name (Odoc_info.string_of_module_type t))
+    method normal_module_type ?code m_name t =
+      (self#relative_module_idents m_name (Odoc_info.string_of_module_type ?code t))
 
     (** Get a string for a type where all idents are relative. *)
     method normal_type m_name t =
@@ -244,7 +260,8 @@ class virtual to_text =
     
     (** @return [text] value for a value. *)
     method text_of_value v =
-      let s_name = Name.simple v.val_name in
+      let name = v.val_name in
+      let s_name = Name.simple name in
       let s = 
 	Format.fprintf Format.str_formatter "@[<hov 2>val %s :@ %s"
           s_name
@@ -252,7 +269,7 @@ class virtual to_text =
 	Format.flush_str_formatter ()
       in
       [ CodePre s ] @ 
-      [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
+      [Latex ("\\index{"^(self#label name)^"@\\verb`"^(self#label ~no_:false name)^"`}\n")] @
       (self#text_of_info v.val_info)
 
     (** @return [text] value for a class attribute. *)
@@ -535,5 +552,6 @@ class virtual to_text =
                    None -> mt_alias.mta_name
                  | Some mt -> mt.mt_name))
           ] 
+
 
   end
