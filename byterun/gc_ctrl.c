@@ -48,7 +48,7 @@ static void check_head (value v)
   Assert (Is_block (v) && Is_in_heap (v));
 
   Assert (Wosize_val (v) != 0);
-  Assert (Color_hd (Hd_val (v)) != Blue);
+  Assert (Color_hd (Hd_val (v)) != Caml_blue);
   Assert (Is_in_heap (v));
   if (Tag_val (v) == Infix_tag){
     int offset = Wsize_bsize (Infix_offset_val (v));
@@ -136,14 +136,15 @@ static value heap_stats (int returnstats)
       cur_hd = Hd_hp (cur_hp);
                                            Assert (Next (cur_hp) <= chunk_end);
       switch (Color_hd (cur_hd)){
-      case White:
+      case Caml_white:
         if (Wosize_hd (cur_hd) == 0){
           ++fragments;
           Assert (prev_hp == NULL
-                  || (Color_hp (prev_hp) != Blue && Wosize_hp (prev_hp) > 0)
+                  || (Color_hp (prev_hp) != Caml_blue
+                      && Wosize_hp (prev_hp) > 0)
                   || cur_hp == gc_sweep_hp);
           Assert (Next (cur_hp) == chunk_end
-                  || (Color_hp (Next (cur_hp)) != Blue
+                  || (Color_hp (Next (cur_hp)) != Caml_blue
                       && Wosize_hp (Next (cur_hp)) > 0)
                   || Next (cur_hp) == gc_sweep_hp);
         }else{
@@ -156,7 +157,7 @@ static value heap_stats (int returnstats)
           }
         }
         break;
-      case Gray: case Black:
+      case Caml_gray: case Caml_black:
         Assert (Wosize_hd (cur_hd) > 0);
         ++ live_blocks;
         live_words += Whsize_hd (cur_hd);
@@ -164,7 +165,7 @@ static value heap_stats (int returnstats)
         check_block (cur_hp);
 #endif
         break;
-      case Blue:
+      case Caml_blue:
         Assert (Wosize_hd (cur_hd) > 0);
         ++ free_blocks;
         free_words += Whsize_hd (cur_hd);
@@ -172,10 +173,10 @@ static value heap_stats (int returnstats)
           largest_free = Whsize_hd (cur_hd);
         }
         Assert (prev_hp == NULL
-                || (Color_hp (prev_hp) != Blue && Wosize_hp (prev_hp) > 0)
+                || (Color_hp (prev_hp) != Caml_blue && Wosize_hp (prev_hp) > 0)
                 || cur_hp == gc_sweep_hp);
         Assert (Next (cur_hp) == chunk_end
-                || (Color_hp (Next (cur_hp)) != Blue
+                || (Color_hp (Next (cur_hp)) != Caml_blue
                     && Wosize_hp (Next (cur_hp)) > 0)
                 || Next (cur_hp) == gc_sweep_hp);
         break;

@@ -278,7 +278,7 @@ void compact_heap (void)
             * (word *) q = (word) Val_hp (newadr);
             q = next;
           }
-          *p = Make_header (Wosize_whsize (sz), t, White);
+          *p = Make_header (Wosize_whsize (sz), t, Caml_white);
 
           if (infixes != NULL){
             /* Rebuild the infix headers and revert the infix pointers. */
@@ -292,7 +292,7 @@ void compact_heap (void)
                 * (word *) q = (word) Val_hp ((word *) newadr + (infixes - p));
                 q = next;
               }                    Assert (Ecolor (q) == 1 || Ecolor (q) == 3);
-              *infixes = Make_header (infixes - p, Infix_tag, White);
+              *infixes = Make_header (infixes - p, Infix_tag, Caml_white);
               infixes = (word *) q;
             }
           }
@@ -303,7 +303,7 @@ void compact_heap (void)
           */
           /* No pointers to the header and no infix header:
              the object was free. */
-          *p = Make_header (Wosize_ehd (q), Tag_ehd (q), Blue);
+          *p = Make_header (Wosize_ehd (q), Tag_ehd (q), Caml_blue);
           p += Whsize_ehd (q);
         }
       }
@@ -323,14 +323,14 @@ void compact_heap (void)
       chend = ch + Chunk_size (ch);
       while ((char *) p < chend){
         word q = *p;
-        if (Color_hd (q) == White){
+        if (Color_hd (q) == Caml_white){
           size_t sz = Bhsize_hd (q);
           char *newadr = compact_allocate (sz);  Assert (newadr <= (char *)p);
           /* bcopy (source, destination, length) */
           bcopy (p, newadr, sz);
           p += Wsize_bsize (sz);
         }else{
-          Assert (Color_hd (q) == Blue);
+          Assert (Color_hd (q) == Caml_blue);
           p += Whsize_hd (q);
         }
       }
@@ -380,7 +380,7 @@ void compact_heap (void)
       if (Chunk_size (ch) > Chunk_alloc (ch)){
         header_t *p = (header_t *) (ch + Chunk_alloc (ch));
         *p = Make_header (Wosize_bhsize (Chunk_size (ch) - Chunk_alloc (ch)),
-                          0, White);
+                          0, Caml_white);
         fl_merge_block (Bp_hp (p));
       }
       ch = Chunk_next (ch);

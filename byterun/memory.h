@@ -54,7 +54,7 @@ color_t allocation_color (void *hp);
     Restore_after_gc;                                                       \
     young_ptr -= Bhsize_wosize (wosize);                                    \
   }                                                                         \
-  Hd_hp (young_ptr) = Make_header ((wosize), (tag), Black);                 \
+  Hd_hp (young_ptr) = Make_header ((wosize), (tag), Caml_black);            \
   (result) = Val_hp (young_ptr);                                            \
 }
 

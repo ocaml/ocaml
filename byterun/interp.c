@@ -507,7 +507,7 @@ value interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       p++;
       for (i = 1; i < nfuncs; i++) {
-        *p = Make_header(i * 2, Infix_tag, Black); /* color irrelevant?  Yes. */
+        *p = Make_header(i * 2, Infix_tag, Caml_white);  /* color irrelevant. */
         p++;
         *p = (value) (pc + pc[i]);
         *--sp = (value) p;

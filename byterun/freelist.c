@@ -36,7 +36,7 @@ static struct {
   header_t h;
   value first_bp;
   value filler2; /* Make sure the sentinel is never adjacent to any block. */
-} sentinel = {0, Make_header (0, 0, Blue), 0, 0};
+} sentinel = {0, Make_header (0, 0, Caml_blue), 0, 0};
 
 #define Fl_head ((char *) (&(sentinel.first_bp)))
 static char *fl_prev = Fl_head;  /* Current allocation pointer. */
@@ -97,9 +97,9 @@ static char *allocate_block (mlsize_t wh_sz, char *prev, char *cur)
       /* In case 1, the following creates the empty block correctly.
          In case 0, it gives an invalid header to the block.  The function
          calling [fl_allocate] will overwrite it. */
-    Hd_op (cur) = Make_header (0, 0, White);
+    Hd_op (cur) = Make_header (0, 0, Caml_white);
   }else{                                                        /* Case 2. */
-    Hd_op (cur) = Make_header (Wosize_hd (h) - wh_sz, 0, Blue);
+    Hd_op (cur) = Make_header (Wosize_hd (h) - wh_sz, 0, Caml_blue);
   }
   fl_prev = prev;
   return cur + Bosize_hd (h) - Bsize_wsize (wh_sz);
@@ -186,7 +186,7 @@ char *fl_merge_block (char *bp)
 
   /* If [last_fragment] and [bp] are adjacent, merge them. */
   if (last_fragment == Hp_bp (bp)){
-    hd = Make_header (Whsize_bp (bp), 0, White);
+    hd = Make_header (Whsize_bp (bp), 0, Caml_white);
     bp = last_fragment;
     Hd_bp (bp) = hd;
     fl_cur_size += Whsize_wosize (0);
@@ -201,7 +201,7 @@ char *fl_merge_block (char *bp)
 
     Next (prev) = next_cur;
     if (fl_prev == cur) fl_prev = prev;
-    hd = Make_header (Wosize_hd (hd) + cur_whsz, 0, Blue);
+    hd = Make_header (Wosize_hd (hd) + cur_whsz, 0, Caml_blue);
     Hd_bp (bp) = hd;
     adj = bp + Bosize_hd (hd);
 #ifdef DEBUG
@@ -214,7 +214,7 @@ char *fl_merge_block (char *bp)
   /* If [prev] and [bp] are adjacent merge them, else insert [bp] into
      the free-list if it is big enough. */
   if (prev + Bosize_bp (prev) == Hp_bp (bp)){
-    Hd_bp (prev) = Make_header (Wosize_bp (prev) + Whsize_hd (hd), 0, Blue);
+    Hd_bp (prev) = Make_header (Wosize_bp (prev) + Whsize_hd (hd), 0, Caml_blue);
 #ifdef DEBUG
     Hd_bp (bp) = not_random ();
 #endif

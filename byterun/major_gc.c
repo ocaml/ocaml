@@ -185,7 +185,7 @@ static void update_weak_pointers (void)
   mlsize_t sz, i;
 
   while (cur != NULL){
-    if (Color_val (cur) == White){
+    if (Color_val (cur) == Caml_white){
       *prev = Field (cur, 0);
       cur = (value *) *prev;
     }else{
@@ -216,18 +216,18 @@ static void sweep_slice (long int work)
       work -= Whsize_hd (hd);
       gc_sweep_hp += Bhsize_hd (hd);
       switch (Color_hd (hd)){
-      case White:
+      case Caml_white:
         if (Tag_hd (hd) == Final_tag){
           Final_fun (Val_hp (hp)) (Val_hp (hp));
         }
         gc_sweep_hp = fl_merge_block (Bp_hp (hp));
         break;
-      case Blue:
+      case Caml_blue:
         /* Only the blocks of the free-list are blue.  See [freelist.c]. */
         fl_merge = Bp_hp (hp);
         break;
-      default:          /* Gray or Black */
-        Assert(Color_hd(hd) == Black);
+      default:          /* gray or black */
+        Assert (Color_hd (hd) == Caml_black);
         Hd_hp (hp) = Whitehd_hd (hd);
         break;
       }
@@ -379,7 +379,7 @@ void init_major_heap (asize_t heap_size)
     page_table [i] = In_heap;
   }
 
-  Hd_hp (heap_start) = Make_header (Wosize_bhsize (stat_heap_size), 0, Blue);
+  Hd_hp (heap_start) = Make_header (Wosize_bhsize (stat_heap_size), 0, Caml_blue);
   fl_init_merge ();
   fl_merge_block (Bp_hp (heap_start));
   gc_phase = Phase_idle;

@@ -126,7 +126,7 @@ void raise_sys_blocked_io(void)
 
 void init_exceptions(void)
 {
-  out_of_memory_bucket.hdr = Make_header(1, 0, White);
+  out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
   out_of_memory_bucket.exn = Field(global_data, OUT_OF_MEMORY_EXN);
   register_global_root(&out_of_memory_bucket.exn);
 }

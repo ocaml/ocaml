@@ -104,7 +104,7 @@ value obj_truncate (value v, value newsize)  /* ML */
   if (new_wosize <= 0 || new_wosize > wosize) invalid_argument ("Obj.truncate");
   if (new_wosize == wosize) return Val_unit;
   Field (v, new_wosize) =
-    Make_header (Wosize_whsize (wosize-new_wosize), 0, White);
+    Make_header (Wosize_whsize (wosize-new_wosize), 0, Caml_white);
   Hd_val (v) = Make_header (new_wosize, tag, color);
   return Val_unit;
 }

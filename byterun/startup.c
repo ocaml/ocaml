@@ -55,7 +55,7 @@ header_t atom_table[256];
 static void init_atoms(void)
 {
   int i;
-  for(i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, White);
+  for(i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, Caml_white);
 }
 
 /* Read the trailer of a bytecode file */

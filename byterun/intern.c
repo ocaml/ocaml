@@ -280,7 +280,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_block = alloc(wosize, String_tag);
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);
-    Assert (intern_color == White || intern_color == Black);
+    Assert (intern_color == Caml_white || intern_color == Caml_black);
     intern_dest = (header_t *) Hp_val(intern_block);
     intern_extra_block = NULL;
   }
@@ -302,7 +302,7 @@ static void intern_add_to_heap(mlsize_t whsize)
     Assert(intern_dest <= end_extra_block);
     if (intern_dest < end_extra_block)
       *intern_dest =
-        Make_header(Wosize_whsize(end_extra_block - intern_dest), 0, White);
+        Make_header(Wosize_whsize(end_extra_block-intern_dest), 0, Caml_white);
     add_to_heap(intern_extra_block);
   }
 }

@@ -157,7 +157,7 @@ static char *expand_heap (mlsize_t request)
     return NULL;
   }
   Assert (Wosize_bhsize (malloc_request) >= request);
-  Hd_hp (mem) = Make_header (Wosize_bhsize (malloc_request), 0, Blue);
+  Hd_hp (mem) = Make_header (Wosize_bhsize (malloc_request), 0, Caml_blue);
 
   if (add_to_heap (mem) != 0){
     free (mem);
@@ -212,11 +212,11 @@ color_t allocation_color (void *hp)
 {
   if (gc_phase == Phase_mark
       || (gc_phase == Phase_sweep && (addr)hp >= (addr)gc_sweep_hp)){
-    return Black;
+    return Caml_black;
   }else{
     Assert (gc_phase == Phase_idle
             || (gc_phase == Phase_sweep && (addr)hp < (addr)gc_sweep_hp));
-    return White;
+    return Caml_white;
   }
 }
 
@@ -242,11 +242,11 @@ value alloc_shr (mlsize_t wosize, tag_t tag)
   /* Inline expansion of allocation_color. */
   if (gc_phase == Phase_mark
       || (gc_phase == Phase_sweep && (addr)hp >= (addr)gc_sweep_hp)){
-    Hd_hp (hp) = Make_header (wosize, tag, Black);
+    Hd_hp (hp) = Make_header (wosize, tag, Caml_black);
   }else{
     Assert (gc_phase == Phase_idle
             || (gc_phase == Phase_sweep && (addr)hp < (addr)gc_sweep_hp));
-    Hd_hp (hp) = Make_header (wosize, tag, White);
+    Hd_hp (hp) = Make_header (wosize, tag, Caml_white);
   }
   Assert (Hd_hp (hp) == Make_header (wosize, tag, allocation_color (hp)));
   allocated_words += Whsize_wosize (wosize);
