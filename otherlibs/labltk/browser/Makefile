@@ -29,7 +29,7 @@ all: ocamlbrowser
 ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ)
 	$(LABLC) -o ocamlbrowser $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma str.cma tk41.cma jglib.cma $(OBJ) \
+		unix.cma str.cma labltk.cma jglib.cma $(OBJ) \
 		$(TKLINKOPT)
 
 jglib.cma: $(JG)

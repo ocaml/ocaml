@@ -7,26 +7,26 @@ all: hello demo eyes calc clock tetris
 opt: hello.opt demo.opt eyes.opt calc.opt clock.opt tetris.opt
 
 hello: hello.cmo
-	$(LABLC) $(COMPFLAGS) -o hello tk41.cma hello.cmo $(TKLINKOPT)
+	$(LABLC) $(COMPFLAGS) -o hello labltk.cma hello.cmo $(TKLINKOPT)
 
 demo: demo.cmo
-	$(LABLC) $(COMPFLAGS) -o demo tk41.cma demo.cmo $(TKLINKOPT)
+	$(LABLC) $(COMPFLAGS) -o demo labltk.cma demo.cmo $(TKLINKOPT)
 
 eyes: eyes.cmo
-	$(LABLC) $(COMPFLAGS) -o eyes tk41.cma eyes.cmo $(TKLINKOPT)
+	$(LABLC) $(COMPFLAGS) -o eyes labltk.cma eyes.cmo $(TKLINKOPT)
 
 calc: calc.cmo
-	$(LABLC) $(COMPFLAGS) -o calc tk41.cma calc.cmo $(TKLINKOPT)
+	$(LABLC) $(COMPFLAGS) -o calc labltk.cma calc.cmo $(TKLINKOPT)
 
 clock: clock.cmo
-	$(LABLC) $(COMPFLAGS) -o clock tk41.cma unix.cma clock.cmo $(TKLINKOPT)
+	$(LABLC) $(COMPFLAGS) -o clock labltk.cma unix.cma clock.cmo $(TKLINKOPT)
 
 clock.opt: clock.cmx
 	$(CAMLOPT) $(COMPFLAGS) -o clock.opt \
-	      tk41.cmxa unix.cmxa clock.cmx $(TKLINKOPT)
+	      labltk.cmxa unix.cmxa clock.cmx $(TKLINKOPT)
 
 tetris: tetris.cmo
-	$(LABLC) $(COMPFLAGS) -o tetris tk41.cma tetris.cmo $(TKLINKOPT)
+	$(LABLC) $(COMPFLAGS) -o tetris labltk.cma tetris.cmo $(TKLINKOPT)
 
 clean:
 	rm -f hello demo eyes calc clock tetris *.opt *.o *.cm*
@@ -44,4 +44,4 @@ clean:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 .cmx.opt:
-	$(CAMLOPT) $(COMPFLAGS) -o $@ tk41.cmxa $< $(TKLINKOPT)
+	$(CAMLOPT) $(COMPFLAGS) -o $@ labltk.cmxa $< $(TKLINKOPT)

@@ -2,6 +2,8 @@ $Id$
 
 Some examples for LablTk.
 Only demo.ml and tetris.ml really need to be compiled with the -labels option.
+You may either compile them here, or just run them as scripts with
+        labltk -labels example.ml
 
 hello.ml        A very simple example of CamlTk
 hello.tcl       The same programme in Tcl/Tk

@@ -10,38 +10,41 @@ SUPPORTX = $(SUPPORT:.cmo=.cmx)
 
 TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
 
-all : tk41.cma labltk
+all : labltk.cma labltk
 
-opt : tk41.cmxa
+opt : labltk.cmxa
 
 include ./modules
 WIDGETOBJSX = $(WIDGETOBJS:.cmo=.cmx)
 
-tk41.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
-	$(LABLLIBR) -custom -o tk41.cma $(SUPPORT) tk.cmo $(WIDGETOBJS) \
+labltk.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
+	$(LABLLIBR) -custom -o labltk.cma $(SUPPORT) tk.cmo $(WIDGETOBJS) \
 	  -cclib -llabltk41 $(TK_LINK)
 
-tk41.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
-	$(CAMLOPTLIBR) -o tk41.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \
+labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
+	$(CAMLOPTLIBR) -o labltk.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \
 	  -cclib -llabltk41 $(TK_LINK)
 
 labltk : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
 	$(LABLC) -custom -linkall -o $@ -I ../support $(TKLINKOPT) \
-	       -I $(TOPDIR)/toplevel toplevellib.cma tk41.cma topmain.cmo
+	       -I $(TOPDIR)/toplevel toplevellib.cma labltk.cma \
+	       -I $(OTHERS)/win32unix -ccopt -L$(OTHERS)/unix unix.cma \
+	       -I $(OTHERS)/str -ccopt -L$(OTHERS)/str str.cma \
+	       topmain.cmo
 
 # All .{ml,mli} files are generated in this directory
 clean : 
 	rm -f *.cm* *.ml *.mli *.o *.a labltktop
 
-install: tk41.cma labltk
+install: labltk.cma labltk
 	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
-	cp *.cmi tk41.cma $(LABLTKDIR)
+	cp *.cmi labltk.cma $(LABLTKDIR)
 	@if not exist $(BINDIR) mkdir $(BINDIR)
 	cp labltk.exe $(BINDIR)
 
-installopt: tk41.cmxa
+installopt: labltk.cmxa
 	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
-	cp tk41.cmxa tk41.lib $(LABLTKDIR)
+	cp labltk.cmxa labltk.lib $(LABLTKDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp

@@ -33,11 +33,11 @@ clean:
 
 balloontest: balloontest.cmo 
 	$(LABLC) -o balloontest -I ../support -I ../lib \
-	        -custom tk41.cma libjpf.cma balloontest.cmo $(TKLINKOPT)
+	        -custom labltk.cma libjpf.cma balloontest.cmo $(TKLINKOPT)
 
 balloontest.opt: balloontest.cmx
 	$(CAMLOPT) -o balloontest.opt -I ../support -I ../lib \
-	        tk41.cmxa libjpf.cmxa balloontest.cmx $(TKLINKOPT)
+	        labltk.cmxa libjpf.cmxa balloontest.cmx $(TKLINKOPT)
 
 balloontest.cmo : balloon.cmo libjpf.cma
 

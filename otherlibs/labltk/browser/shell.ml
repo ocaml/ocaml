@@ -239,7 +239,7 @@ let get_all () =
   all
 
 let may_exec_unix prog =
-  try Unix.access ~file:prog ~perm:[Unix.X_OK]; true
+  try Unix.access prog ~perm:[Unix.X_OK]; true
   with Unix.Unix_error _ -> false
 
 let may_exec_win prog =
