@@ -179,7 +179,6 @@ val catch_break : bool -> unit
 
 val ocaml_version : string;;
 (** [ocaml_version] is the version of Objective Caml.
-    It is a string of the form ["major.minor[additional-info] (date)"]
-    Where major and minor are integers, date is in standard format
-    (i.e. YYYY-MM-DD), and [additional-info] is a string that may be
-    empty and does not start with a digit. *)
+    It is a string of the form ["major.minor[additional-info]"]
+    Where major and minor are integers, and [additional-info] is
+    a string that is empty or starts with a '+'. *)
