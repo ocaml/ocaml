@@ -62,16 +62,21 @@ let arg x = atan2 x.im x.re
 
 let polar n a = { re = cos a *. n; im = sin a *. n }
 
-let sqrt x =
-  (* Avoid cancellation in computing norm x + x.re 
-     when x.re < 0 and x.im is small *)
-  if x.re >= 0.0 then begin
-    let r = sqrt(0.5 *. norm x +. 0.5 *. x.re) in
-    { re = r; im = if r = 0.0 then 0.0 else 0.5 *. x.im /. r }
-  end else begin
-    let s = sqrt(0.5 *. norm x -. 0.5 *. x.re) in
-    { re = if s = 0.0 then 0.0 else 0.5 *. abs_float x.im /. s;
-      im = if x.im >= 0.0 then s else -. s }
+let sqrt x = 
+  if x.re = 0.0 && x.im = 0.0 then { re = 0.0; im = 0.0 }
+  else begin
+    let r = abs_float x.re and i = abs_float x.im in
+    let w =
+      if r >= i then begin
+        let q = i /. r in 
+        sqrt(r) *. sqrt(0.5 *. (1.0 +. sqrt(1.0 +. q *. q))) 
+      end else begin
+        let q = r /. i in
+        sqrt(i) *. sqrt(0.5 *. (q +. sqrt(1.0 +. q *. q)))
+      end in   
+    if x.re >= 0.0
+    then { re = w;  im = 0.5 *. x.im /. w }  
+    else { re = 0.5 *. i /. w;  im = if x.im >= 0.0 then w else -. w }
   end
 
 let exp x =

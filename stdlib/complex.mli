@@ -55,7 +55,8 @@ val div: t -> t -> t
 (** Division *)
 
 val sqrt: t -> t
-(** Square root.  The result always lies within the semispace [real >= 0].
+(** Square root.  The result [x + i.y] is such that [x > 0] or
+    [x = 0] and [y >= 0].
     This function has a discontinuity along the negative real axis. *)
 
 val norm2: t -> float
