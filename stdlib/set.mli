@@ -67,23 +67,23 @@ module type S =
     val subset: t -> t -> bool
         (* [subset s1 s2] tests whether the set [s1] is a subset of
            the set [s2]. *)
-    val iter: (elt -> 'a) -> t -> unit
-        (* [iter f s] applies [f] in turn to all elements of [s], and
-           discards the results. The elements of [s] are presented to [f]
-           in a non-specified order. *)
+    val iter: (elt -> unit) -> t -> unit
+        (* [iter f s] applies [f] in turn to all elements of [s].
+           The order in which the elements of [s] are presented to [f]
+           is unspecified. *)
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
         (* [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
            where [x1 ... xN] are the elements of [s].
            The order in which elements of [s] are presented to [f] is
-           not specified. *)
+           unspecified. *)
     val cardinal: t -> int
         (* Return the number of elements of a set. *)
     val elements: t -> elt list
         (* Return the list of all elements of the given set.
-           The elements appear in the list in some non-specified order. *)
+           The elements appear in the list in some unspecified order. *)
     val choose: t -> elt
         (* Return one element of the given set, or raise [Not_found] if
-           the set is empty. Which element is chosen is not specified,
+           the set is empty. Which element is chosen is unspecified,
            but equal elements will be chosen for equal sets. *)
   end
 

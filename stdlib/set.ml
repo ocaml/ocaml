@@ -34,7 +34,7 @@ module type S =
     val compare: t -> t -> int
     val equal: t -> t -> bool
     val subset: t -> t -> bool
-    val iter: (elt -> 'a) -> t -> unit
+    val iter: (elt -> unit) -> t -> unit
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     val cardinal: t -> int
     val elements: t -> elt list

@@ -79,9 +79,9 @@ val to_list: 'a array -> 'a list
 val of_list: 'a list -> 'a array
         (* [Array.of_list l] returns a fresh array containing the elements
            of [l]. *)
-val iter: ('a -> 'b) -> 'a array -> unit
+val iter: ('a -> unit) -> 'a array -> unit
         (* [Array.iter f a] applies function [f] in turn to all
-           the elements of [a], discarding all the results:
+           the elements of [a].  It is equivalent to
            [f a.(0); f a.(1); ...; f a.(Array.length a - 1); ()]. *)
 val map: ('a -> 'b) -> 'a array -> 'b array
         (* [Array.map f a] applies function [f] to all the elements of [a],

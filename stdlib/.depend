@@ -2,8 +2,8 @@ genlex.cmi: stream.cmi
 parsing.cmi: lexing.cmi obj.cmi 
 arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
 arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
-array.cmo: list.cmi array.cmi 
-array.cmx: list.cmx array.cmi 
+array.cmo: array.cmi list.cmi array.cmi 
+array.cmx: array.cmx list.cmx array.cmi 
 callback.cmo: obj.cmi callback.cmi 
 callback.cmx: obj.cmx callback.cmi 
 char.cmo: char.cmi 
@@ -30,8 +30,8 @@ map.cmo: map.cmi
 map.cmx: map.cmi 
 marshal.cmo: string.cmi marshal.cmi 
 marshal.cmx: string.cmx marshal.cmi 
-obj.cmo: obj.cmi 
-obj.cmx: obj.cmi 
+obj.cmo: marshal.cmi obj.cmi 
+obj.cmx: marshal.cmx obj.cmi 
 oo.cmo: array.cmi hashtbl.cmi list.cmi map.cmi obj.cmi random.cmi sort.cmi \
     sys.cmi oo.cmi 
 oo.cmx: array.cmx hashtbl.cmx list.cmx map.cmx obj.cmx random.cmx sort.cmx \
@@ -56,8 +56,8 @@ stack.cmo: list.cmi stack.cmi
 stack.cmx: list.cmx stack.cmi 
 stream.cmo: list.cmi obj.cmi string.cmi stream.cmi 
 stream.cmx: list.cmx obj.cmx string.cmx stream.cmi 
-string.cmo: char.cmi list.cmi string.cmi 
-string.cmx: char.cmx list.cmx string.cmi 
+string.cmo: char.cmi list.cmi string.cmi string.cmi 
+string.cmx: char.cmx list.cmx string.cmx string.cmi 
 sys.cmo: sys.cmi 
 sys.cmx: sys.cmi 
 weak.cmo: obj.cmi weak.cmi 

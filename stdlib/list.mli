@@ -33,9 +33,9 @@ val flatten : 'a list list -> 'a list
 
 (** Iterators *)
 
-val iter : ('a -> 'b) -> 'a list -> unit
+val iter : ('a -> unit) -> 'a list -> unit
         (* [List.iter f [a1; ...; an]] applies function [f] in turn to
-           [a1; ...; an], discarding all the results. It is equivalent to
+           [a1; ...; an]. It is equivalent to
            [begin f a1; f a2; ...; f an; () end]. *)
 val map : ('a -> 'b) -> 'a list -> 'b list
         (* [List.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
@@ -50,9 +50,9 @@ val fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 
 (** Iterators on two lists *)
 
-val iter2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> unit
+val iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
         (* [List.iter2 f [a1; ...; an] [b1; ...; bn]] calls in turn
-           [f a1 b1; ...; f an bn], discarding the results.
+           [f a1 b1; ...; f an bn].
            Raise [Invalid_argument] if the two lists have
            different lengths. *)
 val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list

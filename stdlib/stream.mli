@@ -44,7 +44,7 @@ val of_channel : in_channel -> char t;;
 
 (** Stream iterator *)
 
-val iter : ('a -> 'b) -> 'a t -> unit;;
+val iter : ('a -> unit) -> 'a t -> unit;;
         (* [Stream.iter f s] scans the whole stream s, applying function [f]
            in turn to each stream element encountered. *)
 

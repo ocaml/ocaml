@@ -54,9 +54,8 @@ module type S =
     val remove: key -> 'a t -> 'a t
         (* [remove x m] returns a map containing the same bindings as
            [m], except for [x] which is unbound in the returned map. *)
-    val iter: (key -> 'a -> 'b) -> 'a t -> unit
-        (* [iter f m] applies [f] to all bindings in map [m],
-           discarding the results.
+    val iter: (key -> 'a -> unit) -> 'a t -> unit
+        (* [iter f m] applies [f] to all bindings in map [m].
            [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
            [f] is unspecified. Only current bindings are presented to [f]:
@@ -72,7 +71,7 @@ module type S =
            where [k1 ... kN] are the keys of all bindings in [m],
            and [d1 ... dN] are the associated data.
            The order in which the bindings are presented to [f] is
-           not specified. *)
+           unspecified. *)
   end
 
 module Make(Ord: OrderedType): (S with type key = Ord.t)

@@ -134,7 +134,7 @@ module type S =
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
     val find_all: 'a t -> key -> 'a list
-    val iter: (key -> 'a -> 'b) -> 'a t -> unit
+    val iter: (key -> 'a -> unit) -> 'a t -> unit
   end
 
 module Make(H: HashedType): (S with type key = H.t) =

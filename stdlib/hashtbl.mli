@@ -52,9 +52,8 @@ val remove : ('a, 'b) t -> 'a -> unit
            restoring the previous binding if it exists.
            It does nothing if [x] is not bound in [tbl]. *)
 
-val iter : ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
-        (* [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl],
-           discarding all the results.
+val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
+        (* [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
            [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
            [f] is unspecified. Each binding is presented exactly once
@@ -91,7 +90,7 @@ module type S =
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
     val find_all: 'a t -> key -> 'a list
-    val iter: (key -> 'a -> 'b) -> 'a t -> unit
+    val iter: (key -> 'a -> unit) -> 'a t -> unit
   end
 
 module Make(H: HashedType): (S with type key = H.t)

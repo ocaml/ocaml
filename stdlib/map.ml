@@ -25,7 +25,7 @@ module type S =
     val add: key -> 'a -> 'a t -> 'a t
     val find: key -> 'a t -> 'a
     val remove: key -> 'a t -> 'a t
-    val iter: (key -> 'a -> 'b) -> 'a t -> unit
+    val iter: (key -> 'a -> unit) -> 'a t -> unit
     val map: ('a -> 'b) -> 'a t -> 'b t
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   end
