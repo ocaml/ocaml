@@ -159,18 +159,27 @@ val bscanf :
    For instance, [%6d] reads an integer, having at most 6 decimal digits;
    and [%4f] reads a float with at most 4 characters.
 
-   Scanning indications appear just after string conversions [s] and
+   Scanning indications appear just after the string conversions [s] and
    [\[ range \]] to delimit the end of the token. A scanning
    indication is introduced by a [@] character, followed by some
    constant character [c]. It means that the string token should end
    just before the next matching [c] (which is skipped). If no [c]
    character is encountered, the string token spreads as much as
-   possible.  For instance, ["%s@\t"] reads a string up to the next
+   possible. For instance, ["%s@\t"] reads a string up to the next
    tabulation character. If a scanning indication [\@c] does not
    follow a string conversion, it is ignored and treated as a plain
    [c] character.
 
    Note:
+
+   - the scanning indications introduce slight differences in the
+   syntax of [Scanf] format strings compared to those used by the
+   [Printf] module. However, scanning indications are similar to those
+   of the [Format] module; hence, when producing formatted text to be
+   scanned by [!Scanf.bscanf], it is advised to use printing functions
+   from [Format] (or, if you need to use functions from [Printf],
+   banish or carefully double check the format strings that contain
+   ['@'] characters).
 
    - in addition to relevant digits, ['_'] characters may appear
    inside numbers (this is reminiscent to the usual Caml
@@ -182,12 +191,6 @@ val bscanf :
    needs, several alternative exists: regular expressions (module
    [Str]), stream parsers, [ocamllex]-generated lexers,
    [ocamlyacc]-generated parsers. 
-
-   - Scanning indications are similar to those in the [Format] module;
-   hence it is advised to use [!Format.fprintf] and related functions
-   (instead of [!Printf.fprintf] ...) to produce formatted text to be
-   scanned by [!Scanf.bscanf] etc...
-
 *)
 
 val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
