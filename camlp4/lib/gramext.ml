@@ -5,12 +5,14 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
+
+open Printf;
 
 type grammar =
   { gtokens : Hashtbl.t Token.pattern (ref int);
@@ -105,7 +107,7 @@ value is_before s1 s2 =
   | _ -> False ]
 ;
 
-value insert_tree gsymbols action tree =
+value insert_tree entry_name gsymbols action tree =
   let rec insert symbols tree =
     match symbols with
     [ [s :: sl] -> insert_in_tree s sl tree
@@ -116,8 +118,10 @@ value insert_tree gsymbols action tree =
         | LocAct old_action action_list ->
             do {
               if warning_verbose.val then do {
-                Printf.eprintf
-                  "<W> Grammar extension: some rule has been masked\n";
+                eprintf "<W> Grammar extension: ";
+                if entry_name <> "" then eprintf "in [%s], " entry_name
+                else ();
+                eprintf "some rule has been masked\n";
                 flush stderr
               }
               else ();
@@ -161,8 +165,8 @@ value insert_tree gsymbols action tree =
 value srules rl =
   let t =
     List.fold_left
-      (fun tree (symbols, action) -> insert_tree symbols action tree) DeadEnd
-      rl
+      (fun tree (symbols, action) -> insert_tree "" symbols action tree)
+      DeadEnd rl
   in
   Stree t
 ;
@@ -175,15 +179,15 @@ value is_level_labelled n lev =
   | None -> False ]
 ;
 
-value insert_level e1 symbols action slev =
+value insert_level entry_name e1 symbols action slev =
   match e1 with
   [ True ->
       {assoc = slev.assoc; lname = slev.lname;
-       lsuffix = insert_tree symbols action slev.lsuffix;
+       lsuffix = insert_tree entry_name symbols action slev.lsuffix;
        lprefix = slev.lprefix}
   | False ->
       {assoc = slev.assoc; lname = slev.lname; lsuffix = slev.lsuffix;
-       lprefix = insert_tree symbols action slev.lprefix} ]
+       lprefix = insert_tree entry_name symbols action slev.lprefix} ]
 ;
 
 value empty_lev lname assoc =
@@ -202,7 +206,7 @@ value change_lev lev n lname assoc =
     | Some a ->
         do {
           if a <> lev.assoc && warning_verbose.val then do {
-            Printf.eprintf "<W> Changing associativity of level \"%s\"\n" n;
+            eprintf "<W> Changing associativity of level \"%s\"\n" n;
             flush stderr
           }
           else ();
@@ -213,7 +217,7 @@ value change_lev lev n lname assoc =
     match lname with
     [ Some n ->
         if lname <> lev.lname && warning_verbose.val then do {
-          Printf.eprintf "<W> Level label \"%s\" ignored\n" n; flush stderr
+          eprintf "<W> Level label \"%s\" ignored\n" n; flush stderr
         }
         else ()
     | _ -> () ];
@@ -231,7 +235,7 @@ value get_level entry position levs =
         fun
         [ [] ->
             do {
-              Printf.eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
+              eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
                 entry.ename;
               flush stderr;
               failwith "Grammar.extend"
@@ -248,7 +252,7 @@ value get_level entry position levs =
         fun
         [ [] ->
             do {
-              Printf.eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
+              eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
                 entry.ename;
               flush stderr;
               failwith "Grammar.extend"
@@ -265,7 +269,7 @@ value get_level entry position levs =
         fun
         [ [] ->
             do {
-              Printf.eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
+              eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
                 entry.ename;
               flush stderr;
               failwith "Grammar.extend"
@@ -287,7 +291,7 @@ value rec check_gram entry =
   fun
   [ Snterm e ->
       if e.egram != entry.egram then do {
-        Printf.eprintf "\
+        eprintf "\
 Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
           entry.ename e.ename;
         flush stderr;
@@ -296,7 +300,7 @@ Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
       else ()
   | Snterml e _ ->
       if e.egram != entry.egram then do {
-        Printf.eprintf "\
+        eprintf "\
 Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
           entry.ename e.ename;
         flush stderr;
@@ -370,7 +374,7 @@ value levels_of_rules entry position rules =
     [ Dlevels elev -> elev
     | Dparser _ ->
         do {
-          Printf.eprintf "Error: entry not extensible: \"%s\"\n" entry.ename;
+          eprintf "Error: entry not extensible: \"%s\"\n" entry.ename;
           flush stderr;
           failwith "Grammar.extend"
         } ]
@@ -390,7 +394,7 @@ value levels_of_rules entry position rules =
                     List.iter (check_gram entry) symbols;
                     let (e1, symbols) = get_initial entry symbols in
                     insert_tokens entry.egram symbols;
-                    insert_level e1 symbols action lev
+                    insert_level entry.ename e1 symbols action lev
                   })
                lev level
            in

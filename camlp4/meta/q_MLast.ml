@@ -591,18 +591,6 @@ EXTEND
       | i = a_LIDENT -> List [i]
       | i = a_UIDENT; "."; j = SELF -> Cons i j ] ]
   ;
-  rec_flag:
-    [ [ "rec" -> Bool True
-      | -> Bool False ] ]
-  ;
-  direction_flag:
-    [ [ "to" -> Bool True
-      | "downto" -> Bool False ] ]
-  ;
-  mutable_flag:
-    [ [ "mutable" -> Bool True
-      | -> Bool False ] ]
-  ;
   (* Objects and Classes *)
   str_item:
     [ [ "class"; cd = SLIST1 class_declaration SEP "and" ->
@@ -647,8 +635,7 @@ EXTEND
     | "apply" NONA
       [ ce = SELF; e = expr LEVEL "simple" -> Node "CeApp" [Loc; ce; e] ]
     | "simple"
-      [ a = anti_ -> a
-      | ci = class_longident; "["; ctcl = SLIST0 ctyp SEP ","; "]" ->
+      [ ci = class_longident; "["; ctcl = SLIST0 ctyp SEP ","; "]" ->
           Node "CeCon" [Loc; ci; ctcl]
       | ci = class_longident -> Node "CeCon" [Loc; ci; List []]
       | "object"; cspo = SOPT class_self_patt; cf = class_structure; "end" ->
@@ -665,12 +652,17 @@ EXTEND
       | "("; p = patt; ":"; t = ctyp; ")" -> Node "PaTyc" [Loc; p; t] ] ]
   ;
   class_str_item:
-    [ [ a = a_class_str_item -> a
-      | "declare"; st = SLIST0 [ s = class_str_item; ";" -> s ]; "end" ->
+    [ [ "declare"; st = SLIST0 [ s = class_str_item; ";" -> s ]; "end" ->
           Node "CrDcl" [Loc; st]
       | "inherit"; ce = class_expr; pb = SOPT [ "as"; i = a_LIDENT -> i ] ->
           Node "CrInh" [Loc; ce; pb]
-      | "value"; (lab, mf, e) = cvalue -> Node "CrVal" [Loc; lab; mf; e]
+      | "value"; labmfe = cvalue ->
+          let (lab, mf, e) =
+            match labmfe with
+            [ Tuple [xx1; xx2; xx3] -> (xx1, xx2, xx3)
+            | _ -> match () with [] ]
+          in
+          Node "CrVal" [Loc; lab; mf; e]
       | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
           Node "CrVir" [Loc; l; Bool True; t]
       | "method"; "virtual"; l = label; ":"; t = ctyp ->
@@ -683,21 +675,20 @@ EXTEND
       | "initializer"; se = expr -> Node "CrIni" [Loc; se] ] ]
   ;
   cvalue:
-    [ [ mf = mutable_flag; l = label; "="; e = expr -> (l, mf, e)
+    [ [ mf = mutable_flag; l = label; "="; e = expr -> Tuple [l; mf; e]
       | mf = mutable_flag; l = label; ":"; t = ctyp; "="; e = expr ->
-          (l, mf, Node "ExTyc" [Loc; e; t])
-      | mf = mutable_flag; l = label; ":"; t1 = ctyp; ":>"; t2 = ctyp; "=";
+          Tuple [l; mf; Node "ExTyc" [Loc; e; t]]
+      | mf = mutable_flag; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
         e = expr ->
-          (l, mf, Node "ExCoe" [Loc; e; Option (Some t1); t2])
+          Tuple [l; mf; Node "ExCoe" [Loc; e; Option (Some t); t2]]
       | mf = mutable_flag; l = label; ":>"; t = ctyp; "="; e = expr ->
-          (l, mf, Node "ExCoe" [Loc; e; Option None; t]) ] ]
+          Tuple [l; mf; Node "ExCoe" [Loc; e; Option None; t]] ] ]
   ;
   label:
     [ [ i = a_LIDENT -> i ] ]
   ;
   class_type:
-    [ [ a = a_class_type -> a
-      | "["; t = ctyp; "]"; "->"; ct = SELF -> Node "CtFun" [Loc; t; ct]
+    [ [ "["; t = ctyp; "]"; "->"; ct = SELF -> Node "CtFun" [Loc; t; ct]
       | id = clty_longident; "["; tl = SLIST1 ctyp SEP ","; "]" ->
           Node "CtCon" [Loc; id; tl]
       | id = clty_longident -> Node "CtCon" [Loc; id; List []]
@@ -709,8 +700,7 @@ EXTEND
     [ [ "("; t = ctyp; ")" -> t ] ]
   ;
   class_sig_item:
-    [ [ a = a_class_sig_item -> a
-      | "declare"; st = SLIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
+    [ [ "declare"; st = SLIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
           Node "CgDcl" [Loc; st]
       | "inherit"; cs = class_type -> Node "CgInh" [Loc; cs]
       | "value"; mf = mutable_flag; l = label; ":"; t = ctyp ->
@@ -752,65 +742,95 @@ EXTEND
       | "("; e = SELF; ":>"; t = ctyp; ")" ->
           Node "ExCoe" [Loc; e; Option None; t]
       | "{<"; ">}" -> Node "ExOvr" [Loc; List []]
-      | "{<"; fel = field_expr_list; ">}" -> Node "ExOvr" [Loc; List fel]
-      | "{<"; fel = anti_list; ">}" -> Node "ExOvr" [Loc; fel] ] ]
+      | "{<"; fel = field_expr_list; ">}" -> Node "ExOvr" [Loc; fel] ] ]
   ;
   field_expr_list:
-    [ [ l = label; "="; e = expr; ";"; fel = SELF -> [Tuple [l; e] :: fel]
-      | l = label; "="; e = expr; ";" -> [Tuple [l; e]]
-      | l = label; "="; e = expr -> [Tuple [l; e]] ] ]
+    [ [ l = label; "="; e = expr; ";"; fel = SELF -> Cons (Tuple [l; e]) fel
+      | l = label; "="; e = expr; ";" -> List [Tuple [l; e]]
+      | l = label; "="; e = expr -> List [Tuple [l; e]] ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "#"; id = class_longident -> Node "TyCls" [Loc; id]
-      | "<"; (ml, v) = meth_list; ">" -> Node "TyObj" [Loc; ml; v]
+      | "<"; mlv = meth_list; ">" ->
+          let (ml, v) =
+            match mlv with
+            [ Tuple [xx1; xx2] -> (xx1, xx2)
+            | _ -> match () with [] ]
+          in
+          Node "TyObj" [Loc; ml; v]
       | "<"; ">" -> Node "TyObj" [Loc; List []; Bool False] ] ]
   ;
   meth_list:
-    [ [ a = anti_list -> (a, Bool False)
-      | a = anti_list; b = anti_ -> (a, b)
-      | f = field; ";"; (ml, v) = SELF -> (Cons f ml, v)
-      | f = field; ";" -> (List [f], Bool False)
-      | f = field -> (List [f], Bool False)
-      | ".." -> (List [], Bool True) ] ]
+    [ [ f = field; ";"; mlv = SELF ->
+          let (ml, v) =
+            match mlv with
+            [ Tuple [xx1; xx2] -> (xx1, xx2)
+            | _ -> match () with [] ]
+          in
+          Tuple [Cons f ml; v]
+      | f = field; ";" -> Tuple [List [f]; Bool False]
+      | f = field -> Tuple [List [f]; Bool False]
+      | ".." -> Tuple [List []; Bool True] ] ]
   ;
   field:
     [ [ lab = a_LIDENT; ":"; t = ctyp -> Tuple [lab; t] ] ]
   ;
   clty_longident:
-    [ [ l = longid -> List l
-      | a = anti_list -> a ] ]
+    [ [ m = a_UIDENT; "."; l = SELF -> Cons m l
+      | i = a_LIDENT -> List [i] ] ]
   ;
   class_longident:
-    [ [ l = longid -> List l
-      | a = anti_list -> a ] ]
+    [ [ m = a_UIDENT; "."; l = SELF -> Cons m l
+      | i = a_LIDENT -> List [i] ] ]
   ;
-  longid:
-    [ [ m = a_UIDENT; "."; l = SELF -> [m :: l]
-      | i = a_LIDENT -> [i] ] ]
+  rec_flag:
+    [ [ "rec" -> Bool True
+      | -> Bool False ] ]
+  ;
+  direction_flag:
+    [ [ "to" -> Bool True
+      | "downto" -> Bool False ] ]
+  ;
+  mutable_flag:
+    [ [ "mutable" -> Bool True
+      | -> Bool False ] ]
+  ;
+  virtual_flag:
+    [ [ "virtual" -> Bool True
+      | -> Bool False ] ]
   ;
   (* Labels *)
   ctyp: AFTER "arrow"
     [ NONA
-      [ a = TILDEIDENTCOLON; ":"; t = SELF -> Node "TyLab" [Loc; Str a; t]
-      | "~"; a = anti_; ":"; t = SELF -> Node "TyLab" [Loc; a; t]
-      | "?"; a = a_LIDENT; ":"; t = SELF -> Node "TyOlb" [Loc; a; t] ] ]
+      [ i = a_TILDEIDENTCOLON; t = SELF -> Node "TyLab" [Loc; i; t]
+      | i = a_QUESTIONIDENTCOLON; t = SELF -> Node "TyOlb" [Loc; i; t] ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "[|"; rfl = SLIST0 row_field SEP "|"; "|]" ->
           Node "TyVrn" [Loc; rfl; Option None]
-      | "[|"; ">"; rfl = SLIST1 row_field SEP "|"; "|]" ->
+      | "[|"; ">"; rfl = row_field_list; "|]" ->
           Node "TyVrn" [Loc; rfl; Option (Some (Option None))]
-      | "[|"; "<"; rfl = SLIST1 row_field SEP "|"; sl = opt_tag_list; "|]" ->
-          Node "TyVrn" [Loc; rfl; Option (Some (Option (Some sl)))] ] ]
+      | "[|"; "<"; rfl = row_field_list; "|]" ->
+          Node "TyVrn" [Loc; rfl; Option (Some (Option (Some (List []))))]
+      | "[|"; "<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag;
+        "|]" ->
+          Node "TyVrn" [Loc; rfl; Option (Some (Option (Some ntl)))] ] ]
   ;
-  opt_tag_list:
-    [ [ ">"; sl = SLIST1 a_LIDENT -> sl
-      | -> List [] ] ]
+  row_field_list:
+    [ [ rfl = SLIST1 row_field SEP "|" -> rfl ] ]
   ;
   row_field:
-    [ [ "`"; i = a_LIDENT -> Tuple [i; Bool True; List []]
-      | "`"; i = a_LIDENT; "of"; oa = OPT "&"; l = SLIST1 ctyp SEP "&" ->
-          Tuple [i; Bool (oa <> None); l] ] ]
+    [ [ "`"; i = ident -> Node "RfTag" [i; Bool True; List []]
+      | "`"; i = ident; "of"; ao = SOPT "&"; l = SLIST1 ctyp SEP "&" ->
+          Node "RfTag" [i; o2b ao; l]
+      | t = ctyp -> Node "RfInh" [t] ] ]
+  ;
+  name_tag:
+    [ [ "`"; i = ident -> i ] ]
+  ;
+  patt: LEVEL "simple"
+    [ [ "#"; a = anti_list -> Node "PaTyp" [Loc; a]
+      | "#"; s = mod_ident -> Node "PaTyp" [Loc; s] ] ]
   ;
   patt: BEFORE "simple"
     [ NONA
@@ -832,10 +852,6 @@ EXTEND
           Node "PaOlb" [Loc; i; p; Option (Some e)]
       | "`"; s = ident -> Node "PaVrn" [Loc; s] ] ]
   ;
-  patt: LEVEL "simple"
-    [ [ "#"; a = anti_list -> Node "PaTyp" [Loc; a]
-      | "#"; s = mod_ident -> Node "PaTyp" [Loc; s] ] ]
-  ;
   expr: AFTER "apply"
     [ "label" NONA
       [ lab = TILDEIDENTCOLON; e = SELF -> Node "ExLab" [Loc; Str lab; e]
@@ -855,9 +871,6 @@ EXTEND
 
   str_item:
     [ [ "#"; n = a_LIDENT; dp = dir_param -> Node "StDir" [Loc; n; dp] ] ]
-  ;
-  rec_flag:
-    [ [ a = ANTIQUOT "rec" -> antiquot "rec" loc a ] ]
   ;
   sig_item:
     [ [ "#"; n = a_LIDENT; dp = dir_param -> Node "SgDir" [Loc; n; dp] ] ]
@@ -921,17 +934,30 @@ EXTEND
   mod_ident:
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
-  direction_flag:
-    [ [ a = ANTIQUOT "to" -> antiquot "to" loc a ] ]
+  class_expr: LEVEL "simple"
+    [ [ a = anti_ -> a ] ]
   ;
-  a_class_str_item:
+  class_str_item:
     [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
   ;
-  a_class_sig_item:
+  class_sig_item:
     [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
   ;
-  a_class_type:
+  class_type:
     [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  meth_list:
+    [ [ a = anti_list -> Tuple [a; Bool False]
+      | a = anti_list; b = anti_ -> Tuple [a; b] ] ]
+  ;
+  expr: LEVEL "simple"
+    [ [ "{<"; fel = anti_list; ">}" -> Node "ExOvr" [Loc; fel] ] ]
+  ;
+  clty_longident:
+    [ [ a = anti_list -> a ] ]
+  ;
+  class_longident:
+    [ [ a = anti_list -> a ] ]
   ;
   a_UIDENT:
     [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a
@@ -963,14 +989,31 @@ EXTEND
       | a = ANTIQUOT "" -> antiquot "" loc a
       | s = CHAR -> Str s ] ]
   ;
+  a_TILDEIDENTCOLON:
+    [ [ "~"; a = ANTIQUOT ""; ":" -> antiquot "" loc a
+      | s = TILDEIDENTCOLON -> Str s ] ]
+  ;
+  a_QUESTIONIDENTCOLON:
+    [ [ "?"; a = ANTIQUOT ""; ":" -> antiquot "" loc a
+      | s = QUESTIONIDENTCOLON -> Str s ] ]
+  ;
+  rec_flag:
+    [ [ a = ANTIQUOT "rec" -> antiquot "rec" loc a ] ]
+  ;
+  direction_flag:
+    [ [ a = ANTIQUOT "to" -> antiquot "to" loc a ] ]
+  ;
+  mutable_flag:
+    [ [ a = ANTIQUOT "mut" -> antiquot "mut" loc a ] ]
+  ;
+  virtual_flag:
+    [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]
+  ;
   anti_:
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   anti_list:
     [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
-  ;
-  mutable_flag:
-    [ [ a = ANTIQUOT "mut" -> antiquot "mut" loc a ] ]
   ;
   anti_opt:
     [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
@@ -988,14 +1031,6 @@ EXTEND
         "done" ->
           let _ = warning_seq () in
           Node "ExWhi" [Loc; e; seq] ] ]
-  ;
-  virtual_flag:
-    [ [ a = anti_virt -> a
-      | "virtual" -> Bool True
-      | -> Bool False ] ]
-  ;
-  anti_virt:
-    [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]
   ;
 END;
 

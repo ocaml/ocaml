@@ -210,7 +210,8 @@ EXTEND
 END;
 
 EXTEND
-  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr
+  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
+    class_expr class_sig_item class_str_item
     let_binding type_parameter fun_binding ipatt direction_flag mod_ident;
   module_expr:
     [ [ "functor"; "("; i = UIDENT; ":"; t = module_type; ")"; "->";
@@ -570,72 +571,7 @@ EXTEND
       | i = LIDENT -> [i]
       | i = UIDENT; "."; j = SELF -> [i :: j] ] ]
   ;
-  rec_flag:
-    [ [ "rec" -> True
-      | -> False ] ]
-  ;
-  direction_flag:
-    [ [ "to" -> True
-      | "downto" -> False ] ]
-  ;
-  mutable_flag:
-    [ [ "mutable" -> True
-      | -> False ] ]
-  ;
-END;
-
-EXTEND
-  expr: LEVEL "simple"
-    [ [ x = LOCATE ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found | Failure _ -> (0, x) ]
-          in
-          Pcaml.handle_expr_locate loc x
-      | x = QUOTATION ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (String.sub x 0 i,
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found -> ("", x) ]
-          in
-          Pcaml.handle_expr_quotation loc x ] ]
-  ;
-  patt: LEVEL "simple"
-    [ [ x = LOCATE ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found | Failure _ -> (0, x) ]
-          in
-          Pcaml.handle_patt_locate loc x
-      | x = QUOTATION ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (String.sub x 0 i,
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found -> ("", x) ]
-          in
-          Pcaml.handle_patt_quotation loc x ] ]
-  ;
-END;
-
-(* Objects and Classes *)
-
-EXTEND
-  GLOBAL: str_item sig_item expr ctyp class_sig_item class_str_item class_type
-    class_expr;
+  (* Objects and Classes *)
   str_item:
     [ [ "class"; cd = LIST1 class_declaration SEP "and" ->
           <:str_item< class $list:cd$ >>
@@ -649,9 +585,9 @@ EXTEND
           <:sig_item< class type $list:ctd$ >> ] ]
   ;
   class_declaration:
-    [ [ vf = OPT "virtual"; i = LIDENT; ctp = class_type_parameters;
+    [ [ vf = virtual_flag; i = LIDENT; ctp = class_type_parameters;
         cfb = class_fun_binding ->
-          {MLast.ciLoc = loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
+          {MLast.ciLoc = loc; MLast.ciVir = vf; MLast.ciPrm = ctp;
            MLast.ciNam = i; MLast.ciExp = cfb} ] ]
   ;
   class_fun_binding:
@@ -697,7 +633,9 @@ EXTEND
       | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >> ] ]
   ;
   class_str_item:
-    [ [ "inherit"; ce = class_expr; pb = OPT [ "as"; i = LIDENT -> i ] ->
+    [ [ "declare"; st = LIST0 [ s= class_str_item; ";" -> s ]; "end" ->
+          <:class_str_item< declare $list:st$ end >>
+      | "inherit"; ce = class_expr; pb = OPT [ "as"; i = LIDENT -> i ] ->
           <:class_str_item< inherit $ce$ $as:pb$ >>
       | "value"; (lab, mf, e) = cvalue ->
           <:class_str_item< value $mut:mf$ $lab$ = $e$ >>
@@ -714,14 +652,14 @@ EXTEND
       | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
   ;
   cvalue:
-    [ [ mf = OPT "mutable"; l = label; "="; e = expr -> (l, o2b mf, e)
-      | mf = OPT "mutable"; l = label; ":"; t = ctyp; "="; e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t$) >>)
-      | mf = OPT "mutable"; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
+    [ [ mf = mutable_flag; l = label; "="; e = expr -> (l, mf, e)
+      | mf = mutable_flag; l = label; ":"; t = ctyp; "="; e = expr ->
+          (l, mf, <:expr< ($e$ : $t$) >>)
+      | mf = mutable_flag; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
         e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t$ :> $t2$) >>)
-      | mf = OPT "mutable"; l = label; ":>"; t = ctyp; "="; e = expr ->
-          (l, o2b mf, <:expr< ($e$ :> $t$) >>) ] ]
+          (l, mf, <:expr< ($e$ : $t$ :> $t2$) >>)
+      | mf = mutable_flag; l = label; ":>"; t = ctyp; "="; e = expr ->
+          (l, mf, <:expr< ($e$ :> $t$) >>) ] ]
   ;
   label:
     [ [ i = LIDENT -> i ] ]
@@ -740,9 +678,11 @@ EXTEND
     [ [ "("; t = ctyp; ")" -> t ] ]
   ;
   class_sig_item:
-    [ [ "inherit"; cs = class_type -> <:class_sig_item< inherit $cs$ >>
-      | "value"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< value $mut:o2b mf$ $l$ : $t$ >>
+    [ [ "declare"; st = LIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
+          <:class_sig_item< declare $list:st$ end >>
+      | "inherit"; cs = class_type -> <:class_sig_item< inherit $cs$ >>
+      | "value"; mf = mutable_flag; l = label; ":"; t = ctyp ->
+          <:class_sig_item< value $mut:mf$ $l$ : $t$ >>
       | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
           <:class_sig_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; l = label; ":"; t = ctyp ->
@@ -755,15 +695,15 @@ EXTEND
           <:class_sig_item< type $t1$ = $t2$ >> ] ]
   ;
   class_description:
-    [ [ vf = OPT "virtual"; n = LIDENT; ctp = class_type_parameters; ":";
+    [ [ vf = virtual_flag; n = LIDENT; ctp = class_type_parameters; ":";
         ct = class_type ->
-          {MLast.ciLoc = loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
+          {MLast.ciLoc = loc; MLast.ciVir = vf; MLast.ciPrm = ctp;
            MLast.ciNam = n; MLast.ciExp = ct} ] ]
   ;
   class_type_declaration:
-    [ [ vf = OPT "virtual"; n = LIDENT; ctp = class_type_parameters; "=";
+    [ [ vf = virtual_flag; n = LIDENT; ctp = class_type_parameters; "=";
         cs = class_type ->
-          {MLast.ciLoc = loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
+          {MLast.ciLoc = loc; MLast.ciVir = vf; MLast.ciPrm = ctp;
            MLast.ciNam = n; MLast.ciExp = cs} ] ]
   ;
   expr: LEVEL "apply"
@@ -807,12 +747,23 @@ EXTEND
     [ [ m = UIDENT; "."; l = SELF -> [m :: l]
       | i = LIDENT -> [i] ] ]
   ;
-END;
-
-(* Labels *)
-
-EXTEND
-  GLOBAL: ctyp ipatt patt expr mod_ident;
+  rec_flag:
+    [ [ "rec" -> True
+      | -> False ] ]
+  ;
+  direction_flag:
+    [ [ "to" -> True
+      | "downto" -> False ] ]
+  ;
+  mutable_flag:
+    [ [ "mutable" -> True
+      | -> False ] ]
+  ;
+  virtual_flag:
+    [ [ "virtual" -> True
+      | -> False ] ]
+  ;
+  (* Labels *)
   ctyp: AFTER "arrow"
     [ NONA
       [ i = TILDEIDENTCOLON; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
@@ -892,9 +843,52 @@ EXTEND
   expr: LEVEL "simple"
     [ [ "`"; s = ident -> <:expr< ` $s$ >> ] ]
   ;
-  ident:
-    [ [ i = LIDENT -> i
-      | i = UIDENT -> i ] ]
+END;
+
+EXTEND
+  expr: LEVEL "simple"
+    [ [ x = LOCATE ->
+          let x =
+            try
+              let i = String.index x ':' in
+              (int_of_string (String.sub x 0 i),
+               String.sub x (i + 1) (String.length x - i - 1))
+            with
+            [ Not_found | Failure _ -> (0, x) ]
+          in
+          Pcaml.handle_expr_locate loc x
+      | x = QUOTATION ->
+          let x =
+            try
+              let i = String.index x ':' in
+              (String.sub x 0 i,
+               String.sub x (i + 1) (String.length x - i - 1))
+            with
+            [ Not_found -> ("", x) ]
+          in
+          Pcaml.handle_expr_quotation loc x ] ]
+  ;
+  patt: LEVEL "simple"
+    [ [ x = LOCATE ->
+          let x =
+            try
+              let i = String.index x ':' in
+              (int_of_string (String.sub x 0 i),
+               String.sub x (i + 1) (String.length x - i - 1))
+            with
+            [ Not_found | Failure _ -> (0, x) ]
+          in
+          Pcaml.handle_patt_locate loc x
+      | x = QUOTATION ->
+          let x =
+            try
+              let i = String.index x ':' in
+              (String.sub x 0 i,
+               String.sub x (i + 1) (String.length x - i - 1))
+            with
+            [ Not_found -> ("", x) ]
+          in
+          Pcaml.handle_patt_quotation loc x ] ]
   ;
 END;
 
