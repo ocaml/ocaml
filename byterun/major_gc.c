@@ -192,9 +192,11 @@ static void mark_slice (long work)
            weak_again:
             if (curfield != 0 && Is_block (curfield) && Is_in_heap (curfield)){
               if (Tag_val (curfield) == Forward_tag){
-                curfield = Forward_val (curfield);
-                Field (cur, i) = curfield;
-                goto weak_again;
+                value v = Forward_val (curfield);
+                if (Is_block (v) && Is_in_heap (v)){
+                  Field (cur, i) = curfield = v;
+                  goto weak_again;
+                }
               }
               if (Is_white_val (curfield)){
                 Field (cur, i) = 0;

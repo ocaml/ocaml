@@ -47,8 +47,12 @@ CAMLprim value weak_set (value ar, value n, value el)
                                                    Assert (Is_in_heap (ar));
   if (offset < 1 || offset >= Wosize_val (ar)) invalid_argument ("Weak.set");
   Field (ar, offset) = 0;
-  if (el != None_val){                        Assert (Wosize_val (el) == 1);
-    Modify (&Field (ar, offset), Field (el, 0));
+  if (el != None_val){
+    value v;                                  Assert (Wosize_val (el) == 1);
+    v = Field (el, 0);
+    if (Is_block (v) && Is_in_heap (v)){
+      Modify (&Field (ar, offset), v);
+    }
   }
   return Val_unit;
 }
@@ -88,16 +92,20 @@ CAMLprim value weak_get_copy (value ar, value n)
 
   v = Field (ar, offset);
   if (v == 0) CAMLreturn (None_val);
-  elt = alloc (Wosize_val (v), Tag_val (v)); /* The GC may erase or move v. */
-  v = Field (ar, offset);
-  if (v == 0) CAMLreturn (None_val);
-  if (Tag_val (v) < No_scan_tag){
-    mlsize_t i;
-    for (i = 0; i < Wosize_val (v); i++){
-      Modify (&Field (elt, i), Field (v, i));
+  if (Is_block (v) && Is_in_heap (v)){
+    elt = alloc (Wosize_val (v), Tag_val (v)); /* The GC may erase or move v. */
+    v = Field (ar, offset);
+    if (v == 0) CAMLreturn (None_val);
+    if (Tag_val (v) < No_scan_tag){
+      mlsize_t i;
+      for (i = 0; i < Wosize_val (v); i++){
+        Modify (&Field (elt, i), Field (v, i));
+      }
+    }else{
+      memmove (Bp_val (elt), Bp_val (v), Bosize_val (v));
     }
   }else{
-    memmove (Bp_val (elt), Bp_val (v), Bosize_val (v));
+    elt = v;
   }
   res = alloc_small (1, Some_tag);
   Field (res, 0) = elt;
