@@ -56,6 +56,8 @@ void (*channel_mutex_unlock_exn) (void) = NULL;
    These functions can be called directly from C.
    No locking is performed. */
 
+/* Functions shared between input and output */
+ 
 struct channel * open_descriptor(int fd)
 {
   struct channel * channel;
@@ -86,6 +88,17 @@ long channel_size(struct channel *channel)
     sys_error(NO_ARG);
   }
   return end;
+}
+
+int channel_binary_mode(struct channel *channel)
+{
+#ifdef _WIN32
+  int oldmode = _setmode(channel->fd, O_BINARY);
+  if (oldmode == O_TEXT) _setmode(channel->fd, O_TEXT);
+  return oldmode == O_BINARY;
+#else
+  return 1;
+#endif
 }
 
 /* Output */
@@ -161,6 +174,8 @@ void flush(struct channel *channel)
 
 void putword(struct channel *channel, uint32 w)
 {
+  if (! channel_binary_mode(channel))
+    failwith("output_binary_int: not a binary channel");
   putch(channel, w >> 24);
   putch(channel, w >> 16);
   putch(channel, w >> 8);
@@ -254,6 +269,8 @@ uint32 getword(struct channel *channel)
   int i;
   uint32 res;
 
+  if (! channel_binary_mode(channel))
+    failwith("input_binary_int: not a binary channel");
   res = 0;
   for(i = 0; i < 4; i++) {
     res = (res << 8) + getch(channel);

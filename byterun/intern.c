@@ -264,6 +264,8 @@ value input_val(struct channel *chan)
   mlsize_t block_len, num_objects, size_32, size_64, whsize;
   value res;
 
+  if (! channel_binary_mode(chan))
+    failwith("input_value: not a binary channel");
   magic = getword(chan);
   if (magic != Intext_magic_number) failwith("input_value: bad object");
   block_len = getword(chan);

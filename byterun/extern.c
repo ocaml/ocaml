@@ -391,6 +391,8 @@ static long extern_value(value v, value flags)
 void output_val(struct channel *chan, value v, value flags)
 {
   long len;
+  if (! channel_binary_mode(chan))
+    failwith("output_value: not a binary channel");
   alloc_extern_block();
   len = extern_value(v, flags);
   really_putblock(chan, extern_block, len);

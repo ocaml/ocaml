@@ -54,6 +54,7 @@ struct channel {
 
 struct channel * open_descriptor (int);
 void close_channel (struct channel *);
+int channel_binary_mode (struct channel *);
 
 int flush_partial (struct channel *);
 void flush (struct channel *);
