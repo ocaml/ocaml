@@ -398,7 +398,8 @@ and comment = parse
         with Error (Unterminated_string, _) ->
           match !comment_start_loc with
           | [] -> assert false
-          | loc :: _ -> raise (Error (Unterminated_string_in_comment, loc))
+          | loc :: _ -> comment_start_loc := [];
+                        raise (Error (Unterminated_string_in_comment, loc))
         end;
         reset_string_buffer ();
         comment lexbuf }
@@ -417,7 +418,8 @@ and comment = parse
   | eof
       { match !comment_start_loc with
         | [] -> assert false
-        | loc :: _ -> raise (Error (Unterminated_comment, loc))
+        | loc :: _ -> comment_start_loc := [];
+                      raise (Error (Unterminated_comment, loc))
       }
   | newline
       { update_loc lexbuf None 1 false 0;
@@ -445,11 +447,11 @@ and string = parse
   | '\\' _
       { if in_comment ()
         then string lexbuf
-(*  Should be an error, but we are very lax.
-        else raise (Error (Illegal_escape (Lexing.lexeme lexbuf),
-                           Location.curr lexbuf))
-*)
         else begin
+(*  Should be an error, but we are very lax.
+          raise (Error (Illegal_escape (Lexing.lexeme lexbuf),
+                        Location.curr lexbuf))
+*)
           let loc = Location.curr lexbuf in
           let warn = Warnings.Other "Illegal backslash escape in string" in
           Location.prerr_warning loc warn;
