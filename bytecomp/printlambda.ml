@@ -39,7 +39,7 @@ let rec struct_const ppf = function
   | Const_float_array (f1 :: fl) ->
       let floats ppf fl =
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
-      fprintf ppf "@[<1[|@[%s%a@]|]@]" f1 floats fl
+      fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
 let boxed_integer_name = function
   | Pnativeint -> "nativeint"
