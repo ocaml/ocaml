@@ -284,7 +284,13 @@ let inheritance table cl vars =
     & (table.init = [[]; []])
   then begin
     copy_table table cl.table;
-    table.init <- table.init@[[]]
+    table.init <- table.init@[[]];
+    table.vars <- 
+      List.fold_left
+        (fun s v ->
+           try Vars.add v (Vars.find v table.vars) s with Not_found -> s)
+        Vars.empty
+        vars
   end else begin
     table.init <- []::table.init;
     table.saved_vars <- table.vars::table.saved_vars;
