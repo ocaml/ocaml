@@ -28,7 +28,7 @@ _caml_alloc1:
         jb      L100
         ret
 L100:   movl    $8, %eax
-        jmp     _caml_call_gc
+        jmp     L105
 
         .align  4
 _caml_alloc2:
@@ -39,7 +39,7 @@ _caml_alloc2:
         jb      L101
         ret
 L101:   movl    $12, %eax
-        jmp     _caml_call_gc
+        jmp     L105
 
         .align  4
 _caml_alloc3:
@@ -50,7 +50,7 @@ _caml_alloc3:
         jb      L102
         ret
 L102:   movl    $16, %eax
-        jmp     _caml_call_gc
+        jmp     L105
 
         .align  4
 _caml_alloc:
@@ -63,8 +63,15 @@ _caml_alloc:
         addl    $4, %esp
         ret
 L103:   popl    %eax
+        jmp     L105
 
 _caml_call_gc:
+    # Recover desired size and adjust return address
+        popl    %eax
+        addl    $2, %eax
+        pushl   %eax
+	movzwl	-2(%eax), %eax
+L105:
     # Record lowest stack address and return address
         popl    _caml_last_return_address
         movl    %esp, _caml_bottom_of_stack
@@ -102,13 +109,12 @@ _caml_call_gc:
         .align  4
 _caml_c_call:
     # Record lowest stack address and return address
-        popl    _caml_last_return_address
-        movl    %esp, _caml_bottom_of_stack
+        movl    (%esp), %edx
+        movl    %edx, _caml_last_return_address
+        leal    4(%esp), %edx
+        movl    %edx, _caml_bottom_of_stack
     # Call the function (address in %eax)
-        call    *%eax
-    # Return to caller
-        movl    _caml_last_return_address, %edx  #  %edx dead here
-        jmp     *%edx
+        jmp     *%eax
 
 # Start the Caml program
 
