@@ -66,11 +66,11 @@ CAMLprim value caml_obj_is_block(value arg)
 CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
-    return 1000;
-  }else if (Is_young (arg) || Is_in_heap (arg)){
+    return Val_int (1000);
+  }else if (Is_young (arg) || Is_in_heap (arg) || Is_atom (arg)){
     return Val_int(Tag_val(arg));
   }else{
-    return 1001;
+    return Val_int (1001);
   }
 }
 
@@ -168,15 +168,6 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
    They are not written in O'Caml because they must be atomic with respect
    to the GC.
  */
-
-/* [lazy_is_forward] is obsolete.  Stays here to make bootstrapping
-   easier for patched versions of 3.07.  To be removed before 3.08. FIXME */
-/*
-CAMLxxprim value lazy_is_forward (value v)
-{
-  return Val_bool (Is_block (v) && Tag_val (v) == Forward_tag);
-}
-*/
 
 CAMLprim value caml_lazy_follow_forward (value v)
 {
