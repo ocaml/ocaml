@@ -1,5 +1,5 @@
 \chapter{The standard library}
-\pdfchapterfold{-29}{The standard library}
+\pdfchapterfold{-32}{The standard library}
 
 This chapter describes the functions provided by the Caml Light
 standard library. The modules from the standard library are
@@ -48,6 +48,10 @@ Here is a short listing, by theme, of the standard library modules.
 "Buffer" & p.~\pageref{s:Buffer} & string buffers that grow on demand \\
 "Lazy"  & p.~\pageref{s:Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{s:Weak} & references that don't prevent objects from being garbage-collected \\
+"Int32" & p.~\pageref{s:Int32} & operations on 32-bit integers \\
+"Int64" & p.~\pageref{s:Int64} & operations on 64-bit integers \\
+"Nativeint" & p.~\pageref{s:Nativeint} & operations on platform-native
+integers
 \end{tabular}
 \subsubsection{Input/output:}
 \begin{tabular}{lll}
@@ -88,11 +92,14 @@ be called from C \\
 \input{gc.tex}
 \input{genlex.tex}
 \input{hashtbl.tex}
+\input{int32.tex}
+\input{int64.tex}
 \input{lazy.tex}
 \input{lexing.tex}
 \input{list.tex}
 \input{map.tex}
 \input{marshal.tex}
+\input{nativeint.tex}
 \input{oo.tex}
 \input{parsing.tex}
 \input{printexc.tex}

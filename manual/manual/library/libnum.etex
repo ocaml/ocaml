@@ -13,15 +13,14 @@ Valérie Ménissier-Morain, technical report 141, INRIA, july 1992
 "ftp://ftp.inria.fr/INRIA/publication/RT/RT-0141.ps.gz").
 A summary of the functions is given below.
 
-Programs that use the "num" library must be linked in ``custom
-runtime'' mode, as follows:
+Programs that use the "num" library must be linked as follows:
 \begin{alltt}
-        ocamlc -custom \var{other options} nums.cma \var{other files} -cclib -lnums
-        ocamlopt \var{other options} nums.cmxa \var{other files} -cclib -lnums
+        ocamlc \var{other options} nums.cma \var{other files}
+        ocamlopt \var{other options} nums.cmxa \var{other files}
 \end{alltt}
 For interactive use of the "nums" library, do:
 \begin{alltt}
-        ocamlmktop -custom -o mytop nums.cma -cclib -lnums
+        ocamlmktop -o mytop nums.cma
         ./mytop
 \end{alltt}
 

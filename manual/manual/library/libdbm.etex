@@ -8,19 +8,16 @@ the data are arbitrary strings. They support fairly large databases
 system accesses. Refer to the Unix manual pages for more information.
 
 \begin{unix}
-Programs that use the "dbm" library must be linked in ``custom
-runtime'' mode, as follows:
+Programs that use the "dbm" library must be linked as follows:
 \begin{alltt}
-        ocamlc -custom \var{other options} dbm.cma \var{other files} -cclib -lmldbm -cclib -lndbm
-        ocamlopt \var{other options} dbm.cmxa \var{other files} -cclib -lmldbm -cclib -lndbm
+        ocamlc \var{other options} dbm.cma \var{other files}
+        ocamlopt \var{other options} dbm.cmxa \var{other files}
 \end{alltt}
 For interactive use of the "dbm" library, do:
 \begin{alltt}
-        ocamlmktop -custom -o mytop dbm.cma -cclib -lmldbm -cclib -lndbm
+        ocamlmktop -o mytop dbm.cma
         ./mytop
 \end{alltt}
-Depending on the Unix system used, the "-cclib -lndbm" option is not
-always necessary, or the library may have another name than "-lndbm".
 \end{unix}
 
 \begin{windows}

@@ -10,15 +10,14 @@ details on the behavior of these functions.
 Not all functions are provided by all Unix variants. If some functions
 are not available, they will raise "Invalid_arg" when called.
 
-Programs that use the "unix" library must be linked in ``custom
-runtime'' mode, as follows:
+Programs that use the "unix" library must be linked as follows:
 \begin{alltt}
-        ocamlc -custom \var{other options} unix.cma \var{other files} -cclib -lunix
-        ocamlopt \var{other options} unix.cmxa \var{other files} -cclib -lunix
+        ocamlc \var{other options} unix.cma \var{other files}
+        ocamlopt \var{other options} unix.cmxa \var{other files}
 \end{alltt}
 For interactive use of the "unix" library, do:
 \begin{alltt}
-        ocamlmktop -custom -o mytop unix.cma -cclib -lunix
+        ocamlmktop -o mytop unix.cma
         ./mytop
 \end{alltt}
 

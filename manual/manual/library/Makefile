@@ -1,20 +1,20 @@
 CORE_INTF=pervasives.tex
 
 STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
-  gc.tex genlex.tex hashtbl.tex lazy.tex lexing.tex list.tex map.tex \
-  marshal.tex oo.tex \
+  gc.tex genlex.tex hashtbl.tex int32.tex int64.tex \
+  lazy.tex lexing.tex list.tex map.tex marshal.tex nativeint.tex oo.tex \
   parsing.tex printexc.tex printf.tex queue.tex random.tex set.tex sort.tex \
   stack.tex stream.tex string.tex sys.tex weak.tex callback.tex lazy.tex \
   buffer.tex
 
 OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex \
   thread.tex mutex.tex condition.tex event.tex threadUnix.tex \
-  dbm.tex dynlink.tex tk.tex
+  dbm.tex dynlink.tex tk.tex bigarray.tex
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
 
 BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex \
-  libthreads.tex libdbm.tex libdynlink.tex liblabltk.tex
+  libthreads.tex libdbm.tex libdynlink.tex liblabltk.tex libbigarray.tex
 
 FILES=$(BLURB) $(INTF)
 
@@ -23,7 +23,7 @@ TEXQUOTE=../../tools/texquote2
 
 CSLDIR=../../../csl
 
-VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dbm:$(CSLDIR)/otherlibs/dynlink
+VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dbm:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 
 all: $(FILES)
 

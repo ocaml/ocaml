@@ -6,15 +6,14 @@ some based on regular expressions. It is intended to support the kind
 of file processing that is usually performed with scripting languages
 such as "awk", "perl" or "sed".
 
-Programs that use the "str" library must be linked in ``custom
-runtime'' mode, as follows:
+Programs that use the "str" library must be linked as follows:
 \begin{alltt}
-        ocamlc -custom \var{other options} str.cma \var{other files} -cclib -lstr
-        ocamlopt \var{other options} str.cmxa \var{other files} -cclib -lstr
+        ocamlc \var{other options} str.cma \var{other files}
+        ocamlopt \var{other options} str.cmxa \var{other files}
 \end{alltt}
 For interactive use of the "str" library, do:
 \begin{alltt}
-        ocamlmktop -custom -o mytop str.cma -cclib -lstr
+        ocamlmktop -o mytop str.cma
         ./mytop
 \end{alltt}
 
