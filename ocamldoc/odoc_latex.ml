@@ -198,7 +198,7 @@ class text =
       "{\\tt{"^s3^"}}"
 
     method latex_of_CodePre s =
-      "\n\\begin{ocamldoccode}\n"^(self#escape_simple s)^"\n\\end{ocamldoccode}\n"
+      "\\begin{ocamldoccode}\n"^(self#escape_simple s)^"\n\\end{ocamldoccode}\n"
 
     method latex_of_Verbatim s = "\\begin{verbatim}"^s^"\\end{verbatim}"
 
@@ -724,11 +724,11 @@ class latex =
         (self#latex_of_text (self#text_of_parameter_list (Name.father c.cl_name) c.cl_parameters));
        
       output_string chanout (self#latex_of_text [ Newline ] );
-      output_string chanout ("\\vspace{0.5cm}\n\n");
+      output_string chanout ("\\ocamldocvspace{0.5cm}\n\n");
       self#generate_class_inheritance_info chanout c;
 
       List.iter 
-        (fun ele -> output_string chanout ((self#latex_of_class_element c.cl_name ele)^"\\vspace{0.1cm}\n\n"))
+        (fun ele -> output_string chanout ((self#latex_of_class_element c.cl_name ele)^"\n\n"))
         (Class.class_elements ~trans: false c);
 
       output_string chanout (self#latex_of_text [ CodePre "end"])
@@ -753,11 +753,11 @@ class latex =
         (self#latex_of_text [Latex ("\\index{"^(self#class_type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
       output_string chanout ((self#latex_of_text rest_t)) ;
       output_string chanout (self#latex_of_text [ Newline]) ;
-      output_string chanout ("\\vspace{0.5cm}\n\n");
+      output_string chanout ("\\ocamldocvspace{0.5cm}\n\n");
       self#generate_class_type_inheritance_info chanout ct;
 
       List.iter 
-        (fun ele -> output_string chanout ((self#latex_of_class_element ct.clt_name ele)^"\\vspace{0.1cm}\n\n"))
+        (fun ele -> output_string chanout ((self#latex_of_class_element ct.clt_name ele)^"\n\n"))
         (Class.class_type_elements ~trans: false ct);
 
       output_string chanout (self#latex_of_text [ CodePre "end"])
@@ -788,9 +788,9 @@ class latex =
               (Module.module_type_parameters mt)));
 
       output_string chanout (self#latex_of_text [ Newline ] );
-      output_string chanout ("\\vspace{0.5cm}\n\n");
+      output_string chanout ("\\ocamldocvspace{0.5cm}\n\n");
       List.iter 
-        (fun ele -> output_string chanout ((self#latex_of_module_element mt.mt_name ele)^"\\vspace{0.1cm}\n\n"))
+        (fun ele -> output_string chanout ((self#latex_of_module_element mt.mt_name ele)^"\n\n"))
         (Module.module_type_elements ~trans: false mt);
 
       if depth > 1 then 
@@ -833,9 +833,9 @@ class latex =
               (Module.module_parameters m)));
 
       output_string chanout (self#latex_of_text [ Newline ]) ;
-      output_string chanout ("\\vspace{0.5cm}\n\n");
+      output_string chanout ("\\ocamldocvspace{0.5cm}\n\n");
       List.iter 
-        (fun ele -> output_string chanout ((self#latex_of_module_element m.m_name ele)^"\\vspace{0.1cm}\n\n"))
+        (fun ele -> output_string chanout ((self#latex_of_module_element m.m_name ele)^"\n\n"))
         (Module.module_elements ~trans: false m);
 
       if depth > 1 then 
@@ -869,7 +869,7 @@ class latex =
       (match !Args.title with None -> "" | Some _ -> "\\maketitle\n")^
       (if !Args.with_toc then "\\tableofcontents\n" else "")
 
-    (** Generate the LaTeX file from a module list, in the {!Args.out_file} file. *)
+    (** Generate the LaTeX file from a module list, in the {!Odoc_info.Args.out_file} file. *)
     method generate module_list =
       if !Args.separate_files then
         (
