@@ -140,6 +140,53 @@ char * caml_dlerror(void)
     return dlerror_buffer;
 }
 
+/* Proper emulation of signal(), including ctrl-C and ctrl-break */
+
+typedef void (*sighandler)(int sig);
+static int ctrl_handler_installed = 0;
+static volatile sighandler ctrl_handler_action = SIG_DFL;
+
+static BOOL WINAPI ctrl_handler(DWORD event)
+{
+  int saved_mode;
+  sighandler action;
+
+  /* Only ctrl-C and ctrl-Break are handled */
+  if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
+  /* Default behavior is to exit, which we get by not handling the event */
+  if (ctrl_handler_action == SIG_DFL) return FALSE;
+  /* Ignore behavior is to do nothing, which we get by claiming that we
+     have handled the event */
+  if (ctrl_handler_action == SIG_IGN) return TRUE;
+  /* Reset handler to default action for consistency with signal() */
+  action = ctrl_handler_action;
+  ctrl_handler_action = SIG_DFL;
+  /* Call user-provided signal handler.  Win32 doesn't like it when
+     we do a longjmp() at this point (it looks like we're running in
+     a different thread than the main program!).  So, pretend we are not in
+     async signal mode, so that the handler simply records the signal. */
+  saved_mode = async_signal_mode;
+  async_signal_mode = 0;
+  action(SIGINT);
+  async_signal_mode = saved_mode;
+  /* We have handled the event */
+  return TRUE;
+}
+
+sighandler win32_signal(int sig, sighandler action)
+{
+  sighandler oldaction;
+
+  if (sig != SIGINT) return signal(sig, action);
+  if (! ctrl_handler_installed) {
+    SetConsoleCtrlHandler(ctrl_handler, TRUE);
+    ctrl_handler_installed = 1;
+  }
+  oldaction = ctrl_handler_action;
+  ctrl_handler_action = action;
+  return oldaction;
+}
+
 /* Expansion of @responsefile and *? file patterns in the command line */
 
 #ifndef HAS_UI

@@ -31,6 +31,12 @@
 #include <sys/resource.h>
 #endif
 
+#ifdef _WIN32
+typedef void (*sighandler)(int sig);
+extern sighandler win32_signal(int sig, sighandler action);
+#define signal(sig,act) win32_signal(sig,act)
+#endif
+
 #if defined(TARGET_power) && defined(SYS_rhapsody)
 /* Confer machdep/ppc/unix_signal.c and mach/ppc/thread_status.h
    in the Darwin sources */

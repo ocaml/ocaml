@@ -28,6 +28,12 @@
 #include "rotatecursor.h"
 #endif /* macintosh */
 
+#ifdef _WIN32
+typedef void (*sighandler)(int sig);
+extern sighandler win32_signal(int sig, sighandler action);
+#define signal(sig,act) win32_signal(sig,act)
+#endif
+
 int volatile async_signal_mode = 0;
 int volatile pending_signal = 0;
 int volatile something_to_do = 0;
