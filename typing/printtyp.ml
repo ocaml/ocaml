@@ -207,7 +207,7 @@ let aliased = ref ([] : type_expr list)
 let delayed = ref ([] : type_expr list)
 
 let add_delayed t =
-  if not (List.mem_assq t !names) then delayed := t :: !delayed
+  if not (List.memq t !delayed) then delayed := t :: !delayed
 
 let is_aliased ty = List.memq (proxy ty) !aliased
 let add_alias ty =
@@ -227,7 +227,8 @@ let namable_row row =
 let rec mark_loops_rec visited ty =
   let ty = repr ty in
   let px = proxy ty in
-  if List.memq px visited then add_alias px else
+  (* if List.memq px !aliased then () else : need also consider delayed *)
+  if List.memq px visited then aliased := px :: !aliased else
     let visited = px :: visited in
     match ty.desc with
     | Tvar -> ()
@@ -375,9 +376,11 @@ let rec tree_of_typexp sch ty =
         let tyl = List.map repr tyl in
         (* let tyl = List.filter is_aliased tyl in *)
         if tyl = [] then tree_of_typexp sch ty else begin
+          let old_delayed = !delayed in
           List.iter add_delayed tyl;
           let tl = List.map name_of_type tyl in
-          Otyp_poly (tl, tree_of_typexp sch ty)
+          let tr = Otyp_poly (tl, tree_of_typexp sch ty) in
+          delayed := old_delayed; tr
         end
     | Tunivar ->
         Otyp_var (false, name_of_type ty)

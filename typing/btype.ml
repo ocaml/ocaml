@@ -126,17 +126,19 @@ let hash_variant s =
   if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
 
 let proxy ty =
-  let ty = repr ty in
-  match ty.desc with
-  | Tvariant row -> row_more row
+  let ty0 = repr ty in
+  match ty0.desc with
+  | Tvariant row when not (static_row row) ->
+      row_more row
   | Tobject (ty, _) ->
       let rec proxy_obj ty =
         match ty.desc with
           Tfield (_, _, _, ty) | Tlink ty -> proxy_obj ty
-        | Tvar | Tnil | Tunivar -> ty
+        | Tvar | Tunivar | Tconstr _ -> ty
+        | Tnil -> ty0
         | _ -> assert false
       in proxy_obj ty
-  | _ -> ty
+  | _ -> ty0
 
 
                   (**********************************)
