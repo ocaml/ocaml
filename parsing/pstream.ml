@@ -64,7 +64,7 @@ let stream_pattern_component skont =
   | Spat_sterm p ->
       (esome (mkexp sexp), p, skont)
 
-let rec stream_pattern epo e is_first =
+let rec stream_pattern epo e ekont =
   function
     [] ->
       begin match epo with
@@ -73,36 +73,31 @@ let rec stream_pattern epo e is_first =
       | _ -> e
       end
   | (spc, err) :: spcl ->
-      let skont = stream_pattern epo e false spcl in
-      let (tst, p, e) = stream_pattern_component skont spc in
-      let ckont =
-        if is_first then araise "Parse_failure" None
-        else
+      let skont =
+        let ekont err =
           let str =
             match err with
               Some estr -> estr
             | _ -> mkexp (Pexp_constant (Const_string ""))
           in
           araise "Parse_error" (Some str)
+        in
+        stream_pattern epo e ekont spcl
       in
+      let (tst, p, e) = stream_pattern_component skont spc in
+      let ckont = ekont err in
       mkexp
         (Pexp_match
            (tst,
             [(ploc p.ppat_loc (Ppat_construct (Lident "Some", Some p)), e);
              (mkpat Ppat_any, ckont)]))
 
-let parser_case (spcl, epo, e) =
-  stream_pattern epo e true spcl
-
-let parser_cases pc =
-  List.fold_right
-    (fun pc kont ->
-       let e = parser_case pc in
-       eloc e.pexp_loc (Pexp_try (e, [(pcon "Parse_failure" None, kont)])))
-    pc
-    (araise "Parse_failure" None)
+let rec parser_cases =
+  function
+    [] -> araise "Parse_failure" None
+  | (spcl, epo, e)::cl -> stream_pattern epo e (fun _ -> parser_cases cl) spcl
   
-let bp_parser_cases (bpo, pc) =
+let cparser (bpo, pc) =
   let pc = parser_cases pc in
   let e =
     match bpo with
@@ -111,8 +106,6 @@ let bp_parser_cases (bpo, pc) =
     | None -> pc
   in
   mkexp (Pexp_function [(mkpat spat, e)])
-
-let cparser (bpo, pc) = bp_parser_cases (bpo, pc)
 
 
 (* streams *)

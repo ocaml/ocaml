@@ -133,6 +133,7 @@ let rec mkrangepat c1 c2 =
 %token OR
 %token PARSER
 %token <string> PREFIXOP
+%token QUESTION
 %token QUOTE
 %token RBRACE
 %token RBRACKET
@@ -486,7 +487,7 @@ opt_pat:
 ;
 opt_err:
     /* empty */                                 { None }
-  | COLON expr %prec prec_list                  { Some $2 }
+  | QUESTION expr %prec prec_list               { Some $2 }
 ;
 stream_expr:
     stream_expr_component                       { [$1] }

@@ -184,6 +184,7 @@ rule token = parse
   | ")" { RPAREN }
   | "*" { STAR }
   | "," { COMMA }
+  | "?" { QUESTION }
   | "->" { MINUSGREATER }
   | "." { DOT }
   | ".." { DOTDOT }
