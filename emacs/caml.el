@@ -476,16 +476,48 @@ have caml-electric-indent on, which see.")
   (interactive"r")
   (inferior-caml-eval-region start end))
 
-(defun caml-eval-phrase ()
-  "Send the current Caml phrase to the inferior Caml process."
-  (interactive)
-  (save-excursion
-    (let ((bounds (caml-mark-phrase)))
-    (inferior-caml-eval-region (car bounds) (cdr bounds)))))
+;; old version ---to be deleted later
+; 
+; (defun caml-eval-phrase ()
+;   "Send the current Caml phrase to the inferior Caml process."
+;   (interactive)
+;   (save-excursion
+;     (let ((bounds (caml-mark-phrase)))
+;     (inferior-caml-eval-region (car bounds) (cdr bounds)))))
+
+(defun caml-eval-phrase (arg &optional min max)
+  "Send the phrase containing the point to the CAML process.
+With prefix-arg send as many phrases as its numeric value, 
+If an error occurs during evalutaion, stop at this phrase and
+repport the error. 
+
+Return nil if noerror and position of error if any.
+
+If arg's numeric value is zero or negative, evaluate the current phrase
+or as many as prefix arg, ignoring evaluation errors. 
+This allows to jump other erroneous phrases. 
+
+Optional arguments min max defines a region within which the phrase
+should lies."
+  (interactive "p")
+  (inferior-caml-eval-phrase arg min max))
+
+(defun caml-eval-buffer (arg)
+  "Evaluate the buffer from the beginning to the phrase under the point.
+With prefix arg, evaluate past the whole buffer, no stopping at
+the current point."
+  (interactive "p")
+  (let ((here (point)) ((error))
+    (goto-char (point-min))
+    (setq error
+          (caml-eval-phrase 500 (point-min) (if arg (point-max) here))))
+    (if error (set-mark (error)))
+    (goto-char here)))
 
 (defun caml-show-subshell ()
   (interactive)
   (inferior-caml-show-subshell))
+
 
 ;;; Imenu support
 (defun caml-show-imenu ()
@@ -1580,10 +1612,22 @@ by |, insert one."
                              0)
                             abbrev-correct)))))))
 
-(defun caml-indent-phrase ()
-  (interactive "*")
-  (let ((bounds (caml-mark-phrase)))
-    (indent-region (car bounds) (cdr bounds) nil)))
+; (defun caml-indent-phrase ()
+;   (interactive "*")
+;   (let ((bounds (caml-mark-phrase)))
+;     (indent-region (car bounds) (cdr bounds) nil)))
+
+(defun caml-indent-phrase (arg)
+  (interactive "p")
+  (save-excursion
+    (let ((beg (caml-find-phrase)))
+    (while (progn (setq arg (- arg 1)) (> arg 0))
+      (caml-find-region))
+    (indent-region beg (point) nil))))
+
+(defun caml-indent-buffer ()
+  (interactive)
+  (indent-region (point-min) (point-max) nil))
 
 (defun caml-backward-to-less-indent (&optional n)
   "Move cursor back  N lines with less or same indentation."

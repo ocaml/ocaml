@@ -3,7 +3,7 @@
 ;; Didier Remy, November 2001.
 
 ;; This provides two functions completion and help
-;; look for ocaml-complete and ocaml-help
+;; look for caml-complete and caml-help
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -157,7 +157,7 @@ command. An entry may be an info module or a complete file name."
       (setq file (concat dir (ocaml-uncapitalize module) ".mli"))
       (message file)
       (save-window-excursion
-        (set-buffer (get-buffer-create "*ocaml-help*"))
+        (set-buffer (get-buffer-create "*caml-help*"))
         (if (and file (file-exists-p file))
             (progn
               (message "Scanning module %s" file)
@@ -194,7 +194,7 @@ command. An entry may be an info module or a complete file name."
         )))
   ocaml-visible-modules)
 
-;; Look for identifiers aroun poin
+;; Look for identifiers around point
 
 (defun ocaml-current-position ()
   "Return a pair (MODULE . ENTRY) such that point is above ENTRY and 
@@ -202,20 +202,21 @@ MODULE is the module preceeding ENTRY.
 
 Both are a pair of position (BEG . END) in the buffer and can be nil if
 undefined."
-  (let ((module) (entry))
-    (save-excursion
-      (backward-word 1)
-      (if (looking-at "\\([A-Z][A-Za-z0-9_]*\\)[.]")
-          (setq module (cons (match-beginning 1) (match-end 1)))
-        (if (looking-at "[a-z_][A-Za-z0-9_]*")
-            (progn
-              (setq entry (cons (match-beginning 0) (match-end 0)))
-              (backward-word 1)
-              (if (looking-at
-                   (concat "\\([A-Z][A-Za-z0-_]*\\)[.]"
-                           (regexp-quote (match-string 0))))
-                  (setq module (cons (match-beginning 1) (match-end 1)))))))
-      (cons module entry))))
+  (save-excursion
+    (let ((module) (entry))
+      (if (re-search-backward
+           "\\(\\<[A-Z][A-Za-z0-9_]*\\>\\.\\|[^.]\\)\\<[A-Za-z0-9_]*\\="
+           (- (point) 100) t)
+          (progn
+            (if (looking-at "\\<\\([A-Za-z_'][A-Za-z0-9_']*\\)\\>[.]")
+                (progn
+                  (setq module (cons (match-beginning 1) (match-end 1)))
+                  (goto-char (match-end 0))))
+            (if (looking-at "\\<\\([a-z_'][A-Za-z0-9_']*\\)\\>")
+                (progn (message "TROIS")
+                (setq entry (cons (match-beginning 1) (match-end 1)))))))
+      (cons module entry))
+    ))
 
 ;; completion around point
 
@@ -241,7 +242,7 @@ undefined."
         res)
       )))
 
-(defun ocaml-complete (arg)
+(defun caml-complete (arg)
   "Complete symbol define in libraries"
   (interactive "p")
   (let* ((module-entry (ocaml-current-position))
@@ -328,7 +329,7 @@ undefined."
             (string-match files "^ *$"))
         (message "No info file found: %s." (mapconcat 'identity files " "))
       (message "Scanning info files %s." files)
-      (set-buffer (get-buffer-create "*ocaml-help*"))
+      (set-buffer (get-buffer-create "*caml-help*"))
       (setq command
             (concat "gunzip -c -f " files
                 " | grep -e '" ocaml-info-section-regexp "'"))
@@ -395,14 +396,18 @@ current buffer using \\[ocaml-current-position]."
   (let ((info-section (assoc module (ocaml-info-alist))))
     (if info-section (info (cdr info-section))
       (ocaml-visible-modules)
-      (let* ((module-info (assoc module (ocaml-module-alist)))
+      (let* ((module-info
+              (or (assoc module (ocaml-module-alist))
+                  (and (file-exists-p
+                        (concat (ocaml-uncapitalize module) ".mli"))
+                       (ocaml-get-or-make-module module))))                  
              (location (cdadr module-info)))
         (cond
          (location
           (view-file (concat location (ocaml-uncapitalize module) ".mli"))
           (bury-buffer (current-buffer)))
          (info-section (error "Aborted"))
-         (t (error "No help for module %s" (car module)))))
+         (t (error "No help for module %s" module))))
       ))
   (if (stringp entry)
       (let ((here (point)))
@@ -417,13 +422,15 @@ current buffer using \\[ocaml-current-position]."
               (goto-char here)))))
   )
 
-(defun ocaml-help (arg)
+(defun caml-help (arg)
   (interactive "p")
   (let ((module) (entry))
     (cond
-     ((= arg 4)
-      (or (setq module
+     ((or (= arg 4))
+      (or (and
+           (setq module
                 (completing-read "Module: " ocaml-module-alist nil t))
+           (not (string-equal module "")))
           (error "Quit")))
      (t
       (if (= arg 0) (setq ocaml-visible-modules 'lazy))
@@ -455,8 +462,8 @@ current buffer using \\[ocaml-current-position]."
 
 (if (boundp 'caml-mode-map)
     (progn 
-      (define-key caml-mode-map [?\C-c?\C-h] 'ocaml-help)
-      (define-key caml-mode-map [?\C-c?\t] 'ocaml-complete)
+      (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
+      (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
       ))
 
 (provide 'caml-help)
