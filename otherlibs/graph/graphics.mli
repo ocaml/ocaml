@@ -29,6 +29,8 @@ val open_graph: string -> unit
 val close_graph: unit -> unit
         (* Delete the graphics window or switch the screen back to
            text mode. *)
+val set_window_title : string -> unit
+        (* Set the title of the graphics window. *)
 external clear_graph : unit -> unit = "gr_clear_graph"
         (* Erase the graphics window. *)
 external size_x : unit -> int = "gr_size_x"
@@ -84,6 +86,8 @@ val foreground: color
 
 external plot : x:int -> y:int -> unit = "gr_plot"
         (* Plot the given point with the current drawing color. *)
+external plots : (int * int) array -> unit = "gr_plots"
+        (* Plot the given points with the current drawing color. *)
 external point_color : x:int -> y:int -> color = "gr_point_color"
         (* Return the color of the given point in the backing store
            (see "Double buffering" below). *)
@@ -107,6 +111,16 @@ val rlineto : dx:int -> dy:int -> unit
 external draw_rect : x:int -> y:int -> w:int -> h:int -> unit = "gr_draw_rect"
         (* [draw_rect x y w h] draws the rectangle with lower left corner
            at [x,y], width [w] and height [h].
+           The current point is unchanged. *)
+external draw_poly : (int * int) array -> unit = "gr_draw_poly"
+        (* [draw_poly x y w h] draws the polygon given as argument.
+           The array contains the coordinates of the vertices of the
+           polygon.
+           The current point is unchanged. *)
+external draw_lines : (int * int * int * int) array -> unit = "gr_draw_lines"
+        (* [draw_lines segments] draws the segments given in the array
+           argument. Each segment is given as two points, whose
+           coordinates are two integer values.
            The current point is unchanged. *)
 external draw_arc :
         x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
@@ -294,6 +308,8 @@ external remember_mode : bool -> unit = "gr_remember_mode"
            onto the graphics window (see the function [display_mode] above).
            Default remember mode is on.  *)
 
-(* sub window creation *)
+(* subwindow creation *)
 val open_subwindow : x:int -> y:int -> width:int -> height:int -> window_id
+         (* Open a subwindow of the current Graphics window. *)
 val close_subwindow : window_id -> unit
+         (* Close the subwindow with identifier [window_id]. *)

@@ -49,6 +49,7 @@ let window_id =
   | "MacOS" -> (fun () -> "unknown")
   | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)
 
+external set_window_title : string -> unit = "gr_set_window_title"
 external clear_graph : unit -> unit = "gr_clear_graph"
 external size_x : unit -> int = "gr_size_x"
 external size_y : unit -> int = "gr_size_y"
@@ -88,6 +89,7 @@ and foreground = black
 (* Drawing *)
 
 external plot : int -> int -> unit = "gr_plot"
+external plots : (int * int) array -> unit = "gr_plots"
 external point_color : int -> int -> color = "gr_point_color"
 external moveto : int -> int -> unit = "gr_moveto"
 external current_x : unit -> int = "gr_current_x"
@@ -97,6 +99,8 @@ external lineto : int -> int -> unit = "gr_lineto"
 let rlineto x y = lineto (current_x () + x) (current_y () + y)
 let rmoveto x y = moveto (current_x () + x) (current_y () + y)
 external draw_rect : int -> int -> int -> int -> unit = "gr_draw_rect"
+external draw_poly : (int * int) array -> unit = "gr_draw_poly"
+external draw_lines : (int * int * int * int) array -> unit = "gr_draw_lines"
 external draw_arc : int -> int -> int -> int -> int -> int -> unit
                = "gr_draw_arc" "gr_draw_arc_nat"
 let draw_ellipse x y rx ry = draw_arc x y rx ry 0 360
