@@ -41,7 +41,7 @@ value create_string(len)        /* ML */
      value len;
 {
   mlsize_t size = Long_val(len);
-  if (size > Max_wosize * sizeof(value) - 2) invalid_argument("String.create");
+  if (size > Bsize_wsize (Max_wosize) - 1) invalid_argument("String.create");
   return alloc_string(size);
 }
 
