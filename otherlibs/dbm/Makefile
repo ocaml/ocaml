@@ -3,8 +3,8 @@
 include ../../config/Makefile
 
 # Compilation optiosn
-CC=$(BYTECC)
-CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot
+CC=$(BYTECC) -g
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../boot
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
 COBJS=dbm.o
 all: libmldbm.a dbm.cmi dbm.cma
@@ -38,6 +38,6 @@ install:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend:
-	../../tools/csldep *.mli *.ml >> .depend
+	../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend
