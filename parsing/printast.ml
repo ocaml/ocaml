@@ -309,6 +309,13 @@ and expression i ppf x =
       line i ppf "Pexp_loc\n";
       joinlocations i ppf d;
       expression i ppf e;
+  | Pexp_dynamic e ->
+      line i ppf "Pexp_dynamic\n";
+      expression i ppf e;
+  | Pexp_coerce (e, ct) ->
+      line i ppf "Pexp_coerce\n";
+      expression i ppf e;
+      core_type i ppf ct;
 
 and joindefinition i ppf d = list i joinautomaton ppf d
 
