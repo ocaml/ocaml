@@ -18,7 +18,7 @@ if test "$2" = "camlp4r" -o "$2" = "camlp4"; then
         if test "$2" = "camlp4r"; then
             ARGS1="$ARGS1 -warn_seq"
         fi
-	COMM="ocamlrun ../boot/$2$EXE -nolib -I ../boot"
+	COMM="ocamlrun$EXE ../boot/$2$EXE -nolib -I ../boot"
         if test "`basename $OTOP`" != "ocaml_stuff"; then
             COMM="$OTOP/boot/$COMM"
         fi

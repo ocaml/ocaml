@@ -1,5 +1,5 @@
 #!/bin/sh -e
-COMM="ocamlrun $OTOP/otherlibs/dynlink/extract_crc$EXE"
+COMM="ocamlrun$EXE $OTOP/otherlibs/dynlink/extract_crc"
 if test "`basename $OTOP`" != "ocaml_stuff"; then
     COMM="$OTOP/boot/$COMM"
 fi
