@@ -54,7 +54,7 @@ method select_addressing = function
       (Iindexed n, Cop(Cadda, [arg1; arg2]))
   | arg ->
       (Iindexed 0, arg)
- 
+
 method select_shift_arith op shiftop shiftrevop args =
   match args with
     [arg1; Cop(Clsl, [arg2; Cconst_int n])]
@@ -90,7 +90,7 @@ method select_operation op args =
       | _ ->
           self#select_shift_arith op Ishiftsub Ishiftsubrev args
       end
-  | Cmuli ->			(* no multiply immediate *)
+  | Cmuli ->                    (* no multiply immediate *)
       (Iintop Imul, args)
   | Cdivi ->
       begin match args with
@@ -109,8 +109,8 @@ method select_operation op args =
   | Ccheckbound ->
       begin match args with
         [Cop(Clsr, [arg1; Cconst_int n]); arg2]
-	when n > 0 && n < 32 && not(is_intconst arg2) ->
-	  (Ispecific(Ishiftcheckbound n), [arg1; arg2])
+        when n > 0 && n < 32 && not(is_intconst arg2) ->
+          (Ispecific(Ishiftcheckbound n), [arg1; arg2])
       | _ ->
         super#select_operation op args
       end

@@ -359,7 +359,7 @@ let emit_instr i =
         `       {emit_string instr}     {emit_reg r}, {emit_addressing addr i.arg 1}\n`;
         1
     | Lop(Ialloc n) ->
-	let nn = Nativeint.from n in
+        let nn = Nativeint.from n in
         if !fastcode_flag then begin
           if is_immediate nn then begin
             `   ldr     r10, [alloc_limit, #0]\n`;

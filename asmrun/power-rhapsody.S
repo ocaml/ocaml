@@ -12,15 +12,15 @@
 
 /* $Id$ */
 
-.macro Addrglobal	/* reg, glob */
+.macro Addrglobal       /* reg, glob */
         addis   $0, 0, ha16($1)
         addi    $0, $0, lo16($1)
 .endmacro
-.macro Loadglobal	/* reg,glob,tmp */
+.macro Loadglobal       /* reg,glob,tmp */
         addis   $2, 0, ha16($1)
         lwz     $0, lo16($1)($2)
 .endmacro
-.macro Storeglobal	/* reg,glob,tmp */
+.macro Storeglobal      /* reg,glob,tmp */
         addis   $2, 0, ha16($1)
         stw     $0, lo16($1)($2)
 .endmacro
@@ -204,7 +204,7 @@ _caml_c_call:
         Storeglobal r12, _caml_last_return_address, r11
     /* Return to caller */
         blr
-        
+
 /* Raise an exception from C */
 
         .globl  _raise_caml_exception
@@ -296,7 +296,7 @@ L103:
         stw     r11, 4(r1)
         mr      r29, r1
     /* Reload allocation pointers */
-        Loadglobal r31, _young_ptr, r11 
+        Loadglobal r31, _young_ptr, r11
         Loadglobal r30, _young_limit, r11
     /* Say we are back into Caml code */
         li      r0, 0
@@ -314,9 +314,9 @@ L106:
         lwz     r9, 0(r1)
         lwz     r10, 4(r1)
         lwz     r11, 8(r1)
-        Storeglobal r9, _caml_bottom_of_stack, r12 
-        Storeglobal r10, _caml_last_return_address, r12 
-        Storeglobal r11, _caml_gc_regs, r12 
+        Storeglobal r9, _caml_bottom_of_stack, r12
+        Storeglobal r10, _caml_last_return_address, r12
+        Storeglobal r11, _caml_gc_regs, r12
         addi    r1, r1, 16
     /* Update allocation pointer */
         Storeglobal r31, _young_ptr, r11
@@ -392,7 +392,7 @@ _callback2_exn:
         mr      r5, r0
         Addrglobal r12, _caml_apply2
         b       L102
-        
+
         .globl  _callback3_exn
 _callback3_exn:
         mr      r0, r3            /* Closure */

@@ -43,7 +43,7 @@ let word_addressed = false
 let int_reg_name = [|
   "r0"; "r1"; "r2"; "r3"; "r4"; "r5"; "r6"; "r7"; "r10"; "r12"
 |]
-  
+
 let float_reg_name = [|
   "f0"; "f1"; "f2"; "f3"; "f4"; "f5"; "f6"; "f7"
 |]
@@ -167,7 +167,7 @@ let destroyed_at_c_call =               (* r4-r9, f4-f7 preserved *)
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
-  | Iop(Ialloc(_)) -> [|phys_reg 8|]	(* r10 destroyed *)
+  | Iop(Ialloc(_)) -> [|phys_reg 8|]    (* r10 destroyed *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
