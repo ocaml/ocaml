@@ -181,7 +181,7 @@ expr:
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
   | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
   | LPAREN APPLY expr exprlist machtype RPAREN { Cop(Capply $5, $3 :: List.rev $4) }
-  | LPAREN EXTCALL STRING exprlist machtype RPAREN { Cop(Cextcall($3, $5, true), List.rev $4) }
+  | LPAREN EXTCALL STRING exprlist machtype RPAREN { Cop(Cextcall($3, $5, false), List.rev $4) }
   | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3]) }
   | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4]) }
   | LPAREN unaryop expr RPAREN { Cop($2, [$3]) }
@@ -190,7 +190,11 @@ expr:
   | LPAREN IF expr expr expr RPAREN { Cifthenelse($3, $4, $5) }
   | LPAREN SWITCH INTCONST expr caselist RPAREN { make_switch $3 $4 $5 }
   | LPAREN WHILE expr sequence RPAREN
-      { Ccatch(Cloop(Cifthenelse($3, $4, Cexit)), Ctuple []) }
+      { let body =
+          match $3 with
+            Cconst_int x when x <> 0 -> $4
+          | _ -> Cifthenelse($3, $4, Cexit) in
+        Ccatch(Cloop body, Ctuple []) }
   | LPAREN CATCH sequence WITH sequence RPAREN { Ccatch($3, $5) }
   | EXIT        { Cexit }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN

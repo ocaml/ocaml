@@ -46,4 +46,4 @@
     []))
 
 (function "quicksort" (lo: int hi: int a: addr)
-  (app "quick" [lo hi a "cmp"] unit))
+  (app "quick" lo hi a "cmp" unit))

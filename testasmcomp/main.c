@@ -12,7 +12,9 @@
 
 /* $Id$ */
 
+#include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void caml_array_bound_error(void)
 {
@@ -22,9 +24,13 @@ void caml_array_bound_error(void)
 
 #ifdef SORT
 
-long cmpint(long * i, long * j)
+int cmpint(const void * i, const void * j)
 {
-  return *i - *j;
+  long vi = *((long *) i);
+  long vj = *((long *) j);
+  if (vi == vj) return 0;
+  if (vi < vj) return -1;
+  return 1;
 }
 
 #endif
@@ -68,13 +74,13 @@ int main(int argc, char **argv)
     a = (long *) malloc(n * sizeof(long));
     for (i = 0 ; i < n; i++) a[i] = rand() & 0xFFF;
 #ifdef DEBUG
-    for (i = 0; i < n; i++) printf("%d ", a[i]); printf("\n");
+    for (i = 0; i < n; i++) printf("%ld ", a[i]); printf("\n");
 #endif
     b = (long *) malloc(n * sizeof(long));
     for (i = 0; i < n; i++) b[i] = a[i];
     call_gen_code(FUN, 0, n-1, a);
 #ifdef DEBUG
-    for (i = 0; i < n; i++) printf("%d ", a[i]); printf("\n");
+    for (i = 0; i < n; i++) printf("%ld ", a[i]); printf("\n");
 #endif
     qsort(b, n, sizeof(long), cmpint);
     for (i = 0; i < n; i++) {
