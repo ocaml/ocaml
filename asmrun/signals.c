@@ -123,7 +123,7 @@ void leave_blocking_section(void)
 void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(_AIX)
 void handle_signal(int sig, int code, struct sigcontext * context)
-#elif defined(TARGET_power) && defined(__linux)
+#elif defined(TARGET_power) && defined(SYS_elf)
 void handle_signal(int sig, struct pt_regs * context)
 #else
 void handle_signal(int sig)
@@ -160,7 +160,7 @@ void handle_signal(int sig)
       /* Cached in register 30 */
       context->sc_jmpbuf.jmp_context.gpr[30] = (ulong_t) young_limit;
 #endif
-#if defined(TARGET_power) && defined(__linux)
+#if defined(TARGET_power) && defined(SYS_elf)
       /* Cached in register 30 */
       context->gpr[30] = (unsigned long) young_limit;
 #endif
@@ -362,7 +362,7 @@ static void trap_handler(int sig, int code, struct sigcontext * context)
 }
 #endif
 
-#if defined(TARGET_power) && defined(__linux)
+#if defined(TARGET_power) && defined(SYS_elf)
 static void trap_handler(int sig, struct pt_regs * context)
 {
   /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
