@@ -4,17 +4,20 @@ TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2
 FORMAT=../../tools/format-intf
 
-all: $(FILES)
+all: $(FILES) $(FILES:.tex=.htex)
 
 clean:
-	rm -f $(FILES)
+	rm -f $(FILES) $(FILES:.tex=.htex)
 	rm -f *~ #*#
 
 .SUFFIXES:
-.SUFFIXES: .tex .etex
+.SUFFIXES: .tex .etex .htex
 
 .etex.tex:
 	$(TEXQUOTE) < $*.etex > $*.tex
+
+.etex.htex:
+	cp $*.etex $*.htex
 
 top.tex: top.etex $(TRANSF)
 	$(TRANSF) < top.etex | $(TEXQUOTE) > top.tex
@@ -22,4 +25,8 @@ top.tex: top.etex $(TRANSF)
 lexyacc.tex: lexyacc.etex $(TRANSF)
 	$(TRANSF) < lexyacc.etex | $(TEXQUOTE) > lexyacc.tex
 
+top.htex: top.etex $(TRANSF)
+	$(TRANSF) -html < top.etex > top.htex
 
+lexyacc.htex: lexyacc.etex $(TRANSF)
+	$(TRANSF) -html < lexyacc.etex > lexyacc.htex

@@ -1,19 +1,23 @@
 FILES= refman.tex lex.tex names.tex values.tex const.tex types.tex \
   patterns.tex expr.tex typedecl.tex modtypes.tex modules.tex compunit.tex
-# directive.tex intf.tex impl.tex exten.tex
 
 TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2
 
-all: $(FILES)
+ALLFILES=$(FILES) $(FILES:.tex=.htex)
+
+all: $(ALLFILES)
 
 clean:
-	rm -f $(FILES)
+	rm -f $(ALLFILES)
 
 .SUFFIXES:
-.SUFFIXES: .etex .tex
+.SUFFIXES: .etex .tex .htex
 
 .etex.tex:
 	$(TRANSF) < $*.etex | $(TEXQUOTE) > $*.tex
 
-$(FILES): $(TRANSF) $(TEXQUOTE)
+.etex.htex:
+	$(TRANSF) -html < $*.etex > $*.htex
+
+$(ALLFILES): $(TRANSF) $(TEXQUOTE)

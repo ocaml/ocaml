@@ -5,8 +5,8 @@ STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
   printexc.tex printf.tex queue.tex set.tex sort.tex \
   stack.tex string.tex sys.tex
 
-FILES=core.tex $(CORE_INTF) \
-      stdlib.tex stdlib-all.tex $(STDLIB_INTF)
+INTF=$(CORE_INTF) $(STDLIB_INTF)
+FILES=core.tex core.htex stdlib.tex stdlib.htex stdlib-all.tex $(INTF) $(INTF:.tex=.htex)
 
 FORMAT=../../tools/format-intf
 
@@ -19,17 +19,23 @@ all: $(FILES)
 clean:
 	rm -f $(FILES)
 
-$(CORE_INTF) $(STDLIB_INTF): $(FORMAT)
+$(INTF) $(INTF:.tex=.htex): $(FORMAT)
 
 stdlib-all.tex: $(STDLIB_INTF)
 	@ (for i in $(STDLIB_INTF); do echo "\\input $$i"; done) | sort > stdlib-all.tex
 
 .SUFFIXES:
-.SUFFIXES: .tex .etex .mli
+.SUFFIXES: .tex .etex .mli .htex
 
 .etex.tex:
 	../../tools/texquote2 < $*.etex > $*.tex
 
 .mli.tex:
 	$(FORMAT) $< > $*.tex
+
+.etex.htex:
+	cp $*.etex $*.htex
+
+.mli.htex:
+	$(FORMAT) -html $< > $*.htex
 
