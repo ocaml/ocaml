@@ -1026,3 +1026,20 @@ test "maf" maf (`TConstr []) 5 ;
 test "maf" maf (`TVariant []) 6
 ;;
 
+(* PR#1310
+  Using ``get_args'' in place or an ad-hoc ``matcher'' function for tuples.
+  Has made the compiler [3.05] to fail.
+*)
+type t_seb = Uin | Uout
+;;
+
+let rec seb = function
+  | ((i, Uin) | (i, Uout)), Uout -> 1
+  | ((j, Uin) | (j, Uout)), Uin ->  2
+;;
+
+test "seb" seb ((0,Uin),Uout) 1 ;
+test "seb" seb ((0,Uout),Uin) 2 ;
+()
+;;
+

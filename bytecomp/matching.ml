@@ -924,8 +924,21 @@ let make_default matcher (exit,l) =
         | pss -> (pss,i)::rem in
   exit,make_rec l
 
-(* Matching against a constant *)
+(* Then come various functions,
+   There is one set of functions per match style
+   (constants, constructors etc.
 
+  - matcher function are arguments to make_default (for defaukt handlers)
+    They may raise NoMatch or OrPat and perform the full
+    matching (selection + arguments).
+
+  
+  - get_args and get_key are for the compiled matrices, note that
+    selection and geting arguments are separed.
+
+  - make_*_matching combines the previous functions for produicing
+    new  ``pattern_matching'' records.
+*)
 
 
 let rec matcher_const cst p rem = match p.pat_desc with
@@ -1129,6 +1142,10 @@ let divide_variant row ctx ({cases = cl; args = al; default=def} as pm) =
   in
   divide cl
 
+(*
+  Three ``no-test'' cases
+*)
+
 (* Matching against a variable *)
 
 let get_args_var _ rem = rem
@@ -1151,9 +1168,13 @@ let get_args_tuple arity p rem = match p with
   | {pat_desc = Tpat_any} -> omegas arity @ rem
   | {pat_desc = Tpat_tuple args} ->
       args @ rem
-  | _ ->
-      assert false
+  | _ ->  assert false
 
+let matcher_tuple arity p rem = match p.pat_desc with
+| Tpat_or (_,_,_)     -> raise OrPat
+| Tpat_var _          -> get_args_tuple arity omega rem
+| _                   ->  get_args_tuple arity p rem
+  
 let make_tuple_matching arity def = function
     [] -> fatal_error "Matching.make_tuple_matching"
   | (arg, mut) :: argl ->
@@ -1162,14 +1183,14 @@ let make_tuple_matching arity def = function
         then argl
         else (Lprim(Pfield pos, [arg]), Alias) :: make_args (pos + 1) in
       {cases = []; args = make_args 0 ;
-        default=make_default (get_args_tuple arity) def}
+        default=make_default (matcher_tuple arity) def}
 
 
 let divide_tuple arity p ctx pm =
   divide_line
     (filter_ctx p)
     (make_tuple_matching arity)
-    (get_args_tuple arity) p ctx pm
+    (get_args_tuple  arity) p ctx pm
 
 (* Matching against a record pattern *)
 
@@ -1185,6 +1206,11 @@ let get_args_record num_fields p rem = match p with
 | {pat_desc=Tpat_record lbl_pat_list} ->
     record_matching_line num_fields lbl_pat_list @ rem
 | _ -> assert false
+
+let matcher_record num_fields p rem = match p.pat_desc with
+| Tpat_or (_,_,_) -> raise OrPat
+| Tpat_var _      -> get_args_record num_fields omega rem
+| _               -> get_args_record num_fields p rem
 
 let make_record_matching all_labels def = function
     [] -> fatal_error "Matching.make_record_matching"
@@ -1203,7 +1229,7 @@ let make_record_matching all_labels def = function
           (Lprim(access, [arg]), str) :: make_args(pos + 1)
         end in
       let nfields = Array.length all_labels in
-      let def= make_default (get_args_record nfields) def in
+      let def= make_default (matcher_record nfields) def in
       {cases = []; args = make_args 0 ; default = def}
 
 
