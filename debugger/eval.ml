@@ -39,17 +39,22 @@ let rec path event = function
     Pident id ->
       if Ident.global id then
         Debugcom.Remote_value.global (Symtable.get_global_position id)
-      else begin
-        try
-          let pos = Ident.find_same id event.ev_compenv.ce_stack in
-          Debugcom.Remote_value.local (event.ev_stacksize - pos)
-        with Not_found ->
-        try
-          let pos = Ident.find_same id event.ev_compenv.ce_heap in
-          Debugcom.Remote_value.from_environment (pos + 1)
-        with Not_found ->
-          raise(Error(Unbound_identifier id))
-      end
+      else
+        begin match event with
+          Some ev ->
+            begin try
+              let pos = Ident.find_same id ev.ev_compenv.ce_stack in
+              Debugcom.Remote_value.local (ev.ev_stacksize - pos)
+            with Not_found ->
+            try
+              let pos = Ident.find_same id ev.ev_compenv.ce_heap in
+              Debugcom.Remote_value.from_environment (pos + 1)
+            with Not_found ->
+              raise(Error(Unbound_identifier id))
+            end
+        | None ->
+            raise(Error(Unbound_identifier id))
+        end
   | Pdot(root, fieldname, pos) ->
       let v = path event root in
       if not (Debugcom.Remote_value.is_block v) then
@@ -67,8 +72,8 @@ let rec expression event env = function
         raise(Error(Unbound_long_identifier lid))
       end
   | E_result ->
-      begin match event.ev_kind with
-        Event_after ty when !Frames.current_frame = 0 ->
+      begin match event with
+        Some {ev_kind = Event_after ty} when !Frames.current_frame = 0 ->
           (Debugcom.Remote_value.accu(), ty)
       | _ ->
           raise(Error(No_result))

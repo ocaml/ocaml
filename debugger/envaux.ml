@@ -54,9 +54,15 @@ let rec env_from_summary sum =
             try 
               Env.find_module path env
             with Not_found ->
+(* XXX Brutal !!! *)
               fatal_error "Envaux.env_from_summary"
             in
           Env.open_signature path (extract_sig env mty) env
     in
       Hashtbl.add env_cache sum env;
       env
+
+let env_of_event =
+  function
+    None    -> Env.empty
+  | Some ev -> env_from_summary ev.Instruct.ev_typenv

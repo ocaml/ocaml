@@ -15,9 +15,8 @@
 open Types
 open Parser_aux
 
-val path : Instruct.debug_event -> Path.t -> Debugcom.Remote_value.t
 val expression :
-    Instruct.debug_event -> Env.t -> expression ->
+    Instruct.debug_event option -> Env.t -> expression ->
     Debugcom.Remote_value.t * type_expr
 
 type error =

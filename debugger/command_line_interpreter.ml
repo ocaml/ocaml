@@ -297,6 +297,9 @@ let instr_next lexbuf =
     next step_count;
     show_current_event ()
 
+(* XXX Etudier instruction previous et start, symetriques de next et
+   finish. *)
+
 let instr_goto lexbuf =
   let time = integer_eol Lexer.lexeme lexbuf in
     ensure_loaded ();
@@ -429,14 +432,10 @@ let print_expr depth ev env expr =
     raise Toplevel
 
 let print_command depth lexbuf =
-  let e =
-    match !selected_event with
-      None -> raise Toplevel
-    | Some x -> x in
   let exprs = expression_list_eol Lexer.lexeme lexbuf in
   ensure_loaded ();
-  let env = Envaux.env_from_summary e.ev_typenv in
-  List.iter (print_expr depth e env) exprs
+  let env = Envaux.env_of_event !selected_event in
+  List.iter (print_expr depth !selected_event env) exprs
 
 let instr_print lexbuf = print_command !max_printer_depth lexbuf
 
@@ -499,6 +498,8 @@ let instr_info =
          "\"info\" must be followed by the name of an info command.";
        raise Toplevel)
 
+(* XXX Point d'arret sur fonction a traiter de maniere specifique
+   (il n'y a pas toujours un unique evenement en debut de fonction) *)
 let instr_break lexbuf =
   let argument = break_argument_eol Lexer.lexeme lexbuf in
     ensure_loaded ();
@@ -513,12 +514,9 @@ let instr_break lexbuf =
     | BA_pc pc ->                               (* break PC *)
         add_breakpoint_at_pc pc
     | BA_function expr ->                       (* break FUNCTION *)
-        let ev = match !current_event with
-            None -> raise Toplevel
-          | Some x -> x in
-        let env = Envaux.env_from_summary ev.ev_typenv in
+        let env = Envaux.env_of_event !current_event in
         begin try
-          let (v, ty) = Eval.expression ev env expr in
+          let (v, ty) = Eval.expression !current_event env expr in
           match (Ctype.repr ty).desc with
             Tarrow (_, _) ->
               add_breakpoint_after_pc (Remote_value.closure_code v)
