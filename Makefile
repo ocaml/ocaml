@@ -334,13 +334,16 @@ beforedepend:: asmcomp/proc.ml
 # Preprocess the code emitters
 
 asmcomp/emit.ml: asmcomp/emit_$(ARCH).mlp tools/cvt_emit
-	perl tools/cvt_emit asmcomp/emit_$(ARCH).mlp > asmcomp/emit.ml \
+	boot/ocamlrun tools/cvt_emit < asmcomp/emit_$(ARCH).mlp > asmcomp/emit.ml \
         || { rm -f asmcomp/emit.ml; exit 2; }
 
 clean::
 	rm -f asmcomp/emit.ml
 
 beforedepend:: asmcomp/emit.ml
+
+tools/cvt_emit: tools/cvt_emit.mll
+	cd tools; $(MAKE) cvt_emit
 
 # The "expunge" utility
 
