@@ -489,8 +489,12 @@ CAMLprim value caml_close_channel(value vchannel)
 
   /* For output channels, must have flushed before */
   struct channel * channel = Channel(vchannel);
-  result = close(channel->fd);
-  channel->fd = -1;
+  if (channel->fd != -1){
+    result = close(channel->fd);
+    channel->fd = -1;
+  }else{
+    result = 0;
+  }
   /* Ensure that every read or write on the channel will cause an
      immediate flush_partial or refill, thus raising a Sys_error
      exception */
