@@ -23,6 +23,7 @@
 
 static Volatile int async_signal_mode = 0;
 Volatile int pending_signal = 0;
+Volatile int force_major_slice = 0;
 value signal_handlers = 0;
 char * young_limit;
 extern char * caml_last_return_address;
@@ -43,13 +44,25 @@ void garbage_collection()
 {
   int sig;
 
-  if (young_ptr < young_start) minor_collection();
+  if (young_ptr < young_start || force_major_slice) minor_collection();
   /* If a signal arrives between the following two instructions,
      it will be lost. */
   sig = pending_signal;
   pending_signal = 0;
   if (sig) execute_signal(sig);
   young_limit = young_start;
+}
+
+/* Trigger a garbage collection as soon as possible */
+
+void urge_major_slice ()
+{
+  force_major_slice = 1;
+  young_limit = young_end;
+  /* This is only moderately effective on ports that cache young_limit
+     in a register, since modify() is called directly, not through
+     caml_c_call, so it may take a while before the register is reloaded
+     from young_limit. */
 }
 
 void enter_blocking_section()
@@ -110,9 +123,9 @@ void handle_signal(sig)
       context->sc_regs[14] = (long) young_limit;
 #endif
 #ifdef TARGET_mips
-    /* Cached in register $23 */
-    if (caml_last_return_address == NULL)
-      context->sc_regs[23] = (int) young_limit;
+      /* Cached in register $23 */
+      if (caml_last_return_address == NULL)
+        context->sc_regs[23] = (int) young_limit;
 #endif
   }
 }
