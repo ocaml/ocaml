@@ -1531,6 +1531,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
       (Tvar, _) when if inst_nongen then t1.level <> generic_level - 1
                                     else t1.level =  generic_level ->
         moregen_occur env t1.level t2;
+        occur env t1 t2;
         t1.desc <- Tlink t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
