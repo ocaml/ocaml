@@ -20,9 +20,6 @@
 
 #ifdef HAS_SOCKETS
 #include "socketaddr.h"
-#endif
-
-#if defined(HAS_SOCKETS) && defined(MSG_OOB) && defined(MSG_DONTROUTE) && defined(MSG_PEEK)
 
 static int msg_flag_table[] = {
   MSG_OOB, MSG_DONTROUTE, MSG_PEEK
