@@ -7,9 +7,6 @@ ocaml \- The Objective Caml interactive toplevel
 .SH SYNOPSIS
 .B ocaml
 [
-.B \-labels
-]
-[
 .B \-unsafe
 ]
 [
@@ -61,13 +58,6 @@ with
 are searched after the current directory, in the order in which they
 were given on the command line, but before the standard library
 directory.
-
-.TP
-.B \-labels
-Switch to ``commuting label mode''. Arguments must be
-explicitly labeled by labels appearing in types. Arguments with different
-labels may commute freely.
-
 
 .TP
 .B \-unsafe

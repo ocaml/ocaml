@@ -19,9 +19,6 @@ ocamlopt \- The Objective Caml native-code compiler
 .B \-compact
 ]
 [
-.B \-labels
-]
-[
 .B \-unsafe
 ]
 [
@@ -218,12 +215,6 @@ is saved in the file
 .TP
 .B \-v
 Print the version number of the compiler.
-
-.TP
-.B \-labels
-Switch to ``commuting label mode''. Arguments must be
-explicitly labeled by labels appearing in types. Arguments with different
-labels may commute freely.
 
 .TP
 .B \-unsafe
