@@ -78,7 +78,11 @@ let type_variable loc name =
   with Not_found ->
     raise(Error(loc, Unbound_type_variable ("'" ^ name)))
 
-type policy = Fixed | Extensible | Delayed 
+(* DYN: Policies carries local variable set  *)
+type policy = 
+    Fixed 
+  | Extensible of (string, type_expr) Tbl.t 
+  | Delayed of (string, type_expr) Tbl.t
 
 let rec transl_type env policy styp =
   match styp.ptyp_desc with
@@ -86,32 +90,36 @@ let rec transl_type env policy styp =
       Ctype.newvar ()
   | Ptyp_var name ->
       begin
-        match policy with
+	match policy with
           Fixed ->
             begin try
               Tbl.find name !type_variables
             with Not_found ->
               raise(Error(styp.ptyp_loc, Unbound_type_variable ("'" ^ name)))
             end
-        | Extensible ->
+        | Extensible local_tbl (* DYN *) ->
             begin try
+	      Tbl.find name local_tbl
+	    with Not_found -> try
               Tbl.find name !type_variables
             with Not_found ->
-              let v = new_global_var () in
+              let v = Ctype.newvar () in
               type_variables := Tbl.add name v !type_variables;
               v
             end
-        | Delayed ->
+        | Delayed local_tbl (* DYN *) ->
             begin try
+              Tbl.find name local_tbl
+            with Not_found -> try
               Tbl.find name !used_variables
             with Not_found -> try
               let v1 = Tbl.find name !type_variables in
-              let v2 = new_global_var () in
+               let v2 = new_global_var () in
               used_variables := Tbl.add name v2 !used_variables;
               bindings := (styp.ptyp_loc, v1, v2)::!bindings;
               v2
             with Not_found ->
-              let v = new_global_var () in
+              let v = new_global_var () in (* DYN *)
               type_variables := Tbl.add name v !type_variables;
               used_variables := Tbl.add name v !used_variables;
               v
@@ -333,14 +341,28 @@ and transl_fields env policy =
       let ty2 = transl_fields env policy l in
         newty (Tfield (s, Fpresent, ty1, ty2))
 
-let transl_simple_type env fixed styp =
-  let typ = transl_type env (if fixed then Fixed else Extensible) styp in
+let transl_simple_type env fixed ?(local_vars=[] (* DYN *)) styp =
+(* DYN *)
+  let local_tbl = 
+    List.fold_right (fun name tbl ->
+      if Tbl.mem name tbl then tbl
+      else Tbl.add name (Ctype.newvar ()) tbl) local_vars Tbl.empty
+  in
+(* /DYN *)
+  let typ = transl_type env (if fixed then Fixed else Extensible local_tbl (* DYN *)) styp in
   typ
 
-let transl_simple_type_delayed env styp =
+let transl_simple_type_delayed env ?(local_vars=[] (* DYN *)) styp =
+(* DYN *)
+  let local_tbl = 
+    List.fold_right (fun name tbl ->
+      if Tbl.mem name tbl then tbl
+      else Tbl.add name (Ctype.newvar ()) tbl) local_vars Tbl.empty
+  in
+(* /DYN *)
   used_variables := Tbl.empty;
   bindings := [];
-  let typ = transl_type env Delayed styp in
+  let typ = transl_type env (Delayed local_tbl) styp in
   let b = !bindings in
   used_variables := Tbl.empty;
   bindings := [];

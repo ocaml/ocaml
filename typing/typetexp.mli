@@ -17,9 +17,9 @@
 open Format;;
 
 val transl_simple_type:
-        Env.t -> bool -> Parsetree.core_type -> Types.type_expr
+        Env.t -> bool -> ?local_vars: string list -> Parsetree.core_type -> Types.type_expr
 val transl_simple_type_delayed:
-        Env.t -> Parsetree.core_type -> Types.type_expr * (unit -> unit)
+        Env.t -> ?local_vars: string list -> Parsetree.core_type -> Types.type_expr * (unit -> unit)
         (* Translate a type, but leave type variables unbound. Returns
            the type and a function that binds the type variable. *)
 val transl_type_scheme:
