@@ -62,7 +62,8 @@ let interface ppf sourcefile =
       fprintf std_formatter "%a@." Printtyp.signature
                                    (Typemod.simplify_signature sg);
     Warnings.check_fatal ();
-    Env.save_signature sg modulename (prefixname ^ ".cmi");
+    if not !Clflags.print_types then
+      Env.save_signature sg modulename (prefixname ^ ".cmi");
     Pparse.remove_preprocessed inputfile
   with e ->
     Pparse.remove_preprocessed_if_ast inputfile;
@@ -80,28 +81,38 @@ let implementation ppf sourcefile =
   let prefixname = chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = Pparse.preprocess sourcefile in
-  let objfile = prefixname ^ ".cmo" in
-  let oc = open_out_bin objfile in
   let env = initial_env() in
-  try
-    Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
-    ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-    ++ Typemod.type_implementation sourcefile prefixname modulename env
-    ++ Translmod.transl_implementation modulename
-    ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-    ++ Simplif.simplify_lambda
-    ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-    ++ Bytegen.compile_implementation modulename
-    ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
-    ++ Emitcode.to_file oc modulename;
-    Warnings.check_fatal ();
-    Pparse.remove_preprocessed inputfile;
-    close_out oc;
-  with x ->
-    close_out oc;
-    remove_file objfile;
-    Pparse.remove_preprocessed_if_ast inputfile;
-    raise x
+  if !Clflags.print_types then begin
+    try ignore(
+      Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
+      ++ print_if ppf Clflags.dump_parsetree Printast.implementation
+      ++ Typemod.type_implementation sourcefile prefixname modulename env)
+    with x ->
+      Pparse.remove_preprocessed_if_ast inputfile;
+      raise x
+  end else begin    
+    let objfile = prefixname ^ ".cmo" in
+    let oc = open_out_bin objfile in
+    try
+      Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
+      ++ print_if ppf Clflags.dump_parsetree Printast.implementation
+      ++ Typemod.type_implementation sourcefile prefixname modulename env
+      ++ Translmod.transl_implementation modulename
+      ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+      ++ Simplif.simplify_lambda
+      ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+      ++ Bytegen.compile_implementation modulename
+      ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
+      ++ Emitcode.to_file oc modulename;
+      Warnings.check_fatal ();
+      Pparse.remove_preprocessed inputfile;
+      close_out oc;
+    with x ->
+      close_out oc;
+      remove_file objfile;
+      Pparse.remove_preprocessed_if_ast inputfile;
+      raise x
+  end
 
 let c_file name =
   if Ccomp.compile_file name <> 0 then exit 2

@@ -90,7 +90,8 @@ let main () =
              " Optimize code size rather than speed";
        "-dtypes", Arg.Set save_types,
              " Save type information in <filename>.annot";
-       "-i", Arg.Set print_types, " Print the types";
+       "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
+             " Print inferred interface";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";
        "-impl", Arg.String (process_implementation_file ppf),

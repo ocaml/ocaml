@@ -720,7 +720,7 @@ let type_implementation sourcefile prefixname modulename initial_env ast =
     end else begin
       check_nongen_schemes finalenv str;
       normalize_signature finalenv sg;
-      if not !Clflags.dont_write_files then
+      if not !Clflags.dont_write_files && not !Clflags.print_types then
         Env.save_signature sg modulename (prefixname ^ ".cmi");
       Tcoerce_none
     end in

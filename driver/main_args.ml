@@ -76,7 +76,7 @@ struct
            "<dir>  Add <dir> to the run-time search path for shared libraries";
     "-dtypes", Arg.Unit F._dtypes, " Save type information in <filename>.annot";
     "-g", Arg.Unit F._g, " Save debugging information";
-    "-i", Arg.Unit F._i, " Print the types";
+    "-i", Arg.Unit F._i, " Print inferred interface";
     "-I", Arg.String F._I,
            "<dir>  Add <dir> to the list of include directories";
     "-impl", Arg.String F._impl, "<file>  Compile <file> as a .ml file";

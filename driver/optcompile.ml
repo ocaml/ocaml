@@ -61,7 +61,8 @@ let interface ppf sourcefile =
       fprintf std_formatter "%a@." Printtyp.signature
                                    (Typemod.simplify_signature sg);
     Warnings.check_fatal ();
-    Env.save_signature sg modulename (prefixname ^ ".cmi");
+    if not !Clflags.print_types then
+      Env.save_signature sg modulename (prefixname ^ ".cmi");
     Pparse.remove_preprocessed inputfile
   with e ->
     Pparse.remove_preprocessed_if_ast inputfile;
@@ -83,15 +84,21 @@ let implementation ppf sourcefile =
   let env = initial_env() in
   Compilenv.reset modulename;
   try
-    Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
-    ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-    ++ Typemod.type_implementation sourcefile prefixname modulename env
-    ++ Translmod.transl_store_implementation modulename
-    +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-    +++ Simplif.simplify_lambda
-    +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-    ++ Asmgen.compile_implementation prefixname ppf;
-    Compilenv.save_unit_info (prefixname ^ ".cmx");
+    if !Clflags.print_types then ignore(
+      Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
+      ++ print_if ppf Clflags.dump_parsetree Printast.implementation
+      ++ Typemod.type_implementation sourcefile prefixname modulename env)
+    else begin
+      Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
+      ++ print_if ppf Clflags.dump_parsetree Printast.implementation
+      ++ Typemod.type_implementation sourcefile prefixname modulename env
+      ++ Translmod.transl_store_implementation modulename
+      +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+      +++ Simplif.simplify_lambda
+      +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+      ++ Asmgen.compile_implementation prefixname ppf;
+      Compilenv.save_unit_info (prefixname ^ ".cmx");
+    end;
     Warnings.check_fatal ();
     Pparse.remove_preprocessed inputfile
   with x ->
