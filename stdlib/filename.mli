@@ -84,7 +84,7 @@ val temp_file : string -> string -> string
 
 val open_temp_file :
       ?mode: open_flag list -> string -> string -> string * out_channel
-(** Same as {!temp_file}, but returns both the name of a fresh
+(** Same as {!Filename.temp_file}, but returns both the name of a fresh
    temporary file, and an output channel opened (atomically) on
    this file.  This function is more secure than [temp_file]: there
    is no risk that the temporary file will be modified (e.g. replaced
