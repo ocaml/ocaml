@@ -548,15 +548,15 @@ let rec emit_instr i dslot =
         if toc then begin
           `	lwz	0, 0({emit_reg i.arg.(0)})\n`;
           `	stw	2, 20(1)\n`;
-          `	mtlr	0\n`;
+          `	mtctr	0\n`;
           `	lwz	2, 4({emit_reg i.arg.(0)})\n`;
           record_frame i.live;
-          `	blrl\n`;
+          `	bctrl\n`;
           `	lwz	2, 20(1)\n`
         end else begin
-          `	mtlr	{emit_reg i.arg.(0)}\n`;
+          `	mtctr	{emit_reg i.arg.(0)}\n`;
           record_frame i.live;
-          `	blrl\n`
+          `	bctrl\n`
         end
     | Lop(Icall_imm s) ->
         record_frame i.live;
@@ -605,10 +605,10 @@ let rec emit_instr i dslot =
           let n = frame_size() in
           `	lwz	12, {emit_label lbl}(2) # {emit_symbol s}\n`;
           if !contains_calls then begin
-            `	lwz	11, {emit_int(n - 4)}(1)\n`;
             `	lwz	0, 0(12)\n`;
             `	lwz	2, 4(12)\n`;
             `	mtctr	0\n`;
+            `	lwz	11, {emit_int(n - 4)}(1)\n`;
             `	addi	1, 1, {emit_int n}\n`;
             `	mtlr	11\n`
           end else begin
@@ -640,8 +640,8 @@ let rec emit_instr i dslot =
             external_functions := StringSet.add s !external_functions;
             `	addis	{emit_gpr 11}, 0, ha16(L{emit_symbol s}$non_lazy_ptr)\n`;
             `	lwz	{emit_gpr 11}, lo16(L{emit_symbol s}$non_lazy_ptr)({emit_gpr 11})\n`;
-            `	mtlr	{emit_gpr 11}\n`;
-            `	blrl\n`
+            `	mtctr	{emit_gpr 11}\n`;
+            `	bctrl\n`
           end else
           `	bl	{emit_codesymbol s}\n`
         end;

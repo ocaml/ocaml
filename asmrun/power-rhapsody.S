@@ -186,7 +186,7 @@ _caml_c_call:
     /* Save return address */
         mflr    r25
     /* Get ready to call C function (address in 11) */
-        mtlr    r11
+        mtctr   r11
     /* Record lowest stack address and return address */
         Storeglobal r1, _caml_bottom_of_stack, r12
         Storeglobal r25, _caml_last_return_address, r12
@@ -194,7 +194,7 @@ _caml_c_call:
         Storeglobal r31, _caml_young_ptr, r11
         Storeglobal r29, _caml_exception_pointer, r11
     /* Call the function (address in link register) */
-        blrl
+        bctrl
     /* Restore return address (in 25, preserved by the C function) */
         mtlr    r25
     /* Reload allocation pointer and allocation limit*/
@@ -303,9 +303,9 @@ L103:
         li      r0, 0
         Storeglobal r0, _caml_last_return_address, r11
     /* Call the Caml code */
-        mtlr    r12
+        mtctr    r12
 L105:
-        blrl
+        bctrl
     /* Pop the trap frame, restoring caml_exception_pointer */
         lwz     r9, 4(r1)
         Storeglobal r9, _caml_exception_pointer, r11
