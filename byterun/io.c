@@ -150,7 +150,6 @@ int flush_partial(struct channel *channel)
 {
   int towrite, written;
 
-  Lock(channel);
   towrite = channel->curr - channel->buff;
   if (towrite > 0) {
     written = do_write(channel->fd, channel->buff, towrite);
@@ -159,7 +158,6 @@ int flush_partial(struct channel *channel)
       bcopy(channel->buff + written, channel->buff, towrite - written);
     channel->curr -= written;
   }
-  Unlock(channel);
   return (channel->curr == channel->buff);
 }
 
@@ -420,12 +418,20 @@ value caml_channel_size(value vchannel)      /* ML */
 
 value caml_flush_partial(value vchannel)            /* ML */
 {
-  return Val_bool(flush_partial(Channel(vchannel)));
+  struct channel * channel = Channel(vchannel);
+  int res;
+  Lock(channel);
+  res = flush_partial(channel);
+  Unlock(channel);
+  return Val_bool(res);
 }
 
 value caml_flush(value vchannel)            /* ML */
 {
-  flush(Channel(vchannel));
+  struct channel * channel = Channel(vchannel);
+  Lock(channel);
+  flush(channel);
+  Unlock(channel);
   return Val_unit;
 }
 
