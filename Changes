@@ -53,13 +53,15 @@ Toplevel environment:
 - Revised handling of top-level value definitions, allows reclaimation
   of definitions that are shadowed by later definitions with the same names.
   (E.g. "let x = <big list>;; let x = 1;;" allows <big list> to be reclaimed.)
+- Revised the tracing facility so that for standard library functions,
+  only calls from user code are traced, not calls from the system.
 
 Runtime system:
 - Fixed portability issue on bcopy() vs memmove(), affecting Linux RedHat 7.0
   in particular.
 - Structural comparisons (=, <>, <, <=, >, >=, compare) reimplemented
   so as to avoid overflowing the C stack.
-- Input/output functions: arrange so that all reads and writes on closed
+- Input/output functions: arrange so that reads and writes on closed
   in_channel or out_channel raise Sys_error immediately.
 
 Standard library:
@@ -67,7 +69,7 @@ Standard library:
     added alarms
 - Module Hashtbl: added Hashtbl.replace.
 - Module Int64: added bits_of_float, float_of_bits (access to IEEE 754
-    representation of floats)
+    representation of floats).
 - Module List:  List.partition now tail-rec; 
     improved memory behavior of List.stable_sort.
 - Module Nativeint: added Nativeint.size (number of bits in a nativeint).
