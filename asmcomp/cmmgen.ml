@@ -362,8 +362,7 @@ let new_const_symbol () =
   incr const_label;
   Compilenv.current_unit_name () ^ "_" ^ string_of_int !const_label
 
-let structured_constants =
-  (Hashtbl.create 19 : (structured_constant, string) Hashtbl.t)
+let structured_constants = ref ([] : (string * structured_constant) list)
 
 let transl_constant = function
     Const_base(Const_int n) ->
@@ -377,14 +376,9 @@ let transl_constant = function
                                 (Nativeint.shift_left (Nativeint.of_int n) 1)
                                 Nativeint.one)
   | cst ->
-      let lbl =
-        try
-          Hashtbl.find structured_constants cst
-        with Not_found ->
-          let lbl = new_const_symbol() in
-          Hashtbl.add structured_constants cst lbl;
-          lbl
-      in Cconst_symbol lbl
+      let lbl = new_const_symbol() in
+      structured_constants := (lbl, cst) :: !structured_constants;
+      Cconst_symbol lbl
 
 (* Translate constant closures *)
 
@@ -1565,10 +1559,10 @@ let emit_constant_closure symb fundecls cont =
 
 let emit_all_constants cont =
   let c = ref cont in
-  Hashtbl.iter
-    (fun cst lbl -> c := Cdata(emit_constant lbl cst []) :: !c)
-    structured_constants;
-  Hashtbl.clear structured_constants;
+  List.iter
+    (fun (lbl, cst) -> c := Cdata(emit_constant lbl cst []) :: !c)
+    !structured_constants;
+  structured_constants := [];
   List.iter
     (fun (symb, bi, n) ->
         c := Cdata(emit_boxedint_constant symb bi n) :: !c)
