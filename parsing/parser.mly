@@ -925,7 +925,7 @@ simple_expr:
   | LBRACE record_expr RBRACE
       { let (exten, fields) = $2 in mkexp(Pexp_record(fields, exten)) }
   | LBRACE record_expr error
-      { unclosed "{" 1 "}" 5 }
+      { unclosed "{" 1 "}" 3 }
   | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { mkexp(Pexp_array(List.rev $2)) }
   | LBRACKETBAR expr_semi_list opt_semi error
