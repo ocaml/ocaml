@@ -33,12 +33,12 @@ struct extern_obj {
 };
 
 static struct extern_obj * extern_table;
-static asize_t extern_table_size;
+static unsigned long extern_table_size;
 
 #ifdef SIXTYFOUR
-#define Hash(v) (((asize_t) ((v) >> 3)) % extern_table_size)
+#define Hash(v) (((unsigned long) ((v) >> 3)) % extern_table_size)
 #else
-#define Hash(v) (((asize_t) ((v) >> 2)) % extern_table_size)
+#define Hash(v) (((unsigned long) ((v) >> 2)) % extern_table_size)
 #endif
 
 static void alloc_extern_table()

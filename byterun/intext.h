@@ -58,9 +58,6 @@
 
 /* Initial sizes of data structures for extern */
 
-#ifndef INITIAL_EXTERN_SIZE
-#define INITIAL_EXTERN_SIZE 4096
-#endif
 #ifndef INITIAL_EXTERN_TABLE_SIZE
 #define INITIAL_EXTERN_TABLE_SIZE 2039
 #endif
