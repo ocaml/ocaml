@@ -100,7 +100,7 @@ actions.
 Between the header and the entry points, one can give names to
 frequently-occurring regular expressions.  This is written
 @"let" ident "=" regexp@.
-In following regular expressions, the identifier
+In regular expressions that follow this declaration, the identifier
 \var{ident} can be used as shorthand for \var{regexp}.
 
 \subsection{Entry points}

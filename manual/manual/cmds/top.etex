@@ -97,7 +97,7 @@ full editing power of Emacs (command "run-caml" from library "inf-caml").
 
 At any point, the parsing, compilation or evaluation of the current
 phrase can be interrupted by pressing "ctrl-C" (or, more precisely,
-by sending the "sigintr" signal to the "ocaml" process). The toplevel
+by sending the "INTR" signal to the "ocaml" process). The toplevel
 then immediately returns to the "#" prompt.
 
 If \var{scriptfile} is given on the command-line to "ocaml", the toplevel
@@ -110,12 +110,16 @@ command exits immediately.  No commands are read from standard input.
 starting with the script file name in "Sys.argv.(0)".
 
 In script mode, the first line of the script is ignored if it starts
-with "#!".  Thus, it is theoretically possible to make the script
+with "#!".  Thus, it should be possible to make the script
 itself executable and put as first line "#!/usr/local/bin/ocaml",
 thus calling the toplevel system automatically when the script is
 run.  However, "ocaml" itself is a "#!" script on most installations
 of Objective Caml, and Unix kernels usually do not handle nested "#!"
-scripts.
+scripts.  A better solution is to put the following as the first line
+of the script:
+\begin{verbatim}
+        #!/usr/local/bin/ocamlrun /usr/local/bin/ocaml
+\end{verbatim}
 
 \end{unix}
 
@@ -189,6 +193,8 @@ printed as is; otherwise, they are printed as decimal escape sequences
 attempts to underline visually the location of the error. It
 consults the "TERM" variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
+
+\item["HOME"] Directory where the ".ocamlinit" file is searched.
 \end{options}
 \end{unix}
 
@@ -291,12 +297,12 @@ can be entered with the "#load" directive described above. Referencing
 a unit for which no implementation has been provided
 results in the error ``Reference to undefined global `\ldots'\,''.
 
-Note that entering "open "\var{mod} merely accesses the compiled
-interface (".cmi" file) for \var{mod}, but does not load the
-implementation of \var{mod}, and does not cause any error if no
-implementation of \var{mod} has been loaded. The error 
-``reference to undefined global \var{mod}'' will occur only when
-executing a value or module definition that refers to \var{mod}.
+Note that entering "open "\var{Mod} merely accesses the compiled
+interface (".cmi" file) for \var{Mod}, but does not load the
+implementation of \var{Mod}, and does not cause any error if no
+implementation of \var{Mod} has been loaded. The error 
+``reference to undefined global \var{Mod}'' will occur only when
+executing a value or module definition that refers to \var{Mod}.
 
 \section{Common errors}
 

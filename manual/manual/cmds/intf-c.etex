@@ -1622,7 +1622,7 @@ write and read back the contents of custom blocks in a portable way.
 Those functions handle endianness conversions when e.g. data is
 written on a little-endian machine and read back on a big-endian machine.
 
-\begin{tableau}{|l|p{10cm}}{Function}{Action}
+\begin{tableau}{|l|p{10cm}|}{Function}{Action}
 \entree{"serialize_int_1"}{Write a 1-byte integer}
 \entree{"serialize_int_2"}{Write a 2-byte integer}
 \entree{"serialize_int_4"}{Write a 4-byte integer}
@@ -1706,9 +1706,6 @@ linking and dynamic linking modes.
 native Win32 port.
 \end{windows}
 
-\begin{macos} This command is not available.
-\end{macos}
-%
 The "ocamlmklib" command takes three kinds of arguments:
 \begin{itemize}
 \item Caml source files and object files (".cmo", ".cmx", ".ml")

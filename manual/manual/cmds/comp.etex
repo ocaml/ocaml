@@ -394,8 +394,8 @@ the name of the module they describe (for ".cmi" files) or implement
 (for ".cmo" files).
 
 When the compiler encounters a reference to a free module identifier
-"Mod", it looks in the search path for a file "mod.cmi" (note
-lowercasing of first letter) and loads the compiled interface
+"Mod", it looks in the search path for a file named "Mod.cmi" or "mod.cmi"
+and loads the compiled interface
 contained in that file. As a consequence, renaming ".cmi" files is not
 advised: the name of a ".cmi" file must always correspond to the name
 of the compilation unit it implements. It is admissible to move them

@@ -23,12 +23,6 @@ For interactive use of the "unix" library, do:
 or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"unix.cma\";;".
 
-\begin{macos}
-A fairly complete emulation of the Unix system calls is provided in
-the MacOS version of Objective Caml. The end of this chapter gives
-more information on the functions that are not supported under MacOS.
-\end{macos}
-
 \begin{windows}
 A fairly complete emulation of the Unix system calls is provided in
 the Windows version of Objective Caml. The end of this chapter gives
@@ -57,46 +51,11 @@ at "unixLabels.mli", or by using the "ocamlbrowser" tool.
 \fi
 
 \newpage
-\begin{macos}
-Under MacOS, the Unix library is only available in the toplevel
-application, not in MPW tools.
-Below is a list of the functions that are not implemented, or only
-partially implemented, under MacOS. Functions not mentioned are
-fully implemented and behave as described previously in this chapter.
-
-\begin{tableau}{|l|p{8cm}|}{Functions}{Comment}
-\entree{"chown", "fchown"}{not implemented}
-\entree{"chroot"}{not implemented}
-\entree{"environment", "putenv"}{not implemented}
-\entree{"execv", "execve", "execvp", "execvpe"}{not implemented}
-\entree{"fork"}{not implemented, use threads}
-\entree{"getegid", "geteuid", "getgid", "getuid"}{always return 1}
-\entree{"getgrnam", "getgrgid"}{not implemented}
-\entree{"getlogin"}{returns the user name as set in the Internet control panel}
-\entree{"getpid"}{returns the low-order 31 bits of the PSN}
-\entree{"getppid"}{not implemented}
-\entree{"getpwnam", "getpwuid"}{not implemented}
-\entree{"kill"}{not implemented}
-\entree{"link"}{not implemented}
-\entree{"mkfifo"}{not implemented}
-\entree{"nice"}{not implemented}
-\entree{"setgid", "setuid"}{not implemented}
-\entree{"times"}{only the process user time is returned}
-\entree{"umask"}{not implemented}
-\entree{"wait"}{not implemented}
-\entree{"waitpid"}{not implemented}
-\entree{"establish_server"}{not implemented; use threads}
-\entree{terminal functions ("tc*")}{not implemented}
-\end{tableau}
-
-\end{macos}
-
-\newpage
 \begin{windows}
 The Cygwin port of Objective Caml fully implements all functions from
-the Unix module.  The native Win32 port implements a subset of them.
+the Unix module.  The native Win32 ports implement a subset of them.
 Below is a list of the functions that are not implemented, or only
-partially implemented, by the Win32 port. Functions not mentioned are
+partially implemented, by the Win32 ports. Functions not mentioned are
 fully implemented and behave as described previously in this chapter.
 
 \begin{tableau}{|l|p{8cm}|}{Functions}{Comment}

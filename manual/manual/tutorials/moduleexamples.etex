@@ -255,22 +255,21 @@ after changes.
 
 In Objective Caml, compilation units are special cases of structures
 and signatures, and the relationship between the units can be
-explained easily in terms of the module system. A compilation unit \var{a}
+explained easily in terms of the module system. A compilation unit \var{A}
 comprises two files:
 \begin{itemize}
-\item the implementation file \var{a}".ml", which contains a sequence
+\item the implementation file \var{A}".ml", which contains a sequence
 of definitions, analogous to the inside of a "struct"\ldots"end"
 construct;
-\item the interface file \var{a}".mli", which contains a sequence of
+\item the interface file \var{A}".mli", which contains a sequence of
 specifications, analogous to the inside of a "sig"\ldots"end"
 construct.
 \end{itemize}
-Both files define a structure named \var{A} (same name as the base name
-\var{a} of the two files, with the first letter capitalized), as if
+Both files define a structure named \var{A} as if
 the following definition was entered at top-level:
 \begin{alltt}
-module \var{A}: sig (* \hbox{contents of file} \var{a}.mli *) end
-        = struct (* \hbox{contents of file} \var{a}.ml *) end;;
+module \var{A}: sig (* \hbox{contents of file} \var{A}.mli *) end
+        = struct (* \hbox{contents of file} \var{A}.ml *) end;;
 \end{alltt}
 The files defining the compilation units can be compiled separately
 using the "ocamlc -c" command (the "-c" option means ``compile only, do

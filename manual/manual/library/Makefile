@@ -41,7 +41,7 @@ FILES=$(BLURB) $(INTF)
 FORMAT=../../tools/format-intf
 TEXQUOTE=../../tools/texquote2
 
-CSLDIR=../../../csl
+CSLDIR=../../../cslrel
 
 VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dbm:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 

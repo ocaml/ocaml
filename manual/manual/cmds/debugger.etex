@@ -9,10 +9,8 @@ BSD sockets.
 \end{unix}
 
 \begin{windows} The debugger is available under the Cygwin port of
-Objective Caml, but not under the native Win32 port.
+Objective Caml, but not under the native Win32 ports.
 \end{windows}
-
-\begin{macos} The debugger is not available. \end{macos}
 
 \section{Compiling for debugging}
 

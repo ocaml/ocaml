@@ -198,7 +198,7 @@ p#move 3;;
 p#get_x;;
 \end{caml_example}
 
-Contrary to classes, which cannot be defined inside an expression,
+Unlike classes, which cannot be defined inside an expression,
 immediate objects can appear anywhere, using variables from their
 environment.
 \begin{caml_example}

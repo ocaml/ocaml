@@ -25,22 +25,19 @@ Objective Caml runs on several operating systems. The parts of
 this manual that are specific to one operating system are presented as
 shown below:
 
-\begin{macos} This is material specific to MacOS 7, 8, 9.  (For MacOS
-X, see ``Unix''.)
-\end{macos}
-
 \begin{unix} This is material specific to the Unix family of operating
 systems, including Linux and \hbox{MacOS~X}.
 \end{unix}
 
 \begin{windows} This is material specific to Microsoft Windows (95, 98, ME,
-NT, 2000).
+NT, 2000, XP).
 \end{windows}
 
 \section*{License}
 
 The Objective Caml system is copyright \copyright\ 1996, 1997, 1998,
-1999, 2000, 2001, 2002, 2003 Institut National de Recherche en Informatique et en
+1999, 2000, 2001, 2002, 2003, 2004
+Institut National de Recherche en Informatique et en
 Automatique (INRIA).
 INRIA holds all ownership rights to the Objective Caml system. 
 
