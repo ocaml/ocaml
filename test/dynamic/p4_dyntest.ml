@@ -27,7 +27,7 @@ EXTEND
             print_string $string_of_type loc to_ty$;
             print_string (if success then "  [OK]" else "  [FAIL]");
             if success <> expected then do {
-              print_string " !!";
+              print_string " !!!!!!!!!!!!!!!!";
               incr counter
             } else ();
             print_newline ()
