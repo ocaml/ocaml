@@ -40,7 +40,7 @@ clean: partialclean
 install:
 	cp libstr.a $(LIBDIR)/libstr.a
 	cd $(LIBDIR); $(RANLIB) libstr.a
-	cp str.cma str.cmi $(LIBDIR)
+	cp str.cma str.cmi str.mli $(LIBDIR)
 
 installopt:
 	cp str.cmx str.cmxa str.a $(LIBDIR)

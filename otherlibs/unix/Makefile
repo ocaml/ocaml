@@ -49,7 +49,7 @@ clean: partialclean
 install:
 	cp libunix.a $(LIBDIR)/libunix.a
 	cd $(LIBDIR); $(RANLIB) libunix.a
-	cp unix.cmi unix.cma $(LIBDIR)
+	cp unix.cmi unix.cma unix.mli $(LIBDIR)
 
 installopt:
 	cp unix.cmx unix.cmxa unix.a $(LIBDIR)

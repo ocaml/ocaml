@@ -33,7 +33,7 @@ clean: partialclean
 install:
 	cp libmldbm.a $(LIBDIR)/libmldbm.a
 	cd $(LIBDIR); $(RANLIB) libmldbm.a
-	cp dbm.cma dbm.cmi $(LIBDIR)
+	cp dbm.cma dbm.cmi dbm.mli $(LIBDIR)
 
 installopt:
 	cp dbm.cmx dbm.cmxa dbm.a $(LIBDIR)

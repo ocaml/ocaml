@@ -35,7 +35,7 @@ clean: partialclean
 install:
 	cp libgraphics.a $(LIBDIR)/libgraphics.a
 	cd $(LIBDIR); $(RANLIB) libgraphics.a
-	cp graphics.cm[ia] $(LIBDIR)
+	cp graphics.cm[ia] graphics.mli $(LIBDIR)
 
 installopt:
 	cp graphics.cmxa graphics.a $(LIBDIR)

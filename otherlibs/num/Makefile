@@ -38,7 +38,7 @@ $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 install:
 	cp libnums.a $(LIBDIR)/libnums.a
 	cd $(LIBDIR); $(RANLIB) libnums.a
-	cp nums.cma $(CMIFILES) $(LIBDIR)
+	cp nums.cma $(CMIFILES) $(CMIFILES:.cmi=.mli) $(LIBDIR)
 
 installopt:
 	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.a $(LIBDIR)
