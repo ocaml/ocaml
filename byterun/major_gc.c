@@ -364,17 +364,37 @@ void finish_major_cycle (void)
   allocated_words = 0;
 }
 
-asize_t round_heap_chunk_size (asize_t request)
-{                            Assert (major_heap_increment >= Heap_chunk_min);
-  if (request < major_heap_increment){
-                              Assert (major_heap_increment % Page_size == 0);
-    return major_heap_increment;
-  }else if (request <= Heap_chunk_max){
-    return ((request + Page_size - 1) >> Page_log) << Page_log;
-  }else{
-    raise_out_of_memory ();
-    /* not reached */ return 0;
+/* Clip the request to [Heap_chunk_min..Heap_chunk_max] and round it
+   to a multiple of the page size.
+*/
+static asize_t clip_heap_chunk_size (asize_t request)
+{                             Assert (Heap_chunk_max >= Heap_chunk_min);
+  if (request < Heap_chunk_min){
+    request = Heap_chunk_min;
   }
+  if (request > Heap_chunk_max){
+    request = Heap_chunk_max;
+  }
+  return ((request + Page_size - 1) >> Page_log) << Page_log;
+}
+
+/* Make sure the request is >= major_heap_increment, then call
+   clip_heap_chunk_size, then make sure the result is >= request.
+*/
+asize_t round_heap_chunk_size (asize_t request)
+{
+  asize_t result = request;
+
+  if (result < major_heap_increment){
+    result = major_heap_increment;
+  }
+  result = clip_heap_chunk_size (result);
+
+  if (result < request){
+    raise_out_of_memory ();
+    return 0; /* not reached */
+  }
+  return result;
 }
 
 void init_major_heap (asize_t heap_size)
@@ -384,7 +404,7 @@ void init_major_heap (asize_t heap_size)
   asize_t page_table_size;
   page_table_entry *page_table_block;
 
-  stat_heap_size = round_heap_chunk_size (heap_size);
+  stat_heap_size = clip_heap_chunk_size (heap_size);
   stat_top_heap_size = stat_heap_size;
   Assert (stat_heap_size % Page_size == 0);
   heap_start = aligned_malloc (stat_heap_size + sizeof (heap_chunk_head),
