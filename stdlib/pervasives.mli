@@ -58,6 +58,11 @@ external raise : exn -> 'a = "%raise"
            apply. The arguments are the location of the pattern-matching
            in the source code (file name, position of first character,
            position of last character). *)
+exception Assert_failure of string * int * int
+        (* Exception raised when an assertion fails.  The arguments are
+           the location of the pattern-matching in the source code
+           (file name, position of first character, position of last
+           character). *)
 (*- exception Invalid_argument of string *)
         (* Exception raised by library functions to signal that the given
            arguments do not make sense. *)

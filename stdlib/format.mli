@@ -42,33 +42,6 @@
    state of the pretty-printer. *)
 
 (*** Boxes *)
-val open_hbox : unit -> unit
-        (* [open_hbox ()] opens a new pretty-printing box.
-           This box is ``horizontal'': the line is not split in this box
-           (new lines may still occur inside boxes nested deeper). *)
-val open_vbox : int -> unit
-        (* [open_vbox d] opens a new pretty-printing box
-           with offset [d]. 
-           This box is ``vertical'': every break hint inside this
-           box leads to a new line.
-           When a new line is printed in the box, [d] is added to the
-           current indentation. *)
-val open_hvbox : int -> unit
-        (* [open_hovbox d] opens a new pretty-printing box
-           with offset [d]. 
-           This box is ``horizontal-vertical'': it behaves as an
-           ``horizontal'' box if it fits on a single line,
-           otherwise it behaves as a ``vertical'' box.
-           When a new line is printed in the box, [d] is added to the
-           current indentation. *)
-val open_hovbox : int -> unit
-        (* [open_hovbox d] opens a new pretty-printing box
-           with offset [d]. 
-           This box is ``horizontal or vertical'': break hints
-           inside this box may lead to a new line, if there is no more room
-           on the line to print the remainder of the box.
-           When a new line is printed in the box, [d] is added to the
-           current indentation. *)
 val open_box : int -> unit
         (* [open_box d] opens a new pretty-printing box
            with offset [d]. 
@@ -129,27 +102,6 @@ val print_if_newline : unit -> unit
            has just been split. Otherwise, ignore the next formatting
            command. *)
 
-(*** Tabulations *)
-val open_tbox : unit -> unit
-        (* Open a tabulation box. *)
-val close_tbox : unit -> unit
-        (* Close the most recently opened tabulation box. *)
-val print_tbreak : int -> int -> unit
-        (* Break hint in a tabulation box.
-           [print_tbreak spaces offset] moves the insertion point to
-           the next tabulation ([spaces] being added to this position).
-           Nothing occurs if insertion point is already on a
-           tabulation mark.
-           If there is no next tabulation on the line, then a newline
-           is printed and the insertion point moves to the first
-           tabulation of the box.
-           If a new line is printed, [offset] is added to the current
-           indentation. *)
-val set_tab : unit -> unit
-        (* Set a tabulation mark at the current insertion point. *)
-val print_tab : unit -> unit
-        (* [print_tab ()] is equivalent to [print_tbreak (0,0)]. *)
-
 (*** Margin *)
 val set_margin : int -> unit
         (* [set_margin d] sets the value of the right margin
@@ -182,6 +134,56 @@ val set_max_boxes : int -> unit
            Nothing happens if [max] is not greater than 1. *)
 val get_max_boxes : unit -> int
         (* Return the maximum number of boxes allowed before ellipsis. *)
+
+(*** Advanced boxes *)
+val open_hbox : unit -> unit
+        (* [open_hbox ()] opens a new pretty-printing box.
+           This box is ``horizontal'': the line is not split in this box
+           (new lines may still occur inside boxes nested deeper). *)
+val open_vbox : int -> unit
+        (* [open_vbox d] opens a new pretty-printing box
+           with offset [d]. 
+           This box is ``vertical'': every break hint inside this
+           box leads to a new line.
+           When a new line is printed in the box, [d] is added to the
+           current indentation. *)
+val open_hvbox : int -> unit
+        (* [open_hovbox d] opens a new pretty-printing box
+           with offset [d]. 
+           This box is ``horizontal-vertical'': it behaves as an
+           ``horizontal'' box if it fits on a single line,
+           otherwise it behaves as a ``vertical'' box.
+           When a new line is printed in the box, [d] is added to the
+           current indentation. *)
+val open_hovbox : int -> unit
+        (* [open_hovbox d] opens a new pretty-printing box
+           with offset [d]. 
+           This box is ``horizontal or vertical'': break hints
+           inside this box may lead to a new line, if there is no more room
+           on the line to print the remainder of the box.
+           When a new line is printed in the box, [d] is added to the
+           current indentation. *)
+
+(*** Tabulations *)
+val open_tbox : unit -> unit
+        (* Open a tabulation box. *)
+val close_tbox : unit -> unit
+        (* Close the most recently opened tabulation box. *)
+val print_tbreak : int -> int -> unit
+        (* Break hint in a tabulation box.
+           [print_tbreak spaces offset] moves the insertion point to
+           the next tabulation ([spaces] being added to this position).
+           Nothing occurs if insertion point is already on a
+           tabulation mark.
+           If there is no next tabulation on the line, then a newline
+           is printed and the insertion point moves to the first
+           tabulation of the box.
+           If a new line is printed, [offset] is added to the current
+           indentation. *)
+val set_tab : unit -> unit
+        (* Set a tabulation mark at the current insertion point. *)
+val print_tab : unit -> unit
+        (* [print_tab ()] is equivalent to [print_tbreak (0,0)]. *)
 
 (*** Ellipsis *)
 val set_ellipsis_text : string -> unit

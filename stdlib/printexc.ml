@@ -11,14 +11,20 @@
 
 (* $Id$ *)
 
+let prerr_loc file first_char last_char msg =
+  prerr_string "File \"";
+  prerr_string file;
+  prerr_string "\", line 0, characters "; prerr_int first_char;
+  prerr_char '-'; prerr_int last_char; prerr_string ": ";
+  prerr_string msg; prerr_char '\n'
+
 let print_exn = function
     Out_of_memory ->
       prerr_string "Out of memory\n"
   | Match_failure(file, first_char, last_char) ->
-      prerr_string "Pattern matching failed, file ";
-      prerr_string file;
-      prerr_string ", chars "; prerr_int first_char;
-      prerr_char '-'; prerr_int last_char; prerr_char '\n'
+      prerr_loc file first_char last_char "Pattern matching failed";
+  | Assert_failure(file, first_char, last_char) ->
+      prerr_loc file first_char last_char "Assertion failed";
   | x ->
       prerr_string "Uncaught exception: ";
       prerr_string (Obj.magic(Obj.field (Obj.field (Obj.repr x) 0) 0));
