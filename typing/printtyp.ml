@@ -195,12 +195,14 @@ let new_name () =
   incr name_counter;
   name
 
-let vardebug = try ignore (Sys.getenv "GCAML_VAR_LEVEL"); true with _ -> false
+let var_level_debug = try ignore (Sys.getenv "GCAML_VAR_LEVEL"); true with _ -> false
+let var_id_debug = try ignore (Sys.getenv "GCAML_VAR_ID"); true with _ -> false
 
 let name_of_type t =
   try List.assq t !names with Not_found ->
     let name = new_name () in
-    let name = if vardebug then name ^ string_of_int t.level else name in
+    let name = if var_id_debug then name ^ string_of_int t.id else name in
+    let name = if var_level_debug then name ^ "@" ^ string_of_int t.level else name in
     names := (t, name) :: !names;
     name
 

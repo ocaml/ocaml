@@ -28,6 +28,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Unsupported_type_constructor
 
 exception Error of Location.t * error
 
@@ -508,26 +509,33 @@ let assert_failed loc =
 (* if the type variable of the generic instance is generalized, types should come from
    the outer type abstraction. *)
 
-let transl_generic_instance env path vdesc typ =
-  let typ = Etype.body typ in (* we are not intersted in the konst part *)
-
+let transl_generic_instance env path vdesc etyp =
+  (* we must fix the type using correct_levels *)
+  let etyp = Etype.body (Ctype.correct_levels etyp) in
+  let vtyp = Ctype.correct_levels vdesc.val_type in
+(*
+Format.fprintf Format.err_formatter "tgi vtyp=%a etyp=%a@." 
+    Printtyp.type_scheme vtyp
+    Printtyp.type_scheme etyp
+;
+*)
   (* We must know how the [tabsts] are instantiated in e.exp_type *)
-  (* Note: e.exp_type may be generalized type variable due to 
-     the external type generalizations. Therefore we instantiate it. *)
 
-  let i_tabsts, i_val_type =  Etype.split (Ctype.instance vdesc.val_type) in
+  let i_tabsts, i_val_type =  Etype.split (Ctype.instance vtyp) in
   
-  (* Note #2: by instantiating the instance type, outer-generalized type 
+  (* Note: even after correct_levels, type level information may be
+     still wrong; etyp may have generalized type variable due to 
+     the external type generalizations. Therefore we instantiate it. *)
+  (* Note #2: by instantiating the etyp, outer-generalized type 
      variables' identity is lost. We must keep track of these 
      instantiation... *)
-  let gvars = Ctype.generalized_vars typ in
-  let i_typ, i_gvars = 
-    match Ctype.instance_list (typ :: gvars) with
-    | i_typ :: i_gvars -> i_typ, i_gvars 
+  let gvars = Ctype.generalized_vars etyp in
+  let i_etyp, i_gvars = 
+    match Ctype.instance_list (etyp :: gvars) with
+    | i_etyp :: i_gvars -> i_etyp, i_gvars 
     | _ -> assert false
   in
-  Ctype.unify env i_typ i_val_type;
-  (* i_tabsts are unified too! *)
+  Ctype.unify env i_etyp i_val_type; (* i_tabsts are unified too! *)
   let i_gvars = List.map Btype.repr i_gvars in
   Lapply(transl_path path, 
 	 Transltype.transl_type_exprs (List.combine i_gvars gvars) 
@@ -536,6 +544,7 @@ let transl_generic_instance env path vdesc typ =
 (* the body compilation must be delayed after the variables for 
    type abstractions are created *)
 let transl_type_abstraction typ compfunc arg =
+  let typ = Ctype.correct_levels typ in
   let konst, t = Etype.split typ in
   let tabsts = Etype.type_abstraction konst t in
   if tabsts = [] then compfunc arg
@@ -569,7 +578,13 @@ and transl_exp0 e =
   | Texp_ident(path, ({val_kind = Val_reg | Val_self _} as vdesc)) ->
       begin match Etype.type_abstraction_of_value vdesc with
       | [] -> transl_path path
-      | _ -> transl_generic_instance e.exp_env path vdesc e.exp_type
+      | _ -> 
+	  begin try
+	    transl_generic_instance e.exp_env path vdesc e.exp_type
+	  with
+	  | Transltype.Unsupported_type_constructor ->
+	      raise (Error (e.exp_loc, Unsupported_type_constructor))
+	  end
       end
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
@@ -739,7 +754,13 @@ and transl_exp0 e =
           cl_loc = e.exp_loc;
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
-  | Texp_rtype ty -> Transltype.transl_type_expr [] ty
+  | Texp_rtype ty -> 
+      begin try
+	Transltype.transl_type_expr [] ty
+      with
+      | Transltype.Unsupported_type_constructor ->
+	  raise (Error (e.exp_loc, Unsupported_type_constructor))
+      end
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -926,6 +947,8 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     end
   end
 
+let transl_eval e = transl_type_abstraction e.exp_type transl_exp e
+
 (* Wrapper for class compilation *)
 
 (*
@@ -962,3 +985,6 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
+  | Unsupported_type_constructor ->
+      fprintf ppf
+        "Type contains unsupported constructor as a run-time type"

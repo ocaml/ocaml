@@ -802,10 +802,10 @@ let fix_konstraints env pat_exp_kset_list =
     let mono_tvars = List.filter (fun t -> t.level <> generic_level) tvars in
     let konst = gen_vars in
     if konst <> [] then begin
-      (* pattern must be enough simple, since the definition is actually
-	 a function *)
-      let scm = Btype.newty2 exp.exp_type.level (Tkonst(konst, exp.exp_type))
-      in
+      (* we must use the type of pat, not exp. (they are different?) *)
+      let scm = Btype.newgenty (Tkonst(konst, pat.pat_type)) in
+      (* pattern must be enough simple, 
+	 since the definition is actually a function *)
       (* reject let x,y = generic ... *)
       let rec check_simple_pattern p =
 	match p.pat_desc with
@@ -891,6 +891,13 @@ let rec type_exp env kset sexp =
         generalize_structure funct.exp_type
       end;
       let (args, ty_res) = type_application env kset funct sargs in
+
+let debug = try ignore (Sys.getenv "GCAML_DEBUG"); true with _ -> false in
+if debug then
+Format.fprintf Format.err_formatter "funct=%a@." 
+    Printtyp.type_scheme funct.exp_type
+;
+
       let funct = {funct with exp_type = instance funct.exp_type} in
       re {
         exp_desc = Texp_apply(funct, args);
@@ -1922,6 +1929,8 @@ let type_binding env rec_flag spat_sexp_list =
 (* Typing of toplevel expressions *)
 
 open Format
+open Printtyp
+
 let type_expression env kset sexp =
   Typetexp.reset_type_variables();
   begin_def();
@@ -1942,9 +1951,6 @@ let type_expression env kset sexp =
   exp
 
 (* Typing of toplevel generic primitive declaration *)
-
-open Format
-open Printtyp
 
 let type_genprimitive env setyp expr =
   (* FIXME: after the konstraint typing, the def expression cannot be generic *)

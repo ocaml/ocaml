@@ -288,7 +288,7 @@ and transl_structure fields cc rootpath = function
           fatal_error "Translmod.transl_structure"
       end
   | Tstr_eval expr :: rem ->
-      Lsequence(transl_exp expr, transl_structure fields cc rootpath rem)
+      Lsequence(transl_eval expr, transl_structure fields cc rootpath rem)
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
       let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
       transl_let rec_flag pat_expr_list
@@ -377,7 +377,7 @@ let transl_store_structure glob map prims str =
     [] ->
       lambda_unit
   | Tstr_eval expr :: rem ->
-      Lsequence(subst_lambda subst (transl_exp expr),
+      Lsequence(subst_lambda subst (transl_eval expr),
                 transl_store subst rem)
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
       let ids = let_bound_idents pat_expr_list in
@@ -592,7 +592,7 @@ let close_toplevel_term lam =
 
 let transl_toplevel_item = function
     Tstr_eval expr ->
-      transl_exp expr
+      transl_eval expr
   | Tstr_value(rec_flag, pat_expr_list) ->
       let idents = let_bound_idents pat_expr_list in
       transl_let rec_flag pat_expr_list

@@ -2,6 +2,8 @@ open Path
 open Types
 open Ctype
 
+exception Unsupported_type_constructor
+
 let ident_of = Ident.unique_name
     
 let rec rpath_of = function
@@ -26,7 +28,7 @@ let rtype_of t =
     | Tconstr (p, args, ab_memo_ref) ->
 	Rtype.mk_type (Rtype.Tconstr (rpath_of p, List.map sub args))
     | Tlink t -> sub t
-    | _ -> assert false
+    | _ -> raise Unsupported_type_constructor
 (*
     | Tobject of type_expr * (Path.t * type_expr list) option ref
     | Tfield of string * field_kind * type_expr * type_expr
@@ -124,7 +126,7 @@ let transl_type_expr vartbl t =
 	  | Tvar -> ()
 	  | Tarrow(l,t1,t2,_) -> count_type t1; count_type t2
 	  | Ttuple ts | Tconstr (_, ts, _) -> List.iter count_type ts
-	  | _ -> assert false
+	  | _ -> raise Unsupported_type_constructor
     in
     count_type t;
     !tbl
@@ -171,43 +173,10 @@ let transl_type_expr vartbl t =
     | Tconstr (p, ts, _) ->
         make_block 2 [Lconst (transl_rpath_of_path p); 
   		    transl_list transl_type_expr ts]
-    | _ -> assert false
+    | _ -> raise Unsupported_type_constructor
   in
   List.fold_right (fun (t,id) st ->
     Llet(Alias, id, transl_top_type_expr t, st))
     ident_tbl (transl_top_type_expr t)
       
-(*
-let transl_type_expr vartbl t =
-  let rec transl_type_expr t =
-    try
-      match t.desc with
-      | Tvar ->
-	  (* retrieve the original type variable, in order to recover
-	   the linkage to the generalization *)
-	  let t = try List.assq t vartbl with Not_found -> t in
-  	  Lambda.transl_path (Path.Pident (Etype.find_ident_of_type_variable t))
-      | Tlink t -> transl_type_expr t
-      | _ -> raise Not_found
-    with
-    | Not_found -> 
-        Lprim(Pmakeblock(0, Mutable), [ transl_type_desc t.desc ])
-  
-  (* FIXME: type variable sharing is never considered *)
-  and transl_type_desc = function
-    | Tvar -> 
-        Lconst(Const_pointer 0)
-    | Tarrow(l,t1,t2,_) -> 
-        make_block 0 [Lconst(Const_base (Const_string l)); 
-  		    transl_type_expr t1; 
-  		    transl_type_expr t2]
-    | Ttuple ts -> make_block 1 (List.map transl_type_expr ts)
-    | Tconstr (p, ts, _) ->
-        make_block 2 [Lconst (transl_rpath_of_path p); 
-  		    transl_list transl_type_expr ts]
-    | _ -> assert false
-  in
-  transl_type_expr t
-*)
-
 let transl_type_exprs vartbl = List.map (transl_type_expr vartbl)
