@@ -107,7 +107,7 @@ let rec output_env e = function
   | (x, Ident_char (o,nstart)) :: rem ->
       <:expr< 
 	  let $lid:x$ = 
-	    Lexing.$lid: if o then "sub_lexeme_char_opt" else "Lexing.sub_lexeme_char"$
+	    Lexing.$lid: if o then "sub_lexeme_char_opt" else "sub_lexeme_char"$
 	    lexbuf $output_tag_access nstart$
           in $output_env e rem$
       >>
