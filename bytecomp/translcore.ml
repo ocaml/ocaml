@@ -209,29 +209,52 @@ let transl_primitive p =
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
 let check_recursive_lambda idlist lam =
-  let rec check_top = function
+  let rec check_top idlist = function
       Lfunction(kind, params, body) as funct -> true
-    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
-    | Lprim(Pmakearray(Paddrarray|Pintarray), args) -> List.for_all check args
-    | Llet(str, id, arg, body) -> check arg & check_top body
+    | Lprim(Pmakeblock(tag, mut), args) ->
+        List.for_all (check idlist) args
+    | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
+        List.for_all (check idlist) args
+    | Llet(str, id, arg, body) ->
+        check idlist arg && check_top (add_let id arg idlist) body
     | Lletrec(bindings, body) ->
-        List.for_all (fun (id, arg) -> check arg) bindings & check_top body
-    | Levent (lam, _) -> check_top lam
+        let idlist' = add_letrec bindings idlist in
+        List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
+        check_top idlist' body
+    | Levent (lam, _) -> check_top idlist lam
     | _ -> false
-  and check = function
+
+  and check idlist = function
       Lvar _ -> true
     | Lconst cst -> true
     | Lfunction(kind, params, body) -> true
-    | Llet(str, id, arg, body) -> check arg & check body
+    | Llet(str, id, arg, body) ->
+        check idlist arg && check (add_let id arg idlist) body
     | Lletrec(bindings, body) ->
-        List.for_all (fun (id, arg) -> check arg) bindings & check body
-    | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
-    | Lprim(Pmakearray(Paddrarray|Pintarray), args) -> List.for_all check args
-    | Levent (lam, _) -> check lam
+        let idlist' = add_letrec bindings idlist in
+        List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
+        check idlist' body
+    | Lprim(Pmakeblock(tag, mut), args) ->
+        List.for_all (check idlist) args
+    | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
+        List.for_all (check idlist) args
+    | Levent (lam, _) -> check idlist lam
     | lam ->
         let fv = free_variables lam in
         List.for_all (fun id -> not(IdentSet.mem id fv)) idlist
-  in check_top lam
+
+  and add_let id arg idlist =
+    match arg with
+      Lvar id' -> if List.mem id' idlist then id :: idlist else idlist
+    | Llet(_, _, _, body) -> add_let id body idlist
+    | Lletrec(_, body) -> add_let id body idlist
+    | _ -> idlist
+
+  and add_letrec bindings idlist =
+    List.fold_right (fun (id, arg) idl -> add_let id arg idl)
+                    bindings idlist
+
+  in check_top idlist lam
 
 (* To propagate structured constants *)
 
