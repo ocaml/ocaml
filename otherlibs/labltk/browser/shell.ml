@@ -111,10 +111,8 @@ object (self)
     with Sys_error _ -> ()
   method private read ~fd ~len =
     begin try
-      prerr_endline "reading...";
       let buf = String.create len in
       let len = Unix.read fd ~buf ~pos:0 ~len in
-      prerr_endline "read";
       if len > 0 then begin
         self#insert (String.sub buf ~pos:0 ~len);
         Text.mark_set textw ~mark:"input" ~index:(`Mark"insert",[`Char(-1)])
@@ -215,16 +213,12 @@ object (self)
       in
       read_buffer ()
     end else begin
-      try ()
-(*
-        prerr_endline "add inputs...";
+      try
         List.iter [in1;err1] ~f:
           begin fun fd ->
             Fileevent.add_fileinput ~fd
               ~callback:(fun () -> ignore (self#read ~fd ~len:1024))
-          end;
-        prerr_endline "added"
-*)
+          end
       with _ -> ()
     end
 end
