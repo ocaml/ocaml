@@ -331,7 +331,7 @@ let transl_class ids cl_id arity pub_meths cl =
     let i = ref (i0-1) in
     List.fold_left
       (fun subst id ->
-        incr i; Ident.add id (Lprim (Pfield !i, [env]))  subst)
+        incr i; Ident.add id (Lprim (Pfield !i, [Lvar env]))  subst)
       Ident.empty !new_ids'
   in
   let new_ids_meths = ref [] in
@@ -344,18 +344,20 @@ let transl_class ids cl_id arity pub_meths cl =
           Curried, self :: args,
           Llet(Alias, env,
                Lprim(Parrayrefu Paddrarray, [Lvar self; Lvar env2]),
-               subst_lambda (subst (Lvar env) body 0 new_ids_meths) body))
+               subst_lambda (subst env body 0 new_ids_meths) body))
       | _ -> assert false
   in
   let new_ids_init = ref [] in
+  let env1 = Ident.create "env" in
   let copy_env envs self =
     if top then lambda_unit else
     Lifused(env2, Lprim(
             Parraysetu Paddrarray,
             [Lvar self; Lvar env2;
-             Lprim(Pfield 0, [Lprim(Pfield 0, [Lvar envs])])]))
+             Lprim(Pfield 0, [Lvar env1])]))
   and subst_env envs lam =
-    subst_lambda (subst (Lprim(Pfield 0, [Lvar envs])) lam 1 new_ids_init) lam
+    Llet(Alias, env1, Lprim(Pfield 0, [Lvar envs]),
+	 subst_lambda (subst env1 lam 1 new_ids_init) lam)
   in
 
   let cla = Ident.create "class" in
