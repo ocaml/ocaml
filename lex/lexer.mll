@@ -119,9 +119,11 @@ and action = parse
       string lexbuf;
       reset_string_buffer();
       action lexbuf }
-  | "'{'"
+  | "'" [^ '\\'] "'" 
     { action lexbuf }
-  | "'}'"
+  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'" 
+    { action lexbuf }
+  | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
     { action lexbuf }
   | "(*" 
     { comment_depth := 1;
