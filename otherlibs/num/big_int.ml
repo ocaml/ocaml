@@ -88,7 +88,7 @@ let pred_big_int bi =
     0 -> { sign = -1; abs_value = nat_of_int 1}
   | 1 -> let size_bi = num_digits_big_int bi in
           let copy_bi = copy_nat (bi.abs_value) 0 size_bi in
-            decr_nat copy_bi 0 size_bi 0;
+            ignore (decr_nat copy_bi 0 size_bi 0);
             { sign = if is_zero_nat copy_bi 0 size_bi then 0 else 1;
               abs_value = copy_bi }
   | _ -> let size_bi = num_digits_big_int bi in
@@ -96,7 +96,7 @@ let pred_big_int bi =
          let copy_bi = create_nat (size_res) in
           blit_nat copy_bi 0 (bi.abs_value) 0 size_bi;
           set_digit_nat copy_bi size_bi 0;
-          incr_nat copy_bi 0 size_res 1; 
+          ignore (incr_nat copy_bi 0 size_res 1); 
           { sign = -1;
             abs_value = copy_bi }
 
@@ -105,7 +105,7 @@ let succ_big_int bi =
     0 -> {sign = 1; abs_value = nat_of_int 1}
   | -1 -> let size_bi = num_digits_big_int bi in
            let copy_bi = copy_nat (bi.abs_value) 0 size_bi in
-            decr_nat copy_bi 0 size_bi 0;
+            ignore (decr_nat copy_bi 0 size_bi 0);
             { sign = if is_zero_nat copy_bi 0 size_bi then 0 else -1;
               abs_value = copy_bi }
   | _ -> let size_bi = num_digits_big_int bi in
@@ -113,7 +113,7 @@ let succ_big_int bi =
          let copy_bi = create_nat (size_res) in
           blit_nat copy_bi 0 (bi.abs_value) 0 size_bi;
           set_digit_nat copy_bi size_bi 0;
-          incr_nat copy_bi 0 size_res 1;
+          ignore (incr_nat copy_bi 0 size_res 1);
           { sign = 1;
             abs_value = copy_bi }
 
@@ -129,14 +129,15 @@ let add_big_int bi1 bi2 =
         -1 -> let res = create_nat (succ size_bi2) in
                 (blit_nat res 0 (bi2.abs_value) 0 size_bi2; 
                  set_digit_nat res size_bi2 0;
-                 add_nat res 0 (succ size_bi2) 
-                          (bi1.abs_value) 0 size_bi1 0;
+                 ignore
+                   (add_nat res 0 (succ size_bi2) 
+                      (bi1.abs_value) 0 size_bi1 0);
                  res)
        |_  -> let res = create_nat (succ size_bi1) in
                (blit_nat res 0 (bi1.abs_value) 0 size_bi1;
                 set_digit_nat res size_bi1 0;
-                add_nat res 0 (succ size_bi1) 
-                         (bi2.abs_value) 0 size_bi2 0;
+                ignore (add_nat res 0 (succ size_bi1) 
+                         (bi2.abs_value) 0 size_bi2 0);
                 res)}
 
   else      (* Subtract absolute values if signs are different *)
@@ -146,14 +147,14 @@ let add_big_int bi1 bi2 =
      | 1 -> { sign = bi1.sign;
                abs_value = 
                 let res = copy_nat (bi1.abs_value) 0 size_bi1 in
-                 (sub_nat res 0 size_bi1 
-                           (bi2.abs_value) 0 size_bi2 1;
+                 (ignore (sub_nat res 0 size_bi1 
+                            (bi2.abs_value) 0 size_bi2 1);
                   res) }
      | _ -> { sign = bi2.sign;
               abs_value = 
                let res = copy_nat (bi2.abs_value) 0 size_bi2 in
-                 (sub_nat res 0 size_bi2 
-                           (bi1.abs_value) 0 size_bi1 1;
+                 (ignore (sub_nat res 0 size_bi2 
+                            (bi1.abs_value) 0 size_bi1 1);
                   res) }
 
 (* Coercion with int type *)
@@ -163,7 +164,7 @@ let big_int_of_int i =
       let res = (create_nat 1)
       in (if i = monster_int
              then (set_digit_nat res 0 biggest_int;
-                   incr_nat res 0 1 1; ())
+                   ignore (incr_nat res 0 1 1))
              else set_digit_nat res 0 (abs i));
       res }
 
@@ -179,13 +180,13 @@ let mult_int_big_int i bi =
      then let res = create_nat size_res in
             blit_nat res 0 (bi.abs_value) 0 size_bi;
             set_digit_nat res size_bi 0;
-            mult_digit_nat res 0 size_res (bi.abs_value) 0 size_bi 
-                           (nat_of_int biggest_int) 0;
+            ignore (mult_digit_nat res 0 size_res (bi.abs_value) 0 size_bi 
+                      (nat_of_int biggest_int) 0);
             { sign = - (sign_big_int bi);
               abs_value = res }             
      else let res = make_nat (size_res) in
-          mult_digit_nat res 0 size_res (bi.abs_value) 0 size_bi 
-                         (nat_of_int (abs i)) 0;
+          ignore (mult_digit_nat res 0 size_res (bi.abs_value) 0 size_bi 
+                    (nat_of_int (abs i)) 0);
           { sign = (sign_int i) * (sign_big_int bi);
             abs_value = res } 
 
@@ -197,10 +198,10 @@ let mult_big_int bi1 bi2 =
   { sign = bi1.sign * bi2.sign;
     abs_value = 
          if size_bi2 > size_bi1
-           then (mult_nat res 0 size_res (bi2.abs_value) 0 size_bi2 
-                          (bi1.abs_value) 0 size_bi1;res)
-           else (mult_nat res 0 size_res (bi1.abs_value) 0 size_bi1 
-                          (bi2.abs_value) 0 size_bi2;res) }
+           then (ignore (mult_nat res 0 size_res (bi2.abs_value) 0 size_bi2 
+                           (bi1.abs_value) 0 size_bi1);res)
+           else (ignore (mult_nat res 0 size_res (bi1.abs_value) 0 size_bi1 
+                           (bi2.abs_value) 0 size_bi2);res) }
 
 (* (quotient, rest) of the euclidian division of 2 big_int *)
 let quomod_big_int bi1 bi2 =
@@ -260,10 +261,10 @@ let quomod_big_int bi1 bi2 =
                       (* new_r contains (r, size_bi2) the remainder *)
                 { sign = - bi2.sign;
                   abs_value = (set_digit_nat q (pred size_q) 0;
-                               incr_nat q 0 size_q 1; q) }, 
+                               ignore (incr_nat q 0 size_q 1); q) }, 
                 { sign = 1;
                  abs_value = 
-                      (sub_nat new_r 0 size_bi2 r 0 size_bi2 1; 
+                      (ignore (sub_nat new_r 0 size_bi2 r 0 size_bi2 1); 
                       new_r) })
              else 
               (if bi1_negatif then set_digit_nat q (pred size_q) 0; 
@@ -380,21 +381,20 @@ let power_base_nat base nat off len =
         let len = num_digits_nat res 0 n in
         let len2 = min n (2 * len) in
         let succ_len2 = succ len2 in
-          square_nat res2 0 len2 res 0 len;
+          ignore (square_nat res2 0 len2 res 0 len);
           begin
            if n land !p > 0
               then (set_to_zero_nat res 0 len;
-                    mult_digit_nat res 0 succ_len2 
-                                   res2 0 len2 
-                                   power_base pmax; ())
+                    ignore (mult_digit_nat res 0 succ_len2 
+                              res2 0 len2 power_base pmax))
               else blit_nat res 0 res2 0 len2
           end;
           set_to_zero_nat res2 0 len2;
           p := !p lsr 1
       done;
     if rem > 0
-     then (mult_digit_nat res2 0 (succ n)
-                          res 0 n power_base (pred rem);
+     then (ignore (mult_digit_nat res2 0 (succ n)
+                     res 0 n power_base (pred rem));
            res2)
      else res
   end
@@ -426,11 +426,11 @@ let power_big_int_positive_int bi n =
              let len = num_digits_nat res 0 res_len in
              let len2 = min res_len (2 * len) in
              let succ_len2 = succ len2 in
-               square_nat res2 0 len2 res 0 len;
+               ignore (square_nat res2 0 len2 res 0 len);
                (if n land !p > 0 
                    then (set_to_zero_nat res 0 len;
-                         mult_nat res 0 succ_len2 
-                                   res2 0 len2 (bi.abs_value) 0 bi_len;
+                         ignore (mult_nat res 0 succ_len2 
+                                   res2 0 len2 (bi.abs_value) 0 bi_len);
                          set_to_zero_nat res2 0 len2)
                    else blit_nat res 0 res2 0 len2;
                    set_to_zero_nat res2 0 len2);
@@ -475,14 +475,14 @@ let power_big_int_positive_big_int bi1 bi2 =
              let len = num_digits_nat res 0 res_len in
              let len2 = min res_len (2 * len) in
              let succ_len2 = succ len2 in
-               square_nat res2 0 len2 res 0 len;
+               ignore (square_nat res2 0 len2 res 0 len);
                land_digit_nat nat 0 (nat_of_int !p) 0;
                if is_zero_nat nat 0 len_bi2 
                   then (blit_nat res 0 res2 0 len2;
                         set_to_zero_nat res2 0 len2)
                   else (set_to_zero_nat res 0 len;
-                        mult_nat res 0 succ_len2 
-                                 res2 0 len2 (bi1.abs_value) 0 bi1_len;
+                        ignore (mult_nat res 0 succ_len2 
+                                  res2 0 len2 (bi1.abs_value) 0 bi1_len);
                         set_to_zero_nat res2 0 len2);
                p := !p lsr 1
            done;
@@ -520,6 +520,7 @@ let base_power_big_int base n bi =
          and len_bi = num_digits_big_int bi in
          let new_len = len_bi + len_nat in
          let res = make_nat new_len in
+         ignore
            (if len_bi > len_nat
                then mult_nat res 0 new_len 
                               (bi.abs_value) 0 len_bi 
@@ -553,7 +554,7 @@ let square_big_int bi =
   let len_bi = num_digits_big_int bi in
   let len_res = 2 * len_bi in
   let res = make_nat len_res in
-  square_nat res 0 len_res (bi.abs_value) 0 len_bi;
+  ignore (square_nat res 0 len_res (bi.abs_value) 0 len_bi);
   {sign = 1; abs_value = res}
 
 (* round off of the futur last digit (of the integer represented by the string
