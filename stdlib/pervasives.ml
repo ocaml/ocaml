@@ -189,8 +189,9 @@ let valid_float_lexem s =
   let l = string_length s in
   let rec loop i =
     if i >= l then s ^ "." else
-    if s.[i] = '.' || s.[i] = 'e' then s
-    else loop (i+1)
+    match s.[i] with
+    | '0' .. '9' | '-' -> loop (i+1)
+    | _ -> s
   in
   loop 0
 ;;
