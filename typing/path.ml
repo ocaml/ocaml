@@ -41,3 +41,9 @@ let rec name = function
     Pident id -> Ident.name id
   | Pdot(p, s, pos) -> name p ^ "." ^ s
   | Papply(p1, p2) -> name p1 ^ "(" ^ name p2 ^ ")"
+
+let rec head = function
+    Pident id -> id
+  | Pdot(p, s, pos) -> head p
+  | Papply(p1, p2) -> assert false
+

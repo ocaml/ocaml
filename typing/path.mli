@@ -26,3 +26,4 @@ val binding_time: t -> int
 val nopos: int
 
 val name: t -> string
+val head: t -> Ident.t

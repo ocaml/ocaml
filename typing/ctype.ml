@@ -1181,11 +1181,11 @@ let rec non_recursive_abbrev env ty0 ty =
         iter_type_expr (non_recursive_abbrev env ty0) ty
   end
 
-let correct_abbrev env ident params ty =
+let correct_abbrev env path params ty =
   check_abbrev_env env;
   let ty0 = newgenvar () in
   visited := [];
-  let abbrev = Mcons (Path.Pident ident, ty0, ty0, Mnil) in
+  let abbrev = Mcons (path, ty0, ty0, Mnil) in
   simple_abbrevs := abbrev;
   try
     non_recursive_abbrev env ty0

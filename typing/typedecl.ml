@@ -32,7 +32,7 @@ type error =
   | Constraint_failed of type_expr * type_expr
   | Unconsistent_constraint of (type_expr * type_expr) list
   | Type_clash of (type_expr * type_expr) list
-  | Parameters_differ of type_expr * type_expr
+  | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var
@@ -294,9 +294,10 @@ let check_abbrev env (_, sdecl) (id, decl) =
 let check_recursive_abbrev env (name, sdecl) (id, decl) =
   match decl.type_manifest with
     Some ty ->
-      begin try Ctype.correct_abbrev env id decl.type_params ty with
-        Ctype.Recursive_abbrev ->
-          raise(Error(sdecl.ptype_loc, Recursive_abbrev name))
+      begin try
+        Ctype.correct_abbrev env (Path.Pident id) decl.type_params ty 
+      with Ctype.Recursive_abbrev ->
+        raise(Error(sdecl.ptype_loc, Recursive_abbrev name))
       end
   | _ ->
       ()
@@ -312,7 +313,8 @@ let rec check_expansion_rec env id args loc id_check_list visited ty =
   | Tconstr(Path.Pident id' as path, args', _) ->
       if Ident.same id id' then begin
         if not (Ctype.equal env false args args') then
-          raise (Error(loc, Parameters_differ(ty, Ctype.newconstr path args)))
+          raise (Error(loc, 
+                   Parameters_differ(path, ty, Ctype.newconstr path args)))
       end else begin try
         let (loc, checked) = List.assoc id' id_check_list in
         if List.exists (Ctype.equal env false args') !checked then () else
@@ -647,6 +649,70 @@ let approx_type_decl env name_sdecl_list =
        abstract_type_decl (List.length sdecl.ptype_params)))
     name_sdecl_list
 
+(* These are variants of [check_recursive_abbrev] and [check_expansion]
+   above that check the well-formedness conditions on type abbreviations
+   defined within recursive modules. *)
+
+let check_recmod_typedecl env loc recmod_ids path decl =
+  (* recmod_ids is the list of recursively-defined module idents.
+     (path, decl) is the type declaration to be checked. *)
+  let visited = ref [] in
+
+  let rec check_regular path args prev_exp ty =
+    let ty = Ctype.repr ty in
+    if not (List.memq ty !visited) then begin
+      visited := ty :: !visited;
+      match ty.desc with
+      | Tconstr(path', args', _) ->
+          if Path.same path path' then begin
+            if not (Ctype.equal env false args args') then
+              raise (Error(loc, 
+                     Parameters_differ(path, ty, Ctype.newconstr path args)))
+          end
+          (* Attempt to expand a type abbreviation if:
+              1- it belongs to one of the recursively-defined modules
+                 (otherwise its expansion cannot involve [path]);
+              2- we haven't expanded this type constructor before
+                 (otherwise we could loop if [path'] is itself 
+                 a non-regular abbreviation). *)
+          else if List.mem (Path.head path') recmod_ids
+               && not (List.mem path' prev_exp) then begin
+            try
+              (* Attempt expansion *)
+              let (params, body) = Env.find_type_expansion path' env in
+              let (params, body) = 
+                Ctype.instance_parameterized_type params body in
+              begin
+                try List.iter2 (Ctype.unify env) params args'
+                with Ctype.Unify _ -> assert false
+              end;
+              check_regular path args (path' :: prev_exp) body
+            with Not_found -> ()
+          end;
+          List.iter (check_regular path args prev_exp) args'
+      | Tpoly (ty, tl) ->
+          let (_, ty) = Ctype.instance_poly false tl ty in
+          check_regular path args prev_exp ty
+      | _ ->
+          Btype.iter_type_expr (check_regular path args prev_exp) ty
+    end in
+
+  match decl.type_manifest with
+    None -> ()
+  | Some body ->
+      (* Check that recursion is well-founded *)
+      begin try
+        Ctype.correct_abbrev env path decl.type_params body
+      with Ctype.Recursive_abbrev ->
+        raise(Error(loc, Recursive_abbrev (Path.name path)))
+      end;
+      (* Check that recursion is regular *)
+      if decl.type_params <> [] then begin
+        let (args, body) =
+          Ctype.instance_parameterized_type decl.type_params body in
+        check_regular path args [] body
+      end
+
 (**** Error report ****)
 
 open Format
@@ -675,12 +741,12 @@ let report_error ppf = function
       Printtyp.mark_loops ty';
       fprintf ppf "@[<hv>Type@ %a@ should be an instance of@ %a@]"
         Printtyp.type_expr ty Printtyp.type_expr ty'
-  | Parameters_differ (ty, ty') ->
+  | Parameters_differ (path, ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
       fprintf ppf
-        "@[<hv>In this definition, type@ %a@ should be@ %a@]"
-        Printtyp.type_expr ty Printtyp.type_expr ty'
+        "@[<hv>In the definition of %s, type@ %a@ should be@ %a@]"
+        (Path.name path) Printtyp.type_expr ty Printtyp.type_expr ty'
   | Unconsistent_constraint trace ->
       fprintf ppf "The type constraints are not consistent.@.";
       Printtyp.report_unification_error ppf trace

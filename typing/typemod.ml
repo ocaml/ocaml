@@ -179,6 +179,20 @@ let approx_modtype transl_mty init_env smty =
 
   in approx_mty init_env smty
 
+(* Additional validity checks on type definitions arising from
+   recursive modules *)
+
+let check_recmod_typedecls env sdecls decls =
+  let recmod_ids = List.map fst decls in
+  List.iter2
+    (fun (_, smty) (id, mty) ->
+      List.iter
+        (fun path ->
+          Typedecl.check_recmod_typedecl env smty.pmty_loc recmod_ids
+                                         path (Env.find_type path env))
+        (Mtype.type_paths env (Pident id) mty))
+    sdecls decls
+
 (* Auxiliaries for checking uniqueness of names in signatures and structures *)
 
 module StringSet = Set.Make(struct type t = string let compare = compare end)
@@ -341,6 +355,7 @@ and transl_recmodule_modtypes loc env sdecls =
   let first = transition (make_env init) init in
   let final_env = make_env first in
   let final_decl = transition final_env init in
+  check_recmod_typedecls final_env sdecls final_decl;
   (final_decl, final_env)
 
 (* Try to convert a module expression to a module path. *)

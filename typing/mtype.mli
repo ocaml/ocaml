@@ -29,3 +29,4 @@ val nondep_supertype: Env.t -> Ident.t -> module_type -> module_type
            Raise [Not_found] if no such type exists. *)
 val enrich_modtype: Env.t -> Path.t -> module_type -> module_type
 val enrich_typedecl: Env.t -> Path.t -> type_declaration -> type_declaration
+val type_paths: Env.t -> Path.t -> module_type -> Path.t list
