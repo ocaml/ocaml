@@ -23,7 +23,6 @@ exception Cannot_expand
 exception Cannot_apply
 exception Recursive_abbrev
 
-val generic_level: int
 val init_def: int -> unit
         (* Set the initial variable level *)
 val begin_def: unit -> unit
@@ -58,7 +57,8 @@ val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
 val make_nongen: type_expr -> unit
         (* Make non-generalizable the given type *)
-val correct_levels: Env.t -> type_expr -> type_expr
+val correct_levels: type_expr -> type_expr
+        (* Returns a copy with decreasing levels *)
 
 val instance: type_expr -> type_expr
         (* Take an instance of a type scheme *)
