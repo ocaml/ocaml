@@ -1,4 +1,4 @@
-PROGS=test1.byt test2.byt test3.byt test4.byt test5.byt test6.byt test7.byt test8.byt test9.byt testA.byt sieve.byt
+PROGS=test1.byt test2.byt test3.byt test4.byt test5.byt test6.byt test7.byt test8.byt test9.byt testA.byt sieve.byt io.byt
 
 include ../../../config/Makefile
 
@@ -13,6 +13,6 @@ sorts.byt: sorts.ml
 .SUFFIXES: .ml .byt
 
 .ml.byt:
-	cslc -custom -o $*.byt -I .. threads.cma $*.ml ../libthreads.a
+	cslc -custom -o $*.byt -I .. -I ../../unix unix.cma threads.cma $*.ml ../libthreads.a ../../unix/libunix.a
 
 $(PROGS): ../threads.cma ../libthreads.a
