@@ -54,11 +54,11 @@ end = struct let g = g end;;
 
 let r = ref []
 let f = multifun `A -> r | `B -> ref [];;
-(* Bad *)
+(* Now OK *)
 module M : sig
   val f : [< `A & 'b = int list ref | `B & 'b = 'c list ref] -> 'b
 end = struct let f = f end;;
-(* OK *)
+(* Still OK *)
 let l : int list = r;;
 module M : sig
   val f : [< `A & 'b = int list ref | `B & 'b = 'c list ref] -> 'b
@@ -68,7 +68,7 @@ end = struct let f = f end;;
 (* Examples that would need unification *)
 let f = multifun `A -> (1, []) | `B -> (true, [])
 let g x = fst (f x);;
-(* Should work, but doesn't... *)
+(* Didn't work, now Ok *)
 module M : sig
   val g : [< `A & 'a * 'b = int * bool | `B & 'a * 'b = bool * int] -> 'a
 end = struct let g = g end;;
