@@ -12,9 +12,11 @@ reference description of the language.
 the compilers, toplevel system, and programming utilities.
 \item Part~\ref{p:library}, ``The Objective Caml library'', describes the
 modules provided in the standard library.
+\begin{latexonly}
 \item Part~\ref{p:appendix}, ``Appendix'', contains an
 index of all identifiers defined in the standard library, and an
 index of keywords.
+\end{latexonly}
 \end{itemize}
 
 \section*{Conventions}
@@ -57,11 +59,13 @@ Directory:  & "lang/caml-light" \\
 Files:      & see the index in file "README"
 \end{tabular}
 \end{center}
+More information on the Caml family of languages is also available on
+the World Wide Web, "http://pauillac.inria.fr/caml/".
 \end{latexonly}
 \begin{rawhtml}
 Follow <A HREF="ftp://ftp.inria.fr/lang/caml-light/">this link</A>
 to access the distribution.
+More information on the Caml family of languages is also available
+<A HREF="http://pauillac.inria.fr/caml/">here</A>.
 \end{rawhtml}
 
-More information on the Caml family of languages is also available on
-the World Wide Web, "http://pauillac.inria.fr/caml/".

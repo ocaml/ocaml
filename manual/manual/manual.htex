@@ -23,7 +23,6 @@ Automatique
 \part{The Objective Caml language} \label{p:refman}
 \input refman.tex
 \input exten.tex
-\input objects.tex
 
 \part{The Objective Caml tools}
 \label{p:commands}
