@@ -569,7 +569,8 @@ value func kwd_table glexr =
   let find = Hashtbl.find kwd_table in
   let dfa = dollar_for_antiquotation.val in
   let ssd = specific_space_dot.val in
-  Token.lexer_func_of_parser (next_token_fun dfa ssd find fname lnum bolpos glexr)
+  (Token.lexer_func_of_parser (next_token_fun dfa ssd find fname lnum bolpos glexr),
+   (bolpos, lnum, fname))
 ;
 
 value rec check_keyword_stream =
@@ -751,7 +752,7 @@ value tok_match =
   | tok -> Token.default_match tok ]
 ;
 
-value gmake () =
+value make_lexer () =
   let kwd_table = Hashtbl.create 301 in
   let id_table = Hashtbl.create 301 in
   let glexr =
@@ -759,13 +760,18 @@ value gmake () =
      {tok_func = fun []; tok_using = fun []; tok_removing = fun [];
       tok_match = fun []; tok_text = fun []; tok_comm = None}
   in
+  let (f,pos) = func kwd_table glexr in
   let glex =
-    {tok_func = func kwd_table glexr;
+    {tok_func = f;
      tok_using = using_token kwd_table id_table;
      tok_removing = removing_token kwd_table id_table; tok_match = tok_match;
      tok_text = text; tok_comm = None}
   in
-  do { glexr.val := glex; glex }
+  do { glexr.val := glex; (glex, pos) }
+;
+
+value gmake () =
+  let (p,_) = make_lexer () in p
 ;
 
 value tparse =
@@ -788,6 +794,6 @@ value make () =
      {tok_func = fun []; tok_using = fun []; tok_removing = fun [];
       tok_match = fun []; tok_text = fun []; tok_comm = None}
   in
-  {func = func kwd_table glexr; using = using_token kwd_table id_table;
+  {func = fst(func kwd_table glexr); using = using_token kwd_table id_table;
    removing = removing_token kwd_table id_table; tparse = tparse; text = text}
 ;

@@ -172,11 +172,20 @@ let rec parse_file pa getdir useast =
   in
   clear (); phr
 and use_file pa getdir useast s =
+  let (bolpos, lnum, fname) = !(Pcaml.position) in
   let clear =
     let v_input_file = !(Pcaml.input_file) in
-    fun () -> Pcaml.input_file := v_input_file
+    let (bolp, ln, fn) = !bolpos, !lnum, !fname in
+    fun () ->
+      Pcaml.input_file := v_input_file;
+      bolpos := bolp;
+      lnum := ln;
+      fname := fn
   in
   Pcaml.input_file := s;
+  bolpos := 0;
+  lnum := 1;
+  fname := s;
   try let r = parse_file pa getdir useast in clear (); r with
     e -> clear (); raise e
 ;;

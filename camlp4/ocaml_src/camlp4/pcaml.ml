@@ -476,3 +476,5 @@ let string_of pr x =
 ;;
 
 let inter_phrases = ref None;;
+
+let position = ref (ref 0, ref 0, ref "");;

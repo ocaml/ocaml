@@ -50,6 +50,14 @@ value gmake : unit -> Token.glexer Token.t;
        The lexer do not use global (mutable) variables: instantiations
        of [Plexer.gmake ()] do not perturb each other.  *)
 
+value make_lexer :
+    unit -> (Token.glexer Token.t * (ref int * ref int * ref string));
+   (** [make_lexer] builds a lexer as [gmake does], but returns also
+       the triple [(bolpos, lnum, fname)] where
+- [bolpos] contains the character number of the beginning of the current line,
+- [lnum] contains the current line number and
+- [fname] contains the name of the file being parsed. *)
+
 value dollar_for_antiquotation : ref bool;
    (** When True (default), the next call to [Plexer.make ()] returns a
        lexer where the dollar sign is used for antiquotations. If False,
