@@ -54,7 +54,7 @@ BYTECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
 BYTECCLINKOPTS=
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=-O -Wall -Wno-unused -DCAML_DLL
+DLLCCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused -DCAML_DLL
 
 ### Libraries needed
 BYTECCLIBS=
