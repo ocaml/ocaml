@@ -24,23 +24,13 @@
 #include <sys/time.h>
 #ifdef HAS_SYS_SELECT_H
 #include <sys/select.h>
-
 #endif
 
 #ifdef __OpenBSD__
 #include <string.h>
 #endif
 
-#ifdef FD_ISSET
 typedef fd_set file_descr_set;
-#else
-typedef int file_descr_set;
-#define FD_SETSIZE (sizeof(int) * 8)
-#define FD_SET(fd,fds) (*(fds) |= 1 << (fd))
-#define FD_CLR(fd,fds) (*(fds) &= ~(1 << (fd)))
-#define FD_ISSET(fd,fds) (*(fds) & (1 << (fd)))
-#define FD_ZERO(fds) (*(fds) = 0)
-#endif
 
 static void fdlist_to_fdset(value fdlist, file_descr_set *fdset)
 {
