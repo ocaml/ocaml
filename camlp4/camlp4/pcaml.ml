@@ -201,6 +201,9 @@ value handle_patt_locate loc x = handle_locate loc patt_eoi patt_anti x;
 value expr_reloc = Reloc.expr;
 value patt_reloc = Reloc.patt;
 
+value ctyp_reloc = Reloc.ctyp;
+value row_field_reloc = Reloc.row_field;
+value class_infos_reloc = Reloc.class_infos;
 value module_type_reloc = Reloc.module_type;
 value sig_item_reloc = Reloc.sig_item;
 value with_constr_reloc = Reloc.with_constr;

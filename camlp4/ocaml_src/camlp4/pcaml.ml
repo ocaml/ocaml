@@ -206,6 +206,9 @@ let handle_patt_locate loc x = handle_locate loc patt_eoi patt_anti x;;
 let expr_reloc = Reloc.expr;;
 let patt_reloc = Reloc.patt;;
 
+let ctyp_reloc = Reloc.ctyp;;
+let row_field_reloc = Reloc.row_field;;
+let class_infos_reloc = Reloc.class_infos;;
 let module_type_reloc = Reloc.module_type;;
 let sig_item_reloc = Reloc.sig_item;;
 let with_constr_reloc = Reloc.with_constr;;
@@ -382,37 +385,37 @@ and kont = pretty Stream.t
 ;;
 
 let pr_str_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 406, 30))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 409, 30))); pr_levels = []}
 ;;
 let pr_sig_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 407, 30))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 410, 30))); pr_levels = []}
 ;;
 let pr_module_type =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 408, 33))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 411, 33))); pr_levels = []}
 ;;
 let pr_module_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 409, 33))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 412, 33))); pr_levels = []}
 ;;
 let pr_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 410, 26))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 413, 26))); pr_levels = []}
 ;;
 let pr_patt =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 411, 26))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 414, 26))); pr_levels = []}
 ;;
 let pr_ctyp =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 412, 26))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 415, 26))); pr_levels = []}
 ;;
 let pr_class_sig_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 413, 36))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 416, 36))); pr_levels = []}
 ;;
 let pr_class_str_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 414, 36))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 417, 36))); pr_levels = []}
 ;;
 let pr_class_type =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 415, 32))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 418, 32))); pr_levels = []}
 ;;
 let pr_class_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("", 416, 32))); pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 419, 32))); pr_levels = []}
 ;;
 let pr_expr_fun_args = ref Extfun.empty;;
 

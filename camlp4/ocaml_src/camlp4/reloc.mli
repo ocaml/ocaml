@@ -16,6 +16,13 @@ val zero_loc : Lexing.position;;
 val shift_pos : int -> Lexing.position -> Lexing.position;;
 val adjust_loc : Lexing.position -> MLast.loc -> MLast.loc;;
 val linearize : MLast.loc -> MLast.loc;;
+
+val ctyp : (MLast.loc -> MLast.loc) -> 'a -> MLast.ctyp -> MLast.ctyp;;
+val row_field :
+  (MLast.loc -> MLast.loc) -> 'a -> MLast.row_field -> MLast.row_field;;
+val class_infos :
+  ((MLast.loc -> MLast.loc) -> 'a -> 'b -> 'c) -> (MLast.loc -> MLast.loc) ->
+    'a -> 'b MLast.class_infos -> 'c MLast.class_infos;;
 val patt :
   (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;;
 val expr :

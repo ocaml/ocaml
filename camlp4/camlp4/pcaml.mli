@@ -88,6 +88,10 @@ value handle_patt_locate : MLast.loc -> (Lexing.position * string) -> MLast.patt
 (** Relocation functions for abstract syntax trees *)
 value expr_reloc :           (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;
 value patt_reloc :           (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;
+
+value ctyp_reloc :           (MLast.loc -> MLast.loc) -> 'a -> MLast.ctyp -> MLast.ctyp;
+value row_field_reloc :      (MLast.loc -> MLast.loc) -> 'a -> MLast.row_field -> MLast.row_field;
+value class_infos_reloc :    ((MLast.loc -> MLast.loc) -> 'a -> 'b -> 'c) ->  (MLast.loc -> MLast.loc) -> 'a -> MLast.class_infos 'b -> MLast.class_infos 'c;
 value module_type_reloc :    (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.module_type -> MLast.module_type;
 value sig_item_reloc :       (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.sig_item -> MLast.sig_item;
 value with_constr_reloc :    (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.with_constr -> MLast.with_constr;

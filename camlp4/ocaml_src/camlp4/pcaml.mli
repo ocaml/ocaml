@@ -90,6 +90,13 @@ val expr_reloc :
   (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;;
 val patt_reloc :
   (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;;
+
+val ctyp_reloc : (MLast.loc -> MLast.loc) -> 'a -> MLast.ctyp -> MLast.ctyp;;
+val row_field_reloc :
+  (MLast.loc -> MLast.loc) -> 'a -> MLast.row_field -> MLast.row_field;;
+val class_infos_reloc :
+  ((MLast.loc -> MLast.loc) -> 'a -> 'b -> 'c) -> (MLast.loc -> MLast.loc) ->
+    'a -> 'b MLast.class_infos -> 'c MLast.class_infos;;
 val module_type_reloc :
   (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.module_type ->
     MLast.module_type;;
