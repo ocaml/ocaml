@@ -301,7 +301,7 @@ let rec update_level env level ty =
         end
     | _ ->
         iter_type_expr (update_level env level) ty
-    end;
+    end
   end
 
 (* 
@@ -783,7 +783,7 @@ and unify3 env t1 t1' t2 t2' =
         ()
     | (_, _) ->
         raise (Unify [])
-    end;
+    end
 (*
     (* 
        Can only be done afterwards, once the row variable has

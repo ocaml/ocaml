@@ -184,7 +184,7 @@ let rec typexp sch prio0 ty =
             print_string ")"; close_box(); print_space()
         end;
         path p;
-        close_box();
+        close_box()
     | Tobject (fi, nm) ->
         typobject sch ty fi nm
 (*

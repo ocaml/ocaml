@@ -28,7 +28,7 @@ let fill ar ofs len x =
   then raise (Invalid_argument "Weak.fill")
   else begin
     for i = ofs to (ofs + len - 1) do
-      set ar i x;
+      set ar i x
     done
   end
 ;;
@@ -39,11 +39,11 @@ let blit ar1 of1 ar2 of2 len =
   else begin
     if of2 > of1 then begin
       for i = 0 to len - 1 do
-        set ar2 (of2 + i) (get ar1 (of1 + i));
+        set ar2 (of2 + i) (get ar1 (of1 + i))
       done
     end else begin
       for i = len - 1 downto 0 do
-        set ar2 (of2 + i) (get ar1 (of1 + i));
+        set ar2 (of2 + i) (get ar1 (of1 + i))
       done
     end
   end
