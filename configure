@@ -923,7 +923,7 @@ if test $has_tk = true; then
 fi
 
 if test $has_tk = true; then
-  tk_libs=`echo $tk_libs | sed -e 's/-l/-cclib &/g' -e 's/-L/-ccopt &/g' `
+  tk_libs=`echo $tk_libs | sed -e 's/-l/-cclib &/g' -e 's/-[LW]/-ccopt &/g' `
   echo "TK_DEFS=$tk_defs" >> Makefile
   echo "TK_LINK=$tk_libs" >> Makefile
   otherlibraries="$otherlibraries labltk"
