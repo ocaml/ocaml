@@ -132,6 +132,12 @@ let restore_global_level () =
 (* Abbreviations without parameters *)
 (* Shall reset after generalizing *)
 let simple_abbrevs = ref Mnil
+let proper_abbrevs path tl abbrev =
+  if !Clflags.principal || tl <> [] then abbrev else
+  let name = match path with Path.Pident id -> Ident.name id
+                           | Path.Pdot(_, s,_) -> s
+                           | Path.Papply _ -> assert false in
+  if name.[0] <> '#' then simple_abbrevs else abbrev
 
 (**** Some type creators ****)
 
@@ -698,9 +704,7 @@ let rec copy ty =
     t.desc <-
       begin match desc with
       | Tconstr (p, tl, _) ->
-          let abbrevs =
-            if tl = [] && not !Clflags.principal then simple_abbrevs
-            else !abbreviations in
+          let abbrevs = proper_abbrevs p tl !abbreviations in
           begin match find_repr p !abbrevs with
             Some ty when repr ty != t -> (* XXX Commentaire... *)
               Tlink ty
@@ -934,9 +938,7 @@ let rec subst env level abbrev ty params args body =
     begin match ty with
       None      -> ()
     | Some ({desc = Tconstr (path, tl, _)} as ty) ->
-        let abbrev =
-          if tl = [] && not !Clflags.principal then simple_abbrevs else abbrev
-        in
+        let abbrev = proper_abbrevs path tl abbrev in
         memorize_abbrev abbrev path ty body0
     | _ ->
         assert false
@@ -1021,9 +1023,7 @@ let expand_abbrev env ty =
   end;
   match ty with
     {desc = Tconstr (path, args, abbrev); level = level} ->
-      let lookup_abbrev =
-        if args = [] && not !Clflags.principal then simple_abbrevs
-        else abbrev in
+      let lookup_abbrev = proper_abbrevs path args abbrev in
       begin match find_expans path !lookup_abbrev with
         Some ty ->
           if level <> generic_level then
