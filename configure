@@ -586,6 +586,7 @@ case "$host" in
   ia64-*-freebsd*)              arch=ia64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
+  x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
 esac
 
 if test -z "$ccoption"; then
