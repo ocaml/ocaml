@@ -77,11 +77,11 @@ rule main = parse
       string lexbuf;
       Tstring(get_stored_string()) }
   | "'" [^ '\\'] "'" 
-    { Tchar(Lexing.lexeme_char lexbuf 1) }
+    { Tchar(Char.code(Lexing.lexeme_char lexbuf 1)) }
   | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'" 
-    { Tchar(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
+    { Tchar(Char.code(char_for_backslash (Lexing.lexeme_char lexbuf 2))) }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
-    { Tchar(char_for_decimal_code lexbuf 2) }
+    { Tchar(Char.code(char_for_decimal_code lexbuf 2)) }
   | '{' 
     { let n1 = Lexing.lexeme_end lexbuf in
         brace_depth := 1;

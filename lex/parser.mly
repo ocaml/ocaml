@@ -21,16 +21,16 @@ open Syntax
 let regexp_for_string s =
   let rec re_string n =
     if n >= String.length s then Epsilon
-    else if succ n = String.length s then Characters([s.[n]])
-    else Sequence(Characters([s.[n]]), re_string (succ n))
+    else if succ n = String.length s then Characters([Char.code (s.[n])])
+    else Sequence(Characters([Char.code (s.[n])]), re_string (succ n))
   in re_string 0
 
 let char_class c1 c2 =
   let rec cl n =
-    if n > (Char.code c2) then [] else (Char.chr n) :: cl(succ n)
-  in cl (Char.code c1)
+    if n > c2 then [] else n :: cl(succ n)
+  in cl c1
 
-let all_chars = char_class (Char.chr 1) (Char.chr 255)
+let all_chars = char_class 0 255
 
 let rec subtract l1 l2 =
   match l1 with
@@ -39,7 +39,7 @@ let rec subtract l1 l2 =
 %}
 
 %token <string> Tident
-%token <char> Tchar
+%token <int> Tchar
 %token <string> Tstring
 %token <Syntax.location> Taction
 %token Trule Tparse Tand Tequal Tend Tor Tunderscore Teof Tlbracket Trbracket
@@ -98,7 +98,7 @@ regexp:
     Tunderscore
         { Characters all_chars }
   | Teof
-        { Characters ['\000'] }
+        { Characters [256] }
   | Tchar
         { Characters [$1] }
   | Tstring

@@ -27,6 +27,7 @@ struct lexer_buffer {
   value lex_curr_pos;
   value lex_last_pos;
   value lex_last_action;
+  value lex_eof_reached;
 };
 
 struct lexing_table {
@@ -72,11 +73,18 @@ value lex_engine(tbl, start_state, lexbuf)     /* ML */
       lexbuf->lex_last_action = Val_int(backtrk);
     }
     /* See if we need a refill */
-    if (lexbuf->lex_curr_pos >= lexbuf->lex_buffer_len)
-      return Val_int(-state - 1);
-    /* Read next input char */
-    c = Byte_u(lexbuf->lex_buffer, Long_val(lexbuf->lex_curr_pos));
-    lexbuf->lex_curr_pos += 2;
+    if (lexbuf->lex_curr_pos >= lexbuf->lex_buffer_len){
+      if (lexbuf->lex_eof_reached == Val_int (0)){
+	return Val_int(-state - 1);
+      }else{
+	c = 256;
+	lexbuf->lex_eof_reached = Val_int (0);
+      }
+    }else{
+      /* Read next input char */
+      c = Byte_u(lexbuf->lex_buffer, Long_val(lexbuf->lex_curr_pos));
+      lexbuf->lex_curr_pos += 2;
+    }
     /* Determine next state */
     if (Short(tbl->lex_check, base + c) == state)
       state = Short(tbl->lex_trans, base + c);

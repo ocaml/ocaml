@@ -59,8 +59,8 @@ let grow_transitions () =
   Array.blit old_check 0 !check 0 !last_used
 
 let pack_moves state_num move_t =
-  let move_v = Array.create 256 0 in
-  for i = 0 to 255 do
+  let move_v = Array.create 257 0 in
+  for i = 0 to 256 do
     move_v.(i) <-
       (match move_t.(i) with
         Backtrack -> -1
@@ -69,7 +69,7 @@ let pack_moves state_num move_t =
   let default = most_frequent_elt move_v in
   let nondef = non_default_elements default move_v in
   let rec pack_from b =
-    while b + 256 > Array.length !trans do grow_transitions() done;
+    while b + 257 > Array.length !trans do grow_transitions() done;
     let rec try_pack = function
       [] -> b
     | (pos, v) :: rem ->
@@ -81,7 +81,7 @@ let pack_moves state_num move_t =
       !trans.(base + pos) <- v;
       !check.(base + pos) <- state_num)
     nondef;
-  if base + 256 > !last_used then last_used := base + 256;
+  if base + 257 > !last_used then last_used := base + 257;
   (base, default)
 
 (* Build the tables *)

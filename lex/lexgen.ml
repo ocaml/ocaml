@@ -51,7 +51,7 @@ type automata_entry =
     
 (* From shallow to deep syntax *)
 
-let chars = ref ([] : char list list)
+let chars = ref ([] : int list list)
 let chars_count = ref 0
 let actions = ref ([] : (int * location) list)
 let actions_count = ref 0
@@ -203,16 +203,16 @@ let goto_state st =
   if TransSet.is_empty st then Backtrack else Goto (get_state st)
 
 let transition_from chars follow pos_set = 
-  let tr = Array.create 256 TransSet.empty in
-  let shift = Array.create 256 Backtrack in
+  let tr = Array.create 257 TransSet.empty in
+  let shift = Array.create 257 Backtrack in
     List.iter
       (fun pos ->
         List.iter
           (fun c ->
-             tr.(Char.code c) <- TransSet.union tr.(Char.code c) follow.(pos))
+             tr.(c) <- TransSet.union tr.(c) follow.(pos))
           chars.(pos))
       pos_set;
-    for i = 0 to 255 do
+    for i = 0 to 256 do
       shift.(i) <- goto_state tr.(i)
     done;
     shift
