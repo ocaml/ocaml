@@ -405,8 +405,16 @@ case "$host" in
     # On Sparc V9 with certain versions of gcc, determination of double
     # alignment is not reliable (PR#1521), hence force it.
     # Same goes for hppa.
-    echo "Doubles must be doubleword-aligned."
-    echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+    # But there's a knack (PR#2572):
+    # if we're in 64-bit mode (sizeof(long) == 8), 
+    # we must not doubleword-align floats...
+    if test $2 = 8; then
+      echo "Doubles can be word-aligned."
+      echo "#undef ARCH_ALIGN_DOUBLE" >> m.h
+    else
+      echo "Doubles must be doubleword-aligned."
+      echo "#define ARCH_ALIGN_DOUBLE" >> m.h
+    fi;;
   *)
     sh ./runtest dblalign.c
     case $? in
@@ -425,8 +433,13 @@ esac
 if $int64_native; then
   case "$host" in
     hppa*-*-*)
-      echo "64-bit integers must be doubleword-aligned."
-      echo "#define ARCH_ALIGN_INT64" >> m.h;;
+      if test $2 = 8; then
+        echo "64-bit integers can be word-aligned."
+        echo "#undef ARCH_ALIGN_INT64" >> m.h
+      else
+        echo "64-bit integers must be doubleword-aligned."
+        echo "#define ARCH_ALIGN_INT64" >> m.h
+      fi;;
     *)
       sh ./runtest int64align.c
       case $? in
