@@ -1233,9 +1233,10 @@ void copy_action(void)
       else
         fprintf(f, "(peek_val parser_env %d : '%s) in\n", n - i, item->name);
     }
-    fprintf(f, "    Obj.repr((\n");
+    fprintf(f, "    Obj.repr(\n");
     fprintf(f, line_format, lineno, input_file_name);
-    for (i = cptr - line; i >= 0; i--) fputc(' ', f);
+    for (i = 0; i < cptr - line; i++) fputc(' ', f);
+    fputc ('(', f);
 
     depth = 1;
     cptr++;
@@ -1268,15 +1269,15 @@ loop:
         goto loop;
     }
     if (c == '}' && depth == 1) {
-      fprintf(f, "\n# 0\n              ");
+      fprintf(f, ")\n# 0\n              ");
       cptr++;
       tagres = plhs[nrules]->tag;
       if (tagres)
-        fprintf(f, ") : %s))\n", tagres);
+        fprintf(f, " : %s))\n", tagres);
       else if (sflag)
-        fprintf(f, ")))\n");
+        fprintf(f, "))\n");
       else
-        fprintf(f, ") : '%s))\n", plhs[nrules]->name);
+        fprintf(f, " : '%s))\n", plhs[nrules]->name);
       if (sflag)
         fprintf(f, "\n");
       return;
