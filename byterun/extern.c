@@ -237,7 +237,7 @@ static void extern_rec(value v)
       return;
     }
     /* Check if already seen */
-    if (! extern_ignore_sharing) {
+    if (! extern_ignore_sharing && tag != Infix_tag) {
       if (2 * obj_counter >= extern_table_size) resize_extern_table();
       h = Hash(v);
       while (extern_table[h].ofs >= initial_ofs) {
