@@ -80,7 +80,9 @@ void stash_backtrace(value exn, code_t pc, value * sp)
     if (backtrace_buffer == NULL) return;
   }
   if (backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-  backtrace_buffer[backtrace_pos++] = pc;
+  if (pc >= start_code && pc < end_code){
+    backtrace_buffer[backtrace_pos++] = pc;
+  }
   for (/*nothing*/; sp < trapsp; sp++) {
     code_t p = (code_t) *sp;
     if (p >= start_code && p < end_code) {
