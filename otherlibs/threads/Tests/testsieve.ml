@@ -17,7 +17,7 @@ let sieve primes=
     (* On elimine de la sortie ceux qui sont des multiples de n *)
     while true do 
       	let m = Event.sync (Event.receive inpout) in
-(*        print_int n; print_string ": "; print_int m; print_newline(); *)
+        (* print_int n; print_string ": "; print_int m; print_newline(); *)
         if (m mod n) = 0 
       	then () 
       	else ((Event.sync (Event.send output m));())

@@ -195,11 +195,12 @@ value thread_new(value clos)          /* ML */
   /* Set up a return frame that pretends we're applying clos to ().
      This way, when this thread is activated, the RETURN will take us
      to the entry point of the closure. */
-  th->sp -= 4;
-  th->sp[0] = Val_unit;
+  th->sp -= 5;
+  th->sp[0] = Val_unit;         /* dummy local to be popped by RETURN 1 */
   th->sp[1] = (value) Code_val(clos);
   th->sp[2] = clos;
   th->sp[3] = Val_long(0);      /* no extra args */
+  th->sp[4] = Val_unit;         /* the () argument */
   /* Fake a C call frame */
   th->sp--;
   th->sp[0] = Val_unit;         /* a dummy environment */
