@@ -117,9 +117,7 @@ void enter_blocking_section(void)
        it will be lost. */
     temp = pending_signal;   pending_signal = 0;
     if (temp) execute_signal(temp, 0);
-#if !macintosh_GUSI
     async_signal_mode = 1;
-#endif
     if (!pending_signal) break;
     async_signal_mode = 0;
   }
@@ -129,16 +127,8 @@ void enter_blocking_section(void)
 void leave_blocking_section(void)
 {
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
-#if !macintosh_GUSI
   Assert(async_signal_mode);
   async_signal_mode = 0;
-#else
-  {
-    int temp = pending_signal;
-	pending_signal = 0;
-	if (temp) execute_signal (temp, 0);
-  }
-#endif
 }
 
 #ifndef SIGABRT

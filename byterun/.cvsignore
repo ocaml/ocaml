@@ -5,6 +5,7 @@ opnames.h
 ocamlrun
 ocamlrund
 libcamlrun.x
+libcamlrun-gui.x
 *.c.x
 ocamlrun.xcoff
 ocamlrun.dbg
