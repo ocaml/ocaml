@@ -34,11 +34,14 @@ getgroups.o : getgroups.c unix.h
 gethost.o : gethost.c unix.h socketaddr.h 
 gethostname.o : gethostname.c unix.h 
 getlogin.o : getlogin.c unix.h 
+getpeername.o : getpeername.c unix.h socketaddr.h 
 getpid.o : getpid.c unix.h 
 getppid.o : getppid.c unix.h 
 getproto.o : getproto.c unix.h 
 getpw.o : getpw.c unix.h 
 getserv.o : getserv.c unix.h 
+getsockname.o : getsockname.c unix.h socketaddr.h 
+gettimeofday.o : gettimeofday.c unix.h 
 getuid.o : getuid.c unix.h 
 gmtime.o : gmtime.c unix.h 
 ioctl.o : ioctl.c unix.h 
@@ -84,3 +87,4 @@ wait.o : wait.c unix.h
 waitpid.o : waitpid.c unix.h 
 write.o : write.c unix.h 
 unix.cmo: unix.cmi 
+unix.cmx: unix.cmi 
