@@ -804,8 +804,9 @@ let open_proc cmd proc input output toclose =
      0 -> if input <> stdin then begin dup2 input stdin; close input end;
           if output <> stdout then begin dup2 output stdout; close output end;
           if not cloexec then List.iter close toclose;
-          execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
-          exit 127
+          begin try execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+          with _ -> exit 127
+          end
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_in cmd =
@@ -840,8 +841,9 @@ let open_proc_full cmd env proc input output error toclose =
           dup2 output stdout; close output;
           dup2 error stderr; close error;
           if not cloexec then List.iter close toclose;
-          execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env;
-          exit 127
+          begin try execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env
+          with _ -> exit 127
+          end
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_full cmd env =
