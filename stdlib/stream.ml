@@ -54,7 +54,8 @@ let rec get_data =
         Sgen _ | Sbuffio _ -> failwith "illegal stream concatenation"
       | x -> get_data x
       end
-  | _ -> failwith "internal error in module Stream: please report"
+  | Sgen _ | Sbuffio _ ->
+      failwith "illegal stream concatenation"
 ;;
 
 let rec peek s =
