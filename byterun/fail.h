@@ -54,5 +54,6 @@ void raise_sys_error P((value)) Noreturn;
 void raise_end_of_file P((void)) Noreturn;
 void raise_zero_divide P((void)) Noreturn;
 void raise_not_found P((void)) Noreturn;
+void fatal_uncaught_exception P((value)) Noreturn;
 
 #endif /* _fail_ */

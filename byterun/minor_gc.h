@@ -27,6 +27,7 @@ extern int in_minor_collection;
 
 extern void set_minor_heap_size P((asize_t));
 extern void minor_collection P((void));
+extern void garbage_collection P((void)); /* for the native-code system */
 extern void realloc_ref_table P((void));
 extern void oldify P((value, value *));
 
