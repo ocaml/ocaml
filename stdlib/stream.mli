@@ -25,7 +25,7 @@ exception Parse_error of string
 
 (** Stream builders *)
 (* Warning: these functions create streams with fast access; it is illegal
-   to mix them with streams built with [[: :]]; would raise [Failure]
+   to mix them with streams built with [[< >]]; would raise [Failure]
    when accessing such mixed streams. *)
 
 val from : (int -> 'a option) -> 'a t
