@@ -15,7 +15,7 @@
 
 open Misc
 open Asttypes
-open Typedtree
+open Types
 
 exception Unify of (type_expr * type_expr) list
 exception Subtype of

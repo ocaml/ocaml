@@ -19,7 +19,7 @@ open Format
 open Longident
 open Path
 open Asttypes
-open Typedtree
+open Types
 
 
 (* Print a long identifier *)

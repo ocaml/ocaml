@@ -14,7 +14,7 @@
 (* Operations on core types *)
 
 open Asttypes
-open Typedtree
+open Types
 
 val generic_level: int
 val init_def: int -> unit
@@ -68,8 +68,7 @@ val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val filter_arrow: Env.t -> type_expr -> type_expr * type_expr
         (* A special case of unification (with 'a -> 'b). *)
-val filter_method:
-  Env.t -> string -> Typedtree.type_expr -> Typedtree.type_expr
+val filter_method: Env.t -> string -> type_expr -> type_expr
       	(* A special case of unification (with {m : 'a; 'b}). *)
 val moregeneral: Env.t -> type_expr -> type_expr -> bool
         (* Check if the first type scheme is more general than the second. *)
@@ -94,7 +93,7 @@ val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr
 val nondep_class_type: Env.t -> Ident.t -> class_type -> class_type
         (* Same for class types. *)
 val substitute:
-        (Path.t * Typedtree.type_expr) list -> type_expr list ->
+        (Path.t * type_expr) list -> type_expr list ->
         type_expr list -> type_expr -> type_expr
         (* [substitute [v1...vN] [t1...tN] t]
            returns a copy of [t] where the [vi] are replaced

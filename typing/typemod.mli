@@ -13,14 +13,14 @@
 
 (* Type-checking of the module language *)
 
-open Typedtree
+open Types
 
 val type_structure:
-        Env.t -> Parsetree.structure -> structure * signature * Env.t
+        Env.t -> Parsetree.structure -> Typedtree.structure * signature * Env.t
 val transl_signature:
         Env.t -> Parsetree.signature -> signature
 val check_nongen_schemes:
-        Env.t -> structure -> unit
+        Env.t -> Typedtree.structure -> unit
 
 type error =
     Unbound_module of Longident.t

@@ -16,6 +16,7 @@
 open Misc
 open Asttypes
 open Parsetree
+open Types
 open Typedtree
 open Ctype
 
@@ -271,20 +272,23 @@ let rec type_exp env sexp =
 	        Texp_ident(path, desc)
       	    end;
           exp_loc = sexp.pexp_loc;
-          exp_type = instance desc.val_type }
+          exp_type = instance desc.val_type;
+          exp_env = env }
       with Not_found ->
         raise(Error(sexp.pexp_loc, Unbound_value lid))
       end
   | Pexp_constant cst ->
       { exp_desc = Texp_constant cst;
         exp_loc = sexp.pexp_loc;
-        exp_type = type_constant cst }
+        exp_type = type_constant cst;
+        exp_env = env }
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
       let (pat_exp_list, new_env) = type_let env rec_flag spat_sexp_list in
       let body = type_exp new_env sbody in
       { exp_desc = Texp_let(rec_flag, pat_exp_list, body);
         exp_loc = sexp.pexp_loc;
-        exp_type = body.exp_type }
+        exp_type = body.exp_type;
+        exp_env = env }
   | Pexp_function caselist ->
       let ty_arg = newvar() and ty_res = newvar() in
       let cases = type_cases env ty_arg ty_res caselist in
@@ -292,7 +296,8 @@ let rec type_exp env sexp =
       Parmatch.check_partial sexp.pexp_loc cases;
       { exp_desc = Texp_function cases;
         exp_loc = sexp.pexp_loc;
-        exp_type = newty (Tarrow(ty_arg, ty_res)) }
+        exp_type = newty (Tarrow(ty_arg, ty_res));
+        exp_env = env }
   | Pexp_apply(sfunct, sargs) ->
       let funct = type_exp env sfunct in
       let rec type_args ty_fun = function
@@ -311,7 +316,8 @@ let rec type_exp env sexp =
       let (args, ty_res) = type_args funct.exp_type sargs in
       { exp_desc = Texp_apply(funct, args);
         exp_loc = sexp.pexp_loc;
-        exp_type = ty_res }
+        exp_type = ty_res;
+        exp_env = env }
   | Pexp_match(sarg, caselist) ->
       let arg = type_exp env sarg in
       let ty_res = newvar() in
@@ -320,7 +326,8 @@ let rec type_exp env sexp =
       Parmatch.check_partial sexp.pexp_loc cases;
       { exp_desc = Texp_match(arg, cases);
         exp_loc = sexp.pexp_loc;
-        exp_type = ty_res }
+        exp_type = ty_res;
+        exp_env = env }
   | Pexp_try(sbody, caselist) ->
       let body = type_exp env sbody in
       let cases =
@@ -328,12 +335,14 @@ let rec type_exp env sexp =
       Parmatch.check_unused cases;
       { exp_desc = Texp_try(body, cases);
         exp_loc = sexp.pexp_loc;
-        exp_type = body.exp_type }
+        exp_type = body.exp_type;
+        exp_env = env }
   | Pexp_tuple sexpl ->
       let expl = List.map (type_exp env) sexpl in
       { exp_desc = Texp_tuple expl;
         exp_loc = sexp.pexp_loc;
-        exp_type = newty (Ttuple(List.map (fun exp -> exp.exp_type) expl)) }
+        exp_type = newty (Ttuple(List.map (fun exp -> exp.exp_type) expl));
+        exp_env = env }
   | Pexp_construct(lid, sarg) ->
       let constr =
         try
@@ -352,7 +361,8 @@ let rec type_exp env sexp =
       let args = List.map2 (type_expect env) sargs ty_args in
       { exp_desc = Texp_construct(constr, args);
         exp_loc = sexp.pexp_loc;
-        exp_type = ty_res }
+        exp_type = ty_res;
+        exp_env = env }
   | Pexp_record lid_sexp_list ->
       let ty = newvar() in
       let num_fields = ref 0 in
@@ -383,7 +393,8 @@ let rec type_exp env sexp =
         raise(Error(sexp.pexp_loc, Label_missing));
       { exp_desc = Texp_record lbl_exp_list;
         exp_loc = sexp.pexp_loc;
-        exp_type = ty }
+        exp_type = ty;
+        exp_env = env }
   | Pexp_field(sarg, lid) ->
       let arg = type_exp env sarg in
       let label =
@@ -395,7 +406,8 @@ let rec type_exp env sexp =
       unify_exp env arg ty_res;
       { exp_desc = Texp_field(arg, label);
         exp_loc = sexp.pexp_loc;
-        exp_type = ty_arg }
+        exp_type = ty_arg;
+        exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
       let record = type_exp env srecord in
       let label =
@@ -410,13 +422,15 @@ let rec type_exp env sexp =
       let newval = type_expect env snewval ty_arg in
       { exp_desc = Texp_setfield(record, label, newval);
         exp_loc = sexp.pexp_loc;
-        exp_type = instance Predef.type_unit }
+        exp_type = instance Predef.type_unit;
+        exp_env = env }
   | Pexp_array(sargl) ->
       let ty = newvar() in
       let argl = List.map (fun sarg -> type_expect env sarg ty) sargl in
       { exp_desc = Texp_array argl;
         exp_loc = sexp.pexp_loc;
-        exp_type = instance (Predef.type_array ty) }
+        exp_type = instance (Predef.type_array ty);
+        exp_env = env }
   | Pexp_ifthenelse(scond, sifso, sifnot) ->
       let cond = type_expect env scond (instance Predef.type_bool) in
       begin match sifnot with
@@ -424,26 +438,30 @@ let rec type_exp env sexp =
           let ifso = type_expect env sifso (instance Predef.type_unit) in
           { exp_desc = Texp_ifthenelse(cond, ifso, None);
             exp_loc = sexp.pexp_loc;
-            exp_type = instance Predef.type_unit }
+            exp_type = instance Predef.type_unit;
+            exp_env = env }
       | Some sifnot ->
           let ifso = type_exp env sifso in
           let ifnot = type_expect env sifnot ifso.exp_type in
           { exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
             exp_loc = sexp.pexp_loc;
-            exp_type = ifso.exp_type }
+            exp_type = ifso.exp_type;
+            exp_env = env }
       end
   | Pexp_sequence(sexp1, sexp2) ->
       let exp1 = type_statement env sexp1 in
       let exp2 = type_exp env sexp2 in
       { exp_desc = Texp_sequence(exp1, exp2);
         exp_loc = sexp.pexp_loc;
-        exp_type = exp2.exp_type }
+        exp_type = exp2.exp_type;
+        exp_env = env }
   | Pexp_while(scond, sbody) ->
       let cond = type_expect env scond (instance Predef.type_bool) in
       let body = type_statement env sbody in
       { exp_desc = Texp_while(cond, body);
         exp_loc = sexp.pexp_loc;
-        exp_type = instance Predef.type_unit }
+        exp_type = instance Predef.type_unit;
+        exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
       let low = type_expect env slow (instance Predef.type_int) in
       let high = type_expect env shigh (instance Predef.type_int) in
@@ -453,7 +471,8 @@ let rec type_exp env sexp =
       let body = type_statement new_env sbody in
       { exp_desc = Texp_for(id, low, high, dir, body);
         exp_loc = sexp.pexp_loc;
-        exp_type = instance Predef.type_unit }
+        exp_type = instance Predef.type_unit;
+        exp_env = env }
   | Pexp_constraint(sarg, sty, sty') ->
       let (arg, ty') =
         match (sty, sty') with
@@ -483,13 +502,15 @@ let rec type_exp env sexp =
       in
       { exp_desc = arg.exp_desc;
         exp_loc = arg.exp_loc;
-        exp_type = ty' }
+        exp_type = ty';
+        exp_env = env }
   | Pexp_when(scond, sbody) ->
       let cond = type_expect env scond (instance Predef.type_bool) in
       let body = type_exp env sbody in
       { exp_desc = Texp_when(cond, body);
         exp_loc = sexp.pexp_loc;
-        exp_type = body.exp_type }
+        exp_type = body.exp_type;
+        exp_env = env }
   | Pexp_send (e, met) ->
       let object = type_exp env e in
       begin try
@@ -509,14 +530,19 @@ let rec type_exp env sexp =
       	       	       	       	                {val_type = method_type;
       	       	       	       	                 val_kind = Val_reg});
       	       	          exp_loc = sexp.pexp_loc;
-      	       	          exp_type = method_type},
+      	       	          exp_type = method_type;
+                          exp_env = env },
                          [{exp_desc = Texp_ident(path, desc);
       	       	       	   exp_loc = object.exp_loc;
-      	       	       	   exp_type = desc.val_type}])
+      	       	       	   exp_type = desc.val_type;
+                           exp_env = env }])
           | _ ->
 	      Texp_send(object, met)
         in
-          { exp_desc = exp; exp_loc = sexp.pexp_loc; exp_type = typ}
+          { exp_desc = exp;
+            exp_loc = sexp.pexp_loc;
+            exp_type = typ;
+            exp_env = env }
       with Unify _ ->
       	raise(Error(e.pexp_loc,	Undefined_method_err met))
       end
@@ -531,7 +557,8 @@ let rec type_exp env sexp =
         | Some ty ->
             { exp_desc = Texp_new cl_path;
       	      exp_loc = sexp.pexp_loc;
-	      exp_type = instance ty }
+	      exp_type = instance ty;
+              exp_env = env }
         end
   | Pexp_setinstvar (lab, snewval) ->
       begin try
@@ -544,7 +571,8 @@ let rec type_exp env sexp =
             in
             { exp_desc = Texp_setinstvar(path_self, path, newval);
               exp_loc = sexp.pexp_loc;
-              exp_type = instance Predef.type_unit }
+              exp_type = instance Predef.type_unit;
+              exp_env = env }
 	| Val_ivar _ ->
       	    raise(Error(sexp.pexp_loc, Instance_variable_not_mutable lab))
 	| _ ->
@@ -584,7 +612,8 @@ let rec type_exp env sexp =
       let modifs = List.map type_override lst in
       { exp_desc = Texp_override(path_self, modifs);
       	exp_loc = sexp.pexp_loc;
-	exp_type = self_ty }
+	exp_type = self_ty;
+        exp_env = env }
 
       (* let obj = Oo.copy self in obj.x <- e; obj *)
 
@@ -599,10 +628,12 @@ and type_expect env sexp ty_expected =
           exp_loc = sexp.pexp_loc;
           exp_type =
             (* Terrible hack for format strings *)
-            match (repr ty_expected).desc with
+            begin match (repr ty_expected).desc with
               Tconstr(path, _, _) when Path.same path Predef.path_format ->
                 type_format sexp.pexp_loc s
-            | _ -> instance Predef.type_string } in
+            | _ -> instance Predef.type_string
+            end;
+          exp_env = env } in
       unify_exp env exp ty_expected;
       exp
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
@@ -610,13 +641,15 @@ and type_expect env sexp ty_expected =
       let body = type_expect new_env sbody ty_expected in
       { exp_desc = Texp_let(rec_flag, pat_exp_list, body);
         exp_loc = sexp.pexp_loc;
-        exp_type = body.exp_type }
+        exp_type = body.exp_type;
+        exp_env = env }
   | Pexp_sequence(sexp1, sexp2) ->
       let exp1 = type_statement env sexp1 in
       let exp2 = type_expect env sexp2 ty_expected in
       { exp_desc = Texp_sequence(exp1, exp2);
         exp_loc = sexp.pexp_loc;
-        exp_type = exp2.exp_type }
+        exp_type = exp2.exp_type;
+        exp_env = env }
   | _ ->
       let exp = type_exp env sexp in
       unify_exp env exp ty_expected;
@@ -713,7 +746,8 @@ let type_method env self self_name sexp =
   let exp = type_exp env sexp in
   ({ exp_desc = Texp_function [(pattern, exp)];
      exp_loc = sexp.pexp_loc;
-     exp_type = newty (Tarrow(pattern.pat_type, exp.exp_type)) },
+     exp_type = newty (Tarrow(pattern.pat_type, exp.exp_type));
+     exp_env = env },
    exp.exp_type)
 
 (* Error report *)

@@ -14,7 +14,7 @@
 (* Operations on module types *)
 
 open Path
-open Typedtree
+open Types
 
 
 let rec scrape env mty =

@@ -13,6 +13,7 @@
 
 (* Inclusion checks for the module language *)
 
+open Types
 open Typedtree
 
 val modtypes: Env.t -> module_type -> module_type -> module_coercion

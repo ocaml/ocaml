@@ -15,6 +15,7 @@
 
 open Misc
 open Path
+open Types
 open Typedtree
 
 (* Inclusion between value descriptions *)

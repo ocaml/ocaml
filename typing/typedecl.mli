@@ -13,7 +13,7 @@
 
 (* Typing of type definitions and primitive definitions *)
 
-open Typedtree
+open Types
 
 val transl_type_decl:
         Env.t -> (string * Parsetree.type_declaration) list ->

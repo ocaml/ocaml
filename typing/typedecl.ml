@@ -14,6 +14,7 @@
 (* Typing of type definitions *)
 
 open Parsetree
+open Types
 open Typedtree
 open Typetexp
 

@@ -14,13 +14,13 @@
 (* Typechecking of type expressions for the core language *)
 
 val transl_simple_type:
-        Env.t -> bool -> Parsetree.core_type -> Typedtree.type_expr
+        Env.t -> bool -> Parsetree.core_type -> Types.type_expr
 val transl_type_scheme:
-        Env.t -> Parsetree.core_type -> Typedtree.type_expr
+        Env.t -> Parsetree.core_type -> Types.type_expr
 val reset_type_variables: unit -> unit
-val enter_type_variable: bool -> string -> Typedtree.type_expr
-val type_variable : Location.t -> string -> Typedtree.type_expr
-val type_variable_list : unit -> Typedtree.type_expr list
+val enter_type_variable: bool -> string -> Types.type_expr
+val type_variable : Location.t -> string -> Types.type_expr
+val type_variable_list : unit -> Types.type_expr list
 
 exception Already_bound
 
@@ -32,7 +32,7 @@ type error =
   | Recursive_type
   | Unbound_class of Longident.t
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of Typedtree.type_expr * Typedtree.type_expr
+  | Type_mismatch of Types.type_expr * Types.type_expr
 
 exception Error of Location.t * error
 

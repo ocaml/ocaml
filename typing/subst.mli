@@ -13,7 +13,7 @@
 
 (* Substitutions *)
 
-open Typedtree
+open Types
 
 type t
 

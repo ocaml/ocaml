@@ -15,8 +15,8 @@
 
 open Misc
 open Asttypes
+open Types
 open Typedtree
-
 
 let make_pat desc ty =
   {pat_desc = desc; pat_loc = Location.none; pat_type = ty}

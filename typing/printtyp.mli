@@ -13,7 +13,7 @@
 
 (* Printing functions *)
 
-open Typedtree
+open Types
 
 val longident: Longident.t -> unit
 val ident: Ident.t -> unit

@@ -13,7 +13,7 @@
 
 (* Environment handling *)
 
-open Typedtree
+open Types
 
 type t
 

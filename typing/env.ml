@@ -19,7 +19,7 @@ open Misc
 open Asttypes
 open Longident
 open Path
-open Typedtree
+open Types
 
 
 type error =

@@ -15,7 +15,7 @@
 
 open Misc
 open Parsetree
-open Typedtree
+open Types
 open Ctype
 
 exception Already_bound

@@ -16,7 +16,7 @@
 
 open Misc
 open Asttypes
-open Typedtree
+open Types
 
 let constructor_descrs ty_res cstrs =
   let num_consts = ref 0 and num_nonconsts = ref 0 in

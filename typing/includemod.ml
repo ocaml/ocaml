@@ -15,8 +15,8 @@
 
 open Misc
 open Path
+open Types
 open Typedtree
-
 
 type error =
     Missing_field of Ident.t

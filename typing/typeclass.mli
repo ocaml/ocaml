@@ -12,7 +12,7 @@
 (* $Id$ *)
 
 open Asttypes
-open Parsetree
+open Types
 open Typedtree
 
 val transl_classes:

@@ -15,7 +15,7 @@
    determining their representation. *)
 
 open Asttypes
-open Typedtree
+open Types
 
 val constructor_descrs:
   type_expr -> (string * type_expr list) list ->

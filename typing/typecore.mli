@@ -14,21 +14,21 @@
 (* Type inference for the core language *)
 
 open Asttypes
-open Typedtree
+open Types
 
 val type_binding:
         Env.t -> rec_flag ->
           (Parsetree.pattern * Parsetree.expression) list -> 
-            (pattern * expression) list * Env.t
+          (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_expression:
-        Env.t -> Parsetree.expression -> expression
+        Env.t -> Parsetree.expression -> Typedtree.expression
 val type_method:
-        Env.t -> Typedtree.type_expr -> string option ->
-        Parsetree.expression -> expression * type_expr
+        Env.t -> type_expr -> string option ->
+        Parsetree.expression -> Typedtree.expression * type_expr
 val type_pattern_list:
         Env.t -> Parsetree.pattern list -> Typedtree.pattern list * Env.t
 val type_expect:
-        Env.t -> Parsetree.expression -> Typedtree.type_expr ->
+        Env.t -> Parsetree.expression -> type_expr ->
         Typedtree.expression
 val type_exp:
       	Env.t -> Parsetree.expression -> Typedtree.expression

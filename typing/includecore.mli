@@ -13,6 +13,7 @@
 
 (* Inclusion checks for the core language *)
 
+open Types
 open Typedtree
 
 exception Dont_match

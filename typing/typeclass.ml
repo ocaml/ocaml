@@ -14,6 +14,7 @@
 open Misc
 open Parsetree
 open Asttypes
+open Types
 open Typedtree
 open Typecore
 open Typetexp

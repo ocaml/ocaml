@@ -13,7 +13,7 @@
 
 (* Operations on module types *)
 
-open Typedtree
+open Types
 
 val scrape: Env.t -> module_type -> module_type
         (* Expand toplevel module type abbreviations

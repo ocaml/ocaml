@@ -15,7 +15,7 @@
 
 open Misc
 open Path
-open Typedtree
+open Types
 
 
 type t = 
