@@ -60,7 +60,12 @@
 #define Already_scanned(sp, retaddr) (retaddr & 1)
 #define Mark_scanned(sp, retaddr) (*((long *)(sp - 4)) = retaddr | 1)
 #define Mask_already_scanned(retaddr) (retaddr & ~1)
-#define Callback_link(sp) ((struct callback_link *)(sp + 24))
+#ifdef SYS_aix
+#define Trap_frame_size 24
+#else
+#define Trap_frame_size 8
+#endif
+#define Callback_link(sp) ((struct callback_link *)(sp + Trap_frame_size))
 #endif
 
 

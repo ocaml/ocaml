@@ -346,7 +346,7 @@ let contains_calls = ref false
 
 let assemble_file infile outfile =
   let proc = if powerpc then "ppc" else "pwr" in
-  Sys.command ("gas-ppc -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
+  Sys.command ("as -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
 
 let create_archive archive file_list =
   Misc.remove_file archive;

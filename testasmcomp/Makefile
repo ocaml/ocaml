@@ -108,8 +108,8 @@ checkbound.out: main.c checkbound.o $(ARCH).o
 
 # The runtime environment
 
-power.o: power-$(SYS).o
-	ln -s power-$(SYS).o power.o
+power.o: power-$(SYSTEM).o
+	cp power-$(SYSTEM).o power.o
 
 .SUFFIXES:
 .SUFFIXES: .cmm .c .o .asm .S .ml .mli .cmo .cmi

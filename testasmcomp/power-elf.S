@@ -93,7 +93,7 @@
         lfdu    30, 8(11); \
         lfdu    31, 8(11)
 
-        .section "text"
+        .section ".text"
 
         .globl  call_gen_code
         .type   call_gen_code, @function

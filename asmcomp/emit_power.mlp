@@ -766,7 +766,7 @@ let fundecl fundecl =
 let data_space =
   if toc
   then "	.csect  .data[RW]\n"
-  else "	.section \"data\"\n"
+  else "	.section \".data\"\n"
 
 let declare_global_data s =
   `	.globl	{emit_symbol s}\n`;
@@ -821,7 +821,8 @@ let begin_assembly() =
   defined_functions := StringSet.empty;
   let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
   emit_string data_space;
-  declare_global_data lbl_begin
+  declare_global_data lbl_begin;
+  `{emit_symbol lbl_begin}:\n`
 
 let end_assembly() =
   if toc then begin

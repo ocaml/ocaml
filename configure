@@ -193,6 +193,7 @@ case "$host" in
   hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
   rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
   powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
+  powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
 esac
 
 case "$arch" in
@@ -222,9 +223,10 @@ case "$arch" in
   i386)         asflags='-DSYS_$(SYSTEM)';;
   hppa)         as="$cc"; asflags='-c -DSYS_$(SYSTEM)';;
   power)
-    case "$model" in
-      rs6000)   asflags='-u -m pwr -w';;
-      ppc)      asflags='-u -m ppc -w';;
+    case "$model,$system" in
+      rs6000,aix)   asflags='-u -m pwr -w';;
+      ppc,aix)      asflags='-u -m ppc -w';;
+      *,elf)        asflags='';;
     esac;;
 esac
 
