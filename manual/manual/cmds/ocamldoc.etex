@@ -264,6 +264,17 @@ Output "dot" code describing the type dependency graph instead of
 the module dependency graph.
 \end{options}
 
+\subsubsection*{Options for generating man files}
+
+The following options apply in conjunction with the "-man" option:
+
+\begin{options}
+\item["-man-suffix"]
+Set the suffix used for generated man filenames. Default is '"o"',
+like in "List.o".
+
+\end{options}
+
 \subsection{Merging of module information}
 \label{s:ocamldoc-merge}
 
