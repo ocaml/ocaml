@@ -64,6 +64,11 @@ let rec loadfiles ppf name =
   try
     let filename = find_in_path !Config.load_path name in
     use_debugger_symtable Dynlink.loadfile filename;
+    let d = Filename.dirname name in
+    if d <> Filename.current_dir_name then begin
+      if not (List.mem d !Config.load_path) then
+        Config.load_path := d :: !Config.load_path;
+    end;
     fprintf ppf "File %s loaded@." filename;
     true
   with
