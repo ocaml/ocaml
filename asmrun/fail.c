@@ -20,7 +20,7 @@
 #include "mlvalues.h"
 #include "roots.h"
 #include "signals.h"
-#include "stacks.h"
+#include "stack.h"
 
 /* The globals holding predefined exceptions */
 
@@ -35,11 +35,21 @@ extern caml_generated_constant Out_of_memory, Sys_error, Failure,
 
 extern void raise_caml_exception P((value bucket)) Noreturn;
 
+extern char * caml_exception_pointer;
+
 void mlraise(v)
      value v;
 {
   leave_blocking_section();
-  local_roots = NULL;
+#ifndef Stack_grows_upwards
+  while (local_roots != NULL && 
+         (char *) local_roots < caml_exception_pointer) {
+#else
+  while (local_roots != NULL && 
+         (char *) local_roots > caml_exception_pointer) {
+#endif
+    local_roots = (value *) local_roots[1];
+  }
   raise_caml_exception(v);
 }
 

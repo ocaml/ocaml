@@ -134,16 +134,16 @@ caml_saved_gp:                  .quad   0
 /* Allocation */
 
         .text
-        .globl  caml_alloc1
         .globl  caml_alloc2
         .globl  caml_alloc3
         .globl  caml_alloc
         .globl  caml_call_gc
-        .ent    caml_alloc1
 
 /* caml_alloc* : all code generator registers preserved,
    $gp preserved, $27 not valid on entry */
 
+        .globl  caml_alloc1
+        .ent    caml_alloc1
         .align  3
 caml_alloc1:
         subq    $13, 16, $13
@@ -152,7 +152,10 @@ caml_alloc1:
         ret     ($26)
 $100:   ldiq    $25, 16
         br      caml_call_gc
+        .end    caml_alloc1
 
+        .globl  caml_alloc2
+        .ent    caml_alloc2
         .align  3
 caml_alloc2:
         subq    $13, 24, $13
@@ -161,7 +164,10 @@ caml_alloc2:
         ret     ($26)
 $101:   ldiq    $25, 24
         br      caml_call_gc
+        .end    caml_alloc2
 
+        .globl  caml_alloc3
+        .ent    caml_alloc3
         .align  3
 caml_alloc3:
         subq    $13, 32, $13
@@ -170,7 +176,10 @@ caml_alloc3:
         ret     ($26)
 $102:   ldiq    $25, 32
         br      caml_call_gc
+        .end    caml_alloc3
 
+        .globl  caml_alloc
+        .ent    caml_alloc
         .align  3
 caml_alloc:
         subq    $13, $25, $13
@@ -179,7 +188,11 @@ caml_alloc:
         bne     $at, caml_call_gc
         .set    at
         ret     ($26)
+        .end    caml_alloc
         
+        .globl  caml_call_gc
+        .ent    caml_call_gc
+        .align  3
 caml_call_gc:
         lda     $sp, -32($sp)
         stq     $26, 0($sp)
@@ -215,13 +228,12 @@ $103:   ldgp    $gp, 0($27)
         lda     $sp, 32($sp)
         ret     ($26)
 
-        .end    caml_alloc1
+        .end    caml_call_gc
 
 /* Call a C function from Caml */
 
         .globl  caml_c_call
         .ent    caml_c_call
-
         .align  3
 caml_c_call:
     /* Function to call is in $27 */
@@ -331,7 +343,6 @@ raise_caml_exception:
         ldq     $27, 8($sp)
         lda     $sp, 16($sp)
         jmp     $25, ($27)      /* Keep retaddr in $25 to help debugging */
-
         .end    raise_caml_exception
 
 /* Glue code to jump to array_bound_error after reinitializing $gp */
@@ -379,8 +390,15 @@ $107:
         stt     $f7, 104($sp)
         stt     $f8, 112($sp)
         stt     $f9, 120($sp)
-    /* Set up callback link on the stack. Also save there various stuff
-       saved in global variables by caml_c_call. */
+    /* Set up a trap frame to catch exceptions escaping the Caml code */
+        lda     $sp, -16($sp)
+        ldq     $15, caml_exception_pointer
+        stq     $15, 0($sp)
+        lda     $0, $109
+        stq     $0, 8($sp)
+        mov     $sp, $15
+    /* Set up a callback link on the stack. Also save there
+       everything put in global variables by caml_c_call. */
         lda     $sp, -32($sp)
         ldq     $0, caml_bottom_of_stack
         stq     $0, 0($sp)
@@ -388,14 +406,13 @@ $107:
         stq     $1, 8($sp)
         ldq     $2, caml_saved_gp
         stq     $2, 16($sp)
-    /* Reload allocation pointers and trap pointer */
+    /* Reload allocation pointers */
         ldq     $13, young_ptr
         ldq     $14, young_start
-        ldq     $15, caml_exception_pointer
     /* Call the Caml code */
 $108:   jsr     ($25)
     /* Reload $gp */
-        bic     $26, 1, $26     /* retaddr may have "scanned" bit set */
+        bic     $26, 1, $26     /* return address may have "scanned" bit set */
         ldgp    $gp, 4($26)
     /* Restore the global variables used by caml_c_call */
         ldq     $25, 8($sp)
@@ -403,7 +420,10 @@ $108:   jsr     ($25)
         ldq     $22, 16($sp)
         stq     $22, caml_saved_gp
         lda     $sp, 32($sp)
+    /* Pop the trap frame, restoring caml-exception_pointer */
+        ldq     $15, 0($sp)
         stq     $15, caml_exception_pointer
+        lda     $sp, 16($sp)
     /* Update allocation pointer */
         stq     $13, young_ptr
     /* Reload callee-save registers */
@@ -426,6 +446,13 @@ $108:   jsr     ($25)
         ldq     $26, 0($sp)
         lda     $sp, 128($sp)
         ret     ($26)
+    /* The trap handler: re-raise the exception through mlraise,
+       so that local C roots are cleaned up correctly. */
+$109:   ldgp    $gp, 0($27)
+        stq     $13, young_ptr
+        stq     $15, caml_exception_pointer
+        mov     $0, $16         /* bucket as first argument */
+        jsr     mlraise         /* never returns */
 
         .end    callback
 
