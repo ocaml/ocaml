@@ -35,6 +35,9 @@
 #ifdef HAS_TIMES
 #include <sys/times.h>
 #endif
+#ifdef HAS_GETTIMEOFDAY
+#include <sys/time.h>
+#endif
 #include "alloc.h"
 #include "debugger.h"
 #include "fail.h"
@@ -263,9 +266,15 @@ value sys_time(value unit)            /* ML */
 #endif
 }
 
-value sys_date (value unit)       /* ML */
+value sys_random_seed (value unit)       /* ML */
 {
-  return copy_double ((double) time (NULL));
+#ifdef HAS_GETTIMEOFDAY
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return Val_int(tv.tv_sec ^ tv.tv_usec);
+#else
+  return Val_int(time (NULL));
+#endif
 }
 
 value sys_get_config(value unit)  /* ML */
