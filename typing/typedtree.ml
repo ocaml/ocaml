@@ -171,6 +171,7 @@ and module_coercion =
     Tcoerce_none
   | Tcoerce_structure of (int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
+  | Tcoerce_primitive of Primitive.description
 
 (* Auxiliary functions over the a.s.t. *)
 

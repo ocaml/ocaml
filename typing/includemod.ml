@@ -37,9 +37,10 @@ exception Error of error list
 (* Inclusion between value descriptions *)
 
 let value_descriptions env id vd1 vd2 =
-  if Includecore.value_descriptions env vd1 vd2
-  then ()
-  else raise(Error[Value_descriptions(id, vd1, vd2)])
+  try
+    Includecore.value_descriptions env vd1 vd2
+  with Includecore.Dont_match ->
+    raise(Error[Value_descriptions(id, vd1, vd2)])
 
 (* Inclusion between type declarations *)
 
@@ -144,8 +145,12 @@ and signatures env sig1 sig2 =
         let (id, name) = item_ident_name item in
         let nextpos =
           match item with
-            Tsig_value(_,_) | Tsig_exception(_,_) | Tsig_module(_,_) -> pos+1
-          | Tsig_type(_,_) | Tsig_modtype(_,_) -> pos in
+            Tsig_value(_,{val_prim = None})
+          | Tsig_exception(_,_)
+          | Tsig_module(_,_) -> pos+1
+          | Tsig_value(_,{val_prim = Some _})
+          | Tsig_type(_,_)
+          | Tsig_modtype(_,_) -> pos in
         build_component_table nextpos
                               (Tbl.add name (id, item, pos) tbl) rem in
   let comps1 =
@@ -179,8 +184,11 @@ and signatures env sig1 sig2 =
 and signature_components env = function
     [] -> []
   | (Tsig_value(id1, valdecl1), Tsig_value(id2, valdecl2), pos) :: rem ->
-      value_descriptions env id1 valdecl1 valdecl2;
-      (pos, Tcoerce_none) :: signature_components env rem
+      let cc = value_descriptions env id1 valdecl1 valdecl2 in
+      begin match valdecl2.val_prim with
+        None -> (pos, cc) :: signature_components env rem
+      | Some p -> signature_components env rem
+      end
   | (Tsig_type(id1, tydecl1), Tsig_type(id2, tydecl2), pos) :: rem ->
       type_declarations env id1 tydecl1 tydecl2;
       signature_components env rem

@@ -17,16 +17,20 @@ open Misc
 open Path
 open Typedtree
 
-
 (* Inclusion between value descriptions *)
 
+exception Dont_match
+
 let value_descriptions env vd1 vd2 =
-  Ctype.moregeneral env vd1.val_type vd2.val_type &
-  begin match (vd1.val_prim, vd2.val_prim) with
-      (Some p1, Some p2) -> p1 = p2
-    | (None, Some p) -> false
-    | _ -> true
-  end
+  if Ctype.moregeneral env vd1.val_type vd2.val_type then begin
+    match (vd1.val_prim, vd2.val_prim) with
+        (Some p1, Some p2) ->
+          if p1 = p2 then Tcoerce_none else raise Dont_match
+      | (Some p, None) -> Tcoerce_primitive p
+      | (None, Some p) -> raise Dont_match
+      | (None, None) -> Tcoerce_none
+  end else
+    raise Dont_match
 
 (* Inclusion between type declarations *)
 

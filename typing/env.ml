@@ -311,7 +311,8 @@ let rec prefix_idents root pos sub = function
     [] -> ([], sub)
   | Tsig_value(id, decl) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
-      let (pl, final_sub) = prefix_idents root (pos+1) sub rem in
+      let nextpos = match decl.val_prim with None -> pos+1 | Some _ -> pos in
+      let (pl, final_sub) = prefix_idents root nextpos sub rem in
       (p::pl, final_sub)
   | Tsig_type(id, decl) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
@@ -353,7 +354,9 @@ let rec components_of_module env sub path mty =
             let decl' = Subst.value_description sub decl in
             c.comp_values <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_values;
-            incr pos
+            begin match decl.val_prim with
+              None -> incr pos | Some _ -> ()
+            end
         | Tsig_type(id, decl) ->
             let decl' = Subst.type_declaration sub decl in
             c.comp_types <-
