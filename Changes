@@ -1,0 +1,83 @@
+Release 1.13:
+
+* Pattern-matching compilation revised to factor out accesses inside
+matched structures.
+
+* Callbacks and signals now supported in cslopt (what a terrible
+hack). Signals are only detected at allocation points, though.
+Added callback functions with 2 and 3 arguments.
+
+* More explicit error messages when a native-code program aborts due
+to array or string bound violations.
+
+* cslopt for the Intel: code generation for floating-point
+operations entirely redone for the third time (a pox on whomever at
+Intel decided to organize the floating-point registers as a stack).
+
+* cslopt for the Sparc: don't use Sparc V8 smul and sdiv instructions,
+emulation on V7 processors is abysmal.
+
+* && and || allowed as alternate syntax for & and or.
+
+Release 1.12:
+
+* Fix an embarrassing bug with references to floats.
+
+Release 1.11:
+
+* Streams and stream parsers a la Caml Light are back (thanks to
+Daniel de Rauglaudre).
+
+* User-level concurrent threads, with low-level shared memory primitives
+(locks and conditions) as well as channel-based communication primitives
+with first-class synchronous events, in the style of Reppy's CML.
+
+* The native-code compiler has been ported to the HP PA-RISC processor
+running under NextStep (sorry, no HPUX, its linker keeps dumping
+core on me).
+
+* References not captured in a function are optimized into variables.
+
+* Fixed several bugs related to exceptions.
+
+* Floats behave a little more as specified in the IEEE standard
+(believe it or not, but x < y is not the negation of x >= y).
+
+* Lower memory consumption for the native-code compiler.
+
+Release 1.10:
+
+* Many bug fixes (too many to list here).
+
+* Module language: introduction of a "with module" notation over
+signatures for concise sharing of all type components of a signature;
+better support for concrete types in signatures.
+
+* Native-code compiler: the Intel 386 version has been ported to
+NextStep and FreeBSD, and generates better code (especially for
+floats)
+
+* Tools and libraries: the Caml Light profiler and library for
+arbitrary-precision arithmetic have been ported (thanks to John
+Malecki and Victor Manuel Gulias Fernandez); better docs for the Unix
+and regexp libraries.
+
+Release 1.07:
+
+* Syntax: optional ;; allowed in compilation units and structures
+(back by popular demand)
+
+* cslopt: 
+generic handling of float arrays fixed
+direct function application when the function expr is not a path fixed
+compilation of "let rec" over values fixed
+multiple definitions of a value name in a module correctly handled
+no calls to ranlib in Solaris
+
+* csltop: #trace now working
+
+* Standard library: added List.memq; documentation of Array fixed.
+
+Release 1.06:
+
+* First public release.
