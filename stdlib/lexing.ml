@@ -21,7 +21,8 @@ type lexbuf =
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;
     mutable lex_last_pos : int;
-    mutable lex_last_action : int }
+    mutable lex_last_action : int;
+    mutable lex_eof_reached : bool }
 
 type lex_tables =
   { lex_base: string;
@@ -38,7 +39,7 @@ let lex_refill read_fun aux_buffer lexbuf =
   let n =
     if read > 0
     then read
-    else (String.unsafe_set aux_buffer 0 '\000'; 1) in
+    else (lexbuf.lex_eof_reached <- true; 0) in
   if lexbuf.lex_start_pos < n then begin
     let oldlen = lexbuf.lex_buffer_len in
     let newlen = oldlen * 2 in
@@ -70,21 +71,22 @@ let from_function f =
     lex_start_pos = 1024;
     lex_curr_pos = 1024;
     lex_last_pos = 1024;
-    lex_last_action = 0 }
+    lex_last_action = 0;
+    lex_eof_reached = false }
 
 let from_channel ic =
   from_function (fun buf n -> input ic buf 0 n)
 
 let from_string s =
-  { refill_buff =
-      (fun lexbuf -> lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1);
-    lex_buffer = s ^ "\000";
-    lex_buffer_len = String.length s + 1;
+  { refill_buff = (fun lexbuf -> lexbuf.lex_eof_reached <- true);
+    lex_buffer = s ^ "";
+    lex_buffer_len = String.length s;
     lex_abs_pos = 0;
     lex_start_pos = 0;
     lex_curr_pos = 0;
     lex_last_pos = 0;
-    lex_last_action = 0 }
+    lex_last_action = 0;
+    lex_eof_reached = true }
 
 let lexeme lexbuf =
   let len = lexbuf.lex_curr_pos - lexbuf.lex_start_pos in
