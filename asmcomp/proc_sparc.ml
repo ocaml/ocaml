@@ -210,7 +210,9 @@ let loc_exn_bucket = phys_reg 8         (* $o0 *)
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call = (* %l0-%l7, %i0-%i5 preserved *)
-  Array.of_list(List.map phys_reg [8; 9; 10; 11; 12; 13; 20; 21])
+  Array.of_list(List.map phys_reg
+    [8; 9; 10; 11; 12; 13; 20; 21; 100; 101; 102; 103; 104; 105; 106; 107;
+     108; 109; 110; 111; 112; 113; 114])
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs

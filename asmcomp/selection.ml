@@ -71,8 +71,6 @@ let cheap_operation = function
     (* The following may have side effects *)
     Capply _ | Cextcall(_, _, _) | Calloc | Cstore | Cstorechunk _ | 
     Craise -> false
-    (* The following are expensive to compute, better start them early *)
-  | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat -> false
     (* The remaining operations are cheap *)
   | _ -> true
 

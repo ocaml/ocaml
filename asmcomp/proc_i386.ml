@@ -31,7 +31,7 @@ open Mach
     edi         5
     ebp         6
 
-    f0 - f5     100-105         function arguments and results
+    f0 - f4     100-104         function arguments and results
                                 f0: C function results
                                 not preserved by C *)
 
@@ -39,7 +39,7 @@ let int_reg_name =
   [| "%eax"; "%ebx"; "%ecx"; "%edx"; "%esi"; "%edi"; "%ebp" |]
 
 let float_reg_name =
-  [| "%st"; "%st(1)"; "%st(2)"; "%st(3)"; "%st(4)"; "%st(5)"; "%st(6)" |]
+  [| "%st"; "%st(1)"; "%st(2)"; "%st(3)"; "%st(4)"; "%st(5)" |]
 
 let num_register_classes = 2
 
@@ -49,7 +49,7 @@ let register_class r =
   | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 7; 6 |]
+let num_available_registers = [| 7; 5 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -69,8 +69,8 @@ let hard_int_reg =
   v
 
 let hard_float_reg =
-  let v = Array.new 6 Reg.dummy in
-  for i = 0 to 5 do v.(i) <- Reg.at_location Float (Reg(i + 100)) done;
+  let v = Array.new 5 Reg.dummy in
+  for i = 0 to 4 do v.(i) <- Reg.at_location Float (Reg(i + 100)) done;
   v
 
 let all_phys_regs =
@@ -155,6 +155,27 @@ let select_addressing exp =
 
 exception Use_default
 
+let select_floatop op = function
+    [Cop(Cload _, [loc1]); Cop(Cload _, [loc2])] ->
+      let (addr1, arg1) = select_addressing loc1 in
+      let (addr2, arg2) = select_addressing loc2 in
+      (Ispecific(Ifloatarith(op, Some addr1, Some addr2, None)), [arg1; arg2])
+  | [Cop(Cload _, [loc1]); arg2] ->
+      let (addr1, arg1) = select_addressing loc1 in
+      (Ispecific(Ifloatarith(op, Some addr1, None, None)), [arg1; arg2])
+  | [arg1; Cop(Cload _, [loc2])] ->
+      let (addr2, arg2) = select_addressing loc2 in
+      (Ispecific(Ifloatarith(op, None, Some addr2, None)), [arg1; arg2])
+  | arg12 ->
+      (Ispecific(Ifloatarith(op, None, None, None)), arg12)
+
+let select_floatop_store op loc args =
+  let (addr, addr_arg) = select_addressing loc in
+  match select_floatop op args with
+    (Ispecific(Ifloatarith(op, opt1, opt2, None)), newargs) ->
+      (Ispecific(Ifloatarith(op, opt1, opt2, Some addr)), newargs @ [addr_arg])
+  | _ -> fatal_error "Proc_i386.select_floatop_store"
+
 let select_oper op args =
   match op with
   (* Recognize the LEA instruction *)
@@ -164,6 +185,15 @@ let select_oper op args =
       | (Iindexed2 0, _) -> raise Use_default
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
+  (* Prevent the recognition of (x / cst) and (x % cst),
+     which do not correspond to an addressing mode. *)
+  | Cdivi -> (Iintop Idiv, args)
+  | Cmodi -> (Iintop Imod, args)
+  (* Recognize the floating-point operations *)
+  | Caddf -> select_floatop Ifloatadd args
+  | Csubf -> select_floatop Ifloatsub args
+  | Cmulf -> select_floatop Ifloatmul args
+  | Cdivf -> select_floatop Ifloatdiv args
   (* Recognize store instructions *)
   | Cstore ->
       begin match args with
@@ -180,20 +210,34 @@ let select_oper op args =
         when loc = loc' ->
           let (addr, arg) = select_addressing loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
+      | [loc; Cop(Caddf, args)] ->
+          select_floatop_store Ifloatadd loc args
+      | [loc; Cop(Csubf, args)] ->
+          select_floatop_store Ifloatsub loc args
+      | [loc; Cop(Cmulf, args)] ->
+          select_floatop_store Ifloatmul loc args
+      | [loc; Cop(Cdivf, args)] ->
+          select_floatop_store Ifloatdiv loc args
       | _ ->
           raise Use_default
       end
-  (* Prevent the recognition of (x / cst) and (x % cst),
-     which do not correspond to an addressing mode. *)
-  | Cdivi -> (Iintop Idiv, args)
-  | Cmodi -> (Iintop Imod, args)
   | _ -> raise Use_default
+
+let select_store_floatop op addr args =
+  match select_floatop op args with
+    (Ispecific(Ifloatarith(op, opt1, opt2, None)), newargs) ->
+      (Ispecific(Ifloatarith(op, opt1, opt2, Some addr)), Ctuple newargs)
+  | _ -> fatal_error "Proc_i386.select_store_floatop"
 
 let select_store addr exp =
   match exp with
     Cconst_int n -> (Ispecific(Istore_int(n, addr)), Ctuple [])
   | Cconst_pointer n -> (Ispecific(Istore_int(n, addr)), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Istore_symbol(s, addr)), Ctuple [])
+  | Cop(Caddf, args) -> select_store_floatop Ifloatadd addr args
+  | Cop(Csubf, args) -> select_store_floatop Ifloatsub addr args
+  | Cop(Cmulf, args) -> select_store_floatop Ifloatmul addr args
+  | Cop(Cdivf, args) -> select_store_floatop Ifloatdiv addr args
   | _ -> raise Use_default
 
 let pseudoregs_for_operation op arg res =
@@ -278,7 +322,7 @@ let loc_exn_bucket = phys_reg 0         (* eax *)
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =               (* ebx, esi, edi, ebp preserved *)
-  Array.of_list(List.map phys_reg [0;2;3;100;101;102;103;104;105])
+  Array.of_list(List.map phys_reg [0;2;3;100;101;102;103;104])
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
@@ -294,14 +338,14 @@ let destroyed_at_raise = all_phys_regs
 
 (* Maximal register pressure *)
 
-let safe_register_pressure op = 6
+let safe_register_pressure op = 5
 
 let max_register_pressure = function
     Iextcall(_, _) -> [| 4; 0 |]
-  | Iintop(Idiv | Imod) -> [| 5; 6 |]
+  | Iintop(Idiv | Imod) -> [| 5; 5 |]
   | Ialloc _ | Iintop(Icomp _) | Iintop_imm(Icomp _, _) |
-    Iintoffloat -> [| 6; 6 |]
-  | _ -> [|7; 6|]
+    Iintoffloat -> [| 6; 5 |]
+  | _ -> [|7; 5|]
 
 (* Reloading of instruction arguments, storing of instruction results *)
 
@@ -325,31 +369,26 @@ let reload_operation makereg op arg res =
       if stackp arg.(0) & stackp arg.(1)
       then ([|arg.(0); makereg arg.(1)|], res)
       else (arg, res)
-  | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) |
-    Iaddf | Isubf | Imulf | Idivf | Ifloatofint | Iintoffloat ->
+  | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ifloatofint | Iintoffloat ->
       (* The argument(s) can be either in register or on stack *)
       (arg, res)
+  | Ispecific(Ifloatarith(op, addr_arg1, addr_arg2, addr_res)) ->
+      (* This one is a pain. The float arguments and results can reside in
+         the stack, but the integer arguments must be in registers. *)
+      let newarg = Array.new (Array.length arg) Reg.dummy in
+      for i = 0 to Array.length arg - 1 do
+        newarg.(i) <- if arg.(i).typ = Float then arg.(i) else makereg arg.(i)
+      done;
+      (newarg, res)
   | _ -> (* Other operations: all args and results in registers *)
       raise Use_default
 
-(* Scheduling is turned off because it's useless on the 386/486.
-   Might be effective on the Pentium and on the P6, though. *)
+(* Scheduling is turned off until I understand better the pipelines
+   of the 486 and Pentium. *)
 
 let need_scheduling = false
 
-(* Wild guesses for doing experiments with the Pentium *)
-
-let oper_latency = function
-    Ireload -> 2
-  | Iload(_, _) -> 2
-  | Iintop_imm(Imul, _) -> 10
-  | Iintop(Idiv | Imod) -> 20
-  | Iintop_imm((Idiv | Imod), _) -> 20
-  | Iaddf | Isubf -> 5
-  | Imulf -> 10
-  | Idivf -> 20
-  | Ispecific(Istore_int(_, _) | Istore_symbol(_, _) | Ioffset_loc(_, _)) -> -1
-  | _ -> 1
+let oper_latency _ = 1
 
 (* Layout of the stack frame *)
 

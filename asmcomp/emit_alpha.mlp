@@ -166,22 +166,6 @@ let emit_call_gc gc =
   `{emit_label gc.gc_frame}:	bsr	caml_call_gc\n`;
   `	br	{emit_label gc.gc_return_lbl}\n`
 
-(* Record calls to caml_fast_modify -- we've moved then out of the way *)
-
-type modify_call =
-  { mod_lbl: label;                     (* Entry label *)
-    mod_return_lbl: label;              (* Where to branch after call *)
-    mod_instr: instruction }            (* Record live registers *)
-
-let modify_sites = ref ([] : modify_call list)
-
-let emit_modify mc =
-  let i = mc.mod_instr in
-  `{emit_label mc.mod_lbl}:	mov	{emit_reg i.arg.(0)}, $25\n`;
-  liveregs i (live_24 + live_25);
-  `	bsr	caml_fast_modify\n`; (* Pointer to block in $25, header in $24 *)
-  `	br	{emit_label mc.mod_return_lbl}\n`
-
 (* Return the label occurring most frequently in an array of labels *)
 
 let most_frequent_element v =
@@ -578,7 +562,6 @@ let fundecl fundecl =
   tailrec_entry_point := new_label();
   stack_offset := 0;
   call_gc_sites := [];
-  modify_sites := [];
   uses_gp := instr_uses_gp fundecl.fun_body;
   if !uses_gp then contains_calls := true;
   range_check_trap := 0;
@@ -601,7 +584,6 @@ let fundecl fundecl =
   `{emit_label !tailrec_entry_point}:`;
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
-  List.iter emit_modify !modify_sites;
   if !range_check_trap > 0 then
     `{emit_label !range_check_trap}:	call_pal PAL_gentrap\n`;
   `	.end	{emit_symbol fundecl.fun_name}\n`

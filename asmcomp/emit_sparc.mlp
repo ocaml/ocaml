@@ -554,10 +554,6 @@ let rec emit_instr i dslot =
         `	jmp	%g4 + 8\n`;         (* poor scheduling *)
         `	add	%sp, 8, %sp\n`
 
-and emit_delay_slot = function
-    None -> ()
-  | Some i -> emit_instr i None
-
 and fill_delay_slot = function
     None -> `	nop\n`
   | Some i -> emit_instr i None

@@ -25,6 +25,11 @@ type specific_operation =
   | Istore_int of int * addressing_mode (* Store an integer constant *)
   | Istore_symbol of string * addressing_mode (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
+  | Ifloatarith of float_oper * addressing_mode option *
+                   addressing_mode option * addressing_mode option 
+                                        (* Reg/mem float operations *)
+and float_oper =
+    Ifloatadd | Ifloatsub | Ifloatmul | Ifloatdiv
 
 (* Sizes, endianness *)
 
@@ -77,6 +82,9 @@ let print_addressing printreg addr arg =
       print_string " * "; print_int scale;
       if n <> 0 then begin print_string " + "; print_int n end
 
+let print_sub_addressing printreg addr arg pos =
+  print_addressing printreg addr (Array.sub arg pos (Array.length arg - pos))
+
 let print_specific_operation printreg op arg =
   match op with
     Ilea addr -> print_addressing printreg addr arg
@@ -89,3 +97,29 @@ let print_specific_operation printreg op arg =
   | Ioffset_loc(n, addr) ->
       print_string "["; print_addressing printreg addr arg;
       print_string "] +:= "; print_int n
+  | Ifloatarith(op, arg1, arg2, res) ->
+      let pos_arg2 =
+        match arg1 with None -> 1 | Some addr -> num_args_addressing addr in
+      let pos_res =
+        pos_arg2 +
+        (match arg2 with None -> 1 | Some addr -> num_args_addressing addr) in
+      begin match res with
+          None -> ()
+        | Some addr ->
+            print_string "["; print_sub_addressing printreg addr arg pos_res;
+            print_string "] := "
+      end;
+      let print_arg pos = function
+          None ->
+            printreg arg.(pos)
+        | Some addr ->
+            print_string "[";
+            print_sub_addressing printreg addr arg pos in
+      print_arg 0 arg1;
+      begin match op with
+        Ifloatadd -> print_string " +f "
+      | Ifloatsub -> print_string " -f "
+      | Ifloatmul -> print_string " *f "
+      | Ifloatdiv -> print_string " /f "
+      end;
+      print_arg pos_arg2 arg2

@@ -122,6 +122,17 @@ let register_overlap reg arr =
   with Exit ->
     true
 
+(* Check if a set of registers contains a float *)
+
+let contains_floats arr =
+  try
+    for i = 0 to Array.length arr - 1 do
+      if arr.(i).typ = Float then raise Exit
+    done;
+    false
+  with Exit ->
+    true
+
 (* Output an addressing mode *)
 
 let emit_addressing addr r n =
@@ -280,14 +291,14 @@ let emit_instr i =
           `	jmp	{emit_symbol s}\n`
         end
     | Lop(Iextcall(s, alloc)) ->
+        if contains_floats i.arg or contains_floats i.res then
+          `	finit\n`;
         if alloc then begin
           `	movl	${emit_symbol s}, %eax\n`;
           `	call	{emit_symbol "caml_c_call"}\n`;
           record_frame i.live
-        end else begin
-          `	finit\n`;
-          `	call	{emit_symbol s}\n`
-        end;
+        end else
+          `	call	{emit_symbol s}\n`;
         if Array.length i.res > 0 & i.res.(0).typ = Float then
           `	fstpl	{emit_shift i.res.(0)}\n`
     | Lop(Istackoffset n) ->
@@ -398,21 +409,7 @@ let emit_instr i =
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	${emit_int n}, {emit_reg i.res.(0)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
-        let instr =
-          match floatop with
-              Iaddf -> "fadd"
-            | Isubf -> "fsub"
-            | Imulf -> "fmul"
-            | Idivf -> "fdiv"
-            | _ -> fatal_error "Emit_i386.emit_instr: floatop" in
-        `	fldl	{emit_reg i.arg.(0)}\n`;
-        begin match i.arg.(1).loc with
-          Stack s ->
-            `	{emit_string instr}l	{emit_shift i.arg.(1)}\n`
-        | _ ->
-            `	{emit_string instr}	{emit_shift i.arg.(1)}\n`
-        end;
-        `	fstpl	{emit_shift i.res.(0)}\n`
+        fatal_error "Emit_i386: floatop"
     | Lop(Ifloatofint) ->
         begin match i.arg.(0).loc with
           Stack s ->
@@ -453,6 +450,42 @@ let emit_instr i =
         `	movl	${emit_symbol s}, {emit_addressing addr i.arg 0}\n`
     | Lop(Ispecific(Ioffset_loc(n, addr))) ->
         `	addl	${emit_int n}, {emit_addressing addr i.arg 0}\n`
+    | Lop(Ispecific(Ifloatarith(op, addr_arg1, addr_arg2, addr_res))) ->
+        let pos_arg2 =
+          match addr_arg1 with
+            None -> 1 | Some addr -> num_args_addressing addr in
+        let pos_res =
+          pos_arg2 +
+          (match addr_arg2 with
+            None -> 1 | Some addr -> num_args_addressing addr) in
+        let instr =
+          match op with
+              Ifloatadd -> "fadd"
+            | Ifloatsub -> "fsub"
+            | Ifloatmul -> "fmul"
+            | Ifloatdiv -> "fdiv" in
+        begin match addr_arg1 with
+          Some addr ->
+            `	fldl	{emit_addressing addr i.arg 0}\n`
+        | None ->
+            `	fldl	{emit_reg i.arg.(0)}\n`
+        end;
+        begin match addr_arg2 with
+          Some addr ->
+            `	{emit_string instr}l	{emit_addressing addr i.arg pos_arg2}\n`
+        | None ->
+            match i.arg.(1).loc with
+              Stack s ->
+              `	{emit_string instr}l	{emit_shift i.arg.(pos_arg2)}\n`
+            | _ ->
+              `	{emit_string instr}	{emit_shift i.arg.(pos_arg2)}\n`
+        end;
+        begin match addr_res with
+          Some addr ->
+            `	fstpl	{emit_addressing addr i.arg pos_res}\n`
+        | None ->
+            `	fstpl	{emit_shift i.res.(0)}\n`
+        end
     | Lreloadretaddr ->
         ()
     | Lreturn ->
