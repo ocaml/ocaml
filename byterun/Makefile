@@ -1,8 +1,9 @@
 include ../config/Makefile.h
 include ../Makefile.config
 
-CFLAGS=-O $(CCCOMPOPTS)
-DFLAGS=-g -DDEBUG $(CCCOMPOPTS)
+CC=$(BYTECC)
+CFLAGS=-O $(BYTECCCOMPOPTS)
+DFLAGS=-g -DDEBUG $(BYTECCCOMPOPTS)
 
 OBJS=interp.o misc.o stacks.o fix_code.o main.o fail.o signals.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o \
@@ -18,10 +19,10 @@ PRIMS=array.c compare.c crc.c extern.c floats.c gc_ctrl.c hash.c \
 all: camlrun camlrund
 
 camlrun: $(OBJS) prims.o
-	$(CC) $(CCCOMPOPTS) $(CCLINKOPTS) $(LOWADDRESSES) -o camlrun prims.o $(OBJS) $(CCLIBS)
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CCLINKOPTS) $(LOWADDRESSES) -o camlrun prims.o $(OBJS) $(CCLIBS)
 
 camlrund: $(DOBJS) prims.o
-	$(CC) -g $(CCCOMPOPTS) $(CCLINKOPTS) $(LOWADDRESSES) -o camlrund prims.o $(DOBJS) $(CCLIBS)
+	$(BYTECC) -g $(BYTECCCOMPOPTS) $(CCLINKOPTS) $(LOWADDRESSES) -o camlrund prims.o $(DOBJS) $(CCLIBS)
 
 install:
 	cp camlrun $(BINDIR)/cslrun
@@ -70,8 +71,10 @@ jumptbl.h : instruct.h
 .SUFFIXES: .d.o
 
 .c.d.o:
-	cd .debugobj; $(CC) -c $(DFLAGS) -I.. ../$<
-	mv .debugobj/$*.o $*.d.o
+	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
+	$(CC) -c $(DFLAGS) $<
+	mv $*.o $*.d.o
+	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
 depend : prims.c opnames.h jumptbl.h
 	gcc -MM $(CFLAGS) *.c > .depend

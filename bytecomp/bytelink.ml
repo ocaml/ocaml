@@ -212,7 +212,7 @@ let link objfiles =
       if Sys.command
           (Printf.sprintf
            "%s -I%s -o %s %s %s -L%s %s -lcamlrun %s"
-           Config.c_compiler
+           Config.bytecomp_c_compiler
            Config.standard_library
            !Clflags.exec_name
            (String.concat " " (List.rev !Clflags.ccopts))
