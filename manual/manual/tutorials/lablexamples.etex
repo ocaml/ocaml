@@ -144,7 +144,7 @@ let bump ?step x =
 ;;
 \end{caml_example}
 
-It may also be useful to relay a functional argument from a function
+It may also be useful to relay an optional argument from a function
 call to another. This can be done by prefixing the applied argument
 with "?". This question mark disables the wrapping of optional
 argument in an option type.
