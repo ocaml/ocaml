@@ -24,6 +24,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #endif
+#if !macintosh && !_WIN32
+#include <sys/wait.h>
+#endif
 #include "config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -218,14 +221,25 @@ void sys_init(char **argv)
   main_argv = argv;
 }
 
+#if !(defined(WIFEXITED) && defined(WEXITSTATUS))
+/* Assume old-style V7 status word */
+#define WIFEXITED(status) (((status) & 0xFF) == 0)
+#define WEXITSTATUS(status) (((status) >> 8) & 0xFF)
+#endif
+
 value sys_system_command(value command)   /* ML */
 {
+  int status, retcode;
 #ifndef _WIN32
-  int retcode = system(String_val(command));
+  status = system(String_val(command));
+  if (WIFEXITED(status))
+    retcode = WEXITSTATUS(status);
+  else
+    retcode = 255;
 #else
-  int retcode = win32_system(String_val(command));
+  status = retcode = win32_system(String_val(command));
 #endif
-  if (retcode == -1) sys_error(command);
+  if (status == -1) sys_error(command);
   return Val_int(retcode);
 }
 
