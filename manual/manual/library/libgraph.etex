@@ -43,14 +43,12 @@ geometry.
 \end{unix}
 
 \begin{windows}
-This library is available only under the toplevel application
-"ocamlwin.exe". Before using it, the Caml part of this library must be
-loaded in-core, either by typing
+This library is available both for standalone compiled programs and
+under the toplevel application "ocamlwin.exe".  For the latter, this
+library must be loaded in-core by typing
 \begin{verbatim}
-        #load "graphics.cmo";;
+        #load "graphics.cma";;
 \end{verbatim}
-in the input windows or by using the ``Load'' entry of the ``File''
-menu.
 \end{windows}
 
 The screen coordinates are interpreted as shown in the figure below.
