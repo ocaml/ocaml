@@ -2178,13 +2178,9 @@ let rec build_subtype env visited loops posi onlyloop t =
       in
       if posi && fields = [] then (t, false) else
       let row =
-        if posi then
-          {row_fields = List.map fst fields; row_more = newvar();
-           row_bound = !bound; row_closed = true;
-           row_name = if List.exists snd fields then None else row.row_name }
-        else
-          {row_fields = List.map fst fields; row_more = newvar ();
-           row_bound = !bound; row_closed = false; row_name = None}
+        { row_fields = List.map fst fields; row_more = newvar();
+          row_bound = !bound; row_closed = posi;
+          row_name = if List.exists snd fields then None else row.row_name }
       in
       (newty (Tvariant row), true)
   | Tobject (t1, _) when opened_object t1 ->

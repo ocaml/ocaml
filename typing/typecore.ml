@@ -112,8 +112,11 @@ let rec extract_label_names env ty =
 let unify_pat env pat expected_ty =
   try
     unify env pat.pat_type expected_ty
-  with Unify trace ->
-    raise(Error(pat.pat_loc, Pattern_type_clash(trace)))
+  with
+    Unify trace ->
+      raise(Error(pat.pat_loc, Pattern_type_clash(trace)))
+  | Tags(l1,l2) ->
+      raise(Typetexp.Error(pat.pat_loc, Typetexp.Variant_tags (l1, l2)))
 
 let pattern_variables = ref ([]: (Ident.t * type_expr) list)
 
@@ -679,8 +682,11 @@ let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 let unify_exp env exp expected_ty =
   try
     unify env exp.exp_type expected_ty
-  with Unify trace ->
-    raise(Error(exp.exp_loc, Expr_type_clash(trace)))
+  with
+    Unify trace ->
+      raise(Error(exp.exp_loc, Expr_type_clash(trace)))
+  | Tags(l1,l2) ->
+      raise(Typetexp.Error(exp.exp_loc, Typetexp.Variant_tags (l1, l2)))
 
 let rec type_exp env sexp =
   match sexp.pexp_desc with

@@ -36,6 +36,7 @@ type error =
   | Present_has_no_type of string
   | Constructor_mismatch of type_expr * type_expr
   | Not_a_variant of type_expr
+  | Variant_tags of string * string
 
 exception Error of Location.t * error
 
@@ -311,7 +312,7 @@ let rec transl_type env policy styp =
             let h = Btype.hash_variant l in
             try
               let l' = List.assoc h hl in
-              if l <> l' then raise(Ctype.Tags(l, l'));
+              if l <> l' then raise(Error(styp.ptyp_loc, Variant_tags(l, l')));
               hl
             with Not_found -> (h,l) :: hl)
           []
@@ -419,3 +420,7 @@ let report_error ppf = function
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
         Printtyp.type_expr ty
+  | Variant_tags (lab1, lab2) ->
+      fprintf ppf
+        "Variant tags `%s@ and `%s have same hash value.@ Change one of them."
+        lab1 lab2

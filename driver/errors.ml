@@ -33,7 +33,7 @@ let report_error ppf exn =
       Env.report_error ppf err
   | Ctype.Tags(l, l') -> fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
-       have the same hash value." l l'
+       have the same hash value.@ Change one of them." l l'
   | Typecore.Error(loc, err) ->
       Location.print ppf loc; Typecore.report_error ppf err
   | Typetexp.Error(loc, err) ->
