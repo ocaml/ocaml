@@ -27,7 +27,7 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr
-  | Constraint_failed of Path.t * type_expr * type_expr
+  | Constraint_failed of type_expr * type_expr
   | Unconsistent_constraint
   | Type_clash of (type_expr * type_expr) list
   | Null_arity_external
@@ -67,8 +67,11 @@ module StringSet =
 let transl_declaration env (name, sdecl) id =
   (* Bind type parameters *)
   reset_type_variables();
-  let params = List.map (enter_type_variable true) sdecl.ptype_params in
-
+  let params =
+    try List.map (enter_type_variable true) sdecl.ptype_params
+    with Already_bound ->
+      raise(Error(sdecl.ptype_loc, Repeated_parameter))
+  in
   let decl =
     { type_params = params;
       type_arity = List.length params;
@@ -151,8 +154,17 @@ let generalize_decl decl =
 
 (* Check that all constraints are enforced *)
 
-let rec check_constraints_rec env loc ty =
+module TypeSet =
+  Set.Make
+    (struct
+      type t = type_expr
+      let compare t1 t2 = t1.id - t2.id
+    end)
+
+let rec check_constraints_rec env loc visited ty =
   let ty = Ctype.repr ty in
+  if TypeSet.mem ty !visited then () else begin
+  visited := TypeSet.add ty !visited;
   match ty.desc with
   | Tconstr (path, args, _) ->
       Ctype.begin_def ();
@@ -163,16 +175,17 @@ let rec check_constraints_rec env loc ty =
       end;
       Ctype.end_def ();
       Ctype.generalize ty';
-      List.iter2
-        (fun ty ty' ->
-          if not (Ctype.moregeneral env false ty' ty) then
-            raise (Error(loc, Constraint_failed (path, ty, ty'))))
-        args args';
-      List.iter (check_constraints_rec env loc) args
+      let targs = Btype.newgenty (Ttuple args)
+      and targs' = Btype.newgenty (Ttuple args') in
+      if not (Ctype.moregeneral env false targs' targs) then
+        raise (Error(loc, Constraint_failed (ty, ty')));
+      List.iter (check_constraints_rec env loc visited) args
   | _ ->
-      Btype.iter_type_expr (check_constraints_rec env loc) ty
+      Btype.iter_type_expr (check_constraints_rec env loc visited) ty
+  end
 
 let check_constraints env (_, sdecl) (_, decl) =
+  let visited = ref TypeSet.empty in
   begin match decl.type_kind with
   | Type_abstract -> ()
   | Type_variant l ->
@@ -183,7 +196,7 @@ let check_constraints env (_, sdecl) (_, decl) =
         (fun (name, tyl) ->
           let styl = try List.assoc name pl with Not_found -> assert false in
           List.iter2
-            (fun sty ty -> check_constraints_rec env sty.ptyp_loc ty)
+            (fun sty ty -> check_constraints_rec env sty.ptyp_loc visited ty)
             styl tyl)
         l
   | Type_record (l, _) ->
@@ -196,7 +209,8 @@ let check_constraints env (_, sdecl) (_, decl) =
             if name = name' then sty.ptyp_loc else get_loc name tl
       in
       List.iter
-        (fun (name, _, ty) -> check_constraints_rec env (get_loc name pl) ty)
+        (fun (name, _, ty) ->
+          check_constraints_rec env (get_loc name pl) visited ty)
         l
   end;
   begin match decl.type_manifest with
@@ -205,7 +219,7 @@ let check_constraints env (_, sdecl) (_, decl) =
       let sty =
         match sdecl.ptype_manifest with Some sty -> sty | _ -> assert false
       in
-      check_constraints_rec env sty.ptyp_loc ty
+      check_constraints_rec env sty.ptyp_loc visited ty
   end
 
 (*
@@ -379,13 +393,11 @@ let report_error ppf = function
       fprintf ppf
         "The variant or record definition does not match that of type@ %a"
         Printtyp.type_expr ty
-  | Constraint_failed (path, ty, ty') ->
-      fprintf ppf
-        "Constraints are not satisfied for type constructor %a.@."
-        Printtyp.path path;
+  | Constraint_failed (ty, ty') ->
+      fprintf ppf "Constraints are not satisfied in this type.@.";
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
-      fprintf ppf "@[<hv>Type@ %a should be an instance of@ %a.@]"
+      fprintf ppf "@[<hv>Type@ %a@ should be an instance of@ %a@]"
         Printtyp.type_expr ty Printtyp.type_expr ty'
   | Unconsistent_constraint ->
       fprintf ppf "The type constraints are not consistent"
