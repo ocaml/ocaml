@@ -126,22 +126,22 @@ void handle_signal(int sig)
        we are inside C code (i.e. caml_last_context != 0). */
 #ifdef TARGET_alpha
     /* Cached in register $14 */
-    if (caml_last_context == NULL)
+    if (caml_last_return_address == 0)
       context->sc_regs[14] = (long) young_limit;
 #endif
 #ifdef TARGET_mips
       /* Cached in register $23 */
-      if (caml_last_context == NULL)
+      if (caml_last_return_address == 0)
         context->sc_regs[23] = (int) young_limit;
 #endif
 #ifdef TARGET_power
       /* Cached in register 31 */
 #ifdef _AIX
-      if (caml_last_context == NULL)
+      if (caml_last_return_address == 0)
         context->sc_jmpbuf.jmp_context.gpr[31] = (ulong_t) young_limit;
 #endif
 #ifdef __linux
-      if (caml_last_context == NULL)
+      if (caml_last_return_address == 0)
         context->gpr[31] = (unsigned long) young_limit;
 #endif
 #endif
