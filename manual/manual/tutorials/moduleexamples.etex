@@ -94,12 +94,13 @@ module PrioQueue : PRIOQUEUE = struct ... end;;
 \subsection*{Functors}
 
 Functors are ``functions'' from structures to structures. They are used to
-express parameterized structures: a structure "A" parameterized by a
-structure "B" is simply a functor "F" with a formal parameter "B" (along
-with the expected signature for "B") which returns the actual
-structure "A" itself. The functor "F" can then be applied to one or
-several implementations $"B"_1, \ldots, "B"_n$ of "B", yielding the
-corresponding structures $"A"_1, \ldots, "A"_n$.
+express parameterized structures: a structure \var{A} parameterized by a
+structure \var{B} is simply a functor \var{F} with a formal parameter
+\var{B} (along with the expected signature for \var{B}) which returns
+the actual structure \var{A} itself. The functor \var{F} can then be
+applied to one or several implementations \nth{B}{1} \ldots \nth{B}{n}
+of \var{B}, yielding the corresponding structures
+\nth{A}{1} \ldots \nth{A}{n}.
 
 For instance, here is a structure implementing sets as sorted lists,
 parameterized by a structure providing the type of the set elements
@@ -289,10 +290,10 @@ $ ocamlc -o theprogram aux.cmo main.cmo
 The program behaves exactly as if the following phrases were entered
 at top-level:
 \begin{alltt}
-module Aux: sig (*{\rm contents of} aux.mli *) end
-          = struct (*{\rm contents of} aux.ml *) end;;
-module Main: sig (*{\rm contents of} main.mli *) end
-           = struct (*{\rm contents of} main.ml *) end;;
+module Aux: sig (* \rminalltt{contents of} aux.mli *) end
+          = struct (* \rminalltt{contents of} aux.ml *) end;;
+module Main: sig (* \rminalltt{contents of} main.mli *) end
+           = struct (* \rminalltt{contents of} main.ml *) end;;
 \end{alltt}
 In particular, "Main" can refer to "Aux": the definitions and
 declarations contained in "main.ml" and "main.mli" can refer to
