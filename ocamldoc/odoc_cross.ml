@@ -68,67 +68,104 @@ module P_alias =
 (** The module used to get the aliased elements. *)
 module Search_alias = Odoc_search.Search (P_alias)
 
-let rec build_alias_list (acc_m, acc_mt, acc_ex) = function
-    [] ->
-      (acc_m, acc_mt, acc_ex)
-  | (Odoc_search.Res_module m) :: q ->
-      let new_acc_m = 
-        match m.m_kind with
-          Module_alias ma -> (m.m_name, ma.ma_name) :: acc_m
-        | _ -> acc_m
-      in
-      build_alias_list (new_acc_m, acc_mt, acc_ex) q
-  | (Odoc_search.Res_module_type mt) :: q ->
-      let new_acc_mt = 
-        match mt.mt_kind with
-          Some (Module_type_alias mta) -> (mt.mt_name, mta.mta_name) :: acc_mt
-        | _ -> acc_mt
-      in
-      build_alias_list (acc_m, new_acc_mt, acc_ex) q
-  | (Odoc_search.Res_exception e) :: q ->
-      let new_acc_ex = 
-        match e.ex_alias with
-          None -> acc_ex
-        | Some ea -> (e.ex_name, ea.ea_name) :: acc_ex
-      in
-      build_alias_list (acc_m, acc_mt, new_acc_ex) q
-  | _ :: q ->
-      build_alias_list (acc_m, acc_mt, acc_ex) q
-
-
+type alias_state =
+    Alias_resolved
+  | Alias_to_resolve
 
 (** Couples of module name aliases. *)
-let module_aliases = ref [] ;;
+let (module_aliases : (Name.t, Name.t * alias_state) Hashtbl.t) = Hashtbl.create 13 ;;
 
-(** Couples of module type name aliases. *)
-let module_type_aliases = ref [] ;;
+(** Couples of module or module type name aliases. *)
+let module_and_modtype_aliases = Hashtbl.create 13;;
 
 (** Couples of exception name aliases. *)
-let exception_aliases = ref [] ;;
+let exception_aliases = Hashtbl.create 13;;
 
-(** Retrieve the aliases for modules, module types and exceptions and put them in global variables. *)
+let rec build_alias_list = function
+    [] -> ()
+  | (Odoc_search.Res_module m) :: q ->
+      (
+       match m.m_kind with
+         Module_alias ma -> 
+	   Hashtbl.add module_aliases m.m_name (ma.ma_name, Alias_to_resolve);
+	   Hashtbl.add module_and_modtype_aliases m.m_name (ma.ma_name, Alias_to_resolve)
+       | _ -> ()
+      );
+      build_alias_list q
+  | (Odoc_search.Res_module_type mt) :: q ->
+      (
+       match mt.mt_kind with
+         Some (Module_type_alias mta) -> 
+	   Hashtbl.add module_and_modtype_aliases 
+	     mt.mt_name (mta.mta_name, Alias_to_resolve)
+       | _ -> ()
+      );
+      build_alias_list q
+  | (Odoc_search.Res_exception e) :: q ->
+      (
+       match e.ex_alias with
+         None -> ()
+       | Some ea -> 
+	   Hashtbl.add exception_aliases 
+	     e.ex_name (ea.ea_name,Alias_to_resolve)
+      );
+      build_alias_list q
+  | _ :: q ->
+      build_alias_list q
+
+(** Retrieve the aliases for modules, module types and exceptions 
+   and put them in global hash tables. *)
 let get_alias_names module_list =
-  let (alias_m, alias_mt, alias_ex) = 
-    build_alias_list
-      ([], [], []) 
-      (Search_alias.search module_list 0)
-  in
-  module_aliases := alias_m ;
-  module_type_aliases := alias_mt ;
-  exception_aliases := alias_ex 
+  Hashtbl.clear module_aliases;
+  Hashtbl.clear module_and_modtype_aliases;
+  Hashtbl.clear exception_aliases;
+  build_alias_list (Search_alias.search module_list 0)
   
+exception Found of string
+let name_alias =
+  let rec f t name =
+    try
+      match Hashtbl.find t name with
+	(s, Alias_resolved) -> s
+      |	(s, Alias_to_resolve) -> f t s
+    with
+      Not_found ->
+	try
+	  Hashtbl.iter
+	    (fun n2 (n3, _) ->
+	      if Name.prefix n2 name then
+		let ln2 = String.length n2 in
+		let s = n3^(String.sub name ln2 ((String.length name) - ln2)) in
+		raise (Found s)
+	    )
+	    t ;
+	  Hashtbl.replace t name (name, Alias_resolved);
+	  name
+	with
+	  Found s ->
+	    let s2 = f t s in
+	    Hashtbl.replace t s2 (s2, Alias_resolved);
+	    s2
+  in
+  fun name alias_tbl ->
+    f alias_tbl name
+
 
 (** The module with lookup predicates. *)
 module P_lookup = 
   struct
     type t = Name.t
-    let p_module m name = (Name.prefix m.m_name name, m.m_name = (Name.name_alias name !module_aliases))
-    let p_module_type mt name = (Name.prefix mt.mt_name name, mt.mt_name = (Name.name_alias name (!module_aliases @ !module_type_aliases)))
-    let p_class c name = (false, c.cl_name = (Name.name_alias name (!module_aliases @ !module_type_aliases)))
-    let p_class_type ct name = (false, ct.clt_name = (Name.name_alias name (!module_aliases @ !module_type_aliases)))
+    let p_module m name = 
+      (Name.prefix m.m_name name, m.m_name = (name_alias name module_aliases))
+    let p_module_type mt name = 
+      (Name.prefix mt.mt_name name, 
+       mt.mt_name = (name_alias name module_and_modtype_aliases))
+    let p_class c name = (false, c.cl_name = (name_alias name module_and_modtype_aliases))
+    let p_class_type ct name = 
+      (false, ct.clt_name = (name_alias name module_and_modtype_aliases))
     let p_value v name = false
     let p_type t name = false
-    let p_exception e name = e.ex_name = (Name.name_alias name !exception_aliases)
+    let p_exception e name = e.ex_name = (name_alias name exception_aliases)
     let p_attribute a name = false
     let p_method m name = false
     let p_section s name = false

@@ -142,21 +142,3 @@ let to_path n =
 
 let from_longident longident = String.concat "." (Longident.flatten longident)
 
-let name_alias name cpl_aliases =
-  let rec f n1 = function
-      [] -> raise Not_found
-    | (n2, n3) :: q ->
-        if n2 = n1 then 
-          n3
-        else
-          if prefix n2 n1 then
-            let ln2 = String.length n2 in
-            n3^(String.sub n1 ln2 ((String.length n1) - ln2))
-          else
-            f n1 q
-  in
-  let rec iter n =
-    try iter (f n cpl_aliases)
-    with Not_found -> n
-  in
-  iter name

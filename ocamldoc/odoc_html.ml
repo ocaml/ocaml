@@ -169,6 +169,8 @@ module Naming =
       f
   end
 
+module StringSet = Set.Make (struct type t = string let compare = compare end)
+
 (** A class with a method to colorize a string which represents OCaml code. *)
 class ocaml_code =
   object(self)
@@ -577,6 +579,25 @@ let print_concat b sep f =
   in
   iter
 
+let newline_to_indented_br s =
+  let len = String.length s in
+  let b = Buffer.create len in
+  for i = 0 to len - 1 do
+    match s.[i] with
+      '\n' -> Buffer.add_string b "<br>     "
+    | c -> Buffer.add_char b c
+  done;
+  Buffer.contents b
+
+let remove_last_newline s =
+  let len = String.length s in
+  if len <= 0 then
+    s
+  else
+    match s.[len-1] with
+      '\n' -> String.sub s 0 (len-1)
+    | _ -> s
+
 (** This class is used to create objects which can generate a simple html documentation. *)
 class html =
   object (self)
@@ -660,17 +681,17 @@ class html =
     (** The known types names. 
        Used to know if we must create a link to a type
        when printing a type. *)
-    val mutable known_types_names = []
+    val mutable known_types_names = StringSet.empty
 
     (** The known class and class type names. 
        Used to know if we must create a link to a class 
        or class type or not when printing a type. *)
-    val mutable known_classes_names = []
+    val mutable known_classes_names = StringSet.empty
 
     (** The known modules and module types names. 
        Used to know if we must create a link to a type or not
        when printing a module type. *)
-    val mutable known_modules_names = []
+    val mutable known_modules_names = StringSet.empty
 
     (** The main file. *)
     val mutable index = "index.html"
@@ -854,6 +875,7 @@ class html =
       print_lines "Section" section_titles ;
       print_lines "Subsection" subsection_titles 
 
+
     (** Html code for navigation bar. 
        @param pre optional name for optional previous module/class 
        @param post optional name for optional next module/class
@@ -919,12 +941,12 @@ class html =
             match_s
             rel
         in
-        if List.mem match_s known_types_names then
+        if StringSet.mem match_s known_types_names then
            "<a href=\""^(Naming.complete_target Naming.mark_type match_s)^"\">"^
            s_final^
            "</a>"
         else
-          if List.mem match_s known_classes_names then
+          if StringSet.mem match_s known_classes_names then
             let (html_file, _) = Naming.html_files match_s in
             "<a href=\""^html_file^"\">"^s_final^"</a>"
           else
@@ -942,7 +964,7 @@ class html =
     method create_fully_qualified_module_idents_links m_name s =
       let f str_t = 
         let match_s = Str.matched_string str_t in
-        if List.mem match_s known_modules_names then
+        if StringSet.mem match_s known_modules_names then
           let (html_file, _) = Naming.html_files match_s in
           "<a href=\""^html_file^"\">"^(Name.get_relative m_name match_s)^"</a>"
         else
@@ -957,20 +979,16 @@ class html =
 
     (** Print html code to display a [Types.type_expr]. *)
     method html_of_type_expr b m_name t =
-      let s = String.concat "\n"
-          (Str.split (Str.regexp "\n") (Odoc_info.string_of_type_expr t))
-      in
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
+      let s = remove_last_newline (Odoc_info.string_of_type_expr t) in
+      let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
 
     (** Print html code to display a [Types.class_type].*)
     method html_of_class_type_expr b m_name t =
-      let s = String.concat "\n"
-          (Str.split (Str.regexp "\n") (Odoc_info.string_of_class_type t))
-      in
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
+      let s = remove_last_newline (Odoc_info.string_of_class_type t) in
+      let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
@@ -980,7 +998,7 @@ class html =
       print_DEBUG "html#html_of_type_expr_list";
       let s = Odoc_info.string_of_type_list sep l in
       print_DEBUG "html#html_of_type_expr_list: 1";
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
+      let s2 = newline_to_indented_br s in
       print_DEBUG "html#html_of_type_expr_list: 2";
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
@@ -990,7 +1008,7 @@ class html =
        of a class of class type. *)
     method html_of_class_type_param_expr_list b m_name l =
       let s = Odoc_info.string_of_class_type_param_list l in
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
+      let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
@@ -998,32 +1016,26 @@ class html =
     (** Print html code to display a list of type parameters for the given type.*)
     method html_of_type_expr_param_list b m_name t =
       let s = Odoc_info.string_of_type_param_list t in
-      let s2 = Str.global_replace (Str.regexp "\n") "<br>     " s in
+      let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
 
     (** Print html code to display a [Types.module_type]. *)
     method html_of_module_type b m_name t =
-      let s = String.concat "\n"
-          (Str.split (Str.regexp "\n") (Odoc_info.string_of_module_type t))
-      in
+      let s = remove_last_newline (Odoc_info.string_of_module_type t) in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_module_idents_links m_name s);
       bs b "</code>"
         
     (** Generate a file containing the module type in the given file name. *)
     method output_module_type in_title file mtyp =
-      let s = String.concat "\n"
-          (Str.split (Str.regexp "\n") (Odoc_info.string_of_module_type ~complete: true mtyp))
-      in
+      let s = remove_last_newline (Odoc_info.string_of_module_type ~complete: true mtyp) in
       self#output_code in_title file s
 
     (** Generate a file containing the class type in the given file name. *)
     method output_class_type in_title file ctyp =
-      let s = String.concat "\n"
-          (Str.split (Str.regexp "\n") (Odoc_info.string_of_class_type ~complete: true ctyp))
-      in
+      let s = remove_last_newline(Odoc_info.string_of_class_type ~complete: true ctyp) in
       self#output_code in_title file s
 
 
@@ -2158,20 +2170,33 @@ class html =
       self#prepare_header module_list ;
       (* Get the names of all known types. *)
       let types = Odoc_info.Search.types module_list in
-      let type_names = List.map (fun t -> t.ty_name) types in
-      known_types_names <- type_names ;
+      known_types_names <- 
+	List.fold_left 
+	  (fun acc t -> StringSet.add t.ty_name acc) 
+	  known_types_names
+	  types ;
       (* Get the names of all class and class types. *)
       let classes = Odoc_info.Search.classes module_list in
       let class_types = Odoc_info.Search.class_types module_list in
-      let class_names = List.map (fun c -> c.cl_name) classes in
-      let class_type_names = List.map (fun ct -> ct.clt_name) class_types in
-      known_classes_names <- class_names @ class_type_names ;
+      known_classes_names <- 
+	List.fold_left
+	  (fun acc c -> StringSet.add c.cl_name acc) 
+	  known_classes_names 
+	  classes ;
+      known_classes_names <-  
+	List.fold_left
+	  (fun acc ct -> StringSet.add ct.clt_name acc) 
+	  known_classes_names
+	  class_types ;
       (* Get the names of all known modules and module types. *)
       let module_types = Odoc_info.Search.module_types module_list in
       let modules = Odoc_info.Search.modules module_list in
       let module_type_names = List.map (fun mt -> mt.mt_name) module_types in
-      let module_names = List.map (fun m -> m.m_name) modules in
-      known_modules_names <- module_type_names @ module_names ;
+      known_modules_names <-
+	List.fold_left 
+	  (fun acc m -> StringSet.add m.m_name acc) 
+	  known_modules_names 
+	  modules ;
       (* generate html for each module *)
       if not !Args.index_only then 
         self#generate_elements self#generate_for_module module_list ;

@@ -29,8 +29,9 @@ OK - new module odoc_print, will work when Format.pp_print_flush is fixed
   - odoc_html: use buffers instead of string concatenation
 OK - odoc_man: use buffers instead of string concatenation
   - odoc_latex: use buffers instead of string concatenation
-
-
+OK - odoc_cross.ml: use hash tables modified on the fly to resolve 
+    (module | module type | exception) name aliases
+OK - odoc_html: replace some calls to Str. by specific functions on strings
 ======
 
 Release 3.05 :

@@ -61,6 +61,3 @@ val to_path : t -> Path.t
 (** Get a name from a [Longident.t].*)
 val from_longident : Longident.t -> t
 
-(** This function takes a name and a list of name aliases and returns the name
-   after substitution using the aliases. *)
-val name_alias : t -> (t * t) list -> t
