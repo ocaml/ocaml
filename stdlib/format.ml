@@ -1005,13 +1005,13 @@ let rec fprintf_out str out ppf fmt =
     pp_print_as_string s; doprn i
   and cont_a printer arg i =
     if str then
-      pp_print_as_string ((Obj.magic printer) () arg)
+      pp_print_as_string ((Obj.magic printer : unit -> 'a -> string) () arg)
     else
       printer ppf arg;
     doprn i
   and cont_t printer i =
     if str then
-      pp_print_as_string ((Obj.magic printer) ())
+      pp_print_as_string ((Obj.magic printer : unit -> string) ())
     else
       printer ppf;
     doprn i
@@ -1081,11 +1081,12 @@ let rec fprintf_out str out ppf fmt =
        let cont_s s i = get (s :: s0 :: accu) i i
        and cont_a printer arg i =
          let s =
-           if str then (Obj.magic printer) () arg else exstring printer arg in
+           if str then (Obj.magic printer : unit -> 'b -> string) () arg
+                  else exstring printer arg in
          get (s :: s0 :: accu) i i
        and cont_t printer i =
          let s =
-           if str then (Obj.magic printer) ()
+           if str then (Obj.magic printer : unit -> string) ()
            else exstring (fun ppf () -> printer ppf) () in
          get (s :: s0 :: accu) i i
        and cont_f i =
