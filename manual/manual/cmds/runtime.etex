@@ -18,7 +18,7 @@ The usage for "ocamlrun" is:
 The first non-option argument is taken to be the name of the file
 containing the executable bytecode. (That file is searched in the
 executable path as well as in the current directory.) The remaining
-arguments are passed to the Caml Light program, in the string array
+arguments are passed to the Caml program, in the string array
 "Sys.argv". Element 0 of this array is the name of the
 bytecode executable file; elements 1 to \var{n} are the remaining
 arguments \nth{arg}{1} to \nth{arg}{n}.

@@ -53,7 +53,7 @@ The implementation is checked against the interface file \var{x}".mli"
 \item
 Arguments ending in ".cmx" are taken to be compiled object code.  These
 files are linked together, along with the object files obtained
-by compiling ".ml" arguments (if any), and the Caml Light standard
+by compiling ".ml" arguments (if any), and the Caml standard
 library, to produce a native-code executable program. The order in
 which ".cmx" and ".ml" arguments are presented on the command line is
 relevant: compilation units are initialized in that order at
