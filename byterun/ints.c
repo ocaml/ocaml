@@ -58,12 +58,13 @@ static int parse_digit(char c)
     return -1;
 }
 
-static long parse_long(char * p)
+static long parse_long(value s)
 {
+  char * p;
   unsigned long res;
   int sign, base, d;
 
-  p = parse_sign_and_base(p, &base, &sign);
+  p = parse_sign_and_base(String_val(s), &base, &sign);
   d = parse_digit(*p);
   if (d < 0 || d >= base) failwith("int_of_string");
   for (p++, res = d; /*nothing*/; p++) {
@@ -73,7 +74,7 @@ static long parse_long(char * p)
     if (d < 0 || d >= base) break;
     res = base * res + d;
   }
-  if (*p != 0) failwith("int_of_string");
+  if (p != String_val(s) + string_length(s)) failwith("int_of_string");
   return sign < 0 ? -((long) res) : (long) res;
 }
 
@@ -105,7 +106,7 @@ CAMLprim value int_compare(value v1, value v2)
 
 CAMLprim value int_of_string(value s)
 {
-  return Val_long(parse_long(String_val(s)));
+  return Val_long(parse_long(s));
 }
 
 #define FORMAT_BUFFER_SIZE 32
@@ -304,7 +305,7 @@ CAMLprim value int32_format(value fmt, value arg)
 
 CAMLprim value int32_of_string(value s)
 {
-  return copy_int32(parse_long(String_val(s)));
+  return copy_int32(parse_long(s));
 }
 
 /* 64-bit integers */
@@ -500,7 +501,7 @@ CAMLprim value int64_of_string(value s)
     if (d < 0 || d >= base) break;
     res = I64_add(I64_mul(I64_of_int32(base), res), I64_of_int32(d));
   }
-  if (*p != 0) failwith("int_of_string");
+  if (p != String_val(s) + string_length(s)) failwith("int_of_string");
   if (sign < 0) res = I64_neg(res);
   return copy_int64(res);
 }
@@ -683,7 +684,7 @@ CAMLprim value nativeint_format(value fmt, value arg)
 
 CAMLprim value nativeint_of_string(value s)
 {
-  return copy_nativeint(parse_long(String_val(s)));
+  return copy_nativeint(parse_long(s));
 }
 
 
