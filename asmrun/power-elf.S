@@ -236,7 +236,7 @@ caml_start_program:
         stwu    1, -256(1)
     /* Save return address */
         mflr    0
-        stw 0,  256+4(1)
+        stw     0, 256+4(1)
     /* Save all callee-save registers */
     /* GPR 14 at sp+16 ... GPR 31 at sp+84
        FPR 14 at sp+92 ... FPR 31 at sp+228 */
