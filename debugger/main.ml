@@ -89,20 +89,25 @@ let set_checkpoints n =
   checkpoint_max_count := n
 let set_directory dir =
   Sys.chdir dir
-let set_emacs () =
-  emacs := true
+let print_version () =
+  printf "The Objective Caml debugger, version %s@." Sys.ocaml_version;
+  exit 0;
+;;
 
-let speclist =
-  ["-I", Arg.String add_include,
-      "<dir>  Add <dir> to the list of include directories";
-   "-s", Arg.String set_socket,
-      "<filename>  Set the name of the communication socket";
+let speclist = [
    "-c", Arg.Int set_checkpoints,
       "<count>  Set max number of checkpoints kept";
    "-cd", Arg.String set_directory,
       "<dir>  Change working directory";
-   "-emacs", Arg.Unit set_emacs,
-      "For running the debugger under emacs"]
+   "-emacs", Arg.Set emacs,
+      "For running the debugger under emacs";
+   "-I", Arg.String add_include,
+      "<dir>  Add <dir> to the list of include directories";
+   "-s", Arg.String set_socket,
+      "<filename>  Set the name of the communication socket";
+   "-version", Arg.Unit print_version,
+      " Print version and exit";
+   ]
 
 let main () =
   try

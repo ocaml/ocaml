@@ -52,6 +52,7 @@
 #include "stacks.h"
 #include "sys.h"
 #include "startup.h"
+#include "version.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -240,7 +241,12 @@ static int parse_command_line(char **argv)
       break;
 #endif
     case 'v':
-      caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
+      if (!strcmp (argv[i], "-version")){
+        printf ("The Objective Caml runtime, version " OCAML_VERSION "\n");
+        exit (0);
+      }else{
+        caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
+      }
       break;
     case 'p':
       for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)

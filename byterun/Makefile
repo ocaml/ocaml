@@ -101,6 +101,11 @@ jumptbl.h : instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
 	       -e '/^}/q' instruct.h > jumptbl.h
 
+version.h : ../stdlib/sys.ml
+	sed -n -e 's/;;//' \
+            -e '/let *ocaml_version *= */s//#define OCAML_VERSION /p' \
+            <../stdlib/sys.ml >version.h
+
 .SUFFIXES: .d.o
 
 .c.d.o:
@@ -109,7 +114,7 @@ jumptbl.h : instruct.h
 	mv $*.o $*.d.o
 	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
-depend : prims.c opnames.h jumptbl.h
+depend : prims.c opnames.h jumptbl.h version.h
 	gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
 	gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 

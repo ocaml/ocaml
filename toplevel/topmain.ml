@@ -45,6 +45,11 @@ let file_argument name =
       else exit 2
     end
 
+let print_version () =
+  Printf.printf "The Objective Caml toplevel, version %s\n" Sys.ocaml_version;
+  exit 0;
+;;
+
 let main () =
   Arg.parse [
      "-I", Arg.String(fun dir ->
@@ -60,6 +65,7 @@ let main () =
      "-principal", Arg.Set principal, " Check principality of type inference";
      "-rectypes", Arg.Set recursive_types, " Allow arbitrary recursive types";
      "-unsafe", Arg.Set fast, " No bound checking on array and string access";
+     "-version", Arg.Unit print_version, " Print version and exit";
      "-w", Arg.String (Warnings.parse_options false),
            "<flags>  Enable or disable warnings according to <flags>:\n\
        \032    A/a enable/disable all warnings\n\

@@ -113,7 +113,8 @@ startup.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
   alloc.h misc.h mlvalues.h backtrace.h callback.h custom.h debugger.h \
   dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
   intext.h io.h memory.h gc.h major_gc.h freelist.h minor_gc.h osdeps.h \
-  prims.h printexc.h reverse.h signals.h stacks.h sys.h startup.h
+  prims.h printexc.h reverse.h signals.h stacks.h sys.h startup.h \
+  version.h
 str.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h fail.h
 sys.o: sys.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
@@ -247,7 +248,8 @@ startup.d.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
   alloc.h misc.h mlvalues.h backtrace.h callback.h custom.h debugger.h \
   dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
   intext.h io.h memory.h gc.h major_gc.h freelist.h minor_gc.h osdeps.h \
-  prims.h printexc.h reverse.h signals.h stacks.h sys.h startup.h
+  prims.h printexc.h reverse.h signals.h stacks.h sys.h startup.h \
+  version.h
 str.d.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h fail.h
 sys.d.o: sys.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
