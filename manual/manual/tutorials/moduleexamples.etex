@@ -41,7 +41,7 @@ module PrioQueue =
       | Node(prio, elt, _, _) as queue -> (prio, elt, remove_top queue)
   end;;
 \end{caml_example}
-Outside of the structure, its components can be referred to using the
+Outside the structure, its components can be referred to using the
 ``dot notation'', that is, identifiers qualified by a structure name.
 For instance, "PrioQueue.insert" in a value context is
 the function "insert" defined inside the structure
@@ -93,7 +93,7 @@ module PrioQueue : PRIOQUEUE = struct ... end;;
 
 \subsection*{Functors}
 
-Functors are functions from structures to structures. They are used to
+Functors are ``functions'' from structures to structures. They are used to
 express parameterized structures: a structure "A" parameterized by a
 structure "B" is simply a functor "F" with a formal parameter "B" (along
 with the expected signature for "B") which returns the actual
@@ -154,7 +154,7 @@ As in the "PrioQueue" example, it would be good style to hide the
 actual implementation of the type "set", so that users of the
 structure will not rely on sets being lists, and we can switch later
 to another, more efficient representation of sets without breaking
-any code. This can be achieved by restricting "Set" by a suitable
+their code. This can be achieved by restricting "Set" by a suitable
 functor signature:
 \begin{caml_example}
 module type SETFUNCTOR =
@@ -195,9 +195,9 @@ operations of "WrongStringSet" cannot be applied to strings.
 As demonstrated above, it is important that the type "element" in the
 signature "SET" be declared equal to "Elt.t"; unfortunately, this is
 impossible above since "SET" is defined in a context where "Elt" does
-not exist. To overcome this difficulty, Caml provides a "with type"
-construct over signatures that allow to enrich a signature with extra
-type equalities:
+not exist. To overcome this difficulty, Objective Caml provides a
+"with type" construct over signatures that allow to enrich a signature
+with extra type equalities:
 \begin{caml_example}
 module AbstractSet = 
   (Set : functor(Elt: ORDERED_TYPE) -> (SET with type element = Elt.t));;
@@ -304,8 +304,8 @@ linking phase determines the order in which the module definitions
 occur. Hence, in the example above, "Aux" appears first and "Main" can
 refer to it, but "Aux" cannot refer to "Main".
 
-Notice that only top-level structures and signatures can be mapped to
-separately-compiled files, but not functors nor functor types.
+Notice that only top-level structures can be mapped to
+separately-compiled files, but not functors nor module types.
 However, all module-class objects can appear as components of a
-structure, so the solution is to put the functor or functor type
+structure, so the solution is to put the functor or module type
 inside a structure, which can then be mapped to a file.
