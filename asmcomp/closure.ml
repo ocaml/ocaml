@@ -461,34 +461,6 @@ let rec close fenv cenv = function
       let (umet, _) = close fenv cenv met in
       let (uobj, _) = close fenv cenv obj in
       (Usend(kind, umet, uobj, close_list fenv cenv args), Value_unknown)
-  (*
-  | Lsend(Public, met, obj, args) ->
-      let self = Ident.create "obj" in
-      let prim kind arity =
-        {prim_name = "oo_"^kind^"_public_method"; prim_arity = arity;
-         prim_alloc = false; prim_native_name = ""; prim_native_float = false}
-      in
-      let met, args =
-        match args with
-          Lprim(Pfield n, [Lvar cache]) :: args
-          when Ident.name cache = "*cache*" ->
-            let imeths = Ident.create "meths"
-            and icache = Ident.create "cache" in
-            (Llet(Alias, imeths, Lprim(Pfield 0, [Lvar self]),
-             Llet(Alias, icache, Lvar cache,
-                  let cache = Lvar icache and meths = Lvar imeths in
-                  Lifthenelse(
-                  Lprim(Pintcomp Cneq, [Lprim(Pfield n, [cache]); meths]),
-                  Lprim(Pccall (prim "cache" 4),
-                        [meths; met; cache; Lconst(Const_pointer n)]),
-                  Lprim(Parrayrefu Paddrarray,
-                        [meths; Lprim(Pfield (n+1), [cache])])))),
-             args)
-        | _ ->
-            (Lprim (Pccall (prim "get" 2), [Lvar self; met]), args)
-      in
-      close fenv cenv (Llet(Alias, self, obj, Lapply(met, Lvar self :: args)))
-  *)
   | Llet(str, id, lam, body) ->
       let (ulam, alam) = close_named fenv cenv id lam in
       begin match (str, alam) with

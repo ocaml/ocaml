@@ -182,33 +182,11 @@ CAMLprim value lazy_make_forward (value v)
    See also GETPUBMET in interp.c
  */
 
-CAMLprim value oo_get_public_method (value obj, value tag)
+CAMLprim value oo_get_public_method (value obj, unsigned long tag)
 {
   value meths = Field (obj, 0);
-  value tags = Field (meths, 0);
-  int li = 0, hi = Wosize_val(tags)-1, mi;
-  while (li < hi) {
-    mi = (li+hi+1) >> 1;
-    if (tag < Field(tags,mi)) hi = mi-1;
-    else li = mi;
-  }
-  return Field (meths, li+1);
-}
-
-CAMLprim value oo_cache_public_method (value meths, value tag,
-                                       value cache, value index)
-{
-  value n = Int_val(index);
-  value tags = Field (meths, 0);
-  value met;
-  int li = 0, hi = Wosize_val(tags)-1, mi;
-  while (li < hi) {
-    mi = (li+hi+1) >> 1;
-    if (tag < Field(tags,mi)) hi = mi-1;
-    else li = mi;
-  }
-  modify (&Field(cache, n), meths);
-  li++;
-  Field(cache, n+1) = Val_int(li);
-  return Field(meths, li);
+  int m = Int_val(Field (meths, 0));
+  unsigned long c = Field (meths, 1);
+  c = c >> 1;
+  return (Field (meths, ((c*tag << (sizeof(value)*8-31)) >> m) + 2));
 }
