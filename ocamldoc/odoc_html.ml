@@ -125,7 +125,6 @@ class ocaml_code =
       html_code
   end
 
-
 (** Generation of html code from text structures. *)
 class text =
   object (self)
@@ -135,6 +134,29 @@ class text =
     (** Escape the strings which would clash with html syntax, and
        make some replacements (double newlines replaced by <br>). *)
     method escape s = Odoc_ocamlhtml.escape_base s
+
+
+    method keep_alpha_num s =
+      let len = String.length s in
+      let buf = Buffer.create len in
+      for i = 0 to len - 1 do
+	match s.[i] with
+	  'a'..'z' | 'A'..'Z' | '0'..'9' -> Buffer.add_char buf s.[i]
+	| _ -> ()
+      done;
+      Buffer.contents buf
+
+    (** Create a label for the associated title. 
+       If a label is given, use the label, or else create a mark
+       from the title level and the first sentence of the title.*)
+    method create_title_label (n,label_opt,t) =
+      match label_opt with
+	Some s -> s
+      |	None ->
+	  let t2 = Odoc_info.first_sentence_of_text t in
+	  let s = Odoc_info.string_of_text t2 in
+	  let s2 = self#keep_alpha_num s in
+	  Printf.sprintf "%d%s" n s2
 
     (** Return the html code corresponding to the [text] parameter. *)
     method html_of_text t = String.concat "" (List.map self#html_of_text_element t)
@@ -206,11 +228,7 @@ class text =
     method html_of_Title n label_opt t =
       let css_class = "title"^(string_of_int n) in
       "<br>\n"^
-      (
-       match label_opt with
-	 None -> ""
-       | Some l -> "<a name=\""^(Naming.label_target l)^"\"></a>"
-      )^
+      "<a name=\""^(Naming.label_target (self#create_title_label (n, label_opt, t)))^"\"></a>"^
       "<table cellpadding=5 cellspacing=5 width=\"100%\">\n"^
       "<tr class=\""^css_class^"\"><td><div align=center>\n"^
       "<span class=\""^css_class^"\">"^(self#html_of_text t)^"</span>\n"^
@@ -496,7 +514,7 @@ class html =
     val mutable list_class_types = []
 
     (** The header of pages. Must be prepared by the [prepare_header] method.*)
-    val mutable header = fun ?(nav=None) -> fun _ -> ""
+    val mutable header = fun ?(nav=None) -> fun ?(comments=[]) -> fun _ -> ""
 
     (** Init the style. *)
     method init_style =
@@ -528,11 +546,11 @@ class html =
       (self#escape s)
 
     (** Get the page header. *)
-    method header ?nav title = header ?nav title
+    method header ?nav ?comments title = header ?nav ?comments title
 
     (** A function to build the header of pages. *)
     method prepare_header module_list =
-      let f ?(nav=None) t = 
+      let f ?(nav=None) ?(comments=[]) t  = 
 	let link_if_not_empty l m url =
 	  match l with
 	    [] -> ""
@@ -579,11 +597,53 @@ class html =
 	      module_list
 	   )
 	)^
+	(self#html_sections_links comments)^
 	"<title>"^
 	t^
 	"</title>\n</head>\n"
       in
       header <- f
+
+    (** Build the html code for the link tags in the header, defining section and
+       subsections for the titles found in the given comments.*)
+    method html_sections_links comments =
+      let titles = List.flatten (List.map Odoc_info.get_titles_in_text comments) in
+      let levels = 
+	let rec iter acc l =
+	  match l with
+	    [] -> acc
+	  | (n,_,_) :: q ->
+	      if List.mem n acc 
+	      then iter acc q
+	      else iter (n::acc) q
+	in
+	iter [] titles
+      in
+      let sorted_levels = List.sort compare levels in
+      let (section_level, subsection_level) =
+	match sorted_levels with
+	  [] -> (None, None)
+	| [n] -> (Some n, None)
+	| n :: m :: _ -> (Some n, Some m)
+      in
+      let titles_per_level level_opt =
+	match level_opt with
+	  None -> []
+	| Some n -> List.filter (fun (m,_,_) -> m = n) titles
+      in
+      let section_titles = titles_per_level section_level in
+      let subsection_titles = titles_per_level subsection_level in
+      let create_lines s_rel titles =
+	List.map
+	  (fun (n,lopt,t) -> 
+	    let s = Odoc_info.string_of_text t in
+	    let label = self#create_title_label (n,lopt,t) in
+	    Printf.sprintf "<link title=\"%s\" rel=\"%s\" href=\"#%s\">\n" s s_rel label)
+	  titles
+      in
+      let section_lines = create_lines "Section" section_titles in
+      let subsection_lines = create_lines "Subsection" subsection_titles in
+      String.concat "" (section_lines @ subsection_lines)
 
     (** Html code for navigation bar. 
        @param pre optional name for optional previous module/class 
@@ -1340,6 +1400,7 @@ class html =
 	  ("<html>\n"^
 	   (self#header 
 	      ~nav: (Some (pre_name, post_name, cl.cl_name))
+	      ~comments: (Class.class_comments cl)
 	      (self#inner_title cl.cl_name)
 	   )^
 	   "<body>\n"^
@@ -1395,6 +1456,7 @@ class html =
 	  ("<html>\n"^
 	   (self#header 
 	      ~nav: (Some (pre_name, post_name, clt.clt_name))
+	      ~comments: (Class.class_type_comments clt)
 	      (self#inner_title clt.clt_name)
 	   )^
 	   "<body>\n"^
@@ -1447,6 +1509,7 @@ class html =
 	  ("<html>\n"^
 	   (self#header
 	      ~nav: (Some (pre_name, post_name, mt.mt_name))
+	      ~comments: (Module.module_type_comments mt)
 	      (self#inner_title mt.mt_name)
 	   )^
 	   "<body>\n"^
@@ -1529,6 +1592,7 @@ class html =
 	  ("<html>\n"^
 	   (self#header 
 	      ~nav: (Some (pre_name, post_name, modu.m_name))
+	      ~comments: (Module.module_comments modu)
 	      (self#inner_title modu.m_name)
 	   ) ^
 	   "<body>\n"^
