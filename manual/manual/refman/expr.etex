@@ -172,36 +172,33 @@ to @argument_n@. The expression @expr@ must evaluate to a
 functional value @f@, which is then applied to the values of 
 @argument_1, \ldots, argument_n@.
 
-If a parameter is specified as optional (label prefixed by "?") in
-@expr@'s type, the corresponding argument will be automatically
-wrapped with the constructor "Some", except if the argument itself is
-also prefixed by "?", in which case it is passed as is.
-
 The order in which the expressions @expr, argument_1, \ldots,
 argument_n@ are evaluated is not specified.
 
-The way in which arguments and parameters are matched depends on the
-compilation mode.
-In the default, or classic mode, non optional arguments need not be
-explicitly labeled. They will match the parameters in the order of
-definition. In case arguments are labeled, the label is checked
-against the parameter at compile time.
-Optional arguments must be labeled. They will be reordered according
-to their labels, but a group of contiguous optional parameters in
-$expr$'s type must be matched by a group of contiguous labeled
-arguments. If there is one or more non-labeled arguments after the
-optional ones, optional parameters with no matching argument will be
-defaulted, that is the value "None" will be passed for them. Otherwise
-they will be kept, and the result of the function will still be a
-function of the missing optional parameters.
+Arguments and parameters are matched according to their respective
+labels. Argument order is irrelevent, except among arguments with the
+same label, or no label.
 
-In the strict, or commuting label mode, parameters and arguments are
-matched according to their labels. The order is irrelevent, except if
-several arguments have the same label, or no label. The criterion for
-defaulting missing optional arguments is whether a non-labeled
-parameter following them in @f@ was matched by an argument or not.  If
-some parameters were not matched in the process, the result will be a
-new function from these parameters to the body of @f@.
+If a parameter is specified as optional (label prefixed by "?") in the
+type of @expr@, the corresponding argument will be automatically
+wrapped with the constructor "Some", except if the argument itself is
+also prefixed by "?", in which case it is passed as is.
+%
+If a non-labeled argument is passed, and its corresponding parameter
+is preceded by one or several optional parameters, then these
+parameters are {\em defaulted}, {\em i.e.} the value "None" will be
+passed for them.
+%
+All other missing parameters (without corresponding argument), both
+optional and non-optional, will be kept, and the result of the
+function will still be a function of these missing parameters to the
+body of @f@.
+
+As a special case, if the function has a known arity, all the
+arguments are unlabeled, and their number matches the number of
+non-optional parameters, then labels are ignored and non-optional
+parameters are matched in their definition order. Optional arguments
+are defaulted.
 
 \subsubsection*{Function definition}
 
