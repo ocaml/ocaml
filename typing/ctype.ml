@@ -354,7 +354,7 @@ let rec closed_schema_rec ty =
           closed_schema_rec t1;
         closed_schema_rec t2
     | Tvariant row when static_row row ->
-        iter_row closed_schema_rec row
+        iter_row closed_schema_rec {row with row_bound = []}
     | _ ->
         iter_type_expr closed_schema_rec ty
   end
