@@ -162,6 +162,8 @@ See `caml-types-location-re' for annotation file format.
          (target-file (file-name-nondirectory (buffer-file-name)))
          (target-date (nth 5 (file-attributes target-file))))
     (unless (and caml-types-annotation-tree
+                 type-date
+                 caml-types-annotation-date
                  (not (caml-types-date< caml-types-annotation-date type-date)))
       (if (and type-date target-date (caml-types-date< type-date target-date))
           (error (format "%s is more recent than %s" target-file type-file)))
@@ -378,7 +380,7 @@ See `caml-types-location-re' for annotation file format.
      (with-current-buffer buf (toggle-read-only 1))
      )
    (t
-    (error "No annotation file. You may compile with \"-dtypes\" option"))
+    (error "No annotation file. You should compile with option \"-dtypes\"."))
     )
   buf))
 
@@ -401,12 +403,12 @@ and its type is displayed in the minibuffer, until the move is released."
          target-pos
          Left Right limits cnum node mes type
          region
+         target-tree
          )
     (unwind-protect
         (progn
-          (if type-file (caml-types-preprocess type-file)
-            (error
-             "No annotation file. You may compile with \"-dtypes\" option"))
+          (caml-types-preprocess type-file)
+          (setq target-tree caml-types-annotation-tree)
           (unless caml-types-buffer 
             (setq caml-types-buffer
                   (get-buffer-create caml-types-buffer-name)))
@@ -419,7 +421,7 @@ and its type is displayed in the minibuffer, until the move is released."
                (while (and event
                            (integer-or-marker-p
                             (setq cnum (caml-event-point-end event))))
-                 (if (and region (<= (car region) cnum) (<= cnum (cdr region)))
+                 (if (and region (<= (car region) cnum) (< cnum (cdr region)))
                      (if (and limits
                               (>= cnum (car limits)) (< cnum (cdr limits)))
                          (message mes)
@@ -432,7 +434,7 @@ and its type is displayed in the minibuffer, until the move is released."
                              (vector target-file target-line target-bol cnum))
                        (save-excursion
                          (setq node (caml-types-find-location
-                                     target-pos () caml-types-annotation-tree))
+                                     target-pos () target-tree))
                          (set-buffer caml-types-buffer)
                          (erase-buffer)
                          (cond
@@ -453,8 +455,7 @@ and its type is displayed in the minibuffer, until the move is released."
                            (setq type "*no type information*")
                            (setq limits
                                  (caml-types-find-interval
-                                  target-buf target-pos
-                                  caml-types-annotation-tree))
+                                  target-buf target-pos target-tree))
                            ))
                          (message (setq mes (format "type: %s" type)))
                          (insert type)
@@ -469,12 +470,12 @@ and its type is displayed in the minibuffer, until the move is released."
       ;; the mouse is down. One should prevent against mouse release,
       ;; which could do something undesirable.
       ;; In most common cases, next event will be mouse release.
-      ;; However, it could also be a character stroke before mourse release.
+      ;; However, it could also be a key stroke before mouse release.
       ;; Will then execute the action for mouse release (if bound).
       ;; Emacs does not allow to test whether mouse is up or down.
-      ;; Same problem may happen abouve while exploring
+      ;; Same problem may happen above while exploring
       (if (and event (caml-read-event)))
-      ))
+      )))
 
 (defun caml-types-typed-make-overlay (target-buf pos)
   (interactive "p")
@@ -486,7 +487,7 @@ and its type is displayed in the minibuffer, until the move is released."
         (if (and (equal target-buf (current-buffer))
                  (setq left (caml-types-get-pos target-buf (elt node 0))
                        right (caml-types-get-pos target-buf (elt node 1)))
-                 (<= left pos) (>= right pos)
+                 (<= left pos) (> right pos)
                  )
             (setq start (min start left)
                   end (max end right))
