@@ -14,6 +14,7 @@ Language:
   and UnixLabels. "open StdLabels" gives access to the first three.
 - Extended polymorphic variant type syntax, allowing union types and
   row abbreviations for both sub- and super-types. #t deprecated in types.
+- See the Upgrading file for how to adapt to all the above changes.
 
 Type-checker:
 - Fixed obscure bug in module typing causing the type-checker to loop
