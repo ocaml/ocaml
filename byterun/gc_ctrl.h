@@ -29,7 +29,7 @@ extern long
      stat_compactions;
 
 void init_gc (unsigned long, unsigned long, unsigned long,
-              unsigned long, unsigned long, unsigned long);
+              unsigned long, unsigned long);
 
 
 #ifdef DEBUG

@@ -67,8 +67,7 @@ static void init_atoms(void)
 /* Read the trailer of a bytecode file */
 
 #define FILE_NOT_FOUND (-1)
-#define TRUNCATED_FILE (-2)
-#define BAD_MAGIC_NUM (-3)
+#define BAD_BYTECODE (-2)
 
 static void fixup_endianness_trailer(uint32 * p)
 {
@@ -81,12 +80,12 @@ static int read_trailer(int fd, struct exec_trailer *trail)
 {
   lseek(fd, (long) -TRAILER_SIZE, SEEK_END);
   if (read(fd, (char *) trail, TRAILER_SIZE) < TRAILER_SIZE)
-    return TRUNCATED_FILE;
+    return BAD_BYTECODE;
   fixup_endianness_trailer(&trail->num_sections);
   if (strncmp(trail->magic, EXEC_MAGIC, 12) == 0)
     return 0;
   else
-    return BAD_MAGIC_NUM;
+    return BAD_BYTECODE;
 }
 
 static int attempt_open(char **name, struct exec_trailer *trail,
@@ -99,15 +98,27 @@ static int attempt_open(char **name, struct exec_trailer *trail,
 
   truename = searchpath(*name);
   if (truename == 0) truename = *name; else *name = truename;
+  gc_message(0x100, "Opening bytecode executable %s\n",
+             (unsigned long) truename);
   fd = open(truename, O_RDONLY | O_BINARY);
-  if (fd == -1) return FILE_NOT_FOUND;
-  if (!do_open_script){
+  if (fd == -1) {
+    gc_message(0x100, "Cannot open file\n", 0);
+    return FILE_NOT_FOUND;
+  }
+  if (!do_open_script) {
     err = read (fd, buf, 2);
-    if (err < 2) { close(fd); return TRUNCATED_FILE; }
-    if (buf [0] == '#' && buf [1] == '!') { close(fd); return BAD_MAGIC_NUM; }
+    if (err < 2 || (buf [0] == '#' && buf [1] == '!')) {
+      close(fd);
+      gc_message(0x100, "Rejected #! script\n", 0);
+      return BAD_BYTECODE;
+    }
   }
   err = read_trailer(fd, trail);
-  if (err != 0) { close(fd); return err; }
+  if (err != 0) {
+    close(fd);
+    gc_message(0x100, "Not a bytecode executable\n", 0);
+    return err;
+  }
   return fd;
 }
 
@@ -198,7 +209,6 @@ Algorithm:
 
 /* Configuration parameters and flags */
 
-static unsigned long verbose_init = 0;
 static unsigned long percent_free_init = Percent_free_def;
 static unsigned long max_percent_free_init = Max_percent_free_def;
 static unsigned long minor_heap_init = Minor_heap_def;
@@ -225,7 +235,7 @@ static int parse_command_line(char **argv)
         break; }
 #endif
     case 'v':
-      verbose_init = 1+4+8+16+32;
+      verb_gc = 1+4+8+16+32;
       break;
     case 'p':
       for (j = 0; names_of_cprim[j] != NULL; j++)
@@ -269,7 +279,7 @@ static void parse_camlrunparam(void)
       case 'l': scanmult (opt, &max_stack_init); break;
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
-      case 'v': scanmult (opt, &verbose_init); break;
+      case 'v': scanmult (opt, &verb_gc); break;
       }
     }
   }
@@ -298,7 +308,7 @@ void caml_main(char **argv)
   external_raise = NULL;
   /* Determine options and position of bytecode file */
 #ifdef DEBUG
-  verbose_init = 63;
+  verb_gc = 63;
 #endif
   parse_camlrunparam();
   pos = 0;
@@ -312,8 +322,7 @@ void caml_main(char **argv)
     case FILE_NOT_FOUND:
       fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
       break;
-    case TRUNCATED_FILE:
-    case BAD_MAGIC_NUM:
+    case BAD_BYTECODE:
       fatal_error_arg(
         "Fatal error: the file %s is not a bytecode executable file\n",
         argv[pos]);
@@ -324,7 +333,7 @@ void caml_main(char **argv)
   read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-           percent_free_init, max_percent_free_init, verbose_init);
+           percent_free_init, max_percent_free_init);
   init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */
@@ -373,13 +382,13 @@ void caml_startup_code(code_t code, asize_t code_size, char *data, char **argv)
 
   init_ieee_floats();
 #ifdef DEBUG
-  verbose_init = 63;
+  verb_gc = 63;
 #endif
   parse_camlrunparam();
   external_raise = NULL;
   /* Initialize the abstract machine */
   init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-           percent_free_init, max_percent_free_init, verbose_init);
+           percent_free_init, max_percent_free_init);
   init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */

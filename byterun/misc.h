@@ -56,7 +56,7 @@ void fatal_error_arg (char *, char *) Noreturn;
 
 /* GC flags and messages */
 
-extern int verb_gc;
+extern unsigned long verb_gc;
 void gc_message (int, char *, unsigned long);
 
 /* Memory routines */

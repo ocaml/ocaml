@@ -380,7 +380,7 @@ value gc_compaction(value v) /* ML */
 
 void init_gc (unsigned long minor_size, unsigned long major_size,
               unsigned long major_incr, unsigned long percent_fr,
-              unsigned long percent_m,  unsigned long verb)
+              unsigned long percent_m)
 {
   unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 
@@ -392,7 +392,6 @@ void init_gc (unsigned long minor_size, unsigned long major_size,
                                                        "###\n", 0);
 #endif
 
-  verb_gc = verb;
   set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
   major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
   percent_free = norm_pfree (percent_fr);

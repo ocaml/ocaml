@@ -31,7 +31,7 @@ void caml_failed_assert (char * expr, char * file, int line)
 
 #endif
 
-int verb_gc;
+unsigned long verb_gc = 0;
 
 void gc_message (int level, char *msg, unsigned long arg)
 {
