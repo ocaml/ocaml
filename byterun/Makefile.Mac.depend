@@ -45,15 +45,16 @@
 "compact.c.x" Ä  compact.c ¶
                             config.h ¶
                             ::config:sm-Mac.h ¶
-                            freelist.h ¶
-                            misc.h ¶
-                            mlvalues.h ¶
-                            gc.h ¶
-                            gc_ctrl.h ¶
-                            major_gc.h ¶
-                            memory.h ¶
-                            minor_gc.h ¶
+                            finalise.h ¶
                             roots.h ¶
+                            misc.h ¶
+                            memory.h ¶
+                            gc.h ¶
+                            mlvalues.h ¶
+                            major_gc.h ¶
+                            freelist.h ¶
+                            minor_gc.h ¶
+                            gc_ctrl.h ¶
                             weak.h
 
 "compare.c.x" Ä  compare.c ¶
@@ -119,6 +120,21 @@
                          minor_gc.h ¶
                          signals.h ¶
                          stacks.h
+
+"finalise.c.x" Ä  finalise.c ¶
+                             callback.h ¶
+                             mlvalues.h ¶
+                             config.h ¶
+                             ::config:sm-Mac.h ¶
+                             misc.h ¶
+                             fail.h ¶
+                             roots.h ¶
+                             memory.h ¶
+                             gc.h ¶
+                             major_gc.h ¶
+                             freelist.h ¶
+                             minor_gc.h ¶
+                             signals.h
 
 "fix_code.c.x" Ä  fix_code.c ¶
                              config.h ¶
@@ -300,13 +316,14 @@
                              misc.h ¶
                              fail.h ¶
                              mlvalues.h ¶
-                             freelist.h ¶
-                             gc.h ¶
-                             gc_ctrl.h ¶
-                             major_gc.h ¶
+                             finalise.h ¶
                              roots.h ¶
                              memory.h ¶
+                             gc.h ¶
+                             major_gc.h ¶
+                             freelist.h ¶
                              minor_gc.h ¶
+                             gc_ctrl.h ¶
                              weak.h
 
 "md5.c.x" Ä  md5.c ¶
@@ -357,13 +374,14 @@
                              fail.h ¶
                              misc.h ¶
                              mlvalues.h ¶
+                             finalise.h ¶
+                             roots.h ¶
+                             memory.h ¶
                              gc.h ¶
-                             gc_ctrl.h ¶
                              major_gc.h ¶
                              freelist.h ¶
-                             memory.h ¶
                              minor_gc.h ¶
-                             roots.h ¶
+                             gc_ctrl.h ¶
                              signals.h
 
 "misc.c.x" Ä  misc.c ¶
@@ -583,15 +601,16 @@
 "compact.c.o" Ä  compact.c ¶
                             config.h ¶
                             ::config:sm-Mac.h ¶
-                            freelist.h ¶
-                            misc.h ¶
-                            mlvalues.h ¶
-                            gc.h ¶
-                            gc_ctrl.h ¶
-                            major_gc.h ¶
-                            memory.h ¶
-                            minor_gc.h ¶
+                            finalise.h ¶
                             roots.h ¶
+                            misc.h ¶
+                            memory.h ¶
+                            gc.h ¶
+                            mlvalues.h ¶
+                            major_gc.h ¶
+                            freelist.h ¶
+                            minor_gc.h ¶
+                            gc_ctrl.h ¶
                             weak.h
 
 "compare.c.o" Ä  compare.c ¶
@@ -657,6 +676,21 @@
                          minor_gc.h ¶
                          signals.h ¶
                          stacks.h
+
+"finalise.c.o" Ä  finalise.c ¶
+                             callback.h ¶
+                             mlvalues.h ¶
+                             config.h ¶
+                             ::config:sm-Mac.h ¶
+                             misc.h ¶
+                             fail.h ¶
+                             roots.h ¶
+                             memory.h ¶
+                             gc.h ¶
+                             major_gc.h ¶
+                             freelist.h ¶
+                             minor_gc.h ¶
+                             signals.h
 
 "fix_code.c.o" Ä  fix_code.c ¶
                              config.h ¶
@@ -838,13 +872,14 @@
                              misc.h ¶
                              fail.h ¶
                              mlvalues.h ¶
-                             freelist.h ¶
-                             gc.h ¶
-                             gc_ctrl.h ¶
-                             major_gc.h ¶
+                             finalise.h ¶
                              roots.h ¶
                              memory.h ¶
+                             gc.h ¶
+                             major_gc.h ¶
+                             freelist.h ¶
                              minor_gc.h ¶
+                             gc_ctrl.h ¶
                              weak.h
 
 "md5.c.o" Ä  md5.c ¶
@@ -895,13 +930,14 @@
                              fail.h ¶
                              misc.h ¶
                              mlvalues.h ¶
+                             finalise.h ¶
+                             roots.h ¶
+                             memory.h ¶
                              gc.h ¶
-                             gc_ctrl.h ¶
                              major_gc.h ¶
                              freelist.h ¶
-                             memory.h ¶
                              minor_gc.h ¶
-                             roots.h ¶
+                             gc_ctrl.h ¶
                              signals.h
 
 "misc.c.o" Ä  misc.c ¶

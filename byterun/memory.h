@@ -336,35 +336,6 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 #define End_roots() local_roots = caml__roots_block.next; }
 
 
-/*
-   [Push_roots] and [Pop_roots] are obsolete.
-   Use [CAMLparam], [CAMLxparam], [CAMLlocal], [CAMLreturn] instead.
-*/
-
-/* [Push_roots] and [Pop_roots] are used for C variables that are GC roots.
- * It must contain all values in C local variables at the time the minor GC is
- * called.
- * Usage:
- * At the end of the declarations of your C local variables, add
- * [ Push_roots (variable_name, size); ]
- * The size is the number of declared roots.  They are accessed as
- * [ variable_name [0] ... variable_name [size - 1] ].
- * The [variable_name] and the [size] must not be [ _ ].
- * Just before the function return, add a call to [Pop_roots].
- */
-
-#define Push_roots(name, size) \
-  value name [(size)]; \
-  struct caml__roots_block caml__roots_block; \
-  { long _; for (_ = 0; _ < (size); name [_++] = Val_unit); } \
-  caml__roots_block.next = local_roots; \
-  local_roots = &caml__roots_block; \
-  caml__roots_block.nitems = (size); \
-  caml__roots_block.ntables = 1; \
-  caml__roots_block.tables[0] = name;
-  
-#define Pop_roots() local_roots = caml__roots_block.next;
-
 /* [register_global_root] registers a global C variable as a memory root
    for the duration of the program, or until [remove_global_root] is
    called. */
