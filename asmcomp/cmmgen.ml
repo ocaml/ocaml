@@ -346,6 +346,16 @@ let lookup_tag_cache obj tag cache n =
 	[Cop(Cload Word, [obj]); tag; cache n]))
 *)
 
+(*
+let lookup_tag_cache obj tag cache n =
+  Compilenv.need_apply_fun 1;
+  let cargs =
+    [ Cconst_symbol "caml_get_cached_method"; obj; tag;
+      Cop(Cadda, [cache; Cconst_int (n * size_addr)]) ]
+  in
+  Cop(Capply typ_addr, cargs)
+*)
+
 let lookup_tag obj tag =
   bind "tag" tag (fun tag ->
     Cop(Cextcall("oo_get_public_method", typ_addr, false), [obj; tag]))
@@ -1710,6 +1720,35 @@ let compunit size ulam =
          Cdefine_symbol glob;
          Cskip(size * size_addr)] :: c3
 
+let get_cached_method () =
+  let cache = Ident.create "cache"
+  and obj = Ident.create "obj"
+  and tag = Ident.create "tag" in
+  let body =
+    let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
+    let meths = Ident.create "meths" and cached = Ident.create "cached" in
+    let mask = get_field (Cvar meths) 1 in
+    let cached_pos = Cvar cached in
+    let tag_pos = Cop(Cadda, [cached_pos; Cconst_int(2*size_addr-1)]) in
+    let tag' = Cop(Cload Word, [tag_pos]) in
+    let meth_pos = Cop(Cadda, [cached_pos; Cconst_int(size_addr-1)]) in
+    Clet(meths, Cop(Cload Word, [obj]),
+    Clet(cached,
+	 Cop(Cadda,
+	     [Cop(Cand, [Cop(Cload Word, [cache]); mask]); Cvar meths]),
+    Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
+		Cop(Cextcall("oo_cache_public_method", typ_addr, false),
+		    [Cvar meths; tag; cache]),
+                Cop(Cload Word, [meth_pos]))
+        ))
+  in
+  Cfunction
+   {fun_name = "caml_get_cached_method";
+    fun_args = [obj, typ_addr; tag, typ_int; cache, typ_addr];
+    fun_body = body;
+    fun_fast = true}
+  
+
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
        (if (= clos.arity N)
@@ -1722,6 +1761,7 @@ let compunit size ulam =
 *)
 
 let apply_function arity =
+  if arity = 1 then get_cached_method () else
   let arg = Array.create arity (Ident.create "arg") in
   for i = 1 to arity - 1 do arg.(i) <- Ident.create "arg" done;
   let clos = Ident.create "clos" in
