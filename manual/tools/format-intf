@@ -9,6 +9,7 @@ if ($ARGV[0] eq "-html") {
 # Skip initial junk
 
 while(($_ = <>) && ! m/^\(\* Module \[(.*)\]:/) { }
+m/^\(\* Module \[(.*)\]:/;
 $modname = $1;
 chop;
 s/^\(\* *//;
