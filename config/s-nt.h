@@ -13,6 +13,8 @@
 
 /* Operating system dependencies, Intel x86 processors, Windows NT */
 
+#define OCAML_OS_TYPE "Windows NT"
+
 #define HAS_MEMMOVE
 #define BSD_SIGNALS
 #define HAS_STRERROR

@@ -200,6 +200,12 @@ value sys_system_command(command)   /* ML */
   return Val_int(retcode);
 }
 
+value sys_get_os_type(unit)  /* ML */
+     value unit;
+{
+  return copy_string (OCAML_OS_TYPE);
+}
+
 /* Search path function */
 
 #ifndef _WIN32

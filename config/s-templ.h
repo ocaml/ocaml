@@ -13,6 +13,12 @@
 
 /* Operating system and standard library dependencies. */
 
+/* 0. Operating system type string. */
+
+#define OCAML_OS_TYPE "Unix"
+/* #define OCAML_OS_TYPE "Windows NT" */
+/* #define OCAML_OS_TYPE "Macintosh" */
+
 /* 1. For the runtime system. */
 
 #define HAS_MEMMOVE

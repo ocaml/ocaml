@@ -286,6 +286,10 @@ else
   echo "SHARPBANGSCRIPTS=false" >> Makefile
 fi
 
+# This is obviously a Unix system
+
+echo '#define OCAML_OS_TYPE "Unix"' >> s.h
+
 # Find a good byte move function
 
 if sh runtest -Dcopy=memmove -Dreverse bytecopy.c; then
