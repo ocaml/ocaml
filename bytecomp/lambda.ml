@@ -162,6 +162,64 @@ let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
 
+let rec same l1 l2 =
+  match (l1, l2) with
+  | Lvar v1, Lvar v2 ->
+      Ident.same v1 v2
+  | Lconst c1, Lconst c2 ->
+      c1 = c2
+  | Lapply(a1, bl1), Lapply(a2, bl2) ->
+      same a1 a2 && samelist same bl1 bl2
+  | Lfunction(k1, idl1, a1), Lfunction(k2, idl2, a2) ->
+      k1 = k2 && samelist Ident.same idl1 idl2 && same a1 a2
+  | Llet(k1, id1, a1, b1), Llet(k2, id2, a2, b2) ->
+      k1 = k2 && Ident.same id1 id2 && same a1 a2 && same b1 b2
+  | Lletrec (bl1, a1), Lletrec (bl2, a2) ->
+      samelist samebinding bl1 bl2 && same a1 a2
+  | Lprim(p1, al1), Lprim(p2, al2) ->
+      p1 = p2 && samelist same al1 al2
+  | Lswitch(a1, s1), Lswitch(a2, s2) ->
+      same a1 a2 && sameswitch s1 s2
+  | Lstaticraise(n1, al1), Lstaticraise(n2, al2) ->
+      n1 = n2 && samelist same al1 al2
+  | Lstaticcatch(a1, (n1, idl1), b1), Lstaticcatch(a2, (n2, idl2), b2) ->
+      same a1 a2 && n1 = n2 && samelist Ident.same idl1 idl2 && same b1 b2
+  | Ltrywith(a1, id1, b1), Ltrywith(a2, id2, b2) ->
+      same a1 a2 && Ident.same id1 id2 && same b1 b2
+  | Lifthenelse(a1, b1, c1), Lifthenelse(a2, b2, c2) ->
+      same a1 a2 && same b1 b2 && same c1 c2
+  | Lsequence(a1, b1), Lsequence(a2, b2) ->
+      same a1 a2 && same b1 b2
+  | Lwhile(a1, b1), Lwhile(a2, b2) ->
+      same a1 a2 && same b1 b2
+  | Lfor(id1, a1, b1, df1, c1), Lfor(id2, a2, b2, df2, c2) ->
+      Ident.same id1 id2 &&  same a1 a2 &&
+      same b1 b2 && df1 = df2 && same c1 c2
+  | Lassign(id1, a1), Lassign(id2, a2) ->
+      Ident.same id1 id2 && same a1 a2
+  | Lsend(k1, a1, b1, cl1), Lsend(k2, a2, b2, cl2) ->
+      k1 = k2 && same a1 a2 && same b1 b2 && samelist same cl1 cl2
+  | Levent(a1, ev1), Levent(a2, ev2) ->
+      same a1 a2 && ev1.lev_pos = ev2.lev_pos
+  | Lifused(id1, a1), Lifused(id2, a2) ->
+      Ident.same id1 id2 && same a1 a2
+  | _, _ ->
+      false
+
+and samebinding (id1, c1) (id2, c2) =
+  Ident.same id1 id2 && same c1 c2
+
+and sameswitch sw1 sw2 =
+  let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
+  sw1.sw_numconsts = sw2.sw_numconsts &&
+  sw1.sw_numblocks = sw2.sw_numblocks &&
+  samelist samecase sw1.sw_consts sw2.sw_consts &&
+  samelist samecase sw1.sw_blocks sw2.sw_blocks &&
+  (match (sw1.sw_failaction, sw2.sw_failaction) with
+    | (None, None) -> true
+    | (Some a1, Some a2) -> same a1 a2
+    | _ -> false)
+
 let name_lambda arg fn =
   match arg with
     Lvar id -> fn id
