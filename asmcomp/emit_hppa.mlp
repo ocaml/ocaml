@@ -296,10 +296,14 @@ let name_for_int_comparison = function
   | Iunsigned Cle -> "<<="  | Iunsigned Cgt -> ">>"
   | Iunsigned Clt -> "<<"   | Iunsigned Cge -> ">>="
 
-let name_for_float_comparison = function
-    Ceq -> "="   | Cne -> "<>"
-  | Cle -> "<="  | Cgt -> ">"
-  | Clt -> "<"   | Cge -> ">="
+let name_for_float_comparison cmp neg =
+  match cmp with
+    Ceq -> if neg then "=" else "!="
+  | Cne -> if neg then "!=" else "="
+  | Cle -> if neg then "<=" else "!<="
+  | Cgt -> if neg then ">" else "!>"
+  | Clt -> if neg then "<" else "!<"
+  | Cge -> if neg then ">=" else "!>="
 
 let negate_int_comparison = function
     Isigned cmp -> Isigned(Cmm.negate_comparison cmp)
@@ -584,10 +588,7 @@ let rec emit_instr i dslot =
             let comp = name_for_int_comparison(swap_int_comparison cmp) in
             `	comib,{emit_string comp} {emit_int n}, {emit_reg i.arg.(0)}, {emit_label lbl}\n`
         | Ifloattest(cmp, neg) ->
-            let comp =
-              if neg
-              then name_for_float_comparison cmp
-              else "!" ^ name_for_float_comparison cmp in
+            let comp = name_for_float_comparison cmp neg in
             `	fcmp,dbl,{emit_string comp}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	ftest\n`;
             `	b	{emit_label lbl}\n`
