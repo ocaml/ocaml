@@ -22,16 +22,25 @@ Pcaml.add_option "-split_ext" (Arg.Set split_ext)
 Pcaml.add_option "-split_gext" (Arg.Set split_ext)
   "  Old name for the option -split_ext.";
 
-type name = { expr : MLast.expr; tvar : string; loc : (int * int) };
+type loc = (int * int);
 
-type entry 'e 'p 't =
-  { name : name; pos : option 'e; levels : list (level 'e 'p 't) }
-and level 'e 'p 't =
-  { label : option string; assoc : option 'e; rules : list (rule 'e 'p 't) }
-and rule 'e 'p 't = { prod : list (psymbol 'e 'p 't); action : option 'e }
-and psymbol 'e 'p 't = { pattern : option 'p; symbol : symbol 'e 'p 't }
-and symbol 'e 'p 't =
-  { used : list name; text : string -> string -> 'e; styp : string -> 't }
+type styp =
+  [ STlid of loc and string
+  | STapp of loc and string and styp
+  | STquo of loc and string
+  | STprm of loc and string ]
+;
+
+type name 'e = { expr : 'e; tvar : string; loc : (int * int) };
+
+type entry 'e 'p =
+  { name : name 'e; pos : option 'e; levels : list (level 'e 'p) }
+and level 'e 'p =
+  { label : option string; assoc : option 'e; rules : list (rule 'e 'p) }
+and rule 'e 'p = { prod : list (psymbol 'e 'p); action : option 'e }
+and psymbol 'e 'p = { pattern : option 'p; symbol : symbol 'e 'p }
+and symbol 'e 'p =
+  { used : list (name 'e); text : string -> string -> 'e; styp : styp }
 ;
 
 type used = [ Unused | UsedScanned | UsedNotScanned ];
@@ -346,6 +355,18 @@ value quotify_action psl act =
     e psl
 ;
 
+value rec make_ctyp styp tvar =
+  match styp with
+  [ STlid loc s -> <:ctyp< $lid:s$ >>
+  | STapp loc s t -> <:ctyp< $lid:s$ $make_ctyp t tvar$ >>
+  | STquo loc s -> <:ctyp< '$s$ >>
+  | STprm loc x ->
+      if tvar = "" then
+        Stdpp.raise_with_loc loc
+          (Stream.Error ("'" ^ x ^  "' illegal in anonymous entry level"))
+      else <:ctyp< '$tvar$ >> ]
+;
+
 value text_of_action loc psl rtvar act tvar =
   let locid = <:patt< $lid:Stdpp.loc_name.val$ >> in
   let act =
@@ -360,7 +381,7 @@ value text_of_action loc psl rtvar act tvar =
          match ps.pattern with
          [ None -> <:expr< fun _ -> $txt$ >>
          | Some p ->
-             let t = ps.symbol.styp tvar in
+             let t = make_ctyp ps.symbol.styp tvar in
              let p =
                match p with
                [ <:patt< ($list:pl$) >> when quotify.val ->
@@ -448,7 +469,7 @@ value sstoken loc s =
 
 value ssopt loc symb =
   let psymbol p s t =
-    let symb = {used = []; text = s; styp = fun _ -> t} in
+    let symb = {used = []; text = s; styp = t} in
     {pattern = Some p; symbol = symb}
   in
   let rl =
@@ -471,7 +492,7 @@ value ssopt loc symb =
     let r1 =
       let prod =
         let text = stoken loc "ANTIQUOT" <:expr< $str:anti_n$ >> in
-        [psymbol <:patt< a >> text <:ctyp< string >>]
+        [psymbol <:patt< a >> text (STlid loc "string")]
       in
       let act = <:expr< antiquot $str:anti_n$ loc a >> in
       {prod = prod; action = Some act}
@@ -486,14 +507,14 @@ value ssopt loc symb =
               {prod = [psymbol]; action = action}
             in
             let text = srules loc "ast" [rule] in
-            let styp _ = <:ctyp< ast >> in
+            let styp = STlid loc "ast" in
             {used = []; text = text; styp = styp}
         | _ -> symb ]
       in
       let psymb =
         let symb =
           {used = []; text = sopt loc symb;
-           styp = fun n -> <:ctyp< option $symb.styp n$ >>}
+           styp = STapp loc "option" symb.styp}
         in
         let patt = <:patt< o >> in
         {pattern = Some patt; symbol = symb}
@@ -508,14 +529,14 @@ value ssopt loc symb =
 
 value sslist_aux loc min sep s =
   let psymbol p s t =
-    let symb = {used = []; text = s; styp = fun _ -> t} in
+    let symb = {used = []; text = s; styp = t} in
     {pattern = Some p; symbol = symb}
   in
   let rl =
     let r1 =
       let prod =
         let n = mk_name loc <:expr< anti_list >> in
-        [psymbol <:patt< a >> (snterm loc n None) <:ctyp< 'anti_list >>]
+        [psymbol <:patt< a >> (snterm loc n None) (STquo loc "anti_list")]
       in
       let act = <:expr< a >> in
       {prod = prod; action = Some act}
@@ -524,7 +545,7 @@ value sslist_aux loc min sep s =
       let psymb =
         let symb =
           {used = []; text = slist loc min sep s;
-           styp = fun n -> <:ctyp< list $s.styp n$ >>}
+           styp = STapp loc "list" s.styp}
         in
         let patt = <:patt< l >> in
         {pattern = Some patt; symbol = symb}
@@ -573,7 +594,7 @@ value text_of_entry loc gmod gl e =
                     let n = "a_" ^ e.name.tvar in
                     let e = mk_name loc <:expr< $lid:n$ >> in
                     {used = []; text = snterm loc e None;
-                     styp _ = <:ctyp< ast >>}
+                     styp = STlid loc "ast"}
                   in
                   {pattern = Some <:patt< a >>; symbol = s}
                 in
@@ -779,7 +800,7 @@ EXTEND
       | i = LIDENT; lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
           let name = mk_name loc <:expr< $lid:i$ >> in
           let text = snterm loc name lev in
-          let styp _ = <:ctyp< '$i$ >> in
+          let styp = STquo loc i in
           let symb = {used = [name]; text = text; styp = styp} in
           {pattern = None; symbol = symb}
       | p = pattern; "="; s = symbol -> {pattern = Some p; symbol = s}
@@ -794,7 +815,7 @@ EXTEND
             [ Some symb -> symb.used @ s.used
             | None -> s.used ]
           in
-          let styp n = let t = s.styp n in <:ctyp< list $t$ >> in
+          let styp = STapp loc "list" s.styp in
           let text =
             if quotify.val then sslist loc False sep s
             else slist loc False sep s
@@ -807,60 +828,46 @@ EXTEND
             [ Some symb -> symb.used @ s.used
             | None -> s.used ]
           in
-          let styp n = let t = s.styp n in <:ctyp< list $t$ >> in
+          let styp = STapp loc "list" s.styp in
           let text =
             if quotify.val then sslist loc True sep s
             else slist loc True sep s
           in
           {used = used; text = text; styp = styp}
       | UIDENT "OPT"; s = SELF ->
-          let styp n = let t = s.styp n in <:ctyp< option $t$ >> in
+          let styp = STapp loc "option" s.styp in
           let text =
             if quotify.val then ssopt loc s
             else sopt loc s
           in
           {used = s.used; text = text; styp = styp} ]
     | [ UIDENT "SELF" ->
-          let styp n =
-            if n = "" then
-              Stdpp.raise_with_loc loc
-                (Stream.Error "'SELF' illegal in anonymous entry level")
-            else <:ctyp< '$n$ >>
-          in
-          {used = []; text = sself loc; styp = styp}
+          {used = []; text = sself loc; styp = STprm loc "SELF"}
       | UIDENT "NEXT" ->
-          let styp n =
-            if n = "" then
-              Stdpp.raise_with_loc loc
-                (Stream.Error "'NEXT' illegal in anonymous entry level")
-            else <:ctyp< '$n$ >>
-          in
-          {used = []; text = snext loc; styp = styp}
+          {used = []; text = snext loc; styp = STprm loc "NEXT"}
       | "["; rl = LIST0 rule SEP "|"; "]" ->
           let rl = retype_rule_list_without_patterns loc rl in
           let t = new_type_var () in
           {used = used_of_rule_list rl; text = srules loc t rl;
-           styp = fun _ -> <:ctyp< '$t$ >>}
+           styp = STquo loc t}
       | x = UIDENT ->
           let text =
             if quotify.val then sstoken loc x
             else stoken loc x <:expr< "" >>
           in
-          {used = []; text = text; styp = fun _ -> <:ctyp< string >>}
+          {used = []; text = text; styp = STlid loc "string"}
       | x = UIDENT; e = string ->
           let text = stoken loc x e in
-          {used = []; text = text; styp = fun _ -> <:ctyp< string >>}
+          {used = []; text = text; styp = STlid loc "string"}
       | e = string ->
           let text = stoken loc "" e in
-          {used = []; text = text; styp = fun _ -> <:ctyp< string >>}
+          {used = []; text = text; styp = STlid loc "string"}
       | i = UIDENT; "."; e = qualid;
         lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
           let n = mk_name loc <:expr< $uid:i$ . $e$ >> in
-          {used = [n]; text = snterm loc n lev;
-           styp = fun _ -> <:ctyp< '$n.tvar$ >>}
+          {used = [n]; text = snterm loc n lev; styp = STquo loc n.tvar}
       | n = name; lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
-          {used = [n]; text = snterm loc n lev;
-           styp = fun _ -> <:ctyp< '$n.tvar$ >>}
+          {used = [n]; text = snterm loc n lev; styp = STquo loc n.tvar}
       | "("; s_t = SELF; ")" -> s_t ] ]
   ;
   pattern:

@@ -483,7 +483,7 @@ Grammar.extend
                 Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 5896, 5912))
+                  _ -> raise (Match_failure ("q_MLast.ml", 5892, 5908))
             in
             Node ("StExc", [Loc; c; tl; b]) :
             'str_item));
@@ -718,7 +718,7 @@ Grammar.extend
                 Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 7959, 7975))
+                  _ -> raise (Match_failure ("q_MLast.ml", 7955, 7971))
             in
             Node ("SgExc", [Loc; c; tl]) :
             'sig_item));

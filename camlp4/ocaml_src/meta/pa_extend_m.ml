@@ -21,8 +21,7 @@ Grammar.extend
     [[Gramext.Stoken ("", "SOPT"); Gramext.Sself],
      Gramext.action
        (fun (s : 'symbol) _ (loc : int * int) ->
-          ({used = s.used; text = ssopt loc s;
-            styp = fun _ -> MLast.TyLid (loc, "ast")} :
+          ({used = s.used; text = ssopt loc s; styp = STlid (loc, "ast")} :
            'symbol));
      [Gramext.srules
         [[Gramext.Stoken ("UIDENT", "SLIST1")],
@@ -48,5 +47,5 @@ Grammar.extend
              | None -> s.used
            in
            {used = used; text = sslist loc min sep s;
-            styp = fun _ -> MLast.TyLid (loc, "ast")} :
+            styp = STlid (loc, "ast")} :
            'symbol))]]];;

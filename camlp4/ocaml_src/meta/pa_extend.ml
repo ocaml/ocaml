@@ -22,18 +22,25 @@ Pcaml.add_option "-split_ext" (Arg.Set split_ext)
 Pcaml.add_option "-split_gext" (Arg.Set split_ext)
   "  Old name for the option -split_ext.";;
 
-type name = { expr : MLast.expr; tvar : string; loc : int * int };;
+type loc = int * int;;
 
-type ('e, 'p, 't) entry =
-  { name : name; pos : 'e option; levels : ('e, 'p, 't) level list }
-and ('e, 'p, 't) level =
-  { label : string option; assoc : 'e option; rules : ('e, 'p, 't) rule list }
-and ('e, 'p, 't) rule =
-  { prod : ('e, 'p, 't) psymbol list; action : 'e option }
-and ('e, 'p, 't) psymbol =
-  { pattern : 'p option; symbol : ('e, 'p, 't) symbol }
-and ('e, 'p, 't) symbol =
-  { used : name list; text : string -> string -> 'e; styp : string -> 't }
+type styp =
+    STlid of loc * string
+  | STapp of loc * string * styp
+  | STquo of loc * string
+  | STprm of loc * string
+;;
+
+type 'e name = { expr : 'e; tvar : string; loc : int * int };;
+
+type ('e, 'p) entry =
+  { name : 'e name; pos : 'e option; levels : ('e, 'p) level list }
+and ('e, 'p) level =
+  { label : string option; assoc : 'e option; rules : ('e, 'p) rule list }
+and ('e, 'p) rule = { prod : ('e, 'p) psymbol list; action : 'e option }
+and ('e, 'p) psymbol = { pattern : 'p option; symbol : ('e, 'p) symbol }
+and ('e, 'p) symbol =
+  { used : 'e name list; text : string -> string -> 'e; styp : styp }
 ;;
 
 type used = Unused | UsedScanned | UsedNotScanned;;
@@ -724,6 +731,19 @@ let quotify_action psl act =
     e psl
 ;;
 
+let rec make_ctyp styp tvar =
+  match styp with
+    STlid (loc, s) -> MLast.TyLid (loc, s)
+  | STapp (loc, s, t) ->
+      MLast.TyApp (loc, MLast.TyLid (loc, s), make_ctyp t tvar)
+  | STquo (loc, s) -> MLast.TyQuo (loc, s)
+  | STprm (loc, x) ->
+      if tvar = "" then
+        Stdpp.raise_with_loc loc
+          (Stream.Error ("'" ^ x ^ "' illegal in anonymous entry level"))
+      else MLast.TyQuo (loc, tvar)
+;;
+
 let text_of_action loc psl rtvar act tvar =
   let locid = MLast.PaLid (loc, !(Stdpp.loc_name)) in
   let act =
@@ -746,7 +766,7 @@ let text_of_action loc psl rtvar act tvar =
          match ps.pattern with
            None -> MLast.ExFun (loc, [MLast.PaAny loc, None, txt])
          | Some p ->
-             let t = ps.symbol.styp tvar in
+             let t = make_ctyp ps.symbol.styp tvar in
              let p =
                match p with
                  MLast.PaTup (_, pl) when !quotify ->
@@ -937,7 +957,7 @@ let sstoken loc s =
 
 let ssopt loc symb =
   let psymbol p s t =
-    let symb = {used = []; text = s; styp = fun _ -> t} in
+    let symb = {used = []; text = s; styp = t} in
     {pattern = Some p; symbol = symb}
   in
   let rl =
@@ -988,7 +1008,7 @@ let ssopt loc symb =
     let r1 =
       let prod =
         let text = stoken loc "ANTIQUOT" (MLast.ExStr (loc, anti_n)) in
-        [psymbol (MLast.PaLid (loc, "a")) text (MLast.TyLid (loc, "string"))]
+        [psymbol (MLast.PaLid (loc, "a")) text (STlid (loc, "string"))]
       in
       let act =
         MLast.ExApp
@@ -1023,16 +1043,14 @@ let ssopt loc symb =
               {prod = [psymbol]; action = action}
             in
             let text = srules loc "ast" [rule] in
-            let styp _ = MLast.TyLid (loc, "ast") in
+            let styp = STlid (loc, "ast") in
             {used = []; text = text; styp = styp}
         | _ -> symb
       in
       let psymb =
         let symb =
           {used = []; text = sopt loc symb;
-           styp =
-             fun n ->
-               MLast.TyApp (loc, MLast.TyLid (loc, "option"), symb.styp n)}
+           styp = STapp (loc, "option", symb.styp)}
         in
         let patt = MLast.PaLid (loc, "o") in
         {pattern = Some patt; symbol = symb}
@@ -1049,7 +1067,7 @@ let ssopt loc symb =
 
 let sslist_aux loc min sep s =
   let psymbol p s t =
-    let symb = {used = []; text = s; styp = fun _ -> t} in
+    let symb = {used = []; text = s; styp = t} in
     {pattern = Some p; symbol = symb}
   in
   let rl =
@@ -1057,7 +1075,7 @@ let sslist_aux loc min sep s =
       let prod =
         let n = mk_name loc (MLast.ExLid (loc, "anti_list")) in
         [psymbol (MLast.PaLid (loc, "a")) (snterm loc n None)
-           (MLast.TyQuo (loc, "anti_list"))]
+           (STquo (loc, "anti_list"))]
       in
       let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
     in
@@ -1065,8 +1083,7 @@ let sslist_aux loc min sep s =
       let psymb =
         let symb =
           {used = []; text = slist loc min sep s;
-           styp =
-             fun n -> MLast.TyApp (loc, MLast.TyLid (loc, "list"), s.styp n)}
+           styp = STapp (loc, "list", s.styp)}
         in
         let patt = MLast.PaLid (loc, "l") in
         {pattern = Some patt; symbol = symb}
@@ -1128,7 +1145,7 @@ let text_of_entry loc gmod gl e =
                     let n = "a_" ^ e.name.tvar in
                     let e = mk_name loc (MLast.ExLid (loc, n)) in
                     {used = []; text = snterm loc e None;
-                     styp = fun _ -> MLast.TyLid (loc, "ast")}
+                     styp = STlid (loc, "ast")}
                   in
                   {pattern = Some (MLast.PaLid (loc, "a")); symbol = s}
                 in
@@ -1695,7 +1712,7 @@ Grammar.extend
         (fun (lev : 'e__3 option) (i : string) (loc : int * int) ->
            (let name = mk_name loc (MLast.ExLid (loc, i)) in
             let text = snterm loc name lev in
-            let styp _ = MLast.TyQuo (loc, i) in
+            let styp = STquo (loc, i) in
             let symb = {used = [name]; text = text; styp = styp} in
             {pattern = None; symbol = symb} :
             'psymbol));
@@ -1710,10 +1727,7 @@ Grammar.extend
      [[Gramext.Stoken ("UIDENT", "OPT"); Gramext.Sself],
       Gramext.action
         (fun (s : 'symbol) _ (loc : int * int) ->
-           (let styp n =
-              let t = s.styp n in
-              MLast.TyApp (loc, MLast.TyLid (loc, "option"), t)
-            in
+           (let styp = STapp (loc, "option", s.styp) in
             let text = if !quotify then ssopt loc s else sopt loc s in
             {used = s.used; text = text; styp = styp} :
             'symbol));
@@ -1732,10 +1746,7 @@ Grammar.extend
                 Some symb -> symb.used @ s.used
               | None -> s.used
             in
-            let styp n =
-              let t = s.styp n in
-              MLast.TyApp (loc, MLast.TyLid (loc, "list"), t)
-            in
+            let styp = STapp (loc, "list", s.styp) in
             let text =
               if !quotify then sslist loc true sep s else slist loc true sep s
             in
@@ -1756,10 +1767,7 @@ Grammar.extend
                 Some symb -> symb.used @ s.used
               | None -> s.used
             in
-            let styp n =
-              let t = s.styp n in
-              MLast.TyApp (loc, MLast.TyLid (loc, "list"), t)
-            in
+            let styp = STapp (loc, "list", s.styp) in
             let text =
               if !quotify then sslist loc false sep s
               else slist loc false sep s
@@ -1780,7 +1788,7 @@ Grammar.extend
       Gramext.action
         (fun (lev : 'e__7 option) (n : 'name) (loc : int * int) ->
            ({used = [n]; text = snterm loc n lev;
-             styp = fun _ -> MLast.TyQuo (loc, n.tvar)} :
+             styp = STquo (loc, n.tvar)} :
             'symbol));
       [Gramext.Stoken ("UIDENT", ""); Gramext.Stoken ("", ".");
        Gramext.Snterm (Grammar.Entry.obj (qualid : 'qualid Grammar.Entry.e));
@@ -1797,22 +1805,20 @@ Grammar.extend
               mk_name loc (MLast.ExAcc (loc, MLast.ExUid (loc, i), e))
             in
             {used = [n]; text = snterm loc n lev;
-             styp = fun _ -> MLast.TyQuo (loc, n.tvar)} :
+             styp = STquo (loc, n.tvar)} :
             'symbol));
       [Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'string) (loc : int * int) ->
            (let text = stoken loc "" e in
-            {used = []; text = text;
-             styp = fun _ -> MLast.TyLid (loc, "string")} :
+            {used = []; text = text; styp = STlid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'string) (x : string) (loc : int * int) ->
            (let text = stoken loc x e in
-            {used = []; text = text;
-             styp = fun _ -> MLast.TyLid (loc, "string")} :
+            {used = []; text = text; styp = STlid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "")],
       Gramext.action
@@ -1821,8 +1827,7 @@ Grammar.extend
               if !quotify then sstoken loc x
               else stoken loc x (MLast.ExStr (loc, ""))
             in
-            {used = []; text = text;
-             styp = fun _ -> MLast.TyLid (loc, "string")} :
+            {used = []; text = text; styp = STlid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("", "[");
        Gramext.Slist0sep
@@ -1834,29 +1839,17 @@ Grammar.extend
            (let rl = retype_rule_list_without_patterns loc rl in
             let t = new_type_var () in
             {used = used_of_rule_list rl; text = srules loc t rl;
-             styp = fun _ -> MLast.TyQuo (loc, t)} :
+             styp = STquo (loc, t)} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "NEXT")],
       Gramext.action
         (fun _ (loc : int * int) ->
-           (let styp n =
-              if n = "" then
-                Stdpp.raise_with_loc loc
-                  (Stream.Error "'NEXT' illegal in anonymous entry level")
-              else MLast.TyQuo (loc, n)
-            in
-            {used = []; text = snext loc; styp = styp} :
+           ({used = []; text = snext loc; styp = STprm (loc, "NEXT")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "SELF")],
       Gramext.action
         (fun _ (loc : int * int) ->
-           (let styp n =
-              if n = "" then
-                Stdpp.raise_with_loc loc
-                  (Stream.Error "'SELF' illegal in anonymous entry level")
-              else MLast.TyQuo (loc, n)
-            in
-            {used = []; text = sself loc; styp = styp} :
+           ({used = []; text = sself loc; styp = STprm (loc, "SELF")} :
             'symbol))]];
     Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e), None,
     [None, None,
