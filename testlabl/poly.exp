@@ -1,4 +1,4 @@
-        Objective Caml version 3.06+19 (2002-12-03)
+        Objective Caml version 3.06+24 (2003-02-28)
 
 #   * * *       #   type 'a t = { t : 'a; } 
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; } 
@@ -84,14 +84,14 @@
     method hd : 'a
     method tl : 'b
   end
-#           class vari : object method m : [< `A | `B | `C] -> int end
-#       class vari : object method m : [< `A | `B | `C] -> int end
-#           module V : sig type v = [ `A | `B | `C] val m : [< v] -> int end
-#         class varj : object method m : [< V.v] -> int end
+#           class vari : object method m : [< `A | `B | `C ] -> int end
+#       class vari : object method m : [< `A | `B | `C ] -> int end
+#           module V : sig type v = [ `A | `B | `C ] val m : [< v ] -> int end
+#         class varj : object method m : [< V.v ] -> int end
 #         module type T =
-  sig class vari : object method m : [< `A | `B | `C] -> int end end
+  sig class vari : object method m : [< `A | `B | `C ] -> int end end
 #             module M0 :
-  sig class vari : object method m : [< `A | `B | `C] -> int end end
+  sig class vari : object method m : [< `A | `B | `C ] -> int end end
 #   module M : T
 # val v : M.vari = <obj>
 # - : int = 1
@@ -118,7 +118,7 @@
 val p1 : point = <obj>
 val cp : color_point = <obj>
 val c : circle = <obj>
-val d : float = 11.45362404707371
+val d : float = 11.4536240470737098
 #   val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
 #   Characters 41-42:
 This expression has type < m : 'a. 'a -> 'a list > but is here used with type
@@ -193,7 +193,7 @@ The type abbreviation foo is cyclic
 #   val count : 'a #olist -> int = <fun>
 #     val append : 'a #olist -> ('a #olist as 'b) -> 'b = <fun>
 #     type 'a t = unit
-#   class o : object method x : [> `A] t -> unit end
+#   class o : object method x : [> `A ] t -> unit end
 #   class c : object method m : d end
 class d : ?x:int -> unit -> object  end
 # class d : ?x:int -> unit -> object  end
@@ -201,9 +201,9 @@ class c : object method m : d end
 #           class type numeral = object method fold : ('a -> 'a) -> 'a -> 'a end
 class zero : object method fold : ('a -> 'a) -> 'a -> 'a end
 class next : #numeral -> object method fold : ('a -> 'a) -> 'a -> 'a end
-#       class type node_type = object method as_variant : [> `Node of node_type] end
+#       class type node_type = object method as_variant : [> `Node of node_type ] end
 #       class node : node_type
-#     class node : object method as_variant : [> `Node of node_type] end
+#     class node : object method as_variant : [> `Node of node_type ] end
 #   type bad = { bad : 'a. 'a option ref; } 
 # Characters 17-25:
 This field value has type 'a option ref which is less general than
@@ -213,9 +213,9 @@ This field value has type 'a option ref which is less general than
 # Characters 13-28:
 This field value has type 'a option ref option which is less general than
   'b. 'b option ref option
-#       type 'a t = [ `A of 'a]
-#       class c : object method m : ([> 'a t] as 'a) -> unit end
-#         class c : object method m : ([> 'a t] as 'a) -> unit end
-#     class c : object method m : ([> 'a t] as 'a) -> 'a end
-#     class c : object method m : ([> `A] as 'a) option -> 'a end
+#       type 'a t = [ `A of 'a ]
+#       class c : object method m : ([> 'a t ] as 'a) -> unit end
+#         class c : object method m : ([> 'a t ] as 'a) -> unit end
+#     class c : object method m : ([> 'a t ] as 'a) -> 'a end
+#     class c : object method m : ([> `A ] as 'a) option -> 'a end
 # 
