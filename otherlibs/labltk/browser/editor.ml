@@ -141,7 +141,7 @@ let send_phrase txt =
         let i1,i2 = Text.tag_nextrange txt.tw tag:"sel" start:tstart in
         let phrase = Text.get txt.tw start:(i1,[]) end:(i2,[]) in
         sh#send phrase;
-        if Str.string_match phrase pat:(Str.regexp ";;") pos:0)
+        if Str.string_match phrase pat:(Str.regexp ";;") pos:0
         then sh#send "\n" else sh#send ";;\n"
       with Not_found | Protocol.TkError _ ->
         let text = Text.get txt.tw start:tstart end:tend in
