@@ -148,6 +148,14 @@ extern char * caml_bottom_of_stack, * caml_top_of_stack;
 extern unsigned long caml_last_return_address;
 extern value gc_entry_regs[];
 
+/* Structure of markers stored in stack by [callback] to skip C portion
+   of stack */
+
+struct callback_link {
+  char * bottom_of_stack;
+  unsigned long return_address;
+};
+
 /* Call [oldify] on all stack roots, C roots and global roots */
 
 void oldify_local_roots ()
@@ -185,29 +193,37 @@ void oldify_local_roots ()
       if (d->retaddr == retaddr) break;
       h = (h+1) & frame_descriptors_mask;
     }
-    /* Scan the roots in this frame */
-    for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
-      ofs = *p;
-      if (ofs & 1) {
-        root = &gc_entry_regs[ofs >> 1];
-      } else {
-        root = (value *)(sp + ofs);
+    n = d->num_live;
+    if (n >= 0) {
+      /* Scan the roots in this frame */
+      for (p = d->live_ofs; n > 0; n--, p++) {
+        ofs = *p;
+        if (ofs & 1) {
+          root = &gc_entry_regs[ofs >> 1];
+        } else {
+          root = (value *)(sp + ofs);
+        }
+        oldify(*root, root);
       }
-      oldify(*root, root);
-    }
-    /* Move to next frame */
+      /* Move to next frame */
 #ifndef Stack_grows_upwards
-    sp += d->frame_size;
+      sp += d->frame_size;
 #else
-    sp -= d->frame_size;
+      sp -= d->frame_size;
 #endif
-    retaddr = Saved_return_address(sp);
+      retaddr = Saved_return_address(sp);
 #ifdef Already_scanned
-    /* Stop here if the frame has already been scanned during earlier GCs  */
-    if (Already_scanned(sp, retaddr)) break;
-    /* Mark frame as already scanned */
-    Mark_scanned(sp, retaddr);
+      /* Stop here if the frame has already been scanned during earlier GCs  */
+      if (Already_scanned(sp, retaddr)) break;
+      /* Mark frame as already scanned */
+      Mark_scanned(sp, retaddr);
 #endif
+    } else {
+      /* This marks the top of a stack chunk for an ML callback.
+         Skip C portion of stack and continue with next ML stack chunk. */
+      retaddr = ((struct callback_link *) sp)->return_address;
+      sp = ((struct callback_link *) sp)->bottom_of_stack;
+    }
   }
   /* Local C roots */
   for (block = local_roots; block != NULL; block = (value *) block [1]){
@@ -260,25 +276,33 @@ void darken_all_roots ()
       if (d->retaddr == retaddr) break;
       h = (h+1) & frame_descriptors_mask;
     }
-    /* Scan the roots in this frame */
-    for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
-      ofs = *p;
-      if (ofs & 1) {
-        darken(gc_entry_regs[ofs >> 1]);
-      } else {
-        darken(*((value *)(sp + ofs)));
+    n = d->num_live;
+    if (n >= 0) {
+      /* Scan the roots in this frame */
+      for (p = d->live_ofs; n > 0; n--, p++) {
+        ofs = *p;
+        if (ofs & 1) {
+          darken(gc_entry_regs[ofs >> 1]);
+        } else {
+          darken(*((value *)(sp + ofs)));
+        }
       }
-    }
-    /* Move to next frame */
+      /* Move to next frame */
 #ifndef Stack_grows_upwards
-    sp += d->frame_size;
+      sp += d->frame_size;
 #else
-    sp -= d->frame_size;
+      sp -= d->frame_size;
 #endif
-    retaddr = Saved_return_address(sp);
+      retaddr = Saved_return_address(sp);
 #ifdef Mask_already_scanned
-    retaddr = Mask_already_scanned(retaddr);
+      retaddr = Mask_already_scanned(retaddr);
 #endif
+    } else {
+      /* This marks the top of a stack chunk for an ML callback.
+         Skip C portion of stack and continue with next ML stack chunk. */
+      retaddr = ((struct callback_link *) sp)->return_address;
+      sp = ((struct callback_link *) sp)->bottom_of_stack;
+    }
   }
   Assert(sp == caml_top_of_stack);
 

@@ -345,6 +345,127 @@ call_array_bound_error:
 $106:   ldgp    $gp, 0($27)
     /* Branch to array_bound_error -- never returns */
         jsr     array_bound_error
-
         .end    call_array_bound_error
 
+/* Callback from C to Caml */
+
+        .globl  callback
+        .ent    callback
+        .align  3
+callback:
+    /* Initial shuffling of arguments */
+        ldgp    $gp, 0($27)
+        mov     $16, $25
+        mov     $17, $16        /* first arg */
+        mov     $25, $17        /* environment */
+        ldq     $25, 0($25)     /* code pointer */
+$107:
+    /* Save return address */
+	lda	$sp, -128($sp)
+        stq     $26, 0($sp)
+    /* Save all callee-save registers */
+        stq     $9, 8($sp)
+        stq     $10, 16($sp)
+        stq     $11, 24($sp)
+        stq     $12, 32($sp)
+        stq     $13, 40($sp)
+        stq     $14, 48($sp)
+        stq     $15, 56($sp)
+        stt     $f2, 64($sp)
+        stt     $f3, 72($sp)
+        stt     $f4, 80($sp)
+        stt     $f5, 88($sp)
+        stt     $f6, 96($sp)
+        stt     $f7, 104($sp)
+        stt     $f8, 112($sp)
+        stt     $f9, 120($sp)
+    /* Set up callback link on the stack. Also save there various stuff
+       saved in global variables by caml_c_call. */
+        lda     $sp, -32($sp)
+        lda     $24, caml_bottom_of_stack
+        ldq     $0, 0($24)
+        stq     $0, 0($sp)
+        ldq     $1, Ofs_last_return_address($24)
+        stq     $1, 8($sp)
+        ldq     $2, Ofs_exception_pointer($24)
+        stq     $2, 16($sp)
+        ldq     $3, Ofs_saved_gp($24)
+        stq     $3, 24($sp)
+    /* Reload allocation pointers and trap pointer */
+        ldq     $13, young_ptr
+        ldq     $14, young_start
+        ldq     $15, caml_exception_pointer
+    /* Call the Caml code */
+$108:   jsr     ($25)
+    /* Reload $gp */
+        bic     $26, 1, $26     /* retaddr may have "scanned" bit set */
+        ldgp    $gp, 4($26)
+    /* Restore the global variables used by caml_c_call */
+        lda     $24, caml_bottom_of_stack
+        ldq     $25, 8($sp)
+        stq     $25, Ofs_last_return_address($24)
+        ldq     $23, 16($sp)
+        stq     $23, Ofs_exception_pointer($24)
+        ldq     $22, 24($sp)
+        stq     $22, Ofs_saved_gp($24)
+        lda     $sp, 32($sp)
+    /* Update allocation pointer */
+        stq     $13, young_ptr
+    /* Reload callee-save registers */
+        ldq     $9, 8($sp)
+        ldq     $10, 16($sp)
+        ldq     $11, 24($sp)
+        ldq     $12, 32($sp)
+        ldq     $13, 40($sp)
+        ldq     $14, 48($sp)
+        ldq     $15, 56($sp)
+        ldt     $f2, 64($sp)
+        ldt     $f3, 72($sp)
+        ldt     $f4, 80($sp)
+        ldt     $f5, 88($sp)
+        ldt     $f6, 96($sp)
+        ldt     $f7, 104($sp)
+        ldt     $f8, 112($sp)
+        ldt     $f9, 120($sp)
+    /* Return to caller */
+        ldq     $26, 0($sp)
+        lda     $sp, 128($sp)
+        ret     ($26)
+
+        .end    callback
+
+        .globl  callback2
+        .ent    callback2
+        .align  3
+callback2:
+        ldgp    $gp, 0($27)
+        mov     $16, $25
+        mov     $17, $16        /* first arg */
+        mov     $18, $17        /* second arg */
+        mov     $25, $18        /* environment */
+        lda     $25, caml_apply2
+        br      $107
+        .end    callback2
+
+        .globl  callback3
+        .ent    callback3
+        .align  3
+callback3:
+        ldgp    $gp, 0($27)
+        mov     $16, $25
+        mov     $17, $16        /* first arg */
+        mov     $18, $17        /* second arg */
+        mov     $19, $18        /* third arg */
+        mov     $25, $19        /* environment */
+        lda     $25, caml_apply3
+        br      $107
+        .end    callback3
+
+        .rdata
+        .globl  system_frametable
+system_frametable:
+        .quad   1               /* one descriptor */
+        .quad   $108 + 4        /* return address into callback */
+        .word   0               /* frame size irrelevant */
+        .word   -1              /* negative root count => use callback link */
+        .align  3
