@@ -125,7 +125,7 @@ let record_frame_label live =
   Reg.Set.iter
     (function
         {typ = Addr; loc = Reg r} ->
-          live_offset := (-1 - int_reg_number.(r)) :: !live_offset
+          live_offset := ((int_reg_number.(r) lsl 1) + 1) :: !live_offset
       | {typ = Addr; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
       | _ -> ())
@@ -581,7 +581,7 @@ let fundecl fundecl =
   end;
   if !contains_calls then
     `	stq	$26, {emit_int(n - 8)}($sp)\n`;
-  `{emit_label !tailrec_entry_point}:`;
+  `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then

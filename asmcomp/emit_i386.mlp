@@ -168,7 +168,7 @@ let record_frame_label live =
   Reg.Set.iter
     (function
         {typ = Addr; loc = Reg r} ->
-          live_offset := (-1 - r) :: !live_offset
+          live_offset := ((r lsl 1) + 1) :: !live_offset
       | {typ = Addr; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
       | _ -> ())
