@@ -218,4 +218,11 @@ This field value has type 'a option ref option which is less general than
 #         class c : object method m : ([> 'a t ] as 'a) -> unit end
 #     class c : object method m : ([> 'a t ] as 'a) -> 'a end
 #     class c : object method m : ([> `A ] as 'a) option -> 'a end
+#           Characters 149-151:
+This type 'a should be an instance of type 'b
+The universal variable 'a would escape its scope
+#                 type ('a, 'b) list_visitor = < caseCons : 'b -> 'b list -> 'a; caseNil : 'a >
+type 'a alist = < visit : 'b. ('b, 'a) list_visitor -> 'b >
+class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end
+type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
 # 

@@ -367,3 +367,18 @@ end;;
 
 (* usage avant instance *)
 class c = object method m : 'a. 'a option -> ([> `A] as 'a) = fun x -> `A end;;
+
+(* various old bugs *)
+class virtual ['a] visitor =
+object method virtual caseNil : 'a end
+and virtual int_list =
+object method virtual visit : 'a.('a visitor -> 'a) end;;
+
+type ('a,'b) list_visitor = < caseNil : 'a; caseCons : 'b -> 'b list -> 'a >
+type 'b alist = < visit : 'a. ('a,'b) list_visitor -> 'a >
+
+(* PR#1607 *)
+class type ct = object ('s)
+  method fold : ('b -> 's -> 'b) -> 'b -> 'b
+end
+type t = {f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b};;
