@@ -82,11 +82,11 @@ val fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
 val for_all : ('a -> bool) -> 'a list -> bool
         (* [for_all p [a1; ...; an]] checks if all elements of the list
            satisfy the predicate [p]. That is, it returns
-           [(p a1) & (p a2) & ... & (p an)]. *)
+           [(p a1) && (p a2) && ... && (p an)]. *)
 val exists : ('a -> bool) -> 'a list -> bool
         (* [exists p [a1; ...; an]] checks if at least one element of
            the list satisfies the predicate [p]. That is, it returns
-           [(p a1) or (p a2) or ... or (p an)]. *)
+           [(p a1) || (p a2) || ... || (p an)]. *)
 val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
         (* Same as [for_all] and [exists], but for a two-argument predicate.
@@ -98,6 +98,24 @@ val mem : 'a -> 'a list -> bool
 val memq : 'a -> 'a list -> bool
         (* Same as [mem], but uses physical equality instead of structural
            equality to compare list elements. *)
+
+(** List searching *)
+
+val find : ('a -> bool) -> 'a list -> 'a
+        (* [find p l] returns the first element of the list [l]
+           that satisfies the predicate [p].
+           Raise [Not_found] if there is no value that satisfies [p] in the
+           list [l]. *)
+
+val find_all : ('a -> bool) -> 'a list -> 'a list
+        (* [find_all p l] returns all the elements of the list [l]
+           that satisfies the predicate [p]. *)
+
+val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
+        (* [partition p l] returns a pair of lists [(l1, l2)], such
+        that [l1] is the list of all the elements of [l] that
+        satisfy the predicate [p], and [l2] is the list of all the
+        elements of [l] that do not satisfy [p]. *)
 
 (** Association lists *)
 

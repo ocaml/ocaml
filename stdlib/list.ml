@@ -144,6 +144,22 @@ let rec removeq x = function
   | [] -> []
   | (a, b as pair) :: l -> if a == x then l else pair :: removeq x l
 
+let rec find p = function
+  | [] -> raise Not_found
+  | x :: l -> if p x then x else find p l
+
+let find_all p =
+  let rec find accu = function
+  | [] -> rev accu
+  | x :: l -> if p x then find (x :: accu) l else find accu l in
+  find []
+
+let rec partition p l =
+  let rec part yes no = function
+  | [] -> (rev yes, rev no)
+  | x :: l -> if p x then part (x :: yes) no l else part yes (x :: no) l in
+  part [] [] l
+
 let rec split = function
     [] -> ([], [])
   | (x,y)::l ->
