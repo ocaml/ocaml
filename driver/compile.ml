@@ -106,7 +106,8 @@ let interface ppf sourcefile =
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
   if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
   let sg = Typemod.transl_signature (initial_env()) ast in
-  if !Clflags.print_types then fprintf ppf "%a@." Printtyp.signature sg;
+  if !Clflags.print_types
+    then fprintf std_formatter "%a@." Printtyp.signature sg;
   Env.save_signature sg modulename (prefixname ^ ".cmi");
   remove_preprocessed inputfile
 
