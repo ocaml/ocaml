@@ -35,7 +35,7 @@ struct channel {
   struct channel * next;        /* Linear chaining of channels (flush_all) */
   int revealed;                 /* For Cash only */
   int old_revealed;             /* For Cash only */
-  int refcount;                 /* For Cash only */
+  int refcount;                 /* For flush_all and for Cash */
   char buff[IO_BUFFER_SIZE];    /* The buffer itself */
 };
 
