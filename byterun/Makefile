@@ -29,7 +29,7 @@ install:
 	rm -f $(LIBDIR)/libcamlrun.a
 	ar rc $(LIBDIR)/libcamlrun.a $(OBJS)
 	cd $(LIBDIR); $(RANLIB) libcamlrun.a
-	test -d $(LIBDIR)/caml || mkdir $(LIBDIR)/caml
+	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi
 	cp mlvalues.h alloc.h misc.h $(LIBDIR)/caml
 	sed -e '/#include ".*\/m.h/r ../config/m.h' \
             -e '/#include ".*\/s.h/r ../config/s.h' \
