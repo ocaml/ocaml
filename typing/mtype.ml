@@ -102,8 +102,10 @@ let nondep_supertype env mid mty =
       let rem' = nondep_sig va rem in
       match item with
         Tsig_value(id, d) ->
-          Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
-                          val_kind = d.val_kind}) :: rem'
+	  let t = Ctype.nondep_type env mid d.val_type in
+          Tsig_value(id, {val_type = t;
+                          val_kind = d.val_kind }) ::
+	  rem'
       | Tsig_type(id, d) ->
           Tsig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d) :: rem'
       | Tsig_exception(id, d) ->
@@ -170,7 +172,8 @@ and type_paths_sig env p pos sg =
       let pos' = match decl.val_kind with Val_prim _ -> pos | _ -> pos + 1 in
       type_paths_sig env p pos' rem
   | Tsig_type(id, decl) :: rem ->
-      Pdot(p, Ident.name id, nopos) :: type_paths_sig env p pos rem
+      let pos' = pos + 1 in
+      Pdot(p, Ident.name id, pos) :: type_paths_sig env p pos' rem
   | Tsig_module(id, mty) :: rem ->
       type_paths env (Pdot(p, Ident.name id, pos)) mty @
       type_paths_sig (Env.add_module id mty env) p (pos+1) rem

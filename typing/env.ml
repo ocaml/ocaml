@@ -421,9 +421,10 @@ let rec prefix_idents root pos sub = function
       let (pl, final_sub) = prefix_idents root nextpos sub rem in
       (p::pl, final_sub)
   | Tsig_type(id, decl) :: rem ->
-      let p = Pdot(root, Ident.name id, nopos) in
+      (* types bind their own values *)
+      let p = Pdot(root, Ident.name id, pos) in
       let (pl, final_sub) =
-        prefix_idents root pos (Subst.add_type id p sub) rem in
+        prefix_idents root (pos + 1) (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
   | Tsig_exception(id, decl) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
@@ -475,7 +476,8 @@ let rec components_of_module env sub path mty =
         | Tsig_type(id, decl) ->
             let decl' = Subst.type_declaration sub decl in
             c.comp_types <-
-              Tbl.add (Ident.name id) (decl', nopos) c.comp_types;
+              Tbl.add (Ident.name id) (decl', !pos) c.comp_types;
+	    incr pos;
             List.iter
               (fun (name, descr) ->
                 c.comp_constrs <- Tbl.add name (descr, nopos) c.comp_constrs)

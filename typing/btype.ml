@@ -174,6 +174,7 @@ let iter_type_expr f ty =
   | Tsubst ty           -> f ty
   | Tunivar             -> ()
   | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
+  | Tkonst (konst, ty)  -> List.iter f konst; f ty
 
 let rec iter_abbrev f = function
     Mnil                   -> ()
@@ -241,7 +242,8 @@ let rec copy_type_desc f = function
   | Tpoly (ty, tyl)     ->
       let tyl = List.map (fun x -> norm_univar (f x)) tyl in
       Tpoly (f ty, tyl)
-
+  | Tkonst (konst, ty) -> Tkonst (List.map f konst, f ty)
+      
 
 (* Utilities for copying *)
 
@@ -439,6 +441,7 @@ let log_type ty =
 let link_type ty ty' = log_type ty; ty.desc <- Tlink ty'
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
+
 let set_level ty level =
   if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
   ty.level <- level

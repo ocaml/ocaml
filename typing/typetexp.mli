@@ -54,6 +54,7 @@ type error =
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * Types.type_expr
+  | Cannot_have_konstraint
 
 exception Error of Location.t * error
 

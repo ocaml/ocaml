@@ -184,10 +184,10 @@ and signatures env subst sig1 sig2 =
         let nextpos =
           match item with
             Tsig_value(_,{val_kind = Val_prim _})
-          | Tsig_type(_,_)
           | Tsig_modtype(_,_)
           | Tsig_cltype(_,_) -> pos
           | Tsig_value(_,_)
+          | Tsig_type(_,_)
           | Tsig_exception(_,_)
           | Tsig_module(_,_)
           | Tsig_class(_, _) -> pos+1 in
@@ -241,7 +241,7 @@ and signature_components env subst = function
       end
   | (Tsig_type(id1, tydecl1), Tsig_type(id2, tydecl2), pos) :: rem ->
       type_declarations env subst id1 tydecl1 tydecl2;
-      signature_components env subst rem
+      (pos, Tcoerce_none) :: signature_components env subst rem
   | (Tsig_exception(id1, excdecl1), Tsig_exception(id2, excdecl2), pos)
     :: rem ->
       exception_declarations env subst id1 excdecl1 excdecl2;

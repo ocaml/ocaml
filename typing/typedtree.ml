@@ -23,7 +23,7 @@ open Types
 type pattern =
   { pat_desc: pattern_desc;
     pat_loc: Location.t;
-    pat_type: type_expr;
+    mutable pat_type: type_expr;
     pat_env: Env.t }
 
 and pattern_desc =
@@ -44,7 +44,7 @@ type optional = Required | Optional
 type expression =
   { exp_desc: expression_desc;
     exp_loc: Location.t;
-    exp_type: type_expr;
+    mutable exp_type: type_expr;
     exp_env: Env.t }
 
 and expression_desc =
@@ -78,6 +78,7 @@ and expression_desc =
   | Texp_assertfalse
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
+  | Texp_rtype of type_expr
 
 and meth =
     Tmeth_name of string

@@ -110,7 +110,7 @@ let rec raw_type ppf ty =
     fprintf ppf "@[<1>{id=%d;level=%d;desc=@,%a}@]" ty.id ty.level
       raw_type_desc ty.desc
   end
-and raw_type_list tl = raw_list raw_type tl
+and raw_type_list ppf = raw_list raw_type ppf (* original is wrong tl must be ppf *)
 and raw_type_desc ppf = function
     Tvar -> fprintf ppf "Tvar"
   | Tarrow(l,t1,t2,c) ->
@@ -158,6 +158,10 @@ and raw_type_desc ppf = function
           match row.row_name with None -> fprintf ppf "None"
           | Some(p,tl) ->
               fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
+  | Tkonst (konst, ty) ->
+      fprintf ppf "@[<hov1>Tkonst(@,%a,@,%a)@]"
+        raw_type_list konst
+        raw_type ty
 
 and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
@@ -191,9 +195,12 @@ let new_name () =
   incr name_counter;
   name
 
+let vardebug = try ignore (Sys.getenv "GCAML_VAR_LEVEL"); true with _ -> false
+
 let name_of_type t =
   try List.assq t !names with Not_found ->
     let name = new_name () in
+    let name = if vardebug then name ^ string_of_int t.level else name in
     names := (t, name) :: !names;
     name
 
@@ -279,6 +286,9 @@ let rec mark_loops_rec visited ty =
         List.iter (fun t -> add_alias t) tyl;
         mark_loops_rec visited ty
     | Tunivar -> ()
+    | Tkonst (konst, ty) ->
+        List.iter (fun t -> add_alias t) konst;
+        mark_loops_rec visited ty
 
 let mark_loops ty =
   normalize_type Env.empty ty;
@@ -384,12 +394,19 @@ let rec tree_of_typexp sch ty =
         end
     | Tunivar ->
         Otyp_var (false, name_of_type ty)
+    | Tkonst (konst, ty) ->
+	let ktree = List.map (tree_of_typexp sch) konst in
+	let tree = tree_of_typexp sch ty in
+	Otyp_konst (ktree, tree)
   in
-  if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
-  if is_aliased px && ty.desc <> Tvar && ty.desc <> Tunivar then begin
-    check_name_of_type px;
-    Otyp_alias (pr_typ (), name_of_type px) end
-  else pr_typ ()
+  let tree = 
+    if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
+    if is_aliased px && ty.desc <> Tvar && ty.desc <> Tunivar then begin
+      check_name_of_type px;
+      Otyp_alias (pr_typ (), name_of_type px) end
+    else pr_typ ()
+  in
+  tree
 
 and tree_of_row_field sch (l, f) =
   match row_field_repr f with
@@ -464,7 +481,8 @@ let type_scheme_max ?(b_reset_names=true) ppf ty =
   typexp true 0 ppf ty
 (* Fin Maxence *)
 
-let tree_of_type_scheme ty = reset_and_mark_loops ty; tree_of_typexp true ty
+let tree_of_type_scheme ty = 
+  reset_and_mark_loops ty; tree_of_typexp true ty
 
 (* Print one type declaration *)
 

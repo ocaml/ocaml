@@ -18,9 +18,9 @@ open Types
 open Format
 
 val type_module:
-        Env.t -> Parsetree.module_expr -> Typedtree.module_expr
+        Env.t -> Kset.t -> Parsetree.module_expr -> Typedtree.module_expr
 val type_structure:
-        Env.t -> Parsetree.structure -> Typedtree.structure * signature * Env.t
+        Env.t -> Kset.t -> Parsetree.structure -> Typedtree.structure * signature * Env.t
 val type_implementation:
         string -> string -> string -> Env.t -> Parsetree.structure ->
                                Typedtree.structure * Typedtree.module_coercion

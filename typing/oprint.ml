@@ -160,6 +160,14 @@ let rec print_out_type ppf =
       fprintf ppf "@[<hov 2>%a.@ %a@]"
         pr_vars sl
         print_out_type ty
+  | Otyp_konst ([], ty) -> print_out_type_1 ppf ty
+  | Otyp_konst (tys, ty) ->
+      let pr_typs =
+	print_list print_out_type (fun ppf -> fprintf ppf ",@ ")
+      in
+      fprintf ppf "@[<hov 2>{ @[%a@] }@ =>@ %a@]"
+	pr_typs tys
+	print_out_type ty
   | ty ->
       print_out_type_1 ppf ty
 
@@ -207,6 +215,8 @@ and print_simple_out_type ppf =
   | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
   | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
+  | Otyp_konst _ -> assert false
+
 and print_fields rest ppf =
   function
     [] ->

@@ -39,6 +39,7 @@ type error =
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
+  | Cannot_have_konstraint
 
 exception Error of Location.t * error
 
@@ -440,6 +441,9 @@ let rec transl_type env policy styp =
       let ty' = Btype.newgenty (Tpoly(ty, List.rev ty_list)) in
       unify_var env (newvar()) ty';
       ty'
+  | Ptyp_konst(_,_) -> (* not allowed *)
+      raise (Error(styp.ptyp_loc, Cannot_have_konstraint))
+      
 
 and transl_fields env policy =
   function
@@ -521,13 +525,22 @@ let transl_simple_type_delayed env styp =
             raise (Error(loc, Type_mismatch trace)))
        b)
 
-let transl_type_scheme env styp =
+let transl_type_scheme env sktyp =
   reset_type_variables();
   begin_def();
-  let typ = transl_simple_type env false styp in
+  let t =
+    match sktyp.ptyp_desc with
+    | Ptyp_konst (k, t) ->
+	let konst = List.map (transl_simple_type env false) k in
+	let ty = transl_simple_type env false t in
+	let konst = Etype.normalize_konstraint konst ty in
+	newty (Tkonst(konst, ty))
+    | _ -> 
+	transl_simple_type env false sktyp
+  in
   end_def();
-  generalize typ;
-  typ
+  generalize t;
+  t
 
 (* Error report *)
 
@@ -595,3 +608,5 @@ let report_error ppf = function
         (if v.desc = Tvar then "it escapes this scope" else
          if v.desc = Tunivar then "it is aliased to another variable"
          else "it is not a variable")
+  | Cannot_have_konstraint ->
+      fprintf ppf "This type has a constraint which is not allowed in this context."

@@ -474,6 +474,10 @@ let closed_class params sign =
     unmark_class_signature sign;
     Some reason
 
+let generalized_vars ty = 
+  let tvars = free_vars ty in
+  unmark_type ty;
+  List.filter (fun t -> t.level = generic_level) (List.map fst tvars)
 
                             (**********************)
                             (*  Type duplication  *)
@@ -1927,6 +1931,9 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               with exn ->
                 univar_pairs := old_univars; raise exn
               end
+	  | (Tkonst (k1, t1), Tkonst (k2, t2)) ->
+	      moregen_list inst_nongen type_pairs env (t1::k1) (t2::k2)
+		(* FIXME *)
           | (_, _) ->
               raise (Unify [])
         end
@@ -2742,6 +2749,19 @@ let rec build_subtype env visited loops posi level t =
       else (t, Unchanged)
   | Tunivar ->
       (t, Unchanged)
+  | Tkonst (konst, ty) ->
+      (* FIXME: I do not know it is correct.. *)
+      if memq_warn t visited then (t, Unchanged) else
+      let visited = t :: visited in
+      let konst' =
+        List.map (build_subtype env visited loops (not posi) level) konst
+      in
+      let (ty',c2) = build_subtype env visited loops posi level ty in
+      let c1 = collect konst' in
+      let c = max c1 c2 in
+      if c > Unchanged then (newty (Tkonst (List.map fst konst', ty')), c)
+      else (t, Unchanged)
+      
 
 let enlarge_type env ty =
   warn := false;

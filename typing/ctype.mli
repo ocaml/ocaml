@@ -226,6 +226,7 @@ type closed_class_failure =
 val closed_class:
         type_expr list -> class_signature -> closed_class_failure option
         (* Check whether all type variables are bound *)
+val generalized_vars : type_expr -> type_expr list
 
 val unalias: type_expr -> type_expr
 val signature_of_class_type: class_type -> class_signature

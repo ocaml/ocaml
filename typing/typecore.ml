@@ -58,14 +58,16 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
+  | Generic_primitive_type_mismatch of type_expr * type_expr
+  | Should_not_be_generic of type_expr * type_expr
 
 exception Error of Location.t * error
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
 let type_module =
-  ref ((fun env md -> assert false) :
-       Env.t -> Parsetree.module_expr -> Typedtree.module_expr)
+  ref ((fun env kset md -> assert false) :
+       Env.t -> Kset.t -> Parsetree.module_expr -> Typedtree.module_expr)
 
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 let type_object =
@@ -487,7 +489,8 @@ let add_pattern_variables env =
   let pv = get_ref pattern_variables in
   List.fold_right
     (fun (id, ty) env ->
-       Env.add_value id {val_type = ty; val_kind = Val_reg} env)
+       Env.add_value id {val_type = ty; 
+			 val_kind = Val_reg} env)
     pv env
 
 let type_pattern env spat =
@@ -790,6 +793,40 @@ let check_partial_application env exp =
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 
+let fix_konstraints env pat_exp_kset_list =
+  let mono_tvars = 
+    List.flatten (List.map (fun (pat, (exp, kset)) ->
+    (* build the real type scheme with konstraint *)
+    let tvars = Etype.type_variables !kset in
+    let gen_vars = List.filter (fun t -> t.level = generic_level) tvars in
+    let mono_tvars = List.filter (fun t -> t.level <> generic_level) tvars in
+    let konst = gen_vars in
+    if konst <> [] then begin
+      (* pattern must be enough simple, since the definition is actually
+	 a function *)
+      let scm = Btype.newty2 exp.exp_type.level (Tkonst(konst, exp.exp_type))
+      in
+      (* reject let x,y = generic ... *)
+      let rec check_simple_pattern p =
+	match p.pat_desc with
+	| Tpat_any | Tpat_var _ -> ()
+	| Tpat_alias (p, id) -> check_simple_pattern p 
+	| _ -> 
+	    raise (Error (exp.exp_loc, 
+			  Should_not_be_generic (scm, pat.pat_type)))
+      in
+      check_simple_pattern pat;
+      (* rebind the type with konstraint *)
+      List.iter (fun ident ->
+	let vdesc = Env.find_value (Path.Pident ident) env in
+	vdesc.val_type <- scm) (pat_bound_idents pat);
+      (* and pattern's outmost type too. *)
+      pat.pat_type <- scm
+    end; mono_tvars) pat_exp_kset_list)
+  in
+  mono_tvars
+;;
+
 (* Typing of expressions *)
 
 let unify_exp env exp expected_ty =
@@ -801,7 +838,7 @@ let unify_exp env exp expected_ty =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(exp.exp_loc, Typetexp.Variant_tags (l1, l2)))
 
-let rec type_exp env sexp =
+let rec type_exp env kset sexp =
   match sexp.pexp_desc with
     Pexp_ident lid ->
       begin try
@@ -825,7 +862,7 @@ let rec type_exp env sexp =
                 Texp_ident(path, desc)
             end;
           exp_loc = sexp.pexp_loc;
-          exp_type = instance desc.val_type;
+          exp_type = Kset.instance kset (instance desc.val_type);
           exp_env = env }
       with Not_found ->
         raise(Error(sexp.pexp_loc, Unbound_value lid))
@@ -837,23 +874,23 @@ let rec type_exp env sexp =
         exp_type = type_constant cst;
         exp_env = env }
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
-      let (pat_exp_list, new_env) = type_let env rec_flag spat_sexp_list in
-      let body = type_exp new_env sbody in
+      let (pat_exp_list, new_env) = type_let env kset rec_flag spat_sexp_list in
+      let body = type_exp new_env kset sbody in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_function _ ->     (* defined in type_expect *)
-      type_expect env sexp (newvar())
+      type_expect env kset sexp (newvar())
   | Pexp_apply(sfunct, sargs) ->
       if !Clflags.principal then begin_def ();
-      let funct = type_exp env sfunct in
+      let funct = type_exp env kset sfunct in
       if !Clflags.principal then begin
         end_def ();
         generalize_structure funct.exp_type
       end;
-      let (args, ty_res) = type_application env funct sargs in
+      let (args, ty_res) = type_application env kset funct sargs in
       let funct = {funct with exp_type = instance funct.exp_type} in
       re {
         exp_desc = Texp_apply(funct, args);
@@ -861,10 +898,10 @@ let rec type_exp env sexp =
         exp_type = ty_res;
         exp_env = env }
   | Pexp_match(sarg, caselist) ->
-      let arg = type_exp env sarg in
+      let arg = type_exp env kset sarg in
       let ty_res = newvar() in
       let cases, partial =
-        type_cases env arg.exp_type ty_res (Some sexp.pexp_loc) caselist
+        type_cases env kset arg.exp_type ty_res (Some sexp.pexp_loc) caselist
       in
       re {
         exp_desc = Texp_match(arg, cases, partial);
@@ -872,9 +909,9 @@ let rec type_exp env sexp =
         exp_type = ty_res;
         exp_env = env }
   | Pexp_try(sbody, caselist) ->
-      let body = type_exp env sbody in
+      let body = type_exp env kset sbody in
       let cases, _ =
-        type_cases env (instance Predef.type_exn) body.exp_type None
+        type_cases env kset (instance Predef.type_exn) body.exp_type None
           caselist in
       re {
         exp_desc = Texp_try(body, cases);
@@ -882,16 +919,16 @@ let rec type_exp env sexp =
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_tuple sexpl ->
-      let expl = List.map (type_exp env) sexpl in
+      let expl = List.map (type_exp env kset) sexpl in
       re {
         exp_desc = Texp_tuple expl;
         exp_loc = sexp.pexp_loc;
         exp_type = newty (Ttuple(List.map (fun exp -> exp.exp_type) expl));
         exp_env = env }
   | Pexp_construct(lid, sarg, explicit_arity) ->
-      type_construct env sexp.pexp_loc lid sarg explicit_arity (newvar ())
+      type_construct env kset sexp.pexp_loc lid sarg explicit_arity (newvar ())
   | Pexp_variant(l, sarg) ->
-      let arg = may_map (type_exp env) sarg in
+      let arg = may_map (type_exp env kset) sarg in
       let arg_type = may_map (fun arg -> arg.exp_type) arg in
       re {
         exp_desc = Texp_variant(l, arg);
@@ -925,7 +962,7 @@ let rec type_exp env sexp =
         with Unify trace ->
           raise(Error(sexp.pexp_loc, Label_mismatch(lid, trace)))
         end;
-        let arg = type_argument env sarg ty_arg in
+        let arg = type_argument env kset sarg ty_arg in
         end_def ();
         if vars <> [] && not (is_nonexpansive arg) then
           generalize_expansive env arg.exp_type;
@@ -959,7 +996,7 @@ let rec type_exp env sexp =
                 unify env ty_arg1 ty_arg2
               end in
             Array.iter unify_kept lbl.lbl_all;
-            Some(type_expect env sexp ty_exp)
+            Some(type_expect env kset sexp ty_exp)
         | _ -> assert false
       in
       if opt_sexp = None && List.length lid_sexp_list <> !num_fields then begin
@@ -981,7 +1018,7 @@ let rec type_exp env sexp =
         exp_type = ty;
         exp_env = env }
   | Pexp_field(sarg, lid) ->
-      let arg = type_exp env sarg in
+      let arg = type_exp env kset sarg in
       let label =
         try
           Env.lookup_label lid env
@@ -995,7 +1032,7 @@ let rec type_exp env sexp =
         exp_type = ty_arg;
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
-      let record = type_exp env srecord in
+      let record = type_exp env kset srecord in
       let label =
         try
           Env.lookup_label lid env
@@ -1006,7 +1043,7 @@ let rec type_exp env sexp =
       begin_def ();
       let (vars, ty_arg, ty_res) = instance_label true label in
       unify_exp env record ty_res;
-      let newval = type_expect env snewval ty_arg in
+      let newval = type_expect env kset snewval ty_arg in
       end_def ();
       if vars <> [] && not (is_nonexpansive newval) then
         generalize_expansive env newval.exp_type;
@@ -1020,25 +1057,25 @@ let rec type_exp env sexp =
         exp_env = env }
   | Pexp_array(sargl) ->
       let ty = newvar() in
-      let argl = List.map (fun sarg -> type_expect env sarg ty) sargl in
+      let argl = List.map (fun sarg -> type_expect env kset sarg ty) sargl in
       re {
         exp_desc = Texp_array argl;
         exp_loc = sexp.pexp_loc;
         exp_type = instance (Predef.type_array ty);
         exp_env = env }
   | Pexp_ifthenelse(scond, sifso, sifnot) ->
-      let cond = type_expect env scond (instance Predef.type_bool) in
+      let cond = type_expect env kset scond (instance Predef.type_bool) in
       begin match sifnot with
         None ->
-          let ifso = type_expect env sifso (instance Predef.type_unit) in
+          let ifso = type_expect env kset sifso (instance Predef.type_unit) in
           re {
             exp_desc = Texp_ifthenelse(cond, ifso, None);
             exp_loc = sexp.pexp_loc;
             exp_type = instance Predef.type_unit;
             exp_env = env }
       | Some sifnot ->
-          let ifso = type_exp env sifso in
-          let ifnot = type_expect env sifnot ifso.exp_type in
+          let ifso = type_exp env kset sifso in
+          let ifnot = type_expect env kset sifnot ifso.exp_type in
           re {
             exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
             exp_loc = sexp.pexp_loc;
@@ -1046,28 +1083,28 @@ let rec type_exp env sexp =
             exp_env = env }
       end
   | Pexp_sequence(sexp1, sexp2) ->
-      let exp1 = type_statement env sexp1 in
-      let exp2 = type_exp env sexp2 in
+      let exp1 = type_statement env kset sexp1 in
+      let exp2 = type_exp env kset sexp2 in
       re {
         exp_desc = Texp_sequence(exp1, exp2);
         exp_loc = sexp.pexp_loc;
         exp_type = exp2.exp_type;
         exp_env = env }
   | Pexp_while(scond, sbody) ->
-      let cond = type_expect env scond (instance Predef.type_bool) in
-      let body = type_statement env sbody in
+      let cond = type_expect env kset scond (instance Predef.type_bool) in
+      let body = type_statement env kset sbody in
       re {
         exp_desc = Texp_while(cond, body);
         exp_loc = sexp.pexp_loc;
         exp_type = instance Predef.type_unit;
         exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
-      let low = type_expect env slow (instance Predef.type_int) in
-      let high = type_expect env shigh (instance Predef.type_int) in
+      let low = type_expect env kset slow (instance Predef.type_int) in
+      let high = type_expect env kset shigh (instance Predef.type_int) in
       let (id, new_env) =
         Env.enter_value param {val_type = instance Predef.type_int;
-                                val_kind = Val_reg} env in
-      let body = type_statement new_env sbody in
+                               val_kind = Val_reg} env in
+      let body = type_statement new_env kset sbody in
       re {
         exp_desc = Texp_for(id, low, high, dir, body);
         exp_loc = sexp.pexp_loc;
@@ -1077,7 +1114,7 @@ let rec type_exp env sexp =
       let (arg, ty') =
         match (sty, sty') with
           (None, None) ->               (* Case actually unused *)
-            let arg = type_exp env sarg in
+            let arg = type_exp env kset sarg in
             (arg, arg.exp_type)
         | (Some sty, None) ->
             if !Clflags.principal then begin_def ();
@@ -1086,14 +1123,14 @@ let rec type_exp env sexp =
               end_def ();
               generalize_structure ty;
               let ty1 = instance ty and ty2 = instance ty in
-              (type_expect env sarg ty1, ty2)
+              (type_expect env kset sarg ty1, ty2)
             end else
-              (type_expect env sarg ty, ty)
+              (type_expect env kset sarg ty, ty)
         | (None, Some sty') ->
             let (ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
             in
-            let arg = type_exp env sarg in
+            let arg = type_exp env kset sarg in
             begin match arg.exp_desc, !self_coercion, (repr ty').desc with
               Texp_ident(_, {val_kind=Val_self _}), (path,r) :: _,
               Tconstr(path',_,_) when Path.same path path' ->
@@ -1120,7 +1157,7 @@ let rec type_exp env sexp =
             with Subtype (tr1, tr2) ->
               raise(Error(sexp.pexp_loc, Not_subtype(tr1, tr2)))
             end;
-            (type_expect env sarg ty, ty')
+            (type_expect env kset sarg ty, ty')
       in
       re {
         exp_desc = arg.exp_desc;
@@ -1128,8 +1165,8 @@ let rec type_exp env sexp =
         exp_type = ty';
         exp_env = env }
   | Pexp_when(scond, sbody) ->
-      let cond = type_expect env scond (instance Predef.type_bool) in
-      let body = type_exp env sbody in
+      let cond = type_expect env kset scond (instance Predef.type_bool) in
+      let body = type_exp env kset sbody in
       re {
         exp_desc = Texp_when(cond, body);
         exp_loc = sexp.pexp_loc;
@@ -1137,7 +1174,7 @@ let rec type_exp env sexp =
         exp_env = env }
   | Pexp_send (e, met) ->
       if !Clflags.principal then begin_def ();
-      let obj = type_exp env e in
+      let obj = type_exp env kset e in
       begin try
         let (exp, typ) =
           match obj.exp_desc with
@@ -1167,7 +1204,7 @@ let rec type_exp env sexp =
                   unify env res_ty (instance typ);
                   (Texp_apply({ exp_desc = Texp_ident(Path.Pident method_id,
                                                      {val_type = method_type;
-                                                       val_kind = Val_reg});
+                                                      val_kind = Val_reg});
                                 exp_loc = sexp.pexp_loc;
                                 exp_type = method_type;
                                 exp_env = env },
@@ -1235,7 +1272,7 @@ let rec type_exp env sexp =
         let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
         match desc.val_kind with
           Val_ivar (Mutable, cl_num) ->
-            let newval = type_expect env snewval (instance desc.val_type) in
+            let newval = type_expect env kset snewval (instance desc.val_type) in
             let (path_self, _) =
               Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
             in
@@ -1269,12 +1306,12 @@ let rec type_exp env sexp =
         with Not_found ->
           raise(Error(sexp.pexp_loc, Outside_class))
       with
-        (_, {val_type = self_ty; val_kind = Val_self (_, vars, _, _)}),
+        (_, {val_type = self_ty; val_kind = Val_self (_, vars, _, _) }),
         (path_self, _) ->
           let type_override (lab, snewval) =
             begin try
               let (id, _, ty) = Vars.find lab !vars in
-              (Path.Pident id, type_expect env snewval (instance ty))
+              (Path.Pident id, type_expect env kset snewval (instance ty))
             with
               Not_found ->
                 raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
@@ -1293,11 +1330,11 @@ let rec type_exp env sexp =
       let ty = newvar() in
       Ident.set_current_time ty.level;
       let context = Typetexp.narrow () in
-      let modl = !type_module env smodl in
+      let modl = !type_module env kset smodl in
       let (id, new_env) = Env.enter_module name modl.mod_type env in
       Ctype.init_def(Ident.current_time());
       Typetexp.widen context;
-      let body = type_exp new_env sbody in
+      let body = type_exp new_env kset sbody in
       (* Unification of body.exp_type with the fresh variable ty
          fails if and only if the prefix condition is violated,
          i.e. if generative types rooted at id show up in the
@@ -1314,7 +1351,7 @@ let rec type_exp env sexp =
         exp_type = ty;
         exp_env = env }
   | Pexp_assert (e) ->
-       let cond = type_expect env e (instance Predef.type_bool) in
+       let cond = type_expect env kset e (instance Predef.type_bool) in
        re {
          exp_desc = Texp_assert (cond);
          exp_loc = sexp.pexp_loc;
@@ -1329,7 +1366,7 @@ let rec type_exp env sexp =
          exp_env = env;
        }
   | Pexp_lazy (e) ->
-       let arg = type_exp env e in
+       let arg = type_exp env kset e in
        re {
          exp_desc = Texp_lazy arg;
          exp_loc = sexp.pexp_loc;
@@ -1344,10 +1381,22 @@ let rec type_exp env sexp =
         exp_type = sign.cty_self;
         exp_env = env;
       }
+  | Pexp_rtype sty ->
+      let ty = Typetexp.transl_simple_type env false sty in
+      let type_path, _ = 
+	Env.lookup_type (Longident.Ldot (Longident.Lident "Rtype", "type_expr")) env in 
+      let type_t = Ctype.newty (Tconstr (type_path, [], ref Mnil)) in
+      re {
+        exp_desc = Texp_rtype( ty );
+        exp_loc = sexp.pexp_loc;
+        exp_type = type_t;
+        exp_env = env
+      }
   | Pexp_poly _ ->
       assert false
+      
 
-and type_argument env sarg ty_expected' =
+and type_argument env kset sarg ty_expected' =
   (* ty_expected' may be generic *)
   let no_labels ty =
     let ls, tvar = list_labels env ty in
@@ -1356,12 +1405,12 @@ and type_argument env sarg ty_expected' =
   let ty_expected = instance ty_expected' in
   match expand_head env ty_expected', sarg with
   | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
-      type_expect env sarg ty_expected
+      type_expect env kset sarg ty_expected
   | {desc = Tarrow("",ty_arg,ty_res,_); level = lv}, _ ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       if !Clflags.principal then begin_def ();
-      let texp = type_exp env sarg in
+      let texp = type_exp env kset sarg in
       if !Clflags.principal then begin
         end_def ();
         generalize_structure texp.exp_type
@@ -1391,6 +1440,7 @@ and type_argument env sarg ty_expected' =
       if args = [] then texp else
       (* eta-expand to avoid side effects *)
       let var_pair name ty =
+	(* ty is already generalized *)
         let id = Ident.create name in
         {pat_desc = Tpat_var id; pat_type = ty;
          pat_loc = Location.none; pat_env = env},
@@ -1413,9 +1463,9 @@ and type_argument env sarg ty_expected' =
            Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
       end
   | _ ->
-      type_expect env sarg ty_expected
+      type_expect env kset sarg ty_expected
 
-and type_application env funct sargs =
+and type_application env kset funct sargs =
   (* funct.exp_type may be generic *)
   let result_type omitted ty_fun =
     List.fold_left
@@ -1459,7 +1509,7 @@ and type_application env funct sargs =
         in
         let optional = if is_optional l1 then Optional else Required in
         let arg1 () =
-          let arg1 = type_expect env sarg1 ty1 in
+          let arg1 = type_expect env kset sarg1 ty1 in
           if optional = Optional then
             unify_exp env arg1 (type_option(newvar()));
           arg1
@@ -1503,7 +1553,7 @@ and type_application env funct sargs =
                 if l <> l' && l' <> "" then
                   raise(Error(sarg0.pexp_loc, Apply_wrong_label(l', ty_fun')))
                 else
-                  ([], more_sargs, Some (fun () -> type_argument env sarg0 ty))
+                  ([], more_sargs, Some (fun () -> type_argument env kset sarg0 ty))
             | _ ->
                 assert false
           end else try
@@ -1524,11 +1574,11 @@ and type_application env funct sargs =
             in
             sargs, more_sargs,
             if optional = Required || is_optional l' then
-              Some (fun () -> type_argument env sarg0 ty)
+              Some (fun () -> type_argument env kset sarg0 ty)
             else begin
               may_warn sarg0.pexp_loc
                 "Using an optional argument here is not principal";
-              Some (fun () -> option_some (type_argument env sarg0 
+              Some (fun () -> option_some (type_argument env kset sarg0 
                                              (extract_option_type env ty)))
             end
           with Not_found ->
@@ -1563,7 +1613,7 @@ and type_application env funct sargs =
     Texp_ident (_, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
     ["", sarg] ->
       let ty_arg, ty_res = filter_arrow env (instance funct.exp_type) "" in
-      let exp = type_expect env sarg ty_arg in
+      let exp = type_expect env kset sarg ty_arg in
       begin match (expand_head env exp.exp_type).desc with
       | Tarrow _ ->
           Location.prerr_warning exp.exp_loc Warnings.Partial_application
@@ -1579,7 +1629,7 @@ and type_application env funct sargs =
       else
         type_args [] [] ty ty sargs []
 
-and type_construct env loc lid sarg explicit_arity ty_expected =
+and type_construct env kset loc lid sarg explicit_arity ty_expected =
   let constr =
     try
       Env.lookup_constructor lid env
@@ -1608,7 +1658,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
       exp_type = instance ty_res;
       exp_env = env } in
   unify_exp env texp ty_expected;
-  let args = List.map2 (type_argument env) sargs ty_args in
+  let args = List.map2 (type_argument env kset) sargs ty_args in
   if constr.cstr_private = Private then
     raise(Error(loc, Private_type ty_res));
   { texp with exp_desc = Texp_construct(constr, args) }
@@ -1616,7 +1666,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
 
-and type_expect ?in_function env sexp ty_expected =
+and type_expect ?in_function env kset sexp ty_expected =
   match sexp.pexp_desc with
     Pexp_constant(Const_string s as cst) ->
       let exp =
@@ -1634,18 +1684,18 @@ and type_expect ?in_function env sexp ty_expected =
       unify_exp env exp ty_expected;
       exp
   | Pexp_construct(lid, sarg, explicit_arity) ->
-      type_construct env sexp.pexp_loc lid sarg explicit_arity ty_expected
+      type_construct env kset sexp.pexp_loc lid sarg explicit_arity ty_expected
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
-      let (pat_exp_list, new_env) = type_let env rec_flag spat_sexp_list in
-      let body = type_expect new_env sbody ty_expected in
+      let (pat_exp_list, new_env) = type_let env kset rec_flag spat_sexp_list in
+      let body = type_expect new_env kset sbody ty_expected in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_sequence(sexp1, sexp2) ->
-      let exp1 = type_statement env sexp1 in
-      let exp2 = type_expect env sexp2 ty_expected in
+      let exp1 = type_statement env kset sexp1 in
+      let exp2 = type_expect env kset sexp2 ty_expected in
       re {
         exp_desc = Texp_sequence(exp1, exp2);
         exp_loc = sexp.pexp_loc;
@@ -1673,7 +1723,7 @@ and type_expect ?in_function env sexp ty_expected =
                                 {pexp_loc = sexp.pexp_loc; pexp_desc =
                                  Pexp_let(Default, [spat, smatch], sbody)}])}
       in
-      type_expect ?in_function env sfun ty_expected
+      type_expect ?in_function env kset sfun ty_expected
   | Pexp_function (l, _, caselist) ->
       let (loc, ty_fun) =
         match in_function with Some p -> p
@@ -1694,7 +1744,7 @@ and type_expect ?in_function env sexp ty_expected =
         with Unify _ -> assert false
       end;
       let cases, partial =
-        type_cases ~in_function:(loc,ty_fun) env ty_arg ty_res
+        type_cases ~in_function:(loc,ty_fun) env kset ty_arg ty_res
           (Some sexp.pexp_loc) caselist in
       let all_labeled ty =
         let ls, tvar = list_labels env ty in
@@ -1723,28 +1773,28 @@ and type_expect ?in_function env sexp ty_expected =
         match ty.desc with
           Tpoly (ty', []) ->
             if sty <> None then set_type ty;
-            let exp = type_expect env sbody ty' in
+            let exp = type_expect env kset sbody ty' in
             re { exp with exp_type = ty }
         | Tpoly (ty', tl) ->
             if sty <> None then set_type ty;
             (* One more level to generalize locally *)
             begin_def ();
             let vars, ty'' = instance_poly true tl ty' in
-            let exp = type_expect env sbody ty'' in
+            let exp = type_expect env kset sbody ty'' in
             end_def ();
             check_univars env "method" exp ty_expected vars;
             re { exp with exp_type = ty }
         | _ -> assert false
       end
   | _ ->
-      let exp = type_exp env sexp in
+      let exp = type_exp env kset sexp in
       unify_exp env exp ty_expected;
       exp
 
 (* Typing of statements (expressions whose values are discarded) *)
 
-and type_statement env sexp =
-    let exp = type_exp env sexp in
+and type_statement env kset sexp =
+    let exp = type_exp env kset sexp in
     match (expand_head env exp.exp_type).desc with
     | Tarrow _ ->
         Location.prerr_warning sexp.pexp_loc Warnings.Partial_application;
@@ -1759,7 +1809,7 @@ and type_statement env sexp =
 
 (* Typing of match cases *)
 
-and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
+and type_cases ?in_function env kset ty_arg ty_res partial_loc caselist =
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
   let pat_env_list =
@@ -1793,7 +1843,8 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   let cases =
     List.map2
       (fun (pat, ext_env) (spat, sexp) ->
-        let exp = type_expect ?in_function ext_env sexp ty_res in
+	let bound_idents = pat_bound_idents pat in
+        let exp = type_expect ?in_function ext_env kset sexp ty_res in
         (pat, exp))
       pat_env_list caselist
   in
@@ -1806,7 +1857,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 
 (* Typing of let bindings *)
 
-and type_let env rec_flag spat_sexp_list =
+and type_let env kset rec_flag spat_sexp_list =
   begin_def();
   if !Clflags.principal then begin_def ();
   let (pat_list, new_env, force) =
@@ -1837,23 +1888,30 @@ and type_let env rec_flag spat_sexp_list =
   List.iter (fun f -> f()) force;
   let exp_env =
     match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
-  let exp_list =
+  let exp_kset_list =
     List.map2
-      (fun (spat, sexp) pat -> type_expect exp_env sexp pat.pat_type)
+      (fun (spat, sexp) pat -> 
+	let kset' = Kset.empty () in
+	type_expect exp_env kset' sexp pat.pat_type, kset')
       spat_sexp_list pat_list in
+  let exp_list = List.map fst exp_kset_list in
   List.iter2
     (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
     pat_list exp_list;
   end_def();
   List.iter2
-    (fun pat exp ->
+    (fun pat (exp, kset') ->
        if not (is_nonexpansive exp) then
          iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat)
-    pat_list exp_list;
+    pat_list exp_kset_list;
   List.iter
     (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
     pat_list;
-  (List.combine pat_list exp_list, new_env)
+  let pat_exp_list = List.combine pat_list exp_list in
+  let pat_exp_kset_list = List.combine pat_list exp_kset_list in
+  (* fix konstraint info *)
+  kset := !kset @ fix_konstraints new_env pat_exp_kset_list;
+  (pat_exp_list, new_env)
 
 (* Typing of toplevel bindings *)
 
@@ -1863,19 +1921,49 @@ let type_binding env rec_flag spat_sexp_list =
 
 (* Typing of toplevel expressions *)
 
-let type_expression env sexp =
+open Format
+let type_expression env kset sexp =
   Typetexp.reset_type_variables();
   begin_def();
-  let exp = type_exp env sexp in
+  let kset' = Kset.empty () in
+  let exp = type_exp env kset' sexp in
   end_def();
   if is_nonexpansive exp then generalize exp.exp_type
   else generalize_expansive env exp.exp_type;
+  (* FIXME: BAD DESIGN. create a dummy pattern where fix_konstraints
+     assign a konstraint *)
+  let dummy_pat = { pat_desc= Tpat_any;
+		    pat_loc= Location.none;
+		    pat_type= exp.exp_type;
+		    pat_env= env } 
+  in
+  kset := !kset @ fix_konstraints env [dummy_pat, (exp, kset')];
+  exp.exp_type <- dummy_pat.pat_type;
   exp
 
-(* Error report *)
+(* Typing of toplevel generic primitive declaration *)
 
 open Format
 open Printtyp
+
+let type_genprimitive env setyp expr =
+  (* FIXME: after the konstraint typing, the def expression cannot be generic *)
+  Typetexp.reset_type_variables();
+  let etyp = Typetexp.transl_type_scheme env setyp in
+  let konst, ty = Etype.split etyp in
+  let expected = Etype.type_of_generic_primitive_compilation env konst ty in
+
+  begin_def ();
+  let texp = type_expect env (Kset.empty ()) expr (instance expected) in
+  end_def ();
+  if is_nonexpansive texp then generalize texp.exp_type
+  else generalize_expansive env texp.exp_type;
+  if moregeneral env true texp.exp_type expected then etyp, texp
+  else
+    raise (Error(texp.exp_loc, 
+		 Generic_primitive_type_mismatch(texp.exp_type, expected)))
+
+(* Error report *)
 
 let report_error ppf = function
   | Unbound_value lid ->
@@ -2023,3 +2111,13 @@ let report_error ppf = function
       report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
+  | Generic_primitive_type_mismatch (actual, expected) ->
+      fprintf ppf "This generic primitive compilation has type %a@ " 
+	type_scheme actual;
+      fprintf ppf "which is incompatible with the required type %a." 
+	type_scheme expected
+  | Should_not_be_generic (scm,typ) ->
+      fprintf ppf "This expression has type %a@ " 
+	type_scheme scm;
+      fprintf ppf "which cannot be bound to a pattern of type %a."
+	type_expr typ

@@ -503,6 +503,47 @@ let assert_failed loc =
                Const_base(Const_int char)]))])])
 ;;
 
+(* Generic stuffs *)
+
+(* if the type variable of the generic instance is generalized, types should come from
+   the outer type abstraction. *)
+
+let transl_generic_instance env path vdesc typ =
+  let typ = Etype.body typ in (* we are not intersted in the konst part *)
+
+  (* We must know how the [tabsts] are instantiated in e.exp_type *)
+  (* Note: e.exp_type may be generalized type variable due to 
+     the external type generalizations. Therefore we instantiate it. *)
+
+  let i_tabsts, i_val_type =  Etype.split (Ctype.instance vdesc.val_type) in
+  
+  (* Note #2: by instantiating the instance type, outer-generalized type 
+     variables' identity is lost. We must keep track of these 
+     instantiation... *)
+  let gvars = Ctype.generalized_vars typ in
+  let i_typ, i_gvars = 
+    match Ctype.instance_list (typ :: gvars) with
+    | i_typ :: i_gvars -> i_typ, i_gvars 
+    | _ -> assert false
+  in
+  Ctype.unify env i_typ i_val_type;
+  (* i_tabsts are unified too! *)
+  let i_gvars = List.map Btype.repr i_gvars in
+  Lapply(transl_path path, 
+	 Transltype.transl_type_exprs (List.combine i_gvars gvars) 
+	   i_tabsts)
+
+(* the body compilation must be delayed after the variables for 
+   type abstractions are created *)
+let transl_type_abstraction typ compfunc arg =
+  let konst, t = Etype.split typ in
+  let tabsts = Etype.type_abstraction konst t in
+  if tabsts = [] then compfunc arg
+  else begin
+    let absts = List.map Etype.ident_of_type_variable tabsts in
+    Lfunction (Curried, absts, compfunc arg)
+  end
+
 (* Translation of expressions *)
 
 let rec transl_exp e =
@@ -525,8 +566,11 @@ and transl_exp0 e =
 	transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
-  | Texp_ident(path, {val_kind = Val_reg | Val_self _}) ->
-      transl_path path
+  | Texp_ident(path, ({val_kind = Val_reg | Val_self _} as vdesc)) ->
+      begin match Etype.type_abstraction_of_value vdesc with
+      | [] -> transl_path path
+      | _ -> transl_generic_instance e.exp_env path vdesc e.exp_type
+      end
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
       Lconst(Const_base cst)
@@ -695,6 +739,7 @@ and transl_exp0 e =
           cl_loc = e.exp_loc;
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
+  | Texp_rtype ty -> Transltype.transl_type_expr [] ty
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -795,7 +840,8 @@ and transl_let rec_flag pat_expr_list body =
         [] ->
           body
       | (pat, expr) :: rem ->
-          Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
+	  let lam = transl_type_abstraction pat.pat_type transl_exp expr in
+          Matching.for_let pat.pat_loc lam pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -806,7 +852,7 @@ and transl_let rec_flag pat_expr_list body =
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
       let transl_case (pat, expr) id =
-        let lam = transl_exp expr in
+        let lam = transl_type_abstraction pat.pat_type transl_exp expr in
         if not (check_recursive_lambda idlist lam) then
           raise(Error(expr.exp_loc, Illegal_letrec_expr));
         (id, lam) in
