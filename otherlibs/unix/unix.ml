@@ -133,6 +133,11 @@ let stdin = 0
 let stdout = 1
 let stderr = 2
 
+let max_opened_descr = ref 2
+
+let record_descr fd =
+  if fd > !max_opened_descr then max_opened_descr := fd
+
 type open_flag =
     O_RDONLY
   | O_WRONLY
@@ -146,8 +151,14 @@ type open_flag =
 type file_perm = int
 
 
-external openfile : string -> open_flag list -> file_perm -> file_descr
+external sys_openfile : string -> open_flag list -> file_perm -> file_descr
            = "unix_open"
+
+let openfile name flags perm =
+  let fd = sys_openfile name flags perm in
+  record_descr fd;
+  fd
+
 external close : file_descr -> unit = "unix_close"
 external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
 external unsafe_write : file_descr -> string -> int -> int -> int = "unix_write"
@@ -218,7 +229,11 @@ external fchown : file_descr -> int -> int -> unit = "unix_fchown"
 external umask : int -> int = "unix_umask"
 external access : string -> access_permission list -> unit = "unix_access"
 
-external dup : file_descr -> file_descr = "unix_dup"
+external sys_dup : file_descr -> file_descr = "unix_dup"
+
+let dup fd =
+  let newfd = sys_dup fd in record_descr newfd; newfd
+
 external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
 external set_nonblock : file_descr -> unit = "unix_set_nonblock"
 external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
@@ -236,7 +251,13 @@ external opendir : string -> dir_handle = "unix_opendir"
 external readdir : dir_handle -> string = "unix_readdir"
 external rewinddir : dir_handle -> unit = "unix_rewinddir"
 external closedir : dir_handle -> unit = "unix_closedir"
-external pipe : unit -> file_descr * file_descr = "unix_pipe"
+
+external sys_pipe : unit -> file_descr * file_descr = "unix_pipe"
+
+let pipe () =
+  let (fd1, fd2 as fdpair) = sys_pipe() in
+  record_descr fd1; record_descr fd2; fdpair
+
 external symlink : string -> string -> unit = "unix_symlink"
 external readlink : string -> string = "unix_readlink"
 external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
@@ -369,12 +390,25 @@ type socket_option =
   | SO_DONTROUTE
   | SO_OOBINLINE
 
-external socket : socket_domain -> socket_type -> int -> file_descr
+external sys_socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
-external socketpair :
+let socket domain typ proto =
+  let fd = sys_socket domain typ proto in
+  record_descr fd; fd
+
+external sys_socketpair :
         socket_domain -> socket_type -> int -> file_descr * file_descr
                                   = "unix_socketpair"
-external accept : file_descr -> file_descr * sockaddr = "unix_accept"
+let socketpair domain typ proto =
+  let (fd1, fd2 as fdpair) = sys_socketpair domain typ proto in
+  record_descr fd1; record_descr fd2; fdpair
+
+external sys_accept : file_descr -> file_descr * sockaddr = "unix_accept"
+
+let accept fd =
+  let (newfd, addr as result) = sys_accept fd in
+  record_descr newfd; result
+
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"
@@ -503,10 +537,26 @@ external tcflow: file_descr -> flow_action -> unit = "unix_tcflow"
 
 (* High-level process management (system, popen) *)
 
+let closeall () =
+  for i = 3 to !max_opened_descr do close i done
+
 let system cmd =
   match fork() with
-     0 -> execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]; exit 127
+     0 -> closeall();
+          execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
+          exit 127
   | id -> snd(waitpid [] id)
+
+let create_process cmd args new_stdin new_stdout new_stderr =
+  match fork() with
+    0 ->
+      if new_stdin  <> stdin  then dup2 new_stdin stdin;
+      if new_stdout <> stdout then dup2 new_stdout stdout;
+      if new_stderr <> stderr then dup2 new_stderr stderr;
+      closeall();
+      execvp cmd args;
+      exit 127
+  | id -> id
 
 type popen_process =
     Process of in_channel * out_channel
@@ -515,26 +565,22 @@ type popen_process =
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
-let open_proc cmd proc input output toclose =
-  match fork() with
-     0 -> if input <> stdin then begin dup2 input stdin; close input end;
-          if output <> stdout then begin dup2 output stdout; close output end;
-          List.iter close toclose;
-          execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
-          exit 127
-  | id -> Hashtbl.add popen_processes proc id
+let open_proc cmd proc input output =
+  let pid =
+    create_process "/bin/sh" [| "/bin/sh"; "-c"; cmd |] input output stderr in
+  Hashtbl.add popen_processes proc pid
 
 let open_process_in cmd =
   let (in_read, in_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
-  open_proc cmd (Process_in inchan) stdin in_write [in_read];
+  open_proc cmd (Process_in inchan) stdin in_write;
   close in_write;
   inchan
 
 let open_process_out cmd =
   let (out_read, out_write) = pipe() in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process_out outchan) out_read stdout [out_write];
+  open_proc cmd (Process_out outchan) out_read stdout;
   close out_read;
   outchan
 
@@ -543,8 +589,9 @@ let open_process cmd =
   let (out_read, out_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process(inchan, outchan))
-            out_read in_write [in_read; out_write];
+  open_proc cmd (Process(inchan, outchan)) out_read in_write;
+  close in_write;
+  close out_read;
   (inchan, outchan)
 
 let find_proc_id fun_name proc =

@@ -201,8 +201,7 @@ type open_flag =
 type file_perm = int
         (* The type of file access rights. *)
 
-external openfile : string -> open_flag list -> file_perm -> file_descr
-           = "unix_open"
+val openfile : string -> open_flag list -> file_perm -> file_descr
         (* Open the named file with the given flags. Third argument is
            the permissions to give to the file if it is created. Return
            a file descriptor on the named file. *)
@@ -327,8 +326,9 @@ external access : string -> access_permission list -> unit = "unix_access"
 
 (*** Operations on file descriptors *)
 
-external dup : file_descr -> file_descr = "unix_dup"
-        (* Duplicate a descriptor. *)
+val dup : file_descr -> file_descr
+        (* Return a new file descriptor referencing the same file as
+           the given descriptor. *)
 external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
         (* [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
            opened. *)
@@ -378,10 +378,34 @@ external closedir : dir_handle -> unit = "unix_closedir"
 
 (*** Pipes and redirections *)
 
-external pipe : unit -> file_descr * file_descr = "unix_pipe"
+val pipe : unit -> file_descr * file_descr
         (* Create a pipe. The first component of the result is opened
            for reading, that's the exit to the pipe. The second component is
            opened for writing, that's the entrance to the pipe. *) 
+
+external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
+        (* Create a named pipe with the given permissions. *)
+
+
+(*** High-level process and redirection management *)
+
+val create_process :
+  string -> string array -> file_descr -> file_descr -> file_descr -> int
+        (* [create_process prog args new_stdin new_stdout new_stderr]
+           forks a new process that executes the program
+           in file [prog], with arguments [args]. The pid of the new 
+           process is returned immediately; the new process executes
+           concurrently with the current process.
+           The standard input and outputs of the new process are connected
+           to the descriptors [new_stdin], [new_stdout] and [new_stderr].
+           Passing e.g. [stdout] for [new_stdout] prevents the redirection
+           and causes the new process to have the same standard output
+           as the current process.
+           The executable file [prog] is searched in the path.
+           The new process has the same environment as the current process.
+           All file descriptors of the current process are closed in the
+           new process, except those redirected to standard input and
+           outputs. *)
 
 val open_process_in: string -> in_channel
 val open_process_out: string -> out_channel
@@ -400,7 +424,6 @@ val close_process: in_channel * out_channel -> process_status
            and [open_process], respectively, wait for the associated
            command to terminate, and return its termination status. *)
 
-
 (*** Symbolic links *)
 
 external symlink : string -> string -> unit = "unix_symlink"
@@ -408,12 +431,6 @@ external symlink : string -> string -> unit = "unix_symlink"
            to the file [source]. *)
 external readlink : string -> string = "unix_readlink"
         (* Read the contents of a link. *)
-
-
-(*** Named pipes *)
-
-external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
-        (* Create a named pipe with the given permissions. *)
 
 
 (*** Special files *)
@@ -651,16 +668,14 @@ type sockaddr =
            domain; [addr] is the Internet address of the machine, and
            [port] is the port number. *)
 
-external socket : socket_domain -> socket_type -> int -> file_descr
-                                  = "unix_socket"
+val socket : socket_domain -> socket_type -> int -> file_descr
         (* Create a new socket in the given domain, and with the
            given kind. The third argument is the protocol type; 0 selects
            the default protocol for that kind of sockets. *)
-external socketpair :
+val socketpair :
         socket_domain -> socket_type -> int -> file_descr * file_descr
-                                  = "unix_socketpair"
         (* Create a pair of unnamed sockets, connected together. *)
-external accept : file_descr -> file_descr * sockaddr = "unix_accept"
+val accept : file_descr -> file_descr * sockaddr
         (* Accept connections on the given socket. The returned descriptor
            is a socket connected to the client; the returned address is
            the address of the connecting client. *)
