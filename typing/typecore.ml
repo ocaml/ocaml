@@ -13,6 +13,7 @@
 
 (* Typechecking for the core language *)
 
+open Misc
 open Asttypes
 open Parsetree
 open Typedtree
@@ -99,6 +100,8 @@ let rec type_pat env sp =
         match sarg with
           None -> []
         | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
+        | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity > 1 ->
+            replicate_list sp constr.cstr_arity
         | Some sp -> [sp] in
       if List.length sargs <> constr.cstr_arity then
         raise(Error(sp.ppat_loc, Constructor_arity_mismatch(lid,
