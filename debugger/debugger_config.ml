@@ -77,9 +77,10 @@ let make_checkpoints = ref true
 (* List of standard library modules *)
 let stdlib_units = [
   "Pervasives"; "List"; "Char"; "String"; "Array"; "Sys";
-  "Hashtbl"; "Sort"; "Filename"; "Obj"; "Lexing"; "Parsing";
+  "Hashtbl"; "Sort"; "Marshal"; "Obj"; "Lexing"; "Parsing";
   "Set"; "Map"; "Stack"; "Queue"; "Stream";
-  "Printf"; "Format"; "Arg"; "Printexc"; "Gc";
-  "Digest"; "Random"; "Oo"; "Genlex"; "Callback"; "Buffer";
-  "Weak"; "Lazy"; "Marshal"; "Unix"
+  "Buffer"; "Printf"; "Format"; "Arg"; "Printexc"; "Gc";
+  "Digest"; "Random"; "Oo"; "Genlex"; "Callback"; "Weak";
+  "Lazy"; "Filename"; "Int32"; "Int64"; "Nativeint";
+  "Unix"
 ]
