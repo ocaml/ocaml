@@ -347,21 +347,21 @@ value input_val(struct channel *chan)
 
 value input_value(value vchan)        /* ML */
 {
+  CAMLparam1 (vchan);
   struct channel * chan = Channel(vchan);
-  value res = Val_unit;
+  CAMLlocal1 (res);
 
-  Begin_root(res)
-    Lock(chan);
-    res = input_val(chan);
-    Unlock(chan);
-  End_roots();
-  return res;
+  Lock(chan);
+  res = input_val(chan);
+  Unlock(chan);
+  CAMLreturn (res);
 }
 
 value input_val_from_string(value str, long int ofs)
 {
+  CAMLparam1 (str);
   mlsize_t num_objects, size_32, size_64, whsize;
-  value obj;
+  CAMLlocal1 (obj);
 
   intern_src = &Byte_u(str, ofs + 2*4);
   intern_input_malloced = 0;
@@ -374,16 +374,14 @@ value input_val_from_string(value str, long int ofs)
 #else
   whsize = size_32;
 #endif
-  Begin_root(str);
-    intern_alloc(whsize, num_objects);
-  End_roots();
+  intern_alloc(whsize, num_objects);
   intern_src = &Byte_u(str, ofs + 5*4); /* If a GC occurred */
   /* Fill it in */
   intern_rec(&obj);
   intern_add_to_heap(whsize);
   /* Free everything */
   if (intern_obj_table != NULL) stat_free(intern_obj_table);
-  return obj;
+  CAMLreturn (obj);
 }
 
 value input_value_from_string(value str, value ofs) /* ML */

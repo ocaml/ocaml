@@ -128,7 +128,8 @@ value array_unsafe_set(value array, value index, value newval)   /* ML */
 
 value make_vect(value len, value init) /* ML */
 {
-  value res;
+  CAMLparam2 (len, init);
+  CAMLlocal1 (res);
   mlsize_t size, wsize, i;
   double d;
 
@@ -146,49 +147,46 @@ value make_vect(value len, value init) /* ML */
     }
   } else {
     if (size > Max_wosize) invalid_argument("Array.make");
-    Begin_root(init);
-      if (size < Max_young_wosize) {
-	res = alloc_small(size, 0);
-	for (i = 0; i < size; i++) Field(res, i) = init;
-      }
-      else if (Is_block(init) && Is_young(init)) {
-	minor_collection();
-	res = alloc_shr(size, 0);
-	for (i = 0; i < size; i++) Field(res, i) = init;
-	res = check_urgent_gc (res);
-      }
-      else {
-	res = alloc_shr(size, 0);
-	for (i = 0; i < size; i++) initialize(&Field(res, i), init);
-	res = check_urgent_gc (res);
-      }
-    End_roots();
+    if (size < Max_young_wosize) {
+      res = alloc_small(size, 0);
+      for (i = 0; i < size; i++) Field(res, i) = init;
+    }
+    else if (Is_block(init) && Is_young(init)) {
+      minor_collection();
+      res = alloc_shr(size, 0);
+      for (i = 0; i < size; i++) Field(res, i) = init;
+      res = check_urgent_gc (res);
+    }
+    else {
+      res = alloc_shr(size, 0);
+      for (i = 0; i < size; i++) initialize(&Field(res, i), init);
+      res = check_urgent_gc (res);
+    }
   }
-  return res;
+  CAMLreturn (res);
 }
 
 value make_array(value init)    /* ML */
 {
+  CAMLparam1 (init);
   mlsize_t wsize, size, i;
-  value v, res;
+  CAMLlocal2 (v, res);
 
   size = Wosize_val(init);
   if (size == 0) {
-    return init;
+    CAMLreturn (init);
   } else {
     v = Field(init, 0);
     if (Is_long(v) || Tag_val(v) != Double_tag) {
-      return init;
+      CAMLreturn (init);
     } else {
       Assert(size < Max_young_wosize);
       wsize = size * Double_wosize;
-      Begin_root(init);
-        res = alloc_small(wsize, Double_array_tag);
-	for (i = 0; i < size; i++) {
-	  Store_double_field(res, i, Double_val(Field(init, i)));
-	}
-      End_roots();
-      return res;
+      res = alloc_small(wsize, Double_array_tag);
+      for (i = 0; i < size; i++) {
+        Store_double_field(res, i, Double_val(Field(init, i)));
+      }
+      CAMLreturn (res);
     }
   }
 }

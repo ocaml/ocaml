@@ -461,32 +461,31 @@ value caml_output_int(value vchannel, value w)    /* ML */
 
 value caml_output_partial(value vchannel, value buff, value start, value length) /* ML */
 {
+  CAMLparam4 (vchannel, buff, start, length);
   struct channel * channel = Channel(vchannel);
   int res;
-  Begin_root(buff)
-    Lock(channel);
-    res = putblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
-    Unlock(channel);
-  End_roots();
-  return Val_int(res);
+
+  Lock(channel);
+  res = putblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
+  Unlock(channel);
+  CAMLreturn (Val_int(res));
 }
 
 value caml_output(value vchannel, value buff, value start, value length) /* ML */
 {
+  CAMLparam4 (vchannel, buff, start, length);
   struct channel * channel = Channel(vchannel);
   long pos = Long_val(start);
   long len = Long_val(length);
 
-  Begin_root(buff)
-    Lock(channel);
-      while (len > 0) {
-        int written = putblock(channel, &Byte(buff, pos), len);
-        pos += written;
-        len -= written;
-      }
-    Unlock(channel);
-  End_roots();
-  return Val_unit;
+  Lock(channel);
+	while (len > 0) {
+	  int written = putblock(channel, &Byte(buff, pos), len);
+	  pos += written;
+	  len -= written;
+	}
+  Unlock(channel);
+  CAMLreturn (Val_unit);
 }
 
 value caml_seek_out(value vchannel, value pos)    /* ML */
@@ -530,15 +529,14 @@ value caml_input_int(value vchannel)        /* ML */
 
 value caml_input(value vchannel, value buff, value start, value length) /* ML */
 {
+  CAMLparam4 (vchannel, buff, start, length);
   struct channel * channel = Channel(vchannel);
   long res;
 
-  Begin_root(buff)
-    Lock(channel);
-    res = getblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
-    Unlock(channel);
-  End_roots();
-  return Val_long(res);
+  Lock(channel);
+  res = getblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
+  Unlock(channel);
+  CAMLreturn (Val_long(res));
 }
 
 value caml_seek_in(value vchannel, value pos)     /* ML */

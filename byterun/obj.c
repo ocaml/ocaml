@@ -68,21 +68,20 @@ value obj_block(value tag, value size) /* ML */
 
 value obj_dup(value arg) /* ML */
 {
-  value res;
+  CAMLparam1 (arg);
+  CAMLlocal1 (res);
   mlsize_t sz, i;
   tag_t tg;
 
   sz = Wosize_val(arg);
   if (sz == 0) return arg;
 
-  Begin_root(arg);
   tg = Tag_val(arg);
   res = alloc(sz, tg);
   for (i = 0; i < sz; i++)
     Field(res, i) = Field(arg, i);
-  End_roots();
 
-  return res;
+  CAMLreturn (res);
 }
 
 /* Shorten the given block to the given size and return void.

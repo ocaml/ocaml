@@ -55,9 +55,9 @@ value weak_set (value ar, value n, value el)     /* ML */
 
 value weak_get (value ar, value n)        /* ML */
 {
+  CAMLparam2 (ar, n);
   mlsize_t offset = Long_val (n) + 1;
-  value res;
-  value elt;
+  CAMLlocal2 (res, elt);
                                                    Assert (Is_in_heap (ar));
   if (offset < 1 || offset >= Wosize_val (ar)) invalid_argument ("Weak.get");
   if (Field (ar, offset) == 0){
@@ -65,12 +65,10 @@ value weak_get (value ar, value n)        /* ML */
   }else{
     elt = Field (ar, offset);
     if (gc_phase == Phase_mark) darken (elt, NULL);
-    Begin_root(elt);
-      res = alloc_small (1, Some_tag);
-    End_roots ();
+    res = alloc_small (1, Some_tag);
     Field (res, 0) = elt;
   }
-  return res;
+  CAMLreturn (res);
 }
 
 #undef Setup_for_gc

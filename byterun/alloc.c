@@ -49,7 +49,7 @@ value alloc (mlsize_t wosize, tag_t tag)
 value alloc_small (mlsize_t wosize, tag_t tag)
 {
   value result;
-  
+
   Assert (wosize > 0 && wosize <= Max_young_wosize);
   Alloc_small (result, wosize, tag);
   return result;
@@ -101,25 +101,24 @@ value copy_string(char *s)
 
 value alloc_array(value (*funct)(char *), char ** arr)
 {
+  CAMLparam0 ();
   mlsize_t nbr, n;
-  value v, result;
+  CAMLlocal2 (v, result);
 
   nbr = 0;
   while (arr[nbr] != 0) nbr++;
   if (nbr == 0) {
-    return Atom(0);
+    CAMLreturn (Atom(0));
   } else {
     result = alloc (nbr, 0);
-    Begin_root(result);
-      for (n = 0; n < nbr; n++) {
-	/* The two statements below must be separate because of evaluation
-           order (don't take the address &Field(result, n) before
-           calling funct, which may cause a GC and move result). */
-	v = funct(arr[n]);
-	modify(&Field(result, n), v);
-      }
-    End_roots();
-    return result;
+    for (n = 0; n < nbr; n++) {
+      /* The two statements below must be separate because of evaluation
+         order (don't take the address &Field(result, n) before
+         calling funct, which may cause a GC and move result). */
+      v = funct(arr[n]);
+      modify(&Field(result, n), v);
+    }
+    CAMLreturn (result);
   }
 }
 

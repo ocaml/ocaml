@@ -187,12 +187,13 @@ int convert_signal_number(int signo)
 
 value install_signal_handler(value signal_number, value action) /* ML */
 {
+  CAMLparam2 (signal_number, action);
   int sig;
   void (*act)(int signo), (*oldact)(int signo);
 #ifdef POSIX_SIGNALS
   struct sigaction sigact, oldsigact;
 #endif
-  value res;
+  CAMLlocal1 (res);
 
   sig = convert_signal_number(Int_val(signal_number));
   if (sig < 0 || sig >= NSIG) 
@@ -207,9 +208,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
   default:                      /* Signal_handle */
     if (signal_handlers == 0) {
       int i;
-      Begin_root(action);
-        signal_handlers = alloc_tuple(NSIG);
-      End_roots();
+      signal_handlers = alloc_tuple(NSIG);
       for (i = 0; i < NSIG; i++) Field(signal_handlers, i) = Val_int(0);
       register_global_root(&signal_handlers);
     }
@@ -235,5 +234,5 @@ value install_signal_handler(value signal_number, value action) /* ML */
     res = Val_int(1);           /* Signal_ignore */
   else
     res = Val_int(0);           /* Signal_default */
-  return res;
+  CAMLreturn (res);
 }

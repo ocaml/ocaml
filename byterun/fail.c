@@ -38,31 +38,31 @@ void mlraise(value v)
 
 void raise_constant(value tag)
 {
-  value bucket;
-  Begin_root (tag);
-    bucket = alloc_small (1, 0);
-    Field(bucket, 0) = tag;
-  End_roots ();
+  CAMLparam1 (tag);
+  CAMLlocal1 (bucket);
+
+  bucket = alloc_small (1, 0);
+  Field(bucket, 0) = tag;
   mlraise(bucket);
 }
 
 void raise_with_arg(value tag, value arg)
 {
-  value bucket;
-  Begin_roots2 (tag, arg);
-    bucket = alloc_small (2, 0);
-    Field(bucket, 0) = tag;
-    Field(bucket, 1) = arg;
-  End_roots ();
+  CAMLparam2 (tag, arg);
+  CAMLlocal1 (bucket);
+
+  bucket = alloc_small (2, 0);
+  Field(bucket, 0) = tag;
+  Field(bucket, 1) = arg;
   mlraise(bucket);
 }
 
 void raise_with_string(value tag, char *msg)
 {
-  value vmsg;
-  Begin_root(tag);
-    vmsg = copy_string(msg);
-  End_roots();
+  CAMLparam1 (tag);
+  CAMLlocal1 (vmsg);
+
+  vmsg = copy_string(msg);
   raise_with_arg(tag, vmsg);
 }
 

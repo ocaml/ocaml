@@ -98,35 +98,33 @@ value callback3_exn(value closure, value arg1, value arg2, value arg3)
 
 value callbackN_exn(value closure, int narg, value args[])
 {
-  value res;
+  CAMLparam1 (closure);
+  CAMLxparamN (args, nargs);
+  CAMLlocal1 (res);
   int i;
 
   res = closure;
-  Begin_roots1(res)
-    Begin_roots_block(args, narg)
-      for (i = 0; i < narg; /*nothing*/) {
-        /* Pass as many arguments as possible */
-        switch (narg - i) {
-        case 1:
-          res = callback_exn(res, args[i]);
-          if (Is_exception_result(res)) return res;
-          i += 1;
-          break;
-        case 2:
-          res = callback2(res, args[i], args[i + 1]);
-          if (Is_exception_result(res)) return res;
-          i += 2;
-          break;
-        default:
-          res = callback3(res, args[i], args[i + 1], args[i + 2]);
-          if (Is_exception_result(res)) return res;
-          i += 3;
-          break;
-        }
-      }
-    End_roots();
-  End_roots();
-  return res;
+  for (i = 0; i < narg; /*nothing*/) {
+    /* Pass as many arguments as possible */
+    switch (narg - i) {
+    case 1:
+      res = callback_exn(res, args[i]);
+      if (Is_exception_result(res)) CAMLreturn (res);
+      i += 1;
+      break;
+    case 2:
+      res = callback2(res, args[i], args[i + 1]);
+      if (Is_exception_result(res)) CAMLreturn (res);
+      i += 2;
+      break;
+    default:
+      res = callback3(res, args[i], args[i + 1], args[i + 2]);
+      if (Is_exception_result(res)) CAMLreturn (res);
+      i += 3;
+      break;
+    }
+  }
+  CAMLreturn (res);
 }
 
 #endif

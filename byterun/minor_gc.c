@@ -142,12 +142,9 @@ void minor_collection (void)
 
 value check_urgent_gc (value extra_root)
 {
-  if (force_major_slice) {
-    Begin_root(extra_root);
-      minor_collection();
-    End_roots();
-  }
-  return extra_root;
+  CAMLparam1 (extra_root);
+  if (force_major_slice) minor_collection();
+  CAMLreturn (extra_root);
 }
 
 void realloc_ref_table (void)

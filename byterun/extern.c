@@ -401,13 +401,13 @@ void output_val(struct channel *chan, value v, value flags)
 
 value output_value(value vchan, value v, value flags) /* ML */
 {
+  CAMLparam3 (vchan, v, flags);
   struct channel * channel = Channel(vchan);
-  Begin_roots2(v, flags)
-    Lock(channel);
-    output_val(channel, v, flags);
-    Unlock(channel);
-  End_roots();
-  return Val_unit;
+
+  Lock(channel);
+  output_val(channel, v, flags);
+  Unlock(channel);
+  CAMLreturn (Val_unit);
 }
 
 value output_value_to_string(value v, value flags) /* ML */

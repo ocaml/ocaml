@@ -28,6 +28,9 @@
 #if !macintosh && !_WIN32
 #include <sys/wait.h>
 #endif
+#if macintosh
+#include "macintosh.h"
+#endif
 #include "config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -85,8 +88,9 @@ char * error_message(void)
 
 void sys_error(value arg)
 {
+  CAMLparam1 (arg);
   char * err;
-  value str;
+  CAMLlocal1 (str);
   
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
     raise_sys_blocked_io();
@@ -97,9 +101,7 @@ void sys_error(value arg)
     } else {
       int err_len = strlen(err);
       int arg_len = string_length(arg);
-      Begin_root(arg);
       str = alloc_string(arg_len + 2 + err_len);
-      End_roots();
       bcopy(String_val(arg), &Byte(str, 0), arg_len);
       bcopy(": ", &Byte(str, arg_len), 2);
       bcopy(err, &Byte(str, arg_len + 2), err_len);
@@ -234,6 +236,8 @@ void sys_init(char **argv)
 value sys_system_command(value command)   /* ML */
 {
   int status, retcode;
+  
+  enter_blocking_section ();
 #ifndef _WIN32
   status = system(String_val(command));
   if (WIFEXITED(status))
@@ -243,6 +247,7 @@ value sys_system_command(value command)   /* ML */
 #else
   status = retcode = win32_system(String_val(command));
 #endif
+  leave_blocking_section ();
   if (status == -1) sys_error(command);
   return Val_int(retcode);
 }
@@ -279,16 +284,14 @@ value sys_random_seed (value unit)       /* ML */
 
 value sys_get_config(value unit)  /* ML */
 {
-  value result;
-  value ostype;
+  CAMLparam0 ();   /* unit is unused */
+  CAMLlocal2 (result, ostype);
 
   ostype = copy_string(OCAML_OS_TYPE);
-  Begin_root(ostype);
-    result = alloc_small (2, 0);
-    Field(result, 0) = ostype;
-    Field(result, 1) = Val_long (8 * sizeof(value));
-  End_roots ();
-  return result;
+  result = alloc_small (2, 0);
+  Field(result, 0) = ostype;
+  Field(result, 1) = Val_long (8 * sizeof(value));
+  CAMLreturn (result);
 }
 
 /* Search path function */

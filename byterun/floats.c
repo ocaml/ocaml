@@ -162,15 +162,15 @@ value fmod_float(value f1, value f2)              /* ML */
 
 value frexp_float(value f)              /* ML */
 {
+  CAMLparam1 (f);
+  CAMLlocal2 (res, mantissa);
   int exponent;
-  value res;
-  value mantissa = copy_double(frexp (Double_val(f), &exponent));
-  Begin_root(mantissa);
-    res = alloc_tuple(2);
-    Field(res, 0) = mantissa;
-    Field(res, 1) = Val_int(exponent);
-  End_roots();
-  return res;
+
+  mantissa = copy_double(frexp (Double_val(f), &exponent));
+  res = alloc_tuple(2);
+  Field(res, 0) = mantissa;
+  Field(res, 1) = Val_int(exponent);
+  CAMLreturn (res);
 }
 
 value ldexp_float(value f, value i)              /* ML */
@@ -190,22 +190,20 @@ value log10_float(value f)              /* ML */
 
 value modf_float(value f)              /* ML */
 {
-#if __MRC__ || __SC__
-  _float_eval frem;
+#if __SC__
+  _float_eval frem;       /* Problem with Apple's <math.h> */
 #else
   double frem;
 #endif
-  value res;
-  value quo = Val_unit, rem = Val_unit;
+  CAMLparam1 (f);
+  CAMLlocal3 (res, quo, rem);
 
-  Begin_roots2(quo,rem);
-    quo = copy_double(modf (Double_val(f), &frem));
-    rem = copy_double(frem);
-    res = alloc_tuple(2);
-    Field(res, 0) = quo;
-    Field(res, 1) = rem;
-  End_roots();
-  return res;
+  quo = copy_double(modf (Double_val(f), &frem));
+  rem = copy_double(frem);
+  res = alloc_tuple(2);
+  Field(res, 0) = quo;
+  Field(res, 1) = rem;
+  CAMLreturn (res);
 }
 
 value sqrt_float(value f)             /* ML */
