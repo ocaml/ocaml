@@ -51,10 +51,13 @@ let lambda_create_location = mk_lambda env_jprims "create_location"
 let lambda_create_process = mk_lambda env_join "create_process"
 let lambda_create_process_location =
   mk_lambda env_jprims "create_process_location"
-let lambda_send_sync = mk_lambda env_jprims "send_sync"
-let lambda_send_async = mk_lambda env_jprims "send_async"
+let lambda_send_sync = mk_lambda env_join "send_sync"
+let lambda_send_async = mk_lambda env_join "send_async"
 let lambda_create_automaton = mk_lambda env_join "create_automaton"
 let lambda_create_automaton_location = mk_lambda env_jprims "create_automaton_location"
+let lambda_patch_table = mk_lambda env_join "patch_table"
+let lambda_get_queue = mk_lambda env_join "get_queue"
+let lambda_unlock_automaton = mk_lambda env_join "unlock_automaton"
 let lambda_patch_match = mk_lambda env_jprims "patch_match"
 let lambda_patch_guard = mk_lambda env_jprims "patch_guard"
 let lambda_reply_to = mk_lambda env_jprims "reply_to"
@@ -70,9 +73,11 @@ let create_process p =  mk_apply lambda_create_process [p]
 let create_process_location id_loc p =
   mk_apply lambda_create_process_location [Lvar id_loc ; p]
 
-let send_async auto num arg =
-  mk_apply lambda_send_async
-    [Lvar auto ; lambda_int  num ; arg]
+let do_send send auto num arg =
+  mk_apply send [Lvar auto ; lambda_int  num ; arg]
+
+let send_async auto num arg = do_send lambda_send_async auto num  arg
+and send_sync auto num arg = do_send lambda_send_sync auto num  arg
 
 let send_sync auto num arg =
   mk_apply lambda_send_sync
@@ -103,13 +108,16 @@ let do_spawn some_loc p =
   if p = lambda_unit then
     p
   else
-    let param = Ident.create "x" in
+    let param = Ident.create "_x" in
     match some_loc with
     | None ->
         create_process (Lfunction (Curried, [param], p))
     | Some id_loc ->
         create_process_location id_loc (Lfunction (Curried, [param], p))
 
+let get_queue auto num = mk_apply lambda_get_queue [auto ; lambda_int num]
+
+let unlock_automaton lam = mk_apply lambda_unlock_automaton [lam]
 
 (*
 
@@ -148,7 +156,6 @@ let rec inter xs ys = match xs, ys with
 
 
 
-  
 let rec do_principal p = match p.exp_desc with
 (* Base cases processes *)
 | Texp_asyncsend (_,_) | Texp_exec (_) | Texp_null 
@@ -170,8 +177,8 @@ let rec do_principal p = match p.exp_desc with
 | _ -> assert false
 
 let principal p = match do_principal p with
-| x::_ -> Some x
-| [] -> None  
+| x::_ -> None (* Some x *)
+| []   -> None  
 
 (* Once again for finding back parts of princpal threads *)
 let rec is_principal id p = match p.exp_desc with
@@ -353,12 +360,17 @@ let transl_jpat sync {jpat_desc=_,arg} = match sync,arg.pat_desc with
 
 let transl_jpats sync jpats = List.map (transl_jpat sync) jpats
 
+type phase1 =
+  Ident.t * (Ident.t * Typedtree.joinchannel) list *
+  (Location.t * Ident.t option * int * int list *
+   Typedtree.pattern list * Typedtree.expression) array
+
 let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
 
   let rec build_clauses i = function
     | [] -> []
     | {jclause_desc = (jpats,e); jclause_loc=cl_loc}::rem ->
-        (* compute principal name *)
+        (* compute principal name -> later *)
         let sync = principal e in
         (* Sort jpats by channel indexes *)
         let jpats =
@@ -381,37 +393,57 @@ let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
             nums in
           
         (* add automaton entries for jpats *)
-        List.iter
-          (fun num ->
-            r.(num) <-
-               i :: principal_pat :: base_pat :: r.(num))
-          nums ;
-        (cl_loc, sync, transl_jpats sync jpats, e)::build_clauses (i+1) rem in
+        (cl_loc, sync, base_pat, nums,
+         transl_jpats sync jpats, e)::build_clauses (i+1) rem in
 
   let guarded = build_clauses 0 cls in
-  for i = 0 to Array.length r-1 do
-    r.(i) <- List.rev r.(i)
-  done ;
-  (name, r, Array.of_list guarded)
+  (name, names, Array.of_list guarded)
 
+type comp_guard =
+    Location.t -> (* Location of reaction *)
+    Ident.t option -> (* principal name *)
+    Typedtree.pattern list -> (* join pattern *)
+    Typedtree.expression -> (* guarded process *)
+    Ident.t list * Lambda.lambda
               
-let build_auto some_loc (name, matches, guards) k =
-  let nchannels = Array.length matches
-  and nguards = Array.length guards in
+let patch_table auto t =
+  mk_apply
+    lambda_patch_table
+    [Lvar auto ; Lprim (Pmakeblock (0,Immutable), t)]
 
-  let rec patch_matches i k =
-    if i >= nchannels then
-      k
+let build_auto comp_fun some_loc (auto_name, names, cls) k =
+  let nguards = Array.length cls
+  and nchans = List.length names in
+
+  let rec params_from_queues bauto params nums k = match params, nums with
+  | [],[] ->
+      Lsequence (unlock_automaton (Lvar bauto), k)
+  | param::params, num::nums ->
+      Llet
+        (Strict,
+         param, get_queue (Lvar bauto) num,
+         params_from_queues bauto params nums k)
+  | _,_ -> assert false in
+
+  let rec build_table i = 
+    if i >= nguards then []
     else
-      let this_match = matches.(i) in
-      Lsequence
-        (patch_match name i matches.(i),
-         patch_matches (i+1) k) in
-        
+      let cl_loc, sync, ipat, nums, jpats, e = cls.(i) in
+      let params, body = comp_fun cl_loc sync jpats e in
+      let body =
+        match sync with
+        | None -> do_spawn some_loc body
+        | Some id -> body in            
+      let bauto = Ident.create "_bauto" in
+      let body = params_from_queues bauto params nums  body in
+      Lprim
+        (Pmakeblock (0, Immutable),
+         [lambda_int ipat ; Lfunction (Curried, [bauto] , body)])::
+      build_table (i+1) in
   Llet
-    (Strict, name,
-     create_automaton some_loc nchannels nguards,
-     patch_matches 0 k)
+    (Strict, auto_name ,
+     create_automaton some_loc nchans nguards,
+     Lsequence (patch_table auto_name (build_table 0), k))
 
 let build_channels {jauto_name=name ; jauto_names=names} k =
   List.fold_right
@@ -428,15 +460,4 @@ let build_channels {jauto_name=name ; jauto_names=names} k =
          k))
     names k
 
-let build_guards comp_fun (name,_,guards) k =
-  let nguards = Array.length guards in
-  let rec do_rec i =
-    if i >= nguards then
-      k
-    else
-      let cl_loc, sync, jpats, e = guards.(i) in
-      Lsequence
-        (patch_guard name i
-           (comp_fun cl_loc sync jpats e),
-         do_rec (i+1)) in
-  do_rec 0
+

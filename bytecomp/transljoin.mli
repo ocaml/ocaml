@@ -17,6 +17,7 @@
 *)
 
 (* Basic join operations from the module Jprims *)
+
 val exit : unit -> Lambda.lambda
 val create_location : unit -> Lambda.lambda
 val create_process : Lambda.lambda -> Lambda.lambda
@@ -40,15 +41,24 @@ val as_procs :
   Typedtree.expression option * Typedtree.expression list * Typedtree.expression list
 
 (* Building definitions and locations *)
-val build_matches :
-  Typedtree.joinautomaton ->
-  Ident.t * int list array *
-  (Location.t * Ident.t option * Typedtree.pattern list * Typedtree.expression) array
+type phase1
+
+type comp_guard =
+    Location.t -> (* Location of reaction *)
+    Ident.t option -> (* principal name *)
+    Typedtree.pattern list -> (* join pattern *)
+    Typedtree.expression -> (* guarded process *)
+    Ident.t list * Lambda.lambda
+
+val build_matches : Typedtree.joinautomaton -> phase1
+
 val build_auto :
-  Ident.t option ->
-  Ident.t * int list array * 'a array -> Lambda.lambda -> Lambda.lambda
+  comp_guard -> (* to compile guarded processes *)
+    Ident.t option -> (* join-location of automaton *)
+      phase1 -> (* pre-compiled automaton *)
+        Lambda.lambda -> (* continuation *)
+          Lambda.lambda
+
 val build_channels :
   Typedtree.joinautomaton -> Lambda.lambda -> Lambda.lambda
-val build_guards :
-  ('a -> 'b -> 'c -> 'd -> Lambda.lambda) ->
-  Ident.t * 'e * ('a * 'b * 'c * 'd) array -> Lambda.lambda -> Lambda.lambda
+

@@ -880,7 +880,7 @@ and transl_guarded_proc loc sync pats p = match pats with
       
 and guarded_proc_as_fun cl_loc sync jpats p =
   let params, body = transl_guarded_proc cl_loc sync jpats p in
-  Lfunction (Curried, params, body)
+  params, body
 
 (* transl_spawn separates e into a forked part and a part to execute now *)
 and transl_spawn sync some_loc e =
@@ -1016,20 +1016,17 @@ and transl_let rec_flag pat_expr_list body =
 (*> JOCAML *)
 
 and  build_autos some_loc cautos k =
-  List.fold_right (Transljoin.build_auto some_loc) cautos k
+  List.fold_right
+    (Transljoin.build_auto guarded_proc_as_fun some_loc)
+    cautos k
 
 and  build_channels autos k =
   List.fold_right Transljoin.build_channels autos k
 
-and build_guards cautos k =
-  List.fold_right
-    (Transljoin.build_guards guarded_proc_as_fun) cautos k
-
 and do_transl_def some_loc autos body =
     let cautos = List.map Transljoin.build_matches autos in
     build_autos some_loc cautos
-      (build_channels autos 
-         (build_guards cautos body))
+      (build_channels autos body)
         
 and transl_loc locs body =
   let clocs =
@@ -1054,12 +1051,6 @@ and transl_loc locs body =
         build_channels cautos k)
       clocs k in
 
-  let build_guards_locs clocs k =
-    List.fold_right
-      (fun  (_,cautos,_) k ->
-        build_guards cautos k)
-      clocs k in
-
   let spawn_locs clocs k =
     List.fold_right
       (fun (id_loc, _, e) k ->
@@ -1074,8 +1065,7 @@ and transl_loc locs body =
   
     build_autos_locs clocs
       (build_channels_locs locs
-         (build_guards_locs clocs
-            (spawn_locs clocs body)))
+         (spawn_locs clocs body))
 (*< JOCAML *)
 
 and transl_setinstvar self var expr =

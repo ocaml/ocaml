@@ -1015,7 +1015,7 @@ and do_type_exp ctx env sexp =
         exp_env = env }
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
       let (pat_exp_list, new_env) = type_let env rec_flag spat_sexp_list in
-      let body = type_exp new_env sbody in
+      let body = do_type_exp ctx new_env sbody in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
         exp_loc = sexp.pexp_loc;
