@@ -149,7 +149,8 @@ EXTEND
       | "open"; i = mod_ident -> Node "StOpn" [Loc; i]
       | "type"; tdl = SLIST1 type_declaration SEP "and" ->
           Node "StTyp" [Loc; tdl]
-      | "value"; r = SOPT "rec"; l = SLIST1 let_binding SEP "and" ->
+      | "value"; r = SOPT [ x = "rec" -> Str x ];
+        l = SLIST1 let_binding SEP "and" ->
           Node "StVal" [Loc; o2b r; l]
       | "#"; n = lident; dp = dir_param -> Node "StDir" [Loc; n; dp]
       | e = expr -> Node "StExp" [Loc; e] ] ]
@@ -224,8 +225,8 @@ EXTEND
   ;
   expr:
     [ "top" RIGHTA
-      [ "let"; r = SOPT "rec"; l = SLIST1 let_binding SEP "and"; "in";
-        x = SELF ->
+      [ "let"; r = SOPT [ x = "rec" -> Str x ];
+        l = SLIST1 let_binding SEP "and"; "in"; x = SELF ->
           Node "ExLet" [Loc; o2b r; l; x]
       | "let"; "module"; m = a_UIDENT; mb = module_binding; "in"; e = SELF ->
           Node "ExLmd" [Loc; m; mb; e]
@@ -250,9 +251,7 @@ EXTEND
       | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
           Node "ExWhi" [Loc; e; seq] ]
     | "where"
-      [ e = SELF; "where";
-        rf =
-          [ a = anti_opt -> a | o = OPT [ x = "rec" -> Str x ] -> Option o ];
+      [ e = SELF; "where"; rf = SOPT [ x = "rec" -> Str x ];
         lb = let_binding ->
           Node "ExLet" [Loc; o2b rf; List [lb]; e] ]
     | ":=" NONA

@@ -931,29 +931,6 @@ let ssopt loc symb =
       let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
     in
     let r2 =
-      let symb =
-        match symb.text "" "" with
-          MLast.ExApp
-            (_,
-             MLast.ExAcc
-               (_, MLast.ExUid (_, "Gramext"), MLast.ExUid (_, "Stoken")),
-             MLast.ExTup (_, [MLast.ExStr (_, ""); MLast.ExStr (_, _)])) ->
-            let rule =
-              let psymbol =
-                {pattern = Some (MLast.PaLid (loc, "x")); symbol = symb}
-              in
-              let action =
-                Some
-                  (MLast.ExApp
-                     (loc, MLast.ExUid (loc, "Str"), MLast.ExLid (loc, "x")))
-              in
-              {prod = [psymbol]; action = action}
-            in
-            let text = srules loc "ast" [rule] in
-            let styp _ = MLast.TyLid (loc, "ast") in
-            {used = []; text = text; styp = styp}
-        | _ -> symb
-      in
       let psymb =
         let symb =
           {used = []; text = sopt loc symb;

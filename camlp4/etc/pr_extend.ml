@@ -317,6 +317,12 @@ value rec symbol s k =
             [: `S LR "SLIST1"; `simple_symbol s [: :]; `S LR "SEP";
                `simple_symbol sep k :]
       | _ -> assert False ]
+  | Srules
+      [([(Some <:patt< a >>, Snterm <:expr< anti_opt >>)], Some <:expr< a >>);
+       ([(Some <:patt< o >>, (Sopt s))], Some <:expr< Option o >>)]
+    when not no_slist.val
+    ->
+      HVbox [: `S LR "SOPT"; `simple_symbol s k :]
   | Srules rl ->
       let rl = simplify_rules rl in
       HVbox [: `HVbox [: :]; rule_list  rl k :] ]

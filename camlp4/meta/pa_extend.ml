@@ -444,19 +444,6 @@ value ssopt loc symb =
       {prod = prod; action = Some act}
     in
     let r2 =
-      let symb =
-        match symb.text "" "" with
-        [ <:expr< Gramext.Stoken ("", $str:_$) >> ->
-            let rule =
-              let psymbol = {pattern = Some <:patt< x >>; symbol = symb} in
-              let action = Some <:expr< Str x >> in
-              {prod = [psymbol]; action = action}
-            in
-            let text = srules loc "ast" [rule] in
-            let styp _ = <:ctyp< ast >> in
-            {used = []; text = text; styp = styp}
-        | _ -> symb ]
-      in
       let psymb =
         let symb =
           {used = []; text = sopt loc symb;
