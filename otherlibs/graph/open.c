@@ -219,13 +219,13 @@ value id_of_window(Window win)
 {
   char tmp[256];
 
-  gr_check_open();
   sprintf(tmp, "%lu", (unsigned long)win);
   return copy_string( tmp );
 }
 
 value gr_window_id(void)
 {
+  gr_check_open();
   return id_of_window(grwindow.win);
 }
 
