@@ -46,27 +46,30 @@ val delay: float -> unit
         (* [delay d] suspends the execution of the calling thread for
            [d] seconds. The other program threads continue to run during
            this time. *)
-val wait_inchan : in_channel -> unit
-        (* [wait_inchan ic] suspends the execution of the calling thread
-           until at least one character is available for reading on the
-           input channel [ic]. The other program threads continue to run
-           during this time. In contrast, calling an input function directly
-           on [ic] would block all threads in the program until data is
-           available on the channel. See the module [ThreadIO] for
-           higher-level input functions compatible with threads. *)
-val wait_read : Unix.file_descr -> unit
-val wait_write : Unix.file_descr -> unit
-        (* Similar to [wait_inchan], but operates on a file descriptor
-           from the [Unix] library instead of an input channel.
-           [wait_read] suspends the thread until at least one
-           character is available for reading; [wait_write] suspends the
-           thread until at least one character can be written without
-           blocking. *)
 val join : t -> unit
         (* [join th] suspends the execution of the calling thread
            until the thread [th] has terminated. *)
+val wait_read : Unix.file_descr -> unit
+val wait_write : Unix.file_descr -> unit
+        (* Suspend the execution of the calling thread until at least
+           one character is available for reading ([wait_read]) or
+           one character can be written without blocking ([wait_write])
+           on the given Unix file descriptor. *)
+val wait_timed_read : Unix.file_descr -> float -> bool
+val wait_timed_write : Unix.file_descr -> float -> bool
+        (* Same as [wait_read] and [wait_write], but wait for at most
+           the amount of time given as second argument (in seconds).
+           Return [true] if the file descriptor is ready for input/output
+           and [false] if the timeout expired. *)
+val wait_pid : int -> unit
+        (* [wait_pid p] suspends the execution of the calling thread
+           until the Unix process specified by the process identifier [p]
+           terminates. A pid [p] of [-1] means wait for any child.
+           A pid of [0] means wait for any child in the same process group
+           as the current process. Negative pid arguments represent
+           process groups. *)
 
-(** Low-level thread synchronization primitives *)
+(*--*)
 
 (* The following primitives provide the basis for implementing 
    synchronization functions between threads. Their direct use is
@@ -88,6 +91,5 @@ val sleep : unit -> unit
            [critical_section] and suspending the calling thread is an
            atomic operation. *)
 val wakeup : t -> unit
-        (* Reactivate the given thread. This thread is assumed to 
-           be suspended on a call to [sleep]. After the call to [wakeup],
+        (* Reactivate the given thread. After the call to [wakeup],
            the suspended thread will resume execution at some future time. *)
