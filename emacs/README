@@ -32,8 +32,9 @@ To install ocamltags, do
 
     % make install-ocamltags
 
-To use highlighting capabilities, add ONE of the following two
-lines to your .emacs.
+To use highlighting capabilities, add ONE of the following two lines
+to your .emacs.  The second one works better on recent versions of
+emacs.
 
     (if window-system (require 'caml-hilit))
     (if window-system (require 'caml-font))
@@ -62,6 +63,14 @@ For other bindings, see C-h b.
 
 Changes log:
 -----------
+
+Version 3.05:
+-------------
+* improved interaction with inferior caml mode
+
+* access help from the source
+
+* fixes in indentation code
 
 Version 3.03:
 -------------
