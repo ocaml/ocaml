@@ -190,6 +190,6 @@ let parse l f msg =
   try
     parse_argv Sys.argv l f msg;
   with
-  | Bad msg -> eprintf "%s" msg; exit 0;
-  | Help msg -> eprintf "%s" msg; exit 2;
+  | Bad msg -> eprintf "%s" msg; exit 2;
+  | Help msg -> printf "%s" msg; exit 0;
 ;;
