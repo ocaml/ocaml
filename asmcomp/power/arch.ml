@@ -80,12 +80,13 @@ let powerpc =
   | _ -> Misc.fatal_error "wrong $(MODEL)"
 
 (* Distinguish between the PowerOpen (AIX, MacOS) TOC-based,
-   relative-addressing model and the SVR4 (Solaris, MkLinux)
+   relative-addressing model and the SVR4 (Solaris, MkLinux, Rhapsody)
    absolute-addressing model. *)
 
 let toc =
   match Config.system with
     "aix" -> true
   | "elf" -> false
+  | "rhapsody" -> false
   | _ -> Misc.fatal_error "wrong $(SYSTEM)"
 

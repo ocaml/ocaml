@@ -61,8 +61,11 @@ let slot_offset loc cls =
 
 (* Output a symbol *)
 
-let emit_symbol s =
-  Emitaux.emit_symbol '.' s
+let emit_symbol =
+  match Config.system with
+    "aix" | "elf" -> (fun s -> Emitaux.emit_symbol '.' s)
+  | "rhapsody"    -> (fun s -> emit_char '_'; Emitaux.emit_symbol '$' s)
+  | _ -> assert false
 
 let emit_codesymbol s =
   if toc then emit_char '.';
@@ -70,7 +73,12 @@ let emit_codesymbol s =
 
 (* Output a label *)
 
-let label_prefix = if toc then "L.." else ".L"
+let label_prefix =
+  match Config.system with
+    "aix" -> "L.."
+  | "elf" -> ".L"
+  | "rhapsody" -> "L"
+  | _ -> assert false
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
@@ -78,14 +86,25 @@ let emit_label lbl =
 (* Section switching *)
 
 let data_space =
-  if toc
-  then "	.csect  .data[RW]\n"
-  else "	.section \".data\"\n"
+  match Config.system with
+    "aix" -> "	.csect  .data[RW]\n"
+  | "elf" -> "	.section \".data\"\n"
+  | "rhapsody" -> "	.data\n"
+  | _ -> assert false
 
 let code_space =
-  if toc
-  then "	.csect  .text[PR]\n"
-  else "	.section \".text\"\n"
+  match Config.system with
+    "aix" -> "	.csect  .text[PR]\n"
+  | "elf" -> "	.section \".text\"\n"
+  | "rhapsody" -> "	.text\n"
+  | _ -> assert false
+
+let rodata_space =
+  match Config.system with
+    "aix" -> "	.csect  .data[RW]\n" (* ?? *)
+  | "elf" -> "	.section \".rodata\"\n"
+  | "rhapsody" -> "	.const\n"
+  | _ -> assert false
 
 (* Output a pseudo-register *)
 
@@ -116,9 +135,28 @@ let is_immediate n =
 let is_native_immediate n =
   Nativeint.cmp n 32767 <= 0 && Nativeint.cmp n (-32768) >= 0
 
+(* Output a "upper 16 bits" or "lower 16 bits" operator
+   (for the absolute addressing mode) *)
+
+let emit_upper emit_fun arg =
+  match Config.system with
+    "elf" ->
+      emit_fun arg; emit_string "@ha"
+  | "rhapsody" ->
+      emit_string "ha16("; emit_fun arg; emit_string ")"
+  | _ -> assert false
+
+let emit_lower emit_fun arg =
+  match Config.system with
+    "elf" ->
+      emit_fun arg; emit_string "@l"
+  | "rhapsody" ->
+      emit_string "lo16("; emit_fun arg; emit_string ")"
+  | _ -> assert false
+
 (* Output a load or store operation *)
 
-let emit_symbol_offset s d =
+let emit_symbol_offset (s, d) =
   emit_symbol s;
   if d > 0 then `+`;
   if d <> 0 then emit_int d
@@ -127,8 +165,8 @@ let emit_load_store instr addressing_mode addr n arg =
   match addressing_mode with
     Ibased(s, d) ->
       (* Only relevant in the absolute model *)
-      `	addis	11, 0, {emit_symbol_offset s d}@ha\n`;
-      `	{emit_string instr}	{emit_reg arg}, {emit_symbol_offset s d}@l(11)\n`
+      `	addis	11, 0, {emit_upper emit_symbol_offset (s,d)}\n`;
+      `	{emit_string instr}	{emit_reg arg}, {emit_lower emit_symbol_offset (s,d)}(11)\n`
   | Iindexed ofs ->
       if is_immediate ofs then
         `	{emit_string instr}	{emit_reg arg}, {emit_int ofs}({emit_reg addr.(n)})\n`
@@ -338,16 +376,16 @@ let rec emit_instr i dslot =
         end else begin
           let lbl = new_label() in
           float_literals := (s, lbl) :: !float_literals;
-          `	addis	11, 0, {emit_label lbl}@ha\n`;
-          `	lfd	{emit_reg i.res.(0)}, {emit_label lbl}@l(11)\n`
+          `	addis	11, 0, {emit_upper emit_label lbl}\n`;
+          `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}(11)\n`
         end
     | Lop(Iconst_symbol s) ->
         if toc then begin
           let lbl = label_symbol s in
           `	lwz	{emit_reg i.res.(0)}, {emit_label lbl}(2) # {emit_symbol s}\n`
         end else begin
-          `	addis	{emit_reg i.res.(0)}, 0, {emit_symbol s}@ha\n`;
-          `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_symbol s}@l\n`
+          `	addis	{emit_reg i.res.(0)}, 0, {emit_upper emit_symbol s}\n`;
+          `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_lower emit_symbol s}\n`
         end
     | Lop(Icall_ind) ->
         if toc then begin
@@ -428,8 +466,8 @@ let rec emit_instr i dslot =
             let lbl = label_symbol s in
             `	lwz	11, {emit_label lbl}(2) # {emit_symbol s}\n`
           end else begin
-            `	addis	11, 0, {emit_symbol s}@ha\n`;
-            `	addi	11, 11, {emit_symbol s}@l\n`
+            `	addis	11, 0, {emit_upper emit_symbol s}\n`;
+            `	addi	11, 11, {emit_lower emit_symbol s}\n`
           end;
           record_frame i.live;
           `	bl	{emit_codesymbol "caml_c_call"}\n`
@@ -533,8 +571,8 @@ let rec emit_instr i dslot =
           let lbl = new_label() in
           float_literals := ("4.503601774854144e15", lbl) :: !float_literals;
           (* That float above also represents 0x4330000080000000 *)
-          `	addis	11, 0, {emit_label lbl}@ha\n`;
-          `	lfd	0, {emit_label lbl}@l(11)\n`
+          `	addis	11, 0, {emit_upper emit_label lbl}\n`;
+          `	lfd	0, {emit_lower emit_label lbl}(11)\n`
         end;
         `	lis	0, 0x4330\n`;
         `	stwu	0, -8(1)\n`;
@@ -629,8 +667,8 @@ let rec emit_instr i dslot =
         if toc then begin
           `	lwz	11, {emit_label !lbl_jumptbl}(2)\n`
         end else begin
-          `	addis	11, 0, {emit_label !lbl_jumptbl}@ha\n`;
-          `	addi	11, 11, {emit_label !lbl_jumptbl}@l\n`
+          `	addis	11, 0, {emit_upper emit_label !lbl_jumptbl}\n`;
+          `	addi	11, 11, {emit_lower emit_label !lbl_jumptbl}\n`
         end;
         `	addi	0, {emit_reg i.arg.(0)}, {emit_int !num_jumptbl_entries}\n`;
         `	slwi	0, 0, 2\n`;
@@ -722,13 +760,15 @@ let fundecl fundecl =
   call_gc_label := 0;
   float_literals := [];
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
-  if toc then begin
-    `	.globl	.{emit_symbol fundecl.fun_name}\n`;
-    `	.csect	{emit_symbol fundecl.fun_name}[DS]\n`;
-    `{emit_symbol fundecl.fun_name}:\n`;
-    `	.long	.{emit_symbol fundecl.fun_name}, TOC[tc0], 0\n`
-  end else begin
-    `	.type	{emit_symbol fundecl.fun_name}, @function\n`
+  begin match Config.system with
+    "aix" ->
+      `	.globl	.{emit_symbol fundecl.fun_name}\n`;
+      `	.csect	{emit_symbol fundecl.fun_name}[DS]\n`;
+      `{emit_symbol fundecl.fun_name}:\n`;
+      `	.long	.{emit_symbol fundecl.fun_name}, TOC[tc0], 0\n`
+  | "elf" ->
+      `	.type	{emit_symbol fundecl.fun_name}, @function\n`
+  | _ -> ()
   end;
   emit_string code_space;
   `	.align	2\n`;
@@ -756,7 +796,7 @@ let fundecl fundecl =
   end;
   (* Emit the floating-point literals *)
   if !float_literals <> [] then begin
-    `	.section \".rodata\"\n`;
+    emit_string rodata_space;
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
@@ -768,7 +808,8 @@ let fundecl fundecl =
 
 let declare_global_data s =
   `	.globl	{emit_symbol s}\n`;
-  if not toc then `	.type	{emit_symbol s}, @object\n`
+  if Config.system = "elf" then
+    `	.type	{emit_symbol s}, @object\n`
 
 let emit_item = function
     Cdefine_symbol s ->
@@ -826,12 +867,9 @@ let end_assembly() =
         let lbl_tbl = new_label() in
         `	.toc\n`;
         `{emit_label !lbl_jumptbl}:	.tc	{emit_label lbl_tbl}[TC], {emit_label lbl_tbl}\n`;
-        `	.csect	.text[PR]\n`;
         lbl_tbl
-      end else begin
-        `	.section \".text\"\n`;
-        !lbl_jumptbl
-      end in
+      end else !lbl_jumptbl in
+    emit_string code_space;
     `{emit_label lbl_tbl}:\n`;
     List.iter
       (fun lbl -> `	.long	{emit_label lbl} - {emit_label lbl_tbl}\n`)
@@ -855,6 +893,7 @@ let end_assembly() =
   `{emit_symbol lbl_end}:\n`;
   `	.long	0\n`;
   (* Emit the frame descriptors *)
+  emit_string rodata_space;
   let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;
