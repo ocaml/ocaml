@@ -80,10 +80,6 @@ all: runtime camlc camllex camlyacc library camltop
 # The compilation of camltop will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
 
-# Configure the system
-configure:
-	cd config; sh autoconf "$(BYTECC) $(CCLINKOPTS) $(CCLIBS)"
-
 # Compile everything the first time
 world: coldstart clean all
 
