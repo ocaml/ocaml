@@ -312,8 +312,73 @@ let string_length exp =
 
 (* Message sending *)
 
+let untag_uint31 n =
+  if size_addr = 4 then Cop(Clsr, [n; Cconst_int 1]) else
+  Cop(Clsr, [Cop(Clsl, [n; Cconst_int (size_addr*8 - 32)]);
+             Cconst_int (size_addr*8 - 31)])
+
+let lookup_tag obj tag =
+  bind "tag" tag (fun tag ->
+    let table = Ident.create "table" in
+    let m = untag_int (Cop(Cload Word, [Cvar table])) in
+    let c = untag_uint31
+        (Cop(Cload Word, [Cop(Cadda, [Cvar table; Cconst_int size_addr])])) in
+    let tag =
+      match tag with
+        Cconst_int tag ->
+          Cconst_natint
+            (Nativeint.logand (Nativeint.of_int (tag lsr 1)) 0x7fffffffn)
+      | Cconst_natint tag ->
+          Cconst_natint
+            (Nativeint.logand (Nativeint.shift_right tag 1) 0x7fffffffn)
+      | _ ->
+          untag_uint31 tag
+    in
+    let lab =
+      Cop(Cadda,
+          [Cop(Clsr,
+               [Cop(Clsl, [Cop(Cmuli, [tag; c]);
+                           Cconst_int(size_addr*8 - 31)]);
+                m]);
+           Cconst_int 2]) in
+    Clet(table, Cop (Cload Word, [obj]),
+         Cop(Cload Word,
+             [Cop (Cadda, [Cvar table; lsl_const lab log2_size_addr])])))
+
+(*
+let lookup_tag obj tag =
+  bind "tag" tag (fun tag ->
+    let table = Ident.create "table"
+    and table_def = Cop (Cload Word, [obj]) in
+    let arg = Ident.create "arg"
+    and arg_def = untag_uint31 (Cop(Cload Word, [Cvar table])) in
+    let m = Ident.create "m"
+    and m_def = Cop(Cand, [Cvar arg; Cconst_int 0x7f]) in
+    let c = Cop(Caddi, [Cop(Cxor, [Cvar arg; Cvar m]); Cconst_int 0x5c]) in
+    let tag =
+      match tag with
+        Cconst_int tag ->
+          Cconst_natint
+            (Nativeint.logand (Nativeint.of_int (tag lsr 1)) 0x7fffffffn)
+      | Cconst_natint tag ->
+          Cconst_natint
+            (Nativeint.logand (Nativeint.shift_right tag 1) 0x7fffffffn)
+      | _ ->
+          untag_uint31 tag
+    in
+    let mul = lsl_const (Cop(Cmuli, [tag; c])) (size_addr*8 - 31) in
+    let labw = Cop(Cadda, [Cop(Cand, [Cop(Clsr, [mul; Cvar m]);
+                                     Cconst_int (1-size_addr)]);
+                          Cconst_int size_addr]) in
+    Clet(table, table_def,
+    Clet(arg, arg_def,
+    Clet(m, m_def,
+         Cop(Cload Word,
+             [Cop (Cadda, [Cvar table; labw])])))))
+*)
+
 let lookup_label kind obj lab =
-  if kind = Public then assert false else
+  if kind = Public then lookup_tag obj lab else
   bind "lab" lab (fun lab ->
     let table = Cop (Cload Word, [obj]) in
     addr_array_ref table lab)

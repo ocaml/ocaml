@@ -457,10 +457,11 @@ let rec close fenv cenv = function
       | ((ufunct, _), uargs) ->
           (Ugeneric_apply(ufunct, uargs), Value_unknown)
       end
-  | Lsend(Self, met, obj, args) ->
+  | Lsend(kind, met, obj, args) ->
       let (umet, _) = close fenv cenv met in
       let (uobj, _) = close fenv cenv obj in
-      (Usend(Self, umet, uobj, close_list fenv cenv args), Value_unknown)
+      (Usend(kind, umet, uobj, close_list fenv cenv args), Value_unknown)
+  (*
   | Lsend(Public, met, obj, args) ->
       let self = Ident.create "obj" in
       let prim kind arity =
@@ -487,6 +488,7 @@ let rec close fenv cenv = function
             (Lprim (Pccall (prim "get" 2), [Lvar self; met]), args)
       in
       close fenv cenv (Llet(Alias, self, obj, Lapply(met, Lvar self :: args)))
+  *)
   | Llet(str, id, lam, body) ->
       let (ulam, alam) = close_named fenv cenv id lam in
       begin match (str, alam) with

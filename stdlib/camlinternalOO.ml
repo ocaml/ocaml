@@ -98,6 +98,7 @@ type labs = bool Labs.t
 type table =
  { mutable size: int;
    mutable methods: closure array;
+   mutable next_label: int;
    mutable methods_by_name: meths;
    mutable methods_by_label: labs;
    mutable previous_states:
@@ -109,6 +110,7 @@ type table =
 
 let dummy_table =
   { methods = [| |];
+    next_label = 0;
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
@@ -119,9 +121,10 @@ let dummy_table =
 
 let table_count = ref 0
 
-let new_table pub_labels =
+let new_table meths =
   incr table_count;
-  { methods = [| pub_labels |];
+  { methods = meths;
+    next_label = Array.length meths;
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
@@ -151,8 +154,12 @@ type t
 type meth = item
 
 let new_method table =
-  let index = Array.length table.methods in
-  resize table (index + 1);
+  let len = Array.length table.methods in
+  while table.next_label < len &&
+    table.methods.(table.next_label) <> dummy_item
+  do table.next_label <- table.next_label + 1 done;
+  let index = table.next_label in
+  table.next_label <- index + 1;
   index
 
 let get_method_label table name =
@@ -260,6 +267,7 @@ let get_variables table names =
 let add_initializer table f =
   table.initializers <- f::table.initializers
 
+(*
 module Keys = Map.Make(struct type t = tag array let compare = compare end)
 let key_map = ref Keys.empty
 let get_key tags : item =
@@ -267,15 +275,28 @@ let get_key tags : item =
   with Not_found ->
     key_map := Keys.add tags tags !key_map;
     magic tags
+*)
 
-let create_table public_methods =
-  if public_methods == magic 0 then new_table dummy_item else
+let compute_label tag m c =
+  let uint31 x = Int32.logand (Int32.of_int x) 0x7fffffffl in
+  let big = Int32.mul (uint31 c) (uint31 tag)
+  in (Int32.to_int big) lsr (m + 31 - Sys.word_size) + 2
+
+let create_table arg public_methods =
+  if public_methods == magic 0 then new_table [||] else
   (* [public_methods] must be in ascending order for bytecode *)
   let tags = Array.map public_method_label public_methods in
-  let table = new_table (get_key tags) in
-  Array.iter
-    (function met ->
-      let lab = new_method table in
+  let table_data = if magic arg = 0 then [|magic tags|] else magic arg in
+  let table = new_table table_data in
+  Array.iteri
+    (fun i met ->
+      let lab =
+        if magic arg = 0 then new_method table else
+        compute_label (magic tags.(i)) arg.(0) arg.(1)
+      in
+      Printf.eprintf "%s: 0x%x -> %d\n" met (magic tags.(i)) lab;
+      flush stderr;
+      put table lab (magic 1);
       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
       table.methods_by_label <- Labs.add lab true table.methods_by_label)
     public_methods;
@@ -292,16 +313,16 @@ let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
   widen cla;
   init
 
-let make_class pub_meths class_init =
-  let table = create_table pub_meths in
+let make_class arg pub_meths class_init =
+  let table = create_table arg pub_meths in
   let env_init = class_init table in
   init_class table;
   (env_init (Obj.repr 0), class_init, env_init, Obj.repr 0)
 
 type init_table = { mutable env_init: t; mutable class_init: table -> t }
 
-let make_class_store pub_meths class_init init_table =
-  let table = create_table pub_meths in
+let make_class_store arg pub_meths class_init init_table =
+  let table = create_table arg pub_meths in
   let env_init = class_init table in
   init_class table;
   init_table.class_init <- class_init;

@@ -529,6 +529,40 @@ module M = struct
 end
 open M
 
+let try_hash f n l =
+  let arr = String.make n ' ' in
+  List.iter
+    (fun x ->
+      let y = f x in if arr.[y] = ' ' then arr.[y] <- '1' else raise Not_found)
+    l
+
+let flip c n = Int32.logxor c (Int32.shift_left 1l (31 - n))
+
+let perfect_hash l =
+  let len = List.length l in
+  if len <= 1 then 0, 0 else
+  let n = ref 1 and m = ref 0 in
+  while len > !n do n := !n * 2; incr m done;
+  let c = ref 0l and i = ref 0 and j = ref 0 and k = ref 0 in
+  while !n > 0 do
+    try
+      c := flip (flip (flip 0x4f1bbcdcl !i) !j) !k;
+      try_hash
+        (fun x ->
+          let big =
+            Int32.mul !c (Int32.logand (Int32.of_int x) 0x7fffffffl)
+          in (Int32.to_int big) lsr (31 - !m))
+        !n l;
+      Printf.eprintf "size=%d, bits=%d,%d,%d\n" !n !i !j !k; flush stderr;
+      n := 0
+    with Not_found ->
+      if !k < !j - 1 then incr k else
+      if !j < !i - 1 then (incr j; k := 0) else
+      if !i < 31 then (incr i; j := 0; k := 0) else
+      (n := !n * 2; incr m; i := 0; j:= 0; k := 0)
+  done;
+  assert (!m < 24); (* table size *)
+  !m, Int32.to_int !c
 
 (*
    Traduction d'une classe.
@@ -619,11 +653,20 @@ let transl_class ids cl_id arity pub_meths cl =
   and class_init = Ident.create "class_init"
   and env_init = Ident.create "env_init"
   and obj_init = Ident.create "obj_init" in
-  let pub_meths =
+  let concrete =
+    ids = [] ||
+    Typeclass.virtual_methods (Ctype.signature_of_class_type cl.cl_type) = []
+  and pub_meths =
     List.sort
       (fun s s' -> compare (Btype.hash_variant s) (Btype.hash_variant s'))
       pub_meths in
   let tags = List.map Btype.hash_variant pub_meths in
+  let create_arg =
+    if not (concrete && !Clflags.native_code) then lambda_unit else
+    let (m, c) = perfect_hash tags in
+    Lconst(Const_block(0, [Const_base(Const_int (Sys.word_size - m));
+                           Const_base(Const_int c)]))
+  in
   let rev_map = List.combine tags pub_meths in
   List.iter2
     (fun tag name ->
@@ -632,7 +675,8 @@ let transl_class ids cl_id arity pub_meths cl =
     tags pub_meths;
   let ltable table lam =
     Llet(Strict, table,
-         Lapply (oo_prim "create_table", [transl_meth_list pub_meths]), lam)
+         Lapply (oo_prim "create_table",
+                 [create_arg; transl_meth_list pub_meths]), lam)
   and ldirect obj_init =
     Llet(Strict, obj_init, cl_init,
          Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
@@ -641,14 +685,12 @@ let transl_class ids cl_id arity pub_meths cl =
   (* Simplest case: an object defined at toplevel (ids=[]) *)
   if top && ids = [] then llets (ltable cla (ldirect obj_init)) else
 
-  let concrete =
-    ids = [] ||
-    Typeclass.virtual_methods (Ctype.signature_of_class_type cl.cl_type) = []
-  and lclass lam =
+  let lclass lam =
     Llet(Strict, class_init, Lfunction(Curried, [cla], cl_init),
          lam class_init)
   and lbody class_init =
-    Lapply (oo_prim "make_class",[transl_meth_list pub_meths; Lvar class_init])
+    Lapply (oo_prim "make_class",
+            [create_arg; transl_meth_list pub_meths; Lvar class_init])
   and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
           [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])
@@ -719,7 +761,7 @@ let transl_class ids cl_id arity pub_meths cl =
               if not concrete then lclass_virt () else
               lclass (
               Lapply (oo_prim "make_class_store",
-                      [transl_meth_list pub_meths;
+                      [create_arg; transl_meth_list pub_meths;
                        Lvar class_init; Lvar cached]))),
   make_envs (
   if ids = [] then Lapply(lfield cached 0, [lenvs]) else

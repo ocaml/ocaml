@@ -49,14 +49,16 @@ let cache_required = ref false
 let method_cache = Ident.create "*cache*"
 let method_count = ref 0
 
-let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
+let meth s = (Lconst(Const_base(Const_int(Btype.hash_variant s))), [])
 
+(*
 let meth lab =
   let tag = meth_tag lab in
   if not (!cache_required && !Clflags.native_code) then (tag, []) else
   let n = !method_count in
   incr method_count;
   (tag, [Lprim(Pfield (2*n), [Lvar method_cache])])
+*)
 
 let reset_labels () =
   Hashtbl.clear consts;
