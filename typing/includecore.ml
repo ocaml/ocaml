@@ -23,7 +23,7 @@ open Typedtree
 exception Dont_match
 
 let value_descriptions env vd1 vd2 =
-  if Ctype.moregeneral env vd1.val_type vd2.val_type then begin
+  if Ctype.moregeneral env true vd1.val_type vd2.val_type then begin
     match (vd1.val_kind, vd2.val_kind) with
         (Val_prim p1, Val_prim p2) ->
           if p1 = p2 then Tcoerce_none else raise Dont_match
@@ -112,4 +112,4 @@ let class_types env d1 d2 =
   let (v1, v2) = vars d1.cty_vars d2.cty_vars in
   let t1 = Ctype.newgenty (Ttuple (d1.cty_self::v1@d1.cty_args)) in
   let t2 = Ctype.newgenty (Ttuple (d2.cty_self::v2@d2.cty_args)) in
-  Ctype.moregeneral env t1 t2
+  Ctype.moregeneral env true t1 t2

@@ -128,7 +128,7 @@ module Make(Obj : Obj) = struct
       let rec find = function
         [] -> raise Not_found
       | (name, sch, printer) :: remainder ->
-          if Ctype.moregeneral env sch ty
+          if Ctype.moregeneral env false sch ty
           then printer
           else find remainder
       in find !printers

@@ -98,7 +98,7 @@ val filter_arrow: Env.t -> type_expr -> type_expr * type_expr
 val filter_method: Env.t -> string -> type_expr -> type_expr
       	(* A special case of unification (with {m : 'a; 'b}). *)
 
-val moregeneral: Env.t -> type_expr -> type_expr -> bool
+val moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
         (* Check if the first type scheme is more general than the second. *)
 
 val equal: Env.t -> bool -> type_expr list -> type_expr list -> bool
