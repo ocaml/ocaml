@@ -862,7 +862,8 @@ let equal env params1 ty1 params2 ty2 =
 
 (* Subtyping *)
 
-let visited = ref ([] : type_expr list)
+let subtypes = ref []
+let supertypes = ref []
 
 let rec build_subtype env vars t =
   if List.memq t vars then (t, false) else
@@ -872,7 +873,7 @@ let rec build_subtype env vars t =
   | Tvar ->
       (t, false)
   | Tarrow(t1, t2) ->
-      let (t1', c1) = build_supertype env vars t1 in
+      let (t1', c1) = (t1, false) (* build_supertype env vars t1 *) in
       let (t2', c2) = build_subtype env vars t2 in
       if c1 or c2 then (new_global_ty (Tarrow(t1', t2')), true)
       else (t, false)
@@ -894,15 +895,17 @@ let rec build_subtype env vars t =
   | Tobject (t1, _) ->
       if opened t1 then
         (t, false)
-      else if List.memq t !visited then
-        (t, false)
-      else begin
-        let old_visited = !visited in
-        visited := t :: old_visited;
-        let (t1', _) = build_subtype env vars t1 in
-        visited := old_visited;
-        (new_global_ty (Tobject (t1', ref None)), true)
-      end
+      else
+        (begin try
+           List.assq t !subtypes
+         with Not_found ->
+           let t' = new_global_var () in
+           subtypes := (t, t')::!subtypes;
+           let (t1', _) = build_subtype env vars t1 in
+           t'.desc <- Tobject (t1', ref None);
+           t'
+         end,
+         true)
   | Tfield(s, t1, t2) ->
       let (t1', _) = build_subtype env vars t1 in
       let (t2', _) = build_subtype env vars t2 in
@@ -942,16 +945,22 @@ and build_supertype env vars t =
   | Tobject (t1, _) ->
       if opened t1 then
         (t, false)
-      else if List.memq t !visited then
-        (t, false)
-      else begin
-        let old_visited = !visited in
-        visited := t :: old_visited;
-        let (t1', c) = build_supertype env vars t1 in
-        visited := old_visited;
-        if c then (new_global_ty (Tobject (t1', ref None)), true)
-        else (t, false)
-      end
+      else
+        begin try
+          List.assq t !supertypes
+        with Not_found ->
+          let t' = new_global_var () in
+          supertypes := (t, (t', false))::!supertypes;
+          let (t1', c) = build_supertype env vars t1 in
+          if c then begin
+            supertypes := (t, (t', true))::!supertypes;
+            t'.desc <- Tobject (t1', ref None);
+            (t', true)
+          end else begin
+            supertypes := (t, (t, false))::!supertypes;
+            (t, false)
+          end
+        end
   | Tfield(s, t1, t2) ->
       let (t1', c1) = build_supertype env vars t1 in
       let (t2', c2) = build_supertype env vars t2 in
@@ -961,10 +970,10 @@ and build_supertype env vars t =
       (t, false)
 
 let enlarge_type env vars ty =
-  visited := [];
+  subtypes := []; supertypes := [];
   let (ty', _) = build_subtype env vars ty in
-    visited := [];
-    ty'
+  subtypes := []; supertypes := [];
+  ty'
 
 let subtypes = ref [];;
 let known_subtype t1 t2 =
