@@ -81,7 +81,7 @@ let rec expression event env = function
       end
   | E_item(arg, n) ->
       let (v, ty) = expression event env arg in
-      begin match (Ctype.repr(Ctype.expand_root env ty)).desc with
+      begin match (Ctype.repr(Ctype.expand_head env ty)).desc with
         Ttuple ty_list ->
           if n < 1 || n > List.length ty_list
           then raise(Error(Tuple_index(ty, List.length ty_list, n)))
@@ -110,7 +110,7 @@ let rec expression event env = function
       end
   | E_field(arg, lbl) ->
       let (v, ty) = expression event env arg in
-      begin match (Ctype.repr(Ctype.expand_root env ty)).desc with
+      begin match (Ctype.repr(Ctype.expand_head env ty)).desc with
         Tconstr(path, args, _) ->
           let tydesc = Env.find_type path env in
           begin match tydesc.type_kind with
