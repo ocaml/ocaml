@@ -19,7 +19,7 @@ open Output
 
 let main () =
   if Array.length Sys.argv != 2 then begin
-    prerr_endline "Usage: camllex <input file>";
+    prerr_endline "Usage: ocamllex <input file>";
     exit 2
   end;
   let source_name = Sys.argv.(1) in
