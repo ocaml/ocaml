@@ -248,3 +248,15 @@ let _ = Hashtbl.add directive_table "print_depth"
              (Directive_int(fun n -> max_printer_depth := n))
 let _ = Hashtbl.add directive_table "print_length"
              (Directive_int(fun n -> max_printer_steps := n))
+
+(* Set various compiler flags *)
+
+let _ = Hashtbl.add directive_table "modern"
+             (Directive_bool(fun b -> Clflags.classic := not b))
+
+let parse_warnings s =
+  try Warnings.parse_options s
+  with Arg.Bad err -> printf "%s." err
+
+let _ = Hashtbl.add directive_table "warnings"
+             (Directive_string parse_warnings)

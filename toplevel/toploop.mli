@@ -27,6 +27,7 @@ type directive_fun =
   | Directive_string of (string -> unit)
   | Directive_int of (int -> unit)
   | Directive_ident of (Longident.t -> unit)
+  | Directive_bool of (bool -> unit)
 
 val directive_table: (string, directive_fun) Hashtbl.t
         (* Table of known directives, with their execution function *)

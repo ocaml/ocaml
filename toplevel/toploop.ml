@@ -28,6 +28,7 @@ type directive_fun =
   | Directive_string of (string -> unit)
   | Directive_int of (int -> unit)
   | Directive_ident of (Longident.t -> unit)
+  | Directive_bool of (bool -> unit)
 
 (* Hooks for parsing functions *)
 
@@ -175,6 +176,7 @@ let execute_phrase print_outcome phr =
         | (Directive_string f, Pdir_string s) -> f s; true
         | (Directive_int f, Pdir_int n) -> f n; true
         | (Directive_ident f, Pdir_ident lid) -> f lid; true
+        | (Directive_bool f, Pdir_bool b) -> f b; true
         | (_, _) ->
             print_string "Wrong type of argument for directive `";
             print_string dir_name; print_string "'"; print_newline();

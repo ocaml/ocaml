@@ -1365,6 +1365,8 @@ toplevel_directive:
   | SHARP ident STRING          { Ptop_dir($2, Pdir_string $3) }
   | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
   | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
+  | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }
+  | SHARP ident TRUE            { Ptop_dir($2, Pdir_bool true) }
 ;
 
 /* Miscellaneous */

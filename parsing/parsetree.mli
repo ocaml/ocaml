@@ -253,3 +253,4 @@ and directive_argument =
   | Pdir_string of string
   | Pdir_int of int
   | Pdir_ident of Longident.t
+  | Pdir_bool of bool
