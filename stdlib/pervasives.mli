@@ -293,17 +293,14 @@ val (^) : string -> string -> string
 
 (*** Character operations *)
 
+(* More character operations are provided in module [Char]. *)
+
 external int_of_char : char -> int = "%identity"
         (* Return the ASCII code of the argument. *)
 val char_of_int : int -> char
         (* Return the character with the given ASCII code.
            Raise [Invalid_argument "char_of_int"] if the argument is
            outside the range 0--255. *)
-
-(* More character operations are provided in module [Char]. *)
-
-val (^) : string -> string -> string
-        (* String concatenation. *)
 
 (*** String conversion functions *)
 
