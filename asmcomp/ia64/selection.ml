@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -35,6 +35,13 @@ let reassociate_add = function
         [Cop(Caddi, [arg1; arg2]); arg3]
   | args -> args
 
+(* Helper function for mult-immediate selection *)
+
+let rec count_one_bits n =
+  if n = 0 then 0
+  else if n land 1 = 0 then count_one_bits (n lsr 1)
+  else 1 + count_one_bits (n lsr 1)
+
 class selector = object (self)
 
 inherit Selectgen.selector_generic as super
@@ -43,8 +50,8 @@ inherit Selectgen.selector_generic as super
      add                14-bit signed
      sub                turned into add
      sub reversed       8-bit signed
-     mul                1..15 (emulated by shift-adds)
-     div, mod      no immediate forms
+     mul                at most 16 "one" bits
+     div, mod           powers of 2
      and, or, xor       8-bit signed
      lsl, lsr, asr      6-bit unsigned
      cmp                8-bit signed
@@ -119,8 +126,8 @@ method select_operation op args =
       super#select_operation op args
 
 method private select_imul_imm arg n =
-  let l = Misc.log2 n in
-  if n = 1 lsl l then (Iintop_imm(Ilsl, l), [arg])
+  if count_one_bits n <= 16
+  then (Iintop_imm(Imul, n), [arg])
   else (Iintop Imul, [arg; Cconst_int n])
 
 (* To palliate the lack of addressing with displacement, multiple
@@ -157,10 +164,12 @@ method emit_stores env data regs_addr =
     (fun exp -> Array.iter do_store (self#emit_expr env exp))
     data;
   (* Store the backlog if any *)
-  match !backlog with
+  begin match !backlog with
     None -> ()
   | Some r -> self#insert (Iop(Ispecific(Istoreincr 16))) [| t1; r |] [| t1 |]
-
+  end;
+  (* Insert an init barrier *)
+  self#insert (Iop(Ispecific Iinitbarrier)) [||] [||]
 end
 
 let fundecl f = (new selector)#emit_fundecl f

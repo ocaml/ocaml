@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -28,10 +28,24 @@ open Emitaux
 
 (* Representation of resources accessed or produced by instructions *)
 
-type resource =
-    R of string         (* register *)
-  | Stk of int          (* stack location *)
-  | Heap                (* Caml heap *)
+type resource = string
+  (* A resource is either:
+     - a register name
+     - "stkN" for a stack location
+     - "heap" for the Caml heap
+     - "chkN" for the result of a checkbound instruction *)
+
+let is_memory_resource rsrc =
+  String.length rsrc >= 4 &&
+  begin match String.sub rsrc 0 3 with
+    "stk" -> true
+  | "hea" -> true
+  | "chk" -> true
+  | _     -> false
+  end
+
+let is_mutable_resource rsrc =
+  rsrc <> "r0" && rsrc <> "p0"
 
 (* Description of instructions *)
 
@@ -203,6 +217,7 @@ let instruction_table = create_hashtable 73 [
   "xmpy.l", {opcode = "xmpy.l"; latency = 7; kind = KF; format = F_rr_r};
   "xor", {opcode = "xor"; latency = 1; kind = KA; format = F_rr_r};
   "xori", {opcode = "xor"; latency = 1; kind = KA; format = F_ir_r};
+  "#initbarrier", {opcode = "# init barrier"; latency = 0; kind = KI; format = F_i};
 ]
 
 (* Nodes of the code DAG.  Each node represents one instruction to be
@@ -273,7 +288,7 @@ let add_edge_after son ancestor = add_edge ancestor son 0
 
 (* Add an instruction to the code DAG *)
 
-let insert_node imm opc arg res =
+let insimm opc arg imm res =
   let instr =
     try
       Hashtbl.find instruction_table opc
@@ -292,43 +307,46 @@ let insert_node imm opc arg res =
       emitted_ancestors = 0 } in        (* ditto *)
   (* RAW dependencies: add edges from all instrs that define one of the
      resources used *)
-   for i = 0 to Array.length arg - 1 do
-     try
-       let rsrc = arg.(i) in
-       let anc = Hashtbl.find code_results rsrc in
-       let delay = match rsrc with R _ -> anc.delay | _ -> 0 in
-       (* Memory accesses are ordered by the hardware, so we can emit
-          a memop 1, then a dependent memop 2 in the same cycle *)
-       add_edge anc node delay
-     with Not_found ->
-       ()
-   done;
+  for i = 0 to Array.length arg - 1 do
+    try
+      let rsrc = arg.(i) in
+      if is_mutable_resource rsrc then begin
+        let anc = Hashtbl.find code_results rsrc in
+        let delay = if is_memory_resource rsrc then 0 else anc.delay in
+        (* Memory accesses are ordered by the hardware, so we can emit
+           a memop 1, then a dependent memop 2 in the same cycle *)
+        add_edge anc node delay
+      end
+    with Not_found ->
+      ()
+  done;
   (* WAR dependencies: add edges from all instrs that use one of the
+     resources defined by this instruction
+     WAW dependencies: add edges from all instrs that define one of the
      resources defined by this instruction *)
-   for i = 0 to Array.length res - 1 do
-     let anc = Hashtbl.find_all code_uses res.(i) in
-     List.iter (add_edge_after node) anc
-   done;
-  (* WAW dependencies: add edges from all instrs that define one of the
-     resources defined by this instruction *)
-   for i = 0 to Array.length res - 1 do
-     try
-       let anc = Hashtbl.find code_results res.(i) in
-       add_edge anc node 1
-     with Not_found ->
-       ()
-   done;
-   (* Remember the results and uses of this instruction *)
-   for i = 0 to Array.length res - 1 do
-     Hashtbl.add code_results res.(i) node
-   done;
-   for i = 0 to Array.length arg - 1 do
-     Hashtbl.add code_uses arg.(i) node
-   done;
-   node
-
-let insimm opc arg imm res =
-  let node = insert_node imm opc arg res in
+  for i = 0 to Array.length res - 1 do
+    let rsrc = res.(i) in
+    if is_mutable_resource rsrc then begin
+      (* WAR *)
+      let anc = Hashtbl.find_all code_uses res.(i) in
+      List.iter (add_edge_after node) anc;
+      (* WAW *)
+      try
+        let anc = Hashtbl.find code_results rsrc in
+        let delay = if is_memory_resource rsrc then 0 else 1 in
+        add_edge anc node delay
+      with Not_found ->
+        ()
+    end
+  done;
+  (* Remember the results and uses of this instruction *)
+  for i = 0 to Array.length res - 1 do
+    Hashtbl.add code_results res.(i) node
+  done;
+  for i = 0 to Array.length arg - 1 do
+    Hashtbl.add code_uses arg.(i) node
+  done;
+  (* Insert in appropriate queue *)  
   if node.instr.kind = KB
   then add_branch node
   else if node.ancestors = 0 then add_ready node
@@ -349,7 +367,7 @@ let rec longest_path node =
 
 (* Emit the assembly code for a node *)
 
-let emit_r = function R s -> emit_string s | _ -> assert false
+let emit_r = emit_string
 
 let emit_instr node =
   let opc = node.instr.opcode
@@ -409,27 +427,30 @@ let emit_instr node =
    2 int units, 2 mem units, 2 FP units, and 3 branch units,
    with a maximum of 6 instructions dispatched per clock cycle. *)
 
+let num_A = ref 0
 let num_I = ref 0
 let num_M = ref 0
 let num_F = ref 0
 let num_B = ref 0
 
 let reset_issue () =
-  num_I := 0; num_M := 0; num_F := 0; num_B := 0
+  num_A := 0; num_I := 0; num_M := 0; num_F := 0; num_B := 0
 
 let can_issue instr =
-  if !num_I + !num_M + !num_F + !num_B >= 6 then false else begin
+  if !num_A + !num_I + !num_M + !num_F + !num_B >= 6 then false else begin
     match instr.kind with
-      KA -> (* occupy I units preferently, then M units *)
-        if !num_I < 2 then (incr num_I; true)
-        else if !num_M < 2 then (incr num_M; true)
+      KA ->
+        if !num_A + !num_I + !num_M < 4
+        then (incr num_A; true)
         else false
     | KF ->
         if !num_F < 2 then (incr num_F; true) else false
     | KI ->
-        if !num_I < 2 then (incr num_I; true) else false
+        if !num_I < 2 && !num_A + !num_I + !num_M < 4 
+        then (incr num_I; true) else false
     | KM ->
-        if !num_M < 2 then (incr num_M; true) else false
+        if !num_M < 2 && !num_A + !num_I + !num_M < 4 
+        then (incr num_M; true) else false
     | _  (* KB | KB_exc *) ->
         if !num_B < 3 then (incr num_B; true) else false
   end
@@ -442,6 +463,7 @@ let can_issue instr =
 
 let emit_node date node =
   begin try
+    (*`# Date: {emit_int date}; distance: {emit_int node.length}\n`;*)
     emit_instr node
   with x ->
     fatal_error ("Error while emitting " ^ node.instr.opcode)
@@ -452,22 +474,30 @@ let emit_node date node =
       if son.date < completion_date then son.date <- completion_date;
       son.emitted_ancestors <- son.emitted_ancestors + 1;
       if son.emitted_ancestors = son.ancestors && son.instr.kind <> KB then
-        if son.date = date then add_ready son else add_in_progress son)
+      begin
+        (*`# {emit_string son.instr.opcode} will be ready at {emit_int son.date}\n`;*)
+        if son.date = date then add_ready son else add_in_progress son
+      end)
     node.sons
 
 (* Emit all ready nodes that we can emit given the architectural 
    constraints. *)
 
-let rec emit_ready_nodes date =
+let rec emit_ready_nodes filter date =
   match !ready_queue with
     [] -> []
   | node :: rem ->
       ready_queue := rem;
-      if can_issue node.instr then begin
+      if filter node && can_issue node.instr then begin
         emit_node date node;
-        emit_ready_nodes date
+        emit_ready_nodes filter date
       end else
-        node :: emit_ready_nodes date
+        node :: emit_ready_nodes filter date
+
+let filter_MF node =
+  match node.instr.kind with KM -> true | KF -> true | _ -> false
+let filter_non_MF node =
+  not(filter_MF node)
 
 (* Add all instructions with date <= d to the ready queue, and remove them *)
 
@@ -499,9 +529,12 @@ let rec reschedule date =
       (* Try again *)
       reschedule node.date
   | (_, _) ->
+      `  # time {emit_int date}\n`;
       (* Emit and remove as many ready instructions as we can *)
+      (* Give priority to M and F instructions *)
       reset_issue();
-      ready_queue := emit_ready_nodes date;
+      ready_queue := emit_ready_nodes filter_MF date;
+      ready_queue := emit_ready_nodes filter_non_MF date;
       (* Special hack: if the only remaining instructions are branches
          and they are all ready now, emit them in the current
          group of instructions *)
@@ -524,9 +557,17 @@ let rec reschedule date =
 (* Emit the code for the current basic block *)
 
 let end_basic_block () =
-  List.iter (fun n -> ignore (longest_path n)) !ready_queue;
+  (* Compute critical paths and rebuild ready queue sorted by
+     decreasing criticality *)
+  let r = !ready_queue in
+  ready_queue := []; 
+  let max_length =
+    List.fold_left (fun len node -> max len (longest_path node)) 0 r in
+  List.iter add_ready r;
   branch_list := List.rev !branch_list;
+  (* Emit the instructions by traversing the code DAG *)
   reschedule 0;
+  if max_length > 0 then `  # basic block length {emit_int max_length}\n`;
   clear_code_dag ();
   clear_queues ()
 
@@ -562,7 +603,7 @@ let emit_symbol s = Emitaux.emit_symbol '$' s
 (* Translate a pseudo-register *)
 
 let reg r =
-  match r.loc with Reg r -> R (register_name r) | _ -> assert false
+  match r.loc with Reg r -> register_name r | _ -> assert false
 
 let regs r =
   Array.map reg r
@@ -713,15 +754,33 @@ let is_immediate_addl_nat n =
   n >= Nativeint.of_int (-0x200000) && n < Nativeint.of_int 0x200000
 let is_immediate_adds n = n >= -0x2000 && n < 0x2000
 
-(* Generate temporaries for stack accesses *)
+(* Return the positions of all "1" bits in the given integer,
+   most significant bits first *)
 
-let temp_counter = ref 0
-let temporaries = [| R "r14"; R "r15"; R "r3" |]
-let new_temp_reg () =
-  let reg = temporaries.(!temp_counter) in
-  incr temp_counter;
-  if !temp_counter >= Array.length temporaries then temp_counter := 0;
-  reg
+let ones_pos n =
+  let rec ones p accu =
+    if p >= 63 
+    then accu
+    else ones (p+1) (if n land (1 lsl p) = 0 then accu else p :: accu) in
+  ones 0 []
+
+(* Generate temporary registers *)
+
+let temp_generator temporaries =
+  let counter = ref 0 in
+  fun () ->
+    let r = temporaries.(!counter) in
+    incr counter;
+    if !counter >= Array.length temporaries then counter := 0;
+    r
+
+let new_temp_reg =
+  temp_generator [| "r2"; "r3"; "r14"; "r15" |]
+let new_temp_float =
+  temp_generator [| "f64"; "f65"; "f66"; "f67";
+                    "f68"; "f69"; "f70"; "f71" |]
+let new_pred =
+  temp_generator [| "p2"; "p3"; "p4"; "p5" |]
 
 (* Output the assembly code for an instruction *)
 
@@ -729,8 +788,6 @@ let new_temp_reg () =
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
-(* Label of trap for out-of-range accesses *)
-let range_check_trap = ref 0
 
 let emit_instr i =
     match i.desc with
@@ -738,17 +795,17 @@ let emit_instr i =
     | Lop(Imove) ->
         insert "mov" (regs i.arg) (regs i.res)
     | Lop(Ispill) ->
-        let offset = slot_offset_reg i.res.(0) in
+        let offset = string_of_int (slot_offset_reg i.res.(0)) in
         let r = new_temp_reg() in
-        insimm "addi" [| R "sp" |] (string_of_int offset) [| r |];
+        insimm "addi" [| "sp" |] offset [| r |];
         insert (if i.res.(0).typ = Float then "stfd" else "st8")
-            [| r; reg i.arg.(0) |] [| Stk offset |]
+               [| r; reg i.arg.(0) |] [| "stk" ^ offset |]
     | Lop(Ireload) ->
-        let offset = slot_offset_reg i.arg.(0) in
+        let offset = string_of_int (slot_offset_reg i.arg.(0)) in
         let r = new_temp_reg() in
-        insimm "addi" [| R "sp" |] (string_of_int offset) [| r |];
+        insimm "addi" [| "sp" |] offset [| r |];
         insert (if i.arg.(0).typ = Float then "ldfd" else "ld8")
-            [| r; Stk offset |] (regs i.res)
+               [| r; "stk" ^ offset |] (regs i.res)
     | Lop(Iconst_int n) ->
         let instr =
           if is_immediate_addl_nat n then "movi" else "movil" in
@@ -756,36 +813,38 @@ let emit_instr i =
     | Lop(Iconst_float s) ->
         let f = float_of_string s in
         if f = 0.0 then
-          insert "mov" [| R "f0" |] (regs i.res)
+          insert "mov" [| "f0" |] (regs i.res)
         else if f = 1.0 then
-          insert "mov" [| R "f1" |] (regs i.res)
+          insert "mov" [| "f1" |] (regs i.res)
         else begin
-          insimm "movil" [||] (float_bits f) [| R "r2" |];
-          insert "setf.d" [| R "r2" |] (regs i.res)
+          let tmp = new_temp_reg() in
+          insimm "movil" [||] (float_bits f) [| tmp |];
+          insert "setf.d" [| tmp |] (regs i.res)
         end
     | Lop(Iconst_symbol s) ->
-        insimm "addi" [| R "gp" |] (ltoffset s) (regs i.res);
+        insimm "addi" [| "gp" |] (ltoffset s) (regs i.res);
         insert "ld8" (regs i.res) (regs i.res)
     | Lop(Icall_ind) ->
-        insert "movtb" (regs i.arg) [| R "b0" |];
-        insert "brcallind" [| R "b0" |] [| R "b0" |];
+        insert "movtb" (regs i.arg) [| "b0" |];
+        insert "brcallind" [| "b0" |] [| "b0" |];
         end_basic_block();
         `{record_frame i.live}\n`
     | Lop(Icall_imm s) ->
-        insimm "brcall" [||] (symbol s) [| R "b0" |];
+        insimm "brcall" [||] (symbol s) [| "b0" |];
         end_basic_block();
         `{record_frame i.live}\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
-        insert "movtb" (regs i.arg) [| R "b6" |];
+        insert "movtb" (regs i.arg) [| "b6" |];
         if !contains_calls then begin
-          insimm "addi" [| R "sp" |] (string_of_int (n + 8)) [| R "r2" |];
-          insert "ld8" [| R "r2" |] [| R "r2" |];
-          insert "mov" [| R "r2" |] [| R "b0" |]
+          let tmp = new_temp_reg() in
+          insimm "addi" [| "sp" |] (string_of_int (n + 8)) [| tmp |];
+          insert "ld8" [| tmp |] [| tmp |];
+          insert "mov" [| tmp |] [| "b0" |]
         end;
         if n > 0 then
-          insimm "addi" [| R "sp" |] (string_of_int n) [| R "sp" |];
-        insert "brind" [| R "b6" |] [||];
+          insimm "addi" [| "sp" |] (string_of_int n) [| "sp" |];
+        insert "brind" [| "b6" |] [||];
         end_basic_block()
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
@@ -793,31 +852,33 @@ let emit_instr i =
         end else begin
           let n = frame_size() in
           if !contains_calls then begin
-            insimm "addi" [| R "sp" |] (string_of_int (n + 8)) [| R "r2" |];
-            insert "ld8" [| R "r2" |] [| R "r2" |];
-            insert "mov" [| R "r2" |] [| R "b0" |]
+            let tmp = new_temp_reg() in
+            insimm "addi" [| "sp" |] (string_of_int (n + 8)) [| tmp |];
+            insert "ld8" [| tmp |] [| tmp |];
+            insert "mov" [| tmp |] [| "b0" |]
           end;
           if n > 0 then
-            insimm "addi" [| R "sp" |] (string_of_int n) [| R "sp" |];
+            insimm "addi" [| "sp" |] (string_of_int n) [| "sp" |];
           insimm "br" [||] (symbol s) [||]
         end;
         end_basic_block()
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          insimm "addi" [| R "gp" |] (ltoffset_fptr s) [| R "r2" |];
-          insert "ld8" [| R "r2" |] [| R "r2" |];
-          insimm "brcall" [||] "caml_c_call#" [| R "b0" |];
+          let tmp = new_temp_reg() in
+          insimm "addi" [| "gp" |] (ltoffset_fptr s) [| tmp |];
+          insert "ld8" [| tmp |] [| "r2" |];
+          insimm "brcall" [||] "caml_c_call#" [| "b0" |];
           end_basic_block();
           `{record_frame i.live}\n`
         end else begin
-          insert "mov" [| R "gp" |] [| R "r7" |];
-          insimm "brcall" [||] (symbol s) [| R "b0" |];
+          insert "mov" [| "gp" |] [| "r7" |];
+          insimm "brcall" [||] (symbol s) [| "b0" |];
           end_basic_block();
-          insert "mov" [| R "r7" |] [| R "gp" |]
+          insert "mov" [| "r7" |] [| "gp" |]
         end
     | Lop(Istackoffset n) ->
         end_basic_block();
-        insimm "addi" [| R "sp" |] (string_of_int (-n)) [| R "sp" |];
+        insimm "addi" [| "sp" |] (string_of_int (-n)) [| "sp" |];
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
         let load_instr =
@@ -832,7 +893,7 @@ let emit_instr i =
           | Single -> "ldfs"
           | Double -> "ldfd"
           | Double_u -> "ldfd" in
-        insert load_instr [| reg i.arg.(0); Heap |] (regs i.res);
+        insert load_instr [| reg i.arg.(0); "heap" |] (regs i.res);
         let sext_instr =
           match chunk with
             Byte_signed -> "sxt1"
@@ -854,75 +915,109 @@ let emit_instr i =
           | Single -> "stf4"
           | Double -> "stfd"
           | Double_u -> "stfd" in
-        insert store_instr [| reg i.arg.(1); reg i.arg.(0) |] [| Heap |]
+        insert store_instr [| reg i.arg.(1); reg i.arg.(0) |] [| "heap" |]
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
-          insimm "addi" [| R "r4" |] (string_of_int (-n)) [| R "r4" |];
-          insert "cmp.ltu" [| R "r4"; R "r5" |] [| R "p6"; R "p0" |];
-          insimm "movi" [||] (string_of_int n) [| R "r2" |];
-          insimm "brcallcond" [| R "p6" |] "caml_call_gc#" [| R "b0" |];
+          insimm "addi" [| "r4" |] (string_of_int (-n)) [| "r4" |];
+          insert "cmp.ltu" [| "r4"; "r5" |] [| "p6"; "p0" |];
+          insimm "movi" [||] (string_of_int n) [| "r2" |];
+          insimm "brcallcond" [| "p6" |] "caml_call_gc#" [| "b0" |];
           end_basic_block();
           `{record_frame i.live}\n`;
-          insimm "addi" [| R "r4" |] "8" (regs i.res)
+          insimm "addi" [| "r4" |] "8" (regs i.res)
         end else begin
-          insimm "movi" [||] (string_of_int n) [| R "r2" |];
-          insimm "brcall" [||] "caml_alloc#" [| R "b0" |];
+          insimm "movi" [||] (string_of_int n) [| "r2" |];
+          insimm "brcall" [||] "caml_alloc#" [| "b0" |];
           end_basic_block();
           `{record_frame i.live}\n`;
-          insimm "addi" [| R "r4" |] "8" (regs i.res)
+          insimm "addi" [| "r4" |] "8" (regs i.res)
         end
     | Lop(Iintop Imul) ->
-        insert "setf.sig" [|reg i.arg.(0)|] [| R "f64" |];
-        insert "setf.sig" [|reg i.arg.(1)|] [| R "f65" |];
-        insert "xmpy.l" [| R "f64"; R "f65" |] [| R "f64" |];
-        insert "getf.sig" [| R "f64" |] (regs i.res)
+        let t1 = new_temp_float() and t2 = new_temp_float() in
+        insert "setf.sig" [|reg i.arg.(0)|] [| t1 |];
+        insert "setf.sig" [|reg i.arg.(1)|] [| t2 |];
+        insert "xmpy.l" [| t1; t2 |] [| t1 |];
+        insert "getf.sig" [| t1 |] (regs i.res)
     | Lop(Iintop(Icomp cmp)) ->
         let comp = "cmpp." ^ name_for_int_comparison cmp in
-        insert comp (regs i.arg) [| R "p6"; R "p7" |];
-        insimm "movicond" [| R "p6" |] "1" (regs i.res);
-        insimm "movicond" [| R "p7" |] "0" (regs i.res)
+        let p1 = new_pred() and p2 = new_pred() in
+        insert comp (regs i.arg) [| p1; p2 |];
+        insimm "movicond" [| p1 |] "1" (regs i.res);
+        insimm "movicond" [| p2 |] "0" (regs i.res)
     | Lop(Iintop(Icheckbound)) ->
-        insert "cmp.leu" (regs i.arg) [| R "p6"; R "p0" |];
-        insimm "brcallcondexc" [| R "p6" |] "caml_array_bound_error#"
-                               [| R "b0"; Heap |]
+        insert "cmp.leu" (regs i.arg) [| "p6"; "p0" |];
+        insimm "brcallcondexc" [| "p6" |] "caml_array_bound_error#"
+                               [| "b0"; "heap" |]
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         insert instr (regs i.arg) (regs i.res)
+    | Lop(Iintop_imm(Imul, n)) ->
+        let src = reg i.arg.(0) and dst = reg i.res.(0) in
+        begin match ones_pos n with
+          [] ->
+            insert "mov" [|src|] [|dst|]
+        | [n] ->
+            insimm "shli" [|src|] (string_of_int n) [|dst|]
+        | [n; 0] when n <= 4 ->
+            insimm "shladd" [|src; src|] (string_of_int n) [|dst|]
+        | n1::n2::lst ->
+            let acc1 = new_temp_reg() and acc2 = new_temp_reg()
+            and tmp1 = new_temp_reg() and tmp2 = new_temp_reg() in
+            insimm "shli" [|src|] (string_of_int n1) [|acc1|];
+            insimm "shli" [|src|] (string_of_int n2) [|acc2|];
+            let rec add_shifts a1 t1 a2 t2 = function
+              [] ->
+                insert "add" [|a1; a2|] [|dst|]
+            | n::rem ->
+                if n = 0 then
+                  insert "add" [|src; a1|] [|a1|]
+                else if n <= 4 then
+                  insimm "shladd" [|src; a1|] (string_of_int n) [|a1|]
+                else begin
+                  insimm "shli" [|src|] (string_of_int n) [|t1|];
+                  insert "add" [|t1; a1|] [|a1|]
+                end;
+                add_shifts a2 t2 a1 t1 rem in
+            add_shifts acc1 tmp1 acc2 tmp2 lst
+        end
     | Lop(Iintop_imm(Idiv, n)) -> (* n must be a power of 2 *)
         let src = regs i.arg and dst = regs i.res in
+        let p1 = new_pred() and p2 = new_pred() in
         let l = Misc.log2 n in
-        insert "cmpp.lt" [| src.(0); R "r0" |] [| R "p6"; R "p7" |];
+        insert "cmpp.lt" [| src.(0); "r0" |] [| p1; p2 |];
         if is_immediate_adds (n-1) then
-          insimm "addicond" [| R "p6"; src.(0) |] (string_of_int (n-1)) dst
+          insimm "addicond" [| p1; src.(0) |] (string_of_int (n-1)) dst
         else begin
           let moveop = if is_immediate_addl (n-1) then "movi" else "movil" in
-          insimm moveop [||] (string_of_int (n-1)) [| R "r2" |];
-          insert "addcond" [| R "p6"; src.(0); R "r2" |] dst
+          insimm moveop [||] (string_of_int (n-1)) [| "r2" |];
+          insert "addcond" [| p1; src.(0); "r2" |] dst
         end;
-        insert "movcond" [| R "p7"; src.(0) |] dst;
+        insert "movcond" [| p2; src.(0) |] dst;
         insimm "shri" dst (string_of_int l) dst
     | Lop(Iintop_imm(Imod, n)) -> (* n must be a power of 2 *)
         let src = regs i.arg and dst = regs i.res in
+        let p = new_pred() in
         let l = Misc.log2 n in
-        insert "cmpp.lt" [| src.(0); R "r0" |] [| R "p6"; R "p0" |];
+        insert "cmpp.lt" [| src.(0); "r0" |] [| p; "p0" |];
         insimm "extr.u" src (sprintf "0, %d" l) dst;
-        insert "cmpp.ne.and" [| dst.(0); R "r0"; R "p6" |] [| R "p6"; R "p0" |];
+        insert "cmpp.ne.and" [| dst.(0); "r0"; p |] [| p; "p0" |];
         if is_immediate_adds (-n) then
-          insimm "addicond" [| R "p6"; dst.(0) |] (string_of_int (-n)) dst
+          insimm "addicond" [| p; dst.(0) |] (string_of_int (-n)) dst
         else begin
           let moveop = if is_immediate_addl (-n) then "movi" else "movil" in
-          insimm moveop [||] (string_of_int (-n)) [| R "r2" |];
-          insert "addcond" [| R "p6"; dst.(0); R "r2" |] dst
+          insimm moveop [||] (string_of_int (-n)) [| "r2" |];
+          insert "addcond" [| p; dst.(0); "r2" |] dst
         end
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         let comp = "cmppi." ^ name_for_swapped_int_comparison cmp in
-        insimm comp (regs i.arg) (string_of_int n) [| R "p6"; R "p7" |];
-        insimm "movicond" [| R "p6" |] "1" (regs i.res);
-        insimm "movicond" [| R "p7" |] "0" (regs i.res)
+        let p1 = new_pred() and p2 = new_pred() in
+        insimm comp (regs i.arg) (string_of_int n) [| p1; p2 |];
+        insimm "movicond" [| p1 |] "1" (regs i.res);
+        insimm "movicond" [| p2 |] "0" (regs i.res)
     | Lop(Iintop_imm(Icheckbound, n)) ->
-        insimm "cmpi.geu" (regs i.arg) (string_of_int n) [| R "p6"; R "p0" |];
-        insimm "brcallcondexc" [| R "p6" |] "caml_array_bound_error#"
-                               [| R "b0"; Heap |]
+        insimm "cmpi.geu" (regs i.arg) (string_of_int n) [| "p6"; "p0" |];
+        insimm "brcallcondexc" [| "p6" |] "caml_array_bound_error#"
+                               [| "b0"; "heap" |]
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op ^ "i" in
         insimm instr (regs i.arg) (string_of_int n) (regs i.res)
@@ -933,30 +1028,33 @@ let emit_instr i =
         (* Straight from the IA64 application developer's architecture guide,
            section 13.3.3.1. Modified so that the destination may be equal
            to one of the operands *)
-        let a = reg i.arg.(0) and b = reg i.arg.(1) and r = reg i.res.(0) in
-        insert "frcpa" [| a; b |] [| R "f64"; R "p6" |];
-        insert "fmas1cond" [| R "p6"; a; R "f64"; R "f0" |] [| R "f65" |];
-        insert "fnmas1cond" [| R "p6"; b; R "f64"; R "f1" |] [| R "f66" |];
-        insert "fmas1cond" [| R "p6"; R "f66"; R "f66"; R "f65" |] [| R "f65" |];
-        insert "fmas1cond" [| R "p6"; R "f66"; R "f66"; R "f0" |] [| R "f67" |];
-        insert "fmas1cond" [| R "p6"; R "f66"; R "f64"; R "f64" |] [| R "f64" |];
-        insert "fmas1cond" [| R "p6"; R "f67"; R "f65"; R "f65" |] [| R "f65" |];
-        insert "fmas1cond" [| R "p6"; R "f67"; R "f67"; R "f0" |] [| R "f66" |];
-        insert "fmas1cond" [| R "p6"; R "f67"; R "f64"; R "f64" |] [| R "f64" |];
-        insert "fmads1cond" [| R "p6"; R "f66"; R "f65"; R "f65" |] [| R "f65" |];
-        insert "fmas1cond" [| R "p6"; R "f66"; R "f64"; R "f64" |] [| R "f64" |];
-        insert "fnmads1cond" [| R "p6"; b; R "f65"; a |] [| R "f66" |];
-        insert "mov" [| R "f64" |] [| r |];
-        insert "fmacond" [| R "p6"; R "f66"; R "f64"; R "f65" |] [| r |]
+        let a = reg i.arg.(0) and b = reg i.arg.(1) and r = reg i.res.(0)
+        and t1 = new_temp_float() and t2 = new_temp_float()
+        and t3 = new_temp_float() and t4 = new_temp_float()
+        and p = new_pred() in
+        insert "frcpa" [| a; b |] [| t1; p |];
+        insert "fmas1cond" [| p; a; t1; "f0" |] [| t2 |];
+        insert "fnmas1cond" [| p; b; t1; "f1" |] [| t3 |];
+        insert "fmas1cond" [| p; t3; t3; t2 |] [| t2 |];
+        insert "fmas1cond" [| p; t3; t3; "f0" |] [| t4 |];
+        insert "fmas1cond" [| p; t3; t1; t1 |] [| t1 |];
+        insert "fmas1cond" [| p; t4; t2; t2 |] [| t2 |];
+        insert "fmas1cond" [| p; t4; t4; "f0" |] [| t3 |];
+        insert "fmas1cond" [| p; t4; t1; t1 |] [| t1 |];
+        insert "fmads1cond" [| p; t3; t2; t2 |] [| t2 |];
+        insert "fmas1cond" [| p; t3; t1; t1 |] [| t1 |];
+        insert "fnmads1cond" [| p; b; t2; a |] [| t3 |];
+        insert "mov" [| t1 |] [| r |];
+        insert "fmacond" [| p; t3; t1; t2 |] [| r |]
     | Lop(Ifloatofint) ->
         let src = regs i.arg and dst = regs i.res in
         insert "setf.sig" src dst;
         insert "fcvt.xf" dst dst;
         insert "fnorm.d" dst dst
     | Lop(Iintoffloat) ->
-        let src = regs i.arg and dst = regs i.res in
-        insert "fcvt.fx.trunc" src [| R "f64" |];
-        insert "getf.sig" [| R "f64" |] dst
+        let src = regs i.arg and dst = regs i.res and tmp = new_temp_float() in
+        insert "fcvt.fx.trunc" src [| tmp |];
+        insert "getf.sig" [| tmp |] dst
     | Lop(Ispecific(Iadd1)) ->
         let s = if Array.length i.arg >= 2 then 1 else 0 in
         insimm "add1" [| reg i.arg.(0); reg i.arg.(s) |] "1" (regs i.res)
@@ -974,17 +1072,20 @@ let emit_instr i =
         let op = if i.arg.(1).typ = Float then "stfd+" else "st8+" in
         insimm op [| reg i.arg.(0); reg i.arg.(1) |]
                   (string_of_int n)
-	          (regs i.res)
+	          [| reg i.res.(0); "heapinit" |]
+    | Lop(Ispecific Iinitbarrier) ->
+        insert "#initbarrier" [| "heapinit" |] [| "heap" |]
     | Lreloadretaddr ->
         let n = frame_size() + 8 in
-        insimm "addi" [| R "sp" |] (string_of_int n) [| R "r2" |];
-        insert "ld8" [| R "r2" |] [| R "r2" |];
-        insert "movtb" [| R "r2" |] [| R "b0" |]
+        let tmp = new_temp_reg() in
+        insimm "addi" [| "sp" |] (string_of_int n) [| tmp |];
+        insert "ld8" [| tmp |] [| tmp |];
+        insert "movtb" [| tmp |] [| "b0" |]
     | Lreturn ->
         let n = frame_size() in
         if n > 0 then
-          insimm "addi" [| R "sp" |] (string_of_int n) [| R "sp" |];
-        insert "brret" [| R "b0" |] [||];
+          insimm "addi" [| "sp" |] (string_of_int n) [| "sp" |];
+        insert "brret" [| "b0" |] [||];
         end_basic_block()
     | Llabel lbl ->
         end_basic_block();
@@ -995,38 +1096,37 @@ let emit_instr i =
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->
-            insimm "cmpi.ne" (regs i.arg) "0" [| R "p6"; R "p0" |]
+            insimm "cmpi.ne" (regs i.arg) "0" [| "p6"; "p0" |]
         | Ifalsetest ->
-            insimm "cmpi.eq" (regs i.arg) "0" [| R "p6"; R "p0" |]
+            insimm "cmpi.eq" (regs i.arg) "0" [| "p6"; "p0" |]
         | Iinttest cmp ->
             let comp = "cmp." ^ name_for_int_comparison cmp in
-            insert comp (regs i.arg) [| R "p6"; R "p0" |]
+            insert comp (regs i.arg) [| "p6"; "p0" |]
         | Iinttest_imm(cmp, n) ->
             let comp = "cmpi." ^ name_for_swapped_int_comparison cmp in
-            insimm comp (regs i.arg) (string_of_int n) [| R "p6"; R "p0" |]
+            insimm comp (regs i.arg) (string_of_int n) [| "p6"; "p0" |]
         | Ifloattest(cmp, neg) ->
             let comp = "fcmp." ^ name_for_float_comparison cmp in
             insert comp (regs i.arg)
-                     (if neg then [| R "p0"; R "p6" |]
-                             else [| R "p6"; R "p0" |])
+                     (if neg then [| "p0"; "p6" |]
+                             else [| "p6"; "p0" |])
         | Ioddtest ->
-            insimm "tbit.nz" (regs i.arg) "0" [| R "p6"; R "p0" |]
+            insimm "tbit.nz" (regs i.arg) "0" [| "p6"; "p0" |]
         | Ieventest ->
-            insimm "tbit.z" (regs i.arg) "0" [| R "p6"; R "p0" |]
+            insimm "tbit.z" (regs i.arg) "0" [| "p6"; "p0" |]
         end;
-        insimm "brcond" [| R "p6" |] (label lbl) [||];
+        insimm "brcond" [| "p6" |] (label lbl) [||];
         end_basic_block()
     | Lcondbranch3(lbl0, lbl1, lbl2) ->
         end_basic_block();
         let emit_compare n p = function
           None -> ()
         | Some lbl ->
-           `    cmp.eq  p{emit_int p}, p0 = {emit_int n}, {emit_reg i.arg.(0)}\n
-` in
+           `	cmp.eq  p{emit_int p}, p0 = {emit_int n}, {emit_reg i.arg.(0)}\n` in
         let emit_branch p = function
           None -> ()
         | Some lbl ->
-           `    (p{emit_int p}) br {emit_label lbl}\n` in
+           `  (p{emit_int p})	br {emit_label lbl}\n` in
         emit_compare 0 5 lbl0; emit_compare 1 6 lbl1; emit_compare 2 7 lbl2;
         emit_branch 5 lbl0; emit_branch 6 lbl1; emit_branch 7 lbl2
     | Lswitch jumptbl ->
@@ -1036,44 +1136,46 @@ let emit_instr i =
           for j = 0 to numcases / 3 do
             let n = j * 3 in
             for k = 0 to 2 do
-              if n + k < numcases then
-                `       cmp.eq p{emit_int(k+5)}, p0 = {emit_int (n+k)}, {emit_reg i.arg.(0)}\n`
+              if n + k < numcases - 1 then
+                `	cmp.eq	p{emit_int(k+5)}, p0 = {emit_int (n+k)}, {emit_reg i.arg.(0)}\n`
             done;
             for k = 0 to 2 do
-              if n + k < numcases then
-                `       (p{emit_int(k+5)}) br {emit_label jumptbl.(n+k)}\n`
+              if n + k < numcases - 1 then
+                `  (p{emit_int(k+5)})	br {emit_label jumptbl.(n+k)}\n`
+              else if n + k = numcases - 1 then
+                `	br {emit_label jumptbl.(n+k)}\n`
             done;
             `  ;;\n`
           done
         end else if numcases <= 47 then begin
-          `     mov     r2 = 1\n`;
-          `     cmp.eq  p6, p0 = 0, {emit_reg i.arg.(0)}\n`;
-          `     (p6) br {emit_label jumptbl.(0)} ;;\n`;
-          `     shl     r2 = r2, {emit_reg i.arg.(0)}\n`;
-          `     cmp.eq  p7, p0 = 1, {emit_reg i.arg.(0)}\n`;
-          `     (p7) br {emit_label jumptbl.(1)} ;;\n`;
-          `     mov     pr = r2, -1 ;;\n;;`;
+          `	mov	r2 = 1\n`;
+          `	cmp.eq	p6, p0 = 0, {emit_reg i.arg.(0)}\n`;
+          `  (p6)	br {emit_label jumptbl.(0)} ;;\n`;
+          `	shl	r2 = r2, {emit_reg i.arg.(0)}\n`;
+          `	cmp.eq	p7, p0 = 1, {emit_reg i.arg.(0)}\n`;
+          `  (p7)	br {emit_label jumptbl.(1)} ;;\n`;
+          `	mov	pr = r2, -1 ;;\n`;
           for i = 2 to numcases - 1 do
-            `   (p{emit_int i}) br {emit_label jumptbl.(i)}\n`
+            `  (p{emit_int i})	br {emit_label jumptbl.(i)}\n`
           done;
           `  ;;\n`
         end else begin
           let lbl_jumptbl = new_label() in
           let lbl_ip = new_label() in
-          `{emit_label lbl_ip}:	mov     r2 = ip ;;\n`;
-          `	add     r2 = {emit_label lbl_jumptbl} - {emit_label lbl_ip}, r2 ;;\n`;
-          `     shladd  r3 = {emit_reg i.arg.(0)}, 2, r2 ;;\n`;
-          `     ld4     r3 = [r3] ;;\n`;
-          `     sxt4    r3 = r3 ;;\n`;
-          `     add     r2 = r2, r3 ;;\n`;
-          `     mov     br6 = r2 ;;\n`;
-          `     br      b6 ;;\n`;
-          `     .align 4\n`;
+          `{emit_label lbl_ip}:	mov	r2 = ip ;;\n`;
+          `	add	r2 = {emit_label lbl_jumptbl} - {emit_label lbl_ip}, r2 ;;\n`;
+          `	shladd	r3 = {emit_reg i.arg.(0)}, 2, r2 ;;\n`;
+          `	ld4	r3 = [r3] ;;\n`;
+          `	sxt4	r3 = r3 ;;\n`;
+          `	add	r2 = r2, r3 ;;\n`;
+          `	mov	br6 = r2 ;;\n`;
+          `	br	b6 ;;\n`;
+          `	.align 4\n`;
           `{emit_label lbl_jumptbl}:\n`;
           for i = 0 to numcases - 1 do
-            `   data4   {emit_label jumptbl.(i)} - {emit_label lbl_jumptbl}\n`
+            `	data4	{emit_label jumptbl.(i)} - {emit_label lbl_jumptbl}\n`
           done;
-          `     .align 16\n`
+          `	.align 16\n`
         end
     | Lsetuptrap lbl ->
         end_basic_block();
@@ -1131,13 +1233,13 @@ let fundecl f =
   `{emit_symbol f.fun_name}:\n`;
   let n = frame_size() in
   if !contains_calls then begin
-    insert "movfb" [| R "b0" |] [| R "r2" |];
-    insimm "addi" [| R "sp" |] "8" [| R "r3" |];
-    insimm "addi" [| R "sp" |] (string_of_int (-n)) [| R "sp" |];
-    insert "st8" [| R "r3"; R "r2" |] [||]
+    insert "movfb" [| "b0" |] [| "r2" |];
+    insimm "addi" [| "sp" |] "8" [| "r3" |];
+    insimm "addi" [| "sp" |] (string_of_int (-n)) [| "sp" |];
+    insert "st8" [| "r3"; "r2" |] [||]
   end
   else if n > 0 then
-    insimm "addi" [| R "sp" |] (string_of_int (-n)) [| R "sp" |];
+    insimm "addi" [| "sp" |] (string_of_int (-n)) [| "sp" |];
   if is_tailrec f.fun_body then begin
     tailrec_entry_point := new_label();
     end_basic_block();

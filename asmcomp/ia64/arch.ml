@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -31,6 +31,7 @@ type specific_operation =
   | Imultsubf                           (* x *. y -. z *)
   | Isubmultf                           (* z -. x *. y *)
   | Istoreincr of int                   (* store y at x; x <- x + N *)
+  | Iinitbarrier                        (* end of object initialization *)
 
 (* Sizes, endianness *)
 
@@ -78,3 +79,5 @@ let print_specific_operation printreg op ppf arg =
   | Istoreincr n ->
       fprintf ppf "[%a] := %a; %a += %d"
               printreg arg.(0) printreg arg.(1) printreg arg.(0) n
+  | Iinitbarrier ->
+      fprintf ppf "initbarrier"
