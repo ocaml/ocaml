@@ -2952,15 +2952,15 @@ let cyclic_abbrev env id ty =
     let ty = repr ty in
     match ty.desc with
       Tconstr (p, tl, abbrev) ->
-        if List.exists (Path.same p) seen then true else begin
-          try
-            check_cycle (p :: seen) (expand_abbrev env ty)
-          with Cannot_expand ->
-            false
+        p = Path.Pident id || List.memq ty seen ||
+        begin try
+          check_cycle (ty :: seen) (expand_abbrev env ty)
+        with Cannot_expand ->
+          false
         end
     | _ ->
         false
-  in check_cycle [Path.Pident id] ty
+  in check_cycle [] ty
 
 (* Normalize a type before printing, saving... *)
 let rec normalize_type_rec env ty =
