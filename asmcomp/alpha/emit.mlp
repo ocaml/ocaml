@@ -280,8 +280,8 @@ let emit_call_gc gc =
 
 let rdata_section =
   match Config.system with
-    "digital" | "openbsd" -> ".rdata"
-  | "linux" | "netbsd" | "freebsd" -> ".section .rodata"
+    "digital" -> ".rdata"
+  | "linux" | "openbsd" | "netbsd" | "freebsd" -> ".section .rodata"
   | _ -> assert false
 
 (* Names of various instructions *)

@@ -426,7 +426,7 @@ $111:   ldgp    $gp, 0($27)
         br      caml_c_call             /* never returns */
         .end    caml_array_bound_error
 
-#if defined(SYS_digital) || defined(SYS_openbsd)
+#if defined(SYS_digital)
         .rdata
 #else
         .section .rodata
