@@ -51,7 +51,7 @@ let rec path event = function
             with Not_found ->
             try
               let pos = Ident.find_same id ev.ev_compenv.ce_heap in
-              Debugcom.Remote_value.from_environment (pos + 1)
+              Debugcom.Remote_value.from_environment pos
             with Not_found ->
               raise(Error(Unbound_identifier id))
             end
