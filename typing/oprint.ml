@@ -41,12 +41,7 @@ let value_ident ppf name =
 (* Values *)
 
 let print_out_value ppf tree =
-  let rec print_tree ppf =
-    function
-      Oval_tuple tree_list ->
-        fprintf ppf "@[%a@]" (print_tree_list print_tree_1 ",") tree_list
-    | tree -> print_tree_1 ppf tree
-  and print_tree_1 ppf =
+  let rec print_tree_1 ppf =
     function
       Oval_constr (name, [param]) ->
         fprintf ppf "@[<1>%a@ %a@]" print_ident name print_simple_tree param
@@ -76,13 +71,15 @@ let print_out_value ppf tree =
         fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true)) fel
     | Oval_ellipsis -> raise Ellipsis
     | Oval_printer f -> f ppf
-    | tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree) tree
+    | Oval_tuple tree_list ->
+        fprintf ppf "@[(%a)@]" (print_tree_list print_tree_1 ",") tree_list
+    | tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree_1) tree
   and print_fields first ppf =
     function
       [] -> ()
     | (name, tree) :: fields ->
         if not first then fprintf ppf ";@ ";
-        fprintf ppf "@[<1>%a@ =@ %a@]" print_ident name (cautious print_tree)
+        fprintf ppf "@[<1>%a@ =@ %a@]" print_ident name (cautious print_tree_1)
           tree;
         print_fields false ppf fields
   and print_tree_list print_item sep ppf tree_list =
@@ -96,7 +93,7 @@ let print_out_value ppf tree =
     in
     cautious (print_list true) ppf tree_list
   in
-  cautious print_tree ppf tree
+  cautious print_tree_1 ppf tree
 
 let out_value = ref print_out_value
 
