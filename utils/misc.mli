@@ -39,6 +39,10 @@ val may_map: ('a -> 'b) -> 'a option -> 'b option
 
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
+val find_in_path_uncap: string list -> string -> string
+        (* Same, but search also for uncapitalized name, i.e.
+           if name is Foo.ml, allow /path/Foo.ml and /path/foo.ml
+           to match. *)
 val remove_file: string -> unit
         (* Delete the given file if it exists. Never raise an error. *)
 val expand_directory: string -> string -> string

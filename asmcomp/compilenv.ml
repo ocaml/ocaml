@@ -112,7 +112,7 @@ let global_approx global_ident =
       let (approx, crc) =
         try
           let filename =
-            find_in_path !load_path (String.uncapitalize modname ^ ".cmx") in
+            find_in_path_uncap !load_path (modname ^ ".cmx") in
           let (ui, crc) = read_unit_info filename in
           if ui.ui_name <> modname then
             raise(Error(Illegal_renaming(ui.ui_name, filename)));

@@ -25,9 +25,8 @@ let load_path = ref [""]
 let native_only = ref false
 
 let find_dependency modname (byt_deps, opt_deps) =
-  let name = String.uncapitalize modname in
   try
-    let filename = Misc.find_in_path !load_path (name ^ ".mli") in
+    let filename = Misc.find_in_path_uncap !load_path (modname ^ ".mli") in
     let basename = Filename.chop_suffix filename ".mli" in
     ((basename ^ ".cmi") :: byt_deps,
      (if Sys.file_exists (basename ^ ".ml")
@@ -35,7 +34,7 @@ let find_dependency modname (byt_deps, opt_deps) =
       else basename ^ ".cmi") :: opt_deps)
   with Not_found ->
   try
-    let filename = Misc.find_in_path !load_path (name ^ ".ml") in
+    let filename = Misc.find_in_path_uncap !load_path (modname ^ ".ml") in
     let basename = Filename.chop_suffix filename ".ml" in
     ((basename ^ (if !native_only then ".cmx" else ".cmo")) :: byt_deps,
      (basename ^ ".cmx") :: opt_deps)
