@@ -112,6 +112,8 @@ let rec size_of_lambda = function
       1 + IdentSet.cardinal(free_variables funct)
   | Lprim(Pmakeblock(tag, mut), args) ->
       List.length args
+  | Lprim(Pmakearray kind, args) ->
+      List.length args
   | Llet(str, id, arg, body) ->
       size_of_lambda body
   | Lletrec(bindings, body) ->
