@@ -218,18 +218,19 @@ $103:   ldgp    $gp, 0($27)
         .end    caml_call_gc
 
 /* Call a C function from Caml */
-/* Function to call is in $25 */
+/* Function to call is in $27 */
 
         .globl  caml_c_call
         .ent    caml_c_call
         .align  3
 caml_c_call:
         .prologue 0
-    /* Preserve return address and caller's $gp callee-save registers */
+    /* Preserve return address and caller's $gp in callee-save registers */
         mov     $26, $9
         mov     $gp, $10
     /* Rebuild $gp */
-        ldgp    $gp, 8($27)
+        br      $25, $104
+$104:   ldgp    $gp, 0($25)
     /* Record lowest stack address and return address */
         lda     $11, caml_last_return_address
         stq     $26, 0($11)
@@ -240,8 +241,7 @@ caml_c_call:
         lda     $14, young_limit
         stq     $15, caml_exception_pointer
     /* Call the function */
-        mov     $25, $27
-        jsr     ($25)
+        jsr     ($27)
     /* Reload alloc ptr and alloc limit */
         ldq     $13, 0($12)  /* $12 still points to young_ptr */
         ldq     $14, 0($14)  /* $14 still points to young_limit */

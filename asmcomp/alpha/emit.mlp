@@ -46,6 +46,8 @@ let insert_load_gp f =
       labels_needing_gp := LabelSet.add lbl !labels_needing_gp
     end in
 
+  let tailrec_entry_point = new_label() in
+
   (* Determine if $gp is needed before an instruction.
      [next] says whether $gp is needed just after (i.e. by the following
      instruction). *)
@@ -57,11 +59,10 @@ let insert_load_gp f =
     | Lop(Iconst_float s) -> true       (* turned into ldq ($gp) *)
     | Lop(Iconst_symbol s) -> true      (* turned into ldq ($gp) *)
     | Lop(Icall_ind) -> false           (* does ldgp if needed afterwards *)
-    | Lop(Icall_imm s) -> true          (* loads $27 from ($gp) if external, *)
-                                        (* and assume $gp set if internal *)
+    | Lop(Icall_imm s) -> false         (* does ldgp if needed afterwards *)
     | Lop(Itailcall_ind) -> false
-    | Lop(Itailcall_imm s) -> true      (* loads $27 from ($gp) if external *)
-                                        (* and assume $gp set if internal *)
+    | Lop(Itailcall_imm s) ->
+        if s = f.fun_name then label_needs_gp tailrec_entry_point else false
     | Lop(Iextcall(_, _)) -> true       (* loads $27 from ($gp) *)
     | Lop(Iload(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
     | Lop(Istore(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
@@ -97,7 +98,7 @@ let insert_load_gp f =
 
   while not !fixpoint_reached do
     fixpoint_reached := true;
-    needs_gp f.fun_body
+    if needs_gp f.fun_body then set_label_needs_gp tailrec_entry_point
   done;
 
   (* Insert Ireloadgp instructions after calls where needed *)
@@ -419,26 +420,18 @@ let emit_instr i =
     | Lop(Iconst_symbol s) ->
         `	lda	{emit_reg i.res.(0)}, {emit_symbol s}\n`
     | Lop(Icall_ind) ->
-        `	mov	{emit_reg i.arg.(0)}, $27\n`;
-        liveregs i live_27;
+        liveregs i 0;
         `{record_frame i.live}	jsr	({emit_reg i.arg.(0)})\n`
     | Lop(Icall_imm s) ->
         liveregs i 0;
-        begin try
-          let lbl = local_entry_point s in
-          `{record_frame i.live}	bsr	$26, {emit_label lbl} # {emit_symbol s}\n`
-        with External_function ->
-          `	lda	$27, {emit_symbol s}\n`;
-          `{record_frame i.live}	bsr	$26, {emit_symbol s}\n`
-        end
+        `{record_frame i.live}	bsr	$26, {emit_symbol s}\n`
     | Lop(Itailcall_ind) ->
-        `	mov	{emit_reg i.arg.(0)}, $27\n`;
         let n = frame_size() in
         if !contains_calls then
           `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
         if n > 0 then
           `	lda	$sp, {emit_int n}($sp)\n`;
-        liveregs i (live_26 lor live_27);
+        liveregs i live_26;
         `	jmp	({emit_reg i.arg.(0)})\n`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
@@ -450,18 +443,12 @@ let emit_instr i =
           if n > 0 then
             `	lda	$sp, {emit_int n}($sp)\n`;
           liveregs i live_26;
-          try
-            let lbl = local_entry_point s in
-            `	br	{emit_label lbl} # {emit_symbol s}\n`
-          with External_function ->
-            `	lda	$27, {emit_symbol s}\n`;
-            `	jmp	($27), {emit_symbol s}\n`
+          `	br	{emit_symbol s}\n`
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          `	lda	$25, {emit_symbol s}\n`;
-          liveregs i live_25;
-          `	lda	$27, caml_c_call\n`;
+          `	lda	$27, {emit_symbol s}\n`;
+          liveregs i live_27;
           `{record_frame i.live}	bsr	$26, caml_c_call\n`
         end else begin
           `	jsr	{emit_symbol s}\n`
@@ -711,26 +698,21 @@ let emit_fundecl (fundecl, needs_gp) =
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.ent	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
-  if needs_gp then
-    `	ldgp	$gp, 0($27)\n`;
-  let local_entry =
-    try
-      local_entry_point fundecl.fun_name
-    with External_function -> (* should not happen except with testasmcomp *)
-      let lbl = new_label() in
-      Hashtbl.add local_entry_points fundecl.fun_name lbl;
-      lbl in
-  `{emit_label local_entry}:\n`;
   let n = frame_size() in
   if n > 0 then
     `	lda	$sp, -{emit_int n}($sp)\n`;
+  if needs_gp then begin
+    let lbl = new_label() in
+    `	br	$27, {emit_label lbl}\n`;
+    `{emit_label lbl}:	ldgp	$gp, 0($27)\n`
+  end;
   if !contains_calls then begin
     `	stq	$26, {emit_int(n - 8)}($sp)\n`;
     `	.mask	0x04000000, -8\n`;
     `	.fmask	0x0, 0\n`
   end;
   `	.frame	$sp, {emit_int n}, $26\n`;
-  `	.prologue {emit_int(if needs_gp then 1 else 0)}\n`;
+  `	.prologue 0\n`;
   tailrec_entry_point := new_label();
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
