@@ -195,7 +195,7 @@ and add_sig_item bv item =
 and add_module bv modl =
   match modl.pmod_desc with
     Pmod_ident l -> addmodule bv l
-  | Pmod_structure s -> add_structure bv s
+  | Pmod_structure s -> ignore (add_structure bv s)
   | Pmod_functor(id, mty, modl) ->
       add_modtype bv mty;
       add_module (StringSet.add id bv) modl
@@ -204,9 +204,8 @@ and add_module bv modl =
   | Pmod_constraint(modl, mty) ->
       add_module bv modl; add_modtype bv mty
 
-and add_structure bv = function
-    [] -> ()
-  | item :: rem -> add_structure (add_struct_item bv item) rem
+and add_structure bv item_list =
+  List.fold_left add_struct_item bv item_list 
 
 and add_struct_item bv item =
   match item.pstr_desc with
@@ -235,13 +234,12 @@ and add_struct_item bv item =
   | Pstr_include modl ->
       add_module bv modl; bv
 
-and add_use_file bv = function
-  | [] -> ()
-  | top_phrs -> List.iter (add_top_phrase bv) top_phrs
+and add_use_file bv top_phrs =
+  ignore (List.fold_left add_top_phrase bv top_phrs)
 
 and add_top_phrase bv = function
   | Ptop_def str -> add_structure bv str
-  | Ptop_dir (_, _) -> ()
+  | Ptop_dir (_, _) -> bv
 
 and add_class_expr bv ce =
   match ce.pcl_desc with
