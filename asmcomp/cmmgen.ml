@@ -336,6 +336,16 @@ let lookup_tag_cache obj tag cache n =
                 Cop(Cload Word, [meth_pos]))
 	))))
 
+(*
+let lookup_tag_cache obj tag cache n =
+  bind "tag" tag (fun tag ->
+    let cache n =
+      if n = 0 then cache else Cop(Cadda, [cache; Cconst_int (n * size_addr)])
+    in
+    Cop(Cextcall("oo_cache_public_method2", typ_addr, false),
+	[Cop(Cload Word, [obj]); tag; cache n]))
+*)
+
 let lookup_tag obj tag =
   bind "tag" tag (fun tag ->
     Cop(Cextcall("oo_get_public_method", typ_addr, false), [obj; tag]))

@@ -205,3 +205,19 @@ CAMLprim value oo_cache_public_method (value meths, value tag, value *cache)
   *cache = (li-2)*sizeof(value)+1;
   return Field (meths, li-1);
 }
+
+value oo_cache_public_method2 (value *meths, value tag, value *cache)
+{
+  if (*(value*)(((char*)(meths+2)) + *cache - 1) == tag)
+    return *(value*)(((char*)(meths+1)) + *cache - 1);
+  {
+    int li = 3, hi = meths[0], mi;
+    while (li < hi) {
+      mi = ((li+hi) >> 1) | 1;
+      if (tag < meths[mi]) hi = mi-2;
+      else li = mi;
+    }
+    *cache = (li-2)*sizeof(value)+1;
+    return meths[li-1];
+  }
+}
