@@ -78,6 +78,7 @@ let _ =
         \032    A/a enable/disable all warnings\n\
         \032    C/c enable/disable suspicious comment\n\
         \032    D/d enable/disable deprecated features\n\
+        \032    E/e enable/disable fragile match\n\
         \032    F/f enable/disable partially applied function\n\
         \032    L/l enable/disable labels omitted in application\n\
         \032    M/m enable/disable overriden method\n\
@@ -86,7 +87,8 @@ let _ =
         \032    U/u enable/disable unused match case\n\
         \032    V/v enable/disable hidden instance variable\n\
         \032    X/x enable/disable all other warnings\n\
-        \032    default setting is \"Al\" (all warnings but labels enabled)" ]
+        \032    default setting is \"Ale\"\n\
+        \032    (all warnings but labels and fragile match enabled)";
   and errmsg = "Command line: ocamlbrowser <options>" in
   if not (check ~spec Sys.argv) then fatal_error (usage ~spec errmsg);
   Arg.parse spec
