@@ -153,7 +153,7 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt camlopt instrscheduler libraryopt
+opt: runtimeopt camlopt libraryopt
 
 # Installation
 install:
@@ -175,9 +175,6 @@ installopt:
 	cd asmrun; $(MAKE) install
 	cp camlopt $(BINDIR)/cslopt
 	cd stdlib; $(MAKE) installopt
-	if test -d scheduler/$(ARCH); \
-        then cd scheduler/$(ARCH); make install; \
-        else :; fi
 
 realclean:: clean
 
@@ -381,24 +378,6 @@ realclean::
 	cd tools; $(MAKE) clean
 alldepend::
 	cd tools; $(MAKE) depend
-
-# The external scheduler (optional)
-
-instrscheduler:
-	if test -d scheduler/$(ARCH); \
-        then (cd scheduler/$(ARCH); $(MAKE) all); \
-             if test -f stdlib/scheduler_$(ARCH); then :; else \
-               ln -s ../scheduler/$(ARCH)/scheduler_$(ARCH) \
-                     stdlib/scheduler_$(ARCH); fi; \
-        else :; fi
-realclean::
-	if test -d scheduler/$(ARCH); \
-        then cd scheduler/$(ARCH); $(MAKE) clean; \
-        else :; fi
-alldepend::
-	if test -d scheduler/$(ARCH); \
-        then cd scheduler/$(ARCH); $(MAKE) depend; \
-        else :; fi
 
 # Default rules
 
