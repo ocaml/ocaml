@@ -382,15 +382,12 @@ $107:
     /* Set up callback link on the stack. Also save there various stuff
        saved in global variables by caml_c_call. */
         lda     $sp, -32($sp)
-        lda     $24, caml_bottom_of_stack
-        ldq     $0, 0($24)
+        ldq     $0, caml_bottom_of_stack
         stq     $0, 0($sp)
-        ldq     $1, Ofs_last_return_address($24)
+        ldq     $1, caml_last_return_address
         stq     $1, 8($sp)
-        ldq     $2, Ofs_exception_pointer($24)
+        ldq     $2, caml_saved_gp
         stq     $2, 16($sp)
-        ldq     $3, Ofs_saved_gp($24)
-        stq     $3, 24($sp)
     /* Reload allocation pointers and trap pointer */
         ldq     $13, young_ptr
         ldq     $14, young_start
@@ -401,14 +398,12 @@ $108:   jsr     ($25)
         bic     $26, 1, $26     /* retaddr may have "scanned" bit set */
         ldgp    $gp, 4($26)
     /* Restore the global variables used by caml_c_call */
-        lda     $24, caml_bottom_of_stack
         ldq     $25, 8($sp)
-        stq     $25, Ofs_last_return_address($24)
-        ldq     $23, 16($sp)
-        stq     $23, Ofs_exception_pointer($24)
-        ldq     $22, 24($sp)
-        stq     $22, Ofs_saved_gp($24)
+        stq     $25, caml_last_return_address
+        ldq     $22, 16($sp)
+        stq     $22, caml_saved_gp
         lda     $sp, 32($sp)
+        stq     $15, caml_exception_pointer
     /* Update allocation pointer */
         stq     $13, young_ptr
     /* Reload callee-save registers */
@@ -466,6 +461,6 @@ callback3:
 system_frametable:
         .quad   1               /* one descriptor */
         .quad   $108 + 4        /* return address into callback */
-        .word   0               /* frame size irrelevant */
-        .word   -1              /* negative root count => use callback link */
+        .word   -1              /* negative frame size => use callback link */
+        .word   0               /* no roots here */
         .align  3
