@@ -71,6 +71,6 @@ installopt:
 
 depend: $(GENFILES)
 	gcc -MM -I../../byterun *.c > .depend
-	../../boot/ocamlrun ../../tools/ocamldep -I ../unix *.mli *.ml >> .depend
+	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend
