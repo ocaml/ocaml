@@ -2,6 +2,8 @@
 (*                                                                       *)
 (*                Objective Caml LablTk library                          *)
 (*                                                                       *)
+(*          Francois Rouaix, Francois Pessaux, Jun Furuse                *)
+(*               projet Cristal, INRIA Rocquencourt                      *)
 (*            Jacques Garrigue, Kyoto University RIMS                    *)
 (*                                                                       *)
 (*   Copyright 1999 Institut National de Recherche en Informatique et    *)
@@ -13,12 +15,4 @@
 
 (* $Id$ *)
 
-open Tk
-
-let create_destroyer :parent ?(:text="Ok") tl =
-    Button.create parent :text command:(fun () -> destroy tl)
-
-let add_destroyer ?:text tl =
-    let b = create_destroyer tl parent:tl ?:text in
-    pack [b] side:`Bottom fill:`X;
-    b
+All the files in this directory are subject to the above copyright notice.
