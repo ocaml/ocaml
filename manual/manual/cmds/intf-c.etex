@@ -140,7 +140,7 @@ objects)}
 \entree{"caml/memory.h"}{miscellaneous memory-related functions (for in-place
 modification of structures, etc).}
 \entree{"caml/callback.h"}{callback from C to Caml (see
-section~\ref{s:callback-caml}).}
+section~\ref{s:callback}).}
 \end{tableau}
 These files reside in the "caml/" subdirectory of the Objective Caml
 standard library directory (usually "/usr/local/lib/ocaml").
