@@ -20,6 +20,7 @@ type traced_function =
     instrumented_fun: Obj.t }
 
 val traced_functions: traced_function list ref
+val is_traced: Path.t -> bool
 val copy_closure: Obj.t -> Obj.t
 val overwrite_closure: Obj.t -> Obj.t -> unit
 val instrument_closure: 

@@ -28,6 +28,14 @@ type traced_function =
 
 let traced_functions = ref ([] : traced_function list)
 
+(* Check if a function is already traced *)
+
+let is_traced path =
+  let rec is_traced = function
+      [] -> false
+    | tf :: rem -> Path.same path tf.path or is_traced rem
+  in is_traced !traced_functions
+
 (* Make a copy of a closure *)
 
 let copy_closure cls =
