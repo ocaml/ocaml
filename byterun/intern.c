@@ -215,7 +215,16 @@ static void intern_rec(value *dest)
         *intern_dest = Make_header(Double_wosize, Double_tag, intern_color);
         intern_dest += 1 + Double_wosize;
         readblock((char *) v, 8);
-        if (code != CODE_DOUBLE_NATIVE) Reverse_64(v, v);
+#if ARCH_FLOAT_ENDIANNESS == 0x76543210
+        if (code != CODE_DOUBLE_BIG) Reverse_64(v, v);
+#elif ARCH_FLOAT_ENDIANNESS == 0x01234567
+        if (code != CODE_DOUBLE_LITTLE) Reverse_64(v, v);
+#else
+        if (code == CODE_DOUBLE_LITTLE)
+          Permute_64(v, ARCH_FLOAT_ENDIANNESS, v, 0x01234567)
+        else
+          Permute_64(v, ARCH_FLOAT_ENDIANNESS, v, 0x76543210);
+#endif            
         break;
       case CODE_DOUBLE_ARRAY8_LITTLE:
       case CODE_DOUBLE_ARRAY8_BIG:
@@ -231,12 +240,34 @@ static void intern_rec(value *dest)
         *intern_dest = Make_header(size, Double_array_tag, intern_color);
         intern_dest += 1 + size;
         readblock((char *) v, len * 8);
-        if (code != CODE_DOUBLE_ARRAY8_NATIVE && 
-            code != CODE_DOUBLE_ARRAY32_NATIVE) {
+#if ARCH_FLOAT_ENDIANNESS == 0x76543210
+        if (code != CODE_DOUBLE_ARRAY8_BIG &&
+            code != CODE_DOUBLE_ARRAY32_BIG) {
           mlsize_t i;
           for (i = 0; i < len; i++) Reverse_64((value)((double *)v + i),
                                                (value)((double *)v + i));
         }
+#elif ARCH_FLOAT_ENDIANNESS == 0x01234567
+        if (code != CODE_DOUBLE_ARRAY8_LITTLE &&
+            code != CODE_DOUBLE_ARRAY32_LITTLE) {
+          mlsize_t i;
+          for (i = 0; i < len; i++) Reverse_64((value)((double *)v + i),
+                                               (value)((double *)v + i));
+        }
+#else
+        if (code == CODE_DOUBLE_ARRAY8_LITTLE ||
+            code == CODE_DOUBLE_ARRAY32_LITTLE) {
+          mlsize_t i;
+          for (i = 0; i < len; i++)
+            Permute_64((value)((double *)v + i), ARCH_FLOAT_ENDIANNESS,
+                       (value)((double *)v + i), 0x01234567);
+        } else {
+          mlsize_t i;
+          for (i = 0; i < len; i++)
+            Permute_64((value)((double *)v + i), ARCH_FLOAT_ENDIANNESS,
+                       (value)((double *)v + i), 0x76543210);
+        }
+#endif
         break;
       case CODE_DOUBLE_ARRAY32_LITTLE:
       case CODE_DOUBLE_ARRAY32_BIG:
@@ -589,7 +620,7 @@ CAMLexport float deserialize_float_4(void)
 CAMLexport double deserialize_float_8(void)
 {
   double f;
-  deserialize_block_8(&f, 1);
+  deserialize_block_float_8(&f, 1);
   return f;
 }
 
@@ -635,6 +666,23 @@ CAMLexport void deserialize_block_8(void * data, long len)
 #else
   memmove(data, intern_src, len * 8);
   intern_src += len * 8;
+#endif
+}
+
+CAMLexport void deserialize_block_float_8(void * data, long len)
+{
+  unsigned char * p, * q;
+#if ARCH_FLOAT_ENDIANNESS == 0x01234567
+  memmove(data, intern_src, len * 8);
+  intern_src += len * 8;
+#elif ARCH_FLOAT_ENDIANNESS == 0x76543210
+  for (p = intern_src, q = data; len > 0; len--, p += 8, q += 8)
+    Reverse_64(q, p);
+  intern_src = p;
+#else
+  for (p = intern_src, q = data; len > 0; len--, p += 8, q += 8)
+    Permute_64(q, ARCH_FLOAT_ENDIANNESS, p, 0x01234567);
+  intern_src = p;
 #endif
 }
 

@@ -54,13 +54,7 @@ install:
 	cp ocamlrun.lib $(LIBDIR)\ocamlrun.lib
 	cp libcamlrun.lib $(LIBDIR)\libcamlrun.lib
 	if not exist $(LIBDIR)\caml mkdir $(LIBDIR)\caml
-	cp $(PUBLIC_INCLUDES) $(LIBDIR)\caml
-	sed -e "/#include .*\/m.h/r ..\config\m.h" \
-            -e "/#include .*\/s.h/r ..\config\s.h" \
-            -e "/#include /d" config.h > $(LIBDIR)\caml\config.h
-	sed -e "/#include .*gc\.h/d" \
-	    -e "/#define Alloc_small/,/^}/d" \
-	    -e "/Modify/,/^}/d" memory.h > $(LIBDIR)\caml\memory.h
+	for %i in ($(PUBLIC_INCLUDES)) do sed -f ../tools/cleanup-header %i > $(LIBDIR)\caml\%i
 
 clean:
 	rm -f *.exe *.dobj *.sobj *.lib

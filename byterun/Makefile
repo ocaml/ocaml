@@ -34,7 +34,8 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
   dynlink.c
 
-PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h intext.h
+PUBLIC_INCLUDES=alloc.h callback.h config.h custom.h fail.h intext.h \
+  memory.h misc.h mlvalues.h
 
 all: ocamlrun$(EXE)
 
@@ -51,13 +52,9 @@ install:
 	cp libcamlrun.a $(LIBDIR)/libcamlrun.a
 	cd $(LIBDIR); $(RANLIB) libcamlrun.a
 	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi
-	cp $(PUBLIC_INCLUDES) $(LIBDIR)/caml
-	sed -e '/#include ".*\/m.h/r ../config/m.h' \
-            -e '/#include ".*\/s.h/r ../config/s.h' \
-            -e '/#include "/d' config.h > $(LIBDIR)/caml/config.h
-	sed -e '/#include ".*gc\.h"/d' \
-	    -e '/#define Alloc_small/,/^}/d' \
-	    -e '/Modify/,/^}/d' memory.h > $(LIBDIR)/caml/memory.h
+	for i in $(PUBLIC_INCLUDES); do \
+          sed -f ../tools/cleanup-header $$i > $(LIBDIR)/caml/$$i; \
+        done
 
 libcamlrun.a: $(OBJS)
 	ar rc libcamlrun.a $(OBJS)

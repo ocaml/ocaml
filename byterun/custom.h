@@ -45,9 +45,12 @@ CAMLextern value alloc_custom(struct custom_operations * ops,
                               mlsize_t max  /*max resources*/);
 
 CAMLextern void register_custom_operations(struct custom_operations * ops);
+
+/* <private> */
 extern struct custom_operations * find_custom_operations(char * ident);
 extern struct custom_operations * final_custom_operations(void (*fn)(value));
 
 extern void init_custom_operations(void);
+/* </private> */
 
 #endif

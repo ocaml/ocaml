@@ -34,7 +34,9 @@ typedef size_t asize_t;
 #define NULL 0
 #endif
 
+/* <private> */
 typedef char * addr;
+/* </private> */
 
 #ifdef __GNUC__
 /* Works only in GCC 2.5 and later */
@@ -60,6 +62,8 @@ typedef char * addr;
 #endif
 
 /* Assertions */
+
+/* <private> */
 
 #ifdef DEBUG
 #define CAMLassert(x) ((x) ? 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
@@ -133,5 +137,6 @@ char *aligned_malloc (asize_t, int, void **);
 #define Assert CAMLassert
 #endif
 
+/* </private> */
 
 #endif /* _misc_ */

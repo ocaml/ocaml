@@ -16,7 +16,9 @@
 #ifndef _config_
 #define _config_
 
-
+/* <include ../config/m.h> */
+/* <include ../config/s.h> */
+/* <private> */
 #if !macintosh
 #include "../config/m.h"
 #include "../config/s.h"
@@ -24,6 +26,7 @@
 #include <m.h>
 #include <s.h>
 #endif
+/* </private> */
 
 /* Types for signed chars, 16-bit integers, 32-bit integers, 64-bit integers */
 
@@ -53,6 +56,20 @@ typedef struct { uint32 a, b; } uint64;
 typedef uint64 int64;
 #endif
 
+/* Endianness of floats */
+
+/* ARCH_FLOAT_ENDIANNESS encodes the byte order of doubles as follows:
+   the value [0xabcdefgh] means that the least significant byte of the
+   float is at byte offset [a], the next lsb at [b], ..., and the
+   most significant byte at [h]. */
+
+#if defined(__arm__)
+#define ARCH_FLOAT_ENDIANNESS 0x45670123
+#elif defined(ARCH_BIG_ENDIAN)
+#define ARCH_FLOAT_ENDIANNESS 0x76543210
+#else
+#define ARCH_FLOAT_ENDIANNESS 0x01234567
+#endif
 
 /* Library dependencies */
 

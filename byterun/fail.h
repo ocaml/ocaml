@@ -16,11 +16,13 @@
 #ifndef _fail_
 #define _fail_
 
-
+/* <private> */
 #include <setjmp.h>
+/* </private> */
 #include "misc.h"
 #include "mlvalues.h"
 
+/* <private> */
 #define OUT_OF_MEMORY_EXN 0     /* "Out_of_memory" */
 #define SYS_ERROR_EXN 1         /* "Sys_error" */
 #define FAILURE_EXN 2           /* "Failure" */
@@ -48,6 +50,8 @@ struct longjmp_buffer {
 CAMLextern struct longjmp_buffer * external_raise;
 extern value exn_bucket;
 
+/* </private> */
+
 CAMLextern void mlraise (value bucket) Noreturn;
 CAMLextern void raise_constant (value tag) Noreturn;
 CAMLextern void raise_with_arg (value tag, value arg) Noreturn;
@@ -64,6 +68,8 @@ CAMLextern void init_exceptions (void);
 CAMLextern void array_bound_error (void) Noreturn;
 CAMLextern void raise_sys_blocked_io (void) Noreturn;
 
+/* <private> */
 CAMLextern void (*caml_reset_sigmask)(void);
+/* </private> */
 
 #endif /* _fail_ */

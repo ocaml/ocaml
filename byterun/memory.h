@@ -20,9 +20,11 @@
 
 
 #include "config.h"
+/* <private> */
 #include "gc.h"
 #include "major_gc.h"
 #include "minor_gc.h"
+/* </private> */
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -40,6 +42,8 @@ int add_to_heap (header_t *mem);
 color_t allocation_color (void *hp);
 
 /* void shrink_heap (char *);        Only used in compact.c */
+
+/* <private> */
 
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
@@ -93,6 +97,8 @@ color_t allocation_color (void *hp);
     }                                                                       \
   }                                                                         \
 }while(0)
+
+/* </private> */
 
 struct caml__roots_block {
   struct caml__roots_block *next;

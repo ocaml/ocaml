@@ -148,6 +148,14 @@ static void writeblock(char *data, long int len)
   extern_ptr += len;
 }
 
+#if ARCH_FLOAT_ENDIANNESS == 0x01234567 || ARCH_FLOAT_ENDIANNESS == 0x76543210
+#define writeblock_float8(data,ndoubles) \
+  writeblock((char *)(data), (ndoubles) * 8)
+#else
+#define writeblock_float8(data,ndoubles) \
+  serialize_block_float_8((data), (ndoubles))
+#endif
+
 static void writecode8(int code, long int val)
 {
   if (extern_ptr + 2 > extern_limit) resize_extern_block(2);
@@ -290,7 +298,7 @@ static void extern_rec(value v)
       if (sizeof(double) != 8)
         extern_invalid_argument("output_value: non-standard floats");
       Write(CODE_DOUBLE_NATIVE);
-      writeblock((char *) v, 8);
+      writeblock_float8((double *) v, 1);
       size_32 += 1 + 2;
       size_64 += 1 + 1;
       break;
@@ -305,7 +313,7 @@ static void extern_rec(value v)
       } else {
         writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
       }
-      writeblock((char *) v, Bosize_val(v));
+      writeblock_float8((double *) v, nfloats);
       size_32 += 1 + nfloats * 2;
       size_64 += 1 + nfloats;
       break;
@@ -578,3 +586,24 @@ CAMLexport void serialize_block_8(void * data, long len)
   extern_ptr += len * 8;
 #endif
 }
+
+CAMLexport void serialize_block_float_8(void * data, long len)
+{
+  unsigned char * p;
+  char * q;
+  if (extern_ptr + 8 * len > extern_limit) resize_extern_block(8 * len);
+#if ARCH_FLOAT_ENDIANNESS == 0x01234567
+  memmove(extern_ptr, data, len * 8);
+  extern_ptr += len * 8;
+#elif ARCH_FLOAT_ENDIANNESS == 0x76543210
+  for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
+    Reverse_64(q, p);
+  extern_ptr = q;
+#else
+  for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
+    Permute_64(q, 0x01234567, p, ARCH_FLOAT_ENDIANNESS);
+  extern_ptr = q;
+#endif
+}
+
+

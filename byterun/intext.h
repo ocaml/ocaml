@@ -20,6 +20,8 @@
 
 #include "misc.h"
 #include "mlvalues.h"
+
+/* <private> */
 #include "io.h"
 
 /* Magic number */
@@ -51,7 +53,7 @@
 #define CODE_INFIXPOINTER 0x11
 #define CODE_CUSTOM 0x12
 
-#ifdef ARCH_BIG_ENDIAN
+#if ARCH_FLOAT_ENDIANNESS == 0x76543210
 #define CODE_DOUBLE_NATIVE CODE_DOUBLE_BIG
 #define CODE_DOUBLE_ARRAY8_NATIVE CODE_DOUBLE_ARRAY8_BIG
 #define CODE_DOUBLE_ARRAY32_NATIVE CODE_DOUBLE_ARRAY32_BIG
@@ -86,6 +88,9 @@
 
 CAMLextern void output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
+
+/* </private> */
+
 CAMLextern void output_value_to_malloc(value v, value flags,
                                        /*out*/ char ** buf,
                                        /*out*/ long * len);
@@ -99,8 +104,11 @@ CAMLextern long output_value_to_block(value v, value flags,
      in bytes.  Return the number of bytes actually written in buffer.
      Raise [Failure] if buffer is too short. */
 
+/* <private> */
 CAMLextern value input_val (struct channel * chan);
   /* Read a structured value from the channel [chan]. */
+/* </private> */
+
 CAMLextern value input_val_from_string (value str, long ofs);
   /* Read a structured value from the Caml string [str], starting
      at offset [ofs]. */
@@ -127,6 +135,7 @@ CAMLextern void serialize_block_1(void * data, long len);
 CAMLextern void serialize_block_2(void * data, long len);
 CAMLextern void serialize_block_4(void * data, long len);
 CAMLextern void serialize_block_8(void * data, long len);
+CAMLextern void serialize_block_float_8(void * data, long len);
 
 CAMLextern int deserialize_uint_1(void);
 CAMLextern int deserialize_sint_1(void);
@@ -142,7 +151,10 @@ CAMLextern void deserialize_block_1(void * data, long len);
 CAMLextern void deserialize_block_2(void * data, long len);
 CAMLextern void deserialize_block_4(void * data, long len);
 CAMLextern void deserialize_block_8(void * data, long len);
+CAMLextern void deserialize_block_float_8(void * data, long len);
 CAMLextern void deserialize_error(char * msg);
+
+/* <private> */
 
 /* Auxiliary stuff for sending code pointers */
 unsigned char * code_checksum (void);
@@ -154,6 +166,8 @@ unsigned char * code_checksum (void);
 #else
 extern char * code_area_start, * code_area_end;
 #endif
+
+/* </private> */
 
 #endif
 
