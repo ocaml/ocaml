@@ -123,7 +123,7 @@ bootstrap_sources:
 		 sed 's/# $$Id.*\$$/# Id/' ../../$$i/Makefile | \
 		 sed 's-include ../config-include ../../config-g' | \
 		 sed 's-../boot-../../boot-g' > Makefile; \
-		 cp ../../$$i/.depend .; \
+		 cp ../../$$i/.depend .); \
 	 done
 	@-for i in $(FDIRS); do \
 		for j in $$i/*.ml*; do \
