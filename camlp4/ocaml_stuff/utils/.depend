@@ -1,0 +1,2 @@
+config.cmo: config.cmi 
+config.cmx: config.cmi 

@@ -113,6 +113,14 @@ clean_cold:
 		(cd ocaml_src/$$i; $(MAKE) clean); \
 	done
 
+# Stealing some Ocaml compiler sources
+
+steal:
+	cd ocaml_stuff; $(MAKE) steal
+
+compare_stolen:
+	cd ocaml_stuff; $(MAKE) compare_stolen
+
 # Bootstrap the sources
 
 bootstrap_sources:
