@@ -66,6 +66,7 @@ and as a
 \input{lexyacc.tex}
 \input{depend.tex}
 \input{browser.tex}
+\input{ocamldoc.tex}
 \input{debugger.tex}
 \input{profil.tex}
 % \input emacs.tex
