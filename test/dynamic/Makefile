@@ -41,7 +41,7 @@ depend: p4_dyntest.cmo
 	$(OCAMLDEP) -pp "$(CAMLP4O) ./p4_dyntest.cmo" $(tests:=.ml) >.depend
 	set -e; \
 	for x in $(tests); do \
-	  echo "$$x.cmo: p4_dyntest.cmo ../../otherlibs/dyntypes/dynamics.cma"; \
+	  echo "$$x.cmo: p4_dyntest.cmo $(ROOT)/ocamlc $(ROOT)/otherlibs/dyntypes/dynamics.cma"; \
 	done >>.depend
 
 include .depend
