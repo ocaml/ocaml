@@ -876,12 +876,11 @@ let compute_univars ty =
           TypeHash.add node_univars inv.inv_type (ref(TypeSet.singleton univ));
           List.iter (add_univar univ) inv.inv_parents
   in
-  TypeHash.iter
-    (fun ty inv -> if ty.desc = Tunivar then add_univar ty inv)
+  TypeHash.iter (fun ty inv -> if ty.desc = Tunivar then add_univar ty inv)
     inverted;
   fun ty ->
     try !(TypeHash.find node_univars ty) with Not_found -> TypeSet.empty
-  
+
 let rec diff_list l1 l2 =
   if l1 == l2 then [] else
   match l1 with [] -> invalid_arg "Ctype.diff_list"
@@ -1284,6 +1283,40 @@ let occur_univar ty =
   with exn ->
     unmark_type ty; raise exn
 
+(* Grouping univars by families according to their binders *) 
+let add_univars =
+  List.fold_left (fun s (t,_) -> TypeSet.add (repr t) s)
+
+let get_univar_family univar_pairs univars =
+  let rec insert s = function
+      ((t1,_)::_ as cl1), ((t2,_)::_ as cl2) ->
+        let t1 = repr t1 and t2 = repr t2 in
+        if TypeSet.mem t1 s && not (TypeSet.mem  t2 s) then
+          add_univars s cl2
+        else s
+    | _ -> assert false
+  in
+  let s =
+    List.fold_left (fun s t -> TypeSet.add (repr t) s) TypeSet.empty univars
+  in List.fold_left insert s univar_pairs
+
+(* Whether a family of univars escapes from a type *)
+let univars_escape family ty =
+  let visited = ref TypeSet.empty in
+  let rec occur t =
+    let t = repr t in
+    if TypeSet.mem t !visited then () else begin
+      visited := TypeSet.add t !visited;
+      match t.desc with
+        Tpoly (_, t::_) when TypeSet.mem (repr t) family -> ()
+      | Tunivar ->
+          if TypeSet.mem t family then raise Occur
+      | _ ->
+          iter_type_expr occur t
+    end
+  in
+  try occur ty; false with Occur -> true
+
 let univar_pairs = ref []
 
 
@@ -1484,6 +1517,16 @@ and unify3 env t1 t1' t2 t2' =
     | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
         if List.length tl1 <> List.length tl2 then raise (Unify []);
         let old_univars = !univar_pairs in
+        let f1 = get_univar_family old_univars tl1
+        and f2 = get_univar_family old_univars tl2 in
+        let known_univars =
+          List.fold_left (fun s (cl,_) -> add_univars s cl)
+            TypeSet.empty old_univars
+        in
+        if TypeSet.mem (TypeSet.choose f1) known_univars &&
+          univars_escape f1 t2 then raise (Unify []);
+        if TypeSet.mem (TypeSet.choose f2) known_univars &&
+          univars_escape f2 t1 then raise (Unify []);
         let cl1 = List.map (fun t -> t, ref None) tl1
         and cl2 = List.map (fun t -> t, ref None) tl2 in
         univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
