@@ -15,6 +15,7 @@
 val max_printer_depth : int ref
 val max_printer_steps : int ref
 
+val print_exception: Debugcom.Remote_value.t -> unit
 val print_value :
   int -> Debugcom.Remote_value.t -> Types.type_expr -> Env.t -> unit
 val print_named_value :

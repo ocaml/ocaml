@@ -63,6 +63,8 @@ let remove_printer = Printer.remove_printer
 let max_printer_depth = ref 20
 let max_printer_steps = ref 300
 
+let print_exception = Printer.print_exception
+
 let print_value max_depth obj ty env =
   Printer.print_value !max_printer_steps max_depth
     check_depth env obj ty

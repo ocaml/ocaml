@@ -49,7 +49,9 @@ let show_current_event () =
              print_newline ()
 	 | breakpoints ->
 	     print_string "Breakpoints : ";
-	     List.iter (function x -> print_int x; print_string " ") breakpoints;
+	     List.iter
+               (function x -> print_int x; print_string " ")
+               breakpoints;
       	     print_newline ());
         show_point mdle point (current_event_is_before ()) true
   | Some {rep_type = Exited} ->
@@ -61,7 +63,7 @@ let show_current_event () =
       print_newline ();
       open_box 0;
       print_string "Uncaught exception:"; print_space();
-      (*print_value (get_accu ()) type_exn;*)
+      Printval.print_exception (Debugcom.Remote_value.accu ());
       close_box();
       print_newline();
       show_no_point ()

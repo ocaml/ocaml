@@ -144,10 +144,10 @@ program_management.cmx: debugcom.cmx debugger_config.cmx history.cmx \
     program_management.cmi 
 show_information.cmo: breakpoints.cmi checkpoints.cmi debugcom.cmi events.cmi \
     frames.cmi ../bytecomp/instruct.cmi ../utils/misc.cmi primitives.cmi \
-    show_source.cmi symbols.cmi show_information.cmi 
+    printval.cmi show_source.cmi symbols.cmi show_information.cmi 
 show_information.cmx: breakpoints.cmx checkpoints.cmx debugcom.cmx events.cmx \
     frames.cmx ../bytecomp/instruct.cmx ../utils/misc.cmx primitives.cmx \
-    show_source.cmx symbols.cmx show_information.cmi 
+    printval.cmx show_source.cmx symbols.cmx show_information.cmi 
 show_source.cmo: debugger_config.cmi ../utils/misc.cmi parameters.cmi \
     primitives.cmi source.cmi show_source.cmi 
 show_source.cmx: debugger_config.cmx ../utils/misc.cmx parameters.cmx \
