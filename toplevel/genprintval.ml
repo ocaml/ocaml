@@ -381,7 +381,14 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           Oval_int i -> fprintf ppf "%i" i
         | Oval_float f -> fprintf ppf "%.12g" f
         | Oval_char c -> fprintf ppf "'%s'" (Char.escaped c)
-        | Oval_string s -> fprintf ppf "\"%s\"" (String.escaped s)
+        | Oval_string s ->
+            (* String.escaped may raise [Invalid_argument "String.create"]
+               if the escaped string is longer than [Sys.max_string_length] *)
+            begin try
+              fprintf ppf "\"%s\"" (String.escaped s)
+            with Invalid_argument "String.create" ->
+              fprintf ppf "<huge string>"
+            end
         | Oval_list tl ->
             fprintf ppf "@[<1>[%a]@]" (print_tree_list print_tree_1 ";") tl
         | Oval_array tl ->
