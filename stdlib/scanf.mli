@@ -15,6 +15,35 @@
 
 (** Formatted input functions. *)
 
+(** {6 Scanning buffers} *)
+module Scanning : sig
+
+type scanbuf;;
+(** The type of scanning buffers. A scanning buffer is the argument passed
+   to the scanning functions used by the [scanf] family of functions.
+   The scanning buffer holds the current state of the scan, plus
+   a function to get the next char from the input, and a token buffer
+   to store the string matched so far. *)
+
+val from_string : string -> scanbuf;;
+(** [Scanning.from_string s] returns a scanning buffer which reads
+    from the given string.
+    Reading starts from the first character in the string.
+    The end-of-input condition is set when the end of the string is reached. *)
+
+val from_channel : in_channel -> scanbuf;;
+(** [Scanning.from_channel inchan] returns a scanning buffer which reads
+    from the input channel [inchan], at the current reading position. *)
+
+val from_function : (unit -> char) -> scanbuf;;
+(** [Scanning.from_function f] returns a scanning buffer with
+    the given function as its reading method.
+    When scanning needs one more character, the given function is called.
+    When the function has no more character to provide, it must set
+    an end of input condition by raising the exception [End_of_file]. *)
+
+end;;
+
 val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** [fscanf inchan format f] reads tokens from the channel [inchan] according
    to the format string [format], converts these tokens to values, and

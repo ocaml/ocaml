@@ -13,6 +13,122 @@
 
 (* $Id$ *)
 
+(* The run-time library for scanners. *)
+
+(* {6 Scanning buffers} *)
+module type SCANNING = sig
+
+type scanbuf;;
+
+val next_char : scanbuf -> unit;;
+(** [Scanning.next_char scanbuf] advance the scanning buffer for
+    one character. *)
+
+val peek_char : scanbuf -> char;;
+(** [Scanning.peek_char scanbuf] returns the current char available in
+    the input. *)
+
+val store_char : scanbuf -> char -> int -> int;;
+(** [Scanning.store_char scanbuf c lim] adds [c] to the token buffer
+    of the scanning buffer. It also advances the scanning buffer for one
+    character and returns [lim - 1], indicating that there
+    is one less character to read. *)
+
+val char_count : scanbuf -> int;;
+(** [Scanning.char_count scanbuf] returns the number of characters read
+    from the given buffer. *)
+
+val token : scanbuf -> string;;
+(** [Scanning.token scanbuf] returns the string stored into the token
+    buffer of the scanning buffer: it returns the token matched by the
+    format. *)
+
+val reset_token : scanbuf -> unit;;
+(** [Scanning.reset_token scanbuf] resets the token buffer of
+    the given scanning buffer. *)
+
+val token_count : scanbuf -> int;;
+(** [Scanning.token_count scanbuf] returns the number of tokens read
+    so far from [scanbuf]. *)
+
+val end_of_input : scanbuf -> bool;;
+(** [Scanning.end_of_input scanbuf] tests the end of input condition
+    of the given buffer. *)
+
+val from_string : string -> scanbuf;;
+val from_channel : in_channel -> scanbuf;;
+val from_function : (unit -> char) -> scanbuf;;
+
+end;;
+
+module Scanning : SCANNING = struct
+
+(* The run-time library for scanf. *)
+type scanbuf = {
+  mutable eof : bool;
+  mutable cur_char : char;
+  mutable char_count : int;
+  mutable token_count : int;
+  mutable get_next_char : unit -> char;
+  tokbuf : Buffer.t;
+};;
+
+let next_char ib =
+  try
+   ib.cur_char <- ib.get_next_char ();
+   ib.char_count <- ib.char_count + 1
+  with End_of_file ->
+   ib.cur_char <- '\000';
+   ib.eof <- true;;
+
+let peek_char ib = ib.cur_char;;
+let end_of_input ib = ib.eof && (ib.eof <- false; next_char ib; ib.eof);;
+let char_count ib = ib.char_count;;
+let reset_token ib = Buffer.reset ib.tokbuf;;
+
+let token ib =
+  let tokbuf = ib.tokbuf in
+  let tok = Buffer.contents tokbuf in
+  Buffer.clear tokbuf;
+  ib.token_count <- 1 + ib.token_count;
+  tok;;
+
+let token_count ib = ib.token_count;;
+
+let store_char ib c max =
+  Buffer.add_char ib.tokbuf c;
+  next_char ib;
+  max - 1;;
+
+let create next =
+  let ib = {
+    eof = true;
+    cur_char = '\000';
+    char_count = 0;
+    get_next_char = next;
+    tokbuf = Buffer.create 10;
+    token_count = 0;
+    } in
+  ib;;
+
+let from_string s =
+  let i = ref 0 in
+  let len = String.length s in
+  let next () =
+    if !i >= len then raise End_of_file else
+    let c = s.[!i] in
+    incr i;
+    c in
+  create next;;
+
+let from_channel ic =
+  let next () = input_char ic in
+  create next;;
+
+let from_function f = create f;;
+
+end;;
+
 (** Formatted input functions. *)
 
 let bad_input ib s =
@@ -50,10 +166,11 @@ let token_float ib =
 let token_string = Scanning.token;;
 
 (* To scan native ints, int32 and int64 integers.
-We cannot access to convertion to from strings: Nativeint.of_string,
-Int32.of_string, and Int64.of_string, since those module are not
-available to scanf. However, we can bind and use the primitives that are
-available in the runtime. *)
+   We cannot access to convertion to/from strings for those types,
+   Nativeint.of_string, Int32.of_string, and Int64.of_string,
+   since those modules are not available to scanf.
+   However, we can bind and use the corresponding primitives that are
+   available in the runtime. *)
 
 external nativeint_of_string: string -> nativeint = "nativeint_of_string";;
 external int32_of_string : string -> int32 = "int32_of_string";;
@@ -450,7 +567,7 @@ let bscanf ib (fmt : ('a, Scanning.scanbuf, 'c) format) f =
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as c ->
            let x = scan_int c max ib in
            begin match t with
-        | 'l' -> scan (stack f (token_int32 ib)) (i + 1)
+           | 'l' -> scan (stack f (token_int32 ib)) (i + 1)
            | 'L' -> scan (stack f (token_int64 ib)) (i + 1)
            | _ -> scan (stack f (token_nativeint ib)) (i + 1) end
         | fc -> bad_format fmt i fc end
