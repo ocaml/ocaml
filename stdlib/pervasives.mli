@@ -408,9 +408,9 @@ val string_of_int : int -> string
 
 external int_of_string : string -> int = "int_of_string"
 (** Convert the given string to an integer.
-   The string is read in decimal (by default) or in hexadecimal,
-   octal or binary if the string begins with [0x], [0o] or [0b]
-   respectively.
+   The string is read in decimal (by default) or in hexadecimal (if it
+   begins with [0x] or [0X]), octal (if it begins with [0o] or [0O]),
+   or binary (if it begins with [0b] or [0B]).
    Raise [Failure "int_of_string"] if the given string is not
    a valid representation of an integer. *)
 
