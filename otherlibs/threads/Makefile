@@ -27,6 +27,8 @@ CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo join.cmo
 
 LIB=../../stdlib
 
+OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
+
 LIB_OBJS=pervasives.cmo \
   $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/string.cmo \
   $(LIB)/sys.cmo $(LIB)/hashtbl.cmo $(LIB)/sort.cmo \
@@ -114,10 +116,10 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(CAMLC) -c $(COMPFLAGS) $(OCAMLPP) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(COMPFLAGS) $(OCAMLPP) $<
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

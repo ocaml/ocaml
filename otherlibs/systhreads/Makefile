@@ -19,6 +19,7 @@ CAMLC=../../ocamlcomp.sh -I ../unix
 CAMLOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
+OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
 
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
@@ -97,10 +98,10 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(CAMLC) -c -g $(COMPFLAGS) $<
+	$(CAMLC) -c -g $(COMPFLAGS) $(OCAMLPP) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(COMPFLAGS) $(OCAMLPP) $<
 
 depend: $(GENFILES)
 	gcc -MM -I../../byterun *.c > .depend
