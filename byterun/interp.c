@@ -627,6 +627,7 @@ value interprete(prog, prog_size)
     Instruct(SETSTRINGCHAR):
       Byte_u(accu, Long_val(sp[0])) = Int_val(sp[1]);
       sp += 2;
+      accu = Val_unit;
       Next;
 
 /* Branches and conditional branches */
