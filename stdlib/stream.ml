@@ -23,17 +23,15 @@ and 'a data =
   | Sfunc of (int -> 'a data)
   | Sbuffio of buffio
 and buffio =
-  {ic : in_channel; buff : string;
-   (*mutable*) len : int; (*mutable*) ind : int}
+  {ic : in_channel; buff : string; mutable len : int; mutable ind : int}
 exception Parse_failure
 exception Parse_error of string
 
 let count s = s.count
 
 let fill_buff b =
-  Obj.set_field (Obj.repr b) 2
-    (Obj.repr (input b.ic b.buff 0 (String.length b.buff)));
-  Obj.set_field (Obj.repr b) 3 (Obj.repr 0)
+  b.len <- input b.ic b.buff 0 (String.length b.buff);
+  b.ind <- 0
 
 let rec get_data cnt =
   function
@@ -79,7 +77,7 @@ let rec junk s =
       Obj.set_field (Obj.repr s) 1 (Obj.repr s')
   | Sbuffio b ->
       Obj.set_field (Obj.repr s) 0 (Obj.repr (succ s.count));
-      Obj.set_field (Obj.repr b) 3 (Obj.repr (succ b.ind))
+      b.ind <- succ b.ind
   | _ -> match peek s with None -> () | Some _ -> junk s
 
 let next s =
