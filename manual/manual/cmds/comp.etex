@@ -395,7 +395,7 @@ mod1.ml:    let forward_g =
                 ref((fun x -> failwith "forward_g") : <type>)
             let f x = ... !forward_g ...
 mod2.ml:    let g y = ... Mod1.f ...
-            Mod1.forward_g := g
+            let _ = Mod1.forward_g := g
 \end{verbatim}
 This will not work if "g" is a polymorphic function, however.
 \end{itemize}
