@@ -674,27 +674,41 @@ let error_no_respect_rules p_con p_prm =
           " does not respect Plexer rules"))
 ;;
 
-let using_token kwd_table (p_con, p_prm) =
+let error_ident_and_keyword p_con p_prm =
+  raise
+    (Token.Error
+       ("the token \"" ^ p_prm ^ "\" is used as " ^ p_con ^
+          " and as keyword"))
+;;
+
+let using_token kwd_table ident_table (p_con, p_prm) =
   match p_con with
     "" ->
-      begin try let _ = Hashtbl.find kwd_table p_prm in () with
-        Not_found ->
-          if check_keyword p_prm then Hashtbl.add kwd_table p_prm p_prm
-          else error_no_respect_rules p_con p_prm
-      end
+      if not (Hashtbl.mem kwd_table p_prm) then
+        if check_keyword p_prm then
+          if Hashtbl.mem ident_table p_prm then
+            error_ident_and_keyword (Hashtbl.find ident_table p_prm) p_prm
+          else Hashtbl.add kwd_table p_prm p_prm
+        else error_no_respect_rules p_con p_prm
   | "LIDENT" ->
       if p_prm = "" then ()
       else
         begin match p_prm.[0] with
           'A'..'Z' -> error_no_respect_rules p_con p_prm
-        | _ -> ()
+        | _ ->
+            if Hashtbl.mem kwd_table p_prm then
+              error_ident_and_keyword p_con p_prm
+            else Hashtbl.add ident_table p_prm p_con
         end
   | "UIDENT" ->
       if p_prm = "" then ()
       else
         begin match p_prm.[0] with
           'a'..'z' -> error_no_respect_rules p_con p_prm
-        | _ -> ()
+        | _ ->
+            if Hashtbl.mem kwd_table p_prm then
+              error_ident_and_keyword p_con p_prm
+            else Hashtbl.add ident_table p_prm p_con
         end
   | "TILDEIDENT" | "TILDEIDENTCOLON" | "QUESTIONIDENT" |
     "QUESTIONIDENTCOLON" | "INT" | "FLOAT" | "CHAR" | "STRING" | "QUOTATION" |
@@ -706,8 +720,12 @@ let using_token kwd_table (p_con, p_prm) =
            ("the constructor \"" ^ p_con ^ "\" is not recognized by Plexer"))
 ;;
 
-let removing_token kwd_table (p_con, p_prm) =
-  if p_con = "" then Hashtbl.remove kwd_table p_prm
+let removing_token kwd_table ident_table (p_con, p_prm) =
+  match p_con with
+    "" -> Hashtbl.remove kwd_table p_prm
+  | "LIDENT" | "UIDENT" ->
+      if p_prm <> "" then Hashtbl.remove ident_table p_prm
+  | _ -> ()
 ;;
 
 let text =
@@ -764,6 +782,7 @@ let tparse =
 
 let make () =
   let kwd_table = Hashtbl.create 301 in
-  {func = func kwd_table; using = using_token kwd_table;
-   removing = removing_token kwd_table; tparse = tparse; text = text}
+  let id_table = Hashtbl.create 301 in
+  {func = func kwd_table; using = using_token kwd_table id_table;
+   removing = removing_token kwd_table id_table; tparse = tparse; text = text}
 ;;

@@ -835,7 +835,7 @@ let extend_entry entry position rules =
         entry.econtinue <- f; f lev bp a strm
   with
     Token.Error s ->
-      Printf.eprintf "Lexer initialization error.\n%s\n" s;
+      Printf.eprintf "Lexer initialization error:\n- %s\n" s;
       flush stderr;
       failwith "Grammar.extend"
 ;;
