@@ -42,8 +42,8 @@ corresponding Caml function.
 User primitives with arity $n \leq 5$ are implemented by C functions
 that take $n$ arguments of type "value", and return a result of type
 "value". The type "value" is the type of the representations for Caml
-Light values. It encodes objects of several base types (integers,
-floating-point numbers, strings, \ldots), as well as Caml Light data
+values. It encodes objects of several base types (integers,
+floating-point numbers, strings, \ldots), as well as Caml data
 structures. The type "value" and the associated conversion
 functions and macros are described in details below.  For instance,
 here is the declaration for the C function implementing the "input"
@@ -56,16 +56,16 @@ primitive:
         }
 \end{verbatim}
 
-When the primitive function is applied in a Caml Light program, the C
+When the primitive function is applied in a Caml program, the C
 function is called with the values of the expressions to which the
 primitive is applied as arguments. The value returned by the function is
-passed back to the Caml Light program as the result of the function
+passed back to the Caml program as the result of the function
 application.
 
 User primitives with arity greater than 5 should be implemented by two
 C functions. The first function, to be used in conjunction with the
 bytecode compiler "ocamlc", receives two arguments: a pointer to an
-array of Caml Light values (the values for the arguments), and an
+array of Caml values (the values for the arguments), and an
 integer which is the number of arguments provided. The other function,
 to be used in conjunction with the native-code compiler "ocamlopt",
 takes its arguments directly. For instance, here are the two C
@@ -98,16 +98,16 @@ For instance, in the case of "add_nat", the declaration is:
 
 Implementing a user primitive is actually two separate tasks: on the
 one hand, decoding the arguments to extract C values from the given
-Caml Light values, and encoding the return value as a Caml Light
+Caml values, and encoding the return value as a Caml 
 value; on the other hand, actually computing the result from the arguments.
 Except for very simple primitives, it is often preferable to have two
 distinct C functions to implement these two tasks. The first function
 actually implements the primitive, taking native C values as
 arguments and returning a native C value. The second function,
 often called the ``stub code'', is a simple wrapper around the first
-function that converts its arguments from Caml Light values to C values,
+function that converts its arguments from Caml values to C values,
 call the first function, and convert the returned C value to Caml
-Light value. For instance, here is the stub code for the "input"
+value. For instance, here is the stub code for the "input"
 primitive:
 \begin{verbatim}
         value input(channel, buffer, offset, length)
@@ -136,14 +136,14 @@ include files are provided:
 \begin{tableau}{|l|p{12cm}|}{Include file}{Provides}
 \entree{"caml/mlvalues.h"}{definition of the "value" type, and conversion macros}
 \entree{"caml/alloc.h"}{allocation functions (to create structured Caml
-Light objects)}
+objects)}
 \entree{"caml/memory.h"}{miscellaneous memory-related functions (for in-place
 modification of structures, etc).}
 \entree{"caml/callback.h"}{callback from C to Caml (see
 section~\ref{s:callback-caml}).}
 \end{tableau}
-These files reside in the "caml/" subdirectory of the Caml Light
-standard library directory (usually "/usr/local/lib/caml-light").
+These files reside in the "caml/" subdirectory of the Objective Caml
+standard library directory (usually "/usr/local/lib/ocaml").
 
 \subsection{Linking C code with Caml code}
 
@@ -166,7 +166,7 @@ builds a suitable runtime system, by calling the native code linker with:
 \item a library that provides the bytecode interpreter, the
 memory manager, and the standard primitives
 \item libraries and object code files (".o" files) mentioned on the
-command line for the Caml Light linker, that provide implementations
+command line for the Caml linker, that provide implementations
 for the user's primitives.
 \end{itemize}
 This builds a runtime system with the required primitives. The Caml
@@ -239,9 +239,9 @@ from the type "value". This includes pointers returned by "malloc",
 and pointers to C variables (of size at least one word) obtained with
 the \verb'&' operator.
 
-\section{Representation of Caml Light data types}
+\section{Representation of Caml data types}
 
-This section describes how Caml Light data types are encoded in the
+This section describes how Caml data types are encoded in the
 "value" type.
 
 \subsection{Atomic types}
@@ -361,7 +361,7 @@ $\hbox{"string_length"}(v)-1$.
 \item "String_val("\var{v}")" returns a pointer to the first byte of the string
 \var{v}, with type "char *". This pointer is a valid C string: there is a
 null character after the last character in the string. However, Caml
-Light strings can contain embedded null characters, that will confuse
+strings can contain embedded null characters, that will confuse
 the usual C functions over strings. 
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
