@@ -104,7 +104,7 @@ CAMLprim value caml_obj_dup(value arg)
   tag_t tg;
 
   sz = Wosize_val(arg);
-  if (sz == 0) CAMLreturn arg;
+  if (sz == 0) CAMLreturn (arg);
   tg = Tag_val(arg);
   if (tg >= No_scan_tag) {
     res = caml_alloc(sz, tg);
