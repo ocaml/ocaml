@@ -13,6 +13,28 @@ open Emitaux
 
 let fastcode_flag = ref true
 
+(* Layout of the stack *)
+(* Always keep the stack 8-aligned.
+   Always leave 96 bytes at the bottom of the stack *)
+
+let stack_offset = ref 0
+
+let frame_size () =
+  let size =
+    !stack_offset +
+    4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) +
+    (if !contains_calls then 8 else 0) in
+  Misc.align size 8
+
+let slot_offset loc class =
+  match loc with
+    Incoming n -> frame_size() + n + 96
+  | Local n ->
+      if class = 0
+      then !stack_offset + n * 4 + 96
+      else !stack_offset + num_stack_slots.(0) * 4 + n * 8 + 96
+  | Outgoing n -> n + 96
+
 (* Return the other register in a register pair *)
 
 let next_in_pair = function
@@ -241,8 +263,10 @@ let emit_instr i =
         `	nop\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
-        if !contains_calls then
+        if !contains_calls then begin
           `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
+          `	andn	%o7, 1, %o7\n`
+        end;
         `	jmp	{emit_reg i.arg.(0)}\n`;
         if n > 0 then
           `	add	%sp, {emit_int n}, %sp\n`
@@ -254,8 +278,10 @@ let emit_instr i =
           `	nop\n`
         end else begin
           let n = frame_size() in
-          if !contains_calls then
+          if !contains_calls then begin
             `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
+            `	andn	%o7, 1, %o7\n`
+          end;
           `	sethi	%hi({emit_symbol s}), %g1\n`;
           `	jmp	%g1 + %lo({emit_symbol s})\n`;
           if n > 0 then
@@ -263,10 +289,14 @@ let emit_instr i =
           else
             `	nop\n`
         end
-    | Lop(Iextcall s) ->
-        `	sethi	%hi({emit_symbol s}), %g1\n`;
-        `{record_frame i.live}	call	_caml_c_call\n`;
-        `	or	%g1, %lo({emit_symbol s}), %g1\n`
+    | Lop(Iextcall(s, alloc)) ->
+        if alloc then begin
+          `	sethi	%hi({emit_symbol s}), %g1\n`;
+          `{record_frame i.live}	call	_caml_c_call\n`;
+          `	or	%g1, %lo({emit_symbol s}), %g1\n`
+        end else begin
+          `	call	{emit_symbol s}\n`
+        end
     | Lop(Istackoffset n) ->
         `	add	%sp, {emit_int (-n)}, %sp\n`;
         stack_offset := !stack_offset + n
@@ -328,14 +358,6 @@ let emit_instr i =
           `	call	_caml_modify\n`;
           `	mov	{emit_reg i.arg.(0)}, %g1\n`
         end
-    | Lop(Iintop(Icomp cmp)) ->
-        let comp = name_for_int_comparison cmp in
-        `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-        let lbl = new_label() in
-        `	{emit_string comp},a	{emit_label lbl}\n`;
-        `	mov	1, {emit_reg i.res.(0)}\n`;
-        `	mov	0, {emit_reg i.res.(0)}\n`;
-        `{emit_label lbl}:\n`
     | Lop(Iintop Idiv) ->
         `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
         `	wr	%g0, %g1, %y\n`;
@@ -352,6 +374,17 @@ let emit_instr i =
         `	sdiv	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, %g1\n`;
         `	smul	%g1, {emit_reg i.arg.(1)}, %g1\n`;
         `	sub	{emit_reg i.arg.(0)}, %g1, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop(Icomp cmp)) ->
+        let comp = name_for_int_comparison cmp in
+        `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        let lbl = new_label() in
+        `	{emit_string comp},a	{emit_label lbl}\n`;
+        `	mov	1, {emit_reg i.res.(0)}\n`;
+        `	mov	0, {emit_reg i.res.(0)}\n`;
+        `{emit_label lbl}:\n`
+    | Lop(Iintop Icheckbound) ->
+        `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
@@ -379,6 +412,9 @@ let emit_instr i =
         `	mov	1, {emit_reg i.res.(0)}\n`;
         `	mov	0, {emit_reg i.res.(0)}\n`;
         `{emit_label lbl}:\n`
+    | Lop(Iintop_imm(Icheckbound, n)) ->
+        `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
+        `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
@@ -406,8 +442,10 @@ let emit_instr i =
         fatal_error "Emit: specific"
     | Lreturn ->
         let n = frame_size() in
-        if !contains_calls then
+        if !contains_calls then begin
           `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
+          `	andn	%o7, 1, %o7\n`
+        end;
         `	retl\n`;
         if n > 0 then
           `	add	%sp, {emit_int n}, %sp\n`
@@ -447,23 +485,36 @@ let emit_instr i =
             `	andcc	{emit_reg i.arg.(0)}, 1, %g0\n`;
             `	bne	{emit_label lbl}\n`;
             `	nop\n`
-        | Ifalsetest ->
+        | Ieventest ->
             `	andcc	{emit_reg i.arg.(0)}, 1, %g0\n`;
             `	be	{emit_label lbl}\n`;
             `	nop\n`
         end
     | Lswitch jumptbl ->
+        (* Switches with 1 or 2 cases have normally been eliminated before *)
+        (* Do something for 3 cases *)
         let lbl_jumptbl = new_label() in
-        `	sethi	%hi({emit_label lbl_jumptbl}), %g1\n`;
-        `	or	%g1, %lo({emit_label lbl_jumptbl}), %g1\n`;
-        `	sll	{emit_reg i.arg.(0)}, 2, %g4\n`;
-        `	ld	[%g1 + %g4], %g1\n`;
-        `	jmp	%g1\n`;
-        `	nop\n`;
-        `{emit_label lbl_jumptbl}:`;
-        for i = 0 to Array.length jumptbl - 1 do
-          `	.word	{emit_label jumptbl.(i)}\n`
-        done
+        begin match Array.length jumptbl with
+          3 ->
+            `	cmp	{emit_reg i.arg.(0)}, 1\n`;
+            `	bl	{emit_label jumptbl.(0)}\n`;
+            `	nop\n`;
+            `	be	{emit_label jumptbl.(1)}\n`;
+            `	nop\n`;
+            `	br	{emit_label jumptbl.(2)}\n`;
+            `	nop\n`
+        | _ ->
+            `	sethi	%hi({emit_label lbl_jumptbl}), %g1\n`;
+            `	or	%g1, %lo({emit_label lbl_jumptbl}), %g1\n`;
+            `	sll	{emit_reg i.arg.(0)}, 2, %g4\n`;
+            `	ld	[%g1 + %g4], %g1\n`;
+            `	jmp	%g1\n`;
+            `	nop\n`;
+            `{emit_label lbl_jumptbl}:`;
+            for i = 0 to Array.length jumptbl - 1 do
+              `	.word	{emit_label jumptbl.(i)}\n`
+            done
+        end
     | Lpushtrap lbl ->
         stack_offset := !stack_offset + 8;
         `	sub	%sp, 8, %sp\n`;

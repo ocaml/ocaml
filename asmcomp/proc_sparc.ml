@@ -210,25 +210,20 @@ let reload_test makereg tst args = raise Use_default
 let reload_operation makereg op args res = raise Use_default
 
 (* Layout of the stack *)
-(* Always keep the stack 8-aligned.
-   Always leave 96 bytes at the bottom of the stack *)
 
 let num_stack_slots = [| 0; 0 |]
-let stack_offset = ref 0
 let contains_calls = ref false
 
-let frame_size () =
-  let size =
-    !stack_offset +
-    4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) +
-    (if !contains_calls then 8 else 0) in
-  Misc.align size 8
+(* Calling the assembler and the archiver *)
 
-let slot_offset loc class =
-  match loc with
-    Incoming n -> frame_size() + n + 96
-  | Local n ->
-      if class = 0
-      then !stack_offset + n * 4 + 96
-      else !stack_offset + num_stack_slots.(0) * 4 + n * 8 + 96
-  | Outgoing n -> n + 96
+let assemble_file infile outfile =
+  try
+    let sched = find_in_path !Config.load_path "scheduler_sparc" in
+    Sys.command (sched ^ " -dl " ^ infile ^ " | as -o " ^ outfile ^ " -")
+  with Not_found ->
+    Sys.command ("as -o " ^ outfile ^ " " ^ infile)
+
+let create_archive archive file_list =
+  Misc.remove_file archive;
+  Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list ^
+               " && ranlib " ^ archive)
