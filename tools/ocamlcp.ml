@@ -26,7 +26,7 @@ let _ =
     (* Same options as the compiler ocamlc *)
        "-a", Arg.Unit(option "-a"), " Build a library";
        "-c", Arg.Unit(option "-c"), " Compile only (do not link)";
-       "-cclib", Arg.String(option_with_arg "-cclib")
+       "-cclib", Arg.String(option_with_arg "-cclib"),
              "<opt>  Pass option <opt> to the C linker";
        "-ccopt", Arg.String(option_with_arg "-ccopt"),
              "<opt>  Pass option <opt> to the C compiler and linker";
@@ -36,11 +36,8 @@ let _ =
              "<d>  Add <d> to the list of include directories";
        (* -impl et -intf ont disparu ?? PWZ *)
        "-linkall", Arg.Unit(option "-linkall"), " Don't remove unused modules";
-       "-o", Arg.String(option_with_arg "-o")
+       "-o", Arg.String(option_with_arg "-o"),
              "<name>  Set output file name to <name> (default a.out)";
-       "-pp", Arg.Unit(fun () -> prerr_endline "ocamlcp: profiling is incompatible with the -pp option"; exit 2),
-             "This option of ocamlc is not available with ocamlcp";
-       (* -thread a disparu aussi PWZ *)
        "-v", Arg.Unit(option "-v"), " Print compiler version number";
        "-unsafe", Arg.Unit(option "-unsafe"),
              " No bound checking on array and string access";
@@ -53,7 +50,7 @@ let _ =
        "-", Arg.String process_file,
              "<f>  Take <f> as a file name (even if it starts with `-')";
     (* Option specific to the profiler *)
-       "-p", Arg.String(fun s -> profargs := s :: "-m" :: !profargs)],
+       "-p", Arg.String(fun s -> profargs := s :: "-m" :: !profargs),
              "[afilmt]  Profile constructs specified by argument:\n\
        a  Everything\n\
        f  Function calls\n\
