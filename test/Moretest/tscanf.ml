@@ -257,9 +257,9 @@ let test11 () =
 ;;
 
 let test110 () =
- sscanf "" "\n" (fun x -> x) "" = "" &&
+ sscanf "" " " (fun x -> x) "" = "" &&
  sscanf "" "%[^\n]" (fun x -> x) = "" &&
- sscanf "" "%[^\n]\n" (fun x -> x) = "";;
+ sscanf "" "%[^\n] " (fun x -> x) = "";;
 
 let test111 () =
  test_raises_this_exc End_of_file (sscanf "" "%[^\n]@\n") (fun x -> x);;
@@ -707,19 +707,30 @@ test (test34 ());;
 let test35 () =
   sscanf "" "%N" (fun x -> x) = 0 &&
   sscanf "456" "%N" (fun x -> x) = 0 &&
-  sscanf "456" "%d%N" (fun x y -> x, y) = (456, 3);;
-
-test (test35 ());;
-
-(* Weird tests to empty strings or formats. *)
-let test36 () =
-  sscanf "" "" true &&
-  sscanf "" "" (fun x -> x) 1 = 1 &&
-  sscanf "123" "" (fun x -> x) 1 = 1 &&
+  sscanf "456" "%d%N" (fun x y -> x, y) = (456, 1) &&
   sscanf " " "%N%s%N" (fun x s y -> x, s, y) = (0, "", 1)
 ;;
 
+test (test35 ());;
+
+(* Testing the %n format. *)
+let test36 () =
+  sscanf "" "%n" (fun x -> x) = 0 &&
+  sscanf "456" "%n" (fun x -> x) = 0 &&
+  sscanf "456" "%d%n" (fun x y -> x, y) = (456, 3) &&
+  sscanf " " "%n%s%n" (fun x s y -> x, s, y) = (0, "", 1)
+;;
+
 test (test36 ());;
+
+(* Weird tests to empty strings or formats. *)
+let test37 () =
+  sscanf "" "" true &&
+  sscanf "" "" (fun x -> x) 1 = 1 &&
+  sscanf "123" "" (fun x -> x) 1 = 1
+;;
+
+test (test37 ());;
 
 (*******
 

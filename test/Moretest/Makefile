@@ -117,6 +117,10 @@ tscanf.byt: tscanf.cmo
 tscanf.out: tscanf.cmx
 	${CAMLOPT} -o tscanf.out tscanf.cmx
 
+scanf: tscanf.byt tscanf.out
+	./tscanf.byt
+	./tscanf.out
+
 # Common rules
 
 .SUFFIXES:
