@@ -132,13 +132,14 @@ let next_char ib =
    ib.cur_char <- '\000';
    ib.eof <- true;;
 
+(* Returns the last character read, or read one if none has ever been read. *)
 let cautious_peek_char ib =
   if ib.bof then begin
     next_char ib;
     if ib.char_count > 0 then ib.bof <- false end;
   ib.cur_char;;
 
-(* Returns a valid current char for the input buffer.  In particular
+(* Returns a valid current char for the input buffer. In particular
    no irrelevant null character (as set by [next_char] in case of end
    of input) is returned, since [End_of_file] is raised when
    [next_char] sets the end of file condition while trying to read a
@@ -230,8 +231,8 @@ let from_input_channel fname ic =
 
 let from_channel = from_input_channel "input channel";;
 
-let stdib = from_input_channel "stdin" stdin;;
 (* The scanning buffer reading from [stdin].*)
+let stdib = from_input_channel "stdin" stdin;;
 
 end;;
 
