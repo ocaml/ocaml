@@ -4,16 +4,16 @@
 The "labltk" library provides access to the Tcl/Tk GUI from Objective
 Caml programs. This interface is generated in an automated way, and
 you should refer to Tcl/Tk books and man pages for detailed
-information on the behavior of the numerous functions.
+information on the behavior of the numerous functions. We also suggest
+to use "ocamlbrowser" to see the types of the various functions, that
+are the best documentation for the library itself. 
 
 \smallskip\noindent
 Programs that use the "labltk" library must be linked as follows:
 \begin{alltt}
-        ocamlc \var{other options} -I labltk-dir labltk.cma \var{other files}
-        ocamlopt \var{other options} -I labltk-dir labltk.cmxa \var{other files}
+        ocamlc \var{other options} -I +labltk labltk.cma \var{other files}
+        ocamlopt \var{other options} -I +labltk labltk.cmxa \var{other files}
 \end{alltt}
-"labltk-dir" is "CAMLLIB/labltk". On Unix the default
-location is "/usr/local/lib/caml/labltk".
 
 \begin{unix}
 The "labltk" library is available for any system with Tcl/Tk installed,

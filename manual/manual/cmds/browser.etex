@@ -14,7 +14,7 @@ Its functions are:
 
 \section{Invocation} \label{s:browser-options}
 
-The browser is started by the command "ocamlrowser", as follows:
+The browser is started by the command "ocamlbrowser", as follows:
 \begin{alltt}
         ocamlbrowser \var{options}
 \end{alltt}
