@@ -174,7 +174,7 @@ class text =
 
     method html_of_CodePre s =
       if !Odoc_args.colorize_code then
-	self#html_of_code s
+	"<pre></pre>"^(self#html_of_code s)^"<pre></pre>"
       else
 	"<pre><code class=\""^Odoc_ocamlhtml.code_class^"\">"^(self#escape s)^"</code></pre>"
 
