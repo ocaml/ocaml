@@ -1,0 +1,63 @@
+\chapter{The LablTk library: Tcl/Tk GUI interface}
+\pdfchapterfold{-1}{The LablTk library: Tcl/Tk GUI interface}
+
+The "labltk" library provides access to the Tcl/Tk GUI from Objective
+Caml programs. This interface is generated in an automated way, and
+you should refer to Tk books and man pages for detailed information on
+the behavior of the numerous functions.
+
+\begin{unix}
+The "labltk" library is available for any system with Tcl/Tk installed,
+starting from Tcl 7.5/Tk 4.1 up to Tcl/Tk 8.0.
+Library files are installed in the "labltk" subdirectory of the caml
+library. The default location is "/usr/local/lib/caml/labltk".
+
+If the library was not compiled correctly, try to run again the
+"configure" script with the option "-tkdefs" \var{switches},
+where \var{switches} is a list of C-style inclusion paths leading to
+the right "tcl.h" and "tk.h", for instance
+'"-I/usr/local/include/tcl8.0 -I/usr/local/include/tk8.0"'.
+
+Three scripts are installed, to make easier the use of the "labltk"
+library.
+\begin{options}
+\item["labltk"]
+This is a toplevel including the "labltk" library, and the path is
+already set as to allow the use of the various modules. You can use it
+in place of "ocaml".
+\item["labltklink"]
+This script calls "ocamlc" with appropriate switches so as to compile
+and link properly with the "labltk" library. Use it in place of
+"ocamlc".
+\item["labltkopt"]
+This script work like "labltklink", but is a replacement for "ocamlopt".
+\end{options}
+\end{unix}
+
+\begin{windows}
+The "labltk" library is not yet ported to Windows.
+\end{windows}
+
+The "labltk" library is composed of a large number of modules.
+\begin{quote}
+\begin{verbatim}
+Bell                Imagebitmap         Place
+Button              Imagephoto          Radiobutton
+Canvas              Label               Scale
+Checkbutton         Listbox             Scrollbar
+Clipboard           Menu                Selection
+Dialog              Menubutton          Text
+Entry               Message             Tk
+Focus               Option              Tkwait
+Frame               Optionmenu          Toplevel
+Grab                Pack                Winfo
+Grid                Palette             Wm
+\end{verbatim}
+\end{quote}
+
+Giving a detailed account of each of these module would be impractical
+here. We will just present some of the basic functions in the module "Tk".
+
+\begin{library}
+\input{tk.tex}
+\end{library}

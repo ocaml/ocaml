@@ -9,16 +9,17 @@ STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
 
 OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex \
   thread.tex mutex.tex condition.tex event.tex threadUnix.tex \
-  dbm.tex dynlink.tex
+  dbm.tex dynlink.tex tk.tex
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
 
 BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex \
-  libthreads.tex libdbm.tex libdynlink.tex
+  libthreads.tex libdbm.tex libdynlink.tex liblabltk.tex
 
 FILES=$(BLURB) $(INTF)
 
 FORMAT=../../tools/format-intf
+TEXQUOTE=../../tools/texquote2
 
 CSLDIR=../../../csl
 
@@ -34,10 +35,10 @@ $(INTF): $(FORMAT)
 .SUFFIXES:
 .SUFFIXES: .tex .etex .mli
 
-.etex.tex:
-	../../tools/texquote2 < $*.etex > $*.tex
+.etex.tex: $(TEXQUOTE)
+	$(TEXQUOTE) < $*.etex > $*.tex
 
-.mli.tex:
+.mli.tex: $(FORMAT)
 	$(FORMAT) $< > $*.tex
 
 # TeX hates underscores in file names

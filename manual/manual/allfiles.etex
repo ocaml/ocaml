@@ -79,6 +79,7 @@ and as a
 \input{libgraph.tex}
 \input{libdbm.tex}
 \input{libdynlink.tex}
+\input{liblabltk.tex}
 
 \part{Appendix}
 \label{p:appendix}
