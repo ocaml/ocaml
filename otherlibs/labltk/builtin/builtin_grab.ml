@@ -1,0 +1,1 @@
+type grabGlobal = bool

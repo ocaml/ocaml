@@ -1,0 +1,48 @@
+include ../Makefile.common
+
+LABLTKLIB=-I ../lib -I ../support
+OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str
+OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
+INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
+CLIBS=-L../support -llabltk41 -L$(OTHERS)/str -lstr -L$(OTHERS)/unix -lunix
+
+OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
+	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\
+	viewer.cmo	typecheck.cmo	editor.cmo	main.cmo
+
+JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
+	jg_box.cmo \
+	jg_button.cmo	jg_toplevel.cmo	jg_text.cmo	jg_message.cmo \
+	jg_menu.cmo	jg_entry.cmo	jg_multibox.cmo	jg_memo.cmo
+
+# Default rules
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.ml.cmo:
+	$(LABLCOMP) $(INCLUDES) $<
+
+.mli.cmi:
+	$(LABLCOMP) $(INCLUDES) $<
+
+all: lablbrowser
+
+lablbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ)
+	$(LABLC) -custom -o lablbrowser $(INCLUDES) \
+		$(TOPDIR)/toplevel/toplevellib.cma \
+		unix.cma str.cma tk41.cma jglib.cma $(OBJ) \
+		-cclib "$(CLIBS)" $(TKLINKOPT)
+
+jglib.cma: $(JG)
+	$(LABLCOMP) -a -o jglib.cma $(JG) 
+
+install:
+	if test -f lablbrowser; then : ; cp lablbrowser $(BINDIR); fi
+
+clean:
+	rm -f *.cm? lablbrowser *~ *.orig
+
+depend:
+	$(LABLDEP) *.ml *.mli > .depend
+
+include	.depend
