@@ -480,26 +480,26 @@ value thread_delay(time)          /* ML */
 
 /* Suspend the current thread on a Unix file descriptor, with timeout */
 
-value thread_wait_timed_read(fd, time)        /* ML */
-     value fd, time;
+value thread_wait_timed_read(fd_time)        /* ML */
+     value fd_time;
 {
-  double date = timeofday() + Double_val(time);
+  double date = timeofday() + Double_val(Field(fd_time, 1));
   Assert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_READ | BLOCKED_DELAY;
-  curr_thread->fd = fd;
+  curr_thread->fd = Field(fd_time, 0);
   Assign(curr_thread->delay, copy_double(date));
   return schedule_thread();
 }
 
-value thread_wait_timed_write(fd, time)        /* ML */
-     value fd, time;
+value thread_wait_timed_write(fd_time)        /* ML */
+     value fd_time;
 {
-  double date = timeofday() + Double_val(time);
+  double date = timeofday() + Double_val(Field(fd_time, 1));
   Assert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_WRITE | BLOCKED_DELAY;
-  curr_thread->fd = fd;
+  curr_thread->fd = Field(fd_time, 0);
   Assign(curr_thread->delay, copy_double(date));
   return schedule_thread();
 }

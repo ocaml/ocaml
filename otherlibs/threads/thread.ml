@@ -30,7 +30,9 @@ type resumption_status =
    it takes sp from the new thread, but keeps pc from the old thread.
    But that's OK if all calls to rescheduling primitives are immediately
    followed by a RETURN operation, which will restore the correct pc
-   from the stack. *)
+   from the stack. Furthermore, the RETURNs must all have the same
+   frame size, which means that both the primitives and their ML wrappers
+   must take exactly one argument. *)
 
 external thread_initialize : unit -> unit = "thread_initialize"
 external thread_new : (unit -> unit) -> t = "thread_new"
@@ -39,10 +41,10 @@ external thread_sleep : unit -> unit = "thread_sleep"
 external thread_wait_read : Unix.file_descr -> unit = "thread_wait_read"
 external thread_wait_write : Unix.file_descr -> unit = "thread_wait_write"
 external thread_wait_timed_read
-            : Unix.file_descr -> float -> resumption_status
+            : Unix.file_descr * float -> resumption_status (* remeber: 1 arg *)
             = "thread_wait_timed_read"
 external thread_wait_timed_write
-            : Unix.file_descr -> float -> resumption_status
+            : Unix.file_descr * float -> resumption_status (* remeber: 1 arg *)
             = "thread_wait_timed_write"
 external thread_join : t -> unit = "thread_join"
 external thread_delay : float -> unit = "thread_delay"
@@ -67,19 +69,19 @@ let self () = thread_self()
 let kill pid = thread_kill pid
 let exit () = thread_kill(thread_self())
 
-let wait_timed_read_aux fd d = thread_wait_timed_read fd d
-let wait_timed_write_aux fd d = thread_wait_timed_write fd d
+let wait_timed_read_aux arg = thread_wait_timed_read arg
+let wait_timed_write_aux arg = thread_wait_timed_write arg
 let wait_pid_aux pid = thread_wait_pid pid
 
-let wait_timed_read fd d = wait_timed_read_aux fd d = Resumed_io
-let wait_timed_write fd d = wait_timed_write_aux fd d = Resumed_io
+let wait_timed_read fd d = wait_timed_read_aux (fd, d) = Resumed_io
+let wait_timed_write fd d = wait_timed_write_aux (fd, d) = Resumed_io
 let wait_pid pid = 
   match wait_pid_aux pid with
     Resumed_wait(pid, status) -> (pid, status)
   | _ -> invalid_arg "Thread.wait_pid"
 
-(* For new, make sure the function passed to thread_new always terminates
-   by calling exit. *)
+(* For Thread.create, make sure the function passed to thread_new
+   always terminates by calling Thread.exit. *)
 
 let create fn arg =
   thread_new
