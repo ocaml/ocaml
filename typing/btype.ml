@@ -275,8 +275,8 @@ let rec forget_abbrev_rec mem path =
       assert false
   | Mcons (path', _, _, rem) when Path.same path path' ->
       rem 
-  | Mcons (path, v, v', rem) ->
-      Mcons (path, v, v', forget_abbrev_rec rem path)
+  | Mcons (path', v, v', rem) ->
+      Mcons (path', v, v', forget_abbrev_rec rem path)
   | Mlink mem' ->
       mem' := forget_abbrev_rec !mem' path;
       raise Exit
