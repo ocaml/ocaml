@@ -287,25 +287,39 @@ EXTEND
     | "&&" RIGHTA
       [ e1 = SELF; f = "&&"; e2 = SELF -> <:expr< $lid:f$ $e1$ $e2$ >> ]
     | "<" LEFTA
-      [ e1 = SELF; f = [ "<" | ">" | "<=" | ">=" | "=" | "<>" | "==" | "!=" ];
-        e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "<"; e2 = SELF -> <:expr< $e1$ < $e2$ >>
+      | e1 = SELF; ">"; e2 = SELF -> <:expr< $e1$ > $e2$ >>
+      | e1 = SELF; "<="; e2 = SELF -> <:expr< $e1$ <= $e2$ >>
+      | e1 = SELF; ">="; e2 = SELF -> <:expr< $e1$ >= $e2$ >>
+      | e1 = SELF; "="; e2 = SELF -> <:expr< $e1$ = $e2$ >>
+      | e1 = SELF; "<>"; e2 = SELF -> <:expr< $e1$ <> $e2$ >>
+      | e1 = SELF; "=="; e2 = SELF -> <:expr< $e1$ == $e2$ >>
+      | e1 = SELF; "!="; e2 = SELF -> <:expr< $e1$ != $e2$ >> ]
     | "^" RIGHTA
-      [ e1 = SELF; f = [ "^" | "@" ]; e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "^"; e2 = SELF -> <:expr< $e1$ ^ $e2$ >>
+      | e1 = SELF; "@"; e2 = SELF -> <:expr< $e1$ @ $e2$ >> ]
     | "+" LEFTA
-      [ e1 = SELF; f = [ "+" | "-" | "+." | "-." ]; e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "+"; e2 = SELF -> <:expr< $e1$ + $e2$ >>
+      | e1 = SELF; "-"; e2 = SELF -> <:expr< $e1$ - $e2$ >>
+      | e1 = SELF; "+."; e2 = SELF -> <:expr< $e1$ +. $e2$ >>
+      | e1 = SELF; "-."; e2 = SELF -> <:expr< $e1$ -. $e2$ >> ]
     | "*" LEFTA
-      [ e1 = SELF;
-        f = [ "*" | "/" | "*." | "/." | "land" | "lor" | "lxor" | "mod" ];
-        e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "*"; e2 = SELF -> <:expr< $e1$ * $e2$ >>
+      | e1 = SELF; "/"; e2 = SELF -> <:expr< $e1$ / $e2$ >>
+      | e1 = SELF; "*."; e2 = SELF -> <:expr< $e1$ *. $e2$ >>
+      | e1 = SELF; "/."; e2 = SELF -> <:expr< $e1$ /. $e2$ >>
+      | e1 = SELF; "land"; e2 = SELF -> <:expr< $e1$ land $e2$ >>
+      | e1 = SELF; "lor"; e2 = SELF -> <:expr< $e1$ lor $e2$ >>
+      | e1 = SELF; "lxor"; e2 = SELF -> <:expr< $e1$ lxor $e2$ >>
+      | e1 = SELF; "mod"; e2 = SELF -> <:expr< $e1$ mod $e2$ >> ]
     | "**" RIGHTA
-      [ e1 = SELF; f = [ "**" | "asr" | "lsl" | "lsr" ]; e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "**"; e2 = SELF -> <:expr< $e1$ ** $e2$ >>
+      | e1 = SELF; "asr"; e2 = SELF -> <:expr< $e1$ asr $e2$ >>
+      | e1 = SELF; "lsl"; e2 = SELF -> <:expr< $e1$ lsl $e2$ >>
+      | e1 = SELF; "lsr"; e2 = SELF -> <:expr< $e1$ lsr $e2$ >> ]
     | "unary minus" NONA
-      [ f = [ "-" | "-." ]; e = SELF -> <:expr< $mkumin loc f e$ >> ]
+      [ "-"; e = SELF -> <:expr< $mkumin loc "-" e$ >>
+      | "-."; e = SELF -> <:expr< $mkumin loc "-." e$ >> ]
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF -> <:expr< $e1$ $e2$ >>
       | "assert"; e = SELF ->

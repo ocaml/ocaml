@@ -496,69 +496,52 @@ EXTEND
           <:expr< $e1$.val := $e2$ >>
       | e1 = SELF; "<-"; e2 = expr LEVEL "expr1" -> <:expr< $e1$ := $e2$ >> ]
     | "||" RIGHTA
-      [ e1 = SELF; f = [ op = "or" -> op | op = "||" -> op ]; e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "or"; e2 = SELF -> <:expr< $lid:"or"$ $e1$ $e2$ >>
+      | e1 = SELF; "||"; e2 = SELF -> <:expr< $e1$ || $e2$ >> ]
     | "&&" RIGHTA
-      [ e1 = SELF; f = [ op = "&" -> op | op = "&&" -> op ]; e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "&"; e2 = SELF -> <:expr< $lid:"&"$ $e1$ $e2$ >>
+      | e1 = SELF; "&&"; e2 = SELF -> <:expr< $e1$ && $e2$ >> ]
     | "<" LEFTA
-      [ e1 = SELF;
-        f =
-          [ op = "<" -> op
-          | op = ">" -> op
-          | op = "<=" -> op
-          | op = ">=" -> op
-          | op = "=" -> op
-          | op = "<>" -> op
-          | op = "==" -> op
-          | op = "!=" -> op
-          | op = infixop0 -> op ];
-        e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "<"; e2 = SELF -> <:expr< $e1$ < $e2$ >>
+      | e1 = SELF; ">"; e2 = SELF -> <:expr< $e1$ > $e2$ >>
+      | e1 = SELF; "<="; e2 = SELF -> <:expr< $e1$ <= $e2$ >>
+      | e1 = SELF; ">="; e2 = SELF -> <:expr< $e1$ >= $e2$ >>
+      | e1 = SELF; "="; e2 = SELF -> <:expr< $e1$ = $e2$ >>
+      | e1 = SELF; "<>"; e2 = SELF -> <:expr< $e1$ <> $e2$ >>
+      | e1 = SELF; "=="; e2 = SELF -> <:expr< $e1$ == $e2$ >>
+      | e1 = SELF; "!="; e2 = SELF -> <:expr< $e1$ != $e2$ >>
+      | e1 = SELF; op = infixop0; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | "^" RIGHTA
-      [ e1 = SELF;
-        f = [ op = "^" -> op | op = "@" -> op | op = infixop1 -> op ];
-        e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "^"; e2 = SELF -> <:expr< $e1$ ^ $e2$ >>
+      | e1 = SELF; "@"; e2 = SELF -> <:expr< $e1$ @ $e2$ >>
+      | e1 = SELF; op = infixop1; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | RIGHTA
       [ e1 = SELF; "::"; e2 = SELF -> <:expr< [$e1$ :: $e2$] >> ]
     | "+" LEFTA
-      [ e1 = SELF;
-        f =
-          [ op = "+" -> op
-          | op = "-" -> op
-          | op = "+." -> op
-          | op = "-." -> op
-          | op = infixop2 -> op ];
-        e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "+"; e2 = SELF -> <:expr< $e1$ + $e2$ >>
+      | e1 = SELF; "-"; e2 = SELF -> <:expr< $e1$ - $e2$ >>
+      | e1 = SELF; "+."; e2 = SELF -> <:expr< $e1$ +. $e2$ >>
+      | e1 = SELF; "-."; e2 = SELF -> <:expr< $e1$ -. $e2$ >>
+      | e1 = SELF; op = infixop2; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | "*" LEFTA
-      [ e1 = SELF;
-        f =
-          [ op = "*" -> op
-          | op = "/" -> op
-          | op = "*." -> op
-          | op = "/." -> op
-          | op = "land" -> op
-          | op = "lor" -> op
-          | op = "lxor" -> op
-          | op = "mod" -> op
-          | op = infixop3 -> op ];
-        e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "*"; e2 = SELF -> <:expr< $e1$ * $e2$ >>
+      | e1 = SELF; "/"; e2 = SELF -> <:expr< $e1$ / $e2$ >>
+      | e1 = SELF; "*."; e2 = SELF -> <:expr< $e1$ *. $e2$ >>
+      | e1 = SELF; "/."; e2 = SELF -> <:expr< $e1$ /. $e2$ >>
+      | e1 = SELF; "land"; e2 = SELF -> <:expr< $e1$ land $e2$ >>
+      | e1 = SELF; "lor"; e2 = SELF -> <:expr< $e1$ lor $e2$ >>
+      | e1 = SELF; "lxor"; e2 = SELF -> <:expr< $e1$ lxor $e2$ >>
+      | e1 = SELF; "mod"; e2 = SELF -> <:expr< $e1$ mod $e2$ >>
+      | e1 = SELF; op = infixop3; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | "**" RIGHTA
-      [ e1 = SELF;
-        f =
-          [ op = "**" -> op
-          | op = "asr" -> op
-          | op = "lsl" -> op
-          | op = "lsr" -> op
-          | op = infixop4 -> op ];
-        e2 = SELF ->
-          <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "**"; e2 = SELF -> <:expr< $e1$ ** $e2$ >>
+      | e1 = SELF; "asr"; e2 = SELF -> <:expr< $e1$ asr $e2$ >>
+      | e1 = SELF; "lsl"; e2 = SELF -> <:expr< $e1$ lsl $e2$ >>
+      | e1 = SELF; "lsr"; e2 = SELF -> <:expr< $e1$ lsr $e2$ >>
+      | e1 = SELF; op = infixop4; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | "unary minus" NONA
-      [ f = [ op = "-" -> op | op = "-." -> op ]; e = SELF ->
-          <:expr< $mkumin loc f e$ >> ]
+      [ "-"; e = SELF -> <:expr< $mkumin loc "-" e$ >>
+      | "-."; e = SELF -> <:expr< $mkumin loc "-." e$ >> ]
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF ->
           match constr_expr_arity e1 with
