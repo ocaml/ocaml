@@ -43,6 +43,6 @@ install:
 
 installopt:
 	cp $(TARGET:.cma=.cmxa) *.cmx "$(LIBDIR)/camlp4/."
-	tar cf - $(TARGET:.cma=.$(A)) | (cd "$(LIBDIR)/camlp4/."; tar xf -)
+	TARG=`echo "$(TARGET)" | sed -e "s/\.cma\$$/.$(A)/g"` && tar cf - $$TARG | (cd "$(LIBDIR)/camlp4/." && tar xf -)
 
 include .depend
