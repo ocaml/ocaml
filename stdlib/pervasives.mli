@@ -24,97 +24,20 @@
    name, without prefixing them by [Pervasives].
 *)
 
-(** {6 Built-in types} 
-These are built-in types; they are not really part of this module, because
-they are built into the compiler.  As a consequence, they can only be
-referred by their short names, without the [Pervasives] prefix.
-{[ type int]}    The type of integer numbers.
-{[ type char]}   The type of characters.
-{[ type string]} The type of character strings.
-{[ type float]}  The type of floating-point numbers.
-{[ type bool]}   The type of booleans (truth values).
-{[ type unit = ()]} The type of the unit value.
-{[ type exn]}    The type of exception values.
-{[ type 'a array]}  The type of arrays whose elements have type ['a].
-{[ type 'a list = [] | :: of 'a * 'a list]}
-                 The type of lists whose elements have type ['a].
-{[type 'a option = None | Some of 'a]}
-                 The type of optional values. 
-{[type ('a, 'b, 'c) format]}
-                 The type of format strings. ['a] is the type of the parameters
-                 of the format, ['c] is the result type for the [printf]-style
-                 function, and ['b] is the type of the first argument given to
-                 [%a] and [%t] printing functions (see module {!Printf}).
-{[type 'a lazy_t]} This type is used to implement the {!Lazy} module.
-                 It should not be used directly.
-*)
-
 (** {6 Exceptions} *)
 
 external raise : exn -> 'a = "%raise"
 (** Raise the given exception value *)
         
-(** These are predefined exceptions :
-{[exception Match_failure of (string * int * int)]}
-   Exception raised when none of the cases of a pattern-matching
-   apply. The arguments are the location of the pattern-matching
-   in the source code (file name, position of first character,
-   position of last character).
-
-{[exception Assert_failure of (string * int * int)]}
-   Exception raised when an assertion fails.  The arguments are
-   the location of the pattern-matching in the source code
-   (file name, position of first character, position of last
-   character).
-
-{[exception Invalid_argument of string]}
-   Exception raised by library functions to signal that the given
-   arguments do not make sense.
-
-{[exception Failure of string]}
-   Exception raised by library functions to signal that they are
-   undefined on the given arguments. 
-
-{[exception Not_found]}
-   Exception raised by search functions when the desired object
-   could not be found.
-
-{[exception Out_of_memory]}
-   Exception raised by the garbage collector
-   when there is insufficient memory to complete the computation.
-
-{[exception Stack_overflow]}
-   Exception raised by the bytecode interpreter when the evaluation
-   stack reaches its maximal size. This often indicates infinite
-   or excessively deep recursion in the user's program.
-
-{[exception Sys_error of string]}
-   Exception raised by the input/output functions to report
-   an operating system error.
-
-{[exception End_of_file]}
-   Exception raised by input functions to signal that the
-   end of file has been reached.
-
-{[exception Division_by_zero]}
-   Exception raised by division and remainder operations
-   when their second argument is null.
-
-{[exception Sys_blocked_io]}
-   A special case of [Sys_error] raised when no I/O is possible
-   on a non-blocking I/O channel.
-
-*)
-
-exception Exit
-(** The [Exit] exception is not raised by any library function.  It is
-    provided for use in your programs.*)
-
 val invalid_arg : string -> 'a
 (** Raise exception [Invalid_argument] with the given string. *)
 
 val failwith : string -> 'a
 (** Raise exception [Failure] with the given string. *)
+
+exception Exit
+(** The [Exit] exception is not raised by any library function.  It is
+    provided for use in your programs.*)
 
 
 (** {6 Comparisons} *)
@@ -155,7 +78,7 @@ external compare : 'a -> 'a -> int = "compare"
 (** [compare x y] returns [0] if [x=y], a negative integer if
    [x<y], and a positive integer if [x>y]. The same restrictions
    as for [=] apply. [compare] can be used as the comparison function
-   required by the {!Set} and {!Map} modules. *)
+   required by the {!Set.Make} and {!Map.Make} functors. *)
 
 val min : 'a -> 'a -> 'a
 (** Return the smaller of the two arguments. *)
