@@ -1,7 +1,8 @@
 include ../config/Makefile
 
-CAMLC=../boot/ocamlrun ../ocamlc -I ../stdlib -I KB -I Lex
-CAMLOPT=../boot/ocamlrun ../ocamlopt -I ../stdlib -I KB -I Lex
+CAMLC=../boot/ocamlrun ../ocamlc
+CAMLOPT=../boot/ocamlrun ../ocamlopt
+COMPFLAGS=-I ../stdlib -I KB -I Lex
 OPTFLAGS=-S
 CAMLYACC=../yacc/ocamlyacc
 CAMLLEX=../boot/ocamlrun ../lex/ocamllex
@@ -16,8 +17,8 @@ BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
 CODE_EXE=$(BYTE_EXE:.byt=.out)
 
 default:
-	make all
-	make codetest bytetest
+	$(MAKE) all
+	$(MAKE) codetest bytetest
 
 all: $(BYTE_EXE) $(CODE_EXE)
 
@@ -27,9 +28,9 @@ nucleic.out: nucleic.ml
 	case $(ARCH) in \
           i386) sed -e '/<HAND_CSE>/,/<\/HAND_CSE>/d' -e '/NO_CSE>/d' \
                 nucleic.ml > nucleic.mlt; \
-	        $(CAMLOPT) $(OPTFLAGS) -o nucleic.out nucleic.mlt; \
+	        $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.mlt; \
 	        rm -f nucleic.mlt;; \
-             *) $(CAMLOPT) $(OPTFLAGS) -o nucleic.out nucleic.ml;; \
+             *) $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.ml;; \
         esac
 
 # KB
@@ -38,9 +39,9 @@ BYTE_KB=KB/terms.cmo KB/equations.cmo KB/kb.cmo KB/orderings.cmo KB/kbmain.cmo
 CODE_KB=$(BYTE_KB:.cmo=.cmx)
 
 kb.byt: $(BYTE_KB)
-	$(CAMLC) -I KB $(BYTE_KB) -o kb.byt
+	$(CAMLC) $(COMPFLAGS) $(BYTE_KB) -o kb.byt
 kb.out: $(CODE_KB)
-	$(CAMLOPT) $(OPTFLAGS) -I KB $(CODE_KB) -o kb.out
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) $(CODE_KB) -o kb.out
 
 clean::
 	rm -f KB/*.cm[iox] KB/*.[os]
@@ -53,9 +54,9 @@ BYTE_GENLEX=Lex/syntax.cmo Lex/scan_aux.cmo Lex/scanner.cmo Lex/gram_aux.cmo \
 CODE_GENLEX=$(BYTE_GENLEX:.cmo=.cmx)
 
 genlex.byt: $(BYTE_GENLEX)
-	$(CAMLC) -I Lex $(BYTE_GENLEX) -o genlex.byt
+	$(CAMLC) $(COMPFLAGS) $(BYTE_GENLEX) -o genlex.byt
 genlex.out: $(CODE_GENLEX)
-	$(CAMLOPT) $(OPTFLAGS) -I Lex $(CODE_GENLEX) -o genlex.out
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) $(CODE_GENLEX) -o genlex.out
 
 clean::
 	rm -f Lex/*.cm[iox] Lex/*.[os]
@@ -81,29 +82,29 @@ beforedepend:: Lex/scanner.ml
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .byt .fast.byt .out .fast.out
 
 .ml.byt:
-	$(CAMLC) -o $*.byt $<
+	$(CAMLC) $(COMPFLAGS) -o $*.byt $<
 
 .ml.fast.byt:
 	cp $*.ml $*_fast.ml
-	$(CAMLC) -unsafe -o $*.fast.byt $*_fast.ml
+	$(CAMLC) $(COMPFLAGS) -unsafe -o $*.fast.byt $*_fast.ml
 	rm -f $*_fast.ml
 
 .ml.out:
-	$(CAMLOPT) $(OPTFLAGS) -o $*.out $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o $*.out $<
 
 .ml.fast.out:
 	cp $*.ml $*_fast.ml
-	$(CAMLOPT) $(OPTFLAGS) -unsafe -o $*.fast.out $*_fast.ml
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -unsafe -o $*.fast.out $*_fast.ml
 	rm -f $*_fast.ml
 
 .mli.cmi:
-	$(CAMLC) -c $<
+	$(CAMLC) $(COMPFLAGS) -c $<
 
 .ml.cmo:
-	$(CAMLC) -c $<
+	$(CAMLC) $(COMPFLAGS) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(OPTFLAGS) -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -c $<
 
 $(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ../ocamlc
 $(BYTE_EXE): ../stdlib/stdlib.cma

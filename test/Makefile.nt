@@ -1,7 +1,8 @@
 !include ..\config\Makefile.nt
 
-CAMLC=..\boot\ocamlrun ..\ocamlc -I ..\stdlib -I KB -I Lex
-CAMLOPT=..\boot\ocamlrun ..\ocamlopt -I ..\stdlib -I KB -I Lex
+CAMLC=..\boot\ocamlrun ..\ocamlc
+CAMLOPT=..\boot\ocamlrun ..\ocamlopt
+COMPFLAGS=-I ..\stdlib -I KB -I Lex
 OPTFLAGS=-S
 CAMLYACC=..\yacc\ocamlyacc
 CAMLLEX=..\boot\ocamlrun ..\lex\ocamllex
@@ -22,10 +23,10 @@ all: $(BYTE_EXE) $(CODE_EXE)
 nucleic.exe: nucleic.ml
 !if "$(ARCH)" == "i386"
 	sed -e "/<HAND_CSE>/,/<\/HAND_CSE>/d" -e "/NO_CSE>/d" nucleic.ml > nucleic.mlt
-	$(CAMLOPT) $(OPTFLAGS) -o nucleic.exe nucleic.mlt
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.exe nucleic.mlt
 	rm -f nucleic.mlt
 !else
-	$(CAMLOPT) $(OPTFLAGS) -o nucleic.exe nucleic.ml
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.exe nucleic.ml
 !endif
 
 # KB
@@ -34,9 +35,9 @@ BYTE_KB=KB\terms.cmo KB\equations.cmo KB\kb.cmo KB\orderings.cmo KB\kbmain.cmo
 CODE_KB=$(BYTE_KB:.cmo=.cmx)
 
 kb.byt: $(BYTE_KB)
-	$(CAMLC) -I KB $(BYTE_KB) -o kb.byt
+	$(CAMLC) $(COMPFLAGS) $(BYTE_KB) -o kb.byt
 kb.exe: $(CODE_KB)
-	$(CAMLOPT) $(OPTFLAGS) -I KB $(CODE_KB) -o kb.exe
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) $(CODE_KB) -o kb.exe
 
 clean::
 	rm -f KB/*.cm* KB/*.obj KB/*.asm
@@ -48,9 +49,9 @@ BYTE_GENLEX=Lex\syntax.cmo Lex\scan_aux.cmo Lex\scanner.cmo Lex\gram_aux.cmo \
 CODE_GENLEX=$(BYTE_GENLEX:.cmo=.cmx)
 
 genlex.byt: $(BYTE_GENLEX)
-	$(CAMLC) -I Lex $(BYTE_GENLEX) -o genlex.byt
+	$(CAMLC) $(COMPFLAGS) -I Lex $(BYTE_GENLEX) -o genlex.byt
 genlex.exe: $(CODE_GENLEX)
-	$(CAMLOPT) $(OPTFLAGS) -I Lex $(CODE_GENLEX) -o genlex.exe
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -I Lex $(CODE_GENLEX) -o genlex.exe
 
 clean::
 	rm -f Lex/*.cm* Lex/*.obj Lex/*.asm
@@ -73,32 +74,32 @@ beforedepend:: Lex\scanner.ml
 
 quicksort.fast.byt: quicksort.ml
 	cp quicksort.ml quicksort.fast.ml
-	$(CAMLC) -unsafe -o quicksort.fast.byt quicksort.fast.ml
+	$(CAMLC) $(COMPFLAGS) -unsafe -o quicksort.fast.byt quicksort.fast.ml
 	rm -f quicksort.fast.ml
 
 soli.fast.byt: soli.ml
 	cp soli.ml soli.fast.ml
-	$(CAMLC) -unsafe -o soli.fast.byt soli.fast.ml
+	$(CAMLC) $(COMPFLAGS) -unsafe -o soli.fast.byt soli.fast.ml
 	rm -f soli.fast.ml
 
 fft.fast.byt: fft.ml
 	cp fft.ml fft.fast.ml
-	$(CAMLC) -unsafe -o fft.fast.byt fft.fast.ml
+	$(CAMLC) $(COMPFLAGS) -unsafe -o fft.fast.byt fft.fast.ml
 	rm -f fft.fast.ml
 
 quicksort.fast.exe: quicksort.ml
 	cp quicksort.ml quicksort.fast.ml
-	$(CAMLOPT) $(OPTFLAGS) -unsafe -o quicksort.fast.exe quicksort.fast.ml
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -unsafe -o quicksort.fast.exe quicksort.fast.ml
 	rm -f quicksort.fast.ml
 
 soli.fast.exe: soli.ml
 	cp soli.ml soli.fast.ml
-	$(CAMLOPT) $(OPTFLAGS) -unsafe -o soli.fast.exe soli.fast.ml
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -unsafe -o soli.fast.exe soli.fast.ml
 	rm -f soli.fast.ml
 
 fft.fast.exe: fft.ml
 	cp fft.ml fft.fast.ml
-	$(CAMLOPT) $(OPTFLAGS) -unsafe -o fft.fast.exe fft.fast.ml
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -unsafe -o fft.fast.exe fft.fast.ml
 	rm -f fft.fast.ml
 
 # Common rules
@@ -107,19 +108,19 @@ fft.fast.exe: fft.ml
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .byt .exe
 
 .ml.byt:
-	$(CAMLC) -o $*.byt $<
+	$(CAMLC) $(COMPFLAGS) -o $*.byt $<
 
 .ml.exe:
-	$(CAMLOPT) $(OPTFLAGS) -o $*.exe $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o $*.exe $<
 
 .mli.cmi:
-	$(CAMLC) -c $<
+	$(CAMLC) $(COMPFLAGS) -c $<
 
 .ml.cmo:
-	$(CAMLC) -c $<
+	$(CAMLC) $(COMPFLAGS) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(OPTFLAGS) -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -c $<
 
 $(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ..\ocamlc
 $(BYTE_EXE): ..\stdlib\stdlib.cma
