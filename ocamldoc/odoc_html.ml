@@ -506,6 +506,7 @@ class html =
 	".paramstable { border-style : hidden ; padding: 5pt 5pt}" ;
         "body { background-color : White }" ;
         "tr { background-color : White }" ;
+	"td.typefieldcomment { background-color : #FFFFFF }" ;
       ] 
       
     (** The style file for all pages. *)
@@ -931,15 +932,15 @@ class html =
                   (match constr.vc_text with
                     None -> ""
                   | Some t ->
-                      "<td align=\"left\" valign=\"top\" >"^
+                      "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >"^
                       "<code>"^
                       "(*"^
                       "</code></td>"^
-                      "<td align=\"left\" valign=\"top\" >"^
+                      "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >"^
                       "<code>"^
                       (self#html_of_text t)^
                       "</code></td>"^
-                      "<td align=\"left\" valign=\"bottom\" >"^
+                      "<td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >"^
                       "<code>"^
                       "*)"^
                       "</code></td>"
@@ -968,15 +969,15 @@ class html =
                   (match r.rf_text with
                     None -> ""
                   | Some t ->
-                      "<td align=\"left\" valign=\"top\" >"^
+                      "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >"^
                       "<code>"^
                       "(*"^
                       "</code></td>"^
-                      "<td align=\"left\" valign=\"top\" >"^
+                      "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >"^
                       "<code>"^
                       (self#html_of_text t)^
                       "</code></td>"^
-                      "<td align=\"left\" valign=\"bottom\" >"^
+                      "<td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >"^
                       "<code>"^
                       "*)"^
                       "</code></td>"
