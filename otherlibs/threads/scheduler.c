@@ -13,6 +13,7 @@
 
 /* The thread scheduler */
 
+#include "callback.h"
 #include "config.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -237,8 +238,6 @@ static double timeofday()
 #define FOREACH_THREAD(x) x = curr_thread; do { x = x->next;
 #define END_FOREACH(x) } while (x != curr_thread)
 static value alloc_process_status();
-
-extern int callback_depth;
 
 static value schedule_thread()
 {
