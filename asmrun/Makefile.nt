@@ -7,8 +7,7 @@ COBJS=startup.obj main.obj fail.obj roots.obj signals.obj \
   misc.obj freelist.obj major_gc.obj minor_gc.obj memory.obj alloc.obj \
   compare.obj ints.obj floats.obj str.obj array.obj io.obj extern.obj \
   intern.obj hash.obj sys.obj parsing.obj gc_ctrl.obj terminfo.obj \
-  md5.obj obj.obj lexing.obj \
-  wincmdline.obj
+  md5.obj obj.obj lexing.obj wincmdline.obj printexc.obj
 
 ASMOBJS=$(ARCH)nt.obj
 
@@ -67,9 +66,18 @@ obj.c: ../byterun/obj.c
 	cp ../byterun/obj.c obj.c
 lexing.c: ../byterun/lexing.c
 	cp ../byterun/lexing.c lexing.c
+printexc.c: ../byterun/printexc.c
+	cp ../byterun/printexc.c printexc.c
 
 wincmdline.obj: ../byterun/wincmdline.c
 	$(CC) /c $(NATIVECCCOMPOPTS) ..\byterun\wincmdline.c
+
+LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c \
+  compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
+  parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c
+
+clean::
+	rm -f $(LINKEDFILES)
 
 clean::
 	rm -f *.obj *.lib *~

@@ -64,7 +64,8 @@ lexing.o: lexing.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
  ../byterun/minor_gc.h ../byterun/str.h
 main.o: main.c ../byterun/misc.h ../byterun/config.h \
- ../byterun/../config/m.h ../byterun/../config/s.h
+ ../byterun/../config/m.h ../byterun/../config/s.h \
+ ../byterun/mlvalues.h ../byterun/sys.h
 major_gc.o: major_gc.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/fail.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/freelist.h ../byterun/gc.h \
@@ -93,6 +94,9 @@ parsing.o: parsing.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/misc.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/alloc.h
+printexc.o: printexc.c ../byterun/fail.h ../byterun/misc.h \
+ ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
+ ../byterun/mlvalues.h
 roots.o: roots.c ../byterun/memory.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/gc.h \
  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
@@ -103,9 +107,10 @@ signals.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/memory.h ../byterun/gc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
  ../byterun/fail.h ../byterun/signals.h
-startup.o: startup.c ../byterun/gc.h ../byterun/mlvalues.h \
+startup.o: startup.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/misc.h ../byterun/gc_ctrl.h ../byterun/sys.h
+ ../byterun/mlvalues.h ../byterun/gc.h ../byterun/gc_ctrl.h \
+ ../byterun/sys.h
 str.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h
@@ -114,7 +119,7 @@ sys.o: sys.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/instruct.h \
  ../byterun/signals.h ../byterun/stacks.h ../byterun/memory.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h
+ ../byterun/minor_gc.h ../byterun/str.h ../byterun/sys.h
 terminfo.o: terminfo.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/io.h
@@ -184,7 +189,8 @@ lexing.d.o: lexing.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
  ../byterun/minor_gc.h ../byterun/str.h
 main.d.o: main.c ../byterun/misc.h ../byterun/config.h \
- ../byterun/../config/m.h ../byterun/../config/s.h
+ ../byterun/../config/m.h ../byterun/../config/s.h \
+ ../byterun/mlvalues.h ../byterun/sys.h
 major_gc.d.o: major_gc.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/fail.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/freelist.h ../byterun/gc.h \
@@ -213,6 +219,9 @@ parsing.d.o: parsing.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/mlvalues.h ../byterun/misc.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/alloc.h
+printexc.d.o: printexc.c ../byterun/fail.h ../byterun/misc.h \
+ ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
+ ../byterun/mlvalues.h
 roots.d.o: roots.c ../byterun/memory.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/gc.h \
  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
@@ -223,9 +232,10 @@ signals.d.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/memory.h ../byterun/gc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
  ../byterun/fail.h ../byterun/signals.h
-startup.d.o: startup.c ../byterun/gc.h ../byterun/mlvalues.h \
+startup.d.o: startup.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/misc.h ../byterun/gc_ctrl.h ../byterun/sys.h
+ ../byterun/mlvalues.h ../byterun/gc.h ../byterun/gc_ctrl.h \
+ ../byterun/sys.h
 str.d.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h
@@ -234,7 +244,7 @@ sys.d.o: sys.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/instruct.h \
  ../byterun/signals.h ../byterun/stacks.h ../byterun/memory.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h
+ ../byterun/minor_gc.h ../byterun/str.h ../byterun/sys.h
 terminfo.d.o: terminfo.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/io.h

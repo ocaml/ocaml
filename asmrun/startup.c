@@ -15,11 +15,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "fail.h"
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "misc.h"
 #include "mlvalues.h"
 #include "sys.h"
+#ifdef HAS_UI
+#include "ui.h"
+#endif
 
 header_t atom_table[256];
 char * static_data_start, * static_data_end;
@@ -85,10 +89,7 @@ void caml_main(argv)
   init_signals();
   sys_init(argv);
   retcode = caml_start_program();
-  if (retcode != 0) {
-    fatal_error_arg("Fatal error: uncaught exception %s.\n",
-                    String_val(Field(Field(retcode, 0), 0)));
-  }
+  if (retcode != 0) fatal_uncaught_exception(retcode);
 }
 
 void caml_startup(argv)
