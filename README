@@ -71,14 +71,15 @@ CONTENTS:
 COPYRIGHT:
 
 All files marked "Copyright INRIA" in this distribution are copyright
-1996, 1997, 1998, 1999, 2000, 2001, 2002 Institut National de Recherche en
-Informatique et en Automatique (INRIA) and distributed under the
-conditions stated in file LICENSE.
+1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003 Institut National de
+Recherche en Informatique et en Automatique (INRIA) and distributed
+under the conditions stated in file LICENSE.
 
 INSTALLATION:
 
-See the file INSTALL for installation instructions on Unix machines. 
-For MS Windows, see README.win32.  For the Macintosh, see INSTALL.MPW.
+See the file INSTALL for installation instructions on Unix, Linux and 
+MacOS X machines.  For MS Windows, see README.win32.
+For the MacOS 7, 8, 9, see INSTALL.MPW.
 
 DOCUMENTATION:
 
@@ -98,8 +99,8 @@ and can be accessed through a Web browser at
 
 or directly by anonymous FTP:
 
-        host:       ftp.inria.fr (192.93.2.54)
-        directory:  lang/caml-light
+        host:       ftp.inria.fr
+        directory:  INRIA/caml-light
 
 KEEPING IN TOUCH WITH THE CAML COMMUNITY:
 
