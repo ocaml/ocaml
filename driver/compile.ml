@@ -153,4 +153,4 @@ let implementation sourcefile =
     raise x
 
 let c_file name =
-  if Ccomp.compile_file name <> 0 then exit 2
+  if Ccomp.compile_file_bytecode name <> 0 then exit 2

@@ -21,11 +21,23 @@ let command cmdline =
   end;
   Sys.command cmdline
 
-let compile_file name =
+let compile_file_bytecode name =
   command
    (Printf.sprintf
      "%s -c %s %s -I%s %s"
      Config.bytecomp_c_compiler
+     (String.concat " " (List.rev !Clflags.ccopts))
+     (String.concat " "
+       (List.map (fun dir -> "-I" ^ dir) 
+                 (List.rev !Clflags.include_dirs)))
+     Config.standard_library
+     name)
+
+let compile_file_native name =
+  command
+   (Printf.sprintf
+     "%s -c %s %s -I%s %s"
+     Config.native_c_compiler
      (String.concat " " (List.rev !Clflags.ccopts))
      (String.concat " "
        (List.map (fun dir -> "-I" ^ dir) 

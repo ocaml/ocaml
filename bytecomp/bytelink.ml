@@ -474,7 +474,7 @@ let link objfiles =
     if Sys.file_exists c_file then raise(Error(File_exists c_file));
     try
       link_bytecode_as_c objfiles c_file;
-      if Ccomp.compile_file c_file <> 0
+      if Ccomp.compile_file_bytecode c_file <> 0
       then raise(Error Custom_runtime);
       remove_file c_file
     with x ->
