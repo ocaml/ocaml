@@ -216,6 +216,13 @@ OTHERLIBRARIES=unix str num threads graph dynlink labltk
 # C implementation of these routines.
 BIGNUM_ARCH=alpha
 
+### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
+# Needed for the "systhreads" package
+# Usually:
+#PTHREAD_LINK=-cclib -lpthread
+# For Solaris:
+#PTHREAD_LINK=-cclib -lpthread -cclib -lposix4
+
 ### Location of the include directory containing the X11/*.h includes
 # Needed for the "graph" and "labltk" packages
 # Usually:
