@@ -453,6 +453,8 @@ let combine_constructor arg cstr partial
 	  if List.for_all (fun (n,_) -> n < cstr.cstr_consts & n >= 0) consts
 	  && List.for_all (fun (n,_) -> n < cstr.cstr_nonconsts & n >= 0)
 	       nonconsts
+	  && (cstr.cstr_nonconsts > 1 ||
+              List.length consts > 1 + cstr.cstr_consts / 4)
 	  then
 	    Lswitch(arg, {sw_numconsts = cstr.cstr_consts;
 			  sw_consts = consts;

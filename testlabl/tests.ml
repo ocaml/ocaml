@@ -1,5 +1,10 @@
 (* $Id$ *)
 
+let f1 = function `a x -> x=1 | `b -> true
+let f2 = function `a x -> x | `b -> true
+let f3 = function `b -> true
+let f x = f1 x && f2 x
+
 let sub s ?:pos{=0} ?:len{=String.length s - pos} () =
   String.sub s pos len
 

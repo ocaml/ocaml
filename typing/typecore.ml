@@ -90,6 +90,17 @@ let enter_variable loc name ty =
   pattern_variables := (id, ty) :: !pattern_variables;
   id
 
+let rec extract_row_fields p =
+  match p.pat_desc with
+    Tpat_or(p1, p2) ->
+      extract_row_fields p1 @ extract_row_fields p2
+  | Tpat_variant(l, None, _) ->
+      [l, Rpresent None]
+  | Tpat_variant(l, Some{pat_desc = Tpat_any; pat_type = ty}, _) ->
+      [l, Rpresent(Some ty)]
+  | _ ->
+      raise Not_found
+
 let rec type_pat env sp =
   match sp.ppat_desc with
     Ppat_any ->
@@ -106,7 +117,15 @@ let rec type_pat env sp =
         pat_env = env }
   | Ppat_alias(sp, name) ->
       let p = type_pat env sp in
-      let id = enter_variable sp.ppat_loc name p.pat_type in
+      let ty_var =
+	try
+	  let fields = extract_row_fields p in
+	  newty (Tvariant { row_fields = fields; row_more = newvar();
+			    row_closed = false; row_name = None;
+			    row_bound = [] })
+	with Not_found -> p.pat_type
+      in
+      let id = enter_variable sp.ppat_loc name ty_var in
       { pat_desc = Tpat_alias(p, id);
         pat_loc = sp.ppat_loc;
         pat_type = p.pat_type;

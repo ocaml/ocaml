@@ -56,8 +56,8 @@ let objfile = ref false                        (* true if dumping a .zo *)
 
 let print_float f =
   if String.contains f '.'
-  then printf "%s%s" f
-  else printf "%s.%s" f
+  then printf "%s" f
+  else printf "%s." f
 ;;
 
 let rec print_struct_const = function
@@ -84,7 +84,7 @@ let rec print_struct_const = function
       end
   | Const_float_array a ->
       printf "[|";
-      List.iter (fun f -> print_float f; printf "; ") a
+      List.iter (fun f -> print_float f; printf "; ") a;
       printf "|]"
 
 (* Print an obj *)
