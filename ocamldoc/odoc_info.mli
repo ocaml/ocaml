@@ -60,7 +60,7 @@ type see_ref = Odoc_types.see_ref =
   | See_doc of string
 
 (** Raised when parsing string to build a {!Odoc_info.text}
-   structure. [(line, char, string) *)
+   structure. [(line, char, string)] *)
 exception Text_syntax of int * int * string 
 
 (** The information in a \@see tag. *)
