@@ -21,7 +21,7 @@ open Checkpoints
 open Source
 
 (*** Debugging. ***)
-let debug_breakpoints = ref true
+let debug_breakpoints = ref false
 
 (*** Data. ***)
 
@@ -76,7 +76,8 @@ let remove_breakpoints pos =
          print_int pos;
          print_newline()
        end;
-       reset_instr pos)
+       reset_instr pos;
+       set_event pos)
     pos
 
 (* Set all breakpoints. *)
@@ -141,7 +142,7 @@ let remove_position pos =
       positions := assoc_remove !positions pos;
       new_version ();
       reset_instr pos;
-      ()
+      set_event pos
     end
 
 (* Insert a new breakpoint in lists. *)
@@ -197,8 +198,8 @@ let exec_with_temporary_breakpoint pc funct =
         if !count = 0 then begin
           positions := assoc_remove !positions pc;
           reset_instr pc;
-      	  ()
-	  end
+      	  try Symbols.event_at_pc pc; set_event pc with Not_found -> ()
+	end
 
     in
       Exec.protected (function () -> insert_position pc);
