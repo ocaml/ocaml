@@ -1099,11 +1099,12 @@ let dtransset s =
     s
 
 let dfollow t =
+  eprintf "follow=[" ;
   for i = 0 to Array.length t-1 do
     eprintf "%d:" i ;
-    dtransset t.(i) ;
-    prerr_endline ""
-  done
+    dtransset t.(i)
+  done ;
+  prerr_endline "]"
 *)
 
 let make_tag_entry id start act a r = match a with
@@ -1142,7 +1143,7 @@ let make_dfa lexdef =
         reset_cell_mem le.lex_mem_tags ;
         let pos_set = firstpos le.lex_regexp in
 (*
-        dtransset pos_set ; prerr_endline "" ;
+        prerr_string "trans={" ; dtransset pos_set ; prerr_endline "}" ;
 *)
         let init_state = create_init_state pos_set in
         let init_num = get_state init_state in

@@ -87,10 +87,10 @@ other_definitions:
         { [] }
 ;
 definition:
-    Tident arguments Tequal entry
-        { {name=$1 ; shortest=false ; args=$2 ; clauses=$4} }
-  |  Tident arguments Tequal entry_shortest
-        { {name=$1 ; shortest=true ; args=$2 ; clauses=$4} }
+    Tident arguments Tequal Tparse entry
+        { {name=$1 ; shortest=false ; args=$2 ; clauses=$5} }
+  |  Tident arguments Tequal Tparse_shortest entry
+        { {name=$1 ; shortest=true ; args=$2 ; clauses=$5} }
 ;
 
 arguments:
@@ -100,19 +100,11 @@ arguments:
 
 
 entry:
-    Tparse case rest_of_entry
+    case rest_of_entry
+        { $1::List.rev $2 }
+|   Tor case rest_of_entry
         { $2::List.rev $3 }
-  | Tparse rest_of_entry
-        { List.rev $2 }
 ;
-
-entry_shortest:
-    Tparse_shortest case rest_of_entry
-        { $2::List.rev $3 }
-  | Tparse_shortest rest_of_entry
-        { List.rev $2 }
-;
-
 
 rest_of_entry:
     rest_of_entry Tor case
