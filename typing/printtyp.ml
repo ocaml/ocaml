@@ -259,7 +259,7 @@ and typfields sch rest =
       | _    -> fatal_error "typfields (1)"
       end
   | [(s, t)] ->
-      print_string s.Label.lab_name;
+      print_string s;
       print_string " : ";
       typexp sch 0 t;
       begin match rest.desc with
@@ -269,7 +269,7 @@ and typfields sch rest =
       end;
       typfields sch rest []
   | (s, t)::l ->
-      print_string s.Label.lab_name;
+      print_string s;
       print_string " : ";
       typexp sch 0 t;
       print_string ";"; print_space ();
@@ -378,7 +378,7 @@ let class_var l (m, t) =
     Immutable -> ()
   | Mutable -> print_string "mutable "
   end;
-  print_string l.Label.lab_name;
+  print_string l;
   print_string " :";
   print_space();
   type_sch t;
@@ -388,7 +388,7 @@ let metho kind (l, t) =
   print_space ();
   open_hovbox 2;
   print_string kind;
-  print_string l.Label.lab_name;
+  print_string l;
   print_string " :";
   print_space();
   type_sch t;
@@ -453,7 +453,7 @@ let class_type id cl_ty =
   let (meths, virt) =
     List.fold_right
       (fun ((lab, ty) as m) (ml, vl) ->
-      	 if List.exists (fun lab' -> Label. (=) lab lab') cl_ty.cty_concr then
+      	 if List.exists (fun lab' -> lab = lab') cl_ty.cty_concr then
 	   (m::ml, vl)
 	 else
 	   (ml, m::vl))

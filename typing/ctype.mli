@@ -32,7 +32,7 @@ val new_global_var: unit -> type_expr
 val newobj: type_expr -> type_expr
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
-val flatten_fields : type_expr -> (Label.t * type_expr) list * type_expr
+val flatten_fields : type_expr -> (string * type_expr) list * type_expr
       	(* Transform a field type into a list of pairs label-type *)
 val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
@@ -65,7 +65,7 @@ val unify: Env.t -> type_expr -> type_expr -> unit
 val filter_arrow: Env.t -> type_expr -> type_expr * type_expr
         (* A special case of unification (with 'a -> 'b). *)
 val filter_method:
-  Env.t -> Label.t -> Typedtree.type_expr -> Typedtree.type_expr
+  Env.t -> string -> Typedtree.type_expr -> Typedtree.type_expr
       	(* A special case of unification (with {m : 'a; 'b}). *)
 val moregeneral: Env.t -> type_expr -> type_expr -> bool
         (* Check if the first type scheme is more general than the second. *)

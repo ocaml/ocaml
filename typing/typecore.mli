@@ -48,7 +48,7 @@ type error =
   | Label_missing
   | Label_not_mutable of Longident.t
   | Bad_format of string
-  | Undefined_method_err of Label.t
+  | Undefined_method_err of string
   | Unbound_class of Longident.t
   | Virtual_class of Longident.t
   | Unbound_instance_variable of string

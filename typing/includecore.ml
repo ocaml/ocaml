@@ -73,15 +73,6 @@ let exception_declarations env ed1 ed2 =
   for_all2 (fun ty1 ty2 -> Ctype.equal env [] ty1 [] ty2) ed1 ed2
 
 (* Inclusion between class types *)
-let vars desc =
-  Ctype.newgenty (Ttuple(
-    Vars.fold
-      (fun lab (mut, ty) rem ->
-	 (if mut = Asttypes.Mutable then Predef.type_unit
-      	  else Ctype.newgenty Tvar)
-         ::ty::rem)
-      desc.cty_vars []))
-
 let encode_val (mut, ty) rem =
   begin match mut with
     Asttypes.Mutable   -> Predef.type_unit
@@ -107,8 +98,7 @@ let class_type env d1 d2 =
   Ctype.equal env (List.map fst cstr1) self1 (List.map fst cstr2) self2
       &
   (* Same concretes methods *)
-  for_all2 Label. (=) (Sort.list Label. (=) d1.cty_concr)
-      	       	      (Sort.list Label. (=) d2.cty_concr)
+  for_all2 (=) (Sort.list (<) d1.cty_concr) (Sort.list (<) d2.cty_concr)
       &
   (* If virtual, stays virtual *)
   (d1.cty_new <> None or d2.cty_new = None)

@@ -30,7 +30,6 @@ let oo_prim name =
 let used_methods = ref ([] : (string * Ident.t) list);;
 
 let meth lab =
-  let lab = lab.Label.lab_name in
   try
     List.assoc lab !used_methods
   with Not_found ->

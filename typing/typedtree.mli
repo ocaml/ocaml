@@ -28,7 +28,7 @@ and type_desc =
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * (Path.t * type_expr) list ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
-  | Tfield of Label.t * type_expr * type_expr
+  | Tfield of string * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
 
@@ -42,7 +42,7 @@ and value_kind =
     Val_reg				(* Regular value *)
   | Val_prim of Primitive.description	(* Primitive *)
   | Val_ivar of mutable_flag		(* Instance variable (mutable ?) *)
-  | Val_anc of (Label.t * Ident.t) list (* Ancestor *)
+  | Val_anc of (string * Ident.t) list  (* Ancestor *)
 
 (* Constructor descriptions *)
 
@@ -75,14 +75,14 @@ and record_representation =
 
 (* Type expressions for classes *)
 
-module Vars : Map.S with type key = Label.t
+module Vars : Map.S with type key = string
 
 type class_type =
   { cty_params: type_expr list;
     cty_args: type_expr list;
     cty_vars: (mutable_flag * type_expr) Vars.t;
     cty_self: type_expr;
-    cty_concr: Label.t list;
+    cty_concr: string list;
     mutable cty_new: type_expr option }
 
 (* Value expressions for the core language *)
@@ -127,7 +127,7 @@ and expression_desc =
   | Texp_for of
       Ident.t * expression * expression * direction_flag * expression
   | Texp_when of expression * expression
-  | Texp_send of expression * Label.t
+  | Texp_send of expression * string
   | Texp_new of Path.t
   | Texp_instvar of Path.t * Path.t
   | Texp_setinstvar of Path.t * Path.t * expression
@@ -173,10 +173,10 @@ and modtype_declaration =
 
 type class_field =
     Cf_inher of
-      Path.t * expression list * (Label.t * Ident.t) list *
-      (Label.t * Ident.t) list
-  | Cf_val of Label.t * Ident.t * private_flag * expression option
-  | Cf_meth of Label.t * expression
+      Path.t * expression list * (string * Ident.t) list *
+      (string * Ident.t) list
+  | Cf_val of string * Ident.t * private_flag * expression option
+  | Cf_meth of string * expression
 
 type class_def =
   { cl_args: pattern list;

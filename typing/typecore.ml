@@ -35,7 +35,7 @@ type error =
   | Label_missing
   | Label_not_mutable of Longident.t
   | Bad_format of string
-  | Undefined_method_err of Label.t
+  | Undefined_method_err of string
   | Unbound_class of Longident.t
   | Virtual_class of Longident.t
   | Unbound_instance_variable of string
@@ -525,9 +525,8 @@ let rec type_exp env sexp =
 	      exp_type = instance ty }
         end
   | Pexp_setinstvar (lab, snewval) ->
-      let name = lab.Label.lab_name in
       begin try
-        let (path, desc) = Env.lookup_value (Longident.Lident name) env in
+        let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
         match desc.val_kind with
 	  Val_ivar Mutable ->
 	    let newval = type_expect env snewval desc.val_type in
@@ -538,19 +537,19 @@ let rec type_exp env sexp =
               exp_loc = sexp.pexp_loc;
               exp_type = instance Predef.type_unit }
 	| Val_ivar _ ->
-      	    raise(Error(sexp.pexp_loc, Instance_variable_not_mutable name))
+      	    raise(Error(sexp.pexp_loc, Instance_variable_not_mutable lab))
 	| _ ->
-            raise(Error(sexp.pexp_loc, Unbound_instance_variable name))
+            raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
       with
 	Not_found ->
-          raise(Error(sexp.pexp_loc, Unbound_instance_variable name))
+          raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
       end        
   | Pexp_override lst ->
       List.fold_right
       	(fun (lab, _) l ->
-	   if List.exists (Label. (=) lab) l then
+	   if List.exists ((=) lab) l then
 	     raise(Error(sexp.pexp_loc,
-      	       	       	 Value_multiply_overridden lab.Label.lab_name));
+      	       	       	 Value_multiply_overridden lab));
       	   lab::l)
 	lst
 	[];
@@ -561,17 +560,16 @@ let rec type_exp env sexp =
 	  raise(Error(sexp.pexp_loc, Outside_class))
       in
       let type_override (lab, snewval) =
-        let name = lab.Label.lab_name in
         begin try
-          let (path, desc) = Env.lookup_value (Longident.Lident name) env in
+          let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
           match desc.val_kind with
 	    Val_ivar _ ->
               (path, type_expect env snewval desc.val_type)
 	  | _ ->
-              raise(Error(sexp.pexp_loc, Unbound_instance_variable name))
+              raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
         with
 	  Not_found ->
-            raise(Error(sexp.pexp_loc, Unbound_instance_variable name))
+            raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
         end
       in
       let modifs = List.map type_override lst in
@@ -780,7 +778,7 @@ let report_error = function
       print_string "Bad format `"; print_string s; print_string "'"
   | Undefined_method_err me ->
       print_string "This expression has no method ";
-      print_string me.Label.lab_name
+      print_string me
   | Unbound_class cl ->
       print_string "Unbound class "; longident cl
   | Virtual_class cl ->

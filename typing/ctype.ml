@@ -82,13 +82,13 @@ let associate_fields fields1 fields2 =
     | ([], l') ->
         (List.rev p, List.rev s, (List.rev s') @ l')
     | (((n, t)::r as l), ((n', t')::r' as l')) ->
-        if Label. (=) n n' then
+        if n = n' then
           associate ((t, t')::p) s s' (r, r')
-        else if Label. (<) n  n' then
+        else if n < n' then
           associate p ((n, t)::s) s' (r, l')
         else
           associate p s ((n', t')::s') (l, r')
-  in let sort = Sort.list (fun (n, _) (n', _) -> Label. (<) n n') in
+  in let sort = Sort.list (fun (n, _) (n', _) -> n < n') in
   associate [] [] [] (sort fields1, sort fields2)
 
 (* Check whether an object is open *)
@@ -561,7 +561,7 @@ let rec filter_method_field name ty =
       ty.desc <- Tlink ty';
       ty1
   | Tfield(n, ty1, ty2) ->
-      if Label. (=) n name then
+      if n = name then
         ty1
       else
         filter_method_field name ty2
@@ -789,8 +789,7 @@ let equal env params1 ty1 params2 ty2 =
     List.for_all
       (function (label, t) ->
          List.exists
-           (function (label', t') ->
-              (Label. (=) label label') & (eqtype t t'))
+           (function (label', t') -> (label = label') & (eqtype t t'))
            fields2)
       fields1
   in

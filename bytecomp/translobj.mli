@@ -13,7 +13,7 @@
 
 val oo_prim: string -> Lambda.lambda
 
-val meth: Label.t -> Ident.t
+val meth: string -> Ident.t
 
 val reset_labels: unit -> unit
 val transl_label_init: Lambda.lambda -> Lambda.lambda

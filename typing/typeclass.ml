@@ -46,7 +46,7 @@ exception Error of Location.t * error
 let check_mutable loc lab mut mut' =
   match mut, mut' with
     (Immutable, Mutable) ->
-      raise(Error(loc, Mutable_var lab.Label.lab_name))
+      raise(Error(loc, Mutable_var lab))
   | _ ->
       ()
 
@@ -54,7 +54,7 @@ let rec add_methods env self concr concr_lst t =
   match (Ctype.repr t).desc with
     Tfield (lab, _, t') ->
       Ctype.filter_method env lab self;
-      if List.exists (Label. (=) lab) concr_lst then
+      if List.exists ((=) lab) concr_lst then
         (Ctype.filter_method env lab concr; ());
       add_methods env self concr concr_lst t'
   | _ ->
@@ -165,8 +165,7 @@ let rec type_meth env loc self ty =
       begin try
         Ctype.unify env ty0 ty
       with Ctype.Unify ->
-        raise(Error(loc, Method_type_mismatch
-                           (lab.Label.lab_name, ty, ty0)))
+        raise(Error(loc, Method_type_mismatch (lab, ty, ty0)))
       end;
       type_meth env loc self ty'
   | _ ->
@@ -201,7 +200,7 @@ let rec closed_scheme t =
       fatal_error "Typeclass.closed_scheme"
 
 let vals_remove lab vals =
-  Vars.fold (fun l k v -> if Label. (=) lab l then v else Vars.add l k v)
+  Vars.fold (fun l k v -> if lab = l then v else Vars.add l k v)
     vals Vars.empty
 
 let insert_value env lab priv mut ty loc vals =
@@ -209,7 +208,7 @@ let insert_value env lab priv mut ty loc vals =
     let (mut', ty') = Vars.find lab vals in
     check_mutable loc lab mut mut';
     try Ctype.unify env ty ty' with Ctype.Unify ->
-      raise(Error(loc, Variable_type_mismatch(lab.Label.lab_name, ty, ty')))
+      raise(Error(loc, Variable_type_mismatch(lab, ty, ty')))
   with Not_found -> () end;
   if priv = Private then
     vals_remove lab vals
@@ -225,7 +224,7 @@ let change_value_status lab priv mut loc vals =
     else
       (Vars.add lab (mut, ty') vals, ty')
   with Not_found ->
-    raise(Error(loc, Undefined_var lab.Label.lab_name))
+    raise(Error(loc, Undefined_var lab))
 
 let type_class_field env var_env self cl (met_env, fields, vars_sig) =
   function
@@ -261,7 +260,7 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
         Vars.fold
           (fun lab (mut, ty) (l, v_sig, env) ->
              let (id, env) =
-               Env.enter_value lab.Label.lab_name
+               Env.enter_value lab
                  {val_type = ty; val_kind = Val_ivar mut} env
              in
              ((lab, id)::l,
@@ -282,7 +281,7 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
               with Ctype.Unify ->
                 let lab = missing_method var_env self' self in
                 raise(Error(loc, Closed_ancestor
-                                   (cl.pcl_name, path, lab.Label.lab_name)))
+                                   (cl.pcl_name, path, lab)))
               end;
             ty'.desc <- Tlink self;
             type_meth var_env loc self fi
@@ -303,7 +302,7 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
                 (fun lab ->
                    Ctype.unify met_env (Ctype.filter_method met_env lab ty)
                                        (Ctype.filter_method met_env lab self);
-                   (lab, Ident.create lab.Label.lab_name))
+                   (lab, Ident.create lab))
                 cl_type.cty_concr
             in
             Ctype.close_object ty;
@@ -320,7 +319,7 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
         Some sexp ->
           let exp = type_exp var_env sexp in
           let (id, met_env) =
-            Env.enter_value lab.Label.lab_name
+            Env.enter_value lab
               {val_type = exp.exp_type; val_kind = Val_ivar mut} met_env
           in
           (met_env, Cf_val (lab, id, priv, Some exp)::fields,
@@ -330,7 +329,7 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
             change_value_status lab priv mut loc vars_sig
           in
           let (id, met_env) =
-            Env.enter_value lab.Label.lab_name
+            Env.enter_value lab
               {val_type = ty; val_kind = Val_ivar mut} met_env
           in
           (met_env, Cf_val (lab, id, priv, None)::fields, vars_sig)
@@ -340,7 +339,7 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
       let ty = transl_simple_type met_env false ty in
       let ty' = Ctype.filter_method met_env lab self in
       begin try Ctype.unify met_env ty ty' with Ctype.Unify ->
-        raise(Error(loc, Method_type_mismatch (lab.Label.lab_name, ty, ty')))
+        raise(Error(loc, Method_type_mismatch (lab, ty, ty')))
       end;
       (met_env, fields, vars_sig)
 
@@ -348,7 +347,7 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
       let (texp, ty) = type_method met_env self cl.pcl_self expr in
       let ty' = Ctype.filter_method met_env lab self in
         begin try Ctype.unify met_env ty ty' with Ctype.Unify ->
-          raise(Error(loc, Method_type_mismatch (lab.Label.lab_name, ty, ty')))
+          raise(Error(loc, Method_type_mismatch (lab, ty, ty')))
         end;
       (met_env, Cf_meth (lab, texp)::fields, vars_sig)
   
@@ -484,7 +483,7 @@ let build_new_type temp_env env
     with Ctype.Unify ->
     	let lab = missing_method temp_env concr temp_obj in
       raise(Error(cl.pcl_loc,
-    	       	    Virtual_class (cl.pcl_name, lab.Label.lab_name)))
+    	       	    Virtual_class (cl.pcl_name, lab)))
   end;
 
   (* self should not be an abbreviation (printtyp) *)
@@ -610,12 +609,12 @@ let change_value_status lab priv mut loc val_sig =
     else
       Vars.add lab (mut, ty') val_sig
   with Not_found ->
-    raise(Error(loc, Undefined_var lab.Label.lab_name))
+    raise(Error(loc, Undefined_var lab))
 
 let insert_meth env self lab ty loc meth_redef =
   let ty0 = Ctype.filter_method env lab self in
   if not
-    (List.exists (function (lab', _, _, _) -> Label. (=) lab lab') meth_redef)
+    (List.exists (function (lab', _, _, _) -> lab = lab') meth_redef)
   then
     Ctype.unify env ty ty0;
   (lab, ty0, ty, loc)::meth_redef
@@ -658,8 +657,7 @@ let type_class_type_field env temp_env cl self
 	      with Ctype.Unify ->
 		let lab = missing_method temp_env super self in
 		raise(Error(loc,
-			    Closed_ancestor (cl.pcty_name, path,
-					     lab.Label.lab_name)))
+			    Closed_ancestor (cl.pcty_name, path, lab)))
 	      end;
 	    super.desc <- Tlink self;
 	    type_meth temp_env loc self meth_redef fi
@@ -834,7 +832,7 @@ let check_abbrev env
 
 let check_field_redef env error (lab, ty, ty', loc) =
   if not (Ctype.equal env [] ty [] ty') then
-    raise(Error(loc, error lab.Label.lab_name ty ty'))
+    raise(Error(loc, error lab ty ty'))
 
 let build_class_type env
     (cl, cl_id, cl_abbrev, obj_id, obj_abbrev, obj_params, obj_ty, temp_cl_sig,
@@ -898,7 +896,7 @@ let build_class_type env
       with Ctype.Unify ->
       	let lab = missing_method env concr temp_obj in
 	raise(Error(cl.pcty_loc,
-      	       	    Virtual_class (cl.pcty_name, lab.Label.lab_name)))
+      	       	    Virtual_class (cl.pcty_name, lab)))
       end;
       Ctype.begin_def ();
       let (params, args, _, self) = Ctype.instance_class cl_sig in
@@ -963,10 +961,14 @@ let report_error = function
       open_hovbox 0;
       Printtyp.reset ();
       Printtyp.mark_loops typ;
-      print_string "Some variables are not bound in"; print_space ();
+      print_string
+        "Some type variables are not bound in implicit type definition";
+      print_space ();
+      open_hovbox 0;
       Printtyp.type_expr (Ctype.newty (Tconstr(Path.Pident id, args, ref [])));
       print_space (); print_string "="; print_space ();
       Printtyp.type_expr typ;
+      close_box ();
       close_box ()
   | Mutable_var v ->
       print_string "The variable"; print_space ();

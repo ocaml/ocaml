@@ -19,7 +19,7 @@ open Translobj
 open Translcore
 
 
-let transl_label l = Lconst (Const_base (Const_string l.Label.lab_name))
+let transl_label l = Lconst (Const_base (Const_string l))
 
 (* Instance variable initialization *)
 let set_inst_var obj var id expr =
@@ -54,7 +54,7 @@ let inherited_values vals =
   Lconst
     (List.fold_right
        (fun (v, _) rem ->
-          Const_block(0, [Const_base (Const_string (v.Label.lab_name)); rem]))
+          Const_block(0, [Const_base (Const_string v); rem]))
        vals (Const_pointer 0))
 
 let transl_field_obj obj field (obj_init, anc_id) =

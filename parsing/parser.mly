@@ -923,7 +923,7 @@ field:
 ;
 label:
     LIDENT
-      { { Label.lab_name = $1 } }
+      { $1 }
 ;
 
 /* Constants */

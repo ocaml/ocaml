@@ -34,7 +34,7 @@ and core_field_type =
     pfield_loc: Location.t }
 
 and core_field_desc =
-    Pfield of Label.t * core_type
+    Pfield of string * core_type
   | Pfield_var
 
 (* Value expressions for the core language *)
@@ -78,10 +78,10 @@ and expression_desc =
   | Pexp_for of string * expression * expression * direction_flag * expression
   | Pexp_constraint of expression * core_type option * core_type option
   | Pexp_when of expression * expression
-  | Pexp_send of expression * Label.t
+  | Pexp_send of expression * string
   | Pexp_new of Longident.t
-  | Pexp_setinstvar of Label.t * expression
-  | Pexp_override of (Label.t * expression) list
+  | Pexp_setinstvar of string * expression
+  | Pexp_override of (string * expression) list
 
 (* Value descriptions *)
 
@@ -109,9 +109,9 @@ type exception_declaration = core_type list
 type class_type_field =
     Pctf_inher of (Longident.t * core_type list * Location.t)
   | Pctf_val of
-      (Label.t * private_flag * mutable_flag * core_type option * Location.t)
-  | Pctf_virt of (Label.t * core_type * Location.t)
-  | Pctf_meth of (Label.t * core_type * Location.t)
+      (string * private_flag * mutable_flag * core_type option * Location.t)
+  | Pctf_virt of (string * core_type * Location.t)
+  | Pctf_meth of (string * core_type * Location.t)
 
 type class_type =
   { pcty_name: string;
@@ -128,9 +128,9 @@ type class_field =
     Pcf_inher of (Longident.t * core_type list * expression list *
       	       	  string option * Location.t)
   | Pcf_val of
-      (Label.t * private_flag * mutable_flag * expression option * Location.t)
-  | Pcf_virt of (Label.t * core_type * Location.t)
-  | Pcf_meth of (Label.t * expression * Location.t)
+      (string * private_flag * mutable_flag * expression option * Location.t)
+  | Pcf_virt of (string * core_type * Location.t)
+  | Pcf_meth of (string * expression * Location.t)
 
 type class_def =
   { pcl_name: string;
