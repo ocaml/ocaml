@@ -33,7 +33,7 @@ let escaped = function
   | '\t' -> "\\t"
   | c ->  if is_printable c then begin
             let s = string_create 1 in
-            string_unsafe_set s 1 c;
+            string_unsafe_set s 0 c;
             s
           end else begin
             let n = code c in
