@@ -30,8 +30,8 @@ let create w h =
 let get photo =
   match photo with
   | PhotoImage s -> {
-      pixmap_width = Imagephoto.width photo;
-      pixmap_height = Imagephoto.height photo;
+      pixmap_width = CImagephoto.width photo;
+      pixmap_height = CImagephoto.height photo;
       pixmap_data = rawget s;
     }
 
