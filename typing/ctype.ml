@@ -655,39 +655,45 @@ let rec filter_method env name ty =
 
 (* Matching between type schemes *)
 
-let rec moregen_occur ty0 ty =
+let moregen_occur env ty0 ty =
   let visited = ref [] in
   let rec occur_rec ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tvar ->
-      (* ty0 has level = !current_level iff it is generic
-         in the original type scheme. In this case, it can be freely
-         instantiated. Otherwise, ty0 is not generic
-         and cannot be instantiated by a type that contains
-         generic variables. *)
-      if ty.level = generic_level & ty0.level < !current_level
-      then raise (Unify [])
-  | Tarrow(t1, t2) ->
-      occur_rec t1; occur_rec t2
-  | Ttuple tl ->
-      List.iter occur_rec tl
-  | Tconstr(p, tl, _) ->
-      if not (List.memq ty !visited) then begin
-        visited := ty::!visited;
+    let ty = repr ty in
+    match ty.desc with
+      Tvar ->
+        (* ty0 has level = !current_level iff it is generic
+           in the original type scheme. In this case, it can be freely
+           instantiated. Otherwise, ty0 is not generic
+           and cannot be instantiated by a type that contains
+           generic variables. *)
+        if ty.level = generic_level & ty0.level < !current_level
+        then raise (Unify [])
+    | Tarrow(t1, t2) ->
+        occur_rec t1; occur_rec t2
+    | Ttuple tl ->
         List.iter occur_rec tl
-      end
-  | Tobject(f, _) ->
-      if not (List.memq ty !visited) then begin
-        visited := ty::!visited;
-        occur_rec f
-      end
-  | Tfield(_, t1, t2) ->
-      occur_rec t1; occur_rec t2
-  | Tnil ->
-      ()
-  | Tlink _ ->
-      fatal_error "Ctype.moregen_occur"
+    | Tconstr(p, tl, abbrev) ->
+        if not (List.memq ty !visited) then begin
+          visited := ty::!visited;
+          try
+            List.iter occur_rec tl
+          with Unify lst ->
+            let ty' =
+              try expand_abbrev env p tl abbrev ty.level
+              with Cannot_expand -> raise (Unify lst) in
+            occur_rec ty'
+        end
+    | Tobject(f, _) ->
+        if not (List.memq ty !visited) then begin
+          visited := ty::!visited;
+          occur_rec f
+        end
+    | Tfield(_, t1, t2) ->
+        occur_rec t1; occur_rec t2
+    | Tnil ->
+        ()
+    | Tlink _ ->
+        fatal_error "Ctype.moregen_occur"
   in
     occur_rec ty
 
@@ -701,8 +707,7 @@ let rec moregen env t1 t2 =
     begin match (t1.desc, t2.desc) with
       (Tvar, _) ->
         if t1.level = generic_level then raise (Unify []);
-        occur env t1 t2;
-        moregen_occur t1 t2;
+        moregen_occur env t1 t2;
         t1.desc <- Tlink t2
     | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
         moregen env t1 t2; moregen env u1 u2
@@ -758,7 +763,7 @@ and moregen_fields env ty1 ty2 =
     Tvar ->
       if rest1.level = generic_level then raise (Unify []);
       let fi = build_fields miss2 rest2 in
-      moregen_occur rest1 fi
+      moregen_occur env rest1 fi
   | Tnil ->
       if miss2 <> [] then raise (Unify []);
       if rest2.desc <> Tnil then raise (Unify [])
