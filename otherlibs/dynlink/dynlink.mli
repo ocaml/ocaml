@@ -55,6 +55,7 @@ val allow_unsafe_modules : bool -> unit
 type linking_error =
     Undefined_global of string
   | Unavailable_primitive of string
+  | Uninitialized_global of string
 type error =
     Not_a_bytecode_file of string
   | Inconsistent_import of string

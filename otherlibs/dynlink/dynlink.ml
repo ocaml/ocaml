@@ -19,6 +19,7 @@ open Emitcode
 type linking_error =
     Undefined_global of string
   | Unavailable_primitive of string
+  | Uninitialized_global of string
 
 type error =
     Not_a_bytecode_file of string
@@ -108,6 +109,19 @@ let check_unsafe_module cu =
   if (not !unsafe_allowed) & cu.cu_primitives <> []
   then raise(Error(Unsafe_file))
 
+(* Check that all globals referenced in the object file have been 
+   initialized already *)
+
+let check_global_references file_name patchlist =
+  List.iter
+    (function
+      (Reloc_getglobal id, pos) ->
+        if Obj.is_int (Symtable.get_global_value id) then
+          raise(Error(Linking_error(file_name,
+                                    Uninitialized_global(Ident.name id))))
+    | _ -> ())
+    patchlist
+
 (* Load in-core and execute a bytecode object file *)
 
 let load_compunit ic file_name compunit =
@@ -128,6 +142,7 @@ let load_compunit ic file_name compunit =
   let initial_symtable = Symtable.current_state() in
   begin try
     Symtable.patch_object code compunit.cu_reloc;
+    check_global_references file_name compunit.cu_reloc;
     Symtable.update_global_table()
   with Symtable.Error error ->
     let new_error =
@@ -191,6 +206,9 @@ let error_message = function
   | Linking_error (name, Unavailable_primitive s) ->
       "error while linking " ^ name ^ ".\n" ^
       "The external function `" ^ s ^ "' is not available"
+  | Linking_error (name, Uninitialized_global s) ->
+      "error while linking " ^ name ^ ".\n" ^
+      "The module `" ^ s ^ "' is not yet initialized"
   | Corrupted_interface name ->
       "corrupted interface file " ^ name
 
