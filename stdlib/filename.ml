@@ -11,15 +11,6 @@
 
 (* $Id$ *)
 
-let check_suffix name suff =
- String.length name >= String.length suff &
- String.sub name (String.length name - String.length suff) (String.length suff)
-    = suff
-
-let chop_suffix name suff =
-  let n = String.length name - String.length suff in
-  if n < 0 then invalid_arg "chop_suffix" else String.sub name 0 n
-
 let current_dir_name = "."
 
 let concat dirname filename =
@@ -33,25 +24,40 @@ let is_absolute n =
   or (String.length n >= 2 & String.sub n 0 2 = "./")
   or (String.length n >= 3 & String.sub n 0 3 = "../")
 
-let slash_pos s =
+let rindex s c =
   let rec pos i =
     if i < 0 then raise Not_found
-    else if String.get s i = '/' then i
+    else if String.get s i = c then i
     else pos (i - 1)
   in pos (String.length s - 1)
 
+let check_suffix name suff =
+ String.length name >= String.length suff &
+ String.sub name (String.length name - String.length suff) (String.length suff)
+    = suff
+
+let chop_suffix name suff =
+  let n = String.length name - String.length suff in
+  if n < 0 then invalid_arg "chop_suffix" else String.sub name 0 n
+
+let chop_extension name =
+  try
+    String.sub name 0 (rindex name '.')
+  with Not_found ->
+    invalid_arg "Filename.chop_extension"
+
 let basename name =
   try
-    let p = slash_pos name + 1 in
-      String.sub name p (String.length name - p)
+    let p = rindex name '/' + 1 in
+    String.sub name p (String.length name - p)
   with Not_found ->
     name
 
 let dirname name =
   try
-    match slash_pos name with
+    match rindex name '/' with
       0 -> "/"
-    | n -> String.sub name 0 (slash_pos name)
+    | n -> String.sub name 0 n
   with Not_found ->
     "."
 

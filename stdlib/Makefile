@@ -10,7 +10,8 @@ CAMLDEP=../boot/camlrun ../tools/camldep
 OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
   hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo \
-  printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo random.cmo digest.cmo
+  printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo random.cmo \
+  digest.cmo profiling.cmo
 
 all: stdlib.cma std_exit.cmo cslheader
 

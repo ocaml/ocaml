@@ -32,6 +32,8 @@ printexc.cmo: obj.cmi printexc.cmi
 printexc.cmx: obj.cmx printexc.cmi 
 printf.cmo: list.cmi obj.cmi string.cmi printf.cmi 
 printf.cmx: list.cmx obj.cmx string.cmx printf.cmi 
+profiling.cmo: array.cmi list.cmi profiling.cmi 
+profiling.cmx: array.cmx list.cmx profiling.cmi 
 queue.cmo: queue.cmi 
 queue.cmx: queue.cmi 
 random.cmo: array.cmi random.cmi 
