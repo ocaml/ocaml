@@ -19,6 +19,9 @@ ocamlc \- The Objective Caml bytecode compiler
 .B \-custom
 ]
 [
+.B \-modern
+]
+[
 .B \-unsafe
 ]
 [
