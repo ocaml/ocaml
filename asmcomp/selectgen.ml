@@ -44,7 +44,6 @@ let oper_result_type = function
   | Cintoffloat -> typ_int
   | Craise -> typ_void
   | Ccheckbound -> typ_void
-  | _ -> fatal_error "Selection.oper_result_type"
 
 (* Infer the size in bytes of the result of a simple expression *)
 
