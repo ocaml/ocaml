@@ -418,7 +418,7 @@ and comp_binary_test env cond ifso ifnot sz cont =
   let cont_cond =
     if ifnot = Lconst const_unit then begin
       let (lbl_end, cont1) = label_code cont in
-      Kbranchifnot lbl_end :: comp_expr env ifso sz cont1
+      Kstrictbranchifnot lbl_end :: comp_expr env ifso sz cont1
     end else
     if ifso = Lstaticfail & sz = !sz_staticfail then
       Kbranchif !lbl_staticfail :: comp_expr env ifnot sz cont
