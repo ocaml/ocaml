@@ -239,6 +239,7 @@ library.
 \entree{"pred:"}{a boolean predicate}
 \entree{"acc:"}{an accumulator}
 \entree{"to:"}{an output channel}
+\entree{"item:"}{a value in a collection}
 \entree{"key:"}{a value used as index}
 \entree{"data:"}{a value associated to an index}
 \entree{"mode:"}{an operation mode or a flag list}
