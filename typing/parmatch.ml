@@ -187,7 +187,7 @@ let rec pretty_val ppf v = match v.pat_desc with
         (pretty_lvals (get_record_labels v.pat_type v.pat_env))
         (List.filter
            (function
-             | (_,{pat_desc=Tpat_any}) -> true (* do not show lbl=_ *)
+             | (_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
              | _ -> true) lvs)
   | Tpat_array vs ->
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
@@ -840,31 +840,30 @@ let rec try_many f = function
       | r -> r
       end
 
-let rec exhaust tdefs pss qs = match pss with
-| []    ->  Rsome qs
+let rec exhaust tdefs pss n = match pss with
+| []    ->  Rsome (omegas n)
 | []::_ ->  Rnone
-| pss   -> match qs with
-  | []    -> assert false
-  | _::qs ->
+| pss   ->
     let q0 = discr_pat omega pss in     
     begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
       [] ->
-        begin match exhaust tdefs (filter_extra pss) qs with
+        begin match exhaust tdefs (filter_extra pss) (n-1) with
         | Rsome r -> Rsome (q0::r)
         | r -> r
       end
     | constrs ->          
         let try_non_omega (p,pss) =
           match
-            exhaust tdefs pss (simple_match_args p omega @ qs)
+            exhaust tdefs pss
+              (List.length (simple_match_args p omega) + n - 1)
           with
           | Rsome r -> Rsome (set_args p r)
           | r       -> r in
         if full_match tdefs true constrs
         then try_many try_non_omega constrs
         else
-          match exhaust tdefs (filter_extra pss) qs with
+          match exhaust tdefs (filter_extra pss) (n-1) with
           | Rnone ->   try_many try_non_omega constrs
           | Rsome r ->
               (* try all constructors anyway, for variant typing ! *)
@@ -920,12 +919,13 @@ let pretty_matrix pss =
     - left  ->  elements not to be processed,
     - right ->  elements to be processed
 *)
-type 'a row = {left : 'a list ; right : 'a list}
+type 'a row = {no_ors : 'a list ; ors : 'a list ; active : 'a list}
 
 
-let pretty_row {left=ps ; right=qs} =
-  pretty_line ps ; prerr_string " * " ;
-  pretty_line qs
+let pretty_row {ors=ors ; no_ors=no_ors; active=active} =
+  pretty_line ors ; prerr_string " *" ;
+  pretty_line no_ors ; prerr_string " *" ;
+  pretty_line active
 
 let pretty_rows rs =
   prerr_endline "begin matrix" ;
@@ -937,7 +937,7 @@ let pretty_rows rs =
   prerr_endline "end matrix"
 
 (* Initial build *)
-let make_row ps = {left=[] ; right=ps}
+let make_row ps = {ors=[] ; no_ors=[]; active=ps}
 
 let make_rows pss = List.map make_row pss
 
@@ -954,97 +954,131 @@ let is_var p = match (unalias p).pat_desc with
 
 let is_var_column rs =
   List.for_all
-    (fun r -> match r.right with
+    (fun r -> match r.active with
     | p::_ -> is_var p
     | []   -> assert false)
     rs
 
+let rec or_args p = match p.pat_desc with
+| Tpat_or (p1,p2,_) -> p1,p2
+| Tpat_alias (p,_)  -> or_args p
+| _                 -> assert false
+
 (* Just remove current column *)
-let remove r = match r.right with
-| _::rem -> {r with right=rem}
+let remove r = match r.active with
+| _::rem -> {r with active=rem}
 | []     -> assert false
 
 let remove_column rs = List.map remove rs
     
 (* Current column has been processed *)
-let push r = match r.right with
-| p::rem -> {left = p::r.left ; right=rem}
+let push_no_or r = match r.active with
+| p::rem -> { r with no_ors = p::r.no_ors ; active=rem}
 | [] -> assert false
 
-let push_column rs = List.map push rs
+let push_or r = match r.active with
+| p::rem -> { r with ors = p::r.ors ; active=rem}
+| [] -> assert false
+
+let push_or_column rs = List.map push_or rs
+and push_no_or_column rs = List.map push_no_or rs
 
 (* Those are adaptations of the previous homonymous functions that
    work on the current column, instead of the first column
 *)
 
 let discr_pat q rs = 
-  discr_pat q (List.map (fun r -> r.right) rs)
+  discr_pat q (List.map (fun r -> r.active) rs)
 
 let filter_one q rs =
   let rec filter_rec rs = match rs with
   | [] -> []
   | r::rem ->
-      match r.right with
+      match r.active with
       | [] -> assert false
       | {pat_desc = Tpat_alias(p,_)}::ps ->
-          filter_rec ({r with right = p::ps}::rem)
+          filter_rec ({r with active = p::ps}::rem)
       | {pat_desc = Tpat_or(p1,p2,_)}::ps ->
           filter_rec
-            ({r with right = p1::ps}::
-             {r with right = p2::ps}::
+            ({r with active = p1::ps}::
+             {r with active = p2::ps}::
              rem)
       | p::ps ->
           if simple_match q p then
-            {r with right=simple_match_args q p @ ps} :: filter_rec rem
+            {r with active=simple_match_args q p @ ps} :: filter_rec rem
           else
             filter_rec rem in
   filter_rec rs
 
 
 (* Back to normal matrices *)
-let make_vector r = r.left @ r.right
+let make_vector r = r.no_ors
 
 let make_matrix rs = List.map make_vector rs
 
 
-(* consider every elements but the current one are processed *)
-let out_element r = match r.right with
-| p::rem -> {left = List.rev_append r.left rem ; right=[p]}
-| [] -> assert false
-
-let out_column rs = List.map out_element rs
-
 (* Standard union on answers *)
 let union_res r1 r2 = match r1, r2 with
 | (Unused,_)
-| (_, Unused) -> assert false ; Unused (* cannot happen by optimization *)
+| (_, Unused) -> Unused
 | Used,_    -> r2
 | _, Used   -> r1
 | Upartial u1, Upartial u2 -> Upartial (u1@u2)
 
-let verb_satisfiable pss qs =
-  prerr_endline "++++++++" ;
-  pretty_matrix pss ;
-  pretty_line qs ;
-  let r = satisfiable pss qs in
-  if r then
-    prerr_endline "\nTRUE"
-  else
-    prerr_endline "\nFALSE" ;
-  r
+(* propose or pats for expansion *)
+let extract_elements qs =
+  let rec do_rec seen = function
+    | [] -> []
+    | q::rem ->
+        {no_ors= List.rev_append seen rem @ qs.no_ors ;
+        ors=[] ;
+        active = [q]}::
+        do_rec (q::seen) rem in
+  do_rec [] qs.ors
+
+(* idem for matrices *)
+let transpose rs = match rs with
+| [] -> assert false
+| r::rem ->
+    let i = List.map (fun x -> [x]) r in
+    List.fold_left
+      (List.map2 (fun r x -> x::r))
+      i rem
+
+let extract_columns pss qs = match pss with
+| [] -> List.map (fun _ -> []) qs.ors
+| _  ->
+  let rows = List.map extract_elements pss in
+  transpose rows
 
 (* Core function
-   The idea is to expand constructor pats and
-   check or-patterns arguments at the same time.   
+   The idea is to first look for or patterns (recursive case), then
+   check or-patterns argument usefulness (terminal case)
 *)
 
-let rec every_satisfiables pss qs = match qs.right with
+let rec every_satisfiables pss qs = match qs.active with
 | []     ->
-    (* qs is now a or-pattern expansion,  check usefulness *)
-    if satisfiable (make_matrix pss) (make_vector qs) then
-      Used
-    else
-      Unused
+    (* qs is now partitionned,  check usefulness *)
+    begin match qs.ors with
+    | [] -> (* no or-patterns *)
+        if satisfiable (make_matrix pss) (make_vector qs) then
+          Used
+        else
+          Unused
+    | _  -> (* n or-patterns -> 2n expansions *)
+        List.fold_right2
+          (fun pss qs r -> match r with
+          | Unused -> Unused
+          | _ ->
+              match qs.active with
+              | [q] ->
+                  let q1,q2 = or_args q in
+                  let r_loc = every_both pss qs q1 q2 in
+                  union_res r r_loc
+              | _   -> assert false)
+          (extract_columns pss qs) (extract_elements qs)
+          Used
+    end
 | q::rem ->
     let uq = unalias q in
     begin match uq.pat_desc with
@@ -1053,29 +1087,23 @@ let rec every_satisfiables pss qs = match qs.right with
 (* forget about ``all-variable''  columns now *)
           every_satisfiables (remove_column pss) (remove qs)
         else
-(* otherwise this is direct food for satisfy *)
-          every_satisfiables (push_column pss) (push qs)
+(* otherwise this is direct food for satisfiable *)
+          every_satisfiables (push_no_or_column pss) (push_no_or qs)
     | Tpat_or (q1,q2,_) ->
         if uq.pat_loc.Location.loc_ghost then
 (* syntactically generated or-pats should not be expanded *)
-          every_satisfiables (push_column pss) (push qs)
+          every_satisfiables (push_no_or_column pss) (push_no_or qs)
         else 
-(* check usefulness of a or-pattern *) 
-          let r1 = every_satisfiables (push_column pss) (push qs) in
-          begin match r1 with 
-          | Unused -> Unused
-          | _  ->
-              let r2 = every_both pss qs q1 q2 in
-              union_res r1 r2
-          end
-    | Tpat_variant (l,_,r) when is_absent l r ->
+(* this is a real or-pattern *)
+          every_satisfiables (push_or_column pss) (push_or qs)
+    | Tpat_variant (l,_,r) when is_absent l r -> (* Ah Jacques... *)
         Unused
     | _ ->
 (* standard case, filter matrix *)
         let q0 = discr_pat q pss in
         every_satisfiables
           (filter_one q0 pss)
-          {qs with right=simple_match_args q0 q @ rem}
+          {qs with active=simple_match_args q0 q @ rem}
     end
 
 (*
@@ -1084,14 +1112,12 @@ let rec every_satisfiables pss qs = match qs.right with
   The trick is to call every_satisfied twice with
   current active columns restricted to q1 and q2,
   That way,
-  - others orpats in qs.right will not get expanded.
-  - all matching work performed on qs.left is not performed again.
+  - others orpats in qs.ors will not get expanded.
+  - all matching work performed on qs.no_ors is not performed again.
   *)
 and every_both pss qs q1 q2 =
-  let pss = out_column pss
-  and qs = out_element qs in
-  let qs1 = {qs with right=[q1]}
-  and qs2 =  {qs with right=[q2]} in
+  let qs1 = {qs with active=[q1]}
+  and qs2 =  {qs with active=[q2]} in
   let r1 = every_satisfiables pss qs1
   and r2 =  every_satisfiables (if compat q1 q2 then qs1::pss else pss) qs2 in
   match r1 with
@@ -1114,16 +1140,12 @@ and every_both pss qs q1 q2 =
       end
 
   
-(* Foo *)
-let has_guard act =   match act.exp_desc with
-  Texp_when(_, _) -> true
-| _ -> false
 
 
 (* le_pat p q  means, forall V,  V matches q implies V matches p *)
 let rec le_pat p q =
   match (p.pat_desc, q.pat_desc) with
-  | Tpat_var _,_ -> true | Tpat_any, _ -> true
+  | (Tpat_var _|Tpat_any),_ -> true
 (* Absent variants have no instance *)
   | _, Tpat_variant (l,_,row)  when is_absent l row -> true
   | Tpat_alias(p,_), _ -> le_pat p q
@@ -1165,8 +1187,7 @@ let get_mins le ps =
 (*
   lub p q is a pattern that matches all values matched by p and q
   may raise Empty, when p and q and not compatible
-  Exact
-  *)
+*)
 
 let rec lub p q = match p.pat_desc,q.pat_desc with
 | Tpat_alias (p,_),_      -> lub p q
@@ -1250,9 +1271,13 @@ and lubs ps qs = match ps,qs with
   *)
 (*
   Build up a working pattern matrix.
-  1- Retain minimal patterns (for optimizing when catch all's  are here)
-  2- Forget about guarded patterns
-  *)
+   - Forget about guarded patterns
+*)
+
+let has_guard act =   match act.exp_desc with
+| Texp_when(_, _) -> true
+| _ -> false
+
 
 let rec initial_matrix = function
     [] -> []
@@ -1262,6 +1287,14 @@ let rec initial_matrix = function
         initial_matrix rem
       else
         [pat] :: initial_matrix rem
+
+(*
+   All the following ``*_all'' functions
+   check whether a given value [v] is matched by some row in pss.
+   They are used to whether the exhaustiveness exemple is
+   matched by a guarded clause
+*)
+  
 
 exception NoGuard
 
@@ -1292,7 +1325,6 @@ let do_filter_one q pss =
     | _ -> [] in
   filter_rec pss
 
-(* Check whether value v can be matched, considering guarded clauses *) 
 let rec do_match pss qs = match qs with
 | [] ->
     begin match pss  with
@@ -1314,10 +1346,7 @@ let rec do_match pss qs = match qs with
         
 let check_partial_all v casel =
   try
-    let pss =
-      get_mins
-        (fun (p,_) (q,_) -> le_pats p q)
-        (initial_all true casel) in
+    let pss = initial_all true casel in
     do_match pss [v]
   with
   | NoGuard -> None
@@ -1343,8 +1372,7 @@ let check_partial tdefs loc casel =
       end ;
       Partial
   | ps::_  ->
-      let r = exhaust tdefs pss (omega_list ps) in
-      match exhaust tdefs pss (omega_list ps) with
+      begin match exhaust tdefs pss (List.length ps) with
       | Rnone -> Total
       | Rsome [v] ->
           let errmsg =
@@ -1369,6 +1397,7 @@ let check_partial tdefs loc casel =
           Partial
       | _ ->
           fatal_error "Parmatch.check_partial"
+      end
 
 let location_of_clause = function
     pat :: _ -> pat.pat_loc
@@ -1379,16 +1408,19 @@ let check_unused tdefs casel =
     let prefs =   
       List.fold_right
         (fun (pat,act as clause) r ->
-          if has_guard act
-          then ([], ([pat], act)) :: r
-          else ([], ([pat], act)) :: 
+          if has_guard act then
+            ([], ([pat], act)) :: r
+          else
+            ([], ([pat], act)) :: 
             List.map (fun (pss,clause) -> [pat]::pss,clause) r)
         casel [] in
     List.iter
       (fun (pss, ((qs, _) as clause)) ->
         try
-          let r = every_satisfiables
-              (make_rows (get_mins le_pats pss)) (make_row qs) in
+(* Do my best to remove lines out of pss *)
+          let pss = get_mins le_pats (List.filter (compats qs) pss) in
+(* Before calling the expansive every_satisfiables *)
+          let r = every_satisfiables (make_rows pss) (make_row qs) in
           match r with
           | Unused ->
               Location.prerr_warning
