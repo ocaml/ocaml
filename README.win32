@@ -39,7 +39,6 @@ REQUIREMENTS:
 This port requires the Cygwin environment from Cygnus/RedHat, which
 is freely available at:
           http://sources.redhat.com/cygwin/
-Version 1.1 or the upcoming version 1.2 are recommended.
 
 This port runs under all versions of MS Windows supported by Cygwin,
 i.e. Windows 95, 98, ME, NT and 2000 on Intel IA32 machines.
