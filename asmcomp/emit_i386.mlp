@@ -76,6 +76,21 @@ let emit_shift r =
   | Unknown ->
       fatal_error "Emit_i386.emit_shift"
 
+(* Output a reference to the lower 8 bits or lower 16 bits of a register *)
+
+let reg_low_byte_name = [| "%al"; "%bl"; "%cl"; "%dl" |]
+let reg_low_half_name = [| "%ax"; "%bx"; "%cx"; "%dx"; "%si"; "%di"; "%bp" |]
+
+let emit_reg8 r =
+  match r.loc with
+    Reg r when r < 4 -> emit_string (reg_low_byte_name.(r))
+  | _ -> fatal_error "Emit_i386.emit_reg8"
+
+let emit_reg16 r =
+  match r.loc with
+    Reg r when r < 7 -> emit_string (reg_low_half_name.(r))
+  | _ -> fatal_error "Emit_i386.emit_reg16"
+
 (* Output an addressing mode *)
 
 let emit_addressing addr r n =
@@ -164,6 +179,14 @@ let output_comparison arg n =
     Reg r when n = 0 -> `	testl	{emit_reg arg}, {emit_reg arg}\n`
   | _                -> `	cmpl	${emit_int n}, {emit_reg arg}\n`
 
+(* Deallocate the stack frame before a return or tail call *)
+
+let output_epilogue () =
+  match frame_size() - 4 with
+    0 -> ()
+  | 4 -> `	popl	%esi\n` (* Faster than add, and %esi is dead here *)
+  | n -> `	addl	${emit_int n}, %esp\n`
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -216,17 +239,13 @@ let emit_instr i =
         `	call	{emit_symbol s}\n`;
         record_frame i.live
     | Lop(Itailcall_ind) ->
-        let n = frame_size() - 4 in
-        if n > 0 then
-          `	addl	${emit_int n}, %esp\n`;
+        output_epilogue();
         `	jmp	*{emit_reg i.arg.(0)}\n`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then
           `	jmp	{emit_label !tailrec_entry_point}\n`
         else begin
-          let n = frame_size() - 4 in
-          if n > 0 then
-            `	addl	${emit_int n}, %esp\n`;
+          output_epilogue();
           `	jmp	{emit_symbol s}\n`
         end
     | Lop(Iextcall(s, alloc)) ->
@@ -246,16 +265,27 @@ let emit_instr i =
         else `	addl	${emit_int(-n)}, %esp\n`;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
-        begin match i.res.(0).typ with
+        let dest = i.res.(0) in
+        begin match dest.typ with
           Int | Addr ->
-            let loadop =
-              match chunk with
-                Word -> "movl"
-              | Byte_unsigned -> "movzbl"
-              | Byte_signed -> "movsbl"
-              | Sixteen_unsigned -> "movzwl"
-              | Sixteen_signed -> "movswl" in
-            `	{emit_string loadop}	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
+            begin match (chunk, dest.loc) with
+              (Word, _) ->
+                `	movl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+            | (Byte_unsigned, Reg r) when r < 4 ->
+                `	xorl	{emit_reg dest}, {emit_reg dest}\n`;
+                `	movb	{emit_addressing addr i.arg 0}, {emit_reg8 dest}\n`
+            | (Byte_unsigned, _) ->
+                `	movzbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+            | (Byte_signed, _) ->
+                `	movsbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+            | (Sixteen_unsigned, Reg r) ->
+                `	xorl	{emit_reg dest}, {emit_reg dest}\n`;
+                `	movw	{emit_addressing addr i.arg 0}, {emit_reg16 dest}\n`
+            | (Sixteen_unsigned, _) ->
+                `	movzwl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+            | (Sixteen_signed, _) ->
+                `	movswl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+            end
         | Float ->
             `	fldl	{emit_addressing addr i.arg 0}\n`;
             `	fstpl	{emit_shift i.res.(0)}\n`
@@ -273,13 +303,13 @@ let emit_instr i =
             end
         end
     | Lop(Istore(chunk, addr)) ->
-        (* i.arg.(0) is guaranteed to be in %edx *)
+        (* i.arg.(0) is guaranteed to be in %edx, actually *)
         begin match chunk with
           Word -> fatal_error "Emit_i386: store word"
         | Byte_unsigned | Byte_signed ->
-            `	movb	%dl, {emit_addressing addr i.arg 1}\n`
+            `	movb	{emit_reg8 i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
         | Sixteen_unsigned | Sixteen_signed ->
-            `	movw	%dx, {emit_addressing addr i.arg 1}\n`
+            `	movw	{emit_reg16 i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
@@ -394,9 +424,7 @@ let emit_instr i =
     | Lreloadretaddr ->
         ()
     | Lreturn ->
-        let n = frame_size() - 4 in
-        if n > 0 then
-          `	addl	${emit_int n}, %esp\n`;
+        output_epilogue();
         `	ret\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
