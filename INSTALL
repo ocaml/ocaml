@@ -31,6 +31,11 @@ The "configure" script accepts the following options:
         needs to be provided by hand. The installation instructions
         for gcc or emacs contain a complete list of configuration names.
 
+-x11include <include_dir>       (default: determined automatically)
+-x11lib     <lib_dir>           (default: determined automatically)
+        Location of the X11 include directory (e.g. /usr/X11R6/include)
+        and the X11 library directory (e.g. /usr/X11R6/lib).
+
 Examples:
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
     ./configure -cc "acc -fast" -libs "-lucb"

@@ -20,6 +20,8 @@ manext=1
 host_type=unknown
 cc=''
 cclibs=''
+x11_include_dir=''
+x11_lib_dir=''
 
 # Parse command-line arguments
 
@@ -32,6 +34,8 @@ while : ; do
     -host*|--host*) host_type=$2;;
     -cc*) cc="$2";;
     -lib*) cclibs="$2 ";;
+    -x11include*|--x11include*) x11_include_dir=$2;;
+    -x11lib*|--x11lib*) x11_lib_dir=$2;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -107,7 +111,7 @@ case "$1,$2,$3" in
          echo "sizeof(long) != sizeof(long *)."
          echo "Objective Caml won't run on this architecture."
          exit 2;;
-  ?,?,?) echo "This architecture seems to be neither 32 bits nor 64 bits."
+  *,*,*) echo "This architecture seems to be neither 32 bits nor 64 bits."
          echo "Objective Caml won't run on this architecture."
          exit 2;;
       *) echo "Unable to compile the test program."
@@ -495,7 +499,7 @@ fi
 x11_include="not found"
 x11_link="not found"
 
-for dir in \
+for dir in $x11_include_dir \
   /usr/X11R6/include /usr/X11R5/include /usr/X11R4/include \
   /usr/include/X11R6 /usr/include/X11R5 /usr/include/X11R4 \
   /usr/local/X11R6/include /usr/local/X11R5/include /usr/local/X11R4/include \
@@ -504,7 +508,8 @@ for dir in \
   /usr/local/include/X11 /usr/X386/include /usr/x386/include \
   /usr/XFree86/include/X11 /usr/include /usr/local/include \
   /usr/unsupported/include /usr/athena/include /usr/local/x11r5/include \
-  /usr/lpp/Xamples/include /usr/openwin/include /usr/openwin/share/include
+  /usr/lpp/Xamples/include /usr/openwin/include /usr/openwin/share/include \
+  /opt/X11R6/include /opt/X11R5/include
 do
   if test -f $dir/X11/X.h; then
     x11_include=$dir
@@ -512,7 +517,7 @@ do
   fi
 done
 
-for dir in \
+for dir in $x11_lib_dir \
   /usr/X11R6/lib /usr/X11R5/lib /usr/X11R4/lib \
   /usr/lib/X11R6 /usr/lib/X11R5 /usr/lib/X11R4 \
   /usr/local/X11R6/lib /usr/local/X11R5/lib /usr/local/X11R4/lib \
@@ -521,7 +526,8 @@ for dir in \
   /usr/local/lib/X11 /usr/X386/lib /usr/x386/lib \
   /usr/XFree86/lib/X11 /usr/lib /usr/local/lib \
   /usr/unsupported/lib /usr/athena/lib /usr/local/x11r5/lib \
-  /usr/lpp/Xamples/lib /usr/openwin/lib /usr/openwin/share/lib
+  /usr/lpp/Xamples/lib /usr/openwin/lib /usr/openwin/share/lib \
+  /opt/X11R6/lib /opt/X11R5/lib
 do
   if test -f $dir/libX11.a || \
      test -f $dir/libX11.so || \
