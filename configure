@@ -1558,5 +1558,9 @@ echo "        use tcl/tk version ....... $tcl_version"
 echo "        options for compiling .... $tk_defs"
 echo "        options for linking ...... $tk_libs"
 else
-echo "The \"labltk\" library: not found"
+echo "The \"labltk\" library: not supported"
 fi
+
+echo
+echo "** Objective Caml configuration completed successfully **"
+echo
