@@ -24,17 +24,33 @@ let command cmdline =
 
 let run_command cmdline = ignore(command cmdline)
 
+let quote = Filename.quote;;
+
 let compile_file name =
-  command
-   (Printf.sprintf
-     "%s -c %s %s -I%s %s"
-     !Clflags.c_compiler
-     (String.concat " " (List.rev !Clflags.ccopts))
-     (String.concat " "
-       (List.map (fun dir -> "-I" ^ dir) 
-                 (List.rev !Clflags.include_dirs)))
-     Config.standard_library
-     name)
+  match Sys.os_type with
+  | "MacOS" ->
+     let qname = quote name in
+     let includes = Config.standard_library :: !Clflags.include_dirs in
+     let args =
+       Printf.sprintf " %s %s -i %s"
+         (String.concat " " (List.rev_map quote !Clflags.ccopts))
+         (String.concat "," (List.rev_map quote includes))
+         qname
+     in
+     run_command ("sc " ^ args ^ " -o " ^ qname ^ ".o");
+     command ("mrc " ^ args ^ " -o " ^ qname ^ ".x")
+  | _ ->
+     command
+       (Printf.sprintf
+         "%s -c %s %s -I%s %s"
+         !Clflags.c_compiler
+         (String.concat " " (List.rev !Clflags.ccopts))
+         (String.concat " "
+           (List.map (fun dir -> "-I" ^ dir) 
+                     (List.rev !Clflags.include_dirs)))
+         Config.standard_library
+         name)
+;;
 
 let create_archive archive file_list =
   Misc.remove_file archive;

@@ -17,11 +17,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <AppleEvents.h>
+#include <CursorCtl.h>
+#include <Errors.h>
 #include <Files.h>
 #include <IntEnv.h>
 #include <MacTypes.h>
+#include <QuickDraw.h>
 #include <TextUtils.h>
 
+#include "misc.h"
 #include "rotatecursor.h"
 
 /* The user interface defaults to MPW tool.  The standalone application
@@ -135,18 +140,136 @@ char *getcwd (char *buf, long size)
   return buf;
 }
 
+pascal Boolean system_idleproc (const EventRecord *event, long *sleepTime,
+                                RgnHandle *mouseRgn)
+{
+  static RgnHandle myregion = NULL;
+  EventRecord evt;
+  
+  if (myregion == NULL){
+    myregion = NewRgn ();
+    SetRectRgn (myregion, -32000, -32000, 32000, 32000);
+  }
+
+  /* XXX standalone appli: process event */
+  *mouseRgn = myregion;
+  *sleepTime = 3;
+  if (EventAvail (keyDownMask, &evt)
+      && (evt.modifiers & cmdKey)
+      && ((evt.message & charCodeMask) == '.')){
+    return true;
+  }else{
+    return false;
+  }
+}
+
+void quote (char *buf, long buflen)
+{
+  long i, j;
+
+  j = 2;
+  for (i = 0; buf[i] != '\0'; i++){
+    if (buf[i] == '\'') j += 3;
+    ++ j;
+  }
+  if (j >= buflen) return;
+
+  buf[j--] = '\0';
+  buf[j--] = '\'';
+  while (i > 0){
+    -- i;
+    buf[j--] = buf[i];
+    if (buf[i] == '\''){
+      buf[j--] = '\'';
+      buf[j--] = '\266';
+      buf[j--] = '\'';
+    }
+  }
+  buf[j] = '\'';                   Assert (j == 0);
+}
+
 int system (char const *cmd)
 {
-  char *filename;
-  FILE *f;
+  char *fmt = "directory %s; %s";
+  char *cmdline;
+  char *buf;
+  #define buf_size 66000
 
-  if (StandAlone) return -1;
+  static AEIdleUPP myIdleProcUPP = NULL;
+  AEAddressDesc serveraddr;
+  AppleEvent myevent, reply;
+  OSType toolserver_sig = 'MPSX';
+  DescType ret_type;
+  OSErr err = noErr;
+  long event_status = 0, ret_size;
+  int result;
 
-  filename = getenv ("ocamlcommands");
-  if (filename == NULL) return 1;
-  f = fopen (filename, "a");
-  if (f == NULL) return 1;
-  fprintf (f, "%s\n", cmd);
-  fclose (f);
+  /* once only */
+  if (myIdleProcUPP == NULL) myIdleProcUPP = NewAEIdleProc (system_idleproc);
+
+  SetCursor (*GetCursor (watchCursor));
+  
+  buf = malloc (buf_size);
+  if (buf == NULL) goto failed_malloc_buf;
+
+  /* Create the command line */
+  getcwd (buf, buf_size);
+  quote (buf, buf_size);
+  cmdline = malloc (strlen (fmt) + strlen (cmd) + strlen (buf) + 1);
+  if (cmdline == NULL) goto failed_malloc_cmdline;
+  sprintf (cmdline, fmt, buf, cmd);
+  
+  /* Send the event and get the reply */
+  err = AECreateDesc (typeApplSignature, &toolserver_sig,
+                      sizeof (toolserver_sig), &serveraddr);
+  if (err != noErr) goto failed_AECreateDesc;
+  err = AECreateAppleEvent ('misc', 'dosc', &serveraddr, kAutoGenerateReturnID,
+                            kAnyTransactionID, &myevent);
+  if (err != noErr) goto failed_AECreateAppleEvent;
+  err = AEPutParamPtr (&myevent, '----', 'TEXT', cmdline, strlen (cmdline));
+  if (err != noErr) goto failed_AEPutParamPtr;
+  err = AESend (&myevent, &reply, kAEWaitReply + kAENeverInteract,
+                kAENormalPriority, kNoTimeOut, myIdleProcUPP, NULL);
+  if (err != noErr) goto failed_AESend;
+  err = AEGetParamPtr (&reply, 'errn', typeLongInteger, &ret_type,
+                       &event_status, sizeof (event_status), &ret_size);
+  if (err != noErr || event_status != noErr) goto failed_script;
+  err = AEGetParamPtr (&reply, 'stat', typeLongInteger, &ret_type,
+                       &event_status, sizeof (event_status), &ret_size);
+  if (err != noErr || event_status != noErr) goto failed_script;
+
+  /* forward stdout and stderr */
+  err = AEGetParamPtr (&reply, 'diag', typeChar, &ret_type,
+                       buf, buf_size, &ret_size);
+  if (err == noErr) ui_write (2, buf, ret_size);
+  err = AEGetParamPtr (&reply, '----', typeChar, &ret_type,
+                       buf, buf_size, &ret_size);
+  if (err == noErr) ui_write (1, buf, ret_size);
+  
+  AEDisposeDesc (&reply);
+  AEDisposeDesc (&myevent);
+  AEDisposeDesc (&serveraddr);
+  free (cmdline);
+  free (buf);
+  RotateCursor (32);
   return 0;
+
+  failed_script:
+    AEDisposeDesc (&reply);
+  failed_AESend:
+  failed_AEPutParamPtr:
+    AEDisposeDesc (&myevent);
+  failed_AECreateAppleEvent:
+    AEDisposeDesc (&serveraddr);
+  failed_AECreateDesc:
+    free (cmdline);
+  failed_malloc_cmdline:
+    free (buf);
+  failed_malloc_buf:
+    if (err != noErr) result = err;
+    else if (event_status != 0) result = event_status;
+    else result = 1;
+    if (result == 0 || result == -1) result = 1;
+    RotateCursor (32);
+    return result;
 }
