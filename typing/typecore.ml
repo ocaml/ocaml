@@ -723,7 +723,7 @@ let type_format loc fmt =
           let sfmt = String.sub fmt j (sj - j - 1) in
           let ty_sfmt = type_in_format sfmt in
           begin match c with
-          | '{' -> conversion (sj + 1) ty_sfmt
+          | '{' -> conversion sj ty_sfmt
           | _ -> incr meta; conversion (j - 1) ty_sfmt end
         | ')' when !meta > 0 -> decr meta; scan_format (j + 1)
         | c -> bad_conversion i (j - i + 1) in
