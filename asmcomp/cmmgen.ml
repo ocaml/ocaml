@@ -834,6 +834,8 @@ and exit_if_true cond otherwise =
       Csequence(Ccatch(exit_if_true arg1 (Ctuple []),
                        exit_if_true arg2 (Ctuple [])),
                 otherwise)
+  | Uprim(Pnot, [arg]) ->
+      exit_if_false arg otherwise
   | _ ->
       Cifthenelse(test_bool(transl cond), Cexit, otherwise)
 
@@ -845,6 +847,8 @@ and exit_if_false cond otherwise =
       Csequence(Ccatch(exit_if_false arg1 (Ctuple []),
                        exit_if_false arg2 (Ctuple [])),
                 otherwise)
+  | Uprim(Pnot, [arg]) ->
+      exit_if_true arg otherwise
   | _ ->
       Cifthenelse(test_bool(transl cond), otherwise, Cexit)
 
