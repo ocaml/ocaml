@@ -38,7 +38,11 @@ external size_y : unit -> int = "gr_size_y"
            Drawings outside of this rectangle are clipped, without causing
            an error. The origin (0,0) is at the lower left corner. *)
 
-external window_id : unit -> string = "gr_window_id"
+val window_id : unit -> string
+        (* Return the unique identifier of the window allocated by the
+           window manager and where Caml graphics are drawn.
+           Under X Windows, the returned string is an unsigned 32 bits
+           integer in decimal form. *)
 
 (*** Colors *)
 
