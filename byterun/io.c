@@ -173,18 +173,12 @@ again:
 /* Attempt to flush the buffer. This will make room in the buffer for
    at least one character. Returns true if the buffer is empty at the
    end of the flush, or false if some data remains in the buffer.
-
-   If the channel is closed, DO NOT raise a "bad file descriptor"
-   exception, but do nothing (the buffer is already empty).  See
-   the "at_exit" line of stdlib/format.ml for a good reason to avoid
-   the exception.
  */
 
 CAMLexport int flush_partial(struct channel *channel)
 {
   int towrite, written;
 
-  if (channel->fd == -1) return 1;
   towrite = channel->curr - channel->buff;
   if (towrite > 0) {
     written = do_write(channel->fd, channel->buff, towrite);
@@ -535,11 +529,19 @@ CAMLprim value caml_set_binary_mode(value vchannel, value mode)
   return Val_unit;
 }
 
+/*
+   If the channel is closed, DO NOT raise a "bad file descriptor"
+   exception, but do nothing (the buffer is already empty).
+   This is because some libraries will flush at exit, even on
+   file descriptors that may be closed.
+*/
+
 CAMLprim value caml_flush_partial(value vchannel)
 {
   struct channel * channel = Channel(vchannel);
   int res;
 
+  if (channel->fd == -1) return Val_true;
   Lock(channel);
   res = flush_partial(channel);
   Unlock(channel);
@@ -550,6 +552,7 @@ CAMLprim value caml_flush(value vchannel)
 {
   struct channel * channel = Channel(vchannel);
 
+  if (channel->fd == -1) return Val_unit;
   Lock(channel);
   flush(channel);
   Unlock(channel);
