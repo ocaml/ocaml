@@ -786,12 +786,20 @@ external decr : int ref -> unit = "%decr"
 
 (** {6 Operations on format strings} *)
 
-external format_of_string :
- ('a, 'b, 'c, 'd) format -> ('a, 'b, 'c, 'd) format = "%identity"
-(** Converts a string constant into a format string.*)
 external string_of_format :
  ('a, 'b, 'c, 'd) format -> string = "%identity"
 (** Converts a format string into a string.*)
+external format_of_string :
+ ('a, 'b, 'c, 'd) format -> ('a, 'b, 'c, 'd) format = "%identity"
+(** [format_of_string s] returns a format string read from the string
+   constant [s]. *)
+
+val ( ^^ ) :
+  ('a, 'b, 'c, 'd) format -> ('d, 'b, 'c, 'e) format ->
+  ('a, 'b, 'c, 'e) format;;
+(** [f1 ^^ f2] catenates formats [f1] and [f2], leading to a format
+  that accepts arguments from [f1] then arguments from [f2] in turn. *)
+
 
 (** {6 Program termination} *)
 

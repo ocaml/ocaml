@@ -500,8 +500,12 @@ module LargeFile =
 (* Formats *)
 external format_of_string :
  ('a, 'b, 'c, 'd) format -> ('a, 'b, 'c, 'd) format = "%identity"
-external string_of_format :
- ('a, 'b, 'c, 'd) format -> string = "%identity"
+external string_of_format : ('a, 'b, 'c, 'd) format -> string = "%identity"
+
+external string_to_format : string -> ('a, 'b, 'c, 'd) format = "%identity"
+let (( ^^ ) : ('a, 'b, 'c, 'd) format -> ('d, 'b, 'c, 'e) format ->
+              ('a, 'b, 'c, 'e) format) = fun fmt1 fmt2 ->
+  string_to_format (string_of_format fmt1 ^ string_of_format fmt2);;
 
 (* Miscellaneous *)
 
