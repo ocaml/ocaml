@@ -171,10 +171,10 @@ let rec build_as_type env p =
       List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
       ty_res
-  | Tpat_variant(l, p, _) ->
-      let ty = may_map (build_as_type env) p in
-      newty (Tvariant {row_fields = [l, Rpresent ty]; row_more = newvar();
-                       row_bound = []; row_name = None; row_closed = false})
+  | Tpat_variant(l, p', _) ->
+      let ty = may_map (build_as_type env) p' in
+      newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
+                      row_bound=[]; row_name=None; row_closed=false})
   | Tpat_record lpl ->
       let lbl = fst(List.hd lpl) in
       let ty = newvar () in
@@ -191,9 +191,19 @@ let rec build_as_type env p =
         end in
       Array.iter do_label lbl.lbl_all;
       ty
-  | Tpat_or(p1, p2) ->
+  | Tpat_or(p1, p2, path) ->
       let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
       unify_pat env {p2 with pat_type = ty2} ty1;
+      begin match path with None -> ()
+      | Some path ->
+          let td = try Env.find_type path env with Not_found -> assert false in
+          let params = List.map (fun _ -> newvar()) td.type_params in
+          match expand_head env (newty (Tconstr (path, params, ref Mnil)))
+          with {desc=Tvariant row} when static_row row ->
+            unify_pat env {p1 with pat_type = ty1}
+              (newty (Tvariant{row with row_closed=false; row_more=newvar()}))
+          | _ -> ()
+      end;
       ty1
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_array _ -> p.pat_type
 
@@ -241,7 +251,7 @@ let build_or_pat env loc lid =
     [] -> raise(Error(loc, Not_a_variant_type lid))
   | pat :: pats ->
       List.fold_left
-        (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat); pat_loc=loc;
+        (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some path); pat_loc=loc;
                           pat_env=env; pat_type=ty})
         pat pats
 
@@ -366,7 +376,7 @@ let rec type_pat env sp =
       let alpha_env =
         enter_orpat_variables sp.ppat_loc env p1_variables p2_variables in
       pattern_variables := p1_variables ;
-      { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2);
+      { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
         pat_loc = sp.ppat_loc;
         pat_type = p1.pat_type;
         pat_env = env }
@@ -478,7 +488,7 @@ let rec iter_pattern f p =
       may (iter_pattern f) p
   | Tpat_record fl ->
       List.iter (fun (_, p) -> iter_pattern f p) fl
-  | Tpat_or (p, p') ->
+  | Tpat_or (p, p', _) ->
       iter_pattern f p;
       iter_pattern f p'
   | Tpat_array pl ->

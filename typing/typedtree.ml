@@ -36,7 +36,7 @@ and pattern_desc =
   | Tpat_variant of label * pattern option * row_desc
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
-  | Tpat_or of pattern * pattern
+  | Tpat_or of pattern * pattern * Path.t option
 
 type partial = Partial | Total
 type optional = Required | Optional
@@ -164,7 +164,7 @@ let rec bound_idents pat =
   | Tpat_record lbl_pat_list ->
       List.iter (fun (lbl, pat) -> bound_idents pat) lbl_pat_list
   | Tpat_array patl -> List.iter bound_idents patl
-  | Tpat_or(p1, _) ->
+  | Tpat_or(p1, _, _) ->
       (* Invariant : both arguments binds the same variables *)
       bound_idents p1
 
@@ -208,8 +208,8 @@ let rec alpha_pat env p = match p.pat_desc with
 | Tpat_variant (x1, Some p, x2) ->
     {p with pat_desc =
     Tpat_variant (x1, Some (alpha_pat env p), x2)}
-| Tpat_or (p1,p2) ->
+| Tpat_or (p1,p2,path) ->
     {p with pat_desc =
-    Tpat_or (alpha_pat env p1, alpha_pat env p2)}
+    Tpat_or (alpha_pat env p1, alpha_pat env p2, path)}
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> p
 

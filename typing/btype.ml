@@ -114,7 +114,7 @@ let rec iter_row f row =
     row.row_fields;
   match (repr row.row_more).desc with
     Tvariant row -> iter_row f row
-  | Tvar ->
+  | Tvar | Tnil ->
       Misc.may (fun (_,l) -> List.iter f l) row.row_name;
       List.iter f row.row_bound
   | _ -> assert false

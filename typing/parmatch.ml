@@ -189,7 +189,7 @@ let rec normalize_pat q = match q.pat_desc with
   | Tpat_record (largs) ->
       make_pat (Tpat_record (List.map (fun (lbl,_) -> lbl,omega) largs))
         q.pat_type q.pat_env
-  | Tpat_or (_,_) -> fatal_error "Parmatch.normalize_pat"
+  | Tpat_or _ -> fatal_error "Parmatch.normalize_pat"
 
 
 (*
@@ -202,7 +202,7 @@ let discr_pat q pss =
   let rec acc_pat acc pss = match pss with
     ({pat_desc = Tpat_alias (p,_)}::ps)::pss -> 
         acc_pat acc ((p::ps)::pss)
-  | ({pat_desc = Tpat_or (p1,p2)}::ps)::pss ->
+  | ({pat_desc = Tpat_or (p1,p2,_)}::ps)::pss ->
         acc_pat acc ((p1::ps)::(p2::ps)::pss)
   | ({pat_desc = (Tpat_any | Tpat_var _)}::_)::pss ->
         acc_pat acc pss
@@ -282,7 +282,7 @@ let filter_one q pss =
   let rec filter_rec = function
       ({pat_desc = Tpat_alias(p,_)}::ps)::pss -> 
         filter_rec ((p::ps)::pss)
-    | ({pat_desc = Tpat_or(p1,p2)}::ps)::pss ->
+    | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
         filter_rec ((p1::ps)::(p2::ps)::pss)
     | (p::ps)::pss ->
         if simple_match q p
@@ -300,7 +300,7 @@ let filter_extra pss =
   let rec filter_rec = function
       ({pat_desc = Tpat_alias(p,_)}::ps)::pss -> 
         filter_rec ((p::ps)::pss)
-    | ({pat_desc = Tpat_or(p1,p2)}::ps)::pss ->
+    | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
         filter_rec ((p1::ps)::(p2::ps)::pss)
     | ({pat_desc = (Tpat_any | Tpat_var(_))} :: qs) :: pss ->
         qs :: filter_rec pss
@@ -333,7 +333,7 @@ let filter_all pat0 pss =
   let rec filter_rec env = function
     ({pat_desc = Tpat_alias(p,_)}::ps)::pss ->
       filter_rec env ((p::ps)::pss)
-  | ({pat_desc = Tpat_or(p1,p2)}::ps)::pss ->
+  | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
       filter_rec env ((p1::ps)::(p2::ps)::pss)
   | ({pat_desc = (Tpat_any | Tpat_var(_))}::_)::pss ->
       filter_rec env pss
@@ -344,7 +344,7 @@ let filter_all pat0 pss =
   and filter_omega env = function
     ({pat_desc = Tpat_alias(p,_)}::ps)::pss ->
       filter_omega env ((p::ps)::pss)
-  | ({pat_desc = Tpat_or(p1,p2)}::ps)::pss ->
+  | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
       filter_omega env ((p1::ps)::(p2::ps)::pss)
   | ({pat_desc = (Tpat_any | Tpat_var(_))}::ps)::pss ->
       filter_omega
@@ -450,7 +450,7 @@ let rec pat_of_constrs ex_pat = function
     pat_desc=
       Tpat_or
         (pat_of_constr ex_pat cstr,
-         pat_of_constrs ex_pat rem)}
+         pat_of_constrs ex_pat rem, None)}
 
 (* Sends back a pattern that complements constructor tags all_tag *)
 let complete_constrs p all_tags = match p.pat_desc with
@@ -518,7 +518,7 @@ let build_other env =  match env with
     | pat::other_pats ->
         List.fold_left
           (fun p_res pat ->
-            make_pat (Tpat_or (pat, p_res)) p.pat_type p.pat_env)
+            make_pat (Tpat_or (pat, p_res, None)) p.pat_type p.pat_env)
           pat other_pats
     end
 | ({pat_desc = Tpat_constant(Const_char _)} as p,_) :: _ ->
@@ -633,7 +633,7 @@ let rec satisfiable tdefs build pss qs =
   | _ ->
     match qs with
       [] -> Rnone
-    | {pat_desc = Tpat_or(q1,q2)}::qs ->
+    | {pat_desc = Tpat_or(q1,q2,_)}::qs ->
         begin match satisfiable tdefs build pss (q1::qs) with
         | Rnone -> satisfiable tdefs build pss (q2::qs)
         | r -> r
@@ -704,7 +704,7 @@ let rec le_pat p q =
   | Tpat_var _,_ -> true | Tpat_any, _ -> true
   | Tpat_alias(p,_), _ -> le_pat p q
   | _, Tpat_alias(q,_) -> le_pat p q
-  | _, Tpat_or(q1,q2) -> le_pat p q1 && le_pat p q2
+  | _, Tpat_or(q1,q2,_) -> le_pat p q1 && le_pat p q2
   | Tpat_constant(c1), Tpat_constant(c2) -> c1 = c2
   | Tpat_construct(c1,ps), Tpat_construct(c2,qs) ->
       c1.cstr_tag = c2.cstr_tag && le_pats ps qs
@@ -800,7 +800,7 @@ let rec pretty_val ppf v = match v.pat_desc with
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_alias (v,x) ->
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
-  | Tpat_or (v,w)    ->
+  | Tpat_or (v,w,_)    ->
       fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
 
 and pretty_car ppf v = match v.pat_desc with
@@ -820,7 +820,7 @@ and pretty_arg ppf v = match v.pat_desc with
 |  _ -> pretty_val ppf v
 
 and pretty_or ppf v = match v.pat_desc with
-| Tpat_or (v,w) ->
+| Tpat_or (v,w,_) ->
     fprintf ppf "%a|@,%a" pretty_or v pretty_or w
 | _ -> pretty_val ppf v
 
@@ -847,12 +847,12 @@ let top_pretty ppf v =
 
 let rec compat p q =
   match p.pat_desc,q.pat_desc with
-  | Tpat_alias (p,_),_     -> compat p q
-  | _,Tpat_alias (q,_)     -> compat p q
+  | Tpat_alias (p,_),_      -> compat p q
+  | _,Tpat_alias (q,_)      -> compat p q
   | (Tpat_any|Tpat_var _),_ -> true
   | _,(Tpat_any|Tpat_var _) -> true
-  | Tpat_or (p1,p2),_       -> compat p1 q || compat p2 q
-  | _,Tpat_or (q1,q2)       -> compat p q1 || compat p q2    
+  | Tpat_or (p1,p2,_),_     -> compat p1 q || compat p2 q
+  | _,Tpat_or (q1,q2,_)     -> compat p q1 || compat p q2    
   | Tpat_constant c1, Tpat_constant c2 -> c1=c2
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_construct (c1,ps1), Tpat_construct (c2,ps2) ->
@@ -883,12 +883,12 @@ and compats ps qs = match ps,qs with
 *)
 
 let rec lub p q = match p.pat_desc,q.pat_desc with
-| Tpat_alias (p,_),_     -> lub p q
-| _,Tpat_alias (q,_)     -> lub p q
+| Tpat_alias (p,_),_      -> lub p q
+| _,Tpat_alias (q,_)      -> lub p q
 | (Tpat_any|Tpat_var _),_ -> q
 | _,(Tpat_any|Tpat_var _) -> p
-| Tpat_or (p1,p2),_       -> orlub p1 p2 q
-| _,Tpat_or (q1,q2)       -> orlub q1 q2 p (* Thanks god, lub is commutative *)
+| Tpat_or (p1,p2,_),_     -> orlub p1 p2 q
+| _,Tpat_or (q1,q2,_)     -> orlub q1 q2 p (* Thanks god, lub is commutative *)
 | Tpat_constant c1, Tpat_constant c2 when c1=c2 -> p
 | Tpat_tuple ps, Tpat_tuple qs ->
     let rs = lubs ps qs in
@@ -917,7 +917,7 @@ and orlub p1 p2 q =
   try    
     let r1 = lub p1 q in
     try
-      {q with pat_desc=(Tpat_or (r1,lub p2 q))}
+      {q with pat_desc=(Tpat_or (r1,lub p2 q,None))}
     with
     | Empty -> r1
   with

@@ -47,7 +47,10 @@ let rec add_type bv ty =
   | Ptyp_class(c, tl, _) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, s) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
-      List.iter (fun (_,_,stl) -> List.iter (add_type bv) stl) fl
+      List.iter
+        (function Rtag(_,_,stl) -> List.iter (add_type bv) stl
+          | Rinherit sty -> add_type bv sty)
+        fl
 
 and add_field_type bv ft =
   match ft.pfield_desc with

@@ -127,7 +127,7 @@ let filter_matrix matcher pss =
   let rec filter_rec = function
     | (p::ps)::rem ->
         begin match p.pat_desc with
-        | Tpat_or (p1,p2) ->
+        | Tpat_or (p1,p2,_) ->
             filter_rec ((p1::ps)::(p2::ps)::rem)
         | Tpat_alias (p,_) ->
             filter_rec ((p::ps)::rem)
@@ -203,7 +203,7 @@ let filter_ctx q ctx =
   let rec filter_rec = function
     | ({right=p::ps} as l)::rem ->
         begin match p.pat_desc with
-        | Tpat_or (p1,p2) ->
+        | Tpat_or (p1,p2,_) ->
             filter_rec ({l with right=p1::ps}::{l with right=p2::ps}::rem)
         | Tpat_alias (p,_) ->
             filter_rec ({l with right=p::ps}::rem)
@@ -477,7 +477,7 @@ let up_ok (ps,act_p) l =
 exception Same
 
 let rec what_is_or = function
-  | {pat_desc = Tpat_or (p,_)} -> what_is_or p
+  | {pat_desc = Tpat_or (p,_,_)} -> what_is_or p
   | {pat_desc = (Tpat_alias (p,_))} -> what_is_or p        
   | {pat_desc=(Tpat_var _|Tpat_any)} -> fatal_error "Matching.what_is_or"
   | p -> p
@@ -501,8 +501,8 @@ let simplify_or p =
         with
         | Var q -> raise (Var {p with pat_desc = Tpat_alias (q,id)})
         end
-    | {pat_desc = Tpat_or (p1,p2)} ->
-        {p with pat_desc = Tpat_or (simpl_rec p1, simpl_rec p2)}
+    | {pat_desc = Tpat_or (p1,p2,_)} ->
+        {p with pat_desc = Tpat_or (simpl_rec p1, simpl_rec p2, None)}
     | {pat_desc = Tpat_record lbls} ->
         let all_lbls = all_record_args lbls in
         {p with pat_desc=Tpat_record all_lbls}        
@@ -540,10 +540,10 @@ let simplify_matching m = match m.args with
               record_ex_pat full_pat ;
               (full_pat::patl,action)::
               simplify rem
-          | Tpat_or (_,_) ->
+          | Tpat_or _ ->
               let pat_simple  = simplify_or pat in
               begin match pat_simple.pat_desc with
-              | Tpat_or (_,_) ->
+              | Tpat_or _ ->
                   let ex_pat = what_is_or pat_simple in
                   record_ex_pat ex_pat ;
                   (pat_simple :: patl, action) ::
@@ -611,7 +611,7 @@ let rec extract_vars r p = match p.pat_desc with
 | Tpat_array pats ->
     List.fold_left extract_vars r pats
 | Tpat_variant (_,Some p, _) -> extract_vars r p
-| Tpat_or (p,_) -> extract_vars r p
+| Tpat_or (p,_,_) -> extract_vars r p
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
 
 exception Cannot_flatten
@@ -628,7 +628,7 @@ let mk_alpha_env arg aliases ids =
     ids
 
 let rec explode_or_pat arg patl mk_action rem vars aliases = function
-  | {pat_desc = Tpat_or (p1,p2)} ->
+  | {pat_desc = Tpat_or (p1,p2,_)} ->
       explode_or_pat
         arg patl mk_action
         (explode_or_pat arg patl mk_action rem vars aliases p2)
@@ -661,7 +661,7 @@ let compile_or argo cl clor al def = match clor with
       to_catch = []}
 | _  ->
     let rec do_cases = function
-      | ({pat_desc=Tpat_or (_,_)} as orp::patl, action)::rem ->
+      | ({pat_desc=Tpat_or _} as orp::patl, action)::rem ->
           let others,rem = get_equiv orp rem in          
           let orpm =
             {cases =
@@ -757,7 +757,7 @@ let all_vars _ = false
 *)
 
 let is_or p = match p.pat_desc with
-| Tpat_or (_,_) -> true
+| Tpat_or _ -> true
 | _ -> false
 
 (* Conditions for appending to the Or matrix *)
@@ -767,7 +767,7 @@ and condb act ps qs =  not (is_guarded act) && Parmatch.le_pats qs ps
 let or_ok p ps l =
   List.for_all
     (function
-      | ({pat_desc=Tpat_or (_,_)} as q::qs,act) ->
+      | ({pat_desc=Tpat_or _} as q::qs,act) ->
           conda p q || condb act ps qs
       | _ -> true)
     l
@@ -1510,11 +1510,11 @@ let rec list_as_pat = function
   | [] -> fatal_error "Matching.list_as_pat"
   | [pat] -> pat
   | pat::rem ->
-      {pat with pat_desc = Tpat_or (pat,list_as_pat rem)}
+      {pat with pat_desc = Tpat_or (pat,list_as_pat rem,None)}
 
 
 let rec pat_as_list k = function
-  | {pat_desc=Tpat_or (p1,p2)} ->
+  | {pat_desc=Tpat_or (p1,p2,_)} ->
       pat_as_list (pat_as_list k p2) p1
   | p -> p::k
 
@@ -1522,7 +1522,7 @@ let rec pat_as_list k = function
 exception All
 
 let rec extract_pat seen k p = match p.pat_desc with
-| Tpat_or (p1,p2) ->
+| Tpat_or (p1,p2,_) ->
     let k1,seen1 = extract_pat seen k p1 in
     extract_pat seen1 k1 p2
 | Tpat_alias (p,_) ->
@@ -2175,7 +2175,7 @@ let flatten_pattern size p =
 let rec flatten_pat_line size p k = match p.pat_desc with
 | Tpat_any ->  omegas size::k
 | Tpat_tuple args -> args::k
-| Tpat_or (p1,p2) ->
+| Tpat_or (p1,p2,_) ->
     flatten_pat_line size p1 (flatten_pat_line size p2 k)
 | _ -> fatal_error "Matching.flatten_pat_line"
 

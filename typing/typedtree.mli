@@ -35,7 +35,7 @@ and pattern_desc =
   | Tpat_variant of label * pattern option * row_desc
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
-  | Tpat_or of pattern * pattern
+  | Tpat_or of pattern * pattern * Path.t option
 
 type partial = Partial | Total
 type optional = Required | Optional

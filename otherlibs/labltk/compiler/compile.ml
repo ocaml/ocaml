@@ -153,7 +153,7 @@ let ppMLtype ?(any=false) ?(return=false) ?(def=false) ?(counter=ref 0) =
           with
             Not_found -> prerr_endline ("ppMLtype " ^ s ^ " ?"); s
           else if not def && List.length typdef.constructors > 1 then
-            "#" ^ s
+            "[< " ^ s ^ "]"
           else s
         else s
       with Not_found -> s
@@ -448,8 +448,9 @@ let rec converterCAMLtoTK ~context_widget argname ty =
        name ^ args
  |  Subtype (s, s') ->
        let name = "cCAMLtoTK" ^ s' ^ "_" ^ s ^ " " in
-       let args = if safetype then "(" ^ argname ^ " : #" ^ s' ^ "_" ^ s ^ ")"
-                  else argname
+       let args =
+         if safetype then "(" ^ argname ^ " : [< " ^ s' ^ "_" ^ s ^ "])"
+                     else argname
        in
        let args = 
            if requires_widget_context s then context_widget ^ " " ^ args
@@ -580,8 +581,8 @@ let write_CAMLtoTK ~w ~def:typdef ?safetype:(st = true) name =
         "dummy" in
     if st then begin
       w " : ";
-      if typdef.variant then w "#";
-      w name; w " -> tkArgs "
+      if typdef.variant then w ("[< " ^ name ^ "]") else w name;
+      w " -> tkArgs "
     end;
     w (" = function");
     List.iter constrs

@@ -44,7 +44,8 @@ type error =
   | Alias_type_mismatch of (Types.type_expr * Types.type_expr) list
   | Present_has_conjunction of string
   | Present_has_no_type of string
-  | Multiple_constructor of string
+  | Constructor_mismatch of Types.type_expr * Types.type_expr
+  | Not_a_variant of Types.type_expr
 
 exception Error of Location.t * error
 

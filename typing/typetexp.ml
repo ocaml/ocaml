@@ -33,7 +33,8 @@ type error =
   | Alias_type_mismatch of (type_expr * type_expr) list
   | Present_has_conjunction of string
   | Present_has_no_type of string
-  | Multiple_constructor of string
+  | Constructor_mismatch of type_expr * type_expr
+  | Not_a_variant of type_expr
 
 exception Error of Location.t * error
 
@@ -162,6 +163,7 @@ let rec transl_type env policy styp =
                     check (Env.find_type path env)
                 | _ -> raise Not_found
           in check decl;
+          Location.prerr_warning styp.ptyp_loc Warnings.Deprecated;
           (path, decl,true)
         with Not_found -> try
           if present <> [] then raise Not_found;
@@ -231,39 +233,88 @@ let rec transl_type env policy styp =
         end;
         ty
   | Ptyp_variant(fields, closed, present) ->
-      let bound = ref [] in
-      ignore (List.fold_left
-                (fun (ll,hl) (l,_,_) ->
-                  if List.mem l ll then
-                    raise(Error(styp.ptyp_loc, Multiple_constructor l));
-                  let h = Btype.hash_variant l in
-                  if List.mem h hl then
-                    raise(Ctype.Tags(l, List.assoc h (List.combine hl ll)));
-                  (l::ll, h::hl))
-                ([],[])
-                fields);
-      let fields =
-        List.map
-          (fun (l, c, stl) ->
-            l, if List.mem l present then begin
-              if List.length stl > 1 || c && stl <> [] then
-                raise(Error(styp.ptyp_loc, Present_has_conjunction l));
-              match stl with [] -> Rpresent None
-              | st::_ -> Rpresent(Some(transl_type env policy st))
-            end else begin
-              let tl = List.map (transl_type env policy) stl in
-              bound := tl @ !bound;
-              Reither(c, tl, false, ref None)
-            end)
-          fields
+      let bound = ref [] and name = ref None in
+      let mkfield l f =
+        newty (Tvariant {row_fields=[l,f]; row_more=newty Tnil;
+                         row_bound=[]; row_closed=true; row_name=None}) in
+      let add_typed_field loc l f fields =
+        try
+          let f' = List.assoc l fields in
+          let ty = mkfield l f and ty' = mkfield l f' in
+          if equal env false [ty] [ty'] then fields
+          else raise(Error(loc, Constructor_mismatch (ty,ty')))
+        with Not_found ->
+          (l, f) :: fields
       in
-      List.iter
-        (fun l -> if not (List.mem_assoc l fields) then
-          raise(Error(styp.ptyp_loc, Present_has_no_type l)))
-        present;
+      let rec add_field fields = function
+          Rtag (l, c, stl) ->
+            name := None;
+            let f = match present with
+              Some present when not (List.mem l present) ->
+                let tl = List.map (transl_type env policy) stl in
+                bound := tl @ !bound;
+                Reither(c, tl, false, ref None)
+            | _ ->
+                if List.length stl > 1 || c && stl <> [] then
+                  raise(Error(styp.ptyp_loc, Present_has_conjunction l));
+                match stl with [] -> Rpresent None
+                | st :: _ -> Rpresent (Some(transl_type env policy st))
+            in
+            add_typed_field styp.ptyp_loc l f fields
+        | Rinherit sty ->
+            let ty = transl_type env policy sty in
+            if fields <> [] then name := None else begin
+              match repr ty with
+                {desc=Tconstr(p, tl, _)} -> name := Some(p, tl)
+              | _                        -> ()
+            end;
+            let fl = match expand_head env ty with
+              {desc=Tvariant row} when Btype.static_row row ->
+                let row = Btype.row_repr row in
+                row.row_fields
+            | _ -> raise(Error(sty.ptyp_loc, Not_a_variant ty))
+            in
+            List.fold_left
+              (fun fields (l, f) ->
+                let f = match present with
+                  Some present when not (List.mem l present) ->
+                    begin match f with
+                      Rpresent(Some ty) ->
+                        bound := ty :: !bound;
+                        Reither(false, [ty], false, ref None)
+                    | Rpresent None ->
+                        Reither(true, [], false, ref None)
+                    | _ ->
+                        assert false
+                    end
+                | _ -> f
+                in
+                add_typed_field sty.ptyp_loc l f fields)
+              fields fl
+      in
+      let fields = List.fold_left add_field [] fields in
+      begin match present with None -> ()
+      | Some present ->
+          List.iter
+            (fun l -> if not (List.mem_assoc l fields) then
+              raise(Error(styp.ptyp_loc, Present_has_no_type l)))
+            present
+      end;
+      ignore begin
+        List.fold_left
+          (fun hl (l,_) ->
+            let h = Btype.hash_variant l in
+            try
+              let l' = List.assoc h hl in
+              if l <> l' then raise(Ctype.Tags(l, l'));
+              hl
+            with Not_found -> (h,l) :: hl)
+          []
+          fields
+      end;
       let row =
-        { row_fields = fields; row_more = newvar ();
-          row_bound = !bound; row_closed = closed; row_name = None } in
+        { row_fields = List.rev fields; row_more = newvar ();
+          row_bound = !bound; row_closed = closed; row_name = !name } in
       if policy = Fixed && not (Btype.static_row row) then
         raise(Error(styp.ptyp_loc, Unbound_type_variable "[..]"));
       newty (Tvariant row)
@@ -349,5 +400,14 @@ let report_error ppf = function
       fprintf ppf "The present constructor %s has a conjunctive type" l
   | Present_has_no_type l ->
       fprintf ppf "The present constructor %s has no type" l
-  | Multiple_constructor l ->
-      fprintf ppf "The variant constructor %s is multiply defined" l
+  | Constructor_mismatch (ty, ty') ->
+      Printtyp.reset_and_mark_loops_list [ty; ty'];
+      fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
+        "This variant type contains a constructor"
+        Printtyp.type_expr ty
+        "which should be"
+        Printtyp.type_expr ty'
+  | Not_a_variant ty ->
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
+        Printtyp.type_expr ty

@@ -1348,49 +1348,49 @@ and unify_row env row1 row2 =
   begin try
     rm1.desc <- Tlink (more row1 r2);
     rm2.desc <- Tlink (more row2 r1);
-    List.iter
-      (fun (l,f1,f2) ->
-        let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
-        if f1 == f2 then () else
-        match f1, f2 with
-          Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
-        | Rpresent None, Rpresent None -> ()
-        | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
-            if e1 == e2 then () else
-            let tl = tl1 @ tl2 in
-            let tl =
-              if not (m1 || m2) then
-                List.fold_right
-                  (fun t tl ->
-                    let t = repr t in if List.memq t tl then tl else t::tl)
-                  tl []
-              else match tl with
-              | [] -> []
-              | t1 :: tl ->
-                  if c1 || c2 then raise (Unify []);
-                  List.iter (unify env t1) tl;
-                  [t1]
-            in
-            let f = Reither(c1 || c2, tl, m1 || m2, ref None) in
-            e1 := Some f; e2 := Some f
-        | Reither(false, tl, _, e1), Rpresent(Some t2) ->
-            e1 := Some f2;
-            (try List.iter (fun t1 -> unify env t1 t2) tl
-             with exn -> e1 := None; raise exn)
-        | Rpresent(Some t1), Reither(false, tl, _, e2) ->
-            e2 := Some f1;
-            (try List.iter (unify env t1) tl
-             with exn -> e2 := None; raise exn)
-        | Reither(true, [], _, e1), Rpresent None -> e1 := Some f2
-        | Rpresent None, Reither(true, [], _, e2) -> e2 := Some f1
-        | Reither(_, _, false, e1), Rabsent -> e1 := Some f2
-        | Rabsent, Reither(_, _, false, e2) -> e2 := Some f1
-        | Rabsent, Rabsent -> ()
-        | _ -> raise (Unify []))
-      pairs
+    List.iter (fun (l,f1,f2) -> unify_row_field env f1 f2)  pairs
   with exn ->
     rm1.desc <- md1; rm2.desc <- md2; raise exn
   end
+
+and unify_row_field env f1 f2 =
+  let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
+  if f1 == f2 then () else
+  match f1, f2 with
+    Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
+  | Rpresent None, Rpresent None -> ()
+  | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
+      if e1 == e2 then () else
+      let tl = tl1 @ tl2 in
+      let tl =
+        if not (m1 || m2) then
+          List.fold_right
+            (fun t tl ->
+              let t = repr t in if List.memq t tl then tl else t::tl)
+            tl []
+        else match tl with
+        | [] -> []
+        | t1 :: tl ->
+            if c1 || c2 then raise (Unify []);
+            List.iter (unify env t1) tl;
+            [t1]
+      in
+      let f = Reither(c1 || c2, tl, m1 || m2, ref None) in
+      e1 := Some f; e2 := Some f
+  | Reither(false, tl, _, e1), Rpresent(Some t2) ->
+      e1 := Some f2;
+      (try List.iter (fun t1 -> unify env t1 t2) tl
+      with exn -> e1 := None; raise exn)
+  | Rpresent(Some t1), Reither(false, tl, _, e2) ->
+      e2 := Some f1;
+      (try List.iter (unify env t1) tl
+      with exn -> e2 := None; raise exn)
+  | Reither(true, [], _, e1), Rpresent None -> e1 := Some f2
+  | Rpresent None, Reither(true, [], _, e2) -> e2 := Some f1
+  | Reither(_, _, false, e1), Rabsent -> e1 := Some f2
+  | Rabsent, Reither(_, _, false, e2) -> e2 := Some f1
+  | Rabsent, Rabsent -> ()
+  | _ -> raise (Unify [])
 
 let unify env ty1 ty2 =
   try

@@ -104,8 +104,11 @@ let rec search_pos_type t ~pos ~env =
     Ptyp_any
   | Ptyp_var _ -> ()
   | Ptyp_variant(tl, _, _) ->
-      List.iter tl
-        ~f:(fun (_,_,tl) -> List.iter tl ~f:(search_pos_type ~pos ~env))
+      List.iter tl ~f:
+        begin function
+            Rtag (_,_,tl) -> List.iter tl ~f:(search_pos_type ~pos ~env)
+          | Rinherit st -> search_pos_type ~pos ~env st
+        end
   | Ptyp_arrow (_, t1, t2) ->
       search_pos_type t1 ~pos ~env;
       search_pos_type t2 ~pos ~env
@@ -806,8 +809,10 @@ and search_pos_pat ~pos ~env pat =
       List.iter l ~f:(fun (_, pat) -> search_pos_pat pat ~pos ~env)
   | Tpat_array l ->
       List.iter l ~f:(search_pos_pat ~pos ~env)
-  | Tpat_or (a, b) ->
+  | Tpat_or (a, b, None) ->
       search_pos_pat a ~pos ~env; search_pos_pat b ~pos ~env
+  | Tpat_or (_, _, Some _) ->
+      ()
   end;
   add_found_str (`Exp(`Pat, pat.pat_type)) ~env ~loc:pat.pat_loc
   end

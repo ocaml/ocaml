@@ -16,6 +16,7 @@
 
 type t =                             (* A is all *)
   | Comment of string                (* C *)
+  | Deprecated                       (* D *)
   | Partial_application              (* F *)
   | Labels_omitted		     (* L *)
   | Method_override of string list   (* M *)
@@ -28,6 +29,7 @@ type t =                             (* A is all *)
 
 let letter = function        (* 'a' is all *)
   | Comment _ ->                'c'
+  | Deprecated ->               'd'
   | Partial_application ->      'f'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
@@ -39,7 +41,7 @@ let letter = function        (* 'a' is all *)
 ;;
 
 let check c =
-  try ignore (String.index "acflmpsuvxACFLMPSUVX" c)
+  try ignore (String.index "acdflmpsuvxACDFLMPSUVX" c)
   with _ -> raise (Arg.Bad (Printf.sprintf "unknown warning option %c" c))
 ;;    
 
@@ -97,6 +99,7 @@ let message = function
   | Statement_type ->
       "this expression should have type unit."
   | Comment s -> "this is " ^ s ^ "."
+  | Deprecated -> "this syntax is deprecated."
   | Other s -> s
 ;;
 

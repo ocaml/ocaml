@@ -16,6 +16,7 @@ open Format
 
 type t =                             (* A is all *)
   | Comment of string                (* C *)
+  | Deprecated                       (* D *)
   | Partial_application              (* F *)
   | Labels_omitted		     (* L *)
   | Method_override of string list   (* M *)

@@ -31,7 +31,7 @@ and core_type_desc =
   | Ptyp_object of core_field_type list
   | Ptyp_class of Longident.t * core_type list * label list
   | Ptyp_alias of core_type * string
-  | Ptyp_variant of (label * bool * core_type list) list * bool * label list
+  | Ptyp_variant of row_field list * bool * label list option
 
 and core_field_type =
   { pfield_desc: core_field_desc;
@@ -40,6 +40,10 @@ and core_field_type =
 and core_field_desc =
     Pfield of string * core_type
   | Pfield_var
+
+and row_field =
+    Rtag of label * bool * core_type list
+  | Rinherit of core_type
 
 (* XXX Type expressions for the class language *)
 

@@ -114,7 +114,7 @@ let rec core_type i ppf x =
   | Ptyp_variant (l, closed, low) ->
       line i ppf "Ptyp_variant closed=%s\n" (string_of_bool closed);
       list i label_x_bool_x_core_type_list ppf l;
-      list i string ppf low
+      option i (fun i -> list i string) ppf low
   | Ptyp_object (l) ->
       line i ppf "Ptyp_object\n";
       list i core_field_type ppf l;
@@ -610,9 +610,14 @@ and label_x_expression i ppf (l,e) =
   line i ppf "<label> \"%s\"\n" l;
   expression (i+1) ppf e;
 
-and label_x_bool_x_core_type_list i ppf (l, b, ctl) =
-  line i ppf "<row_field> \"%s\" %s\n" l (string_of_bool b);
-  list (i+1) core_type ppf ctl
+and label_x_bool_x_core_type_list i ppf x =
+  match x with
+    Rtag (l, b, ctl) ->
+      line i ppf "Rtag \"%s\" %s\n" l (string_of_bool b);
+      list (i+1) core_type ppf ctl
+  | Rinherit (ct) ->
+      line i ppf "Rinherit\n";
+      core_type (i+1) ppf ct
 ;;
 
 let rec toplevel_phrase i ppf x =
