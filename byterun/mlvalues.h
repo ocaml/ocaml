@@ -197,12 +197,17 @@ typedef void (*final_fun) P((value));
 extern header_t first_atoms[];
 #define Atom(tag) (Val_hp (&(first_atoms [tag])))
 
-/* For the benefits of the native-code generator, we define as atoms
+/* For compatibility with the native-code generator, we define as atoms
    all data in the statically initialized or statically uninitialized (BSS)
    zones. */
 
+#ifdef __alpha
+extern int _end;
+#define Is_atom(v) ((int *)(v) < &_end)
+#else
 extern int end;
 #define Is_atom(v) ((int *)(v) < &end)
+#endif
 
 /* Booleans are integers 0 or 1 */
 
