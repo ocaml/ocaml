@@ -38,7 +38,7 @@ ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
 depend.cmx:
-	$(CAMLOPT) $(INCLUDES) -I ../stdlib depend.ml
+	$(CAMLOPT) $(INCLUDES) -I ../stdlib -c depend.ml
 
 clean::
 	rm -f ocamldep

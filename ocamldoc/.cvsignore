@@ -1,0 +1,6 @@
+ocamldoc
+ocamldoc.opt
+odoc_crc.ml
+odoc_parser.ml
+odoc_text_parser.ml
+*.output
