@@ -132,8 +132,8 @@ include files are provided:
 \entree{"caml/mlvalues.h"}{definition of the "value" type, and conversion macros}
 \entree{"caml/alloc.h"}{allocation functions (to create structured Caml
 objects)}
-\entree{"caml/memory.h"}{miscellaneous memory-related functions (for in-place
-modification of structures, etc).}
+\entree{"caml/memory.h"}{miscellaneous memory-related functions
+and macros (for GC interface, in-place modification of structures, etc).}
 \entree{"caml/fail.h"}{functions for raising exceptions
 (see section~\ref{s:c-exceptions})}
 \entree{"caml/callback.h"}{callback from C to Caml (see
@@ -211,13 +211,13 @@ system) that can run on this custom runtime.  This is achieved by the
 to build a custom runtime system integrating the C parts of the
 ``unix'' and ``threads'' libraries, do:
 \begin{verbatim}
-        ocamlc -make_runtime -o /home/me/ocamlunixrun unix.cma threads.cma \
+        ocamlc -make-runtime -o /home/me/ocamlunixrun unix.cma threads.cma \
                 -cclib -lunix -cclib -lthreads
 \end{verbatim}
 To generate a bytecode executable that runs on this runtime system,
 do:
 \begin{alltt}
-        ocamlc -use_runtime /home/me/ocamlunixrun -o myprog \char92
+        ocamlc -use-runtime /home/me/ocamlunixrun -o myprog \char92
                 unix.cma threads.cma {\it{your .cmo and .cma files}}
 \end{alltt}
 The bytecode executable "myprog" can then be launched as usual:
@@ -264,7 +264,7 @@ classified according to their tags as follows:
 \entree{0 to $\hbox{"No_scan_tag"}-1$}{A structured block (an array of
 Caml objects). Each field is a "value".}
 \entree{"Closure_tag"}{A closure representing a functional value. The first
-word is a pointer to a piece of bytecode, the remaining words are
+word is a pointer to a piece of code, the remaining words are
 "value" containing the environment.}
 \entree{"String_tag"}{A character string.}
 \entree{"Double_tag"}{A double-precision floating-point number.}
@@ -429,15 +429,7 @@ below).
 
 \subsection{Allocating blocks}
 
-From the standpoint of the allocation functions, blocks are divided
-according to their size as zero-sized blocks, small blocks (with size
-less than or equal to \verb"Max_young_wosize"), and large blocks (with
-size greater than \verb"Max_young_wosize"). The constant
-\verb"Max_young_wosize" is declared in the include file "mlvalues.h". It
-is guaranteed to be at least 64 (words), so that any block with
-constant size less than or equal to 64 can be assumed to be small. For
-blocks whose size is computed at run-time, the size must be compared
-against \verb"Max_young_wosize" to determine the correct allocation procedure.
+\subsubsection{Simple interface}
 
 \begin{itemize}
 \item
@@ -446,26 +438,13 @@ Zero-sized blocks are preallocated outside of the heap. It is
 incorrect to try and allocate a zero-sized block using the functions below.
 For instance, "Atom(0)" represents the empty array.
 \item
-"alloc("\var{n}", "\var{t}")" returns a fresh small block of size
-$n \leq \hbox{"Max_young_wosize"}$ words, with tag \var{t}. 
-If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
-the fields of the block (initially containing garbage) must be initialized
-with legal values (using direct assignment to the fields of the block)
-before the next allocation.
+"alloc("\var{n}", "\var{t}")" returns a fresh block of size \var{n}
+with tag \var{t}.  If \var{t} is less than "No_scan_tag", then the
+fields of the block are initialized with a valid value in order to
+satisfy the GC constraints.
 \item
-"alloc_tuple("\var{n}")" returns a fresh small block of size
-$n \leq \hbox{"Max_young_wosize"}$ words, with
-tag 0. The fields of this block must be filled with legal values
-before the next allocation or modification.
-\item
-"alloc_shr("\var{n}", "\var{t}")" returns a fresh block of size \var{n}, with tag \var{t}.
-The size of the block can be greater than \verb"Max_young_wosize". (It
-can also be smaller, but in this case it is more efficient to call
-"alloc" instead of "alloc_shr".) 
-If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
-the fields of the block (initially containing garbage) must be initialized
-with legal values (using the "initialize" function described below)
-before the next allocation.
+"alloc_tuple("\var{n}")" returns a fresh block of size
+$n \leq \hbox{"Max_young_wosize"}$ words, with tag 0.
 \item
 "alloc_string("\var{n}")" returns a string value of length \var{n} characters.
 The string initially contains garbage.
@@ -487,6 +466,41 @@ an array of floating-point numbers.)
 \item
 "copy_string_array("\var{p}")" allocates an array of strings, copied from
 the pointer to a string array \var{p} (a \verb"char **").
+\end{itemize}
+
+\subsubsection{Optimized interface}
+
+The following functions are more efficient than "alloc", but also much
+more difficult to use.
+
+From the standpoint of the allocation functions, blocks are divided
+according to their size as zero-sized blocks, small blocks (with size
+less than or equal to \verb"Max_young_wosize"), and large blocks (with
+size greater than \verb"Max_young_wosize"). The constant
+\verb"Max_young_wosize" is declared in the include file "mlvalues.h". It
+is guaranteed to be at least 64 (words), so that any block with
+constant size less than or equal to 64 can be assumed to be small. For
+blocks whose size is computed at run-time, the size must be compared
+against \verb"Max_young_wosize" to determine the correct allocation procedure.
+
+\begin{itemize}
+\item
+"alloc_small("\var{n}", "\var{t}")" returns a fresh small block of size
+$n \leq \hbox{"Max_young_wosize"}$ words, with tag \var{t}. 
+If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
+the fields of the block (initially containing garbage) must be initialized
+with legal values (using direct assignment to the fields of the block)
+before the next allocation.
+\item
+"alloc_shr("\var{n}", "\var{t}")" returns a fresh block of size
+\var{n}, with tag \var{t}. 
+The size of the block can be greater than \verb"Max_young_wosize". (It
+can also be smaller, but in this case it is more efficient to call
+"alloc_small" instead of "alloc_shr".) 
+If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
+the fields of the block (initially containing garbage) must be initialized
+with legal values (using the "initialize" function described below)
+before the next allocation.
 \end{itemize}
 
 \subsection{Raising exceptions} \label{s:c-exceptions}
@@ -522,11 +536,124 @@ Unused blocks in the heap are automatically reclaimed by the garbage
 collector. This requires some cooperation from C code that
 manipulates heap-allocated blocks.
 
+\subsection{Simple interface}
+
+All the macros described in this section are declared in the
+"memory.h" header file.
+
+\begin{gcrule}
+A function that has parameters or local variables of type "value" must
+begin with a call to one of the "CAMLparam" macros and return with
+"CAMLreturn".
+\end{gcrule}
+
+There are six "CAMLparam" macros: "CAMLparam0" to "CAMLparam5", which
+take zero to five arguments respectively.  If your function has fewer
+than 5 parameters of type "value", use the corresponding macros
+with these parameters as arguments.  If your function has more than 5
+parameters of type "value", use "CAMLparam5" with five of these
+parameters, and use one or more calls to the "CAMLxparam" macros for
+the remaining parameters ("CAMLxparam0" to "CAMLxparam5").
+
+The macro "CAMLreturn" is used as a direct replacement for the C
+keyword "return".  All occurences of "return" must be replaced by
+"CAMLreturn", including the implicit "return" at the end of a
+procedure ("void"-returning function).
+
+\goodbreak
+
+Example:
+\begin{verbatim}
+void foo (value v1, value v2, value v3)
+{
+  CAMLparam (v1, v2, v3);
+  ...
+  CAMLreturn;
+}
+\end{verbatim}
+
+{\bf Note:} if your function is a primitive with more than 5 arguments
+for use with the byte-code runtime, its arguments are not "value"s and
+must not be declared (they have types "value *" and "int").
+
+\begin{gcrule}
+Local variables of type "value" must be declared with one of the
+"CAMLlocal" macros.  Arrays of "value"s are declared with
+"CAMLlocalN".
+\end{gcrule}
+
+The macros "CAMLlocal1" to "CAMLlocal5" declare and initialize one to
+five local variables of type "value".  The variable names are given as
+arguments to the macros.  "CAMLlocalN("\var{x}", "\var{n}")" declares
+and initializes a local variable of type "value ["\var{n}"]".  You can
+use several calls to these macros if you have more than 5 local
+variables.  You can also use them in nested C blocks within the
+function.
+
+Example:
+\begin{verbatim}
+value bar (value v1, value v2, value v3)
+{
+  CAMLparam (v1, v2, v3);
+  CAMLlocal result;
+  result = alloc (3, 0);
+  ...
+  CAMLreturn result;
+}
+\end{verbatim}
+
+\begin{gcrule}
+Assignments to the fields of structured blocks must be done with the
+"Store_field" macro.
+\end{gcrule}
+
+"Store_field ("\var{b}", "\var{n}", "\var{v}")" stores the value
+\var{v} in the field number \var{n} of value \var{b}, which must be a
+block (i.e. "Is_block("\var{b}")" must be true).
+
+Example:
+\begin{verbatim}
+value bar (value v1, value v2, value v3)
+{
+  CAMLparam (v1, v2, v3);
+  CAMLlocal result;
+  result = alloc (3, 0);
+  Store_field (result, 0, v1);
+  Store_field (result, 1, v2);
+  Store_field (result, 2, v3);
+  CAMLreturn result;
+}
+\end{verbatim}
+
+\begin{gcrule} Global variables containing values must be registered
+with the garbage collector using the "register_global_root" function.
+\end{gcrule}
+
+Registration of a global variable "v" is achieved by calling
+"register_global_root(&v)" just before a valid value is stored in "v"
+for the first time. 
+
+A registered global variable "v" can be un-registered by calling
+"remove_global_root(&v)".
+
+{\bf Note:} The "CAML" macros use identifiers (local variables, type
+identifiers, structure tags) that start with "caml__".  Do not use any
+identifier starting with "caml__" in your programs.
+
+\subsection{Optimized interface}
+
+% Il faudrait simplifier violemment ce qui suit.
+% En gros, dire quand on n'a pas besoin de declarer les variables
+% et dans quels cas on peut se passer de "Store_field".
+
+The following details are provided for the very infrequent case where
+stub code needs to be optimized.
+
 \begin{gcrule} After a structured block (a block with tag less than
 "No_scan_tag") is allocated, all fields of this block must be filled
 with well-formed values before the next allocation operation. If the
-block has been allocated with "alloc" or "alloc_tuple", filling is performed
-by direct assignment to the fields of the block:
+block has been allocated with "alloc_small", filling
+is performed by direct assignment to the fields of the block:
 \begin{alltt}
         Field(\var{v}, \var{n}) = \nth{v}{n};
 \end{alltt}
@@ -582,23 +709,12 @@ of the "raise" functions.
 structure tag named "caml__roots_block".  Do not use this identifier
 in your programs.
 
-\begin{gcrule} Global variables containing values must be registered
-with the garbage collector using the "register_global_root" function.
-\end{gcrule}
-
-Registration of a global variable "v" is achieved by calling
-"register_global_root(&v)" just before a valid value is stored in "v"
-for the first time. 
-
-A registered global variable "v" can be un-registered by calling
-"remove_global_root(&v)".
-
 \begin{gcrule} Direct assignment to a field of a block, as in
 \begin{alltt}
         Field(\var{v}, \var{n}) = \var{w};
 \end{alltt}
-is safe only if \var{v} is a block newly allocated by "alloc" or
-"alloc_tuple"; that is, if no allocation took place between the
+is safe only if \var{v} is a block newly allocated by "alloc_small";
+that is, if no allocation took place between the 
 allocation of \var{v} and the assignment to the field. In all other cases,
 never assign directly. If the block has just been allocated by "alloc_shr",
 use "initialize" to assign a value to a field for the first time:
