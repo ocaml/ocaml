@@ -72,300 +72,308 @@ all Ä runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
 
 # Compile everything the first time
 world Ä
-	domake coldstart
-	domake clean
-	domake all
+    domake coldstart
+    domake clean
+    domake all
 
 # Complete bootstrapping cycle
 bootstrap Ä
-# Save the original bootstrap compiler
-	domake backup
-# Promote the new compiler but keep the old runtime
-# This compiler runs on :boot:ocamlrun and produces bytecode for
-# :byterun:ocamlrun
-	domake promote-cross
-# Rebuild ocamlc and ocamllex (run on :byterun:ocamlrun)
-	domake clean
-	domake ocamlc ocamllex
-# Rebuild the library (using :byterun:ocamlrun :ocamlc)
-	domake library-cross
-# Promote the new compiler and the new runtime
-	domake promote
-# Rebuild everything, including ocaml and the tools
-	domake clean
-	domake all
-# Check if fixpoint reached
-	domake compare
-	beep
+      # Save the original bootstrap compiler
+    domake backup
+      # Promote the new compiler but keep the old runtime
+      # This compiler runs on :boot:ocamlrun and produces bytecode for
+      # :byterun:ocamlrun
+    domake promote-cross
+      # Rebuild ocamlc and ocamllex (run on :byterun:ocamlrun)
+    domake clean
+    domake ocamlc ocamllex
+      # Rebuild the library (using :byterun:ocamlrun :ocamlc)
+    domake library-cross
+      # Promote the new compiler and the new runtime
+    domake promote
+      # Rebuild everything, including ocaml and the tools
+    domake clean
+    domake all
+      # Check if fixpoint reached
+    domake compare
+    beep
 
 LIBFILES = :stdlib.cma :std_exit.cmo :Å.cmi camlheader
 
 # Start up the system from the distribution compiler
 coldstart Ä
-	directory :byterun; domake all; directory ::
-	duplicate -y :byterun:ocamlrun :boot:ocamlrun
-	directory :yacc; domake all; directory ::
-	duplicate -y :yacc:ocamlyacc :boot:ocamlyacc
-	directory :stdlib
-	domake -d COMPILER=::boot:ocamlc all
-	duplicate -y {LIBFILES} ::boot:
-	directory ::
+    directory :byterun; domake all; directory ::
+    duplicate -y :byterun:ocamlrun :boot:ocamlrun
+    directory :yacc; domake all; directory ::
+    duplicate -y :yacc:ocamlyacc :boot:ocamlyacc
+    directory :stdlib
+    domake -d COMPILER=::boot:ocamlc all
+    duplicate -y {LIBFILES} ::boot:
+    directory ::
 
 # Save the current bootstrap compiler
 backup Ä
-	if `exists -d :boot:Saved:` == ""
-	  NewFolder :boot:Saved:
-	end
-	move :boot:Saved: :boot:Saved.prev:
-	NewFolder :boot:Saved:
-	move :boot:Saved.prev: :boot:Saved:Saved.prev:
-	duplicate -y :boot:ocamlrun :boot:Saved:
-	move :boot:ocamlc :boot:ocamllex :boot:ocamlyacc :boot:Saved:
-	directory :boot; duplicate -y {LIBFILES} :Saved:; directory ::
+    if `exists -d :boot:Saved:` == ""
+      newfolder :boot:Saved:
+    end
+    move :boot:Saved: :boot:Saved.prev:
+    newfolder :boot:Saved:
+    move :boot:Saved.prev: :boot:Saved:Saved.prev:
+    duplicate -y :boot:ocamlrun :boot:Saved:
+    move :boot:ocamlc :boot:ocamllex :boot:ocamlyacc :boot:Saved:
+    directory :boot; duplicate -y {LIBFILES} :Saved:; directory ::
 
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
 promote-cross Ä
-	duplicate -y :ocamlc :boot:ocamlc
-	duplicate -y :lex:ocamllex :boot:ocamllex
-	duplicate -y :yacc:ocamlyacc :boot:ocamlyacc
-	directory :stdlib
-	duplicate -y {LIBFILES} ::boot: || set status 0
-	directory ::
+    duplicate -y :ocamlc :boot:ocamlc
+    duplicate -y :lex:ocamllex :boot:ocamllex
+    duplicate -y :yacc:ocamlyacc :boot:ocamlyacc
+    directory :stdlib
+    duplicate -y {LIBFILES} ::boot: || set status 0
+    directory ::
 
 # Promote the newly compiled system to the rank of bootstrap compiler
 # (Runs on the new runtime, produces code for the new runtime)
 promote Ä promote-cross
-	duplicate -y :byterun:ocamlrun :boot:ocamlrun
+    duplicate -y :byterun:ocamlrun :boot:ocamlrun
 
 # Restore the saved bootstrap compiler if a problem arises
 restore Ä
-	move -y :boot:Saved:Å :boot:
-	delete -y :boot:Saved:
-	move -y :boot:Saved.prev: :boot:Saved:
+    move -y :boot:Saved:Å :boot:
+    delete -y :boot:Saved:
+    move -y :boot:Saved.prev: :boot:Saved:
 
 # Check if fixpoint reached
 compare Ä
-	set exit 0
-	equal -q :boot:ocamlc :ocamlc && equal -q :boot:ocamllex :lex:ocamllex
-	if {status}
-	  echo "¶nFixpoint not reached, try one more bootstrapping cycle.¶n"
-	else
-	  echo "¶nFixpoint reached, bootstrap succeeded.¶n"
-	end
+    set exit 0
+    equal -q :boot:ocamlc :ocamlc && equal -q :boot:ocamllex :lex:ocamllex
+    if {status}
+      echo "¶nFixpoint not reached, try one more bootstrapping cycle.¶n"
+    else
+      echo "¶nFixpoint reached, bootstrap succeeded.¶n"
+    end
 
 # Remove old bootstrap compilers
 cleanboot Ä
-	delete -i -y :boot:Saved:Saved.prev:Å || set status 0
+    delete -i -y :boot:Saved:Saved.prev:Å || set status 0
 
 # Installation
 install Ä $OutOfDate
-	flush
-	for i in "{BINDIR}" "{LIBDIR}"
-	  if "`exists -d "{i}"`" == ""
-		newfolder "{i}"
-	  end
-	end
-	directory :byterun:
-	domake install
-	directory ::
-	duplicate -y :ocamlc "{BINDIR}ocamlc"
-	duplicate -y :ocaml "{BINDIR}ocaml"
-	directory :stdlib:
-	domake install
-	directory ::
-	duplicate -y :lex:ocamllex "{BINDIR}ocamllex"
-	duplicate -y :yacc:ocamlyacc "{BINDIR}ocamlyacc"
-	duplicate -y toplevellib.cma expunge "{LIBDIR}"
-	duplicate -y :toplevel:topmain.cmo "{LIBDIR}topmain.cmo"
-	duplicate -y :toplevel:toploop.cmi :toplevel:topdirs.cmi "{LIBDIR}"
-	directory :tools:
-	domake install
-	directory ::
-	duplicate -y :man:ocaml.help "{HELPFILE}"
-	for i in {OTHERLIBRARIES}
-	  directory :otherlibs:{i}
-	  domake install
-	  directory :::
-	end
+    flush
+    for i in "{BINDIR}" "{LIBDIR}"
+      if "`exists -d "{i}"`" == ""
+	newfolder "{i}"
+      end
+    end
+    directory :byterun:
+    domake install
+    directory ::
+    duplicate -y :ocamlc "{BINDIR}ocamlc"
+    duplicate -y :ocaml "{BINDIR}ocaml"
+    directory :stdlib:
+    domake install
+    directory ::
+    duplicate -y :lex:ocamllex "{BINDIR}ocamllex"
+    duplicate -y :yacc:ocamlyacc "{BINDIR}ocamlyacc"
+    duplicate -y toplevellib.cma expunge "{LIBDIR}"
+    duplicate -y :toplevel:topmain.cmo "{LIBDIR}topmain.cmo"
+    duplicate -y :toplevel:toploop.cmi :toplevel:topdirs.cmi "{LIBDIR}"
+    directory :tools:
+    domake install
+    directory ::
+    duplicate -y :man:ocaml.help "{HELPFILE}"
+    for i in {OTHERLIBRARIES}
+      directory :otherlibs:{i}
+      domake install
+      directory :::
+    end
 
 realclean ÄÄ clean
 
 # The compiler
 
 ocamlc Ä {COMPOBJS}
-	{CAMLC} {LINKFLAGS} -o ocamlc {COMPOBJS}
+    {CAMLC} {LINKFLAGS} -o ocamlc {COMPOBJS}
 
 clean ÄÄ
-	delete -i ocamlc
+    delete -i ocamlc
 
 # The toplevel
 
 ocaml Ä toplevellib.cma {TOPLEVELMAIN} expunge
-	{CAMLC} {LINKFLAGS} -linkall -o ocaml.tmp toplevellib.cma {TOPLEVELMAIN}
-	{CAMLRUN} :expunge ocaml.tmp ocaml {PERVASIVES} || set status 0
-	delete -i ocaml.tmp
+    {CAMLC} {LINKFLAGS} -linkall -o ocaml.tmp toplevellib.cma {TOPLEVELMAIN}
+    {CAMLRUN} :expunge ocaml.tmp ocaml {PERVASIVES} || set status 0
+    delete -i ocaml.tmp
 
 toplevellib.cma Ä {TOPLIB}
-	{CAMLC} -a -o toplevellib.cma {TOPLIB}
+    {CAMLC} -a -o toplevellib.cma {TOPLIB}
 
 clean ÄÄ
-	delete -i ocaml toplevellib.cma
+    delete -i ocaml toplevellib.cma
 
 # The configuration file
 
 :utils:config.ml Ä :utils:config.mlp :config:Makefile
-	delete -i :utils:config.ml
-	streamedit -e "/let version =/ replace /¶¶¶"°/ ¶"/{MacVersion}¶¶¶"¶"" ¶
-	           -e "1,$ replace /%%LIBDIR%%/ ¶"{LIBDIR}¶"" ¶
-			   -e "1,$ replace /%%EXT_OBJ%%/ '.o'" ¶
-			   -e "1,$ replace /%%EXT_LIB%%/ '.x'" ¶
-               :utils:config.mlp > :utils:config.ml
+    delete -i :utils:config.ml
+    streamedit -e "/let version =/ replace /¶¶¶"°/ ¶"/{MacVersion}¶¶¶"¶"" ¶
+	       -e "1,$ replace /%%LIBDIR%%/ ¶"{LIBDIR}¶"" ¶
+		       -e "1,$ replace /%%EXT_OBJ%%/ '.o'" ¶
+		       -e "1,$ replace /%%EXT_LIB%%/ '.x'" ¶
+	   :utils:config.mlp > :utils:config.ml
 
 clean ÄÄ
-	delete -i :utils:config.ml
+    delete -i :utils:config.ml
 
 beforedepend ÄÄ :utils:config.ml
 
 # The parser generator
 
 :parsing:parser.mli Ä :parsing:parser.ml
-	echo -n
+    echo -n
 
 :parsing:parser.ml Ä :parsing:parser.mly
-	{CAMLYACC} {YACCFLAGS} :parsing:parser.mly
+    {CAMLYACC} {YACCFLAGS} :parsing:parser.mly
 
 clean ÄÄ
-	delete -i :parsing:parser.mli :parsing:parser.ml :parsing:parser.output
+    delete -i :parsing:parser.mli :parsing:parser.ml :parsing:parser.output
 
 beforedepend ÄÄ :parsing:parser.mli :parsing:parser.ml
 
 # The lexer generator
 
 :parsing:lexer.ml Ä :parsing:lexer.mll
-	{CAMLLEX} :parsing:lexer.mll
+    {CAMLLEX} :parsing:lexer.mll
 
 clean ÄÄ
-	delete -i :parsing:lexer.ml
+    delete -i :parsing:lexer.ml
 
 beforedepend ÄÄ :parsing:lexer.ml
 
 # The numeric opcodes
 
 :bytecomp:opcodes.ml Ä :byterun:instruct.h
-	:tools:make-opcodes.Mac :byterun:instruct.h :bytecomp:opcodes.ml
+    :tools:make-opcodes.Mac :byterun:instruct.h :bytecomp:opcodes.ml
 
 clean ÄÄ
-	delete -i :bytecomp:opcodes.ml
+    delete -i :bytecomp:opcodes.ml
 
 beforedepend ÄÄ :bytecomp:opcodes.ml
 
 # The predefined exceptions and primitives
 
 :byterun:primitives Ä
-	directory :byterun:
-	domake primitives
-	directory ::
+    directory :byterun:
+    domake primitives
+    directory ::
 
 :bytecomp:runtimedef.ml Ä :byterun:primitives :byterun:fail.h
-	(echo 'let builtin_exceptions = [|' ; ¶
+    (echo 'let builtin_exceptions = [|' ; ¶
      streamedit -d -e '/¶/¶* (¶"[A-Za-z_]*¶")¨0 ¶*¶/°/ print ¨0 ";"' :byterun:fail.h | ¶
-	 streamedit -e '$ replace /;°/ "|]"'; ¶
-	 echo 'let builtin_primitives = [|'; ¶
-	 streamedit -e "1,$ replace /(Å)¨0/ '  ¶"' ¨0 '¶";'" -e '$ replace /;°/ "|]"' :byterun:primitives; ¶
+     streamedit -e '$ replace /;°/ "|]"'; ¶
+     echo 'let builtin_primitives = [|'; ¶
+     streamedit -e "1,$ replace /(Å)¨0/ '  ¶"' ¨0 '¶";'" -e '$ replace /;°/ "|]"' :byterun:primitives; ¶
     ) > :bytecomp:runtimedef.ml
 
 clean ÄÄ
-	delete -i :bytecomp:runtimedef.ml
+    delete -i :bytecomp:runtimedef.ml
 
 beforedepend ÄÄ :bytecomp:runtimedef.ml
 
 # The "expunge" utility
 
 expunge Ä {EXPUNGEOBJS}
-	{CAMLC} {LINKFLAGS} -o expunge {EXPUNGEOBJS}
+    {CAMLC} {LINKFLAGS} -o expunge {EXPUNGEOBJS}
 
 clean ÄÄ
-	delete -i expunge
+    delete -i expunge
 
 # The runtime system for the bytecode compiler
 
 runtime Ä
-	directory :byterun:; domake all; directory ::
+    directory :byterun:; domake all; directory ::
 realclean ÄÄ
-	directory :byterun:; domake clean; directory ::
+    directory :byterun:; domake clean; directory ::
 alldepend ÄÄ
-	directory :byterun:; domake depend; directory ::
+    directory :byterun:; domake depend; directory ::
 
 # The library
 
 library Ä
-	directory :stdlib; domake all; directory ::
+    directory :stdlib; domake all; directory ::
 library-cross Ä
-	directory :stdlib; domake -d RUNTIME=::byterun:ocamlrun all; directory ::
+    directory :stdlib; domake -d RUNTIME=::byterun:ocamlrun all; directory ::
 clean ÄÄ
-	directory :stdlib; domake clean; directory ::
+    directory :stdlib; domake clean; directory ::
 alldepend ÄÄ
-	directory :stdlib; domake depend; directory ::
+    directory :stdlib; domake depend; directory ::
 
 # The lexer and parser generators
 
 ocamllex Ä
-	directory :lex; domake all; directory ::
+    directory :lex; domake all; directory ::
 clean ÄÄ
-	directory :lex; domake clean; directory ::
+    directory :lex; domake clean; directory ::
 alldepend ÄÄ
-	directory :lex; domake depend; directory ::
+    directory :lex; domake depend; directory ::
 
 ocamlyacc Ä
-	directory :yacc; domake all; directory ::
+    directory :yacc; domake all; directory ::
 realclean ÄÄ
-	directory :yacc; domake clean; directory ::
+    directory :yacc; domake clean; directory ::
 
 # Tools
 
 ocamltools Ä
-	directory :tools; domake all; directory ::
+    directory :tools; domake all; directory ::
 clean ÄÄ
-	directory :tools; domake clean; directory ::
+    directory :tools; domake clean; directory ::
 alldepend ÄÄ
-	directory :tools; domake depend; directory ::
+    directory :tools; domake depend; directory ::
 
 # The extra libraries
 
 otherlibraries Ä
-	for i in {OTHERLIBRARIES}
-	  directory :otherlibs:{i}; domake all; directory :::
-	end
+    for i in {OTHERLIBRARIES}
+      directory :otherlibs:{i}; domake all; directory :::
+    end
 clean ÄÄ
-	for i in {OTHERLIBRARIES}
-	  directory :otherlibs:{i}; domake clean; directory :::
-	end
+    for i in {OTHERLIBRARIES}
+      directory :otherlibs:{i}; domake clean; directory :::
+    end
 realclean ÄÄ
-	for i in {OTHERLIBRARIES}
-	  directory :otherlibs:{i}; domake realclean; directory :::
-	end
+    for i in {OTHERLIBRARIES}
+      directory :otherlibs:{i}; domake realclean; directory :::
+    end
 alldepend ÄÄ
-	for i in {OTHERLIBRARIES}
-	  directory :otherlibs:{i}; domake depend; directory :::
-	end
+    for i in {OTHERLIBRARIES}
+      directory :otherlibs:{i}; domake depend; directory :::
+    end
+
+# Clean up the test directory
+
+clean ÄÄ
+    directory :test; domake clean; directory ::
 
 # Default rules
 
 .cmo Ä .ml
-	{CAMLC} {COMPFLAGS} -c {depdir}{default}.ml
+    {CAMLC} {COMPFLAGS} -c {depdir}{default}.ml
 
 .cmi Ä .mli
-	{CAMLC} {COMPFLAGS} -c {depdir}{default}.mli
+    {CAMLC} {COMPFLAGS} -c {depdir}{default}.mli
 
 clean ÄÄ
-	for i in utils parsing typing bytecomp driver toplevel tools
-	  delete -i :{i}:Å.cm[io] || set status 0
-	end
+    for i in utils parsing typing bytecomp driver toplevel tools
+      delete -i :{i}:Å.cm[io] || set status 0
+    end
 
 depend Ä beforedepend
-	for d in utils parsing typing bytecomp driver toplevel
+    for d in utils parsing typing bytecomp driver toplevel
       {CAMLDEP} {DEPFLAGS} :{d}:Å.mli :{d}:Å.ml
     end > Makefile.Mac.depend
 
 alldepend ÄÄ depend
+
+# Make sure the config file was executed
+dummy Ä {OTHERLIBRARIES}
