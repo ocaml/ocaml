@@ -42,9 +42,8 @@ The remainder of this document gives more information on each port.
 
 REQUIREMENTS:
 
-This port runs under MS Windows 95, 98, ME, NT, 2000 and XP on Intel IA32
-machines.  Windows 3.1 and Windows for Workgroups are not
-supported. Windows NT on non-Intel processors has not been tested.
+This port runs under MS Windows NT, 2000 and XP.  
+Windows 95, 98 and ME are also supported, but less reliably.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
@@ -69,6 +68,18 @@ INSTALLATION:
 The binary distribution is a self-installing executable archive.
 Just run it and it should install OCaml automatically.
 
+If you are using Windows 95, 98 or ME, you need to adjust environment
+variables as follows:
+  - add the "bin" subdirectory of the OCaml installation directory
+    to the PATH variable;
+  - set the OCAMLLIB variable to the "lib" subdirectory of the
+    OCaml installation directory.
+For instance, if you installed OCaml in C:\Program Files\Objective Caml,
+do
+    set PATH=%PATH%;"C:\Program Files\Objective Caml\bin"
+    set OCAMLLIB="C:\Program Files\Objective Caml\lib"
+No such tweaking of environment variables is needed under NT, 2000 and XP.
+
 To run programs that use the LablTK GUI, the directory where the
 DLLs tk83.dll and tcl83.dll were installed (by the Tcl/Tk
 installer) must be added to the PATH environment variable.
@@ -78,6 +89,7 @@ libraries tk83.lib and tcl83.lib were installed (by the Tcl/Tk
 installer) must be added to the library search path in the LIB
 environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 "C:\tcl\lib" to the LIB environment variable.
+
 
 RECOMPILATION FROM THE SOURCES:
 
@@ -140,8 +152,8 @@ The graphical user interface for the toplevel is due to Jacob Navia.
 
 REQUIREMENTS:
 
-This port runs under MS Windows 95, 98, ME, NT, 2000 and XP on Intel IA32
-machines.
+This port runs under MS Windows NT, 2000 and XP.  
+Windows 95, 98 and ME are also supported, but less reliably.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
@@ -210,8 +222,7 @@ This port requires the Cygwin environment from Cygnus/RedHat, which
 is freely available at:
           http://sources.redhat.com/cygwin/
 
-This port runs under all versions of MS Windows supported by Cygwin,
-i.e. Windows 95, 98, ME, NT, 2000 and XP on Intel IA32 machines.
+This port runs under all versions of MS Windows supported by Cygwin.
 
 
 INSTALLATION:
