@@ -757,7 +757,8 @@ let emit_item = function
   | Cint16 n ->
       `	.word	{emit_int n}\n`
   | Cint32 n ->
-      `	.long	{emit_nativeint n}\n`
+      let n' = Nativeint.shift_right (Nativeint.shift_left n 32) 32 in
+      `	.long	{emit_nativeint n'}\n`
   | Cint n ->
       if digital_asm then
         `	.quad	{emit_nativeint n}\n`
