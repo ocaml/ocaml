@@ -12,78 +12,79 @@
 
 (* $Id$ *)
 
-(* Module [Big_int]: operations on arbitrary-precision integers *)
+(** Operations on arbitrary-precision integers.
 
-(* Big integers (type [big_int]) are signed integers of arbitrary size. *)
+   Big integers (type [big_int]) are signed integers of arbitrary size. 
+*)
   
 open Nat
  
 type big_int
-        (* The type of big integers. *)
+        (** The type of big integers. *)
 
 val zero_big_int : big_int
-        (* The big integer [0]. *)
+        (** The big integer [0]. *)
 val unit_big_int : big_int
-        (* The big integer [1]. *)
+        (** The big integer [1]. *)
 
-(*** Arithmetic operations *)
+(** {2 Arithmetic operations} *)
 
 val minus_big_int : big_int -> big_int
-        (* Unary negation. *)
+        (** Unary negation. *)
 val abs_big_int : big_int -> big_int
-        (* Absolute value. *)
+        (** Absolute value. *)
 val add_big_int : big_int -> big_int -> big_int
-        (* Addition. *)
+        (** Addition. *)
 val succ_big_int : big_int -> big_int
-        (* Successor (add 1). *)
+        (** Successor (add 1). *)
 val add_int_big_int : int -> big_int -> big_int
-        (* Addition of a small integer to a big integer. *)
+        (** Addition of a small integer to a big integer. *)
 val sub_big_int : big_int -> big_int -> big_int
-        (* Subtraction. *)
+        (** Subtraction. *)
 val pred_big_int : big_int -> big_int
-        (* Predecessor (subtract 1). *)
+        (** Predecessor (subtract 1). *)
 val mult_big_int : big_int -> big_int -> big_int
-        (* Multiplication of two big integers. *)
+        (** Multiplication of two big integers. *)
 val mult_int_big_int : int -> big_int -> big_int
-        (* Multiplication of a big integer by a small integer *)
+        (** Multiplication of a big integer by a small integer *)
 val square_big_int: big_int -> big_int
-        (* Return the square of the given big integer *)
+        (** Return the square of the given big integer *)
 val sqrt_big_int: big_int -> big_int
-        (* [sqrt_big_int a] returns the integer square root of [a],
+        (** [sqrt_big_int a] returns the integer square root of [a],
            that is, the largest big integer [r] such that [r * r <= a].
            Raise [Invalid_argument] if [a] is negative. *)
 val quomod_big_int : big_int -> big_int -> big_int * big_int
-        (* Euclidean division of two big integers.
+        (** Euclidean division of two big integers.
            The first part of the result is the quotient,
            the second part is the remainder.
            Writing [(q,r) = quomod_big_int a b], we have
            [a = q * b + r] and [0 <= r < |b|].
            Raise [Division_by_zero] if the divisor is zero. *)
 val div_big_int : big_int -> big_int -> big_int
-        (* Euclidean quotient of two big integers.
+        (** Euclidean quotient of two big integers.
            This is the first result [q] of [quomod_big_int] (see above). *)
 val mod_big_int : big_int -> big_int -> big_int
-        (* Euclidean modulus of two big integers.
+        (** Euclidean modulus of two big integers.
            This is the second result [r] of [quomod_big_int] (see above). *)
 val gcd_big_int : big_int -> big_int -> big_int
-        (* Greatest common divisor of two big integers. *)
+        (** Greatest common divisor of two big integers. *)
 val power_int_positive_int: int -> int -> big_int
 val power_big_int_positive_int: big_int -> int -> big_int
 val power_int_positive_big_int: int -> big_int -> big_int
 val power_big_int_positive_big_int: big_int -> big_int -> big_int
-        (* Exponentiation functions.  Return the big integer
+        (** Exponentiation functions.  Return the big integer
            representing the first argument [a] raised to the power [b]
            (the second argument).  Depending
            on the function, [a] and [b] can be either small integers
            or big integers.  Raise [Invalid_argument] if [b] is negative. *)
 
-(*** Comparisons and tests *)
+(** {2 Comparisons and tests} *)
 
 val sign_big_int : big_int -> int
-        (* Return [0] if the given big integer is zero,
+        (** Return [0] if the given big integer is zero,
            [1] if it is positive, and [-1] if it is negative. *)
 val compare_big_int : big_int -> big_int -> int
-        (* [compare_big_int a b] returns [0] if [a] and [b] are equal,
+        (** [compare_big_int a b] returns [0] if [a] and [b] are equal,
            [1] if [a] is greater than [b], and [-1] if [a] is smaller
            than [b]. *)
 val eq_big_int : big_int -> big_int -> bool
@@ -91,48 +92,48 @@ val le_big_int : big_int -> big_int -> bool
 val ge_big_int : big_int -> big_int -> bool
 val lt_big_int : big_int -> big_int -> bool
 val gt_big_int : big_int -> big_int -> bool
-        (* Usual boolean comparisons between two big integers. *)
+        (** Usual boolean comparisons between two big integers. *)
 val max_big_int : big_int -> big_int -> big_int
-        (* Return the greater of its two arguments. *)
+        (** Return the greater of its two arguments. *)
 val min_big_int : big_int -> big_int -> big_int
-        (* Return the smaller of its two arguments. *)
+        (** Return the smaller of its two arguments. *)
 val num_digits_big_int : big_int -> int
-        (* Return the number of machine words used to store the
+        (** Return the number of machine words used to store the
            given big integer.  *)
 
-(*** Conversions to and from strings *)
+(** {2 Conversions to and from strings} *)
 
 val string_of_big_int : big_int -> string
-        (* Return the string representation of the given big integer,
+        (** Return the string representation of the given big integer,
            in decimal (base 10). *)
 val big_int_of_string : string -> big_int
-        (* Convert a string to a big integer, in decimal.
+        (** Convert a string to a big integer, in decimal.
            The string consists of an optional [-] or [+] sign,
            followed by one or several decimal digits. *)
 
-(*** Conversions to and from other numerical types *)
+(** {2 Conversions to and from other numerical types} *)
 
 val big_int_of_int : int -> big_int
-        (* Convert a small integer to a big integer. *)
+        (** Convert a small integer to a big integer. *)
 val is_int_big_int : big_int -> bool
-        (* Test whether the given big integer is small enough to
+        (** Test whether the given big integer is small enough to
            be representable as a small integer (type [int])
            without loss of precision.  On a 32-bit platform,
            [is_int_big_int a] returns [true] if and only if
-           [a] is between $-2^{30}$ and $2^{30}-1$.  On a 64-bit platform,
+           [a] is between 2{^30} and 2{^30}-1.  On a 64-bit platform,
            [is_int_big_int a] returns [true] if and only if
-           [a] is between $-2^{62}$ and $2^{62}-1$. *)
+           [a] is between -2{^62} and 2{^62}-1. *)
 val int_of_big_int : big_int -> int
-        (* Convert a big integer to a small integer (type [int]).
+        (** Convert a big integer to a small integer (type [int]).
            Raises [Failure "int_of_big_int"] if the big integer
            is not representable as a small integer. *)
 val float_of_big_int : big_int -> float
-        (* Returns a floating-point number approximating the
+        (** Returns a floating-point number approximating the
            given big integer. *)
 
-(*--*)
+(**/**)
 
-(*** For internal use *)
+(** {2 For internal use} *)
 val nat_of_big_int : big_int -> nat
 val big_int_of_nat : nat -> big_int
 val base_power_big_int: int -> int -> big_int -> big_int
