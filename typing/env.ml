@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -776,21 +776,14 @@ let summary env = env.summary
 (* Error report *)
 
 let report_error = function
-    Not_an_interface filename ->
-      print_string filename; print_space();
-      print_string "is not a compiled interface."
+  | Not_an_interface filename ->
+      printf "%s@ is not a compiled interface" filename
   | Corrupted_interface filename ->
-      print_string "Corrupted compiled interface"; print_space();
-      print_string filename
+      printf "Corrupted compiled interface@ %s" filename
   | Illegal_renaming(modname, filename) ->
-      print_string "Wrong file naming:"; print_space();
-      print_string filename; print_space();
-      print_string "contains the compiled interface for"; print_space();
-      print_string modname
+      printf "Wrong file naming: %s@ contains the compiled interface for@ %s"
+        filename modname
   | Inconsistent_import(name, source1, source2) ->
-      open_hvbox 0;
-      print_string "The compiled interfaces for "; print_string source1;
-      print_string " and "; print_string source2; print_space();
-      print_string "make inconsistent assumptions over interface ";
-      print_string name;
-      close_box()
+      printf "@[<hv>The compiled interfaces for %s@ and %s@ " source1 source2;
+      printf "make inconsistent assumptions over interface %s@]" name
+;;
