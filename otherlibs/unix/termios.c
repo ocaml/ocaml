@@ -30,7 +30,6 @@ enum { Input, Output };
 #define oflags ((long)(&terminal_status.c_oflag))
 #define cflags ((long)(&terminal_status.c_cflag))
 #define lflags ((long)(&terminal_status.c_lflag))
-#define cc(n)  ((long)(&terminal_status.c_cc[n]))
 
 /* Number of fields in the terminal_io record field. Cf. unix.mli */
 
@@ -72,16 +71,16 @@ static long terminal_io_descr[] = {
   Bool, lflags, ECHOK,
   Bool, lflags, ECHONL,
   /* Control characters */
-  Char, cc(VINTR),
-  Char, cc(VQUIT),
-  Char, cc(VERASE),
-  Char, cc(VKILL),
-  Char, cc(VEOF),
-  Char, cc(VEOL),
-  Char, cc(VMIN),
-  Char, cc(VTIME),
-  Char, cc(VSTART),
-  Char, cc(VSTOP),
+  Char, VINTR,
+  Char, VQUIT,
+  Char, VERASE,
+  Char, VKILL,
+  Char, VEOF,
+  Char, VEOL,
+  Char, VMIN,
+  Char, VTIME,
+  Char, VSTART,
+  Char, VSTOP,
   End
 };
 
@@ -89,7 +88,6 @@ static long terminal_io_descr[] = {
 #undef oflags
 #undef cflags
 #undef lflags
-#undef cc
 
 struct speedtable_entry ;
 
@@ -158,8 +156,8 @@ static void encode_terminal_status(value *dst)
         }
         break; }
     case Char:
-      { unsigned char * src = (unsigned char *) (*pc++);
-        *dst = Val_int(*src);
+      { int which = *pc++;
+        *dst = Val_int(terminal_status.c_cc[which]);
         break; }
     }
   }
@@ -213,8 +211,8 @@ static void decode_terminal_status(value *src)
       ok:
         break; }
     case Char:
-      { unsigned char * dst = (unsigned char *) (*pc++);
-        *dst = Int_val(*src);
+      { int which = *pc++;
+        terminal_status.c_cc[which] = Int_val(*src);
         break; }
     }
   }
