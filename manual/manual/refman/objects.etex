@@ -146,10 +146,10 @@ An object can be duplicated using the library function "Oo.copy"
 \begin{syntax}
 definition:
     \ldots
-  | 'class' class-definition { 'and' class-definition }
+  | 'class' class-definition { 'and' class-definition } 'end'
 ;
 class-definition:
-    class-header '=' [constraints] { class-fields } 'end'
+    class-header '=' [constraints] { class-fields }
 ;
 class-header:
     class-tags parameterized-class-name class-params class-binders
@@ -169,13 +169,13 @@ class-binders:
     ['as' value-name] [':' "'" ident]
 ;
 constraints:
-    'constraint' "'" ident '=' typexpr { 'and' "'" ident '=' typexpr }
+    { 'constraint' "'" ident '=' typexpr }
 ;
 class-fields:
-    'inherit' ancestor { 'then' ancestor }
-  | 'val' value { 'and' value }
-  | 'virtual' method-type { 'and' method-type }
-  | 'method' method { 'and' method }
+    'inherit' ancestor
+  | 'val' value
+  | 'virtual' method-type
+  | 'method' method
 ;
 ancestor:
     [ '(' typexpr { ',' typexpr } ')' ] class-path {{ expr }} ['as' value-name]
@@ -229,27 +229,22 @@ to bind self (the current object) and its type, respectively. The variable
 \subsubsection*{Constraints on type parameters}
 
 \ikwd{constraint\@\verb`constraint`}
-The construct
-@'constraint' "'" ident '=' typexpr { 'and' "'" ident '=' typexpr }@
-allows to specify type parameters.  The value of the type parameter
-@ident_i@ will be an instance of @typexpr_i@ (more precisely,
-@ident_i@ and @typexpr_i@ are unified).
+The construct @{ 'constraint' "'" ident '=' typexpr }@ allows to
+specify type parameters.  The value of the type parameter @ident_i@
+will be an instance of @typexpr_i@ (more precisely, @ident_i@ and
+@typexpr_i@ are unified).
 
 \subsubsection*{Inheritance}
 
 \ikwd{inherit\@\verb`inherit`}
-The construction @'inherit' ancestor { 'then' ancestor }@ allows to
-reuse methods from other classes.
- 
 The inheritance construct
 @'inherit' [ '(' typexpr { ',' typexpr } ')' ] class-path {{ expr }}@
-adds the instance variables and methods from class @class-path@ into
-the current class, possibly overriding previously defined ones of the
-same name.
-%
-Parent instance variables are initialized with parent class parameters bound
-to the arguments @{{expr}}@. Parent type parameters are unified with
-type arguments @typexpr_1, \ldots, typexpr_n@.
+allows to reuse methods from other classes. It adds the instance
+variables and methods from class @class-path@ into the current class,
+possibly overriding previously defined ones of the same name.  %
+Parent instance variables are initialized with parent class parameters
+bound to the arguments @{{expr}}@. Parent type parameters are unified
+with type arguments @typexpr_1, \ldots, typexpr_n@.
 
 \ikwd{inherit\@\verb`as`}
 An ancestor can be bound by prepending the construct @'as' value-name@
@@ -265,7 +260,7 @@ redefined in the current class.
 \ikwd{mutable\@\verb`mutable`}
 \ikwd{private\@\verb`private`}
 Instance variables can be defined or their status can be changed using the
-construct @'val' value { 'and' value }@.
+construct @'val' value@.
 
 The definition @'val' ['private'] ['mutable'] inst-var-name '=' expr@ adds
 an instance variable 
@@ -288,9 +283,8 @@ keeping the same initial value.
 
 \ikwd{method\@\verb`method`}
 
-Method definition is written @'method' method { 'and' method }@.  The
-definition of a method overrides any previous definition of this
-method.
+Method definition is written @'method' method@.  The definition of a
+method overrides any previous definition of this method.
 
 Method bodies do not have access to class parameters, but to instance
 variables.  Some special
@@ -321,12 +315,9 @@ been replaced by the values of the corresponding expressions @expr_1,
 \subsubsection*{Virtual class}
 
 \ikwd{virtual\@\verb`virtual`}
-Methods can be declared,  without being defined, with the construct
-\begin{center}
-@'virtual' method-type { 'and' method-type }@
-\end{center}
-Methods that are declared in this way or applied to self
-but not actually defined are said to be virtual.
+Methods can be declared, without being defined, with the construct
+@'virtual' method-type@.  Methods that are declared in this way or
+applied to self but not actually defined are said to be virtual.
 %
 A class must be flagged virtual if one of its methods is virtual. 
 Objects cannot be created from a virtual class.
@@ -358,10 +349,10 @@ Class types are modeled on class definitions.
 \begin{syntax}
 specification:
     \ldots
-  | 'class' class-type { 'and' class-type }
+  | 'class' class-type { 'and' class-type } 'end'
 ;
 class-type:
-    class-type-header '=' [constraints] { class-type-fields } 'end'
+    class-type-header '=' [constraints] { class-type-fields }
 ;
 class-type-header:
     class-tags parameterized-class-name class-type-params
@@ -371,10 +362,10 @@ class-type-params:
     {{ '(' typexpr ')' }}
 ;
 class-type-fields:
-    'inherit' ancestor-type { 'then' ancestor-type }
-  | 'val' value-type { 'and' value-type }
-  | 'virtual' method-type { 'and' method-type }
-  | 'method' method-type { 'and' method-type }
+    'inherit' ancestor-type
+  | 'val' value-type
+  | 'virtual' method-type
+  | 'method' method-type
 ;
 ancestor-type:
     [ '(' typexpr { "," typexpr } ')' ] class-path
