@@ -33,7 +33,8 @@ type stat = {
   (* The memory management counters are returned in a [stat] record.
      The fields of this record are:
 -     [minor_words]  Number of words allocated in the minor heap since
-             the program was started.
+             the program was started.  This number is accurate in the
+             byte-code runtime, but only approximate in the native runtime.
 -     [promoted_words] Number of words allocated in the minor heap that
              survived a minor collection and were moved to the major heap
              since the program was started.
