@@ -323,6 +323,9 @@ resynchronization points, as in "yacc".
 
 Actions occurring in the middle of rules are not supported.
 
+Nonterminal symbols are like regular Caml symbols, except that they
+cannot end with "'" (single quote).
+
 \subsection{Error handling}
 
 Error recovery is supported as follows: when the parser reaches an
