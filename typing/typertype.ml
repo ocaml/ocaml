@@ -375,15 +375,21 @@ let cached_runtime_type_tbl =
   ref ([] : (Types.type_expr * Rtype.type_expr) list)
 let dummy_runtime_type_declaration_tbl = 
   ref ([] : (Rtype.type_declaration * Path.t) list)
+let dummy_cntr = ref 0
 
 let reset_tables () =
   cached_runtime_type_tbl := [];
-  dummy_runtime_type_declaration_tbl := []
+  dummy_runtime_type_declaration_tbl := [];
+  dummy_cntr := 0
 
 (* empty type declaration for compilation hacks *)
-let dummy_runtime_type_declaration () =
+(* since Rtype.type_declaration is unmutable, we must explicitly
+   create a different copy the following for each dummy entrie *)
+let dummy_runtime_type_declaration () = 
+  incr dummy_cntr;
   { Rtype.type_params = [];
-    Rtype.type_arity= 0;
+    Rtype.type_arity= !dummy_cntr; 
+      (* we need this to make each instance different! *)
     Rtype.type_kind= Rtype.Type_abstract;
     Rtype.type_manifest= None;
     Rtype.type_variance= [] }
