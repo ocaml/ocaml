@@ -124,6 +124,8 @@ coldstart:
 	cp yacc/ocamlyacc boot/ocamlyacc
 	cd stdlib; $(MAKE) COMPILER=../boot/ocamlc all
 	cd stdlib; cp $(LIBFILES) ../boot
+	if test -f boot/libcamlrun.a; then :; else \
+          ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
 
 # Save the current bootstrap compiler
 backup:
