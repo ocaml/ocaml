@@ -31,6 +31,9 @@ let rec for_all2 pred l1 l2 =
   | (hd1::tl1, hd2::tl2) -> pred hd1 hd2 & for_all2 pred tl1 tl2
   | (_, _) -> false
 
+let rec replicate_list elem n =
+  if n <= 0 then [] else elem :: replicate_list elem (n-1)
+
 (* File functions *)
 
 let find_in_path path name =
@@ -50,12 +53,6 @@ let remove_file filename =
     Sys.remove filename
   with Sys_error msg ->
     ()
-
-let temp_file base suffix =
-  let rec try_name counter =
-    let name = "/tmp/" ^ base ^ string_of_int counter ^ suffix in
-    if Sys.file_exists name then try_name (counter + 1) else name
-  in try_name 0
 
 (* Hashtable functions *)
 

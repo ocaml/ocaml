@@ -17,14 +17,17 @@ val fatal_error: string -> 'a
 exception Fatal_error
 
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
+        (* [map_end f l t] is [map f l @ t], just more efficient. *)
 val for_all2: ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+        (* Same as [List.for_all] but for a binary predicate. *)
+val replicate_list: 'a -> int -> 'a list
+        (* [replicate_list elem n] is the list with [n] elements
+           all identical to [elem]. *)
 
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
 val remove_file: string -> unit
-        (* Delete the given file if it List.exists. Never raise an error. *)
-val temp_file: string -> string -> string
-        (* Return the name of a non-existent temporary file in [/tmp]. *)
+        (* Delete the given file if it exists. Never raise an error. *)
 
 val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
         (* Create a hashtable of the given size and fills it with the
@@ -32,6 +35,8 @@ val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
 
 val capitalize: string -> string
 val lowercase: string -> string
+        (* Return a copy of the given string with the first character
+           set to uppercase or lowercase, respectively. *)
 
 val copy_file: in_channel -> out_channel -> unit
         (* [copy_file ic oc] reads the contents of file [ic] and copies
