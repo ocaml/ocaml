@@ -21,13 +21,97 @@ module Qast =
       | List of t list
       | Tuple of t list
       | Option of t option
+      | Int of string
       | Str of string
       | Bool of bool
       | Cons of t * t
-      | Append of t * t
+      | Apply of string * t list
       | Record of (string * t) list
       | Loc
       | Antiquot of MLast.loc * string
+    ;;
+    let loc = 0, 0;;
+    let rec to_expr =
+      function
+        Node (n, al) ->
+          List.fold_left (fun e a -> MLast.ExApp (loc, e, to_expr a))
+            (MLast.ExAcc
+               (loc, MLast.ExUid (loc, "MLast"), MLast.ExUid (loc, n)))
+            al
+      | List al ->
+          List.fold_right
+            (fun a e ->
+               MLast.ExApp
+                 (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), to_expr a),
+                  e))
+            al (MLast.ExUid (loc, "[]"))
+      | Tuple al -> MLast.ExTup (loc, List.map to_expr al)
+      | Option None -> MLast.ExUid (loc, "None")
+      | Option (Some a) ->
+          MLast.ExApp (loc, MLast.ExUid (loc, "Some"), to_expr a)
+      | Int s -> MLast.ExInt (loc, s)
+      | Str s -> MLast.ExStr (loc, s)
+      | Bool true -> MLast.ExUid (loc, "True")
+      | Bool false -> MLast.ExUid (loc, "False")
+      | Cons (a1, a2) ->
+          MLast.ExApp
+            (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), to_expr a1),
+             to_expr a2)
+      | Apply (f, al) ->
+          List.fold_left (fun e a -> MLast.ExApp (loc, e, to_expr a))
+            (MLast.ExLid (loc, f)) al
+      | Record lal -> MLast.ExRec (loc, List.map to_expr_label lal, None)
+      | Loc -> MLast.ExLid (loc, !(Stdpp.loc_name))
+      | Antiquot (loc, s) ->
+          let e =
+            try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
+              Stdpp.Exc_located ((bp, ep), exc) ->
+                raise (Stdpp.Exc_located ((fst loc + bp, fst loc + ep), exc))
+          in
+          MLast.ExAnt (loc, e)
+    and to_expr_label (l, a) =
+      MLast.PaAcc (loc, MLast.PaUid (loc, "MLast"), MLast.PaLid (loc, l)),
+      to_expr a
+    ;;
+    let rec to_patt =
+      function
+        Node (n, al) ->
+          List.fold_left (fun e a -> MLast.PaApp (loc, e, to_patt a))
+            (MLast.PaAcc
+               (loc, MLast.PaUid (loc, "MLast"), MLast.PaUid (loc, n)))
+            al
+      | List al ->
+          List.fold_right
+            (fun a p ->
+               MLast.PaApp
+                 (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), to_patt a),
+                  p))
+            al (MLast.PaUid (loc, "[]"))
+      | Tuple al -> MLast.PaTup (loc, List.map to_patt al)
+      | Option None -> MLast.PaUid (loc, "None")
+      | Option (Some a) ->
+          MLast.PaApp (loc, MLast.PaUid (loc, "Some"), to_patt a)
+      | Int s -> MLast.PaInt (loc, s)
+      | Str s -> MLast.PaStr (loc, s)
+      | Bool true -> MLast.PaUid (loc, "True")
+      | Bool false -> MLast.PaUid (loc, "False")
+      | Cons (a1, a2) ->
+          MLast.PaApp
+            (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), to_patt a1),
+             to_patt a2)
+      | Apply (_, _) -> failwith "bad pattern"
+      | Record lal -> MLast.PaRec (loc, List.map to_patt_label lal)
+      | Loc -> MLast.PaAny loc
+      | Antiquot (loc, s) ->
+          let p =
+            try Grammar.Entry.parse Pcaml.patt_eoi (Stream.of_string s) with
+              Stdpp.Exc_located ((bp, ep), exc) ->
+                raise (Stdpp.Exc_located ((fst loc + bp, fst loc + ep), exc))
+          in
+          MLast.PaAnt (loc, p)
+    and to_patt_label (l, a) =
+      MLast.PaAcc (loc, MLast.PaUid (loc, "MLast"), MLast.PaLid (loc, l)),
+      to_patt a
     ;;
   end
 ;;
@@ -196,7 +280,7 @@ let mkassert loc e =
             raiser])
 ;;
 
-let append_elem el e = Qast.Append (el, e);;
+let append_elem el e = Qast.Apply ("@", [el; Qast.List [e]]);;
 
 let not_yet_warned = ref true;;
 let warning_seq () =
@@ -320,8 +404,6 @@ Grammar.extend
      grammar_entry_create "mutable_flag"
    and virtual_flag : 'virtual_flag Grammar.Entry.e =
      grammar_entry_create "virtual_flag"
-   and amp_flag : 'amp_flag Grammar.Entry.e =
-     grammar_entry_create "amp_flag"
    in
    [Grammar.Entry.obj (module_expr : 'module_expr Grammar.Entry.e), None,
     [None, None,
@@ -494,7 +576,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 7234, 7250))
+                  _ -> raise (Match_failure ("q_MLast.ml", 9701, 9717))
             in
             Qast.Node ("StExc", [Qast.Loc; c; tl; b]) :
             'str_item));
@@ -725,7 +807,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 9447, 9463))
+                  _ -> raise (Match_failure ("q_MLast.ml", 11914, 11930))
             in
             Qast.Node ("SgExc", [Qast.Loc; c; tl]) :
             'sig_item));
@@ -2519,7 +2601,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 30039, 30055))
+                  _ -> raise (Match_failure ("q_MLast.ml", 32506, 32522))
             in
             Qast.Node ("CrVal", [Qast.Loc; lab; mf; e]) :
             'class_str_item));
@@ -2914,7 +2996,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 34606, 34622))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37073, 37089))
             in
             Qast.Node ("TyObj", [Qast.Loc; ml; v]) :
             'ctyp));
@@ -2949,7 +3031,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 34953, 34969))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37420, 37436))
             in
             Qast.Tuple [Qast.Cons (f, ml); v] :
             'meth_list))]];
@@ -3100,8 +3182,20 @@ Grammar.extend
       [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (ident : 'ident Grammar.Entry.e));
        Gramext.Stoken ("", "of");
-       Gramext.Snterm
-         (Grammar.Entry.obj (amp_flag : 'amp_flag Grammar.Entry.e));
+       Gramext.srules
+         [[Gramext.Sopt
+             (Gramext.srules
+                [[Gramext.Stoken ("", "&")],
+                 Gramext.action
+                   (fun (x : string) (loc : int * int) ->
+                      (Qast.Str x : 'e__10))])],
+          Gramext.action
+            (fun (a : 'e__10 option) (loc : int * int) ->
+               (Qast.Option a : 'a_opt));
+          [Gramext.Snterm
+             (Grammar.Entry.obj (a_opt : 'a_opt Grammar.Entry.e))],
+          Gramext.action
+            (fun (a : 'a_opt) (loc : int * int) -> (a : 'a_opt))];
        Gramext.srules
          [[Gramext.Slist1sep
              (Gramext.Snterm
@@ -3115,9 +3209,8 @@ Grammar.extend
           Gramext.action
             (fun (a : 'a_list) (loc : int * int) -> (a : 'a_list))]],
       Gramext.action
-        (fun (l : 'a_list) (ao : 'amp_flag) _ (i : 'ident) _
-           (loc : int * int) ->
-           (Qast.Node ("RfTag", [i; ao; l]) : 'row_field));
+        (fun (l : 'a_list) (ao : 'a_opt) _ (i : 'ident) _ (loc : int * int) ->
+           (Qast.Node ("RfTag", [i; o2b ao; l]) : 'row_field));
       [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (ident : 'ident Grammar.Entry.e))],
       Gramext.action
@@ -3432,13 +3525,6 @@ Grammar.extend
       [Gramext.Stoken ("", "virtual")],
       Gramext.action
         (fun _ (loc : int * int) -> (Qast.Bool true : 'virtual_flag))]];
-    Grammar.Entry.obj (amp_flag : 'amp_flag Grammar.Entry.e), None,
-    [None, None,
-     [[],
-      Gramext.action (fun (loc : int * int) -> (Qast.Bool false : 'amp_flag));
-      [Gramext.Stoken ("", "&")],
-      Gramext.action
-        (fun _ (loc : int * int) -> (Qast.Bool true : 'amp_flag))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.Level "top"),
     [None, None,
@@ -3450,9 +3536,9 @@ Grammar.extend
                     (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
                   Gramext.Stoken ("", ";")],
                  Gramext.action
-                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__12))])],
+                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__13))])],
           Gramext.action
-            (fun (a : 'e__12 list) (loc : int * int) ->
+            (fun (a : 'e__13 list) (loc : int * int) ->
                (Qast.List a : 'a_list));
           [Gramext.Snterm
              (Grammar.Entry.obj (a_list : 'a_list Grammar.Entry.e))],
@@ -3480,9 +3566,9 @@ Grammar.extend
                     (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
                   Gramext.Stoken ("", ";")],
                  Gramext.action
-                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__11))])],
+                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__12))])],
           Gramext.action
-            (fun (a : 'e__11 list) (loc : int * int) ->
+            (fun (a : 'e__12 list) (loc : int * int) ->
                (Qast.List a : 'a_list));
           [Gramext.Snterm
              (Grammar.Entry.obj (a_list : 'a_list Grammar.Entry.e))],
@@ -3504,9 +3590,9 @@ Grammar.extend
                     (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
                   Gramext.Stoken ("", ";")],
                  Gramext.action
-                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__10))])],
+                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__11))])],
           Gramext.action
-            (fun (a : 'e__10 list) (loc : int * int) ->
+            (fun (a : 'e__11 list) (loc : int * int) ->
                (Qast.List a : 'a_list));
           [Gramext.Snterm
              (Grammar.Entry.obj (a_list : 'a_list Grammar.Entry.e))],
@@ -3610,13 +3696,7 @@ Grammar.extend
      [[Gramext.Stoken ("ANTIQUOT", "virt")],
       Gramext.action
         (fun (a : string) (loc : int * int) ->
-           (antiquot "virt" loc a : 'virtual_flag))]];
-    Grammar.Entry.obj (amp_flag : 'amp_flag Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Stoken ("ANTIQUOT", "opt")],
-      Gramext.action
-        (fun (a : string) (loc : int * int) ->
-           (antiquot "opt" loc a : 'amp_flag))]]]);;
+           (antiquot "virt" loc a : 'virtual_flag))]]]);;
 
 Grammar.extend
   (let _ = (str_item : 'str_item Grammar.Entry.e)
@@ -3933,95 +4013,10 @@ Grammar.extend
        (fun (a : string) _ (loc : int * int) ->
           (antiquot "" loc a : 'a_QUESTIONIDENT))]]];;
 
-let loc = 0, 0;;
-
-let rec expr_of_ast =
-  function
-    Qast.Node (n, al) ->
-      List.fold_left (fun e a -> MLast.ExApp (loc, e, expr_of_ast a))
-        (MLast.ExAcc (loc, MLast.ExUid (loc, "MLast"), MLast.ExUid (loc, n)))
-        al
-  | Qast.List al ->
-      List.fold_right
-        (fun a e ->
-           MLast.ExApp
-             (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), expr_of_ast a),
-              e))
-        al (MLast.ExUid (loc, "[]"))
-  | Qast.Tuple al -> MLast.ExTup (loc, List.map expr_of_ast al)
-  | Qast.Option None -> MLast.ExUid (loc, "None")
-  | Qast.Option (Some a) ->
-      MLast.ExApp (loc, MLast.ExUid (loc, "Some"), expr_of_ast a)
-  | Qast.Str s -> MLast.ExStr (loc, s)
-  | Qast.Bool true -> MLast.ExUid (loc, "True")
-  | Qast.Bool false -> MLast.ExUid (loc, "False")
-  | Qast.Cons (a1, a2) ->
-      MLast.ExApp
-        (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), expr_of_ast a1),
-         expr_of_ast a2)
-  | Qast.Append (a1, a2) ->
-      MLast.ExApp
-        (loc, MLast.ExApp (loc, MLast.ExLid (loc, "@"), expr_of_ast a1),
-         MLast.ExApp
-           (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), expr_of_ast a2),
-            MLast.ExUid (loc, "[]")))
-  | Qast.Record lal -> MLast.ExRec (loc, List.map label_expr_of_ast lal, None)
-  | Qast.Loc -> MLast.ExLid (loc, !(Stdpp.loc_name))
-  | Qast.Antiquot (loc, s) ->
-      let e =
-        try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
-          Stdpp.Exc_located ((bp, ep), exc) ->
-            raise (Stdpp.Exc_located ((fst loc + bp, fst loc + ep), exc))
-      in
-      MLast.ExAnt (loc, e)
-and label_expr_of_ast (l, a) =
-  MLast.PaAcc (loc, MLast.PaUid (loc, "MLast"), MLast.PaLid (loc, l)),
-  expr_of_ast a
-;;
-
-let rec patt_of_ast =
-  function
-    Qast.Node (n, al) ->
-      List.fold_left (fun e a -> MLast.PaApp (loc, e, patt_of_ast a))
-        (MLast.PaAcc (loc, MLast.PaUid (loc, "MLast"), MLast.PaUid (loc, n)))
-        al
-  | Qast.List al ->
-      List.fold_right
-        (fun a p ->
-           MLast.PaApp
-             (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), patt_of_ast a),
-              p))
-        al (MLast.PaUid (loc, "[]"))
-  | Qast.Tuple al -> MLast.PaTup (loc, List.map patt_of_ast al)
-  | Qast.Option None -> MLast.PaUid (loc, "None")
-  | Qast.Option (Some a) ->
-      MLast.PaApp (loc, MLast.PaUid (loc, "Some"), patt_of_ast a)
-  | Qast.Str s -> MLast.PaStr (loc, s)
-  | Qast.Bool true -> MLast.PaUid (loc, "True")
-  | Qast.Bool false -> MLast.PaUid (loc, "False")
-  | Qast.Cons (a1, a2) ->
-      MLast.PaApp
-        (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), patt_of_ast a1),
-         patt_of_ast a2)
-  | Qast.Append (_, _) -> failwith "bad pattern"
-  | Qast.Record lal -> MLast.PaRec (loc, List.map label_patt_of_ast lal)
-  | Qast.Loc -> MLast.PaAny loc
-  | Qast.Antiquot (loc, s) ->
-      let p =
-        try Grammar.Entry.parse Pcaml.patt_eoi (Stream.of_string s) with
-          Stdpp.Exc_located ((bp, ep), exc) ->
-            raise (Stdpp.Exc_located ((fst loc + bp, fst loc + ep), exc))
-      in
-      MLast.PaAnt (loc, p)
-and label_patt_of_ast (l, a) =
-  MLast.PaAcc (loc, MLast.PaUid (loc, "MLast"), MLast.PaLid (loc, l)),
-  patt_of_ast a
-;;
-
 let apply_entry e =
   let f s = Grammar.Entry.parse e (Stream.of_string s) in
-  let expr s = expr_of_ast (f s) in
-  let patt s = patt_of_ast (f s) in Quotation.ExAst (expr, patt)
+  let expr s = Qast.to_expr (f s) in
+  let patt s = Qast.to_patt (f s) in Quotation.ExAst (expr, patt)
 ;;
 
 let sig_item_eoi = Grammar.Entry.create gram "signature item" in

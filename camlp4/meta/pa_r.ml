@@ -747,8 +747,8 @@ EXTEND
   ;
   row_field:
     [ [ "`"; i = ident -> MLast.RfTag i True []
-      | "`"; i = ident; "of"; ao = amp_flag; l = LIST1 ctyp SEP "&" ->
-          MLast.RfTag i ao l
+      | "`"; i = ident; "of"; ao = OPT "&"; l = LIST1 ctyp SEP "&" ->
+          MLast.RfTag i (o2b ao) l
       | t = ctyp -> MLast.RfInh t ] ]
   ;
   name_tag:
@@ -822,10 +822,6 @@ EXTEND
   ;
   virtual_flag:
     [ [ "virtual" -> True
-      | -> False ] ]
-  ;
-  amp_flag:
-    [ [ "&" -> True
       | -> False ] ]
   ;
   (* Compatibility old syntax of sequences *)

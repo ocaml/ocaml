@@ -21,14 +21,72 @@ module Qast =
       | List of list t
       | Tuple of list t
       | Option of option t
+      | Int of string
       | Str of string
       | Bool of bool
       | Cons of t and t
-      | Append of t and t
+      | Apply of string and list t
       | Record of list (string * t)
       | Loc
       | Antiquot of MLast.loc and string ]
     ;
+    value loc = (0, 0);
+    value rec to_expr =
+      fun
+      [ Node n al ->
+          List.fold_left (fun e a -> <:expr< $e$ $to_expr a$ >>)
+            <:expr< MLast.$uid:n$ >> al
+      | List al ->
+          List.fold_right (fun a e -> <:expr< [$to_expr a$ :: $e$] >>) al
+            <:expr< [] >>
+      | Tuple al -> <:expr< ($list:List.map to_expr al$) >>
+      | Option None -> <:expr< None >>
+      | Option (Some a) -> <:expr< Some $to_expr a$ >>
+      | Int s -> <:expr< $int:s$ >>
+      | Str s -> <:expr< $str:s$ >>
+      | Bool True -> <:expr< True >>
+      | Bool False -> <:expr< False >>
+      | Cons a1 a2 -> <:expr< [$to_expr a1$ :: $to_expr a2$] >>
+      | Apply f al ->
+          List.fold_left (fun e a -> <:expr< $e$ $to_expr a$ >>)
+            <:expr< $lid:f$ >> al
+      | Record lal -> <:expr< {$list:List.map to_expr_label lal$} >>
+      | Loc -> <:expr< $lid:Stdpp.loc_name.val$ >>
+      | Antiquot loc s ->
+          let e =
+            try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
+            [ Stdpp.Exc_located (bp, ep) exc ->
+                raise (Stdpp.Exc_located (fst loc + bp, fst loc + ep) exc) ]
+          in
+          <:expr< $anti:e$ >> ]
+    and to_expr_label (l, a) = (<:patt< MLast.$lid:l$ >>, to_expr a);
+    value rec to_patt =
+      fun
+      [ Node n al ->
+          List.fold_left (fun e a -> <:patt< $e$ $to_patt a$ >>)
+            <:patt< MLast.$uid:n$ >> al
+      | List al ->
+          List.fold_right (fun a p -> <:patt< [$to_patt a$ :: $p$] >>) al
+            <:patt< [] >>
+      | Tuple al -> <:patt< ($list:List.map to_patt al$) >>
+      | Option None -> <:patt< None >>
+      | Option (Some a) -> <:patt< Some $to_patt a$ >>
+      | Int s -> <:patt< $int:s$ >>
+      | Str s -> <:patt< $str:s$ >>
+      | Bool True -> <:patt< True >>
+      | Bool False -> <:patt< False >>
+      | Cons a1 a2 -> <:patt< [$to_patt a1$ :: $to_patt a2$] >>
+      | Apply _ _ -> failwith "bad pattern"
+      | Record lal -> <:patt< {$list:List.map to_patt_label lal$} >>
+      | Loc -> <:patt< _ >>
+      | Antiquot loc s ->
+          let p =
+            try Grammar.Entry.parse Pcaml.patt_eoi (Stream.of_string s) with
+            [ Stdpp.Exc_located (bp, ep) exc ->
+                raise (Stdpp.Exc_located (fst loc + bp, fst loc + ep) exc) ]
+          in
+          <:patt< $anti:p$ >> ]
+    and to_patt_label (l, a) = (<:patt< MLast.$lid:l$ >>, to_patt a);
   end
 ;
 
@@ -172,7 +230,7 @@ value mkassert loc e =
           [Qast.Loc; e; Qast.Node "ExUid" [Qast.Loc; Qast.Str "()"]; raiser] ]
 ;
 
-value append_elem el e = Qast.Append el e;
+value append_elem el e = Qast.Apply "@" [el; Qast.List [e]];
 
 value not_yet_warned = ref True;
 value warning_seq () =
@@ -961,8 +1019,8 @@ EXTEND
   ;
   row_field:
     [ [ "`"; i = ident -> Qast.Node "RfTag" [i; Qast.Bool True; Qast.List []]
-      | "`"; i = ident; "of"; ao = amp_flag; l = SLIST1 ctyp SEP "&" ->
-          Qast.Node "RfTag" [i; ao; l]
+      | "`"; i = ident; "of"; ao = SOPT "&"; l = SLIST1 ctyp SEP "&" ->
+          Qast.Node "RfTag" [i; o2b ao; l]
       | t = ctyp -> Qast.Node "RfInh" [t] ] ]
   ;
   name_tag:
@@ -1059,10 +1117,6 @@ EXTEND
     [ [ "virtual" -> Qast.Bool True
       | -> Qast.Bool False ] ]
   ;
-  amp_flag:
-    [ [ "&" -> Qast.Bool True
-      | -> Qast.Bool False ] ]
-  ;
   (* Compatibility old syntax of sequences *)
   expr: LEVEL "top"
     [ [ "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "return"; warning_sequence;
@@ -1118,9 +1172,6 @@ EXTEND
   ;
   virtual_flag:
     [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]
-  ;
-  amp_flag:
-    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
 END;
 
@@ -1250,66 +1301,10 @@ EXTEND
   ;
 END;
 
-value loc = (0, 0);
-
-value rec expr_of_ast =
-  fun
-  [ Qast.Node n al ->
-      List.fold_left (fun e a -> <:expr< $e$ $expr_of_ast a$ >>)
-        <:expr< MLast.$uid:n$ >> al
-  | Qast.List al ->
-      List.fold_right (fun a e -> <:expr< [$expr_of_ast a$ :: $e$] >>) al
-        <:expr< [] >>
-  | Qast.Tuple al -> <:expr< ($list:List.map expr_of_ast al$) >>
-  | Qast.Option None -> <:expr< None >>
-  | Qast.Option (Some a) -> <:expr< Some $expr_of_ast a$ >>
-  | Qast.Str s -> <:expr< $str:s$ >>
-  | Qast.Bool True -> <:expr< True >>
-  | Qast.Bool False -> <:expr< False >>
-  | Qast.Cons a1 a2 -> <:expr< [$expr_of_ast a1$ :: $expr_of_ast a2$] >>
-  | Qast.Append a1 a2 -> <:expr< $expr_of_ast a1$ @ [$expr_of_ast a2$] >>
-  | Qast.Record lal -> <:expr< {$list:List.map label_expr_of_ast lal$} >>
-  | Qast.Loc -> <:expr< $lid:Stdpp.loc_name.val$ >>
-  | Qast.Antiquot loc s ->
-      let e =
-        try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
-        [ Stdpp.Exc_located (bp, ep) exc ->
-            raise (Stdpp.Exc_located (fst loc + bp, fst loc + ep) exc) ]
-      in
-      <:expr< $anti:e$ >> ]
-and label_expr_of_ast (l, a) = (<:patt< MLast.$lid:l$ >>, expr_of_ast a);
-
-value rec patt_of_ast =
-  fun
-  [ Qast.Node n al ->
-      List.fold_left (fun e a -> <:patt< $e$ $patt_of_ast a$ >>)
-        <:patt< MLast.$uid:n$ >> al
-  | Qast.List al ->
-      List.fold_right (fun a p -> <:patt< [$patt_of_ast a$ :: $p$] >>) al
-        <:patt< [] >>
-  | Qast.Tuple al -> <:patt< ($list:List.map patt_of_ast al$) >>
-  | Qast.Option None -> <:patt< None >>
-  | Qast.Option (Some a) -> <:patt< Some $patt_of_ast a$ >>
-  | Qast.Str s -> <:patt< $str:s$ >>
-  | Qast.Bool True -> <:patt< True >>
-  | Qast.Bool False -> <:patt< False >>
-  | Qast.Cons a1 a2 -> <:patt< [$patt_of_ast a1$ :: $patt_of_ast a2$] >>
-  | Qast.Append _ _ -> failwith "bad pattern"
-  | Qast.Record lal -> <:patt< {$list:List.map label_patt_of_ast lal$} >>
-  | Qast.Loc -> <:patt< _ >>
-  | Qast.Antiquot loc s ->
-      let p =
-        try Grammar.Entry.parse Pcaml.patt_eoi (Stream.of_string s) with
-        [ Stdpp.Exc_located (bp, ep) exc ->
-            raise (Stdpp.Exc_located (fst loc + bp, fst loc + ep) exc) ]
-      in
-      <:patt< $anti:p$ >> ]
-and label_patt_of_ast (l, a) = (<:patt< MLast.$lid:l$ >>, patt_of_ast a);
-
 value apply_entry e =
   let f s = Grammar.Entry.parse e (Stream.of_string s) in
-  let expr s = expr_of_ast (f s) in
-  let patt s = patt_of_ast (f s) in
+  let expr s = Qast.to_expr (f s) in
+  let patt s = Qast.to_patt (f s) in
   Quotation.ExAst (expr, patt)
 ;
 

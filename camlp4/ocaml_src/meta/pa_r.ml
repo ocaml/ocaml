@@ -296,7 +296,6 @@ Grammar.extend
      grammar_entry_create "mutable_flag"
    and virtual_flag : 'virtual_flag Grammar.Entry.e =
      grammar_entry_create "virtual_flag"
-   and amp_flag : 'amp_flag Grammar.Entry.e = grammar_entry_create "amp_flag"
    and warning_sequence : 'warning_sequence Grammar.Entry.e =
      grammar_entry_create "warning_sequence"
    in
@@ -2264,16 +2263,14 @@ Grammar.extend
         (fun (t : 'ctyp) (loc : int * int) -> (MLast.RfInh t : 'row_field));
       [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (ident : 'ident Grammar.Entry.e));
-       Gramext.Stoken ("", "of");
-       Gramext.Snterm
-         (Grammar.Entry.obj (amp_flag : 'amp_flag Grammar.Entry.e));
+       Gramext.Stoken ("", "of"); Gramext.Sopt (Gramext.Stoken ("", "&"));
        Gramext.Slist1sep
          (Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e)),
           Gramext.Stoken ("", "&"))],
       Gramext.action
-        (fun (l : 'ctyp list) (ao : 'amp_flag) _ (i : 'ident) _
+        (fun (l : 'ctyp list) (ao : string option) _ (i : 'ident) _
            (loc : int * int) ->
-           (MLast.RfTag (i, ao, l) : 'row_field));
+           (MLast.RfTag (i, o2b ao, l) : 'row_field));
       [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (ident : 'ident Grammar.Entry.e))],
       Gramext.action
@@ -2476,11 +2473,6 @@ Grammar.extend
      [[], Gramext.action (fun (loc : int * int) -> (false : 'virtual_flag));
       [Gramext.Stoken ("", "virtual")],
       Gramext.action (fun _ (loc : int * int) -> (true : 'virtual_flag))]];
-    Grammar.Entry.obj (amp_flag : 'amp_flag Grammar.Entry.e), None,
-    [None, None,
-     [[], Gramext.action (fun (loc : int * int) -> (false : 'amp_flag));
-      [Gramext.Stoken ("", "&")],
-      Gramext.action (fun _ (loc : int * int) -> (true : 'amp_flag))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.Level "top"),
     [None, None,
