@@ -13,6 +13,8 @@
 
 /* Interface with the debugger */
 
+#include <string.h>
+
 #include "config.h"
 #include "debugger.h"
 #include "fail.h"
@@ -41,13 +43,11 @@ void debugger(event)
 
 #else
 
-#include <string.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
