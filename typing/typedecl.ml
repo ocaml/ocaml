@@ -141,7 +141,8 @@ let transl_declaration2 env (name, sdecl) (id, decl) =
                   raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
                 all_constrs := StringSet.add name !all_constrs)
               cstrs;
-            if List.length cstrs > Config.max_tag then
+            if List.length (List.filter (fun (name, args) -> args <> []) cstrs)
+               > Config.max_tag then
               raise(Error(sdecl.ptype_loc, Too_many_constructors));
             Type_variant(List.map
               (fun (name, args) ->
@@ -355,7 +356,8 @@ let report_error ppf = function
   | Duplicate_constructor s ->
       fprintf ppf "Two constructors are named %s" s
   | Too_many_constructors ->
-      fprintf ppf "Too many constructors -- maximum is %i constructors"
+      fprintf ppf "Too many non-constant constructors -- \
+                   maximum is %i non-constant constructors"
         Config.max_tag
   | Duplicate_label s ->
       fprintf ppf "Two labels are named %s" s
