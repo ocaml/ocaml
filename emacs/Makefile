@@ -30,6 +30,7 @@ install:
 
 simple-install:
 	@echo "Installing in $(EMACSDIR)..."
+	if test -d $(EMACSDIR); then : ; else mkdir -p $(EMACSDIR); fi
 	cp $(FILES) $(EMACSDIR)
 	cd $(EMACSDIR); $(EMACS) --batch --eval '$(COMPILECMD)'
 
