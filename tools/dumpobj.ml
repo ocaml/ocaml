@@ -81,9 +81,9 @@ let rec print_struct_const = function
 let rec print_obj x =
   if Obj.is_block x then begin
     match Obj.tag x with
-      253 ->                            (* string *)
+      252 ->                            (* string *)
         printf "\"%s\"" (String.escaped (Obj.magic x : string))
-    | 254 ->                            (* float *)
+    | 253 ->                            (* float *)
         printf "%.12g" (Obj.magic x : float)
     | _ ->
         printf "<%d>" (Obj.tag x);
