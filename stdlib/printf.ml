@@ -40,11 +40,11 @@ let fprintf outchan format =
                     int_of_string (String.sub format (i+1) (j-i-1))
                   with _ ->
                     invalid_arg "fprintf: bad %s format" in
-                if p > 0 & String.length s < p then begin
+                if p > 0 && String.length s < p then begin
                   output_string outchan
                                 (String.make (p - String.length s) ' ');
                   output_string outchan s
-                end else if p < 0 & String.length s < -p then begin
+                end else if p < 0 && String.length s < -p then begin
                   output_string outchan s;
                   output_string outchan
                                 (String.make (-p - String.length s) ' ')
@@ -124,10 +124,10 @@ let sprintf format =
                     try
                       int_of_string (String.sub format (i+1) (j-i-1))
                     with _ ->
-                      invalid_arg "fprintf: bad %s format" in
-                  if p > 0 & String.length s < p then
+                      invalid_arg "sprintf: bad %s format" in
+                  if p > 0 && String.length s < p then
                     s :: String.make (p - String.length s) ' ' :: accu1
-                  else if p < 0 & String.length s < -p then
+                  else if p < 0 && String.length s < -p then
                     String.make (-p - String.length s) ' ' :: s :: accu1
                   else
                     s :: accu1
@@ -136,7 +136,7 @@ let sprintf format =
         | 'c' ->
             Obj.magic(fun c ->
               doprn (succ j) (succ j) (String.make 1 c :: accu1))
-        | 'd' | 'o' | 'x' | 'X' | 'u' ->
+        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
             Obj.magic(fun n ->
               doprn (succ j) (succ j)
                     (format_int (String.sub format i (j-i+1)) n :: accu1))
