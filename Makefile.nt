@@ -185,10 +185,10 @@ installbyt:
 	cp toplevel\topdirs.cmi $(LIBDIR)\topdirs.cmi
 	cd tools & $(MAKEREC) install
 	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) install & cd ..\..)
-	cd wingui & $(MAKEREC) install
-	cp README.win32 $(DISTRIB)\Readme.txt
-	cp LICENSE $(DISTRIB)\License.txt
-	cp Changes $(DISTRIB)\Changes.txt
+	cd wingui & $(MAKE) -nologo install
+	copy /a README.win32 $(DISTRIB)\Readme.txt
+	copy /a LICENSE $(DISTRIB)\License.txt
+	copy /a Changes $(DISTRIB)\Changes.txt
 
 # Installation of the native-code compiler
 installopt:

@@ -37,15 +37,15 @@ directories and files:
 Installing the toplevel application:
 
   Copy the file camlsl\cslwin.ini to the Windows system directory
-  (e.g. C:\windows). This file assumes that the standard library resides
-  in C:\camlsl\lib. If this is not the case, edit the file cslwin.ini
+  (e.g. C:\windows). This file assumes that the Caml distribution
+  resides in C:\camlsl. If this is not the case, edit the file cslwin.ini
   and change the line that says
 
-          CmdLine=cslrun C:\camlsl\lib\csltop -I C:\camlsl\lib
+          CmdLine=cslrun c:\camlsl\bin\csltop.exe -I c:\camlsl\lib
   to
-          CmdLine=cslrun <caml_dir>\lib\csltop -I <caml_dir>\lib
+          CmdLine=cslrun <caml_dir>\bin\csltop.exe -I <caml_dir>\lib
   e.g.
-          CmdLine=cslrun D:\lang\camlsl\lib\csltop -I D:\lang\camlsl\lib
+          CmdLine=cslrun d:\lang\camlsl\bin\csltop.exe -I d:\lang\camlsl\lib
 
 Installing the command-line tools:
 
@@ -92,9 +92,11 @@ performance, but none of the currently available ports of GCC for
 Win32 is sufficiently complete, robust and stable to compile Caml
 Special Light.
 
-* The "num" and "str" libraries are available under Win32. The other
-external libraries ("unix", "threads", "camltk4") make heavy use of
-Unix system calls and require considerable work to run under Win32.
+* The "num", "str" and "graph" libraries are available under Win32.
+("graph" works only under the toplevel application).
+The other external libraries ("unix", "threads", "camltk4") make heavy
+use of Unix system calls and require considerable work to run under
+Win32.
 
 
 CREDITS:
