@@ -488,6 +488,10 @@ let emit_instr i =
         end;
         incr fp_offset
     | Lop(Iintoffloat) ->
+        if i.arg.(0).loc <> Reg 100 then begin
+          `	fldl	{emit_reg i.arg.(0)}\n`;
+          incr fp_offset
+        end;
         stack_offset := !stack_offset - 8;
         `	subl	$8, %esp\n`;
         `	fnstcw	4(%esp)\n`;
@@ -495,7 +499,6 @@ let emit_instr i =
         `	movb    $12, %ah\n`;
         `	movl	%eax, (%esp)\n`;
         `	fldcw	(%esp)\n`;
-        `	fldl	{emit_reg i.arg.(0)}\n`;
         begin match i.res.(0).loc with
           Stack s ->
             `	fistpl	{emit_reg i.res.(0)}\n`
@@ -503,6 +506,7 @@ let emit_instr i =
             `	fistpl	(%esp)\n`;
             `	movl	(%esp), {emit_reg i.res.(0)}\n`
         end;
+        decr fp_offset;
         `	fldcw	4(%esp)\n`;
         `	addl	$8, %esp\n`;
         stack_offset := !stack_offset + 8
