@@ -51,7 +51,7 @@ char * transcode[] = {
 
 #define STACK_SIZE 100
 
-struct { int sh, sv, sw, sx, sy, sz } stack[STACK_SIZE];
+struct { int sh, sv, sw, sx, sy, sz; } stack[STACK_SIZE];
 
 struct known_font_struct {
   char * prefix;
@@ -87,7 +87,7 @@ void fontdef(input, fontnum)
        i < sizeof(known_fonts) / sizeof(struct known_font_struct);
        i++) {
     if (strncmp(font[fontnum].name, known_fonts[i].prefix,
-                strlen(known_fonts[i].prefix)) == NULL) {
+                strlen(known_fonts[i].prefix)) == 0) {
       font[fontnum].encoding = known_fonts[i].encoding;
       font[fontnum].style = known_fonts[i].style;
       return;

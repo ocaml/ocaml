@@ -1,28 +1,28 @@
 \section{Expressions} \label{s:value-expr}
 \pdfsection{Expressions}
-\ikwd{in\@\verb`in`|see{\verb`let`}}
-\ikwd{and\@\verb`and`|see{\verb`let`, \verb`type`, \verb`class`}}
-\ikwd{rec\@\verb`rec`|see{\verb`let`}}
-\ikwd{let\@\verb`let`}
-\ikwd{try\@\verb`try`}
-\ikwd{function\@\verb`function`}
-\ikwd{fun\@\verb`fun`}
-\ikwd{with\@\verb`with`|see{\verb`match`, \verb`try`}}
-\ikwd{done\@\verb`done`|see{\verb`while`, \verb`for`}}
-\ikwd{do\@\verb`do`|see{\verb`while`, \verb`for`}}
-\ikwd{downto\@\verb`downto`|see{\verb`for`}}
-\ikwd{to\@\verb`to`|see{\verb`for`}}
-\ikwd{for\@\verb`for`}
-\ikwd{else\@\verb`else`|see{\verb`if`}}
-\ikwd{then\@\verb`then`|see{\verb`if`}}
-\ikwd{if\@\verb`if`}
-\ikwd{of\@\verb`of`|see{\verb`type`, \verb`exception`}}
-\ikwd{or\@\verb`or`}
-\ikwd{match\@\verb`match`}
-\ikwd{begin\@\verb`begin`}
-\ikwd{end\@\verb`end`}
-\ikwd{when\@\verb`when`}
-\ikwd{new\@\verb`new`}
+\ikwd{in\@\texttt{in}|see{\texttt{let}}}
+\ikwd{and\@\texttt{and}|see{\texttt{let}, \texttt{type}, \texttt{class}}}
+\ikwd{rec\@\texttt{rec}|see{\texttt{let}}}
+\ikwd{let\@\texttt{let}}
+\ikwd{try\@\texttt{try}}
+\ikwd{function\@\texttt{function}}
+\ikwd{fun\@\texttt{fun}}
+\ikwd{with\@\texttt{with}|see{\texttt{match}, \texttt{try}}}
+\ikwd{done\@\texttt{done}|see{\texttt{while}, \texttt{for}}}
+\ikwd{do\@\texttt{do}|see{\texttt{while}, \texttt{for}}}
+\ikwd{downto\@\texttt{downto}|see{\texttt{for}}}
+\ikwd{to\@\texttt{to}|see{\texttt{for}}}
+\ikwd{for\@\texttt{for}}
+\ikwd{else\@\texttt{else}|see{\texttt{if}}}
+\ikwd{then\@\texttt{then}|see{\texttt{if}}}
+\ikwd{if\@\texttt{if}}
+\ikwd{of\@\texttt{of}|see{\texttt{type}, \texttt{exception}}}
+\ikwd{or\@\texttt{or}}
+\ikwd{match\@\texttt{match}}
+\ikwd{begin\@\texttt{begin}}
+\ikwd{end\@\texttt{end}}
+\ikwd{when\@\texttt{when}}
+\ikwd{new\@\texttt{new}}
 
 \begin{syntax}
 expr:
@@ -82,14 +82,14 @@ The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
 precedence come first. For infix and prefix symbols, we write
 ``"*"\ldots'' to mean ``any symbol starting with "*"''.
-\ikwd{not\@\verb`not`}%
-\ikwd{or\@\verb`or`}%
-\ikwd{if\@\verb`if`}%
-\ikwd{fun\@\verb`fun`}%
-\ikwd{function\@\verb`function`}%
-\ikwd{match\@\verb`match`}%
-\ikwd{try\@\verb`try`}%
-\ikwd{let\@\verb`let`}%
+\ikwd{not\@\texttt{not}}%
+\ikwd{or\@\texttt{or}}%
+\ikwd{if\@\texttt{if}}%
+\ikwd{fun\@\texttt{fun}}%
+\ikwd{function\@\texttt{function}}%
+\ikwd{match\@\texttt{match}}%
+\ikwd{try\@\texttt{try}}%
+\ikwd{let\@\texttt{let}}%
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(    .["}{--}
@@ -125,8 +125,8 @@ this path in the current evaluation environment. The path can
 be either a value name or an access path to a value component of a module.
 
 \subsubsection*{Parenthesized expressions}
-\ikwd{begin\@\verb`begin`}
-\ikwd{end\@\verb`end`}
+\ikwd{begin\@\texttt{begin}}
+\ikwd{end\@\texttt{end}}
 
 The expressions @'(' expr ')'@ and @'begin' expr 'end'@ have the same
 value as @expr@. Both constructs are semantically equivalent, but it
@@ -156,7 +156,7 @@ expr_n@ are evaluated is not specified.
 
 Two syntactic forms are provided to define functions. The first form
 is introduced by the keyword "function":
-\ikwd{function\@\verb`function`}
+\ikwd{function\@\texttt{function}}
 \begin{latexonly}
 $$\begin{array}{rlll}
 \token{function} & {\sl pattern}_1 & \token{->} & {\sl expr}_1 \\
@@ -190,7 +190,7 @@ matches the argument, the exception "Match_failure" is raised.
 \medskip
 
 The other form of function definition is introduced by the keyword "fun":
-\ikwd{fun\@\verb`fun`}
+\ikwd{fun\@\texttt{fun}}
 \begin{center}
 @"fun" pattern_1 \ldots pattern_n "->" expr@
 \end{center}
@@ -208,7 +208,7 @@ If the matching fails, the exception "Match_failure" is raised.
 
 \subsubsection*{Guards in pattern-matchings}
 
-\ikwd{when\@\verb`when`}
+\ikwd{when\@\texttt{when}}
 Cases of a pattern matching (in the "function", "fun", "match" and
 "try" constructs) can include guard expressions, which are
 arbitrary boolean expressions that must evaluate to "true" for the
@@ -238,7 +238,7 @@ is resumed against the patterns following @pattern_i@.
 
 \subsubsection*{Local definitions} \label{s:localdef}
 
-\ikwd{let\@\verb`let`}
+\ikwd{let\@\texttt{let}}
 
 The {\tt let} and {\tt let rec} constructs bind value names locally.
 The construct
@@ -315,7 +315,7 @@ The expression @expr_1 ";" expr_2@ evaluates @expr_1@ first, then
 @expr_2@, and returns the value of @expr_2@.
 
 \subsubsection*{Conditional}
-\ikwd{if\@\verb`if`}
+\ikwd{if\@\texttt{if}}
 
 The expression @"if" expr_1 "then" expr_2 "else" expr_3@ evaluates to
 the value of @expr_2@ if @expr_1@ evaluates to the boolean @"true"@,
@@ -325,7 +325,7 @@ and to the value of @expr_3@ if @expr_1@ evaluates to the boolean
 The @"else" expr_3@ part can be omitted, in which case it defaults to
 @"else" "()"@.
 
-\subsubsection*{Case expression}\ikwd{match\@\verb`match`}
+\subsubsection*{Case expression}\ikwd{match\@\texttt{match}}
 
 The expression
 \begin{latexonly}
@@ -368,7 +368,7 @@ exactly as
 @'if' expr_1 'then' expr_2 'else' 'false'@.
 \end{center}
 
-\ikwd{or\@\verb`or`}
+\ikwd{or\@\texttt{or}}
 The expression @expr_1 'or' expr_2@ evaluates to @'true'@ if one of
 @expr_1@ and @expr_2@ evaluates to @'true'@; otherwise, it evaluates to
 @'false'@. The first component, @expr_1@, is evaluated first. The
@@ -381,14 +381,14 @@ exactly as
 
 \subsubsection*{Loops}
 
-\ikwd{while\@\verb`while`}
+\ikwd{while\@\texttt{while}}
 The expression @'while' expr_1 'do' expr_2 'done'@ repeatedly
 evaluates @expr_2@ while @expr_1@ evaluates to @'true'@. The loop
 condition @expr_1@ is evaluated and tested at the beginning of each
 iteration. The whole @'while' \ldots 'done'@ expression evaluates to
 the unit value @'()'@.
 
-\ikwd{for\@\verb`for`}
+\ikwd{for\@\texttt{for}}
 The expression @'for' name '=' expr_1 'to' expr_2 'do' expr_3 'done'@
 first evaluates the expressions @expr_1@ and @expr_2@ (the boundaries)
 into integer values \var{n} and \var{p}. Then, the loop body @expr_3@ is
@@ -418,7 +418,7 @@ In both cases, the whole @'for'@ expression evaluates to the unit
 value @'()'@.
 
 \subsubsection*{Exception handling}
-\ikwd{try\@\verb`try`}
+\ikwd{try\@\texttt{try}}
 
 The expression
 \begin{latexonly}
@@ -591,7 +591,7 @@ details). Their meaning may be changed at any time using
 
 \subsubsection*{Object creation} \label{s:objects}
 
-\ikwd{new\@\verb`new`}
+\ikwd{new\@\texttt{new}}
 
 When @class-path@ evaluates to a class body, @'new' class-path@
 evaluates to an object containing the instance variables and

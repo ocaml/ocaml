@@ -1,6 +1,6 @@
 \section{Patterns}
 \pdfsection{Patterns}
-\ikwd{as\@\verb`as`}
+\ikwd{as\@\texttt{as}}
 
 \begin{syntax}
 pattern:
@@ -21,7 +21,7 @@ pattern:
 The table below shows the relative precedences and associativity of
 operators and non-closed pattern constructions. The constructions with
 higher precedences come first.
-\ikwd{as\@\verb`as`}
+\ikwd{as\@\texttt{as}}
 \begin{tableau}{|l|l|}{Operator}{Associativity}
 \entree{Constructor application}{--}
 \entree{"::"}{right}
@@ -54,7 +54,7 @@ A pattern consisting in a constant matches the values that
 are equal to this constant.
 
 \subsubsection*{Alias patterns}
-\ikwd{as\@\verb`as`}
+\ikwd{as\@\texttt{as}}
 
 The pattern @pattern_1 "as" value-name@ matches the same values as
 @pattern_1@. If the matching against @pattern_1@ is successful,

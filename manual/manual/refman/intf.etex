@@ -1,7 +1,7 @@
 \section{Module interfaces}
-\ikwd{value\@\verb`value`}
-\ikwd{type\@\verb`type`}
-\ikwd{exception\@\verb`exception`}
+\ikwd{value\@\texttt{value}}
+\ikwd{type\@\texttt{type}}
+\ikwd{exception\@\texttt{exception}}
 
 \begin{syntax}
 interface:

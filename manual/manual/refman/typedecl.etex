@@ -8,7 +8,7 @@ variant types, record types, type abbreviations, or abstract data
 types. They also bind the value constructors and record labels
 associated with the definition.
 
-\ikwd{type\@\verb`type`}
+\ikwd{type\@\texttt{type}}
 
 \begin{syntax}
 type-definition:
@@ -41,8 +41,8 @@ constraint:
     'constraint' "'" ident '=' typexpr
 ;
 \end{syntax}
-\ikwd{mutable\@\verb`mutable`}
-\ikwd{constraint\@\verb`constraint`}
+\ikwd{mutable\@\texttt{mutable}}
+\ikwd{constraint\@\texttt{constraint}}
 
 Type definitions are introduced by the "type" keyword, and
 consist in one or several simple definitions, possibly mutually
@@ -90,7 +90,7 @@ label-decl_n@ describe the labels associated to this record type.
 The label declaration @label-name ':' typexpr@ declares @label-name@
 as a label whose argument has type @typexpr@.
 The label declaration @'mutable' label-name ':' typexpr@
-\ikwd{mutable\@\verb`mutable`}
+\ikwd{mutable\@\texttt{mutable}}
 behaves similarly; in addition, it allows physical modification over
 the argument to this label.
 
@@ -125,7 +125,7 @@ must agree with the representation: it must be of the same kind
 in the same order, with the same arguments. 
 \end{description}
 
-\ikwd{constraint\@\verb`constraint`}
+\ikwd{constraint\@\texttt{constraint}}
 The construct @ 'constraint' "'" ident '=' typexpr @ allows to specify
 type parameters.  Any actual type argument corresponding to the type
 parameter @ident@ have to be an instance of @typexpr@ (more precisely,
@@ -133,7 +133,7 @@ parameter @ident@ have to be an instance of @typexpr@ (more precisely,
 appear in the type equation and the type declaration.
 
 \subsection{Exception definitions} \label{s:excdef}
-\ikwd{exception\@\verb`exception`}
+\ikwd{exception\@\texttt{exception}}
 
 \begin{syntax}
 exception-definition:

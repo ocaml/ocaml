@@ -9,15 +9,15 @@ language.
 Class types are the class-level equivalent of type expressions: they
 specify the general shape and type properties of classes.
 
-\ikwd{object\@\verb`object`}
-\ikwd{end\@\verb`end`}
-\ikwd{inherit\@\verb`inherit`}
-\ikwd{val\@\verb`val`}
-\ikwd{mutable\@\verb`mutable`}
-\ikwd{method\@\verb`method`}
-\ikwd{private\@\verb`private`}
-\ikwd{virtual\@\verb`virtual`}
-\ikwd{constraint\@\verb`constraint`}
+\ikwd{object\@\texttt{object}}
+\ikwd{end\@\texttt{end}}
+\ikwd{inherit\@\texttt{inherit}}
+\ikwd{val\@\texttt{val}}
+\ikwd{mutable\@\texttt{mutable}}
+\ikwd{method\@\texttt{method}}
+\ikwd{private\@\texttt{private}}
+\ikwd{virtual\@\texttt{virtual}}
+\ikwd{constraint\@\texttt{constraint}}
 
 \begin{syntax}
 class-type:
@@ -74,7 +74,7 @@ mutable instance variable.
 
 \subsubsection*{Inheritance}
 
-\ikwd{inherit\@\verb`inherit`}
+\ikwd{inherit\@\texttt{inherit}}
 
 The inheritance construct @'inherit' class-type@ allows to include
 methods and instance variables from other classes types.
@@ -83,8 +83,8 @@ into the current class type.
 
 \subsubsection*{Instance variable specification}
 
-\ikwd{val\@\verb`val`}
-\ikwd{mutable\@\verb`mutable`}
+\ikwd{val\@\texttt{val}}
+\ikwd{mutable\@\texttt{mutable}}
 
 A specification of an instance variable is written
 @'val' ['mutable'] inst-var-name ':' typexpr@, where @inst-var-name@
@@ -98,8 +98,8 @@ specification of an instance variable of the same name.
 
 \subsubsection*{Method specification}
 
-\ikwd{method\@\verb`method`}
-\ikwd{private\@\verb`private`}
+\ikwd{method\@\texttt{method}}
+\ikwd{private\@\texttt{private}}
 
 A specification of an method is written
 @'method' ['private'] method-name ':' typexpr@, where @method-name@ is
@@ -111,9 +111,9 @@ Several specification for the same method must have compatible types.
 
 \subsubsection*{Virtual method specification}
 
-\ikwd{virtual\@\verb`virtual`}
-\ikwd{method\@\verb`method`}
-\ikwd{private\@\verb`private`}
+\ikwd{virtual\@\texttt{virtual}}
+\ikwd{method\@\texttt{method}}
+\ikwd{private\@\texttt{private}}
 
 Virtual method specification is written @'method' ['private']
 'virtual' method-name ':' typexpr@, where @method-name@ is the name of
@@ -121,7 +121,7 @@ the method and @typexpr@ its expected type.
 
 \subsubsection*{Constraints on type parameters}
 
-\ikwd{constraint\@\verb`constraint`}
+\ikwd{constraint\@\texttt{constraint}}
 
 The construct @'constraint' typexpr_1 '=' typexpr_2@ forces the two
 type expressions to be equals. This is typically used to specify type
@@ -134,22 +134,22 @@ Class expressions are the class-level equivalent of value expressions:
 they evaluate to classes, thus providing implementations for the
 specifications expressed in class types.
 
-\ikwd{object\@\verb`object`}
-\ikwd{end\@\verb`end`}
-\ikwd{fun\@\verb`fun`}
-\ikwd{let\@\verb`let`}
-\ikwd{rec\@\verb`rec`}
-\ikwd{in\@\verb`in`}
-\ikwd{and\@\verb`and`}
-\ikwd{inherit\@\verb`inherit`}
-\ikwd{as\@\verb`as`}
-\ikwd{val\@\verb`val`}
-\ikwd{mutable\@\verb`mutable`}
-\ikwd{method\@\verb`method`}
-\ikwd{private\@\verb`private`}
-\ikwd{virtual\@\verb`virtual`}
-\ikwd{constraint\@\verb`constraint`}
-\ikwd{initializer\@\verb`initializer`}
+\ikwd{object\@\texttt{object}}
+\ikwd{end\@\texttt{end}}
+\ikwd{fun\@\texttt{fun}}
+\ikwd{let\@\texttt{let}}
+\ikwd{rec\@\texttt{rec}}
+\ikwd{in\@\texttt{in}}
+\ikwd{and\@\texttt{and}}
+\ikwd{inherit\@\texttt{inherit}}
+\ikwd{as\@\texttt{as}}
+\ikwd{val\@\texttt{val}}
+\ikwd{mutable\@\texttt{mutable}}
+\ikwd{method\@\texttt{method}}
+\ikwd{private\@\texttt{private}}
+\ikwd{virtual\@\texttt{virtual}}
+\ikwd{constraint\@\texttt{constraint}}
+\ikwd{initializer\@\texttt{initializer}}
 
 \begin{syntax}
 class-expr:
@@ -239,7 +239,7 @@ extensible.
 
 \subsubsection*{Inheritance}
 
-\ikwd{inherit\@\verb`inherit`}
+\ikwd{inherit\@\texttt{inherit}}
 
 The inheritance construct @'inherit' class-expr@ allows to reuse
 methods and instance variables from other classes. The class
@@ -248,7 +248,7 @@ variables, methods and initializers from this class body are added
 into the current class.  The addition of a method will override any
 previously defined methods of the same name.
 
-\ikwd{as\@\verb`as`}
+\ikwd{as\@\texttt{as}}
 An ancestor can be bound by prepending the construct @'as' value-name@
 to the inheritance construct above.  @value-name@ is not a true
 variable and can only be used to select a method, i.e. in an expression
@@ -258,8 +258,8 @@ redefined in the current class.
 
 \subsubsection*{Instance variable definition}
 
-\ikwd{val\@\verb`val`}
-\ikwd{mutable\@\verb`mutable`}
+\ikwd{val\@\texttt{val}}
+\ikwd{mutable\@\texttt{mutable}}
 
 The definition @'val' ['mutable'] inst-var-name '=' expr@ adds an
 instance variable @inst-var-name@ whose initial value is the value of
@@ -274,8 +274,8 @@ initializers of the class.
 
 \subsubsection*{Method definition}
 
-\ikwd{method\@\verb`method`}
-\ikwd{private\@\verb`private`}
+\ikwd{method\@\texttt{method}}
+\ikwd{private\@\texttt{private}}
 
 Method definition is written @'method' method-name '=' expr@.  The
 definition of a method overrides any previous definition of this
@@ -314,9 +314,9 @@ been replaced by the values of the corresponding expressions @expr_1,
 
 \subsubsection*{Virtual method definition}
 
-\ikwd{virtual\@\verb`virtual`}
-\ikwd{method\@\verb`method`}
-\ikwd{private\@\verb`private`}
+\ikwd{virtual\@\texttt{virtual}}
+\ikwd{method\@\texttt{method}}
+\ikwd{private\@\texttt{private}}
 
 Method specification is written @'method' ['private'] 'virtual'
 method-name ':' typexpr@.  It specifies whether the method is public
@@ -324,7 +324,7 @@ or private, and gives its type.
 
 \subsubsection*{Constraints on type parameters}
 
-\ikwd{constraint\@\verb`constraint`}
+\ikwd{constraint\@\texttt{constraint}}
 
 The construct @'constraint' typexpr_1 '=' typexpr_2@ forces the two
 type expressions to be equals. This is typically used to specify type
@@ -333,7 +333,7 @@ expression.
 
 \subsubsection*{Initializers}
 
-\ikwd{initializer\@\verb`initializer`}
+\ikwd{initializer\@\texttt{initializer}}
 
 A class initializer @'initializer' expr@ specifies an expression that
 will be evaluated when an object will be created from the class, once
@@ -342,9 +342,9 @@ all the instance variables have been initialized.
 \subsection{Class definitions}
 \label{s:classdef}
 
-\ikwd{class\@\verb`class`}
-\ikwd{and\@\verb`and`}
-\ikwd{virtual\@\verb`virtual`}
+\ikwd{class\@\texttt{class}}
+\ikwd{and\@\texttt{and}}
+\ikwd{virtual\@\texttt{virtual}}
 
 \begin{syntax}
 class-definition:
@@ -374,7 +374,7 @@ section~\ref{s:sharp-types}).
 
 \subsubsection*{Virtual class}
 
-\ikwd{virtual\@\verb`virtual`}
+\ikwd{virtual\@\texttt{virtual}}
 A class must be flagged virtual if one of its methods is virtual (that
 is, appears in the class type, but is not actually defined).
 Objects cannot be created from a virtual class.
@@ -391,9 +391,9 @@ parameters or be bound in the constraint clause.
 \subsection{Class specification}
 \label{s:class-spec}
 
-\ikwd{class\@\verb`class`}
-\ikwd{and\@\verb`and`}
-\ikwd{virtual\@\verb`virtual`}
+\ikwd{class\@\texttt{class}}
+\ikwd{and\@\texttt{and}}
+\ikwd{virtual\@\texttt{virtual}}
 
 \begin{syntax}
 class-specification:
@@ -412,10 +412,10 @@ type parameters and their types match.
 \subsection{Class type definitions}
 \label{s:classtype}
 
-\ikwd{class\@\verb`class`}
-\ikwd{type\@\verb`type`}
-\ikwd{and\@\verb`and`}
-\ikwd{virtual\@\verb`virtual`}
+\ikwd{class\@\texttt{class}}
+\ikwd{type\@\texttt{type}}
+\ikwd{and\@\texttt{and}}
+\ikwd{virtual\@\texttt{virtual}}
 
 \begin{syntax}
 classtype-definition:

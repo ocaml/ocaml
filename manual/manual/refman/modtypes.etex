@@ -4,16 +4,16 @@
 Module types are the module-level equivalent of type expressions: they
 specify the general shape and type properties of modules.
 
-\ikwd{sig\@\verb`sig`}
-\ikwd{end\@\verb`end`}
-\ikwd{functor\@\verb`functor`}
-\ikwd{with\@\verb`with`}
-\ikwd{val\@\verb`val`}
-\ikwd{external\@\verb`external`}
-\ikwd{type\@\verb`type`}
-\ikwd{exception\@\verb`exception`}
-\ikwd{module\@\verb`module`}
-\ikwd{open\@\verb`open`}
+\ikwd{sig\@\texttt{sig}}
+\ikwd{end\@\texttt{end}}
+\ikwd{functor\@\texttt{functor}}
+\ikwd{with\@\texttt{with}}
+\ikwd{val\@\texttt{val}}
+\ikwd{external\@\texttt{external}}
+\ikwd{type\@\texttt{type}}
+\ikwd{exception\@\texttt{exception}}
+\ikwd{module\@\texttt{module}}
+\ikwd{open\@\texttt{open}}
 
 \begin{syntax}
 module-type:
@@ -51,8 +51,8 @@ The expression @'(' module-type ')'@ denotes the same type as
 
 \subsection{Signatures}
 
-\ikwd{sig\@\verb`sig`}
-\ikwd{end\@\verb`end`}
+\ikwd{sig\@\texttt{sig}}
+\ikwd{end\@\texttt{end}}
 
 Signatures are type specifications for structures. Signatures
 @'sig' \ldots 'end'@ are collections of type specifications for value
@@ -67,13 +67,13 @@ specification in a signature. The ";;" has no semantic meaning.
 
 \subsubsection*{Value specifications}
 
-\ikwd{val\@\verb`val`}
+\ikwd{val\@\texttt{val}}
 
 A specification of a value component in a signature is written
 @'val' value-name ':' typexpr@, where @value-name@ is the name of the
 value and @typexpr@ its expected type.
 
-\ikwd{external\@\verb`external`}
+\ikwd{external\@\texttt{external}}
 
 The form @'external' value-name ':' typexpr '=' external-declaration@
 is similar, except that it requires in addition the name to be
@@ -82,7 +82,7 @@ implemented as the external function specified in @external-declaration@
 
 \subsubsection*{Type specifications}
 
-\ikwd{type\@\verb`type`}
+\ikwd{type\@\texttt{type}}
 
 A specification of one or several type components in a signature is
 written @'type' typedef { 'and' typedef }@ and consists of a sequence
@@ -133,7 +133,7 @@ made visible to all users, and no fresh type is generated.
 
 \subsubsection*{Exception specification}
 
-\ikwd{exception\@\verb`exception`}
+\ikwd{exception\@\texttt{exception}}
 
 The specification @'exception' constr-decl@ in a signature requires the
 matching structure to provide an exception with the name and arguments
@@ -159,7 +159,7 @@ section~\ref{s:classtype}.
 
 \subsubsection*{Module specifications}
 
-\ikwd{module\@\verb`module`}
+\ikwd{module\@\texttt{module}}
 
 A specification of a module component in a signature is written
 @'module' module-name ':' module-type@, where @module-name@ is the
@@ -183,8 +183,8 @@ instead of
 
 \subsubsection*{Module type specifications}
 
-\ikwd{type\@\verb`type`}
-\ikwd{module\@\verb`module`}
+\ikwd{type\@\texttt{type}}
+\ikwd{module\@\texttt{module}}
 
 A module type component of a signature can be specified either as a
 manifest module type or as an abstract module type.
@@ -202,7 +202,7 @@ requires the name @modtype-name@ to be implemented by the module type
 
 \subsubsection{Opening a module path}
 
-\ikwd{open\@\verb`open`}
+\ikwd{open\@\texttt{open}}
 
 The expression @'open' module-path@ in a signature does not specify
 any components. It simply affects the parsing of the following items
@@ -213,7 +213,7 @@ stops at the end of the signature expression.
 
 \subsection{Functor types}
 
-\ikwd{functor\@\verb`functor`}
+\ikwd{functor\@\texttt{functor}}
 
 The module type expression 
 @'functor' '(' module-name ':' module-type_1 ')' '->' module-type_2@ 
@@ -227,7 +227,7 @@ argument (``higher-order'' functor).
 
 \subsection{The "with" operator}
 
-\ikwd{with\@\verb`with`}
+\ikwd{with\@\texttt{with}}
 
 Assuming @module-type@ denotes a signature, the expression
 @module-type 'with' constraint { 'and' constraint }@ denotes the same

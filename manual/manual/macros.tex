@@ -140,7 +140,9 @@
 
 % Pour l'index
 
-\newcommand{\ikwd}{\altindex{\jobname.kwd}}
+\let\indexentry=\index
+\def\index{\indexentry{\jobname}}
+\def\ikwd{\indexentry{\jobname.kwd}}
 
 % Les en-tetes personnalises
 

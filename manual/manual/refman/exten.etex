@@ -21,9 +21,9 @@ parsers.
 Streams are presented by the following extensions to the syntactic
 classes of expressions:
 
-\ikwd{parser\@\verb`parser`}
-\ikwd{match\@\verb`match`}
-\ikwd{match\@\verb`when`}
+\ikwd{parser\@\texttt{parser}}
+\ikwd{match\@\texttt{match}}
+\ikwd{match\@\texttt{when}}
 
 \begin{syntax}
 expr:
@@ -126,7 +126,7 @@ that occur between \var{c} and \var{d} in the ASCII character set. For
 instance, the pattern "'0'..'9'" matches all characters that are digits.
 
 \section{Assertion checking}
-\ikwd{assert\@\verb`assert`}
+\ikwd{assert\@\texttt{assert}}
 
 Objective Caml supports the "assert" construct to check debugging assertions.
 The expression @"assert" expr@ evaluates the expression @expr@ and
@@ -140,7 +140,7 @@ checking can be turned off with the "-noassert" compiler option.
 
 
 \section{Deferred computations}
-\ikwd{lazy\@\verb`lazy`}
+\ikwd{lazy\@\texttt{lazy}}
 
 The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
 encapsulates the computation of @expr@.  The argument @expr@ is not
@@ -158,7 +158,7 @@ standard library (section~\ref{s:Lazy}).
 \index{force\@\verb`force`}%
 
 \section{Record copy with update}
-\ikwd{with\@\verb`with`}
+\ikwd{with\@\texttt{with}}
 
 The expression
 @"{" expr "with" lbl_1 "=" expr_1 ";" \ldots ";" lbl_n "=" expr_n "}"@
@@ -175,8 +175,8 @@ which are initialized to @expr_1 \ldots expr_n@.  For example:
 The two definitions of "proj" above are equivalent.
 
 \section{Local modules}
-\ikwd{let\@\verb`let`}
-\ikwd{module\@\verb`module`}
+\ikwd{let\@\texttt{let}}
+\ikwd{module\@\texttt{module}}
 
 The expression
 @"let" "module" module-name "=" module-expr "in" expr@

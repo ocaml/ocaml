@@ -21,8 +21,8 @@ identifier is in lowercase (written @lowercase-ident@ below) or in
 uppercase (written @capitalized-ident@).  Underscore is considered a
 lowercase letter for this purpose.
 
-\ikwd{false\@\verb`false`}
-\ikwd{true\@\verb`true`}
+\ikwd{false\@\texttt{false}}
+\ikwd{true\@\texttt{true}}
 
 \subsubsection*{Naming objects}
 

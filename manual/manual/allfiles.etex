@@ -1,5 +1,5 @@
-\makeindex
-\makealtindex{\jobname.kwd}
+\makeindex{\jobname}
+\makeindex{\jobname.kwd}
 
 \emergencystretch=50pt  % pour que TeX resolve les overfull hbox lui-meme
 
@@ -68,7 +68,7 @@
 \part{Appendix}
 \label{p:appendix}
  
-% \input biblio.tex
-\input index.tex
+\printindex{\jobname}{Index to the library}
+\printindex{\jobname.kwd}{Index of keywords}
 
 \end{document}

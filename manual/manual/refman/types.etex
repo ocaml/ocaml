@@ -1,7 +1,7 @@
 \section{Type expressions}
 \pdfsection{Type expressions}
 
-\ikwd{as\@\verb`as`}
+\ikwd{as\@\texttt{as}}
 
 \begin{syntax}
 typexpr:
@@ -26,7 +26,7 @@ method-type:
 The table below shows the relative precedences and associativity of
 operators and non-closed type constructions. The constructions with
 higher precedences come first.
-\ikwd{as\@\verb`as`}
+\ikwd{as\@\texttt{as}}
 \begin{tableau}{|l|l|}{Operator}{Associativity}
 \entree{Type constructor application}{--}
 \entree{"*"}{--}
@@ -78,7 +78,7 @@ application of the $n$-ary type constructor @typeconstr@ to the types
 
 \subsubsection*{Recursive types}
 
-\ikwd{as\@\verb`as`}
+\ikwd{as\@\texttt{as}}
 
 The type expression @typexpr 'as' "'" ident@ denotes the same type as
 @typexpr@, and also binds the type variable @ident@ to type @typexpr@

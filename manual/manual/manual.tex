@@ -1,4 +1,12 @@
-\documentstyle[11pt,fullpage,syntaxdef,alltt,altindex,makeidx,multicols,html,caml-sl]{book}
+\documentclass[11pt]{book}
+
+\usepackage{isolatin1}
+\usepackage{alltt}
+\usepackage{fullpage}
+\usepackage{syntaxdef}
+\usepackage{multind}
+\usepackage{html}
+\usepackage{caml-sl}
 
 \newif\ifplaintext
 \plaintextfalse
@@ -7,8 +15,6 @@
 \input macros.tex
 \raggedbottom
 
-
-\def \ikwd #1{\relax}
 \input allfiles.tex
 
 

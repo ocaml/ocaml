@@ -1,9 +1,17 @@
-\pdfoutput=1
-\pdfpagewidth=21cm
-\pdfpageheight=11in
-\pdfcompresslevel=7
+%\pdfoutput=1
+%\pdfpagewidth=21cm
+%\pdfpageheight=11in
+%\pdfcompresslevel=7
 
-\documentstyle[11pt,fullpage,syntaxdef,alltt,altindex,makeidx,multicols,html,caml-sl,isolatin]{book}
+\documentclass[11pt]{book}
+
+\usepackage{isolatin1}
+\usepackage{alltt}
+\usepackage{fullpage}
+\usepackage{syntaxdef}
+\usepackage{multind}
+\usepackage{html}
+\usepackage{caml-sl}
 
 \newif\ifplaintext
 \plaintextfalse
@@ -11,4 +19,5 @@
 \pdftrue
 \input macros.tex
 \raggedbottom
+
 \input allfiles.tex

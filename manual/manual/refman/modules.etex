@@ -5,15 +5,15 @@ Module expressions are the module-level equivalent of value
 expressions: they evaluate to modules, thus providing implementations
 for the specifications expressed in module types.
 
-\ikwd{struct\@\verb`struct`}
-\ikwd{end\@\verb`end`}
-\ikwd{functor\@\verb`functor`}
-\ikwd{let\@\verb`let`}
-\ikwd{external\@\verb`external`}
-\ikwd{type\@\verb`type`}
-\ikwd{exception\@\verb`exception`}
-\ikwd{module\@\verb`module`}
-\ikwd{open\@\verb`open`}
+\ikwd{struct\@\texttt{struct}}
+\ikwd{end\@\texttt{end}}
+\ikwd{functor\@\texttt{functor}}
+\ikwd{let\@\texttt{let}}
+\ikwd{external\@\texttt{external}}
+\ikwd{type\@\texttt{type}}
+\ikwd{exception\@\texttt{exception}}
+\ikwd{module\@\texttt{module}}
+\ikwd{open\@\texttt{open}}
 
 \begin{syntax}
 module-expr:
@@ -57,8 +57,8 @@ longer be accessed.
 
 \subsection{Structures}
 
-\ikwd{struct\@\verb`struct`}
-\ikwd{end\@\verb`end`}
+\ikwd{struct\@\texttt{struct}}
+\ikwd{end\@\texttt{end}}
 
 Structures @'struct' \ldots 'end'@ are collections of definitions for
 value names, type names, exceptions, module names and module type
@@ -76,7 +76,7 @@ meaning @'let' '_' '=' expr@, i.e. evaluate @expr@ for its side-effects.
 
 \subsubsection*{Value definitions}
 
-\ikwd{let\@\verb`let`}
+\ikwd{let\@\texttt{let}}
 
 A value definition @'let' ['rec'] let-binding  { 'and' let-binding }@
 bind value names in the same way as a @'let' \ldots 'in' \ldots@ expression
@@ -84,7 +84,7 @@ bind value names in the same way as a @'let' \ldots 'in' \ldots@ expression
 left-hand sides of the bindings are bound to the corresponding values
 in the right-hand sides.
 
-\ikwd{external\@\verb`external`}
+\ikwd{external\@\texttt{external}}
 
 A value definition @'external' value-name ':' typexpr '=' external-declaration@
 implements @value-name@ as the external function specified in
@@ -92,7 +92,7 @@ implements @value-name@ as the external function specified in
 
 \subsubsection*{Type definitions}
 
-\ikwd{type\@\verb`type`}
+\ikwd{type\@\texttt{type}}
 
 A definition of one or several type components is written
 @'type' typedef { 'and' typedef }@ and consists of a sequence
@@ -100,7 +100,7 @@ of mutually recursive definitions of type names.
 
 \subsubsection*{Exception definitions}
 
-\ikwd{exception\@\verb`exception`}
+\ikwd{exception\@\texttt{exception}}
 
 Exceptions are defined with the syntax @'exception' constr-decl@.
 
@@ -121,7 +121,7 @@ section~\ref{s:classtype}.
 
 \subsubsection*{Module definitions}
 
-\ikwd{module\@\verb`module`}
+\ikwd{module\@\texttt{module}}
 
 The basic form for defining a module component is
 @'module' module-name '=' module-expr@, which evaluates @module-expr@ and binds
@@ -149,8 +149,8 @@ which is equivalent to
 
 \subsubsection*{Module type definitions}
 
-\ikwd{type\@\verb`type`}
-\ikwd{module\@\verb`module`}
+\ikwd{type\@\texttt{type}}
+\ikwd{module\@\texttt{module}}
 
 A definition for a module type is written
 @'module' 'type' modtype-name '=' module-type@.
@@ -159,7 +159,7 @@ expression @module-type@.
 
 \subsubsection*{Opening a module path}
 
-\ikwd{open\@\verb`open`}
+\ikwd{open\@\texttt{open}}
 
 The expression @'open' module-path@ in a structure does not define any
 components nor perform any bindings. It simply affects the parsing of
@@ -172,7 +172,7 @@ the "open" stops at the end of the structure expression.
 
 \subsubsection*{Functor definition}
 
-\ikwd{functor\@\verb`functor`}
+\ikwd{functor\@\texttt{functor}}
 
 The expression @'functor' '(' module-name ':' module-type ')' '->'
 module-expr@ evaluates to a functor that takes as argument modules of
