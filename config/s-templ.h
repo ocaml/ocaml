@@ -186,3 +186,7 @@
 
 /* Define HAS_PUTENV if you have putenv(). */
 
+#define HAS_LOCALE
+
+/* Define HAS_LOCALE if you have the include file <locale.h> and the 
+   setlocale() function. */
