@@ -5,7 +5,7 @@
 /*             Damien Doligez, projet Para, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -28,5 +28,9 @@ extern long
 void init_gc (unsigned long, unsigned long, unsigned long,
               unsigned long, unsigned long, unsigned long);
 
+
+#ifdef DEBUG
+void heap_check (void);
+#endif
 
 #endif /* _gc_ctrl_ */
