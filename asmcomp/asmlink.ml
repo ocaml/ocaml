@@ -109,6 +109,7 @@ module IntSet = Set.Make(
 let make_startup_file filename info_list =
   let oc = open_out filename in
   Emitaux.output_channel := oc;
+  Location.input_name := "startup"; (* set the name of the "current" input *)
   Compilenv.reset "startup" 0; (* set the name of the "current" compunit *)
   Emit.begin_assembly();
   let name_list = List.map (fun ui -> ui.ui_name) info_list in

@@ -645,7 +645,11 @@ let begin_assembly() =
   `	.noalias $17,$sp; .noalias $17,$15; .noalias $18,$sp; .noalias $18,$15\n`;
   `	.noalias $19,$sp; .noalias $19,$15; .noalias $20,$sp; .noalias $20,$15\n`;
   `	.noalias $21,$sp; .noalias $21,$15; .noalias $22,$sp; .noalias $22,$15\n`;
-  `	.noalias $23,$sp; .noalias $23,$15\n\n`
+  `	.noalias $23,$sp; .noalias $23,$15\n\n`;
+  (* The following .file directive is intended to prevent the generation
+     of line numbers for the debugger, 'cos they make .o files larger
+     and slow down linking. *)
+  `	.file	1 \"{emit_string !Location.input_name}\"\n\n`
 
 let end_assembly () =
   let lbl = Compilenv.current_unit_name() ^ "_frametable" in

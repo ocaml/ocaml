@@ -553,10 +553,20 @@ let transl_function lbl params body =
 
 (* Translate all function definitions *)
 
-let rec transl_all_functions cont =
+module StringSet =
+  Set.Make(struct
+    type t = string
+    let compare = compare
+  end)
+
+let rec transl_all_functions already_translated cont =
   try
     let (lbl, params, body) = Queue.take functions in
-    transl_all_functions(transl_function lbl params body :: cont)
+    if StringSet.mem lbl already_translated then
+      transl_all_functions already_translated cont
+    else
+      transl_all_functions (StringSet.add lbl already_translated)
+                           (transl_function lbl params body :: cont)
   with Queue.Empty ->
     cont
 
@@ -630,7 +640,7 @@ let compunit ulam =
   structured_constants := [];
   let c1 = [Cfunction {fun_name = glob ^ "_entry"; fun_args = [];
                        fun_body = transl ulam; fun_fast = false}] in
-  let c2 = transl_all_functions c1 in
+  let c2 = transl_all_functions StringSet.empty c1 in
   let c3 = emit_all_constants c2 in
   Cdata [Cdefine_symbol glob; Cint 0] :: c3
 

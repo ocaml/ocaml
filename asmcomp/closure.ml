@@ -285,34 +285,23 @@ and close_one_function fenv cenv id funct =
 
 and close_switch fenv cenv num_keys cases =
   let index = Array.new num_keys 0 in
-  let num_cases = ref 0 and ucases = ref [] in
+  let ucases = ref []
+  and num_cases = ref 0
+  and cases_processed = ref [] in
   if List.length cases < num_keys then begin
     num_cases := 1;
     ucases := [Ustaticfail]
   end;
   List.iter
-    (function
-        (key, Lshared(lam, r)) ->
-          begin match !r with
-            None ->
-              let (ulam, _) = close fenv cenv lam in
-              ucases := ulam :: !ucases;
-              index.(key) <- !num_cases;
-              r := Some !num_cases;
-              incr num_cases
-          | Some n ->
-              index.(key) <- n
-          end
-      | (key, lam) ->
-          let (ulam, _) = close fenv cenv lam in
-          ucases := ulam :: !ucases;
-          index.(key) <- !num_cases;
-          incr num_cases)
-    cases;
-  List.iter
-    (function
-        (key, Lshared(lam, r)) -> r := None
-      | (key, lam) -> ())
+    (function (key, lam) ->
+      try
+        index.(key) <- List.assq lam !cases_processed
+      with Not_found ->
+        let (ulam, _) = close fenv cenv lam in
+        ucases := ulam :: !ucases;
+        index.(key) <- !num_cases;
+        cases_processed := (lam, !num_cases) :: !cases_processed;
+        incr num_cases)
     cases;
   (index, Array.of_list(List.rev !ucases))
 
@@ -320,4 +309,3 @@ and close_switch fenv cenv num_keys cases =
 
 let intro lam =
   let (ulam, approx) = close Tbl.empty Tbl.empty lam in ulam
-
