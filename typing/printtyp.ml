@@ -271,7 +271,9 @@ and tree_of_row_field sch (l, f) =
 
 and tree_of_typlist sch = function
   | [] -> []
-  | ty :: tyl -> tree_of_typexp sch ty :: tree_of_typlist sch tyl
+  | ty :: tyl ->
+      let tr = tree_of_typexp sch ty in
+      tr :: tree_of_typlist sch tyl
 
 and tree_of_typobject sch ty fi nm =
   begin match !nm with
@@ -623,7 +625,8 @@ let tree_of_constraints params =
     (fun ty list ->
        let ty' = unalias ty in
        if ty != ty' then
-         (tree_of_typexp true ty, tree_of_typexp true ty') :: list
+         let tr = tree_of_typexp true ty in
+         (tr, tree_of_typexp true ty') :: list
        else list)
     params []
 
@@ -759,7 +762,7 @@ let metho sch concrete ppf (lab, kind, ty) =
     fprintf ppf "@ @[<2>method %s%s%s :@ %a@]" priv virt lab (typexp sch 0) ty
   end
 
-let tree_of_metho sch concrete (lab, kind, ty) csil =
+let tree_of_metho sch concrete csil (lab, kind, ty) =
   if lab <> "*dummy method*" then begin
     let priv =
       match field_kind_repr kind with
@@ -813,20 +816,22 @@ let rec tree_of_class_type sch params =
       in
       let csil = [] in
       let csil =
-        List.fold_right (tree_of_metho sch sign.cty_concr) fields csil
+        List.fold_left (tree_of_metho sch sign.cty_concr) csil fields
       in
+      let all_vars =
+        Vars.fold (fun l (m, t) all -> (l, m, t) :: all) sign.cty_vars [] in
       let csil =
-        Vars.fold
-          (fun l (m, t) csil ->
+        List.fold_left
+          (fun csil (l, m, t) ->
              Ocsg_value (l, m = Mutable, tree_of_typexp sch t) :: csil)
-          sign.cty_vars csil
+          csil all_vars
       in
       let csil =
-        List.fold_right
-          (fun (ty1, ty2) csil -> Ocsg_constraint (ty1, ty2) :: csil)
-          (tree_of_constraints params) csil
+        List.fold_left
+          (fun csil (ty1, ty2) -> Ocsg_constraint (ty1, ty2) :: csil)
+          csil (tree_of_constraints params)
       in
-      Octy_signature (self_ty, csil)
+      Octy_signature (self_ty, List.rev csil)
   | Tcty_fun (l, ty, cty) ->
       let lab = if !print_labels && l <> "" || is_optional l then l else "" in
       let ty =
@@ -835,7 +840,8 @@ let rec tree_of_class_type sch params =
          | Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
          | _ -> newconstr (Path.Pident(Ident.create "<hidden>")) []
        else ty in
-      Octy_fun (lab, tree_of_typexp sch ty, tree_of_class_type sch params cty)
+      let tr = tree_of_typexp sch ty in
+      Octy_fun (lab, tr, tree_of_class_type sch params cty)
 
 let class_type ppf cty =
   reset ();
