@@ -168,7 +168,7 @@ An object type
 @'<' method-type { ';' method-type } '>'@
 is a record of method types.
 
-Each method may have an explicit polymorphic type: @{ "'" ident }
+Each method may have an explicit polymorphic type: @{{ "'" ident }}
 '.' typexpr@. Explicit polymorphic variables have a local scope, and
 an explicit polymorphic type can only be unified to an
 equivalent one, with polymorphic variables at the same positions.
