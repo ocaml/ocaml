@@ -109,7 +109,7 @@ let rec mem x = function
 
 let rec memq x = function
     [] -> false
-  | a::l -> a == x or mem x l
+  | a::l -> a == x or memq x l
 
 let rec assoc x = function
     [] -> raise Not_found
