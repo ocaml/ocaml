@@ -29,6 +29,7 @@ output_c=''
 sharedldtype='%%SHAREDLDTYPE%%'
 dynlink='%%SUPPORTS_SHARED_LIBRARIES%%'
 custom_opt='-custom'
+failsafe='false'
 
 while :; do
     case "$1" in
@@ -54,6 +55,8 @@ while :; do
     -I)
         caml_opts="$caml_opts $1 $2"
         shift;;
+    -failsafe)
+        failsafe=true;;
     -linkall)
         caml_opts="$caml_opts $1";;
     -l*)
@@ -127,25 +130,22 @@ set -e
 
 if test "$c_objs" != ""; then
     if $dynlink; then
-        %%MKSHAREDLIB%% lib$output_c.so $c_objs $c_opts $c_libs \
-            || dynlink=false
+        %%MKSHAREDLIB%% lib$output_c.so $c_objs $c_opts $c_libs || $failsafe
     fi
     rm -f lib$output_c.a
-    ar rc lib$output_c.a $c_objs ||
+    ar rc lib$output_c.a $c_objs
     %%RANLIB%% lib$output_c.a
 fi
-if $dynlink; then
+if $dynlink && test "$failsafe" = "false" || test -f lib$output_c.so; then
     c_libs_caml=''
     custom_opt=''
 fi
 if test "$bytecode_objs" != ""; then
      $ocamlc -a $custom_opt -o $output.cma $caml_opts $bytecode_objs \
-        -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml \
-        || exit 2
+        -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml
 fi
 if test "$native_objs" != ""; then
     $ocamlopt -a -o $output.cmxa $caml_opts $native_objs \
-        -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml \
-        || exit 2
+        -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml
 fi
 
