@@ -1,4 +1,9 @@
 Next release :
+ - new option -o to use with texi, latex and dot generators
+ - new .code CSS class used
+ - better output for classes and modules, with their type
+ - added texinfo generator, by Olivier Andrieu
+ - removed iso generator, which became the odoc_check custom generator
  - link syntax {{:url}text} added to the manual
  - (** comments in code is colorized in ocaml code html pages
  - new class .code in style
