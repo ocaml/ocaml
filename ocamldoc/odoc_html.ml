@@ -358,7 +358,7 @@ class text =
     method html_of_Link b s t =
       bs b "<a href=\"";
       bs b s ;
-      bs b ">";
+      bs b "\">";
       self#html_of_text b t;
       bs b "</a>"
 
