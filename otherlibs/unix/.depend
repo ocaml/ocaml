@@ -67,6 +67,7 @@ rmdir.o: rmdir.c unixsupport.h
 select.o: select.c unixsupport.h
 sendrecv.o: sendrecv.c unixsupport.h socketaddr.h
 setgid.o: setgid.c unixsupport.h
+setsid.o: setsid.c unixsupport.h
 setuid.o: setuid.c unixsupport.h
 shutdown.o: shutdown.c unixsupport.h
 sleep.o: sleep.c unixsupport.h

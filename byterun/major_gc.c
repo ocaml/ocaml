@@ -192,9 +192,12 @@ static void update_weak_pointers ()
       *prev = Field (cur, 0);
       cur = (value *) *prev;
     }else{
+      value curfield;
+
       sz = Wosize_val (cur);
       for (i = 1; i < sz; i++){
-	if (Field (cur, i) != 0 && Is_white_val (Field (cur, i))){
+	curfield = Field (cur, i);
+	if (curfield != 0 && Is_block (curfield) && Is_white_val (curfield)){
 	  Field (cur, i) = 0;
 	}
       }
