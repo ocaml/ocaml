@@ -937,18 +937,16 @@ let kscanf ib ef fmt f =
         | _ -> scan_conversion skip max f i end
     | '(' | '{' as conv ->
         let i = succ i in
-        let sj = Printf.sub_format conv fmt i in
-        let sfmt = String.sub fmt i (sj - i - 1) in
+        let j = Printf.sub_format conv fmt i + 1 in
+        let mf = String.sub fmt i (j - i - 2) in
         let x = scan_String max ib in
-        let rfmt = token_string ib in
-        if Printf.summarize_format sfmt <> Printf.summarize_format rfmt
-          then format_mismatch sfmt rfmt ib else 
-        begin match conv with
-        | '{' -> scan_fmt (stack f rfmt) (sj + 1)
-        | _ ->
-          let nf = scan_fmt (Obj.magic rfmt) 0 in
-          scan_fmt (stack f nf) (sj + 1) end
-    | conv -> bad_format fmt i conv
+        let rf = token_string ib in
+        if Printf.summarize_format mf <> Printf.summarize_format rf
+          then format_mismatch mf rf ib else 
+        if conv = '{' then scan_fmt (stack f rf) j else
+        let nf = scan_fmt (Obj.magic rf) 0 in
+        scan_fmt (stack f nf) j
+    | c -> bad_format fmt i c
 
   and scan_fmt_stoppers i =
     if i > lim then i - 1, [] else
