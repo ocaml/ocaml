@@ -1316,19 +1316,16 @@ and transl_unbox_int bi = function
   | exp -> unbox_int bi (transl exp)
 
 and transl_unbox_let box_fn unbox_fn transl_unbox_fn id exp body =
-  print_string "transl_unbox_let ";
   let unboxed_id = Ident.create (Ident.name id) in
   let (tr_body, need_boxed, is_assigned) =
     subst_boxed_number unbox_fn id unboxed_id (transl body) in
   if need_boxed && is_assigned then
-    (print_string "need_boxed & is_assigned\n";
-    Clet(id, transl exp, transl body))
+    Clet(id, transl exp, transl body)
   else
-    (print_string "unboxing!\n";
     Clet(unboxed_id, transl_unbox_fn exp,
          if need_boxed
          then Clet(id, box_fn(Cvar unboxed_id), tr_body)
-         else tr_body))
+         else tr_body)
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
