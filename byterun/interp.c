@@ -1054,3 +1054,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
   }
 #endif
 }
+
+void caml_clear_bytecode(code_t prog, asize_t prog_size) {
+  /* other implementations of the interpreter (such as an hypothetical
+     JIT translator) might want to know when a bytecode is removed */
+  /* check that we have a program */
+  Assert(prog);
+  Assert(prog_size>0);
+}
+
+/* eof $Id$ */
