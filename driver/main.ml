@@ -76,10 +76,10 @@ module Options = Main_args.Make_options (struct
   let _impl = impl
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
+  let _label = unset classic
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
-  let _modern = unset classic
   let _noassert = set noassert
   let _noautolink = set no_auto_link
   let _o s = exec_name := s; archive_name := s; object_name := s

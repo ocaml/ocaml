@@ -26,9 +26,9 @@ module Make_options (F :
      val _impl : string -> unit
      val _intf : string -> unit
      val _intf_suffix : string -> unit
+     val _label : unit -> unit
      val _linkall : unit -> unit
      val _make_runtime : unit -> unit
-     val _modern : unit -> unit
      val _noassert : unit -> unit
      val _noautolink : unit -> unit
      val _o : string -> unit
@@ -69,12 +69,13 @@ struct
            "<file>  Suffix for interface files (default: .mli)";
     "-intf_suffix", Arg.String F._intf_suffix,
            "<file>  (deprecated) same as -intf-suffix";
-    "-modern", Arg.Unit F._modern, " Use strict label syntax";
+    "-label", Arg.Unit F._label, " Use strict label syntax";
     "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
     "-make-runtime", Arg.Unit F._make_runtime,
            " Build a runtime system with given C objects and libraries";
     "-make_runtime", Arg.Unit F._make_runtime,
            " (deprecated) same as -make-runtime";
+    "-modern", Arg.Unit F._label, " (deprecated) same as -label";
     "-noassert", Arg.Unit F._noassert, " Do not compile assertion checks";
     "-noautolink", Arg.Unit F._noautolink,
            " Don't automatically link C libraries specified in .cma files";
