@@ -50,10 +50,10 @@ let insert_checkpoint ({c_time = time} as checkpoint) =
       [] -> [checkpoint]
     | (({c_time = t} as a)::l) as l' ->
         if t > time then
-	  a::(traverse l)
-	else if t = time then
-	  raise Exit
-	else
+          a::(traverse l)
+        else if t = time then
+          raise Exit
+        else
           checkpoint::l'
   in
     checkpoints := traverse !checkpoints
@@ -74,10 +74,10 @@ let wait_for_connection checkpoint =
          let old_controller = Input_handling.current_controller !connection in
            execute_with_other_controller
              (function
-      	        fd ->
+                fd ->
                   old_controller fd;
                   if checkpoint.c_valid = true then
-	            exit_main_loop ())
+                    exit_main_loop ())
              !connection
              main_loop)
   with
@@ -100,7 +100,7 @@ let set_current_checkpoint checkpoint =
 let kill_checkpoint checkpoint =
   if !debug_time_travel then
     prerr_endline ("Kill : " ^ (string_of_int checkpoint.c_pid));
-  if checkpoint.c_pid > 0 then		(* Ghosts don't have to be killed ! *)
+  if checkpoint.c_pid > 0 then          (* Ghosts don't have to be killed ! *)
     (if not checkpoint.c_valid then
        wait_for_connection checkpoint;
      stop checkpoint.c_fd;
@@ -110,7 +110,7 @@ let kill_checkpoint checkpoint =
      close_io checkpoint.c_fd;
      remove_file checkpoint.c_fd;
      remove_checkpoint checkpoint);
-  checkpoint.c_pid <- -1		(* Don't exist anymore *)
+  checkpoint.c_pid <- -1                (* Don't exist anymore *)
 
 (*** Cleaning the checkpoint list. ***)
 
@@ -122,10 +122,10 @@ let cut t =
       [] -> ([], [])
     | ({c_time = t'} as a::l) as l' ->
         if t' <= t then
-      	  ([], l')
+          ([], l')
         else
-      	  let (b, e) = cut_t l in
-      	    (a::b, e)
+          let (b, e) = cut_t l in
+            (a::b, e)
   in
     cut_t
 
@@ -137,7 +137,7 @@ let cut2 t0 t l =
     | l ->
        let (after, before) = cut (t0 - t - 1) l in
          let l = cut2_t0 (2 * t) before in
-       	   after::l
+           after::l
   in
     let (after, before) = cut (t0 - 1) l in
       after::(cut2_t0 t before)
@@ -152,7 +152,7 @@ let chk_merge2 cont =
           (a::accepted, rejected)
     | a::l ->
         let (accepted, rejected) = chk_merge2_cont l in
-      	  (accepted, a::rejected)
+          (accepted, a::rejected)
   in chk_merge2_cont
 
 (* Separe the checkpoint list. *)
@@ -184,8 +184,8 @@ let clean_checkpoints time checkpoint_count =
       let (kept, lost) =
         new_checkpoint_list checkpoint_count accepted after
       in
-	List.iter kill_checkpoint (lost @ rejected);
-      	checkpoints := kept
+        List.iter kill_checkpoint (lost @ rejected);
+        checkpoints := kept
 
 (*** Internal functions for moving. ***)
 
@@ -196,18 +196,18 @@ let find_checkpoint_before time =
   let rec find =
     function
       [] ->
-      	print_string "Can't go that far in the past !"; print_newline ();
-      	if yes_or_no "Reload program" then begin
-      	  load_program ();
-      	  find !checkpoints
-	  end
-	else
-	  raise Toplevel
+        print_string "Can't go that far in the past !"; print_newline ();
+        if yes_or_no "Reload program" then begin
+          load_program ();
+          find !checkpoints
+          end
+        else
+          raise Toplevel
     | { c_time = t } as a::l ->
-      	if t > time then
+        if t > time then
           find l
-	else
-	  a
+        else
+          a
   in find !checkpoints
 
 (* Make a copy of the current checkpoint and clean the checkpoint list. *)
@@ -216,7 +216,7 @@ let duplicate_current_checkpoint () =
   let checkpoint = !current_checkpoint in
     if not checkpoint.c_valid then
       wait_for_connection checkpoint;
-    let new_checkpoint =			(* Ghost *)
+    let new_checkpoint =                        (* Ghost *)
       {c_time = checkpoint.c_time;
        c_pid = 0;
        c_fd = checkpoint.c_fd;
@@ -231,17 +231,17 @@ let duplicate_current_checkpoint () =
       checkpoints := list_replace checkpoint new_checkpoint !checkpoints;
       set_current_checkpoint checkpoint;
       clean_checkpoints (checkpoint.c_time + 1) (!checkpoint_max_count - 1);
-      if new_checkpoint.c_pid = 0 then	(* The ghost has not been killed *)
-        (match do_checkpoint () with	(* Duplicate checkpoint *)
+      if new_checkpoint.c_pid = 0 then  (* The ghost has not been killed *)
+        (match do_checkpoint () with    (* Duplicate checkpoint *)
            Checkpoint_done pid ->
-	     (new_checkpoint.c_pid <- pid;
-	      if !debug_time_travel then
+             (new_checkpoint.c_pid <- pid;
+              if !debug_time_travel then
                 prerr_endline ("Waiting for connection : " ^ (string_of_int pid)))
          | Checkpoint_failed ->
-      	     prerr_endline
+             prerr_endline
                "A fork failed. Reducing maximum number of checkpoints.";
-      	     checkpoint_max_count := List.length !checkpoints - 1;
-       	     remove_checkpoint new_checkpoint)
+             checkpoint_max_count := List.length !checkpoints - 1;
+             remove_checkpoint new_checkpoint)
 
 (* Ensure we stop on an event. *)
 let rec stop_on_event report =
@@ -254,18 +254,19 @@ let rec stop_on_event report =
   in
     match report with
       {rep_type = Breakpoint; rep_program_pointer = pc} ->
-      	if Some pc = !temporary_breakpoint_position then begin
-					(* Others breakpoints are on events. *)
-          try				(* Check if we are on an event. *)
-      	    update_current_event ()
-          with
-       	    Not_found -> find_event ()
-          end
+        if Some pc = !temporary_breakpoint_position then begin
+                                        (* Others breakpoints are on events. *)
+                                        (* Check if we are on an event. *)
+          update_current_event ();
+          match !current_event with
+            None   -> find_event ()
+          | Some _ -> ()
+        end
     | {rep_type = Trap_barrier; rep_stack_pointer = trap_frame} ->
-	(* No event at current position. *)
+        (* No event at current position. *)
         find_event ()
     | _ ->
-      	()
+        ()
 
 (* Was the movement interrupted ? *)
 (* --- An exception could have been used instead, *)
@@ -285,46 +286,46 @@ let internal_step duration =
   | _ ->
       Exec.protected
         (function () ->
-	   if !make_checkpoints then
+           if !make_checkpoints then
              duplicate_current_checkpoint ()
-	   else
-	     remove_checkpoint !current_checkpoint;
+           else
+             remove_checkpoint !current_checkpoint;
            update_breakpoints ();
            update_trap_barrier ();
-	   !current_checkpoint.c_state <- C_running duration;
+           !current_checkpoint.c_state <- C_running duration;
            let report = do_go duration in
              !current_checkpoint.c_report <- Some report;
-	     !current_checkpoint.c_state <- C_stopped;
-	     if report.rep_type = Event then begin
+             !current_checkpoint.c_state <- C_stopped;
+             if report.rep_type = Event then begin
                !current_checkpoint.c_time <-
                  !current_checkpoint.c_time + duration;
-	       interrupted := false
-	       end
-	     else begin
+               interrupted := false
+               end
+             else begin
                !current_checkpoint.c_time <-
-      	          !current_checkpoint.c_time + duration
-      	          - report.rep_event_count + 1;
-	       interrupted := true;
-	       stop_on_event report
-      	       end;
+                  !current_checkpoint.c_time + duration
+                  - report.rep_event_count + 1;
+               interrupted := true;
+               stop_on_event report
+               end;
              (try
                 insert_checkpoint !current_checkpoint
               with
                 Exit ->
                   kill_checkpoint !current_checkpoint;
                   set_current_checkpoint
-      	            (find_checkpoint_before (current_time ()))));
-	if !debug_time_travel then begin
+                    (find_checkpoint_before (current_time ()))));
+        if !debug_time_travel then begin
           print_string "Checkpoints : pid(time)"; print_newline ();
-      	  List.iter
+          List.iter
             (function {c_time = time; c_pid = pid; c_valid = valid} ->
-      	       print_int pid;
+               print_int pid;
                print_string "("; print_int time; print_string ")";
                if not valid then print_string "(invalid)";
-      	       print_string " ")
-      	    !checkpoints;
-      	  print_newline ()
-	end
+               print_string " ")
+            !checkpoints;
+          print_newline ()
+        end
 
 (*** Miscellaneous functions (exported). ***)
 
@@ -351,16 +352,16 @@ let set_file_descriptor pid fd =
   let rec find =
     function
       [] ->
-	prerr_endline "Unexpected connection";
-	close_io fd;
-      	false
+        prerr_endline "Unexpected connection";
+        close_io fd;
+        false
     | ({c_pid = pid'} as checkpoint)::l ->
         if pid <> pid' then
-	  find l
-	else
-	  (checkpoint.c_fd <- fd;
-	   checkpoint.c_valid <- true;
-	   true)
+          find l
+        else
+          (checkpoint.c_fd <- fd;
+           checkpoint.c_valid <- true;
+           true)
   in
     if !debug_time_travel then
       prerr_endline ("New connection : " ^(string_of_int pid));
@@ -382,9 +383,9 @@ let forget_process fd pid =
     if checkpoint = !current_checkpoint then begin
       prerr_endline " (active process)";
       match !current_checkpoint.c_state with
-      	C_stopped ->
-	  prerr_string "at time ";
-	  prerr_int !current_checkpoint.c_time
+        C_stopped ->
+          prerr_string "at time ";
+          prerr_int !current_checkpoint.c_time
       | C_running duration ->
           prerr_string "between time ";
           prerr_int !current_checkpoint.c_time;
@@ -396,7 +397,7 @@ let forget_process fd pid =
     close_io checkpoint.c_fd;
     remove_file checkpoint.c_fd;
     remove_checkpoint checkpoint;
-    checkpoint.c_pid <- -1;		(* Don't exist anymore *)
+    checkpoint.c_pid <- -1;             (* Don't exist anymore *)
     if checkpoint.c_parent.c_pid > 0 then
       wait_child checkpoint.c_parent.c_fd;
     if checkpoint = !current_checkpoint then
@@ -414,9 +415,9 @@ let rec step_forward duration =
   if duration > !checkpoint_small_step then begin
     let first_step =
       if duration > !checkpoint_big_step then
-      	!checkpoint_big_step
+        !checkpoint_big_step
       else
-      	!checkpoint_small_step
+        !checkpoint_small_step
     in
       internal_step first_step;
       if not !interrupted then
@@ -443,17 +444,17 @@ let rec find_last_breakpoint max_time =
   let on_breakpoint () =
     match current_report () with
       Some {rep_program_pointer = pc} ->
-      	breakpoint_at_pc pc
+        breakpoint_at_pc pc
     | _ ->
-      	false
+        false
   in
     let rec find break =
       let time = current_time () in
         step_forward (max_time - time);
-	if ((on_breakpoint ()) & (current_time () < max_time)) then
-	  find true
-	else
-	  (time, break)
+        if ((on_breakpoint ()) & (current_time () < max_time)) then
+          find true
+        else
+          (time, break)
     in
       find (on_breakpoint ())
 
@@ -468,7 +469,7 @@ let rec back_to time time_max =
       if break or (new_time <= time) then
         go_to new_time
       else
-      	back_to time new_time
+        back_to time new_time
 
 (* Backward stepping. *)
 (* --- Assume duration > 1 *)
@@ -500,8 +501,9 @@ let step duration =
 
 (*** Next, finish. ***)
 
-(* Finish current fucntion. *)
+(* Finish current function. *)
 let finish () =
+  update_current_event ();
   match !current_event with
     None ->
       prerr_endline "Program is currently not running."; raise Toplevel
@@ -513,38 +515,40 @@ let finish () =
         raise Toplevel
       end;
       exec_with_trap_barrier
-      	frame
-	(fun () ->
+        frame
+        (fun () ->
            exec_with_temporary_breakpoint
              pc
              (fun () ->
                 while
-		  run ();
-     	          match current_report () with
-     	            Some {rep_type = Breakpoint;
+                  run ();
+                  match current_report () with
+                    Some {rep_type = Breakpoint;
                           rep_stack_pointer = sp;
                           rep_program_pointer = pc2} ->
-     	              (pc = pc2) && (frame <> sp)
+                      (pc = pc2) && (frame <> sp)
                   | _ ->
-     	              false
+                      false
                 do
-     	          ()
-     	        done))
+                  ()
+                done))
 
 let next_1 () =
+  update_current_event ();
   match !current_event with
-    None ->				(* Beginning of the program. *)
+    None ->                             (* Beginning of the program. *)
       step 1
   | Some event1 ->
       let (frame1, pc1) = initial_frame() in
       step 1;
+      update_current_event ();
       match !current_event with
         None -> ()
       | Some event2 ->
           let (frame2, pc2) = initial_frame() in
           (* Call `finish' if we've entered a function. *)
           if frame1 >= 0 && frame2 >= 0 &&
-             frame2 + event2.ev_stacksize < frame1 + event1.ev_stacksize
+             frame2 - event2.ev_stacksize > frame1 - event1.ev_stacksize
           then finish()
 
 (* Same as `step' (forward) but skip over function calls. *)
