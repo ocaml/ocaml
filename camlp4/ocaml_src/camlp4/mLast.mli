@@ -109,9 +109,8 @@ and expr =
 and joinlocation = loc * joinident * joinautomaton list * expr
 and joinautomaton = loc * joinclause list
 and joinclause = loc * joinpattern list * expr
-and joinpattern = loc * joinident * joinarg list
+and joinpattern = loc * joinident * patt
 and joinident = loc * string
-and joinarg = loc * string option
 and module_type =
     MtAcc of loc * module_type * module_type
   | MtApp of loc * module_type * module_type

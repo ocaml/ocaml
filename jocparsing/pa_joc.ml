@@ -33,30 +33,39 @@ let joinclause = Grammar.Entry.create gram "joinclause"
 let joinautomaton = Grammar.Entry.create gram "joinautomaton"
 let joinlocation =  Grammar.Entry.create gram "joinlocation"
 let bracedproc = Grammar.Entry.create gram "bracedproc"
-let ipatt = Grammar.Entry.create gram "ipatt"
+let ijpatt = Grammar.Entry.create gram "ijpatt"
+let label_ijpatt = Grammar.Entry.create gram "label_ijpatt"
+let ijpatt_label_ident = Grammar.Entry.create gram "label_ijpatt"
 
 EXTEND
  joinident:
    [[id=LIDENT -> (loc, id)]];
 
+ ijpatt_label_ident:
+    [ LEFTA
+      [ p1 = SELF; "."; p2 = SELF -> PaAcc (loc,p1,p2) ]
+    | RIGHTA
+      [ i = UIDENT -> PaUid (loc,i)
+      | i = LIDENT -> PaLid (loc,i) ] ]
+  ;
+
  label_ijpatt:
-    [ [ i = patt_label_ident; "="; p = ijpatt -> (i, p) ] ];
+    [ [ i = ijpatt_label_ident; "="; p = ijpatt -> (i, p) ] ];
 
  ijpatt:
-     [ [ "{"; lpl = LIST1 label_ijpatt SEP ";"; "}" -> PaRec loc lpl
-      | "("; ")" ->
-          PaCon
-      | "("; p = SELF; ")" -> <:patt< $p$ >>
-      | "("; p = SELF; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
-      | "("; p = SELF; "as"; p2 = SELF; ")" -> <:patt< ($p$ as $p2$) >>
-      | "("; p = SELF; ","; pl = LIST1 ipatt SEP ","; ")" ->
-          <:patt< ( $list:[p::pl]$) >>
-      | s = LIDENT -> <:patt< $lid:s$ >>
-      | "_" -> <:patt< _ >> ] ]
+     [[
+       "{"; lpl = LIST1 label_ijpatt SEP ";"; "}" -> PaRec (loc, lpl)
+      | "("; ")" -> PaLid (loc, "()")
+      | "("; p = SELF; ")" -> p
+      | "("; p = SELF; "as"; p2 = SELF; ")" -> PaAli (loc, p, p2)
+      | "("; p = SELF; ","; pl = LIST1 SELF SEP ","; ")" ->
+          PaTup (loc, p::pl)
+      | s = LIDENT -> PaLid (loc, s)
+      | "_" -> PaAny loc
+      ]];
 
  joinpattern:
-   [[id=joinident ; pat=ijpatt ->
-     (loc, id, pat)]];
+   [[id=joinident ; pat=ijpatt -> (loc, id, pat)]];
 
  joinclause:
    [[jpats = LIST1 joinpattern SEP "&" ; "=" ; e=expr ->

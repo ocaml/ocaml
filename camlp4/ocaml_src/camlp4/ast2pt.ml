@@ -580,9 +580,9 @@ and joinclause (loc, jpats, e) =
   {pjclause_loc = mkloc loc;
    pjclause_desc = List.map joinpattern jpats, expr e}
 and joinpattern (loc, id, args) =
-  {pjpat_loc = mkloc loc; pjpat_desc = joinident id, List.map joinarg args}
+  {pjpat_loc = mkloc loc; pjpat_desc = joinident id, patt args}
 and joinident (loc, id) = {pjident_loc = mkloc loc; pjident_desc = id}
-and joinarg (loc, idopt) = {pjarg_loc = mkloc loc; pjarg_desc = idopt}
+
 and label_expr =
   function
     ExLab (loc, lab, e) -> lab, expr e

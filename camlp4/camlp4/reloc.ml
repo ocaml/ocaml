@@ -176,7 +176,7 @@ and joinclause floc sh (loc, jpats, e) =
   (floc loc, List.map (joinpattern floc sh) jpats, expr floc sh e)
 
 and joinpattern floc sh (loc, id, args) =
-  (floc loc, joinident floc sh id, List.map (joinarg floc sh) args)
+  (floc loc, joinident floc sh id, patt floc sh args)
 
 and joinident floc sh (loc,id) = (floc loc, id)
 

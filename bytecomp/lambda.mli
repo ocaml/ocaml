@@ -165,6 +165,7 @@ and lambda_event_kind =
 
 val const_unit: structured_constant
 val lambda_unit: lambda
+val lambda_int : int -> lambda
 val name_lambda: lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 val is_guarded: lambda -> bool

@@ -361,8 +361,7 @@ let extract_float = function
 
 (*> JOCAML *)
 let name_join_pattern default p = match p.pat_desc with
-  | Tpat_id id -> 
-  | Tpat_alias (_,id) -> id
+  | Tpat_var id   | Tpat_alias (_,id) -> id
   | _ -> Ident.create default
 (*< JOCAML *)
 
@@ -497,7 +496,7 @@ let rec transl_exp e =
        ((Some arg,_)::oargs)) ->
       let lfunct = Transljoin.send_sync auto num (transl_exp arg) in
       event_after e
-        (match rem_args with
+        (match oargs with
         | [] -> lfunct
         | _  -> transl_apply lfunct oargs)
   | Texp_apply(funct, oargs) ->
@@ -513,7 +512,7 @@ let rec transl_exp e =
       Ltrywith
         (transl_exp body, id,
          Matching.for_trywith
-           (Lvar id) (transl_cases transl_expr pat_expr_list))
+           (Lvar id) (transl_cases transl_exp pat_expr_list))
   | Texp_tuple el ->
       let ll = transl_list el in
       begin try
@@ -636,14 +635,18 @@ let rec transl_exp e =
 (*
   proc constructs are compiled here when they have been spotted to terminate
 *)
-  | Texp_spawn (e) | (Texp_par (_,_) as e) ->
-      let forks, seqs = Transljoin.as_procs e in
+  | Texp_spawn (e) ->
+      let seqs, forks = Transljoin.as_procs e in
+      let lseq = List.fold_right transl_seq seqs lambda_unit in
+      List.fold_right transl_fork forks lseq
+  | Texp_par (_,_) ->
+      let seqs, forks = Transljoin.as_procs e in
       let lseq = List.fold_right transl_seq seqs lambda_unit in
       List.fold_right transl_fork forks lseq
   | Texp_asyncsend
       ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
-        Transljoin_send_async auto num (transl_expr e2)
-  | Texp_asyncsend (e1,e2) -> Lapply (transl_expr e1) [transl_expr e2]
+        Transljoin.send_async auto num (transl_exp e2)
+  | Texp_asyncsend (e1,e2) -> Lapply (transl_exp e1,[transl_exp e2])
 (*< JOCAML *)
 
   | _ ->
@@ -655,11 +658,11 @@ and transl_proc e = match e.exp_desc with
     transl_let rec_flag pat_expr_list
       (event_before body (transl_proc body))
 | Texp_def (d,body) ->
-    transl_def d (event_before body (transl_proc body))
+    transl_def d (transl_proc body)
 | Texp_loc (d,body) ->
-    transl_loc d (event_before body (transl_proc body))
+    transl_loc d (transl_proc body)
 | Texp_sequence(expr1, expr2) ->
-    Lsequence(transl_exp expr1, event_before expr2 (transl_proc expr2))
+    Lsequence(transl_exp expr1, transl_proc expr2)
 | Texp_when(cond, body) ->
     event_before cond
       (Lifthenelse
@@ -674,17 +677,16 @@ and transl_proc e = match e.exp_desc with
 (* Proc constructs *)
 | Texp_null -> Transljoin.exit ()
 | Texp_par (e1,e2) ->
-      let forks, seqs = Transljoin.as_procs e in
-      match forks, seqs with
+      let seqs, forks = Transljoin.as_procs e in
+      begin match forks, seqs with
       | [],[] ->  Transljoin.exit ()
       | p::rem,[] ->
           List.fold_right transl_fork rem (transl_proc p)
       | _,_ ->
           let lseq = List.fold_right transl_seq seqs (Transljoin.exit ()) in
           List.fold_right transl_fork forks lseq
-end
-
-    
+      end
+| _ -> Lsequence (transl_exp e,Transljoin.exit())
 
 and transl_fork e k = 
   let l = Transljoin.do_spawn (transl_proc e) in
@@ -693,9 +695,8 @@ and transl_fork e k =
   else
     Lsequence (l,k)
     
-   
 and transl_seq e k =
-  let l = transl_expr e in
+  let l = transl_exp e in
   if k=lambda_unit then
     l
   else
@@ -784,26 +785,27 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
         let param = name_pattern "param" pat_expr_list in
         ((Curried, [param]),
          Matching.for_function loc repr (Lvar param)
-           (transl_cases transl_expr pat_expr_list) partial)
+           (transl_cases transl_exp pat_expr_list) partial)
       end
   | _ ->
       let param = name_pattern "param" pat_expr_list in
       ((Curried, [param]),
        Matching.for_function loc repr (Lvar param)
-         (transl_cases pat_expr_list) partial)
+         (transl_cases transl_exp pat_expr_list) partial)
 (*> JOCAML *)
-and transl_guarded_proc loc repr pats p = match pats with
+and transl_guarded_proc loc pats p = match pats with
 | []     -> assert false
 | [pat]  ->
     let param = name_join_pattern "param" pat in
     ([param],
-      Matching.for_function loc repr (Lvar param)
+     Matching.for_function
+       loc None (Lvar param)
            (transl_cases transl_proc [pat,p] ) Total)
 | pat::rem ->
     let param = name_join_pattern "param" pat in
-    let (params, body) = transl_guarded_proc loc repr rem in
+    let (params, body) = transl_guarded_proc loc rem p in
     (param::params,
-     Matching.for_function loc None (Lvar param) [pat,body])
+     Matching.for_function loc None (Lvar param) [pat,body] Total)
       
       
 
@@ -834,7 +836,9 @@ and transl_let rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 (*> JOCAML *)
 
-and transl_def autos body =
+and transl_def autos body = body
+and transl_loc d body = body
+(*
   let work_list = List.map Transljoin.build_matches autos in
   let k =
     List.fold_right
@@ -847,7 +851,7 @@ and transl_def autos body =
           
           
           Lfunction(Curried, params, body)
-      
+*)      
       
   
 (*< JOCAML *)

@@ -16,6 +16,7 @@ open Misc
 open Longident
 open Primitive
 open Types
+open Asttypes
 open Typedtree
 open Env
 open Lambda
@@ -37,6 +38,8 @@ let transl_name name =
 
 let lambda_exit = lazy (transl_name "exit")
 let lambda_create_process = lazy (transl_name "create_process")
+let lambda_send_sync = lazy (transl_name "send_sync")
+let lambda_send_async = lazy (transl_name "send_async")
 
 let mk_apply f args = match f with
 | _,{val_kind=Val_prim p}  -> Lprim (Pccall p,args)
@@ -45,6 +48,16 @@ let mk_apply f args = match f with
 
 let exit () = mk_apply (Lazy.force lambda_exit) [lambda_unit]
 let create_process p =  mk_apply (Lazy.force lambda_create_process) [p]
+
+let send_async auto num arg =
+  mk_apply
+    (Lazy.force lambda_send_async)
+    [Lvar auto ; lambda_int  num ; arg]
+
+let send_sync auto num arg =
+  mk_apply
+    (Lazy.force lambda_send_sync)
+    [Lvar auto ; lambda_int num; arg]
 
 let do_spawn p =
   create_process (Lfunction (Curried, [], p))
@@ -107,15 +120,15 @@ let as_procs e = partition_procs (do_as_procs [] e)
 
 (* Automaton build *)
 let get_num names id =
-  let {jchannel_id=num} = List.assoc names id in
-  id_num
+  try
+    let {jchannel_id=num} = List.assoc id names in
+    num
+  with
+  | Not_found -> assert false
 
-let transl_jpat jpat =
-  let _,arg = jpat.jpat_desc in
-  args
+let transl_jpat j{jpat_desc=(_,arg)} = arg
 
-let transl_jpats jpats =
-  List.map transl_jpat jpats
+let transl_jpats jpats = List.map transl_jpat jpats
 
 let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
   let r = Array.create (List.length names) [] in
@@ -125,7 +138,7 @@ let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
     | {jclause_desc = (jpats,e); jclause_loc=cl_loc}::rem ->
         let nums =
           List.map
-            (fun {pat_desc=({jident_desc=id}, _)} -> get_num names id)
+            (fun {jpat_desc=({jident_desc=id}, _)} -> get_num names id)
             jpats in
         let base_pat =
           List.fold_left
@@ -135,13 +148,12 @@ let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
         List.iter
           (fun num ->
             r.(num) <-
-               (base_pat land (lnot (1 lsl num)),i) ::
-                r.(num))
+               (base_pat land (lnot (1 lsl num))) :: i :: r.(num))
           nums ;
-        (cl_loc,transl_jpats pats, e)::build_clauses (i+1) rem in
+        (cl_loc,transl_jpats jpats, e)::build_clauses (i+1) rem in
 
-  let guarded = build_clauses 0 in
-  (name, Array.map Array.from_list r, Array.from_list guarded)
+  let guarded = build_clauses 0 cls in
+  (name, Array.map Array.of_list r, Array.of_list guarded)
   
               
 

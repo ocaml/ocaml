@@ -159,6 +159,8 @@ let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
 
+let lambda_int i = Lconst (Const_base (Const_int i))
+
 let name_lambda arg fn =
   match arg with
     Lvar id -> fn id
