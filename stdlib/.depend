@@ -6,8 +6,8 @@ arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi
 arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
 array.cmo: list.cmi array.cmi 
 array.cmx: list.cmx array.cmi 
-buffer.cmo: string.cmi buffer.cmi 
-buffer.cmx: string.cmx buffer.cmi 
+buffer.cmo: string.cmi sys.cmi buffer.cmi 
+buffer.cmx: string.cmx sys.cmx buffer.cmi 
 callback.cmo: obj.cmi callback.cmi 
 callback.cmx: obj.cmx callback.cmi 
 char.cmo: char.cmi 
@@ -22,8 +22,8 @@ gc.cmo: printf.cmi gc.cmi
 gc.cmx: printf.cmx gc.cmi 
 genlex.cmo: char.cmi hashtbl.cmi list.cmi stream.cmi string.cmi genlex.cmi 
 genlex.cmx: char.cmx hashtbl.cmx list.cmx stream.cmx string.cmx genlex.cmi 
-hashtbl.cmo: array.cmi hashtbl.cmi 
-hashtbl.cmx: array.cmx hashtbl.cmi 
+hashtbl.cmo: array.cmi sys.cmi hashtbl.cmi 
+hashtbl.cmx: array.cmx sys.cmx hashtbl.cmi 
 lazy.cmo: lazy.cmi 
 lazy.cmx: lazy.cmi 
 lexing.cmo: string.cmi lexing.cmi 
@@ -50,8 +50,8 @@ printf.cmo: buffer.cmi obj.cmi string.cmi printf.cmi
 printf.cmx: buffer.cmx obj.cmx string.cmx printf.cmi 
 queue.cmo: queue.cmi 
 queue.cmx: queue.cmi 
-random.cmo: array.cmi char.cmi digest.cmi string.cmi random.cmi 
-random.cmx: array.cmx char.cmx digest.cmx string.cmx random.cmi 
+random.cmo: array.cmi char.cmi digest.cmi string.cmi sys.cmi random.cmi 
+random.cmx: array.cmx char.cmx digest.cmx string.cmx sys.cmx random.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
 sort.cmo: array.cmi sort.cmi 

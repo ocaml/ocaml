@@ -24,8 +24,10 @@ parsing/parsetree.cmi: parsing/asttypes.cmi parsing/location.cmi \
     parsing/longident.cmi 
 parsing/pstream.cmi: parsing/parsetree.cmi 
 parsing/syntaxerr.cmi: parsing/location.cmi 
-parsing/lexer.cmo: utils/misc.cmi parsing/parser.cmi parsing/lexer.cmi 
-parsing/lexer.cmx: utils/misc.cmx parsing/parser.cmx parsing/lexer.cmi 
+parsing/lexer.cmo: parsing/location.cmi utils/misc.cmi parsing/parser.cmi \
+    utils/warnings.cmi parsing/lexer.cmi 
+parsing/lexer.cmx: parsing/location.cmx utils/misc.cmx parsing/parser.cmx \
+    utils/warnings.cmx parsing/lexer.cmi 
 parsing/linenum.cmo: utils/misc.cmi parsing/linenum.cmi 
 parsing/linenum.cmx: utils/misc.cmx parsing/linenum.cmi 
 parsing/location.cmo: parsing/linenum.cmi utils/terminfo.cmi \
@@ -477,10 +479,10 @@ asmcomp/emit.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/compilenv.cmx \
     asmcomp/proc.cmx asmcomp/reg.cmx asmcomp/emit.cmi 
 asmcomp/emitaux.cmo: utils/nativeint.cmi asmcomp/emitaux.cmi 
 asmcomp/emitaux.cmx: utils/nativeint.cmx asmcomp/emitaux.cmi 
-asmcomp/interf.cmo: asmcomp/mach.cmi asmcomp/proc.cmi asmcomp/reg.cmi \
-    asmcomp/interf.cmi 
-asmcomp/interf.cmx: asmcomp/mach.cmx asmcomp/proc.cmx asmcomp/reg.cmx \
-    asmcomp/interf.cmi 
+asmcomp/interf.cmo: asmcomp/mach.cmi utils/misc.cmi asmcomp/proc.cmi \
+    asmcomp/reg.cmi asmcomp/interf.cmi 
+asmcomp/interf.cmx: asmcomp/mach.cmx utils/misc.cmx asmcomp/proc.cmx \
+    asmcomp/reg.cmx asmcomp/interf.cmi 
 asmcomp/linearize.cmo: asmcomp/cmm.cmi asmcomp/mach.cmi asmcomp/proc.cmi \
     asmcomp/reg.cmi asmcomp/linearize.cmi 
 asmcomp/linearize.cmx: asmcomp/cmm.cmx asmcomp/mach.cmx asmcomp/proc.cmx \

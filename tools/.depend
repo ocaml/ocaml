@@ -24,5 +24,7 @@ ocamlprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
 ocamlprof.cmx: ../utils/clflags.cmx ../utils/config.cmx ../parsing/lexer.cmx \
     ../parsing/location.cmx ../utils/misc.cmx ../parsing/parse.cmx \
     ../parsing/parsetree.cmi ../parsing/syntaxerr.cmx 
+primreq.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi 
+primreq.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
 profiling.cmo: profiling.cmi 
 profiling.cmx: profiling.cmi 
