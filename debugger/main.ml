@@ -24,6 +24,7 @@ open Parameters
 open Program_management
 open Frames
 open Show_information
+open Format
 
 let line_buffer = Lexing.from_function read_user_input
 
@@ -41,19 +42,18 @@ let rec protect ppf cont =
         forget_process
           !current_checkpoint.c_fd
           !current_checkpoint.c_pid;
-        flush stdout;
+        pp_print_flush ppf ();
         stop_user_input ();
         loop ppf)
   | Toplevel ->
       protect ppf (function ppf ->
-        flush stdout;
+        pp_print_flush ppf ();
         stop_user_input ();
         loop ppf)
   | Sys.Break ->
       protect ppf (function ppf ->
-        print_endline "Interrupted.";
+        fprintf ppf "Interrupted.@.";
         Exec.protect (function () ->
-          flush stdout;
           stop_user_input ();
           if !loaded then begin
             try_select_frame 0;
@@ -62,8 +62,7 @@ let rec protect ppf cont =
         loop ppf)
   | Current_checkpoint_lost ->
       protect ppf (function ppf ->
-        print_endline "Trying to recover...";
-        flush stdout;
+        fprintf ppf "Trying to recover...@.";
         stop_user_input ();
         recover ();
         try_select_frame 0;
@@ -120,9 +119,7 @@ let main () =
       done
     end;
     current_prompt := debugger_prompt;
-    print_string "\tObjective Caml Debugger version ";
-    print_string Config.version;
-    print_newline(); print_newline();
+    printf "\tObjective Caml Debugger version %s@.@." Config.version;
     Config.load_path := !default_load_path;
     toplevel_loop ();                   (* Toplevel. *)
     kill_program ();
