@@ -25,7 +25,8 @@ val transl_exp: expression -> lambda
 val transl_let:
       rec_flag -> (pattern * expression) list -> lambda -> lambda
 val transl_primitive: Primitive.description -> lambda
-val transl_exception: Ident.t -> exception_declaration -> lambda
+val transl_exception:
+      Ident.t -> Path.t option -> exception_declaration -> lambda
 
 type error =
     Illegal_letrec_pat
@@ -37,4 +38,5 @@ exception Error of Location.t * error
 val report_error: error -> unit
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
-val transl_module : (module_coercion -> module_expr -> lambda) ref
+val transl_module :
+      (module_coercion -> Path.t option -> module_expr -> lambda) ref

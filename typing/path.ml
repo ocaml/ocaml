@@ -34,3 +34,8 @@ let rec binding_time = function
     Pident id -> Ident.binding_time id
   | Pdot(p, s, pos) -> binding_time p
   | Papply(p1, p2) -> max (binding_time p1) (binding_time p2)
+
+let rec name = function
+    Pident id -> Ident.name id
+  | Pdot(p, s, pos) -> name p ^ "." ^ s
+  | Papply(p1, p2) -> name p1 ^ "(" ^ name p2 ^ ")"

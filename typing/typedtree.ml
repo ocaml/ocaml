@@ -139,6 +139,7 @@ let rec bound_idents pat =
   | Tpat_construct(cstr, patl) -> List.iter bound_idents patl
   | Tpat_record lbl_pat_list ->
       List.iter (fun (lbl, pat) -> bound_idents pat) lbl_pat_list
+  | Tpat_array patl -> List.iter bound_idents patl
   | Tpat_or(p1, p2) -> bound_idents p1; bound_idents p2
 
 let pat_bound_idents pat =

@@ -16,6 +16,7 @@
 
 open Misc
 open Asttypes
+open Path
 open Types
 open Typedtree
 open Lambda
@@ -71,33 +72,48 @@ let rec compose_coercions c1 c2 =
 
 let primitive_declarations = ref ([] : string list)
 
+(* Keep track of the root path (from the root of the namespace to the
+   currently compiled module expression).  Useful for naming exceptions. *)
+
+let global_path glob = Some(Pident glob)
+let functor_path path param =
+  match path with
+    None -> None
+  | Some p -> Some(Papply(p, Pident param))
+let field_path path field =
+  match path with
+    None -> None
+  | Some p -> Some(Pdot(p, Ident.name field, Path.nopos))
+
 (* Compile a module expression *)
 
-let rec transl_module cc mexp =
+let rec transl_module cc rootpath mexp =
   match mexp.mod_desc with
     Tmod_ident path ->
       apply_coercion cc (transl_path path)
   | Tmod_structure str ->
-      transl_structure [] cc str
+      transl_structure [] cc rootpath str
   | Tmod_functor(param, mty, body) ->
+      let bodypath = functor_path rootpath param in
       begin match cc with
         Tcoerce_none ->
-          Lfunction(Curried, [param], transl_module Tcoerce_none body)
+          Lfunction(Curried, [param], transl_module Tcoerce_none bodypath body)
       | Tcoerce_functor(ccarg, ccres) ->
           let param' = Ident.create "funarg" in
           Lfunction(Curried, [param'],
             Llet(Alias, param, apply_coercion ccarg (Lvar param'),
-              transl_module ccres body))
+              transl_module ccres bodypath body))
       | _ ->
           fatal_error "Translmod.transl_module"
       end
   | Tmod_apply(funct, arg, ccarg) ->
       apply_coercion cc
-        (Lapply(transl_module Tcoerce_none funct, [transl_module ccarg arg]))
+        (Lapply(transl_module Tcoerce_none None funct,
+                [transl_module ccarg None arg]))
   | Tmod_constraint(arg, mty, ccarg) ->
-      transl_module (compose_coercions cc ccarg) arg
+      transl_module (compose_coercions cc ccarg) rootpath arg
 
-and transl_structure fields cc = function
+and transl_structure fields cc rootpath = function
     [] ->
       begin match cc with
         Tcoerce_none ->
@@ -116,29 +132,31 @@ and transl_structure fields cc = function
           fatal_error "Translmod.transl_structure"
       end
   | Tstr_eval expr :: rem ->
-      Lsequence(transl_exp expr, transl_structure fields cc rem)
+      Lsequence(transl_exp expr, transl_structure fields cc rootpath rem)
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
       let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
-      transl_let rec_flag pat_expr_list (transl_structure ext_fields cc rem)
+      transl_let rec_flag pat_expr_list
+                 (transl_structure ext_fields cc rootpath rem)
   | Tstr_primitive(id, descr) :: rem ->
       begin match descr.val_kind with
         Val_prim p -> primitive_declarations :=
                         p.Primitive.prim_name :: !primitive_declarations
       | _ -> ()
       end;
-      transl_structure fields cc rem
+      transl_structure fields cc rootpath rem
   | Tstr_type(decls) :: rem ->
-      transl_structure fields cc rem
+      transl_structure fields cc rootpath rem
   | Tstr_exception(id, decl) :: rem ->
-      Llet(Strict, id, transl_exception id decl,
-           transl_structure (id :: fields) cc rem)
+      Llet(Strict, id, transl_exception id (field_path rootpath id) decl,
+           transl_structure (id :: fields) cc rootpath rem)
   | Tstr_module(id, modl) :: rem ->
-      Llet(Strict, id, transl_module Tcoerce_none modl,
-           transl_structure (id :: fields) cc rem)
+      Llet(Strict, id,
+           transl_module Tcoerce_none (field_path rootpath id) modl,
+           transl_structure (id :: fields) cc rootpath rem)
   | Tstr_modtype(id, decl) :: rem ->
-      transl_structure fields cc rem
+      transl_structure fields cc rootpath rem
   | Tstr_open path :: rem ->
-      transl_structure fields cc rem
+      transl_structure fields cc rootpath rem
   | Tstr_class cl_list :: rem ->
       List.fold_right
         (fun (id, cl) re ->
@@ -149,7 +167,7 @@ and transl_structure fields cc = function
               Lsequence(transl_class id cl, re))
            cl_list
          (transl_structure
-            ((List.rev (List.map fst cl_list)) @ fields) cc rem))
+            ((List.rev (List.map fst cl_list)) @ fields) cc rootpath rem))
 
 (* Update forward declaration in Translcore *)
 let _ =
@@ -161,7 +179,9 @@ let transl_implementation module_name (str, cc) =
   reset_labels ();
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
-  Lprim(Psetglobal module_id, [transl_label_init (transl_structure [] cc str)])
+  Lprim(Psetglobal module_id,
+        [transl_label_init
+            (transl_structure [] cc (global_path module_id) str)])
 
 (* A variant of transl_structure used to compile toplevel structure definitions
    for the native-code compiler. Store the defined values in the fields
@@ -190,10 +210,12 @@ let transl_store_structure glob map prims str =
   | Tstr_type(decls) :: rem ->
       transl_store rem
   | Tstr_exception(id, decl) :: rem ->
-      Llet(Strict, id, transl_exception id decl,
+      Llet(Strict, id,
+           transl_exception id (field_path (global_path glob) id) decl,
            store_ident glob map id (transl_store rem))
   | Tstr_module(id, modl) :: rem ->
-      Llet(Strict, id, transl_module Tcoerce_none modl,
+      Llet(Strict, id,
+           transl_module Tcoerce_none (field_path (global_path glob) id) modl,
            store_ident glob map id (transl_store rem))
   | Tstr_modtype(id, decl) :: rem ->
       transl_store rem
@@ -315,10 +337,10 @@ let transl_toplevel_item = function
       lambda_unit
   | Tstr_exception(id, decl) ->
       Ident.make_global id;
-      Lprim(Psetglobal id, [transl_exception id decl])
+      Lprim(Psetglobal id, [transl_exception id None decl])
   | Tstr_module(id, modl) ->
       Ident.make_global id;
-      Lprim(Psetglobal id, [transl_module Tcoerce_none modl])
+      Lprim(Psetglobal id, [transl_module Tcoerce_none None modl])
   | Tstr_modtype(id, decl) ->
       lambda_unit
   | Tstr_open path ->

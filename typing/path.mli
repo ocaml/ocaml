@@ -23,3 +23,5 @@ val isfree: Ident.t -> t -> bool
 val binding_time: t -> int
 
 val nopos: int
+
+val name: t -> string

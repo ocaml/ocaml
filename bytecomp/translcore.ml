@@ -32,7 +32,8 @@ exception Error of Location.t * error
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 let transl_module =
-  ref((fun cc modl -> assert false) : module_coercion -> module_expr -> lambda)
+  ref((fun cc rootpath modl -> assert false) :
+      module_coercion -> Path.t option -> module_expr -> lambda)
 
 (* Translation of primitives *)
 
@@ -463,7 +464,7 @@ let rec transl_exp e =
              modifs
              (Lvar cpy))
   | Texp_letmodule(id, modl, body) ->
-      Llet(Strict, id, !transl_module Tcoerce_none modl, transl_exp body)
+      Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
   | _ ->
       fatal_error "Translcore.transl"
 
@@ -538,9 +539,12 @@ and transl_setinstvar self var expr =
 
 (* Compile an exception definition *)
 
-let transl_exception id decl =
-    Lprim(Pmakeblock(0, Immutable),
-          [Lconst(Const_base(Const_string(Ident.name id)))])
+let transl_exception id path decl =
+  let name =
+    match path with
+      None -> Ident.name id
+    | Some p -> Path.name p in
+  Lprim(Pmakeblock(0, Immutable), [Lconst(Const_base(Const_string name))])
 
 (* Error report *)
 
