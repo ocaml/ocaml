@@ -179,10 +179,20 @@ let print_labels = ref true
 let print_label ppf l =
   if !print_labels && l <> "" || is_optional l then fprintf ppf "%s:" l
 
+let rec print_list_term pr sep ppf = function
+  | [] -> ()
+  | a :: l -> pr ppf a; sep (); print_list_term pr sep ppf l;;
+
+let rec print_list_init pr sep ppf = function
+  | [] -> ()
+  | a :: l -> sep (); pr ppf a; print_list_init pr sep ppf l;;
+
+(*
 let rec print_list pr sep ppf = function
   | [] -> ()
   | [a] -> pr ppf a
   | a :: l -> pr ppf a; sep (); print_list pr sep ppf l;;
+*)
 
 let rec typexp sch prio0 ppf ty =
   let ty = repr ty in
@@ -231,7 +241,7 @@ let rec typexp sch prio0 ppf ty =
         let all_present = List.length present = List.length fields in
         let pr_present ppf l =
           fprintf ppf "@[%a@]"
-            (print_list (fun ppf (s, _) -> fprintf ppf "@ | `%s" s) ignore)
+            (print_list_init (fun ppf (s, _) -> fprintf ppf "@ | `%s" s) ignore)
             l in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
@@ -260,7 +270,7 @@ let rec typexp sch prio0 ppf ty =
               | l ->
                  if not all_present then fprintf ppf "@ >%a" pr_present l in
             let print_fields ppf fields =
-              print_list (row_field sch)
+              print_list_init (row_field sch)
                          (fun () -> fprintf ppf "@ | ") ppf fields in
               
             fprintf ppf "@[<hov>%s[%s%a%t%a]@]"
@@ -385,29 +395,24 @@ let rec type_decl kwd id ppf decl =
       List.iter (fun (_, _, ty) -> mark_loops ty) l
   end;
 
-  fprintf ppf "@[<hv 2>%s%a"
+  fprintf ppf "%s%a"
     kwd type_expr (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)));
   begin match decl.type_manifest with
   | None -> ()
-  | Some ty -> fprintf ppf " =@ %a" type_expr ty
+  | Some ty -> fprintf ppf " =%a" type_expr ty
   end;
   begin match decl.type_kind with
   | Type_abstract -> ()
   | Type_variant [] -> ()
       (* A fatal error actually, except when printing type exn... *)
   | Type_variant cstrs ->
-      fprintf ppf " =@;<1 2>%a"
-       (print_list constructor (fun () -> fprintf ppf "@ | "))
-       cstrs
-  | Type_record (lbl1 :: lbls as l) ->
-      let pr_labels ppf lbls =
-        List.iter
-         (fun lbl -> fprintf ppf ";@;<1 2>%a" label lbl)
-         lbls in
-      fprintf ppf " =@ { %a%a }" label lbl1 pr_labels lbls
-  | _ -> assert false
+      fprintf ppf " =@ @[<hv 2>%a@]"
+       (print_list_init constructor (fun () -> fprintf ppf "@ | ")) cstrs
+  | Type_record lbls ->
+      fprintf ppf " = {@;<0 2>@[<hv>%a@]@,}"
+       (print_list_term label (fun () -> fprintf ppf ";@ ")) lbls
   end;
-  fprintf ppf "%a@]" (fun ppf l -> List.iter (constrain ppf) l) params
+  fprintf ppf "%a" (fun ppf l -> List.iter (constrain ppf) l) params
 
 and constructor ppf (name, args) =
   match args with
