@@ -41,7 +41,7 @@ extern char * caml_code_area_start, * caml_code_area_end;
 #ifdef _WIN32
 typedef void (*sighandler)(int sig);
 extern sighandler caml_win32_signal(int sig, sighandler action);
-#define signal(sig,act) win32_signal(sig,act)
+#define signal(sig,act) caml_win32_signal(sig,act)
 #endif
 
 #if defined(TARGET_power) && defined(SYS_rhapsody)
