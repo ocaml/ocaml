@@ -13,7 +13,7 @@ main program in C.
 fixed value printing problems where the wrong printer was selected.
 
 * Debugger: fixed printing problem with local references; revised
-handling of checkpoints; fixed problem with chop_extension.
+handling of checkpoints; various other small fixes.
 
 * Macintosh port: fixed signed division problem in bytecomp/emitcode.ml
 
