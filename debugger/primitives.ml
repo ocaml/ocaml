@@ -138,7 +138,7 @@ let string_trim s =
     done;
     let j = ref (l - 1) in
       while
-        !j >= !i && is_space (String.get s !i)
+        !j >= !i && is_space (String.get s !j)
       do
         decr j
       done;
