@@ -28,7 +28,7 @@ val zero_big_int : big_int
 val unit_big_int : big_int
         (** The big integer [1]. *)
 
-(** {2 Arithmetic operations} *)
+(** {6 Arithmetic operations} *)
 
 val minus_big_int : big_int -> big_int
         (** Unary negation. *)
@@ -79,7 +79,7 @@ val power_big_int_positive_big_int: big_int -> big_int -> big_int
            on the function, [a] and [b] can be either small integers
            or big integers.  Raise [Invalid_argument] if [b] is negative. *)
 
-(** {2 Comparisons and tests} *)
+(** {6 Comparisons and tests} *)
 
 val sign_big_int : big_int -> int
         (** Return [0] if the given big integer is zero,
@@ -102,7 +102,7 @@ val num_digits_big_int : big_int -> int
         (** Return the number of machine words used to store the
            given big integer.  *)
 
-(** {2 Conversions to and from strings} *)
+(** {6 Conversions to and from strings} *)
 
 val string_of_big_int : big_int -> string
         (** Return the string representation of the given big integer,
@@ -112,7 +112,7 @@ val big_int_of_string : string -> big_int
            The string consists of an optional [-] or [+] sign,
            followed by one or several decimal digits. *)
 
-(** {2 Conversions to and from other numerical types} *)
+(** {6 Conversions to and from other numerical types} *)
 
 val big_int_of_int : int -> big_int
         (** Convert a small integer to a big integer. *)
@@ -134,7 +134,7 @@ val float_of_big_int : big_int -> float
 
 (**/**)
 
-(** {2 For internal use} *)
+(** {6 For internal use} *)
 val nat_of_big_int : big_int -> nat
 val big_int_of_nat : nat -> big_int
 val base_power_big_int: int -> int -> big_int -> big_int
