@@ -21,6 +21,7 @@ type resumption_status =
     Resumed_wakeup
   | Resumed_delay
   | Resumed_join
+  | Resumed_io
   | Resumed_select of
       Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
   | Resumed_wait of int * Unix.process_status
@@ -39,6 +40,14 @@ external thread_initialize : unit -> unit = "thread_initialize"
 external thread_new : (unit -> unit) -> t = "thread_new"
 external thread_yield : unit -> unit = "thread_yield"
 external thread_sleep : unit -> unit = "thread_sleep"
+external thread_wait_read : Unix.file_descr -> unit = "thread_wait_read"
+external thread_wait_write : Unix.file_descr -> unit = "thread_wait_write"
+external thread_wait_timed_read :
+  Unix.file_descr * float -> resumption_status     (* remember: 1 arg *)
+  = "thread_wait_timed_read"
+external thread_wait_timed_write :
+  Unix.file_descr * float -> resumption_status     (* remember: 1 arg *)
+  = "thread_wait_timed_write"
 external thread_select :
   Unix.file_descr list * Unix.file_descr list *          (* remember: 1 arg *)
   Unix.file_descr list * float -> resumption_status
@@ -71,17 +80,17 @@ let select readfds writefds exceptfds delay =
     Resumed_select(r, w, e) -> (r, w, e)
   | _ -> ([], [], [])
 
-let wait_read fd = select_aux([fd], [], [], -1.0); ()
-let wait_write fd = select_aux([], [fd], [], -1.0); ()
-  
+let wait_read fd = thread_wait_read fd
+let wait_write fd = thread_wait_write fd
+
+let wait_timed_read_aux arg = thread_wait_timed_read arg
+let wait_timed_write_aux arg = thread_wait_timed_write arg
+
 let wait_timed_read fd delay =
-  match select_aux([fd], [], [], delay) with
-    Resumed_select(_, _, _) -> true
-  | _ -> false
+  match wait_timed_read_aux (fd, delay) with Resumed_io -> true | _ -> false
+
 let wait_timed_write fd delay =
-  match select_aux([], [fd], [], delay) with
-    Resumed_select(_, _, _) -> true
-  | _ -> false
+  match wait_timed_write_aux (fd, delay) with Resumed_io -> true | _ -> false
 
 let wait_pid_aux pid = thread_wait_pid pid
 

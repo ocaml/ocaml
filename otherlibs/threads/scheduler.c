@@ -84,6 +84,7 @@ struct thread_struct {
   value * sp;
   value * trapsp;
   value status;                 /* RUNNABLE, KILLED. etc (see below) */
+  value fd;     /* File descriptor on which we're doing read or write */
   value readfds, writefds, exceptfds;
                 /* Lists of file descriptors on which we're doing select() */
   value delay;                  /* Time until which this thread is blocked */
@@ -97,16 +98,19 @@ typedef struct thread_struct * thread_t;
 #define RUNNABLE Val_int(0)
 #define KILLED Val_int(1)
 #define SUSPENDED Val_int(2)
-#define BLOCKED_IO Val_int(4)
-#define BLOCKED_DELAY Val_int(8)
-#define BLOCKED_JOIN Val_int(16)
-#define BLOCKED_WAIT Val_int(32)
+#define BLOCKED_READ Val_int(4)
+#define BLOCKED_WRITE Val_int(8)
+#define BLOCKED_SELECT Val_int(16)
+#define BLOCKED_DELAY Val_int(32)
+#define BLOCKED_JOIN Val_int(64)
+#define BLOCKED_WAIT Val_int(128)
 
 #define RESUMED_WAKEUP Val_int(0)
 #define RESUMED_DELAY Val_int(1)
 #define RESUMED_JOIN Val_int(2)
+#define RESUMED_IO Val_int(3)
 
-#define TAG_RESUMED_IO 0
+#define TAG_RESUMED_SELECT 0
 #define TAG_RESUMED_WAIT 1
 
 #define NO_FDS Val_unit
@@ -161,6 +165,7 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
   curr_thread->status = RUNNABLE;
+  curr_thread->fd = Val_int(0);
   curr_thread->readfds = NO_FDS;
   curr_thread->writefds = NO_FDS;
   curr_thread->exceptfds = NO_FDS;
@@ -209,6 +214,7 @@ value thread_new(value clos)          /* ML */
   th->sp[0] = Val_unit;         /* a dummy environment */
   /* The thread is initially runnable */
   th->status = RUNNABLE;
+  th->fd = Val_int(0);
   th->readfds = NO_FDS;
   th->writefds = NO_FDS;
   th->exceptfds = NO_FDS;
@@ -248,7 +254,8 @@ static double timeofday(void)
 
 static value alloc_process_status(int pid, int status);
 static void add_fdlist_to_set(value fdl, fd_set *set);
-static value inter_fdlist_set(value fdl, fd_set *set);
+static value inter_fdlist_set(value fdl, fd_set *set, int *count);
+static void find_bad_fd(int fd, fd_set *set);
 static void find_bad_fds(value fdl, fd_set *set);
 
 static value schedule_thread(void)
@@ -269,8 +276,10 @@ static value schedule_thread(void)
   curr_thread->trapsp = trapsp;
 
 try_again:
-  /* Build fdsets and delay for select.
+  /* Find if a thread is runnable.
+     Build fdsets and delay for select.
      See if some join or wait operations succeeded. */
+  run_thread = NULL;
   FD_ZERO(&readfds);
   FD_ZERO(&writefds);
   FD_ZERO(&exceptfds);
@@ -280,7 +289,17 @@ try_again:
   need_wait = 0;
 
   FOREACH_THREAD(th)
-    if (th->status & (BLOCKED_IO - 1)) {
+    if (th->status <= SUSPENDED) continue;
+
+    if (th->status & (BLOCKED_READ - 1)) {
+      FD_SET(Int_val(th->fd), &readfds);
+      need_select = 1;
+    }
+    if (th->status & (BLOCKED_WRITE - 1)) {
+      FD_SET(Int_val(th->fd), &writefds);
+      need_select = 1;
+    }
+    if (th->status & (BLOCKED_SELECT - 1)) {
       add_fdlist_to_set(th->readfds, &readfds);
       add_fdlist_to_set(th->writefds, &writefds);
       add_fdlist_to_set(th->exceptfds, &exceptfds);
@@ -356,13 +375,19 @@ try_again:
            Find it using fstat() and wake up the threads waiting on it
            so that they'll get an error when operating on it. */
         FOREACH_THREAD(th)
-          if (th->status & (BLOCKED_IO - 1)) {
+          if (th->status & (BLOCKED_READ - 1)) {
+            find_bad_fd(Int_val(th->fd), &readfds);
+          }
+          if (th->status & (BLOCKED_WRITE - 1)) {
+            find_bad_fd(Int_val(th->fd), &writefds);
+          }
+          if (th->status & (BLOCKED_SELECT - 1)) {
             find_bad_fds(th->readfds, &readfds);
             find_bad_fds(th->writefds, &writefds);
             find_bad_fds(th->exceptfds, &exceptfds);
           }
         END_FOREACH(th);
-        retcode = 1;
+        retcode = FD_SETSIZE;
         break;
       default:
         sys_error(NO_ARG);
@@ -371,19 +396,36 @@ try_again:
       /* Some descriptors are ready. 
          Mark the corresponding threads runnable. */
       FOREACH_THREAD(th)
-        if (th->status & (BLOCKED_IO - 1)) {
-	  value r = Val_unit, w = Val_unit, e = Val_unit;
-          Begin_roots3(r,w,e);
-            r = inter_fdlist_set(th->readfds, &readfds);
-	    w = inter_fdlist_set(th->writefds, &writefds);
-	    e = inter_fdlist_set(th->exceptfds, &exceptfds);
-	    if (r != NO_FDS || w != NO_FDS || e != NO_FDS) {
-	      value retval = alloc_small(3, TAG_RESUMED_IO);
-	      Field(retval, 0) = r;
-	      Field(retval, 1) = w;
-	      Field(retval, 2) = e;
-	      Assign(th->retval, retval);
-	      th->status = RUNNABLE;
+        if (retcode <= 0) break;
+        if ((th->status & (BLOCKED_READ - 1)) &&
+            FD_ISSET(Int_val(th->fd), &readfds)) {
+          th->retval = RESUMED_IO;
+          th->status = RUNNABLE;
+          if (run_thread == NULL) run_thread = th; /* Found one. */
+          FD_CLR(Int_val(th->fd), &readfds);
+          retcode--;
+        }
+        if ((th->status & (BLOCKED_WRITE - 1)) &&
+            FD_ISSET(Int_val(th->fd), &writefds)) {
+          th->retval = RESUMED_IO;
+          th->status = RUNNABLE;
+          if (run_thread == NULL) run_thread = th; /* Found one. */
+          FD_CLR(Int_val(th->fd), &readfds);
+          retcode--;
+        }
+        if (th->status & (BLOCKED_SELECT - 1)) {
+          value r = Val_unit, w = Val_unit, e = Val_unit;
+          Begin_roots3(r,w,e)
+            r = inter_fdlist_set(th->readfds, &readfds, &retcode);
+            w = inter_fdlist_set(th->writefds, &writefds, &retcode);
+            e = inter_fdlist_set(th->exceptfds, &exceptfds, &retcode);
+            if (r != NO_FDS || w != NO_FDS || e != NO_FDS) {
+              value retval = alloc_small(3, TAG_RESUMED_SELECT);
+              Field(retval, 0) = r;
+              Field(retval, 1) = w;
+              Field(retval, 2) = e;
+              Assign(th->retval, retval);
+              th->status = RUNNABLE;
 	      if (run_thread == NULL) run_thread = th; /* Found one. */
 	    }
           End_roots();
@@ -451,6 +493,54 @@ value thread_sleep(value unit)        /* ML */
   return schedule_thread();
 }
 
+/* Suspend the current thread on a read() or write() request */
+
+static value thread_wait_rw(int kind, value fd)
+{
+  /* Don't do an error if we're not initialized yet
+     (we can be called from thread-safe Pervasives before initialization),
+     just return immediately. */
+  if (curr_thread == NULL) return RESUMED_WAKEUP;
+  check_callback();
+  curr_thread->fd = fd;
+  curr_thread->status = kind;
+  return schedule_thread();
+}
+
+value thread_wait_read(value fd)
+{
+  return thread_wait_rw(BLOCKED_READ, fd);
+}
+
+value thread_wait_write(value fd)
+{
+  return thread_wait_rw(BLOCKED_WRITE, fd);
+}
+
+/* Suspend the current thread on a read() or write() request with timeout */
+
+static value thread_wait_timed_rw(int kind, value arg)
+{
+  double date;
+
+  check_callback();
+  curr_thread->fd = Field(arg, 0);
+  date = timeofday() + Double_val(Field(arg, 1));
+  Assign(curr_thread->delay, copy_double(date));
+  curr_thread->status = kind | BLOCKED_DELAY;
+  return schedule_thread();
+}
+
+value thread_wait_timed_read(value arg)
+{
+  return thread_wait_timed_rw(BLOCKED_READ, arg);
+}
+
+value thread_wait_timed_write(value arg)
+{
+  return thread_wait_timed_rw(BLOCKED_WRITE, arg);
+}
+
 /* Suspend the current thread on a select() request */
 
 value thread_select(value arg)        /* ML */
@@ -468,9 +558,9 @@ value thread_select(value arg)        /* ML */
   if (date >= 0.0) {
     date += timeofday();
     Assign(curr_thread->delay, copy_double(date));
-    curr_thread->status = BLOCKED_IO | BLOCKED_DELAY;
+    curr_thread->status = BLOCKED_SELECT | BLOCKED_DELAY;
   } else {
-    curr_thread->status = BLOCKED_IO;
+    curr_thread->status = BLOCKED_SELECT;
   }
   return schedule_thread();
 }
@@ -605,7 +695,7 @@ static void add_fdlist_to_set(value fdl, fd_set *set)
 /* Build the intersection of a list and a fdset (the list of file descriptors
    which are both in the list and in the fdset). */
 
-static value inter_fdlist_set(value fdl, fd_set *set)
+static value inter_fdlist_set(value fdl, fd_set *set, int *count)
 {
   value res = Val_unit;
   value cons;
@@ -619,6 +709,7 @@ static value inter_fdlist_set(value fdl, fd_set *set)
 	Field(cons, 1) = res;
 	res = cons;
 	FD_CLR(fd, set); /* wake up only one thread per fd ready */
+        (*count)--;
       }
     }
   End_roots();
@@ -628,15 +719,17 @@ static value inter_fdlist_set(value fdl, fd_set *set)
 /* Find closed file descriptors in a waiting list and set them to 1 in
    the given fdset */
 
-static void find_bad_fds(value fdl, fd_set *set)
+static void find_bad_fd(int fd, fd_set *set)
 {
   struct stat s;
+  if (fd >= 0 && fd < FD_SETSIZE && fstat(fd, &s) == -1 && errno == EBADF)
+    FD_SET(fd, set);
+}
 
-  for (/*nothing*/; fdl != NO_FDS; fdl = Field(fdl, 1)) {
-    int fd = Int_val(Field(fdl, 0));
-    if (fd >= 0 && fd < FD_SETSIZE && fstat(fd, &s) == -1 && errno == EBADF)
-      FD_SET(fd, set);
-  }
+static void find_bad_fds(value fdl, fd_set *set)
+{
+  for (/*nothing*/; fdl != NO_FDS; fdl = Field(fdl, 1))
+    find_bad_fd(Int_val(Field(fdl, 0)), set);
 }
 
 /* Auxiliary function for allocating the result of a waitpid() call */
