@@ -134,12 +134,13 @@ let bounded_full_split expr text num =
     if n = 1 then [Text(string_after text start)] else
       try
         let pos = search_forward expr text start in
+        let s = matched_string text in
         if pos > start then
           Text(String.sub text start (pos-start)) ::
-          Delim(matched_string text) ::
+          Delim(s) ::
           split (match_end()) (n-1)
         else
-          Delim(matched_string text) ::
+          Delim(s) ::
           split (match_end()) (n-1)
       with Not_found ->
         [Text(string_after text start)] in
