@@ -534,6 +534,19 @@ partialclean::
 alldepend::
 	cd debugger; $(MAKE) depend
 
+# Camlp4
+
+camlp4out: ocamlc
+	set -e; cd camlp4/config; ./configure_batch -bindir $(BINDIR) -libdir $(LIBDIR)/../camlp4 -mandir $(MANDIR) -ocaml-top ../..
+	set -e; cd camlp4; $(MAKE) all
+partialclean::
+	set -e; cd camlp4; $(MAKE) clean
+alldepend::
+	set -e; cd camlp4; $(MAKE) depend
+
+camlp4opt: ocamlopt
+	set -e; cd camlp4; $(MAKE) opt
+
 # Default rules
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
