@@ -312,6 +312,9 @@ EOF
     CRAY-2:*:*:*)
 	echo cray2-cray-unicos
         exit 0 ;;
+    CRAY*T3E:*:*:*)
+        echo alpha-cray-unicos
+        exit 0 ;;
     hp3[0-9][05]:NetBSD:*:*)
 	echo m68k-hp-netbsd${UNAME_RELEASE}
 	exit 0 ;;
