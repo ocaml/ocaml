@@ -153,7 +153,10 @@ let final_rewrite add_function =
     seek_out !outchan (!pos_len - String.length len);
     output_string !outchan len
   end;
-  close_out !outchan;
+  (* Cannot close because outchan is stdout and Format doesn't like
+     a closed stdout.
+    close_out !outchan;
+  *)
 ;;
 
 let rec rewrite_patexp_list iflag l =
