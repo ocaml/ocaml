@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id *)
+(* $Id$ *)
 
 (* Module [Db]: interface to the DB databases of type btree. Cf dbopen(3) *)
 
