@@ -133,7 +133,7 @@ codetest:
           if test -f Results/$$prog.runtest; then \
             sh Results/$$prog.runtest test $$prog.out; \
           else \
-            $$prog.out | cmp - Results/$$prog.out; \
+            ./$$prog.out | cmp - Results/$$prog.out; \
           fi; \
         done
 
