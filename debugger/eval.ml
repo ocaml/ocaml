@@ -62,7 +62,7 @@ let rec expression event env = function
     E_ident lid ->
       begin try
         let (p, valdesc) = Env.lookup_value lid env in
-        (path event p, Ctype.correct_levels env valdesc.val_type)
+        (path event p, Ctype.correct_levels valdesc.val_type)
       with Not_found ->
         raise(Error(Unbound_long_identifier lid))
       end
