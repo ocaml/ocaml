@@ -908,7 +908,8 @@ and class_type_declaration b ci _ k =
 ;
 
 pr_sig_item.pr_levels :=
-  [{pr_label = "top"; pr_box _ x = HVbox x;
+  [{pr_label = "top";
+    pr_box s x = LocInfo (MLast.loc_of_sig_item s) (HVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:sig_item< type $list:stl$ >> ->
@@ -1707,6 +1708,7 @@ value output_string_eval oc s =
 
 value maxl = ref 78;
 value sep = ref None;
+value ncip = ref False;
 value comm_after = ref False;
 value type_comm = ref False;
 value delayed_comm = ref "";
@@ -1775,6 +1777,75 @@ value copy_to_end ic oc first bp =
   else output_string oc "\n"
 ;
 
+module Buff =
+  struct
+    value buff = ref (String.create 80);
+    value store len x =
+      do {
+        if len >= String.length buff.val then
+          buff.val := buff.val ^ String.create (String.length buff.val)
+        else ();
+        buff.val.[len] := x;
+        succ len
+      }
+    ;
+    value mstore len s =
+      add_rec len 0 where rec add_rec len i =
+        if i == String.length s then len
+        else add_rec (store len s.[i]) (succ i)
+    ;
+    value get len = String.sub buff.val 0 len;
+  end
+;
+
+value extract_comment strm =
+  let rec find_comm sp_cnt =
+    parser
+    [ [: `'('; a = find_star sp_cnt :] -> a
+    | [: `' '; s :] -> find_comm (sp_cnt + 1) s
+    | [: `_; s :] -> find_comm 0 s
+    | [: :] -> "" ]
+  and find_star sp_cnt =
+    parser
+    [ [: `'*'; a = insert (Buff.mstore 0 "(*") :] -> a
+    | [: a = find_comm 0 :] -> a ]
+  and insert len =
+    parser
+    [ [: `'*'; a = rparen (Buff.store len '*') :] -> a
+    | [: `x; s :] -> insert (Buff.store len x) s
+    | [: :] -> "" ]
+  and rparen len =
+    parser
+    [ [: `')'; s :] -> if_newline (Buff.store len ')') s
+    | [: a = insert len :] -> a ]
+  and if_newline len =
+    parser
+    [ [: `'\n'; a = while_space (Buff.store len '\n') :] -> a
+    | [: :] -> " " ^ Buff.get len ]
+  and while_space len =
+    parser
+    [ [: `(' ' as c); a = while_space (Buff.store len c) :] -> a
+    | [: `'\n'; a = while_space len :] -> a
+    | [: :] -> Buff.get len ]
+  in
+  find_comm 0 strm
+;
+
+value print_comment ic oc last_ep (bp, ep) =
+  if bp > last_ep.val then do {
+    seek_in ic last_ep.val;
+    let strm =
+      Stream.from
+        (fun i -> if i = bp - last_ep.val then None else Some (input_char ic))
+    in
+    match extract_comment strm with
+    [ "" -> ()
+    | s -> output_string oc s ];
+    last_ep.val := last_ep.val + Stream.count strm
+  }
+  else ()
+;
+
 value apply_printer printer ast =
   let oc =
     match Pcaml.output_file.val with
@@ -1791,6 +1862,11 @@ value apply_printer printer ast =
   let pr_nl () = output_char oc '\n' in
   if Pcaml.input_file.val <> "-" && Pcaml.input_file.val <> "" then do {
     let ic = open_in_bin Pcaml.input_file.val in
+    let last_ep = ref 0 in
+    let prcom =
+      if not ncip.val && sep.val = None then print_comment ic oc last_ep
+      else fun _ -> ()
+    in
     try
       do {
         input_file_ic.val := if type_comm.val then Some ic else None;
@@ -1800,7 +1876,8 @@ value apply_printer printer ast =
                do {
                  copy_source ic oc first last_pos bp;
                  flush oc;
-                 print_pretty pr_ch pr_str pr_nl "" "" maxl.val (fun _ -> ())
+                 last_ep.val := bp;
+                 print_pretty pr_ch pr_str pr_nl "" "" maxl.val prcom
                    (printer si "" [: :]);
                  flush oc;
                  (False, ep)
