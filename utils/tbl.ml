@@ -28,19 +28,19 @@ let create l x d r =
 let bal l x d r =
   let hl = height l and hr = height r in
   if hl > hr + 1 then
-    let (Node(ll, lv, ld, lr, _)) = l in
-    if height ll >= height lr then
-      create ll lv ld (create lr x d r)
-    else
-      let (Node(lrl, lrv, lrd, lrr, _)) = lr in
-      create (create ll lv ld lrl) lrv lrd (create lrr x d r)
+    match l with
+    | Node (ll, lv, ld, lr, _) when height ll >= height lr ->
+        create ll lv ld (create lr x d r)
+    | Node (ll, lv, ld, Node (lrl, lrv, lrd, lrr, _), _) ->
+        create (create ll lv ld lrl) lrv lrd (create lrr x d r)
+    | _ -> assert false
   else if hr > hl + 1 then
-    let (Node(rl, rv, rd, rr, _)) = r in
-    if height rr >= height rl then
-      create (create l x d rl) rv rd rr
-    else
-      let (Node(rll, rlv, rld, rlr, _)) = rl in
-      create (create l x d rll) rlv rld (create rlr rv rd rr)
+    match r with
+    | Node (rl, rv, rd, rr, _) when height rr >= height rl ->
+        create (create l x d rl) rv rd rr
+    | Node (Node (rll, rlv, rld, rlr, _), rv, rd, rr, _) ->
+        create (create l x d rll) rlv rld (create rlr rv rd rr)
+    | _ -> assert false
   else
     create l x d r
 
