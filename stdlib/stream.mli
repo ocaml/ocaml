@@ -17,34 +17,35 @@ type 'a t
 	(* The type of streams containing values of type ['a]. *)
 
 exception Parse_failure
-	(* Raised by parsers when none of the first component of the stream
-           patterns is accepted *)
+	(* Raised by parsers when none of the first components of the stream
+           patterns is accepted. *)
 exception Parse_error of string
 	(* Raised by parsers when the first component of a stream pattern is
-	   accepted, but one of the following components is rejected *)
+	   accepted, but one of the following components is rejected. *)
 
 val next : 'a t -> 'a
-	(* Returns the first element of the stream, and removes it from the
+	(* Returns the first element of the stream and removes it from the
            stream. Raises [Parse_failure] if the stream is empty. *)
 val empty : 'a t -> unit
-	(* Returns () if the stream is empty, else raises [Parse_failure] *)
+	(* Returns [()] if the stream is empty, else raises [Parse_failure]. *)
 
+val peek : 'a t -> 'a option
+        (* Returns [Some] "the first element" of the stream, or [None] if the
+           stream is empty. *)
 val count : 'a t -> int
 	(* Returns the count of elements of the stream (starting from 0). *)
 
 val from : (int -> 'a option) -> 'a t
-  	(* [Stream.from f] returns a stream built from the function f.
-           To create a stream element, the stream module calls [f] with
-           the current stream count. The function [f] must return either
-           [Some <value>] or [None] to specify the end of the stream. *)
+  	(* [Stream.from f] returns a stream built from the function [f].
+           To create a new stream element, the function [f] is called with
+           the current stream count. The user function [f] must return either
+           [Some <value>] for a value or [None] to specify the end of the
+           stream. *)
 val of_list : 'a list -> 'a t
         (* Returns the stream holding the elements of the list in the same
            order. *)
 val of_string : string -> char t
-        (* [Stream.of_string s] returns the characters stream of [s]. Its code
-           is built from the function [from]:
-             Stream.from
-                (fun c -> if c < String.length s then Some s.[c] else None) *)
+        (* Returns the character stream of the string parameter. *)
 val of_channel : in_channel -> char t
 	(* Returns the characters stream read from the input channel. *)
 
@@ -52,7 +53,6 @@ val of_channel : in_channel -> char t
 
 (*** For system use only, not for the casual user *)
 
-val peek : 'a t -> 'a option
 val junk : 'a t -> unit
 val sempty : 'a t
 val scons : (unit -> 'a) -> 'a t -> 'a t
