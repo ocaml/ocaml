@@ -43,7 +43,7 @@ end
 
 let dump_handle (h : Unix.file_descr) =
   let obj = Obj.repr h in
-  if Obj.is_int obj || Obj.tag obj <> Obj.final_tag then
+  if Obj.is_int obj || Obj.tag obj <> Obj.custom_tag then
     invalid_arg "Shell.dump_handle";
   Nativeint.format "%x" (Obj.obj obj)
 
