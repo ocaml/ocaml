@@ -71,7 +71,9 @@ value tree_failed entry prev_symb tree =
     | Sopt _ | Stree _ -> ("", txt)
     | _ -> (name_of_symbol entry prev_symb, txt) ]
   in
-  <:expr< P.error $str:entry.ename$ $str:s2$ $str:s3$ >>
+  <:expr<
+    P.error $str:entry.ename$ $str:String.escaped s2$ $str:String.escaped s3$
+  >>
 ;
 
 (* Compilation *)
@@ -240,12 +242,14 @@ and parse_symbol entry nlevn s rkont fkont ending_act =
       in
       let p =
         let patt = nth_patt_of_act ending_act in
-        if snd tok = "" then <:patt< ($str:fst tok$, $patt$) >>
+        let p_con = String.escaped (fst tok) in
+        let p_prm = String.escaped (snd tok) in
+        if snd tok = "" then <:patt< ($str:p_con$, $patt$) >>
         else
-          let p = <:patt< ($str:fst tok$, $str:snd tok$) >> in
+          let p = <:patt< ($str:p_con$, $str:p_prm$) >> in
           match patt with
-          [ <:patt< _ >> -> <:patt< ($str:fst tok$, $str:snd tok$) >>
-          | _ -> <:patt< ($str:fst tok$, ($str:snd tok$ as $patt$)) >> ]
+          [ <:patt< _ >> -> <:patt< ($str:p_con$, $str:p_prm$) >>
+          | _ -> <:patt< ($str:p_con$, ($str:p_prm$ as $patt$)) >> ]
       in
       <:expr<
         match Stream.peek strm__ with
@@ -276,7 +280,9 @@ and symbol_parser entry nlevn =
           else ()
         }
       in
-      <:expr< P.token ($str:fst tok$, $str:snd tok$) >>
+      let p_con = String.escaped (fst tok) in
+      let p_prm = String.escaped (snd tok) in
+      <:expr< P.token ($str:p_con$, $str:p_prm$) >>
   | Stree tree ->
       let kont = <:expr< raise Stream.Failure >> in
       let act_kont _ act = final_action act in
@@ -504,7 +510,9 @@ value all_entries_in_graph list entry =
 
 (* main *)
 
-value entries =
+value entries = ref [];
+
+(*
   [Grammar.Entry.obj Pcaml.interf;
    Grammar.Entry.obj Pcaml.implem;
    Grammar.Entry.obj Pcaml.top_phrase;
@@ -514,7 +522,7 @@ value entries =
    Grammar.Entry.obj Pcaml.ctyp;
    Grammar.Entry.obj Pcaml.expr;
    Grammar.Entry.obj Pcaml.patt]
-;
+*)
 
 value rec list_mem_right_assoc x =
   fun
@@ -525,19 +533,15 @@ value rec list_mem_right_assoc x =
 value rec expr_list =
   fun
   [ [] -> <:expr< [] >>
-  | [x :: l] -> <:expr< [$str:x$ :: $expr_list l$] >> ]
+  | [x :: l] -> <:expr< [$str:String.escaped x$ :: $expr_list l$] >> ]
 ;
 
 value compile () =
   let _ = do { keywords.val := []; } in
-  let list = [] in
-  let list = all_entries_in_graph list (Grammar.Entry.obj Pcaml.interf) in
-  let list = all_entries_in_graph list (Grammar.Entry.obj Pcaml.implem) in
-  let list = all_entries_in_graph list (Grammar.Entry.obj Pcaml.top_phrase) in
-  let list = all_entries_in_graph list (Grammar.Entry.obj Pcaml.use_file) in
+  let list = List.fold_left all_entries_in_graph [] entries.val in
   let list =
-    List.filter (fun e -> List.memq e list) entries @
-    List.filter (fun e -> not (List.memq e entries)) list
+    List.filter (fun e -> List.memq e list) entries.val @
+    List.filter (fun e -> not (List.memq e entries.val)) list
   in
   let list =
     let set = ref [] in

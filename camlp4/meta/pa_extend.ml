@@ -188,7 +188,8 @@ module MetaAction =
       | MLast.ExSeq loc el -> <:expr< MLast.ExSeq $mloc$ $mlist mexpr el$ >>
       | MLast.ExSte loc e1 e2 ->
           <:expr< MLast.ExSte $mloc$ $mexpr e1$ $mexpr e2$ >>
-      | MLast.ExStr loc s -> <:expr< MLast.ExStr $mloc$ $str:s$ >>
+      | MLast.ExStr loc s ->
+          <:expr< MLast.ExStr $mloc$ $str:String.escaped s$ >>
       | MLast.ExTry loc e pwel ->
           <:expr< MLast.ExTry $mloc$ $mexpr e$ $mlist mpwe pwel$ >>
       | MLast.ExTup loc el -> <:expr< MLast.ExTup $mloc$ $mlist mexpr el$ >>
@@ -207,7 +208,8 @@ module MetaAction =
       | MLast.PaLid loc s -> <:expr< MLast.PaLid $mloc$ $str:s$ >>
       | MLast.PaOrp loc p1 p2 ->
           <:expr< MLast.PaOrp $mloc$ $mpatt p1$ $mpatt p2$ >>
-      | MLast.PaStr loc s -> <:expr< MLast.PaStr $mloc$ $str:s$ >>
+      | MLast.PaStr loc s ->
+          <:expr< MLast.PaStr $mloc$ $str:String.escaped s$ >>
       | MLast.PaTup loc pl -> <:expr< MLast.PaTup $mloc$ $mlist mpatt pl$ >>
       | MLast.PaTyc loc p t ->
           <:expr< MLast.PaTyc $mloc$ $mpatt p$ $mctyp t$ >>

@@ -336,7 +336,7 @@ module MetaAction =
                   (loc, MLast.ExUid (loc, "MLast"),
                    MLast.ExUid (loc, "ExStr")),
                 mloc),
-             MLast.ExStr (loc, s))
+             MLast.ExStr (loc, String.escaped s))
       | MLast.ExTry (loc, e, pwel) ->
           MLast.ExApp
             (loc,
@@ -460,7 +460,7 @@ module MetaAction =
                   (loc, MLast.ExUid (loc, "MLast"),
                    MLast.ExUid (loc, "PaStr")),
                 mloc),
-             MLast.ExStr (loc, s))
+             MLast.ExStr (loc, String.escaped s))
       | MLast.PaTup (loc, pl) ->
           MLast.ExApp
             (loc,

@@ -161,7 +161,7 @@ EXTEND
   use_file:
     [ [ si = str_item; ";"; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | "#"; n = LIDENT; dp = OPT expr; ";" ->
-          ([<:str_item< # $n$ $opt:dp$ >>], True)
+          ([ <:str_item< # $n$ $opt:dp$ >>], True)
       | EOI -> ([], False) ] ]
   ;
   phrase:
@@ -402,7 +402,7 @@ EXTEND
             [ [e] -> e
             | _ -> <:expr< do { $list:el$ } >> ]
           in
-          [<:expr< let $rec:o2b o$ $list:l$ in $e$ >>]
+          [ <:expr< let $rec:o2b o$ $list:l$ in $e$ >>]
       | e = expr; ";"; el = SELF -> [e :: el]
       | e = expr; ";" -> [e]
       | e = expr -> [e] ] ]
