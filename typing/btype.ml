@@ -361,7 +361,7 @@ type changes =
   | Unchanged
   | Invalid
 
-type snapshot = changes ref
+type snapshot = changes ref * int
 
 let trail = Weak.create 1
 let last_snapshot = ref 0
@@ -391,12 +391,13 @@ let set_commu rc c =
   log_change (Ccommu (rc, !rc)); rc := c
 
 let snapshot () =
+  let old = !last_snapshot in
   last_snapshot := !new_id;
-  match Weak.get trail 0 with Some r -> r
+  match Weak.get trail 0 with Some r -> (r, old)
   | None ->
       let r = ref Unchanged in
       Weak.set trail 0 (Some r);
-      r
+      (r, old)
 
 let rec rev_log accu = function
     Unchanged -> accu
@@ -406,13 +407,14 @@ let rec rev_log accu = function
       next := Invalid;
       rev_log (ch::accu) d
 
-let backtrack changes =
+let backtrack (changes, old) =
   match !changes with
-    Unchanged -> ()
+    Unchanged -> last_snapshot := old
   | Invalid -> failwith "Btype.backtrack"
   | Change _ as change ->
       cleanup_abbrev ();
       let backlog = rev_log [] change in
       List.iter undo_change backlog;
       changes := Unchanged;
+      last_snapshot := old;
       Weak.set trail 0 (Some changes)
