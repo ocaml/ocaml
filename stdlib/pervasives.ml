@@ -107,10 +107,10 @@ external truncate : float -> int = "%intoffloat"
 
 (* String operations -- more in module String *)
 
-external string_length : string -> int = "ml_string_length"
+external string_length : string -> int = "%string_length"
 external string_create: int -> string = "create_string"
 external string_blit : string -> int -> string -> int -> int -> unit
-                     = "blit_string"
+                     = "blit_string" "noalloc"
 
 let (^) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
