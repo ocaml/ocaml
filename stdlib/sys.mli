@@ -37,6 +37,8 @@ val interactive: bool ref
         (* This reference is initially set to [false] in standalone
            programs and to [true] if the code is being executed under
            the interactive toplevel [csltop]. *)
+external get_os_type: unit -> string = "sys_get_os_type"
+        (* Return the operating system name. *)
 
 (*** Signal handling *)
 

@@ -24,6 +24,7 @@ external getenv: string -> string = "sys_getenv"
 external command: string -> int = "sys_system_command"
 external chdir: string -> unit = "sys_chdir"
 external getcwd: unit -> string = "sys_getcwd"
+external get_os_type: unit -> string = "sys_get_os_type"
 
 let interactive = ref false
 

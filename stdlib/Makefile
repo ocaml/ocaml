@@ -49,17 +49,6 @@ pervasives.cmo: pervasives.ml
 pervasives.cmx: pervasives.ml
 	$(CAMLOPT) $(COMPFLAGS) -nopervasives -c pervasives.ml
 
-filename.ml: filename.mlp ../config/Makefile
-	@rm -f filename.ml
-	$(CPP) $(CPPFLAGS) filename.mlp > filename.ml || \
-        { rm -f filename.ml; exit 2; }
-	@chmod -w filename.ml
-
-clean::
-	rm -f filename.ml
-
-beforedepend:: filename.ml
-
 .SUFFIXES: .mli .ml .cmi .cmo .cmx
 
 .mli.cmi:
