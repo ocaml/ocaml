@@ -56,6 +56,7 @@ let type_path s = function
 (* Special type ids for saved signatures *)
 
 let new_id = ref (-1)
+let reset_for_saving () = new_id := -1
 
 let newpersvar () =
   decr new_id; { desc = Tvar; level = generic_level; id = !new_id }
@@ -193,7 +194,8 @@ let class_declaration s decl =
         | Some ty -> Some (typexp s ty)
         end }
   in
-  cleanup_types ();
+  (* Do not clean up if saving: next is cltype_declaration *)
+  if not s.for_saving then cleanup_types ();
   decl
 
 let cltype_declaration s decl =
@@ -202,7 +204,8 @@ let cltype_declaration s decl =
       clty_type = class_type s decl.clty_type;
       clty_path = type_path s decl.clty_path }
   in
-  cleanup_types ();
+  (* Do not clean up if saving: next is type_declaration *)
+  if not s.for_saving then cleanup_types ();
   decl
 
 let class_type s cty =

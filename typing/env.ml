@@ -719,6 +719,7 @@ let imported_units() =
 
 let save_signature sg modname filename =
   Btype.cleanup_abbrev ();
+  Subst.reset_for_saving ();
   let s = Subst.for_saving Subst.identity in
   let sg = Subst.signature s sg in
   let comps =
