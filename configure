@@ -471,13 +471,19 @@ if test $withsharedlibs = "yes"; then
       shared_libraries_supported=true;;
     alpha*-*-osf*)
       case "$bytecc" in
-        cc*) sharedcccompopts="";;
-        gcc*) sharedcccompopts="-fPIC";;
-      esac
-      mksharedlib="ld -shared -expect_unresolved '*' -o"
-      byteccrpath="-Wl,-rpath,"
-      mksharedlibrpath="-rpath "
-      shared_libraries_supported=true;;
+        gcc*)
+          sharedcccompopts="-fPIC"
+          mksharedlib="$bytecc -shared -o"
+          byteccrpath="-Wl,-rpath,"
+          mksharedlibrpath="-Wl,-rpath,"
+          shared_libraries_supported=true;;
+        cc*)
+          sharedcccompopts=""
+          mksharedlib="ld -shared -expect_unresolved '*' -o"
+          byteccrpath="-Wl,-rpath,"
+          mksharedlibrpath="-rpath "
+          shared_libraries_supported=true;;
+      esac;;
     *-*-solaris2*)
       case "$bytecc" in
         gcc*)
