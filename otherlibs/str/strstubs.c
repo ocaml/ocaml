@@ -59,9 +59,9 @@ enum {
   GOTO,       /* unconditional branch */
   PUSHBACK,   /* record a backtrack point -- 
                  where to jump in case of failure */
-  GOTO_STAR,  /* like goto, except that we backtrack if no
+  GOTO_STAR,  /* like goto, except that we fall through if no
                  characters were consumed since last PUSHBACK */
-  GOTO_PLUS,  /* like goto, except that we backtrack if no
+  GOTO_PLUS,  /* like goto, except that we fall through if no
                  characters were consumed since penultimate PUSHBACK */
 };
 
@@ -269,14 +269,14 @@ static int re_match(value re,
       break;
     case GOTO_STAR: {
       struct backtrack_point * p = re_previous_backtrack_point(sp, stack, 1);
-      if (p != NULL && txt == p->txt) goto backtrack;
-      pc = pc + SignedArg(instr);
+      if (p == NULL || txt > p->txt)
+        pc = pc + SignedArg(instr);
       break;
     }
     case GOTO_PLUS: {
       struct backtrack_point * p = re_previous_backtrack_point(sp, stack, 2);
-      if (p != NULL && txt == p->txt) goto backtrack;
-      pc = pc + SignedArg(instr);
+      if (p == NULL || txt > p->txt)
+        pc = pc + SignedArg(instr);
       break;
     }
     default:
