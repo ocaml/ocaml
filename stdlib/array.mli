@@ -90,7 +90,7 @@ val map: ('a -> 'b) -> 'a array -> 'b array
         (* [Array.map f a] applies function [f] to all the elements of [a],
            and builds an array with the results returned by [f]:
            [[| f a.(0); f a.(1); ...; f a.(Array.length a - 1) |]]. *)
-val iteri: (int -> 'a -> 'b) -> 'a array -> unit
+val iteri: (int -> 'a -> unit) -> 'a array -> unit
 val mapi: (int -> 'a -> 'b) -> 'a array -> 'b array
         (* Same as [Array.iter] and [Array.map] respectively, but the
            function is applied to the index of the element as first argument,
