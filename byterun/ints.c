@@ -119,7 +119,8 @@ static char * parse_format(value fmt,
 
 value format_int(value fmt, value arg)      /* ML */
 {
-  char format_string[32], default_format_buffer[32];
+  char format_string[FORMAT_BUFFER_SIZE];
+  char default_format_buffer[FORMAT_BUFFER_SIZE];
   char * buffer;
   value res;
 
@@ -231,7 +232,8 @@ value int32_to_float(value v) /* ML */
 
 value int32_format(value fmt, value arg)      /* ML */
 {
-  char format_string[32], default_format_buffer[32];
+  char format_string[FORMAT_BUFFER_SIZE];
+  char default_format_buffer[FORMAT_BUFFER_SIZE];
   char * buffer;
   value res;
 
@@ -382,7 +384,8 @@ value int64_to_nativeint(value v) /* ML */
 value int64_format(value fmt, value arg)      /* ML */
 #ifdef ARCH_INT64_PRINTF_FORMAT
 {
-  char format_string[64], default_format_buffer[64];
+  char format_string[FORMAT_BUFFER_SIZE];
+  char default_format_buffer[FORMAT_BUFFER_SIZE];
   char * buffer;
   value res;
 
@@ -404,13 +407,29 @@ value int64_of_string(value s)          /* ML */
   int sign, base, d;
 
   p = parse_sign_and_base(String_val(s), &base, &sign);
-  for (res = 0; /*nothing*/; p++) {
+  d = parse_digit(p);
+  if (d < 0 || d >= base) failwith("int_of_string");
+  for (p++, res = d; /*nothing*/; p++) {
     d = parse_digit(p);
     if (d < 0 || d >= base) break;
     res = base * res + d;
   }
   if (*p != 0) failwith("int_of_string");
   return copy_int64(sign < 0 ? -((int64) res) : (int64) res);
+}
+
+value int64_bits_of_float(value vd)   /* ML */
+{
+  union { double d; int64 i; } u;
+  u.d = Double_val(vd);
+  return copy_int64(u.i);
+}
+
+value int64_float_of_bits(value vi)   /* ML */
+{
+  union { double d; int64 i; } u;
+  u.i = Int64_val(vi);
+  return copy_double(u.d);
 }
 
 #else
@@ -485,6 +504,12 @@ value int64_format(value fmt, value arg)
 { invalid_argument(int64_error); }
 
 value int64_of_string(value s)
+{ invalid_argument(int64_error); }
+
+value int64_bits_of_float(value vd)
+{ invalid_argument(int64_error); }
+
+value int64_float_of_bits(value vi)
 { invalid_argument(int64_error); }
 
 #endif
@@ -622,7 +647,8 @@ value nativeint_to_int32(value v) /* ML */
 
 value nativeint_format(value fmt, value arg)      /* ML */
 {
-  char format_string[32], default_format_buffer[32];
+  char format_string[FORMAT_BUFFER_SIZE];
+  char default_format_buffer[FORMAT_BUFFER_SIZE];
   char * buffer;
   value res;
 
