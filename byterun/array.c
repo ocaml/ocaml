@@ -138,7 +138,7 @@ value make_vect(value len, value init) /* ML */
   else if (Is_block(init) && Tag_val(init) == Double_tag) {
     d = Double_val(init);
     wsize = size * Double_wosize;
-    if (wsize > Max_wosize) invalid_argument("Array.new");
+    if (wsize > Max_wosize) invalid_argument("Array.make");
     if (wsize < Max_young_wosize) {
       res = alloc(wsize, Double_array_tag);
     } else {
@@ -149,7 +149,7 @@ value make_vect(value len, value init) /* ML */
       Store_double_field(res, i, d);
     }
   } else {
-    if (size > Max_wosize) invalid_argument("Array.new");
+    if (size > Max_wosize) invalid_argument("Array.make");
     Begin_root(init);
       if (size < Max_young_wosize) {
 	res = alloc(size, 0);
