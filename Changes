@@ -14,7 +14,7 @@ Language:
   and UnixLabels. "open StdLabels" gives access to the first three.
 - Extended polymorphic variant type syntax, allowing union types and
   row abbreviations for both sub- and super-types. #t deprecated in types.
-- See the Upgrading file for how to adapt to all the above changes.
+- See the "Upgrading" file for how to adapt to all the changes above.
 
 Type-checker:
 - Fixed obscure bug in module typing causing the type-checker to loop
@@ -34,8 +34,6 @@ Byte-code compiler:
 - Protect against VM stack overflow caused by module initialization code
   with many local variables.
 - Support for dynamic loading of the C part of mixed Caml/C libraries.
-- Removed the -use-runtime and -make-runtime flags, obsoleted by dynamic
-  loading of C libraries.
 
 Native-code compiler:
 - Attempt to recover gracefully from system stack overflow.  Currently
@@ -55,6 +53,8 @@ Tools:
   They provide easy transition from classic mode ocaml 3.02 sources,
   depending on whether you want to keep labels or not.
 - ocamldep: added -pp option to handle preprocessed source files.
+- ocamlyacc: added parser debugging support (set OCAMLRUNPARAM=p to get
+  a trace of the pushdown automaton actions).
 
 Run-time system:
 - Support for dynamic loading of the C part of mixed Caml/C libraries.
@@ -68,6 +68,8 @@ Run-time system:
 
 Standard library:
 - Added Pervasives.flush_all to flush all opened output channels.
+- Pervasives.float_of_string: now raises Failure on ill-formed input.
+- Pervasives: added useful float constants max_float, min_float, epsilon_float.
 - printf functions in Printf and Format: added % formats for int32, nativeint,
   int64; "*" in width and precision specifications now supported 
   (contributed by Thorsten Ohl).

@@ -70,7 +70,9 @@ type parse_tables =
     tablesize : int;
     table : string;
     check : string;
-    error_function : string -> unit }
+    error_function : string -> unit;
+    names_const : string;
+    names_block : string }
 
 exception YYexit of Obj.t
 

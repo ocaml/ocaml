@@ -60,6 +60,8 @@
 #define SEEK_END 2
 #endif
 
+extern int parser_trace;
+
 CAMLexport header_t atom_table[256];
 
 /* Initialize the atom table */
@@ -235,10 +237,6 @@ static int parse_command_line(char **argv)
     case 't':
       trace_flag = 1;
       break;
-    case 'P':
-      { extern int parser_trace;
-        parser_trace = 1;
-        break; }
 #endif
     case 'v':
       verb_gc = 1+4+8+16+32;
@@ -296,6 +294,7 @@ static void parse_camlrunparam(void)
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &verb_gc); break;
       case 'b': backtrace_active = 1; break;
+      case 'p': parser_trace = 1; break;
       }
     }
   }

@@ -37,6 +37,8 @@ struct parser_tables {    /* Mirrors parse_tables in ../stdlib/parsing.mli */
   char * table;
   char * check;
   value error_function;
+  char * names_const;
+  char * names_block;
 };
 
 struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
@@ -66,12 +68,7 @@ struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
 #define Short(tbl,n) (((short *)(tbl))[n])
 #endif
 
-#ifdef DEBUG
 int parser_trace = 0;
-#define Trace(act) if(parser_trace) act
-#else
-#define Trace(act)
-#endif
 
 /* Input codes */
 /* Mirrors parser_input in ../stdlib/parsing.ml */
@@ -103,6 +100,41 @@ int parser_trace = 0;
   state = Int_val(env->state), \
   errflag = Int_val(env->errflag)
 
+/* Auxiliary for printing token just read */
+
+static char * token_name(char * names, int number)
+{
+  for (/*nothing*/; number > 0; number--) {
+    if (names[0] == 0) return "<unknown token>";
+    names += strlen(names) + 1;
+  }
+  return names;
+}
+
+static void print_token(struct parser_tables *tables, int state, value tok)
+{
+  mlsize_t i;
+  value v;
+
+  if (Is_long(tok)) {
+    fprintf(stderr, "State %d: read token %s\n",
+            state, token_name(tables->names_const, Int_val(tok)));
+  } else {
+    fprintf(stderr, "State %d: read token %s(",
+            state, token_name(tables->names_block, Tag_val(tok)));
+    v = Field(tok, 0);
+    if (Is_long(v))
+      fprintf(stderr, "%ld", Long_val(v));
+    else if (Tag_val(v) == String_tag)
+      fprintf(stderr, "%s", String_val(v));
+    else if (Tag_val(v) == Double_tag)
+      fprintf(stderr, "%g", Double_val(v));
+    else
+      fprintf(stderr, "_");
+    fprintf(stderr, ")\n");
+  }          
+}      
+
 /* The pushdown automata */
 
 CAMLprim value parse_engine(struct parser_tables *tables,
@@ -121,7 +153,6 @@ CAMLprim value parse_engine(struct parser_tables *tables,
     errflag = 0;
 
   loop:
-    Trace(printf("Loop %d\n", state));
     n = Short(tables->defred, state);
     if (n != 0) goto reduce;
     if (Int_val(env->curr_char) >= 0) goto testshift;
@@ -138,7 +169,7 @@ CAMLprim value parse_engine(struct parser_tables *tables,
       env->curr_char = Field(tables->transl_const, Int_val(arg));
       modify(&env->lval, Val_long(0));
     }
-    Trace(printf("Token %d (0x%lx)\n", Int_val(env->curr_char), env->lval));
+    if (parser_trace) print_token(tables, state, arg);
     
   testshift:
     n1 = Short(tables->sindex, state);
@@ -167,12 +198,13 @@ CAMLprim value parse_engine(struct parser_tables *tables,
         n2 = n1 + ERRCODE;
         if (n1 != 0 && n2 >= 0 && n2 <= Int_val(tables->tablesize) &&
             Short(tables->check, n2) == ERRCODE) {
-          Trace(printf("Recovering in state %d\n", state1));
+          if (parser_trace) 
+            fprintf(stderr, "Recovering in state %d\n", state1);
           goto shift_recover;
         } else {
-          Trace(printf("Discarding state %d\n", state1));
+          if (parser_trace) fprintf(stderr, "Discarding state %d\n", state1);
           if (sp <= Int_val(env->stackbase)) {
-            Trace(printf("Fallen off bottom\n"));
+            if (parser_trace) fprintf(stderr, "No more states to discard\n");
             return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
           }
           sp--;
@@ -181,8 +213,7 @@ CAMLprim value parse_engine(struct parser_tables *tables,
     } else {
       if (Int_val(env->curr_char) == 0)
         return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
-      Trace(printf("Discarding token %d (0x%lx)\n",
-                   Int_val(env->curr_char), env->lval));
+      if (parser_trace) fprintf(stderr, "Discarding last token read\n");
       env->curr_char = Val_int(-1);
       goto loop;
     }
@@ -191,8 +222,10 @@ CAMLprim value parse_engine(struct parser_tables *tables,
     env->curr_char = Val_int(-1);
     if (errflag > 0) errflag--;
   shift_recover:
+    if (parser_trace)
+      fprintf(stderr, "State %d: shift to state %d\n",
+              state, Short(tables->table, n2));
     state = Short(tables->table, n2);
-    Trace(printf("Shift %d\n", state));
     sp++;
     if (sp < Long_val(env->stacksize)) goto push;
     SAVE;
@@ -208,7 +241,8 @@ CAMLprim value parse_engine(struct parser_tables *tables,
     goto loop;
 
   reduce:
-    Trace(printf("Reduce %d\n", n));
+    if (parser_trace)
+      fprintf(stderr, "State %d: reduce by rule %d\n", state, n);
     m = Short(tables->len, n);
     env->asp = Val_int(sp);
     env->rule_number = Val_int(n);
