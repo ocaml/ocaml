@@ -149,6 +149,10 @@ let prim_makearray =
   { prim_name = "make_vect"; prim_arity = 2; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
+let prim_obj_dup =
+  { prim_name = "obj_dup"; prim_arity = 1; prim_alloc = true;
+    prim_native_name = ""; prim_native_float = false }
+
 let transl_prim prim args =
   try
     let (gencomp, intcomp, floatcomp, stringcomp) =
@@ -351,44 +355,7 @@ let rec transl_exp e =
           Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
       end
   | Texp_record ((lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
-      let all_labels = lbl1.lbl_all in
-      let lv = Array.create (Array.length all_labels) Lstaticfail in
-      let init_id = Ident.create "init" in
-      begin match opt_init_expr with
-        None -> ()
-      | Some init_expr ->
-          for i = 0 to Array.length all_labels - 1 do
-            let access =
-              match all_labels.(i).lbl_repres with
-                Record_regular -> Pfield i
-              | Record_float -> Pfloatfield i in
-            lv.(i) <- Lprim(access, [Lvar init_id])
-          done
-      end;
-      List.iter
-        (fun (lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
-        lbl_expr_list;
-      let ll = Array.to_list lv in
-      let mut =
-        if List.exists (fun (lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
-        then Mutable
-        else Immutable in
-      let lam =
-        try
-          if mut = Mutable then raise Not_constant;
-          let cl = List.map extract_constant ll in
-          match lbl1.lbl_repres with
-            Record_regular -> Lconst(Const_block(0, cl))
-          | Record_float ->
-              Lconst(Const_float_array(List.map extract_float cl))
-        with Not_constant ->
-          match lbl1.lbl_repres with
-            Record_regular -> Lprim(Pmakeblock(0, mut), ll)
-          | Record_float -> Lprim(Pmakearray Pfloatarray, ll) in
-      begin match opt_init_expr with
-        None -> lam
-      | Some init_expr -> Llet(Strict, init_id, transl_exp init_expr, lam)
-      end
+      transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
   | Texp_field(arg, lbl) ->
       let access =
         match lbl.lbl_repres with
@@ -452,7 +419,7 @@ let rec transl_exp e =
   | Texp_new (cl, _) ->
       Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit])
   | Texp_instvar(path_self, path) ->
-      Lprim(Parrayrefu Paddrarray , [transl_path path_self; transl_path path])
+      Lprim(Parrayrefu Paddrarray, [transl_path path_self; transl_path path])
   | Texp_setinstvar(path_self, path, expr) ->
       transl_setinstvar (transl_path path_self) path expr
   | Texp_override(path_self, modifs) ->
@@ -461,8 +428,7 @@ let rec transl_exp e =
            Lapply(Translobj.oo_prim "copy", [transl_path path_self]),
            List.fold_right
              (fun (path, expr) rem ->
-                Lsequence(transl_setinstvar (Lvar cpy) path expr,
-                          rem))
+                Lsequence(transl_setinstvar (Lvar cpy) path expr, rem))
              modifs
              (Lvar cpy))
   | Texp_letmodule(id, modl, body) ->
@@ -538,6 +504,68 @@ and transl_let rec_flag pat_expr_list body =
 and transl_setinstvar self var expr =
   Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
                     [self; transl_path var; transl_exp expr])
+
+and transl_record all_labels repres lbl_expr_list opt_init_expr =
+  (* Determine if there are "enough" new fields *)
+  if 3 + 2 * List.length lbl_expr_list >= Array.length all_labels
+  then begin
+    (* Allocate new record with given fields (and remaining fields
+       taken from init_expr if any *)
+    let lv = Array.create (Array.length all_labels) Lstaticfail in
+    let init_id = Ident.create "init" in
+    begin match opt_init_expr with
+      None -> ()
+    | Some init_expr ->
+        for i = 0 to Array.length all_labels - 1 do
+          let access =
+            match all_labels.(i).lbl_repres with
+              Record_regular -> Pfield i
+            | Record_float -> Pfloatfield i in
+          lv.(i) <- Lprim(access, [Lvar init_id])
+        done
+    end;
+    List.iter
+      (fun (lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
+      lbl_expr_list;
+    let ll = Array.to_list lv in
+    let mut =
+      if List.exists (fun (lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
+      then Mutable
+      else Immutable in
+    let lam =
+      try
+        if mut = Mutable then raise Not_constant;
+        let cl = List.map extract_constant ll in
+        match repres with
+          Record_regular -> Lconst(Const_block(0, cl))
+        | Record_float ->
+            Lconst(Const_float_array(List.map extract_float cl))
+      with Not_constant ->
+        match repres with
+          Record_regular -> Lprim(Pmakeblock(0, mut), ll)
+        | Record_float -> Lprim(Pmakearray Pfloatarray, ll) in
+    begin match opt_init_expr with
+      None -> lam
+    | Some init_expr -> Llet(Strict, init_id, transl_exp init_expr, lam)
+    end
+  end else begin
+    (* Take a shallow copy of the init record, then mutate the fields
+       of the copy *)
+    let copy_id = Ident.create "newrecord" in
+    let rec update_field (lbl, expr) cont =
+      let upd =
+        match lbl.lbl_repres with
+          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
+        | Record_float -> Psetfloatfield lbl.lbl_pos in
+      Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr]), cont) in
+    begin match opt_init_expr with
+      None -> assert false
+    | Some init_expr ->
+        Llet(Strict, copy_id,
+             Lprim(Pccall prim_obj_dup, [transl_exp init_expr]),
+             List.fold_right update_field lbl_expr_list (Lvar copy_id))
+    end
+  end
 
 (* Compile an exception definition *)
 
