@@ -9,7 +9,10 @@ OCAMLCFLAGS = -I $(ROOT)/otherlibs/dyntypes
 OCAMLDEP = $(OCAMLRUN) $(ROOT)/tools/ocamldep
 JOCPARSER = $(ROOT)/jocparsing/pa_joc.cmo
 
-tests = basic higher_order_types type_substitutions sharing_in_types variants
+tests = basic \
+	higher_order_types type_substitutions sharing_in_types \
+	variants polymorphic_variants \
+	records
 
 default: build run
 

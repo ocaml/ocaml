@@ -64,6 +64,8 @@ DYNTEST L.A L.N as int L.t L.tr to int L'.t L'.tr for true in failures;;
 DYNTEST L.A L.N as int L.t L.tr to int L'.tr for true in failures;;
 DYNTEST L.A L.N as int L.tr to int L'.t L'.tr for true in failures;;
 
+DYNTEST L.A L.N as int L.tr to string L'.tr for true in failures;;
+
 module L2 = struct type 'a t = N | C of 'a * 'a t;;
                    type 'a tr = A of ('a tr) t | B of 'a;; end;;
 

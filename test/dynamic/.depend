@@ -3,3 +3,5 @@ higher_order_types.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dyn
 type_substitutions.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
 sharing_in_types.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
 variants.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
+polymorphic_variants.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
+records.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
