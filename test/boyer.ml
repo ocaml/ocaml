@@ -788,14 +788,14 @@ add (CProp
 let truep x lst =
   match x with
     Prop(head, _) ->
-      head.name = "true" or List.mem x lst
+      head.name = "true" || List.mem x lst
   | _ ->
       List.mem x lst
 
 and falsep x lst =
   match x with
     Prop(head, _) ->
-      head.name = "false" or List.mem x lst
+      head.name = "false" || List.mem x lst
   | _ ->
       List.mem x lst
 
@@ -814,7 +814,7 @@ let rec tautologyp x true_lst false_lst =
             tautologyp yes true_lst false_lst
           else if falsep test false_lst then
             tautologyp no true_lst false_lst
-          else tautologyp yes (test::true_lst) false_lst &
+          else tautologyp yes (test::true_lst) false_lst &&
                tautologyp no true_lst (test::false_lst)
         else
           false

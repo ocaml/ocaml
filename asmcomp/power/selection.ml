@@ -51,7 +51,7 @@ class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate n = (n <= 32767) & (n >= -32768)
+method is_immediate n = (n <= 32767) && (n >= -32768)
 
 method select_addressing exp =
   match select_addr exp with
@@ -95,9 +95,9 @@ method select_operation op args =
       super#select_operation op args
 
 method select_logical op = function
-    [arg; Cconst_int n] when n >= 0 & n <= 0xFFFF ->
+    [arg; Cconst_int n] when n >= 0 && n <= 0xFFFF ->
       (Iintop_imm(op, n), [arg])
-  | [Cconst_int n; arg] when n >= 0 & n <= 0xFFFF ->
+  | [Cconst_int n; arg] when n >= 0 && n <= 0xFFFF ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)

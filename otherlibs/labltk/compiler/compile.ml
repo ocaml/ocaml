@@ -151,7 +151,7 @@ let ppMLtype ?(any=false) ?(return=false) ?(def=false) ?(counter=ref 0) =
                 end) ^ "]"
           with
             Not_found -> prerr_endline ("ppMLtype " ^ s ^ " ?"); s
-          else if not def & List.length typdef.constructors > 1 then
+          else if not def && List.length typdef.constructors > 1 then
             "#" ^ s
           else s
         else s

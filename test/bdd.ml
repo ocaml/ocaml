@@ -93,8 +93,9 @@ let mkNode low v high =
                              insert (getId low) (getId high) v ind bucket n; n
                     | n :: ns -> 
                         match n with
-                        | Node(l,v',id,h) -> if v=v' & idl=getId l & idh=getId h
-                                             then n else lookup ns
+                        | Node(l,v',id,h) ->
+                           if v = v' && idl = getId l && idh = getId h
+                           then n else lookup ns
                         | _ -> assert false
            in
              lookup bucket
@@ -140,7 +141,7 @@ match n1 with
         Node(l2, v2, i2, r2)
         -> let h = hash i1 i2
            in
-             if i1=andslot1.(h) & i2=andslot2.(h) then andslot3.(h)
+             if i1=andslot1.(h) && i2=andslot2.(h) then andslot3.(h)
              else let f = match cmpVar v1 v2 with
                             EQUAL   -> mkNode (and2 l1 l2) v1 (and2 r1 r2)
                           | LESS    -> mkNode (and2 l1 n2) v1 (and2 r1 n2)
@@ -163,7 +164,7 @@ match n1 with
         Node(l2, v2, i2, r2)
         -> let h = hash i1 i2
            in
-             if i1=andslot1.(h) & i2=andslot2.(h) then andslot3.(h)
+             if i1=andslot1.(h) && i2=andslot2.(h) then andslot3.(h)
              else let f = match cmpVar v1 v2 with
                             EQUAL   -> mkNode (xor l1 l2) v1 (xor r1 r2)
                           | LESS    -> mkNode (xor l1 n2) v1 (xor r1 n2)

@@ -212,7 +212,7 @@ class cell t1 t2 t3 ~canvas ~x ~y = object
   method get = color
   method set ~color:col =
     if color = col then () else
-    if color <> 0 & col = 0 then begin
+    if color <> 0 && col = 0 then begin
       Canvas.move canvas t1
         ~x:(- block_size * (x + 1) -10 - cell_border * 2)
         ~y:(- block_size * (y + 1) -10 - cell_border * 2);
@@ -232,7 +232,7 @@ class cell t1 t2 t3 ~canvas ~x ~y = object
       Canvas.configure_rectangle canvas t3
         ~fill: (`Color "light gray")
         ~outline: (`Color "light gray");
-      if color = 0 & col <> 0 then begin
+      if color = 0 && col <> 0 then begin
         Canvas.move canvas t1
           ~x: (block_size * (x+1)+10+ cell_border*2)
           ~y: (block_size * (y+1)+10+ cell_border*2);
@@ -250,7 +250,7 @@ end
 let cell_get (c, cf) x y = cf.(y).(x) #get
 
 let cell_set (c, cf) ~x ~y ~color =
-  if x >= 0 & y >= 0 & Array.length cf > y & Array.length cf.(y) > x then
+  if x >= 0 && y >= 0 && Array.length cf > y && Array.length cf.(y) > x then
     let cur = cf.(y).(x) in
     if cur#get = color then () else cur#set ~color
 
@@ -443,7 +443,7 @@ let _ =
   and clear fb =
     let l = ref 0 in
     for i = 0 to 3 do
-      if i + fb.y >= 3 & i + fb.y <= 22 then 
+      if i + fb.y >= 3 && i + fb.y <= 22 then 
         if field.(i + fb.y) = line_full then
           begin
             incr l;

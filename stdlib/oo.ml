@@ -161,7 +161,7 @@ let rec except e =
 let merge_buckets b1 b2 =
   for i = 0 to bucket_size - 1 do
     if
-      (b2.(i) != dummy_item) & (b1.(i) != dummy_item) & (b2.(i) != b1.(i))
+      (b2.(i) != dummy_item) && (b1.(i) != dummy_item) && (b2.(i) != b1.(i))
     then
       raise Failed
   done;
@@ -173,7 +173,7 @@ let merge_buckets b1 b2 =
   b1
 
 let rec choose bucket i =
-  if (i > 0) & (!small_bucket_count > 0) then begin
+  if (i > 0) && (!small_bucket_count > 0) then begin
     let n = Random.int !small_bucket_count in
     if not (small_bucket !small_buckets.(n)) then begin
       remove_bucket n; choose bucket i
@@ -189,7 +189,7 @@ let rec choose bucket i =
 
 let compact b =
   if
-    (b != empty_bucket) & (bucket_version b = !version) & (small_bucket b)
+    (b != empty_bucket) && (bucket_version b = !version) && (small_bucket b)
   then
     choose b params.retry_count
   else

@@ -32,7 +32,7 @@ let rec skip_phrase lexbuf =
 
 let maybe_skip_phrase lexbuf =
   if Parsing.is_current_lookahead Parser.SEMISEMI
-  or Parsing.is_current_lookahead Parser.EOF
+  || Parsing.is_current_lookahead Parser.EOF
   then ()
   else skip_phrase lexbuf
 

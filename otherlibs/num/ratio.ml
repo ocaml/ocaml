@@ -219,7 +219,7 @@ let square_ratio r =
     normalized = r.normalized }
 
 let inverse_ratio r =
-  if !error_when_null_denominator_flag & (sign_big_int r.numerator) = 0
+  if !error_when_null_denominator_flag && (sign_big_int r.numerator) = 0
   then failwith_zero "inverse_ratio"
   else {numerator = report_sign_ratio r r.denominator; 
         denominator = abs_big_int r.numerator; 
@@ -268,7 +268,7 @@ let ceiling_ratio r =
 let eq_ratio r1 r2 =
  normalize_ratio r1; 
  normalize_ratio r2;
- eq_big_int (r1.numerator) r2.numerator &
+ eq_big_int (r1.numerator) r2.numerator &&
  eq_big_int (r1.denominator) r2.denominator 
 
 let compare_ratio r1 r2 =
@@ -277,8 +277,8 @@ let compare_ratio r1 r2 =
          if (verify_null_denominator r2)
           then 
            let sign_num_r2 = sign_big_int r2.numerator in
-             if sign_num_r1 = 1 & sign_num_r2 = -1 then  1 
-             else if sign_num_r1 = -1 & sign_num_r2 = 1 then -1
+             if sign_num_r1 = 1 && sign_num_r2 = -1 then  1 
+             else if sign_num_r1 = -1 && sign_num_r2 = 1 then -1
              else 0
          else sign_num_r1
   else if verify_null_denominator r2 then
@@ -303,7 +303,7 @@ let max_ratio r1 r2 = if lt_ratio r1 r2 then r2 else r1
 and min_ratio r1 r2 = if gt_ratio r1 r2 then r2 else r1
 
 let eq_big_int_ratio bi r =
- (is_integer_ratio r) & eq_big_int bi r.numerator
+ (is_integer_ratio r) && eq_big_int bi r.numerator
 
 let compare_big_int_ratio bi r =
  normalize_ratio r;
@@ -320,7 +320,7 @@ and ge_big_int_ratio bi r = compare_big_int_ratio bi r >= 0
 
 (* Coercions with type int *)
 let int_of_ratio r = 
- if ((is_integer_ratio r) & (is_int_big_int r.numerator))
+ if ((is_integer_ratio r) && (is_int_big_int r.numerator))
  then (int_of_big_int r.numerator)
  else failwith "integer argument required"
 

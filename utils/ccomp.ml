@@ -61,7 +61,7 @@ let create_archive archive file_list =
       let r1 =
         command(Printf.sprintf "ar rc %s %s"
                                    archive (String.concat " " file_list)) in
-      if r1 <> 0 or String.length Config.ranlib = 0
+      if r1 <> 0 || String.length Config.ranlib = 0
       then r1
       else command(Config.ranlib ^ " " ^ archive)
 

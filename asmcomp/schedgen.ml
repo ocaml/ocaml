@@ -87,7 +87,7 @@ let rec longest_path critical_outputs node =
       [] ->
         node.length <-
           if is_critical critical_outputs node.instr.res
-          or node.instr.desc = Lreloadretaddr (* alway critical *)
+          || node.instr.desc = Lreloadretaddr (* alway critical *)
           then node.delay
           else 0
     | sons ->

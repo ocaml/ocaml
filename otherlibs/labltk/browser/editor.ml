@@ -200,7 +200,7 @@ let send_phrase txt =
         sh#send ";;\n"
 
 let search_pos_window txt ~x ~y =
-  if txt.structure = [] & txt.psignature = [] then () else
+  if txt.structure = [] && txt.psignature = [] then () else
   let `Linechar (l, c) = Text.index txt.tw ~index:(`Atxy(x,y), []) in
   let text = Jg_text.get_all txt.tw in
   let pos = Searchpos.lines_to_chars l ~text + c in
@@ -217,7 +217,7 @@ let search_pos_window txt ~x ~y =
   with Not_found -> ()
 
 let search_pos_menu txt ~x ~y =
-  if txt.structure = [] & txt.psignature = [] then () else
+  if txt.structure = [] && txt.psignature = [] then () else
   let `Linechar (l, c) = Text.index txt.tw ~index:(`Atxy(x,y), []) in
   let text = Jg_text.get_all txt.tw in
   let pos = Searchpos.lines_to_chars l ~text + c in
@@ -326,8 +326,8 @@ class editor ~top ~menus = object (self)
     bind tw ~events:[`Modified([`Alt], `KeyPress)] ~action:ignore;
     bind tw ~events:[`KeyPress] ~fields:[`Char]
       ~action:(fun ev ->
-        if ev.ev_Char <> "" &
-          (ev.ev_Char.[0] >= ' ' or
+        if ev.ev_Char <> "" &&
+          (ev.ev_Char.[0] >= ' ' ||
            List.mem ev.ev_Char.[0]
              (List.map ~f:control ['d'; 'h'; 'i'; 'k'; 'o'; 't'; 'w'; 'y']))
         then Textvariable.set txt.modified "modified");
@@ -440,7 +440,7 @@ class editor ~top ~menus = object (self)
       close_in file;
       Text.mark_set tw ~mark:"insert" ~index;
       Text.see tw ~index;
-      if Filename.check_suffix name ".ml" or
+      if Filename.check_suffix name ".ml" ||
         Filename.check_suffix name ".mli"
       then begin
         if !lex_on_load then self#lex ();

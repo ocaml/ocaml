@@ -275,7 +275,7 @@ method private select_arith op = function
       (Iintop op, args)
 
 method private select_shift op = function
-    [arg; Cconst_int n] when n >= 0 & n < Arch.size_int * 8 ->
+    [arg; Cconst_int n] when n >= 0 && n < Arch.size_int * 8 ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)

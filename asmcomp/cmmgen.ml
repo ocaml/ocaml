@@ -772,7 +772,7 @@ let rec transl = function
         let unboxed_id = Ident.create (Ident.name id) in
         let (tr_body, need_boxed, is_assigned) =
           subst_boxed_float id unboxed_id (transl body) in
-        if need_boxed & is_assigned then
+        if need_boxed && is_assigned then
           Clet(id, transl exp, transl body)
         else
           Clet(unboxed_id, transl_unbox_float exp,

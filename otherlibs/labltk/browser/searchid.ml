@@ -106,38 +106,38 @@ let rec equal ~prefix t1 t2 =
       and fields2 = filter_row_fields false row1.row_fields
       in
       let r1, r2, pairs = merge_row_fields fields1 fields2 in
-      row1.row_closed = row2.row_closed & r1 = [] & r2 = [] &
+      row1.row_closed = row2.row_closed && r1 = [] && r2 = [] &&
       List.for_all pairs ~f:
            begin fun (_,f1,f2) ->
              match row_field_repr f1, row_field_repr f2 with
                Rpresent None, Rpresent None -> true
              | Rpresent(Some t1), Rpresent (Some t2) -> equal t1 t2 ~prefix
              | Reither(c1, tl1, _), Reither(c2, tl2, _) ->
-                 c1 = c2 & List.length tl1 = List.length tl2 &
+                 c1 = c2 && List.length tl1 = List.length tl2 &&
                  List.for_all2 tl1 tl2 ~f:(equal ~prefix)
              | _ -> false
            end
   | Tarrow _, Tarrow _ ->
       let l1, t1 = all_args t1 and l2, t2 = all_args t2 in
-      equal t1 t2 ~prefix &
-      List.length l1 = List.length l2 &
+      equal t1 t2 ~prefix &&
+      List.length l1 = List.length l2 &&
       List.exists (permutations l1) ~f:
       begin fun l1 ->
         List.for_all2 l1 l2 ~f:
         begin fun (p1,t1) (p2,t2) ->
-          (p1 = "" or p1 = p2) & equal t1 t2 ~prefix
+          (p1 = "" || p1 = p2) && equal t1 t2 ~prefix
         end
       end
   | Ttuple l1, Ttuple l2 ->
-      List.length l1 = List.length l2 &
+      List.length l1 = List.length l2 &&
       List.for_all2 l1 l2 ~f:(equal ~prefix)
   | Tconstr (p1, l1, _), Tconstr (p2, l2, _) ->
       remove_prefix ~prefix (longident_of_path p1) = (longident_of_path p2)
-      & List.length l1 = List.length l2
-      & List.for_all2 l1 l2 ~f:(equal ~prefix)
+      && List.length l1 = List.length l2
+      && List.for_all2 l1 l2 ~f:(equal ~prefix)
   | _ -> false
 
-let is_opt s = s <> "" & s.[0] = '?'
+let is_opt s = s <> "" && s.[0] = '?'
 let get_options = List.filter ~f:is_opt
 
 let rec included ~prefix t1 t2 =
@@ -149,37 +149,37 @@ let rec included ~prefix t1 t2 =
       and fields2 = filter_row_fields false row1.row_fields
       in
       let r1, r2, pairs = merge_row_fields fields1 fields2 in
-      r1 = [] &
+      r1 = [] &&
       List.for_all pairs ~f:
            begin fun (_,f1,f2) ->
              match row_field_repr f1, row_field_repr f2 with
                Rpresent None, Rpresent None -> true
              | Rpresent(Some t1), Rpresent (Some t2) -> included t1 t2 ~prefix
              | Reither(c1, tl1, _), Reither(c2, tl2, _) ->
-                 c1 = c2 & List.length tl1 = List.length tl2 &
+                 c1 = c2 && List.length tl1 = List.length tl2 &&
                  List.for_all2 tl1 tl2 ~f:(included ~prefix)
              | _ -> false
            end
   | Tarrow _, Tarrow _ ->
       let l1, t1 = all_args t1 and l2, t2 = all_args t2 in
-      included t1 t2 ~prefix &
+      included t1 t2 ~prefix &&
       let len1 = List.length l1 and len2 = List.length l2 in
       let l2 = if arr len1 ~card:len2 < 100 then l2 else
           let ll1 = get_options (fst (List.split l1)) in
           List.filter l2
-          ~f:(fun (l,_) -> not (is_opt l) or List.mem l ll1)
+          ~f:(fun (l,_) -> not (is_opt l) || List.mem l ll1)
       in
-      len1 <= len2 &
+      len1 <= len2 &&
       List.exists (List2.flat_map ~f:permutations (choose len1 ~card:l2)) ~f:
       begin fun l2 ->
         List.for_all2 l1 l2 ~f:
         begin fun (p1,t1) (p2,t2) ->
-          (p1 = "" or p1 = p2) & included t1 t2 ~prefix
+          (p1 = "" || p1 = p2) && included t1 t2 ~prefix
         end
       end
   | Ttuple l1, Ttuple l2 ->
       let len1 = List.length l1 in
-      len1 <= List.length l2 &
+      len1 <= List.length l2 &&
       List.exists (List2.flat_map ~f:permutations (choose len1 ~card:l2)) ~f:
       begin fun l2 ->
         List.for_all2 l1 l2 ~f:(included ~prefix)
@@ -187,8 +187,8 @@ let rec included ~prefix t1 t2 =
   | _, Ttuple _ -> included (newty (Ttuple [t1])) t2 ~prefix
   | Tconstr (p1, l1, _), Tconstr (p2, l2, _) ->
       remove_prefix ~prefix (longident_of_path p1) = (longident_of_path p2)
-      & List.length l1 = List.length l2
-      & List.for_all2 l1 l2 ~f:(included ~prefix)
+      && List.length l1 = List.length l2
+      && List.for_all2 l1 l2 ~f:(included ~prefix)
   | _ -> false
 
 let mklid = function
@@ -223,7 +223,7 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
           begin match td.type_manifest with
             None -> false
           | Some t -> matches t
-          end or
+          end ||
           begin match td.type_kind with
             Type_abstract -> false
           | Type_variant l ->
@@ -244,14 +244,14 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
       | Tsig_class (id, cl) ->
           let self = self_type cl.cty_type in
           if matches self
-          or (match cl.cty_new with None -> false | Some ty -> matches ty)
-          (* or List.exists (get_fields ~prefix ~sign self)
+          || (match cl.cty_new with None -> false | Some ty -> matches ty)
+          (* || List.exists (get_fields ~prefix ~sign self)
               ~f:(fun (_,_,ty_field) -> matches ty_field) *)
           then [lid_of_id id, Pclass] else []
       | Tsig_cltype (id, cl) ->
           let self = self_type cl.clty_type in
           if matches self
-          (* or List.exists (get_fields ~prefix ~sign self)
+          (* || List.exists (get_fields ~prefix ~sign self)
               ~f:(fun (_,_,ty_field) -> matches ty_field) *)
           then [lid_of_id id, Pclass] else []
   end
@@ -323,7 +323,7 @@ let rec check_match ~pattern s =
   match pattern, s with
     [], [] -> true
   | '*'::l, l' -> check_match ~pattern:l l'
-                  or check_match ~pattern:('?'::'*'::l) l'
+                  || check_match ~pattern:('?'::'*'::l) l'
   | '?'::l, _::l' -> check_match ~pattern:l l'
   | x::l, y::l' when x == y -> check_match ~pattern:l l'
   | _ -> false
@@ -344,12 +344,12 @@ let search_pattern_symbol text =
           | Tsig_module (i, _) when check i -> [i, Pmodule]
           | Tsig_modtype (i, _) when check i -> [i, Pmodtype]
           | Tsig_class (i, cl) when check i
-            or List.exists
+            || List.exists
                 (get_fields ~prefix:[modname] ~sign (self_type cl.cty_type))
                 ~f:(fun (name,_,_) -> check_match ~pattern (explode name))
             -> [i, Pclass]
           | Tsig_cltype (i, cl) when check i
-            or List.exists
+            || List.exists
                 (get_fields ~prefix:[modname] ~sign (self_type cl.clty_type))
                 ~f:(fun (name,_,_) -> check_match ~pattern (explode name))
             -> [i, Pcltype]
@@ -367,7 +367,7 @@ let search_pattern_symbol text =
 (*
 let is_pattern s =
   try for i = 0 to String.length s -1 do
-      if s.[i] = '?' or s.[i] = '*' then raise Exit
+      if s.[i] = '?' || s.[i] = '*' then raise Exit
     done; false
   with Exit -> true
 *)
@@ -446,13 +446,13 @@ let search_structure str ~name ~kind ~prefix =
       | Pstr_exception (s, _) when kind = Pconstructor -> name = s
       | Pstr_module (s, _) when kind = Pmodule -> name = s
       | Pstr_modtype (s, _) when kind = Pmodtype -> name = s
-      | Pstr_class l when kind = Pclass or kind = Ptype or kind = Pcltype ->
+      | Pstr_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->
           List.iter l ~f:
             begin fun c ->
               if c.pci_name = name then loc := c.pci_loc.loc_start
             end;
           false
-      | Pstr_class_type l when kind = Pcltype or kind = Ptype ->
+      | Pstr_class_type l when kind = Pcltype || kind = Ptype ->
           List.iter l ~f:
             begin fun c ->
               if c.pci_name = name then loc := c.pci_loc.loc_start
@@ -495,13 +495,13 @@ let search_signature sign ~name ~kind ~prefix =
       | Psig_exception (s, _) when kind = Pconstructor -> name = s
       | Psig_module (s, _) when kind = Pmodule -> name = s
       | Psig_modtype (s, _) when kind = Pmodtype -> name = s
-      | Psig_class l when kind = Pclass or kind = Ptype or kind = Pcltype ->
+      | Psig_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->
           List.iter l ~f:
             begin fun c ->
               if c.pci_name = name then loc := c.pci_loc.loc_start
             end;
           false
-      | Psig_class_type l when kind = Ptype or kind = Pcltype ->
+      | Psig_class_type l when kind = Ptype || kind = Pcltype ->
           List.iter l ~f:
             begin fun c ->
               if c.pci_name = name then loc := c.pci_loc.loc_start

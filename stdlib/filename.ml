@@ -17,7 +17,7 @@ module Unix = struct
   let parent_dir_name = ".."
   let concat dirname filename =
     let l = String.length dirname in
-    if l = 0 or dirname.[l-1] = '/'
+    if l = 0 || dirname.[l-1] = '/'
     then dirname ^ filename
     else dirname ^ "/" ^ filename
   let is_relative n = String.length n < 1 || n.[0] <> '/';;
@@ -51,7 +51,7 @@ module Win32 = struct
   let parent_dir_name = ".."
   let concat dirname filename =
     let l = String.length dirname in
-    if l = 0 or (let c = dirname.[l-1] in c = '/' or c = '\\' or c = ':')
+    if l = 0 || (let c = dirname.[l-1] in c = '/' || c = '\\' || c = ':')
     then dirname ^ filename
     else dirname ^ "\\" ^ filename
   let is_relative n =
@@ -101,7 +101,7 @@ module MacOS = struct
   let parent_dir_name = ".."
   let concat dirname filename =
     let l = String.length dirname in
-    if l = 0 or dirname.[l-1] = ':'
+    if l = 0 || dirname.[l-1] = ':'
     then dirname ^ filename
     else dirname ^ ":" ^ filename
   let contains_colon n = String.contains n ':'

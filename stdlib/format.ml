@@ -780,14 +780,13 @@ let fprintf_out str out ppf format =
                       invalid_arg ("fprintf: bad %s format, " ^ format) in
                   if p > 0 && String.length s < p then begin
                     pp_print_as_string ppf
-                                  (String.make (p - String.length s) ' ');
-                    pp_print_as_string ppf s
-                  end else if p < 0 && String.length s < -p then begin
+                     (String.make (p - String.length s) ' ');
+                    pp_print_as_string ppf s end else
+                  if p < 0 && String.length s < -p then begin
                     pp_print_as_string ppf s;
                     pp_print_as_string ppf
-                                  (String.make (-p - String.length s) ' ')
-                  end else
-                    pp_print_as_string ppf s
+                     (String.make (-p - String.length s) ' ') end
+                  else pp_print_as_string ppf s
                 end;
                 doprn (succ j))
           | 'c' ->
@@ -807,25 +806,25 @@ let fprintf_out str out ppf format =
           | 'b' ->
               Obj.magic(fun b ->
                 pp_print_as_string ppf (string_of_bool b);
-                doprn(succ j))
+                doprn (succ j))
           | 'a' ->
               if str then
                Obj.magic(fun printer arg ->
                 pp_print_as_string ppf (printer () arg);
-                doprn(succ j))
+                doprn (succ j))
               else
                Obj.magic(fun printer arg ->
                 printer ppf arg;
-                doprn(succ j))
+                doprn (succ j))
           | 't' ->
               if str then
                Obj.magic(fun printer ->
                 pp_print_as_string ppf (printer ());
-                doprn(succ j))
+                doprn (succ j))
               else
                Obj.magic(fun printer ->
                 printer ppf;
-                doprn(succ j))
+                doprn (succ j))
           | c ->
               format_invalid_arg "fprintf: unknown format " c
           end
@@ -859,13 +858,13 @@ let fprintf_out str out ppf format =
       let j = succ j in
       if j >= limit then Pp_hbox, j else
       begin match format.[j] with
-      | 'o' -> 
+      | 'o' ->
          let j = succ j in
          if j >= limit
           then invalid_arg ("fprintf: bad box format " ^ format) else
          begin match format.[j] with
          | 'v' -> Pp_hovbox, succ j
-         | c ->  format_invalid_arg "fprintf: bad name " c end
+         | c -> format_invalid_arg "fprintf: bad box name " c end
       | 'v' -> Pp_hvbox, succ j
       | c -> Pp_hbox, j
       end
@@ -885,17 +884,17 @@ let fprintf_out str out ppf format =
      then invalid_arg "fprintf: bad break format" format
      else pp_print_break ppf nspaces offset;
      j
-   | c ->  pp_print_space ppf (); i
+   | c -> pp_print_space ppf (); i
 
   and do_pp_open ppf i =
    if i >= limit then begin pp_open_box_gen ppf 0 Pp_box; i end else
    match format.[i] with
    | '<' ->
-     let k, j = get_box_kind (succ i) in
+     let kind, j = get_box_kind (succ i) in
      let size, j = get_int "fprintf: bad box format " format j in
-     pp_open_box_gen ppf size k;
+     pp_open_box_gen ppf size kind;
      j
-   | c ->  pp_open_box_gen ppf 0 Pp_box; i
+   | c -> pp_open_box_gen ppf 0 Pp_box; i
 
   in doprn 0;;
 

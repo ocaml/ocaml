@@ -160,7 +160,7 @@ let new_type typname arity =
 (* Assume that types not yet defined are not subtyped *)
 (* Widget is builtin and implicitly subtyped *)
 let is_subtyped s =
-  s = "widget" or
+  s = "widget" ||
   try  
     let typdef = Hashtbl.find types_table s in
       typdef.subtypes <> []
@@ -312,7 +312,7 @@ let enter_type typname ?(variant = false) arity constructors =
       end;
       (* Callbacks require widget context *)
       typdef.requires_widget_context <- 
-        typdef.requires_widget_context or
+        typdef.requires_widget_context ||
                 has_callback c.template
     end
 
@@ -336,7 +336,7 @@ let enter_subtype typ arity subtyp constructors =
                 typdef.constructors <- c :: typdef.constructors
               end;
               typdef.requires_widget_context <-
-                typdef.requires_widget_context or
+                typdef.requires_widget_context ||
                 has_callback c.template;
               c
           | Abbrev name -> find_constructor name typdef.constructors

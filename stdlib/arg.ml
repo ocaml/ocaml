@@ -70,7 +70,7 @@ let parse speclist anonfun errmsg =
   incr current;
   while !current < l do
     let s = Sys.argv.(!current) in
-    if String.length s >= 1 & String.get s 0 = '-' then begin
+    if String.length s >= 1 && String.get s 0 = '-' then begin
       let action =
         try assoc3 s speclist
         with Not_found -> stop (Unknown s)

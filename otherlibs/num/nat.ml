@@ -64,7 +64,7 @@ let is_zero_nat n off len =
   compare_nat (make_nat 1) 0 1 n off (num_digits_nat n off len) = 0 
 
 let is_nat_int nat off len =
-  num_digits_nat nat off len = 1 & is_digit_int nat off
+  num_digits_nat nat off len = 1 && is_digit_int nat off
 
 let sys_int_of_nat nat off len =
   if is_nat_int nat off len
@@ -329,7 +329,7 @@ let make_power_base base power_base =
                   power_base (pred !i) 1 
                   power_base 0
    done;
-   while !j <= !i & is_digit_int power_base !j do incr j done;
+   while !j <= !i && is_digit_int power_base !j do incr j done;
   (!i - 2, !j)
 
 (* 
@@ -340,7 +340,7 @@ let make_power_base base power_base =
 let int_to_string int s pos_ref base times = 
   let i = ref int 
   and j = ref times in
-     while ((!i != 0) or (!j != 0)) & (!pos_ref != -1) do
+     while ((!i != 0) || (!j != 0)) && (!pos_ref != -1) do
         String.set s !pos_ref (String.get digits (!i mod base));
         decr pos_ref;
         decr j;
@@ -504,8 +504,8 @@ let string_of_nat nat =
 
 let base_digit_of_char c base =
   let n = Char.code c in
-    if n >= 48 & n <= 47 + min base 10 then n - 48
-    else if n >= 65 & n <= 65 + base - 11 then n - 55
+    if n >= 48 && n <= 47 + min base 10 then n - 48
+    else if n >= 65 && n <= 65 + base - 11 then n - 55
     else failwith "invalid digit"
 
 (* 
@@ -537,7 +537,7 @@ let sys_nat_of_string base s off len =
         | _ -> int := !int * base + base_digit_of_char c base;
                incr digits_read
         end;
-        if (!digits_read = pint or i = bound) & not (!digits_read = 0) then 
+        if (!digits_read = pint || i = bound) && not (!digits_read = 0) then 
           begin
            set_digit_nat nat1 0 !int;
            let erase_len = if !new_len = !current_len then !current_len - 1

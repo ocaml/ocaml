@@ -228,13 +228,13 @@ let emit_instr = function
   | Kconst sc ->
       begin match sc with
         Const_base(Const_int i) when is_immed i ->
-          if i >= 0 & i <= 3
+          if i >= 0 && i <= 3
           then out (opCONST0 + i)
           else (out opCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opCONSTINT; out_int (Char.code c)
       | Const_pointer i ->
-          if i >= 0 & i <= 3
+          if i >= 0 && i <= 3
           then out (opCONST0 + i)
           else (out opCONSTINT; out_int i)
       | Const_block(t, []) ->
@@ -347,13 +347,13 @@ let rec emit = function
   | Kpush :: Kconst sc :: c ->
       begin match sc with
         Const_base(Const_int i) when is_immed i ->
-          if i >= 0 & i <= 3
+          if i >= 0 && i <= 3
           then out (opPUSHCONST0 + i)
           else (out opPUSHCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opPUSHCONSTINT; out_int(Char.code c)
       | Const_pointer i ->
-          if i >= 0 & i <= 3
+          if i >= 0 && i <= 3
           then out (opPUSHCONST0 + i)
           else (out opPUSHCONSTINT; out_int i)
       | Const_block(t, []) ->

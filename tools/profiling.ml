@@ -29,8 +29,8 @@ let dump_counters () =
     List.iter2
       (fun (curname, (curmodes,curcount)) (prevname, (prevmodes,prevcount)) ->
         if curname <> prevname
-        or curmodes <> prevmodes
-        or Array.length curcount <> Array.length prevcount
+        || curmodes <> prevmodes
+        || Array.length curcount <> Array.length prevcount
         then raise Bad_profile)
       !counters prevl;
     List.iter2

@@ -96,7 +96,7 @@ let f txt =
         Jg_text.tag_and_see txt.tw ~start:(tpos s) ~stop:(tpos e) ~tag:"error"
   end;
   end_message ();
-  if !nowarnings or Text.index ew ~index:tend = `Linechar (2,0)
+  if !nowarnings || Text.index ew ~index:tend = `Linechar (2,0)
   then destroy tl
   else begin
     error_messages := tl :: !error_messages;

@@ -111,7 +111,7 @@ let test_in filename =
   | _ -> false);
   test 21 (match input_value ic with
     G((G((D "sharing" as t1), t2) as t3), G(t4, t5)) ->
-      t1 == t2 & t3 == t5 & t4 == t1
+      t1 == t2 && t3 == t5 && t4 == t1
   | _ -> false);
   test 22 (input_value ic = [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|]);
   let rec check_big n t =
@@ -211,7 +211,7 @@ let test_string () =
   let s = Marshal.to_string z [] in
   test 121 (match Marshal.from_string s 0 with
     G((G((D "sharing" as t1), t2) as t3), G(t4, t5)) ->
-      t1 == t2 & t3 == t5 & t4 == t1
+      t1 == t2 && t3 == t5 && t4 == t1
   | _ -> false);
   let s = Marshal.to_string [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|] [] in
   test 122 (Marshal.from_string s 0 = [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|]);
@@ -294,7 +294,7 @@ let test_buffer () =
   Marshal.to_buffer s 0 512 z [];
   test 221 (match Marshal.from_string s 0 with
     G((G((D "sharing" as t1), t2) as t3), G(t4, t5)) ->
-      t1 == t2 & t3 == t5 & t4 == t1
+      t1 == t2 && t3 == t5 && t4 == t1
   | _ -> false);
   Marshal.to_buffer s 0 512 [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|] [];
   test 222 (Marshal.from_string s 0 = [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|]);

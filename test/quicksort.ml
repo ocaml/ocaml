@@ -20,8 +20,8 @@ let rec qsort lo hi (a : int array) =
     let j = ref hi in
     let pivot = a.(hi) in
     while !i < !j do
-      while !i < hi & a.(!i) <= pivot do incr i done;
-      while !j > lo & a.(!j) >= pivot do decr j done;
+      while !i < hi && a.(!i) <= pivot do incr i done;
+      while !j > lo && a.(!j) >= pivot do decr j done;
       if !i < !j then begin
         let temp = a.(!i) in a.(!i) <- a.(!j); a.(!j) <- temp
       end
@@ -42,8 +42,8 @@ let rec qsort2 lo hi (a : int array) =
     let j = ref hi in
     let pivot = a.(hi) in
     while !i < !j do
-      while !i < hi & cmp a.(!i) pivot <= 0 do incr i done;
-      while !j > lo & cmp a.(!j) pivot >= 0 do decr j done;
+      while !i < hi && cmp a.(!i) pivot <= 0 do incr i done;
+      while !j > lo && cmp a.(!j) pivot >= 0 do decr j done;
       if !i < !j then begin
         let temp = a.(!i) in a.(!i) <- a.(!j); a.(!j) <- temp
       end

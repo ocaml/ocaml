@@ -178,7 +178,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 
       let rec print_val prio depth obj ppf ty =
         decr printer_steps;
-        if !printer_steps < 0 or depth < 0 then raise Ellipsis;
+        if !printer_steps < 0 || depth < 0 then raise Ellipsis;
         try
           find_printer env ty ppf obj
         with Not_found ->

@@ -26,7 +26,7 @@ and least_INT = big_int_of_int least_int
 
 (* Coercion big_int -> num *)
 let num_of_big_int bi = 
- if le_big_int bi biggest_INT & ge_big_int bi least_INT
+ if le_big_int bi biggest_INT && ge_big_int bi least_INT
  then Int (int_of_big_int bi)
  else Big_int bi
 

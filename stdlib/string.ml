@@ -37,7 +37,7 @@ let copy s =
   r
 
 let sub s ofs len =
-  if ofs < 0 or len < 0 or ofs + len > length s
+  if ofs < 0 || len < 0 || ofs + len > length s
   then invalid_arg "String.sub"
   else begin
     let r = create len in
@@ -46,13 +46,13 @@ let sub s ofs len =
   end
 
 let fill s ofs len c =
-  if ofs < 0 or len < 0 or ofs + len > length s
+  if ofs < 0 || len < 0 || ofs + len > length s
   then invalid_arg "String.fill"
   else unsafe_fill s ofs len c
 
 let blit s1 ofs1 s2 ofs2 len =
-  if len < 0 or ofs1 < 0 or ofs1 + len > length s1
-             or ofs2 < 0 or ofs2 + len > length s2
+  if len < 0 || ofs1 < 0 || ofs1 + len > length s1
+             || ofs2 < 0 || ofs2 + len > length s2
   then invalid_arg "String.blit"
   else unsafe_blit s1 ofs1 s2 ofs2 len
 

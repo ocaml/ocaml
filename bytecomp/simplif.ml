@@ -136,7 +136,7 @@ let simplify_lambda lam =
   | Llet(str, v, l1, l2) ->
       count l2;
       (* If v is unused, l1 will be removed, so don't count its variables *)
-      if str = Strict or count_var v > 0 then count l1
+      if str = Strict || count_var v > 0 then count l1
   | Lletrec(bindings, body) ->
       List.iter (fun (v, l) -> count l) bindings;
       count body

@@ -239,7 +239,7 @@ let transl_prim prim args =
     | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2] ->
         intcomp
     | [arg1; arg2] when has_base_type arg1 Predef.path_int
-                     or has_base_type arg1 Predef.path_char ->
+                     || has_base_type arg1 Predef.path_char ->
         intcomp
     | [arg1; arg2] when has_base_type arg1 Predef.path_float ->
         floatcomp

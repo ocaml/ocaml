@@ -290,7 +290,7 @@ let f ?(dir=Unix.getcwd()) ?on () =
       let s = Entry.get ew in
       let is_type = ref false and is_long = ref false in
       for i = 0 to String.length s - 2 do
-        if s.[i] = '-' & s.[i+1] = '>' then is_type := true;
+        if s.[i] = '-' && s.[i+1] = '>' then is_type := true;
         if s.[i] = '.' then is_long := true
       done;
       let l =

@@ -113,7 +113,7 @@ module Make(Ord: OrderedType) =
         Empty -> invalid_arg "Set.join"
       | Node(l', x', r', _) as t' ->
           let d = height l' - height r' in
-          if d < -2 or d > 2 then join l' x' r' else t'
+          if d < -2 || d > 2 then join l' x' r' else t'
 
     (* Merge two trees l and r into one.
        All elements of l must precede the elements of r.

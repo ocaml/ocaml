@@ -42,27 +42,27 @@ let occurs_var var u =
       Uvar v -> v = var
     | Uconst cst -> false
     | Udirect_apply(lbl, args) -> List.exists occurs args
-    | Ugeneric_apply(funct, args) -> occurs funct or List.exists occurs args
+    | Ugeneric_apply(funct, args) -> occurs funct || List.exists occurs args
     | Uclosure(fundecls, clos) -> List.exists occurs clos
     | Uoffset(u, ofs) -> occurs u
-    | Ulet(id, def, body) -> occurs def or occurs body
+    | Ulet(id, def, body) -> occurs def || occurs body
     | Uletrec(decls, body) ->
-        List.exists (fun (id, u) -> occurs u) decls or occurs body
+        List.exists (fun (id, u) -> occurs u) decls || occurs body
     | Uprim(p, args) -> List.exists occurs args
     | Uswitch(arg, s) ->
-        occurs arg or occurs_array s.us_cases_consts
-                   or occurs_array s.us_cases_blocks
+        occurs arg || occurs_array s.us_cases_consts
+                   || occurs_array s.us_cases_blocks
     | Ustaticfail (_, args) -> List.exists occurs args
-    | Ucatch(_, _, body, hdlr) -> occurs body or occurs hdlr
-    | Utrywith(body, exn, hdlr) -> occurs body or occurs hdlr
+    | Ucatch(_, _, body, hdlr) -> occurs body || occurs hdlr
+    | Utrywith(body, exn, hdlr) -> occurs body || occurs hdlr
     | Uifthenelse(cond, ifso, ifnot) ->
-        occurs cond or occurs ifso or occurs ifnot
-    | Usequence(u1, u2) -> occurs u1 or occurs u2
-    | Uwhile(cond, body) -> occurs cond or occurs body
-    | Ufor(id, lo, hi, dir, body) -> occurs lo or occurs hi or occurs body
-    | Uassign(id, u) -> id = var or occurs u
+        occurs cond || occurs ifso || occurs ifnot
+    | Usequence(u1, u2) -> occurs u1 || occurs u2
+    | Uwhile(cond, body) -> occurs cond || occurs body
+    | Ufor(id, lo, hi, dir, body) -> occurs lo || occurs hi || occurs body
+    | Uassign(id, u) -> id = var || occurs u
     | Usend(met, obj, args) -> 
-        occurs met or occurs obj or List.exists occurs args
+        occurs met || occurs obj || List.exists occurs args
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do

@@ -31,12 +31,12 @@ let (~!) = Jg_memo.fast ~f:Str.regexp
 let lines_to_chars n ~text:s =
   let l = String.length s in
   let rec ltc n ~pos =
-    if n = 1 or pos >= l then pos else
+    if n = 1 || pos >= l then pos else
     if s.[pos] = '\n' then ltc (n-1) ~pos:(pos+1) else ltc n ~pos:(pos+1)
   in ltc n ~pos:0
 
 let in_loc loc ~pos =
-  pos >= loc.loc_start & pos < loc.loc_end
+  pos >= loc.loc_start && pos < loc.loc_end
 
 let rec string_of_longident = function
     Lident s -> s
@@ -457,7 +457,7 @@ and view_decl_menu lid ~kind ~env ~parent =
       Menu.add_command menu ~label
         ~command:(fun () -> view_decl lid ~kind ~env);
   end;
-  if kind = `Type or kind = `Modtype then begin
+  if kind = `Type || kind = `Modtype then begin
     let buf = new buffer ~size:60 in
     let (fo,ff) = Format.get_formatter_output_functions ()
     and margin = Format.get_margin () in

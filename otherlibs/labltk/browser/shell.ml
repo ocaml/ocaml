@@ -143,7 +143,7 @@ object (self)
     self#lex ~start:(idx,[`Linestart]) ();
     Text.see textw ~index:(`Mark"insert",[])
   method private keypress c =
-    if not reading & c > " " then begin
+    if not reading && c > " " then begin
       reading <- true;
       Text.mark_set textw ~mark:"input" ~index:(`Mark"insert",[`Char(-1)])
     end
@@ -330,7 +330,7 @@ let f ~prog ~title =
           if l = [] then () else
           let name = List.hd l in
           current_dir := Filename.dirname name;
-          if Filename.check_suffix name ".cmo" or
+          if Filename.check_suffix name ".cmo" ||
             Filename.check_suffix name ".cma"
           then
             let cmd = "#load \"" ^ name ^ "\";;\n" in

@@ -31,7 +31,7 @@ let allocate_spilled reg =
         | _ -> ())
       reg.interf;
     let slot = ref 0 in
-    while !slot < nslots & conflict.(!slot) do incr slot done;
+    while !slot < nslots && conflict.(!slot) do incr slot done;
     reg.loc <- Stack(Local !slot);
     if !slot >= nslots then Proc.num_stack_slots.(cl) <- !slot + 1
   end
@@ -56,7 +56,7 @@ let find_degree reg =
     else begin
       let deg = ref 0 in
       List.iter
-        (fun r -> if not r.spill & Proc.register_class r = cl then incr deg)
+        (fun r -> if not r.spill && Proc.register_class r = cl then incr deg)
         reg.interf;
       reg.degree <- !deg;
       if !deg >= avail_regs
@@ -72,7 +72,7 @@ let remove_reg reg =
   let cl = Proc.register_class reg in
   List.iter
     (fun r ->
-      if Proc.register_class r = cl & r.degree > 0 then begin
+      if Proc.register_class r = cl && r.degree > 0 then begin
         let olddeg = r.degree in
         r.degree <- olddeg - 1;
         if olddeg = Proc.num_available_registers.(cl) then begin
@@ -154,13 +154,13 @@ let assign_location reg =
     iter_preferred
       (fun r w ->
         match r.loc with
-          Reg n -> if n >= first_reg & n < last_reg then
+          Reg n -> if n >= first_reg && n < last_reg then
                      score.(n - first_reg) <- score.(n - first_reg) + w
         | Unknown ->
             List.iter
               (fun neighbour ->
                 match neighbour.loc with
-                  Reg n -> if n >= first_reg & n < last_reg then
+                  Reg n -> if n >= first_reg && n < last_reg then
                            score.(n - first_reg) <- score.(n - first_reg) - w
                 | _ -> ())
               r.interf
@@ -171,7 +171,7 @@ let assign_location reg =
         (* Prohibit the registers that have been assigned
            to our neighbours *)
         begin match neighbour.loc with
-          Reg n -> if n >= first_reg & n < last_reg then
+          Reg n -> if n >= first_reg && n < last_reg then
                      score.(n - first_reg) <- (-1000000)
         | _ -> ()
         end;
@@ -180,7 +180,7 @@ let assign_location reg =
         iter_preferred
           (fun r w ->
             match r.loc with
-              Reg n -> if n >= first_reg & n < last_reg then
+              Reg n -> if n >= first_reg && n < last_reg then
                          score.(n - first_reg) <- score.(n - first_reg) - (w - 1)
                        (* w-1 to break the symmetry when two conflicting regs
                           have the same preference for a third reg. *)
@@ -216,7 +216,7 @@ let assign_location reg =
         match r.loc with
           Stack(Incoming n) ->
             if w > !best_score
-             & List.for_all (fun neighbour -> neighbour.loc <> r.loc)
+             && List.for_all (fun neighbour -> neighbour.loc <> r.loc)
                             reg.interf
             then begin
               best_score := w;

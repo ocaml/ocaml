@@ -49,12 +49,12 @@ method select_operation op args =
   | (Cmuli, _) -> 
       (Iextcall(".umul", false), args)
   | (Cdivi, [arg; Cconst_int n])
-    when self#is_immediate n & n = 1 lsl (Misc.log2 n) ->
+    when self#is_immediate n && n = 1 lsl (Misc.log2 n) ->
       (Iintop_imm(Idiv, n), [arg])
   | (Cdivi, _) -> 
       (Iextcall(".div", false), args)
   | (Cmodi, [arg; Cconst_int n])
-    when self#is_immediate n & n = 1 lsl (Misc.log2 n) ->
+    when self#is_immediate n && n = 1 lsl (Misc.log2 n) ->
       (Iintop_imm(Imod, n), [arg])
   | (Cmodi, _) ->
       (Iextcall(".rem", false), args)

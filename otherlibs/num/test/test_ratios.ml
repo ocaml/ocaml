@@ -12,49 +12,49 @@ let infinite_failure = "infinite or undefined rational number";;
 testing_function "create_ratio";;
 
 let r = create_ratio (big_int_of_int 1) (big_int_of_int (-2)) in
-test 1 eq_big_int (numerator_ratio r, big_int_of_int (-1)) & 
+test 1 eq_big_int (numerator_ratio r, big_int_of_int (-1)) && 
 test 2 eq_big_int (denominator_ratio r, big_int_of_int 2);;
 
 let r = create_ratio (big_int_of_int 2) (big_int_of_int 3) in
-test 3 eq_big_int (numerator_ratio r, big_int_of_int 2) & 
+test 3 eq_big_int (numerator_ratio r, big_int_of_int 2) && 
 test 4 eq_big_int (denominator_ratio r, big_int_of_int 3);;
 
 set_normalize_ratio true;;
 
 let r = create_ratio (big_int_of_int 12) (big_int_of_int (-16)) in
-test 5 eq_big_int (numerator_ratio r, big_int_of_int (-3)) & 
+test 5 eq_big_int (numerator_ratio r, big_int_of_int (-3)) && 
 test 6 eq_big_int (denominator_ratio r, big_int_of_int 4);;
 
 set_normalize_ratio false;;
 
 let r = create_ratio (big_int_of_int 0) (big_int_of_int 0) in
-test 7 eq_big_int (numerator_ratio r, big_int_of_int 0) & 
+test 7 eq_big_int (numerator_ratio r, big_int_of_int 0) && 
 test 8 eq_big_int (denominator_ratio r, big_int_of_int 0);;
 
 testing_function "create_normalized_ratio";;
 
 let r = create_normalized_ratio (big_int_of_int 1) (big_int_of_int (-2)) in
-test 1 eq_big_int (numerator_ratio r, big_int_of_int (-1)) & 
+test 1 eq_big_int (numerator_ratio r, big_int_of_int (-1)) && 
 test 2 eq_big_int (denominator_ratio r, big_int_of_int 2);;
 
 let r = create_normalized_ratio (big_int_of_int 2) (big_int_of_int 3) in
-test 3 eq_big_int (numerator_ratio r, big_int_of_int 2) & 
+test 3 eq_big_int (numerator_ratio r, big_int_of_int 2) && 
 test 4 eq_big_int (denominator_ratio r, big_int_of_int 3);;
 
 set_normalize_ratio true;;
 
 let r = create_normalized_ratio (big_int_of_int 12) (big_int_of_int (-16)) in
-test 5 eq_big_int (numerator_ratio r, big_int_of_int (-12)) & 
+test 5 eq_big_int (numerator_ratio r, big_int_of_int (-12)) && 
 test 6 eq_big_int (denominator_ratio r, big_int_of_int 16);;
 
 set_normalize_ratio false;;
 
 let r = create_normalized_ratio (big_int_of_int 1) (big_int_of_int 0) in
-test 7 eq_big_int (numerator_ratio r, big_int_of_int 1) & 
+test 7 eq_big_int (numerator_ratio r, big_int_of_int 1) && 
 test 8 eq_big_int (denominator_ratio r, big_int_of_int 0);;
 
 let r = create_normalized_ratio (big_int_of_int 0) (big_int_of_int 0) in
-test 9 eq_big_int (numerator_ratio r, big_int_of_int 0) & 
+test 9 eq_big_int (numerator_ratio r, big_int_of_int 0) && 
 test 10 eq_big_int (denominator_ratio r, big_int_of_int 0);;
 
 testing_function "null_denominator";;
@@ -89,12 +89,12 @@ testing_function "normalize_ratio";;
 
 let r = create_ratio (big_int_of_int 12) (big_int_of_int (-16)) in
 normalize_ratio r;
-test 1 eq_big_int (numerator_ratio r, big_int_of_int (-3)) & 
+test 1 eq_big_int (numerator_ratio r, big_int_of_int (-3)) && 
 test 2 eq_big_int (denominator_ratio r, big_int_of_int 4);;
 
 let r = create_ratio (big_int_of_int (-1)) zero_big_int in
 normalize_ratio r;
-test 3 eq_big_int (numerator_ratio r, big_int_of_int (-1)) & 
+test 3 eq_big_int (numerator_ratio r, big_int_of_int (-1)) && 
 test 4 eq_big_int (denominator_ratio r, zero_big_int);;
 
 testing_function "report_sign_ratio";;
@@ -123,27 +123,27 @@ testing_function "add_ratio";;
 
 let r = add_ratio (create_ratio (big_int_of_int 1) (big_int_of_int 2)) 
                    (create_ratio (big_int_of_int 2) (big_int_of_int 3)) in
-test 1 eq_big_int (numerator_ratio r, big_int_of_int 7) & 
+test 1 eq_big_int (numerator_ratio r, big_int_of_int 7) && 
 test 2 eq_big_int (denominator_ratio r, big_int_of_int 6);;
 
 let r = add_ratio (create_ratio (big_int_of_int 2) (big_int_of_int 3)) 
                    (create_ratio (big_int_of_int 1) (big_int_of_int (-2))) in
-test 3 eq_big_int (numerator_ratio r, big_int_of_int 1) & 
+test 3 eq_big_int (numerator_ratio r, big_int_of_int 1) && 
 test 4 eq_big_int (denominator_ratio r, big_int_of_int 6);;
 
 let r = add_ratio (create_ratio (big_int_of_int 2) zero_big_int) 
                    (create_ratio (big_int_of_int 1) (big_int_of_int (-2))) in
-test 5 eq_big_int (numerator_ratio r, big_int_of_int 4) & 
+test 5 eq_big_int (numerator_ratio r, big_int_of_int 4) && 
 test 6 eq_big_int (denominator_ratio r, zero_big_int);;
 
 let r = add_ratio (create_ratio (big_int_of_int 2) (big_int_of_int 3)) 
                    (create_ratio (big_int_of_int 1) zero_big_int) in
-test 7 eq_big_int (numerator_ratio r, big_int_of_int 3) & 
+test 7 eq_big_int (numerator_ratio r, big_int_of_int 3) && 
 test 8 eq_big_int (denominator_ratio r, zero_big_int);;
 
 let r = add_ratio (create_ratio (big_int_of_int 2) zero_big_int) 
                    (create_ratio (big_int_of_int 1) zero_big_int) in
-test 9 eq_big_int (numerator_ratio r, zero_big_int) & 
+test 9 eq_big_int (numerator_ratio r, zero_big_int) && 
 test 10 eq_big_int (denominator_ratio r, zero_big_int);;
 
 let r = add_ratio (create_ratio (big_int_of_string "12724951") 
@@ -151,7 +151,7 @@ let r = add_ratio (create_ratio (big_int_of_string "12724951")
                    (create_ratio (big_int_of_string "-1") 
                                  (big_int_of_string "81749606400")) in
 test 11 eq_big_int (numerator_ratio r, 
-                     big_int_of_string "1040259735682744320") & 
+                     big_int_of_string "1040259735682744320") && 
 test 12 eq_big_int (denominator_ratio r, 
                      big_int_of_string "2169804593037312000");;
 
@@ -167,14 +167,14 @@ in
 test 1
 eq_big_int (bi1,
             big_int_of_string "1040259735709286400")
-& 
+&& 
 test 2
 eq_big_int (bi2,
             big_int_of_string "-26542080")
-& test 3
+&& test 3
 eq_big_int (mult_big_int (denominator_ratio r1) (denominator_ratio r2),
             big_int_of_string "2169804593037312000")
-& test 4
+&& test 4
 eq_big_int (add_big_int bi1 bi2,
             big_int_of_string "1040259735682744320")
 ;;
@@ -183,66 +183,66 @@ testing_function "sub_ratio";;
 
 let r = sub_ratio (create_ratio (big_int_of_int 2) (big_int_of_int 3)) 
                    (create_ratio (big_int_of_int 1) (big_int_of_int 2)) in
-test 1  eq_big_int (numerator_ratio r, big_int_of_int 1) & 
+test 1  eq_big_int (numerator_ratio r, big_int_of_int 1) && 
 test 2 eq_big_int (denominator_ratio r, big_int_of_int 6);;
 
 let r = sub_ratio (create_ratio (big_int_of_int 2) zero_big_int) 
                    (create_ratio (big_int_of_int 1) (big_int_of_int (-2))) in
-test 3 eq_big_int (numerator_ratio r, big_int_of_int 4) & 
+test 3 eq_big_int (numerator_ratio r, big_int_of_int 4) && 
 test 4 eq_big_int (denominator_ratio r, zero_big_int);;
 
 let r = sub_ratio (create_ratio (big_int_of_int 2) (big_int_of_int 3)) 
                    (create_ratio (big_int_of_int 1) zero_big_int) in
-test 5 eq_big_int (numerator_ratio r, big_int_of_int (-3)) & 
+test 5 eq_big_int (numerator_ratio r, big_int_of_int (-3)) && 
 test 6 eq_big_int (denominator_ratio r, zero_big_int);;
 
 let r = sub_ratio (create_ratio (big_int_of_int 2) zero_big_int) 
                    (create_ratio (big_int_of_int 1) zero_big_int) in
-test 7 eq_big_int (numerator_ratio r, zero_big_int) & 
+test 7 eq_big_int (numerator_ratio r, zero_big_int) && 
 test 8 eq_big_int (denominator_ratio r, zero_big_int);;
 
 testing_function "mult_ratio";;
 
 let r = mult_ratio (create_ratio (big_int_of_int 2) (big_int_of_int 3)) 
                     (create_ratio (big_int_of_int 7) (big_int_of_int 5)) in
-test 1 eq_big_int (numerator_ratio r, big_int_of_int 14) & 
+test 1 eq_big_int (numerator_ratio r, big_int_of_int 14) && 
 test 2 eq_big_int (denominator_ratio r, big_int_of_int 15);;
 
 let r = mult_ratio (create_ratio (big_int_of_int 2) zero_big_int) 
                     (create_ratio (big_int_of_int 1) (big_int_of_int (-2))) in
-test 3 eq_big_int (numerator_ratio r, big_int_of_int (-2)) &
+test 3 eq_big_int (numerator_ratio r, big_int_of_int (-2)) &&
 test 4 eq_big_int (denominator_ratio r, zero_big_int);;
 
 let r = mult_ratio (create_ratio (big_int_of_int 2) (big_int_of_int 3)) 
                    (create_ratio (big_int_of_int 1) zero_big_int) in
-test 5 eq_big_int (numerator_ratio r, big_int_of_int 2) & 
+test 5 eq_big_int (numerator_ratio r, big_int_of_int 2) && 
 test 6 eq_big_int (denominator_ratio r, zero_big_int);;
 
 let r = mult_ratio (create_ratio (big_int_of_int 2) zero_big_int) 
                    (create_ratio (big_int_of_int 1) zero_big_int) in
-test 7 eq_big_int (numerator_ratio r, big_int_of_int 2) & 
+test 7 eq_big_int (numerator_ratio r, big_int_of_int 2) && 
 test 8 eq_big_int (denominator_ratio r, zero_big_int);;
 
 testing_function "div_ratio";;
 
 let r = div_ratio (create_ratio (big_int_of_int 2) (big_int_of_int 3)) 
                    (create_ratio (big_int_of_int 5) (big_int_of_int 7)) in
-test 1 eq_big_int (numerator_ratio r, big_int_of_int 14) & 
+test 1 eq_big_int (numerator_ratio r, big_int_of_int 14) && 
 test 2 eq_big_int (denominator_ratio r, big_int_of_int 15);;
 
 let r = div_ratio (create_ratio (big_int_of_int 2) zero_big_int) 
                    (create_ratio (big_int_of_int 1) (big_int_of_int (-2))) in
-test 3 eq_big_int (numerator_ratio r, big_int_of_int (-4)) & 
+test 3 eq_big_int (numerator_ratio r, big_int_of_int (-4)) && 
 test 4 eq_big_int (denominator_ratio r, zero_big_int);;
 
 let r = div_ratio (create_ratio (big_int_of_int 2) (big_int_of_int 3)) 
                    (create_ratio (big_int_of_int 1) zero_big_int) in
-test 5 eq_big_int (numerator_ratio r, zero_big_int) & 
+test 5 eq_big_int (numerator_ratio r, zero_big_int) && 
 test 6 eq_big_int (denominator_ratio r, big_int_of_int 3);;
 
 let r = div_ratio (create_ratio (big_int_of_int 2) zero_big_int) 
                    (create_ratio (big_int_of_int 1) zero_big_int) in
-test 7 eq_big_int (numerator_ratio r, zero_big_int) & 
+test 7 eq_big_int (numerator_ratio r, zero_big_int) && 
 test 8 eq_big_int (denominator_ratio r, zero_big_int);;
 
 testing_function "integer_ratio";;
@@ -774,58 +774,58 @@ testing_function "round_futur_last_digit";;
 
 let s = "+123456" in
 test 1 eq (round_futur_last_digit s 1 (pred (String.length s)), 
-            false) &
+            false) &&
 test 2 eq_string (s, "+123466");;
 
 let s = "123456" in
-test 3 eq (round_futur_last_digit s 0 (String.length s), false) &
+test 3 eq (round_futur_last_digit s 0 (String.length s), false) &&
 test 4 eq_string (s, "123466");;
 
 let s = "-123456" in
 test 5 eq (round_futur_last_digit s 1 (pred (String.length s)),
-            false) &
+            false) &&
 test 6 eq_string (s, "-123466");;
 
 let s = "+123496" in
 test 7 eq (round_futur_last_digit s 1 (pred (String.length s)),
-            false) &
+            false) &&
 test 8 eq_string (s, "+123506");;
 
 let s = "123496" in
-test 9 eq (round_futur_last_digit s 0 (String.length s), false) &
+test 9 eq (round_futur_last_digit s 0 (String.length s), false) &&
 test 10 eq_string (s, "123506");;
 
 let s = "-123496" in
 test 11 eq (round_futur_last_digit s 1 (pred (String.length s)),
-            false) &
+            false) &&
 test 12 eq_string (s, "-123506");;
 
 let s = "+996" in
 test 13 eq (round_futur_last_digit s 1 (pred (String.length s)), 
-            true) &
+            true) &&
 test 14 eq_string (s, "+006");;
 
 let s = "996" in
-test 15 eq (round_futur_last_digit s 0 (String.length s), true) &
+test 15 eq (round_futur_last_digit s 0 (String.length s), true) &&
 test 16 eq_string (s, "006");;
 
 let s = "-996" in
 test 17 eq (round_futur_last_digit s 1 (pred (String.length s)), 
-             true) &
+             true) &&
 test 18 eq_string (s, "-006");;
 
 let s = "+6666666" in
 test 19 eq (round_futur_last_digit s 1 (pred (String.length s)), 
-             false) &
+             false) &&
 test 20 eq_string (s, "+6666676") ;; 
 
 let s = "6666666" in
-test 21 eq (round_futur_last_digit s 0 (String.length s), false) &
+test 21 eq (round_futur_last_digit s 0 (String.length s), false) &&
 test 22 eq_string (s, "6666676") ;; 
 
 let s = "-6666666" in
 test 23 eq (round_futur_last_digit s 1 (pred (String.length s)), 
-             false) &
+             false) &&
 test 24 eq_string (s, "-6666676") ;; 
 
 testing_function "approx_ratio_fix";;

@@ -193,42 +193,42 @@ testing_function "quomod_big_int";;
 
 let (quotient, modulo) =
       quomod_big_int (big_int_of_int 1) (big_int_of_int 1) in
- test 1 eq_big_int (quotient, big_int_of_int 1) &
+ test 1 eq_big_int (quotient, big_int_of_int 1) &&
  test 2 eq_big_int (modulo, zero_big_int);;
 
 let (quotient, modulo) =
       quomod_big_int (big_int_of_int 1) (big_int_of_int (-1)) in
- test 3 eq_big_int (quotient, big_int_of_int (-1)) &
+ test 3 eq_big_int (quotient, big_int_of_int (-1)) &&
  test 4 eq_big_int (modulo, zero_big_int);;
 
 let (quotient, modulo) = 
       quomod_big_int (big_int_of_int (-1)) (big_int_of_int 1) in
- test 5 eq_big_int (quotient, big_int_of_int (-1)) & 
+ test 5 eq_big_int (quotient, big_int_of_int (-1)) && 
  test 6 eq_big_int (modulo, zero_big_int);;
 
 let (quotient, modulo) = 
       quomod_big_int (big_int_of_int 3) (big_int_of_int 2) in
- test 7 eq_big_int (quotient, big_int_of_int 1) & 
+ test 7 eq_big_int (quotient, big_int_of_int 1) && 
  test 8 eq_big_int (modulo, big_int_of_int 1);;
 
 let (quotient, modulo) =
       quomod_big_int (big_int_of_int 5) (big_int_of_int 3) in
- test 9 eq_big_int (quotient, big_int_of_int 1) &
+ test 9 eq_big_int (quotient, big_int_of_int 1) &&
  test 10 eq_big_int (modulo, big_int_of_int 2);;
 
 let (quotient, modulo) =
       quomod_big_int (big_int_of_int (-5)) (big_int_of_int 3) in
- test 11 eq_big_int (quotient, big_int_of_int (-2)) &
+ test 11 eq_big_int (quotient, big_int_of_int (-2)) &&
  test 12 eq_big_int (modulo, big_int_of_int 1);;
 
 let (quotient, modulo) = 
       quomod_big_int (big_int_of_int 1) (big_int_of_int 2) in
- test 13 eq_big_int (quotient, zero_big_int) & 
+ test 13 eq_big_int (quotient, zero_big_int) && 
  test 14 eq_big_int (modulo, big_int_of_int 1);;
 
 let (quotient, modulo) = 
       quomod_big_int (big_int_of_int (-1)) (big_int_of_int 3) in
- test 15 eq_big_int (quotient, minus_big_int unit_big_int) &
+ test 15 eq_big_int (quotient, minus_big_int unit_big_int) &&
  test 16 eq_big_int (modulo, big_int_of_int 2);;
 
 failwith_test 17

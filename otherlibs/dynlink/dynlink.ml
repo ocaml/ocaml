@@ -106,7 +106,7 @@ let allow_unsafe_modules b =
   unsafe_allowed := b
 
 let check_unsafe_module cu =
-  if (not !unsafe_allowed) & cu.cu_primitives <> []
+  if (not !unsafe_allowed) && cu.cu_primitives <> []
   then raise(Error(Unsafe_file))
 
 (* Check that all globals referenced in the object file have been 

@@ -586,7 +586,7 @@ let rec cut n l =
 
 let make_test_sequence nofail check tst lt_tst arg const_lambda_list =
   let rec make_test_sequence const_lambda_list =
-    if List.length const_lambda_list >= 4 & lt_tst <> Praise then
+    if List.length const_lambda_list >= 4 && lt_tst <> Praise then
       split_sequence const_lambda_list
     else
       List.fold_right

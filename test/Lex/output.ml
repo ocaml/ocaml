@@ -80,7 +80,7 @@ let output_char_lit oc = function
   | '\\' -> output_string oc "\\\\"
   | '\n' -> output_string oc "\\n"
   | '\t' -> output_string oc "\\t"
-  | c ->  if Char.code c >= 32 & Char.code c < 128 then
+  | c ->  if Char.code c >= 32 && Char.code c < 128 then
             output_char oc c
           else begin
             let n = Char.code c in

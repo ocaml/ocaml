@@ -113,8 +113,8 @@ let rec nullable = function
     Empty      -> true
   | Chars _    -> false
   | Action _   -> false
-  | Seq(r1,r2) -> nullable r1 & nullable r2
-  | Alt(r1,r2) -> nullable r1 or nullable r2
+  | Seq(r1,r2) -> nullable r1 && nullable r2
+  | Alt(r1,r2) -> nullable r1 || nullable r2
   | Star r     -> true
 
 let rec firstpos = function

@@ -24,17 +24,17 @@ let process_implementation_file ppf name =
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
-  or Filename.check_suffix name ".mlt" then begin
+  || Filename.check_suffix name ".mlt" then begin
     Compile.implementation ppf name;
     objfiles := (Filename.chop_extension name ^ ".cmo") :: !objfiles
   end
   else if Filename.check_suffix name !Config.interface_suffix then
     Compile.interface ppf name
   else if Filename.check_suffix name ".cmo"
-       or Filename.check_suffix name ".cma" then
+       || Filename.check_suffix name ".cma" then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ext_obj
-       or Filename.check_suffix name ext_lib then
+       || Filename.check_suffix name ext_lib then
     ccobjs := name :: !ccobjs
   else if Filename.check_suffix name ".c" then begin
     Compile.c_file name;

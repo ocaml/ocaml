@@ -137,7 +137,7 @@ let insertion_sort gc =
   for i = 1 to Array.length gc.array - 1 do
     let val_i = gc.array.(i) in
     let j = ref (i - 1) in
-    while !j >= 0 & val_i < gc.array.(!j) do
+    while !j >= 0 && val_i < gc.array.(!j) do
       assign gc (!j + 1) gc.array.(!j);
       decr j
     done;
@@ -164,8 +164,8 @@ let quick_sort gc =
       let j = ref hi in
       let pivot = gc.array.(hi) in
       while !i < !j do
-        while !i < hi & gc.array.(!i) <= pivot do incr i done;
-        while !j > lo & gc.array.(!j) >= pivot do decr j done;
+        while !i < hi && gc.array.(!i) <= pivot do incr i done;
+        while !j > lo && gc.array.(!j) >= pivot do decr j done;
         if !i < !j then exchange gc !i !j
       done;
       exchange gc !i hi;

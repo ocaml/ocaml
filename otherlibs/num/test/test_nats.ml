@@ -44,14 +44,14 @@ testing_function "incr_nat";;
 let zero = nat_of_int 0 in
 let res = incr_nat zero 0 1 1 in
  test 1
-  equal_nat (zero, nat_of_int 1) &
+  equal_nat (zero, nat_of_int 1) &&
  test 2
   eq (res,0);;
 
 let n = nat_of_int 1 in
 let res = incr_nat n 0 1 1 in
  test 3
-  equal_nat (n, nat_of_int 2) &
+  equal_nat (n, nat_of_int 2) &&
  test 4
   eq (res,0);;
 
@@ -61,23 +61,23 @@ testing_function "decr_nat";;
 let n = nat_of_int 1 in
 let res = decr_nat n 0 1 0 in
  test 1
-  equal_nat (n, nat_of_int 0) &
+  equal_nat (n, nat_of_int 0) &&
  test 2
   eq (res,1);;
 
 let n = nat_of_int 2 in
 let res = decr_nat n 0 1 0 in
  test 3
-  equal_nat (n, nat_of_int 1) &
+  equal_nat (n, nat_of_int 1) &&
  test 4
   eq (res,1);;
 
 testing_function "is_zero_nat";;
 
 let n = nat_of_int 1 in
-test 1 eq (is_zero_nat n 0 1,false) &
-test 2 eq (is_zero_nat (make_nat 1) 0 1, true) &
-test 3 eq (is_zero_nat (make_nat 2) 0 2, true) &
+test 1 eq (is_zero_nat n 0 1,false) &&
+test 2 eq (is_zero_nat (make_nat 1) 0 1, true) &&
+test 3 eq (is_zero_nat (make_nat 2) 0 2, true) &&
 (let r = make_nat 2 in
   set_digit_nat r 1 1;
   test 4 eq (is_zero_nat r 0 1, true))
@@ -93,7 +93,7 @@ complement_nat n 0 (if sixtyfour then 2 else 4);;
 
 test 2 eq_string (string_of_nat n, "340282366920938463463374607431768211455");;
 
-testing_function "string_of_nat & nat_of_string";;
+testing_function "string_of_nat && nat_of_string";;
 
 for i = 1 to 20 do
   let s = String.make i '0' in

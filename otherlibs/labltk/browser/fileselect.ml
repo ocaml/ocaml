@@ -70,7 +70,7 @@ let unix_regexp s =
   Str.regexp s
 
 let exact_match s ~pat =
-  Str.string_match ~pat s ~pos:0 & Str.match_end () = String.length s
+  Str.string_match ~pat s ~pos:0 && Str.match_end () = String.length s
 
 let ls ~dir ~pattern =
   let files = get_files_in_directory dir in
@@ -117,16 +117,16 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       else filter
     in
     let dir, pattern = parse_filter filter in
-    let dir = if !load_in_path & usepath then "" else
+    let dir = if !load_in_path && usepath then "" else
               (current_dir := Filename.dirname dir; dir)
     and pattern = if pattern = "" then "*" else pattern in
       current_pattern := pattern;
     let filter =
-        if !load_in_path & usepath then pattern else dir ^ pattern in
+        if !load_in_path && usepath then pattern else dir ^ pattern in
     let directories = get_directories_in_files ~path:dir 
           (get_files_in_directory dir) in
     let matched_files = (* get matched file by subshell call. *)
-      if !load_in_path & usepath then
+      if !load_in_path && usepath then
       List.fold_left !Config.load_path ~init:[] ~f:
       begin fun acc dir ->
         let files = ls ~dir ~pattern in
@@ -143,7 +143,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       Listbox.delete filter_listbox ~first:(`Num 0) ~last:`End;
       Listbox.insert filter_listbox ~index:`End ~texts:matched_files;
       Jg_box.recenter filter_listbox ~index:(`Num 0);
-      if !load_in_path & usepath then
+      if !load_in_path && usepath then
         Listbox.configure directory_listbox ~takefocus:false
       else
       begin
@@ -159,7 +159,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
     Grab.release tl;
     destroy tl;
     let l =
-      if !load_in_path & usepath then
+      if !load_in_path && usepath then
         List.fold_right l ~init:[] ~f:
         begin fun name acc ->
           if not (Filename.is_implicit name) then
@@ -236,7 +236,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
     ~action:(fun ev ->
       let name = Listbox.get filter_listbox
           ~index:(Listbox.nearest filter_listbox ~y:ev.ev_MouseY) in
-      if !load_in_path & usepath then
+      if !load_in_path && usepath then
         try Textvariable.set selection_var (search_in_path ~name)
         with Not_found -> ()
       else Textvariable.set selection_var (!current_dir ^ "/" ^ name));
@@ -279,7 +279,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
     pack [okb; flb; ccb] ~side:`Left ~fill:`X ~expand:true;
     pack [cfrm] ~before:frm ~side:`Bottom ~fill:`X;
 
-  if !load_in_path & usepath then begin
+  if !load_in_path && usepath then begin
     load_in_path := false;
     Checkbutton.invoke toggle_in_path;
     Checkbutton.select toggle_in_path

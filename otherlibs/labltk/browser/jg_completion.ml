@@ -23,7 +23,7 @@ class completion ?nocase texts = object
   val mutable current = 0
   method add c =
     prefix <- prefix ^ c;
-    while current < List.length texts - 1 &
+    while current < List.length texts - 1 &&
       lt_string (List.nth texts current) prefix ?nocase
     do
       current <- current + 1

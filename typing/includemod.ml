@@ -118,7 +118,7 @@ let simplify_structure_coercion cc =
   try
     List.iter
       (fun (n, c) ->
-        if n <> !pos or c <> Tcoerce_none then raise Exit;
+        if n <> !pos || c <> Tcoerce_none then raise Exit;
         incr pos)
       cc;
     Tcoerce_none

@@ -1182,7 +1182,7 @@ and unify3 env t1 t1' t2 t2' =
           t2'.desc <- Tlink t1
         end
     | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2
-      or !Clflags.classic && not (is_optional l1 or is_optional l2) ->
+      || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         unify env t1 t2; unify env u1 u2
     | (Ttuple tl1, Ttuple tl2) ->
         unify_list env tl1 tl2
@@ -1353,7 +1353,7 @@ and unify_row env row1 row2 =
                   List.iter (unify env t1) tl;
                   [t1]
             in
-            let f = Reither(c1 or c2, tl, ref None) in
+            let f = Reither(c1 || c2, tl, ref None) in
             e1 := Some f; e2 := Some f
         | Reither(false, tl, e1), Rpresent(Some t2) ->
             e1 := Some f2;
@@ -1532,7 +1532,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               moregen_occur env t1'.level t2;
               t1'.desc <- Tlink t2
           | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2
-            or !Clflags.classic && not (is_optional l1 or is_optional l2) ->
+            || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
               moregen inst_nongen type_pairs env t1 t2;
               moregen inst_nongen type_pairs env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
@@ -1702,7 +1702,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                 subst := (t1', t2') :: !subst
               end
           | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2
-            or !Clflags.classic && not (is_optional l1 or is_optional l2) ->
+            || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
               eqtype rename type_pairs subst env t1 t2;
               eqtype rename type_pairs subst env u1 u2;
           | (Ttuple tl1, Ttuple tl2) ->
@@ -2092,7 +2092,7 @@ let rec build_subtype env visited posi t =
       (* let (t1', c1) = build_subtype env visited (not posi) t1 in *)
       let (t1', c1) = (t1, false) in
       let (t2', c2) = build_subtype env visited posi t2 in
-      if c1 or c2 then (newty (Tarrow(l, t1', t2')), true)
+      if c1 || c2 then (newty (Tarrow(l, t1', t2')), true)
       else (t, false)
   | Ttuple tlist ->
       if List.memq t visited then (t, false) else
@@ -2264,7 +2264,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
       (Tvar, _) | (_, Tvar) ->
         (trace, t1, t2)::cstrs
     | (Tarrow(l1, t1, u1), Tarrow(l2, t2, u2)) when l1 = l2
-      or !Clflags.classic && not (is_optional l1 or is_optional l2) ->
+      || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         let cstrs = subtype_rec env ((t2, t1)::trace) t2 t1 cstrs in
         subtype_rec env ((u1, u2)::trace) u1 u2 cstrs
     | (Ttuple tl1, Ttuple tl2) ->
@@ -2289,7 +2289,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
               else cstrs)
           cstrs decl.type_variance (List.combine tl1 tl2)
     | (Tobject (f1, _), Tobject (f2, _))
-              when opened_object f1 & opened_object f2 ->
+              when opened_object f1 && opened_object f2 ->
         (* Same row variable implies same object. *)
         (trace, t1, t2)::cstrs
     | (Tobject (f1, _), Tobject (f2, _)) ->

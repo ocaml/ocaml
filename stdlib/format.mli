@@ -33,7 +33,8 @@
    For instance, the sequence 
    [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()]
    that prints [x = 1] within a pretty-printing box, can be
-   abbreviated as [printf "@\[%s@ %i@\]" "x =" 1]. *)
+   abbreviated as [printf "@\[%s@ %i@\]" "x =" 1], or even shorter
+   [printf "@\[x =@ %i@\]" 1]. *)
 
 (* Rule of thumb for casual users of this library:
 -   use simple boxes (as obtained by [open_box 0]);
@@ -61,7 +62,7 @@
 (*** Boxes *)
 val open_box : int -> unit;;
         (* [open_box d] opens a new pretty-printing box
-           with offset [d]. 
+           with offset [d].
            This box is the general purpose pretty-printing box.
            Material in this box is displayed ``horizontal or vertical'':
            break hints inside the box may lead to a new line, if there
@@ -107,7 +108,8 @@ val print_break : int -> int -> unit;;
         (* Insert a break hint in a pretty-printing box.
            [print_break nspaces offset] indicates that the line may
            be split (a newline character is printed) at this point,
-           if the contents of the current box does not fit on one line.
+           if the contents of the current box does not fit on the
+           current line. 
            If the line is split at that point, [offset] is added to
            the current indentation. If the line is not split,
            [nspaces] spaces are printed. *)
@@ -169,14 +171,14 @@ val open_hbox : unit -> unit;;
            (new lines may still occur inside boxes nested deeper). *)
 val open_vbox : int -> unit;;
         (* [open_vbox d] opens a new pretty-printing box
-           with offset [d]. 
+           with offset [d].
            This box is ``vertical'': every break hint inside this
            box leads to a new line.
            When a new line is printed in the box, [d] is added to the
            current indentation. *)
 val open_hvbox : int -> unit;;
         (* [open_hvbox d] opens a new pretty-printing box
-           with offset [d]. 
+           with offset [d].
            This box is ``horizontal-vertical'': it behaves as an
            ``horizontal'' box if it fits on a single line,
            otherwise it behaves as a ``vertical'' box.
@@ -184,7 +186,7 @@ val open_hvbox : int -> unit;;
            current indentation. *)
 val open_hovbox : int -> unit;;
         (* [open_hovbox d] opens a new pretty-printing box
-           with offset [d]. 
+           with offset [d].
            This box is ``horizontal or vertical'': break hints
            inside this box may lead to a new line, if there is no more room
            on the line to print the remainder of the box.
@@ -223,6 +225,7 @@ val get_ellipsis_text : unit -> string;;
 val set_formatter_out_channel : out_channel -> unit;;
         (* Redirect the pretty-printer output to the given channel. *)
 
+(*** Changing the meaning of printing material *)
 val set_formatter_output_functions :
       out:(buf:string -> pos:int -> len:int -> unit) ->
       flush:(unit -> unit) -> unit;;
@@ -238,7 +241,8 @@ val get_formatter_output_functions :
       unit -> (buf:string -> pos:int -> len:int -> unit) * (unit -> unit);;
         (* Return the current output functions of the pretty-printer. *)
 
-(*** Changing the meaning of indentation and line breaking *)
+(*** Changing the meaning of pretty printing (indentation, line breaking,
+     and printing material) *)
 val set_all_formatter_output_functions :
       out:(buf:string -> pos:int -> len:int -> unit) ->
       flush:(unit -> unit) ->

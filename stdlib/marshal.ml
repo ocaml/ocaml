@@ -25,7 +25,7 @@ external to_buffer_unsafe:
     = "output_value_to_buffer"
 
 let to_buffer buff ofs len v flags =
-  if ofs < 0 or len < 0 or ofs + len > String.length buff
+  if ofs < 0 || len < 0 || ofs + len > String.length buff
   then invalid_arg "Marshal.to_buffer: substring out of bounds"
   else to_buffer_unsafe buff ofs len v flags
 

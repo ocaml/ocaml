@@ -60,7 +60,7 @@ let error_matching () =
 let same_name {qualid = name1} =
   function
     GRname name2 ->
-      (name2 = "") or (name1.id = name2)
+      (name2 = "") || (name1.id = name2)
   | GRmodname name2 ->
       name1 = name2
 

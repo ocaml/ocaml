@@ -685,7 +685,7 @@ let rec le_pat p q =
   | Tpat_construct(c1,ps), Tpat_construct(c2,qs) ->
       c1.cstr_tag = c2.cstr_tag && le_pats ps qs
   | Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
-      l1 = l2 & le_pat p1 p2
+      l1 = l2 && le_pat p1 p2
   | Tpat_variant(l1,None,_), Tpat_variant(l2,None,_) -> l1 = l2
   | Tpat_tuple(ps), Tpat_tuple(qs) -> le_pats ps qs
   | Tpat_record l1, Tpat_record l2 ->
