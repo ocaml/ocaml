@@ -238,11 +238,12 @@ val combine : 'a list -> 'b list -> ('a * 'b) list
 
 val sort : ('a -> 'a -> int) -> 'a list -> 'a list
 (** Sort a list in increasing order according to a comparison
-   function.  The comparison function must return 0 if it arguments
+   function.  The comparison function must return 0 if its arguments
    compare as equal, a positive integer if the first is greater,
    and a negative integer if the first is smaller (see Array.sort for
    a complete specification).  For example,
-   {!Pervasives.compare} is a suitable comparison function.
+   {!Pervasives.compare} is a suitable comparison function, provided
+   there are no floating-point NaN values in the data.
    The resulting list is sorted in increasing order.
    [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
