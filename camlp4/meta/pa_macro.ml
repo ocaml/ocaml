@@ -99,6 +99,7 @@ value substp mloc env =
         try <:patt< $anti:List.assoc x env$ >> with
         [ Not_found -> <:patt< $uid:x$ >> ]
     | <:expr< $int:x$ >> -> <:patt< $int:x$ >>
+    | <:expr< $str:s$ >> -> <:patt< $str:s$ >>
     | <:expr< ($list:x$) >> -> <:patt< ($list:List.map loop x$) >>
     | <:expr< { $list:pel$ } >> ->
         let ppl = List.map (fun (p, e) -> (p, loop e)) pel in

@@ -106,6 +106,7 @@ let substp mloc env =
           Not_found -> MLast.PaUid (loc, x)
         end
     | MLast.ExInt (_, x) -> MLast.PaInt (loc, x)
+    | MLast.ExStr (_, s) -> MLast.PaStr (loc, s)
     | MLast.ExTup (_, x) -> MLast.PaTup (loc, List.map loop x)
     | MLast.ExRec (_, pel, None) ->
         let ppl = List.map (fun (p, e) -> p, loop e) pel in
