@@ -15,7 +15,7 @@
    been redefined to not block the whole process, but only the calling
    thread. *)
 
-type 'a option = None | Some of 'a
+(* type 'a option = None | Some of 'a *)
 
 (* Exceptions *)
 

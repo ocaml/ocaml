@@ -842,8 +842,6 @@ and type_application env funct sargs =
 	   (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun)))
 	   ty_fun omitted)
     | (l1, sarg1) :: sargl ->
-	if !Clflags.classic && l1 <> "" then
-	  raise(Error(funct.exp_loc, Apply_wrong_label l1));
         let (ty1, ty2) =
           try
             filter_arrow env ty_fun l1
@@ -857,12 +855,68 @@ and type_application env funct sargs =
         let arg1 = type_expect env sarg1 ty1 in
         type_unknown_args (Some arg1 :: args) omitted ty2 sargl
   in
+  let option_none ty loc =
+    let cnone = Env.lookup_constructor (Longident.Lident "None") Env.initial in
+    { exp_desc = Texp_construct(cnone, []);
+      exp_type = ty; exp_loc = loc; exp_env = env }
+  and option_some texp =
+    let csome = Env.lookup_constructor (Longident.Lident "Some") Env.initial in
+    { exp_desc = Texp_construct(csome, [texp]); exp_loc = texp.exp_loc;
+      exp_type = type_option texp.exp_type; exp_env = env }
+  and extract_option_type ty =
+    match expand_head env ty with {desc = Tconstr(path, [ty], _)}
+      when Path.same path Predef.path_option -> ty
+    | _ -> assert false
+  in
+  let type_arg sarg ty_expected =
+    match expand_head env ty_expected, sarg with
+    | _, {pexp_desc = Pexp_function(l,_,_)}
+      when not (is_optional l) ->
+	type_expect env sarg ty_expected
+    | {desc = Tarrow("",ty_arg,ty_res)}, _ ->
+	(* apply optional arguments when expected type is "" *)
+	let texp = type_exp env sarg in
+	let rec make_args args ty_fun =
+	  match (expand_head env ty_fun).desc with
+	  | Tarrow (l,ty_arg,ty_fun) when is_optional l ->
+	      make_args (Some(option_none ty_arg sarg.pexp_loc) :: args) ty_fun
+	  | Tarrow (l,_,_) when l = "" || !Clflags.classic ->
+	      args, ty_fun
+	  | Tvar ->  args, ty_fun
+	  |  _ -> [], texp.exp_type
+	in
+	let args, ty_fun = make_args [] texp.exp_type in
+	unify_exp env {texp with exp_type = ty_fun} ty_expected;
+	if args = [] then texp else
+	(* eta-expand to avoid side effects *)
+	let var_pair name ty =
+	  let id = Ident.create name in
+	  {pat_desc = Tpat_var id; pat_type = ty_arg;
+	   pat_loc = Location.none; pat_env = env},
+	  {exp_type = ty_arg; exp_loc = Location.none;
+	   exp_env = env; exp_desc = Texp_ident(
+	   Path.Pident id,{val_type = ty_arg; val_kind = Val_reg})}
+	in
+	let eta_pat, eta_var = var_pair "eta" ty_arg in
+	let func texp =
+	  { texp with exp_type = ty_fun; exp_desc = Texp_function
+	      ([eta_pat, {texp with exp_type = ty_res; exp_desc =
+			  Texp_apply (texp, args@[Some eta_var])}],
+	       Total) } in
+	if is_nonexpansive texp then func texp else
+	(* let-expand to have side effects *)
+	let let_pat, let_var = var_pair "let" texp.exp_type in
+	{ texp with exp_type = ty_fun; exp_desc =
+	  Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
+    | _ ->
+	type_expect env sarg ty_expected
+  in
   let rec type_args args omitted ty_fun sargs more_sargs =
     match expand_head env ty_fun with
       {desc=Tarrow (l, ty, ty_fun); level=lv}
       when sargs <> [] || more_sargs <> [] ->
 	let name = label_name l in
-	let sargs, more_sargs, sarg =
+	let sargs, more_sargs, arg =
 	  if !Clflags.classic && not (is_optional l) then begin
 	    if sargs <> [] then 
 	      raise(Error(funct.exp_loc,
@@ -870,7 +924,7 @@ and type_application env funct sargs =
 	    let (l', sarg0) = List.hd more_sargs in
 	    if l <> l' && l' <> "" then
 	      raise(Error(funct.exp_loc, Apply_wrong_label l'))
-	    else ([], List.tl more_sargs, Some sarg0)
+	    else ([], List.tl more_sargs, Some (type_arg sarg0 ty))
 	  end else try
 	    let (l', sarg0, sargs, more_sargs) =
 	      try
@@ -882,84 +936,41 @@ and type_application env funct sargs =
 	    in
 	    sargs, more_sargs,
 	    if is_optional l' || not (is_optional l) then
-	      Some sarg0
+	      Some (type_arg sarg0 ty)
 	    else
-	      Some { pexp_loc = sarg0.pexp_loc;
-		     pexp_desc = Pexp_construct (Longident.Lident "Some",
-						 Some sarg0, false) }
+	      let arg = type_arg sarg0 (extract_option_type ty) in
+	      Some (option_some arg)
 	  with Not_found ->
 	    sargs, more_sargs,
 	    if is_optional l &&
 	      (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
 	    then
-	      Some { pexp_loc = Location.none;
-		     pexp_desc = Pexp_construct (Longident.Lident "None",
-						 None, false) }
+	      Some (option_none ty Location.none)
 	    else None
 	in
-	let arg, omitted =
-	  match sarg with None -> None, (l,ty,lv) :: omitted
-	  | Some sarg ->
-	      let targ =
-		match expand_head env ty, sarg with
-		| _, {pexp_desc = Pexp_function(l,_,_)}
-		  when not (is_optional l) ->
-		    type_expect env sarg ty
-		| {desc = Tarrow("",ty_arg,ty_res)}, _ ->
-		    (* apply optional arguments when expected type is "" *)
-		    let texp = type_exp env sarg in
-		    let rec make_args args ty_fun =
-		      match (expand_head env ty_fun).desc with
-		      |	Tarrow (l,ty_arg,ty_fun) when is_optional l ->
-			  let sarg =
-			    { sarg with pexp_desc = Pexp_construct
-				(Longident.Lident "None", None, false) } in
-			  let arg = type_expect env sarg ty_arg in
-			  make_args (Some arg :: args) ty_fun
-		      |	Tarrow (l,_,_) when l = "" || !Clflags.classic ->
-			  args, ty_fun
-		      |	Tvar ->
-			  args, ty_fun
-		      |	_ -> [], texp.exp_type
-		    in
-		    let args, ty_fun = make_args [] texp.exp_type in
-		    unify_exp env {texp with exp_type = ty_fun} ty;
-		    if args = [] then texp else
-		    (* eta-expand to avoid side effects *)
-		    let var_pair name ty =
-		      let id = Ident.create name in
-		      {pat_desc = Tpat_var id; pat_type = ty_arg;
-		       pat_loc = Location.none; pat_env = env},
-		      {exp_type = ty_arg; exp_loc = Location.none;
-		       exp_env = env; exp_desc = Texp_ident(
-		       Path.Pident id,{val_type = ty_arg; val_kind = Val_reg})}
-		    in
-		    let eta_pat, eta_var = var_pair "eta" ty_arg in
-		    let func texp =
-		      { texp with exp_type = ty_fun; exp_desc = Texp_function
-			  ([eta_pat, {texp with exp_type = ty_res; exp_desc =
-				      Texp_apply (texp, args@[Some eta_var])}],
-			   Total) } in
-		    if is_nonexpansive texp then func texp else
-		    (* let-expand to have side effects *)
-		    let let_pat, let_var = var_pair "let" texp.exp_type in
-		    { texp with exp_type = ty_fun; exp_desc =
-		      Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
-		| _ ->
-		    type_expect env sarg ty
-	      in
-	      Some targ, omitted
-	in
+	let omitted = if arg = None then (l,ty,lv) :: omitted else omitted in
 	type_args (arg::args) omitted ty_fun sargs more_sargs
     | _ ->
 	if !Clflags.classic && sargs <> [] then
 	  raise(Error(funct.exp_loc, Apply_wrong_label(fst (List.hd sargs))));
 	type_unknown_args args omitted ty_fun (sargs @ more_sargs)
   in
-  if !Clflags.classic then
-    type_args [] []  funct.exp_type [] sargs
-  else
-    type_args [] [] funct.exp_type sargs []
+  match funct.exp_desc, sargs with
+    Texp_ident (_, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
+    ["", sarg] ->
+      let ty_arg, ty_res = filter_arrow env funct.exp_type "" in
+      let exp = type_expect env sarg ty_arg in
+      begin match expand_head env exp.exp_type with
+      | {desc=Tarrow(_, _, _)} ->
+          Location.print_warning exp.exp_loc Warnings.Partial_application
+      |	_ -> ()
+      end;
+      ([Some exp], ty_res)
+  | _ ->
+      if !Clflags.classic then
+	type_args [] []  funct.exp_type [] sargs
+      else
+	type_args [] [] funct.exp_type sargs []
 
 and type_construct env loc lid sarg explicit_arity ty_expected =
   let constr =

@@ -1541,7 +1541,6 @@ and moregen_kind k1 k2 =
 
 and moregen_row inst_nongen type_pairs env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
-  let static = static_row row2 in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   let r1, r2 =
     if row2.row_closed then

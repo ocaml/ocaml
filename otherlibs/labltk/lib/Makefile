@@ -8,6 +8,8 @@ SUPPORT=../support/support.cmo ../support/widget.cmo ../support/protocol.cmo \
 
 SUPPORTX = $(SUPPORT:.cmo=.cmx)
 
+TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
+
 all : tk41.cma labltktop labltk labltklink labltkopt
 
 opt : tk41.cmxa
@@ -21,7 +23,7 @@ tk41.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo
 tk41.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
 	$(CAMLOPTLIBR) -o tk41.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX)
 
-labltktop : $(TOPDIR)/toplevel/toplevellib.cma $(WIDGETOBJS) $(SUPPORT)
+labltktop : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
 	$(LABLC) -custom -linkall -o labltktop -I ../support $(TKLINKOPT) \
 	       -I $(TOPDIR)/toplevel toplevellib.cma tk41.cma topmain.cmo
 

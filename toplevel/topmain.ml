@@ -27,7 +27,18 @@ let main () =
      "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)";
-     "-rectypes", Arg.Set recursive_types, " (undocumented)"
+     "-rectypes", Arg.Set recursive_types, " (undocumented)";
+     "-w", Arg.String Warnings.parse_options,
+             "<flags>  Enable or disable warnings according to <flags>:\n\
+         \032    A/a enable/disable all warnings\n\
+         \032    F/f enable/disable partially applied function\n\
+         \032    M/m enable/disable overriden methods\n\
+         \032    P/p enable/disable partial match\n\
+         \032    S/s enable/disable non-unit statement\n\
+         \032    U/u enable/disable unused match case\n\
+         \032    V/v enable/disable hidden instance variables\n\
+         \032    X/x enable/disable all other warnings\n\
+         \032    default setting is A (all warnings enabled)";
     ] file_argument usage;
   Toploop.loop()
 
