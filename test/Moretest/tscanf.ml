@@ -30,13 +30,15 @@ let print_test_fail () =
 let print_failure_test_fail () =
   all_tests_ok := false;
   print_string
-   (Printf.sprintf "\n********* Failure Test number %i incorrectly failed ***********\n"
+   (Printf.sprintf
+      "\n********* Failure Test number %i incorrectly failed ***********\n"
     !test_num);;
 
 let print_failure_test_succeed () =
   all_tests_ok := false;
   print_string
-   (Printf.sprintf "\n********* Failure Test number %i failed to fail ***********\n"
+   (Printf.sprintf
+      "\n********* Failure Test number %i failed to fail ***********\n"
     !test_num);;
 
 let test b =
@@ -242,8 +244,6 @@ let test9 () =
 ;;
 test (test9 ());;
 
-let unit_S = unit "%S";;
-
 let test10 () =
   let res = sscanf "Une chaîne: \"celle-ci\" et \"celle-là\"!"
                "%s %s %S %s %S %s"
@@ -273,7 +273,8 @@ let test110 () =
  sscanf "" "%[^\n] " (fun x -> x) = "";;
 
 let test111 () =
- test_raises_this_exc End_of_file (sscanf "" "%[^\n]@\n") (fun x -> x);;
+ try (sscanf "" "%[^\n]@\n") (fun x -> false) with
+ | End_of_file -> true;;
 
 test (test11 () && test110 () && test111 ());;
 
@@ -471,7 +472,7 @@ let test22 () =
 
 test (test22 ());;
 
-(* Should work and does not!
+(* Should work and does not with this version of scan_int_list!
 scan_int_list (Scanning.from_string "[1;2;3;4; ]");;
 (* Should lead to a bad input error. *)
 scan_int_list (Scanning.from_string "[1;2;3;4 5]");;
@@ -535,8 +536,8 @@ and test27 () =
 
 (* To scan a Caml string:
    the format is "\"%s@\"".
-   A better way would be to add a %S (String.escaped)
-   %C (Char.escaped) *)
+   A better way would be to add a %S (String.escaped), a %C (Char.escaped).
+   This is now available. *)
 let scan_string_elem ib = bscanf ib " \"%s@\" %1[;]";;
 let scan_string_list = scan_list scan_string_elem;;
 
@@ -743,10 +744,32 @@ let test37 () =
 
 test (test37 ());;
 
+(* Testing end of input condition. *)
+let test38 () =
+  sscanf " " " %!" true &&
+  sscanf "" " %!" true &&
+  sscanf "" "%!" true;;
+
+test (test38 ());;
+
+(* Weird tests on empty buffers. *)
+let test39 () =
+  let is_empty_buff ib =
+    Scanning.beginning_of_input ib &&
+    Scanning.end_of_input ib in
+
+  let ib = Scanning.from_string "" in
+  is_empty_buff ib &&
+  (* Do it twice since testing empty buff could incorrectly
+     thraw an exception or wrongly change the beginning_of_input condition. *)
+  is_empty_buff ib;;
+
+test (test39 ());;
+
 (*******
 
 print_string "Test number is "; 
-print_int !test_num; print_string ". It should be 36."; 
+print_int !test_num; print_string ". It should be 40."; 
 print_newline();;
 
 To be continued.
@@ -759,10 +782,6 @@ let digest () =
    while true do scan_line digest_line done
   with End_of_file -> ()
 ;;
-
-let test37 () = ();;
-
-test (test37 ());;
 
 (* Trying to scan records. *)
 let rec scan_fields ib scan_field accu =
