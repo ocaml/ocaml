@@ -2,10 +2,13 @@ Objective Caml 3.03:
 --------------------
 
 Language:
+- Removed built-in syntactic sugar for streams and stream patterns
+  [< ... >], now supported via CamlP4, which is now included in the
+  distribution.
 - Switched the default behaviour to labels mode (labels are compulsory),
   but allows omitting labels when a function application is complete.
   -nolabels mode is available but deprecated for programming.
-  (See also scrapelabels and addlabels tools lower)
+  (See also scrapelabels and addlabels tools below.)
 - Removed all labels in the standard libraries, except labltk.
   Labelized versions are kept for ArrayLabels, ListLabels, StringLabels
   and UnixLabels. "open StdLabels" gives access to the first three.
@@ -22,6 +25,10 @@ Type-checker:
   certain signature summary information.
 - An empty polymorphic variant type is now an error.
 
+Both compilers:
+- Fixed wrong code generated for "struct include M ... end" when M
+  contains one or several "external" declarations.
+
 Byte-code compiler:
 - Protect against VM stack overflow caused by module initialization code
   with many local variables.
@@ -37,6 +44,8 @@ Toplevel environment:
   so that an external printer (e.g. Camlp4's) can be hooked in.
 
 Tools:
+- The CamlP4 pre-processor-pretty-printer is now included in the standard
+  distribution.
 - New tool ocamlmklib to help build mixed Caml/C libraries.
 - New tool scrapelabels and addlabels, to either remove (non-optional)
   labels in interfaces, or automatically add them in the definitions.
@@ -57,6 +66,7 @@ Other libraries:
 - Graphics under X Windows: revised event handling, should no longer lose
     mouse events between two calls to wait_next_event(); wait_next_event()
     now interruptible by signals.
+- Bigarrays: fixed bug in marshaling of big arrays.
 
 Windows port:
 - Fixed broken Unix.{get,set}sockopt*
