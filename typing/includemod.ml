@@ -289,7 +289,7 @@ let include_err = function
       close_box()
 
 let report_error errlist =
-  match List.rev errlist with
+  match errlist with
     [] -> ()
   | err :: rem ->
       open_vbox 0;
