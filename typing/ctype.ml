@@ -851,29 +851,51 @@ let rec inv_type hash pty ty =
     TypeHash.add hash ty inv;
     iter_type_expr (inv_type hash [inv]) ty
 
-let compute_univars ty =
+let compute_univars env tyl =
   let inverted = TypeHash.create 17 in
-  inv_type inverted [] ty;
+  List.iter (inv_type inverted []) tyl;
   let node_univars = TypeHash.create 17 in
   let rec add_univar univ inv =
     match inv.inv_type.desc with
       Tpoly (ty, tl) when List.memq univ (List.map repr tl) -> ()
     | _ ->
-        try
-          let univs = TypeHash.find node_univars inv.inv_type in
-          if not (TypeSet.mem univ !univs) then begin
-            univs := TypeSet.add univ !univs;
-            List.iter (add_univar univ) inv.inv_parents
-          end
-        with Not_found ->
-          TypeHash.add node_univars inv.inv_type (ref(TypeSet.singleton univ));
+        let ok =
+          try
+            let univs = TypeHash.find node_univars inv.inv_type in
+            not (TypeSet.mem univ !univs) && begin
+              univs := TypeSet.add univ !univs;
+              true
+            end
+          with Not_found ->
+            TypeHash.add node_univars inv.inv_type
+              (ref(TypeSet.singleton univ));
+            true
+        in
+        if env <> None && ok then
+          List.iter
+            (fun invp ->
+              match invp.inv_type.desc with
+                Tconstr _ ->
+                  (* expand the type to find variables *)
+                  let env =
+                    match env with None -> assert false | Some e -> e in
+                  begin try
+                    let ty = !try_expand_head' env invp.inv_type in
+                    inv_type inverted [] ty
+                  with Cannot_expand -> ()
+                  end
+              | _ -> ())
+            inv.inv_parents;
+        if ok then
           List.iter (add_univar univ) inv.inv_parents
   in
   TypeHash.iter
     (fun ty inv -> if ty.desc = Tunivar then add_univar ty inv)
     inverted;
-  fun ty ->
-    try !(TypeHash.find node_univars ty) with Not_found -> TypeSet.empty
+  node_univars
+
+let get_univars node_univars ty =
+  try !(TypeHash.find node_univars ty) with Not_found -> TypeSet.empty
   
 let rec diff_list l1 l2 =
   if l1 == l2 then [] else
@@ -891,7 +913,7 @@ let delayed_copy = ref []
 (* all free univars must be included in [visited]            *)
 let rec copy_sep fixed free bound visited ty =
   let ty = repr ty in
-  let univars = free ty in
+  let univars = get_univars free ty in
   if TypeSet.is_empty univars then 
     if ty.level <> generic_level then ty else
     let t = newvar () in
@@ -938,7 +960,7 @@ let instance_poly fixed univars sch =
   let vars = List.map (fun _ -> newvar ()) univars in
   let pairs = List.map2 (fun u v -> repr u, (v, [])) univars vars in
   delayed_copy := [];
-  let ty = copy_sep fixed (compute_univars sch) [] pairs sch in
+  let ty = copy_sep fixed (compute_univars None [sch]) [] pairs sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   cleanup_types ();
@@ -1277,7 +1299,27 @@ let occur_univar ty =
   with exn ->
     unmark_type ty; raise exn
 
-let univar_pairs = ref []
+let univar_pairs = ref ([], TypeHash.create 1)
+
+let get_update_univars env free ty =
+  let n = TypeSet.cardinal (get_univars free ty) in
+  if n <> 0 then n else
+  let new_free = compute_univars (Some env) [ty] in
+  TypeHash.iter (fun a b -> TypeHash.add free a b) new_free;
+  TypeSet.cardinal (get_univars new_free ty)
+
+let add_univars env (old_univars, old_free) t1 t2 tl1 tl2 =
+  if List.length tl1 <> List.length tl2 then raise (Unify []);
+  let old_univars, old_free = !univar_pairs in
+  let free =
+    if old_univars = [] then compute_univars (Some env) [t1; t2] else
+    let n1 = get_update_univars env old_free t1
+    and n2 = get_update_univars env old_free t2 in
+    if n1 <> n2 then raise (Unify[]) else old_free
+  in
+  let cl1 = List.map (fun t -> t, ref None) tl1
+  and cl2 = List.map (fun t -> t, ref None) tl2 in
+  ((cl1,cl2) :: (cl2,cl1) :: old_univars, free)
 
 
                               (*****************)
@@ -1371,7 +1413,7 @@ let rec unify env t1 t2 =
         update_level env t2.level t1;
         link_type t2 t1
     | (Tunivar, Tunivar) ->
-        unify_univar t1 t2 !univar_pairs;
+        unify_univar t1 t2 (fst !univar_pairs);
         update_level env t1.level t2;
         link_type t1 t2
     | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
@@ -1475,11 +1517,8 @@ and unify3 env t1 t1' t2 t2' =
     | (Tpoly (t1, []), Tpoly (t2, [])) ->
         unify env t1 t2
     | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-        if List.length tl1 <> List.length tl2 then raise (Unify []);
         let old_univars = !univar_pairs in
-        let cl1 = List.map (fun t -> t, ref None) tl1
-        and cl2 = List.map (fun t -> t, ref None) tl2 in
-        univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
+        univar_pairs := add_univars env old_univars t1 t2 tl1 tl2;
         begin try
           unify env t1 t2;
           let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
@@ -1762,7 +1801,7 @@ let unify_pairs env ty1 ty2 pairs =
   unify env ty1 ty2
 
 let unify env ty1 ty2 =
-  univar_pairs := [];
+  univar_pairs := ([], TypeHash.create 1);
   unify env ty1 ty2
 
 
@@ -1883,7 +1922,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
   try
     match (t1.desc, t2.desc) with
       (Tunivar, Tunivar) ->
-        unify_univar t1 t2 !univar_pairs
+        unify_univar t1 t2 (fst !univar_pairs)
     | (Tvar, _) when if inst_nongen then t1.level <> generic_level - 1
                                     else t1.level =  generic_level ->
         moregen_occur env t1.level t2;
@@ -1927,9 +1966,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               moregen inst_nongen type_pairs env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
               let old_univars = !univar_pairs in
-              let cl1 = List.map (fun t -> t, ref None) tl1
-              and cl2 = List.map (fun t -> t, ref None) tl2 in
-              univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
+              univar_pairs := add_univars env old_univars t1 t2 tl1 tl2;
               begin try
                 moregen inst_nongen type_pairs env t1 t2;
                 univar_pairs := old_univars
@@ -1985,7 +2022,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
   let univ =
     match rm1.desc, rm2.desc with
       Tunivar, Tunivar ->
-        unify_univar rm1 rm2 !univar_pairs;
+        unify_univar rm1 rm2 (fst !univar_pairs);
         true
     | Tunivar, _ | _, Tunivar ->
         raise (Unify [])
@@ -2034,7 +2071,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
 
 (* Must empty univar_pairs first *)
 let moregen inst_nongen type_pairs env patt subj =
-  univar_pairs := [];
+  univar_pairs := ([], TypeHash.create 1);
   moregen inst_nongen type_pairs env patt subj
 
 (*
@@ -2185,9 +2222,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               eqtype rename type_pairs subst env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
               let old_univars = !univar_pairs in
-              let cl1 = List.map (fun t -> t, ref None) tl1
-              and cl2 = List.map (fun t -> t, ref None) tl2 in
-              univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
+              univar_pairs := add_univars env old_univars t1 t2 tl1 tl2;
               begin try eqtype rename type_pairs subst env t1 t2
               with exn ->
                 univar_pairs := old_univars;
@@ -2195,7 +2230,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               end;
               univar_pairs := old_univars
           | (Tunivar, Tunivar) ->
-              unify_univar t1 t2 !univar_pairs
+              unify_univar t1 t2 (fst !univar_pairs)
           | (_, _) ->
               raise (Unify [])
         end
@@ -2263,14 +2298,14 @@ and eqtype_row rename type_pairs subst env row1 row2 =
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
   try
-    univar_pairs := [];
+    univar_pairs := ([], TypeHash.create 1);
     eqtype_list rename (TypePairs.create 11) (ref []) env tyl1 tyl2; true
   with
     Unify _ -> false
 
 (* Must empty univar_pairs first *)  
 let eqtype rename type_pairs subst env t1 t2 =
-  univar_pairs := [];
+  univar_pairs := ([], TypeHash.create 1);
   eqtype rename type_pairs subst env t1 t2
 
 
@@ -2851,12 +2886,10 @@ let rec subtype_rec env trace t1 t2 cstrs =
         end
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env trace u1 u2 cstrs
-    | (Tpoly (t1, tl1), Tpoly (t2,tl2)) ->
+    | (Tpoly (t1', tl1), Tpoly (t2',tl2)) ->
         let old_univars = !univar_pairs in
-        let cl1 = List.map (fun t -> t, ref None) tl1
-        and cl2 = List.map (fun t -> t, ref None) tl2 in
-        univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
-        let cstrs = subtype_rec env trace t1 t2 cstrs in
+        univar_pairs := add_univars env old_univars t1 t2 tl1 tl2;
+        let cstrs = subtype_rec env trace t1' t2' cstrs in
         univar_pairs := old_univars;
         cstrs
     | (_, _) ->
@@ -2891,7 +2924,7 @@ and subtype_fields env trace ty1 ty2 cstrs =
 
 let subtype env ty1 ty2 =
   TypePairs.clear subtypes;
-  univar_pairs := [];
+  univar_pairs := ([], TypeHash.create 1);
   (* Build constraint set. *)
   let cstrs = subtype_rec env [(ty1, ty2)] ty1 ty2 [] in
   TypePairs.clear subtypes;
