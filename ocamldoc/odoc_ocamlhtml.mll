@@ -487,7 +487,7 @@ and string = parse
         string lexbuf }
 {
 
-let html_of_code ?(with_pre=true) code =
+let html_of_code b ?(with_pre=true) code =
   let old_pre = !pre in
   let old_margin = !margin in
   let old_comment_buffer = Buffer.contents comment_buffer in
@@ -498,7 +498,6 @@ let html_of_code ?(with_pre=true) code =
   pre := with_pre;
   margin := 0;
   
-
   let start = "<code class=\""^code_class^"\">" in
   let ending = "</code>" in
   let html = 
@@ -526,6 +525,6 @@ let html_of_code ?(with_pre=true) code =
   Buffer.add_string string_buffer old_string_buffer ;
   fmt := old_fmt ;
 
-  html
+  Buffer.add_string b html
 
 } 

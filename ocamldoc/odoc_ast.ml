@@ -1437,7 +1437,12 @@ module Analyser =
           { m_base with m_kind = kind }
 
       | (Parsetree.Pmod_apply (p_module_expr1, p_module_expr2), 
-         Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _)) ->
+         Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _))
+      | (Parsetree.Pmod_apply (p_module_expr1, p_module_expr2),
+         Typedtree.Tmod_constraint 
+	   ({ Typedtree.mod_desc = Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _)}, 
+            _, _)
+	) ->
           let m1 = analyse_module 
               env
               current_module_name
@@ -1498,7 +1503,26 @@ module Analyser =
           let elements2 = replace_dummy_included_modules elements included_modules_from_tt in
           { m_base with m_kind = Module_struct elements2 }
 
-      | _ ->
+      | (parsetree, typedtree) ->
+          let s_parse = 
+            match parsetree with
+              Parsetree.Pmod_ident _ -> "Pmod_ident"
+	    | Parsetree.Pmod_structure _ -> "Pmod_structure"
+	    | Parsetree.Pmod_functor _ -> "Pmod_functor"
+	    | Parsetree.Pmod_apply _ -> "Pmod_apply"
+	    | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
+	  in
+	  let s_typed = 
+            match typedtree with
+              Typedtree.Tmod_ident _ -> "Tmod_ident"
+	    | Typedtree.Tmod_structure _ -> "Tmod_structure"
+	    | Typedtree.Tmod_functor _ -> "Tmod_functor"
+	    | Typedtree.Tmod_apply _ -> "Tmod_apply"
+	    | Typedtree.Tmod_constraint _ -> "Tmod_constraint"
+	  in
+	  let code = get_string_of_file pos_start pos_end in
+	  print_DEBUG (Printf.sprintf "code=%s\ns_parse=%s\ns_typed=%s\n" code s_parse s_typed);
+	   
           raise (Failure "analyse_module: parsetree and typedtree don't match.")
 
      let analyse_typed_tree source_file input_file 

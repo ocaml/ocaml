@@ -25,7 +25,11 @@ OK - fix: html generator: included module names were displayed with their simple
      name rather than their fully qualified name
 OK - fix: use a formatter from a buffer rather Format.str_formatter in
      Odoc_mist.sting_of_module_type, to avoid too much blanks
-  - new module odoc_print, will work when Format.pp_print_flush is fixed
+OK - new module odoc_print, will work when Format.pp_print_flush is fixed
+  - odoc_html: use buffers instead of string concatenation
+OK - odoc_man: use buffers instead of string concatenation
+  - odoc_latex: use buffers instead of string concatenation
+
 
 ======
 
