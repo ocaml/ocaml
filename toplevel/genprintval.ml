@@ -193,8 +193,18 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 	    when Path.same path Predef.path_dyn ->
 	      let rt = (O.magic (O.field obj 1) : rtype) in
 	      let ty = Transltype.type_expr_of_run_type rt in
-	      Oval_dynamic (tree_of_val depth (O.field obj 0) ty,
-			    Printtyp.tree_of_type_scheme ty)
+	      let oty = Transltype.tree_of_run_type rt in
+              (* try to print the content *)
+              let v = 
+                try
+                  (* run time type check ... *) 
+                  let rt' = Transltype.run_type_of_typexp env ty in
+                  Rtype.import_comp ("",0,0) [|rt'|] ((),rt);
+                  Some (tree_of_val depth (O.field obj 0) ty)
+                with
+                | _ -> None
+              in
+	      Oval_dynamic (v, oty)
 /GENERIC *)
 (* DYN *)
 	  | Tconstr(path, [], _) 
