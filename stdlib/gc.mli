@@ -12,9 +12,7 @@
 
 (* $Id$ *)
 
-(* Module [Gc]:
-   memory management control and statistics; finalised values
-*)
+(* Module [Gc]: memory management control and statistics; finalised values *)
 
 type stat = {
   minor_words : int;
