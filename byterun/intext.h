@@ -75,7 +75,7 @@
    any value below 2^N - (2^N / (2 * sizeof(value))) suffices.
    We just take 2^(N-1) for simplicity. */
 
-#define INITIAL_OFFSET_MAX (1UL << (8 * sizeof(value) - 1))
+#define INITIAL_OFFSET_MAX ((unsigned long)1 << (8 * sizeof(value) - 1))
 
 /* The entry points */
 
