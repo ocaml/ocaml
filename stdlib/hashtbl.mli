@@ -35,6 +35,7 @@ val create : int -> ('a, 'b) t
 val clear : ('a, 'b) t -> unit
 (** Empty a hash table. *)
 
+
 val add : ('a, 'b) t -> 'a -> 'b -> unit
 (** [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
    Previous bindings for [x] are not removed, but simply
@@ -91,6 +92,12 @@ val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
    the most recent binding is passed first. *)
 
 
+val length : ('a, 'b) t -> int
+(** [Hashtbl.length tbl] returns the number of bindings in [tbl]. 
+   Multiple bindings are counted multiply, so [Hashtbl.length] 
+   gives the number of times [Hashtbl.iter] calls it first argument. *)
+
+
 (** {6 Functorial interface} *)
 
 
@@ -130,6 +137,7 @@ module type S =
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val length : 'a t -> int
   end
 (** The output signature of the functor {!Hashtbl.Make}. *)
 
