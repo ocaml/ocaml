@@ -128,7 +128,7 @@ void leave_blocking_section(void)
 
 #if defined(TARGET_alpha) || defined(TARGET_mips)
 void handle_signal(int sig, int code, struct sigcontext * context)
-#elif defined(TARGET_power) && defined(_AIX)
+#elif defined(TARGET_power) && defined(SYS_aix)
 void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_elf)
 void handle_signal(int sig, struct pt_regs * context)
@@ -165,7 +165,7 @@ void handle_signal(int sig)
       /* Cached in register $23 */
       context->sc_regs[23] = (int) young_limit;
 #endif
-#if defined(TARGET_power) && defined(_AIX)
+#if defined(TARGET_power) && defined(SYS_aix)
       /* Cached in register 30 */
       context->sc_jmpbuf.jmp_context.gpr[30] = (ulong_t) young_limit;
 #endif
@@ -369,9 +369,14 @@ static void trap_handler(int sig)
 }
 #endif
 
-#if defined(TARGET_power) && defined(_AIX)
+#if defined(TARGET_power) && defined(SYS_aix)
 static void trap_handler(int sig, int code, struct sigcontext * context)
 {
+  /* Unblock SIGTRAP */
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGTRAP);
+  sigprocmask(SIG_UNBLOCK, &mask, NULL);
   /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
   caml_exception_pointer = (char *) context->sc_jmpbuf.jmp_context.gpr[29];
   young_ptr = (char *) context->sc_jmpbuf.jmp_context.gpr[31];
@@ -427,7 +432,7 @@ void init_signals(void)
   struct sigaction act;
   act.sa_handler = (void (*)(int)) trap_handler;
   sigemptyset(&act.sa_mask);
-#if defined(SYS_rhapsody)
+#if defined(SYS_rhapsody) || defined(SYS_aix)
   act.sa_flags = 0;
 #else
   act.sa_flags = SA_NODEFER:;
