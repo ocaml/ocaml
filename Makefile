@@ -75,8 +75,9 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
   toplevel/expunge.cmo
 
-PERVASIVES=arg array char filename format hashtbl lexing list map \
-  obj parsing pervasives printexc printf queue set sort stack string sys
+PERVASIVES=arg array char filename format gc hashtbl lexing list map \
+  obj parsing pervasives printexc printf queue random set sort stack \
+  string sys
 
 # Recompile the system using the bootstrap compiler
 all: runtime camlc camllex camlyacc camltools library camltop
