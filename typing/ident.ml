@@ -27,6 +27,11 @@ let create s =
 let create_persistent s =
   { name = s; stamp = 0; global = true }
 
+(* DYN *)
+let create_with_stamp s stamp =
+  { name = s; stamp = stamp; global= false}
+(* /DYN *)
+
 let rename i =
   incr currentstamp;
   { i with stamp = !currentstamp }

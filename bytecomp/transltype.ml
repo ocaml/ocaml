@@ -5,6 +5,7 @@ open Asttypes
 open Types
 open Longident
 open Misc
+open Outcometree
 
 let dbg = try ignore (Sys.getenv "DEBUG_TRANSLTYPE"); true with _ -> false
 
@@ -163,6 +164,36 @@ let transl_rtype_of_type (* env *) t =
   in
   sub t
 
+(* rtype -> type_expr *)
+
+let type_expr_of_rtype rt =
+  let tvars = ref [] in
+  let rec path_of_rpath = function
+      RPident (name,stamp) -> Pident (Ident.create_with_stamp name stamp)
+    | RPdot (RPident ("*toplevel*",0), s, x) ->
+	Pident (Ident.create_with_stamp s x)
+    | RPdot (rp, s, x) -> Pdot (path_of_rpath rp, s, x)
+    | RPapply (p1,p2) -> Papply (path_of_rpath p1, path_of_rpath p2)
+  in
+  let rec sub = function
+    | RTvar x -> 
+	begin 
+	  try List.assoc x !tvars with Not_found ->
+	    let tv = Btype.newgenty Tvar in
+	    tvars := (x,tv) :: !tvars;
+	    tv
+	end
+    | RTarrow (l,f,t) ->
+	Btype.newgenty (Tarrow (l, sub f, sub t, Cunknown))
+    | RTtuple tls ->
+	Btype.newgenty (Ttuple (List.map sub tls))
+    | RTconstr (rp, args) ->
+	Btype.newgenty (Tconstr (path_of_rpath rp, 
+				 List.map sub args, ref Mnil))
+  in
+  sub rt
+;;
+
 (* dynamic/coerce primitive compilaiton are stored in stdlib/rtype.ml *)
 let rtype_prim name =
   try
@@ -170,3 +201,4 @@ let rtype_prim name =
       (fst (Env.lookup_value (Ldot (Lident "Rtype", name)) Env.empty))
   with Not_found ->
     fatal_error ("Primitive " ^ name ^ " not found.")
+

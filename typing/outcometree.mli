@@ -26,21 +26,6 @@ type out_ident =
   | Oide_dot of out_ident * string
   | Oide_ident of string
 
-type out_value =
-  | Oval_array of out_value list
-  | Oval_char of char
-  | Oval_constr of out_ident * out_value list
-  | Oval_ellipsis
-  | Oval_float of float
-  | Oval_int of int
-  | Oval_list of out_value list
-  | Oval_printer of (Format.formatter -> unit)
-  | Oval_record of (out_ident * out_value) list
-  | Oval_string of string
-  | Oval_stuff of string
-  | Oval_tuple of out_value list
-  | Oval_variant of string * out_value option
-
 type out_type =
   | Otyp_abstract
   | Otyp_alias of out_type * string
@@ -59,6 +44,22 @@ type out_type =
 and out_variant =
   | Ovar_fields of (string * bool * out_type list) list
   | Ovar_name of out_ident * out_type list
+
+type out_value =
+  | Oval_array of out_value list
+  | Oval_char of char
+  | Oval_constr of out_ident * out_value list
+  | Oval_ellipsis
+  | Oval_float of float
+  | Oval_int of int
+  | Oval_list of out_value list
+  | Oval_printer of (Format.formatter -> unit)
+  | Oval_record of (out_ident * out_value) list
+  | Oval_string of string
+  | Oval_stuff of string
+  | Oval_tuple of out_value list
+  | Oval_variant of string * out_value option
+  | Oval_dynamic of out_value * out_type
 
 type out_class_type =
   | Octy_constr of out_ident * out_type list

@@ -148,3 +148,14 @@ Ok, syntax is done.
 		(for conversion from ident to rident)
 
 	* added Translcore.make_block
+
+*************************************************************** printer for dyn
+
+	* added type_expr_of_rtype to Transltype
+
+	* Outcometree
+		* Oval_dynamic is added
+
+	* Genprintval
+		* O.magic is added 
+		* added printer for dyn

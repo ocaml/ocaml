@@ -20,6 +20,7 @@ open Longident
 open Path
 open Types
 open Outcometree
+open Rtype
 
 module type OBJ =
   sig
@@ -29,6 +30,9 @@ module type OBJ =
     val tag : t -> int
     val size : t -> int
     val field : t -> int -> t
+    (* DYN *)
+    val magic : t -> 'a
+    (* /DYN *)
   end
 
 module type EVALPATH =
@@ -187,6 +191,14 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
               Oval_tuple (tree_of_val_list 0 depth obj ty_list)
           | Tconstr(path, [], _) when Path.same path Predef.path_exn ->
               tree_of_exception depth obj
+(* DYN *)
+	  | Tconstr(path, [], _) 
+	    when Path.same path Predef.path_dyn ->
+	      let rt = (O.magic (O.field obj 1) : rtype) in
+	      let ty = Transltype.type_expr_of_rtype rt in
+	      Oval_dynamic (tree_of_val depth (O.field obj 0) ty,
+			    Printtyp.tree_of_type_scheme ty)
+(* /DYN *)
           | Tconstr(path, [ty_arg], _)
             when Path.same path Predef.path_list ->
               if O.is_block obj then
@@ -400,7 +412,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
             fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true)) fel
         | Oval_ellipsis -> raise Ellipsis
         | Oval_printer f -> f ppf
-        | tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree) tree
+	(* DYN *)
+	| Oval_dynamic (v,t) -> fprintf ppf "<%a : %a>" 
+	      print_tree v
+	      !Printtyp.outcome_type t
+        (* /DYN *)
+	| tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree) tree
       and print_fields first ppf =
         function
           [] -> ()

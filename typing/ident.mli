@@ -22,6 +22,7 @@ val rename: t -> t
 val name: t -> string
 (* DYN *)
 val stamp: t -> int
+val create_with_stamp: string -> int -> t
 (* /DYN *)
 val unique_name: t -> string
 val persistent: t -> bool
