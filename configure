@@ -757,6 +757,9 @@ case "$host" in
   *) bignum_arch=C
 esac
 
+# Some systems (e.g. Solaris) don't have an assembler!
+if sh ./searchpath as; then :; else bignum_arch=C; fi
+
 echo "BIGNUM_ARCH=$bignum_arch" >> Makefile
 
 # Determine if the threads library is supported
