@@ -483,4 +483,4 @@ and skip_sharp_bang = parse
        { update_loc lexbuf None 3 false 0 }
   | "#!" [^ '\n']* '\n'
        { update_loc lexbuf None 1 false 0 }
-  | "" {}
+  | "" { () }
