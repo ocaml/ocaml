@@ -766,10 +766,33 @@ let test39 () =
 
 test (test39 ());;
 
+(* Testing ranges. *)
+let test40 () =
+ let s = "cba" in
+ let ib = Scanning.from_string s in
+ bscanf ib "%[^ab]%s%!" (fun s1 s2 -> s1 = "c" && s2 = "ba");;
+
+test (test40 ());;
+
+let test41 () =
+ let s = "cba" in
+ let ib = Scanning.from_string s in
+ bscanf ib "%[^abc]%[cba]%!" (fun s1 s2 -> s1 = "" && s2 = "cba");;
+
+test (test41 ());;
+
+let test42 () =
+ let s = "defcbaaghi" in
+ let ib = Scanning.from_string s in
+ bscanf ib "%[^abc]%[cba]%s%!" (fun s1 s2 s3 ->
+   s1 = "def" && s2 = "cbaa" && s3 = "ghi");;
+
+test (test42 ());;
+
 (*******
 
 print_string "Test number is "; 
-print_int !test_num; print_string ". It should be 40."; 
+print_int !test_num; print_string ". It should be 42.";
 print_newline();;
 
 To be continued.
