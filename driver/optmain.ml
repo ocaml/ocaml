@@ -70,8 +70,12 @@ let main () =
        "-intf", Arg.String process_interface_file,
              "<file>  Compile <file> as a .mli file";
        "-linkall", Arg.Set link_everything, " Don't remove unused modules";
-       "-o", Arg.String(fun s -> exec_name := s; archive_name := s),
+       "-o", Arg.String(fun s -> exec_name := s;
+                                 archive_name := s;
+                                 object_name := s),
              "<file>  Set output file name to <file> (default a.out)";
+       "-output-obj", Arg.Unit(fun () -> output_c_object := true),
+             "Output a C object file instead of an executable";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
        "-S", Arg.Set keep_asm_file, " Don't delete assembly file";
