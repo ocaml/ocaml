@@ -245,6 +245,9 @@ let get_tag ptr =
     Cop(Cload Byte_unsigned,
         [Cop(Cadda, [ptr; Cconst_int(tag_offset)])])
 
+let get_size ptr =
+  Cop(Clsr, [header ptr; Cconst_int 10])
+
 (* Array indexing *)
 
 let log2_size_addr = Misc.log2 size_addr
@@ -317,13 +320,18 @@ let lookup_tag_cache obj tag cache n =
     let cache n =
       if n = 0 then cache else Cop(Cadda, [cache; Cconst_int (n * size_addr)])
     in
-    let meths = Ident.create "meths" and tags = Ident.create "tags" in
+    let meths = Ident.create "meths" and cached = Ident.create "cached" in
+    let mask = get_field (Cvar meths) 1 in
+    let cached_pos = lsl_const (Cvar cached) log2_size_addr in
+    let tag_pos = Cop(Cadda, [cached_pos; Cconst_int(2*size_addr)]) in
+    let tag' = Cop(Cload Word, [Cop(Cadda, [Cvar meths; tag_pos])]) in
+    let meth_pos = Cop(Cadda, [cached_pos; Cconst_int size_addr]) in
     Clet(meths, Cop(Cload Word, [obj]),
-    Clet(tags, Cop(Cload Word, [Cvar meths]),
-    Cifthenelse(Cop(Ccmpa Cne, [Cop(Cload Word, [cache n]); Cvar tags]),
+    Clet(cached, Cop(Cand, [Cop(Cload Word, [cache n]); mask]),
+    Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
 		Cop(Cextcall("oo_cache_public_method", typ_addr, false),
 		    [Cvar meths; tag; cache n]),
-		addr_array_ref (Cvar meths) (Cop(Cload Word,[cache (n+1)])))
+                Cop(Cload Word, [Cop(Cadda, [Cvar meths; meth_pos])]))
 	))))
 
 let lookup_tag obj tag =

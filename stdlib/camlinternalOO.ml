@@ -108,7 +108,7 @@ type table =
    mutable initializers: (obj -> unit) list }
 
 let dummy_table =
-  { methods = [| |];
+  { methods = [| dummy_item |];
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
@@ -119,9 +119,21 @@ let dummy_table =
 
 let table_count = ref 0
 
+let null_item : item = Obj.obj (Obj.field (Obj.repr 0n) 1)
+
+let rec fit_size n =
+  if n <= 2 then n else
+  fit_size ((n+1)/2) * 2
+
 let new_table pub_labels =
   incr table_count;
-  { methods = [| pub_labels |];
+  let len = Array.length pub_labels in
+  let len' = fit_size len in
+  let methods = Array.create (len*2+2) null_item in
+  methods.(0) <- magic len;
+  methods.(1) <- magic (fit_size (len*2) - 1);
+  for i = 0 to len - 1 do methods.(i*2+3) <- magic pub_labels.(i) done;
+  { methods = methods;
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
@@ -133,7 +145,7 @@ let new_table pub_labels =
 let resize array new_size =
   let old_size = Array.length array.methods in
   if new_size > old_size then begin
-    let new_buck = Array.create new_size dummy_item in
+    let new_buck = Array.create new_size null_item in
     Array.blit array.methods 0 new_buck 0 old_size;
     array.methods <- new_buck
  end
@@ -260,6 +272,7 @@ let get_variables table names =
 let add_initializer table f =
   table.initializers <- f::table.initializers
 
+(*
 module Keys = Map.Make(struct type t = tag array let compare = compare end)
 let key_map = ref Keys.empty
 let get_key tags : item =
@@ -267,15 +280,16 @@ let get_key tags : item =
   with Not_found ->
     key_map := Keys.add tags tags !key_map;
     magic tags
+*)
 
 let create_table public_methods =
-  if public_methods == magic 0 then new_table dummy_item else
+  if public_methods == magic 0 then new_table [||] else
   (* [public_methods] must be in ascending order for bytecode *)
   let tags = Array.map public_method_label public_methods in
-  let table = new_table (get_key tags) in
-  Array.iter
-    (function met ->
-      let lab = new_method table in
+  let table = new_table tags in
+  Array.iteri
+    (fun i met ->
+      let lab = i*2+2 in
       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
       table.methods_by_label <- Labs.add lab true table.methods_by_label)
     public_methods;
@@ -283,7 +297,8 @@ let create_table public_methods =
 
 let init_class table =
   inst_var_count := !inst_var_count + table.size - 1;
-  table.initializers <- List.rev table.initializers
+  table.initializers <- List.rev table.initializers;
+  resize table (3 + magic table.methods.(1))
 
 let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
   narrow cla vals virt_meths concr_meths;

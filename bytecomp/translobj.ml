@@ -56,7 +56,7 @@ let meth lab =
   if not (!cache_required && !Clflags.native_code) then (tag, []) else
   let n = !method_count in
   incr method_count;
-  (tag, [Lprim(Pfield (2*n), [Lvar method_cache])])
+  (tag, [Lprim(Pfield n, [Lvar method_cache])])
 
 let reset_labels () =
   Hashtbl.clear consts;
@@ -80,7 +80,7 @@ let transl_label_init expr =
   let expr =
     if !method_count = 0 then expr else
     Llet(StrictOpt, method_cache,
-         Lprim (Pccall prim_makearray, [int (2 * !method_count); int 0]),
+         Lprim (Pccall prim_makearray, [int !method_count; int 0]),
          expr)
   in
   reset_labels ();

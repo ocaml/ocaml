@@ -185,31 +185,28 @@ CAMLprim value lazy_make_forward (value v)
 CAMLprim value oo_get_public_method (value obj, value tag)
 {
   value meths = Field (obj, 0);
-  value tags = Field (meths, 0);
-  int li = 0, hi = Wosize_val(tags)-1, mi;
+  int count = Int_val(Field(meths,0));
+  int li = 1, hi = count, mi;
   while (li < hi) {
     mi = (li+hi+1) >> 1;
-    if (tag < Field(tags,mi)) hi = mi-1;
+    if (tag < Field(meths,mi*2+1)) hi = mi-1;
     else li = mi;
   }
-  return Field (meths, li+1);
+  return Field (meths, li*2);
 }
 
 CAMLprim value oo_cache_public_method (value meths, value tag, value *cache)
 {
-  value tags = Field (meths, 0);
-  value met;
-  int li = 0, hi = Wosize_val(tags)-1, mi;
+  int count = Int_val(Field(meths,0));
+  int li = 1, hi = count, mi;
   while (li < hi) {
     mi = (li+hi+1) >> 1;
-    if (tag < Field(tags,mi)) hi = mi-1;
+    if (tag < Field(meths,mi*2+1)) hi = mi-1;
     else li = mi;
   }
-  // cache[0] = tags;
-  modify(cache, tags);
-  li++;
-  cache[1] = Val_int(li);
-  return Field(meths, li);
+  li *= 2;
+  *cache = li-1;
+  return Field (meths, li);
 }
 
 CAMLprim value oo_cache_public_method2 (value obj, value tag, value *cache)

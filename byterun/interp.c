@@ -1022,14 +1022,15 @@ value interprete(code_t prog, asize_t prog_size)
 
     Instruct(GETPUBMET): {
       /* accu == tag, sp[0] == object */
-      value tags = Field (Field(sp[0],0), 0);
-      int li = 0, hi = Wosize_val(tags)-1, mi;
+      value meths = Field (sp[0], 0);
+      int count = Int_val(Field(meths,0));
+      int li = 1, hi = count, mi;
       while (li < hi) {
         mi = (li+hi+1) >> 1;
-        if (accu < Field(tags,mi)) hi = mi-1;
+        if (accu < Field(meths,mi*2+1)) hi = mi-1;
         else li = mi;
       }
-      accu = Field (Field(sp[0],0), li+1);
+      accu = Field (meths, li*2);
       Next;
     }
 
