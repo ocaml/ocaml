@@ -242,14 +242,21 @@ let refill_lexbuf buffer len =
     first_line := false;
     let i = ref 0 in
     try
-      while !i < len && (let c = input_char stdin in buffer.[!i] <- c; c<>'\n')
-      do incr i done;
-      !i + 1
-    with End_of_file ->
-      Location.echo_eof ();
-      if !i > 0
-      then (got_eof := true; !i)
-      else 0
+      while true do
+        if !i >= len then raise Exit;
+        let c = input_char stdin in
+        buffer.[!i] <- c;
+        incr i;
+        if c = '\n' then raise Exit;
+      done;
+      !i
+    with
+    | End_of_file ->
+        Location.echo_eof ();
+        if !i > 0
+        then (got_eof := true; !i)
+        else 0
+    | Exit -> !i
   end
 
 (* Discard everything already in a lexer buffer *)
