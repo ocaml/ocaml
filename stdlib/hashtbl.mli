@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -46,6 +46,9 @@ val find_all : ('a, 'b) t -> 'a -> 'b list
            associated with [x] in [tbl].
            The current binding is returned first, then the previous
            bindings, in reverse order of introduction in the table. *)
+
+val mem :  ('a, 'b) t -> 'a -> bool
+        (* [Hashtbl.mem tbl x] checks if [x] is bound in [tbl]. *)
 
 val remove : ('a, 'b) t -> 'a -> unit
         (* [Hashtbl.remove tbl x] removes the current binding of [x] in [tbl],
@@ -90,6 +93,7 @@ module type S =
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
     val find_all: 'a t -> key -> 'a list
+    val mem: 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
   end
 

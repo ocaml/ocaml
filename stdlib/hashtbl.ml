@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -104,6 +104,14 @@ let find_all h key =
       if k = key then d :: find_in_bucket rest else find_in_bucket rest in
   find_in_bucket h.data.((hash_param 10 100 key) mod (Array.length h.data))
 
+let mem h key =
+  let rec mem_in_bucket = function
+  | Empty ->
+      false
+  | Cons(k, d, rest) ->
+      k = key || mem_in_bucket rest in
+  mem_in_bucket h.data.((hash_param 10 100 key) mod (Array.length h.data))
+
 let iter f h =
   let rec do_bucket = function
       Empty ->
@@ -134,6 +142,7 @@ module type S =
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
     val find_all: 'a t -> key -> 'a list
+    val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
   end
 
@@ -192,6 +201,15 @@ module Make(H: HashedType): (S with type key = H.t) =
           then d :: find_in_bucket rest
           else find_in_bucket rest in
       find_in_bucket h.data.((H.hash key) mod (Array.length h.data))
+
+    let mem h key =
+      let rec mem_in_bucket = function
+      | Empty ->
+          false
+      | Cons(k, d, rest) ->
+          H.equal k key || mem_in_bucket rest in
+      mem_in_bucket h.data.((hash_param 10 100 key) mod (Array.length h.data))
+
 
     let iter = iter
   end
