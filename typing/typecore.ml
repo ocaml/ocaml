@@ -576,92 +576,98 @@ let type_format loc fmt =
   let rec scan_format i =
     if i >= len then ty_aresult, ty_result else
     match fmt.[i] with
-    | '%' -> scan_flags i (i+1)
-    | _ -> scan_format (i+1)
+    | '%' -> scan_flags i (i + 1)
+    | _ -> scan_format (i + 1)
   and scan_flags i j =
     if j >= len then incomplete i else
     match fmt.[j] with
-    | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j+1)
-    | _ -> scan_width i j
-  and scan_width i j =
+    | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j + 1)
+    | _ -> scan_skip i j
+  and scan_skip i j =
     if j >= len then incomplete i else
-    match fmt.[j] with
-    | '*' ->
-        let ty_aresult, ty_result = scan_dot i (j+1) in
-        ty_aresult, ty_arrow Predef.type_int ty_result
-    | '.' -> scan_precision i (j+1)
-    | '_' ->
-        let _, _ = scan_fixed_width i (j+1) in
-        ty_aresult, ty_result
-    | _ -> scan_fixed_width i j
-  and scan_fixed_width i j =
-    if j >= len then incomplete i else
-    match fmt.[j] with
-    | '0' .. '9' | '-' | '+' -> scan_fixed_width i (j+1)
-    | '.' -> scan_precision i (j+1)
-    | _ -> scan_conversion i j
-  and scan_dot i j =
-    if j >= len then incomplete i else
-    match fmt.[j] with
-    | '.' -> scan_precision i (j+1)
-    | _ -> scan_conversion i j
-  and scan_precision i j =
-    if j >= len then incomplete i else
-    match fmt.[j] with
-    | '*' ->
-        let ty_aresult, ty_result = scan_conversion i (j+1) in
-        ty_aresult, ty_arrow Predef.type_int ty_result
-    | _ -> scan_fixed_precision i j
-  and scan_fixed_precision i j =
-    if j >= len then incomplete i else
-    match fmt.[j] with
-    | '0' .. '9' | '-' | '+' -> scan_fixed_precision i (j+1)
-    | _ -> scan_conversion i j
+      match fmt.[j] with
+      | '_' -> scan_rest true i j
+      | _ -> scan_rest false i j
+  and scan_rest skip i j =
+    let rec scan_width i j =
+      if j >= len then incomplete i else
+      match fmt.[j] with
+      | '*' ->
+          let ty_aresult, ty_result = scan_dot i (j + 1) in
+          ty_aresult, ty_arrow Predef.type_int ty_result
+      | '_' -> scan_fixed_width i (j + 1)
+      | '.' -> scan_precision i (j + 1)
+      | _ -> scan_fixed_width i j
+    and scan_fixed_width i j =
+      if j >= len then incomplete i else
+      match fmt.[j] with
+      | '0' .. '9' | '-' | '+' -> scan_fixed_width i (j + 1)
+      | '.' -> scan_precision i (j + 1)
+      | _ -> scan_conversion i j
+    and scan_dot i j =
+      if j >= len then incomplete i else
+      match fmt.[j] with
+      | '.' -> scan_precision i (j + 1)
+      | _ -> scan_conversion i j
+    and scan_precision i j =
+      if j >= len then incomplete i else
+      match fmt.[j] with
+      | '*' ->
+          let ty_aresult, ty_result = scan_conversion i (j + 1) in
+          ty_aresult, ty_arrow Predef.type_int ty_result
+      | _ -> scan_fixed_precision i j
+    and scan_fixed_precision i j =
+      if j >= len then incomplete i else
+      match fmt.[j] with
+      | '0' .. '9' | '-' | '+' -> scan_fixed_precision i (j + 1)
+      | _ -> scan_conversion i j
 
-  and conversion j ty_arg =
-    let ty_aresult, ty_result = scan_format (j+1) in
-    ty_aresult, ty_arrow ty_arg ty_result
+    and conversion j ty_arg =
+      let ty_aresult, ty_result = scan_format (j + 1) in
+      ty_aresult,
+      if skip then ty_result else ty_arrow ty_arg ty_result
 
-  and scan_conversion i j =
-    if j >= len then incomplete i else
-    match fmt.[j] with
-    | '%' -> scan_format (j+1)
-    | 's' | 'S' | '[' -> conversion j Predef.type_string
-    | 'c' | 'C' -> conversion j Predef.type_char
-    | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
-        conversion j Predef.type_int
-    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
-    | 'B' -> conversion j Predef.type_bool
-    | 'a' ->
-        let ty_arg = newvar() in
-        let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in 
-        let ty_aresult, ty_result = conversion j ty_arg in
-        ty_aresult, ty_arrow ty_a ty_result
-    | 'r' ->
-        let ty_res = newvar() in
-        let ty_r = ty_arrow ty_input ty_res in
-        let ty_aresult, ty_result = conversion j ty_res in
-        ty_arrow ty_r ty_aresult, ty_result
-    | 't' -> conversion j (ty_arrow ty_input ty_aresult)
-    | 'n' when j + 1 = len -> conversion j Predef.type_int
-    | 'l' | 'n' | 'L' as conv ->
-        let j = j + 1 in
-        if j >= len then incomplete i else begin
-          match fmt.[j] with
-          | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-              let ty_arg =
-               match conv with
-               | 'l' -> Predef.type_int32
-               | 'n' -> Predef.type_nativeint
-               | _ -> Predef.type_int64 in
-              conversion j ty_arg
-          | c ->
-             if conv = 'n' then conversion (j - 1) Predef.type_int else
-             raise(Error(loc, Bad_format(String.sub fmt i (j-i))))
-        end
-    | c ->
-        raise(Error(loc, Bad_format(String.sub fmt i (j-i+1))))
-  in
+    and scan_conversion i j =
+      if j >= len then incomplete i else
+      match fmt.[j] with
+      | '%' -> scan_format (j + 1)
+      | 's' | 'S' | '[' -> conversion j Predef.type_string
+      | 'c' | 'C' -> conversion j Predef.type_char
+      | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
+          conversion j Predef.type_int
+      | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
+      | 'B' -> conversion j Predef.type_bool
+      | 'a' ->
+          let ty_arg = newvar() in
+          let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in 
+          let ty_aresult, ty_result = conversion j ty_arg in
+          ty_aresult, ty_arrow ty_a ty_result
+      | 'r' ->
+          let ty_res = newvar() in
+          let ty_r = ty_arrow ty_input ty_res in
+          let ty_aresult, ty_result = conversion j ty_res in
+          ty_arrow ty_r ty_aresult, ty_result
+      | 't' -> conversion j (ty_arrow ty_input ty_aresult)
+      | 'n' when j + 1 = len -> conversion j Predef.type_int
+      | 'l' | 'n' | 'L' as conv ->
+          let j = j + 1 in
+          if j >= len then incomplete i else begin
+            match fmt.[j] with
+            | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+                let ty_arg =
+                 match conv with
+                 | 'l' -> Predef.type_int32
+                 | 'n' -> Predef.type_nativeint
+                 | _ -> Predef.type_int64 in
+                conversion j ty_arg
+            | c ->
+               if conv = 'n' then conversion (j - 1) Predef.type_int else
+               raise(Error(loc, Bad_format(String.sub fmt i (j - i))))
+          end
+      | c ->
+          raise(Error(loc, Bad_format(String.sub fmt i (j - i + 1)))) in
+    scan_width i j in
+
   let ty_ares, ty_res = scan_format 0 in
   newty
     (Tconstr(Predef.path_format,
@@ -909,8 +915,8 @@ let rec type_exp env sexp =
         let rec missing_labels n = function
             [] -> []
           | lbl :: rem ->
-              if List.mem n present_indices then missing_labels (n+1) rem
-              else lbl :: missing_labels (n+1) rem
+              if List.mem n present_indices then missing_labels (n + 1) rem
+              else lbl :: missing_labels (n + 1) rem
         in
         let missing = missing_labels 0 label_names in
         raise(Error(sexp.pexp_loc, Label_missing missing))
