@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** Analysis of source files. This module is strongly inspired from driver/main.ml :-) *)
 
@@ -444,3 +445,4 @@ let load_modules file =
       raise (Failure s)
 
 
+(* eof $Id$ *)

@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** Analysis of implementation files. *)
 open Misc
@@ -1532,3 +1533,4 @@ module Analyser =
 
 
 
+(* eof $Id$ *)

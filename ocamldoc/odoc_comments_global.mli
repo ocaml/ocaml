@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** The global variables used by the special comment parser.*)
 

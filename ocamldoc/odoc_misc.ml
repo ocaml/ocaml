@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-
+(* $Id$ *)
 
 let input_file_as_string nom =
   let chanin = open_in_bin nom in
@@ -450,3 +450,5 @@ let remove_option typ =
     | Types.Tsubst t2 -> iter t2.Types.desc
   in
   { typ with Types.desc = iter typ.Types.desc }
+
+(* eof $Id$ *)

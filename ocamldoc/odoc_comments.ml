@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** Analysis of comments. *)
 
@@ -310,3 +311,5 @@ module Info_retriever =
   end
 
 module Basic_info_retriever = Info_retriever (Odoc_text.Texter)
+
+(* eof $Id$ *)

@@ -10,6 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
+
 let print_DEBUG2 s = print_string s ; print_newline ()
 
 (** the lexer for special comments. *)

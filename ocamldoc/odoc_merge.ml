@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** Merge of information from [.ml] and [.mli] for a module.*)
 
@@ -949,3 +950,4 @@ let merge merge_options modules_list =
   in
   iter modules_list
   
+(* eof $Id$ *)

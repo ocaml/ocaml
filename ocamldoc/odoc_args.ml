@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* cvsid $Id$ *)
 
 (** Command-line arguments. *)
 open Clflags
@@ -302,3 +303,4 @@ let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~dot_g
   hidden_modules := List.sort (fun a -> fun b -> - (compare a b)) !hidden_modules
 
 
+(* eof $Id$ *)

@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** Representation and manipulation of classes and class types.*)
 
@@ -249,3 +250,4 @@ let class_type_parameter_text_by_name clt label =
           None
 
         
+(* eof $Id$ *)

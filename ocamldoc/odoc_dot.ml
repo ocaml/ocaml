@@ -9,6 +9,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
+
 (** Definition of a class which outputs a dot file showing 
    top modules dependencies.*)
 

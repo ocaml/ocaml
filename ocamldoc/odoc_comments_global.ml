@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** The global variables used by the special comment parser.*)
 
@@ -44,3 +45,4 @@ let init () =
   return_value := None ;
   customs := [] 
 
+(* eof $Id$ *)

@@ -11,6 +11,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
+
 (** Generation of html code to display OCaml code. *)
 open Lexing 
 

@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** Research of elements through modules. *)
 
@@ -627,3 +628,5 @@ let find_section mods regexp =
   with
     Res_section (_,t) -> t
   | _ -> assert false
+
+(* eof $Id$ *)

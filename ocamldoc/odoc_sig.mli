@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** The module for analysing a signature and source code and creating modules, classes, ..., elements.*)
 

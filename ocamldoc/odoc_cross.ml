@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** Cross referencing. *)
 
@@ -810,3 +811,5 @@ let associate module_list =
   let _ = associate_type_of_elements_in_comments module_list in
   ()
         
+
+(* eof $Id$ *)

@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** Interface for analysing documented OCaml source files and to the collected information. *)
 

@@ -9,6 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
 
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
