@@ -85,7 +85,7 @@ let convert_impl buffer =
         copy_input s; input_pos := e;
         may_discard (next_token ())
     | LPAREN | LBRACKET | LBRACKETBAR | LBRACKETLESS | BEGIN
-    | LBRACE | LBRACELESS ->
+    | LBRACE | LBRACELESS | STRUCT | SIG | OBJECT->
         process_paren (token, s, e);
         may_discard (next_token ())
     | PREFIXOP _ ->
@@ -103,7 +103,7 @@ let convert_impl buffer =
   and search_start (token, s, e) =
     match token with
       LPAREN | LBRACKET | LBRACKETBAR | LBRACKETLESS | BEGIN
-    | LBRACE | LBRACELESS ->
+    | LBRACE | LBRACELESS | STRUCT | SIG | OBJECT ->
         process_paren (token, s, e);
         search_start (next_token ())
     | EQUAL | SEMI | SEMISEMI | MINUSGREATER | LESSMINUS | COMMA
@@ -119,7 +119,7 @@ let convert_impl buffer =
     try match token with
       LPAREN | LBRACKET | LBRACKETBAR | LBRACKETLESS | BEGIN ->
         may_start (next_token ())
-    | LBRACE | LBRACELESS ->
+    | LBRACE | LBRACELESS | STRUCT | SIG | OBJECT ->
         search_start (next_token ())
     | _ ->
         assert false
@@ -128,15 +128,19 @@ let convert_impl buffer =
         LPAREN, RPAREN 
       | (LBRACKET|LBRACKETBAR|LBRACKETLESS),
         (RBRACKET|BARRBRACKET|GREATERRBRACKET)
-      | BEGIN, END
+      | (BEGIN|STRUCT|SIG|OBJECT), END
       | LBRACE, RBRACE
       | LBRACELESS, GREATERRBRACE -> ()
       | _ -> raise (Closing last)
   in
   try
     may_start (next_token ());
-  with End_of_file | Closing _ ->
+  with End_of_file ->
     copy_input (Buffer.length input_buffer)
+  | Closing _ ->
+      prerr_endline ("bad closing token at position " ^
+                     string_of_int (Lexing.lexeme_start buffer));
+      copy_input (Buffer.length input_buffer)
 
 type state = Out | Enter | In | Escape
 
