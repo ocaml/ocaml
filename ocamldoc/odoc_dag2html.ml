@@ -51,7 +51,6 @@ let html_table_struct indi_txt phony d t =
     | Ghost _ -> false
     | Nothing -> true
   in
-  let jlast = Array.length t.table.(0) - 1 in
   let elem_txt =
     function
       Elem e -> indi_txt d.dag.(int_of_idag e)
@@ -1643,7 +1642,6 @@ let no_optim = ref false;;
 let no_group = ref false;;
 
 let html_of_dag d =
-  let print_indi n = print_string n.valu in
   let t = table_of_dag phony !no_optim !invert !no_group d in
   let hts = html_table_struct indi_txt phony d t in
   string_table !border hts
@@ -1651,7 +1649,7 @@ let html_of_dag d =
 
 
 (********************************* Max's code **********************************)
-(** This function takes a list of classes and a list of class types 
+(** This function takes a list of classes and a list of class types
    and create the associate dag. *)
 let create_class_dag cl_list clt_list =
   let module M = Odoc_info.Class in
@@ -1660,15 +1658,15 @@ let create_class_dag cl_list clt_list =
   let clt_list2 = List.map (fun ct -> (ct.M.clt_name, Some (M.Cltype (ct, [])))) clt_list in
   let list = cl_list2 @ clt_list2 in
   let all_classes =
-    let rec iter list2 = 
+    let rec iter list2 =
       List.fold_left
-        (fun acc -> fun (name, cct_opt) -> 
-          let l = 
+        (fun acc -> fun (name, cct_opt) ->
+          let l =
             match cct_opt with
               None -> []
             | Some (M.Cl c) ->
-                iter 
-                  (List.map 
+                iter
+                  (List.map
                      (fun inh ->(inh.M.ic_name, inh.M.ic_class))
                      (match c.M.cl_kind with
                        M.Class_structure (inher_l, _) ->
@@ -1678,8 +1676,8 @@ let create_class_dag cl_list clt_list =
                      )
                   )
             | Some (M.Cltype (ct, _)) ->
-                iter 
-                  (List.map 
+                iter
+                  (List.map
                      (fun inh ->(inh.M.ic_name, inh.M.ic_class))
                      (match ct.M.clt_kind with
                        M.Class_signature (inher_l, _) ->
@@ -1706,7 +1704,7 @@ let create_class_dag cl_list clt_list =
           distinct ((name, cct_opt) :: acc) q
   in
   let distinct_classes = distinct [] all_classes in
-  let liste_index = 
+  let liste_index =
     let rec f n = function
         [] -> []
       | (name, _) :: q -> (name, n) :: (f (n+1) q)
@@ -1715,7 +1713,7 @@ let create_class_dag cl_list clt_list =
   in
   let array1 = Array.of_list distinct_classes in
   (* create the dag array, filling parents and values *)
-  let fmap (name, cct_opt) = 
+  let fmap (name, cct_opt) =
     { pare = List.map
         (fun inh -> List.assoc inh.M.ic_name liste_index )
         (match cct_opt with
@@ -1737,7 +1735,7 @@ let create_class_dag cl_list clt_list =
         );
       valu = (name, cct_opt) ;
       chil = []
-    } 
+    }
   in
   let dag = { dag = Array.map fmap array1 } in
   (* fill the children *)
@@ -1750,7 +1748,3 @@ let create_class_dag cl_list clt_list =
   in
   Array.iteri fiter dag.dag;
   dag
-
-      
-      
-        

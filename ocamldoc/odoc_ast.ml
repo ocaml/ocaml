@@ -1198,11 +1198,6 @@ module Analyser =
                 let complete_name = Name.concat current_module_name name in
                 let loc_start = mod_exp.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
                 let loc_end =  mod_exp.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
-                let pos_limit2 =
-                  match q with
-                    [] -> pos_limit
-                  | (_, _, me) :: _ -> me.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum
-                in
                 let tt_mod_exp =
                   try Typedtree_search.search_module table name
                   with Not_found -> raise (Failure (Odoc_messages.module_not_found_in_typedtree complete_name))
@@ -1532,23 +1527,23 @@ module Analyser =
 	  }
 
       | (parsetree, typedtree) ->
-          let s_parse =
-            match parsetree with
-              Parsetree.Pmod_ident _ -> "Pmod_ident"
-	    | Parsetree.Pmod_structure _ -> "Pmod_structure"
-	    | Parsetree.Pmod_functor _ -> "Pmod_functor"
-	    | Parsetree.Pmod_apply _ -> "Pmod_apply"
-	    | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
-	  in
-	  let s_typed =
-            match typedtree with
-              Typedtree.Tmod_ident _ -> "Tmod_ident"
-	    | Typedtree.Tmod_structure _ -> "Tmod_structure"
-	    | Typedtree.Tmod_functor _ -> "Tmod_functor"
-	    | Typedtree.Tmod_apply _ -> "Tmod_apply"
-	    | Typedtree.Tmod_constraint _ -> "Tmod_constraint"
-	  in
-	  let code = get_string_of_file pos_start pos_end in
+          (*DEBUG*)let s_parse =
+          (*DEBUG*)  match parsetree with
+          (*DEBUG*)    Parsetree.Pmod_ident _ -> "Pmod_ident"
+	  (*DEBUG*)  | Parsetree.Pmod_structure _ -> "Pmod_structure"
+	  (*DEBUG*)  | Parsetree.Pmod_functor _ -> "Pmod_functor"
+	  (*DEBUG*)  | Parsetree.Pmod_apply _ -> "Pmod_apply"
+	  (*DEBUG*)  | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
+	  (*DEBUG*)in
+	  (*DEBUG*)let s_typed =
+          (*DEBUG*)  match typedtree with
+          (*DEBUG*)    Typedtree.Tmod_ident _ -> "Tmod_ident"
+	  (*DEBUG*)  | Typedtree.Tmod_structure _ -> "Tmod_structure"
+	  (*DEBUG*)  | Typedtree.Tmod_functor _ -> "Tmod_functor"
+	  (*DEBUG*)  | Typedtree.Tmod_apply _ -> "Tmod_apply"
+	  (*DEBUG*)  | Typedtree.Tmod_constraint _ -> "Tmod_constraint"
+	  (*DEBUG*)in
+	  (*DEBUG*)let code = get_string_of_file pos_start pos_end in
 	  print_DEBUG (Printf.sprintf "code=%s\ns_parse=%s\ns_typed=%s\n" code s_parse s_typed);
 
           raise (Failure "analyse_module: parsetree and typedtree don't match.")

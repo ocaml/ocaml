@@ -26,23 +26,23 @@ OCAMLBIN = $(BINDIR)
 
 OCAMLPP=-pp './remove_DEBUG'
 
-# For installation 
+# For installation
 ##############
 MKDIR=mkdir -p
 CP=cp -f
 OCAMLDOC=ocamldoc
 OCAMLDOC_RUN=sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
 OCAMLDOC_OPT=$(OCAMLDOC).opt
-OCAMLDOC_LIBCMA=odoc_info.cma 
+OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
-OCAMLDOC_LIBCMXA=odoc_info.cmxa 
+OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.a
 INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
 INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
 INSTALL_BINDIR=$(OCAMLBIN)
 INSTALL_MANODIR=$(MANDIR)/man3
 
-INSTALL_MLIS=odoc_info.mli 
+INSTALL_MLIS=odoc_info.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
 
 ODOC_TEST=odoc_test.cmo
@@ -68,7 +68,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -warn-error Ay
+COMPFLAGS=$(INCLUDES) -warn-error A
 LINKFLAGS=$(INCLUDES)
 
 CMOFILES= odoc_config.cmo \
@@ -193,8 +193,8 @@ lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 
 opt.opt: exeopt libopt
 exeopt: $(OCAMLDOC_OPT)
-libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI) 
-debug: 
+libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
+debug:
 	make OCAMLPP=""
 
 $(OCAMLDOC): $(EXECMOFILES) odoc.cmo
@@ -274,26 +274,26 @@ installopt_really:
 # Testing :
 ###########
 test: dummy
-	$(MKDIR) $@ 
+	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli
 
 test_stdlib: dummy
-	$(MKDIR) $@ 
+	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
 	../stdlib/pervasives.ml ../stdlib/*.mli \
 	../otherlibs/unix/unix.mli \
 	../otherlibs/str/str.mli
 
 test_framed: dummy
-	$(MKDIR) $@ 
+	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -g odoc_fhtml.cmo -sort -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 test_latex: dummy
-	$(MKDIR) $@ 
+	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml odoc*.mli ../stdlib/*.mli ../otherlibs/unix/unix.mli
 
 test_latex_simple: dummy
-	$(MKDIR) $@ 
+	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) \
 	-latextitle 6,subsection -latextitle 7,subsubection \
 	../stdlib/hashtbl.mli \
@@ -302,11 +302,11 @@ test_latex_simple: dummy
 	../stdlib/map.mli
 
 test_man: dummy
-	$(MKDIR) $@ 
+	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -man -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 test_texi: dummy
-	$(MKDIR) $@ 
+	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -texi -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
@@ -316,7 +316,7 @@ stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
 	$(STDLIB_MLIS)
 
 autotest_stdlib: dummy
-	$(MKDIR) $@ 
+	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -g autotest/odoc_test.cmo\
 	$(INCLUDES) -keep-code \
 	../stdlib/pervasives.ml ../stdlib/*.mli \
@@ -331,7 +331,7 @@ clean:: dummy
 	@rm -f $(OCAMLDOC)$(EXE) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.a *.o
 	@rm -f odoc_parser.output odoc_text_parser.output
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
-	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli 
+	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	@rm -rf stdlib_man
 
 depend::
