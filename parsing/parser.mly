@@ -268,7 +268,7 @@ module_type:
   | FUNCTOR LPAREN UIDENT COLON module_type RPAREN MINUSGREATER module_type
     %prec FUNCTOR
       { mkmty(Pmty_functor($3, $5, $8)) }
-  | module_type WITH type_declarations
+  | module_type WITH with_constraints
       { mkmty(Pmty_with($1, List.rev $3)) }
   | LPAREN module_type RPAREN
       { $2 }
@@ -567,6 +567,22 @@ label_declarations:
 ;
 label_declaration:
     mutable_flag LIDENT COLON core_type         { ($2, $1, $4) }
+;
+
+/* "with" constraints (additional type equations over signature components) */
+
+with_constraints:
+    with_constraint                             { [$1] }
+  | with_constraints AND with_constraint        { $3 :: $1 }
+;
+with_constraint:
+    type_parameters label_longident EQUAL core_type
+      { ($2, {ptype_params = $1;
+              ptype_kind = Ptype_abstract;
+              ptype_manifest = Some $4;
+              ptype_loc = symbol_loc()}) }
+    /* used label_longident instead of type_longident to disallow
+       functor applications in type path */
 ;
 
 /* Core types */

@@ -11,11 +11,14 @@
 
 (* $Id$ *)
 
-(* Long identifiers, used in parsetree. *)
-
 type t =
     Lident of string
   | Ldot of t * string
   | Lapply of t * t
 
-val flatten: t -> string list
+let rec flat accu = function
+    Lident s -> s :: accu
+  | Ldot(lid, s) -> flat (s :: accu) lid
+  | Lapply(l1, l2) -> Misc.fatal_error "Longident.flat"
+
+let flatten lid = flat [] lid

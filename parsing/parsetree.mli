@@ -100,7 +100,7 @@ and module_type_desc =
     Pmty_ident of Longident.t
   | Pmty_signature of signature
   | Pmty_functor of string * module_type * module_type
-  | Pmty_with of module_type * (string * type_declaration) list
+  | Pmty_with of module_type * (Longident.t * type_declaration) list
 
 and signature = signature_item list
 
