@@ -82,3 +82,7 @@ val search_substring: string -> string -> int -> int
            occurrence of string [pat] in string [str].  Search starts
            at offset [start] in [str].  Raise [Not_found] if [pat]
            does not occur. *)
+
+val rev_split_words: string -> string list
+        (* [rev_split_words s] splits [s] in blank-separated words, and return
+           the list of words in reverse order. *)

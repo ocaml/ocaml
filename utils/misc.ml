@@ -129,6 +129,8 @@ let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
 let no_overflow_lsl a = min_int asr 1 <= a && a <= max_int asr 1
 
+(* String operations *)
+
 let chop_extension_if_any fname =
   try
     ignore(String.index (Filename.basename fname) '.');
@@ -142,3 +144,18 @@ let search_substring pat str start =
     else if str.[i + j] = pat.[j] then search i (j+1)
     else search (i+1) 0
   in search start 0
+
+let rev_split_words s =
+  let rec split1 res i =
+    if i >= String.length s then res else begin
+      match s.[i] with
+        ' ' | '\t' | '\r' | '\n' -> split1 res (i+1)
+      | _ -> split2 res i (i+1)
+    end
+  and split2 res i j =
+    if j >= String.length s then String.sub s i (j-i) :: res else begin
+      match s.[j] with
+        ' ' | '\t' | '\r' | '\n' -> split1 (String.sub s i (j-i) :: res) (j+1)
+      | _ -> split2 res i (j+1)
+    end
+  in split1 [] 0
