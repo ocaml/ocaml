@@ -234,7 +234,17 @@ let options  = ref [
 
 ] 
 
-let add_option o = options := !options @ [o]
+let add_option o = 
+  let (s,_,_) = o in
+  let rec iter = function
+      [] -> [o]
+    | (s2,f,m) :: q ->
+	if s = s2 then
+	  o :: q
+	else
+	  (s2,f,m) :: (iter q)
+  in
+  options := iter !options
 
 let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~dot_generator =
   default_html_generator := Some html_generator ;
