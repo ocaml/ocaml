@@ -187,7 +187,7 @@ let rec mkrangepat c1 c2 =
 /* Entry points */
 
 implementation:
-    structure EOF                        { List.rev $1 }
+    structure EOF                        { $1 }
 ;
 interface:
     signature EOF                        { List.rev $1 }
@@ -208,7 +208,7 @@ module_expr:
     mod_longident
       { mkmod(Pmod_ident $1) }
   | STRUCT structure END
-      { mkmod(Pmod_structure(List.rev $2)) }
+      { mkmod(Pmod_structure($2)) }
   | FUNCTOR LPAREN UIDENT COLON module_type RPAREN MINUSGREATER module_expr
     %prec prec_fun
       { mkmod(Pmod_functor($3, $5, $8)) }
@@ -220,8 +220,15 @@ module_expr:
       { $2 }
 ;
 structure:
+    structure_tail                              { $1 }
+  | expr structure_tail                         { Pstr_eval $1 :: $2 }
+;
+structure_tail:
     /* empty */                                 { [] }
-  | structure structure_item                    { $2 :: $1 }
+  | SEMISEMI                                    { [] }
+  | SEMISEMI expr structure_tail                { Pstr_eval $2 :: $3 }
+  | SEMISEMI structure_item structure_tail      { $2 :: $3 }
+  | structure_item structure_tail               { $1 :: $2 }
 ;
 structure_item:
     LET UNDERSCORE EQUAL expr
@@ -268,6 +275,7 @@ module_type:
 signature:
     /* empty */                                 { [] }
   | signature signature_item                    { $2 :: $1 }
+  | signature signature_item SEMISEMI           { $2 :: $1 }
 ;
 signature_item:
     VAL val_ident COLON core_type
