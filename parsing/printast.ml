@@ -38,7 +38,8 @@ let fmt_constant f x =
   match x with
   | Const_int (i) -> Format.fprintf f "Const_int %d" i;
   | Const_char (c) -> Format.fprintf f "Const_char %02x" (Char.code c);
-  | Const_string (s) -> Format.fprintf f "Const_string \"%s\"" s;
+  | Const_string (s) ->
+      Format.fprintf f "Const_string \"%s\"" (String.escaped s);
   | Const_float (s) -> Format.fprintf f "Const_float %s" s;
 ;;
 
@@ -88,7 +89,7 @@ let option i f x =
       f (i+1) x;
 ;;
 
-let longident i li = line i "%a" fmt_longident li;;
+let longident i li = line i "%a\n" fmt_longident li;;
 let string i s = line i "\"%s\"\n" s;;
 let bool i x = line i "%s\n" (string_of_bool x);;
 let label i x = line i "label=\"%s\"\n" x;;
