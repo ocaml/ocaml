@@ -555,7 +555,7 @@ let square_big_int bi =
   let len_res = 2 * len_bi in
   let res = make_nat len_res in
     square_nat res 0 len_res (bi.abs_value) 0 len_bi;
-    { sign = bi.sign;
+    { sign = 1;
       abs_value = res }
 
 (* round off of the futur last digit (of the integer represented by the string
