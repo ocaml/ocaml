@@ -245,7 +245,7 @@ let may_exec =
 
 let path_sep = if Sys.os_type = "Win32" then ";" else ":"
 
-let warnings = ref "A"
+let warnings = ref "Al"
 
 let program_not_found prog =
   ignore begin
