@@ -519,14 +519,10 @@ and unify_core env a1 a2 t1 t2 =        (* Other cases *)
     | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) (*when Path.same p1 p2*) ->
         unify_list env tl1 tl2
     | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
-        let old_nm = !nm2 in
-        begin match old_nm with
+        unify_fields env fi1 fi2;
+        begin match !nm2 with
           Some (_, va::_) when (repr va).desc = Tvar -> ()
         | _                                          -> nm2 := !nm1
-        end;
-        begin try unify_fields env fi1 fi2 with exn ->
-          nm2 := old_nm;
-          raise exn
         end
     | (_, _) ->
         raise (Unify [])
