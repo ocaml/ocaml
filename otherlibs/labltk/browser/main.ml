@@ -18,7 +18,7 @@ let _ =
   Searchpos.view_defined_ref := Viewer.view_defined;
   Searchpos.editor_ref.contents <- Editor.f;
 
-  let top = openTkClass "OCamlBrowser" in
+  let top = openTk class:"OCamlBrowser" () in
   Jg_config.init ();
 
   bind top events:[[], `Destroy] action:(`Set ([], fun _ -> exit 0));

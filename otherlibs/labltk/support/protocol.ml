@@ -12,7 +12,7 @@ type tkArgs =
 
 type cbid = int
 
-external opentk : string -> string -> unit
+external opentk : display:string -> class:string -> unit
         =  "camltk_opentk"
 external tcl_eval : string -> string
         =  "camltk_tcl_eval"
@@ -157,18 +157,8 @@ let _ = callback_init ()
 
 (* Different version of initialisation functions *)
 (* Native opentk is [opentk display class]       *)
-let openTk () =
-  opentk "" "LablTk";
-  install_cleanup();
-  Widget.default_toplevel
-
-let openTkClass s =
-  opentk "" s;
-  install_cleanup();
-  Widget.default_toplevel
-
-let openTkDisplayClass display:disp cl =
-  opentk disp cl;
+let openTk ?(:display = "") ?(:class = "LablTk") () =
+  opentk :display :class;
   install_cleanup();
   Widget.default_toplevel
 
