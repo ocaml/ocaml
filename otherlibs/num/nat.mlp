@@ -259,7 +259,7 @@ let raw_string_of_digit nat off =
 
 (* XL: suppression de string_of_digit et de sys_string_of_digit.
    La copie est de toute facon faite dans string_of_nat, qui est le
-   seul point d'entree public dans ce code. *)
+   seul point d entree public dans ce code. *)
 
 (******
 let sys_string_of_digit nat off =
