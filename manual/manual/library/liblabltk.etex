@@ -3,16 +3,22 @@
 
 The "labltk" library provides access to the Tcl/Tk GUI from Objective
 Caml programs. This interface is generated in an automated way, and
-you should refer to Tk books and man pages for detailed information on
-the behavior of the numerous functions.
+you should refer to Tcl/Tk books and man pages for detailed
+information on the behavior of the numerous functions.
+
+\smallskip\noindent
+Programs that use the "labltk" library must be linked as follows:
+\begin{alltt}
+        ocamlc \var{other options} -I labltk-dir labltk.cma \var{other files}
+        ocamlopt \var{other options} -I labltk-dir labltk.cmxa \var{other files}
+\end{alltt}
+"labltk-dir" is "CAMLLIB/labltk". On Unix the default
+location is "/usr/local/lib/caml/labltk".
 
 \begin{unix}
 The "labltk" library is available for any system with Tcl/Tk installed,
-starting from Tcl 7.5/Tk 4.1 up to Tcl/Tk 8.2. Beware that some beta
+starting from Tcl 7.5/Tk 4.1 up to Tcl/Tk 8.3. Beware that some beta
 versions may have compatibility problems.
-
-Library files are installed in the "labltk" subdirectory of the caml
-library. The default location is "/usr/local/lib/caml/labltk".
 
 If the library was not compiled correctly, try to run again the
 "configure" script with the option "-tkdefs" \var{switches},
@@ -20,19 +26,14 @@ where \var{switches} is a list of C-style inclusion paths leading to
 the right "tcl.h" and "tk.h", for instance
 '"-I/usr/local/include/tcl8.0 -I/usr/local/include/tk8.0"'.
 
-Three scripts are installed, to make easier the use of the "labltk"
-library.
+A script is installed, to make easier the use of the "labltk"
+library as toplevel.
 \begin{options}
 \item["labltk"]
 This is a toplevel including the "labltk" library, and the path is
-already set as to allow the use of the various modules. You can use it
+already set as to allow the use of the various modules. It also
+includes code for the Unix and Str libraries. You can use it
 in place of "ocaml".
-\item["labltklink"]
-This script calls "ocamlc" with appropriate switches so as to compile
-and link properly with the "labltk" library. Use it in place of
-"ocamlc".
-\item["labltkopt"]
-This script work like "labltklink", but is a replacement for "ocamlopt".
 \end{options}
 \end{unix}
 
@@ -45,10 +46,9 @@ After installing it, you must put the dynamically loaded libraries
 "tcl80.dll" and "tk80.dll" (from the "bin" directory of the Tcl
 installation) in a directory included in you path.
 
-The toplevel is available as "labltk", but other utility scripts
-are not available on Windows. Also, you need to explicitly add the
-"labltk" library directory to your load path with the "#directory"
-directive.
+The toplevel, including Unix and Str, is available as "labltk".
+But you need to explicitly add the "labltk" library directory to your
+load path with the "#directory" directive.
 \end{windows}
 
 The "labltk" library is composed of a large number of modules.
@@ -71,7 +71,7 @@ Grid                Palette             Wm
 Giving a detailed account of each of these module would be impractical
 here. We will just present some of the basic functions in the module
 "Tk". Note that for most other modules information can be found in the
-"man" page of their name.
+Tcl "man" page of their name.
 
 \begin{library}
 \input{tk.tex}

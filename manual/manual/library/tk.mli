@@ -40,7 +40,7 @@ val pack :
   ?before:'b Widget.widget ->
   ?expand:bool ->
   ?fill:fillMode ->
-  ?in:'c Widget.widget ->
+  ?inside:'c Widget.widget ->
   ?ipadx:int ->
   ?ipady:int ->
   ?padx:int ->
@@ -52,7 +52,7 @@ val pack :
 val grid :
   ?column:int ->
   ?columnspan:int ->
-  ?in:'a Widget.widget ->
+  ?inside:'a Widget.widget ->
   ?ipadx:int ->
   ?ipady:int ->
   ?padx:int ->
@@ -66,7 +66,7 @@ val place :
   ?anchor:anchor ->
   ?bordermode:borderMode ->
   ?height:int ->
-  ?in:'a Widget.widget ->
+  ?inside:'a Widget.widget ->
   ?relheight:float ->
   ?relwidth:float ->
   ?relx:float ->
@@ -166,7 +166,7 @@ val bind_class :
   ?on:'a Widget.widget ->
   string -> unit
         (* Same thing for all widgets of a given class. If a widget
-           is given with label [on:], the binding will be removed as
+           is given with label [~on:], the binding will be removed as
            soon as it is destroyed. *)
 val bind_tag :
   events:event list ->
@@ -180,4 +180,4 @@ val bind_tag :
 val break : unit -> unit
         (* Used inside a bound action, do not call other actions
            after this one. This is only possible if this action
-           was bound with [setbreakable:true]. *)
+           was bound with [~breakable:true]. *)

@@ -13,8 +13,9 @@ Its functions are:
 \end{itemize}
 
 The name of the command is "ocamlbrowser", and, as with the
-compiler, you may change the standard library directory by setting
-"CAMLLIB", and extend the load path using "-I" options.
+toplevel, you may change the standard library directory by setting
+"CAMLLIB", extend the load path using "-I" options, set commuting
+label mode with "-labels" or select warnings with "-w".
 
 \section{Viewer}
 This is the first window you get when you start OCamlBrowser.
