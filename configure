@@ -995,20 +995,10 @@ fi
 
 # Determine if system stack overflows can be detected
 
-case "$arch,$model,$system" in
-  i386,*,*)
-    case "$host" in              # Check for FreeBSD 4.5 bug
-      *-*-freebsd*|*-*-openbsd*) check_pthread=yes ;;
-      *)                         check_pthread=no ;;
-    esac
-    if ./runtest -DTARGET_$arch -DSYS_$system stackov.c \
-    && test $check_pthread = no || cclibs="-pthread $cclibs" \
-           ./runtest -DTARGET_$arch -DSYS_$system stackov.c; then
+case "$arch,$system" in
+  i386,linux_elf|i386,bsd_elf)
       echo "System stack overflow can be detected."
-      echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h
-    else
-      echo "Cannot detect system stack overflow."
-    fi;;
+      echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)
       echo "Cannot detect system stack overflow.";;
 esac
