@@ -15,7 +15,8 @@ Streams and stream parsers are no longer part of the Objective Caml
 language, but available through a CamlP4 syntax extension.  See the
 CamlP4 reference manual for more information.  Objective Caml programs
 that use streams and stream parsers can be compiled with the
-"-pp camlp4o" option to "ocamlc" and "ocamlopt".
+"-pp camlp4o" option to "ocamlc" and "ocamlopt".  For interactive use,
+run "ocaml" and issue the \verb'#load "camlp4o.cma";;' command.
 
 \section{Range patterns}
 
@@ -89,3 +90,9 @@ It then returns the value of @expr@.  For example:
             (List.fold_right StringSet.add string_list StringSet.empty)
 \end{verbatim}
 
+\section{Grouping in integer and floating-point literals}
+
+In integer and floating-point literals, the character "_" (underscore)
+can be used to separate groups of digits, as in "1_000_000",
+"0x45_FF",  or "1_234.567_89".  The underscore characters are simply
+ignored when reading the literal.
