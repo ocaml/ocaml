@@ -753,14 +753,17 @@ let rec type_approx env sexp =
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
   | Pexp_sequence (_,e) -> type_approx env e
   | Pexp_constraint (e, sty1, sty2) ->
+      let approx_ty_opt = function
+        | None -> newvar ()
+        | Some sty -> approx_type sty
+      in
       let ty = type_approx env e
-      and ty1 = match sty1 with None -> newvar () | Some sty -> approx_type sty
-      and ty2 = match sty2 with None -> newvar () | Some sty -> approx_type sty
-      in begin
-        try unify env ty ty1; unify env ty1 ty2; ty2
-        with Unify trace ->
-          raise(Error(sexp.pexp_loc, Expr_type_clash trace))
-      end
+      and ty1 = approx_ty_opt sty1
+      and ty2 = approx_ty_opt sty2 in
+      begin try unify env ty ty1 with Unify trace ->
+        raise(Error(sexp.pexp_loc, Expr_type_clash trace))
+      end;
+      if sty2 = None then ty1 else ty2
   | _ -> newvar ()
 
 (* List labels in a function type, and whether return type is a variable *)
