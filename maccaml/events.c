@@ -14,9 +14,6 @@
 
 #include "main.h"
 
-/* [quit_requested] becomes true when the user chooses File:Quit */
-int quit_requested = 0;
-
 /* [intr_requested] is true if the user typed command-period and the
    SIGINT signal was not yet delivered.
 */

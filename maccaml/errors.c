@@ -27,8 +27,7 @@ void assert_failure (char *condition, char *file, int line)
   InitCursor ();
   modalkeys = kKeysOK;
   StopAlert (kAlertBug, myModalFilterUPP);
-  quit_requested = 1;
-  exit (0);
+  FinaliseAndQuit ();
 }
 
 void XXX (void)

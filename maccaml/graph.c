@@ -1096,19 +1096,8 @@ value gr_wait_event (value veventlist)
       motion_oldx = pt.h;
       motion_oldy = pt.v;
     }
-    sched_yield ();
-    if (pending_signal != 0 && pending_signal != SIGVTALRM){
-      /* handle signals, but not the tick thread stuff because:
-         1. We don't hold the master lock so it is not needed.
-         2. It would execute some Caml code and prevent processor idle.
-      */
-      PopPort;
-      intr_requested = 0;
-      raise (SIGINT);
-      leave_blocking_section ();
-      enter_blocking_section ();
-      PushWindowPort (winGraphics);
-    }
+	GetAndProcessEvents (askmotion ? waitMove : waitEvent,
+	                     motion_oldx, motion_oldy);
   }
 
   gotevent:

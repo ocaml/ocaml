@@ -42,7 +42,10 @@ OSErr DoQuit ()
     if (err != noErr) return err;
   }
   done:
-  quit_requested = 1;
+  if (winGraphics != NULL) WinCloseGraphics ();
+  WinCloseToplevel ();
+  rotatecursor_final ();
+  FinaliseAndQuit ();
   return noErr;
 }
 

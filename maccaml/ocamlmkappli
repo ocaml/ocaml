@@ -20,7 +20,7 @@
 #   -creator <code>   use this creator code (default '????')
 #   -ocamlc <command> use <command> as O'Caml compiler (default ocamlc)
 #   -d <def>          pass "-d <def>" option to Rez
-#   -prefsize <int>   set preferred memory size (megabytes, default 4000)
+#   -prefsize <int>   set preferred memory size (kilobytes, default 4000)
 #   -lib <folder>     use library files from <folder> (default {CAMLLIB})
 #   -minsize <int>    set minimum memory size (megabytes, default 2000)
 #   -name <name>      set the name of the application (default a.out)

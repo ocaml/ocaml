@@ -126,12 +126,10 @@ data 'ICON' (1000) {  /* kApplicationIcon */
 
 data 'TEXT' (kAboutText2, purgeable) {
   "Includes (parts of) Objective Caml, MPW libraries,"
-             " the WASTE text engine, GUSI, and SFIO.\n"
+             "and the WASTE text engine.\n"
   "\n"
-  "GUSI Copyright (C) 1992-1999 Matthias Neeracher\n"
-  "MPW © 1983-1999 by Apple Computer, Inc., all rights reserved\n"
-  "Objective Caml Copyright 1991-2000 INRIA, all rights reserved.\n"
-  "SFIO Copyright (c) 1991, 1996 by AT&T Labs - Research.\n"
+  "Objective Caml Copyright 1991-2001 INRIA, all rights reserved.\n"
+  "MPW © 1983-2001 by Apple Computer, Inc., all rights reserved\n"
   "WASTE text engine © 1993-1998 Marco Piovanelli\n"
 };
 
@@ -311,7 +309,7 @@ resource 'DITL' (kAlertExit) {
         {10, 70, 95, 328},
         StaticText {
           disabled,
-          "The " APPLNAME " toplevel loop has terminated.\n\n"
+          "The " APPLNAME " toplevel loop has terminated^0^1.\n\n"
           "Any further input in the toplevel window will be ignored."
         },
     }
@@ -512,6 +510,7 @@ resource 'STR#' (kMiscStrings, purgeable) {
     "Save file as:",
     "",
     "Unable to write to \"",
+	" with error code ",
   }
 };
 

@@ -105,6 +105,7 @@
 #define kSaveAsPromptIdx 7
 #define kEmptyIdx 8
 #define kCannotWriteIdx 9
+#define kWithErrorCodeIdx 10
 
 #define kErrorStrings 1002
 #define kMemFull 1

@@ -13,7 +13,6 @@
 /* $Id$ */
 
 #include <limits.h>
-#include <sched.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +52,7 @@
 
 #include "WASTE.h"
 
-#include "../byterun/signals.h"
+#include "::byterun:rotatecursor.h"
 
 #include "ocamlconstants.h"
 
@@ -136,7 +135,6 @@ void ErrorAlertGeneric (OSErr err);
 OSErr InitialiseErrors (void);
 
 /* events.c */
-extern int quit_requested;
 extern int intr_requested;
 extern UInt32 last_event_date;
 extern UInt32 evtSleep;
@@ -184,7 +182,7 @@ void LCSynch( ControlRef );
 extern int gHasDragAndDrop;
 extern int gHasPowerManager;
 extern int launch_toplevel_requested;
-void Finalise (void);
+void FinaliseAndQuit (void);
 
 /* memory.c */
 OSErr AllocHandle (Size size, Handle *result);

@@ -16,7 +16,6 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "alloc.h"
 #include "mlvalues.h"
@@ -33,16 +32,11 @@ Handle macos_getfullpathname (short vrefnum, long dirid);
 /* This pointer contains the environment variables. */
 char *envPtr = NULL;
 
-
-/* The last time that O'Caml was seen doing some compute-bound work,
-   as returned by [TickCount]. */
-static UInt32 caml_working_date;
-
-/* The number of threads that are blocked reading from the console. */
+/* True if the Caml program is reading from the console. */
 static int caml_reading_console = 0;
 
 /* [Caml_working] is used to manage the processor idle state on
-   PowerBooks.  [Caml_working (1)] disable the idle state, and
+   PowerBooks.  [Caml_working (1)] disables the idle state, and
    [Caml_working (0)] enables it.
 */
 static int caml_at_work = 0;
@@ -118,9 +112,8 @@ int AdjustRotatingCursor (void)
 
 static pascal void interp_yield (long counter)
 {
-  caml_working_date = TickCount ();
   RotateCursor (counter);
-  sched_yield ();
+  GetAndProcessEvents (noWait, 0, 0);
   if (intr_requested){
     intr_requested = 0;
     raise (SIGINT);
@@ -197,12 +190,6 @@ static OSErr expand_escapes (Handle s)
     return err;
 }
 
-static void caml_main_then_exit (char **argv)
-{
-  caml_main (argv);
-  exit (0);
-}
-
 /* [build_command_line] creates the array of strings that represents
    the command line according to the template found in
    the 'Line'(kCommandLineTemplate) resource and the environment
@@ -276,11 +263,7 @@ static OSErr build_command_line (char ***p_argv)
 OSErr launch_caml_main (void)
 { 
   char **argv;
-  pthread_t topthread;
-  pthread_attr_t attr;
   OSErr err;
-  int res;
-  sigset_t mask;
 
   rotatecursor_options (&something_to_do, 0, &interp_yield);
   err = WinOpenToplevel ();
@@ -288,53 +271,21 @@ OSErr launch_caml_main (void)
 
   err = build_command_line (&argv);
   if (err) goto failed;
-  pthread_attr_init (&attr);
-  pthread_attr_setstacksize (&attr, 256 * 1024);
-  res = pthread_create (&topthread, &attr, (void *) caml_main_then_exit,
-                        (void *) argv);
-  pthread_attr_destroy (&attr);
-  if (res != 0){
-    err = -1;
-    goto failed;
-  }
 
-  /* Block all signals in this thread. */
-  sigfillset(&mask);
-  pthread_sigmask(SIG_BLOCK, &mask, NULL);
-
-  caml_working_date = TickCount ();
   Caml_working (1);
-  while (!quit_requested){
-    int towait = waitEvent;
-    if (motion_requested) towait = waitMove;
-    if (TickCount () < caml_working_date + 120){
-      towait = noWait;
-      Caml_working (1);
-    }else{
-      Caml_working (0);
-    }
-    GetAndProcessEvents (towait, motion_oldx, motion_oldy);
-    sched_yield ();
-  }
-  return noErr;
+  caml_main (argv);
+  ui_exit (0);
 
   failed:
     return err;
 }
 
-/* SIO stubs */
+/* console I/O functions */
 
 /* Management of error highlighting. */
 static int erroring = 0;
 static long error_curpos;
 static long error_anchor = -1;
-
-
-static pascal void caml_sio_init (int *mainArgc, char ***mainArgv)
-{
-#pragma unused (mainArgc, mainArgv)
-}
-pascal void (*__sioInit) (int *, char ***) = &caml_sio_init;
 
 void FlushUnreadInput (void)
 {
@@ -355,10 +306,8 @@ void FlushUnreadInput (void)
   WEFeatureFlag (weFOutlineHilite, weBitSet, we);
 }
 
-static pascal void caml_sio_read (char *buffer, SInt32 nCharsDesired,
-                                  SInt32 *nCharsUsed, SInt16 *eofFlag)
+int ui_read (int fd, char *buffer, unsigned int nCharsDesired)
 {
-#pragma unused (eofFlag)
   long len, i;
   char **htext;
   WEReference we;
@@ -367,9 +316,13 @@ static pascal void caml_sio_read (char *buffer, SInt32 nCharsDesired,
   short readonly, autoscroll;
   int atend;
 
+  if (fd != 0) return read (fd, buffer, nCharsDesired);
+
   we = WinGetWE (winToplevel);
   Assert (we != NULL);
   htext = (char **) WEGetText (we);
+
+  ++ caml_reading_console;
 
   while (1){
     char *p;
@@ -379,17 +332,7 @@ static pascal void caml_sio_read (char *buffer, SInt32 nCharsDesired,
     for (i = wintopfrontier; i < len; i++){
       if (p[i] == '\n') goto gotit;
     }
-    ++ caml_reading_console;
-    sched_yield ();
-    -- caml_reading_console;
-    if (pending_signal != 0 && pending_signal != SIGVTALRM){
-      /* handle signals, but not the tick thread stuff because:
-         1. We don't hold the master lock so it is not needed.
-         2. It would execute some Caml code and prevent processor idle.
-      */
-      leave_blocking_section ();
-      enter_blocking_section ();
-    }
+	GetAndProcessEvents (waitEvent, 0, 0);
   }
 
   gotit:
@@ -423,29 +366,29 @@ static pascal void caml_sio_read (char *buffer, SInt32 nCharsDesired,
   if (atend) ScrollToEnd (winToplevel);
 
   WinAdvanceTopFrontier (len);
-  *nCharsUsed = len;
 
-  caml_working_date = TickCount ();
-  return;
+  -- caml_reading_console;
+  return len;
 }
-pascal void (*__sioRead) (char *, SInt32, SInt32 *, SInt16 *) = &caml_sio_read;
 
-static pascal void caml_sio_write (SInt16 filenum, char *buffer, SInt32 nChars)
+int ui_write (int fd, char *buffer, unsigned int nChars)
 {
-#pragma unused (filenum)
   long selstart, selend;
-  WEReference we = WinGetWE (winToplevel);
+  WEReference we;
   OSErr err;
   short readonly, autoscroll;
   int atend;
 
+  if (fd != 1 && fd != 2) return write (fd, buffer, nChars);
+
   Assert (nChars >= 0);
+  we = WinGetWE (winToplevel);
   Assert (we != NULL);
   
   if (erroring){  /* overwrite mode to display errors; see terminfo_* */
     error_curpos += nChars;
     if (error_curpos > wintopfrontier) error_curpos = wintopfrontier;
-    return;
+    return nChars;
   }
 
   atend = ScrollAtEnd (winToplevel);
@@ -460,7 +403,7 @@ static pascal void caml_sio_write (SInt16 filenum, char *buffer, SInt32 nChars)
   err = WEInsert (buffer, nChars, NULL, NULL, we);
   if (err != noErr){
     WESetSelection (selstart, selend, we);
-    return; /* FIXME raise an exception ? */
+    return nChars;
   }
   if (selstart >= wintopfrontier){
     selstart += nChars;
@@ -475,26 +418,44 @@ static pascal void caml_sio_write (SInt16 filenum, char *buffer, SInt32 nChars)
 
   WinAdvanceTopFrontier (nChars);
   
-  caml_working_date = TickCount ();
-  return;
+  return nChars;
 }
-pascal void (*__sioWrite) (SInt16, char *, SInt32) = &caml_sio_write;
 
-static pascal void caml_sio_exit (void)
+void ui_print_stderr (char *msg, void *arg)
 {
+  char buf [1000];
+  
+  sprintf (buf, msg, arg);
+  ui_write (2, buf, strlen (buf));
+}
+
+void ui_exit (int return_code)
+{
+#pragma unused (return_code)
+  Str255 buf0;
+  Str255 buf1;
+
   caml_reading_console = 1;  /* hack: don't display rotating cursor */
-  if (!quit_requested){
-    modalkeys = kKeysOK;
-    InitCursor ();
-    NoteAlert (kAlertExit, myModalFilterUPP);
+
+  if (return_code != 0){
+    GetIndString (buf0, kMiscStrings, kWithErrorCodeIdx);
+    NumToString ((long) return_code, buf1);
+  }else{
+    buf0[0] = 0;
+    buf1[0] = 0;
   }
-  while (!quit_requested) GetAndProcessEvents (waitEvent, 0, 0);
+  ParamText (buf0, buf1, NULL, NULL);
+  InitCursor ();
+  modalkeys = kKeysOK;
+  NoteAlert (kAlertExit, myModalFilterUPP);
+
+  while (1) GetAndProcessEvents (waitEvent, 0, 0);
+
   if (winGraphics != NULL) WinCloseGraphics ();
   WinCloseToplevel ();
   rotatecursor_final ();
-  Finalise ();
+  FinaliseAndQuit ();
 }
-pascal void (*__sioExit) (void) = &caml_sio_exit;
 
 
 /*

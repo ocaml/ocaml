@@ -99,10 +99,11 @@ static OSErr Initialise (void)
   problem: return err;
 }
 
-void Finalise (void)
+void FinaliseAndQuit (void)
 {
   if (gHasDragAndDrop) RemoveDragHandlers ();
   WritePrefs ();
+  ExitToShell ();
 }
 
 int main (void)
@@ -111,15 +112,13 @@ int main (void)
 
   err = Initialise ();
   if (err != noErr){
-    quit_requested = 1;
-    exit (0);
+    FinaliseAndQuit ();
   }
   while (!launch_toplevel_requested){
     GetAndProcessEvents (waitEvent, 0, 0);
-    if (quit_requested) exit (0);
   }
   err = launch_caml_main (); /* launch bytecode interp and event loop */
   if (err != noErr) ErrorAlertGeneric (err);
-  exit (0);
+  FinaliseAndQuit ();
   return 0; /* not reached */
 }
