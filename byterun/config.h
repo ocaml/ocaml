@@ -121,11 +121,6 @@ typedef struct { uint32 l, h; } uint64, int64;
    Must be a multiple of [Page_size / sizeof (value)]. */
 #define Heap_chunk_min (2 * Page_size / sizeof (value))
 
-/* Maximum size of a contiguous piece of the heap (words).
-   Must be greater than or equal to [Heap_chunk_min].
-   Must be greater than or equal to [Whsize_wosize (Max_wosize)]. */
-#define Heap_chunk_max (Whsize_wosize (Max_wosize))
-
 /* Default size increment when growing the heap. (words)
    Must be a multiple of [Page_size / sizeof (value)]. */
 #define Heap_chunk_def (15 * Page_size)

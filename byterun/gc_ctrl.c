@@ -306,7 +306,6 @@ static long norm_heapincr (long unsigned int i)
 #define Psv (Wsize_bsize (Page_size))
   i = ((i + Psv - 1) / Psv) * Psv;
   if (i < Heap_chunk_min) i = Heap_chunk_min;
-  if (i > Heap_chunk_max) i = Heap_chunk_max;
   return i;
 }
 

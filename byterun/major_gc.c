@@ -380,16 +380,13 @@ void finish_major_cycle (void)
   allocated_words = 0;
 }
 
-/* Clip the request to [Heap_chunk_min..Heap_chunk_max] and round it
+/* Make sure the request is at least Heap_chunk_min and round it up
    to a multiple of the page size.
 */
 static asize_t clip_heap_chunk_size (asize_t request)
-{                             Assert (Heap_chunk_max >= Heap_chunk_min);
+{
   if (request < Bsize_wsize (Heap_chunk_min)){
     request = Bsize_wsize (Heap_chunk_min);
-  }
-  if (request > Bsize_wsize (Heap_chunk_max)){
-    request = Bsize_wsize (Heap_chunk_max);
   }
   return ((request + Page_size - 1) >> Page_log) << Page_log;
 }
