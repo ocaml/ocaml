@@ -24,13 +24,39 @@
 #include "signals.h"
 #include "sys.h"
 
-volatile int async_signal_mode = 0;
-volatile int pending_signal = 0;
-volatile int something_to_do = 0;
-volatile int force_major_slice = 0;
+#if macintosh
+#include "rotatecursor.h"
+#endif /* macintosh */
+
+int volatile async_signal_mode = 0;
+int volatile pending_signal = 0;
+int volatile something_to_do = 0;
+int volatile force_major_slice = 0;
 value signal_handlers = 0;
-void (*enter_blocking_section_hook)() = NULL;
-void (*leave_blocking_section_hook)() = NULL;
+void (*enter_blocking_section_hook)(void) = NULL;
+void (*leave_blocking_section_hook)(void) = NULL;
+void (* volatile async_action_hook)(void) = NULL;
+
+void process_event(void)
+{
+  int signal_number;
+  void (*async_action)(void);
+  if (force_major_slice) minor_collection ();
+  /* If a signal arrives between the following two instructions,
+     it will be lost.  To do: use atomic swap or atomic read-and-clear
+     for processors that support it? */
+  signal_number = pending_signal;
+  pending_signal = 0;
+  if (signal_number) execute_signal(signal_number, 0);
+  /* If an async action is scheduled between the following two instructions,
+     it will be lost. */
+  async_action = async_action_hook;
+  async_action_hook = NULL;
+  if (async_action != NULL) (*async_action)();
+#if macintosh
+  ROTATECURSOR_MAGIC ();
+#endif
+}
 
 void execute_signal(int signal_number, int in_signal_handler)
 {

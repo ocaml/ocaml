@@ -30,10 +30,6 @@
 #include "signals.h"
 #include "stacks.h"
 
-#if macintosh
-#include "rotatecursor.h"
-#endif /* macintosh */
-
 /* Registers for the abstract machine:
         pc         the code pointer
         sp         the stack pointer (grows downward)
@@ -70,6 +66,21 @@ sp is a local copy of the global variable extern_sp. */
 #define Restore_after_gc { accu = sp[0]; env = sp[1]; sp += 2; }
 #define Setup_for_c_call { *--sp = env; extern_sp = sp; }
 #define Restore_after_c_call { sp = extern_sp; env = *sp++; }
+
+/* An event frame must look like accu + a C_CALL frame + a RETURN 1 frame */
+#define Setup_for_event \
+  { sp -= 6; \
+    sp[0] = accu; /* accu */ \
+    sp[1] = Val_unit; /* C_CALL frame: dummy environment */ \
+    sp[2] = Val_unit; /* RETURN frame: dummy local 0 */ \
+    sp[3] = (value) pc; /* RETURN frame: saved return address */ \
+    sp[4] = env; /* RETURN frame: saved environment */ \
+    sp[5] = Val_long(extra_args); /* RETURN frame: saved extra args */ \
+    extern_sp = sp; }
+#define Restore_after_event \
+  { sp = extern_sp; accu = sp[0]; \
+    pc = (code_t) sp[3]; env = sp[4]; extra_args = Long_val(sp[5]); \
+    sp += 6; }
 
 /* Debugger interface */
 
@@ -789,24 +800,9 @@ value interprete(code_t prog, asize_t prog_size)
 
     process_signal:
       something_to_do = 0;
-      if (force_major_slice){
-        Setup_for_gc;
-        minor_collection ();
-        Restore_after_gc;
-      }
-      /* If a signal arrives between the following two instructions,
-         it will be lost. */
-      { int signal_number = pending_signal;
-        pending_signal = 0;
-        if (signal_number) {
-          Setup_for_gc;
-          execute_signal(signal_number, 0);
-          Restore_after_gc;
-        }
-      }
-#if macintosh
-      ROTATECURSOR_MAGIC ();
-#endif
+      Setup_for_event;
+      process_event();
+      Restore_after_event;
       Next;
 
 /* Calling C functions */
