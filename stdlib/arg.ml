@@ -41,7 +41,9 @@ let rec assoc3 x l =
 
 let usage speclist errmsg =
   eprintf "%s\n" errmsg;
-  List.iter (function (key, _, doc) -> eprintf "  %s %s\n" key doc) speclist
+  List.iter (function (key, _, doc) -> eprintf "  %s %s\n" key doc) speclist;
+  try ignore (assoc3 "-help" speclist)
+  with Not_found -> eprintf "  -help  display this list of options\n";
 ;;
 
 let current = ref 0;;

@@ -13,9 +13,9 @@
 (* $Id$ *)
 
 type stat = {
-  minor_words : int;
-  promoted_words : int;
-  major_words : int;
+  minor_words : float;
+  promoted_words : float;
+  major_words : float;
   minor_collections : int;
   major_collections : int;
   heap_words : int;
@@ -39,7 +39,7 @@ type control = {
 };;
 
 external stat : unit -> stat = "gc_stat";;
-external counters : unit -> (int * int * int) = "gc_counters";;
+external counters : unit -> (float * float * float) = "gc_counters";;
 external get : unit -> control = "gc_get";;
 external set : control -> unit = "gc_set";;
 external minor : unit -> unit = "gc_minor";;
@@ -51,9 +51,9 @@ open Printf;;
 
 let print_stat c =
   let st = stat () in
-  fprintf c "minor_words: %d\n" st.minor_words;
-  fprintf c "promoted_words: %d\n" st.promoted_words;
-  fprintf c "major_words: %d\n" st.major_words;
+  fprintf c "minor_words: %.0f\n" st.minor_words;
+  fprintf c "promoted_words: %.0f\n" st.promoted_words;
+  fprintf c "major_words: %.0f\n" st.major_words;
   fprintf c "minor_collections: %d\n" st.minor_collections;
   fprintf c "major_collections: %d\n" st.major_collections;
   fprintf c "heap_words: %d\n" st.heap_words;
@@ -68,7 +68,26 @@ let print_stat c =
 ;;
 
 let allocated_bytes () =
-  let (mi, pro, ma) = counters () in (mi + ma - pro) * (Sys.word_size / 8)
+  let (mi, pro, ma) = counters () in
+  (mi +. ma -. pro) *. float_of_int (Sys.word_size / 8)
 ;;
 
 external finalise : ('a -> unit) -> 'a -> unit = "final_register";;
+
+
+type alarm = {mutable active : bool; f : unit -> unit};;
+
+let rec call_alarm a =
+  if a.active then begin
+    finalise call_alarm a;
+    a.f ();
+  end;
+;;
+
+let create_alarm f =
+  let a = { active = true; f = f } in
+  finalise call_alarm a;
+  a
+;;
+
+let delete_alarm a = a.active <- false;;

@@ -15,9 +15,9 @@
 (* Module [Gc]: memory management control and statistics; finalised values *)
 
 type stat = {
-  minor_words : int;
-  promoted_words : int;
-  major_words : int;
+  minor_words : float;
+  promoted_words : float;
+  major_words : float;
   minor_collections : int;
   major_collections : int;
   heap_words : int;
@@ -28,7 +28,7 @@ type stat = {
   free_blocks : int;
   largest_free : int;
   fragments : int;
-  compactions : int
+  compactions : int;
 }
   (* The memory management counters are returned in a [stat] record.
      The fields of this record are:
@@ -71,7 +71,7 @@ type control = {
   mutable space_overhead : int;
   mutable verbose : int;
   mutable max_overhead : int;
-  mutable stack_limit : int
+  mutable stack_limit : int;
 }
 
   (* The GC parameters are given as a [control] record.  The fields are:
@@ -114,7 +114,7 @@ type control = {
 external stat : unit -> stat = "gc_stat"
   (* Return the current values of the memory management counters in a
      [stat] record. *)
-external counters : unit -> (int * int * int) = "gc_counters"
+external counters : unit -> (float * float * float) = "gc_counters"
   (* Return [(minor_words, promoted_words, major_words)].  Much faster
      than [stat]. *)
 external get : unit -> control = "gc_get"
@@ -138,10 +138,10 @@ val print_stat : out_channel -> unit
   (* Print the current values of the memory management counters (in
      human-readable form) into the channel argument. *)
 
-val allocated_bytes : unit -> int
+val allocated_bytes : unit -> float
   (* Return the total number of bytes allocated since the program was
-     started.  Warning: on 32-bit machines, this counter can easily
-     overflow and roll over. *)
+     started.  It is returned as a [float] to avoid overflow problems
+     with [int] on 32-bit machines. *)
 
 
 val finalise : ('a -> unit) -> 'a -> unit;;
@@ -184,4 +184,22 @@ val finalise : ('a -> unit) -> 'a -> unit;;
      some immutable values, especially floating-point numbers when
      stored into arrays, so they can be finalised and collected while
      another copy is still in use by the program.
+  *)
+
+
+type alarm;;
+  (* An alarm is a piece of data that calls a user function at the end of
+     each major GC cycle.  The following functions are provided to create
+     and delete alarms.
+  *)
+
+val create_alarm : (unit -> unit) -> alarm;;
+  (* [create_alarm f] will arrange for f to be called at the end of each
+     major GC cycle.  A value of type [alarm] is returned that you can
+     use to call [delete_alarm].
+  *)
+
+val delete_alarm : alarm -> unit;;
+  (* [delete_alarm a] will stop the calls to the function associated
+     to [a].  Calling [delete_alarm a] again has no effect.
   *)
