@@ -1549,6 +1549,7 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
 and unify_kind k1 k2 =
   let k1 = field_kind_repr k1 in
   let k2 = field_kind_repr k2 in
+  if k1 == k2 then () else
   match k1, k2 with
     (Fvar r, (Fvar _ | Fpresent))             -> r := Some k2
   | (Fpresent, Fvar r)                        -> r := Some k1
@@ -1925,6 +1926,7 @@ and moregen_fields inst_nongen type_pairs env ty1 ty2 =
 and moregen_kind k1 k2 =
   let k1 = field_kind_repr k1 in
   let k2 = field_kind_repr k2 in
+  if k1 == k2 then () else
   match k1, k2 with
     (Fvar r, (Fvar _ | Fpresent))  -> r := Some k2
   | (Fpresent, Fpresent)           -> ()
@@ -2266,7 +2268,7 @@ let match_class_types env pat_sch subj_sch =
              let k = field_kind_repr k in
              begin match k with
                Fvar r -> r := Some Fabsent; err
-             | _      ->                    CM_Hide_public lab::err
+             | _      -> CM_Hide_public lab::err
              end
            in
            if Concr.mem lab sign1.cty_concr then err
