@@ -52,7 +52,7 @@ installopt:
 		test -f $$f && cp $$f "$(LIBDIR)/camlp4/." || true ; \
 	done
 	# Special treatment for this one: some versions of make don't like $(A) in $(TARGET:.cma=.$(A)) 
-	target="`echo $(TARGET) | sed -e 's/\.cma$$/.$(A))/'`" ; \
+	target="`echo $(TARGET) | sed -e 's/\.cma$$/.$(A)/'`" ; \
 	   test -f $$target && cp $$target "$(LIBDIR)/camlp4/." || true
 
 include .depend
