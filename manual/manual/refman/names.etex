@@ -28,7 +28,6 @@ lowercase letter for this purpose.
 
 \subsubsection*{Naming objects}
 
-\stepcounter{footnote}
 \begin{syntax}
 value-name:
         lowercase-ident
@@ -52,7 +51,7 @@ label-name:
         lowercase-ident
 ;
 tag-name:
-        capitalized-ident\footnotemark
+        capitalized-ident
 ;
 typeconstr-name:
         lowercase-ident
@@ -81,12 +80,11 @@ Keywords such as '::' and 'false' are also constructor names. The
 capitalization rules  are summarized in the table
 below.
 
-\addtocounter{footnote}{-1}
 \begin{tableau}{|l|l|}{Name space}{Case of first letter}
 \entree{Values}{lowercase}
 \entree{Constructors}{uppercase}
 \entree{Labels}{lowercase}
-\entree{Variant tag}{uppercase\footnotemark}
+\entree{Variant tag}{uppercase}
 \entree{Type constructors}{lowercase}
 \entree{Record fields}{lowercase}
 \entree{Classes}{lowercase}
@@ -94,8 +92,11 @@ below.
 \entree{Modules}{uppercase}
 \entree{Module types}{any}
 \end{tableau}
-\footnotetext{Actually the implementation accepts lowercase variant
-tags also, but we suggest you avoid them for portability.}
+
+{\it Note on variant tags:\/} the current implementation accepts
+lowercase variant tags in addition to uppercase variant tags, but we
+suggest you avoid lowercase variant tags for portability and
+compatibility with future OCaml versions.
 
 \subsubsection*{Referring to named objects}
 
