@@ -358,15 +358,18 @@ CAMLprim value caml_classify_float(value vd)
     return Val_int(FP_normal);
   }
 #else
-  double d = Double_val(vd);
-  uint32 h, l;
+  union { 
+    double d;
 #ifdef ARCH_BIG_ENDIAN
-  h = ((uint32 *) &d)[0];
-  l = ((uint32 *) &d)[1];
+    struct { uint32 h; uint32 l; } i;
 #else
-  l = ((uint32 *) &d)[0];
-  h = ((uint32 *) &d)[1];
+    struct { uint32 l; uint32 h; } i;
 #endif
+  } u;
+  uint32 h, l;
+
+  u.d = Double_val(vd);
+  h = u.i.h;  l = u.i.l;
   l = l | (h & 0xFFFFF);
   h = h & 0x7FF00000;
   if ((h | l) == 0)
