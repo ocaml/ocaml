@@ -84,7 +84,13 @@ let blit a1 ofs1 a2 ofs2 len =
   if len < 0 or ofs1 < 0 or ofs1 + len > length a1
              or ofs2 < 0 or ofs2 + len > length a2
   then invalid_arg "Array.blit"
+  else if ofs1 < ofs2 then
+    (* Top-down copy *)
+    for i = len - 1 downto 0 do
+      unsafe_set a2 (ofs2 + i) (unsafe_get a1 (ofs1 + i))
+    done
   else
+    (* Bottom-up copy *)
     for i = 0 to len - 1 do
       unsafe_set a2 (ofs2 + i) (unsafe_get a1 (ofs1 + i))
     done
