@@ -29,7 +29,7 @@
 code_t start_code;
 asize_t code_size;
 unsigned char * saved_code;
-char code_md5[16];
+unsigned char code_md5[16];
 
 /* Read the main bytecode block from a file */
 

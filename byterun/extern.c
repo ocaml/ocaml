@@ -346,7 +346,7 @@ static void extern_rec(v)
     if (!extern_closures)
       extern_invalid_argument("output_value: functional value");
     writecode32(CODE_CODEPOINTER, (char *) v - code_area_start);
-    writeblock(code_checksum(), 16);
+    writeblock((char *) code_checksum(), 16);
     return;
   }
   extern_invalid_argument("output_value: abstract value");

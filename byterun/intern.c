@@ -344,9 +344,9 @@ value marshal_data_size(buff, ofs) /* ML */
 
 #include "md5.h"
 
-char * code_checksum()
+unsigned char * code_checksum()
 {
-  static char checksum[16];
+  static unsigned char checksum[16];
   static int checksum_computed = 0;
 
   if (! checksum_computed) {
@@ -365,9 +365,12 @@ char * code_checksum()
 
 #include "fix_code.h"
 
-char * code_checksum()
+unsigned char * code_checksum()
 {
   return code_md5;
 }
 
 #endif
+
+
+

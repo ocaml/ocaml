@@ -24,7 +24,7 @@
 extern code_t start_code;
 extern asize_t code_size;
 extern unsigned char * saved_code;
-extern char code_md5[16];
+extern unsigned char code_md5[16];
 
 void load_code P((int fd, asize_t len));
 void fixup_endianness P((code_t code, asize_t len));
