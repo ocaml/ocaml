@@ -165,6 +165,8 @@ and expr floc sh =
         ExDyn (floc loc) (self x1)
     | ExDco loc x1 t1 ->
         ExDco loc (self x1) (ctyp floc sh t1)
+    | ExDtm loc x1 ->
+        ExDtm (floc loc) (module_expr floc sh x1)
 (*< JOCAML *)
 ]
 (*> JOCAML *)
@@ -238,6 +240,10 @@ and module_expr floc sh =
         MeFun (floc loc) x1 (module_type floc sh x2) (self x3)
     | MeStr loc x1 -> MeStr (floc loc) (List.map (str_item floc sh) x1)
     | MeTyc loc x1 x2 -> MeTyc (floc loc) (self x1) (module_type floc sh x2)
+(*> JOCAML *)
+    | MeDtm loc x1 x2 ->
+        MeDtm (floc loc) (expr floc sh x1) (module_type floc sh x2)
+(*< JOCAML *)
     | MeUid loc x1 -> MeUid (floc loc) x1 ]
 and str_item floc sh =
   self where rec self =

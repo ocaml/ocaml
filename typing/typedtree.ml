@@ -87,6 +87,7 @@ and expression_desc =
   | Texp_loc of joinlocation list * expression
   | Texp_dynamic of expression
   | Texp_coerce of expression * Parsetree.core_type
+  | Texp_dyntype of module_expr
 
 and joinlocation =
     {jloc_desc : joinident * joinautomaton list * expression ;
@@ -171,6 +172,9 @@ and module_expr_desc =
   | Tmod_functor of Ident.t * module_type * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
   | Tmod_constraint of module_expr * module_type * module_coercion
+(*> JOCAML *)
+  | Tmod_dyntype of expression
+(*< JOCAML *)
 
 and structure = structure_item list
 

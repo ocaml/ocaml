@@ -39,7 +39,7 @@ let ijpatt = Grammar.Entry.create gram "ijpatt"
 let label_ijpatt = Grammar.Entry.create gram "label_ijpatt"
 let ijpatt_label_ident = Grammar.Entry.create gram "label_ijpatt"
 
-EXTEND
+EXTEND (* join calculus *)
  joinident:
    [[id=LIDENT -> (loc, id)]];
 
@@ -127,12 +127,6 @@ EXTEND
         ExLoc (loc, d, e)
     ]];
 
- expr: LEVEL "apply"
-    [[
-      "dynamic" ; e = SELF -> ExDyn (loc,e)
-     | "coerce" ; "(" ; e = SELF ; ":" ; t=ctyp ; ")" -> ExDco (loc, e, t)
-    ]];
-
  str_item: LEVEL "top"
     [[
       "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ;
@@ -157,6 +151,20 @@ EXTEND
     [[
        "{" ; "}" ->  ExNul (loc)
     ]];
-
 END
 
+
+
+EXTEND (* dynamic typing *)
+ expr: LEVEL "apply"
+    [[
+       "dynamic"; "module"; e = module_expr -> ExDtm (loc, e)
+     | "dynamic"; e = expr -> ExDyn (loc, e)
+     | "coerce"; "("; e = SELF; ":"; t=ctyp; ")" -> ExDco (loc, e, t)
+    ]];
+
+ module_expr:
+    [[
+      "coerce"; e = expr; ":"; s = module_type -> MeDtm (loc, e, s)
+    ]];
+END

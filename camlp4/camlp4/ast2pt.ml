@@ -569,6 +569,8 @@ value rec expr =
       mkexp loc (Pexp_dynamic (expr e))
   | ExDco loc e t ->
       mkexp loc (Pexp_coerce (expr e) (ctyp t))
+  | ExDtm loc me ->
+      mkexp loc (Pexp_dyntype (module_expr me))
 (*< JOCAML *)
   ]
 (*> JOCAML *)
@@ -661,6 +663,10 @@ and module_expr =
       mkmod loc (Pmod_structure (List.fold_right str_item sl []))
   | MeTyc loc me mt ->
       mkmod loc (Pmod_constraint (module_expr me) (module_type mt))
+(*> JOCAML *)
+  | MeDtm loc e mt ->
+      mkmod loc (Pmod_dyntype (expr e) (module_type mt))
+(*< JOCAML *)
   | MeUid loc s -> mkmod loc (Pmod_ident (lident s)) ]
 and str_item s l =
   match s with

@@ -347,6 +347,15 @@ let rec type_module env smod =
         mod_type = mty;
         mod_env = env;
         mod_loc = smod.pmod_loc }
+(*> JOCAML *)
+  | Pmod_dyntype(sexpr,smty) ->
+      let expr = Typecore.type_expression env sexpr in
+      let mty = transl_modtype env smty in
+      { mod_desc = Tmod_dyntype expr;
+        mod_type = mty;
+        mod_env = env;
+        mod_loc = smod.pmod_loc }
+(*< JOCAML *)
 
 and type_structure env sstr =
   let type_names = ref StringSet.empty

@@ -316,6 +316,9 @@ and expression i ppf x =
       line i ppf "Pexp_coerce\n";
       expression i ppf e;
       core_type i ppf ct;
+  | Pexp_dyntype me ->
+      line i ppf "Pexp_dyntype\n";
+      module_expr i ppf me;
 
 and joindefinition i ppf d = list i joinautomaton ppf d
 
@@ -347,7 +350,7 @@ and joinlocation i ppf l =
   joinident i ppf id;
   joindefinition i ppf d;
   expression i ppf p
-(* < JOCAML *)
+(*< JOCAML *)
 
 and value_description i ppf x =
   line i ppf "value_description\n";
@@ -595,6 +598,12 @@ and module_expr i ppf x =
       line i ppf "Pmod_constraint\n";
       module_expr i ppf me;
       module_type i ppf mt;
+(*> JOCAML *)
+  | Pmod_dyntype (e, mt) ->
+      line i ppf "Pmod_constraint\n";
+      expression i ppf e;
+      module_type i ppf mt;
+(*< JOCAML *)
 
 and structure i ppf x = list i structure_item ppf x
 

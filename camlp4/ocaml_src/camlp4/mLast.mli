@@ -108,6 +108,7 @@ and expr =
   | ExLoc of loc * joinlocation list * expr
   | ExDyn of loc * expr
   | ExDco of loc * expr * ctyp
+  | ExDtm of loc * module_expr
 and joinlocation = loc * joinident * joinautomaton list * expr
 and joinautomaton = loc * joinclause list
 and joinclause = loc * joinpattern list * expr
@@ -143,6 +144,7 @@ and module_expr =
   | MeFun of loc * string * module_type * module_expr
   | MeStr of loc * str_item list
   | MeTyc of loc * module_expr * module_type
+  | MeDtm of loc * expr * module_type
   | MeUid of loc * string
 and str_item =
     StCls of loc * class_expr class_infos list
