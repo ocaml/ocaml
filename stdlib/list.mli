@@ -27,6 +27,7 @@ val nth : 'a list -> int -> 'a
            Raise [Failure "nth"] if the list is too short. *)
 val rev : 'a list -> 'a list
         (* List reversal. *)
+val concat  : 'a list list -> 'a list
 val flatten : 'a list list -> 'a list
         (* Catenate (flatten) a list of lists. *)
 

@@ -43,6 +43,8 @@ let rec flatten = function
     [] -> []
   | l::r -> l @ flatten r
 
+let concat = flatten
+
 let rec map f = function
     [] -> []
   | a::l -> let r = f a in r :: map f l
