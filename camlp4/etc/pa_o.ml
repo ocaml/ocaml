@@ -848,7 +848,7 @@ EXTEND
     [ [ t1 = SELF; "as"; "'"; i = ident -> <:ctyp< $t1$ as '$i$ >> ]
     | "arrow" RIGHTA
       [ t1 = SELF; "->"; t2 = SELF -> <:ctyp< $t1$ -> $t2$ >> ]
-    | [ t = SELF; "*"; tl = LIST1 ctyp LEVEL "ctyp1" SEP "*" ->
+    | [ t = SELF; "*"; tl = LIST1 (ctyp LEVEL "ctyp1") SEP "*" ->
           <:ctyp< ( $list:[t :: tl]$ ) >> ]
     | "ctyp1"
       [ t1 = SELF; t2 = SELF -> <:ctyp< $t2$ $t1$ >> ]
@@ -1061,8 +1061,8 @@ EXTEND
     [ [ e = SELF; "#"; lab = label -> <:expr< $e$ # $lab$ >> ] ]
   ;
   expr: LEVEL "simple"
-    [ [ "("; e = SELF; ":"; t1 = ctyp; ":>"; t2 = ctyp; ")" ->
-          <:expr< ($e$ : $t1$ :> $t2$) >>
+    [ [ "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
+          <:expr< ($e$ : $t$ :> $t2$) >>
       | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
       | "{<"; ">}" -> <:expr< {< >} >>
       | "{<"; fel = field_expr_list; ">}" -> <:expr< {< $list:fel$ >} >> ] ]
