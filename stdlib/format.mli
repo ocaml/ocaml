@@ -31,7 +31,7 @@ val open_vbox : int -> unit
            current indentation. *)
 val open_hbox : unit -> unit
         (* [open_hbox ()] opens a new pretty-printing box.
-           This box is ``horizontal'': the line is not List.split in this box
+           This box is ``horizontal'': the line is not split in this box
            (new lines may still occur inside boxes nested deeper). *)
 val open_hvbox : int -> unit
         (* [open_hovbox d] opens a new pretty-printing box
@@ -72,10 +72,10 @@ val print_bool : bool -> unit
 val print_break : int -> int -> unit
         (* Insert a break hint in a pretty-printing box.
            [print_break nspaces offset] indicates that the line may
-           be List.split (a newline character is printed) at this point,
+           be split (a newline character is printed) at this point,
            if the contents of the current box does not fit on one line.
-           If the line is List.split at that point, [offset] is added to
-           the current indentation. If the line is not List.split,
+           If the line is split at that point, [offset] is added to
+           the current indentation. If the line is not split,
            [nspaces] spaces are printed. *)
 val print_cut : unit -> unit
         (* [print_cut ()] is equivalent to [print_break 0 0].
@@ -94,8 +94,9 @@ val print_newline : unit -> unit
         (* Equivalent to [print_flush] followed by a new line. *)
 
 val print_if_newline : unit -> unit
-        (* If the preceding line has not been List.split, the next
-           formatting command is ignored. *)
+        (* Execute the next formatting command if the preceding line
+           has just been split. Otherwise, ignore the next formatting
+           command. *)
 
 (*** Tabulations *)
 val open_tbox : unit -> unit
@@ -122,7 +123,7 @@ val print_tab : unit -> unit
 val set_margin : int -> unit
         (* [set_margin d] sets the val of the right margin
            to [d] (in characters): this val is used to detect line
-           overflows that leads to List.split lines.
+           overflows that leads to split lines.
            Nothing happens if [d] is not greater than 1. *)
 val get_margin : unit -> int
         (* Return the position of the right margin. *)

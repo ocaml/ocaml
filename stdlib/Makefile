@@ -5,7 +5,7 @@ COMPILER=../camlc
 CAMLC=$(RUNTIME) $(COMPILER)
 OPTCOMPILER=../camlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-CAMLDEP=../tools/camldep
+CAMLDEP=../boot/camlrun ../tools/camldep
 
 OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
   hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \
