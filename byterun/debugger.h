@@ -73,9 +73,6 @@ enum debugger_request {
   /* Return the specified global variable. Reply is one value. */
   REQ_GET_ACCU = 'A',           /* no args */
   /* Return the current contents of the accumulator. Reply is one value. */
-  REQ_GET_OBJ = 'O',            /* mlvalue v */
-  /* Send the contents of the given value v.
-     Reply is one uint32 for the header, then N values for the fields. */
   REQ_GET_HEADER = 'H',         /* mlvalue v */
   /* As REQ_GET_OBJ, but sends only the header. */
   REQ_GET_FIELD = 'F',          /* mlvalue v, uint32 fieldnum */

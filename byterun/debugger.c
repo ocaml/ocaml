@@ -281,13 +281,6 @@ void debugger(event)
       putval(dbg_out, *extern_sp);
       flush(dbg_out);
       break;
-    case REQ_GET_OBJ:
-      val = getval(dbg_in);
-      putword(dbg_out, Hd_val(val));
-      for (size = Wosize_val(val), p = &Field(val, 0); size > 0; size--, p++)
-        putval(dbg_out, *p);
-      flush(dbg_out);
-      break;
     case REQ_GET_HEADER:
       val = getval(dbg_in);
       putword(dbg_out, Hd_val(val));
