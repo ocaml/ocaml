@@ -1006,7 +1006,7 @@ echo "Configuring LablTk..."
 
 if test $tk_wanted = no; then
   has_tk=false
-elif  "$ostype" = "Cygwin"; then
+elif test "$ostype" = "Cygwin"; then
   has_tk=true
 elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
   echo "X11 not found."
