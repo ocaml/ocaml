@@ -531,10 +531,10 @@ case "$host" in
   alpha*-*-freebsd*)            arch=alpha; system=freebsd;;
   alpha*-*-netbsd*)             arch=alpha; system=netbsd;;
   alpha*-*-openbsd*)            arch=alpha; system=openbsd;;
-  sparc-*-sunos4.*)             arch=sparc; system=sunos;;
-  sparc-*-solaris2.*)           arch=sparc; system=solaris;;
-  sparc-*-*bsd*)                arch=sparc; system=bsd;;
-  sparc-*-linux*)               arch=sparc; system=linux;;
+  sparc*-*-sunos4.*)            arch=sparc; system=sunos;;
+  sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
+  sparc*-*-*bsd*)               arch=sparc; system=bsd;;
+  sparc*-*-linux*)              arch=sparc; system=linux;;
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
@@ -1004,7 +1004,7 @@ esac
 
 case "$host" in
   mips-*-ultrix*) bignum_arch=mips;;
-  alpha-*-osf*) bignum_arch=alpha;;
+  alpha*-*-osf*) bignum_arch=alpha;;
   i[3456]86-*-linux*)
     case `sh ./runtest elf.c` in
       elf) bignum_arch=x86;;
@@ -1016,9 +1016,9 @@ case "$host" in
       elf) bignum_arch=x86;;
         *) bignum_arch=C;;
     esac;;
-  sparc-*-sunos*) bignum_arch=supersparc;;
-  sparc-*-solaris*) bignum_arch=supersparc-solaris;;
-  sparc-*-*bsd*) bignum_arch=sparc;;
+  sparc*-*-sunos*) bignum_arch=supersparc;;
+  sparc*-*-solaris*) bignum_arch=supersparc-solaris;;
+  sparc*-*-*bsd*) bignum_arch=sparc;;
   m68k-*-sunos*) bignum_arch=68K;;
   *) bignum_arch=C
 esac
