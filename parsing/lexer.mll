@@ -179,6 +179,7 @@ rule token = parse
         token lexbuf }
   | "#" { SHARP }
   | "&" { AMPERSAND }
+  | "&&" { AMPERAMPER }
   | "'" { QUOTE }
   | "(" { LPAREN }
   | ")" { RPAREN }
@@ -204,6 +205,7 @@ rule token = parse
   | "_" { UNDERSCORE }
   | "{" { LBRACE }
   | "|" { BAR }
+  | "||" { BARBAR }
   | "|]" { BARRBRACKET }
   | ">]" { GREATERRBRACKET }
   | "}" { RBRACE }

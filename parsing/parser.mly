@@ -77,10 +77,12 @@ let rec mkrangepat c1 c2 =
 
 /* Tokens */
 
+%token AMPERAMPER
 %token AMPERSAND
 %token AND
 %token AS
 %token BAR
+%token BARBAR
 %token BARRBRACKET
 %token BEGIN
 %token <char> CHAR
@@ -172,8 +174,8 @@ let rec mkrangepat c1 c2 =
 %left  BAR                              /* | in patterns */
 %left  COMMA                            /* , in expressions, patterns, types */
 %right prec_type_arrow                  /* -> in type expressions */
-%right OR                               /* or */
-%right AMPERSAND                        /* & */
+%right OR BARBAR                        /* or */
+%right AMPERSAND AMPERAMPER             /* & */
 %left  INFIXOP1 EQUAL                   /* = < > etc */
 %right COLONCOLON                       /* :: */
 %left  INFIXOP2 SUBTRACTIVE             /* + - */
@@ -382,8 +384,12 @@ expr:
       { mkinfix $1 "=" $3 } 
   | expr OR expr
       { mkinfix $1 "or" $3 }
+  | expr BARBAR expr
+      { mkinfix $1 "||" $3 }
   | expr AMPERSAND expr
       { mkinfix $1 "&" $3 }
+  | expr AMPERAMPER expr
+      { mkinfix $1 "&&" $3 }
   | expr COLONEQUAL expr
       { mkinfix $1 ":=" $3 }
   | SUBTRACTIVE expr %prec prec_unary_minus
@@ -734,7 +740,9 @@ operator:
   | STAR                                        { "*" }
   | EQUAL                                       { "=" }
   | OR                                          { "or" }
+  | BARBAR                                      { "||" }
   | AMPERSAND                                   { "&" }
+  | AMPERAMPER                                  { "&&" }
   | COLONEQUAL                                  { ":=" }
 ;
 constr_ident:
