@@ -13,7 +13,7 @@
 
 (* Module [Stack]: last-in first-out stacks *)
 
-(* This modl implements stacks (LIFOs), with in-place modification. *)
+(* This module implements stacks (LIFOs), with in-place modification. *)
 
 type 'a t
         (* The type of stacks containing elements of type ['a]. *)

@@ -6,6 +6,8 @@ array.cmo: list.cmi array.cmi
 array.cmx: list.cmx array.cmi 
 char.cmo: string.cmi char.cmi 
 char.cmx: string.cmx char.cmi 
+digest.cmo: string.cmi digest.cmi 
+digest.cmx: string.cmx digest.cmi 
 filename.cmo: string.cmi filename.cmi 
 filename.cmx: string.cmx filename.cmi 
 format.cmo: queue.cmi string.cmi format.cmi 
