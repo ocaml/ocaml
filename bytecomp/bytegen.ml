@@ -304,9 +304,9 @@ let comp_primitive p args =
   | Pfloatcomp Cgt -> Kccall("gt_float", 2)
   | Pfloatcomp Cle -> Kccall("le_float", 2)
   | Pfloatcomp Cge -> Kccall("ge_float", 2)
-  | Pstringlength -> Kccall("ml_string_length", 1)
-  | Pstringrefs -> Kccall("string_get", 2)
-  | Pstringsets -> Kccall("string_set", 3)
+  | Pstringlength -> Kccall("caml_ml_string_length", 1)
+  | Pstringrefs -> Kccall("caml_string_get", 2)
+  | Pstringsets -> Kccall("caml_string_set", 3)
   | Pstringrefu -> Kgetstringchar
   | Pstringsetu -> Ksetstringchar
   | Parraylength kind -> Kvectlength
@@ -324,7 +324,7 @@ let comp_primitive p args =
   | Parraysetu _ -> Ksetvectitem
   | Pisint -> Kisint
   | Pisout -> Kisout
-  | Pbittest -> Kccall("bitvect_test", 2)
+  | Pbittest -> Kccall("caml_bitvect_test", 2)
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
   | Pintofbint bi -> comp_bint_primitive bi "to_int" args
   | Pcvtbint(Pint32, Pnativeint) -> Kccall("nativeint_of_int32", 1)

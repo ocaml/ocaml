@@ -30,7 +30,7 @@
 /* **** debugger.c */
 /* **** dynlink.c */
 /* **** extern.c */
-/* **** fail.c */
+/* **** fail.c                check asmrun */
 /* **** finalise.c */
 /* **** fix_code.c */
 /* **** floats.c */
@@ -57,17 +57,46 @@
 /* **** parsing.c */
 /* **** prims.c */
 /* **** printexc.c */
-/* **** roots.c */
+/* **** roots.c                     check asmrun */
 /* **** rotatecursor.c */
-/* **** signals.c */
+/* **** signals.c                   check asmrun */
 /* **** stacks.c */
-/* **** startup.c */
+/* **** startup.c                   check asmrun */
 /* **** str.c */
+#define string_length caml_string_length
+/*      ml_string_length -> caml_ml_string_length */
+/*      create_string -> caml_create_string */
+/*      string_get -> caml_string_get */
+/*      string_set -> caml_string_set */
+/*      string_equal -> caml_string_equal */
+/*      string_notequal -> caml_string_notequal */
+/*      string_compare -> caml_string_compare */
+/*      string_lessthan -> caml_string_lessthan */
+/*      string_lessequal -> caml_string_lessequal */
+/*      string_greaterthan -> caml_string_greaterthan */
+/*      string_greaterequal -> caml_string_greaterequal */
+/*      blit_string -> caml_blit_string */
+/*      fill_string -> caml_fill_string */
+/*      is_printable -> caml_is_printable */
+/*      bitvect_test -> caml_bitvect_test */
 
 /* **** sys.c */
-/*      sys_open -> caml_sys_open */
 #define sys_error caml_sys_error
 #define sys_exit caml_sys_exit
+/*      sys_open -> caml_sys_open */
+/*      sys_close -> caml_sys_close */
+/*      sys_file_exists -> caml_sys_file_exists */
+/*      sys_remove -> caml_sys_remove */
+/*      sys_chdir -> caml_sys_chdir */
+/*      sys_getcwd -> caml_sys_getcwd */
+/*      sys_getenv -> caml_sys_getenv */
+/*      sys_get_argv -> caml_sys_get_argv */
+/*    g sys_init -> caml_sys_init */
+/*      sys_system_command -> caml_sys_system_command */
+/*      sys_time -> caml_sys_time */
+/*      sys_random_seed -> caml_sys_random_seed */
+/*      sys_get_config -> caml_sys_get_config */
+/*      sys_read_directory -> caml_sys_read_directory */
 
 /* **** terminfo.c */
 /* **** unix.c */

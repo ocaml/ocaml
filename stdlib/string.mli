@@ -35,7 +35,7 @@ external set : string -> int -> char -> unit = "%string_safe_set"
    Raise [Invalid_argument "index out of bounds"]
    if [n] is outside the range 0 to [(String.length s - 1)]. *)
 
-external create : int -> string = "create_string"
+external create : int -> string = "caml_create_string"
 (** [String.create n] returns a fresh string of length [n].
    The string initially contains arbitrary characters.
    Raise [Invalid_argument] if [n < 0] or [n > Sys.max_string_length].
@@ -157,6 +157,6 @@ val compare: t -> t -> int
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit :
-  string -> int -> string -> int -> int -> unit = "blit_string" "noalloc"
+  string -> int -> string -> int -> int -> unit = "caml_blit_string" "noalloc"
 external unsafe_fill :
-  string -> int -> int -> char -> unit = "fill_string" "noalloc"
+  string -> int -> int -> char -> unit = "caml_fill_string" "noalloc"

@@ -67,7 +67,7 @@ static void hash_aux(value obj)
     switch (tag) {
     case String_tag:
       hash_univ_count--;
-      i = string_length(obj);
+      i = caml_string_length(obj);
       for (p = &Byte_u(obj, 0); i > 0; i--, p++)
         Combine_small(*p);
       break;

@@ -15,8 +15,8 @@
 
 /* Machine-dependent interface with the asm code */
 
-#ifndef _stack_
-#define _stack_
+#ifndef CAML_STACK_H
+#define CAML_STACK_H
 
 /* Macros to access the stack frame */
 #ifdef TARGET_alpha
@@ -102,4 +102,4 @@ extern long caml_globals_inited;
 extern long * caml_frametable[];
 
 
-#endif /* _stack_ */
+#endif /* CAML_STACK_H */

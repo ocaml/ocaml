@@ -393,7 +393,7 @@ CAMLexport void caml_main(char **argv)
   oldify_mopup ();
   /* Initialize system libraries */
   init_exceptions();
-  sys_init(exe_name, argv + pos);
+  caml_sys_init(exe_name, argv + pos);
 #ifdef _WIN32
   /* Start a thread to handle signals */
   if (getenv("CAMLSIGPIPE"))
@@ -448,7 +448,7 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   oldify_mopup ();
   /* Run the code */
   init_exceptions();
-  sys_init("", argv);
+  caml_sys_init("", argv);
   res = interprete(start_code, code_size);
   if (Is_exception_result(res))
     fatal_uncaught_exception(Extract_exception(res));

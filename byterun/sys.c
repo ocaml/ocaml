@@ -106,7 +106,7 @@ CAMLexport void caml_sys_error(value arg)
       str = copy_string(err);
     } else {
       int err_len = strlen(err);
-      int arg_len = string_length(arg);
+      int arg_len = caml_string_length(arg);
       str = alloc_string(arg_len + 2 + err_len);
       memmove(&Byte(str, 0), String_val(arg), arg_len);
       memmove(&Byte(str, arg_len), ": ", 2);
@@ -154,7 +154,7 @@ CAMLprim value caml_sys_open(value path, value flags, value perm)
   int fd;
   char * p;
 
-  p = stat_alloc(string_length(path) + 1);
+  p = stat_alloc(caml_string_length(path) + 1);
   strcpy(p, String_val(path));
   /* open on a named FIFO can block (PR#1533) */
   enter_blocking_section();
@@ -172,13 +172,13 @@ CAMLprim value caml_sys_open(value path, value flags, value perm)
   CAMLreturn(Val_long(fd));
 }
 
-CAMLprim value sys_close(value fd)
+CAMLprim value caml_sys_close(value fd)
 {
   close(Int_val(fd));
   return Val_unit;
 }
 
-CAMLprim value sys_file_exists(value name)
+CAMLprim value caml_sys_file_exists(value name)
 {
 #if macintosh
   int f;
@@ -192,7 +192,7 @@ CAMLprim value sys_file_exists(value name)
 #endif
 }
 
-CAMLprim value sys_remove(value name)
+CAMLprim value caml_sys_remove(value name)
 {
   int ret;
   ret = unlink(String_val(name));
@@ -200,20 +200,20 @@ CAMLprim value sys_remove(value name)
   return Val_unit;
 }
 
-CAMLprim value sys_rename(value oldname, value newname)
+CAMLprim value caml_sys_rename(value oldname, value newname)
 {
   if (rename(String_val(oldname), String_val(newname)) != 0)
     caml_sys_error(oldname);
   return Val_unit;
 }
 
-CAMLprim value sys_chdir(value dirname)
+CAMLprim value caml_sys_chdir(value dirname)
 {
   if (chdir(String_val(dirname)) != 0) caml_sys_error(dirname);
   return Val_unit;
 }
 
-CAMLprim value sys_getcwd(value unit)
+CAMLprim value caml_sys_getcwd(value unit)
 {
   char buff[4096];
 #ifdef HAS_GETCWD
@@ -224,7 +224,7 @@ CAMLprim value sys_getcwd(value unit)
   return copy_string(buff);
 }
 
-CAMLprim value sys_getenv(value var)
+CAMLprim value caml_sys_getenv(value var)
 {
   char * res;
 
@@ -236,7 +236,7 @@ CAMLprim value sys_getenv(value var)
 char * caml_exe_name;
 static char ** caml_main_argv;
 
-CAMLprim value sys_get_argv(value unit)
+CAMLprim value caml_sys_get_argv(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal3 (exe_name, argv, res);
@@ -248,7 +248,7 @@ CAMLprim value sys_get_argv(value unit)
   CAMLreturn(res);
 }
 
-void sys_init(char * exe_name, char **argv)
+void caml_sys_init(char * exe_name, char **argv)
 {
   caml_exe_name = exe_name;
   caml_main_argv = argv;
@@ -265,14 +265,14 @@ void sys_init(char * exe_name, char **argv)
 #endif
 #endif
 
-CAMLprim value sys_system_command(value command)
+CAMLprim value caml_sys_system_command(value command)
 {
   CAMLparam1 (command);
   int status, retcode;
   char *buf;
   unsigned long len;
   
-  len = string_length (command);
+  len = caml_string_length (command);
   buf = stat_alloc (len + 1);
   memmove (buf, String_val (command), len + 1);
   enter_blocking_section ();
@@ -287,7 +287,7 @@ CAMLprim value sys_system_command(value command)
   CAMLreturn (Val_int(retcode));
 }
 
-CAMLprim value sys_time(value unit)
+CAMLprim value caml_sys_time(value unit)
 {
 #ifdef HAS_TIMES
 #ifndef CLK_TCK
@@ -306,7 +306,7 @@ CAMLprim value sys_time(value unit)
 #endif
 }
 
-CAMLprim value sys_random_seed (value unit)
+CAMLprim value caml_sys_random_seed (value unit)
 {
   long seed;
 #ifdef HAS_GETTIMEOFDAY
@@ -322,7 +322,7 @@ CAMLprim value sys_random_seed (value unit)
   return Val_long(seed);
 }
 
-CAMLprim value sys_get_config(value unit)
+CAMLprim value caml_sys_get_config(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal2 (result, ostype);
@@ -334,7 +334,7 @@ CAMLprim value sys_get_config(value unit)
   CAMLreturn (result);
 }
 
-CAMLprim value sys_read_directory(value path)
+CAMLprim value caml_sys_read_directory(value path)
 {
   CAMLparam1(path);
   CAMLlocal1(result);

@@ -79,7 +79,7 @@ static long parse_long(value s, int nbits)
     /* Detect overflow in addition (base * res) + d */
     if (res < (unsigned long) d) failwith("int_of_string");
   }
-  if (p != String_val(s) + string_length(s)) failwith("int_of_string");
+  if (p != String_val(s) + caml_string_length(s)) failwith("int_of_string");
   if (base == 10) {
     /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits - 1) */
     if (res > 1UL << (nbits - 1))
@@ -139,7 +139,7 @@ static char * parse_format(value fmt,
 
   /* Copy Caml format fmt to format_string,
      adding the suffix before the last letter of the format */
-  len = string_length(fmt);
+  len = caml_string_length(fmt);
   len_suffix = strlen(suffix);
   if (len + len_suffix + 1 >= FORMAT_BUFFER_SIZE)
     invalid_argument("format_int: format too long");
@@ -523,7 +523,7 @@ CAMLprim value int64_of_string(value s)
     /* Detect overflow in addition (base * res) + d */
     if (I64_ult(res, I64_of_int32(d))) failwith("int_of_string");
   }
-  if (p != String_val(s) + string_length(s)) failwith("int_of_string");
+  if (p != String_val(s) + caml_string_length(s)) failwith("int_of_string");
   if (base == 10 && I64_ult(max_int64, res)) failwith("int_of_string");
   if (sign < 0) res = I64_neg(res);
   return copy_int64(res);

@@ -28,7 +28,7 @@ value gen_where = ref True;
 value old_sequences = ref False;
 value expand_declare = ref False;
 
-external is_printable : char -> bool = "is_printable";
+external is_printable : char -> bool = "caml_is_printable";
 
 value char_escaped =
   fun

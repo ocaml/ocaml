@@ -137,8 +137,8 @@ static long compare_val(value v1, value v2, int total)
       mlsize_t len1, len2, len;
       unsigned char * p1, * p2;
       if (v1 == v2) break;
-      len1 = string_length(v1);
-      len2 = string_length(v2);
+      len1 = caml_string_length(v1);
+      len2 = caml_string_length(v2);
       for (len = (len1 <= len2 ? len1 : len2),
              p1 = (unsigned char *) String_val(v1),
              p2 = (unsigned char *) String_val(v2);

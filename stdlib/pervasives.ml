@@ -137,9 +137,9 @@ external classify_float: float -> fpclass = "classify_float"
 (* String operations -- more in module String *)
 
 external string_length : string -> int = "%string_length"
-external string_create: int -> string = "create_string"
+external string_create: int -> string = "caml_create_string"
 external string_blit : string -> int -> string -> int -> int -> unit
-                     = "blit_string" "noalloc"
+                     = "caml_blit_string" "noalloc"
 
 let (^) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in

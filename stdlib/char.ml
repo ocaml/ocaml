@@ -21,9 +21,9 @@ external unsafe_chr: int -> char = "%identity"
 let chr n =
   if n < 0 or n > 255 then invalid_arg "Char.chr" else unsafe_chr n
 
-external is_printable: char -> bool = "is_printable"
+external is_printable: char -> bool = "caml_is_printable"
 
-external string_create: int -> string = "create_string"
+external string_create: int -> string = "caml_create_string"
 external string_unsafe_get : string -> int -> char = "%string_unsafe_get"
 external string_unsafe_set : string -> int -> char -> unit
                            = "%string_unsafe_set"

@@ -294,7 +294,7 @@ static void extern_rec(value v)
     /* Output the contents of the object */
     switch(tag) {
     case String_tag: {
-      mlsize_t len = string_length(v);
+      mlsize_t len = caml_string_length(v);
       if (len < 0x20) {
         Write(PREFIX_SMALL_STRING + len);
       } else if (len < 0x100) {

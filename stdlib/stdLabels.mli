@@ -104,7 +104,7 @@ module String :
     external length : string -> int = "%string_length"
     external get : string -> int -> char = "%string_safe_get"
     external set : string -> int -> char -> unit = "%string_safe_set"
-    external create : int -> string = "create_string"
+    external create : int -> string = "caml_create_string"
     val make : int -> char -> string
     val copy : string -> string
     val sub : string -> pos:int -> len:int -> string
@@ -130,7 +130,7 @@ module String :
     external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
     external unsafe_blit :
       src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int ->
-        unit = "blit_string" "noalloc"
-    external unsafe_fill :
-      string -> pos:int -> len:int -> char -> unit = "fill_string" "noalloc"
+        unit = "caml_blit_string" "noalloc"
+    external unsafe_fill : string -> pos:int -> len:int -> char -> unit
+      = "caml_fill_string" "noalloc"
   end

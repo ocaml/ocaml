@@ -113,7 +113,7 @@ CAMLprim value float_of_string(value vs)
   mlsize_t len;
   double d;
 
-  len = string_length(vs);
+  len = caml_string_length(vs);
   buf = len < sizeof(parse_buffer) ? parse_buffer : stat_alloc(len + 1);
   src = String_val(vs);
   dst = buf;
