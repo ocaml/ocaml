@@ -156,36 +156,6 @@ let lambda_smaller lam threshold =
   with Exit ->
     false
 
-(* Check if a lambda term denoting a function is ``pure'',
-   that is without side-effects *and* not containing function definitions *)
-
-let rec is_pure = function
-    Lvar v -> true
-  | Lprim(Pgetglobal id, _) -> true
-  | Lprim(Pfield n, [arg]) -> is_pure arg
-  | _ -> false
-
-(* Generate a direct application *)
-
-let direct_apply fundesc funct ufunct uargs =
-  let app_args =
-    if fundesc.fun_closed then uargs else uargs @ [ufunct] in
-  let app =
-    match fundesc.fun_inline with
-      None -> Udirect_apply(fundesc.fun_label, app_args)
-    | Some(params, body) ->
-        List.fold_right2
-          (fun param arg body -> Ulet(param, arg, body))
-          params app_args body in
-  (* If ufunct can contain side-effects or function definitions,
-     we must make sure that it is evaluated exactly once.
-     If the function is not closed, we evaluate ufunct as part of the
-     arguments.
-     If the function is closed, we force the evaluation of ufunct first. *)
-  if not fundesc.fun_closed || is_pure funct
-  then app
-  else Usequence(ufunct, app)
-
 (* Simplify primitive operations on integers *)
 
 let make_const_int n = (Uconst(Const_base(Const_int n)), Value_integer n)
@@ -227,6 +197,108 @@ let simplif_prim p (args, approxs) =
   | _ ->
       (Uprim(p, args), Value_unknown)
       
+(* Substitute variables in a [ulambda] term and perform
+   some more simplifications on integer primitives.
+   The variables must not be assigned in the term.
+   This is used to substitute "trivial" arguments for parameters
+   during inline expansion. *)
+
+let approx_ulam = function
+    Uconst(Const_base(Const_int n)) -> Value_integer n
+  | Uconst(Const_base(Const_char c)) -> Value_integer(Char.code c)
+  | Uconst(Const_pointer n) -> Value_integer n
+  | _ -> Value_unknown
+
+let substitute sb ulam =
+  let rec subst ulam =
+    match ulam with
+      Uvar v ->
+        begin try Tbl.find v sb with Not_found -> ulam end
+    | Uconst cst -> ulam
+    | Udirect_apply(lbl, args) -> Udirect_apply(lbl, List.map subst args)
+    | Ugeneric_apply(fn, args) -> Ugeneric_apply(subst fn, List.map subst args)
+    | Uclosure(defs, env) -> Uclosure(defs, List.map subst env)
+    | Uoffset(u, ofs) -> Uoffset(subst u, ofs)
+    | Ulet(id, u1, u2) -> Ulet(id, subst u1, subst u2)
+    | Uletrec(bindings, body) ->
+        Uletrec(List.map (fun (id, u) -> (id, subst u)) bindings, subst body)
+    | Uprim(p, args) ->
+        let sargs = List.map subst args in
+        let (res, _) = simplif_prim p (sargs, List.map approx_ulam sargs) in
+        res
+    | Uswitch(arg, sw) ->
+        Uswitch(subst arg,
+                { us_index_consts = sw.us_index_consts;
+                  us_cases_consts = Array.map subst sw.us_cases_consts;
+                  us_index_blocks = sw.us_index_blocks;
+                  us_cases_blocks = Array.map subst sw.us_cases_blocks;
+                  us_checked = sw.us_checked })
+    | Ustaticfail -> Ustaticfail
+    | Ucatch(u1, u2) -> Ucatch(subst u1, subst u2)
+    | Utrywith(u1, id, u2) -> Utrywith(subst u1, id, subst u2)
+    | Uifthenelse(u1, u2, u3) ->
+        begin match subst u1 with
+          Uconst(Const_pointer n) -> if n <> 0 then subst u2 else subst u3
+        | su1 -> Uifthenelse(su1, subst u2, subst u3)
+        end
+    | Usequence(u1, u2) -> Usequence(subst u1, subst u2)
+    | Uwhile(u1, u2) -> Uwhile(subst u1, subst u2)
+    | Ufor(id, u1, u2, dir, u3) -> Ufor(id, subst u1, subst u2, dir, subst u3)
+    | Uassign(id, u) -> Uassign(id, subst u)
+    | Usend(u1, u2, ul) -> Usend(subst u1, subst u2, List.map subst ul)
+  in subst ulam
+
+(* Perform an inline expansion *)
+
+let is_simple_argument = function
+    Uvar _ -> true
+  | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _)) -> true
+  | Uconst(Const_pointer _) -> true
+  | _ -> false
+
+let rec bind_params subst params args body =
+  match (params, args) with
+    ([], []) -> substitute subst body
+  | (p1 :: pl, a1 :: al) ->
+      if is_simple_argument a1
+      then bind_params (Tbl.add p1 a1 subst) pl al body
+      else Ulet(p1, a1, bind_params subst pl al body)
+  | (_, _) -> assert false
+
+(* Check if a lambda term denoting a function is ``pure'',
+   that is without side-effects *and* not containing function definitions *)
+
+let rec is_pure = function
+    Lvar v -> true
+  | Lprim(Pgetglobal id, _) -> true
+  | Lprim(Pfield n, [arg]) -> is_pure arg
+  | _ -> false
+
+(* Generate a direct application *)
+
+let direct_apply fundesc funct ufunct uargs =
+  let app_args =
+    if fundesc.fun_closed then uargs else uargs @ [ufunct] in
+  let app =
+    match fundesc.fun_inline with
+      None -> Udirect_apply(fundesc.fun_label, app_args)
+    | Some(params, body) -> bind_params Tbl.empty params app_args body in
+  (* If ufunct can contain side-effects or function definitions,
+     we must make sure that it is evaluated exactly once.
+     If the function is not closed, we evaluate ufunct as part of the
+     arguments.
+     If the function is closed, we force the evaluation of ufunct first. *)
+  if not fundesc.fun_closed || is_pure funct
+  then app
+  else Usequence(ufunct, app)
+
+(* Add [Value_integer] info to the approximation of an application *)
+
+let strengthen_approx appl approx =
+  match approx_ulam appl with
+    Value_integer _ as intapprox -> intapprox
+  | _ -> approx
+
 (* Maintain the approximation of the global structure being defined *)
 
 let global_approx = ref([||] : value_approximation array)
@@ -267,10 +339,12 @@ let rec close fenv cenv = function
         ((ufunct, Value_closure(fundesc, approx_res)),
          [Uprim(Pmakeblock(_, _), uargs)])
         when List.length uargs = - fundesc.fun_arity ->
-          (direct_apply fundesc funct ufunct uargs, approx_res)
+          let app = direct_apply fundesc funct ufunct uargs in
+          (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when nargs = fundesc.fun_arity ->
-          (direct_apply fundesc funct ufunct uargs, approx_res)
+          let app = direct_apply fundesc funct ufunct uargs in
+          (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
           let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
