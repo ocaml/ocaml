@@ -222,6 +222,12 @@ typing/typetexp.cmo: typing/ctype.cmi typing/env.cmi parsing/location.cmi \
 typing/typetexp.cmx: typing/ctype.cmx typing/env.cmx parsing/location.cmx \
     parsing/longident.cmx utils/misc.cmx parsing/parsetree.cmi \
     typing/printtyp.cmx utils/tbl.cmx typing/types.cmx typing/typetexp.cmi 
+typing/typetexp.pw.cmo: typing/ctype.cmi typing/env.cmi parsing/location.cmi \
+    parsing/longident.cmi utils/misc.cmi parsing/parsetree.cmi \
+    typing/printtyp.cmi utils/tbl.cmi typing/types.cmi 
+typing/typetexp.pw.cmx: typing/ctype.cmx typing/env.cmx parsing/location.cmx \
+    parsing/longident.cmx utils/misc.cmx parsing/parsetree.cmi \
+    typing/printtyp.cmx utils/tbl.cmx typing/types.cmx 
 bytecomp/bytegen.cmi: bytecomp/instruct.cmi bytecomp/lambda.cmi 
 bytecomp/bytelink.cmi: bytecomp/emitcode.cmi bytecomp/symtable.cmi 
 bytecomp/emitcode.cmi: typing/ident.cmi bytecomp/instruct.cmi \
@@ -600,10 +606,10 @@ driver/opterrors.cmx: asmcomp/asmgen.cmx asmcomp/asmlibrarian.cmx \
     typing/typetexp.cmx driver/opterrors.cmi 
 driver/optmain.cmo: asmcomp/asmlibrarian.cmi asmcomp/asmlink.cmi \
     utils/clflags.cmo utils/config.cmi driver/optcompile.cmi \
-    driver/opterrors.cmi asmcomp/printmach.cmi 
+    driver/opterrors.cmi asmcomp/printmach.cmi utils/warnings.cmi 
 driver/optmain.cmx: asmcomp/asmlibrarian.cmx asmcomp/asmlink.cmx \
     utils/clflags.cmx utils/config.cmx driver/optcompile.cmx \
-    driver/opterrors.cmx asmcomp/printmach.cmx 
+    driver/opterrors.cmx asmcomp/printmach.cmx utils/warnings.cmx 
 toplevel/genprintval.cmi: typing/env.cmi typing/path.cmi typing/types.cmi 
 toplevel/printval.cmi: typing/env.cmi typing/path.cmi typing/types.cmi 
 toplevel/topdirs.cmi: parsing/longident.cmi 
