@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <windows.h>
+#include <Richedit.h>
 #include "inria.h"
 #include "inriares.h"
 
@@ -298,6 +299,12 @@ void ForceRepaint(void)
 	InvalidateRect(hwndEdit,NULL,1);
 }
 
+static void Add_Char_To_Queue(int c)
+{
+	HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+	SendMessage(hwndEdit,WM_CHAR,c,1);
+}
+
 /*------------------------------------------------------------------------
  Procedure:     AddLineToControl ID:1
  Purpose:       It will ad the given text at the end of the edit
@@ -423,6 +430,60 @@ static void SaveText(char *fname)
 	free(buf);
 }
 
+
+static void Add_Clipboard_To_Queue(void)
+{
+    if (IsClipboardFormatAvailable(CF_TEXT) &&
+        OpenClipboard(hwndMain))
+    {
+        HANDLE hClipData = GetClipboardData(CF_TEXT);
+
+        if (hClipData)
+        {
+            char *str = GlobalLock(hClipData);
+
+            if (str)
+                while (*str)
+                {
+                    if (*str != '\r')
+                        Add_Char_To_Queue(*str);
+                    str++;
+                }
+            GlobalUnlock(hClipData);
+        }
+        CloseClipboard();
+    }
+
+}
+
+static void CopyToClipboard(HWND hwnd)
+{
+	HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+	SendMessage(hwndEdit,WM_COPY,0,0);
+}
+
+int ResetText(void)
+{
+	HWND hwndEdit = (HWND) GetWindowLong(hwndSession,DWL_USER);
+	TEXTRANGE cr;
+	int len = SendMessage(hwndEdit,WM_GETTEXTLENGTH,0,0);
+	char *tmp = malloc(len+10),*p;
+
+	memset(tmp,0,len+10);
+	cr.chrg.cpMin = 0;
+	cr.chrg.cpMax = -1;
+	cr.lpstrText = tmp;
+	SendMessage(hwndEdit,EM_GETTEXTRANGE,0,(LPARAM)&cr);
+	p = tmp+len/2;
+	while (*p && *p != '\r')
+		p++;
+	SendMessage(hwndEdit,EM_SETSEL,0,(LPARAM)-1);
+	SendMessage(hwndEdit,EM_REPLACESEL,0,(LPARAM)p);
+	InvalidateRect(hwndEdit,0,1);
+	free(tmp);
+	return 0;
+}
+
 /*------------------------------------------------------------------------
  Procedure:     HandleCommand ID:1
  Purpose:       Handles all menu commands.
@@ -455,6 +516,15 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
 			break;
 		case IDM_GC:
 			AddLineToControl("Gc.full_major();;");
+			break;
+		case IDCTRLC:
+			InterruptOcaml();
+			break;
+		case IDM_EDITPASTE:
+			Add_Clipboard_To_Queue();
+			break;
+		case IDM_EDITCOPY:
+			CopyToClipboard(hwnd);
 			break;
 		case IDM_SAVE:
 			fname = SafeMalloc(512);
@@ -502,6 +572,15 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
 			break;
 		case IDM_ABOUT:
 			CallDlgProc(AboutDlgProc,IDD_ABOUT);
+			break;
+		default:
+			if (LOWORD(wParam) >= IDEDITCONTROL && LOWORD(wParam) < IDEDITCONTROL+5) {
+				switch (HIWORD(wParam)) {
+					case EN_ERRSPACE:
+						ResetText();
+						break;
+				}
+			}
 			break;
 	}
 }

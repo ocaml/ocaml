@@ -47,6 +47,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&History", IDM_HISTORY
         MENUITEM "&Garbage collect", IDM_GC
+        MENUITEM "&Interrupt", IDCTRLC
         END
     POPUP "&Window"
         BEGIN

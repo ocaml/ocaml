@@ -315,3 +315,14 @@ error:
 		goto error;
 	return result;
 }
+
+
+void InterruptOcaml(void)
+{
+  if (! GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pi.dwProcessId)) {
+    char message[1024];
+    sprintf(message, "GenerateConsole failed: %d\n", GetLastError());
+    MessageBox(NULL, message, "Ocaml", MB_OK);
+  }
+  WriteToPipe(" ");
+}

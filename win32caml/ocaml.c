@@ -25,7 +25,7 @@
 #include <Richedit.h>
 #include "inriares.h"
 #include "inria.h"
-int EditControls = 10000;
+int EditControls = IDEDITCONTROL;
 static WNDPROC lpEProc;
 static char lineBuffer[1024*32];
 int ReadToLineBuffer(void);
@@ -530,74 +530,85 @@ static LRESULT CALLBACK MdiChildWndProc(HWND hwnd,UINT msg,WPARAM wparam,LPARAM 
 	HDC hDC;
 
 	switch(msg) {
-		case WM_CREATE:
-			GetClientRect(hwnd,&rc);
-	         hwndChild= CreateWindow("EDIT",
-                      NULL,
-                      WS_CHILD | WS_VISIBLE |
-                      ES_MULTILINE |
-                      WS_VSCROLL | WS_HSCROLL |
-                      ES_AUTOHSCROLL | ES_AUTOVSCROLL,
-                      0,
-                      0,
-                      (rc.right-rc.left),
-                      (rc.bottom-rc.top),
-                      hwnd,
-                      (HMENU) EditControls++,
-                      hInst,
-                      NULL);
-	         SetWindowLong(hwnd, DWL_USER, (DWORD) hwndChild);
-		    SendMessage(hwndChild, WM_SETFONT, (WPARAM) ProgramParams.hFont, 0L);
-			SubClassEditField(hwndChild);
-			  break;
-		// Resize the edit control
-	    case WM_SIZE:
-	        hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
-			MoveWindow(hwndChild, 0, 0, LOWORD(lparam), HIWORD(lparam), TRUE);
-         break;
-		 // Always set the focus to the edit control.
-		case WM_SETFOCUS:
-	        hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
-			SetFocus(hwndChild);
-			break;
-		// Repainting of the edit control about to happen.
-		// Set the text color and the background color
-		case WM_CTLCOLOREDIT:
-			hDC = (HDC)wparam;
-			SetTextColor(hDC,ProgramParams.TextColor);
-			SetBkColor(hDC,BackColor);
-			return (LRESULT)BackgroundBrush;
-		// Take care of erasing the background color to avoid flicker
-		case WM_ERASEBKGND:
-			GetWindowRect(hwnd,&rc);
-			hDC = (HDC)wparam;
-			FillRect(hDC,&rc,BackgroundBrush);
-			return 1;
-		// A carriage return has been pressed. Send the data to the interpreted.
-		// This message is posted by the subclassed edit field.
-		case WM_NEWLINE:
-			if (busy)
-				break;
-	        hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
-			SendLastLine(hwndChild);
-			break;
-		// The timer will call us 4 times a second. Look if the interpreter
-		// has written something in its end of the pipe.
-		case WM_TIMERTICK:
-	        hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
-			if (ReadToLineBuffer()) {
-				char *p;
+        case WM_CREATE:
+          GetClientRect(hwnd,&rc);
+          hwndChild= CreateWindow("EDIT",
+                                  NULL,
+                                  WS_CHILD | WS_VISIBLE |
+                                  ES_MULTILINE |
+                                  WS_VSCROLL | WS_HSCROLL |
+                                  ES_AUTOHSCROLL | ES_AUTOVSCROLL,
+                                  0,
+                                  0,
+                                  (rc.right-rc.left),
+                                  (rc.bottom-rc.top),
+                                  hwnd,
+                                  (HMENU) EditControls++,
+                                  hInst,
+                                  NULL);
+          SetWindowLong(hwnd, DWL_USER, (DWORD) hwndChild);
+          SendMessage(hwndChild, WM_SETFONT, (WPARAM) ProgramParams.hFont, 0L);
+          SendMessage(hwndChild,EM_LIMITTEXT,0xffffffff,0);
+          SubClassEditField(hwndChild);
+          break;
+          // Resize the edit control
+        case WM_SIZE:
+          hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
+          MoveWindow(hwndChild, 0, 0, LOWORD(lparam), HIWORD(lparam), TRUE);
+          break;
+          // Always set the focus to the edit control.
+        case WM_SETFOCUS:
+          hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
+          SetFocus(hwndChild);
+          break;
+          // Repainting of the edit control about to happen.
+          // Set the text color and the background color
+        case WM_CTLCOLOREDIT:
+          hDC = (HDC)wparam;
+          SetTextColor(hDC,ProgramParams.TextColor);
+          SetBkColor(hDC,BackColor);
+          return (LRESULT)BackgroundBrush;
+          // Take care of erasing the background color to avoid flicker
+        case WM_ERASEBKGND:
+          GetWindowRect(hwnd,&rc);
+          hDC = (HDC)wparam;
+          FillRect(hDC,&rc,BackgroundBrush);
+          return 1;
+          // A carriage return has been pressed. Send the data to the interpreted.
+          // This message is posted by the subclassed edit field.
+        case WM_COMMAND:
+          if (LOWORD(wparam) >= IDEDITCONTROL && LOWORD(wparam) < IDEDITCONTROL+5) {
+            switch (HIWORD(wparam)) {
+            case EN_ERRSPACE:
+            case EN_MAXTEXT:
+              ResetText();
+              break;
+            }
+          }
+          break;
+        case WM_NEWLINE:
+          if (busy)
+            break;
+          hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
+          SendLastLine(hwndChild);
+          break;
+          // The timer will call us 4 times a second. Look if the interpreter
+          // has written something in its end of the pipe.
+        case WM_TIMERTICK:
+          hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
+          if (ReadToLineBuffer()) {
+            char *p;
 				// Ok we read something. Display it.
-				AddLineBuffer();
-				p = strrchr(lineBuffer,'\r');
-				if (p && !strcmp(p,"\r\n# ")) {
-					if (p[4] == 0) {
-						SetLastPrompt(hwndChild);
-					}
-				}
+            AddLineBuffer();
+            p = strrchr(lineBuffer,'\r');
+            if (p && !strcmp(p,"\r\n# ")) {
+              if (p[4] == 0) {
+                SetLastPrompt(hwndChild);
+              }
+            }
 
-			}
-			break;
+          }
+          break;
 
 	}
 	return DefMDIChildProc(hwnd, msg, wparam, lparam);
@@ -753,12 +764,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	MSG msg;
 	HANDLE hAccelTable;
+	char consoleTitle[512];
+	HWND hwndConsole;
 
 	// Setup the hInst global
 	hInst = hInstance;
 	// Do the setup
 	if (!Setup(&hAccelTable))
 		return 0;
+        // Need to set up a console so that we can send ctrl-break signal
+        // to inferior Caml
+	AllocConsole();
+	GetConsoleTitle(consoleTitle,sizeof(consoleTitle));
+	hwndConsole = FindWindow(NULL,consoleTitle);
+	ShowWindow(hwndConsole,SW_HIDE);
 	// Create main window and exit if this fails
 	if ((hwndMain = CreateinriaWndClassWnd()) == (HWND)0)
 		return 0;

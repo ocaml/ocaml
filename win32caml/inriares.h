@@ -12,6 +12,7 @@
 #define	IDM_EXIT	270
 #define	IDM_HISTORY	281
 #define	IDM_GC	282
+#define	IDCTRLC	283
 #define	IDD_HISTORY	300
 #define	IDLIST	301
 #define	IDM_EDITUNDO	310

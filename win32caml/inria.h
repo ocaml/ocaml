@@ -110,3 +110,5 @@ typedef struct tagHistory {
 extern void *SafeMalloc(int);
 extern HISTORYLINE *History; // The root of the history lines
 
+#define IDEDITCONTROL 15432
+
