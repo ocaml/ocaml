@@ -132,7 +132,8 @@ OCamldoc:
 - handling recursive modules
 - handling private types
 - some fixes in html generation
-
+- don't overwrite existing style.css file when generating HTML
+- create the ocamldoc.sty file when generating LaTeX (if it does not already exists)
 
 Objective Caml 3.06:
 --------------------

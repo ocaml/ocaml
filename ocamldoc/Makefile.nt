@@ -109,6 +109,7 @@ EXECMOFILES=$(CMOFILES)\
 	odoc_ocamlhtml.cmo\
 	odoc_html.cmo\
 	odoc_man.cmo\
+	odoc_latex_style.cmo \
 	odoc_latex.cmo\
 	odoc_texi.cmo\
 	odoc_dot.cmo\
@@ -266,7 +267,7 @@ odoc_crc.ml: $(CMIFILES)
 	Odoc_sig Odoc_ast Odoc_control Odoc_inherit\
 	Odoc_search Odoc_cross Odoc_merge Odoc_analyse\
 	Odoc_dag2html Odoc_ocamlhtml Odoc_html Odoc_to_text \
-	Odoc_latex Odoc_man Odoc_texi Odoc_scan > $@
+	Odoc_latex_style Odoc_latex Odoc_man Odoc_texi Odoc_scan > $@
 
 # generic rules :
 #################

@@ -582,10 +582,17 @@ class html =
           let default_style = String.concat "\n" default_style_options in
           (
            try
-             let chanout = open_out (Filename.concat !Args.target_dir style_file) in
-             output_string chanout default_style ;
-             flush chanout ;
-             close_out chanout
+	     let file = Filename.concat !Args.target_dir style_file in
+	     if Sys.file_exists file then
+	       Odoc_info.verbose (Odoc_messages.file_exists_dont_generate file)
+	     else
+	       (
+		let chanout = open_out file in
+		output_string chanout default_style ;
+		flush chanout ;
+		close_out chanout;
+		Odoc_info.verbose (Odoc_messages.file_generated file)
+	       )
            with
              Sys_error s ->
                prerr_endline s ;

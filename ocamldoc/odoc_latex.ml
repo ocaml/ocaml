@@ -892,8 +892,29 @@ class latex =
       (match !Args.title with None -> "" | Some _ -> "\\maketitle\n")^
       (if !Args.with_toc then "\\tableofcontents\n" else "")
 
+    (** Generate the LaTeX style file, if it does not exists. *)
+    method generate_style_file =
+      try
+	let dir = Filename.dirname !Args.out_file in
+	let file = Filename.concat dir "ocamldoc.sty" in
+	if Sys.file_exists file then
+	  Odoc_info.verbose (Odoc_messages.file_exists_dont_generate file)
+	else
+	  (
+	   let chanout = open_out file in
+	   output_string chanout Odoc_latex_style.content ;
+	   flush chanout ;
+	   close_out chanout;
+	   Odoc_info.verbose (Odoc_messages.file_generated file)
+	  )
+      with
+        Sys_error s ->
+          prerr_endline s ;
+          incr Odoc_info.errors ;
+
     (** Generate the LaTeX file from a module list, in the {!Odoc_info.Args.out_file} file. *)
     method generate module_list =
+      self#generate_style_file ;
       if !Args.separate_files then
         (
          let f m =

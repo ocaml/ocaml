@@ -245,6 +245,9 @@ let merging = "Merging..."
 let cross_referencing = "Cross referencing..."
 let generating_doc = "Generating documentation..."
 let loading f = "Loading "^f^"..."
+let file_generated f = "File "^f^" generated."
+let file_exists_dont_generate f =
+  "File "^f^" exists, we don't generate it."
 
 (** Messages for documentation generation.*)
 
