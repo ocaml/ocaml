@@ -237,7 +237,7 @@ let sqrt_nat rad off len =
 (* Modular exponentiation.  Return a fresh nat equal to (a ^ b) mod c.
    We assume c > 0 and a < c. *)
 
-let modexp_nat a b c =
+let mod_power_nat a b c =
   let len_c = length_nat c in
   let res = make_nat len_c in
   set_digit_nat res 0 1;
