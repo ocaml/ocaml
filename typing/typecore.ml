@@ -1182,8 +1182,7 @@ let rec type_exp env sexp =
               in
               if (repr typ).desc = Tvar then
                 Location.prerr_warning sexp.pexp_loc
-                  (Warnings.Other
-                     ("the virtual method "^met^" is not declared."));
+                  (Warnings.Undeclared_virtual_method met);
               (Texp_send(obj, Tmeth_val id), typ)
           | Texp_ident(path, {val_kind = Val_anc (methods, cl_num)}) ->
               let method_id =
@@ -1234,8 +1233,7 @@ let rec type_exp env sexp =
           | {desc = Tpoly (ty, tl); level = l} ->
               if !Clflags.principal && l <> generic_level then
                 Location.prerr_warning sexp.pexp_loc
-                  (Warnings.Other
-                     "this use of a polymorphic method is not principal.");
+                  (Warnings.Not_principal "this use of a polymorphic method");
               snd (instance_poly false tl ty)
           | {desc = Tvar} as ty ->
               let ty' = newvar () in
@@ -1444,8 +1442,7 @@ and type_argument env sarg ty_expected' =
                                                [Some eta_var, Required])}],
                         Total) } in
       if warn then Location.prerr_warning texp.exp_loc
-          (Warnings.Other
-             "eliminated optional argument without principality.");
+          (Warnings.Without_principality "eliminated optional argument");
       if is_nonexpansive texp then func texp else
       (* let-expand to have side effects *)
       let let_pat, let_var = var_pair "let" texp.exp_type in
@@ -1486,9 +1483,7 @@ and type_application env funct sargs =
                 | _ -> true
               in
               if ty_fun.level >= t1.level && not_identity funct.exp_desc then
-                Location.prerr_warning sarg1.pexp_loc
-                  (Warnings.Other
-                     "this argument will not be received by the function.");
+                Location.prerr_warning sarg1.pexp_loc Warnings.Unused_argument;
               unify env ty_fun (newty (Tarrow(l1,t1,t2,Clink(ref Cunknown))));
               (t1, t2)
           | Tarrow (l,t1,t2,_) when l = l1
@@ -1535,11 +1530,11 @@ and type_application env funct sargs =
     match expand_head env ty_fun with
       {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun'
       when (sargs <> [] || more_sargs <> []) && commu_repr com = Cok ->
-        let may_warn loc msg =
+        let may_warn loc w =
           if not !warned && !Clflags.principal && lv <> generic_level
           then begin
             warned := true;
-            Location.prerr_warning loc (Warnings.Other msg)
+            Location.prerr_warning loc w
           end
         in
         let name = label_name l
@@ -1563,14 +1558,14 @@ and type_application env funct sargs =
                 let (l', sarg0, sargs1, sargs2) = extract_label name sargs in
                 if sargs1 <> [] then
                   may_warn sarg0.pexp_loc
-                    "commuting this argument is not principal.";
+                    (Warnings.Not_principal "commuting this argument");
                 (l', sarg0, sargs1 @ sargs2, more_sargs)
               with Not_found ->
                 let (l', sarg0, sargs1, sargs2) =
                   extract_label name more_sargs in
                 if sargs1 <> [] || sargs <> [] then
                   may_warn sarg0.pexp_loc
-                    "commuting this argument is not principal.";
+                    (Warnings.Not_principal "commuting this argument");
                 (l', sarg0, sargs @ sargs1, sargs2)
             in
             sargs, more_sargs,
@@ -1578,7 +1573,7 @@ and type_application env funct sargs =
               Some (fun () -> type_argument env sarg0 ty)
             else begin
               may_warn sarg0.pexp_loc
-                "using an optional argument here is not principal.";
+                (Warnings.Not_principal "using an optional argument here");
               Some (fun () -> option_some (type_argument env sarg0 
                                              (extract_option_type env ty)))
             end
@@ -1588,12 +1583,12 @@ and type_application env funct sargs =
               (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
             then begin
               may_warn funct.exp_loc
-                "eliminated an optional argument without principality.";
+                (Warnings.Without_principality "eliminated optional argument");
               ignored := (l,ty,lv) :: !ignored;
               Some (fun () -> option_none (instance ty) Location.none)
             end else begin
               may_warn funct.exp_loc
-                "commuted an argument without principality.";
+                (Warnings.Without_principality "commuted an argument");
               None
             end
         in
@@ -1753,7 +1748,7 @@ and type_expect ?in_function env sexp ty_expected =
       in
       if is_optional l && all_labeled ty_res then
         Location.prerr_warning (fst (List.hd cases)).pat_loc
-          (Warnings.Other "this optional argument cannot be erased.");
+          Warnings.Unerasable_optional_argument;
       re {
         exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
@@ -1804,8 +1799,7 @@ and type_statement env sexp =
       Location.prerr_warning sexp.pexp_loc Warnings.Partial_application
   | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
   | Tvar when ty.level > tv.level ->
-      Location.prerr_warning sexp.pexp_loc
-        (Warnings.Other "this statement never returns.")
+      Location.prerr_warning sexp.pexp_loc Warnings.Nonreturning_statement
   | Tvar ->
       add_delayed_check (fun () -> check_partial_application env exp)
   | _ ->

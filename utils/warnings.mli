@@ -15,7 +15,8 @@
 open Format
 
 type t =                             (* A is all *)
-  | Comment of string                (* C *)
+  | Comment_start                    (* C *)
+  | Comment_not_end
   | Deprecated                       (* D *)
   | Fragile_pat of string            (* E *)
   | Partial_application              (* F *)
@@ -24,9 +25,18 @@ type t =                             (* A is all *)
   | Partial_match of string          (* P *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
-  | Unused_pat                       (* U *)
+  | Unused_pat
   | Hide_instance_variable of string (* V *)
-  | Other of string                  (* X *)
+  | Illegal_backslash                (* X *)
+  | Implicit_public_methods of string list
+  | Unerasable_optional_argument
+  | Undeclared_virtual_method of string
+  | Not_principal of string
+  | Without_principality of string
+  | Unused_argument
+  | Nonreturning_statement
+  | Camlp4 of string
+  | All_clauses_guarded
   | Unused_var of string             (* Y *)
   | Unused_var_strict of string      (* Z *)
 ;;

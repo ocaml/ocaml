@@ -134,7 +134,7 @@ let is_ast_file ic ast_magic =
 
 let parse_use_file ic =
   if is_ast_file ic Config.ast_impl_magic_number then
-    let source_file = input_value ic in
+    let _source_file = input_value ic in
     [Ptop_def (input_value ic : Parsetree.structure)]
   else begin
     seek_in ic 0;
@@ -144,7 +144,7 @@ let parse_use_file ic =
 
 let parse_interface ic =
   if is_ast_file ic Config.ast_intf_magic_number then
-    let source_file = input_value ic in
+    let _source_file = input_value ic in
     (input_value ic : Parsetree.signature)
   else begin
     seek_in ic 0;

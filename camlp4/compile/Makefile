@@ -3,7 +3,7 @@
 include ../config/Makefile
 
 INCLUDES=-I ../camlp4 -I ../boot
-OCAMLCFLAGS=-warn-error Ay -w Y $(INCLUDES)
+OCAMLCFLAGS=-warn-error Ay $(INCLUDES)
 SRC=../etc/pa_o.ml ../etc/pa_op.ml
 D=o
 COMP_OPT=-strict_parsing

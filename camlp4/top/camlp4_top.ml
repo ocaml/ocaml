@@ -170,4 +170,4 @@ Toploop.parse_use_file.val :=
 Pcaml.warning.val :=
   fun loc txt ->
     Toploop.print_warning (Ast2pt.mkloc loc) Format.err_formatter
-      (Warnings.Other txt);
+      (Warnings.Camlp4 txt);

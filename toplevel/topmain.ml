@@ -79,9 +79,10 @@ let main () =
        \032    S/s enable/disable non-unit statement\n\
        \032    U/u enable/disable unused match case\n\
        \032    V/v enable/disable hidden instance variable\n\
+       \032    Y/y enable/disable suspicious unused variables\n\
+       \032    Z/z enable/disable all other unused variables\n\
        \032    X/x enable/disable all other warnings\n\
-       \032    default setting is \"Ale\"\n\
-       \032    (all warnings but labels and fragile match enabled)";
+       \032    default setting is \"Aelz\"";
      "-warn-error" , Arg.String (Warnings.parse_options true),
        "<flags>  Enable or disable fatal warnings according to <flags>\n\
          \032    (see option -w for the list of flags)\n\

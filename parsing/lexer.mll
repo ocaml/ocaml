@@ -316,15 +316,14 @@ rule token = parse
         token lexbuf }
   | "(*)"
       { let loc = Location.curr lexbuf in
-        Location.prerr_warning loc (Warnings.Comment "the start of a comment");
+        Location.prerr_warning loc Warnings.Comment_start;
         comment_start_loc := [Location.curr lexbuf];
         comment lexbuf;
         token lexbuf
       }
   | "*)"
       { let loc = Location.curr lexbuf in
-        let warn = Warnings.Comment "not the end of a comment" in
-        Location.prerr_warning loc warn;
+        Location.prerr_warning loc Warnings.Comment_not_end;
         lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
         let curpos = lexbuf.lex_curr_p in
         lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 1 };
@@ -473,8 +472,7 @@ and string = parse
                         Location.curr lexbuf))
 *)
           let loc = Location.curr lexbuf in
-          let warn = Warnings.Other "Illegal backslash escape in string" in
-          Location.prerr_warning loc warn;
+          Location.prerr_warning loc Warnings.Illegal_backslash;
           store_string_char (Lexing.lexeme_char lexbuf 0);
           store_string_char (Lexing.lexeme_char lexbuf 1);
           string lexbuf

@@ -152,7 +152,7 @@ let peek_char ib = ib.cur_char;;
 let eof ib = ib.eof;;
 let beginning_of_input ib = ib.bof;;
 let end_of_input ib =
-  let c = cautious_peek_char ib in
+  let _c = cautious_peek_char ib in
   ib.eof;;
 let name_of_input ib = ib.file_name;;
 let char_count ib = ib.char_count;;
@@ -879,39 +879,39 @@ let kscanf ib ef fmt f =
         scan_fmt (stack f c) (i + 1)
     | 'c' | 'C' as conv ->
         if max <> 1 && max <> max_int then bad_format fmt i conv else
-        let x =
+        let _x =
           if conv = 'c' then scan_char max ib else scan_Char max ib in
         scan_fmt (stack f (token_char ib)) (i + 1)
     | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
-        let x = scan_int_conv conv max ib in
+        let _x = scan_int_conv conv max ib in
         scan_fmt (stack f (token_int conv ib)) (i + 1)
     | 'f' | 'g' | 'G' | 'e' | 'E' ->
-        let x = scan_float max ib in
+        let _x = scan_float max ib in
         scan_fmt (stack f (token_float ib)) (i + 1)
     | 'F' ->
-        let x = scan_Float max ib in
+        let _x = scan_Float max ib in
         scan_fmt (stack f (token_float ib)) (i + 1)
     | 's' ->
         let i, stp = scan_fmt_stoppers (i + 1) in
-        let x = scan_string stp max ib in
+        let _x = scan_string stp max ib in
         scan_fmt (stack f (token_string ib)) (i + 1)
     | '[' ->
         let i, char_set = read_char_set fmt (i + 1) in
         let i, stp = scan_fmt_stoppers (i + 1) in
-        let x = scan_chars_in_char_set stp char_set max ib in
+        let _x = scan_chars_in_char_set stp char_set max ib in
         scan_fmt (stack f (token_string ib)) (i + 1)
     | 'S' ->
-        let x = scan_String max ib in
+        let _x = scan_String max ib in
         scan_fmt (stack f (token_string ib)) (i + 1)
     | 'B' | 'b' ->
-        let x = scan_bool max ib in
+        let _x = scan_bool max ib in
         scan_fmt (stack f (token_bool ib)) (i + 1)
     | 'l' | 'n' | 'L' as conv ->
         let i = i + 1 in
         if i > lim then scan_fmt (stack f (get_count conv ib)) i else begin
         match fmt.[i] with
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
-            let x = scan_int_conv conv max ib in
+            let _x = scan_int_conv conv max ib in
             begin match conv with
             | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
             | 'n' -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1)
@@ -944,7 +944,7 @@ let kscanf ib ef fmt f =
         let i = succ i in
         let j = Printf.sub_format conv fmt i + 1 in
         let mf = String.sub fmt i (j - i - 2) in
-        let x = scan_String max ib in
+        let _x = scan_String max ib in
         let rf = token_string ib in
         if Printf.summarize_format mf <> Printf.summarize_format rf
           then format_mismatch mf rf ib else 

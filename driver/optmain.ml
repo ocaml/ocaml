@@ -164,11 +164,10 @@ let main () =
          \032    S/s enable/disable non-unit statement\n\
          \032    U/u enable/disable unused match case\n\
          \032    V/v enable/disable hidden instance variables\n\
-         \032    Y/y enable/disable unused variable\n\
-         \032    Z/z enable/disable unused variable (strict)\n\
+         \032    Y/y enable/disable suspicious unused variables\n\
+         \032    Z/z enable/disable all other unused variables\n\
          \032    X/x enable/disable all other warnings\n\
-         \032    default setting is \"Aelyz\"\n\
-         \032    (all warnings enabled except fragile match, labels, unused var)";
+         \032    default setting is \"Aelz\"";
        "-warn-error" , Arg.String (Warnings.parse_options true),
          "<flags>  Treat the warnings enabled by <flags> as errors.\n\
          \032    See option -w for the list of flags.\n\

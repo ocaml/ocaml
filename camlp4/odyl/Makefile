@@ -5,7 +5,7 @@ include ../config/Makefile
 SHELL=/bin/sh
 
 INCLUDES=-I $(OTOP)/otherlibs/dynlink
-OCAMLCFLAGS=-warn-error Ay -w Y $(INCLUDES)
+OCAMLCFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 OBJS=odyl_config.cmo odyl_main.cmo

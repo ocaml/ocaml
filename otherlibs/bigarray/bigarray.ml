@@ -218,9 +218,9 @@ let reshape_3 a dim1 dim2 dim3 = reshape a [|dim1;dim2;dim3|]
    to those primitives directly in this file *)
 
 let _ =
-  let getN = Genarray.get in
-  let get1 = Array1.get in
-  let get2 = Array2.get in
-  let get3 = Array3.get in
+  let _ = Genarray.get in
+  let _ = Array1.get in
+  let _ = Array2.get in
+  let _ = Array3.get in
   ()
 

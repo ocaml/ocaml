@@ -3,7 +3,7 @@
 include ../config/Makefile
 
 INCLUDES=-I ../camlp4 -I ../boot -I $(OTOP)/utils -I $(OTOP)/parsing -I $(OTOP)/typing -I $(OTOP)/toplevel
-OCAMLCFLAGS=-warn-error Ay -w Y $(INCLUDES)
+OCAMLCFLAGS=-warn-error A $(INCLUDES)
 
 CAMLP4_OBJS=$(OTOP)/utils/config.cmo ../boot/stdpp.cmo ../boot/token.cmo ../boot/plexer.cmo ../boot/gramext.cmo ../boot/grammar.cmo ../boot/extfold.cmo ../boot/extfun.cmo ../boot/fstream.cmo ../camlp4/quotation.cmo  ../camlp4/reloc.cmo ../camlp4/spretty.cmo ../camlp4/pcaml.cmo ../camlp4/ast2pt.cmo
 TOP=camlp4_top.cmo

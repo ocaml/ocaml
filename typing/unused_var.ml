@@ -28,9 +28,8 @@ let rm_vars tbl (vll1, vll2) =
   List.iter rm_var vll2;
 ;;
 
-let w_lax x = Warnings.Unused_var x;;
+let w_suspicious x = Warnings.Unused_var x;;
 let w_strict x = Warnings.Unused_var_strict x;;
-let w_either x = if Warnings.is_active (w_lax x) then w_lax x else w_strict x;;
 
 let check_rm_vars ppf tbl (vlul_pat, vlul_as) =
   let check_rm_var kind (v, loc, used) =
@@ -39,7 +38,7 @@ let check_rm_vars ppf tbl (vlul_pat, vlul_as) =
     Hashtbl.remove tbl v;
   in
   List.iter (check_rm_var w_strict) vlul_pat;
-  List.iter (check_rm_var w_either) vlul_as;
+  List.iter (check_rm_var w_suspicious) vlul_as;
 ;;
 
 let check_rm_let ppf tbl vlulpl =
@@ -54,8 +53,8 @@ let check_rm_let ppf tbl vlulpl =
   let check_rm_pat (def, def_as) =
     let def_unused = List.fold_left check_rm_one true def in
     let all_unused = List.fold_left check_rm_one def_unused def_as in
-    List.iter (warn_var (if all_unused then w_either else w_strict)) def;
-    List.iter (warn_var w_either) def_as;
+    List.iter (warn_var (if all_unused then w_suspicious else w_strict)) def;
+    List.iter (warn_var w_suspicious) def_as;
   in
   List.iter check_rm_pat vlulpl;
 ;;
@@ -252,7 +251,7 @@ and class_field ppf tbl cf =
 ;;
 
 let warn ppf ast =
-  if Warnings.is_active (w_lax "") || Warnings.is_active (w_strict "")
+  if Warnings.is_active (w_suspicious "") || Warnings.is_active (w_strict "")
   then begin
     let tbl = Hashtbl.create 97 in
     structure ppf tbl ast;
