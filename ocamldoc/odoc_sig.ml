@@ -32,7 +32,7 @@ open Odoc_types
 
 module Signature_search =
   struct
-    type ele = 
+    type ele =
       | M of string
       | MT of string
       | V of string
@@ -109,7 +109,7 @@ module Signature_search =
     let search_attribute_type name class_sig =
       let (_, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
       type_expr
-          
+
     let search_method_type name class_sig =
       let fields = Odoc_misc.get_fields class_sig.Types.cty_self in
       List.assoc name fields
@@ -121,11 +121,11 @@ module type Info_retriever =
     val blank_line_outside_simple : string -> string -> bool
     val just_after_special : string -> string -> (int * Odoc_types.info option)
     val first_special : string -> string -> (int * Odoc_types.info option)
-    val get_comments : 
+    val get_comments :
         (Odoc_types.text -> 'a) -> string -> string -> (Odoc_types.info option * 'a list)
   end
 
-module Analyser = 
+module Analyser =
   functor (My_ir : Info_retriever) ->
   struct
     (** This variable is used to load a file as a string and retrieve characters from it.*)
@@ -158,71 +158,46 @@ module Analyser =
 
     (** The function used to get the comments in a class. *)
     let get_comments_in_class pos_start pos_end =
-      My_ir.get_comments (fun t -> Class_comment t) 
+      My_ir.get_comments (fun t -> Class_comment t)
         !file_name
         (get_string_of_file pos_start pos_end)
 
     (** The function used to get the comments in a module. *)
     let get_comments_in_module pos_start pos_end =
-      My_ir.get_comments (fun t -> Element_module_comment t) 
+      My_ir.get_comments (fun t -> Element_module_comment t)
         !file_name
         (get_string_of_file pos_start pos_end)
 
-    let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options 
+    let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options
 
-    let name_comment_from_type_kind pos_start pos_end pos_limit tk =
+    let name_comment_from_type_kind pos_end pos_limit tk =
       match tk with
         Parsetree.Ptype_abstract ->
           (0, [])
-      | Parsetree.Ptype_variant (cons_core_type_list_list, _) -> 
-          (*of (string * core_type list) list *)
-          let rec f acc last_pos cons_core_type_list_list =
+      | Parsetree.Ptype_variant (cons_core_type_list_list, _) ->
+          let rec f acc cons_core_type_list_list =
             match cons_core_type_list_list with
               [] ->
                 (0, acc)
-            | (name, core_type_list, xxloc) :: [] ->
-                let pos = Str.search_forward (Str.regexp_string name) !file last_pos in
-                let s = get_string_of_file pos_end pos_limit in
+            | (name, core_type_list, loc) :: [] ->
+                let s = get_string_of_file
+		    loc.Location.loc_end.Lexing.pos_cnum
+		    pos_limit
+		in
                 let (len, comment_opt) =  My_ir.just_after_special !file_name s in
                 (len, acc @ [ (name, comment_opt) ])
 
-            | (name, core_type_list, xxloc) :: (name2, core_type_list2, loc2)
+            | (name, core_type_list, loc) :: (name2, core_type_list2, loc2)
               :: q ->
-                match (List.rev core_type_list, core_type_list2) with
-                  ([], []) ->
-                    let pos = Str.search_forward (Str.regexp_string name) !file last_pos in
-                    let pos' = pos + (String.length name) in
-                    let pos2 = Str.search_forward (Str.regexp_string name2) !file pos' in
-                    let s = get_string_of_file pos' pos2 in
-                    let (_,comment_opt) =  My_ir.just_after_special !file_name  s in
-                    f (acc @ [name, comment_opt]) pos2
-                      ((name2, core_type_list2, loc2) :: q)
-                      
-                | ([], (ct2 :: _)) ->
-                    let pos = Str.search_forward (Str.regexp_string name) !file last_pos in
-                    let pos' = pos + (String.length name) in
-                    let pos2 = ct2.Parsetree.ptyp_loc.Location.loc_start.Lexing.pos_cnum in
-                    let pos2' = Str.search_backward (Str.regexp_string name2) !file pos2 in
-                    let s = get_string_of_file pos' pos2' in
-                    let (_,comment_opt) =  My_ir.just_after_special !file_name  s in
-                    f (acc @ [name, comment_opt]) pos2'
-                      ((name2, core_type_list2, loc2) :: q)
-                      
-                | ((ct :: _), _) ->
-                    let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
-                    let pos2 = Str.search_forward (Str.regexp_string name2) !file pos in
-                    let s = get_string_of_file pos pos2 in
-                    let (_,comment_opt) =  My_ir.just_after_special !file_name  s in
-                    let new_pos_end =
-                      match comment_opt with
-                        None -> ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum
-                       | Some _ -> Str.search_forward (Str.regexp "*)") !file pos
-                    in
-                    f (acc @ [name, comment_opt]) new_pos_end
-                      ((name2, core_type_list2, loc2) :: q)
+		let pos_end_first = loc.Location.loc_end.Lexing.pos_cnum in
+		let pos_start_second = loc2.Location.loc_start.Lexing.pos_cnum in
+		let s = get_string_of_file pos_end_first pos_start_second in
+		let (_,comment_opt) = My_ir.just_after_special !file_name  s in
+		f (acc @ [name, comment_opt])
+                  ((name2, core_type_list2, loc2) :: q)
           in
-          f [] pos_start cons_core_type_list_list
-            
+          f [] cons_core_type_list_list
+
       | Parsetree.Ptype_record (name_mutable_type_list, _) (* of (string * mutable_flag * core_type) list*) ->
           let rec f = function
               [] ->
@@ -248,8 +223,8 @@ module Analyser =
 
       | Types.Type_variant (l, priv) ->
           let f (constructor_name, type_expr_list) =
-            let comment_opt = 
-              try 
+            let comment_opt =
+              try
                 match List.assoc constructor_name name_comment_list with
                   None -> None
                 | Some d -> d.Odoc_types.i_desc
@@ -259,14 +234,14 @@ module Analyser =
               vc_name = constructor_name ;
               vc_args = List.map (Odoc_env.subst_type env) type_expr_list ;
               vc_text = comment_opt
-            } 
+            }
           in
           Odoc_type.Type_variant (List.map f l, priv = Asttypes.Private)
 
       | Types.Type_record (l, _, priv) ->
           let f (field_name, mutable_flag, type_expr) =
-            let comment_opt = 
-              try 
+            let comment_opt =
+              try
                 match List.assoc field_name name_comment_list with
                   None -> None
                 | Some d -> d.Odoc_types.i_desc
@@ -277,13 +252,13 @@ module Analyser =
               rf_mutable = mutable_flag = Mutable ;
               rf_type = Odoc_env.subst_type env type_expr ;
               rf_text = comment_opt
-            } 
+            }
           in
           Odoc_type.Type_record (List.map f l, priv = Asttypes.Private)
 
     (** Analysis of the elements of a class, from the information in the parsetree and in the class
        signature. @return the couple (inherited_class list, elements).*)
-    let analyse_class_elements env current_class_name last_pos pos_limit 
+    let analyse_class_elements env current_class_name last_pos pos_limit
         class_type_field_list class_signature =
       print_DEBUG "Types.Tcty_signature class_signature";
       let f_DEBUG var (mutable_flag, type_exp) = print_DEBUG var in
@@ -295,7 +270,7 @@ module Analyser =
           [] -> pos_limit
         | ele2 :: _ ->
             match ele2 with
-              Parsetree.Pctf_val (_, _, _, loc)  
+              Parsetree.Pctf_val (_, _, _, loc)
             | Parsetree.Pctf_virt (_, _, _, loc)
             | Parsetree.Pctf_meth (_, _, _, loc)
             | Parsetree.Pctf_cstr (_, _, loc) -> loc.Location.loc_start.Lexing.pos_cnum
@@ -304,7 +279,7 @@ module Analyser =
       in
       let get_method name comment_opt private_flag loc q =
         let complete_name = Name.concat current_class_name name in
-        let typ = 
+        let typ =
           try Signature_search.search_method_type name class_signature
           with Not_found ->
             raise (Failure (Odoc_messages.method_type_not_found current_class_name name))
@@ -312,7 +287,7 @@ module Analyser =
         let subst_typ = Odoc_env.subst_type env typ in
         let met =
           {
-            met_value = 
+            met_value =
             {
               val_name = complete_name ;
               val_info = comment_opt ;
@@ -328,7 +303,7 @@ module Analyser =
         in
         let pos_limit2 = get_pos_limit2 q in
         let pos_end = loc.Location.loc_end.Lexing.pos_cnum in
-        let (maybe_more, info_after_opt) = 
+        let (maybe_more, info_after_opt) =
           My_ir.just_after_special
             !file_name
             (get_string_of_file pos_end pos_limit2)
@@ -360,7 +335,7 @@ module Analyser =
             (* of (string * mutable_flag * core_type option * Location.t)*)
             let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let complete_name = Name.concat current_class_name name in
-            let typ = 
+            let typ =
               try Signature_search.search_attribute_type name class_signature
               with Not_found ->
                 raise (Failure (Odoc_messages.attribute_type_not_found current_class_name name))
@@ -368,7 +343,7 @@ module Analyser =
             let subst_typ = Odoc_env.subst_type env typ in
             let att =
               {
-                att_value = 
+                att_value =
                 {
                   val_name = complete_name ;
                   val_info = comment_opt ;
@@ -379,11 +354,11 @@ module Analyser =
                   val_loc = { loc_impl = None ; loc_inter = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum)} ;
                 } ;
                 att_mutable = mutable_flag = Asttypes.Mutable ;
-              } 
+              }
             in
             let pos_limit2 = get_pos_limit2 q in
             let pos_end = loc.Location.loc_end.Lexing.pos_cnum in
-            let (maybe_more, info_after_opt) = 
+            let (maybe_more, info_after_opt) =
               My_ir.just_after_special
                 !file_name
                 (get_string_of_file pos_end pos_limit2)
@@ -413,36 +388,36 @@ module Analyser =
             let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let (inher_l, eles) = f loc.Location.loc_end.Lexing.pos_cnum q in
             (inher_l, eles_comments @ eles)
-      
+
         | Parsetree.Pctf_inher class_type :: q ->
             let loc = class_type.Parsetree.pcty_loc in
-            let (comment_opt, eles_comments) = 
+            let (comment_opt, eles_comments) =
               get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum
             in
             let pos_limit2 = get_pos_limit2 q in
             let pos_end = loc.Location.loc_end.Lexing.pos_cnum in
-            let (maybe_more, info_after_opt) = 
+            let (maybe_more, info_after_opt) =
               My_ir.just_after_special
                 !file_name
                 (get_string_of_file pos_end pos_limit2)
             in
             let comment_opt2 = merge_infos comment_opt info_after_opt in
             let text_opt = match comment_opt2 with None -> None | Some i -> i.Odoc_types.i_desc in
-            let inh  = 
+            let inh  =
               match class_type.Parsetree.pcty_desc with
                 Parsetree.Pcty_constr (longident, _) ->
                   (*of Longident.t * core_type list*)
                   let name = Name.from_longident longident in
-                  let ic = 
+                  let ic =
                     {
                       ic_name = Odoc_env.full_class_or_class_type_name env name ;
                       ic_class = None ;
                       ic_text = text_opt ;
-                    }           
+                    }
                   in
                   ic
-    
-              | Parsetree.Pcty_signature _ 
+
+              | Parsetree.Pcty_signature _
               | Parsetree.Pcty_fun _ ->
                   (* we don't have a name for the class signature, so we call it "object ... end"  *)
                   {
@@ -480,7 +455,7 @@ module Analyser =
             acc_eles @ ele_comments
 
         | ele :: q ->
-            let (assoc_com, ele_comments) =  get_comments_in_module 
+            let (assoc_com, ele_comments) =  get_comments_in_module
                 last_pos
                 ele.Parsetree.psig_loc.Location.loc_start.Lexing.pos_cnum
             in
@@ -491,8 +466,8 @@ module Analyser =
                 current_module_name
                 ele.Parsetree.psig_loc.Location.loc_start.Lexing.pos_cnum
                 ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum
-                (match q with 
-                  [] -> pos_limit 
+                (match q with
+                  [] -> pos_limit
                 | ele2 :: _ -> ele2.Parsetree.psig_loc.Location.loc_start.Lexing.pos_cnum
                 )
                 assoc_com
@@ -500,8 +475,8 @@ module Analyser =
             in
             f (acc_eles @ (ele_comments @ elements))
               new_env
-              (ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum + maybe_more) 
-                   (* for the comments of constructors in types, 
+              (ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum + maybe_more)
+                   (* for the comments of constructors in types,
                       which are after the constructor definition and can
                       go beyond ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum *)
               q
@@ -510,18 +485,18 @@ module Analyser =
 
     (** Analyse the given signature_item_desc to create the corresponding module element
        (with the given attached comment).*)
-    and analyse_signature_item_desc env signat table current_module_name 
+    and analyse_signature_item_desc env signat table current_module_name
         pos_start_ele pos_end_ele pos_limit comment_opt sig_item_desc =
         match sig_item_desc with
           Parsetree.Psig_value (name_pre, value_desc) ->
-            let type_expr = 
+            let type_expr =
               try Signature_search.search_value table name_pre
               with Not_found ->
                 raise (Failure (Odoc_messages.value_not_found current_module_name name_pre))
             in
             let name = Name.parens_if_infix name_pre in
             let subst_typ = Odoc_env.subst_type env type_expr in
-            let v =  
+            let v =
               {
                 val_name = Name.concat current_module_name name ;
                 val_info = comment_opt ;
@@ -530,9 +505,9 @@ module Analyser =
                 val_parameters = Odoc_value.dummy_parameter_list subst_typ ;
                 val_code = None ;
                 val_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele)}
-              } 
+              }
             in
-            let (maybe_more, info_after_opt) = 
+            let (maybe_more, info_after_opt) =
               My_ir.just_after_special
                 !file_name
                 (get_string_of_file pos_end_ele pos_limit)
@@ -545,28 +520,28 @@ module Analyser =
             (maybe_more, new_env, [ Element_value v ])
 
         | Parsetree.Psig_exception (name, exception_decl) ->
-            let types_excep_decl = 
-              try Signature_search.search_exception table name  
-              with Not_found -> 
+            let types_excep_decl =
+              try Signature_search.search_exception table name
+              with Not_found ->
                 raise (Failure (Odoc_messages.exception_not_found current_module_name name))
             in
             let e =
-              { 
+              {
                 ex_name = Name.concat current_module_name name ;
                 ex_info = comment_opt ;
                 ex_args = List.map (Odoc_env.subst_type env) types_excep_decl ;
                 ex_alias = None ;
                 ex_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
-		ex_code = 
+		ex_code =
 		   (
                     if !Odoc_args.keep_code then
                       Some (get_string_of_file pos_start_ele pos_end_ele)
                     else
                       None
                    ) ;
-              } 
+              }
             in
-            let (maybe_more, info_after_opt) = 
+            let (maybe_more, info_after_opt) =
               My_ir.just_after_special
                 !file_name
                 (get_string_of_file pos_end_ele pos_limit)
@@ -578,7 +553,7 @@ module Analyser =
         | Parsetree.Psig_type name_type_decl_list ->
             (* we start by extending the environment *)
             let new_env =
-              List.fold_left 
+              List.fold_left
                 (fun acc_env -> fun (name, _) ->
                   let complete_name = Name.concat current_module_name name in
                   Odoc_env.add_type acc_env complete_name
@@ -588,7 +563,7 @@ module Analyser =
             in
             let rec f ?(first=false) acc_maybe_more last_pos name_type_decl_list =
               match name_type_decl_list with
-                [] -> 
+                [] ->
                   (acc_maybe_more, [])
               | (name, type_decl) :: q ->
                   let (assoc_com, ele_comments) =
@@ -604,9 +579,8 @@ module Analyser =
                       [] -> pos_limit
                     | (_, td) :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
                   in
-                  let (maybe_more, name_comment_list) = 
+                  let (maybe_more, name_comment_list) =
                     name_comment_from_type_kind
-                      type_decl.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
                       type_decl.Parsetree.ptype_loc.Location.loc_end.Lexing.pos_cnum
                       pos_limit2
                       type_decl.Parsetree.ptype_kind
@@ -615,8 +589,8 @@ module Analyser =
                   let f_DEBUG (name, c_opt) = print_DEBUG ("constructor/field "^name^": "^(match c_opt with None -> "sans commentaire" | Some c -> Odoc_misc.string_of_info c)) in
                   List.iter f_DEBUG name_comment_list;
                   (* get the information for the type in the signature *)
-                  let sig_type_decl = 
-                    try Signature_search.search_type table name 
+                  let sig_type_decl =
+                    try Signature_search.search_type table name
                     with Not_found ->
                       raise (Failure (Odoc_messages.type_not_found current_module_name name))
                   in
@@ -629,38 +603,38 @@ module Analyser =
                     {
                       ty_name = Name.concat current_module_name name ;
                       ty_info = assoc_com ;
-                      ty_parameters = 
+                      ty_parameters =
 		        List.map2 (fun p (co,cn,_) ->
 			             (Odoc_env.subst_type new_env p,
 				      co, cn)
-				  ) 
-			sig_type_decl.Types.type_params 
+				  )
+			sig_type_decl.Types.type_params
 			sig_type_decl.Types.type_variance;
                       ty_kind = type_kind ;
-                      ty_manifest = 
+                      ty_manifest =
                       (match sig_type_decl.Types.type_manifest with
                         None -> None
                       | Some t -> Some (Odoc_env.subst_type new_env t));
-                      ty_loc = 
-                      { loc_impl = None ; 
+                      ty_loc =
+                      { loc_impl = None ;
                         loc_inter = Some (!file_name,loc_start) ;
                       };
-                      ty_code = 
+                      ty_code =
 		        (
 			 if !Odoc_args.keep_code then
-			   Some (get_string_of_file loc_start new_end) 
+			   Some (get_string_of_file loc_start new_end)
 			 else
 			   None
 			) ;
                     }
                   in
-                  let (maybe_more2, info_after_opt) = 
+                  let (maybe_more2, info_after_opt) =
                     My_ir.just_after_special
                       !file_name
                       (get_string_of_file new_end pos_limit2)
                   in
                   new_type.ty_info <- merge_infos new_type.ty_info info_after_opt ;
-                  let (new_maybe_more, eles) = f 
+                  let (new_maybe_more, eles) = f
                       (maybe_more + maybe_more2)
                       (new_end + maybe_more2)
                       q
@@ -669,7 +643,7 @@ module Analyser =
             in
             let (maybe_more, types) = f ~first: true 0 pos_start_ele name_type_decl_list in
             (maybe_more, new_env, types)
-              
+
         | Parsetree.Psig_open _ -> (* A VOIR *)
             let ele_comments = match comment_opt with
               None -> []
@@ -683,13 +657,13 @@ module Analyser =
         | Parsetree.Psig_module (name, module_type) ->
             let complete_name = Name.concat current_module_name name in
             (* get the the module type in the signature by the module name *)
-            let sig_module_type = 
-              try Signature_search.search_module table name 
+            let sig_module_type =
+              try Signature_search.search_module table name
               with Not_found ->
                 raise (Failure (Odoc_messages.module_not_found current_module_name name))
             in
             let module_kind = analyse_module_kind env complete_name module_type sig_module_type in
-	    let code_intf = 
+	    let code_intf =
 	      if !Odoc_args.keep_code then
 		let loc = module_type.Parsetree.pmty_loc in
 		let st = loc.Location.loc_start.Lexing.pos_cnum in
@@ -698,7 +672,7 @@ module Analyser =
 	      else
 		None
 	    in
-            let new_module = 
+            let new_module =
               {
                 m_name = complete_name ;
                 m_type = sig_module_type;
@@ -710,16 +684,16 @@ module Analyser =
                 m_top_deps = [] ;
 		m_code = None ;
 		m_code_intf = code_intf ;
-              } 
+              }
             in
-            let (maybe_more, info_after_opt) = 
+            let (maybe_more, info_after_opt) =
               My_ir.just_after_special
                 !file_name
                 (get_string_of_file pos_end_ele pos_limit)
             in
             new_module.m_info <- merge_infos new_module.m_info info_after_opt ;
             let new_env = Odoc_env.add_module env new_module.m_name in
-            let new_env2 = 
+            let new_env2 =
               match new_module.m_type with (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
                 Types.Tmty_signature s -> Odoc_env.add_signature new_env new_module.m_name ~rel: (Name.simple new_module.m_name) s
               | _ -> new_env
@@ -729,21 +703,21 @@ module Analyser =
         | Parsetree.Psig_recmodule decls ->
 	    (* we start by extending the environment *)
             let new_env =
-              List.fold_left 
+              List.fold_left
                 (fun acc_env -> fun (name, _) ->
                   let complete_name = Name.concat current_module_name name in
                   let e = Odoc_env.add_module acc_env complete_name in
                   (* get the information for the module in the signature *)
-                  let sig_module_type = 
-                    try Signature_search.search_module table name 
+                  let sig_module_type =
+                    try Signature_search.search_module table name
                     with Not_found ->
                       raise (Failure (Odoc_messages.module_not_found current_module_name name))
                   in
 		  match sig_module_type with
                     (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
-                    Types.Tmty_signature s -> 
+                    Types.Tmty_signature s ->
 		      Odoc_env.add_signature e complete_name ~rel: name s
-		  | _ -> 
+		  | _ ->
 		      print_DEBUG "not a Tmty_signature";
 		      e
                 )
@@ -752,7 +726,7 @@ module Analyser =
             in
             let rec f ?(first=false) acc_maybe_more last_pos name_mtype_list =
               match name_mtype_list with
-                [] -> 
+                [] ->
                   (acc_maybe_more, [])
               | (name, modtype) :: q ->
 		  let complete_name = Name.concat current_module_name name in
@@ -772,14 +746,14 @@ module Analyser =
                     | (_, mty) :: _ -> mty.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum
                   in
                   (* get the information for the module in the signature *)
-                  let sig_module_type = 
-                    try Signature_search.search_module table name 
+                  let sig_module_type =
+                    try Signature_search.search_module table name
                     with Not_found ->
                       raise (Failure (Odoc_messages.module_not_found current_module_name name))
                   in
                   (* associate the comments to each constructor and build the [Type.t_type] *)
 		  let module_kind = analyse_module_kind new_env complete_name modtype sig_module_type in
-		  let code_intf = 
+		  let code_intf =
 		    if !Odoc_args.keep_code then
 		      let loc = modtype.Parsetree.pmty_loc in
 		      let st = loc.Location.loc_start.Lexing.pos_cnum in
@@ -788,7 +762,7 @@ module Analyser =
 		    else
 		      None
 		  in
-		  let new_module = 
+		  let new_module =
 		    {
                       m_name = complete_name ;
                       m_type = sig_module_type;
@@ -800,16 +774,16 @@ module Analyser =
                       m_top_deps = [] ;
 		      m_code = None ;
 		      m_code_intf = code_intf ;
-		    } 
+		    }
 		  in
-		  let (maybe_more, info_after_opt) = 
+		  let (maybe_more, info_after_opt) =
 		    My_ir.just_after_special
                       !file_name
                       (get_string_of_file loc_end pos_limit2)
 		  in
 		  new_module.m_info <- merge_infos new_module.m_info info_after_opt ;
 
-                  let (maybe_more2, eles) = f 
+                  let (maybe_more2, eles) = f
                       maybe_more
                       (loc_end + maybe_more)
                       q
@@ -817,11 +791,11 @@ module Analyser =
                   (maybe_more2, (ele_comments @ [Element_module new_module]) @ eles)
             in
             let (maybe_more, mods) = f ~first: true 0 pos_start_ele decls in
-            (maybe_more, new_env, mods)              
+            (maybe_more, new_env, mods)
 
         | Parsetree.Psig_modtype (name, Parsetree.Pmodtype_abstract) ->
-            let sig_mtype = 
-              try Signature_search.search_module_type table name 
+            let sig_mtype =
+              try Signature_search.search_module_type table name
               with Not_found ->
                 raise (Failure (Odoc_messages.module_type_not_found current_module_name name))
             in
@@ -835,9 +809,9 @@ module Analyser =
                 mt_file = !file_name ;
                 mt_kind = None ;
                 mt_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
-              } 
+              }
             in
-            let (maybe_more, info_after_opt) = 
+            let (maybe_more, info_after_opt) =
               My_ir.just_after_special
                 !file_name
                 (get_string_of_file pos_end_ele pos_limit)
@@ -848,8 +822,8 @@ module Analyser =
 
         | Parsetree.Psig_modtype (name, Parsetree.Pmodtype_manifest module_type) ->
             let complete_name = Name.concat current_module_name name in
-            let sig_mtype_opt = 
-              try Signature_search.search_module_type table name 
+            let sig_mtype_opt =
+              try Signature_search.search_module_type table name
               with Not_found ->
                 raise (Failure (Odoc_messages.module_type_not_found current_module_name name))
             in
@@ -858,7 +832,7 @@ module Analyser =
               | Some sig_mtype -> Some (analyse_module_type_kind env complete_name module_type sig_mtype)
               | None -> None
             in
-            let mt = 
+            let mt =
               {
                 mt_name = complete_name ;
                 mt_info = comment_opt ;
@@ -867,9 +841,9 @@ module Analyser =
                 mt_file = !file_name ;
                 mt_kind = module_type_kind ;
                 mt_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
-              } 
+              }
             in
-            let (maybe_more, info_after_opt) = 
+            let (maybe_more, info_after_opt) =
               My_ir.just_after_special
                 !file_name
                 (get_string_of_file pos_end_ele pos_limit)
@@ -887,7 +861,7 @@ module Analyser =
             let rec f = function
                 Parsetree.Pmty_ident longident ->
                   Name.from_longident longident
-              | Parsetree.Pmty_signature _ -> 
+              | Parsetree.Pmty_signature _ ->
                   "??"
               | Parsetree.Pmty_functor _ ->
                   "??"
@@ -896,19 +870,19 @@ module Analyser =
             in
 	    let name = (f module_type.Parsetree.pmty_desc) in
 	    let full_name = Odoc_env.full_module_or_module_type_name env name in
-            let im = 
+            let im =
               {
                 im_name = full_name ;
                 im_module = None ;
 		im_info = comment_opt;
-              } 
+              }
             in
             (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)
 
         | Parsetree.Psig_class class_description_list ->
             (* we start by extending the environment *)
             let new_env =
-              List.fold_left 
+              List.fold_left
                 (fun acc_env -> fun class_desc ->
                   let complete_name = Name.concat current_module_name class_desc.Parsetree.pci_name in
                   Odoc_env.add_class acc_env complete_name
@@ -937,13 +911,13 @@ module Analyser =
                   in
                   let name = class_desc.Parsetree.pci_name in
                   let complete_name = Name.concat current_module_name name in
-                  let sig_class_decl = 
+                  let sig_class_decl =
                     try Signature_search.search_class table name
                     with Not_found ->
                       raise (Failure (Odoc_messages.class_not_found current_module_name name))
                   in
                   let sig_class_type = sig_class_decl.Types.cty_type in
-                  let (parameters, class_kind) = 
+                  let (parameters, class_kind) =
                     analyse_class_kind
                      new_env
                      complete_name
@@ -961,22 +935,22 @@ module Analyser =
                      cl_kind = class_kind ;
                      cl_parameters = parameters ;
                      cl_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
-                   } 
+                   }
                  in
-                 let (maybe_more, info_after_opt) = 
+                 let (maybe_more, info_after_opt) =
                    My_ir.just_after_special
                      !file_name
                      (get_string_of_file pos_end pos_limit2)
                  in
                  new_class.cl_info <- merge_infos new_class.cl_info info_after_opt ;
                  Odoc_class.class_update_parameters_text new_class ;
-                 let (new_maybe_more, eles) = 
+                 let (new_maybe_more, eles) =
                    f maybe_more (pos_end + maybe_more) q
                  in
                  (new_maybe_more,
                   ele_comments @ (( Element_class new_class ) :: eles))
             in
-            let (maybe_more, eles) = 
+            let (maybe_more, eles) =
               f ~first: true 0 pos_start_ele class_description_list
             in
             (maybe_more, new_env, eles)
@@ -984,7 +958,7 @@ module Analyser =
         | Parsetree.Psig_class_type class_type_declaration_list ->
             (* we start by extending the environment *)
             let new_env =
-              List.fold_left 
+              List.fold_left
                 (fun acc_env -> fun class_type_decl ->
                   let complete_name = Name.concat current_module_name class_type_decl.Parsetree.pci_name in
                   Odoc_env.add_class_type acc_env complete_name
@@ -1013,7 +987,7 @@ module Analyser =
                   in
                   let name = ct_decl.Parsetree.pci_name in
                   let complete_name = Name.concat current_module_name name in
-                  let sig_cltype_decl = 
+                  let sig_cltype_decl =
                     try Signature_search.search_class_type table name
                     with Not_found ->
                       raise (Failure (Odoc_messages.class_type_not_found current_module_name name))
@@ -1021,12 +995,12 @@ module Analyser =
                   let sig_class_type = sig_cltype_decl.Types.clty_type in
                   let kind = analyse_class_type_kind
                       new_env
-                      complete_name 
+                      complete_name
                       ct_decl.Parsetree.pci_loc.Location.loc_start.Lexing.pos_cnum
                       ct_decl.Parsetree.pci_expr
                       sig_class_type
                   in
-                  let ct = 
+                  let ct =
                     {
                       clt_name = complete_name ;
                       clt_info = assoc_com ;
@@ -1035,21 +1009,21 @@ module Analyser =
                       clt_virtual = ct_decl.Parsetree.pci_virt = Asttypes.Virtual ;
                       clt_kind = kind ;
                       clt_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
-                    } 
+                    }
                   in
-                  let (maybe_more, info_after_opt) = 
+                  let (maybe_more, info_after_opt) =
                     My_ir.just_after_special
                       !file_name
                       (get_string_of_file pos_end pos_limit2)
                   in
                   ct.clt_info <- merge_infos ct.clt_info info_after_opt ;
-                  let (new_maybe_more, eles) = 
+                  let (new_maybe_more, eles) =
                     f maybe_more (pos_end + maybe_more) q
                   in
                  (new_maybe_more,
                   ele_comments @ (( Element_class_type ct) :: eles))
             in
-            let (maybe_more, eles) = 
+            let (maybe_more, eles) =
               f ~first: true 0 pos_start_ele class_type_declaration_list
             in
             (maybe_more, new_env, eles)
@@ -1058,13 +1032,13 @@ module Analyser =
     and analyse_module_type_kind env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
         Parsetree.Pmty_ident longident ->
-          let name = 
+          let name =
             match sig_module_type with
               Types.Tmty_ident path -> Name.from_path path
-            | _ -> Name.from_longident longident 
+            | _ -> Name.from_longident longident
               (* A VOIR cela arrive quand on fait module type F : functor ... -> Toto, Toto n'est pas un ident mais une structure *)
           in
-          Module_type_alias { mta_name = Odoc_env.full_module_type_name env name ; 
+          Module_type_alias { mta_name = Odoc_env.full_module_type_name env name ;
                               mta_module = None }
 
       | Parsetree.Pmty_signature ast ->
@@ -1079,7 +1053,7 @@ module Analyser =
            | _ ->
                raise (Failure "Parsetree.Pmty_signature signature but not Types.Tmty_signature signat")
           )
-            
+
       | Parsetree.Pmty_functor (_,pmodule_type2, module_type2) ->
           (
 	   let loc_start = pmodule_type2.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
@@ -1088,21 +1062,21 @@ module Analyser =
 	   print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
            match sig_module_type with
              Types.Tmty_functor (ident, param_module_type, body_module_type) ->
-	       let mp_kind = analyse_module_type_kind env 
-		   current_module_name pmodule_type2 param_module_type 
+	       let mp_kind = analyse_module_type_kind env
+		   current_module_name pmodule_type2 param_module_type
 	       in
-               let param = 
+               let param =
                  {
                    mp_name = Name.from_ident ident ;
                    mp_type = Odoc_env.subst_module_type env param_module_type ;
 		   mp_type_code = mp_type_code ;
 		   mp_kind = mp_kind ;
-                 } 
+                 }
                in
-	       let k = analyse_module_type_kind env 
-		   current_module_name 
-		   module_type2 
-		   body_module_type 
+	       let k = analyse_module_type_kind env
+		   current_module_name
+		   module_type2
+		   body_module_type
 	       in
                Module_type_functor (param, k)
 
@@ -1133,7 +1107,7 @@ module Analyser =
            match sig_module_type with
              Types.Tmty_signature signat ->
                Module_struct
-                 (analyse_parsetree 
+                 (analyse_parsetree
                     env
                     signat
                     current_module_name
@@ -1153,24 +1127,24 @@ module Analyser =
                let loc_end = pmodule_type2.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
 	       let mp_type_code = get_string_of_file loc_start loc_end in
 	       print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
-	       let mp_kind = analyse_module_type_kind env 
-		   current_module_name pmodule_type2 param_module_type 
+	       let mp_kind = analyse_module_type_kind env
+		   current_module_name pmodule_type2 param_module_type
 	       in
-               let param = 
+               let param =
                  {
                    mp_name = Name.from_ident ident ;
                    mp_type = Odoc_env.subst_module_type env param_module_type ;
 		   mp_type_code = mp_type_code ;
 		   mp_kind = mp_kind ;
-                 } 
+                 }
                in
-               let k = analyse_module_kind env 
-		   current_module_name 
-		   module_type2 
-		   body_module_type 
+               let k = analyse_module_kind env
+		   current_module_name
+		   module_type2
+		   body_module_type
 	       in
                Module_functor (param, k)
-                     
+
            | _ ->
                (* if we're here something's wrong *)
                raise (Failure "Parsetree.Pmty_functor _ but not Types.Tmty_functor _")
@@ -1194,13 +1168,13 @@ module Analyser =
           print_DEBUG "Tcty_constr _";
            let path_name = Name.from_path p in
            let name = Odoc_env.full_class_or_class_type_name env path_name in
-           let k = 
-             Class_constr 
+           let k =
+             Class_constr
                {
                  cco_name = name ;
                  cco_class = None ;
                  cco_type_parameters = List.map (Odoc_env.subst_type env) typ_list
-               } 
+               }
            in
            ([], k)
 
@@ -1211,7 +1185,7 @@ module Analyser =
           print_DEBUG ("Type de la classe "^current_class_name^" : ");
           print_DEBUG (Odoc_print.string_of_type_expr class_signature.Types.cty_self);
           (* we get the elements of the class in class_type_field_list *)
-          let (inher_l, ele) = analyse_class_elements env current_class_name 
+          let (inher_l, ele) = analyse_class_elements env current_class_name
               last_pos
               parse_class_type.Parsetree.pcty_loc.Location.loc_end.Lexing.pos_cnum
               class_type_field_list
@@ -1219,12 +1193,12 @@ module Analyser =
           in
           ([], Class_structure (inher_l, ele))
 
-      | (Parsetree.Pcty_fun (parse_label, _, pclass_type), Types.Tcty_fun (label, type_expr, class_type)) -> 
+      | (Parsetree.Pcty_fun (parse_label, _, pclass_type), Types.Tcty_fun (label, type_expr, class_type)) ->
           (* label = string. Dans les signatures, pas de nom de paramètres à l'intérieur des tuples *)
           (* si label = "", pas de label. ici on a l'information pour savoir si on a un label explicite. *)
           if parse_label = label then
             (
-             let new_param = Simple_name 
+             let new_param = Simple_name
                  {
                    sn_name = Btype.label_name label ;
                    sn_type = Odoc_env.subst_type env type_expr ;
@@ -1238,7 +1212,7 @@ module Analyser =
             (
              raise (Failure "Parsetree.Pcty_fun (parse_label, _, pclass_type), labels différents")
             )
-           
+
       | _ ->
           raise (Failure "analyse_class_kind pas de correspondance dans le match")
 
@@ -1248,13 +1222,13 @@ module Analyser =
         (Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
          Types.Tcty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
           print_DEBUG "Tcty_constr _";
-           let k = 
-             Class_type 
+           let k =
+             Class_type
                {
                  cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;
                  cta_class = None ;
                  cta_type_parameters = List.map (Odoc_env.subst_type env) typ_list
-               } 
+               }
            in
            k
 
@@ -1273,16 +1247,16 @@ module Analyser =
           in
           Class_signature (inher_l, ele)
 
-      | (Parsetree.Pcty_fun (parse_label, _, pclass_type), Types.Tcty_fun (label, type_expr, class_type)) -> 
+      | (Parsetree.Pcty_fun (parse_label, _, pclass_type), Types.Tcty_fun (label, type_expr, class_type)) ->
           raise (Failure "analyse_class_type_kind : Parsetree.Pcty_fun (...) with Types.Tcty_fun (...)")
 (*
       | (Parsetree.Pcty_constr (longident, _) (*of Longident.t * core_type list *),
          Types.Tcty_signature class_signature) ->
-           (* A VOIR : c'est pour le cas des contraintes de classes : 
+           (* A VOIR : c'est pour le cas des contraintes de classes :
               class type cons = object
                 method m : int
               end
-                    
+
               class ['a] maxou x =
                 (object
                   val a = (x : 'a)
@@ -1290,13 +1264,13 @@ module Analyser =
                 end : cons )
                     ^^^^^^
            *)
-           let k = 
-             Class_type 
+           let k =
+             Class_type
                {
                  cta_name = Odoc_env.full_class_name env (Name.from_longident longident) ;
                  cta_class = None ;
                  cta_type_parameters = List.map (Odoc_env.subst_type env) typ_list (* ?? *)
-               } 
+               }
            in
            ([], k)
 *)
@@ -1304,7 +1278,7 @@ module Analyser =
           raise (Failure "analyse_class_type_kind pas de correspondance dans le match")
 
     let analyse_signature source_file input_file
-	(ast : Parsetree.signature) (signat : Types.signature) = 
+	(ast : Parsetree.signature) (signat : Types.signature) =
       let complete_source_file =
         try
           let curdir = Sys.getcwd () in
@@ -1322,13 +1296,13 @@ module Analyser =
       prepare_file complete_source_file input_file;
       (* We create the t_module for this file. *)
       let mod_name = String.capitalize
-          (Filename.basename (try Filename.chop_extension source_file with _ -> source_file)) 
+          (Filename.basename (try Filename.chop_extension source_file with _ -> source_file))
       in
       let (len,info_opt) = My_ir.first_special !file_name !file in
-      let elements = 
-	analyse_parsetree Odoc_env.empty signat mod_name len (String.length !file) ast 
+      let elements =
+	analyse_parsetree Odoc_env.empty signat mod_name len (String.length !file) ast
       in
-      let code_intf = 
+      let code_intf =
 	if !Odoc_args.keep_code then
 	  Some !file
 	else
@@ -1345,8 +1319,8 @@ module Analyser =
         m_top_deps = [] ;
 	m_code = None ;
 	m_code_intf = code_intf ;
-      } 
-          
+      }
+
     end
 
 (* eof $Id$ *)
