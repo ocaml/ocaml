@@ -19,7 +19,7 @@ of window managers.
 \label{ss:bank-accounts}
 
 In this section, we illustrate most aspects of Object and inheritance
-by refinining, debuging, and specializing the following 
+by refining, debugging, and specializing the following 
 initial naive definition of a simple bank account.  (We reuse the
 module "Euro" defined at the end of chapter~\ref{c:objectexamples}.)
 \begin{caml_eval}
@@ -184,7 +184,7 @@ module Account (M:MONEY) =
           
     class virtual check_client x = 
       let y = if (m 100.)#leq x then x
-      else raise (Failure "Insuffisant initial deposit") in
+      else raise (Failure "Insufficient initial deposit") in
       object (self) initializer self#deposit y end
         
     module Client (B : sig class bank : client_view end) =
@@ -229,7 +229,7 @@ possibility for further personalization.
 It is important that the client's view has been defined as a functor
 "Client" in order to keep the ability to build client accounts while
 refining the "bank". The functor "Client" may remain unchanged and be passed
-the new definition to initiliaze a client's view of the extended account.
+the new definition to initialize a client's view of the extended account.
 \begin{caml_example*}
 module Investment_account (M : MONEY) = 
   struct
@@ -480,11 +480,11 @@ This is another instance of friend functions as seen in section
 \ref{ss:friends}. Indeed, this is the same mechanism used in the module
 "Set" in the absence of objects.
 
-In the object-oriented version of set, we only need to add an aditional 
+In the object-oriented version of set, we only need to add an additional 
 method "tag" to return the representation of a set. Since "set" are
 parametric. The method "tag" has a parametric type "'a tag", concrete within 
 the module definition but abstract in its signature.
-From outside, it will them be garanteed that two objects with a method "tag" 
+From outside, it will them be guaranteed that two objects with a method "tag" 
 of the same type will share the same representation.
 \begin{caml_example*}
 module type SET =
@@ -531,20 +531,20 @@ module Set : SET =
 \label{ss:subject-observer}
 
 The following example, known as the subject/observer pattern, is often
-presented in the litterature as a difficult inheritance problem with
+presented in the literature as a difficult inheritance problem with
 inter-connected classes.
 The general pattern amounts to the definition a pair of two
-classes that recusively interact with one another.  
+classes that recursively interact with one another.  
 
 The class "observer"  has a distinguished method "notify" that requires 
-two arguments, a subject and an event to excecute an action. 
+two arguments, a subject and an event to execute an action. 
 \begin{caml_example*}
 class virtual ['subject, 'event] observer =
   object
     method virtual notify : 'subject ->  'event -> unit
   end;;
 \end{caml_example*}
-The class "subject" remembers a list of oberservers in an instance variable,
+The class "subject" remembers a list of observers in an instance variable,
 and has a distinguished method "notify_observers" to broadcast the message
 "notify" to all observers with a particular event "e". 
 \begin{caml_example*}
@@ -637,5 +637,5 @@ window#move 1; window#resize 2;;
 
 
 % LocalWords:  Caml objectexamples bsection init caml val int Oo succ incr ref
-% LocalWords:  typecheck leq bool cp eval sig struct ABSPOINT Abspoint iter
-% LocalWords:  accu mem rec repr
+% LocalWords:  typecheck leq bool cp eval sig struct ABSPOINT Abspoint iter neg
+% LocalWords:  accu mem rec repr Euro euro ccp inlined ostring len concat OCaml

@@ -157,7 +157,7 @@ calling the definition of class "point" with the value of the
 \begin{caml_example}
 class adjusted_point x_init =  point ((x_init / 10) * 10);;
 \end{caml_example}
-An alternative solution would have been to define the adjustement in 
+An alternative solution would have been to define the adjustment in 
 a special allocation function:
 \begin{caml_example}
 let new_adjusted_point x_init = new point ((x_init / 10) * 10);;
@@ -214,7 +214,7 @@ class printable_point x_init =
   end;;
 let p = new printable_point 17;;
 \end{caml_example}
-Initializers cannot be overriden. On the contrary, all intilializers are
+Initializers cannot be overridden. On the contrary, all initializers are
 evaluated sequentially. 
 Initializers are particularly useful to enforce invariants. 
 Another example can be seen in section \ref{ss:bank-accounts}.
@@ -402,8 +402,8 @@ let p' = new printable_colored_point 17 "red";;
 p'#print;;
 \end{caml_example}
 A private method that has been hidden in the parent class is no more
-visible, and is thus not overriden. This also applies to initializers:
-all initializers along the class hierachy are evaluated, in the order
+visible, and is thus not overridden. This also applies to initializers:
+all initializers along the class hierarchy are evaluated, in the order
 they are introduced.
 
 \section{Parameterized classes}
@@ -689,7 +689,7 @@ While objects of either class will behave the same, objects of their
 subclasses will be different. In a subclass of the latter, the method
 "move" will
 keep returning an object of the parent class.  On the contrary, in a
-subclass of the former, the move method will return an object of the
+subclass of the former, the method "move" will return an object of the
 subclass.
 
 Functional update is often used in conjunction with binary methods
@@ -735,8 +735,8 @@ p = q, p = p;;
 \end{caml_example}
 
 Cloning and override have a non empty intersection.
-They are intercheangeable when used withing an object and without 
-overrding any field:
+They are interchangeable when used within an object and without 
+overriding any field:
 \begin{caml_example}
 class copy =
   object
@@ -750,7 +750,7 @@ class copy =
 Only the override can be used to actually override fields, and 
 only the "Oo.copy" primitive can be used externally. 
 
-Cloning can also be used to provide a facilities.
+Cloning can also be used to provide facilities.
 \begin{caml_example}
 class backup = 
   object (self : 'mytype)
@@ -960,3 +960,6 @@ representation abstract outside of the module.
 
 
 
+% LocalWords:  typecheck monomorphic uncaptured Subtyping subtyping leq repr Oo
+% LocalWords:  val sig bool Euro struct Caml Vouillon Didier int ref incr init
+% LocalWords:  succ mytype rec
