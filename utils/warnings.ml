@@ -27,12 +27,14 @@ type t =                             (* A is all *)
   | Unused_pat                       (* U *)
   | Hide_instance_variable of string (* V *)
   | Other of string                  (* X *)
+  | Unused_var of string             (* Y *)
+  | Unused_var_strict of string      (* Z *)
 ;;
 
 let letter = function        (* 'a' is all *)
   | Comment _ ->                'c'
   | Deprecated ->               'd'
-  | Fragile_pat _ ->              'e'
+  | Fragile_pat _ ->            'e'
   | Partial_application ->      'f'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
@@ -41,10 +43,12 @@ let letter = function        (* 'a' is all *)
   | Unused_match|Unused_pat ->  'u'
   | Hide_instance_variable _ -> 'v'
   | Other _ ->                  'x'
+  | Unused_var _ ->             'y'
+  | Unused_var_strict _ ->      'z'
 ;;
 
 let check c =
-  try ignore (String.index "acdeflmpsuvxACDEFLMPSUVX" c)
+  try ignore (String.index "acdeflmpsuvxyzACDEFLMPSUVXYZ" c)
   with _ -> raise (Arg.Bad (Printf.sprintf "unknown warning option %c" c))
 ;;    
 
@@ -81,7 +85,7 @@ let parse_options iserr s =
   done
 ;;
 
-let () = parse_options false "el";;
+let () = parse_options false "elyz";;
 
 let message = function
   | Partial_match "" -> "this pattern-matching is not exhaustive."
@@ -113,6 +117,7 @@ let message = function
       "this expression should have type unit."
   | Comment s -> "this is " ^ s ^ "."
   | Deprecated -> "this syntax is deprecated."
+  | Unused_var v | Unused_var_strict v -> "unused variable " ^ v ^ "."
   | Other s -> s
 ;;
 

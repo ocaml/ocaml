@@ -27,6 +27,8 @@ type t =                             (* A is all *)
   | Unused_pat                       (* U *)
   | Hide_instance_variable of string (* V *)
   | Other of string                  (* X *)
+  | Unused_var of string             (* Y *)
+  | Unused_var_strict of string      (* Z *)
 ;;
 
 val parse_options : bool -> string -> unit;;
