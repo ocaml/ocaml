@@ -87,7 +87,10 @@ let full_init seed =
   done
 
 (* Low-entropy system-dependent initialisation. *)
-let self_init () = init (int_of_float (Sys.date () -. 2e9));;
+
+external random_seed: unit -> int = "sys_random_seed";;
+
+let self_init () = init (random_seed());;
 
 (********************
 
