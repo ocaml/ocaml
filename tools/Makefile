@@ -117,6 +117,9 @@ scrapelabels: $(SCRAPELABELS)
 lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
+install::
+	cp scrapelabels $(LIBDIR)
+
 clean::
 	rm -f scrapelabels lexer301.ml
 
@@ -129,6 +132,9 @@ ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
 addlabels: addlabels.ml
 	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
 		$(ADDLABELS_IMPORTS) addlabels.ml
+
+install::
+	cp addlabels $(LIBDIR)
 
 clean::
 	rm -f addlabels
