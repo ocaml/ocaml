@@ -152,22 +152,22 @@ value gr_open_graph(arg)
     fcntl(ConnectionNumber(grdisplay), F_SETFL, ret | FASYNC);
     fcntl(ConnectionNumber(grdisplay), F_SETOWN, getpid());
 #endif
+  }
 #ifdef USE_INTERVAL_TIMER
-    /* If BSD-style interval timers are provided, use the real-time timer
-       to poll events. */
-    { struct itimerval it;
-      it.it_interval.tv_sec = 0;
-      it.it_interval.tv_usec = 250000;
-      it.it_value.tv_sec = 0;
-      it.it_value.tv_usec = 250000;
-      setitimer(ITIMER_REAL, &it, NULL);
-    }
+  /* If BSD-style interval timers are provided, use the real-time timer
+     to poll events. */
+  { struct itimerval it;
+    it.it_interval.tv_sec = 0;
+    it.it_interval.tv_usec = 250000;
+    it.it_value.tv_sec = 0;
+    it.it_value.tv_usec = 250000;
+    setitimer(ITIMER_REAL, &it, NULL);
+  }
 #endif
 #ifdef USE_ALARM
-    /* The poor man's solution: use alarm to poll events. */
-    alarm(1);
+  /* The poor man's solution: use alarm to poll events. */
+  alarm(1);
 #endif
-  }
   /* Position the current point at origin */
   grx = 0;
   gry = 0;
@@ -191,6 +191,7 @@ value gr_close_graph()
     XDestroyWindow(grdisplay, grwindow.win);
     XFreeGC(grdisplay, grbstore.gc);
     XFreePixmap(grdisplay, grbstore.win);
+    XFlush(grdisplay);
   }
   return Val_unit;
 }
