@@ -658,8 +658,8 @@ partialclean::
 
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp driver toplevel; \
-         do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
-         done) > .depend
+	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
+	 done) > .depend
 
 alldepend:: depend
 
