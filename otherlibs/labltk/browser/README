@@ -98,7 +98,7 @@ USE
 
    C-s opens a text search dialog for the displayed signature.
 
-c) File editor
+2) Editor
    You can edit files with it, but there is no auto-save nor undo at
    the moment. Otherwise you can use it as a browser, making
    occasional corrections.
@@ -127,7 +127,7 @@ c) File editor
 
    Signature shows the signature of the current file.
 
-d) Shell
+3) Shell
    When you create a shell, a dialog is presented to you, letting you
    choose which command you want to run, and the title of the shell
    (to choose it in the Editor).

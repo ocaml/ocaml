@@ -12,8 +12,14 @@
 
 (* $Id$ *)
 
-(* Module [StdLabels]: meta-module for labelled libraries *)
-(* See the real interfaces in ArrayLabels, ListLabels and StringLabels *)
+(* Module [StdLabels]: standard labeled libraries *)
+
+(* This meta-module provides labelized version of the [Array],
+   [List] and [String] modules.
+
+   They only differ by their labels. Detailed interfaces can be found
+   in [arrayLabels.mli], [listLabels.mli] and [stringLabels.mli].
+*)
 
 module Array : sig
   external length : 'a array -> int = "%array_length"
