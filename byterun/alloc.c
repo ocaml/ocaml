@@ -95,7 +95,7 @@ value copy_string(char *s)
 
   len = strlen(s);
   res = alloc_string(len);
-  bcopy(s, String_val(res), len);
+  memmove(String_val(res), s, len);
   return res;
 }
 

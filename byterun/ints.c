@@ -97,10 +97,10 @@ static char * parse_format(value fmt,
   len_suffix = strlen(suffix);
   if (len + len_suffix + 1 >= FORMAT_BUFFER_SIZE)
     invalid_argument("format_int: format too long");
-  bcopy(String_val(fmt), format_string, len);
+  memmove(format_string, String_val(fmt), len);
   p = format_string + len - 1;
   lastletter = *p;
-  bcopy(suffix, p, len_suffix);  p += len_suffix;
+  memmove(p, suffix, len_suffix);  p += len_suffix;
   *p++ = lastletter;
   *p = 0;
   /* Determine space needed for result and allocate it dynamically if needed */

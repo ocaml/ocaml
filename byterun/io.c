@@ -150,7 +150,7 @@ int flush_partial(struct channel *channel)
     written = do_write(channel->fd, channel->buff, towrite);
     channel->offset += written;
     if (written < towrite)
-      bcopy(channel->buff + written, channel->buff, towrite - written);
+      memmove(channel->buff, channel->buff + written, towrite - written);
     channel->curr -= written;
   }
   return (channel->curr == channel->buff);
@@ -183,17 +183,17 @@ int putblock(struct channel *channel, char *p, long int len)
   free = channel->end - channel->curr;
   if (n <= free) {
     /* Write request small enough to fit in buffer: transfer to buffer. */
-    bcopy(p, channel->curr, n);
+    memmove(channel->curr, p, n);
     channel->curr += n;
     return n;
   } else {
     /* Write request overflows buffer: transfer whatever fits to buffer
        and write the buffer */
-    bcopy(p, channel->curr, free);
+    memmove(channel->curr, p, free);
     towrite = channel->end - channel->buff;
     written = do_write(channel->fd, channel->buff, towrite);
     if (written < towrite)
-      bcopy(channel->buff + written, channel->buff, towrite - written);
+      memmove(channel->buff, channel->buff + written, towrite - written);
     channel->offset += written;
     channel->curr = channel->end - written;
     channel->max = channel->end - written;
@@ -278,11 +278,11 @@ int getblock(struct channel *channel, char *p, long int len)
   n = len >= INT_MAX ? INT_MAX : (int) len;
   avail = channel->max - channel->curr;
   if (n <= avail) {
-    bcopy(channel->curr, p, n);
+    memmove(p, channel->curr, n);
     channel->curr += n;
     return n;
   } else if (avail > 0) {
-    bcopy(channel->curr, p, avail);
+    memmove(p, channel->curr, avail);
     channel->curr += avail;
     return avail;
   } else {
@@ -290,7 +290,7 @@ int getblock(struct channel *channel, char *p, long int len)
     channel->offset += nread;
     channel->max = channel->buff + nread;
     if (n > nread) n = nread;
-    bcopy(channel->buff, p, n);
+    memmove(p, channel->buff, n);
     channel->curr = channel->buff + n;
     return n;
   }
@@ -337,7 +337,7 @@ long input_scan_line(struct channel *channel)
       if (channel->curr > channel->buff) {
         /* Try to make some room in the buffer by shifting the unread
            portion at the beginning */
-        bcopy(channel->curr, channel->buff, channel->max - channel->curr);
+        memmove(channel->buff, channel->curr, channel->max - channel->curr);
         n = channel->curr - channel->buff;
         channel->curr -= n;
         channel->max -= n;
@@ -555,10 +555,10 @@ value caml_input(value vchannel,value buff,value vstart,value vlength) /* ML */
   n = len >= INT_MAX ? INT_MAX : (int) len;
   avail = channel->max - channel->curr;
   if (n <= avail) {
-    bcopy(channel->curr, &Byte(buff, start), n);
+    memmove(&Byte(buff, start), channel->curr, n);
     channel->curr += n;
   } else if (avail > 0) {
-    bcopy(channel->curr, &Byte(buff, start), avail);
+    memmove(&Byte(buff, start), channel->curr, avail);
     channel->curr += avail;
     n = avail;
   } else {
@@ -566,7 +566,7 @@ value caml_input(value vchannel,value buff,value vstart,value vlength) /* ML */
     channel->offset += nread;
     channel->max = channel->buff + nread;
     if (n > nread) n = nread;
-    bcopy(channel->buff, &Byte(buff, start), n);
+    memmove(&Byte(buff, start), channel->buff, n);
     channel->curr = channel->buff + n;
   }
   Unlock(channel);

@@ -102,9 +102,9 @@ void sys_error(value arg)
       int err_len = strlen(err);
       int arg_len = string_length(arg);
       str = alloc_string(arg_len + 2 + err_len);
-      bcopy(String_val(arg), &Byte(str, 0), arg_len);
-      bcopy(": ", &Byte(str, arg_len), 2);
-      bcopy(err, &Byte(str, arg_len + 2), err_len);
+      memmove(&Byte(str, 0), String_val(arg), arg_len);
+      memmove(&Byte(str, arg_len), ": ", 2);
+      memmove(&Byte(str, arg_len + 2), err, err_len);
     }
     raise_sys_error(str);
   }

@@ -93,7 +93,7 @@ static long read64s(void)
 #endif
 
 #define readblock(dest,len) \
-  (bcopy(intern_src, dest, len), intern_src += len)
+  (memmove(dest, intern_src, len), intern_src += len)
 
 static void intern_cleanup(void)
 {
@@ -550,7 +550,7 @@ double deserialize_float_8(void)
 
 void deserialize_block_1(void * data, long len)
 {
-  bcopy(intern_src, data, len);
+  memmove(data, intern_src, len);
   intern_src += len;
 }
 
@@ -562,7 +562,7 @@ void deserialize_block_2(void * data, long len)
     Reverse_16(q, p);
   intern_src = p;
 #else
-  bcopy(intern_src, data, len * 2);
+  memmove(data, intern_src, len * 2);
   intern_src += len * 2;
 #endif
 }
@@ -575,7 +575,7 @@ void deserialize_block_4(void * data, long len)
     Reverse_32(q, p);
   intern_src = p;
 #else
-  bcopy(intern_src, data, len * 4);
+  memmove(data, intern_src, len * 4);
   intern_src += len * 4;
 #endif
 }
@@ -588,7 +588,7 @@ void deserialize_block_8(void * data, long len)
     Reverse_64(q, p);
   intern_src = p;
 #else
-  bcopy(intern_src, data, len * 8);
+  memmove(data, intern_src, len * 8);
   intern_src += len * 8;
 #endif
 }

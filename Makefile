@@ -16,7 +16,7 @@
 
 include config/Makefile
 
-CAMLC=boot/ocamlrun boot/ocamlc -I boot
+CAMLC=boot/ocamlrun boot/ocamlc -I boot             -g
 CAMLOPT=boot/ocamlrun ./ocamlopt -I stdlib
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=

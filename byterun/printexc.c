@@ -39,7 +39,7 @@ static void add_string(struct stringbuf *buf, char *s)
 {
   int len = strlen(s);
   if (buf->ptr + len > buf->end) len = buf->end - buf->ptr;
-  if (len > 0) bcopy(s, buf->ptr, len);
+  if (len > 0) memmove(buf->ptr, s, len);
   buf->ptr += len;
 }
   
@@ -86,7 +86,7 @@ char * format_caml_exception(value exn)
   i = buf.ptr - buf.data + 1;
   res = malloc(i);
   if (res == NULL) return NULL;
-  bcopy(buf.data, res, i);
+  memmove(res, buf.data, i);
   return res;
 }
 

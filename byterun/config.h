@@ -56,14 +56,14 @@ typedef uint64 int64;
 /* Library dependencies */
 
 #ifdef HAS_MEMMOVE
-#undef bcopy
-#define bcopy(src,dst,len) memmove((dst), (src), (len))
+/* nothing to do */
 #else
 #ifdef HAS_BCOPY
-/* Nothing to do */
+#undef memmove
+#define memmove(dst,src,len) bcopy((src), (dst), (len))
 #else
-#undef bcopy
-#define bcopy(src,dst,len) memmov((dst), (src), (len))
+#undef memmove
+#define memmove(dst,src,len) memmov((dst), (src), (len))
 #define USING_MEMMOV
 #endif
 #endif

@@ -329,8 +329,7 @@ void compact_heap (void)
         if (Color_hd (q) == Caml_white){
           size_t sz = Bhsize_hd (q);
           char *newadr = compact_allocate (sz);  Assert (newadr <= (char *)p);
-          /* bcopy (source, destination, length) */
-          bcopy (p, newadr, sz);
+          memmove (newadr, p, sz);
           p += Wsize_bsize (sz);
         }else{
           Assert (Color_hd (q) == Caml_blue);

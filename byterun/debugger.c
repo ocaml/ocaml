@@ -121,7 +121,7 @@ void debugger_init(void)
       host = gethostbyname(address);
       if (host == NULL)
         fatal_error_arg("Unknown debugging host %s\n", address);
-      bcopy(host->h_addr, &sock_addr.s_inet.sin_addr, host->h_length);
+      memmove(&sock_addr.s_inet.sin_addr, host->h_addr, host->h_length);
     }
     sock_addr.s_inet.sin_port = htons(atoi(port));
     sock_addr_len = sizeof(sock_addr.s_inet);

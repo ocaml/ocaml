@@ -136,7 +136,7 @@ static void resize_extern_block(int required)
 static void writeblock(char *data, long int len)
 {
   if (extern_ptr + len > extern_limit) resize_extern_block(len);
-  bcopy(data, extern_ptr, len);
+  memmove(extern_ptr, data, len);
   extern_ptr += len;
 }
 
@@ -433,7 +433,7 @@ value output_value_to_string(value v, value flags) /* ML */
   alloc_extern_block();
   len = extern_value(v, flags);
   res = alloc_string(len);
-  bcopy(extern_block, String_val(res), len);
+  memmove(String_val(res), extern_block, len);
   stat_free(extern_block);
   return res;
 }
@@ -504,7 +504,7 @@ void serialize_float_8(double f)
 void serialize_block_1(void * data, long len)
 {
   if (extern_ptr + len > extern_limit) resize_extern_block(len);
-  bcopy(data, extern_ptr, len);
+  memmove(extern_ptr, data, len);
   extern_ptr += len;
 }
 
@@ -518,7 +518,7 @@ void serialize_block_2(void * data, long len)
     Reverse_16(q, p);
   extern_ptr = q;
 #else
-  bcopy(data, extern_ptr, len * 2);
+  memmove(extern_ptr, data, len * 2);
   extern_ptr += len * 2;
 #endif
 }
@@ -533,7 +533,7 @@ void serialize_block_4(void * data, long len)
     Reverse_32(q, p);
   extern_ptr = q;
 #else
-  bcopy(data, extern_ptr, len * 4);
+  memmove(extern_ptr, data, len * 4);
   extern_ptr += len * 4;
 #endif
 }
@@ -548,7 +548,7 @@ void serialize_block_8(void * data, long len)
     Reverse_64(q, p);
   extern_ptr = q;
 #else
-  bcopy(data, extern_ptr, len * 8);
+  memmove(extern_ptr, data, len * 8);
   extern_ptr += len * 8;
 #endif
 }

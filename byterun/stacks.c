@@ -63,9 +63,9 @@ void realloc_stack(void)
     ((char *) new_high - ((char *) stack_high - (char *) (ptr)))
 
   new_sp = (value *) shift(extern_sp);
-  bcopy((char *) extern_sp,
-        (char *) new_sp,
-        (stack_high - extern_sp) * sizeof(value));
+  memmove((char *) new_sp,
+          (char *) extern_sp,
+          (stack_high - extern_sp) * sizeof(value));
   stat_free(stack_low);
   trapsp = (value *) shift(trapsp);
   trap_barrier = (value *) shift(trap_barrier);
