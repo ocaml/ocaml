@@ -691,7 +691,8 @@ successive calls to \var{f}.  (This function must not be used to build
 an array of floating-point numbers.)
 \item
 "copy_string_array("\var{p}")" allocates an array of strings, copied from
-the pointer to a string array \var{p} (a \verb"char **").
+the pointer to a string array \var{p} (a \verb"char **").  \var{p} must
+be NULL-terminated.
 \end{itemize}
 
 \subsubsection{Low-level interface}
