@@ -51,6 +51,6 @@ installopt:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
-	../../tools/ocamldep *.mli *.ml >> .depend
+	../../tools/ocamldep *.mli *.ml > .depend
 
 include .depend
