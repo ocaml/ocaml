@@ -986,7 +986,7 @@ pr_str_item.pr_levels :=
           fun curr next dg k -> [: `S LR "include"; `module_expr me "" k :]
       | <:str_item< type $list:tdl$ >> ->
           fun curr next dg k -> [: `type_list [: `S LR "type" :] tdl "" k :]
-      | <:str_item< value $opt:rf$ $list:pel$ >> ->
+      | <:str_item< value $rec:rf$ $list:pel$ >> ->
           fun curr next dg k ->
             [: `bind_list
                   [: `S LR "let"; if rf then [: `S LR "rec" :] else [: :] :]
@@ -1028,7 +1028,7 @@ pr_expr.pr_levels :=
    {pr_label = "expr1"; pr_box _ x = HOVbox x;
     pr_rules =
       extfun Extfun.empty with
-      [ <:expr< let $opt:r$ $p1$ = $e1$ in $e$ >> ->
+      [ <:expr< let $rec:r$ $p1$ = $e1$ in $e$ >> ->
           fun curr next dg k ->
             let r = if r then [: `S LR "rec" :] else [: :] in
             if dg <> ";" then
@@ -1049,7 +1049,7 @@ pr_expr.pr_levels :=
                                [: `S LR "in" :];
                              `expr e "" [: :] :];
                        `HVbox [: `S LR "end"; k :] :] :]
-      | <:expr< let $opt:r$ $list:pel$ in $e$ >> ->
+      | <:expr< let $rec:r$ $list:pel$ in $e$ >> ->
           fun curr next dg k ->
             let r = if r then [: `S LR "rec" :] else [: :] in
             if dg <> ";" then
@@ -1530,7 +1530,7 @@ pr_expr.pr_levels :=
         <:expr< fun [ $list:_$ ] >> | <:expr< match $_$ with [ $list:_$ ] >> |
         <:expr< if $_$ then $_$ else $_$ >> |
         <:expr< try $_$ with [ $list:_$ ] >> |
-        <:expr< let $opt:_$ $list:_$ in $_$ >> |
+        <:expr< let $rec:_$ $list:_$ in $_$ >> |
         <:expr< for $_$ = $_$ $to:_$ $_$ do { $list:_$ } >> |
         <:expr< while $_$ do { $list:_$ } >> | <:expr< ($list: _$) >> |
         <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |

@@ -202,7 +202,7 @@ EXTEND
       | "type"; tdl = LIST1 type_declaration SEP "and" ->
           <:str_item< type $list:tdl$ >>
       | "value"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
-          <:str_item< value $opt:o2b r$ $list:l$ >>
+          <:str_item< value $rec:o2b r$ $list:l$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
   ;
   rebind_exn:
@@ -265,7 +265,7 @@ EXTEND
     [ "top" RIGHTA
       [ "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = SELF ->
-          <:expr< let $opt:o2b r$ $list:l$ in $x$ >>
+          <:expr< let $rec:o2b r$ $list:l$ in $x$ >>
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = SELF ->
           <:expr< let module $m$ = $mb$ in $e$ >>
       | "fun"; "["; l = LIST0 match_case SEP "|"; "]" ->
@@ -292,7 +292,7 @@ EXTEND
           <:expr< while $e$ do { $list:seq$ } >> ]
     | "where"
       [ e = SELF; "where"; rf = OPT "rec"; lb = let_binding ->
-          <:expr< let $opt:o2b rf$ $list:[lb]$ in $e$ >> ]
+          <:expr< let $rec:o2b rf$ $list:[lb]$ in $e$ >> ]
     | ":=" NONA
       [ e1 = SELF; ":="; e2 = SELF; dummy -> <:expr< $e1$ := $e2$ >> ]
     | "||" RIGHTA
@@ -352,7 +352,8 @@ EXTEND
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>
       | e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >> ]
     | "~-" NONA
-      [ f = [ "~-" | "~-." ]; e = SELF -> <:expr< $lid:f$ $e$ >> ]
+      [ "~-"; e = SELF -> <:expr< ~- $e$ >>
+      | "~-."; e = SELF -> <:expr< ~-. $e$ >> ]
     | "simple"
       [ s = INT -> <:expr< $int:s$ >>
       | s = FLOAT -> <:expr< $flo:s$ >>
@@ -405,7 +406,7 @@ EXTEND
             [ [e] -> e
             | _ -> <:expr< do { $list:el$ } >> ]
           in
-          [ <:expr< let $opt:o2b o$ $list:l$ in $e$ >>]
+          [ <:expr< let $rec:o2b o$ $list:l$ in $e$ >>]
       | e = expr; ";"; el = SELF -> [e :: el]
       | e = expr; ";" -> [e]
       | e = expr -> [e] ] ]

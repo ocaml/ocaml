@@ -318,10 +318,19 @@ value rec symbol s k =
                `simple_symbol sep k :]
       | _ -> assert False ]
   | Srules
-      [([(Some <:patt< a >>, Snterm <:expr< anti_opt >>)], Some <:expr< a >>);
+      [([(Some <:patt< a >>, Stoken ("ANTIQUOT", _))],
+        Some <:expr< antiquot $str:_$ loc a >>);
        ([(Some <:patt< o >>, (Sopt s))], Some <:expr< Option o >>)]
     when not no_slist.val
     ->
+      let s =
+        match s with
+        [ Srules
+            [([(Some <:patt< x >>, Stoken ("", s))], Some <:expr< Str x >>)]
+          ->
+            Stoken ("", s)
+        | _ -> s ]
+      in
       HVbox [: `S LR "SOPT"; `simple_symbol s k :]
   | Srules rl ->
       let rl = simplify_rules rl in

@@ -222,7 +222,7 @@ and str_item_se se =
         | _ -> (False, sel) ]
       in
       let lbs = value_binding_se sel in
-      <:str_item< value $opt:r$ $list:lbs$ >>
+      <:str_item< value $rec:r$ $list:lbs$ >>
   | Sexpr loc _ ->
       let e = expr_se se in
       <:str_item< $exp:e$ >> ]
@@ -272,7 +272,7 @@ and expr_se =
       [ [Sexpr _ sel1 :: sel2] ->
           let lbs = List.map let_binding_se sel1 in
           let e = progn_se loc sel2 in
-          <:expr< let $opt:r$ $list:lbs$ in $e$ >>
+          <:expr< let $rec:r$ $list:lbs$ in $e$ >>
       | [se :: _] -> error se "let_binding"
       | _ -> error_loc loc "let_binding" ]
   | Sexpr loc [Satom _ Alid "let*" :: sel] ->

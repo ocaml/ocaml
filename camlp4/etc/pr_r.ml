@@ -454,7 +454,7 @@ and let_binding b (p, e) k =
 and let_binding0 b e k =
   let (pl, e) = expr_fun_args e in
   match e with
-  [ <:expr< let $opt:r$ $lid:f$ = fun [ $list:pel$ ] in $e$ >>
+  [ <:expr< let $rec:r$ $lid:f$ = fun [ $list:pel$ ] in $e$ >>
     when
       let rec call_f =
         fun
@@ -509,7 +509,7 @@ value field_expr (lab, e) k = HVbox [: `label lab; `S LR "="; `expr e k :];
 
 value rec sequence_loop =
   fun
-  [ [<:expr< let $opt:r$ $list:pel$ in $e$ >>] ->
+  [ [<:expr< let $rec:r$ $list:pel$ in $e$ >>] ->
       let el =
         match e with
         [ <:expr< do { $list:el$ } >> -> el
@@ -519,7 +519,7 @@ value rec sequence_loop =
       [: listwbws (fun b (p, e) k -> let_binding b (p, e) k)
            [: `S LR "let"; r :] (S LR "and") pel [: `S RO ";" :];
          sequence_loop el :]
-  | [(<:expr< let $opt:_$ $list:_$ in $_$ >> as e) :: el] ->
+  | [(<:expr< let $rec:_$ $list:_$ in $_$ >> as e) :: el] ->
       [: `HVbox [: `S LO "("; `expr e [: `S RO ")"; `S RO ";" :] :];
          sequence_loop el :]
   | [e] -> [: `expr e [: :] :]
@@ -537,7 +537,7 @@ value sequence b1 b2 b3 el k =
 value rec let_sequence e =
   match e with
   [ <:expr< do { $list:el$ } >> -> Some el
-  | <:expr< let $opt:_$ $list:_$ in $e1$ >> ->
+  | <:expr< let $rec:_$ $list:_$ in $e1$ >> ->
       match let_sequence e1 with
       [ Some _ -> Some [e]
       | None -> None ]
@@ -974,7 +974,7 @@ pr_str_item.pr_levels :=
           fun curr next _ k -> [: `S LR "include"; `module_expr me k :]
       | <:str_item< type $list:tdl$ >> ->
           fun curr next _ k -> [: `type_list [: `S LR "type" :] tdl k :]
-      | <:str_item< value $opt:rf$ $list:pel$ >> ->
+      | <:str_item< value $rec:rf$ $list:pel$ >> ->
           fun curr next _ k ->
             [: `bind_list [: `S LR "value"; flag "rec" rf :] pel k :]
       | <:str_item< external $s$ : $t$ = $list:pl$ >> ->
@@ -1028,7 +1028,7 @@ pr_expr.pr_levels :=
   [{pr_label = "top"; pr_box e x = LocInfo (MLast.loc_of_expr e) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
-      [ <:expr< let $opt:r$ $p1$ = $e1$ in $e$ >> ->
+      [ <:expr< let $rec:r$ $p1$ = $e1$ in $e$ >> ->
           fun curr next _ k ->
             let r = flag "rec" r in
             [: `Vbox
@@ -1036,7 +1036,7 @@ pr_expr.pr_levels :=
                      `let_binding [: `S LR "let"; r :] (p1, e1)
                         [: `S LR "in" :];
                      `expr e k :] :]
-      | <:expr< let $opt:r$ $list:pel$ in $e$ >> ->
+      | <:expr< let $rec:r$ $list:pel$ in $e$ >> ->
           fun curr next _ k ->
             let r = flag "rec" r in
             [: `Vbox
@@ -1392,7 +1392,7 @@ pr_expr.pr_levels :=
         <:expr< if $_$ then $_$ else $_$ >> | <:expr< do { $list:_$ } >> |
         <:expr< for $_$ = $_$ $to:_$ $_$ do { $list:_$ } >> |
         <:expr< while $_$ do { $list:_$ } >> |
-        <:expr< let $opt:_$ $list:_$ in $_$ >> | MLast.ExNew _ _ as e ->
+        <:expr< let $rec:_$ $list:_$ in $_$ >> | MLast.ExNew _ _ as e ->
           fun curr next _ k ->
             [: `S LO "("; `expr e [: `HVbox [: `S RO ")"; k :] :] :]
       | e -> fun curr next _ k -> [: `next e "" k :] ]}];

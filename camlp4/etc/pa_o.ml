@@ -428,12 +428,12 @@ EXTEND
           <:str_item< type $list:tdl$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr ->
-          let e = <:expr< let $opt:o2b r$ $list:l$ in $x$ >> in
+          let e = <:expr< let $rec:o2b r$ $list:l$ in $x$ >> in
           <:str_item< $exp:e$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
           match l with
           [ [(<:patt< _ >>, e)] -> <:str_item< $exp:e$ >>
-          | _ -> <:str_item< value $opt:o2b r$ $list:l$ >> ]
+          | _ -> <:str_item< value $rec:o2b r$ $list:l$ >> ]
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = expr ->
           <:str_item< let module $m$ = $mb$ in $e$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
@@ -512,7 +512,7 @@ EXTEND
     | "expr1"
       [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr LEVEL "top" ->
-          <:expr< let $opt:o2b o$ $list:l$ in $x$ >>
+          <:expr< let $rec:o2b o$ $list:l$ in $x$ >>
       | "let"; "module"; m = UIDENT; mb = module_binding; "in";
         e = expr LEVEL "top" ->
           <:expr< let module $m$ = $mb$ in $e$ >>

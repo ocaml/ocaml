@@ -435,15 +435,38 @@ value ssopt loc symb =
     {pattern = Some p; symbol = symb}
   in
   let rl =
+    let anti_n =
+      match symb.text "" "" with
+      [ <:expr< Gramext.Stoken ("", $str:n$) >> -> n
+      | _ -> "opt" ]
+    in
     let r1 =
       let prod =
+(**)
+        let text = stoken loc "ANTIQUOT" <:expr< $str:anti_n$ >> in
+        [psymbol <:patt< a >> text <:ctyp< string >>]
+(*
         let n = mk_name loc <:expr< anti_opt >> in
-        [psymbol <:patt< a >> (snterm loc n None) <:ctyp< 'anti_opt >>]
+        [psymbol <:patt< a >> (snterm loc n None) <:ctyp< ast >>]
+*)
       in
-      let act = <:expr< a >> in
+      let act = <:expr< antiquot $str:anti_n$ loc a >> in
       {prod = prod; action = Some act}
     in
     let r2 =
+      let symb =
+        match symb.text "" "" with
+        [ <:expr< Gramext.Stoken ("", $str:_$) >> ->
+            let rule =
+              let psymbol = {pattern = Some <:patt< x >>; symbol = symb} in
+              let action = Some <:expr< Str x >> in
+              {prod = [psymbol]; action = action}
+            in
+            let text = srules loc "ast" [rule] in
+            let styp _ = <:ctyp< ast >> in
+            {used = []; text = text; styp = styp}
+        | _ -> symb ]
+      in
       let psymb =
         let symb =
           {used = []; text = sopt loc symb;
