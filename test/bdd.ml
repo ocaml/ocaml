@@ -102,7 +102,7 @@ let mkNode low v high =
 
 type ordering = LESS | EQUAL | GREATER
 
-let cmpVar (x:int) (y:int) =
+let cmpVar (x : int) (y : int) =
   if x<y then LESS else if x>y then GREATER else EQUAL 
 
 let zero = Zero
