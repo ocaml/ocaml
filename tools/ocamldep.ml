@@ -144,6 +144,8 @@ let rec add_expr bv exp =
   | Pexp_override sel -> List.iter (fun (s, e) -> add_expr bv e) sel
   | Pexp_letmodule(id, m, e) ->
       add_module bv m; add_expr (StringSet.add id bv) e
+  | Pexp_assert (e) -> add_expr bv e
+  | Pexp_assertfalse -> ()
 
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel

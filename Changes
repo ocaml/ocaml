@@ -6,6 +6,8 @@ Standard library:
 
 Both compilers:
 - Option -warn-error to turn warnings into errors.
+- Assertions are now type-checked even if the -noassert option is given,
+  thus -noassert doesn't change the types of your modules anymore.
 
 
 Objective Caml 3.00:

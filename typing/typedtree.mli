@@ -73,6 +73,8 @@ and expression_desc =
   | Texp_setinstvar of Path.t * Path.t * expression
   | Texp_override of Path.t * (Path.t * expression) list
   | Texp_letmodule of Ident.t * module_expr * expression
+  | Texp_assert of expression
+  | Texp_assertfalse
 
 and meth =
     Tmeth_name of string

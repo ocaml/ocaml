@@ -266,6 +266,11 @@ and expression i ppf x =
       line i ppf "Pexp_letmodule \"%s\"\n" s;
       module_expr i ppf me;
       expression i ppf e;
+  | Pexp_assert (e) ->
+      line i ppf "Pexp_assert";
+      expression i ppf e;
+  | Pexp_assertfalse ->
+      line i ppf "Pexp_assertfalse";
 
 and value_description i ppf x =
   line i ppf "value_description\n";

@@ -101,6 +101,8 @@ and expression_desc =
   | Pexp_setinstvar of string * expression
   | Pexp_override of (string * expression) list
   | Pexp_letmodule of string * module_expr * expression
+  | Pexp_assert of expression
+  | Pexp_assertfalse
 
 (* Value descriptions *)
 

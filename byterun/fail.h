@@ -30,6 +30,7 @@
 #define MATCH_FAILURE_EXN 7     /* "Match_failure" */
 #define STACK_OVERFLOW_EXN 8    /* "Stack_overflow" */
 #define SYS_BLOCKED_IO 9        /* "Sys_blocked_io" */
+#define ASSERT_FAILURE_EXN 10   /* "Assert_failure" */
 
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {

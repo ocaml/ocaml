@@ -431,6 +431,15 @@ let event_function exp lam =
     lam None
 
 
+let assert_failed loc =
+  Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
+          [transl_path Predef.path_assert_failure;
+           Lconst(Const_block(0,
+              [Const_base(Const_string !Location.input_name);
+               Const_base(Const_int loc.Location.loc_start);
+               Const_base(Const_int loc.Location.loc_end)]))])])
+;;
+
 (* Translation of expressions *)
 
 let rec transl_exp e =
@@ -585,6 +594,11 @@ let rec transl_exp e =
              (Lvar cpy))
   | Texp_letmodule(id, modl, body) ->
       Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
+  | Texp_assert (cond) ->
+      if !Clflags.noassert
+      then lambda_unit
+      else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
+  | Texp_assertfalse -> assert_failed e.exp_loc
   | _ ->
       fatal_error "Translcore.transl"
 
