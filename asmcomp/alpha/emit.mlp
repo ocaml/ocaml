@@ -340,31 +340,6 @@ let name_for_float_comparison cmp neg =
   | Cle -> ("cmptle", false, neg)  | Cgt -> ("cmptlt", true, neg)
   | Clt -> ("cmptlt", false, neg)  | Cge -> ("cmptle", true, neg)
 
-(* Determine if a function label is defined in the current compilation
-   unit *)
-
-let is_local s =
-  let cu = Compilenv.current_unit_name() in
-  let lcu = String.length cu in
-  String.length s >= lcu + 1 && String.sub s 0 lcu = cu && s.[lcu] = '.'
-
-(* Local entry points for functions defined in the current compilation unit *)
-
-let local_entry_points = (Hashtbl.create 19 : (string, label) Hashtbl.t)
-
-exception External_function
-
-let local_entry_point s =
-  try
-    Hashtbl.find local_entry_points s
-  with Not_found ->
-    if is_local s then begin
-      let lbl = new_label() in
-      Hashtbl.add local_entry_points s lbl;
-      lbl
-    end else
-      raise External_function
-
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -794,8 +769,7 @@ let begin_assembly() =
   let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
-  `{emit_symbol lbl_begin}:\n`;
-  Hashtbl.clear local_entry_points
+  `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
   let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
