@@ -68,12 +68,15 @@ For the moment, the only possible keyword is \"type\"."
 (overlay-put caml-types-expr-ovl 'face 'caml-types-face)
 
 
-(defvar caml-types-annotation-tree)
-(defvar caml-types-annotation-date)
+(defvar caml-types-annotation-tree nil)
+(defvar caml-types-annotation-date nil)
 (make-variable-buffer-local 'caml-types-annotation-tree)
 (make-variable-buffer-local 'caml-types-annotation-date)
-(set-default 'caml-types-annotation-tree ())
 
+(defvar caml-types-buffer-name "*caml-types*"
+  "Name of buffer for diplaying caml types")
+(defvar caml-types-buffer nil
+  "buffer for diplaying caml types")
 
 (defun caml-types-show-type (arg)
   "Show the type of expression or pattern at point.
@@ -102,9 +105,10 @@ See `caml-types-location-re' for annotation file format.
          (target-bol (line-beginning-position))
          (target-cnum (point))
          (type-file (concat (file-name-sans-extension (buffer-file-name))
-                            ".annot"))
-         (type-buf (caml-types-find-file type-file)))
-    (caml-types-preprocess type-file type-buf)
+                            ".annot")))
+    (caml-types-preprocess type-file)
+    (unless caml-types-buffer 
+      (setq caml-types-buffer (get-buffer-create caml-types-buffer-name)))
     (let* ((targ-loc (vector target-file target-line target-bol target-cnum))
            (node (caml-types-find-location targ-loc ()
                                            caml-types-annotation-tree)))
@@ -112,26 +116,26 @@ See `caml-types-location-re' for annotation file format.
        ((null node)
         (delete-overlay caml-types-expr-ovl)
         (message "Point is not within a typechecked expression or pattern.")
-        (with-current-buffer type-buf (narrow-to-region 1 1)))
+        ; (with-current-buffer type-buf (narrow-to-region 1 1))
+        )
        (t
         (let ((left (caml-types-get-pos target-buf (elt node 0)))
               (right (caml-types-get-pos target-buf (elt node 1)))
-              (ty-start (car (elt node 2)))
-              (ty-end (cdr (elt node 2))))
+              (type (elt node 2)))
           (move-overlay caml-types-expr-ovl left right target-buf)
-          (with-current-buffer type-buf
-            (widen)
-            (message (format "type: %s" (buffer-substring ty-start
-                                                          (1- ty-end))))
-            (narrow-to-region ty-start ty-end))))))
+          (with-current-buffer caml-types-buffer
+            (erase-buffer)
+            (insert type)
+            (message (format "type: %s" type)))
+          ))))
     (if (and (= arg 4)
-             (not (window-live-p (get-buffer-window type-buf))))
-        (display-buffer type-buf))
+             (not (window-live-p (get-buffer-window caml-types-buffer))))
+        (display-buffer caml-types-buffer))
     (unwind-protect
         (sit-for 60)
       (delete-overlay caml-types-expr-ovl))))
 
-(defun caml-types-preprocess (type-file type-buf)
+(defun caml-types-preprocess (type-file)
   (let* ((type-date (nth 5 (file-attributes type-file)))
          (target-file (file-name-nondirectory (buffer-file-name)))
          (target-date (nth 5 (file-attributes target-file))))
@@ -139,14 +143,17 @@ See `caml-types-location-re' for annotation file format.
                  (not (caml-types-date< caml-types-annotation-date type-date)))
       (if (caml-types-date< type-date target-date)
           (error (format "%s is more recent than %s" target-file type-file)))
-      (message "reading annotation file...")
-      (let ((tree (with-current-buffer type-buf
+      (message "Reading annotation file...")
+      (let* ((type-buf (caml-types-find-file type-file))
+             (tree (with-current-buffer type-buf
                     (widen)
                     (goto-char (point-min))
                     (caml-types-build-tree target-file))))
         (setq caml-types-annotation-tree tree
               caml-types-annotation-date type-date)
-        (message "")))))
+        (kill-buffer type-buf)
+        (message ""))
+      )))
 
 (defun caml-types-date< (date1 date2)
   (or (< (car date1) (car date2))
@@ -160,9 +167,14 @@ See `caml-types-location-re' for annotation file format.
 ;  () if this node does not correspond to an annotated interval
 ;  (type-start . type-end)  address of the annotation in the .annot file
 
+(defun caml-types-hcons (elem table)
+  (or (cl-gethash elem table) (cl-puthash elem elem table) elem))
+      
+
 (defun caml-types-build-tree (target-file)
   (let ((stack ())
         (accu ())
+        (table (make-hash-table :test 'equal))
         (type-info ()))
     (while (re-search-forward caml-types-location-re () t)
       (let ((l-file (file-name-nondirectory (match-string 1)))
@@ -181,8 +193,8 @@ See `caml-types-location-re' for annotation file format.
             (forward-char 1))
           (setq type-info
                 (if (looking-at
-                            "^type(\n\\(  \\([^\n)]\\|.)\\|\n[^)]\\)*\n\\))")
-                    (cons (match-beginning 1) (match-end 1))))
+                     "^type(\n\\(  \\([^\n)]\\|.)\\|\n[^)]\\)*\\)\n)")
+                    (caml-types-hcons (match-string 1) table)))
           (setq accu ())
           (while (and stack
                       (caml-types-pos-contains l-cnum r-cnum (car stack)))
@@ -348,13 +360,14 @@ and its type is displayed in the minibuffer, until the move is released."
          (target-file (file-name-nondirectory (buffer-file-name)))
          (type-file (concat (file-name-sans-extension (buffer-file-name))
                             ".annot"))
-         (type-buf (caml-types-find-file type-file))
          (target-line) (target-bol)
          target-pos
-         Left Right limits cnum node mes ty-start ty-end
+         Left Right limits cnum node mes type
          (tree caml-types-annotation-tree)
          )
-    (caml-types-preprocess type-file type-buf)
+    (caml-types-preprocess type-file)
+    (unless caml-types-buffer 
+      (setq caml-types-buffer (get-buffer-create caml-types-buffer-name)))
     ; (message "Drag the mouse to explore types")
     (unwind-protect
         (track-mouse
@@ -369,9 +382,9 @@ and its type is displayed in the minibuffer, until the move is released."
                     (1+ (count-lines (point-min) target-bol)))
               (setq target-pos (vector target-file target-line target-bol cnum))
               (save-excursion
-                (set-buffer type-buf)
-                (widen)
                 (setq node (caml-types-find-location target-pos () tree))
+                (set-buffer caml-types-buffer)
+                (erase-buffer)
                 (cond
                  (node
                   (setq Left (caml-types-get-pos target-buf (elt node 0)))
@@ -379,21 +392,17 @@ and its type is displayed in the minibuffer, until the move is released."
                   (move-overlay caml-types-expr-ovl Left Right target-buf)
                   (setq limits (caml-types-find-interval target-buf target-pos
                                                          node))
-                  (setq ty-start (car (elt node 2))
-                        ty-end (cdr (elt node 2)))
-                  (setq mes (format "type: %s" (buffer-substring ty-start
-                                                                 (1- ty-end))))
-                  (narrow-to-region ty-start ty-end)
+                  (setq type (elt node 2))
                   )
                  (t
                   (delete-overlay caml-types-expr-ovl)
-                  (setq mes nil)
-                  (narrow-to-region 1 1)
+                  (setq type "*no type information*")
                   (setq limits (caml-types-find-interval target-buf target-pos
                                                          tree))
-                 )))
-              (message mes)
-              )
+                  ))
+                (message (format "type: %s" type))
+                (insert type)
+                ))
               (setq event (read-event))
               (unless (mouse-movement-p event) (setq event nil))
             )
