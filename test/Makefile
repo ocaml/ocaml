@@ -5,6 +5,7 @@ CAMLYACC=../yacc/camlyacc
 CAMLLEX=../boot/camlrun ../lex/camllex
 CAMLDEP=../tools/camldep
 CAMLRUN=../byterun/camlrun
+CODERUNPARAMS=CAMLRUNPARAM='o=100'
 
 BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
   fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt \
@@ -135,7 +136,7 @@ bytebench:
         for prog in $(BYTE_EXE:.byt=); do \
           echo -n "$$prog		"; \
           if test -f Results/$$prog.runtest; then \
-            sh Results/$$prog.runtest bench $$(CAMLRUN) $prog.byt; \
+            sh Results/$$prog.runtest bench $(CAMLRUN) $$prog.byt; \
           else \
             xtime -o /dev/null -e /dev/null $(CAMLRUN) $$prog.byt; \
           fi; \
@@ -146,9 +147,9 @@ codebench:
         for prog in $(CODE_EXE:.out=); do \
           echo -n "$$prog		"; \
           if test -f Results/$$prog.runtest; then \
-            sh Results/$$prog.runtest bench $$prog.out; \
+            $(CODERUNPARAMS) sh Results/$$prog.runtest bench $$prog.out; \
           else \
-            xtime -repeat 3 -o /dev/null -e /dev/null $$prog.out; \
+            $(CODERUNPARAMS) xtime -repeat 3 -o /dev/null -e /dev/null $$prog.out; \
           fi; \
         done
 

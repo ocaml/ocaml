@@ -51,10 +51,10 @@ let apply_subst alist term =
 
 exception Unify
 
-let rec unify (term1, term2) =
-  unify1 (term1, term2, [])
+let rec unify term1 term2 =
+  unify1 term1 term2 []
 
-and unify1 (term1, term2, unify_subst) =
+and unify1 term1 term2 unify_subst =
  match term2 with
     Var v ->
       begin try
@@ -69,28 +69,29 @@ and unify1 (term1, term2, unify_subst) =
          Var _ -> raise Unify
        | Prop (head1,argl1) ->
            if head1 == head2
-           then unify1_lst (argl1, argl2, unify_subst)
+           then unify1_lst argl1 argl2 unify_subst
            else raise Unify
 
-and unify1_lst = function
-    ([], [], unify_subst) -> unify_subst
-  | (h1::r1, h2::r2, unify_subst) ->
-      unify1_lst(r1, r2, unify1(h1, h2, unify_subst))
+and unify1_lst l1 l2 unify_subst =
+  match (l1, l2) with
+    ([], []) -> unify_subst
+  | (h1::r1, h2::r2) -> unify1_lst r1 r2 (unify1 h1 h2 unify_subst)
   | _ -> raise Unify
 
 
 let rec rewrite = function
     Var _ as term -> term
   | Prop (head, argl) ->
-      rewrite_with_lemmas (Prop (head, List.map rewrite argl),  head.props)
-and rewrite_with_lemmas = function
-    (term, []) ->
+      rewrite_with_lemmas (Prop (head, List.map rewrite argl)) head.props
+and rewrite_with_lemmas term lemmas =
+  match lemmas with
+    [] ->
       term
-  | (term, (t1,t2)::rest) ->
+  | (t1,t2)::rest ->
       try
-        rewrite (apply_subst (unify (term, t1)) t2)
+        rewrite (apply_subst (unify term t1) t2)
       with Unify ->
-        rewrite_with_lemmas (term, rest)
+        rewrite_with_lemmas term rest
 
 type cterm = CVar of int | CProp of string * cterm list
 
@@ -768,14 +769,14 @@ add (CProp
 
 (* Tautology checker *)
 
-let truep (x, lst) =
+let truep x lst =
   match x with
     Prop(head, _) ->
       head.name = "true" or List.mem x lst
   | _ ->
       List.mem x lst
 
-and falsep (x, lst) =
+and falsep x lst =
   match x with
     Prop(head, _) ->
       head.name = "false" or List.mem x lst
@@ -783,9 +784,9 @@ and falsep (x, lst) =
       List.mem x lst
 
 
-let rec tautologyp (x, true_lst, false_lst) =
- if truep (x, true_lst) then true else
- if falsep (x, false_lst) then false else begin
+let rec tautologyp x true_lst false_lst =
+ if truep x true_lst then true else
+ if falsep x false_lst then false else begin
 (*
  print_term x; print_newline();
 *)
@@ -793,12 +794,12 @@ let rec tautologyp (x, true_lst, false_lst) =
      Var _ -> false
    | Prop (head,[test; yes; no]) as p ->
         if head.name = "if" then
-          if truep (test, true_lst) then
-            tautologyp (yes, true_lst, false_lst)
-          else if falsep (test, false_lst) then
-            tautologyp (no, true_lst, false_lst)
-          else tautologyp (yes, test::true_lst, false_lst) &
-               tautologyp (no, true_lst, test::false_lst)
+          if truep test true_lst then
+            tautologyp yes true_lst false_lst
+          else if falsep test false_lst then
+            tautologyp no true_lst false_lst
+          else tautologyp yes (test::true_lst) false_lst &
+               tautologyp no true_lst (test::false_lst)
         else
           false
   end
@@ -808,7 +809,7 @@ let tautp x =
 (*  print_term x; print_string"\n"; *)
   let y = rewrite x in
 (*    print_term y; print_string "\n"; *)
-    tautologyp (y, [], [])
+    tautologyp y [] []
 
 (* the benchmark *)
 

@@ -5,8 +5,6 @@ external (-) : float -> float -> float = "%subfloat"
 external ( * ) : float -> float -> float = "%mulfloat"
 external (/) : float -> float -> float = "%divfloat"
 
-type intg = int
-
 (* -- MATH UTILITIES --------------------------------------------------------*)
 
 let constant_pi        =  3.14159265358979323846
@@ -2923,7 +2921,7 @@ let rU'
 
 (* -- PARTIAL INSTANTIATIONS ------------------------------------------------*)
 
-type var = intg*tfo*nuc
+type var = int*tfo*nuc
 
 let mk_var i t n = (i,t,n : var)
 
