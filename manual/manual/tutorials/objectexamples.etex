@@ -2,8 +2,6 @@
 
 This chapter gives an overview of the object-oriented features of
 Objective Caml.
-%% Some commented examples introduces progressively
-%% most of its features.
 
 \subsection*{Classes and objects}
 
@@ -262,16 +260,14 @@ end;;
 \end{caml_example}
 
 Objects of class "int_comparable2" below can also modify the integer
-they hold. The status of instance variable "x" is changed. It is
-now mutable and private; that is, subclasses cannot access it (it does
-no longer appear in the class type). Note that the type
-"int_comparable2" is not a subtype of type "int_comparable",
-as the self type appears in contravariant position in the type of method
-"leq".
+they hold. The status of instance variable "x" is changed. It is now
+mutable. Note that the type "int_comparable2" is not a subtype of type
+"int_comparable", as the self type appears in contravariant position
+in the type of method "leq".
 \begin{caml_example}
 class int_comparable2 x =
   inherit int_comparable x
-  val private mutable x
+  val mutable x
   method set_x y = x <- y
 end;;
 \end{caml_example}
@@ -320,10 +316,10 @@ possiblly raising a runtime error.  However, there is not such operation
 available in the language. 
 
 Be aware that subtyping and inheritance are not related.  Inheritance is a
-syntactic relation between classed while subtyping is a semantic relation
+syntactic relation between classes while subtyping is a semantic relation
 between types.  For instance, the class of colored points could have been
-defined directly without inheriting from the class of points; the type of
-colored points would remain unchanged and thus a subtype of
+defined directly, without inheriting from the class of points; the type of
+colored points would remain unchanged and thus still be a subtype of
 points. Conversely, the class "int_comparable" inherits from class
 "comparable", but type "int_comparable" is not a subtype of "comparable".
 \begin{caml_example}
@@ -332,16 +328,16 @@ function x -> (x : int_comparable :> comparable);;
 % XXX the message above is too verbose ...
 Indeed, an object "p" of class "int_comparable" has a method "leq" that expects
 an argument of type "int_comparable" since it accesses its "x" method. 
-Considering "p" of type "comparable" would allow call method "leq" on "p"
+Considering "p" of type "comparable" would allow to call method "leq" on "p"
 with an argument that does not have a method "x", which would be an error.
 
-The domain of a coercion may be omitted. For instance, one can define:
+The domain of a coercion can usually be omitted. For instance, one can define:
 \begin{caml_example}
 let to_point cp = (cp :> point);;
 \end{caml_example}
 In this case, the function "colored_point_to_point" is an instance of the 
-function "point". This is not the general case however, and the fully
-explicit coercion  is more precise and thus unavoidable in some cases. 
+function "point". This is not always true however, and the fully
+explicit coercion  is more precise, and thus unavoidable in some cases. 
 Here is an example:
 \begin{caml_example}
 class virtual c () = virtual m : c end;;
@@ -351,19 +347,25 @@ class c' () as self =
   method m' = 1
 end;;
 \end{caml_example}
-The coercion to class "c" can be seen here:
+The the type of the coercion to type "c" can be seen here:
 \begin{caml_example}
 function x -> (x :> c);;
 \end{caml_example}
-Note that this function does not have type "<m : c;..> -> c" as may be
-expected.  This produces the type contradiction for type "c'".  As class
-"c'" inherits from class "c", it has a method "m" of type "c". As the
-expression "(self :> c)" is used, the type of "self" must be unified with
-the domain of the coercion above; that is "self" must have a method "m" of
-type "self", and so "c'" must have a method "m" of type "c'". However, "c'"
-and "c" are different as "c" does not contain a method "m'".
 
-The desired function of type "<m : c;..> -> c" is given by using a fully
+Note that this function does not have type "< m : c; .. > -> c" as may
+be expected.
+% XXX Detailler... : pas de meilleur choix; pourquoi ce choix.
+% Actually, both "< m : 'a; .. > as 'a" and "< m : c; .. >"
+% are subtypes of type "c".
+This produces the type contradiction for type "c'".  As class "c'"
+inherits from class "c", its method "m" must have type "c". On the
+other hand, expression "(self :> c)" try to unify the type of "self"
+and the domain of the coercion above; that is, the method "m" of
+"self" must have the same type as "self".  So, the type of "self"
+should be type "c". This is not possible, as the type of "self" has a
+method "m'", whereas type "c" don't.
+
+The desired function of type "<m : c;..> -> c" can be obtained by using a fully
 explicit coercion:
 \begin{caml_example}
 function x -> (x : #c :> c);;
@@ -389,7 +391,7 @@ class c' () as self =
 end;;
 \end{caml_example}
 Moreover, the simple coercion operator "(e :> t)" can be used to
-coerce an object of type "c'" to one of type "c". It is actually defined so
+coerce an object from type "c'" to type "c". It is actually defined so
 as to work correctly with classes returning "self" without coercion.
 \begin{caml_example}
 (new c' () :> c);;
@@ -397,15 +399,15 @@ as to work correctly with classes returning "self" without coercion.
 
 Another common problem may occur when one tries to define a coercion to a
 class "c" inside the definition of class "c". The problem is due to the type
-abbreviation not being completely defined, and so its subtypes are not
-clearly known.  Then, the coercion "(_ : #c :> c)" is taken to be 
+abbreviation not being completely defined yet, and so its subtypes are not
+clearly known.  Then, a coercion "(_ : #c :> c)" is taken to be 
 the identify function, as in
 \begin{caml_example}
 function x -> (x :> 'a);;
 \end{caml_example}
-Moreover, if the coercion is applied to "self", as in the following example,
-then the type of "self" is unified with the closed type of "c". 
-This requires the class to be closed:
+As a consequence, if the coercion is applied to "self", as in the following example,
+the type of "self" is unified with the closed type "c". 
+This constrains the class to be closed:
 \begin{caml_example}
 class c () as self = method m = (self : #c :> c) end;;
 \end{caml_example}
@@ -430,32 +432,34 @@ One could think of defining the type abbreviation directly:
 \begin{caml_eval}
 type c1 = <m : c1>;;
 \end{caml_eval}
-However, this abbreviation "#c1" is undefined (the abbreviation  
- "#c0" is defined from the class "c0", not from the type "c0"), 
-and should be expanded:
+However, the abbreviation "#c1" cannot be defined this way (the
+abbreviation "#c0" is defined from the class "c0", not from the type
+"c0"), and should be expanded:
 \begin{caml_eval}
 class c () as self =  method m = (self : <m : c1; ..> as 'a :> c1) end;;
 \end{caml_eval}
 
 
-
 \subsection*{Recursive classes}
 
-% Recusive classes are useless
-
-% je te laisse completer l'exemple des fenetre et boutons, 
-
-% car je n'arrive plus à reconstruire un exemple interessant
-% que l'on ne puisse pas écrire sans les classes recursives...
-% (on peut toujours définir les types objets récursivement)
-
+Recursive classes are used to define objects whose types are
+mutually recursive.
+\begin{caml_example}
+class window () =
+  val mutable top_widget = (None : widget option)
+  method top_widget = top_widget
+and widget (w : window) =
+  val window = w
+  method window = window
+end;;
+\end{caml_example}
 
 \subsection*{Class interfaces}
 
 Class interfaces are inferred from class definitions. 
 They may also be defined directly in interfaces of modules. 
 For instance, the following is 
-the interface of a module defining class point. 
+the interface of a module defining class "point".
 \begin{caml_example}
 module type POINT = sig 
   class point (int) =
@@ -469,14 +473,7 @@ module Point : POINT = struct
 end;;
 \end{caml_example}
 It is sometime necessary to restrict the interface of classes. 
-Instance variables can be hidden explicitly in a subclass definition:
-\begin{caml_example}
-class point x =
-  inherit Point.point x
-  val private mutable x
-end;;
-\end{caml_example}
-Instance variables can also be hidden implicitly by signature matching:
+Instance variables can be hidden by signature matching:
 \begin{caml_example}
 module type ABSPOINT = sig 
   class point (int) =
@@ -486,9 +483,8 @@ module type ABSPOINT = sig
 end;;
 module Abspoint : ABSPOINT = Point;;
 \end{caml_example}
-However, in the current implementation, 
-methods cannot be hidden implicitly nor explicitly.
-
+However, methods cannot be hidden.
+% XXX Expliquer pourquoi ?
 
 \subsection*{Simple modules as classes}
 
@@ -500,6 +496,18 @@ Indeed, there are situations when the two approaches are quite similar.
 
 % XXX stack example
 
+\begin{caml_example}
+exception Empty;;
+class 'a stack () =
+  val mutable l = ([] : 'a list)
+  method push x = l <- x::l
+  method pop =
+    match l with [] -> raise Empty | a::l' -> l <- l'; a
+  method clear = l <- []
+  method length = List.length l
+end;;
+\end{caml_example}
+
 However, the nice correspondence between the implementations of stacks as 
 modules or classes is a very particular case. 
 
@@ -507,13 +515,68 @@ modules or classes is a very particular case.
 
 % problem 
 
-% solution
+\begin{caml_example}
+class 'a stack2 () =
+  inherit ('a) stack ()
+  method fold f x = List.fold_left f x l
+end;;
+\end{caml_example}
 
+% solution
+The solution is to leave the function "fold" outside of the class.
+\begin{caml_example}
+class 'a stack3 () =
+  inherit ('a) stack ()
+  method iter f = List.iter (f : 'a -> unit) l
+end;;
+let stack_fold (s : 'a #stack3) f x =
+  let accu = ref x in
+  s#iter (fun e -> accu := f !accu e);
+  !accu;;
+\end{caml_example}
 
 
 % XXX Sets
 
 
 % problem 
-
+                                
 % solution
+
+\begin{caml_example}
+module type SET =
+  sig
+    type 'a tag
+    class 'a c (unit) : 'b =
+      method is_empty : bool
+      method mem : 'a -> bool
+      method add : 'a -> 'b
+      method union : 'b -> 'b
+      method tag : 'a tag
+      method iter : ('a -> unit) -> unit
+    end
+  end;;
+module Set : SET =
+  struct
+    let rec merge l1 l2 =
+      match l1 with
+        [] -> l2
+      | h1 :: t1 ->
+          match l2 with
+            [] -> l1
+          | h2 :: t2 ->
+              if h1 < h2 then h1 :: merge t1 l2
+              else if h1 > h2 then h2 :: merge l1 t2
+              else merge t1 l2
+    type 'a tag = 'a list
+    class 'a c () : 'b =
+      val repr = ([] : 'a list)
+      method is_empty = (repr = [])
+      method mem x = List.exists ((=) x) repr
+      method add x = {< repr = merge [x] repr >}
+      method union (s : 'b) = {< repr = merge repr s#tag >}
+      method iter (f : 'a -> unit) = List.iter f repr
+      method tag = repr
+    end
+  end;;
+\end{caml_example}
