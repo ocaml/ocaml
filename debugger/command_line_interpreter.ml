@@ -434,7 +434,14 @@ let print_expr depth ev env expr =
 let print_command depth lexbuf =
   let exprs = expression_list_eol Lexer.lexeme lexbuf in
   ensure_loaded ();
-  let env = Envaux.env_of_event !selected_event in
+  let env =
+    try
+      Envaux.env_of_event !selected_event
+    with
+      Envaux.Error msg ->
+        Envaux.report_error msg;
+        raise Toplevel
+  in
   List.iter (print_expr depth !selected_event env) exprs
 
 let instr_print lexbuf = print_command !max_printer_depth lexbuf
@@ -505,8 +512,8 @@ let instr_break lexbuf =
     ensure_loaded ();
     match argument with
       BA_none ->                                (* break *)
-        (match current_pc () with
-           Some pc ->
+        (match !selected_event with
+           Some {ev_pos = pc} ->
              add_breakpoint_at_pc pc
          | None ->
              prerr_endline "Can't add breakpoint at this point.";
@@ -514,9 +521,16 @@ let instr_break lexbuf =
     | BA_pc pc ->                               (* break PC *)
         add_breakpoint_at_pc pc
     | BA_function expr ->                       (* break FUNCTION *)
-        let env = Envaux.env_of_event !current_event in
+        let env =
+          try
+            Envaux.env_of_event !selected_event
+          with
+            Envaux.Error msg ->
+              Envaux.report_error msg;
+              raise Toplevel
+        in
         begin try
-          let (v, ty) = Eval.expression !current_event env expr in
+          let (v, ty) = Eval.expression !selected_event env expr in
           match (Ctype.repr ty).desc with
             Tarrow (_, _) ->
               add_breakpoint_after_pc (Remote_value.closure_code v)
