@@ -102,7 +102,7 @@ let  rshift_num n {left=left ; right=right} =
 let ctx_rshift_num n ctx = List.map (rshift_num n) ctx
 
 let combine {left=left ; right=right} = match left with
-| p::ps -> {left=ps ; right=set_args p right}
+| p::ps -> {left=ps ; right=set_args_erase_mutable p right}
 | _ -> assert false
 
 let ctx_combine ctx = List.map combine ctx

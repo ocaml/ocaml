@@ -410,7 +410,7 @@ let rec read_args xs r = match xs,r with
 | _,_ ->
     fatal_error "Parmatch.read_args"
 
-let set_args q r = match q with
+let do_set_args erase_mutable q r = match q with
 | {pat_desc = Tpat_tuple omegas} ->
     let args,rest = read_args omegas r in
     make_pat (Tpat_tuple args) q.pat_type q.pat_env::rest
@@ -418,7 +418,16 @@ let set_args q r = match q with
     let args,rest = read_args omegas r in
     make_pat
       (Tpat_record
-         (List.map2 (fun (lbl,_) arg -> lbl,arg) omegas args))
+         (List.map2 (fun (lbl,_) arg ->
+           if
+             erase_mutable &&
+             (match lbl.lbl_mut with
+             | Mutable -> true | Immutable -> false)
+           then
+             lbl, omega
+           else
+             lbl,arg)
+            omegas args))
       q.pat_type q.pat_env::
     rest
 | {pat_desc = Tpat_construct (c,omegas)} ->
@@ -445,6 +454,8 @@ let set_args q r = match q with
     q::r (* case any is used in matching.ml *)
 | _ -> fatal_error "Parmatch.set_args"
 
+let set_args q r = do_set_args false q r
+and set_args_erase_mutable q r = do_set_args true q r
 
 (* filter pss acording to pattern q *)
 let filter_one q pss =
