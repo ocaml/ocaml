@@ -36,10 +36,11 @@ let rec bind_pattern env pat arg mut =
   | Tpat_tuple patl ->
       bind_pattern_list env patl arg mut 0
   | Tpat_construct(cstr, patl) ->
-      bind_pattern_list env patl arg mut
-        (match cstr.cstr_tag with
-            Cstr_tag _ -> 0
-          | Cstr_exception _ -> 1)
+      begin match cstr.cstr_tag with
+        Cstr_constant _  -> (env, fun e -> e)
+      | Cstr_block _     -> bind_pattern_list env patl arg mut 0
+      | Cstr_exception _ -> bind_pattern_list env patl arg mut 1
+      end
   | Tpat_record lbl_pat_list ->
       bind_label_pattern env lbl_pat_list arg mut
   | _ ->
@@ -71,22 +72,21 @@ and bind_label_pattern env patl arg mut =
 
 let comparisons_table = create_hashtable 11 [
   "%equal",
-      (Pccall("equal", 2), Pcomp Ceq, Pccall("eq_float", 2));
+      (Pccall("equal", 2), Pintcomp Ceq, Pfloatcomp Ceq);
   "%notequal",
-      (Pccall("notequal", 2), Pcomp Cneq, Pccall("neq_float", 2));
+      (Pccall("notequal", 2), Pintcomp Cneq, Pfloatcomp Cneq);
   "%lessthan",
-      (Pccall("lessthan", 2), Pcomp Clt, Pccall("lt_float", 2));
+      (Pccall("lessthan", 2), Pintcomp Clt, Pfloatcomp Clt);
   "%greaterthan",
-      (Pccall("greaterthan", 2), Pcomp Cgt, Pccall("gt_float", 2));
+      (Pccall("greaterthan", 2), Pintcomp Cgt, Pfloatcomp Cgt);
   "%lessequal",
-      (Pccall("lessequal", 2), Pcomp Cle, Pccall("le_float", 2));
+      (Pccall("lessequal", 2), Pintcomp Cle, Pfloatcomp Cle);
   "%greaterequal",
-      (Pccall("greaterequal", 2), Pcomp Cge, Pccall("ge_float", 2))
+      (Pccall("greaterequal", 2), Pintcomp Cge, Pfloatcomp Cge)
 ]
 
 let primitives_table = create_hashtable 31 [
   "%identity", Pidentity;
-  "%tagof", Ptagof;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
   "%setfield0", Psetfield 0;
@@ -110,14 +110,24 @@ let primitives_table = create_hashtable 31 [
   "%lslint", Plslint;
   "%lsrint", Plsrint;
   "%asrint", Pasrint;
-  "%eq", Pcomp Ceq;
-  "%noteq", Pcomp Cneq;
-  "%ltint", Pcomp Clt;
-  "%leint", Pcomp Cle;
-  "%gtint", Pcomp Cgt;
-  "%geint", Pcomp Cge;
+  "%eq", Pintcomp Ceq;
+  "%noteq", Pintcomp Cneq;
+  "%ltint", Pintcomp Clt;
+  "%leint", Pintcomp Cle;
+  "%gtint", Pintcomp Cgt;
+  "%geint", Pintcomp Cge;
   "%incr", Poffsetref(1);
   "%decr", Poffsetref(-1);
+  "%addfloat", Paddfloat;
+  "%subfloat", Psubfloat;
+  "%mulfloat", Pmulfloat;
+  "%divfloat", Pdivfloat;
+  "%eqfloat", Pfloatcomp Ceq;
+  "%noteqfloat", Pfloatcomp Cneq;
+  "%ltfloat", Pfloatcomp Clt;
+  "%lefloat", Pfloatcomp Cle;
+  "%gtfloat", Pfloatcomp Cgt;
+  "%gefloat", Pfloatcomp Cge;
   "%string_unsafe_get", Pgetstringchar;
   "%string_unsafe_set", Psetstringchar;
   "%array_length", Pvectlength;
@@ -215,7 +225,9 @@ let rec transl_exp env e =
   | Texp_construct(cstr, args) ->
       let ll = transl_list env args in
       begin match cstr.cstr_tag with
-        Cstr_tag n ->
+        Cstr_constant n ->
+          Lconst(Const_base(Const_int n))
+      | Cstr_block n ->
           begin try
             Lconst(Const_block(n, List.map extract_constant ll))
           with Not_constant ->
@@ -230,7 +242,8 @@ let rec transl_exp env e =
         (fun (lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp env expr)
         lbl_expr_list;
       let ll = Array.to_list lv in
-      if List.for_all (fun (lbl, expr) -> lbl.lbl_mut = Immutable) lbl_expr_list
+      if List.for_all (fun (lbl, expr) -> lbl.lbl_mut = Immutable)
+                      lbl_expr_list
       then begin
         try
           Lconst(Const_block(0, List.map extract_constant ll))

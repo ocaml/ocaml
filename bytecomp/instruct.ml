@@ -23,7 +23,6 @@ type instruction =
   | Kmakeblock of int * int             (* size, tag *)
   | Kgetfield of int
   | Ksetfield of int
-  | Ktagof
   | Kdummy of int
   | Kupdate
   | Kvectlength
@@ -36,7 +35,7 @@ type instruction =
   | Kbranchifnot of label
   | Kstrictbranchif of label
   | Kstrictbranchifnot of label
-  | Kswitch of label array
+  | Kswitch of label array * label array
   | Ktranslate of (int * int * int) array
   | Kboolnot
   | Kpushtrap of label

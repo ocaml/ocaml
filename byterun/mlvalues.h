@@ -194,16 +194,16 @@ extern header_t first_atoms[];
 #define Atom(tag) (Val_hp (&(first_atoms [tag])))
 #define Is_atom(v) (v >= Atom(0) && v <= Atom(255))
 
-/* Booleans are atoms tagged 0 or 1 */
+/* Booleans are integers 0 or 1 */
 
-#define Val_bool(x) Atom((x) != 0)
-#define Bool_val(x) Tag_val(x)
-#define Val_false Atom(0)
-#define Val_true Atom(1)
+#define Val_bool(x) Val_int((x) != 0)
+#define Bool_val(x) Int_val(x)
+#define Val_false Val_int(0)
+#define Val_true Val_int(1)
 
-/* The unit value is the atom tagged 0 */
+/* The unit value is 0 */
 
-#define Val_unit Atom(0)
+#define Val_unit Val_int(0)
 
 /* The table of global identifiers */
 

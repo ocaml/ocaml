@@ -56,7 +56,7 @@ value blit_string(argv, argc)   /* ML */
   bcopy(&Byte(argv[0], Long_val(argv[1])),
         &Byte(argv[2], Long_val(argv[3])),
         Int_val(argv[4]));
-  return Atom(0);
+  return Val_unit;
 }
 
 value fill_string(s, offset, len, init) /* ML */
@@ -70,7 +70,7 @@ value fill_string(s, offset, len, init) /* ML */
   for(p = &Byte(s, Long_val(offset)), n = Long_val(len);
       n > 0; n--, p++)
     *p = c;
-  return Atom(0);
+  return Val_unit;
 }
 
 static unsigned char printable_chars_ascii[] = /* 0x20-0x7E */

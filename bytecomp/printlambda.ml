@@ -29,7 +29,6 @@ let primitive = function
   | Pgetglobal id -> print_string "global "; Ident.print id
   | Psetglobal id -> print_string "setglobal "; Ident.print id
   | Pmakeblock sz -> print_string "makeblock "; print_int sz
-  | Ptagof -> print_string "tag"
   | Pfield n -> print_string "field "; print_int n
   | Psetfield n -> print_string "setfield "; print_int n
   | Pccall(name, arity) -> print_string name
@@ -50,19 +49,40 @@ let primitive = function
   | Plslint -> print_string "lsl"
   | Plsrint -> print_string "lsr"
   | Pasrint -> print_string "asr"
-  | Pcomp(Ceq) -> print_string "=="
-  | Pcomp(Cneq) -> print_string "!="
-  | Pcomp(Clt) -> print_string "<"
-  | Pcomp(Cle) -> print_string "<="
-  | Pcomp(Cgt) -> print_string ">"
-  | Pcomp(Cge) -> print_string ">="
+  | Pintcomp(Ceq) -> print_string "=="
+  | Pintcomp(Cneq) -> print_string "!="
+  | Pintcomp(Clt) -> print_string "<"
+  | Pintcomp(Cle) -> print_string "<="
+  | Pintcomp(Cgt) -> print_string ">"
+  | Pintcomp(Cge) -> print_string ">="
   | Poffsetint n -> print_int n; print_string "+"
   | Poffsetref n -> print_int n; print_string "+:="
+  | Pnegfloat -> print_string "~."
+  | Paddfloat -> print_string "+."
+  | Psubfloat -> print_string "-."
+  | Pmulfloat -> print_string "*."
+  | Pdivfloat -> print_string "/."
+  | Pfloatcomp(Ceq) -> print_string "==."
+  | Pfloatcomp(Cneq) -> print_string "!=."
+  | Pfloatcomp(Clt) -> print_string "<."
+  | Pfloatcomp(Cle) -> print_string "<=."
+  | Pfloatcomp(Cgt) -> print_string ">."
+  | Pfloatcomp(Cge) -> print_string ">=."
   | Pgetstringchar -> print_string "string.get"
   | Psetstringchar -> print_string "string.set"
   | Pvectlength -> print_string "array.length"
   | Pgetvectitem -> print_string "array.get"
   | Psetvectitem -> print_string "array.set"
+  | Ptranslate tbl ->
+      print_string "translate [";
+      open_hvbox 0;
+      for i = 0 to Array.length tbl - 1 do
+        if i > 0 then print_space();
+        let (lo, hi, ofs) = tbl.(i) in
+        print_space(); print_int lo; print_string "/";
+        print_int hi; print_string "/"; print_int ofs
+      done;
+      print_string "]"; close_box()
 
 let rec lambda = function
     Lvar id ->
@@ -110,21 +130,29 @@ let rec lambda = function
       List.iter (fun l -> print_space(); lambda l) largs;
       print_string ")";
       close_box()
-  | Lswitch(larg, lo, hi, cases) ->
+  | Lswitch(larg, num_cases1, cases1, num_cases2, cases2) ->
       open_hovbox 1;
-      print_string "(switch "; print_int lo; print_string "/";
-      print_int hi; print_space();
-      lambda larg; print_space();
+      print_string "(switch "; lambda larg; print_space();
       open_vbox 0;
       let spc = ref false in
       List.iter
         (fun (n, l) ->
+          if !spc then print_space() else spc := true;
           open_hvbox 1;
-          print_string "case "; print_int n; print_string ":"; print_space();
+          print_string "case int "; print_int n;
+          print_string ":"; print_space();
           lambda l;
-          close_box();
-          if !spc then print_space() else spc := true)
-        cases;
+          close_box())
+        cases1;
+      List.iter
+        (fun (n, l) ->
+          if !spc then print_space() else spc := true;
+          open_hvbox 1;
+          print_string "case tag "; print_int n;
+          print_string ":"; print_space();
+          lambda l;
+          close_box())
+        cases2;
       print_string ")"; close_box(); close_box()
   | Lstaticfail ->
       print_string "exit"

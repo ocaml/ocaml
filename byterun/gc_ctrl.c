@@ -34,7 +34,7 @@ value gc_stat(v) /* ML */
   char *cur_hp, *prev_hp;
   header_t cur_hd;
 
-  Assert (v == Atom (0));
+  Assert (v == Val_unit);
 
   while (chunk != NULL){
     ++ heap_chunks;
@@ -107,7 +107,7 @@ value gc_get(v) /* ML */
 {
   value res;
 
-  Assert (v == Atom (0));
+  Assert (v == Val_unit);
   res = alloc (4, 0);
   Field (res, 0) = Wsize_bsize (Val_long (minor_heap_size));
   Field (res, 1) = Wsize_bsize (Val_long (major_heap_increment));
@@ -165,31 +165,31 @@ value gc_set(v) /* ML */
     gc_message ("New minor heap size: %ldk\n", new_size/1024);
     set_minor_heap_size (new_size);
   }
-  return Atom (0);
+  return Val_unit;
 }
 
 value gc_minor(v) /* ML */
     value v;
-{                                                    Assert (v == Atom (0));
+{                                                    Assert (v == Val_unit);
   minor_collection ();
-  return Atom (0);
+  return Val_unit;
 }
 
 value gc_major(v) /* ML */
     value v;
-{                                                    Assert (v == Atom (0));
+{                                                    Assert (v == Val_unit);
   minor_collection ();
   finish_major_cycle ();
-  return Atom (0);
+  return Val_unit;
 }
 
 value gc_full_major(v) /* ML */
     value v;
-{                                                    Assert (v == Atom (0));
+{                                                    Assert (v == Val_unit);
   minor_collection ();
   finish_major_cycle ();
   finish_major_cycle ();
-  return Atom (0);
+  return Val_unit;
 }
 
 void init_gc (minor_size, major_incr, percent_fr, verb)

@@ -56,7 +56,13 @@ void thread_code(code, len, instr_table)
     case GETGLOBALFIELD: case MAKEBLOCK: case C_CALLN:
       p += 2; break;
       /* Instructions with N+1 operands */
-    case SWITCH: case TRANSLATE:
+    case SWITCH:
+      { uint32 sizes = *p++;
+        uint32 const_size = sizes & 0xFFFF;
+        uint32 block_size = sizes >> 16;
+        p += const_size + block_size;
+        break; }
+    case TRANSLATE:
       p += *p + 1; break;
     }
   }

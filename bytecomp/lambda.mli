@@ -7,7 +7,6 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   | Pmakeblock of int
-  | Ptagof
   | Pfield of int
   | Psetfield of int
   | Pccall of string * int
@@ -17,11 +16,14 @@ type primitive =
   | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
-  | Pcomp of comparison
+  | Pintcomp of comparison
   | Poffsetint of int
   | Poffsetref of int
+  | Pnegfloat | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
+  | Pfloatcomp of comparison
   | Pgetstringchar | Psetstringchar
   | Pvectlength | Pgetvectitem | Psetvectitem
+  | Ptranslate of (int * int * int) array
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -38,7 +40,7 @@ type lambda =
   | Llet of Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda * int) list * lambda
   | Lprim of primitive * lambda list
-  | Lswitch of lambda * int * int * (int * lambda) list
+  | Lswitch of lambda * int * (int * lambda) list * int * (int * lambda) list
   | Lstaticfail
   | Lcatch of lambda * lambda
   | Ltrywith of lambda * Ident.t * lambda

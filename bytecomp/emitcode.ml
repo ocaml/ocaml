@@ -25,7 +25,7 @@ type compilation_unit =
     cu_interfaces: (string * int) list } (* Names and CRC of intfs imported *)
 
 (* Format of a .cmo file:
-     Obj.magic number (Config.cmo_magic_number)
+     magic number (Config.cmo_magic_number)
      absolute offset of compilation unit descriptor
      block of relocatable bytecode
      compilation unit descriptor *)
@@ -155,11 +155,13 @@ let emit_instr = function
   | Kconst sc ->
       begin match sc with
         Const_base(Const_int i) when i >= immed_min & i <= immed_max ->
-          out opCONSTINT; out_int i
+          if i >= 0 & i <= 3
+          then out (opCONST0 + i)
+          else (out opCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opCONSTINT; out_int (Char.code c)
       | Const_block(t, []) ->
-          if t < 4 then out (opATOM0 + t) else (out opATOM; out_int t)
+          if t = 0 then out opATOM0 else (out opATOM; out_int t)
       | _ ->
           out opGETGLOBAL; slot_for_literal sc
       end
@@ -172,7 +174,6 @@ let emit_instr = function
       if n < 4 then out(opGETFIELD0 + n) else (out opGETFIELD; out_int n)
   | Ksetfield n ->
       if n < 4 then out(opSETFIELD0 + n) else (out opSETFIELD; out_int n)
-  | Ktagof -> out opTAGOF
   | Kdummy n -> out opDUMMY; out_int n
   | Kupdate -> out opUPDATE
   | Kvectlength -> out opVECTLENGTH
@@ -185,10 +186,12 @@ let emit_instr = function
   | Kbranchifnot lbl -> out opBRANCHIFNOT; out_label lbl
   | Kstrictbranchif lbl -> out opBRANCHIF; out_label lbl
   | Kstrictbranchifnot lbl -> out opBRANCHIFNOT; out_label lbl
-  | Kswitch lblv ->
-      out opSWITCH; out_int (Array.length lblv);
+  | Kswitch(tbl_const, tbl_block) ->
+      out opSWITCH;
+      out_int (Array.length tbl_const + (Array.length tbl_block lsl 16));
       let org = !out_position in
-      Array.iter (out_label_with_orig org) lblv
+      Array.iter (out_label_with_orig org) tbl_const;
+      Array.iter (out_label_with_orig org) tbl_block
   | Ktranslate tbl ->
       out opTRANSLATE; out_int (Array.length tbl);
       Array.iter
@@ -234,11 +237,13 @@ let rec emit = function
   | Kpush :: Kconst sc :: c ->
       begin match sc with
         Const_base(Const_int i) when i >= immed_min & i <= immed_max ->
-          out opPUSHCONSTINT; out_int i
+          if i >= 0 & i <= 3
+          then out (opPUSHCONST0 + i)
+          else (out opPUSHCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opPUSHCONSTINT; out_int(Char.code c)
       | Const_block(t, []) ->
-          if t < 4 then out (opPUSHATOM0 + t) else (out opPUSHATOM; out_int t)
+          if t = 0 then out opPUSHATOM0 else (out opPUSHATOM; out_int t)
       | _ ->
           out opPUSHGETGLOBAL; slot_for_literal sc
       end;

@@ -115,7 +115,7 @@ value interprete(prog, prog_size)
   pc = prog;
   extra_args = 0;
   env = Atom(0);
-  accu = Val_long(0);
+  accu = Val_int(0);
   initial_local_roots = local_roots;
   initial_sp_offset = stack_high - sp;
   initial_external_raise = external_raise;
@@ -448,31 +448,17 @@ value interprete(prog, prog_size)
 
 /* Allocation of blocks */
 
+    Instruct(PUSHATOM0):
+      *--sp = accu;
+      /* Fallthrough */
     Instruct(ATOM0):
       accu = Atom(0); Next;
-    Instruct(ATOM1):
-      accu = Atom(1); Next;
-    Instruct(ATOM2):
-      accu = Atom(2); Next;
-    Instruct(ATOM3):
-      accu = Atom(3); Next;
-
-    Instruct(PUSHATOM0):
-      *--sp = accu; accu = Atom(0); Next;
-    Instruct(PUSHATOM1):
-      *--sp = accu; accu = Atom(1); Next;
-    Instruct(PUSHATOM2):
-      *--sp = accu; accu = Atom(2); Next;
-    Instruct(PUSHATOM3):
-      *--sp = accu; accu = Atom(3); Next;
 
     Instruct(PUSHATOM):
       *--sp = accu;
       /* Fallthrough */
     Instruct(ATOM):
-      accu = Atom(*pc);
-      pc++;
-      Next;
+      accu = Atom(*pc++); Next;
 
     Instruct(MAKEBLOCK): {
       mlsize_t wosize = *pc++;
@@ -553,10 +539,6 @@ value interprete(prog, prog_size)
       modify_newval = *sp++;
       goto modify;
 
-    Instruct(TAGOF):
-      accu = Val_int(Tag_val(accu));
-      Next;
-
 /* For recursive definitions */
 
     Instruct(DUMMY): {
@@ -609,16 +591,22 @@ value interprete(prog, prog_size)
       pc += *pc;
       Next;
     Instruct(BRANCHIF):
-      if (Tag_val(accu) != 0) pc += *pc; else pc++;
+      if (accu != Val_false) pc += *pc; else pc++;
       Next;
     Instruct(BRANCHIFNOT):
-      if (Tag_val(accu) == 0) pc += *pc; else pc++;
+      if (accu == Val_false) pc += *pc; else pc++;
       Next;
     Instruct(SWITCH): {
-      long index = Long_val(accu);
-      Assert(index >= 0 && index < *pc);
-      pc++;
-      pc += pc[index];
+      uint32 sizes = *pc++;
+      if (Is_block(accu)) {
+        long index = Tag_val(accu);
+        Assert(index >= 0 && index < (sizes >> 16));
+        pc += pc[(sizes & 0xFFFF) + index];
+      } else {
+        long index = Long_val(accu);
+        Assert(index >= 0 && index < (sizes & 0xFFFF));
+        pc += pc[index];
+      }
       Next;
     }
     Instruct(TRANSLATE): {
@@ -644,7 +632,7 @@ value interprete(prog, prog_size)
       Next;
     }
     Instruct(BOOLNOT):
-      accu = Atom(Tag_val(accu) == 0);
+      accu = Bool_val(accu == Val_false);
       Next;
 
 /* Exceptions */
@@ -765,17 +753,36 @@ value interprete(prog, prog_size)
       Next;
     }
 
-/* Integer arithmetic */
+/* Integer constants */
 
+    Instruct(CONST0):
+      accu = Val_int(0); Next;
+    Instruct(CONST1):
+      accu = Val_int(1); Next;
+    Instruct(CONST2):
+      accu = Val_int(2); Next;
+    Instruct(CONST3):
+      accu = Val_int(3); Next;
+
+    Instruct(PUSHCONST0):
+      *--sp = accu; accu = Val_int(0); Next;
+    Instruct(PUSHCONST1):
+      *--sp = accu; accu = Val_int(1); Next;
+    Instruct(PUSHCONST2):
+      *--sp = accu; accu = Val_int(2); Next;
+    Instruct(PUSHCONST3):
+      *--sp = accu; accu = Val_int(3); Next;
+
+    Instruct(PUSHCONSTINT):
+      *--sp = accu;
+      /* Fallthrough */
     Instruct(CONSTINT):
       accu = Val_int(*pc);
       pc++;
       Next;
-    Instruct(PUSHCONSTINT):
-      *--sp = accu;
-      accu = Val_int(*pc);
-      pc++;
-      Next;
+
+/* Integer arithmetic */
+
     Instruct(NEGINT):
       accu = (value)(2 - (long)accu); Next;
     Instruct(ADDINT):
@@ -786,19 +793,13 @@ value interprete(prog, prog_size)
       accu = Val_long(Long_val(accu) * Long_val(*sp++)); Next;
     Instruct(DIVINT): {
       value div = *sp++;
-      if (div == Val_long(0)) {
-        accu = Field(global_data, ZERO_DIVIDE_EXN);
-        goto raise_exception;
-      }
+      if (div == Val_long(0)) { Setup_for_c_call; raise_zero_divide(); }
       accu = Val_long(Long_val(accu) / Long_val(div));
       Next;
     }
     Instruct(MODINT): {
       value div = *sp++;
-      if (div == Val_long(0)) {
-        accu = Field(global_data, ZERO_DIVIDE_EXN);
-        goto raise_exception;
-      }
+      if (div == Val_long(0)) { Setup_for_c_call; raise_zero_divide(); }
       accu = Val_long(Long_val(accu) % Long_val(div));
       Next;
     }
@@ -818,7 +819,7 @@ value interprete(prog, prog_size)
 
 #define Integer_comparison(opname,tst) \
     Instruct(opname): \
-      accu = Atom((long) accu tst (long) *sp++); Next;
+      accu = Val_int((long) accu tst (long) *sp++); Next;
 
     Integer_comparison(EQ, ==)
     Integer_comparison(NEQ, !=)

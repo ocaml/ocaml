@@ -33,7 +33,6 @@ let instruction = function
       print_string "\tmakeblock "; print_int n; print_string ", "; print_int m
   | Kgetfield n -> print_string "\tgetfield "; print_int n
   | Ksetfield n -> print_string "\tsetfield "; print_int n
-  | Ktagof -> print_string "\ttagof"
   | Kdummy n -> print_string "\tdummy "; print_int n
   | Kupdate -> print_string "\tupdate"
   | Kvectlength -> print_string "\tvectlength"
@@ -47,10 +46,12 @@ let instruction = function
   | Kstrictbranchif lbl -> print_string "\tstrictbranchif L"; print_int lbl
   | Kstrictbranchifnot lbl ->
       print_string "\tstrictbranchifnot L"; print_int lbl
-  | Kswitch lblv ->
+  | Kswitch(consts, blocks) ->
       open_hovbox 10;
       print_string "\tswitch";
-      Array.iter (fun lbl -> print_space(); print_int lbl) lblv;
+      Array.iter (fun lbl -> print_space(); print_int lbl) consts;
+      print_string "/";
+      Array.iter (fun lbl -> print_space(); print_int lbl) blocks;
       close_box()
   | Ktranslate tbl ->
       open_hovbox 10;

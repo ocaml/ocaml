@@ -28,24 +28,18 @@ let make_decision_tree casei =
     (* Record the segment and continue *)
     (start, !stop) :: partition (!stop + 1) in
   let part = partition 0 in
-  (* Compute the length of the switch table.
-     Slot 0 is reserved and always contains Lstaticfail. *)
-  let switchl = ref 1 in
-  List.iter
-    (fun (start, stop) -> switchl := !switchl + keyv.(stop) - keyv.(start) + 1)
-    part;
   (* Build the two tables *)
   let transl = Array.new (List.length part) (0, 0, 0)
-  and switch = Array.new !switchl Lstaticfail in
+  and switch = ref [] in
   let tr_pos = ref 0
-  and sw_ind = ref 1 in
+  and sw_ind = ref 1 in (* Slot 0 in switch is reserved for Lstaticfail *)
   List.iter
     (fun (start, stop) ->
       transl.(!tr_pos) <- (keyv.(start), keyv.(stop), !sw_ind);
       for i = start to stop do
-        switch.(!sw_ind + keyv.(i) - keyv.(start)) <- actv.(i)
+        switch := (!sw_ind + keyv.(i) - keyv.(start), actv.(i)) :: !switch
       done;
       incr tr_pos;
       sw_ind := !sw_ind + keyv.(stop) - keyv.(start) + 1)
     part;
-  (transl, switch)
+  (transl, !switch, !sw_ind)

@@ -8,7 +8,8 @@
 
 struct parser_tables {    /* Mirrors parse_tables in ../stdlib/parsing.mli */
   value actions;
-  value transl;
+  value transl_const;
+  value transl_block;
   char * lhs;
   char * len;
   char * defred;
@@ -54,20 +55,20 @@ int parser_trace = 0;
 #endif
 
 /* Input codes */
-
-#define START 0            /* Mirrors parser_input in ../stdlib/parsing.ml */
+/* Mirrors parser_input in ../stdlib/parsing.ml */
+#define START 0
 #define TOKEN_READ 1
 #define STACKS_GROWN_1 2
 #define STACKS_GROWN_2 3
 #define SEMANTIC_ACTION_COMPUTED 4
 
 /* Output codes */
-
-#define READ_TOKEN Atom(0) /* Mirrors parser_output in ../stdlib/parsing.ml */
-#define RAISE_PARSE_ERROR Atom(1)
-#define GROW_STACKS_1 Atom(2)
-#define GROW_STACKS_2 Atom(3)
-#define COMPUTE_SEMANTIC_ACTION Atom(4)
+/* Mirrors parser_output in ../stdlib/parsing.ml */
+#define READ_TOKEN Val_int(0) 
+#define RAISE_PARSE_ERROR Val_int(1)
+#define GROW_STACKS_1 Val_int(2)
+#define GROW_STACKS_2 Val_int(3)
+#define COMPUTE_SEMANTIC_ACTION Val_int(4)
 
 /* The pushdown automata */
 
@@ -81,7 +82,7 @@ value parse_engine(tables, env, cmd, arg) /* ML */
   mlsize_t sp;
   int n, n1, n2, m, state1;
 
-  switch(Tag_val(cmd)) {
+  switch(Int_val(cmd)) {
 
   case START:
     state = 0;
@@ -100,30 +101,12 @@ value parse_engine(tables, env, cmd, arg) /* ML */
   case TOKEN_READ:
     sp = Int_val(env->sp);
     state = Int_val(env->state);
-    env->curr_char = Field(tables->transl, Tag_val(arg));
-    switch (Wosize_val(arg)) {
-    case 0:
-      env->lval = Val_long(0); break;
-    case 1:
-      modify(&env->lval, Field(arg, 0)); break;
-    default: {
-      value tuple;
-      mlsize_t size, i;
-      Push_roots(r, 4);
-      r[0] = (value) tables;
-      r[1] = (value) env;
-      r[2] = cmd;
-      r[3] = arg;
-      size = Wosize_val(arg);
-      tuple = alloc_tuple(size);
-      tables = (struct parser_tables *) r[0];
-      env = (struct parser_env *) r[1];
-      cmd = r[2];
-      arg = r[3];
-      for (i = 0; i < size; i++) Field(tuple, i) = Field(arg, i);
-      modify(&env->lval, tuple);
-      Pop_roots();
-      break; }
+    if (Is_block(arg)) {
+      env->curr_char = Field(tables->transl_block, Tag_val(arg));
+      modify(&env->lval, Field(arg, 0));
+    } else {
+      env->curr_char = Field(tables->transl_const, Int_val(arg));
+      env->lval = Val_long(0);
     }
     Trace(printf("Token %d (0x%lx)\n", Int_val(env->curr_char), env->lval));
     

@@ -60,7 +60,7 @@ let divide_constant {cases = cl; args = al} =
 let make_constr_matching cstr (arg :: argl) =
   let (first_pos, last_pos) =
     match cstr.cstr_tag with
-      Cstr_tag _ -> (0, cstr.cstr_arity - 1)
+      Cstr_constant _ | Cstr_block _ -> (0, cstr.cstr_arity - 1)
     | Cstr_exception _ -> (1, cstr.cstr_arity) in
   let rec make_args pos =
     if pos > last_pos
@@ -140,54 +140,67 @@ let divide_record num_fields {cases = cl; args = al} =
 let combine_var (lambda1, total1) (lambda2, total2) =
   if total1 then (lambda1, true) else (Lcatch(lambda1, lambda2), total2)
 
+let make_test_sequence tst arg const_lambda_list =
+  List.fold_right
+    (fun (c, act) rem ->
+      Lifthenelse(Lprim(tst, [arg; Lconst(Const_base c)]), act, rem))
+    const_lambda_list Lstaticfail
+
 let combine_constant arg cst (const_lambda_list, total1) (lambda2, total2) =
   let lambda1 =
     match cst with
       Const_int _ ->
-        List.fold_right
-          (fun (c, act) rem ->
-            Lifthenelse(
-              Lprim(Pcomp Ceq, [arg; Lconst(Const_base c)]), act, rem))
-          const_lambda_list Lstaticfail
+        make_test_sequence (Pintcomp Ceq) arg const_lambda_list
     | Const_char _ ->
-        Lswitch(arg, 0, 256,
-                List.map (fun (Const_char c, l) -> (Char.code c, l))
-                    const_lambda_list)
-    | Const_string _ | Const_float _ ->
-        List.fold_right
-          (fun (c, act) rem ->
-            Lifthenelse(
-              Lprim(Pccall("equal", 2), [arg; Lconst(Const_base c)]),
-              act, rem))
-          const_lambda_list Lstaticfail
+        let casel =
+          List.map (fun (Const_char c, l) -> (Char.code c, l))
+                   const_lambda_list in
+        let (transl_table, actions, num_actions) =
+          Dectree.make_decision_tree casel in
+        Lswitch(Lprim(Ptranslate transl_table, [arg]),
+                num_actions, actions, 0, [])
+    | Const_string _ ->
+        make_test_sequence (Pccall("equal", 2)) arg const_lambda_list
+    | Const_float _ ->
+        make_test_sequence (Pfloatcomp Ceq) arg const_lambda_list
   in (Lcatch(lambda1, lambda2), total2)
 
 let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
-  if cstr.cstr_span < 0 then begin
+  if cstr.cstr_consts < 0 then begin
     (* Special cases for exceptions *)
     let lambda1 =
       List.fold_right
         (fun (Cstr_exception path, act) rem ->
-          Lifthenelse(Lprim(Pcomp Ceq, [Lprim(Pfield 0, [arg]);
-                                        transl_path path]), act, rem))
+          Lifthenelse(Lprim(Pintcomp Ceq, 
+                            [Lprim(Pfield 0, [arg]); transl_path path]),
+                      act, rem))
         tag_lambda_list Lstaticfail
     in (Lcatch(lambda1, lambda2), total2)
   end else begin
     (* Regular concrete type *)
-    let caselist =
-      List.map (function (Cstr_tag n, act) -> (n, act)) tag_lambda_list in
+    let rec split_cases = function
+      [] -> ([], [])
+    | (cstr, act) :: rem ->
+        let (consts, nonconsts) = split_cases rem in
+        match cstr with
+          Cstr_constant n -> ((n, act) :: consts, nonconsts)
+        | Cstr_block n    -> (consts, (n, act) :: nonconsts) in
+    let (consts, nonconsts) = split_cases tag_lambda_list in
     let lambda1 =
-      match (caselist, cstr.cstr_span) with
-        ([0, act], 1) -> act
-      | ([0, act], 2) -> Lifthenelse(arg, Lstaticfail, act)
-      | ([1, act], 2) -> Lifthenelse(arg, act, Lstaticfail)
-      | ([0, act0; 1, act1], 2) -> Lifthenelse(arg, act1, act0)
-      | ([1, act1; 0, act0], 2) -> Lifthenelse(arg, act1, act0)
-      | _ ->
-          if cstr.cstr_span < Config.max_tag
-          then Lswitch(Lprim(Ptagof, [arg]), 0, cstr.cstr_span, caselist)
-          else Lswitch(Lprim(Pfield 0, [arg]), 0, cstr.cstr_span, caselist) in
-    if total1 & List.length tag_lambda_list = cstr.cstr_span
+      match (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts) with
+        (1, 0, [0, act], []) -> act
+      | (0, 1, [], [0, act]) -> act
+      | (1, 1, [0, act1], [0, act2]) ->
+          Lifthenelse(arg, act2, act1)
+      | (1, 1, [0, act1], []) ->
+          Lifthenelse(arg, Lstaticfail, act1)
+      | (1, 1, [], [0, act2]) ->
+          Lifthenelse(arg, act2, Lstaticfail)
+      | (_, _, _, _) ->
+          Lswitch(arg, cstr.cstr_consts, consts,
+                       cstr.cstr_nonconsts, nonconsts) in
+    if total1
+     & List.length tag_lambda_list = cstr.cstr_consts + cstr.cstr_nonconsts
     then (lambda1, true)
     else (Lcatch(lambda1, lambda2), total2)
   end

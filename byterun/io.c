@@ -90,7 +90,7 @@ value flush(channel)            /* ML */
     channel->curr = channel->buff;
     channel->max  = channel->buff;
   }
-  return Atom(0);
+  return Val_unit;
 }
 
 value output_char(channel, ch)  /* ML */
@@ -98,7 +98,7 @@ value output_char(channel, ch)  /* ML */
      value ch;
 {
   putch(channel, Long_val(ch));
-  return Atom(0);
+  return Val_unit;
 }
 
 void putword(channel, w)
@@ -116,7 +116,7 @@ value output_int(channel, w)    /* ML */
      value w;
 {
   putword(channel, Long_val(w));
-  return Atom(0);
+  return Val_unit;
 }
 
 void putblock(channel, p, n)
@@ -158,7 +158,7 @@ value output(channel, buff, start, length) /* ML */
   putblock((struct channel *) channel,
            &Byte(buff, Long_val(start)),
            (unsigned) Long_val(length));
-  return Atom(0);
+  return Val_unit;
 }
 
 value seek_out(channel, pos)    /* ML */
@@ -176,7 +176,7 @@ value seek_out(channel, pos)    /* ML */
     if (lseek(channel->fd, dest, 0) != dest) sys_error(NULL);
     channel->offset = dest;
   }
-  return Atom(0);
+  return Val_unit;
 }
 
 value pos_out(channel)          /* ML */
@@ -191,7 +191,7 @@ value close_out(channel)     /* ML */
   flush(channel);
   close(channel->fd);
   stat_free((char *) channel);
-  return Atom(0);
+  return Val_unit;
 }
 
 /* Input */
@@ -334,7 +334,7 @@ value seek_in(channel, pos)     /* ML */
     channel->offset = dest;
     channel->curr = channel->max = channel->buff;
   }
-  return Atom(0);
+  return Val_unit;
 }
 
 value pos_in(channel)           /* ML */
@@ -348,7 +348,7 @@ value close_in(channel)     /* ML */
 {
   close(channel->fd);
   stat_free((char *) channel);
-  return Atom(0);
+  return Val_unit;
 }
 
 value input_scan_line(channel)       /* ML */

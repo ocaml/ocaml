@@ -42,16 +42,6 @@ static void hash_aux(obj)
     return;
   }
 
-  /* Atoms are not in the heap, but it's better to hash their tag
-     than to do nothing. */
-
-  if (Is_atom(obj)) {
-    tag = Tag_val(obj);
-    hash_univ_count--;
-    Combine_small(tag);
-    return;
-  }
-
   /* Pointers into the heap are well-structured blocks.
      We can inspect the block contents. */
   

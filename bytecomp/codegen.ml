@@ -5,7 +5,6 @@ open Asttypes
 open Lambda
 open Instruct
 
-
 (**** Label generation ****)
 
 let label_counter = ref 0
@@ -227,9 +226,8 @@ let rec comp_expr env exp sz cont =
           Pgetglobal id -> Kgetglobal id
         | Psetglobal id -> Ksetglobal id
         | Pupdate -> Kupdate
-        | Pcomp cmp -> Kintcomp cmp
+        | Pintcomp cmp -> Kintcomp cmp
         | Pmakeblock tag -> Kmakeblock(List.length args, tag)
-        | Ptagof -> Ktagof
         | Pfield n -> Kgetfield n
         | Psetfield n -> Ksetfield n
         | Pccall(name, n) -> Kccall(name, n)
@@ -247,11 +245,23 @@ let rec comp_expr env exp sz cont =
         | Pasrint -> Kasrint
         | Poffsetint n -> Koffsetint n
         | Poffsetref n -> Koffsetref n
+        | Pnegfloat -> Kccall("neg_float", 1)
+        | Paddfloat -> Kccall("add_float", 2)
+        | Psubfloat -> Kccall("sub_float", 2)
+        | Pmulfloat -> Kccall("mul_float", 2)
+        | Pdivfloat -> Kccall("div_float", 2)
+        | Pfloatcomp Ceq -> Kccall("eq_float", 2)
+        | Pfloatcomp Cneq -> Kccall("neq_float", 2)
+        | Pfloatcomp Clt -> Kccall("lt_float", 2)
+        | Pfloatcomp Cgt -> Kccall("gt_float", 2)
+        | Pfloatcomp Cle -> Kccall("le_float", 2)
+        | Pfloatcomp Cge -> Kccall("ge_float", 2)
         | Pgetstringchar -> Kgetstringchar
         | Psetstringchar -> Ksetstringchar
         | Pvectlength -> Kvectlength
         | Pgetvectitem -> Kgetvectitem
         | Psetvectitem -> Ksetvectitem
+        | Ptranslate tbl -> Ktranslate tbl
         | _ -> fatal_error "Codegen.comp_expr: prim" in
       comp_args env args sz (instr :: cont)
   | Lcatch(body, Lstaticfail) ->
@@ -287,7 +297,7 @@ let rec comp_expr env exp sz cont =
       Kbranch lbl_test :: Klabel lbl_loop :: Kcheck_signals ::
         comp_expr env body sz
           (Klabel lbl_test ::
-            comp_expr env cond sz (Kbranchif lbl_loop :: cont))
+            comp_expr env cond sz (Kbranchif lbl_loop :: add_const_unit cont))
   | Lfor(param, start, stop, dir, body) ->
       let lbl_loop = new_label() in
       let lbl_test = new_label() in
@@ -303,16 +313,30 @@ let rec comp_expr env exp sz cont =
               Kacc 0 :: Kpush :: Kacc 2 :: Kintcomp comp ::
               Kbranchif lbl_loop ::
               add_const_unit (add_pop 2 cont))))
-  | Lswitch(arg, lo, hi, casel) ->
-      let numcases = List.length casel in
-      let cont1 =
-        if lo = 0 & numcases >= hi - 8 then (* Always true if hi <= 8... *)
-          comp_direct_switch env hi casel sz cont
-        else begin
-          let (transl_table, actions) = Dectree.make_decision_tree casel in
-          Ktranslate transl_table :: comp_switch env actions sz cont 
-        end in
-      comp_expr env arg sz cont1
+  | Lswitch(arg, num_consts, consts, num_blocks, blocks) ->
+      (* To ensure stack balancing, we must have either sz = !sz_staticfail
+         or none of the actv.(i) contains an unguarded Lstaticfail. *)
+      let (branch, cont1) = make_branch cont in
+      let c = ref (discard_dead_code cont1) in
+      let act_consts = Array.new num_consts Lstaticfail in
+      List.iter (fun (n, act) -> act_consts.(n) <- act) consts;
+      let act_blocks = Array.new num_blocks Lstaticfail in
+      List.iter (fun (n, act) -> act_blocks.(n) <- act) blocks;
+      let lbl_consts = Array.new num_consts 0 in
+      let lbl_blocks = Array.new num_blocks 0 in
+      for i = num_blocks - 1 downto 0 do
+        let (lbl, c1) =
+          label_code(comp_expr env act_blocks.(i) sz (branch :: !c)) in
+        lbl_blocks.(i) <- lbl;
+        c := discard_dead_code c1
+      done;
+      for i = num_consts - 1 downto 0 do
+        let (lbl, c1) =
+          label_code(comp_expr env act_consts.(i) sz (branch :: !c)) in
+        lbl_consts.(i) <- lbl;
+        c := discard_dead_code c1
+      done;
+      comp_expr env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
   | Lshared(expr, lblref) ->
       begin match !lblref with
         None ->
@@ -356,29 +380,6 @@ and comp_binary_test env cond ifso ifnot sz cont =
       Kbranchifnot lbl_not :: comp_expr env ifso sz (branch_end :: cont2)
     end in
   comp_expr env cond sz cont_cond
-
-(* Compile a Lswitch directly, without breaking the array of cases into
-   dense enough components *)
-
-and comp_direct_switch env range casel sz cont =
-  let actv = Array.new range Lstaticfail in
-  List.iter (fun (n, act) -> actv.(n) <- act) casel;
-  comp_switch env actv sz cont
-
-(* Compile a switch instruction *)
-
-and comp_switch env actv sz cont =
-  (* To ensure stack balancing, we must have either sz = !sz_staticfail
-     or none of the actv.(i) contains an unguarded Lstaticfail. *)
-  let lblv = Array.new (Array.length actv) !lbl_staticfail in
-  let (branch, cont1) = make_branch cont in
-  let c = ref (discard_dead_code cont1) in
-  for i = Array.length actv - 1 downto 0 do
-    let (lbl, c1) = label_code(comp_expr env actv.(i) sz (branch :: !c)) in
-    lblv.(i) <- lbl;
-    c := discard_dead_code c1
-  done;
-  Kswitch lblv :: !c
 
 (**** Compilation of functions ****)
 

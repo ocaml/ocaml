@@ -75,36 +75,36 @@ value compare(v1, v2)           /* ML */
 value equal(v1, v2)            /* ML */
      value v1, v2;
 {
-  return Atom(compare_val(v1, v2) == 0);
+  return Val_int(compare_val(v1, v2) == 0);
 }
 
 value notequal(v1, v2)            /* ML */
      value v1, v2;
 {
-  return Atom(compare_val(v1, v2) != 0);
+  return Val_int(compare_val(v1, v2) != 0);
 }
 
 value lessthan(v1, v2)            /* ML */
      value v1, v2;
 {
-  return Atom(compare_val(v1, v2) < 0);
+  return Val_int(compare_val(v1, v2) < 0);
 }
 
 value lessequal(v1, v2)          /* ML */
      value v1, v2;
 {
-  return Atom(compare_val(v1, v2) <= 0);
+  return Val_int(compare_val(v1, v2) <= 0);
 }
 
 value greaterthan(v1, v2)        /* ML */
      value v1, v2;
 {
-  return Atom(compare_val(v1, v2) > 0);
+  return Val_int(compare_val(v1, v2) > 0);
 }
 
 value greaterequal(v1, v2)       /* ML */
      value v1, v2;
 {
-  return Atom(compare_val(v1, v2) >= 0);
+  return Val_int(compare_val(v1, v2) >= 0);
 }
 

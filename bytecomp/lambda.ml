@@ -7,7 +7,6 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   | Pmakeblock of int
-  | Ptagof
   | Pfield of int
   | Psetfield of int
   | Pccall of string * int
@@ -17,11 +16,14 @@ type primitive =
   | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
-  | Pcomp of comparison
+  | Pintcomp of comparison
   | Poffsetint of int
   | Poffsetref of int
+  | Pnegfloat | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
+  | Pfloatcomp of comparison
   | Pgetstringchar | Psetstringchar
   | Pvectlength | Pgetvectitem | Psetvectitem
+  | Ptranslate of (int * int * int) array
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -38,7 +40,7 @@ type lambda =
   | Llet of Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda * int) list * lambda
   | Lprim of primitive * lambda list
-  | Lswitch of lambda * int * int * (int * lambda) list
+  | Lswitch of lambda * int * (int * lambda) list * int * (int * lambda) list
   | Lstaticfail
   | Lcatch of lambda * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -48,7 +50,7 @@ type lambda =
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lshared of lambda * int option ref
 
-let const_unit = Const_block(0, [])
+let const_unit = Const_base(Const_int 0)
 
 let lambda_unit = Lconst const_unit
 
@@ -85,8 +87,10 @@ let free_variables l =
       List.iter (fun (id, exp, sz) -> fv := IdentSet.remove id !fv) decl
   | Lprim(p, args) ->
       List.iter freevars args
-  | Lswitch(arg, lo, hi, cases) ->
-      freevars arg; List.iter (fun (key, case) -> freevars case) cases
+  | Lswitch(arg, num_cases1, cases1, num_cases2, cases2) ->
+      freevars arg; 
+      List.iter (fun (key, case) -> freevars case) cases1;
+      List.iter (fun (key, case) -> freevars case) cases2
   | Lstaticfail -> ()
   | Lcatch(e1, e2) ->
       freevars e1; freevars e2

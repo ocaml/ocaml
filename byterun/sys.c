@@ -101,7 +101,7 @@ value sys_remove(name)          /* ML */
   int ret;
   ret = unlink(String_val(name));
   if (ret != 0) sys_error(String_val(name));
-  return Atom(0);
+  return Val_unit;
 }
 
 value sys_rename(oldname, newname) /* ML */
@@ -109,14 +109,14 @@ value sys_rename(oldname, newname) /* ML */
 {
   if (rename(String_val(oldname), String_val(newname)) != 0)
     sys_error(String_val(oldname));
-  return Atom(0);
+  return Val_unit;
 }
 
 value sys_chdir(dirname)        /* ML */
      value dirname;
 {
   if (chdir(String_val(dirname)) != 0) sys_error(String_val(dirname));
-  return Atom(0);
+  return Val_unit;
 }
 
 value sys_getenv(var)           /* ML */

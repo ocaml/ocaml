@@ -123,8 +123,8 @@ int convert_flag_list(list, flags)
 {
   int res;
   res = 0;
-  while (Tag_val(list) == 1) {
-    res |= flags[Tag_val(Field(list, 0))];
+  while (list != Val_int(0)) {
+    res |= flags[Int_val(Field(list, 0))];
     list = Field(list, 1);
   }
   return res;

@@ -43,7 +43,7 @@ value realloc_global(size)      /* ML */
     }
     global_data = new_global_data;
   }
-  return Atom(0);
+  return Val_unit;
 }
     
 value static_alloc(size)        /* ML */
@@ -56,7 +56,7 @@ value static_free(blk)          /* ML */
      value blk;
 {
   stat_free((char *) blk);
-  return Atom(0);
+  return Val_unit;
 }
 
 value static_resize(blk, new_size) /* ML */
@@ -68,7 +68,13 @@ value static_resize(blk, new_size) /* ML */
 value obj_is_block(arg)             /* ML */
      value arg;
 {
-  return Atom(Is_block(arg));
+  return Val_bool(Is_block(arg));
+}
+
+value obj_tag(arg)                 /* ML */
+     value arg;
+{
+  return Val_int(Tag_val(arg));
 }
 
 value obj_block(tag, size) /* ML */
