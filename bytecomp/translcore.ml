@@ -174,9 +174,9 @@ let transl_prim prim args =
     let (gencomp, intcomp, floatcomp, stringcomp) =
       Hashtbl.find comparisons_table prim.prim_name in
     match args with
-      [arg1; {exp_desc = Texp_construct(cstr, [])}] ->
+      [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}] ->
         intcomp
-    | [{exp_desc = Texp_construct(cstr, [])}; arg2] ->
+    | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2] ->
         intcomp
     | [arg1; arg2] when same_base_type arg1.exp_type Predef.type_int
                      or same_base_type arg1.exp_type Predef.type_char ->
