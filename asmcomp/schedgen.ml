@@ -37,25 +37,32 @@ let dummy_node =
 (* The code dag itself is represented by two tables from registers to nodes:
    - "results" maps registers to the instructions that produced them;
    - "uses" maps registers to the instructions that use them.
-   In addition, code_stores contains the latest store nodes emitted so far
-   and code_loads contains all load nodes emitted since the last store. *)
+   In addition:
+   - code_stores contains the latest store nodes emitted so far
+   - code_loads contains all load nodes emitted since the last store
+   - code_checkbounds contains the latest checkbound node not matched
+     by a subsequent load or store. *)
 
 let code_results = (Hashtbl.create 31 : (location, code_dag_node) Hashtbl.t)
 let code_uses = (Hashtbl.create 31 : (location, code_dag_node) Hashtbl.t)
 let code_stores = ref ([] : code_dag_node list)
 let code_loads = ref ([] : code_dag_node list)
+let code_checkbounds = ref ([] : code_dag_node list)
 
 let clear_code_dag () =
   Hashtbl.clear code_results;
   Hashtbl.clear code_uses;
   code_stores := [];
-  code_loads := []
+  code_loads := [];
+  code_checkbounds := []
 
 (* Add an edge to the code DAG *)
 
 let add_edge ancestor son delay =
   ancestor.sons <- (son, delay) :: ancestor.sons;
   son.ancestors <- son.ancestors + 1
+
+let add_edge_after son ancestor = add_edge ancestor son 0
 
 (* Compute length of longest path to a result.
    For leafs of the DAG, see whether their result is used in the instruction
@@ -140,6 +147,11 @@ method is_load = function
     Iload(_, _) -> true
   | _ -> false
 
+method is_checkbound = function
+    Iintop Icheckbound -> true
+  | Iintop_imm(Icheckbound, _) -> true
+  | _ -> false
+
 method private instr_is_store instr =
   match instr.desc with
     Lop op -> self#is_store op
@@ -148,6 +160,11 @@ method private instr_is_store instr =
 method private instr_is_load instr =
   match instr.desc with
     Lop op -> self#is_load op
+  | _ -> false
+
+method private instr_is_checkbound instr =
+  match instr.desc with
+    Lop op -> self#is_checkbound op
   | _ -> false
 
 (* Estimate the latency of an operation. *)
@@ -207,7 +224,7 @@ method private add_instruction ready_queue instr =
      of this instruction (WAR dependencies). *)
   for i = 0 to Array.length instr.res - 1 do
     let ancestors = Hashtbl.find_all code_uses instr.res.(i).loc in
-    List.iter (fun ancestor -> add_edge ancestor node 0) ancestors
+    List.iter (add_edge_after node) ancestors
   done;
   (* Also add edges from all instructions that have already defined one
      of the results of this instruction (WAW dependencies). *)
@@ -219,21 +236,29 @@ method private add_instruction ready_queue instr =
       ()
   done;
   (* If this is a load, add edges from the most recent store viewed so
-     far (if any) and remember the load *)
+     far (if any) and remember the load.  Also add edges from the most
+     recent checkbound and forget that checkbound. *)
   if self#instr_is_load instr then begin
-    List.iter (fun store -> add_edge store node 0) !code_stores;
-    code_loads := node :: !code_loads
+    List.iter (add_edge_after node) !code_stores;
+    code_loads := node :: !code_loads;
+    List.iter (add_edge_after node) !code_checkbounds;
+    code_checkbounds := []
   end
   (* If this is a store, add edges from the most recent store,
-     as well as all loads viewed since then.  Remember the store,
-     discarding the previous store and loads. *)
+     as well as all loads viewed since then, and also the most recent
+     checkbound. Remember the store,
+     discarding the previous stores, loads and checkbounds. *)
   else if self#instr_is_store instr then begin
-    List.iter (fun store -> add_edge store node 0) !code_stores;
-    List.iter (fun load -> add_edge load node 0) !code_loads;
+    List.iter (add_edge_after node) !code_stores;
+    List.iter (add_edge_after node) !code_loads;
+    List.iter (add_edge_after node) !code_checkbounds;
     code_stores := [node];
-    code_loads := []
+    code_loads := [];
+    code_checkbounds := []
+  end
+  else if self#instr_is_checkbound instr then begin
+    code_checkbounds := [node]
   end;
-
   (* Remember the registers used and produced by this instruction *)
   for i = 0 to Array.length instr.res - 1 do
     Hashtbl.add code_results instr.res.(i).loc node

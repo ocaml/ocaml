@@ -38,6 +38,8 @@ class virtual scheduler_generic : object
       (* Says whether the given operation is a memory store *)
   method is_load : Mach.operation -> bool
       (* Says whether the given operation is a memory load *)
+  method is_checkbound : Mach.operation -> bool
+      (* Says whether the given operation is a checkbound *)
   (* Entry point *)
   method schedule_fundecl : Linearize.fundecl -> Linearize.fundecl
 end
