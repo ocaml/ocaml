@@ -49,6 +49,17 @@ let test_out filename =
   output_value oc (big 1000);
   Marshal.to_channel oc y [Marshal.No_sharing];
   Marshal.to_channel oc fib [Marshal.Closures];
+  output_value oc (Int32.of_string "0");
+  output_value oc (Int32.of_string "123456");
+  output_value oc (Int32.of_string "-123456");
+  output_value oc (Int64.of_string "0");
+  output_value oc (Int64.of_string "123456789123456");
+  output_value oc (Int64.of_string "-123456789123456");
+  output_value oc (Nativeint.of_string "0");
+  output_value oc (Nativeint.of_string "123456");
+  output_value oc (Nativeint.of_string "-123456");
+  output_value oc (Nativeint.shift_left (Nativeint.of_string "123456789") 32);
+  output_value oc (Nativeint.shift_left (Nativeint.of_string "-123456789") 32);
   close_out oc
 
 
@@ -115,6 +126,19 @@ let test_in filename =
     G((D "sharing" as t1), (D "sharing" as t2)) -> t1 != t2
   | _ -> false);
   test 25 (let fib = input_value ic in fib 5 = 8 && fib 10 = 89);
+  test 26 (input_value ic = Int32.of_string "0");
+  test 27 (input_value ic = Int32.of_string "123456");
+  test 28 (input_value ic = Int32.of_string "-123456");
+  test 29 (input_value ic = Int64.of_string "0");
+  test 30 (input_value ic = Int64.of_string "123456789123456");
+  test 31 (input_value ic = Int64.of_string "-123456789123456");
+  test 32 (input_value ic = Nativeint.of_string "0");
+  test 33 (input_value ic = Nativeint.of_string "123456");
+  test 34 (input_value ic = Nativeint.of_string "-123456");
+  test 35 (input_value ic =
+             Nativeint.shift_left (Nativeint.of_string "123456789") 32);
+  test 36 (input_value ic =
+             Nativeint.shift_left (Nativeint.of_string "-123456789") 32);
   close_in ic
 
 let test_string () =

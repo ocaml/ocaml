@@ -24,6 +24,7 @@
 #endif
 #include "alloc.h"
 #include "callback.h"
+#include "custom.h"
 #include "debugger.h"
 #include "exec.h"
 #include "fail.h"
@@ -257,6 +258,7 @@ void caml_main(char **argv)
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   init_ieee_floats();
+  init_custom_operations();
   external_raise = NULL;
   /* Determine options and position of bytecode file */
 #ifdef DEBUG

@@ -143,13 +143,13 @@ let low n = n land 0xFFFF
 let high n = n asr 16
 
 let nativelow n = Nativeint.to_int n land 0xFFFF
-let nativehigh n = Nativeint.to_int (Nativeint.shift n (-16))
+let nativehigh n = Nativeint.to_int (Nativeint.shift_right n 16)
 
 let is_immediate n =
   n <= 32767 && n >= -32768
 
 let is_native_immediate n =
-  Nativeint.cmp n 32767 <= 0 && Nativeint.cmp n (-32768) >= 0
+  n <= Nativeint.of_int 32767 && n >= Nativeint.of_int (-32768)
 
 (* Output a "upper 16 bits" or "lower 16 bits" operator
    (for the absolute addressing mode) *)

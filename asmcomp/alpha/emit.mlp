@@ -52,8 +52,8 @@ let insert_load_gp f =
   let instr_needs_gp next = function
       Lend -> false
     | Lop(Iconst_int n) ->         (* for large n, turned into ldq ($gp) *)
-        next || Nativeint.cmp n (-0x80000000) < 0
-             || Nativeint.cmp n 0x7FFFFFFF > 0
+        next || n < Nativeint.of_int(-0x80000000)
+             || n > Nativeint.of_int 0x7FFFFFFF
     | Lop(Iconst_float s) -> true       (* turned into ldq ($gp) *)
     | Lop(Iconst_symbol s) -> true      (* turned into ldq ($gp) *)
     | Lop(Icall_ind) -> false           (* does ldgp if needed afterwards *)
@@ -372,11 +372,11 @@ let emit_instr i =
               fatal_error "Emit_alpha: Imove"
         end
     | Lop(Iconst_int n) ->
-        if Nativeint.sign n = 0 then
+        if n = Nativeint.zero then
           `	clr	{emit_reg i.res.(0)}\n`
         else if digital_asm || 
-                (Nativeint.cmp n (-0x80000000) >= 0 &&
-                 Nativeint.cmp n 0x7FFFFFFF <= 0) then
+                (n >= Nativeint.of_int (-0x80000000) &&
+                 n <= Nativeint.of_int 0x7FFFFFFF) then
           `	ldiq	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
         else begin
           (* Work around a bug in gas/gld concerning big integer constants *)
@@ -730,7 +730,7 @@ let emit_fundecl (fundecl, needs_gp) =
     `	{emit_string rdata_section}\n`;
     `	.align	3\n`;
     List.iter
-      (fun (lbl, n) -> `{emit_label lbl}:	.quad	{emit_string(Nativeint.to_hexa_string n)}\n`)
+      (fun (lbl, n) -> `{emit_label lbl}:	.quad	0x{emit_string(Nativeint.format "%x" n)}\n`)
       !bigint_constants
   end;
   if !float_constants <> [] then begin
@@ -764,7 +764,7 @@ let emit_item = function
       else
         (* Work around a bug in gas regarding the parsing of
            long decimal constants *)
-        `	.quad	{emit_string(Nativeint.to_hexa_string n)}\n`
+        `	.quad	0x{emit_string(Nativeint.format "%x" n)}\n`
   | Csingle f ->
       `	.float	{emit_string f}\n`
   | Cdouble f ->

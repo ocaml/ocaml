@@ -73,7 +73,7 @@ let is_immediate n =
   n <= 4095 && n >= -4096
 
 let is_native_immediate n =
-  Nativeint.cmp n 4095 <= 0 && Nativeint.cmp n (-4096) >= 0
+  n <= Nativeint.of_int 4095 && n >= Nativeint.of_int (-4096)
 
 (* Output a label *)
 

@@ -49,7 +49,8 @@ interp.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  instruct.h interp.h major_gc.h freelist.h memory.h gc.h minor_gc.h \
  prims.h signals.h stacks.h jumptbl.h
 ints.o: ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
+ mlvalues.h custom.h fail.h intext.h io.h fix_code.h memory.h gc.h \
+ major_gc.h freelist.h minor_gc.h
 io.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  mlvalues.h custom.h fail.h io.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h signals.h sys.h
@@ -92,9 +93,9 @@ signals.o: signals.c alloc.h misc.h config.h ../config/m.h \
 stacks.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
- misc.h mlvalues.h callback.h debugger.h exec.h fail.h fix_code.h \
- gc_ctrl.h interp.h intext.h io.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h prims.h signals.h stacks.h sys.h
+ misc.h mlvalues.h callback.h custom.h debugger.h exec.h fail.h \
+ fix_code.h gc_ctrl.h interp.h intext.h io.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h prims.h signals.h stacks.h sys.h
 str.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h
 sys.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
@@ -157,7 +158,8 @@ interp.d.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  instruct.h interp.h major_gc.h freelist.h memory.h gc.h minor_gc.h \
  prims.h signals.h stacks.h
 ints.d.o: ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
+ mlvalues.h custom.h fail.h intext.h io.h fix_code.h memory.h gc.h \
+ major_gc.h freelist.h minor_gc.h
 io.d.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  mlvalues.h custom.h fail.h io.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h signals.h sys.h
@@ -200,9 +202,9 @@ signals.d.o: signals.c alloc.h misc.h config.h ../config/m.h \
 stacks.d.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.d.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
- misc.h mlvalues.h callback.h debugger.h exec.h fail.h fix_code.h \
- gc_ctrl.h interp.h intext.h io.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h prims.h signals.h stacks.h sys.h
+ misc.h mlvalues.h callback.h custom.h debugger.h exec.h fail.h \
+ fix_code.h gc_ctrl.h interp.h intext.h io.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h prims.h signals.h stacks.h sys.h
 str.d.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h
 sys.d.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \

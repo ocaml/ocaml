@@ -360,7 +360,7 @@ method emit_expr env exp =
   match exp with
     Cconst_int n ->
       let r = Reg.createv typ_int in
-      self#insert_op (Iconst_int(Nativeint.from n)) [||] r
+      self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r
   | Cconst_natint n ->
       let r = Reg.createv typ_int in
       self#insert_op (Iconst_int n) [||] r
@@ -372,7 +372,7 @@ method emit_expr env exp =
       self#insert_op (Iconst_symbol n) [||] r
   | Cconst_pointer n ->
       let r = Reg.createv typ_addr in
-      self#insert_op (Iconst_int(Nativeint.from n)) [||] r
+      self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r
   | Cvar v ->
       begin try
         Tbl.find v env

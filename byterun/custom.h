@@ -47,4 +47,6 @@ void register_custom_operations(struct custom_operations * ops);
 struct custom_operations * find_custom_operations(char * ident);
 struct custom_operations * final_custom_operations(void (*fn)(value));
 
+void init_custom_operations(void);
+
 #endif

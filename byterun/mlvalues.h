@@ -221,10 +221,11 @@ void Store_double_val (value,double);
 #define Data_custom_val(v) ((void *) &Field(v, 1))
 struct custom_operations;       /* defined in [custom.h] */
 
-/* Int32.t and Int64.t are represented as custom blocks. */
+/* Int32.t, Int64.t and Nativeint.t are represented as custom blocks. */
 
 #define Int32_val(v) (*((int32 *) Data_custom_val(v)))
 #define Int64_val(v) (*((int64 *) Data_custom_val(v)))
+#define Nativeint_val(v) (*((long *) Data_custom_val(v)))
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 

@@ -33,6 +33,7 @@ val fprintf: out_channel -> ('a, out_channel, unit) format -> 'a
                 using lowercase letters.
 -          [X]: convert an integer argument to unsigned hexadecimal,
                 using uppercase letters.
+-          [o]: convert an integer argument to unsigned octal.
 -          [s]: insert a string argument
 -          [c]: insert a character argument
 -          [f]: convert a floating-point argument to decimal notation,

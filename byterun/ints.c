@@ -155,7 +155,7 @@ static unsigned long int32_deserialize(void * dst)
   return 4;
 }
 
-static struct custom_operations int32_ops = {
+struct custom_operations int32_ops = {
   "_i",
   custom_finalize_default,
   int32_compare,
@@ -221,7 +221,7 @@ value int32_of_int(value v) /* ML */
 value int32_to_int(value v) /* ML */
 { return Val_long(Int32_val(v)); }
 
-value format_int32(value fmt, value arg)      /* ML */
+value int32_format(value fmt, value arg)      /* ML */
 {
   char format_string[32], default_format_buffer[32];
   char * buffer;
@@ -268,8 +268,8 @@ static unsigned long int64_deserialize(void * dst)
   return 8;
 }
 
-static struct custom_operations int64_ops = {
-  "_i",
+struct custom_operations int64_ops = {
+  "_j",
   custom_finalize_default,
   int64_compare,
   int64_hash,
@@ -340,7 +340,7 @@ value int64_of_int32(value v) /* ML */
 value int64_to_int32(value v) /* ML */
 { return copy_int32((int32) Int64_val(v)); }
 
-value format_int64(value fmt, value arg)      /* ML */
+value int64_format(value fmt, value arg)      /* ML */
 {
   char format_string[64], default_format_buffer[64];
   char * buffer;
@@ -371,7 +371,7 @@ value int64_of_string(value s)          /* ML */
     if (d < 0) break;
     res = base * res + d;
   }
-  if (*p != 0) failwith("Int64.of_string");
+  if (*p != 0) failwith("int_of_string");
   return copy_int64(sign < 0 ? -((int64) res) : (int64) res);
 }
 
@@ -438,3 +438,142 @@ value int64_of_string(value s)
 { invalid_arg(int64_error); }
 
 #endif
+
+/* Native integers */
+
+static int nativeint_compare(value v1, value v2)
+{
+  long i1 = Int32_val(v1);
+  long i2 = Int32_val(v2);
+  return i1 == i2 ? 0 : i1 < i2 ? -1 : 1;
+}
+
+static long nativeint_hash(value v)
+{
+  return Nativeint_val(v);
+}
+
+static void nativeint_serialize(value v, unsigned long * wsize_32,
+                            unsigned long * wsize_64)
+{
+  long l = Nativeint_val(v);
+#ifdef ARCH_SIXTYFOUR
+  if (l <= 0x7FFFFFFFL && l >= -0x80000000L) {
+    serialize_int_1(1);
+    serialize_int_4((int32) l);
+  } else {
+    serialize_int_1(2);
+    serialize_int_8(l);
+  }
+#else
+  serialize_int_1(1);
+  serialize_int_4(l);
+#endif
+  *wsize_32 = 4;
+  *wsize_64 = 8;
+}
+
+static unsigned long nativeint_deserialize(void * dst)
+{
+  switch (deserialize_uint_1()) {
+  case 1:
+    *((long *) dst) = deserialize_sint_4();
+    break;
+  case 2:
+#ifdef ARCH_SIXTYFOUR
+    *((long *) dst) = deserialize_sint_8();
+#else
+    deserialize_error("input_value: native integer value too large");
+#endif
+    break;
+  default:
+    deserialize_error("input_value: ill-formed native integer");
+  }
+  return sizeof(long);
+}
+
+struct custom_operations nativeint_ops = {
+  "_n",
+  custom_finalize_default,
+  nativeint_compare,
+  nativeint_hash,
+  nativeint_serialize,
+  nativeint_deserialize
+};
+
+value copy_nativeint(long i)
+{
+  value res = alloc_custom(&nativeint_ops, sizeof(long), 0, 1);
+  Nativeint_val(res) = i;
+  return res;
+}
+
+value nativeint_neg(value v)        /* ML */
+{ return copy_nativeint(- Nativeint_val(v)); }
+
+value nativeint_add(value v1, value v2)  /* ML */
+{ return copy_nativeint(Nativeint_val(v1) + Nativeint_val(v2)); }
+
+value nativeint_sub(value v1, value v2)  /* ML */
+{ return copy_nativeint(Nativeint_val(v1) - Nativeint_val(v2)); }
+
+value nativeint_mul(value v1, value v2)  /* ML */
+{ return copy_nativeint(Nativeint_val(v1) * Nativeint_val(v2)); }
+
+value nativeint_div(value v1, value v2)  /* ML */
+{
+  long divisor = Nativeint_val(v2);
+  if (divisor == 0) raise_zero_divide();
+  return copy_nativeint(Nativeint_val(v1) / divisor);
+}
+
+value nativeint_mod(value v1, value v2)  /* ML */
+{
+  long divisor = Nativeint_val(v2);
+  if (divisor == 0) raise_zero_divide();
+  return copy_nativeint(Nativeint_val(v1) % divisor);
+}
+
+value nativeint_and(value v1, value v2)  /* ML */
+{ return copy_nativeint(Nativeint_val(v1) & Nativeint_val(v2)); }
+
+value nativeint_or(value v1, value v2)  /* ML */
+{ return copy_nativeint(Nativeint_val(v1) | Nativeint_val(v2)); }
+
+value nativeint_xor(value v1, value v2)  /* ML */
+{ return copy_nativeint(Nativeint_val(v1) ^ Nativeint_val(v2)); }
+
+value nativeint_shift_left(value v1, value v2)  /* ML */
+{ return copy_nativeint(Nativeint_val(v1) << Int_val(v2)); }
+
+value nativeint_shift_right(value v1, value v2)  /* ML */
+{ return copy_nativeint(Nativeint_val(v1) >> Int_val(v2)); }
+
+value nativeint_shift_right_unsigned(value v1, value v2)  /* ML */
+{ return copy_nativeint((uint32)Nativeint_val(v1) >> Int_val(v2)); }
+
+value nativeint_of_int(value v) /* ML */
+{ return copy_nativeint(Long_val(v)); }
+
+value nativeint_to_int(value v) /* ML */
+{ return Val_long(Nativeint_val(v)); }
+
+value nativeint_format(value fmt, value arg)      /* ML */
+{
+  char format_string[32], default_format_buffer[32];
+  char * buffer;
+  value res;
+
+  buffer = parse_format(fmt, "l", format_string, default_format_buffer);
+  sprintf(buffer, format_string, (long) Nativeint_val(arg));
+  res = copy_string(buffer);
+  if (buffer != default_format_buffer) stat_free(buffer);
+  return res;
+}
+
+value nativeint_of_string(value s)          /* ML */
+{
+  return copy_nativeint(parse_long(String_val(s)));
+}
+
+

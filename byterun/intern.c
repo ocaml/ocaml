@@ -590,3 +590,9 @@ void deserialize_block_8(void * data, long len)
   intern_src += len * 8;
 #endif
 }
+
+void deserialize_error(char * msg)
+{
+  intern_cleanup();
+  failwith(msg);
+}

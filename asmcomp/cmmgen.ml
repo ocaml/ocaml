@@ -51,7 +51,8 @@ let float_tag = Cconst_int 253
 let floatarray_tag = Cconst_int 254
 
 let block_header tag sz =
-  Nativeint.add (Nativeint.shift (Nativeint.from sz) 10) (Nativeint.from tag)
+  Nativeint.add (Nativeint.shift_left (Nativeint.of_int sz) 10)
+                (Nativeint.of_int tag)
 let closure_header sz = block_header 250 sz
 let infix_header ofs = block_header 249 ofs
 let float_header = block_header 253 (size_float / size_addr)
@@ -72,8 +73,9 @@ let min_repr_int = min_int asr 1
 let int_const n =
   if n <= max_repr_int & n >= min_repr_int
   then Cconst_int((n lsl 1) + 1)
-  else Cconst_natint(Nativeint.add (Nativeint.shift (Nativeint.from n) 1)
-                                   (Nativeint.from 1))
+  else Cconst_natint(Nativeint.add
+                       (Nativeint.shift_left (Nativeint.of_int n) 1)
+                       Nativeint.one)
 
 let add_const c n =
   if n = 0 then c else Cop(Caddi, [c; Cconst_int n])
@@ -963,11 +965,11 @@ and emit_constant_fields fields cont =
 and emit_constant_field field cont =
   match field with
     Const_base(Const_int n) ->
-      (Cint(Nativeint.add (Nativeint.shift (Nativeint.from n) 1)
-                          (Nativeint.from 1)),
+      (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 
+                          Nativeint.one),
        cont)
   | Const_base(Const_char c) ->
-      (Cint(Nativeint.from(((Char.code c) lsl 1) + 1)), cont)
+      (Cint(Nativeint.of_int(((Char.code c) lsl 1) + 1)), cont)
   | Const_base(Const_float s) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
@@ -978,7 +980,7 @@ and emit_constant_field field cont =
        Cint(string_header (String.length s)) :: Cdefine_label lbl :: 
        emit_string_constant s cont)
   | Const_pointer n ->
-      (Cint(Nativeint.from((n lsl 1) + 1)), cont)
+      (Cint(Nativeint.of_int((n lsl 1) + 1)), cont)
   | Const_block(tag, fields) ->
       let lbl = new_const_label() in
       let (emit_fields, cont1) = emit_constant_fields fields cont in
@@ -1007,23 +1009,23 @@ let emit_constant_closure symb fundecls cont =
           if arity = 1 then
             Cint(infix_header pos) ::
             Csymbol_address label ::
-            Cint(Nativeint.from 3) ::
+            Cint(Nativeint.of_int 3) ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
             Csymbol_address(curry_function arity) ::
-            Cint(Nativeint.from (arity lsl 1 + 1)) ::
+            Cint(Nativeint.of_int (arity lsl 1 + 1)) ::
             Csymbol_address label ::
             emit_others (pos + 4) rem in
       Cint(closure_header (fundecls_size fundecls)) ::
       Cdefine_symbol symb ::
       if arity = 1 then
         Csymbol_address label ::
-        Cint(Nativeint.from 3) ::
+        Cint(Nativeint.of_int 3) ::
         emit_others 3 remainder
       else
         Csymbol_address(curry_function arity) ::
-        Cint(Nativeint.from (arity lsl 1 + 1)) ::
+        Cint(Nativeint.of_int (arity lsl 1 + 1)) ::
         Csymbol_address label ::
         emit_others 4 remainder
 
@@ -1193,7 +1195,7 @@ let entry_point namelist =
 
 (* Generate the table of globals *)
 
-let cint_zero = Cint(Nativeint.from 0)
+let cint_zero = Cint(Nativeint.zero)
 
 let global_table namelist =
   Cdata(Cdefine_symbol "caml_globals" ::

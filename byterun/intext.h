@@ -112,6 +112,7 @@ extern void deserialize_block_1(void * data, long len);
 extern void deserialize_block_2(void * data, long len);
 extern void deserialize_block_4(void * data, long len);
 extern void deserialize_block_8(void * data, long len);
+extern void deserialize_error(char * msg);
 
 /* Auxiliary stuff for sending code pointers */
 unsigned char * code_checksum (void);
