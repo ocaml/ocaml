@@ -130,14 +130,17 @@ let call_symbol s =
 
 (* An external symbol is code if either it is branched to, or
    it does not start with an uppercase letter (for calls to
-   runtime functions).  We need to special-case "caml_globals_inited"
-   as a data symbol, though. *)
+   runtime functions).  We need to special-case a few data symbols
+   that start with a lower case. *)
+
+let data_imports =
+  ["caml_globals_inited"; "nativeint_ops"; "int32_ops"; "int64_ops"]
 
 let emit_import s =
   if not(StringSet.mem s !defined_symbols) then begin
     `	.import	{emit_symbol s}`;
-    if (StringSet.mem s !called_symbols || s.[0] < 'A' or s.[0] > 'Z')
-    && s <> "caml_globals_inited"
+    if (StringSet.mem s !called_symbols || s.[0] < 'A' || s.[0] > 'Z')
+    && not (List.mem s data_imports)
     then `, code\n`
     else `, data\n`
   end
