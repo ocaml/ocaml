@@ -737,14 +737,14 @@ let unification_error unif tr txt1 txt2 =
         Tfield _, Tvar | Tvar, Tfield _ ->
           print_cut ();
           print_string "Self type cannot escape its class"
-      | Tconstr (p, _, _), Tvar when unif ->
+      | Tconstr (p, _, _), Tvar when unif && t4.level < Path.binding_time p ->
           print_cut ();
           open_box 0;
           print_string "The type constructor"; print_break 1 2;
           path p;
           print_space (); print_string "would escape its scope";
           close_box()
-      | Tvar, Tconstr (p, _, _) when unif ->
+      | Tvar, Tconstr (p, _, _) when unif && t3.level < Path.binding_time p ->
           print_cut ();
           open_box 0;
           print_string "The type constructor"; print_break 1 2;
