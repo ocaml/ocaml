@@ -176,7 +176,7 @@ let simple_match_args p1 p2 =
 let rec normalize_pat q = match q.pat_desc with
   | Tpat_any | Tpat_constant _ -> q
   | Tpat_var _ -> make_pat Tpat_any q.pat_type q.pat_env
-  | Tpat_alias (p,_) -> normalize_pat q
+  | Tpat_alias (p,_) -> normalize_pat p
   | Tpat_tuple (args) ->
       make_pat (Tpat_tuple (omega_list args)) q.pat_type q.pat_env
   | Tpat_construct  (c,args) ->
