@@ -280,7 +280,7 @@ void caml_startup_code(code, code_size, data, argv)
     /* Load the code */
     start_code = code;
     /* Load the globals */
-    global_data = input_value_from_string((value)data, Val_int(0));
+    global_data = Field(input_value_from_string((value)data, Val_int(0)), 0);
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);
     /* Run the code */

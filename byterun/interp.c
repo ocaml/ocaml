@@ -14,6 +14,7 @@
 /* The bytecode interpreter */
 
 #include "alloc.h"
+#include "callback.h"
 #include "fail.h"
 #include "fix_code.h"
 #include "instrtrace.h"
@@ -42,8 +43,6 @@ extern int volatile have_to_interact;
         extra_args number of extra arguments provided by the caller
 
 sp is a local copy of the global variable extern_sp. */
-
-int callback_depth = 0;
 
 /* Instruction decoding */
 
@@ -878,50 +877,4 @@ value interprete(prog, prog_size)
     }
   }
 #endif
-}
-
-static opcode_t callback1_code[] = { ACC1, APPLY1, POP, 1, STOP };
-static opcode_t callback2_code[] = { ACC2, APPLY2, POP, 1, STOP };
-static opcode_t callback3_code[] = { ACC3, APPLY3, POP, 1, STOP };
-
-value callback(closure, arg)
-     value closure, arg;
-{
-  value res;
-  extern_sp -= 2;
-  extern_sp[0] = arg;
-  extern_sp[1] = closure;
-  callback_depth++;
-  res = interprete(callback1_code, sizeof(callback1_code));
-  callback_depth--;
-  return res;
-}
-
-value callback2(closure, arg1, arg2)
-     value closure, arg1, arg2;
-{
-  value res;
-  extern_sp -= 3;
-  extern_sp[0] = arg1;
-  extern_sp[1] = arg2;
-  extern_sp[2] = closure;
-  callback_depth++;
-  res = interprete(callback2_code, sizeof(callback2_code));
-  callback_depth--;
-  return res;
-}
-
-value callback3(closure, arg1, arg2, arg3)
-     value closure, arg1, arg2, arg3;
-{
-  value res;
-  extern_sp -= 4;
-  extern_sp[0] = arg1;
-  extern_sp[1] = arg2;
-  extern_sp[2] = arg3;
-  extern_sp[3] = closure;
-  callback_depth++;
-  res = interprete(callback3_code, sizeof(callback3_code));
-  callback_depth--;
-  return res;
 }

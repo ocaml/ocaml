@@ -13,6 +13,7 @@
 
 #include <signal.h>
 #include "alloc.h"
+#include "callback.h"
 #include "config.h"
 #include "fail.h"
 #include "memory.h"
