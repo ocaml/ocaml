@@ -1,6 +1,0 @@
-multdef.cmo: multdef.cmi 
-multdef.cmx: multdef.cmi 
-structinit2.cmo: structinit1.cmo 
-structinit2.cmx: structinit1.cmx 
-usemultdef.cmo: multdef.cmi 
-usemultdef.cmx: multdef.cmx 
