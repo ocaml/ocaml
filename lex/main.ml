@@ -18,6 +18,7 @@ open Syntax
 open Lexgen
 
 let ml_automata = ref false
+let quiet_mode = ref false
 let source_name = ref None
 let output_name = ref None
 
@@ -26,8 +27,9 @@ let usage = "usage: ocamlex [options] sourcefile"
 let specs =
   ["-ml", Arg.Set ml_automata,
     " Output code that does not use the Lexing module built-in automata interpreter";
-    "-o", Arg.String (fun x -> source_name := Some x),
+   "-o", Arg.String (fun x -> source_name := Some x),
     " <file>  Set output file name to <file>";
+   "-q", Arg.Set Common.quiet_mode, " Do not display informational messages";
   ] 
 
 let _ =

@@ -108,12 +108,13 @@ let output_entry sourcefile ic oc oci e =
 exception Table_overflow
 
 let output_lexdef sourcefile ic oc oci header tables entry_points trailer =
-  Printf.printf "%d states, %d transitions, table size %d bytes\n"
-    (Array.length tables.tbl_base)
-    (Array.length tables.tbl_trans)
-    (2 * (Array.length tables.tbl_base + Array.length tables.tbl_backtrk +
-          Array.length tables.tbl_default + Array.length tables.tbl_trans +
-          Array.length tables.tbl_check));
+  if not !Common.quiet_mode then
+    Printf.printf "%d states, %d transitions, table size %d bytes\n"
+      (Array.length tables.tbl_base)
+      (Array.length tables.tbl_trans)
+      (2 * (Array.length tables.tbl_base + Array.length tables.tbl_backtrk +
+            Array.length tables.tbl_default + Array.length tables.tbl_trans +
+            Array.length tables.tbl_check));
   let size_groups =
     (2 * (Array.length tables.tbl_base_code +
           Array.length tables.tbl_backtrk_code +
@@ -121,7 +122,7 @@ let output_lexdef sourcefile ic oc oci header tables entry_points trailer =
           Array.length tables.tbl_trans_code +
           Array.length tables.tbl_check_code) +
     Array.length tables.tbl_code) in
-  if  size_groups > 0 then
+  if size_groups > 0 && not !Common.quiet_mode then
     Printf.printf "%d additional bytes used for bindings\n" size_groups ;
   flush stdout;
   if Array.length tables.tbl_trans > 0x8000 then raise Table_overflow;

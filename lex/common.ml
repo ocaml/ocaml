@@ -149,3 +149,5 @@ let output_env oc env =
 let output_args oc args =
   List.iter (fun x -> (output_string oc x; output_char oc ' ')) args
 
+(* quiet flag *)
+let quiet_mode = ref false;;
