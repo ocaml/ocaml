@@ -99,22 +99,22 @@ struct caml__roots_block {
   value *tables [5];
 };
 
-extern struct caml__roots_block *local_roots_new;  /* defined in roots.h */
+extern struct caml__roots_block *local_roots;  /* defined in roots.h */
 
 #define Begin_root Begin_roots1
 
 #define Begin_roots1(r0) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = local_roots_new; \
-  local_roots_new = &caml__roots_block; \
+  caml__roots_block.next = local_roots; \
+  local_roots = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = &(r0);
 
 #define Begin_roots2(r0, r1) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = local_roots_new; \
-  local_roots_new = &caml__roots_block; \
+  caml__roots_block.next = local_roots; \
+  local_roots = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 2; \
   caml__roots_block.tables[0] = &(r0); \
@@ -122,8 +122,8 @@ extern struct caml__roots_block *local_roots_new;  /* defined in roots.h */
 
 #define Begin_roots3(r0, r1, r2) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = local_roots_new; \
-  local_roots_new = &caml__roots_block; \
+  caml__roots_block.next = local_roots; \
+  local_roots = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 3; \
   caml__roots_block.tables[0] = &(r0); \
@@ -132,8 +132,8 @@ extern struct caml__roots_block *local_roots_new;  /* defined in roots.h */
 
 #define Begin_roots4(r0, r1, r2, r3) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = local_roots_new; \
-  local_roots_new = &caml__roots_block; \
+  caml__roots_block.next = local_roots; \
+  local_roots = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 4; \
   caml__roots_block.tables[0] = &(r0); \
@@ -143,8 +143,8 @@ extern struct caml__roots_block *local_roots_new;  /* defined in roots.h */
 
 #define Begin_roots5(r0, r1, r2, r3, r4) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = local_roots_new; \
-  local_roots_new = &caml__roots_block; \
+  caml__roots_block.next = local_roots; \
+  local_roots = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 5; \
   caml__roots_block.tables[0] = &(r0); \
@@ -155,13 +155,13 @@ extern struct caml__roots_block *local_roots_new;  /* defined in roots.h */
 
 #define Begin_roots_block(table, size) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = local_roots_new; \
-  local_roots_new = &caml__roots_block; \
+  caml__roots_block.next = local_roots; \
+  local_roots = &caml__roots_block; \
   caml__roots_block.nitems = (size); \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = (table);
 
-#define End_roots() local_roots_new = caml__roots_block.next; }
+#define End_roots() local_roots = caml__roots_block.next; }
 
 
 /*
@@ -181,16 +181,17 @@ extern struct caml__roots_block *local_roots_new;  /* defined in roots.h */
  * Just before the function return, add a call to [Pop_roots].
  */
 
-extern value *local_roots;
-
-#define Push_roots(name, size)                                              \
-   value name [(size) + 2];                                                 \
-   { long _; for (_ = 0; _ < (size); name [_++] = Val_long (0)); }          \
-   name [(size)] = (value) (size);                                          \
-   name [(size) + 1] = (value) local_roots;                                 \
-   local_roots = &(name [(size)]);
-
-#define Pop_roots() {local_roots = (value *) local_roots [1]; }
+#define Push_roots(name, size) \
+  value name [(size)]; \
+  struct caml__roots_block caml__roots_block; \
+  { long _; for (_ = 0; _ < (size); name [_++] = Val_unit; } \
+  caml__roots_block.next = local_roots; \
+  local_roots = &caml__roots_block; \
+  caml__roots_block.nitems = (size); \
+  caml__roots_block.ntables = 1; \
+  caml__roots_block.tables[0] = name;
+  
+#define Pop_roots() local_roots = caml__roots_block.next;
 
 /* [register_global_root] registers a global C variable as a memory root
    for the duration of the program, or until [remove_global_root] is

@@ -60,11 +60,7 @@ void mlraise(v)
 #endif
   while (local_roots != NULL && 
          (char *) local_roots PUSHED_AFTER caml_exception_pointer) {
-    local_roots = (value *) local_roots[1];
-  }
-  while (local_roots_new != NULL && 
-         (char *) local_roots_new PUSHED_AFTER caml_exception_pointer) {
-    local_roots_new = local_roots_new->next;
+    local_roots = local_roots->next;
   }
 #undef PUSHED_AFTER
 

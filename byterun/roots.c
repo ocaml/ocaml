@@ -21,8 +21,7 @@
 #include "roots.h"
 #include "stacks.h"
 
-value * local_roots = NULL;
-struct caml__roots_block *local_roots_new = NULL;
+struct caml__roots_block *local_roots = NULL;
 
 struct global_root {
   value * root;
@@ -76,18 +75,12 @@ void oldify_local_roots ()
     oldify (*sp, sp);
   }
   /* Local C roots */
-  for (lr = local_roots_new; lr != NULL; lr = lr->next) {
+  for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
         oldify (*sp, sp);
       }
-    }
-  }
-  /* Local C roots, old style */
-  for (block = local_roots; block != NULL; block = (value *) block [1]){
-    for (sp = block - (long) block [0]; sp < block; sp++){
-      oldify (*sp, sp);
     }
   }
   /* Global C roots */
@@ -122,18 +115,12 @@ void do_roots (f)
     f (*sp, sp);
   }
   /* Local C roots */
-  for (lr = local_roots_new; lr != NULL; lr = lr->next) {
+  for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
         f (*sp, sp);
       }
-    }
-  }
-  /* Local C roots, old style */
-  for (block = local_roots; block != NULL; block = (value *) block [1]){
-    for (sp = block - (long) block [0]; sp < block; sp++){
-      f (*sp, sp);
     }
   }
   /* Global C roots */

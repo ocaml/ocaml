@@ -23,8 +23,7 @@
 
 /* Roots registered from C functions */
 
-value * local_roots = NULL;
-struct caml__roots_block *local_roots_new = NULL;
+struct caml__roots_block *local_roots = NULL;
 
 struct global_root {
   value * root;
@@ -205,18 +204,12 @@ void oldify_local_roots ()
     }
   }
   /* Local C roots */
-  for (lr = local_roots_new; lr != NULL; lr = lr->next) {
+  for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
         oldify (*root, root);
       }
-    }
-  }
-  /* Local C roots, old style */
-  for (block = local_roots; block != NULL; block = (value *) block [1]){
-    for (root = block - (long) block [0]; root < block; root++){
-      oldify (*root, root);
     }
   }
   /* Global C roots */
@@ -296,18 +289,12 @@ void do_roots (f)
     }
   }
   /* Local C roots */
-  for (lr = local_roots_new; lr != NULL; lr = lr->next) {
+  for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
         f (*root, root);
       }
-    }
-  }
-  /* Local C roots, old style */
-  for (block = local_roots; block != NULL; block = (value *) block [1]){
-    for (root = block - (long) block [0]; root < block; root++){
-      f (*root, root);
     }
   }
   /* Global C roots */
