@@ -49,5 +49,5 @@ val pressure_variants: Env.t -> pattern list -> unit
 val check_partial: Location.t -> (pattern * expression) list -> partial
 val check_unused: Env.t -> (pattern * expression) list -> unit
 
-
+val useful: pattern list -> bool list
 

@@ -69,37 +69,44 @@ let collect cls =
 
 (*************************************************************************)
 (*  Build dispatcher on one channel
-    Ident.t -> pattern Agraph.t -> pattern Agraph.node * Ident.t Hashtbl.t 
-    -> partial -> dispatcher
+    Ident.t -> pattern Agraph.t -> partial -> 
+    (dispatcher *  (pattern Agraph.node * (Ident.t option)) list 
 
-make_disp id_ch2be_dispatched dag tbl_node2newchid is_partial
+make_disp id_ch2be_dispatched dag is_partial
 
 **************************************************************************)
 
-let make_disp id dag tbl_node2id par =
+let make_disp id dag par =
+  let fresh_id = fun () -> Ident.create (Ident.name id) in
+  (*tbl_node2id: hash table from node in dag to new channel id*)
   (*ns_sorted: nodes in dag sorted in a queue*)
-  let ns_sorted = 
+  let sorted_ns = 
     try
       Agraph.top_sort dag
     with Agraph.Cyclic -> assert false in
+  let sorted_pats = List.fold_left 
+      (fun pats node -> pats @ [Agraph.info dag node])
+      [] sorted_ns in
+  let usage_pats = Parmatch.useful sorted_pats in
+  let newid_opts = List.map 
+      (fun b -> if b then Some (fresh_id ()) else None)
+      usage_pats in
+  let tbl_node2id = List.combine sorted_ns newid_opts in
+  let rules = List.fold_left2 
+      (fun rls pat id_opt ->
+	match id_opt with
+	| None -> rls
+	| Some newid -> rls @ [(pat,newid)])
+      [] sorted_pats newid_opts in
   let z = Ident.create "_z" in
-  (*build the (pattern, newid) list from a queue of nodes*)
-  let rec build_rules q =
-    if Queue.is_empty q
-    then []
-    else
-      let n = Queue.take q in
-      let pat = Agraph.info dag n in
-      let newid = Hashtbl.find tbl_node2id n in
-      (pat,newid) :: (build_rules q) in
-  let rules = build_rules ns_sorted in
-  (id, z, rules, par)
+  ((id, z, rules, par), tbl_node2id)
 
 
 (*************************************************************************)
 (*  Rewrite reaction rules from match_clause format to match_clause format
+
     Ident.t -> match_clause Array.t -> 
-    (pattern Agraph.t * (pattern Agraph.node * Ident.t) Hashtbl.t) optional
+    (pattern Agraph.t * (pattern Agraph.node * Ident.t option) list) option
     -> match_clause Array.t 
     
 rewrtite id_ch2be_rewrite match_clauses (None | Some (dag, tbl_node2id))
@@ -171,14 +178,19 @@ let rewrite id mcls is_weighty =
 		  let rec build_or nds =
 		    match nds with
 		    | [nd] ->
-			[{jpat with jpat_desc = 
-                          ({jid with jident_desc = (Hashtbl.find tbl_node2id nd)}, 
-			   xi_pat)}]
+			(match List.assoc nd tbl_node2id with
+			| None -> []
+			| Some ch_id -> 
+			    [{jpat with jpat_desc = 
+                               ({jid with jident_desc = ch_id}, 
+				xi_pat)}])
 		    | hd::tl ->
-			{jpat with jpat_desc = 
-                         ({jid with jident_desc = (Hashtbl.find tbl_node2id hd)}, 
-			  xi_pat)} ::
-			build_or tl
+			(match List.assoc hd tbl_node2id with
+			| None -> []
+			| Some ch_id -> 
+			    [{jpat with jpat_desc = 
+                               ({jid with jident_desc = ch_id}, 
+				xi_pat)}]) @ build_or tl
 		    | [] -> assert false in
 		  build_or (pat_node::preds) in
 		Reaction (new_or_jpats::remains, ((xi, pat)::id2pat_ls, ex)) in
@@ -187,18 +199,14 @@ let rewrite id mcls is_weighty =
     
 (*******************************************************************************)
 (*      Build the dag from a pairwise distinct list of patterns
-        Ident.t -> pattern list -> 
-	pattern Agraph.t * (pattern Agraph.node * Ident.t) Hashtbl.t
+        pattern list -> pattern Agraph.t 
 
-build_dag id_ch2be_builtdag pat_args 
+	build_dag pat_args 
 
 ********************************************************************************)
 
-let build_dag id pats =
+let build_dag pats =
   let dag = Agraph.create null_pat in
-  let fresh_id = fun () -> Ident.create (Ident.name id) in
-  (*tbl_node2id: hash table from node in dag to new channel id*)
-  let tbl_node2id = Hashtbl.create 10 in
   let rec do_build_dag pats =
     (match pats with
     | [] -> ()
@@ -206,8 +214,6 @@ let build_dag id pats =
 	do_build_dag pats';
 	let oldnodes = Agraph.nodes dag in
 	let newnode = Agraph.new_node dag pat in
-	let newid = fresh_id () in
-	Hashtbl.add tbl_node2id newnode newid;
 	let rec draw_edge newn oldns =
 	  match oldns with
 	  | [] -> ()
@@ -219,7 +225,7 @@ let build_dag id pats =
 	      draw_edge newn tl_ns in
 	draw_edge newnode oldnodes) in
   do_build_dag pats;
-  (dag, tbl_node2id)
+  dag
       
 
 (********************************************************************************)
@@ -257,7 +263,7 @@ let y mauto id args =
 	f pat trimed_pats' in
   let pi'= trim_eq_pat args in
   let patch = List.map (fun pat -> (pat,null_ex)) pi' in
-  let par = Parmatch.check_partial mauto.jauto_loc patch in 
+  let par = Parmatch.check_partial mauto.jauto_loc patch in
   match pi' with
   | [] -> assert false         (*every channel takes a pat arg*)
   | [pat] ->
@@ -266,7 +272,10 @@ let y mauto id args =
 	  let new_mcls = rewrite id mauto.jauto_desc None in
 	  {mauto with jauto_desc = new_mcls; }
       |	Partial ->
-	  let (dag, tbl_node2id) = build_dag id pi' in
+	  let dag = build_dag pi' in
+	  let (disp,tbl_node2id) = make_disp id dag par in
+	  let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
+	  let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
 	  let old_jc = List.assoc id mauto.jauto_names in
 	  let nchans = ref mauto.jauto_nchans in
 	  let new_jauto_names =
@@ -274,11 +283,12 @@ let y mauto id args =
 	      (fun newid ->
 		nchans := (!nchans)+1;
 		(newid, {old_jc with jchannel_id = (!nchans) - 1}))
-	      (Hashtbl.fold 
-		 (fun node id ids -> id::ids) tbl_node2id []) in
-	  let disp = make_disp id dag tbl_node2id par in
-	  let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
-	  let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
+	      (List.fold_left 
+		 (fun ids (node,id_opt) ->
+		   match id_opt with
+		   | None -> ids
+		   | Some newid -> newid::ids) 
+		 [] tbl_node2id) in
 	  {mauto with jauto_desc = new_mcls; 
              jauto_names = mauto.jauto_names @ new_jauto_names;
              jauto_nchans = !nchans}
@@ -303,7 +313,10 @@ let y mauto id args =
 	    (pat::lubs') @ lubs pat lubs' in
       let gamma = compute_lubs pi' in
       let gamma' = trim_eq_pat gamma in
-      let (dag, tbl_node2id) = build_dag id gamma' in
+      let dag = build_dag gamma' in
+      let (disp, tbl_node2id) = make_disp id dag par in
+      let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
+      let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
       let old_jc = List.assoc id mauto.jauto_names in
       let nchans = ref mauto.jauto_nchans in
       let new_jauto_names =
@@ -311,15 +324,16 @@ let y mauto id args =
 	  (fun newid ->
 	    nchans := (!nchans)+1;
 	    (newid, {old_jc with jchannel_id = (!nchans) - 1}))
-	  (Hashtbl.fold 
-	     (fun node id ids -> id::ids) tbl_node2id []) in
-      let disp = make_disp id dag tbl_node2id par in
-      let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
-      let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
+	  (List.fold_left 
+	     (fun ids (node,id_opt) ->
+	       match id_opt with
+	       | None -> ids
+	       | Some newid -> newid::ids) 
+	     [] tbl_node2id) in
       {mauto with jauto_desc = new_mcls; 
-         jauto_names = mauto.jauto_names @ new_jauto_names;
-         jauto_nchans = !nchans}
-
+        jauto_names = mauto.jauto_names @ new_jauto_names;
+        jauto_nchans = !nchans}
+	
 
 (*****************************************************************************)  
 (*

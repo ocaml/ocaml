@@ -68,5 +68,5 @@ val dump : out_channel -> 'a t -> string -> unit
 val dump_info : out_channel -> 'a t -> string -> (out_channel -> 'a -> unit) -> unit
 
 exception Cyclic
-val top_sort : 'a t -> ('a node) Queue.t
+val top_sort : 'a t -> ('a node) list
 (* Topological sort, raises exception Cyclic when input graph has cycle*)

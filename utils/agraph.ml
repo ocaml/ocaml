@@ -187,4 +187,5 @@ let top_sort t =
 	  )
   in
   sort ();
-  sorted
+  Queue.fold 
+    (fun n_ls node -> n_ls @ [node]) [] sorted
