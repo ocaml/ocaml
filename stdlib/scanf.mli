@@ -190,7 +190,7 @@ val bscanf :
    just before the next matching [c] (which is skipped). If no [c]
    character is encountered, the string token spreads as much as
    possible. For instance, ["%s@\t"] reads a string up to the next
-   tabulation character. If a scanning indication [\@c] does not
+   tabulation character. If a scanning indication [@c] does not
    follow a string conversion, it is ignored and treated as a plain
    [c] character.
 
