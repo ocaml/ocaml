@@ -1,4 +1,4 @@
 val bind :
-  tag: tagOrId -> events: event list ->
+  canvas: canvas widget -> events: event list ->
   ?extend: bool -> ?breakable: bool -> ?fields: eventField list ->
-  ?action: (eventInfo -> unit) -> canvas widget -> unit 
+  ?action: (eventInfo -> unit) -> tagOrId -> unit 

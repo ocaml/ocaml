@@ -272,7 +272,7 @@ subtype option(arc) {
    Start ["-start"; float]
    Stipple ["-stipple"; Bitmap]
    ArcStyle ["-style"; ArcStyle]
-   Tags ["-tags"; [TagOrId list]]
+   Tags ["-tags"; [string list]]
    Width
   }
 
@@ -399,10 +399,10 @@ widget canvas {
    option YScrollIncrement ["-yscrollincrement"; int]
 
 
-   function () addtag [widget(canvas); "addtag"; tag: TagOrId; specs: SearchSpec list]     # Tag only
+   function () addtag [widget(canvas); "addtag"; tag: string; specs: SearchSpec list]     # Tag only
    # bbox not fully supported. should be builtin because of ambiguous result
    # will raise protocol__TkError if no items match TagOrId
-   function (int,int,int,int) bbox [widget(canvas); "bbox"; tags: TagOrId list]
+   function (int,int,int,int) bbox [canvas: widget(canvas); "bbox"; TagOrId list]
    external bind "builtin/canvas_bind"
    function (float) canvasx [widget(canvas); "canvasx"; x:int; ?spacing:[int]]
 #   function (float) canvasx [widget(canvas); "canvasx"; x:int]
@@ -413,43 +413,38 @@ widget canvas {
    function () configure [widget(canvas); "configure"; option(canvas) list]
    function (string) configure_get [widget(canvas); "configure"]
    # TODO: check result
-   function (float list) coords_get [widget(canvas); "coords"; tag: TagOrId]
-   function () coords_set [widget(canvas); "coords"; tag: TagOrId; coords: int list]
+   function (float list) coords_get [canvas: widget(canvas); "coords"; TagOrId]
+   function () coords_set [canvas: widget(canvas); "coords"; TagOrId; coords: int list]
    # create variations (see below)
-   function () dchars [widget(canvas); "dchars"; tag: TagOrId; first: Index(canvas); last: Index(canvas)]
-   function () delete [widget(canvas); "delete"; tags: TagOrId list]
-   function () dtag [widget(canvas); "dtag"; tag: TagOrId; tagtodelete: TagOrId]     # 2d arg is tag only 
+   function () dchars [canvas: widget(canvas); "dchars"; TagOrId; first: Index(canvas); last: Index(canvas)]
+   function () delete [canvas: widget(canvas); "delete"; TagOrId list]
+   function () dtag [canvas: widget(canvas); "dtag"; TagOrId; tag: string]
    function (TagOrId list) find [widget(canvas); "find"; specs: SearchSpec list]
    # focus variations
    function () focus_reset [widget(canvas); "focus"; ""]
    function (TagOrId) focus_get [widget(canvas); "focus"]
-   function () focus [widget(canvas); "focus"; tag: TagOrId]
-   function (TagOrId list) gettags [widget(canvas); "gettags"; tag: TagOrId]
-   function () icursor [widget(canvas); "icursor"; tag: TagOrId; index: Index(canvas)]
-   function (int) index [widget(canvas); "index"; tag: TagOrId; index: Index(canvas)]
-   function () insert [widget(canvas); "insert"; tag: TagOrId; before: Index(canvas); text: string]
-   function () lower [widget(canvas); "lower"; tag: TagOrId; ?below: [TagOrId]]
-   # configure variations, see below
-#   function () lower_below [widget(canvas); "lower"; tag: TagOrId; below: TagOrId]
-#   function () lower_bot   [widget(canvas); "lower"; tag: TagOrId]
-   function () move [widget(canvas); "move"; tag: TagOrId; x: int; y: int]
+   function () focus [canvas: widget(canvas); "focus"; TagOrId]
+   function (string list) gettags [canvas: widget(canvas); "gettags"; TagOrId]
+   function () icursor [canvas: widget(canvas); "icursor"; TagOrId; index: Index(canvas)]
+   function (int) index [canvas: widget(canvas); "index"; TagOrId; index: Index(canvas)]
+   function () insert [canvas: widget(canvas); "insert"; TagOrId; before: Index(canvas); text: string]
+   function () lower [canvas: widget(canvas); "lower"; TagOrId; ?below: [TagOrId]]
+   function () move [canvas: widget(canvas); "move"; TagOrId; x: int; y: int]
    unsafe function (string) postscript [widget(canvas); "postscript"; option(postscript) list]
    # We use raise... with Module name
-   function () raise [widget(canvas); "raise"; tag: TagOrId; ?above:[TagOrId]]
-#   function () raise_above [widget(canvas); "raise"; tag: TagOrId; above: TagOrId]
-#   function () raise_top [widget(canvas); "raise"; tag: TagOrId]
-   function () scale [widget(canvas); "scale"; tag: TagOrId; xorigin: int; yorigin: int; xscale: float; yscale: float]
+   function () raise [canvas: widget(canvas); "raise"; TagOrId; ?above:[TagOrId]]
+   function () scale [canvas: widget(canvas); "scale"; TagOrId; xorigin: int; yorigin: int; xscale: float; yscale: float]
    # For scan, use x:int and y:int since common usage is with mouse coordinates
    function () scan_mark [widget(canvas); "scan"; "mark"; x: int; y: int]
    function () scan_dragto [widget(canvas); "scan"; "dragto"; x: int; y: int]
    # select variations
-   function () select_adjust [widget(canvas); "select"; "adjust"; tag: TagOrId; index: Index(canvas)]
+   function () select_adjust [canvas: widget(canvas); "select"; "adjust"; TagOrId; index: Index(canvas)]
    function () select_clear [widget(canvas); "select"; "clear"]
-   function () select_from [widget(canvas); "select"; "from"; tag: TagOrId; index: Index(canvas)]
+   function () select_from [canvas: widget(canvas); "select"; "from"; TagOrId; index: Index(canvas)]
    function (TagOrId) select_item [widget(canvas); "select"; "item"]
-   function () select_to  [widget(canvas); "select"; "to"; tag: TagOrId; index: Index(canvas)]
+   function () select_to  [canvas: widget(canvas); "select"; "to"; TagOrId; index: Index(canvas)]
 
-   function (CanvasItem) typeof [widget(canvas); "type"; tag: TagOrId]
+   function (CanvasItem) typeof [canvas: widget(canvas); "type"; TagOrId]
    function (float,float) xview_get [widget(canvas); "xview"]
    function (float,float) yview_get [widget(canvas); "yview"]
    function () xview [widget(canvas); "xview"; scroll: ScrollValue]
@@ -466,17 +461,17 @@ widget canvas {
    function (TagOrId) create_text [widget(canvas); "create"; "text"; x: int; y: int; option(canvastext) list]
    function (TagOrId) create_window [widget(canvas); "create"; "window"; x: int; y: int; option(window) list]
 
-   function (string) itemconfigure_get [widget(canvas); "itemconfigure"; tag: TagOrId]
+   function (string) itemconfigure_get [canvas: widget(canvas); "itemconfigure"; TagOrId]
 
-   function () configure_arc [widget(canvas); "itemconfigure"; tag: TagOrId; option(arc) list]
-   function () configure_bitmap [widget(canvas); "itemconfigure"; tag: TagOrId; option(bitmap) list]
-   function () configure_image [widget(canvas); "itemconfigure"; tag: TagOrId; option(image) list]
-   function () configure_line [widget(canvas); "itemconfigure"; tag: TagOrId; option(line) list]
-   function () configure_oval [widget(canvas); "itemconfigure"; tag: TagOrId; option(oval) list]
-   function () configure_polygon [widget(canvas); "itemconfigure"; tag: TagOrId; option(polygon) list]
-   function () configure_rectangle [widget(canvas); "itemconfigure"; tag: TagOrId; option(rectangle) list]
-   function () configure_text [widget(canvas); "itemconfigure"; tag: TagOrId; option(canvastext) list]
-   function () configure_window [widget(canvas); "itemconfigure"; tag: TagOrId; option(window) list]
+   function () configure_arc [canvas: widget(canvas); "itemconfigure"; TagOrId; option(arc) list]
+   function () configure_bitmap [canvas: widget(canvas); "itemconfigure"; TagOrId; option(bitmap) list]
+   function () configure_image [canvas: widget(canvas); "itemconfigure"; TagOrId; option(image) list]
+   function () configure_line [canvas: widget(canvas); "itemconfigure"; TagOrId; option(line) list]
+   function () configure_oval [canvas: widget(canvas); "itemconfigure"; TagOrId; option(oval) list]
+   function () configure_polygon [canvas: widget(canvas); "itemconfigure"; TagOrId; option(polygon) list]
+   function () configure_rectangle [canvas: widget(canvas); "itemconfigure"; TagOrId; option(rectangle) list]
+   function () configure_text [canvas: widget(canvas); "itemconfigure"; TagOrId; option(canvastext) list]
+   function () configure_window [canvas: widget(canvas); "itemconfigure"; TagOrId; option(window) list]
    }
 
 

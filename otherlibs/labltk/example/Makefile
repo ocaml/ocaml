@@ -1,6 +1,6 @@
 include ../support/Makefile.common
 
-COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/unix
+COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/unix -w s
 
 all: hello demo eyes calc clock tetris
 

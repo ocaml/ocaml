@@ -44,17 +44,17 @@ class calc () = object (calc)
 
   method set = Textvariable.set variable
   method get = Textvariable.get variable
-  method insert s = calc#set to:(calc#get ^ s)
+  method insert s = calc#set (calc#get ^ s)
   method get_float = float_of_string (calc#get)
 
   method command s =
     if s <> "" then match s.[0] with
       '0'..'9' ->
-        if displaying then (calc#set to:""; displaying <- false);
+        if displaying then (calc#set ""; displaying <- false);
         calc#insert s
     | '.' ->
         if displaying then
-          (calc#set to:"0."; displaying <- false)
+          (calc#set "0."; displaying <- false)
         else
           if not (mem_string elt:'.' calc#get) then calc#insert s
     | '+'|'-'|'*'|'/' as c ->
@@ -62,11 +62,11 @@ class calc () = object (calc)
         begin match op with
           None ->
             x <- calc#get_float;
-            op <- Some (List.assoc key:c ops)
+            op <- Some (List.assoc c ops)
         | Some f ->
             x <- f x (calc#get_float);
-            op <- Some (List.assoc key:c ops);
-            calc#set to:(string_of_float x)
+            op <- Some (List.assoc c ops);
+            calc#set (string_of_float x)
         end
     | '='|'\n'|'\r' ->
         displaying <- true;
@@ -75,7 +75,7 @@ class calc () = object (calc)
         | Some f ->
             x <- f x (calc#get_float);
             op <- None;
-            calc#set to:(string_of_float x)
+            calc#set (string_of_float x)
         end
     | 'q' -> closeTk (); exit 0
     | _ -> ()
@@ -99,16 +99,17 @@ class calculator :parent = object
 
   initializer
     let buttons =
-      Array.map fun:
-        (List.map fun:
+      Array.map f:
+        (List.map f:
            (fun text ->
              Button.create :text command:(fun () -> calc#command text) frame))
         m
     in
     Label.configure textvariable:variable label;
-    calc#set to:"0";
-    bind parent events:[`KeyPress] fields:[`Char]
-      action:(fun ev -> calc#command ev.ev_Char);
+    calc#set "0";
+    bind events:[`KeyPress] fields:[`Char]
+      action:(fun ev -> calc#command ev.ev_Char)
+      parent;
     for i = 0 to Array.length m - 1 do
       Grid.configure row:i buttons.(i)
     done;

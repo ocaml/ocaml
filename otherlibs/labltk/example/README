@@ -1,17 +1,17 @@
 $Id$
 
-Some examples for LablTk. They must be compiled with the -modern
-option, except for hello.ml and calc.ml.
+Some examples for LablTk.
+Only demo.ml and tetris.ml really need to be compiled with the -labels option.
 
 hello.ml        A very simple example of CamlTk
 hello.tcl       The same programme in Tcl/Tk
 
-demo.ml         A demonstration using many widget classes
+demo.ml         A demonstration using many widget classes  (use -labels)
 
 eyes.ml         A "bind" test
 
 calc.ml         A little calculator
 
-clock.ml        An analog clock
+clock.ml        An analog clock  (use unix.cma)
 
-tetris.ml       You NEED a game also. Edit it to set a background
+tetris.ml       You NEED a game also (use -labels)

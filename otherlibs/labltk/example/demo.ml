@@ -80,10 +80,10 @@ pack [bar] fill: `X;
     
     (* Radio buttons *)
     let tv = Textvariable.create () in
-    Textvariable.set tv to: "One";
+    Textvariable.set tv "One";
     let radf = Frame.create right in
     let rads = List.map
-        fun:(fun t -> Radiobutton.create radf text: t value: t variable: tv)
+        f:(fun t -> Radiobutton.create radf text: t value: t variable: tv)
         ["One"; "Two"; "Three"] in
     
     (* Scale *)
@@ -122,7 +122,7 @@ pack [bar] fill: `X;
   let defcol = `Color "#dfdfdf" in
   let selcol = `Color "#ffdfdf" in
   let buttons = 
-    List.map fun:(fun (w, t, c, a) ->
+    List.map f:(fun (w, t, c, a) ->
         let b = Button.create top2 text:t command:c in
         bind b events: [`Enter] action:(fun _ -> a selcol);
         bind b events: [`Leave] action:(fun _ -> a defcol);
@@ -147,7 +147,7 @@ pack [bar] fill: `X;
        (fun background -> Message.configure mes :background);
        coe radf, "Radiobox", (fun () -> ()),
        (fun background ->
-         List.iter rads fun:(fun b -> Radiobutton.configure b :background));
+         List.iter rads f:(fun b -> Radiobutton.configure b :background));
        coe sca, "Scale", (fun () -> ()),
        (fun background -> Scale.configure sca :background);
        coe tex, "Text", (fun () -> ()),
