@@ -21,15 +21,14 @@ native-code compiler currently runs on the following platforms:
 
     Intel/AMD Pentium processors: PCs under Linux, FreeBSD, NetBSD, 
       OpenBSD, Windows, NextStep, Solaris 2, BeOS.
-    PowerPC processors: PowerMacintosh under MacOS X and LinuxPPC,
-      IBM RS6000 and PowerPC workstations under AIX 4.3
+    PowerPC processors: PowerMacintosh under MacOS X and LinuxPPC.
     AMD64 (Opteron) processors: PCs under Linux.
     Alpha processors: Digital/Compaq/HP Alpha machines under
       Digital Unix/Compaq Tru64, Linux, NetBSD and OpenBSD.
     Sparc processors: Sun Sparc machines under Solaris 2, NetBSD, Linux
     Mips processors: SGI workstations and mainframes under IRIX 6
     Intel IA64 processors: HP stations under Linux
-    HP PA-RISC processors: HP 9000/700 under HPUX 10
+    HP PA-RISC processors: HP 9000/700 under HPUX 10 and Linux
     Strong ARM processors: Corel Netwinder under Linux
 
 Other operating systems for the processors above have not been tested,

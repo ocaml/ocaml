@@ -111,8 +111,8 @@ SHARPBANGSCRIPTS=true
 ### i386        Intel Pentium PCs under Linux, *BSD*, NextStep
 ### sparc       Sun Sparcstation under SunOS 4.1 or Solaris 2
 ### mips        SGI machines under IRIX
-### hppa        HP 9000/700 under HPUX
-### power       Mac OS X; IBM RS6000 and PowerPC workstations under AIX
+### hppa        HP 9000/700 under HPUX and Linux
+### power       Macintosh under Mac OS X and Linux
 ### ia64        Intel Itanium/IA64 under Linux
 ### arm         ARM under Linux
 ###
@@ -133,18 +133,9 @@ SHARPBANGSCRIPTS=true
 ### behavior of the code generator to the particular flavor used.
 ### Currently needed only if ARCH=power; leave MODEL=default for
 ### other architectures.
-### If ARCH=power: choose between
-###   MODEL=rs6000      The original IBM RS6000 workstations
-###                     (RIOS and RIOS2 processors)
-###   MODEL=ppc         The newer PowerPC processors
-###                     (Motorola/IBM PPC601, PPC603, PPC604, G3, G4, etc)
-### The Motorola PPC601 is compatible with both models, but the newer
-### PPCs will work only with MODEL=ppc, and the older IBM RS6000
-### workstations will work only with MODEL=rs6000.
-###
+### If ARCH=power: set MODEL=ppc
 ### For other architectures: leave MODEL=default
 ###
-#MODEL=rs6000
 #MODEL=ppc
 #MODEL=default
 

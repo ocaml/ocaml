@@ -577,8 +577,6 @@ case "$host" in
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
   hppa*-*-linux*)		arch=hppa; system=linux;;
-  rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
-  powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=bsd;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
@@ -608,10 +606,6 @@ case "$arch,$nativecc,$system,$host_type" in
   alpha,cc*,digital,*) nativecccompopts=-std1;;
   mips,cc*,irix,*)     nativecccompopts=-n32
                        nativecclinkopts="-n32 -Wl,-woff,84";;
-  power,gcc*,aix,*aix4.3*)
-                       nativecccompopts="$gcc_warnings -D_XOPEN_SOURCE=500";;
-  power,*,aix,*aix4.3*)
-                       nativecccompopts="-D_XOPEN_SOURCE=500";;
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
   *,*,rhapsody,*darwin6*)
@@ -643,8 +637,6 @@ case "$arch,$model,$system" in
   i386,*,solaris)   aspp='/usr/ccs/bin/as'; asppflags='-P -DSYS_$(SYSTEM)';;
   i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   hppa,*,*)         aspp="$cc"; asppflags='-traditional -c -DSYS_$(SYSTEM)';;
-  power,rs6000,aix) asflags='-u -m pwr -w'; asppflags="$asflags";;
-  power,ppc,aix)    asflags='-u -m ppc -w'; asppflags="$asflags";;
   power,*,elf)      aspp='gcc'; asppflags='-c';;
   power,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   power,*,rhapsody) ;;
