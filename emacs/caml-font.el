@@ -67,7 +67,7 @@
           "\\|in\\(herit\\|itializer\\)?\\|let"
           "\\|m\\(ethod\\|utable\\|odule\\)"
           "\\|of\\|p\\(arser\\|rivate\\)\\|rec\\|type"
-          "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
+          "\\|v\\(al\\|irtual\\)\\)\\>")
          'font-lock-type-face)
 ;blocking
    '("\\<\\(begin\\|end\\|object\\|s\\(ig\\|truct\\)\\)\\>"
