@@ -342,8 +342,10 @@ let emit_instr i =
           `	lda	$27, {emit_symbol s}\n`;
           liveregs i live_27;
           `{record_frame i.live}	bsr	caml_c_call\n`
+          (* caml_c_call preserves $gp *)
         end else begin
-          `	jsr	{emit_symbol s}\n`
+          `	jsr	{emit_symbol s}\n`;
+          `	ldgp	$gp, 0($26)\n`
         end
     | Lop(Istackoffset n) ->
         `	lda	$sp, {emit_int (-n)}($sp)\n`;
