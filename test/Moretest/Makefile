@@ -29,7 +29,7 @@ callback.out: callback.cmx callbackprim.o
 manyargs.byt: manyargs.cmo manyargsprim.o
 	$(CAMLC) -o manyargs.byt -custom manyargs.cmo manyargsprim.o
 manyargs.out: manyargs.cmx manyargsprim.o
-	$(CAMLOPT) -o manyargs.out manyargs.cmx manyargsprim.o
+	$(CAMLOPT) -inline 0 -o manyargs.out manyargs.cmx manyargsprim.o
 
 multdef.out: multdef.cmx usemultdef.cmx
 	$(CAMLOPT) -o multdef.out multdef.cmx usemultdef.cmx
@@ -128,6 +128,12 @@ regexp.opt: ../../otherlibs/str/str.cmxa regexp.ml
 
 md5.out: md5.ml
 	$(CAMLOPT) -unsafe -inline 100 -o md5.out md5.ml
+
+recmod.byt: recmod.cmo
+	$(CAMLC) -o recmod.byt recmod.cmo
+
+recmod.out: recmod.cmx
+	$(CAMLOPT) -o recmod.out recmod.cmx
 
 # Common rules
 
