@@ -101,6 +101,10 @@ let  rshift_num n {left=left ; right=right} =
 
 let ctx_rshift_num n ctx = List.map (rshift_num n) ctx
 
+(* Recombination of contexts (eg: (_,_)::p1::p2::rem ->  (p1,p2)::rem)
+  All mutable fields are replaced by '_', since side-effects in
+  guards can alter these fields *)
+
 let combine {left=left ; right=right} = match left with
 | p::ps -> {left=ps ; right=set_args_erase_mutable p right}
 | _ -> assert false
@@ -2356,7 +2360,11 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
 
 (* The entry points *)
 
-(* had toplevel handler when appropriate *)
+(*
+   If there is a guard in a matching, then
+   set exhaustiveness info to Partial.
+   (because of side effects in guards, assume the worst)
+*)
 
 let check_partial pat_act_list partial =
   if
@@ -2364,10 +2372,12 @@ let check_partial pat_act_list partial =
       (fun (_,lam) -> is_guarded lam)
        pat_act_list
   then begin
-    prerr_endline "CHANGE" ;
     Partial 
   end else
     partial
+
+
+(* have toplevel handler when appropriate *)
 
 let start_ctx n = [{left=[] ; right = omegas n}]
 
