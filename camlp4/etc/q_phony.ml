@@ -37,11 +37,13 @@ Quotation.add ""
 Quotation.default.val := "";
 Quotation.translate.val := fun s -> do { t.val := s; "" };
 
-EXTEND
-  expr: LEVEL "top"
-    [ [ "ifdef"; c = UIDENT; "then"; e1 = expr; "else"; e2 = expr ->
-          <:expr< if def $uid:c$ then $e1$ else $e2$ >>
-      | "ifndef"; c = UIDENT; "then"; e1 = expr; "else"; e2 = expr ->
-          <:expr< if ndef $uid:c$ then $e1$ else $e2$ >> ] ]
-  ;
-END;
+if Pcaml.syntax_name.val <> "Scheme" then
+  EXTEND
+    expr: LEVEL "top"
+      [ [ "IFDEF"; c = UIDENT; "THEN"; e1 = expr; "ELSE"; e2 = expr; "END" ->
+            <:expr< if DEF $uid:c$ then $e1$ else $e2$ >>
+        | "IFNDEF"; c = UIDENT; "THEN"; e1 = expr; "ELSE"; e2 = expr; "END" ->
+            <:expr< if NDEF $uid:c$ then $e1$ else $e2$ >> ] ]
+    ;
+  END
+else ();

@@ -90,9 +90,9 @@ value rec subst v e =
   | <:expr< $int:_$ >> -> e
   | <:expr< $chr:_$ >> -> e
   | <:expr< $str:_$ >> -> e
-  | <:expr< $_$ . $_$ >> -> e
-  | <:expr< let $rec:rf$ $list:pel$ in $e$ >> ->
-      <:expr< let $rec:rf$ $list:List.map (subst_pe v) pel$ in $subst v e$ >>
+  | <:expr< $_$.$_$ >> -> e
+  | <:expr< let $opt:rf$ $list:pel$ in $e$ >> ->
+      <:expr< let $opt:rf$ $list:List.map (subst_pe v) pel$ in $subst v e$ >>
   | <:expr< $e1$ $e2$ >> -> <:expr< $subst v e1$ $subst v e2$ >>
   | <:expr< ( $list:el$ ) >> -> <:expr< ( $list:List.map (subst v) el$ ) >>
   | _ -> raise Not_found ]

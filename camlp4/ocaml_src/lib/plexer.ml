@@ -36,6 +36,16 @@ let get_buff len = String.sub !buff 0 len;;
 
 (* The lexer *)
 
+let stream_peek_nth n strm =
+  let rec loop n =
+    function
+      [] -> None
+    | [x] -> if n == 1 then Some x else None
+    | _ :: l -> loop (n - 1) l
+  in
+  loop n (Stream.npeek n strm)
+;;
+
 let rec ident len (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
     Some
@@ -132,21 +142,359 @@ and end_exponent_part_under len (strm__ : _ Stream.t) =
 let error_on_unknown_keywords = ref false;;
 let err loc msg = raise_with_loc loc (Token.Error msg);;
 
-let next_token_fun dfa find_kwd =
+(*
+value next_token_fun dfa find_kwd =
+  let keyword_or_error loc s =
+    try (("", find_kwd s), loc) with
+    [ Not_found ->
+        if error_on_unknown_keywords.val then err loc ("illegal token: " ^ s)
+        else (("", s), loc) ]
+  in
+  let rec next_token =
+    parser bp
+    [ [: `' ' | '\010' | '\013' | '\t' | '\026' | '\012'; s :] ->
+        next_token s
+    | [: `'('; s :] -> left_paren bp s
+    | [: `'#'; s :] -> do { spaces_tabs s; linenum bp s }
+    | [: `('A'..'Z' | '\192'..'\214' | '\216'..'\222' as c); s :] ->
+        let id = get_buff (ident (store 0 c) s) in
+        let loc = (bp, Stream.count s) in
+        (try ("", find_kwd id) with [ Not_found -> ("UIDENT", id) ], loc)
+    | [: `('a'..'z' | '\223'..'\246' | '\248'..'\255' | '_' as c); s :] ->
+        let id = get_buff (ident (store 0 c) s) in
+        let loc = (bp, Stream.count s) in
+        (try ("", find_kwd id) with [ Not_found -> ("LIDENT", id) ], loc)
+    | [: `('1'..'9' as c); s :] ->
+        let tok = number (store 0 c) s in
+        let loc = (bp, Stream.count s) in
+        (tok, loc)
+    | [: `'0'; s :] ->
+        let tok = base_number (store 0 '0') s in
+        let loc = (bp, Stream.count s) in
+        (tok, loc)
+    | [: `'''; s :] ->
+        match Stream.npeek 3 s with
+        [ [_; '''; _] | ['\\'; _; _] | ['\x0D'; '\x0A'; '''] ->
+            let tok = ("CHAR", get_buff (char bp 0 s)) in
+            let loc = (bp, Stream.count s) in
+            (tok, loc)
+        | _ -> keyword_or_error (bp, Stream.count s) "'" ]
+    | [: `'"'; s :] ->
+        let tok = ("STRING", get_buff (string bp 0 s)) in
+        let loc = (bp, Stream.count s) in
+        (tok, loc)
+    | [: `'$'; s :] ->
+        let tok = dollar bp 0 s in
+        let loc = (bp, Stream.count s) in
+        (tok, loc)
+    | [: `('!' | '=' | '@' | '^' | '&' | '+' | '-' | '*' | '/' | '%' as c);
+         s :] ->
+        let id = get_buff (ident2 (store 0 c) s) in
+        keyword_or_error (bp, Stream.count s) id
+    | [: `('~' as c);
+         a =
+           parser
+           [ [: `('a'..'z' as c); len = ident (store 0 c) :] ep ->
+               (("TILDEIDENT", get_buff len), (bp, ep))
+           | [: s :] ->
+               let id = get_buff (ident2 (store 0 c) s) in
+               keyword_or_error (bp, Stream.count s) id ] :] ->
+        a
+    | [: `('?' as c);
+         a =
+           parser
+           [ [: `('a'..'z' as c); len = ident (store 0 c) :] ep ->
+               (("QUESTIONIDENT", get_buff len), (bp, ep))
+           | [: s :] ->
+               let id = get_buff (ident2 (store 0 c) s) in
+               keyword_or_error (bp, Stream.count s) id ] :] ->
+        a
+    | [: `'<'; s :] -> less bp s
+    | [: `(':' as c1);
+         len =
+           parser
+           [ [: `(']' | ':' | '=' | '>' as c2) :] -> store (store 0 c1) c2
+           | [: :] -> store 0 c1 ] :] ep ->
+        let id = get_buff len in
+        keyword_or_error (bp, ep) id
+    | [: `('>' | '|' as c1);
+         len =
+           parser
+           [ [: `(']' | '}' as c2) :] -> store (store 0 c1) c2
+           | [: a = ident2 (store 0 c1) :] -> a ] :] ep ->
+        let id = get_buff len in
+        keyword_or_error (bp, ep) id
+    | [: `('[' | '{' as c1); s :] ->
+        let len =
+          match Stream.npeek 2 s with
+          [ ['<'; '<' | ':'] -> store 0 c1
+          | _ ->
+              match s with parser
+              [ [: `('|' | '<' | ':' as c2) :] -> store (store 0 c1) c2
+              | [: :] -> store 0 c1 ] ]
+        in
+        let ep = Stream.count s in
+        let id = get_buff len in
+        keyword_or_error (bp, ep) id
+    | [: `'.';
+         id =
+           parser
+           [ [: `'.' :] -> ".."
+           | [: :] -> if ssd && after_space then " ." else "." ] :] ep ->
+        keyword_or_error (bp, ep) id
+    | [: `';';
+         id =
+           parser
+           [ [: `';' :] -> ";;"
+           | [: :] -> ";" ] :] ep ->
+        keyword_or_error (bp, ep) id
+    | [: `'\\'; s :] ep -> (("LIDENT", get_buff (ident3 0 s)), (bp, ep))
+    | [: `c :] ep -> keyword_or_error (bp, ep) (String.make 1 c)
+    | [: _ = Stream.empty :] -> (("EOI", ""), (bp, succ bp)) ]
+  and less bp strm =
+    if no_quotations.val then
+      match strm with parser
+      [ [: len = ident2 (store 0 '<') :] ep ->
+          let id = get_buff len in
+          keyword_or_error (bp, ep) id ]
+    else
+      match strm with parser
+      [ [: `'<'; len = quotation bp 0 :] ep ->
+          (("QUOTATION", ":" ^ get_buff len), (bp, ep))
+      | [: `':'; i = parser [: len = ident 0 :] -> get_buff len;
+           `'<' ? "character '<' expected"; len = quotation bp 0 :] ep ->
+          (("QUOTATION", i ^ ":" ^ get_buff len), (bp, ep))
+      | [: len = ident2 (store 0 '<') :] ep ->
+          let id = get_buff len in
+          keyword_or_error (bp, ep) id ]
+  and string bp len =
+    parser
+    [ [: `'"' :] -> len
+    | [: `'\\'; `c; s :] -> string bp (store (store len '\\') c) s
+    | [: `c; s :] -> string bp (store len c) s
+    | [: :] ep -> err (bp, ep) "string not terminated" ]
+  and char bp len =
+    parser
+    [ [: `'''; s :] -> if len = 0 then char bp (store len ''') s else len
+    | [: `'\\'; `c; s :] -> char bp (store (store len '\\') c) s
+    | [: `c; s :] -> char bp (store len c) s
+    | [: :] ep -> err (bp, ep) "char not terminated" ]
+  and dollar bp len =
+    parser
+    [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
+    | [: `('a'..'z' | 'A'..'Z' as c); s :] -> antiquot bp (store len c) s
+    | [: `('0'..'9' as c); s :] -> maybe_locate bp (store len c) s
+    | [: `':'; s :] ->
+        let k = get_buff len in
+        ("ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bp 0 s)
+    | [: `'\\'; `c; s :] ->
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+    | [: s :] ->
+        if dfa then
+          match s with parser
+          [ [: `c :] ->
+              ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+          | [: :] ep -> err (bp, ep) "antiquotation not terminated" ]
+        else ("", get_buff (ident2 (store 0 '$') s)) ]
+  and maybe_locate bp len =
+    parser
+    [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
+    | [: `('0'..'9' as c); s :] -> maybe_locate bp (store len c) s
+    | [: `':'; s :] ->
+        ("LOCATE", get_buff len ^ ":" ^ locate_or_antiquot_rest bp 0 s)
+    | [: `'\\'; `c; s :] ->
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+    | [: `c; s :] ->
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+    | [: :] ep -> err (bp, ep) "antiquotation not terminated" ]
+  and antiquot bp len =
+    parser
+    [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
+    | [: `('a'..'z' | 'A'..'Z' | '0'..'9' as c); s :] ->
+        antiquot bp (store len c) s
+    | [: `':'; s :] ->
+        let k = get_buff len in
+        ("ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bp 0 s)
+    | [: `'\\'; `c; s :] ->
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+    | [: `c; s :] ->
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+    | [: :] ep -> err (bp, ep) "antiquotation not terminated" ]
+  and locate_or_antiquot_rest bp len =
+    parser
+    [ [: `'$' :] -> get_buff len
+    | [: `'\\'; `c; s :] -> locate_or_antiquot_rest bp (store len c) s
+    | [: `c; s :] -> locate_or_antiquot_rest bp (store len c) s
+    | [: :] ep -> err (bp, ep) "antiquotation not terminated" ]
+  and quotation bp len =
+    parser
+    [ [: `'>'; s :] -> maybe_end_quotation bp len s
+    | [: `'<'; s :] ->
+        quotation bp (maybe_nested_quotation bp (store len '<') s) s
+    | [: `'\\';
+         len =
+           parser
+           [ [: `('>' | '<' | '\\' as c) :] -> store len c
+           | [: :] -> store len '\\' ];
+         s :] ->
+        quotation bp len s
+    | [: `c; s :] -> quotation bp (store len c) s
+    | [: :] ep -> err (bp, ep) "quotation not terminated" ]
+  and maybe_nested_quotation bp len =
+    parser
+    [ [: `'<'; s :] -> mstore (quotation bp (store len '<') s) ">>"
+    | [: `':'; len = ident (store len ':');
+         a =
+           parser
+           [ [: `'<'; s :] -> mstore (quotation bp (store len '<') s) ">>"
+           | [: :] -> len ] :] ->
+        a
+    | [: :] -> len ]
+  and maybe_end_quotation bp len =
+    parser
+    [ [: `'>' :] -> len
+    | [: a = quotation bp (store len '>') :] -> a ]
+  and left_paren bp =
+    parser
+    [ [: `'*'; _ = comment bp; a = next_token True :] -> a
+    | [: :] ep -> keyword_or_error (bp, ep) "(" ]
+  and comment bp =
+    parser
+    [ [: `'('; s :] -> left_paren_in_comment bp s
+    | [: `'*'; s :] -> star_in_comment bp s
+    | [: `'"'; _ = string bp 0; s :] -> comment bp s
+    | [: `'''; s :] -> quote_in_comment bp s
+    | [: `c; s :] -> comment bp s
+    | [: :] ep -> err (bp, ep) "comment not terminated" ]
+  and quote_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: `'\013'; s :] -> quote_cr_in_comment bp s
+    | [: `'\\'; s :] -> quote_antislash_in_comment bp s
+    | [: `'('; s :] -> quote_left_paren_in_comment bp s
+    | [: `'*'; s :] -> quote_star_in_comment bp s
+    | [: `'"'; s :] -> quote_doublequote_in_comment bp s
+    | [: `_; s :] -> quote_any_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_any_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_cr_in_comment bp =
+    parser
+    [ [: `'\010'; s :] -> quote_any_in_comment bp s
+    | [: s :] -> quote_any_in_comment bp s ]
+  and quote_left_paren_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: s :] -> left_paren_in_comment bp s ]
+  and quote_star_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: s :] -> star_in_comment bp s ]
+  and quote_doublequote_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: _ = string bp 0; s :] -> comment bp s ]
+  and quote_antislash_in_comment bp =
+    parser
+    [ [: `'''; s :] -> quote_antislash_quote_in_comment bp s
+    | [: `('\\' | '"' | 'n' | 't' | 'b' | 'r'); s :] ->
+        quote_any_in_comment bp s
+    | [: `('0'..'9'); s :] -> quote_antislash_digit_in_comment bp s
+    | [: `'x'; s :] -> quote_antislash_x_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_antislash_quote_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: s :] -> quote_in_comment bp s ]
+  and quote_antislash_digit_in_comment bp =
+    parser
+    [ [: `('0'..'9'); s :] -> quote_antislash_digit2_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_antislash_digit2_in_comment bp =
+    parser
+    [ [: `('0'..'9'); s :] -> quote_any_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_antislash_x_in_comment bp =
+    parser
+    [ [: _ = hexa; s :] -> quote_antislash_x_digit_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_antislash_x_digit_in_comment bp =
+    parser
+    [ [: _ = hexa; s :] -> quote_any_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and left_paren_in_comment bp =
+    parser
+    [ [: `'*'; s :] -> do { comment bp s; comment bp s }
+    | [: a = comment bp :] -> a ]
+  and star_in_comment bp =
+    parser
+    [ [: `')' :] -> ()
+    | [: a = comment bp :] -> a ]
+  and linedir n s =
+    match stream_peek_nth n s with
+    [ Some (' ' | '\t') -> linedir (n + 1) s
+    | Some ('0'..'9') -> linedir_digits (n + 1) s
+    | _ -> False ]
+  and linedir_digits n s =
+    match stream_peek_nth n s with
+    [ Some ('0'..'9') -> linedir_digits (n + 1) s
+    | _ -> linedir_quote n s ]
+  and linedir_quote n s =
+    match stream_peek_nth n s with
+    [ Some (' ' | '\t') -> linedir_quote (n + 1) s
+    | Some '"' -> True
+    | _ -> False ]
+  and any_to_nl =
+    parser
+    [ [: `'\013' | '\010' :] ep -> bolpos.val := ep
+    | [: `_; s :] -> any_to_nl s
+    | [: :] -> () ]
+  in
+  fun cstrm ->
+    try
+      let glex = glexr.val in
+      let comm_bp = Stream.count cstrm in
+      let r = next_token False cstrm in
+      do {
+        match glex.tok_comm with
+        [ Some list ->
+            if fst (snd r) > comm_bp then
+              let comm_loc = (comm_bp, fst (snd r)) in
+              glex.tok_comm := Some [comm_loc :: list]
+            else ()
+        | None -> () ];
+        r
+      }
+    with
+    [ Stream.Error str ->
+        err (Stream.count cstrm, Stream.count cstrm + 1) str ]
+;
+*)
+
+let next_token_fun dfa ssd find_kwd bolpos glexr =
   let keyword_or_error loc s =
     try ("", find_kwd s), loc with
       Not_found ->
         if !error_on_unknown_keywords then err loc ("illegal token: " ^ s)
         else ("", s), loc
   in
-  let rec next_token (strm__ : _ Stream.t) =
+  let rec next_token after_space (strm__ : _ Stream.t) =
     let bp = Stream.count strm__ in
     match Stream.peek strm__ with
-      Some (' ' | '\010' | '\013' | '\t' | '\026' | '\012') ->
-        Stream.junk strm__; next_token strm__
+      Some ('\010' | '\013') ->
+        Stream.junk strm__;
+        let s = strm__ in
+        let ep = Stream.count strm__ in bolpos := ep; next_token true s
+    | Some (' ' | '\t' | '\026' | '\012') ->
+        Stream.junk strm__; next_token true strm__
+    | Some '#' when bp = !bolpos ->
+        Stream.junk strm__;
+        let s = strm__ in
+        if linedir 1 s then begin any_to_nl s; next_token true s end
+        else keyword_or_error (bp, bp + 1) "#"
     | Some '(' -> Stream.junk strm__; left_paren bp strm__
-    | Some '#' ->
-        Stream.junk strm__; let s = strm__ in spaces_tabs s; linenum bp s
     | Some ('A'..'Z' | '\192'..'\214' | '\216'..'\222' as c) ->
         Stream.junk strm__;
         let s = strm__ in
@@ -174,8 +522,8 @@ let next_token_fun dfa find_kwd =
     | Some '\'' ->
         Stream.junk strm__;
         let s = strm__ in
-        begin match Stream.npeek 3 s with
-          [_; '\''; _] | ['\\'; _; _] | ['\x0D'; '\x0A'; '\''] ->
+        begin match Stream.npeek 2 s with
+          [_; '\''] | ['\\'; _] ->
             let tok = "CHAR", get_buff (char bp 0 s) in
             let loc = bp, Stream.count s in tok, loc
         | _ -> keyword_or_error (bp, Stream.count s) "'"
@@ -276,7 +624,7 @@ let next_token_fun dfa find_kwd =
           try
             match Stream.peek strm__ with
               Some '.' -> Stream.junk strm__; ".."
-            | _ -> "."
+            | _ -> if ssd && after_space then " ." else "."
           with
             Stream.Failure -> raise (Stream.Error "")
         in
@@ -511,7 +859,7 @@ let next_token_fun dfa find_kwd =
           try comment bp strm__ with
             Stream.Failure -> raise (Stream.Error "")
         in
-        begin try next_token strm__ with
+        begin try next_token true strm__ with
           Stream.Failure -> raise (Stream.Error "")
         end
     | _ -> let ep = Stream.count strm__ in keyword_or_error (bp, ep) "("
@@ -533,47 +881,26 @@ let next_token_fun dfa find_kwd =
   and quote_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '\'' -> Stream.junk strm__; comment bp strm__
-    | Some '\013' -> Stream.junk strm__; quote_cr_in_comment bp strm__
-    | Some '\\' -> Stream.junk strm__; quote_antislash_in_comment bp strm__
-    | Some '(' -> Stream.junk strm__; quote_left_paren_in_comment bp strm__
-    | Some '*' -> Stream.junk strm__; quote_star_in_comment bp strm__
-    | Some '\"' -> Stream.junk strm__; quote_doublequote_in_comment bp strm__
-    | Some _ -> Stream.junk strm__; quote_any_in_comment bp strm__
-    | _ -> comment bp strm__
+    | Some '\\' -> Stream.junk strm__; quote_antislash_in_comment bp 0 strm__
+    | _ ->
+        let s = strm__ in
+        begin match Stream.npeek 2 s with
+          [_; '\''] -> Stream.junk s; Stream.junk s
+        | _ -> ()
+        end;
+        comment bp s
   and quote_any_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '\'' -> Stream.junk strm__; comment bp strm__
     | _ -> comment bp strm__
-  and quote_cr_in_comment bp (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some '\010' -> Stream.junk strm__; quote_any_in_comment bp strm__
-    | _ -> quote_any_in_comment bp strm__
-  and quote_left_paren_in_comment bp (strm__ : _ Stream.t) =
+  and quote_antislash_in_comment bp len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '\'' -> Stream.junk strm__; comment bp strm__
-    | _ -> left_paren_in_comment bp strm__
-  and quote_star_in_comment bp (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some '\'' -> Stream.junk strm__; comment bp strm__
-    | _ -> star_in_comment bp strm__
-  and quote_doublequote_in_comment bp (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some '\'' -> Stream.junk strm__; comment bp strm__
-    | _ -> let _ = string bp 0 strm__ in comment bp strm__
-  and quote_antislash_in_comment bp (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some '\'' ->
-        Stream.junk strm__; quote_antislash_quote_in_comment bp strm__
     | Some ('\\' | '\"' | 'n' | 't' | 'b' | 'r') ->
         Stream.junk strm__; quote_any_in_comment bp strm__
     | Some ('0'..'9') ->
         Stream.junk strm__; quote_antislash_digit_in_comment bp strm__
-    | Some 'x' -> Stream.junk strm__; quote_antislash_x_in_comment bp strm__
     | _ -> comment bp strm__
-  and quote_antislash_quote_in_comment bp (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some '\'' -> Stream.junk strm__; comment bp strm__
-    | _ -> quote_in_comment bp strm__
   and quote_antislash_digit_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some ('0'..'9') ->
@@ -582,20 +909,6 @@ let next_token_fun dfa find_kwd =
   and quote_antislash_digit2_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some ('0'..'9') -> Stream.junk strm__; quote_any_in_comment bp strm__
-    | _ -> comment bp strm__
-  and quote_antislash_x_in_comment bp (strm__ : _ Stream.t) =
-    match
-      try Some (hexa strm__) with
-        Stream.Failure -> None
-    with
-      Some _ -> quote_antislash_x_digit_in_comment bp strm__
-    | _ -> comment bp strm__
-  and quote_antislash_x_digit_in_comment bp (strm__ : _ Stream.t) =
-    match
-      try Some (hexa strm__) with
-        Stream.Failure -> None
-    with
-      Some _ -> quote_any_in_comment bp strm__
     | _ -> comment bp strm__
   and left_paren_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
@@ -606,54 +919,54 @@ let next_token_fun dfa find_kwd =
     match Stream.peek strm__ with
       Some ')' -> Stream.junk strm__; ()
     | _ -> comment bp strm__
-  and linenum bp (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some ('0'..'9') ->
-        Stream.junk strm__;
-        let _ =
-          try digits strm__ with
-            Stream.Failure -> raise (Stream.Error "")
-        in
-        let _ =
-          try spaces_tabs strm__ with
-            Stream.Failure -> raise (Stream.Error "")
-        in
-        begin match Stream.peek strm__ with
-          Some '\"' ->
-            Stream.junk strm__;
-            let _ =
-              try any_to_nl strm__ with
-                Stream.Failure -> raise (Stream.Error "")
-            in
-            next_token strm__
-        | _ -> raise (Stream.Error "")
-        end
-    | _ -> keyword_or_error (bp, bp + 1) "#"
-  and spaces_tabs (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some (' ' | '\t') -> Stream.junk strm__; spaces_tabs strm__
-    | _ -> ()
-  and digits (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some ('0'..'9') -> Stream.junk strm__; digits strm__
-    | _ -> ()
+  and linedir n s =
+    match stream_peek_nth n s with
+      Some (' ' | '\t') -> linedir (n + 1) s
+    | Some ('0'..'9') -> linedir_digits (n + 1) s
+    | _ -> false
+  and linedir_digits n s =
+    match stream_peek_nth n s with
+      Some ('0'..'9') -> linedir_digits (n + 1) s
+    | _ -> linedir_quote n s
+  and linedir_quote n s =
+    match stream_peek_nth n s with
+      Some (' ' | '\t') -> linedir_quote (n + 1) s
+    | Some '\"' -> true
+    | _ -> false
   and any_to_nl (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
-      Some ('\013' | '\010') -> Stream.junk strm__; ()
+      Some ('\013' | '\010') ->
+        Stream.junk strm__; let ep = Stream.count strm__ in bolpos := ep
     | Some _ -> Stream.junk strm__; any_to_nl strm__
     | _ -> ()
   in
   fun cstrm ->
-    try next_token cstrm with
+    try
+      let glex = !glexr in
+      let comm_bp = Stream.count cstrm in
+      let r = next_token false cstrm in
+      begin match glex.tok_comm with
+        Some list ->
+          if fst (snd r) > comm_bp then
+            let comm_loc = comm_bp, fst (snd r) in
+            glex.tok_comm <- Some (comm_loc :: list)
+      | None -> ()
+      end;
+      r
+    with
       Stream.Error str -> err (Stream.count cstrm, Stream.count cstrm + 1) str
 ;;
 
-let dollar_for_antiquotation = ref true;;
 
-let func kwd_table =
+let dollar_for_antiquotation = ref true;;
+let specific_space_dot = ref false;;
+
+let func kwd_table glexr =
+  let bolpos = ref 0 in
   let find = Hashtbl.find kwd_table in
   let dfa = !dollar_for_antiquotation in
-  Token.lexer_func_of_parser (next_token_fun dfa find)
+  let ssd = !specific_space_dot in
+  Token.lexer_func_of_parser (next_token_fun dfa ssd find bolpos glexr)
 ;;
 
 let rec check_keyword_stream (strm__ : _ Stream.t) =
@@ -862,9 +1175,22 @@ let tok_match =
 let gmake () =
   let kwd_table = Hashtbl.create 301 in
   let id_table = Hashtbl.create 301 in
-  {tok_func = func kwd_table; tok_using = using_token kwd_table id_table;
-   tok_removing = removing_token kwd_table id_table; tok_match = tok_match;
-   tok_text = text}
+  let glexr =
+    ref
+      {tok_func = (fun _ -> raise (Match_failure ("plexer.ml", 952, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("plexer.ml", 952, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("plexer.ml", 952, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("plexer.ml", 953, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("plexer.ml", 953, 37)));
+       tok_comm = None}
+  in
+  let glex =
+    {tok_func = func kwd_table glexr;
+     tok_using = using_token kwd_table id_table;
+     tok_removing = removing_token kwd_table id_table; tok_match = tok_match;
+     tok_text = text; tok_comm = None}
+  in
+  glexr := glex; glex
 ;;
 
 let tparse =
@@ -883,6 +1209,15 @@ let tparse =
 let make () =
   let kwd_table = Hashtbl.create 301 in
   let id_table = Hashtbl.create 301 in
-  {func = func kwd_table; using = using_token kwd_table id_table;
+  let glexr =
+    ref
+      {tok_func = (fun _ -> raise (Match_failure ("plexer.ml", 981, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("plexer.ml", 981, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("plexer.ml", 981, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("plexer.ml", 982, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("plexer.ml", 982, 37)));
+       tok_comm = None}
+  in
+  {func = func kwd_table glexr; using = using_token kwd_table id_table;
    removing = removing_token kwd_table id_table; tparse = tparse; text = text}
 ;;

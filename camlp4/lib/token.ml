@@ -26,7 +26,8 @@ type glexer 'te =
     tok_using : pattern -> unit;
     tok_removing : pattern -> unit;
     tok_match : pattern -> 'te -> string;
-    tok_text : pattern -> string }
+    tok_text : pattern -> string;
+    tok_comm : mutable option (list location) }
 ;
 type lexer =
   { func : lexer_func t;
@@ -54,19 +55,16 @@ value loct_func (loct, ov) i =
   | _ -> locerr () ]
 ;
 value loct_add (loct, ov) i loc =
-  do {
-    if i >= Array.length loct.val then do {
-      let new_tmax = Array.length loct.val * 2 in
-      if new_tmax < Sys.max_array_length then do {
-        let new_loct = Array.create new_tmax None in
-        Array.blit loct.val 0 new_loct 0 (Array.length loct.val);
-        loct.val := new_loct;
-        loct.val.(i) := Some loc
-      }
-      else ov.val := True
+  if i >= Array.length loct.val then
+    let new_tmax = Array.length loct.val * 2 in
+    if new_tmax < Sys.max_array_length then do {
+      let new_loct = Array.create new_tmax None in
+      Array.blit loct.val 0 new_loct 0 (Array.length loct.val);
+      loct.val := new_loct;
+      loct.val.(i) := Some loc
     }
-    else loct.val.(i) := Some loc
-  }
+    else ov.val := True
+  else loct.val.(i) := Some loc
 ;
 
 value make_stream_and_location next_token_loc =

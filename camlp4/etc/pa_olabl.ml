@@ -568,7 +568,7 @@ module Plexer =
       let kwd_table = Hashtbl.create 301 in
       {tok_func = func kwd_table; tok_using = using_token kwd_table;
        tok_removing = removing_token kwd_table;
-       tok_match = Token.default_match; tok_text = text}
+       tok_match = Token.default_match; tok_text = text; tok_comm = None}
     ;
   end
 ;
@@ -913,12 +913,12 @@ EXTEND
           <:str_item< type $list:tdl$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr ->
-          let e = <:expr< let $rec:o2b r$ $list:l$ in $x$ >> in
+          let e = <:expr< let $opt:o2b r$ $list:l$ in $x$ >> in
           <:str_item< $exp:e$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
           match l with
           [ [(<:patt< _ >>, e)] -> <:str_item< $exp:e$ >>
-          | _ -> <:str_item< value $rec:o2b r$ $list:l$ >> ]
+          | _ -> <:str_item< value $opt:o2b r$ $list:l$ >> ]
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = expr ->
           <:str_item< let module $m$ = $mb$ in $e$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
@@ -996,7 +996,7 @@ EXTEND
     | "expr1"
       [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr LEVEL "top" ->
-          <:expr< let $rec:o2b o$ $list:l$ in $x$ >>
+          <:expr< let $opt:o2b o$ $list:l$ in $x$ >>
       | "let"; "module"; m = UIDENT; mb = module_binding; "in";
         e = expr LEVEL "top" ->
           <:expr< let module $m$ = $mb$ in $e$ >>
@@ -1452,7 +1452,7 @@ EXTEND
       [ "fun"; cfd = class_fun_def -> cfd
       | "let"; rf = OPT "rec"; lb = LIST1 let_binding SEP "and"; "in";
         ce = SELF ->
-          <:class_expr< let $rec:o2b rf$ $list:lb$ in $ce$ >> ]
+          <:class_expr< let $opt:o2b rf$ $list:lb$ in $ce$ >> ]
     | "apply" NONA
       [ ce = SELF; e = expr LEVEL "label" ->
           <:class_expr< $ce$ $e$ >> ]
@@ -1478,9 +1478,9 @@ EXTEND
   ;
   class_str_item:
     [ [ "inherit"; ce = class_expr; pb = OPT [ "as"; i = LIDENT -> i ] ->
-          <:class_str_item< inherit $ce$ $as:pb$ >>
+          <:class_str_item< inherit $ce$ $opt:pb$ >>
       | "val"; (lab, mf, e) = cvalue ->
-          <:class_str_item< value $mut:mf$ $lab$ = $e$ >>
+          <:class_str_item< value $opt:mf$ $lab$ = $e$ >>
       | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
           <:class_str_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
@@ -1532,7 +1532,7 @@ EXTEND
   class_sig_item:
     [ [ "inherit"; cs = class_signature -> <:class_sig_item< inherit $cs$ >>
       | "val"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< value $mut:o2b mf$ $l$ : $t$ >>
+          <:class_sig_item< value $opt:o2b mf$ $l$ : $t$ >>
       | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
           <:class_sig_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
@@ -1586,7 +1586,7 @@ EXTEND
   (* Core types *)
   ctyp: LEVEL "simple"
     [ [ "#"; id = class_longident -> <:ctyp< # $list:id$ >>
-      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $v$ > >>
+      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $opt:v$ > >>
       | "<"; ">" -> <:ctyp< < > >> ] ]
   ;
   meth_list:
@@ -1766,8 +1766,8 @@ value rec subst v e =
   | <:expr< $chr:_$ >> -> e
   | <:expr< $str:_$ >> -> e
   | <:expr< $_$ . $_$ >> -> e
-  | <:expr< let $rec:rf$ $list:pel$ in $e$ >> ->
-      <:expr< let $rec:rf$ $list:List.map (subst_pe v) pel$ in $subst v e$ >>
+  | <:expr< let $opt:rf$ $list:pel$ in $e$ >> ->
+      <:expr< let $opt:rf$ $list:List.map (subst_pe v) pel$ in $subst v e$ >>
   | <:expr< $e1$ $e2$ >> -> <:expr< $subst v e1$ $subst v e2$ >>
   | <:expr< ( $list:el$ ) >> -> <:expr< ( $list:List.map (subst v) el$ ) >>
   | _ -> raise Not_found ]

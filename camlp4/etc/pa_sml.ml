@@ -15,6 +15,8 @@
 open Stdpp;
 open Pcaml;
 
+value ocaml_records = ref False;
+
 Pcaml.no_constructors_arity.val := True;
 
 value lexer = Plexer.gmake ();
@@ -133,7 +135,7 @@ value make_local loc sl1 sl2 =
     let pl =
       List.map
         (fun
-         [ <:str_item< value $rec:_$ $p$ = $_$ >> -> p
+         [ <:str_item< value $opt:_$ $p$ = $_$ >> -> p
          | _ -> raise Exit ])
         sl2
       in
@@ -242,6 +244,67 @@ value function_of_clause_list loc xl =
           List.fold_right (fun s e -> <:expr< fun $lid:s$ -> $e$ >>) sl e ]
   in
   (let loc = fname_loc in <:patt< $lid:fname$ >>, e)
+;
+
+value record_expr loc x1 =
+  if ocaml_records.val then <:expr< { $list:x1$ } >>
+  else
+    let list1 =
+      List.map
+        (fun (l, v) ->
+           let id =
+             match l with
+             [ <:patt< $lid:l$ >> -> l
+             | _ -> "" ]
+           in
+           let loc = MLast.loc_of_expr v in
+           <:class_str_item< value $id$ = $v$ >>)
+        x1
+    in
+    let list2 =
+      List.map
+        (fun (l, v) ->
+           let id =
+             match l with
+             [ <:patt< $lid:l$ >> -> l
+             | _ -> "" ]
+           in
+           let loc = MLast.loc_of_patt l in
+           <:class_str_item< method $id$ = $lid:id$ >>)
+        x1
+    in
+    <:expr<
+      let module M =
+        struct
+          class a = object $list:list1 @ list2$ end; 
+        end
+      in
+      new M.a
+    >>
+;
+
+value record_match_assoc loc lpl e =
+  if ocaml_records.val then (<:patt< { $list:lpl$ } >>, e)
+  else
+    let pl = List.map (fun (_, p) -> p) lpl in
+    let e =
+      let el =
+        List.map
+          (fun (l, _) ->
+             let s =
+               match l with
+               [ <:patt< $lid:l$ >> -> l
+               | _ -> "" ]
+             in
+             let loc = MLast.loc_of_patt l in
+             <:expr< v # $lid:s$ >>)
+          lpl
+      in
+      let loc = MLast.loc_of_expr e in
+      <:expr< let v = $e$ in ($list:el$) >>
+    in
+    let p = <:patt< ($list:pl$) >> in
+    (p, e)
 ;
 
 value op =
@@ -380,8 +443,10 @@ EXTEND
       [ "'"; x1 = LIDENT -> <:ctyp< '$x1$ >>
       | "'"; "'"; x1 = LIDENT -> <:ctyp< '$x1$ >>
       | "{"; x1 = LIST1 tlabel SEP ","; "}" ->
-          let list = List.map (fun (_, l, _, t) -> (l, t)) x1 in
-          <:ctyp< < $list:list$ > >>
+          if ocaml_records.val then <:ctyp< { $list:x1$ } >>
+          else
+            let list = List.map (fun (_, l, _, t) -> (l, t)) x1 in
+            <:ctyp< < $list:list$ > >>
       | "{"; "}" -> not_impl loc "ty' 3"
       | "("; x1 = ctyp; ","; x2 = LIST1 ctyp SEP ","; ")"; x3 = tycon ->
           List.fold_left (fun t1 t2 -> <:ctyp< $t1$ $t2$ >>) x3 [x1 :: x2]
@@ -443,7 +508,9 @@ EXTEND
     | LEFTA
       [ x1 = expr; x2 = expr -> <:expr< $x1$ $x2$ >> ]
     | [ "#"; x1 = STRING -> <:expr< $chr:x1$ >>
-      | "#"; x1 = selector; x2 = expr -> <:expr< $x2$ # $lid:x1$ >>
+      | "#"; x1 = selector; x2 = expr ->
+          if ocaml_records.val then <:expr< $x2$ . $lid:x1$ >>
+          else <:expr< $x2$ # $lid:x1$ >>
       | x1 = expr; "ocaml_record_access"; x2 = expr -> <:expr< $x1$ . $x2$ >> ]
     | [ "!"; x1 = expr -> <:expr< $x1$ . val >>
       | "~"; x1 = expr -> <:expr< - $x1$ >> ]
@@ -479,66 +546,13 @@ EXTEND
                        (fun (p, e) ->
                           match p with
                           [ <:patt< { $list:lpl$ } >> ->
-                              let pl = List.map (fun (_, p) -> p) lpl in
-                              let e =
-                                let el =
-                                  List.map
-                                    (fun (l, _) ->
-                                       let s =
-                                         match l with
-                                         [ <:patt< $lid:l$ >> -> l
-                                         | _ -> "" ]
-                                       in
-                                       let loc = MLast.loc_of_patt l in
-                                       <:expr< v # $lid:s$ >>)
-                                    lpl
-                                in
-                                let loc = MLast.loc_of_expr e in
-                                <:expr< let v = $e$ in ($list:el$) >>
-                              in
-                              let p =
-                                let loc = MLast.loc_of_patt p in
-                                <:patt< ($list:pl$) >>
-                              in
-                              (p, e)
+                              record_match_assoc (MLast.loc_of_patt p) lpl e
                           | _ -> (p, e) ])
                        pel
                    in
                    <:expr< let $list:pel$ in $x2$ >> ])
             x1 x2
-      | "{"; x1 = LIST1 elabel SEP ","; "}" ->
-          let list1 =
-            List.map
-              (fun (l, v) ->
-                 let id =
-                   match l with
-                   [ <:patt< $lid:l$ >> -> l
-                   | _ -> "" ]
-                 in
-                 let loc = MLast.loc_of_expr v in
-                 <:class_str_item< value $id$ = $v$ >>)
-              x1
-          in
-          let list2 =
-            List.map
-              (fun (l, v) ->
-                 let id =
-                   match l with
-                   [ <:patt< $lid:l$ >> -> l
-                   | _ -> "" ]
-                 in
-                 let loc = MLast.loc_of_patt l in
-                 <:class_str_item< method $id$ = $lid:id$ >>)
-              x1
-          in
-          <:expr<
-            let module M =
-              struct
-                class a = object $list:list1 @ list2$ end; 
-              end
-            in
-            new M.a
-          >>
+      | "{"; x1 = LIST1 elabel SEP ","; "}" -> record_expr loc x1
       | "["; "]" -> <:expr< [] >>
       | "["; x1 = expr; "]" -> <:expr< [$x1$] >>
       | "["; x1 = expr; ","; x2 = LIST1 SELF SEP ","; "]" ->
@@ -928,3 +942,6 @@ EXTEND
       | x = expr; OPT ";" -> not_impl loc "interdec 2" ] ]
   ;
 END;
+
+Pcaml.add_option "-records" (Arg.Set ocaml_records)
+  "Convert record into OCaml records, instead of objects";

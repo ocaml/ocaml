@@ -693,7 +693,7 @@ let rec quot_expr e =
                   (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
                 MLast.ExStr (loc, c)),
              mklistexp loc al)
-      | MLast.ExAcc (_, _, MLast.ExUid (_, c)) ->
+      | MLast.ExAcc (_, MLast.ExUid (_, "MLast"), MLast.ExUid (_, c)) ->
           let al = List.map quot_expr al in
           MLast.ExApp
             (loc,
@@ -702,6 +702,16 @@ let rec quot_expr e =
                 MLast.ExAcc
                   (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
                 MLast.ExStr (loc, c)),
+             mklistexp loc al)
+      | MLast.ExAcc (_, MLast.ExUid (_, m), MLast.ExUid (_, c)) ->
+          let al = List.map quot_expr al in
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
+                MLast.ExStr (loc, (m ^ "." ^ c))),
              mklistexp loc al)
       | MLast.ExLid (_, f) ->
           let al = List.map quot_expr al in
@@ -736,7 +746,7 @@ let rec quot_expr e =
       if s = !(Stdpp.loc_name) then
         MLast.ExAcc (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Loc"))
       else e
-  | MLast.ExAcc (_, _, MLast.ExUid (_, s)) ->
+  | MLast.ExAcc (_, MLast.ExUid (_, "MLast"), MLast.ExUid (_, s)) ->
       MLast.ExApp
         (loc,
          MLast.ExApp
@@ -744,6 +754,15 @@ let rec quot_expr e =
             MLast.ExAcc
               (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
             MLast.ExStr (loc, s)),
+         MLast.ExUid (loc, "[]"))
+  | MLast.ExAcc (_, MLast.ExUid (_, m), MLast.ExUid (_, s)) ->
+      MLast.ExApp
+        (loc,
+         MLast.ExApp
+           (loc,
+            MLast.ExAcc
+              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
+            MLast.ExStr (loc, (m ^ "." ^ s))),
          MLast.ExUid (loc, "[]"))
   | MLast.ExUid (_, s) ->
       MLast.ExApp
@@ -1442,6 +1461,20 @@ let text_of_functorial_extend loc gmod gl el =
 
 open Pcaml;;
 let symbol = Grammar.Entry.create gram "symbol";;
+let semi_sep =
+  if !syntax_name = "Scheme" then
+    Grammar.Entry.of_parser gram "'/'"
+      (fun (strm__ : _ Stream.t) ->
+         match Stream.peek strm__ with
+           Some ("", "/") -> Stream.junk strm__; ()
+         | _ -> raise Stream.Failure)
+  else
+    Grammar.Entry.of_parser gram "';'"
+      (fun (strm__ : _ Stream.t) ->
+         match Stream.peek strm__ with
+           Some ("", ";") -> Stream.junk strm__; ()
+         | _ -> raise Stream.Failure)
+;;
 
 Grammar.extend
   (let _ = (expr : 'expr Grammar.Entry.e)
@@ -1516,7 +1549,8 @@ Grammar.extend
          (Gramext.srules
             [[Gramext.Snterm
                 (Grammar.Entry.obj (entry : 'entry Grammar.Entry.e));
-              Gramext.Stoken ("", ";")],
+              Gramext.Snterm
+                (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
              Gramext.action
                (fun _ (e : 'entry) (loc : int * int) -> (e : 'e__1))])],
       Gramext.action
@@ -1533,7 +1567,8 @@ Grammar.extend
          (Gramext.srules
             [[Gramext.Snterm
                 (Grammar.Entry.obj (entry : 'entry Grammar.Entry.e));
-              Gramext.Stoken ("", ";")],
+              Gramext.Snterm
+                (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
              Gramext.action
                (fun _ (e : 'entry) (loc : int * int) -> (e : 'e__2))])],
       Gramext.action
@@ -1548,7 +1583,8 @@ Grammar.extend
        Gramext.Slist1sep
          (Gramext.Snterm
             (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e)),
-          Gramext.Stoken ("", ";"))],
+          Gramext.Snterm
+            (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)))],
       Gramext.action
         (fun (sl : 'symbol list) _ (n : 'name) (loc : int * int) ->
            (let (e, b) = expr_of_delete_rule loc "Grammar" n sl in
@@ -1572,7 +1608,8 @@ Grammar.extend
        Gramext.Slist1sep
          (Gramext.Snterm
             (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e)),
-          Gramext.Stoken ("", ";"))],
+          Gramext.Snterm
+            (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)))],
       Gramext.action
         (fun (sl : 'symbol list) _ (n : 'name) (g : string)
            (loc : int * int) ->
@@ -1598,7 +1635,8 @@ Grammar.extend
             'efunction));
       [Gramext.Stoken ("UIDENT", "FUNCTION"); Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (qualid : 'qualid Grammar.Entry.e));
-       Gramext.Stoken ("", ";")],
+       Gramext.Snterm
+         (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
       Gramext.action
         (fun _ (f : 'qualid) _ _ (loc : int * int) -> (f : 'efunction))]];
     Grammar.Entry.obj (global : 'global Grammar.Entry.e), None,
@@ -1606,7 +1644,8 @@ Grammar.extend
      [[Gramext.Stoken ("UIDENT", "GLOBAL"); Gramext.Stoken ("", ":");
        Gramext.Slist1
          (Gramext.Snterm (Grammar.Entry.obj (name : 'name Grammar.Entry.e)));
-       Gramext.Stoken ("", ";")],
+       Gramext.Snterm
+         (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
       Gramext.action
         (fun _ (sl : 'name list) _ _ (loc : int * int) -> (sl : 'global))]];
     Grammar.Entry.obj (entry : 'entry Grammar.Entry.e), None,
@@ -1731,14 +1770,16 @@ Grammar.extend
      [[Gramext.Slist0sep
          (Gramext.Snterm
             (Grammar.Entry.obj (psymbol : 'psymbol Grammar.Entry.e)),
-          Gramext.Stoken ("", ";"))],
+          Gramext.Snterm
+            (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)))],
       Gramext.action
         (fun (psl : 'psymbol list) (loc : int * int) ->
            ({prod = psl; action = None} : 'rule));
       [Gramext.Slist0sep
          (Gramext.Snterm
             (Grammar.Entry.obj (psymbol : 'psymbol Grammar.Entry.e)),
-          Gramext.Stoken ("", ";"));
+          Gramext.Snterm
+            (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)));
        Gramext.Stoken ("", "->");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action

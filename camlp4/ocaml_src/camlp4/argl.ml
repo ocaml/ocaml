@@ -3,9 +3,21 @@
 
 open Printf;;
 
-let action_arg s sl =
+let rec action_arg s sl =
   function
     Arg.Unit f -> if s = "" then begin f (); Some sl end else None
+  | Arg.Bool f ->
+      if s = "" then
+        match sl with
+          s :: sl ->
+            begin try f (bool_of_string s); Some sl with
+              Invalid_argument "bool_of_string" -> None
+            end
+        | [] -> None
+      else
+        begin try f (bool_of_string s); Some sl with
+          Invalid_argument "bool_of_string" -> None
+        end
   | Arg.Set r -> if s = "" then begin r := true; Some sl end else None
   | Arg.Clear r -> if s = "" then begin r := false; Some sl end else None
   | Arg.Rest f -> List.iter f (s :: sl); Some []
@@ -57,11 +69,21 @@ let action_arg s sl =
           s :: sl -> r := float_of_string s; Some sl
         | [] -> None
       else begin r := float_of_string s; Some sl end
+  | Arg.Tuple specs ->
+      let rec action_args s sl =
+        function
+          [] -> Some sl
+        | spec :: spec_list ->
+            match action_arg s sl spec with
+              None -> action_args "" [] spec_list
+            | Some (s :: sl) -> action_args s sl spec_list
+            | Some sl -> action_args "" sl spec_list
+      in
+      action_args s sl specs
   | Arg.Symbol (syms, f) ->
-      begin match if s = "" then sl else s :: sl with
+      match if s = "" then sl else s :: sl with
         s :: sl when List.mem s syms -> f s; Some sl
-      | _ -> None end
-  | _ -> assert false
+      | _ -> None
 ;;
 
 let common_start s1 s2 =
@@ -104,14 +126,14 @@ let loc_fmt =
 
 let print_location loc =
   if !(Pcaml.input_file) <> "-" then
-    let (line, bp, ep) = Stdpp.line_of_loc !(Pcaml.input_file) loc in
+    let (fname, line, bp, ep) = Stdpp.line_of_loc !(Pcaml.input_file) loc in
     eprintf loc_fmt !(Pcaml.input_file) line bp ep
   else eprintf "At location %d-%d\n" (fst loc) (snd loc)
 ;;
 
 let print_warning loc s = print_location loc; eprintf "%s\n" s;;
 
-let process pa pr getdir =
+let rec parse_file pa getdir useast =
   let name = !(Pcaml.input_file) in
   Pcaml.warning := print_warning;
   let ic = if name = "-" then stdin else open_in_bin name in
@@ -122,29 +144,43 @@ let process pa pr getdir =
       let rec loop () =
         let (pl, stopped_at_directive) = pa cs in
         if stopped_at_directive then
-          begin
-            begin match getdir (List.rev pl) with
+          let pl =
+            let rpl = List.rev pl in
+            match getdir rpl with
               Some x ->
                 begin match x with
                   loc, "load", Some (MLast.ExStr (_, s)) ->
-                    Odyl_main.loadfile s
+                    Odyl_main.loadfile s; pl
                 | loc, "directory", Some (MLast.ExStr (_, s)) ->
-                    Odyl_main.directory s
+                    Odyl_main.directory s; pl
+                | loc, "use", Some (MLast.ExStr (_, s)) ->
+                    List.rev_append rpl
+                      [useast loc s (use_file pa getdir useast s), loc]
                 | loc, _, _ ->
                     Stdpp.raise_with_loc loc (Stream.Error "bad directive")
                 end
-            | None -> ()
-            end;
-            pl @ loop ()
-          end
+            | None -> pl
+          in
+          pl @ loop ()
         else pl
       in
       loop ()
     with
       x -> clear (); raise x
   in
-  clear (); pr phr
+  clear (); phr
+and use_file pa getdir useast s =
+  let clear =
+    let v_input_file = !(Pcaml.input_file) in
+    fun () -> Pcaml.input_file := v_input_file
+  in
+  Pcaml.input_file := s;
+  try let r = parse_file pa getdir useast in clear (); r with
+    e -> clear (); raise e
 ;;
+
+let process pa pr getdir useast = pr (parse_file pa getdir useast);;
+
 
 let gind =
   function
@@ -158,11 +194,14 @@ let gimd =
   | _ -> None
 ;;
 
+let usesig loc fname ast = MLast.SgUse (loc, fname, ast);;
+let usestr loc fname ast = MLast.StUse (loc, fname, ast);;
+
 let process_intf () =
-  process !(Pcaml.parse_interf) !(Pcaml.print_interf) gind
+  process !(Pcaml.parse_interf) !(Pcaml.print_interf) gind usesig
 ;;
 let process_impl () =
-  process !(Pcaml.parse_implem) !(Pcaml.print_implem) gimd
+  process !(Pcaml.parse_implem) !(Pcaml.print_implem) gimd usestr
 ;;
 
 type file_kind =
@@ -212,6 +251,24 @@ let align_doc key s =
     String.make (max 1 (13 - String.length key - String.length p)) ' '
   in
   p ^ tab ^ s
+;;
+
+let make_symlist l =
+  match l with
+    [] -> "<none>"
+  | h :: t -> List.fold_left (fun x y -> x ^ "|" ^ y) ("{" ^ h) t ^ "}"
+;;
+
+let print_usage_list l =
+  List.iter
+    (fun (key, spec, doc) ->
+       match spec with
+         Arg.Symbol (symbs, _) ->
+           let s = make_symlist symbs in
+           let synt = key ^ " " ^ s in
+           eprintf "  %s %s\n" synt (align_doc synt doc)
+       | _ -> eprintf "  %s %s\n" key (align_doc key doc))
+    l
 ;;
 
 let make_symlist l =

@@ -28,22 +28,17 @@ value print_str ppf s = fprintf ppf "\"%s\"" (String.escaped s);
 
 value rec print_symbol ppf =
   fun
-  [ Smeta n sl _ ->
-      print_meta ppf n sl
-  | Slist0 s ->
-      fprintf ppf "LIST0 %a" print_symbol1 s
+  [ Smeta n sl _ -> print_meta ppf n sl
+  | Slist0 s -> fprintf ppf "LIST0 %a" print_symbol1 s
   | Slist0sep s t ->
       fprintf ppf "LIST0 %a SEP %a" print_symbol1 s print_symbol1 t
-  | Slist1 s ->
-      fprintf ppf "LIST1 %a" print_symbol1 s
+  | Slist1 s -> fprintf ppf "LIST1 %a" print_symbol1 s
   | Slist1sep s t ->
       fprintf ppf "LIST1 %a SEP %a" print_symbol1 s print_symbol1 t
-  | Sopt s ->
-      fprintf ppf "OPT %a" print_symbol1 s
+  | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
   | Stoken (con, prm) when con <> "" && prm <> "" ->
       fprintf ppf "%s@ %a" con print_str prm
-  | Snterml e l ->
-      fprintf ppf "%s@ LEVEL@ %a" e.ename print_str l
+  | Snterml e l -> fprintf ppf "%s@ LEVEL@ %a" e.ename print_str l
   | Snterm _ | Snext | Sself | Stoken _ | Stree _ as s ->
       print_symbol1 ppf s ]
 and print_meta ppf n sl =
@@ -52,16 +47,12 @@ and print_meta ppf n sl =
     [ [] -> ()
     | [s :: sl] ->
         let j =
-          try String.index_from n i ' ' with
-          [ Not_found -> String.length n ]
+          try String.index_from n i ' ' with [ Not_found -> String.length n ]
         in
         do {
           fprintf ppf "%s %a" (String.sub n i (j - i)) print_symbol1 s;
           if sl = [] then ()
-          else do {
-            fprintf ppf " ";
-            loop (min (j + 1) (String.length n)) sl
-          }
+          else do { fprintf ppf " "; loop (min (j + 1) (String.length n)) sl }
         } ]
 and print_symbol1 ppf =
   fun
@@ -72,7 +63,7 @@ and print_symbol1 ppf =
   | Stoken (con, "") -> pp_print_string ppf con
   | Stree t -> print_level ppf pp_print_space (flatten_tree t)
   | Smeta _ _ _ | Snterml _ _ | Slist0 _ | Slist0sep _ _ | Slist1 _ |
-    Slist1sep _ _  | Sopt _ | Stoken _ as s ->
+    Slist1sep _ _ | Sopt _ | Stoken _ as s ->
       fprintf ppf "(%a)" print_symbol s ]
 and print_rule ppf symbols =
   do {
@@ -100,7 +91,7 @@ and print_level ppf pp_print_space rules =
            })
         (fun ppf -> ()) rules
     in
-    fprintf ppf " ]@]";
+    fprintf ppf " ]@]"
   }
 ;
 
@@ -136,8 +127,73 @@ value print_entry ppf e =
     match e.edesc with
     [ Dlevels elev -> print_levels ppf elev
     | Dparser _ -> fprintf ppf "<parser>" ];
-    fprintf ppf " ]@]@.";
+    fprintf ppf " ]@]"
   }
+;
+
+value iter_entry f e =
+  let treated = ref [] in
+  let rec do_entry e =
+    if List.memq e treated.val then ()
+    else do {
+      treated.val := [e :: treated.val];
+      f e;
+      match e.edesc with
+      [ Dlevels ll -> List.iter do_level ll
+      | Dparser _ -> () ]
+    }
+  and do_level lev = do { do_tree lev.lsuffix; do_tree lev.lprefix }
+  and do_tree =
+    fun
+    [ Node n -> do_node n
+    | LocAct _ _ | DeadEnd -> () ]
+  and do_node n = do { do_symbol n.node; do_tree n.son; do_tree n.brother }
+  and do_symbol =
+    fun
+    [ Smeta _ sl _ -> List.iter do_symbol sl
+    | Snterm e | Snterml e _ -> do_entry e
+    | Slist0 s | Slist1 s | Sopt s -> do_symbol s
+    | Slist0sep s1 s2 | Slist1sep s1 s2 -> do { do_symbol s1; do_symbol s2 }
+    | Stree t -> do_tree t
+    | Sself | Snext | Stoken _ -> () ]
+  in
+  do_entry e
+;
+
+value fold_entry f e init =
+  let treated = ref [] in
+  let rec do_entry accu e =
+    if List.memq e treated.val then accu
+    else do {
+      treated.val := [e :: treated.val];
+      let accu = f e accu in
+      match e.edesc with
+      [ Dlevels ll -> List.fold_left do_level accu ll
+      | Dparser _ -> accu ]
+    }
+  and do_level accu lev =
+    let accu = do_tree accu lev.lsuffix in
+    do_tree accu lev.lprefix
+  and do_tree accu =
+    fun
+    [ Node n -> do_node accu n
+    | LocAct _ _ | DeadEnd -> accu ]
+  and do_node accu n =
+    let accu = do_symbol accu n.node in
+    let accu = do_tree accu n.son in
+    do_tree accu n.brother
+  and do_symbol accu =
+    fun
+    [ Smeta _ sl _ -> List.fold_left do_symbol accu sl
+    | Snterm e | Snterml e _ -> do_entry accu e
+    | Slist0 s | Slist1 s | Sopt s -> do_symbol accu s
+    | Slist0sep s1 s2 | Slist1sep s1 s2 ->
+        let accu = do_symbol accu s1 in
+        do_symbol accu s2
+    | Stree t -> do_tree accu t
+    | Sself | Snext | Stoken _ -> accu ]
+  in
+  do_entry init e
 ;
 
 type g = Gramext.grammar Token.t;
@@ -327,7 +383,7 @@ value tree_failed entry prev_symb_result prev_symb tree =
       print_level ppf pp_force_newline (flatten_tree tree);
       fprintf ppf "@]@,";
       fprintf ppf "----------------------------------@,";
-      fprintf ppf "@]@.";
+      fprintf ppf "@]@."
     }
     else ();
     txt ^ " (in [" ^ entry.ename ^ "])"
@@ -581,7 +637,9 @@ and parser_of_symbol entry nlevn =
       let f = entry.egram.glexer.Token.tok_match tok in
       fun strm ->
         match Stream.peek strm with
-        [ Some tok -> let r = f tok in do { Stream.junk strm; Obj.repr r }
+        [ Some tok ->
+            let r = f tok in
+            do { Stream.junk strm; Obj.repr r }
         | None -> raise Stream.Failure ] ]
 and parse_top_symb entry symb =
   parser_of_symbol entry 0 (top_symb entry symb)
@@ -671,11 +729,7 @@ value parse_parsable entry efun (cs, (ts, fun_loc)) =
   let restore =
     let old_floc = floc.val in
     let old_tc = token_count.val in
-    fun () ->
-      do {
-        floc.val := old_floc;
-        token_count.val := old_tc;
-      }
+    fun () -> do { floc.val := old_floc; token_count.val := old_tc }
   in
   let get_loc () =
     try
@@ -723,15 +777,12 @@ value tematch tparse tok =
   | None -> Token.default_match tok ]
 ;
 value glexer_of_lexer lexer =
-  {Token.tok_func = lexer.Token.func;
-   Token.tok_using = lexer.Token.using;
+  {Token.tok_func = lexer.Token.func; Token.tok_using = lexer.Token.using;
    Token.tok_removing = lexer.Token.removing;
    Token.tok_match = tematch lexer.Token.tparse;
-   Token.tok_text = lexer.Token.text}
+   Token.tok_text = lexer.Token.text; Token.tok_comm = None}
 ;
-value create lexer =
-  gcreate (glexer_of_lexer lexer)
-;
+value create lexer = gcreate (glexer_of_lexer lexer);
 
 (* Extend syntax *)
 
@@ -813,9 +864,7 @@ value gram_reinit g glexer =
   do { Hashtbl.clear g.gtokens; g.glexer := glexer }
 ;
 
-value reinit_gram g lexer =
-  gram_reinit g (glexer_of_lexer lexer)
-;
+value reinit_gram g lexer = gram_reinit g (glexer_of_lexer lexer);
 
 module Unsafe =
   struct
@@ -887,20 +936,19 @@ module Entry =
     value parse (entry : e 'a) cs : 'a =
       Obj.magic (wrap_parse entry (entry.estart 0) cs)
     ;
-    value parse_token (entry : e 'a) ts : 'a =
-      Obj.magic (entry.estart 0 ts);
+    value parse_token (entry : e 'a) ts : 'a = Obj.magic (entry.estart 0 ts);
     value name e = e.ename;
     value of_parser g n (p : Stream.t te -> 'a) : e 'a =
       {egram = g; ename = n; estart _ = Obj.magic p;
        econtinue _ _ _ = parser []; edesc = Dparser (Obj.magic p)}
     ;
     external obj : e 'a -> Gramext.g_entry te = "%identity";
-    value print e = print_entry std_formatter (obj e);
+    value print e = printf "%a@." print_entry (obj e);
     value find e s = find_entry (obj e) s;
   end
 ;
 
-value gen_tokens g con =
+value tokens g con =
   let list = ref [] in
   do {
     Hashtbl.iter
@@ -911,17 +959,13 @@ value gen_tokens g con =
   }
 ;
 
-value tokens g = gen_tokens (grammar_obj g);
+value glexer g = g.glexer;
 
 value warning_verbose = Gramext.warning_verbose;
 
 (* Functorial interface *)
 
-module type GLexerType =
-  sig
-    type te = 'x;
-    value lexer : Token.glexer te;
-  end;
+module type GLexerType = sig type te = 'x; value lexer : Token.glexer te; end;
 
 module type S =
   sig
@@ -929,6 +973,7 @@ module type S =
     type parsable = 'x;
     value parsable : Stream.t char -> parsable;
     value tokens : string -> list (string * int);
+    value glexer : Token.glexer te;
     module Entry :
       sig
         type e 'a = 'x;
@@ -958,21 +1003,17 @@ module type S =
   end
 ;
 
-module type ReinitType =
-  sig
-    value reinit_gram : g -> Token.lexer -> unit;
-  end
+module type ReinitType = sig value reinit_gram : g -> Token.lexer -> unit; end
 ;
 
 module GGMake (R : ReinitType) (L : GLexerType) =
   struct
     type te = L.te;
-    type parsable =
-      (Stream.t char * (Stream.t te * Token.location_function))
-    ;
+    type parsable = (Stream.t char * (Stream.t te * Token.location_function));
     value gram = gcreate L.lexer;
     value parsable cs = (cs, L.lexer.Token.tok_func cs);
-    value tokens = gen_tokens gram;
+    value tokens = tokens gram;
+    value glexer = glexer gram;
     module Entry =
       struct
         type e 'a = g_entry te;
@@ -990,7 +1031,7 @@ module GGMake (R : ReinitType) (L : GLexerType) =
           {egram = gram; ename = n; estart _ = Obj.magic p;
            econtinue _ _ _ = parser []; edesc = Dparser (Obj.magic p)}
         ;
-        value print e = print_entry std_formatter (obj e);
+        value print e = printf "%a@." print_entry (obj e);
       end
     ;
     module Unsafe =
@@ -1015,16 +1056,9 @@ module GMake (L : GLexerType) =
     L
 ;
 
-module type LexerType =
-  sig
-    value lexer : Token.lexer;
-  end;
+module type LexerType = sig value lexer : Token.lexer; end;
 
 module Make (L : LexerType) =
-  GGMake
-    (struct value reinit_gram = reinit_gram; end)
-    (struct
-       type te = Token.t;
-       value lexer = glexer_of_lexer L.lexer;
-     end)
+  GGMake (struct value reinit_gram = reinit_gram; end)
+    (struct type te = Token.t; value lexer = glexer_of_lexer L.lexer; end)
 ;

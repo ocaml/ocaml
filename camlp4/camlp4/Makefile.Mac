@@ -45,13 +45,8 @@ all Ä {CAMLP4}
 camlp4.cma Ä {CAMLP4_OBJS}
     {OCAMLC} {LINKFLAGS} {CAMLP4_OBJS} -a -o camlp4.cma
 
-crc.cmo Ä {CAMLP4_INTF}
-    ::tools:extract_crc.mpw {INTERFACES} > crc.ml
-    echo "let _ = Dynlink.add_available_units crc_unit_list" >> crc.ml
-    {OCAMLC} {OCAMLCFLAGS} -c crc.ml
-
 clean ÄÄ
-    delete -i {CAMLP4} crc.ml extract_crc
+    delete -i {CAMLP4}
 
 {dependrule}
 

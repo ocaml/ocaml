@@ -295,9 +295,12 @@ value rec quot_expr e =
       [ <:expr< $uid:c$ >> ->
           let al = List.map quot_expr al in
           <:expr< Qast.Node $str:c$ $mklistexp loc al$ >>
-      | <:expr< $_$.$uid:c$ >> ->
+      | <:expr< MLast.$uid:c$ >> ->
           let al = List.map quot_expr al in
           <:expr< Qast.Node $str:c$ $mklistexp loc al$ >>
+      | <:expr< $uid:m$.$uid:c$ >> ->
+          let al = List.map quot_expr al in
+          <:expr< Qast.Node $str:m ^ "." ^ c$ $mklistexp loc al$ >>
       | <:expr< $lid:f$ >> ->
           let al = List.map quot_expr al in
           List.fold_left (fun f e -> <:expr< $f$ $e$ >>)
@@ -322,15 +325,16 @@ value rec quot_expr e =
       [ Not_found -> e ]
   | <:expr< $lid:s$ >> ->
       if s = Stdpp.loc_name.val then <:expr< Qast.Loc >> else e
-  | <:expr< $_$.$uid:s$ >> -> <:expr< Qast.Node $str:s$ [] >>
+  | <:expr< MLast.$uid:s$ >> -> <:expr< Qast.Node $str:s$ [] >>
+  | <:expr< $uid:m$.$uid:s$ >> -> <:expr< Qast.Node $str:m ^ "." ^ s$ [] >>
   | <:expr< $uid:s$ >> -> <:expr< Qast.Node $str:s$ [] >>
   | <:expr< $str:s$ >> -> <:expr< Qast.Str $str:s$ >>
   | <:expr< ($list:el$) >> ->
       let el = List.map quot_expr el in
       <:expr< Qast.Tuple $mklistexp loc el$ >>
-  | <:expr< let $rec:r$ $list:pel$ in $e$ >> ->
+  | <:expr< let $opt:r$ $list:pel$ in $e$ >> ->
       let pel = List.map (fun (p, e) -> (p, quot_expr e)) pel in
-      <:expr< let $rec:r$ $list:pel$ in $quot_expr e$ >>
+      <:expr< let $opt:r$ $list:pel$ in $quot_expr e$ >>
   | _ -> e ]
 ;
 
@@ -722,6 +726,12 @@ value text_of_functorial_extend loc gmod gl el =
 
 open Pcaml;
 value symbol = Grammar.Entry.create gram "symbol";
+value semi_sep =
+  if syntax_name.val = "Scheme" then
+    Grammar.Entry.of_parser gram "'/'" (parser [: `("", "/") :] -> ())
+  else
+    Grammar.Entry.of_parser gram "';'" (parser [: `("", ";") :] -> ())
+;
 
 EXTEND
   GLOBAL: expr symbol;
@@ -732,29 +742,30 @@ EXTEND
       | "GDELETE_RULE"; e = gdelete_rule_body; "END" -> e ] ]
   ;
   extend_body:
-    [ [ f = efunction; sl = OPT global; el = LIST1 [ e = entry; ";" -> e ] ->
+    [ [ f = efunction; sl = OPT global;
+        el = LIST1 [ e = entry; semi_sep -> e ] ->
           text_of_extend loc "Grammar" sl el f ] ]
   ;
   gextend_body:
-    [ [ g = UIDENT; sl = OPT global; el = LIST1 [ e = entry; ";" -> e ] ->
+    [ [ g = UIDENT; sl = OPT global; el = LIST1 [ e = entry; semi_sep -> e ] ->
           text_of_functorial_extend loc g sl el ] ]
   ;
   delete_rule_body:
-    [ [ n = name; ":"; sl = LIST1 symbol SEP ";" ->
+    [ [ n = name; ":"; sl = LIST1 symbol SEP semi_sep ->
           let (e, b) = expr_of_delete_rule loc "Grammar" n sl in
           <:expr< Grammar.delete_rule $e$ $b$ >> ] ]
   ;
   gdelete_rule_body:
-    [ [ g = UIDENT; n = name; ":"; sl = LIST1 symbol SEP ";" ->
+    [ [ g = UIDENT; n = name; ":"; sl = LIST1 symbol SEP semi_sep ->
           let (e, b) = expr_of_delete_rule loc g n sl in
           <:expr< $uid:g$.delete_rule $e$ $b$ >> ] ]
   ;
   efunction:
-    [ [ UIDENT "FUNCTION"; ":"; f = qualid; ";" -> f
+    [ [ UIDENT "FUNCTION"; ":"; f = qualid; semi_sep -> f
       | -> <:expr< Grammar.extend >> ] ]
   ;
   global:
-    [ [ UIDENT "GLOBAL"; ":"; sl = LIST1 name; ";" -> sl ] ]
+    [ [ UIDENT "GLOBAL"; ":"; sl = LIST1 name; semi_sep -> sl ] ]
   ;
   entry:
     [ [ n = name; ":"; pos = OPT position; ll = level_list ->
@@ -785,9 +796,9 @@ EXTEND
           retype_rule_list_without_patterns loc rules ] ]
   ;
   rule:
-    [ [ psl = LIST0 psymbol SEP ";"; "->"; act = expr ->
+    [ [ psl = LIST0 psymbol SEP semi_sep; "->"; act = expr ->
           {prod = psl; action = Some act}
-      | psl = LIST0 psymbol SEP ";" ->
+      | psl = LIST0 psymbol SEP semi_sep ->
           {prod = psl; action = None} ] ]
   ;
   psymbol:

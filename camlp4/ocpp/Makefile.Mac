@@ -27,13 +27,8 @@ ocpp Ä {OBJS}
     {OCAMLC} {LINKFLAGS} ::boot:stdpp.cmo ::camlp4:quotation.cmo ¶
              ::odyl:odyl.cma {OBJS} ::odyl:odyl.cmo -linkall -o ocpp
 
-crc.cmo Ä
-    ::tools:extract_crc.mpw {INTERFACES} > crc.ml
-    echo "let _ = Dynlink.add_available_units crc_unit_list" >> crc.ml
-    {OCAMLC} {OCAMLCFLAGS} -c crc.ml
-
 clean ÄÄ
-    delete -i crc.ml ocpp
+    delete -i ocpp
 
 install Ä
     (newfolder "{P4LIBDIR}" || set status 0) ³ dev:null

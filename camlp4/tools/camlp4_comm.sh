@@ -3,8 +3,10 @@
 
 ARGS1=
 FILE=
+QUIET=no
 while test "" != "$1"; do
         case $1 in
+        -q) QUIET=yes;;
         *.ml*) FILE=$1;;
         *) ARGS1="$ARGS1 $1";;
         esac
@@ -22,7 +24,7 @@ if test "$2" = "camlp4r" -o "$2" = "camlp4"; then
         shift; shift
         ARGS2=`echo $* | sed -e "s/[()*]//g"`
 #        ARGS1="$ARGS1 -verbose"
-        echo $COMM $ARGS2 $ARGS1 $FILE
+        if test "$QUIET" = "no"; then echo $COMM $ARGS2 $ARGS1 $FILE; fi
         $COMM $ARGS2 $ARGS1 $FILE
 else
         if test "`basename $FILE .mli`.mli" = "$FILE"; then
@@ -30,6 +32,6 @@ else
         else
                 OFILE=`basename $FILE .ml`.ppo
         fi
-        echo cp $FILE $OFILE
+        if test "$QUIET" = "no"; then echo cp $FILE $OFILE; fi
         cp $FILE $OFILE
 fi

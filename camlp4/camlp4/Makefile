@@ -5,7 +5,7 @@ include ../config/Makefile
 SHELL=/bin/sh
 
 INCLUDES=-I ../odyl -I ../boot -I $(OTOP)/utils -I $(OTOP)/parsing -I $(OTOP)/otherlibs/dynlink
-OCAMLCFLAGS= $(INCLUDES) -warn-error A
+OCAMLCFLAGS= $(INCLUDES) -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 INTERFACES=-I $(OLIBDIR) Arg Array ArrayLabels Buffer Callback CamlinternalOO Char Complex Digest Filename Format Gc Genlex Hashtbl Int32 Int64 Lazy Lexing List ListLabels Map Marshal MoreLabels Nativeint Obj Oo Parsing Pervasives Printexc Printf Queue Random Scanf Set Sort Stack StdLabels Stream String StringLabels Sys Weak -I ../boot Extfold Extfun Fstream Gramext Grammar Plexer Stdpp Token -I $(OTOP)/utils Config Warnings -I $(OTOP)/parsing Asttypes Location Longident Parsetree -I . Ast2pt MLast Pcaml Quotation Spretty
 CAMLP4_INTF=$(OTOP)/utils/config.cmi $(OTOP)/utils/warnings.cmi $(OTOP)/parsing/asttypes.cmi $(OTOP)/parsing/location.cmi $(OTOP)/parsing/longident.cmi $(OTOP)/parsing/parsetree.cmi ast2pt.cmi mLast.cmi pcaml.cmi spretty.cmi quotation.cmi
@@ -36,14 +36,9 @@ camlp4.cma: $(CAMLP4_OBJS)
 camlp4.cmxa: $(CAMLP4_XOBJS)
 	$(OCAMLOPT) $(LINKFLAGS) $(CAMLP4_XOBJS) -a -o camlp4.cmxa
 
-crc.cmo: $(CAMLP4_INTF)
-	@OTOP=$(OTOP) EXE=$(EXE) ../tools/extract_crc.sh $(INTERFACES) > crc.ml
-	echo "let _ = Dynlink.add_available_units crc_unit_list" >> crc.ml
-	$(OCAMLC) $(OCAMLCFLAGS) -c crc.ml
-
 clean::
 	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt
-	rm -f $(CAMLP4) crc.ml
+	rm -f $(CAMLP4)
 
 depend:
 	cp .depend .depend.bak
@@ -62,11 +57,11 @@ compare:
 	done
 
 install:
-	-$(MKDIR) $(BINDIR)
-	-$(MKDIR) $(LIBDIR)/camlp4
-	cp $(CAMLP4) $(BINDIR)/.
-	cp mLast.mli quotation.mli ast2pt.mli pcaml.mli spretty.mli $(LIBDIR)/camlp4/.
-	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi $(LIBDIR)/camlp4/.
+	-$(MKDIR) "$(BINDIR)"
+	-$(MKDIR) "$(LIBDIR)/camlp4"
+	cp $(CAMLP4) "$(BINDIR)/."
+	cp mLast.mli quotation.mli ast2pt.mli pcaml.mli spretty.mli "$(LIBDIR)/camlp4/."
+	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi "$(LIBDIR)/camlp4/."
 	cp camlp4.cma $(LIBDIR)/camlp4/.
 	if [ -f camlp4.cmxa ]; \
 	  then cp camlp4.cmxa camlp4.a $(LIBDIR)/camlp4/.; \

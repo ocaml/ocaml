@@ -54,6 +54,12 @@ value dollar_for_antiquotation : ref bool;
        lexer where the dollar sign is used for antiquotations. If False,
        the dollar sign can be used as token. *)
 
+value specific_space_dot : ref bool;
+   (** When False (default), the next call to [Plexer.make ()] returns a
+       lexer where the dots can be preceded by spaces. If True, dots
+       preceded by spaces return the keyword " ." (space dot), otherwise
+       return the keyword "." (dot). *)
+
 value no_quotations : ref bool;
    (** When True, all lexers built by [Plexer.make ()] do not lex the
        quotation syntax any more. Default is False (quotations are

@@ -120,7 +120,71 @@ let print_entry ppf e =
     Dlevels elev -> print_levels ppf elev
   | Dparser _ -> fprintf ppf "<parser>"
   end;
-  fprintf ppf " ]@]@."
+  fprintf ppf " ]@]"
+;;
+
+let iter_entry f e =
+  let treated = ref [] in
+  let rec do_entry e =
+    if List.memq e !treated then ()
+    else
+      begin
+        treated := e :: !treated;
+        f e;
+        match e.edesc with
+          Dlevels ll -> List.iter do_level ll
+        | Dparser _ -> ()
+      end
+  and do_level lev = do_tree lev.lsuffix; do_tree lev.lprefix
+  and do_tree =
+    function
+      Node n -> do_node n
+    | LocAct (_, _) | DeadEnd -> ()
+  and do_node n = do_symbol n.node; do_tree n.son; do_tree n.brother
+  and do_symbol =
+    function
+      Smeta (_, sl, _) -> List.iter do_symbol sl
+    | Snterm e | Snterml (e, _) -> do_entry e
+    | Slist0 s | Slist1 s | Sopt s -> do_symbol s
+    | Slist0sep (s1, s2) | Slist1sep (s1, s2) -> do_symbol s1; do_symbol s2
+    | Stree t -> do_tree t
+    | Sself | Snext | Stoken _ -> ()
+  in
+  do_entry e
+;;
+
+let fold_entry f e init =
+  let treated = ref [] in
+  let rec do_entry accu e =
+    if List.memq e !treated then accu
+    else
+      begin
+        treated := e :: !treated;
+        let accu = f e accu in
+        match e.edesc with
+          Dlevels ll -> List.fold_left do_level accu ll
+        | Dparser _ -> accu
+      end
+  and do_level accu lev =
+    let accu = do_tree accu lev.lsuffix in do_tree accu lev.lprefix
+  and do_tree accu =
+    function
+      Node n -> do_node accu n
+    | LocAct (_, _) | DeadEnd -> accu
+  and do_node accu n =
+    let accu = do_symbol accu n.node in
+    let accu = do_tree accu n.son in do_tree accu n.brother
+  and do_symbol accu =
+    function
+      Smeta (_, sl, _) -> List.fold_left do_symbol accu sl
+    | Snterm e | Snterml (e, _) -> do_entry accu e
+    | Slist0 s | Slist1 s | Sopt s -> do_symbol accu s
+    | Slist0sep (s1, s2) | Slist1sep (s1, s2) ->
+        let accu = do_symbol accu s1 in do_symbol accu s2
+    | Stree t -> do_tree accu t
+    | Sself | Snext | Stoken _ -> accu
+  in
+  do_entry init e
 ;;
 
 type g = Token.t Gramext.grammar;;
@@ -774,7 +838,7 @@ let glexer_of_lexer lexer =
   {Token.tok_func = lexer.Token.func; Token.tok_using = lexer.Token.using;
    Token.tok_removing = lexer.Token.removing;
    Token.tok_match = tematch lexer.Token.tparse;
-   Token.tok_text = lexer.Token.text}
+   Token.tok_text = lexer.Token.text; Token.tok_comm = None}
 ;;
 let create lexer = gcreate (glexer_of_lexer lexer);;
 
@@ -933,12 +997,12 @@ module Entry =
        edesc = Dparser (Obj.magic p)}
     ;;
     external obj : 'a e -> te Gramext.g_entry = "%identity";;
-    let print e = print_entry std_formatter (obj e);;
+    let print e = printf "%a@." print_entry (obj e);;
     let find e s = find_entry (obj e) s;;
   end
 ;;
 
-let gen_tokens g con =
+let tokens g con =
   let list = ref [] in
   Hashtbl.iter
     (fun (p_con, p_prm) c -> if p_con = con then list := (p_prm, !c) :: !list)
@@ -946,7 +1010,7 @@ let gen_tokens g con =
   !list
 ;;
 
-let tokens g = gen_tokens (grammar_obj g);;
+let glexer g = g.glexer;;
 
 let warning_verbose = Gramext.warning_verbose;;
 
@@ -960,6 +1024,7 @@ module type S =
     type parsable;;
     val parsable : char Stream.t -> parsable;;
     val tokens : string -> (string * int) list;;
+    val glexer : te Token.glexer;;
     module Entry :
       sig
         type 'a e;;
@@ -998,7 +1063,8 @@ module GGMake (R : ReinitType) (L : GLexerType) =
     type parsable = char Stream.t * (te Stream.t * Token.location_function);;
     let gram = gcreate L.lexer;;
     let parsable cs = cs, L.lexer.Token.tok_func cs;;
-    let tokens = gen_tokens gram;;
+    let tokens = tokens gram;;
+    let glexer = glexer gram;;
     module Entry =
       struct
         type 'a e = te g_entry;;
@@ -1020,7 +1086,7 @@ module GGMake (R : ReinitType) (L : GLexerType) =
              (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
            edesc = Dparser (Obj.magic p)}
         ;;
-        let print e = print_entry std_formatter (obj e);;
+        let print e = printf "%a@." print_entry (obj e);;
       end
     ;;
     module Unsafe =

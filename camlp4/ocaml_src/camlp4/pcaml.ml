@@ -14,12 +14,14 @@
 
 let version = Sys.ocaml_version;;
 
+let syntax_name = ref "";;
+
 let gram =
   Grammar.gcreate
     {Token.tok_func = (fun _ -> failwith "no loaded parsing module");
      Token.tok_using = (fun _ -> ()); Token.tok_removing = (fun _ -> ());
-     Token.tok_match = (fun _ -> raise (Match_failure ("pcaml.ml", 21, 23)));
-     Token.tok_text = fun _ -> ""}
+     Token.tok_match = (fun _ -> raise (Match_failure ("pcaml.ml", 23, 23)));
+     Token.tok_text = (fun _ -> ""); Token.tok_comm = None}
 ;;
 
 let interf = Grammar.Entry.create gram "interf";;
@@ -34,6 +36,7 @@ let expr = Grammar.Entry.create gram "expr";;
 let patt = Grammar.Entry.create gram "patt";;
 let ctyp = Grammar.Entry.create gram "type";;
 let let_binding = Grammar.Entry.create gram "let_binding";;
+let type_declaration = Grammar.Entry.create gram "type_declaration";;
 
 let class_sig_item = Grammar.Entry.create gram "class_sig_item";;
 let class_str_item = Grammar.Entry.create gram "class_str_item";;
@@ -54,6 +57,18 @@ let sync = ref skip_to_eol;;
 let input_file = ref "";;
 let output_file = ref None;;
 
+let warning_default_function (bp, ep) txt =
+  Printf.eprintf "<W> loc %d %d: %s\n" bp ep txt; flush stderr
+;;
+
+let warning = ref warning_default_function;;
+
+let apply_with_var v x f =
+  let vx = !v in
+  try v := x; let r = f () in v := vx; r with
+    e -> v := vx; raise e
+;;
+
 List.iter (fun (n, f) -> Quotation.add n f)
   ["id", Quotation.ExStr (fun _ s -> "$0:" ^ s ^ "$");
    "string", Quotation.ExStr (fun _ s -> "\"" ^ String.escaped s ^ "\"")];;
@@ -69,13 +84,19 @@ type err_ctx =
 exception Qerror of string * err_ctx * exn;;
 
 let expand_quotation loc expander shift name str =
-  try expander str with
-    Stdpp.Exc_located ((p1, p2), exc) ->
-      let exc1 = Qerror (name, Expanding, exc) in
-      raise (Stdpp.Exc_located ((shift + p1, shift + p2), exc1))
-  | exc ->
-      let exc1 = Qerror (name, Expanding, exc) in
-      raise (Stdpp.Exc_located (loc, exc1))
+  let new_warning =
+    let warn = !warning in
+    fun (bp, ep) txt -> warn (shift + bp, shift + ep) txt
+  in
+  apply_with_var warning new_warning
+    (fun () ->
+       try expander str with
+         Stdpp.Exc_located ((p1, p2), exc) ->
+           let exc1 = Qerror (name, Expanding, exc) in
+           raise (Stdpp.Exc_located ((shift + p1, shift + p2), exc1))
+       | exc ->
+           let exc1 = Qerror (name, Expanding, exc) in
+           raise (Stdpp.Exc_located (loc, exc1)))
 ;;
 
 let parse_quotation_result entry loc shift name str =
@@ -167,6 +188,8 @@ let handle_patt_locate loc x = handle_locate loc patt_eoi patt_anti x;;
 let expr_reloc = Reloc.expr;;
 let patt_reloc = Reloc.patt;;
 
+let rename_id = ref (fun x -> x);;
+
 let find_line (bp, ep) str =
   let rec find i line col =
     if i == String.length str then line, 0, col
@@ -247,16 +270,23 @@ let print_format str =
   Format.open_box 2; loop 0 0; Format.close_box ()
 ;;
 
+let print_file_failed file line char =
+  Format.print_string ", file \"";
+  Format.print_string file;
+  Format.print_string "\", line ";
+  Format.print_int line;
+  Format.print_string ", char ";
+  Format.print_int char
+;;
+
 let print_exn =
   function
     Out_of_memory -> Format.print_string "Out of memory\n"
+  | Assert_failure (file, line, char) ->
+      Format.print_string "Assertion failed"; print_file_failed file line char
   | Match_failure (file, line, char) ->
-      Format.print_string "Pattern matching failed, file ";
-      Format.print_string file;
-      Format.print_string ", line ";
-      Format.print_int line;
-      Format.print_string ", char ";
-      Format.print_int char
+      Format.print_string "Pattern matching failed";
+      print_file_failed file line char
   | Stream.Error str -> print_format ("Parse error: " ^ str)
   | Stream.Failure -> Format.print_string "Parse failure"
   | Token.Error str ->
@@ -278,7 +308,7 @@ let print_exn =
             let arg = Obj.field (Obj.repr x) i in
             if not (Obj.is_block arg) then
               Format.print_int (Obj.magic arg : int)
-            else if Obj.tag arg = 252 then
+            else if Obj.tag arg = Obj.tag (Obj.repr "a") then
               begin
                 Format.print_char '\"';
                 Format.print_string (Obj.magic arg : string);
@@ -301,12 +331,6 @@ let report_error exn =
   | Qerror (name, ctx, exn) -> report_quotation_error name ctx; print_exn exn
   | e -> print_exn exn
 ;;
-
-let warning_default_function (bp, ep) txt =
-  Printf.eprintf "<W> loc %d %d: %s\n" bp ep txt; flush stderr
-;;
-
-let warning = ref warning_default_function;;
 
 let no_constructors_arity = Ast2pt.no_constructors_arity;;
 (*value no_assert = ref False;*)
@@ -336,46 +360,55 @@ and kont = pretty Stream.t
 ;;
 
 let pr_str_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 349, 30)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 385, 30)));
    pr_levels = []}
 ;;
 let pr_sig_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 350, 30)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 386, 30)));
+   pr_levels = []}
+;;
+let pr_module_type =
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 387, 33)));
+   pr_levels = []}
+;;
+let pr_module_expr =
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 388, 33)));
    pr_levels = []}
 ;;
 let pr_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 351, 26)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 389, 26)));
    pr_levels = []}
 ;;
 let pr_patt =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 352, 26)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 390, 26)));
    pr_levels = []}
 ;;
 let pr_ctyp =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 353, 26)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 391, 26)));
+   pr_levels = []}
+;;
+let pr_class_sig_item =
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 392, 36)));
    pr_levels = []}
 ;;
 let pr_class_str_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 354, 36)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 393, 36)));
+   pr_levels = []}
+;;
+let pr_class_type =
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 394, 32)));
+   pr_levels = []}
+;;
+let pr_class_expr =
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 395, 32)));
    pr_levels = []}
 ;;
 let pr_expr_fun_args = ref Extfun.empty;;
 
-let not_impl name x =
-  let desc =
-    if Obj.is_block (Obj.repr x) then
-      "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
-    else "int_val = " ^ string_of_int (Obj.magic x)
-  in
-  HVbox
-    (Stream.lsing
-       (fun _ -> S (NO, ("<pr_fun: not impl: " ^ name ^ "; " ^ desc ^ ">"))))
-;;
-
 let pr_fun name pr lab =
   let rec loop app =
     function
-      [] -> (fun x dg k -> not_impl name x)
+      [] -> (fun x dg k -> failwith ("unable to print " ^ name))
     | lev :: levl ->
         if app || lev.pr_label = lab then
           let next = loop true levl in
@@ -388,10 +421,15 @@ let pr_fun name pr lab =
 
 pr_str_item.pr_fun <- pr_fun "str_item" pr_str_item;;
 pr_sig_item.pr_fun <- pr_fun "sig_item" pr_sig_item;;
+pr_module_type.pr_fun <- pr_fun "module_type" pr_module_type;;
+pr_module_expr.pr_fun <- pr_fun "module_expr" pr_module_expr;;
 pr_expr.pr_fun <- pr_fun "expr" pr_expr;;
 pr_patt.pr_fun <- pr_fun "patt" pr_patt;;
 pr_ctyp.pr_fun <- pr_fun "ctyp" pr_ctyp;;
+pr_class_sig_item.pr_fun <- pr_fun "class_sig_item" pr_class_sig_item;;
 pr_class_str_item.pr_fun <- pr_fun "class_str_item" pr_class_str_item;;
+pr_class_type.pr_fun <- pr_fun "class_type" pr_class_type;;
+pr_class_expr.pr_fun <- pr_fun "class_expr" pr_class_expr;;
 
 let rec find_pr_level lab =
   function
@@ -409,6 +447,18 @@ let top_printer pr x =
     Format.print_newline "<< " "   " 78 (fun _ _ -> "", 0, 0, 0) 0
     (pr.pr_fun "top" x "" Stream.sempty);
   Format.print_string " >>"
+;;
+
+let buff = Buffer.create 73;;
+let buffer_char = Buffer.add_char buff;;
+let buffer_string = Buffer.add_string buff;;
+let buffer_newline () = Buffer.add_char buff '\n';;
+
+let string_of pr x =
+  Buffer.clear buff;
+  Spretty.print_pretty buffer_char buffer_string buffer_newline "" "" 78
+    (fun _ _ -> "", 0, 0, 0) 0 (pr.pr_fun "top" x "" Stream.sempty);
+  Buffer.contents buff
 ;;
 
 let inter_phrases = ref None;;

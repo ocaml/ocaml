@@ -28,9 +28,18 @@ load-options
 other-options
 ]
 .br
+.B camlp4sch
+[
+load-options
+] [--] [
+other-options
+]
+.br
 .B camlp4o.cma
 .br
 .B camlp4r.cma
+.br
+.B camlp4sch.cma
 .br
 .B mkcamlp4
 .br
@@ -56,16 +65,18 @@ other-options
 is a Pre-Processor-Pretty-Printer for OCaml, parsing a source
 file and printing some result on standard output.
 .LP
-.B camlp4o
-and
+.B camlp4o,
 .B camlp4r
+and
+.B camlp4sch
 are versions of
 .B camlp4
 with some files already loaded (see further).
 .LP
-.B camlp4o.cma
-and
+.B camlp4o.cma,
 .B camlp4r.cma
+and
+.B camlp4sch.cma
 are files to be loaded in ocaml toplevel to use the camlp4 machinery
 .LP
 .B mkcamlp4
@@ -175,10 +186,10 @@ of comments.
 Added by pr_o.cmo: do not print double semicolons
 .TP
 .BI \-D\  ident
-Added by pa_ifdef.cmo: define the ident.
+Added by pa_macro.cmo: define the ident.
 .TP
 .BI \-U\  ident
-Added by pa_ifdef.cmo: undefine the ident.
+Added by pa_macro.cmo: undefine the ident.
 
 .SH "PROVIDED FILES"
 These files are installed in the directory LIBDIR/camlp4.
@@ -192,12 +203,12 @@ Parsing files:
 	pa_oop.cmo: streams and parsers (without code optimization)
 	pa_r.cmo: revised syntax
 	pa_rp.cmo: streams and parsers
-	pa_lisp.cmo: lisp syntax
+	pa_scheme.cmo: scheme syntax
 	pa_extend.cmo: syntax extension for grammars
 	pa_extfold.cmo: extension of pa_extend with FOLD0 and FOLD1
 	pa_extfun.cmo: syntax extension for extensible functions
 	pa_fstream.cmo: syntax extension for functional streams
-	pa_ifdef.cmo: add ifdef instruction (conditional compilation)
+	pa_macro.cmo: add macros (ifdef, define) like in C
 	pa_lefteval.cmo: left-to-right evaluation of parameters
 	pa_olabl.cmo: old syntax for labels
 .fi
@@ -209,6 +220,8 @@ Printing files:
 	pr_op.cmo: try to rebuild streams and parsers syntax
 	pr_r.cmo: revised syntax
 	pr_rp.cmo: try to rebuild streams and parsers syntax
+	pr_scheme.cmo: scheme syntax
+	pr_schemep.cmo: try to rebuild streams and parsers syntax
 	pr_extend.cmo: try to rebuild EXTEND statements
 	pr_extfun.cmo: try to rebuild extfun statements
 	pr_dump.cmo: syntax tree
@@ -239,6 +252,14 @@ is a shortcut for:
 	camlp4 pa_r.cmo pa_rp.cmo pr_dump.cmo
 .fi
 .LP
+The command
+.B camlp4sch
+is a shortcut for:
+.nf
+.ta 1c
+	camlp4 pa_scheme.cmo pr_dump.cmo
+.fi
+.LP
 .LP
 The file
 .B camlp4o.cma
@@ -247,6 +268,10 @@ can be loaded in the toplevel to start camlp4 with OCaml syntax.
 The file
 .B camlp4r.cma
 can be loaded in the toplevel to start camlp4 with revised syntax.
+.LP
+The file
+.B camlp4sch.cma
+can be loaded in the toplevel to start camlp4 with Scheme syntax.
 
 .SH "MKCAMLP4"
 

@@ -5,14 +5,19 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
 
-(* Module [MLast]: abstract syntax tree *)
+(* Module [MLast]: abstract syntax tree
+
+   This is undocumented because the AST is not supposed to be used
+   directly; the good usage is to use the quotations representing
+   these values in concrete syntax (see the Camlp4 documentation).
+   See also the file q_MLast.ml in Camlp4 sources. *)
 
 type loc = (int * int);
 
@@ -58,9 +63,9 @@ type patt =
   | PaChr of loc and string
   | PaInt of loc and string
   | PaFlo of loc and string
-  | PaLab of loc and string and patt
+  | PaLab of loc and string and option patt
   | PaLid of loc and string
-  | PaOlb of loc and string and patt and option expr
+  | PaOlb of loc and string and option (patt * option expr)
   | PaOrp of loc and patt and patt
   | PaRng of loc and patt and patt
   | PaRec of loc and list (patt * patt)
@@ -86,14 +91,14 @@ and expr =
   | ExFun of loc and list (patt * option expr * expr)
   | ExIfe of loc and expr and expr and expr
   | ExInt of loc and string
-  | ExLab of loc and string and expr
+  | ExLab of loc and string and option expr
   | ExLaz of loc and expr
   | ExLet of loc and bool and list (patt * expr) and expr
   | ExLid of loc and string
   | ExLmd of loc and string and module_expr and expr
   | ExMat of loc and expr and list (patt * option expr * expr)
   | ExNew of loc and list string
-  | ExOlb of loc and string and expr
+  | ExOlb of loc and string and option expr
   | ExOvr of loc and list (string * expr)
   | ExRec of loc and list (patt * expr) and option expr
   | ExSeq of loc and list expr
@@ -127,6 +132,7 @@ and sig_item =
   | SgMty of loc and string and module_type
   | SgOpn of loc and list string
   | SgTyp of loc and list type_decl
+  | SgUse of loc and string and list (sig_item * loc)
   | SgVal of loc and string and ctyp ]
 and with_constr =
   [ WcTyp of loc and list string and list (string * (bool * bool)) and ctyp
@@ -151,6 +157,7 @@ and str_item =
   | StMty of loc and string and module_type
   | StOpn of loc and list string
   | StTyp of loc and list type_decl
+  | StUse of loc and string and list (str_item * loc)
   | StVal of loc and bool and list (patt * expr) ]
 and type_decl =
   ((loc * string) * list (string * (bool * bool)) * ctyp * list (ctyp * ctyp))

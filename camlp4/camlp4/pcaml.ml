@@ -14,11 +14,14 @@
 
 value version = Sys.ocaml_version;
 
+value syntax_name = ref "";
+
 value gram =
   Grammar.gcreate
     {Token.tok_func _ = failwith "no loaded parsing module";
      Token.tok_using _ = (); Token.tok_removing _ = ();
-     Token.tok_match = fun []; Token.tok_text _ = ""}
+     Token.tok_match = fun []; Token.tok_text _ = "";
+     Token.tok_comm = None}
 ;
 
 value interf = Grammar.Entry.create gram "interf";
@@ -33,6 +36,7 @@ value expr = Grammar.Entry.create gram "expr";
 value patt = Grammar.Entry.create gram "patt";
 value ctyp = Grammar.Entry.create gram "type";
 value let_binding = Grammar.Entry.create gram "let_binding";
+value type_declaration = Grammar.Entry.create gram "type_declaration";
 
 value class_sig_item = Grammar.Entry.create gram "class_sig_item";
 value class_str_item = Grammar.Entry.create gram "class_str_item";
@@ -53,6 +57,24 @@ value sync = ref skip_to_eol;
 value input_file = ref "";
 value output_file = ref None;
 
+value warning_default_function (bp, ep) txt =
+  do { Printf.eprintf "<W> loc %d %d: %s\n" bp ep txt; flush stderr }
+;
+
+value warning = ref warning_default_function;
+
+value apply_with_var v x f =
+  let vx = v.val in
+  try
+    do {
+      v.val := x;
+      let r = f ();
+      v.val := vx;
+      r
+    }
+  with e -> do { v.val := vx; raise e }
+;
+
 List.iter (fun (n, f) -> Quotation.add n f)
   [("id", Quotation.ExStr (fun _ s -> "$0:" ^ s ^ "$"));
    ("string", Quotation.ExStr (fun _ s -> "\"" ^ String.escaped s ^ "\""))];
@@ -65,13 +87,19 @@ type err_ctx =
 exception Qerror of string and err_ctx and exn;
 
 value expand_quotation loc expander shift name str =
-  try expander str with
-  [ Stdpp.Exc_located (p1, p2) exc ->
-      let exc1 = Qerror name Expanding exc in
-      raise (Stdpp.Exc_located (shift + p1, shift + p2) exc1)
-  | exc ->
-      let exc1 = Qerror name Expanding exc in
-      raise (Stdpp.Exc_located loc exc1) ]
+  let new_warning =
+    let warn = warning.val in
+    fun (bp, ep) txt -> warn (shift + bp, shift + ep) txt
+  in
+  apply_with_var warning new_warning
+    (fun () ->
+       try expander str with
+       [ Stdpp.Exc_located (p1, p2) exc ->
+           let exc1 = Qerror name Expanding exc in
+           raise (Stdpp.Exc_located (shift + p1, shift + p2) exc1)
+       | exc ->
+           let exc1 = Qerror name Expanding exc in
+           raise (Stdpp.Exc_located loc exc1) ])
 ;
 
 value parse_quotation_result entry loc shift name str =
@@ -158,6 +186,8 @@ value handle_patt_locate loc x = handle_locate loc patt_eoi patt_anti x;
 
 value expr_reloc = Reloc.expr;
 value patt_reloc = Reloc.patt;
+
+value rename_id = ref (fun x -> x);
 
 value find_line (bp, ep) str =
   find 0 1 0 where rec find i line col =
@@ -251,17 +281,29 @@ value print_format str =
   do { Format.open_box 2; loop 0 0; Format.close_box () }
 ;
 
+value print_file_failed file line char =
+  do {
+    Format.print_string ", file \"";
+    Format.print_string file;
+    Format.print_string "\", line ";
+    Format.print_int line;
+    Format.print_string ", char ";
+    Format.print_int char
+  }
+;
+
 value print_exn =
   fun
   [ Out_of_memory -> Format.print_string "Out of memory\n"
+  | Assert_failure (file, line, char) ->
+      do {
+        Format.print_string "Assertion failed";
+        print_file_failed file line char;
+      }
   | Match_failure (file, line, char) ->
       do {
-        Format.print_string "Pattern matching failed, file ";
-        Format.print_string file;
-        Format.print_string ", line ";
-        Format.print_int line;
-        Format.print_string ", char ";
-        Format.print_int char
+        Format.print_string "Pattern matching failed";
+        print_file_failed file line char;
       }
   | Stream.Error str -> print_format ("Parse error: " ^ str)
   | Stream.Failure -> Format.print_string "Parse failure"
@@ -285,7 +327,7 @@ value print_exn =
             let arg = Obj.field (Obj.repr x) i in
             if not (Obj.is_block arg) then
               Format.print_int (Obj.magic arg : int)
-            else if Obj.tag arg = 252 then do {
+            else if Obj.tag arg = Obj.tag (Obj.repr "a") then do {
               Format.print_char '"';
               Format.print_string (Obj.magic arg : string);
               Format.print_char '"'
@@ -312,12 +354,6 @@ value report_error exn =
       do { report_quotation_error name ctx; print_exn exn }
   | e -> print_exn exn ]
 ;
-
-value warning_default_function (bp, ep) txt =
-  do { Printf.eprintf "<W> loc %d %d: %s\n" bp ep txt; flush stderr }
-;
-
-value warning = ref warning_default_function;
 
 value no_constructors_arity = Ast2pt.no_constructors_arity;
 (*value no_assert = ref False;*)
@@ -348,25 +384,21 @@ and kont = Stream.t pretty
 
 value pr_str_item = {pr_fun = fun []; pr_levels = []};
 value pr_sig_item = {pr_fun = fun []; pr_levels = []};
+value pr_module_type = {pr_fun = fun []; pr_levels = []};
+value pr_module_expr = {pr_fun = fun []; pr_levels = []};
 value pr_expr = {pr_fun = fun []; pr_levels = []};
 value pr_patt = {pr_fun = fun []; pr_levels = []};
 value pr_ctyp = {pr_fun = fun []; pr_levels = []};
+value pr_class_sig_item = {pr_fun = fun []; pr_levels = []};
 value pr_class_str_item = {pr_fun = fun []; pr_levels = []};
+value pr_class_type = {pr_fun = fun []; pr_levels = []};
+value pr_class_expr = {pr_fun = fun []; pr_levels = []};
 value pr_expr_fun_args = ref Extfun.empty;
-
-value not_impl name x =
-  let desc =
-    if Obj.is_block (Obj.repr x) then
-      "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
-    else "int_val = " ^ string_of_int (Obj.magic x)
-  in
-  HVbox [: `S NO ("<pr_fun: not impl: " ^ name ^ "; " ^ desc ^ ">") :]
-;
 
 value pr_fun name pr lab =
   loop False pr.pr_levels where rec loop app =
     fun
-    [ [] -> fun x dg k -> not_impl name x
+    [ [] -> fun x dg k -> failwith ("unable to print " ^ name)
     | [lev :: levl] ->
         if app || lev.pr_label = lab then
           let next = loop True levl in
@@ -377,10 +409,15 @@ value pr_fun name pr lab =
 
 pr_str_item.pr_fun := pr_fun "str_item" pr_str_item;
 pr_sig_item.pr_fun := pr_fun "sig_item" pr_sig_item;
+pr_module_type.pr_fun := pr_fun "module_type" pr_module_type;
+pr_module_expr.pr_fun := pr_fun "module_expr" pr_module_expr;
 pr_expr.pr_fun := pr_fun "expr" pr_expr;
 pr_patt.pr_fun := pr_fun "patt" pr_patt;
 pr_ctyp.pr_fun := pr_fun "ctyp" pr_ctyp;
+pr_class_sig_item.pr_fun := pr_fun "class_sig_item" pr_class_sig_item;
 pr_class_str_item.pr_fun := pr_fun "class_str_item" pr_class_str_item;
+pr_class_type.pr_fun := pr_fun "class_type" pr_class_type;
+pr_class_expr.pr_fun := pr_fun "class_expr" pr_class_expr;
 
 value rec find_pr_level lab =
   fun
@@ -400,6 +437,20 @@ value top_printer pr x =
       Format.print_newline "<< " "   " 78
       (fun _ _ -> ("", 0, 0, 0)) 0 (pr.pr_fun "top" x "" [: :]);
     Format.print_string " >>";
+  }
+;
+
+value buff = Buffer.create 73;
+value buffer_char = Buffer.add_char buff;
+value buffer_string = Buffer.add_string buff;
+value buffer_newline () = Buffer.add_char buff '\n';
+
+value string_of pr x =
+  do {
+    Buffer.clear buff;
+    Spretty.print_pretty buffer_char buffer_string buffer_newline "" "" 78
+      (fun _ _ -> ("", 0, 0, 0)) 0 (pr.pr_fun "top" x "" [: :]);
+    Buffer.contents buff
   }
 ;
 

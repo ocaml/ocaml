@@ -37,9 +37,11 @@ let string_of_string_token loc s =
     Failure _ as exn -> raise_with_loc loc exn
 ;;
 
+let glob_fname = ref "";;
+
 let mkloc (bp, ep) =
   let loc_at n =
-    {Lexing.pos_fname = ""; Lexing.pos_lnum = 1; Lexing.pos_bol = 0;
+    {Lexing.pos_fname = !glob_fname; Lexing.pos_lnum = 1; Lexing.pos_bol = 0;
      Lexing.pos_cnum = n}
   in
   {Location.loc_start = loc_at bp; Location.loc_end = loc_at ep;
@@ -237,6 +239,33 @@ let option f =
   | None -> None
 ;;
 
+let expr_of_lab loc lab =
+  function
+    Some e -> e
+  | None -> ExLid (loc, lab)
+;;
+
+let patt_of_lab loc lab =
+  function
+    Some p -> p
+  | None -> PaLid (loc, lab)
+;;
+
+let paolab loc lab peoo =
+  let lab =
+    match lab, peoo with
+      "", Some ((PaLid (_, i) | PaTyc (_, PaLid (_, i), _)), _) -> i
+    | "", _ -> error loc "bad ast"
+    | _ -> lab
+  in
+  let (p, eo) =
+    match peoo with
+      Some peo -> peo
+    | None -> PaLid (loc, lab), None
+  in
+  lab, p, eo
+;;
+
 let rec same_type_expr ct ce =
   match ct, ce with
     TyLid (_, s1), ExLid (_, s2) -> s1 = s2
@@ -396,7 +425,7 @@ let rec patt =
   | PaFlo (loc, s) -> mkpat loc (Ppat_constant (Const_float s))
   | PaLab (loc, _, _) -> error loc "labeled pattern not allowed here"
   | PaLid (loc, s) -> mkpat loc (Ppat_var s)
-  | PaOlb (loc, _, _, _) -> error loc "labeled pattern not allowed here"
+  | PaOlb (loc, _, _) -> error loc "labeled pattern not allowed here"
   | PaOrp (loc, p1, p2) -> mkpat loc (Ppat_or (patt p1, patt p2))
   | PaRng (loc, p1, p2) ->
       begin match p1, p2 with
@@ -454,6 +483,12 @@ let class_info class_expr ci =
    pci_params = params, mkloc (fst ci.ciPrm); pci_name = ci.ciNam;
    pci_expr = class_expr ci.ciExp; pci_loc = mkloc ci.ciLoc;
    pci_variance = variance}
+;;
+
+let apply_with_var v x f =
+  let vx = !v in
+  try v := x; let r = f () in v := vx; r with
+    e -> v := vx; raise e
 ;;
 
 let rec expr =
@@ -550,9 +585,12 @@ let rec expr =
       let e3 = ExSeq (loc, el) in
       let df = if df then Upto else Downto in
       mkexp loc (Pexp_for (i, expr e1, expr e2, df, expr e3))
-  | ExFun (loc, [PaLab (_, lab, p), w, e]) ->
-      mkexp loc (Pexp_function (lab, None, [patt p, when_expr e w]))
-  | ExFun (loc, [PaOlb (_, lab, p, eo), w, e]) ->
+  | ExFun (loc, [PaLab (_, lab, po), w, e]) ->
+      mkexp loc
+        (Pexp_function
+           (lab, None, [patt (patt_of_lab loc lab po), when_expr e w]))
+  | ExFun (loc, [PaOlb (_, lab, peoo), w, e]) ->
+      let (lab, p, eo) = paolab loc lab peoo in
       mkexp loc
         (Pexp_function (("?" ^ lab), option expr eo, [patt p, when_expr e w]))
   | ExFun (loc, pel) ->
@@ -572,12 +610,14 @@ let rec expr =
   | ExOlb (loc, _, _) -> error loc "labeled expression not allowed here"
   | ExOvr (loc, iel) -> mkexp loc (Pexp_override (List.map mkideexp iel))
   | ExRec (loc, lel, eo) ->
-      let eo =
-        match eo with
-          Some e -> Some (expr e)
-        | None -> None
-      in
-      mkexp loc (Pexp_record (List.map mklabexp lel, eo))
+      if lel = [] then error loc "empty record"
+      else
+        let eo =
+          match eo with
+            Some e -> Some (expr e)
+          | None -> None
+        in
+        mkexp loc (Pexp_record (List.map mklabexp lel, eo))
   | ExSeq (loc, el) ->
       let rec loop =
         function
@@ -608,8 +648,8 @@ let rec expr =
       let e2 = ExSeq (loc, el) in mkexp loc (Pexp_while (expr e1, expr e2))
 and label_expr =
   function
-    ExLab (loc, lab, e) -> lab, expr e
-  | ExOlb (loc, lab, e) -> "?" ^ lab, expr e
+    ExLab (loc, lab, eo) -> lab, expr (expr_of_lab loc lab eo)
+  | ExOlb (loc, lab, eo) -> "?" ^ lab, expr (expr_of_lab loc lab eo)
   | e -> "", expr e
 and mkpe (p, e) = patt p, expr e
 and mkpwe (p, w, e) = patt p, when_expr e w
@@ -664,6 +704,9 @@ and sig_item s l =
   | SgOpn (loc, id) ->
       mksig loc (Psig_open (long_id_of_string_list loc id)) :: l
   | SgTyp (loc, tdl) -> mksig loc (Psig_type (List.map mktype_decl tdl)) :: l
+  | SgUse (loc, fn, sl) ->
+      apply_with_var glob_fname fn
+        (fun () -> List.fold_right (fun (si, _) -> sig_item si) sl l)
   | SgVal (loc, n, t) -> mksig loc (Psig_value (n, mkvalue_desc t [])) :: l
 and module_expr =
   function
@@ -702,6 +745,9 @@ and str_item s l =
   | StOpn (loc, id) ->
       mkstr loc (Pstr_open (long_id_of_string_list loc id)) :: l
   | StTyp (loc, tdl) -> mkstr loc (Pstr_type (List.map mktype_decl tdl)) :: l
+  | StUse (loc, fn, sl) ->
+      apply_with_var glob_fname fn
+        (fun () -> List.fold_right (fun (si, _) -> str_item si) sl l)
   | StVal (loc, rf, pel) ->
       mkstr loc (Pstr_value (mkrf rf, List.map mkpe pel)) :: l
 and class_type =
@@ -742,15 +788,12 @@ and class_expr =
       mkpcl loc (Pcl_apply (class_expr ce, el))
   | CeCon (loc, id, tl) ->
       mkpcl loc (Pcl_constr (long_id_of_string_list loc id, List.map ctyp tl))
-  | CeFun (loc, PaLab (_, lab, p), ce) ->
-      mkpcl loc (Pcl_fun (lab, None, patt p, class_expr ce))
-  | CeFun (loc, PaOlb (_, lab, p, eo), ce) ->
-      let eo =
-        match eo with
-          Some e -> Some (expr e)
-        | None -> None
-      in
-      mkpcl loc (Pcl_fun (("?" ^ lab), eo, patt p, class_expr ce))
+  | CeFun (loc, PaLab (_, lab, po), ce) ->
+      mkpcl loc
+        (Pcl_fun (lab, None, patt (patt_of_lab loc lab po), class_expr ce))
+  | CeFun (loc, PaOlb (_, lab, peoo), ce) ->
+      let (lab, p, eo) = paolab loc lab peoo in
+      mkpcl loc (Pcl_fun (("?" ^ lab), option expr eo, patt p, class_expr ce))
   | CeFun (loc, p, ce) ->
       mkpcl loc (Pcl_fun ("", None, patt p, class_expr ce))
   | CeLet (loc, rf, pel, ce) ->

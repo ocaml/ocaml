@@ -59,7 +59,9 @@ value of_channel ic =
 value iter f =
   do_rec where rec do_rec strm =
     match next strm with
-    [ Some (a, strm) -> let _ = f a in do_rec strm
+    [ Some (a, strm) ->
+        let _ = f a in
+        do_rec strm
     | None -> () ]
 ;
 
@@ -69,7 +71,7 @@ value count_unfrozen s =
   loop 0 s where rec loop cnt s =
     if Lazy.lazy_is_val s.data then
       match Lazy.force s.data with
-      [ (Cons _ s) -> loop (cnt + 1) s
+      [ Cons _ s -> loop (cnt + 1) s
       | _ -> cnt ]
     else cnt
 ;

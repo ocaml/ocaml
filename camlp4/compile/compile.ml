@@ -131,6 +131,15 @@ value parse_standard_symbol e rkont fkont ending_act =
   >>
 ;
 
+value parse_symbol_no_failure e rkont fkont ending_act =
+  <:expr<
+     let $nth_patt_of_act ending_act$ =
+       try $e$ strm__ with [ Stream.Failure -> raise (Stream.Error "") ]
+     in
+     $rkont$
+  >>
+;
+
 value rec contain_loc =
   fun
   [ <:expr< $lid:s$ >> -> s = "loc"
@@ -194,7 +203,7 @@ and parse_symbol entry nlevn s rkont fkont ending_act =
   match s with
   [ Slist0 s ->
       let e = <:expr< P.list0 $symbol_parser entry nlevn s$ >> in
-      parse_standard_symbol e rkont fkont ending_act
+      parse_symbol_no_failure e rkont fkont ending_act
   | Slist1 s ->
       let e = <:expr< P.list1 $symbol_parser entry nlevn s$ >> in
       parse_standard_symbol e rkont fkont ending_act
@@ -204,7 +213,7 @@ and parse_symbol entry nlevn s rkont fkont ending_act =
           P.list0sep $symbol_parser entry nlevn s$
             $symbol_parser entry nlevn sep$ >>
       in
-      parse_standard_symbol e rkont fkont ending_act
+      parse_symbol_no_failure e rkont fkont ending_act
   | Slist1sep s sep ->
       let e =
         <:expr<
@@ -214,7 +223,7 @@ and parse_symbol entry nlevn s rkont fkont ending_act =
       parse_standard_symbol e rkont fkont ending_act
   | Sopt s ->
       let e = <:expr< P.option $symbol_parser entry nlevn s$ >> in
-      parse_standard_symbol e rkont fkont ending_act
+      parse_symbol_no_failure e rkont fkont ending_act
   | Stree tree ->
       let kont = <:expr< raise Stream.Failure >> in
       let act_kont _ act = gen_let_loc loc (final_action act) in

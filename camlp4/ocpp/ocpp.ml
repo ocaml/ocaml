@@ -111,7 +111,7 @@ value loc_fmt =
 ;
 
 value print_location loc file =
-  let (line, c1, c2) = Stdpp.line_of_loc file loc in
+  let (fname, line, c1, c2) = Stdpp.line_of_loc file loc in
   do { Printf.eprintf loc_fmt file line c1 c2; flush stderr; }
 ;
 

@@ -35,6 +35,8 @@ val tokens : g -> string -> (string * int) list;;
        list.
 -      The call [Grammar.token g "IDENT"] returns the list of all usages
        of the pattern "IDENT" in the [EXTEND] statements. *)
+val glexer : g -> Token.t Token.glexer;;
+   (** Return the lexer used by the grammar *)
 
 module Entry :
   sig
@@ -100,6 +102,7 @@ module type S =
     type parsable;;
     val parsable : char Stream.t -> parsable;;
     val tokens : string -> (string * int) list;;
+    val glexer : te Token.glexer;;
     module Entry :
       sig
         type 'a e;;
@@ -155,6 +158,20 @@ val strict_parsing : bool ref;;
 
 val print_entry : Format.formatter -> 'te Gramext.g_entry -> unit;;
    (** General printer for all kinds of entries (obj entries) *)
+
+val iter_entry :
+  ('te Gramext.g_entry -> unit) -> 'te Gramext.g_entry -> unit;;
+  (** [Grammar.iter_entry f e] applies [f] to the entry [e] and
+      transitively all entries called by [e]. The order in which
+      the entries are passed to [f] is the order they appear in
+      each entry. Each entry is passed only once. *)
+
+val fold_entry :
+  ('te Gramext.g_entry -> 'a -> 'a) -> 'te Gramext.g_entry -> 'a -> 'a;;
+  (** [Grammar.fold_entry f e init] computes [(f eN .. (f e2 (f e1 init)))],
+      where [e1 .. eN] are [e] and transitively all entries called by [e].
+      The order in which the entries are passed to [f] is the order they
+      appear in each entry. Each entry is passed only once. *)
 
 (**/**)
 

@@ -35,6 +35,8 @@ value tokens : g -> string -> list (string * int);
        list.
 -      The call [Grammar.token g "IDENT"] returns the list of all usages
        of the pattern "IDENT" in the [EXTEND] statements. *)
+value glexer : g -> Token.glexer Token.t;
+   (** Return the lexer used by the grammar *)
 
 module Entry :
   sig
@@ -106,6 +108,7 @@ module type S =
     type parsable = 'x;
     value parsable : Stream.t char -> parsable;
     value tokens : string -> list (string * int);
+    value glexer : Token.glexer te;
     module Entry :
       sig
         type e 'a = 'y;
@@ -165,6 +168,20 @@ value strict_parsing : ref bool;
 value print_entry : Format.formatter -> Gramext.g_entry 'te -> unit;
    (** General printer for all kinds of entries (obj entries) *)
 
+value iter_entry :
+  (Gramext.g_entry 'te -> unit) -> Gramext.g_entry 'te -> unit;
+  (** [Grammar.iter_entry f e] applies [f] to the entry [e] and
+      transitively all entries called by [e]. The order in which
+      the entries are passed to [f] is the order they appear in
+      each entry. Each entry is passed only once. *)
+
+value fold_entry :
+  (Gramext.g_entry 'te -> 'a -> 'a) -> Gramext.g_entry 'te -> 'a -> 'a;
+  (** [Grammar.fold_entry f e init] computes [(f eN .. (f e2 (f e1 init)))],
+      where [e1 .. eN] are [e] and transitively all entries called by [e].
+      The order in which the entries are passed to [f] is the order they
+      appear in each entry. Each entry is passed only once. *)
+
 (**/**)
 
 (*** deprecated since version 3.05; use rather the functor GMake *)
@@ -183,8 +200,7 @@ value extend :
        (option string * option Gramext.g_assoc *
         list (list (Gramext.g_symbol 'te) * Gramext.g_action))) ->
     unit;
-value delete_rule :
-  Entry.e 'a -> list (Gramext.g_symbol Token.t) -> unit;
+value delete_rule : Entry.e 'a -> list (Gramext.g_symbol Token.t) -> unit;
 
 value parse_top_symb :
   Gramext.g_entry 'te -> Gramext.g_symbol 'te -> Stream.t 'te -> Obj.t;

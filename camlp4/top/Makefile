@@ -8,11 +8,12 @@ OCAMLCFLAGS=-warn-error A $(INCLUDES)
 CAMLP4_OBJS=$(OTOP)/utils/config.cmo ../boot/stdpp.cmo ../boot/token.cmo ../boot/plexer.cmo ../boot/gramext.cmo ../boot/grammar.cmo ../boot/extfold.cmo ../boot/extfun.cmo ../boot/fstream.cmo ../camlp4/quotation.cmo ../camlp4/ast2pt.cmo ../camlp4/reloc.cmo ../camlp4/spretty.cmo ../camlp4/pcaml.cmo
 TOP=camlp4_top.cmo
 ROBJS=$(CAMLP4_OBJS) ../meta/pa_r.cmo ../meta/pa_rp.cmo rprint.cmo $(TOP)
+SOBJS=$(CAMLP4_OBJS) ../etc/pa_scheme.cmo $(TOP)
 OOBJS=$(CAMLP4_OBJS) ../etc/pa_o.cmo ../etc/pa_op.cmo $(TOP)
 OOOBJS=$(CAMLP4_OBJS) ../etc/pa_o.cmo ../etc/pa_oop.cmo $(TOP)
 OBJS=$(OTOP)/utils/config.cmo ../camlp4/quotation.cmo ../camlp4/reloc.cmo ../camlp4/ast2pt.cmo ../camlp4/spretty.cmo ../camlp4/pcaml.cmo camlp4_top.cmo
 
-TARGET=camlp4o.cma camlp4r.cma camlp4_top.cma
+TARGET=camlp4o.cma camlp4r.cma camlp4sch.cma camlp4_top.cma
 
 all: $(TARGET)
 
@@ -24,6 +25,9 @@ camlp4o.cma: $(OOBJS)
 
 camlp4r.cma: $(ROBJS)
 	$(OCAMLC) $(ROBJS) -linkall -a -o camlp4r.cma
+
+camlp4sch.cma: $(SOBJS)
+	$(OCAMLC) $(SOBJS) -linkall -a -o camlp4sch.cma
 
 camlp4_top.cma: $(OBJS)
 	$(OCAMLC) $(OBJS) -a -o camlp4_top.cma
@@ -42,7 +46,7 @@ depend:
 get_promote:
 
 install:
-	-$(MKDIR) $(LIBDIR)/camlp4
-	cp $(TARGET) $(LIBDIR)/camlp4/.
+	-$(MKDIR) "$(LIBDIR)/camlp4"
+	cp $(TARGET) "$(LIBDIR)/camlp4/."
 
 include .depend

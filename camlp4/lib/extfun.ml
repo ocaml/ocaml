@@ -86,7 +86,7 @@ value print ef =
 
 value insert_matching matchings (patt, has_when, expr) =
   let m1 = {patt = patt; has_when = has_when; expr = expr} in
-  loop matchings where rec loop =
+  let rec loop =
     fun
     [ [m :: ml] as gml ->
         if m1.has_when && not m.has_when then [m1 :: gml]
@@ -98,6 +98,8 @@ value insert_matching matchings (patt, has_when, expr) =
           else if m.has_when then [m1 :: gml]
           else [m1 :: ml]
     | [] -> [m1] ]
+  in
+  loop matchings
 ;
 
 (* available extension function *)

@@ -123,6 +123,20 @@ value left_eval_tuple loc expr el =
       <:expr< ($list:[e :: el]$) >> pel
 ;
 
+value left_eval_record loc expr lel =
+  let el = List.map snd lel in
+  if not (may_depend_on_order el) then
+    let lel = List.map (fun (p, e) -> (p, expr e)) lel in
+    <:expr< { $list:lel$ } >>
+  else
+    let (pel, e, el) = gen_let_in loc expr el in
+    let e =
+      let lel = List.combine (List.map fst lel) [e :: el] in
+      <:expr< { $list:lel$ } >>
+    in
+    List.fold_left (fun e (p1, e1) -> <:expr< let $p1$ = $e1$ in $e$ >>) e pel
+;
+
 value left_eval_assign loc expr e1 e2 = <:expr< $e1$ := $expr e2$ >>;
 
 (* scanning the input tree, calling "left_eval_*" functions if necessary *)
@@ -148,8 +162,8 @@ value rec expr x =
       <:expr< match $expr e$ with [ $list:List.map match_assoc pwel$ ] >>
   | <:expr< try $e$ with [ $list:pwel$ ] >> ->
       <:expr< try $expr e$ with [ $list:List.map match_assoc pwel$ ] >>
-  | <:expr< let $rec:rf$ $list:pel$ in $e$ >> ->
-      <:expr< let $rec:rf$ $list:List.map let_binding pel$ in $expr e$ >>
+  | <:expr< let $opt:rf$ $list:pel$ in $e$ >> ->
+      <:expr< let $opt:rf$ $list:List.map let_binding pel$ in $expr e$ >>
   | <:expr< let module $s$ = $me$ in $e$ >> ->
       <:expr< let module $s$ = $module_expr me$ in $expr e$ >>
   | <:expr< if $e1$ then $e2$ else $e3$ >> ->
@@ -163,6 +177,7 @@ value rec expr x =
   | <:expr< $e1$ && $e2$ >> -> <:expr< $expr e1$ && $expr e2$ >>
   | <:expr< $e1$ $e2$ >> -> left_eval_apply loc expr e1 e2
   | <:expr< ($list:el$) >> -> left_eval_tuple loc expr el
+  | <:expr< { $list:lel$ } >> -> left_eval_record loc expr lel
   | <:expr< $e1$ := $e2$ >> -> left_eval_assign loc expr e1 e2
   | <:expr< $_$ . $_$ >> | <:expr< $uid:_$ >> | <:expr< $lid:_$ >> |
     <:expr< $str:_$ >> | <:expr< $chr:_$ >> | <:expr< $int:_$ >> |
@@ -188,8 +203,8 @@ and str_item x =
   match x with
   [ <:str_item< module $s$ = $me$ >> ->
       <:str_item< module $s$ = $module_expr me$ >>
-  | <:str_item< value $rec:rf$ $list:pel$ >> ->
-      <:str_item< value $rec:rf$ $list:List.map let_binding pel$ >>
+  | <:str_item< value $opt:rf$ $list:pel$ >> ->
+      <:str_item< value $opt:rf$ $list:List.map let_binding pel$ >>
   | <:str_item< declare $list:sil$ end >> ->
       <:str_item< declare $list:List.map str_item sil$ end >>
   | <:str_item< class $list:ce$ >> ->
@@ -209,8 +224,8 @@ and class_expr x =
 and class_str_item x =
   let loc = MLast.loc_of_class_str_item x in
   match x with
-  [ <:class_str_item< value $mut:mf$ $s$ = $e$ >> ->
-      <:class_str_item< value $mut:mf$ $s$ = $expr e$ >>
+  [ <:class_str_item< value $opt:mf$ $s$ = $e$ >> ->
+      <:class_str_item< value $opt:mf$ $s$ = $expr e$ >>
   | <:class_str_item< method $s$ = $e$ >> ->
       <:class_str_item< method $s$ = $expr e$ >>
   | x -> not_impl "class_str_item" x ]

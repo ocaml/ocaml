@@ -54,6 +54,7 @@ do {
   Grammar.Unsafe.clear_entry patt;
   Grammar.Unsafe.clear_entry ctyp;
   Grammar.Unsafe.clear_entry let_binding;
+  Grammar.Unsafe.clear_entry type_declaration;
   Grammar.Unsafe.clear_entry class_type;
   Grammar.Unsafe.clear_entry class_expr;
   Grammar.Unsafe.clear_entry class_sig_item;
@@ -83,22 +84,25 @@ value mkmatchcase loc p aso w e =
   in
   (p, w, e)
 ;
+      
+value neg_string n =
+  let len = String.length n in
+  if len > 0 && n.[0] = '-' then String.sub n 1 (len - 1)
+  else "-" ^ n
+;
 
 value mkumin loc f arg =
   match arg with
-  [ <:expr< $int:n$ >> when int_of_string n > 0 ->
-      let n = "-" ^ n in
-      <:expr< $int:n$ >>
-  | <:expr< $flo:n$ >> when float_of_string n > 0.0 ->
-      let n = "-" ^ n in
-      <:expr< $flo:n$ >>
+  [ <:expr< $int:n$ >> -> <:expr< $int:neg_string n$ >>
+  | <:expr< $flo:n$ >> -> <:expr< $flo:neg_string n$ >>
   | _ ->
       let f = "~" ^ f in
       <:expr< $lid:f$ $arg$ >> ]
 ;
 
 value mkuminpat loc f is_int n =
-  if is_int then <:patt< $int:"-" ^ n$ >> else <:patt< $flo:"-" ^ n$ >>
+  if is_int then <:patt< $int:neg_string n$ >>
+  else <:patt< $flo:neg_string n$ >>
 ;
 
 value mklistexp loc last =
@@ -140,8 +144,8 @@ value mkexprident loc i j =
 
 value mkassert loc e =
   match e with
-  [ <:expr< False >> -> <:expr< assert False >>
-  | _ -> <:expr< assert ($e$) >> ]
+  [ <:expr< False >> -> MLast.ExAsf loc
+  | _ -> MLast.ExAsr loc e ]
 ;
 
 value append_elem el e = el @ [e];
@@ -163,25 +167,26 @@ Pcaml.sync.val := sync;
 *)
 
 value ipatt = Grammar.Entry.create gram "ipatt";
+value with_constr = Grammar.Entry.create gram "with_constr";
+value row_field = Grammar.Entry.create gram "row_field";
 
 value not_yet_warned_variant = ref True;
-value warn_variant () =
+value warn_variant loc =
   if not_yet_warned_variant.val then do {
     not_yet_warned_variant.val := False;
-    Printf.eprintf "\
-*** warning: use of syntax of variants types deprecated since version 3.05\n";
-    flush stderr
+    Pcaml.warning.val loc
+      (Printf.sprintf
+         "use of syntax of variants types deprecated since version 3.05");
   }
   else ()
 ;
 
 value not_yet_warned = ref True;
-value warn_sequence () =
+value warn_sequence loc =
   if not_yet_warned.val then do {
     not_yet_warned.val := False;
-    Printf.eprintf "\
-*** warning: use of syntax of sequences deprecated since version 3.01.1\n";
-    flush stderr
+    Pcaml.warning.val loc
+      ("use of syntax of sequences deprecated since version 3.01.1");
   }
   else ()
 ;
@@ -190,7 +195,8 @@ Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
 
 EXTEND
   GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
-    class_expr class_sig_item class_str_item let_binding ipatt;
+    class_expr class_sig_item class_str_item let_binding type_declaration
+    ipatt with_constr row_field;
   module_expr:
     [ [ "functor"; "("; i = UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
@@ -221,8 +227,8 @@ EXTEND
       | "open"; i = mod_ident -> <:str_item< open $i$ >>
       | "type"; tdl = LIST1 type_declaration SEP "and" ->
           <:str_item< type $list:tdl$ >>
-      | "value"; r = rec_flag; l = LIST1 let_binding SEP "and" ->
-          <:str_item< value $rec:r$ $list:l$ >>
+      | "value"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
+          <:str_item< value $opt:o2b r$ $list:l$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
   ;
   rebind_exn:
@@ -279,15 +285,15 @@ EXTEND
   ;
   with_constr:
     [ [ "type"; i = mod_ident; tpl = LIST0 type_parameter; "="; t = ctyp ->
-          MLast.WcTyp loc i tpl t
+          <:with_constr< type $i$ $list:tpl$ = $t$ >>
       | "module"; i = mod_ident; "="; me = module_expr ->
-          MLast.WcMod loc i me ] ]
+          <:with_constr< module $i$ = $me$ >> ] ]
   ;
   expr:
     [ "top" RIGHTA
-      [ "let"; r = rec_flag; l = LIST1 let_binding SEP "and"; "in";
+      [ "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = SELF ->
-          <:expr< let $rec:r$ $list:l$ in $x$ >>
+          <:expr< let $opt:o2b r$ $list:l$ in $x$ >>
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = SELF ->
           <:expr< let module $m$ = $mb$ in $e$ >>
       | "fun"; "["; l = LIST0 match_case SEP "|"; "]" ->
@@ -310,8 +316,8 @@ EXTEND
       | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
           <:expr< while $e$ do { $list:seq$ } >> ]
     | "where"
-      [ e = SELF; "where"; rf = rec_flag; lb = let_binding ->
-          <:expr< let $rec:rf$ $list:[lb]$ in $e$ >> ]
+      [ e = SELF; "where"; rf = OPT "rec"; lb = let_binding ->
+          <:expr< let $opt:o2b rf$ $list:[lb]$ in $e$ >> ]
     | ":=" NONA
       [ e1 = SELF; ":="; e2 = SELF; dummy -> <:expr< $e1$ := $e2$ >> ]
     | "||" RIGHTA
@@ -391,9 +397,9 @@ EXTEND
     [ [ -> () ] ]
   ;
   sequence:
-    [ [ "let"; rf = rec_flag; l = LIST1 let_binding SEP "and"; [ "in" | ";" ];
+    [ [ "let"; rf = OPT "rec"; l = LIST1 let_binding SEP "and"; [ "in" | ";" ];
         el = SELF ->
-          [ <:expr< let $rec:rf$ $list:l$ in $mksequence loc el$ >>]
+          [<:expr< let $opt:o2b rf$ $list:l$ in $mksequence loc el$ >>]
       | e = expr; ";"; el = SELF -> [e :: el]
       | e = expr; ";" -> [e]
       | e = expr -> [e] ] ]
@@ -540,8 +546,8 @@ EXTEND
       | ci = UIDENT -> (loc, ci, []) ] ]
   ;
   label_declaration:
-    [ [ i = LIDENT; ":"; mf = mutable_flag; t = ctyp ->
-          (loc, i, mf, t) ] ]
+    [ [ i = LIDENT; ":"; mf = OPT "mutable"; t = ctyp ->
+          (loc, i, o2b mf, t) ] ]
   ;
   ident:
     [ [ i = LIDENT -> i
@@ -567,9 +573,9 @@ EXTEND
           <:sig_item< class type $list:ctd$ >> ] ]
   ;
   class_declaration:
-    [ [ vf = virtual_flag; i = LIDENT; ctp = class_type_parameters;
+    [ [ vf = OPT "virtual"; i = LIDENT; ctp = class_type_parameters;
         cfb = class_fun_binding ->
-          {MLast.ciLoc = loc; MLast.ciVir = vf; MLast.ciPrm = ctp;
+          {MLast.ciLoc = loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
            MLast.ciNam = i; MLast.ciExp = cfb} ] ]
   ;
   class_fun_binding:
@@ -590,17 +596,17 @@ EXTEND
     [ "top"
       [ "fun"; p = ipatt; ce = class_fun_def ->
           <:class_expr< fun $p$ -> $ce$ >>
-      | "let"; rf = rec_flag; lb = LIST1 let_binding SEP "and"; "in";
+      | "let"; rf = OPT "rec"; lb = LIST1 let_binding SEP "and"; "in";
         ce = SELF ->
-          <:class_expr< let $rec:rf$ $list:lb$ in $ce$ >> ]
+          <:class_expr< let $opt:o2b rf$ $list:lb$ in $ce$ >> ]
     | "apply" NONA
-      [ ce = SELF; e = expr LEVEL "simple" ->
+      [ ce = SELF; e = expr LEVEL "label" ->
           <:class_expr< $ce$ $e$ >> ]
     | "simple"
       [ ci = class_longident; "["; ctcl = LIST0 ctyp SEP ","; "]" ->
           <:class_expr< $list:ci$ [ $list:ctcl$ ] >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>
-      | "object"; cspo = class_self_patt_opt; cf = class_structure; "end" ->
+      | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
           <:class_expr< object $opt:cspo$ $list:cf$ end >>
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           <:class_expr< ($ce$ : $ct$) >>
@@ -609,47 +615,38 @@ EXTEND
   class_structure:
     [ [ cf = LIST0 [ cf = class_str_item; ";" -> cf ] -> cf ] ]
   ;
-  class_self_patt_opt:
-    [ [ "("; p = patt; ")" -> Some p
-      | "("; p = patt; ":"; t = ctyp; ")" -> Some <:patt< ($p$ : $t$) >>
-      | -> None ] ]
+  class_self_patt:
+    [ [ "("; p = patt; ")" -> p
+      | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >> ] ]
   ;
   class_str_item:
     [ [ "declare"; st = LIST0 [ s= class_str_item; ";" -> s ]; "end" ->
           <:class_str_item< declare $list:st$ end >>
-      | "inherit"; ce = class_expr; pb = as_lident_opt ->
-          <:class_str_item< inherit $ce$ $as:pb$ >>
-      | "value"; (lab, mf, e) = cvalue ->
-          <:class_str_item< value $mut:mf$ $lab$ = $e$ >>
-      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
-          <:class_str_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; l = label; ":"; t = ctyp ->
-          <:class_str_item< method virtual $l$ : $t$ >>
-      | "method"; "private"; l = label; ":"; t = ctyp; "="; e = expr ->
-          <:class_str_item< method private $l$ : $t$ = $e$ >>
-      | "method"; "private"; l = label; fb = fun_binding ->
-          <:class_str_item< method private $l$ = $fb$ >>
-      | "method"; l = label; ":"; t = ctyp; "="; e = expr ->
-          <:class_str_item< method $l$ : $t$ = $e$ >>
-      | "method"; l = label; fb = fun_binding ->
-          <:class_str_item< method $l$ = $fb$ >>
+      | "inherit"; ce = class_expr; pb = OPT as_lident ->
+          <:class_str_item< inherit $ce$ $opt:pb$ >>
+      | "value"; mf = OPT "mutable"; lab = label; e = cvalue_binding ->
+          <:class_str_item< value $opt:o2b mf$ $lab$ = $e$ >>
+      | "method"; "virtual"; pf = OPT "private"; l = label; ":"; t = ctyp ->
+          <:class_str_item< method virtual $opt:o2b pf$ $l$ : $t$ >>
+      | "method"; pf = OPT "private"; l = label; topt = OPT polyt;
+        e = fun_binding ->
+          <:class_str_item< method $opt:o2b pf$ $l$ $opt:topt$ = $e$ >>
       | "type"; t1 = ctyp; "="; t2 = ctyp ->
           <:class_str_item< type $t1$ = $t2$ >>
       | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
   ;
-  as_lident_opt:
-    [ [ "as"; i = LIDENT -> Some i
-      | -> None ] ]
+  as_lident:
+    [ [ "as"; i = LIDENT -> i ] ]
   ;
-  cvalue:
-    [ [ mf = mutable_flag; l = label; "="; e = expr -> (l, mf, e)
-      | mf = mutable_flag; l = label; ":"; t = ctyp; "="; e = expr ->
-          (l, mf, <:expr< ($e$ : $t$) >>)
-      | mf = mutable_flag; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
-        e = expr ->
-          (l, mf, <:expr< ($e$ : $t$ :> $t2$) >>)
-      | mf = mutable_flag; l = label; ":>"; t = ctyp; "="; e = expr ->
-          (l, mf, <:expr< ($e$ :> $t$) >>) ] ]
+  polyt:
+    [ [ ":"; t = ctyp -> t ] ]
+  ;
+  cvalue_binding:
+    [ [ "="; e = expr -> e
+      | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >>
+      | ":"; t = ctyp; ":>"; t2 = ctyp; "="; e = expr ->
+          <:expr< ($e$ : $t$ :> $t2$) >>
+      | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
   ;
   label:
     [ [ i = LIDENT -> i ] ]
@@ -671,29 +668,25 @@ EXTEND
     [ [ "declare"; st = LIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
           <:class_sig_item< declare $list:st$ end >>
       | "inherit"; cs = class_type -> <:class_sig_item< inherit $cs$ >>
-      | "value"; mf = mutable_flag; l = label; ":"; t = ctyp ->
-          <:class_sig_item< value $mut:mf$ $l$ : $t$ >>
-      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< method virtual $l$ : $t$ >>
-      | "method"; "private"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< method private $l$ : $t$ >>
-      | "method"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< method $l$ : $t$ >>
+      | "value"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
+          <:class_sig_item< value $opt:o2b mf$ $l$ : $t$ >>
+      | "method"; "virtual"; pf = OPT "private"; l = label; ":"; t = ctyp ->
+          <:class_sig_item< method virtual $opt:o2b pf$ $l$ : $t$ >>
+      | "method"; pf = OPT "private"; l = label; ":"; t = ctyp ->
+          <:class_sig_item< method $opt:o2b pf$ $l$ : $t$ >>
       | "type"; t1 = ctyp; "="; t2 = ctyp ->
           <:class_sig_item< type $t1$ = $t2$ >> ] ]
   ;
   class_description:
-    [ [ vf = virtual_flag; n = LIDENT; ctp = class_type_parameters; ":";
+    [ [ vf = OPT "virtual"; n = LIDENT; ctp = class_type_parameters; ":";
         ct = class_type ->
-          {MLast.ciLoc = loc; MLast.ciVir = vf; MLast.ciPrm = ctp;
+          {MLast.ciLoc = loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
            MLast.ciNam = n; MLast.ciExp = ct} ] ]
   ;
   class_type_declaration:
-    [ [ vf = virtual_flag; n = LIDENT; ctp = class_type_parameters; "=";
+    [ [ vf = OPT "virtual"; n = LIDENT; ctp = class_type_parameters; "=";
         cs = class_type ->
-          {MLast.ciLoc = loc; MLast.ciVir = vf; MLast.ciPrm = ctp;
+          {MLast.ciLoc = loc; MLast.ciVir = o2b vf; MLast.ciPrm = ctp;
            MLast.ciNam = n; MLast.ciExp = cs} ] ]
   ;
   expr: LEVEL "apply"
@@ -707,24 +700,16 @@ EXTEND
     [ [ "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
           <:expr< ($e$ : $t$ :> $t2$ ) >>
       | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
-      | "{<"; ">}" -> <:expr< {< >} >>
-      | "{<"; fel = field_expr_list; ">}" -> <:expr< {< $list:fel$ >} >> ] ]
+      | "{<"; fel = LIST0 field_expr SEP ";"; ">}" ->
+          <:expr< {< $list:fel$ >} >> ] ]
   ;
-  field_expr_list:
-    [ [ l = label; "="; e = expr; ";"; fel = SELF -> [(l, e) :: fel]
-      | l = label; "="; e = expr; ";" -> [(l, e)]
-      | l = label; "="; e = expr -> [(l, e)] ] ]
+  field_expr:
+    [ [ l = label; "="; e = expr -> (l, e) ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "#"; id = class_longident -> <:ctyp< # $list:id$ >>
-      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $v$ > >>
-      | "<"; ">" -> <:ctyp< < > >> ] ]
-  ;
-  meth_list:
-    [ [ f = field; ";"; (ml, v) = SELF -> ([f :: ml], v)
-      | f = field; ";" -> ([f], False)
-      | f = field -> ([f], False)
-      | ".." -> ([], True) ] ]
+      | "<"; ml = LIST0 field SEP ";"; v = OPT ".."; ">" ->
+          <:ctyp< < $list:ml$ $opt:o2b v$ > >> ] ]
   ;
   field:
     [ [ lab = LIDENT; ":"; t = ctyp -> (lab, t) ] ]
@@ -760,10 +745,10 @@ EXTEND
     [ [ rfl = LIST0 row_field SEP "|" -> rfl ] ]
   ;
   row_field:
-    [ [ "`"; i = ident -> MLast.RfTag i True []
+    [ [ "`"; i = ident -> <:row_field< ` $i$ >>
       | "`"; i = ident; "of"; ao = OPT "&"; l = LIST1 ctyp SEP "&" ->
-          MLast.RfTag i (o2b ao) l
-      | t = ctyp -> MLast.RfInh t ] ]
+          <:row_field< ` $i$ of $opt:o2b ao$ $list:l$ >>
+      | t = ctyp -> <:row_field< $t$ >> ] ]
   ;
   name_tag:
     [ [ "`"; i = ident -> i ] ]
@@ -771,46 +756,35 @@ EXTEND
   patt: LEVEL "simple"
     [ [ "`"; s = ident -> <:patt< ` $s$ >>
       | "#"; sl = mod_ident -> <:patt< # $list:sl$ >>
-      | i = TILDEIDENT; ":"; p = SELF ->
-          <:patt< ~ $i$ : $p$ >>
-      | i = TILDEIDENT ->
-          <:patt< ~ $i$ >>
-      | i = QUESTIONIDENT; ":"; "("; p = patt; ")" ->
-          <:patt< ? $i$ : ( $p$ ) >>
-      | i = QUESTIONIDENT; ":"; "("; p = patt; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $p$ = $e$ ) >>
-      | i = QUESTIONIDENT; ":"; "("; p = patt; ":"; t = ctyp; ")" ->
-          <:patt< ? $i$ : ( $p$ : $t$ ) >>
-      | i = QUESTIONIDENT; ":"; "("; p = patt; ":"; t = ctyp; "=";
-        e = expr; ")" ->
-          <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
+      | i = TILDEIDENT; ":"; p = SELF -> <:patt< ~ $i$ : $p$ >>
+      | i = TILDEIDENT -> <:patt< ~ $i$ >>
+      | i = QUESTIONIDENT; ":"; "("; p = patt_tcon; eo = OPT eq_expr; ")" ->
+          <:patt< ? $i$ : ($p$ $opt:eo$) >>
       | i = QUESTIONIDENT ->
           <:patt< ? $i$ >>
-      | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? ( $i$ = $e$ ) >>
-      | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
-          <:patt< ? ( $i$ : $t$ = $e$ ) >> ] ]
+      | "?"; "("; p = patt_tcon; eo = OPT eq_expr; ")" ->
+          <:patt< ? ($p$ $opt:eo$) >> ] ]
+  ;
+  patt_tcon:
+    [ [ p = patt; ":"; t = ctyp -> <:patt< ($p$ : $t$) >>
+      | p = patt -> p ] ]
   ;
   ipatt:
-    [ [ i = TILDEIDENT; ":"; p = SELF ->
-          <:patt< ~ $i$ : $p$ >>
-      | i = TILDEIDENT ->
-          <:patt< ~ $i$ >>
-      | i = QUESTIONIDENT; ":"; "("; p = ipatt; ")" ->
-          <:patt< ? $i$ : ( $p$ ) >>
-      | i = QUESTIONIDENT; ":"; "("; p = ipatt; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $p$ = $e$ ) >>
-      | i = QUESTIONIDENT; ":"; "("; p = ipatt; ":"; t = ctyp; ")" ->
-          <:patt< ? $i$ : ( $p$ : $t$ ) >>
-      | i = QUESTIONIDENT; ":"; "("; p = ipatt; ":"; t = ctyp; "=";
-        e = expr; ")" ->
-          <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
+    [ [ i = TILDEIDENT; ":"; p = SELF -> <:patt< ~ $i$ : $p$ >>
+      | i = TILDEIDENT -> <:patt< ~ $i$ >>
+      | i = QUESTIONIDENT; ":"; "("; p = ipatt_tcon; eo = OPT eq_expr; ")" ->
+          <:patt< ? $i$ : ($p$ $opt:eo$) >>
       | i = QUESTIONIDENT ->
           <:patt< ? $i$ >>
-      | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? ( $i$ = $e$ ) >>
-      | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
-          <:patt< ? ( $i$ : $t$ = $e$ ) >> ] ]
+      | "?"; "("; p = ipatt_tcon; eo = OPT eq_expr; ")" ->
+          <:patt< ? ($p$ $opt:eo$) >> ] ]
+  ;
+  ipatt_tcon:
+    [ [ p = ipatt; ":"; t = ctyp -> <:patt< ($p$ : $t$) >>
+      | p = ipatt -> p ] ]
+  ;
+  eq_expr:
+    [ [ "="; e = expr -> e ] ]
   ;
   expr: AFTER "apply"
     [ "label" NONA
@@ -822,21 +796,9 @@ EXTEND
   expr: LEVEL "simple"
     [ [ "`"; s = ident -> <:expr< ` $s$ >> ] ]
   ;
-  rec_flag:
-    [ [ "rec" -> True
-      | -> False ] ]
-  ;
   direction_flag:
     [ [ "to" -> True
       | "downto" -> False ] ]
-  ;
-  mutable_flag:
-    [ [ "mutable" -> True
-      | -> False ] ]
-  ;
-  virtual_flag:
-    [ [ "virtual" -> True
-      | -> False ] ]
   ;
   (* Compatibility old syntax of variant types definitions *)
   ctyp: LEVEL "simple"
@@ -851,7 +813,7 @@ EXTEND
           <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
   ;
   warning_variant:
-    [ [ -> warn_variant () ] ]
+    [ [ -> warn_variant loc ] ]
   ;
   (* Compatibility old syntax of sequences *)
   expr: LEVEL "top"
@@ -866,7 +828,7 @@ EXTEND
           <:expr< while $e$ do { $list:seq$ } >> ] ]
   ;
   warning_sequence:
-    [ [ -> warn_sequence () ] ]
+    [ [ -> warn_sequence loc ] ]
   ;
 END;
 
@@ -896,7 +858,7 @@ EXTEND
   ;
   use_file:
     [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
-          ([ <:str_item< # $n$ $opt:dp$ >>], True)
+          ([<:str_item< # $n$ $opt:dp$ >>], True)
       | si = str_item; ";"; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | EOI -> ([], False) ] ]
   ;

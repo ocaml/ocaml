@@ -74,10 +74,12 @@ value rec patt floc sh =
     | PaChr loc x1 -> PaChr (floc loc) x1
     | PaInt loc x1 -> PaInt (floc loc) x1
     | PaFlo loc x1 -> PaFlo (floc loc) x1
-    | PaLab loc x1 x2 -> PaLab (floc loc) x1 (self x2)
+    | PaLab loc x1 x2 -> PaLab (floc loc) x1 (option_map self x2)
     | PaLid loc x1 -> PaLid (floc loc) x1
-    | PaOlb loc x1 x2 x3 ->
-        PaOlb (floc loc) x1 (self x2) (option_map (expr floc sh) x3)
+    | PaOlb loc x1 x2 ->
+        PaOlb (floc loc) x1
+          (option_map
+             (fun (x1, x2) -> (self x1, option_map (expr floc sh) x2)) x2)
     | PaOrp loc x1 x2 -> PaOrp (floc loc) (self x1) (self x2)
     | PaRng loc x1 x2 -> PaRng (floc loc) (self x1) (self x2)
     | PaRec loc x1 ->
@@ -115,7 +117,7 @@ and expr floc sh =
              x1)
     | ExIfe loc x1 x2 x3 -> ExIfe (floc loc) (self x1) (self x2) (self x3)
     | ExInt loc x1 -> ExInt (floc loc) x1
-    | ExLab loc x1 x2 -> ExLab (floc loc) x1 (self x2)
+    | ExLab loc x1 x2 -> ExLab (floc loc) x1 (option_map self x2)
     | ExLaz loc x1 -> ExLaz (floc loc) (self x1)
     | ExLet loc x1 x2 x3 ->
         ExLet (floc loc) x1
@@ -130,7 +132,7 @@ and expr floc sh =
                 (patt floc sh x1, option_map self x2, self x3))
              x2)
     | ExNew loc x1 -> ExNew (floc loc) x1
-    | ExOlb loc x1 x2 -> ExOlb (floc loc) x1 (self x2)
+    | ExOlb loc x1 x2 -> ExOlb (floc loc) x1 (option_map self x2)
     | ExOvr loc x1 ->
         ExOvr (floc loc) (List.map (fun (x1, x2) -> (x1, self x2)) x1)
     | ExRec loc x1 x2 ->
@@ -187,6 +189,7 @@ and sig_item floc sh =
                  List.map (fun (x1, x2) -> (ctyp floc sh x1, ctyp floc sh x2))
                    x4))
              x1)
+    | SgUse loc x1 x2 -> SgUse loc x1 x2
     | SgVal loc x1 x2 -> SgVal (floc loc) x1 (ctyp floc sh x2) ]
 and with_constr floc sh =
   self where rec self =
@@ -227,6 +230,7 @@ and str_item floc sh =
                  List.map (fun (x1, x2) -> (ctyp floc sh x1, ctyp floc sh x2))
                    x4))
              x1)
+    | StUse loc x1 x2 -> StUse loc x1 x2
     | StVal loc x1 x2 ->
         StVal (floc loc) x1
           (List.map (fun (x1, x2) -> (patt floc sh x1, expr floc sh x2)) x2) ]

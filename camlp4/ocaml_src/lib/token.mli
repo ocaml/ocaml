@@ -47,7 +47,8 @@ type 'te glexer =
     tok_using : pattern -> unit;
     tok_removing : pattern -> unit;
     tok_match : pattern -> 'te -> string;
-    tok_text : pattern -> string }
+    tok_text : pattern -> string;
+    mutable tok_comm : location list option }
 ;;
    (** The type for a lexer used by Camlp4 grammars.
 -      The field [tok_func] is the main lexer function. See [lexer_func]
@@ -66,7 +67,9 @@ type 'te glexer =
        efficency, write it as a function returning functions according
        to the values of the pattern, not a function with two parameters.
 -      The field [tok_text] returns the name of some token pattern,
-       used in error messages. *)
+       used in error messages.
+-      The field [tok_comm] if not None asks the lexer to record the
+       locations of the comments.  *)
 
 val lexer_text : pattern -> string;;
    (** A simple [tok_text] function for lexers *)

@@ -76,9 +76,10 @@ value rec patt =
   | PaArr _ pl -> list patt pl
   | PaChr _ _ -> ()
   | PaInt _ _ -> ()
-  | PaLab _ _ p -> patt p
+  | PaLab _ _ po -> option patt po
   | PaLid _ _ -> ()
-  | PaOlb _ _ p eo -> patt p
+  | PaOlb _ _ peoo ->
+      option (fun (p, eo) -> do { patt p; option expr eo }) peoo
   | PaOrp _ p1 p2 -> do { patt p1; patt p2; }
   | PaRec _ lpl -> list label_patt lpl
   | PaRng _ p1 p2 -> do { patt p1; patt p2; }
@@ -93,9 +94,8 @@ and patt_module =
   [ PaUid _ m -> addmodule m
   | PaAcc _ p _ -> patt_module p
   | x -> not_impl "patt_module" x ]
-and label_patt (p1, p2) = do { patt p1; patt p2; };
-
-value rec expr =
+and label_patt (p1, p2) = do { patt p1; patt p2; }
+and expr =
   fun
   [ ExAcc _ e1 e2 -> do { expr_module e1; expr e2; }
   | ExApp _ e1 e2 -> do { expr e1; expr e2; }
@@ -109,14 +109,14 @@ value rec expr =
   | ExIfe _ e1 e2 e3 -> do { expr e1; expr e2; expr e3; }
   | ExInt _ _ -> ()
   | ExFlo _ _ -> ()
-  | ExLab _ _ e -> expr e
+  | ExLab _ _ eo -> option expr eo
   | ExLaz _ e -> expr e
   | ExLet _ _ pel e -> do { list let_binding pel; expr e; }
   | ExLid _ _ -> ()
   | ExLmd _ _ me e -> do { module_expr me; expr e; }
   | ExMat _ e pwel -> do { expr e; list match_case pwel; }
   | ExNew _ li -> longident li
-  | ExOlb _ _ e -> expr e
+  | ExOlb _ _ eo -> option expr eo
   | ExRec _ lel w -> do { list label_expr lel; option expr w; }
   | ExSeq _ el -> list expr el
   | ExSnd _ e _ -> expr e

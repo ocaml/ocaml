@@ -121,7 +121,7 @@ value loc_fmt =
 
 value print_location loc =
   if Pcaml.input_file.val <> "-" then
-    let (line, bp, ep) = Stdpp.line_of_loc Pcaml.input_file.val loc in
+    let (fname, line, bp, ep) = Stdpp.line_of_loc Pcaml.input_file.val loc in
     eprintf loc_fmt Pcaml.input_file.val line bp ep
   else eprintf "At location %d-%d\n" (fst loc) (snd loc)
 ;
@@ -130,7 +130,7 @@ value print_warning loc s =
   do { print_location loc; eprintf "%s\n" s }
 ;
 
-value process pa pr getdir =
+value rec parse_file pa getdir useast =
   let name = Pcaml.input_file.val in
   do {
     Pcaml.warning.val := print_warning;
@@ -141,27 +141,49 @@ value process pa pr getdir =
       try
         loop () where rec loop () =
           let (pl, stopped_at_directive) = pa cs in
-          if stopped_at_directive then do {
-            match getdir (List.rev pl) with
-            [ Some x ->
-                match x with
-                [ (loc, "load", Some <:expr< $str:s$ >>) ->
-                    Odyl_main.loadfile s
-                | (loc, "directory", Some <:expr< $str:s$ >>) ->
-                    Odyl_main.directory s
-                | (loc, _, _) ->
-                    Stdpp.raise_with_loc loc (Stream.Error "bad directive") ]
-            | None -> () ];
+          if stopped_at_directive then
+            let pl =
+              let rpl = List.rev pl in
+              match getdir rpl with
+              [ Some x ->
+                  match x with
+                  [ (loc, "load", Some <:expr< $str:s$ >>) ->
+                      do { Odyl_main.loadfile s; pl }
+                  | (loc, "directory", Some <:expr< $str:s$ >>) ->
+                      do { Odyl_main.directory s; pl }
+                  | (loc, "use", Some <:expr< $str:s$ >>) ->
+                      List.rev_append rpl
+                        [(useast loc s (use_file pa getdir useast s), loc)]
+                  | (loc, _, _) ->
+                      Stdpp.raise_with_loc loc (Stream.Error "bad directive") ]
+              | None -> pl ]
+            in
             pl @ loop ()
-          }
           else pl
       with x ->
         do { clear (); raise x }
     in
     clear ();
-    pr phr
+    phr
+  }
+and use_file pa getdir useast s =
+  let clear =
+    let v_input_file = Pcaml.input_file.val in
+    fun () -> Pcaml.input_file.val := v_input_file
+  in
+  do {
+    Pcaml.input_file.val := s;
+    try
+      let r = parse_file pa getdir useast in
+      do { clear (); r }
+    with e ->
+      do { clear (); raise e }
   }
 ;
+
+value process pa pr getdir useast =
+   pr (parse_file pa getdir useast);
+
 
 value gind =
   fun
@@ -175,10 +197,13 @@ value gimd =
   | _ -> None ]
 ;
 
+value usesig loc fname ast = MLast.SgUse loc fname ast;
+value usestr loc fname ast = MLast.StUse loc fname ast;
+
 value process_intf () =
-  process Pcaml.parse_interf.val Pcaml.print_interf.val gind;
+  process Pcaml.parse_interf.val Pcaml.print_interf.val gind usesig;
 value process_impl () =
-  process Pcaml.parse_implem.val Pcaml.print_implem.val gimd;
+  process Pcaml.parse_implem.val Pcaml.print_implem.val gimd usestr;
 
 type file_kind =
   [ Intf
@@ -229,6 +254,24 @@ value make_symlist l =
   match l with
   [ [] -> "<none>"
   | [h::t] -> (List.fold_left (fun x y -> x ^ "|" ^ y) ("{" ^ h) t) ^ "}" ]
+;
+
+value print_usage_list l =
+  List.iter
+    (fun (key, spec, doc) ->
+      match spec with
+      [ Arg.Symbol symbs _ ->
+          let s = make_symlist symbs in
+          let synt = key ^ " " ^ s in
+          eprintf "  %s %s\n" synt (align_doc synt doc)
+      | _ -> eprintf "  %s %s\n" key (align_doc key doc) ] )
+    l
+;
+
+value make_symlist l =
+  match l with
+  [ [] -> "<none>"
+  | [h :: t] -> (List.fold_left (fun x y -> x ^ "|" ^ y) ("{" ^ h) t) ^ "}" ]
 ;
 
 value print_usage_list l =

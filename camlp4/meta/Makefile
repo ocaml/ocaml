@@ -4,7 +4,7 @@ include ../config/Makefile
 
 INCLUDES=-I ../camlp4 -I ../boot -I $(OTOP)/utils
 OCAMLCFLAGS=-warn-error A $(INCLUDES)
-OBJS=q_MLast.cmo pa_r.cmo pa_rp.cmo pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo pr_dump.cmo
+OBJS=q_MLast.cmo pa_r.cmo pa_rp.cmo pa_extend.cmo pa_extend_m.cmo pa_macro.cmo pr_dump.cmo
 CAMLP4RM=pa_r.cmo pa_rp.cmo pr_dump.cmo
 CAMLP4RMX=pa_r.cmx pa_rp.cmx pr_dump.cmx
 SHELL=/bin/sh
@@ -42,10 +42,10 @@ compare:
 	done
 
 install:
-	-$(MKDIR) $(LIBDIR)/camlp4 $(BINDIR)
-	cp $(OBJS) $(LIBDIR)/camlp4/.
-	cp pa_ifdef.cmi pa_extend.cmi $(LIBDIR)/camlp4/.
-	cp camlp4r$(EXE) $(BINDIR)/.
-	if test -f $(COPT); then cp $(COPT) $(BINDIR)/.; fi
+	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"
+	cp $(OBJS) "$(LIBDIR)/camlp4/."
+	cp pa_macro.cmi pa_extend.cmi "$(LIBDIR)/camlp4/."
+	cp camlp4r$(EXE) "$(BINDIR)/."
+	if test -f $(COPT); then cp $(COPT) "$(BINDIR)/."; fi
 
 include .depend

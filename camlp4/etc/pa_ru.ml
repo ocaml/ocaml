@@ -36,7 +36,7 @@ EXTEND
             [ [e] -> e
             | _ -> <:expr< do { $list:el$ } >> ]
           in
-          [<:expr< let $rec:o2b o$ $list:l$ in $e$ >>]
+          [<:expr< let $opt:o2b o$ $list:l$ in $e$ >>]
       | e = expr; ";"; el = SELF ->
           let e = let loc = MLast.loc_of_expr e in <:expr< ($e$ : unit) >> in
           [e :: el]

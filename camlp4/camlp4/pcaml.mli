@@ -17,14 +17,29 @@
    Hold variables to be set by language syntax extensions. Some of them
    are provided for quotations management. *)
 
+value syntax_name : ref string;
+
 (** {6 Parsers} *)
 
 value parse_interf :
   ref (Stream.t char -> (list (MLast.sig_item * MLast.loc) * bool));
 value parse_implem :
   ref (Stream.t char -> (list (MLast.str_item * MLast.loc) * bool));
+   (** Called when parsing an interface (mli file) or an implementation
+       (ml file) to build the syntax tree; the returned list contains the
+       phrases (signature items or structure items) and their locations;
+       the boolean tells that the parser has encountered a directive; in
+       this case, since the directive may change the syntax, the parsing
+       stops, the directive is evaluated, and this function is called
+       again.
+       These functions are references, because they can be changed to
+       use another technology than the Camlp4 extended grammars. By
+       default, they use the grammars entries [implem] and [interf]
+       defined below. *)
 
 value gram : Grammar.g;
+   (** Grammar variable of the OCaml language *)
+
 value interf : Grammar.Entry.e (list (MLast.sig_item * MLast.loc) * bool);
 value implem : Grammar.Entry.e (list (MLast.str_item * MLast.loc) * bool);
 value top_phrase : Grammar.Entry.e (option MLast.str_item);
@@ -37,12 +52,12 @@ value expr : Grammar.Entry.e MLast.expr;
 value patt : Grammar.Entry.e MLast.patt;
 value ctyp : Grammar.Entry.e MLast.ctyp;
 value let_binding : Grammar.Entry.e (MLast.patt * MLast.expr);
+value type_declaration : Grammar.Entry.e MLast.type_decl;
 value class_sig_item : Grammar.Entry.e MLast.class_sig_item;
 value class_str_item : Grammar.Entry.e MLast.class_str_item;
 value class_expr : Grammar.Entry.e MLast.class_expr;
 value class_type : Grammar.Entry.e MLast.class_type;
-   (** Some grammar and entries of the language, set by [pa_o.cmo] and
-       [pa_r.cmo]. *)
+   (** Some entries of the language, set by [pa_o.cmo] and [pa_r.cmo]. *)
 
 value input_file : ref string;
    (** The file currently being parsed. *)
@@ -78,6 +93,10 @@ value expr_reloc :
 value patt_reloc :
   (MLast.loc -> MLast.loc) -> int -> MLast.patt -> MLast.patt;
 
+(** To possibly rename identifiers; parsers may call this function
+    when generating their identifiers; default = identity *)
+value rename_id : ref (string -> string);
+
 (** Allow user to catch exceptions in quotations *)
 type err_ctx =
   [ Finding | Expanding | ParsingResult of (int * int) and string | Locating ]
@@ -106,18 +125,25 @@ and next 'a = 'a -> string -> kont -> pretty
 and kont = Stream.t pretty
 ;
 
-value pr_str_item : printer_t MLast.str_item;
 value pr_sig_item : printer_t MLast.sig_item;
+value pr_str_item : printer_t MLast.str_item;
+value pr_module_type : printer_t MLast.module_type;
+value pr_module_expr : printer_t MLast.module_expr;
 value pr_expr : printer_t MLast.expr;
 value pr_patt : printer_t MLast.patt;
 value pr_ctyp : printer_t MLast.ctyp;
+value pr_class_sig_item : printer_t MLast.class_sig_item;
 value pr_class_str_item : printer_t MLast.class_str_item;
+value pr_class_type : printer_t MLast.class_type;
+value pr_class_expr : printer_t MLast.class_expr;
+
 value pr_expr_fun_args :
   ref (Extfun.t MLast.expr (list MLast.patt * MLast.expr));
 
 value find_pr_level : string -> list (pr_level 'a) -> pr_level 'a;
 
 value top_printer : printer_t 'a -> 'a -> unit;
+value string_of : printer_t 'a -> 'a -> string;
 
 value inter_phrases : ref (option string);
 

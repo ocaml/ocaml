@@ -26,7 +26,8 @@ type 'te glexer =
     tok_using : pattern -> unit;
     tok_removing : pattern -> unit;
     tok_match : pattern -> 'te -> string;
-    tok_text : pattern -> string }
+    tok_text : pattern -> string;
+    mutable tok_comm : location list option }
 ;;
 type lexer =
   { func : t lexer_func;

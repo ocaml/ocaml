@@ -15,6 +15,7 @@
 open Stdpp;
 open Pcaml;
 
+Pcaml.syntax_name.val := "OCaml";
 Pcaml.no_constructors_arity.val := True;
 
 do {
@@ -34,6 +35,7 @@ do {
   Grammar.Unsafe.clear_entry patt;
   Grammar.Unsafe.clear_entry ctyp;
   Grammar.Unsafe.clear_entry let_binding;
+  Grammar.Unsafe.clear_entry type_declaration;
   Grammar.Unsafe.clear_entry class_type;
   Grammar.Unsafe.clear_entry class_expr;
   Grammar.Unsafe.clear_entry class_sig_item;
@@ -282,19 +284,43 @@ value test_typevar_list_dot =
 
 value constr_arity = ref [("Some", 1); ("Match_Failure", 1)];
 
-value rec constr_expr_arity =
+value rec is_expr_constr_call =
+  fun
+  [ <:expr< $uid:_$ >> -> True
+  | <:expr< $uid:_$.$e$ >> -> is_expr_constr_call e
+  | <:expr< $e$ $_$ >> -> is_expr_constr_call e
+  | _ -> False ]
+;
+
+value rec constr_expr_arity loc =
   fun
   [ <:expr< $uid:c$ >> ->
       try List.assoc c constr_arity.val with [ Not_found -> 0 ]
-  | <:expr< $uid:_$.$e$ >> -> constr_expr_arity e
+  | <:expr< $uid:_$.$e$ >> -> constr_expr_arity loc e
+  | <:expr< $e$ $_$ >> ->
+      if is_expr_constr_call e then
+        Stdpp.raise_with_loc loc (Stream.Error "currified constructor")
+      else 1
   | _ -> 1 ]
 ;
 
-value rec constr_patt_arity =
+value rec is_patt_constr_call =
+  fun
+  [ <:patt< $uid:_$ >> -> True
+  | <:patt< $uid:_$.$p$ >> -> is_patt_constr_call p
+  | <:patt< $p$ $_$ >> -> is_patt_constr_call p
+  | _ -> False ]
+;
+
+value rec constr_patt_arity loc =
   fun
   [ <:patt< $uid:c$ >> ->
       try List.assoc c constr_arity.val with [ Not_found -> 0 ]
-  | <:patt< $uid:_$.$p$ >> -> constr_patt_arity p
+  | <:patt< $uid:_$.$p$ >> -> constr_patt_arity loc p
+  | <:patt< $p$ $_$ >> ->
+      if is_patt_constr_call p then
+        Stdpp.raise_with_loc loc (Stream.Error "currified constructor")
+      else 1
   | _ -> 1 ]
 ;
 
@@ -322,11 +348,13 @@ value choose_tvar tpl =
 
 value rec patt_lid =
   fun
-  [ <:patt< $lid:i$ $p$ >> -> Some (i, [p])
-  | <:patt< $p1$ $p2$ >> ->
-      match patt_lid p1 with
-      [ Some (i, pl) -> Some (i, [p2 :: pl])
-      | None -> None ]
+  [ <:patt< $p1$ $p2$ >> ->
+      match p1 with
+      [ <:patt< $lid:i$ >> -> Some (MLast.loc_of_patt p1, i, [p2])
+      | _ ->
+          match patt_lid p1 with
+          [ Some (loc, i, pl) -> Some (loc, i, [p2 :: pl])
+          | None -> None ] ]
   | _ -> None ]
 ;
 
@@ -375,7 +403,7 @@ Pcaml.sync.val := sync;
 
 EXTEND
   GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
-    class_expr class_sig_item class_str_item let_binding;
+    class_expr class_sig_item class_str_item let_binding type_declaration;
   module_expr:
     [ [ "functor"; "("; i = UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
@@ -412,12 +440,12 @@ EXTEND
           <:str_item< type $list:tdl$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr ->
-          let e = <:expr< let $rec:o2b r$ $list:l$ in $x$ >> in
+          let e = <:expr< let $opt:o2b r$ $list:l$ in $x$ >> in
           <:str_item< $exp:e$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
           match l with
           [ [(<:patt< _ >>, e)] -> <:str_item< $exp:e$ >>
-          | _ -> <:str_item< value $rec:o2b r$ $list:l$ >> ]
+          | _ -> <:str_item< value $opt:o2b r$ $list:l$ >> ]
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = expr ->
           <:str_item< let module $m$ = $mb$ in $e$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
@@ -498,7 +526,7 @@ EXTEND
     | "expr1"
       [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr LEVEL "top" ->
-          <:expr< let $rec:o2b o$ $list:l$ in $x$ >>
+          <:expr< let $opt:o2b o$ $list:l$ in $x$ >>
       | "let"; "module"; m = UIDENT; mb = module_binding; "in";
         e = expr LEVEL "top" ->
           <:expr< let module $m$ = $mb$ in $e$ >>
@@ -576,7 +604,7 @@ EXTEND
       | "-."; e = SELF -> <:expr< $mkumin loc "-." e$ >> ]
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF ->
-          match constr_expr_arity e1 with
+          match constr_expr_arity loc e1 with
           [ 1 -> <:expr< $e1$ $e2$ >>
           | _ ->
               match e2 with
@@ -622,6 +650,7 @@ EXTEND
       | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
       | "("; e = SELF; ")" -> <:expr< $e$ >>
       | "begin"; e = SELF; "end" -> <:expr< $e$ >>
+      | "begin"; "end" -> <:expr< () >>
       | x = LOCATE ->
           let x =
             try
@@ -646,7 +675,7 @@ EXTEND
   let_binding:
     [ [ p = patt; e = fun_binding ->
           match patt_lid p with
-          [ Some (i, pl) ->
+          [ Some (loc, i, pl) ->
               let e =
                 List.fold_left (fun e p -> <:expr< fun $p$ -> $e$ >>) e pl
               in
@@ -709,7 +738,7 @@ EXTEND
       [ p1 = SELF; "::"; p2 = SELF -> <:patt< [$p1$ :: $p2$] >> ]
     | LEFTA
       [ p1 = SELF; p2 = SELF ->
-          match constr_patt_arity p1 with
+          match constr_patt_arity loc p1 with
           [ 1 -> <:patt< $p1$ $p2$ >>
           | n ->
               let p2 =
@@ -922,7 +951,7 @@ EXTEND
       [ "fun"; cfd = class_fun_def -> cfd
       | "let"; rf = OPT "rec"; lb = LIST1 let_binding SEP "and"; "in";
         ce = SELF ->
-          <:class_expr< let $rec:o2b rf$ $list:lb$ in $ce$ >> ]
+          <:class_expr< let $opt:o2b rf$ $list:lb$ in $ce$ >> ]
     | "apply" LEFTA
       [ ce = SELF; e = expr LEVEL "label" ->
           <:class_expr< $ce$ $e$ >> ]
@@ -948,9 +977,9 @@ EXTEND
   ;
   class_str_item:
     [ [ "inherit"; ce = class_expr; pb = OPT [ "as"; i = LIDENT -> i ] ->
-          <:class_str_item< inherit $ce$ $as:pb$ >>
-      | "val"; (lab, mf, e) = cvalue ->
-          <:class_str_item< value $mut:mf$ $lab$ = $e$ >>
+          <:class_str_item< inherit $ce$ $opt:pb$ >>
+      | "val"; mf = OPT "mutable"; lab = label; e = cvalue_binding ->
+          <:class_str_item< value $opt:o2b mf$ $lab$ = $e$ >>
       | "method"; "private"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_str_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; "private"; l = label; ":"; t = poly_type ->
@@ -969,15 +998,13 @@ EXTEND
           <:class_str_item< type $t1$ = $t2$ >>
       | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
   ;
-  cvalue:
-    [ [ mf = OPT "mutable"; l = label; "="; e = expr -> (l, o2b mf, e)
-      | mf = OPT "mutable"; l = label; ":"; t = ctyp; "="; e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t$) >>)
-      | mf = OPT "mutable"; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
-        e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t$ :> $t2$) >>)
-      | mf = OPT "mutable"; l = label; ":>"; t = ctyp; "="; e = expr ->
-          (l, o2b mf, <:expr< ($e$ :> $t$) >>) ] ]
+  cvalue_binding:
+    [ [ "="; e = expr -> e
+      | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >>
+      | ":"; t = ctyp; ":>"; t2 = ctyp; "="; e = expr ->
+          <:expr< ($e$ : $t$ :> $t2$) >>
+      | ":>"; t = ctyp; "="; e = expr ->
+          <:expr< ($e$ :> $t$) >> ] ]
   ;
   label:
     [ [ i = LIDENT -> i ] ]
@@ -1002,7 +1029,7 @@ EXTEND
   class_sig_item:
     [ [ "inherit"; cs = class_signature -> <:class_sig_item< inherit $cs$ >>
       | "val"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< value $mut:o2b mf$ $l$ : $t$ >>
+          <:class_sig_item< value $opt:o2b mf$ $l$ : $t$ >>
       | "method"; "private"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; "private"; l = label; ":"; t = poly_type ->
@@ -1029,7 +1056,7 @@ EXTEND
            MLast.ciNam = n; MLast.ciExp = cs} ] ]
   ;
   (* Expressions *)
-  expr: LEVEL "apply"
+  expr: LEVEL "simple"
     [ LEFTA
       [ "new"; i = class_longident -> <:expr< new $list:i$ >> ] ]
   ;
@@ -1052,7 +1079,7 @@ EXTEND
   (* Core types *)
   ctyp: LEVEL "simple"
     [ [ "#"; id = class_longident -> <:ctyp< # $list:id$ >>
-      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $v$ > >>
+      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $opt:v$ > >>
       | "<"; ">" -> <:ctyp< < > >> ] ]
   ;
   meth_list:
@@ -1089,8 +1116,9 @@ EXTEND
       | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
   ;
   ctyp: LEVEL "simple"
-    [ [ "["; OPT "|"; rfl = LIST0 row_field SEP "|"; "]" ->
+    [ [ "["; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
           <:ctyp< [ = $list:rfl$ ] >>
+      | "["; ">"; "]" -> <:ctyp< [ > $list:[]$ ] >>
       | "["; ">"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
           <:ctyp< [ > $list:rfl$ ] >>
       | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
@@ -1149,15 +1177,15 @@ EXTEND
       | i = QUESTIONIDENT; ":"; "("; p = patt; ":"; t = ctyp; "=";
         e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
-      | i = QUESTIONIDENT -> <:patt< ? $i$ : ($lid:i$) >>
+      | i = QUESTIONIDENT -> <:patt< ? $i$ >>
       | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $lid:i$ = $e$ ) >>
+          <:patt< ? ( $lid:i$ = $e$ ) >>
       | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $lid:i$ : $t$ = $e$ ) >>
+          <:patt< ? ( $lid:i$ : $t$ = $e$ ) >>
       | "?"; "("; i = LIDENT; ")" ->
           <:patt< ? $i$ >>
       | "?"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
-          <:patt< ? $i$ : ( $lid:i$ : $t$ ) >> ] ]
+          <:patt< ? ( $lid:i$ : $t$ ) >> ] ]
   ;
   class_type:
     [ [ i = lident_colon; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
@@ -1208,3 +1236,6 @@ EXTEND
       | "#"; n = LIDENT; dp = OPT expr -> <:str_item< # $n$ $opt:dp$ >> ] ]
   ;
 END;
+
+Pcaml.add_option "-no_quot" (Arg.Set Plexer.no_quotations)
+  "Don't parse quotations, allowing to use, e.g. \"<:>\" as token";
