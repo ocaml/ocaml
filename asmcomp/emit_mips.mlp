@@ -271,7 +271,10 @@ let emit_instr i =
           if !call_gc_label = 0 then call_gc_label := new_label();
           `	subu	$22, $22, {emit_int n}\n`;
           `	subu	$25, $22, $23\n`;
+          `	.set	noreorder\n`;
           `{record_frame i.live}	bltzal	$25, {emit_label !call_gc_label}\n`;
+          `	li	$25, {emit_int n}\n`;
+          `	.set	reorder\n`;
           `	addu	{emit_reg i.res.(0)}, $22, 4\n`
         end else begin
           begin match n with
@@ -382,7 +385,7 @@ let emit_instr i =
         `	lw	$30, 0($sp)\n`;
         `	addu	$sp, $sp, 8\n`;
         liveregs i 0;
-        `	jal	$25\n`          (* Keep retaddr in $31 for debugging *)
+        `	j	$25\n`
 
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
