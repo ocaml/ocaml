@@ -36,11 +36,11 @@ let stack_offset = ref 0
 let frame_size () =                     (* includes return address *)
   !stack_offset + 4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) + 4
 
-let slot_offset loc class =
+let slot_offset loc cl =
   match loc with
     Incoming n -> frame_size() + n
   | Local n ->
-      if class = 0
+      if cl = 0
       then !stack_offset + n * 4
       else !stack_offset + num_stack_slots.(0) * 4 + n * 8
   | Outgoing n -> n

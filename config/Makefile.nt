@@ -3,13 +3,13 @@
 ######### General configuration
 
 ### Where to install the binaries
-BINDIR=c:\camlsl\bin
+BINDIR=c:\ocaml\bin
 
 ### Where to install the standard library
-LIBDIR=c:\camlsl\lib
+LIBDIR=c:\ocaml\lib
 
 ### Where to install the info files
-DISTRIB=c:\camlsl
+DISTRIB=c:\ocaml
 
 ########## Configuration for the bytecode compiler
 

@@ -16,7 +16,7 @@ PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
 all: ocamlrun.exe
 
 ocamlrun.exe: $(OBJS) prims.obj
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) /Fecslrun.exe prims.obj $(OBJS) $(CCLIBS)
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun.exe prims.obj $(OBJS) $(CCLIBS)
 
 install:
 	cp ocamlrun.exe $(BINDIR)\ocamlrun.exe

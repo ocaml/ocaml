@@ -13,12 +13,12 @@ OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
   printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo oo.cmo
 
-all: stdlib.cma std_exit.cmo ocamlheader
+all: stdlib.cma std_exit.cmo camlheader
 
 allopt: stdlib.cmxa std_exit.cmx
 
 install:
-	cp stdlib.cma std_exit.cmo *.cmi *.mli ocamlheader $(LIBDIR)
+	cp stdlib.cma std_exit.cmo *.cmi *.mli camlheader $(LIBDIR)
 
 installopt:
 	cp stdlib.cmxa stdlib.lib std_exit.obj *.cmx $(LIBDIR)
@@ -29,11 +29,11 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
-ocamlheader: headernt.c ..\config\Makefile.nt
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -Fecslheader. headernt.c
+camlheader: headernt.c ..\config\Makefile.nt
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o camlheader. headernt.c
 
 clean::
-	rm -f ocamlheader
+	rm -f camlheader
 
 pervasives.cmi: pervasives.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.mli
