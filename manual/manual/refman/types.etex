@@ -14,7 +14,7 @@ typexpr:
       | typexpr typeconstr
       | '(' typexpr { ',' typexpr } ')' typeconstr
       | typexpr 'as' "'" ident
-      | '[' variant-type ']'
+      | variant-type
       | '<' ['..'] '>'
       | '<' method-type { ';' method-type } [';' '..'] '>'
       | '#' class-path
@@ -113,9 +113,9 @@ is captured by @"'" ident@, and quantified upon.
 
 \begin{syntax}
 variant-type:
-        [ '|' ] tag-spec { '|' tag-spec }
-      | '>' [ tag-spec ] { '|' tag-spec }
-      | '<' [ '|' ] tag-spec-full { '|' tag-spec-full } [ '>' {{ '`'tag-name }} ]
+        '[' [ '|' ] tag-spec { '|' tag-spec } ']'
+      | '[>' [ tag-spec ] { '|' tag-spec } ']'
+      | '[<' [ '|' ] tag-spec-full { '|' tag-spec-full } [ '>' {{ '`'tag-name }} ] ']'
 ;
 tag-spec:
         '`'tag-name [ "of" typexpr ]
