@@ -198,7 +198,8 @@ caml_c_call:
 $105:   ldgp    $gp, 0($27)
     /* Record lowest stack address and return address */
         stq     $26, caml_last_return_address
-        stq     $sp, caml_bottom_of_stack
+	lda	$27, 16($sp)
+        stq     $27, caml_bottom_of_stack
     /* Make the exception handler and alloc ptr available to the C code */
         stq     $13, young_ptr
         stq     $15, caml_exception_pointer
