@@ -138,6 +138,10 @@ can be executed directly, even if the "ocamlrun" command is not
 installed. Moreover, the ``custom runtime'' mode enables linking Caml
 code with user-defined C functions, as described in
 chapter~\ref{c:intf-c}.
+\begin{unix}
+Never use the "strip" command on executables produced by "ocamlc -custom".
+This would remove the bytecode part of the executable.
+\end{unix}
 
 \item["-g"]
 Add debugging information while compiling and linking. This option is
