@@ -132,11 +132,17 @@ let load_lambda ppf lam =
     may_trace := true;
     let retval = (Meta.reify_bytecode code code_size) () in
     may_trace := false;
-    if can_free then Meta.static_free code;
+    if can_free then begin 
+      Meta.static_release_bytecode code code_size;
+      Meta.static_free code;
+    end;
     Result retval
   with x ->
     may_trace := false;
-    if can_free then Meta.static_free code;
+    if can_free then begin 
+      Meta.static_release_bytecode code code_size;
+      Meta.static_free code;
+    end;
     Symtable.restore_state initial_symtable;
     Exception x
 
