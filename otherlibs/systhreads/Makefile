@@ -43,7 +43,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f libthreads.a *.o *.cm*
+	rm -f libthreads*.a *.o
 	rm -f $(GENFILES)
 
 install:
