@@ -29,5 +29,3 @@ install:
 	cp ocpp$(EXE) $(BINDIR)/.
 
 depend:
-
-include .depend
