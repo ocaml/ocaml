@@ -251,7 +251,7 @@ Raise_caml_exception:
         Load(Young_ptr, %g6)
         Load(Young_start, %g7)
     /* Save exception bucket in a register outside the reg windows */
-        mov     %o0, %g4
+        mov     %o0, %g1
     /* Pop some frames until the trap pointer is in the current frame. */
 	cmp     %g5, %fp
         blt     L107                    /* if Trap_handler_reg < %fp, over */
@@ -265,4 +265,4 @@ L107:   mov     %g5, %sp
         add     %sp, 8, %sp
         jmp     %g4 + 8
     /* Restore bucket, in delay slot */
-	mov     %g4, %o0
+	mov     %g1, %o0
