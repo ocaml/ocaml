@@ -49,6 +49,7 @@ let main () =
        "-o", Arg.String(fun s -> exec_name := s; archive_name := s);
        "-i", Arg.Set print_types;
        "-a", Arg.Set make_archive;
+       "-pp", Arg.String(fun s -> Compile.pproc := Some s);
        "-unsafe", Arg.Set fast;
        "-nopervasives", Arg.Set nopervasives;
        "-custom", Arg.Set custom_runtime;

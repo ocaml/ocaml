@@ -41,6 +41,10 @@ val cmx_magic_number: string
         (* Magic number for compilation unit descriptions *)
 val cmxa_magic_number: string
         (* Magic number for libraries of compilation unit descriptions *)
+val ast_intf_magic_number: string
+        (* Magic number for file holding an interface syntax tree *)
+val ast_impl_magic_number: string
+        (* Magic number for file holding an implementation syntax tree *)
 
 val max_tag: int
         (* Biggest tag that can be stored in the header of a block. *)
