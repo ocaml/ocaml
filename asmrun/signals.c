@@ -15,8 +15,11 @@
 
 #include <signal.h>
 #include <stdio.h>
-#if (defined(TARGET_sparc) && defined(SYS_solaris))
+#if defined(TARGET_sparc) && defined(SYS_solaris)
 #include <ucontext.h>
+#endif
+#if defined(TARGET_power) && defined(SYS_rhapsody) && defined(DARWIN_VERSION_6)
+#include <sys/ucontext.h>
 #endif
 #include "alloc.h"
 #include "callback.h"
@@ -39,10 +42,23 @@ extern sighandler win32_signal(int sig, sighandler action);
 #endif
 
 #if defined(TARGET_power) && defined(SYS_rhapsody)
-/* Confer machdep/ppc/unix_signal.c and mach/ppc/thread_status.h
-   in the Darwin sources */
-#define CONTEXT_GPR(ctx, regno) \
-  (((unsigned long *)((ctx)->sc_regs))[2 + (regno)])
+  #ifdef DARWIN_VERSION_6
+    /* cf. xnu/osfmk/dev/ppc/unix_signal.c
+           xnu/osfmk/mach/ppc/thread_status.h
+           xnu/bsd/sys/ucontext.h
+           xnu/bsd/ppc/signal.h
+           etc. etc. etc.
+    */
+    #define STRUCT_SIGCONTEXT struct ucontext
+    #define CONTEXT_GPR(ctx, regno) \
+      (((unsigned long *)&((ctx)->uc_mcontext->ss))[2 + (regno)])
+  #else
+    /* Confer machdep/ppc/unix_signal.c and mach/ppc/thread_status.h
+       in the Darwin sources */
+    #define STRUCT_SIGCONTEXT struct sigcontext
+    #define CONTEXT_GPR(ctx, regno) \
+      (((unsigned long *)((ctx)->sc_regs))[2 + (regno)])
+  #endif
 #endif
 
 #if defined(TARGET_power) && defined(SYS_aix)
@@ -161,7 +177,7 @@ void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
 #elif defined(TARGET_power) && defined(SYS_elf)
 void handle_signal(int sig, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_rhapsody)
-void handle_signal(int sig, int code, struct sigcontext * context)
+void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
 #else
 void handle_signal(int sig)
 #endif
@@ -429,7 +445,7 @@ static void trap_handler(int sig, struct sigcontext * context)
 #endif
 
 #if defined(TARGET_power) && defined(SYS_rhapsody)
-static void trap_handler(int sig, int code, struct sigcontext * context)
+static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
 {
   /* Unblock SIGTRAP */
   sigset_t mask;
@@ -523,7 +539,11 @@ void init_signals(void)
     act.sa_handler = (void (*)(int)) trap_handler;
     sigemptyset(&act.sa_mask);
 #if defined(SYS_rhapsody) || defined(SYS_aix)
+  #ifdef DARWIN_VERSION_6
+    act.sa_flags = SA_SIGINFO;
+  #else
     act.sa_flags = 0;
+  #endif
 #else
     act.sa_flags = SA_NODEFER;
 #endif
