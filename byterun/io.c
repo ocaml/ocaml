@@ -430,10 +430,10 @@ static struct custom_operations channel_operations = {
 
 CAMLexport value alloc_channel(struct channel *chan)
 {
-  value res = alloc_custom(&channel_operations, sizeof(struct channel *),
-                           1, 1000);
+  value res;
+  chan->refcount++;             /* prevent finalization during next alloc */
+  res = alloc_custom(&channel_operations, sizeof(struct channel *), 1, 1000);
   Channel(res) = chan;
-  chan->refcount++;
   return res;
 }
 
