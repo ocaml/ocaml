@@ -25,4 +25,4 @@ val strengthen: Env.t -> module_type -> Path.t -> module_type
 val nondep_supertype: Env.t -> Ident.t -> module_type -> module_type
         (* Return the smallest supertype of the given type
            in which the given ident does not appear.
-           Raise [Not_found] if no such type List.exists. *)
+           Raise [Not_found] if no such type exists. *)
