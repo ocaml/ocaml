@@ -11,6 +11,7 @@ Both compilers:
   or local modules.
 - Simpler represention for method tables. Objects can now be marshalled
   between identical programs with the flag Marshal.Closures.
+- Improved error messages for objects and variants.
 
 Ocamllex:
 - #line directives in the input file are now accepted.
