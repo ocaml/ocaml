@@ -1192,10 +1192,10 @@ i_121:    MOVE.L     initial_external_raise_(A7), (external_raise).L
           BRA        lbl_1B88
           Nodispatch
 
-; EVENT
+; EVENT                                    XXX pas implemente
 i_122:    Dispatch
 
-; BREAK
+; BREAK                                    XXX pas implemente
 i_123:    Dispatch
 
           Spacer     12100                    ; complete a 64k

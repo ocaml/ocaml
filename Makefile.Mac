@@ -1,6 +1,6 @@
 # The main Makefile
 
-MacVersion = "mac.0x1"
+MacVersion = "mac.0x2"
 
 CAMLC = :boot:ocamlrun :boot:ocamlc -I :boot:
 COMPFLAGS = {INCLUDES}
@@ -167,7 +167,7 @@ install Ä $OutOfDate
     flush
     for i in "{BINDIR}" "{LIBDIR}"
       if "`exists -d "{i}"`" == ""
-	newfolder "{i}"
+        newfolder "{i}"
       end
     end
     directory :byterun:
@@ -218,13 +218,13 @@ clean ÄÄ
 
 # The configuration file
 
-:utils:config.ml Ä :utils:config.mlp :config:Makefile
+:utils:config.ml Ä :utils:config.mlp :config:config.Mac
     delete -i :utils:config.ml
     streamedit -e "/let version =/ replace /¶¶¶"°/ ¶"/{MacVersion}¶¶¶"¶"" ¶
-	       -e "1,$ replace /%%LIBDIR%%/ ¶"{LIBDIR}¶"" ¶
-		       -e "1,$ replace /%%EXT_OBJ%%/ '.o'" ¶
-		       -e "1,$ replace /%%EXT_LIB%%/ '.x'" ¶
-	   :utils:config.mlp > :utils:config.ml
+               -e "1,$ replace /%%LIBDIR%%/ ¶"{LIBDIR}¶"" ¶
+               -e "1,$ replace /%%EXT_OBJ%%/ '.o'" ¶
+               -e "1,$ replace /%%EXT_LIB%%/ '.x'" ¶
+               :utils:config.mlp > :utils:config.ml
 
 clean ÄÄ
     delete -i :utils:config.ml

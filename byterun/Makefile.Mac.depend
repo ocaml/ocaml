@@ -53,6 +53,25 @@
                             minor_gc.h ¶
                             str.h
 
+"debugger.c.x" Ä  debugger.c ¶
+                             config.h ¶
+                             ::config:sm-Mac.h ¶
+                             debugger.h ¶
+                             misc.h ¶
+                             mlvalues.h ¶
+                             fail.h ¶
+                             fix_code.h ¶
+                             instruct.h ¶
+                             intext.h ¶
+                             io.h ¶
+                             stacks.h ¶
+                             memory.h ¶
+                             gc.h ¶
+                             major_gc.h ¶
+                             freelist.h ¶
+                             minor_gc.h ¶
+                             sys.h
+
 "extern.c.x" Ä  extern.c ¶
                            alloc.h ¶
                            misc.h ¶
@@ -88,10 +107,16 @@
 "fix_code.c.x" Ä  fix_code.c ¶
                              config.h ¶
                              ::config:sm-Mac.h ¶
-                             fix_code.h ¶
+                             debugger.h ¶
                              misc.h ¶
                              mlvalues.h ¶
+                             fix_code.h ¶
                              instruct.h ¶
+                             memory.h ¶
+                             gc.h ¶
+                             major_gc.h ¶
+                             freelist.h ¶
+                             minor_gc.h ¶
                              reverse.h
 
 "floats.c.x" Ä  floats.c ¶
@@ -173,6 +198,7 @@
                            ::config:sm-Mac.h ¶
                            mlvalues.h ¶
                            callback.h ¶
+                           debugger.h ¶
                            fail.h ¶
                            fix_code.h ¶
                            instrtrace.h ¶
@@ -408,6 +434,7 @@
                             alloc.h ¶
                             misc.h ¶
                             mlvalues.h ¶
+                            debugger.h ¶
                             exec.h ¶
                             fail.h ¶
                             fix_code.h ¶
@@ -437,6 +464,7 @@
                         alloc.h ¶
                         misc.h ¶
                         mlvalues.h ¶
+                        debugger.h ¶
                         fail.h ¶
                         instruct.h ¶
                         signals.h ¶
@@ -516,6 +544,25 @@
                             minor_gc.h ¶
                             str.h
 
+"debugger.c.o" Ä  debugger.c ¶
+                             config.h ¶
+                             ::config:sm-Mac.h ¶
+                             debugger.h ¶
+                             misc.h ¶
+                             mlvalues.h ¶
+                             fail.h ¶
+                             fix_code.h ¶
+                             instruct.h ¶
+                             intext.h ¶
+                             io.h ¶
+                             stacks.h ¶
+                             memory.h ¶
+                             gc.h ¶
+                             major_gc.h ¶
+                             freelist.h ¶
+                             minor_gc.h ¶
+                             sys.h
+
 "extern.c.o" Ä  extern.c ¶
                            alloc.h ¶
                            misc.h ¶
@@ -551,10 +598,16 @@
 "fix_code.c.o" Ä  fix_code.c ¶
                              config.h ¶
                              ::config:sm-Mac.h ¶
-                             fix_code.h ¶
+                             debugger.h ¶
                              misc.h ¶
                              mlvalues.h ¶
+                             fix_code.h ¶
                              instruct.h ¶
+                             memory.h ¶
+                             gc.h ¶
+                             major_gc.h ¶
+                             freelist.h ¶
+                             minor_gc.h ¶
                              reverse.h
 
 "floats.c.o" Ä  floats.c ¶
@@ -636,6 +689,7 @@
                            ::config:sm-Mac.h ¶
                            mlvalues.h ¶
                            callback.h ¶
+                           debugger.h ¶
                            fail.h ¶
                            fix_code.h ¶
                            instrtrace.h ¶
@@ -871,6 +925,7 @@
                             alloc.h ¶
                             misc.h ¶
                             mlvalues.h ¶
+                            debugger.h ¶
                             exec.h ¶
                             fail.h ¶
                             fix_code.h ¶
@@ -900,6 +955,7 @@
                         alloc.h ¶
                         misc.h ¶
                         mlvalues.h ¶
+                        debugger.h ¶
                         fail.h ¶
                         instruct.h ¶
                         signals.h ¶

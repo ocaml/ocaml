@@ -203,9 +203,10 @@
 :bytecomp:bytelink.cmiÄ :bytecomp:emitcode.cmi :bytecomp:symtable.cmi 
 :bytecomp:emitcode.cmiÄ :typing:ident.cmi :bytecomp:instruct.cmi ¶
     :bytecomp:lambda.cmi 
-:bytecomp:instruct.cmiÄ :typing:ident.cmi :bytecomp:lambda.cmi 
-:bytecomp:lambda.cmiÄ :parsing:asttypes.cmi :typing:ident.cmi ¶
-    :typing:path.cmi :typing:primitive.cmi 
+:bytecomp:instruct.cmiÄ :typing:env.cmi :typing:ident.cmi ¶
+    :bytecomp:lambda.cmi :typing:types.cmi 
+:bytecomp:lambda.cmiÄ :parsing:asttypes.cmi :typing:env.cmi :typing:ident.cmi ¶
+    :typing:path.cmi :typing:primitive.cmi :typing:types.cmi 
 :bytecomp:matching.cmiÄ :typing:ident.cmi :bytecomp:lambda.cmi ¶
     :parsing:location.cmi :typing:typedtree.cmi 
 :bytecomp:printinstr.cmiÄ :bytecomp:instruct.cmi 
@@ -220,21 +221,25 @@
 :bytecomp:translmod.cmiÄ :bytecomp:lambda.cmi :typing:typedtree.cmi 
 :bytecomp:translobj.cmiÄ :typing:ident.cmi :bytecomp:lambda.cmi 
 :bytecomp:bytegen.cmoÄ :parsing:asttypes.cmi :typing:ident.cmi ¶
-    :bytecomp:instruct.cmi :bytecomp:lambda.cmi :utils:misc.cmi ¶
-    :typing:primitive.cmi :typing:types.cmi :bytecomp:bytegen.cmi 
+    :bytecomp:instruct.cmi :bytecomp:lambda.cmi :parsing:location.cmi ¶
+    :utils:misc.cmi :typing:primitive.cmi :typing:types.cmi ¶
+    :bytecomp:bytegen.cmi 
 :bytecomp:bytegen.cmxÄ :parsing:asttypes.cmi :typing:ident.cmx ¶
-    :bytecomp:instruct.cmx :bytecomp:lambda.cmx :utils:misc.cmx ¶
-    :typing:primitive.cmx :typing:types.cmx :bytecomp:bytegen.cmi 
+    :bytecomp:instruct.cmx :bytecomp:lambda.cmx :parsing:location.cmx ¶
+    :utils:misc.cmx :typing:primitive.cmx :typing:types.cmx ¶
+    :bytecomp:bytegen.cmi 
 :bytecomp:bytelibrarian.cmoÄ :utils:clflags.cmo :utils:config.cmi ¶
     :bytecomp:emitcode.cmi :utils:misc.cmi :bytecomp:bytelibrarian.cmi 
 :bytecomp:bytelibrarian.cmxÄ :utils:clflags.cmx :utils:config.cmx ¶
     :bytecomp:emitcode.cmx :utils:misc.cmx :bytecomp:bytelibrarian.cmi 
 :bytecomp:bytelink.cmoÄ :utils:ccomp.cmi :utils:clflags.cmo :utils:config.cmi ¶
-    :bytecomp:emitcode.cmi :typing:ident.cmi :utils:misc.cmi ¶
-    :bytecomp:opcodes.cmo :bytecomp:symtable.cmi :bytecomp:bytelink.cmi 
+    :bytecomp:emitcode.cmi :typing:ident.cmi :bytecomp:instruct.cmi ¶
+    :utils:misc.cmi :bytecomp:opcodes.cmo :bytecomp:symtable.cmi ¶
+    :bytecomp:bytelink.cmi 
 :bytecomp:bytelink.cmxÄ :utils:ccomp.cmx :utils:clflags.cmx :utils:config.cmx ¶
-    :bytecomp:emitcode.cmx :typing:ident.cmx :utils:misc.cmx ¶
-    :bytecomp:opcodes.cmx :bytecomp:symtable.cmx :bytecomp:bytelink.cmi 
+    :bytecomp:emitcode.cmx :typing:ident.cmx :bytecomp:instruct.cmx ¶
+    :utils:misc.cmx :bytecomp:opcodes.cmx :bytecomp:symtable.cmx ¶
+    :bytecomp:bytelink.cmi 
 :bytecomp:emitcode.cmoÄ :parsing:asttypes.cmi :utils:config.cmi ¶
     :typing:env.cmi :typing:ident.cmi :bytecomp:instruct.cmi ¶
     :bytecomp:lambda.cmi :bytecomp:meta.cmi :utils:misc.cmi ¶
@@ -243,14 +248,16 @@
     :typing:env.cmx :typing:ident.cmx :bytecomp:instruct.cmx ¶
     :bytecomp:lambda.cmx :bytecomp:meta.cmx :utils:misc.cmx ¶
     :bytecomp:opcodes.cmx :bytecomp:translmod.cmx :bytecomp:emitcode.cmi 
-:bytecomp:instruct.cmoÄ :typing:ident.cmi :bytecomp:lambda.cmi ¶
-    :bytecomp:instruct.cmi 
-:bytecomp:instruct.cmxÄ :typing:ident.cmx :bytecomp:lambda.cmx ¶
-    :bytecomp:instruct.cmi 
-:bytecomp:lambda.cmoÄ :parsing:asttypes.cmi :typing:ident.cmi :utils:misc.cmi ¶
-    :typing:path.cmi :typing:primitive.cmi :bytecomp:lambda.cmi 
-:bytecomp:lambda.cmxÄ :parsing:asttypes.cmi :typing:ident.cmx :utils:misc.cmx ¶
-    :typing:path.cmx :typing:primitive.cmx :bytecomp:lambda.cmi 
+:bytecomp:instruct.cmoÄ :typing:env.cmi :typing:ident.cmi ¶
+    :bytecomp:lambda.cmi :typing:types.cmi :bytecomp:instruct.cmi 
+:bytecomp:instruct.cmxÄ :typing:env.cmx :typing:ident.cmx ¶
+    :bytecomp:lambda.cmx :typing:types.cmx :bytecomp:instruct.cmi 
+:bytecomp:lambda.cmoÄ :parsing:asttypes.cmi :typing:env.cmi :typing:ident.cmi ¶
+    :utils:misc.cmi :typing:path.cmi :typing:primitive.cmi :typing:types.cmi ¶
+    :bytecomp:lambda.cmi 
+:bytecomp:lambda.cmxÄ :parsing:asttypes.cmi :typing:env.cmx :typing:ident.cmx ¶
+    :utils:misc.cmx :typing:path.cmx :typing:primitive.cmx :typing:types.cmx ¶
+    :bytecomp:lambda.cmi 
 :bytecomp:matching.cmoÄ :parsing:asttypes.cmi :typing:ctype.cmi ¶
     :typing:ident.cmi :bytecomp:lambda.cmi :parsing:location.cmi ¶
     :utils:misc.cmi :typing:predef.cmi :typing:primitive.cmi ¶
