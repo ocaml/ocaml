@@ -149,17 +149,26 @@ static int sys_open_flags[] = {
 
 CAMLprim value sys_open(value path, value flags, value perm)
 {
+  CAMLparam3(path, flags, perm);
   int fd;
-  fd = open(String_val(path), convert_flag_list(flags, sys_open_flags)
+  char * p;
+
+  p = stat_alloc(string_length(path) + 1);
+  strcpy(p, String_val(path));
+  /* open on a named FIFO can block (PR#1533) */
+  enter_blocking_section();
+  fd = open(p, convert_flag_list(flags, sys_open_flags)
 #if !macintosh
              , Int_val(perm)
 #endif
                                        );
+  leave_blocking_section();
+  stat_free(p);
   if (fd == -1) sys_error(path);
 #if defined(F_SETFD) && defined(FD_CLOEXEC)
   fcntl(fd, F_SETFD, FD_CLOEXEC);
 #endif
-  return Val_long(fd);
+  CAMLreturn(Val_long(fd));
 }
 
 CAMLprim value sys_close(value fd)

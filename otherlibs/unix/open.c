@@ -15,7 +15,10 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
+#include <string.h>
 #include <fcntl.h>
 
 #ifndef O_NONBLOCK
@@ -38,10 +41,17 @@ static int open_flag_table[] = {
 
 CAMLprim value unix_open(value path, value flags, value perm)
 {
+  CAMLparam3(path, flags, perm);
   int ret;
+  char * p;
 
-  ret = open(String_val(path), convert_flag_list(flags, open_flag_table),
-             Int_val(perm));
+  p = stat_alloc(string_length(path) + 1);
+  strcpy(p, String_val(path));
+  /* open on a named FIFO can block (PR#1533) */
+  enter_blocking_section();
+  ret = open(p, convert_flag_list(flags, open_flag_table), Int_val(perm));
+  leave_blocking_section();
+  stat_free(p);
   if (ret == -1) uerror("open", path);
-  return Val_int(ret);
+  CAMLreturn (Val_int(ret));
 }
