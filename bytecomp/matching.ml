@@ -2378,7 +2378,7 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
         let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
         check_total total lambda raise_num handler_fun
       with
-      | Unused -> assert false ; handler_fun()
+      | Unused -> assert false (* ; handler_fun() *)
       end
   | Total ->
       let pm =
@@ -2549,5 +2549,5 @@ let for_multiple_match loc paraml pat_act_list partial =
           lambda
       end
   with Unused ->
-    assert false ; partial_function loc ()
+    assert false (* ; partial_function loc () *)
 
