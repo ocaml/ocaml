@@ -101,7 +101,7 @@ value format_float(fmt, arg)    /* ML */
   char * dest;
   value res;
 
-  prec = 64;
+  prec = MAX_DIGITS;
   for (p = String_val(fmt); *p != 0; p++) {
     if (*p >= '0' && *p <= '9') {
       i = atoi(p) + MAX_DIGITS;

@@ -213,6 +213,7 @@ value interprete(prog, prog_size)
       Next;
     Instruct(ASSIGN):
       sp[*pc++] = accu;
+      accu = Val_unit;
       Next;
 
 /* Access in heap-allocated environment */
