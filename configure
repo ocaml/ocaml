@@ -55,7 +55,7 @@ while : ; do
         cc="$2"; shift;;
     -lib*)
         cclibs="$2 $cclibs"; shift;;
-    -nocurses) withcurses=no; shift;;
+    -no-curses) withcurses=no;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
