@@ -255,6 +255,7 @@ let init_toplevel () =
     ignore(Bytesections.seek_section ic "SYMB");
     global_table := (input_value ic : Ident.t numtable);
     let prims = Bytesections.read_section ic "PRIM" in
+    c_prim_table := empty_numtable;
     let pos = ref 0 in
     while !pos < String.length prims do
       let i = String.index_from prims !pos '\000' in
