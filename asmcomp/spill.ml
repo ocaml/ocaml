@@ -247,15 +247,16 @@ let rec reload i before =
    That is, any register that may be reloaded in the future must be spilled
    just after its definition. *)
 
-(* As an optimization, if a register needs to be spilled in one branch of
+(*
+   As an optimization, if a register needs to be spilled in one branch of
    a conditional but not in the other, then we spill it late on entrance
    in the branch that needs it spilled.
    NB: This strategy is turned off in loops, as it may prevent a spill from
    being lifted up all the way out of the loop.
-   NB again: This strategy is also turned off when one of the branch is
-   Iexit, as it generates many useless spills inside switch arms
-   NB ter: I am sure that, as implemented, this strategy generates useless
-   spills inside switches arms *)
+   NB again: This strategy is also off in switch arms
+   as it generates many useless spills inside switch arms
+   NB ter: is it the same thing for catch bodies ?
+*)
 
 
 let spill_at_exit = ref []
@@ -267,6 +268,8 @@ let find_spill_at_exit k =
 
 let spill_at_raise = ref Reg.Set.empty
 let inside_loop = ref false
+and inside_arm = ref false
+and inside_catch = ref false
 
 let add_spills regset i =
   Reg.Set.fold
@@ -302,9 +305,7 @@ let rec spill i finally =
       let (new_ifso, before_ifso) = spill ifso at_join in
       let (new_ifnot, before_ifnot) = spill ifnot at_join in
       if
-        !inside_loop ||
-        (match new_ifso.desc with Iexit _ -> true | _ -> false) ||
-        (match new_ifnot.desc with Iexit _ -> true | _ -> false)
+        !inside_loop || !inside_arm
       then
         (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
                      i.arg i.res new_next,
@@ -325,6 +326,8 @@ let rec spill i finally =
       end
   | Iswitch(index, cases) ->
       let (new_next, at_join) = spill i.next finally in
+      let saved_inside_arm = !inside_arm in
+      inside_arm := true ;
       let before = ref Reg.Set.empty in
       let new_cases =
         Array.map
@@ -333,6 +336,7 @@ let rec spill i finally =
             before := Reg.Set.union !before before_c;
             new_c)
           cases in
+      inside_arm := saved_inside_arm ;
       (instr_cons (Iswitch(index, new_cases)) i.arg i.res new_next,
        !before)
   | Iloop(body) ->
@@ -358,9 +362,12 @@ let rec spill i finally =
   | Icatch(nfail, body, handler) ->
       let (new_next, at_join) = spill i.next finally in
       let (new_handler, at_exit) = spill handler at_join in
+      let saved_inside_catch = !inside_catch in
+      inside_catch := true ;
       spill_at_exit := (nfail, at_exit) :: !spill_at_exit ;
       let (new_body, before) = spill body at_join in
       spill_at_exit := List.tl !spill_at_exit;
+      inside_catch := saved_inside_catch ;
       (instr_cons (Icatch(nfail, new_body, new_handler)) i.arg i.res new_next,
        before)
   | Iexit nfail ->

@@ -44,10 +44,9 @@ type ulambda =
 
 and ulambda_switch =
   { us_index_consts: int array;
-    us_cases_consts: ulambda array;
+    us_actions_consts : ulambda array;
     us_index_blocks: int array;
-    us_cases_blocks: ulambda array;
-    us_checked: bool}
+    us_actions_blocks: ulambda array}
 
 (* Description of known functions *)
 

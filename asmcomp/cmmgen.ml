@@ -579,29 +579,12 @@ exception Found of int
 let make_switch_gen arg cases acts =
   let min_key,_,_ = cases.(0)
   and _,max_key,_ = cases.(Array.length cases-1) in
-  let new_cases = Array.create (max_key-min_key+1) 0
-  and actions = ref []
-  and n_acts = ref 0 in
-
-  let store act =
-    let rec store_rec i = function
-      | [] -> [act]
-      | act0::rem ->
-          if act0 = act then
-            raise (Found i)
-          else
-            act0::(store_rec (i+1) rem) in
-    try
-      actions := store_rec 0 !actions ;
-      let r = !n_acts in
-      incr n_acts ;
-      r
-    with
-    | Found i -> i in
+  let new_cases = Array.create (max_key-min_key+1) 0 in
+  let store = Switch.mk_store (=) in
             
   for i = 0 to Array.length cases-1 do
     let l,h,act = cases.(i) in
-    let new_act = store act in
+    let new_act = store.Switch.act_store act in
     for j = l to h do
       new_cases.(j-min_key) <- new_act
     done
@@ -610,33 +593,8 @@ let make_switch_gen arg cases acts =
     (arg, new_cases,
      Array.map
        (fun n -> acts.(n))
-       (Array.of_list !actions))
+       (store.Switch.act_get ()))
 
-(*
-module SArgConst =
-struct
-  type primitive = operation
-
-  let eqint = Ccmpi Ceq
-  let leint = Ccmpi Cle
-  let ltint = Ccmpi Clt
-  let geint = Ccmpi Cge
-  let gtint = Ccmpi Cgt
-
-  type act = expression
-
-  let default = Cexit (0,[])
-  let make_prim p args = Cop (p,args)
-  let make_isout = transl_isout
-  let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
-  let make_switch (nofail : bool)  arg cases actions =
-    make_switch_gen
-      (fun n arg -> untag_int (add_const arg (n lsl 1)))
-      arg cases actions
-end
-
-module SwitcherConsts = Switch.Make(SArgConst)
-*)
 
 (* Then for blocks *)
 
@@ -899,30 +857,21 @@ let rec transl = function
       (* As in the bytecode interpreter, only matching against constants
          can be checked *)
       if Array.length s.us_index_blocks = 0 then
-        if s.us_checked then
-          bind "switch" (untag_int (transl arg)) (fun idx ->
-            Cifthenelse
-              (Cop(Ccmpa Cge,
-                   [idx; Cconst_pointer(Array.length s.us_index_consts)]),
-               Cexit (0,[]),
-               Cswitch
-                 (idx,s.us_index_consts,
-                  Array.map transl s.us_cases_consts)))
-        else
-          Cswitch
-            (untag_int (transl arg),
-             s.us_index_consts,
-             Array.map transl s.us_cases_consts)
+        Cswitch
+          (untag_int (transl arg),
+           s.us_index_consts,
+           Array.map transl s.us_actions_consts)
       else if Array.length s.us_index_consts = 0 then
         transl_switch (get_tag (transl arg))
-          s.us_index_blocks s.us_cases_blocks
+          s.us_index_blocks s.us_actions_blocks
       else
         bind "switch" (transl arg) (fun arg ->
           Cifthenelse(
           Cop(Cand, [arg; Cconst_int 1]),
-          transl_switch (untag_int arg) s.us_index_consts s.us_cases_consts,
-          transl_switch (get_tag arg)
-            s.us_index_blocks s.us_cases_blocks))
+          transl_switch
+            (untag_int arg) s.us_index_consts s.us_actions_consts,
+          transl_switch
+            (get_tag arg) s.us_index_blocks s.us_actions_blocks))
   | Ustaticfail (nfail, args) ->
       Cexit (nfail, List.map transl args)
   | Ucatch(nfail, [], body, handler) ->
@@ -1407,6 +1356,7 @@ and exit_if_false cond otherwise nfail =
       Cifthenelse(test_bool(transl cond), otherwise, Cexit (nfail, []))
 
 and transl_switch arg index cases = match Array.length cases with
+| 0 -> fatal_error "Cmmgen.transl_switch"
 | 1 -> transl cases.(0)
 | _ ->
     let n_index = Array.length index in
@@ -1498,9 +1448,10 @@ let rec transl_all_functions already_translated cont =
     let (lbl, params, body) = Queue.take functions in
     if StringSet.mem lbl already_translated then
       transl_all_functions already_translated cont
-    else
+    else begin
       transl_all_functions (StringSet.add lbl already_translated)
                            (transl_function lbl params body :: cont)
+    end
   with Queue.Empty ->
     cont
 

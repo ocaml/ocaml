@@ -222,7 +222,7 @@ install: FORCE
 	cp toplevel/topmain.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
-	cd man; $(MAKE) install
+	-cd man; $(MAKE) install
 	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) install); done
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi

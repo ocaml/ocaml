@@ -18,6 +18,7 @@ open Misc
 open Asttypes
 open Primitive
 open Lambda
+open Switch
 open Clambda
 
 (* Auxiliaries for compiling functions *)
@@ -50,8 +51,8 @@ let occurs_var var u =
         List.exists (fun (id, u) -> occurs u) decls || occurs body
     | Uprim(p, args) -> List.exists occurs args
     | Uswitch(arg, s) ->
-        occurs arg || occurs_array s.us_cases_consts
-                   || occurs_array s.us_cases_blocks
+        occurs arg ||
+        occurs_array s.us_actions_consts || occurs_array s.us_actions_blocks
     | Ustaticfail (_, args) -> List.exists occurs args
     | Ucatch(_, _, body, hdlr) -> occurs body || occurs hdlr
     | Utrywith(body, exn, hdlr) -> occurs body || occurs hdlr
@@ -101,6 +102,8 @@ let prim_size prim args =
   | Pbigarrayset(ndims, _, _) -> 4 + ndims * 6
   | _ -> 2 (* arithmetic and comparisons *)
 
+(* Very raw approximation of switch cost *)
+  
 let lambda_smaller lam threshold =
   let size = ref 0 in
   let rec lambda_size lam =
@@ -127,12 +130,11 @@ let lambda_smaller lam threshold =
         size := !size + prim_size prim args;
         lambda_list_size args
     | Uswitch(lam, cases) ->
-        if Array.length cases.us_cases_consts > 0 then size := !size + 5;
-        if Array.length cases.us_cases_blocks > 0 then size := !size + 5;
-        if cases.us_checked then size := !size + 2;
+        if Array.length cases.us_actions_consts > 1 then size := !size + 5 ;
+        if Array.length cases.us_actions_blocks > 1 then size := !size + 5 ;
         lambda_size lam;
-        lambda_array_size cases.us_cases_consts;
-        lambda_array_size cases.us_cases_blocks
+        lambda_array_size cases.us_actions_consts ;
+        lambda_array_size cases.us_actions_blocks
     | Ustaticfail (_,args) -> lambda_list_size args
     | Ucatch(_, _, body, handler) ->
         incr size; lambda_size body; lambda_size handler
@@ -271,8 +273,10 @@ let rec substitute sb ulam =
   | Uswitch(arg, sw) ->
       Uswitch(substitute sb arg,
               { sw with
-                us_cases_consts = Array.map (substitute sb) sw.us_cases_consts;
-                us_cases_blocks = Array.map (substitute sb) sw.us_cases_blocks;
+                us_actions_consts =
+                  Array.map (substitute sb) sw.us_actions_consts;
+                us_actions_blocks =
+                  Array.map (substitute sb) sw.us_actions_blocks;
                })
   | Ustaticfail (nfail, args) ->
       Ustaticfail (nfail, List.map (substitute sb) args)
@@ -522,27 +526,21 @@ let rec close fenv cenv = function
        Value_unknown)
   | Lprim(p, args) ->
       simplif_prim p (close_list_approx fenv cenv args)
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw) as l ->
+(* NB: failaction might get copied, thus it should be some Lstaticraise *)
       let (uarg, _) = close fenv cenv arg in
-      let (const_index, const_cases) =
-        close_switch fenv cenv  sw.sw_nofail sw.sw_numconsts sw.sw_consts in
-      let (block_index, block_cases) =
-        close_switch fenv cenv  sw.sw_nofail sw.sw_numblocks sw.sw_blocks in
+      let const_index, const_actions =
+        close_switch fenv cenv sw.sw_consts sw.sw_numconsts sw.sw_failaction
+      and block_index, block_actions =
+        close_switch fenv cenv sw.sw_blocks sw.sw_numblocks sw.sw_failaction in
       (Uswitch(uarg, 
                {us_index_consts = const_index;
-                us_cases_consts = const_cases;
+                us_actions_consts = const_actions;
                 us_index_blocks = block_index;
-                us_cases_blocks = block_cases;
-                us_checked = sw.sw_checked && not sw.sw_nofail}),
+                us_actions_blocks = block_actions}),
        Value_unknown)
-  | Lstaticfail ->
-      (Ustaticfail (0, []), Value_unknown)
   | Lstaticraise (i, args) ->
       (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
-  | Lcatch(body, handler) ->
-      let (ubody, _) = close fenv cenv body in
-      let (uhandler, _) = close fenv cenv handler in
-      (Ucatch(0, [], ubody, uhandler), Value_unknown)
   | Lstaticcatch(body, (i, vars), handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
@@ -698,41 +696,32 @@ and close_one_function fenv cenv id funct =
 
 (* Close a switch *)
 
-and close_switch fenv cenv nofail num_keys cases =
-  match cases, nofail with
-  | [], true ->
-      [| |], [| |] (* no need to switch here *)
-  | _,_      -> 
-  let index = Array.create num_keys 0 in
-  let ucases = ref []
-  and num_cases = ref 0 in
-(* if nofail holds, then static fail is replaced by a random branch *)
-  if List.length cases < num_keys && not nofail then begin
-    num_cases := 1;
-    ucases := [Ustaticfail (0,[])]
-  end  ;
-  let store act =
-    let rec store_rec i = function
-      | [] -> [act]
-      | act0::rem ->
-          if act0 = act then raise (Found i)
-          else
-            act0 :: store_rec (i+1) rem in
-    try
-      ucases := store_rec 0 !ucases ;
-      let r = !num_cases in
-      incr num_cases ;
-      r
-    with
-    | Found i -> i in
-      
+and close_switch fenv cenv cases num_keys default =
+  let index = Array.create num_keys 0
+  and store = mk_store Pervasives.(=) in
+
+  (* First default case *)
+  begin match default with
+  | Some def when List.length cases < num_keys ->
+      ignore (store.act_store def)
+  | _ -> ()
+  end ;
+  (* Then all other cases *)
   List.iter
-    (function (key, lam) ->
-        let (ulam, _) = close fenv cenv lam in
-        index.(key) <- store ulam)
-    cases;
-    
-  (index, Array.of_list !ucases)
+    (fun (key,lam) ->
+     index.(key) <- store.act_store lam)
+    cases ;
+  (* Compile action *)
+  let actions =
+    Array.map
+      (fun lam ->
+        let ulam,_ = close fenv cenv lam in
+        ulam)
+      (store.act_get ()) in
+  match actions with
+  | [| |] -> [| |], [| |] (* May happen when default is None *)
+  | _     -> index, actions
+
 
 (* The entry point *)
 
