@@ -550,7 +550,41 @@ value rec expr =
   | ExVrn loc s -> mkexp loc (Pexp_variant s None)
   | ExWhi loc e1 el ->
       let e2 = ExSeq loc el in
-      mkexp loc (Pexp_while (expr e1) (expr e2)) ]
+      mkexp loc (Pexp_while (expr e1) (expr e2))
+(*> JOCAML *)
+  | ExSpa loc e1 -> mkexp loc (Pexp_spawn (expr e1))
+  | ExPar loc e1 e2 -> mkexp loc (Pexp_par (expr e1) (expr e2))
+  | ExNul loc -> mkexp loc Pexp_null
+  | ExRep loc e id ->
+      mkexp loc (Pexp_reply (expr e) (joinident id))
+  | ExDef loc d e ->
+      mkexp loc (Pexp_def (List.map joinautomaton d) (expr e))
+  | ExLoc loc d e ->
+      mkexp loc (Pexp_loc (List.map joinlocation d) (expr e))
+(*< JOCAML *)
+  ]
+(*> JOCAML *)
+
+and joinlocation (loc, id, autos, e) =
+  {pjloc_loc = mkloc loc ;
+  pjloc_desc =
+    (joinident id, List.map joinautomaton autos, expr e)}
+
+and joinautomaton (loc, cls) =
+  {pjauto_loc = mkloc loc ; pjauto_desc = List.map joinclause cls}
+
+and joinclause (loc, jpats, e) =
+  {pjclause_loc = mkloc loc ;
+   pjclause_desc = (List.map joinpattern jpats, expr e)}
+
+and joinpattern (loc, id, args) =
+  {pjpat_loc = mkloc loc ;
+  pjpat_desc = (joinident id, List.map joinident args)}
+
+and joinident (loc, id) =
+  {pjident_loc = mkloc loc ; pjident_desc = id}
+(*< JOCAML *)
+
 and label_expr =
   fun
   [ ExLab loc lab e -> (lab, expr e)
@@ -646,7 +680,14 @@ and str_item s l =
       [mkstr loc (Pstr_open (long_id_of_string_list loc id)) :: l]
   | StTyp loc tdl -> [mkstr loc (Pstr_type (List.map mktype_decl tdl)) :: l]
   | StVal loc rf pel ->
-      [mkstr loc (Pstr_value (mkrf rf) (List.map mkpe pel)) :: l] ]
+      [mkstr loc (Pstr_value (mkrf rf) (List.map mkpe pel)) :: l] 
+(*> JOCAML *)
+  | StDef loc d ->
+      [mkstr loc (Pstr_def (List.map joinautomaton d)) :: l]
+  | StLoc loc d ->
+      [mkstr loc (Pstr_loc (List.map joinlocation d)) :: l]
+(*< JOCAML *)
+]
 and class_type =
   fun
   [ CtCon loc id tl ->

@@ -149,6 +149,29 @@ let rec add_expr bv exp =
       add_module bv m; add_expr (StringSet.add id bv) e
   | Pexp_assert (e) -> add_expr bv e
   | Pexp_assertfalse -> ()
+(*> JOCAML *)
+  | Pexp_spawn (e) -> add_expr bv e
+  | Pexp_par (e1, e2) -> add_expr bv e1; add_expr bv e2
+  | Pexp_null -> ()
+  | Pexp_reply (e,_) -> add_expr bv e
+  | Pexp_def (d, e) ->
+      List.iter (add_joinautomaton bv) d ; add_expr bv e
+  | Pexp_loc (d, e) ->
+      List.iter (add_joinlocation bv) d ; add_expr bv e
+
+and add_joinlocation bv jloc =
+  let (_, autos, e) = jloc.pjloc_desc in
+  List.iter (add_joinautomaton bv) autos ;
+  add_expr bv e
+
+and add_joinautomaton bv jauto =
+  let cls = jauto.pjauto_desc in
+  List.iter (add_joinclause bv) cls
+
+and add_joinclause bv cl =
+  let (_,e) = cl.pjclause_desc in
+  add_expr bv e
+(*< JOCAML *)
 
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel
@@ -236,6 +259,12 @@ and add_struct_item bv item =
       List.iter (add_class_type_declaration bv) cdtl; bv
   | Pstr_include modl ->
       add_module bv modl; bv
+(*> JOCAML *)
+  | Pstr_loc d ->
+      List.iter (add_joinlocation bv) d ; bv
+  | Pstr_def d ->
+      List.iter (add_joinautomaton bv) d ; bv
+(*< JOCAML *)
 
 and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)

@@ -146,7 +146,41 @@ and expr floc sh =
     | ExTyc loc x1 x2 -> ExTyc (floc loc) (self x1) (ctyp floc sh x2)
     | ExUid loc x1 -> ExUid (floc loc) x1
     | ExVrn loc x1 -> ExVrn (floc loc) x1
-    | ExWhi loc x1 x2 -> ExWhi (floc loc) (self x1) (List.map self x2) ]
+    | ExWhi loc x1 x2 -> ExWhi (floc loc) (self x1) (List.map self x2)
+    | ExSpa loc x1 -> ExSpa (floc loc) (self x1)
+    | ExPar loc x1 x2 -> ExPar (floc loc) (self x1) (self x2)
+    | ExNul loc -> ExNul (floc loc)
+    | ExRep loc x1 x2 -> ExRep (floc loc) (self x1) (joinident floc sh x2)
+    | ExDef loc x1 x2 ->
+        ExDef (floc loc)
+          (List.map (joinautomaton floc sh) x1)
+          (self x2)
+    | ExLoc loc x1 x2 ->
+        ExLoc (floc loc)
+          (List.map (joinlocation floc sh) x1)
+          (self x2)
+(*< JOCAML *)
+]
+(*> JOCAML *)
+
+and joinlocation floc sh (loc, id, autos, e) =
+  (floc loc,
+  joinident floc sh id,
+  List.map (joinautomaton floc sh) autos,
+  expr floc sh e)
+
+and joinautomaton floc sh (loc, cls) =
+  (floc loc,  List.map (joinclause floc sh) cls)
+
+and joinclause floc sh (loc, jpats, e) =
+  (floc loc, List.map (joinpattern floc sh) jpats, expr floc sh e)
+
+and joinpattern floc sh (loc, id, args) =
+  (floc loc, joinident floc sh id, List.map (joinident floc sh) args)
+
+and joinident floc sh (loc,id) = (floc loc, id)
+(*< JOCAML *)
+
 and module_type floc sh =
   self where rec self =
     fun
@@ -223,7 +257,14 @@ and str_item floc sh =
              x1)
     | StVal loc x1 x2 ->
         StVal (floc loc) x1
-          (List.map (fun (x1, x2) -> (patt floc sh x1, expr floc sh x2)) x2) ]
+          (List.map (fun (x1, x2) -> (patt floc sh x1, expr floc sh x2)) x2)
+(*> JOCAML *)
+    | StDef loc d ->
+        StDef (floc loc) (List.map (joinautomaton floc sh) d)
+    | StLoc loc d ->
+        StLoc (floc loc) (List.map (joinlocation floc sh) d)
+(*< JOCAML *)
+    ]
 and class_type floc sh =
   self where rec self =
     fun

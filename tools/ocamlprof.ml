@@ -281,6 +281,11 @@ and rw_exp iflag sexp =
 
   | Pexp_assert (cond) -> rewrite_exp iflag cond
   | Pexp_assertfalse -> ()
+(*> JOCAML *)
+  | (Pexp_loc (_, _)|Pexp_def (_, _)|Pexp_reply (_, _)|Pexp_par (_, _)|
+    Pexp_spawn _|Pexp_null) ->
+      assert false (* No profiling in jocaml *)
+(*< JOCAML *)
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then

@@ -105,8 +105,24 @@ and expr =
 (*> JOCAML *)
   | ExSpa of loc and expr
   | ExPar of loc and expr and expr
+  | ExNul of loc
+  | ExRep of loc and expr and joinident
+  | ExDef of loc and list joinautomaton  and expr
+  | ExLoc of loc and list joinlocation  and expr
 (*< JOCAML *)
 ]
+(*> JOCAML *)
+and joinlocation = (loc * joinident * list joinautomaton * expr)
+
+and joinautomaton = (loc * list joinclause)
+
+and joinclause = (loc * list joinpattern * expr)
+
+and joinpattern = (loc * joinident * list joinident)
+
+and joinident = (loc * string)
+(*< JOCAML *)
+
 and module_type =
   [ MtAcc of loc and module_type and module_type
   | MtApp of loc and module_type and module_type
@@ -151,7 +167,12 @@ and str_item =
   | StMty of loc and string and module_type
   | StOpn of loc and list string
   | StTyp of loc and list type_decl
-  | StVal of loc and bool and list (patt * expr) ]
+  | StVal of loc and bool and list (patt * expr)
+(*> JOCAML *)
+  | StDef of loc and list joinautomaton
+  | StLoc of loc and list joinlocation
+(*< JOCAML *)
+] 
 and type_decl =
   ((loc * string) * list (string * (bool * bool)) * ctyp * list (ctyp * ctyp))
 and class_type =
