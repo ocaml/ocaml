@@ -807,14 +807,12 @@ module Analyser =
     (** This function takes a [module element list] of a module and replaces the "dummy" included modules with
        the ones found in typed tree structure of the module. *)
     let replace_dummy_included_modules module_elements included_modules =
-      prerr_endline "replace_dummy_included_modules";
       let rec f = function
 	| ([], _) ->
 	    []
 	| ((Element_included_module im) :: q, (im_repl :: im_q)) ->
 	    (Element_included_module im_repl) :: (f (q, im_q))
 	| ((Element_included_module im) :: q, []) ->
-	    prerr_endline (Printf.sprintf "module %s not found (empty list)" im.im_name);
 	    (Element_included_module im) :: q
 	| (ele :: q, l) ->
 	    ele :: (f (q, l))
