@@ -35,13 +35,22 @@
 #define FUNCTION_ALIGN 2
 #endif
 
-#if defined(PROFILING) && defined(SYS_linux_elf)
+#if defined(PROFILING)
+#if defined(SYS_linux_elf)
 #define PROFILE_CAML \
         pushl %ebp; movl %esp, %ebp; pushl %eax; pushl %ecx; pushl %edx; \
         call mcount; \
         popl %edx; popl %ecx; popl %eax; popl %ebp
 #define PROFILE_C \
         pushl %ebp; movl %esp, %ebp; call mcount; popl %ebp
+#elif defined(SYS_bsd_elf)
+#define PROFILE_CAML \
+        pushl %ebp; movl %esp, %ebp; pushl %eax; pushl %ecx; pushl %edx; \
+        call .mcount; \
+        popl %edx; popl %ecx; popl %eax; popl %ebp
+#define PROFILE_C \
+        pushl %ebp; movl %esp, %ebp; call .mcount; popl %ebp
+#endif
 #else
 #define PROFILE_CAML
 #define PROFILE_C

@@ -714,6 +714,15 @@ let emit_profile () =
       `	popl	%edx\n`;
       `	popl	%ecx\n`;
       `	popl	%eax\n`
+  | "bsd_elf" ->
+      `	pushl	%eax\n`;
+      `	movl	%esp, %ebp\n`;
+      `	pushl	%ecx\n`;
+      `	pushl	%edx\n`;
+      `	call	.mcount\n`;
+      `	popl	%edx\n`;
+      `	popl	%ecx\n`;
+      `	popl	%eax\n`
   | _ -> () (*unsupported yet*)
 
 (* Emission of a function declaration *)
