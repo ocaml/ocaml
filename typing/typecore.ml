@@ -1136,7 +1136,12 @@ and type_application env funct sargs =
     match nonopt_labels [] funct.exp_type with
     | Some labels ->
         List.length labels = List.length sargs &&
-        List.for_all (fun (l,_) -> l = "") sargs
+        List.for_all (fun (l,_) -> l = "") sargs &&
+        List.exists (fun l -> l <> "") labels &&
+        begin
+          Location.prerr_warning funct.exp_loc Warnings.Labels_omitted;
+          true
+        end
     | None -> false
   in
   let rec type_args args omitted ty_fun ty_old sargs more_sargs =

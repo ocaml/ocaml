@@ -17,6 +17,7 @@
 type t =                             (* A is all *)
   | Comment of string                (* C *)
   | Partial_application              (* F *)
+  | Labels_omitted		     (* L *)
   | Method_override of string list   (* M *)
   | Partial_match of string          (* P *)
   | Statement_type                   (* S *)
@@ -28,6 +29,7 @@ type t =                             (* A is all *)
 let letter = function        (* 'a' is all *)
   | Comment _ ->                'c'
   | Partial_application ->      'f'
+  | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
   | Partial_match _ ->          'p'
   | Statement_type ->           's'
@@ -37,7 +39,7 @@ let letter = function        (* 'a' is all *)
 ;;
 
 let check c =
-  try ignore (String.index "acfmpsuvxACFMPSUVX" c)
+  try ignore (String.index "acflmpsuvxACFLMPSUVX" c)
   with _ -> raise (Arg.Bad (Printf.sprintf "unknown warning option %c" c))
 ;;    
 
@@ -80,6 +82,8 @@ let message = function
       "this pattern-matching is not exhaustive.\n\
        Here is an example of a value that is not matched:\n" ^ s
   | Unused_match -> "this match case is unused."
+  | Labels_omitted ->
+      "labels were omitted in the application of this function."
   | Method_override slist ->
       String.concat " "
         ("the following methods are overriden \
