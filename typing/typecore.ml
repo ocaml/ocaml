@@ -1338,8 +1338,6 @@ let report_error ppf = function
         | "" -> "but its argument is not labeled"
         |  l -> sprintf "but its argument is labeled %s:" l in
       reset_and_mark_loops ty;
-      open_vbox 0;
-      open_box 2;
       fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
       type_expr ty (label_mark l)
   | Scoping_let_module(id, ty) ->

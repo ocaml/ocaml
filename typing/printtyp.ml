@@ -178,18 +178,9 @@ let print_labels = ref true
 let print_label ppf l =
   if !print_labels && l <> "" || is_optional l then fprintf ppf "%s:" l
 
-let rec print_list_term pr sep ppf = function
-  | [] -> ()
-  | a :: l -> pr ppf a; sep (); print_list_term pr sep ppf l;;
-
-let rec print_list_init pr sep ppf = function
-  | [] -> ()
-  | a :: l -> sep (); pr ppf a; print_list_init pr sep ppf l;;
-
 let rec print_list pr sep ppf = function
   | [] -> ()
-  | [a] -> pr ppf a
-  | a :: l -> pr ppf a; sep (); print_list pr sep ppf l;;
+  | a :: l -> sep (); pr ppf a; print_list pr sep ppf l;;
 
 let rec typexp sch prio0 ppf ty =
   let ty = repr ty in
@@ -238,7 +229,7 @@ let rec typexp sch prio0 ppf ty =
         let all_present = List.length present = List.length fields in
         let pr_present =
           print_list (fun ppf (s, _) -> fprintf ppf "`%s" s)
-                     (fun () -> fprintf ppf "@ |")
+                     (fun () -> fprintf ppf "@ | ")
         in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
@@ -269,7 +260,7 @@ let rec typexp sch prio0 ppf ty =
                  if not all_present then
                    fprintf ppf "@ @[<hov>>%a@]" pr_present l in
             let print_fields =
-              print_list (row_field sch) (fun () -> fprintf ppf "@ |") in
+              print_list (row_field sch) (fun () -> fprintf ppf "@ | ") in
 
             fprintf ppf "%s@[<hv>@[<hv>[%s%a%t@]%a]@]"
               gen_mark close_mark print_fields fields pr_ellipsis
@@ -301,8 +292,6 @@ and row_field sch ppf (l, f) =
     | Rabsent -> fprintf ppf "@ []" in
   fprintf ppf "@[<hv 2>`%s%a@]" l pr_field f
 
-(* typlist is simply 
-   print_list (typexp sch prio) (fun () -> fprintf ppf "%s@ " sep) *)
 and typlist sch prio sep ppf = function
   | [] -> ()
   | [ty] -> typexp sch prio ppf ty
@@ -420,7 +409,7 @@ let rec type_decl kwd id ppf decl =
   | Type_record(lbls, rep) ->
       fprintf ppf "@[<2>@[<hv 2>%a = {%a@;<1 -2>}@]@ %a@]"
         print_name_args decl
-        (print_list_init label (fun () -> fprintf ppf "@ ")) lbls
+        (print_list label (fun () -> fprintf ppf "@ ")) lbls
         print_constraints params
   end
 
