@@ -154,16 +154,23 @@ let array_kind arg =
   match (Ctype.repr ty).desc with
     Tconstr(p, [ty], _) when Path.same p Predef.path_array ->
       begin match (Ctype.repr(Ctype.expand_root arg.exp_env ty)).desc with
-        Tvar -> Pgenarray
+        Tvar ->
+          Pgenarray
       | Tconstr(p, _, _) ->
           if Path.same p Predef.path_int or Path.same p Predef.path_char then
             Pintarray
           else if Path.same p Predef.path_float then
             Pfloatarray
           else begin
-            match Env.find_type p arg.exp_env with
-              {type_kind = Type_abstract} -> Pgenarray
-            | {type_kind = _} -> Paddrarray
+            try
+              match Env.find_type p arg.exp_env with
+                {type_kind = Type_abstract} -> Pgenarray
+              | {type_kind = _} -> Paddrarray
+            with Not_found ->
+              (* This can happen due to e.g. missing -I options,
+                 causing some .cmi files to be unavailable.
+                 Maybe we should emit a warning. *)
+              Pgenarray
           end
       | _ -> Paddrarray
       end
