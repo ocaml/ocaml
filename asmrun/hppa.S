@@ -24,7 +24,7 @@
 #define ENDPROC .exit ! .procend
 #define LOADHIGH(x) addil LR%x-$global$, %r27
 #define LOW(x) RR%x-$global$
-#define LOADHIGHLABEL(x) addil LR%x, %r27
+#define LOADHIGHLABEL(x) ldil LR%x, %r1
 #define LOWLABEL(x) RR%x
 #define CALL(x) bl x, %r2 ! nop
 #endif
@@ -42,8 +42,6 @@
 #define LOADHIGHLABEL(x) ldil L`x, %r1
 #define LOWLABEL(x) R`x
 #define CALL(x) ldil L`x, %r1; ble R`x(4, %r1); copy %r31, %r2
-#define WORD .long
-#define HALF .short
 #endif
 
 #ifdef SYS_hpux
@@ -253,7 +251,11 @@ G(caml_call_gc):
 ; Function to call is in %r22
 
 	.align	CODE_ALIGN
+#ifdef SYS_hpux
+        .export G(caml_c_call), ENTRY, ARGW0=GR, ARGW1=GR, ARGW2=GR, ARGW3=GR
+#else
 	EXPORT_CODE(G(caml_c_call))
+#endif
 G(caml_c_call):
         STARTPROC
 ; Record lowest stack address

@@ -320,6 +320,22 @@ let emit_stubs () =
   emit_align 4;
   Hashtbl.iter emit_stub stub_label_table
 
+(* Describe the registers used to pass arguments to a C function *)
+
+let describe_call arg =
+  `	.CALL	RTNVAL=NO`;
+  let pos = ref 0 in
+  for i = 0 to Array.length arg - 1 do
+    if !pos < 4 then begin
+      match arg.(i).typ with
+        Float -> `, ARGW{emit_int !pos}=FR, ARGW{emit_int(!pos + 1)}=FU`;
+                 pos := !pos + 2
+      | _     -> `, ARGW{emit_int !pos}=GR`;
+                 pos := !pos + 1
+    end
+  done;
+  `\n`
+
 (* Output a function call *)
 
 let emit_call s retreg =
@@ -472,6 +488,7 @@ let rec emit_instr i dslot =
           call_symbol s;
           if hpux then begin
             `	ldil	LP'{emit_symbol s}, %r22\n`;
+            describe_call i.arg;
             emit_call "caml_c_call" "%r2";
             `	ldo	RP'{emit_symbol s}(%r22), %r22\n`  (* in delay slot *)
           end else begin
@@ -481,6 +498,7 @@ let rec emit_instr i dslot =
           end;
           record_frame i.live
         end else begin
+          if hpux then describe_call i.arg;
           emit_call s "%r2";
           fill_delay_slot dslot
         end
