@@ -42,7 +42,7 @@
         (* The type of arrays whose elements have type ['a]. *)
 (*- type 'a list = [] | :: of 'a * 'a list *)
         (* The type of lists whose elements have type ['a]. *)
-(* type 'a option = None | Some of 'a *)
+(*- type 'a option = None | Some of 'a *)
         (* The type of optional values. *)
 (*- type ('a, 'b, 'c) format *)
         (* The type of format strings. ['a] is the type of the parameters
@@ -309,7 +309,8 @@ external ignore : 'a -> unit = "%ignore"
         (* Discard the value of its argument and return [()].
            For instance, [ignore(f x)] discards the result of
            the side-effecting function [f].  It is equivalent to
-           [f x; ()], except that no warning is generated. *)
+           [f x; ()], except that only a partial application warning
+           may be generated. *)
 
 (*** String conversion functions *)
 
@@ -441,9 +442,8 @@ val open_out_bin : string -> out_channel
            systems that do not distinguish between text mode and binary
            mode, this function behaves like [open_out]. *)
 val open_out_gen : mode:open_flag list -> perm:int -> string -> out_channel
-        (* [open_out_gen mode rights filename] opens the file named
-           [filename] for writing, as above. The extra argument [mode]
-           specify the opening mode. The extra argument [rights] specifies
+        (* Open the named file for writing, as above. The extra argument [mode]
+           specify the opening mode. The extra argument [perm] specifies
            the file permissions, in case the file must be created.
            [open_out] and [open_out_bin] are special cases of this function. *)
 val flush : out_channel -> unit
@@ -456,10 +456,10 @@ val output_char : to:out_channel -> char -> unit
 val output_string : to:out_channel -> string -> unit
         (* Write the string on the given output channel. *)
 val output : out_channel -> buf:string -> pos:int -> len:int -> unit
-        (* [output chan buff ofs len] writes [len] characters from string 
-           [buff], starting at offset [ofs], to the output channel [chan].
-           Raise [Invalid_argument "output"] if [ofs] and [len] do not
-           designate a valid substring of [buff]. *)
+        (* Write [len] characters from string [buf], starting at offset
+           [pos], to the given output channel.
+           Raise [Invalid_argument "output"] if [pos] and [len] do not
+           designate a valid substring of [buf]. *)
 val output_byte : to:out_channel -> int -> unit
         (* Write one 8-bit integer (as the single character with that code)
            on the given output channel. The given integer is taken modulo
@@ -477,10 +477,10 @@ val output_value : to:out_channel -> 'a -> unit
            [Marshal] for more information. [output_value] is equivalent
            to [Marshal.to_channel] with an empty list of flags. *)
 val seek_out : out_channel -> pos:int -> unit
-        (* [seek_out chan pos] sets the current writing position to [pos]
-           for channel [chan]. This works only for regular files. On
-           files of other kinds (such as terminals, pipes and sockets),
-           the behavior is unspecified. *)
+        (* Set the current writing position to [pos] for the given channel.
+           This works only for regular files. On files of other kinds
+           (such as terminals, pipes and sockets), the behavior is
+           unspecified. *)
 val pos_out : out_channel -> int
         (* Return the current writing position for the given channel. *)
 val out_channel_length : out_channel -> int
@@ -513,9 +513,8 @@ val open_in_bin : string -> in_channel
            systems that do not distinguish between text mode and binary
            mode, this function behaves like [open_in]. *)
 val open_in_gen : mode:open_flag list -> perm:int -> string -> in_channel
-        (* [open_in_gen mode rights filename] opens the file named
-           [filename] for reading, as above. The extra arguments
-           [mode] and [rights] specify the opening mode and file permissions.
+        (* Open the named file for reading, as above. The extra arguments
+           [mode] and [perm] specify the opening mode and file permissions.
            [open_in] and [open_in_bin] are special cases of this function. *)
 val input_char : in_channel -> char
         (* Read one character from the given input channel.
@@ -527,23 +526,23 @@ val input_line : in_channel -> string
            Raise [End_of_file] if the end of the file is reached
            at the beginning of line. *)
 val input : in_channel -> buf:string -> pos:int -> len:int -> int
-        (* [input chan buff ofs len] attempts to read [len] characters
-           from channel [chan], storing them in string [buff], starting at
-           character number [ofs]. It returns the actual number of characters
-           read, between 0 and [len] (inclusive).
+        (* Attempt to read [len] characters from the given channel,
+           storing them in string [buf], starting at character number [pos].
+           It returns the actual number of characters read, between 0 and
+           [len] (inclusive).
            A return value of 0 means that the end of file was reached.
            A return value between 0 and [len] exclusive means that
            no more characters were available at that time; [input] must be
            called again to read the remaining characters, if desired.
-           Exception [Invalid_argument "input"] is raised if [ofs] and [len]
-           do not designate a valid substring of [buff]. *)          
+           Exception [Invalid_argument "input"] is raised if [pos] and [len]
+           do not designate a valid substring of [buf]. *)          
 val really_input : in_channel -> buf:string -> pos:int -> len:int -> unit
-        (* [really_input chan buff ofs len] reads [len] characters
-           from channel [chan], storing them in string [buff], starting at
-           character number [ofs]. Raise [End_of_file] if
-           the end of file is reached before [len] characters have been read.
+        (* Read [len] characters from the given channel, storing them in
+           string [buf], starting at character number [pos].
+           Raise [End_of_file] if the end of file is reached before [len]
+           characters have been read.
            Raise [Invalid_argument "really_input"] if
-           [ofs] and [len] do not designate a valid substring of [buff]. *)
+           [pos] and [len] do not designate a valid substring of [buf]. *)
 val input_byte : in_channel -> int
         (* Same as [input_char], but return the 8-bit integer representing
            the character.
@@ -560,9 +559,9 @@ val input_value : in_channel -> 'a
            see the description of module [Marshal] for more information,
            in particular concerning the lack of type safety. *)
 val seek_in : in_channel -> pos:int -> unit
-        (* [seek_in chan pos] sets the current reading position to [pos]
-           for channel [chan]. This works only for regular files. On
-           files of other kinds, the behavior is unspecified. *)
+        (* Set the current reading position to [pos] for the given channel.
+           This works only for regular files. On files of other kinds,
+           the behavior is unspecified. *)
 val pos_in : in_channel -> int
         (* Return the current reading position for the given channel. *)
 val in_channel_length : in_channel -> int
