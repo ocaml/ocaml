@@ -119,15 +119,15 @@ let indices = function
   | `Module_type -> "mt"
 
 let indices_names = [
-  "Types", "ty" ;
-  "Exceptions", "ex" ;
-  "Values", "va" ;
+  "Types"           , "ty" ;
+  "Exceptions"      , "ex" ;
+  "Values"          , "va" ;
   "Class attributes", "ca" ;
-  "Methods", "me" ;
-  "Classes", "cl" ;
-  "Class types", "ct" ;
-  "Modules", "mo" ;
-  "Module types", "mt" ; ]
+  "Methods"         , "me" ;
+  "Classes"         , "cl" ;
+  "Class types"     , "ct" ;
+  "Modules"         , "mo" ;
+  "Module types"    , "mt" ; ]
 
 
 
@@ -208,11 +208,13 @@ struct
     puts_nl chan "@end menu"
   end
 
+  (** cross reference to node [name] *)
   let xref ?xname name =
     "@xref{" ^ (fix_nodename name) ^ 
     (match xname with | None -> "" | Some s -> "," ^ s) ^ 
     "}."
 
+  (** enclose the string between [\@ifinfo] tags *)
   let ifinfo s = 
     String.concat "\n"
       [ "@ifinfo" ; s ; "@end ifinfo" ; "" ]
@@ -222,11 +224,13 @@ end
 
 
 
-(** Generation of Texinfo code from text structures *)
+(** {2 Generation of Texinfo code} *)
+
+(** This class generates Texinfo code from text structures *)
 class text = 
   object(self)
 
-  (** Associations between a title number and functions to get texinfo code. *)
+  (** Associations between a title number and texinfo code. *)
     val titles = [
       1, "@chapter " ;
       2, "@section " ;
@@ -250,6 +254,8 @@ class text =
     method escape = 
       Texi.escape 
 
+    (** this method is not used here but is virtual
+        in a class we will inherit later *)
     method label ?(no_ : bool option) (_ : string) = 
       failwith "gni" ; ""
 
@@ -258,6 +264,10 @@ class text =
       String.concat ""
 	(List.map self#texi_of_text_element t)
       
+
+    (** {3 Conversion methods}
+       [texi_of_????] converts a [text_element] to a Texinfo string. *)
+
     (** Return the Texinfo code for the [text_element] in parameter. *)
     method texi_of_text_element = function
       | Verbatim s | Latex s -> self#texi_of_Verbatim s
@@ -361,7 +371,7 @@ class texi =
     inherit text as to_texi
     inherit Odoc_to_text.to_text as to_text
 
-    (** quelques machins utiles qui se trouvent bien ici *)
+    (** {3 Small helper stuff.} *)
 
     val maxdepth = 4
 
@@ -383,81 +393,126 @@ class texi =
 	else "")
       
 
-    (** grosse bidouille infame *)
-    method private fix_linebreaks t = 
+    (** Two hacks to fix linebreaks in the descriptions.*)
+    method private fix_linebreaks = 
       let re = Str.regexp "\n[ \t]*" in
-      List.map 
-	(function
-	  | Newline -> Raw "\n"
-	  | Raw s -> Raw (Str.global_replace re "\n" s)
-	  | List tel | Enum tel -> List (List.map self#fix_linebreaks tel)
-	  | te -> te) t
+      fun t ->
+	List.map 
+	  (function
+	    | Newline -> Raw "\n"
+	    | Raw s -> Raw (Str.global_replace re "\n" s)
+	    | List tel | Enum tel -> List (List.map self#fix_linebreaks tel)
+	    | te -> te) t
 
-    (** autre bidouille du meme acabit. Elles ont tellement honte
-        qu'elle se cachent. *)
-    method private soft_fix_linebreaks ind t = 
+    method private soft_fix_linebreaks = 
       let re = Str.regexp "\n[ \t]*" in
-      let rep = String.make (succ ind) ' ' in
-      rep.[0] <- '\n' ;
-      List.map
-	(function
-	  | Raw s -> Raw (Str.global_replace re rep s)
-	  | te -> te) t
+      fun ind t ->
+	let rep = String.make (succ ind) ' ' in
+	rep.[0] <- '\n' ;
+	List.map
+	  (function
+	    | Raw s -> Raw (Str.global_replace re rep s)
+	    | te -> te) t
+
+    (** {3 [text] values generation}
+       Generates [text] values out of description parts.
+       Redefines some of methods of {! Odoc_to_text.to_text}. *)
 
     method text_of_desc = function
       | None -> []
       | Some [ Raw "" ] -> []
-      | Some t -> (self#fix_linebreaks t) @ [ Newline ]
+      | Some t -> (self#fix_linebreaks t) @ [ Newline ] 
 
-    (** ça je l'ai rajouté *)
-    method text_of_sees_opt = function
-      |	[] -> []
-      |	(See_url s, t) :: n ->
-	  [ Bold [ Raw Odoc_messages.see_also ] ;
-	    Raw " " ; Link (s, t) ; Newline ] @ (self#text_of_sees_opt n)
-      |	(See_file s, t) :: n
-      |	(See_doc s, t) :: n ->
-	  [ Bold [ Raw Odoc_messages.see_also ] ;
-	    Raw " " ; Raw s ] @ t @ [ Newline ] @ (self#text_of_sees_opt n)
+    method text_of_sees_opt see_l = 
+      List.concat
+	(List.map
+	   (function
+	     | (See_url s, t) ->
+		 [ linebreak ; Bold [ Raw Odoc_messages.see_also ] ;
+		   Raw " " ; Link (s, t) ; Newline ]
+	     | (See_file s, t) 
+	     | (See_doc s, t)  ->
+		 [ linebreak ; Bold [ Raw Odoc_messages.see_also ] ;
+		   Raw " " ; Raw s ] @ t @ [ Newline ])
+	   see_l)
 
-    (** ça aussi je l'ai rajouté *)
-    method text_of_params = function
-      |	[] -> []
-      |	(s, t) :: n ->
-	  [ Bold [ Raw Odoc_messages.parameters ] ;
-	    Raw " " ; Raw s ; Raw ": " ] @ t @
-	  [ Newline ] @ (self#text_of_params n)
+    method text_of_params params_list =
+	List.concat
+	  (List.map
+	     (fun (s, t) ->
+	       [ linebreak ; 
+		 Bold [ Raw Odoc_messages.parameters ] ;
+		 Raw " " ; Raw s ; Raw ": " ] @ t @ [ Newline ] )
+	     params_list)
 
-    (** plouf plouf *)
+    method text_of_raised_exceptions = function
+      | [] -> []
+      | (s, t) :: [] -> 
+	  [ linebreak ;
+	    Bold [ Raw Odoc_messages.raises ] ;
+	    Raw " " ; Code s ; Raw " " ]  
+	  @ t @ [ Newline ]
+      | l ->
+	  [ linebreak ;
+	    Bold [ Raw Odoc_messages.raises ] ;
+	    Raw " :" ;
+	    List
+	      (List.map
+		 (fun (ex, desc) ->(Code ex) :: (Raw " ") :: desc ) l ) ;
+	    Newline ] 
+
     method text_of_return_opt = function
       | None -> []
       | Some t -> 
-	  (Bold [ Raw Odoc_messages.returns ]) 
-	  :: (Raw " ") :: t @ [ Newline ]
+	  (Bold [Raw Odoc_messages.returns ]) :: Raw " " :: t @ [ Newline ]
 
-    (** redéfinition de text_of_info de Odoc_to_text.to_text
-        dans le seul but d'introduire la précédente bidouille 
-        @raise Exit pas d'exceptions, aucunes ! *)
+    method text_of_custom c_l =
+      List.flatten 
+	(List.rev 
+	   (List.fold_left 
+	      (fun acc -> fun (tag, text) ->
+		try
+		  let f = List.assoc tag tag_functions in
+		  ( linebreak :: (f text) @ [ Newline ] ) :: acc
+		with
+	       Not_found ->
+		 Odoc_info.warning (Odoc_messages.tag_not_handled tag) ;
+		 acc
+	      ) [] c_l))
+
     method text_of_info ?(block=false) = function
       | None -> []
       | Some info -> 
 	  let t = 
-	    List.flatten [
-	    ( match info.i_deprecated with
-	    | None -> []
-	    | Some t -> 
-		(Raw (Odoc_messages.deprecated ^ " ")) :: 
-		(self#fix_linebreaks t) 
-		@ [ Newline ; Newline ] ) ;
-	    self#text_of_desc info.i_desc ;
-	    self#text_of_author_list info.i_authors ;
-	    self#text_of_version_opt info.i_version ;
-	    self#text_of_sees_opt info.i_sees ;
-	    self#text_of_since_opt info.i_since ;
-	    self#text_of_params info.i_params ;
-	    self#text_of_raised_exceptions info.i_raised_exceptions ;
-	    self#text_of_return_opt info.i_return_value ;
-	  ] in
+	    List.concat
+		 [ ( match info.i_deprecated with
+		 | None -> []
+		 | Some t -> 
+		     (Raw (Odoc_messages.deprecated ^ " ")) :: 
+		     (self#fix_linebreaks t) 
+		     @ [ Newline ; Newline ] ) ;
+		   self#text_of_desc info.i_desc ;
+		   if info.i_authors <> [] 
+		   then ( linebreak ::
+			  self#text_of_author_list info.i_authors )
+		   else [] ;
+		   if is info.i_version 
+		   then ( linebreak :: 
+			  self#text_of_version_opt info.i_version )
+		   else [] ;
+		   self#text_of_sees_opt info.i_sees ;
+		   if is info.i_since
+		   then ( linebreak ::
+			  self#text_of_since_opt info.i_since )
+		   else [] ;
+		   self#text_of_params info.i_params ;
+		   self#text_of_raised_exceptions info.i_raised_exceptions ;
+		   if is info.i_return_value
+		   then ( linebreak :: 
+			  self#text_of_return_opt info.i_return_value )
+		   else [] ;
+		   self#text_of_custom info.i_custom ;
+		 ] in
 	  if block 
 	  then [ Block t ] 
 	  else (t @ [ Newline ] )
@@ -465,13 +520,16 @@ class texi =
     method texi_of_info i =
       self#texi_of_text (self#text_of_info i)
 
+    (** {3 Conversion of [module_elements] into Texinfo strings}
+       The following functions convert [module_elements] and their 
+       description to [text] values then to Texinfo strings using the
+       functions above. *)
+
     method text_el_of_type_expr m_name typ = 
       Raw (indent 5
 	     (self#relative_idents m_name 
 		(Odoc_info.string_of_type_expr typ)))
 
-    (** je l'ai redéfini pcq to_text mettait un [Code] 
-        et moi je veux un [Raw] sinon c'est moche *)
     method text_of_short_type_expr m_name typ =
       [ Raw (self#normal_type m_name typ) ]
 
@@ -713,8 +771,12 @@ class texi =
       | Element_value v -> self#texi_of_value v
       | Element_exception e -> self#texi_of_exception e
       | Element_type t -> self#texi_of_type t
-      | Element_module_comment t -> self#texi_of_text (t @ [Newline])
+      | Element_module_comment t -> 
+	  self#texi_of_text (Newline :: t @ [Newline])
       )
+
+    (** {3 Generating methods }
+       These methods write Texinfo code to an [out_channel] *)
 
     (** Generate the Texinfo code for the given list of inherited classes.*)
     method generate_inheritance_info chanout inher_l =
@@ -927,7 +989,7 @@ class texi =
 
 
 
-    (** Return the header of the TeX document. *)
+    (** Writes the header of the TeX document. *)
     method generate_texi_header chan m_list =
       let title, filename = 
        match !Odoc_args.title with 
@@ -981,7 +1043,7 @@ class texi =
 	 else [] ))
       
 
-
+    (** Writes the header of the TeX document. *)
     method generate_texi_trailer chan = 
       nl chan ; 
       if !with_index
@@ -1000,7 +1062,8 @@ class texi =
 
 
 
-    (** Generate the Texinfo file from a module list, in the {!Odoc_args.out_file} file. *)
+    (** Generate the Texinfo file from a module list, 
+       in the {!Odoc_args.out_file} file. *)
     method generate module_list =
       try
 	let chanout = open_out 
