@@ -35,10 +35,10 @@ Standard library:
 
 Other libraries:
 - Dynlink: better error reporting in add_interfaces for missing .cmi files.
-- Graphics: added more drawing primitives (multiple points, polygons,
-    multiple lines, splines) and support for multiple windows.
+- Graphics: added more drawing functions (multiple points, polygons,
+    multiple lines, splines).
 - Bytecode threads: the module Unix is now thread-safe, ThreadUnix is
-    deprecated.  Unix.exec* now reset standard descriptors to blocking mode.
+    deprecated.  Unix.exec* now resets standard descriptors to blocking mode.
 - Unix.inet_addr_of_string: call inet_aton() when available so as to
     handle correctly the address 255.255.255.255.
 - Unix.getsockopt: added the SO_ERROR option.
