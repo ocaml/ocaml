@@ -19,7 +19,7 @@ CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 OPTFLAGS=-S
 CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
 CAMLRUN=../../byterun/ocamlrun
-CODERUNPARAMS=CAMLRUNPARAM='o=100'
+CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
 callback.byt: callback.cmo callbackprim.o
 	$(CAMLC) -o callback.byt -custom callback.cmo callbackprim.o ../../otherlibs/unix/libunix.a

@@ -50,11 +50,17 @@ to signal garbage collections and heap extensions.
 The following environment variable are also consulted:
 
 .TP
-.B CAMLRUNPARAM
+.B OCAMLRUNPARAM
 Set the garbage collection parameters.
+(If
+.B OCAMLRUNPARAM
+is not set,
+.B CAMLRUNPARAM
+will be used instead.)
 This variable must be a sequence of parameter specifications.
 A parameter specification is an option letter followed by an =
-sign and a decimal number.  There are four options:
+sign, a decimal number, and an optional multiplier.  There are seven
+options:
 .TP
 .BR s \ (minor_heap_size)
 Size of the minor heap.
@@ -65,9 +71,53 @@ Minimum size increment for the major heap.
 .BR o \ (space_overhead)
 The major GC speed setting.
 .TP
+.BR O \ (max_overhead)
+The heap compaction trigger setting.
+.TP
+.BR l \ (stack_limit)
+The limit (in words) of the stack size.
+.TP
+.BR h
+The initial size of the major heap (in words).
+.TP
 .BR v \ (verbose)
-Whether to print GC messages or not.  0 is
-false; 1 is true; other values may give unexpected results.
+What GC messages to print to stderr.  This is a sum of values selected
+from the following:
+.TP
+.BR 1
+Start of major GC cycle.
+.TP
+.BR 2
+Minor collection and major GC slice.
+.TP
+.BR 4
+Growing and shrinking of the heap.
+.TP
+.BR 8
+Resizing of stacks and memory manager tables.
+.TP
+.BR 16
+Heap compaction.
+.TP
+.BR 32
+Change of GC parameters.
+.TP
+.BR 64
+Computation of major GC slice size.
+
+The multiplier is
+.B k
+,
+.B M
+, or
+.B G
+, for multiplication by 2^10, 2^20, and 2^30 respectively.
+For example, on a 32-bit machine under bash, the command
+.B export OCAMLRUNPARAM='s=256k,v=1'
+tells a subsequent
+.B ocamlrun
+to set its initial minor heap size to 1 megabyte and to print
+a message at the start of each major GC cycle.
 
 .TP
 .B PATH
