@@ -158,6 +158,8 @@ static void thread_restore_std_descr(void);
 value thread_initialize(value unit)       /* ML */
 {
   struct itimerval timer;
+  /* Protect against repeated initialization (PR#1325) */
+  if (curr_thread != NULL) return Val_unit;
   /* Create a descriptor for the current thread */
   curr_thread =
     (thread_t) alloc_shr(sizeof(struct thread_struct) / sizeof(value), 0);

@@ -307,6 +307,8 @@ value caml_thread_initialize(value unit)   /* ML */
   value mu = Val_unit;
   value descr;
 
+  /* Protect against repeated initialization (PR#1325) */
+  if (curr_thread != NULL) return Val_unit;
   Begin_root (mu);
     /* Initialize the main mutex */
     caml_pthread_check(pthread_mutex_init(&caml_mutex, NULL),

@@ -278,6 +278,8 @@ CAMLprim value caml_thread_initialize(value unit)
   HANDLE tick_thread;
   unsigned long tick_id;
 
+  /* Protect against repeated initialization (PR#1325) */
+  if (curr_thread != NULL) return Val_unit;
   Begin_root (vthread);
     /* Initialize the main mutex and acquire it */
     caml_mutex = CreateMutex(NULL, TRUE, NULL);
