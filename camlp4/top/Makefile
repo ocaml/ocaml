@@ -41,7 +41,7 @@ depend:
 get_promote:
 
 install:
-	-$(MKDIR) $(LIBDIR)
-	cp $(TARGET) $(LIBDIR)/.
+	-$(MKDIR) $(LIBDIR)/camlp4
+	cp $(TARGET) $(LIBDIR)/camlp4/.
 
 include .depend

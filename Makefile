@@ -243,7 +243,7 @@ install: FORCE
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	cd camlp4; $(MAKE) install LIBDIR=$(LIBDIR)/camlp4
+	cd camlp4; $(MAKE) install LIBDIR=$(LIBDIR)
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi
 
 # Installation of the native-code compiler

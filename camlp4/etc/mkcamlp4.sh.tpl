@@ -2,7 +2,7 @@
 # $Id$
 
 OLIB=`ocamlc -where`
-LIB=LIBDIR
+LIB=LIBDIR/camlp4
 
 INTERFACES=
 OPTS=

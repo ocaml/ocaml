@@ -48,10 +48,10 @@ depend:
 get_promote:
 
 install:
-	-$(MKDIR) $(LIBDIR) $(BINDIR)
-	cp $(OBJS) $(LIBDIR)/.
-	cp $(INTF) $(LIBDIR)/.
-	cp lib.sml $(LIBDIR)/.
+	-$(MKDIR) $(LIBDIR)/camlp4 $(BINDIR)
+	cp $(OBJS) $(LIBDIR)/camlp4/.
+	cp $(INTF) $(LIBDIR)/camlp4/.
+	cp lib.sml $(LIBDIR)/camlp4/.
 	cp camlp4o$(EXE) $(BINDIR)/.
 	if test -f $(COPT); then cp $(COPT) $(BINDIR)/.; fi
 	cp mkcamlp4.sh $(BINDIR)/mkcamlp4

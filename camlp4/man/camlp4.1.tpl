@@ -181,7 +181,7 @@ Added by pa_ifdef.cmo: define the ident.
 Added by pa_ifdef.cmo: undefine the ident.
 
 .SH "PROVIDED FILES"
-These files are installed in the directory LIBDIR.
+These files are installed in the directory LIBDIR/camlp4.
 
 .LP
 Parsing files:
@@ -262,7 +262,7 @@ the OCaml module "str":
 .SH "FILES"
 Camlp4 library directory in the present installation:
 .br
-LIBDIR
+LIBDIR/camlp4
 
 .SH "SEE ALSO"
 Camlp4 - tutorial

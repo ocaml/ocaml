@@ -1205,7 +1205,7 @@ fi
 
 (
 cd ../../camlp4/config
-EXE=$exe ./configure_batch -bindir "$bindir" -libdir "$libdir/camlp4" -mandir "$mandir" -ocaml-top ../.. > /dev/null
+EXE=$exe ./configure_batch -bindir "$bindir" -libdir "$libdir" -mandir "$mandir" -ocaml-top ../.. > /dev/null
 )
 
 # Finish generated files

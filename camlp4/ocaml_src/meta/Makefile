@@ -42,9 +42,9 @@ compare:
 	done
 
 install:
-	-$(MKDIR) $(LIBDIR) $(BINDIR)
-	cp $(OBJS) $(LIBDIR)/.
-	cp pa_ifdef.cmi $(LIBDIR)/.
+	-$(MKDIR) $(LIBDIR)/camlp4 $(BINDIR)
+	cp $(OBJS) $(LIBDIR)/camlp4/.
+	cp pa_ifdef.cmi $(LIBDIR)/camlp4/.
 	cp camlp4r$(EXE) $(BINDIR)/.
 	if test -f $(COPT); then cp $(COPT) $(BINDIR)/.; fi
 

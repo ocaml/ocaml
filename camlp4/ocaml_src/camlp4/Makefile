@@ -62,9 +62,10 @@ compare:
 
 install:
 	-$(MKDIR) $(BINDIR)
+	-$(MKDIR) $(LIBDIR)/camlp4
 	cp $(CAMLP4) $(BINDIR)/.
-	cp mLast.mli quotation.mli ast2pt.mli pcaml.mli spretty.mli $(LIBDIR)/.
-	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi $(LIBDIR)/.
-	cp camlp4.cma $(LIBDIR)/.
+	cp mLast.mli quotation.mli ast2pt.mli pcaml.mli spretty.mli $(LIBDIR)/camlp4/.
+	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi $(LIBDIR)/camlp4/.
+	cp camlp4.cma $(LIBDIR)/camlp4/.
 
 include .depend

@@ -24,8 +24,8 @@ clean::
 	rm -f *.cm[ioa] *.pp[io] *.o *.out *.bak .*.bak crc.ml ocpp$(EXE)
 
 install:
-	-$(MKDIR) $(LIBDIR) $(BINDIR)
-	cp $(OBJS) $(LIBDIR)
+	-$(MKDIR) $(LIBDIR)/camlp4 $(BINDIR)
+	cp $(OBJS) $(LIBDIR)/camlp4/.
 	cp ocpp$(EXE) $(BINDIR)/.
 
 depend:
