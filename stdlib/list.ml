@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -124,13 +124,25 @@ let rec assoc x = function
     [] -> raise Not_found
   | (a,b)::l -> if a = x then b else assoc x l
 
-let rec mem_assoc x = function
-    [] -> false
-  | (a,b)::l -> a = x || mem_assoc x l
-
 let rec assq x = function
     [] -> raise Not_found
   | (a,b)::l -> if a == x then b else assq x l
+
+let rec mem_assoc x = function
+  | [] -> false
+  | (a, b) :: l -> a = x || mem_assoc x l
+
+let rec mem_assq x = function
+  | [] -> false
+  | (a, b) :: l -> a == x || mem_assq x l
+
+let rec remove x = function
+  | [] -> []
+  | (a, b as pair) :: l -> if a = x then l else pair :: remove x l
+
+let rec removeq x = function
+  | [] -> []
+  | (a, b as pair) :: l -> if a == x then l else pair :: removeq x l
 
 let rec split = function
     [] -> ([], [])

@@ -20,13 +20,13 @@ external get : string -> int -> char = "%string_safe_get"
         (* [String.get s n] returns character number [n] in string [s].
            The first character is character number 0.
            The last character is character number [String.length s - 1].
-           Raise [Invalid_argument] if [n] is ouside the range
+           Raise [Invalid_argument] if [n] is outside the range
            0 to [(String.length s - 1)].
            You can also write [s.[n]] instead of [String.get s n]. *)
 external set : string -> int -> char -> unit = "%string_safe_set"
         (* [String.set s n c] modifies string [s] in place,
            replacing the character number [n] by [c].
-           Raise [Invalid_argument] if [n] is ouside the range
+           Raise [Invalid_argument] if [n] is outside the range
            0 to [(String.length s - 1)].
            You can also write [s.[n] <- c] instead of [String.set s n c]. *)
 

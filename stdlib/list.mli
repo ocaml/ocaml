@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -108,11 +108,23 @@ val assoc : 'a -> ('a * 'b) list -> 'b
            if [(a,b)] is the leftmost binding of [a] in list [l].
            Raise [Not_found] if there is no value associated with [a] in the
            list [l]. *)
+val assq : 'a -> ('a * 'b) list -> 'b
+        (* Same as [assoc], but uses physical equality instead of structural
+           equality to compare keys. *)
+
 val mem_assoc : 'a -> ('a * 'b) list -> bool
         (* Same as [assoc], but simply return true if a binding exists,
            and false if no bindings exist for the given key. *)
-val assq : 'a -> ('a * 'b) list -> 'b
-        (* Same as [assoc], but uses physical equality instead of structural
+val mem_assq : 'a -> ('a * 'b) list -> bool
+        (* Same as [mem_assoc], but uses physical equality instead of structural
+           equality to compare keys. *)
+
+val remove : 'a -> ('a * 'b) list -> ('a * 'b) list
+        (* [remove a l] returns the list of
+           pairs [l] without the first pair with key [a], if any. *)
+
+val removeq : 'a -> ('a * 'b) list -> ('a * 'b) list
+        (* Same as [remove], but uses physical equality instead of structural
            equality to compare keys. *)
 
 (** Lists of pairs *)
