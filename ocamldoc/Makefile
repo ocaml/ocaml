@@ -16,8 +16,8 @@ include ../config/Makefile
 # Various commands and dir
 ##########################
 CAMLRUN=../boot/ocamlrun
-OCAMLC   = $(CAMLRUN) ../boot/ocamlc -I ../boot -warn-error A
-OCAMLOPT = $(CAMLRUN) ../ocamlopt 
+OCAMLC   = $(CAMLRUN) ../ocamlc -warn-error A
+OCAMLOPT = $(CAMLRUN) ../ocamlopt
 OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
 OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
 OCAMLYACC= ../boot/ocamlyacc

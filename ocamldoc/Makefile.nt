@@ -14,7 +14,7 @@
 !include ..\config\Makefile.nt
 
 CAMLRUN =..\boot\ocamlrun
-OCAMLC   =$(CAMLRUN) ..\boot\ocamlc -I ..\boot -warn-error A
+OCAMLC   =$(CAMLRUN) ..\ocamlc -warn-error A
 OCAMLOPT =$(CAMLRUN) ..\ocamlopt
 OCAMLLEX =$(CAMLRUN) ..\boot\ocamllex
 OCAMLYACC=..\boot\ocamlyacc
