@@ -275,10 +275,36 @@ testing_function "int_of_big_int";;
 
 test 1
 eq_int (int_of_big_int (big_int_of_int 1), 1);;
-test 2
+
+testing_function "is_int_big_int";;
+
+test 1
 eq (is_int_big_int (big_int_of_int 1), true);;
+test 2
+eq (is_int_big_int (big_int_of_int (-1)), true);;
 test 3
-eq (is_int_big_int (succ_big_int (big_int_of_int biggest_int)),false);;
+eq (is_int_big_int (succ_big_int (big_int_of_int biggest_int)), false);;
+test 4
+eq (int_of_big_int (big_int_of_int monster_int), monster_int);;
+(* Should be true *)
+test 5
+eq (is_int_big_int (big_int_of_string (string_of_int biggest_int)), true);;
+test 6
+eq (is_int_big_int (big_int_of_string (string_of_int least_int)), true);;
+test 7
+eq (is_int_big_int (big_int_of_string (string_of_int monster_int)), true);;
+(* Should be false *)
+(* Successor of biggest_int is not an int *)
+test 8
+eq (is_int_big_int (succ_big_int (big_int_of_int (biggest_int))), false);;
+test 9
+eq (is_int_big_int
+     (succ_big_int (succ_big_int (big_int_of_int (biggest_int)))), false);;
+(* Negation of monster_int (as a big_int) is not an int *)
+test 10
+eq (is_int_big_int
+     (minus_big_int (big_int_of_string (string_of_int monster_int))), false);;
+
 
 testing_function "sys_string_of_big_int";;
 
