@@ -1855,9 +1855,9 @@ let report_error ppf = function
            (type_expansion ty) ty')
         (function ppf ->
            fprintf ppf "but is here used with type");
-      fprintf ppf "%s@ %s"
+      fprintf ppf ".@.@[<hov>%s@ %s@]"
         "Simple coercions are not complete."
-        "Consider using double coercions."
+        "Consider using a double coercion."
   | Too_many_arguments (in_function, ty) ->
       reset_and_mark_loops ty;
       if in_function then begin
