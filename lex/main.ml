@@ -28,10 +28,9 @@ let main () =
       Filename.chop_suffix source_name ".mll" ^ ".ml"
     else
       source_name ^ ".ml" in
-  let ic_bin = open_in_bin source_name in
-  let ic_txt = open_in source_name in
+  let ic = open_in_bin source_name in
   let oc = open_out dest_name in
-  let lexbuf = Lexing.from_channel ic_bin in
+  let lexbuf = Lexing.from_channel ic in
   let def =
     try
       Parser.lexer_definition Lexer.main lexbuf
@@ -54,9 +53,8 @@ let main () =
       exit 2 in
   let (entries, transitions) = Lexgen.make_dfa def in
   let tables = Compact.compact_tables transitions in
-  Output.output_lexdef ic_txt oc def.header tables entries def.trailer;
-  close_in ic_bin;
-  close_in ic_txt;
+  Output.output_lexdef ic oc def.header tables entries def.trailer;
+  close_in ic;
   close_out oc
 
 let _ = Printexc.catch main (); exit 0
