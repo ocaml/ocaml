@@ -1,6 +1,7 @@
 external mycallback1 : ('a -> 'b) -> 'a -> 'b = "mycallback1"
 external mycallback2 : ('a -> 'b -> 'c) -> 'a -> 'b -> 'c = "mycallback2"
 external mycallback3 : ('a -> 'b -> 'c -> 'd) -> 'a -> 'b -> 'c -> 'd = "mycallback3"
+external mycallback4 : ('a -> 'b -> 'c -> 'd -> 'e) -> 'a -> 'b -> 'c -> 'd -> 'e = "mycallback4"
 
 let rec tak (x, y, z as tuple) =
   if x > y then tak(tak (x-1, y, z), tak (y-1, z, x), tak (z-1, x, y))
@@ -9,6 +10,8 @@ let rec tak (x, y, z as tuple) =
 let tak2 x (y, z) = tak (x, y, z)
 
 let tak3 x y z = tak (x, y, z)
+
+let tak4 x y z u = tak (x, y, z + u)
 
 let raise_exit () = (raise Exit : unit)
 
@@ -54,6 +57,7 @@ let _ =
   print_int(mycallback1 tak (18, 12, 6)); print_newline();
   print_int(mycallback2 tak2 18 (12, 6)); print_newline();
   print_int(mycallback3 tak3 18 12 6); print_newline();
+  print_int(mycallback4 tak4 18 12 3 3); print_newline();
   print_int(trapexit ()); print_newline();
   print_string(tripwire ()); print_newline();
   Sys.signal Sys.sigusr1 (Sys.Signal_handle sighandler);
