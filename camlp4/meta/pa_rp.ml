@@ -222,7 +222,9 @@ value cparser_match loc me bpo pc =
     [ Some bp -> <:expr< let $bp$ = Stream.count $lid:strm_n$ in $pc$ >>
     | None -> pc ]
   in
-  <:expr< let ($lid:strm_n$ : Stream.t _) = $me$ in $e$ >>
+  match me with
+  [ <:expr< $lid:x$ >> when x = strm_n -> e
+  | _ -> <:expr< let ($lid:strm_n$ : Stream.t _) = $me$ in $e$ >> ]
 ;
 
 (* streams *)
