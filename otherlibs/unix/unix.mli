@@ -509,6 +509,9 @@ val lockf : file_descr -> mode:lock_command -> len:int -> unit
 
 (*** Signals *)
 
+        (* Note: installation of signal handlers is performed via
+           the functions [signal] and [set_signal] of module [Sys]. *)
+
 val kill : pid:int -> signal:int -> unit
         (* [kill pid sig] sends signal number [sig] to the process
            with id [pid]. *)
