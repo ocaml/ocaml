@@ -418,3 +418,15 @@ type 'a u = A of 'a t;;
 type 'a t = < a : 'a >;;
 fun (x : 'a t as 'a) -> (x : 'b t);;
 type u = 'a t as 'a;;
+
+
+(* Variant tests *)
+type t = A | B;;
+function `A,_ -> 1 | _,A -> 2 | _,B -> 3;;
+function `A,_ -> 1 | _,(A|B) -> 2;;
+function Some `A, _ -> 1 | Some _, A -> 2 | None, A -> 3 | _, B -> 4;;
+function Some `A, A -> 1 | Some `A, B -> 1
+       | Some _, A -> 2  | None, A -> 3 | _, B -> 4;;
+function A, `A -> 1 | A, `B -> 2 | B, _ -> 3;;
+function `A, A -> 1 | `B, A -> 2 | _, B -> 3;;
+function (`A|`B), _ -> 0 | _,(`A|`B) -> 1;;

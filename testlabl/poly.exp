@@ -254,4 +254,16 @@ type 'a u = A of 'a t
 #     type 'a t = < a : 'a >
 # - : ('a t as 'a) -> 'a t = <fun>
 # type u = 'a t as 'a
+#       type t = A | B
+# - : [> `A ] * t -> int = <fun>
+# - : [> `A ] * t -> int = <fun>
+# - : [> `A ] option * t -> int = <fun>
+#   - : [> `A ] option * t -> int = <fun>
+# - : t * [< `A | `B ] -> int = <fun>
+# - : [< `A | `B ] * t -> int = <fun>
+# Characters 0-41:
+Warning: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(`AnyExtraTag, `AnyExtraTag)
+- : [> `A | `B ] * [> `A | `B ] -> int = <fun>
 # 

@@ -531,13 +531,32 @@ let filter_all pat0 pss =
       pss)
     pss
 
+let close_variant env row =
+  let row = Btype.row_repr row in
+  let nm =
+    List.fold_left
+      (fun nm (tag,f) ->
+        match Btype.row_field_repr f with
+        | Reither(_, _, false, e) ->
+            (* m=false means that this tag is not explicitly matched *)
+            Btype.set_row_field e Rabsent;
+            None
+        | Rabsent | Reither (_, _, true, _) | Rpresent _ -> nm)
+      row.row_name row.row_fields in
+  if not row.row_closed || nm != row.row_name then begin
+    (* this unification cannot fail *)
+    Ctype.unify env row.row_more
+      (Btype.newgenty
+         (Tvariant {row with row_fields = []; row_more = Btype.newgenvar();
+                    row_closed = true; row_name = nm}))
+  end
 
 (*
   Check whether the first column of env makes up a complete signature or
   not.
 *)      
 
-let full_match tdefs force env =  match env with
+let full_match tdefs closing env =  match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ ->
     false
 | ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
@@ -550,28 +569,20 @@ let full_match tdefs force env =  match env with
         env
     in
     let row = Btype.row_repr row in
-    if force && not row.row_fixed then begin
+    if closing && not row.row_fixed then begin
       (* force=true, we are called from check_partial, and must close *)
-      let (ok, nm) =
-        List.fold_left
-          (fun (ok,nm) (tag,f) ->
+      let ok =
+        List.for_all
+          (fun (tag,f) ->
             match Btype.row_field_repr f with
-              Rabsent -> (ok, nm)
-            | Reither(_, _, false, e) ->
-                (* m=false means that this tag is not explicitly matched *)
-                Btype.set_row_field e Rabsent;
-                (ok, None)
+              Rabsent | Reither(_, _, false, _) -> true
             | Reither (_, _, true, _)
                 (* m=true, do not discard matched tags, rather warn *)
-            | Rpresent _ ->
-                (ok && List.mem tag fields, nm))
-          (true, row.row_name) row.row_fields in
-      if not row.row_closed || nm != row.row_name then
-        (* this unification cannot fail *)
-        Ctype.unify tdefs row.row_more
-          (Btype.newgenty
-             (Tvariant {row with row_fields = []; row_more = Btype.newgenvar();
-                        row_closed = true; row_name = nm}));
+            | Rpresent _ -> List.mem tag fields)
+          row.row_fields in
+      begin match tdefs with None -> ()
+      | Some env -> close_variant env row
+      end;
       ok
     end else
       row.row_closed &&
@@ -705,7 +716,9 @@ let build_other env =  match env with
           | Reither (c, _, _, _) -> make_other_pat tag c :: others
           | Rpresent arg -> make_other_pat tag (arg = None) :: others)
         [] row.row_fields
-    with [] -> assert false
+    with
+      [] ->
+        make_other_pat "AnyExtraTag" true
     | pat::other_pats ->
         List.fold_left
           (fun p_res pat ->
@@ -831,7 +844,7 @@ let rec satisfiable pss qs = match pss with
           (* first column of pss is made of variables only *)
         | [] -> satisfiable (filter_extra pss) qs
         | constrs  ->
-            (not (full_match Env.empty false constrs) &&
+            (not (full_match None false constrs) &&
              satisfiable (filter_extra pss) qs) ||
              List.exists
                (fun (p,pss) -> satisfiable pss (simple_match_args p omega @ qs))
@@ -940,7 +953,7 @@ let rec exhaust variants tdefs pss n = match pss with
           with
           | Rsome r -> Rsome (set_args p r)
           | r       -> r in
-        if full_match tdefs true constrs
+        if full_match None false constrs
         then try_many variants try_non_omega constrs
         else
           match exhaust variants tdefs (filter_extra pss) (n-1) with
@@ -958,6 +971,43 @@ let rec exhaust variants tdefs pss n = match pss with
 
     end
 
+let rec pressure_variants tdefs = function
+  | []    -> false
+  | []::_ -> true
+  | pss   ->
+      let q0 = discr_pat omega pss in
+      begin match filter_all q0 pss with
+        [] -> pressure_variants tdefs (filter_extra pss)
+      | constrs ->   
+          let try_non_omega (p,pss) = pressure_variants tdefs pss in
+          let sub = List.map try_non_omega constrs in
+          let ok = List.for_all (fun x -> x) sub in
+          if full_match None false constrs then ok else
+          begin
+            if tdefs <> None && full_match None true constrs then
+              ok && pressure_variants None (filter_extra pss)
+            else
+              pressure_variants tdefs (filter_extra pss)
+          end ||
+          full_match tdefs true constrs && ok
+      end
+
+(*
+let rec pressure_variants tdefs pss =
+  if pss = [] || List.hd pss = [] then () else
+  let fstcol, pss' =
+    List.split (List.map (function p::ps -> [p], ps | [] -> assert false) pss)
+  in
+  if filter_extra fstcol = [] then begin
+    let q0 = discr_pat omega fstcol in
+    match filter_all q0 pss with
+      [] -> ()
+    | constrs ->
+        ignore (full_match tdefs true constrs);
+        List.iter (fun (q,qss) -> pressure_variants tdefs qss) constrs
+  end;
+  pressure_variants tdefs pss'
+*)    
 
 (* Yet another satisfiable fonction *)
 
@@ -1473,9 +1523,11 @@ and look_variants = function
 
 
 let check_partial tdefs loc casel =
-  let variant_inside = List.exists (fun (p,_) -> look_variant p) casel in
+  ignore (pressure_variants (Some tdefs) (List.map (fun (p,e) -> [p]) casel));
+  let variant_inside = false
+      (* List.exists (fun (p,_) -> look_variant p) casel *) in
   let pss = initial_matrix casel in
-  let pss = List.map (List.map simplify_or_pat) pss in
+  (* let pss = List.map (List.map simplify_or_pat) pss in *)
   let pss = get_mins le_pats pss in
   match pss with
   | [] ->
