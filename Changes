@@ -32,7 +32,7 @@ Both compilers:
 - Option -warn-error to turn warnings into errors.
 - Option -where to print the location of the standard library directory.
 - Assertions are now type-checked even if the -noassert option is given,
-  thus -noassert no longer changes the types of your modules.
+  thus -noassert can no longe change the types of modules.
 
 Native-code compiler:
 - Better unboxing optimizations on the int32, int64, and nativeint types.
@@ -45,7 +45,7 @@ Native-code compiler:
 - Removed spurious dependency on the -lcurses library.
 
 Toplevel environment:
-- Revised handling of top-level value definitions, allows reclaimation
+- Revised handling of top-level value definitions, allows reclamation
   of definitions that are shadowed by later definitions with the same names.
 
 Runtime system:
@@ -57,22 +57,24 @@ Runtime system:
   in_channel or out_channel raise Sys_error immediately.
 
 Standard library:
+- Module Gc: changed some counters to float in order to avoid overflow;
+    added alarms
 - Module Hashtbl: added Hashtbl.replace.
 - Module Int64: added bits_of_float, float_of_bits (access to IEEE 754
     representation of floats)
 - Module List:  List.partition now tail-rec; 
     improved memory behavior of List.stable_sort.
 - Module Nativeint: added Nativeint.size (number of bits in a nativeint).
+- Module Obj: fixed incorrect resizing of float arrays in Obj.resize.
 - Module Pervasives: added float constants "infinity", "neg_infinity", "nan";
     added a "classify_float" function to test a float for NaN, infinity, etc.
 - Pervasives.input_value: fixed bug affecting shared custom objects.
 - Pervasives.output_value: fixed size bug affecting "int64" values.
 - Pervasives.int_of_string, {Int32,Int64,Nativeint}.of_string:
   fixed bug causing illegal digits to be accepted without error.
-- Module Obj: fixed incorrect resizing of float arrays in Obj.resize.
+- Module Random: added get_state and set_state to checkpoint the generator.
 - Module Sys: signal handling functions are passed the system-independent
   signal number rather than the raw system signal number whenever possible.
-- Module Random: added get_state and set_state to checkpoint the generator.
 - Module Weak: added Weak.get_copy.
 
 Other libraries:
