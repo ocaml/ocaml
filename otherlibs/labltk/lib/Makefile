@@ -18,10 +18,12 @@ include ./modules
 WIDGETOBJSX = $(WIDGETOBJS:.cmo=.cmx)
 
 tk41.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
-	$(LABLLIBR) -o tk41.cma $(SUPPORT) tk.cmo $(WIDGETOBJS)
+	$(LABLLIBR) -custom -o tk41.cma $(SUPPORT) tk.cmo $(WIDGETOBJS) \
+          -cclib -llabltk41 $(TK_LINK) $(X11_LINK)
 
 tk41.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
-	$(CAMLOPTLIBR) -o tk41.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX)
+	$(CAMLOPTLIBR) -o tk41.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \
+          -cclib -llabltk41 $(TK_LINK) $(X11_LINK)
 
 labltktop : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
 	$(LABLC) -custom -linkall -o labltktop -I ../support $(TKLINKOPT) \
@@ -35,16 +37,12 @@ labltk: Makefile $(TOPDIR)/config/Makefile
 labltklink: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec ocamlc -custom -I $(LABLTKDIR) tk41.cma "$$@" \' >> $@
-	@echo '	-cclib "-L$(LABLTKDIR) -llabltk41 $(TK_LINK)" \' >> $@
-	@echo '	$(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"' >> $@
+	@echo 'exec ocamlc -I $(LABLTKDIR) tk41.cma "$$@"' >> $@
 
 labltkopt: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec ocamlopt -I $(LABLTKDIR) tk41.cmxa "$$@" \' >> $@
-	@echo '	-cclib "-L$(LABLTKDIR) -llabltk41 $(TK_LINK)" \' >> $@
-	@echo '	$(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"' >> $@
+	@echo 'exec ocamlopt -I $(LABLTKDIR) tk41.cmxa "$$@" '
 
 # All .{ml,mli} files are generated in this directory
 clean : 

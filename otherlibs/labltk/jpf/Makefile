@@ -6,9 +6,6 @@ OBJS= fileselect.cmo balloon.cmo
 
 OBJSX = $(OBJS:.cmo=.cmx)
 
-TKLINKOPT=$(STATIC) -ccopt -L../support -cclib -llabltk41 \
-	  -cclib "$(TK_LINK)" $(X11_LINK)
-
 all: libjpf.cma
 
 opt: libjpf.cmxa

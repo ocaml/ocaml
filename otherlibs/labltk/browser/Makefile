@@ -4,7 +4,6 @@ LABLTKLIB=-I ../lib -I ../support
 OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
-CLIBS=../support/liblabltk41.a $(OTHERS)/str/libstr.a $(OTHERS)/unix/libunix.a
 
 OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
 	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\
@@ -28,10 +27,10 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 all: ocamlbrowser
 
 ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ)
-	$(LABLC) -custom -o ocamlbrowser $(INCLUDES) \
+	$(LABLC) -o ocamlbrowser $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma str.cma tk41.cma jglib.cma $(OBJ) \
-		-cclib "$(CLIBS)" $(TKLINKOPT)
+		$(TKLINKOPT)
 
 jglib.cma: $(JG)
 	$(LABLCOMP) -a -o jglib.cma $(JG) 

@@ -7,8 +7,9 @@ OTHERS=../..
 include $(TOPDIR)/config/Makefile
 
 LABLTKDIR=$(LIBDIR)/labltk
-TKLINKOPT=$(STATIC) -ccopt -L../support -cclib -llabltk41 \
-	  -cclib "$(TK_LINK)" $(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"
+TKLINKOPT=$(STATIC) \
+          -ccopt -L../support -ccopt -L$(OTHERS)/str -ccopt -L$(OTHERS)/unix
+
 
 ## Tools from the Objective Caml distribution
 
