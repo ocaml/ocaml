@@ -410,7 +410,10 @@ CAMLprim value int64_of_float(value v)
 { return copy_int64(I64_of_double(Double_val(v))); }
 
 CAMLprim value int64_to_float(value v)
-{ return copy_double(I64_to_double(Int64_val(v))); }
+{ 
+  int64 i = Int64_val(v);
+  return copy_double(I64_to_double(i));
+}
 
 CAMLprim value int64_of_int32(value v)
 { return copy_int64(I64_of_int32(Int32_val(v))); }
