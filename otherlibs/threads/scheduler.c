@@ -436,6 +436,11 @@ value thread_kill(thread)       /* ML */
   Assign(th->next->prev, th->prev);
   /* Free its resources */
   stat_free((char *) th->stack_low);
+  th->stack_low = NULL;
+  th->stack_high = NULL;
+  th->stack_threshold = NULL;
+  th->sp = NULL;
+  th->trapsp = NULL;
   return Val_unit;
 }
 
