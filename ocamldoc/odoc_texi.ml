@@ -222,7 +222,7 @@ end
 
 
 
-(** {2 Generation of Texinfo code from text structures} *)
+(** Generation of Texinfo code from text structures *)
 class text = 
   object(self)
 
