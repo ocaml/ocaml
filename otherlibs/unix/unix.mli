@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Interface to the Unix system *)
+(* Module [Unix]: interface to the Unix system *)
 
 (*** Error report *)
 
