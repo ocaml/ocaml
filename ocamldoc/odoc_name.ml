@@ -60,7 +60,7 @@ let cut name =
                      '(' -> 
                        j := 1
                    | _ ->
-                       Buffer.add_char buf.(!j) '('
+                       Buffer.add_char buf.(!j) '.'
                  else
                    Buffer.add_char buf.(!j) s.[i]
              | c ->

@@ -36,6 +36,7 @@ OK - odoc_cross.ml: use a Map to associate a complete name to
     the known elements with this name, instead of searching each time
     through the whole list of modules -> a gain of more than 90% in speed
     for cross-referecing (Odoc_cross.associate)
+OK - fix: Odoc_name.cut printed a '(' instead of a '.' 
 
 
 ======
