@@ -21,7 +21,7 @@
 
 #ifndef PATH_MAX
 #ifdef MAXPATHLEN
-#define PATH_MAN MAXPATHLEN
+#define PATH_MAX MAXPATHLEN
 #else
 #define PATH_MAX 512
 #endif
