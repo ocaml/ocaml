@@ -100,18 +100,18 @@ end
 ;;
 
 class vari = object
-  method virtual m : 'a. ([< `a|`b|`c] as 'a) -> int
-  method m = function `a -> 1 | _ -> 0
+  method virtual m : 'a. ([< `A|`B|`C] as 'a) -> int
+  method m = function `A -> 1 | `B|`C  -> 0
 end
 ;;
 class vari = object
-  method m : 'a. ([< `a|`b|`c] as 'a) -> int = function `a -> 1 | _ -> 0
+  method m : 'a. ([< `A|`B|`C] as 'a) -> int = function `A -> 1 | `B|`C -> 0
 end
 ;;
 module V =
   struct
-    type v = [`a | `b | `c]
-    let m : [< v] -> int = function `a -> 1 | _ -> 0
+    type v = [`A | `B | `C]
+    let m : [< v] -> int = function `A -> 1 | #v -> 0
   end
 ;;
 class varj = object
@@ -121,20 +121,20 @@ end
 ;;
 
 module type T = sig
-  class vari : object method m : 'a. ([< `a | `b | `c] as 'a) -> int end
+  class vari : object method m : 'a. ([< `A | `B | `C] as 'a) -> int end
 end
 ;;
 module M0 = struct
   class vari = object
-    method virtual m : 'a. ([< `a|`b|`c] as 'a) -> int
-    method m = function `a -> 1 | _ -> 0
+    method virtual m : 'a. ([< `A|`B|`C] as 'a) -> int
+    method m = function `A -> 1 | `B|`C -> 0
   end
 end
 ;;
 module M : T = M0
 ;;
 let v = new M.vari;;
-v#m `a;;
+v#m `A;;
 
 class point ~x ~y = object
   val x : int = x
@@ -230,7 +230,7 @@ let f2 f = (f : id)#id 1, (f : id)#id true
 ;;
 let f3 f = f#id 1, f#id true
 ;;
-let f4 f = (f : id); f#id 1, f#id true
+let f4 f = ignore(f : id); f#id 1, f#id true
 ;;
 
 class c = object

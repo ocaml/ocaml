@@ -1,13 +1,13 @@
 # $Id$
 # Test extensions
 
-CAMLTOP=../boot/ocamlrun ../ocaml -I ../boot
+CAMLTOP=../boot/ocamlrun ../ocaml -I ../stdlib
 
 test: test-poly
 
 test-poly:
-	TERM=character $(CAMLTOP) < poly.ml > poly.out 2>&1
-	TERM=character $(CAMLTOP) -principal < poly.ml > poly.out2 2>&1
-	@diff poly.out poly.exp && echo ocaml OK || echo ocaml changed
-	@diff poly.out2 poly.exp2 && echo ocaml -principal OK \
+	TERM=norepeat $(CAMLTOP) < poly.ml > poly.out 2>&1
+	TERM=norepeat $(CAMLTOP) -principal < poly.ml > poly.out2 2>&1
+	@diff poly.exp poly.out && echo ocaml OK || echo ocaml changed
+	@diff poly.exp2 poly.out2 && echo ocaml -principal OK \
 	   || echo ocaml -principal changed
