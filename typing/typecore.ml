@@ -260,10 +260,12 @@ let build_or_pat env loc lid =
   match pats with
     [] -> raise(Error(loc, Not_a_variant_type lid))
   | pat :: pats ->
-      List.fold_left
-        (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some path); pat_loc=gloc;
-                          pat_env=env; pat_type=ty})
-        pat pats
+      let r =
+        List.fold_left
+          (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some path); pat_loc=gloc;
+                             pat_env=env; pat_type=ty})
+          pat pats in
+      { r with pat_loc = loc }
 
 let rec type_pat env sp =
   match sp.ppat_desc with

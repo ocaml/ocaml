@@ -62,29 +62,43 @@ and ident3 len (strm__ : _ Stream.t) =
 and base_number len (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
     Some ('o' | 'O') ->
-      Stream.junk strm__; octal_digits (store len 'o') strm__
-  | Some ('x' | 'X') -> Stream.junk strm__; hexa_digits (store len 'x') strm__
+      Stream.junk strm__; digits octal (store len 'o') strm__
+  | Some ('x' | 'X') -> Stream.junk strm__; digits hexa (store len 'x') strm__
   | Some ('b' | 'B') ->
-      Stream.junk strm__; binary_digits (store len 'b') strm__
+      Stream.junk strm__; digits binary (store len 'b') strm__
   | _ -> number len strm__
-and octal_digits len (strm__ : _ Stream.t) =
+and digits kind len (strm__ : _ Stream.t) =
+  let d =
+    try kind strm__ with
+      Stream.Failure -> raise (Stream.Error "ill-formed integer constant")
+  in
+  digits_under kind (store len d) strm__
+and digits_under kind len (strm__ : _ Stream.t) =
+  match
+    try Some (kind strm__) with
+      Stream.Failure -> None
+  with
+    Some d -> digits_under kind (store len d) strm__
+  | _ ->
+      match Stream.peek strm__ with
+        Some '_' -> Stream.junk strm__; digits_under kind len strm__
+      | _ -> "INT", get_buff len
+and octal (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
-    Some ('0'..'7' as d) ->
-      Stream.junk strm__; octal_digits (store len d) strm__
-  | _ -> "INT", get_buff len
-and hexa_digits len (strm__ : _ Stream.t) =
+    Some ('0'..'7' as d) -> Stream.junk strm__; d
+  | _ -> raise Stream.Failure
+and hexa (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
-    Some ('0'..'9' | 'a'..'f' | 'A'..'F' as d) ->
-      Stream.junk strm__; hexa_digits (store len d) strm__
-  | _ -> "INT", get_buff len
-and binary_digits len (strm__ : _ Stream.t) =
+    Some ('0'..'9' | 'a'..'f' | 'A'..'F' as d) -> Stream.junk strm__; d
+  | _ -> raise Stream.Failure
+and binary (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
-    Some ('0'..'1' as d) ->
-      Stream.junk strm__; binary_digits (store len d) strm__
-  | _ -> "INT", get_buff len
+    Some ('0'..'1' as d) -> Stream.junk strm__; d
+  | _ -> raise Stream.Failure
 and number len (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
     Some ('0'..'9' as c) -> Stream.junk strm__; number (store len c) strm__
+  | Some '_' -> Stream.junk strm__; number len strm__
   | Some '.' -> Stream.junk strm__; decimal_part (store len '.') strm__
   | Some ('e' | 'E') ->
       Stream.junk strm__; exponent_part (store len 'E') strm__
@@ -93,6 +107,7 @@ and decimal_part len (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
     Some ('0'..'9' as c) ->
       Stream.junk strm__; decimal_part (store len c) strm__
+  | Some '_' -> Stream.junk strm__; decimal_part len strm__
   | Some ('e' | 'E') ->
       Stream.junk strm__; exponent_part (store len 'E') strm__
   | _ -> "FLOAT", get_buff len
@@ -104,15 +119,14 @@ and exponent_part len (strm__ : _ Stream.t) =
 and end_exponent_part len (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
     Some ('0'..'9' as c) ->
-      Stream.junk strm__; end_exponent_part (store len c) strm__
-  | _ -> "FLOAT", get_buff len
-;;
-
-let rec skip_spaces (strm__ : _ Stream.t) =
+      Stream.junk strm__; end_exponent_part_under (store len c) strm__
+  | _ -> raise (Stream.Error "ill-formed floating-point constant")
+and end_exponent_part_under len (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
-    Some (' ' | '\010' | '\013' | '\t' | '\026' | '\012') ->
-      Stream.junk strm__; skip_spaces strm__
-  | _ -> ()
+    Some ('0'..'9' as c) ->
+      Stream.junk strm__; end_exponent_part_under (store len c) strm__
+  | Some '_' -> Stream.junk strm__; end_exponent_part_under len strm__
+  | _ -> "FLOAT", get_buff len
 ;;
 
 let error_on_unknown_keywords = ref false;;

@@ -37,12 +37,12 @@ let action_arg s sl =
       if s = "" then
         match sl with
           s :: sl ->
-            begin try r := (int_of_string s); Some sl with
+            begin try r := int_of_string s; Some sl with
               Failure "int_of_string" -> None
             end
         | [] -> None
       else
-        begin try r := (int_of_string s); Some sl with
+        begin try r := int_of_string s; Some sl with
           Failure "int_of_string" -> None
         end
   | Arg.Float f ->
@@ -54,14 +54,13 @@ let action_arg s sl =
   | Arg.Set_float r ->
       if s = "" then
         match sl with
-          s :: sl -> r := (float_of_string s); Some sl
+          s :: sl -> r := float_of_string s; Some sl
         | [] -> None
-      else begin r := (float_of_string s); Some sl end
+      else begin r := float_of_string s; Some sl end
   | Arg.Symbol (syms, f) ->
-      begin match (if s = "" then sl else (s::sl)) with
-      | s :: sl when List.mem s syms -> f s; Some sl
+      match if s = "" then sl else s :: sl with
+        s :: sl when List.mem s syms -> f s; Some sl
       | _ -> None
-      end
 ;;
 
 let common_start s1 s2 =
@@ -99,8 +98,7 @@ let loc_fmt =
   match Sys.os_type with
     "MacOS" ->
       format_of_string "File \"%s\"; line %d; characters %d to %d\n### "
-  | _ ->
-      format_of_string "File \"%s\", line %d, characters %d-%d:\n"
+  | _ -> format_of_string "File \"%s\", line %d, characters %d-%d:\n"
 ;;
 
 let print_location loc =
@@ -217,19 +215,19 @@ let align_doc key s =
 
 let make_symlist l =
   match l with
-  | [] -> "<none>"
-  | h :: t -> (List.fold_left (fun x y -> x ^ "|" ^ y) ("{" ^ h) t) ^ "}"
+    [] -> "<none>"
+  | h :: t -> List.fold_left (fun x y -> x ^ "|" ^ y) ("{" ^ h) t ^ "}"
 ;;
 
 let print_usage_list l =
   List.iter
     (fun (key, spec, doc) ->
-      match spec with
-      | Arg.Symbol (symbs, _) ->
-          let s = make_symlist symbs in
-          let synt = key ^ " " ^ s in
-          eprintf "  %s %s\n" synt (align_doc synt doc)
-      | _ -> eprintf "  %s %s\n" key (align_doc key doc) )
+       match spec with
+         Arg.Symbol (symbs, _) ->
+           let s = make_symlist symbs in
+           let synt = key ^ " " ^ s in
+           eprintf "  %s %s\n" synt (align_doc synt doc)
+       | _ -> eprintf "  %s %s\n" key (align_doc key doc))
     l
 ;;
 
@@ -256,7 +254,7 @@ Other options:
   if ext_sl <> [] then
     begin
       eprintf "Options added by loaded object files:\n";
-      print_usage_list ext_sl;
+      print_usage_list ext_sl
     end
 ;;
 

@@ -53,6 +53,5 @@ compare:
 install:
 	-$(MKDIR) $(LIBDIR)/camlp4 $(BINDIR)
 	cp odyl.cmo odyl.cma $(LIBDIR)/camlp4/.
-	cp odyl$(EXE) $(BINDIR)/.
 
 include .depend

@@ -110,6 +110,8 @@ let mstore len s =
 let get_buff len = String.sub !buff 0 len;;
 
 let valch x = Char.code x - Char.code '0';;
+let valch_a x = Char.code x - Char.code 'a' + 10;;
+let valch_A x = Char.code x - Char.code 'A' + 10;;
 
 let rec backslash s i =
   if i = String.length s then raise Not_found
@@ -123,6 +125,7 @@ let rec backslash s i =
     | '\"' -> '\"', i + 1
     | '\'' -> '\'', i + 1
     | '0'..'9' as c -> backslash1 (valch c) s (i + 1)
+    | 'x' -> backslash1h s (i + 1)
     | _ -> raise Not_found
 and backslash1 cod s i =
   if i = String.length s then '\\', i - 1
@@ -135,6 +138,22 @@ and backslash2 cod s i =
   else
     match s.[i] with
       '0'..'9' as c -> Char.chr (10 * cod + valch c), i + 1
+    | _ -> '\\', i - 2
+and backslash1h s i =
+  if i = String.length s then '\\', i - 1
+  else
+    match s.[i] with
+      '0'..'9' as c -> backslash2h (valch c) s (i + 1)
+    | 'a'..'f' as c -> backslash2h (valch_a c) s (i + 1)
+    | 'A'..'F' as c -> backslash2h (valch_A c) s (i + 1)
+    | _ -> '\\', i - 1
+and backslash2h cod s i =
+  if i = String.length s then '\\', i - 2
+  else
+    match s.[i] with
+      '0'..'9' as c -> Char.chr (16 * cod + valch c), i + 1
+    | 'a'..'f' as c -> Char.chr (16 * cod + valch_a c), i + 1
+    | 'A'..'F' as c -> Char.chr (16 * cod + valch_A c), i + 1
     | _ -> '\\', i - 2
 ;;
 

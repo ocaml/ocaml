@@ -112,11 +112,16 @@ let mkstrexp e =
 let array_function str name =
   Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name))
 
-let rec mkrangepat c1 c2 =
-  if c1 > c2 then mkrangepat c2 c1 else
+let rec deep_mkrangepat c1 c2 =
   if c1 = c2 then ghpat(Ppat_constant(Const_char c1)) else
   ghpat(Ppat_or(ghpat(Ppat_constant(Const_char c1)),
-                mkrangepat (Char.chr(Char.code c1 + 1)) c2))
+                deep_mkrangepat (Char.chr(Char.code c1 + 1)) c2))
+
+let rec mkrangepat c1 c2 =
+  if c1 > c2 then mkrangepat c2 c1 else
+  if c1 = c2 then mkpat(Ppat_constant(Const_char c1)) else
+  mkpat(Ppat_or(ghpat(Ppat_constant(Const_char c1)),
+                deep_mkrangepat (Char.chr(Char.code c1 + 1)) c2))
 
 let syntax_error () =
   raise Syntaxerr.Escape_error

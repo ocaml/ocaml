@@ -13,8 +13,8 @@
 
 INCLUDES =
 OCAMLCFLAGS = {INCLUDES}
-OBJS = stdpp.cmo token.cmo plexer.cmo gramext.cmo grammar.cmo extfold.cmo extfun.cmo fstream.cmo
-INTF = stdpp.cmi token.cmi plexer.cmi gramext.cmi grammar.cmi extfold.cmi extfun.cmi fstream.cmi
+OBJS = stdpp.cmo token.cmo plexer.cmo gramext.cmo grammar.cmo extfun.cmo fstream.cmo
+INTF = stdpp.cmi token.cmi plexer.cmi gramext.cmi grammar.cmi extfun.cmi fstream.cmi
 TARGETS = gramlib.cma
 
 all Ä {TARGETS}

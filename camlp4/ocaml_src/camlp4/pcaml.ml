@@ -18,8 +18,7 @@ let gram =
   Grammar.gcreate
     {Token.tok_func = (fun _ -> failwith "no loaded parsing module");
      Token.tok_using = (fun _ -> ()); Token.tok_removing = (fun _ -> ());
-     Token.tok_match =
-       (fun _ -> raise (Match_failure ("pcaml.ml", 21, 23)));
+     Token.tok_match = (fun _ -> raise (Match_failure ("pcaml.ml", 21, 23)));
      Token.tok_text = fun _ -> ""}
 ;;
 
@@ -182,8 +181,7 @@ let loc_fmt =
   match Sys.os_type with
     "MacOS" ->
       format_of_string "File \"%s\"; line %d; characters %d to %d\n### "
-  | _ ->
-      format_of_string "File \"%s\", line %d, characters %d-%d:\n"
+  | _ -> format_of_string "File \"%s\", line %d, characters %d-%d:\n"
 ;;
 
 let report_quotation_error name ctx =

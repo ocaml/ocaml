@@ -309,13 +309,21 @@ value rec patt_fa al =
   | f -> (f, al) ]
 ;
 
-value rec mkrangepat loc c1 c2 =
-  if c1 > c2 then mkrangepat loc c2 c1
-  else if c1 = c2 then mkghpat loc (Ppat_constant (Const_char c1))
+value rec deep_mkrangepat loc c1 c2 =
+  if c1 = c2 then mkghpat loc (Ppat_constant (Const_char c1))
   else
     mkghpat loc
       (Ppat_or (mkghpat loc (Ppat_constant (Const_char c1)))
-         (mkrangepat loc (Char.chr (Char.code c1 + 1)) c2))
+         (deep_mkrangepat loc (Char.chr (Char.code c1 + 1)) c2))
+;
+
+value rec mkrangepat loc c1 c2 =
+  if c1 > c2 then mkrangepat loc c2 c1
+  else if c1 = c2 then mkpat loc (Ppat_constant (Const_char c1))
+  else
+    mkpat loc
+      (Ppat_or (mkghpat loc (Ppat_constant (Const_char c1)))
+         (deep_mkrangepat loc (Char.chr (Char.code c1 + 1)) c2))
 ;
 
 value rec patt_long_id il =

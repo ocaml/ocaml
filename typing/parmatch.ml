@@ -1095,7 +1095,10 @@ let rec every_satisfiables pss qs = match qs.active with
 (* otherwise this is direct food for satisfiable *)
           every_satisfiables (push_no_or_column pss) (push_no_or qs)
     | Tpat_or (q1,q2,_) ->
-        if uq.pat_loc.Location.loc_ghost then
+        if
+          q1.pat_loc.Location.loc_ghost &&
+          q2.pat_loc.Location.loc_ghost
+        then
 (* syntactically generated or-pats should not be expanded *)
           every_satisfiables (push_no_or_column pss) (push_no_or qs)
         else 

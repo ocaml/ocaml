@@ -46,8 +46,18 @@ let mkloc (bp, ep) =
    Location.loc_ghost = false}
 ;;
 
+let mkghloc (bp, ep) =
+  let loc_at n =
+    {Lexing.pos_fname = ""; Lexing.pos_lnum = 1; Lexing.pos_bol = 0;
+     Lexing.pos_cnum = n}
+  in
+  {Location.loc_start = loc_at bp; Location.loc_end = loc_at ep;
+   Location.loc_ghost = true}
+;;
+
 let mktyp loc d = {ptyp_desc = d; ptyp_loc = mkloc loc};;
 let mkpat loc d = {ppat_desc = d; ppat_loc = mkloc loc};;
+let mkghpat loc d = {ppat_desc = d; ppat_loc = mkghloc loc};;
 let mkexp loc d = {pexp_desc = d; pexp_loc = mkloc loc};;
 let mkmty loc d = {pmty_desc = d; pmty_loc = mkloc loc};;
 let mksig loc d = {psig_desc = d; psig_loc = mkloc loc};;
@@ -292,14 +302,23 @@ let rec patt_fa al =
   | f -> f, al
 ;;
 
+let rec deep_mkrangepat loc c1 c2 =
+  if c1 = c2 then mkghpat loc (Ppat_constant (Const_char c1))
+  else
+    mkghpat loc
+      (Ppat_or
+         (mkghpat loc (Ppat_constant (Const_char c1)),
+          deep_mkrangepat loc (Char.chr (Char.code c1 + 1)) c2))
+;;
+
 let rec mkrangepat loc c1 c2 =
   if c1 > c2 then mkrangepat loc c2 c1
   else if c1 = c2 then mkpat loc (Ppat_constant (Const_char c1))
   else
     mkpat loc
       (Ppat_or
-         (mkpat loc (Ppat_constant (Const_char c1)),
-          mkrangepat loc (Char.chr (Char.code c1 + 1)) c2))
+         (mkghpat loc (Ppat_constant (Const_char c1)),
+          deep_mkrangepat loc (Char.chr (Char.code c1 + 1)) c2))
 ;;
 
 let rec patt_long_id il =
