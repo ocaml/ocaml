@@ -544,6 +544,18 @@ and transl_function loc untuplify_fn repr bindings partial pat_expr_list =
 	  exp bindings
       in
       transl_function loc untuplify_fn repr [] partial [pat, exp]
+  | (pat, exp)::_ when bindings <> [] ->
+      let param = name_pattern "param" pat_expr_list in
+      let exp =
+        { exp with exp_loc = loc; exp_desc =
+          Texp_match
+            ({exp with exp_type = pat.pat_type; exp_desc =
+              Texp_ident (Path.Pident param,
+                          {val_type = pat.pat_type; val_kind = Val_reg})},
+             pat_expr_list, partial) }
+      in
+      transl_function loc untuplify_fn repr bindings Total
+        [{pat with pat_desc = Tpat_var param}, exp]
   | ({pat_desc = Tpat_tuple pl}, _) :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
