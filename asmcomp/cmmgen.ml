@@ -132,6 +132,10 @@ let tag_int = function
     Cconst_int n -> int_const n
   | c -> Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1])
 
+let force_tag_int = function
+    Cconst_int n -> int_const n
+  | c -> Cop(Cor, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1])
+
 let untag_int = function
     Cconst_int n -> Cconst_int(n asr 1)
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) -> c
@@ -865,6 +869,7 @@ let rec transl = function
           | Pbigarray_int32 -> box_int Pint32 elt
           | Pbigarray_int64 -> box_int Pint64 elt
           | Pbigarray_native_int -> box_int Pnativeint elt
+          | Pbigarray_caml_int -> force_tag_int elt
           | _ -> tag_int elt
           end
       | (Pbigarrayset(num_dims, elt_kind, layout), arg1 :: argl) ->
@@ -1060,7 +1065,7 @@ and transl_prim_1 p arg =
   | Pbintofint bi ->
       box_int bi (untag_int (transl arg))
   | Pintofbint bi ->
-      tag_int (transl_unbox_int bi arg)
+      force_tag_int (transl_unbox_int bi arg)
   | Pcvtbint(bi1, bi2) ->
       box_int bi2 (transl_unbox_int bi1 arg)
   | Pnegbint bi ->
