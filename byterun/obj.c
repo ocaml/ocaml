@@ -46,6 +46,8 @@ CAMLprim value caml_static_release_bytecode(value blk, value size)
 {
 #ifndef NATIVE_CODE
   caml_release_bytecode((code_t) blk, (asize_t) Long_val(size));
+#else
+  caml_failwith("Meta.static_release_bytecode impossible with native code");
 #endif
   return Val_unit;
 }
