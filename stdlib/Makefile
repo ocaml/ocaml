@@ -3,8 +3,10 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
+COMPFLAGS=-g
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
+OPTCOMPFLAGS=
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
@@ -46,7 +48,7 @@ pervasives.cmo: pervasives.ml
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.ml
 
 pervasives.cmx: pervasives.ml
-	$(CAMLOPT) $(COMPFLAGS) -nopervasives -c pervasives.ml
+	$(CAMLOPT) $(OPTCOMPFLAGS) -nopervasives -c pervasives.ml
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx
 
@@ -57,7 +59,7 @@ pervasives.cmx: pervasives.ml
 	$(CAMLC) $(COMPFLAGS) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) -c $<
+	$(CAMLOPT) $(OPTCOMPFLAGS) -c $<
 
 $(OBJS) std_exit.cmo: pervasives.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
