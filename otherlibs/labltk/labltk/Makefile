@@ -22,7 +22,7 @@ clean:
 
 install: $(LABLTKOBJS)
 	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	cp $(LABLTKOBJS:.cmo=.cmi) $(WIDGETOBJS:.cmo=.mli) $(LABLTKDIR)
+	cp $(LABLTKOBJS:.cmo=.cmi) $(WIDGETOBJS:.cmo=.mli) labltk.mli $(LABLTKDIR)
 	chmod 644 $(LABLTKDIR)/*.cmi
 
 installopt: $(LABLTKOBJSX)
