@@ -1,159 +1,168 @@
-let text = "                          OCamlBrowser Help
-
-USE
-   OCamlBrowser is composed of three tools, the Viewer, to walk around
-   compiled modules, the Editor, which allows one to
-   edit/typecheck/analyse .mli and .ml files, and the Shell, to run an
-   OCaml subshell. You may only have one instance of Editor and
-   Viewer, but you may use several subshells.
-
-   As with the compiler, you may specify a different path for the
-   standard library by setting CAMLLIB. You may also extend the
-   initial load path (only standard library by default) by using the
-   -I command line option, or set various other options (see -help).
-
-   If you prefered the old GUI, it is still available with the option
-   -oldui, otherwise you get a new Smalltalkish user interface.
-
-1) Viewer
-
- Menus
-
-   File - Open and File - Editor give access to the editor.
-
-   File - Shell opens an OCaml shell.
-
-   View - Show all defs  displays all the interface of the currently
-        selected module
-   View - Search entry  shows/hides the search entry at the top of the
-        window
-
-   Modules - Path editor changes the load path.
-        Pressing [Add to path] or Insert key adds selected directories
-        to the load path.
-        Pressing [Remove from path] or Delete key removes selected
-        paths from the load path.
-   Modules - Reset cache rescans the load path and resets the module
-        cache. Do it if you recompile some interface, or change the load
-        path in a conflictual way.
-
-   Modules - Search symbol allows to search a symbol either by its
-        name, like the bottom line of the viewer, or, more
-        interestingly, by its type. Exact type searches for a type
-        with exactly the same information as the pattern (variables
-        match only variables), included type allows to give only
-        partial information: the actual type may take more arguments
-        and return more results, and variables in the pattern match
-        anything. In both cases, argument and tuple order is
-        irrelevant, and unlabeled arguments in the pattern match
-        any label.
-
- Search entry
-
-   The entry line at the top allows one to search for an identifier
-   in all modules, either by its name (? and * patterns allowed) or by
-   its type. When search by type is used, it is done in inclusion mode
-   (cf. Modules - search symbol)
-
-   The Close all button at the bottom is there to dismiss the windows
-   created by the Detach button. By double-clicking on it you will
-   quit the browser.
-
- Module browsing
-
-   You select a module in the leftmost box by either cliking on it or
-   pressing return when it is selected. Fast access is available in
-   all boxes pressing the first few letter of the desired
-   name. Double-clicking / double-return displays the whole signature
-   for the module.
-
-   Defined identifiers inside the module are displayed in a box to the
-   right of the previous one. If you click on one, this will either
-   display its contents in another box (if this is a sub-module) or
-   display the signature for this identifier below.
-
-   Signatures are clickable. Double clicking with the left mouse
-   button on an identifier in a signature brings you to its signature.
-   A single click on the right button pops up a menu displaying the
-   type declaration for the selected identifier. Its title, when
-   selectable, also brings you to its signature.
-
-   At the bottom, a series of buttons, depending on the context.
-   * Detach copies the currently displayed signature in a new window,
-     to keep it. You can discard these windows with Close all.
-   * Impl and Intf bring you to the implementation or interface of
-     the currently displayed signature, if it is available.
-
-   C-s opens a text search dialog for the displayed signature.
-
-2) Editor
-   You can edit files with it, but there is no auto-save nor undo at
-   the moment. Otherwise you can use it as a browser, making
-   occasional corrections.
-
-   The Edit menu contains commands for jump (C-g), search (C-s), and
-   sending the current selection to a sub-shell (M-x). For this last
-   option, you may choose the shell via a dialog.
-
-   Essential function are in the Compiler menu.
-
-   Preferences opens a dialog to set internals of the editor and
-   type checker.
-
-   Lex (M-l) adds colors according to lexical categories.
-
-   Typecheck (M-t) verifies typing, and memorizes it to let one see an
-   expression's type by double-clicking on it. This is also valid for
-   interfaces. If an error occurs, the part of the interface preceding
-   the error is computed.
-
-   After typechecking, pressing the right button pops up a menu giving
-   the type of the pointed expression, and eventually allowing to
-   follow some links.
-
-   Clear errors dismisses type checker error messages and warnings.
-
-   Signature shows the signature of the current file.
-
-3) Shell
-   When you create a shell, a dialog is presented to you, letting you
-   choose which command you want to run, and the title of the shell
-   (to choose it in the Editor).
-
-   You may change the default command by setting the OLABL environment
-   variable.
-
-   The executed subshell is given the current load path.
-   File: use a source file or load a bytecode file.
-     You may also import the browser's path into the subprocess.
-   History: M-p and M-n browse up and down.
-   Signal: C-c interrupts and you can kill the subprocess.
-
-BUGS
-
-* This not really a bug, but OCamlBrowser is a huge memory consumer.
-  Go and buy some.
-
-* When you quit the editor and some file was modified, a dialogue is
-  displayed asking wether you want to really quit or not. But 1) if
-  you quit directly from the viewer, there is no dialogue at all, and
-  2) if you close from the window manager, the dialogue is displayed,
-  but you cannot cancel the destruction... Beware.
-
-* When you run it through xon, the shell hangs at the first error. But
-  its ok if you start ocamlbrowser from a remote shell...
-
-TODO
-
-* Complete cross-references.
-
-* Power up editor.
-
-* Add support for the debugger.
-
-* Make this a real programming environment, both for beginners an
-  experimented users.
-
-
-Bug reports and comments to <garrigue@kurims.kyoto-u.ac.jp>
+let text = "\
+\032                         OCamlBrowser Help\n\
+\n\
+USE\n\
+\n\
+\032  OCamlBrowser is composed of three tools, the Editor, which allows\n\
+\032  one to edit/typecheck/analyse .mli and .ml files, the Viewer, to\n\
+\032  walk around compiled modules, and the Shell, to run an OCaml\n\
+\032  subshell. You may only have one instance of Editor and Viewer, but\n\
+\032  you may use several subshells.\n\
+\n\
+\032  As with the compiler, you may specify a different path for the\n\
+\032  standard library by setting OCAMLLIB. You may also extend the\n\
+\032  initial load path (only standard library by default) by using the\n\
+\032  -I command line option. The -nolabels, -rectypes and -w options are\n\
+\032  also accepted, and inherited by subshells.\n\
+\032  The -oldui options selects the old multi-window interface. The\n\
+\032  default is now more like Smalltalk's class browser.\n\
+\n\
+1) Viewer\n\
+\n\
+\032  This is the first window you get when you start OCamlBrowser.  It\n\
+\032  displays a search window, and the list of modules in the load path.\n\
+\032  At the top a row of menus.\n\
+\n\
+\032  File - Open and File - Editor give access to the editor.\n\
+\n\
+\032  File - Shell opens an OCaml shell.\n\
+\n\
+\032  View - Show all defs  displays the signature of the currently\n\
+\032  selected module.\n\
+\n\
+\032  View - Search entry  shows/hides the search entry just\n\
+\032  below the menu bar.\n\
+\n\
+\032  Modules - Path editor changes the load path.\n\
+\032       Pressing [Add to path] or Insert key adds selected directories\n\
+\032       to the load path.\n\
+\032       Pressing [Remove from path] or Delete key removes selected\n\
+\032       paths from the load path.\n\
+\n\
+\032  Modules - Reset cache rescans the load path and resets the module\n\
+\032  cache. Do it if you recompile some interface, or change the load\n\
+\032  path in a conflictual way.\n\
+\n\
+\032  Modules - Search symbol allows to search a symbol either by its\n\
+\032  name, like the bottom line of the viewer, or, more interestingly,\n\
+\032  by its type. Exact type searches for a type with exactly the same\n\
+\032  information as the pattern (variables match only variables),\n\
+\032  included type allows to give only partial information: the actual\n\
+\032  type may take more arguments and return more results, and variables\n\
+\032  in the pattern match anything. In both cases, argument and tuple\n\
+\032  order is irrelevant (*), and unlabeled arguments in the pattern\n\
+\032  match any label.\n\
+\n\
+\032  (*) To avoid combinatorial explosion of the search space, optional\n\
+\032  arguments in the actual type are ignored if (1) there are to many\n\
+\032  of them, and (2) they do not appear explicitly in the pattern.\n\
+\n\
+\032  The Search entry just below the menu bar allows one to search for\n\
+\032  an identifier in all modules, either by its name (? and * patterns\n\
+\032  allowed) or by its type (if there is an arrow in the input). When\n\
+\032  search by type is used, it is done in inclusion mode (cf. Modules -\n\
+\032  search symbol)\n\
+\n\
+\032  The Close all button is there to dismiss the windows created\n\
+\032  by the Detach button. By double-clicking on it you will quit the\n\
+\032  browser.\n\
+\n\
+\n\
+2) Module browsing\n\
+\n\
+\032  You select a module in the leftmost box by either cliking on it or\n\
+\032  pressing return when it is selected. Fast access is available in\n\
+\032  all boxes pressing the first few letter of the desired name.\n\
+\032  Double-clicking / double-return displays the whole signature for\n\
+\032  the module.\n\
+\n\
+\032  Defined identifiers inside the module are displayed in a box to the\n\
+\032  right of the previous one. If you click on one, this will either\n\
+\032  display its contents in another box (if this is a sub-module) or\n\
+\032  display the signature for this identifier below.\n\
+\n\
+\032  Signatures are clickable. Double clicking with the left mouse\n\
+\032  button on an identifier in a signature brings you to its signature,\n\
+\032  inside its module box.\n\
+\032  A single click on the right button pops up a menu displaying the\n\
+\032  type declaration for the selected identifier. Its title, when\n\
+\032  selectable, also brings you to its signature.\n\
+\n\
+\032  At the bottom, a series of buttons, depending on the context.\n\
+\032  * Detach copies the currently displayed signature in a new window,\n\
+\032    to keep it.\n\
+\032  * Impl and Intf bring you to the implementation or interface of\n\
+\032    the currently displayed signature, if it is available.\n\
+\n\
+\032  C-s opens a text search dialog for the displayed signature.\n\
+\n\
+3) File editor\n\
+\n\
+\032  You can edit files with it, but there is no auto-save nor undo at\n\
+\032  the moment. Otherwise you can use it as a browser, making\n\
+\032  occasional corrections.\n\
+\n\
+\032  The Edit menu contains commands for jump (C-g), search (C-s), and\n\
+\032  sending the current selection to a sub-shell (M-x). For this last\n\
+\032  option, you may choose the shell via a dialog.\n\
+\n\
+\032  Essential function are in the Compiler menu.\n\
+\n\
+\032  Preferences opens a dialog to set internals of the editor and\n\
+\032  type checker.\n\
+\n\
+\032  Lex (M-l) adds colors according to lexical categories.\n\
+\n\
+\032  Typecheck (M-t) verifies typing, and memorizes it to let one see an\n\
+\032  expression's type by double-clicking on it. This is also valid for\n\
+\032  interfaces. If an error occurs, the part of the interface preceding\n\
+\032  the error is computed.\n\
+\n\
+\032  After typechecking, pressing the right button pops up a menu giving\n\
+\032  the type of the pointed expression, and eventually allowing to\n\
+\032  follow some links.\n\
+\n\
+\032  Clear errors dismisses type checker error messages and warnings.\n\
+\n\
+\032  Signature shows the signature of the current file.\n\
+\n\
+4) Shell\n\
+\n\
+\032  When you create a shell, a dialog is presented to you, letting you\n\
+\032  choose which command you want to run, and the title of the shell\n\
+\032  (to choose it in the Editor).\n\
+\n\
+\032  You may change the default command by setting the OLABL environment\n\
+\032  variable.\n\
+\n\
+\032  The executed subshell is given the current load path.\n\
+\032  File: use a source file or load a bytecode file.\n\
+\032    You may also import the browser's path into the subprocess.\n\
+\032  History: M-p and M-n browse up and down.\n\
+\032  Signal: C-c interrupts and you can kill the subprocess.\n\
+\n\
+BUGS\n\
+\n\
+* When you quit the editor and some file was modified, a dialogue is\n\
+\032 displayed asking wether you want to really quit or not. But 1) if\n\
+\032 you quit directly from the viewer, there is no dialogue at all, and\n\
+\032 2) if you close from the window manager, the dialogue is displayed,\n\
+\032 but you cannot cancel the destruction... Beware.\n\
+\n\
+* When you run it through xon, the shell hangs at the first error. But\n\
+\032 its ok if you start ocamlbrowser from a remote shell...\n\
+\n\
+TODO\n\
+\n\
+* Complete cross-references.\n\
+\n\
+* Power up editor.\n\
+\n\
+* Add support for the debugger.\n\
+\n\
+* Make this a real programming environment, both for beginners an\n\
+\032 experimented users.\n\
+\n\
+\n\
+Bug reports and comments to <garrigue@kurims.kyoto-u.ac.jp>\n\
 ";;
