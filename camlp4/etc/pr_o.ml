@@ -1034,7 +1034,7 @@ pr_expr.pr_levels :=
               match eel_e with
               [ ([], <:expr< () >>) ->
                   [: `BEbox [: `S LR "if"; `expr e1 "" [: :]; `S LR "then" :];
-                     `expr1 e2 dg k :]
+                     `expr1 e2 dg k; `S LR "else"; `S LR "()" :]
               | (eel, <:expr< () >>) ->
                   let (eel, (e1f, e2f)) =
                     let r = List.rev eel in
