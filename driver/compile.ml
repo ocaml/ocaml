@@ -53,6 +53,14 @@ let print_if flag printer arg =
   if !flag then begin printer arg; print_newline() end;
   arg
 
+let write_lambda prefixname lam =
+  if !Clflags.write_lambda then begin
+    let oc = open_out_bin (prefixname ^ ".cmx") in
+    output_value oc lam;
+    close_out oc
+  end;
+  lam
+
 let implementation sourcefile =
   let prefixname = Filename.chop_suffix sourcefile ".ml" in
   let modulename = capitalize(Filename.basename prefixname) in
@@ -78,8 +86,9 @@ let implementation sourcefile =
     Emitcode.to_file oc modulename crc
       (print_if Clflags.dump_instr Printinstr.instrlist
         (Codegen.compile_implementation
-          (print_if Clflags.dump_lambda Printlambda.lambda
-            (Translmod.transl_implementation modulename str coercion))));
+          (write_lambda prefixname
+            (print_if Clflags.dump_lambda Printlambda.lambda
+              (Translmod.transl_implementation modulename str coercion)))));
     close_in ic;
     close_out oc
   with x ->
