@@ -862,17 +862,21 @@ EXTEND
     [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> (t1, t2) ] ]
   ;
   type_kind:
-    [ [ test_constr_decl; pf = OPT "private"; OPT "|";
-        cdl = LIST1 constructor_declaration SEP "|" ->
-          if o2b pf then <:ctyp< private [ $list:cdl$ ] >>
-          else <:ctyp< [ $list:cdl$ ] >>
+    [ [ "private"; "{"; ldl = label_declarations; "}" ->
+          <:ctyp< private { $list:ldl$ } >>
+      | "private"; OPT "|"; 
+        cdl = LIST1 constructor_declaration SEP "|" -> <:ctyp< private [ $list:cdl$ ] >>
+      | test_constr_decl; OPT "|";
+        cdl = LIST1 constructor_declaration SEP "|" -> <:ctyp< [ $list:cdl$ ] >>
       | t = ctyp -> <:ctyp< $t$ >>
+      | t = ctyp; "="; "private"; "{"; ldl = label_declarations; "}" ->
+          <:ctyp< $t$ == private { $list:ldl$ } >>
       | t = ctyp; "="; "{"; ldl = label_declarations; "}" ->
           <:ctyp< $t$ == { $list:ldl$ } >>
+      | t = ctyp; "="; "private"; OPT "|"; cdl = LIST1 constructor_declaration SEP "|" ->
+          <:ctyp< $t$ == private [ $list:cdl$ ] >>
       | t = ctyp; "="; OPT "|"; cdl = LIST1 constructor_declaration SEP "|" ->
           <:ctyp< $t$ == [ $list:cdl$ ] >>
-      | "private"; "{"; ldl = label_declarations; "}" ->
-          <:ctyp< private { $list:ldl$ } >>
       | "{"; ldl = label_declarations; "}" ->
           <:ctyp< { $list:ldl$ } >> ] ]
   ;
