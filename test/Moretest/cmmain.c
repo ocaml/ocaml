@@ -9,7 +9,7 @@ extern char * format_result(int n);
 int main(int argc, char ** argv)
 {
   printf("Initializing Caml code...\n");
-#ifdef BYTECODE_LINKED
+#ifdef NO_BYTECODE_FILE
   caml_startup(argv);
 #else
   caml_main(argv);

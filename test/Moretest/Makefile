@@ -21,15 +21,15 @@ multdef.out: multdef.cmx usemultdef.cmx
 	$(CAMLOPT) -o multdef.out multdef.cmx usemultdef.cmx
 
 cm.byt:
-	ocamlc -custom -o cm.byt cmcaml.ml cmstub.c cmmain.c
+	$(CAMLC) -custom -o cm.byt cmcaml.ml cmstub.c cmmain.c
 
 cmlinked.out: cmcaml.cmo
-	ocamlc -output-obj -o cm.o cmcaml.ml
-	$(BYTECC) -g -o cmlinked.out cm.o -I$(LIBDIR) cmstub.c -DBYTECODE_LINKED cmmain.c -L$(LIBDIR) -lcamlrun $(CCLIBS)
+	$(CAMLC) -output-obj -o cm.o cmcaml.ml
+	$(BYTECC) -g -o cmlinked.out cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../byterun/libcamlrun.a $(CCLIBS)
 
 cm.out:
-	ocamlopt -output-obj -o cm.o cmcaml.ml
-	$(NATIVECC) -g -o cm.out cm.o -I$(LIBDIR) cmstub.c cmmain.c -L$(LIBDIR) -lasmrun $(CCLIBS)
+	$(CAMLOPT) -output-obj -o cm.o cmcaml.ml
+	$(NATIVECC) -g -o cm.out cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../asmrun/libasmrun.a $(CCLIBS)
 
 # Common rules
 
