@@ -156,6 +156,11 @@ let check_recursive_abbrev env (name, sdecl) (id, decl) =
 let transl_type_decl env name_sdecl_list =
   (* Enter the types as abstract *)
   let (id_list, temp_env) = enter_types env name_sdecl_list in
+  (* Since we've introduced fresh idents, make sure the definition level
+     is at least the binding time of these events. Otherwise, passing
+     one of the recursively-defined type constrs as argument to an
+     abbreviation may fail. *)
+  Ctype.init_def(Ident.current_time());
   (* Translate each declaration *)
   let decls =
     List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
