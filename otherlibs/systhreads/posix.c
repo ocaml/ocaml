@@ -319,14 +319,12 @@ value caml_thread_initialize(value unit)   /* ML */
     channel_mutex_unlock = caml_io_mutex_unlock;
     channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
     /* Fork the tick thread */
-#if 0
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     caml_pthread_check(
         pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL),
         "Thread.init");
     pthread_detach(tick_pthread);
-#endif
   End_roots();
   return Val_unit;
 }
