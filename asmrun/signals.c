@@ -85,7 +85,13 @@ void execute_signal(int signal_number, int in_signal_handler)
 }
 
 /* This routine is the common entry point for garbage collection
-   and signal handling */
+   and signal handling.  It can trigger a callback to Caml code.
+   With system threads, this callback can cause a context switch.
+   Hence [garbage_collection] must not be called from regular C code
+   (e.g. the [alloc] function) because the context of the call
+   (e.g. [intern_val]) may not allow context switching.
+   Only generated assembly code can call [garbage_collection],
+   via the caml_call_gc assembly stubs.  */
 
 void garbage_collection(void)
 {
