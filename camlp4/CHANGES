@@ -1,6 +1,9 @@
 Camlp4 Version 3.04+5
 ---------------------
 
+- [05 Feb 02] pr_r.cmo: now the option -ncip (no comments in phrases) is
+  by default, because its behaviour is not 100% sure. An option -cip has
+  been added to set it.
 - [03 Feb 02] Added function Stdpp.line_of_loc returning the line and
   columns positions from a character location and a file.
 - [01 Feb 02] Fixed bug in token.ml: the location function provided by

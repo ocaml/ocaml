@@ -1547,7 +1547,7 @@ value output_string_eval oc s =
 
 value maxl = ref 78;
 value sep = Pcaml.inter_phrases;
-value ncip = ref False;
+value ncip = ref True;
 value type_comm = ref False;
 
 value input_source ic dont_skip_to_next_bol len =
@@ -1730,7 +1730,11 @@ Pcaml.add_option "-sep" (Arg.String (fun x -> sep.val := Some x))
 Pcaml.add_option "-no_where" (Arg.Clear gen_where)
   "    Dont generate \"where\" statements";
 
-Pcaml.add_option "-ncip" (Arg.Set ncip) "        No comments in phrases.";
+Pcaml.add_option "-cip" (Arg.Clear ncip)
+   "         Add comments in phrases.";
+
+Pcaml.add_option "-ncip" (Arg.Set ncip)
+   "        No comments in phrases (default).";
 
 Pcaml.add_option "-old_seq" (Arg.Set old_sequences)
   "     Pretty print with old syntax for sequences.";
