@@ -98,18 +98,14 @@ let add_const_unit = function
 (**** Auxiliary for compiling "let rec" ****)
 
 let rec size_of_lambda = function
-    Lfunction(kind, params, body) as funct ->
+  | Lfunction(kind, params, body) as funct ->
       1 + IdentSet.cardinal(free_variables funct)
-  | Lprim(Pmakeblock(tag, mut), args) ->
-      List.length args
-  | Lprim(Pmakearray kind, args) ->
-      List.length args
-  | Llet(str, id, arg, body) ->
-      size_of_lambda body
-  | Lletrec(bindings, body) ->
-      size_of_lambda body
-  | _ ->
-      fatal_error "Bytegen.size_of_lambda"
+  | Lprim(Pmakeblock(tag, mut), args) -> List.length args
+  | Lprim(Pmakearray kind, args) -> List.length args
+  | Llet(str, id, arg, body) -> size_of_lambda body
+  | Lletrec(bindings, body) -> size_of_lambda body
+  | Levent (lam, _) -> size_of_lambda lam
+  | _ -> fatal_error "Bytegen.size_of_lambda"
 
 (**** Compilation of a lambda expression ****)
 

@@ -260,6 +260,7 @@ let check_recursive_lambda idlist lam =
     | Llet(str, id, arg, body) -> check arg & check_top body
     | Lletrec(bindings, body) ->
         List.for_all (fun (id, arg) -> check arg) bindings & check_top body
+    | Levent (lam, _) -> check_top lam
     | _ -> false
   and check = function
       Lvar _ -> true
@@ -270,6 +271,7 @@ let check_recursive_lambda idlist lam =
         List.for_all (fun (id, arg) -> check arg) bindings & check body
     | Lprim(Pmakeblock(tag, mut), args) -> List.for_all check args
     | Lprim(Pmakearray kind, args) -> List.for_all check args
+    | Levent (lam, _) -> check lam
     | lam ->
         let fv = free_variables lam in
         List.for_all (fun id -> not(IdentSet.mem id fv)) idlist
