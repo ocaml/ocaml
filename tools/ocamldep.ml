@@ -23,10 +23,22 @@ open Parsetree
 let load_path = ref [""]
 
 let native_only = ref false
+let force_slash = ref false
+
+let find_file name =
+  let filename = Misc.find_in_path_uncap !load_path name in
+  if !force_slash then begin
+    let filename = String.copy filename in
+    for i = 0 to String.length filename - 1 do
+      if filename.[i] = '\\' then filename.[i] <- '/'
+    done;
+    filename
+  end else
+    filename
 
 let find_dependency modname (byt_deps, opt_deps) =
   try
-    let filename = Misc.find_in_path_uncap !load_path (modname ^ ".mli") in
+    let filename = find_file (modname ^ ".mli") in
     let basename = Filename.chop_suffix filename ".mli" in
     ((basename ^ ".cmi") :: byt_deps,
      (if Sys.file_exists (basename ^ ".ml")
@@ -34,7 +46,7 @@ let find_dependency modname (byt_deps, opt_deps) =
       else basename ^ ".cmi") :: opt_deps)
   with Not_found ->
   try
-    let filename = Misc.find_in_path_uncap !load_path (modname ^ ".ml") in
+    let filename = find_file (modname ^ ".ml") in
     let basename = Filename.chop_suffix filename ".ml" in
     ((basename ^ (if !native_only then ".cmx" else ".cmo")) :: byt_deps,
      (basename ^ ".cmx") :: opt_deps)
@@ -190,6 +202,8 @@ let _ =
      "-native", Arg.Set native_only,
        "  Generate dependencies for a pure native-code project \
        (no .cmo files)";
+     "-slash", Arg.Set force_slash,
+       "  (for Windows) Use forward slash / instead of backslash \\ in file paths";
      "-pp", Arg.String(fun s -> preprocessor := Some s),
        "<command>  Pipe sources through preprocessor <command>"
     ] file_dependencies usage;
