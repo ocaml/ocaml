@@ -1311,9 +1311,7 @@ let rec le_pat p q =
   match (p.pat_desc, q.pat_desc) with
   | (Tpat_var _|Tpat_any),_ -> true
   | Tpat_alias(p,_), _ -> le_pat p q
-  | Tpat_or (p1, p2, _), _ ->  le_pat p1 q || le_pat p2 q    
   | _, Tpat_alias(q,_) -> le_pat p q
-  | _, Tpat_or(q1,q2,_) -> le_pat p q1 && le_pat p q2
   | Tpat_constant(c1), Tpat_constant(c2) -> c1 = c2
   | Tpat_construct(c1,ps), Tpat_construct(c2,qs) ->
       c1.cstr_tag = c2.cstr_tag && le_pats ps qs
@@ -1329,14 +1327,7 @@ let rec le_pat p q =
   | Tpat_array(ps), Tpat_array(qs) ->
       List.length ps = List.length qs && le_pats ps qs
 (* In all other cases, enumeration is performed *)
-  | _,(Tpat_var _|Tpat_any)  -> not (satisfiable [[p]] [q])
-(* Cannot occur, by typing *)
-  | (Tpat_array _|Tpat_record _|Tpat_variant (_, _, _)|
-    Tpat_construct (_, _)|Tpat_tuple _| Tpat_constant _),
-      (Tpat_array _|Tpat_record _|Tpat_variant (_, _, _)|
-      Tpat_construct (_, _)|Tpat_tuple _| Tpat_constant _)
-    -> assert false
-
+  | _,_  -> not (satisfiable [[p]] [q])
         
 and le_pats ps qs =
   match ps,qs with
