@@ -83,17 +83,19 @@ let substitute_first expr repl_fun text =
     text
 
 let global_substitute expr repl_fun text =
-  let rec replace start =
+  let rec replace start last_was_empty =
     try
-      let pos = search_forward expr text start in
+      let startpos = if last_was_empty then start + 1 else start in
+      if startpos > String.length text then raise Not_found;
+      let pos = search_forward expr text startpos in
       let end_pos = match_end() in
       let repl_text = repl_fun text in
       String.sub text start (pos-start) ::
       repl_text ::
-      replace end_pos
+      replace end_pos (end_pos = pos)
     with Not_found ->
       [string_after text start] in
-  String.concat "" (replace 0)
+  String.concat "" (replace 0 false)
 
 let global_replace expr repl text =
   global_substitute expr (replacement_text repl) text
