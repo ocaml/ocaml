@@ -63,7 +63,7 @@ val expand_abbrev:
 	int -> type_expr
 	(* Expand an abbreviation *)
 val full_expand: Env.t -> type_expr -> type_expr
-val expand_root: Env.t -> type_expr -> type_expr
+val expand_head: Env.t -> type_expr -> type_expr
 val occur: Env.t -> type_expr -> type_expr -> unit
         (* [occur env var ty] Raise [Unify] if [var] occurs in [ty] *)
 val unify: Env.t -> type_expr -> type_expr -> unit
@@ -86,7 +86,7 @@ val subtype : Env.t -> type_expr -> type_expr -> unit -> unit
            It accumulates the constraints the type variables must
            enforce and returns a function that inforce this
            constraints. *)
-val closed_schema: type_expr -> bool
+val closed_schema: bool -> type_expr -> bool
 type closed_schema_result = Var of type_expr | Row_var of type_expr
 val closed_schema_verbose: type_expr -> closed_schema_result option
         (* Check whether the given type scheme contains no non-generic
@@ -109,8 +109,6 @@ val remove_object_name: type_expr -> unit
 val correct_abbrev: Env.t -> Ident.t -> type_expr list -> type_expr -> unit
 val unalias: type_expr -> type_expr
 val unroll_abbrev: Ident.t -> type_expr list -> type_expr -> type_expr
-val is_generic: type_expr -> bool
-        (* Test whether the given type variable is generic *)
 val arity: type_expr -> int
         (* Return the arity (as for curried functions) of the given type. *)
 val none: type_expr
@@ -120,5 +118,4 @@ exception Unify of (type_expr * type_expr) list
 exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 exception Cannot_expand
-exception Nonlinear_abbrev
 exception Recursive_abbrev
