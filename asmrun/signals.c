@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include "alloc.h"
+#include "memory.h"
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -22,7 +23,7 @@
 
 static Volatile int async_signal_mode = 0;
 Volatile int pending_signal = 0;
-value signal_handlers;
+value signal_handlers = 0;
 char * young_limit;
 extern char * caml_last_return_address;
 
@@ -216,6 +217,16 @@ value install_signal_handler(signal_number, action) /* ML */
     act = SIG_IGN;
     break;
   default:                      /* Signal_handle */
+    if (signal_handlers == 0) {
+      int i;
+      Push_roots(r, 1);
+      r[0] = action;
+      signal_handlers = alloc_tuple(NSIG);
+      action = r[0];
+      Pop_roots();
+      for (i = 0; i < NSIG; i++) Field(signal_handlers, i) = Val_int(0);
+      register_global_root(&signal_handlers);
+    }
     modify(&Field(signal_handlers, sig), Field(action, 0));
     act = handle_signal;
     break;
@@ -273,7 +284,6 @@ static void trap_handler(sig, info, context)
 
 void init_signals()
 {
-  int i;
 #if defined(TARGET_sparc) && defined(SYS_sunos)
   signal(SIGILL, trap_handler);
 #endif
@@ -285,8 +295,5 @@ void init_signals()
   sigaction(SIGILL, &act, NULL);
 #endif
   young_limit = young_start;
-  signal_handlers = alloc_tuple(NSIG);
-  for (i = 0; i < NSIG; i++) Field(signal_handlers, i) = Val_int(0);
-  register_global_root(&signal_handlers);
 }
 

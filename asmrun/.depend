@@ -93,9 +93,11 @@ roots.o: roots.c ../byterun/memory.h ../byterun/config.h \
  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h \
  stack.h
-signals.o: signals.c ../byterun/misc.h ../byterun/config.h \
- ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h ../byterun/fail.h ../byterun/signals.h
+signals.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
+ ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
+ ../byterun/mlvalues.h ../byterun/memory.h ../byterun/gc.h \
+ ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
+ ../byterun/fail.h ../byterun/signals.h
 str.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h
@@ -203,9 +205,11 @@ roots.d.o: roots.c ../byterun/memory.h ../byterun/config.h \
  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
  ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h \
  stack.h
-signals.d.o: signals.c ../byterun/misc.h ../byterun/config.h \
- ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h ../byterun/fail.h ../byterun/signals.h
+signals.d.o: signals.c ../byterun/alloc.h ../byterun/misc.h \
+ ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
+ ../byterun/mlvalues.h ../byterun/memory.h ../byterun/gc.h \
+ ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
+ ../byterun/fail.h ../byterun/signals.h
 str.d.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h

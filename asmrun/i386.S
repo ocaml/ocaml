@@ -110,7 +110,7 @@ L105:
     /* Save desired size */
         pushl   %eax
     /* Call the garbage collector */
-        call    G(minor_collection)
+        call    G(garbage_collection)
     /* Restore all regs used by the code generator */
         movl    G(gc_entry_regs) + 4, %ebx
         movl    G(gc_entry_regs) + 8, %ecx
