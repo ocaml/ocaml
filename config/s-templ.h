@@ -72,6 +72,11 @@
 
 /* Define HAS_SOCKETS if you have BSD sockets. */
 
+#define HAS_SOCKLEN_T
+
+/* Define HAS_SOCKLEN_T if the type socklen_t is defined in
+   /usr/include/sys/socket.h. */
+
 #define HAS_UNISTD
 
 /* Define HAS_UNISTD if you have /usr/include/unistd.h. */

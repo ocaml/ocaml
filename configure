@@ -481,6 +481,11 @@ elif sh ./hasgot -lnsl -lsocket socket socketpair bind listen accept connect; th
   has_sockets=yes
 fi
 
+if sh ./hasgot -i sys/socket.h -t socklen_t; then
+  echo "socklen_t is defined in <sys/socket.h>"
+  echo "#define HAS_SOCKLEN_T" >> s.h
+fi
+
 if sh ./hasgot -i unistd.h; then
   echo "unistd.h found."
   echo "#define HAS_UNISTD" >> s.h
