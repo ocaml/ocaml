@@ -617,8 +617,13 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
     let self_methods =
       List.fold_right
         (fun (lab,kind,ty) rem ->
-          if lab = dummy_method then rem else
-          Ctype.newty(Tfield(lab, Btype.copy_kind kind, ty, rem)))
+          if lab = dummy_method then
+	    (* allow public self and private self to be unified *)
+	    match Btype.field_kind_repr kind with
+	      Fvar r -> Btype.set_kind r Fabsent; rem
+	    | _ -> rem
+	  else
+            Ctype.newty(Tfield(lab, Btype.copy_kind kind, ty, rem)))
         methods (Ctype.newty Tnil) in
     begin try Ctype.unify val_env public_self
         (Ctype.newty (Tobject(self_methods, ref None)))
