@@ -26,6 +26,7 @@ type error =
   | Inconsistent_implementation of string * string * string
   | Assembler_error of string
   | Linking_error
+  | Multiple_definition of string * string * string
 
 exception Error of error
 

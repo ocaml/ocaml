@@ -27,6 +27,7 @@ type error =
   | Inconsistent_implementation of string * string * string
   | Assembler_error of string
   | Linking_error
+  | Multiple_definition of string * string * string
 
 exception Error of error
 
@@ -64,7 +65,11 @@ let check_consistency file_name unit crc =
         Hashtbl.add crc_implementations name (file_name, crc)
       end)
     unit.ui_imports_cmx;
-  Hashtbl.add crc_implementations unit.ui_name (file_name, crc)
+  try
+    let (name, crc) = Hashtbl.find crc_implementations unit.ui_name in
+    raise (Error(Multiple_definition(unit.ui_name, file_name, name)))
+  with Not_found ->
+    Hashtbl.add crc_implementations unit.ui_name (file_name, crc)
 
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
@@ -338,3 +343,7 @@ let report_error ppf = function
       fprintf ppf "Error while assembling %s" file
   | Linking_error ->
       fprintf ppf "Error during linking"
+  | Multiple_definition(modname, file1, file2) ->
+      fprintf ppf
+        "@[<hov>Files %s@ and %s@ both define a module named %s@]"
+        file1 file2 modname
