@@ -431,14 +431,14 @@ let build_custom_runtime prim_name exec_name =
        (Printf.sprintf
           "%s -o %s %s %s %s %s %s -lcamlrun %s"
           !Clflags.c_linker
-          exec_name
+          (Filename.quote exec_name)
           (Clflags.std_include_flag "-I")
           (String.concat " " (List.rev !Clflags.ccopts))
           prim_name
-          (String.concat " "
+          (Ccomp.quote_files
             (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
                       !load_path))
-          (String.concat " " (List.rev !Clflags.ccobjs))
+          (Ccomp.quote_files (List.rev !Clflags.ccobjs))
           Config.bytecomp_c_libraries)
   | "Win32" ->
       let retcode =
@@ -446,13 +446,13 @@ let build_custom_runtime prim_name exec_name =
        (Printf.sprintf
           "%s /Fe%s %s %s %s %s %s %s"
           !Clflags.c_linker
-          exec_name
+          (Filename.quote exec_name)
           (Clflags.std_include_flag "-I")
           (String.concat " " (List.rev !Clflags.ccopts))
           prim_name
-          (String.concat " "
-                         (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
-          (Ccomp.expand_libname "-lcamlrun")
+          (Ccomp.quote_files
+            (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
+          (Filename.quote (Ccomp.expand_libname "-lcamlrun"))
           Config.bytecomp_c_libraries) in
       (* C compiler doesn't clean up after itself.  Note that the .obj
          file is created in the current working directory. *)
