@@ -28,7 +28,7 @@ Tools:
 - ocamlcp: was broken in 3.03 (Sys_error), fixed.
 
 Run-time system:
-- More work on  dynamic loading of the C part of mixed Caml/C libraries.
+- More work on dynamic loading of the C part of mixed Caml/C libraries.
 - On uncaught exception, flush output channels before printing exception
   message and backtrace.
 - Corrected several errors in exception backtraces.
@@ -60,9 +60,11 @@ Windows port:
 - Unix library: improved reporting of system error codes.
 - Fixed error in "globbing" of * and ? patterns on command line.
 
-Others:
-- Emacs mode : (** comments (doc comments for ocamldoc) are now in a 
-  different color from the (* or (*** comments.
+Emacs mode: small fixes; special color highlighting for ocamldoc comments.
+
+License: added special exception to the LGPL'ed code (libraries and
+  runtime system) allowing unrestricted linking, whether static or dynamic.
+
 
 Objective Caml 3.03 ALPHA:
 --------------------------
