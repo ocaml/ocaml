@@ -26,3 +26,9 @@ external size : t -> int = "%obj_size"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 external new_block : int -> int -> t = "obj_block"
+
+(* The following two functions are deprecated.  Use module [Marshal]
+   instead. *)
+
+val marshal : t -> string
+val unmarshal : string -> int -> t * int

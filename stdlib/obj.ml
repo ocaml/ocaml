@@ -24,3 +24,8 @@ external size : t -> int = "%obj_size"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 external new_block : int -> int -> t = "obj_block"
+
+let marshal (obj: t) =
+  Marshal.to_string obj []
+let unmarshal str pos =
+  (Marshal.from_string str pos, Marshal.total_size str pos)

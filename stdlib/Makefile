@@ -10,10 +10,11 @@ OPTCOMPFLAGS=
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
-  hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \
+  hashtbl.cmo sort.cmo filename.cmo marshal.cmo obj.cmo \
+  lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
   printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo marshal.cmo \
+  digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo marshal.cmo \
   lazy.cmo
 
 all: stdlib.cma std_exit.cmo camlheader
