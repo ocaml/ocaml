@@ -225,8 +225,6 @@ Grammar.extend
    and direction_flag : 'direction_flag Grammar.Entry.e =
      grammar_entry_create "direction_flag"
    and rec_flag : 'rec_flag Grammar.Entry.e = grammar_entry_create "rec_flag"
-   and as_opt : 'as_opt Grammar.Entry.e = grammar_entry_create "as_opt"
-   and when_opt : 'when_opt Grammar.Entry.e = grammar_entry_create "when_opt"
    and mutable_flag : 'mutable_flag Grammar.Entry.e =
      grammar_entry_create "mutable_flag"
    and dir_param : 'dir_param Grammar.Entry.e =
@@ -262,8 +260,6 @@ Grammar.extend
    and anti_str : 'anti_str Grammar.Entry.e = grammar_entry_create "anti_str"
    and anti_to : 'anti_to Grammar.Entry.e = grammar_entry_create "anti_to"
    and anti_uid : 'anti_uid Grammar.Entry.e = grammar_entry_create "anti_uid"
-   and anti_when : 'anti_when Grammar.Entry.e =
-     grammar_entry_create "anti_when"
    and class_declaration : 'class_declaration Grammar.Entry.e =
      grammar_entry_create "class_declaration"
    and class_fun_binding : 'class_fun_binding Grammar.Entry.e =
@@ -484,7 +480,7 @@ Grammar.extend
                 Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 5635, 5651))
+                  _ -> raise (Match_failure ("q_MLast.ml", 5624, 5640))
             in
             Node ("StExc", [Loc; c; tl; b]) :
             'str_item));
@@ -719,7 +715,7 @@ Grammar.extend
                 Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 7698, 7714))
+                  _ -> raise (Match_failure ("q_MLast.ml", 7687, 7703))
             in
             Node ("SgExc", [Loc; c; tl]) :
             'sig_item));
@@ -1533,13 +1529,38 @@ Grammar.extend
     Grammar.Entry.obj (match_case : 'match_case Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
-       Gramext.Snterm (Grammar.Entry.obj (as_opt : 'as_opt Grammar.Entry.e));
-       Gramext.Snterm
-         (Grammar.Entry.obj (when_opt : 'when_opt Grammar.Entry.e));
+       Gramext.srules
+         [[Gramext.Sopt
+             (Gramext.srules
+                [[Gramext.Stoken ("", "as");
+                  Gramext.Snterm
+                    (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e))],
+                 Gramext.action
+                   (fun (p : 'patt) _ (loc : int * int) -> (p : 'e__7))])],
+          Gramext.action
+            (fun (o : 'e__7 option) (loc : int * int) -> (Option o : 'anti));
+          [Gramext.Stoken ("ANTIQUOT", "as")],
+          Gramext.action
+            (fun (a : string) (loc : int * int) ->
+               (antiquot "as" loc a : 'anti))];
+       Gramext.srules
+         [[Gramext.Sopt
+             (Gramext.srules
+                [[Gramext.Stoken ("", "when");
+                  Gramext.Snterm
+                    (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
+                 Gramext.action
+                   (fun (e : 'expr) _ (loc : int * int) -> (e : 'e__8))])],
+          Gramext.action
+            (fun (o : 'e__8 option) (loc : int * int) -> (Option o : 'anti));
+          [Gramext.Stoken ("ANTIQUOT", "when")],
+          Gramext.action
+            (fun (a : string) (loc : int * int) ->
+               (antiquot "when" loc a : 'anti))];
        Gramext.Stoken ("", "->");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'expr) _ (w : 'when_opt) (aso : 'as_opt) (p : 'patt)
+        (fun (e : 'expr) _ (w : ast) (aso : ast) (p : 'patt)
            (loc : int * int) ->
            (let p =
               match aso with
@@ -1554,10 +1575,10 @@ Grammar.extend
      [[Gramext.Snterm
          (Grammar.Entry.obj
             (patt_label_ident : 'patt_label_ident Grammar.Entry.e));
-       Gramext.Stoken ("", "=");
-       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
+       Gramext.Snterm
+         (Grammar.Entry.obj (fun_binding : 'fun_binding Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'expr) _ (i : 'patt_label_ident) (loc : int * int) ->
+        (fun (e : 'fun_binding) (i : 'patt_label_ident) (loc : int * int) ->
            (Tuple [i; e] : 'label_expr))]];
     Grammar.Entry.obj (expr_ident : 'expr_ident Grammar.Entry.e), None,
     [None, Some Gramext.RightA,
@@ -1660,10 +1681,10 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
              Gramext.action
-               (fun (e : 'expr) _ (loc : int * int) -> (e : 'e__8))]);
+               (fun (e : 'expr) _ (loc : int * int) -> (e : 'e__10))]);
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (e : 'e__8 option) (t : 'ctyp) _ (p : 'patt) _ _ (i : 'lident)
+        (fun _ (e : 'e__10 option) (t : 'ctyp) _ (p : 'patt) _ _ (i : 'lident)
            _ (loc : int * int) ->
            (let p = Node ("PaTyc", [Loc; p; t]) in
             Node ("PaOlb", [Loc; i; p; Option e]) :
@@ -1677,10 +1698,10 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
              Gramext.action
-               (fun (e : 'expr) _ (loc : int * int) -> (e : 'e__7))]);
+               (fun (e : 'expr) _ (loc : int * int) -> (e : 'e__9))]);
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (e : 'e__7 option) (p : 'patt) _ _ (i : 'lident) _
+        (fun _ (e : 'e__9 option) (p : 'patt) _ _ (i : 'lident) _
            (loc : int * int) ->
            (Node ("PaOlb", [Loc; i; p; Option e]) : 'patt));
       [Gramext.Stoken ("", "~");
@@ -1782,10 +1803,10 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e))],
              Gramext.action
-               (fun (p : 'patt) _ (loc : int * int) -> (p : 'e__9))]);
+               (fun (p : 'patt) _ (loc : int * int) -> (p : 'e__11))]);
        Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun _ (last : 'e__9 option) (pl : 'patt list) _ (loc : int * int) ->
+        (fun _ (last : 'e__11 option) (pl : 'patt list) _ (loc : int * int) ->
            (mklistpat last pl : 'patt));
       [Gramext.Stoken ("", "["); Gramext.Stoken ("", "]")],
       Gramext.action
@@ -2391,29 +2412,6 @@ Grammar.extend
          (Grammar.Entry.obj (anti_rec : 'anti_rec Grammar.Entry.e))],
       Gramext.action
         (fun (a : 'anti_rec) (loc : int * int) -> (a : 'rec_flag))]];
-    Grammar.Entry.obj (as_opt : 'as_opt Grammar.Entry.e), None,
-    [None, None,
-     [[], Gramext.action (fun (loc : int * int) -> (Option None : 'as_opt));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (anti_as : 'anti_as Grammar.Entry.e))],
-      Gramext.action (fun (a : 'anti_as) (loc : int * int) -> (a : 'as_opt));
-      [Gramext.Stoken ("", "as");
-       Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e))],
-      Gramext.action
-        (fun (p : 'patt) _ (loc : int * int) ->
-           (Option (Some p) : 'as_opt))]];
-    Grammar.Entry.obj (when_opt : 'when_opt Grammar.Entry.e), None,
-    [None, None,
-     [[], Gramext.action (fun (loc : int * int) -> (Option None : 'when_opt));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (anti_when : 'anti_when Grammar.Entry.e))],
-      Gramext.action
-        (fun (a : 'anti_when) (loc : int * int) -> (a : 'when_opt));
-      [Gramext.Stoken ("", "when");
-       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
-      Gramext.action
-        (fun (e : 'expr) _ (loc : int * int) ->
-           (Option (Some e) : 'when_opt))]];
     Grammar.Entry.obj (mutable_flag : 'mutable_flag Grammar.Entry.e), None,
     [None, None,
      [[],
@@ -2661,12 +2659,6 @@ Grammar.extend
       Gramext.action
         (fun (a : string) (loc : int * int) ->
            (antiquot "uid" loc a : 'anti_uid))]];
-    Grammar.Entry.obj (anti_when : 'anti_when Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Stoken ("ANTIQUOT", "when")],
-      Gramext.action
-        (fun (a : string) (loc : int * int) ->
-           (antiquot "when" loc a : 'anti_when))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.Level "top"),
     [None, None,
@@ -2678,9 +2670,9 @@ Grammar.extend
                     (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
                   Gramext.Stoken ("", ";")],
                  Gramext.action
-                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__12))])],
+                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__14))])],
           Gramext.action
-            (fun (l : 'e__12 list) (loc : int * int) -> (List l : 'anti));
+            (fun (l : 'e__14 list) (loc : int * int) -> (List l : 'anti));
           [Gramext.Snterm
              (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
           Gramext.action
@@ -2704,9 +2696,9 @@ Grammar.extend
                     (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
                   Gramext.Stoken ("", ";")],
                  Gramext.action
-                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__11))])],
+                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__13))])],
           Gramext.action
-            (fun (l : 'e__11 list) (loc : int * int) -> (List l : 'anti));
+            (fun (l : 'e__13 list) (loc : int * int) -> (List l : 'anti));
           [Gramext.Snterm
              (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
           Gramext.action
@@ -2726,9 +2718,9 @@ Grammar.extend
                     (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
                   Gramext.Stoken ("", ";")],
                  Gramext.action
-                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__10))])],
+                   (fun _ (e : 'expr) (loc : int * int) -> (e : 'e__12))])],
           Gramext.action
-            (fun (l : 'e__10 list) (loc : int * int) -> (List l : 'anti));
+            (fun (l : 'e__12 list) (loc : int * int) -> (List l : 'anti));
           [Gramext.Snterm
              (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
           Gramext.action
@@ -3050,9 +3042,9 @@ Grammar.extend
                   Gramext.Stoken ("", ";")],
                  Gramext.action
                    (fun _ (cf : 'class_str_item) (loc : int * int) ->
-                      (cf : 'e__13))])],
+                      (cf : 'e__15))])],
           Gramext.action
-            (fun (l : 'e__13 list) (loc : int * int) -> (List l : 'anti));
+            (fun (l : 'e__15 list) (loc : int * int) -> (List l : 'anti));
           [Gramext.Snterm
              (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
           Gramext.action
@@ -3148,9 +3140,9 @@ Grammar.extend
                   Gramext.Stoken ("", ";")],
                  Gramext.action
                    (fun _ (s : 'class_str_item) (loc : int * int) ->
-                      (s : 'e__14))])],
+                      (s : 'e__16))])],
           Gramext.action
-            (fun (l : 'e__14 list) (loc : int * int) -> (List l : 'anti));
+            (fun (l : 'e__16 list) (loc : int * int) -> (List l : 'anti));
           [Gramext.Snterm
              (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
           Gramext.action
@@ -3224,9 +3216,9 @@ Grammar.extend
                   Gramext.Stoken ("", ";")],
                  Gramext.action
                    (fun _ (csf : 'class_sig_item) (loc : int * int) ->
-                      (csf : 'e__15))])],
+                      (csf : 'e__17))])],
           Gramext.action
-            (fun (l : 'e__15 list) (loc : int * int) -> (List l : 'anti));
+            (fun (l : 'e__17 list) (loc : int * int) -> (List l : 'anti));
           [Gramext.Snterm
              (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
           Gramext.action
@@ -3347,9 +3339,9 @@ Grammar.extend
                   Gramext.Stoken ("", ";")],
                  Gramext.action
                    (fun _ (s : 'class_sig_item) (loc : int * int) ->
-                      (s : 'e__16))])],
+                      (s : 'e__18))])],
           Gramext.action
-            (fun (l : 'e__16 list) (loc : int * int) -> (List l : 'anti));
+            (fun (l : 'e__18 list) (loc : int * int) -> (List l : 'anti));
           [Gramext.Snterm
              (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
           Gramext.action

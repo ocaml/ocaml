@@ -128,8 +128,7 @@ value mklazy loc e =
           [Loc; Node "ExUid" [Loc; Str "Lazy"];
            Node "ExUid" [Loc; Str "Delayed"]];
         Node "ExFun"
-          [Loc;
-           List [Tuple [Node "PaUid" [Loc; Str "()"]; Option None; e]]]]]
+          [Loc; List [Tuple [Node "PaUid" [Loc; Str "()"]; Option None; e]]]]]
 ;
 
 value neg s = string_of_int (- int_of_string s);
@@ -147,8 +146,8 @@ value warning_seq () =
 ;
 
 EXTEND
-  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr
-    class_type class_expr class_sig_item class_str_item;
+  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
+    class_expr class_sig_item class_str_item;
   module_expr:
     [ [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
@@ -448,7 +447,8 @@ EXTEND
       | ":"; t = ctyp; "="; e = expr -> Node "ExTyc" [Loc; e; t] ] ]
   ;
   match_case:
-    [ [ p = patt; aso = as_opt; w = when_opt; "->"; e = expr ->
+    [ [ p = patt; aso = SOPT [ "as"; p = patt -> p ];
+        w = SOPT [ "when"; e = expr -> e ]; "->"; e = expr ->
           let p =
             match aso with
             [ Option (Some p2) -> Node "PaAli" [Loc; p; p2]
@@ -458,7 +458,7 @@ EXTEND
           Tuple [p; w; e] ] ]
   ;
   label_expr:
-    [ [ i = patt_label_ident; "="; e = expr -> Tuple [i; e] ] ]
+    [ [ i = patt_label_ident; e = fun_binding -> Tuple [i; e] ] ]
   ;
   expr_ident:
     [ RIGHTA
@@ -662,16 +662,6 @@ EXTEND
       | "rec" -> Bool True
       | -> Bool False ] ]
   ;
-  as_opt:
-    [ [ "as"; p = patt -> Option (Some p)
-      | a = anti_as -> a
-      | -> Option None ] ]
-  ;
-  when_opt:
-    [ [ "when"; e = expr -> Option (Some e)
-      | a = anti_when -> a
-      | -> Option None ] ]
-  ;
   mutable_flag:
     [ [ a = anti_mut -> a
       | "mutable" -> Bool True
@@ -779,9 +769,6 @@ EXTEND
   ;
   anti_uid:
     [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a ] ]
-  ;
-  anti_when:
-    [ [ a = ANTIQUOT "when" -> antiquot "when" loc a ] ]
   ;
   (* Compatibility old syntax of sequences *)
   expr: LEVEL "top"

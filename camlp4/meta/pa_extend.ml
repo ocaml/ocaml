@@ -264,13 +264,7 @@ value mklistpat loc =
 value rec quot_expr e =
   let loc = MLast.loc_of_expr e in
   match e with
-  [ <:expr< match $e$ with [ $list:pel$ ] >> ->
-      let pel = List.map quot_match_case pel in
-      <:expr< match $quot_expr e$ with [ $list:pel$ ] >>
-  | <:expr< let $list:pel$ in $e$ >> ->
-      let pel = List.map quot_let_binding pel in
-      <:expr< let $list:pel$ in $quot_expr e$ >>
-  | <:expr< None >> -> <:expr< Option None >>
+  [ <:expr< None >> -> <:expr< Option None >>
   | <:expr< Some $e$ >> -> <:expr< Option (Some $quot_expr e$) >>
   | <:expr< False >> -> <:expr< Bool False >>
   | <:expr< True >> -> <:expr< Bool True >>
@@ -293,21 +287,6 @@ value rec quot_expr e =
       let el = List.map quot_expr el in
       <:expr< Tuple $mklistexp loc el$ >>
   | _ -> e ]
-and quot_patt p =
-  let loc = MLast.loc_of_patt p in
-  match p with
-  [ <:patt< [$p1$ :: $pl$] >> ->
-      let p1 = quot_patt p1 in
-      match quot_patt pl with
-      [ <:patt< List [$pl$] >> -> <:patt< List [$p1$ :: $pl$] >>
-      | <:patt< List [] >> -> <:patt< List [$p1$] >>
-      | _ -> p ]
-  | <:patt< [] >> -> <:patt< List [] >>
-  | _ -> p ]
-and quot_match_case (p, eo, e) =
-  (quot_patt p, eo, quot_expr e)
-and quot_let_binding (p, e) =
-  (quot_patt p, quot_expr e)
 ;
 
 value symgen = "xx";
@@ -457,19 +436,25 @@ value ssopt loc symb =
   in
   let rl =
     let anti_n =
-      match symb.text "" "" with
-      [ <:expr< Gramext.Stoken ("", $str:n$) >> -> n
-      | _ -> "opt" ]
+      try
+        match symb.text "" "" with
+        [ <:expr< Gramext.Stoken ("", $str:n$) >> -> n
+        | <:expr<
+            Gramext.srules
+              [([Gramext.Stoken ("", $str:n$) :: $_$], $_$)] >>
+          ->
+            if String.length n > 0 then
+              match n.[0] with
+              [ 'A'..'Z' | 'a'..'z' -> n
+              | _ -> raise Not_found ]
+            else raise Not_found
+        | _ -> raise Not_found ]
+      with [ Not_found ->"opt" ]
     in
     let r1 =
       let prod =
-(**)
         let text = stoken loc "ANTIQUOT" <:expr< $str:anti_n$ >> in
         [psymbol <:patt< a >> text <:ctyp< string >>]
-(*
-        let n = mk_name loc <:expr< anti_opt >> in
-        [psymbol <:patt< a >> (snterm loc n None) <:ctyp< ast >>]
-*)
       in
       let act = <:expr< antiquot $str:anti_n$ loc a >> in
       {prod = prod; action = Some act}

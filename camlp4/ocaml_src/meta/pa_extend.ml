@@ -605,13 +605,7 @@ let mklistpat loc =
 let rec quot_expr e =
   let loc = MLast.loc_of_expr e in
   match e with
-    MLast.ExMat (_, e, pel) ->
-      let pel = List.map quot_match_case pel in
-      MLast.ExMat (loc, quot_expr e, pel)
-  | MLast.ExLet (_, false, pel, e) ->
-      let pel = List.map quot_let_binding pel in
-      MLast.ExLet (loc, false, pel, quot_expr e)
-  | MLast.ExUid (_, "None") ->
+    MLast.ExUid (_, "None") ->
       MLast.ExApp
         (loc, MLast.ExUid (loc, "Option"), MLast.ExUid (loc, "None"))
   | MLast.ExApp (_, MLast.ExUid (_, "Some"), e) ->
@@ -664,34 +658,7 @@ let rec quot_expr e =
       let el = List.map quot_expr el in
       MLast.ExApp (loc, MLast.ExUid (loc, "Tuple"), mklistexp loc el)
   | _ -> e
-and quot_patt p =
-  let loc = MLast.loc_of_patt p in
-  match p with
-    MLast.PaApp (_, MLast.PaApp (_, MLast.PaUid (_, "::"), p1), pl) ->
-      let p1 = quot_patt p1 in
-      begin match quot_patt pl with
-        MLast.PaApp
-          (_, MLast.PaUid (_, "List"),
-           MLast.PaApp
-             (_, MLast.PaApp (_, MLast.PaUid (_, "::"), pl),
-              MLast.PaUid (_, "[]"))) ->
-          MLast.PaApp
-            (loc, MLast.PaUid (loc, "List"),
-             MLast.PaApp
-               (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), p1), pl))
-      | MLast.PaApp (_, MLast.PaUid (_, "List"), MLast.PaUid (_, "[]")) ->
-          MLast.PaApp
-            (loc, MLast.PaUid (loc, "List"),
-             MLast.PaApp
-               (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), p1),
-                MLast.PaUid (loc, "[]")))
-      | _ -> p
-      end
-  | MLast.PaUid (_, "[]") ->
-      MLast.PaApp (loc, MLast.PaUid (loc, "List"), MLast.PaUid (loc, "[]"))
-  | _ -> p
-and quot_match_case (p, eo, e) = quot_patt p, eo, quot_expr e
-and quot_let_binding (p, e) = quot_patt p, quot_expr e;;
+;;
 
 let symgen = "xx";;
 
@@ -956,14 +923,48 @@ let ssopt loc symb =
   in
   let rl =
     let anti_n =
-      match symb.text "" "" with
-        MLast.ExApp
-          (_,
-           MLast.ExAcc
-             (_, MLast.ExUid (_, "Gramext"), MLast.ExUid (_, "Stoken")),
-           MLast.ExTup (_, [MLast.ExStr (_, ""); MLast.ExStr (_, n)])) ->
-          n
-      | _ -> "opt"
+      try
+        match symb.text "" "" with
+          MLast.ExApp
+            (_,
+             MLast.ExAcc
+               (_, MLast.ExUid (_, "Gramext"), MLast.ExUid (_, "Stoken")),
+             MLast.ExTup (_, [MLast.ExStr (_, ""); MLast.ExStr (_, n)])) ->
+            n
+        | MLast.ExApp
+            (_,
+             MLast.ExAcc
+               (_, MLast.ExUid (_, "Gramext"), MLast.ExLid (_, "srules")),
+             MLast.ExApp
+               (_,
+                MLast.ExApp
+                  (_, MLast.ExUid (_, "::"),
+                   MLast.ExTup
+                     (_,
+                      [MLast.ExApp
+                         (_,
+                          MLast.ExApp
+                            (_, MLast.ExUid (_, "::"),
+                             MLast.ExApp
+                               (_,
+                                MLast.ExAcc
+                                  (_, MLast.ExUid (_, "Gramext"),
+                                   MLast.ExUid (_, "Stoken")),
+                                MLast.ExTup
+                                  (_,
+                                   [MLast.ExStr (_, "");
+                                    MLast.ExStr (_, n)]))),
+                          _);
+                       _])),
+                MLast.ExUid (_, "[]"))) ->
+            if String.length n > 0 then
+              match n.[0] with
+                'A'..'Z' | 'a'..'z' -> n
+              | _ -> raise Not_found
+            else raise Not_found
+        | _ -> raise Not_found
+      with
+        Not_found -> "opt"
     in
     let r1 =
       let prod =
