@@ -15,7 +15,7 @@
 
 open Types
 
-module type Obj =
+module type OBJ =
   sig
     type t
 
@@ -39,4 +39,4 @@ module type S =
           Env.t -> t -> type_expr -> unit
   end
 
-module Make(Obj : Obj) : (S with type t = Obj.t)
+module Make(O : OBJ) : (S with type t = O.t)

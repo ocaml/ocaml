@@ -24,9 +24,9 @@ let field x i =
   let f = Obj.field x i in
   if not (Obj.is_block f) then
     sprintf "%d" (Obj.magic f : int)           (* can also be a char *)
-  else if Obj.tag f = 252 then
+  else if Obj.tag f = Obj.string_tag then
     sprintf "\"%s\"" (String.escaped (Obj.magic f : string))
-  else if Obj.tag f = 253 then
+  else if Obj.tag f = Obj.double_tag then
     string_of_float (Obj.magic f : float)
   else
     "_"

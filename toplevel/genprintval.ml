@@ -19,7 +19,7 @@ open Longident
 open Path
 open Types
 
-module type Obj =
+module type OBJ =
   sig
     type t
 
@@ -43,9 +43,9 @@ module type S =
           Env.t -> t -> type_expr -> unit
   end
 
-module Make(Obj : Obj) = struct
+module Make(O : OBJ) = struct
 
-    type t = Obj.t
+    type t = O.t
 
     (* Given an exception value, we cannot recover its type,
        hence we cannot print its arguments in general.
@@ -53,20 +53,20 @@ module Make(Obj : Obj) = struct
        integer, string and float arguments... *)
 
     let print_exception_args obj start_offset =
-      if Obj.size obj > start_offset then begin
+      if O.size obj > start_offset then begin
         open_box 1;
         print_string "(";
-        for i = start_offset to Obj.size obj - 1 do
+        for i = start_offset to O.size obj - 1 do
           if i > start_offset then begin print_string ","; print_space() end;
-          let arg = Obj.field obj i in
-          if not (Obj.is_block arg) then
-            print_int(Obj.obj arg : int)  (* Note: this could be a char! *)
-          else if Obj.tag arg = 252 then begin
+          let arg = O.field obj i in
+          if not (O.is_block arg) then
+            print_int(O.obj arg : int)  (* Note: this could be a char! *)
+          else if O.tag arg = Obj.string_tag then begin
             print_string "\"";
-            print_string (String.escaped (Obj.obj arg : string));
+            print_string (String.escaped (O.obj arg : string));
             print_string "\""
-          end else if Obj.tag arg = 253 then
-            print_float (Obj.obj arg : float)
+          end else if O.tag arg = Obj.double_tag then
+            print_float (O.obj arg : float)
           else
             print_string "_"
         done;
@@ -75,12 +75,12 @@ module Make(Obj : Obj) = struct
       end
 
     let print_exception bucket =
-      let name = (Obj.obj(Obj.field(Obj.field bucket 0) 0) : string) in
+      let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
       print_string name;
       if (name = "Match_failure" || name = "Assert_failure")
-      && Obj.size bucket = 2
-      && Obj.tag(Obj.field bucket 1) = 0
-      then print_exception_args (Obj.field bucket 1) 0
+      && O.size bucket = 2
+      && O.tag(O.field bucket 1) = 0
+      then print_exception_args (O.field bucket 1) 0
       else print_exception_args bucket 1
 
     (* Recover a constructor by its tag *)
@@ -103,18 +103,18 @@ module Make(Obj : Obj) = struct
 
     let printers = ref ([
       Pident(Ident.create "print_int"), Predef.type_int,
-        (fun x -> print_int (Obj.obj x : int));
+        (fun x -> print_int (O.obj x : int));
       Pident(Ident.create "print_float"), Predef.type_float,
-        (fun x -> print_float(Obj.obj x : float));
+        (fun x -> print_float(O.obj x : float));
       Pident(Ident.create "print_char"), Predef.type_char,
         (fun x -> print_string "'";
-                  print_string (Char.escaped (Obj.obj x : char));
+                  print_string (Char.escaped (O.obj x : char));
                   print_string "'");
       Pident(Ident.create "print_string"), Predef.type_string,
         (fun x -> print_string "\"";
-                  print_string (String.escaped (Obj.obj x : string));
+                  print_string (String.escaped (O.obj x : string));
                   print_string "\"")
-    ] : (Path.t * type_expr * (Obj.t -> unit)) list)
+    ] : (Path.t * type_expr * (O.t -> unit)) list)
 
     let install_printer path ty fn =
       let print_val obj =
@@ -212,12 +212,12 @@ module Make(Obj : Obj) = struct
                 close_box()
               end
           | Tconstr(path, [ty_arg], _) when Path.same path Predef.path_list ->
-              if Obj.is_block obj then begin
+              if O.is_block obj then begin
                 if check_depth depth obj ty then begin
                   let rec print_conses cons =
-                    print_val 0 (depth - 1) (Obj.field cons 0) ty_arg;
-                    let next_obj = Obj.field cons 1 in
-                    if Obj.is_block next_obj then begin
+                    print_val 0 (depth - 1) (O.field cons 0) ty_arg;
+                    let next_obj = O.field cons 1 in
+                    if O.is_block next_obj then begin
                       print_string ";"; print_space();
                       print_conses next_obj
                     end
@@ -231,14 +231,14 @@ module Make(Obj : Obj) = struct
               end else
                 print_string "[]"
           | Tconstr(path, [ty_arg], _) when Path.same path Predef.path_array ->
-              let length = Obj.size obj in
+              let length = O.size obj in
               if length = 0 then
                 print_string "[||]"
               else if check_depth depth obj ty then begin
                 let rec print_items i =
                   if i < length then begin
                     if i > 0 then begin print_string ";"; print_space() end;
-                    print_val 0 (depth - 1) (Obj.field obj i) ty_arg;
+                    print_val 0 (depth - 1) (O.field obj i) ty_arg;
                     print_items (i + 1)
                   end in
                 open_box 2;
@@ -259,9 +259,9 @@ module Make(Obj : Obj) = struct
                          Ctype.Cannot_apply -> abstract_type)
                 | {type_kind = Type_variant constr_list} ->
                     let tag =
-                      if Obj.is_block obj
-                      then Cstr_block(Obj.tag obj)
-                      else Cstr_constant(Obj.obj obj) in
+                      if O.is_block obj
+                      then Cstr_block(O.tag obj)
+                      else Cstr_constant(O.obj obj) in
                     let (constr_name, constr_args) =
                       find_constr tag 0 0 constr_list in
                     let ty_args =
@@ -281,7 +281,7 @@ module Make(Obj : Obj) = struct
                           print_constr env path constr_name;
                           print_space();
                           cautious (print_val 2 (depth - 1)
-                                      (Obj.field obj 0)) ty1;
+                                      (O.field obj 0)) ty1;
                           if prio > 1 then print_string ")";
                           close_box()
                         end
@@ -319,7 +319,7 @@ module Make(Obj : Obj) = struct
                               Ctype.Cannot_apply -> abstract_type
                           in
                           cautious (print_val 0 (depth - 1)
-                                      (Obj.field obj pos)) ty_arg;
+                                      (O.field obj pos)) ty_arg;
                           close_box();
                           print_fields (pos + 1) remainder in
                       open_box 1;
@@ -344,7 +344,7 @@ module Make(Obj : Obj) = struct
           [] -> ()
         | ty :: ty_list ->
             if i > 0 then begin print_string ","; print_space() end;
-            print_val prio (depth - 1) (Obj.field obj i) ty;
+            print_val prio (depth - 1) (O.field obj i) ty;
             print_list (i + 1) ty_list in
       cautious (print_list 0) ty_list
 

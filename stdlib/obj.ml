@@ -31,3 +31,13 @@ let marshal (obj: t) =
   Marshal.to_string obj []
 let unmarshal str pos =
   (Marshal.from_string str pos, pos + Marshal.total_size str pos)
+
+let no_scan_tag = 251
+let closure_tag = 250
+let infix_tag = 249
+let object_tag = 248
+let abstract_tag = 251
+let string_tag = 252
+let double_tag = 253
+let double_array_tag = 254
+let final_tag = 255

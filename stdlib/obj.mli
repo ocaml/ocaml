@@ -29,8 +29,19 @@ external new_block : int -> int -> t = "obj_block"
 external dup : t -> t = "obj_dup"
 external truncate : t -> int -> unit = "obj_truncate"
 
+val no_scan_tag : int
+val closure_tag : int
+val infix_tag : int
+val object_tag : int
+val abstract_tag : int
+val string_tag : int
+val double_tag : int
+val double_array_tag : int
+val final_tag : int
+
 (* The following two functions are deprecated.  Use module [Marshal]
    instead. *)
 
 val marshal : t -> string
 val unmarshal : string -> int -> t * int
+
