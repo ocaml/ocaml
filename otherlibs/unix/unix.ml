@@ -705,8 +705,11 @@ let establish_server server_fun sockaddr =
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
             server_fun inchan outchan;
-            close_in inchan;
-            close_out outchan
+            close_out outchan;
+            (* The file descriptor was already closed by close_out.
+               close_in inchan;
+            *)
+            exit 0;
     | id -> close s; ignore(waitpid [] id) (* Reclaim the son *)
   done
 
