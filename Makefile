@@ -244,6 +244,7 @@ partialclean::
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
+            -e 's|%%BYTERUN%%|$(BINDIR)/ocamlrun|' \
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
             -e 's|%%PARTIALLD%%|ld -r $(NATIVECCLINKOPTS)|' \

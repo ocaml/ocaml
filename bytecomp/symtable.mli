@@ -45,6 +45,7 @@ val filter_global_map: (Ident.t -> bool) -> global_map -> global_map
 type error =
     Undefined_global of string
   | Unavailable_primitive of string
+  | Wrong_vm of string
 
 exception Error of error
 

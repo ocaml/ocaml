@@ -206,6 +206,13 @@ let link_file output_fun currpos_fun = function
   | Link_archive(file_name, units) ->
       link_archive output_fun currpos_fun file_name units
 
+(* Transform a file name into an absolute file name *)
+
+let make_absolute file =
+  if Filename.is_relative file
+  then Filename.concat (Sys.getcwd()) file
+  else file
+
 (* Create a bytecode executable file *)
 
 let link_bytecode objfiles exec_name copy_header =
@@ -226,6 +233,13 @@ let link_bytecode objfiles exec_name copy_header =
         close_in inchan
       with Not_found | Sys_error _ -> ()
     end;
+    (* The path to the bytecode interpreter *)
+    let pos0 = pos_out outchan in
+    output_string outchan
+      (if String.length !Clflags.use_runtime > 0
+       then make_absolute !Clflags.use_runtime
+       else Config.standard_runtime);
+    output_char outchan '\n';
     (* The bytecode *)
     let pos1 = pos_out outchan in
     Symtable.init();
@@ -250,6 +264,7 @@ let link_bytecode objfiles exec_name copy_header =
     if !Clflags.debug then output_value outchan !debug_info;
     (* The trailer *)
     let pos6 = pos_out outchan in
+    output_binary_int outchan (pos1 - pos0);
     output_binary_int outchan (pos2 - pos1);
     output_binary_int outchan (pos3 - pos2);
     output_binary_int outchan (pos4 - pos3);
@@ -475,7 +490,9 @@ let link objfiles =
       let exec_name = fix_exec_name !Clflags.exec_name in
       if build_custom_runtime prim_name exec_name <> 0
       then raise(Error Custom_runtime);
-      append_bytecode_and_cleanup bytecode_name exec_name prim_name
+      if !Clflags.make_runtime
+      then (remove_file bytecode_name; remove_file prim_name)
+      else append_bytecode_and_cleanup bytecode_name exec_name prim_name
     with x ->
       remove_file bytecode_name;
       remove_file prim_name;

@@ -24,12 +24,14 @@ module Make_options (F :
       val _impl : string -> unit
       val _intf : string -> unit
       val _linkall : unit -> unit
+      val _make_runtime : unit -> unit
       val _noassert : unit -> unit
       val _o : string -> unit
       val _output_obj : unit -> unit
       val _pp : string -> unit
       val _thread : unit -> unit
       val _unsafe : unit -> unit
+      val _use_runtime : string -> unit
       val _v : unit -> unit
       val _verbose : unit -> unit
       val _nopervasives : unit -> unit

@@ -19,13 +19,14 @@ let standard_library =
   with Not_found ->
     "%%LIBDIR%%"
 
+let standard_runtime = "%%BYTERUN%%"
 let bytecomp_c_compiler = "%%BYTECC%%"
 let native_c_compiler = "%%NATIVECC%%"
 let native_partial_linker = "%%PARTIALLD%%"
 let c_libraries = "%%CCLIBS%%"
 let ranlib = "%%RANLIBCMD%%"
 
-let exec_magic_number = "Caml1999X003"
+let exec_magic_number = "Caml1999X004"
 and cmi_magic_number = "Caml1999I003"
 and cmo_magic_number = "Caml1999O004"
 and cma_magic_number = "Caml1999A004"

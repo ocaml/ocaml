@@ -332,14 +332,9 @@ if (SHELL=/bin/sh; export SHELL; ./sharpbang > /dev/null); then
   echo "#! appears to work in shell scripts"
   case "$host" in
     *-*-sunos*)
-      if test `echo $bindir/ocamlrun | wc -c` -gt 32; then
-        echo "We won't use it, though, because the path"
-        echo "      $bindir/ocamlrun"
-        echo "is too long (more than 32 characters -- some kernels don't support this)"
-        echo "SHARPBANGSCRIPTS=false" >> Makefile
-      else
-        echo "SHARPBANGSCRIPTS=true" >> Makefile
-      fi;;
+      echo "We won't use it, though, because under SunOS it breaks"
+      echo "on pathnames longer than 30 characters"
+      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)  echo "SHARPBANGSCRIPTS=true" >> Makefile;;
   esac
 else

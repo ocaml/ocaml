@@ -18,6 +18,8 @@ val version: string
 
 val standard_library: string
         (* The directory containing the standard libraries *)
+val standard_runtime: string
+        (* The full path to the standard bytecode interpreter ocamlrun *)
 val bytecomp_c_compiler: string
         (* The C compiler to use for the custom runtime mode of the
            bytecode compiler *)

@@ -329,8 +329,9 @@ let dump_exe ic =
   if (let buff = String.create 12 in input ic buff 0 12; buff)
      <> exec_magic_number
   then raise Not_exec;
-  let trailer_pos = in_channel_length ic - 32 in
+  let trailer_pos = in_channel_length ic - 36 in
   seek_in ic trailer_pos;
+  let path_size = input_binary_int ic in
   let code_size = input_binary_int ic in
   let prim_size = input_binary_int ic in
   let data_size = input_binary_int ic in

@@ -75,12 +75,13 @@ static int read_trailer(int fd, struct exec_trailer *trail)
 
   lseek(fd, (long) -TRAILER_SIZE, SEEK_END);
   if (read(fd, buffer, TRAILER_SIZE) < TRAILER_SIZE) return TRUNCATED_FILE;
-  trail->code_size = read_size(buffer);
-  trail->prim_size = read_size(buffer + 4);
-  trail->data_size = read_size(buffer + 8);
-  trail->symbol_size = read_size(buffer + 12);
-  trail->debug_size = read_size(buffer + 16);
-  if (strncmp(buffer + 20, EXEC_MAGIC, 12) == 0)
+  trail->path_size = read_size(buffer);
+  trail->code_size = read_size(buffer + 4);
+  trail->prim_size = read_size(buffer + 8);
+  trail->data_size = read_size(buffer + 12);
+  trail->symbol_size = read_size(buffer + 16);
+  trail->debug_size = read_size(buffer + 20);
+  if (strncmp(buffer + 24, EXEC_MAGIC, 12) == 0)
     return 0;
   else
     return BAD_MAGIC_NUM;
@@ -169,7 +170,7 @@ extern int trace_flag;
 
 static int parse_command_line(char **argv)
 {
-  int i;
+  int i, j;
 
   for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
     switch(argv[i][1]) {
@@ -180,6 +181,11 @@ static int parse_command_line(char **argv)
 #endif
     case 'v':
       verbose_init = 1;
+      break;
+    case 'p':
+      for (j = 0; names_of_cprim[j] != NULL; j++)
+        printf("%s\n", names_of_cprim[j]);
+      exit(0);
       break;
     default:
       fatal_error_arg("Unknown option %s.\n", argv[i]);

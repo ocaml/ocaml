@@ -34,10 +34,10 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
-camlheader: header.c ../config/Makefile
+camlheader: sharpbang header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); \
-	then echo "#!$(BINDIR)/ocamlrun" > camlheader; \
-	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) '-DRUNTIME_NAME="$(BINDIR)/ocamlrun"' header.c -o camlheader; \
+	then cp sharpbang camlheader; \
+	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) header.c -o camlheader; \
 	     strip camlheader; \
         fi
 

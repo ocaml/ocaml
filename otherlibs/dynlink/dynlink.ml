@@ -15,7 +15,7 @@
 
 open Emitcode
 
-type linking_error = Symtable.error =
+type linking_error =
     Undefined_global of string
   | Unavailable_primitive of string
 
@@ -129,7 +129,12 @@ let load_compunit ic file_name compunit =
     Symtable.patch_object code compunit.cu_reloc;
     Symtable.update_global_table()
   with Symtable.Error error ->
-    raise(Error(Linking_error (file_name, error)))
+    let new_error =
+      match error with
+        Symtable.Undefined_global s -> Undefined_global s
+      | Symtable.Unavailable_primitive s -> Unavailable_primitive s
+      | _ -> assert false in
+    raise(Error(Linking_error (file_name, new_error)))
   end;
   begin try
     (Meta.reify_bytecode code code_size) (); ()

@@ -2,16 +2,22 @@
 
 foreach $f (@ARGV) {
   open(FILE, $f) || die("Cannot open $f");
-  seek(FILE, -32, 2);
+  seek(FILE, -36, 2);
+  $path_size = do read_int();
   $code_size = do read_int();
   $prim_size = do read_int();
   $data_size = do read_int();
   $symbol_size = do read_int();
   $debug_size = do read_int();
   read(FILE, $magic, 12);
+  seek(FILE, -($path_size + $code_size + $prim_size + $data_size +
+               $symbol_size + $debug_size + 36), 2);
+  read(FILE, $path, $path_size);
   print $f, ":\n" if ($#ARGV > 0);
   printf ("\tcode: %d    data: %d    symbols: %d    debug: %d\n",
           $code_size, $data_size, $symbol_size, $debug_size);
+  printf ("\tmagic number: %s     runtime system: %s",
+          $magic, $path);
   close(FILE);
 }
 

@@ -34,6 +34,8 @@ and preprocessor = ref(None : string option) (* -pp *)
 and thread_safe = ref false             (* -thread *)
 and noassert = ref false                (* -noassert *)
 and verbose = ref false                 (* -verbose *)
+and use_runtime = ref ""                (* -use_runtime ... *)
+and make_runtime = ref false            (* -make_runtime *)
 
 let dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)

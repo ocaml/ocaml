@@ -64,12 +64,15 @@ module Options = Main_args.Make_options (struct
   let _impl = process_implementation_file
   let _intf = process_interface_file
   let _linkall = set link_everything
+  let _make_runtime () =
+    custom_runtime := true; make_runtime := true; link_everything := true
   let _noassert = set noassert
   let _o s = exec_name := s; archive_name := s; object_name := s
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _pp s = preprocessor := Some s
   let _thread = set thread_safe
   let _unsafe = set fast
+  let _use_runtime s = use_runtime := s
   let _v = print_version_number
   let _verbose = set verbose
   let _nopervasives = set nopervasives

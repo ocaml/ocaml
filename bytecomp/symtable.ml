@@ -24,6 +24,7 @@ open Emitcode
 type error =
     Undefined_global of string
   | Unavailable_primitive of string
+  | Wrong_vm of string
 
 exception Error of error
 
@@ -126,8 +127,24 @@ let init () =
       literal_table := (c, cst) :: !literal_table)
     Runtimedef.builtin_exceptions;
   (* Enter the known C primitives *)
-  Array.iter (fun x -> enter_numtable c_prim_table x; ())
-             Runtimedef.builtin_primitives
+  if String.length !Clflags.use_runtime = 0 then 
+    Array.iter (fun x -> enter_numtable c_prim_table x; ())
+               Runtimedef.builtin_primitives
+  else begin
+    let primfile = Filename.temp_file "camlprims" "" in
+    try
+      if Sys.command(Printf.sprintf "%s -p > %s"
+                                    !Clflags.use_runtime primfile) <> 0
+      then raise(Error(Wrong_vm !Clflags.use_runtime));
+      let ic = open_in primfile in
+      try
+        while true do
+          enter_numtable c_prim_table (input_line ic)
+        done
+      with End_of_file -> close_in ic
+         | x -> close_in ic; raise x
+    with x -> remove_file primfile; raise x
+  end
 
 (* Relocate a block of object bytecode *)
 
@@ -205,8 +222,9 @@ let init_toplevel () =
   (* Read back the known global symbols from the executable file *)
   let ic = open_in_bin Sys.argv.(0) in
   let pos_trailer =
-    in_channel_length ic - 20 - String.length Config.exec_magic_number in
+    in_channel_length ic - 24 - String.length Config.exec_magic_number in
   seek_in ic pos_trailer;
+  let path_size = input_binary_int ic in
   let code_size = input_binary_int ic in
   let prim_size = input_binary_int ic in
   let data_size = input_binary_int ic in
@@ -264,3 +282,6 @@ let report_error = function
   | Unavailable_primitive s ->
       print_string "The external function `"; print_string s;
       print_string "' is not available"
+  | Wrong_vm s ->
+      print_string "Cannot find or execute the runtime system ";
+      print_string s

@@ -24,12 +24,14 @@ module Make_options (F :
      val _impl : string -> unit
      val _intf : string -> unit
      val _linkall : unit -> unit
+     val _make_runtime : unit -> unit
      val _noassert : unit -> unit
      val _o : string -> unit
      val _output_obj : unit -> unit
      val _pp : string -> unit
      val _thread : unit -> unit
      val _unsafe : unit -> unit
+     val _use_runtime : string -> unit
      val _v : unit -> unit
      val _verbose : unit -> unit
      val _nopervasives : unit -> unit
@@ -53,6 +55,8 @@ struct
      "-impl", Arg.String F._impl, "<file>  Compile <file> as a .ml file";
      "-intf", Arg.String F._intf, "<file>  Compile <file> as a .mli file";
      "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
+     "-make_runtime", Arg.Unit F._make_runtime,
+            " Build a runtime system with given C objects and libraries";
      "-noassert", Arg.Unit F._noassert, " Do not compile assertion checks";
      "-o", Arg.String F._o, "<file>  Set output file name to <file>";
      "-output-obj", Arg.Unit F._output_obj,
@@ -62,6 +66,8 @@ struct
      "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
      "-unsafe", Arg.Unit F._unsafe,
                              " No bounds checking on array and string access";
+     "-use_runtime", Arg.String F._use_runtime,
+                   "<path> Generate bytecode for the given runtime system";
      "-v", Arg.Unit F._v, " Print compiler version number";
      "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
 

@@ -40,9 +40,9 @@ let main () =
     to_keep := StringSet.add (String.capitalize Sys.argv.(i)) !to_keep
   done;
   let ic = open_in_bin input_name in
-  let pos_trailer =
-    in_channel_length ic - 20 - String.length Config.exec_magic_number in
+  let pos_trailer = in_channel_length ic - 36 in
   seek_in ic pos_trailer;
+  let path_size = input_binary_int ic in
   let code_size = input_binary_int ic in
   let prim_size = input_binary_int ic in
   let data_size = input_binary_int ic in
@@ -70,6 +70,7 @@ let main () =
   output_value oc (expunge_map global_map);
   let pos2 = pos_out oc in
   (* Rewrite the trailer *)
+  output_binary_int oc path_size;
   output_binary_int oc code_size;
   output_binary_int oc prim_size;
   output_binary_int oc data_size;
