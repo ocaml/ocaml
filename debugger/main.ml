@@ -81,7 +81,8 @@ exception Found_program_name
 let anonymous s =
   program_name := s; raise Found_program_name
 let add_include d =
-  default_load_path := d :: !default_load_path
+  default_load_path :=
+    Misc.expand_directory Config.standard_library d :: !default_load_path
 let set_socket s =
   socket_name := s
 let set_checkpoints n =
