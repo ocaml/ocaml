@@ -33,7 +33,7 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
   dynlink.c
 
-PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h
+PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h intext.h
 
 all: ocamlrun$(EXE)
 

@@ -469,6 +469,18 @@ CAMLexport void output_value_to_malloc(value v, value flags,
   *len = len_res;
 }
 
+CAMLexport long output_value_to_block(value v, value flags,
+                                      char * buf, long len)
+{
+  long len_res;
+  extern_block = buf;
+  extern_limit = extern_block + len;
+  extern_ptr = extern_block;
+  extern_block_malloced = 0;
+  len_res = extern_value(v, flags);
+  return len_res;
+}
+
 /* Functions for writing user-defined marshallers */
 
 CAMLexport void serialize_int_1(int i)
