@@ -332,7 +332,7 @@ let structured_constants = ref ([] : (string * structured_constant) list)
 
 let transl_constant = function
     Const_base(Const_int n) ->
-      Cconst_int((n lsl 1) + 1)
+      int_const n
   | Const_base(Const_char c) ->
       Cconst_int(((Char.code c) lsl 1) + 1)
   | Const_pointer n ->
