@@ -197,7 +197,10 @@ Objects cannot be created from a virtual class.
 
 \ikwd{closed\@\verb`closed`}
 A class can be flagged as @'closed'@.  A closed class is a class
-to which subclasses cannot add methods.
+to which subclasses cannot add methods. 
+If the compiler complains that a class must be closed, this usually
+means that the type of self has been unintentionally unified with a
+closed object type.
 
 \subsection{Class types} \label{s:classtype}
 
@@ -217,6 +220,10 @@ to which subclasses cannot add methods.
 
 Class types are specifications for class definitions. The syntax of
 class types is closely modeled on class definitions.
+
+The type of a concrete method can be omitted. That way, the status of
+a method can be changed from virtual to concrete without having the
+method type be given.
 
 Some type information can be hidden in a class type: it can be given
 stronger constraints than a matched class; some instance variables can
@@ -238,7 +245,7 @@ class-type-fields:
     'inherit' ancestor-type
   | 'val' value-type
   | 'virtual' method-type
-  | 'method' method-type
+  | 'method' method-name [ ':' typexpr ]
 ;
 ancestor-type:
     [ '(' typexpr { "," typexpr } ')' ] class-path
