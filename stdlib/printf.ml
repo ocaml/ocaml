@@ -23,7 +23,7 @@ external format_float: string -> float -> string = "caml_format_float"
 let bad_conversion fmt i c =
   invalid_arg
     ("printf: bad conversion %" ^ String.make 1 c ^ ", at char number " ^
-     string_of_int i ^ " in format ``" ^ fmt ^ "''");;
+     string_of_int i ^ " in format string ``" ^ fmt ^ "''");;
 
 let incomplete_format fmt =
   invalid_arg
@@ -88,9 +88,10 @@ let format_int_with_conv conv fmt i =
 (* Returns the position of the last character of the meta format
    string, starting from position [i], inside a given format [fmt].
    According to the character [conv], the meta format string is
-   enclosed by the delimitors %{ and %} (when [conv = '{'])
-   or %( and %) (when [conv = '(']). Hence [sub_format] returns the
-   index of the character ')' or '}' that ends the meta format. *)
+   enclosed by the delimitors %{ and %} (when [conv = '{']) or %( and
+   %) (when [conv = '(']). Hence, [sub_format] returns the index of
+   the character ')' or '}' that ends the meta format, according to
+   the character [conv]. *)
 let sub_format incomplete_format bad_conversion conv fmt i =
   let len = String.length fmt in
   let rec sub_fmt c i =
@@ -106,7 +107,7 @@ let sub_format incomplete_format bad_conversion conv fmt i =
        | '(' | '{' as c ->
          let j = sub_fmt c (j + 1) in sub (j + 1)
        | ')' | '}' as c ->
-         if c = close then j else bad_conversion fmt j c
+         if c = close then j else bad_conversion fmt i c
        | _ -> sub (j + 1) in
     sub i in
   sub_fmt conv i;;

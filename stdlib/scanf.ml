@@ -252,14 +252,15 @@ let scanf_bad_input ib = function
       bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
   | x -> raise x;;
 
-let incomplete_format fmt =
-  invalid_arg
-   (Printf.sprintf "scanf: premature end of format string ``%s''" fmt);;
-
 let bad_conversion fmt i c =
   invalid_arg
     (Printf.sprintf
-       "scanf: bad conversion %%%c, at char number %i in format %S" c i fmt);;
+       "scanf: bad conversion %%%c, at char number %i \
+        in format string ``%s''" c i fmt);;
+
+let incomplete_format fmt =
+  invalid_arg
+    (Printf.sprintf "scanf: premature end of format string ``%s''" fmt);;
 
 let bad_float () = bad_input "no dot or exponent part found in float token";;
 

@@ -37,8 +37,8 @@ type error =
   | Label_multiply_defined of Longident.t
   | Label_missing of string list
   | Label_not_mutable of Longident.t
-  | Bad_format of string
-  | Bad_conversion of string * string
+  | Incomplete_format of string
+  | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t
@@ -624,20 +624,20 @@ and is_nonexpansive_opt = function
     None -> true
   | Some e -> is_nonexpansive e
 
-(* Typing of printf formats.  
+(* Typing of printf formats.
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
 let type_format loc fmt =
 
   let ty_arrow gty ty = newty (Tarrow ("", instance gty, ty, Cok)) in
 
+  let bad_conversion fmt i c =
+    raise (Error (loc, Bad_conversion (fmt, i, c))) in
+  let incomplete_format fmt =
+    raise (Error (loc, Incomplete_format fmt)) in
+
   let rec type_in_format fmt =
     let len = String.length fmt in
-
-    let bad_conversion fmt i c =
-      raise (Error (loc, Bad_conversion (fmt, String.sub fmt i len))) in
-    let incomplete i =
-      raise (Error (loc, Bad_format (String.sub fmt i (len - i)))) in
 
     let ty_input = newvar ()
     and ty_result = newvar ()
@@ -647,29 +647,31 @@ let type_format loc fmt =
 
     let rec scan_format i =
       if i >= len then
-        if !meta = 0 then ty_aresult, ty_result else incomplete (i - 1) else
+        if !meta = 0
+        then ty_aresult, ty_result
+        else incomplete_format fmt else
       match fmt.[i] with
       | '%' -> scan_opts i (i + 1)
       | _ -> scan_format (i + 1)
     and scan_opts i j =
-      if j >= len then incomplete i else
+      if j >= len then incomplete_format fmt else
       match fmt.[j] with
       | '_' -> scan_rest true i (j + 1)
       | _ -> scan_rest false i j
     and scan_rest skip i j =
       let rec scan_flags i j =
-        if j >= len then incomplete i else
+        if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j + 1)
         | _ -> scan_width i j
       and scan_width i j = scan_width_or_prec_value scan_precision i j
       and scan_decimal_string scan i j =
-        if j >= len then incomplete i else
+        if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '0' .. '9' -> scan_decimal_string scan i (j + 1)
         | _ -> scan i j
       and scan_width_or_prec_value scan i j =
-        if j >= len then incomplete i else
+        if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '*' ->
             let ty_aresult, ty_result = scan i (j + 1) in
@@ -677,7 +679,7 @@ let type_format loc fmt =
         | '-' | '+' -> scan_decimal_string scan i (j + 1)
         | _ -> scan_decimal_string scan i j
       and scan_precision i j =
-        if j >= len then incomplete i else
+        if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '.' -> scan_width_or_prec_value scan_conversion i (j + 1)
         | _ -> scan_conversion i j
@@ -688,7 +690,7 @@ let type_format loc fmt =
         if skip then ty_result else ty_arrow ty_arg ty_result
 
       and scan_conversion i j =
-        if j >= len then incomplete i else
+        if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '%' | '!' -> scan_format (j + 1)
         | 's' | 'S' | '[' -> conversion j Predef.type_string
@@ -718,10 +720,9 @@ let type_format loc fmt =
           end
         | '{' | '(' as c ->
           let j = j + 1 in
-          if j >= len then incomplete i else
+          if j >= len then incomplete_format fmt else
           let sj =
-            Printf.sub_format
-              (fun fmt -> incomplete 0) bad_conversion c fmt j in
+            Printf.sub_format incomplete_format bad_conversion c fmt j in
           let sfmt = String.sub fmt j (sj - j - 1) in
           let ty_sfmt = type_in_format sfmt in
           begin match c with
@@ -1995,10 +1996,12 @@ let report_error ppf = function
         print_labels labels
   | Label_not_mutable lid ->
       fprintf ppf "The record field label %a is not mutable" longident lid
-  | Bad_format s ->
-      fprintf ppf "Bad format %S" s
-  | Bad_conversion (fmt, conv) ->
-      fprintf ppf "Bad conversion %S in format %S" fmt conv
+  | Incomplete_format s ->
+      fprintf ppf "Premature end of format string ``%S''" s
+  | Bad_conversion (fmt, i, c) ->
+      fprintf ppf
+        "Bad conversion %%%c, at char number %d \
+         in format string ``%s''" c i fmt
   | Undefined_method (ty, me) ->
       reset_and_mark_loops ty;
       fprintf ppf

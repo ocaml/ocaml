@@ -106,6 +106,34 @@ CAMLprim value caml_format_float(value fmt, value arg)
   return res;
 }
 
+/*CAMLprim*/ value caml_float_of_substring(value vs, value idx, value l)
+{
+  char parse_buffer[64];
+  char * buf, * src, * dst, * end;
+  mlsize_t len, lenvs;
+  double d;
+  long flen = Int_val(l);
+  long fidx = Int_val(idx);
+
+  lenvs = caml_string_length(vs);
+  len =
+    fidx >= 0 && fidx < lenvs && flen > 0 && flen <= lenvs - fidx
+    ? flen : 0;
+  buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
+  src = String_val(vs) + fidx;
+  dst = buf;
+  while (len--) {
+    char c = *src++;
+    if (c != '_') *dst++ = c;
+  }
+  *dst = 0;
+  if (dst == buf) caml_failwith("float_of_string");
+  d = strtod((const char *) buf, &end);
+  if (buf != parse_buffer) caml_stat_free(buf);
+  if (end != dst) caml_failwith("float_of_string");
+  return caml_copy_double(d);
+}
+
 CAMLprim value caml_float_of_string(value vs)
 {
   char parse_buffer[64];
