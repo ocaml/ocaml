@@ -372,7 +372,9 @@ let class_arg arg =
   print_string ")"; close_box ()
 
 let constrain (v, ty) =
+  list_item ();
   open_hovbox 2;
+  print_string "constraint ";
   type_sch v;
   print_string " =";
   print_space();
@@ -402,18 +404,6 @@ let metho kind (l, t) =
   print_space();
   type_sch t;
   close_box()
-
-let rec and_sep_list pr =
-  function
-    [] ->
-      ()
-  | [e] ->
-      pr e
-  | e::l ->
-      pr e;
-      print_break 1 (-2);
-      print_string "and ";
-      and_sep_list pr l
 
 let methods_of_type ty =
   match (repr ty).desc with
@@ -474,9 +464,10 @@ let class_type id cl_ty =
   open_hvbox 0;
   if cstr <> [] then begin
     list_item ();
-    open_hvbox 2;
-    print_string "constraint ";
-    and_sep_list constrain cstr;
+    open_hvbox 0;
+    start_list false;
+    List.iter constrain cstr;
+    end_list false;
     close_box()
   end;
   if vars <> Vars.empty then begin

@@ -288,7 +288,7 @@ structure_item:
       { mkstr(Pstr_modtype($3, $5)) }
   | OPEN mod_longident
       { mkstr(Pstr_open $2) }
-  | CLASS class_list
+  | CLASS class_list END
       { mkstr(Pstr_class (List.rev $2)) }
 ;
 module_binding:
@@ -339,7 +339,7 @@ signature_item:
       { mksig(Psig_open $2) }
   | INCLUDE module_type
       { mksig(Psig_include $2) }
-  | CLASS class_type_list
+  | CLASS class_type_list END
       { mksig(Psig_class (List.rev $2)) }
 ;
 
@@ -641,9 +641,9 @@ class_list:
 class_def:
         virtual_flag closed_flag
       	type_parameters LIDENT simple_pattern_list self self_type EQUAL
-        opt_constraints class_fields END
+        constraints class_fields
 	  { { pcl_name = $4; pcl_param = $3; pcl_args = List.rev $5;
-      	      pcl_self = $6; pcl_self_ty = $7; pcl_cstr = $9;
+      	      pcl_self = $6; pcl_self_ty = $7; pcl_cstr = List.rev $9;
 	      pcl_field = List.rev $10;
 	      pcl_kind = $1; pcl_closed = $2;
       	      pcl_loc = symbol_loc () } }
@@ -663,20 +663,14 @@ self:
 class_fields:
         /* empty */
 	  { [] }
-      | class_fields INHERIT ancestors
-      	  { List.map (function f -> Pcf_inher f) $3 @ $1 }
-      | class_fields VAL values
-      	  { List.map (function f -> Pcf_val   f) $3 @ $1 }
-      | class_fields VIRTUAL method_types
-      	  { List.map (function f -> Pcf_virt  f) $3 @ $1 }
-      | class_fields METHOD methods
-      	  { List.map (function f -> Pcf_meth  f) $3 @ $1 }
-
-ancestors:
-      	ancestors THEN ancestor
-	  { $3 :: $1 }
-      | ancestor
-      	  { [$1] }
+      | class_fields INHERIT ancestor
+      	  { Pcf_inher $3 :: $1 }
+      | class_fields VAL value
+      	  { Pcf_val $3 :: $1 }
+      | class_fields VIRTUAL method_type
+      	  { Pcf_virt $3 :: $1 }
+      | class_fields METHOD method_def
+      	  { Pcf_meth $3 :: $1 }
 ;
 ancestor:
         LPAREN core_type_comma_list RPAREN class_longident simple_expr_list
@@ -687,23 +681,11 @@ ancestor:
       | class_longident simple_expr_list self
       	  { $1, [], List.rev $2, $3, symbol_loc () }
 ;
-values:
-      	values AND value
-          { $3 :: $1 }
-      | value
-      	  { [$1] }
-;
 value:
         private_flag mutable_flag label EQUAL expr
 	  { $3, $1, $2, Some $5, symbol_loc () }
       | private_flag mutable_flag label
 	  { $3, $1, $2, None, symbol_loc () }
-;
-methods :
-      	methods AND method_def
-          { $3 :: $1 }
-      | method_def
-      	  { [$1] }
 ;
 method_def :
         label fun_binding
@@ -721,9 +703,10 @@ class_type_list:
 class_type:
         virtual_flag closed_flag type_parameters LIDENT type_list self_type
 	EQUAL
-        opt_constraints class_type_fields END
+        constraints class_type_fields
 	  { { pcty_name = $4; pcty_param = $3; pcty_args = $5;
-      	      pcty_self = $6; pcty_cstr = $8; pcty_field = List.rev $9;
+      	      pcty_self = $6; pcty_cstr = List.rev $8;
+              pcty_field = List.rev $9;
       	      pcty_kind = $1; pcty_closed = $2;
       	      pcty_loc = symbol_loc () } }
 ;
@@ -739,17 +722,11 @@ self_type:
       | /* empty */
       	  { None }
 ;
-opt_constraints:
-        CONSTRAINT constraints
-	  { List.rev $2 }
+constraints:
+      	constraints CONSTRAINT constrain
+	  { $3 :: $1 }
       | /* empty */
       	  { [] }
-;
-constraints:
-      	constraints AND constrain
-	  { $3 :: $1 }
-      | constrain
-      	  { [$1] }
 ;
 constrain:
       	type_parameter EQUAL core_type
@@ -758,20 +735,14 @@ constrain:
 class_type_fields:
         /* empty */
 	  { [] }
-      | class_type_fields INHERIT ancestor_types
-      	  { List.map (function f -> Pctf_inher f) $3 @ $1 }
-      | class_type_fields VAL value_types
-      	  { List.map (function f -> Pctf_val   f) $3 @ $1 }
-      | class_type_fields VIRTUAL method_types
-      	  { List.map (function f -> Pctf_virt  f) $3 @ $1 }
-      | class_type_fields METHOD method_types
-      	  { List.map (function f -> Pctf_meth  f) $3 @ $1 }
-;
-ancestor_types:
-        ancestor_types THEN ancestor_type
-          { $3 :: $1 }
-      | ancestor_type
-      	  { [$1] }
+      | class_type_fields INHERIT ancestor_type
+      	  { Pctf_inher $3 :: $1 }
+      | class_type_fields VAL value_type
+      	  { Pctf_val $3 :: $1 }
+      | class_type_fields VIRTUAL method_type
+      	  { Pctf_virt $3 :: $1 }
+      | class_type_fields METHOD method_type
+      	  { Pctf_meth $3 :: $1 }
 ;
 ancestor_type:
         LPAREN core_type_comma_list RPAREN class_longident
@@ -781,23 +752,11 @@ ancestor_type:
       | class_longident
       	  { $1, [], symbol_loc () }
 ;
-value_types :
-      	value_types AND value_type
-          { $3 :: $1 }
-      | value_type
-      	  { [$1] }
-;
 value_type :
         private_flag mutable_flag label COLON core_type
 	  { $3, $1, $2, Some $5, symbol_loc () }
       | private_flag mutable_flag label
 	  { $3, $1, $2, None, symbol_loc () }
-;
-method_types :
-      	method_types AND method_type
-          { $3 :: $1 }
-      | method_type
-      	  { [$1] }
 ;
 method_type :
         label COLON core_type
