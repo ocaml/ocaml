@@ -788,7 +788,22 @@ EXTEND
   ;
   patt: LEVEL "simple"
     [ [ "`"; s = ident -> <:patt< ` $s$ >>
-      | "#"; sl = mod_ident -> <:patt< # $list:sl$ >> ] ]
+      | "#"; sl = mod_ident -> <:patt< # $list:sl$ >>
+      | i = TILDEIDENTCOLON; p = SELF ->
+          <:patt< ~ $i$ : $p$ >>
+      | i = TILDEIDENT ->
+          <:patt< ~ $i$ >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; ")" ->
+          <:patt< ? $i$ : ( $p$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; "="; e = expr; ")" ->
+          <:patt< ? $i$ : ( $p$ = $e$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; ")" ->
+          <:patt< ? $i$ : ( $p$ : $t$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; "=";
+        e = expr; ")" ->
+          <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
+      | i = QUESTIONIDENT ->
+          <:patt< ? $i$ >> ] ]
   ;
   ipatt:
     [ [ i = TILDEIDENTCOLON; p = SELF ->
