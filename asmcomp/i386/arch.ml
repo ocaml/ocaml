@@ -22,11 +22,11 @@ type addressing_mode =
 
 type specific_operation =
     Ilea of addressing_mode             (* Lea gives scaled adds *)
-  | Istore_int of int * addressing_mode (* Store an integer constant *)
+  | Istore_int of Nativeint.t * addressing_mode (* Store an integer constant *)
   | Istore_symbol of string * addressing_mode (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ipush                               (* Push regs on stack *)
-  | Ipush_int of int                    (* Push an integer constant *)
+  | Ipush_int of Nativeint.t            (* Push an integer constant *)
   | Ipush_symbol of string              (* Push a symbol *)
   | Ipush_load of addressing_mode       (* Load a scalar and push *)
   | Ipush_load_float of addressing_mode (* Load a float and push *)
@@ -92,7 +92,7 @@ let print_specific_operation printreg op arg =
     Ilea addr -> print_addressing printreg addr arg
   | Istore_int(n, addr) ->
       print_string "["; print_addressing printreg addr arg;
-      print_string "] := "; print_int n
+      print_string "] := "; print_string (Nativeint.to_string n)
   | Istore_symbol(lbl, addr) ->
       print_string "["; print_addressing printreg addr arg;
       print_string "] := \""; print_string lbl; print_string "\""
@@ -106,7 +106,7 @@ let print_specific_operation printreg op arg =
         printreg arg.(i)
       done
   | Ipush_int n ->
-      print_string "push "; print_int n
+      print_string "push "; print_string (Nativeint.to_string n)
   | Ipush_symbol s ->
       print_string "push \""; print_string s; print_string "\""
   | Ipush_load addr ->

@@ -505,7 +505,7 @@ let emit_instr i =
     | Lop(Ispecific(Ilea addr)) ->
         `	lea	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
     | Lop(Ispecific(Istore_int(n, addr))) ->
-        `	movl	${emit_int n}, {emit_addressing addr i.arg 0}\n`
+        `	movl	${emit_nativeint n}, {emit_addressing addr i.arg 0}\n`
     | Lop(Ispecific(Istore_symbol(s, addr))) ->
         `	movl	${emit_symbol s}, {emit_addressing addr i.arg 0}\n`
     | Lop(Ispecific(Ioffset_loc(n, addr))) ->
@@ -529,7 +529,7 @@ let emit_instr i =
               stack_offset := !stack_offset + 4
         done
     | Lop(Ispecific(Ipush_int n)) ->
-        `	pushl	${emit_int n}\n`;
+        `	pushl	${emit_nativeint n}\n`;
         stack_offset := !stack_offset + 4
     | Lop(Ispecific(Ipush_symbol s)) ->
         `	pushl	${emit_symbol s}\n`;
