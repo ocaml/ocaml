@@ -368,3 +368,62 @@ let rec map_list f (x:'a lst) =
 let p1 = (map_list (fun x -> new printable_color_point x "red") l1);;
 p1#print (fun x -> x#print);;
 \end{caml_example}
+
+Here are two common problems. The first one is that, in a class
+definition, coercion to the type defined by this class is the
+identity. The reason is that this type abbreviation is not yet
+completely defined, and thus its subtypes are not clearly known. So,
+for instance, the following class fails to type. Indeed, the type of
+"self" is unified to the closed type "c".
+\begin{caml_example}
+class c () as self = method m = (self : #c :> c) end;;
+\end{caml_example}
+The abbreviation should first be defined by an virtual class, before
+being used:
+\begin{caml_example}
+class virtual c () = virtual m : c end;;
+class c' () as self = inherit c () method m = (self : #c :> c) end;;
+\end{caml_example}
+The second problem is that the coercion operator "(e :> t)" is not
+always powerful enough. Here is an example:
+\begin{caml_example}
+class virtual c () = virtual m : c end;;
+class c' () as self =
+  inherit c ()
+  method m = (self :> c)
+  method m' = 1
+end;;
+\end{caml_example}
+The operator type can be seen here:
+\begin{caml_example}
+function x -> (x :> c);;
+\end{caml_example}
+So, as class "c'" inherits from class "c", its method "m" has type
+"c", but then according to the operator type, expression "(self :> c)
+constrains this type to be also the one of "self". This fails, as "c"
+has no method "m'". On the other hand, "#c = < m : c; .. >", so one
+can use the more precise coercion operator:
+\begin{caml_example}
+class c' () as self =
+  inherit c ()
+  method m = (self : #c :> c)
+end;;
+\end{caml_example}
+An alternative is to rather defines class "c" as follow (of course
+this definition is not equivalent to the previous one):
+\begin{caml_example}
+class virtual c () : 'a = virtual m : 'a end;;
+\end{caml_example}
+Then a coercion operator is not even required.
+\begin{caml_example}
+class c' () as self =
+  method m = self
+  method m' = 1
+end;;
+\end{caml_example}
+Moreover, the simple coercion operator "(e :> t)" can be used to
+coerce an object of type "c'" to type "c". It is actually defined so
+as to work fine with classes returning "self" without coercion.
+\begin{caml_example}
+(new c' () :> c);;
+\end{caml_example}
