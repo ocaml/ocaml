@@ -219,6 +219,12 @@ let new_method met =
     Hashtbl.add methods met label;
     label
 
+let public_method_label met =
+  try
+    Hashtbl.find methods met
+  with Not_found ->
+    invalid_arg "Oo.public_method_label"
+
 let new_anonymous_method =
   new_label
 

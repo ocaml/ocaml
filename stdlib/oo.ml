@@ -16,3 +16,4 @@
 let copy = CamlinternalOO.copy
 external id : < .. > -> int = "%field1"
 let new_method = CamlinternalOO.new_method
+let public_method_label = CamlinternalOO.public_method_label

@@ -21,6 +21,7 @@
 
 type label
 val new_method : string -> label
+val public_method_label : string -> label
 
 (** {6 Classes} *)
 

@@ -26,3 +26,4 @@ external id : < .. > -> int = "%field1"
 (**/**)
 (** For internal use (CamlIDL) *)
 val new_method : string -> CamlinternalOO.label
+val public_method_label : string -> CamlinternalOO.label
