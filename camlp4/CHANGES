@@ -1,3 +1,8 @@
+- [07 Sep 04] Camlp4 grammars `error recovery mode' now issues a warning
+  when used.
+
+Camlp4 Version 3.08.[01]
+------------------------
 - [05 Jul 04] creation of the `unmaintained' directory:
   pa_format, pa_lefteval, pa_ocamllex, pa_olabl, pa_scheme and pa_sml
   go there, each in its own subdir. Currently, they compile fine.
