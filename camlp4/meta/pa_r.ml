@@ -803,18 +803,19 @@ END;
 
 (* Old syntax for sequences *)
 
-value not_yet_warned = ref False;
+value not_yet_warned = ref True;
 value warning_seq () =
   if not_yet_warned.val then do {
     not_yet_warned.val := False;
     Printf.eprintf "\
-*** warning: use of old syntax; do \"camlp4r -help_seq\" for explanations
+*** warning: use of old syntax
+*** type \"camlp4r -help_seq\" in a shell for explanations
 ";
     flush stderr
   }
   else ()
 ;
-Pcaml.add_option "-warn_seq" (Arg.Set not_yet_warned)
+Pcaml.add_option "-no-warn_seq" (Arg.Clear not_yet_warned)
   "    Warn when using old syntax for sequences.";
 
 EXTEND

@@ -1,6 +1,9 @@
 Camlp4 Version 3.03
 -------------------
 
+- [02 Oct 01] In revised syntax, the warning for using old syntax for
+  sequences is now by default. To remove it, the option -no-warn-seq
+  of camlp4r has been added. Option -warn-seq has been removed.
 - [07 Sep 01] Included Camlp4 in OCaml distribution.
 - [06 Sep 01] Added missing pattern construction #t
 - [05 Sep 01] Fixed bug in pa_o: {A.B.c = d} was refused.
