@@ -508,7 +508,7 @@ let link objfiles =
                  else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
-  Clflags.ccopts := !Clflags.ccopts @ !lib_ccopts;
+  Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
   if not !Clflags.custom_runtime then
     link_bytecode tolink !Clflags.exec_name true
   else if not !Clflags.output_c_object then begin

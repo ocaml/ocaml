@@ -285,7 +285,7 @@ let link ppf objfiles =
   | mg -> raise(Error(Missing_implementations mg))
   end;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
-  Clflags.ccopts := !Clflags.ccopts @ !lib_ccopts;
+  Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
   let startup = Filename.temp_file "camlstartup" ext_asm in
   make_startup_file ppf startup units_tolink;
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
