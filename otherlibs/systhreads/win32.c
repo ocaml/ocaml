@@ -34,8 +34,8 @@
 /* Initial size of stack when a thread is created (4 Ko) */
 #define Thread_stack_size (Stack_size / 4)
 
-/* Max computation time before rescheduling, in microseconds (50ms) */
-#define Thread_timeout 50000
+/* Max computation time before rescheduling, in milliseconds (50ms) */
+#define Thread_timeout 50
 
 /* Signal used for timer preemption (any unused, legal signal number) */
 #define SIGTIMER SIGTERM
