@@ -109,8 +109,8 @@ let rec constructor_type constr cty =
 
 let rec class_body cty =
   match cty with
-    Tcty_constr (_, _, cty) ->
-      class_body cty
+    Tcty_constr (_, _, cty') ->
+      cty (* Only class bodies can be abbreviated *)
   | Tcty_signature sign ->
       cty
   | Tcty_fun (ty, cty) ->
@@ -128,6 +128,13 @@ let rec extract_constraints cty =
      [] fields
    end,
    sign.cty_concr)
+
+let rec abbreviate_class_type path params cty =
+  match cty with
+    Tcty_constr (_, _, _) | Tcty_signature _ ->
+      Tcty_constr (path, params, cty)
+  | Tcty_fun (ty, cty) ->
+      Tcty_fun (ty, abbreviate_class_type path params cty)
 
 
                 (***********************************)
@@ -289,8 +296,6 @@ and class_type env scty =
         Ctype.instance_class decl.clty_params decl.clty_type
       in
       let sty = Ctype.self_type clty in
-(* XXX Usage incorrect de Ctype.row_variable *)
-      let rv = Ctype.row_variable sty in
       if List.length params <> List.length styl then
         raise(Error(scty.pcty_loc,
                     Parameter_arity_mismatch (lid, List.length params,
@@ -301,7 +306,7 @@ and class_type env scty =
            try Ctype.unify env ty' ty with Ctype.Unify trace ->
              raise(Error(sty.ptyp_loc, Parameter_mismatch trace)))
         styl params;
-      Tcty_constr (path, rv::params, clty)
+      Tcty_constr (path, params, clty)
 
   | Pcty_signature (sty, sign) ->
       Tcty_signature (class_signature env sty sign)
@@ -313,8 +318,10 @@ and class_type env scty =
 
 (*******************************)
 
+module StringSet = Set.Make(struct type t = string let compare = compare end)
+
 let rec class_field self_type meths vars
-    (val_env, met_env, par_env, fields, concr_meths) =
+    (val_env, met_env, par_env, fields, concr_meths, inh_vals) =
   function
     Pcf_inher (sparent, super) ->
       let parent = class_expr val_env par_env sparent in
@@ -323,14 +330,20 @@ let rec class_field self_type meths vars
           parent.cl_type
       in
       (* Variables *)
-      let (val_env, met_env, par_env, inh_vars) =
+      let (val_env, met_env, par_env, inh_vars, inh_vals) =
         Vars.fold
-          (fun lab (mut, ty) (val_env, met_env, par_env, inh_vars) ->
+          (fun lab (mut, ty) (val_env, met_env, par_env, inh_vars, inh_vals) ->
              let (id, val_env, met_env, par_env) =
                enter_val vars lab mut ty val_env met_env par_env
              in
-             (val_env, met_env, par_env, (lab, id) :: inh_vars))
-          cl_sig.cty_vars (val_env, met_env, par_env, [])
+             if StringSet.mem lab inh_vals then
+               Location.print_warning sparent.pcl_loc
+                 ("this definition of an instance variable " ^ lab ^
+                  " hides a previously\ndefined instance variable of \
+                    the same name");
+             (val_env, met_env, par_env, (lab, id) :: inh_vars,
+              StringSet.add lab inh_vals))
+          cl_sig.cty_vars (val_env, met_env, par_env, [], inh_vals)
       in
       (* Inherited concrete methods *)
       let inh_meths = 
@@ -350,9 +363,14 @@ let rec class_field self_type meths vars
             (val_env, met_env, par_env)
       in
       (val_env, met_env, par_env,
-       Cf_inher (parent, inh_vars, inh_meths)::fields, concr_meths)
+       Cf_inher (parent, inh_vars, inh_meths)::fields,
+       concr_meths, inh_vals)
 
   | Pcf_val (lab, mut, sexp, loc) ->
+      if StringSet.mem lab inh_vals then
+        Location.print_warning loc
+          ("this definition of an instance variable " ^ lab ^
+           " hides a previously\ndefined instance variable of the same name");
       let exp = type_exp val_env sexp in
       if not (Typecore.is_nonexpansive exp) then
         begin try
@@ -363,11 +381,12 @@ let rec class_field self_type meths vars
       let (id, val_env, met_env, par_env) =
         enter_val vars lab mut exp.exp_type val_env met_env par_env
       in
-      (val_env, met_env, par_env, Cf_val (lab, id, exp) :: fields, concr_meths)
+      (val_env, met_env, par_env, Cf_val (lab, id, exp) :: fields,
+       concr_meths, inh_vals)
 
   | Pcf_virt (lab, priv, sty, loc) ->
       virtual_method val_env meths self_type lab priv sty loc;
-      (val_env, met_env, par_env, fields, concr_meths)
+      (val_env, met_env, par_env, fields, concr_meths, inh_vals)
 
   | Pcf_meth (lab, priv, expr, loc)  ->
       Ctype.raise_nongen_level ();
@@ -381,11 +400,11 @@ let rec class_field self_type meths vars
       let texp = type_expect met_env expr meth_type in
       Ctype.end_def ();
       (val_env, met_env, par_env, Cf_meth (lab, texp)::fields,
-       Concr.add lab concr_meths)
+       Concr.add lab concr_meths, inh_vals)
 
   | Pcf_cstr (sty, sty', loc) ->
       type_constraint val_env sty sty' loc;
-      (val_env, met_env, par_env, fields, concr_meths)
+      (val_env, met_env, par_env, fields, concr_meths, inh_vals)
 
   | Pcf_let (rec_flag, sdefs, loc) ->
       let (defs, val_env) =
@@ -414,7 +433,7 @@ let rec class_field self_type meths vars
           ([], met_env, par_env)
       in
       (val_env, met_env, par_env, Cf_let (rec_flag, defs, vals)::fields,
-       concr_meths)
+       concr_meths, inh_vals)
 
   | Pcf_init expr ->
       Ctype.raise_nongen_level ();
@@ -424,7 +443,7 @@ let rec class_field self_type meths vars
       Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
       let texp = type_expect met_env expr meth_type in
       Ctype.end_def ();
-      (val_env, met_env, par_env, Cf_init texp::fields, concr_meths)
+      (val_env, met_env, par_env, Cf_init texp::fields, concr_meths, inh_vals)
 
 and class_structure val_env met_env (spat, str) =
   (* Environment for substructures *)
@@ -444,9 +463,9 @@ and class_structure val_env met_env (spat, str) =
   end;
 
   (* Class fields *)
-  let (_, _, _, fields, concr_meths) =
+  let (_, _, _, fields, concr_meths, _) =
     List.fold_left (class_field self_type meths vars)
-      (val_env, meth_env, par_env, [], Concr.empty)
+      (val_env, meth_env, par_env, [], Concr.empty, StringSet.empty)
       str
   in
 
@@ -470,6 +489,7 @@ and class_expr val_env met_env scl =
       let (params, clty) =
         Ctype.instance_class decl.cty_params decl.cty_type
       in
+      let clty' = abbreviate_class_type path params clty in
       if List.length params <> List.length styl then
         raise(Error(scl.pcl_loc,
                     Parameter_arity_mismatch (lid, List.length params,
@@ -483,12 +503,12 @@ and class_expr val_env met_env scl =
       let cl =        
         {cl_desc = Tclass_ident path;
          cl_loc = scl.pcl_loc;
-         cl_type = clty}
+         cl_type = clty'}
       in
       let (vals, meths, concrs) = extract_constraints clty in
       {cl_desc = Tclass_constraint (cl, vals, meths, concrs);
        cl_loc = scl.pcl_loc;
-       cl_type = clty}
+       cl_type = clty'}
   | Pcl_structure cl_str ->
       let (desc, ty) = class_structure val_env met_env cl_str in
       {cl_desc = Tclass_structure desc;
@@ -919,13 +939,13 @@ let report_error = function
   | Repeated_parameter ->
       print_string "A type parameter occurs several times"
   | Unconsistent_constraint trace ->
-      Printtyp.unification_error trace
+      Printtyp.unification_error true trace
         (function () ->
            print_string "The class constraints are not consistent : type")
         (function () ->
            print_string "is not compatible with type")
   | Method_type_mismatch (m, trace) ->
-      Printtyp.unification_error trace
+      Printtyp.unification_error true trace
         (function () ->
            print_string "The method ";
            print_string m; print_space ();
@@ -979,7 +999,7 @@ let report_error = function
       Printtyp.type_expr expected;
       close_box ()
   | Constructor_type_mismatch (c, trace) ->
-      Printtyp.unification_error trace
+      Printtyp.unification_error true trace
         (function () ->
            print_string "The expression \"new ";
            print_string c;
@@ -1009,7 +1029,7 @@ let report_error = function
       print_string " type argument(s)";
       close_box()
   | Parameter_mismatch trace ->
-      Printtyp.unification_error trace
+      Printtyp.unification_error true trace
         (function () ->
            print_string "The type parameter")
         (function () ->
