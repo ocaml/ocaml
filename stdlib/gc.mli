@@ -159,7 +159,7 @@ val finalise : ('a -> unit) -> 'a -> unit;;
      finalisation functions are called asynchronously, sometimes
      even during the execution of other finalisation functions.
      In a multithreaded program, finalisation functions are called
-     from any thread, thus they cannot not acquire any mutex.
+     from any thread, thus they must not acquire any mutex.
 
      Anything reachable from the closure of finalisation functions
      is considered reachable, so the following code will not work:
@@ -182,10 +182,17 @@ val finalise : ('a -> unit) -> 'a -> unit;;
      heap-allocated are integers, constant constructors, booleans,
      the empty array, the empty list, the unit value.  The exact list
      of what is heap-allocated or not is implementation-dependent.
+     Some constant values can be heap-allocated but never deallocated
+     during the lifetime of the program, for example a list of integer
+     constants; this is also implementation-dependent.
      You should also be aware that some optimisations will duplicate
      some immutable values, especially floating-point numbers when
      stored into arrays, so they can be finalised and collected while
      another copy is still in use by the program.
+
+     The results of calling [String.make], [String.create], and
+     [Array.make] are guaranteed to be heap-allocated and non-constant
+     except when the length argument is [0].
   *)
 
 
