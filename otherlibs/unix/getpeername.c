@@ -22,11 +22,13 @@
 value unix_getpeername(value sock)          /* ML */
 {
   int retcode;
+  union sock_addr_union addr;
+  socklen_param_type addr_len;
 
-  sock_addr_len = sizeof(sock_addr);
-  retcode = getpeername(Int_val(sock), &sock_addr.s_gen, &sock_addr_len);
+  addr_len = sizeof(sock_addr);
+  retcode = getpeername(Int_val(sock), &addr.s_gen, &addr_len);
   if (retcode == -1) uerror("getpeername", Nothing);
-  return alloc_sockaddr();
+  return alloc_sockaddr(&addr, addr_len);
 }
 
 #else

@@ -22,8 +22,11 @@
 value unix_bind(value socket, value address)      /* ML */
 {
   int ret;
-  get_sockaddr(address);
-  ret = bind(Int_val(socket), &sock_addr.s_gen, sock_addr_len);
+  union sock_addr_union addr;
+  socklen_param_type addr_len;
+
+  get_sockaddr(address, &addr, &addr_len);
+  ret = bind(Int_val(socket), &addr.s_gen, addr_len);
   if (ret == -1) uerror("bind", Nothing);
   return Val_unit;
 }

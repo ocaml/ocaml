@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "socketaddr.h"
+
 #ifndef SO_BROADCAST
 #define SO_BROADCAST (-1)
 #endif
@@ -34,11 +36,8 @@ static int sockopt[] = {
 value unix_getsockopt(value socket, value option)
 {
   int optval;
-#ifdef HAS_SOCKLEN_T
-  socklen_t optsize;
-#else
-  int optsize;
-#endif
+  socklen_param_type optsize;
+
   optsize = sizeof(optval);
   if (getsockopt(Int_val(socket), SOL_SOCKET, sockopt[Int_val(option)],
                  (void *) &optval, &optsize) == -1)
