@@ -129,7 +129,7 @@ Algorithm:
 
 extern void init_ieee_floats();
 
-int caml_main(argc, argv)
+void caml_main(argc, argv)
      int argc;
      char ** argv;
 {
@@ -235,13 +235,11 @@ int caml_main(argc, argv)
 
     sys_init(argv + i);
     interprete(start_code, code_size);
-    sys_exit(Val_int(0));
 
   } else {
 
     fatal_error_arg("Fatal error: uncaught exception %s.\n",
                     String_val(Field(Field(exn_bucket, 0), 0)));
   }
-  return 0; /* never reached */
 }
 

@@ -15,8 +15,10 @@
    function that calls caml_main() later). */
 
 #include "misc.h"
+#include "mlvalues.h"
+#include "sys.h"
 
-extern int caml_main P((int, char **));
+extern void caml_main P((int, char **));
 
 #ifdef _WIN32
 extern void expand_command_line P((int *, char ***));
@@ -29,5 +31,7 @@ int main(argc, argv)
 #ifdef _WIN32
   expand_command_line(&argc, &argv);
 #endif
-  return caml_main(argc, argv);
+  caml_main(argc, argv);
+  sys_exit(Val_int(0));
+  return 0; /* not reached */
 }
