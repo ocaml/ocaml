@@ -349,10 +349,14 @@ type "unit" (e.g. \var{expr1}"; "\var{expr2} when \var{expr1} does not
 have type "unit").
 \item["U"/"u"] enable/disable warnings for unused (redundant) match cases.
 \item["V"/"v"] enable/disable warnings for hidden instance variables.
+\item["Y"/"y"] enable/disable warnings for unused variables bound with the
+"let" or "as" keywords and that don't start with an underscore.
+\item["Z"/"z"] enable/disable warnings for all unused variables that don't
+start with an underscore.
 \item["X"/"x"] enable/disable all other warnings.
 \end{options}
-The default setting is "-w Ael" (all warnings enabled except fragile
-matchings and omitted labels).
+The default setting is "-w Aelyz" (all warnings enabled except fragile
+matchings, omitted labels, unused variables).
 
 \item["-warn-error" \var{warning-list}]
 Turn the warnings indicated in the argument \var{warning-list} into
