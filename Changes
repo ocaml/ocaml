@@ -21,6 +21,8 @@ Objective Caml 1.07:
   - Bytecode threads: fixed problem with "Marshal" module.
   - Both: added Event.always.
 
+* MS Windows port: better handling of long command lines in Sys.command
+
 Objective Caml 1.06:
 --------------------
 
