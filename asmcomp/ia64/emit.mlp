@@ -819,15 +819,15 @@ let emit_instr i =
           if is_immediate_addl_nat n then "movi" else "movil" in
         insimm instr [||] (Nativeint.to_string n) (regs i.res)
     | Lop(Iconst_float s) ->
-        let f = float_of_string s in
-        if f = 0.0 then
-          insert "mov" [| "f0" |] (regs i.res)
-        else if f = 1.0 then
-          insert "mov" [| "f1" |] (regs i.res)
-        else begin
-          let tmp = new_temp_reg() in
-          insimm "movil" [||] (float_bits f) [| tmp |];
-          insert "setf.d" [| tmp |] (regs i.res)
+        begin match Int64.bits_of_float (float_of_string s) with
+        | 0x0000_0000_0000_0000L ->       (* +0.0 *)
+            insert "mov" [| "f0" |] (regs i.res)
+        | 0x3FF0_0000_0000_0000L ->       (*  1.0 *)
+            insert "mov" [| "f1" |] (regs i.res)
+        | _ ->
+            let tmp = new_temp_reg() in
+            insimm "movil" [||] (float_bits f) [| tmp |];
+            insert "setf.d" [| tmp |] (regs i.res)
         end
     | Lop(Iconst_symbol s) ->
         insimm "addi" [| "gp" |] (ltoffset s) (regs i.res);

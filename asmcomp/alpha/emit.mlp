@@ -395,7 +395,7 @@ let emit_instr fallthrough i =
     | Lop(Iconst_float s) ->
         if digital_asm then
           `	ldit	{emit_reg i.res.(0)}, {emit_string s}\n`
-        else if float_of_string s = 0.0 then
+        else if Int64.bits_of_float (float_of_string s) = 0L then
           `	fmov	$f31, {emit_reg i.res.(0)}\n`
         else begin
           let lbl = new_label() in

@@ -305,9 +305,10 @@ let emit_instr i =
         end else
           emit_complex_intconst r n
     | Lop(Iconst_float s) ->
-        if float_of_string s = 0.0 then
+        begin match Int64.bits_of_float (float_of_string s) with
+        | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           `	mvfd	{emit_reg i.res.(0)}, #0.0\n`
-        else begin
+        | _ ->
           let lbl = label_constant float_constants s 2 in
           pending_float := true;
           `	ldfd	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_string s}\n`
