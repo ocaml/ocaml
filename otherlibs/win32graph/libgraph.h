@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <windows.h>
+#include <windowsx.h>
 
 struct canvas {
   int w, h;                     /* Dimensions of the drawable */
@@ -103,6 +104,8 @@ extern GR_WINDOW grwindow;
 HFONT CreationFont(char *name);
 extern int MouseLbuttonDown,MouseMbuttonDown,MouseRbuttonDown;
 extern HANDLE EventHandle;
-extern int InspectMessages;
-extern MSG msg;
+extern MSG * InspectMessages;
+extern int MouseLbuttonDown,MouseMbuttonDown,MouseRbuttonDown;
+extern int MouseLastX, MouseLastY;
+extern int LastKey;
 

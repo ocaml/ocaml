@@ -19,6 +19,8 @@
 #include <windows.h>
 static value gr_reset(void);
 int MouseLbuttonDown,MouseMbuttonDown,MouseRbuttonDown;
+int MouseLastX, MouseLastY;
+int LastKey = -1;
 static long tid;
 static HANDLE threadHandle;
 HWND grdisplay = NULL;
@@ -73,6 +75,7 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
 {
 	PAINTSTRUCT ps;
 	HDC hdc;
+
 	switch (msg) {
 		// Create the MDI client invisible window
 	case WM_CREATE:
@@ -113,7 +116,23 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
 	case WM_MBUTTONUP:
 		MouseMbuttonDown = 0;
 		break;
-	default:
+	case WM_CHAR:
+                LastKey = wParam & 0xFF;
+                break;
+	case WM_KEYUP:
+                LastKey = -1;
+                break;
+	case WM_MOUSEMOVE:
+#if 0
+		pt.x = GET_X_LPARAM(lParam);
+		pt.y = GET_Y_LPARAM(lParam);
+		MapWindowPoints(HWND_DESKTOP,grwindow.hwnd,&pt,1);
+		MouseLastX = pt.x;
+		MouseLastY = grwindow.height - 1 - pt.y;
+#else
+		MouseLastX = GET_X_LPARAM(lParam);
+		MouseLastY = grwindow.height - 1 - GET_Y_LPARAM(lParam);
+#endif
 		break;
 	}
 	return DefWindowProc(hwnd,msg,wParam,lParam);
@@ -201,7 +220,8 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
   int screenx,screeny;
   int attributes;
   static int registered;
-  
+  MSG msg;
+
   gr_initialized = TRUE;
   hInst = GetModuleHandle(NULL);
   x = y = w = h = CW_USEDEFAULT;
@@ -255,7 +275,8 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
 
   /* Enter the message handling loop */
   while (GetMessage(&msg,NULL,0,0)) {
-    if (InspectMessages) {
+    if (InspectMessages != NULL) {
+      *InspectMessages = msg;
       SetEvent(EventHandle);
       Sleep(10);
     }

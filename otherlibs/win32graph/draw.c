@@ -433,8 +433,7 @@ void gr_enqueue_char(unsigned char c)
 #define Key_pressed		4
 #define Mouse_motion	8
 #define Poll			16
-int InspectMessages;
-MSG msg;
+MSG * InspectMessages = NULL;
 
 CAMLprim value gr_wait_event(value eventlist)
 {
@@ -446,7 +445,7 @@ CAMLprim value gr_wait_event(value eventlist)
 	int r,i,stop;
 	unsigned int modifiers;
 	POINT pt;
-	unsigned char keystate[256];
+	MSG msg;
 
 	gr_check_open();
 	mask = 0;
@@ -477,107 +476,37 @@ CAMLprim value gr_wait_event(value eventlist)
 	key = -1;
 
 	if (poll) {
-		// Poll uses peek message
-		r = 0;
-		if (mask & Button_down) {
-			r |= PeekMessage(&msg,grwindow.hwnd,WM_LBUTTONDOWN,WM_LBUTTONDOWN,PM_REMOVE);
-			if (r)
-				button = 1;
-			else {
-				r |= PeekMessage(&msg,grwindow.hwnd,WM_MBUTTONDOWN,WM_LBUTTONDOWN,PM_REMOVE);
-				if (r)
-					button = 2;
-				else {
-					r |= PeekMessage(&msg,grwindow.hwnd,WM_RBUTTONDOWN,WM_LBUTTONDOWN,PM_REMOVE);
-				}
-				if (r)
-					button = 3;
-			}
-		}
-		if (mask & Button_up) {
-			r |= PeekMessage(&msg,grwindow.hwnd,WM_LBUTTONUP,WM_LBUTTONUP,PM_REMOVE);
-			if (r)
-				button = 1;
-			else {
-				r |= PeekMessage(&msg,grwindow.hwnd,WM_MBUTTONUP,WM_LBUTTONUP,PM_REMOVE);
-				if (r)
-					button = 2;
-				else {
-					r |= PeekMessage(&msg,grwindow.hwnd,WM_RBUTTONUP,WM_LBUTTONUP,PM_REMOVE);
-				}
-				if (r)
-					button = 3;
-			}
-		}
-		if (mask & Mouse_motion) {
-			r |= PeekMessage(&msg,grwindow.hwnd,WM_MOUSEMOVE,WM_MOUSEMOVE,PM_REMOVE);
-		}
-		if (r) {
-			pt = msg.pt;
-			MapWindowPoints(HWND_DESKTOP,grwindow.hwnd,&pt,1);
-			mouse_x = pt.x;
-			mouse_y = grwindow.height-pt.y;
-		}
-		if (mask & Key_pressed) {
-			r = PeekMessage(&msg,grwindow.hwnd,WM_KEYFIRST,WM_KEYLAST,PM_REMOVE);
-			if (r) {
-				GetKeyboardState(keystate);
-				for (i=0; i<256;i++) {
-					if (keystate[i]&(~1)) {
-						key = i;
-						break;
-					}
-				}
-			}
-		}
+		// Poll uses info on last event stored in global variables
+		mouse_x = MouseLastX;
+		mouse_y = MouseLastY;
+		button = MouseLbuttonDown | MouseMbuttonDown | MouseRbuttonDown;
+		key = LastKey;
 	}
 	else { // Not polled. Block for a message
-		InspectMessages = 1;
+		InspectMessages = &msg;
 		while (1) {
 			WaitForSingleObject(EventHandle,INFINITE);
 			stop = 0;
-			if (msg.message == WM_LBUTTONDOWN && (mask&Button_down)) {
-				stop = 1;
+			switch (msg.message) {
+			case WM_LBUTTONDOWN:
+			case WM_MBUTTONDOWN:
+			case WM_RBUTTONDOWN:
 				button = 1;
-			}
-			if (msg.message == WM_MBUTTONDOWN && (mask&Button_down)) {
-				stop = 1;
-				button = 2;
-			}
-			if (msg.message == WM_RBUTTONDOWN && (mask&Button_down)) {
-				stop = 1;
-				button = 3;
-			}
-			if (mask&Button_up) {
-				if (msg.message == WM_LBUTTONUP) {
-					stop = 1;
-					button = 1;
-				}
-				if (msg.message == WM_MBUTTONUP) {
-					stop = 1;
-					button = 2;
-				}
-				if (msg.message == WM_RBUTTONUP) {
-					stop = 1;
-					button = 3;
-				}
-			}
-			if (mask&Mouse_motion) {
-				if (msg.message == WM_MOUSEMOVE) {
-					stop = 1;
-				}
-			}
-			if (mask&Key_pressed) {
-				if (msg.message >= WM_KEYFIRST && msg.message <= WM_KEYLAST) {
-					stop = 1;
-					GetKeyboardState(keystate);
-					for (i=0; i<256;i++) {
-						if (keystate[i]&(~1)) {
-							key = i;
-							break;
-						}
-					}
-				}
+				if (mask&Button_down) stop = 1;
+				break;
+			case WM_LBUTTONUP:
+			case WM_MBUTTONUP:
+			case WM_RBUTTONUP:
+				button = 0;
+				if (mask&Button_up) stop = 1;
+				break;
+			case WM_MOUSEMOVE:
+				if (mask&Mouse_motion) stop = 1;
+				break;
+			case WM_CHAR:
+				key = msg.wParam & 0xFF;
+				if (mask&Key_pressed) stop = 1;
+				break;
 			}
 			if (stop) {
 				pt = msg.pt;
@@ -589,7 +518,7 @@ CAMLprim value gr_wait_event(value eventlist)
 			if (msg.message == WM_CLOSE)
 				break;
 		}
-		InspectMessages = 0;
+		InspectMessages = NULL;
 	}
 	res = alloc_small(5, 0);
 	Field(res, 0) = Val_int(mouse_x);
