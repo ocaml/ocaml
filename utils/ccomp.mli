@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -14,5 +14,6 @@
 (* Compiling C files and building C libraries *)
 
 val command: string -> int
+val run_command: string -> unit
 val compile_file: string -> int
 val create_archive: string -> string list -> int
