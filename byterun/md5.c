@@ -42,6 +42,7 @@ value md5_chan(vchan, len)       /* ML */
   long toread, read;
   char buffer[4096];
 
+  Lock(chan);
   MD5Init(&ctx);
   toread = Long_val(len);
   while (toread > 0) {
@@ -53,6 +54,7 @@ value md5_chan(vchan, len)       /* ML */
   }
   res = alloc_string(16);
   MD5Final(&Byte_u(res, 0), &ctx);
+  Unlock(chan);
   return res;
 }
 
