@@ -5,7 +5,7 @@
 (*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt        *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -66,10 +66,8 @@ let wnt_is_implicit n =
 ;;
 
 let contains_colon n =
-  try
-    String.index n ':'; true
-  with Not_found ->
-    false
+  try let _ = String.index n ':' in true
+  with Not_found ->                 false
 ;;
 
 let mac_is_relative n =
