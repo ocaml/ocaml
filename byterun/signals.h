@@ -18,9 +18,12 @@
 
 extern value signal_handlers;
 extern Volatile int pending_signal;
+extern Volatile int something_to_do;
+extern Volatile int force_major_slice;
 
 void enter_blocking_section P((void));
 void leave_blocking_section P((void));
+void urge_major_slice P((void));
 
 #endif /* _signals_ */
 

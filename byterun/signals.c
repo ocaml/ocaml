@@ -23,6 +23,8 @@
 
 static Volatile int async_signal_mode = 0;
 Volatile int pending_signal = 0;
+Volatile int something_to_do = 0;
+Volatile int force_major_slice = 0;
 value signal_handlers = 0;
 
 static void execute_signal(signal_number)
@@ -48,6 +50,12 @@ void handle_signal(signal_number)
     pending_signal = signal_number;
     something_to_do = 1;
   }
+}
+
+void urge_major_slice ()
+{
+  force_major_slice = 1;
+  something_to_do = 1;
 }
 
 void enter_blocking_section()

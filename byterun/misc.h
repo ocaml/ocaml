@@ -88,10 +88,6 @@ void fatal_error_arg P((char *, char *)) Noreturn;
 /* GC flags and messages */
 
 extern int verb_gc;
-extern int Volatile something_to_do;
-extern int Volatile force_major_slice;
-
-void urge_major_slice P((void));
 void gc_message P((char *, unsigned long));
 
 /* Memory routines */

@@ -40,14 +40,6 @@ unsigned long not_random ()
 #endif
 
 int verb_gc;
-int Volatile something_to_do = 0;
-int Volatile force_major_slice = 0;
-
-void urge_major_slice ()
-{
-  force_major_slice = 1;
-  something_to_do = 1;
-}
 
 void gc_message (msg, arg)
      char *msg;

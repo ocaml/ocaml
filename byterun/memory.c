@@ -21,6 +21,7 @@
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "signals.h"
 
 /* Allocate more memory from malloc for the heap.
    Return a block of at least the requested size (in words).

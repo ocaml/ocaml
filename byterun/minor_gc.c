@@ -22,6 +22,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "roots.h"
+#include "signals.h"
 
 asize_t minor_heap_size;
 char *young_start = NULL, *young_end = NULL, *young_ptr = NULL;
@@ -152,7 +153,7 @@ void realloc_ref_table ()
     asize_t sz;
     asize_t cur_ptr = ref_table_ptr - ref_table;
                                                   Assert (force_major_slice);
-                                                   Assert (something_to_do);
+
     ref_table_size *= 2;
     sz = (ref_table_size + ref_table_reserve) * sizeof (value *);
     gc_message ("Growing ref_table to %ldk\n", (long) sz / 1024);
