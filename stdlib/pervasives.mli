@@ -432,13 +432,13 @@ val output_binary_int : out_channel -> int -> unit
         (* Write one integer in binary format on the given output channel.
            The only reliable way to read it back is through the
            [input_binary_int] function. The format is compatible across
-           all machines for a given version of Caml Light. *)
+           all machines for a given version of Objective Caml. *)
 val output_value : out_channel -> 'a -> unit
         (* Write the representation of a structured value of any type
            to a channel. Circularities and sharing inside the value
            are detected and preserved. The object can be read back,
            by the function [input_value]. The format is compatible across
-           all machines for a given version of Caml Light. *)
+           all machines for a given version of Objective Caml. *)
 val seek_out : out_channel -> int -> unit
         (* [seek_out chan pos] sets the current writing position to [pos]
            for channel [chan]. This works only for regular files. On

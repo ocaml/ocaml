@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                         Objective Caml                              *)
 (*                                                                     *)
 (*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)
