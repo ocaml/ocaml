@@ -341,7 +341,7 @@ value input_val(struct channel *chan)
   size_64 = getword(chan);
   /* Read block from channel */
   block = stat_alloc(block_len);
-  /* During really_gutblock, concurrent input_val operations can take
+  /* During really_getblock, concurrent input_val operations can take
      place (via signal handlers or context switching in systhreads),
      and intern_input may change.  So, wait until really_getblock
      is over before using intern_input and the other global vars. */
