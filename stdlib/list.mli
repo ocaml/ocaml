@@ -210,7 +210,7 @@ val mem_assq : 'a -> ('a * 'b) list -> bool
    Not tail-recursive. *)
 val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
 
-(** Same as {!List.remove_assq}, but uses physical equality instead
+(** Same as {!List.remove_assoc}, but uses physical equality instead
    of structural equality to compare keys.  Not tail-recursive. *)
 val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
 
