@@ -305,14 +305,14 @@ runtime\primitives:
 	cd runtime & $(MAKEREC) primitives
 
 bytecomp\runtimedef.ml: byterun\primitives byterun\fail.h
-        echo let builtin_exceptions = ^[^| > bytecomp\runtimedef.ml
-        sed -n -e "s|.*/\* \(\"[A-Za-z_]*\"\) \*/$$|  \1;|p" byterun\fail.h | \
+	echo let builtin_exceptions = ^[^| > bytecomp\runtimedef.ml
+	sed -n -e "s|.*/\* \(\"[A-Za-z_]*\"\) \*/$$|  \1;|p" byterun\fail.h | \
         sed -e "$$s|;$$||" >> bytecomp\runtimedef.ml
-        echo ^|^] >> bytecomp\runtimedef.ml
-        echo let builtin_primitives = ^[^| >> bytecomp\runtimedef.ml
-        sed -e "s|.*|  \"^&\";|" -e "$$s|;$$||" byterun\primitives \
+	echo ^|^] >> bytecomp\runtimedef.ml
+	echo let builtin_primitives = ^[^| >> bytecomp\runtimedef.ml
+	sed -e "s|.*|  \"^&\";|" -e "$$s|;$$||" byterun\primitives \
         >> bytecomp\runtimedef.ml
-        echo ^|^] >> bytecomp\runtimedef.ml
+	echo ^|^] >> bytecomp\runtimedef.ml
 
 clean::
 	rm -f bytecomp\runtimedef.ml
@@ -416,15 +416,15 @@ alldepend::
 # The extra libraries
 
 otherlibraries:
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) all & cd ..\..)
+	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) all & cd ..\..)
 otherlibrariesopt:
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) allopt & cd ..\..)
+	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) allopt & cd ..\..)
 clean::
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) clean & cd ..\..)
+	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) clean & cd ..\..)
 realclean::
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) realclean & cd ..\..)
+	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) realclean & cd ..\..)
 alldepend::
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) depend & cd ..\..)
+	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) depend & cd ..\..)
 
 # Default rules
 
