@@ -89,6 +89,12 @@ The "configure" script accepts the following options:
         ./configure -tklibs "-L/usr/local/lib -ltk8.0jp -ltcl8.0jp"
           -tkdefs "-I/usr/local/include/tcl8.0jp -I/usr/local/include/tk8.0jp"
 
+-tk-no-x11
+        Build LablTk without using X11. This option is needed on Cygwin.
+
+-no-tk
+        Do not attempt to build LablTk.
+
 -verbose
         Verbose output of the configuration tests. Use it if the outcome
         of configure is not what you were expecting.
