@@ -201,6 +201,17 @@ Generate only index files.
 The following options apply in conjunction with the "-latex" option:
 
 \begin{options}
+\item["-latex-value-prefix" \var{prefix}]
+Give a prefix to use for the labels of the values in the generated \LaTeX\ document.
+The default prefix is the empty string. You can also use the options
+{\tt -latex-type-prefix}, {\tt -latex-exception-prefix}, {\tt -latex-module-prefix},
+{\tt -latex-module-type-prefix}, {\tt -latex-class-prefix}, {\tt -latex-class-type-prefix},
+{\tt -latex-attribute-prefix} and {\tt -latex-method-prefix}.
+
+These options are useful when you have, for example, a type and a value with
+ the same name. If you do not specify prefixes, \LaTeX\ will complain about
+multiply defined labels.
+
 \item["-latextitle" \var{n,style}]
 Associate style number \var{n} to the given \LaTeX\ sectioning command
 \var{style}, e.g. "section" or "subsection".  (\LaTeX\ only.)  This is
