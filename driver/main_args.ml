@@ -114,7 +114,7 @@ struct
       \032    U/u enable/disable unused match case\n\
       \032    V/v enable/disable hidden instance variable\n\
       \032    X/x enable/disable all other warnings\n\
-      \032    default setting is \"A\" (all warnings enabled)";
+      \032    default setting is \"Al\" (all warnings but labels enabled)";
     "-warn-error" , Arg.String F._warn_error,
       "<flags>  Treat the warnings enabled by <flags> as errors.\n\
         \032    See option -w for the list of flags.\n\

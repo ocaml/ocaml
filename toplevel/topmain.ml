@@ -37,6 +37,7 @@ let main () =
            "<flags>  Enable or disable warnings according to <flags>:\n\
        \032    A/a enable/disable all warnings\n\
        \032    C/c enable/disable suspicious comment\n\
+       \032    D/d enable/disable deprecated features\n\
        \032    F/f enable/disable partially applied function\n\
        \032    M/m enable/disable overriden method\n\
        \032    P/p enable/disable partial match\n\
@@ -44,7 +45,7 @@ let main () =
        \032    U/u enable/disable unused match case\n\
        \032    V/v enable/disable hidden instance variable\n\
        \032    X/x enable/disable all other warnings\n\
-       \032    default setting is A (all warnings enabled)";
+       \032    default setting is \"Al\" (all warnings but labels enabled)";
      "-warn-error" , Arg.String (Warnings.parse_options true),
        "<flags>  Enable or disable fatal warnings according to <flags>\n\
          \032    (see option -w for the list of flags)\n\

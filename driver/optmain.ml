@@ -127,7 +127,7 @@ let main () =
          \032    U/u enable/disable unused match case\n\
          \032    V/v enable/disable hidden instance variables\n\
          \032    X/x enable/disable all other warnings\n\
-         \032    default setting is A (all warnings enabled)";
+         \032    default setting is \"Al\" (all warnings but labels enabled)";
        "-warn-error" , Arg.String (Warnings.parse_options true),
          "<flags>  Enable or disable fatal warnings according to <flags>\n\
            \032    (see option -w for the list of flags)\n\
