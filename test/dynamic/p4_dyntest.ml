@@ -7,7 +7,7 @@
 
 open Pcaml
 
-let string_of_type loc ty = <:expr< "{{TYPE}}" >>
+let string_of_type ty = "{{TYPE}}"
 
 EXTEND
   expr: LEVEL "top"
@@ -22,9 +22,9 @@ EXTEND
             and expected = $b$
             and counter = $c$
             in do {
-            print_string $string_of_type loc from_ty$;
+            print_string $str: string_of_type from_ty$;
             print_string " ---> ";
-            print_string $string_of_type loc to_ty$;
+            print_string $str: string_of_type to_ty$;
             print_string (if success then "  [OK]" else "  [FAIL]");
             if success <> expected then do {
               print_string " !!!!!!!!!!!!!!!!";
