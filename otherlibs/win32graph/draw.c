@@ -478,7 +478,7 @@ CAMLprim value gr_wait_event(value eventlist)
         }
         else { // Not polled. Block for a message
                 InspectMessages = &msg;
-                while (1) {
+                do {
                         WaitForSingleObject(EventHandle,INFINITE);
                         stop = 0;
                         switch (msg.message) {
@@ -501,17 +501,18 @@ CAMLprim value gr_wait_event(value eventlist)
                                 key = msg.wParam & 0xFF;
                                 if (mask&Key_pressed) stop = 1;
                                 break;
+			case WM_CLOSE:
+			        stop = 1;
+				break;
                         }
                         if (stop) {
                                 pt = msg.pt;
                                 MapWindowPoints(HWND_DESKTOP,grwindow.hwnd,&pt,1);
                                 mouse_x = pt.x;
                                 mouse_y = grwindow.height- 1 - pt.y;
-                                break;
                         }
-                        if (msg.message == WM_CLOSE)
-                                break;
-                }
+			SetEvent(EventProcessedHandle);
+                } while (! stop);
                 InspectMessages = NULL;
         }
         res = alloc_small(5, 0);
@@ -602,7 +603,7 @@ CAMLprim value gr_create_image(value vw, value vh)
         if (w < 0 || h < 0)
                 gr_fail("create_image: width and height must be positive",0);
 
-        cbm = CreateCompatibleBitmap(grwindow.tempDC, w, h);
+        cbm = CreateCompatibleBitmap(grwindow.gc, w, h);
         res = alloc_custom(&image_ops, sizeof(struct image),
                 w * h, Max_image_mem);
         if (res) {
@@ -619,8 +620,6 @@ CAMLprim value gr_blit_image (value i, value x, value y)
         HBITMAP oldBmp = SelectObject(grwindow.tempDC,Data(i));
         int xsrc = Int_val(x);
         int ysrc = Wcvt(Int_val(y) + Height(i) - 1);
-	printf("blitting from (%d, %d) size (%d, %d)\n",
-	       xsrc, ysrc, Width(i), Height(i));
         BitBlt(grwindow.tempDC,0, 0, Width(i), Height(i),
                 grwindow.gcBitmap, xsrc, ysrc, SRCCOPY);
         SelectObject(grwindow.tempDC,oldBmp);

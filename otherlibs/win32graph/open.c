@@ -36,7 +36,7 @@ int grcolor;
 extern HFONT * grfont;
 MSG msg;
 
-HANDLE EventHandle;
+HANDLE EventHandle, EventProcessedHandle;
 static char *szOcamlWindowClass = "OcamlWindowClass";
 static BOOL gr_initialized = 0;
 CAMLprim value gr_clear_graph(void);
@@ -166,7 +166,6 @@ static value gr_reset(void)
         grwindow.width = rc.right;
         grwindow.height = rc.bottom;
         if (grwindow.gcBitmap == (HDC)0) {
-//              grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,grwindow.width,grwindow.height);
                 grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,screenx,screeny);
                 grwindow.gcBitmap = CreateCompatibleDC(grwindow.gc);
                 grwindow.tempDC = CreateCompatibleDC(grwindow.gc);
@@ -268,6 +267,7 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
   grwindow.gry = 0;
   
   EventHandle = CreateEvent(NULL,0,0,NULL);
+  EventProcessedHandle = CreateEvent(NULL,0,0,NULL);
 
   /* The global data structures are now correctly initialized.
      Restart the Caml main thread. */
@@ -279,12 +279,14 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
     if (InspectMessages != NULL) {
       *InspectMessages = msg;
       SetEvent(EventHandle);
-      Sleep(10);
     }
     TranslateMessage(&msg);  // Translates virtual key codes
     DispatchMessage(&msg);   // Dispatches message to window
     if (!IsWindow(grwindow.hwnd))
       break;
+    if (InspectMessages != NULL) {
+      WaitForSingleObject(EventProcessedHandle,INFINITE);
+    }
   }
   return 0;
 }

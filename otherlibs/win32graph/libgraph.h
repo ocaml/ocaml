@@ -78,7 +78,7 @@ typedef struct tagWindow {
 extern GR_WINDOW grwindow;
 HFONT CreationFont(char *name);
 extern int MouseLbuttonDown,MouseMbuttonDown,MouseRbuttonDown;
-extern HANDLE EventHandle;
+extern HANDLE EventHandle, EventProcessedHandle;
 extern MSG * InspectMessages;
 extern int MouseLbuttonDown,MouseMbuttonDown,MouseRbuttonDown;
 extern int MouseLastX, MouseLastY;
