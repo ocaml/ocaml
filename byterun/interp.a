@@ -45,7 +45,7 @@ Val_true    equ 3
   import (realloc_stack): code
   import (something_to_do, force_major_slice, pending_signal): data
   import (signal_handlers, rotatecursor_flag): data
-  import (execute_signal): code
+  import (process_event): code
   import (rotatecursor_action): code
   import (cprim): data
   import (raise_zero_divide, fatal_error_arg): code
@@ -1012,7 +1012,7 @@ i_92:     ; CHECK_SIGNALS
           BNE.S      process_signals
           Next
 process_signals:
-          ASL.L      extra_args_               ; begin Setup_for_event
+          ASL.L      #1, extra_args_           ; begin Setup_for_event
           ADDQ.L     #1, extra_args_
           MOVE.L     extra_args_, -(sp_)
           MOVE.L     env_, -(sp_)
