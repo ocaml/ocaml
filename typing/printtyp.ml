@@ -779,15 +779,17 @@ let tree_of_metho sch concrete csil (lab, kind, ty) =
   end
   else csil
 
-let rec prepare_class_type = function
+let rec prepare_class_type params = function
   | Tcty_constr (p, tyl, cty) ->
       let sty = Ctype.self_type cty in
       begin try
-        if List.memq sty !visited_objects then raise (Unify []);
+        if List.memq sty !visited_objects
+        || List.exists (fun ty -> (repr ty).desc <> Tvar) params
+        then raise (Unify []);
         List.iter (occur Env.empty sty) tyl;
         List.iter mark_loops tyl
       with Unify _ ->
-        prepare_class_type cty
+        prepare_class_type params cty
       end
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
@@ -801,13 +803,15 @@ let rec prepare_class_type = function
       Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
   | Tcty_fun (_, ty, cty) ->
       mark_loops ty;
-      prepare_class_type cty
+      prepare_class_type params cty
 
 let rec tree_of_class_type sch params =
   function
   | Tcty_constr (p', tyl, cty) ->
       let sty = Ctype.self_type cty in
-      if List.memq sty !visited_objects then
+      if List.memq sty !visited_objects
+      || List.exists (fun ty -> (repr ty).desc <> Tvar) params
+      then
         tree_of_class_type sch params cty
       else
         Octy_constr (tree_of_path p', tree_of_typlist true tyl)
@@ -851,7 +855,7 @@ let rec tree_of_class_type sch params =
 
 let class_type ppf cty =
   reset ();
-  prepare_class_type cty;
+  prepare_class_type [] cty;
   print_out_class_type ppf (tree_of_class_type false [] cty)
 
 let tree_of_class_params = function
@@ -865,7 +869,7 @@ let tree_of_class_declaration id cl =
 
   reset ();
   aliased := params @ !aliased;
-  prepare_class_type cl.cty_type;
+  prepare_class_type params cl.cty_type;
   let sty = self_type cl.cty_type in
   List.iter mark_loops params;
 
@@ -885,7 +889,7 @@ let tree_of_cltype_declaration id cl =
 
   reset ();
   aliased := params @ !aliased;
-  prepare_class_type cl.clty_type;
+  prepare_class_type params cl.clty_type;
   let sty = self_type cl.clty_type in
   List.iter mark_loops params;
 
