@@ -44,6 +44,7 @@ let access_array base numelt size =
 %token BYTE
 %token CASE
 %token CATCH
+%token CHECKBOUND
 %token COLON
 %token DIVF
 %token DIVI
@@ -258,6 +259,7 @@ binaryop:
   | LEF                         { Ccmpf Cle }
   | GTF                         { Ccmpf Cgt }
   | GEF                         { Ccmpf Cge }
+  | CHECKBOUND                  { Ccheckbound }
 ;
 sequence:
     expr sequence               { Csequence($1, $2) }

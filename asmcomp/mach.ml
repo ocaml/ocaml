@@ -37,6 +37,7 @@ type operation =
   | Iintop_imm of integer_operation * int
   | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
+  | Icheckbound
   | Ispecific of Arch.specific_operation
 
 type instruction =

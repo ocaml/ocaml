@@ -52,6 +52,7 @@ type operation =
   | Cfloatofint | Cintoffloat
   | Ccmpf of comparison
   | Craise
+  | Ccheckbound
 
 type expression =
     Cconst_int of int

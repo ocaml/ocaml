@@ -67,6 +67,7 @@ let operation = function
   | Cintoffloat -> print_string "intoffloat"
   | Ccmpf c -> comparison c; print_string "f"
   | Craise -> print_string "raise"
+  | Ccheckbound -> print_string "checkbound"
 
 let rec expression = function
     Cconst_int n -> print_int n

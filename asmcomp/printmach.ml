@@ -122,7 +122,10 @@ let operation op arg res =
   | Idivf -> reg arg.(0); print_string " /f "; reg arg.(1)
   | Ifloatofint -> print_string "floatofint "; reg arg.(0)
   | Iintoffloat -> print_string "intoffloat "; reg arg.(0)
-  | Ispecific op -> Arch.print_specific_operation reg op arg
+  | Icheckbound ->
+      print_string "check "; reg arg.(0); print_string " < "; reg arg.(1)
+  | Ispecific op ->
+      Arch.print_specific_operation reg op arg
 
 let rec instr i =
   if !print_live then begin

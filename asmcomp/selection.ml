@@ -25,6 +25,7 @@ let oper_result_type = function
   | Cfloatofint -> typ_float
   | Cintoffloat -> typ_int
   | Craise -> typ_void
+  | Ccheckbound -> typ_void
   | _ -> fatal_error "Selection.oper_result_type"
 
 (* Infer the size in bytes of the result of a simple expression *)
@@ -96,6 +97,7 @@ let rec sel_operation op args =
   | (Cdivf, _) -> (Idivf, args)
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
+  | (Ccheckbound, _) -> (Icheckbound, args)
   | _ -> fatal_error "Selection.sel_oper"
 
 and sel_arith_comm op = function
