@@ -376,7 +376,7 @@ let include_err = function
       print_break 1 (-2);
       print_string "is not included in"; print_space();
       Printtyp.cltype_declaration id d2;
-      close_box(),
+      close_box();
       print_space ();
       Includeclass.report_error reason
   | Class_declarations(id, d1, d2, reason) ->
