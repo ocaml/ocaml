@@ -1203,38 +1203,40 @@ let rec occur_rec env visited ty0 ty =
     Tconstr(p, tl, abbrev) ->
       begin try
         if List.memq ty visited then raise Occur;
-        iter_type_expr (occur_rec env (ty::visited) ty0) ty
-      with Occur -> try
-        let ty' = try_expand_head env ty in
+        if not !Clflags.recursive_types then
+          iter_type_expr (occur_rec env (ty::visited) ty0) ty
+      with Occur ->
+        if not (generic_abbrev env p) then raise Occur else
+        let ty' = repr (expand_abbrev env ty) in
         (* Maybe we could simply make a recursive call here,
            but it seems it could make the occur check loop
            (see change in rev. 1.58) *)
         if ty' == ty0 || List.memq ty' visited then raise Occur;
         match ty'.desc with
           Tobject _ | Tvariant _ -> ()
-        | _         -> iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
-      with Cannot_expand ->
-        raise Occur
+        | _ ->
+            if not !Clflags.recursive_types then
+              iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       end
   | Tobject _ | Tvariant _ ->
       ()
   | _ ->
-      iter_type_expr (occur_rec env visited ty0) ty
+      if not !Clflags.recursive_types then
+        iter_type_expr (occur_rec env visited ty0) ty
 
 let type_changed = ref false (* trace possible changes to the studied type *)
 
 let merge r b = if b then r := true
 
 let occur env ty0 ty =
-  if not !Clflags.recursive_types then
-    let old = !type_changed in
-    try
-      while type_changed := false; occur_rec env [] ty0 ty; !type_changed
-      do () (* prerr_endline "changed" *) done;
-      merge type_changed old
-    with exn ->
-      merge type_changed old;
-      raise (match exn with Occur -> Unify [] | _ -> exn)
+  let old = !type_changed in
+  try
+    while type_changed := false; occur_rec env [] ty0 ty; !type_changed
+    do () (* prerr_endline "changed" *) done;
+    merge type_changed old
+  with exn ->
+    merge type_changed old;
+    raise (match exn with Occur -> Unify [] | _ -> exn)
 
 
                    (*****************************)
@@ -2062,6 +2064,44 @@ let moregeneral env inst_nongen pat_sch subj_sch =
   current_level := old_level;
   res
 
+
+(* Alternative approach: "rigidify" a type scheme,
+   and check validity after unification *)
+(* Simpler, no? *)
+
+let rec rigidify_rec vars ty =
+  let ty = repr ty in
+  if ty.level >= lowest_level then begin
+    ty.level <- pivot_level - ty.level;
+    begin match ty.desc with
+    | Tvar ->
+        if not (List.memq ty !vars) then vars := ty :: !vars
+    | Tvariant row ->
+        let row = row_repr row in
+        let more = repr row.row_more in
+        if more.desc = Tvar && not row.row_fixed then
+          let more' = newty2 more.level Tvar in
+          let row' = {row with row_fixed=true; row_fields=[]; row_more=more'}
+          in link_type more (newty2 ty.level (Tvariant row'))
+    | _ -> ()
+    end;
+    iter_type_expr (rigidify_rec vars) ty
+  end
+
+let rigidify ty =
+  let vars = ref [] in
+  rigidify_rec vars ty;
+  unmark_type ty;
+  !vars
+
+let all_distinct_vars vars =
+  let tyl = ref [] in
+  List.for_all
+    (fun ty ->
+      let ty = repr ty in
+      if List.memq ty !tyl then false else
+      (tyl := ty :: !tyl; ty.desc = Tvar))
+    vars
 
                  (*********************************************)
                  (*  Equivalence between parameterized types  *)

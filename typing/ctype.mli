@@ -150,6 +150,11 @@ val filter_self_method:
         type_expr -> Ident.t * type_expr
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
         (* Check if the first type scheme is more general than the second. *)
+val rigidify: type_expr -> type_expr list
+        (* "Rigidify" a type and return its type variable *)
+val all_distinct_vars: type_expr list -> bool
+        (* Check those type are all distinct type variables *)
+
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
