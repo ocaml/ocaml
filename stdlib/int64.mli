@@ -155,14 +155,6 @@ external of_string : string -> int64 = "int64_of_string"
 val to_string : int64 -> string
 (** Return the string representation of its argument, in decimal. *)
 
-external format : string -> int64 -> string = "int64_format"
-(** [Int64.format fmt n] return the string representation of the
-   64-bit integer [n] in the format specified by [fmt].
-   [fmt] is a {!Printf}-style format containing exactly
-   one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
-   This function is deprecated; use {!Printf.sprintf} with a [%Lx] format
-   instead. *)
-
 external bits_of_float : float -> int64 = "int64_bits_of_float"
 (** Return the internal representation of the given float according
    to the IEEE 754 floating-point ``double format'' bit layout.
@@ -183,3 +175,16 @@ val compare: t -> t -> int
     {!Pervasives.compare}.  Along with the type [t], this function [compare]
     allows the module [Int64] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+(**/**)
+
+(** {6 Deprecated functions} *)
+
+external format : string -> int64 -> string = "int64_format"
+(** [Int64.format fmt n] return the string representation of the
+   64-bit integer [n] in the format specified by [fmt].
+   [fmt] is a {!Printf}-style format consisting of exactly one
+   [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
+   This function is deprecated; use {!Printf.sprintf} with a [%Lx] format
+   instead. *)
+
