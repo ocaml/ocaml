@@ -310,7 +310,7 @@ caml_start_program:
         Storeglobal(9, caml_exception_pointer, 11)
         addi    1, 1, 8
     /* Pop the callback link, restoring the global variables */
-L106:
+.L106:
         lwz     9, 0(1)
         lwz     10, 4(1)
         lwz     11, 8(1)
