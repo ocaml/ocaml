@@ -198,19 +198,6 @@ let max_register_pressure = function
     Iextcall(_, _) -> [| 11; 0 |]
   | _ -> [| 19; 15 |]
 
-(* Latencies (in cycles). Wild guesses. *)
-
-let need_scheduling = true
-
-let oper_latency = function
-    Ireload -> 3
-  | Iload(_, _) -> 3
-  | Iconst_float _ -> 3 (* turned into a load *)
-  | Iaddf | Isubf -> 3
-  | Imulf -> 5
-  | Idivf -> 15
-  | _ -> 1
-
 (* Layout of the stack *)
 
 let num_stack_slots = [| 0; 0 |]
@@ -219,7 +206,9 @@ let contains_calls = ref false
 (* Calling the assembler and the archiver *)
 
 let assemble_file infile outfile =
-  Ccomp.command ("as -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
-
-open Clflags;;
-open Config;;
+  let asprefix = begin match !arch_version with
+    SPARC_V7 -> "as -o "
+  | SPARC_V8 -> "as -xarch=v8 -o "
+  | SPARC_V9 -> "as -xarch=v8plus -o "
+  end in
+  Ccomp.command (asprefix ^ Filename.quote outfile ^ " " ^ Filename.quote infile)

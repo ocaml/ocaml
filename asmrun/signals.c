@@ -13,6 +13,7 @@
 
 /* $Id$ */
 
+#include <stdio.h>
 #include <signal.h>
 #if defined(TARGET_sparc) && defined(SYS_solaris)
 #include <ucontext.h>
@@ -178,6 +179,24 @@ void leave_blocking_section(void)
   async_signal_mode = 0;
 }
 
+#ifdef POSIX_SIGNALS
+static void reraise(int sig, int now)
+{
+  struct sigaction sa;
+  sa.sa_handler = 0;
+  sa.sa_flags = 0;
+  sigemptyset(&sa.sa_mask);
+  sigaction(sig, &sa, 0);
+  /* If the signal was sent using kill() (si_code == 0) or will
+     not recur then raise it here.  Otherwise return.  The
+     offending instruction will be reexecuted and the signal
+     will recur.  */
+  if (now == 1)
+    raise(sig);
+  return;
+}
+#endif
+
 #if defined(TARGET_alpha) || defined(TARGET_mips)
 void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_aix)
@@ -186,6 +205,8 @@ void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
 void handle_signal(int sig, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_rhapsody)
 void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
+#elif defined(TARGET_sparc) && defined(SYS_solaris)
+void handle_signal(int sig, int code, void * context)
 #else
 void handle_signal(int sig)
 #endif
@@ -236,6 +257,15 @@ void handle_signal(int sig)
     if (In_code_area(CONTEXT_PC(context))) {
       /* Cached in register 30 */
       CONTEXT_GPR(context, 30) = (unsigned long) young_limit;
+    }
+#endif
+#if defined(TARGET_sparc) && defined(SYS_solaris)
+    { greg_t * gregs = ((ucontext_t *)context)->uc_mcontext.gregs;
+      if (In_code_area(gregs[REG_PC])) {
+      /* Cached in register l7, which is saved on the stack 7 words
+	 after the stack pointer.  */
+        ((long *)(gregs[REG_SP]))[7] = (long) young_limit;
+      }
     }
 #endif
   }
@@ -358,7 +388,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
 #ifdef POSIX_SIGNALS
   sigact.sa_handler = act;
   sigemptyset(&sigact.sa_mask);
-#ifdef SYS_rhapsody
+#if defined(SYS_solaris) || defined(SYS_rhapsody)
   sigact.sa_flags = SA_SIGINFO;
 #else
   sigact.sa_flags = 0;
@@ -412,10 +442,9 @@ static void trap_handler(int sig, int code,
 #endif
 
 #if defined(TARGET_sparc) && defined(SYS_solaris)
-static void trap_handler(int sig, siginfo_t * info, void * arg)
+static void trap_handler(int sig, siginfo_t * info, void * context)
 {
-  ucontext_t * context;
-  int * sp;
+  long * sp;
 
   if (info->si_code != ILL_ILLTRP) {
     fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n",
@@ -423,8 +452,7 @@ static void trap_handler(int sig, siginfo_t * info, void * arg)
     exit(100);
   }
   /* Recover young_ptr and caml_exception_pointer from the %l5 and %l6 regs */
-  context = (ucontext_t *) arg;
-  sp = (int *) context->uc_mcontext.gregs[REG_SP];
+  sp = (long *) (((ucontext_t *)context)->uc_mcontext.gregs[REG_SP]);
   caml_exception_pointer = (char *) sp[5];
   young_ptr = (char *) sp[6];
   array_bound_error();

@@ -72,6 +72,10 @@
 
 #endif
 
+#ifndef SYS_solaris
+#define INDIRECT_LIMIT
+#endif
+
 #define Exn_ptr %l5
 #define Alloc_ptr %l6
 #define Alloc_limit %l7
@@ -88,9 +92,15 @@
 
 /* Required size in %g2 */
 Caml_alloc:
+#ifdef INDIRECT_LIMIT
         ld      [Alloc_limit], %g1
         sub     Alloc_ptr, %g2, Alloc_ptr
         cmp     Alloc_ptr, %g1
+#else
+        sub     Alloc_ptr, %g2, Alloc_ptr
+        cmp     Alloc_ptr, Alloc_limit
+#endif
+        /*blu,pt  %icc, Caml_call_gc*/
         blu     Caml_call_gc
         nop
         retl
@@ -112,14 +122,22 @@ Caml_call_gc:
         sub     %sp, 20*4 + 15*8, %sp
     /* Save int regs on stack and save it into caml_gc_regs */
 L100:   add     %sp, 96 + 15*8, %g2
-        std     %o0, [%g2]
-        std     %o2, [%g2 + 0x8]
-        std     %o4, [%g2 + 0x10]
-        std     %i0, [%g2 + 0x18]
-        std     %i2, [%g2 + 0x20]
-        std     %i4, [%g2 + 0x28]
-        std     %l0, [%g2 + 0x30]
-        std     %l2, [%g2 + 0x38]
+        st      %o0, [%g2]
+        st      %o1, [%g2 + 0x4]
+        st      %o2, [%g2 + 0x8]
+        st      %o3, [%g2 + 0xc]
+        st      %o4, [%g2 + 0x10]
+        st      %o5, [%g2 + 0x14]
+        st      %i0, [%g2 + 0x18]
+        st      %i1, [%g2 + 0x1c]
+        st      %i2, [%g2 + 0x20]
+        st      %i3, [%g2 + 0x24]
+        st      %i4, [%g2 + 0x28]
+        st      %i5, [%g2 + 0x2c]
+        st      %l0, [%g2 + 0x30]
+        st      %l1, [%g2 + 0x34]
+        st      %l2, [%g2 + 0x38]
+        st      %l3, [%g2 + 0x3c]
         st      %l4, [%g2 + 0x40]
         st      %g3, [%g2 + 0x44]
         st      %g4, [%g2 + 0x48]
@@ -146,14 +164,22 @@ L100:   add     %sp, 96 + 15*8, %g2
         nop
     /* Restore all regs used by the code generator */
         add     %sp, 96 + 15*8, %g2
-        ldd     [%g2], %o0
-        ldd     [%g2 + 0x8], %o2
-        ldd     [%g2 + 0x10], %o4
-        ldd     [%g2 + 0x18], %i0
-        ldd     [%g2 + 0x20], %i2
-        ldd     [%g2 + 0x28], %i4
-        ldd     [%g2 + 0x30], %l0
-        ldd     [%g2 + 0x38], %l2
+        ld      [%g2], %o0
+        ld      [%g2 + 0x4], %o1
+        ld      [%g2 + 0x8], %o2
+        ld      [%g2 + 0xc], %o3
+        ld      [%g2 + 0x10], %o4
+        ld      [%g2 + 0x14], %o5
+        ld      [%g2 + 0x18], %i0
+        ld      [%g2 + 0x1c], %i1
+        ld      [%g2 + 0x20], %i2
+        ld      [%g2 + 0x24], %i3
+        ld      [%g2 + 0x28], %i4
+        ld      [%g2 + 0x2c], %i5
+        ld      [%g2 + 0x30], %l0
+        ld      [%g2 + 0x34], %l1
+        ld      [%g2 + 0x38], %l2
+        ld      [%g2 + 0x3c], %l3
         ld      [%g2 + 0x40], %l4
         ld      [%g2 + 0x44], %g3
         ld      [%g2 + 0x48], %g4
@@ -177,9 +203,15 @@ L100:   add     %sp, 96 + 15*8, %g2
         Load(Young_ptr, Alloc_ptr)
     /* Allocate space for block */
         Load(Caml_required_size, %g2)
+#ifdef INDIRECT_LIMIT
         ld      [Alloc_limit], %g1
         sub     Alloc_ptr, %g2, Alloc_ptr
         cmp     Alloc_ptr, %g1      /* Check that we have enough free space */
+#else
+        Load(Young_limit,Alloc_limit)
+        sub     Alloc_ptr, %g2, Alloc_ptr
+        cmp     Alloc_ptr, Alloc_limit
+#endif
         blu     L100                /* If not, call GC again */
         nop
     /* Return to caller */
@@ -225,11 +257,11 @@ L108:
         Load(Caml_bottom_of_stack, %l0)
         Load(Caml_last_return_address, %l1)
         Load(Caml_gc_regs, %l3)
-        std     %l0, [%sp + 96]
-        st      %l3, [%sp + 104]
+        st      %l0, [%sp + 96]
+        st      %l1, [%sp + 100]
     /* Set up a trap frame to catch exceptions escaping the Caml code */
         call    L111
-        nop
+        st      %l3, [%sp + 104]
         b       L110
         nop
 L111:   sub     %sp, 8, %sp
@@ -239,7 +271,11 @@ L111:   sub     %sp, 8, %sp
         mov     %sp, Exn_ptr
     /* Reload allocation pointers */
         Load(Young_ptr, Alloc_ptr)
+#ifdef INDIRECT_LIMIT
         Address(Young_limit, Alloc_limit)
+#else
+        Load(Young_limit, Alloc_limit)
+#endif
     /* Call the Caml code */
 L109:   call    %l2
         nop
@@ -248,7 +284,8 @@ L109:   call    %l2
         add     %sp, 8, %sp
         Store(Exn_ptr, Caml_exception_pointer)
     /* Pop callback link, restoring the global variables */
-L112:   ldd     [%sp + 96], %l0
+L112:   ld      [%sp + 96], %l0
+        ld      [%sp + 100], %l1
         ld      [%sp + 104], %l2
         Store(%l0, Caml_bottom_of_stack)
         Store(%l1, Caml_last_return_address)
@@ -256,18 +293,15 @@ L112:   ldd     [%sp + 96], %l0
         add     %sp, 16, %sp
     /* Save allocation pointer */
         Store(Alloc_ptr, Young_ptr)
-    /* Move result where the C function expects it */
-        mov     %o0, %i0        /* %i0 will become %o0 after restore */
     /* Reload callee-save registers and return */
         ret
-        restore
+        restore %o0, 0, %o0     /* copy %o0 in this window to caller's %o0 */
 L110:
     /* The trap handler */
         Store(Exn_ptr, Caml_exception_pointer)
     /* Encode exception bucket as an exception result */
-        or      %o0, 2, %o0
         b       L112
-        nop
+        or      %o0, 2, %o0
 
 /* Raise an exception from C */
 
@@ -288,7 +322,11 @@ L106:   restore
 L107:
     /* Reload allocation registers */
         Load(Young_ptr, Alloc_ptr)
+#ifdef INDIRECT_LIMIT
         Address(Young_limit, Alloc_limit)
+#else
+        Load(Young_limit, Alloc_limit)
+#endif
     /* Branch to exception handler */
         mov     %g3, %sp
         ld      [%sp + 96], %g1
@@ -338,10 +376,23 @@ Callback3_exn:
         b       L108
         or      %l2, %lo(Caml_apply3), %l2
 
+#ifdef SYS_solaris
+        .section ".rodata"
+#else
         .data
+#endif
         .global System_frametable
 System_frametable:
         .word   1               /* one descriptor */
         .word   L109            /* return address into callback */
         .half   -1              /* negative frame size => use callback link */
         .half   0               /* no roots */
+
+#ifdef SYS_solaris
+	.type Caml_alloc, #function
+	.type Caml_call_gc, #function
+        .type Caml_c_call, #function
+        .type Caml_start_program, #function
+        .type Raise_caml_exception, #function
+	.type System_frametable, #object
+#endif

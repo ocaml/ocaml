@@ -68,6 +68,16 @@ let emit_symbol s =
   then emit_string s
   else begin emit_string symbol_prefix; Emitaux.emit_symbol '$' s end
 
+let emit_size lbl =
+  if Config.system = "solaris" then
+    `	.size	{emit_symbol lbl},.-{emit_symbol lbl}\n`
+
+let rodata () =
+  if Config.system = "solaris" (* || Config.system = "linux" *) then
+    `	.section \".rodata\"\n`
+  else
+    `	.data\n`
+
 (* Check if an integer or native integer is an immediate operand *)
 
 let is_immediate n =
@@ -179,9 +189,25 @@ let emit_frame fd =
 let float_constants = ref ([] : (int * string) list)
 
 let emit_float_constant (lbl, cst) =
-  `	.data\n`;
+  rodata ();
   `	.align	8\n`;
   `{emit_label lbl}:	.double	0r{emit_string cst}\n`
+
+(* Emission of the profiling prelude *)
+let emit_profile () =
+  begin match Config.system with
+    "solaris" ->
+      let lbl = new_label() in
+      `	.section \".bss\"\n`;
+      `{emit_label lbl}:	.skip 4\n`;
+      `	.text\n`;
+      `	save	%sp,-96,%sp\n`;
+      `	sethi	%hi({emit_label lbl}),%o0\n`;
+      `	call	_mcount\n`;
+      `	or	%o0,%lo({emit_label lbl}),%o0\n`;
+      `	restore\n`
+  | _ -> ()
+  end
 
 (* Names of various instructions *)
 
@@ -194,16 +220,25 @@ let name_for_int_operation = function
   | Ilsl -> "sll"
   | Ilsr -> "srl"
   | Iasr -> "sra"
+  | Imul -> "smul"
   | _ -> Misc.fatal_error "Emit.name_for_int_operation"
 
 let name_for_float_operation = function
-    Inegf -> "fnegs"
-  | Iabsf -> "fabss"
+    Inegf -> if !arch_version = SPARC_V9 then "fnegd" else "fnegs"
+  | Iabsf -> if !arch_version = SPARC_V9 then "fabsd" else "fabss"
   | Iaddf -> "faddd"
   | Isubf -> "fsubd"
   | Imulf -> "fmuld"
   | Idivf -> "fdivd"
   | _ -> Misc.fatal_error "Emit.name_for_float_operation"
+
+let name_for_int_movcc = function
+    Isigned Ceq -> "e"	    | Isigned Cne -> "ne"
+  | Isigned Cle -> "le"	    | Isigned Cgt -> "g"
+  | Isigned Clt -> "l"	    | Isigned Cge -> "ge"
+  | Iunsigned Ceq -> "e"    | Iunsigned Cne -> "ne"
+  | Iunsigned Cle -> "leu"  | Iunsigned Cgt -> "gu"
+  | Iunsigned Clt -> "lu"   | Iunsigned Cge -> "geu"
 
 let name_for_int_comparison = function
     Isigned Ceq -> "be"      | Isigned Cne -> "bne"
@@ -236,19 +271,19 @@ let rec emit_instr i dslot =
             {loc = Reg rs; typ = (Int | Addr)}, {loc = Reg rd} ->
               `	mov	{emit_reg src}, {emit_reg dst}\n`
           | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
-              `	fmovs	{emit_reg src}, {emit_reg dst}\n`;
-              `	fmovs	{emit_reg(next_in_pair src)}, {emit_reg(next_in_pair dst)}\n`
+              if !arch_version = SPARC_V9 then
+                `	fmovd	{emit_reg src}, {emit_reg dst}\n`
+              else begin
+                `	fmovs	{emit_reg src}, {emit_reg dst}\n`;
+                `	fmovs	{emit_reg(next_in_pair src)}, {emit_reg(next_in_pair dst)}\n`
+              end
           | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = (Int | Addr)} ->
               (* This happens when calling C functions and passing a float arg
                  in %o0...%o5 *)
               `	sub	%sp, 8, %sp\n`;
               `	std	{emit_reg src}, [%sp + 96]\n`;
-              if rd land 1 = 0 then
-                `	ldd	[%sp + 96], {emit_reg dst}\n`
-              else begin
-                `	ld	[%sp + 96], {emit_reg dst}\n`;
-                `	ld	[%sp + 100], {emit_reg(next_in_pair dst)}\n`
-              end;
+              `	ld	[%sp + 96], {emit_reg dst}\n`;
+              `	ld	[%sp + 100], {emit_reg(next_in_pair dst)}\n`;
               `	add	%sp, 8, %sp\n`
           | {loc = Reg rs; typ = (Int | Addr)}, {loc = Stack sd} ->
               `	st	{emit_reg src}, {emit_stack dst}\n`
@@ -269,6 +304,8 @@ let rec emit_instr i dslot =
           `	or	%g1, %lo({emit_nativeint n}), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_float s) ->
+        (* On UltraSPARC, the fzero instruction could be used to set a
+           floating point register pair to zero. *)
         let lbl = new_label() in
         float_constants := (lbl, s) :: !float_constants;
         `	sethi	%hi({emit_label lbl}), %g1\n`;
@@ -352,10 +389,15 @@ let rec emit_instr i dslot =
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
+          let indirect = Config.system <> "solaris" in
           let lbl_cont = new_label() in
-          `	ld	[%l7], %g1\n`;
+          if indirect then 
+            `	ld	[%l7], %g1\n`;
           `	sub	%l6, {emit_int n}, %l6\n`;
-          `	cmp	%l6, %g1\n`;
+          if indirect then
+            `	cmp	%l6, %g1\n`
+          else
+            `	cmp	%l6, %l7\n`;
           `	bgeu	{emit_label lbl_cont}\n`;
           `	add	%l6, 4, {emit_reg i.res.(0)}\n`; (* in delay slot *)
           `{record_frame i.live}	call	{emit_symbol "caml_call_gc"}\n`;
@@ -368,29 +410,50 @@ let rec emit_instr i dslot =
           `	add	%l6, 4, {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop(Icomp cmp)) ->
-        let comp = name_for_int_comparison cmp in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-        let lbl = new_label() in
-        `	{emit_string comp},a	{emit_label lbl}\n`;
-        `	mov	1, {emit_reg i.res.(0)}\n`;
-        `	mov	0, {emit_reg i.res.(0)}\n`;
-        `{emit_label lbl}:\n`
+        if !arch_version = SPARC_V9 then begin
+          let comp = name_for_int_movcc cmp in
+          `	mov	0, {emit_reg i.res.(0)}\n`;
+          `	mov{emit_string comp}	%icc, 1, {emit_reg i.res.(0)}\n`
+        end
+        else begin
+          let comp = name_for_int_comparison cmp
+          and lbl = new_label() in
+          `	{emit_string comp},a	{emit_label lbl}\n`;
+          `	mov	1, {emit_reg i.res.(0)}\n`;
+          `	mov	0, {emit_reg i.res.(0)}\n`;
+          `{emit_label lbl}:\n`
+        end
     | Lop(Iintop Icheckbound) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
+    | Lop(Iintop Idiv) ->
+        `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
+        `	wr	%g1, %y\n`;
+        `	sdiv	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
-    | Lop(Iintop_imm(Idiv, n)) ->       (* n is a power of 2 *)
+    | Lop(Iintop_imm(Ilsl, 1)) ->
+        (* UltraSPARC has two add units but only one shifter. *)
+        `	add	{emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop_imm(Idiv, n)) ->
         let l = Misc.log2 n in
-        let lbl = new_label() in
-        `	cmp	{emit_reg i.arg.(0)}, 0\n`;
-        `	bge	{emit_label lbl}\n`;
-        `	mov	{emit_reg i.arg.(0)}, %g1\n`; (* in delay slot *)
-        `	add	%g1, {emit_int (n-1)}, %g1\n`;
-        `{emit_label lbl}:\n`;
-        `	sra	%g1, {emit_int l}, {emit_reg i.res.(0)}\n`
+        if n = 1 lsl l then begin
+          let lbl = new_label() in
+          `	cmp	{emit_reg i.arg.(0)}, 0\n`;
+          `	bge	{emit_label lbl}\n`;
+          `	mov	{emit_reg i.arg.(0)}, %g1\n`; (* in delay slot *)
+          `	add	%g1, {emit_int (n-1)}, %g1\n`;
+          `{emit_label lbl}:\n`;
+          `	sra	%g1, {emit_int l}, {emit_reg i.res.(0)}\n`
+        end else begin
+          `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
+          `	wr	%g1, %y\n`;
+          `	sdiv	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
+        end
     | Lop(Iintop_imm(Imod, n)) ->       (* n is a power of 2 *)
+        let log = Misc.log2 n in
         let lbl = new_label() in
         `	tst	{emit_reg i.arg.(0)}\n`;
         `	bge	{emit_label lbl}\n`;
@@ -400,13 +463,19 @@ let rec emit_instr i dslot =
         `	sub	{emit_reg i.res.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`;
         `{emit_label lbl}:\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
-        let comp = name_for_int_comparison cmp in
         `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
-        let lbl = new_label() in
-        `	{emit_string comp},a	{emit_label lbl}\n`;
-        `	mov	1, {emit_reg i.res.(0)}\n`;
-        `	mov	0, {emit_reg i.res.(0)}\n`;
-        `{emit_label lbl}:\n`
+        if !arch_version = SPARC_V9 then begin
+          let comp = name_for_int_movcc cmp in
+          `	mov	0, {emit_reg i.res.(0)}\n`;
+          `	mov{emit_string comp}	%xcc, 1, {emit_reg i.res.(0)}\n`
+        end else begin
+          let comp = name_for_int_comparison cmp
+          and lbl = new_label() in
+          `	{emit_string comp},a	{emit_label lbl}\n`;
+          `	mov	1, {emit_reg i.res.(0)}\n`;
+          `	mov	0, {emit_reg i.res.(0)}\n`;
+          `{emit_label lbl}:\n`
+        end
     | Lop(Iintop_imm(Icheckbound, n)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
@@ -416,7 +485,8 @@ let rec emit_instr i dslot =
     | Lop(Inegf | Iabsf as op) ->
         let instr = name_for_float_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`;
-        `	fmovs	{emit_reg(next_in_pair i.arg.(0))}, {emit_reg(next_in_pair i.res.(0))}\n`
+        if !arch_version <> SPARC_V9 then
+          `	fmovs	{emit_reg(next_in_pair i.arg.(0))}, {emit_reg(next_in_pair i.res.(0))}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
         let instr = name_for_float_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
@@ -433,14 +503,17 @@ let rec emit_instr i dslot =
         `	ld	[%sp + 96], {emit_reg i.res.(0)}\n`;
         `	add	%sp, 8, %sp\n`
     | Lop(Ispecific sop) ->
-        fatal_error "Emit: specific"
+	assert false
     | Lreloadretaddr ->
         let n = frame_size() in
         `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`
     | Lreturn ->
         let n = frame_size() in
         `	retl\n`;
-        `	add	%sp, {emit_int n}, %sp\n`
+        if n = 0 then
+          `	nop\n`
+        else
+          `	add	%sp, {emit_int n}, %sp\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
     | Lbranch lbl ->
@@ -544,6 +617,7 @@ let is_one_instr i =
       | Iintop(op) -> is_one_instr_op op
       | Iintop_imm(op, _) -> is_one_instr_op op
       | Iaddf | Isubf | Imulf | Idivf -> true
+      | Iabsf | Inegf -> !arch_version = SPARC_V9
       | _ -> false
       end
   | _ -> false
@@ -595,7 +669,10 @@ let fundecl fundecl =
   `	.text\n`;
   `	.align	4\n`;
   `	.global	{emit_symbol fundecl.fun_name}\n`;
+  if Config.system = "solaris" then
+    `	.type	{emit_symbol fundecl.fun_name},#function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
+  if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
   if n > 0 then
     `	sub	%sp, {emit_int n}, %sp\n`;
@@ -603,6 +680,7 @@ let fundecl fundecl =
     `	st	%o7, [%sp + {emit_int(n - 4 + 96)}]\n`;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
+  emit_size fundecl.fun_name;
   List.iter emit_float_constant !float_constants
 
 (* Emission of data *)
@@ -631,18 +709,7 @@ let emit_item = function
   | Clabel_address lbl ->
       `	.word	{emit_label (lbl + 100000)}\n`
   | Cstring s ->
-      let l = String.length s in
-      if l = 0 then ()
-      else if l < 80 then
-        `	.ascii	{emit_string_literal s}\n`
-      else begin
-        let i = ref 0 in
-        while !i < l do
-          let n = min (l - !i) 80 in
-          `	.ascii	{emit_string_literal(String.sub s !i n)}\n`;
-          i := !i + n
-        done
-      end
+      emit_string_directive "	.ascii	" s
   | Cskip n ->
       if n > 0 then `	.skip	{emit_int n}\n`
   | Calign n ->
@@ -675,8 +742,12 @@ let end_assembly() =
   `{emit_symbol lbl_end}:\n`;
   `	.word	0\n`;
   let lbl = Compilenv.current_unit_name() ^ "__frametable" in
+  rodata ();
   `	.global	{emit_symbol lbl}\n`;
+  if Config.system = "solaris" then
+    `	.type   {emit_symbol lbl},#object\n`;
   `{emit_symbol lbl}:\n`;
   `	.word	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
+  emit_size lbl;
   frame_descriptors := []
