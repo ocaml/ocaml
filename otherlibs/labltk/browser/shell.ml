@@ -40,18 +40,11 @@ class ['a] history () = object
     List.nth history ((l + count - 1) mod l)
 end
 
-let dump_mem ?(pos = 0) ?len obj =
-  if not (Obj.is_block obj) then invalid_arg "Shell.dump_mem";
-  let len =
-    match len with
-    | None -> Obj.size obj * Sys.word_size / 8 - pos
-    | Some x -> x in
-  let buf = Buffer.create 256 in
-  for i = pos to len - 1 do
-    let c = String.unsafe_get (Obj.obj obj) i in
-    Buffer.add_string buf (Printf.sprintf "%02x" (Char.code c))
-  done;
-  Buffer.contents buf
+let dump_handle (h : Unix.file_descr) =
+  let obj = Obj.repr h in
+  if Obj.is_int obj || Obj.tag obj <> Obj.final_tag then
+    invalid_arg "Shell.dump_handle";
+  Nativeint.format "%x" (Obj.obj obj)
 
 (* The shell class. Now encapsulated *)
 
@@ -66,7 +59,7 @@ object (self)
   val pid =
     let env =
       if Sys.os_type = "Win32" then
-        let sigdef = "CAMLSIGPIPE=" ^ dump_mem (Obj.repr sig2) in
+        let sigdef = "CAMLSIGPIPE=" ^ dump_handle sig2 in
         Array.append env [|sigdef|]
       else env
     in
@@ -286,10 +279,10 @@ let f ~prog ~title =
       end in
   let load_path =
     List2.flat_map !Config.load_path ~f:(fun dir -> ["-I"; dir]) in
-  let labels = if !Clflags.classic then [] else ["-labels"] in
+  let labels = if !Clflags.classic then ["-nolabels"] else [] in
   let rectypes = if !Clflags.recursive_types then ["-rectypes"] else [] in
   let warnings =
-    if List.mem "-w" progargs || !warnings = "A" then []
+    if List.mem "-w" progargs || !warnings = "Al" then []
     else ["-w"; !warnings]
   in
   let args =
