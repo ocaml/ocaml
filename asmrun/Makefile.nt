@@ -48,7 +48,7 @@ i386nt.obj: i386nt.asm
 	ml /nologo /coff /Cp /c /Foi386nt.obj i386nt.asm
 
 i386.o: i386.S
-	gcc -c -DSYS_$(SYSTEM) i386.S
+	$(CC) -c -DSYS_$(SYSTEM) i386.S
 
 install:
 	cp libasmrun.$(A) $(LIBDIR)
