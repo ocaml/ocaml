@@ -857,6 +857,7 @@ to the end.
               (setq kwop (caml-find-kwop caml-phrase-sep-keywords min-pos))
               (not (string= kwop ";;"))
               (not (bolp))))
+      (if (string= kwop ";;") (forward-char 2))
       (if (not kwop) (goto-char min-pos))
       (caml-skip-comments-forward)
       (setq beg (point))
