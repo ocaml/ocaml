@@ -11,7 +11,7 @@ The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
 Linking Caml bytecode with C code (ocamlc -custom) requires the
-Microsoft Visual C++ compiler.
+Microsoft Visual C++ compiler version 6.
 
 The native-code compiler (ocamlopt) requires Visual C++ and the
 Microsoft assembler MASM version 6.
@@ -81,6 +81,14 @@ In addition to Visual C++ (version 4, 5 or 6) and MASM 6, you will
 need the CygWin port of GNU tools, available from
 http://sourceware.cygnus.com/cygwin/
 
+To recompile, first copy manually the files config/m-nt.h and config/s-nt.h
+to config/m.h and config/s.h.  Edit config/Makefile.nt as needed.
+Then, use "nmake -f Makefile.nt" to build the system, e.g. 
+
+        nmake -f Makefile.nt world
+        nmake -f Makefile.nt bootstrap
+        nmake -f Makefile.nt opt
+        
 The sources for the toplevel graphical user interface are not currently
 available to the general public.  Contact us if you think you need them.
 
