@@ -19,9 +19,9 @@
 
 #ifdef TARGET_mips
 #define Saved_return_address(sp) *((long *)(sp - 4))
-/** #define Already_scanned(sp, retaddr) (retaddr & 1)
-    #define Mark_scanned(sp, retaddr) (*((long *)(sp - 8)) = retaddr | 1)
-    #define Mask_already_scanned(retaddr) (retaddr & ~1) **/
+#define Already_scanned(sp, retaddr) (retaddr & 1)
+#define Mark_scanned(sp, retaddr) (*((long *)(sp - 4)) = retaddr | 1)
+#define Mask_already_scanned(retaddr) (retaddr & ~1)
 #endif
 
 #ifdef TARGET_i386
