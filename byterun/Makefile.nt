@@ -1,6 +1,6 @@
 !include ..\config\Makefile.nt
 
-CC=$(BYTECC) /Zi
+CC=$(BYTECC)
 CFLAGS=$(BYTECCCOMPOPTS)
 
 OBJS=interp.obj misc.obj stacks.obj fix_code.obj startup.obj main.obj \
@@ -23,7 +23,7 @@ install:
 	cp ocamlrun.exe $(BINDIR)\ocamlrun.exe
 	cp libcamlrun.lib $(LIBDIR)\libcamlrun.lib
 	if not exist $(LIBDIR)\caml mkdir $(LIBDIR)\caml
-	cp mlvalues.h alloc.h misc.h $(LIBDIR)\caml
+	cp mlvalues.h alloc.h misc.h callback.h $(LIBDIR)\caml
 	sed -e "/#include .*\/m.h/r ..\config\m.h" \
             -e "/#include .*\/s.h/r ..\config\s.h" \
             -e "/#include /d" config.h > $(LIBDIR)\caml\config.h
