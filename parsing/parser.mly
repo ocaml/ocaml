@@ -659,7 +659,7 @@ class_type_declaration:
 /* Core expressions */
 
 seq_expr:
-  | expr                          { $1 }
+  | expr              %prec SEMI  { $1 }
   | expr SEMI                     { $1 }
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
@@ -1201,19 +1201,20 @@ simple_core_type:
   | LPAREN core_type_comma_list RPAREN SHARP class_longident opt_present
       %prec prec_constr_appl
       { mktyp(Ptyp_class($5, List.rev $2, $6)) }
-  | LBRACKET row_field_list RBRACKET
-      { let l = List.rev $2 in
-        mktyp(Ptyp_variant(l, true, List.map (fun (p,_,_) -> p) l)) }
-  | LBRACKET GREATER row_field_list RBRACKET
+  | LBRACKET opt_bar row_field_list RBRACKET
       { let l = List.rev $3 in
+        mktyp(Ptyp_variant(l, true, List.map (fun (p,_,_) -> p) l)) }
+  | LBRACKET GREATER opt_bar row_field_list RBRACKET
+      { let l = List.rev $4 in
         mktyp(Ptyp_variant(l, false, List.map (fun (p,_,_) -> p) l)) }
-  | LBRACKETLESS row_field_list opt_opened RBRACKET
-      { mktyp(Ptyp_variant(List.rev $2, not $3, [])) }
-  | LBRACKETLESS row_field_list opt_opened GREATER name_tag_list RBRACKET
-      { mktyp(Ptyp_variant(List.rev $2, not $3, List.rev $5)) }
+  | LBRACKETLESS opt_bar row_field_list opt_opened RBRACKET
+      { mktyp(Ptyp_variant(List.rev $3, not $4, [])) }
+  | LBRACKETLESS opt_bar row_field_list opt_opened GREATER name_tag_list
+    RBRACKET
+      { mktyp(Ptyp_variant(List.rev $3, not $4, List.rev $6)) }
   | LBRACKET RBRACKET
       { mktyp(Ptyp_variant([],true,[])) }
-  | LBRACKETLESS DOTDOT RBRACKET
+  | LBRACKETLESS opt_bar DOTDOT RBRACKET
       { mktyp(Ptyp_variant([],false,[])) }
 ;
 opt_opened:
