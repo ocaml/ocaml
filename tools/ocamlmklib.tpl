@@ -70,6 +70,8 @@ while :; do
     -oc)
         output_c="$2"
         shift;;
+    -pthread)
+        c_opts_caml="$c_opts_caml -ccopt $1";;
     -*)
         echo "Unknown option '$1', ignored" 1>&2;;
     *)
@@ -84,10 +86,12 @@ set -e
 
 if %%SUPPORTS_SHARED_LIBRARIES%%; then
     if test "$bytecode_objs" != ""; then
-        $ocamlc -a -o $output.cma $caml_opts $bytecode_objs -cclib -l$output_c $caml_libs
+        $ocamlc -a -o $output.cma $caml_opts $bytecode_objs \
+            -cclib -l$output_c $caml_libs $c_opts_caml
     fi
     if test "$native_objs" != ""; then
-        $ocamlopt -a -o $output.cmxa $caml_opts $native_objs -cclib -l$output_c $caml_libs
+        $ocamlopt -a -o $output.cmxa $caml_opts $native_objs \
+            -cclib -l$output_c $caml_libs $c_opts_caml
     fi
     if test "$c_objs" != ""; then
         %%MKSHAREDLIB%% lib$output_c.so $c_objs $c_opts $c_libs
