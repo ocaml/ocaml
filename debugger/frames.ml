@@ -52,7 +52,7 @@ let rec move_up frame_count event =
   if frame_count <= 0 then event else begin
     let (sp, pc) = up_frame event.ev_stacksize in
     if sp < 0 then raise Not_found;
-    move_up (frame_count - 1) (event_at_pc pc)
+    move_up (frame_count - 1) (any_event_at_pc pc)
   end
 
 (* Select a frame. *)
@@ -111,7 +111,7 @@ let do_backtrace action =
         while action (Some !event) do
           let (sp, pc) = up_frame !event.ev_stacksize in
           if sp < 0 then raise Exit;
-          event := event_at_pc pc
+          event := any_event_at_pc pc
         done
       with Exit -> ()
          | Not_found -> action None; ()
