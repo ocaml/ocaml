@@ -854,20 +854,19 @@ external decr : int ref -> unit = "%decr"
 
 
 val exit : int -> 'a
-(** Flush all pending writes on {!Pervasives.stdout} and
-   {!Pervasives.stderr},
-   and terminate the process, returning the given status code
-   to the operating system (usually 0 to indicate no errors,
-   and a small positive integer to indicate failure.) 
+(** Terminate the process, returning the given status code
+   to the operating system: usually 0 to indicate no errors,
+   and a small positive integer to indicate failure. 
+   All opened output channels are flushed.
    An implicit [exit 0] is performed each time a program
-   terminates normally (but not if it terminates because of
-   an uncaught exception). *)
+   terminates normally.  An implicit [exit 2] is performed if the program
+   terminates early because of an uncaught exception. *)
 
 val at_exit : (unit -> unit) -> unit
 (** Register the given function to be called at program
    termination time. The functions registered with [at_exit]
    will be called when the program executes {!Pervasives.exit},
-   or if the program terminates because of an uncaught exception.
+   or terminates, either normally or because of an uncaught exception.
    The functions are called in ``last in, first out'' order:
    the function most recently added with [at_exit] is called first. *)
 
