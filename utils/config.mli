@@ -5,8 +5,11 @@ val version: string
 
 val standard_library: string
         (* The directory containing the standard libraries *)
-val c_compiler: string
-        (* The C compiler to use for custom runtime mode *)
+val bytecomp_c_compiler: string
+        (* The C compiler to use for the custom runtime mode of the
+           bytecode compiler *)
+val native_c_compiler: string
+        (* The C compiler to use for the native code compiler *)
 val c_libraries: string
         (* The C libraries to link with custom runtimes *)
 

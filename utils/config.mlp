@@ -1,6 +1,8 @@
 let standard_library = "%%LIBDIR%%"
 
-let c_compiler = "%%CC%%"
+let bytecomp_c_compiler = "%%BYTECC%%"
+
+let native_c_compiler = "%%NATIVECC%%"
 
 let c_libraries = "%%CCLIBS%%"
 
