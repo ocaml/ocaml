@@ -118,8 +118,8 @@ let print loc =
     end
   else begin
     let (linenum, linebeg) = line_pos_file !input_name loc.loc_start in
-    print_string "File "; print_string !input_name;
-    print_string ", line "; print_int linenum;
+    print_string "File \""; print_string !input_name;
+    print_string "\", line "; print_int linenum;
     print_string ", characters "; print_int (loc.loc_start - linebeg);
     print_string "-"; print_int (loc.loc_end - linebeg);
     print_string ":";
