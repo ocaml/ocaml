@@ -761,7 +761,7 @@ class_type_fields:
       	  { Pctf_val $3 :: $1 }
       | class_type_fields VIRTUAL method_type
       	  { Pctf_virt $3 :: $1 }
-      | class_type_fields METHOD method_type
+      | class_type_fields METHOD method_type_opt
       	  { Pctf_meth $3 :: $1 }
 ;
 ancestor_type:
@@ -781,6 +781,12 @@ value_type :
 method_type :
         label COLON core_type
 	  { $1, $3, symbol_loc () }
+;
+method_type_opt :
+        label COLON core_type
+	  { $1, Some $3, symbol_loc () }
+      | label
+          { $1, None, symbol_loc () }
 ;
 
 /* Type declarations */

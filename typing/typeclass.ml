@@ -42,6 +42,7 @@ type error =
   | Argument_arity_mismatch of Path.t * int * int
   | Parameter_arity_mismatch of Path.t * int * int
   | Parameter_mismatch of (type_expr * type_expr) list
+  | Undefined_method of string
 
 exception Error of Location.t * error
 
@@ -707,9 +708,16 @@ let type_class_type_field env temp_env cl self
       let ty = transl_simple_type temp_env false sty in
       (val_sig, val_redef, insert_meth temp_env self lab ty loc meth_redef)
 
-  | Pctf_meth (lab, sty, loc) ->
+  | Pctf_meth (lab, Some sty, loc) ->
       let ty = transl_simple_type temp_env false sty in
       (val_sig, val_redef, insert_meth temp_env self lab ty loc meth_redef)
+
+  | Pctf_meth (lab, None, loc) ->
+      if not
+        (List.exists (function (lab', _, _, _) -> lab = lab') meth_redef)
+      then
+        raise(Error(loc, Undefined_method lab));
+      (val_sig, val_redef, meth_redef)
 
 (* Build class and object types *)
 let build_abbrevs temp_env env (cl, obj_id) =
@@ -1092,3 +1100,7 @@ let report_error = function
       print_string "but is here applied to "; print_int provided;
       print_string " type parameter(s)";
       close_box()
+  | Undefined_method m ->
+      print_string "The method"; print_space ();
+      print_string m; print_space ();
+      print_string "must be given a type previously"

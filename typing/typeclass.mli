@@ -48,6 +48,7 @@ type error =
   | Argument_arity_mismatch of Path.t * int * int
   | Parameter_arity_mismatch of Path.t * int * int
   | Parameter_mismatch of (type_expr * type_expr) list
+  | Undefined_method of string
 
 exception Error of Location.t * error
 

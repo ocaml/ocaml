@@ -111,7 +111,7 @@ type class_type_field =
   | Pctf_val of
       (string * private_flag * mutable_flag * core_type option * Location.t)
   | Pctf_virt of (string * core_type * Location.t)
-  | Pctf_meth of (string * core_type * Location.t)
+  | Pctf_meth of (string * core_type option * Location.t)
 
 type class_type =
   { pcty_name: string;
