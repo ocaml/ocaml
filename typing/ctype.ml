@@ -2886,10 +2886,10 @@ let rec subtype_rec env trace t1 t2 cstrs =
         end
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env trace u1 u2 cstrs
-    | (Tpoly (t1', tl1), Tpoly (t2',tl2)) ->
+    | (Tpoly (t1, tl1), Tpoly (t2,tl2)) ->
         let old_univars = !univar_pairs in
         univar_pairs := add_univars env old_univars t1 t2 tl1 tl2;
-        let cstrs = subtype_rec env trace t1' t2' cstrs in
+        let cstrs = subtype_rec env trace t1 t2 cstrs in
         univar_pairs := old_univars;
         cstrs
     | (_, _) ->
