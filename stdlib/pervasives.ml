@@ -196,7 +196,7 @@ let valid_float_lexem s =
   loop 0
 ;;
 
-let string_of_float f = valid_float_lexem (format_float "%.17g" f);;
+let string_of_float f = valid_float_lexem (format_float "%.12g" f);;
 
 external float_of_string : string -> float = "float_of_string"
 
