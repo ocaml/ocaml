@@ -884,6 +884,8 @@ core_type:
 simple_core_type:
     QUOTE ident
       { mktyp(Ptyp_var $2) }
+  | UNDERSCORE
+      { mktyp(Ptyp_any) }
   | type_longident alias
       { mktyp(Ptyp_constr($1, [], $2)) }
   | simple_core_type type_longident alias %prec prec_constr_appl

@@ -30,8 +30,8 @@ and cmo_magic_number = "Caml1999O003"
 and cma_magic_number = "Caml1999A003"
 and cmx_magic_number = "Caml1999X003"  (* X a changer (conflit avec exec) *)
 and cmxa_magic_number = "Caml1999Z003"
-and ast_impl_magic_number = "Caml1999M002"
-and ast_intf_magic_number = "Caml1999N002"
+and ast_impl_magic_number = "Caml1999M003"
+and ast_intf_magic_number = "Caml1999N003"
 
 let load_path = ref ([] : string list)
 

@@ -65,7 +65,8 @@ type policy = Fixed | Extensible | Delayed
 
 let rec transl_type env policy styp =
   match styp.ptyp_desc with
-    Ptyp_var name ->
+    Ptyp_any -> new_global_var()
+  | Ptyp_var name ->
       begin try Tbl.find name !aliases with Not_found ->
         match policy with
           Fixed ->

@@ -21,8 +21,9 @@ type core_type =
   { ptyp_desc: core_type_desc;
     ptyp_loc: Location.t }
 
-and core_type_desc =
-    Ptyp_var of string
+and core_type_desc = 
+    Ptyp_any
+  | Ptyp_var of string
   | Ptyp_arrow of core_type * core_type
   | Ptyp_tuple of core_type list
   | Ptyp_constr of Longident.t * core_type list * string option
