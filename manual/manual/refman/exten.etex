@@ -27,8 +27,8 @@ classes of expressions:
 \begin{syntax}
 expr:
           \ldots
-        | '[:' ':]'
-        | '[:' stream-component { ';' stream-component } ':]'
+        | '[<' '>]'
+        | '[<' stream-component { ';' stream-component } '>]'
         | 'parser' [pattern] stream-matching
         | 'match' expr 'with' 'parser' [pattern] stream-matching
 ;
@@ -41,8 +41,8 @@ stream-matching:
           { '|' stream-pattern [pattern] '->' expr }
 ;
 stream-pattern:
-          '[:' ':]'
-        | '[:' stream-pat-comp { ';' stream-pat-comp [ '?' expr ] }':]'
+          '[<' '>]'
+        | '[<' stream-pat-comp { ';' stream-pat-comp [ '?' expr ] }'>]'
 ;
 stream-pat-comp:
           "'" pattern [ 'when' expr ]
@@ -51,14 +51,14 @@ stream-pat-comp:
 ;
 \end{syntax}
 
-Stream expressions are bracketed by \verb"[:" and \verb":]". They
+Stream expressions are bracketed by \verb"[<" and \verb">]". They
 represent the concatenation of their components. The component
 @"'" expr@ represents the one-element stream whose element is the
 value of @expr@. The component @expr@ represents a
 sub-stream. For instance, if both "s" and "t" are streams of integers,
-then \verb"[:'1; s; t; '2:]" is a stream of integers containing the
+then \verb"[<'1; s; t; '2>]" is a stream of integers containing the
 element "1", then the elements of "s", then those of "t", and finally
-"2". The empty stream is denoted by \verb"[: :]".
+"2". The empty stream is denoted by \verb"[< >]".
 
 Unlike any other kind of expressions in the language, stream
 expressions are submitted to lazy evaluation: the components are not
@@ -67,9 +67,9 @@ during stream matching. The components are evaluated once, the first
 time they are accessed; the following accesses reuse the value
 computed the first time.
 
-Stream patterns, also bracketed by \verb"[:" and \verb":]", describe
+Stream patterns, also bracketed by \verb"[<" and \verb">]", describe
 initial segments of streams. In particular, the stream pattern
-\verb"[: :]" matches all streams. Stream pattern components are
+\verb"[< >]" matches all streams. Stream pattern components are
 matched against the corresponding elements of a stream. The component
 @"'" pattern@ matches the corresponding stream element against the
 pattern; if followed by @when@, the match is accepted only if the
