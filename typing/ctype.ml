@@ -974,12 +974,17 @@ let rec occur_rec env visited ty0 ty =
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
         let ty' = try_expand_head env ty in
-        if ty == ty0 || List.memq ty' visited then raise Occur;
-        iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
+        (* Maybe we could simply make a recursive call here,
+           but it seems it could make the occur check loop
+           (see change in rev. 1.58) *)
+        if ty' == ty0 || List.memq ty' visited then raise Occur;
+        match ty'.desc with
+          Tobject _ -> ()
+        | _         -> iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Cannot_expand ->
         raise Occur
       end
-  | Tobject (_, _) ->
+  | Tobject _ ->
       ()
   | _ ->
       iter_type_expr (occur_rec env visited ty0) ty
