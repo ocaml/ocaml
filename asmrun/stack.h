@@ -37,7 +37,7 @@
 
 #ifdef TARGET_mips
 #define Saved_return_address(sp) *((long *)(sp - 4))
-#define Callback_link(sp) ((struct caml_context *)(sp + 8))
+#define Callback_link(sp) ((struct caml_context *)(sp + 16))
 #endif
 
 #ifdef TARGET_hppa

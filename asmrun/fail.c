@@ -26,9 +26,7 @@
 
 /* The globals holding predefined exceptions */
 
-typedef char caml_generated_constant[256];
-/* We claim these constants are big so that e.g. the Mips compiler
-   will not assume that they are in the .sdata section */
+typedef value caml_generated_constant[1];
 
 extern caml_generated_constant Out_of_memory, Sys_error, Failure,
   Invalid_argument, End_of_file, Division_by_zero, Not_found, Match_failure;

@@ -143,6 +143,12 @@ clean::
 	mv $*.o $*.p.o
 	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
+.s.o:
+	$(ASPP) $(ASPPFLAGS) -o $*.o $*.s
+
+.s.p.o:
+	$(ASPP) $(ASPPFLAGS) $(ASPPPROFFLAGS) -o $*.p.o $*.s
+
 clean::
 	rm -f *.o *.s *.a *~
 

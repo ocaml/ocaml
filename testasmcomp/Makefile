@@ -23,7 +23,7 @@ INCLUDES=-I ../utils -I ../typing -I ../asmcomp
 
 OTHEROBJS=../utils/misc.cmo ../utils/config.cmo ../utils/tbl.cmo \
   ../utils/nativeint.cmo ../utils/clflags.cmo ../utils/ccomp.cmo \
-  ../utils/config.cmo ../utils/clflags.cmo \
+  ../utils/config.cmo ../utils/clflags.cmo ../utils/warnings.cmo \
   ../parsing/linenum.cmo ../parsing/location.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
   ../typing/btype.cmo ../typing/subst.cmo ../typing/primitive.cmo \
@@ -115,7 +115,7 @@ power.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.o
 
 .SUFFIXES:
-.SUFFIXES: .cmm .c .o .S .ml .mli .cmo .cmi
+.SUFFIXES: .cmm .c .o .S .ml .mli .cmo .cmi .s
 
 .ml.cmo:
 	$(CAMLC) $(COMPFLAGS) -c $<
@@ -129,6 +129,9 @@ power.o: power-$(SYSTEM).o
 
 .S.o:
 	$(ASPP) $(ASPPFLAGS) -o $*.o $*.S
+
+.s.o:
+	$(ASPP) $(ASPPFLAGS) -o $*.o $*.s
 
 clean::
 	rm -f *.out *.cm[io] *.s *.o *~

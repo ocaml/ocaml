@@ -38,10 +38,11 @@ let word_addressed = false
     $30                         trap pointer (preserved by C)
     $31                         return address
 
-    $f0 - $f8   100 - 104       function results
-    $f10                        temporary
-    $f12 - $f18 105 - 108       function arguments
-    $f20 - $f30 109 - 114       general purpose (preserved by C) *)
+    $f0 - $f3   100 - 103       function results
+    $f4 - $f11  104 - 111       general purpose
+    $f12 - $f19 112 - 119       function arguments
+    $f20 - $f30 120 - 130       general purpose (even numbered preserved by C)
+    $f31                        temporary *)
 
 let int_reg_name = [|
   (* 0-5 *)    "$2"; "$3"; "$4"; "$5"; "$6"; "$7";
@@ -50,9 +51,12 @@ let int_reg_name = [|
 |]
   
 let float_reg_name = [|
-  (* 100-104 *) "$f0"; "$f2"; "$f4"; "$f6"; "$f8";
-  (* 105-108 *) "$f12"; "$f14"; "$f16"; "$f18";
-  (* 109-114 *) "$f20"; "$f22"; "$f24"; "$f26"; "$f28"; "$f30"
+  "$f0"; "$f1"; "$f2"; "$f3"; "$f4";
+  "$f5"; "$f6"; "$f7"; "$f8"; "$f9";
+  "$f10"; "$f11"; "$f12"; "$f13"; "$f14";
+  "$f15"; "$f16"; "$f17"; "$f18"; "$f19";
+  "$f20"; "$f21"; "$f22"; "$f23"; "$f24";
+  "$f25"; "$f26"; "$f27"; "$f28"; "$f29"; "$f30"
 |]
 
 let num_register_classes = 2
@@ -63,7 +67,7 @@ let register_class r =
   | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 20; 15 |]
+let num_available_registers = [| 20; 31 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -80,8 +84,8 @@ let hard_int_reg =
   v
 
 let hard_float_reg =
-  let v = Array.create 15 Reg.dummy in
-  for i = 0 to 14 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
+  let v = Array.create 31 Reg.dummy in
+  for i = 0 to 30 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
   v
 
 let all_phys_regs =
@@ -96,11 +100,11 @@ let stack_slot slot ty =
 (* Calling conventions *)
 
 let calling_conventions first_int last_int first_float last_float
-                        initial_stack_ofs make_stack arg =
+                        make_stack arg =
   let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref initial_stack_ofs in
+  let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
       Int | Addr as ty ->
@@ -120,57 +124,59 @@ let calling_conventions first_int last_int first_float last_float
           ofs := !ofs + size_float
         end
   done;
-  (loc, Misc.align !ofs 8)         (* Keep stack 8-aligned *)
+  (loc, Misc.align !ofs 16)         (* Keep stack 16-aligned *)
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
-  calling_conventions 6 13 105 108 0 outgoing arg
+  calling_conventions 6 13 112 119 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 6 13 105 108 0 incoming arg in loc
+  let (loc, ofs) = calling_conventions 6 13 112 119 incoming arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 5 100 104 0 not_supported res in loc
+  let (loc, ofs) = calling_conventions 0 5 100 103 not_supported res in loc
 
-(* The C compiler calling conventions are peculiar, especially when
-   a mix of ints and floats are passed. Here, we trap a few special
-   cases and revert to [calling_conventions] when only scalars are
-   passed. *)
+(* The C calling conventions are as follows:
+   the first 8 arguments are passed either in integer regs $4...$11
+   or float regs $f12...$f19.  Each argument "consumes" both one slot
+   in the int register file and one slot in the float register file.
+   Extra arguments are passed on stack, in a 64-bits slot, right-justified
+   (i.e. at +4 from natural address). *)   
 
 let loc_external_arguments arg =
-  try
-    for i = 0 to Array.length arg - 1 do
-      if arg.(i).typ = Float then raise Exit
-    done;
-    (* Always reserve 4 words at the bottom of the stack *)
-    calling_conventions 2 5 0 0 16 outgoing arg
-  with Exit ->
-    match Array.to_list(Array.map register_class arg) with
-      [1] ->                          (* $f12 *)
-         [| phys_reg 105 |], 16
-    | [1;1] ->                        (* $f12, $f14 *)
-         [| phys_reg 105; phys_reg 106 |], 16
-    | [1;0] ->                        (* $f12, $6 *)
-         [| phys_reg 105; phys_reg 4 |], 16
-    | [0;1] ->                        (* $4, $6 (needs fpreg -> $6,$7 move) *)
-         [| phys_reg 2; phys_reg 4 |], 16
-    | [0;0;1] ->                      (* $4, $5, $6 (ditto) *)
-         [| phys_reg 2; phys_reg 3; phys_reg 4 |], 16
-    | _ ->
-         fatal_error "Proc_mips.loc_external_arguments"
+  let loc = Array.create (Array.length arg) Reg.dummy in
+  let int = ref 2 in
+  let float = ref 112 in
+  let ofs = ref 0 in
+  for i = 0 to Array.length arg - 1 do
+    if i < 8 then begin
+      loc.(i) <- phys_reg (if arg.(i).typ = Float then !float else !int);
+      incr int;
+      incr float
+    end else begin
+      begin match arg.(i).typ with
+        Float -> loc.(i) <- stack_slot (Outgoing !ofs) Float
+      | ty    -> loc.(i) <- stack_slot (Outgoing (!ofs + 4)) ty
+      end;
+      ofs := !ofs + 8
+    end
+  done;
+  (loc, Misc.align !ofs 16)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 0 not_supported res in loc
+  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 let loc_exn_bucket = phys_reg 0         (* $2 *)
 
 (* Registers destroyed by operations *)
 
-let destroyed_at_c_call =               (* $16 - $21, $f20 - $f30 preserved *)
+let destroyed_at_c_call =
+  (* $16 - $21, $f20, $f22, $f24, $f26, $f28, $f30 preserved *)
   Array.of_list(List.map phys_reg
     [0;1;2;3;4;5;6;7;8;9;10;11;12;13;
-     100;101;102;103;104;105;106;107;108])
+     100;101;102;103;104;105;106;107;108;109;110;111;112;113;114;
+     115;116;117;118;119;121;123;125;127;129])
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
@@ -186,7 +192,7 @@ let safe_register_pressure = function
   | _ -> 20
 let max_register_pressure = function
     Iextcall(_, _) -> [| 6; 6 |]
-  | _ -> [| 20; 15 |]
+  | _ -> [| 20; 31 |]
 
 (* Layout of the stack *)
 
@@ -195,11 +201,7 @@ let contains_calls = ref false
 
 (* Calling the assembler *)
 
-let asm_command =
-  match Config.system with
-    "ultrix" -> "as -O2 -nocpp -o "
-  | "irix"   -> "as -32 -O2 -nocpp -o "
-  | _ -> fatal_error "Proc_mips.asm_command"
+let asm_command = "as -n32 -O2 -nocpp -g0 -o "
 
 let assemble_file infile outfile =
   Ccomp.command (asm_command ^ outfile ^ " " ^ infile)

@@ -425,8 +425,6 @@ runtimeopt:
 	cd asmrun; $(MAKE) all
 	if test -f stdlib/libasmrun.a; then :; else \
           ln -s ../asmrun/libasmrun.a stdlib/libasmrun.a; fi
-	if test -f stdlib/libasmrunp.a; then :; else \
-          ln -s ../asmrun/libasmrunp.a stdlib/libasmrunp.a; fi
 clean::
 	cd asmrun; $(MAKE) clean
 	rm -f stdlib/libasmrun.a

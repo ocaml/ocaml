@@ -273,7 +273,6 @@ case "$host" in
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         arch=i386; system=solaris;;
   mips-*-irix6*)                arch=mips; system=irix;;
-  mips-*-ultrix*)               arch=mips; system=ultrix;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
   rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
@@ -295,9 +294,8 @@ nativecclinkopts=''
 
 case "$arch,$nativecc,$system" in
   alpha,cc*,digital) nativecccompopts=-std1;;
-  mips,cc*,irix)     nativecccompopts=-32
-                     nativecclinkopts="-32 -Wl,-woff,84";;
-  mips,cc*,ultrix)   nativecccompopts=-std;;
+  mips,cc*,irix)     nativecccompopts=-n32
+                     nativecclinkopts="-n32 -Wl,-woff,84";;
   *,*,nextstep)      nativecccompopts="-Wall -U__GNUC__ -posix"
                      nativecclinkopts="-posix";;
   *,*,rhapsody)      nativecccompopts="-Wall -DSHRINKED_GNUC";;
@@ -313,8 +311,7 @@ case "$arch,$model,$system" in
   alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
                     asppprofflags='-pg -DPROFILING';;
   alpha,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  mips,*,irix)      asflags='-32 -O2'; asppflags="$asflags";;
-  mips,*,ultrix)    asflags='-O2'; asppflags="$asflags";;
+  mips,*,irix)      asflags='-n32 -O2'; asppflags="$asflags";;
   sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,*)        asppflags='-P -DSYS_$(SYSTEM)';;
