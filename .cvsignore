@@ -2,5 +2,6 @@ ocamlc
 ocamlc.opt
 expunge
 ocaml
+jocaml
 ocamlopt
 ocamlopt.opt
