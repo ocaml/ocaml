@@ -5,7 +5,7 @@
 /*             Damien Doligez, projet Para, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -111,20 +111,13 @@ int add_to_heap (header_t *mem)
     page_high = new_page_high;
   }
 
-  /* Update the heap bounds as needed. */
-  if (m < heap_start) heap_start = m;
-  if (m + Chunk_size (m) > heap_end) heap_end = m + Chunk_size (m);
-
   /* Mark the pages as being in the heap. */
   for (i = Page (m); i < Page (m + Chunk_size (m)); i++){
     page_table [i] = In_heap;
   }
 
   /* Chain this heap block. */
-  if (m < heap_start){
-    Chunk_next (m) = heap_start;
-    heap_start = m;
-  }else{
+  {
     char **last = &heap_start;
     char *cur = *last;
 
@@ -135,6 +128,11 @@ int add_to_heap (header_t *mem)
     Chunk_next (m) = cur;
     *last = m;
   }
+
+  /* Update the heap bounds as needed. */
+  /* already done:   if (m < heap_start) heap_start = m; */
+  if (m + Chunk_size (m) > heap_end) heap_end = m + Chunk_size (m);
+
   stat_heap_size += Chunk_size (m);
   return 0;
 }
