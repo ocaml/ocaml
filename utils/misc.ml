@@ -82,8 +82,8 @@ let find_in_path_uncap path name =
   | dir::rem ->
       let fullname = Filename.concat dir name
       and ufullname = Filename.concat dir uname in
-      if Sys.file_exists fullname then fullname
-      else if Sys.file_exists ufullname then ufullname
+      if Sys.file_exists ufullname then ufullname
+      else if Sys.file_exists fullname then fullname
       else try_dir rem
   in try_dir path
 
