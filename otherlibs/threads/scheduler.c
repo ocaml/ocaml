@@ -273,9 +273,10 @@ try_again:
       need_select = 1;
     }
     if (th->status & (BLOCKED_DELAY - 1)) {
-      double th_delay = Double_val(th->delay);
+      double th_delay;
       if (now < 0.0) now = timeofday();
-      if (th_delay < now) {
+      th_delay = Double_val(th->delay) - now;
+      if (th_delay <= 0) {
         th->status = RUNNABLE;
         Assign(th->delay, NO_DELAY);
         th->retval = RESUMED_DELAY;
@@ -313,25 +314,23 @@ try_again:
   if (need_select || run_thread == NULL) {
     struct timeval delay_tv, * delay_ptr;
     int retcode;
+    /* If a thread is blocked on wait, don't block forever */
+    if (need_wait && delay > Thread_timeout * 1e-6) {
+      delay = Thread_timeout * 1e-6;
+    }
     /* Convert delay to a timeval */
     /* If a thread is runnable, just poll */
-    /* If a thread is blocked on wait, don't block forever */
     if (run_thread != NULL) {
       delay_tv.tv_sec = 0;
       delay_tv.tv_usec = 0;
       delay_ptr = &delay_tv;
     }
     else if (delay != DELAY_INFTY) {
-      delay = delay - now;
       delay_tv.tv_sec = (unsigned int) delay;
       delay_tv.tv_usec = (delay - (double) delay_tv.tv_sec) * 1E6;
       delay_ptr = &delay_tv;
     }
-    else if (need_wait) {
-      delay_tv.tv_sec = 0;
-      delay_tv.tv_usec = Thread_timeout;
-      delay_ptr = &delay_tv;
-    } else {
+    else {
       delay_ptr = NULL;
     }
     retcode = select(FD_SETSIZE, &readfds, &writefds, NULL, delay_ptr);
