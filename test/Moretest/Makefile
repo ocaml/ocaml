@@ -57,6 +57,7 @@ clean::
 	rm -f *.byt *.out
 	rm -f *.cm[iox] *.[os]
 	rm -f *~
+	rm -f intext.data
 
 # Dependencies
 
