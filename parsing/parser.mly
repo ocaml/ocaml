@@ -151,7 +151,6 @@ let unclosed opening_name opening_num closing_name closing_num =
 %token BEGIN
 %token <char> CHAR
 %token CLASS
-%token CLOSED
 %token COLON
 %token COLONCOLON
 %token COLONEQUAL

@@ -37,7 +37,6 @@ let keyword_table =
     "assert", ASSERT;
     "begin", BEGIN;
     "class", CLASS;
-    "closed", CLOSED;
     "constraint", CONSTRAINT;
     "do", DO;
     "done", DONE;
