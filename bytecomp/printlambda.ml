@@ -207,7 +207,7 @@ let rec lam ppf = function
         let spc = ref false in
         List.iter
           (fun (id, l) ->
-            if !spc then print_space() else spc := true;
+            if !spc then fprintf ppf "@ " else spc := true;
             fprintf ppf "@[<2>%a@ %a@]" Ident.print id lam l)
           id_arg_list in
       fprintf ppf
@@ -221,12 +221,12 @@ let rec lam ppf = function
         let spc = ref false in
         List.iter
          (fun (n, l) ->
-           if !spc then print_space() else spc := true;
+           if !spc then fprintf ppf "@ " else spc := true;
            fprintf ppf "@[<hv 1>case int %i:@ %a@]" n lam l)
          sw.sw_consts;
        List.iter
          (fun (n, l) ->
-           if !spc then print_space() else spc := true;
+           if !spc then fprintf ppf "@ " else spc := true;
            fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l)
          sw.sw_blocks in
       fprintf ppf
