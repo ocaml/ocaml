@@ -23,9 +23,10 @@ PARSING= parsing/location.cmo parsing/longident.cmo parsing/pstream.cmo \
   parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
-  typing/primitive.cmo typing/typedtree.cmo \
+  typing/primitive.cmo typing/types.cmo \
   typing/subst.cmo typing/predef.cmo \
   typing/datarepr.cmo typing/env.cmo \
+  typing/typedtree.cmo \
   typing/ctype.cmo typing/printtyp.cmo \
   typing/mtype.cmo typing/includecore.cmo \
   typing/includemod.cmo typing/parmatch.cmo \
