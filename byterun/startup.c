@@ -383,7 +383,7 @@ CAMLexport void caml_main(char **argv)
 #ifdef _WIN32
   /* Start a thread to handle signals */
   if (getenv("CAMLSIGPIPE"))
-    _beginthread(caml_signal_thread, 0, NULL);
+    _beginthread(caml_signal_thread, 4096, NULL);
 #endif
   /* Execute the program */
   debugger(PROGRAM_START);
