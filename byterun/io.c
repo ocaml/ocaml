@@ -47,17 +47,29 @@
 
 /* Common functions. */
 
+static void finalize_channel(channel)
+     value channel;
+{
+  struct channel * ch = (struct channel *) channel;
+  stat_free(ch->buff);
+}
+
 struct channel * open_descr(fd)
      int fd;
 {
+  char * buffer;
   struct channel * channel;
 
+  buffer = stat_alloc(IO_BUFFER_SIZE);
   channel = (struct channel *)
-              alloc_shr(sizeof(struct channel) / sizeof(value), Abstract_tag);
+              alloc_final(sizeof(struct channel) / sizeof(value),
+                          finalize_channel,
+                          1, 32);
   channel->fd = fd;
   channel->offset = 0;
-  channel->end = channel->buff + IO_BUFFER_SIZE;
-  channel->curr = channel->max = channel->buff;
+  channel->buff = buffer;
+  channel->end = buffer + IO_BUFFER_SIZE;
+  channel->curr = channel->max = buffer;
   return channel;
 }
 

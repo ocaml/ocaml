@@ -25,12 +25,13 @@
 #endif
 
 struct channel {
+  value final_fun;              /* Finalization function */
   int fd;                       /* Unix file descriptor */
   long offset;                  /* Absolute position of fd in the file */
+  char * buff;                  /* Beginning of the buffer */
   char * end;                   /* Physical end of the buffer */
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
-  char buff[IO_BUFFER_SIZE];    /* The buffer itself */
 };
 
 /* For an output channel:

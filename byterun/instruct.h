@@ -45,5 +45,3 @@ enum instructions {
   GETMETHOD,
   STOP, EVENT, BREAK
 };
-
-#define Last_instruction BREAK
