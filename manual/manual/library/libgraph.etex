@@ -4,10 +4,14 @@ The "graphics" library provides a set of portable drawing primitives,
 implemented under the X11 windows system. Drawing takes place
 in a separate window that is created when "open_graph" is called.
 
+This library cannot be used in native-code programs compiled with
+"cslopt" (because it uses signals, which are not supported by the
+native-code compiler); it can only be used with bytecode programs
+compiled with "cslc".
+
 Programs that use the "graphics" library must be linked as follows:
 \begin{alltt}
         cslc -custom \var{other options} graphics.cma \var{other files} -cclib -lgraphics -cclib -lX11
-        cslopt \var{other options} graphics.cmxa \var{other files} -cclib -lgraphics -cclib -lX11
 \end{alltt}
 For interactive use of the "graphics" library, do:
 \begin{alltt}
