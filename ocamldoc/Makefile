@@ -305,6 +305,19 @@ installopt_really:
 	$(CP) ocamldoc.sty ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
+# Testing :
+###########
+test: dummy
+	$(MKDIR) $@ 
+	./ocamldoc -html -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+
+test_framed: dummy
+	$(MKDIR) $@ 
+	./ocamldoc -g odoc_fhtml.cmo -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+
+test_latex: dummy
+	$(MKDIR) $@ 
+	./ocamldoc -latex -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 # backup, clean and depend :
 ############################
