@@ -423,12 +423,12 @@ class html =
 	".warning { color : Red ; font-weight : bold }" ;
 	".info { margin-left : 3em; margin-right : 3em }" ;
 	".code { color : #465F91 ; }" ;
-	".title1 { font-size : 20pt ; background-color : #416DFF }" ;
-	".title2 { font-size : 20pt ; background-color : #418DFF }" ;
-	".title3 { font-size : 20pt ; background-color : #41ADFF }" ;
-	".title4 { font-size : 20pt ; background-color : #41CDFF }" ;
-	".title5 { font-size : 20pt ; background-color : #41EDFF }" ;
-	".title6 { font-size : 20pt ; background-color : #41FFFF }" ;
+	".title1 { font-size : 20pt ; background-color : #909DFF }" ;
+	".title2 { font-size : 20pt ; background-color : #90BDFF }" ;
+	".title3 { font-size : 20pt ; background-color : #90DDFF }" ;
+	".title4 { font-size : 20pt ; background-color : #90EDFF }" ;
+	".title5 { font-size : 20pt ; background-color : #90FDFF }" ;
+	".title6 { font-size : 20pt ; background-color : #C0FFFF }" ;
 	"body { background-color : White }" ;
 	"tr { background-color : White }" ;
       ]	
