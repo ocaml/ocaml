@@ -10,14 +10,14 @@ following directories and their sub-directories:
   tools, toplevel, typing, utils, yacc
 
 The Compiler is distributed under the terms of the Q Public License
-version 1.0 (included below).
+version 1.0 with a change to choice of law (included below).
 
 The Library is distributed under the terms of the GNU Library General
 Public License version 2 (included below).
 
 As a special exception to the Q Public Licence, you may develop
 application programs, reusable components and other software items
-that link with the original or modified versions of the Software
+that link with the original or modified versions of the Compiler
 and are not made available to the general public, without any of the
 additional requirements listed in clause 6c of the Q Public licence.
 
