@@ -1,6 +1,6 @@
 include ../support/Makefile.common
 
-COMPFLAGS=-I ../../../byterun -I ../support -I ../camltk -I ../../unix
+COMPFLAGS=-I ../../../byterun -I ../support -I ../camltk -I ../../unix -ccopt $(TK_DEFS)
 
 all: tkanim.cma libtkanim.a
 opt: tkanim.cmxa libtkanim.a
