@@ -37,7 +37,8 @@ let word_addressed = false
     r14                         return address
     r15                         program counter
 
-    f0 - f7                     general purpose (f4 - f7 preserved by C)
+    f0 - f6                     general purpose (f4 - f6 preserved by C)
+    f7                          temporary
 *)
 
 let int_reg_name = [|
@@ -45,7 +46,7 @@ let int_reg_name = [|
 |]
 
 let float_reg_name = [|
-  "f0"; "f1"; "f2"; "f3"; "f4"; "f5"; "f6"; "f7"
+  "f0"; "f1"; "f2"; "f3"; "f4"; "f5"; "f6"
 |]
 
 let num_register_classes = 2
@@ -56,7 +57,7 @@ let register_class r =
   | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 10; 8 |]
+let num_available_registers = [| 10; 7 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -73,8 +74,8 @@ let hard_int_reg =
   v
 
 let hard_float_reg =
-  let v = Array.create 8 Reg.dummy in
-  for i = 0 to 7 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
+  let v = Array.create 7 Reg.dummy in
+  for i = 0 to 6 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
   v
 
 let all_phys_regs =
@@ -161,7 +162,7 @@ let loc_exn_bucket = phys_reg 0
 
 (* Registers destroyed by operations *)
 
-let destroyed_at_c_call =               (* r4-r9, f4-f7 preserved *)
+let destroyed_at_c_call =               (* r4-r9, f4-f6 preserved *)
   Array.of_list(List.map phys_reg [0;1;2;3;8;9; 100;101;102;103])
 
 let destroyed_at_oper = function
@@ -176,10 +177,10 @@ let destroyed_at_raise = all_phys_regs
 
 let safe_register_pressure = function
     Iextcall(_, _) -> 4
-  | _ -> 8
+  | _ -> 7
 let max_register_pressure = function
     Iextcall(_, _) -> [| 4; 4 |]
-  | _ -> [| 10; 8 |]
+  | _ -> [| 10; 7 |]
 
 (* Layout of the stack *)
 

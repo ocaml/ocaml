@@ -61,7 +61,7 @@ let print_addressing printreg addr arg =
   match addr with
     Iindexed n ->
       printreg arg.(0);
-      if n <> 0 then printf " + %i" n end
+      if n <> 0 then printf " + %i" n
 
 let print_specific_operation printreg op arg =
   match op with
@@ -79,7 +79,7 @@ let print_specific_operation printreg op arg =
   | Ishiftcheckbound n ->
       print_string "check ";
       printreg arg.(0);
-      print_string " >> %i > " n;
+      printf " >> %i > " n;
       printreg arg.(1)
   | Irevsubimm n ->
       print_int n; print_string " - "; printreg arg.(0)
