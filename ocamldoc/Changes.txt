@@ -1,4 +1,7 @@
 Current :
+OK - add: m_code_intf and m_code fields for modules, fit when the
+   Odoc_args.keep_code option is set, and fit for all modules, not
+   only toplevel ones
 OK - fix: bug preventing to get the code in a .mli
 OK - fix: missing spaces after carriage return in types (Odoc_misc.string_of_type_expr)
 OK - fixes: some bugs in the text parser 

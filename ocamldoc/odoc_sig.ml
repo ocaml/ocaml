@@ -686,6 +686,15 @@ module Analyser =
                 raise (Failure (Odoc_messages.module_not_found current_module_name name))
             in
             let module_kind = analyse_module_kind env complete_name module_type sig_module_type in
+	    let code_intf = 
+	      if !Odoc_args.keep_code then
+		let loc = module_type.Parsetree.pmty_loc in
+		let st = loc.Location.loc_start.Lexing.pos_cnum in
+		let en = loc.Location.loc_end.Lexing.pos_cnum in
+		Some (get_string_of_file st en)
+	      else
+		None
+	    in
             let new_module = 
               {
                 m_name = complete_name ;
@@ -697,6 +706,7 @@ module Analyser =
                 m_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
                 m_top_deps = [] ;
 		m_code = None ;
+		m_code_intf = code_intf ;
               } 
             in
             let (maybe_more, info_after_opt) = 
@@ -766,6 +776,15 @@ module Analyser =
                   in
                   (* associate the comments to each constructor and build the [Type.t_type] *)
 		  let module_kind = analyse_module_kind new_env complete_name modtype sig_module_type in
+		  let code_intf = 
+		    if !Odoc_args.keep_code then
+		      let loc = modtype.Parsetree.pmty_loc in
+		      let st = loc.Location.loc_start.Lexing.pos_cnum in
+		      let en = loc.Location.loc_end.Lexing.pos_cnum in
+		      Some (get_string_of_file st en)
+		    else
+		      None
+		  in
 		  let new_module = 
 		    {
                       m_name = complete_name ;
@@ -777,6 +796,7 @@ module Analyser =
                       m_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
                       m_top_deps = [] ;
 		      m_code = None ;
+		      m_code_intf = code_intf ;
 		    } 
 		  in
 		  let (maybe_more, info_after_opt) = 
@@ -1268,7 +1288,8 @@ module Analyser =
       | _ ->
           raise (Failure "analyse_class_type_kind pas de correspondance dans le match")
 
-    let analyse_signature source_file input_file (ast : Parsetree.signature) (signat : Types.signature) = 
+    let analyse_signature source_file input_file
+	(ast : Parsetree.signature) (signat : Types.signature) = 
       let complete_source_file =
         try
           let curdir = Sys.getcwd () in
@@ -1289,7 +1310,15 @@ module Analyser =
           (Filename.basename (try Filename.chop_extension source_file with _ -> source_file)) 
       in
       let (len,info_opt) = My_ir.first_special !file_name !file in
-      let elements = analyse_parsetree Odoc_env.empty signat mod_name len (String.length !file) ast in
+      let elements = 
+	analyse_parsetree Odoc_env.empty signat mod_name len (String.length !file) ast 
+      in
+      let code_intf = 
+	if !Odoc_args.keep_code then
+	  Some !file
+	else
+	  None
+      in
       let m =
         {
           m_name = mod_name ;
@@ -1301,6 +1330,7 @@ module Analyser =
           m_loc = { loc_impl = None ; loc_inter = Some (!file_name, 0) } ;
           m_top_deps = [] ;
 	  m_code = None ;
+	  m_code_intf = code_intf ;
         } 
       in
       

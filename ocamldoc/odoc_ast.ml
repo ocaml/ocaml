@@ -1124,7 +1124,7 @@ module Analyser =
            (* of string * module_expr *)
            try
              let tt_module_expr = Typedtree_search.search_module table name in
-             let new_module = analyse_module 
+             let new_module_pre = analyse_module 
                  env
                  current_module_name
                  name
@@ -1132,6 +1132,18 @@ module Analyser =
                  module_expr
                  tt_module_expr
              in
+	     let code = 
+	       if !Odoc_args.keep_code then
+		 let loc = module_expr.Parsetree.pmod_loc in
+		 let st = loc.Location.loc_start.Lexing.pos_cnum in
+		 let en = loc.Location.loc_end.Lexing.pos_cnum in
+		 Some (get_string_of_file st en)
+	       else
+		 None
+	     in
+	     let new_module =
+	       { new_module_pre with m_code = code }
+	     in
              let new_env = Odoc_env.add_module env new_module.m_name in
              let new_env2 = 
                match new_module.m_type with
@@ -1382,7 +1394,8 @@ module Analyser =
           m_kind = Module_struct [] ;
           m_loc = { loc_impl = Some (!file_name, pos_start) ; loc_inter = None } ;
           m_top_deps = [] ;
-	  m_code = None ;
+	  m_code = None ; (* code is set by the caller, after the module is created *)
+	  m_code_intf = None ;
       } 
       in
       match (p_module_expr.Parsetree.pmod_desc, tt_module_expr.Typedtree.mod_desc) with
@@ -1525,7 +1538,8 @@ module Analyser =
            m_kind = kind ;
            m_loc = { loc_impl = Some (!file_name, 0) ; loc_inter = None } ;
            m_top_deps = [] ;
-	   m_code = Some !file ;
+	   m_code = (if !Odoc_args.keep_code then Some !file else None) ;
+	   m_code_intf = None ;
          } 
        in
        m

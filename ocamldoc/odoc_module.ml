@@ -65,6 +65,7 @@ and t_module = {
     mutable m_loc : Odoc_types.location ;
     mutable m_top_deps : Name.t list ; (** The toplevels module names this module depends on. *)
     mutable m_code : string option ; (** The whole code of the module *)
+    mutable m_code_intf : string option ; (** The whole code of the interface of the module *)
   } 
 
 and module_type_alias = {
@@ -224,6 +225,7 @@ let rec module_elements ?(trans=true) m =
           m_loc = Odoc_types.dummy_loc ;
           m_top_deps = [] ;
 	  m_code = None ;
+	  m_code_intf = None ;
         }
 (*
       module_type_elements ~trans: trans

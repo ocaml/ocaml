@@ -694,7 +694,17 @@ and merge_modules merge_options mli ml =
     else
       None
   in
+  let code_intf = 
+    if !Odoc_args.keep_code then
+      match mli.m_code_intf, ml.m_code_intf with
+	Some s, _ -> Some s
+      |	_, Some s -> Some s
+      |	_ -> None
+    else
+      None
+  in
   mli.m_code <- code;
+  mli.m_code_intf <- code_intf;
 
   (* merge exceptions *)
   List.iter
