@@ -1,0 +1,227 @@
+#!/usr/local/bin/perl
+
+# Conversion of a Caml Light 0.7 file to Caml 1999.
+
+# The conversion table
+
+$convtbl=
+"value                          val
+int_of_float                    truncate
+float_of_int                    float
+vect                            array
+fast_really_input               unsafe_really_input
+io__exit                        exit
+vect_length                     Array.length
+make_vect                       Array.new
+make_matrix                     Array.new_matrix
+concat_vect                     Array.concat
+sub_vect                        Array.sub
+copy_vect                       Array.copy
+fill_vect                       Array.fill
+blit_vect                       Array.blit
+do_vect                         Array.iter
+map_vect                        Array.map
+vect_of_list                    Array.of_list
+list_of_vect                    Array.to_list
+int_of_char                     Char.code
+char_of_int                     Char.chr
+char_for_read                   Char.escaped
+fchar__char_of_int              Char.unsafe_chr
+hashtbl__do_table               Hashtbl.iter
+do_table                        Hashtbl.iter
+lexing__create_lexer_channel    Lexing.from_channel
+lexing__create_lexer_string     Lexing.from_string
+lexing__create_lexer            Lexing.from_function
+lexing__get_lexeme              Lexing.lexeme
+lexing__get_lexeme_char         Lexing.lexeme_char
+lexing__get_lexeme_start        Lexing.lexeme_start
+lexing__get_lexeme_end          Lexing.lexeme_end
+create_lexer_channel            Lexing.from_channel
+create_lexer_string             Lexing.from_string
+create_lexer                    Lexing.from_function
+get_lexeme                      Lexing.lexeme
+get_lexeme_char                 Lexing.lexeme_char
+get_lexeme_start                Lexing.lexeme_start
+get_lexeme_end                  Lexing.lexeme_end
+list_length                     List.length
+rev                             List.rev
+flatten                         List.flatten
+do_list                         List.iter
+map                             List.map
+it_list                         List.fold_left
+list_it                         List.fold_right
+do_list2                        List.iter2
+map2                            List.map2
+iter2                           List.iter2
+it_list2                        List.fold_left2
+list_it2                        List.fold_right2
+for_all                         List.for_all
+exists                          List.exists
+mem                             List.mem
+assoc                           List.assoc
+mem_assoc                       List.mem_assoc
+assq                            List.assq
+split                           List.split
+combine                         List.combine
+obj__obj                        Obj.t
+obj__repr                       Obj.repr
+obj__magic_obj                  Obj.magic
+obj__magic                      Obj.magic
+obj__is_block                   Obj.is_block
+obj__obj_tag                    Obj.tag
+obj__obj_size                   Obj.size
+obj__obj_field                  Obj.field
+obj__set_obj_field              Obj.set_field
+obj__obj_block                  Obj.new_block
+obj__update                     Obj.update
+magic_obj                       Obj.magic
+magic                           Obj.magic
+is_block                        Obj.is_block
+obj_tag                         Obj.tag
+obj_size                        Obj.size
+obj_field                       Obj.field
+set_obj_field                   Obj.set_field
+obj_block                       Obj.new_block
+printexc__f                     Printexc.catch
+sort__sort                      Sort.list
+sort                            Sort.list
+string_length                   String.length
+nth_char                        String.get
+set_nth_char                    String.set
+sub_string                      String.sub
+create_string                   String.create
+make_string                     String.make
+fill_string                     String.fill
+blit_string                     String.blit
+string_for_read                 String.escaped
+fstring__nth_char               String.unsafe_get
+fstring__set_nth_char           String.unsafe_set
+fstring__blit_string            String.unsafe_blit
+sys__Sys_error                  Sys_error
+sys__exit                       exit
+sys__command_line               Sys.argv
+sys__O_RDONLY                   Sys.Open_rdonly
+sys__O_WRONLY                   Sys.Open_wronly
+sys__O_RDWR                     Sys.Open_rdwr
+sys__O_APPEND                   Sys.Open_append
+sys__O_CREAT                    Sys.Open_creat
+sys__O_TRUNC                    Sys.Open_trunc
+sys__O_EXCL                     Sys.Open_excl
+sys__O_BINARY                   Sys.Open_binary
+sys__O_TEXT                     Sys.Open_text
+sys__open                       Sys.open_desc
+sys__close                      Sys.close_desc
+sys__system_command             Sys.command
+system_command                  Sys.command
+command_line                    Sys.argv
+O_RDONLY                        Sys.Open_rdonly
+O_WRONLY                        Sys.Open_wronly
+O_RDWR                          Sys.Open_rdwr
+O_APPEND                        Sys.Open_append
+O_CREAT                         Sys.Open_creat
+O_TRUNC                         Sys.Open_trunc
+O_EXCL                          Sys.Open_excl
+O_BINARY                        Sys.Open_binary
+O_TEXT                          Sys.Open_text";
+
+# Initialize the table %conv
+%conv = split(/\s+/, $convtbl);
+
+# Open input.
+$infile = $ARGV[0];
+open(IN, $infile) || die("Cannot open $infile");
+$interface = ($infile =~ /\.mli$/);
+
+# If it's a .ml or .mll file: we must insert definitions from the .mli
+# before the first definition
+
+if ($infile =~ /^(.*)\.(ml|mll)$/ && open(INTERFACE, "$1.mli")) {
+
+# Copy and translate the header of the file (first comment and #open decls)
+# Stop at first definition
+    $_ = <IN>;
+    if (/^\(\*/) { 
+        do convert();
+        while (! /\*\)/) { $_ = <IN>; do convert(); }
+        $_ = <IN>;
+    }
+    while(/^$/ || /^#open / || /^{$/) {
+        do convert();
+        $_ = <IN>;
+    }
+    $saved = $_;
+    $copy = 0;
+
+# Copy and translate manifest definitions from the .mli
+    while(<INTERFACE>) {
+        $copy = 1 if /^type .*=/ || /^#open/ || /^exception/;
+        $copy = 0 if /^type [^=]*$/ || /^value /;
+        do convert() if $copy;
+    }
+    close(INTERFACE);
+    $_ = $saved;
+
+# Finish translation of main file
+    do convert();
+    while(<IN>) {
+        do convert();
+    }
+
+} else {
+
+# For other kinds of files (.mli, .mly), just copy as is
+    while(<IN>) {
+        do convert();
+    }
+}
+
+close(IN);
+
+# Convert and print one line (in $_)
+sub convert {
+    chop;
+# Double-semicolon
+    return if /^;;\s*$/;
+    s/;;//;
+# Identifiers that have been renamed
+    s/([A-Za-z][A-Za-z0-9'_]*(__[A-Za-z][A-Za-z0-9'_]*)?)/$conv{$1} || $1/eg;
+# 'type glop == tau'
+    s/^((type|and)\s+(\(.*\)\s+)?[a-z][A-Za-z0-9'_]*\s+)==/\1=/;
+# 'and' for values in .mli files -- what a terrible hack!
+    if ($interface) { s/^  and\b/val/; }
+# Open
+    if (s/#\s*open\s*"([^"]*)"/"open " . do capitalize($1)/e) {
+        /open ([A-Za-z0-9_']+)/;
+        return if $opened{$1};
+        $opened{$1} = 1;
+    }
+# Module references
+    s/([A-Za-z][A-Za-z0-9_']*)__/do capitalize($1) . "."/eg;
+# Character literals
+    s/`([^\\]|\\[\\`ntbr]|\\[0-9][0-9][0-9])`/do convert_char($1)/eg;
+# Over!
+    print $_, "\n";
+}
+
+close(IN);
+close(OUT);
+
+# Capitalize a string
+sub capitalize {
+    local ($_) = @_;
+    m/^(.)(.*)/;
+    $hd = $1;
+    $tl = $2;
+    $hd =~ tr/a-z/A-Z/;
+    return $hd . $tl;
+}
+
+# Convert a character literal
+sub convert_char {
+    local ($_) = @_;
+    s/\\`/`/;
+    s/'/\\'/;
+    s/^/'/;
+    s/$/'/;
+    return $_;
+}

@@ -1,0 +1,148 @@
+(* The parsing engine *)
+
+type parse_tables =
+  { actions : (unit -> Obj.t) array;
+    transl : int array;
+    lhs : string;
+    len : string;
+    defred : string;
+    dgoto : string;
+    sindex : string;
+    rindex : string;
+    gindex : string;
+    tablesize : int;
+    table : string;
+    check : string }
+
+exception YYexit of Obj.t
+exception Parse_error
+
+open Lexing
+
+(* Internal interface to the parsing engine *)
+
+type parser_env =
+  { mutable s_stack : int array;        (* States *)
+    mutable v_stack : Obj.t array;      (* Semantic attributes *)
+    mutable symb_start_stack : int array; (* Start positions *)
+    mutable symb_end_stack : int array;   (* End positions *)
+    mutable stacksize : int;            (* Size of the stacks *)
+    mutable curr_char : int;            (* Last token read *)
+    mutable lval : Obj.t;               (* Its semantic attribute *)
+    mutable symb_start : int;           (* Start pos. of the current symbol*)
+    mutable symb_end : int;             (* End pos. of the current symbol *)
+    mutable asp : int;                  (* The stack pointer for attributes *)
+    mutable rule_len : int;             (* Number of rhs items in the rule *)
+    mutable rule_number : int;          (* Rule number to reduce by *)
+    mutable sp : int;                   (* Saved sp for parse_engine *)
+    mutable state : int }               (* Saved state for parse_engine *)
+
+type parser_input =
+    Start
+  | Token_read
+  | Stacks_grown_1
+  | Stacks_grown_2
+  | Semantic_action_computed
+
+type parser_output =
+    Read_token
+  | Raise_parse_error
+  | Grow_stacks_1
+  | Grow_stacks_2
+  | Compute_semantic_action
+
+external parse_engine :
+    parse_tables -> parser_env -> parser_input -> Obj.t -> parser_output
+    = "parse_engine"
+
+let env =
+  { s_stack = Array.new 100 0;
+    v_stack = Array.new 100 (Obj.repr ());
+    symb_start_stack = Array.new 100 0;
+    symb_end_stack = Array.new 100 0;
+    stacksize = 100;
+    curr_char = 0;
+    lval = Obj.repr ();
+    symb_start = 0;
+    symb_end = 0;
+    asp = 0;
+    rule_len = 0;
+    rule_number = 0;
+    sp = 0;
+    state = 0 }
+
+let grow_stacks() =
+  let oldsize = env.stacksize in
+  let newsize = oldsize * 2 in
+  let new_s = Array.new newsize 0
+  and new_v = Array.new newsize (Obj.repr ())
+  and new_start = Array.new newsize 0
+  and new_end = Array.new newsize 0 in
+    Array.blit env.s_stack 0 new_s 0 oldsize;
+    env.s_stack <- new_s;
+    Array.blit env.v_stack 0 new_v 0 oldsize;
+    env.v_stack <- new_v;
+    Array.blit env.symb_start_stack 0 new_start 0 oldsize;
+    env.symb_start_stack <- new_start;
+    Array.blit env.symb_end_stack 0 new_end 0 oldsize;
+    env.symb_end_stack <- new_end;
+    env.stacksize <- newsize
+
+let clear_parser() =
+  Array.fill env.v_stack 0 env.stacksize (Obj.repr ());
+  env.lval <- Obj.repr ()
+
+let current_lookahead_fun = ref (fun (x: Obj.t) -> false)
+
+let yyparse tables start lexer lexbuf =
+  let rec loop cmd arg =
+    match parse_engine tables env cmd arg with
+      Read_token ->
+        let t = Obj.repr(lexer lexbuf) in
+        env.symb_start <- lexbuf.lex_abs_pos + lexbuf.lex_start_pos;
+        env.symb_end   <- lexbuf.lex_abs_pos + lexbuf.lex_curr_pos;
+        loop Token_read t
+    | Raise_parse_error ->
+        raise Parse_error
+    | Compute_semantic_action ->
+        loop Semantic_action_computed (tables.actions.(env.rule_number) ())
+    | Grow_stacks_1 ->
+        grow_stacks(); loop Stacks_grown_1 (Obj.repr ())
+    | Grow_stacks_2 ->
+        grow_stacks(); loop Stacks_grown_2 (Obj.repr ()) in
+  let init_asp = env.asp
+  and init_sp = env.sp
+  and init_state = env.state
+  and init_curr_char = env.curr_char in
+  env.curr_char <- start;
+  try
+    loop Start (Obj.repr ())
+  with exn ->
+    let curr_char = env.curr_char in
+    env.asp <- init_asp;
+    env.sp <- init_sp;
+    env.state <- init_state;
+    env.curr_char <- init_curr_char;
+    match exn with
+      YYexit v ->
+        Obj.magic v
+    | _ ->
+        current_lookahead_fun :=
+          (fun tok -> tables.transl.(Obj.tag tok) = curr_char);
+        raise exn
+
+let peek_val n =
+  Obj.magic env.v_stack.(env.asp - n)
+
+let symbol_start () =
+  env.symb_start_stack.(env.asp - env.rule_len + 1)
+let symbol_end () =
+  env.symb_end_stack.(env.asp)
+
+let rhs_start n =
+  env.symb_start_stack.(env.asp - (env.rule_len - n))
+let rhs_end n =
+  env.symb_end_stack.(env.asp - (env.rule_len - n))
+
+let is_current_lookahead tok =
+  (!current_lookahead_fun)(Obj.repr tok)

@@ -1,0 +1,4 @@
+case $1 in
+  test) ../byterun/camlrun fft | awk '$2 >= 1e-10 { exit 2; }';;
+  bench) xtime -o /dev/null ../byterun/camlrun fft;;
+esac

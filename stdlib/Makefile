@@ -1,0 +1,55 @@
+include ../Makefile.config
+
+COMPILER=../camlc
+CAMLC=../boot/camlrun $(COMPILER)
+CAMLDEP=../tools/camldep
+
+OBJS=pervasives.cmo string.cmo char.cmo list.cmo array.cmo sys.cmo \
+  hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \
+  baltree.cmo set.cmo stack.cmo queue.cmo \
+  printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo
+
+all: stdlib.cma header.exe
+
+install:
+	cp stdlib.cma *.cmi *.mli header.exe $(LIBDIR)
+
+stdlib.cma: $(OBJS)
+	$(CAMLC) -a -o stdlib.cma $(OBJS)
+
+header.exe: header.c ../Makefile.config
+	if $(SHARPBANGSCRIPTS); \
+	then echo "#!$(BINDIR)/cslrun" > header.exe; \
+	else $(CC) $(CCCOMPOPTS) $(CCLINKOPTS) header.c -o header.exe; \
+	     strip header.exe; fi
+
+pervasives.cmi: pervasives.mli
+	$(CAMLC) -nopervasives -c pervasives.mli
+
+pervasives.cmo: pervasives.ml
+	$(CAMLC) -nopervasives -c pervasives.ml
+
+sys.cmi: sys.mli
+	$(CAMLC) -nopervasives -c sys.mli
+
+.SUFFIXES: .mli .ml .cmi .cmo
+
+.mli.cmi:
+	$(CAMLC) $(COMPFLAGS) -c $<
+
+.ml.cmo:
+	$(CAMLC) $(COMPFLAGS) -c $<
+
+$(OBJS): pervasives.cmi
+
+$(OBJS): $(COMPILER)
+$(OBJS:.cmo=.cmi): $(COMPILER)
+
+clean:
+	rm -f *.cm[ioa]
+	rm -f *~
+
+include .depend
+
+depend:
+	$(CAMLDEP) *.mli *.ml > .depend

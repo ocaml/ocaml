@@ -1,0 +1,7 @@
+lexer.cmi: parser.cmi 
+parser.cmi: syntax.cmo 
+lexer.cmo: lexer.cmi parser.cmi syntax.cmo 
+lexgen.cmo: syntax.cmo 
+main.cmo: lexgen.cmo parser.cmi output.cmo syntax.cmo lexer.cmi 
+output.cmo: syntax.cmo 
+parser.cmo: parser.cmi syntax.cmo 

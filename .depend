@@ -1,0 +1,211 @@
+bytecomp/codegen.cmi: bytecomp/lambda.cmi bytecomp/instruct.cmi 
+bytecomp/dectree.cmi: bytecomp/lambda.cmi 
+bytecomp/emitcode.cmi: typing/ident.cmi bytecomp/lambda.cmi \
+    bytecomp/instruct.cmi utils/config.cmi 
+bytecomp/instruct.cmi: typing/ident.cmi bytecomp/lambda.cmi 
+bytecomp/lambda.cmi: typing/ident.cmi utils/misc.cmi typing/path.cmi \
+    parsing/asttypes.cmi 
+bytecomp/librarian.cmi: utils/config.cmi 
+bytecomp/linker.cmi: bytecomp/symtable.cmi bytecomp/emitcode.cmi 
+bytecomp/matching.cmi: typing/ident.cmi bytecomp/lambda.cmi \
+    typing/typedtree.cmi parsing/location.cmi 
+bytecomp/printinstr.cmi: bytecomp/instruct.cmi 
+bytecomp/printlambda.cmi: bytecomp/lambda.cmi 
+bytecomp/symtable.cmi: typing/ident.cmi bytecomp/emitcode.cmi 
+bytecomp/translcore.cmi: typing/ident.cmi bytecomp/lambda.cmi \
+    typing/typedtree.cmi parsing/location.cmi parsing/asttypes.cmi 
+bytecomp/translmod.cmi: bytecomp/lambda.cmi typing/typedtree.cmi 
+driver/compile.cmi: typing/env.cmi 
+parsing/lexer.cmi: parsing/parser.cmi 
+parsing/location.cmi: utils/misc.cmi 
+parsing/parse.cmi: parsing/parsetree.cmi 
+parsing/parser.cmi: parsing/parsetree.cmi 
+parsing/parsetree.cmi: utils/misc.cmi parsing/location.cmi \
+    parsing/longident.cmi parsing/asttypes.cmi 
+toplevel/printval.cmi: typing/path.cmi typing/typedtree.cmi typing/env.cmi 
+toplevel/topdirs.cmi: parsing/longident.cmi 
+toplevel/toploop.cmi: parsing/parsetree.cmi typing/env.cmi \
+    parsing/longident.cmi 
+typing/ctype.cmi: typing/ident.cmi typing/typedtree.cmi typing/env.cmi 
+typing/env.cmi: typing/ident.cmi typing/path.cmi typing/typedtree.cmi \
+    parsing/longident.cmi 
+typing/includecore.cmi: typing/ident.cmi typing/typedtree.cmi \
+    typing/env.cmi 
+typing/includemod.cmi: typing/ident.cmi typing/typedtree.cmi typing/env.cmi 
+typing/mtype.cmi: typing/ident.cmi typing/path.cmi typing/typedtree.cmi \
+    typing/env.cmi 
+typing/parmatch.cmi: typing/typedtree.cmi parsing/location.cmi 
+typing/path.cmi: typing/ident.cmi 
+typing/predef.cmi: typing/ident.cmi typing/path.cmi typing/typedtree.cmi \
+    typing/env.cmi 
+typing/printtyp.cmi: typing/ident.cmi typing/path.cmi typing/typedtree.cmi \
+    parsing/longident.cmi 
+typing/subst.cmi: typing/ident.cmi typing/path.cmi typing/typedtree.cmi 
+typing/typecore.cmi: parsing/parsetree.cmi typing/typedtree.cmi \
+    parsing/location.cmi typing/env.cmi parsing/longident.cmi \
+    parsing/asttypes.cmi 
+typing/typedecl.cmi: typing/ident.cmi parsing/parsetree.cmi \
+    typing/typedtree.cmi parsing/location.cmi typing/env.cmi 
+typing/typedtree.cmi: typing/ident.cmi utils/misc.cmi typing/path.cmi \
+    parsing/location.cmi parsing/asttypes.cmi 
+typing/typemod.cmi: parsing/parsetree.cmi typing/includemod.cmi \
+    typing/typedtree.cmi parsing/location.cmi typing/env.cmi \
+    parsing/longident.cmi 
+typing/typetexp.cmi: parsing/parsetree.cmi typing/typedtree.cmi \
+    parsing/location.cmi typing/env.cmi parsing/longident.cmi 
+bytecomp/codegen.cmo: bytecomp/codegen.cmi bytecomp/codegen.cmi \
+    bytecomp/lambda.cmi utils/misc.cmi typing/ident.cmi \
+    bytecomp/dectree.cmi bytecomp/instruct.cmi parsing/asttypes.cmi 
+bytecomp/dectree.cmo: bytecomp/dectree.cmi bytecomp/lambda.cmi 
+bytecomp/emitcode.cmo: bytecomp/emitcode.cmi utils/meta.cmi \
+    bytecomp/lambda.cmi utils/config.cmi utils/misc.cmi typing/ident.cmi \
+    bytecomp/emitcode.cmi bytecomp/instruct.cmi typing/env.cmi \
+    parsing/asttypes.cmi bytecomp/opcodes.cmo 
+bytecomp/instruct.cmo: bytecomp/instruct.cmi typing/ident.cmi \
+    bytecomp/lambda.cmi 
+bytecomp/lambda.cmo: bytecomp/lambda.cmi typing/ident.cmi utils/misc.cmi \
+    utils/cset.cmi typing/path.cmi parsing/asttypes.cmi 
+bytecomp/librarian.cmo: bytecomp/librarian.cmi utils/misc.cmi \
+    bytecomp/emitcode.cmi utils/config.cmi 
+bytecomp/linker.cmo: bytecomp/linker.cmi utils/cset.cmi utils/config.cmi \
+    utils/misc.cmi typing/ident.cmi utils/clflags.cmo bytecomp/symtable.cmi \
+    bytecomp/emitcode.cmi bytecomp/opcodes.cmo 
+bytecomp/matching.cmo: bytecomp/matching.cmi typing/predef.cmi \
+    bytecomp/lambda.cmi typing/typedtree.cmi parsing/location.cmi \
+    typing/ctype.cmi parsing/asttypes.cmi 
+bytecomp/printinstr.cmo: bytecomp/printinstr.cmi bytecomp/printlambda.cmi \
+    typing/ident.cmi bytecomp/lambda.cmi bytecomp/instruct.cmi 
+bytecomp/printlambda.cmo: bytecomp/printlambda.cmi bytecomp/lambda.cmi \
+    typing/ident.cmi utils/misc.cmi parsing/asttypes.cmi 
+bytecomp/runtimedef.cmo: bytecomp/runtimedef.cmi 
+bytecomp/symtable.cmo: bytecomp/symtable.cmi typing/predef.cmi \
+    utils/meta.cmi bytecomp/runtimedef.cmi bytecomp/lambda.cmi \
+    utils/config.cmi utils/tbl.cmi utils/misc.cmi typing/ident.cmi \
+    utils/clflags.cmo bytecomp/symtable.cmi bytecomp/emitcode.cmi \
+    parsing/asttypes.cmi 
+bytecomp/translcore.cmo: bytecomp/translcore.cmi typing/predef.cmi \
+    bytecomp/lambda.cmi typing/typedtree.cmi bytecomp/matching.cmi \
+    parsing/location.cmi typing/ident.cmi utils/misc.cmi \
+    bytecomp/translcore.cmi typing/ctype.cmi typing/path.cmi \
+    parsing/asttypes.cmi 
+bytecomp/translmod.cmo: bytecomp/translmod.cmi bytecomp/translmod.cmi \
+    typing/ident.cmi utils/misc.cmi bytecomp/translcore.cmi \
+    bytecomp/lambda.cmi typing/typedtree.cmi 
+driver/compile.cmo: driver/compile.cmi typing/typemod.cmi \
+    typing/printtyp.cmi bytecomp/codegen.cmi typing/typedtree.cmi \
+    utils/config.cmi bytecomp/translmod.cmi utils/misc.cmi \
+    typing/includemod.cmi utils/crc.cmi bytecomp/printinstr.cmi \
+    bytecomp/printlambda.cmi parsing/location.cmi parsing/parse.cmi \
+    utils/clflags.cmo bytecomp/emitcode.cmi typing/env.cmi 
+driver/errors.cmo: driver/errors.cmi typing/typemod.cmi typing/typedecl.cmi \
+    parsing/parse.cmi parsing/location.cmi bytecomp/librarian.cmi \
+    bytecomp/linker.cmi bytecomp/symtable.cmi bytecomp/translcore.cmi \
+    parsing/lexer.cmi typing/includemod.cmi typing/env.cmi \
+    typing/typecore.cmi typing/typetexp.cmi 
+driver/main.cmo: utils/clflags.cmo driver/errors.cmi bytecomp/linker.cmi \
+    driver/compile.cmi bytecomp/librarian.cmi utils/config.cmi 
+lex/grammar.cmo: lex/grammar.cmi 
+parsing/lexer.cmo: parsing/lexer.cmi utils/misc.cmi parsing/parser.cmi 
+parsing/location.cmo: parsing/location.cmi utils/misc.cmi \
+    utils/terminfo.cmi 
+parsing/parse.cmo: parsing/parse.cmi parsing/parser.cmi parsing/lexer.cmi \
+    parsing/location.cmi 
+parsing/parser.cmo: parsing/parser.cmi parsing/parsetree.cmi \
+    parsing/location.cmi utils/misc.cmi utils/clflags.cmo \
+    parsing/longident.cmi parsing/asttypes.cmi 
+stdlib/arg.cmo: stdlib/arg.cmi 
+stdlib/array.cmo: stdlib/array.cmi 
+stdlib/baltree.cmo: stdlib/baltree.cmi 
+stdlib/char.cmo: stdlib/char.cmi 
+stdlib/filename.cmo: stdlib/filename.cmi 
+stdlib/format.cmo: stdlib/format.cmi 
+stdlib/gc.cmo: stdlib/gc.cmi 
+stdlib/hashtbl.cmo: stdlib/hashtbl.cmi 
+stdlib/lexing.cmo: stdlib/lexing.cmi 
+stdlib/list.cmo: stdlib/list.cmi 
+stdlib/obj.cmo: stdlib/obj.cmi 
+stdlib/parsing.cmo: stdlib/parsing.cmi 
+stdlib/pervasives.cmo: stdlib/pervasives.cmi 
+stdlib/printexc.cmo: stdlib/printexc.cmi 
+stdlib/printf.cmo: stdlib/printf.cmi 
+stdlib/queue.cmo: stdlib/queue.cmi 
+stdlib/set.cmo: stdlib/set.cmi 
+stdlib/sort.cmo: stdlib/sort.cmi 
+stdlib/stack.cmo: stdlib/stack.cmi 
+stdlib/string.cmo: stdlib/string.cmi 
+stdlib/sys.cmo: stdlib/sys.cmi 
+tools/dumpobj.cmo: bytecomp/runtimedef.cmi bytecomp/lambda.cmi \
+    utils/tbl.cmi utils/config.cmi typing/ident.cmi bytecomp/emitcode.cmi \
+    parsing/asttypes.cmi bytecomp/opcodes.cmo 
+toplevel/expunge.cmo: utils/cset.cmi bytecomp/runtimedef.cmi \
+    utils/config.cmi utils/misc.cmi typing/ident.cmi bytecomp/symtable.cmi 
+toplevel/printval.cmo: toplevel/printval.cmi typing/predef.cmi \
+    typing/printtyp.cmi typing/typedtree.cmi typing/ident.cmi \
+    typing/ctype.cmi typing/path.cmi typing/env.cmi parsing/longident.cmi 
+toplevel/topdirs.cmo: toplevel/topdirs.cmi typing/predef.cmi \
+    typing/printtyp.cmi utils/meta.cmi typing/typedtree.cmi \
+    toplevel/toploop.cmi utils/config.cmi utils/misc.cmi \
+    toplevel/printval.cmi bytecomp/linker.cmi bytecomp/symtable.cmi \
+    parsing/longident.cmi parsing/parse.cmi parsing/location.cmi \
+    typing/ctype.cmi typing/path.cmi bytecomp/emitcode.cmi typing/env.cmi \
+    bytecomp/opcodes.cmo 
+toplevel/toploop.cmo: toplevel/toploop.cmi typing/typemod.cmi \
+    typing/printtyp.cmi utils/meta.cmi bytecomp/codegen.cmi \
+    parsing/parsetree.cmi typing/typedtree.cmi utils/config.cmi \
+    bytecomp/translmod.cmi utils/misc.cmi toplevel/printval.cmi \
+    bytecomp/symtable.cmi parsing/longident.cmi bytecomp/printinstr.cmi \
+    bytecomp/printlambda.cmi parsing/parse.cmi parsing/location.cmi \
+    utils/clflags.cmo driver/errors.cmi bytecomp/emitcode.cmi \
+    driver/compile.cmi typing/env.cmi 
+toplevel/topmain.cmo: utils/clflags.cmo toplevel/toploop.cmi 
+typing/ctype.cmo: typing/ctype.cmi utils/misc.cmi typing/ctype.cmi \
+    typing/path.cmi typing/typedtree.cmi typing/env.cmi 
+typing/env.cmo: typing/env.cmi typing/predef.cmi typing/typedtree.cmi \
+    utils/tbl.cmi utils/config.cmi utils/misc.cmi typing/ident.cmi \
+    typing/path.cmi typing/subst.cmi typing/env.cmi parsing/longident.cmi \
+    parsing/asttypes.cmi 
+typing/ident.cmo: typing/ident.cmi utils/misc.cmi 
+typing/includecore.cmo: typing/includecore.cmi utils/misc.cmi \
+    typing/ctype.cmi typing/path.cmi typing/typedtree.cmi 
+typing/includemod.cmo: typing/includemod.cmi typing/includecore.cmi \
+    typing/printtyp.cmi typing/typedtree.cmi utils/tbl.cmi utils/misc.cmi \
+    typing/ident.cmi typing/path.cmi typing/includemod.cmi typing/env.cmi 
+typing/mtype.cmo: typing/mtype.cmi typing/ident.cmi typing/ctype.cmi \
+    typing/path.cmi typing/typedtree.cmi typing/env.cmi 
+typing/parmatch.cmo: typing/parmatch.cmi typing/typedtree.cmi \
+    parsing/location.cmi typing/parmatch.cmi utils/misc.cmi \
+    typing/ctype.cmi parsing/asttypes.cmi 
+typing/path.cmo: typing/path.cmi typing/ident.cmi 
+typing/predef.cmo: typing/predef.cmi typing/ident.cmi utils/misc.cmi \
+    typing/ctype.cmi typing/path.cmi typing/typedtree.cmi 
+typing/printtyp.cmo: typing/printtyp.cmi typing/typedtree.cmi \
+    utils/misc.cmi typing/ident.cmi typing/path.cmi parsing/longident.cmi \
+    parsing/asttypes.cmi 
+typing/subst.cmo: typing/subst.cmi typing/ident.cmi utils/misc.cmi \
+    typing/path.cmi typing/typedtree.cmi 
+typing/typecore.cmo: typing/typecore.cmi typing/predef.cmi \
+    typing/printtyp.cmi parsing/parsetree.cmi typing/typedtree.cmi \
+    parsing/location.cmi typing/parmatch.cmi typing/ident.cmi \
+    utils/misc.cmi typing/path.cmi typing/ctype.cmi typing/env.cmi \
+    parsing/longident.cmi typing/typetexp.cmi parsing/asttypes.cmi 
+typing/typedecl.cmo: typing/typedecl.cmi utils/cset.cmi \
+    parsing/parsetree.cmi typing/typedtree.cmi parsing/location.cmi \
+    typing/ctype.cmi typing/env.cmi typing/typetexp.cmi 
+typing/typedtree.cmo: typing/typedtree.cmi typing/ident.cmi utils/misc.cmi \
+    typing/path.cmi parsing/location.cmi parsing/asttypes.cmi 
+typing/typemod.cmo: typing/typemod.cmi typing/printtyp.cmi \
+    typing/typedecl.cmi parsing/parsetree.cmi typing/typedtree.cmi \
+    typing/mtype.cmi parsing/location.cmi utils/misc.cmi typing/ident.cmi \
+    typing/ctype.cmi typing/path.cmi typing/includemod.cmi typing/subst.cmi \
+    typing/env.cmi parsing/longident.cmi typing/typecore.cmi \
+    typing/typetexp.cmi 
+typing/typetexp.cmo: typing/typetexp.cmi typing/printtyp.cmi \
+    parsing/parsetree.cmi typing/typedtree.cmi parsing/location.cmi \
+    utils/tbl.cmi typing/ctype.cmi typing/env.cmi parsing/longident.cmi 
+utils/config.cmo: utils/config.cmi 
+utils/crc.cmo: utils/crc.cmi utils/crc.cmi 
+utils/cset.cmo: utils/cset.cmi utils/cset.cmi 
+utils/meta.cmo: utils/meta.cmi 
+utils/misc.cmo: utils/misc.cmi 
+utils/tbl.cmo: utils/tbl.cmi 
+utils/terminfo.cmo: utils/terminfo.cmi 

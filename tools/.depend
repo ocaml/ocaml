@@ -1,0 +1,3 @@
+oldumpobj.zo: ../bytecomp/runtimedef.zi ../bytecomp/lambda.zi \
+    ../utils/tbl.zi ../utils/config.zi opnames.zo ../typing/ident.zi \
+    ../bytecomp/emitcode.zi ../parsing/asttypes.zi 

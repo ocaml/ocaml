@@ -1,0 +1,119 @@
+(* Typing of type definitions *)
+
+open Parsetree
+open Typedtree
+open Typetexp
+
+
+type error =
+    Repeated_parameter
+  | Duplicate_constructor of string
+  | Duplicate_label of string
+  | Recursive_abbrev of string
+
+exception Error of Location.t * error
+
+(* Enter all declared types in the environment as abstract types *)
+
+let rec enter_types env = function
+    [] ->
+      ([], env)
+  | (name, sdecl) :: srem ->
+      let decl =
+        { type_params = []; (*this field is unused when kind = Type_abstract*)
+          type_arity = List.length sdecl.ptype_params;
+          type_kind = Type_abstract } in
+      let (id, extenv) = Env.enter_type name decl env in
+      let (rem_id, final_env) = enter_types extenv srem in
+      (id :: rem_id, final_env)
+
+(* Translate one type declaration *)
+
+let transl_declaration env (name, sdecl) id =
+  Ctype.begin_def();
+  reset_type_variables();
+  let params =
+    try
+      List.map enter_type_variable sdecl.ptype_params
+    with Already_bound ->
+      raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
+  let kind =
+    match sdecl.ptype_kind with
+      Ptype_abstract ->
+        Type_abstract
+    | Ptype_manifest sty ->
+        Type_manifest(transl_simple_type env true sty)
+    | Ptype_variant cstrs ->
+        let all_constrs = ref Cset.empty in
+        List.iter
+          (fun (name, args) ->
+            if Cset.mem name !all_constrs then
+              raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
+            all_constrs := Cset.add name !all_constrs)
+          cstrs;
+        Type_variant(List.map
+          (fun (name, args) ->
+                  (name, List.map (transl_simple_type env true) args))
+          cstrs)
+    | Ptype_record lbls ->
+        let all_labels = ref Cset.empty in
+        List.iter
+          (fun (name, mut, arg) ->
+            if Cset.mem name !all_labels then
+              raise(Error(sdecl.ptype_loc, Duplicate_label name));
+            all_labels := Cset.add name !all_labels)
+          lbls;
+        Type_record(List.map
+          (fun (name, mut, arg) ->
+                  (name, mut, transl_simple_type env true arg))
+          lbls) in
+  Ctype.end_def();
+  List.iter Ctype.generalize params;
+  (id,
+   {type_params = params; type_arity = List.length params; type_kind = kind})
+
+(* Check for recursive abbrevs *)
+
+let check_recursive_abbrev env (name, sdecl) (id, decl) =
+  match decl.type_kind with
+    Type_manifest ty ->
+      if Ctype.free_type_ident env id ty
+      then raise(Error(sdecl.ptype_loc, Recursive_abbrev name))
+  | _ -> ()
+
+(* Translate a set of mutually recursive type declarations *)
+
+let transl_type_decl env name_sdecl_list =
+  (* Enter the types as abstract *)
+  let (id_list, temp_env) = enter_types env name_sdecl_list in
+  (* Translate each declaration *)
+  let decls = List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+  (* Build the final env *)
+  let newenv =
+    List.fold_right (fun (id, decl) env -> Env.add_type id decl env) decls env in
+  (* Check for recursive abbrevs *)
+  List.iter2 (check_recursive_abbrev newenv) name_sdecl_list decls;
+  (* Done *)
+  (decls, newenv)
+
+(* Translate an exception declaration *)
+
+let transl_exception env excdecl =
+  reset_type_variables();
+  List.map (transl_simple_type env true) excdecl
+
+(* Error report *)
+
+open Format
+
+let report_error = function
+    Repeated_parameter ->
+      print_string "A type parameter occurs several times"
+  | Duplicate_constructor s ->
+      print_string "Two constructors are named "; print_string s
+  | Duplicate_label s ->
+      print_string "Two labels are named "; print_string s
+  | Recursive_abbrev s ->
+      print_string "The type abbreviation "; print_string s;
+      print_string " is cyclic"
+
