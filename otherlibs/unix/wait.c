@@ -19,7 +19,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#ifndef WIFEXITED
+#if !(defined(WIFEXITED) && defined(WEXITSTATUS) && defined(WIFSTOPPED) && \
+      defined(WSTOPSIG) && defined(WTERMSIG))
 #define WIFEXITED(status) ((status) & 0xFF == 0)
 #define WEXITSTATUS(status) (((status) >> 8) & 0xFF)
 #define WIFSTOPPED(status) ((status) & 0xFF == 0xFF)
