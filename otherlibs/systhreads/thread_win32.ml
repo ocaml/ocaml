@@ -69,3 +69,4 @@ let select rd wr ex delay = invalid_arg "Thread.select: not implemented"
 
 let wait_pid p = Unix.waitpid [] p
 
+external wait_signal : int list -> int = "caml_wait_signal"

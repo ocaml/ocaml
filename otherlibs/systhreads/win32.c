@@ -575,6 +575,54 @@ value caml_condition_broadcast(value cond)           /* ML */
   return Val_unit;
 }
 
+/* Synchronous signal wait */
+
+static HANDLE wait_signal_event[NSIG];
+static int * wait_signal_received[NSIG];
+
+static void caml_wait_signal_handler(int signo)
+{
+  *(wait_signal_received[signo]) = signo;
+  SetEvent(wait_signal_event[signo]);
+}
+
+value caml_wait_signal(value sigs)
+{
+  HANDLE event;
+  int res, s, retcode;
+  value l;
+  void (*)(int) oldsignals[NSIG];
+
+  Begin_root(sigs);
+  event = CreateEvent(NULL, FALSE, 0, NULL);
+  if (event == NULL)
+    caml_wthread_error("Thread.wait_signal (CreateEvent)");
+  res = 0;
+  for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
+    s = convert_signal_number(Int_val(Field(l, 0)));
+    if (s < 0) s = posix_signals[-s-1];
+    oldsignals[s] = signal(s, caml_wait_signal_handler);
+    if (oldsignals[s] == SIG_ERR) {
+      CloseHandle(event);
+      caml_wthread_error("Thread.wait_signal (signal)");
+    }
+    wait_signal_event[s] = event;
+    wait_signal_received[s] = &res;
+  }
+  enter_blocking_section();
+  retcode = WaitForSingleObject(event, INFINITE);
+  leave_blocking_section();
+  for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
+    s = convert_signal_number(Int_val(Field(l, 0)));
+    signal(s, oldsignals[s]);
+  }
+  CloseHandle(event);
+  End_roots();
+  if (retcode == WAIT_FAILED || retcode == WAIT_ABANDONED)
+    caml_wthread_error("Thread.wait_signal (WaitForSingleObject)");
+  return Val_int(res);
+}
+
 /* Error report */
 
 static void caml_wthread_error(char * msg)
