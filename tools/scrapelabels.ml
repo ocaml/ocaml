@@ -204,7 +204,7 @@ let convert_file ~intf name =
     Buffer.output_buffer oc output_buffer;
     close_out oc
   end
-  else prerr_endline ("No labels erased in " ^ file)
+  else prerr_endline ("No labels erased in " ^ name)
 
 let _ =
   let files = ref [] and intf = ref false and keepstd = ref false in
