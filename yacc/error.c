@@ -288,10 +288,10 @@ void undefined_goal(char *s)
     done(1);
 }
 
-
-void undefined_symbol_warning(char *s)
+void undefined_symbol(char *s)
 {
-    fprintf(stderr, "%s: w - the symbol %s is undefined\n", myname, s);
+    fprintf(stderr, "%s: e - the symbol %s is undefined\n", myname, s);
+    done(1);
 }
 
 

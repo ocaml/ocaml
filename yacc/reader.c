@@ -1516,7 +1516,7 @@ void check_symbols(void)
     {
         if (bp->class == UNKNOWN)
         {
-            undefined_symbol_warning(bp->name);
+            undefined_symbol(bp->name);
             bp->class = TERM;
         }
     }

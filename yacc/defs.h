@@ -361,7 +361,7 @@ extern void terminal_start (char *s);
 extern void tokenized_start (char *s);
 extern void too_many_entries (void);
 extern void undefined_goal (char *s);
-extern void undefined_symbol_warning (char *s);
+extern void undefined_symbol (char *s);
 extern void unexpected_EOF (void);
 extern void unknown_rhs (int i);
 extern void unterminated_action (int a_lineno, char *a_line, char *a_cptr);
