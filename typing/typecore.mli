@@ -101,6 +101,7 @@ type error =
   | Vouillon_illegal of string (* merci Jerome ! *)
   | Send_non_channel of type_expr
   | Join_pattern_type_clash of (type_expr * type_expr) list
+  | Unbound_continuation of Longident.t
 (*< JOCAML *)
 
 exception Error of Location.t * error

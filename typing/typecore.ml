@@ -62,6 +62,7 @@ type error =
   | Vouillon_illegal of string (* merci Jerome ! *)
   | Send_non_channel of type_expr
   | Join_pattern_type_clash of (type_expr * type_expr) list
+  | Unbound_continuation of Longident.t
 (*< JOCAML *)
 
 exception Error of Location.t * error
@@ -1330,7 +1331,7 @@ let rec do_type_exp ctx env sexp =
           desc.continuation_kind <- true ;
           path, desc.continuation_type
         with Not_found ->
-          raise(Error(jid.pjident_loc, Unbound_value lid)) in
+          raise(Error(jid.pjident_loc, Unbound_continuation lid)) in
       let res = type_expect env sres ty in
       {
         exp_desc = Texp_reply (res, path);
@@ -2102,4 +2103,6 @@ let report_error ppf = function
            fprintf ppf "This join-pattern defines a channel of type")
         (function ppf ->
            fprintf ppf "but the channel is used with type")
+  | Unbound_continuation _ ->
+      fprintf ppf "This continuation is undefined here"
 (*< JOCAML *)      

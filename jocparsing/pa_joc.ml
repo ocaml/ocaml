@@ -32,7 +32,7 @@ let joinpattern = Grammar.Entry.create gram "joinpattern"
 let joinclause = Grammar.Entry.create gram "joinclause"
 let joinautomaton = Grammar.Entry.create gram "joinautomaton"
 let joinlocation =  Grammar.Entry.create gram "joinlocation"
-
+let bracedproc = Grammar.Entry.create gram "bracedproc"
 EXTEND
  joinident:
    [[id=LIDENT -> (loc, id)]];
@@ -56,10 +56,10 @@ EXTEND
 
  joinlocation:
    [[id = joinident ;  "def" ; autos = LIST1 joinautomaton SEP "and" ;
-    "do" ; e=expr LEVEL "top" ->
+    "do" ; e=bracedproc ->
       (loc, id, autos, e)
-    | id = joinident ;  "do" ; e=expr LEVEL "top" ->
-      (loc, id, [], e)
+    | id = joinident ;  "do" ; e = bracedproc ->
+       (loc, id, [], e)
     ]];
 
  expr: BEFORE "expr1" 
@@ -76,7 +76,7 @@ EXTEND
     [[
         "reply" ; "to" ; id = joinident -> ExRep (loc, ExUid (loc, "()"), id)
      |  "reply" ; e = SELF ; "to" ; id = joinident -> ExRep (loc, e, id)
-     | "spawn" ; e = SELF -> ExSpa (loc, e)
+     | "spawn" ;  e = bracedproc -> ExSpa (loc, e)
      | "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ;
         "in" ; e=expr LEVEL "top" ->
         ExDef (loc, d, e)
@@ -101,6 +101,11 @@ EXTEND
          StDef (loc, d)
     | "let" ; "loc" ; d = LIST1 joinlocation SEP "and"  ->
         StLoc (loc, d)
+    ]];
+  bracedproc:
+    [[
+      "{" ; "}" ->  ExNul (loc)
+  |  "{" ; e=expr LEVEL "top" ; "}" -> e
     ]];
 END
 
