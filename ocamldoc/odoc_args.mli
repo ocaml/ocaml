@@ -107,6 +107,12 @@ val latex_titles : (int * string) list ref
 (** The flag which indicates if we must generate a table of contents (for LaTeX). *)
 val with_toc : bool ref
 
+(** The flag which indicates if we must generate an index (for TeXinfo). *)
+val with_index : bool ref
+
+(** The flag which indicates if we must escape accentuated characters (for TeXinfo).*)
+val esc_8bits : bool ref
+
 (** The file used byt the dot generator. *)
 val dot_file : string ref
 
@@ -135,8 +141,9 @@ val add_option : string * Arg.spec * string -> unit
 val parse :
     html_generator:doc_generator -> 
       latex_generator:doc_generator -> 
-	man_generator:doc_generator -> 
-	  iso_generator:doc_generator -> 
-	    dot_generator:doc_generator -> 
-	      unit
+	texi_generator:doc_generator -> 
+	  man_generator:doc_generator -> 
+	    iso_generator:doc_generator -> 
+	      dot_generator:doc_generator -> 
+		unit
             

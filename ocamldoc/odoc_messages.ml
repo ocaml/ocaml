@@ -23,6 +23,7 @@ let usage = "Usage : "^(Sys.argv.(0))^" [options] <files>\n"
 let options_are = "Options are :"
 let option_version = " Print version and exit"
 let latex_only = "(LaTeX only)"
+let texi_only = "(TeXinfo only)"
 let html_only = "(HTML only)"
 let iso_only = "(ISO only)"
 let verbose_mode = " verbose mode"
@@ -40,6 +41,7 @@ let index_only = " Generate index files only "^html_only
 let colorize_code = "Colorize code even in documentation pages "^html_only
 let generate_html = " Generate HTML documentation"
 let generate_latex = " Generate LaTeX documentation"
+let generate_texinfo = " Generate TeXinfo documentation"
 let generate_man = " Generate man pages"
 let generate_iso = " Generate boring check report"
 
@@ -89,6 +91,10 @@ let merge_raised_exception = ('e', "merge @raise")
 let merge_return_value = ('r', "merge @return")
 let merge_custom = ('c', "merge custom @-tags")
 let merge_all = ('A', "merge all")
+
+let no_index = " Do not build index for Info files"^texi_only
+let esc_8bits = " scape accentuated characters in Info files"^texi_only
+
 let options_can_be = "        <options> can be one or more of the following characters:"
 let string_of_options_list l = 
   List.fold_left (fun acc -> fun (c, m) -> acc^"\n        "^(String.make 1 c)^"  "^m)

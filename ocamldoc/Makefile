@@ -108,6 +108,7 @@ EXECMOFILES=$(CMOFILES)\
 	odoc_html.cmo\
 	odoc_man.cmo\
 	odoc_latex.cmo\
+	odoc_texi.cmo\
 	odoc_dot.cmo\
 	odoc_iso.cmo
 
@@ -324,6 +325,14 @@ test_framed: dummy
 test_latex: dummy
 	$(MKDIR) $@ 
 	./ocamldoc -latex -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+
+test_man: dummy
+	$(MKDIR) $@ 
+	./ocamldoc -man -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+
+test_texi: dummy
+	$(MKDIR) $@ 
+	./ocamldoc -texi -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 # backup, clean and depend :
 ############################

@@ -146,6 +146,10 @@ let latex_titles = ref [
 
 let with_toc = ref true 
 
+let with_index = ref true
+
+let esc_8bits = ref false
+
 let files = ref []
 
 let f_latex_title s =
@@ -186,6 +190,9 @@ let default_html_generator = ref (None : doc_generator option)
 (** The default latex generator. Initialized in the parse function, to be used during the command line analysis.*)
 let default_latex_generator = ref (None : doc_generator option)
 
+(** The default texinfo generator. Initialized in the parse function, to be used during the command line analysis.*)
+let default_texi_generator = ref (None : doc_generator option)
+
 (** The default man pages generator. Initialized in the parse function, to be used during the command line analysis.*)
 let default_man_generator = ref (None : doc_generator option)
 
@@ -222,6 +229,7 @@ let options  = ref [
 (* generators *)
   "-html", Arg.Unit (fun () -> set_doc_generator !default_html_generator), Odoc_messages.generate_html ;
   "-latex", Arg.Unit (fun () -> set_doc_generator !default_latex_generator), Odoc_messages.generate_latex ;
+  "-texi", Arg.Unit (fun () -> set_doc_generator !default_texi_generator), Odoc_messages.generate_texinfo ;
   "-man", Arg.Unit (fun () -> set_doc_generator !default_man_generator), Odoc_messages.generate_man ;
   "-iso", Arg.Unit (fun () -> set_doc_generator !default_iso_generator), Odoc_messages.generate_iso ;
   "-dot", Arg.Unit (fun () -> set_doc_generator !default_dot_generator), Odoc_messages.generate_dot ;
@@ -241,6 +249,10 @@ let options  = ref [
   "-latextitle", Arg.String f_latex_title, Odoc_messages.latex_title latex_titles ;
   "-notoc", Arg.Unit (fun () -> with_toc := false), Odoc_messages.no_toc^"\n" ;
 
+(* tex only options *)
+  "-noindex", Arg.Clear with_index, Odoc_messages.no_index ;
+  "-esc8", Arg.Set esc_8bits, Odoc_messages.esc_8bits ;
+
 (* iso only options *)
   "-iso-val", Arg.String (fun s -> iso_val_options := analyse_iso_checks s), Odoc_messages.iso_val_met_att_options ;
   "-iso-cl", Arg.String (fun s -> iso_class_options := analyse_iso_checks s), Odoc_messages.iso_class_options ;
@@ -259,9 +271,10 @@ let options  = ref [
 
 let add_option o = options := !options @ [o]
 
-let parse ~html_generator ~latex_generator ~man_generator ~iso_generator ~dot_generator =
+let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~iso_generator ~dot_generator =
   default_html_generator := Some html_generator ;
   default_latex_generator := Some latex_generator ;
+  default_texi_generator := Some texi_generator ;
   default_man_generator := Some man_generator ;
   default_iso_generator := Some iso_generator ;
   default_dot_generator := Some dot_generator ;
