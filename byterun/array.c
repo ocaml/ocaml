@@ -26,7 +26,7 @@
 CAMLprim value array_get_addr(value array, value index)
 {
   long idx = Long_val(index);
-  if (idx < 0 || idx >= Wosize_val(array)) invalid_argument("Array.get");
+  if (idx < 0 || idx >= Wosize_val(array)) array_bound_error();
   return Field(array, idx);
 }
 
@@ -36,8 +36,8 @@ CAMLprim value array_get_float(value array, value index)
   double d;
   value res;
 
-  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
-    invalid_argument("Array.get");
+  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize) 
+    array_bound_error();
   d = Double_field(array, idx);
 #define Setup_for_gc
 #define Restore_after_gc
@@ -59,7 +59,7 @@ CAMLprim value array_get(value array, value index)
 CAMLprim value array_set_addr(value array, value index, value newval)
 {
   long idx = Long_val(index);
-  if (idx < 0 || idx >= Wosize_val(array)) invalid_argument("Array.set");
+  if (idx < 0 || idx >= Wosize_val(array)) array_bound_error();
   Modify(&Field(array, idx), newval);
   return Val_unit;
 }
@@ -68,7 +68,7 @@ CAMLprim value array_set_float(value array, value index, value newval)
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
-    invalid_argument("Array.set");
+    array_bound_error();
   Store_double_field(array, idx, Double_val(newval));
   return Val_unit;
 }
