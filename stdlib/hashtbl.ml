@@ -193,12 +193,14 @@ module Make(H: HashedType): (S with type key = H.t) =
     let clear = clear
     let copy = copy
 
+    let safehash key = (H.hash key) land max_int
+
     let add h key info =
-      let i = (H.hash key) mod (Array.length h.data) in
+      let i = (safehash key) mod (Array.length h.data) in
       let bucket = Cons(key, info, h.data.(i)) in
       h.data.(i) <- bucket;
       h.size <- succ h.size;
-      if h.size > Array.length h.data lsl 1 then resize H.hash h
+      if h.size > Array.length h.data lsl 1 then resize safehash h
 
     let remove h key =
       let rec remove_bucket = function
@@ -208,7 +210,7 @@ module Make(H: HashedType): (S with type key = H.t) =
             if H.equal k key
             then begin h.size <- pred h.size; next end
             else Cons(k, i, remove_bucket next) in
-      let i = (H.hash key) mod (Array.length h.data) in
+      let i = (safehash key) mod (Array.length h.data) in
       h.data.(i) <- remove_bucket h.data.(i)
 
     let rec find_rec key = function
@@ -218,7 +220,7 @@ module Make(H: HashedType): (S with type key = H.t) =
           if H.equal key k then d else find_rec key rest
 
     let find h key =
-      match h.data.((H.hash key) mod (Array.length h.data)) with
+      match h.data.((safehash key) mod (Array.length h.data)) with
         Empty -> raise Not_found
       | Cons(k1, d1, rest1) ->
           if H.equal key k1 then d1 else
@@ -239,7 +241,7 @@ module Make(H: HashedType): (S with type key = H.t) =
           if H.equal k key
           then d :: find_in_bucket rest
           else find_in_bucket rest in
-      find_in_bucket h.data.((H.hash key) mod (Array.length h.data))
+      find_in_bucket h.data.((safehash key) mod (Array.length h.data))
 
     let replace h key info =
       let rec replace_bucket = function
@@ -249,14 +251,14 @@ module Make(H: HashedType): (S with type key = H.t) =
             if H.equal k key
             then Cons(k, info, next)
             else Cons(k, i, replace_bucket next) in
-      let i = (H.hash key) mod (Array.length h.data) in
+      let i = (safehash key) mod (Array.length h.data) in
       let l = h.data.(i) in
       try
         h.data.(i) <- replace_bucket l
       with Not_found ->
         h.data.(i) <- Cons(key, info, l);
         h.size <- succ h.size;
-        if h.size > Array.length h.data lsl 1 then resize H.hash h
+        if h.size > Array.length h.data lsl 1 then resize safehash h
 
     let mem h key =
       let rec mem_in_bucket = function
@@ -264,7 +266,7 @@ module Make(H: HashedType): (S with type key = H.t) =
           false
       | Cons(k, d, rest) ->
           H.equal k key || mem_in_bucket rest in
-      mem_in_bucket h.data.((H.hash key) mod (Array.length h.data))
+      mem_in_bucket h.data.((safehash key) mod (Array.length h.data))
 
     let iter = iter
     let fold = fold

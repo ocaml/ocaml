@@ -97,10 +97,9 @@ module type HashedType =
     val equal : t -> t -> bool
       (** The equality predicate used to compare keys. *)
     val hash : t -> int
-      (** A hashing function on keys, returning a non-negative
-          integer. It must be such that if two keys are equal according
-          to [equal], then they must have identical hash values as computed
-          by [hash].
+      (** A hashing function on keys. It must be such that if two keys are
+          equal according to [equal], then they have identical hash values
+          as computed by [hash].
           Examples: suitable ([equal], [hash]) pairs for arbitrary key
           types include
           ([(=)], {!Hashtbl.hash}) for comparing objects by structure, and
