@@ -890,13 +890,19 @@ and class_sig_item csf dg k =
       HVbox [: `S LR "inherit"; `class_type ce k :]
   | MLast.CgMth _ lab pf t ->
       HVbox
-        [: `S LR "method"; private_flag pf; `label lab; `S LR ":";
+        [: `HVbox
+              [: `S LR "method"; private_flag pf; `label lab; `S LR ":" :];
            `ctyp t "" k :]
   | MLast.CgVal _ lab mf t ->
       HVbox
-        [: `S LR "val"; mutable_flag mf; `label lab; `S LR ":";
+        [: `HVbox [: `S LR "val"; mutable_flag mf; `label lab; `S LR ":" :];
            `ctyp t "" k :]
-  | _ -> HVbox [: `not_impl "class_sig_item" csf; k :] ]
+  | MLast.CgVir _ lab pf t ->
+      HVbox
+        [: `HVbox
+              [: `S LR "method"; `S LR "virtual"; private_flag pf;
+                 `label lab; `S LR ":" :];
+           `ctyp t "" k :] ]
 and class_description b ci _ k =
   HVbox
     [: `HVbox
