@@ -1305,6 +1305,29 @@ let remove_object_name ty =
 exception Nonlinear_abbrev
 exception Recursive_abbrev
 
+let rec non_recursive_abbrev env path constrs ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tarrow (ty1, ty2) ->
+      non_recursive_abbrev env path constrs ty1;
+      non_recursive_abbrev env path constrs ty2
+  | Ttuple tl ->
+      List.iter (non_recursive_abbrev env path constrs) tl
+  | Tconstr(p, args, abbrev) ->
+      if Path.same path p then
+        raise Recursive_abbrev
+      else begin
+        begin try
+          let ty' = expand_abbrev env p args abbrev ty.level in
+          if List.memq ty' constrs then () else
+            non_recursive_abbrev env path (ty'::constrs) ty'
+        with Cannot_expand ->
+          ()
+        end
+      end
+  | _ (* Tvar | Tobject (_, _) | Tfield (_, _, _) | Tnil *) ->
+      ()
+
 let rec path_assoc x =
   function
     [] -> raise Not_found
@@ -1330,14 +1353,14 @@ let visited_abbrev p args =
     visited_abbrevs := (p, ref [args])::!visited_abbrevs;
     false
 
-let rec linear_abbrev env path params constrs visited ty =
+let rec linear_abbrev env path params visited ty =
   let ty = repr ty in
   match ty.desc with
     Tarrow (ty1, ty2) ->
-      linear_abbrev env path params constrs visited ty1;
-      linear_abbrev env path params constrs visited ty2
+      linear_abbrev env path params visited ty1;
+      linear_abbrev env path params visited ty2
   | Ttuple tl ->
-      List.iter (linear_abbrev env path params constrs visited) tl
+      List.iter (linear_abbrev env path params visited) tl
   | Tconstr(p, args, abbrev) ->
       if Path.same p path then begin
         if
@@ -1349,44 +1372,21 @@ let rec linear_abbrev env path params constrs visited ty =
         try
           let ty' = expand_abbrev env p args abbrev ty.level in
           if not (visited_abbrev p args) then
-            linear_abbrev env path params (ty'::constrs) visited ty'
+            linear_abbrev env path params visited ty'
         with Cannot_expand ->
         if not (List.memq ty visited) then begin
           List.iter
-            (linear_abbrev env path params constrs (ty::visited))
+            (linear_abbrev env path params (ty::visited))
             args
         end
       end
   | Tobject (ty', _) ->
       if not (List.memq ty visited) then
-        linear_abbrev env path params constrs (ty::visited) ty'
+        linear_abbrev env path params (ty::visited) ty'
   | Tfield(_, ty1, ty2) ->
-      linear_abbrev env path params constrs visited ty1;
-      linear_abbrev env path params constrs visited ty2
+      linear_abbrev env path params visited ty1;
+      linear_abbrev env path params visited ty2
   | _ (* Tvar | Tnil *) ->
-      ()
-
-let rec non_recursive_abbrev env path constrs ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tarrow (ty1, ty2) ->
-      non_recursive_abbrev env path constrs ty1;
-      non_recursive_abbrev env path constrs ty2
-  | Ttuple tl ->
-      List.iter (non_recursive_abbrev env path constrs) tl
-  | Tconstr(p, args, abbrev) ->
-      if Path.same path p then
-        raise Recursive_abbrev
-      else begin
-        begin try
-          let ty' = expand_abbrev env p args abbrev ty.level in
-          if List.memq ty' constrs then () else
-            non_recursive_abbrev env path (ty'::constrs) ty'
-        with Cannot_expand ->
-          ()
-        end
-      end
-  | _ (* Tvar | Tobject (_, _) | Tfield (_, _, _) | Tnil *) ->
       ()
 
 let correct_abbrev env ident params ty =
@@ -1394,7 +1394,7 @@ let correct_abbrev env ident params ty =
   non_recursive_abbrev env path [] ty;
   if params <> [] then begin
     visited_abbrevs := [];
-    linear_abbrev env path params [] [] ty;
+    linear_abbrev env path params [] ty;
     visited_abbrevs := []
   end;
   remove_abbrev ty
