@@ -14,8 +14,8 @@
 
 val fast : bool ref;;
 val no_constructors_arity : bool ref;;
-val mkloc : int * int -> Location.t;;
-val long_id_of_string_list : int * int -> string list -> Longident.t;;
+val mkloc : MLast.loc -> Location.t;;
+val long_id_of_string_list : MLast.loc -> string list -> Longident.t;;
 
 val str_item : MLast.str_item -> Parsetree.structure -> Parsetree.structure;;
 val interf : MLast.sig_item list -> Parsetree.signature;;

@@ -487,7 +487,7 @@ Grammar.extend
          (Grammar.Entry.obj (parser_case : 'parser_case Grammar.Entry.e))],
       Gramext.action
         (fun (pc : 'parser_case) (po : 'ipatt option) _ _ (e : 'expr) _
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (cparser_match loc e po [pc] : 'expr));
       [Gramext.Stoken ("", "match"); Gramext.Sself;
        Gramext.Stoken ("", "with"); Gramext.Stoken ("", "parser");
@@ -502,7 +502,7 @@ Grammar.extend
        Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ (pcl : 'parser_case list) _ (po : 'ipatt option) _ _
-           (e : 'expr) _ (loc : int * int) ->
+           (e : 'expr) _ (loc : Lexing.position * Lexing.position) ->
            (cparser_match loc e po pcl : 'expr));
       [Gramext.Stoken ("", "parser");
        Gramext.Sopt
@@ -511,7 +511,8 @@ Grammar.extend
        Gramext.Snterm
          (Grammar.Entry.obj (parser_case : 'parser_case Grammar.Entry.e))],
       Gramext.action
-        (fun (pc : 'parser_case) (po : 'ipatt option) _ (loc : int * int) ->
+        (fun (pc : 'parser_case) (po : 'ipatt option) _
+           (loc : Lexing.position * Lexing.position) ->
            (cparser loc po [pc] : 'expr));
       [Gramext.Stoken ("", "parser");
        Gramext.Sopt
@@ -525,7 +526,7 @@ Grammar.extend
        Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ (pcl : 'parser_case list) _ (po : 'ipatt option) _
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (cparser loc po pcl : 'expr))]];
     Grammar.Entry.obj (parser_case : 'parser_case Grammar.Entry.e), None,
     [None, None,
@@ -540,11 +541,14 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'expr) _ (po : 'ipatt option) _ (sp : 'stream_patt) _
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (sp, po, e : 'parser_case))]];
     Grammar.Entry.obj (stream_patt : 'stream_patt Grammar.Entry.e), None,
     [None, None,
-     [[], Gramext.action (fun (loc : int * int) -> ([] : 'stream_patt));
+     [[],
+      Gramext.action
+        (fun (loc : Lexing.position * Lexing.position) ->
+           ([] : 'stream_patt));
       [Gramext.Snterm
          (Grammar.Entry.obj
             (stream_patt_comp : 'stream_patt_comp Grammar.Entry.e));
@@ -557,13 +561,14 @@ Grammar.extend
           Gramext.Stoken ("", ";"))],
       Gramext.action
         (fun (sp : 'stream_patt_comp_err list) _ (spc : 'stream_patt_comp)
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            ((spc, None) :: sp : 'stream_patt));
       [Gramext.Snterm
          (Grammar.Entry.obj
             (stream_patt_comp : 'stream_patt_comp Grammar.Entry.e))],
       Gramext.action
-        (fun (spc : 'stream_patt_comp) (loc : int * int) ->
+        (fun (spc : 'stream_patt_comp)
+           (loc : Lexing.position * Lexing.position) ->
            ([spc, None] : 'stream_patt))]];
     Grammar.Entry.obj
       (stream_patt_comp_err : 'stream_patt_comp_err Grammar.Entry.e),
@@ -578,23 +583,25 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
              Gramext.action
-               (fun (e : 'expr) _ (loc : int * int) -> (e : 'e__1))])],
+               (fun (e : 'expr) _ (loc : Lexing.position * Lexing.position) ->
+                  (e : 'e__1))])],
       Gramext.action
         (fun (eo : 'e__1 option) (spc : 'stream_patt_comp)
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (spc, eo : 'stream_patt_comp_err))]];
     Grammar.Entry.obj (stream_patt_comp : 'stream_patt_comp Grammar.Entry.e),
     None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e))],
       Gramext.action
-        (fun (p : 'patt) (loc : int * int) ->
+        (fun (p : 'patt) (loc : Lexing.position * Lexing.position) ->
            (SpStr (loc, p) : 'stream_patt_comp));
       [Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
        Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'expr) _ (p : 'patt) (loc : int * int) ->
+        (fun (e : 'expr) _ (p : 'patt)
+           (loc : Lexing.position * Lexing.position) ->
            (SpNtr (loc, p, e) : 'stream_patt_comp));
       [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
@@ -604,15 +611,17 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
              Gramext.action
-               (fun (e : 'expr) _ (loc : int * int) -> (e : 'e__2))])],
+               (fun (e : 'expr) _ (loc : Lexing.position * Lexing.position) ->
+                  (e : 'e__2))])],
       Gramext.action
-        (fun (eo : 'e__2 option) (p : 'patt) _ (loc : int * int) ->
+        (fun (eo : 'e__2 option) (p : 'patt) _
+           (loc : Lexing.position * Lexing.position) ->
            (SpTrm (loc, p, eo) : 'stream_patt_comp))]];
     Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("LIDENT", "")],
       Gramext.action
-        (fun (i : string) (loc : int * int) ->
+        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
            (MLast.PaLid (loc, i) : 'ipatt))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.Level "simple"),
@@ -625,17 +634,18 @@ Grammar.extend
           Gramext.Stoken ("", ";"));
        Gramext.Stoken ("", ":]")],
       Gramext.action
-        (fun _ (se : 'stream_expr_comp list) _ (loc : int * int) ->
+        (fun _ (se : 'stream_expr_comp list) _
+           (loc : Lexing.position * Lexing.position) ->
            (cstream loc se : 'expr))]];
     Grammar.Entry.obj (stream_expr_comp : 'stream_expr_comp Grammar.Entry.e),
     None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'expr) (loc : int * int) ->
+        (fun (e : 'expr) (loc : Lexing.position * Lexing.position) ->
            (SeNtr (loc, e) : 'stream_expr_comp));
       [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'expr) _ (loc : int * int) ->
+        (fun (e : 'expr) _ (loc : Lexing.position * Lexing.position) ->
            (SeTrm (loc, e) : 'stream_expr_comp))]]]);;

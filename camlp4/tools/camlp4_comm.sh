@@ -24,7 +24,7 @@ if test "$2" = "camlp4r" -o "$2" = "camlp4"; then
         fi
         shift; shift
         ARGS2=`echo $* | sed -e "s/[()*]//g"`
-#        ARGS1="$ARGS1 -verbose"
+        ARGS1="$ARGS1 -verbose"
         if test "$QUIET" = "no"; then echo $COMM $ARGS2 $ARGS1 $FILE; fi
         $COMM $ARGS2 $ARGS1 $FILE
 else

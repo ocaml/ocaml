@@ -22,9 +22,9 @@ Pcaml.add_option "-split_ext" (Arg.Set split_ext)
 Pcaml.add_option "-split_gext" (Arg.Set split_ext)
   "Old name for the option -split_ext.";;
 
-type loc = int * int;;
+type loc = Lexing.position * Lexing.position;;
 
-type 'e name = { expr : 'e; tvar : string; loc : int * int };;
+type 'e name = { expr : 'e; tvar : string; loc : loc };;
 
 type styp =
     STlid of loc * string
@@ -161,7 +161,12 @@ module MetaAction =
       in
       failwith (f ^ ", not impl: " ^ desc)
     ;;
-    let loc = 0, 0;;
+    let loc =
+      let nowhere =
+        {(Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0}
+      in
+      nowhere, nowhere
+    ;;
     let rec mlist mf =
       function
         [] -> MLast.ExUid (loc, "[]")
@@ -181,7 +186,26 @@ module MetaAction =
       | true -> MLast.ExUid (loc, "True")
     ;;
     let mloc =
-      MLast.ExTup (loc, [MLast.ExInt (loc, "0"); MLast.ExInt (loc, "0")])
+      MLast.ExLet
+        (loc, false,
+         [MLast.PaLid (loc, "nowhere"),
+          MLast.ExRec
+            (loc,
+             [MLast.PaAcc
+                (loc, MLast.PaUid (loc, "Lexing"),
+                 MLast.PaLid (loc, "pos_lnum")),
+              MLast.ExInt (loc, "1");
+              MLast.PaAcc
+                (loc, MLast.PaUid (loc, "Lexing"),
+                 MLast.PaLid (loc, "pos_cnum")),
+              MLast.ExInt (loc, "0")],
+             Some
+               (MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "Lexing"),
+                   MLast.ExLid (loc, "dummy_pos"))))],
+         MLast.ExTup
+           (loc,
+            [MLast.ExLid (loc, "nowhere"); MLast.ExLid (loc, "nowhere")]))
     ;;
     let rec mexpr =
       function
@@ -809,7 +833,13 @@ let quotify_action psl act =
     (fun e ps ->
        match ps.pattern with
          Some (MLast.PaTup (_, pl)) ->
-           let loc = 0, 0 in
+           let loc =
+             let nowhere =
+               {(Lexing.dummy_pos) with Lexing.pos_lnum = 1;
+                 Lexing.pos_cnum = 0}
+             in
+             nowhere, nowhere
+           in
            let pname = pname_of_ptuple pl in
            let (pl1, el1) =
              let (l, _) =
@@ -1040,7 +1070,13 @@ let text_of_action loc psl rtvar act tvar =
        [MLast.PaTyc
           (loc, locid,
            MLast.TyTup
-             (loc, [MLast.TyLid (loc, "int"); MLast.TyLid (loc, "int")])),
+             (loc,
+              [MLast.TyAcc
+                 (loc, MLast.TyUid (loc, "Lexing"),
+                  MLast.TyLid (loc, "position"));
+               MLast.TyAcc
+                 (loc, MLast.TyUid (loc, "Lexing"),
+                  MLast.TyLid (loc, "position"))])),
         None, MLast.ExTyc (loc, act, MLast.TyQuo (loc, rtvar))])
   in
   let txt =
@@ -1459,6 +1495,8 @@ let text_of_functorial_extend loc gmod gl el =
   let_in_of_extend loc gmod true gl el args
 ;;
 
+let zero_loc = {(Lexing.dummy_pos) with Lexing.pos_cnum = 0};;
+
 open Pcaml;;
 let symbol = Grammar.Entry.create gram "symbol";;
 let semi_sep =
@@ -1518,26 +1556,34 @@ Grammar.extend
             (gdelete_rule_body : 'gdelete_rule_body Grammar.Entry.e));
        Gramext.Stoken ("", "END")],
       Gramext.action
-        (fun _ (e : 'gdelete_rule_body) _ (loc : int * int) -> (e : 'expr));
+        (fun _ (e : 'gdelete_rule_body) _
+           (loc : Lexing.position * Lexing.position) ->
+           (e : 'expr));
       [Gramext.Stoken ("", "DELETE_RULE");
        Gramext.Snterm
          (Grammar.Entry.obj
             (delete_rule_body : 'delete_rule_body Grammar.Entry.e));
        Gramext.Stoken ("", "END")],
       Gramext.action
-        (fun _ (e : 'delete_rule_body) _ (loc : int * int) -> (e : 'expr));
+        (fun _ (e : 'delete_rule_body) _
+           (loc : Lexing.position * Lexing.position) ->
+           (e : 'expr));
       [Gramext.Stoken ("", "GEXTEND");
        Gramext.Snterm
          (Grammar.Entry.obj (gextend_body : 'gextend_body Grammar.Entry.e));
        Gramext.Stoken ("", "END")],
       Gramext.action
-        (fun _ (e : 'gextend_body) _ (loc : int * int) -> (e : 'expr));
+        (fun _ (e : 'gextend_body) _
+           (loc : Lexing.position * Lexing.position) ->
+           (e : 'expr));
       [Gramext.Stoken ("", "EXTEND");
        Gramext.Snterm
          (Grammar.Entry.obj (extend_body : 'extend_body Grammar.Entry.e));
        Gramext.Stoken ("", "END")],
       Gramext.action
-        (fun _ (e : 'extend_body) _ (loc : int * int) -> (e : 'expr))]];
+        (fun _ (e : 'extend_body) _
+           (loc : Lexing.position * Lexing.position) ->
+           (e : 'expr))]];
     Grammar.Entry.obj (extend_body : 'extend_body Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm
@@ -1552,10 +1598,12 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
              Gramext.action
-               (fun _ (e : 'entry) (loc : int * int) -> (e : 'e__1))])],
+               (fun _ (e : 'entry)
+                  (loc : Lexing.position * Lexing.position) ->
+                  (e : 'e__1))])],
       Gramext.action
         (fun (el : 'e__1 list) (sl : 'global option) (f : 'efunction)
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (text_of_extend loc "Grammar" sl el f : 'extend_body))]];
     Grammar.Entry.obj (gextend_body : 'gextend_body Grammar.Entry.e), None,
     [None, None,
@@ -1570,10 +1618,12 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
              Gramext.action
-               (fun _ (e : 'entry) (loc : int * int) -> (e : 'e__2))])],
+               (fun _ (e : 'entry)
+                  (loc : Lexing.position * Lexing.position) ->
+                  (e : 'e__2))])],
       Gramext.action
         (fun (el : 'e__2 list) (sl : 'global option) (g : string)
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (text_of_functorial_extend loc g sl el : 'gextend_body))]];
     Grammar.Entry.obj (delete_rule_body : 'delete_rule_body Grammar.Entry.e),
     None,
@@ -1586,7 +1636,8 @@ Grammar.extend
           Gramext.Snterm
             (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)))],
       Gramext.action
-        (fun (sl : 'symbol list) _ (n : 'name) (loc : int * int) ->
+        (fun (sl : 'symbol list) _ (n : 'name)
+           (loc : Lexing.position * Lexing.position) ->
            (let (e, b) = expr_of_delete_rule loc "Grammar" n sl in
             MLast.ExApp
               (loc,
@@ -1612,7 +1663,7 @@ Grammar.extend
             (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)))],
       Gramext.action
         (fun (sl : 'symbol list) _ (n : 'name) (g : string)
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (let (e, b) = expr_of_delete_rule loc g n sl in
             MLast.ExApp
               (loc,
@@ -1628,7 +1679,7 @@ Grammar.extend
     [None, None,
      [[],
       Gramext.action
-        (fun (loc : int * int) ->
+        (fun (loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
               (loc, MLast.ExUid (loc, "Grammar"),
                MLast.ExLid (loc, "extend")) :
@@ -1638,7 +1689,8 @@ Grammar.extend
        Gramext.Snterm
          (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
       Gramext.action
-        (fun _ (f : 'qualid) _ _ (loc : int * int) -> (f : 'efunction))]];
+        (fun _ (f : 'qualid) _ _ (loc : Lexing.position * Lexing.position) ->
+           (f : 'efunction))]];
     Grammar.Entry.obj (global : 'global Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("UIDENT", "GLOBAL"); Gramext.Stoken ("", ":");
@@ -1647,7 +1699,9 @@ Grammar.extend
        Gramext.Snterm
          (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
       Gramext.action
-        (fun _ (sl : 'name list) _ _ (loc : int * int) -> (sl : 'global))]];
+        (fun _ (sl : 'name list) _ _
+           (loc : Lexing.position * Lexing.position) ->
+           (sl : 'global))]];
     Grammar.Entry.obj (entry : 'entry Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (name : 'name Grammar.Entry.e));
@@ -1659,14 +1713,14 @@ Grammar.extend
          (Grammar.Entry.obj (level_list : 'level_list Grammar.Entry.e))],
       Gramext.action
         (fun (ll : 'level_list) (pos : 'position option) _ (n : 'name)
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            ({name = n; pos = pos; levels = ll} : 'entry))]];
     Grammar.Entry.obj (position : 'position Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("UIDENT", "LEVEL");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
-        (fun (n : 'string) _ (loc : int * int) ->
+        (fun (n : 'string) _ (loc : Lexing.position * Lexing.position) ->
            (MLast.ExApp
               (loc,
                MLast.ExAcc
@@ -1677,7 +1731,7 @@ Grammar.extend
       [Gramext.Stoken ("UIDENT", "AFTER");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
-        (fun (n : 'string) _ (loc : int * int) ->
+        (fun (n : 'string) _ (loc : Lexing.position * Lexing.position) ->
            (MLast.ExApp
               (loc,
                MLast.ExAcc
@@ -1688,7 +1742,7 @@ Grammar.extend
       [Gramext.Stoken ("UIDENT", "BEFORE");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
-        (fun (n : 'string) _ (loc : int * int) ->
+        (fun (n : 'string) _ (loc : Lexing.position * Lexing.position) ->
            (MLast.ExApp
               (loc,
                MLast.ExAcc
@@ -1698,13 +1752,13 @@ Grammar.extend
             'position));
       [Gramext.Stoken ("UIDENT", "LAST")],
       Gramext.action
-        (fun _ (loc : int * int) ->
+        (fun _ (loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
               (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Last")) :
             'position));
       [Gramext.Stoken ("UIDENT", "FIRST")],
       Gramext.action
-        (fun _ (loc : int * int) ->
+        (fun _ (loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
               (loc, MLast.ExUid (loc, "Gramext"),
                MLast.ExUid (loc, "First")) :
@@ -1717,7 +1771,8 @@ Grammar.extend
           Gramext.Stoken ("", "|"));
        Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun _ (ll : 'level list) _ (loc : int * int) ->
+        (fun _ (ll : 'level list) _
+           (loc : Lexing.position * Lexing.position) ->
            (ll : 'level_list))]];
     Grammar.Entry.obj (level : 'level Grammar.Entry.e), None,
     [None, None,
@@ -1729,26 +1784,26 @@ Grammar.extend
          (Grammar.Entry.obj (rule_list : 'rule_list Grammar.Entry.e))],
       Gramext.action
         (fun (rules : 'rule_list) (ass : 'assoc option) (lab : string option)
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            ({label = lab; assoc = ass; rules = rules} : 'level))]];
     Grammar.Entry.obj (assoc : 'assoc Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("UIDENT", "NONA")],
       Gramext.action
-        (fun _ (loc : int * int) ->
+        (fun _ (loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
               (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "NonA")) :
             'assoc));
       [Gramext.Stoken ("UIDENT", "RIGHTA")],
       Gramext.action
-        (fun _ (loc : int * int) ->
+        (fun _ (loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
               (loc, MLast.ExUid (loc, "Gramext"),
                MLast.ExUid (loc, "RightA")) :
             'assoc));
       [Gramext.Stoken ("UIDENT", "LEFTA")],
       Gramext.action
-        (fun _ (loc : int * int) ->
+        (fun _ (loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
               (loc, MLast.ExUid (loc, "Gramext"),
                MLast.ExUid (loc, "LeftA")) :
@@ -1761,10 +1816,13 @@ Grammar.extend
           Gramext.Stoken ("", "|"));
        Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun _ (rules : 'rule list) _ (loc : int * int) ->
+        (fun _ (rules : 'rule list) _
+           (loc : Lexing.position * Lexing.position) ->
            (retype_rule_list_without_patterns loc rules : 'rule_list));
       [Gramext.Stoken ("", "["); Gramext.Stoken ("", "]")],
-      Gramext.action (fun _ _ (loc : int * int) -> ([] : 'rule_list))]];
+      Gramext.action
+        (fun _ _ (loc : Lexing.position * Lexing.position) ->
+           ([] : 'rule_list))]];
     Grammar.Entry.obj (rule : 'rule Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Slist0sep
@@ -1773,7 +1831,8 @@ Grammar.extend
           Gramext.Snterm
             (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)))],
       Gramext.action
-        (fun (psl : 'psymbol list) (loc : int * int) ->
+        (fun (psl : 'psymbol list)
+           (loc : Lexing.position * Lexing.position) ->
            ({prod = psl; action = None} : 'rule));
       [Gramext.Slist0sep
          (Gramext.Snterm
@@ -1783,20 +1842,22 @@ Grammar.extend
        Gramext.Stoken ("", "->");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
-        (fun (act : 'expr) _ (psl : 'psymbol list) (loc : int * int) ->
+        (fun (act : 'expr) _ (psl : 'psymbol list)
+           (loc : Lexing.position * Lexing.position) ->
            ({prod = psl; action = Some act} : 'rule))]];
     Grammar.Entry.obj (psymbol : 'psymbol Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
       Gramext.action
-        (fun (s : 'symbol) (loc : int * int) ->
+        (fun (s : 'symbol) (loc : Lexing.position * Lexing.position) ->
            ({pattern = None; symbol = s} : 'psymbol));
       [Gramext.Snterm
          (Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e));
        Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
       Gramext.action
-        (fun (s : 'symbol) _ (p : 'pattern) (loc : int * int) ->
+        (fun (s : 'symbol) _ (p : 'pattern)
+           (loc : Lexing.position * Lexing.position) ->
            ({pattern = Some p; symbol = s} : 'psymbol));
       [Gramext.Stoken ("LIDENT", "");
        Gramext.Sopt
@@ -1804,9 +1865,12 @@ Grammar.extend
             [[Gramext.Stoken ("UIDENT", "LEVEL");
               Gramext.Stoken ("STRING", "")],
              Gramext.action
-               (fun (s : string) _ (loc : int * int) -> (s : 'e__3))])],
+               (fun (s : string) _
+                  (loc : Lexing.position * Lexing.position) ->
+                  (s : 'e__3))])],
       Gramext.action
-        (fun (lev : 'e__3 option) (i : string) (loc : int * int) ->
+        (fun (lev : 'e__3 option) (i : string)
+           (loc : Lexing.position * Lexing.position) ->
            (let name = mk_name loc (MLast.ExLid (loc, i)) in
             let text = TXnterm (loc, name, lev) in
             let styp = STquo (loc, i) in
@@ -1816,14 +1880,15 @@ Grammar.extend
       [Gramext.Stoken ("LIDENT", ""); Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
       Gramext.action
-        (fun (s : 'symbol) _ (p : string) (loc : int * int) ->
+        (fun (s : 'symbol) _ (p : string)
+           (loc : Lexing.position * Lexing.position) ->
            ({pattern = Some (MLast.PaLid (loc, p)); symbol = s} :
             'psymbol))]];
     Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e), None,
     [Some "top", Some Gramext.NonA,
      [[Gramext.Stoken ("UIDENT", "OPT"); Gramext.Sself],
       Gramext.action
-        (fun (s : 'symbol) _ (loc : int * int) ->
+        (fun (s : 'symbol) _ (loc : Lexing.position * Lexing.position) ->
            (if !quotify then ssopt loc s
             else
               let styp = STapp (loc, STlid (loc, "option"), s.styp) in
@@ -1837,9 +1902,12 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
              Gramext.action
-               (fun (t : 'symbol) _ (loc : int * int) -> (t : 'e__5))])],
+               (fun (t : 'symbol) _
+                  (loc : Lexing.position * Lexing.position) ->
+                  (t : 'e__5))])],
       Gramext.action
-        (fun (sep : 'e__5 option) (s : 'symbol) _ (loc : int * int) ->
+        (fun (sep : 'e__5 option) (s : 'symbol) _
+           (loc : Lexing.position * Lexing.position) ->
            (if !quotify then sslist loc true sep s
             else
               let used =
@@ -1858,9 +1926,12 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
              Gramext.action
-               (fun (t : 'symbol) _ (loc : int * int) -> (t : 'e__4))])],
+               (fun (t : 'symbol) _
+                  (loc : Lexing.position * Lexing.position) ->
+                  (t : 'e__4))])],
       Gramext.action
-        (fun (sep : 'e__4 option) (s : 'symbol) _ (loc : int * int) ->
+        (fun (sep : 'e__4 option) (s : 'symbol) _
+           (loc : Lexing.position * Lexing.position) ->
            (if !quotify then sslist loc false sep s
             else
               let used =
@@ -1875,16 +1946,20 @@ Grammar.extend
      None, None,
      [[Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (s_t : 'symbol) _ (loc : int * int) -> (s_t : 'symbol));
+        (fun _ (s_t : 'symbol) _ (loc : Lexing.position * Lexing.position) ->
+           (s_t : 'symbol));
       [Gramext.Snterm (Grammar.Entry.obj (name : 'name Grammar.Entry.e));
        Gramext.Sopt
          (Gramext.srules
             [[Gramext.Stoken ("UIDENT", "LEVEL");
               Gramext.Stoken ("STRING", "")],
              Gramext.action
-               (fun (s : string) _ (loc : int * int) -> (s : 'e__7))])],
+               (fun (s : string) _
+                  (loc : Lexing.position * Lexing.position) ->
+                  (s : 'e__7))])],
       Gramext.action
-        (fun (lev : 'e__7 option) (n : 'name) (loc : int * int) ->
+        (fun (lev : 'e__7 option) (n : 'name)
+           (loc : Lexing.position * Lexing.position) ->
            ({used = [n.tvar]; text = TXnterm (loc, n, lev);
              styp = STquo (loc, n.tvar)} :
             'symbol));
@@ -1895,10 +1970,12 @@ Grammar.extend
             [[Gramext.Stoken ("UIDENT", "LEVEL");
               Gramext.Stoken ("STRING", "")],
              Gramext.action
-               (fun (s : string) _ (loc : int * int) -> (s : 'e__6))])],
+               (fun (s : string) _
+                  (loc : Lexing.position * Lexing.position) ->
+                  (s : 'e__6))])],
       Gramext.action
         (fun (lev : 'e__6 option) (e : 'qualid) _ (i : string)
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (let n =
               mk_name loc (MLast.ExAcc (loc, MLast.ExUid (loc, i), e))
             in
@@ -1907,20 +1984,21 @@ Grammar.extend
             'symbol));
       [Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'string) (loc : int * int) ->
+        (fun (e : 'string) (loc : Lexing.position * Lexing.position) ->
            (let text = TXtok (loc, "", e) in
             {used = []; text = text; styp = STlid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'string) (x : string) (loc : int * int) ->
+        (fun (e : 'string) (x : string)
+           (loc : Lexing.position * Lexing.position) ->
            (let text = TXtok (loc, x, e) in
             {used = []; text = text; styp = STlid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "")],
       Gramext.action
-        (fun (x : string) (loc : int * int) ->
+        (fun (x : string) (loc : Lexing.position * Lexing.position) ->
            (let text =
               if !quotify then sstoken loc x
               else TXtok (loc, x, MLast.ExStr (loc, ""))
@@ -1933,7 +2011,8 @@ Grammar.extend
           Gramext.Stoken ("", "|"));
        Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun _ (rl : 'rule list) _ (loc : int * int) ->
+        (fun _ (rl : 'rule list) _
+           (loc : Lexing.position * Lexing.position) ->
            (let rl = retype_rule_list_without_patterns loc rl in
             let t = new_type_var () in
             {used = used_of_rule_list rl;
@@ -1942,12 +2021,12 @@ Grammar.extend
             'symbol));
       [Gramext.Stoken ("UIDENT", "NEXT")],
       Gramext.action
-        (fun _ (loc : int * int) ->
+        (fun _ (loc : Lexing.position * Lexing.position) ->
            ({used = []; text = TXnext loc; styp = STself (loc, "NEXT")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "SELF")],
       Gramext.action
-        (fun _ (loc : int * int) ->
+        (fun _ (loc : Lexing.position * Lexing.position) ->
            ({used = []; text = TXself loc; styp = STself (loc, "SELF")} :
             'symbol))]];
     Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e), None,
@@ -1958,17 +2037,20 @@ Grammar.extend
             (patterns_comma : 'patterns_comma Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (pl : 'patterns_comma) _ (p : 'pattern) _ (loc : int * int) ->
+        (fun _ (pl : 'patterns_comma) _ (p : 'pattern) _
+           (loc : Lexing.position * Lexing.position) ->
            (MLast.PaTup (loc, (p :: pl)) : 'pattern));
       [Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (p : 'pattern) _ (loc : int * int) -> (p : 'pattern));
+        (fun _ (p : 'pattern) _ (loc : Lexing.position * Lexing.position) ->
+           (p : 'pattern));
       [Gramext.Stoken ("", "_")],
       Gramext.action
-        (fun _ (loc : int * int) -> (MLast.PaAny loc : 'pattern));
+        (fun _ (loc : Lexing.position * Lexing.position) ->
+           (MLast.PaAny loc : 'pattern));
       [Gramext.Stoken ("LIDENT", "")],
       Gramext.action
-        (fun (i : string) (loc : int * int) ->
+        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
            (MLast.PaLid (loc, i) : 'pattern))]];
     Grammar.Entry.obj (patterns_comma : 'patterns_comma Grammar.Entry.e),
     None,
@@ -1977,49 +2059,54 @@ Grammar.extend
        Gramext.Snterm
          (Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e))],
       Gramext.action
-        (fun (p : 'pattern) _ (pl : 'patterns_comma) (loc : int * int) ->
+        (fun (p : 'pattern) _ (pl : 'patterns_comma)
+           (loc : Lexing.position * Lexing.position) ->
            (pl @ [p] : 'patterns_comma))];
      None, None,
      [[Gramext.Snterm
          (Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e))],
       Gramext.action
-        (fun (p : 'pattern) (loc : int * int) -> ([p] : 'patterns_comma))]];
+        (fun (p : 'pattern) (loc : Lexing.position * Lexing.position) ->
+           ([p] : 'patterns_comma))]];
     Grammar.Entry.obj (name : 'name Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (qualid : 'qualid Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'qualid) (loc : int * int) -> (mk_name loc e : 'name))]];
+        (fun (e : 'qualid) (loc : Lexing.position * Lexing.position) ->
+           (mk_name loc e : 'name))]];
     Grammar.Entry.obj (qualid : 'qualid Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Sself; Gramext.Stoken ("", "."); Gramext.Sself],
       Gramext.action
-        (fun (e2 : 'qualid) _ (e1 : 'qualid) (loc : int * int) ->
+        (fun (e2 : 'qualid) _ (e1 : 'qualid)
+           (loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc (loc, e1, e2) : 'qualid))];
      None, None,
      [[Gramext.Stoken ("LIDENT", "")],
       Gramext.action
-        (fun (i : string) (loc : int * int) ->
+        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
            (MLast.ExLid (loc, i) : 'qualid));
       [Gramext.Stoken ("UIDENT", "")],
       Gramext.action
-        (fun (i : string) (loc : int * int) ->
+        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
            (MLast.ExUid (loc, i) : 'qualid))]];
     Grammar.Entry.obj (string : 'string Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("ANTIQUOT", "")],
       Gramext.action
-        (fun (i : string) (loc : int * int) ->
-           (let shift = fst loc + String.length "$" in
+        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
+           (let shift = Reloc.shift_pos (String.length "$") (fst loc) in
             let e =
               try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string i) with
                 Exc_located ((bp, ep), exc) ->
-                  raise_with_loc (shift + bp, shift + ep) exc
+                  raise_with_loc (Reloc.adjust_loc shift (bp, ep)) exc
             in
-            Pcaml.expr_reloc (fun (bp, ep) -> shift + bp, shift + ep) 0 e :
+            Pcaml.expr_reloc (fun (bp, ep) -> Reloc.adjust_loc shift (bp, ep))
+              zero_loc e :
             'string));
       [Gramext.Stoken ("STRING", "")],
       Gramext.action
-        (fun (s : string) (loc : int * int) ->
+        (fun (s : string) (loc : Lexing.position * Lexing.position) ->
            (MLast.ExStr (loc, s) : 'string))]]]);;
 
 Pcaml.add_option "-quotify" (Arg.Set quotify) "Generate code for quotations";;

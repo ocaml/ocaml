@@ -20,7 +20,7 @@ let gram =
   Grammar.gcreate
     {Token.tok_func = (fun _ -> failwith "no loaded parsing module");
      Token.tok_using = (fun _ -> ()); Token.tok_removing = (fun _ -> ());
-     Token.tok_match = (fun _ -> raise (Match_failure ("pcaml.ml", 23, 23)));
+     Token.tok_match = (fun _ -> raise (Match_failure ("", 23, 23)));
      Token.tok_text = (fun _ -> ""); Token.tok_comm = None}
 ;;
 
@@ -58,7 +58,11 @@ let input_file = ref "";;
 let output_file = ref None;;
 
 let warning_default_function (bp, ep) txt =
-  Printf.eprintf "<W> loc %d %d: %s\n" bp ep txt; flush stderr
+  let c1 = bp.Lexing.pos_cnum - bp.Lexing.pos_bol in
+  let c2 = ep.Lexing.pos_cnum - bp.Lexing.pos_bol in
+  Printf.eprintf "<W> File \"%s\", line %d, chars %d-%d: %s\n"
+    bp.Lexing.pos_fname bp.Lexing.pos_lnum c1 c2 txt;
+  flush stderr
 ;;
 
 let warning = ref warning_default_function;;
@@ -78,7 +82,7 @@ let quotation_dump_file = ref (None : string option);;
 type err_ctx =
     Finding
   | Expanding
-  | ParsingResult of (int * int) * string
+  | ParsingResult of MLast.loc * string
   | Locating
 ;;
 exception Qerror of string * err_ctx * exn;;
@@ -86,14 +90,16 @@ exception Qerror of string * err_ctx * exn;;
 let expand_quotation loc expander shift name str =
   let new_warning =
     let warn = !warning in
-    fun (bp, ep) txt -> warn (shift + bp, shift + ep) txt
+    fun (bp, ep) txt -> warn (Reloc.adjust_loc shift (bp, ep)) txt
   in
   apply_with_var warning new_warning
     (fun () ->
        try expander str with
-         Stdpp.Exc_located ((p1, p2), exc) ->
+         Stdpp.Exc_located (loc, exc) ->
            let exc1 = Qerror (name, Expanding, exc) in
-           raise (Stdpp.Exc_located ((shift + p1, shift + p2), exc1))
+           raise
+             (Stdpp.Exc_located
+                (Reloc.adjust_loc shift (Reloc.linearize loc), exc1))
        | exc ->
            let exc1 = Qerror (name, Expanding, exc) in
            raise (Stdpp.Exc_located (loc, exc1)))
@@ -103,7 +109,7 @@ let parse_quotation_result entry loc shift name str =
   let cs = Stream.of_string str in
   try Grammar.Entry.parse entry cs with
     Stdpp.Exc_located (iloc, (Qerror (_, Locating, _) as exc)) ->
-      raise (Stdpp.Exc_located ((shift + fst iloc, shift + snd iloc), exc))
+      raise (Stdpp.Exc_located (Reloc.adjust_loc shift iloc, exc))
   | Stdpp.Exc_located (iloc, Qerror (_, Expanding, exc)) ->
       let ctx = ParsingResult (iloc, str) in
       let exc1 = Qerror (name, ctx, exc) in
@@ -122,12 +128,12 @@ let handle_quotation loc proj in_expr entry reloc (name, str) =
       "" -> String.length "<<"
     | _ -> String.length "<:" + String.length name + String.length "<"
   in
-  let shift = fst loc + shift in
+  let shift = Reloc.shift_pos shift (fst loc) in
   let expander =
     try Quotation.find name with
       exc ->
         let exc1 = Qerror (name, Finding, exc) in
-        let loc = fst loc, shift in raise (Stdpp.Exc_located (loc, exc1))
+        raise (Stdpp.Exc_located ((fst loc, shift), exc1))
   in
   let ast =
     match expander with
@@ -137,7 +143,13 @@ let handle_quotation loc proj in_expr entry reloc (name, str) =
     | Quotation.ExAst fe_fp ->
         expand_quotation loc (proj fe_fp) shift name str
   in
-  reloc (fun _ -> loc) shift ast
+  reloc
+    (let zero = ref None in
+     fun _ ->
+       match !zero with
+         None -> zero := Some loc; loc
+       | Some x -> x)
+    shift ast
 ;;
 
 let parse_locate entry shift str =
@@ -146,12 +158,12 @@ let parse_locate entry shift str =
     Stdpp.Exc_located ((p1, p2), exc) ->
       let ctx = Locating in
       let exc1 = Qerror (Grammar.Entry.name entry, ctx, exc) in
-      raise (Stdpp.Exc_located ((shift + p1, shift + p2), exc1))
+      raise (Stdpp.Exc_located (Reloc.adjust_loc shift (p1, p2), exc1))
 ;;
 
 let handle_locate loc entry ast_f (pos, str) =
   let s = str in
-  let loc = pos, pos + String.length s in
+  let loc = pos, Reloc.shift_pos (String.length s) pos in
   let x = parse_locate entry (fst loc) s in ast_f loc x
 ;;
 
@@ -165,13 +177,15 @@ Grammar.extend
     [[Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
       Gramext.Stoken ("EOI", "")],
      Gramext.action
-       (fun _ (x : 'expr) (loc : int * int) -> (x : 'expr_eoi))]];
+       (fun _ (x : 'expr) (loc : Lexing.position * Lexing.position) ->
+          (x : 'expr_eoi))]];
    Grammar.Entry.obj (patt_eoi : 'patt_eoi Grammar.Entry.e), None,
    [None, None,
     [[Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
       Gramext.Stoken ("EOI", "")],
      Gramext.action
-       (fun _ (x : 'patt) (loc : int * int) -> (x : 'patt_eoi))]]];;
+       (fun _ (x : 'patt) (loc : Lexing.position * Lexing.position) ->
+          (x : 'patt_eoi))]]];;
 
 let handle_expr_quotation loc x =
   handle_quotation loc fst true expr_eoi Reloc.expr x
@@ -191,13 +205,8 @@ let patt_reloc = Reloc.patt;;
 let rename_id = ref (fun x -> x);;
 
 let find_line (bp, ep) str =
-  let rec find i line col =
-    if i == String.length str then line, 0, col
-    else if i == bp then line, col, col + ep - bp
-    else if str.[i] == '\n' then find (succ i) (succ line) 0
-    else find (succ i) line (succ col)
-  in
-  find 0 1 0
+  bp.Lexing.pos_lnum, bp.Lexing.pos_cnum - bp.Lexing.pos_bol,
+  ep.Lexing.pos_cnum - bp.Lexing.pos_bol
 ;;
 
 let loc_fmt =
@@ -332,7 +341,7 @@ let report_error exn =
   | e -> print_exn exn
 ;;
 
-let no_constructors_arity = Ast2pt.no_constructors_arity;;
+let no_constructors_arity = ref false;;
 (*value no_assert = ref False;*)
 
 let arg_spec_list_ref = ref [];;
@@ -360,48 +369,37 @@ and kont = pretty Stream.t
 ;;
 
 let pr_str_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 385, 30)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 392, 30))); pr_levels = []}
 ;;
 let pr_sig_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 386, 30)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 393, 30))); pr_levels = []}
 ;;
 let pr_module_type =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 387, 33)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 394, 33))); pr_levels = []}
 ;;
 let pr_module_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 388, 33)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 395, 33))); pr_levels = []}
 ;;
 let pr_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 389, 26)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 396, 26))); pr_levels = []}
 ;;
 let pr_patt =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 390, 26)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 397, 26))); pr_levels = []}
 ;;
 let pr_ctyp =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 391, 26)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 398, 26))); pr_levels = []}
 ;;
 let pr_class_sig_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 392, 36)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 399, 36))); pr_levels = []}
 ;;
 let pr_class_str_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 393, 36)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 400, 36))); pr_levels = []}
 ;;
 let pr_class_type =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 394, 32)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 401, 32))); pr_levels = []}
 ;;
 let pr_class_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 395, 32)));
-   pr_levels = []}
+  {pr_fun = (fun _ -> raise (Match_failure ("", 402, 32))); pr_levels = []}
 ;;
 let pr_expr_fun_args = ref Extfun.empty;;
 

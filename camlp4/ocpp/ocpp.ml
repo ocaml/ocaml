@@ -46,7 +46,16 @@ and inside_locate cs =
   | [: :] -> raise (Stream.Error "end of file in locate directive") ]
 ;
 
+value nowhere = {
+  Lexing.pos_fname = "";
+  Lexing.pos_lnum = 0;
+  Lexing.pos_bol = 0;
+  Lexing.pos_cnum = 0
+}
+;
+
 value quot name pos str =
+  let pos = Reloc.shift_pos pos nowhere in
   let exp =
     try
       match Quotation.find name with
@@ -54,13 +63,13 @@ value quot name pos str =
       | _ -> raise Not_found ]
     with
     [ Not_found ->
-        Stdpp.raise_with_loc (pos, pos + String.length str) Not_found ]
+        Stdpp.raise_with_loc (pos, Reloc.shift_pos  (String.length str) pos) Not_found ]
   in
   let new_str =
     try exp True str with
     [ Stdpp.Exc_located (p1, p2) exc ->
-        Stdpp.raise_with_loc (pos + p1, pos + p2) exc
-    | exc -> Stdpp.raise_with_loc (pos, pos + String.length str) exc ]
+        Stdpp.raise_with_loc (Reloc.adjust_loc pos (p1, p2)) exc
+    | exc -> Stdpp.raise_with_loc (pos, Reloc.shift_pos (String.length str) pos) exc ]
   in
   let cs = Stream.of_string new_str in copy_strip_locate cs
 ;

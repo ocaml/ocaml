@@ -19,7 +19,7 @@ open Longident;;
 open Asttypes;;
 
 let fast = ref false;;
-let no_constructors_arity = ref false;;
+let no_constructors_arity = Pcaml.no_constructors_arity;;
 
 let get_tag x =
   if Obj.is_block (Obj.repr x) then Obj.tag (Obj.repr x) else Obj.magic x
@@ -41,17 +41,23 @@ let glob_fname = ref "";;
 
 let mkloc (bp, ep) =
   let loc_at n =
-    {Lexing.pos_fname = !glob_fname; Lexing.pos_lnum = 1; Lexing.pos_bol = 0;
-     Lexing.pos_cnum = n}
+    {n with
+      Lexing.pos_fname =
+        if n.Lexing.pos_fname = "" then
+          if !glob_fname = "" then !(Pcaml.input_file) else !glob_fname
+        else n.Lexing.pos_fname}
   in
   {Location.loc_start = loc_at bp; Location.loc_end = loc_at ep;
-   Location.loc_ghost = false}
+   Location.loc_ghost = bp.Lexing.pos_cnum = 0 && ep.Lexing.pos_cnum = 0}
 ;;
 
 let mkghloc (bp, ep) =
   let loc_at n =
-    {Lexing.pos_fname = ""; Lexing.pos_lnum = 1; Lexing.pos_bol = 0;
-     Lexing.pos_cnum = n}
+    {n with
+      Lexing.pos_fname =
+        if n.Lexing.pos_fname = "" then
+          if !glob_fname = "" then !(Pcaml.input_file) else !glob_fname
+        else n.Lexing.pos_fname}
   in
   {Location.loc_start = loc_at bp; Location.loc_end = loc_at ep;
    Location.loc_ghost = true}

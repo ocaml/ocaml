@@ -19,7 +19,7 @@
    these values in concrete syntax (see the Camlp4 documentation).
    See also the file q_MLast.ml in Camlp4 sources. *)
 
-type loc = int * int;;
+type loc = Lexing.position * Lexing.position;;
 
 type ctyp =
     TyAcc of loc * ctyp * ctyp

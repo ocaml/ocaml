@@ -194,11 +194,13 @@ external grammar_obj : g -> Token.t grammar = "%identity";;
 let floc = ref (fun _ -> failwith "internal error when computing location");;
 let loc_of_token_interval bp ep =
   if bp == ep then
-    if bp == 0 then 0, 1 else let a = snd (!floc (bp - 1)) in a, a + 1
+    if bp == 0 then Token.nowhere, Token.succ_pos Token.nowhere
+    else let a = snd (!floc (bp - 1)) in a, Token.succ_pos a
   else
     let (bp1, bp2) = !floc bp in
     let (ep1, ep2) = !floc (pred ep) in
-    (if bp1 < ep1 then bp1 else ep1), (if bp2 > ep2 then bp2 else ep2)
+    (if Token.lt_pos bp1 ep1 then bp1 else ep1),
+    (if Token.lt_pos ep2 bp2 then bp2 else ep2)
 ;;
 
 let rec name_of_symbol entry =
@@ -805,7 +807,7 @@ let parse_parsable entry efun (cs, (ts, fun_loc)) =
       if !token_count - 1 <= cnt then loc
       else fst loc, snd (fun_loc (!token_count - 1))
     with
-      _ -> Stream.count cs, Stream.count cs + 1
+      _ -> Token.nowhere, Token.succ_pos Token.nowhere
   in
   floc := fun_loc;
   token_count := 0;
@@ -817,7 +819,7 @@ let parse_parsable entry efun (cs, (ts, fun_loc)) =
   | Stream.Error _ as exc ->
       let loc = get_loc () in restore (); raise_with_loc loc exc
   | exc ->
-      let loc = Stream.count cs, Stream.count cs + 1 in
+      let loc = Token.nowhere, Token.succ_pos Token.nowhere in
       restore (); raise_with_loc loc exc
 ;;
 
@@ -1060,7 +1062,7 @@ module type ReinitType = sig val reinit_gram : g -> Token.lexer -> unit;; end
 module GGMake (R : ReinitType) (L : GLexerType) =
   struct
     type te = L.te;;
-    type parsable = char Stream.t * (te Stream.t * Token.location_function);;
+    type parsable = char Stream.t * (te Stream.t * Token.flocation_function);;
     let gram = gcreate L.lexer;;
     let parsable cs = cs, L.lexer.Token.tok_func cs;;
     let tokens = tokens gram;;

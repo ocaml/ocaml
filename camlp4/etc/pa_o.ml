@@ -70,6 +70,7 @@ value mkumin loc f arg =
       <:expr< $lid:f$ $arg$ >> ]
 ;
 
+
 value mklistexp loc last =
   loop True where rec loop top =
     fun
@@ -407,6 +408,7 @@ and sync_semisemi cs =
 Pcaml.sync.val := sync;
 *)
 
+
 EXTEND
   GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
     class_expr class_sig_item class_str_item let_binding type_declaration;
@@ -422,11 +424,13 @@ EXTEND
           <:module_expr< ( $me$ : $mt$ ) >>
       | "("; me = SELF; ")" -> <:module_expr< $me$ >> ] ]
   ;
+
   mod_expr_ident:
     [ LEFTA
       [ i = SELF; "."; j = SELF -> <:module_expr< $i$ . $j$ >> ]
     | [ i = UIDENT -> <:module_expr< $uid:i$ >> ] ]
   ;
+
   str_item:
     [ "top"
       [ "exception"; (_, c, tl) = constructor_declaration; b = rebind_exn ->
@@ -458,6 +462,7 @@ EXTEND
           <:str_item< let module $m$ = $mb$ in $e$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
   ;
+
   rebind_exn:
     [ [ "="; sl = mod_ident -> sl
       | -> [] ] ]
@@ -675,10 +680,13 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({Lexing.pos_fname = "";
+                Lexing.pos_lnum = 0;
+                Lexing.pos_bol = 0;
+                Lexing.pos_cnum = int_of_string (String.sub x 0 i)},
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> (Token.nowhere, x) ]
           in
           Pcaml.handle_expr_locate loc x
       | x = QUOTATION ->
@@ -810,10 +818,13 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({Lexing.pos_fname = "";
+                Lexing.pos_lnum = 0;
+                Lexing.pos_bol = 0;
+                Lexing.pos_cnum = int_of_string (String.sub x 0 i)},
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> (Token.nowhere, x) ]
           in
           Pcaml.handle_patt_locate loc x
       | x = QUOTATION ->

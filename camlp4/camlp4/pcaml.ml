@@ -58,7 +58,10 @@ value input_file = ref "";
 value output_file = ref None;
 
 value warning_default_function (bp, ep) txt =
-  do { Printf.eprintf "<W> loc %d %d: %s\n" bp ep txt; flush stderr }
+   let c1 = bp.Lexing.pos_cnum - bp.Lexing.pos_bol in
+   let c2 = ep.Lexing.pos_cnum - bp.Lexing.pos_bol in
+  do { Printf.eprintf "<W> File \"%s\", line %d, chars %d-%d: %s\n"
+         bp.Lexing.pos_fname bp.Lexing.pos_lnum c1 c2 txt; flush stderr }
 ;
 
 value warning = ref warning_default_function;
@@ -82,21 +85,21 @@ List.iter (fun (n, f) -> Quotation.add n f)
 value quotation_dump_file = ref (None : option string);
 
 type err_ctx =
-  [ Finding | Expanding | ParsingResult of (int * int) and string | Locating ]
+  [ Finding | Expanding | ParsingResult of MLast.loc and string | Locating ]
 ;
 exception Qerror of string and err_ctx and exn;
 
 value expand_quotation loc expander shift name str =
   let new_warning =
     let warn = warning.val in
-    fun (bp, ep) txt -> warn (shift + bp, shift + ep) txt
+    fun (bp, ep) txt -> warn (Reloc.adjust_loc shift (bp, ep)) txt
   in
   apply_with_var warning new_warning
     (fun () ->
        try expander str with
-       [ Stdpp.Exc_located (p1, p2) exc ->
+       [ Stdpp.Exc_located loc exc ->
            let exc1 = Qerror name Expanding exc in
-           raise (Stdpp.Exc_located (shift + p1, shift + p2) exc1)
+           raise (Stdpp.Exc_located (Reloc.adjust_loc shift (Reloc.linearize loc)) exc1)
        | exc ->
            let exc1 = Qerror name Expanding exc in
            raise (Stdpp.Exc_located loc exc1) ])
@@ -106,7 +109,7 @@ value parse_quotation_result entry loc shift name str =
   let cs = Stream.of_string str in
   try Grammar.Entry.parse entry cs with
   [ Stdpp.Exc_located iloc (Qerror _ Locating _ as exc) ->
-      raise (Stdpp.Exc_located (shift + fst iloc, shift + snd iloc) exc)
+      raise (Stdpp.Exc_located (Reloc.adjust_loc shift iloc) exc)
   | Stdpp.Exc_located iloc (Qerror _ Expanding exc) ->
       let ctx = ParsingResult iloc str in
       let exc1 = Qerror name ctx exc in
@@ -119,18 +122,22 @@ value parse_quotation_result entry loc shift name str =
       raise (Stdpp.Exc_located loc exc1) ]
 ;
 
+value ghostify (bp, ep) =
+    let ghost p = { (p) with Lexing.pos_cnum = 0 } in
+    (ghost bp, ghost ep)
+;
+
 value handle_quotation loc proj in_expr entry reloc (name, str) =
   let shift =
     match name with
     [ "" -> String.length "<<"
     | _ -> String.length "<:" + String.length name + String.length "<" ]
   in
-  let shift = fst loc + shift in
+  let shift = Reloc.shift_pos shift (fst loc) in
   let expander =
     try Quotation.find name with exc ->
       let exc1 = Qerror name Finding exc in
-      let loc = (fst loc, shift) in
-      raise (Stdpp.Exc_located loc exc1)
+      raise (Stdpp.Exc_located (fst loc, shift) exc1)
   in
   let ast =
     match expander with
@@ -140,7 +147,14 @@ value handle_quotation loc proj in_expr entry reloc (name, str) =
     | Quotation.ExAst fe_fp ->
         expand_quotation loc (proj fe_fp) shift name str ]
   in
-  reloc (fun _ -> loc) shift ast
+  (* Warning: below, we use a side-effecting function that produces a real location
+     on its first call, and ghost ones at subsequent calls. *)
+  reloc
+    (let zero = ref None in
+     fun _ -> match zero.val with [
+       None -> do { zero.val := Some (ghostify loc) ; loc }
+     | Some x -> x ])
+    shift ast
 ;
 
 value parse_locate entry shift str =
@@ -149,12 +163,12 @@ value parse_locate entry shift str =
   [ Stdpp.Exc_located (p1, p2) exc ->
       let ctx = Locating in
       let exc1 = Qerror (Grammar.Entry.name entry) ctx exc in
-      raise (Stdpp.Exc_located (shift + p1, shift + p2) exc1) ]
+      raise (Stdpp.Exc_located (Reloc.adjust_loc shift (p1, p2)) exc1) ]
 ;
 
 value handle_locate loc entry ast_f (pos, str) =
   let s = str in
-  let loc = (pos, pos + String.length s) in
+  let loc = (pos, Reloc.shift_pos (String.length s) pos) in
   let x = parse_locate entry (fst loc) s in
   ast_f loc x
 ;
@@ -190,11 +204,9 @@ value patt_reloc = Reloc.patt;
 value rename_id = ref (fun x -> x);
 
 value find_line (bp, ep) str =
-  find 0 1 0 where rec find i line col =
-    if i == String.length str then (line, 0, col)
-    else if i == bp then (line, col, col + ep - bp)
-    else if str.[i] == '\n' then find (succ i) (succ line) 0
-    else find (succ i) line (succ col)
+  (bp.Lexing.pos_lnum,
+   bp.Lexing.pos_cnum - bp.Lexing.pos_bol,
+   ep.Lexing.pos_cnum - bp.Lexing.pos_bol)
 ;
 
 value loc_fmt =
@@ -355,7 +367,7 @@ value report_error exn =
   | e -> print_exn exn ]
 ;
 
-value no_constructors_arity = Ast2pt.no_constructors_arity;
+value no_constructors_arity = ref False;
 (*value no_assert = ref False;*)
 
 value arg_spec_list_ref = ref [];

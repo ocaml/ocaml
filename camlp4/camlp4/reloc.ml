@@ -61,136 +61,226 @@ value class_infos a floc sh x =
    ciNam = x.ciNam; ciExp = a floc sh x.ciExp}
 ;
 
+(* Debugging positions and locations *)
+value eprint_pos msg p =
+   Printf.eprintf "%s: fname=%s; lnum=%d; bol=%d; cnum=%d\n%!"
+     msg p.Lexing.pos_fname p.Lexing.pos_lnum p.Lexing.pos_bol p.Lexing.pos_cnum
+;
+
+value eprint_loc (bp, ep) =
+ do { eprint_pos "   P1" bp; eprint_pos "   P2" ep }
+;
+   
+value check_position msg p =
+   let ok =
+     if (p.Lexing.pos_lnum < 0 ||
+         p.Lexing.pos_bol < 0 ||
+         p.Lexing.pos_cnum < 0 ||
+         p.Lexing.pos_cnum < p.Lexing.pos_bol)
+     then
+       do {
+         Printf.eprintf "*** Warning: (%s) strange position ***\n" msg;
+         eprint_pos msg p;
+         False
+          }
+     else
+       True in
+   (ok, p)
+;
+
+value check_location msg ((bp, ep) as loc) =
+   let ok =
+     let (ok1,_) = check_position "  From: " bp in
+     let (ok2,_) = check_position "    To: " ep in
+     if ((not ok1) || (not ok2) || 
+         bp.Lexing.pos_lnum > ep.Lexing.pos_lnum ||
+         bp.Lexing.pos_bol > ep.Lexing.pos_bol ||
+         bp.Lexing.pos_cnum > ep.Lexing.pos_cnum)
+     then
+       do {
+         Printf.eprintf "*** Warning: (%s) strange location ***\n" msg;
+         eprint_loc loc;
+         False
+          }
+     else
+       True in
+   (ok, loc)
+;
+
+(* Change a location into linear positions *)
+value linearize (bp, ep) =
+      ( { (bp) with Lexing.pos_lnum = 1; Lexing.pos_bol = 0 },
+        { (ep) with Lexing.pos_lnum = 1; Lexing.pos_bol = 0 })
+;
+
+value shift_pos n p =
+   { (p) with Lexing.pos_cnum = p.Lexing.pos_cnum + n }
+;
+
+value zero_loc =
+   { (Lexing.dummy_pos) with Lexing.pos_cnum = 0; Lexing.pos_lnum = 0 };
+
+
+value adjust_pos globpos local_pos =
+{
+  Lexing.pos_fname = globpos.Lexing.pos_fname;
+  Lexing.pos_lnum = globpos.Lexing.pos_lnum + local_pos.Lexing.pos_lnum - 1;
+  Lexing.pos_bol = 
+      if local_pos.Lexing.pos_lnum <= 1 then
+        globpos.Lexing.pos_bol
+      else
+        local_pos.Lexing.pos_bol + globpos.Lexing.pos_cnum;
+  Lexing.pos_cnum = local_pos.Lexing.pos_cnum + globpos.Lexing.pos_cnum
+};
+
+value adjust_loc gpos (p1, p2) =
+   (adjust_pos gpos p1, adjust_pos gpos p2)
+;
+
+(* Note: in the following, the "let nloc = floc loc in" is necessary
+   in order to force evaluation order: the "floc" function has a side-effect
+   that changes all locations produced but the first one into ghost locations *)
+
 value rec patt floc sh =
   self where rec self =
     fun
-    [ PaAcc loc x1 x2 -> PaAcc (floc loc) (self x1) (self x2)
-    | PaAli loc x1 x2 -> PaAli (floc loc) (self x1) (self x2)
-    | PaAnt loc x1 ->
-        patt (fun (p1, p2) -> (sh + fst loc + p1, sh + fst loc + p2)) 0 x1
-    | PaAny loc -> PaAny (floc loc)
-    | PaApp loc x1 x2 -> PaApp (floc loc) (self x1) (self x2)
-    | PaArr loc x1 -> PaArr (floc loc) (List.map self x1)
-    | PaChr loc x1 -> PaChr (floc loc) x1
-    | PaInt loc x1 -> PaInt (floc loc) x1
-    | PaInt32 loc x1 -> PaInt32 (floc loc) x1
-    | PaInt64 loc x1 -> PaInt64 (floc loc) x1
-    | PaNativeInt loc x1 -> PaNativeInt (floc loc) x1
-    | PaFlo loc x1 -> PaFlo (floc loc) x1
-    | PaLab loc x1 x2 -> PaLab (floc loc) x1 (option_map self x2)
-    | PaLid loc x1 -> PaLid (floc loc) x1
+    [ PaAcc loc x1 x2 -> let nloc = floc loc in PaAcc nloc (self x1) (self x2)
+    | PaAli loc x1 x2 -> let nloc = floc loc in PaAli nloc (self x1) (self x2)
+    | PaAnt loc x1 -> (* Note that antiquotations are parsed by the OCaml parser, passing line numbers and begs of lines *)
+        patt (fun lloc -> adjust_loc (adjust_pos sh (fst loc)) (linearize lloc)) zero_loc x1
+    | PaAny loc -> let nloc = floc loc in PaAny nloc
+    | PaApp loc x1 x2 -> let nloc = floc loc in PaApp nloc (self x1) (self x2)
+    | PaArr loc x1 -> let nloc = floc loc in PaArr nloc (List.map self x1)
+    | PaChr loc x1 -> let nloc = floc loc in PaChr nloc x1
+    | PaInt loc x1 -> let nloc = floc loc in PaInt nloc x1
+    | PaInt32 loc x1 -> let nloc = floc loc in PaInt32 nloc x1
+    | PaInt64 loc x1 -> let nloc = floc loc in PaInt64 nloc x1
+    | PaNativeInt loc x1 -> let nloc = floc loc in PaNativeInt nloc x1
+    | PaFlo loc x1 -> let nloc = floc loc in PaFlo nloc x1
+    | PaLab loc x1 x2 -> let nloc = floc loc in PaLab nloc x1 (option_map self x2)
+    | PaLid loc x1 -> let nloc = floc loc in PaLid nloc x1
     | PaOlb loc x1 x2 ->
-        PaOlb (floc loc) x1
+        let nloc = floc loc in
+        PaOlb nloc x1
           (option_map
              (fun (x1, x2) -> (self x1, option_map (expr floc sh) x2)) x2)
-    | PaOrp loc x1 x2 -> PaOrp (floc loc) (self x1) (self x2)
-    | PaRng loc x1 x2 -> PaRng (floc loc) (self x1) (self x2)
+    | PaOrp loc x1 x2 -> let nloc = floc loc in PaOrp nloc (self x1) (self x2)
+    | PaRng loc x1 x2 -> let nloc = floc loc in PaRng nloc (self x1) (self x2)
     | PaRec loc x1 ->
-        PaRec (floc loc) (List.map (fun (x1, x2) -> (self x1, self x2)) x1)
-    | PaStr loc x1 -> PaStr (floc loc) x1
-    | PaTup loc x1 -> PaTup (floc loc) (List.map self x1)
-    | PaTyc loc x1 x2 -> PaTyc (floc loc) (self x1) (ctyp floc sh x2)
-    | PaTyp loc x1 -> PaTyp (floc loc) x1
-    | PaUid loc x1 -> PaUid (floc loc) x1
-    | PaVrn loc x1 -> PaVrn (floc loc) x1 ]
+        let nloc = floc loc in PaRec nloc (List.map (fun (x1, x2) -> (self x1, self x2)) x1)
+    | PaStr loc x1 -> let nloc = floc loc in PaStr nloc x1
+    | PaTup loc x1 -> let nloc = floc loc in PaTup nloc (List.map self x1)
+    | PaTyc loc x1 x2 -> let nloc = floc loc in PaTyc nloc (self x1) (ctyp floc sh x2)
+    | PaTyp loc x1 -> let nloc = floc loc in PaTyp nloc x1
+    | PaUid loc x1 -> let nloc = floc loc in PaUid nloc x1
+    | PaVrn loc x1 -> let nloc = floc loc in PaVrn nloc x1 ]
 and expr floc sh =
   self where rec self =
     fun
-    [ ExAcc loc x1 x2 -> ExAcc (floc loc) (self x1) (self x2)
-    | ExAnt loc x1 ->
-        expr (fun (p1, p2) -> (sh + fst loc + p1, sh + fst loc + p2)) 0 x1
-    | ExApp loc x1 x2 -> ExApp (floc loc) (self x1) (self x2)
-    | ExAre loc x1 x2 -> ExAre (floc loc) (self x1) (self x2)
-    | ExArr loc x1 -> ExArr (floc loc) (List.map self x1)
-    | ExAsf loc -> ExAsf (floc loc)
-    | ExAsr loc x1 -> ExAsr (floc loc) (self x1)
-    | ExAss loc x1 x2 -> ExAss (floc loc) (self x1) (self x2)
-    | ExChr loc x1 -> ExChr (floc loc) x1
+    [ ExAcc loc x1 x2 -> let nloc = floc loc in ExAcc nloc (self x1) (self x2)
+    | ExAnt loc x1 -> (* Note that antiquotations are parsed by the OCaml parser, passing line numbers and begs of lines *)
+        expr (fun lloc -> (adjust_loc (adjust_pos sh (fst loc)) (linearize lloc)))
+             zero_loc x1
+    | ExApp loc x1 x2 -> let nloc = floc loc in ExApp nloc (self x1) (self x2)
+    | ExAre loc x1 x2 -> let nloc = floc loc in ExAre nloc (self x1) (self x2)
+    | ExArr loc x1 -> let nloc = floc loc in ExArr nloc (List.map self x1)
+    | ExAsf loc -> let nloc = floc loc in ExAsf nloc
+    | ExAsr loc x1 -> let nloc = floc loc in ExAsr nloc (self x1)
+    | ExAss loc x1 x2 -> let nloc = floc loc in ExAss nloc (self x1) (self x2)
+    | ExChr loc x1 -> let nloc = floc loc in ExChr nloc x1
     | ExCoe loc x1 x2 x3 ->
-        ExCoe (floc loc) (self x1) (option_map (ctyp floc sh) x2)
+        let nloc = floc loc in
+        ExCoe nloc (self x1) (option_map (ctyp floc sh) x2)
           (ctyp floc sh x3)
-    | ExFlo loc x1 -> ExFlo (floc loc) x1
+    | ExFlo loc x1 -> let nloc = floc loc in ExFlo nloc x1
     | ExFor loc x1 x2 x3 x4 x5 ->
-        ExFor (floc loc) x1 (self x2) (self x3) x4 (List.map self x5)
+        let nloc = floc loc in ExFor nloc x1 (self x2) (self x3) x4 (List.map self x5)
     | ExFun loc x1 ->
-        ExFun (floc loc)
+        let nloc = floc loc in
+        ExFun nloc
           (List.map
              (fun (x1, x2, x3) ->
                 (patt floc sh x1, option_map self x2, self x3))
              x1)
-    | ExIfe loc x1 x2 x3 -> ExIfe (floc loc) (self x1) (self x2) (self x3)
-    | ExInt loc x1 -> ExInt (floc loc) x1
-    | ExInt32 loc x1 -> ExInt32 (floc loc) x1
-    | ExInt64 loc x1 -> ExInt64 (floc loc) x1
-    | ExNativeInt loc x1 -> ExNativeInt (floc loc) x1
-    | ExLab loc x1 x2 -> ExLab (floc loc) x1 (option_map self x2)
-    | ExLaz loc x1 -> ExLaz (floc loc) (self x1)
+    | ExIfe loc x1 x2 x3 -> let nloc = floc loc in ExIfe nloc (self x1) (self x2) (self x3)
+    | ExInt loc x1 -> let nloc = floc loc in ExInt nloc x1
+    | ExInt32 loc x1 -> let nloc = floc loc in ExInt32 nloc x1
+    | ExInt64 loc x1 -> let nloc = floc loc in ExInt64 nloc x1
+    | ExNativeInt loc x1 -> let nloc = floc loc in ExNativeInt nloc x1
+    | ExLab loc x1 x2 -> let nloc = floc loc in ExLab nloc x1 (option_map self x2)
+    | ExLaz loc x1 -> let nloc = floc loc in ExLaz nloc (self x1)
     | ExLet loc x1 x2 x3 ->
-        ExLet (floc loc) x1
+        let nloc = floc loc in
+        ExLet nloc x1
           (List.map (fun (x1, x2) -> (patt floc sh x1, self x2)) x2) (self x3)
-    | ExLid loc x1 -> ExLid (floc loc) x1
+    | ExLid loc x1 -> let nloc = floc loc in ExLid nloc x1
     | ExLmd loc x1 x2 x3 ->
-        ExLmd (floc loc) x1 (module_expr floc sh x2) (self x3)
+        let nloc = floc loc in ExLmd nloc x1 (module_expr floc sh x2) (self x3)
     | ExMat loc x1 x2 ->
-        ExMat (floc loc) (self x1)
+        let nloc = floc loc in
+        ExMat nloc (self x1)
           (List.map
              (fun (x1, x2, x3) ->
                 (patt floc sh x1, option_map self x2, self x3))
              x2)
-    | ExNew loc x1 -> ExNew (floc loc) x1
-    | ExOlb loc x1 x2 -> ExOlb (floc loc) x1 (option_map self x2)
+    | ExNew loc x1 -> let nloc = floc loc in ExNew nloc x1
+    | ExOlb loc x1 x2 -> let nloc = floc loc in ExOlb nloc x1 (option_map self x2)
     | ExOvr loc x1 ->
-        ExOvr (floc loc) (List.map (fun (x1, x2) -> (x1, self x2)) x1)
+        let nloc = floc loc in
+        ExOvr nloc (List.map (fun (x1, x2) -> (x1, self x2)) x1)
     | ExRec loc x1 x2 ->
-        ExRec (floc loc)
+        let nloc = floc loc in
+        ExRec nloc
           (List.map (fun (x1, x2) -> (patt floc sh x1, self x2)) x1)
           (option_map self x2)
-    | ExSeq loc x1 -> ExSeq (floc loc) (List.map self x1)
-    | ExSnd loc x1 x2 -> ExSnd (floc loc) (self x1) x2
-    | ExSte loc x1 x2 -> ExSte (floc loc) (self x1) (self x2)
-    | ExStr loc x1 -> ExStr (floc loc) x1
+    | ExSeq loc x1 -> let nloc = floc loc in ExSeq nloc (List.map self x1)
+    | ExSnd loc x1 x2 -> let nloc = floc loc in ExSnd nloc (self x1) x2
+    | ExSte loc x1 x2 -> let nloc = floc loc in ExSte nloc (self x1) (self x2)
+    | ExStr loc x1 -> let nloc = floc loc in ExStr nloc x1
     | ExTry loc x1 x2 ->
-        ExTry (floc loc) (self x1)
+        let nloc = floc loc in
+        ExTry nloc (self x1)
           (List.map
              (fun (x1, x2, x3) ->
                 (patt floc sh x1, option_map self x2, self x3))
              x2)
-    | ExTup loc x1 -> ExTup (floc loc) (List.map self x1)
-    | ExTyc loc x1 x2 -> ExTyc (floc loc) (self x1) (ctyp floc sh x2)
-    | ExUid loc x1 -> ExUid (floc loc) x1
-    | ExVrn loc x1 -> ExVrn (floc loc) x1
-    | ExWhi loc x1 x2 -> ExWhi (floc loc) (self x1) (List.map self x2) ]
+    | ExTup loc x1 -> let nloc = floc loc in ExTup nloc (List.map self x1)
+    | ExTyc loc x1 x2 -> let nloc = floc loc in ExTyc nloc (self x1) (ctyp floc sh x2)
+    | ExUid loc x1 -> let nloc = floc loc in ExUid nloc x1
+    | ExVrn loc x1 -> let nloc = floc loc in ExVrn nloc x1
+    | ExWhi loc x1 x2 -> let nloc = floc loc in ExWhi nloc (self x1) (List.map self x2) ]
 and module_type floc sh =
   self where rec self =
     fun
-    [ MtAcc loc x1 x2 -> MtAcc (floc loc) (self x1) (self x2)
-    | MtApp loc x1 x2 -> MtApp (floc loc) (self x1) (self x2)
-    | MtFun loc x1 x2 x3 -> MtFun (floc loc) x1 (self x2) (self x3)
-    | MtLid loc x1 -> MtLid (floc loc) x1
-    | MtQuo loc x1 -> MtQuo (floc loc) x1
-    | MtSig loc x1 -> MtSig (floc loc) (List.map (sig_item floc sh) x1)
-    | MtUid loc x1 -> MtUid (floc loc) x1
+    [ MtAcc loc x1 x2 -> let nloc = floc loc in MtAcc nloc (self x1) (self x2)
+    | MtApp loc x1 x2 -> let nloc = floc loc in MtApp nloc (self x1) (self x2)
+    | MtFun loc x1 x2 x3 -> let nloc = floc loc in MtFun nloc x1 (self x2) (self x3)
+    | MtLid loc x1 -> let nloc = floc loc in MtLid nloc x1
+    | MtQuo loc x1 -> let nloc = floc loc in MtQuo nloc x1
+    | MtSig loc x1 -> let nloc = floc loc in MtSig nloc (List.map (sig_item floc sh) x1)
+    | MtUid loc x1 -> let nloc = floc loc in MtUid nloc x1
     | MtWit loc x1 x2 ->
-        MtWit (floc loc) (self x1) (List.map (with_constr floc sh) x2) ]
+        let nloc = floc loc in MtWit nloc (self x1) (List.map (with_constr floc sh) x2) ]
 and sig_item floc sh =
   self where rec self =
     fun
     [ SgCls loc x1 ->
-        SgCls (floc loc) (List.map (class_infos class_type floc sh) x1)
+        let nloc = floc loc in SgCls nloc (List.map (class_infos class_type floc sh) x1)
     | SgClt loc x1 ->
-        SgClt (floc loc) (List.map (class_infos class_type floc sh) x1)
-    | SgDcl loc x1 -> SgDcl (floc loc) (List.map self x1)
-    | SgDir loc x1 x2 -> SgDir (floc loc) x1 x2
-    | SgExc loc x1 x2 -> SgExc (floc loc) x1 (List.map (ctyp floc sh) x2)
-    | SgExt loc x1 x2 x3 -> SgExt (floc loc) x1 (ctyp floc sh x2) x3
-    | SgInc loc x1 -> SgInc (floc loc) (module_type floc sh x1)
-    | SgMod loc x1 x2 -> SgMod (floc loc) x1 (module_type floc sh x2)
+        let nloc = floc loc in SgClt nloc (List.map (class_infos class_type floc sh) x1)
+    | SgDcl loc x1 -> let nloc = floc loc in SgDcl nloc (List.map self x1)
+    | SgDir loc x1 x2 -> let nloc = floc loc in SgDir nloc x1 x2
+    | SgExc loc x1 x2 -> let nloc = floc loc in SgExc nloc x1 (List.map (ctyp floc sh) x2)
+    | SgExt loc x1 x2 x3 -> let nloc = floc loc in SgExt nloc x1 (ctyp floc sh x2) x3
+    | SgInc loc x1 -> let nloc = floc loc in SgInc nloc (module_type floc sh x1)
+    | SgMod loc x1 x2 -> let nloc = floc loc in SgMod nloc x1 (module_type floc sh x2)
     | SgRecMod loc xxs
-        -> SgRecMod (floc loc) (List.map (fun (x1,x2) -> (x1, (module_type floc sh x2))) xxs)
-    | SgMty loc x1 x2 -> SgMty (floc loc) x1 (module_type floc sh x2)
-    | SgOpn loc x1 -> SgOpn (floc loc) x1
+        -> let nloc = floc loc in SgRecMod nloc (List.map (fun (x1,x2) -> (x1, (module_type floc sh x2))) xxs)
+    | SgMty loc x1 x2 -> let nloc = floc loc in SgMty nloc x1 (module_type floc sh x2)
+    | SgOpn loc x1 -> let nloc = floc loc in SgOpn nloc x1
     | SgTyp loc x1 ->
-        SgTyp (floc loc)
+        let nloc = floc loc in
+        SgTyp nloc
           (List.map
              (fun ((loc, x1), x2, x3, x4) ->
                 ((floc loc, x1), x2, ctyp floc sh x3,
@@ -198,42 +288,44 @@ and sig_item floc sh =
                    x4))
              x1)
     | SgUse loc x1 x2 -> SgUse loc x1 x2
-    | SgVal loc x1 x2 -> SgVal (floc loc) x1 (ctyp floc sh x2) ]
+    | SgVal loc x1 x2 -> let nloc = floc loc in SgVal nloc x1 (ctyp floc sh x2) ]
 and with_constr floc sh =
   self where rec self =
     fun
-    [ WcTyp loc x1 x2 x3 -> WcTyp (floc loc) x1 x2 (ctyp floc sh x3)
-    | WcMod loc x1 x2 -> WcMod (floc loc) x1 (module_expr floc sh x2) ]
+    [ WcTyp loc x1 x2 x3 -> let nloc = floc loc in WcTyp nloc x1 x2 (ctyp floc sh x3)
+    | WcMod loc x1 x2 -> let nloc = floc loc in WcMod nloc x1 (module_expr floc sh x2) ]
 and module_expr floc sh =
   self where rec self =
     fun
-    [ MeAcc loc x1 x2 -> MeAcc (floc loc) (self x1) (self x2)
-    | MeApp loc x1 x2 -> MeApp (floc loc) (self x1) (self x2)
+    [ MeAcc loc x1 x2 -> let nloc = floc loc in MeAcc nloc (self x1) (self x2)
+    | MeApp loc x1 x2 -> let nloc = floc loc in MeApp nloc (self x1) (self x2)
     | MeFun loc x1 x2 x3 ->
-        MeFun (floc loc) x1 (module_type floc sh x2) (self x3)
-    | MeStr loc x1 -> MeStr (floc loc) (List.map (str_item floc sh) x1)
-    | MeTyc loc x1 x2 -> MeTyc (floc loc) (self x1) (module_type floc sh x2)
-    | MeUid loc x1 -> MeUid (floc loc) x1 ]
+        let nloc = floc loc in
+        MeFun nloc x1 (module_type floc sh x2) (self x3)
+    | MeStr loc x1 -> let nloc = floc loc in MeStr nloc (List.map (str_item floc sh) x1)
+    | MeTyc loc x1 x2 -> let nloc = floc loc in MeTyc nloc (self x1) (module_type floc sh x2)
+    | MeUid loc x1 -> let nloc = floc loc in MeUid nloc x1 ]
 and str_item floc sh =
   self where rec self =
     fun
     [ StCls loc x1 ->
-        StCls (floc loc) (List.map (class_infos class_expr floc sh) x1)
+        let nloc = floc loc in StCls nloc (List.map (class_infos class_expr floc sh) x1)
     | StClt loc x1 ->
-        StClt (floc loc) (List.map (class_infos class_type floc sh) x1)
-    | StDcl loc x1 -> StDcl (floc loc) (List.map self x1)
-    | StDir loc x1 x2 -> StDir (floc loc) x1 x2
-    | StExc loc x1 x2 x3 -> StExc (floc loc) x1 (List.map (ctyp floc sh) x2) x3
-    | StExp loc x1 -> StExp (floc loc) (expr floc sh x1)
-    | StExt loc x1 x2 x3 -> StExt (floc loc) x1 (ctyp floc sh x2) x3
-    | StInc loc x1 -> StInc (floc loc) (module_expr floc sh x1)
-    | StMod loc x1 x2 -> StMod (floc loc) x1 (module_expr floc sh x2)
+        let nloc = floc loc in StClt nloc (List.map (class_infos class_type floc sh) x1)
+    | StDcl loc x1 -> let nloc = floc loc in StDcl nloc (List.map self x1)
+    | StDir loc x1 x2 -> let nloc = floc loc in StDir nloc x1 x2
+    | StExc loc x1 x2 x3 -> let nloc = floc loc in StExc nloc x1 (List.map (ctyp floc sh) x2) x3
+    | StExp loc x1 -> let nloc = floc loc in StExp nloc (expr floc sh x1)
+    | StExt loc x1 x2 x3 -> let nloc = floc loc in StExt nloc x1 (ctyp floc sh x2) x3
+    | StInc loc x1 -> let nloc = floc loc in StInc nloc (module_expr floc sh x1)
+    | StMod loc x1 x2 -> let nloc = floc loc in StMod nloc x1 (module_expr floc sh x2)
     | StRecMod loc nmtmes ->
-        StRecMod (floc loc) (List.map (fun (n, mt, me) -> (n, module_type floc sh mt, module_expr floc sh me)) nmtmes)
-    | StMty loc x1 x2 -> StMty (floc loc) x1 (module_type floc sh x2)
-    | StOpn loc x1 -> StOpn (floc loc) x1
+        let nloc = floc loc in StRecMod nloc (List.map (fun (n, mt, me) -> (n, module_type floc sh mt, module_expr floc sh me)) nmtmes)
+    | StMty loc x1 x2 -> let nloc = floc loc in StMty nloc x1 (module_type floc sh x2)
+    | StOpn loc x1 -> let nloc = floc loc in StOpn nloc x1
     | StTyp loc x1 ->
-        StTyp (floc loc)
+        let nloc = floc loc in
+        StTyp nloc
           (List.map
              (fun ((loc, x1), x2, x3, x4) ->
                 ((floc loc, x1), x2, ctyp floc sh x3,
@@ -242,48 +334,50 @@ and str_item floc sh =
              x1)
     | StUse loc x1 x2 -> StUse loc x1 x2
     | StVal loc x1 x2 ->
-        StVal (floc loc) x1
+        let nloc = floc loc in StVal nloc x1
           (List.map (fun (x1, x2) -> (patt floc sh x1, expr floc sh x2)) x2) ]
 and class_type floc sh =
   self where rec self =
     fun
-    [ CtCon loc x1 x2 -> CtCon (floc loc) x1 (List.map (ctyp floc sh) x2)
-    | CtFun loc x1 x2 -> CtFun (floc loc) (ctyp floc sh x1) (self x2)
+    [ CtCon loc x1 x2 -> let nloc = floc loc in CtCon nloc x1 (List.map (ctyp floc sh) x2)
+    | CtFun loc x1 x2 -> let nloc = floc loc in CtFun nloc (ctyp floc sh x1) (self x2)
     | CtSig loc x1 x2 ->
-        CtSig (floc loc) (option_map (ctyp floc sh) x1)
+        let nloc = floc loc in
+        CtSig nloc (option_map (ctyp floc sh) x1)
           (List.map (class_sig_item floc sh) x2) ]
 and class_sig_item floc sh =
   self where rec self =
     fun
-    [ CgCtr loc x1 x2 -> CgCtr (floc loc) (ctyp floc sh x1) (ctyp floc sh x2)
-    | CgDcl loc x1 -> CgDcl (floc loc) (List.map (class_sig_item floc sh) x1)
-    | CgInh loc x1 -> CgInh (floc loc) (class_type floc sh x1)
-    | CgMth loc x1 x2 x3 -> CgMth (floc loc) x1 x2 (ctyp floc sh x3)
-    | CgVal loc x1 x2 x3 -> CgVal (floc loc) x1 x2 (ctyp floc sh x3)
-    | CgVir loc x1 x2 x3 -> CgVir (floc loc) x1 x2 (ctyp floc sh x3) ]
+    [ CgCtr loc x1 x2 -> let nloc = floc loc in CgCtr nloc (ctyp floc sh x1) (ctyp floc sh x2)
+    | CgDcl loc x1 -> let nloc = floc loc in CgDcl nloc (List.map (class_sig_item floc sh) x1)
+    | CgInh loc x1 -> let nloc = floc loc in CgInh nloc (class_type floc sh x1)
+    | CgMth loc x1 x2 x3 -> let nloc = floc loc in CgMth nloc x1 x2 (ctyp floc sh x3)
+    | CgVal loc x1 x2 x3 -> let nloc = floc loc in CgVal nloc x1 x2 (ctyp floc sh x3)
+    | CgVir loc x1 x2 x3 -> let nloc = floc loc in CgVir nloc x1 x2 (ctyp floc sh x3) ]
 and class_expr floc sh =
   self where rec self =
     fun
-    [ CeApp loc x1 x2 -> CeApp (floc loc) (self x1) (expr floc sh x2)
-    | CeCon loc x1 x2 -> CeCon (floc loc) x1 (List.map (ctyp floc sh) x2)
-    | CeFun loc x1 x2 -> CeFun (floc loc) (patt floc sh x1) (self x2)
+    [ CeApp loc x1 x2 -> let nloc = floc loc in CeApp nloc (self x1) (expr floc sh x2)
+    | CeCon loc x1 x2 -> let nloc = floc loc in CeCon nloc x1 (List.map (ctyp floc sh) x2)
+    | CeFun loc x1 x2 -> let nloc = floc loc in CeFun nloc (patt floc sh x1) (self x2)
     | CeLet loc x1 x2 x3 ->
-        CeLet (floc loc) x1
+        let nloc = floc loc in
+        CeLet nloc x1
           (List.map (fun (x1, x2) -> (patt floc sh x1, expr floc sh x2)) x2)
           (self x3)
     | CeStr loc x1 x2 ->
-        CeStr (floc loc) (option_map (patt floc sh) x1)
+        let nloc = floc loc in CeStr nloc (option_map (patt floc sh) x1)
           (List.map (class_str_item floc sh) x2)
-    | CeTyc loc x1 x2 -> CeTyc (floc loc) (self x1) (class_type floc sh x2) ]
+    | CeTyc loc x1 x2 -> let nloc = floc loc in CeTyc nloc (self x1) (class_type floc sh x2) ]
 and class_str_item floc sh =
   self where rec self =
     fun
-    [ CrCtr loc x1 x2 -> CrCtr (floc loc) (ctyp floc sh x1) (ctyp floc sh x2)
-    | CrDcl loc x1 -> CrDcl (floc loc) (List.map (class_str_item floc sh) x1)
-    | CrInh loc x1 x2 -> CrInh (floc loc) (class_expr floc sh x1) x2
-    | CrIni loc x1 -> CrIni (floc loc) (expr floc sh x1)
+    [ CrCtr loc x1 x2 -> let nloc = floc loc in CrCtr nloc (ctyp floc sh x1) (ctyp floc sh x2)
+    | CrDcl loc x1 -> let nloc = floc loc in CrDcl nloc (List.map (class_str_item floc sh) x1)
+    | CrInh loc x1 x2 -> let nloc = floc loc in CrInh nloc (class_expr floc sh x1) x2
+    | CrIni loc x1 -> let nloc = floc loc in CrIni nloc (expr floc sh x1)
     | CrMth loc x1 x2 x3 x4 ->
-        CrMth (floc loc) x1 x2 (expr floc sh x3) (option_map (ctyp floc sh) x4)
-    | CrVal loc x1 x2 x3 -> CrVal (floc loc) x1 x2 (expr floc sh x3)
-    | CrVir loc x1 x2 x3 -> CrVir (floc loc) x1 x2 (ctyp floc sh x3) ]
+        let nloc = floc loc in CrMth nloc x1 x2 (expr floc sh x3) (option_map (ctyp floc sh) x4)
+    | CrVal loc x1 x2 x3 -> let nloc = floc loc in CrVal nloc x1 x2 (expr floc sh x3)
+    | CrVir loc x1 x2 x3 -> let nloc = floc loc in CrVir nloc x1 x2 (ctyp floc sh x3) ]
 ;

@@ -22,9 +22,9 @@ Pcaml.add_option "-split_ext" (Arg.Set split_ext)
 Pcaml.add_option "-split_gext" (Arg.Set split_ext)
   "Old name for the option -split_ext.";
 
-type loc = (int * int);
+type loc = (Lexing.position * Lexing.position);
 
-type name 'e = { expr : 'e; tvar : string; loc : (int * int) };
+type name 'e = { expr : 'e; tvar : string; loc : loc };
 
 type styp =
   [ STlid of loc and string
@@ -163,7 +163,10 @@ module MetaAction =
       in
       failwith (f ^ ", not impl: " ^ desc)
     ;
-    value loc = (0, 0);
+    value loc =
+        let nowhere =
+          { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
+        (nowhere, nowhere);
     value rec mlist mf =
       fun
       [ [] -> <:expr< [] >>
@@ -179,7 +182,10 @@ module MetaAction =
       [ False -> <:expr< False >>
       | True -> <:expr< True >> ]
     ;
-    value mloc = <:expr< (0, 0) >>;
+    value mloc =
+         <:expr< let nowhere =
+          { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
+           (nowhere, nowhere) >>;
     value rec mexpr =
       fun
       [ MLast.ExAcc loc e1 e2 ->
@@ -355,7 +361,10 @@ value quotify_action psl act =
     (fun e ps ->
        match ps.pattern with
        [ Some <:patt< ($list:pl$) >> ->
-           let loc = (0, 0) in
+           let loc =
+             let nowhere =
+               { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
+               (nowhere, nowhere) in
            let pname = pname_of_ptuple pl in
            let (pl1, el1) =
              let (l, _) =
@@ -453,7 +462,7 @@ value text_of_action loc psl rtvar act tvar =
     [ Some act -> if quotify.val then quotify_action psl act else act
     | None -> <:expr< () >> ]
   in
-  let e = <:expr< fun [ ($locid$ : (int * int)) -> ($act$ : '$rtvar$) ] >> in
+  let e = <:expr< fun [ ($locid$ : (Lexing.position * Lexing.position)) -> ($act$ : '$rtvar$) ] >> in
   let txt =
     List.fold_left
       (fun txt ps ->
@@ -724,6 +733,8 @@ value text_of_functorial_extend loc gmod gl el =
   let_in_of_extend loc gmod True gl el args
 ;
 
+value zero_loc = {(Lexing.dummy_pos) with Lexing.pos_cnum = 0};
+
 open Pcaml;
 value symbol = Grammar.Entry.create gram "symbol";
 value semi_sep =
@@ -899,13 +910,13 @@ EXTEND
   string:
     [ [ s = STRING -> <:expr< $str:s$ >>
       | i = ANTIQUOT ->
-          let shift = fst loc + String.length "$" in
+          let shift = Reloc.shift_pos (String.length "$") (fst loc) in
           let e =
             try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string i) with
             [ Exc_located (bp, ep) exc ->
-                raise_with_loc (shift + bp, shift + ep) exc ]
+                raise_with_loc (Reloc.adjust_loc shift (bp,ep)) exc ]
           in
-          Pcaml.expr_reloc (fun (bp, ep) -> (shift + bp, shift + ep)) 0 e ] ]
+          Pcaml.expr_reloc (fun (bp, ep) -> (Reloc.adjust_loc shift (bp,ep))) zero_loc e ] ]
   ;
 END;
 

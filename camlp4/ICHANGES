@@ -1,6 +1,13 @@
 Internal, very small, undocumented, or invisible changes
 ********************************************************
 
+- [april-may 04] the following interface files changed in order to
+  implement OCaml style locations:
+        camlp4/camlp4/{ast2pt.mli,pcaml.mli,reloc.mli,grammar.mli}
+        camlp4/lib/{stdpp.mli,token.mli}
+  The main changes are occurrences of "int" changed into
+  "Lexing.position" and "int * int" changed into
+  "Lexing.position * Lexing.position" (or an equivalent type).
 - [20 nov 03], token.mli: eval_string takes a location as a extra
   argument (needed to issue a warning).
 

@@ -17,9 +17,23 @@ type pattern = (string * string);
 
 exception Error of string;
 
-type location = (int * int);
-type location_function = int -> (int * int);
-type lexer_func 'te = Stream.t char -> (Stream.t 'te * location_function);
+value make_loc (bp, ep) =
+   ({ (Lexing.dummy_pos) with Lexing.pos_cnum = bp; Lexing.pos_lnum = 1 },
+    { (Lexing.dummy_pos) with Lexing.pos_cnum = ep; Lexing.pos_lnum = 1 })
+;
+
+value nowhere = { (Lexing.dummy_pos) with Lexing.pos_cnum = 0 };
+
+value dummy_loc = (Lexing.dummy_pos, Lexing.dummy_pos);
+
+value succ_pos p =
+    { ( p ) with Lexing.pos_cnum = p.Lexing.pos_cnum + 1};
+value lt_pos p1 p2 = p1.Lexing.pos_cnum < p2.Lexing.pos_cnum;
+
+type flocation = (Lexing.position * Lexing.position);
+
+type flocation_function = int -> flocation;
+type lexer_func 'te = Stream.t char -> (Stream.t 'te * flocation_function);
 
 type glexer 'te =
   { tok_func : lexer_func 'te;
@@ -27,7 +41,7 @@ type glexer 'te =
     tok_removing : pattern -> unit;
     tok_match : pattern -> 'te -> string;
     tok_text : pattern -> string;
-    tok_comm : mutable option (list location) }
+    tok_comm : mutable option (list flocation) }
 ;
 type lexer =
   { func : lexer_func t;
@@ -43,12 +57,12 @@ value lexer_text (con, prm) =
   else con ^ " '" ^ prm ^ "'"
 ;
 
-value locerr () = invalid_arg "Lexer: location function";
+value locerr () = invalid_arg "Lexer: flocation function";
 value loct_create () = (ref (Array.create 1024 None), ref False);
 value loct_func (loct, ov) i =
   match
     if i < 0 || i >= Array.length loct.val then
-      if ov.val then Some (0, 0) else None
+      if ov.val then Some (nowhere, nowhere) else None
     else Array.unsafe_get loct.val i
   with
   [ Some loc -> loc
@@ -67,7 +81,7 @@ value loct_add (loct, ov) i loc =
   else loct.val.(i) := Some loc
 ;
 
-value make_stream_and_location next_token_loc =
+value make_stream_and_flocation next_token_loc =
   let loct = loct_create () in
   let ts =
     Stream.from
@@ -79,7 +93,7 @@ value make_stream_and_location next_token_loc =
 ;
 
 value lexer_func_of_parser next_token_loc cs =
-  make_stream_and_location (fun () -> next_token_loc cs)
+  make_stream_and_flocation (fun () -> next_token_loc cs)
 ;
 
 value lexer_func_of_ocamllex lexfun cs =
@@ -90,10 +104,10 @@ value lexer_func_of_ocamllex lexfun cs =
   in
   let next_token_loc _ =
     let tok = lexfun lb in
-    let loc = (Lexing.lexeme_start lb, Lexing.lexeme_end lb) in
+    let loc = (Lexing.lexeme_start_p lb, Lexing.lexeme_end_p lb) in
     (tok, loc)
   in
-  make_stream_and_location next_token_loc
+  make_stream_and_flocation next_token_loc
 ;
 
 (* Char and string tokens to real chars and string *)
@@ -209,7 +223,7 @@ value eval_string  (bp, ep) s =
                 [ Not_found -> do {
                     Printf.eprintf
                      "Warning: char %d, Invalid backslash escape in string\n%!"
-                     (bp+i+1);
+                     (bp.Lexing.pos_cnum + i + 1);
                     (store (store len '\\') c, i + 1) } ] ]
         else (store len s.[i], i + 1)
       in

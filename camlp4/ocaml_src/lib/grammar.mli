@@ -183,7 +183,7 @@ val create : Token.lexer -> g;;
 
 (*** For system use *)
 
-val loc_of_token_interval : int -> int -> int * int;;
+val loc_of_token_interval : int -> int -> Token.flocation;;
 val extend :
   ('te Gramext.g_entry * Gramext.position option *
      (string option * Gramext.g_assoc option *

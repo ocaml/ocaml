@@ -40,14 +40,14 @@ Grammar.extend
        Gramext.Stoken ("", "else"); Gramext.Sself],
       Gramext.action
         (fun (e2 : 'Pcaml__expr) _ (e1 : 'Pcaml__expr) _ (c : string) _
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then e2 else e1 : 'Pcaml__expr));
       [Gramext.Stoken ("", "ifdef"); Gramext.Stoken ("UIDENT", "");
        Gramext.Stoken ("", "then"); Gramext.Sself;
        Gramext.Stoken ("", "else"); Gramext.Sself],
       Gramext.action
         (fun (e2 : 'Pcaml__expr) _ (e1 : 'Pcaml__expr) _ (c : string) _
-           (loc : int * int) ->
+           (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then e1 else e2 : 'Pcaml__expr))]];
     Grammar.Entry.obj (Pcaml.str_item : 'Pcaml__str_item Grammar.Entry.e),
     Some Gramext.First,
@@ -56,7 +56,7 @@ Grammar.extend
          (Grammar.Entry.obj
             (def_undef_str : 'def_undef_str Grammar.Entry.e))],
       Gramext.action
-        (fun (x : 'def_undef_str) (loc : int * int) ->
+        (fun (x : 'def_undef_str) (loc : Lexing.position * Lexing.position) ->
            (match x with
               SdStr si -> si
             | SdDef x -> define x; MLast.StDcl (loc, [])
@@ -67,17 +67,20 @@ Grammar.extend
     [None, None,
      [[Gramext.Stoken ("", "undef"); Gramext.Stoken ("UIDENT", "")],
       Gramext.action
-        (fun (c : string) _ (loc : int * int) -> (SdUnd c : 'def_undef_str));
+        (fun (c : string) _ (loc : Lexing.position * Lexing.position) ->
+           (SdUnd c : 'def_undef_str));
       [Gramext.Stoken ("", "define"); Gramext.Stoken ("UIDENT", "")],
       Gramext.action
-        (fun (c : string) _ (loc : int * int) -> (SdDef c : 'def_undef_str));
+        (fun (c : string) _ (loc : Lexing.position * Lexing.position) ->
+           (SdDef c : 'def_undef_str));
       [Gramext.Stoken ("", "ifndef"); Gramext.Stoken ("UIDENT", "");
        Gramext.Stoken ("", "then");
        Gramext.Snterm
          (Grammar.Entry.obj
             (str_item_def_undef : 'str_item_def_undef Grammar.Entry.e))],
       Gramext.action
-        (fun (e1 : 'str_item_def_undef) _ (c : string) _ (loc : int * int) ->
+        (fun (e1 : 'str_item_def_undef) _ (c : string) _
+           (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then SdNop else e1 : 'def_undef_str));
       [Gramext.Stoken ("", "ifndef"); Gramext.Stoken ("UIDENT", "");
        Gramext.Stoken ("", "then");
@@ -90,7 +93,7 @@ Grammar.extend
             (str_item_def_undef : 'str_item_def_undef Grammar.Entry.e))],
       Gramext.action
         (fun (e2 : 'str_item_def_undef) _ (e1 : 'str_item_def_undef) _
-           (c : string) _ (loc : int * int) ->
+           (c : string) _ (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then e2 else e1 : 'def_undef_str));
       [Gramext.Stoken ("", "ifdef"); Gramext.Stoken ("UIDENT", "");
        Gramext.Stoken ("", "then");
@@ -98,7 +101,8 @@ Grammar.extend
          (Grammar.Entry.obj
             (str_item_def_undef : 'str_item_def_undef Grammar.Entry.e))],
       Gramext.action
-        (fun (e1 : 'str_item_def_undef) _ (c : string) _ (loc : int * int) ->
+        (fun (e1 : 'str_item_def_undef) _ (c : string) _
+           (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then e1 else SdNop : 'def_undef_str));
       [Gramext.Stoken ("", "ifdef"); Gramext.Stoken ("UIDENT", "");
        Gramext.Stoken ("", "then");
@@ -111,7 +115,7 @@ Grammar.extend
             (str_item_def_undef : 'str_item_def_undef Grammar.Entry.e))],
       Gramext.action
         (fun (e2 : 'str_item_def_undef) _ (e1 : 'str_item_def_undef) _
-           (c : string) _ (loc : int * int) ->
+           (c : string) _ (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then e1 else e2 : 'def_undef_str))]];
     Grammar.Entry.obj
       (str_item_def_undef : 'str_item_def_undef Grammar.Entry.e),
@@ -121,13 +125,14 @@ Grammar.extend
          (Grammar.Entry.obj
             (Pcaml.str_item : 'Pcaml__str_item Grammar.Entry.e))],
       Gramext.action
-        (fun (si : 'Pcaml__str_item) (loc : int * int) ->
+        (fun (si : 'Pcaml__str_item)
+           (loc : Lexing.position * Lexing.position) ->
            (SdStr si : 'str_item_def_undef));
       [Gramext.Snterm
          (Grammar.Entry.obj
             (def_undef_str : 'def_undef_str Grammar.Entry.e))],
       Gramext.action
-        (fun (d : 'def_undef_str) (loc : int * int) ->
+        (fun (d : 'def_undef_str) (loc : Lexing.position * Lexing.position) ->
            (d : 'str_item_def_undef))]];
     Grammar.Entry.obj (Pcaml.sig_item : 'Pcaml__sig_item Grammar.Entry.e),
     Some Gramext.First,
@@ -136,7 +141,7 @@ Grammar.extend
          (Grammar.Entry.obj
             (def_undef_sig : 'def_undef_sig Grammar.Entry.e))],
       Gramext.action
-        (fun (x : 'def_undef_sig) (loc : int * int) ->
+        (fun (x : 'def_undef_sig) (loc : Lexing.position * Lexing.position) ->
            (match x with
               SdStr si -> si
             | SdDef x -> define x; MLast.SgDcl (loc, [])
@@ -147,17 +152,20 @@ Grammar.extend
     [None, None,
      [[Gramext.Stoken ("", "undef"); Gramext.Stoken ("UIDENT", "")],
       Gramext.action
-        (fun (c : string) _ (loc : int * int) -> (SdUnd c : 'def_undef_sig));
+        (fun (c : string) _ (loc : Lexing.position * Lexing.position) ->
+           (SdUnd c : 'def_undef_sig));
       [Gramext.Stoken ("", "define"); Gramext.Stoken ("UIDENT", "")],
       Gramext.action
-        (fun (c : string) _ (loc : int * int) -> (SdDef c : 'def_undef_sig));
+        (fun (c : string) _ (loc : Lexing.position * Lexing.position) ->
+           (SdDef c : 'def_undef_sig));
       [Gramext.Stoken ("", "ifndef"); Gramext.Stoken ("UIDENT", "");
        Gramext.Stoken ("", "then");
        Gramext.Snterm
          (Grammar.Entry.obj
             (sig_item_def_undef : 'sig_item_def_undef Grammar.Entry.e))],
       Gramext.action
-        (fun (e1 : 'sig_item_def_undef) _ (c : string) _ (loc : int * int) ->
+        (fun (e1 : 'sig_item_def_undef) _ (c : string) _
+           (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then SdNop else e1 : 'def_undef_sig));
       [Gramext.Stoken ("", "ifndef"); Gramext.Stoken ("UIDENT", "");
        Gramext.Stoken ("", "then");
@@ -170,7 +178,7 @@ Grammar.extend
             (sig_item_def_undef : 'sig_item_def_undef Grammar.Entry.e))],
       Gramext.action
         (fun (e2 : 'sig_item_def_undef) _ (e1 : 'sig_item_def_undef) _
-           (c : string) _ (loc : int * int) ->
+           (c : string) _ (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then e2 else e1 : 'def_undef_sig));
       [Gramext.Stoken ("", "ifdef"); Gramext.Stoken ("UIDENT", "");
        Gramext.Stoken ("", "then");
@@ -178,7 +186,8 @@ Grammar.extend
          (Grammar.Entry.obj
             (sig_item_def_undef : 'sig_item_def_undef Grammar.Entry.e))],
       Gramext.action
-        (fun (e1 : 'sig_item_def_undef) _ (c : string) _ (loc : int * int) ->
+        (fun (e1 : 'sig_item_def_undef) _ (c : string) _
+           (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then e1 else SdNop : 'def_undef_sig));
       [Gramext.Stoken ("", "ifdef"); Gramext.Stoken ("UIDENT", "");
        Gramext.Stoken ("", "then");
@@ -191,7 +200,7 @@ Grammar.extend
             (sig_item_def_undef : 'sig_item_def_undef Grammar.Entry.e))],
       Gramext.action
         (fun (e2 : 'sig_item_def_undef) _ (e1 : 'sig_item_def_undef) _
-           (c : string) _ (loc : int * int) ->
+           (c : string) _ (loc : Lexing.position * Lexing.position) ->
            (if List.mem c !defined then e1 else e2 : 'def_undef_sig))]];
     Grammar.Entry.obj
       (sig_item_def_undef : 'sig_item_def_undef Grammar.Entry.e),
@@ -201,13 +210,14 @@ Grammar.extend
          (Grammar.Entry.obj
             (Pcaml.sig_item : 'Pcaml__sig_item Grammar.Entry.e))],
       Gramext.action
-        (fun (si : 'Pcaml__sig_item) (loc : int * int) ->
+        (fun (si : 'Pcaml__sig_item)
+           (loc : Lexing.position * Lexing.position) ->
            (SdStr si : 'sig_item_def_undef));
       [Gramext.Snterm
          (Grammar.Entry.obj
             (def_undef_sig : 'def_undef_sig Grammar.Entry.e))],
       Gramext.action
-        (fun (d : 'def_undef_sig) (loc : int * int) ->
+        (fun (d : 'def_undef_sig) (loc : Lexing.position * Lexing.position) ->
            (d : 'sig_item_def_undef))]]]);;
 
 Pcaml.add_option "-D" (Arg.String define)

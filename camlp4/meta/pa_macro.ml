@@ -64,7 +64,10 @@ value defined = ref [];
 
 value is_defined i = List.mem_assoc i defined.val;
 
-value loc = (0, 0);
+value loc =
+    let nowhere =
+      { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
+    (nowhere, nowhere);
 
 value subst mloc env =
   loop where rec loop =
@@ -119,12 +122,12 @@ value define eo x =
     [ Some ([], e) ->
         EXTEND
           expr: LEVEL "simple"
-            [ [ UIDENT $x$ -> Pcaml.expr_reloc (fun _ -> loc) 0 e ] ]
+            [ [ UIDENT $x$ -> Pcaml.expr_reloc (fun _ -> loc) (fst loc) e ] ]
           ;
           patt: LEVEL "simple"
             [ [ UIDENT $x$ ->
                   let p = substp loc [] e in
-                  Pcaml.patt_reloc (fun _ -> loc) 0 p ] ]
+                  Pcaml.patt_reloc (fun _ -> loc) (fst loc) p ] ]
           ;
         END
     | Some (sl, e) ->
@@ -139,7 +142,7 @@ value define eo x =
                   if List.length el = List.length sl then
                     let env = List.combine sl el in
                     let e = subst loc env e in
-                    Pcaml.expr_reloc (fun _ -> loc) 0 e
+                    Pcaml.expr_reloc (fun _ -> loc) (fst loc) e
                   else
                     incorrect_number loc el sl ] ]
           ;
@@ -153,7 +156,7 @@ value define eo x =
                   if List.length pl = List.length sl then
                     let env = List.combine sl pl in
                     let p = substp loc env e in
-                    Pcaml.patt_reloc (fun _ -> loc) 0 p
+                    Pcaml.patt_reloc (fun _ -> loc) (fst loc) p
                   else
                     incorrect_number loc pl sl ] ]
           ;
@@ -228,8 +231,8 @@ EXTEND
   expr: LEVEL "simple"
     [ [ LIDENT "__FILE__" -> <:expr< $str:Pcaml.input_file.val$ >>
       | LIDENT "__LOCATION__" ->
-          let bp = string_of_int (fst loc) in
-          let ep = string_of_int (snd loc) in
+          let bp = string_of_int ((fst loc).Lexing.pos_cnum) in
+          let ep = string_of_int ((snd loc).Lexing.pos_cnum) in
           <:expr< ($int:bp$, $int:ep$) >> ] ]
   ;
   patt:

@@ -99,7 +99,7 @@ value unassoc =
 
 value rec unaction =
   fun
-  [ <:expr< fun ($lid:locp$ : (int * int)) -> ($a$ : $_$) >>
+  [ <:expr< fun ($lid:locp$ : (Lexing.position * Lexing.position)) -> ($a$ : $_$) >>
     when locp = Stdpp.loc_name.val ->
       let ao =
         match a with
@@ -111,7 +111,7 @@ value rec unaction =
       let (pl, a) = unaction e in ([p :: pl], a)
   | <:expr< fun _ -> $e$ >> ->
       let (pl, a) = unaction e in
-      (let loc = (0, 0) in [<:patt< _ >> :: pl], a)
+      (let loc = (Token.nowhere, Token.nowhere) in [<:patt< _ >> :: pl], a)
   | _ -> raise Not_found ]
 ;
 
@@ -174,7 +174,7 @@ and unrule =
   [ <:expr< ($e1$, Gramext.action $e2$) >> ->
       let (pl, a) =
         match unaction e2 with
-        [ ([], None) -> let loc = (0, 0) in ([], Some <:expr< () >>)
+        [ ([], None) -> let loc = (Token.nowhere, Token.nowhere) in ([], Some <:expr< () >>)
         | x -> x ]
       in
       let sl = unpsymbol_list (List.rev pl) e1 in
@@ -389,6 +389,8 @@ value label =
   | None -> [: :] ]
 ;
 
+value intloc loc = ((fst loc).Lexing.pos_cnum, (snd loc).Lexing.pos_cnum);
+
 value assoc =
   fun
   [ Some Gramext.NonA -> [: `S LR "NONA" :]
@@ -419,7 +421,7 @@ value level_list ll k =
 
 value entry (e, pos, ll) k =
   BEbox
-    [: `LocInfo (MLast.loc_of_expr e)
+    [: `LocInfo (intloc(MLast.loc_of_expr e))
           (HVbox [: `expr e "" [: `S RO ":" :]; position pos :]);
        `level_list  ll [: :];
        `HVbox [: `S RO ";"; k :] :]

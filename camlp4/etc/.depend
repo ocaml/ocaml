@@ -11,6 +11,8 @@ pa_ifdef.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi
 pa_ifdef.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_lefteval.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_lefteval.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
+pa_lispr.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi ../camlp4/reloc.cmi 
+pa_lispr.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx ../camlp4/reloc.cmx 
 pa_lisp.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_lisp.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_lispr.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
@@ -31,10 +33,8 @@ pa_op.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi
 pa_op.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_ru.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_ru.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
-pa_scheme.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
-pa_scheme.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
-pa_schemer.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
-pa_schemer.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
+pa_schemer.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi ../camlp4/reloc.cmi 
+pa_schemer.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx ../camlp4/reloc.cmx 
 pa_sml.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_sml.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 parserify.cmo: ../camlp4/mLast.cmi parserify.cmi 

@@ -23,14 +23,14 @@ Quotation.add ""
           if t.val = "" then "<<" ^ s ^ ">>"
           else "<:" ^ t.val ^ "<" ^ s ^ ">>"
         in
-        let loc = (0, 0) in
+        let loc = (Token.nowhere, Token.nowhere) in
         <:expr< $uid:t$ >>,
       fun s ->
         let t =
           if t.val = "" then "<<" ^ s ^ ">>"
           else "<:" ^ t.val ^ "<" ^ s ^ ">>"
         in
-        let loc = (0, 0) in
+        let loc = (Token.nowhere, Token.nowhere) in
         <:patt< $uid:t$ >>))
 ;
 

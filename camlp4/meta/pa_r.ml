@@ -901,10 +901,11 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({ (Lexing.dummy_pos) with Lexing.pos_cnum = int_of_string (String.sub x 0 i) }
+                 ,
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> ({(Lexing.dummy_pos) with Lexing.pos_cnum = 0}, x) ]
           in
           Pcaml.handle_expr_locate loc x
       | x = QUOTATION ->
@@ -923,10 +924,11 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({(Lexing.dummy_pos) with Lexing.pos_cnum = int_of_string (String.sub x 0 i)}
+                 ,
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> ({(Lexing.dummy_pos) with Lexing.pos_cnum = 0}, x) ]
           in
           Pcaml.handle_patt_locate loc x
       | x = QUOTATION ->

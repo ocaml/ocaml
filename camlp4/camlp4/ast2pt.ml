@@ -19,7 +19,7 @@ open Longident;
 open Asttypes;
 
 value fast = ref False;
-value no_constructors_arity = ref False;
+value no_constructors_arity = Pcaml.no_constructors_arity;
 
 value get_tag x =
   if Obj.is_block (Obj.repr x) then Obj.tag (Obj.repr x) else Obj.magic x
@@ -39,24 +39,35 @@ value string_of_string_token loc s =
 value glob_fname = ref "";
 
 value mkloc (bp, ep) =
-  let loc_at n = {
-        Lexing.pos_fname = glob_fname.val;
-        Lexing.pos_lnum = 1;  (* ddr met -1 ici ??? *)
-        Lexing.pos_bol = 0;
-        Lexing.pos_cnum = n
+  let loc_at n = 
+    { (n) with
+        Lexing.pos_fname = 
+          if n.Lexing.pos_fname = "" then
+            if glob_fname.val = "" then
+              Pcaml.input_file.val
+            else
+              glob_fname.val
+          else
+            n.Lexing.pos_fname
       }
   in
   {Location.loc_start = loc_at bp;
    Location.loc_end = loc_at ep;
-   Location.loc_ghost = False} (* ddr met: bp = 0 && ep = 0 *)
+   Location.loc_ghost =
+     bp.Lexing.pos_cnum = 0 && ep.Lexing.pos_cnum = 0}
 ;
 
 value mkghloc (bp, ep) =
-  let loc_at n = {
-        Lexing.pos_fname = "";
-        Lexing.pos_lnum = 1;
-        Lexing.pos_bol = 0;
-        Lexing.pos_cnum = n
+  let loc_at n = 
+    { (n) with
+        Lexing.pos_fname = 
+          if n.Lexing.pos_fname = "" then
+            if glob_fname.val = "" then
+              Pcaml.input_file.val
+            else
+              glob_fname.val
+          else
+            n.Lexing.pos_fname
       }
   in
   {Location.loc_start = loc_at bp;

@@ -1,3 +1,8 @@
+- [12 may 04] Locations are now handled as in OCaml. The main benefit
+  is that line numbers are now correct in error messages. However, this
+  slightly changes the interface of a few Camlp4 modules (see ICHANGES).
+  ** Warning: Some contribs of the camlp4 distribution are broken because
+  of this change. In particular the scheme/lisp syntaxes.
 - [20 nov 03] Illegal escape sequences in strings now issue a warning.
 
 Camlp4 Version 3.07

@@ -143,7 +143,7 @@ value conv_lab =
 
 (* default global loc *)
 
-value loc = (0, 0);
+value loc = (Token.nowhere, Token.nowhere);
 
 value id_var s =
   if has_special_chars s || is_infix s then
@@ -204,17 +204,19 @@ value private_flag =
   | _ -> [: :] ]
 ;
 
+value intloc loc = ((fst loc).Lexing.pos_cnum, (snd loc).Lexing.pos_cnum);
+
 value rec labels loc b vl _ k =
   match vl with
   [ [] -> [: b; k :]
   | [v] ->
-      [: `label True b v "" k; `LocInfo (snd loc, snd loc) (HVbox [: :]) :]
+      [: `label True b v "" k; `LocInfo (intloc(snd loc, snd loc)) (HVbox [: :]) :]
   | [v :: l] -> [: `label False b v "" [: :]; labels loc [: :] l "" k :] ]
 and label is_last b (loc, f, m, t) _ k =
   let m = flag "mutable" m in
   let k = [: if is_last then [: :] else [: `S RO ";" :]; k :] in
   Hbox
-    [: `LocInfo loc
+    [: `LocInfo (intloc loc)
           (HVbox
              [: `HVbox [: b; m; `S LR (conv_lab f); `S LR ":" :];
                 `ctyp t "" [: :] :]);
@@ -226,15 +228,15 @@ value rec ctyp_list tel _ k = listws simple_ctyp (S LR "*") tel "" k;
 value rec variants loc b vl dg k =
   match vl with
   [ [] -> [: b; k :]
-  | [v] -> [: `variant b v "" k; `LocInfo (snd loc, snd loc) (HVbox [: :]) :]
+  | [v] -> [: `variant b v "" k; `LocInfo (intloc(snd loc, snd loc)) (HVbox [: :]) :]
   | [v :: l] ->
       [: `variant b v "" [: :]; variants loc [: `S LR "|" :] l "" k :] ]
 and variant b (loc, c, tl) _ k =
   match tl with
-  [ [] -> HVbox [: `LocInfo loc (HVbox b); `HOVbox [: `S LR c; k :] :]
+  [ [] -> HVbox [: `LocInfo (intloc loc) (HVbox b); `HOVbox [: `S LR c; k :] :]
   | _ ->
       HVbox
-        [: `LocInfo loc (HVbox b);
+        [: `LocInfo (intloc loc) (HVbox b);
            `HOVbox [: `S LR c; `S LR "of"; ctyp_list tl "" k :] :] ]
 ;
 
@@ -342,7 +344,7 @@ value raise_match_failure (bp, ep) k =
     if Pcaml.input_file.val <> "-" then
       Stdpp.line_of_loc Pcaml.input_file.val (bp, ep)
     else
-      ("-", 1, bp, ep)
+      ("-", bp.Lexing.pos_lnum, bp.Lexing.pos_cnum - bp.Lexing.pos_bol,  ep.Lexing.pos_cnum - ep.Lexing.pos_bol)
   in
   HOVbox
     [: `S LR "raise"; `S LO "("; `S LR "Match_failure"; `S LO "(";
@@ -362,7 +364,7 @@ and let_binding b (p, e) _ k =
     let (bp2, ep2) = MLast.loc_of_expr e in
     (min bp1 bp2, max ep1 ep2)
   in
-  LocInfo loc (BEbox (let_binding0 b p e k))
+  LocInfo (intloc loc) (BEbox (let_binding0 b p e k))
 and let_binding0 b p e k =
   let (pl, e) =
     match p with
@@ -606,7 +608,7 @@ and class_signature cs k =
       class_self_type [: `S LR "object" :] cst
         [: `HVbox
               [: `HVbox [: :]; list class_sig_item csf "" [: :];
-                 `LocInfo (ep, ep) (HVbox [: :]) :];
+                 `LocInfo (intloc(ep, ep)) (HVbox [: :]) :];
            `HVbox [: `S LR "end"; k :] :]
   | _ -> HVbox [: `not_impl "class_signature" cs; k :] ]
 and class_self_type b cst k =
@@ -664,7 +666,7 @@ pr_module_type.pr_levels :=
                   [: `S LR "sig";
                      `HVbox
                         [: `HVbox [: :]; list sig_item s "" [: :];
-                           `LocInfo (ep, ep) (HVbox [: :]) :];
+                           `LocInfo (intloc(ep, ep)) (HVbox [: :]) :];
                      `HVbox [: `S LR "end"; k :] :] :]
       | e -> fun curr next dg k -> [: `next e dg k :] ]};
    {pr_label = ""; pr_box mt x = HVbox x;
@@ -697,7 +699,7 @@ pr_module_expr.pr_levels :=
             [: `HVbox [: :];
                `HVbox
                   [: `S LR "struct"; list str_item s "" [: :];
-                     `LocInfo (ep, ep) (HVbox [: :]) :];
+                     `LocInfo (intloc(ep, ep)) (HVbox [: :]) :];
                `HVbox [: `S LR "end"; k :] :]
       | <:module_expr< functor ($s$ : $mt$) -> $me$ >> ->
           fun curr next dg k ->
@@ -740,7 +742,7 @@ pr_module_expr.pr_levels :=
 
 pr_sig_item.pr_levels :=
   [{pr_label = "top";
-    pr_box s x = LocInfo (MLast.loc_of_sig_item s) (HVbox x);
+    pr_box s x = LocInfo (intloc(MLast.loc_of_sig_item s)) (HVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:sig_item< type $list:stl$ >> ->
@@ -788,7 +790,7 @@ pr_sig_item.pr_levels :=
 
 pr_str_item.pr_levels :=
   [{pr_label = "top";
-    pr_box s x = LocInfo (MLast.loc_of_str_item s) (HVbox x);
+    pr_box s x = LocInfo (intloc(MLast.loc_of_str_item s)) (HVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:str_item< open $i$ >> ->
@@ -871,14 +873,14 @@ value ocaml_char =
 ;
 
 pr_expr.pr_levels :=
-  [{pr_label = "top"; pr_box e x = LocInfo (MLast.loc_of_expr e) (HOVbox x);
+  [{pr_label = "top"; pr_box e x = LocInfo (intloc(MLast.loc_of_expr e)) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:expr< do { $list:el$ } >> ->
           fun curr next dg k ->
             [: `HVbox [: `HVbox [: :]; listws next (S RO ";") el dg k :] :]
       | e -> fun curr next dg k -> [: `next e dg k :] ]};
-   {pr_label = "expr1"; pr_box e x = LocInfo (MLast.loc_of_expr e) (HOVbox x);
+   {pr_label = "expr1"; pr_box e x = LocInfo (intloc(MLast.loc_of_expr e)) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:expr< let $opt:r$ $p1$ = $e1$ in $e$ >> ->
@@ -1309,7 +1311,7 @@ pr_expr.pr_levels :=
             | Some x -> [: `next e "" k :] ]
       | e -> fun curr next dg k -> [: `next e dg k :] ]};
    {pr_label = "simple";
-    pr_box e x = LocInfo (MLast.loc_of_expr e) (HOVbox x);
+    pr_box e x = LocInfo (intloc(MLast.loc_of_expr e)) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ ( <:expr< $int:x$ >> | <:expr< $flo:x$ >> )
@@ -1412,7 +1414,7 @@ pr_expr.pr_levels :=
       | e -> fun curr next _ k -> [: `not_impl "expr" e :] ]}];
 
 pr_patt.pr_levels :=
-  [{pr_label = "top"; pr_box p x = LocInfo (MLast.loc_of_patt p) (HOVCbox x);
+  [{pr_label = "top"; pr_box p x = LocInfo (intloc(MLast.loc_of_patt p)) (HOVCbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:patt< ($x$ as $lid:y$) >> ->
@@ -1480,7 +1482,7 @@ pr_patt.pr_levels :=
             | _ -> [: curr x "" [: :]; `next y "" k :] ]
       | p -> fun curr next dg k -> [: `next p "" k :] ]};
    {pr_label = "simple";
-    pr_box p x = LocInfo (MLast.loc_of_patt p) (HOVbox x);
+    pr_box p x = LocInfo (intloc(MLast.loc_of_patt p)) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:patt< $x$ . $y$ >> ->
@@ -1574,7 +1576,7 @@ pr_patt.pr_levels :=
       | p -> fun curr next dg k -> [: `next p "" k :] ]}];
 
 pr_ctyp.pr_levels :=
-  [{pr_label = "top"; pr_box t x = LocInfo (MLast.loc_of_ctyp t) (HOVbox x);
+  [{pr_label = "top"; pr_box t x = LocInfo (intloc(MLast.loc_of_ctyp t)) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:ctyp< $x$ as $y$ >> ->
@@ -1600,7 +1602,7 @@ pr_ctyp.pr_levels :=
           fun curr next dg k -> listws next (S LR "*") tl "" k
       | t -> fun curr next dg k -> [: `next t "" k :] ]};
    {pr_label = "simple";
-    pr_box t x = LocInfo (MLast.loc_of_ctyp t) (HOVbox x);
+    pr_box t x = LocInfo (intloc(MLast.loc_of_ctyp t)) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:ctyp< $t1$ == $t2$ >> ->
@@ -1718,7 +1720,7 @@ pr_ctyp.pr_levels :=
 
 pr_class_str_item.pr_levels :=
   [{pr_label = "top";
-    pr_box s x = LocInfo (MLast.loc_of_class_str_item s) (HVbox x);
+    pr_box s x = LocInfo (intloc(MLast.loc_of_class_str_item s)) (HVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ MLast.CrDcl _ s ->
@@ -1756,7 +1758,7 @@ pr_class_str_item.pr_levels :=
 
 pr_class_sig_item.pr_levels :=
   [{pr_label = "top";
-    pr_box s x = LocInfo (MLast.loc_of_class_sig_item s) (HVbox x);
+    pr_box s x = LocInfo (intloc(MLast.loc_of_class_sig_item s)) (HVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ MLast.CgCtr _ t1 t2 ->
@@ -1834,7 +1836,7 @@ pr_class_expr.pr_levels :=
                   [: `HVbox [: `S LR "object"; `class_self_patt_opt csp :];
                      `HVbox
                         [: `HVbox [: :]; list class_str_item cf "" [: :];
-                           `LocInfo (ep, ep) (HVbox [: :]) :];
+                           `LocInfo (intloc(ep, ep)) (HVbox [: :]) :];
                      `HVbox [: `S LR "end"; k :] :] :]
       | MLast.CeTyc _ ce ct ->
           fun curr next dg k ->
@@ -2006,16 +2008,16 @@ value apply_printer printer ast =
         List.fold_left
           (fun (first, last_pos) (si, (bp, ep)) ->
              do {
-               copy_source ic oc first last_pos bp;
+               copy_source ic oc first last_pos.Lexing.pos_cnum bp.Lexing.pos_cnum;
                flush oc;
-               print_pretty pr_ch pr_str pr_nl "" "" maxl.val getcom bp
+               print_pretty pr_ch pr_str pr_nl "" "" maxl.val getcom bp.Lexing.pos_cnum
                  (printer si "" [: :]);
                flush oc;
                (False, ep)
              })
-          (True, 0) ast
+          (True, Token.nowhere) ast
       in
-      do { copy_to_end ic oc first last_pos; flush oc }
+      do { copy_to_end ic oc first last_pos.Lexing.pos_cnum; flush oc }
     with x ->
       do { close_in ic; cleanup (); raise x };
     close_in ic;

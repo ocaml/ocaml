@@ -30,7 +30,10 @@ module Qast =
       | Loc
       | Antiquot of MLast.loc and string ]
     ;
-    value loc = (0, 0);
+    value loc =
+        let nowhere =
+          {(Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
+          (nowhere,nowhere);
     value rec to_expr =
       fun
       [ Node n al ->
@@ -56,7 +59,7 @@ module Qast =
           let e =
             try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
             [ Stdpp.Exc_located (bp, ep) exc ->
-                raise (Stdpp.Exc_located (fst loc + bp, fst loc + ep) exc) ]
+              raise (Stdpp.Exc_located (Reloc.adjust_loc (fst loc) (bp,ep)) exc) ]
           in
           <:expr< $anti:e$ >> ]
     and to_expr_label (l, a) = (<:patt< MLast.$lid:l$ >>, to_expr a);
@@ -83,7 +86,7 @@ module Qast =
           let p =
             try Grammar.Entry.parse Pcaml.patt_eoi (Stream.of_string s) with
             [ Stdpp.Exc_located (bp, ep) exc ->
-                raise (Stdpp.Exc_located (fst loc + bp, fst loc + ep) exc) ]
+                raise (Stdpp.Exc_located (Reloc.adjust_loc (fst loc) (bp, ep)) exc) ]
           in
           <:patt< $anti:p$ >> ]
     and to_patt_label (l, a) = (<:patt< MLast.$lid:l$ >>, to_patt a);
@@ -95,7 +98,7 @@ value antiquot k (bp, ep) x =
     if k = "" then String.length "$"
     else String.length "$" + String.length k + String.length ":"
   in
-  Qast.Antiquot (shift + bp, shift + ep) x
+  Qast.Antiquot (Reloc.shift_pos shift bp, Reloc.shift_pos (-1) ep) x
 ;
 
 value sig_item = Grammar.Entry.create gram "signature item";
@@ -254,7 +257,7 @@ value not_yet_warned_variant = ref True;
 value warn_variant _ =
   if not_yet_warned_variant.val then do {
     not_yet_warned_variant.val := False;
-    Pcaml.warning.val (0, 1)
+    Pcaml.warning.val (Lexing.dummy_pos, Reloc.shift_pos 1 Lexing.dummy_pos)
       (Printf.sprintf
          "use of syntax of variants types deprecated since version 3.05");
   }
@@ -265,7 +268,7 @@ value not_yet_warned_seq = ref True;
 value warn_sequence _ =
   if not_yet_warned_seq.val then do {
     not_yet_warned_seq.val := False;
-    Pcaml.warning.val (0, 1)
+    Pcaml.warning.val (Lexing.dummy_pos, Reloc.shift_pos 1 Lexing.dummy_pos)
       (Printf.sprintf
          "use of syntax of sequences deprecated since version 3.01.1");
   }

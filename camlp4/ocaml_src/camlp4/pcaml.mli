@@ -83,13 +83,15 @@ val no_constructors_arity : bool ref;;
 val sync : (char Stream.t -> unit) ref;;
 
 val handle_expr_quotation : MLast.loc -> string * string -> MLast.expr;;
-val handle_expr_locate : MLast.loc -> int * string -> MLast.expr;;
+val handle_expr_locate : MLast.loc -> Lexing.position * string -> MLast.expr;;
 
 val handle_patt_quotation : MLast.loc -> string * string -> MLast.patt;;
-val handle_patt_locate : MLast.loc -> int * string -> MLast.patt;;
+val handle_patt_locate : MLast.loc -> Lexing.position * string -> MLast.patt;;
 
-val expr_reloc : (MLast.loc -> MLast.loc) -> int -> MLast.expr -> MLast.expr;;
-val patt_reloc : (MLast.loc -> MLast.loc) -> int -> MLast.patt -> MLast.patt;;
+val expr_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;;
+val patt_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;;
 
 (** To possibly rename identifiers; parsers may call this function
     when generating their identifiers; default = identity *)
@@ -99,7 +101,7 @@ val rename_id : (string -> string) ref;;
 type err_ctx =
     Finding
   | Expanding
-  | ParsingResult of (int * int) * string
+  | ParsingResult of MLast.loc * string
   | Locating
 ;;
 exception Qerror of string * err_ctx * exn;;
@@ -152,7 +154,8 @@ val inter_phrases : string option ref;;
 
 (* for system use *)
 
-val warning : (int * int -> string -> unit) ref;;
+val warning : (MLast.loc -> string -> unit) ref;;
 val expr_eoi : MLast.expr Grammar.Entry.e;;
 val patt_eoi : MLast.patt Grammar.Entry.e;;
 val arg_spec_list : unit -> (string * Arg.spec * string) list;;
+val no_constructors_arity : bool ref;;
