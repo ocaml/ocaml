@@ -261,13 +261,18 @@ echo "#define SIZEOF_INT $1" >> m.h
 echo "#define SIZEOF_LONG $2" >> m.h
 echo "#define SIZEOF_SHORT $4" >> m.h
 
-if test $1 != 8; then
+if test $1 = 8; then
+     echo "#define ARCH_INT64_TYPE long" >> m.h
+     echo "#define ARCH_UINT64_TYPE unsigned long" >> m.h
+     echo '#define ARCH_INT64_PRINTF_FORMAT "l"' >> m.h
+else
   sh ./runtest longlong.c
   case $? in
   0) echo "64-bit \"long long\" integer type found."
-     echo "#define SIZEOF_LONG_LONG 8" >> m.h;;
+     echo "#define ARCH_INT64_TYPE long long" >> m.h
+     echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
+     echo '#define ARCH_INT64_PRINTF_FORMAT "ll"' >> m.h;;
   *) echo "No suitable 64-bit integer type found, Int64.t will not be supported."
-     echo "#define SIZEOF_LONG_LONG 0" >> m.h;;
   esac
 fi
 

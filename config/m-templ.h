@@ -48,7 +48,18 @@
 /* Define SIZEOF_INT, SIZEOF_LONG and SIZEOF_SHORT to the sizes in byte
    of the C types "int", "long" and "short", respectively. */
 
-#define SIZEOF_LONG_LONG 8
+#define ARCH_INT64_TYPE long long
+#define ARCH_UINT64_TYPE unsigned long long
 
-/* Define SIZEOF_LONG_LONG to the size in byte of the C type "long long",
-   if supported by the C compiler.  Otherwise, define SIZEOF_LONG_LONG as 0. */
+/* Define ARCH_INT64_TYPE and ARCH_UINT64_TYPE to 64-bit integer types,
+   typically "long long" and "unsigned long long" on 32-bit platforms,
+   and "long" and "unsigned long" on 64-bit platforms.
+   If the C compiler doesn't support any 64-bit integer type,
+   leave both ARCH_INT64_TYPE and ARCH_UINT64_TYPE undefined. */
+
+#define ARCH_INT64_PRINTF_FORMAT "ll"
+
+/* Define ARCH_INT64_PRINTF_FORMAT to the printf format used for formatting
+   values of type ARCH_INT64_TYPE.  This is usually "ll" on 32-bit
+   platforms and "l" on 64-bit platforms.
+   Leave undefined if ARCH_INT64_TYPE is undefined.  */

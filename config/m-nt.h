@@ -12,7 +12,7 @@
 
 /* $Id$ */
 
-/* Machine configuration, Intel x86 processors, Windows NT */
+/* Machine configuration, Intel x86 processors, Win32, Visual C++ compiler */
 
 #undef ARCH_SIXTYFOUR
 #undef ARCH_BIG_ENDIAN
@@ -20,4 +20,7 @@
 #define SIZEOF_INT 4
 #define SIZEOF_LONG 4
 #define SIZEOF_SHORT 2
+#define ARCH_INT64_TYPE __int64
+#define ARCH_UINT64_TYPE unsigned __int64
+#define ARCH_INT64_PRINTF_FORMAT "I64"
 

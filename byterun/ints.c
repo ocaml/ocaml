@@ -241,7 +241,7 @@ value int32_of_string(value s)          /* ML */
 
 /* 64-bit integers */
 
-#if SIZEOF_LONG == 8 || SIZEOF_LONG_LONG == 8
+#ifdef ARCH_INT64_TYPE
 
 static int int64_compare(value v1, value v2)
 {
@@ -346,12 +346,7 @@ value int64_format(value fmt, value arg)      /* ML */
   char * buffer;
   value res;
 
-  buffer = parse_format(fmt,
-#if SIZEOF_LONG == 8
-                        "l",
-#else
-                        "ll",
-#endif
+  buffer = parse_format(fmt, ARCH_INT64_PRINTF_FORMAT,
                         format_string, default_format_buffer);
   sprintf(buffer, format_string, Int64_val(arg));
   res = copy_string(buffer);

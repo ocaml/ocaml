@@ -38,12 +38,9 @@ typedef short int32;
 typedef unsigned short uint32;
 #endif
 
-#if SIZEOF_LONG == 8
-typedef long int64;
-typedef unsigned long uint64;
-#elif SIZEOF_LONG_LONG == 8
-typedef long long int64;
-typedef unsigned long long uint64;
+#if defined(ARCH_INT64_TYPE) && defined(ARCH_UINT64_TYPE)
+typedef ARCH_INT64_TYPE int64;
+typedef ARCH_UINT64_TYPE uint64;
 #else
 /* Int64.t will not be supported, and operations over it are not defined,
    but we must define the types int64 and uint64 as 64-bit placeholders. */
