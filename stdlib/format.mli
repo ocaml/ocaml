@@ -261,7 +261,7 @@ val print_tab : unit -> unit;;
 (** {6 Tags} *)
 
 
-(** Tags are are used to mark printed entities for user's defined
+(** Tags are used to mark printed entities for user's defined
    purposes, e.g. setting font and giving size indications for a
    display device, or marking delimitations of semantics entities
    (e.g. HTML or TeX elements or terminal escape sequences).
