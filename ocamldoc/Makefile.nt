@@ -260,7 +260,7 @@ odoc_crc.ml: $(CMIFILES)
 	Odoc_module Odoc_str Odoc_args Odoc_env\
 	Odoc_sig Odoc_ast Odoc_control Odoc_inherit\
 	Odoc_search Odoc_cross Odoc_merge Odoc_analyse\
-	Odoc_dag2html Odoc_ocamlhtml Odoc_html\
+	Odoc_dag2html Odoc_ocamlhtml Odoc_html Odoc_to_text \
 	Odoc_latex Odoc_man Odoc_texi Odoc_scan > $@
 
 # generic rules :
