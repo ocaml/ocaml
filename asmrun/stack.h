@@ -43,6 +43,7 @@
 #define Already_scanned(sp, retaddr) (retaddr & 1)
 #define Mark_scanned(sp, retaddr) (*((long *)(sp - 4)) = retaddr | 1)
 #define Mask_already_scanned(retaddr) (retaddr & ~1)
+#define Callback_link(sp) ((struct callback_link *)sp)
 #endif
 
 #ifdef TARGET_hppa
