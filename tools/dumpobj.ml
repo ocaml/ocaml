@@ -211,7 +211,8 @@ let print_instr ic =
     (print_setglobal_name ic)
   (* primitive *)
   else if op == opC_CALL1 or op == opC_CALL2
-       or op == opC_CALL3 or op == opC_CALL4 then
+       or op == opC_CALL3 or op == opC_CALL4
+       or op == opC_CALL5 then
     (print_primitive ic)
   (* unsigned + primitive *)
   else if op == opC_CALLN then
