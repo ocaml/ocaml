@@ -62,10 +62,10 @@ all: dynamics.cma $(CMIFILES)
 allopt: dynamics.cmxa $(CMIFILES)
 
 dynamics.cma: $(CAMLOBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o dynamics $(CAMLOBJS)
+	$(CAMLC) -a -o $@ $(CAMLOBJS)
 
 dynamics.cmxa: $(CAMLOBJS:.cmo=.cmx)
-	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o dynamics $(CAMLOBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(CAMLOBJS:.cmo=.cmx)
 
 $(IMPORTED_INTERFACES:=.mli): import
 $(IMPORTED_MODULES:=.ml): import
