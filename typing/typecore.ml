@@ -951,6 +951,7 @@ let report_error = function
   | Bad_format s ->
       print_string "Bad format `"; print_string s; print_string "'"
   | Undefined_method (ty, me) ->
+      reset (); mark_loops ty;
       open_vbox 0;
       open_box 0;
       print_string "This expression has type";
@@ -1005,6 +1006,7 @@ let report_error = function
   | Too_many_arguments ->
       print_string "This function has too many arguments"
   | Scoping_let_module(id, ty) ->
+      reset (); mark_loops ty;
       print_string "This `let module' expression has type";
       print_space(); type_expr ty; print_space();
       print_string "In this type, the locally bound module name ";
