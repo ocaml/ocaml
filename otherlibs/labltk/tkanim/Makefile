@@ -1,6 +1,6 @@
 include ../support/Makefile.common
 
-COMPFLAGS=-I ../../../byterun -I ../support -I ../camltk -I ../../unix -ccopt $(TK_DEFS)
+COMPFLAGS=-I ../../../byterun -I ../support -I ../camltk -I ../../unix -ccopt "$(TK_DEFS)"
 
 all: tkanim.cma libtkanim.a
 opt: tkanim.cmxa libtkanim.a
@@ -30,7 +30,7 @@ animwish: $(TKANIM_LIB) tkAppInit.o
 $(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
 
 $(OBJS:.cmo=.cmx): ../lib/$(LIBNAME).cmxa
- 
+
 clean:
 	rm -f *.cm* *.o *.a dlltkanim.so animwish gifanimtest
 
