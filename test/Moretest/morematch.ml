@@ -1,7 +1,3 @@
-(*
-  More tests for pattern matching
-*)
-
 let test msg f arg r =
   if f arg <> r then begin
     prerr_endline msg ;
@@ -385,7 +381,7 @@ test "yaya" yaya (B,A,0) 2 ;
 test "yaya" yaya (B,B,100) 3 ; ()
 ;;
 
-
+(*
 let yoyo =  function
 | [],_,_ -> 1
 | _,[],_ -> 2
@@ -411,7 +407,7 @@ test "youyou" youyou 100 1 ;
 test "youyou" youyou 101 2 ;
 test "youyou" youyou 1000 3
 ;;
-
+*)
 type autre =
   |  C | D | E of autre | F of autre * autre | H of autre | I | J | K of string
 
@@ -520,3 +516,109 @@ test "flatgarde" flatgarde (2,4) 3 ; ()
 ;;
 
 
+(* Les bugs de jerome *)
+type f =
+  | ABSENT 
+  | FILE
+  | SYMLINK
+  | DIRECTORY
+
+type r =
+  | Unchanged
+  | Deleted
+  | Modified
+  | PropsChanged
+  | Created
+
+let replicaContent2shortString rc =
+    let (typ, status) = rc in
+    match typ, status with
+      _, Unchanged             -> "        "
+    | ABSENT, Deleted         -> "deleted "
+    | FILE, Created           -> "new file"
+    | FILE, Modified          -> "changed "
+    | FILE, PropsChanged      -> "props   "
+    | SYMLINK, Created        -> "new link"
+    | SYMLINK, Modified       -> "chgd lnk"
+    | DIRECTORY, Created      -> "new dir "
+    | DIRECTORY, Modified     -> "chgd dir"
+    | DIRECTORY, PropsChanged -> "props   "
+    (* Cases that can't happen... *)
+
+    | ABSENT, (Created | Modified | PropsChanged)
+    | SYMLINK, PropsChanged
+    | (FILE|SYMLINK|DIRECTORY), Deleted
+                                -> "assert false"
+;;
+
+
+test "jerome_constr" 
+   replicaContent2shortString (ABSENT, Unchanged) "        " ;
+test "jerome_constr" 
+   replicaContent2shortString (ABSENT, Deleted) "deleted " ;
+test "jerome_constr" 
+   replicaContent2shortString (FILE, Modified) "changed " ;
+test "jerome_constr" 
+   replicaContent2shortString (DIRECTORY, PropsChanged) "props   " ;
+test "jerome_constr" 
+   replicaContent2shortString (FILE, Deleted) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (SYMLINK, Deleted) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (SYMLINK, PropsChanged) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (DIRECTORY, Deleted) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (ABSENT, Created) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (ABSENT, Modified) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (ABSENT, PropsChanged) "assert false" ;
+;;
+
+
+let replicaContent2shortString rc =
+    let (typ, status) = rc in
+    match typ, status with
+      _, `Unchanged             -> "        "
+    | `ABSENT, `Deleted         -> "deleted "
+    | `FILE, `Created           -> "new file"
+    | `FILE, `Modified          -> "changed "
+    | `FILE, `PropsChanged      -> "props   "
+    | `SYMLINK, `Created        -> "new link"
+    | `SYMLINK, `Modified       -> "chgd lnk"
+    | `DIRECTORY, `Created      -> "new dir "
+    | `DIRECTORY, `Modified     -> "chgd dir"
+    | `DIRECTORY, `PropsChanged -> "props   "
+    (* Cases that can't happen... *)
+
+    | `ABSENT, (`Created | `Modified | `PropsChanged)
+    | `SYMLINK, `PropsChanged
+    | (`FILE|`SYMLINK|`DIRECTORY), `Deleted
+                                -> "assert false"
+;;
+
+
+test "jerome_constr" 
+   replicaContent2shortString (`ABSENT, `Unchanged) "        " ;
+test "jerome_constr" 
+   replicaContent2shortString (`ABSENT, `Deleted) "deleted " ;
+test "jerome_constr" 
+   replicaContent2shortString (`FILE, `Modified) "changed " ;
+test "jerome_constr" 
+   replicaContent2shortString (`DIRECTORY, `PropsChanged) "props   " ;
+test "jerome_constr" 
+   replicaContent2shortString (`FILE, `Deleted) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (`SYMLINK, `Deleted) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (`SYMLINK, `PropsChanged) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (`DIRECTORY, `Deleted) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (`ABSENT, `Created) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (`ABSENT, `Modified) "assert false" ;
+test "jerome_constr" 
+   replicaContent2shortString (`ABSENT, `PropsChanged) "assert false" ;
+;;
