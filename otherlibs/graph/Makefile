@@ -66,6 +66,9 @@ installopt:
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
+test: essai.cmo
+	$(CAMLC) -custom -o essai graphics.cma essai.cmo -I .
+
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend

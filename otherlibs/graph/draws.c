@@ -31,36 +31,52 @@ XPoint * make_XPoints (value pts, int npoints)
 }
 
 /* Convert an array of points (represented as pairs of integers) into
-   a closed path for X (an array of points with identical first and
-   last points). */
-XPoint * make_XClosedPath (value pts, int npoints, int *pathlen)
+   a path for X (an array of points with identical first and
+   last points). The path could be closed or not depending on the
+   value of to_be_closed. */
+XPoint *make_XPathGen (value pts, int npoints, int *pathlen, int to_be_closed)
 {
   XPoint *points;
-  int i, to_close;
+  int i;
 
-  to_close = 0;
   if(npoints > 1) {
     int x1, y1, x2, y2;
     x1 = Int_val(Field(Field(pts, 0), 0));
     y1 = Bcvt(Int_val(Field(Field(pts, 0), 1)));
     x2 = Int_val(Field(Field(pts, (npoints - 1)), 0));
     y2 = Bcvt(Int_val(Field(Field(pts, (npoints - 1)), 1)));
-    if((x1 != x2) || (y1 != y2)) {
-      to_close = 1;
+    if((x1 == x2) && (y1 == y2)) {
+      to_be_closed = 0;
     }
   }
-  *pathlen = npoints + to_close;
+  *pathlen = npoints + to_be_closed;
   points = (XPoint *) stat_alloc(*pathlen * sizeof(XPoint));
 
   for (i = 0; i < npoints; i++) {
     points[i].x = Int_val(Field(Field(pts, i), 0));
     points[i].y = Bcvt(Int_val(Field(Field(pts, i), 1)));
   };
-  if(to_close == 1) {
+  if(to_be_closed == 1) {
     points[npoints].x = Int_val(Field(Field(pts, 0), 0));
     points[npoints].y = Bcvt(Int_val(Field(Field(pts, 0), 1)));
   }
   return (points);
+}
+
+/* Convert an array of points (represented as pairs of integers) into
+   a path for X (an array of points with identical first and
+   last points). */
+XPoint *make_XPath (value pts, int npoints, int *pathlen)
+{
+  return (make_XPathGen (pts, npoints, pathlen, 0));
+}
+
+/* Convert an array of points (represented as pairs of integers) into
+   a closed path for X (an array of points with identical first and
+   last points). */
+XPoint *make_XClosedPath (value pts, int npoints, int *pathlen)
+{
+  return (make_XPathGen (pts, npoints, pathlen, 1));
 }
 
 value gr_plots(value pts)
@@ -104,6 +120,27 @@ value gr_draw_poly(value pts)
   return Val_unit;
 }
 
+value gr_draw_poly_line(value pts)
+
+{
+  XPoint *points;
+  int npoints;
+
+  gr_check_open();
+  npoints = Wosize_val(pts);
+  points = make_XPath(pts, npoints, &npoints);
+
+  if(grremember_mode)
+    XDrawLines(grdisplay, grbstore.win, grbstore.gc,
+     points, npoints, CoordModeOrigin);
+  if(grdisplay_mode) {
+    XDrawLines(grdisplay, grwindow.win, grwindow.gc,
+     points, npoints, CoordModeOrigin);
+    XFlush(grdisplay);
+  }
+  return Val_unit;
+}
+
 XSegment * make_XSegments (value segs, int nsegments)
 {
   XSegment *segments;
@@ -118,7 +155,7 @@ XSegment * make_XSegments (value segs, int nsegments)
   return (segments);
 }
 
-value gr_draw_lines(value segs)
+value gr_draw_segments(value segs)
 {
   XSegment *segments;
   int nsegments;

@@ -26,9 +26,6 @@
 #include <sys/time.h>
 #endif
 
-char *window_name = WINDOW_NAME;
-char *icon_name = ICON_NAME;
-
 Display * grdisplay = NULL;
 int grscreen;
 Colormap grcolormap;
@@ -237,6 +234,8 @@ value gr_set_window_title(value n)
   char *s = String_val(n);
   gr_check_open();
   XStoreName(grdisplay, grwindow.win, s);
+  XSetIconName(grdisplay, grwindow.win, s);
+  
   XFlush(grdisplay);
   return Val_unit;
 }

@@ -100,7 +100,8 @@ let rlineto x y = lineto (current_x () + x) (current_y () + y)
 let rmoveto x y = moveto (current_x () + x) (current_y () + y)
 external draw_rect : int -> int -> int -> int -> unit = "gr_draw_rect"
 external draw_poly : (int * int) array -> unit = "gr_draw_poly"
-external draw_lines : (int * int * int * int) array -> unit = "gr_draw_lines"
+external draw_poly_line : (int * int) array -> unit = "gr_draw_poly_line"
+external draw_segments : (int * int * int * int) array -> unit = "gr_draw_segments"
 external draw_arc : int -> int -> int -> int -> int -> int -> unit
                = "gr_draw_arc" "gr_draw_arc_nat"
 let draw_ellipse x y rx ry = draw_arc x y rx ry 0 360
@@ -194,4 +195,40 @@ let close_subwindow wid =
     Hashtbl.remove subwindows wid
   end else raise (Graphic_failure ("Graphics: no such subwindow: " ^ wid))
 ;;
+
+(* Splines *)
+let add (x1, y1) (x2, y2) = (x1 +. x2, y1 +. y2)
+and sub (x1, y1) (x2, y2) = (x1 -. x2, y1 -. y2)
+and middle (x1, y1) (x2, y2) = ((x1 +. x2) /. 2.0,  (y1 +. y2) /. 2.0)
+and area (x1, y1) (x2, y2) = abs_float (x1 *. y2 -. x2 *. y1)
+and norm (x1, y1) = sqrt (x1 *. x1 +. y1 *. y1);;
+
+let test a b c d =
+ let v = sub d a in
+ let s = norm v in
+ area v (sub a b) < s && area v (sub a c) < s;;
+
+let spline a b c d =
+  let rec spl accu a b c d =
+   if test a b c d then d :: accu else
+   let a' = middle a b
+   and o = middle b c in
+   let b' = middle a' o
+   and d' = middle c d in
+   let c' = middle o d' in
+   let i = middle b' c' in
+   spl  (spl accu a a' b' i) i c' d' d in
+  spl [a] a b c d;;
+
+let curveto b c (x, y as d) =
+ let float_point (x, y) = float_of_int x, float_of_int y in
+ let round f = int_of_float (f +. 0.5) in
+ let int_point (x, y) = round x, round y in
+ let points =
+   spline
+    (float_point (current_point ()))
+    (float_point b) (float_point c) (float_point d) in
+ draw_poly_line
+  (Array.of_list (List.map int_point points));
+ moveto x y;;
 
