@@ -22,6 +22,7 @@ let main () =
   Arg.parse [
      "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
            "<dir>  Add <dir> to the list of include directories";
+     "-modern", Arg.Clear classic, " Use strict label syntax";
      "-unsafe", Arg.Set fast, " No bound checking on array and string access";
      "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
