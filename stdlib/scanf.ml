@@ -135,15 +135,16 @@ end;;
 exception Scan_failure of string;;
 
 let bad_input s = raise (Scan_failure s);;
-let bad_input_eof () = bad_input "eof";;
 let bad_input_char c = bad_input (String.make 1 c);;
 
 let bad_input_escape c =
   bad_input (Printf.sprintf "illegal escape character %c" c);;
 
-let scanf_bad_input ib s =
-  let i = Scanning.char_count ib in
-  bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s);;
+let scanf_bad_input ib = function
+  | Scan_failure s | Failure s ->
+      let i = Scanning.char_count ib in
+      bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
+  | x -> raise x;;
 
 let bad_format fmt i fc =
   invalid_arg
@@ -479,7 +480,7 @@ external string_of_format : ('a, 'b, 'c) format -> string = "%identity";;
    tokens as specified by the format. When it founds one token, it converts
    it as specified, remembers the converted value as a future
    argument to the function [f], and continues scanning.
-   If the scanning or some convertion fail, the scanning function
+   If the scanning or some convertion fails, the scanning function
    aborts and applies the scanning buffer and a string that explains
    the error to the error continuation [ef]. *)
 let kscanf ib (fmt : ('a, 'b, 'c) format) f ef =
@@ -493,22 +494,21 @@ let kscanf ib (fmt : ('a, 'b, 'c) format) f ef =
   let rec scan f i =
     if i > lim then f else
     match fmt.[i] with
+    | c when Scanning.end_of_input ib -> raise End_of_file
     | '%' -> scan_width f (i + 1)
     | '@' as t ->
         let i = i + 1 in
         if i > lim then bad_format fmt (i - 1) t else begin
         match fmt.[i] with
-        | c when Scanning.end_of_input ib -> bad_input_eof ()
         | '@' as c when Scanning.peek_char ib = c ->
            Scanning.next_char ib; scan f (i + 1)
         | c when Scanning.peek_char ib = c ->
            Scanning.next_char ib; scan f (i + 1)
-        | c -> bad_input_char c end
+        | c -> bad_input_char (Scanning.peek_char ib) end
     | ' ' | '\r' | '\t' | '\n' -> skip_whites ib; scan f (i + 1)
-    | c when Scanning.end_of_input ib -> bad_input_eof ()
     | c when Scanning.peek_char ib = c ->
         Scanning.next_char ib; scan f (i + 1)
-    | c -> bad_input_char c
+    | c -> bad_input_char (Scanning.peek_char ib)
 
   and scan_width f i =
     if i > lim then bad_format fmt i '%' else
@@ -528,11 +528,11 @@ let kscanf ib (fmt : ('a, 'b, 'c) format) f ef =
   and scan_conversion max f i =
     if i > lim then bad_format fmt i fmt.[lim - 1] else
     match fmt.[i] with
+    | c when Scanning.end_of_input ib -> raise End_of_file
     | 'c' | 'C' as conv ->
         let x =
           if conv = 'c' then scan_char max ib else scan_Char max ib in
         scan (stack f (token_char ib)) (i + 1)
-    | c when Scanning.end_of_input ib -> bad_input_eof ()
     | '%' as fc when Scanning.peek_char ib = fc ->
         Scanning.next_char ib; scan f (i + 1)
     | '%' -> bad_input_char (Scanning.peek_char ib)
@@ -584,9 +584,11 @@ let kscanf ib (fmt : ('a, 'b, 'c) format) f ef =
     | _ -> i - 1, [] in
 
   Scanning.reset_token ib;
+
   let v =
     try scan (fun () -> f) 0 with
-    | Scan_failure s | Failure s -> stack (delay ef ib) s in
+    | (Scan_failure _ | Failure _ | End_of_file) as exc ->
+        stack (delay ef ib) exc in
   return v;;
 
 let bscanf ib fmt f = kscanf ib fmt f scanf_bad_input;;

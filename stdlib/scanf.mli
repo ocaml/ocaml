@@ -57,10 +57,13 @@ val bscanf :
 
    Raise [Scanf.Scan_failure] if the given input does not match the format.
 
+   Raise [End_of_file] if the end of input is encountered while scanning
+   and the input matches the given format so far.
+
    The format is a character string which contains three types of
    objects:
    - plain characters, which are simply matched with the
-   input channel,
+   characters of the input,
    - conversion specifications, each of which causes reading and
    conversion of one argument for [f],
    - scanning indications to specify boundaries of tokens and the
@@ -132,9 +135,9 @@ val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 
 val kscanf :
   Scanning.scanbuf -> ('a, 'b, 'c) format -> 'a ->
-  (Scanning.scanbuf -> string -> 'c) -> 'c;;
+  (Scanning.scanbuf -> exn -> 'c) -> 'c;;
 (** Same as {!Scanf.bscanf}, but takes an additional function argument
   [ef] that is called in case of error: if the scanning process or
   some convertion fails, the scanning function aborts and applies the
-  scanning buffer and a string that explains the error to the error
+  scanning buffer and the exception that aborted evaluation to the error
   continuation [ef]. *)
