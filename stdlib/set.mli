@@ -78,6 +78,20 @@ module type S =
            where [x1 ... xN] are the elements of [s].
            The order in which elements of [s] are presented to [f] is
            unspecified. *)
+    val for_all: f:(elt -> bool) -> t -> bool
+        (* [for_all p s] checks if all elements of the set
+           satisfy the predicate [p]. *)
+    val exists: f:(elt -> bool) -> t -> bool
+        (* [exists p s] checks if at least one element of
+           the set satisfies the predicate [p]. *)
+    val filter: f:(elt -> bool) -> t -> t
+        (* [filter p s] returns the set of all elements in [s]
+           that satisfy predicate [p]. *)
+    val partition: f:(elt -> bool) -> t -> t * t
+        (* [partition p s] returns a pair of sets [(s1, s2)], where
+           [s1] is the set of all the elements of [s] that satisfy the
+           predicate [p], and [s2] is the set of all the elements of
+           [s] that do not satisfy [p]. *)
     val cardinal: t -> int
         (* Return the number of elements of a set. *)
     val elements: t -> elt list

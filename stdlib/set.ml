@@ -38,6 +38,10 @@ module type S =
     val subset: t -> t -> bool
     val iter: (elt -> unit) -> t -> unit
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all: (elt -> bool) -> t -> bool
+    val exists: (elt -> bool) -> t -> bool
+    val filter: (elt -> bool) -> t -> t
+    val partition: (elt -> bool) -> t -> t * t
     val cardinal: t -> int
     val elements: t -> elt list
     val min_elt: t -> elt
@@ -254,6 +258,28 @@ module Make(Ord: OrderedType) =
       match s with
         Empty -> accu
       | Node(l, v, r, _) -> fold f l (f v (fold f r accu))
+
+    let rec for_all p = function
+        Empty -> true
+      | Node(l, v, r, _) -> p v && for_all p l && for_all p r
+
+    let rec exists p = function
+        Empty -> false
+      | Node(l, v, r, _) -> p v || exists p l || exists p r
+
+    let filter p s =
+      let rec filt accu = function
+        | Empty -> accu
+        | Node(l, v, r, _) ->
+            filt (filt (if p v then add v accu else accu) l) r in
+      filt Empty s
+
+    let partition p s =
+      let rec part (t, f as accu) = function
+        | Empty -> accu
+        | Node(l, v, r, _) ->
+            part (part (if p v then (add v t, f) else (t, add v f)) l) r in
+      part (Empty, Empty) s
 
     let rec cardinal = function
         Empty -> 0
