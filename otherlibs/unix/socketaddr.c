@@ -26,7 +26,7 @@ value alloc_inet_addr(a)
      unsigned int a;
 {
   value res;
-  res = alloc(1, Abstract_tag);
+  res = alloc_string(sizeof(uint32));
   GET_INET_ADDR(res) = a;
   return res;
 }

@@ -29,4 +29,4 @@ void get_sockaddr P((value));
 value alloc_sockaddr P((void));
 value alloc_inet_addr P((unsigned int));
 
-#define GET_INET_ADDR(v) (*((unsigned long *) (v)))
+#define GET_INET_ADDR(v) (*((uint32 *) (v)))
