@@ -1,3 +1,7 @@
+addlabels.cmo: ../parsing/asttypes.cmi ../parsing/location.cmi \
+    ../parsing/longident.cmi ../parsing/parse.cmi ../parsing/parsetree.cmi 
+addlabels.cmx: ../parsing/asttypes.cmi ../parsing/location.cmx \
+    ../parsing/longident.cmx ../parsing/parse.cmx ../parsing/parsetree.cmi 
 dumpapprox.cmo: ../asmcomp/clambda.cmi ../asmcomp/compilenv.cmi \
     ../utils/config.cmi 
 dumpapprox.cmx: ../asmcomp/clambda.cmx ../asmcomp/compilenv.cmx \
@@ -10,6 +14,8 @@ dumpobj.cmx: ../parsing/asttypes.cmi ../bytecomp/bytesections.cmx \
     ../utils/config.cmx ../bytecomp/emitcode.cmx ../typing/ident.cmx \
     ../bytecomp/instruct.cmx ../bytecomp/lambda.cmx ../bytecomp/opcodes.cmx \
     opnames.cmx ../utils/tbl.cmx 
+lexer301.cmo: ../parsing/location.cmi ../utils/misc.cmi ../utils/warnings.cmi 
+lexer301.cmx: ../parsing/location.cmx ../utils/misc.cmx ../utils/warnings.cmx 
 objinfo.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi 
 objinfo.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
 ocamlcp.cmo: ../driver/main_args.cmi 
@@ -30,3 +36,5 @@ primreq.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi
 primreq.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
 profiling.cmo: profiling.cmi 
 profiling.cmx: profiling.cmi 
+scrapelabels.cmo: lexer301.cmo 
+scrapelabels.cmx: lexer301.cmx 

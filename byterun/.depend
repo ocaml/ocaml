@@ -66,7 +66,7 @@ io.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
 lexing.o: lexing.c fail.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 macintosh.o: macintosh.c misc.h config.h ../config/m.h ../config/s.h \
- rotatecursor.h
+ rotatecursor.h mlvalues.h prims.h
 main.o: main.c misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
  sys.h
 major_gc.o: major_gc.c compact.h config.h ../config/m.h ../config/s.h \
@@ -94,7 +94,7 @@ parsing.o: parsing.c config.h ../config/m.h ../config/s.h mlvalues.h \
 prims.o: prims.c mlvalues.h config.h ../config/m.h ../config/s.h \
  misc.h prims.h
 printexc.o: printexc.c backtrace.h mlvalues.h config.h ../config/m.h \
- ../config/s.h misc.h debugger.h fail.h printexc.h
+ ../config/s.h misc.h callback.h debugger.h fail.h printexc.h
 roots.o: roots.c finalise.h roots.h misc.h config.h ../config/m.h \
  ../config/s.h memory.h gc.h mlvalues.h major_gc.h freelist.h \
  minor_gc.h globroots.h stacks.h
@@ -191,7 +191,7 @@ io.d.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
 lexing.d.o: lexing.c fail.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 macintosh.d.o: macintosh.c misc.h config.h ../config/m.h ../config/s.h \
- rotatecursor.h
+ rotatecursor.h mlvalues.h prims.h
 main.d.o: main.c misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
  sys.h
 major_gc.d.o: major_gc.c compact.h config.h ../config/m.h ../config/s.h \
@@ -219,7 +219,7 @@ parsing.d.o: parsing.c config.h ../config/m.h ../config/s.h mlvalues.h \
 prims.d.o: prims.c mlvalues.h config.h ../config/m.h ../config/s.h \
  misc.h prims.h
 printexc.d.o: printexc.c backtrace.h mlvalues.h config.h ../config/m.h \
- ../config/s.h misc.h debugger.h fail.h printexc.h
+ ../config/s.h misc.h callback.h debugger.h fail.h printexc.h
 roots.d.o: roots.c finalise.h roots.h misc.h config.h ../config/m.h \
  ../config/s.h memory.h gc.h mlvalues.h major_gc.h freelist.h \
  minor_gc.h globroots.h stacks.h

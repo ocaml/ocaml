@@ -12,8 +12,8 @@ closedir.o: closedir.c unixsupport.h
 connect.o: connect.c unixsupport.h socketaddr.h
 cst2constr.o: cst2constr.c cst2constr.h
 cstringv.o: cstringv.c unixsupport.h
-dup2.o: dup2.c unixsupport.h
 dup.o: dup.c unixsupport.h
+dup2.o: dup2.c unixsupport.h
 envir.o: envir.c
 errmsg.o: errmsg.c
 execv.o: execv.c unixsupport.h
@@ -71,8 +71,8 @@ setuid.o: setuid.c unixsupport.h
 shutdown.o: shutdown.c unixsupport.h
 signals.o: signals.c unixsupport.h
 sleep.o: sleep.c unixsupport.h
-socketaddr.o: socketaddr.c unixsupport.h socketaddr.h
 socket.o: socket.c unixsupport.h
+socketaddr.o: socketaddr.c unixsupport.h socketaddr.h
 socketpair.o: socketpair.c unixsupport.h
 sockopt.o: sockopt.c unixsupport.h socketaddr.h
 stat.o: stat.c unixsupport.h cst2constr.h
@@ -88,6 +88,7 @@ unlink.o: unlink.c unixsupport.h
 utimes.o: utimes.c unixsupport.h
 wait.o: wait.c unixsupport.h
 write.o: write.c unixsupport.h
+unixLabels.cmi: unix.cmi 
 unix.cmo: unix.cmi 
 unix.cmx: unix.cmi 
 unixLabels.cmo: unix.cmi unixLabels.cmi 
