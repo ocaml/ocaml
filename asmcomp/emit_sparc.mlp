@@ -230,8 +230,8 @@ let name_for_int_comparison = function
 
 let name_for_float_comparison cmp neg =
   match cmp with
-    Ceq -> if neg then "fbe" else "fbne"
-  | Cne -> if neg then "fbne" else "fbe"
+    Ceq -> if neg then "fbne" else "fbe"
+  | Cne -> if neg then "fbe" else "fbne"
   | Cle -> if neg then "fbug" else "fble"
   | Cgt -> if neg then "fbule" else "fbg"
   | Clt -> if neg then "fbuge" else "fbl"
