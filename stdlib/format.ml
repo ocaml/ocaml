@@ -684,6 +684,8 @@ and get_all_formatter_output_functions =
 external format_int: string -> int -> string = "format_int"
 external format_float: string -> float -> string = "format_float"
 
+let format_invalid_arg s c = invalid_arg (s ^ String.make 1 c);;
+
 let fprintf ppf format =
   let format = (Obj.magic format : string) in
   let limit = String.length format in
@@ -710,7 +712,8 @@ let fprintf ppf format =
       match format.[i] with
       | '@' ->
           let j = succ i in
-          if j >= limit then invalid_arg ("fprintf: unknown format") else
+          if j >= limit then invalid_arg ("fprintf: unknown format " ^ format)
+          else
           begin match format.[j] with
           | '@' ->
               pp_print_char ppf '@';
@@ -740,12 +743,13 @@ let fprintf ppf format =
               let j = do_pp_break ppf (i + 2) in
               doprn j
           | '<' ->
-              let size, j = get_int "fprintf: bad print format" (i + 2) in
+              let size, j =
+                get_int "fprintf: bad print format " format (i + 2) in
               if format.[pred j] != '>'
-               then invalid_arg "fprintf: bad print format"
+               then invalid_arg ("fprintf: bad print format " ^ format)
                else print_as := Some size;
               doprn j
-          | _ -> invalid_arg ("fprintf: unknown format") end
+          | c -> format_invalid_arg "fprintf: unknown format " c end
       | '%' ->
           let j = skip_args (succ i) in
           begin match format.[j] with
@@ -761,7 +765,7 @@ let fprintf ppf format =
                     try
                       int_of_string (String.sub format (i+1) (j-i-1))
                     with _ ->
-                      invalid_arg "fprintf: bad %s format" in
+                      invalid_arg ("fprintf: bad %s format, " ^ format) in
                   if p > 0 && String.length s < p then begin
                     pp_print_as_string ppf
                                   (String.make (p - String.length s) ' ');
@@ -801,7 +805,7 @@ let fprintf ppf format =
                 printer ppf;
                 doprn(succ j))
           | c ->
-              invalid_arg ("fprintf: unknown format")
+              format_invalid_arg "fprintf: unknown format " c
           end
        | c -> pp_print_as_char ppf c; doprn (succ i)
 
@@ -810,20 +814,20 @@ let fprintf ppf format =
     | '0' .. '9' | ' ' | '.' | '-' -> skip_args (succ j)
     | c -> j
 
-  and get_int s i =
-   if i >= limit then invalid_arg s else
+  and get_int s1 s2 i =
+   if i >= limit then invalid_arg (s1 ^ s2) else
    match format.[i] with
-   | ' ' -> get_int s (i + 1)
+   | ' ' -> get_int s1 s2 (i + 1)
    | c ->
       let rec get j =
-       if j >= limit then invalid_arg s else
+       if j >= limit then invalid_arg (s1 ^ s2) else
        match format.[j] with
        | '0' .. '9' | '-' -> get (succ j)
        | '>' | ' ' ->
          if j = i then 0, succ j else
           begin try int_of_string (String.sub format i (j - i)), succ j
-          with Failure _ -> invalid_arg s end
-       | c -> invalid_arg s in
+          with Failure _ -> invalid_arg (s1 ^ s2) end
+       | c -> format_invalid_arg (s1 ^ s2) c in
        get i
 
   and get_box_kind j =
@@ -836,10 +840,10 @@ let fprintf ppf format =
       | 'o' -> 
          let j = succ j in
          if j >= limit
-          then invalid_arg "fprintf: bad box format" else
+          then invalid_arg ("fprintf: bad box format " ^ format) else
          begin match format.[j] with
          | 'v' -> Pp_hovbox, succ j
-         | _ ->  invalid_arg "fprintf: bad box format" end
+         | c ->  format_invalid_arg "fprintf: bad name " c end
       | 'v' -> Pp_hvbox, succ j
       | c -> Pp_hbox, j
       end
@@ -851,9 +855,12 @@ let fprintf ppf format =
    if i >= limit then begin pp_print_space ppf (); i end else
    match format.[i] with
    | '<' ->
-     let nspaces, j = get_int "fprintf: bad break format" (succ i) in
-     let offset, j = get_int "fprintf: bad break format" j in
-     if format.[pred j] != '>' then invalid_arg "fprintf: bad break format"
+     let nspaces, j =
+       get_int "fprintf: bad break format " format (succ i) in
+     let offset, j =
+       get_int "fprintf: bad break format " format j in
+     if format.[pred j] != '>'
+     then invalid_arg "fprintf: bad break format" format
      else pp_print_break ppf nspaces offset;
      j
    | c ->  pp_print_space ppf (); i
@@ -863,7 +870,7 @@ let fprintf ppf format =
    match format.[i] with
    | '<' ->
      let k, j = get_box_kind (succ i) in
-     let size, j = get_int "fprintf: bad box format" j in
+     let size, j = get_int "fprintf: bad box format " format j in
      pp_open_box_gen ppf size k;
      j
    | c ->  pp_open_box_gen ppf 0 Pp_box; i

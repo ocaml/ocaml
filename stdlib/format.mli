@@ -361,9 +361,12 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
            box may be optionally specified with the following syntax:
            the [<] character, followed by an optional box type indication,
            then an optional integer offset, and the closing [>] character. 
-           Box type is one of [h], [v], [hv], or [hov],
-           which stand respectively for an horizontal, vertical,
-           ``horizontal-vertical'' and ``horizontal or vertical'' box.
+           Box type is one of [h], [v], [hv], [b], or [hov],
+           which stand respectively for an horizontal box, a vertical box,
+           an ``horizontal-vertical'' box, or an ``horizontal or
+           vertical'' box ([b] standing for an ``horizontal or
+           vertical'' box demonstrating indentation and [hov] standing
+           for a regular``horizontal or vertical'' box). 
            For instance, [@\[<hov 2>] opens an ``horizontal or vertical''
            box with indentation 2.
 -          [@\]]: close the most recently opened pretty-printing box.
@@ -385,7 +388,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
            it were of length [n].
 -          [@@]: print a plain [@] character.
 
-           Example: [printf "@\[%s@ %i@\]" "x =" 1] is equivalent to 
+           Example: [printf "@\[%s@ %d@\]" "x =" 1] is equivalent to 
            [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()].
            It prints [x = 1] within a pretty-printing box. *)
 
