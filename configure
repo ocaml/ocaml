@@ -429,6 +429,16 @@ fi
 
 echo '#define OCAML_OS_TYPE "Unix"' >> s.h
 
+# If this system has <sys/types.h>, include it in all hasgot tests
+# (FreeBSD 3.x requires it for many headers)
+
+if sh ./hasgot -i sys/types.h; then
+  echo "sys/types.h found."
+  echo "#define HAS_SYS_TYPES_H" >> s.h
+  HAS_SYS_TYPES_H=yes
+  export HAS_SYS_TYPES_H
+fi
+
 # Find a good byte move function
 
 if sh ./runtest -Dcopy=memmove -Dreverse bytecopy.c; then
