@@ -602,7 +602,7 @@ let close_process_out outchan =
 
 let close_process (inchan, outchan) =
   let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
-  close_in inchan;
+  close_in inchan; close_out outchan;
   snd(waitpid [] pid)
 
 (* High-level network functions *)
