@@ -34,6 +34,7 @@ val system : string -> Unix.process_status
 
 val read : Unix.file_descr -> string -> int -> int -> int
 val write : Unix.file_descr -> string -> int -> int -> int
+val single_write : Unix.file_descr -> string -> int -> int -> int
 
 (** {6 Input/output with timeout} *)
 

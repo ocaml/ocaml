@@ -201,7 +201,10 @@ external openfile : string -> open_flag list -> file_perm -> file_descr
 
 external close : file_descr -> unit = "unix_close"
 external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
-external unsafe_write : file_descr -> string -> int -> int -> int = "unix_write"
+external unsafe_write : file_descr -> string -> int -> int -> int
+    = "unix_write"
+external unsafe_single_write : file_descr -> string -> int -> int -> int 
+    = "unix_single_write"
 
 let rec read fd buf ofs len =
   try
@@ -218,6 +221,14 @@ let rec write fd buf ofs len =
     else unsafe_write fd buf ofs len
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
     wait_write fd; write fd buf ofs len
+
+let rec single_write fd buf ofs len =
+  try
+    if ofs < 0 || len < 0 || ofs > String.length buf - len
+    then invalid_arg "Unix.partial_write"
+    else unsafe_single_write fd buf ofs len
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+    wait_write fd; single_write fd buf ofs len
 
 external in_channel_of_descr : file_descr -> in_channel
                              = "caml_ml_open_descriptor_in"

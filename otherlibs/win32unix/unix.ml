@@ -180,6 +180,8 @@ external unsafe_read : file_descr -> string -> int -> int -> int
                      = "unix_read"
 external unsafe_write : file_descr -> string -> int -> int -> int
                       = "unix_write"
+external unsafe_single_write : file_descr -> string -> int -> int -> int
+                      = "unix_single_write"
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > String.length buf - len
@@ -189,6 +191,10 @@ let write fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
+let single_write fd buf ofs len =
+  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  then invalid_arg "Unix.single_write"
+  else unsafe_single_write fd buf ofs len
 
 (* Interfacing with the standard input/output library *)
 
