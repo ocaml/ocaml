@@ -296,41 +296,36 @@ or "int_comparable2".
 
 \subsection*{Using coercions}
 
-Subtyping in ocaml is never implicit.  There are however too ways of getting
-subtyping.  The most general contruction is fully explicit: both the domain
-and the co-domain of the type coercion must be given.
+Subtyping  is never implicit.  There are, however, too ways of getting
+subtyping.  The most general construction is fully explicit: both the domain
+and the codomain of the type coercion must be given.
 
-We have seen that point and colored points are incompatible types.  For
-instanace, the point "p" and the colored point "p'" cannot be put in the same
-list However, a colored point can be coerced to a point, hiding its "color"
+We have seen that point and colored have incompatible types.  For
+instance, they cannot be mixed in the same
+list. However, a colored point can be coerced to a point, hiding its "color"
 method:
 \begin{caml_example}
 let colored_point_to_point cp = (cp : colored_point :> point);;
-\end{caml_example}
-Thus,  "p" and "p'" can be put in the same list as follows
-in the same list, one needs to coerce "p'" to the type of points,
-\begin{caml_example}
 let p = new point 3 and q = new colored_point 4 "blue";;
 let l = [p; (colored_point_to_point q)];;
 \end{caml_example}
-An object of type $t_1$ can be seen as an objetc of type $t_2$ 
-only if $t_1$ is a subtype of $t_2$. For instance, the point "p" cannot be
+An object of type "t" can be seen as an object of type "t'" 
+only if "t" is a subtype of "t'". For instance, a point cannot be
 seen as a colored point. 
 \begin{caml_example}
 (p : point :> colored_point);;
 \end{caml_example}
-Indeed, backward coercions are unsafe, and should be combined with a typecase,
-possible raising a runtime error.  However, there is not such operation
+Indeed, backward coercions are unsafe, and should be combined with a type case,
+possiblly raising a runtime error.  However, there is not such operation
 available in the language. 
 
-Be aware that subtyping and inheritance are not related. 
-Inheritance is a syntactic relation between classed  while subtyping is a
-semantic relation between types. 
-For instance, the class colored points could have been defined directly
-without inheriting from the class of points; still, colored points would be
-subtypes of points. Conversely, the class "int_comparable" inherits from
-class "comparable", but type "int_comparable" is not a subtype of
-"comparable". 
+Be aware that subtyping and inheritance are not related.  Inheritance is a
+syntactic relation between classed while subtyping is a semantic relation
+between types.  For instance, the class of colored points could have been
+defined directly without inheriting from the class of points; the type of
+colored points would remain unchanged and thus a subtype of
+points. Conversely, the class "int_comparable" inherits from class
+"comparable", but type "int_comparable" is not a subtype of "comparable".
 \begin{caml_example}
 function x -> (x : int_comparable :> comparable);;
 \end{caml_example}
@@ -340,7 +335,7 @@ an argument of type "int_comparable" since it accesses its "x" method.
 Considering "p" of type "comparable" would allow call method "leq" on "p"
 with an argument that does not have a method "x", which would be an error.
 
-The domain of a coercion may be ommitted. For instance, one can define:
+The domain of a coercion may be omitted. For instance, one can define:
 \begin{caml_example}
 let to_point cp = (cp :> point);;
 \end{caml_example}
@@ -394,8 +389,8 @@ class c' () as self =
 end;;
 \end{caml_example}
 Moreover, the simple coercion operator "(e :> t)" can be used to
-coerce an object of type "c'" to type "c". It is actually defined so
-as to work fine with classes returning "self" without coercion.
+coerce an object of type "c'" to one of type "c". It is actually defined so
+as to work correctly with classes returning "self" without coercion.
 \begin{caml_example}
 (new c' () :> c);;
 \end{caml_example}
@@ -403,8 +398,8 @@ as to work fine with classes returning "self" without coercion.
 Another common problem may occur when one tries to define a coercion to a
 class "c" inside the definition of class "c". The problem is due to the type
 abbreviation not being completely defined, and so its subtypes are not
-clearly known.  Thus the coercion "(_ : #c :> c)" is the identify function,
-as in
+clearly known.  Then, the coercion "(_ : #c :> c)" is taken to be 
+the identify function, as in
 \begin{caml_example}
 function x -> (x :> 'a);;
 \end{caml_example}
@@ -419,23 +414,28 @@ what is desired
 \begin{caml_example}
 class closed c () as self = method m = (self : #c :> c) end;;
 \end{caml_example}
-This problem can be avoided by first defining the abbreviation
+This problem can be avoided by first defining the abbreviation, 
+using a virtual class:
 \begin{caml_example}
-type c = <m : c>;;
-class c' () as self = method m = (self : #c :> c) end;;
+class virtual c0 () = virtual m : c0 end;;
+class c () as self = method m = (self : #c0 :> c0) end;;
 \end{caml_example}
-The abbreviation could also have been defined using a virtual class:
+Then, the class "c" may be also declared to inherit from the virtual class
+"c0",  so as to simultaneously enforce all methods of "c" to have the same
+type as the methods of "c0".
 \begin{caml_example}
-class virtual c () = virtual m : c end;;
+class c () as self = inherit c0 () method m = (self #c0 :> c0) end;;
 \end{caml_example}
-Then, the class "c'" may be declared to inherit from the virtual class "c", 
-which simultaneously enforces all methods of "c'" to have the same type as
-the methods of "c".
-\begin{caml_example}
-class c' () as self = inherit c () method m = (self : #c :> c) end;;
-\end{caml_example}
-
-
+One could think of defining the type abbreviation directly:
+\begin{caml_eval}
+type c1 = <m : c1>;;
+\end{caml_eval}
+However, this abbreviation "#c1" is undefined (the abbreviation  
+ "#c0" is defined from the class "c0", not from the type "c0"), 
+and should be expanded:
+\begin{caml_eval}
+class c () as self =  method m = (self : <m : c1; ..> as 'a :> c1) end;;
+\end{caml_eval}
 
 
 
@@ -454,7 +454,7 @@ class c' () as self = inherit c () method m = (self : #c :> c) end;;
 
 Class interfaces are inferred from class definitions. 
 They may also be defined directly in interfaces of modules. 
-For instance the following is 
+For instance, the following is 
 the interface of a module defining class point. 
 \begin{caml_example}
 module type POINT = sig 
@@ -468,15 +468,15 @@ module Point : POINT = struct
   class point x = inherit point x end
 end;;
 \end{caml_example}
-It is sometime necessay to restrict the interface of classes. 
-Instance variables can be hiden explicitly in a subclass definition:
+It is sometime necessary to restrict the interface of classes. 
+Instance variables can be hidden explicitly in a subclass definition:
 \begin{caml_example}
 class point x =
   inherit Point.point x
   val private mutable x
 end;;
 \end{caml_example}
-This can also be done implicitly by signature matching:
+Instance variables can also be hidden implicitly by signature matching:
 \begin{caml_example}
 module type ABSPOINT = sig 
   class point (int) =
@@ -487,7 +487,7 @@ end;;
 module Abspoint : ABSPOINT = Point;;
 \end{caml_example}
 However, in the current implementation, 
-methods cannot be hidden implictlty nor explicity.
+methods cannot be hidden implicitly nor explicitly.
 
 
 \subsection*{Simple modules as classes}
@@ -496,11 +496,11 @@ In Objective Caml one often has a choice between using modules or classes.
 
 % XXX some motivation
 
-Indeed, there are situations when the two approches are quite similar. 
+Indeed, there are situations when the two approaches are quite similar. 
 
 % XXX stack example
 
-However, the nice correspondance between the implementations of stacks as 
+However, the nice correspondence between the implementations of stacks as 
 modules or classes is a very particular case. 
 
 % XXX Maps
@@ -517,8 +517,3 @@ modules or classes is a very particular case.
 % problem 
 
 % solution
-
-
-
-
-
