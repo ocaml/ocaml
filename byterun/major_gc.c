@@ -20,6 +20,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "roots.h"
+#include "weak.h"
 
 #ifdef __STDC__
 #include <limits.h>
@@ -48,6 +49,8 @@ unsigned long extra_heap_memory;
 extern char *fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
+
+static void update_weak_pointers ();
 
 static void realloc_gray_vals ()
 {
@@ -157,6 +160,10 @@ static void mark_slice (work)
       limit = chunk + (((heap_chunk_head *) chunk) [-1]).size;
     }else{
       /* Marking is done. */
+
+      update_weak_pointers ();
+      
+      /* Initialise the sweep phase. */
       gray_vals_cur = gray_vals_ptr;
       gc_sweep_hp = heap_start;
       fl_init_merge ();
@@ -168,6 +175,33 @@ static void mark_slice (work)
     }
   }
   gray_vals_cur = gray_vals_ptr;
+}
+
+/* Walk through the linked list of weak arrays.
+   Arrays that are white are removed from this list.
+   For the other arrays, pointers to white objects are erased.
+*/
+static void update_weak_pointers ()
+{
+  value *prev = &weak_list_head;
+  value *cur = (value *) *prev;
+  mlsize_t sz, i;
+
+  while (cur != NULL){
+    if (Color_val (cur) == White){
+      *prev = Field (cur, 0);
+      cur = (value *) *prev;
+    }else{
+      sz = Wosize_val (cur);
+      for (i = 1; i < sz; i++){
+	if (Field (cur, i) != 0 && Is_white_val (Field (cur, i))){
+	  Field (cur, i) = 0;
+	}
+      }
+      prev = &Field (cur, 0);
+      cur = (value *) *prev;
+    }
+  }
 }
 
 static void sweep_slice (work)

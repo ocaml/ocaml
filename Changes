@@ -6,6 +6,8 @@ Objective Caml 1.04:
     a Macintosh with MPW 3.4.1.
   - An application with the toplevel in a window is forthcoming.
 
+* Standard library:
+  - There is a new module for manipulating weak pointers: Weak.
 
 Objective Caml 1.03:
 --------------------

@@ -56,3 +56,4 @@ string.cmo: char.cmi list.cmi string.cmi
 string.cmx: char.cmx list.cmx string.cmi 
 sys.cmo: sys.cmi 
 sys.cmx: sys.cmi 
+weak.cmo: weak.cmi array.cmi

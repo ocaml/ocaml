@@ -8,14 +8,18 @@ callback.o: callback.c callback.h mlvalues.h config.h ../config/m.h \
 compare.o: compare.c fail.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h str.h
+debugger.o: debugger.c config.h ../config/m.h ../config/s.h debugger.h \
+ misc.h mlvalues.h fail.h fix_code.h instruct.h intext.h io.h stacks.h \
+ memory.h gc.h major_gc.h freelist.h minor_gc.h sys.h
 extern.o: extern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
  minor_gc.h reverse.h str.h
 fail.o: fail.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h memory.h major_gc.h freelist.h minor_gc.h \
  signals.h stacks.h
-fix_code.o: fix_code.c config.h ../config/m.h ../config/s.h fix_code.h \
- misc.h mlvalues.h instruct.h reverse.h
+fix_code.o: fix_code.c config.h ../config/m.h ../config/s.h debugger.h \
+ misc.h mlvalues.h fix_code.h instruct.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h reverse.h
 floats.o: floats.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  stacks.h
@@ -31,9 +35,9 @@ intern.o: intern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
  minor_gc.h reverse.h
 interp.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h callback.h fail.h fix_code.h instrtrace.h instruct.h \
- interp.h major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h \
- signals.h stacks.h str.h jumptbl.h
+ mlvalues.h callback.h debugger.h fail.h fix_code.h instrtrace.h \
+ instruct.h interp.h major_gc.h freelist.h memory.h gc.h minor_gc.h \
+ prims.h signals.h stacks.h str.h jumptbl.h
 ints.o: ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  str.h
@@ -43,6 +47,7 @@ io.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
 lexing.o: lexing.c fail.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  str.h
+macintosh.o: macintosh.c
 main.o: main.c misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
  sys.h
 major_gc.o: major_gc.c config.h ../config/m.h ../config/s.h fail.h \
@@ -76,16 +81,18 @@ signals.o: signals.c alloc.h misc.h config.h ../config/m.h \
 stacks.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
- misc.h mlvalues.h exec.h fail.h fix_code.h gc_ctrl.h interp.h \
- intext.h io.h minor_gc.h stacks.h memory.h gc.h major_gc.h freelist.h \
- sys.h
+ misc.h mlvalues.h debugger.h exec.h fail.h fix_code.h gc_ctrl.h \
+ interp.h intext.h io.h minor_gc.h stacks.h memory.h gc.h major_gc.h \
+ freelist.h sys.h
 str.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h
 sys.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
- mlvalues.h fail.h instruct.h signals.h stacks.h memory.h gc.h \
- major_gc.h freelist.h minor_gc.h str.h sys.h
+ mlvalues.h debugger.h fail.h instruct.h signals.h stacks.h memory.h \
+ gc.h major_gc.h freelist.h minor_gc.h str.h sys.h
 terminfo.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
  misc.h mlvalues.h fail.h io.h
+weak.o: weak.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
+ mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 wincmdline.o: wincmdline.c
 alloc.d.o: alloc.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h major_gc.h freelist.h memory.h gc.h minor_gc.h stacks.h
@@ -97,14 +104,18 @@ callback.d.o: callback.c callback.h mlvalues.h config.h ../config/m.h \
 compare.d.o: compare.c fail.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h str.h
+debugger.d.o: debugger.c config.h ../config/m.h ../config/s.h debugger.h \
+ misc.h mlvalues.h fail.h fix_code.h instruct.h intext.h io.h stacks.h \
+ memory.h gc.h major_gc.h freelist.h minor_gc.h sys.h
 extern.d.o: extern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
  minor_gc.h reverse.h str.h
 fail.d.o: fail.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h memory.h major_gc.h freelist.h minor_gc.h \
  signals.h stacks.h
-fix_code.d.o: fix_code.c config.h ../config/m.h ../config/s.h fix_code.h \
- misc.h mlvalues.h instruct.h reverse.h
+fix_code.d.o: fix_code.c config.h ../config/m.h ../config/s.h debugger.h \
+ misc.h mlvalues.h fix_code.h instruct.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h reverse.h
 floats.d.o: floats.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  stacks.h
@@ -121,9 +132,9 @@ intern.d.o: intern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h intext.h io.h memory.h major_gc.h freelist.h \
  minor_gc.h reverse.h
 interp.d.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h callback.h fail.h fix_code.h instrtrace.h instruct.h \
- interp.h major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h \
- signals.h stacks.h str.h
+ mlvalues.h callback.h debugger.h fail.h fix_code.h instrtrace.h \
+ instruct.h interp.h major_gc.h freelist.h memory.h gc.h minor_gc.h \
+ prims.h signals.h stacks.h str.h
 ints.d.o: ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  str.h
@@ -133,6 +144,7 @@ io.d.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
 lexing.d.o: lexing.c fail.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  str.h
+macintosh.d.o: macintosh.c
 main.d.o: main.c misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
  sys.h
 major_gc.d.o: major_gc.c config.h ../config/m.h ../config/s.h fail.h \
@@ -166,14 +178,16 @@ signals.d.o: signals.c alloc.h misc.h config.h ../config/m.h \
 stacks.d.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.d.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
- misc.h mlvalues.h exec.h fail.h fix_code.h gc_ctrl.h interp.h \
- intext.h io.h minor_gc.h stacks.h memory.h gc.h major_gc.h freelist.h \
- sys.h
+ misc.h mlvalues.h debugger.h exec.h fail.h fix_code.h gc_ctrl.h \
+ interp.h intext.h io.h minor_gc.h stacks.h memory.h gc.h major_gc.h \
+ freelist.h sys.h
 str.d.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h
 sys.d.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
- mlvalues.h fail.h instruct.h signals.h stacks.h memory.h gc.h \
- major_gc.h freelist.h minor_gc.h str.h sys.h
+ mlvalues.h debugger.h fail.h instruct.h signals.h stacks.h memory.h \
+ gc.h major_gc.h freelist.h minor_gc.h str.h sys.h
 terminfo.d.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
  misc.h mlvalues.h fail.h io.h
+weak.d.o: weak.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
+ mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 wincmdline.d.o: wincmdline.c
