@@ -237,10 +237,10 @@ let exception_declaration s tyl =
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
-  | Tsig_type(id, d) :: sg ->
+  | Tsig_type(id, d, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
-  | Tsig_module(id, mty) :: sg ->
+  | Tsig_module(id, mty, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_module id (Pident id') s) (id' :: idents) sg
   | Tsig_modtype(id, d) :: sg ->
@@ -248,7 +248,7 @@ let rec rename_bound_idents s idents = function
       rename_bound_idents (add_modtype id (Tmty_ident(Pident id')) s)
                           (id' :: idents) sg
   | (Tsig_value(id, _) | Tsig_exception(id, _) | 
-     Tsig_class(id, _) | Tsig_cltype(id, _)) :: sg ->
+     Tsig_class(id, _, _) | Tsig_cltype(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
 
@@ -281,18 +281,18 @@ and signature_component s comp newid =
   match comp with
     Tsig_value(id, d) ->
       Tsig_value(newid, value_description s d)
-  | Tsig_type(id, d) ->
-      Tsig_type(newid, type_declaration s d)
+  | Tsig_type(id, d, rs) ->
+      Tsig_type(newid, type_declaration s d, rs)
   | Tsig_exception(id, d) ->
       Tsig_exception(newid, exception_declaration s d)
-  | Tsig_module(id, mty) ->
-      Tsig_module(newid, modtype s mty)
+  | Tsig_module(id, mty, rs) ->
+      Tsig_module(newid, modtype s mty, rs)
   | Tsig_modtype(id, d) ->
       Tsig_modtype(newid, modtype_declaration s d)
-  | Tsig_class(id, d) ->
-      Tsig_class(newid, class_declaration s d)
-  | Tsig_cltype(id, d) ->
-      Tsig_cltype(newid, cltype_declaration s d)
+  | Tsig_class(id, d, rs) ->
+      Tsig_class(newid, class_declaration s d, rs)
+  | Tsig_cltype(id, d, rs) ->
+      Tsig_cltype(newid, cltype_declaration s d, rs)
 
 and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract

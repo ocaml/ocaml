@@ -138,21 +138,21 @@ let init_value modl =
                     [Lvar undef_function_id])
           | _ -> raise Not_found in
         init_v :: init_value_struct env rem
-    | Tsig_type(id, tdecl) :: rem ->
+    | Tsig_type(id, tdecl, _) :: rem ->
         init_value_struct (Env.add_type id tdecl env) rem
     | Tsig_exception(id, edecl) :: rem ->
         transl_exception
           id (Some Predef.path_undefined_recursive_module) edecl ::
         init_value_struct env rem
-    | Tsig_module(id, mty) :: rem ->
+    | Tsig_module(id, mty, _) :: rem ->
         init_value_mod env mty ::
         init_value_struct (Env.add_module id mty env) rem
     | Tsig_modtype(id, minfo) :: rem ->
         init_value_struct (Env.add_modtype id minfo env) rem
-    | Tsig_class(id, cdecl) :: rem ->
+    | Tsig_class(id, cdecl, _) :: rem ->
         Translclass.dummy_class (Lvar undef_function_id) ::
         init_value_struct env rem
-    | Tsig_cltype(id, ctyp) :: rem ->
+    | Tsig_cltype(id, ctyp, _) :: rem ->
         init_value_struct env rem
   in
   try

@@ -72,26 +72,35 @@ let merge_constraint initial_env loc sg lid constr =
     match (sg, namelist, constr) with
       ([], _, _) ->
         raise(Error(loc, With_no_component lid))
-    | (Tsig_type(id, decl) :: rem, [s], Pwith_type sdecl)
+    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
         let newdecl = Typedecl.transl_with_constraint initial_env sdecl in
         Includemod.type_declarations env id newdecl decl;
-        Tsig_type(id, newdecl) :: rem
-    | (Tsig_module(id, mty) :: rem, [s], Pwith_module lid)
+        Tsig_type(id, newdecl, rs) :: rem
+    | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
         let (path, mty') = type_module_path initial_env loc lid in
         let newmty = Mtype.strengthen env mty' path in
         ignore(Includemod.modtypes env newmty mty);
-        Tsig_module(id, newmty) :: rem
-    | (Tsig_module(id, mty) :: rem, s :: namelist, _) when Ident.name id = s ->
+        Tsig_module(id, newmty, rs) :: rem
+    | (Tsig_module(id, mty, rs) :: rem, s :: namelist, _)
+      when Ident.name id = s ->
         let newsg = merge env (extract_sig env loc mty) namelist in
-        Tsig_module(id, Tmty_signature newsg) :: rem
+        Tsig_module(id, Tmty_signature newsg, rs) :: rem
     | (item :: rem, _, _) ->
         item :: merge (Env.add_item item env) rem namelist in
   try
     merge initial_env sg (Longident.flatten lid)
   with Includemod.Error explanation ->
     raise(Error(loc, With_mismatch(lid, explanation)))
+
+(* Add recursion flags on declarations arising from a mutually recursive
+   block. *)
+
+let map_rec fn decls rem =
+  match decls with
+  | [] -> rem
+  | d1 :: dl -> fn Trec_first d1 :: map_end (fn Trec_next) dl rem
 
 (* Auxiliary for translating recursively-defined module types.
    Return a module type that approximates the shape of the given module
@@ -128,11 +137,11 @@ let approx_modtype transl_mty init_env smty =
         | Psig_type sdecls ->
             let decls = Typedecl.approx_type_decl env sdecls in
             let rem = approx_sig env srem in
-            map_end (fun (id, info) -> Tsig_type(id, info)) decls rem
+            map_rec (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
         | Psig_module(name, smty) ->
             let mty = approx_mty env smty in
             let (id, newenv) = Env.enter_module name mty env in
-            Tsig_module(id, mty) :: approx_sig newenv srem
+            Tsig_module(id, mty, Trec_not) :: approx_sig newenv srem
         | Psig_recmodule sdecls ->
             let decls =
               List.map
@@ -142,7 +151,7 @@ let approx_modtype transl_mty init_env smty =
             let newenv =
               List.fold_left (fun env (id, mty) -> Env.add_module id mty env)
               env decls in
-            map_end (fun (id, mty) -> Tsig_module(id, mty)) decls
+            map_rec (fun rs (id, mty) -> Tsig_module(id, mty, rs)) decls
                     (approx_sig newenv srem)
         | Psig_modtype(name, sinfo) ->
             let info = approx_mty_info env sinfo in
@@ -163,11 +172,12 @@ let approx_modtype transl_mty init_env smty =
             let decls = Typeclass.approx_class_declarations env sdecls in
             let rem = approx_sig env srem in
             List.flatten
-              (List.map
-                (fun (i1, d1, i2, d2, i3, d3) ->
-                  [Tsig_cltype(i1, d1); Tsig_type(i2, d2); Tsig_type(i3, d3)])
-                decls)
-            @ rem
+              (map_rec
+                (fun rs (i1, d1, i2, d2, i3, d3) ->
+                  [Tsig_cltype(i1, d1, rs);
+                   Tsig_type(i2, d2, rs);
+                   Tsig_type(i3, d3, rs)])
+                decls [rem])
         | _ ->
             approx_sig env srem
 
@@ -204,9 +214,9 @@ let check cl loc set_ref name =
   else set_ref := StringSet.add name !set_ref
 
 let check_sig_item type_names module_names modtype_names loc = function
-    Tsig_type(id, _) ->
+    Tsig_type(id, _, _) ->
       check "type" loc type_names (Ident.name id)
-  | Tsig_module(id, _) ->
+  | Tsig_module(id, _, _) ->
       check "module" loc module_names (Ident.name id)
   | Tsig_modtype(id, _) ->
       check "module type" loc modtype_names (Ident.name id)
@@ -261,7 +271,7 @@ and transl_signature env sg =
               sdecls;
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
             let rem = transl_sig newenv srem in
-            map_end (fun (id, info) -> Tsig_type(id, info)) decls rem
+            map_rec (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
         | Psig_exception(name, sarg) ->
             let arg = Typedecl.transl_exception env sarg in
             let (id, newenv) = Env.enter_exception name arg env in
@@ -272,7 +282,7 @@ and transl_signature env sg =
             let mty = transl_modtype env smty in
             let (id, newenv) = Env.enter_module name mty env in
             let rem = transl_sig newenv srem in
-            Tsig_module(id, mty) :: rem
+            Tsig_module(id, mty, Trec_not) :: rem
         | Psig_recmodule sdecls ->
             List.iter
               (fun (name, smty) ->
@@ -281,7 +291,7 @@ and transl_signature env sg =
             let (decls, newenv) =
               transl_recmodule_modtypes item.psig_loc env sdecls in
             let rem = transl_sig newenv srem in
-            map_end (fun (id, mty) -> Tsig_module(id, mty)) decls rem
+            map_rec (fun rs (id, mty) -> Tsig_module(id, mty, rs)) decls rem
         | Psig_modtype(name, sinfo) ->
             check "module type" item.psig_loc modtype_names name;
             let info = transl_modtype_info env sinfo in
@@ -312,10 +322,12 @@ and transl_signature env sg =
             let (classes, newenv) = Typeclass.class_descriptions env cl in
             let rem = transl_sig newenv srem in
             List.flatten
-              (map_end
-                 (fun (i, d, i', d', i'', d'', i''', d''', _, _, _) ->
-                    [Tsig_class(i, d);    Tsig_cltype(i', d');
-                     Tsig_type(i'', d''); Tsig_type(i''', d''')])
+              (map_rec
+                 (fun rs (i, d, i', d', i'', d'', i''', d''', _, _, _) ->
+                    [Tsig_class(i, d, rs);
+                     Tsig_cltype(i', d', rs);
+                     Tsig_type(i'', d'', rs);
+                     Tsig_type(i''', d''', rs)])
                  classes [rem])
         | Psig_class_type cl ->
             List.iter
@@ -325,10 +337,11 @@ and transl_signature env sg =
             let (classes, newenv) = Typeclass.class_type_declarations env cl in
             let rem = transl_sig newenv srem in
             List.flatten
-              (map_end
-                 (fun (i, d, i', d', i'', d'') ->
-                    [Tsig_cltype(i, d);
-                     Tsig_type(i', d'); Tsig_type(i'', d'')])
+              (map_rec
+                 (fun rs (i, d, i', d', i'', d'') ->
+                    [Tsig_cltype(i, d, rs);
+                     Tsig_type(i', d', rs);
+                     Tsig_type(i'', d'', rs)])
                  classes [rem])
     in transl_sig env sg
 
@@ -379,7 +392,7 @@ let rec closed_modtype = function
 
 and closed_signature_item = function
     Tsig_value(id, desc) -> Ctype.closed_schema desc.val_type
-  | Tsig_module(id, mty) -> closed_modtype mty
+  | Tsig_module(id, mty, _) -> closed_modtype mty
   | _ -> true
 
 let check_nongen_scheme env = function
@@ -407,8 +420,8 @@ let rec bound_value_identifiers = function
   | Tsig_value(id, {val_kind = Val_reg}) :: rem ->
       id :: bound_value_identifiers rem
   | Tsig_exception(id, decl) :: rem -> id :: bound_value_identifiers rem
-  | Tsig_module(id, mty) :: rem -> id :: bound_value_identifiers rem
-  | Tsig_class(id, decl) :: rem -> id :: bound_value_identifiers rem
+  | Tsig_module(id, mty, _) :: rem -> id :: bound_value_identifiers rem
+  | Tsig_class(id, decl, _) :: rem -> id :: bound_value_identifiers rem
   | _ :: rem -> bound_value_identifiers rem
 
 (* Helpers for typing recursive modules *)
@@ -540,7 +553,7 @@ and type_structure anchor env sstr =
           enrich_type_decls anchor decls env newenv in
         let (str_rem, sig_rem, final_env) = type_struct newenv' srem in
         (Tstr_type decls :: str_rem,
-         map_end (fun (id, info) -> Tsig_type(id, info)) decls sig_rem,
+         map_rec (fun rs (id, info) -> Tsig_type(id, info, rs)) decls sig_rem,
          final_env)
     | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
         let arg = Typedecl.transl_exception env sarg in
@@ -563,7 +576,7 @@ and type_structure anchor env sstr =
         let (id, newenv) = Env.enter_module name mty env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (Tstr_module(id, modl) :: str_rem,
-         Tsig_module(id, modl.mod_type) :: sig_rem,
+         Tsig_module(id, modl.mod_type, Trec_not) :: sig_rem,
          final_env)
     | {pstr_desc = Pstr_recmodule sbind; pstr_loc = loc} :: srem ->
         List.iter
@@ -591,7 +604,7 @@ and type_structure anchor env sstr =
         let bind = List.map2 type_recmodule_binding decls sbind in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (Tstr_recmodule bind :: str_rem,
-         map_end (fun (id, modl) -> Tsig_module(id, modl.mod_type))
+         map_rec (fun rs (id, modl) -> Tsig_module(id, modl.mod_type, rs))
                  bind sig_rem,
          final_env)
     | {pstr_desc = Pstr_modtype(name, smty); pstr_loc = loc} :: srem ->
@@ -623,10 +636,12 @@ and type_structure anchor env sstr =
            (List.map (fun (_,_,_,_,_,_, i, d, _,_,_) -> (i, d)) classes) ::
          str_rem,
          List.flatten
-           (map_end
-              (fun (i, d, i', d', i'', d'', i''', d''', _, _, _) ->
-                 [Tsig_class(i, d);    Tsig_cltype(i', d');
-                  Tsig_type(i'', d''); Tsig_type(i''', d''')])
+           (map_rec
+              (fun rs (i, d, i', d', i'', d'', i''', d''', _, _, _) ->
+                 [Tsig_class(i, d, rs);
+                  Tsig_cltype(i', d', rs);
+                  Tsig_type(i'', d'', rs);
+                  Tsig_type(i''', d''', rs)])
               classes [sig_rem]),
          final_env)
     | {pstr_desc = Pstr_class_type cl; pstr_loc = loc} :: srem ->
@@ -643,9 +658,11 @@ and type_structure anchor env sstr =
            (List.map (fun (_, _, _, _, i, d) -> (i, d)) classes) ::
          str_rem,
          List.flatten
-           (map_end
-              (fun (i, d, i', d', i'', d'') ->
-                 [Tsig_cltype(i, d); Tsig_type(i', d'); Tsig_type(i'', d'')])
+           (map_rec
+              (fun rs (i, d, i', d', i'', d'') ->
+                 [Tsig_cltype(i, d, rs);
+                  Tsig_type(i', d', rs);
+                  Tsig_type(i'', d'', rs)])
               classes [sig_rem]),
          final_env)
     | {pstr_desc = Pstr_include smodl; pstr_loc = loc} :: srem ->
@@ -683,7 +700,7 @@ and normalize_signature env = List.iter (normalize_signature_item env)
 
 and normalize_signature_item env = function
     Tsig_value(id, desc) -> Ctype.normalize_type env desc.val_type
-  | Tsig_module(id, mty) -> normalize_modtype env mty
+  | Tsig_module(id, mty, _) -> normalize_modtype env mty
   | _ -> ()
 
 (* Simplify multiple specifications of a value or an exception in a signature.
@@ -710,9 +727,9 @@ and simplify_signature sg =
       simplif val_names (StringSet.add name exn_names)
               (if StringSet.mem name exn_names then res else component :: res)
               sg
-  | Tsig_module(id, mty) :: sg ->
+  | Tsig_module(id, mty, rs) :: sg ->
       simplif val_names exn_names
-              (Tsig_module(id, simplify_modtype mty) :: res) sg
+              (Tsig_module(id, simplify_modtype mty, rs) :: res) sg
   | component :: sg ->
       simplif val_names exn_names (component :: res) sg
   in
@@ -757,7 +774,7 @@ let rec package_signatures subst = function
       let sg' = Subst.signature subst sg in
       let oldid = Ident.create_persistent name
       and newid = Ident.create name in
-      Tsig_module(newid, Tmty_signature sg') ::
+      Tsig_module(newid, Tmty_signature sg', Trec_not) ::
       package_signatures (Subst.add_module oldid (Pident newid) subst) rem
 
 let package_units objfiles cmifile modulename =

@@ -184,13 +184,18 @@ and signature = signature_item list
 
 and signature_item =
     Tsig_value of Ident.t * value_description
-  | Tsig_type of Ident.t * type_declaration
+  | Tsig_type of Ident.t * type_declaration * rec_status
   | Tsig_exception of Ident.t * exception_declaration
-  | Tsig_module of Ident.t * module_type
+  | Tsig_module of Ident.t * module_type * rec_status
   | Tsig_modtype of Ident.t * modtype_declaration
-  | Tsig_class of Ident.t * class_declaration
-  | Tsig_cltype of Ident.t * cltype_declaration
+  | Tsig_class of Ident.t * class_declaration * rec_status
+  | Tsig_cltype of Ident.t * cltype_declaration * rec_status
 
 and modtype_declaration =
     Tmodtype_abstract
   | Tmodtype_manifest of module_type
+
+and rec_status =
+    Trec_not                            (* not recursive *)
+  | Trec_first                          (* first in a recursive group *)
+  | Trec_next                           (* not first in a recursive group *)

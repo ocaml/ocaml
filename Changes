@@ -12,6 +12,9 @@ Both compilers:
 - Simpler represention for method tables. Objects can now be marshalled
   between identical programs with the flag Marshal.Closures.
 - Improved error messages for objects and variants.
+- Improved printing of inferred module signatures (toplevel and ocamlc -i).
+  Recursion between type, class, class type and module definitions is now
+  correctly printed.
 
 Ocamllex:
 - #line directives in the input file are now accepted.
@@ -20,7 +23,7 @@ Ocamlyacc:
 - #line directives in the input file are now accepted.
 
 Runtime System:
-- All global identifiers are now prefixed with "caml" to avoid name clashes
+- All global C identifiers are now prefixed with "caml" to avoid name clashes
   with other libraries.
 
 Mac OS 9 Port:

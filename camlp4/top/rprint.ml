@@ -313,12 +313,14 @@ and print_out_signature ppf =
         print_out_signature items ]
 and print_out_sig_item ppf =
   fun
-  [ Osig_class vir_flag name params clt ->
-      fprintf ppf "@[<2>class%s@ %a%s@ :@ %a@]"
+  [ Osig_class vir_flag name params clt rs ->
+      fprintf ppf "@[<2>%s%s@ %a%s@ :@ %a@]"
+        (if rs = Orec_next then "and" else "class")
         (if vir_flag then " virtual" else "") print_out_class_params params
         name Toploop.print_out_class_type.val clt
-  | Osig_class_type vir_flag name params clt ->
-      fprintf ppf "@[<2>class type%s@ %a%s@ =@ %a@]"
+  | Osig_class_type vir_flag name params clt rs ->
+      fprintf ppf "@[<2>%s%s@ %a%s@ =@ %a@]"
+        (if rs = Orec_next then "and" else "class type")
         (if vir_flag then " virtual" else "") print_out_class_params params
         name Toploop.print_out_class_type.val clt
   | Osig_exception id tyl ->
@@ -328,10 +330,16 @@ and print_out_sig_item ppf =
   | Osig_modtype name mty ->
       fprintf ppf "@[<2>module type %s =@ %a@]" name
         Toploop.print_out_module_type.val mty
-  | Osig_module name mty ->
-      fprintf ppf "@[<2>module %s :@ %a@]" name
+  | Osig_module name mty rs ->
+      fprintf ppf "@[<2>%s %s :@ %a@]" name
+        (match rs with [ Orec_not -> "module"
+                       | Orec_first -> "module rec"
+                       | Orec_next -> "and" ])
         Toploop.print_out_module_type.val mty
-  | Osig_type tdl -> print_out_type_decl_list ppf tdl
+  | Osig_type td rs ->
+      print_out_type_decl
+          (if rs = Orec_next then "and" else "type")
+          ppf td
   | Osig_value name ty prims ->
       let kwd = if prims = [] then "value" else "external" in
       let pr_prims ppf =
@@ -345,16 +353,7 @@ and print_out_sig_item ppf =
       in
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name
         Toploop.print_out_type.val ty pr_prims prims ]
-and print_out_type_decl_list ppf =
-  fun
-  [ [] -> ()
-  | [x] -> print_out_type_decl "type" ppf x
-  | [x :: l] ->
-      do {
-        print_out_type_decl "type" ppf x;
-        List.iter (fun x -> fprintf ppf "@ %a" (print_out_type_decl "and") x)
-          l
-      } ]
+
 and print_out_type_decl kwd ppf (name, args, ty, constraints) =
   let constrain ppf (ty, ty') =
     fprintf ppf "@ @[<2>constraint %a =@ %a@]" Toploop.print_out_type.val ty

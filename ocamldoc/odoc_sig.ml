@@ -51,13 +51,13 @@ module Signature_search =
           Hashtbl.add table (V (Name.from_ident ident)) signat
       | Types.Tsig_exception (ident, _) ->
           Hashtbl.add table (E (Name.from_ident ident)) signat
-      | Types.Tsig_type (ident, _) ->
+      | Types.Tsig_type (ident, _, _) ->
           Hashtbl.add table (T (Name.from_ident ident)) signat
-      | Types.Tsig_class (ident,_) ->
+      | Types.Tsig_class (ident, _, _) ->
           Hashtbl.add table (C (Name.from_ident ident)) signat
-      | Types.Tsig_cltype (ident, _) ->
+      | Types.Tsig_cltype (ident, _, _) ->
           Hashtbl.add table (CT (Name.from_ident ident)) signat
-      | Types.Tsig_module (ident, _) ->
+      | Types.Tsig_module (ident, _, _) ->
           Hashtbl.add table (M (Name.from_ident ident)) signat
       | Types.Tsig_modtype (ident,_) ->
           Hashtbl.add table (MT (Name.from_ident ident)) signat
@@ -80,22 +80,22 @@ module Signature_search =
 
     let search_type table name =
       match Hashtbl.find table (T name) with
-      | (Types.Tsig_type (_, type_decl)) -> type_decl
+      | (Types.Tsig_type (_, type_decl, _)) -> type_decl
       | _ -> assert false
 
     let search_class table name =
       match Hashtbl.find table (C name) with
-      | (Types.Tsig_class (_, class_decl)) -> class_decl
+      | (Types.Tsig_class (_, class_decl, _)) -> class_decl
       | _ -> assert false
 
     let search_class_type table name =
       match Hashtbl.find table (CT name) with
-      | (Types.Tsig_cltype (_, cltype_decl)) -> cltype_decl
+      | (Types.Tsig_cltype (_, cltype_decl, _)) -> cltype_decl
       | _ -> assert false
 
     let search_module table name =
       match Hashtbl.find table (M name) with
-      | (Types.Tsig_module (ident, module_type)) -> module_type
+      | (Types.Tsig_module (ident, module_type, _)) -> module_type
       | _ -> assert false
 
     let search_module_type table name =

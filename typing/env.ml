@@ -420,7 +420,7 @@ let rec prefix_idents root pos sub = function
       let nextpos = match decl.val_kind with Val_prim _ -> pos | _ -> pos+1 in
       let (pl, final_sub) = prefix_idents root nextpos sub rem in
       (p::pl, final_sub)
-  | Tsig_type(id, decl) :: rem ->
+  | Tsig_type(id, decl, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
       let (pl, final_sub) =
         prefix_idents root pos (Subst.add_type id p sub) rem in
@@ -429,7 +429,7 @@ let rec prefix_idents root pos sub = function
       let p = Pdot(root, Ident.name id, pos) in
       let (pl, final_sub) = prefix_idents root (pos+1) sub rem in
       (p::pl, final_sub)
-  | Tsig_module(id, mty) :: rem ->
+  | Tsig_module(id, mty, _) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
       let (pl, final_sub) =
         prefix_idents root (pos+1) (Subst.add_module id p sub) rem in
@@ -440,11 +440,11 @@ let rec prefix_idents root pos sub = function
         prefix_idents root pos
                       (Subst.add_modtype id (Tmty_ident p) sub) rem in
       (p::pl, final_sub)
-  | Tsig_class(id, decl) :: rem ->
+  | Tsig_class(id, decl, _) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
       let (pl, final_sub) = prefix_idents root (pos + 1) sub rem in
       (p::pl, final_sub)
-  | Tsig_cltype(id, decl) :: rem ->
+  | Tsig_cltype(id, decl, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
       let (pl, final_sub) = prefix_idents root pos sub rem in
       (p::pl, final_sub)
@@ -472,7 +472,7 @@ let rec components_of_module env sub path mty =
             begin match decl.val_kind with
               Val_prim _ -> () | _ -> incr pos
             end
-        | Tsig_type(id, decl) ->
+        | Tsig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
             c.comp_types <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_types;
@@ -491,7 +491,7 @@ let rec components_of_module env sub path mty =
             c.comp_constrs <-
               Tbl.add (Ident.name id) (cstr, !pos) c.comp_constrs;
             incr pos
-        | Tsig_module(id, mty) ->
+        | Tsig_module(id, mty, _) ->
             let mty' = Subst.modtype sub mty in
             c.comp_modules <-
               Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
@@ -505,12 +505,12 @@ let rec components_of_module env sub path mty =
             c.comp_modtypes <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_modtypes;
             env := store_modtype id path decl !env
-        | Tsig_class(id, decl) ->
+        | Tsig_class(id, decl, _) ->
             let decl' = Subst.class_declaration sub decl in
             c.comp_classes <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_classes;
             incr pos
-        | Tsig_cltype(id, decl) ->
+        | Tsig_cltype(id, decl, _) ->
             let decl' = Subst.cltype_declaration sub decl in
             c.comp_cltypes <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes)
@@ -652,12 +652,12 @@ and enter_cltype = enter store_cltype
 let add_item comp env =
   match comp with
     Tsig_value(id, decl)     -> add_value id decl env
-  | Tsig_type(id, decl)      -> add_type id decl env
+  | Tsig_type(id, decl, _)   -> add_type id decl env
   | Tsig_exception(id, decl) -> add_exception id decl env
-  | Tsig_module(id, mty)     -> add_module id mty env
+  | Tsig_module(id, mty, _)  -> add_module id mty env
   | Tsig_modtype(id, decl)   -> add_modtype id decl env
-  | Tsig_class(id, decl)     -> add_class id decl env
-  | Tsig_cltype(id, decl)    -> add_cltype id decl env
+  | Tsig_class(id, decl, _)  -> add_class id decl env
+  | Tsig_cltype(id, decl, _) -> add_cltype id decl env
 
 let rec add_signature sg env =
   match sg with
@@ -677,21 +677,21 @@ let open_signature root sg env =
           Tsig_value(id, decl) ->
             store_value (Ident.hide id) p
                         (Subst.value_description sub decl) env
-        | Tsig_type(id, decl) ->
+        | Tsig_type(id, decl, _) ->
             store_type (Ident.hide id) p
                        (Subst.type_declaration sub decl) env
         | Tsig_exception(id, decl) ->
             store_exception (Ident.hide id) p
                             (Subst.exception_declaration sub decl) env
-        | Tsig_module(id, mty) ->
+        | Tsig_module(id, mty, _) ->
             store_module (Ident.hide id) p (Subst.modtype sub mty) env
         | Tsig_modtype(id, decl) ->
             store_modtype (Ident.hide id) p
                           (Subst.modtype_declaration sub decl) env
-        | Tsig_class(id, decl) ->
+        | Tsig_class(id, decl, _) ->
             store_class (Ident.hide id) p
                         (Subst.class_declaration sub decl) env
-        | Tsig_cltype(id, decl) ->
+        | Tsig_cltype(id, decl, _) ->
             store_cltype (Ident.hide id) p
                          (Subst.cltype_declaration sub decl) env)
       env sg pl in

@@ -45,7 +45,7 @@ and strengthen_sig env sg p =
     [] -> []
   | (Tsig_value(id, desc) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
-  | Tsig_type(id, decl) :: rem ->
+  | Tsig_type(id, decl, rs) :: rem ->
       let newdecl =
         match decl.type_manifest with
           None ->
@@ -53,12 +53,12 @@ and strengthen_sig env sg p =
                 Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),
                                             decl.type_params, ref Mnil))) }
         | _ -> decl in
-      Tsig_type(id, newdecl) :: strengthen_sig env rem p
+      Tsig_type(id, newdecl, rs) :: strengthen_sig env rem p
   | (Tsig_exception(id, d) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
-  | Tsig_module(id, mty) :: rem ->
-      Tsig_module(id, strengthen env mty (Pdot(p, Ident.name id, nopos))) ::
-      strengthen_sig (Env.add_module id mty env) rem p
+  | Tsig_module(id, mty, rs) :: rem ->
+      Tsig_module(id, strengthen env mty (Pdot(p, Ident.name id, nopos)), rs)
+      :: strengthen_sig (Env.add_module id mty env) rem p
       (* Need to add the module in case it defines manifest module types *)
   | Tsig_modtype(id, decl) :: rem ->
       let newdecl =
@@ -70,9 +70,9 @@ and strengthen_sig env sg p =
       Tsig_modtype(id, newdecl) ::
       strengthen_sig (Env.add_modtype id decl env) rem p
       (* Need to add the module type in case it is manifest *)
-  | (Tsig_class(id, decl) as sigelt) :: rem ->
+  | (Tsig_class(id, decl, rs) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
-  | (Tsig_cltype(id, decl) as sigelt) :: rem ->
+  | (Tsig_cltype(id, decl, rs) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
@@ -104,12 +104,13 @@ let nondep_supertype env mid mty =
         Tsig_value(id, d) ->
           Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
                           val_kind = d.val_kind}) :: rem'
-      | Tsig_type(id, d) ->
-          Tsig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d) :: rem'
+      | Tsig_type(id, d, rs) ->
+          Tsig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
+          :: rem'
       | Tsig_exception(id, d) ->
           Tsig_exception(id, List.map (Ctype.nondep_type env mid) d) :: rem'
-      | Tsig_module(id, mty) ->
-          Tsig_module(id, nondep_mty va mty) :: rem'
+      | Tsig_module(id, mty, rs) ->
+          Tsig_module(id, nondep_mty va mty, rs) :: rem'
       | Tsig_modtype(id, d) ->
           begin try
             Tsig_modtype(id, nondep_modtype_decl d) :: rem'
@@ -118,10 +119,12 @@ let nondep_supertype env mid mty =
               Co -> Tsig_modtype(id, Tmodtype_abstract) :: rem'
             | _  -> raise Not_found
           end
-      | Tsig_class(id, d) ->
-          Tsig_class(id, Ctype.nondep_class_declaration env mid d) :: rem'
-      | Tsig_cltype(id, d) ->
-          Tsig_cltype(id, Ctype.nondep_cltype_declaration env mid d) :: rem'
+      | Tsig_class(id, d, rs) ->
+          Tsig_class(id, Ctype.nondep_class_declaration env mid d, rs)
+          :: rem'
+      | Tsig_cltype(id, d, rs) ->
+          Tsig_cltype(id, Ctype.nondep_cltype_declaration env mid d, rs)
+          :: rem'
 
   and nondep_modtype_decl = function
       Tmodtype_abstract -> Tmodtype_abstract
@@ -151,10 +154,12 @@ let rec enrich_modtype env p mty =
       mty
 
 and enrich_item env p = function
-    Tsig_type(id, decl) ->
-      Tsig_type(id, enrich_typedecl env (Pdot(p, Ident.name id, nopos)) decl)
-  | Tsig_module(id, mty) ->
-      Tsig_module(id, enrich_modtype env (Pdot(p, Ident.name id, nopos)) mty)
+    Tsig_type(id, decl, rs) ->
+      Tsig_type(id,
+                enrich_typedecl env (Pdot(p, Ident.name id, nopos)) decl, rs)
+  | Tsig_module(id, mty, rs) ->
+      Tsig_module(id,
+                  enrich_modtype env (Pdot(p, Ident.name id, nopos)) mty, rs)
   | item -> item
 
 let rec type_paths env p mty =
@@ -169,9 +174,9 @@ and type_paths_sig env p pos sg =
   | Tsig_value(id, decl) :: rem ->
       let pos' = match decl.val_kind with Val_prim _ -> pos | _ -> pos + 1 in
       type_paths_sig env p pos' rem
-  | Tsig_type(id, decl) :: rem ->
+  | Tsig_type(id, decl, _) :: rem ->
       Pdot(p, Ident.name id, nopos) :: type_paths_sig env p pos rem
-  | Tsig_module(id, mty) :: rem ->
+  | Tsig_module(id, mty, _) :: rem ->
       type_paths env (Pdot(p, Ident.name id, pos)) mty @
       type_paths_sig (Env.add_module id mty env) p (pos+1) rem
   | Tsig_modtype(id, decl) :: rem ->
@@ -195,7 +200,7 @@ and no_code_needed_sig env sg =
       | Val_prim _ -> no_code_needed_sig env rem
       | _ -> false
       end
-  | Tsig_module(id, mty) :: rem ->
+  | Tsig_module(id, mty, _) :: rem ->
       no_code_needed env mty &&
       no_code_needed_sig (Env.add_module id mty env) rem
   | (Tsig_type _ | Tsig_modtype _ | Tsig_cltype _) :: rem ->

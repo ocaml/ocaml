@@ -79,16 +79,22 @@ type out_module_type =
   | Omty_ident of out_ident
   | Omty_signature of out_sig_item list
 and out_sig_item =
-  | Osig_class of bool * string * string list * out_class_type
-  | Osig_class_type of bool * string * string list * out_class_type
+  | Osig_class of
+      bool * string * string list * out_class_type * out_rec_status
+  | Osig_class_type of
+      bool * string * string list * out_class_type * out_rec_status
   | Osig_exception of string * out_type list
   | Osig_modtype of string * out_module_type
-  | Osig_module of string * out_module_type
-  | Osig_type of out_type_decl list
+  | Osig_module of string * out_module_type * out_rec_status
+  | Osig_type of out_type_decl * out_rec_status
   | Osig_value of string * out_type * string list
 and out_type_decl =
   string * (string * (bool * bool)) list * out_type *
   (out_type * out_type) list
+and out_rec_status =
+  | Orec_not
+  | Orec_first
+  | Orec_next
 
 type out_phrase =
   | Ophr_eval of out_value * out_type

@@ -218,12 +218,12 @@ let search_symbol () =
 
 let ident_of_decl ~modlid = function
     Tsig_value (id, _) -> Lident (Ident.name id), Pvalue
-  | Tsig_type (id, _) -> Lident (Ident.name id), Ptype
+  | Tsig_type (id, _, _) -> Lident (Ident.name id), Ptype
   | Tsig_exception (id, _) -> Ldot (modlid, Ident.name id), Pconstructor
-  | Tsig_module (id, _) -> Lident (Ident.name id), Pmodule
+  | Tsig_module (id, _, _) -> Lident (Ident.name id), Pmodule
   | Tsig_modtype (id, _) -> Lident (Ident.name id), Pmodtype
-  | Tsig_class (id, _) -> Lident (Ident.name id), Pclass
-  | Tsig_cltype (id, _) -> Lident (Ident.name id), Pcltype
+  | Tsig_class (id, _, _) -> Lident (Ident.name id), Pclass
+  | Tsig_cltype (id, _, _) -> Lident (Ident.name id), Pcltype
 
 let view_defined ~env ?(show_all=false) modlid =
   try match lookup_module modlid env with path, Tmty_signature sign ->

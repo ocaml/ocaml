@@ -162,23 +162,23 @@ let pr_item env = function
             Some v
       in
       Some (tree, valopt, rem)
-  | Tsig_type(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_type_declaration id decl in
+  | Tsig_type(id, decl, rs) :: rem ->
+      let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)
   | Tsig_exception(id, decl) :: rem ->
       let tree = Printtyp.tree_of_exception_declaration id decl in
       Some (tree, None, rem)
-  | Tsig_module(id, mty) :: rem ->
-      let tree = Printtyp.tree_of_module id mty in
+  | Tsig_module(id, mty, rs) :: rem ->
+      let tree = Printtyp.tree_of_module id mty rs in
       Some (tree, None, rem)
   | Tsig_modtype(id, decl) :: rem ->
       let tree = Printtyp.tree_of_modtype_declaration id decl in
       Some (tree, None, rem)
-  | Tsig_class(id, decl) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_class_declaration id decl in
+  | Tsig_class(id, decl, rs) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
+      let tree = Printtyp.tree_of_class_declaration id decl rs in
       Some (tree, None, rem)
-  | Tsig_cltype(id, decl) :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_cltype_declaration id decl in
+  | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
+      let tree = Printtyp.tree_of_cltype_declaration id decl rs in
       Some (tree, None, rem)
   | _ -> None
 

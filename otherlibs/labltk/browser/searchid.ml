@@ -220,7 +220,7 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
   begin fun item -> match item with
         Tsig_value (id, vd) ->
           if matches vd.val_type then [lid_of_id id, Pvalue] else []
-      | Tsig_type (id, td) ->
+      | Tsig_type (id, td, _) ->
           if
           begin match td.type_manifest with
             None -> false
@@ -238,19 +238,19 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
           if List.exists l ~f:matches
           then [lid_of_id id, Pconstructor]
           else []
-      | Tsig_module (id, Tmty_signature sign) ->
+      | Tsig_module (id, Tmty_signature sign, _) ->
           search_type_in_signature t ~sign ~mode
             ~prefix:(prefix @ [Ident.name id])
       | Tsig_module _ -> []
       | Tsig_modtype _ -> []
-      | Tsig_class (id, cl) ->
+      | Tsig_class (id, cl, _) ->
           let self = self_type cl.cty_type in
           if matches self
           || (match cl.cty_new with None -> false | Some ty -> matches ty)
           (* || List.exists (get_fields ~prefix ~sign self)
               ~f:(fun (_,_,ty_field) -> matches ty_field) *)
           then [lid_of_id id, Pclass] else []
-      | Tsig_cltype (id, cl) ->
+      | Tsig_cltype (id, cl, _) ->
           let self = self_type cl.clty_type in
           if matches self
           (* || List.exists (get_fields ~prefix ~sign self)
@@ -354,16 +354,16 @@ let search_pattern_symbol text =
         List2.flat_map sign ~f:
           begin function
             Tsig_value (i, _) when check i -> [i, Pvalue]
-          | Tsig_type (i, _) when check i -> [i, Ptype]
+          | Tsig_type (i, _, _) when check i -> [i, Ptype]
           | Tsig_exception (i, _) when check i -> [i, Pconstructor]
-          | Tsig_module (i, _) when check i -> [i, Pmodule]
+          | Tsig_module (i, _, _) when check i -> [i, Pmodule]
           | Tsig_modtype (i, _) when check i -> [i, Pmodtype]
-          | Tsig_class (i, cl) when check i
+          | Tsig_class (i, cl, _) when check i
             || List.exists
                 (get_fields ~prefix:[modname] ~sign (self_type cl.cty_type))
                 ~f:(fun (name,_,_) -> check_match ~pattern (explode name))
             -> [i, Pclass]
-          | Tsig_cltype (i, cl) when check i
+          | Tsig_cltype (i, cl, _) when check i
             || List.exists
                 (get_fields ~prefix:[modname] ~sign (self_type cl.clty_type))
                 ~f:(fun (name,_,_) -> check_match ~pattern (explode name))

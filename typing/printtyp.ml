@@ -69,6 +69,13 @@ let rec path ppf = function
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
 
+(* Print a recursive annotation *)
+
+let tree_of_rec = function
+  | Trec_not -> Orec_not
+  | Trec_first -> Orec_first
+  | Trec_next -> Orec_next
+
 (* Print a raw type expression, with sharing *)
 
 let raw_list pr ppf = function
@@ -578,11 +585,11 @@ and tree_of_constructor (name, args) =
 and tree_of_label (name, mut, arg) =
   (name, mut = Mutable, tree_of_typexp false arg)
 
-let tree_of_type_declaration id decl =
-  Osig_type [tree_of_type_decl id decl]
+let tree_of_type_declaration id decl rs =
+  Osig_type (tree_of_type_decl id decl, tree_of_rec rs)
 
 let type_declaration id ppf decl =
-  !Oprint.out_sig_item ppf (tree_of_type_declaration id decl)
+  !Oprint.out_sig_item ppf (tree_of_type_declaration id decl Trec_first)
 
 (* Print an exception declaration *)
 
@@ -712,7 +719,7 @@ let tree_of_class_params = function
       let tyl = tree_of_typlist true params in
       List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
 
-let tree_of_class_declaration id cl =
+let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in
 
   reset ();
@@ -727,12 +734,13 @@ let tree_of_class_declaration id cl =
   let vir_flag = cl.cty_new = None in
   Osig_class
     (vir_flag, Ident.name id, tree_of_class_params params,
-     tree_of_class_type true params cl.cty_type)
+     tree_of_class_type true params cl.cty_type,
+     tree_of_rec rs)
 
 let class_declaration id ppf cl =
-  !Oprint.out_sig_item ppf (tree_of_class_declaration id cl)
+  !Oprint.out_sig_item ppf (tree_of_class_declaration id cl Trec_first)
 
-let tree_of_cltype_declaration id cl =
+let tree_of_cltype_declaration id cl rs =
   let params = List.map repr cl.clty_params in
 
   reset ();
@@ -756,10 +764,11 @@ let tree_of_cltype_declaration id cl =
 
   Osig_class_type
     (virt, Ident.name id, tree_of_class_params params,
-     tree_of_class_type true params cl.clty_type)
+     tree_of_class_type true params cl.clty_type,
+     tree_of_rec rs)
 
 let cltype_declaration id ppf cl =
-  !Oprint.out_sig_item ppf (tree_of_cltype_declaration id cl)
+  !Oprint.out_sig_item ppf (tree_of_cltype_declaration id cl Trec_first)
 
 (* Print a module type *)
 
@@ -774,48 +783,25 @@ let rec tree_of_modtype = function
 
 and tree_of_signature = function
   | [] -> []
-  | item :: rem ->
-      match item with
-      | Tsig_value(id, decl) ->
-          tree_of_value_description id decl :: tree_of_signature rem
-      | Tsig_type(id, decl)  ->
-          let (type_decl_list, rem) =
-            let rec more_type_declarations = function
-            | Tsig_type(id, decl) :: rem ->
-                let (type_decl_list, rem) = more_type_declarations rem in
-                (id, decl) :: type_decl_list, rem
-            | rem -> [], rem in
-            more_type_declarations rem
-          in
-          let type_decl_list =
-            List.map (fun (id, decl) -> tree_of_type_decl id decl)
-              ((id, decl) :: type_decl_list)
-          in
-          Osig_type type_decl_list
-          ::
-          tree_of_signature rem
-      | Tsig_exception(id, decl)  ->
-          Osig_exception (Ident.name id, tree_of_typlist false decl) ::
-          tree_of_signature rem
-      | Tsig_module(id, mty)  ->
-          Osig_module (Ident.name id, tree_of_modtype mty) ::
-          tree_of_signature rem
-      | Tsig_modtype(id, decl)  ->
-          tree_of_modtype_declaration id decl :: tree_of_signature rem
-      | Tsig_class(id, decl) ->
-          let rem =
-            match rem with
-            | ctydecl :: tydecl1 :: tydecl2 :: rem -> rem
-            | _ -> []
-          in
-          tree_of_class_declaration id decl :: tree_of_signature rem
-      | Tsig_cltype(id, decl) ->
-          let rem =
-            match rem with
-            | tydecl1 :: tydecl2 :: rem -> rem
-            | _ -> []
-          in
-          tree_of_cltype_declaration id decl :: tree_of_signature rem
+  | Tsig_value(id, decl) :: rem ->
+      tree_of_value_description id decl :: tree_of_signature rem
+  | Tsig_type(id, decl, rs) :: rem ->
+      Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
+      tree_of_signature rem
+  | Tsig_exception(id, decl) :: rem ->
+      Osig_exception (Ident.name id, tree_of_typlist false decl) ::
+      tree_of_signature rem
+  | Tsig_module(id, mty, rs) :: rem ->
+      Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs) ::
+      tree_of_signature rem
+  | Tsig_modtype(id, decl) :: rem ->
+      tree_of_modtype_declaration id decl :: tree_of_signature rem
+  | Tsig_class(id, decl, rs) :: ctydecl :: tydecl1 :: tydecl2 :: rem ->
+      tree_of_class_declaration id decl rs :: tree_of_signature rem
+  | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
+      tree_of_cltype_declaration id decl rs :: tree_of_signature rem
+  | _ ->
+      assert false
 
 and tree_of_modtype_declaration id decl =
   let mty =
@@ -825,7 +811,8 @@ and tree_of_modtype_declaration id decl =
   in
   Osig_modtype (Ident.name id, mty)
 
-let tree_of_module id mty = Osig_module (Ident.name id, tree_of_modtype mty)
+let tree_of_module id mty rs = 
+  Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
 let modtype_declaration id ppf decl =
