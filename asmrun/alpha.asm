@@ -189,23 +189,22 @@ caml_modify_realloc:
 
         .align  3
 caml_c_call:
-    /* Function to call is in $25 */
+    /* Function to call is in $27 */
         lda     $sp, -16($sp)
         stq     $26, 0($sp)
         stq     $gp, 8($sp)
     /* Rebuild $gp */
-        br      $27, $105
-$105:   ldgp    $gp, 0($27)
+        br      $25, $105
+$105:   ldgp    $gp, 0($25)
     /* Record lowest stack address and return address */
         stq     $26, caml_last_return_address
-	lda	$27, 16($sp)
-        stq     $27, caml_bottom_of_stack
+	lda	$25, 16($sp)
+        stq     $25, caml_bottom_of_stack
     /* Make the exception handler and alloc ptr available to the C code */
         stq     $13, young_ptr
         stq     $15, caml_exception_pointer
     /* Call the function */
-        mov     $25, $27
-        jsr     ($25)
+        jsr     ($27)
     /* Reload alloc ptr */
         ldgp    $gp, 0($26)
         ldq     $13, young_ptr

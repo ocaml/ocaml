@@ -113,7 +113,7 @@ static void init_frame_descriptors()
 
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
-extern value * caml_globals[];
+extern value caml_globals[];
 extern char * caml_bottom_of_stack, * caml_top_of_stack;
 extern unsigned long caml_last_return_address;
 extern value gc_entry_regs[];
@@ -126,15 +126,18 @@ void oldify_local_roots ()
   unsigned long retaddr;
   frame_descr * d;
   unsigned long h;
-  int i, n, ofs;
+  int i, j, n, ofs;
   short * p;
-  value * root;
-  value * block;
+  value glob;
+  value * root, * block;
   struct global_root * gr;
 
   /* The global roots */
-  for (i = 0; caml_globals[i] != 0; i++) 
-    oldify(caml_globals[i], *(caml_globals[i]));
+  for (i = 0; caml_globals[i] != 0; i++) {
+    glob = caml_globals[i];
+    for (j = 0; j < Wosize_val(glob); j++)
+      oldify(&Field(glob, j), Field(glob, j));
+  }
 
   /* The stack */
   if (frame_descriptors == NULL) init_frame_descriptors();
@@ -190,15 +193,18 @@ void darken_all_roots ()
   unsigned long retaddr;
   frame_descr * d;
   unsigned long h;
-  int i, n, ofs;
+  int i, j, n, ofs;
   short * p;
-  value * root;
-  value * block;
+  value glob;
+  value * block, * root;
   struct global_root * gr;
 
   /* The global roots */
-  for (i = 0; caml_globals[i] != 0; i++) 
-    darken(*(caml_globals[i]));
+  for (i = 0; caml_globals[i] != 0; i++) {
+    glob = caml_globals[i];
+    for (j = 0; j < Wosize_val(glob); j++)
+      darken(Field(glob, j));
+  }
 
   /* The stack */
   if (frame_descriptors == NULL) init_frame_descriptors();
@@ -217,12 +223,11 @@ void darken_all_roots ()
       ofs = *p;
       if (ofs >= 0) {
         Assert(ofs < d->frame_size);
-        root = (value *)(sp + ofs);
+        darken(*((value *)(sp + ofs)));
       } else {
         Assert(ofs >= -32);
-        root = &gc_entry_regs[-ofs-1];
+        darken(gc_entry_regs[-ofs-1]);
       }
-      darken(*root);
     }
     /* Move to next frame */
     sp += d->frame_size;
