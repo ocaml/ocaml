@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -29,6 +30,12 @@
 #include "sys.h"
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 #include <sys/resource.h>
+#endif
+
+#ifdef _WIN32
+typedef void (*sighandler)(int sig);
+extern sighandler win32_signal(int sig, sighandler action);
+#define signal(sig,act) win32_signal(sig,act)
 #endif
 
 #if defined(TARGET_power) && defined(SYS_rhapsody)

@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -29,6 +30,7 @@
 #include "ui.h"
 #endif
 
+extern int parser_trace;
 header_t atom_table[256];
 char * static_data_start, * static_data_end;
 char * code_area_start, * code_area_end;
@@ -99,6 +101,7 @@ static void parse_camlrunparam(void)
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &verb_gc); break;
+      case 'p': parser_trace = 1; break;
       }
     }
   }

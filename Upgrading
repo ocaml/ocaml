@@ -1,5 +1,5 @@
 
-      FAQ: how to upgrade from Objective Caml 3.02 to 3.03-alpha
+      FAQ: how to upgrade from Objective Caml 3.02 to 3.03
 
 I Installation
 
@@ -18,14 +18,15 @@ Q2: I get a syntax error when I try to compile a program using stream
 
 A2: Stream parser now require camlp4. It is included in the
     distribution, and you just need to use "ocamlc -pp camlp4o" in
-    place of "ocamlc".
+    place of "ocamlc". You can also use it under the toplevel with
+    #load"camlp4o.cma".
 
 Q3: I get a warning when I use the syntax "#variant" inside type
     expressions.
 
 A3: The new syntax is [< variant], which just a special case of
     the more general new syntax, which allows type expressions like
-    [ variant1 | variant2] of [> variant]. See the reference manual
+    [ variant1 | variant2] or [> variant]. See the reference manual
     for details.
 
 III Label changes

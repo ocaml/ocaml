@@ -8,7 +8,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file LICENSE.         #
 #                                                                       #
 #########################################################################
 
@@ -37,6 +38,10 @@ withcurses=yes
 withsharedlibs=yes
 jocaml=yes
 gcc_warnings="-Wall -Wno-unused"
+
+# Try to turn internationalization off, can cause config.guess to malfunction!
+unset LANG
+unset LC_ALL LC_CTYPE LC_COLLATE LC_MESSAGES LC_MONETARY LC_NUMERIC LC_TIME 
 
 # Parse command-line arguments
 
@@ -199,9 +204,13 @@ case "$bytecc,$host" in
     # GNU C extensions disabled, but __GNUC__ still defined!
     bytecccompopts="-fno-defer-pop $gcc_warnings -U__GNUC__ -posix"
     bytecclinkopts="-posix";;
-  *,*-*-rhapsody*|*,*-*-darwin*)
+  *,*-*-rhapsody*)
     # Almost the same as NeXTStep
     bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
+    mathlib="";;
+  *,*-*-darwin*)
+    # Almost the same as rhapsody
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
     mathlib="";;
   *,*-*-beos*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
@@ -218,6 +227,10 @@ case "$bytecc,$host" in
     echo "#define ARCH_CODE32" >> m.h;;
   cc,alpha*-*-osf*)
     bytecccompopts="-std1 -ieee";;
+  gcc,alpha*-*-linux*)
+    if cc="$bytecc" sh ./hasgot -mieee; then
+      bytecccompopts="-mieee $bytecccompopts";
+    fi;;
   cc,mips-*-irix6*)
     # Add -n32 flag to ensure compatibility with native-code compiler
     bytecccompopts="-n32"
@@ -362,13 +375,25 @@ if $int64_supported; then
   esac
 fi
 
+# Check semantics of division and modulus
+
+sh ./runtest divmod.c
+case $? in
+  0) echo "Native division and modulus have round-towards-zero semantics, will use them."
+     echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
+  1) echo "Native division and modulus do not have round-towards-zero semantics, will use software emulation."
+     echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
+  *) echo "Something went wrong while checking native division and modulus, please report it."
+     echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
+esac
+
 # Shared library support
 
 shared_libraries_supported=false
 sharedcccompopts=''
 mksharedlib=''
 byteccrpath=''
-sharedldtype='cc'
+mksharedlibrpath=''
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
@@ -377,6 +402,7 @@ if test $withsharedlibs = "yes"; then
       mksharedlib="gcc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
       byteccrpath="-Wl,-rpath,"
+      mksharedlibrpath="-Wl,-rpath,"
       shared_libraries_supported=true;;
     alpha*-*-osf*)
       case "$bytecc" in
@@ -385,26 +411,27 @@ if test $withsharedlibs = "yes"; then
       esac
       mksharedlib="ld -shared -expect_unresolved '*' -o"
       byteccrpath="-Wl,-rpath,"
-      sharedldtype="ld"
+      mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     *-*-solaris2*)
       case "$bytecc" in
         gcc*)
           sharedcccompopts="-fPIC"
-	  if sh ./solaris-ld; then
-	  mksharedlib="$bytecc -shared -o"
-          byteccrpath="-Wl,-R"
+          if sh ./solaris-ld; then
+            mksharedlib="$bytecc -shared -o"
+            byteccrpath="-Wl,-R"
+            mksharedlibrpath="-R"
           else
-	  mksharedlib="$bytecc -shared -o"
-          bytecclinkopts="$bytecclinkopts -Wl,-E"
-          byteccrpath="-Wl,-rpath,"
-	  fi
+            mksharedlib="$bytecc -shared -o"
+            bytecclinkopts="$bytecclinkopts -Wl,-E"
+            byteccrpath="-Wl,-rpath,"
+            mksharedlibrpath="-rpath "
+          fi
 	  shared_libraries_supported=true;;
         *)
           sharedcccompopts="-KPIC"
           byteccrpath="-Wl,-R"
 	  mksharedlib="/usr/ccs/bin/ld -G -o"
-          sharedldtype="ld"
 	  shared_libraries_supported=true;;
       esac;;
     mips-sgi-irix[56]*)
@@ -414,7 +441,7 @@ if test $withsharedlibs = "yes"; then
       esac
       mksharedlib="ld -shared -rdata_shared -o"
       byteccrpath="-Wl,-rpath,"
-      sharedldtype="ld"
+      mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
   esac
 fi
@@ -482,7 +509,10 @@ case "$arch,$nativecc,$system,$host_type" in
                        nativecccompopts="-D_XOPEN_SOURCE=500";;
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
+# SHRINKED_GNUC is not necessary for MacOS 10.1 (don't know about 10.0)
+# (but it doesn't matter much for native code anyway)
   *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
+#  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings";;
   *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
@@ -912,17 +942,46 @@ fi
 x11_include="not found"
 x11_link="not found"
 
-for dir in $x11_include_dir \
-  /usr/X11R6/include /usr/X11R5/include /usr/X11R4/include \
-  /usr/include/X11R6 /usr/include/X11R5 /usr/include/X11R4 \
-  /usr/local/X11R6/include /usr/local/X11R5/include /usr/local/X11R4/include \
-  /usr/local/include/X11R6 /usr/local/include/X11R5 /usr/local/include/X11R4 \
-  /usr/X11/include /usr/include/X11 /usr/local/X11/include \
-  /usr/local/include/X11 /usr/X386/include /usr/x386/include \
-  /usr/XFree86/include/X11 /usr/include /usr/local/include \
-  /usr/unsupported/include /usr/athena/include /usr/local/x11r5/include \
-  /usr/lpp/Xamples/include /usr/openwin/include /usr/openwin/share/include \
-  /opt/X11R6/include /opt/X11R5/include
+for dir in \
+    $x11_include_dir          \
+                              \
+    /usr/X11R6/include        \
+    /usr/include/X11R6        \
+    /usr/local/X11R6/include  \
+    /usr/local/include/X11R6  \
+    /opt/X11R6/include        \
+                              \
+    /usr/X11/include          \
+    /usr/include/X11          \
+    /usr/local/X11/include    \
+    /usr/local/include/X11    \
+    /opt/X11/include          \
+                              \
+    /usr/X11R5/include        \
+    /usr/include/X11R5        \
+    /usr/local/X11R5/include  \
+    /usr/local/include/X11R5  \
+    /usr/local/x11r5/include  \
+    /opt/X11R5/include        \
+                              \
+    /usr/X11R4/include        \
+    /usr/include/X11R4        \
+    /usr/local/X11R4/include  \
+    /usr/local/include/X11R4  \
+                              \
+    /usr/X386/include         \
+    /usr/x386/include         \
+    /usr/XFree86/include/X11  \
+                              \
+    /usr/include              \
+    /usr/local/include        \
+    /usr/unsupported/include  \
+    /usr/athena/include       \
+    /usr/lpp/Xamples/include  \
+                              \
+    /usr/openwin/include      \
+    /usr/openwin/share/include \
+    ; \
 do
   if test -f $dir/X11/X.h; then
     x11_include=$dir
@@ -930,17 +989,54 @@ do
   fi
 done
 
-for dir in $x11_lib_dir \
-  /usr/X11R6/lib /usr/X11R5/lib /usr/X11R4/lib \
-  /usr/lib/X11R6 /usr/lib/X11R5 /usr/lib/X11R4 \
-  /usr/local/X11R6/lib /usr/local/X11R5/lib /usr/local/X11R4/lib \
-  /usr/local/lib/X11R6 /usr/local/lib/X11R5 /usr/local/lib/X11R4 \
-  /usr/X11/lib /usr/lib/X11 /usr/local/X11/lib \
-  /usr/local/lib/X11 /usr/X386/lib /usr/x386/lib \
-  /usr/XFree86/lib/X11 /usr/lib /usr/local/lib \
-  /usr/unsupported/lib /usr/athena/lib /usr/local/x11r5/lib \
-  /usr/lpp/Xamples/lib /usr/openwin/lib /usr/openwin/share/lib \
-  /opt/X11R6/lib /opt/X11R5/lib
+if test "$x11_include" = "not found"; then
+  x11_try_lib_dir=''
+else
+  x11_try_lib_dir=`echo $x11_include | sed -e 's|include|lib|'`
+fi
+
+for dir in \
+    $x11_lib_dir          \
+    $x11_try_lib_dir      \
+                          \
+    /usr/X11R6/lib        \
+    /usr/lib/X11R6        \
+    /usr/local/X11R6/lib  \
+    /usr/local/lib/X11R6  \
+    /opt/X11R6/lib        \
+                          \
+    /usr/X11/lib          \
+    /usr/lib/X11          \
+    /usr/local/X11/lib    \
+    /usr/local/lib/X11    \
+    /opt/X11/lib          \
+                          \
+    /usr/X11R5/lib        \
+    /usr/lib/X11R5        \
+    /usr/local/X11R5/lib  \
+    /usr/local/lib/X11R5  \
+    /usr/local/x11r5/lib  \
+    /opt/X11R5/lib        \
+                          \
+    /usr/X11R4/lib        \
+    /usr/lib/X11R4        \
+    /usr/local/X11R4/lib  \
+    /usr/local/lib/X11R4  \
+                          \
+    /usr/X386/lib         \
+    /usr/x386/lib         \
+    /usr/XFree86/lib/X11  \
+                          \
+    /usr/lib              \
+    /usr/local/lib        \
+    /usr/unsupported/lib  \
+    /usr/athena/lib       \
+    /usr/lpp/Xamples/lib  \
+    /lib/usr/lib/X11	  \
+                          \
+    /usr/openwin/lib      \
+    /usr/openwin/share/lib \
+    ; \
 do
   if test -f $dir/libX11.a || \
      test -f $dir/libX11.so || \
@@ -977,7 +1073,7 @@ fi
 
 dbm_include="not found"
 dbm_link="not found"
-for dir in /usr/include /usr/include/gdbm /usr/include/db1; do
+for dir in /usr/include /usr/include/db1 /usr/include/gdbm; do
   if test -f $dir/ndbm.h; then
     dbm_include=$dir
     if sh ./hasgot dbm_open; then
@@ -986,6 +1082,8 @@ for dir in /usr/include /usr/include/gdbm /usr/include/db1; do
       dbm_link="-lndbm"
     elif sh ./hasgot -ldb1 dbm_open; then
       dbm_link="-ldb1"
+    elif sh ./hasgot -lgdbm dbm_open; then
+      dbm_link="-lgdbm"
     else
       dbm_include="not found"
     fi
@@ -1122,14 +1220,13 @@ cclibs="$cclibs $mathlib"
 echo "BYTECC=$bytecc" >> Makefile
 echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
-echo "BYTECCLIBS=$cclibs $dllib $curseslibs" >> Makefile
+echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link" >> Makefile
 echo "BYTECCRPATH=$byteccrpath" >> Makefile
 echo "EXE=$exe" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
 echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
 echo "MKSHAREDLIB=$mksharedlib" >> Makefile
-echo "SHAREDLDTYPE=$sharedldtype" >> Makefile
-
+echo "MKSHAREDLIBRPATH=$mksharedlibrpath" >> Makefile
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
@@ -1166,11 +1263,11 @@ echo "        manual pages.............. $mandir (with extension .$manext)"
 echo "Configuration for the bytecode compiler:"
 echo "        C compiler used........... $bytecc"
 echo "        options for compiling..... $bytecccompopts"
-echo "        options for linking....... $bytecclinkopts $cclibs $dllib $curseslibs"
+echo "        options for linking....... $bytecclinkopts $cclibs $dllib $curseslibs $pthread_link"
 if $shared_libraries_supported; then
 echo "        shared libraries are supported"
 echo "        options for compiling..... $sharedcccompopts $bytecccompopts"
-echo "        command for building...... $mksharedlib <target>.so <objects>"
+echo "        command for building...... $mksharedlib lib.so $mksharedlibrpath/a/path objs"
 else
 echo "        shared libraries not supported"
 fi

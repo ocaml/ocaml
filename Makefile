@@ -1,4 +1,3 @@
-
 #########################################################################
 #                                                                       #
 #                            Objective Caml                             #
@@ -59,7 +58,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/transljoin.cmo bytecomp/transldyn.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
-  bytecomp/simplif.cmo bytecomp/runtimedef.cmo bytecomp/dllpath.cmo
+  bytecomp/simplif.cmo bytecomp/runtimedef.cmo
 
 BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
@@ -104,14 +103,23 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
   typing/ident.cmo typing/path.cmo typing/types.cmo typing/btype.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
-  bytecomp/dllpath.cmo bytecomp/dll.cmo \
-  bytecomp/symtable.cmo toplevel/expunge.cmo
+  bytecomp/dll.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
 PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   lexing list map obj parsing pervasives printexc printf queue random \
   set sort stack string stream sys oo genlex topdirs toploop weak lazy \
   marshal int32 int64 nativeint outcometree \
   arrayLabels listLabels stringLabels stdLabels
+
+# For users who don't read the INSTALL file
+defaultentry:
+	@echo "Please refer to the installation instructions in file INSTALL."
+	@echo "If you've just unpacked the distribution, something like"
+	@echo "	./configure"
+	@echo "	make world"
+	@echo "	make opt"
+	@echo "	make install"
+	@echo "should work.  But see the file INSTALL for more details."
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
@@ -215,7 +223,9 @@ opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt camlp4optopt
 install: FORCE
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
+	if test -d $(LIBDIR)/shlibs; then : ; else $(MKDIR) $(LIBDIR)/shlibs; fi
 	if test -d $(MANDIR); then : ; else $(MKDIR) $(MANDIR); fi
+	rm -f $(LIBDIR)/lib*.so
 	cd byterun; $(MAKE) install
 	if test -r $(LIBDIR)/ld.conf; then :; else echo "$(LIBDIR)" > $(LIBDIR)/ld.conf; fi
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)
@@ -230,9 +240,11 @@ install: FORCE
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
 	-cd man; $(MAKE) install
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) install); done
+	for i in $(OTHERLIBRARIES); do \
+          (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
+        done
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	cd camlp4; $(MAKE) install
+	cd camlp4; $(MAKE) install LIBDIR=$(LIBDIR)/camlp4
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi
 	if test -f jocparsing/jocp; then (cd jocparsing; $(MAKE) install); else :; fi
 
@@ -241,7 +253,7 @@ installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt); done
+	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlc.opt; then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
 	if test -f ocamlopt.opt; then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
 	if test -f lex/ocamllex.opt; then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE); else :; fi
@@ -285,11 +297,9 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%BYTERUN%%|$(BINDIR)/ocamlrun|' \
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
             -e 's|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
-            -e 's|%%BYTECCRPATH%%|$(BYTECCRPATH)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
             -e 's|%%NATIVELINK%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
             -e 's|%%PARTIALLD%%|ld -r $(NATIVECCLINKOPTS)|' \
-            -e 's|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|' \
             -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
             -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
             -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
@@ -520,11 +530,17 @@ alldepend::
 # The extra libraries
 
 otherlibraries:
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) all); done
+	for i in $(OTHERLIBRARIES); do \
+          (cd otherlibs/$$i; $(MAKE) all) || exit $$?; \
+        done
 otherlibrariesopt:
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) allopt); done
+	for i in $(OTHERLIBRARIES); do \
+          (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
+        done
 partialclean::
-	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) partialclean); done
+	for i in $(OTHERLIBRARIES); do \
+          (cd otherlibs/$$i; $(MAKE) partialclean); \
+        done
 clean::
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) clean); done
 alldepend::
@@ -542,15 +558,15 @@ alldepend::
 # Camlp4
 
 camlp4out: ocamlc
-	set -e; cd camlp4; $(MAKE) all
+	cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
-	set -e; cd camlp4; $(MAKE) opt
+	cd camlp4; $(MAKE) opt
 camlp4optopt: ocamlopt
-	set -e; cd camlp4; $(MAKE) optp4
+	cd camlp4; $(MAKE) optp4
 partialclean::
-	set -e; cd camlp4; $(MAKE) clean
+	cd camlp4; $(MAKE) clean
 alldepend::
-	set -e; cd camlp4; $(MAKE) depend
+	cd camlp4; $(MAKE) depend
 
 # Parser for jocaml
 jocp: ocamlc

@@ -55,7 +55,7 @@ COMP=bytecomp\lambda.cmo bytecomp\printlambda.cmo \
   bytecomp\typeopt.cmo bytecomp\switch.cmo bytecomp\matching.cmo \
   bytecomp\translobj.cmo bytecomp\translcore.cmo \
   bytecomp\translclass.cmo bytecomp\translmod.cmo \
-  bytecomp\simplif.cmo bytecomp\runtimedef.cmo bytecomp\dllpath.cmo
+  bytecomp\simplif.cmo bytecomp\runtimedef.cmo
 
 BYTECOMP=bytecomp\meta.cmo bytecomp\instruct.cmo bytecomp\bytegen.cmo \
   bytecomp\printinstr.cmo bytecomp\opcodes.cmo bytecomp\emitcode.cmo \
@@ -99,7 +99,7 @@ EXPUNGEOBJS=utils\misc.cmo utils\tbl.cmo \
   utils\config.cmo utils\clflags.cmo \
   typing\ident.cmo typing\path.cmo typing\types.cmo typing\btype.cmo \
   typing\predef.cmo bytecomp\runtimedef.cmo bytecomp\bytesections.cmo \
-  bytecomp\dllpath.cmo bytecomp\dll.cmo \
+  bytecomp\dll.cmo \
   bytecomp\symtable.cmo toplevel\expunge.cmo
 
 PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
@@ -108,8 +108,12 @@ PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   marshal int32 int64 nativeint outcometree \
   arrayLabels listLabels stringLabels stdLabels
 
+# For users who don't read the INSTALL file
+defaultentry:
+	@echo "Please refer to the installation instructions in file README.win32."
+
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries camlp4out
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries camlp4out win32gui
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -226,7 +230,7 @@ installbyt:
 	cp toplevel\topdirs.cmi $(LIBDIR)\topdirs.cmi
 	cd tools & $(MAKEREC) install
 	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) install & cd ..\..)
-	if exist wingui cd wingui & $(MAKE) -nologo install
+	cd win32caml & $(MAKE) -nologo install
 	copy /a README $(DISTRIB)\Readme.gen
 	copy /a README.win32 $(DISTRIB)\Readme.win
 	copy /a LICENSE $(DISTRIB)\License.txt
@@ -530,6 +534,13 @@ camlp4opt:
 	cd camlp4 & make opt
 partialclean::
 	cd camlp4 & make clean
+
+# The Win32 toplevel GUI
+
+win32gui:
+	cd win32caml & $(MAKE) all
+clean::
+	cd win32caml & $(MAKE) clean
 
 # Default rules
 
