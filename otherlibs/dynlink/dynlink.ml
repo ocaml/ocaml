@@ -28,6 +28,7 @@ type error =
   | Unsafe_file
   | Linking_error of string * linking_error
   | Corrupted_interface of string
+  | File_not_found of string
 
 exception Error of error
 
@@ -70,7 +71,12 @@ let add_available_units units =
 (* Read the CRC of an interface from its .cmi file *)
 
 let digest_interface unit loadpath =
-  let filename = Misc.find_in_path loadpath (String.uncapitalize unit ^ ".cmi") in
+  let filename =
+    let shortname = String.uncapitalize unit ^ ".cmi" in
+    try
+      Misc.find_in_path loadpath shortname
+    with Not_found ->
+      raise (Error(File_not_found shortname)) in
   let ic = open_in_bin filename in
   try
     let buffer = String.create (String.length Config.cmi_magic_number) in
@@ -211,4 +217,5 @@ let error_message = function
       "The module `" ^ s ^ "' is not yet initialized"
   | Corrupted_interface name ->
       "corrupted interface file " ^ name
-
+  | File_not_found name ->
+      "cannot find file " ^ name ^ " in search path"

@@ -63,6 +63,7 @@ type error =
   | Unsafe_file
   | Linking_error of string * linking_error
   | Corrupted_interface of string
+  | File_not_found of string
 exception Error of error
         (* Errors in dynamic linking are reported by raising the [Error]
            exception with a description of the error. *)
