@@ -105,7 +105,7 @@ an object type constructor are rejected.
 
 \begin{syntax}
 variant-type:
-        [ tag-spec ] { '|' tag-spec }
+        [ '|' ] tag-spec { '|' tag-spec }
       | '>' [ tag-spec ] { '|' tag-spec }
       | '<' [ '|' ] tag-spec-full { '|' tag-spec-full } [ '>' {{ '`'tag-name }} ]
 ;
@@ -123,8 +123,7 @@ Variant types describe the values a polymorphic variant may take.
 
 The first case is an exact variant type: all possible tags are
 known, with their associated types, and they can all be present.
-Its structure is fully known. A special case is the empty type,
-with no tag, which contains no value.
+Its structure is fully known.
 
 The second case is an open variant type, describing a polymorphic
 variant value: it gives the list of all tags the value could take,
