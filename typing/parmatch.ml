@@ -832,11 +832,12 @@ type 'a result =
   | Rnone           (* No matching value *)
   | Rsome of 'a     (* This matching value *)
 
-let rec try_many f = function
+(* boolean argument ``variants'' is unused at present *)
+let rec try_many variants f = function
   | [] -> Rnone
   | x::rest ->
       begin match f x with
-      | Rnone -> try_many f rest
+      | Rnone -> try_many variants f rest
       | r -> r
       end
 
@@ -861,15 +862,15 @@ let rec exhaust variants tdefs pss n = match pss with
           | Rsome r -> Rsome (set_args p r)
           | r       -> r in
         if full_match tdefs true constrs
-        then try_many try_non_omega constrs
+        then try_many variants try_non_omega constrs
         else
           match exhaust variants tdefs (filter_extra pss) (n-1) with
-          | Rnone ->   try_many try_non_omega constrs
+          | Rnone ->   try_many variants try_non_omega constrs
           | Rsome r ->
               (* try all constructors anyway, for variant typing ! *)
               (* Note: it may impact dramatically on cost *)
               if variants then
-                ignore (try_many try_non_omega constrs) ;
+                ignore (try_many variants try_non_omega constrs) ;
               try
                 Rsome (build_other constrs::r)
               with

@@ -1043,3 +1043,31 @@ test "seb" seb ((0,Uout),Uin) 2 ;
 ()
 ;;
 
+(* Talk with Jacques
+     - type 'b is still open ??
+     - better case generation, accept intervals of size 1 when ok_inter is
+       false (in Switch)
+*)
+
+(*
+File "morematch.ml", line 1060, characters 8-65:
+Warning: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+A `D
+*)
+type ('a, 'b) t_j = A of 'a | B of 'b * 'a | C
+
+let f = function
+  | A (`A|`C) -> 0
+  | B (`B,`D) -> 1
+  | C -> 2
+
+let g x = try f x with Match_failure _ -> 3
+
+let _ =
+  test "jacques" g (A `A) 0 ;
+  test "jacques" g (A `C) 0 ;
+  test "jacques" g (B (`B,`D)) 1 ;
+  test "jacaues" g C 2 ;
+  test "jacques" g (B (`A,`D)) 3 ;
+  ()

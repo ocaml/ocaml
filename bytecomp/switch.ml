@@ -332,35 +332,86 @@ let make_key  cases =
 *)
   
 let inter_limit = 1 lsl 16
- 
+
 let ok_inter = ref false
 
 let rec opt_count top cases =
-      let key = make_key cases in
-      try
-        let r = Hashtbl.find t key in
-        r
-      with
-      | Not_found ->
-          let r =
-            let lcases = Array.length cases in
-            match lcases with
-            | 0 -> assert false
-            | _ when same_act cases -> No, ({n=0; ni=0},{n=0; ni=0})
-            | _ ->
-                if lcases < !cut then
-                  enum top cases
-                else if lcases < !more_cut then
-                  heuristic top cases
-                else
-                  divide top cases in
-          Hashtbl.add t key r ;
-          r
-
-    and divide top cases =
-      let lcases = Array.length cases in
-      let m = lcases/2 in
-      let _,left,right = coupe cases m in
+  let key = make_key cases in
+  try
+    let r = Hashtbl.find t key in
+    r
+  with
+  | Not_found ->
+      let r =
+        let lcases = Array.length cases in
+        match lcases with
+        | 0 -> assert false
+        | _ when same_act cases -> No, ({n=0; ni=0},{n=0; ni=0})
+        | _ ->
+            if lcases < !cut then
+              enum top cases
+            else if lcases < !more_cut then
+              heuristic top cases
+            else
+              divide top cases in
+      Hashtbl.add t key r ;
+      r
+        
+and divide top cases =
+  let lcases = Array.length cases in
+  let m = lcases/2 in
+  let _,left,right = coupe cases m in
+  let ci = {n=1 ; ni=0}
+  and cm = {n=1 ; ni=0}
+  and _,(cml,cleft) = opt_count false left
+  and _,(cmr,cright) = opt_count false right in
+  add_test ci cleft ;
+  add_test ci cright ;
+  if less_tests cml cmr then
+    add_test cm cmr
+  else
+    add_test cm cml ;
+  Sep m,(cm, ci)
+    
+and heuristic top cases =
+  let lcases = Array.length cases in
+  
+  let sep,csep = divide false cases
+      
+  and inter,cinter =
+    if !ok_inter then begin
+      let _,_,act0 = cases.(0)
+      and _,_,act1 = cases.(lcases-1) in
+      if act0 = act1 then begin
+        let low, high, inside, outside = coupe_inter 1 (lcases-2) cases in
+        let _,(cmi,cinside) = opt_count false inside
+        and _,(cmo,coutside) = opt_count false outside
+        and cmij = {n=1 ; ni=(if low=high then 0 else 1)}
+        and cij = {n=1 ; ni=(if low=high then 0 else 1)} in
+        add_test cij cinside ;
+        add_test cij coutside ;
+        if less_tests cmi cmo then
+          add_test cmij cmo
+        else
+          add_test cmij cmi ;
+        Inter (1,lcases-2),(cmij,cij)
+      end else
+        Inter (-1,-1),(too_much, too_much)
+    end else
+      Inter (-1,-1),(too_much, too_much) in          
+  if less2tests csep cinter then
+    sep,csep
+  else
+    inter,cinter
+      
+      
+and enum top cases =
+  let lcases = Array.length cases in
+  let lim, with_sep =
+    let best = ref (-1) and best_cost = ref (too_much,too_much) in
+    
+    for i = 1 to lcases-(1) do
+      let _,left,right = coupe cases i in
       let ci = {n=1 ; ni=0}
       and cm = {n=1 ; ni=0}
       and _,(cml,cleft) = opt_count false left
@@ -371,180 +422,152 @@ let rec opt_count top cases =
         add_test cm cmr
       else
         add_test cm cml ;
-      Sep m,(cm, ci)
+      
+      if
+        less2tests (cm,ci) !best_cost
+      then begin
+        if top then
+          Printf.fprintf stderr "Get it: %d\n" i ;
+        best := i ;
+        best_cost := (cm,ci)
+      end
+    done ;
+    !best, !best_cost in
 
-    and heuristic top cases =
-      let lcases = Array.length cases in
-
-      let sep,csep = divide false cases
-
-      and inter,cinter =
-        if !ok_inter then begin
-          let _,_,act0 = cases.(0)
-          and _,_,act1 = cases.(lcases-1) in
-          if act0 = act1 then begin
-            let low, high, inside, outside = coupe_inter 1 (lcases-2) cases in
-            let _,(cmi,cinside) = opt_count false inside
-            and _,(cmo,coutside) = opt_count false outside
-            and cmij = {n=1 ; ni=(if low=high then 0 else 1)}
-            and cij = {n=1 ; ni=(if low=high then 0 else 1)} in
-            add_test cij cinside ;
-            add_test cij coutside ;
-            if less_tests cmi cmo then
-              add_test cmij cmo
-            else
-              add_test cmij cmi ;
-            Inter (1,lcases-2),(cmij,cij)
-          end else
-            Inter (-1,-1),(too_much, too_much)
-        end else
-            Inter (-1,-1),(too_much, too_much) in          
-      if less2tests csep cinter then
-        sep,csep
-      else
-        inter,cinter
-
-
-    and enum top cases =
-      let lcases = Array.length cases in
-      let lim, with_sep =
-        let best = ref (-1) and best_cost = ref (too_much,too_much) in
-
-        for i = 1 to lcases-(1) do
-          let _,left,right = coupe cases i in
-          let ci = {n=1 ; ni=0}
-          and cm = {n=1 ; ni=0}
-          and _,(cml,cleft) = opt_count false left
-          and _,(cmr,cright) = opt_count false right in
-          add_test ci cleft ;
-          add_test ci cright ;
-          if less_tests cml cmr then
-            add_test cm cmr
+  let ilow, ihigh, with_inter =
+    if not !ok_inter then
+      let rlow = ref (-1) and rhigh = ref (-1)
+      and best_cost= ref (too_much,too_much) in
+      for i=1 to lcases-2 do
+        let low, high, inside, outside = coupe_inter i i cases in
+         if low=high then begin
+           let _,(cmi,cinside) = opt_count false inside
+           and _,(cmo,coutside) = opt_count false outside
+           and cmij = {n=1 ; ni=0}
+           and cij = {n=1 ; ni=0} in
+           add_test cij cinside ;
+           add_test cij coutside ;
+           if less_tests cmi cmo then
+             add_test cmij cmo
+           else
+             add_test cmij cmi ;
+           if less2tests (cmij,cij) !best_cost then begin
+             rlow := i ;
+             rhigh := i ;
+             best_cost := (cmij,cij)
+           end
+         end
+      done ;
+      !rlow, !rhigh, !best_cost
+    else
+      let rlow = ref (-1) and rhigh = ref (-1)
+      and best_cost= ref (too_much,too_much) in
+      for i=1 to lcases-2 do
+        for j=i to lcases-2 do
+          let low, high, inside, outside = coupe_inter i j cases in
+          let _,(cmi,cinside) = opt_count false inside
+          and _,(cmo,coutside) = opt_count false outside
+          and cmij = {n=1 ; ni=(if low=high then 0 else 1)}
+          and cij = {n=1 ; ni=(if low=high then 0 else 1)} in
+          add_test cij cinside ;
+          add_test cij coutside ;
+          if less_tests cmi cmo then
+            add_test cmij cmo
           else
-            add_test cm cml ;
-          
-          if
-            less2tests (cm,ci) !best_cost
-          then begin
-            if top then
-              Printf.fprintf stderr "Get it: %d\n" i ;
-            best := i ;
-            best_cost := (cm,ci)
+            add_test cmij cmi ;
+          if less2tests (cmij,cij) !best_cost then begin
+            rlow := i ;
+            rhigh := j ;
+            best_cost := (cmij,cij)
           end
-        done ;
-        !best, !best_cost in
-      let ilow, ihigh, with_inter =
-        if not !ok_inter then
-          -1,-1,(too_much,too_much)
-        else
-          let rlow = ref (-1) and rhigh = ref (-1)
-          and best_cost= ref (too_much,too_much) in
-          for i=1 to lcases-2 do
-            for j=i to lcases-2 do
-              let low, high, inside, outside = coupe_inter i j cases in
-              let _,(cmi,cinside) = opt_count false inside
-              and _,(cmo,coutside) = opt_count false outside
-              and cmij = {n=1 ; ni=(if low=high then 0 else 1)}
-              and cij = {n=1 ; ni=(if low=high then 0 else 1)} in
-              add_test cij cinside ;
-              add_test cij coutside ;
-              if less_tests cmi cmo then
-                add_test cmij cmo
-              else
-                add_test cmij cmi ;
-              if less2tests (cmij,cij) !best_cost then begin
-                rlow := i ;
-                rhigh := j ;
-                best_cost := (cmij,cij)
-              end
-            done
-          done ;
-          !rlow, !rhigh, !best_cost in
-      let r = ref (Inter (ilow,ihigh)) and rc = ref with_inter in
-      if less2tests with_sep !rc then begin
-        r := Sep lim ; rc := with_sep
-      end ;
-      !r, !rc
-
-let make_if_test konst test arg i ifso ifnot =
-  Arg.make_if
-    (Arg.make_prim test [arg ; konst i])
-    ifso ifnot
-
-let make_if_lt konst arg i  ifso ifnot = match i with
-| 1 ->
-    make_if_test konst Arg.leint arg 0 ifso ifnot
-| _ ->
-    make_if_test konst Arg.ltint arg i ifso ifnot
+        done
+      done ;
+      !rlow, !rhigh, !best_cost in
+  let r = ref (Inter (ilow,ihigh)) and rc = ref with_inter in
+  if less2tests with_sep !rc then begin
+    r := Sep lim ; rc := with_sep
+  end ;
+  !r, !rc
     
-and make_if_le konst arg i ifso ifnot = match i with
-| -1 ->
-    make_if_test konst Arg.ltint arg 0 ifso ifnot
-| _ ->
-    make_if_test konst Arg.leint arg i ifso ifnot
-
-and make_if_gt konst arg i  ifso ifnot = match i with
-| -1 ->
-    make_if_test konst Arg.geint arg 0 ifso ifnot
-| _ ->
-    make_if_test konst Arg.gtint arg i ifso ifnot
-    
-and make_if_ge konst arg i  ifso ifnot = match i with
-| 1 ->
-    make_if_test konst Arg.gtint arg 0 ifso ifnot
-| _ ->
-    make_if_test konst Arg.geint arg i ifso ifnot
-
-and make_if_eq  konst arg i ifso ifnot =
-  make_if_test konst Arg.eqint arg i ifso ifnot
-
-and make_if_ne  konst arg i ifso ifnot =
-  make_if_test konst Arg.neint arg i ifso ifnot
-
-let do_make_if_out h arg ifso ifno =
-  Arg.make_if (Arg.make_isout h arg) ifso ifno
-  
-let make_if_out konst ctx l d mk_ifso mk_ifno = match l with
-| 0 ->
-    do_make_if_out
-      (konst d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
-| _ ->
-    Arg.bind
-      (Arg.make_offset ctx.arg (-l))
-      (fun arg ->
-        let ctx = {off= (-l+ctx.off) ; arg=arg} in
+    let make_if_test konst test arg i ifso ifnot =
+      Arg.make_if
+        (Arg.make_prim test [arg ; konst i])
+        ifso ifnot
+        
+    let make_if_lt konst arg i  ifso ifnot = match i with
+    | 1 ->
+        make_if_test konst Arg.leint arg 0 ifso ifnot
+    | _ ->
+        make_if_test konst Arg.ltint arg i ifso ifnot
+          
+    and make_if_le konst arg i ifso ifnot = match i with
+    | -1 ->
+        make_if_test konst Arg.ltint arg 0 ifso ifnot
+    | _ ->
+        make_if_test konst Arg.leint arg i ifso ifnot
+          
+    and make_if_gt konst arg i  ifso ifnot = match i with
+    | -1 ->
+        make_if_test konst Arg.geint arg 0 ifso ifnot
+    | _ ->
+        make_if_test konst Arg.gtint arg i ifso ifnot
+          
+    and make_if_ge konst arg i  ifso ifnot = match i with
+    | 1 ->
+        make_if_test konst Arg.gtint arg 0 ifso ifnot
+    | _ ->
+        make_if_test konst Arg.geint arg i ifso ifnot
+          
+    and make_if_eq  konst arg i ifso ifnot =
+      make_if_test konst Arg.eqint arg i ifso ifnot
+        
+    and make_if_ne  konst arg i ifso ifnot =
+      make_if_test konst Arg.neint arg i ifso ifnot
+        
+    let do_make_if_out h arg ifso ifno =
+      Arg.make_if (Arg.make_isout h arg) ifso ifno
+        
+    let make_if_out konst ctx l d mk_ifso mk_ifno = match l with
+    | 0 ->
         do_make_if_out
-          (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
-
-let do_make_if_in h arg ifso ifno =
-  Arg.make_if (Arg.make_isin h arg) ifso ifno
-
-let make_if_in konst ctx l d mk_ifso mk_ifno = match l with
-| 0 ->
-    do_make_if_in
-      (konst d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
-| _ ->
-    Arg.bind
-      (Arg.make_offset ctx.arg (-l))
-      (fun arg ->
-        let ctx = {off= (-l+ctx.off) ; arg=arg} in
+          (konst d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
+    | _ ->
+        Arg.bind
+          (Arg.make_offset ctx.arg (-l))
+          (fun arg ->
+            let ctx = {off= (-l+ctx.off) ; arg=arg} in
+            do_make_if_out
+              (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
+          
+    let do_make_if_in h arg ifso ifno =
+      Arg.make_if (Arg.make_isin h arg) ifso ifno
+        
+    let make_if_in konst ctx l d mk_ifso mk_ifno = match l with
+    | 0 ->
         do_make_if_in
-          (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
-
-
-let rec c_test konst ctx ({cases=cases ; actions=actions} as s) =
-  let lcases = Array.length cases in
-  assert(lcases > 0) ;
-  if lcases = 1 then
-    actions.(get_act cases 0) ctx
-  else begin
-    
-    let w,c = opt_count false cases in
+          (konst d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
+    | _ ->
+        Arg.bind
+          (Arg.make_offset ctx.arg (-l))
+          (fun arg ->
+            let ctx = {off= (-l+ctx.off) ; arg=arg} in
+            do_make_if_in
+              (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
+          
+          
+    let rec c_test konst ctx ({cases=cases ; actions=actions} as s) =
+      let lcases = Array.length cases in
+      assert(lcases > 0) ;
+      if lcases = 1 then
+        actions.(get_act cases 0) ctx
+      else begin
+        
+        let w,c = opt_count false cases in
 (*
-    Printf.fprintf stderr
-      "off=%d tactic=%a for %a\n"
-      ctx.off pret w pcases cases ;
-*)
+  Printf.fprintf stderr
+  "off=%d tactic=%a for %a\n"
+  ctx.off pret w pcases cases ;
+  *)
     match w with
     | No -> actions.(get_act cases 0) ctx
     | Inter (i,j) ->
@@ -753,23 +776,37 @@ let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
   
 let zyva (low,high) konst arg cases actions = 
   let lcases = Array.length cases in
+  let old_ok = !ok_inter in
   ok_inter := (abs low <= inter_limit && abs high <= inter_limit) ;
+  if !ok_inter <> old_ok then Hashtbl.clear t ;
 
   let s = {cases=cases ; actions=actions} in
 (*
+  Printf.eprintf "ZYVA: %b\n" !ok_inter ;
   pcases stderr cases ;
   prerr_endline "" ;
 *)
   let n_clusters,k = comp_clusters s in
   let clusters = make_clusters s n_clusters k in
-  c_test konst {arg=arg ; off=0} clusters
+  let r = c_test konst {arg=arg ; off=0} clusters in
+  r
+
+
 
 and test_sequence konst arg cases actions =
+  let old_ok = !ok_inter in  
   ok_inter := false ;
+  if !ok_inter <> old_ok then Hashtbl.clear t ;
   let s =
     {cases=cases ;
     actions=Array.map (fun act -> (fun _ -> act)) actions} in
-   c_test konst {arg=arg ; off=0} s
+(*
+  Printf.eprintf "SEQUENCE: %b\n" !ok_inter ;
+  pcases stderr cases ;
+  prerr_endline "" ;
+*)
+  let r = c_test konst {arg=arg ; off=0} s in
+  r
 ;;
 
 end
