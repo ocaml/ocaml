@@ -57,7 +57,8 @@ let interface ppf sourcefile =
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
     let sg = Typemod.transl_signature (initial_env()) ast in
     if !Clflags.print_types then
-      fprintf std_formatter "%a@." Printtyp.signature sg;
+      fprintf std_formatter "%a@." Printtyp.signature
+                                   (Typemod.simplify_signature sg);
     Warnings.check_fatal ();
     Env.save_signature sg modulename (prefixname ^ ".cmi");
     Pparse.remove_preprocessed inputfile

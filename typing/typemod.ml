@@ -509,6 +509,35 @@ let type_implementation sourcefile prefixname modulename initial_env ast =
     end in
   (str, coercion)
 
+(* Simplify multiple specifications of a value or an exception in a signature.
+   (Other signature components, e.g. types, modules, etc, are checked for
+   name uniqueness.)  If multiple specifications with the same name,
+   keep only the last (rightmost) one. *)
+
+let rec simplify_modtype mty =
+  match mty with
+    Tmty_ident path -> mty
+  | Tmty_functor(id, arg, res) -> Tmty_functor(id, arg, simplify_modtype res)
+  | Tmty_signature sg -> Tmty_signature(simplify_signature sg)
+
+and simplify_signature sg =
+  let rec simplif val_names exn_names res = function
+    [] -> res
+  | (Tsig_value(id, descr) as component) :: sg ->
+      let name = Ident.name id in
+      simplif (StringSet.add name val_names) exn_names
+              (if StringSet.mem name val_names then res else component :: res)
+              sg
+  | (Tsig_exception(id, decl) as component) :: sg ->
+      let name = Ident.name id in
+      simplif val_names (StringSet.add name exn_names)
+              (if StringSet.mem name exn_names then res else component :: res)
+              sg
+  | component :: sg ->
+      simplif val_names exn_names (component :: res) sg
+  in
+    simplif StringSet.empty StringSet.empty [] (List.rev sg)
+
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
 
