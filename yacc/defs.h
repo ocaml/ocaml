@@ -107,9 +107,9 @@
 
 /*  character macros  */
 
-#define IS_IDENT(c)        (isalnum(c) || (c) == '_' || (c) == '.' || (c) == '$')
-#define        IS_OCTAL(c)        ((c) >= '0' && (c) <= '7')
-#define        NUMERIC_VALUE(c)        ((c) - '0')
+#define IS_IDENT(c)       (isalnum(c) || (c) == '_' || (c) == '.' || (c) == '$')
+#define IS_OCTAL(c)       ((c) >= '0' && (c) <= '7')
+#define NUMERIC_VALUE(c)  ((c) - '0')
 
 
 /*  symbol macros  */
@@ -124,21 +124,21 @@
 
 #define INTERACT() ROTATECURSOR_MAGIC ()
 
-#define CALLOC(k,n)         (INTERACT (), calloc((unsigned)(k),(unsigned)(n)))
+#define CALLOC(k,n)  (INTERACT (), calloc((unsigned)(k),(unsigned)(n)))
 #define FREE(x)      (INTERACT (), free((char*)(x)))
 #define MALLOC(n)    (INTERACT (), malloc((unsigned)(n)))
-#define        NEW(t)       (INTERACT (), (t*)allocate(sizeof(t)))
-#define        NEW2(n,t)    (INTERACT (), (t*)allocate((unsigned)((n)*sizeof(t))))
+#define NEW(t)       (INTERACT (), (t*)allocate(sizeof(t)))
+#define NEW2(n,t)    (INTERACT (), (t*)allocate((unsigned)((n)*sizeof(t))))
 #define REALLOC(p,n) (INTERACT (), realloc((char*)(p),(unsigned)(n)))
 
 #else
 
-#define CALLOC(k,n)        (calloc((unsigned)(k),(unsigned)(n)))
-#define        FREE(x)                (free((char*)(x)))
+#define CALLOC(k,n)      (calloc((unsigned)(k),(unsigned)(n)))
+#define FREE(x)          (free((char*)(x)))
 #define MALLOC(n)        (malloc((unsigned)(n)))
-#define        NEW(t)                ((t*)allocate(sizeof(t)))
-#define        NEW2(n,t)        ((t*)allocate((unsigned)((n)*sizeof(t))))
-#define REALLOC(p,n)        (realloc((char*)(p),(unsigned)(n)))
+#define NEW(t)           ((t*)allocate(sizeof(t)))
+#define NEW2(n,t)        ((t*)allocate((unsigned)((n)*sizeof(t))))
+#define REALLOC(p,n)     (realloc((char*)(p),(unsigned)(n)))
 
 #endif /* macintosh */
 

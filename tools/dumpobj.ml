@@ -385,7 +385,9 @@ let op_shapes = [
 ];;
 
 let print_event ev =
-  printf "%s, char %d:\n" ev.ev_module ev.ev_char
+  printf "%s, line %d, char %d:\n" ev.ev_char.Lexing.pos_fname
+         ev.ev_char.Lexing.pos_lnum
+         (ev.ev_char.Lexing.pos_cnum - ev.ev_char.Lexing.pos_bol)
 
 let print_instr ic =
   let pos = currpos ic in

@@ -71,7 +71,7 @@ let output_tables oc tbl =
 
 (* Output the entries *)
 
-let output_entry sourcefile ic oc e =
+let output_entry sourcefile ic oc oci e =
   let init_num, init_moves = e.auto_initial_state in
   fprintf oc "%s lexbuf =
   %a%a  __ocaml_lex_%s_rec lexbuf %d\n"
@@ -89,7 +89,7 @@ let output_entry sourcefile ic oc e =
       fprintf oc "  | ";
       fprintf oc "%d -> (\n" num;
       output_env oc env ;
-      copy_chunk sourcefile ic oc loc;
+      copy_chunk sourcefile ic oc oci loc;
       fprintf oc ")\n")
     e.auto_actions;
   fprintf oc "  | n -> lexbuf.Lexing.refill_buff lexbuf; \
@@ -100,7 +100,7 @@ let output_entry sourcefile ic oc e =
 
 exception Table_overflow
 
-let output_lexdef sourcefile ic oc header tables entry_points trailer =
+let output_lexdef sourcefile ic oc oci header tables entry_points trailer =
   Printf.printf "%d states, %d transitions, table size %d bytes\n"
     (Array.length tables.tbl_base)
     (Array.length tables.tbl_trans)
@@ -118,15 +118,15 @@ let output_lexdef sourcefile ic oc header tables entry_points trailer =
     Printf.printf "%d additional bytes used for bindings\n" size_groups ;
   flush stdout;
   if Array.length tables.tbl_trans > 0x8000 then raise Table_overflow;
-  copy_chunk sourcefile ic oc header;
+  copy_chunk sourcefile ic oc oci header;
   output_tables oc tables;
   begin match entry_points with
     [] -> ()
   | entry1 :: entries ->
-      output_string oc "let rec "; output_entry sourcefile ic oc entry1;
+      output_string oc "let rec "; output_entry sourcefile ic oc oci entry1;
       List.iter
-        (fun e -> output_string oc "and "; output_entry sourcefile ic oc e)
+        (fun e -> output_string oc "and "; output_entry sourcefile ic oc oci e)
         entries;
       output_string oc ";;\n\n";
   end;
-  copy_chunk sourcefile ic oc trailer
+  copy_chunk sourcefile ic oc oci trailer

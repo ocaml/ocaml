@@ -177,15 +177,15 @@ let rec new_breakpoint =
       print_string event.ev_module;
       begin try
         let (start, line) =
-          line_of_pos (get_buffer event.ev_module) event.ev_char
+          line_of_pos (get_buffer event.ev_module) event.ev_char.Lexing.pos_cnum
         in
         print_string ", line ";
         print_int line;
         print_string " column ";
-        print_int (event.ev_char - start + 1)
+        print_int (event.ev_char.Lexing.pos_cnum - start + 1)
       with Not_found | Out_of_range ->
         print_string ", character ";
-        print_int event.ev_char
+        print_int event.ev_char.Lexing.pos_cnum
       end;
       print_newline ()
 

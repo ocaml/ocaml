@@ -19,12 +19,16 @@ open Lexgen
 
 let ml_automata = ref false
 let source_name = ref ""
+let output_name = ref "";;
 
-let usage = "ocamlex [-option]* sourcefile"
+let usage = "usage: ocamlex [options] sourcefile"
 
 let _ =
   Arg.parse
-    ["-ml", Arg.Set ml_automata, " outputed automaton is a caml program" ;
+    ["-ml", Arg.Set ml_automata,
+           " Output code that does not use the Lexing module";
+     "-o", Arg.String (fun x -> source_name := x),
+           " <file>  Set output file name to <file>";
     ] 
     (fun name -> source_name := name)
     usage
@@ -33,12 +37,16 @@ let _ =
 let main () =
   let source_name = !source_name in
   let dest_name =
-    if Filename.check_suffix source_name ".mll" then
+    if !output_name <> "" then
+      !output_name
+    else if Filename.check_suffix source_name ".mll" then
       Filename.chop_suffix source_name ".mll" ^ ".ml"
     else
-      source_name ^ ".ml" in
+      source_name ^ ".ml"
+  in
   let ic = open_in_bin source_name in
   let oc = open_out dest_name in
+  let tr = Common.open_tracker dest_name oc in
   let lexbuf = Lexing.from_channel ic in
   try
     let def = Parser.lexer_definition Lexer.main lexbuf in
@@ -51,18 +59,20 @@ let main () =
 *)
     if !ml_automata then begin
       Outputbis.output_lexdef
-        source_name ic oc
+        source_name ic oc tr
         def.header entries transitions def.trailer
     end else begin
        let tables = Compact.compact_tables transitions in
-       Output.output_lexdef source_name ic oc
+       Output.output_lexdef source_name ic oc tr
          def.header tables entries def.trailer
-    end ;
-   close_in ic;
-    close_out oc
+    end;
+    close_in ic;
+    close_out oc;
+    Common.close_tracker tr;
   with exn ->
     close_in ic;
     close_out oc;
+    Common.close_tracker tr;
     Sys.remove dest_name;
     begin match exn with
       Parsing.Parse_error ->

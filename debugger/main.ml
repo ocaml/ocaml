@@ -33,9 +33,9 @@ let rec loop ppf =
   if !loaded && (not (yes_or_no "The program is running. Quit anyway")) then
     loop ppf
 
-let rec protect ppf cont =
+let rec protect ppf loop =
   try
-    cont ppf
+    loop ppf
   with
   | End_of_file ->
       protect ppf (function ppf ->
@@ -79,7 +79,7 @@ let toplevel_loop () = protect Format.std_formatter loop
 exception Found_program_name
 
 let anonymous s =
-  program_name := s; raise Found_program_name
+  program_name := Unix_tools.make_absolute s; raise Found_program_name
 let add_include d =
   default_load_path :=
     Misc.expand_directory Config.standard_library d :: !default_load_path
@@ -116,7 +116,7 @@ let main () =
       exit 2
     with Found_program_name ->
       for j = !Arg.current + 1 to Array.length Sys.argv - 1 do
-        arguments := Printf.sprintf "%s '%s'" !arguments Sys.argv.(j)
+        arguments := !arguments ^ " " ^ (Filename.quote Sys.argv.(j))
       done
     end;
     current_prompt := debugger_prompt;

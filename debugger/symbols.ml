@@ -43,14 +43,14 @@ let read_symbols' bytecode_file =
     ignore(Bytesections.seek_section ic "SYMB");
   with Bytesections.Bad_magic_number | Not_found ->
     prerr_string bytecode_file; prerr_endline " is not a bytecode file.";
-    exit 2
+    raise Toplevel
   end;
   Symtable.restore_state (input_value ic);
   begin try
     ignore (Bytesections.seek_section ic "DBUG")
   with Not_found ->
     prerr_string bytecode_file; prerr_endline " has no debugging info.";
-    exit 2
+    raise Toplevel
   end;
   let num_eventlists = input_binary_int ic in
   let eventlists = ref [] in
@@ -85,8 +85,10 @@ let read_symbols bytecode_file =
         [] -> ()
       | ev :: _ as evl ->
           let md = ev.ev_module in
-          let sorted_evl =
-            List.sort (fun ev1 ev2 -> compare ev1.ev_char ev2.ev_char) evl in
+          let cmp ev1 ev2 = compare ev1.ev_char.Lexing.pos_cnum
+                                    ev2.ev_char.Lexing.pos_cnum
+          in
+          let sorted_evl = List.sort cmp evl in
           modules := md :: !modules;
           Hashtbl.add all_events_by_module md sorted_evl;
           let real_evl =
@@ -123,13 +125,13 @@ let events_in_module mdle =
 let find_event ev char =
   let rec bsearch lo hi =
     if lo >= hi then begin
-      if ev.(hi).ev_char < char then raise Not_found;
+      if ev.(hi).ev_char.Lexing.pos_cnum < char then raise Not_found;
       hi
     end else begin
       let pivot = (lo + hi) / 2 in
       let e = ev.(pivot) in
-      if char <= e.ev_char then bsearch lo pivot
-                           else bsearch (pivot + 1) hi
+      if char <= e.ev_char.Lexing.pos_cnum then bsearch lo pivot
+                                           else bsearch (pivot + 1) hi
     end
   in
   bsearch 0 (Array.length ev - 1)
@@ -148,7 +150,8 @@ let event_near_pos md char =
     let pos = find_event ev char in
     (* Desired event is either ev.(pos) or ev.(pos - 1),
        whichever is closest *)
-    if pos > 0 && char - ev.(pos - 1).ev_char <= ev.(pos).ev_char - char
+    if pos > 0 && char - ev.(pos - 1).ev_char.Lexing.pos_cnum
+                  <= ev.(pos).ev_char.Lexing.pos_cnum - char
     then ev.(pos - 1)
     else ev.(pos)
   with Not_found ->

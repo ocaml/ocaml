@@ -48,7 +48,7 @@ bucket **plhs;
 int name_pool_size;
 char *name_pool;
 
-char line_format[] = "(* Line %d, file %s *)\n";
+char line_format[] = "# %d \"%s\"\n";
 
 
 
@@ -327,7 +327,7 @@ void copy_text(void)
         if (line == 0)
             unterminated_text(t_lineno, t_line, t_cptr);
     }
-    fprintf(f, "# %d \"%s\"\n", lineno, input_file_name);
+    fprintf(f, line_format, lineno, input_file_name);
 
 loop:
     c = *cptr++;
@@ -981,12 +981,13 @@ void output_token_type(void)
   int n;
 
   fprintf(interface_file, "type token =\n");
+  if (!rflag) ++outline;
   fprintf(output_file, "type token =\n");
   n = 0;
   for (bp = first_symbol; bp; bp = bp->next) {
     if (bp->class == TERM && bp->true_token) {
-      fprintf(interface_file, "  %c %s", n == 0 ? ' ' : '|', bp->name);
-      fprintf(output_file, "  %c %s", n == 0 ? ' ' : '|', bp->name);
+      fprintf(interface_file, "  | %s", bp->name);
+      fprintf(output_file, "  | %s", bp->name);
       if (bp->tag) {
         /* Print the type expression in parentheses to make sure
            that the constructor is unary */
@@ -994,11 +995,13 @@ void output_token_type(void)
         fprintf(output_file, " of (%s)", bp->tag);
       }
       fprintf(interface_file, "\n");
+      if (!rflag) ++outline;
       fprintf(output_file, "\n");
       n++;
     }
   }
   fprintf(interface_file, "\n");
+  if (!rflag) ++outline;
   fprintf(output_file, "\n");
 }
 
@@ -1231,7 +1234,7 @@ void copy_action(void)
         fprintf(f, "(peek_val parser_env %d : '%s) in\n", n - i, item->name);
     }
     fprintf(f, "    Obj.repr((\n");
-    fprintf(f, "# %d \"%s\"\n", lineno, input_file_name);
+    fprintf(f, line_format, lineno, input_file_name);
     for (i = cptr - line; i >= 0; i--) fputc(' ', f);
 
     depth = 1;
@@ -1265,6 +1268,7 @@ loop:
         goto loop;
     }
     if (c == '}' && depth == 1) {
+      fprintf(f, "\n# 0\n              ");
       cptr++;
       tagres = plhs[nrules]->tag;
       if (tagres)

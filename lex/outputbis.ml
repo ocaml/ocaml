@@ -153,7 +153,7 @@ let output_automata oc auto =
 
 (* Output the entries *)
 
-let output_entry sourcefile ic oc e =
+let output_entry sourcefile ic oc tr e =
   let init_num, init_moves = e.auto_initial_state in
   fprintf oc "%s lexbuf =
   __init_lexbuf lexbuf %d; %a  match __state%d lexbuf with\n"
@@ -163,7 +163,7 @@ let output_entry sourcefile ic oc e =
       fprintf oc "  | ";
       fprintf oc "%d -> (\n" num;
       output_env oc env ;
-      copy_chunk sourcefile ic oc loc;
+      copy_chunk sourcefile ic oc tr loc;
       fprintf oc ")\n")
     e.auto_actions;
   fprintf oc "  | _ -> raise (Failure \"lexing: empty token\") \n\n\n"
@@ -171,17 +171,17 @@ let output_entry sourcefile ic oc e =
 
 (* Main output function *)
 
-let output_lexdef sourcefile ic oc header entry_points transitions trailer =
+let output_lexdef sourcefile ic oc tr header entry_points transitions trailer =
 
-  copy_chunk sourcefile ic oc header;
+  copy_chunk sourcefile ic oc tr header;
   output_automata oc transitions ;
   begin match entry_points with
     [] -> ()
   | entry1 :: entries ->
-      output_string oc "let rec "; output_entry sourcefile ic oc entry1;
+      output_string oc "let rec "; output_entry sourcefile ic oc tr entry1;
       List.iter
-        (fun e -> output_string oc "and "; output_entry sourcefile ic oc e)
+        (fun e -> output_string oc "and "; output_entry sourcefile ic oc tr e)
         entries;
       output_string oc ";;\n\n";
   end;
-  copy_chunk sourcefile ic oc trailer
+  copy_chunk sourcefile ic oc tr trailer

@@ -746,7 +746,7 @@ let path_variable kill name =
   (function lexbuf ->
        let argument = argument_eol argument lexbuf in
          if (not kill) || ask_kill_program () then
-           name := (expand_path argument)),
+           name := make_absolute (expand_path argument)),
   function ppf -> fprintf ppf "%s@." !name
 
 let loading_mode_variable ppf =
@@ -811,7 +811,8 @@ let info_breakpoints ppf lexbuf =
     (fprintf ppf "Num    Address  Where@.";
      List.iter
        (function (num, {ev_pos = pc; ev_module = md; ev_char = char}) ->
-          fprintf ppf "%3d %10d  in %s, character %d\n" num pc md char)
+          fprintf ppf "%3d %10d  in %s, character %d\n" num pc md
+                  char.Lexing.pos_cnum)
        (List.rev !breakpoints))
 
 let info_events ppf lexbuf =
@@ -824,7 +825,7 @@ let info_events ppf lexbuf =
          Printf.printf
            "%10d %10d  %10s %10s\n"
            ev.ev_pos
-           ev.ev_char
+           ev.ev_char.Lexing.pos_cnum
            ((match ev.ev_kind with
                Event_before   -> "before"
              | Event_after _  -> "after"

@@ -1,3 +1,7 @@
+- Match_failure and Assert_failure now report (file, line, column),
+  instead of (file, starting char, ending char).
+
+
 Objective Caml 3.06:
 --------------------
 

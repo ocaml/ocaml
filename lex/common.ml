@@ -18,6 +18,35 @@ open Lexgen
 
 (* To copy the ML code fragments *)
 
+type line_tracker = {
+  file : string;
+  oc : out_channel;
+  ic : in_channel;
+  mutable cur_line : int;
+};;
+
+let open_tracker file oc = {
+  file = file;
+  oc = oc;
+  ic = open_in_bin file;
+  cur_line = 1;
+};;
+
+let close_tracker tr = close_in_noerr tr.ic;;
+
+let update_tracker tr =
+  fprintf tr.oc "\n";
+  flush tr.oc;
+  let cr_seen = ref false in
+  try while true do
+    match input_char tr.ic with
+    | '\010' when not !cr_seen -> tr.cur_line <- tr.cur_line + 1;
+    | '\013' -> cr_seen := true; tr.cur_line <- tr.cur_line + 1;
+    | _ -> cr_seen := false;
+  done with End_of_file ->
+  fprintf tr.oc "# %d \"%s\"\n" (tr.cur_line+1) tr.file;
+;;
+
 let copy_buffer = String.create 1024
 
 let copy_chars_unix ic oc start stop =
@@ -39,12 +68,13 @@ let copy_chars =
     "Win32" | "Cygwin" -> copy_chars_win32
   | _       -> copy_chars_unix
 
-let copy_chunk sourcefile ic oc loc =
+let copy_chunk sourcefile ic oc trl loc =
   if loc.start_pos < loc.end_pos then begin
     fprintf oc "# %d \"%s\"\n" loc.start_line sourcefile;
     for i = 1 to loc.start_col do output_char oc ' ' done;
     seek_in ic loc.start_pos;
-    copy_chars ic oc loc.start_pos loc.end_pos
+    copy_chars ic oc loc.start_pos loc.end_pos;
+    update_tracker trl;
   end
 
 (* Various memory actions *)

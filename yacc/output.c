@@ -73,16 +73,21 @@ void output(void)
   output_actions();
   output_debug();
   free_parser();
-  if (sflag)
+  if (sflag){
+    if (!rflag) ++outline;
     fprintf(output_file,
       "let yyact = Array.new %d (fun _ -> (failwith \"parser\" : Obj.t))\n",
       ntotalrules);
-  else
+  }else{
+    if (!rflag) outline += 2;
     fprintf(output_file,
       "let yyact = [|\n  (fun _ -> failwith \"parser\")\n");
+  }
   output_semantic_actions();
-  if (!sflag)
+  if (!sflag){
+    if (!rflag) ++outline;
     fprintf(output_file, "|]\n");
+  }
   write_section(define_tables);
   output_entries();
   output_trailing_text();
@@ -482,20 +487,20 @@ void pack_table(void)
 }
 
 
-/*  The function matching_vector determines if the vector specified by        */
-/*  the input parameter matches a previously considered        vector.  The        */
-/*  test at the start of the function checks if the vector represents        */
-/*  a row of shifts over terminal symbols or a row of reductions, or a        */
-/*  column of shifts over a nonterminal symbol.  Berkeley Yacc does not        */
-/*  check if a column of shifts over a nonterminal symbols matches a        */
-/*  previously considered vector.  Because of the nature of LR parsing        */
-/*  tables, no two columns can match.  Therefore, the only possible        */
-/*  match would be between a row and a column.  Such matches are        */
-/*  unlikely.  Therefore, to save time, no attempt is made to see if a        */
+/*  The function matching_vector determines if the vector specified by    */
+/*  the input parameter matches a previously considered vector.  The      */
+/*  test at the start of the function checks if the vector represents     */
+/*  a row of shifts over terminal symbols or a row of reductions, or a    */
+/*  column of shifts over a nonterminal symbol.  Berkeley Yacc does not   */
+/*  check if a column of shifts over a nonterminal symbols matches a      */
+/*  previously considered vector.  Because of the nature of LR parsing    */
+/*  tables, no two columns can match.  Therefore, the only possible       */
+/*  match would be between a row and a column.  Such matches are          */
+/*  unlikely.  Therefore, to save time, no attempt is made to see if a    */
 /*  column matches a previously considered vector.                        */
 /*                                                                        */
-/*  Matching_vector is poorly designed.  The test could easily be made        */
-/*  faster.  Also, it depends on the vectors being in a specific        */
+/*  Matching_vector is poorly designed.  The test could easily be made    */
+/*  faster.  Also, it depends on the vectors being in a specific          */
 /*  order.                                                                */
 
 int
@@ -751,19 +756,25 @@ void output_transl(void)
 {
   int i;
 
+  ++outline;
   fprintf(code_file, "let yytransl_const = [|\n");
   for (i = 0; i < ntokens; i++) {
     if (symbol_true_token[i] && symbol_tag[i] == NULL) {
+      ++outline;
       fprintf(code_file, "  %3d (* %s *);\n", symbol_value[i], symbol_name[i]);
     }
   }
+  outline += 2;
   fprintf(code_file, "    0|]\n\n");
+  ++outline;
   fprintf(code_file, "let yytransl_block = [|\n");
   for (i = 0; i < ntokens; i++) {
     if (symbol_true_token[i] && symbol_tag[i] != NULL) {
+      ++outline;
       fprintf(code_file, "  %3d (* %s *);\n", symbol_value[i], symbol_name[i]);
     }
   }
+  outline += 2;
   fprintf(code_file, "    0|]\n\n");
 }
 
@@ -798,19 +809,25 @@ void output_debug(void)
 {
   int i;
 
+  ++outline;
   fprintf(code_file, "let yynames_const = \"\\\n");
   for (i = 0; i < ntokens; i++) {
     if (symbol_true_token[i] && symbol_tag[i] == NULL) {
+      ++outline;
       fprintf(code_file, "  %s\\000\\\n", symbol_name[i]);
     }
   }
+  outline += 2;
   fprintf(code_file, "  \"\n\n");
+  ++outline;
   fprintf(code_file, "let yynames_block = \"\\\n");
   for (i = 0; i < ntokens; i++) {
     if (symbol_true_token[i] && symbol_tag[i] != NULL) {
+      ++outline;
       fprintf(code_file, "  %s\\000\\\n", symbol_name[i]);
     }
   }
+  outline += 2;
   fprintf(code_file, "  \"\n\n");
 }
 
@@ -824,6 +841,10 @@ void output_trailing_text(void)
 
     in = input_file;
     out = code_file;
+
+    ++outline;
+    fprintf (out, ";;\n");
+
     c = *cptr;
     if (c == '\n')
     {
@@ -853,6 +874,7 @@ void output_trailing_text(void)
         last = '\n';
     }
 
+
     while ((c = getc(in)) != EOF)
     {
         if (c == '\n')
@@ -874,27 +896,34 @@ void output_trailing_text(void)
 void copy_file(FILE **file, char *file_name)
 {
   register int c, last;
-  register FILE *out;
+  register FILE *out = code_file;
+  int state = 0;
 
   fclose(*file);
     *file = fopen(file_name, "r");
     if (*file == NULL)
         open_error(file_name);
 
-    if ((c = getc(*file)) == EOF)
-        return;
+    last = '\n';
 
-    out = code_file;
-    last = c;
-    if (c == '\n')
-        ++outline;
-    putc(c, out);
     while ((c = getc(*file)) != EOF)
     {
-        if (c == '\n')
-            ++outline;
-        putc(c, out);
-        last = c;
+      switch (c){
+      case '\n': state = 1; break;
+      case '#': state = (state == 1) ? 2 : 0; break;
+      case ' ': state = (state == 2) ? 3 : 0; break;
+      case '0':
+        if (state == 3){
+          fprintf (out, "%d \"%s", outline+2, code_file_name);
+          c = '"';
+        }
+        state = 0;
+        break;
+      default: state = 0; break;
+      }
+      if (c == '\n') ++outline;
+      putc(c, out);
+      last = c;
     }
 
     if (last != '\n')
