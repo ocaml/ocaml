@@ -1644,7 +1644,6 @@ and unify_row env row1 row2 =
           Reither(c, t1::tl, _, e) ->
             if c then raise (Unify []);
             set_row_field e (Rpresent (Some t1));
-            e := Some (Rpresent (Some t1));
             (try List.iter (unify env t1) tl
             with exn -> e := None; raise exn)
         | Reither(true, [], _, e) ->
