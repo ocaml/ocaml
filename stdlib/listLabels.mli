@@ -268,3 +268,16 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
    heap space and logarithmic stack space.
 *)
 
+val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
+(** Same as {!List.sort} or {!List.stable_sort}, whichever is faster
+    on typical input. *)
+
+val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
+(** Merge two lists:
+    Assuming that [l1] and [l2] are sorted according to the
+    comparison function [cmp], [merge cmp l1 l2] will return a
+    sorted list containting all the elements of [l1] and [l2].
+    If several elements compare equal, the elements of [l1] will be
+    before the elements of [l2].
+    Not tail-recursive (sum of the lenghts of the arguments).
+*)

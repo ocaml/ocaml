@@ -144,6 +144,7 @@ let to_list a =
     if i < 0 then res else tolist (i - 1) (unsafe_get a i :: res) in
   tolist (length a - 1) []
 
+(* Cannot use List.length here because the List module depends on Array. *)
 let rec list_length accu = function
   | [] -> accu
   | h::t -> list_length (succ accu) t
@@ -274,3 +275,5 @@ let stable_sort cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
+
+let fast_sort = stable_sort;;

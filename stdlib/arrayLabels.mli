@@ -178,6 +178,12 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
    It is faster than the current implementation of {!ArrayLabels.sort}.
 *)
 
+val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
+(** Same as {!Array.sort} or {!Array.stable_sort}, whichever is faster
+    on typical input.
+*)
+
+
 (**/**)
 
 (** {6 Undocumented functions} *)
