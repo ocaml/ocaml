@@ -268,7 +268,6 @@ let test11 () =
 ;;
 
 (* Empty string (end of input) testing. *)
-prerr_endline "Testing";;
 let test110 () =
  sscanf "" " " (fun x -> x) "" = "" &&
  sscanf "" "%s" (fun x -> x = "") &&
@@ -796,8 +795,10 @@ test (test41 ());;
 let test42 () =
  let s = "defcbaaghi" in
  let ib = Scanning.from_string s in
- bscanf ib "%[^abc]%[cba]%s%!" (fun s1 s2 s3 ->
-   s1 = "def" && s2 = "cbaa" && s3 = "ghi");;
+ bscanf ib "%[^abc]%[abc]%s%!" (fun s1 s2 s3 ->
+   s1 = "def" && s2 = "cbaa" && s3 = "ghi") &&
+ let ib = Scanning.from_string s in
+ bscanf ib "%s@\t" (fun s -> s = "defcbaaghi");;
 
 test (test42 ());;
 
