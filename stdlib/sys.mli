@@ -70,6 +70,7 @@ val sigstop: int   (* Stop *)
 val sigtstp: int   (* Interactive stop *)
 val sigttin: int   (* Terminal read from background process *)
 val sigttou: int   (* Terminal write from background process *)
+val sigvtalrm: int (* Timeout in virtual time *)
         (* Signal numbers for the standard POSIX signals. *)
 
 exception Break

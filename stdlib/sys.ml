@@ -52,6 +52,7 @@ let sigstop = -16
 let sigtstp = -17
 let sigttin = -18
 let sigttou = -19
+let sigvtalrm = -20
 
 exception Break
 
