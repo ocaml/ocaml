@@ -726,7 +726,7 @@ let emit_item = function
       `	PUBLIC	{emit_symbol s}\n`;
       `{emit_symbol s} LABEL DWORD\n`
   | Cdefine_label lbl ->
-      `{emit_label (10000 + lbl)} `
+      `{emit_label (100000 + lbl)} `
   | Cint8 n ->
       `	BYTE	{emit_int n}\n`
   | Cint16 n ->
@@ -739,7 +739,7 @@ let emit_item = function
       add_used_symbol s ;
       `	DWORD	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	DWORD	{emit_label (10000 + lbl)}\n`
+      `	DWORD	{emit_label (100000 + lbl)}\n`
   | Cstring s ->
       emit_bytes_directive "	BYTE	" s
   | Cskip n ->
