@@ -13,8 +13,6 @@
 
 | Asm part of the runtime system, Motorola 68k processor
 
-        .comm   _gc_entry_regs, 128
-        .comm   _gc_entry_float, 256
         .comm   _caml_requested_size, 4
 
 | Allocation
@@ -37,35 +35,36 @@ _caml_call_gc:
     | Record current allocation pointer (for debugging)
         movel   d6, _young_ptr
     | Save all regs used by the code generator
-        movel   a0, _gc_entry_regs
-        movel   a1, _gc_entry_regs + 4
-        movel   a2, _gc_entry_regs + 8
-        movel   a3, _gc_entry_regs + 12
-        movel   a4, _gc_entry_regs + 16
-        movel   a5, _gc_entry_regs + 20
-        movel   a6, _gc_entry_regs + 24
-        movel   d0, _gc_entry_regs + 28
-        movel   d1, _gc_entry_regs + 32
-        movel   d2, _gc_entry_regs + 36
-        movel   d3, _gc_entry_regs + 40
-        movel   d4, _gc_entry_regs + 44
+        movel   d4, a7@-
+        movel   d3, a7@-
+        movel   d2, a7@-
+        movel   d1, a7@-
+        movel   d0, a7@-
+        movel   a6, a7@-
+        movel   a5, a7@-
+        movel   a4, a7@-
+        movel   a3, a7@-
+        movel   a2, a7@-
+        movel   a1, a7@-
+        movel   a0, a7@-
+        movel   a7, _caml_gc_regs
         fmovem  fp0-fp7, a7@-
     | Call the garbage collector
         jbsr    _garbage_collection
     | Restore all regs used by the code generator
         fmovem  a7@+, fp0-fp7
-        movel   _gc_entry_regs, a0
-        movel   _gc_entry_regs + 4, a1
-        movel   _gc_entry_regs + 8, a2
-        movel   _gc_entry_regs + 12, a3
-        movel   _gc_entry_regs + 16, a4
-        movel   _gc_entry_regs + 20, a5
-        movel   _gc_entry_regs + 24, a6
-        movel   _gc_entry_regs + 28, d0
-        movel   _gc_entry_regs + 32, d1
-        movel   _gc_entry_regs + 36, d2
-        movel   _gc_entry_regs + 40, d3
-        movel   _gc_entry_regs + 44, d4
+        movel   a7@+, a0
+        movel   a7@+, a1
+        movel   a7@+, a2
+        movel   a7@+, a3
+        movel   a7@+, a4
+        movel   a7@+, a5
+        movel   a7@+, a6
+        movel   a7@+, d0
+        movel   a7@+, d1
+        movel   a7@+, d2
+        movel   a7@+, d3
+        movel   a7@+, d4
     | Reload allocation pointer and allocate block
         movel   _young_ptr, d6
         subl    _caml_requested_size, d6
@@ -136,6 +135,7 @@ _caml_start_program:
 
 L106:
     | Build a callback link
+        movel   _caml_gc_regs, a7@-
         movel   _caml_last_return_address, a7@-
         movel   _caml_bottom_of_stack, a7@-
     | Build an exception handler
@@ -158,6 +158,7 @@ L107:
     | used by caml_c_call
         movel   a7@+, _caml_bottom_of_stack
         movel   a7@+, _caml_last_return_address
+        movel   a7@+, _caml_gc_regs
     | Restore callee-save registers and return
         fmovem  a7@+, fp2-fp7
         moveml  a7@+, a2-a6/d2-d7
@@ -172,6 +173,7 @@ L108:
     | used by caml_c_call
         movel   a7@+, _caml_bottom_of_stack
         movel   a7@+, _caml_last_return_address
+        movel   a7@+, _caml_gc_regs
     | Re-raise the exception through mlraise,
     | so that local C roots are cleaned up correctly.
         movel   a0, a7@-       | exn bucket is the argument

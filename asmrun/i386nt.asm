@@ -163,9 +163,9 @@ _caml_start_program:
 
 L106:
     ; Build a callback link 
+        push    _caml_gc_regs
         push	_caml_last_return_address
         push	_caml_bottom_of_stack
-        push    _caml_gc_regs
     ; Build an exception handler 
         push	L108
         push	_caml_exception_pointer
@@ -178,9 +178,9 @@ L107:
         pop	esi    		; dummy register 
     ; Pop the callback link, restoring the global variables
     ; used by caml_c_call
-        pop     _caml_gc_regs
         pop	_caml_bottom_of_stack
         pop	_caml_last_return_address
+        pop     _caml_gc_regs
     ; Restore callee-save registers.
         pop	ebp
         pop	edi
@@ -192,9 +192,9 @@ L108:
     ; Exception handler
     ; Pop the callback link, restoring the global variables
     ; used by caml_c_call
-        pop     _caml_gc_regs
         pop	_caml_bottom_of_stack
         pop	_caml_last_return_address
+        pop     _caml_gc_regs
     ; Re-raise the exception through mlraise,
     ; so that local C roots are cleaned up correctly.
         push	eax            	; exn bucket is the argument 
