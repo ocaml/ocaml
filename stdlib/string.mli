@@ -68,14 +68,16 @@ val concat : string -> string list -> string
 val escaped: string -> string
         (* Return a copy of the argument, with special characters represented
            by escape sequences, following the lexical conventions of
-           Caml Light. *)
+           Objective Caml. *)
 
 val uppercase: string -> string
         (* Return a copy of the argument, with all lowercase letters
-           translated to uppercase. *)
+           translated to uppercase, including accented letters of the ISO
+           Latin-1 (8859-1) character set. *)
 val lowercase: string -> string
         (* Return a copy of the argument, with all uppercase letters
-           translated to lowercase. *)
+           translated to lowercase, including accented letters of the ISO
+           Latin-1 (8859-1) character set. *)
 val capitalize: string -> string
         (* Return a copy of the argument, with the first letter
            set to uppercase. *)
@@ -91,5 +93,3 @@ external unsafe_blit : string -> int -> string -> int -> int -> unit
                      = "blit_string" "noalloc"
 external unsafe_fill : string -> int -> int -> char -> unit
                      = "fill_string" "noalloc"
-
-
