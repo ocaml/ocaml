@@ -166,24 +166,20 @@ let temp_file_name prefix suffix =
 
 let temp_file prefix suffix =
   let rec try_name counter =
-    if counter >= 1000 then
-      invalid_arg "Filename.temp_file: temp dir nonexistent or full";
     let name = temp_file_name prefix suffix in
     try
       close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o600);
       name
-    with Sys_error _ ->
-      try_name (counter + 1)
+    with Sys_error _ as e ->
+      if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0
 
 let open_temp_file ?(mode = [Open_text]) prefix suffix =
   let rec try_name counter =
-    if counter >= 1000 then
-      invalid_arg "Filename.open_temp_file: temp dir nonexistent or full";
     let name = temp_file_name prefix suffix in
     try
       (name,
        open_out_gen (Open_wronly::Open_creat::Open_excl::mode) 0o600 name)
-    with Sys_error _ ->
-      try_name (counter + 1)
+    with Sys_error _ as e ->
+      if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0
