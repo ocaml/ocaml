@@ -73,7 +73,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
   value res;
 
   Begin_roots3 (readfds, writefds, exceptfds);
-    maxfd = 0;
+    maxfd = -1;
     fdlist_to_fdset(readfds, &read, &maxfd);
     fdlist_to_fdset(writefds, &write, &maxfd);
     fdlist_to_fdset(exceptfds, &except, &maxfd);
@@ -86,7 +86,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       tvp = &tv;
     }
     enter_blocking_section();
-    retcode = select(maxfd, &read, &write, &except, tvp);
+    retcode = select(maxfd + 1, &read, &write, &except, tvp);
     leave_blocking_section();
     if (retcode == -1) uerror("select", Nothing);
     readfds = fdset_to_fdlist(readfds, &read);
