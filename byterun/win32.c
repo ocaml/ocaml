@@ -195,6 +195,8 @@ int win32_system(char * cmdline)
   }
 }
 
+#ifndef NATIVE_CODE
+
 /* Set up a new thread for control-C emulation */
 
 #define hexa_digit(ch) (ch >= 97 ? ch - 87 : \
@@ -228,3 +230,5 @@ DWORD WINAPI caml_signal_thread(LPVOID lpParam)
     }
   }
 }
+
+#endif
