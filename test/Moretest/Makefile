@@ -112,6 +112,11 @@ intext.byt: intext.cmo intextaux.o
 intext.out: intext.cmx intextaux.o
 	${CAMLOPT} -o intext.out intext.cmx intextaux.o
 
+tscanf.byt: tscanf.cmo
+	${CAMLC} -o tscanf.byt tscanf.cmo
+tscanf.out: tscanf.cmx
+	${CAMLOPT} -o tscanf.out tscanf.cmx
+
 # Common rules
 
 .SUFFIXES:
