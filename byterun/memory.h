@@ -57,8 +57,8 @@ color_t allocation_color (void *hp);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) {            Assert (wosize >= 1); \
-                                                Assert ((tag_t) tag < 256); \
+#define Alloc_small(result, wosize, tag) {        CAMLassert (wosize >= 1); \
+                                            CAMLassert ((tag_t) tag < 256); \
   young_ptr -= Bhsize_wosize (wosize);                                      \
   if (young_ptr < young_limit){                                             \
     Setup_for_gc;                                                           \
@@ -85,7 +85,7 @@ color_t allocation_color (void *hp);
         && ! (Is_block (_old_) && Is_young (_old_))){                       \
       *ref_table_ptr++ = (fp);                                              \
       if (ref_table_ptr >= ref_table_limit){                                \
-        Assert (ref_table_ptr == ref_table_limit);                          \
+        CAMLassert (ref_table_ptr == ref_table_limit);                      \
         realloc_ref_table ();                                               \
       }                                                                     \
     }                                                                       \
