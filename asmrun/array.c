@@ -107,6 +107,7 @@ value make_array(init)
       for (i = 0; i < size; i++) {
         Store_double_field(res, i, Double_val(Field(init, i)));
       }
+      Pop_roots();
       return res;
     }
   }
