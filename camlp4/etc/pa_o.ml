@@ -105,7 +105,7 @@ value operator =
 *)
 
 value operator_rparen =
-  Grammar.Entry.of_parser gram "operator"
+  Grammar.Entry.of_parser gram "operator_rparen"
     (fun strm ->
        match Stream.npeek 2 strm with
        [ [("", s); ("", ")")] when is_operator s ->
@@ -242,13 +242,13 @@ value test_not_class_signature =
 ;
 
 value test_label_eq =
-  let rec test lev strm =
-    match stream_peek_nth lev strm with
-    [ Some (("UIDENT", _) | ("LIDENT", _) | ("", ".")) -> test (lev + 1) strm
-    | Some ("", "=") -> ()
-    | _ -> raise Stream.Failure ]
-  in
-  Grammar.Entry.of_parser gram "test_label_eq" (test 1)
+  Grammar.Entry.of_parser gram "test_label_eq"
+    (test 1 where rec test lev strm =
+       match stream_peek_nth lev strm with
+       [ Some (("UIDENT", _) | ("LIDENT", _) | ("", ".")) ->
+           test (lev + 1) strm
+       | Some ("", "=") -> ()
+       | _ -> raise Stream.Failure ])
 ;
 
 value constr_arity = ref [("Some", 1); ("Match_Failure", 1)];
@@ -516,10 +516,10 @@ EXTEND
           <:expr< fun [ $list:l$ ] >>
       | "fun"; p = patt LEVEL "simple"; e = fun_def ->
           <:expr< fun [$p$ -> $e$] >>
-      | "match"; x = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
-          <:expr< match $x$ with [ $list:l$ ] >>
-      | "try"; x = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
-          <:expr< try $x$ with [ $list:l$ ] >>
+      | "match"; e = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
+          <:expr< match $e$ with [ $list:l$ ] >>
+      | "try"; e = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
+          <:expr< try $e$ with [ $list:l$ ] >>
       | "if"; e1 = SELF; "then"; e2 = expr LEVEL "expr1";
         e3 = [ "else"; e = expr LEVEL "expr1" -> e | -> <:expr< () >> ] ->
           <:expr< if $e1$ then $e2$ else $e3$ >>
