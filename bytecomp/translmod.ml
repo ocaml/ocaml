@@ -351,50 +351,61 @@ let transl_store_implementation module_name (str, restr) =
 
 (* Compile a toplevel phrase *)
 
+let toploop_ident = Ident.create_persistent "Toploop"
+let toploop_getvalue_pos = 0 (* position of getvalue in module Toploop *)
+let toploop_setvalue_pos = 1 (* position of setvalue in module Toploop *)
+
+let toploop_getvalue id =
+  Lapply(Lprim(Pfield toploop_getvalue_pos,
+                 [Lprim(Pgetglobal toploop_ident, [])]),
+         [Lconst(Const_base(Const_string (Ident.name id)))])
+
+let toploop_setvalue id lam =
+  Lapply(Lprim(Pfield toploop_setvalue_pos,
+                 [Lprim(Pgetglobal toploop_ident, [])]),
+         [Lconst(Const_base(Const_string (Ident.name id))); Lvar id])
+
+let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
+
+let close_toplevel_term lam =
+  IdentSet.fold (fun id l -> Llet(Strict, id, toploop_getvalue id, l))
+                (free_variables lam) lam
+
 let transl_toplevel_item = function
     Tstr_eval expr ->
       transl_exp expr
   | Tstr_value(rec_flag, pat_expr_list) ->
       let idents = let_bound_idents pat_expr_list in
-      let lam =
-        transl_let rec_flag pat_expr_list
-          (make_sequence (fun id -> Lprim(Psetglobal id, [Lvar id])) idents) in
-      List.iter Ident.make_global idents;
-      lam
+      transl_let rec_flag pat_expr_list
+                 (make_sequence toploop_setvalue_id idents)
   | Tstr_primitive(id, descr) ->
       lambda_unit
   | Tstr_type(decls) ->
       lambda_unit
   | Tstr_exception(id, decl) ->
-      Ident.make_global id;
-      Lprim(Psetglobal id, [transl_exception id None decl])
+      toploop_setvalue id (transl_exception id None decl)
   | Tstr_exn_rebind(id, path) ->
-      Ident.make_global id;
-      Lprim(Psetglobal id, [transl_path path])
+      toploop_setvalue id (transl_path path)
   | Tstr_module(id, modl) ->
-      Ident.make_global id;
-      Lprim(Psetglobal id, [transl_module Tcoerce_none (Some(Pident id)) modl])
+      toploop_setvalue id
+                        (transl_module Tcoerce_none (Some(Pident id)) modl)
   | Tstr_modtype(id, decl) ->
       lambda_unit
   | Tstr_open path ->
       lambda_unit
   | Tstr_class cl_list ->
       let ids = List.map (fun (i, _, _, _) -> i) cl_list in
-      let lam =
-        Lletrec(List.map
-                  (fun (id, arity, meths, cl) ->
-                     (id, transl_class ids id arity meths cl))
-                  cl_list,
-                make_sequence
-                  (fun (id, _, _, _) -> Lprim(Psetglobal id, [Lvar id]))
-                  cl_list)
-      in
-      List.iter (fun (id, _, _, _) -> Ident.make_global id) cl_list;
-      lam
-      
+      Lletrec(List.map
+                (fun (id, arity, meths, cl) ->
+                   (id, transl_class ids id arity meths cl))
+                cl_list,
+              make_sequence
+                (fun (id, _, _, _) -> toploop_setvalue_id id)
+                cl_list)
   | Tstr_cltype cl_list ->
       lambda_unit
 
 let transl_toplevel_definition str =
   reset_labels ();
-  transl_label_init (make_sequence transl_toplevel_item str)
+  close_toplevel_term
+    (transl_label_init (make_sequence transl_toplevel_item str))

@@ -14,6 +14,12 @@
 
 open Format
 
+(* Accessors for the table of toplevel value bindings.  These functions
+   must appear as first and second exported functions in this module.
+   (See module Translmod.) *)
+val getvalue : string -> Obj.t
+val setvalue : string -> Obj.t -> unit
+
 (* The interactive toplevel loop *)
 
 val loop : formatter -> unit

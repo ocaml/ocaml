@@ -30,6 +30,21 @@ type directive_fun =
    | Directive_ident of (Longident.t -> unit)
    | Directive_bool of (bool -> unit)
 
+(* The table of toplevel value bindings and its accessors *)
+
+let toplevel_value_bindings =
+  (Hashtbl.create 37 : (string, Obj.t) Hashtbl.t)
+
+let getvalue name =
+  try
+    Hashtbl.find toplevel_value_bindings name
+  with Not_found ->
+    fatal_error (name ^ " unbound at toplevel")
+
+let setvalue name v =
+  Hashtbl.remove toplevel_value_bindings name;
+  Hashtbl.add toplevel_value_bindings name v
+
 (* Hooks for parsing functions *)
 
 let parse_toplevel_phrase = ref Parse.toplevel_phrase
@@ -76,7 +91,7 @@ let pr_item env ppf = function
       | _ ->
           fprintf ppf "@[<2>%a =@ %a@]"
           (Printtyp.value_description id) decl
-          (print_value env (Symtable.get_global_value id))
+          (print_value env (getvalue (Ident.name id)))
           decl.val_type
       end;
       rem
