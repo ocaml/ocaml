@@ -757,7 +757,11 @@ fi
 case "$host" in
   mips-*-ultrix*) bignum_arch=mips;;
   alpha-*-osf*) bignum_arch=alpha;;
-  i[3456]86-*-linux) bignum_arch=x86;;
+  i[3456]86-*-linux*)
+    case `sh ./runtest elf.c` in
+      elf) bignum_arch=x86;;
+        *) bignum_arch=C;;
+    esac;;
   i[3456]86-*-beos) bignum_arch=x86;;
   i[3456]86-*-*bsd*)
     case `sh ./runtest elf.c` in
