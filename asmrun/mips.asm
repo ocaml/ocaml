@@ -72,10 +72,10 @@ caml_call_gc:
     /* Record lowest stack address and return address */
         sw      $31, caml_last_return_address
         sw      $sp, caml_bottom_of_stack
-    /* Save requested size */
-        subu    $sp, $sp, 8
-        sw      $31, 4($sp)
-        sw      $25, 0($sp)
+    /* Save requested size. Also reserve some stack space for the call. */
+        subu    $sp, $sp, 24
+        sw      $31, 20($sp)
+        sw      $25, 16($sp)
     /* Save current allocation pointer for debugging purposes */
         sw      $22, young_ptr
     /* Save all regs used by the code generator in the arrays
@@ -157,11 +157,11 @@ caml_call_gc:
         lw      $22, young_ptr
         lw      $23, young_start
     /* Allocate space for the block */
-        lw      $25, 0($sp)
+        lw      $25, 16($sp)
         subu    $22, $22, $25
     /* Return to caller */
-        lw	$31, 4($sp)
-        addu    $sp, $sp, 8
+        lw	$31, 20($sp)
+        addu    $sp, $sp, 24
         j       $31
 
         .end    caml_alloc1
@@ -261,8 +261,132 @@ raise_caml_exception:
         lw      $23, young_start
         lw      $sp, caml_exception_pointer
         lw      $30, 0($sp)
-        lw      $2, 8($sp)
+        lw      $25, 4($sp)
         addu    $sp, $sp, 8
-        j       $2
+        j       $25
 
         .end    raise_caml_exception
+
+/* Callback from C to Caml */
+
+        .globl  callback
+        .ent    callback
+callback:
+    /* Initial shuffling of arguments */
+        move    $9, $4          /* closure */
+        move    $8, $5          /* argument */
+        lw      $24, 0($4)      /* code pointer */
+$103:
+    /* Save return address */
+	subu    $sp, $sp, 88
+        sw      $31, 84($sp)
+    /* Save all callee-save registers */
+        sw      $16, 0($sp)
+        sw      $17, 4($sp)
+        sw      $18, 8($sp)
+        sw      $19, 12($sp)
+        sw      $20, 16($sp)
+        sw      $21, 20($sp)
+        sw      $22, 24($sp)
+        sw      $23, 28($sp)
+        sw      $30, 32($sp)
+        s.d     $f20, 36($sp)
+        s.d     $f22, 44($sp)
+        s.d     $f24, 52($sp)
+        s.d     $f26, 60($sp)
+        s.d     $f28, 68($sp)
+        s.d     $f30, 76($sp)
+    /* Set up a trap frame to catch exceptions escaping the Caml code */
+        subu    $sp, $sp, 8
+        lw      $30, caml_exception_pointer
+        sw      $30, 0($sp)
+        la      $2, $105
+        sw      $2, 4($sp)
+        move    $30, $sp
+    /* Set up a callback link on the stack. */
+        subu    $sp, $sp, 8
+        lw      $2, caml_bottom_of_stack
+        sw      $2, 0($sp)
+        lw      $3, caml_last_return_address
+        sw      $3, 4($sp)
+    /* Reload allocation pointers */
+	lw	$22, young_ptr
+	lw	$23, young_start
+    /* Call the Caml code */
+$104:   jal     $24
+    /* Pop the callback link,
+       restoring the global variables used by caml_c_call */
+        lw      $24, 0($sp)
+        sw      $24, caml_bottom_of_stack
+        lw      $25, 4($sp)
+        sw      $25, caml_last_return_address
+        addu    $sp, $sp, 8
+    /* Pop the trap frame, restoring caml_exception_pointer */
+        lw      $24, 0($sp)
+        sw      $24, caml_exception_pointer
+        addu    $sp, $sp, 8
+    /* Update allocation pointer */
+        sw      $22, young_ptr
+    /* Reload callee-save registers and return */
+        lw      $31, 84($sp)
+        lw      $16, 0($sp)
+        lw      $17, 4($sp)
+        lw      $18, 8($sp)
+        lw      $19, 12($sp)
+        lw      $20, 16($sp)
+        lw      $21, 20($sp)
+        lw      $22, 24($sp)
+        lw      $23, 28($sp)
+        lw      $30, 32($sp)
+        l.d     $f20, 36($sp)
+        l.d     $f22, 44($sp)
+        l.d     $f24, 52($sp)
+        l.d     $f26, 60($sp)
+        l.d     $f28, 68($sp)
+        l.d     $f30, 76($sp)
+        addu    $sp, $sp, 88
+        j       $31
+        
+    /* The trap handler: re-raise the exception through mlraise,
+       so that local C roots are cleaned up correctly. */
+$105:
+        sw      $22, young_ptr
+        sw      $30, caml_exception_pointer
+        subu    $sp, $sp, 16    /* reserve some space for the call */
+        move    $4, $2          /* bucket as first argument */
+        jal     mlraise         /* never returns */
+
+        .end    callback
+
+        .globl  callback2
+        .ent    callback2
+callback2:
+    /* Initial shuffling of arguments */
+        move    $10, $4                 /* closure */
+        move    $8, $5                  /* first argument */
+        move    $9, $6                  /* second argument */
+        la      $24, caml_apply2        /* code pointer */
+        b       $103
+
+        .end    callback2
+
+        .globl  callback3
+        .ent    callback3
+callback3:
+    /* Initial shuffling of arguments */
+        move    $11, $4                 /* closure */
+        move    $8, $5                  /* first argument */
+        move    $9, $6                  /* second argument */
+        move    $10, $7                 /* third argument */
+        la      $24, caml_apply3        /* code pointer */
+        b       $103
+
+        .end    callback3
+
+        .rdata
+        .globl  system_frametable
+system_frametable:
+        .word   1               /* one descriptor */
+        .word   $104 + 8        /* return address into callback */
+        .half   -1              /* negative frame size => use callback link */
+        .half   0               /* no roots here */
