@@ -108,11 +108,13 @@ let f :dir =
         current_dir := dir;
         renew_dirs dirbox var:var_dir :dir
       end);
-(*
+
+  (* Avoid space being used by the completion mechanism *)
   let bind_space_toggle lb =
-    bind lb events:[`KeyPressDetail "space"] extend:true action:ignore
-  in bind_space_toggle dirbox; bind_space_toggle pathbox;
-*)
+    bind lb events:[`KeyPressDetail "space"] extend:true action:ignore in
+  bind_space_toggle dirbox;
+  bind_space_toggle pathbox;
+
   let add_paths _ =
     add_to_path pathbox base:!current_dir
       dirs:(List.map (Listbox.curselection dirbox)
