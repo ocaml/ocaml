@@ -945,7 +945,7 @@ lbl_1168: TST.L      (have_to_interact).L
           BNE.S      interact
           UDispatch
 interact: CLR.L      (have_to_interact).L
-          MOVE.L     (gc_phase).L, -(A7)
+          CLR.L      -(A7)
           Call_setup
           JSR        (rotatecursor_action).L
           Call_restore

@@ -82,9 +82,9 @@
 :typing:typetexp.cmiÄ :typing:env.cmi :parsing:location.cmi ¶
     :parsing:longident.cmi :parsing:parsetree.cmi :typing:types.cmi 
 :typing:ctype.cmoÄ :parsing:asttypes.cmi :typing:env.cmi :utils:misc.cmi ¶
-    :typing:path.cmi :typing:types.cmi :typing:ctype.cmi 
+    :typing:path.cmi :typing:subst.cmi :typing:types.cmi :typing:ctype.cmi 
 :typing:ctype.cmxÄ :parsing:asttypes.cmi :typing:env.cmx :utils:misc.cmx ¶
-    :typing:path.cmx :typing:types.cmx :typing:ctype.cmi 
+    :typing:path.cmx :typing:subst.cmx :typing:types.cmx :typing:ctype.cmi 
 :typing:datarepr.cmoÄ :parsing:asttypes.cmi :utils:misc.cmi :typing:path.cmi ¶
     :typing:predef.cmi :typing:types.cmi :typing:datarepr.cmi 
 :typing:datarepr.cmxÄ :parsing:asttypes.cmi :utils:misc.cmx :typing:path.cmx ¶
@@ -144,15 +144,15 @@
 :typing:typeclass.cmoÄ :parsing:asttypes.cmi :typing:ctype.cmi ¶
     :typing:env.cmi :typing:ident.cmi :parsing:location.cmi ¶
     :parsing:longident.cmi :utils:misc.cmi :parsing:parsetree.cmi ¶
-    :typing:path.cmi :typing:printtyp.cmi :typing:typecore.cmi ¶
-    :typing:typedtree.cmi :typing:types.cmi :typing:typetexp.cmi ¶
-    :typing:typeclass.cmi 
+    :typing:path.cmi :typing:printtyp.cmi :typing:subst.cmi ¶
+    :typing:typecore.cmi :typing:typedtree.cmi :typing:types.cmi ¶
+    :typing:typetexp.cmi :typing:typeclass.cmi 
 :typing:typeclass.cmxÄ :parsing:asttypes.cmi :typing:ctype.cmx ¶
     :typing:env.cmx :typing:ident.cmx :parsing:location.cmx ¶
     :parsing:longident.cmx :utils:misc.cmx :parsing:parsetree.cmi ¶
-    :typing:path.cmx :typing:printtyp.cmx :typing:typecore.cmx ¶
-    :typing:typedtree.cmx :typing:types.cmx :typing:typetexp.cmx ¶
-    :typing:typeclass.cmi 
+    :typing:path.cmx :typing:printtyp.cmx :typing:subst.cmx ¶
+    :typing:typecore.cmx :typing:typedtree.cmx :typing:types.cmx ¶
+    :typing:typetexp.cmx :typing:typeclass.cmi 
 :typing:typecore.cmoÄ :parsing:asttypes.cmi :typing:ctype.cmi :typing:env.cmi ¶
     :typing:ident.cmi :parsing:location.cmi :parsing:longident.cmi ¶
     :utils:misc.cmi :typing:parmatch.cmi :parsing:parsetree.cmi ¶
@@ -288,10 +288,10 @@
     :bytecomp:printlambda.cmi 
 :bytecomp:runtimedef.cmoÄ :bytecomp:runtimedef.cmi 
 :bytecomp:runtimedef.cmxÄ :bytecomp:runtimedef.cmi 
-:bytecomp:simplif.cmoÄ :parsing:asttypes.cmi :typing:ident.cmi ¶
-    :bytecomp:lambda.cmi :bytecomp:simplif.cmi 
-:bytecomp:simplif.cmxÄ :parsing:asttypes.cmi :typing:ident.cmx ¶
-    :bytecomp:lambda.cmx :bytecomp:simplif.cmi 
+:bytecomp:simplif.cmoÄ :parsing:asttypes.cmi :utils:clflags.cmo ¶
+    :typing:ident.cmi :bytecomp:lambda.cmi :bytecomp:simplif.cmi 
+:bytecomp:simplif.cmxÄ :parsing:asttypes.cmi :utils:clflags.cmx ¶
+    :typing:ident.cmx :bytecomp:lambda.cmx :bytecomp:simplif.cmi 
 :bytecomp:symtable.cmoÄ :parsing:asttypes.cmi :utils:clflags.cmo ¶
     :utils:config.cmi :bytecomp:emitcode.cmi :typing:ident.cmi ¶
     :bytecomp:lambda.cmi :bytecomp:meta.cmi :utils:misc.cmi ¶

@@ -744,7 +744,7 @@ value interprete(prog, prog_size)
 #if macintosh
       if (have_to_interact){
         have_to_interact = 0;
-        rotatecursor_action (gc_phase);
+        rotatecursor_action (0);
       }
 #endif
       Next;
