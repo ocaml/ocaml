@@ -107,8 +107,9 @@ let scan_file obj_name tolink =
       Link_archive(file_name, required) :: tolink
     end
     else raise(Error(Not_an_object_file file_name))
-  with x ->
-    close_in ic; raise x
+  with
+    End_of_file -> close_in ic; raise(Error(Not_an_object_file file_name))
+  | x -> close_in ic; raise x
 
 (* Second pass: link in the required units *)
 

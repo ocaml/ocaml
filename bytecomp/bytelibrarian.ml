@@ -61,9 +61,9 @@ let copy_object_file oc name =
       toc
     end else
       raise(Error(Not_an_object_file file_name))
-  with x ->
-    close_in ic;
-    raise x
+  with
+    End_of_file -> close_in ic; raise(Error(Not_an_object_file file_name))
+  | x -> close_in ic; raise x
 
 let create_archive file_list lib_name =
   let outchan = open_out_bin lib_name in
