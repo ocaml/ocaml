@@ -2457,8 +2457,7 @@ let rec build_subtype env visited loops posi onlyloop t =
       if List.memq t visited then (t, Unchanged) else
       let visited =
         if !Clflags.recursive_types then t :: visited else visited in
-      let (t1', c1) =
-        build_subtype env visited loops (not posi) (pred_expand onlyloop) t1 in
+      let (t1', c1) = build_subtype env visited loops (not posi) onlyloop t1 in
       (* let (t1', c1) = (t1, Unchanged) in *)
       let (t2', c2) = build_subtype env visited loops posi onlyloop t2 in
       let c = max c1 c2 in
