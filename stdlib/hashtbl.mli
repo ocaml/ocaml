@@ -70,6 +70,15 @@ val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
            [f] is unspecified. Each binding is presented exactly once
            to [f]. *)
 
+val fold : f:(key:'a -> data:'b -> 'c -> 'c) -> ('a, 'b) t -> init:'c -> 'c
+        (* [Hashtbl.fold f tbl init] computes
+           [(f kN dN ... (f k1 d1 init)...)],
+           where [k1 ... kN] are the keys of all bindings in [tbl],
+           and [d1 ... dN] are the associated values.
+           The order in which the bindings are passed to
+           [f] is unspecified. Each binding is presented exactly once
+           to [f]. *)
+
 (*** Functorial interface *)
 
 module type HashedType =
@@ -104,6 +113,7 @@ module type S =
     val replace : 'a t -> key:key -> data:'a -> unit
     val mem: 'a t -> key -> bool
     val iter: f:(key:key -> data:'a -> unit) -> 'a t -> unit
+    val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
   end
 
 module Make(H: HashedType): (S with type key = H.t)

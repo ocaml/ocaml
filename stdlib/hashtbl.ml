@@ -141,6 +141,20 @@ let iter f h =
     do_bucket d.(i)
   done
 
+let fold f h init =
+  let rec do_bucket b accu =
+    match b with
+      Empty ->
+        accu
+    | Cons(k, d, rest) ->
+        do_bucket rest (f k d accu) in
+  let d = h.data in
+  let accu = ref init in
+  for i = 0 to Array.length d - 1 do
+    accu := do_bucket d.(i) !accu
+  done;
+  !accu
+
 (* Functorial interface *)
 
 module type HashedType =
@@ -163,6 +177,7 @@ module type S =
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
+    val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
   end
 
 module Make(H: HashedType): (S with type key = H.t) =
@@ -243,6 +258,6 @@ module Make(H: HashedType): (S with type key = H.t) =
           H.equal k key || mem_in_bucket rest in
       mem_in_bucket h.data.((H.hash key) mod (Array.length h.data))
 
-
     let iter = iter
+    let fold = fold
   end
