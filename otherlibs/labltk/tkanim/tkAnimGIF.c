@@ -290,8 +290,10 @@ FileReadGIF(interp, f, fileName, formatString)
 	for(i=0; i<7; i++){ Tcl_DecrRefCount(argv[i]); }
 
 #else
-	char *argv[7] = {"image", "create", "photo", "-width", widthbuf,
-			 "-height", heightbuf};
+	char *argv[7] = {"image", "create", "photo", "-width", NULL,
+			 "-height", NULL};
+	argv[4] = widthbuf;
+	argv[6] = heightbuf;
 #ifdef TKANIM_DEBUG
     fprintf(stderr, "\n\t\timage creation (%s %s %s %s %s %s %s)", 
 	    argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
