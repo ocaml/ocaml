@@ -313,7 +313,6 @@ CAMLexport void caml_main(char **argv)
 {
   int fd, pos;
   struct exec_trailer trail;
-  asize_t prog_size;
   struct channel * chan;
   value res;
   char * shared_lib_path, * shared_libs, * req_prims;
