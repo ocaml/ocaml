@@ -39,6 +39,17 @@ other-options
 load-options
 ]
 file
+.LP
+.br
+.B camlp4o.opt
+[
+other-options
+]
+.br
+.B camlp4r.opt
+[
+other-options
+]
 
 .SH DESCRIPTION
 .B camlp4
@@ -64,6 +75,13 @@ See further.
 .B ocpp
 is an universal preprocessor, treating any kind of source file,
 generating the same text with the possible quotations expanded.
+.LP
+.B camlp4o.opt
+and
+.B camlp4r.opt
+are versions of camlp4o and camlp4r compiled by the native-code compiler
+ocamlopt. They are faster but not extensible. And they are not available
+in all installations of camlp4.
 
 .SH LOAD OPTIONS
 
