@@ -823,13 +823,20 @@ class html =
       let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
       "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
 
-    (** Return html code to display a [Types.type_expr list].*)
+    (** Return html code to display a [Types.type_expr list]. *)
     method html_of_type_expr_list m_name sep l =
       print_DEBUG "html#html_of_type_expr_list";
       let s = Odoc_info.string_of_type_list sep l in
       print_DEBUG "html#html_of_type_expr_list: 1";
       let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
       print_DEBUG "html#html_of_type_expr_list: 2";
+      "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
+
+    (** Return html code to display a [Types.type_expr list] as type parameters
+       of a class of class type. *)
+    method html_of_class_type_param_expr_list m_name l =
+      let s = Odoc_info.string_of_class_type_param_list l in
+      let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
       "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
 
     (** Return html code to display a list of type parameters for the given type.*)
@@ -1255,8 +1262,8 @@ class html =
        match c.cl_type_parameters with
          [] -> ()
        | l -> 
-           p buf "[%s] "
-             (self#html_of_type_expr_list father ", " l)
+           p buf "%s "
+             (self#html_of_class_type_param_expr_list father l)
       );
       print_DEBUG "html#html_of_class : with link or not" ;
       (
@@ -1297,7 +1304,7 @@ class html =
       (
        match ct.clt_type_parameters with
         [] -> ()
-      | l -> p buf "[%s] " (self#html_of_type_expr_list father ", " l)
+      | l -> p buf "%s " (self#html_of_class_type_param_expr_list father l)
       );
 
       if with_link then

@@ -118,6 +118,8 @@ let string_of_type_list sep type_list = Odoc_str.string_of_type_list sep type_li
 
 let string_of_type_param_list t = Odoc_str.string_of_type_param_list t
 
+let string_of_class_type_param_list l = Odoc_str.string_of_class_type_param_list l
+
 let string_of_module_type = Odoc_misc.string_of_module_type
 
 let string_of_class_type = Odoc_misc.string_of_class_type

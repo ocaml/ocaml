@@ -55,7 +55,7 @@ let raw_string_of_type_list sep type_list =
     [] -> ()
   | [(variance, ty)] -> print_one_type variance ty
   | (variance, ty) :: tyl ->
-      Format.fprintf fmt "@[<hov 2>(";
+      Format.fprintf fmt "@[<hov 2>";
       print_one_type variance ty;
       List.iter
         (fun (variance, t) -> 
@@ -63,20 +63,53 @@ let raw_string_of_type_list sep type_list =
 	  print_one_type variance t
 	)
         tyl;
-      Format.fprintf fmt ")@]"
+      Format.fprintf fmt "@]"
   end;
   Format.pp_print_flush fmt ();
   Buffer.contents buf
 
 let string_of_type_list sep type_list =
-  raw_string_of_type_list sep (List.map (fun t -> ("", t)) type_list)
+  let par =
+    match type_list with
+      [] | [_] -> false
+    | _ -> true
+  in
+  Printf.sprintf "%s%s%s"
+    (if par then "(" else "")
+    (raw_string_of_type_list sep (List.map (fun t -> ("", t)) type_list))
+    (if par then ")" else "")
 
 let string_of_type_param_list t =
-  raw_string_of_type_list ", "
-    (List.map 
-       (fun (typ, co, cn) -> (string_of_variance t (co, cn), typ))
-       t.Odoc_type.ty_parameters
+  let par = 
+    match t.Odoc_type.ty_parameters with
+      [] | [_] -> false
+    | _ -> true
+  in
+  Printf.sprintf "%s%s%s"
+    (if par then "(" else "")
+    (raw_string_of_type_list ", "
+       (List.map 
+	  (fun (typ, co, cn) -> (string_of_variance t (co, cn), typ))
+	  t.Odoc_type.ty_parameters
+       )
     )
+    (if par then ")" else "")
+
+let string_of_class_type_param_list l =
+  let par = 
+    match l with
+      [] | [_] -> false
+    | _ -> true
+  in
+  Printf.sprintf "%s%s%s"
+    (if par then "[" else "")
+    (raw_string_of_type_list ", "
+       (List.map 
+	  (fun typ -> ("", typ))
+	  l
+       )
+    )
+    (if par then "]" else "")
 
 let string_of_type t =
   let module M = Odoc_type in

@@ -595,9 +595,8 @@ class latex =
          match c.cl_type_parameters with
            [] -> ()
          | l -> 
-             Format.fprintf f "[" ;
-             let s1 = self#normal_type_list father ", " l in
-             Format.fprintf f "%s] " s1
+             let s1 = self#normal_class_type_param_list father l in
+             Format.fprintf f "%s " s1
         );
         Format.fprintf f "%s : %s" 
 	  (Name.simple c.cl_name)
@@ -633,9 +632,8 @@ class latex =
          match ct.clt_type_parameters with
              [] -> ()
          | l -> 
-             Format.fprintf f "[" ;
-             let s1 = self#normal_type_list father ", " l in
-             Format.fprintf f "%s] " s1
+             let s1 = self#normal_class_type_param_list father l in
+             Format.fprintf f "%s " s1
         );
         Format.fprintf f "%s = %s" 
 	  (Name.simple ct.clt_name)

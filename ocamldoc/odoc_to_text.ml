@@ -203,6 +203,11 @@ class virtual to_text =
     method normal_type_list m_name sep t =
       (self#relative_idents m_name (Odoc_info.string_of_type_list sep t))
 
+    (** Get a string for a list of class or class type type parameters
+       where all idents are relative. *)
+    method normal_class_type_param_list m_name t =
+      (self#relative_idents m_name (Odoc_info.string_of_class_type_param_list t))
+
     (** @return [text] value to represent a [Types.type_expr].*)
     method text_of_type_expr module_name t =
       let t = List.flatten 
@@ -222,6 +227,11 @@ class virtual to_text =
        the given separator. *)
     method text_of_type_expr_list module_name sep l =
       [ Code (self#normal_type_list module_name sep l) ]        
+
+    (** Return [text] value or the given list of [Types.type_expr], 
+       as type parameters of a class of class type. *)
+    method text_of_class_type_param_expr_list module_name l =
+      [ Code (self#normal_class_type_param_list module_name l) ]        
 
 
     (** @return [text] value to represent a [Types.module_type]. *)
@@ -437,7 +447,7 @@ class virtual to_text =
              [] -> []
            | l -> 
                (Code "[") ::
-               (self#text_of_type_expr_list father  ", " l) @
+               (self#text_of_class_type_param_expr_list father l) @
                [Code "] "]
           ) @
           (

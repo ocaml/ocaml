@@ -1,3 +1,10 @@
+Current :
+OK - fix bad display of type parameters for class and class types
+- need to fix display of type parameters for inherited classes/class types
+
+
+======
+
 Release 3.05 :
  - added link tags in html header to reference sections and subsections
    in each page (for browser which handle those tags)

@@ -615,6 +615,11 @@ val string_of_type_list : string -> Types.type_expr list -> string
    for the given type. *)
 val string_of_type_param_list : Type.t_type -> string
 
+(** This function returns a string to represent the given list of 
+   type parameters of a class or class type,
+   with a given separator. It writes in and flushes [Format.str_formatter].*)
+val string_of_class_type_param_list : Types.type_expr list -> string
+
 (** This function returns a string representing a [Types.module_type]. 
    @param complete indicates if we must print complete signatures
    or just [sig end]. Default if [false].
