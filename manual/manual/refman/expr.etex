@@ -379,6 +379,8 @@ exactly as
 @'if' expr_1 'then' 'true' 'else' expr_2@.
 \end{center}
 
+The boolean operators @'&&'@ and @'||'@ are synonyms for @'&'@ and @'or'@.
+
 \subsubsection*{Loops}
 
 \ikwd{while\@\texttt{while}}
@@ -559,7 +561,7 @@ details). Their meaning may be changed at any time using
         "Division_by_zero" if second argument is zero. The result is
         unspecified if either argument is negative.}
 \entree{"land"}{Bitwise logical ``and'' on integers.}
-\entree{"lor"}{Bitwise logical ``or on integers.}
+\entree{"lor"}{Bitwise logical ``or'' on integers.}
 \entree{"lxor"}{Bitwise logical ``exclusive or'' on integers.}
 \entree{"lsl"}{Bitwise logical shift left on integers.}
 \entree{"lsr"}{Bitwise logical shift right on integers.}

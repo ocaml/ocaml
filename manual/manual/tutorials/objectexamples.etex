@@ -167,8 +167,9 @@ the code for adjustment is part of the definition of the class and will be
 inherited.
 
 This ability provides class constructors as can be found in other
-languages. Several constructors can be defined this way to build
-objects of the same class but with different initialization patterns.
+languages. Several constructors can be defined this way to build objects of
+the same class but with different initialization patterns (an alternative to
+the use of initializers decribed below \ref{ss:initializers}).
 
 
 \section{Reference to self}
@@ -284,7 +285,7 @@ class point_again x =
   end;;
 \end{caml_example}
 One could think that a private method should remain private in a subclass. 
-However, it since the method is visible in a subclass, it is always possible
+However, since the method is visible in a subclass, it is always possible
 pick it's code and define a method of the same name that run that code, so
 yet another (heavier) solution would be:
 \begin{caml_example} 
@@ -402,9 +403,9 @@ let p' = new printable_colored_point 17 "red";;
 p'#print;;
 \end{caml_example}
 A private method that has been hidden in the parent class is no more
-visible, and is thus not overridden. This also applies to initializers:
-all initializers along the class hierarchy are evaluated, in the order
-they are introduced.
+visible, and is thus not overridden. Since initializers are treated as
+private methods, all initializers along the class hierarchy are evaluated,
+in the order they are introduced.
 
 \section{Parameterized classes}
 \pdfsection{Parameterized classes}
@@ -640,9 +641,11 @@ One could think of defining the type abbreviation directly:
 \begin{caml_example}
 type c1 = <m : c1>;;
 \end{caml_example}
-However, the abbreviation "#c1" cannot be defined this way (the
-abbreviation "#c0" is defined from the class "c0", not from the type
-"c0"), and should be expanded:
+However, the abbreviation "#c0" cannot be defined directly in a similar
+It can only be defined by a class or a classtyped definition. 
+(One reason is that "#" sharp abbreviations carry an implicit anonymous
+variable ".." that cannot be explicitly named).
+Thus, the abbreviation "#c0" should be expanded:
 \begin{caml_example}
 class c = object (self)  method m = (self : <m : c1; ..> as 'a :> c1) end;;
 \end{caml_example}
@@ -726,13 +729,14 @@ q#move 7; (p#get_x, q#get_x);;
 In fact, "Oo.copy p" will behave as "p#copy" assuming that a public
 method "copy" with body "{< >}" has been defined in the class of "p".
 
-Objects can be compared using the generic comparison functions ("=",
-"<", ...).  Two objects are equal if and only if they are physically
-equal. In particular, an object and its copy are not equal.
+Objects can be compared using the generic comparison functions "=" and "<>".
+Two objects are equal if and only if they are physically equal. In
+particular, an object and its copy are not equal.
 \begin{caml_example}
 let q = Oo.copy p;;
 p = q, p = p;;
 \end{caml_example}
+Other generic comparissons such as "<" return unspecified results on objects.
 
 Cloning and override have a non empty intersection.
 They are interchangeable when used within an object and without 

@@ -254,7 +254,9 @@ to the inheritance construct above.  @value-name@ is not a true
 variable and can only be used to select a method, i.e. in an expression
 @value-name '#' method-name@.  This gives access to the
 method @method-name@ as it was defined in the parent class even if it is
-redefined in the current class.
+redefined in the current class. 
+The scope of an ancestor binding is limited to the current class. 
+The ancestor method may be called from a subclass but only indirectly. 
 
 \subsubsection*{Instance variable definition}
 

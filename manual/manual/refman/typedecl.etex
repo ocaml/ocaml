@@ -16,7 +16,7 @@ type-definition:
 ;
 typedef:
           [type-params] typeconstr-name [type-equation] [type-representation]
-          { constraint }
+          { type-constraint }
 ;
 type-equation:
           '=' typexpr
@@ -37,7 +37,7 @@ label-decl:
           label-name ':' typexpr
         | 'mutable' label-name ':' typexpr
 ;
-constraint:
+type-constraint:
     'constraint' "'" ident '=' typexpr
 ;
 \end{syntax}

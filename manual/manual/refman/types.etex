@@ -6,6 +6,7 @@
 \begin{syntax}
 typexpr:
         "'" ident
+      | "_" 
       | '(' typexpr ')'
       | typexpr '->' typexpr
       | typexpr {{ '*' typexpr }}
@@ -40,7 +41,8 @@ in type constraints over patterns and expressions.
 \subsubsection*{Type variables}
 
 The type expression @"'" ident@ stands for the type variable named
-@ident@. In data type definitions, type variables are names for the
+@ident@. The type expression @"_"@ stands for an anonymous type variable.
+In data type definitions, type variables are names for the
 data type parameters. In type constraints, they represent unspecified
 types that can be instantiated by any type to satisfy the type
 constraint.
@@ -81,12 +83,11 @@ application of the $n$-ary type constructor @typeconstr@ to the types
 \ikwd{as\@\texttt{as}}
 
 The type expression @typexpr 'as' "'" ident@ denotes the same type as
-@typexpr@, and also binds the type variable @ident@ to type @typexpr@
-both in @typexpr@ and in the remaining part of the type. 
-If the type variable @ident@ actually occurs in @typexpr@, a recursive
-type is created. Recursive types are only allowed when any recursion
-crosses an object type.
-%
+@typexpr@, and also binds the type variable @ident@ to type @typexpr@ both
+in @typexpr@ and in the remaining part of the type.  If the type variable
+@ident@ actually occurs in @typexpr@, a recursive type is created. Recursive
+types for which  there exists a recursive path that does not contain
+an object type constructor are rejected. 
 
 \subsubsection*{Object types}
 
@@ -98,7 +99,10 @@ The type @'<' method-type { ';' method-type } ';' '..'  '>'@ is the
 type of an object with methods and their associated types are described by
 @method-type_1, \ldots, method-type_n@, and possibly some other
 methods represented by the ellipsis.  This ellipsis actually is
-a special kind of type variable, named row variable.
+a special kind of type variable that stands for any number of extra
+fields. 
+
+% named row variable.
 
 \subsubsection*{\#-types}
 \label{s:sharp-types}
