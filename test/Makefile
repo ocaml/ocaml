@@ -69,7 +69,7 @@ clean::
 
 # Regression test
 
-test: $(EXE)
+test:
 	set -e; \
         for prog in $(EXE); do \
           echo $$prog; \
@@ -85,7 +85,7 @@ clean::
 
 # Benchmark
 
-bench: $(EXE)
+bench:
 	set -e; \
         for prog in $(EXE); do \
           echo $$prog; \
