@@ -91,6 +91,7 @@
 		 '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
 	  (t
 	   (setq font-lock-keywords caml-font-lock-keywords)))
+	 (make-local-variable 'font-lock-keywords-only)
 	 (setq font-lock-keywords-only t)
 	 (font-lock-mode 1)))
 

@@ -1,4 +1,4 @@
-	    O'Caml emacs mode, version 2.01+ of 1998/12/16
+	    O'Caml emacs mode, snapshot of $Date$
 
 The files in this archive define a caml-mode for emacs, for editing
 Objective Caml and Objective Label programs, as well as an
@@ -23,6 +23,14 @@ three lines in your .emacs.
 I added camldebug.el from the original distribution, since there will
 soon be a debugger for Objective Caml, but I do not know enough about
 it.
+
+To install the mode itself, edit the Makefile and do
+
+	% make install
+
+To install ocamltags, set SCRIPTDIR in the Makefile and do
+
+	% make install-ocamltags
 
 To use highlighting capabilities, add ONE of the following two
 lines to your .emacs.
@@ -54,6 +62,10 @@ For other bindings, see C-h b.
 
 Changes log:
 -----------
+* improved ocamltags <ITZ and JG>
+
+* added support for multibyte characters in emacs 20
+
 Version 2.01+:
 --------------
 * corrected a bug in caml-font.el <Adam P. Jenkins>

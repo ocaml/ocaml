@@ -237,6 +237,10 @@ Usually negative. nil is align on master.")
   "*Extra indent for caml lines starting with }.
 Usually negative. nil is align on master.")
 
+(defvar caml-rp-extra-indent -1
+  "*Extra indent for caml lines starting with ).
+Usually negative. nil is align on master.")
+
 (defvar caml-electric-indent t
   "*Non-nil means electrically indent lines starting with |, ] or }.
 
@@ -607,7 +611,26 @@ variable caml-mode-indentation."
              (caml-in-indentation))
         (backward-delete-char-untabify caml-mode-indentation))))
 
+;;;
 ;;; Error processing
+;;;
+
+;; Error positions are given in bytes, not in characters
+;; This function switches to monobyte mode
+
+(if (not (fboundp 'char-bytes))
+    (defalias forward-byte forward-char)
+  (defun caml-char-bytes (ch)
+    (let ((l (char-bytes ch)))
+      (if (> l 1) (- l 1) l)))
+  (defun forward-byte (count)
+    (if (> count 0)
+	(while (> count 0)
+	  (setq count (- count (caml-char-bytes (char-after))))
+	  (forward-char))
+      (while (< count 0)
+	(setq count (+ count (caml-char-bytes (char-before))))
+	(backward-char)))))
 
 (require 'compile)
 
@@ -652,7 +675,7 @@ fragment. The erroneous fragment is also temporarily highlighted if
 possible."
 
  (if (eq major-mode 'caml-mode)
-     (let ((beg nil) (end nil))
+     (let (bol beg end)
        (save-excursion
 	 (set-buffer
 	  (if (boundp 'compilation-last-buffer) 
@@ -668,9 +691,12 @@ possible."
 		     (string-to-int
 		      (buffer-substring (match-beginning 2) (match-end 2)))))))
        (cond (beg
+	      (setq end (- end beg))
               (beginning-of-line)
-	      (setq beg (+ (point) beg)
-		    end (+ (point) end))
+	      (forward-byte beg)
+	      (setq beg (point))
+	      (forward-byte end)
+	      (setq end (point))
 	      (goto-char beg)
 	      (push-mark end t)
 	      (cond ((fboundp 'make-overlay)
@@ -1296,7 +1322,13 @@ the line where the governing keyword occurs.")
 	(setq kwop (funcall matching-fun))
 	(if (looking-at kwop-list) (setq done t)))
        (t (let* ((kwop-info (assoc kwop caml-kwop-alist))
-		 (is-op (nth 1 kwop-info)))
+		 (is-op (and (nth 1 kwop-info)
+			     ; check that we are not at beginning of line
+			     (let ((pos (point)) bti)
+			       (back-to-indentation)
+			       (setq bti (point))
+			       (goto-char pos)
+			       (< bti pos)))))
 	    (if (and is-op (looking-at 
 			    (concat (regexp-quote kwop)
 				    "|?[ \t]*\\(\n\\|(\\*\\)")))
@@ -1328,7 +1360,6 @@ Does not preserve point."
 		  (aref caml-kwop-regexps caml-max-indent-priority))
 		 (let* ((kwop (caml-match-string 0))
 			(kwop-info (assoc kwop caml-kwop-alist))
-			(is-op (if kwop-info (nth 1 kwop-info)))
 			(prio (if kwop-info (nth 2 kwop-info)
 				caml-max-indent-priority)))
 		   (if (and (looking-at (aref caml-kwop-regexps 0))
@@ -1349,21 +1380,15 @@ Does not preserve point."
 	    (let ((pos (point)))
 	      (back-to-indentation)
 ;	      (if (looking-at "\\<let\\>") (goto-char pos))
-	      (let* ((indent (symbol-value (nth 3 kwop-info)))
-		     (kwop-extra
-		      (if (looking-at "|")
-			  (assoc (caml-match-string 0)
-				 caml-leading-kwops-alist))))
-		(if kwop-extra
-		    (- indent (symbol-value (nth 1 kwop-extra)))
-		  indent))))))
+	      (- (symbol-value (nth 3 kwop-info))
+		 (if (looking-at "|") caml-|-extra-indent 0))))))
 	 (extra (if in-expr caml-apply-extra-indent 0)))
 	 (+ indent-diff extra (current-column))))
 
 (defconst caml-leading-kwops-regexp
   (concat
    "\\<\\(and\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in"
-   "\\|t\\(hen\\|o\\)\\|with\\)\\>\\|[]|}]")
+   "\\|t\\(hen\\|o\\)\\|with\\)\\>\\|[]|})]")
 
   "Regexp matching caml keywords which need special indentation.")
 
@@ -1379,7 +1404,8 @@ Does not preserve point."
     ("with" caml-with-extra-indent 2)
     ("|" caml-|-extra-indent 2)
     ("]" caml-rb-extra-indent 0)
-    ("}" caml-rc-extra-indent 0))
+    ("}" caml-rc-extra-indent 0)
+    (")" caml-rp-extra-indent 0))
 
   "Association list of special caml keyword indent values.
 

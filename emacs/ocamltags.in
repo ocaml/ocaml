@@ -1,62 +1,65 @@
 ":" ; @EMACS@ -batch -l $0 "$@" ; status=$? ; : '--*-Emacs-Lisp-*--' <<';'
 
+;; Copyright (C) 1998 Ian Zimmerman <itz@transbay.net>
+;;  This program is free software; you can redistribute it and/or
+;;  modify it under the terms of the GNU General Public License as
+;;  published by the Free Software Foundation; either version 2 of the
+;;  License, or (at your option) any later version.
+
+;;  This program is distributed in the hope that it will be useful,
+;;  but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;;  General Public License for more details.
+;; $Id$
+
 (require 'caml)
 
 ;;itz Fri Oct 30 13:08:37 PST 1998 support for creating TAGS files
-(defun caml-tags-next-phrase ()
-  (re-search-forward (concat "^" caml-phrase-start-keywords) nil 'move)
-  (while (and (not (eobp))
-              (or (caml-in-comment-p)
-                  (caml-in-literal-p)
-                  (not (let ((p (point)))
-                         (condition-case nil
-                             (caml-mark-phrase)
-                           (error (goto-char p) nil))))))
-    (forward-line 1))
-  (not (eobp)))
+;; itz Sun Dec 27 10:26:08 PST 1998 adapted very slightly from
+;; Jacques' caml-create-index-function
+(defun caml-tags-create-index-function ()
+  (let (all-alist index)
+    (goto-char (point-max))
+    ;; collect definitions
+    (while (caml-prev-index-position-function)
+      (if (looking-at "[ \t]*val") nil
+	(setq index (cons (caml-match-string 5) (point)))
+	(setq all-alist (cons index all-alist))))
+    all-alist))
 
-(defun caml-tags-file (filename output-buffer)
-  (let* ((basename (file-name-nondirectory filename))
-         (done nil)
-         (current-line 1)
-         last-phrase-point file-buffer)
-    (set-buffer output-buffer)
-    (insert "\n" basename ",\n")
+(defun caml-tags-file (filename)
+  (let* ((output-buffer (current-buffer))
+         (basename (file-name-nondirectory filename))
+         (backpatch (prog2
+                        (insert "\n" basename)
+                        (point))))
     (find-file-read-only filename)
     (caml-mode)
-    (setq file-buffer (current-buffer))
-    (goto-char (point-min))
-    (setq last-phrase-point (point))
-    (while (caml-tags-next-phrase)
-      (save-excursion
-        (re-search-forward caml-phrase-start-keywords)
-        (let ((done nil))
-          (while (not done)
-            (cond
-             ((looking-at "\\s ")
-              (skip-syntax-forward " "))
-             ((char-equal (following-char) ?\( )
-              (forward-sexp 1))
-             ((char-equal (following-char) ?')
-              (skip-syntax-forward "w_"))
-             ((looking-at "\\(type\\|rec\\)\\>")
-              (goto-char (match-end 0)))
-             (t (setq done t)))))
-        (re-search-forward "\\(\\sw\\|\\s_\\)+")
-        (beginning-of-line 1)
-        (setq current-line
-              (+ current-line (count-lines last-phrase-point (point))))
-        (setq last-phrase-point (point))
-        (end-of-line 1)
-        (let ((output-line (format "%%s%d,%d\n"
-                                   (buffer-substring last-phrase-point (point))
-                                   (match-string 0)
-                                   current-line
-                                   (match-beginning 0))))          
-          (set-buffer output-buffer)
-          (insert output-line)))
-      (exchange-point-and-mark))
-    (kill-buffer file-buffer)))
+    (let ((all-alist (caml-tags-create-index-function))
+          (done nil)
+          (current-line 1)
+          (last-point (point-min)))
+      (mapcar
+       (lambda (pair)
+         (let ((tag-name (car pair)) (tag-pos (cdr pair)))
+           (goto-char tag-pos)
+           (setq current-line
+                 (+ current-line (count-lines last-point (point))))
+           (setq last-point (point))
+           (end-of-line 1)
+           (let ((output-line (format "%s%s%d,%d\n"
+                                      (buffer-substring last-point (point))
+                                      tag-name current-line tag-pos)))
+             (save-excursion
+               (set-buffer output-buffer)
+               (insert output-line)))))
+       all-alist))
+    (kill-buffer (current-buffer))
+    (set-buffer output-buffer)
+    (let ((index-size (- (point) backpatch)))
+      (goto-char backpatch)
+      (insert "," (int-to-string index-size) "\n")
+      (goto-char (point-max)))))
 
 (defsubst prefix-p (prefix str)
   (and (<= (length prefix) (length str))
@@ -112,12 +115,10 @@
       (find-file output-file)
       (if append-flag (goto-char (point-max))
         (erase-buffer))
-      (let ((output-buffer (current-buffer)))
-        (while command-line-args-left
-          (caml-tags-file (car command-line-args-left) output-buffer)
-          (setq command-line-args-left (cdr command-line-args-left)))
-        (set-buffer output-buffer)
-        (save-buffer 0)))
+      (while command-line-args-left
+        (caml-tags-file (car command-line-args-left))
+        (setq command-line-args-left (cdr command-line-args-left)))
+      (save-buffer 0))
   (error (setq status 1) (print-error-message foobar)))
 
 (kill-emacs status)

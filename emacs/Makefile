@@ -18,10 +18,6 @@ COMPILECMD=(progn \
               (byte-compile-file "inf-caml.el") \
               (byte-compile-file "camldebug.el"))
 
-ocamltags:	ocamltags.in
-	sed -e 's:@EMACS@:$(EMACS):' ocamltags.in >ocamltags
-	chmod a+x ocamltags
-
 install:
 	@if test "$(EMACSDIR)" = ""; then \
           set xxx `($(EMACS) --batch --eval "(mapcar 'print load-path)") \
@@ -36,12 +32,19 @@ install:
           $(MAKE) simple-install; \
         fi
 
-simple-install:  ocamltags
+simple-install:
 	@echo "Installing in $(EMACSDIR)..."
 	if test -d $(EMACSDIR); then : ; else mkdir -p $(EMACSDIR); fi
 	cp $(FILES) $(EMACSDIR)
 	cd $(EMACSDIR); $(EMACS) --batch --eval '$(COMPILECMD)'
-	cp ocamltags $(SCRIPTDIR)/ocamltags
+
+ocamltags:	ocamltags.in
+	sed -e 's:@EMACS@:$(EMACS):' ocamltags.in >ocamltags
+	chmod a+x ocamltags
+
+install-ocamltags: ocamltags
+
+	cp ocamltags $(SCRIPTDIR)/olabltags
 
 clean:
 	rm -f ocamltags *~ #*#
