@@ -44,6 +44,10 @@ class virtual selector_generic : object
   method emit_extcall_args :
     environment -> Cmm.expression list -> Reg.t array * int
     (* Can be overriden to deal with stack-based calling conventions *)
+  method emit_stores :
+    environment -> Cmm.expression list -> Reg.t array -> unit
+    (* Fill a freshly allocated block.  Can be overriden for architectures
+       that do not provide Arch.offset_addressing. *)
 
   (* The following method is the entry point and should not be overriden *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl

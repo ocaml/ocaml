@@ -448,8 +448,7 @@ method emit_expr env exp =
           let rd = Reg.createv typ_addr in
           let size = size_expr env (Ctuple new_args) in
           self#insert (Iop(Ialloc size)) [||] rd;
-          self#emit_stores env new_args rd 
-            (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int));
+          self#emit_stores env new_args rd;
           rd
       | op ->
           let r1 = self#emit_tuple env new_args in
@@ -572,8 +571,9 @@ method emit_extcall_args env args =
   self#insert_move_args r1 loc_arg stack_ofs;
   arg_stack
 
-method private emit_stores env data regs_addr addr =
-  let a = ref addr in
+method emit_stores env data regs_addr =
+  let a =
+    ref (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int)) in
   List.iter
     (fun e ->
       let (op, arg) = self#select_store !a e in
