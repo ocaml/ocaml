@@ -320,7 +320,7 @@ try_again:
       th_delay = Double_val(th->delay) - now;
       if (th_delay <= 0) {
         th->status = RUNNABLE;
-        th->retval = RESUMED_DELAY;
+        Assign(th->retval,RESUMED_DELAY);
       } else {
         if (th_delay < delay) delay = th_delay;
       }
@@ -328,7 +328,7 @@ try_again:
     if (th->status & (BLOCKED_JOIN - 1)) {
       if (((thread_t)(th->joining))->status == KILLED) {
         th->status = RUNNABLE;
-        th->retval = RESUMED_JOIN;
+        Assign(th->retval, RESUMED_JOIN);
       }
     }
     if (th->status & (BLOCKED_WAIT - 1)) {
@@ -408,7 +408,7 @@ try_again:
         if (retcode <= 0) break;
         if ((th->status & (BLOCKED_READ - 1)) &&
             FD_ISSET(Int_val(th->fd), &readfds)) {
-          th->retval = RESUMED_IO;
+          Assign(th->retval, RESUMED_IO);
           th->status = RUNNABLE;
           if (run_thread == NULL) run_thread = th; /* Found one. */
           /* Wake up only one thread per fd */
@@ -417,7 +417,7 @@ try_again:
         }
         if ((th->status & (BLOCKED_WRITE - 1)) &&
             FD_ISSET(Int_val(th->fd), &writefds)) {
-          th->retval = RESUMED_IO;
+          Assign(th->retval, RESUMED_IO);
           th->status = RUNNABLE;
           if (run_thread == NULL) run_thread = th; /* Found one. */
           /* Wake up only one thread per fd */
@@ -490,7 +490,7 @@ static void check_callback(void)
 value thread_yield(value unit)        /* ML */
 {
   Assert(curr_thread != NULL);
-  curr_thread->retval = Val_unit;
+  Assign(curr_thread->retval, Val_unit);
   return schedule_thread();
 }
 
@@ -505,7 +505,7 @@ static void thread_reschedule(void)
      followed by a RETURN frame */
   accu = *extern_sp++;
   /* Reschedule */
-  curr_thread->retval = accu;
+  Assign(curr_thread->retval, accu);
   accu = schedule_thread();
   /* Push accu below C_CALL frame so that it looks like an event frame */
   *--extern_sp = accu;
@@ -677,7 +677,7 @@ value thread_wakeup(value thread)     /* ML */
   switch (th->status) {
   case SUSPENDED:
     th->status = RUNNABLE;
-    th->retval = RESUMED_WAKEUP;
+    Assign(th->retval, RESUMED_WAKEUP);
     break;
   case KILLED:
     failwith("Thread.wakeup: killed thread");
