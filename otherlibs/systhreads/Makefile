@@ -27,7 +27,7 @@ libthreadsnat.a: $(NATIVECODE_C_OBJS)
 	ar rc libthreadsnat.a $(NATIVECODE_C_OBJS)
 
 posix_n.o: posix.c
-	$(NATIVECC) -g -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
+	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
 	mv posix.o posix_n.o
 
 threads.cma: $(THREAD_OBJS)
