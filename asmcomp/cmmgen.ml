@@ -308,25 +308,24 @@ let fundecls_size fundecls =
     fundecls;
   !sz
 
-let rec expr_size = function
+let rec expr_size_and_tag = function
     Uclosure(fundecls, clos_vars) ->
-      fundecls_size fundecls + List.length clos_vars
+      (fundecls_size fundecls + List.length clos_vars, 250)
   | Uprim(Pmakeblock(tag, mut), args) ->
-      List.length args
+      (List.length args, tag)
   | Ulet(id, exp, body) ->
-      expr_size body
+      expr_size_and_tag body
   | _ ->
-      fatal_error "Cmmgen.expr_size"
+      fatal_error "Cmmgen.expr_size_and_tag"
 
-let dummy_block size =
+let dummy_block (size, tag) =
   let rec init_val i =
     if i >= size then [] else Cconst_int 0 :: init_val(i+1) in
-  Cop(Calloc, alloc_block_header 0 size :: init_val 0)
+  Cop(Calloc, alloc_block_header tag size :: init_val 0)
 
 let rec store_contents ptr = function
     Cop(Calloc, header :: fields) ->
-      Csequence(Cop(Cstore, [field_address ptr (-1); header]),
-                store_fields ptr 0 fields)
+      store_fields ptr 0 fields
   | Clet(id, exp, body) ->
       Clet(id, exp, store_contents ptr body)
   | _ ->
@@ -859,7 +858,7 @@ and transl_letrec bindings cont =
   let rec init_blocks = function
       [] -> fill_blocks bindings
     | (id, exp) :: rem ->
-        Clet(id, dummy_block(expr_size exp), init_blocks rem)
+        Clet(id, dummy_block(expr_size_and_tag exp), init_blocks rem)
   and fill_blocks = function
       [] -> cont
     | (id, exp) :: rem ->
