@@ -21,12 +21,10 @@
 
 #ifdef HAS_TERMCAP
 
-#ifdef __linux__
-#include <termios.h>
-#endif
-#define _BSD /* For DEC OSF1 */
-#undef getch
-#include <curses.h>
+extern int tgetent P((char * buffer, char * name));
+extern int tgetstr P((char * id, char ** area));
+extern int tgetnum P((char * id));
+extern int tputs P((char * str, int count, int (*outchar)(int c)));
 
 value terminfo_setup(unit)      /* ML */
      value unit;
