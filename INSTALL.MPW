@@ -41,7 +41,7 @@ Set -e CAMLLIB "{LIBDIR}"
 
 # Make it persistent.
 
-Echo "Set -e CAMLLIB `quote "{CAMLLIB}"`" >"{MPW}Startup Items:O'Caml"
+Quote Set -e CAMLLIB "{CAMLLIB}" >"{MPW}Startup Items:O'Caml"
 
 # Now you're all set.  Build the files and install everything.
 # For more explanations on these steps, see the file INSTALL.

@@ -20,8 +20,9 @@ stdlib.cma Ä {OBJS}
     {CAMLC} -a -o stdlib.cma {OBJS}
 
 camlheader Ä
-    echo "`quote "{BINDIR}ocamlrun"`" ¶
-         '"{command}" {"Parameters"}; exit {status}' > camlheader
+    (quote -n "{BINDIR}ocamlrun"; ¶
+	 echo ' "{command}" {"Parameters"}; exit {status}') ¶
+	> camlheader
 
 clean ÄÄ
     delete -i camlheader
