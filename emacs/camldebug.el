@@ -621,7 +621,7 @@ Obeying it means displaying in another window the specified file and line."
       (camldebug-remove-current-event)
     (camldebug-display-line (car camldebug-last-frame)
 			    (car (cdr camldebug-last-frame))
-			    (cdr (cdr camldebug-last-frame))))
+			    (car (cdr (cdr camldebug-last-frame)))))
   (setq camldebug-last-frame-displayed-p t))
 
 ;; Make sure the file named TRUE-FILE is in a buffer that appears on the screen
@@ -656,16 +656,13 @@ Obeying it means displaying in another window the specified file and line."
 
 (defun camldebug-set-current-event (pos buffer before)
   (if window-system
-      (progn
-        (if (save-excursion
-              (set-buffer buffer)
-              (goto-char (1+ pos))
-              (looking-at "\n"))
-            (setq pos (1- pos)))
-        (move-overlay camldebug-overlay-event pos (1+ pos) buffer)
-        (if before
-            (move-overlay camldebug-overlay-under (+ pos 1) (+ pos 3) buffer)
-          (move-overlay camldebug-overlay-under (- pos 2) pos buffer)))
+      (if before
+	  (progn
+	    (move-overlay camldebug-overlay-event pos (1+ pos) buffer)
+	    (move-overlay camldebug-overlay-under
+			  (+ pos 1) (+ pos 3) buffer))
+	(move-overlay camldebug-overlay-event (1- pos) pos buffer)
+	(move-overlay camldebug-overlay-under (- pos 3) (- pos 1) buffer))
     (save-excursion
       (set-buffer buffer)
       (goto-char pos)
