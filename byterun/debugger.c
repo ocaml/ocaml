@@ -149,7 +149,7 @@ static void safe_output_value(struct channel *chan, value val)
 
   /* Catch exceptions raised by output_val */
   saved_external_raise = external_raise;
-  if (sigsetjmp(raise_buf.buf, 1) == 0) {
+  if (sigsetjmp(raise_buf.buf, 0) == 0) {
     external_raise = &raise_buf;
     output_val(chan, val, Val_unit);
   } else {

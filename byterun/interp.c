@@ -201,7 +201,7 @@ value interprete(code_t prog, asize_t prog_size)
   initial_external_raise = external_raise;
   callback_depth++;
 
-  if (sigsetjmp(raise_buf.buf, 1)) {
+  if (sigsetjmp(raise_buf.buf, 0)) {
     local_roots = initial_local_roots;
     accu = exn_bucket;
     goto raise_exception;
@@ -743,10 +743,13 @@ value interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(POPTRAP):
-      /* We should check here if a signal is pending, to preserve the
-         semantics of the program w.r.t. exceptions. Unfortunately,
-         process_signal destroys the accumulator, and there is no
-         convenient way to preserve it... */
+      if (something_to_do) {
+        /* We must check here so that if a signal is pending and its
+           handler triggers an exception, the exception is trapped
+           by the current try...with, not the enclosing one. */
+        pc--; /* restart the POPTRAP after processing the signal */
+        goto process_signal;
+      }
       trapsp = Trap_link(sp);
       sp += 4;
       Next;
@@ -795,16 +798,9 @@ value interprete(code_t prog, asize_t prog_size)
       { int signal_number = pending_signal;
         pending_signal = 0;
         if (signal_number) {
-          /* Push a return frame to the current code location */
-          sp -= 4;
-          sp[0] = Val_int(signal_number);
-          sp[1] = (value) pc;
-          sp[2] = env;
-          sp[3] = Val_long(extra_args);
-          /* Branch to the signal handler */
-          env = Field(signal_handlers, signal_number);
-          pc = Code_val(env);
-          extra_args = 0;
+          Setup_for_gc;
+          execute_signal(signal_number, 0);
+          Restore_after_gc;
         }
       }
 #if macintosh

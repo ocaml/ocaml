@@ -27,6 +27,7 @@ void enter_blocking_section (void);
 void leave_blocking_section (void);
 void urge_major_slice (void);
 int convert_signal_number (int);
+void execute_signal(int signal_number, int in_signal_handler);
 
 extern void (*enter_blocking_section_hook)();
 extern void (*leave_blocking_section_hook)();

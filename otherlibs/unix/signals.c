@@ -20,6 +20,8 @@
 #include <signals.h>
 #include "unixsupport.h"
 
+#ifdef POSIX_SIGNALS
+
 static void decode_sigset(value vset, sigset_t * set)
 {
   sigemptyset(set);
@@ -74,3 +76,16 @@ value unix_sigsuspend(value vset) /* ML */
   if (sigsuspend(&set) == -1 && errno != EINTR) uerror("sigsuspend", Nothing);
   return Val_unit;
 }
+
+#else
+
+value unix_sigprocmask(value vaction, value vset)
+{ invalid_argument("Unix.sigprocmask not available"); }
+
+value unix_sigpending(value unit)
+{ invalid_argument("Unix.sigpending not available"); }
+
+value unix_sigsuspend(value vset)
+{ invalid_argument("Unix.sigsuspend not available"); }
+
+#endif

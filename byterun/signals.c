@@ -31,22 +31,40 @@ value signal_handlers = 0;
 void (*enter_blocking_section_hook)() = NULL;
 void (*leave_blocking_section_hook)() = NULL;
 
-static void execute_signal(int signal_number)
+void execute_signal(int signal_number, int in_signal_handler)
 {
-  Assert (!async_signal_mode);
-  callback(Field(signal_handlers, signal_number), Val_int(signal_number));
+  value res;
+#ifdef POSIX_SIGNALS
+  sigset_t sigs;
+  /* Block the signal before executing the handler, and record in sigs
+     the original signal mask */
+  sigemptyset(&sigs);
+  sigaddset(&sigs, signal_number);
+  sigprocmask(SIG_BLOCK, &sigs, &sigs);
+#endif
+  res = callback_exn(Field(signal_handlers, signal_number),
+                     Val_int(signal_number));
+#ifdef POSIX_SIGNALS
+  if (! in_signal_handler) {
+    /* Restore the original signal mask */
+    sigprocmask(SIG_SETMASK, &sigs, NULL);
+  } else if (Is_exception_result(res)) {
+    /* Restore the original signal mask and unblock the signal itself */
+    sigdelset(&sigs, signal_number);
+    sigprocmask(SIG_SETMASK, &sigs, NULL);
+  }
+#endif
+  if (Is_exception_result(res)) mlraise(Extract_exception(res));
 }
 
 void handle_signal(int signal_number)
 {
-#ifndef POSIX_SIGNALS
-#ifndef BSD_SIGNALS
+#if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(signal_number, handle_signal);
-#endif
 #endif
   if (async_signal_mode){
     leave_blocking_section ();
-    execute_signal(signal_number);
+    execute_signal(signal_number, 1);
     enter_blocking_section ();
   }else{
     pending_signal = signal_number;
@@ -69,7 +87,7 @@ void enter_blocking_section(void)
     /* If a signal arrives between the next two instructions,
        it will be lost. */
     temp = pending_signal;   pending_signal = 0;
-    if (temp) execute_signal(temp);
+    if (temp) execute_signal(temp, 0);
     async_signal_mode = 1;
     if (!pending_signal) break;
     async_signal_mode = 0;

@@ -71,7 +71,7 @@ value callback_exn(value closure, value arg1)
 {
   value arg[1];
   arg[0] = arg1;
-  return callbackN(closure, 1, arg);
+  return callbackN_exn(closure, 1, arg);
 }
 
 value callback2_exn(value closure, value arg1, value arg2)
@@ -79,7 +79,7 @@ value callback2_exn(value closure, value arg1, value arg2)
   value arg[2];
   arg[0] = arg1;
   arg[1] = arg2;
-  return callbackN(closure, 2, arg);
+  return callbackN_exn(closure, 2, arg);
 }
 
 value callback3_exn(value closure, value arg1, value arg2, value arg3)
@@ -88,7 +88,7 @@ value callback3_exn(value closure, value arg1, value arg2, value arg3)
   arg[0] = arg1;
   arg[1] = arg2;
   arg[2] = arg3;
-  return callbackN(closure, 3, arg);
+  return callbackN_exn(closure, 3, arg);
 }
 
 #else

@@ -39,10 +39,30 @@ void (*leave_blocking_section_hook)() = NULL;
 
 /* Execute a signal handler immediately. */
 
-static void execute_signal(int signal_number)
+void execute_signal(int signal_number, int in_signal_handler)
 {
-  Assert (!async_signal_mode);
-  callback(Field(signal_handlers, signal_number), Val_int(signal_number));
+  value res;
+#ifdef POSIX_SIGNALS
+  sigset_t sigs;
+  /* Block the signal before executing the handler, and record in sigs
+     the original signal mask */
+  sigemptyset(&sigs);
+  sigaddset(&sigs, signal_number);
+  sigprocmask(SIG_BLOCK, &sigs, &sigs);
+#endif
+  res = callback_exn(Field(signal_handlers, signal_number),
+                     Val_int(signal_number));
+#ifdef POSIX_SIGNALS
+  if (! in_signal_handler) {
+    /* Restore the original signal mask */
+    sigprocmask(SIG_SETMASK, &sigs, NULL);
+  } else if (Is_exception_result(res)) {
+    /* Restore the original signal mask and unblock the signal itself */
+    sigdelset(&sigs, signal_number);
+    sigprocmask(SIG_SETMASK, &sigs, NULL);
+  }
+#endif
+  if (Is_exception_result(res)) mlraise(Extract_exception(res));
 }
 
 /* This routine is the common entry point for garbage collection
@@ -58,7 +78,7 @@ void garbage_collection(void)
   sig = pending_signal;
   pending_signal = 0;
   young_limit = young_start;
-  if (sig) execute_signal(sig);
+  if (sig) execute_signal(sig, 0);
 }
 
 /* Trigger a garbage collection as soon as possible */
@@ -84,7 +104,7 @@ void enter_blocking_section(void)
     sig = pending_signal;
     pending_signal = 0;
     young_limit = young_start;
-    if (sig) execute_signal(sig);
+    if (sig) execute_signal(sig, 0);
     async_signal_mode = 1;
     if (!pending_signal) break;
     async_signal_mode = 0;
@@ -116,7 +136,7 @@ void handle_signal(int sig)
     /* We are interrupting a C function blocked on I/O.
        Callback the Caml code immediately. */
     leave_blocking_section();
-    callback(Field(signal_handlers, sig), Val_int(sig));
+    execute_signal(sig, 1);
     enter_blocking_section();
   } else {
     /* We can't execute the signal code immediately.
