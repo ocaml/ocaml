@@ -676,6 +676,17 @@ let rec initial_env define_class (res, env) (cl, id, ty_id, obj_id, cl_id) =
     constr_type, dummy_class)::res,
    env)
 
+let hide_dummy_method ty =
+  let (fl, _) = Ctype.flatten_fields (Ctype.object_fields ty) in
+  List.iter
+    (function (l, k, _) ->
+       if l = dummy_method then
+       let k = Btype.field_kind_repr k in
+       match k with
+         Fvar r -> r := Some Fabsent
+       | _      -> ())
+    fl
+
 let class_infos define_class kind
     (cl, id, ty_id,
      obj_id, obj_params, obj_ty,
