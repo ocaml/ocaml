@@ -55,6 +55,10 @@ exception TkError of string
       (* Raised by the communication functions *)
 let _ = Callback.register_exception "tkerror" (TkError "")
 
+let cltclinterp = ref Nativeint.zero
+      (* For use in other extensions *)
+let _ = Callback.register "cltclinterp" cltclinterp
+
 (* Debugging support *)
 let debug = 
  ref (try ignore (Sys.getenv "CAMLTKDEBUG"); true

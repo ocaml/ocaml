@@ -50,7 +50,6 @@ $(LIBNAME)top$(EXE) : $(TOPDEPS) $(LIBNAME).cma ../support/lib$(LIBNAME).a
 	       -I ../labltk -I ../camltk $(LIBNAME).cma \
 	       -I $(OTHERS)/unix unix.cma \
 	       -I $(OTHERS)/str str.cma \
-	       $(DLLPATH) \
 	       topmain.cmo
 
 $(LIBNAME): Makefile $(TOPDIR)/config/Makefile

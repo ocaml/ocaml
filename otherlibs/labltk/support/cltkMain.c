@@ -86,6 +86,12 @@ CAMLprim value camltk_opentk(value argv)
     Tcl_FindExecutable(String_val(argv0));
 #endif
     cltclinterp = Tcl_CreateInterp();
+    {
+      /* Register cltclinterp for use in other related extensions */
+      value *interp = caml_named_value("cltclinterp");
+      if (interp != NULL)
+        Store_field(*interp,0,copy_nativeint((long)cltclinterp));
+    }
 
     if (Tcl_Init(cltclinterp) != TCL_OK)
       tk_error(cltclinterp->result);
