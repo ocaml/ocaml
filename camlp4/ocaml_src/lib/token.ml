@@ -223,8 +223,16 @@ let eval_string (bp, ep) s =
             | c ->
                 try let (c, i) = backslash s i in store len c, i with
                   Not_found ->
-                    Printf.eprintf "Warning: char %d, Invalid backslash escape in string\n%!"
-                      (bp.Lexing.pos_cnum + i + 1);
+                    let txt = "Invalid backslash escape in string" in
+                    let pos = bp.Lexing.pos_cnum - bp.Lexing.pos_bol + i in
+                    if bp.Lexing.pos_fname = "" then
+                      Printf.eprintf "Warning: line %d, chars %d-%d: %s\n"
+                        bp.Lexing.pos_lnum pos (pos + 1) txt
+                    else
+                      Printf.eprintf
+                        "Warning: File \"%s\", line %d, chars %d-%d: %s\n"
+                        bp.Lexing.pos_fname bp.Lexing.pos_lnum pos (pos + 1)
+                        txt;
                     store (store len '\\') c, i + 1
         else store len s.[i], i + 1
       in
