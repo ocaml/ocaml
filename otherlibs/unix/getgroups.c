@@ -18,17 +18,20 @@
 #ifdef HAS_GETGROUPS
 
 #include <sys/types.h>
-#include <sys/param.h>
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
+#include <limits.h>
 #include "unixsupport.h"
 
 value unix_getgroups(value unit)           /* ML */
 {
-  gid_t gidset[NGROUPS];
+  gid_t gidset[NGROUPS_MAX];
   int n;
   value res;
   int i;
 
-  n = getgroups(NGROUPS, gidset);
+  n = getgroups(NGROUPS_MAX, gidset);
   if (n == -1) uerror("getgroups", Nothing);
   res = alloc_tuple(n);
   for (i = 0; i < n; i++)
