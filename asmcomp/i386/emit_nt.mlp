@@ -689,8 +689,25 @@ let rec emit_all i =
 
 (* Emission of the floating-point constants *)
 
+let emit_float s =
+  (* MASM doesn't like floating-point constants such as 2e9.
+     Turn them into 2.0e9. *)
+  let pos_e = ref (-1) and pos_dot = ref (-1) in
+  for i = 0 to String.length s - 1 do
+    match s.[i] with
+      'e'|'E' -> pos_e := i
+    | '.'     -> pos_dot := i
+    | _       -> ()
+  done;
+  if !pos_dot < 0 && !pos_e >= 0 then begin
+    emit_string (String.sub s 0 !pos_e);
+    emit_string ".0";
+    emit_string (String.sub s !pos_e (String.length s - !pos_e))
+  end else
+    emit_string s
+
 let emit_float_constant (lbl, cst) =
-  `{emit_label lbl}     REAL8   {emit_string cst}\n`
+  `{emit_label lbl}     REAL8   {emit_float cst}\n`
 
 (* Emission of a function declaration *)
 
@@ -739,7 +756,7 @@ let emit_item = function
   | Cint n ->
       `	DWORD	{emit_nativeint n}\n`
   | Cfloat f ->
-      `	REAL8 {emit_string f}\n`
+      `	REAL8 {emit_float f}\n`
   | Csymbol_address s ->
       add_used_symbol s ;
       `	DWORD	{emit_symbol s}\n`
