@@ -25,6 +25,18 @@ let emit_reg r =
     Reg r -> emit_string (register_name r)
   | _ -> fatal_error "Emit_mips.emit_reg"
 
+(* Output the other half of a floating-point pseudo-register *)
+
+let float_reg_twin_name = [|
+  (* 100-104 *) "$f1"; "$f3"; "$f5"; "$f7"; "$f9";
+  (* 105-108 *) "$f13"; "$f15"; "$f17"; "$f19";
+  (* 109-114 *) "$f21"; "$f23"; "$f25"; "$f27"; "$f29"; "$f31"
+|]
+
+let emit_twin_reg = function
+    { loc = Reg r; typ = Float } -> emit_string (float_reg_twin_name.(r - 100))
+  | _ -> fatal_error "Emit_mips.emit_twin_reg"
+
 (* Layout of the stack frame *)
 
 let stack_offset = ref 0
@@ -41,8 +53,8 @@ let slot_offset loc class =
     Incoming n -> frame_size() + n
   | Local n ->
       if class = 0
-      then !stack_offset + n * 4
-      else !stack_offset + num_stack_slots.(0) * 4 + n * 8
+      then !stack_offset + num_stack_slots.(1) * 8 + n * 4
+      else !stack_offset + n * 8
   | Outgoing n -> n
 
 (* Output a stack reference *)
@@ -254,21 +266,35 @@ let emit_instr i =
           `	addu	$sp, $sp, {emit_int (-n)}\n`;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
-        let load_instr =
-          match chunk with
-            Word -> if i.res.(0).typ = Float then "l.d" else "lw"
-          | Byte_unsigned -> "lbu"
-          | Byte_signed -> "lb"
-          | Sixteen_unsigned -> "lhu"
-          | Sixteen_signed -> "lh" in
-        `	{emit_string load_instr}	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
+        begin match i.res.(0).typ with
+          Int | Addr ->
+            let load_instr =
+              match chunk with
+                Word -> "lw"
+              | Byte_unsigned -> "lbu"
+              | Byte_signed -> "lb"
+              | Sixteen_unsigned -> "lhu"
+              | Sixteen_signed -> "lh" in
+            `	{emit_string load_instr}	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
+        | Float ->
+            (* Destination is not necessarily 8-aligned, hence better not use l.d *)
+            `	lwc1	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`;
+            `	lwc1	{emit_twin_reg i.res.(0)}, {emit_addressing (offset_addressing addr 4) i.arg 0}\n`
+        end
     | Lop(Istore(chunk, addr)) ->
-        let store_instr =
-          match chunk with
-            Word -> if i.arg.(0).typ = Float then "s.d" else "sw"
-          | Byte_unsigned | Byte_signed -> "sb"
-          | Sixteen_unsigned | Sixteen_signed -> "sh" in
-        `	{emit_string store_instr}	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
+        begin match i.arg.(0).typ with
+          Int | Addr ->
+            let store_instr =
+              match chunk with
+                Word -> "sw"
+              | Byte_unsigned | Byte_signed -> "sb"
+              | Sixteen_unsigned | Sixteen_signed -> "sh" in
+            `	{emit_string store_instr}	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
+        | Float ->
+            (* Destination is not necessarily 8-aligned, hence better not use s.d *)
+            `	swc1	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`;
+            `	swc1	{emit_twin_reg i.arg.(0)}, {emit_addressing (offset_addressing addr 4) i.arg 1}\n`
+        end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           if !call_gc_label = 0 then call_gc_label := new_label();

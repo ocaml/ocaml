@@ -63,7 +63,7 @@ let cons_instr d n =
   { desc = d; next = n; arg = [||]; res = [||]; live = Reg.Set.empty }
 
 (* Build an instruction with arg, res, live taken from
-   the given Proc.Mach.instruction *)
+   the given Mach.instruction *)
 
 let copy_instr d i n =
   { desc = d; next = n;
