@@ -586,7 +586,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
      the [<] character, followed by an integer [nspaces] value,
      then an integer offset, and a closing [>] character. 
    - [@?]: flush the pretty printer as with [print_flush ()].
-     This is equivalent to the conversion [%$].
+     This is equivalent to the conversion [%!].
    - [@.]: flush the pretty printer and output a new line, as with
      [print_newline ()].
    - [@<n>]: print the following item as if it were of length [n].

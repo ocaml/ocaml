@@ -491,15 +491,16 @@ let pp_get_formatter_tag_functions state () = {
    print_close_tag = state.pp_print_close_tag;
 };;
 
-let pp_set_formatter_tag_functions state
-    {mark_open_tag = motag;
-     mark_close_tag = mctag;
-     print_open_tag = potag;
-     print_close_tag = pctag;} =
-  state.pp_mark_open_tag <- motag;
-  state.pp_mark_close_tag <- mctag;
-  state.pp_print_open_tag <- potag;
-  state.pp_print_close_tag <- pctag;;
+let pp_set_formatter_tag_functions state {
+     mark_open_tag = mot;
+     mark_close_tag = mct;
+     print_open_tag = pot;
+     print_close_tag = pct;
+  } =
+   state.pp_mark_open_tag <- mot;
+   state.pp_mark_close_tag <- mct;
+   state.pp_print_open_tag <- pot;
+   state.pp_print_close_tag <- pct;;
 
 (* Initialize pretty-printer. *)
 let pp_rinit state =
@@ -519,9 +520,10 @@ let pp_flush_queue state b =
     while state.pp_curr_depth > 1 do
      pp_close_box state ()
     done;
-    state.pp_right_total <- pp_infinity; advance_left state;
+    state.pp_right_total <- pp_infinity;
+    advance_left state;
     if b then pp_output_newline state;
-    pp_rinit state;;
+    if b then pp_rinit state;;
 
 (**************************************************************
 
