@@ -54,6 +54,12 @@ standard toplevel with the following commands.
 # #load "labltk.cma";;
 \end{verbatim}
 \end{quote}
+You can also load it directly from the command line.
+\begin{quote}
+\begin{verbatim}
+C:\ocaml\bin> ocaml -I +labltk labltk.cma
+\end{verbatim}
+\end{quote}
 \end{windows}
 
 The "labltk" library is composed of a large number of modules.
