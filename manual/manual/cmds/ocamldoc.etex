@@ -38,13 +38,15 @@ are stored in the current directory, or in the directory specified
 with the {\bf\tt -d} option.   You can customize the style of the
 generated pages by editing the generated "style.css" file, or by providing
 your own style sheet using option "-css-style".
+The file "style.css" is not generated if it already exists.
 
 \item["-latex"]
 Generate documentation in \LaTeX\ default format.  The generated
 \LaTeX\ document is saved in file "ocamldoc.out", or in the file
 specified with the {\bf\tt -o} option.  The document uses the style file
-"ocamldoc.sty" included in the OCamldoc distribution. You can change
-this file to  customize the style of your \LaTeX\ documentation.
+"ocamldoc.sty". This file is generated when using the "-latex" option,
+if it does not already exist.
+You can change this file to  customize the style of your \LaTeX\ documentation.
 
 \item["-texi"]
 Generate documentation in TeXinfo default format.  The generated
