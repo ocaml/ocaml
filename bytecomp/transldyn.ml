@@ -59,7 +59,7 @@ let dummy_type_decl =
 
 let extract_type_definitions whole_env ty0 =
   let r_env = ref Env.empty and r_sig = ref [] in
-  let rec all ty = Btype.map_type_paths one ty
+  let rec all ty = Btype.iter_type_paths one ty
   and one path =
     let name = Path.name path in
     let id = Ident.create_persistent name in
@@ -72,12 +72,12 @@ let extract_type_definitions whole_env ty0 =
       in
       r_env := Env.add_type id decl !r_env;
       let decl' =
-        { type_params = List.map all decl.type_params;
+        { type_params = (List.iter all decl.type_params; decl.type_params);
           type_arity = decl.type_arity;
           type_kind = Type_abstract;
           type_manifest =
             begin match decl.type_manifest with
-            | Some ty -> Some (all ty)
+            | Some ty -> all ty; decl.type_manifest
             | None ->
                 match decl.type_kind with
                 | Type_abstract ->
@@ -96,19 +96,17 @@ let extract_type_definitions whole_env ty0 =
     end;
     path'
   in
-  let ty' = all ty0 in
-
-  (* FIXME: if [ty'] contains free variables, they should be recorded as
-     [type_params]. (Otherwise weird things happens to them.) *)
-
-  let decl' =
-    { type_params = [];
-      type_arity = 0;
+  all ty0;
+  let clean = false in
+  let vars = if clean then List.map fst (Ctype.free_vars ty0) else [] in
+  let decl =
+    { type_params = if clean then vars else [];
+      type_arity = if clean then 0 else List.length vars;
       type_kind = Type_abstract;
-      type_manifest = Some ty';
-      type_variance = [] }
+      type_manifest = Some ty0;
+      type_variance = if clean then List.map (fun _ -> true, true) vars (*??*) else [] }
   in
-  Tsig_type (interesting_ident, decl') :: !r_sig
+  Tsig_type (interesting_ident, decl) :: !r_sig
 
 
 (* From a type expression, produce code that builds a value that describes
