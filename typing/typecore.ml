@@ -401,7 +401,7 @@ let rec is_nonexpansive exp =
       is_nonexpansive body
   | Texp_apply(e, None::el) ->
       is_nonexpansive e &&
-      List.for_all (function None -> true | Some exp -> is_nonexpansive e) el
+      List.for_all (function None -> true | Some e -> is_nonexpansive e) el
   | Texp_function _ -> true
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
