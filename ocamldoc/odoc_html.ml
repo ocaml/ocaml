@@ -396,73 +396,6 @@ class virtual info =
   end
 
 
-(** A function used to create index files. 
-   We must put it out of the html class because ocaml doesn't support
-   yet polymorphic methods :-( *)
-let generate_elements_index 
-    self_header self_inner_title self_html_of_info_first_sentence
-    elements name info target title simple_file =
-  try
-    let chanout = open_out (Filename.concat !Odoc_args.target_dir simple_file) in
-    output_string chanout 
-      (
-       "<html>\n"^
-       (self_header (self_inner_title title)) ^
-       "<body>\n"^
-       "<center><h1>"^title^"</h1></center>\n");
-    
-    let sorted_elements = List.sort 
-	(fun e1 -> fun e2 -> compare (Name.simple (name e1)) (Name.simple (name e2)))
-	elements
-    in
-    let groups = Odoc_info.create_index_lists sorted_elements (fun e -> Name.simple (name e)) in
-    let f_ele e =
-      let simple_name = Name.simple (name e) in
-      let father_name = Name.father (name e) in
-      output_string chanout
-	("<tr><td><a href=\""^(target e)^"\">"^simple_name^"</a> "^
-	 (if simple_name <> father_name then 
-	   "["^"<a href=\""^(fst (Naming.html_files father_name))^"\">"^father_name^"</a>]"
-	 else
-	   ""
-	 )^
-	 "</td>\n"^
-	 "<td>"^(self_html_of_info_first_sentence (info e))^"</td></tr>\n"
-	)
-    in
-    let f_group l =
-      match l with
-	[] -> ()
-      | e :: _ ->
-	  let s = 
-	    match (Char.uppercase (Name.simple (name e)).[0]) with
-	      'A'..'Z' as c -> String.make 1 c
-	    | _ -> ""
-	  in
-	  output_string chanout ("<tr><td align=\"left\"><br>"^s^"</td></tr>\n");
-	  List.iter f_ele l
-    in
-    output_string chanout "<table>\n";
-    List.iter f_group groups ;
-    output_string chanout "</table><br>\n" ;
-    output_string chanout "</body>\n</html>";
-    close_out chanout
-  with
-    Sys_error s ->
-      raise (Failure s)
-
-(** A function used to generate a list of module/class files.
-   We must put it out of the html class because ocaml doesn't support
-   yet polymorphic methods :-( *)
-let generate_elements f_generate l =
-  let rec iter pre_opt = function
-      [] -> ()
-    | ele :: [] -> f_generate pre_opt None ele
-    | ele1 :: ele2 :: q -> 
-	f_generate pre_opt (Some ele2) ele1 ;
-	iter (Some ele1) (ele2 :: q)
-  in
-  iter None l
 
 let opt = Odoc_info.apply_opt
 
@@ -1322,6 +1255,76 @@ class html =
       |	Class_type _ ->
 	  ()
 
+    (** A method to create index files. *)
+    method generate_elements_index :
+	'a.
+	'a list ->
+	  ('a -> Odoc_info.Name.t) ->
+	    ('a -> Odoc_info.info option) -> 
+	      ('a -> string) -> string -> string -> unit =
+    fun elements name info target title simple_file ->
+      try
+	let chanout = open_out (Filename.concat !Odoc_args.target_dir simple_file) in
+	output_string chanout 
+	  (
+	   "<html>\n"^
+	   (self#header (self#inner_title title)) ^
+	   "<body>\n"^
+	    "<center><h1>"^title^"</h1></center>\n");
+	
+	let sorted_elements = List.sort 
+	    (fun e1 -> fun e2 -> compare (Name.simple (name e1)) (Name.simple (name e2)))
+	    elements
+	in
+	let groups = Odoc_info.create_index_lists sorted_elements (fun e -> Name.simple (name e)) in
+	let f_ele e =
+	  let simple_name = Name.simple (name e) in
+	  let father_name = Name.father (name e) in
+	  output_string chanout
+	    ("<tr><td><a href=\""^(target e)^"\">"^simple_name^"</a> "^
+	     (if simple_name <> father_name then 
+	       "["^"<a href=\""^(fst (Naming.html_files father_name))^"\">"^father_name^"</a>]"
+	     else
+	       ""
+	     )^
+	     "</td>\n"^
+	     "<td>"^(self#html_of_info_first_sentence (info e))^"</td></tr>\n"
+	    )
+	in
+	let f_group l =
+	  match l with
+	    [] -> ()
+	  | e :: _ ->
+	      let s = 
+		match (Char.uppercase (Name.simple (name e)).[0]) with
+		  'A'..'Z' as c -> String.make 1 c
+		| _ -> ""
+	      in
+	      output_string chanout ("<tr><td align=\"left\"><br>"^s^"</td></tr>\n");
+	      List.iter f_ele l
+	in
+	output_string chanout "<table>\n";
+	List.iter f_group groups ;
+	output_string chanout "</table><br>\n" ;
+	output_string chanout "</body>\n</html>";
+	close_out chanout
+      with
+	Sys_error s ->
+	  raise (Failure s)
+
+    (** A method to generate a list of module/class files. *)
+    method generate_elements :
+	'a. ('a option -> 'a option -> 'a -> unit) -> 'a list -> unit =
+      fun f_generate l ->
+	let rec iter pre_opt = function
+	    [] -> ()
+	  | ele :: [] -> f_generate pre_opt None ele
+	  | ele1 :: ele2 :: q -> 
+	      f_generate pre_opt (Some ele2) ele1 ;
+	      iter (Some ele1) (ele2 :: q)
+	in
+	iter None l
+
     (** Generate the code of the html page for the given class.*)
     method generate_for_class pre post cl =
       Odoc_info.reset_type_names ();
@@ -1489,13 +1492,13 @@ class html =
 	close_out chanout;
 
         (* generate html files for submodules *)
-	generate_elements self#generate_for_module (Module.module_type_modules mt);
+	self#generate_elements self#generate_for_module (Module.module_type_modules mt);
         (* generate html files for module types *)
-	generate_elements self#generate_for_module_type (Module.module_type_module_types mt);
+	self#generate_elements self#generate_for_module_type (Module.module_type_module_types mt);
         (* generate html files for classes *)
-	generate_elements self#generate_for_class (Module.module_type_classes mt);
+	self#generate_elements self#generate_for_class (Module.module_type_classes mt);
         (* generate html files for class types *)
-	generate_elements self#generate_for_class_type (Module.module_type_class_types mt);
+	self#generate_elements self#generate_for_class_type (Module.module_type_class_types mt);
 
         (* generate the file with the complete module type *)
 	(
@@ -1569,13 +1572,13 @@ class html =
 	close_out chanout;
 
         (* generate html files for submodules *)
-	generate_elements  self#generate_for_module (Module.module_modules modu);
+	self#generate_elements  self#generate_for_module (Module.module_modules modu);
         (* generate html files for module types *)
-	generate_elements  self#generate_for_module_type (Module.module_module_types modu);
+	self#generate_elements  self#generate_for_module_type (Module.module_module_types modu);
         (* generate html files for classes *)
-	generate_elements  self#generate_for_class (Module.module_classes modu);
+	self#generate_elements  self#generate_for_class (Module.module_classes modu);
         (* generate html files for class types *)
-	generate_elements  self#generate_for_class_type (Module.module_class_types modu);
+	self#generate_elements  self#generate_for_class_type (Module.module_class_types modu);
         
         (* generate the file with the complete module type *)
 	self#output_module_type 
@@ -1634,10 +1637,7 @@ class html =
 
     (** Generate the values index in the file [index_values.html]. *)
     method generate_values_index module_list =
-      generate_elements_index 
-	self#header
-	self#inner_title
-	self#html_of_info_first_sentence
+      self#generate_elements_index 
 	list_values
 	(fun v -> v.val_name) 
 	(fun v -> v.val_info)
@@ -1647,10 +1647,7 @@ class html =
 
     (** Generate the exceptions index in the file [index_exceptions.html]. *)
     method generate_exceptions_index module_list =
-      generate_elements_index 
-	self#header
-	self#inner_title
-	self#html_of_info_first_sentence
+      self#generate_elements_index 
 	list_exceptions
 	(fun e -> e.ex_name) 
 	(fun e -> e.ex_info)
@@ -1660,10 +1657,7 @@ class html =
 
     (** Generate the types index in the file [index_types.html]. *)
     method generate_types_index module_list =
-      generate_elements_index 
-	self#header
-	self#inner_title
-	self#html_of_info_first_sentence
+      self#generate_elements_index 
 	list_types
 	(fun t -> t.ty_name) 
 	(fun t -> t.ty_info)
@@ -1673,10 +1667,7 @@ class html =
 
     (** Generate the attributes index in the file [index_attributes.html]. *)
     method generate_attributes_index module_list =
-      generate_elements_index 
-	self#header
-	self#inner_title
-	self#html_of_info_first_sentence
+      self#generate_elements_index 
 	list_attributes
 	(fun a -> a.att_value.val_name) 
 	(fun a -> a.att_value.val_info)
@@ -1686,10 +1677,7 @@ class html =
 
     (** Generate the methods index in the file [index_methods.html]. *)
     method generate_methods_index module_list =
-      generate_elements_index 
-	self#header
-	self#inner_title
-	self#html_of_info_first_sentence
+      self#generate_elements_index 
 	list_methods
 	(fun m -> m.met_value.val_name) 
 	(fun m -> m.met_value.val_info)
@@ -1699,10 +1687,7 @@ class html =
 
     (** Generate the classes index in the file [index_classes.html]. *)
     method generate_classes_index module_list =
-      generate_elements_index
-	self#header
-	self#inner_title
-	self#html_of_info_first_sentence
+      self#generate_elements_index
 	list_classes
 	(fun c -> c.cl_name) 
 	(fun c -> c.cl_info)
@@ -1712,10 +1697,7 @@ class html =
 
     (** Generate the class types index in the file [index_class_types.html]. *)
     method generate_class_types_index module_list =
-      generate_elements_index
-	self#header
-	self#inner_title
-	self#html_of_info_first_sentence
+      self#generate_elements_index
 	list_class_types
 	(fun ct -> ct.clt_name) 
 	(fun ct -> ct.clt_info)
@@ -1725,10 +1707,7 @@ class html =
 
     (** Generate the modules index in the file [index_modules.html]. *)
     method generate_modules_index module_list =
-      generate_elements_index
-	self#header
-	self#inner_title
-	self#html_of_info_first_sentence
+      self#generate_elements_index
 	list_modules
 	(fun m -> m.m_name) 
 	(fun m -> m.m_info)
@@ -1739,10 +1718,7 @@ class html =
     (** Generate the module types index in the file [index_module_types.html]. *)
     method generate_module_types_index module_list =
       let module_types = Odoc_info.Search.module_types module_list in
-      generate_elements_index
-	self#header
-	self#inner_title
-	self#html_of_info_first_sentence
+      self#generate_elements_index
 	list_module_types
 	(fun mt -> mt.mt_name) 
 	(fun mt -> mt.mt_info)
@@ -1786,7 +1762,7 @@ class html =
       known_modules_names <- module_type_names @ module_names ;
       (* generate html for each module *)
       if not !Odoc_args.index_only then 
-	generate_elements self#generate_for_module module_list ;
+	self#generate_elements self#generate_for_module module_list ;
 
       try
 	self#generate_index module_list;
