@@ -115,6 +115,11 @@ let print_constr =
 and print_label =
   print_qualified (fun lid env -> (Env.lookup_label lid env).lbl_res)
 
+(* An abstract type *)
+
+let abstract_type =
+  Ctype.newty (Tconstr (Pident (Ident.create "abstract"), [], ref Mnil))
+
 (* The main printing function *)
 
 let max_printer_depth = ref 100
@@ -187,7 +192,8 @@ let print_value env obj ty =
                 print_string "<abstr>"
             | {type_kind = Type_abstract; type_manifest = Some body} ->
                 print_val prio depth obj
-                          (Ctype.substitute env decl.type_params ty_list body)
+                  (try Ctype.apply env decl.type_params body ty_list with
+                     Ctype.Cannot_apply -> abstract_type)
             | {type_kind = Type_variant constr_list} ->
                 let tag =
                   if Obj.is_block obj
@@ -196,8 +202,11 @@ let print_value env obj ty =
                 let (constr_name, constr_args) =
                   find_constr tag 0 0 constr_list in
                 let ty_args =
-                  List.map (Ctype.substitute env decl.type_params ty_list)
-                      constr_args in
+                  List.map
+                    (function ty ->
+                       try Ctype.apply env decl.type_params ty ty_list with
+                         Ctype.Cannot_apply -> abstract_type)
+                    constr_args in
                 begin match ty_args with
                   [] ->
                     print_constr env path constr_name
@@ -233,7 +242,9 @@ let print_value env obj ty =
                     print_label env path lbl_name;
                     print_string "="; print_cut();
                     let ty_arg =
-                      Ctype.substitute env decl.type_params ty_list lbl_arg in
+                      try Ctype.apply env decl.type_params lbl_arg ty_list with
+                        Ctype.Cannot_apply -> abstract_type
+                    in
                     cautious (print_val 0 (depth - 1) (Obj.field obj pos))
                              ty_arg;
                     close_box();
