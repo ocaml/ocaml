@@ -1225,21 +1225,21 @@ let occur env ty0 ty =
    be done at meta-level, using bindings in univar_pairs *)
 let rec unify_univar t1 t2 = function
     (cl1, cl2) :: rem ->
-      let repr_univ = List.map (fun (t,o) -> repr t, o) in
-      let cl1 = repr_univ cl1 and cl2 = repr_univ cl2 in
-      begin try
-        let r1 = List.assq t1 cl1 in
-        match !r1 with
-          Some t -> if t2 != repr t then raise (Unify [])
-        | None ->
-            try
-              let r2 = List.assq t2 cl2 in
-              if !r2 <> None then raise (Unify []);
-              set_univar r1 t2; set_univar r2 t1
-            with Not_found ->
-              raise (Unify [])
-      with Not_found ->
-        unify_univar t1 t2 rem
+      let find_univ t cl =
+        try
+          let (_, r) = List.find (fun (t',_) -> t == repr t') cl in
+          Some r
+        with Not_found -> None
+      in
+      begin match find_univ t1 cl1, find_univ t2 cl2 with
+        Some {contents=Some t'2}, Some _ when t2 == repr t'2 ->
+          ()
+      | Some({contents=None} as r1), Some({contents=None} as r2) ->
+          set_univar r1 t2; set_univar r2 t1
+      | None, None ->
+          unify_univar t1 t2 rem
+      | _ ->
+          raise (Unify [])
       end
   | [] -> raise (Unify [])
 
