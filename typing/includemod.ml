@@ -251,6 +251,8 @@ let report_error errlist =
   match List.rev errlist with
     [] -> ()
   | err :: rem ->
+      open_vbox 0;
       include_err err;
-      List.iter (fun err -> print_space(); include_err err) rem
+      List.iter (fun err -> print_space(); include_err err) rem;
+      close_box()
 

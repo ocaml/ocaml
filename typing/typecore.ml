@@ -172,6 +172,7 @@ let rec is_nonexpansive exp =
       List.for_all (fun (lbl, exp) -> lbl.lbl_mut = Immutable & is_nonexpansive exp)
               lbl_exp_list
   | Texp_field(exp, lbl) -> is_nonexpansive exp
+  | Texp_array [] -> true
   | _ -> false
 
 (* Typing of printf formats *)
