@@ -21,13 +21,13 @@ external get: 'a array -> int -> 'a = "%array_safe_get"
            The last element has number [Array.length a - 1].
            Raise [Invalid_argument "Array.get"]  if [n] is outside the range
            0 to [(Array.length a - 1)].
-           You can also write [a.(n)] instead of [vect_item a n]. *)
+           You can also write [a.(n)] instead of [Array.get a n]. *)
 external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
         (* [Array.set a n x] modifies array [a] in place, replacing
            element number [n] with [x].
            Raise [Invalid_argument "Array.set"] if [n] is outside the range
            0 to [Array.length a - 1].
-           You can also write [a.(n) <- x] instead of [vect_assign a n x]. *)
+           You can also write [a.(n) <- x] instead of [Array.set a n x]. *)
 external new: int -> 'a -> 'a array = "make_vect"
         (* [Array.new n x] returns a fresh array of length [n],
            initialized with [x].
