@@ -33,6 +33,7 @@ type error =
   | Virtual_class of string * string
   | Closed_class of string
   | Closed_ancestor of string * Path.t * string
+  | Non_generalizable of Ident.t * type_expr list
   | Non_closed of Ident.t * type_expr list * type_expr *
                   Ctype.closed_schema_result
   | Mutable_var of string
@@ -48,7 +49,6 @@ type error =
   | Argument_arity_mismatch of Path.t * int * int
   | Parameter_arity_mismatch of Path.t * int * int
   | Parameter_mismatch of (type_expr * type_expr) list
-  | Undefined_method of string
 
 exception Error of Location.t * error
 

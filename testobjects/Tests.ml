@@ -93,7 +93,6 @@ let x = ref [];;
 class 'a c () =
   method f = (x : 'a)
 end;;
-new c;;
 
 (* Abreviations *)
 type 'a c = <f : 'a c; g : 'a d>
@@ -117,7 +116,7 @@ fun (x : t) (y : 'a u) -> y = x;;
 module M =
   struct
     class ('a, 'b) c x (y: 'b) =
-      constraint 'a = int -> 'c
+      constraint 'a = int -> bool
       val x = []
       val y = y
       method f (x : 'a) = ()
@@ -278,3 +277,8 @@ fun x -> (x : int -> bool :> 'a -> 'a);;
 fun x -> (x : int -> bool :> int -> int);;
 fun x -> (x : < > :> < .. >);;
 fun x -> (x : < .. > :> < >);;
+
+let x = ref [];;
+module F(X : sig end) =
+  struct type t = int let _ = (x : < m : t> list ref) end;;
+x;;

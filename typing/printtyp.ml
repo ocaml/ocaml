@@ -87,48 +87,49 @@ let aliased = ref ([] : type_expr list)
 
 let rec mark_loops_rec visited ty =
   let ty = repr ty in
-  match ty.desc with
-    Tvar			  -> ()
-  | Tarrow(ty1, ty2)              ->
-      mark_loops_rec visited ty1; mark_loops_rec visited ty2
-  | Ttuple tyl		          -> List.iter (mark_loops_rec visited) tyl
-  | Tconstr(_, tyl, _)		  ->
-      if List.memq ty visited then begin
-      	if not (List.memq ty !aliased) then
-	  aliased := ty :: !aliased
-      end else
-        List.iter (mark_loops_rec (ty::visited)) tyl
-  | Tobject (fi, nm) ->
-      if List.memq ty !visited_objects or List.memq ty visited then begin
-      	if not (List.memq ty !aliased) then
-	  aliased := ty :: !aliased
-      end else begin
-      	if opened_object ty then
-	  visited_objects := ty :: !visited_objects;
-        let name =
-          match !nm with
-            None -> None
-          | Some (n, v::l) ->
-	      let v' = repr v in
-      	      begin match v'.desc with
-	        Tvar -> Some (n, v'::l)
-	      | _    -> None
-	      end
-          | _ ->
-      	      fatal_error "Printtyp.mark_loops_rec"
-        in
-	nm := name;
-	begin match !nm with
-	  None ->
-	    mark_loops_rec (ty::visited) fi
-	| Some (_, l) ->
-	    List.iter (mark_loops_rec (ty::visited)) l
-	end
-      end
-  | Tfield(_, ty1, ty2)		  ->
-      mark_loops_rec visited ty1; mark_loops_rec visited ty2
-  | Tnil			  -> ()
-  | Tlink _			  -> fatal_error "Printtyp.mark_loops_rec (2)"
+  if List.memq ty visited then begin
+    if not (List.memq ty !aliased) then
+      aliased := ty :: !aliased
+  end else
+    let visited = ty :: visited in
+    match ty.desc with
+      Tvar                -> ()
+    | Tarrow(ty1, ty2)    ->
+        mark_loops_rec visited ty1; mark_loops_rec visited ty2
+    | Ttuple tyl          -> List.iter (mark_loops_rec visited) tyl
+    | Tconstr(_, tyl, _)  ->
+        List.iter (mark_loops_rec visited) tyl
+    | Tobject (fi, nm)    ->
+        if List.memq ty !visited_objects then begin
+          if not (List.memq ty !aliased) then
+            aliased := ty :: !aliased
+        end else begin
+          if opened_object ty then
+            visited_objects := ty :: !visited_objects;
+          let name =
+            match !nm with
+              None -> None
+            | Some (n, v::l) ->
+                let v' = repr v in
+                begin match v'.desc with
+                  Tvar -> Some (n, v'::l)
+                | _    -> None
+                end
+            | _ ->
+                fatal_error "Printtyp.mark_loops_rec"
+          in
+          nm := name;
+          begin match !nm with
+            None ->
+              mark_loops_rec visited fi
+          | Some (_, l) ->
+              List.iter (mark_loops_rec visited) l
+          end
+        end
+    | Tfield(_, ty1, ty2) ->
+        mark_loops_rec visited ty1; mark_loops_rec visited ty2
+    | Tnil                -> ()
+    | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
 
 let mark_loops ty = mark_loops_rec [] ty
 
@@ -140,37 +141,37 @@ let reset () =
 
 let rec typexp sch prio ty =
   let ty = repr ty in
-  match ty.desc with
-    Tvar ->
-      if (not sch) or ty.level = generic_level
-      then print_string "'"
-      else print_string "'_";
-      print_string(name_of_type ty)
-  | Tarrow(ty1, ty2) ->
-      if prio >= 1 then begin open_box 1; print_string "(" end
-                   else open_box 0;
-      typexp sch 1 ty1;
-      print_string " ->"; print_space();
-      typexp sch 0 ty2;
-      if prio >= 1 then print_string ")";
-      close_box()
-  | Ttuple tyl ->
-      if prio >= 2 then begin open_box 1; print_string "(" end
-                   else open_box 0;
-      typlist sch 2 " *" tyl;
-      if prio >= 2 then print_string ")";
-      close_box()
-  | Tconstr(p, tyl, abbrev) ->
-      open_box 0;
-      begin try
-        List.assq ty !names;
-        print_string "'";
-        print_string (name_of_type ty)
-      with Not_found ->
+  try
+    List.assq ty !names;
+    print_string "'";
+    print_string (name_of_type ty)
+  with Not_found ->
+    match ty.desc with
+      Tvar ->
+        if (not sch) or ty.level = generic_level
+        then print_string "'"
+        else print_string "'_";
+        print_string(name_of_type ty)
+    | Tarrow(ty1, ty2) ->
+        if prio >= 1 then begin open_box 1; print_string "(" end
+                     else open_box 0;
+        typexp sch 1 ty1;
+        print_string " ->"; print_space();
+        typexp sch 0 ty2;
+        if prio >= 1 then print_string ")";
+        close_box()
+    | Ttuple tyl ->
+        if prio >= 2 then begin open_box 1; print_string "(" end
+                     else open_box 0;
+        typlist sch 2 " *" tyl;
+        if prio >= 2 then print_string ")";
+        close_box()
+    | Tconstr(p, tyl, abbrev) ->
+        open_box 0;
         if List.memq ty !aliased then begin
           name_of_type ty;
           if prio >= 1 then begin open_box 1; print_string "(" end
-	end;
+        end;
         open_box 0;
         begin match tyl with
           [] -> ()
@@ -186,15 +187,18 @@ let rec typexp sch prio ty =
           print_string " as ";
           print_string "'";
           print_string (name_of_type ty);
-	  remove_name_of_type ty;
+          remove_name_of_type ty;
           if prio >= 1 then begin print_string ")"; close_box () end
-        end
-      end;
-      close_box()
-  | Tobject (fi, nm) ->
-      typobject sch prio ty fi nm
-  | _ ->
-      fatal_error "Printtyp.typexp"
+        end;
+        close_box()
+    | Tobject (fi, nm) ->
+        typobject sch prio ty fi nm
+(*
+| Tfield _ -> typobject sch prio ty ty (ref None)
+| Tnil -> typobject sch prio ty ty (ref None)
+*)
+    | _ ->
+        fatal_error "Printtyp.typexp"
 
 and typlist sch prio sep = function
     [] -> ()
@@ -204,57 +208,52 @@ and typlist sch prio sep = function
       typlist sch prio sep tyl
 
 and typobject sch prio ty fi nm =
-  try
-    List.assq ty !names;
+  if List.memq ty !aliased then begin
+    name_of_type ty;
+    if prio >= 1 then begin open_box 1; print_string "(" end
+  end;
+  begin match !nm with
+    None ->
+      open_box 2;
+      print_string "< ";
+      (let (fields, rest) = flatten_fields fi in
+         typfields sch rest fields);
+      print_string " >";
+      close_box ()
+  | Some (p, {desc = Tvar}::tyl) ->
+      open_box 0;
+      begin match tyl with
+        [] -> ()
+      | [ty1] ->
+          typexp sch 2 ty1; print_space()
+      | tyl ->
+          open_box 1; print_string "("; typlist sch 0 "," tyl;
+          print_string ")"; close_box(); print_space()
+      end;
+      if sch & ty.level <> generic_level then
+        print_string "_";
+      print_string "#";
+      path p;
+      close_box()
+  | _ ->
+        fatal_error "Printtyp.typobject"
+  end;
+  if List.memq ty !aliased then begin
+    print_string " as ";
     print_string "'";
-    print_string (name_of_type ty)
-  with Not_found ->
-    if List.memq ty !aliased then begin
-      name_of_type ty;
-      if prio >= 1 then begin open_box 1; print_string "(" end
-    end;
-    begin match !nm with
-      None ->
-        open_box 2;
-        print_string "< ";
-        (let (fields, rest) = flatten_fields fi in
-           typfields sch rest fields);
-        print_string " >";
-        close_box ()
-    | Some (p, {desc = Tvar}::tyl) ->
-        open_box 0;
-        begin match tyl with
-          [] -> ()
-        | [ty1] ->
-            typexp sch 2 ty1; print_space()
-        | tyl ->
-            open_box 1; print_string "("; typlist sch 0 "," tyl;
-            print_string ")"; close_box(); print_space()
-        end;
-	if sch & ty.level <> generic_level then
-	  print_string "_";
-	print_string "#";
-        path p;
-        close_box()
-    | _ ->
-      	fatal_error "Printtyp.typobject"
-    end;
-    if List.memq ty !aliased then begin
-      print_string " as ";
-      print_string "'";
-      print_string (name_of_type ty);
-      if not (opened_object ty) then
-      	remove_name_of_type ty;
-      if prio >= 1 then begin print_string ")"; close_box () end
-    end
+    print_string (name_of_type ty);
+    if not (opened_object ty) then
+        remove_name_of_type ty;
+    if prio >= 1 then begin print_string ")"; close_box () end
+  end
 
 and typfields sch rest =
   function
     [] ->
       begin match rest.desc with
-      	Tvar -> if sch & rest.level <> generic_level then
-      	       	  print_string "_";
-      	       	print_string ".."
+        Tvar -> if sch & rest.level <> generic_level then
+                  print_string "_";
+                print_string ".."
       | Tnil -> ()
       | _    -> fatal_error "typfields (1)"
       end
@@ -263,7 +262,7 @@ and typfields sch rest =
       print_string " : ";
       typexp sch 0 t;
       begin match rest.desc with
-      	Tvar -> print_string ";"; print_space ()
+        Tvar -> print_string ";"; print_space ()
       | Tnil -> ()
       | _    -> fatal_error "typfields (2)"
       end;
@@ -286,29 +285,59 @@ and type_scheme ty =
 
 (* Print one type declaration *)
 
+let constrain ty =
+  let ty' = unalias ty in
+  if ty != ty' then begin
+    print_space ();
+    open_box 2;
+    print_string "constraint ";
+    type_sch ty;
+    print_string " =";
+    print_space();
+    type_sch ty';
+    close_box()
+  end
+
 let rec type_declaration id decl =
   reset();
+
+  let params = List.map repr decl.type_params in
+
+  aliased := params @ !aliased;
+  List.iter mark_loops params;
+  List.iter name_of_type params;
+  begin match decl.type_manifest with
+    None    -> ()
+  | Some ty -> mark_loops ty
+  end;
+  begin match decl.type_kind with
+    Type_abstract -> ()
+  | Type_variant [] -> ()
+  | Type_variant cstrs ->
+      List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
+  | Type_record (lbl1 :: lbls as l) ->
+      List.iter (fun (_, _, ty) -> mark_loops ty) l
+  end;
+
   open_hvbox 2;
   print_string "type ";
-  type_expr {desc = Tconstr(Pident id, decl.type_params, ref Mnil);
-  	     level = generic_level};
+  type_expr {desc = Tconstr(Pident id, params, ref Mnil);
+             level = generic_level};
   begin match decl.type_manifest with
     None -> ()
   | Some ty ->
-      print_string " ="; print_space(); mark_loops ty; type_expr ty
+      print_string " ="; print_space(); type_expr ty
   end;
   begin match decl.type_kind with
     Type_abstract -> ()
   | Type_variant [] -> ()
       (* A fatal error actually, except when printing type exn... *)
   | Type_variant cstrs ->
-      List.iter (fun (_, args) -> List.iter mark_loops args) cstrs;
       print_string " =";
       List.iter
         (fun cstr -> print_space(); print_string "| "; constructor cstr)
         cstrs
   | Type_record (lbl1 :: lbls as l) ->
-      List.iter (fun (_, _, ty) -> mark_loops ty) l;
       print_string " ="; print_space();
       print_string "{ "; label lbl1;
       List.iter
@@ -316,6 +345,7 @@ let rec type_declaration id decl =
         lbls;
       print_string " }"
   end;
+  List.iter constrain params;
   close_box()
 
 and constructor (name, args) =
@@ -360,16 +390,6 @@ let class_arg arg =
   type_sch arg;
   print_string ")"; close_box ()
 
-let constrain (v, ty) =
-  print_space ();
-  open_box 2;
-  print_string "constraint ";
-  type_sch v;
-  print_string " =";
-  print_space();
-  type_sch ty;
-  close_box()
-
 let class_var l (m, t) =
   print_space ();
   open_box 2;
@@ -402,33 +422,26 @@ let methods_of_type ty =
 let rec list_meths ty =
   match (repr ty).desc with
     Tfield(lab, ty, ty') -> (lab, ty) :: (list_meths ty')
-  | _ 			 -> []
+  | _                    -> []
 
 let class_type id cl_ty =
-  begin_def ();
-  let (cstr, args, vars, self) = Ctype.prune_class_type cl_ty in
-  end_def ();
-  List.iter (fun (v, c) -> generalize v; generalize c) cstr;
-  List.iter generalize args;
-  Vars.iter (fun l (m, t) -> generalize t) vars;
-  generalize self;
+  let self = repr cl_ty.cty_self in
+  let params = List.map repr cl_ty.cty_params in
+  let args = cl_ty.cty_args in
+  let vars = cl_ty.cty_vars in
 
-  let self = repr self in
-  let params = List.map fst cstr in
-  let cstr =
-    List.fold_right
-      (fun ((v, ty) as c) l -> if v == ty then l else c::l) cstr []
-  in
   reset ();
-					(* Self may have a name *)
+  (* Self may have a name *)
   visited_objects := self :: !visited_objects;
+  aliased := params @ !aliased;
   begin match self.desc with
     Tobject (fi, _) -> mark_loops fi
   | _               -> fatal_error "Printtyp.class_type"
   end;
+  List.iter mark_loops params;
   List.iter mark_loops args;
-  List.iter (fun (_, ty) -> mark_loops ty) cstr;
   Vars.iter (fun _ (_, ty) -> mark_loops ty) vars;
+  List.iter name_of_type params;
   open_hvbox 2;
   open_box 0;
   print_string "class ";
@@ -447,16 +460,16 @@ let class_type id cl_ty =
   end;
   print_string " =";
   close_box ();
-  List.iter constrain cstr;
+  List.iter constrain params;
   Vars.iter class_var vars;
   let meths = list_meths (methods_of_type self) in
   let (meths, virt) =
     List.fold_right
       (fun ((lab, ty) as m) (ml, vl) ->
-      	 if Concr.mem lab cl_ty.cty_concr then
-	   (m::ml, vl)
-	 else
-	   (ml, m::vl))
+         if Concr.mem lab cl_ty.cty_concr then
+           (m::ml, vl)
+         else
+           (ml, m::vl))
       meths
       ([], []) in
   List.iter (metho "method ") meths;

@@ -28,7 +28,8 @@ type error =
   | Recursive_type
   | Unbound_class of Longident.t
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of type_expr * type_expr
+  | Type_mismatch of (type_expr * type_expr) list
+  | Alias_type_mismatch of (type_expr * type_expr) list
 
 exception Error of Location.t * error
 
@@ -102,9 +103,9 @@ let rec transl_type env policy styp =
   | Ptyp_arrow(st1, st2) ->
       let ty1 = transl_type env policy st1 in
       let ty2 = transl_type env policy st2 in
-        Ctype.newty (Tarrow(ty1, ty2))
+      newty (Tarrow(ty1, ty2))
   | Ptyp_tuple stl ->
-      Ctype.newty (Ttuple(List.map (transl_type env policy) stl))
+      newty (Ttuple(List.map (transl_type env policy) stl))
   | Ptyp_constr(lid, stl, alias) ->
       let (path, decl) =
         try
@@ -114,10 +115,10 @@ let rec transl_type env policy styp =
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
-      let (cstr, params) =
+      let (cstr, args) =
         begin match alias with
-      	  None ->
-	    let tl = List.map (transl_type env policy) stl in
+          None ->
+            let tl = List.map (transl_type env policy) stl in
               (newty (Tconstr(path, tl, ref Mnil)), tl)
         | Some alias ->
             let cstr = newvar () in
@@ -128,46 +129,41 @@ let rec transl_type env policy styp =
               Tbl.find alias !aliases;
               raise(Error(styp.ptyp_loc, Bound_type_variable alias))
             with Not_found ->
-      	      aliases := Tbl.add alias cstr !aliases
-	    end;
-	    let tl = List.map (transl_type env policy) stl in
-	    begin try
-              occur env cstr
-      	       	(Ctype.expand_abbrev env path tl (ref Mnil) cstr.level)
-            with
-	      Unify _       -> raise(Error(styp.ptyp_loc, Recursive_type))
-	    | Cannot_expand -> ()
-	    end;
-	    cstr.desc <- Tconstr(path, tl, ref Mnil);
-	    (cstr, tl)
+              aliases := Tbl.add alias cstr !aliases
+            end;
+            let tl = List.map (transl_type env policy) stl in
+            let cstr' = newty (Tconstr(path, tl, ref Mnil)) in
+            begin try unify env cstr' cstr with Unify trace ->
+              raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
+            end;
+            (cstr, tl)
         end
       in
-      begin match decl.type_manifest with
-      	Some _ ->
-	  List.iter2
-           (fun ty (sty, ty') ->
-	      try Ctype.unify env (Ctype.instance ty) ty' with
-		Unify _ ->
-		  raise (Error(sty.ptyp_loc, Type_mismatch(ty, ty'))))
-           decl.type_params (List.combine stl params)
-      | _ ->
-      	  ()
-      end;
+      let params = Ctype.instance_list decl.type_params in
+      List.iter2
+        (fun (sty, ty) ty' ->
+           try unify env ty ty' with Unify trace ->
+             raise (Error(sty.ptyp_loc, Type_mismatch trace)))
+        (List.combine stl args) params;
       cstr
   | Ptyp_object(fields, None) ->
       newobj (transl_fields env policy fields)
   | Ptyp_object(fields, Some alias) ->
       begin try
         Tbl.find alias !type_variables;
-	raise(Error(styp.ptyp_loc, Bound_type_variable alias))
+        raise(Error(styp.ptyp_loc, Bound_type_variable alias))
       with Not_found -> try
         Tbl.find alias !aliases;
-	raise(Error(styp.ptyp_loc, Bound_type_variable alias))
+        raise(Error(styp.ptyp_loc, Bound_type_variable alias))
       with Not_found ->
         let obj = newvar () in
-      	  aliases := Tbl.add alias obj !aliases;
-	  obj.desc <- Tobject (transl_fields env policy fields, ref None);
-	  obj
+        aliases := Tbl.add alias obj !aliases;
+        let obj' =
+          newty (Tobject (transl_fields env policy fields, ref None)) in
+        begin try unify env obj' obj with Unify trace ->
+          raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
+        end;
+        obj
       end
   | Ptyp_class(lid, stl, alias) ->
       if policy = Fixed then
@@ -175,8 +171,8 @@ let rec transl_type env policy styp =
       let lid2 =
         match lid with
           Longident.Lident s     -> Longident.Lident ("#" ^ s)
-	| Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
-	| Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
+        | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
+        | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
       in
       let (path, decl) =
         try
@@ -186,39 +182,36 @@ let rec transl_type env policy styp =
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
-      let v = new_global_var () in
-      let (ty, params) =
+      let cstr = new_global_var () in
+      let (ty, args) =
         begin match alias with
-      	  None ->
-	    let tl = List.map (transl_type env policy) stl in
-	    (expand_abbrev env path tl (ref Mnil) v.level, tl)
+          None ->
+            let tl = List.map (transl_type env policy) stl in
+            (expand_abbrev env path tl (ref Mnil) cstr.level, tl)
         | Some alias ->
             begin try
               Tbl.find alias !type_variables;
-	      raise(Error(styp.ptyp_loc, Bound_type_variable alias))
+              raise(Error(styp.ptyp_loc, Bound_type_variable alias))
             with Not_found -> try
               Tbl.find alias !aliases;
               raise(Error(styp.ptyp_loc, Bound_type_variable alias))
             with Not_found ->
-      	      aliases := Tbl.add alias v !aliases
-	    end;
-	    let tl = List.map (transl_type env policy) stl in
-	    let cstr = expand_abbrev env path tl (ref Mnil) v.level in
-	    v.desc <- Tlink cstr;
-	    (v, tl)
+              aliases := Tbl.add alias cstr !aliases
+            end;
+            let tl = List.map (transl_type env policy) stl in
+            let cstr' = expand_abbrev env path tl (ref Mnil) cstr.level in
+            begin try unify env cstr' cstr with Unify trace ->
+              raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
+            end;
+            (cstr, tl)
         end
       in
-      begin match decl.type_manifest with
-      	Some _ ->
-	  List.iter2
-           (fun ty (sty, ty') ->
-	      try Ctype.unify env (Ctype.instance ty) ty' with
-		Unify _ ->
-		  raise (Error(sty.ptyp_loc, Type_mismatch(ty, ty'))))
-           decl.type_params (List.combine stl params)
-      | _ ->
-      	  ()
-      end;
+      let params = Ctype.instance_list decl.type_params in
+      List.iter2
+        (fun (sty, ty') ty ->
+           try unify env ty ty' with Unify trace ->
+             raise (Error(sty.ptyp_loc, Type_mismatch trace)))
+        (List.combine stl args) params;
       ty
 
 and transl_fields env policy =
@@ -232,7 +225,7 @@ and transl_fields env policy =
   | {pfield_desc = Pfield(s, e)}::l ->
       let ty1 = transl_type env policy e in
       let ty2 = transl_fields env policy l in
-	newty (Tfield (s, ty1, ty2))
+        newty (Tfield (s, ty1, ty2))
 
 let transl_simple_type env fixed styp =
   aliases := Tbl.empty;
@@ -250,7 +243,7 @@ let transl_simple_type_delayed env styp =
   used_variables := Tbl.empty;
   bindings := [];
   (typ,
-   function () -> List.iter (function (t1, t2) -> Ctype.unify env t1 t2) b)
+   function () -> List.iter (function (t1, t2) -> unify env t1 t2) b)
 
 let transl_type_scheme env styp =
   reset_type_variables();
@@ -286,11 +279,15 @@ let report_error = function
       print_string "Unbound class "; longident lid
   | Unbound_row_variable lid ->
       print_string "Unbound row variable in #"; longident lid
-  | Type_mismatch (ty, ty') ->
-      Printtyp.reset ();
-      Printtyp.mark_loops ty; Printtyp.mark_loops ty';
-      open_box 0;
-      print_string "This parameter ";
-      Printtyp.type_expr ty';
-      print_string " should be an instance of ";
-      Printtyp.type_expr ty
+  | Type_mismatch trace ->
+      Printtyp.unification_error trace
+        (function () ->
+           print_string "This type parameter")
+        (function () ->
+           print_string "should be an instance of type")
+  | Alias_type_mismatch trace ->
+      Printtyp.unification_error trace
+        (function () ->
+           print_string "This alias is bound to type")
+        (function () ->
+           print_string "but is used as an instance of type")

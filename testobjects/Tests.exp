@@ -1,24 +1,27 @@
-	Objective Caml version 1.02+4
+	Objective Caml version 1.04-3
 
 #   - : < x : int > ->
-    < x : int > -> < x : int > -> < x : int > * < x : int > * < x : int > =
-<fun>
+    < x : int > -> < x : int > -> < x : int > * < x : int > * < x : int >
+= <fun>
 #               class 'a c (unit) = constraint 'a = int method f : 'a c end
 class 'a d (unit) = method f : int c end
 #                 Characters 185-212:
 The type variable 'a is not bound in implicit type definition
   d = < f : 'a -> unit >
 It should be captured by a class type parameter
-#             class virtual closed c (< f : int >) = virtual f : int end
-class virtual closed d (< f : int >) = virtual f : int end
-#     class virtual closed e (< f : int >) = virtual f : int end
+#             class virtual closed c ('a) : 'a = virtual f : int end
+class virtual closed d ('a) : 'a = virtual f : int end
+#     class virtual closed e ('a) : 'a = virtual f : int end
 #           class virtual closed c (c) = end
 #             class virtual c (unit) = end
 class 'a d (unit) = constraint 'a = < x : int; .. > method f : 'a -> int end
 #               class 'a c (unit) = constraint 'a = int end
 class 'a d (unit) = constraint 'a = int #c end
-#               class closed 'a c ('a) = constraint 'a = 'a c method f : 'a end
-# - : ('a c as 'a) -> 'b c as 'b = <fun>
+#               class closed 'a c ('a) : 'a =
+  constraint 'a = < f : 'a c >
+  method f : 'a c
+end
+# - : (< f : 'a c > as 'a) c -> (< f : 'b c > as 'b) c = <fun>
 #           Characters 118-143:
 The class x should be virtual: its method f is undefined
 #               Characters 184-187:
@@ -37,15 +40,16 @@ end
   method f : 'a -> 'b -> unit
 end
 #     val x : '_a list ref = {contents=[]}
-#     class 'a c (unit) = constraint 'a = '_b list ref method f : 'a end
-# - : unit -> '_a list ref c = <fun>
-#       Characters 25-52:
-The type abbreviation c is ill-defined
+#     Characters 5-37:
+The type parameters of this class contains type variables that cannot be
+generalized: '_a list ref c
+#       type 'a c = < f : 'a c; g : 'a d > constraint 'a = int
+type 'a d = < f : 'a c > constraint 'a = int
 #   type 'a c = < f : 'a c; g : 'a d >
 type 'a d = < f : 'a c >
-#   type 'a c = < f : 'a c >
+#   type 'a c = < f : 'a c > constraint 'a = int
 type 'a d = < f : int c >
-#   type 'a u = < x : 'a >
+#   type 'a u = < x : 'a > constraint 'a = 'b t
 type 'a t = 'a t u
 #   Characters 19-32:
 The type abbreviation t is cyclic
@@ -56,8 +60,8 @@ The type abbreviation t is cyclic
 #                         module M :
   sig
     class ('a, 'b) c ('c) ('b) =
-      constraint 'a = int -> 'd
-      val x : 'e list
+      constraint 'a = int -> bool
+      val x : 'd list
       val y : 'b
       method f : 'a -> unit
       method g : 'b
@@ -74,8 +78,8 @@ The type abbreviation t is cyclic
     end
   end
 # class ('a, 'b) d (unit) ('b) =
-  constraint 'a = int -> 'c
-  val x : 'd list
+  constraint 'a = int -> bool
+  val x : 'c list
   val y : 'b
   method f : 'a -> unit
   method g : 'b
@@ -180,7 +184,7 @@ It should be captured by a class type parameter
 # - : c = <obj>
 # module M : sig class c (unit) = method m : c end end
 # - : M.c = <obj>
-#   type uu = A of int | B of (< leq : 'a > as 'a)
+#   type uu = | A of int | B of (< leq : 'a > as 'a)
 #   class virtual c (unit) : 'a = virtual m : 'a end
 #         module S : sig val f : (#c as 'a) -> 'a end
 #         Characters 12-43:
@@ -197,7 +201,8 @@ is not included in
 Multiple definition of the type name t.
 Names must be unique in a given structure.
 #   - : (< m : (< m : 'b -> 'b > as 'b) -> 'a; .. > as 'a) ->
-    < m : 'c -> 'c > as 'c = <fun>
+    < m : 'c -> 'c > as 'c
+= <fun>
 #   Characters 10-39:
 Type int -> bool is not a subtype of type int -> int
 Type bool is not a subtype of type int
@@ -206,4 +211,7 @@ Type int -> bool is not a subtype of type int -> int
 Type bool is not a subtype of type int
 # - : <  > -> <  > = <fun>
 # - : < .. > -> <  > = <fun>
+#   val x : '_a list ref = {contents=[]}
+#   module F : functor(X : sig end) -> sig type t = int end
+# - : < m : int > list ref = {contents=[]}
 # 

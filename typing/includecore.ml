@@ -45,33 +45,39 @@ let type_declarations env id decl1 decl2 =
             cstr1 = cstr2 &
             for_all2
               (fun ty1 ty2 ->
-                Ctype.equal env decl1.type_params ty1 decl2.type_params ty2)
+                Ctype.equal env true (ty1::decl1.type_params)
+                                     (ty2::decl2.type_params))
               arg1 arg2)
           cstrs1 cstrs2
     | (Type_record labels1, Type_record labels2) ->
         for_all2
           (fun (lbl1, mut1, ty1) (lbl2, mut2, ty2) ->
             lbl1 = lbl2 & mut1 = mut2 &
-            Ctype.equal env decl1.type_params ty1 decl2.type_params ty2)
+            Ctype.equal env true (ty1::decl1.type_params)
+                                 (ty2::decl2.type_params))
           labels1 labels2
     | (_, _) -> false
   end &
   begin match (decl1.type_manifest, decl2.type_manifest) with
-      (_, None) -> true
+      (_, None) ->
+        Ctype.equal env true decl1.type_params decl2.type_params
     | (Some ty1, Some ty2) ->
-        Ctype.equal env decl1.type_params ty1 decl2.type_params ty2
+        Ctype.equal env true (ty1::decl1.type_params)
+                             (ty2::decl2.type_params)
     | (None, Some ty2) ->
         let ty1 =
 	  {desc = Tconstr(Pident id, decl2.type_params, ref Mnil);
 	   level = Ctype.generic_level }
 	in
-          Ctype.equal env [] ty1 [] ty2
+          Ctype.equal env true decl1.type_params decl2.type_params
+            &
+          Ctype.equal env false [ty1] [ty2]
   end
 
 (* Inclusion between exception declarations *)
 
 let exception_declarations env ed1 ed2 =
-  for_all2 (fun ty1 ty2 -> Ctype.equal env [] ty1 [] ty2) ed1 ed2
+  for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2]) ed1 ed2
 
 (* Inclusion between class types *)
 let encode_val (mut, ty) rem =
@@ -94,16 +100,15 @@ let vars vars1 vars2 =
 
 let class_type env d1 d2 =
   (* Same abbreviations *)
-  let (cstr1, _, _, self1) = Ctype.prune_class_type d1 in
-  let (cstr2, _, _, self2) = Ctype.prune_class_type d2 in
-  Ctype.equal env (List.map fst cstr1) self1 (List.map fst cstr2) self2
-      &
+  Ctype.equal env true
+    (d1.cty_self::d1.cty_params) (d2.cty_self::d2.cty_params)
+      &&
   (* Same concretes methods *)
   Concr.equal d1.cty_concr d2.cty_concr
-      &
+      &&
   (* If virtual, stays virtual *)
   (d1.cty_new <> None or d2.cty_new = None)
-      &
+      &&
   (* Less general *)
   let (v1, v2) = vars d1.cty_vars d2.cty_vars in
   let t1 = Ctype.newgenty (Ttuple (d1.cty_self::v1@d1.cty_args)) in

@@ -1,4 +1,4 @@
-	Objective Caml version 1.02+4
+	Objective Caml version 1.04-3
 
 #           class point (int) =
   val mutable x : int

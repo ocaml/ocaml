@@ -35,7 +35,8 @@ type error =
   | Recursive_type
   | Unbound_class of Longident.t
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of Types.type_expr * Types.type_expr
+  | Type_mismatch of (Types.type_expr * Types.type_expr) list
+  | Alias_type_mismatch of (Types.type_expr * Types.type_expr) list
 
 exception Error of Location.t * error
 

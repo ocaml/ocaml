@@ -42,6 +42,8 @@ val make_nongen: type_expr -> unit
         (* Make non-generalizable the given type *)
 val instance: type_expr -> type_expr
         (* Take an instance of a type scheme *)
+val instance_list: type_expr list -> type_expr list
+        (* Take an instance of a list of type schemes *)
 val instance_parameterized_type:
       	type_expr list -> type_expr -> type_expr list * type_expr
 val instance_parameterized_type_2:
@@ -72,8 +74,7 @@ val filter_method: Env.t -> string -> type_expr -> type_expr
       	(* A special case of unification (with {m : 'a; 'b}). *)
 val moregeneral: Env.t -> type_expr -> type_expr -> bool
         (* Check if the first type scheme is more general than the second. *)
-val equal: Env.t -> type_expr list -> type_expr ->
-                       type_expr list -> type_expr -> bool
+val equal: Env.t -> bool -> type_expr list -> type_expr list -> bool
         (* [equal env [x1...xn] tau [y1...yn] sigma]
            checks whether the parameterized types
            [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
@@ -97,21 +98,16 @@ val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr
 val nondep_class_type: Env.t -> Ident.t -> class_type -> class_type
         (* Same for class types. *)
 val substitute:
-        type_expr list -> type_expr list -> type_expr -> type_expr
+        Env.t -> type_expr list -> type_expr list -> type_expr -> type_expr
         (* [substitute [v1...vN] [t1...tN] t]
            returns a copy of [t] where the [vi] are replaced
            by the [ti]. *)
-val prune:
-      	type_expr -> type_expr list -> type_expr * (type_expr * type_expr) list
-val prune_class_type:
-        class_type ->
-        (type_expr * type_expr) list * type_expr list *
-      	(mutable_flag * type_expr) Vars.t * type_expr
 val close_object: type_expr -> unit
 val set_object_name:
       	type_expr -> type_expr list -> Ident.t -> unit
 val remove_object_name: type_expr -> unit
 val correct_abbrev: Env.t -> Ident.t -> type_expr list -> type_expr -> unit
+val unalias: type_expr -> type_expr
 val unroll_abbrev: Ident.t -> type_expr list -> type_expr -> type_expr
 val is_generic: type_expr -> bool
         (* Test whether the given type variable is generic *)

@@ -94,6 +94,7 @@ type value_description =
 
 type type_declaration =
   { ptype_params: string list;
+    ptype_cstrs: (string * core_type * Location.t) list;
     ptype_kind: type_kind;
     ptype_manifest: core_type option;
     ptype_loc: Location.t }

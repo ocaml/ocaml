@@ -796,9 +796,10 @@ type_declarations:
   | type_declarations AND type_declaration      { $3 :: $1 }
 ;
 type_declaration:
-    type_parameters LIDENT type_kind
+    type_parameters LIDENT type_kind constraints
       { let (kind, manifest) = $3 in
-        ($2, {ptype_params = $1; 
+        ($2, {ptype_params = $1;
+              ptype_cstrs = List.rev $4;
               ptype_kind = kind;
               ptype_manifest = manifest;
               ptype_loc = symbol_loc()}) }
@@ -859,8 +860,9 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE type_parameters label_longident EQUAL core_type
+    TYPE type_parameters label_longident EQUAL core_type constraints
       { ($3, Pwith_type {ptype_params = $2;
+                         ptype_cstrs = List.rev $6;
                          ptype_kind = Ptype_abstract;
                          ptype_manifest = Some $5;
                          ptype_loc = symbol_loc()}) }
