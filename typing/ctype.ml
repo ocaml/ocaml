@@ -903,7 +903,6 @@ let equal env params1 ty1 params2 ty2 =
 (* Subtyping *)
 
 let subtypes = ref []
-let supertypes = ref []
 
 let rec build_subtype env vars t =
   if List.memq t vars then (t, false) else
@@ -913,7 +912,7 @@ let rec build_subtype env vars t =
   | Tvar ->
       (t, false)
   | Tarrow(t1, t2) ->
-      let (t1', c1) = (t1, false) (* build_supertype env vars t1 *) in
+      let (t1', c1) = (t1, false) in
       let (t2', c2) = build_subtype env vars t2 in
       if c1 or c2 then (new_global_ty (Tarrow(t1', t2')), true)
       else (t, false)
@@ -954,65 +953,10 @@ let rec build_subtype env vars t =
       let v = new_global_var () in
       (v, true)
 
-and build_supertype env vars t =
-  if List.memq t vars then (t, false) else
-  match t.desc with
-    Tlink t' ->
-      build_supertype env vars t'
-  | Tvar ->
-      (t, false)
-  | Tarrow(t1, t2) ->
-      let (t1', c1) = build_subtype env vars t1 in
-      let (t2', c2) = build_supertype env vars t2 in
-      if c1 or c2 then (new_global_ty (Tarrow(t1', t2')), true)
-      else (t, false)
-  | Ttuple tlist ->
-      let (tlist', clist) =
-        List.split (List.map (build_supertype env vars) tlist)
-      in
-      if List.exists (function c -> c) clist then
-        (new_global_ty (Ttuple tlist'), true)
-      else
-        (t, false)
-  | Tconstr(p, tl, abbrev) ->
-      if generic_abbrev env p then begin
-        let t' = expand_abbrev env p tl abbrev t.level in
-        let (t'', c) = build_supertype env vars t' in
-        if c then (t'', c)
-        else (t, false)
-      end else
-        (t, false)
-  | Tobject (t1, _) ->
-      if opened t1 then
-        (t, false)
-      else
-        begin try
-          List.assq t !supertypes
-        with Not_found ->
-          let t' = new_global_var () in
-          supertypes := (t, (t', false))::!supertypes;
-          let (t1', c) = build_supertype env vars t1 in
-          if c then begin
-            supertypes := (t, (t', true))::!supertypes;
-            t'.desc <- Tobject (t1', ref None);
-            (t', true)
-          end else begin
-            supertypes := (t, (t, false))::!supertypes;
-            (t, false)
-          end
-        end
-  | Tfield(s, t1, t2) ->
-      let (t1', c1) = build_supertype env vars t1 in
-      let (t2', c2) = build_supertype env vars t2 in
-      if c1 or c2 then (new_global_ty (Tfield(s, t1', t2')), true)
-      else (t, false)
-  | Tnil ->
-      (t, false)
-
 let enlarge_type env vars ty =
-  subtypes := []; supertypes := [];
+  subtypes := [];
   let (ty', _) = build_subtype env vars ty in
-  subtypes := []; supertypes := [];
+  subtypes := [];
   ty'
 
 let subtypes = ref [];;
