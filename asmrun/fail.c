@@ -14,8 +14,12 @@ struct longjmp_buffer * external_raise;
 
 /* The globals holding predefined exceptions */
 
-extern int Out_of_memory, Sys_error, Failure, Invalid_argument;
-extern int End_of_file, Division_by_zero, Not_found, Match_failure;
+typedef char caml_generated_constant[256];
+/* We claim these constants are big so that e.g. the Mips compiler
+   will not assume that they are in the .sdata section */
+
+extern caml_generated_constant Out_of_memory, Sys_error, Failure,
+  Invalid_argument, End_of_file, Division_by_zero, Not_found, Match_failure;
 
 /* Exception raising */
 
@@ -65,13 +69,13 @@ void raise_with_string(tag, msg)
 void failwith (msg)
      char * msg;
 {
-  raise_with_string((value) &Failure, msg);
+  raise_with_string((value) Failure, msg);
 }
 
 void invalid_argument (msg)
      char * msg;
 {
-  raise_with_string((value) &Invalid_argument, msg);
+  raise_with_string((value) Invalid_argument, msg);
 }
 
 /* To raise Out_of_memory, we can't use raise_constant,
@@ -88,28 +92,28 @@ static struct {
 void raise_out_of_memory()
 {
   out_of_memory_bucket.hdr = Make_header(1, 0, White);
-  out_of_memory_bucket.exn = (value) &Out_of_memory;
+  out_of_memory_bucket.exn = (value) Out_of_memory;
   mlraise((value) &(out_of_memory_bucket.exn));
 }
 
 void raise_sys_error(msg)
      value msg;
 {
-  raise_with_arg((value) &Sys_error, msg);
+  raise_with_arg((value) Sys_error, msg);
 }
 
 void raise_end_of_file()
 {
-  raise_constant((value) &End_of_file);
+  raise_constant((value) End_of_file);
 }
 
 void raise_zero_divide()
 {
-  raise_constant((value) &Division_by_zero);
+  raise_constant((value) Division_by_zero);
 }
 
 void raise_not_found()
 {
-  raise_constant((value) &Not_found);
+  raise_constant((value) Not_found);
 }
 
