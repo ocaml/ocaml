@@ -648,4 +648,232 @@ let _ =
           "abc012def3ghi45")
        "abc-012-12-def3ghi45";
 
+  (** XML tokenization *)
+  start_test "XML tokenization";
+  begin 
+    let _TextSE = "[^<]+" in
+    let _UntilHyphen = "[^-]*-" in
+    let _Until2Hyphens = _UntilHyphen ^ "\\([^-]" ^ _UntilHyphen ^ "\\)*-" in
+    let _CommentCE = _Until2Hyphens ^ ">?" in
+    let _UntilRSBs = "[^]]*]\\([^]]+]\\)*]+" in
+    let _CDATA_CE = _UntilRSBs ^ "\\([^]>]" ^ _UntilRSBs ^ "\\)*>" in
+    let _S = "[ \n\t\r]+" in
+    let _NameStrt = "[A-Za-z_:]\\|[^\x00-\x7F]" in
+    let _NameChar = "[A-Za-z0-9_:.-]\\|[^\x00-\x7F]" in
+    let _Name = "\\(" ^ _NameStrt ^ "\\)\\(" ^ _NameChar ^ "\\)*" in
+    let _QuoteSE = "\"[^\"]*\"\\|'[^']*'" in
+    let _DT_IdentSE = _S ^ _Name ^ "\\(" ^ _S ^ "\\(" ^ _Name ^ "\\|" ^ _QuoteSE ^ "\\)\\)*" in
+    let _MarkupDeclCE = "\\([^]\"'><]\\|" ^ _QuoteSE ^ "\\)*>" in
+    let _S1 = "[\n\r\t ]" in
+    let _UntilQMs = "[^?]*\\?+" in
+    let _PI_Tail = "\\?>\\|" ^ _S1 ^ _UntilQMs ^ "\\([^>?]" ^ _UntilQMs ^ "\\)*>" in
+    let _DT_ItemSE = "<\\(!\\(--" ^ _Until2Hyphens ^ ">\\|[^-]" ^ _MarkupDeclCE ^ "\\)\\|\\?" ^ _Name ^ "\\(" ^ _PI_Tail ^ "\\)\\)\\|%" ^ _Name ^ ";\\|" ^ _S1 in
+    let _DocTypeCE = _DT_IdentSE ^ "\\(" ^ _S ^ "\\)?\\(\\[\\(" ^ _DT_ItemSE ^ "\\)*]\\(" ^ _S ^ "\\)?\\)?>?" in
+    let _DeclCE = "--\\(" ^ _CommentCE ^ "\\)?\\|\\[_CDATA\\[\\(" ^ _CDATA_CE ^ "\\)?\\|_DOCTYPE\\(" ^ _DocTypeCE ^ "\\)?" in
+    let _PI_CE = _Name ^ "\\(" ^ _PI_Tail ^ "\\)?" in
+    let _EndTagCE = _Name ^ "\\(" ^ _S ^ "\\)?>?" in
+    let _AttValSE = "\"[^<\"]*\"\\|'[^<']*'" in
+    let _ElemTagCE = _Name ^ "\\(" ^ _S ^ _Name ^ "\\(" ^ _S ^ "\\)?=\\(" ^ _S ^ "\\)?\\(" ^ _AttValSE ^ "\\)\\)*\\(" ^ _S ^ "\\)?/?>?" in
+    let _MarkupSPE = "<\\(!\\(" ^ _DeclCE ^ "\\)?\\|\\?\\(" ^ _PI_CE ^ "\\)?\\|/\\(" ^ _EndTagCE ^ "\\)?\\|\\(" ^ _ElemTagCE ^ "\\)?\\)" in
+    let _XML_SPE = _TextSE ^ "\\|" ^ _MarkupSPE in
+    let input = "\
+<?xml version=\"1.0\"?>
+<?xml-stylesheet type=\"text/css\" href=\"nutrition.css\"?>
+<!DOCTYPE root [
+   <!ELEMENT root (stem)>
+   <!ELEMENT stem EMPTY>
+]>
+<!ELEMENT name (#PCDATA)>
+<![CDATA[my
+escaped text]]> 
+<nutrition>
+<daily-values>
+	<total-fat units=\"g\">65</total-fat>
+	<saturated-fat units=\"g\">20</saturated-fat>
+	<cholesterol units=\"mg\">300</cholesterol>
+	<sodium units=\"mg\">2400</sodium>
+	<carb units=\"g\">300</carb>
+	<fiber units=\"g\">25</fiber>
+	<protein units=\"g\">50</protein>
+</daily-values>
+<food>
+	<name>Avocado Dip</name>
+	<mfr>Sunnydale</mfr>
+	<serving units=\"g\">29</serving>
+	<calories total=\"110\" fat=\"100\"/>
+	<total-fat>11</total-fat>
+	<saturated-fat>3</saturated-fat>
+	<cholesterol>5</cholesterol>
+	<sodium>210</sodium>
+	<carb>2</carb>
+	<fiber>0</fiber>
+	<protein>1</protein>
+	<vitamins>
+		<a>0</a>
+		<c>0</c>
+	</vitamins>
+	<minerals>
+		<ca>0</ca>
+		<fe>0</fe>
+	</minerals>
+</food>
+<!--
+<food>
+	<name></name>
+	<mfr></mfr>
+	<serving units=\"g\"></serving>
+	<calories total=\"\" fat=\"\"/>
+	<total-fat></total-fat>
+	<saturated-fat></saturated-fat>
+	<cholesterol></cholesterol>
+	<sodium></sodium>
+	<carb></carb>
+	<fiber></fiber>
+	<protein></protein>
+	<vitamins>
+		<a></a>
+		<c></c>
+	</vitamins>
+	<minerals>
+		<ca></ca>
+		<fe></fe>
+	</minerals>
+</food>
+-->
+" in
+    let result = [
+  "<?xml version=\"1.0\"?>";
+  "\n";
+  "<?xml-stylesheet type=\"text/css\" href=\"nutrition.css\"?>";
+  "\n";
+  "<!";
+  "DOCTYPE root [\n   ";
+  "<!";
+  "ELEMENT root (stem)>\n   ";
+  "<!";
+  "ELEMENT stem EMPTY>\n]>\n";
+  "<!";
+  "ELEMENT name (#PCDATA)>\n";
+  "<!";
+  "[CDATA[my\nescaped text]]> \n";
+  "<nutrition>";
+  "\n";
+  "<daily-values>";
+  "\n\t";
+  "<total-fat units=\"g\">";
+  "65";
+  "</total-fat>";
+  "\n\t";
+  "<saturated-fat units=\"g\">";
+  "20";
+  "</saturated-fat>";
+  "\n\t";
+  "<cholesterol units=\"mg\">";
+  "300";
+  "</cholesterol>";
+  "\n\t";
+  "<sodium units=\"mg\">";
+  "2400";
+  "</sodium>";
+  "\n\t";
+  "<carb units=\"g\">";
+  "300";
+  "</carb>";
+  "\n\t";
+  "<fiber units=\"g\">";
+  "25";
+  "</fiber>";
+  "\n\t";
+  "<protein units=\"g\">";
+  "50";
+  "</protein>";
+  "\n";
+  "</daily-values>";
+  "\n";
+  "<food>";
+  "\n\t";
+  "<name>";
+  "Avocado Dip";
+  "</name>";
+  "\n\t";
+  "<mfr>";
+  "Sunnydale";
+  "</mfr>";
+  "\n\t";
+  "<serving units=\"g\">";
+  "29";
+  "</serving>";
+  "\n\t";
+  "<calories total=\"110\" fat=\"100\"/>";
+  "\n\t";
+  "<total-fat>";
+  "11";
+  "</total-fat>";
+  "\n\t";
+  "<saturated-fat>";
+  "3";
+  "</saturated-fat>";
+  "\n\t";
+  "<cholesterol>";
+  "5";
+  "</cholesterol>";
+  "\n\t";
+  "<sodium>";
+  "210";
+  "</sodium>";
+  "\n\t";
+  "<carb>";
+  "2";
+  "</carb>";
+  "\n\t";
+  "<fiber>";
+  "0";
+  "</fiber>";
+  "\n\t";
+  "<protein>";
+  "1";
+  "</protein>";
+  "\n\t";
+  "<vitamins>";
+  "\n\t\t";
+  "<a>";
+  "0";
+  "</a>";
+  "\n\t\t";
+  "<c>";
+  "0";
+  "</c>";
+  "\n\t";
+  "</vitamins>";
+  "\n\t";
+  "<minerals>";
+  "\n\t\t";
+  "<ca>";
+  "0";
+  "</ca>";
+  "\n\t\t";
+  "<fe>";
+  "0";
+  "</fe>";
+  "\n\t";
+  "</minerals>";
+  "\n";
+  "</food>";
+  "\n";
+  "<!--\n<food>\n\t<name></name>\n\t<mfr></mfr>\n\t<serving units=\"g\"></serving>\n\t<calories total=\"\" fat=\"\"/>\n\t<total-fat></total-fat>\n\t<saturated-fat></saturated-fat>\n\t<cholesterol></cholesterol>\n\t<sodium></sodium>\n\t<carb></carb>\n\t<fiber></fiber>\n\t<protein></protein>\n\t<vitamins>\n\t\t<a></a>\n\t\t<c></c>\n\t</vitamins>\n\t<minerals>\n\t\t<ca></ca>\n\t\t<fe></fe>\n\t</minerals>\n</food>\n-->";
+  "\n"] in
+    let re = Str.regexp _XML_SPE in
+    let rec process i l =
+      let j = try Str.search_forward re input i with Not_found -> (-1) in
+      if j < 0 then begin
+        test l []
+      end else begin
+        match l with
+          [] -> test 0 1 (* failure *)
+        | hd :: tl ->
+            test (Str.matched_string input) hd; process (Str.match_end()) tl
+      end in
+    process 0 result
+  end;
+
   end_test()
