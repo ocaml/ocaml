@@ -36,34 +36,34 @@ void transitive_closure(unsigned int *R, int n)
     rowi = R;
     while (rowi < relend)
     {
-	ccol = cword;
-	rowj = R;
+        ccol = cword;
+        rowj = R;
 
-	while (rowj < relend)
-	{
-	    if (*ccol & mask)
-	    {
-		rp = rowi;
-		rend = rowj + rowsize;
-		while (rowj < rend)
-		    *rowj++ |= *rp++;
-	    }
-	    else
-	    {
-		rowj += rowsize;
-	    }
+        while (rowj < relend)
+        {
+            if (*ccol & mask)
+            {
+                rp = rowi;
+                rend = rowj + rowsize;
+                while (rowj < rend)
+                    *rowj++ |= *rp++;
+            }
+            else
+            {
+                rowj += rowsize;
+            }
 
-	    ccol += rowsize;
-	}
+            ccol += rowsize;
+        }
 
-	mask <<= 1;
-	if (mask == 0)
-	{
-	    mask = 1;
-	    cword++;
-	}
+        mask <<= 1;
+        if (mask == 0)
+        {
+            mask = 1;
+            cword++;
+        }
 
-	rowi += rowsize;
+        rowi += rowsize;
     }
 }
 
@@ -83,14 +83,14 @@ void reflexive_transitive_closure(unsigned int *R, int n)
     rp = R;
     while (rp < relend)
     {
-	*rp |= mask;
-	mask <<= 1;
-	if (mask == 0)
-	{
-	    mask = 1;
-	    rp++;
-	}
+        *rp |= mask;
+        mask <<= 1;
+        if (mask == 0)
+        {
+            mask = 1;
+            rp++;
+        }
 
-	rp += rowsize;
+        rp += rowsize;
     }
 }

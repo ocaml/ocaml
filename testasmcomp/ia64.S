@@ -19,7 +19,7 @@
 #define STFSPILLOFF(a,b,d) stf.spill [a] = b, d
 #define LDFFILLOFF(a,b,d) ldf.fill a = [b], d
 
-	.text
+        .text
         .align 16
 
         .global call_gen_code#
@@ -27,7 +27,7 @@
 
 call_gen_code:
         /* Allocate 64 "out" registers (for the Caml code) and no locals */
-        alloc	r3 = ar.pfs, 0, 0, 64, 0
+        alloc   r3 = ar.pfs, 0, 0, 64, 0
 
         /* Save PFS, return address and GP on stack */
         add     sp = -368, sp ;;

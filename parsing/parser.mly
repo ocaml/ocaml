@@ -1487,7 +1487,7 @@ opt_semi:
   | SEMI                                        { () }
 ;
 subtractive:
-  | MINUS					{ "-" }
+  | MINUS                                       { "-" }
   | MINUSDOT                                    { "-." }
 ;
 %%
