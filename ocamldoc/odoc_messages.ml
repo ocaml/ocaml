@@ -60,6 +60,10 @@ let dot_colors = "<c1,c2,...,cn>  use colors c1,c1,...,cn in the dot output\n"^
   "        (default list is "^(String.concat "," default_dot_colors)^")"
 let dot_reduce = " perform a transitive reduction on the selected dependency graph before the dot output\n"
 
+let default_man_suffix = "o"
+let man_suffix = "<suffix>  use <suffix> for man page files "^
+  "(default is "^default_man_suffix^")\n"
+
 let option_title = "<title>  use <title> as title for the generated documentation"
 let with_parameter_list = " display the complete list of parameters for functions and methods "^html_only
 let hide_modules = " <M1,M2.M3,...> Hide the given complete module names in generated doc"
@@ -166,6 +170,11 @@ let attribute_type_not_found cl att = "The type of the attribute "^att^" could n
 let method_type_not_found cl met = "The type of the method "^met^" could not be found in the signature of class "^cl^"."
 let module_not_found m m2 = "The module "^m2^" could not be found in the signature of module "^m^"."
 let module_type_not_found m mt = "The module type "^mt^" could not be found in the signature of module "^m^"."
+let value_not_found m v = "The value "^v^" could not be found in the signature of module "^m^"."
+let exception_not_found m e = "The exception "^e^" could not be found in the signature of module "^m^"."
+let type_not_found m t = "The type "^t^" could not be found in the signature of module "^m^"."
+let class_not_found m c = "The class "^c^" could not be found in the signature of module "^m^"."
+let class_type_not_found m c = "The class type "^c^" could not be found in the signature of module "^m^"."
 let type_not_found_in_typedtree t = "Type "^t^" was not found in typed tree."
 let exception_not_found_in_typedtree e = "Exception "^e^" was not found in typed tree."
 let module_type_not_found_in_typedtree mt = "Module type "^mt^" was not found in typed tree."
