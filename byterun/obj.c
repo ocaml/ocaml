@@ -15,6 +15,7 @@
 
 /* Operations on objects */
 
+#include <string.h>
 #include "alloc.h"
 #include "fail.h"
 #include "gc.h"
@@ -82,12 +83,17 @@ CAMLprim value obj_dup(value arg)
 
   sz = Wosize_val(arg);
   if (sz == 0) return arg;
-
   tg = Tag_val(arg);
-  res = alloc(sz, tg);
-  for (i = 0; i < sz; i++)
-    Field(res, i) = Field(arg, i);
-
+  if (tg >= No_scan_tag) {
+    res = alloc(sz, tg);
+    memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
+  } else if (sz <= Max_young_wosize) {
+    res = alloc_small(sz, tg);
+    for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
+  } else {
+    res = alloc_shr(sz, tg);
+    for (i = 0; i < sz; i++) initialize(&Field(res, i), Field(arg, i));
+  }
   CAMLreturn (res);
 }
 
