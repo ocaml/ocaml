@@ -89,11 +89,16 @@ let basic_sync abort_env genev =
   end;
   Mutex.unlock masterlock;
   (* Extract the result *)
-  let num = !performed in
-  let result = bev.(!performed).result() in
-  (* Handle the aborts and return the result *)
-  do_aborts abort_env genev num;
-  result
+  if abort_env = [] then
+    (* Preserve tail recursion *)
+    bev.(!performed).result() 
+  else begin
+    let num = !performed in
+    let result = bev.(num).result() in
+    (* Handle the aborts and return the result *)
+    do_aborts abort_env genev num;
+    result
+  end
 
 (* Apply a random permutation on an array *)
 
