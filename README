@@ -93,9 +93,9 @@ The complete Caml Special Light distribution resides on ftp.inria.fr,
 and can be accessed by anonymous FTP:
 
         host:       ftp.inria.fr (192.93.2.54)
-        directory:  lang/caml-light
+        directory:  lang/caml-special-light
 
-or through a Web browser at ftp://ftp.inria.fr/lang/caml-light/.
+or through a Web browser at ftp://ftp.inria.fr/lang/caml-special-light/.
 
 KEEPING IN TOUCH WITH THE CAML COMMUNITY:
 
