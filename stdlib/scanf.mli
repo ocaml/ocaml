@@ -15,8 +15,7 @@
 
 (** Formatted input functions. *)
 
-val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> ('a -> 'b);;
- 
+val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** [fscanf inchan format f] reads tokens from the channel [inchan] according
    to the format string [format], converts these tokens to values, and
    applies these values to the function [f].
@@ -34,18 +33,22 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> ('a -> 'b);;
    - [i]: reads an optionally signed integer
      (usual input formats for hexadecimal ([0x\[d\]+] and [0X\[d+\]]),
       octal ([0o\[d\]+]), and binary [ob\[d\]+] notations are understood).
-   - [u]: convert an integer argument to unsigned decimal
+   - [u]: convert an integer argument to unsigned decimal.
    - [x]: convert an integer argument to unsigned hexadecimal,
      using lowercase letters.
    - [X]: convert an integer argument to unsigned hexadecimal,
      using uppercase letters.
    - [o]: reads an unsigned octal integer.
    - [s]: reads a string argument (string ends with a space).
+   - [S]: reads a delimited string argument (delimitors and special
+     escaped characters follow the lexical conventions of Objective Caml).
    - [c]: reads a single character.
+   - [C]: reads a single delimited character (delimitors and special
+     escaped characters follow the lexical conventions of Objective Caml).
    - [f]: reads a floating-point number in decimal notation,
-     in the style [dddd.ddd]
+     in the style [dddd.ddd].
    - [e] or [E]: reads a floating-point argument in decimal notation,
-     in the style [d.ddd e+-dd] (mantissa and exponent)
+     in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: reads a floating-point argument in decimal notation,
      in style [f] or [e], [E].
    - [b]: reads a boolean argument ([true] or [false]).
@@ -77,12 +80,12 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> ('a -> 'b);;
    lexing and parsing; if you need efficient language syntactic analysis,
    use the corresponding devoted libraries. *)
 
-val scanf : ('a, Scanning.scanbuf, 'b) format -> ('a -> 'b);;
+val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.fscanf}, but inputs from [stdin]. *)
 
 val bscanf :
-  Scanning.scanbuf -> ('a, Scanning.scanbuf, 'b) format -> ('a -> 'b);;
-(** Same as {!Scanf.bscanf}, but inputs from the buffer argument. *)
+  Scanning.scanbuf -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
+(** Same as {!Scanf.fscanf}, but inputs from the buffer argument. *)
 
-val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> ('a -> 'b);;
+val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.fscanf}, but inputs from the string argument. *)

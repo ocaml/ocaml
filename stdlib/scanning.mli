@@ -19,9 +19,9 @@
 
 type scanbuf;;
 (** The type of scanning buffers. A scanning buffer is the argument passed
-   to the scanning functions used by the [scanf] family functions.
+   to the scanning functions used by the [scanf] family of functions.
    The scanning buffer holds the current state of the scan, plus
-   a function to find the next char from the input, and a token buffer
+   a function to get the next char from the input, and a token buffer
    to store the string matched so far. *)
 
 val next_char : scanbuf -> unit;;
@@ -47,7 +47,7 @@ val token : scanbuf -> string;;
     format. *)
 
 val reset_token : scanbuf -> unit;;
-(** [Scanning.reset_token scanbuf] rests to zero the token buffer of
+(** [Scanning.reset_token scanbuf] resets the token buffer of
     the given scanning buffer. *)
 
 val token_count : scanbuf -> int;;
@@ -59,17 +59,18 @@ val end_of_input : scanbuf -> bool;;
     of the given buffer. *)
 
 val from_string : string -> scanbuf;;
-(** Create a scanning buffer which reads from the given string.
+(** [Scanning.from_string s] returns a scanning buffer which reads
+    from the given string.
     Reading starts from the first character in the string.
     The end-of-input condition is set when the end of the string is reached. *)
 
 val from_channel : in_channel -> scanbuf;;
-(** Create a scanning buffer on the given input channel.
-    [Scanning.from_channel inchan] returns a scanning buffer which reads
+(** [Scanning.from_channel inchan] returns a scanning buffer which reads
     from the input channel [inchan], at the current reading position. *)
 
 val from_function : (unit -> char) -> scanbuf;;
-(** Create a scanning buffer with the given function as its reading method.
-    When the scanning needs one more character, it calls the given function.
+(** [Scanning.from_function f] returns a scanning buffer with
+    the given function as its reading method.
+    When scanning needs one more character, the given function is called.
     When the function has no more character to provide, it must set
     an end of input condition by raising the exception [End_of_file]. *)
