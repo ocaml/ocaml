@@ -250,6 +250,8 @@ let may_exec =
 
 let path_sep = if Sys.os_type = "Win32" then ";" else ":"
 
+let warnings = ref "A"
+
 let f :prog :title =
   let progargs =
     List.filter pred:((<>) "") (Str.split sep:~" " prog) in
@@ -282,7 +284,12 @@ let f :prog :title =
       end in
   let load_path =
     List2.flat_map !Config.load_path fun:(fun dir -> ["-I"; dir]) in
-  let args = Array.of_list (progargs @ load_path) in
+  let modern = if !Clflags.classic then [] else ["-modern"] in
+  let warnings =
+    if List.mem item:"-w" progargs || !warnings = "A" then []
+    else ["-w"; !warnings]
+  in
+  let args = Array.of_list (progargs @ modern @ warnings @ load_path) in
   let sh = new shell textw:tw :prog :env :args in
   let current_dir = ref (Unix.getcwd ()) in
   file_menu#add_command "Use..." command:

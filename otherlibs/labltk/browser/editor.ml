@@ -25,19 +25,22 @@ and type_on_load = ref false
 let compiler_preferences () =
   let tl = Jg_toplevel.titled "Compiler" in
   Wm.transient_set tl master:Widget.default_toplevel;
-  let mk_chkbutton :text :ref =
+  let mk_chkbutton :text :ref :invert =
     let variable = Textvariable.create on:tl () in
-    if !ref then Textvariable.set variable to:"1";
+    if (if invert then not !ref else !ref) then
+      Textvariable.set variable to:"1";
     Checkbutton.create tl :text :variable,
-    (fun () -> ref := Textvariable.get variable = "1")
+    (fun () ->
+      ref := Textvariable.get variable = (if invert then "0" else "1"))
   in
   let chkbuttons, setflags = List.split
-      (List.map fun:(fun (text, ref) -> mk_chkbutton :text :ref)
-        ["No pervasives", Clflags.nopervasives;
-         "No warnings", Typecheck.nowarnings;
-         "Classic", Clflags.classic;
-         "Lex on load", lex_on_load;
-         "Type on load", type_on_load])
+      (List.map
+	 fun:(fun (text, ref, invert) -> mk_chkbutton :text :ref :invert)
+         [ "No pervasives", Clflags.nopervasives, false;
+           "No warnings", Typecheck.nowarnings, false;
+           "Modern", Clflags.classic, true;
+           "Lex on load", lex_on_load, false;
+           "Type on load", type_on_load, false ])
   in
   let buttons = Frame.create tl in
   let ok = Button.create buttons text:"Ok" padx:20 command:

@@ -29,5 +29,6 @@ class shell :
 
 val kill_all : unit -> unit
 val get_all : unit -> (string * shell) list
+val warnings : string ref
 
 val f : prog:string -> title:string -> unit
