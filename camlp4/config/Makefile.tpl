@@ -6,7 +6,7 @@ OCAMLOPT=@OTOP=$(OTOP) OPT=$(OPT) EXE=$(EXE) ../tools/ocamlopt.sh
 OCAMLCFLAGS=
 MKDIR=mkdir -p
 
-PROFILING=prof
+#PROFILING=prof
 
 TESTDIRECTORY= test `basename "$<"` != "$<" && { echo "You are not in the right directory"; exit 1; }
 
