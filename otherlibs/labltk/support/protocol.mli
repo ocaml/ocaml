@@ -1,18 +1,18 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                Objective Caml LablTk library                          *)
-(*                                                                       *)
-(*         Francois Rouaix, Francois Pessaux and Jun Furuse              *)
-(*               projet Cristal, INRIA Rocquencourt                      *)
-(*            Jacques Garrigue, Kyoto University RIMS                    *)
-(*                                                                       *)
-(*   Copyright 1999 Institut National de Recherche en Informatique et    *)
-(*   en Automatique and Kyoto University.  All rights reserved.          *)
-(*   This file is distributed under the terms of the GNU Library         *)
-(*   General Public License, with the special exception on linking       *)
-(*   described in file ../../../LICENSE.                                 *)
-(*                                                                       *)
-(*************************************************************************)
+(***********************************************************************)
+(*                                                                     *)
+(*                 MLTk, Tcl/Tk interface of Objective Caml            *)
+(*                                                                     *)
+(*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    *)
+(*               projet Cristal, INRIA Rocquencourt                    *)
+(*            Jacques Garrigue, Kyoto University RIMS                  *)
+(*                                                                     *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*  en Automatique and Kyoto University.  All rights reserved.         *)
+(*  This file is distributed under the terms of the GNU Library        *)
+(*  General Public License, with the special exception on linking      *)
+(*  described in file LICENSE found in the Objective Caml source tree. *)
+(*                                                                     *)
+(***********************************************************************)
 
 (* $Id$ *)
 
@@ -39,18 +39,49 @@ val add_destroy_hook : (any widget -> unit) -> unit
 
 
 (* Opening, closing, and mainloop *)
-val   openTk : ?display:string -> ?clas:string -> unit -> toplevel widget
-val   closeTk : unit -> unit
-val   mainLoop : unit -> unit
+val default_display : unit -> string
+
+val opentk : unit -> toplevel widget
+    (* The basic initialization function. [opentk ()] parses automatically
+       the command line options and use the tk related options in them
+       such as "-display localhost:0" to initialize Tk applications. 
+       Consult wish manpage about the supported options. *)
+
+val keywords : (string * Arg.spec * string) list
+    (* Command line parsing specification for Arg.parse, which contains
+       the standard Tcl/Tk command line options such as "-display" and "-name".
+       These Tk command line options are used by opentk *)
+
+val opentk_with_args : string list -> toplevel widget
+    (* [opentk_with_args argv] invokes [opentk] with the tk related 
+       command line options given by [argv] to the executable program. *) 
+
+val openTk : ?display:string -> ?clas:string -> unit -> toplevel widget
+    (* [openTk ~display:display ~clas:clas ()] is equivalent to
+       [opentk ["-display"; display; "-name"; clas]] *)
+
+(* Legacy opentk functions *)
+val openTkClass: string -> toplevel widget
+    (* [openTkClass class] is equivalent to [opentk ["-name"; class]] *)
+val openTkDisplayClass: string -> string -> toplevel widget
+    (* [openTkDisplayClass disp class] is equivalent to 
+       [opentk ["-display"; disp; "-name"; class]] *)
+
+val closeTk : unit -> unit
+val finalizeTk : unit -> unit 
+    (* Finalize tcl/tk before exiting. This function will be automatically 
+       called when you call [Pervasives.exit ()] *)
+
+val mainLoop : unit -> unit
 
 
 (* Direct evaluation of tcl code *)
-val   tkEval : tkArgs array -> string
+val tkEval : tkArgs array -> string
 
-val   tkCommand : tkArgs array -> unit
+val tkCommand : tkArgs array -> unit
 
 (* Returning a value from a Tcl callback *)
-val   tkreturn: string -> unit
+val tkreturn: string -> unit
 
 
 (* Callbacks: this is private *)
