@@ -81,10 +81,16 @@ The evaluation outcode for each phrase are not displayed.
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
-"fep"; just run "fep -emacs ocaml" or "fep -vi ocaml".
+"ledit" or "ocaml2" 
+\begin{latexonly}
+(see the Caml Hump "http://caml.inria.fr/humps/index_framed_caml.html").
+\end{latexonly}
+\begin{htmlonly}
+(see the
+\ahref{http://caml.inria.fr/humps/index_framed_caml.html}{Caml Hump}).
+\end{htmlonly}
 Another option is to use "ocaml" under Gnu Emacs, which gives the
-full editing power of Emacs (see the subdirectory "emacs" of the
-Objective Caml distribution).
+full editing power of Emacs (command "run-caml" from library "inf-caml").
 
 At any point, the parsing, compilation or evaluation of the current
 phrase can be interrupted by pressing "ctrl-C" (or, more precisely,
@@ -115,25 +121,8 @@ In addition to the text-only command "ocaml.exe", which works exactly
 as under Unix (see above), a graphical user interface for the
 toplevel is available under the name "ocamlwin.exe". It should be
 launched from the Windows file manager or program manager.
-
-The ``Terminal'' windows is split in two panes. Phrases are entered
-and edited in the bottom pane. The top pane displays a copy of the
-input phrases as they are processed by the Objective Caml toplevel,
-interspersed with the toplevel responses. The ``Return'' key sends the
-contents of the bottom pane to the Objective Caml toplevel. The ``Enter''
-key inserts a newline without sending the contents of the Input
-window. (This can be configured with the ``Preferences'' menu item.)
-
-The contents of the input window can be edited at all times, with the
-standard Windows interface. An history of previously entered phrases
-is maintained and displayed in a separate window.
-
-To quit the "Camlwin" application, either select ``Quit'' from
-the ``File'' menu, or use the "quit" function described below.
-
-At any point, the parsing, compilation or evaluation of the current
-phrase can be interrupted by selecting the ``Interrupt Objective Caml''
-menu item. This goes back to the "#" prompt.
+This interface provides a text window in which commands can be entered
+and edited, and the toplevel responses are printed.
 \end{windows}
 
 \section{Options} \label{s:toplevel-options}

@@ -1275,7 +1275,8 @@ just like for a regular C program.
 
 \item At some point, the C code must call "caml_main(argv)" to
 initialize the Caml code. The "argv" argument is a C array of strings
-(type "char **") which represents the command-line arguments, as
+(type "char **"), terminated with a "NULL" pointer,
+which represents the command-line arguments, as
 passed as second argument to "main". The Caml array "Sys.argv" will
 be initialized from this parameter. For the bytecode compiler,
 "argv[0]" and "argv[1]" are also consulted to find the file containing
@@ -1468,13 +1469,14 @@ contains the following fields:
 \item "char *identifier" \\
 A zero-terminated character string serving as an identifier for
 serialization and deserialization operations.
+
 \item "void  (*finalize)(value v)" \\
 The "finalize" field contains a pointer to a C function that is called
 when the block becomes unreachable and is about to be reclaimed.
 The block is passed as first argument to the function.
 The "finalize" field can also be "NULL" to indicate that no
 finalization function is associated with the block.
-IMPORTANT NOTE: the "v" parameter of this function is of type "value", but
+Important note: the "v" parameter of this function is of type "value", but
 it must not be declared using the "CAMLparam" macros.
 
 \item "int (*compare)(value v1, value v2)" \\
@@ -1486,7 +1488,7 @@ the two blocks are structurally equal, a negative integer if the data
 from the first block is less than the data from the second block, and
 a positive integer if the data from the first block is greater than
 the data from the second block.
-NOTE: You must use "CAMLparam" to declare "v1" and "v2" and "CAMLreturn"
+Note: You must use "CAMLparam" to declare "v1" and "v2" and "CAMLreturn"
 to return the result.
 
 The "compare" field can be set to "custom_compare_default"; this
@@ -1501,7 +1503,7 @@ given custom block.  The hash value must be compatible with the
 "compare" function, in the sense that two structurally equal data
 (that is, two custom blocks for which "compare" returns 0) must have
 the same hash value.
-NOTE: You must use "CAMLparam" to declare "v" and "CAMLreturn"
+Note: You must use "CAMLparam" to declare "v" and "CAMLreturn"
 to return the result.
 
 The "hash" field can be set to "custom_hash_default", in which case
@@ -1520,7 +1522,7 @@ below.  The user-provided "serialize" function must then store in its
 "wsize_32" and "wsize_64" parameters the sizes in bytes of the data
 part of the custom block on a 32-bit architecture and on a 64-bit
 architecture, respectively.
-NOTE: You must use "CAMLparam" to declare "v" and "CAMLreturn"
+Note: You must use "CAMLparam" to declare "v" and "CAMLreturn"
 to return the result.
 
 The "serialize" field can be set to "custom_serialize_default",

@@ -14,41 +14,31 @@ Using this library will therefore never make programs run
 faster. However, many programs are easier to write when structured as
 several communicating processes.
 
-\begin{unix}
-Programs that use the "threads" library must be linked as follows:
-\begin{alltt}
-        ocamlc -thread \var{other options} threads.cma \var{other files}
-\end{alltt}
-The "-thread" option selects a special, thread-safe version of
-the standard library (see chapter~\ref{c:camlc}).  The "-thread"
-option must also be given when compiling any source file that
-references modules from the thread library ("Thread", "Mutex", \ldots).
-
-The default thread implementation cannot be used in native-code
-programs compiled with "ocamlopt".  If your operating system provides
-POSIX 1003.1c compliant threads, you can select an alternate
-implementation when configuring Objective Caml (use the
-"-with-pthread" option to "configure") which also supports native-code
-programs.  Programs that use this alternate implementation of the
-"threads" library must be linked as follows:
+Two implementations of the "threads" library are available, depending
+on the capabilities of the operating system:
+\begin{itemize}
+\item System threads.  This implementation builds on the OS-provided threads
+facilities: POSIX 1003.1c threads for Unix, and Win32 threads for
+Windows.  When available, system threads support both bytecode and
+native-code programs.
+\item VM-level threads.  This implementation performs time-sharing and
+context switching at the level of the OCaml virtual machine (bytecode
+interpreter).  It is available on Unix systems, and supports only
+bytecode programs.  It cannot be used with native-code programs.
+\end{itemize}
+Programs that use system threads must be linked as follows:
 \begin{alltt}
         ocamlc -thread \var{other options} threads.cma \var{other files}
         ocamlopt -thread \var{other options} threads.cmxa \var{other files}
 \end{alltt}
-Depending on the operating system, extra system libraries can be
-necessary.  For instance, under Solaris 2.5, add "-cclib -lposix4"
-at the end of the command line.
-\end{unix}
-
-\begin{windows}
-Programs that use the "threads" library must be linked as follows:
-\begin{alltt}
-        ocamlc -thread \var{other options} threads.cma \var{other files}
-\end{alltt}
 All object files on the command line must also have been compiled with
-the "-thread" option, which selects a special, thread-safe version of
-the standard library (see chapter~\ref{c:camlc}).
-\end{windows}
+the "-thread" option (see chapter~\ref{c:camlc}).
+
+Programs that use VM-level threads must be compiled with the "-vmthread"
+option to "ocamlc" (see chapter~\ref{c:camlc}), and be linked as follows:
+\begin{alltt}
+        ocamlc -vmthread \var{other options} threads.cma \var{other files}
+\end{alltt}
 
 \ifouthtml
 \begin{rawhtml}

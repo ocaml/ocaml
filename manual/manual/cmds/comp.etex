@@ -296,9 +296,7 @@ are supported.
 
 \item["-thread"]
 Compile or link multithreaded programs, in combination with the
-"threads" library described in chapter~\ref{c:threads}. What this
-option actually does is select a special, thread-safe version of the
-standard library.
+system "threads" library described in chapter~\ref{c:threads}.
 
 \item["-unsafe"]
 Turn bound checking off on array and string accesses (the "v.(i)" and
@@ -324,6 +322,10 @@ debug C library problems.
 \item["-version"]
 Print the version number of the compiler in short form (e.g. "3.06"),
 then exit.
+
+\item["-vmthread"]
+Compile or link multithreaded programs, in combination with the
+VM-level "threads" library described in chapter~\ref{c:threads}.
 
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument

@@ -270,9 +270,7 @@ code for the source file \var{x}".ml" is saved in the file \var{x}".s".
 
 \item["-thread"]
 Compile or link multithreaded programs, in combination with the
-"threads" library described in chapter~\ref{c:threads}. What this
-option actually does is select a special, thread-safe version of the
-standard library.
+system "threads" library described in chapter~\ref{c:threads}.
 
 \item["-unsafe"]
 Turn bound checking off on array and string accesses (the "v.(i)" and
