@@ -200,6 +200,9 @@ rule token = parse
         start_pos := Lexing.lexeme_start lexbuf;
         comment lexbuf;
         token lexbuf }
+  | "#" [' ' '\t']* ['0'-'9']+ [' ' '\t']* "\"" [^ '\n'] * '\n'
+      (* # linenum "filename" flags \n *)
+      { token lexbuf }
   | "#"  { SHARP }
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
@@ -304,3 +307,4 @@ and string = parse
   | _
       { store_string_char(Lexing.lexeme_char lexbuf 0);
         string lexbuf }
+

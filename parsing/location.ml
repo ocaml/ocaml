@@ -28,25 +28,59 @@ let input_name = ref ""
 
 let input_lexbuf = ref (None : lexbuf option)
 
-(* Determine line numbers and position of beginning of lines in a file *)
+(* Auxiliaries for line_pos *)
 
-let line_pos_file filename loc =
+let rec tokenize s pos =
+  if pos >= String.length s then raise Not_found else begin
+    let c = s.[pos] in
+    if c = ' ' || c = '\t'
+    then tokenize s (pos+1)
+    else read_token s pos pos
+  end
+and read_token s start pos =
+  if pos >= String.length s then (start, pos) else begin
+    let c = s.[pos] in
+    if c = ' ' || c = '\t' || c = '\n' || c = '\r'
+    then (start, pos)
+    else read_token s start (pos+1)
+  end
+
+(* Given a character position, recover the corresponding line number
+   and position of beginning of line.
+   Honors # linenum "filename" directives. *)
+
+let line_pos filename loc =
   let ic = open_in_bin filename in
-  let pos = ref 0
-  and linenum = ref 1
-  and linebeg = ref 0 in
+  let filename = ref filename in
+  let linenum = ref 1 in
+  let linepos = ref 0 in
   begin try
-    while !pos < loc do
-      incr pos;
-      if input_char ic = '\n' then begin
+    while pos_in ic < loc do
+      let c = input_char ic in
+      if c = '\n' then begin
         incr linenum;
-        linebeg := !pos
+        linepos := pos_in ic
+      end
+      else if c = '#' then begin
+        let s = input_line ic in
+        try
+          let (b1, e1) = tokenize s 0 in
+          prerr_endline (String.sub s b1 (e1-b1));
+          let (b2, e2) = tokenize s e1 in
+          prerr_endline (String.sub s b2 (e2-b2));
+          if s.[b2] = '"' && s.[e2 - 1] = '"' then begin
+            linenum := int_of_string (String.sub s b1 (e1 - b1));
+            filename := String.sub s (b2 + 1) (e2 - b2 - 2)
+          end else
+            incr linenum (* compensate for input_line *)
+        with _ ->
+          incr linenum (* compensate for input_line *)
       end
     done
   with End_of_file -> ()
   end;
   close_in ic;
-  (!linenum, !linebeg)
+  (!filename, !linenum, !linepos)
 
 (* Terminal info *)
 
@@ -150,12 +184,12 @@ let print loc =
       force_newline()
     end
   else begin
-    let (linenum, linebeg) = line_pos_file !input_name loc.loc_start in
-	print_string msg_file; print_string !input_name;
-	print_string msg_line; print_int linenum;
-	print_string msg_chars; print_int (loc.loc_start - linebeg);
-	print_string msg_to; print_int (loc.loc_end - linebeg);
-	print_string msg_colon;
+    let (filename, linenum, linebeg) = line_pos !input_name loc.loc_start in
+    print_string msg_file; print_string filename;
+    print_string msg_line; print_int linenum;
+    print_string msg_chars; print_int (loc.loc_start - linebeg);
+    print_string msg_to; print_int (loc.loc_end - linebeg);
+    print_string msg_colon;
     force_newline()
   end
 

@@ -23,3 +23,4 @@ type error =
 exception Error of error * int * int
 
 val report_error: error -> unit
+
