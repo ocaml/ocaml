@@ -499,6 +499,13 @@ powerful than on regular data structures, as it allows recursive calls
 to parsing functions inside the patterns, for matching sub-components of
 the input stream. See chapter~\ref{c:extensions} for more details.
 
+In order to use stream parsers at toplevel, we must first load the
+"camlp4" preprocessor.
+\begin{caml_example}
+#load"camlp4o.cma";;
+\end{caml_example}
+
+Then we are ready to define our parser.
 \begin{caml_example}
 let rec parse_expr = parser
     [< e1 = parse_mult; e = parse_more_adds e1 >] -> e
