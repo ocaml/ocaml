@@ -58,7 +58,33 @@ let select_addressing exp =
 
 (* Instruction selection *)
 
-let select_oper op args = raise Use_default
+let select_oper op args =
+  (* Multiplication, division and modulus are turned into
+     calls to C library routines, except if the dividend is a power of 2. *)
+    (Cmuli, [arg; Cconst_int n]) ->
+      let l = Misc.log2 n in
+      if n = 1 lsl l
+      then (Iintop_imm(Ilsl, l), [arg])
+      else (Iextcall(".umul", false), args)
+  | (Cmuli, [Cconst_int n; arg]) ->
+      let l = Misc.log2 n in
+      if n = 1 lsl l
+      then (Iintop_imm(Ilsl, l), [arg])
+      else (Iextcall(".umul", false), args)
+  | (Cmuli, _) -> 
+      (Iextcall(".umul", false), args)
+  | (Cdivi, [arg; Cconst_int n])
+    when is_immediate n & n = 1 lsl (Misc.log2 n) ->
+      (Iintop_imm(Idiv, n), [arg])
+  | (Cdivi, _) -> 
+      (Iextcall(".div", false), args)
+  | (Cmodi, [arg; Cconst_int n])
+    when is_immediate n & n = 1 lsl (Misc.log2 n) ->
+      (Iintop_imm(Imod, n), [arg])
+  | (Cmodi, _) ->
+      (Iextcall(".mod", false), args)
+  | _ ->
+      raise Use_default
 
 let select_store addr exp = raise Use_default
 
@@ -183,7 +209,7 @@ let loc_results res =
   let (loc, ofs) = calling_conventions 8 13 100 105 not_supported res in loc
 
 (* On the Sparc, all arguments to C functions, even floating-point arguments,
-   are passed in %o..%o5, then on the stack *)
+   are passed in %o0..%o5, then on the stack *)
 
 let loc_external_arguments arg =
   let loc = Array.new (Array.length arg) Reg.dummy in
@@ -244,10 +270,6 @@ let oper_latency = function
     Ireload -> 3
   | Iload(_, _) -> 3
   | Iconst_float _ -> 3 (* turned into a load *)
-  | Iintop Imul -> 10
-  | Iintop_imm(Imul, _) -> 10
-  | Iintop(Idiv | Imod) -> 20
-  | Iintop_imm((Idiv | Imod), _) -> 20
   | Iaddf | Isubf -> 3
   | Imulf -> 5
   | Idivf -> 15
