@@ -160,6 +160,10 @@ let emit_instr = function
           else (out opCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opCONSTINT; out_int (Char.code c)
+      | Const_pointer i ->
+          if i >= 0 & i <= 3
+          then out (opCONST0 + i)
+          else (out opCONSTINT; out_int i)
       | Const_block(t, []) ->
           if t = 0 then out opATOM0 else (out opATOM; out_int t)
       | _ ->
@@ -174,7 +178,8 @@ let emit_instr = function
       if n < 4 then out(opGETFIELD0 + n) else (out opGETFIELD; out_int n)
   | Ksetfield n ->
       if n < 4 then out(opSETFIELD0 + n) else (out opSETFIELD; out_int n)
-  | Kdummy n -> out opDUMMY; out_int n
+  | Kdummy n ->
+      if n = 0 then out opATOM0 else (out opDUMMY; out_int n)
   | Kupdate n -> out opUPDATE
   | Kvectlength -> out opVECTLENGTH
   | Kgetvectitem -> out opGETVECTITEM

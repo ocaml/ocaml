@@ -30,6 +30,7 @@ and comparison =
 type structured_constant =
     Const_base of constant
   | Const_block of int * structured_constant list
+  | Const_pointer of int
 
 type lambda =
     Lvar of Ident.t
@@ -37,7 +38,7 @@ type lambda =
   | Lapply of lambda * lambda list
   | Lfunction of Ident.t * lambda
   | Llet of Ident.t * lambda * lambda
-  | Lletrec of (Ident.t * lambda * int) list * lambda
+  | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * int * (int * lambda) list * int * (int * lambda) list
   | Lstaticfail
@@ -62,6 +63,16 @@ let name_lambda arg fn =
     Lvar id -> fn id
   | _ -> let id = Ident.new "let" in Llet(id, arg, fn id)
 
+let name_lambda_list args fn =
+  let rec name_list names = function
+    [] -> fn (List.rev names)
+  | (Lvar id as arg) :: rem ->
+      name_list (arg :: names) rem
+  | arg :: rem ->
+      let id = Ident.new "let" in
+      Llet(id, arg, name_list (Lvar id :: names) rem) in
+  name_list [] args
+
 module IdentSet =
   Set.Make(struct
     type t = Ident.t
@@ -82,8 +93,8 @@ let free_variables l =
       freevars arg; freevars body; fv := IdentSet.remove id !fv
   | Lletrec(decl, body) ->
       freevars body;
-      List.iter (fun (id, exp, sz) -> freevars exp) decl;
-      List.iter (fun (id, exp, sz) -> fv := IdentSet.remove id !fv) decl
+      List.iter (fun (id, exp) -> freevars exp) decl;
+      List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
   | Lprim(p, args) ->
       List.iter freevars args
   | Lswitch(arg, num_cases1, cases1, num_cases2, cases2) ->
@@ -105,7 +116,7 @@ let free_variables l =
       freevars e1; freevars e2; freevars e3; fv := IdentSet.remove v !fv
   | Lshared(e, lblref) ->
       freevars e
-  in freevars l; IdentSet.elements !fv
+  in freevars l; !fv
 
 (* Check if an action has a "when" guard *)
 

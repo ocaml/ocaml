@@ -4,7 +4,7 @@ open Typedtree
 open Lambda
 
 val for_function:
-        Location.t -> Ident.t -> (pattern * lambda) list -> lambda
+        Location.t -> lambda -> (pattern * lambda) list -> lambda
 val for_trywith:
         Ident.t -> (pattern * lambda) list -> lambda
 val for_let:

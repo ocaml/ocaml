@@ -132,6 +132,7 @@ let rec transl_const = function
   | Const_base(Const_char c) -> Obj.repr c
   | Const_base(Const_string s) -> Obj.repr s
   | Const_base(Const_float f) -> Obj.repr(float_of_string f)
+  | Const_pointer i -> Obj.repr i
   | Const_block(tag, fields) ->
       let block = Obj.new_block tag (List.length fields) in
       let pos = ref 0 in

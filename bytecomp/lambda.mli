@@ -30,6 +30,7 @@ and comparison =
 type structured_constant =
     Const_base of constant
   | Const_block of int * structured_constant list
+  | Const_pointer of int
 
 type lambda =
     Lvar of Ident.t
@@ -37,7 +38,7 @@ type lambda =
   | Lapply of lambda * lambda list
   | Lfunction of Ident.t * lambda
   | Llet of Ident.t * lambda * lambda
-  | Lletrec of (Ident.t * lambda * int) list * lambda
+  | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * int * (int * lambda) list * int * (int * lambda) list
   | Lstaticfail
@@ -53,8 +54,11 @@ val const_unit: structured_constant
 val lambda_unit: lambda
 val share_lambda: lambda -> lambda
 val name_lambda: lambda -> (Ident.t -> lambda) -> lambda
-val free_variables: lambda -> Ident.t list
+val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 val is_guarded: lambda -> bool
+
+module IdentSet: Set.S with elt = Ident.t
+val free_variables: lambda -> IdentSet.t
 
 type compilenv
 

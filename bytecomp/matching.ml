@@ -1,5 +1,6 @@
 (* Compilation of pattern matching *)
 
+open Misc
 open Location
 open Asttypes
 open Typedtree
@@ -94,12 +95,16 @@ let divide_var {cases = cl; args = al} =
 
 (* Matching against a tuple pattern *)
 
-let make_tuple_matching num_comps (arg :: argl) =
-  let rec make_args pos =
-    if pos >= num_comps
-    then argl
-    else Lprim(Pfield pos, [arg]) :: make_args (pos + 1) in
-  {cases = []; args = make_args 0}
+let make_tuple_matching num_comps = function
+    [] -> fatal_error "Matching.make_tuple_matching"
+  | Lprim(Pmakeblock _, components) :: argl ->
+      {cases = []; args = components @ argl}
+  | arg :: argl ->
+      let rec make_args pos =
+        if pos >= num_comps
+        then argl
+        else Lprim(Pfield pos, [arg]) :: make_args (pos + 1) in
+      {cases = []; args = make_args 0}
 
 let any_pat =
   {pat_desc = Tpat_any; pat_loc = Location.none; pat_type = Ctype.none}
@@ -264,7 +269,7 @@ let partial_function loc () =
                Const_base(Const_int loc.loc_end)]))])])
 
 let for_function loc param pat_act_list =
-  compile_matching (partial_function loc) (Lvar param) pat_act_list
+  compile_matching (partial_function loc) param pat_act_list
 
 let for_trywith param pat_act_list =
   compile_matching (fun () -> Lprim(Praise, [Lvar param]))

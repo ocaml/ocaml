@@ -20,12 +20,14 @@ exception Error of Location.t * error
 
 (* Compute the access paths to identifiers bound in patterns. *)
 
+let identity_env e = e
+
 let rec bind_pattern env pat arg mut =
   match pat.pat_desc with
     Tpat_var id ->
       begin match mut with
         Mutable   -> (env, fun e -> Llet(id, arg, e))
-      | Immutable -> (add_env id arg env, fun e -> e)
+      | Immutable -> (add_env id arg env, identity_env)
       end
   | Tpat_alias(pat, id) ->
       let (ext_env, bind) = bind_pattern env pat arg mut in
@@ -34,21 +36,24 @@ let rec bind_pattern env pat arg mut =
       | Immutable -> (add_env id arg ext_env, bind)
       end
   | Tpat_tuple patl ->
-      bind_pattern_list env patl arg mut 0
+      begin match arg with
+        Lprim(Pmakeblock _, argl) -> bind_patterns env patl argl
+      | _ -> bind_pattern_list env patl arg mut 0
+      end
   | Tpat_construct(cstr, patl) ->
       begin match cstr.cstr_tag with
-        Cstr_constant _  -> (env, fun e -> e)
+        Cstr_constant _  -> (env, identity_env)
       | Cstr_block _     -> bind_pattern_list env patl arg mut 0
       | Cstr_exception _ -> bind_pattern_list env patl arg mut 1
       end
   | Tpat_record lbl_pat_list ->
       bind_label_pattern env lbl_pat_list arg mut
   | _ ->
-      (env, fun e -> e)
+      (env, identity_env)
 
 and bind_pattern_list env patl arg mut pos =
   match patl with
-    [] -> (env, fun e -> e)
+    [] -> (env, identity_env)
   | pat :: rem ->
       let (env1, bind1) =
         bind_pattern env pat (Lprim(Pfield pos, [arg])) mut in
@@ -58,7 +63,7 @@ and bind_pattern_list env patl arg mut pos =
 
 and bind_label_pattern env patl arg mut =
   match patl with
-    [] -> (env, fun e -> e)
+    [] -> (env, identity_env)
   | (lbl, pat) :: rem ->
       let mut1 =
         match lbl.lbl_mut with Mutable -> Mutable | Immutable -> mut in
@@ -67,6 +72,16 @@ and bind_label_pattern env patl arg mut =
       let (env2, bind2) =
         bind_label_pattern env1 rem arg mut in
       (env2, fun e -> bind1(bind2 e))
+
+and bind_patterns env patl argl =
+  match (patl, argl) with
+    ([], []) -> (env, identity_env)
+  | (pat1::patl, arg1::argl) ->
+      let (env1, bind1) = bind_pattern env pat1 arg1 Immutable in
+      let (env2, bind2) = bind_patterns env1 patl argl in
+      (env2, fun e -> bind1(bind2 e))
+  | (_, _) ->
+      fatal_error "Translcore.bind_patterns"
 
 (* Translation of primitives *)
 
@@ -117,6 +132,7 @@ let primitives_table = create_hashtable 31 [
   "%geint", Pintcomp Cge;
   "%incr", Poffsetref(1);
   "%decr", Poffsetref(-1);
+  "%negfloat", Pnegfloat;
   "%addfloat", Paddfloat;
   "%subfloat", Psubfloat;
   "%mulfloat", Pmulfloat;
@@ -157,30 +173,40 @@ let transl_prim prim arity args =
   with Not_found ->
     Pccall(prim, arity)
 
-(* To compile "let rec" *)
+(* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
-exception Unknown
-
-let size_of_lambda id lam =
-  let rec size = function
-      Lfunction(param, body) as funct -> 1 + List.length(free_variables funct)
-    | Lprim(Pmakeblock tag, args) -> List.iter check args; List.length args
-    | Llet(id, arg, body) -> check arg; size body
-    | _ -> raise Unknown
+let check_recursive_lambda id lam =
+  let rec check_top = function
+      Lfunction(param, body) as funct -> true
+    | Lprim(Pmakeblock tag, args) -> List.for_all check args
+    | Llet(id, arg, body) -> check arg & check_top body
+    | _ -> false
   and check = function
-      Lvar _ -> ()
-    | Lconst cst -> ()
-    | Lfunction(param, body) -> ()
-    | Llet(_, arg, body) -> check arg; check body
-    | Lprim(Pmakeblock tag, args) -> List.iter check args
-    | lam -> if List.mem id (free_variables lam) then raise Unknown
-  in size lam
+      Lvar _ -> true
+    | Lconst cst -> true
+    | Lfunction(param, body) -> true
+    | Llet(_, arg, body) -> check arg & check body
+    | Lprim(Pmakeblock tag, args) -> List.for_all check args
+    | lam -> not(IdentSet.mem id (free_variables lam))
+  in check_top lam
 
 (* To propagate structured constants *)
 
 exception Not_constant
 
 let extract_constant = function Lconst sc -> sc | _ -> raise Not_constant
+
+(* To find reasonable names for let-bound and lambda-bound idents *)
+
+let name_pattern default p =
+  match p.pat_desc with
+    Tpat_var id -> id
+  | Tpat_alias(p, id) -> id
+  | _ -> Ident.new default
+
+let name_pattern_list default = function
+    [] -> Ident.new default
+  | (p, e) :: _ -> name_pattern default p
 
 (* Translation of expressions *)
 
@@ -197,23 +223,28 @@ let rec transl_exp env e =
       let (ext_env, add_let) = transl_let env rec_flag pat_expr_list in
       add_let(transl_exp ext_env body)
   | Texp_function pat_expr_list ->
-      let param = Ident.new "fun" in
-      Lfunction(param, Matching.for_function e.exp_loc param
-                         (transl_cases env param pat_expr_list))
+      let param = name_pattern_list "param" pat_expr_list in
+      Lfunction(param, Matching.for_function e.exp_loc (Lvar param)
+                         (transl_cases env (Lvar param) pat_expr_list))
   | Texp_apply({exp_desc = Texp_ident(path, {val_prim = Primitive(s, arity)})},
                args) when List.length args = arity ->
       Lprim(transl_prim s arity args, transl_list env args)
   | Texp_apply(funct, args) ->
       Lapply(transl_exp env funct, transl_list env args)
+  | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list) ->
+      name_lambda_list (transl_list env argl) (fun paraml ->
+        let param = Lprim(Pmakeblock 0, paraml) in
+          Matching.for_function e.exp_loc param
+              (transl_cases env param pat_expr_list))
   | Texp_match(arg, pat_expr_list) ->
-      name_lambda (transl_exp env arg)
-        (fun id ->
-          Matching.for_function e.exp_loc id
-                                 (transl_cases env id pat_expr_list))
+      name_lambda (transl_exp env arg) (fun id ->
+        Matching.for_function e.exp_loc (Lvar id)
+                              (transl_cases env (Lvar id) pat_expr_list))
   | Texp_try(body, pat_expr_list) ->
       let id = Ident.new "exn" in
       Ltrywith(transl_exp env body, id,
-               Matching.for_trywith id (transl_cases env id pat_expr_list))
+               Matching.for_trywith id
+                 (transl_cases env (Lvar id) pat_expr_list))
   | Texp_tuple el ->
       let ll = transl_list env el in
       begin try
@@ -225,7 +256,7 @@ let rec transl_exp env e =
       let ll = transl_list env args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(Const_base(Const_int n))
+          Lconst(Const_pointer n)
       | Cstr_block n ->
           begin try
             Lconst(Const_block(n, List.map extract_constant ll))
@@ -278,7 +309,7 @@ and transl_list env = function
 
 and transl_cases env param pat_expr_list =
   let transl_case (pat, expr) =
-    let (ext_env, bind_fun) = bind_pattern env pat (Lvar param) Immutable in
+    let (ext_env, bind_fun) = bind_pattern env pat param Immutable in
     (pat, bind_fun(transl_exp ext_env expr)) in
   List.map transl_case pat_expr_list
 
@@ -287,9 +318,9 @@ and transl_let env rec_flag pat_expr_list =
     Nonrecursive ->
       let rec transl body_env = function
         [] ->
-          (body_env, fun e -> e)
+          (body_env, identity_env)
       | (pat, expr) :: rem ->
-          let id = Ident.new "let" in
+          let id = name_pattern "let" pat in
           let (ext_env, bind_fun) =
             bind_pattern body_env pat (Lvar id) Immutable in
           let (final_env, add_let_fun) =
@@ -306,10 +337,9 @@ and transl_let env rec_flag pat_expr_list =
             Tpat_var id -> id
           | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)) in
         let lam = transl_exp env expr in
-        let size =
-          try size_of_lambda id lam
-          with Unknown -> raise(Error(expr.exp_loc, Illegal_letrec_expr)) in
-        (id, lam, size) in
+        if not (check_recursive_lambda id lam) then
+          raise(Error(expr.exp_loc, Illegal_letrec_expr));
+        (id, lam) in
       let decls =
         List.map transl_case pat_expr_list in
       (env, fun e -> Lletrec(decls, e))

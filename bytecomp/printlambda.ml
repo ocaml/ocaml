@@ -11,6 +11,7 @@ let rec structured_constant = function
       print_string "\""; print_string(String.escaped s); print_string "\""
   | Const_base(Const_float s) ->
       print_string s
+  | Const_pointer n -> print_int n; print_string "a"
   | Const_block(tag, []) ->
       print_string "["; print_int tag; print_string "]"
   | Const_block(tag, sc1::scl) ->
@@ -28,7 +29,7 @@ let primitive = function
     Pidentity -> print_string "id"
   | Pgetglobal id -> print_string "global "; Ident.print id
   | Psetglobal id -> print_string "setglobal "; Ident.print id
-  | Pmakeblock sz -> print_string "makeblock "; print_int sz
+  | Pmakeblock tag -> print_string "makeblock "; print_int tag
   | Pfield n -> print_string "field "; print_int n
   | Psetfield n -> print_string "setfield "; print_int n
   | Pccall(name, arity) -> print_string name
@@ -115,7 +116,7 @@ let rec lambda = function
       print_string "(";
       let spc = ref false in
       List.iter
-        (fun (id, l, sz) ->
+        (fun (id, l) ->
           if !spc then print_space() else spc := true;
           Ident.print id; print_string " "; lambda l)
         id_arg_list;
