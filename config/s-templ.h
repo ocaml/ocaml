@@ -178,3 +178,11 @@
 
 /* Define HAS_MKTIME if you have mktime(). */
 
+#define HAS_SETSID
+
+/* Define HAS_SETSID if you have setsid(). */
+
+#define HAS_PUTENV
+
+/* Define HAS_PUTENV if you have putenv(). */
+

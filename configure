@@ -572,6 +572,11 @@ if sh ./hasgot setsid; then
   echo "#define HAS_SETSID" >> s.h
 fi
 
+if sh ./hasgot putenv; then
+  echo "putenv() found."
+  echo "#define HAS_PUTENV" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test "$has_sockets" = "yes"; then
