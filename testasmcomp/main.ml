@@ -14,6 +14,7 @@
 open Clflags
 
 let compile_file filename =
+  Emit.begin_assembly();
   let ic = open_in filename in
   let lb = Lexing.from_channel ic in
   try
@@ -22,7 +23,7 @@ let compile_file filename =
     done
   with
       End_of_file ->
-        close_in ic
+        close_in ic; Emit.end_assembly()
     | Lexcmm.Error msg ->
         close_in ic; Lexcmm.report_error lb msg
     | Parsing.Parse_error ->

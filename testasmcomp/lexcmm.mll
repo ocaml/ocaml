@@ -174,7 +174,7 @@ rule token = parse
   | '-'? ['0'-'9']+ 'a'
       { let s = Lexing.lexeme lexbuf in
         POINTER(int_of_string(String.sub s 0 (String.length s - 1))) }
-  | ['0'-'9']+ ('.' ['0'-'9']*)? (['e' 'E'] ['+' '-']? ['0'-'9']+)?
+  | '-'? ['0'-'9']+ ('.' ['0'-'9']*)? (['e' 'E'] ['+' '-']? ['0'-'9']+)?
       { FLOATCONST(Lexing.lexeme lexbuf) }
   | ['A'-'Z' 'a'-'z' '\223'-'\246' '\248'-'\255' ]
     (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'

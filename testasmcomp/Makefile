@@ -13,7 +13,8 @@ CAMLRUN=../boot/cslrun
 CODEGEN=./codegen
 CFLAGS=-g
 
-PROGS=fib.out tak.out quicksort.out quicksort2.out soli.out integr.out
+PROGS=fib.out tak.out quicksort.out quicksort2.out soli.out integr.out \
+      arith.out
 
 all: codegen $(PROGS)
 
@@ -95,6 +96,9 @@ tagged-quicksort.out: main.c tagged-quicksort.o $(ARCH).o
 
 tagged-integr.out: main.c tagged-integr.o $(ARCH).o
 	$(CC) $(CFLAGS) -o tagged-integr.out -DINT_FLOAT -DFUN=test main.c tagged-integr.o $(ARCH).o
+
+arith.out: mainarith.c arith.o $(ARCH).o
+	$(CC) $(CFLAGS) -o arith.out mainarith.c arith.o $(ARCH).o
 
 .SUFFIXES:
 .SUFFIXES: .cmm .c .o .asm .S .ml .mli .cmo .cmi

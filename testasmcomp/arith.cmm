@@ -1,0 +1,154 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                         Caml Special Light                          *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Automatique.  Distributed only by permission.                      *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+
+(* Regression test for arithmetic instructions *)
+
+(function "testarith" ()
+   (let r "r"
+   (let d "d"
+   (let x (load "x" int)
+   (let y (load "y" int)
+   (let f (load "f" float)
+   (let g (load "g" float)
+      (addraset r 0 0)
+      (addraset r 1 1)
+      (addraset r 2 -1)
+      (addraset r 3 256)
+      (addraset r 4 65536)
+      (addraset r 5 16777216)
+      (addraset r 6 -256)
+      (addraset r 7 -65536)
+      (addraset r 8 -16777216)
+
+      (addraset r 9 (+ x y))
+      (addraset r 10 (+ x 1))
+      (addraset r 11 (+ x -1))
+
+      (addraset r 12 (+a "r" 8))
+      (addraset r 13 (+a "r" y))
+
+      (addraset r 14 (- x y))
+      (addraset r 15 (- x 1))
+      (addraset r 16 (- x -1))
+
+      (addraset r 17 (-a "r" 8))
+      (addraset r 18 (-a "r" y))
+
+      (addraset r 19 ( * x 2))
+      (addraset r 20 ( * 2 x))
+      (addraset r 21 ( * x 16))
+      (addraset r 22 ( * 16 x))
+      (addraset r 23 ( * x 12345))
+      (addraset r 24 ( * 12345 x))
+      (addraset r 25 ( * x y))
+
+      (addraset r 26 (/ x 2))
+      (addraset r 27 (/ x 16))
+      (addraset r 28 (/ x 7))
+      (addraset r 29 (if (!= y 0) (/ x y) 0))
+
+      (addraset r 30 (mod x 2))
+      (addraset r 31 (mod x 16))
+      (addraset r 32 (if (!= y 0) (mod x y) 0))
+
+      (addraset r 33 (and x y))
+      (addraset r 34 (and x 3))
+      (addraset r 35 (and 3 x))
+
+      (addraset r 36 (or x y))
+      (addraset r 37 (or x 3))
+      (addraset r 38 (or 3 x))
+
+      (addraset r 39 (xor x y))
+      (addraset r 40 (xor x 3))
+      (addraset r 41 (xor 3 x))
+
+      (addraset r 42 (<< x y))
+      (addraset r 43 (<< x 1))
+      (addraset r 44 (<< x 8))
+
+      (addraset r 45 (>>u x y))
+      (addraset r 46 (>>u x 1))
+      (addraset r 47 (>>u x 8))
+
+      (addraset r 48 (>>s x y))
+      (addraset r 49 (>>s x 1))
+      (addraset r 50 (>>s x 8))
+
+      (addraset r 51 (== x y))
+      (addraset r 52 (!= x y))
+      (addraset r 53 (< x y))
+      (addraset r 54 (> x y))
+      (addraset r 55 (<= x y))
+      (addraset r 56 (>= x y))
+      (addraset r 57 (== x 1))
+      (addraset r 58 (!= x 1))
+      (addraset r 59 (< x 1))
+      (addraset r 60 (> x 1))
+      (addraset r 61 (<= x 1))
+      (addraset r 62 (>= x 1))
+
+      (addraset r 63 (==a x y))
+      (addraset r 64 (!=a x y))
+      (addraset r 65 (<a x y))
+      (addraset r 66 (>a x y))
+      (addraset r 67 (<=a x y))
+      (addraset r 68 (>=a x y))
+      (addraset r 69 (==a x 1))
+      (addraset r 70 (!=a x 1))
+      (addraset r 71 (<a x 1))
+      (addraset r 72 (>a x 1))
+      (addraset r 73 (<=a x 1))
+      (addraset r 74 (>=a x 1))
+
+      (addraset r 75 (+ x (<< y 1)))
+      (addraset r 76 (+ x (<< y 2)))
+      (addraset r 77 (+ x (<< y 3)))
+      (addraset r 78 (- x (<< y 1)))
+      (addraset r 79 (- x (<< y 2)))
+      (addraset r 80 (- x (<< y 3)))
+
+      (floataset d 0 0.0)
+      (floataset d 1 1.0)
+      (floataset d 2 -1.0)
+      (floataset d 3 (+f f g))
+      (floataset d 4 (-f f g))
+      (floataset d 5 ( *f f g))
+      (floataset d 6 (if (!=f g 0.0) (/f f g) 0.0))
+
+      (addraset r 81 (==f f g))
+      (addraset r 82 (!=f f g))
+      (addraset r 83 (<f f g))
+      (addraset r 84 (>f f g))
+      (addraset r 85 (<=f f g))
+      (addraset r 86 (>=f f g))
+
+      (floataset d 7 (floatofint x))
+      (addraset r 87 (intoffloat f))
+
+      (if (and (>= x 0) (< x y))
+          (seq (checkbound y x) (addraset r 88 1))
+        (addraset r 88 0))
+
+      (if (< 0 y)
+          (seq (checkbound y 0) (addraset r 89 1))
+        (addraset r 89 0))
+
+      (if (< 5 y)
+          (seq (checkbound y 5) (addraset r 90 1))
+        (addraset r 90 0))
+
+)))))))
+
+
+
