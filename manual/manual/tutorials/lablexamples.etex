@@ -54,7 +54,7 @@ definitions and interface declarations, like in "val x: int".
 \subsection{Classic mode}
 
 In Objective Caml, there are two ways of using labels, either the
-default {\em classic} mode, or the {\em modern} mode.
+default {\em classic} mode, or the {\em label} mode.
 
 You need do nothing special to be in classic mode, and legacy programs
 written for previous versions of Objective Caml will work with no
@@ -86,19 +86,19 @@ let sum = List.fold_left fun:(fun x :acc -> acc + x) acc:0;;
 
 \subsection{Modern mode}
 
-You can switch to {\em modern} mode giving the "-modern" flag to the
+You can switch to {\em label} mode giving the "-label" flag to the
 various Objective Caml compilers. You can also switch from classic
-mode to modern mode, and back, with the "#modern" pragma.
+mode to label mode, and back, with the "#modern" pragma.
 
 \begin{caml_example}
-#modern true;;
+#label true;;
 \end{caml_example}
 
-The modern mode allows a freer syntax, at the constraint that you must
+The label mode allows a freer syntax, at the constraint that you must
 write all labels both in function definition and application, and that
 labels must match in all types.
 
-In modern mode, formal parameters and arguments are only matched
+In label mode, formal parameters and arguments are only matched
 according to their respective labels. This allows commuting arguments
 in applications. One can also partially apply a function on any
 argument, creating a new function of the remaining parameters.
@@ -153,11 +153,11 @@ test ();;
 test x:2 () z:3 ();;
 \end{caml_example}
 
-Optional arguments behave similarly in classic and modern
+Optional arguments behave similarly in classic and label
 mode. Omitting the label of an optional argument is not allowed,
 and in both cases commutation between differently labeled optional
 arguments may occur. However commutation between an optional argument
-and other labeled or non-labeled arguments is only allowed in modern
+and other labeled or non-labeled arguments is only allowed in label
 mode.
 
 \begin{caml_example}
@@ -259,7 +259,7 @@ We explain here the rules we applied when labeling the standard library.
 To speak in an ``object-oriented'' way, one can consider that each
 function has a main argument, its {\em object}, and other arguments
 related with its action, the {\em parameters}. To permit the
-combination of functions through functionals in modern mode, the
+combination of functions through functionals in label mode, the
 object will not be labeled. Its role is clear by the function
 itself. The parameters are labeled with keywords reminding either of
 their nature or role. Best labels combine in their meaning nature and
@@ -320,7 +320,7 @@ information with OCamlBrowser or the ocaml toplevel, the documentation
 is only used when a more detailed specification is needed.
 
 \begin{caml_eval}
-#modern false;;
+#label false;;
 \end{caml_eval}
 
 

@@ -163,6 +163,13 @@ extension is not ".ml".
 Compile the file \var{filename} as an interface file, even if its
 extension is not ".mli".
 
+\item["-label"]
+Switch to the {\em label} mode of compilation, meaning that labeling
+rules are applied strictly, and commutation between labeled arguments
+is allowed. This mode cannot be used to compile a program written in
+the default {\em classic} style, but modules written in the two styles
+can be mixed in the same application.
+
 \item["-linkall"]
 Force all modules contained in libraries to be linked in. If this
 flag is not given, unreferenced modules are not linked in. When
@@ -177,13 +184,6 @@ line.  This custom runtime system can be used later to execute
 bytecode executables produced with the
 "ocamlc -use-runtime" \var{runtime-name} option.
 See section~\ref{s:custom-runtime} for more information.
-
-\item["-modern"]
-Switch to the {\em modern} mode of compilation, meaning that labeling
-rules are applied strictly, and commutation between labeled arguments
-is allowed. This mode cannot be used to compile a program written in
-the default {\em classic} style, but modules written in the two styles
-can be mixed in the same application.
 
 \item["-noassert"]
 Turn assertion checking off: assertions are not compiled.

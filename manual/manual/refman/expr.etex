@@ -191,7 +191,7 @@ defaulted, that is the value "None" will be passed for them. Otherwise
 they will be kept, and the result of the function will still be a
 function of the missing optional parameters.
 
-In the strict, or modern mode, parameters and arguments are matched
+In the strict, or label mode, parameters and arguments are matched
 according to their labels. The order is irrelevent, except if several
 arguments have the same label, or no label. The criterion for
 defaulting missing optional arguments is whether a non-labeled
