@@ -166,12 +166,14 @@ type class_declaration =
   { cty_params: type_expr list;
     mutable cty_type: class_type;
     cty_path: Path.t;
-    cty_new: type_expr option }
+    cty_new: type_expr option;
+    cty_variance: (bool * bool) list }
 
 type cltype_declaration =
   { clty_params: type_expr list;
     clty_type: class_type;
-    clty_path: Path.t }
+    clty_path: Path.t;
+    clty_variance: (bool * bool) list }
 
 (* Type expressions for the module language *)
 

@@ -405,6 +405,11 @@ let free_vars ty =
   free_variables := [];
   res
 
+let free_variables ty =
+  let tl = List.map fst (free_vars ty) in
+  unmark_type ty;
+  tl
+
 let rec closed_type ty =
   match free_vars ty with
       []           -> ()
@@ -3243,6 +3248,7 @@ let nondep_class_declaration env id decl =
   assert (not (Path.isfree id decl.cty_path));
   let decl =
     { cty_params = List.map (nondep_type_rec env id) decl.cty_params;
+      cty_variance = decl.cty_variance;
       cty_type = nondep_class_type env id decl.cty_type;
       cty_path = decl.cty_path;
       cty_new =
@@ -3264,6 +3270,7 @@ let nondep_cltype_declaration env id decl =
   assert (not (Path.isfree id decl.clty_path));
   let decl =
     { clty_params = List.map (nondep_type_rec env id) decl.clty_params;
+      clty_variance = decl.clty_variance;
       clty_type = nondep_class_type env id decl.clty_type;
       clty_path = decl.clty_path }
   in

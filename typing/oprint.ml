@@ -248,13 +248,16 @@ let out_type = ref print_out_type
 
 (* Class types *)
 
+let type_parameter ppf (ty, (co, cn)) =
+  fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
+    ty
+
 let print_out_class_params ppf =
   function
     [] -> ()
   | tyl ->
       fprintf ppf "@[<1>[%a]@]@ "
-        (print_list (fun ppf x -> fprintf ppf "'%s" x)
-           (fun ppf -> fprintf ppf ", "))
+        (print_list type_parameter (fun ppf -> fprintf ppf ", "))
         tyl
 
 let rec print_out_class_type ppf =

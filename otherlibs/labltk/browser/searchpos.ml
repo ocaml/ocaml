@@ -584,7 +584,7 @@ let view_type kind ~env =
             [Tsig_class(ident_of_path path ~default:"c", cl, Trec_first)]
       end
   | `Class (path, cty) ->
-      let cld = { cty_params = []; cty_type = cty;
+      let cld = { cty_params = []; cty_variance = []; cty_type = cty;
                   cty_path = path; cty_new = None } in
       view_signature_item ~path ~env
         [Tsig_class(ident_of_path path ~default:"c", cld, Trec_first)]

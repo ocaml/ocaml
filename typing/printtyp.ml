@@ -398,11 +398,8 @@ and tree_of_row_field sch (l, f) =
       else (l, false, tree_of_typlist sch tyl)
   | Rabsent -> (l, false, [] (* une erreur, en fait *))
 
-and tree_of_typlist sch = function
-  | [] -> []
-  | ty :: tyl ->
-      let tr = tree_of_typexp sch ty in
-      tr :: tree_of_typlist sch tyl
+and tree_of_typlist sch tyl =
+  List.map (tree_of_typexp sch) tyl
 
 and tree_of_typobject sch fi nm =
   begin match !nm with
@@ -531,8 +528,12 @@ let rec tree_of_type_decl id decl =
     | _ -> "?"
   in
   let type_defined decl =
-    if decl.type_kind = Type_abstract && ty_manifest = None
-       && List.exists (fun x -> x <> (true,true,true)) decl.type_variance then
+    if List.exists2
+        (fun ty x -> x <> (true,true,true) &&
+          (decl.type_kind = Type_abstract && ty_manifest = None
+         || (repr ty).desc <> Tvar))
+        decl.type_params decl.type_variance
+    then
       let vari = List.map (fun (co,cn,ct) -> (co,cn)) decl.type_variance in
       (Ident.name id,
        List.combine
@@ -703,11 +704,9 @@ let class_type ppf cty =
   prepare_class_type [] cty;
   !Oprint.out_class_type ppf (tree_of_class_type false [] cty)
 
-let tree_of_class_params = function
-  | [] -> []
-  | params ->
-      let tyl = tree_of_typlist true params in
-      List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
+let tree_of_class_params params =
+  let tyl = tree_of_typlist true params in
+  List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
 
 let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in
@@ -723,7 +722,8 @@ let tree_of_class_declaration id cl rs =
 
   let vir_flag = cl.cty_new = None in
   Osig_class
-    (vir_flag, Ident.name id, tree_of_class_params params,
+    (vir_flag, Ident.name id,
+     List.combine (tree_of_class_params params) cl.cty_variance,
      tree_of_class_type true params cl.cty_type,
      tree_of_rec rs)
 
@@ -753,7 +753,8 @@ let tree_of_cltype_declaration id cl rs =
       fields in
 
   Osig_class_type
-    (virt, Ident.name id, tree_of_class_params params,
+    (virt, Ident.name id,
+     List.combine (tree_of_class_params params) cl.clty_variance,
      tree_of_class_type true params cl.clty_type,
      tree_of_rec rs)
 

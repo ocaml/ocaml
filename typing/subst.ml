@@ -201,6 +201,7 @@ let rec class_type s =
 let class_declaration s decl =
   let decl =
     { cty_params = List.map (typexp s) decl.cty_params;
+      cty_variance = decl.cty_variance;
       cty_type = class_type s decl.cty_type;
       cty_path = type_path s decl.cty_path;
       cty_new =
@@ -216,6 +217,7 @@ let class_declaration s decl =
 let cltype_declaration s decl =
   let decl =
     { clty_params = List.map (typexp s) decl.clty_params;
+      clty_variance = decl.clty_variance;
       clty_type = class_type s decl.clty_type;
       clty_path = type_path s decl.clty_path }
   in

@@ -245,13 +245,17 @@ and print_typargs ppf =
       fprintf ppf "@[<1>(%a)@]@ " (print_typlist print_out_type ",") tyl ]
 ;
 
+value type_parameter ppf (ty, (co, cn)) =
+  fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
+    ty
+;
+
 value print_out_class_params ppf =
   fun
   [ [] -> ()
   | tyl ->
       fprintf ppf "@[<1>[%a]@]@ "
-        (print_list (fun ppf x -> fprintf ppf "'%s" x)
-           (fun ppf -> fprintf ppf ", "))
+        (print_list type_parameter (fun ppf -> fprintf ppf ", "))
         tyl ]
 ;
 
@@ -360,10 +364,6 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
       Toploop.print_out_type.val ty'
   in
   let print_constraints ppf params = List.iter (constrain ppf) params in
-  let type_parameter ppf (ty, (co, cn)) =
-    fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
-      ty
-  in
   let type_defined ppf =
     match args with
     [ [] -> fprintf ppf "%s" name

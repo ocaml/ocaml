@@ -976,6 +976,7 @@ let rec initial_env define_class approx
   in
   let dummy_class =
     {cty_params = [];             (* Dummy value *)
+     cty_variance = [];
      cty_type = dummy_cty;        (* Dummy value *)
      cty_path = unbound_class;
      cty_new =
@@ -986,6 +987,7 @@ let rec initial_env define_class approx
   let env =
     Env.add_cltype ty_id
       {clty_params = [];            (* Dummy value *)
+       clty_variance = [];
        clty_type = dummy_cty;       (* Dummy value *)
        clty_path = unbound_class} (
     if define_class then
@@ -1100,11 +1102,14 @@ let class_infos define_class kind
   end;
 
   (* Class and class type temporary definitions *)
+  let cty_variance = List.map (fun _ -> true, true) params in
   let cltydef =
     {clty_params = params; clty_type = class_body typ;
+     clty_variance = cty_variance;
      clty_path = Path.Pident obj_id}
   and clty =
     {cty_params = params; cty_type = typ;
+     cty_variance = cty_variance;
      cty_path = Path.Pident obj_id;
      cty_new =
        match cl.pci_virt with
@@ -1136,9 +1141,11 @@ let class_infos define_class kind
   let (params', typ') = Ctype.instance_class params typ in
   let cltydef =
     {clty_params = params'; clty_type = class_body typ';
+     clty_variance = cty_variance;
      clty_path = Path.Pident obj_id}
   and clty =
     {cty_params = params'; cty_type = typ';
+     cty_variance = cty_variance;
      cty_path = Path.Pident obj_id;
      cty_new =
        match cl.pci_virt with
@@ -1217,16 +1224,11 @@ let final_decl env define_class
 let extract_type_decls
     (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
      arity, pub_meths, coe, expr, required) decls =
-  ((obj_id, obj_abbr), required) :: ((cl_id, cl_abbr), required) :: decls
-
-let rec compact = function
-    [] -> []
-  | a :: b :: l -> (a,b) :: compact l
-  | _ -> fatal_error "Typeclass.compact"
+  (obj_id, obj_abbr, cl_abbr, clty, cltydef, required) :: decls
 
 let merge_type_decls
-    (id, clty, ty_id, cltydef, _obj_id, _obj_abbr, _cl_id, _cl_abbr,
-     arity, pub_meths, coe, expr, req) ((obj_id, obj_abbr), (cl_id, cl_abbr)) =
+    (id, _clty, ty_id, _cltydef, obj_id, _obj_abbr, cl_id, _cl_abbr,
+     arity, pub_meths, coe, expr, req) (obj_abbr, cl_abbr, clty, cltydef) =
   (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
    arity, pub_meths, coe, expr)
 
@@ -1292,7 +1294,7 @@ let type_classes define_class approx kind env cls =
   let res = List.rev_map (final_decl env define_class) res in
   let decls = List.fold_right extract_type_decls res [] in
   let decls = Typedecl.compute_variance_decls env decls in
-  let res = List.map2 merge_type_decls res (compact decls) in
+  let res = List.map2 merge_type_decls res decls in
   let env = List.fold_left (final_env define_class) env res in
   let res = List.map (check_coercions env) res in
   (res, env)
