@@ -54,7 +54,7 @@ void print_pos(char *st_line, char *st_cptr)
     if (st_line == 0) return;
     for (s = st_line; *s != '\n'; ++s)
     {
-        if (isprint(*s) || *s == '\t')
+        if (isprint((unsigned char) *s) || *s == '\t')
             putc(*s, stderr);
         else
             putc('?', stderr);

@@ -428,8 +428,11 @@ loop:
           fwrite(cptr, 1, 2, f);
           cptr += 2;
         } else
-        if (cptr[0] == '\\' && isdigit(cptr[1]) && isdigit(cptr[2]) &&
-            isdigit(cptr[3]) && cptr[4] == '\'') {
+        if (cptr[0] == '\\'
+            && isdigit((unsigned char) cptr[1])
+            && isdigit((unsigned char) cptr[2])
+            && isdigit((unsigned char) cptr[3])
+            && cptr[4] == '\'') {
           fwrite(cptr, 1, 5, f);
           cptr += 5;
         } else
@@ -774,10 +777,10 @@ is_reserved(char *name)
             strcmp(name, "$end") == 0)
         return (1);
 
-    if (name[0] == '$' && name[1] == '$' && isdigit(name[2]))
+    if (name[0] == '$' && name[1] == '$' && isdigit((unsigned char) name[2]))
     {
         s = name + 3;
-        while (isdigit(*s)) ++s;
+        while (isdigit((unsigned char) *s)) ++s;
         if (*s == NUL) return (1);
     }
 
@@ -1293,7 +1296,7 @@ loop:
     c = *cptr;
     if (c == '$')
     {
-        if (isdigit(cptr[1]))
+        if (isdigit((unsigned char) cptr[1]))
         {
             ++cptr;
             i = get_number();
@@ -1384,8 +1387,11 @@ loop:
           fwrite(cptr, 1, 2, f);
           cptr += 2;
         } else
-        if (cptr[0] == '\\' && isdigit(cptr[1]) && isdigit(cptr[2]) &&
-            isdigit(cptr[3]) && cptr[4] == '\'') {
+        if (cptr[0] == '\\' 
+            && isdigit((unsigned char) cptr[1])
+            && isdigit((unsigned char) cptr[2])
+            && isdigit((unsigned char) cptr[3])
+            && cptr[4] == '\'') {
           fwrite(cptr, 1, 5, f);
           cptr += 5;
         } else
