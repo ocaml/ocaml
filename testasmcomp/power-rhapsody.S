@@ -16,113 +16,113 @@
    FPR 14 at sp+92 ... FPR 31 at sp+228 */
 
 #define Save_callee_save \
-        addic   11, 1, 16-4; \
-        stwu    14, 4(11); \
-        stwu    15, 4(11); \
-        stwu    16, 4(11); \
-        stwu    17, 4(11); \
-        stwu    18, 4(11); \
-        stwu    19, 4(11); \
-        stwu    20, 4(11); \
-        stwu    21, 4(11); \
-        stwu    22, 4(11); \
-        stwu    23, 4(11); \
-        stwu    24, 4(11); \
-        stwu    25, 4(11); \
-        stwu    26, 4(11); \
-        stwu    27, 4(11); \
-        stwu    28, 4(11); \
-        stwu    29, 4(11); \
-        stwu    30, 4(11); \
-        stwu    31, 4(11); \
-        stfdu   14, 8(11); \
-        stfdu   15, 8(11); \
-        stfdu   16, 8(11); \
-        stfdu   17, 8(11); \
-        stfdu   18, 8(11); \
-        stfdu   19, 8(11); \
-        stfdu   20, 8(11); \
-        stfdu   21, 8(11); \
-        stfdu   22, 8(11); \
-        stfdu   23, 8(11); \
-        stfdu   24, 8(11); \
-        stfdu   25, 8(11); \
-        stfdu   26, 8(11); \
-        stfdu   27, 8(11); \
-        stfdu   28, 8(11); \
-        stfdu   29, 8(11); \
-        stfdu   30, 8(11); \
-        stfdu   31, 8(11)
+        addic   r11, r1, 16-4; \
+        stwu    r14, 4(r11); \
+        stwu    r15, 4(r11); \
+        stwu    r16, 4(r11); \
+        stwu    r17, 4(r11); \
+        stwu    r18, 4(r11); \
+        stwu    r19, 4(r11); \
+        stwu    r20, 4(r11); \
+        stwu    r21, 4(r11); \
+        stwu    r22, 4(r11); \
+        stwu    r23, 4(r11); \
+        stwu    r24, 4(r11); \
+        stwu    r25, 4(r11); \
+        stwu    r26, 4(r11); \
+        stwu    r27, 4(r11); \
+        stwu    r28, 4(r11); \
+        stwu    r29, 4(r11); \
+        stwu    r30, 4(r11); \
+        stwu    r31, 4(r11); \
+        stfdu   f14, 8(r11); \
+        stfdu   f15, 8(r11); \
+        stfdu   f16, 8(r11); \
+        stfdu   f17, 8(r11); \
+        stfdu   f18, 8(r11); \
+        stfdu   f19, 8(r11); \
+        stfdu   f20, 8(r11); \
+        stfdu   f21, 8(r11); \
+        stfdu   f22, 8(r11); \
+        stfdu   f23, 8(r11); \
+        stfdu   f24, 8(r11); \
+        stfdu   f25, 8(r11); \
+        stfdu   f26, 8(r11); \
+        stfdu   f27, 8(r11); \
+        stfdu   f28, 8(r11); \
+        stfdu   f29, 8(r11); \
+        stfdu   f30, 8(r11); \
+        stfdu   f31, 8(r11)
 
 #define Restore_callee_save \
-        addic   11, 1, 16-4; \
-        lwzu    14, 4(11); \
-        lwzu    15, 4(11); \
-        lwzu    16, 4(11); \
-        lwzu    17, 4(11); \
-        lwzu    18, 4(11); \
-        lwzu    19, 4(11); \
-        lwzu    20, 4(11); \
-        lwzu    21, 4(11); \
-        lwzu    22, 4(11); \
-        lwzu    23, 4(11); \
-        lwzu    24, 4(11); \
-        lwzu    25, 4(11); \
-        lwzu    26, 4(11); \
-        lwzu    27, 4(11); \
-        lwzu    28, 4(11); \
-        lwzu    29, 4(11); \
-        lwzu    30, 4(11); \
-        lwzu    31, 4(11); \
-        lfdu    14, 8(11); \
-        lfdu    15, 8(11); \
-        lfdu    16, 8(11); \
-        lfdu    17, 8(11); \
-        lfdu    18, 8(11); \
-        lfdu    19, 8(11); \
-        lfdu    20, 8(11); \
-        lfdu    21, 8(11); \
-        lfdu    22, 8(11); \
-        lfdu    23, 8(11); \
-        lfdu    24, 8(11); \
-        lfdu    25, 8(11); \
-        lfdu    26, 8(11); \
-        lfdu    27, 8(11); \
-        lfdu    28, 8(11); \
-        lfdu    29, 8(11); \
-        lfdu    30, 8(11); \
-        lfdu    31, 8(11)
+        addic   r11, r1, 16-4; \
+        lwzu    r14, 4(r11); \
+        lwzu    r15, 4(r11); \
+        lwzu    r16, 4(r11); \
+        lwzu    r17, 4(r11); \
+        lwzu    r18, 4(r11); \
+        lwzu    r19, 4(r11); \
+        lwzu    r20, 4(r11); \
+        lwzu    r21, 4(r11); \
+        lwzu    r22, 4(r11); \
+        lwzu    r23, 4(r11); \
+        lwzu    r24, 4(r11); \
+        lwzu    r25, 4(r11); \
+        lwzu    r26, 4(r11); \
+        lwzu    r27, 4(r11); \
+        lwzu    r28, 4(r11); \
+        lwzu    r29, 4(r11); \
+        lwzu    r30, 4(r11); \
+        lwzu    r31, 4(r11); \
+        lfdu    f14, 8(r11); \
+        lfdu    f15, 8(r11); \
+        lfdu    f16, 8(r11); \
+        lfdu    f17, 8(r11); \
+        lfdu    f18, 8(r11); \
+        lfdu    f19, 8(r11); \
+        lfdu    f20, 8(r11); \
+        lfdu    f21, 8(r11); \
+        lfdu    f22, 8(r11); \
+        lfdu    f23, 8(r11); \
+        lfdu    f24, 8(r11); \
+        lfdu    f25, 8(r11); \
+        lfdu    f26, 8(r11); \
+        lfdu    f27, 8(r11); \
+        lfdu    f28, 8(r11); \
+        lfdu    f29, 8(r11); \
+        lfdu    f30, 8(r11); \
+        lfdu    f31, 8(r11)
 
         .text
 
         .globl  _call_gen_code
 _call_gen_code:
     /* Allocate and link stack frame */
-        stwu    1, -256(1)
+        stwu    r1, -256(r1)
     /* Save return address */
-        mflr    0
-        stw     0, 256+4(1)
+        mflr    r0
+        stw     r0, 256+4(r1)
     /* Save all callee-save registers */
         Save_callee_save
     /* Shuffle arguments */
-        mtlr    3
-        mr 3, 4
-        mr 4, 5
-        mr 5, 6
-        mr 6, 7
+        mtlr    r3
+        mr r3, r4
+        mr r4, r5
+        mr r5, r6
+        mr r6, r7
     /* Call the function */
         blrl
     /* Restore callee-save registers */
         Restore_callee_save
     /* Reload return address */
-        lwz     0, 256+4(1)
-        mtlr    0
+        lwz     r0, 256+4(r1)
+        mtlr    r0
     /* Return */
-        addi    1, 1, 256
+        addi    r1, r1, 256
         blr
 
         .globl  _caml_c_call
 _caml_c_call:
     /* Jump to C function (address in 11) */
-        mtctr   11
+        mtctr   r11
         bctr

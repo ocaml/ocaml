@@ -11,15 +11,18 @@
 
 /* $Id$ */
 
-#define Addrglobal(reg,glob) \
-        addis   reg, 0, ha16(glob); \
-        addi    reg, reg, lo16(glob)
-#define Loadglobal(reg,glob,tmp) \
-        addis   tmp, 0, ha16(glob); \
-        lwz     reg, lo16(glob)(tmp)
-#define Storeglobal(reg,glob,tmp) \
-        addis   tmp, 0, ha16(glob); \
-        stw     reg, lo16(glob)(tmp)
+.macro Addrglobal	/* reg, glob */
+        addis   $0, 0, ha16($1)
+        addi    $0, $0, lo16($1)
+.endmacro
+.macro Loadglobal	/* reg,glob,tmp */
+        addis   $2, 0, ha16($1)
+        lwz     $0, lo16($1)($2)
+.endmacro
+.macro Storeglobal	/* reg,glob,tmp */
+        addis   $2, 0, ha16($1)
+        stw     $0, lo16($1)($2)
+.endmacro
 
         .text
 
@@ -28,149 +31,149 @@
         .globl  _caml_call_gc
 _caml_call_gc:
     /* Set up stack frame */
-        stwu    1, -0x1A0(1)
+        stwu    r1, -0x1A0(r1)
     /* 0x1A0 = 4*32 (int regs) + 8*32 (float regs) + 32 (space for C call) */
     /* Record return address into Caml code */
-        mflr    0
-        Storeglobal(0, _caml_last_return_address, 11)
+        mflr    r0
+        Storeglobal r0, _caml_last_return_address, r11
     /* Record lowest stack address */
-        addi    0, 1, 0x1A0
-        Storeglobal(0, _caml_bottom_of_stack, 11)
+        addi    r0, r1, 0x1A0
+        Storeglobal r0, _caml_bottom_of_stack, r11
     /* Record pointer to register array */
-        addi    0, 1, 8*32 + 32
-        Storeglobal(0, _caml_gc_regs, 11)
+        addi    r0, r1, 8*32 + 32
+        Storeglobal r0, _caml_gc_regs, r11
     /* Save current allocation pointer for debugging purposes */
-        Storeglobal(31, _young_ptr, 11)
+        Storeglobal r31, _young_ptr, r11
     /* Save exception pointer (if e.g. a sighandler raises) */
-        Storeglobal(29, _caml_exception_pointer, 11)
+        Storeglobal r29, _caml_exception_pointer, r11
     /* Save all registers used by the code generator */
-        addi    11, 1, 8*32 + 32 - 4
-        stwu    3, 4(11)
-        stwu    4, 4(11)
-        stwu    5, 4(11)
-        stwu    6, 4(11)
-        stwu    7, 4(11)
-        stwu    8, 4(11)
-        stwu    9, 4(11)
-        stwu    10, 4(11)
-        stwu    14, 4(11)
-        stwu    15, 4(11)
-        stwu    16, 4(11)
-        stwu    17, 4(11)
-        stwu    18, 4(11)
-        stwu    19, 4(11)
-        stwu    20, 4(11)
-        stwu    21, 4(11)
-        stwu    22, 4(11)
-        stwu    23, 4(11)
-        stwu    24, 4(11)
-        stwu    25, 4(11)
-        stwu    26, 4(11)
-        stwu    27, 4(11)
-        stwu    28, 4(11)
-        addi    11, 1, 32 - 8
-        stfdu   1, 8(11)
-        stfdu   2, 8(11)
-        stfdu   3, 8(11)
-        stfdu   4, 8(11)
-        stfdu   5, 8(11)
-        stfdu   6, 8(11)
-        stfdu   7, 8(11)
-        stfdu   8, 8(11)
-        stfdu   9, 8(11)
-        stfdu   10, 8(11)
-        stfdu   11, 8(11)
-        stfdu   12, 8(11)
-        stfdu   13, 8(11)
-        stfdu   14, 8(11)
-        stfdu   15, 8(11)
-        stfdu   16, 8(11)
-        stfdu   17, 8(11)
-        stfdu   18, 8(11)
-        stfdu   19, 8(11)
-        stfdu   20, 8(11)
-        stfdu   21, 8(11)
-        stfdu   22, 8(11)
-        stfdu   23, 8(11)
-        stfdu   24, 8(11)
-        stfdu   25, 8(11)
-        stfdu   26, 8(11)
-        stfdu   27, 8(11)
-        stfdu   28, 8(11)
-        stfdu   29, 8(11)
-        stfdu   30, 8(11)
-        stfdu   31, 8(11)
+        addi    r11, r1, 8*32 + 32 - 4
+        stwu    r3, 4(r11)
+        stwu    r4, 4(r11)
+        stwu    r5, 4(r11)
+        stwu    r6, 4(r11)
+        stwu    r7, 4(r11)
+        stwu    r8, 4(r11)
+        stwu    r9, 4(r11)
+        stwu    r10, 4(r11)
+        stwu    r14, 4(r11)
+        stwu    r15, 4(r11)
+        stwu    r16, 4(r11)
+        stwu    r17, 4(r11)
+        stwu    r18, 4(r11)
+        stwu    r19, 4(r11)
+        stwu    r20, 4(r11)
+        stwu    r21, 4(r11)
+        stwu    r22, 4(r11)
+        stwu    r23, 4(r11)
+        stwu    r24, 4(r11)
+        stwu    r25, 4(r11)
+        stwu    r26, 4(r11)
+        stwu    r27, 4(r11)
+        stwu    r28, 4(r11)
+        addi    r11, r1, 32 - 8
+        stfdu   f1, 8(r11)
+        stfdu   f2, 8(r11)
+        stfdu   f3, 8(r11)
+        stfdu   f4, 8(r11)
+        stfdu   f5, 8(r11)
+        stfdu   f6, 8(r11)
+        stfdu   f7, 8(r11)
+        stfdu   f8, 8(r11)
+        stfdu   f9, 8(r11)
+        stfdu   f10, 8(r11)
+        stfdu   f11, 8(r11)
+        stfdu   f12, 8(r11)
+        stfdu   f13, 8(r11)
+        stfdu   f14, 8(r11)
+        stfdu   f15, 8(r11)
+        stfdu   f16, 8(r11)
+        stfdu   f17, 8(r11)
+        stfdu   f18, 8(r11)
+        stfdu   f19, 8(r11)
+        stfdu   f20, 8(r11)
+        stfdu   f21, 8(r11)
+        stfdu   f22, 8(r11)
+        stfdu   f23, 8(r11)
+        stfdu   f24, 8(r11)
+        stfdu   f25, 8(r11)
+        stfdu   f26, 8(r11)
+        stfdu   f27, 8(r11)
+        stfdu   f28, 8(r11)
+        stfdu   f29, 8(r11)
+        stfdu   f30, 8(r11)
+        stfdu   f31, 8(r11)
     /* Call the GC */
         bl      _garbage_collection
     /* Reload new allocation pointer and allocation limit */
-        Loadglobal(31, _young_ptr, 11)
-        Loadglobal(30, _young_limit, 11)
+        Loadglobal r31, _young_ptr, r11
+        Loadglobal r30, _young_limit, r11
     /* Restore all regs used by the code generator */
-        addi    11, 1, 8*32 + 32 - 4
-        lwzu    3, 4(11)
-        lwzu    4, 4(11)
-        lwzu    5, 4(11)
-        lwzu    6, 4(11)
-        lwzu    7, 4(11)
-        lwzu    8, 4(11)
-        lwzu    9, 4(11)
-        lwzu    10, 4(11)
-        lwzu    14, 4(11)
-        lwzu    15, 4(11)
-        lwzu    16, 4(11)
-        lwzu    17, 4(11)
-        lwzu    18, 4(11)
-        lwzu    19, 4(11)
-        lwzu    20, 4(11)
-        lwzu    21, 4(11)
-        lwzu    22, 4(11)
-        lwzu    23, 4(11)
-        lwzu    24, 4(11)
-        lwzu    25, 4(11)
-        lwzu    26, 4(11)
-        lwzu    27, 4(11)
-        lwzu    28, 4(11)
-        addi    11, 1, 32 - 8
-        lfdu    1, 8(11)
-        lfdu    2, 8(11)
-        lfdu    3, 8(11)
-        lfdu    4, 8(11)
-        lfdu    5, 8(11)
-        lfdu    6, 8(11)
-        lfdu    7, 8(11)
-        lfdu    8, 8(11)
-        lfdu    9, 8(11)
-        lfdu    10, 8(11)
-        lfdu    11, 8(11)
-        lfdu    12, 8(11)
-        lfdu    13, 8(11)
-        lfdu    14, 8(11)
-        lfdu    15, 8(11)
-        lfdu    16, 8(11)
-        lfdu    17, 8(11)
-        lfdu    18, 8(11)
-        lfdu    19, 8(11)
-        lfdu    20, 8(11)
-        lfdu    21, 8(11)
-        lfdu    22, 8(11)
-        lfdu    23, 8(11)
-        lfdu    24, 8(11)
-        lfdu    25, 8(11)
-        lfdu    26, 8(11)
-        lfdu    27, 8(11)
-        lfdu    28, 8(11)
-        lfdu    29, 8(11)
-        lfdu    30, 8(11)
-        lfdu    31, 8(11)
+        addi    r11, r1, 8*32 + 32 - 4
+        lwzu    r3, 4(r11)
+        lwzu    r4, 4(r11)
+        lwzu    r5, 4(r11)
+        lwzu    r6, 4(r11)
+        lwzu    r7, 4(r11)
+        lwzu    r8, 4(r11)
+        lwzu    r9, 4(r11)
+        lwzu    r10, 4(r11)
+        lwzu    r14, 4(r11)
+        lwzu    r15, 4(r11)
+        lwzu    r16, 4(r11)
+        lwzu    r17, 4(r11)
+        lwzu    r18, 4(r11)
+        lwzu    r19, 4(r11)
+        lwzu    r20, 4(r11)
+        lwzu    r21, 4(r11)
+        lwzu    r22, 4(r11)
+        lwzu    r23, 4(r11)
+        lwzu    r24, 4(r11)
+        lwzu    r25, 4(r11)
+        lwzu    r26, 4(r11)
+        lwzu    r27, 4(r11)
+        lwzu    r28, 4(r11)
+        addi    r11, r1, 32 - 8
+        lfdu    f1, 8(r11)
+        lfdu    f2, 8(r11)
+        lfdu    f3, 8(r11)
+        lfdu    f4, 8(r11)
+        lfdu    f5, 8(r11)
+        lfdu    f6, 8(r11)
+        lfdu    f7, 8(r11)
+        lfdu    f8, 8(r11)
+        lfdu    f9, 8(r11)
+        lfdu    f10, 8(r11)
+        lfdu    f11, 8(r11)
+        lfdu    f12, 8(r11)
+        lfdu    f13, 8(r11)
+        lfdu    f14, 8(r11)
+        lfdu    f15, 8(r11)
+        lfdu    f16, 8(r11)
+        lfdu    f17, 8(r11)
+        lfdu    f18, 8(r11)
+        lfdu    f19, 8(r11)
+        lfdu    f20, 8(r11)
+        lfdu    f21, 8(r11)
+        lfdu    f22, 8(r11)
+        lfdu    f23, 8(r11)
+        lfdu    f24, 8(r11)
+        lfdu    f25, 8(r11)
+        lfdu    f26, 8(r11)
+        lfdu    f27, 8(r11)
+        lfdu    f28, 8(r11)
+        lfdu    f29, 8(r11)
+        lfdu    f30, 8(r11)
+        lfdu    f31, 8(r11)
     /* Return to caller, restarting the allocation */
-        Loadglobal(0, _caml_last_return_address, 11)
-        addic   0, 0, -16     /* Restart the allocation (4 instructions) */
-        mtlr    0
+        Loadglobal r0, _caml_last_return_address, r11
+        addic   r0, r0, -16     /* Restart the allocation (4 instructions) */
+        mtlr    r0
     /* Say we are back into Caml code */
-        li      12, 0
-        Storeglobal(12, _caml_last_return_address, 11)
+        li      r12, 0
+        Storeglobal r12, _caml_last_return_address, r11
     /* Deallocate stack frame */
-        addi    1, 1, 0x1A0
+        addi    r1, r1, 0x1A0
     /* Return */
         blr
 
@@ -179,25 +182,25 @@ _caml_call_gc:
         .globl  _caml_c_call
 _caml_c_call:
     /* Save return address */
-        mflr    25
+        mflr    r25
     /* Get ready to call C function (address in 11) */
-        mtlr    11
+        mtlr    r11
     /* Record lowest stack address and return address */
-        Storeglobal(1, _caml_bottom_of_stack, 12)
-        Storeglobal(25, _caml_last_return_address, 12)
+        Storeglobal r1, _caml_bottom_of_stack, r12
+        Storeglobal r25, _caml_last_return_address, r12
     /* Make the exception handler and alloc ptr available to the C code */
-        Storeglobal(31, _young_ptr, 11)
-        Storeglobal(29, _caml_exception_pointer, 11)
+        Storeglobal r31, _young_ptr, r11
+        Storeglobal r29, _caml_exception_pointer, r11
     /* Call the function (address in link register) */
         blrl
     /* Restore return address (in 25, preserved by the C function) */
-        mtlr    25
+        mtlr    r25
     /* Reload allocation pointer and allocation limit*/
-        Loadglobal(31, _young_ptr, 11)
-        Loadglobal(30, _young_limit, 11)
+        Loadglobal r31, _young_ptr, r11
+        Loadglobal r30, _young_limit, r11
     /* Say we are back into Caml code */
-        li      12, 0
-        Storeglobal(12, _caml_last_return_address, 11)
+        li      r12, 0
+        Storeglobal r12, _caml_last_return_address, r11
     /* Return to caller */
         blr
         
@@ -206,17 +209,17 @@ _caml_c_call:
         .globl  _raise_caml_exception
 _raise_caml_exception:
     /* Reload Caml global registers */
-        Loadglobal(1, _caml_exception_pointer, 11)
-        Loadglobal(31, _young_ptr, 11)
-        Loadglobal(30, _young_limit, 11)
+        Loadglobal r1, _caml_exception_pointer, r11
+        Loadglobal r31, _young_ptr, r11
+        Loadglobal r30, _young_limit, r11
     /* Say we are back into Caml code */
-        li      0, 0
-        Storeglobal(0, _caml_last_return_address, 11)
+        li      r0, 0
+        Storeglobal r0, _caml_last_return_address, r11
     /* Pop trap frame */
-        lwz     0, 0(1)
-        lwz     29, 4(1)
-        mtlr    0
-        addi    1, 1, 8
+        lwz     r0, 0(r1)
+        lwz     r29, 4(r1)
+        mtlr    r0
+        addi    r1, r1, 8
     /* Branch to handler */
         blr
 
@@ -224,191 +227,191 @@ _raise_caml_exception:
 
         .globl  _caml_start_program
 _caml_start_program:
-        Addrglobal(12, _caml_program)
+        Addrglobal r12, _caml_program
 
 /* Code shared between caml_start_program and callback */
 L102:
     /* Allocate and link stack frame */
-        stwu    1, -256(1)
+        stwu    r1, -256(r1)
     /* Save return address */
-        mflr    0
-        stw 0,  256+4(1)
+        mflr    r0
+        stw r0,  256+4(r1)
     /* Save all callee-save registers */
     /* GPR 14 at sp+16 ... GPR 31 at sp+84
        FPR 14 at sp+92 ... FPR 31 at sp+228 */
-        addi    11, 1, 16-4
-        stwu    14, 4(11)
-        stwu    15, 4(11)
-        stwu    16, 4(11)
-        stwu    17, 4(11)
-        stwu    18, 4(11)
-        stwu    19, 4(11)
-        stwu    20, 4(11)
-        stwu    21, 4(11)
-        stwu    22, 4(11)
-        stwu    23, 4(11)
-        stwu    24, 4(11)
-        stwu    25, 4(11)
-        stwu    26, 4(11)
-        stwu    27, 4(11)
-        stwu    28, 4(11)
-        stwu    29, 4(11)
-        stwu    30, 4(11)
-        stwu    31, 4(11)
-        stfdu   14, 8(11)
-        stfdu   15, 8(11)
-        stfdu   16, 8(11)
-        stfdu   17, 8(11)
-        stfdu   18, 8(11)
-        stfdu   19, 8(11)
-        stfdu   20, 8(11)
-        stfdu   21, 8(11)
-        stfdu   22, 8(11)
-        stfdu   23, 8(11)
-        stfdu   24, 8(11)
-        stfdu   25, 8(11)
-        stfdu   26, 8(11)
-        stfdu   27, 8(11)
-        stfdu   28, 8(11)
-        stfdu   29, 8(11)
-        stfdu   30, 8(11)
-        stfdu   31, 8(11)
+        addi    r11, r1, 16-4
+        stwu    r14, 4(r11)
+        stwu    r15, 4(r11)
+        stwu    r16, 4(r11)
+        stwu    r17, 4(r11)
+        stwu    r18, 4(r11)
+        stwu    r19, 4(r11)
+        stwu    r20, 4(r11)
+        stwu    r21, 4(r11)
+        stwu    r22, 4(r11)
+        stwu    r23, 4(r11)
+        stwu    r24, 4(r11)
+        stwu    r25, 4(r11)
+        stwu    r26, 4(r11)
+        stwu    r27, 4(r11)
+        stwu    r28, 4(r11)
+        stwu    r29, 4(r11)
+        stwu    r30, 4(r11)
+        stwu    r31, 4(r11)
+        stfdu   f14, 8(r11)
+        stfdu   f15, 8(r11)
+        stfdu   f16, 8(r11)
+        stfdu   f17, 8(r11)
+        stfdu   f18, 8(r11)
+        stfdu   f19, 8(r11)
+        stfdu   f20, 8(r11)
+        stfdu   f21, 8(r11)
+        stfdu   f22, 8(r11)
+        stfdu   f23, 8(r11)
+        stfdu   f24, 8(r11)
+        stfdu   f25, 8(r11)
+        stfdu   f26, 8(r11)
+        stfdu   f27, 8(r11)
+        stfdu   f28, 8(r11)
+        stfdu   f29, 8(r11)
+        stfdu   f30, 8(r11)
+        stfdu   f31, 8(r11)
     /* Set up a callback link */
-        addi    1, 1, -16
-        Loadglobal(9, _caml_bottom_of_stack, 11)
-        Loadglobal(10, _caml_last_return_address, 11)
-        Loadglobal(11, _caml_gc_regs, 11)
-        stw     9, 0(1)
-        stw     10, 4(1)
-        stw     11, 8(1)
+        addi    r1, r1, -16
+        Loadglobal r9, _caml_bottom_of_stack, r11
+        Loadglobal r10, _caml_last_return_address, r11
+        Loadglobal r11, _caml_gc_regs, r11
+        stw     r9, 0(r1)
+        stw     r10, 4(r1)
+        stw     r11, 8(r1)
     /* Build an exception handler to catch exceptions escaping out of Caml */
         bl      L103
         b       L104
 L103:
-        addi    1, 1, -8
-        mflr    0
-        stw     0, 0(1)
-        Loadglobal(11, _caml_exception_pointer, 11)
-        stw     11, 4(1)
-        mr      29, 1
+        addi    r1, r1, -8
+        mflr    r0
+        stw     r0, 0(r1)
+        Loadglobal r11, _caml_exception_pointer, r11
+        stw     r11, 4(r1)
+        mr      r29, r1
     /* Reload allocation pointers */
-        Loadglobal(31, _young_ptr, 11) 
-        Loadglobal(30, _young_limit, 11)
+        Loadglobal r31, _young_ptr, r11 
+        Loadglobal r30, _young_limit, r11
     /* Say we are back into Caml code */
-        li      0, 0
-        Storeglobal(0, _caml_last_return_address, 11)
+        li      r0, 0
+        Storeglobal r0, _caml_last_return_address, r11
     /* Call the Caml code */
-        mtlr    12
+        mtlr    r12
 L105:
         blrl
     /* Pop the trap frame, restoring caml_exception_pointer */
-        lwz     9, 4(1)
-        Storeglobal(9, _caml_exception_pointer, 11)
-        addi    1, 1, 8
+        lwz     r9, 4(r1)
+        Storeglobal r9, _caml_exception_pointer, r11
+        addi    r1, r1, 8
     /* Pop the callback link, restoring the global variables */
-        lwz     9, 0(1)
-        lwz     10, 4(1)
-        lwz     11, 8(1)
-        Storeglobal(9, _caml_bottom_of_stack, 12) 
-        Storeglobal(10, _caml_last_return_address, 12) 
-        Storeglobal(11, _caml_gc_regs, 12) 
-        addi    1, 1, 16
+        lwz     r9, 0(r1)
+        lwz     r10, 4(r1)
+        lwz     r11, 8(r1)
+        Storeglobal r9, _caml_bottom_of_stack, r12 
+        Storeglobal r10, _caml_last_return_address, r12 
+        Storeglobal r11, _caml_gc_regs, r12 
+        addi    r1, r1, 16
     /* Update allocation pointer */
-        Storeglobal(31, _young_ptr, 11)
+        Storeglobal r31, _young_ptr, r11
     /* Restore callee-save registers */
-        addi    11, 1, 16-4
-        lwzu    14, 4(11)
-        lwzu    15, 4(11)
-        lwzu    16, 4(11)
-        lwzu    17, 4(11)
-        lwzu    18, 4(11)
-        lwzu    19, 4(11)
-        lwzu    20, 4(11)
-        lwzu    21, 4(11)
-        lwzu    22, 4(11)
-        lwzu    23, 4(11)
-        lwzu    24, 4(11)
-        lwzu    25, 4(11)
-        lwzu    26, 4(11)
-        lwzu    27, 4(11)
-        lwzu    28, 4(11)
-        lwzu    29, 4(11)
-        lwzu    30, 4(11)
-        lwzu    31, 4(11)
-        lfdu    14, 8(11)
-        lfdu    15, 8(11)
-        lfdu    16, 8(11)
-        lfdu    17, 8(11)
-        lfdu    18, 8(11)
-        lfdu    19, 8(11)
-        lfdu    20, 8(11)
-        lfdu    21, 8(11)
-        lfdu    22, 8(11)
-        lfdu    23, 8(11)
-        lfdu    24, 8(11)
-        lfdu    25, 8(11)
-        lfdu    26, 8(11)
-        lfdu    27, 8(11)
-        lfdu    28, 8(11)
-        lfdu    29, 8(11)
-        lfdu    30, 8(11)
-        lfdu    31, 8(11)
+        addi    r11, r1, 16-4
+        lwzu    r14, 4(r11)
+        lwzu    r15, 4(r11)
+        lwzu    r16, 4(r11)
+        lwzu    r17, 4(r11)
+        lwzu    r18, 4(r11)
+        lwzu    r19, 4(r11)
+        lwzu    r20, 4(r11)
+        lwzu    r21, 4(r11)
+        lwzu    r22, 4(r11)
+        lwzu    r23, 4(r11)
+        lwzu    r24, 4(r11)
+        lwzu    r25, 4(r11)
+        lwzu    r26, 4(r11)
+        lwzu    r27, 4(r11)
+        lwzu    r28, 4(r11)
+        lwzu    r29, 4(r11)
+        lwzu    r30, 4(r11)
+        lwzu    r31, 4(r11)
+        lfdu    f14, 8(r11)
+        lfdu    f15, 8(r11)
+        lfdu    f16, 8(r11)
+        lfdu    f17, 8(r11)
+        lfdu    f18, 8(r11)
+        lfdu    f19, 8(r11)
+        lfdu    f20, 8(r11)
+        lfdu    f21, 8(r11)
+        lfdu    f22, 8(r11)
+        lfdu    f23, 8(r11)
+        lfdu    f24, 8(r11)
+        lfdu    f25, 8(r11)
+        lfdu    f26, 8(r11)
+        lfdu    f27, 8(r11)
+        lfdu    f28, 8(r11)
+        lfdu    f29, 8(r11)
+        lfdu    f30, 8(r11)
+        lfdu    f31, 8(r11)
     /* Reload return address */
-        lwz     0, 256+4(1)
-        mtlr    0
+        lwz     r0, 256+4(r1)
+        mtlr    r0
     /* Return */
-        addi    1, 1, 256
+        addi    r1, r1, 256
         blr
 
     /* The trap handler: */
 L104:
     /* Update caml_exception_pointer and young_ptr */
-        Storeglobal(29, _caml_exception_pointer, 11)
-        Storeglobal(31, _young_ptr, 11)
+        Storeglobal r29, _caml_exception_pointer, r11
+        Storeglobal r31, _young_ptr, r11
     /* Pop the callback link, restoring the global variables */
-        lwz     9, 0(1)
-        lwz     10, 4(1)
-        lwz     11, 8(1)
-        Storeglobal(9, _caml_bottom_of_stack, 12) 
-        Storeglobal(10, _caml_last_return_address, 12) 
-        Storeglobal(11, _caml_gc_regs, 12) 
+        lwz     r9, 0(r1)
+        lwz     r10, 4(r1)
+        lwz     r11, 8(r1)
+        Storeglobal r9, _caml_bottom_of_stack, r12 
+        Storeglobal r10, _caml_last_return_address, r12 
+        Storeglobal r11, _caml_gc_regs, r12 
     /* Re-raise the exception through mlraise, */
     /* so that local C roots are cleaned up correctly */
-        b       mlraise
+        b       _mlraise
 
 /* Callback from C to Caml */
 
         .globl  _callback
 _callback:
     /* Initial shuffling of arguments */
-        mr      0, 3            /* Closure */
-        mr      3, 4            /* Argument */
-        mr      4, 0
-        lwz     12, 0(4)        /* Code pointer */
+        mr      r0, r3            /* Closure */
+        mr      r3, r4            /* Argument */
+        mr      r4, r0
+        lwz     r12, 0(r4)        /* Code pointer */
         b       L102
 
         .globl  _callback2
 _callback2:
-        mr      0, 3            /* Closure */
-        mr      3, 4            /* First argument */
-        mr      4, 5            /* Second argument */
-        mr      5, 0
-        Addrglobal(12, _caml_apply2)
+        mr      r0, r3            /* Closure */
+        mr      r3, r4            /* First argument */
+        mr      r4, r5            /* Second argument */
+        mr      r5, r0
+        Addrglobal r12, _caml_apply2
         b       L102
         
         .globl  _callback3
 _callback3:
-        mr      0, 3            /* Closure */
-        mr      3, 4            /* First argument */
-        mr      4, 5            /* Second argument */
-        mr      5, 6            /* Third argument */
-        mr      6, 0
-        Addrglobal(12, _caml_apply3)
+        mr      r0, r3            /* Closure */
+        mr      r3, r4            /* First argument */
+        mr      r4, r5            /* Second argument */
+        mr      r5, r6            /* Third argument */
+        mr      r6, r0
+        Addrglobal r12, _caml_apply3
         b       L102
 
 /* Frame table */
 
-        .rodata
+        .const
         .globl  _system_frametable
 _system_frametable:
         .long   1               /* one descriptor */

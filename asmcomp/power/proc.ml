@@ -235,6 +235,12 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  let proc = if powerpc then "ppc" else "pwr" in
-  Ccomp.command ("as -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
-
+  match Config.system with
+    "aix" ->
+      let proc = if powerpc then "ppc" else "pwr" in
+      Ccomp.command ("as -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
+  | "elf" ->
+      Ccomp.command ("as -u -m ppc -o " ^ outfile ^ " " ^ infile)
+  | "rhapsody" ->
+      Ccomp.command ("as -o " ^ outfile ^ " " ^ infile)
+  | _ -> assert false

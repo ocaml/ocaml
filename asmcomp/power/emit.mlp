@@ -284,6 +284,19 @@ let emit_float_constant float lbl =
 
 let float_literals = ref ([] : (string * int) list)
 
+(* Record external C functions to be called in a position-independent way
+   (for Rhapsody) *)
+
+let pic_externals = (Config.system = "rhapsody")
+
+let external_functions = ref StringSet.empty
+
+let emit_external s =
+  `	.non_lazy_symbol_pointer\n`;
+  `L{emit_symbol s}$non_lazy_ptr:\n`;
+  `	.indirect_symbol {emit_symbol s}\n`;
+  `	.long	0\n`
+
 (* Names for conditional branches after comparisons *)
 
 let branch_for_comparison = function
@@ -480,6 +493,10 @@ let rec emit_instr i dslot =
           if toc then begin
             let lbl = label_symbol s in
             `	lwz	11, {emit_label lbl}(2) # {emit_symbol s}\n`
+          end else if pic_externals then begin
+            external_functions := StringSet.add s !external_functions;
+            `	addis	{emit_gpr 11}, 0, ha16(L{emit_symbol s}$non_lazy_ptr)\n`;
+            `	lwz	{emit_gpr 11}, lo16(L{emit_symbol s}$non_lazy_ptr)({emit_gpr 11})\n`
           end else begin
             `	addis	{emit_gpr 11}, 0, {emit_upper emit_symbol s}\n`;
             `	addi	{emit_gpr 11}, {emit_gpr 11}, {emit_lower emit_symbol s}\n`
@@ -487,6 +504,13 @@ let rec emit_instr i dslot =
           record_frame i.live;
           `	bl	{emit_codesymbol "caml_c_call"}\n`
         end else begin
+          if pic_externals then begin
+            external_functions := StringSet.add s !external_functions;
+            `	addis	{emit_gpr 11}, 0, ha16(L{emit_symbol s}$non_lazy_ptr)\n`;
+            `	lwz	{emit_gpr 11}, lo16(L{emit_symbol s}$non_lazy_ptr)({emit_gpr 11})\n`;
+            `	mtlr	{emit_gpr 11}\n`;
+            `	blrl\n`
+          end else
           `	bl	{emit_codesymbol s}\n`
         end;
         if toc then
@@ -806,7 +830,7 @@ let fundecl fundecl =
       `	cror	31, 31, 31\n`;         (* nop *)
       `	blr\n`                         (* Will re-execute the allocation *)
     end else begin
-      `	b	caml_call_gc\n`
+      `	b	{emit_symbol "caml_call_gc"}\n`
     end
   end;
   (* Emit the floating-point literals *)
@@ -861,6 +885,7 @@ let begin_assembly() =
   Hashtbl.clear symbol_constants;
   Hashtbl.clear float_constants;
   defined_functions := StringSet.empty;
+  external_functions := StringSet.empty;
   num_jumptbl_entries := 0;
   jumptbl_entries := [];
   lbl_jumptbl := 0;
@@ -897,6 +922,9 @@ let end_assembly() =
     Hashtbl.iter emit_symbol_constant symbol_constants;
     Hashtbl.iter emit_float_constant float_constants
   end;
+  if pic_externals then
+    (* Emit the pointers to external functions *)
+    StringSet.iter emit_external !external_functions;
   (* Emit the end of the segments *)
   emit_string code_space;
   let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
