@@ -1626,8 +1626,7 @@ value extract_comment strm =
     | [: :] -> "" ]
   and find_star sp_cnt =
     parser
-    [ [: `'*';
-         a = insert (Buff.mstore 0 (String.make sp_cnt ' ' ^ "(*")) :] -> a
+    [ [: `'*'; a = insert (Buff.mstore 0 "(*") :] -> a
     | [: a = find_comm 0 :] -> a ]
   and insert len =
     parser
