@@ -39,7 +39,7 @@ specification:
         | 'include' modtype-path
 ;
 mod-constraint:
-          'type' [type-parameters] typeconstr '=' typexp
+          'type' [type-parameters] typeconstr '=' typexpr
         | 'module' module-path '=' extended-module-path
 \end{syntax}
 
