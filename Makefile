@@ -80,7 +80,7 @@ PERVASIVES=arg array char digest filename format gc hashtbl lexing list map \
   stack string sys
 
 # Recompile the system using the bootstrap compiler
-all: runtime cslc csllex cslyacc csltools library csltop
+all: runtime cslc csllex cslyacc csltools library csltop otherlibraries
 
 # The compilation of csltop will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -160,7 +160,7 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt cslopt libraryopt
+opt: runtimeopt cslopt libraryopt otherlibrariesopt
 
 # Installation
 install:
@@ -178,12 +178,14 @@ install:
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
 	cd man; for i in *.m; do cp $$i $(MANDIR)/`basename $$i .m`.$(MANEXT); done
+	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) install); done
 
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
 	cp cslopt $(BINDIR)/cslopt
 	cd stdlib; $(MAKE) installopt
+	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt); done
 
 realclean:: clean
 
@@ -391,6 +393,19 @@ realclean::
 	cd tools; $(MAKE) clean
 alldepend::
 	cd tools; $(MAKE) depend
+
+# The extra libraries
+
+otherlibraries:
+	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) all); done
+otherlibrariesopt:
+	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) allopt); done
+clean::
+	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) clean); done
+realclean::
+	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) realclean); done
+alldepend::
+	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) depend); done
 
 # Default rules
 
