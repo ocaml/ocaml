@@ -299,24 +299,22 @@ let rec find_constructor cname = function
 
 (* Enter a type, must not be previously defined *)
 let enter_type typname ?(:variant = false) arity constructors =
-  try
-      Hashtbl.find types_table key:typname;
-      raise (Duplicate_Definition ("type", typname))
-  with Not_found ->
-    let typdef = new_type typname arity in
-    if variant then typdef.variant <- true;  
-    List.iter constructors fun:
-      begin fun c ->
-        if not (check_duplicate_constr false c typdef.constructors)
-        then begin 
-           typdef.constructors <- c :: typdef.constructors;
-           add_template_dependancies typname c.template
-        end;
-        (* Callbacks require widget context *)
-        typdef.requires_widget_context <- 
-          typdef.requires_widget_context or
-                  has_callback c.template
-      end
+  if Hashtbl.mem types_table key:typname then
+      raise (Duplicate_Definition ("type", typname)) else
+  let typdef = new_type typname arity in
+  if variant then typdef.variant <- true;  
+  List.iter constructors fun:
+    begin fun c ->
+      if not (check_duplicate_constr false c typdef.constructors)
+      then begin 
+         typdef.constructors <- c :: typdef.constructors;
+         add_template_dependancies typname c.template
+      end;
+      (* Callbacks require widget context *)
+      typdef.requires_widget_context <- 
+        typdef.requires_widget_context or
+                has_callback c.template
+    end
 
 (* Enter a subtype *)
 let enter_subtype typ arity subtyp constructors =
@@ -374,10 +372,8 @@ let rec add_sort acc:l obj =
 let separate_components =  List.fold_left fun:add_sort acc:[]
 
 let enter_widget name components =
-  try 
-    Hashtbl.find module_table key:name;
-    raise (Duplicate_Definition ("widget/module", name))
-  with Not_found ->
+  if Hashtbl.mem module_table key:name then
+    raise (Duplicate_Definition ("widget/module", name)) else
   let sorted_components = separate_components components in
   List.iter sorted_components fun:
     begin function 
@@ -406,10 +402,8 @@ let enter_function comp =
 
 (******************** Modules ********************)
 let enter_module name components = 
-  try 
-    Hashtbl.find module_table key:name;
-    raise (Duplicate_Definition ("widget/module", name))
-  with Not_found ->
+  if Hashtbl.mem module_table key:name then
+    raise (Duplicate_Definition ("widget/module", name)) else
   let sorted_components = separate_components components in
   List.iter sorted_components fun:
     begin function 

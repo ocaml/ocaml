@@ -398,19 +398,16 @@ let write_TKtoCAML :w name def:typdef =
           w ("   with _ ->\n")
         end;
         w ("    match n with\n");
-        let first = ref true in
         List.iter pp.zeroary fun:
           begin fun (tk,ml) -> 
-            if not !first then w "    | " else w "    ";
-            first := false;
-            w "\""; w tk; w "\" -> "; w ml; w "\n"
+            w "    | \""; w tk; w "\" -> "; w ml; w "\n"
           end;
         let final = if pp.stringpar <> [] then
               "n -> " ^ List.hd pp.stringpar ^ " n"
            else " s -> Pervasives.raise (Invalid_argument (\"cTKtoCAML"
                 ^ name ^ ": \" ^s))"
         in
-        if not !first then w "    | " else w "    ";
+        w "    | ";
         w final;
         w "\n\n"
   in
@@ -533,7 +530,7 @@ let code_of_template :context_widget ?(func:funtemplate=false) template =
         ^ String.concat sep:";\n    " (List.map fun:coderec l) ^ "]"
     | _ -> coderec template
     in
-    code , List.rev !variables, List.rev !variables2, !catch_opts
+    code, List.rev !variables, List.rev !variables2, !catch_opts
 
 (*
  * Converters for user defined types
@@ -674,11 +671,10 @@ let write_function :w def =
     w " =\n"
   end;
   begin match def.result with
-    Unit | As (Unit, _) ->  
-      w "tkEval ";  w code; w ";()";
-  | ty -> 
+  | Unit | As (Unit, _) -> w "tkCommand "; w code
+  | ty ->
       w "let res = tkEval "; w code ; w " in \n";
-      write_result_parsing :w ty;
+      write_result_parsing :w ty
   end;
   if co <> "" then w ")";
   w "\n\n"
@@ -687,27 +683,49 @@ let write_create :w clas =
   (w  "let create ?:name =\n" : unit);
   w ("  "^ clas ^ "_options_optionals (fun opts parent ->\n");
   w ("     let w = new_atom \"" ^ clas ^ "\" :parent ?:name in\n");
-  w  "     tkEval [|";
+  w  "     tkCommand [|";
   w ("TkToken \"" ^ clas ^ "\";\n");
   w ("              TkToken (Widget.name w);\n");
   w ("              TkTokenList opts |];\n");
   w ("      w)\n\n\n")
 
+(* Search Path. *)
+let search_path = ref ["."]
+
+(* taken from utils/misc.ml *)
+let find_in_path path name =
+  if not (Filename.is_implicit name) then
+    if Sys.file_exists name then name else raise Not_found
+  else begin
+    let rec try_dir = function
+      [] -> raise Not_found
+    | dir::rem ->
+        let fullname = Filename.concat dir name in
+        if Sys.file_exists fullname then fullname else try_dir rem
+    in try_dir path
+  end
+
 (* builtin-code: the file (without suffix) is in .template... *)
 (* not efficient, but hell *)
 let write_external :w def =
   match def.template with
-    StringArg fname ->
-      let ic = open_in_bin (fname ^ ".ml") in
+  | StringArg fname ->
+      begin try
+        let realname = find_in_path !search_path (fname ^ ".ml") in
+        let ic = open_in_bin realname in
         begin try
          while true do
            w (input_line ic);
            w "\n"
          done
         with
-         End_of_file -> close_in ic
+        | End_of_file -> close_in ic
         end
-  | _ -> raise (Compiler_Error "invalid external definition")
+      with
+      | Not_found ->
+	  raise (Compiler_Error ("can't find external file: " ^ fname))
+      end
+| _ -> raise (Compiler_Error "invalid external definition")
 
 let write_catch_optionals :w clas def:typdef =
   if typdef.subtypes = [] then () else

@@ -26,6 +26,8 @@ let verbose_endline s =
   if !flag_verbose then prerr_endline s
 
 let input_name = ref "Widgets.src"
+let output_dir = ref "lib"
+let destfile f = Filename.concat !output_dir f
 
 let usage () = 
   prerr_string "Usage: tkcompiler input.src\n";
@@ -104,9 +106,9 @@ let option_hack oc =
 
 let compile () = 
 verbose_endline "Creating tkgen.ml ...";
-  let oc = open_out_bin "lib/tkgen.ml" in
-  let oc' = open_out_bin "lib/tkigen.ml" in
-  let oc'' = open_out_bin "lib/tkfgen.ml" in
+  let oc = open_out_bin (destfile "tkgen.ml") in
+  let oc' = open_out_bin (destfile "tkigen.ml") in
+  let oc'' = open_out_bin (destfile "tkfgen.ml") in
   let sorted_types = Tsort.sort types_order in
 verbose_endline "  writing types ...";
   List.iter sorted_types fun:
@@ -144,7 +146,7 @@ verbose_endline "  writing functions ...";
   (* Write the interface for public functions *)
   (* this interface is used only for documentation *)
 verbose_endline "Creating tkgen.mli ...";
-  let oc = open_out_bin "lib/tkgen.mli" in
+  let oc = open_out_bin (destfile "tkgen.mli") in
   List.iter (sort_components !function_table)
     fun:(write_function_type w:(output_string to:oc));
   close_out oc;
@@ -153,8 +155,8 @@ verbose_endline "Creating other ml, mli ...";
   begin fun key:wname data:wdef ->
 verbose_endline ("  "^wname);
     let modname = wname in
-    let oc = open_out_bin ("lib/" ^ modname ^ ".ml") 
-    and oc' = open_out_bin ("lib/" ^ modname ^ ".mli") in 
+    let oc = open_out_bin (destfile (modname ^ ".ml")) 
+    and oc' = open_out_bin (destfile (modname ^ ".mli")) in 
     begin match wdef.module_type with
       Widget -> output_string to:oc' ("(* The "^wname^" widget *)\n")
     | Family -> output_string to:oc' ("(* The "^wname^" commands  *)\n")
@@ -185,7 +187,7 @@ verbose_endline ("  "^wname);
   end;
   (* write the module list for the Makefile *)
   (* and hack to death until it works *)
-  let oc = open_out_bin "lib/modules" in
+  let oc = open_out_bin (destfile "modules") in
     output_string to:oc "WIDGETOBJS=";
     Hashtbl.iter module_table
     fun:(fun key:name data:_ ->

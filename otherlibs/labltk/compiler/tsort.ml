@@ -56,8 +56,7 @@ let add_relation order (succ,pred) =
 
 (* Just add it *)
 let add_element order e =
-  find_entry order e;
-  ()
+  ignore (find_entry order e)
 
 let sort order =
     let q = Queue.create () 

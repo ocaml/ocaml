@@ -82,17 +82,24 @@ let write_function_type :w def =
 
 let write_external_type :w def =
   match def.template with
-    StringArg fname ->
-      let ic = open_in_bin (fname ^ ".mli") in
-      if not def.safe then w "(* unsafe *)\n";
+  | StringArg fname ->
       begin try
-        while true do
-          w (input_line ic);
-          w "\n"
-        done
-      with End_of_file -> 
-        close_in ic;
-        if def.safe then w "\n\n"
-        else w "\n(* /unsafe *)\n\n"
+        let realname = find_in_path !search_path (fname ^ ".mli") in
+        let ic = open_in_bin realname in
+        if not def.safe then w "(* unsafe *)\n";
+        begin try
+         while true do
+           w (input_line ic);
+           w "\n"
+         done
+        with
+        | End_of_file -> 
+            close_in ic;
+            if def.safe then w "\n\n"
+            else w "\n(* /unsafe *)\n\n"
+        end
+      with
+      | Not_found ->
+          raise (Compiler_Error ("can't find external file: " ^ fname))
       end
   | _ -> raise (Compiler_Error "invalid external definition")
