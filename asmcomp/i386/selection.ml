@@ -164,6 +164,10 @@ method select_store addr exp =
       (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
   | Cconst_natint n ->
       (Ispecific(Istore_int(n, addr)), Ctuple [])
+  | Cconst_pointer n ->
+      (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
+  | Cconst_natpointer n ->
+      (Ispecific(Istore_int(n, addr)), Ctuple [])
   | Cconst_symbol s ->
       (Ispecific(Istore_symbol(s, addr)), Ctuple [])
   | _ ->
@@ -256,6 +260,8 @@ method select_push exp =
   match exp with
     Cconst_int n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natint n -> (Ispecific(Ipush_int n), Ctuple [])
+  | Cconst_pointer n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
+  | Cconst_natpointer n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
   | Cop(Cload Word, [loc]) ->
       let (addr, arg) = self#select_addressing loc in

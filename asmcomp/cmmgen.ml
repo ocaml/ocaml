@@ -27,12 +27,14 @@ open Cmm
 
 let bind name arg fn =
   match arg with
-    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
+    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ 
+  | Cconst_pointer _ | Cconst_natpointer _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 let bind_nonvar name arg fn =
   match arg with
-    Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
+    Cconst_int _ | Cconst_natint _ | Cconst_symbol _
+  | Cconst_pointer _ | Cconst_natpointer _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 (* Block headers. Meaning of the tag field:
@@ -212,11 +214,11 @@ let subst_boxed_float boxed_id unboxed_id exp =
 
 (* Unit *)
 
-let return_unit c = Csequence(c, Cconst_int 1)
+let return_unit c = Csequence(c, Cconst_pointer 1)
 
 let rec remove_unit = function
-    Cconst_int 1 -> Ctuple []
-  | Csequence(c, Cconst_int 1) -> c
+    Cconst_pointer 1 -> Ctuple []
+  | Csequence(c, Cconst_pointer 1) -> c
   | Csequence(c1, c2) ->
       Csequence(c1, remove_unit c2)
   | Cifthenelse(cond, ifso, ifnot) ->
@@ -405,7 +407,11 @@ let transl_constant = function
   | Const_base(Const_char c) ->
       Cconst_int(((Char.code c) lsl 1) + 1)
   | Const_pointer n ->
-      int_const n
+      if n <= max_repr_int && n >= min_repr_int
+      then Cconst_pointer((n lsl 1) + 1)
+      else Cconst_natpointer(Nativeint.add
+                                (Nativeint.shift_left (Nativeint.of_int n) 1)
+                                Nativeint.one)
   | cst ->
       let lbl =
         try
@@ -759,7 +765,7 @@ let rec transl = function
           bind "switch" (untag_int (transl arg)) (fun idx ->
             Cifthenelse(
               Cop(Ccmpa Cge,
-                  [idx; Cconst_int(Array.length s.us_index_consts)]),
+                  [idx; Cconst_pointer(Array.length s.us_index_consts)]),
               Cexit,
               transl_switch idx s.us_index_consts s.us_cases_consts))
         else

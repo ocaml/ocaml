@@ -75,6 +75,8 @@ type expression =
   | Cconst_natint of nativeint
   | Cconst_float of string
   | Cconst_symbol of string
+  | Cconst_pointer of int
+  | Cconst_natpointer of nativeint
   | Cvar of Ident.t
   | Clet of Ident.t * expression * expression
   | Cassign of Ident.t * expression
