@@ -310,23 +310,33 @@ let really_input ic s ofs len =
 
 external input_scan_line : in_channel -> int = "caml_input_scan_line"
 
-let rec input_line chan =
-  let n = input_scan_line chan in
-  if n = 0 then                         (* n = 0: we are at EOF *)
-    raise End_of_file
-  else if n > 0 then begin              (* n > 0: newline found in buffer *)
-    let res = string_create (n-1) in
-    ignore (unsafe_input chan res 0 (n-1));
-    ignore (input_char chan);           (* skip the newline *)
-    res
-  end else begin                        (* n < 0: newline not found *)
-    let beg = string_create (-n) in
-    ignore(unsafe_input chan beg 0 (-n));
-    try
-      beg ^ input_line chan
-    with End_of_file ->
-      beg
-  end
+let input_line chan =
+  let rec build_result buf pos = function
+    [] -> buf
+  | hd :: tl ->
+      let len = string_length hd in
+      string_blit hd 0 buf (pos - len) len;
+      build_result buf (pos - len) tl in
+  let rec scan accu len =
+    let n = input_scan_line chan in
+    if n = 0 then begin                   (* n = 0: we are at EOF *)
+      match accu with
+        [] -> raise End_of_file
+      | _  -> build_result (string_create len) len accu
+    end else if n > 0 then begin          (* n > 0: newline found in buffer *)
+      let res = string_create (n-1) in
+      ignore (unsafe_input chan res 0 (n-1));
+      ignore (input_char chan);           (* skip the newline *)
+      match accu with
+        [] -> res
+      |  _ -> let len = len + n - 1 in 
+              build_result (string_create len) len (res :: accu)
+    end else begin                        (* n < 0: newline not found *)
+      let beg = string_create (-n) in
+      ignore(unsafe_input chan beg 0 (-n));
+      scan (beg :: accu) (len - n)
+    end
+  in scan [] 0
 
 external input_byte : in_channel -> int = "caml_input_char"
 external input_binary_int : in_channel -> int = "caml_input_int"
