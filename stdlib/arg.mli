@@ -73,8 +73,10 @@ val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
 *)
 
 exception Bad of string
-        (* Functions in [spec] or [anonfun] can raise [Bad] with
-           an error message to reject invalid arguments. *)
+(*
+     Functions in [spec] or [anonfun] can raise [Bad] with an error
+     message to reject invalid arguments.
+*)
 
 val usage: (string * spec * string) list -> string -> unit
 (*
@@ -85,5 +87,6 @@ val usage: (string * spec * string) list -> string -> unit
 
 val current: int ref;;
 (*
-    Position (in [Sys.argv]) of the argument being processed.
+    Position (in [Sys.argv]) of the argument being processed.  You can
+    change this value, e.g. to force [parse] to skip some arguments.
 *)
