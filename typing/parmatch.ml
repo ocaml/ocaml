@@ -1640,7 +1640,7 @@ let check_unused tdefs casel =
 
     do_rec [] casel
 
-(********************************************************************************)
+(***********************************************************************)
 (*      
 	Take a list of patterns as argument, test if each pattern
 	is useful in its corresponding position in the list, and 
@@ -1648,18 +1648,13 @@ let check_unused tdefs casel =
 
       useful pattern list -> bool list 
 
-*********************************************************************************)
+*************************************************************************)
+
 
 let useful pats =
-  let queue = Queue.create () in
-  let _ = 
-    List.fold_left 
-      (fun pre_pats pat ->
-	Queue.add (satisfiable pre_pats [pat]) queue;
-	pre_pats @ [[pat]])
-      [] pats in
-  Queue.fold 
-    (fun bools b ->
-      bools @ [b] )
-    [] queue
-    
+  let rec do_rec pref = function
+    | [] -> []
+    | pat::rem ->
+        satisfiable pref [pat]::
+        do_rec ([pat]::pref) rem in
+  do_rec [] pats
