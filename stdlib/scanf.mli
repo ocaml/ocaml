@@ -145,7 +145,7 @@ val bscanf :
      it, if the range starts with [^]). Returns a [string] that can be
      empty, if no character in the input matches the range. Hence,
      [\[0-9\]] returns a string representing a decimal number or an empty
-     string if no decimal digit is found. 
+     string if no decimal digit is found.
      If a closing bracket appears in a range, it must occur as the
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
@@ -190,7 +190,7 @@ val bscanf :
    just before the next matching [c] (which is skipped). If no [c]
    character is encountered, the string token spreads as much as
    possible. For instance, ["%s@\t"] reads a string up to the next
-   tabulation character. If a scanning indication [@c] does not
+   tabulation character. If a scanning indication [\@c] does not
    follow a string conversion, it is ignored and treated as a plain
    [c] character.
 
@@ -203,7 +203,7 @@ val bscanf :
    scanned by [!Scanf.bscanf], it is wise to use printing functions
    from [Format] (or, if you need to use functions from [Printf],
    banish or carefully double check the format strings that contain
-   ['@'] characters).
+   ['\@'] characters).
 
    - in addition to relevant digits, ['_'] characters may appear
    inside numbers (this is reminiscent to the usual Caml
@@ -214,7 +214,7 @@ val bscanf :
    analysis and parsing. If it appears not expressive enough for your
    needs, several alternative exists: regular expressions (module
    [Str]), stream parsers, [ocamllex]-generated lexers,
-   [ocamlyacc]-generated parsers. 
+   [ocamlyacc]-generated parsers.
 *)
 
 val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
