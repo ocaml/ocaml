@@ -50,7 +50,7 @@ threads.cma: $(THREAD_OBJS)
 
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-          -cclib -lthreads -cclib -lunix $(PTHREAD_LINK)
+          -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
 
 $(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 
