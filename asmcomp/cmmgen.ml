@@ -1502,7 +1502,9 @@ and emit_constant_field field cont =
        Cint(string_header (String.length s)) :: Cdefine_label lbl :: 
        emit_string_constant s cont)
   | Const_pointer n ->
-      (Cint(Nativeint.of_int((n lsl 1) + 1)), cont)
+      (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 
+                          Nativeint.one),
+       cont)
   | Const_block(tag, fields) ->
       let lbl = new_const_label() in
       let (emit_fields, cont1) = emit_constant_fields fields cont in
