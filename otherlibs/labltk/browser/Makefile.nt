@@ -1,7 +1,7 @@
 !include ..\support\Makefile.common.nt
 
 LABLTKLIB=-I ../lib -I ../support
-OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
+OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
 CLIBS=../support/liblabltk41.lib $(OTHERS)/str/libstr.lib $(OTHERS)/win32unix/libunix.lib $(OTHERS)/systhreads/libthreads.lib
