@@ -251,7 +251,7 @@ let get_mins ps =
 let check_partial loc casel =
   let pss = get_mins (initial_matrix casel) in
   if match pss with
-      []     -> true
+      []     -> if casel = [] then false else true
     | ps::_  -> satisfiable pss (List.map (fun _ -> omega) ps)
   then Location.print_warning loc "this pattern-matching is not exhaustive"
 
