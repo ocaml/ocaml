@@ -43,5 +43,6 @@ type t_type = {
     ty_kind : type_kind ;
     ty_manifest : Types.type_expr option; (** type manifest *)
     mutable ty_loc : Odoc_types.location ;
+    mutable ty_code : string option;
   } 
 

@@ -76,6 +76,9 @@ Emacs mode:
 - Added file caml-types.el to interactively display the type information
   saved by option -dtypes.
 
+OCamldoc:
+- new ty_code field for types, to keep code of type (with option -keep-code)
+
 
 Objective Caml 3.06:
 --------------------

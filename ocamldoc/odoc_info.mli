@@ -215,6 +215,7 @@ module Type :
           ty_kind : type_kind ; (** Type kind. *)
           ty_manifest : Types.type_expr option; (** Type manifest. *)
           mutable ty_loc : location ;
+          mutable ty_code : string option;
         } 
   end
 

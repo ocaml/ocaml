@@ -620,6 +620,8 @@ module Analyser =
                   in
                   (* get the type kind with the associated comments *)
                   let type_kind = get_type_kind new_env name_comment_list sig_type_decl.Types.type_kind in
+		  let loc_start = type_decl.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum in
+                  let new_end = type_decl.Parsetree.ptype_loc.Location.loc_end.Lexing.pos_cnum + maybe_more in
                   (* associate the comments to each constructor and build the [Type.t_type] *)
                   let new_type =
                     {
@@ -633,11 +635,17 @@ module Analyser =
                       | Some t -> Some (Odoc_env.subst_type new_env t));
                       ty_loc = 
                       { loc_impl = None ; 
-                        loc_inter = Some (!file_name,type_decl.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum)
+                        loc_inter = Some (!file_name,loc_start) ;
                       };
+                      ty_code = 
+		        (
+			 if !Odoc_args.keep_code then
+			   Some (get_string_of_file loc_start new_end) 
+			 else
+			   None
+			) ;
                     }
                   in
-                  let new_end = type_decl.Parsetree.ptype_loc.Location.loc_end.Lexing.pos_cnum + maybe_more in
                   let (maybe_more2, info_after_opt) = 
                     My_ir.just_after_special
                       !file_name

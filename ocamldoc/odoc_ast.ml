@@ -996,6 +996,7 @@ module Analyser =
                     new_env name_comment_list
                     tt_type_decl.Types.type_kind
                 in
+                let new_end = loc_end + maybe_more in
                 let t =
                   {
                     ty_name = complete_name ;
@@ -1009,9 +1010,15 @@ module Analyser =
                       None -> None
                     | Some t -> Some (Odoc_env.subst_type new_env t));
                     ty_loc = { loc_impl = Some (!file_name, loc_start) ; loc_inter = None } ;
+                    ty_code = 
+		      (
+		       if !Odoc_args.keep_code then
+			 Some (get_string_of_file loc_start new_end) 
+		       else
+			 None
+		      ) ;
                   } 
                 in
-                let new_end = loc_end + maybe_more in
                 let (maybe_more2, info_after_opt) = 
                   My_ir.just_after_special
                     !file_name

@@ -1223,7 +1223,10 @@ class html =
            { ty_name = c.cl_name ;
              ty_info = None ; ty_parameters = [] ;
              ty_kind = Type_abstract ; ty_manifest = None ; 
-             ty_loc = Odoc_info.dummy_loc });
+             ty_loc = Odoc_info.dummy_loc ; 
+	     ty_code = None ;
+	   }
+	);
       print_DEBUG "html#html_of_class : virtual or not" ;
       if c.cl_virtual then p buf "%s " (self#keyword "virtual") else ();
       (
@@ -1264,7 +1267,10 @@ class html =
            { ty_name = ct.clt_name ;
              ty_info = None ; ty_parameters = [] ;
              ty_kind = Type_abstract ; ty_manifest = None ;
-             ty_loc = Odoc_info.dummy_loc });
+             ty_loc = Odoc_info.dummy_loc ; 
+	     ty_code = None ;
+	   }
+	);
       if ct.clt_virtual then p buf "%s "(self#keyword "virtual") else ();
       (
        match ct.clt_type_parameters with

@@ -189,6 +189,8 @@ let merge_info_opt merge_options mli_opt ml_opt =
 let merge_types merge_options mli ml =
   mli.ty_info <- merge_info_opt merge_options mli.ty_info ml.ty_info;
   mli.ty_loc <- { mli.ty_loc with loc_impl = ml.ty_loc.loc_impl } ;
+  mli.ty_code <- (match mli.ty_code with None -> ml.ty_code | _ -> mli.ty_code) ;
+
   match mli.ty_kind, ml.ty_kind with
     Type_abstract, _ ->
       ()
