@@ -71,6 +71,15 @@ Dynamically load the given file, which defines a custom documentation
 generator.  See section \ref{s:ocamldoc-compilation-and-usage}.  This
 option is supported by the "ocamldoc" command, but not by its
 native-code version "ocamldoc.opt".
+If the given file is a simple one and does not exist in
+the current directory, then ocamldoc looks for it in the custom 
+generators default directory.
+
+\item["-customdir"]
+Display the custom generators default directory.
+
+\item["-i" \var{directory}]
+Add the given directory to the path where to look for custom generators.
 
 \end{options}
 
