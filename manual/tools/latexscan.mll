@@ -35,6 +35,8 @@ rule main = parse
                     print_string "</i>"; main lexbuf }
   | "{\\bf" " "*  { print_string "<b>"; upto `}` main lexbuf;
                     print_string "</b>"; main lexbuf }
+  | "{\\rm" " "*  { print_string "<u>"; upto `}` main lexbuf;
+                    print_string "</u>"; main lexbuf }
   | "{\\tt" " "*  { print_string "<tt>"; upto `}` main lexbuf;
                     print_string "</tt>"; main lexbuf }
   | `"`           { print_string "<tt>"; indoublequote lexbuf;
@@ -151,7 +153,7 @@ and latexonly = parse
   | _           { latexonly lexbuf }
 
 and print_arg = parse
-    "{"         { upto `}` main lexbuf }
+    [` ` `\n`] * "{" { upto `}` main lexbuf }
   | _           { print_char(get_lexeme_char lexbuf 0); rawhtml lexbuf }
 
 and skip_arg = parse

@@ -30,7 +30,7 @@ def_macro "\\subsubsection"
 def_macro "\\subsubsection*"
     [Print "<H4>"; Print_arg; Print "</H4>\n"];
 def_macro "\\paragraph"
-    [Print "<H5>"; Print_arg; Print "</H5>\n"];
+    [Print "<B>"; Print_arg; Print "</B>&nbsp;&nbsp;\n"];
 def_macro "\\begin{alltt}" [Print "<pre>"];
 def_macro "\\end{alltt}" [Print "</pre>"];
 def_macro "\\begin{itemize}" [Print "<p><ul>"];
@@ -41,6 +41,10 @@ def_macro "\\begin{description}" [Print "<p><dl>"];
 def_macro "\\end{description}" [Print "</dl>"];
 def_macro "\\begin{center}" [Print "<blockquote>"];
 def_macro "\\end{center}" [Print "</blockquote>"];
+def_macro "\\begin{quote}" [Print "<blockquote>"];
+def_macro "\\end{quote}" [Print "</blockquote>"];
+def_macro "\\begin{quotation}" [Print "<blockquote>"];
+def_macro "\\end{quotation}" [Print "</blockquote>"];
 def_macro "\\smallskip" [];
 def_macro "\\medskip" [];
 def_macro "\\bigskip" [];
@@ -133,5 +137,6 @@ def_macro "\\event" [Print "<font color=\"red\">*</font>"];
 def_macro "\\pdfchapter" [Skip_arg];
 def_macro "\\pdfchapterfold" [Skip_arg; Skip_arg];
 def_macro "\\pdfsection" [Skip_arg];
+def_macro "\\transl" [Print "<"; Print_arg; Print ">"];
 ();;
 

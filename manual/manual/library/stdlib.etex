@@ -1,5 +1,5 @@
 \chapter{The standard library}
-\pdfchapterfold{-28}{The standard library}
+\pdfchapterfold{-29}{The standard library}
 
 This chapter describes the functions provided by the Caml Light
 standard library. The modules from the standard library are
@@ -45,6 +45,7 @@ Here is a short listing, by theme, of the standard library modules.
 "Oo" & p.~\pageref{s:Oo} & useful functions on objects \\
 "Stack" & p.~\pageref{s:Stack} & last-in first-out stacks \\
 "Queue" & p.~\pageref{s:Queue} & first-in first-out queues \\
+"Buffer" & p.~\pageref{s:Buffer} & string buffers that grow on demand \\
 "Lazy"  & p.~\pageref{s:Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{s:Weak} & references that don't prevent objects from being garbage-collected \\
 \end{tabular}
@@ -78,6 +79,7 @@ be called from C \\
 \begin{library}
 \input arg.tex
 \input array.tex
+\input buffer.tex
 \input callback.tex
 \input char.tex
 \input digest.tex

@@ -38,6 +38,28 @@ The latter is slightly more efficient, as it allows clients of the
 module to call directly the C function instead of going through the
 corresponding Caml function. 
 
+The arity (number of arguments) of a primitive is automatically
+determined from its Caml type in the "external" declaration, by
+counting the number of function arrows in the type.  For instance,
+"input" above has arity 4, and the "input" C function is called with
+four arguments.  Similarly,
+\begin{verbatim}
+    external input2 : in_channel * string * int * int -> int = "input2"
+\end{verbatim}
+has arity 1, and the "input2" C function receives one argument (which
+is a quadruple of Caml values).
+
+Type abbreviations are not expanded when determining the arity of a
+primitive.  For instance,
+\begin{verbatim}
+        type int_endo = int -> int
+        external f : int_endo -> int_endo = "f"
+        external g : (int -> int) -> (int -> int) = "f"
+\end{verbatim}
+"f" has arity 1, but "g" has arity 2.  This allows a primitive to
+return a functional value (as in the "f" example above): just remember
+to name the functional return type in a type abbreviation.
+
 \subsection{Implementing primitives}
 
 User primitives with arity $n \leq 5$ are implemented by C functions
@@ -382,7 +404,7 @@ and false if it is an immediate integer.
 truth value of the C integer \var{x}.
 \item "Bool_val("\var{v}")" returns 0 if \var{v} is the Caml boolean
 "false", 1 if \var{v} is "true".
-\item "Val_true", "Val_false" represent to Caml booleans "true" and "false".
+\item "Val_true", "Val_false" represent the Caml booleans "true" and "false".
 \end{itemize}
 
 \subsection{Accessing blocks}
@@ -447,7 +469,7 @@ fields of the block are initialized with a valid value in order to
 satisfy the GC constraints.
 \item
 "alloc_tuple("\var{n}")" returns a fresh block of size
-$n \leq \hbox{"Max_young_wosize"}$ words, with tag 0.
+\var{n} words, with tag 0.
 \item
 "alloc_string("\var{n}")" returns a string value of length \var{n} characters.
 The string initially contains garbage.
@@ -505,6 +527,54 @@ the fields of the block (initially containing garbage) must be initialized
 with legal values (using the "initialize" function described below)
 before the next allocation.
 \end{itemize}
+
+\subsection{Finalized blocks}
+
+Blocks with tag "Final_tag" have an attached C finalization function
+that is called when the block becomes unreachable and is about to be
+reclaimed.  The finalization function occupies the first word of the
+allocated block; the remaining words can contain arbitrary raw data
+(but not Caml pointers, since "Final_tag" is greater than
+"No_scan_tag".
+
+Finalized blocks must be allocated via the "alloc_final" function.
+"alloc_final("\var{n}", "\var{f}", "\var{used}", "\var{max}")"
+returns a fresh finalized block of size \var{n} words, with
+finalization function \var{f}.
+
+The two parameters \var{used} and \var{max} are used to control the
+speed of garbage collection when the finalized object contains
+pointers to out-of-heap resources.  Generally speaking, the
+Caml incremental major collector adjusts its speed relative to the
+allocation rate of the program.  The faster the program allocates, the
+harder the GC works in order to reclaim quickly unreachable blocks
+and avoid having large amount of ``floating garbage'' (unreferenced
+objects that the GC has not yet collected).
+
+Normally, the allocation rate is measured by counting the in-heap size
+of allocated blocks.  However, it often happens that finalized
+objects contain pointers to out-of-heap memory blocks and other resources
+(such as file descriptors, X Windows bitmaps, etc.).  For those
+blocks, the in-heap size of blocks is not a good measure of the
+quantity of resources allocated by the program.
+
+The two arguments \var{used} and \var{max} give the GC an idea of how
+much out-of-heap resources are consumed by the finalized block
+being allocated: you give the amount of resources allocated to this
+object as parameter \var{used}, and the maximum amount that you want
+to see in floating garbage as parameter \var{max}.  The units are
+arbitrary: the GC cares only about the ratio $\var{used} / \var{max}$.
+
+For instance, if you are allocating a finalized block holding an X
+Windows bitmap of \var{w} by \var{h} pixels, and you'd rather not
+have more than 1 mega-pixels of unreclaimed bitmaps, specify
+$\var{used} = \var{w} * \var{h}$ and $\var{max} = 1000000$.
+
+If your finalized blocks contain no pointers to out-of-heap resources,
+or if the previous discussion made little sense to you, just take
+$\var{used} = 0$ and $\var{max} = 1$.  But if you later find that the
+finalization functions are not called ``often enough'', consider
+increasing the $\var{used} / \var{max}$ ratio.
 
 \subsection{Raising exceptions} \label{s:c-exceptions}
 
@@ -818,6 +888,8 @@ the value \var{a} and return the value returned by~\var{f}.
 \var{a} and \var{b}.
 \item "callback3("\var{f, a, b, c}")" applies the functional value \var{f}
 (a curried Caml function with three arguments) to \var{a}, \var{b} and \var{c}.
+\item "callbackN("\var{f, n, args}")" applies the functional value \var{f}
+to the \var{n} arguments contained in the array of values \var{args}.
 \end{itemize}
 If the function \var{f} does not return, but raises an exception that
 escapes the scope of the application, then this exception is
@@ -826,6 +898,18 @@ code. That is, if a Caml function \var{f} calls a C function \var{g} that
 calls back a Caml function \var{h} that raises a stray exception, then the
 execution of \var{g} is interrupted and the exception is propagated back
 into \var{f}.
+
+If the C code wishes to catch exceptions escaping the Caml function,
+it can use the functions "callback_exn", "callback2_exn",
+"callback3_exn", "callbackN_exn".  These functions take the same
+arguments as their non-"_exn" counterparts, but catch escaping
+exceptions and return them to the C code.  The return value \var{v} of the
+"callback*_exn" functions must be tested with the macro
+"Is_exception_result("\var{v}")".  If the macro returns ``false'', no
+exception occured, and \var{v} is the value returned by the Caml
+function.  If "Is_exception_result("\var{v}")" returns ``true'',
+an exception escaped, and its value (the exception descriptor) can be
+recovered using "Extract_exception("\var{v}")".
 
 \subsection{Registering Caml closures for use in C functions}
 
@@ -964,6 +1048,24 @@ option, causing it to output a C object file containing the native
 code for all Caml modules on the command-line, as well as the Caml
 startup code. Initialization is performed by calling "caml_startup" as
 in the case of the bytecode compiler.
+
+For the final linking phase, in addition to the object file produced
+by "-output-obj", you will have to provide the Objective Caml runtime
+library ("libcamlrun.a" for bytecode, "libasmrun.a" for native-code),
+as well as all C libraries that are required by the Caml libraries
+used.  For instance, assume the Caml part of your program uses the
+Unix library.  With "ocamlc", you should do:
+\begin{alltt}
+        ocamlc -output-obj -o camlcode.o unix.cma {\it{other}} .cmo {\it{and}} .cma {\it{files}}
+        cc -o myprog {\it{C objects and libraries}} \char92
+           camlcode.o -L/usr/local/lib/ocaml -lunix -lcamlrun
+\end{alltt}
+With "ocamlopt", you should do:
+\begin{alltt}
+        ocamlopt -output-obj -o camlcode.o unix.cmxa {\it{other}} .cmx {\it{and}} .cmxa {\it{files}}
+        cc -o myprog {\it{C objects and libraries}} \char92
+           camlcode.o -L/usr/local/lib/ocaml -lunix -lasmrun
+\end{alltt}
 
 \paragraph{Warning:} On some ports, special options are required on the final
 linking phase that links together the object file produced by the

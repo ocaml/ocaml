@@ -26,6 +26,7 @@ and syntax = parse
   | `"` {
       print_string "\\token{";
       indoublequote lexbuf }
+  | "epsilon" { print_string "\\emptystring"; syntax lexbuf }
   | [`a`-`z``-`] + {
       print_string "\\nonterm{";
       print_string (get_lexeme lexbuf);
@@ -49,7 +50,6 @@ and syntax = parse
   | ":" { print_string "\\is "; syntax lexbuf }
   | "|" { print_string "\\alt "; syntax lexbuf }
   | ";" { print_string "\\sep "; syntax lexbuf }
-  | "@" { print_string "\\emptystring"; syntax lexbuf }
   | _ {
       print_char (get_lexeme_char lexbuf 0);
       syntax lexbuf }

@@ -64,6 +64,7 @@ release:
 #	cp texstuff/plaintext.txt $(RELEASE)refman.txt
 #	cp texstuff/plaintext.ipr $(RELEASE)refman.prn
 	tar cf - htmlman/*.* | gzip > $(RELEASE)refman.html.tar.gz
+	zip -8 $(RELEASE)refman.html.zip htmlman/*.*
 	cp texstuff/pdfmanual.pdf $(RELEASE)refman.pdf
 
 .SUFFIXES:

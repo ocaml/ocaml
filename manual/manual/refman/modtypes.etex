@@ -36,6 +36,7 @@ specification:
         | 'module' 'type' modtype-name
         | 'module' 'type' modtype-name '=' module-type
         | 'open' module-path
+        | 'include' modtype-path
 ;
 constraint:
           'type' [type-parameters] typeconstr '=' typexp
@@ -210,6 +211,16 @@ of the signature, allowing components of the module denoted by
 @module-path@ to be referred to by their simple names @name@ instead of
 path accesses @module-path '.' name@. The scope of the "open"
 stops at the end of the signature expression.
+
+\subsubsection{Including a signature}
+
+\ikwd{include\@\texttt{include}}
+
+The expression @'include' modtype-path@ in a signature performs textual
+inclusion of the components of the signature denoted by @modtype-path@.
+It behaves as if the components of the included signature were copied
+at the location of the @'include'@.  The @modtype-path@ argument must
+refer to a module type that is a signature, 
 
 \subsection{Functor types}
 

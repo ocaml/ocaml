@@ -4,7 +4,8 @@ STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
   gc.tex genlex.tex hashtbl.tex lazy.tex lexing.tex list.tex map.tex \
   marshal.tex oo.tex \
   parsing.tex printexc.tex printf.tex queue.tex random.tex set.tex sort.tex \
-  stack.tex stream.tex string.tex sys.tex weak.tex callback.tex lazy.tex
+  stack.tex stream.tex string.tex sys.tex weak.tex callback.tex lazy.tex \
+  buffer.tex
 
 OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex \
   thread.tex mutex.tex condition.tex event.tex threadUnix.tex \
