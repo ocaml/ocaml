@@ -42,7 +42,7 @@ OBJS = :interp.a.o :misc.c.o :stacks.c.o ¶
   :obj.c.o :lexing.c.o :macintosh.c.o ¶
   :rotatecursor.c.o :printexc.c.o :callback.c.o ¶
   :debugger.c.o :weak.c.o :compact.c.o ¶
-  :instrtrace.c.o :finalise.c.o :custom.c.o
+  :instrtrace.c.o :finalise.c.o :custom.c.o :backtrace.c.o
 
 PPCOBJS = :interp.c.x :misc.c.x :stacks.c.x ¶
   :fix_code.c.x :startup.c.x :main.c.x ¶
@@ -55,7 +55,7 @@ PPCOBJS = :interp.c.x :misc.c.x :stacks.c.x ¶
   :obj.c.x :lexing.c.x :macintosh.c.x ¶
   :rotatecursor.c.x :printexc.c.x :callback.c.x ¶
   :debugger.c.x :weak.c.x :compact.c.x ¶
-  :instrtrace.c.x :finalise.c.x :custom.c.x
+  :instrtrace.c.x :finalise.c.x :custom.c.x :backtrace.c.x
 
 PRIMS = alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c ¶
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c ¶
