@@ -1,7 +1,7 @@
-        Objective Caml version 3.06+24 (2003-02-28)
+        Objective Caml version 3.06+26 (2003-03-26)
 
-#   * * *       #   type 'a t = { t : 'a; } 
-# type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; } 
+#   * * *       #   type 'a t = { t : 'a; }
+# type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
 # val f : 'a list -> 'a fold = <fun>
 # - : int = 6
 #               class ['a] ilist :
@@ -167,7 +167,7 @@ The type abbreviation foo is cyclic
 = <fun>
 #   type sum = T of < id : 'a. 'a -> 'a >
 # - : sum -> 'a -> 'a = <fun>
-#   type record = { r : < id : 'a. 'a -> 'a >; } 
+#   type record = { r : < id : 'a. 'a -> 'a >; }
 # - : record -> 'a -> 'a = <fun>
 # - : record -> 'a -> 'a = <fun>
 #       class myself : object ('a) method self : 'b -> 'a end
@@ -211,11 +211,11 @@ class next : #numeral -> object method fold : ('a -> 'a) -> 'a -> 'a end
 #       class type node_type = object method as_variant : [> `Node of node_type ] end
 #       class node : node_type
 #     class node : object method as_variant : [> `Node of node_type ] end
-#   type bad = { bad : 'a. 'a option ref; } 
+#   type bad = { bad : 'a. 'a option ref; }
 # Characters 17-25:
 This field value has type 'a option ref which is less general than
   'b. 'b option ref
-# type bad2 = { mutable bad2 : 'a. 'a option ref option; } 
+# type bad2 = { mutable bad2 : 'a. 'a option ref option; }
 # val bad2 : bad2 = {bad2 = None}
 # Characters 13-28:
 This field value has type 'a option ref option which is less general than
