@@ -94,7 +94,7 @@ rule main = parse
       Tstring(get_stored_string()) }
   | "'" [^ '\\'] "'" 
     { Tchar(Char.code(Lexing.lexeme_char lexbuf 1)) }
-  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'" 
+  | "'" '\\' ['\\' '"' '\'' 'n' 't' 'b' 'r'] "'" 
     { Tchar(Char.code(char_for_backslash (Lexing.lexeme_char lexbuf 2))) }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
     { Tchar(Char.code(char_for_decimal_code lexbuf 2)) }
@@ -136,9 +136,9 @@ and action = parse
       string lexbuf;
       reset_string_buffer();
       action lexbuf }
-  | "'" [^ '\\'] "'" 
+  | "'" [^ '\\' '\''] "'" 
     { action lexbuf }
-  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'" 
+  | "'" '\\' ['\\' '"' '\'' 'n' 't' 'b' 'r'] "'" 
     { action lexbuf }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
     { action lexbuf }

@@ -115,6 +115,11 @@ let get_stored_string () =
   string_buff := initial_string_buffer;
   s
 
+(* To store the position of the beginning of a string and comment *)
+let string_start_pos = ref 0;;
+let comment_start_pos = ref [];;
+let in_comment () = !comment_start_pos <> [];;
+
 (* To translate escape sequences *)
 
 let char_for_backslash =
@@ -141,15 +146,11 @@ let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
            10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
                 (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in  
-  if c < 0 || c > 255 then raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
-					Lexing.lexeme_start lexbuf,
-					Lexing.lexeme_end lexbuf))
+  if (c < 0 || c > 255) && not (in_comment ())
+  then raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
+                    Lexing.lexeme_start lexbuf,
+                    Lexing.lexeme_end lexbuf))
   else Char.chr c
-
-(* To store the position of the beginning of a string and comment *)
-let string_start_pos = ref 0;;
-let comment_start_pos = ref [];;
-let in_comment () = !comment_start_pos <> [];;
 
 (* Error report *)
 
@@ -159,7 +160,7 @@ let report_error ppf = function
   | Illegal_character c ->
       fprintf ppf "Illegal character (%s)" (Char.escaped c)
   | Illegal_escape s ->
-      fprintf ppf "Illegal escape (%s)" s
+      fprintf ppf "Illegal backslash escape in string or character (%s)" s
   | Unterminated_comment ->
       fprintf ppf "Comment not terminated"
   | Unterminated_string ->
@@ -229,13 +230,17 @@ rule token = parse
         STRING (get_stored_string()) }
   | "'" [^ '\\' '\''] "'"
       { CHAR(Lexing.lexeme_char lexbuf 1) }
-  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'"
+  | "'" '\\' ['\\' '\'' '"' 'n' 't' 'b' 'r'] "'"
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { CHAR(char_for_decimal_code lexbuf 2) }
-  | "'" '\\' _ "'"
-      { raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
-                     Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))}
+  | "'" '\\' _
+      { let l = Lexing.lexeme lexbuf in
+        let esc = String.sub l 1 (String.length l - 1) in
+        raise (Error(Illegal_escape esc,
+                     Lexing.lexeme_start lexbuf + 1,
+                     Lexing.lexeme_end lexbuf))
+      }
   | "(*"
       { comment_start_pos := [Lexing.lexeme_start lexbuf];
         comment lexbuf;
@@ -349,7 +354,7 @@ and comment = parse
       { comment lexbuf }
   | "'" [^ '\\' '\''] "'"
       { comment lexbuf }
-  | "'\\" ['\\' '\'' 'n' 't' 'b' 'r'] "'"
+  | "'\\" ['\\' '"' '\'' 'n' 't' 'b' 'r'] "'"
       { comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
@@ -365,12 +370,19 @@ and string = parse
       { () }
   | '\\' ("\010" | "\013" | "\013\010") [' ' '\009'] *
       { string lexbuf }
-  | '\\' ['\\' '"' 'n' 't' 'b' 'r']
+  | '\\' ['\\' '\'' '"' 'n' 't' 'b' 'r']
       { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
         string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
       { store_string_char(char_for_decimal_code lexbuf 1);
          string lexbuf }
+  | '\\' _
+      { if in_comment ()
+        then string lexbuf
+        else raise (Error (Illegal_escape (Lexing.lexeme lexbuf),
+                           Lexing.lexeme_start lexbuf,
+                           Lexing.lexeme_end lexbuf))
+      }
   | eof
       { raise (Error (Unterminated_string,
                       !string_start_pos, !string_start_pos+1)) }
