@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl
 
-$camllight = "TERM= csltop";
+$camllight = "TERM=dumb csltop";
 $camlbegin = "\\caml\n";
 $camlend = "\\endcaml\n";
 $camlin = "\\?";
