@@ -203,11 +203,11 @@ EOF
 WARNING: you are using gcc version 2.96 on an Intel x86 processor.
 Certain patched versions of gcc 2.96 are known to generate incorrect
 code for the Objective Caml runtime system.  (The symptom is a segmentation
-violation of boot/ocamlc.)  Those incorrectly patched versions can be found
+violation on boot/ocamlc.)  Those incorrectly patched versions can be found
 in RedHat 7.2 and Mandrake 8.0 and 8.1; other Linux distributions
 might also be affected.  (See bug #57760 on bugzilla.redhat.com)
 
-Auto-configuration will now select gcc compiler flags that (we believe)
+Auto-configuration will now select gcc compiler flags that we believe
 work around the problem.  Still, if you observe segmentation faults
 while running ocamlc or ocamlopt, you are advised to try another version
 of gcc, such as 2.95.3 or 3.0.4.
@@ -336,7 +336,7 @@ if test $2 = 8; then
      echo "#define ARCH_INT64_TYPE long" >> m.h
      echo "#define ARCH_UINT64_TYPE unsigned long" >> m.h
      echo '#define ARCH_INT64_PRINTF_FORMAT "l"' >> m.h
-     int64_supported=true
+     int64_native=true
 else
   sh ./runtest longlong.c
   case $? in
@@ -344,14 +344,22 @@ else
      echo "#define ARCH_INT64_TYPE long long" >> m.h
      echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
      echo '#define ARCH_INT64_PRINTF_FORMAT "ll"' >> m.h
-     int64_supported=true;;
+     int64_native=true;;
   1) echo "64-bit \"long long\" integer type found (printf with \"%q\")."
      echo "#define ARCH_INT64_TYPE long long" >> m.h
      echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
      echo '#define ARCH_INT64_PRINTF_FORMAT "q"' >> m.h
-     int64_supported=true;;
-  *) echo "No suitable 64-bit integer type found, Int64.t will not be supported."
-     int64_supported=false;;
+     int64_native=true;;
+  2) echo "64-bit \"long long\" integer type found (but no printf)."
+     echo "#define ARCH_INT64_TYPE long long" >> m.h
+     echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
+     echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
+     int64_native=true;;
+  *) echo "No suitable 64-bit integer type found, will use software emulation."
+     echo "#undef ARCH_INT64_TYPE" >> m.h
+     echo "#undef ARCH_UINT64_TYPE" >> m.h
+     echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
+     int64_native=false;;
   esac
 fi
 
@@ -386,7 +394,7 @@ case $? in
      echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
 esac
 
-if $int64_supported; then
+if $int64_native; then
   sh ./runtest int64align.c
   case $? in
     0) echo "64-bit integers can be word-aligned."
@@ -399,6 +407,8 @@ if $int64_supported; then
        echo "this architecture has actually no alignment constraints."
        echo "#define ARCH_ALIGN_INT64" >> m.h;;
   esac
+else
+  echo "#undef ARCH_ALIGN_INT64" >> m.h
 fi
 
 # Check semantics of division and modulus
@@ -461,7 +471,7 @@ if test $withsharedlibs = "yes"; then
 	  mksharedlib="/usr/ccs/bin/ld -G -o"
 	  shared_libraries_supported=true;;
       esac;;
-    mips-sgi-irix[56]*)
+    mips*-*-irix[56]*)
       case "$bytecc" in
         cc*) sharedcccompopts="";;
         gcc*) sharedcccompopts="-fPIC";;
@@ -563,10 +573,7 @@ case "$arch,$model,$system" in
                       gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
                          *) asppflags='-P -DSYS_$(SYSTEM)';;
                     esac;;
-  i386,*,solaris)   # case "$cc" in
-                    # Intel/solaris assembler doesn't like GNU cpp output
-                    # gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-                    aspp='/usr/ccs/bin/as'; asppflags='-P -DSYS_$(SYSTEM)';;
+  i386,*,solaris)   aspp='/usr/ccs/bin/as'; asppflags='-P -DSYS_$(SYSTEM)';;
   i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   hppa,*,*)         aspp="$cc"; asppflags='-traditional -c -DSYS_$(SYSTEM)';;
   power,rs6000,aix) asflags='-u -m pwr -w'; asppflags="$asflags";;
@@ -1401,20 +1408,20 @@ else
   echo "Source-level replay debugger: not supported"
 fi
 
-echo "Configuration for the external libraries:"
-echo "        libraries supported ...... $otherlibraries"
+echo "Additional libraries supported:"
+echo "        $otherlibraries"
 
-echo "The \"num\" library:"
+echo "Configuration for the \"num\" library:"
 echo "        target architecture ...... $bignum_arch"
 
 if test "$x11_include" != "not found" && test "$x11_lib" != "not found"; then
-echo "The \"graph\" library:"
+echo "Configuration for the \"graph\" library:"
 echo "        options for compiling .... $x11_include"
 echo "        options for linking ...... $x11_link"
 fi
 
 if test $has_tk = true; then
-echo "The \"labltk\" library:"
+echo "Configuration for the \"labltk\" library:"
 echo "        use tcl/tk version ....... $tcl_version"
 echo "        options for compiling .... $tk_defs"
 echo "        options for linking ...... $tk_libs"
