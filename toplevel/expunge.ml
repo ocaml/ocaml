@@ -30,6 +30,12 @@ let expunge_map tbl =
     (fun id -> StringSet.mem (Ident.name id) !to_keep)
     tbl
 
+let openflags =
+  match (Sys.get_config ()).Sys.os_type with
+  | "MacOS" -> [Open_wronly; Open_trunc; Open_creat]
+  | _ -> [Open_wronly; Open_trunc; Open_creat; Open_binary]
+;;
+
 let main () =
   let input_name = Sys.argv.(1) in
   let output_name = Sys.argv.(2) in
@@ -53,7 +59,7 @@ let main () =
     prerr_endline "Wrong magic number"; exit 2
   end;
   let oc =
-    open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o777 output_name in
+    open_out_gen openflags 0o777 output_name in
   (* Copy the file up to the symbol section as is *)
   seek_in ic 0;
   copy_file_chunk ic oc (pos_trailer - symbol_size - debug_size);
