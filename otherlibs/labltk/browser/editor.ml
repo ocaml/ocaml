@@ -151,10 +151,10 @@ let send_phrase txt =
               index:(`Mark"insert",[])
           then begin
             after := true;
-            if !block_start <> [] then begin
-              start := List.hd !block_start;
-              block_start := []
-            end
+            let anon, real =
+              List.partition !block_start pred:(fun x -> x = -1) in
+            block_start := anon;
+            if real <> [] then start := List.hd real;
           end;
           match token with
             CLASS | EXTERNAL | EXCEPTION | FUNCTOR
@@ -167,7 +167,9 @@ let send_phrase txt =
                 if !after then pend := Lexing.lexeme_start buffer
                 else start := pos
               else block_start := pos :: List.tl !block_start
-          | BEGIN | OBJECT | STRUCT | SIG ->
+          | BEGIN | OBJECT ->
+              block_start := -1 :: !block_start
+          | STRUCT | SIG ->
               block_start := Lexing.lexeme_end buffer :: !block_start
           | END ->
               if !block_start = [] then
