@@ -573,22 +573,24 @@ type popen_process =
     Process of in_channel * out_channel
   | Process_in of in_channel
   | Process_out of out_channel
+  | Process_full of in_channel * out_channel * in_channel
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
-let open_proc cmd proc input output =
+let open_proc cmd optenv proc input output error =
   let shell =
     try Sys.getenv "COMSPEC"
     with Not_found -> raise(Unix_error(ENOEXEC, "open_proc", cmd)) in
   let pid =
-    create_process shell [|shell; "/c"; cmd|] input output stderr in
+    win_create_process shell (shell ^ " /c " ^ cmd) optenv
+                       input output error in
   Hashtbl.add popen_processes proc pid
 
 let open_process_in cmd =
   let (in_read, in_write) = pipe() in
   set_close_on_exec in_read;
   let inchan = in_channel_of_descr in_read in
-  open_proc cmd (Process_in inchan) stdin in_write;
+  open_proc cmd None (Process_in inchan) stdin in_write stderr;
   close in_write;
   inchan
 
@@ -596,7 +598,7 @@ let open_process_out cmd =
   let (out_read, out_write) = pipe() in
   set_close_on_exec out_write;
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process_out outchan) out_read stdout;
+  open_proc cmd None (Process_out outchan) out_read stdout stderr;
   close out_read;
   outchan
 
@@ -607,9 +609,24 @@ let open_process cmd =
   set_close_on_exec out_write;
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process(inchan, outchan)) out_read in_write;
+  open_proc cmd None (Process(inchan, outchan)) out_read in_write stderr;
   close out_read; close in_write;
   (inchan, outchan)
+
+let open_process_full cmd env =
+  let (in_read, in_write) = pipe() in
+  let (out_read, out_write) = pipe() in
+  let (err_read, err_write) = pipe() in
+  set_close_on_exec in_read;
+  set_close_on_exec out_write;
+  set_close_on_exec err_read;
+  let inchan = in_channel_of_descr in_read in
+  let outchan = out_channel_of_descr out_write in
+  let errchan = in_channel_of_descr err_read in
+  open_proc cmd (Some env) (Process_full(inchan, outchan, errchan))
+                out_read in_write err_write;
+  close out_read; close in_write; close err_write;
+  (inchan, outchan, errchan)
 
 let find_proc_id fun_name proc =
   try

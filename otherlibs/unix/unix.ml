@@ -569,6 +569,7 @@ type popen_process =
     Process of in_channel * out_channel
   | Process_in of in_channel
   | Process_out of out_channel
+  | Process_full of in_channel * out_channel * in_channel
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
@@ -606,6 +607,30 @@ let open_process cmd =
   close in_write;
   (inchan, outchan)
 
+let open_proc_full cmd env proc input output error toclose =
+  match fork() with
+     0 -> dup2 input stdin; close input;
+          dup2 output stdout; close output;
+          dup2 error stderr; close error;
+          List.iter close toclose;
+          execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env;
+          exit 127
+  | id -> Hashtbl.add popen_processes proc id
+
+let open_process_full cmd env =
+  let (in_read, in_write) = pipe() in
+  let (out_read, out_write) = pipe() in
+  let (err_read, err_write) = pipe() in
+  let inchan = in_channel_of_descr in_read in
+  let outchan = out_channel_of_descr out_write in
+  let errchan = in_channel_of_descr err_read in
+  open_proc_full cmd env (Process_full(inchan, outchan, errchan))
+                 out_read in_write err_write [in_read; out_write; err_read];
+  close out_read;
+  close in_write;
+  close err_write;
+  (inchan, outchan, errchan)
+
 let find_proc_id fun_name proc =
   try
     let pid = Hashtbl.find popen_processes proc in
@@ -627,6 +652,13 @@ let close_process_out outchan =
 let close_process (inchan, outchan) =
   let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
   close_in inchan; close_out outchan;
+  snd(waitpid [] pid)
+
+let close_process_full (inchan, outchan, errchan) =
+  let pid =
+    find_proc_id "close_process_full"
+                 (Process_full(inchan, outchan, errchan)) in
+  close_in inchan; close_out outchan; close_in errchan;
   snd(waitpid [] pid)
 
 (* High-level network functions *)

@@ -439,12 +439,20 @@ val open_process: string -> in_channel * out_channel
            by the shell [/bin/sh] (cf. [system]). Warning: writes on channels
            are buffered, hence be careful to call [flush] at the right times
            to ensure correct synchronization. *)
+val open_process_full:
+      string -> string array -> in_channel * out_channel * in_channel
+        (* Similar to [open_process], but the second argument specifies
+           the environment passed to the command.  The result is a triple
+           of channels connected to the standard output, standard input,
+           and standard error of the command. *)
 val close_process_in: in_channel -> process_status
 val close_process_out: out_channel -> process_status
 val close_process: in_channel * out_channel -> process_status
-        (* Close channels opened by [open_process_in], [open_process_out]
-           and [open_process], respectively, wait for the associated
-           command to terminate, and return its termination status. *)
+val close_process_full: in_channel * out_channel * in_channel -> process_status
+        (* Close channels opened by [open_process_in], [open_process_out],
+           [open_process] and [open_process_full], respectively,
+           wait for the associated command to terminate,
+           and return its termination status. *)
 
 (*** Symbolic links *)
 
