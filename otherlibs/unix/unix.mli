@@ -153,15 +153,18 @@ type wait_flag =
   | WUNTRACED (** report also the children that receive stop signals. *)
 (** Flags for {!Unix.waitpid}. *)
 
-val execv : string -> string array -> unit
+val execv : string -> string array -> 'a
 (** [execv prog args] execute the program in file [prog], with
-   the arguments [args], and the current process environment. *)
+   the arguments [args], and the current process environment. 
+   These [execv*] functions never return: on success, the current 
+   program is replaced by the new one; 
+   on failure, a {!Unix.Unix_error} exception is raised. *)
 
-val execve : string -> string array -> string array -> unit
+val execve : string -> string array -> string array -> 'a
 (** Same as {!Unix.execv}, except that the third argument provides the
    environment to the program executed. *)
 
-val execvp : string -> string array -> unit
+val execvp : string -> string array -> 'a
 (** Same as {!Unix.execv} respectively, except that
    the program is searched in the path. *)
 
