@@ -571,17 +571,14 @@ let transl_isout h arg = tag_int (Cop(Ccmpa Clt, [h ; arg]))
 exception Found of int
 
 let make_switch_gen arg cases acts =
-  let min_key,_,_ = cases.(0)
-  and _,max_key,_ = cases.(Array.length cases-1) in
-  let new_cases = Array.create (max_key-min_key+1) 0 in
+  let lcases = Array.length cases in
+  let new_cases = Array.create lcases 0 in
   let store = Switch.mk_store (=) in
             
   for i = 0 to Array.length cases-1 do
-    let l,h,act = cases.(i) in
+    let act = cases.(i) in
     let new_act = store.Switch.act_store act in
-    for j = l to h do
-      new_cases.(j-min_key) <- new_act
-    done
+    new_cases.(i) <- new_act
   done ;
   Cswitch
     (arg, new_cases,
@@ -609,6 +606,7 @@ struct
   let make_prim p args = Cop (p,args)
   let make_offset arg n = add_const arg n
   let make_isout h arg =  Cop (Ccmpa Clt, [h ; arg])
+  let make_isin h arg =  Cop (Ccmpa Cge, [h ; arg])
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
   let make_switch arg cases actions =
     make_switch_gen arg cases actions
@@ -1377,35 +1375,9 @@ and transl_switch arg index cases = match Array.length cases with
       (fun a ->
         SwitcherBlocks.zyva
           (fun i -> Cconst_int i)
-          a (Switch.Int 0) (Switch.Int (n_index-1))
+          a
           (Array.of_list !inters) actions)
         
-(* OLD CODE
-  | 2 -> Cifthenelse(arg, transl cases.(index.(1)), transl cases.(index.(0)))
-  | _ ->
-      (* Determine whether all actions minus one or two are equal to
-         Ustaticfail 0 *)
-      let num_fail = ref 0 in
-      let key1 = ref (-1) in
-      let key2 = ref (-1) in
-      for i = 0 to Array.length index - 1 do
-        if cases.(index.(i)) = Ustaticfail (0, []) then incr num_fail
-        else if !key1 < 0 then key1 := i
-        else if !key2 < 0 then key2 := i
-      done;
-      match Array.length index - !num_fail with
-        0 -> Csequence(arg, Cexit (0, []))
-      | 1 -> Cifthenelse(Cop(Ccmpi Ceq, [arg; Cconst_int !key1]),
-                         transl cases.(index.(!key1)), Cexit (0, []))
-      | 2 -> bind "test" arg (fun a ->
-               Cifthenelse(Cop(Ccmpi Ceq, [a; Cconst_int !key1]),
-                           transl cases.(index.(!key1)),
-                           Cifthenelse(Cop(Ccmpi Ceq, [a; Cconst_int !key2]),
-                                       transl cases.(index.(!key2)),
-                                       Cexit (0, []))))
-      | _ -> Cswitch(arg, index, Array.map transl cases)
-OLD CODE *)
-
 and transl_letrec bindings cont =
   let rec init_blocks = function
       [] -> fill_blocks bindings

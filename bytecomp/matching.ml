@@ -1307,9 +1307,15 @@ let make_switch_offset arg min_key max_key int_lambda_list default  =
           sw_failaction = default})
 
 let make_switch_switcher arg cases acts =
-  let min_key, max_key, clauses, default = as_int_list cases acts in
-  make_switch_offset arg 0 (max_key-min_key) clauses default
-
+  let l = ref [] in
+  for i = Array.length cases-1 downto 0 do
+    l := (i,acts.(cases.(i))) ::  !l
+  done ;    
+  Lswitch(arg,
+          {sw_numconsts = Array.length cases ; sw_consts = !l ;
+           sw_numblocks = 0 ; sw_blocks =  []  ;
+           sw_failaction = None})
+           
 let full sw =
   List.length sw.sw_consts = sw.sw_numconsts &&
   List.length sw.sw_blocks = sw.sw_numblocks
@@ -1374,6 +1380,7 @@ module SArg = struct
     bind Alias newvar arg (body newarg)
 
   let make_isout h arg = Lprim (Pisout, [h ; arg])
+  let make_isin h arg = Lprim (Pnot,[make_isout h arg])
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
   let make_switch = make_switch_switcher
 end
@@ -1387,14 +1394,11 @@ let lambda_of_int i =  Lconst (Const_base (Const_int i))
 let as_interval_canfail fail low high l =
   let store = mk_store equal_action in
   let rec nofail_rec cur_low cur_high cur_act = function
-    | [] -> begin match high with
-      | TooMuch -> [cur_low,cur_high,cur_act]
-      | Int h ->
-        if cur_high = h then
+    | [] ->
+        if cur_high = high then
           [cur_low,cur_high,cur_act]
         else
-          [(cur_low,cur_high,cur_act) ; (cur_high+1,h, 0)]
-    end
+          [(cur_low,cur_high,cur_act) ; (cur_high+1,high, 0)]
     | ((i,act_i)::rem) as all ->
         let act_index = store.act_store act_i in
         if cur_high+1= i then
@@ -1422,30 +1426,22 @@ let as_interval_canfail fail low high l =
     | (i,act_i)::rem as all ->
         let index = store.act_store act_i in
         if index=0 then
-          match low with
-          | TooMuch -> init_rec rem
-          | Int low -> fail_rec low i rem
-        else begin match low with
-        | TooMuch -> nofail_rec i i index rem
-        | Int low ->
-            if low < i then
-              (low,i-1,0)::nofail_rec i i index rem
+          fail_rec low i rem
+        else
+          if low < i then
+            (low,i-1,0)::nofail_rec i i index rem
           else
-              nofail_rec i i index rem
-      end in
+            nofail_rec i i index rem in
 
   ignore (store.act_store fail) ; (* fail has action index 0 *)
   let r = init_rec (sort_lambda_list l) in
-  low, high, Array.of_list r,  store.act_get ()
+  Array.of_list r,  store.act_get ()
 
 let as_interval_nofail l =
-  let store = mk_store equal_action
-  and high = ref (-1)
-  and low = ref (-1) in
+  let store = mk_store equal_action in
 
   let rec i_rec cur_low cur_high cur_act = function
     | [] ->
-        high := cur_high ;
         [cur_low, cur_high, cur_act]
     | (i,act)::rem ->
         let act_index = store.act_store act in
@@ -1456,21 +1452,19 @@ let as_interval_nofail l =
           i_rec i i act_index rem in
   let inters = match sort_lambda_list l with
   | (i,act)::rem ->
-      low := i ;
       let act_index = store.act_store act in
       i_rec i i act_index rem
   | _ -> assert false in
-  Int !low, Int !high, Array.of_list inters, store.act_get ()
+  Array.of_list inters, store.act_get ()
 
 let as_interval fail low high l = match fail with
 | None -> as_interval_nofail l
 | Some act -> as_interval_canfail act low high l
 
 let call_switcher konst fail arg low high int_lambda_list =
-  let real_low, real_high, cases, actions =
+  let cases, actions =
     as_interval fail low high int_lambda_list in
-  Switcher.zyva
-    konst arg real_low real_high cases actions
+  Switcher.zyva konst arg cases actions
 
 
 let exists_ctx ok ctx =
@@ -1613,9 +1607,7 @@ let combine_constant arg cst partial ctx def
           List.map (function Const_int n, l -> n,l | _ -> assert false)
             const_lambda_list in
         call_switcher
-          lambda_of_int fail arg
-          Switch.TooMuch Switch.TooMuch
-          int_lambda_list
+          lambda_of_int fail arg min_int max_int int_lambda_list
     | Const_char _ ->
         let int_lambda_list =
           List.map (function Const_char c, l -> (Char.code c, l)
@@ -1623,9 +1615,7 @@ let combine_constant arg cst partial ctx def
             const_lambda_list in
         call_switcher
           (fun i -> Lconst (Const_base (Const_int i)))
-          fail arg
-          (Switch.Int 0) (Switch.Int 255)
-          int_lambda_list
+          fail arg 0 255 int_lambda_list
     | Const_string _ ->
         make_test_sequence
           fail prim_string_notequal Praise arg const_lambda_list
@@ -1702,12 +1692,10 @@ let combine_constructor arg ex_pat cstr partial ctx def
           with
           | (1, 1, [0, act1], [0, act2]) ->
               Lifthenelse(arg, act2, act1)
-          | n,0,_,[] ->
+          | (n,_,_,[])  ->
               call_switcher
                 (fun i -> Lconst (Const_base (Const_int i)))
-                None arg
-                (Switch.Int 0) (Switch.Int (n-1))
-                consts
+                None arg 0 (n-1) consts
           | (n, _, _, _) ->
               match same_actions nonconsts with
               | None ->
@@ -1722,21 +1710,28 @@ let combine_constructor arg ex_pat cstr partial ctx def
                      call_switcher
                        (fun i -> Lconst (Const_base (Const_int i)))
                        None arg
-                       (Switch.Int 0) (Switch.Int (n-1))
-                       consts,
+                       0 (n-1) consts,
                      act) in
     lambda1, jumps_union local_jumps total1
   end
 
 let make_test_sequence_variant_constant fail arg int_lambda_list =
-  make_test_sequence fail (Pintcomp Cneq) (Pintcomp Clt) arg
-                (List.map (fun (n, l) -> (Const_int n, l)) int_lambda_list)
+  let cases, actions =
+    as_interval fail min_int max_int int_lambda_list in
+  Switcher.test_sequence
+    (fun i -> Lconst (Const_base (Const_int i))) arg cases actions
 
-let make_test_sequence_variant_constr fail arg int_lambda_list =
+let call_switcher_variant_constant fail arg int_lambda_list =
+  call_switcher
+    (fun i -> Lconst (Const_base (Const_int i)))
+    fail arg min_int max_int int_lambda_list
+
+let call_switcher_variant_constr fail arg int_lambda_list =
   let v = Ident.create "variant" in
   Llet(Alias, v, Lprim(Pfield 0, [arg]),
-       make_test_sequence fail (Pintcomp Cneq) (Pintcomp Clt) (Lvar v)
-                (List.map (fun (n, l) -> (Const_int n, l)) int_lambda_list))
+       call_switcher
+         (fun i -> Lconst (Const_base (Const_int i)))
+         fail (Lvar v) min_int max_int int_lambda_list)
 
 let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
   let row = Btype.row_repr row in
@@ -1771,7 +1766,7 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
       | (_, []) -> (* One can compare integers and pointers *)
           make_test_sequence_variant_constant fail arg consts
       | ([], _) ->
-          let lam = make_test_sequence_variant_constr
+          let lam = call_switcher_variant_constr
                        fail arg nonconsts in
           (* One must not dereference integers *)
           begin match fail with
@@ -1780,10 +1775,10 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
           end
       | (_, _) ->
           let lam_const =
-            make_test_sequence_variant_constant
+            call_switcher_variant_constant
               fail arg consts
           and lam_nonconst =
-            make_test_sequence_variant_constr
+            call_switcher_variant_constr
               fail arg nonconsts in
           test_int_or_block arg lam_const lam_nonconst
   in
@@ -1801,8 +1796,7 @@ let combine_array arg kind partial ctx def
       call_switcher
         lambda_of_int
         fail (Lvar newvar)
-        (Switch.Int 0) Switch.TooMuch
-        len_lambda_list in
+        0 max_int len_lambda_list in
     bind
       Alias newvar (Lprim(Parraylength kind, [arg])) switch in
   lambda1, jumps_union local_jumps total1

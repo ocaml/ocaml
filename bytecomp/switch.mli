@@ -15,10 +15,6 @@
   of if tests and switches.
 *)
 
-(* integer plus infinity, for interval limits *)
-
-type iext = TooMuch | Int of int
-
 (* For detecting action sharing, object style *)
 
 type 'a t_store =
@@ -46,12 +42,13 @@ module type S =
     val make_offset : act -> int -> act
     val make_prim : primitive -> act list -> act
     val make_isout : act -> act -> act
+    val make_isin : act -> act -> act
     val make_if : act -> act -> act -> act
    (* construct an actual switch :
       make_switch arg cases acts
-      NB:  cases is in the interval form *)
+      NB:  cases is in the value form *)
     val make_switch :
-      act -> (int * int * int) array -> act array -> act
+        act -> int array -> act array -> act
   end
 
 
@@ -61,7 +58,7 @@ module type S =
     - arg is the argument of the switch.
     - low, high are the interval limits.
     - cases is a list of sub-interval and action indices
-    - action is an array of actions.
+    - actions is an array of actions.
 
   All these arguments specify a switch construct and zyva
   returns an action that performs the switch,
@@ -72,7 +69,12 @@ module Make :
       val zyva :
           (int -> Arg.act) ->
            Arg.act ->
-           iext -> iext ->
+           (int * int * int) array ->
+           Arg.act array ->
+           Arg.act
+     val test_sequence :
+          (int -> Arg.act) ->
+           Arg.act ->
            (int * int * int) array ->
            Arg.act array ->
            Arg.act
