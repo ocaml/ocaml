@@ -36,9 +36,9 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      using uppercase letters.
    - [o]: convert an integer argument to unsigned octal.
    - [s]: insert a string argument.
-   - [S]: insert a string argument as a valid Objective Caml lexical unit.
+   - [S]: insert a string argument in Caml syntax (double quotes, escapes).
    - [c]: insert a character argument.
-   - [C]: insert a character argument as a valid Objective Caml lexical unit.
+   - [C]: insert a character argument in Caml syntax (single quotes, escapes).
    - [f]: convert a floating-point argument to decimal notation,
      in the style [dddd.ddd].
    - [e] or [E]: convert a floating-point argument to decimal notation,

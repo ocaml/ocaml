@@ -50,16 +50,15 @@ external mul : int64 -> int64 -> int64 = "%int64_mul"
 
 external div : int64 -> int64 -> int64 = "%int64_div"
 (** Integer division.  Raise [Division_by_zero] if the second 
-   argument is zero. *)
+   argument is zero.  This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
 
 external rem : int64 -> int64 -> int64 = "%int64_mod"
-(** Integer remainder.  If [x >= 0] and [y > 0], the result
+(** Integer remainder.  If [y] is not zero, the result
    of [Int64.rem x y] satisfies the following properties:
-   [0 <= Int64.rem x y < y] and
+   [Int64.zero <= Int64.rem x y < Int64.abs y] and
    [x = Int64.add (Int64.mul (Int64.div x y) y) (Int64.rem x y)].
-   If [y = 0], [Int64.rem x y] raises [Division_by_zero].
-   If [x < 0] or [y < 0], the result of [Int64.rem x y] is
-   not specified and depends on the platform. *)
+   If [y = 0], [Int64.rem x y] raises [Division_by_zero]. *)
 
 val succ : int64 -> int64
 (** Successor.  [Int64.succ x] is [Int64.add x Int64.one]. *)

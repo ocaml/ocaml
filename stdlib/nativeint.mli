@@ -53,16 +53,15 @@ external mul : nativeint -> nativeint -> nativeint = "%nativeint_mul"
 
 external div : nativeint -> nativeint -> nativeint = "%nativeint_div"
 (** Integer division.  Raise [Division_by_zero] if the second 
-   argument is zero. *)
+   argument is zero.  This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
 
 external rem : nativeint -> nativeint -> nativeint = "%nativeint_mod"
-(** Integer remainder.  If [x >= 0] and [y > 0], the result
+(** Integer remainder.  If [y] is not zero, the result
    of [Nativeint.rem x y] satisfies the following properties:
-   [0 <= Nativeint.rem x y < y] and
+   [Nativeint.zero <= Nativeint.rem x y < Nativeint.abs y] and
    [x = Nativeint.add (Nativeint.mul (Nativeint.div x y) y) (Nativeint.rem x y)].
-   If [y = 0], [Nativeint.rem x y] raises [Division_by_zero].
-   If [x < 0] or [y < 0], the result of [Nativeint.rem x y] is
-   not specified and depends on the platform. *)
+   If [y = 0], [Nativeint.rem x y] raises [Division_by_zero]. *)
 
 val succ : nativeint -> nativeint
 (** Successor.
