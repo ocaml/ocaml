@@ -166,6 +166,5 @@ L104:
 _raise_caml_exception:
         movl    4(%esp), %eax
         movl    _caml_exception_pointer, %esp
-        popl    %edx
         popl    _caml_exception_pointer
-        jmp     *%edx
+        ret
