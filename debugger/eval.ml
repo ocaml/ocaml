@@ -143,7 +143,7 @@ and find_label lbl env ty path tydesc pos = function
 open Format
 
 let report_error error =
-  open_hovbox 0;
+  open_box 0;
   begin match error with
     Unbound_identifier id ->
       print_string "Unbound identifier "; print_string (Ident.name id)

@@ -59,7 +59,7 @@ let show_current_event () =
       print_newline ();
       print_string "Program end.";
       print_newline ();
-      open_hovbox 0;
+      open_box 0;
       print_string "Uncaught exception:"; print_space();
       (*print_value (get_accu ()) type_exn;*)
       close_box();

@@ -113,7 +113,7 @@ let remove_printer lid =
 open Format
 
 let report_error error =
-  open_hovbox 0;
+  open_box 0;
   begin match error with
     Load_failure e ->
       print_string "Error during code loading:"; print_space();

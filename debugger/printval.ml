@@ -50,7 +50,7 @@ let print_exception obj =
     (Debugcom.marshal_obj(Debugcom.get_field (Debugcom.get_field obj 0) 0));
   let (tag, field) = Debugcom.get_obj obj in
   if Array.length field > 1 then begin
-    open_hovbox 1;
+    open_box 1;
     print_string "(";
     for i = 1 to Array.length field - 1 do
       if i > 1 then begin print_string ","; print_space() end;
@@ -149,8 +149,8 @@ let print_value max_depth obj ty env =
       | Ttuple(ty_list) ->
           if check_depth depth obj ty then begin
             if prio > 0
-            then begin open_hovbox 1; print_string "(" end
-            else open_hovbox 0;
+            then begin open_box 1; print_string "(" end
+            else open_box 0;
             print_val_list 1 depth obj ty_list;
             if prio > 0 then print_string ")";
             close_box()
@@ -158,8 +158,8 @@ let print_value max_depth obj ty env =
       | Tconstr(path, [], _) when Path.same path Predef.path_exn ->
           if check_depth depth obj ty then begin
             if prio > 1
-            then begin open_hovbox 2; print_string "(" end
-            else open_hovbox 1;
+            then begin open_box 2; print_string "(" end
+            else open_box 1;
             print_exception obj;
             if prio > 1 then print_string ")";
             close_box()
@@ -175,7 +175,7 @@ let print_value max_depth obj ty env =
                 print_string ";"; print_space();
                 print_conses next_obj
               end in
-            open_hovbox 1;
+            open_box 1;
             print_string "[";
             cautious print_conses obj;
             print_string "]";
@@ -192,7 +192,7 @@ let print_value max_depth obj ty env =
                 print_val 0 (depth - 1) fields.(i) ty_arg;
                 print_items (i + 1)
               end in
-            open_hovbox 2;
+            open_box 2;
             print_string "[|";
             cautious print_items 0;
             print_string "|]";
@@ -225,8 +225,8 @@ let print_value max_depth obj ty env =
                 | [ty1] ->
                     if check_depth depth obj ty then begin
                       if prio > 1
-                      then begin open_hovbox 2; print_string "(" end
-                      else open_hovbox 1;
+                      then begin open_box 2; print_string "(" end
+                      else open_box 1;
                       print_string constr_name;
                       print_space();
                       cautious
@@ -238,11 +238,11 @@ let print_value max_depth obj ty env =
                 | tyl ->
                     if check_depth depth obj ty then begin
                       if prio > 1
-                      then begin open_hovbox 2; print_string "(" end
-                      else open_hovbox 1;
+                      then begin open_box 2; print_string "(" end
+                      else open_box 1;
                       print_string constr_name;
                       print_space();
-                      open_hovbox 1;
+                      open_box 1;
                       print_string "(";
                       print_val_list 1 depth obj tyl;
                       print_string ")";
@@ -259,7 +259,7 @@ let print_value max_depth obj ty env =
                       if pos > 0 then begin
                         print_string ";"; print_space()
                       end;
-                      open_hovbox 1;
+                      open_box 1;
                       print_string lbl_name;
                       print_string "="; print_cut();
                       let ty_arg =
@@ -270,7 +270,7 @@ let print_value max_depth obj ty env =
                         ty_arg;
                       close_box();
                       print_fields (pos + 1) remainder in
-                  open_hovbox 1;
+                  open_box 1;
                   print_string "{";
                   cautious (print_fields 0) lbl_list;
                   print_string "}";
@@ -299,7 +299,7 @@ let print_value max_depth obj ty env =
 in print_val 0 max_depth obj ty
 
 let print_named_value max_depth exp obj ty env =
-  open_hovbox 2;
+  open_box 2;
   begin match exp with
     E_ident lid ->
       Printtyp.longident lid
