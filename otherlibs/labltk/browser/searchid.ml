@@ -232,7 +232,7 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
             List.exists l ~f:(fun (_, l) -> List.exists l ~f:matches)
           | Type_record(l, rep) ->
             List.exists l ~f:(fun (_, _, t) -> matches t)
-          | Type_virtual tkind -> search_tkind tkind in
+          | Type_private tkind -> search_tkind tkind in
           search_tkind td.type_kind
           then [lid_of_id id, Ptype] else []
       | Tsig_exception (id, l) ->

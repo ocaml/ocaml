@@ -185,7 +185,7 @@ let bigarray_set arr arg newval =
                         "", newval]))
 
 let mktype_kind pflag kind =
-  if pflag = Private && kind != Ptype_abstract then Ptype_virtual kind else kind
+  if pflag = Private && kind != Ptype_abstract then Ptype_private kind else kind
 
 %}
 

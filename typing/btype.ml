@@ -255,7 +255,7 @@ let unmark_type_decl decl =
       List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
   | Type_record(lbls, rep) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
-  | Type_virtual tkind -> unmark_tkind tkind in
+  | Type_private tkind -> unmark_tkind tkind in
   unmark_tkind decl.type_kind;
   begin match decl.type_manifest with
     None    -> ()

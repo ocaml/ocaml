@@ -320,7 +320,9 @@ and type_kind i ppf x =
   | Ptype_record (l) ->
       line i ppf "Ptype_record\n";
       list (i+1) string_x_mutable_flag_x_core_type ppf l;
-  | Ptype_virtual x -> type_kind i ppf x
+  | Ptype_private x ->
+      line i ppf "Ptype_private\n";
+      type_kind (i + 1) ppf x
 
 and exception_declaration i ppf x = list i core_type ppf x
 

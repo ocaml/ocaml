@@ -140,7 +140,7 @@ let transl_declaration env (name, sdecl) id =
               then Record_float
               else Record_regular in
             Type_record(lbls', rep)
-        | Ptype_virtual kind -> Type_virtual (get_tkind kind) in
+        | Ptype_private kind -> Type_private (get_tkind kind) in
         get_tkind sdecl.ptype_kind
       end;
       type_manifest =
@@ -170,17 +170,17 @@ let transl_declaration env (name, sdecl) id =
 let generalize_decl decl =
   List.iter Ctype.generalize decl.type_params;
   let rec gen = function
-    Type_abstract ->
+  | Type_abstract ->
       ()
   | Type_variant v ->
       List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
   | Type_record(r, rep) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
-  | Type_virtual tkind ->
+  | Type_private tkind ->
       gen tkind in
   gen decl.type_kind;
   begin match decl.type_manifest with
-    None    -> ()
+  | None    -> ()
   | Some ty -> Ctype.generalize ty
   end
 
@@ -225,7 +225,7 @@ let check_constraints env (_, sdecl) (_, decl) =
   | Type_variant l ->
       let rec find_pl = function
           Ptype_variant pl -> pl
-        | Ptype_virtual tkind -> find_pl tkind
+        | Ptype_private tkind -> find_pl tkind
         | Ptype_record _ | Ptype_abstract -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
@@ -239,7 +239,7 @@ let check_constraints env (_, sdecl) (_, decl) =
   | Type_record (l, _) ->
       let rec find_pl = function
           Ptype_record pl -> pl
-        | Ptype_virtual tkind -> find_pl tkind
+        | Ptype_private tkind -> find_pl tkind
         | Ptype_variant _ | Ptype_abstract -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
@@ -252,7 +252,7 @@ let check_constraints env (_, sdecl) (_, decl) =
         (fun (name, _, ty) ->
           check_constraints_rec env (get_loc name pl) visited ty)
         l
-  | Type_virtual tkind -> check tkind in
+  | Type_private tkind -> check tkind in
   check decl.type_kind;
   begin match decl.type_manifest with
   | None -> ()
@@ -431,7 +431,7 @@ let compute_variance_decl env decl (required, loc) =
       List.iter
         (fun (_, mut, ty) -> compute_variance env tvl true (mut = Mutable) ty)
         ftl
-  | Type_virtual tkind -> variance_tkind tkind in
+  | Type_private tkind -> variance_tkind tkind in
   variance_tkind decl.type_kind;
   List.map2
     (fun (_, co, cn) (c, n) ->

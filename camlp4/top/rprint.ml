@@ -170,18 +170,18 @@ and print_simple_out_type ppf =
   | Otyp_manifest ty1 ty2 ->
       fprintf ppf "@[<2>%a ==@ %a@]" print_out_type ty1 print_out_type ty2
   | Otyp_sum constrs ->
-      fprintf ppf "@[<hv>%a[ %a ]@]" print_virtual v
+      fprintf ppf "@[<hv>%a[ %a ]@]" print_private v
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
   | Otyp_record lbls ->
-      fprintf ppf "@[<hv 2>%a{ %a }@]" print_virtual v
+      fprintf ppf "@[<hv 2>%a{ %a }@]" print_private v
         (print_list print_out_label (fun ppf -> fprintf ppf ";@ ")) lbls
-  | Otyp_virtual tk -> print_tkind True ppf tk
+  | Otyp_private tk -> print_tkind True ppf tk
   | Otyp_abstract -> fprintf ppf "'abstract"
   | Otyp_alias _ _ | Otyp_poly _ _
   | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty ]
-  and print_virtual ppf v =
-     if v then fprintf ppf "virtual " else ()
+  and print_private ppf v =
+     if v then fprintf ppf "private " else ()
   in
   print_tkind False ppf
 and print_out_constr ppf (name, tyl) =

@@ -169,7 +169,7 @@ and print_simple_out_type ppf =
         print_fields row_fields print_present tags
   | Otyp_alias _ _ | Otyp_arrow _ _ _ | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
-  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_virtual _
+  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_private _
   | Otyp_manifest _ _ -> () ]
 and print_fields rest ppf =
   fun

@@ -156,7 +156,7 @@ let type_declaration s decl =
       type_kind =
         begin
         let rec kind_of_tkind = function
-          Type_abstract -> Type_abstract
+        | Type_abstract -> Type_abstract
         | Type_variant cstrs ->
             Type_variant(
               List.map (fun (n, args) -> (n, List.map (typexp s) args))
@@ -166,7 +166,7 @@ let type_declaration s decl =
               List.map (fun (n, mut, arg) -> (n, mut, typexp s arg))
                        lbls,
               rep)
-        | Type_virtual tkind -> Type_virtual (kind_of_tkind tkind) in
+        | Type_private tkind -> Type_private (kind_of_tkind tkind) in
         kind_of_tkind decl.type_kind
         end;
       type_manifest =

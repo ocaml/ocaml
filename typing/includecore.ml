@@ -58,8 +58,8 @@ let type_declarations env id decl1 decl2 =
             Ctype.equal env true (ty1::decl1.type_params)
                                  (ty2::decl2.type_params))
           labels1 labels2
-    | (Type_virtual tkind1, Type_virtual tkind2) -> incl_tkinds (tkind1, tkind2)
-    | (tkind1, Type_virtual tkind2) -> incl_tkinds (tkind1, tkind2)
+    | (Type_private tkind1, Type_private tkind2) -> incl_tkinds (tkind1, tkind2)
+    | (tkind1, Type_private tkind2) -> incl_tkinds (tkind1, tkind2)
     | (_, _) -> false in
   incl_tkinds (decl1.type_kind, decl2.type_kind)
   &&

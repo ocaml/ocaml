@@ -55,7 +55,7 @@ type out_type =
   | Otyp_record of (string * bool * out_type) list
   | Otyp_stuff of string
   | Otyp_sum of (string * out_type list) list
-  | Otyp_virtual of out_type
+  | Otyp_private of out_type
   | Otyp_tuple of out_type list
   | Otyp_var of bool * string
   | Otyp_variant of

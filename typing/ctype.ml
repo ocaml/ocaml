@@ -429,7 +429,7 @@ let closed_type_decl decl =
         List.iter (fun (_, tyl) -> List.iter closed_type tyl) v
     | Type_record(r, rep) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
-    | Type_virtual tkind -> closed_tkind tkind in
+    | Type_private tkind -> closed_tkind tkind in
     closed_tkind decl.type_kind;
     begin match decl.type_manifest with
       None    -> ()
@@ -3073,7 +3073,7 @@ let nondep_type_decl env mid id is_covariant decl =
                     (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
                     lbls,
                   rep)
-            | Type_virtual tkind -> Type_virtual (kind_of_tkind tkind) in
+            | Type_private tkind -> Type_private (kind_of_tkind tkind) in
             kind_of_tkind decl.type_kind
           with Not_found when is_covariant ->
             Type_abstract
@@ -3098,7 +3098,7 @@ let nondep_type_decl env mid id is_covariant decl =
         List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
     | Type_record(lbls, rep) ->
         List.iter (fun (c, mut, t) -> unmark_type t) lbls
-    | Type_virtual tkind -> unmark_tkind tkind in
+    | Type_private tkind -> unmark_tkind tkind in
     unmark_tkind decl.type_kind;
     begin match decl.type_manifest with
       None    -> ()

@@ -172,7 +172,7 @@ let search_pos_type_decl td ~pos ~env =
           ~f:(fun (_, tl) -> List.iter tl ~f:(search_pos_type ~pos ~env))
     | Ptype_record dl ->
         List.iter dl ~f:(fun (_, _, t) -> search_pos_type t ~pos ~env)
-    | Ptype_virtual tkind -> search_tkind tkind in
+    | Ptype_private tkind -> search_tkind tkind in
     search_tkind td.ptype_kind;
     List.iter td.ptype_cstrs ~f:
       begin fun (t1, t2, _) ->

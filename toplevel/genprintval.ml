@@ -277,7 +277,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                         in
                         Oval_record (tree_of_fields 0 lbl_list)
                     end
-                | {type_kind = Type_virtual tkind} ->
+                | {type_kind = Type_private tkind} ->
                     tree_decl {decl with type_kind = tkind} in
                 tree_decl decl
               with

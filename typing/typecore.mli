@@ -79,8 +79,8 @@ type error =
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t
   | Virtual_class of Longident.t
-  | Virtual_type of string
-  | Virtual_type_setfield of Longident.t * string
+  | Private_type of string
+  | Private_type_setfield of Longident.t * string
   | Unbound_instance_variable of string
   | Instance_variable_not_mutable of string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list

@@ -73,7 +73,7 @@ let add_type_declaration bv td =
       List.iter (fun (c, args) -> List.iter (add_type bv) args) cstrs
   | Ptype_record lbls ->
       List.iter (fun (l, mut, ty) -> add_type bv ty) lbls
-  | Ptype_virtual tkind -> add_tkind tkind in
+  | Ptype_private tkind -> add_tkind tkind in
   add_tkind td.ptype_kind
 
 let rec add_class_type bv cty =

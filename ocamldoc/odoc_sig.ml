@@ -236,7 +236,7 @@ module Analyser =
           in
           (0, f name_mutable_type_list)
 
-      | Parsetree.Ptype_virtual tkind -> comment_from_tkind tkind in
+      | Parsetree.Ptype_private tkind -> comment_from_tkind tkind in
 
      comment_from_tkind tk
 
@@ -280,7 +280,7 @@ module Analyser =
           in
           Odoc_type.Type_record (List.map f l)
 
-      | Types.Type_virtual tkind -> get_tkind tkind in
+      | Types.Type_private tkind -> get_tkind tkind in
 
      get_tkind type_kind
 
