@@ -309,6 +309,81 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
    XXX Il devrait etre peu couteux d'ecrire des classes :
      class c x y = d e f
 *)
+let rec transl_class_rebind obj_init cl =
+  match cl.cl_desc with
+    Tclass_ident path ->
+      (path, obj_init)
+  | Tclass_fun (pat, _, cl, partial) ->
+      let path, obj_init = transl_class_rebind obj_init cl in
+      let build params rem =
+        let param = name_pattern "param" [pat, ()] in
+        Lfunction (Curried, param::params,
+                   Matching.for_function
+                     pat.pat_loc None (Lvar param) [pat, rem] partial)
+      in
+      (path,
+       match obj_init with
+         Lfunction (Curried, params, rem) -> build params rem
+       | rem                              -> build [] rem)
+  | Tclass_apply (cl, oexprs) ->
+      let path, obj_init = transl_class_rebind obj_init cl in
+      (path, transl_apply obj_init oexprs)
+  | Tclass_let (rec_flag, defs, vals, cl) ->
+      let path, obj_init = transl_class_rebind obj_init cl in
+      (path, Translcore.transl_let rec_flag defs obj_init)
+  | Tclass_structure _ -> raise Exit
+  | Tclass_constraint (cl', _, _, _) ->
+      let path, obj_init = transl_class_rebind obj_init cl' in
+      let rec check_constraint = function
+          Tcty_constr(path', _, _) when Path.same path path' -> ()
+        | Tcty_fun (_, _, cty) -> check_constraint cty
+        | _ -> raise Exit
+      in
+      check_constraint cl.cl_type;
+      (path, obj_init)
+
+let rec transl_class_rebind_0 self obj_init cl =
+  match cl.cl_desc with
+    Tclass_let (rec_flag, defs, vals, cl) ->
+      let path, obj_init = transl_class_rebind_0 self obj_init cl in
+      (path, Translcore.transl_let rec_flag defs obj_init)
+  | _ ->
+      let path, obj_init = transl_class_rebind obj_init cl in
+      (path, lfunction [self] obj_init)
+
+let transl_class_rebind ids cl =
+  try
+    let obj_init = Ident.create "obj_init"
+    and self = Ident.create "self" in
+    let obj_init0 = lapply (Lvar obj_init) [Lvar self] in
+    let path, obj_init' = transl_class_rebind_0 self obj_init0 cl in
+    if not (Translcore.check_recursive_lambda ids obj_init') then
+      raise(Error(cl.cl_loc, Illegal_class_expr));
+    if obj_init' = lfunction [self] obj_init0 then transl_path path else
+
+    let cla = Ident.create "class"
+    and new_init = Ident.create "new_init"
+    and arg = Ident.create "arg"
+    and env_init = Ident.create "env_init"
+    and table = Ident.create "table"
+    and envs = Ident.create "envs" in
+    Llet(
+    Strict, new_init, lfunction [obj_init] obj_init',
+    Llet(
+    Alias, cla, transl_path path,
+    Lprim(Pmakeblock(0, Immutable),
+          [Lapply(Lvar new_init, [Lprim(Pfield 0, [Lvar cla])]);
+           lfunction [table]
+             (Llet(Strict, env_init,
+                   Lapply(Lprim(Pfield 1, [Lvar cla]), [Lvar table]),
+                   lfunction [envs]
+                     (Lapply(Lvar new_init,
+                             [Lapply(Lvar env_init, [Lvar envs])]))));
+           Lprim(Pfield 2, [Lvar cla]);
+           Lprim(Pfield 3, [Lvar cla])])))
+  with Exit ->
+    lambda_unit
+
 (*
    XXX
    Exploiter le fait que les methodes sont definies dans l'ordre pour
@@ -318,6 +393,11 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
 
 
 let transl_class ids cl_id arity pub_meths cl =
+  (* First check if it is not only a rebind *)
+  let rebind = transl_class_rebind ids cl in
+  if rebind <> lambda_unit then rebind else
+
+  (* Prepare for heavy environment handling *)
   let tables = Ident.create (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
   let top = not req in
@@ -361,6 +441,7 @@ let transl_class ids cl_id arity pub_meths cl =
 	 subst_lambda (subst env1 lam 1 new_ids_init) lam)
   in
 
+  (* Now we start compiling the class *)
   let cla = Ident.create "class" in
   let (inh_init, obj_init) =
     build_object_init_0 cla [] cl copy_env subst_env top ids in
@@ -382,7 +463,7 @@ let transl_class ids cl_id arity pub_meths cl =
          Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
                    Lapply(Lvar obj_init, [lambda_unit])))
   in
-  (* simplification when we are an object (indicated by ids=[]) *)
+  (* Simplest case: an object defined at toplevel (ids=[]) *)
   if top && ids = [] then ltable cla (ldirect obj_init) else
 
   let lclass lam =
@@ -396,8 +477,10 @@ let transl_class ids cl_id arity pub_meths cl =
                           Lvar table;
                           lambda_unit])))
   in
+  (* Still easy: a class defined at toplevel *)
   if top then ltable table (lclass (lbody obj_init)) else
 
+  (* Now for the hard stuff: prepare for table cacheing *)
   let env_index = Ident.create "env_index"
   and envs = Ident.create "envs" in
   let lenvs =
