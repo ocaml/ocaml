@@ -73,14 +73,12 @@ let add_const c n =
 
 let incr_int = function
     Cconst_int n when n < max_int -> Cconst_int(n+1)
-  | Cop(Caddi, [c; Cconst_int n]) when n < max_int ->
-      if n = -1 then c else add_const c (n + 1)
+  | Cop(Caddi, [c; Cconst_int n]) when n < max_int -> add_const c (n + 1)
   | c -> add_const c 1
 
 let decr_int = function
     Cconst_int n when n > min_int -> Cconst_int(n-1)
-  | Cop(Caddi, [c; Cconst_int n]) when n > min_int ->
-      if n = 1 then c else add_const c (n - 1)
+  | Cop(Caddi, [c; Cconst_int n]) when n > min_int -> add_const c (n - 1)
   | c -> add_const c (-1)
 
 let add_int c1 c2 =
@@ -118,7 +116,18 @@ let tag_int = function
 let untag_int = function
     Cconst_int n -> Cconst_int(n asr 1)
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) -> c
+  | Cop(Cor, [Cop(Casr, [c; Cconst_int n]); Cconst_int 1]) ->
+      Cop(Casr, [c; Cconst_int (n+1)])
+  | Cop(Cor, [c; Cconst_int 1]) -> Cop(Casr, [c; Cconst_int 1])
   | c -> Cop(Casr, [c; Cconst_int 1])
+
+let lsl_int c1 c2 =
+  match (c1, c2) with
+    (Cop(Clsl, [c; Cconst_int n1]), Cconst_int n2)
+    when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
+      Cop(Clsl, [c; Cconst_int (n1 + n2)])
+  | (_, _) ->
+      Cop(Clsl, [c1; c2])
 
 (* Bool *)
 
@@ -547,13 +556,13 @@ let rec transl = function
   | Uprim(Pxorint, [arg1; arg2]) ->
       incr_int(Cop(Cxor, [transl arg1; transl arg2]))
   | Uprim(Plslint, [arg1; arg2]) ->
-      incr_int(Cop(Clsl, [decr_int(transl arg1); untag_int(transl arg2)]))
+      incr_int(lsl_int (decr_int(transl arg1)) (untag_int(transl arg2)))
   | Uprim(Plsrint, [arg1; arg2]) ->
       Cop(Cor, [Cop(Clsr, [transl arg1; untag_int(transl arg2)]);
-                 Cconst_int 1])
+                Cconst_int 1])
   | Uprim(Pasrint, [arg1; arg2]) ->
       Cop(Cor, [Cop(Casr, [transl arg1; untag_int(transl arg2)]);
-                 Cconst_int 1])
+                Cconst_int 1])
   | Uprim(Pintcomp cmp, [arg1; arg2]) ->
       tag_int(Cop(Ccmpi(transl_comparison cmp), [transl arg1; transl arg2]))
   | Uprim(Poffsetint n, [arg]) ->
