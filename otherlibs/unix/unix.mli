@@ -517,10 +517,7 @@ val create_process :
    and causes the new process to have the same standard output
    as the current process.
    The executable file [prog] is searched in the path.
-   The new process has the same environment as the current process.
-   All file descriptors of the current process are closed in the
-   new process, except those redirected to standard input and
-   outputs. *)
+   The new process has the same environment as the current process. *)
 
 val create_process_env :
   string -> string array -> string array -> file_descr -> file_descr ->
@@ -531,26 +528,31 @@ val create_process_env :
 
 
 val open_process_in : string -> in_channel
-(** High-level pipe and process management. These functions
-   (with {!Unix.open_process_out} and {!Unix.open_process})
-   run the given command in parallel with the program,
-   and return channels connected to the standard input and/or
-   the standard output of the command. The command is interpreted
-   by the shell [/bin/sh] (cf. [system]). Warning: writes on channels
-   are buffered, hence be careful to call {!Pervasives.flush} at the right times
-   to ensure correct synchronization. *)
+(** High-level pipe and process management. This function
+   runs the given command in parallel with the program.
+   The standard output of the command is redirected to a pipe,
+   which can be read via the returned input channel.
+   The command is interpreted by the shell [/bin/sh] (cf. [system]). *)
 
 val open_process_out : string -> out_channel
-(** See {!Unix.open_process_in}. *)
+(** Same as {!Unix.open_process_in}, but redirect the standard input of
+   the command to a pipe.  Data written to the returned output channel
+   is sent to the standard input of the command.
+   Warning: writes on output channels are buffered, hence be careful
+   to call {!Pervasives.flush} at the right times to ensure
+   correct synchronization. *)
 
 val open_process : string -> in_channel * out_channel
-(** See {!Unix.open_process_in}. *)
+(** Same as {!Unix.open_process_out}, but redirects both the standard input
+   and standard output of the command to pipes connected to the two
+   returned channels.  The input channel is connected to the output
+   of the command, and the output channel to the input of the command. *)
 
 val open_process_full :
   string -> string array -> in_channel * out_channel * in_channel
 (** Similar to {!Unix.open_process}, but the second argument specifies
    the environment passed to the command.  The result is a triple
-   of channels connected to the standard output, standard input,
+   of channels connected respectively to the standard output, standard input,
    and standard error of the command. *)
 
 val close_process_in : in_channel -> process_status
