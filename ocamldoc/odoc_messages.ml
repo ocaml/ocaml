@@ -179,7 +179,7 @@ let bad_magic_number =
   "This dump was not created by this version of OCamldoc."
 
 let not_a_module_name s = s^" is not a valid module name"
-let load_file_error f e = "Error while loading file "^f^":\n"^e^"\n"
+let load_file_error f e = "Error while loading file "^f^":\n"^e
 let wrong_format s = "Wrong format for \""^s^"\""
 let errors_occured n = (string_of_int n)^" error(s) encountered"
 let parse_error = "Parse error"
@@ -191,7 +191,7 @@ let text_parse_error l c s =
   (String.make c ' ')^"^"
 
 let file_not_found_in_paths paths name =
-  Printf.sprintf "No file %s was found in the load paths: \n%s\n"
+  Printf.sprintf "No file %s found in the load paths: \n%s"
     name
     (String.concat "\n" paths)
 
