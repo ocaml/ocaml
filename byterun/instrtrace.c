@@ -176,4 +176,96 @@ caml_instr_string (code_t pc)
   return buf;
 }
 
+
+void
+caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
+{
+  int i;
+  fprintf (f, "%#lx", v);
+  if (!v)
+    return;
+  if (Is_atom (v))
+    fprintf (f, "=atom%ld", v - Atom (0));
+  else if (prog && v % sizeof (int) == 0
+	   && (code_t) v >= prog
+	   && (code_t) v < (code_t) ((char *) prog + proglen))
+    fprintf (f, "=code@%d", (code_t) v - prog);
+  else if (Is_long (v))
+    fprintf (f, "=long%ld", Long_val (v));
+  else if ((void*)v >= (void*)caml_stack_low 
+	   && (void*)v < (void*)caml_stack_high)
+    fprintf (f, "=stack_%d", (long*)caml_stack_high - (long*)v);
+  else if (Is_block (v)) {
+    int s = Wosize_val (v);
+    int tg = Tag_val (v);
+    int l = 0;
+    switch (tg) {
+    case Closure_tag:
+      fprintf (f, "=closure[s%d,cod%d]", s, (code_t) (Code_val (v)) - prog);
+      goto displayfields;
+    case String_tag:
+      l = caml_string_length (v);
+      fprintf (f, "=string[s%dL%d]'", s, l);
+      for (i = 0; i < ((l>0x1f)?0x1f:l) ; i++) {
+	if (isprint (Byte (v, i)))
+	  putc (Byte (v, i), f);
+	else
+	  putc ('?', f);
+      };
+      fprintf (f, "'");
+      goto displayfields;
+    case Double_tag:
+      fprintf (f, "=float[s%d]=%g", s, Double_val (v));
+      goto displayfields;
+    case Double_array_tag:
+      fprintf (f, "=floatarray[s%d]", s);
+      for (i = 0; i < ((s>0xf)?0xf:s); i++)
+	fprintf (f, " %g", Double_field (v, i));
+      goto displayfields;
+    case Abstract_tag:
+      fprintf (f, "=abstract[s%d]", s);
+      goto displayfields;
+    case Custom_tag:
+      fprintf (f, "=custom[s%d]", s);
+      goto displayfields;
+    default:
+      fprintf (f, "=block<T%d/s%d>", tg, s);
+    displayfields:
+      if (s > 0)
+	fputs ("=(", f);
+      for (i = 0; i < s; i++) {
+	if (i > 20) {
+	  fputs ("....", f);
+	  break;
+	};
+	if (i > 0)
+	  putc (' ', f);
+	fprintf (f, "%#lx", Field (v, i));
+      };
+      if (s > 0)
+	putc (')', f);
+    };
+  }
+}
+
+// added by Basile
+void
+caml_trace_accu_sp_file (value accu, value * sp, code_t prog, int proglen,
+			 FILE * f)
+{
+  int i;
+  value *p;
+  fprintf (f, "accu=");
+  caml_trace_value_file (accu, prog, proglen, f);
+  fprintf (f, "\n sp=%#lx @%d:", (long) sp, caml_stack_high - sp);
+  for (p = sp, i = 0; i < 12 + (1 << caml_trace_flag) && p < caml_stack_high;
+       p++, i++) {
+    fprintf (f, "\n[%d] ", caml_stack_high - p);
+    caml_trace_value_file (*p, prog, proglen, f);
+  };
+  putc ('\n', f);
+  fflush (f);
+}
+
 #endif /* DEBUG */
+/* eof $Id$ */
