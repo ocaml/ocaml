@@ -497,4 +497,4 @@ let set_formatter_output os =
   current_output.flush_function <- (fun () -> flush os)
 
 (* Initialize the formatter *)
-let _ = pp_rinit()
+let _ = pp_rinit(); at_exit print_flush
