@@ -45,10 +45,10 @@ typedef char * addr;
 /* Assertions */
 
 #ifdef DEBUG
-#define Assert(x) if (!(x)) failed_assert ( #x , __FILE__, __LINE__)
-void failed_assert (char *, char *, int) Noreturn;
+#define CAMLassert(x) if (!(x)) caml_failed_assert ( #x , __FILE__, __LINE__)
+void caml_failed_assert (char *, char *, int) Noreturn;
 #else
-#define Assert(x)
+#define CAMLassert(x)
 #endif
 
 void fatal_error (char *) Noreturn;
@@ -93,6 +93,11 @@ char *aligned_malloc (asize_t, int, void **);
 #define Debug_uninit_stat    Debug_tag (0x12)
 #define Debug_uninit_align   Debug_tag (0x15)
 #define Debug_filler_align   Debug_tag (0x85)
+#endif
+
+
+#ifndef CAML_AVOID_CONFLICTS
+#define Assert CAMLassert
 #endif
 
 

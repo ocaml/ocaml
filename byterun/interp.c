@@ -737,7 +737,8 @@ value interprete(code_t prog, asize_t prog_size)
       uint32 sizes = *pc++;
       if (Is_block(accu)) {
         long index = Tag_val(accu);
-        Assert(index >= 0 && index < (sizes >> 16));
+        Assert (index >= 0);
+        Assert (index < (sizes >> 16));
         pc += pc[(sizes & 0xFFFF) + index];
       } else {
         long index = Long_val(accu);

@@ -216,17 +216,20 @@ void debugger(enum event_kind event)
     switch(getch(dbg_in)) {
     case REQ_SET_EVENT:
       pos = getword(dbg_in);
-      Assert(pos >= 0 && pos < code_size);
+      Assert (pos >= 0);
+      Assert (pos < code_size);
       set_instruction(start_code + pos / sizeof(opcode_t), EVENT);
       break;
     case REQ_SET_BREAKPOINT:
       pos = getword(dbg_in);
-      Assert(pos >= 0 && pos < code_size);
+      Assert (pos >= 0);
+      Assert (pos < code_size);
       set_instruction(start_code + pos / sizeof(opcode_t), BREAK);
       break;
     case REQ_RESET_INSTR:
       pos = getword(dbg_in);
-      Assert(pos >= 0 && pos < code_size);
+      Assert (pos >= 0);
+      Assert (pos < code_size);
       pos = pos / sizeof(opcode_t);
       set_instruction(start_code + pos, saved_code[pos]);
       break;

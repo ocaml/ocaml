@@ -47,7 +47,8 @@ extern unsigned long percent_max;     /*        see compact.c */
 /* Check that [v]'s header looks good.  [v] must be a block in the heap. */
 static void check_head (value v)
 {
-  Assert (Is_block (v) && Is_in_heap (v));
+  Assert (Is_block (v));
+  Assert (Is_in_heap (v));
 
   Assert (Wosize_val (v) != 0);
   Assert (Color_hd (Hd_val (v)) != Caml_blue);
@@ -83,7 +84,8 @@ static void check_block (char *hp)
     /* not true when check_urgent_gc is called by alloc or alloc_string:
        lastbyte = Bosize_val (v) - 1;
        i = Byte (v, lastbyte);
-       Assert (i >= 0 && i < sizeof (value));
+       Assert (i >= 0);
+       Assert (i < sizeof (value));
        Assert (Byte (v, lastbyte - i) == 0);
     */
     break;

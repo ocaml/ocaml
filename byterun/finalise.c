@@ -45,7 +45,8 @@ void final_update (void)
   Assert (young == old);
   Assert (young <= active);
   for (i = 0; i < old; i++){
-    Assert (Is_block (final_table[i].val) && Is_in_heap (final_table[i].val));
+    Assert (Is_block (final_table[i].val));
+    Assert (Is_in_heap (final_table[i].val));
     if (Is_white_val (final_table[i].val)){
       struct final f = final_table[i];
       final_table[i] = final_table[--old];
@@ -147,7 +148,8 @@ value final_register (value f, value v)       /* ML */
     if (final_table == NULL){
       unsigned long new_size = 30;
       final_table = stat_alloc (new_size * sizeof (struct final));
-      Assert (old == 0 && young == 0);
+      Assert (old == 0);
+      Assert (young == 0);
       active = size = new_size;
     }else{
       unsigned long new_size = size * 2;

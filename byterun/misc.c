@@ -21,7 +21,7 @@
 
 #ifdef DEBUG
 
-void failed_assert (char * expr, char * file, int line)
+void caml_failed_assert (char * expr, char * file, int line)
 {
   fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
            file, line, expr);
@@ -148,7 +148,7 @@ char *aligned_malloc (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
   unsigned long aligned_mem;
-                                                 Assert (modulo < Page_size);
+                                                  Assert (modulo < Page_size);
   raw_mem = (char *) malloc (size + Page_size);
   if (raw_mem == NULL) return NULL;
   *block = raw_mem;

@@ -181,7 +181,9 @@ static void intern_rec(value *dest)
       case CODE_SHARED8:
         ofs = read8u();
       read_shared:
-        Assert(ofs > 0 && ofs <= obj_counter && intern_obj_table != NULL); 
+        Assert (ofs > 0);
+        Assert (ofs <= obj_counter);
+        Assert (intern_obj_table != NULL); 
         v = intern_obj_table[obj_counter - ofs];
         break;
       case CODE_SHARED16:
