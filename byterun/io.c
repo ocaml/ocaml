@@ -376,10 +376,17 @@ static void finalize_channel(value vchan)
   stat_free(chan);
 }
 
+static int compare_channel(value vchan1, value vchan2)
+{
+  struct channel * chan1 = Channel(vchan1);
+  struct channel * chan2 = Channel(vchan2);
+  return (chan1 == chan2) ? 0 : (chan1 < chan2) ? -1 : 1;
+}
+
 static struct custom_operations channel_operations = {
   "_chan",
   finalize_channel,
-  custom_compare_default,
+  compare_channel,
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default
