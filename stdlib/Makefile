@@ -26,7 +26,8 @@ install:
 
 installopt:
 	cp stdlib.cmxa stdlib.a std_exit.o *.cmx $(LIBDIR)
-	cd $(LIBDIR); $(RANLIB) stdlib.a
+	cp stdlib.p.cmxa stdlib.p.a std_exit.p.o $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) stdlib.a; $(RANLIB) stdlib.p.a
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
