@@ -190,11 +190,16 @@ let new_method met =
 
 (**** Sparse array ****)
 
+module Vars = Map.Make(struct type t = string let compare = compare end)
+type vars = int Vars.t
+
 type obj_init
 type table =
  { mutable buckets: bucket array;
    mutable methods: (label * item) list;
-   mutable vars: (string * int ref) list;
+   mutable vars: vars;
+   mutable saved_vars: vars list;
+   mutable saved_var_lst: int option list;
    mutable size: int;
    mutable init: obj_init list list }
 
@@ -206,7 +211,9 @@ let new_table () =
   incr table_count;
   { buckets = [| |];
     methods = [];
-    vars = [];
+    vars = Vars.empty;
+    saved_vars = [];
+    saved_var_lst = [];
     size = initial_size;
     init = [[]; []]}
 
@@ -215,6 +222,8 @@ let copy_table array1 array2 =
   array1.buckets <- Array.copy array2.buckets;
   array1.methods <- array2.methods;
   array1.vars <- array2.vars;
+  array1.saved_vars <- [];
+  array1.saved_var_lst <- array1.saved_var_lst;
   array1.size <- array2.size;
   array1.init <- array2.init
 
@@ -269,7 +278,7 @@ let set_initializer table init =
   | _ ->
       failwith "Fatal error in Oo.set_initializer."
 
-let inheritance table cl =
+let inheritance table cl vars =
   if
     !copy_parent & (table.methods = []) & (table.size = initial_size)
   then begin
@@ -277,7 +286,21 @@ let inheritance table cl =
     table.init <- table.init@[[]]
   end else begin
     table.init <- []::table.init;
-    cl.class_init table
+    table.saved_vars <- table.vars::table.saved_vars;
+    table.vars <-
+      List.fold_left
+        (fun s v ->
+           try Vars.add v (Vars.find v table.vars) s with Not_found -> s)
+        Vars.empty
+        vars;
+    cl.class_init table;
+    table.vars <-
+      List.fold_left
+        (fun s v ->
+           try Vars.add v (Vars.find v table.vars) s with Not_found -> s)
+        (List.hd table.saved_vars)
+        vars;
+    table.saved_vars <- List.tl table.saved_vars
   end
 
 let set_method table label element =
@@ -295,14 +318,19 @@ let new_slot table =
 
 let get_variable table name =
   try
-    !(List.assoc name table.vars)
+    Vars.find name table.vars
   with Not_found ->
     let index = new_slot table in
-    table.vars <- (name, ref index)::table.vars;
+    table.vars <- Vars.add name index table.vars;
     index
 
 let hide_variable table name =
-  table.vars <- (name, ref (new_slot table))::table.vars
+  try
+    let i = Vars.find name table.vars in
+    table.vars <- Vars.remove name table.vars;
+    table.saved_var_lst <- Some i::table.saved_var_lst
+  with Not_found ->
+    table.saved_var_lst <- None::table.saved_var_lst
 
 let rec list_remove name =
   function
@@ -313,9 +341,17 @@ let rec list_remove name =
        else a::list_remove name l
 
 let get_private_variable table name =
-  let index = !(List.assoc name table.vars) in
-  let vars = list_remove name table.vars in
-  table.vars <- vars;
+  let index =
+    try Vars.find name table.vars with Not_found -> new_slot table
+  in
+  table.vars <-
+    begin match List.hd table.saved_var_lst with
+      None ->
+        Vars.remove name table.vars
+    | Some i ->
+        Vars.add name i table.vars
+    end;
+  table.saved_var_lst <- List.tl table.saved_var_lst;
   index
 
 let method_count = ref 0

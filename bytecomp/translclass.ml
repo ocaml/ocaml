@@ -50,6 +50,13 @@ let transl_vals tbl vals rem =
     (fun (name, id) rem -> transl_val tbl name id rem)
     vals rem
 
+let inherited_values vals =
+  Lconst
+    (List.fold_right
+       (fun (v, _) rem ->
+          Const_block(0, [Const_base (Const_string (v.Label.lab_name)); rem]))
+       vals (Const_pointer 0))
+
 let transl_field_obj obj field (obj_init, anc_id) =
   match field with
     Cf_inher (name, args, vals, meths) ->
@@ -68,7 +75,8 @@ let transl_field_obj obj field (obj_init, anc_id) =
 let transl_field_cl tbl field cl_init =
   match field with
     Cf_inher (name, args, vals, meths) ->
-      Lsequence(Lapply (oo_prim "inheritance", [Lvar tbl; transl_path name]),
+      Lsequence(Lapply (oo_prim "inheritance", [Lvar tbl; transl_path name;
+                                                inherited_values vals]),
       	       	transl_vals tbl vals (
                 transl_super tbl meths cl_init))
   | Cf_val (name, id, priv, exp) ->
@@ -81,8 +89,8 @@ let transl_field_cl tbl field cl_init =
                         [Lvar tbl; Lvar (meth name); transl_exp exp]),
 		cl_init)
 
-let transl_val_hiding tbl field cl_init =
-  match field with
+let transl_val_hiding tbl cl_init =
+  function
     Cf_inher _ | Cf_meth _ | Cf_val (_, _, Public, _) ->
       cl_init
   | Cf_val (name, id, Private, exp) ->
@@ -108,9 +116,10 @@ let transl_class cl =
   let table = Ident.create "table" in
   let cl_init =
     Lfunction ([table],
-               List.fold_right (transl_val_hiding table) cl.cl_field
+               List.fold_left (transl_val_hiding table)
                  (List.fold_right (transl_field_cl table) cl.cl_field
 	            (Lapply (oo_prim "set_initializer",
-                             [Lvar table; obj_init]))))
+                             [Lvar table; obj_init])))
+                 cl.cl_field)
   in
     Lapply (oo_prim "create_class", [cl_init])

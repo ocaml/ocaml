@@ -31,7 +31,7 @@ type item
 type obj_init
 type class_info
 val set_initializer: table -> obj_init -> unit
-val inheritance: table -> class_info -> unit
+val inheritance: table -> class_info -> string list -> unit
 val get_method: table -> label -> item
 val set_method: table -> label -> item -> unit
 val get_variable: table -> string -> int

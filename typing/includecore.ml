@@ -74,17 +74,31 @@ let exception_declarations env ed1 ed2 =
 
 (* Inclusion between class types *)
 let vars desc =
-  Ctype.newgenty (Tobject (
+  Ctype.newgenty (Ttuple(
     Vars.fold
       (fun lab (mut, ty) rem ->
-      	 let ty' = Ctype.newgenty
-	   (Ttuple [if mut = Asttypes.Mutable then Predef.type_mutable
-      	            else Ctype.newgenty Tvar;
-		    ty])
-	 in
-      	   Ctype.newgenty (Tfield (lab, ty', rem)))
-      desc.cty_vars (Ctype.newgenty Tnil),
-    ref None))
+	 (if mut = Asttypes.Mutable then Predef.type_unit
+      	  else Ctype.newgenty Tvar)
+         ::ty::rem)
+      desc.cty_vars []))
+
+let encode_val (mut, ty) rem =
+  begin match mut with
+    Asttypes.Mutable   -> Predef.type_unit
+  | Asttypes.Immutable -> Ctype.newgenty Tvar
+  end
+  ::ty::rem
+
+let vars vars1 vars2 =
+  Vars.fold
+    (fun lab v2 (vl1, vl2) ->
+       (begin try
+          encode_val (Vars.find lab vars1) vl1
+        with Not_found ->
+          vl1
+        end,
+        encode_val v2 vl2))
+    vars2 ([], [])
 
 let class_type env d1 d2 =
   (* Same abbreviations *)
@@ -100,6 +114,7 @@ let class_type env d1 d2 =
   (d1.cty_new <> None or d2.cty_new = None)
       &
   (* Less general *)
-  let t1 = Ctype.newgenty (Ttuple (d1.cty_self::vars d1::d1.cty_args)) in
-  let t2 = Ctype.newgenty (Ttuple (d2.cty_self::vars d2::d2.cty_args)) in
+  let (v1, v2) = vars d1.cty_vars d2.cty_vars in
+  let t1 = Ctype.newgenty (Ttuple (d1.cty_self::v1@d1.cty_args)) in
+  let t2 = Ctype.newgenty (Ttuple (d2.cty_self::v2@d2.cty_args)) in
   Ctype.moregeneral env t1 t2
