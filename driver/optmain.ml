@@ -58,12 +58,12 @@ let main () =
        "-c", Arg.Set compile_only, " Compile only (do not link)";
        "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs),
              "<opt>  Pass option <opt> to the C linker";
-       "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts)
+       "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts),
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
        "-i", Arg.Set print_types, " Print the types";
-       "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs)
+       "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";
        "-impl", Arg.String process_implementation_file,
              "<file>  Compile <file> as a .ml file";
