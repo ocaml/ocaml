@@ -34,7 +34,9 @@ int main(void)
   long n[10];
   int res;
   signal(SIGSEGV, sig_handler);
+#ifdef SIGBUS
   signal(SIGBUS, sig_handler);
+#endif
   if(setjmp(failure) == 0) {
     access_double((double *) n);
     access_double((double *) (n+1));
@@ -43,7 +45,9 @@ int main(void)
     res = 1;
   }
   signal(SIGSEGV, SIG_DFL);
+#ifdef SIGBUS
   signal(SIGBUS, SIG_DFL);
+#endif
   exit(res);
 }
 

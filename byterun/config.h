@@ -43,7 +43,7 @@
    bytecode interpreter (THREADED_CODE defined in config/sm-Mac.h).
 */
 
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG)
+#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) && !defined (SHRINKED_GNUC)
 #define THREADED_CODE
 #endif
 

@@ -20,6 +20,7 @@ manext=1
 host_type=unknown
 cc=''
 cclibs=''
+mathlib='-lm'
 x11_include_dir=''
 x11_lib_dir=''
 posix_threads=no
@@ -143,6 +144,10 @@ case "$bytecc,$host" in
     # GNU C extensions disabled, but __GNUC__ still defined!
     bytecccompopts="-fno-defer-pop -Wall -U__GNUC__ -posix"
     bytecclinkopts="-posix";;
+  cc,*-*-rhapsody*)
+    # Almost the same as NeXTStep
+    bytecccompopts="-fno-defer-pop -Wall -DSHRINKED_GNUC"
+    mathlib="";;
   gcc,alpha-*-osf*)
     bytecccompopts="-fno-defer-pop -Wall"
     # -taso puts code in lower 4GB
@@ -265,6 +270,7 @@ case "$host" in
   rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
   powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
+  powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   m68k-*-sunos*)                arch=m68k; system=sunos;;
 esac
 
@@ -284,6 +290,7 @@ case "$arch,$nativecc,$system" in
   mips,cc*,ultrix)   nativecccompopts=-std;;
   *,*,nextstep)      nativecccompopts="-Wall -U__GNUC__ -posix"
                      nativecclinkopts="-posix";;
+  *,*,rhapsody)      nativecccompopts="-Wall -DSHRINKED_GNUC";;
   *,gcc*,*)          nativecccompopts=-Wall;;
 esac
 
@@ -304,6 +311,7 @@ case "$arch,$model,$system" in
   power,rs6000,aix) asflags='-u -m pwr -w'; asppflags="$asflags";;
   power,ppc,aix)    asflags='-u -m ppc -w'; asppflags="$asflags";;
   power,*,elf)      aspp='gcc'; asppflags='-c';;
+  power,*,rhapsody) ;;
 esac
 
 # Where is ranlib?
@@ -358,7 +366,11 @@ fi
 
 if sh ./hasgot sigaction sigprocmask; then
   echo "POSIX signal handling found."
-  echo "#define POSIX_SIGNALS" >> s.h
+  case $host in
+  *-*-rhapsody*) echo "But it doesn't work properly."
+                 echo "#define BSD_SIGNALS" >> s.h;;
+  *) echo "#define POSIX_SIGNALS" >> s.h;;
+  esac
 else
   if sh ./runtest signals.c; then
     echo "Signals have the BSD semantics."
@@ -679,7 +691,7 @@ fi
 
 # Finish generated files
 
-cclibs="$cclibs -lm"
+cclibs="$cclibs $mathlib"
 
 echo "BYTECC=$bytecc" >> Makefile
 echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile

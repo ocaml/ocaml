@@ -40,18 +40,18 @@ static value alloc_host_entry(struct hostent *entry)
 {
   value res;
   value name = Val_unit, aliases = Val_unit;
-  value addr_list = Val_unit, addr = Val_unit;
+  value addr_list = Val_unit, adr = Val_unit;
 
-  Begin_roots4 (name, aliases, addr_list, addr);
+  Begin_roots4 (name, aliases, addr_list, adr);
     name = copy_string((char *)(entry->h_name));
     aliases = copy_string_array(entry->h_aliases);
     entry_h_length = entry->h_length;
 #ifdef h_addr
     addr_list = alloc_array(alloc_one_addr, entry->h_addr_list);
 #else
-    addr = alloc_one_addr(entry->h_addr);
+    adr = alloc_one_addr(entry->h_addr);
     addr_list = alloc_tuple(1);
-    Field(addr_list, 0) = addr;
+    Field(addr_list, 0) = adr;
 #endif
     res = alloc_tuple(4);
     Field(res, 0) = name;
@@ -64,11 +64,11 @@ static value alloc_host_entry(struct hostent *entry)
 
 value unix_gethostbyaddr(value a)   /* ML */
 {
-  uint32 addr;
+  uint32 adr;
   struct hostent * entry;
-  addr = GET_INET_ADDR(a);
+  adr = GET_INET_ADDR(a);
   enter_blocking_section();
-  entry = gethostbyaddr((char *) &addr, 4, AF_INET);
+  entry = gethostbyaddr((char *) &adr, 4, AF_INET);
   leave_blocking_section();
   if (entry == (struct hostent *) NULL) raise_not_found();
   return alloc_host_entry(entry);
