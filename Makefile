@@ -113,7 +113,7 @@ PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries $(DEBUGGER)
+  otherlibraries camlp4out $(DEBUGGER)
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -203,7 +203,7 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
 opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt
@@ -229,6 +229,7 @@ install: FORCE
 	-cd man; $(MAKE) install
 	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) install); done
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
+	cd camlp4; $(MAKE) install
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi
 
 # Installation of the native-code compiler
@@ -537,15 +538,14 @@ alldepend::
 # Camlp4
 
 camlp4out: ocamlc
-	set -e; cd camlp4/config; ./configure_batch -bindir $(BINDIR) -libdir $(LIBDIR)/../camlp4 -mandir $(MANDIR) -ocaml-top ../..
+	set -e; cd camlp4/config; ./configure_batch -bindir $(BINDIR) -libdir $(LIBDIR)/../camlp4 -mandir $(MANDIR) -ocaml-top ../.. > /dev/null
 	set -e; cd camlp4; $(MAKE) all
+camlp4opt: ocamlopt
+	set -e; cd camlp4; $(MAKE) opt
 partialclean::
 	set -e; cd camlp4; $(MAKE) clean
 alldepend::
 	set -e; cd camlp4; $(MAKE) depend
-
-camlp4opt: ocamlopt
-	set -e; cd camlp4; $(MAKE) opt
 
 # Default rules
 
