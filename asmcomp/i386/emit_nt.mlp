@@ -330,49 +330,44 @@ let emit_instr i =
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
-        begin match dest.typ with
-          Int | Addr ->
-            begin match (chunk, dest.loc) with
-              (Word, _) ->
-                `	mov	{emit_reg dest}, DWORD PTR {emit_addressing addr i.arg 0}\n`
-            | (Byte_unsigned, Reg r) when r < 4 & not (register_overlap dest i.arg) ->
-                `	xor	{emit_reg dest}, {emit_reg dest}\n`;
-                `	mov	{emit_reg8 dest}, BYTE PTR {emit_addressing addr i.arg 0}\n`
-            | (Byte_unsigned, _) ->
-                `	movzx	{emit_reg dest}, BYTE PTR {emit_addressing addr i.arg 0}\n`
-            | (Byte_signed, _) ->
-                `	movsx	{emit_reg dest}, BYTE PTR {emit_addressing addr i.arg 0}\n`
-            | (Sixteen_unsigned, Reg r) when not (register_overlap dest i.arg) ->
-                `	xor	{emit_reg dest}, {emit_reg dest}\n`;
-                `	mov	{emit_reg16 dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
-            | (Sixteen_unsigned, _) ->
-                `	movzx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
-            | (Sixteen_signed, _) ->
-                `	movsx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
-            end
-        | Float ->
+        begin match chunk with
+          | Byte_unsigned ->
+              `	movzx	{emit_reg dest}, BYTE PTR {emit_addressing addr i.arg 0}\n`
+          | Byte_signed ->
+              `	movsx	{emit_reg dest}, BYTE PTR {emit_addressing addr i.arg 0}\n`
+          | Sixteen_unsigned ->
+              `	movzx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
+          | Sixteen_signed ->
+              `	movsx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
+          | Single ->
+            `	fld	REAL4 PTR {emit_addressing addr i.arg 0}\n`
+          | Double ->
             `	fld	REAL8 PTR {emit_addressing addr i.arg 0}\n`
-        end
-    | Lop(Istore(Word, addr)) ->
-        begin match i.arg.(0).typ with
-          Int | Addr ->
-            `	mov	DWORD PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`
-        | Float ->
-            if i.arg.(0) = tos then
-                `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`
-            else begin
-                `	fld	{emit_reg i.arg.(0)}\n`;
-                `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`
-            end
+          | _ (* Word | Thirtytwo_signed | Thirtytwo_unsigned *) ->
+            `	mov	{emit_reg dest}, DWORD PTR {emit_addressing addr i.arg 0}\n`
         end
     | Lop(Istore(chunk, addr)) ->
-        (* i.arg.(0) is guaranteed to be in %edx, actually *)
         begin match chunk with
-          Word -> fatal_error "Emit: store word"
-        | Byte_unsigned | Byte_signed ->
+          | Word | Thirtytwo_signed | Thirtytwo_unsigned ->
+            `	mov	DWORD PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`
+          | Byte_unsigned | Byte_signed ->
             `	mov	BYTE PTR {emit_addressing addr i.arg 1}, {emit_reg8 i.arg.(0)}\n`
-        | Sixteen_unsigned | Sixteen_signed ->
+          | Sixteen_unsigned | Sixteen_signed ->
             `	mov	WORD PTR {emit_addressing addr i.arg 1}, {emit_reg16 i.arg.(0)}\n`
+          | Single ->
+              if i.arg.(0) = tos then
+                `	fstp	REAL4 PTR {emit_addressing addr i.arg 1}\n`
+              else begin
+                `	fld	{emit_reg i.arg.(0)}\n`;
+                `	fstp	REAL4 PTR {emit_addressing addr i.arg 1}\n`
+              end
+          | Double ->
+              if i.arg.(0) = tos then
+                `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`
+              else begin
+                `	fld	{emit_reg i.arg.(0)}\n`;
+                `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`
+              end
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
@@ -755,8 +750,10 @@ let emit_item = function
       `	WORD	{emit_int n}\n`
   | Cint n ->
       `	DWORD	{emit_nativeint n}\n`
-  | Cfloat f ->
-      `	REAL8 {emit_float f}\n`
+  | Csingle f ->
+      `	REAL4	{emit_float f}\n`
+  | Cdouble f ->
+      `	REAL8	{emit_float f}\n`
   | Csymbol_address s ->
       add_used_symbol s ;
       `	DWORD	{emit_symbol s}\n`
