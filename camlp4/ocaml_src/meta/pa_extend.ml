@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -24,6 +24,8 @@ Pcaml.add_option "-split_gext" (Arg.Set split_ext)
 
 type loc = int * int;;
 
+type 'e name = { expr : 'e; tvar : string; loc : int * int };;
+
 type styp =
     STlid of loc * string
   | STapp of loc * string * styp
@@ -31,7 +33,15 @@ type styp =
   | STprm of loc * string
 ;;
 
-type 'e name = { expr : 'e; tvar : string; loc : int * int };;
+type 'e text =
+    TXlist of loc * bool * 'e text * 'e text option
+  | TXnext of loc
+  | TXnterm of loc * 'e name * string option
+  | TXopt of loc * 'e text
+  | TXrules of loc * ('e text list * 'e) list
+  | TXself of loc
+  | TXtok of loc * string * 'e
+;;
 
 type ('e, 'p) entry =
   { name : 'e name; pos : 'e option; levels : ('e, 'p) level list }
@@ -39,8 +49,7 @@ and ('e, 'p) level =
   { label : string option; assoc : 'e option; rules : ('e, 'p) rule list }
 and ('e, 'p) rule = { prod : ('e, 'p) psymbol list; action : 'e option }
 and ('e, 'p) psymbol = { pattern : 'p option; symbol : ('e, 'p) symbol }
-and ('e, 'p) symbol =
-  { used : 'e name list; text : string -> string -> 'e; styp : styp }
+and ('e, 'p) symbol = { used : 'e name list; text : 'e text; styp : styp }
 ;;
 
 type used = Unused | UsedScanned | UsedNotScanned;;
@@ -131,14 +140,6 @@ let retype_rule_list_without_patterns loc rl =
       rl
   with
     Exit -> rl
-;;
-
-let text_of_psymbol_list loc gmod psl tvar =
-  List.fold_right
-    (fun ps txt ->
-       let x = ps.symbol.text gmod tvar in
-       MLast.ExApp (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), x), txt))
-    psl (MLast.ExUid (loc, "[]"))
 ;;
 
 let quotify = ref false;;
@@ -744,6 +745,153 @@ let rec make_ctyp styp tvar =
       else MLast.TyQuo (loc, tvar)
 ;;
 
+let rec make_expr gmod tvar =
+  function
+    TXlist (loc, min, t, ts) ->
+      let txt = make_expr gmod "" t in
+      begin match min, ts with
+        false, None ->
+          MLast.ExApp
+            (loc,
+             MLast.ExAcc
+               (loc, MLast.ExUid (loc, "Gramext"),
+                MLast.ExUid (loc, "Slist0")),
+             txt)
+      | true, None ->
+          MLast.ExApp
+            (loc,
+             MLast.ExAcc
+               (loc, MLast.ExUid (loc, "Gramext"),
+                MLast.ExUid (loc, "Slist1")),
+             txt)
+      | false, Some s ->
+          let x = make_expr gmod tvar s in
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "Gramext"),
+                   MLast.ExUid (loc, "Slist0sep")),
+                txt),
+             x)
+      | true, Some s ->
+          let x = make_expr gmod tvar s in
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "Gramext"),
+                   MLast.ExUid (loc, "Slist1sep")),
+                txt),
+             x)
+      end
+  | TXnext loc ->
+      MLast.ExAcc
+        (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Snext"))
+  | TXnterm (loc, n, lev) ->
+      begin match lev with
+        Some lab ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "Gramext"),
+                   MLast.ExUid (loc, "Snterml")),
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc,
+                      MLast.ExAcc
+                        (loc, MLast.ExUid (loc, gmod),
+                         MLast.ExUid (loc, "Entry")),
+                      MLast.ExLid (loc, "obj")),
+                   MLast.ExTyc
+                     (loc, n.expr,
+                      MLast.TyApp
+                        (loc,
+                         MLast.TyAcc
+                           (loc,
+                            MLast.TyAcc
+                              (loc, MLast.TyUid (loc, gmod),
+                               MLast.TyUid (loc, "Entry")),
+                            MLast.TyLid (loc, "e")),
+                         MLast.TyQuo (loc, n.tvar))))),
+             MLast.ExStr (loc, lab))
+      | None ->
+          if n.tvar = tvar then
+            MLast.ExAcc
+              (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sself"))
+          else
+            MLast.ExApp
+              (loc,
+               MLast.ExAcc
+                 (loc, MLast.ExUid (loc, "Gramext"),
+                  MLast.ExUid (loc, "Snterm")),
+               MLast.ExApp
+                 (loc,
+                  MLast.ExAcc
+                    (loc,
+                     MLast.ExAcc
+                       (loc, MLast.ExUid (loc, gmod),
+                        MLast.ExUid (loc, "Entry")),
+                     MLast.ExLid (loc, "obj")),
+                  MLast.ExTyc
+                    (loc, n.expr,
+                     MLast.TyApp
+                       (loc,
+                        MLast.TyAcc
+                          (loc,
+                           MLast.TyAcc
+                             (loc, MLast.TyUid (loc, gmod),
+                              MLast.TyUid (loc, "Entry")),
+                           MLast.TyLid (loc, "e")),
+                        MLast.TyQuo (loc, n.tvar)))))
+      end
+  | TXopt (loc, t) ->
+      MLast.ExApp
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sopt")),
+         make_expr gmod "" t)
+  | TXrules (loc, rl) ->
+      let e =
+        List.fold_left
+          (fun txt (sl, ac) ->
+             let sl =
+               List.fold_right
+                 (fun t txt ->
+                    let x = make_expr gmod "" t in
+                    MLast.ExApp
+                      (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), x),
+                       txt))
+                 sl (MLast.ExUid (loc, "[]"))
+             in
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc, MLast.ExUid (loc, "::"), MLast.ExTup (loc, [sl; ac])),
+                txt))
+          (MLast.ExUid (loc, "[]")) rl
+      in
+      MLast.ExApp
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Gramext"), MLast.ExLid (loc, "srules")),
+         e)
+  | TXself loc ->
+      MLast.ExAcc
+        (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sself"))
+  | TXtok (loc, s, e) ->
+      MLast.ExApp
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Stoken")),
+         MLast.ExTup (loc, [MLast.ExStr (loc, s); e]))
+;;
+
 let text_of_action loc psl rtvar act tvar =
   let locid = MLast.PaLid (loc, !(Stdpp.loc_name)) in
   let act =
@@ -792,6 +940,14 @@ let text_of_action loc psl rtvar act tvar =
      txt)
 ;;
 
+let text_of_psymbol_list loc gmod psl tvar =
+  List.fold_right
+    (fun ps txt ->
+       let x = make_expr gmod tvar ps.symbol.text in
+       MLast.ExApp (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), x), txt))
+    psl (MLast.ExUid (loc, "[]"))
+;;
+
 let text_of_rule_list loc gmod rtvar rl tvar =
   List.fold_left
     (fun txt r ->
@@ -805,12 +961,25 @@ let text_of_rule_list loc gmod rtvar rl tvar =
     (MLast.ExUid (loc, "[]")) rl
 ;;
 
+let srules loc t rl =
+  let v =
+    List.map
+      (fun r ->
+         let sl = List.map (fun ps -> ps.symbol.text) r.prod in
+         let ac = text_of_action loc r.prod t r.action "" in sl, ac)
+      rl
+  in
+  TXrules (loc, v)
+;;
+
 let expr_of_delete_rule loc gmod n sl =
   let sl =
     List.fold_right
       (fun s e ->
          MLast.ExApp
-           (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), s.text gmod ""),
+           (loc,
+            MLast.ExApp
+              (loc, MLast.ExUid (loc, "::"), make_expr gmod "" s.text),
             e))
       sl (MLast.ExUid (loc, "[]"))
   in
@@ -827,132 +996,18 @@ let rec ident_of_expr =
 
 let mk_name loc e = {expr = e; tvar = ident_of_expr e; loc = loc};;
 
-let sself loc gmod n =
-  MLast.ExAcc (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sself"))
-;;
-let snext loc gmod n =
-  MLast.ExAcc (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Snext"))
-;;
-let stoken loc s e gmod n =
-  MLast.ExApp
-    (loc,
-     MLast.ExAcc
-       (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Stoken")),
-     MLast.ExTup (loc, [MLast.ExStr (loc, s); e]))
-;;
-let snterm loc n lev gmod tvar =
-  match lev with
-    Some lab ->
-      MLast.ExApp
-        (loc,
-         MLast.ExApp
-           (loc,
-            MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Gramext"),
-               MLast.ExUid (loc, "Snterml")),
-            MLast.ExApp
-              (loc,
-               MLast.ExAcc
-                 (loc,
-                  MLast.ExAcc
-                    (loc, MLast.ExUid (loc, gmod),
-                     MLast.ExUid (loc, "Entry")),
-                  MLast.ExLid (loc, "obj")),
-               MLast.ExTyc
-                 (loc, n.expr,
-                  MLast.TyApp
-                    (loc,
-                     MLast.TyAcc
-                       (loc,
-                        MLast.TyAcc
-                          (loc, MLast.TyUid (loc, gmod),
-                           MLast.TyUid (loc, "Entry")),
-                        MLast.TyLid (loc, "e")),
-                     MLast.TyQuo (loc, n.tvar))))),
-         MLast.ExStr (loc, lab))
-  | None ->
-      if n.tvar = tvar then sself loc gmod tvar
-      else
-        MLast.ExApp
-          (loc,
-           MLast.ExAcc
-             (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Snterm")),
-           MLast.ExApp
-             (loc,
-              MLast.ExAcc
-                (loc,
-                 MLast.ExAcc
-                   (loc, MLast.ExUid (loc, gmod), MLast.ExUid (loc, "Entry")),
-                 MLast.ExLid (loc, "obj")),
-              MLast.ExTyc
-                (loc, n.expr,
-                 MLast.TyApp
-                   (loc,
-                    MLast.TyAcc
-                      (loc,
-                       MLast.TyAcc
-                         (loc, MLast.TyUid (loc, gmod),
-                          MLast.TyUid (loc, "Entry")),
-                       MLast.TyLid (loc, "e")),
-                    MLast.TyQuo (loc, n.tvar)))))
-;;
-let slist loc min sep symb gmod n =
-  let txt = symb.text gmod "" in
-  match min, sep with
-    false, None ->
-      MLast.ExApp
-        (loc,
-         MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Slist0")),
-         txt)
-  | true, None ->
-      MLast.ExApp
-        (loc,
-         MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Slist1")),
-         txt)
-  | false, Some s ->
-      let x = s.text gmod n in
-      MLast.ExApp
-        (loc,
-         MLast.ExApp
-           (loc,
-            MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Gramext"),
-               MLast.ExUid (loc, "Slist0sep")),
-            txt),
-         x)
-  | true, Some s ->
-      let x = s.text gmod n in
-      MLast.ExApp
-        (loc,
-         MLast.ExApp
-           (loc,
-            MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Gramext"),
-               MLast.ExUid (loc, "Slist1sep")),
-            txt),
-         x)
-;;
-let sopt loc symb gmod n =
-  let txt = symb.text gmod "" in
-  MLast.ExApp
-    (loc,
-     MLast.ExAcc
-       (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sopt")),
-     txt)
-;;
-let srules loc t rl gmod tvar =
-  let e = text_of_rule_list loc gmod t rl "" in
-  MLast.ExApp
-    (loc,
-     MLast.ExAcc
-       (loc, MLast.ExUid (loc, "Gramext"), MLast.ExLid (loc, "srules")),
-     e)
+let slist loc min sep symb =
+  let t =
+    match sep with
+      Some s -> Some s.text
+    | None -> None
+  in
+  TXlist (loc, min, symb.text, t)
 ;;
 
 let sstoken loc s =
-  let n = mk_name loc (MLast.ExLid (loc, ("a_" ^ s))) in snterm loc n None
+  let n = mk_name loc (MLast.ExLid (loc, ("a_" ^ s))) in
+  TXnterm (loc, n, None)
 ;;
 
 let ssopt loc symb =
@@ -963,39 +1018,9 @@ let ssopt loc symb =
   let rl =
     let anti_n =
       try
-        match symb.text "" "" with
-          MLast.ExApp
-            (_,
-             MLast.ExAcc
-               (_, MLast.ExUid (_, "Gramext"), MLast.ExUid (_, "Stoken")),
-             MLast.ExTup (_, [MLast.ExStr (_, ""); MLast.ExStr (_, n)])) ->
-            n
-        | MLast.ExApp
-            (_,
-             MLast.ExAcc
-               (_, MLast.ExUid (_, "Gramext"), MLast.ExLid (_, "srules")),
-             MLast.ExApp
-               (_,
-                MLast.ExApp
-                  (_, MLast.ExUid (_, "::"),
-                   MLast.ExTup
-                     (_,
-                      [MLast.ExApp
-                         (_,
-                          MLast.ExApp
-                            (_, MLast.ExUid (_, "::"),
-                             MLast.ExApp
-                               (_,
-                                MLast.ExAcc
-                                  (_, MLast.ExUid (_, "Gramext"),
-                                   MLast.ExUid (_, "Stoken")),
-                                MLast.ExTup
-                                  (_,
-                                   [MLast.ExStr (_, "");
-                                    MLast.ExStr (_, n)]))),
-                          _);
-                       _])),
-                MLast.ExUid (_, "[]"))) ->
+        match symb.text with
+          TXtok (_, "", MLast.ExStr (_, n)) -> n
+        | TXrules (_, ((TXtok (_, "", MLast.ExStr (_, n)) :: _, _) :: _)) ->
             if String.length n > 0 then
               match n.[0] with
                 'A'..'Z' | 'a'..'z' -> n
@@ -1007,7 +1032,7 @@ let ssopt loc symb =
     in
     let r1 =
       let prod =
-        let text = stoken loc "ANTIQUOT" (MLast.ExStr (loc, anti_n)) in
+        let text = TXtok (loc, "ANTIQUOT", MLast.ExStr (loc, anti_n)) in
         [psymbol (MLast.PaLid (loc, "a")) text (STlid (loc, "string"))]
       in
       let act =
@@ -1025,12 +1050,8 @@ let ssopt loc symb =
     in
     let r2 =
       let symb =
-        match symb.text "" "" with
-          MLast.ExApp
-            (_,
-             MLast.ExAcc
-               (_, MLast.ExUid (_, "Gramext"), MLast.ExUid (_, "Stoken")),
-             MLast.ExTup (_, [MLast.ExStr (_, ""); MLast.ExStr (_, _)])) ->
+        match symb.text with
+          TXtok (_, "", MLast.ExStr (_, _)) ->
             let rule =
               let psymbol =
                 {pattern = Some (MLast.PaLid (loc, "x")); symbol = symb}
@@ -1049,7 +1070,7 @@ let ssopt loc symb =
       in
       let psymb =
         let symb =
-          {used = []; text = sopt loc symb;
+          {used = []; text = TXopt (loc, symb.text);
            styp = STapp (loc, "option", symb.styp)}
         in
         let patt = MLast.PaLid (loc, "o") in
@@ -1074,7 +1095,7 @@ let sslist_aux loc min sep s =
     let r1 =
       let prod =
         let n = mk_name loc (MLast.ExLid (loc, "anti_list")) in
-        [psymbol (MLast.PaLid (loc, "a")) (snterm loc n None)
+        [psymbol (MLast.PaLid (loc, "a")) (TXnterm (loc, n, None))
            (STquo (loc, "anti_list"))]
       in
       let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
@@ -1099,10 +1120,8 @@ let sslist_aux loc min sep s =
 ;;
 
 let sslist loc min sep s =
-  match s.text "" "" with
-    MLast.ExAcc
-      (_, MLast.ExUid (_, "Gramext"), MLast.ExUid (_, ("Sself" | "Snext"))) ->
-      slist loc min sep s
+  match s.text with
+    TXself _ | TXnext _ -> slist loc min sep s
   | _ -> sslist_aux loc min sep s
 ;;
 
@@ -1144,7 +1163,7 @@ let text_of_entry loc gmod gl e =
                   let s =
                     let n = "a_" ^ e.name.tvar in
                     let e = mk_name loc (MLast.ExLid (loc, n)) in
-                    {used = []; text = snterm loc e None;
+                    {used = []; text = TXnterm (loc, e, None);
                      styp = STlid (loc, "ast")}
                   in
                   {pattern = Some (MLast.PaLid (loc, "a")); symbol = s}
@@ -1711,7 +1730,7 @@ Grammar.extend
       Gramext.action
         (fun (lev : 'e__3 option) (i : string) (loc : int * int) ->
            (let name = mk_name loc (MLast.ExLid (loc, i)) in
-            let text = snterm loc name lev in
+            let text = TXnterm (loc, name, lev) in
             let styp = STquo (loc, i) in
             let symb = {used = [name]; text = text; styp = styp} in
             {pattern = None; symbol = symb} :
@@ -1728,7 +1747,9 @@ Grammar.extend
       Gramext.action
         (fun (s : 'symbol) _ (loc : int * int) ->
            (let styp = STapp (loc, "option", s.styp) in
-            let text = if !quotify then ssopt loc s else sopt loc s in
+            let text =
+              if !quotify then ssopt loc s else TXopt (loc, s.text)
+            in
             {used = s.used; text = text; styp = styp} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "LIST1"); Gramext.Sself;
@@ -1787,7 +1808,7 @@ Grammar.extend
                (fun (s : string) _ (loc : int * int) -> (s : 'e__7))])],
       Gramext.action
         (fun (lev : 'e__7 option) (n : 'name) (loc : int * int) ->
-           ({used = [n]; text = snterm loc n lev;
+           ({used = [n]; text = TXnterm (loc, n, lev);
              styp = STquo (loc, n.tvar)} :
             'symbol));
       [Gramext.Stoken ("UIDENT", ""); Gramext.Stoken ("", ".");
@@ -1804,20 +1825,20 @@ Grammar.extend
            (let n =
               mk_name loc (MLast.ExAcc (loc, MLast.ExUid (loc, i), e))
             in
-            {used = [n]; text = snterm loc n lev;
+            {used = [n]; text = TXnterm (loc, n, lev);
              styp = STquo (loc, n.tvar)} :
             'symbol));
       [Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'string) (loc : int * int) ->
-           (let text = stoken loc "" e in
+           (let text = TXtok (loc, "", e) in
             {used = []; text = text; styp = STlid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'string) (x : string) (loc : int * int) ->
-           (let text = stoken loc x e in
+           (let text = TXtok (loc, x, e) in
             {used = []; text = text; styp = STlid (loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "")],
@@ -1825,7 +1846,7 @@ Grammar.extend
         (fun (x : string) (loc : int * int) ->
            (let text =
               if !quotify then sstoken loc x
-              else stoken loc x (MLast.ExStr (loc, ""))
+              else TXtok (loc, x, MLast.ExStr (loc, ""))
             in
             {used = []; text = text; styp = STlid (loc, "string")} :
             'symbol));
@@ -1844,12 +1865,12 @@ Grammar.extend
       [Gramext.Stoken ("UIDENT", "NEXT")],
       Gramext.action
         (fun _ (loc : int * int) ->
-           ({used = []; text = snext loc; styp = STprm (loc, "NEXT")} :
+           ({used = []; text = TXnext loc; styp = STprm (loc, "NEXT")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "SELF")],
       Gramext.action
         (fun _ (loc : int * int) ->
-           ({used = []; text = sself loc; styp = STprm (loc, "SELF")} :
+           ({used = []; text = TXself loc; styp = STprm (loc, "SELF")} :
             'symbol))]];
     Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e), None,
     [None, None,

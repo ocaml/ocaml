@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -24,6 +24,8 @@ Pcaml.add_option "-split_gext" (Arg.Set split_ext)
 
 type loc = (int * int);
 
+type name 'e = { expr : 'e; tvar : string; loc : (int * int) };
+
 type styp =
   [ STlid of loc and string
   | STapp of loc and string and styp
@@ -31,7 +33,15 @@ type styp =
   | STprm of loc and string ]
 ;
 
-type name 'e = { expr : 'e; tvar : string; loc : (int * int) };
+type text 'e =
+  [ TXlist of loc and bool and text 'e and option (text 'e)
+  | TXnext of loc
+  | TXnterm of loc and name 'e and option string
+  | TXopt of loc and text 'e
+  | TXrules of loc and list (list (text 'e) * 'e)
+  | TXself of loc
+  | TXtok of loc and string and 'e ]
+;
 
 type entry 'e 'p =
   { name : name 'e; pos : option 'e; levels : list (level 'e 'p) }
@@ -39,8 +49,7 @@ and level 'e 'p =
   { label : option string; assoc : option 'e; rules : list (rule 'e 'p) }
 and rule 'e 'p = { prod : list (psymbol 'e 'p); action : option 'e }
 and psymbol 'e 'p = { pattern : option 'p; symbol : symbol 'e 'p }
-and symbol 'e 'p =
-  { used : list (name 'e); text : string -> string -> 'e; styp : styp }
+and symbol 'e 'p = { used : list (name 'e); text : text 'e; styp : styp }
 ;
 
 type used = [ Unused | UsedScanned | UsedNotScanned ];
@@ -137,13 +146,6 @@ value retype_rule_list_without_patterns loc rl =
       rl
   with
   [ Exit -> rl ]
-;
-
-value text_of_psymbol_list loc gmod psl tvar =
-  List.fold_right
-    (fun ps txt ->
-       let x = ps.symbol.text gmod tvar in <:expr< [$x$ :: $txt$] >>)
-    psl <:expr< [] >>
 ;
 
 value quotify = ref False;
@@ -367,6 +369,54 @@ value rec make_ctyp styp tvar =
       else <:ctyp< '$tvar$ >> ]
 ;
 
+value rec make_expr gmod tvar =
+  fun
+  [ TXlist loc min t ts ->
+      let txt = make_expr gmod "" t in
+      match (min, ts) with
+      [ (False, None) -> <:expr< Gramext.Slist0 $txt$ >>
+      | (True, None) -> <:expr< Gramext.Slist1 $txt$ >>
+      | (False, Some s) ->
+          let x = make_expr gmod tvar s in
+          <:expr< Gramext.Slist0sep $txt$ $x$ >>
+      | (True, Some s) ->
+          let x = make_expr gmod tvar s in
+          <:expr< Gramext.Slist1sep $txt$ $x$ >> ]
+  | TXnext loc -> <:expr< Gramext.Snext >>
+  | TXnterm loc n lev ->
+      match lev with
+      [ Some lab ->
+          <:expr<
+             Gramext.Snterml
+               ($uid:gmod$.Entry.obj ($n.expr$ : $uid:gmod$.Entry.e '$n.tvar$))
+               $str:lab$ >>
+      | None ->
+          if n.tvar = tvar then <:expr< Gramext.Sself >>
+          else
+            <:expr<
+               Gramext.Snterm
+                 ($uid:gmod$.Entry.obj
+                    ($n.expr$ : $uid:gmod$.Entry.e '$n.tvar$)) >> ]
+  | TXopt loc t -> <:expr< Gramext.Sopt $make_expr gmod "" t$ >>
+  | TXrules loc rl ->
+      let e =
+        List.fold_left
+          (fun txt (sl, ac) ->
+             let sl =
+               List.fold_right
+                 (fun t txt ->
+                    let x = make_expr gmod "" t in
+                    <:expr< [$x$ :: $txt$] >>)
+                 sl <:expr< [] >>
+             in
+             <:expr< [($sl$, $ac$) :: $txt$] >>)
+          <:expr< [] >> rl
+      in
+      <:expr< Gramext.srules $e$ >>
+  | TXself loc -> <:expr< Gramext.Sself >>
+  | TXtok loc s e -> <:expr< Gramext.Stoken ($str:s$, $e$) >> ]
+;
+
 value text_of_action loc psl rtvar act tvar =
   let locid = <:patt< $lid:Stdpp.loc_name.val$ >> in
   let act =
@@ -399,6 +449,13 @@ value text_of_action loc psl rtvar act tvar =
   <:expr< Gramext.action $txt$ >>
 ;
 
+value text_of_psymbol_list loc gmod psl tvar =
+  List.fold_right
+    (fun ps txt ->
+       let x = make_expr gmod tvar ps.symbol.text in <:expr< [$x$ :: $txt$] >>)
+    psl <:expr< [] >>
+;
+
 value text_of_rule_list loc gmod rtvar rl tvar =
   List.fold_left
     (fun txt r ->
@@ -408,9 +465,22 @@ value text_of_rule_list loc gmod rtvar rl tvar =
     <:expr< [] >> rl
 ;
 
+value srules loc t rl =
+  let v =
+    List.map
+      (fun r ->
+         let sl = List.map (fun ps -> ps.symbol.text) r.prod in
+         let ac = text_of_action loc r.prod t r.action "" in
+         (sl, ac))
+      rl
+  in
+  TXrules loc v
+;
+
 value expr_of_delete_rule loc gmod n sl =
   let sl =
-    List.fold_right (fun s e -> <:expr< [$s.text gmod ""$ :: $e$] >>) sl
+    List.fold_right
+      (fun s e -> <:expr< [$make_expr gmod "" s.text$ :: $e$] >>) sl
       <:expr< [] >>
   in
   (<:expr< $n.expr$ >>, sl)
@@ -426,45 +496,18 @@ value rec ident_of_expr =
 
 value mk_name loc e = {expr = e; tvar = ident_of_expr e; loc = loc};
 
-value sself loc gmod n = <:expr< Gramext.Sself >>;
-value snext loc gmod n = <:expr< Gramext.Snext >>;
-value stoken loc s e gmod n = <:expr< Gramext.Stoken ($str:s$, $e$) >>;
-value snterm loc n lev gmod tvar =
-  match lev with
-  [ Some lab ->
-      <:expr< Gramext.Snterml
-                ($uid:gmod$.Entry.obj
-                   ($n.expr$ : $uid:gmod$.Entry.e '$n.tvar$))
-                $str:lab$ >>
-  | None ->
-      if n.tvar = tvar then sself loc gmod tvar
-      else
-        <:expr<
-           Gramext.Snterm
-             ($uid:gmod$.Entry.obj
-                ($n.expr$ : $uid:gmod$.Entry.e '$n.tvar$)) >> ]
-;
-value slist loc min sep symb gmod n =
-  let txt = symb.text gmod "" in
-  match (min, sep) with
-  [ (False, None) -> <:expr< Gramext.Slist0 $txt$ >>
-  | (True, None) -> <:expr< Gramext.Slist1 $txt$ >>
-  | (False, Some s) ->
-      let x = s.text gmod n in <:expr< Gramext.Slist0sep $txt$ $x$ >>
-  | (True, Some s) ->
-      let x = s.text gmod n in <:expr< Gramext.Slist1sep $txt$ $x$ >> ]
-;
-value sopt loc symb gmod n =
-  let txt = symb.text gmod "" in <:expr< Gramext.Sopt $txt$ >>
-;
-value srules loc t rl gmod tvar =
-  let e = text_of_rule_list loc gmod t rl "" in
-  <:expr< Gramext.srules $e$ >>
+value slist loc min sep symb =
+  let t =
+    match sep with
+    [ Some s -> Some s.text
+    | None -> None ]
+  in
+  TXlist loc min symb.text t
 ;
 
 value sstoken loc s =
   let n = mk_name loc <:expr< $lid:"a_" ^ s$ >> in
-  snterm loc n None
+  TXnterm loc n None
 ;
 
 value ssopt loc symb =
@@ -475,12 +518,9 @@ value ssopt loc symb =
   let rl =
     let anti_n =
       try
-        match symb.text "" "" with
-        [ <:expr< Gramext.Stoken ("", $str:n$) >> -> n
-        | <:expr<
-            Gramext.srules
-              [([Gramext.Stoken ("", $str:n$) :: $_$], $_$)] >>
-          ->
+        match symb.text with
+        [ TXtok _ "" <:expr< $str:n$ >> -> n
+        | TXrules _ [([TXtok _ "" <:expr< $str:n$ >> :: _], _) :: _] ->
             if String.length n > 0 then
               match n.[0] with
               [ 'A'..'Z' | 'a'..'z' -> n
@@ -491,7 +531,7 @@ value ssopt loc symb =
     in
     let r1 =
       let prod =
-        let text = stoken loc "ANTIQUOT" <:expr< $str:anti_n$ >> in
+        let text = TXtok loc "ANTIQUOT" <:expr< $str:anti_n$ >> in
         [psymbol <:patt< a >> text (STlid loc "string")]
       in
       let act = <:expr< antiquot $str:anti_n$ loc a >> in
@@ -499,8 +539,8 @@ value ssopt loc symb =
     in
     let r2 =
       let symb =
-        match symb.text "" "" with
-        [ <:expr< Gramext.Stoken ("", $str:_$) >> ->
+        match symb.text with
+        [ TXtok _ "" <:expr< $str:_$ >> ->
             let rule =
               let psymbol = {pattern = Some <:patt< x >>; symbol = symb} in
               let action = Some <:expr< Str x >> in
@@ -513,7 +553,7 @@ value ssopt loc symb =
       in
       let psymb =
         let symb =
-          {used = []; text = sopt loc symb;
+          {used = []; text = TXopt loc symb.text;
            styp = STapp loc "option" symb.styp}
         in
         let patt = <:patt< o >> in
@@ -536,7 +576,7 @@ value sslist_aux loc min sep s =
     let r1 =
       let prod =
         let n = mk_name loc <:expr< anti_list >> in
-        [psymbol <:patt< a >> (snterm loc n None) (STquo loc "anti_list")]
+        [psymbol <:patt< a >> (TXnterm loc n None) (STquo loc "anti_list")]
       in
       let act = <:expr< a >> in
       {prod = prod; action = Some act}
@@ -559,8 +599,8 @@ value sslist_aux loc min sep s =
 ;
 
 value sslist loc min sep s =
-  match s.text "" "" with
-  [ <:expr< Gramext.$uid:"Sself" | "Snext"$ >> -> slist loc min sep s
+  match s.text with
+  [ TXself _ | TXnext _ -> slist loc min sep s
   | _ -> sslist_aux loc min sep s ]
 ;
 
@@ -593,7 +633,7 @@ value text_of_entry loc gmod gl e =
                   let s =
                     let n = "a_" ^ e.name.tvar in
                     let e = mk_name loc <:expr< $lid:n$ >> in
-                    {used = []; text = snterm loc e None;
+                    {used = []; text = TXnterm loc e None;
                      styp = STlid loc "ast"}
                   in
                   {pattern = Some <:patt< a >>; symbol = s}
@@ -799,7 +839,7 @@ EXTEND
           {pattern = Some <:patt< $lid:p$ >>; symbol = s}
       | i = LIDENT; lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
           let name = mk_name loc <:expr< $lid:i$ >> in
-          let text = snterm loc name lev in
+          let text = TXnterm loc name lev in
           let styp = STquo loc i in
           let symb = {used = [name]; text = text; styp = styp} in
           {pattern = None; symbol = symb}
@@ -836,15 +876,12 @@ EXTEND
           {used = used; text = text; styp = styp}
       | UIDENT "OPT"; s = SELF ->
           let styp = STapp loc "option" s.styp in
-          let text =
-            if quotify.val then ssopt loc s
-            else sopt loc s
-          in
+          let text = if quotify.val then ssopt loc s else TXopt loc s.text in
           {used = s.used; text = text; styp = styp} ]
     | [ UIDENT "SELF" ->
-          {used = []; text = sself loc; styp = STprm loc "SELF"}
+          {used = []; text = TXself loc; styp = STprm loc "SELF"}
       | UIDENT "NEXT" ->
-          {used = []; text = snext loc; styp = STprm loc "NEXT"}
+          {used = []; text = TXnext loc; styp = STprm loc "NEXT"}
       | "["; rl = LIST0 rule SEP "|"; "]" ->
           let rl = retype_rule_list_without_patterns loc rl in
           let t = new_type_var () in
@@ -853,21 +890,21 @@ EXTEND
       | x = UIDENT ->
           let text =
             if quotify.val then sstoken loc x
-            else stoken loc x <:expr< "" >>
+            else TXtok loc x <:expr< "" >>
           in
           {used = []; text = text; styp = STlid loc "string"}
       | x = UIDENT; e = string ->
-          let text = stoken loc x e in
+          let text = TXtok loc x e in
           {used = []; text = text; styp = STlid loc "string"}
       | e = string ->
-          let text = stoken loc "" e in
+          let text = TXtok loc "" e in
           {used = []; text = text; styp = STlid loc "string"}
       | i = UIDENT; "."; e = qualid;
         lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
           let n = mk_name loc <:expr< $uid:i$ . $e$ >> in
-          {used = [n]; text = snterm loc n lev; styp = STquo loc n.tvar}
+          {used = [n]; text = TXnterm loc n lev; styp = STquo loc n.tvar}
       | n = name; lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
-          {used = [n]; text = snterm loc n lev; styp = STquo loc n.tvar}
+          {used = [n]; text = TXnterm loc n lev; styp = STquo loc n.tvar}
       | "("; s_t = SELF; ")" -> s_t ] ]
   ;
   pattern:
