@@ -861,6 +861,7 @@ let rec type_exp env sexp =
         end;
         let arg = type_argument env sarg ty_arg in
         end_def ();
+        if not (is_nonexpansive arg) then List.iter make_nongen vars;
         check_univars env "field value" arg label.lbl_arg vars;
         num_fields := Array.length label.lbl_all;
         (label, arg) in
@@ -936,6 +937,7 @@ let rec type_exp env sexp =
       unify_exp env record ty_res;
       let newval = type_expect env snewval ty_arg in
       end_def ();
+      if not (is_nonexpansive newval) then List.iter make_nongen vars;
       check_univars env "field value" newval label.lbl_arg vars;
       { exp_desc = Texp_setfield(record, label, newval);
         exp_loc = sexp.pexp_loc;
