@@ -26,6 +26,8 @@ list.cmoÄ list.cmi
 list.cmxÄ list.cmi 
 map.cmoÄ map.cmi 
 map.cmxÄ map.cmi 
+marshal.cmoÄ string.cmi marshal.cmi 
+marshal.cmxÄ string.cmx marshal.cmi 
 obj.cmoÄ obj.cmi 
 obj.cmxÄ obj.cmi 
 oo.cmoÄ array.cmi hashtbl.cmi list.cmi map.cmi obj.cmi random.cmi sort.cmi ¶

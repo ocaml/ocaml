@@ -37,7 +37,7 @@ default Ä
 #   echo All is done
 
 all Ä {LIB} {PPCLIB}
-    echo All is done
+    echo
 
 scratch Ä
     delete -i :o:Å.[ox] || set status 0
