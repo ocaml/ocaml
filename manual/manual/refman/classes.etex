@@ -231,8 +231,7 @@ method type be given.
 
 Some type information can be hidden in a class type: instance
 variables and protected concrete methods can be omitted; previously
-non-mutable instance variables can be flagged mutable. Moreover,
-protected methods can be turned into public methods.
+non-mutable instance variables can be flagged mutable.
 
 \begin{syntax}
 class-type:
