@@ -1,3 +1,10 @@
+Objective Caml 3.08.3:
+----------------------
+
+New features:
+- support for ocamlopt -pack under Mac OS X
+
+
 Objective Caml 3.08.2:
 ----------------------
 

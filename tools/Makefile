@@ -112,6 +112,11 @@ beforedepend:: ocamlmklib.ml
 clean::
 	rm -f ocamlmklib.ml
 
+# ocamlopt -pack support for Mac OS X: objcopy emulator
+
+install::
+	$(BINUTILS_INSTALL_OBJCOPY) ocaml-objcopy-macosx $(BINUTILS_OBJCOPY)
+
 # Converter olabl/ocaml 2.99 to ocaml 3
 
 OCAML299TO3= lexer299.cmo ocaml299to3.cmo

@@ -85,7 +85,8 @@ let extract_symbols units symbolfile =
       try
         let i = 3 + (try search_substring " T " l 0 with Not_found -> 
                      try search_substring " D " l 0 with Not_found ->
-                     search_substring " R " l 0) in
+                     try search_substring " R " l 0 with Not_found ->
+                     search_substring " S " l 0) in
         let j = try search_substring "__" l i
                 with Not_found -> String.length l in
         let k = if l.[i] = '_' then i + 1 else i in

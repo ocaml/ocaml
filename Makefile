@@ -635,7 +635,8 @@ package-macosx:
              install
 	tools/make-package-macosx
 clean::
-	rm -rf package-macosx/root package-macosx/*.pkg package-macosx/*.dmg
+	sudo rm -rf package-macosx/root
+	rm -rf package-macosx/*.pkg package-macosx/*.dmg
 
 # Default rules
 
