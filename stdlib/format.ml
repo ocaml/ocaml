@@ -439,11 +439,7 @@ let pp_open_box_gen state indent br_ty =
     then enqueue_string state state.pp_ellipsis;;
 
 (* The box which is always opened. *)
-let pp_open_sys_box state =
-    state.pp_curr_depth <- state.pp_curr_depth + 1;
-    scan_push state false
-     {elem_size = (- state.pp_right_total);
-      token = Pp_begin (0, Pp_hovbox); length = 0};;
+let pp_open_sys_box state = pp_open_box_gen state 0 Pp_hovbox;;
 
 (* Close a block, setting sizes of its subblocks. *)
 let pp_close_box state () =
@@ -522,17 +518,8 @@ let pp_flush_queue state b =
     done;
     state.pp_right_total <- pp_infinity;
     advance_left state;
-    if b then begin
-      pp_output_newline state;
-      pp_rinit state
-    end else begin
-      clear_scan_stack state;
-      state.pp_format_stack <- [];
-      state.pp_current_indent <- 0;
-      state.pp_curr_depth <- 0;
-      state.pp_space_left <- state.pp_margin;
-      pp_open_sys_box state;
-    end;;
+    if b then pp_output_newline state;
+    pp_rinit state;;
 
 (**************************************************************
 
