@@ -13,8 +13,8 @@ size. Compatibility with the bytecode compiler is extremely high: the
 same source code should run identically when compiled with "ocamlc" and
 "ocamlopt".
 
-It is not possible to mix native-code object files produced by "ocamlc"
-with bytecode object files produced by "ocamlopt": a program must be
+It is not possible to mix native-code object files produced by "ocamlopt"
+with bytecode object files produced by "ocamlc": a program must be
 compiled entirely with "ocamlopt" or entirely with "ocamlc". Native-code
 object files produced by "ocamlopt" cannot be loaded in the toplevel
 system "ocaml".
