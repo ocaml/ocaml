@@ -1002,7 +1002,8 @@ let apply_transitions gen r pri m ts =
 
 (* For a given nfa_state pos, refine char partition *)  
 let rec split_env gen follow pos m s = function
-  | [] -> assert false
+  | [] -> (* Can occur ! because of non-matching regexp ([^'\000'-'\255']) *)
+      []
   | (s1,st1) as p::rem ->
       let here = Cset.inter s s1 in
       if Cset.is_empty here then
