@@ -29,7 +29,7 @@ static regexp alloc_regexp(void)
 {
   value res =
     alloc_final(sizeof(struct regexp_struct) / sizeof(value),
-                free_regexp, 1, 1000);
+                free_regexp, 1, 10000);
   return (regexp) res;
 }
 
