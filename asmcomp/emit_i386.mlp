@@ -533,13 +533,13 @@ let emit_instr i =
     | Lop(Ispecific(Ipush_symbol s)) ->
         `	pushl	${emit_symbol s}\n`;
         stack_offset := !stack_offset + 4
-    | Lop(Ispecific(Ipush_load(ty, addr))) ->
-        if ty = Float then begin
-          `	pushl	{emit_addressing (offset_addressing addr 4) i.arg 0}\n`;
-          stack_offset := !stack_offset + 4
-        end;
+    | Lop(Ispecific(Ipush_load addr)) ->
         `	pushl	{emit_addressing addr i.arg 0}\n`;
         stack_offset := !stack_offset + 4
+    | Lop(Ispecific(Ipush_load_float addr)) ->
+        `	pushl	{emit_addressing (offset_addressing addr 4) i.arg 0}\n`;
+        `	pushl	{emit_addressing addr i.arg 0}\n`;
+        stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
         if i.arg.(0) <> tos then
           `	fldl	{emit_reg i.arg.(0)}\n`;
