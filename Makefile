@@ -108,6 +108,8 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
+PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
+
 # For users who don't read the INSTALL file
 defaultentry:
 	@echo "Please refer to the installation instructions in file INSTALL."
@@ -302,7 +304,7 @@ partialclean::
 
 ocaml: $(TOPOBJS) expunge
 	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp $(TOPOBJS)
-	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(STDLIB_MODULES)
+	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
 	rm -f ocaml.tmp
 
 toplevel/toplevellib.cma: $(TOPLIB)
