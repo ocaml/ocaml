@@ -486,3 +486,10 @@ type foo' =   <m: 'a. 'a * 'a foo>
 type 'a bar = <m: 'b. 'a * <m: 'c. 'c * 'a bar> >
 type bar' =   <m: 'a. 'a * 'a bar >
 let f (x : foo') = (x : bar');;
+
+fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
+  (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('c * 'bar)>)> as 'bar);;
+fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
+  (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('b * 'bar)>)> as 'bar);;
+fun (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) ->
+  (x : <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>);;

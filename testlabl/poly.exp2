@@ -1,4 +1,4 @@
-        Objective Caml version 3.07+19 (2004-05-26)
+        Objective Caml version 3.09+dev3 (2004-10-06)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -129,7 +129,7 @@ The universal variable 'a would escape its scope
 #         class type id_spec = object method id : 'a -> 'a end
 #       class id_impl : object method id : 'a -> 'a end
 #               class a : object method m : bool end
-class b : object method id : 'a -> 'a end
+and b : object method id : 'a -> 'a end
 #           Characters 72-77:
 This method has type 'a -> 'a which is less general than 'b. 'b -> 'a
 #         Characters 75-80:
@@ -203,9 +203,9 @@ The type abbreviation foo is cyclic
 #     type 'a t = unit
 #   class o : object method x : [> `A ] t -> unit end
 #   class c : object method m : d end
-class d : ?x:int -> unit -> object  end
+and d : ?x:int -> unit -> object  end
 # class d : ?x:int -> unit -> object  end
-class c : object method m : d end
+and c : object method m : d end
 #           class type numeral = object method fold : ('a -> 'a) -> 'a -> 'a end
 class zero : object method fold : ('a -> 'a) -> 'a -> 'a end
 class next : #numeral -> object method fold : ('a -> 'a) -> 'a -> 'a end
@@ -241,20 +241,20 @@ type t = [ `A of t a ]
 Constraints are not satisfied in this type.
 Type ('a, 'b) t should be an instance of ('c, 'c) t
 #     type 'a t = 'a
-type u = int t
+and u = int t
 #     type 'a t constraint 'a = int
 # Characters 26-32:
 Constraints are not satisfied in this type.
 Type 'a u t should be an instance of int t
 # type 'a u = 'a constraint 'a = int
-type 'a v = 'a u t constraint 'a = int
+and 'a v = 'a u t constraint 'a = int
 #     type g = int
 # type 'a t = unit constraint 'a = g
 # Characters 26-32:
 Constraints are not satisfied in this type.
 Type 'a u t should be an instance of g t
 # type 'a u = 'a constraint 'a = g
-type 'a v = 'a u t constraint 'a = int
+and 'a v = 'a u t constraint 'a = int
 #     Characters 38-58:
 In the definition of v, type 'a list u should be 'a u
 #       type 'a t = 'a
@@ -301,7 +301,7 @@ should be an instance of
     method as_a : ('a, 'b) a
     method b : 'b
   end
-class type ['a, 'b] b =
+and ['a, 'b] b =
   object
     constraint 'a = ('a, 'b) #a
     constraint 'b = ('a, 'b) #b
@@ -353,5 +353,19 @@ Type 'a foo = < m : 'a * 'a foo > is not compatible with type
   'a bar = < m : 'a * < m : 'b. 'b * 'a bar > > 
 Type 'a foo = < m : 'a * 'a foo > is not compatible with type
   < m : 'b. 'b * 'a bar > 
+Types for method m are incompatible
+#     Characters 67-68:
+This expression has type < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >
+but is here used with type
+  < m : 'a. 'a * ('a * < m : 'c. 'c * ('c * 'd) >) > as 'd
+Types for method m are incompatible
+#   Characters 66-67:
+This expression has type < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >
+but is here used with type
+  < m : 'a. 'a * ('a * < m : 'c. 'c * ('a * 'd) >) > as 'd
+Types for method m are incompatible
+#   Characters 51-52:
+This expression has type < m : 'b. 'b * ('b * 'a) > as 'a
+but is here used with type < m : 'b. 'b * ('b * < m : 'd. 'd * 'c > as 'c) >
 Types for method m are incompatible
 # 
