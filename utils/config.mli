@@ -22,10 +22,17 @@ val standard_library: string
 val standard_runtime: string
         (* The full path to the standard bytecode interpreter ocamlrun *)
 val bytecomp_c_compiler: string
-        (* The C compiler to use for the custom runtime mode of the
-           bytecode compiler *)
+        (* The C compiler to use for compiling C files 
+           with the bytecode compiler *)
+val bytecomp_c_linker: string
+        (* The C compiler to use for building custom runtime systems
+           with the bytecode compiler *)
 val native_c_compiler: string
-        (* The C compiler to use for the native code compiler *)
+        (* The C compiler to use for compiling C files 
+           with the native-code compiler *)
+val native_c_linker: string
+        (* The C compiler to use for the final linking step
+           in the native code compiler *)
 val native_partial_linker: string
         (* The linker to use for partial links (-output-obj option) *)
 val c_libraries: string

@@ -56,12 +56,13 @@ let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 let main () =
   native_code := true;
   c_compiler := Config.native_c_compiler;
+  c_linker := Config.native_c_linker;
   let ppf = Format.err_formatter in
   try
     Arg.parse [
        "-a", Arg.Set make_archive, " Build a library";
        "-c", Arg.Set compile_only, " Compile only (do not link)";
-       "-cc", Arg.String(fun s -> c_compiler := s),
+       "-cc", Arg.String(fun s -> c_compiler := s; c_linker := s),
              "<comp>  Use <comp> as the C compiler and linker";
        "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs),
              "<opt>  Pass option <opt> to the C linker";

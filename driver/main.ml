@@ -66,7 +66,7 @@ module Options = Main_args.Make_options (struct
   let unset r () = r := false
   let _a = set make_archive
   let _c = set compile_only
-  let _cc s = c_compiler := s
+  let _cc s = c_compiler := s; c_linker := s
   let _cclib s = ccobjs := s :: !ccobjs
   let _ccopt s = ccopts := s :: !ccopts
   let _custom = set custom_runtime

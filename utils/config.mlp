@@ -22,7 +22,9 @@ let standard_library =
 
 let standard_runtime = "%%BYTERUN%%"
 let bytecomp_c_compiler = "%%BYTECC%%"
+let bytecomp_c_linker = "%%BYTELINK%%"
 let native_c_compiler = "%%NATIVECC%%"
+let native_c_linker = "%%NATIVELINK%%"
 let native_partial_linker = "%%PARTIALLD%%"
 let c_libraries = "%%CCLIBS%%"
 let ranlib = "%%RANLIBCMD%%"

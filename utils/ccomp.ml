@@ -46,8 +46,7 @@ let compile_file name =
          !Clflags.c_compiler
          (String.concat " " (List.rev !Clflags.ccopts))
          (String.concat " "
-           (List.map (fun dir -> "-I" ^ dir) 
-                     (List.rev !Clflags.include_dirs)))
+           (List.rev_map (fun dir -> "-I" ^ dir) !Clflags.include_dirs))
          Config.standard_library
          name)
 ;;
