@@ -1,0 +1,27 @@
+nat_stubs.obj: nat_stubs.c bignum/h/BigNum.h bignum/h/BntoBnn.h \
+ ../../byterun/mlvalues.h ../../byterun/config.h \
+ ../../byterun/../config/m.h ../../byterun/../config/s.h \
+ ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/memory.h \
+ ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
+ ../../byterun/minor_gc.h nat.h
+big_int.cmi: nat.cmi 
+num.cmi: big_int.cmi nat.cmi ratio.cmi 
+ratio.cmi: big_int.cmi nat.cmi 
+arith_flags.cmo: arith_flags.cmi 
+arith_flags.cmx: arith_flags.cmi 
+arith_status.cmo: arith_flags.cmi arith_status.cmi 
+arith_status.cmx: arith_flags.cmx arith_status.cmi 
+big_int.cmo: int_misc.cmi nat.cmi big_int.cmi 
+big_int.cmx: int_misc.cmx nat.cmx big_int.cmi 
+int_misc.cmo: int_misc.cmi 
+int_misc.cmx: int_misc.cmi 
+nat.cmo: int_misc.cmi nat.cmi 
+nat.cmx: int_misc.cmx nat.cmi 
+num.cmo: arith_flags.cmi big_int.cmi int_misc.cmi nat.cmi ratio.cmi num.cmi 
+num.cmx: arith_flags.cmx big_int.cmx int_misc.cmx nat.cmx ratio.cmx num.cmi 
+ratio.cmo: arith_flags.cmi big_int.cmi int_misc.cmi nat.cmi string_misc.cmi \
+    ratio.cmi 
+ratio.cmx: arith_flags.cmx big_int.cmx int_misc.cmx nat.cmx string_misc.cmx \
+    ratio.cmi 
+string_misc.cmo: string_misc.cmi 
+string_misc.cmx: string_misc.cmi 
