@@ -115,6 +115,10 @@ value rec print_list pr sep ppf =
   | [a :: l] -> do { pr ppf a; sep ppf; print_list pr sep ppf l } ]
 ;
 
+value pr_vars =
+  print_list (fun ppf s -> fprintf ppf "'%s" s) (fun ppf -> fprintf ppf "@ ")
+;
+
 value pr_present =
   print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
 ;
@@ -130,6 +134,10 @@ and print_out_type_1 ppf =
   [ Otyp_arrow lab ty1 ty2 ->
       fprintf ppf "@[%s%a ->@ %a@]" (if lab <> "" then lab ^ ":" else "")
         print_out_type_2 ty1 print_out_type_1 ty2
+  | Otyp_poly sl ty ->
+      fprintf ppf "@[<hov 2>%a.@ %a@]"
+        pr_vars sl
+        print_out_type ty
   | ty -> print_out_type_2 ppf ty ]
 and print_out_type_2 ppf =
   fun
