@@ -12,13 +12,13 @@
 /* $Id$ */
 
 char * runtime_name = "ocamlrun";
-char * errmsg = "Cannot exec ocamlrun.\n";
+char errmsg [] = "Cannot exec ocamlrun.\n";
 
 int main(argc, argv)
      int argc;
      char ** argv;
 {
   execvp(runtime_name, argv);
-  write(2, errmsg, strlen(errmsg));
+  write(2, errmsg, sizeof(errmsg)-1);
   return 2;
 }

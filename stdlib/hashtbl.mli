@@ -54,7 +54,7 @@ val iter : ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
 	   discarding all the results.
            [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
-           [f] is unpredictable. Each binding is presented exactly once
+           [f] is unspecified. Each binding is presented exactly once
            to [f]. *)
 
 (*** The polymorphic hash primitive *)
