@@ -323,11 +323,17 @@ let rec extract suffix l =
 ;;
 
 let build_custom_runtime prim_name exec_name =
+  let libname = "libcamlrun" ^ ext_lib in
+  let runtime_lib =
+    try
+      find_in_path !load_path libname
+    with Not_found ->
+      raise(Error(File_not_found libname)) in
   match Sys.os_type with
     "Unix" ->
       Sys.command
        (Printf.sprintf
-          "%s -o %s -I%s %s %s -L%s %s -lcamlrun %s"
+          "%s -o %s -I%s %s %s -L%s %s %s %s"
           Config.bytecomp_c_compiler
           exec_name
           Config.standard_library
@@ -335,18 +341,19 @@ let build_custom_runtime prim_name exec_name =
           prim_name
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccobjs))
+          runtime_lib
           Config.c_libraries)
   | "Win32" ->
       Sys.command
        (Printf.sprintf
-          "%s /Fe%s -I%s %s %s %s %s\\libcamlrun.lib %s"
+          "%s /Fe%s -I%s %s %s %s %s %s"
           Config.bytecomp_c_compiler
           exec_name
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccopts))
           prim_name
           (String.concat " " (List.rev !Clflags.ccobjs))
-          Config.standard_library
+          runtime_lib
           Config.c_libraries)
   | "MacOS" ->
       let c68k = "sc"
