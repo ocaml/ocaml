@@ -132,5 +132,7 @@ val scan_format :
   ('e -> int -> 'f) -> (int -> 'g) ->
   (('h, 'i, 'j, 'k) format4 -> int -> 'a) -> 'a
 
-val sub_format : char -> string -> int -> int
-val summarize_format : string -> string
+val sub_format :
+  (string -> int) -> (string -> int -> char -> int) ->
+  char -> string -> int -> int
+val summarize_format_type : string -> string
