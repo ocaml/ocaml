@@ -77,11 +77,9 @@ let usage speclist errmsg =
 
 let current = ref 0;;
 
-let parse_argv argv speclist anonfun errmsg =
-  let initpos = !current in
+let parse_argv_internal argv speclist anonfun errmsg =
   let stop error =
-    let progname =
-      if initpos < Array.length argv then argv.(initpos) else "(?)" in
+    let progname = if Array.length argv > 0 then argv.(0) else "(?)" in
     begin match error with
       | Unknown "-help" -> ()
       | Unknown "--help" -> ()
@@ -176,6 +174,15 @@ let parse_argv argv speclist anonfun errmsg =
       incr current;
     end;
   done;
+;;
+
+let parse_argv argv speclist anonfun errmsg =
+  let save_current = !current in
+  current := 0;
+  try
+    parse_argv_internal argv speclist anonfun errmsg;
+    current := save_current;
+  with ex -> current := save_current; raise ex
 ;;
 
 let parse = parse_argv Sys.argv;;
