@@ -42,18 +42,13 @@ static void add_string(struct stringbuf *buf, char *s)
   buf->ptr += len;
 }
   
-#ifdef HAS_UI
-#define errprintf(fmt,arg) ui_print_stderr(fmt, arg)
-#else
-#define errprintf(fmt,arg) fprintf(stderr, fmt, arg)
-#endif
-
-void fatal_uncaught_exception(value exn)
+char * format_caml_exception(value exn)
 {
   mlsize_t start, i;
   value bucket, v;
   struct stringbuf buf;
   char intbuf[64];
+  char * res;
 
   buf.ptr = buf.data;
   buf.end = buf.data + sizeof(buf.data) - 1;
@@ -87,7 +82,23 @@ void fatal_uncaught_exception(value exn)
     add_char(&buf, ')');
   }
   *buf.ptr = 0;              /* Terminate string */
-  errprintf("Fatal error: uncaught exception %s\n", buf.data);
+  i = buf.ptr - buf.data + 1;
+  res = malloc(i);
+  if (res == NULL) return NULL;
+  bcopy(buf.data, res, i);
+  return res;
+}
+
+
+void fatal_uncaught_exception(value exn)
+{
+  char * msg = format_caml_exception(exn);
+#ifdef HAS_UI
+  ui_print_stderr("Fatal error: uncaught exception %s\n", msg);
+#else
+  fprintf(stderr, "Fatal error: uncaught exception %s\n", msg);
+#endif
+  free(msg);
 #ifdef HAS_UI
   ui_exit(2);
 #else
