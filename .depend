@@ -315,8 +315,6 @@ asmcomp/scheduling.cmi: asmcomp/linearize.cmi
 asmcomp/selection.cmi: asmcomp/cmm.cmi asmcomp/mach.cmi 
 asmcomp/spill.cmi: asmcomp/mach.cmi 
 asmcomp/split.cmi: asmcomp/mach.cmi 
-asmcomp/arch.cmo: utils/misc.cmi 
-asmcomp/arch.cmx: utils/misc.cmx 
 asmcomp/arch_i386.cmo: asmcomp/cmm.cmi 
 asmcomp/arch_i386.cmx: asmcomp/cmm.cmx 
 asmcomp/arch_mips.cmo: utils/misc.cmi 
@@ -390,11 +388,11 @@ asmcomp/compilenv.cmo: asmcomp/clambda.cmi utils/config.cmi typing/env.cmi \
 asmcomp/compilenv.cmx: asmcomp/clambda.cmx utils/config.cmx typing/env.cmx \
     typing/ident.cmx utils/misc.cmx asmcomp/compilenv.cmi 
 asmcomp/emit.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/compilenv.cmi \
-    utils/config.cmi asmcomp/emitaux.cmi asmcomp/linearize.cmi \
+    asmcomp/emitaux.cmi asmcomp/linearize.cmi parsing/location.cmi \
     asmcomp/mach.cmi utils/misc.cmi asmcomp/proc.cmi asmcomp/reg.cmi \
     asmcomp/emit.cmi 
 asmcomp/emit.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/compilenv.cmx \
-    utils/config.cmx asmcomp/emitaux.cmx asmcomp/linearize.cmx \
+    asmcomp/emitaux.cmx asmcomp/linearize.cmx parsing/location.cmx \
     asmcomp/mach.cmx utils/misc.cmx asmcomp/proc.cmx asmcomp/reg.cmx \
     asmcomp/emit.cmi 
 asmcomp/emitaux.cmo: asmcomp/emitaux.cmi 
@@ -427,10 +425,10 @@ asmcomp/printmach.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
 asmcomp/printmach.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
     asmcomp/printcmm.cmx asmcomp/proc.cmx asmcomp/reg.cmx \
     asmcomp/printmach.cmi 
-asmcomp/proc.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi utils/config.cmi \
-    asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi asmcomp/proc.cmi 
-asmcomp/proc.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx utils/config.cmx \
-    asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx asmcomp/proc.cmi 
+asmcomp/proc.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
+    utils/misc.cmi asmcomp/reg.cmi asmcomp/proc.cmi 
+asmcomp/proc.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
+    utils/misc.cmx asmcomp/reg.cmx asmcomp/proc.cmi 
 asmcomp/proc_alpha.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
     utils/misc.cmi asmcomp/reg.cmi 
 asmcomp/proc_alpha.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
