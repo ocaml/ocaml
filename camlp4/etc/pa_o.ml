@@ -393,8 +393,8 @@ EXTEND
   ;
   mod_expr_ident:
     [ LEFTA
-      [ m1 = SELF; "."; m2 = SELF -> <:module_expr< $m1$ . $m2$ >> ]
-    | [ m = UIDENT -> <:module_expr< $uid:m$ >> ] ]
+      [ i = SELF; "."; j = SELF -> <:module_expr< $i$ . $j$ >> ]
+    | [ i = UIDENT -> <:module_expr< $uid:i$ >> ] ]
   ;
   str_item:
     [ "top"
@@ -690,15 +690,15 @@ EXTEND
     [ RIGHTA
       [ i = LIDENT -> <:expr< $lid:i$ >>
       | i = UIDENT -> <:expr< $uid:i$ >>
-      | m = UIDENT; "."; i = SELF ->
+      | i = UIDENT; "."; j = SELF ->
           let rec loop m =
             fun
             [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
             | e -> <:expr< $m$ . $e$ >> ]
           in
-          loop <:expr< $uid:m$ >> i
-      | m = UIDENT; "."; "("; i = operator_rparen ->
-          <:expr< $uid:m$ . $lid:i$ >> ] ]
+          loop <:expr< $uid:i$ >> j
+      | i = UIDENT; "."; "("; j = operator_rparen ->
+          <:expr< $uid:i$ . $lid:j$ >> ] ]
   ;
   (* Patterns *)
   patt:
@@ -874,7 +874,7 @@ EXTEND
     [ RIGHTA
       [ i = UIDENT -> [i]
       | i = LIDENT -> [i]
-      | m = UIDENT; "."; i = SELF -> [m :: i] ] ]
+      | i = UIDENT; "."; j = SELF -> [i :: j] ] ]
   ;
   (* Miscellaneous *)
   direction_flag:
@@ -992,9 +992,9 @@ EXTEND
     [ [ mf = OPT "mutable"; l = label; "="; e = expr -> (l, o2b mf, e)
       | mf = OPT "mutable"; l = label; ":"; t = ctyp; "="; e = expr ->
           (l, o2b mf, <:expr< ($e$ : $t$) >>)
-      | mf = OPT "mutable"; l = label; ":"; t1 = ctyp; ":>"; t2 = ctyp; "=";
+      | mf = OPT "mutable"; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
         e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t1$ :> $t2$) >>)
+          (l, o2b mf, <:expr< ($e$ : $t$ :> $t2$) >>)
       | mf = OPT "mutable"; l = label; ":>"; t = ctyp; "="; e = expr ->
           (l, o2b mf, <:expr< ($e$ :> $t$) >>) ] ]
   ;
