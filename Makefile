@@ -106,9 +106,9 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   bytecomp/dll.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
 PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
-  lexing list map obj parsing scanning pervasives printexc printf \
-  scanf queue random \
-  set sort stack string stream sys oo camlinternalOO \
+  lexing list map obj parsing pervasives printexc printf scanf \
+  queue random set sort stack string stream \
+  sys oo camlinternalOO \
   genlex topdirs toploop weak lazy \
   marshal int32 int64 nativeint complex outcometree \
   arrayLabels listLabels stringLabels stdLabels moreLabels
