@@ -55,5 +55,6 @@ dummy.mli:
 	rm -f $@
 	ln -s dummyUnix.mli $@
 shell.cmo: dummy.cmi
+lexical.cmi searchid.cmi typecheck.cmi: $(TOPDIR)/toplevel/toplevellib.cma
 
 include	.depend
