@@ -695,6 +695,7 @@ module Analyser =
                 m_kind = module_kind ;
                 m_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
                 m_top_deps = [] ;
+		m_code = None ;
               } 
             in
             let (maybe_more, info_after_opt) = 
@@ -774,6 +775,7 @@ module Analyser =
                       m_kind = module_kind ;
                       m_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
                       m_top_deps = [] ;
+		      m_code = None ;
 		    } 
 		  in
 		  let (maybe_more, info_after_opt) = 
@@ -1297,6 +1299,7 @@ module Analyser =
           m_kind = Module_struct elements ;
           m_loc = { loc_impl = None ; loc_inter = Some (!file_name, 0) } ;
           m_top_deps = [] ;
+	  m_code = None ;
         } 
       in
       

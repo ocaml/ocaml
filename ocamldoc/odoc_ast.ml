@@ -1381,6 +1381,7 @@ module Analyser =
           m_kind = Module_struct [] ;
           m_loc = { loc_impl = Some (!file_name, pos_start) ; loc_inter = None } ;
           m_top_deps = [] ;
+	  m_code = None ;
       } 
       in
       match (p_module_expr.Parsetree.pmod_desc, tt_module_expr.Typedtree.mod_desc) with
@@ -1523,6 +1524,7 @@ module Analyser =
            m_kind = kind ;
            m_loc = { loc_impl = Some (!file_name, 0) ; loc_inter = None } ;
            m_top_deps = [] ;
+	   m_code = Some !file ;
          } 
        in
        m

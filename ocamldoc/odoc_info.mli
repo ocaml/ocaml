@@ -441,6 +441,7 @@ module Module :
           mutable m_kind : module_kind ; (** The way the module is defined. *)
           mutable m_loc : location ;
           mutable m_top_deps : Name.t list ; (** The toplevels module names this module depends on. *)
+	  mutable m_code : string option ; (** The whole code of the module *)
         } 
 
     and module_type_alias = Odoc_module.module_type_alias =

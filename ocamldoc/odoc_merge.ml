@@ -683,6 +683,18 @@ and merge_modules merge_options mli ml =
   mli.m_loc <- { mli.m_loc with loc_impl = ml.m_loc.loc_impl } ;
   (* More dependencies in the .ml file. *)
   mli.m_top_deps <- ml.m_top_deps ;
+  
+  let code = 
+    if !Odoc_args.keep_code then
+      match mli.m_code, ml.m_code with
+	Some s, _ -> Some s
+      |	_, Some s -> Some s
+      |	_ -> None
+    else
+      None
+  in
+  mli.m_code <- code;
+
   (* merge exceptions *)
   List.iter
     (fun ex ->

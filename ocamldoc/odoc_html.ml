@@ -157,6 +157,12 @@ module Naming =
       let f = type_prefix^name^".html" in
       f
 
+    (** Return the complete filename for the code of the 
+       given module name. *)
+    let file_code_module_complete_target name = 
+      let f = code_prefix^name^".html" in
+      f
+
     (** Return the complete filename for the code of the type of the 
        given class or class type name. *)
     let file_type_class_complete_target name = 
@@ -1681,6 +1687,7 @@ class html =
         Odoc_info.verbose ("Generate for module "^modu.m_name);
         let (html_file, _) = Naming.html_files modu.m_name in
         let type_file = Naming.file_type_module_complete_target modu.m_name in
+        let code_file = Naming.file_code_module_complete_target modu.m_name in
         let chanout = open_out (Filename.concat !Args.target_dir html_file) in
         let pre_name = opt (fun m -> m.m_name) pre in
         let post_name = opt (fun m -> m.m_name) post in
@@ -1696,6 +1703,11 @@ class html =
            "<center><h1>"^(if Module.module_is_functor modu then Odoc_messages.functo else Odoc_messages.modul)^
            " "^
            "<a href=\""^type_file^"\">"^modu.m_name^"</a>"^
+	   (
+	    match modu.m_code with
+	      None -> ""
+	    | Some _ -> Printf.sprintf " (<a href=\"%s\">.ml</a>)" code_file
+	   )^
            "</h1></center>\n"^
            "<br>\n"^
            (self#html_of_module ~with_link: false modu)
@@ -1746,7 +1758,15 @@ class html =
         self#output_module_type 
           modu.m_name
           (Filename.concat !Args.target_dir type_file)
-          modu.m_type
+          modu.m_type;
+
+	match modu.m_code with
+	  None -> ()
+	| Some code ->
+	    self#output_code
+	      modu.m_name
+	      (Filename.concat !Args.target_dir code_file)
+	      code
       with
         Sys_error s ->
           raise (Failure s)
