@@ -45,7 +45,3 @@ let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
 let ext_lib = "%%EXT_LIB%%"
 
-let standard_includes =
-  match system with
-    "win32" -> "-I" ^ standard_library
-  | _       -> "-I" ^ standard_library ^ " -L" ^ standard_library
