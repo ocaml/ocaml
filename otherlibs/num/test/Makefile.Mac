@@ -8,13 +8,14 @@ TESTFILES = test.cmo test_nats.cmo test_big_ints.cmo ¶
             test_ratios.cmo test_nums.cmo end_test.cmo
 
 test.byt Ä {TESTFILES} ::nums.cma ::libnums.o
-	{CAMLC} -o test.byt -custom ::nums.cma {TESTFILES} ::libnums.o
+	alias ocamlc "{CAMLC}"
+	::::tools:ocamlc-custom -o test.byt ::nums.cma {TESTFILES} ::libnums.[ox]
 
 .cmo Ä .ml
 	{CAMLC} -I :: -c {default}.ml
 
 ocamlnum Ä
-	ocamlmktop -o ocamlnum -custom ::nums.cma ::libnums.o
+	ocamlmktop -o ocamlnum -custom ::nums.cma ::libnums.[ox]
 
 clean Ä
 	delete -i test.byt ocamlnum
