@@ -172,47 +172,6 @@ let unbox_float = function
     Cop(Calloc, [header; c]) -> c
   | c -> Cop(Cload Double_u, [c])
 
-let is_unboxed_float = function
-    Uconst(Const_base(Const_float f)) -> true
-  | Uprim(p, _) ->
-      begin match p with
-          Pccall p -> p.prim_native_float
-        | Pfloatfield _ | Pfloatofint | Pnegfloat | Pabsfloat
-        | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
-        | Parrayrefu Pfloatarray | Parrayrefs Pfloatarray -> true
-        | _ -> false
-      end
-  | _ -> false
-
-let subst_boxed_float boxed_id unboxed_id exp =
-  let need_boxed = ref false in
-  let assigned = ref false in
-  let rec subst = function
-      Cvar id as e ->
-        if Ident.same id boxed_id then need_boxed := true; e
-    | Clet(id, arg, body) -> Clet(id, subst arg, subst body)
-    | Cassign(id, arg) -> 
-        if Ident.same id boxed_id then begin
-          assigned := true;
-          Cassign(unboxed_id, subst(unbox_float arg))
-        end else
-          Cassign(id, subst arg)
-    | Ctuple argv -> Ctuple(List.map subst argv)
-    | Cop(Cload _, [Cvar id]) as e ->
-        if Ident.same id boxed_id then Cvar unboxed_id else e
-    | Cop(op, argv) -> Cop(op, List.map subst argv)
-    | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
-    | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
-    | Cswitch(arg, index, cases) ->
-        Cswitch(subst arg, index, Array.map subst cases)
-    | Cloop e -> Cloop(subst e)
-    | Ccatch(nfail, ids, e1, e2) -> Ccatch(nfail, ids, subst e1, subst e2)
-    | Cexit (nfail, el) -> Cexit (nfail, List.map subst el)        
-    | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
-    | e -> e in
-  let res = subst exp in
-  (res, !need_boxed, !assigned)  
-
 (* Unit *)
 
 let return_unit c = Csequence(c, Cconst_pointer 1)
@@ -703,6 +662,84 @@ end
 
 module SwitcherBlocks = Switch.Make(SArgBlocks)
 
+(* Auxiliary functions for optimizing "let" of boxed numbers (floats and
+   boxed integers *)
+
+type unboxed_number_kind =
+    No_unboxing
+  | Boxed_float
+  | Boxed_integer of boxed_integer
+
+let is_unboxed_number = function
+    Uconst(Const_base(Const_float f)) ->
+      Boxed_float
+  | Uprim(p, _) ->
+      begin match simplif_primitive p with
+          Pccall p -> if p.prim_native_float then Boxed_float else No_unboxing
+        | Pfloatfield _ -> Boxed_float
+        | Pfloatofint -> Boxed_float
+        | Pnegfloat -> Boxed_float
+        | Pabsfloat -> Boxed_float
+        | Paddfloat -> Boxed_float
+        | Psubfloat -> Boxed_float
+        | Pmulfloat -> Boxed_float
+        | Pdivfloat -> Boxed_float
+        | Parrayrefu Pfloatarray -> Boxed_float
+        | Parrayrefs Pfloatarray -> Boxed_float
+        | Pbintofint bi -> Boxed_integer bi
+        | Pcvtbint(src, dst) -> Boxed_integer dst
+        | Pnegbint bi -> Boxed_integer bi
+        | Paddbint bi -> Boxed_integer bi
+        | Psubbint bi -> Boxed_integer bi
+        | Pmulbint bi -> Boxed_integer bi
+        | Pdivbint bi -> Boxed_integer bi
+        | Pmodbint bi -> Boxed_integer bi
+        | Pandbint bi -> Boxed_integer bi
+        | Porbint bi -> Boxed_integer bi
+        | Pxorbint bi -> Boxed_integer bi
+        | Plslbint bi -> Boxed_integer bi
+        | Plsrbint bi -> Boxed_integer bi
+        | Pasrbint bi -> Boxed_integer bi
+        | Pbigarrayref(_, (Pbigarray_float32 | Pbigarray_float64), _) ->
+            Boxed_float
+        | Pbigarrayref(_, Pbigarray_int32, _) -> Boxed_integer Pint32
+        | Pbigarrayref(_, Pbigarray_int64, _) -> Boxed_integer Pint64
+        | Pbigarrayref(_, Pbigarray_native_int, _) -> Boxed_integer Pnativeint
+        | _ -> No_unboxing
+      end
+  | _ -> No_unboxing
+
+let subst_boxed_number unbox_fn boxed_id unboxed_id exp =
+  let need_boxed = ref false in
+  let assigned = ref false in
+  let rec subst = function
+      Cvar id as e ->
+        if Ident.same id boxed_id then need_boxed := true; e
+    | Clet(id, arg, body) -> Clet(id, subst arg, subst body)
+    | Cassign(id, arg) -> 
+        if Ident.same id boxed_id then begin
+          assigned := true;
+          Cassign(unboxed_id, subst(unbox_fn arg))
+        end else
+          Cassign(id, subst arg)
+    | Ctuple argv -> Ctuple(List.map subst argv)
+    | Cop(Cload _, [Cvar id]) as e ->
+        if Ident.same id boxed_id then Cvar unboxed_id else e
+    | Cop(Cload _, [Cop(Cadda, [Cvar id; _])]) as e ->
+        if Ident.same id boxed_id then Cvar unboxed_id else e
+    | Cop(op, argv) -> Cop(op, List.map subst argv)
+    | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
+    | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
+    | Cswitch(arg, index, cases) ->
+        Cswitch(subst arg, index, Array.map subst cases)
+    | Cloop e -> Cloop(subst e)
+    | Ccatch(nfail, ids, e1, e2) -> Ccatch(nfail, ids, subst e1, subst e2)
+    | Cexit (nfail, el) -> Cexit (nfail, List.map subst el)        
+    | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
+    | e -> e in
+  let res = subst exp in
+  (res, !need_boxed, !assigned)  
+
 (* Translate an expression *)
 
 let functions = (Queue.create() : (string * Ident.t list * ulambda) Queue.t)
@@ -768,19 +805,16 @@ let rec transl = function
             obj :: (List.map transl args) @ [clos] in
           Cop(Capply typ_addr, cargs)))
   | Ulet(id, exp, body) ->
-      if is_unboxed_float exp then begin
-        let unboxed_id = Ident.create (Ident.name id) in
-        let (tr_body, need_boxed, is_assigned) =
-          subst_boxed_float id unboxed_id (transl body) in
-        if need_boxed && is_assigned then
+      begin match is_unboxed_number exp with
+        No_unboxing ->
           Clet(id, transl exp, transl body)
-        else
-          Clet(unboxed_id, transl_unbox_float exp,
-               if need_boxed
-               then Clet(id, box_float(Cvar unboxed_id), tr_body)
-               else tr_body)
-      end else
-        Clet(id, transl exp, transl body)
+      | Boxed_float ->
+          transl_unbox_let box_float unbox_float transl_unbox_float
+                           id exp body
+      | Boxed_integer bi ->
+          transl_unbox_let (box_int bi) (unbox_int bi) (transl_unbox_int bi)
+                           id exp body
+      end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
 
@@ -1280,6 +1314,21 @@ and transl_unbox_int bi = function
     Uprim(Pbintofint bi', [Uconst(Const_base(Const_int i))]) when bi = bi' ->
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
+
+and transl_unbox_let box_fn unbox_fn transl_unbox_fn id exp body =
+  print_string "transl_unbox_let ";
+  let unboxed_id = Ident.create (Ident.name id) in
+  let (tr_body, need_boxed, is_assigned) =
+    subst_boxed_number unbox_fn id unboxed_id (transl body) in
+  if need_boxed && is_assigned then
+    (print_string "need_boxed & is_assigned\n";
+    Clet(id, transl exp, transl body))
+  else
+    (print_string "unboxing!\n";
+    Clet(unboxed_id, transl_unbox_fn exp,
+         if need_boxed
+         then Clet(id, box_fn(Cvar unboxed_id), tr_body)
+         else tr_body))
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
