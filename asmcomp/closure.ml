@@ -72,6 +72,15 @@ let occurs_var var u =
       true
   in occurs u
 
+(* Check if a lambda term denoting a function is ``pure'',
+   that is without side-effects *and* not containing function definitions *)
+
+let rec is_pure = function
+    Lvar v -> true
+  | Lprim(Pgetglobal id, _) -> true
+  | Lprim(Pfield n, [arg]) -> is_pure arg
+  | _ -> false
+
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
    The approximation environment [fenv] maps idents to approximations.
@@ -100,7 +109,8 @@ let rec close fenv cenv = function
           let uargs = close_list fenv cenv args in
           let app_args = if fundesc.fun_closed then uargs
                                                else uargs @ [ufunct] in
-          (Udirect_apply(fundesc.fun_label, app_args),
+          let app = Udirect_apply(fundesc.fun_label, app_args) in
+          ((if is_pure funct then app else Usequence(ufunct, app)),
            approx_res)
       | (ufunct, Value_closure(fundesc, approx_res))
         when nargs > fundesc.fun_arity ->
@@ -108,8 +118,10 @@ let rec close fenv cenv = function
           let ufirst_args = close_list fenv cenv first_args in
           let app_args = if fundesc.fun_closed then ufirst_args
                                                else ufirst_args @ [ufunct] in
-          (Ugeneric_apply(Udirect_apply(fundesc.fun_label, app_args),
-                          close_list fenv cenv rem_args),
+          let app =
+            Ugeneric_apply(Udirect_apply(fundesc.fun_label, app_args),
+                           close_list fenv cenv rem_args) in
+          ((if is_pure funct then app else Usequence(ufunct, app)),
            Value_unknown)
       | (ufunct, _) ->
           (Ugeneric_apply(ufunct, close_list fenv cenv args), Value_unknown)

@@ -799,17 +799,16 @@ let rec transl_structure glob = function
     Uprim(Pmakeblock tag, args) ->
       (* Scan the args, storing those that are not identifiers and
          returning a map id -> position in block for those that are idents. *)
-      let rec make_stores pos = function
-        [] -> (Ctuple [], Tbl.empty)
+      let rec make_stores pos map = function
+        [] -> (Ctuple [], map)
       | Uvar v :: rem ->
-          let (c, map) = make_stores (pos+1) rem in
-          (c, Tbl.add v pos map)
+          make_stores (pos+1) (Tbl.add v pos map) rem
       | ulam :: rem ->
-          let (c, map) = make_stores (pos+1) rem in
+          let (c, final_map) = make_stores (pos+1) map rem in
           (Csequence(Cop(Cstore, [field_address (Cconst_symbol glob) pos;
                                   transl ulam]), c),
-           map) in
-      let (c, map) = make_stores 0 args in
+           final_map) in
+      let (c, map) = make_stores 0 Tbl.empty args in
       (c, map, List.length args)
   | Usequence(e1, e2) ->
       let (c2, map, size) = transl_structure glob e2 in
