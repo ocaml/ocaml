@@ -14,6 +14,7 @@
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 #include <sys/types.h>

@@ -15,6 +15,7 @@
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 #ifdef HAS_SOCKETS

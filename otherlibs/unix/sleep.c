@@ -12,6 +12,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 value unix_sleep(t)              /* ML */

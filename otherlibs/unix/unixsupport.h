@@ -15,4 +15,5 @@
 
 extern void unix_error P((int errcode, char * cmdname, value arg));
 extern void uerror P((char * cmdname, value arg));
-extern value unix_freeze_buffer P((value));
+
+#define UNIX_BUFFER_SIZE 16384

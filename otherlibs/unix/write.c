@@ -11,17 +11,45 @@
 
 /* $Id$ */
 
+#include <errno.h>
 #include <mlvalues.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 
-value unix_write(fd, buf, ofs, len) /* ML */
-     value fd, buf, ofs, len;
+#ifndef EAGAIN
+#define EAGAIN (-1)
+#endif
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK (-1)
+#endif
+
+value unix_write(fd, buf, vofs, vlen) /* ML */
+     value fd, buf, vofs, vlen;
 {
-  int ret;
-  buf = unix_freeze_buffer(buf);
-  enter_blocking_section();
-  ret = write(Int_val(fd), &Byte(buf, Long_val(ofs)), Int_val(len));
-  leave_blocking_section();
-  if (ret == -1) uerror("write", Nothing);
-  return Val_int(ret);
+  long ofs, len, written;
+  int numbytes, ret;
+  char iobuf[UNIX_BUFFER_SIZE];
+  Push_roots(r, 1);
+
+  r[0] = buf;
+  ofs = Long_val(vofs);
+  len = Long_val(vlen);
+  written = 0;
+  while (len > 0) {
+    numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
+    bcopy(&Byte(r[0], ofs), iobuf, numbytes);
+    enter_blocking_section();
+    ret = write(Int_val(fd), iobuf, numbytes);
+    leave_blocking_section();
+    if (ret == -1) {
+      if ((errno == EAGAIN || errno == EWOULDBLOCK) && written > 0) break;
+      uerror("write", Nothing);
+    }
+    written += ret;
+    ofs += ret;
+    len -= ret;
+  }
+  Pop_roots();
+  return Val_long(written);
 }
