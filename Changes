@@ -1,6 +1,14 @@
 Objective Caml 3.03:
 --------------------
 
+Language:
+- Switched the default behaviour to labels mode (labels are compulsory),
+  but allows omitting labels when a function application is complete.
+  -nolabels mode is available but deprecated for programming.
+- Removed all labels in the standard libraries, except labltk.
+  Labelized versions are kept for ArrayLabels, ListLabels, StringLabels
+  and UnixLabels. "open StdLabels" gives access to the first three.
+
 Type-checker:
 - Fixed obscure bug in module typing causing the type-checker to loop
   on signatures of the form
@@ -26,6 +34,8 @@ Toplevel environment:
 
 Tools:
 - New tool ocamlmklib to help build mixed Caml/C libraries.
+- New tool scrapelabels to remove (non-optional) labels in interfaces,
+  providing a quick and dirty transition from ocaml 3.02.
 - ocamldep: added -pp option to handle preprocessed source files.
 
 Run-time system:
