@@ -189,7 +189,7 @@ let hwb n =
                   else xor (and2 (not(mkVar i)) (h (i+1) j)) 
                            (and2 (mkVar i)      (g (i+1) j))
   in
-     h 1 n
+     h 0 (n-1)
 
 (* Testing *)
 let seed = ref 0
@@ -204,14 +204,14 @@ let random_vars n =
 
 let test_hwb bdd vars =
   (* We should have
-        eval bdd vars = vars.(n) if n > 0
-        eval bdd vars = 0 if n = 0
+        eval bdd vars = vars.(n-1) if n > 0
+        eval bdd vars = false if n = 0
      where n is the number of "true" elements in vars. *)
   let ntrue = ref 0 in
   for i = 0 to Array.length vars - 1 do
     if vars.(i) then incr ntrue
   done;
-  eval bdd vars = (if !ntrue > 0 then vars.(!ntrue) else false)
+  eval bdd vars = (if !ntrue > 0 then vars.(!ntrue-1) else false)
 
 let main () =
   let n =
@@ -221,7 +221,7 @@ let main () =
   let bdd = hwb n in
   let succeeded = ref true in
   for i = 1 to ntests do
-    succeeded := !succeeded || test_hwb bdd (random_vars n)
+    succeeded := !succeeded && test_hwb bdd (random_vars n)
   done;
   if !succeeded
   then print_string "OK\n"
