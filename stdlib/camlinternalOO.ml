@@ -171,9 +171,11 @@ let merge_buckets b1 b2 =
   bucket_list := except b2 !bucket_list;
   b1
 
+let prng = Random.State.make [| 0 |];;
+
 let rec choose bucket i =
   if (i > 0) && (!small_bucket_count > 0) then begin
-    let n = Random.int !small_bucket_count in
+    let n = Random.State.int prng !small_bucket_count in
     if not (small_bucket !small_buckets.(n)) then begin
       remove_bucket n; choose bucket i
     end else

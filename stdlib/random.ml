@@ -20,117 +20,153 @@
    It is seeded by a MD5-based PRNG.
 *)
 
-type state = { st : int array; mutable idx : int };;
+external random_seed: unit -> int = "sys_random_seed";;
+
+module State = struct
+
+  type t = { st : int array; mutable idx : int };;
+
+  let new_state () = { st = Array.make 55 0; idx = 0 };;
+  let assign st1 st2 =
+    Array.blit st2.st 0 st1.st 0 55;
+    st1.idx <- st2.idx;
+  ;;
+
+  let full_init s seed =
+    let combine accu x = Digest.string (accu ^ string_of_int x) in
+    let extract d =
+      (Char.code d.[0] + (Char.code d.[1] lsl 8) + (Char.code d.[2] lsl 16))
+      lxor (Char.code d.[3] lsl 22)
+    in
+    let l = Array.length seed in
+    for i = 0 to 54 do
+      s.st.(i) <- i;
+    done;
+    let accu = ref "x" in
+    for i = 0 to 54 + max 55 l do
+      let j = i mod 55 in
+      let k = i mod l in
+      accu := combine !accu seed.(k);
+      s.st.(j) <- s.st.(j) lxor extract !accu;
+    done;
+    s.idx <- 0;
+  ;;
+
+  let make seed =
+    let result = new_state () in
+    full_init result seed;
+    result
+  ;;
+
+  let make_self_init () = make [| random_seed () |];;
+
+  let copy s =
+    let result = new_state () in
+    assign result s;
+    result
+  ;;
+
+  (* Returns 30 random bits as an integer 0 <= x < 1073741824 *)
+  let bits s =
+    s.idx <- (s.idx + 1) mod 55;
+    let newval = (s.st.((s.idx + 24) mod 55) + s.st.(s.idx)) land 0x3FFFFFFF in
+    s.st.(s.idx) <- newval;
+    newval
+  ;;
+
+  let rec intaux s n =
+    let r = bits s in
+    if r >= n then intaux s n else r
+  ;;
+  let int s bound =
+    if bound > 0x3FFFFFFF || bound <= 0
+    then invalid_arg "Random.int"
+    else (intaux s (0x3FFFFFFF / bound * bound)) mod bound
+  ;;
+
+  let rec int32aux s n =
+    let b1 = Int32.of_int (bits s) in
+    let b2 = Int32.shift_left (Int32.of_int (bits s land 1)) 30 in
+    let r = Int32.logor b1 b2 in
+    if r >= n then int32aux s n else r
+  ;;
+  let int32 s bound =
+    if bound <= 0l then
+      invalid_arg "Random.int32"
+    else
+      let rb = Int32.mul bound (Int32.div Int32.max_int bound) in
+      Int32.rem (int32aux s rb) bound
+  ;;
+
+  let rec int64aux s n =
+    let b1 = Int64.of_int (bits s) in
+    let b2 = Int64.shift_left (Int64.of_int (bits s)) 30 in
+    let b3 = Int64.shift_left (Int64.of_int (bits s land 7)) 60 in
+    let r = Int64.logor b1 (Int64.logor b2 b3) in
+    if r >= n then int64aux s n else r
+  ;;
+  let int64 s bound =
+    if bound <= 0L then
+      invalid_arg "Random.int64"
+    else
+      let rb = Int64.mul bound (Int64.div Int64.max_int bound) in
+      Int64.rem (int64aux s rb) bound
+  ;;
+
+  let nativeint =
+    if Nativeint.size = 32
+    then fun s bound -> Nativeint.of_int32 (int32 s (Nativeint.to_int32 bound))
+    else fun s bound -> Int64.to_nativeint (int64 s (Int64.of_nativeint bound))
+  ;;
+
+  (* Returns a float 0 <= x < 1 with at most 90 bits of precision. *)
+  let rawfloat s =
+    let scale = 1073741824.0
+    and r0 = Pervasives.float (bits s)
+    and r1 = Pervasives.float (bits s)
+    and r2 = Pervasives.float (bits s)
+    in ((r0 /. scale +. r1) /. scale +. r2) /. scale
+  ;;
+
+  let float s bound = rawfloat s *. bound;;
+
+  let bool s = (bits s land 1 = 0);;
+
+end;;
 
 (* This is the state you get with [init 27182818] on a 32-bit machine. *)
 let default = {
-  st = [|
-    561073064; 1051173471; 764306064; 9858203; 1023641486; 615350359;
-    552627506; 486882977; 147054819; 951240904; 869261341; 71648846;
-    848741663; 337696531; 66770770; 473370118; 998499212; 477485839;
-    814302728; 281896889; 206134737; 796925167; 762624501; 971004788;
-    878960411; 233350272; 965168955; 933858406; 572927557; 708896334;
-    32881167; 462134267; 868098973; 768795410; 567327260; 4136554;
-    268309077; 804670393; 854580894; 781847598; 310632349; 22990936;
-    187230644; 714526560; 146577263; 979459837; 514922558; 414383108;
-    21528564; 896816596; 33747835; 180326017; 414576093; 124177607;
-    440266690;
-  |];
-  idx = 0;
+  State.st = [|
+      509760043; 399328820; 99941072; 112282318; 611886020; 516451399;
+      626288598; 337482183; 748548471; 808894867; 657927153; 386437385;
+      42355480; 977713532; 311548488; 13857891; 307938721; 93724463;
+      1041159001; 444711218; 1040610926; 233671814; 664494626; 1071756703;
+      188709089; 420289414; 969883075; 513442196; 275039308; 918830973;
+      598627151; 134083417; 823987070; 619204222; 81893604; 871834315;
+      398384680; 475117924; 520153386; 324637501; 38588599; 435158812;
+      168033706; 585877294; 328347186; 293179100; 671391820; 846150845;
+      283985689; 502873302; 718642511; 938465128; 962756406; 107944131;
+      192910970;
+    |];
+  State.idx = 0;
 };;
 
-(* Returns 30 random bits as an integer 0 <= x < 1073741824 *)
-let s_bits s =
-  s.idx <- (s.idx + 1) mod 55;
-  let newval = (s.st.((s.idx + 24) mod 55) + s.st.(s.idx)) land 0x3FFFFFFF in
-  s.st.(s.idx) <- newval;
-  newval
-;;
+let bits () = State.bits default;;
+let int bound = State.int default bound;;
+let int32 bound = State.int32 default bound;;
+let nativeint bound = State.nativeint default bound;;
+let int64 bound = State.int64 default bound;;
+let float scale = State.float default scale;;
+let bool () = State.bool default;;
 
-(* Returns a float 0 <= x < 1 with at most 90 bits of precision. *)
-let s_rawfloat s =
-  let scale = 1073741824.0
-  and r0 = Pervasives.float (s_bits s)
-  and r1 = Pervasives.float (s_bits s)
-  and r2 = Pervasives.float (s_bits s)
-  in ((r0 /. scale +. r1) /. scale +. r2) /. scale
-;;
-
-let rec s_intaux s n =
-  let r = s_bits s in
-  if r >= n then s_intaux s n else r
-;;
-let s_int s bound =
-  if bound > 0x3FFFFFFF || bound <= 0
-  then invalid_arg "Random.int"
-  else (s_intaux s (0x3FFFFFFF / bound * bound)) mod bound
-;;
-
-let s_float s bound = s_rawfloat s *. bound
-
-let s_bool s = (s_bits s land 1 = 0);;
-
-let bits () = s_bits default;;
-let int bound = s_int default bound;;
-let float scale = s_float default scale;;
-let bool () = s_bool default;;
-
-(* Full initialisation.  The seed is an array of integers. *)
-let s_full_init s seed =
-  let combine accu x = Digest.string (accu ^ string_of_int x) in
-  let extract d =
-    (Char.code d.[0] + (Char.code d.[1] lsl 8) + (Char.code d.[2] lsl 16))
-    lxor (Char.code d.[3] lsl 22)
-  in
-  let l = Array.length seed in
-  for i = 0 to 54 do
-    s.st.(i) <- i;
-  done;
-  let accu = ref "x" in
-  for i = 0 to 54 + max 55 l do
-    let j = i mod 55 in
-    let k = i mod l in
-    accu := combine !accu seed.(k);
-    s.st.(j) <- s.st.(j) lxor extract !accu;
-  done;
-  s.idx <- 0;
-;;
-
-let full_init seed = s_full_init default seed;;
-
-(* Simple initialisation.  The seed is an integer. *)
-let init seed = s_full_init default [| seed |];;
-
-(* Low-entropy system-dependent initialisation. *)
-external random_seed: unit -> int = "sys_random_seed";;
+let full_init seed = State.full_init default seed;;
+let init seed = State.full_init default [| seed |];;
 let self_init () = init (random_seed());;
-
-(* The default PRNG is initialised with self_init. *)
-self_init ();;
-
-let new_state () = { st = Array.make 55 0; idx = 0 };;
-let assign_state st1 st2 =
-  Array.blit st2.st 0 st1.st 0 55;
-  st1.idx <- st2.idx;
-;;
-
-(* Create, initialise, and return a new state value. *)
-let s_make seed =
-  let result = new_state () in
-  s_full_init result seed;
-  result
-;;
-
-let s_copy s =
-  let result = new_state () in
-  assign_state result s;
-  result
-;;
 
 (* Manipulating the current state. *)
 
-let get_state () = s_copy default;;
-let set_state s = assign_state default s;;
+let get_state () = State.copy default;;
+let set_state s = State.assign default s;;
 
 (********************
 

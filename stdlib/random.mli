@@ -15,7 +15,7 @@
 
 (** Pseudo-random number generators (PRNG). *)
 
-(** {6 functions for casual users} *)
+(** {6 basic functions} *)
 
 val init : int -> unit
 (** Initialize the generator, using the argument as a seed.
@@ -26,8 +26,7 @@ val full_init : int array -> unit
 
 val self_init : unit -> unit
 (** Initialize the generator with a more-or-less random seed chosen
-   in a system-dependent way.  The generator is initialised with this
-   function at the start of the program. *)
+   in a system-dependent way. *)
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer. *)
@@ -36,6 +35,18 @@ val int : int -> int
 (** [Random.int bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be more than 0 and less
      than 2{^30}. *)
+
+val int32 : Int32.t -> Int32.t;;
+(** [Random.int32 bound] returns a random integer between 0 (inclusive)
+     and [bound] (exclusive).  [bound] must be greater than 0. *)
+
+val nativeint : Nativeint.t -> Nativeint.t;;
+(** [Random.nativeint bound] returns a random integer between 0 (inclusive)
+     and [bound] (exclusive).  [bound] must be greater than 0. *)
+
+val int64 : Int64.t -> Int64.t;;
+(** [Random.int64 bound] returns a random integer between 0 (inclusive)
+     and [bound] (exclusive).  [bound] must be greater than 0. *)
 
 val float : float -> float
 (** [Random.float bound] returns a random floating-point number
@@ -46,20 +57,8 @@ val float : float -> float
 val bool : unit -> bool
 (** [Random.bool ()] returns [true] or [false] with probability 0.5 each. *)
 
-type state
-(** Values of this type are used to store the current state of the
-   generator. *)
 
-val get_state : unit -> state
-(** Return the current state of the generator.  This is useful for
-   checkpointing computations that use the PRNG. *)
-
-val set_state : state -> unit
-(** Reset the state of the generator to some previous state returned by
-   {!Random.get_state}. *)
-
-
-(** {6 functions for serious users} *)
+(** {6 advanced functions} *)
 
 (** These function manipulate the current state explicitely.
     This allows you to use one or several deterministic PRNGs,
@@ -68,16 +67,35 @@ val set_state : state -> unit
     and some object-oriented primitives use the default PRNG).
 *)
 
-val s_make : int array -> state;;
-(** Create a new state and initialize it with the given seed. *)
+module State : sig
+  type t
+  (** The type of PRNG states. *)
 
-val s_copy : state -> state;;
-(** Make a copy of the given state. *)
+  val make : int array -> t
+  (** Create a new state and initialize it with the given seed. *)
 
-val s_bits : state -> int;;
-val s_int : state -> int -> int;;
-val s_float : state -> float -> float;;
-val s_bool : state -> bool;;
-(** These functions are the same as the above versions, except that they
-    use (and update) the given PRNG state instead of the default one.
-*)
+  val make_self_init : unit -> t
+  (** Create a new state and initialize it with a system-dependent
+      low-entropy seed. *)
+
+  val copy : t -> t
+  (** Return a copy of the given state. *)
+
+  val bits : t -> int
+  val int : t -> int -> int
+  val int32 : t -> Int32.t -> Int32.t
+  val nativeint : t -> Nativeint.t -> Nativeint.t
+  val int64 : t -> Int64.t -> Int64.t
+  val float : t -> float -> float
+  val bool : t -> bool
+  (** These functions are the same as the basic functions, except that they
+      use (and update) the given PRNG state instead of the default one.
+  *)
+end;;
+
+
+val get_state : unit -> State.t
+(** Return the current state of the generator used by the basic functions. *)
+
+val set_state : State.t -> unit
+(** Set the state of the generator used by the basic functions. *)

@@ -26,13 +26,14 @@ CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
+  int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo buffer.cmo \
   printf.cmo format.cmo scanf.cmo \
   arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo camlinternalOO.cmo oo.cmo \
   genlex.cmo callback.cmo weak.cmo \
-  lazy.cmo filename.cmo int32.cmo int64.cmo nativeint.cmo complex.cmo
+  lazy.cmo filename.cmo complex.cmo
 LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml moreLabels.ml
 
 OBJS=$(BASIC) labelled.cmo stdLabels.cmo

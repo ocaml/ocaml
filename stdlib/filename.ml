@@ -182,19 +182,13 @@ let chop_extension name =
 
 external open_desc: string -> open_flag list -> int -> int = "sys_open"
 external close_desc: int -> unit = "sys_close"
-external random_seed: unit -> int = "sys_random_seed"
 
-let temp_file_counter = ref 0
+let prng = Random.State.make_self_init ();;
 
 let temp_file_name prefix suffix =
-  if !temp_file_counter = 0 then temp_file_counter := random_seed();
-  let name =
-    concat temporary_directory
-           (Printf.sprintf "%s%06x%s"
-                           prefix (!temp_file_counter land 0xFFFFFF) suffix) in
-  (* Linear congruential PRNG *)
-  temp_file_counter := !temp_file_counter * 69069 + 25173;
-  name
+  let rnd = (Random.State.bits prng) land 0xFFFFFF in
+  concat temporary_directory (Printf.sprintf "%s%06x%s" prefix rnd suffix)
+;;
 
 let temp_file prefix suffix =
   let rec try_name counter =
