@@ -1565,17 +1565,7 @@ followed by |."
                        (caml-in-indentation)
                        (not (caml-in-comment-p)))))
     (self-insert-command 1)
-    (if electric
-        (let ((indent
-               (save-excursion
-                 (backward-char 1)
-                 (caml-indent-command)
-                 (current-column))))
-          (indent-to (- indent
-                        (symbol-value
-                         (nth 1 (assoc
-                                 (char-to-string last-command-char)
-                                 caml-leading-kwops-alist)))))))))
+    (if electric (save-excursion (caml-indent-command)))))
 
 (defun caml-electric-rb ()
   "If inserting a ] operator at beginning of line, reindent the line.
@@ -1585,38 +1575,26 @@ by |, insert one."
 
   (interactive "*")
   (let* ((prec (preceding-char))
-         (look-pipe (and caml-electric-close-vector
-                         (not (caml-in-comment-p))
-                         (not (caml-in-literal-p))
-                         (or (not (numberp prec))
-                             (not (char-equal ?| prec)))
-                         (set-marker (make-marker) (point))))
+         (use-pipe (and caml-electric-close-vector
+                        (not (caml-in-comment-p))
+                        (not (caml-in-literal-p))
+                        (or (not (numberp prec))
+                            (not (char-equal ?| prec)))))
          (electric (and caml-electric-indent
                         (caml-in-indentation)
                         (not (caml-in-comment-p)))))
     (self-insert-command 1)
-    (if electric
-        (let ((indent
-               (save-excursion
-                 (backward-char 1)
-                 (caml-indent-command)
-                 (current-column))))
-          (indent-to (- indent
-                        (symbol-value
-                         (nth 1 (assoc
-                                 (char-to-string last-command-char)
-                                 caml-leading-kwops-alist)))))))
-    (if look-pipe
-        (save-excursion
-          (let ((insert-pipe
-                 (condition-case nil
-                     (prog2
+    (if electric (save-excursion (caml-indent-command)))
+    (if (and use-pipe
+             (save-excursion
+               (condition-case nil
+                   (prog2
                        (backward-list 1)
-                       (if (looking-at "\\[|") "|" ""))
-                   (error ""))))
-            (goto-char look-pipe)
-            (insert insert-pipe))
-          (set-marker look-pipe nil)))))
+                       (looking-at "\\[|"))
+                 (error ""))))
+        (save-excursion
+          (backward-char 1)
+          (insert "|")))))
 
 (defun caml-abbrev-hook ()
   "If inserting a leading keyword at beginning of line, reindent the line."
