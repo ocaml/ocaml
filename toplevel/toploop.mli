@@ -80,6 +80,7 @@ val input_name : string ref
 val print_out_value : (formatter -> Outcometree.out_value -> unit) ref
 val print_out_type : (formatter -> Outcometree.out_type -> unit) ref
 val print_out_sig_item : (formatter -> Outcometree.out_sig_item -> unit) ref
+val print_out_phrase : (formatter -> Outcometree.out_phrase -> unit) ref
 
 (* Used by Trace module *)
 

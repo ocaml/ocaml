@@ -14,12 +14,12 @@
 
 (* Module [Outcometree]: results displayed by the toplevel *)
 
-(* These types represent values, types and signature items that the toplevel
-   displays as normal results or errors messages. The real displaying is
-   customisable using the hooks:
+(* These types represent messages that the toplevel displays as normal
+   results or errors. The real displaying is customisable using the hooks:
       [Toploop.print_out_value]
       [Toploop.print_out_type]
-      [Toploop.print_out_sig_item] *)
+      [Toploop.print_out_sig_item]
+      [Toploop.print_out_phrase] *)
 
 type out_ident =
   | Oide_apply of out_ident * out_ident
@@ -82,3 +82,8 @@ and out_sig_item =
 and out_type_decl =
   string * (string * (bool * bool)) list * out_type *
   (out_type * out_type) list
+
+type out_phrase =
+  | Ophr_eval of out_value * out_type
+  | Ophr_signature of (out_sig_item * out_value option) list
+  | Ophr_exception of (exn * out_value)

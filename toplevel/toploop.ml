@@ -133,51 +133,60 @@ let load_lambda ppf lam =
 
 (* Print the outcome of an evaluation *)
 
-let pr_item env ppf = function
+let pr_item env = function
   | Tsig_value(id, decl) :: rem ->
-      begin match decl.val_kind with
-      | Val_prim _ ->
-          fprintf ppf "@[<2>%a@]"
-          (Printtyp.value_description id) decl
-      | _ ->
-          fprintf ppf "@[<2>%a =@ %a@]"
-          (Printtyp.value_description id) decl
-          (print_value env (getvalue (Translmod.toplevel_name id)))
-          decl.val_type
-      end;
-      rem
+      let tree = Printtyp.tree_of_value_description id decl in
+      let valopt =
+        match decl.val_kind with
+        | Val_prim _ -> None
+        | _ ->
+            let v =
+              outval_of_value env (getvalue (Translmod.toplevel_name id))
+                decl.val_type
+            in
+            Some v
+      in
+      Some (tree, valopt, rem)
   | Tsig_type(id, decl) :: rem ->
-      fprintf ppf "@[%a@]"
-      (Printtyp.type_declaration id) decl;
-      rem
+      let tree = Printtyp.tree_of_type_declaration id decl in
+      Some (tree, None, rem)
   | Tsig_exception(id, decl) :: rem ->
-      fprintf ppf "@[%a@]"
-      (Printtyp.exception_declaration id) decl;
-      rem
+      let tree = Printtyp.tree_of_exception_declaration id decl in
+      Some (tree, None, rem)
   | Tsig_module(id, mty) :: rem ->
-      !print_out_sig_item ppf
-        (Osig_module (Ident.name id, Printtyp.tree_of_modtype mty));
-      rem
+      let tree = Printtyp.tree_of_module id mty in
+      Some (tree, None, rem)
   | Tsig_modtype(id, decl) :: rem ->
-      fprintf ppf "@[%a@]" 
-      (Printtyp.modtype_declaration id) decl;
-      rem
+      let tree = Printtyp.tree_of_modtype_declaration id decl in
+      Some (tree, None, rem)
   | Tsig_class(id, decl) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
-      fprintf ppf "@[%a@]"
-      (Printtyp.class_declaration id) decl;
-      rem
+      let tree = Printtyp.tree_of_class_declaration id decl in
+      Some (tree, None, rem)
   | Tsig_cltype(id, decl) :: tydecl1 :: tydecl2 :: rem ->
-      fprintf ppf "@[%a@]" 
-      (Printtyp.cltype_declaration id) decl;
-      rem
-  | _ -> []
+      let tree = Printtyp.tree_of_cltype_declaration id decl in
+      Some (tree, None, rem)
+  | _ -> None
 
-let rec print_items env ppf = function
-  | [] -> ()
+let rec item_list env = function
+  | [] -> []
   | items ->
-     match pr_item env ppf items with
-     | [] -> ()
-     | items -> fprintf ppf "@ %a" (print_items env) items;;
+     match pr_item env items with
+     | None -> []
+     | Some (tree, valopt, items) -> (tree, valopt) :: item_list env items
+
+let rec print_items ppf =
+  function
+  | [] -> ()
+  | (tree, valopt) :: items ->
+      begin match valopt with
+      | Some v ->
+          fprintf ppf "@[<2>%a =@ %a@]" !print_out_sig_item tree
+            !print_out_value v
+      | None ->
+          fprintf ppf "@[%a@]" !print_out_sig_item tree
+      end;
+      if items <> [] then
+        fprintf ppf "@ %a" print_items items;;
 
 (* The current typing environment for the toplevel *)
 
@@ -185,17 +194,21 @@ let toplevel_env = ref Env.empty
 
 (* Print an exception produced by an evaluation *)
 
-let print_exception_outcome ppf = function
+let print_out_exception ppf exn outv =
+  match exn with
   | Sys.Break ->
       fprintf ppf "Interrupted.@."
   | Out_of_memory ->
-      Gc.full_major();
       fprintf ppf "Out of memory during evaluation.@."
   | Stack_overflow ->
       fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
-  | exn ->
-      fprintf ppf "@[Uncaught exception:@ %a.@]@."
-              (print_value !toplevel_env (Obj.repr exn)) Predef.type_exn
+  | _ ->
+      fprintf ppf "@[Uncaught exception:@ %a.@]@." !print_out_value outv
+
+let print_exception_outcome ppf exn =
+  if exn = Out_of_memory then Gc.full_major ();
+  let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
+  print_out_exception ppf exn outv
 
 (* The table of toplevel directives. 
    Filled by functions from module topdirs. *)
@@ -204,6 +217,17 @@ let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
 
 (* Execute a toplevel phrase *)
 
+let print_phrase ppf =
+  function
+  | Ophr_eval (outv, ty) ->
+      fprintf ppf "@[- : %a@ =@ %a@]@."
+        !print_out_type ty !print_out_value outv
+  | Ophr_signature [] -> ()
+  | Ophr_signature items -> fprintf ppf "@[<v>%a@]@." print_items items
+  | Ophr_exception (exn, outv) -> print_out_exception ppf exn outv
+
+let print_out_phrase = ref print_phrase
+
 let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
@@ -211,26 +235,31 @@ let execute_phrase print_outcome ppf phr =
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
       let res = load_lambda ppf lam in
-      begin match res with
-      | Result v ->
-          if print_outcome then begin
-            match str with
-            | [Tstr_eval exp] ->
-                let outv = outval_of_value newenv v exp.exp_type in
-                fprintf ppf "@[- : %a@ =@ %a@]@."
-                Printtyp.type_scheme exp.exp_type
-                !print_out_value outv
-            | [] -> ()
-            | _ ->
-                fprintf ppf "@[<v>%a@]@."
-                (print_items newenv) sg
-          end;
-          toplevel_env := newenv;
-          true
-      | Exception exn ->
-          print_exception_outcome ppf exn;
-          false
+      let out_phr =
+        match res with
+        | Result v ->
+            if print_outcome then
+              match str with
+              | [Tstr_eval exp] ->
+                  let outv = outval_of_value newenv v exp.exp_type in
+                  let ty = Printtyp.tree_of_type_scheme exp.exp_type in
+                  Ophr_eval (outv, ty)
+              | [] -> Ophr_signature []
+              | _ -> Ophr_signature (item_list newenv sg)
+            else Ophr_signature []
+        | Exception exn ->
+            if exn = Out_of_memory then Gc.full_major();
+            let outv =
+              outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn
+            in
+            Ophr_exception (exn, outv)
+      in
+      !print_out_phrase ppf out_phr;
+      begin match out_phr with
+      | Ophr_eval (_, _) | Ophr_signature _ -> toplevel_env := newenv; true
+      | Ophr_exception _ -> false
       end
+      
   | Ptop_dir(dir_name, dir_arg) ->
       try
         match (Hashtbl.find directive_table dir_name, dir_arg) with

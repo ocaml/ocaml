@@ -710,14 +710,20 @@ and tree_of_constructor (name, args) =
 and tree_of_label (name, mut, arg) =
   (name, mut = Mutable, tree_of_typexp false arg)
 
+let tree_of_type_declaration id decl =
+  Osig_type [tree_of_type_decl id decl]
+
 let type_declaration id ppf decl =
-  !outcome_sig_item ppf (Osig_type [tree_of_type_decl id decl])
+  !outcome_sig_item ppf (tree_of_type_declaration id decl)
 
 (* Print an exception declaration *)
 
-let exception_declaration id ppf decl =
+let tree_of_exception_declaration id decl =
   let tyl = tree_of_typlist false decl in
-  !outcome_sig_item ppf (Osig_exception (Ident.name id, tyl))
+  Osig_exception (Ident.name id, tyl)
+
+let exception_declaration id ppf decl =
+  !outcome_sig_item ppf (tree_of_exception_declaration id decl)
 
 (* Print a value declaration *)
 
@@ -952,6 +958,8 @@ and tree_of_modtype_declaration id decl =
     | Tmodtype_manifest mty -> tree_of_modtype mty
   in
   Osig_modtype (Ident.name id, mty)
+
+let tree_of_module id mty = Osig_module (Ident.name id, tree_of_modtype mty)
 
 let modtype ppf mty = print_out_module_type ppf (tree_of_modtype mty)
 let modtype_declaration id ppf decl =

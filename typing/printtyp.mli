@@ -16,24 +16,34 @@
 
 open Format
 open Types
+open Outcometree
 
 val longident: formatter -> Longident.t -> unit
 val ident: formatter -> Ident.t -> unit
+val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
 val reset: unit -> unit
 val mark_loops: type_expr -> unit
 val reset_and_mark_loops: type_expr -> unit
 val reset_and_mark_loops_list: type_expr list -> unit
 val type_expr: formatter -> type_expr -> unit
+val tree_of_type_scheme: type_expr -> out_type
 val type_scheme: formatter -> type_expr -> unit
+val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit
+val tree_of_type_declaration: Ident.t -> type_declaration -> out_sig_item
 val type_declaration: Ident.t -> formatter -> type_declaration -> unit
+val tree_of_exception_declaration: Ident.t -> exception_declaration -> out_sig_item
 val exception_declaration: Ident.t -> formatter -> exception_declaration -> unit
+val tree_of_module: Ident.t -> module_type -> out_sig_item
 val modtype: formatter -> module_type -> unit
 val signature: formatter -> signature -> unit
+val tree_of_modtype_declaration: Ident.t -> modtype_declaration -> out_sig_item
 val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit
 val class_type: formatter -> class_type -> unit
+val tree_of_class_declaration: Ident.t -> class_declaration -> out_sig_item
 val class_declaration: Ident.t -> formatter -> class_declaration -> unit
+val tree_of_cltype_declaration: Ident.t -> cltype_declaration -> out_sig_item
 val cltype_declaration: Ident.t -> formatter -> cltype_declaration -> unit
 val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
 val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
@@ -47,7 +57,5 @@ val report_unification_error:
     (formatter -> unit) -> (formatter -> unit) ->
     unit
 
-val tree_of_path: Path.t -> Outcometree.out_ident
-val tree_of_modtype: module_type -> Outcometree.out_module_type
-val outcome_type: (formatter -> Outcometree.out_type -> unit) ref
-val outcome_sig_item: (formatter -> Outcometree.out_sig_item -> unit) ref
+val outcome_type: (formatter -> out_type -> unit) ref
+val outcome_sig_item: (formatter -> out_sig_item -> unit) ref
