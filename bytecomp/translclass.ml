@@ -103,15 +103,18 @@ let transl_super tbl meths inh_methods rem =
 
 let create_object cl obj init =
   let obj' = Ident.create "self" in
-  let (inh_init, obj_init) = init obj' in
+  let (inh_init, obj_init, has_init) = init obj' in
   if obj_init = lambda_unit then
-   (inh_init,
-    Lapply (oo_prim "create_object_and_run_initializers", [obj; Lvar cl]))
+    (inh_init,
+     Lapply (oo_prim (if has_init then "create_object_and_run_initializers"
+                      else"create_object_opt"),
+             [obj; Lvar cl]))
   else begin
    (inh_init,
     Llet(Strict, obj',
             Lapply (oo_prim "create_object_opt", [obj; Lvar cl]),
          Lsequence(obj_init,
+                   if not has_init then Lvar obj' else
                    Lapply (oo_prim "run_initializers_opt",
 			   [obj; Lvar obj'; Lvar cl]))))
   end
@@ -129,20 +132,23 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
        Lapply(Lvar obj_init, env @ [obj]))
   | Tclass_structure str ->
       create_object cl_table obj (fun obj ->
-        let (inh_init, obj_init) =
+        let (inh_init, obj_init, has_init) =
           List.fold_right
-            (fun field (inh_init, obj_init) ->
+            (fun field (inh_init, obj_init, has_init) ->
                match field with
                  Cf_inher (cl, _, _) ->
                    let (inh_init, obj_init') =
                      build_object_init cl_table (Lvar obj) [] inh_init
                        (fun _ -> lambda_unit) cl
                    in
-                   (inh_init, lsequence obj_init' obj_init)
+                   (inh_init, lsequence obj_init' obj_init, true)
                | Cf_val (_, id, exp) ->
-                   (inh_init, lsequence (set_inst_var obj id exp) obj_init)
-               | Cf_meth _ | Cf_init _ ->
-                   (inh_init, obj_init)
+                   (inh_init, lsequence (set_inst_var obj id exp) obj_init,
+                    has_init)
+               | Cf_meth _ ->
+                   (inh_init, obj_init, has_init)
+               | Cf_init _ ->
+                   (inh_init, obj_init, true)
                | Cf_let (rec_flag, defs, vals) ->
                    (inh_init,
                     Translcore.transl_let rec_flag defs
@@ -150,15 +156,17 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
                          (fun (id, expr) rem ->
                             lsequence (Lifused(id, set_inst_var obj id expr))
                                       rem)
-                         vals obj_init)))
+                         vals obj_init),
+                    has_init))
             str.cl_field
-            (inh_init, obj_init obj)
+            (inh_init, obj_init obj, false)
         in
         (inh_init,
          List.fold_right
            (fun (id, expr) rem ->
               lsequence (Lifused (id, set_inst_var obj id expr)) rem)
-           params obj_init))
+           params obj_init,
+         has_init))
   | Tclass_fun (pat, vals, cl, partial) ->
       let (inh_init, obj_init) =
         build_object_init cl_table obj (vals @ params) inh_init obj_init cl
@@ -473,6 +481,9 @@ let rec builtin_meths self env env2 body =
   | Lsend(Lvar n, Lvar s, [arg]) when List.mem s self ->
       let s, args = conv arg in
       ("meth_app_"^s, Lvar n :: args)
+  | Lsend(Lvar n, arg, []) ->
+      let s, args = conv arg in
+      ("send_"^s, Lvar n :: args)
   | Lfunction (Curried, [x], body) ->
       let rec enter self = function
         | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'])
@@ -512,6 +523,10 @@ module M = struct
     | "meth_app_var"    -> MethAppVar
     | "meth_app_env"    -> MethAppEnv
     | "meth_app_meth"   -> MethAppMeth
+    | "send_const" -> SendConst
+    | "send_var"   -> SendVar
+    | "send_env"   -> SendEnv
+    | "send_meth"  -> SendMeth
     | _ -> assert false
     in Lconst(Const_pointer(Obj.magic tag)) :: args
 end

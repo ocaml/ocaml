@@ -91,6 +91,10 @@ val meth_app_const : label -> t -> closure
 val meth_app_var : label -> int -> closure
 val meth_app_env : label -> int -> int -> closure
 val meth_app_meth : label -> label -> closure
+val send_const : label -> obj -> closure
+val send_var : label -> int -> closure
+val send_env : label -> int -> int -> closure
+val send_meth : label -> label -> closure
 
 type impl =
     GetConst
@@ -113,6 +117,10 @@ type impl =
   | MethAppVar
   | MethAppEnv
   | MethAppMeth
+  | SendConst
+  | SendVar
+  | SendEnv
+  | SendMeth
   | Closure of t
 
 (** {6 Parameters} *)
