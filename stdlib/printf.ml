@@ -56,7 +56,7 @@ let fprintf outchan format =
             Obj.magic(fun c ->
               output_char outchan c;
               doprn (succ j))
-        | 'd' | 'o' | 'x' | 'X' | 'u' ->
+        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
             Obj.magic(fun n ->
               output_string outchan
                             (format_int (String.sub format i (j-i+1)) n);

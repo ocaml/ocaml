@@ -322,7 +322,7 @@ let type_format loc fmt =
             newty (Tarrow(instance Predef.type_string, scan_format (j+1)))
         | 'c' ->
             newty (Tarrow(instance Predef.type_char, scan_format (j+1)))
-        | 'd' | 'o' | 'x' | 'X' | 'u' ->
+        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
             newty (Tarrow(instance Predef.type_int, scan_format (j+1)))
         | 'f' | 'e' | 'E' | 'g' | 'G' ->
             newty (Tarrow(instance Predef.type_float, scan_format (j+1)))
