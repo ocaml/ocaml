@@ -36,7 +36,7 @@ extern caml_generated_constant Out_of_memory, Sys_error, Failure,
 
 extern void raise_caml_exception P((value bucket)) Noreturn;
 
-extern char * caml_exception_pointer;
+char * caml_exception_pointer = NULL;
 
 void mlraise(v)
      value v;
@@ -51,6 +51,7 @@ void mlraise(v)
 #endif
 #endif
   leave_blocking_section();
+  if (caml_exception_pointer == NULL) fatal_uncaught_exception(v);
 #ifndef Stack_grows_upwards
   while (local_roots != NULL && 
          (char *) local_roots < caml_exception_pointer) {

@@ -13,13 +13,7 @@
 
 | Asm part of the runtime system, Motorola 68k processor
 
-        .comm   _young_limit, 4
-        .comm   _young_ptr, 4
         .comm   _gc_entry_regs, 48
-        .comm   _caml_bottom_of_stack, 4
-        .comm   _caml_top_of_stack, 4
-        .comm   _caml_last_return_address, 4
-        .comm   _caml_exception_pointer, 4
         .comm   _caml_requested_size, 4
 
 | Allocation
@@ -134,52 +128,11 @@ _caml_start_program:
     | Save callee-save registers
         moveml  a2-a6/d2-d7, a7@-
         fmovem  fp2-fp7, a7@-
-    | Build an exception handler
-        pea     L103
-        pea     0
-        movel   a7, d7
-    | Record highest stack address
-        movel   a7, _caml_top_of_stack
-    | Load allocation pointer
-        movel   _young_ptr, d6
-    | Go for it
-        jbsr    _caml_program
-    | Pop handler
-        addql   #8, a7
-    | Zero return code
-        clrl    d0
-        bra     L104
-L103:
-    | Return exception bucket
-        movel   a0, d0
-L104:
-    | Restore registers and return
-        fmovem  a7@+, fp2-fp7
-        moveml  a7@+, a2-a6/d2-d7
-        rts
+    | Initial code point is caml_program
+        lea     _caml_program, a5
 
-| Raise an exception from C
+| Code shared between caml_start_program and callback*
 
-        .globl  _raise_caml_exception
-_raise_caml_exception:
-        movel   a7@(4), a0     | exception bucket
-        movel   _young_ptr, d6
-        movel   _caml_exception_pointer, a7
-        movel   a7@+, d7
-        rts
-
-| Callback from C to Caml
-
-        .globl  _callback
-_callback:
-        link    a6, #0
-    | Save callee-save registers
-        moveml  a2-a6/d2-d7, a7@-
-        fmovem  fp2-fp7, a7@-
-    | Initial loading of arguments
-        movel   a6@(8), a1     | closure
-        movel   a6@(12), a0    | argument
-        movel   a1@(0), a5     | code pointer
 L106:
     | Build a callback link
         movel   _caml_last_return_address, a7@-
@@ -222,6 +175,30 @@ L108:
     | so that local C roots are cleaned up correctly.
         movel   a0, a7@-       | exn bucket is the argument
         jbsr    _mlraise        | never returns
+
+| Raise an exception from C
+
+        .globl  _raise_caml_exception
+_raise_caml_exception:
+        movel   a7@(4), a0     | exception bucket
+        movel   _young_ptr, d6
+        movel   _caml_exception_pointer, a7
+        movel   a7@+, d7
+        rts
+
+| Callback from C to Caml
+
+        .globl  _callback
+_callback:
+        link    a6, #0
+    | Save callee-save registers
+        moveml  a2-a6/d2-d7, a7@-
+        fmovem  fp2-fp7, a7@-
+    | Initial loading of arguments
+        movel   a6@(8), a1     | closure
+        movel   a6@(12), a0    | argument
+        movel   a1@(0), a5     | code pointer
+        bra     L106
 
         .globl  _callback2
 _callback2:

@@ -25,13 +25,7 @@
 #define FUNCTION_ALIGN 2
 #endif
 
-        .comm   G(young_limit), 4
-        .comm   G(young_ptr), 4
         .comm   G(gc_entry_regs), 28
-        .comm   G(caml_bottom_of_stack), 4
-        .comm   G(caml_top_of_stack), 4
-        .comm   G(caml_last_return_address), 4
-        .comm   G(caml_exception_pointer), 4
 
 /* Allocation */
 
@@ -135,7 +129,6 @@ L103:   subl	G(young_ptr), %eax      /* eax = - size */
 /* Call a C function from Caml */
 
         .globl  G(caml_c_call)
-
         .align  FUNCTION_ALIGN
 G(caml_c_call):
     /* Record lowest stack address and return address */
@@ -156,50 +149,9 @@ G(caml_start_program):
         pushl   %esi
         pushl   %edi
         pushl   %ebp
-    /* Build an exception handler */
-        pushl   $L104
-        pushl   $0
-        movl    %esp, G(caml_exception_pointer)
-    /* Record highest stack address */
-        movl    %esp, G(caml_top_of_stack)
-    /* Go for it */
-        call    G(caml_program)
-    /* Pop handler */
-        addl    $8, %esp
-    /* Zero return code */
-        xorl    %eax, %eax
-L104:
-    /* Restore registers and return */
-        popl    %ebp
-        popl    %edi
-        popl    %esi
-        popl    %ebx
-        ret
-
-/* Raise an exception from C */
-
-        .globl  G(raise_caml_exception)
-        .align  FUNCTION_ALIGN
-G(raise_caml_exception):
-        movl    4(%esp), %eax
-        movl    G(caml_exception_pointer), %esp
-        popl    G(caml_exception_pointer)
-        ret
-
-/* Callback from C to Caml */
-
-        .globl  G(callback)
-        .align  FUNCTION_ALIGN
-G(callback):
-    /* Save callee-save registers */
-        pushl   %ebx
-        pushl   %esi
-        pushl   %edi
-        pushl   %ebp
-    /* Initial loading of arguments */
-        movl    20(%esp), %ebx   /* closure */
-        movl    24(%esp), %eax   /* argument */
-        movl    0(%ebx), %esi    /* code pointer */
+    /* Initial entry point is caml_program */
+        movl    $ G(caml_program), %esi
+    /* Common code for caml_start_program and callback* */
 L106:
     /* Build a callback link */
         pushl   G(caml_last_return_address)
@@ -235,6 +187,32 @@ L108:
        so that local C roots are cleaned up correctly. */
         pushl   %eax            /* exn bucket is the argument */
         call    G(mlraise)      /* never returns */
+
+/* Raise an exception from C */
+
+        .globl  G(raise_caml_exception)
+        .align  FUNCTION_ALIGN
+G(raise_caml_exception):
+        movl    4(%esp), %eax
+        movl    G(caml_exception_pointer), %esp
+        popl    G(caml_exception_pointer)
+        ret
+
+/* Callback from C to Caml */
+
+        .globl  G(callback)
+        .align  FUNCTION_ALIGN
+G(callback):
+    /* Save callee-save registers */
+        pushl   %ebx
+        pushl   %esi
+        pushl   %edi
+        pushl   %ebp
+    /* Initial loading of arguments */
+        movl    20(%esp), %ebx   /* closure */
+        movl    24(%esp), %eax   /* argument */
+        movl    0(%ebx), %esi    /* code pointer */
+        jmp     L106
 
         .globl  G(callback2)
         .align  FUNCTION_ALIGN

@@ -13,18 +13,8 @@
 
 /* Asm part of the runtime system, Alpha processor */
 
-        .comm   young_start 8
-        .comm   young_end 8
-        .comm   young_ptr 8
-        .comm   young_limit 8
         .comm   gc_entry_regs 8 * 32
         .comm   gc_entry_float_regs 8 * 32
-        .comm   remembered_ptr 8
-        .comm   remembered_end 8
-        .comm   caml_top_of_stack 8
-        .comm   caml_bottom_of_stack 8
-        .comm   caml_last_return_address 8
-        .comm   caml_exception_pointer 8
 
 #define SAVE_ALL_REGS \
         lda     $24, gc_entry_regs; \
@@ -260,11 +250,15 @@ $105:   ldgp    $gp, 0($25)
 /* Start the Caml program */
 
         .globl  caml_start_program
-        .globl  stray_exn_handler
         .ent    caml_start_program
         .align  3
 caml_start_program:
         ldgp    $gp, 0($27)
+        lda     $25, caml_program
+
+/* Code shared with callback* */
+$107:
+    /* Save return address */
 	lda	$sp, -128($sp)
         stq     $26, 0($sp)
     /* Save all callee-save registers */
@@ -283,25 +277,42 @@ caml_start_program:
         stt     $f7, 104($sp)
         stt     $f8, 112($sp)
         stt     $f9, 120($sp)
-    /* Build an exception handler */
-	lda	$sp, -16($sp)
-	lda	$0, stray_exn_handler
-	stq	$0, 8($sp)
-	mov	$sp, $15
-    /* Record highest stack address */
-        stq     $sp, caml_top_of_stack
-    /* Initialize allocation registers */
-	ldq	$13, young_ptr
-	ldq	$14, young_start
-    /* Go for it */
-        jsr     caml_program
-    /* Pop handler */
+    /* Set up a callback link on the stack. */
+        lda     $sp, -16($sp)
+        ldq     $0, caml_bottom_of_stack
+        stq     $0, 0($sp)
+        ldq     $1, caml_last_return_address
+        stq     $1, 8($sp)
+    /* Set up a trap frame to catch exceptions escaping the Caml code */
+        lda     $sp, -16($sp)
+        ldq     $15, caml_exception_pointer
+        stq     $15, 0($sp)
+        lda     $0, $109
+        stq     $0, 8($sp)
+        mov     $sp, $15
+    /* Reload allocation pointers */
+        ldq     $13, young_ptr
+        ldq     $14, young_limit
+    /* We are back into Caml code */
+        stq     $31, caml_last_return_address
+    /* Call the Caml code */
+$108:   jsr     ($25)
+    /* Reload $gp */
+        bic     $26, 1, $26     /* return address may have "scanned" bit set */
+        ldgp    $gp, 4($26)
+    /* Pop the trap frame, restoring caml_exception_pointer */
+        ldq     $15, 0($sp)
+        stq     $15, caml_exception_pointer
         lda     $sp, 16($sp)
-    /* Return with zero code */
-        clr     $0
-    /* Restore registers */
-stray_exn_handler:
-        ldq     $26, 0($sp)
+    /* Restore the global variables used by caml_c_call */
+        ldq     $24, 0($sp)
+        stq     $24, caml_bottom_of_stack
+        ldq     $25, 8($sp)
+        stq     $25, caml_last_return_address
+        lda     $sp, 16($sp)
+    /* Update allocation pointer */
+        stq     $13, young_ptr
+    /* Reload callee-save registers */
         ldq     $9, 8($sp)
         ldq     $10, 16($sp)
         ldq     $11, 24($sp)
@@ -317,8 +328,25 @@ stray_exn_handler:
         ldt     $f7, 104($sp)
         ldt     $f8, 112($sp)
         ldt     $f9, 120($sp)
+    /* Return to caller */
+        ldq     $26, 0($sp)
         lda     $sp, 128($sp)
         ret     ($26)
+
+    /* The trap handler */
+$109:   ldgp    $gp, 0($27)
+    /* Restore the global variables used by caml_c_call */
+        ldq     $24, 0($sp)
+        stq     $24, caml_bottom_of_stack
+        ldq     $25, 8($sp)
+        stq     $25, caml_last_return_address
+        lda     $sp, 16($sp)
+    /* Re-raise the exception through mlraise,
+       so that local C roots are cleaned up correctly. */
+        stq     $13, young_ptr
+        stq     $15, caml_exception_pointer
+        mov     $0, $16         /* bucket as first argument */
+        jsr     mlraise         /* never returns */
 
         .end    caml_start_program
 
@@ -366,96 +394,7 @@ callback:
         mov     $17, $16        /* first arg */
         mov     $25, $17        /* environment */
         ldq     $25, 0($25)     /* code pointer */
-$107:
-    /* Save return address */
-	lda	$sp, -128($sp)
-        stq     $26, 0($sp)
-    /* Save all callee-save registers */
-        stq     $9, 8($sp)
-        stq     $10, 16($sp)
-        stq     $11, 24($sp)
-        stq     $12, 32($sp)
-        stq     $13, 40($sp)
-        stq     $14, 48($sp)
-        stq     $15, 56($sp)
-        stt     $f2, 64($sp)
-        stt     $f3, 72($sp)
-        stt     $f4, 80($sp)
-        stt     $f5, 88($sp)
-        stt     $f6, 96($sp)
-        stt     $f7, 104($sp)
-        stt     $f8, 112($sp)
-        stt     $f9, 120($sp)
-    /* Set up a callback link on the stack. */
-        lda     $sp, -16($sp)
-        ldq     $0, caml_bottom_of_stack
-        stq     $0, 0($sp)
-        ldq     $1, caml_last_return_address
-        stq     $1, 8($sp)
-    /* Set up a trap frame to catch exceptions escaping the Caml code */
-        lda     $sp, -16($sp)
-        ldq     $15, caml_exception_pointer
-        stq     $15, 0($sp)
-        lda     $0, $109
-        stq     $0, 8($sp)
-        mov     $sp, $15
-    /* Reload allocation pointers */
-        ldq     $13, young_ptr
-        ldq     $14, young_limit
-    /* We are back into Caml code */
-        stq     $31, caml_last_return_address
-    /* Call the Caml code */
-$108:   jsr     ($25)
-    /* Reload $gp */
-        bic     $26, 1, $26     /* return address may have "scanned" bit set */
-        ldgp    $gp, 4($26)
-    /* Pop the trap frame, restoring caml-exception_pointer */
-        ldq     $15, 0($sp)
-        stq     $15, caml_exception_pointer
-        lda     $sp, 16($sp)
-    /* Restore the global variables used by caml_c_call */
-        ldq     $24, 0($sp)
-        stq     $24, caml_bottom_of_stack
-        ldq     $25, 8($sp)
-        stq     $25, caml_last_return_address
-        lda     $sp, 16($sp)
-    /* Update allocation pointer */
-        stq     $13, young_ptr
-    /* Reload callee-save registers */
-        ldq     $9, 8($sp)
-        ldq     $10, 16($sp)
-        ldq     $11, 24($sp)
-        ldq     $12, 32($sp)
-        ldq     $13, 40($sp)
-        ldq     $14, 48($sp)
-        ldq     $15, 56($sp)
-        ldt     $f2, 64($sp)
-        ldt     $f3, 72($sp)
-        ldt     $f4, 80($sp)
-        ldt     $f5, 88($sp)
-        ldt     $f6, 96($sp)
-        ldt     $f7, 104($sp)
-        ldt     $f8, 112($sp)
-        ldt     $f9, 120($sp)
-    /* Return to caller */
-        ldq     $26, 0($sp)
-        lda     $sp, 128($sp)
-        ret     ($26)
-    /* The trap handler */
-$109:   ldgp    $gp, 0($27)
-    /* Restore the global variables used by caml_c_call */
-        ldq     $24, 0($sp)
-        stq     $24, caml_bottom_of_stack
-        ldq     $25, 8($sp)
-        stq     $25, caml_last_return_address
-        lda     $sp, 16($sp)
-    /* Re-raise the exception through mlraise,
-       so that local C roots are cleaned up correctly. */
-        stq     $13, young_ptr
-        stq     $15, caml_exception_pointer
-        mov     $0, $16         /* bucket as first argument */
-        jsr     mlraise         /* never returns */
-
+        br      $107
         .end    callback
 
         .globl  callback2

@@ -11,12 +11,6 @@
 
 /* $Id$ */
 
-        .comm   young_start, 4, 4
-        .comm   young_ptr, 4, 4
-        .comm   caml_bottom_of_stack, 4, 4
-        .comm   caml_top_of_stack, 4, 4
-        .comm   caml_last_return_address, 4, 4
-        .comm   caml_exception_pointer, 4, 4
         .comm   gc_entry_regs, 4*32, 4
         .comm   gc_entry_float_regs, 8*32, 8
 
@@ -310,55 +304,9 @@ raise_caml_exception:
         .globl  caml_start_program
         .type   caml_start_program, @function
 caml_start_program:
-    /* Allocate and link stack frame */
-        stwu    1, -256(1)
-    /* Save return address */
-        mflr    0
-        stw     0, 256+4(1)
-    /* Save all callee-save registers */
-        Save_callee_save
-    /* Build an exception handler */
-        bl      .L100
-        b       .L101
-.L100:
-        addi    1, 1, -8
-        mflr    0
-        stw     0, 0(1)
-        mr      29, 1
-    /* Record highest stack address */
-        Storeglobal(1, caml_top_of_stack, 11)
-    /* Initialize allocation registers */
-        Loadglobal(31, young_ptr, 11)
-        Loadglobal(30, young_limit, 11)
-    /* Say we are inside Caml code */
-        li      0, 0
-        Storeglobal(0, caml_last_return_address, 11)
-    /* Go for it */
-        bl      caml_program
-    /* Pop handler */
-        addi    1, 1, 8
-    /* Return with zero code */
-        li      3, 0
-.L101:
-    /* Restore callee-save registers */
-        Restore_callee_save
-    /* Reload return address */
-        lwz     0, 256+4(1)
-        mtlr    0
-    /* Return */
-        addi    1, 1, 256
-        blr
+        Addrglobal(12, caml_program)
 
-/* Callback from C to Caml */
-
-        .globl  callback
-        .type   callback, @function
-callback:
-    /* Initial shuffling of arguments */
-        mr      0, 3            /* Closure */
-        mr      3, 4            /* Argument */
-        mr      4, 0
-        lwz     12, 0(4)        /* Code pointer */
+/* Code shared between caml_start_program and callback */
 .L102:
     /* Allocate and link stack frame */
         stwu    1, -256(1)
@@ -429,6 +377,18 @@ callback:
     /* Re-raise the exception through mlraise, */
     /* so that local C roots are cleaned up correctly */
         b       mlraise
+
+/* Callback from C to Caml */
+
+        .globl  callback
+        .type   callback, @function
+callback:
+    /* Initial shuffling of arguments */
+        mr      0, 3            /* Closure */
+        mr      3, 4            /* Argument */
+        mr      4, 0
+        lwz     12, 0(4)        /* Code pointer */
+        b       .L102
 
         .globl  callback2
         .type   callback2, @function

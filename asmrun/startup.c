@@ -70,7 +70,7 @@ static void parse_camlrunparam()
   }
 }
 
-extern value caml_start_program P((void));
+extern void caml_start_program P((void));
 extern void init_ieee_floats P((void));
 extern void init_signals P((void));
 
@@ -88,8 +88,7 @@ void caml_main(argv)
   init_atoms();
   init_signals();
   sys_init(argv);
-  retcode = caml_start_program();
-  if (retcode != 0) fatal_uncaught_exception(retcode);
+  caml_start_program();
 }
 
 void caml_startup(argv)

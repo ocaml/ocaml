@@ -161,50 +161,11 @@ _caml_start_program:
         push	esi
         push	edi
         push	ebp
-    ; Build an exception handler 
-        push	L104
-        push	0
-        mov	_caml_exception_pointer, esp
-    ; Record highest stack address 
-        mov	_caml_top_of_stack, esp
-    ; Go for it 
-        call	_caml_program
-    ; Pop handler 
-        add	esp, 8
-    ; Zero return code 
-        xor	eax, eax
-L104:
-    ; Restore registers and return 
-        pop	ebp
-        pop	edi
-        pop	esi
-        pop	ebx
-        ret	
+    ; Initial code pointer is caml_program
+        mov     esi, offset _caml_program
 
-; Raise an exception from C 
+; Code shared between caml_start_program and callback*
 
-        PUBLIC  _raise_caml_exception
-        ALIGN  4
-_raise_caml_exception:
-        mov	eax, [esp+4]
-        mov	esp, _caml_exception_pointer
-        pop	_caml_exception_pointer
-        ret	
-
-; Callback from C to Caml 
-
-        PUBLIC  _callback
-        ALIGN  4
-_callback:
-    ; Save callee-save registers 
-        push	ebx
-        push	esi
-        push	edi
-        push	ebp
-    ; Initial loading of arguments 
-        mov	ebx, [esp+20]   ; closure 
-        mov	eax, [esp+24]   ; argument 
-        mov	esi, [ebx]      ; code pointer 
 L106:
     ; Build a callback link 
         push	_caml_last_return_address
@@ -240,6 +201,32 @@ L108:
     ; so that local C roots are cleaned up correctly.
         push	eax            	; exn bucket is the argument 
         call	_mlraise      	; never returns 
+
+; Raise an exception from C 
+
+        PUBLIC  _raise_caml_exception
+        ALIGN  4
+_raise_caml_exception:
+        mov	eax, [esp+4]
+        mov	esp, _caml_exception_pointer
+        pop	_caml_exception_pointer
+        ret	
+
+; Callback from C to Caml 
+
+        PUBLIC  _callback
+        ALIGN  4
+_callback:
+    ; Save callee-save registers 
+        push	ebx
+        push	esi
+        push	edi
+        push	ebp
+    ; Initial loading of arguments 
+        mov	ebx, [esp+20]   ; closure 
+        mov	eax, [esp+24]   ; argument 
+        mov	esi, [ebx]      ; code pointer
+        jmp     L106
 
         PUBLIC  _callback2
         ALIGN  4

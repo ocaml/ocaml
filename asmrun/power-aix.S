@@ -11,10 +11,6 @@
 
 # $Id$
 
-        .comm   caml_bottom_of_stack, 4
-        .comm   caml_top_of_stack, 4
-        .comm   caml_last_return_address, 4
-        .comm   caml_exception_pointer, 4
         .comm   gc_entry_regs, 4*32
         .comm   gc_entry_float_regs, 8*32
 
@@ -244,133 +240,10 @@
 
         .globl  .caml_start_program
 .caml_start_program:
-        mflr    0
-    # Save return address
-	stw 0, 8(1)
-    # Save all callee-save registers
-	stw 13, -76(1)
-	stw 14, -72(1)
-	stw 15, -68(1)
-	stw 16, -64(1)
-	stw 17, -60(1)
-	stw 18, -56(1)
-	stw 19, -52(1)
-	stw 20, -48(1)
-	stw 21, -44(1)
-	stw 22, -40(1)
-	stw 23, -36(1)
-	stw 24, -32(1)
-	stw 25, -28(1)
-	stw 26, -24(1)
-	stw 27, -20(1)
-	stw 28, -16(1)
-	stw 29, -12(1)
-	stw 30, -8(1)
-	stw 31, -4(1)
-        stfd 14, -224(1)
-        stfd 15, -216(1)
-        stfd 16, -208(1)
-        stfd 17, -200(1)
-        stfd 18, -192(1)
-        stfd 19, -184(1)
-        stfd 20, -176(1)
-        stfd 21, -168(1)
-        stfd 22, -160(1)
-        stfd 23, -152(1)
-        stfd 24, -144(1)
-        stfd 25, -136(1)
-        stfd 26, -128(1)
-        stfd 27, -120(1)
-        stfd 28, -112(1)
-        stfd 29, -104(1)
-        stfd 30, -96(1)
-        stfd 31, -88(1)
-    # Allocate and link stack frame
-	stwu    1, -280(1)
-    # Build an exception handler
-        bl      L..100
-        b       L..101
-L..100:
-        addi    1, 1, -24
-        mflr    0
-        stw     0, 0(1)
-        stw     2, 20(1)
-        mr      29, 1
-    # Record highest stack address
-        lwz     3, L..caml_top_of_stack(2)
-        stw     1, 0(3)
-    # Initialize allocation registers
-        lwz     3, L..young_ptr(2)
-        lwz     31, 0(3)
-        lwz     3, L..young_limit(2)
-        lwz     30, 0(3)
-    # Say we are inside Caml code
-        lwz     3, L..caml_last_return_address(2)
-        li      0, 0
-        stw     0, 0(3)
-    # Go for it
-        bl      .caml_program
-        or      0, 0, 0
-    # Pop handler
-        addi    1, 1, 24
-    # Return with zero code
-        li      3, 0
-L..101:
-    # Deallocate stack frame
-	addi    1, 1, 280
-    # Restore callee-save registers
-	lwz 13, -76(1)
-	lwz 14, -72(1)
-	lwz 15, -68(1)
-	lwz 16, -64(1)
-	lwz 17, -60(1)
-	lwz 18, -56(1)
-	lwz 19, -52(1)
-	lwz 20, -48(1)
-	lwz 21, -44(1)
-	lwz 22, -40(1)
-	lwz 23, -36(1)
-	lwz 24, -32(1)
-	lwz 25, -28(1)
-	lwz 26, -24(1)
-	lwz 27, -20(1)
-	lwz 28, -16(1)
-	lwz 29, -12(1)
-	lwz 30, -8(1)
-	lwz 31, -4(1)
-        lfd 14, -224(1)
-        lfd 15, -216(1)
-        lfd 16, -208(1)
-        lfd 17, -200(1)
-        lfd 18, -192(1)
-        lfd 19, -184(1)
-        lfd 20, -176(1)
-        lfd 21, -168(1)
-        lfd 22, -160(1)
-        lfd 23, -152(1)
-        lfd 24, -144(1)
-        lfd 25, -136(1)
-        lfd 26, -128(1)
-        lfd 27, -120(1)
-        lfd 28, -112(1)
-        lfd 29, -104(1)
-        lfd 30, -96(1)
-        lfd 31, -88(1)
-    # Reload return address
-	lwz 0, 8(1)
-	mtlr 0
-    # Return
-        blr
+        lwz     11, L..caml_program(2)
 
-#### Callback from C to Caml
+#### Code shared between caml_start_program and callback*
 
-        .globl  .callback
-.callback:
-    # Initial shuffling of arguments
-        mr      0, 3            # Closure
-        mr      3, 4            # Argument
-        mr      4, 0
-        lwz     11, 0(4)        # Code pointer
 L..102:
         mflr    0
     # Save return address
@@ -533,6 +406,17 @@ L..104:
     # so that local C roots are cleaned up correctly
         b       .mlraise
 
+#### Callback from C to Caml
+
+        .globl  .callback
+.callback:
+    # Initial shuffling of arguments
+        mr      0, 3            # Closure
+        mr      3, 4            # Argument
+        mr      4, 0
+        lwz     11, 0(4)        # Code pointer
+        b       L..102
+
         .globl  .callback2
 .callback2:
         mr      0, 3            # Closure
@@ -571,8 +455,6 @@ L..young_ptr:
         .tc     young_ptr[TC], young_ptr
 L..caml_bottom_of_stack:
         .tc     caml_bottom_of_stack[TC], caml_bottom_of_stack
-L..caml_top_of_stack:
-        .tc     caml_top_of_stack[TC], caml_top_of_stack
 L..caml_last_return_address:
         .tc     caml_last_return_address[TC], caml_last_return_address
 L..caml_exception_pointer:
@@ -581,6 +463,8 @@ L..gc_entry_regs:
         .tc     gc_entry_regs[TC], gc_entry_regs
 L..gc_entry_float_regs:
         .tc     gc_entry_float_regs[TC], gc_entry_float_regs
+L..caml_program:
+        .tc     caml_program[TC], caml_program
 L..caml_apply2:
         .tc     caml_apply2[TC], caml_apply2
 L..caml_apply3:

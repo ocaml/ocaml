@@ -13,17 +13,8 @@
 
 /* Asm part of the runtime system, Mips processor */
 
-        .comm   young_limit, 4
-        .comm   young_end, 4
-        .comm   young_ptr, 4
         .comm   gc_entry_regs, 4 * 32
         .comm   gc_entry_float_regs, 8 * 16
-        .comm   caml_top_of_stack, 4
-        .comm   caml_bottom_of_stack, 4
-        .comm   caml_last_return_address, 4
-        .comm   caml_exception_pointer, 4
-        .comm   remembered_ptr, 4
-        .comm   remembered_end, 4
 
 /* Save all callee-save registers in the stack frame */
 #define SAVE_CALLEE_SAVE_REGS \
@@ -293,68 +284,9 @@ caml_start_program:
         .cpload $25
         .set    reorder
 #endif
-	subu    $sp, $sp, 96
-        sw      $31, 88($sp)
-	SAVE_CALLEE_SAVE_REGS
-    /* Build an exception handler */
-	subu    $sp, $sp, 8
-	la	$2, stray_exn_handler
-	sw 	$2, 4($sp)
-	move    $30, $sp
-        sw      $sp, caml_top_of_stack
-    /* Initialize allocation registers */
-	lw	$22, young_ptr
-	lw	$23, young_limit
-    /* Go for it */
-        jal     caml_program
-    /* Pop handler */
-        addu    $sp, $sp, 8
-    /* Return with zero code */
-        li      $2, 0
-stray_exn_handler:
-    /* Restore registers */
-        lw      $31, 88($sp)
-	RELOAD_CALLEE_SAVE_REGS
-        addu    $sp, $sp, 96
-        j       $31
+        la      $24, caml_program
 
-        .end    caml_start_program
-
-/* Raise an exception from C */
-
-        .globl  raise_caml_exception
-        .ent    raise_caml_exception
-raise_caml_exception:
-#ifdef _PIC
-        .set    noreorder
-        .cpload $25
-        .set    reorder
-#endif
-        move    $2, $4
-        lw      $22, young_ptr
-        lw      $23, young_limit
-        lw      $sp, caml_exception_pointer
-        lw      $30, 0($sp)
-        lw      $24, 4($sp)
-        addu    $sp, $sp, 8
-        j       $24
-
-        .end    raise_caml_exception
-
-/* Callback from C to Caml */
-
-        .globl  callback
-        .ent    callback
-callback:
-#ifdef _PIC
-        .set    noreorder
-        .cpload $25
-        .set    reorder
-#endif
-    /* Initial shuffling of arguments */
-        move    $9, $4          /* closure */
-        move    $8, $5          /* argument */
-        lw      $24, 0($4)      /* code pointer */
+    /* Code shared with callback* */
 $103:
     /* Save return address */
 	subu    $sp, $sp, 96
@@ -427,6 +359,44 @@ $105:
         move    $4, $2          /* bucket as first argument */
         jal     mlraise         /* never returns */
 
+        .end    caml_start_program
+
+/* Raise an exception from C */
+
+        .globl  raise_caml_exception
+        .ent    raise_caml_exception
+raise_caml_exception:
+#ifdef _PIC
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
+        move    $2, $4
+        lw      $22, young_ptr
+        lw      $23, young_limit
+        lw      $sp, caml_exception_pointer
+        lw      $30, 0($sp)
+        lw      $24, 4($sp)
+        addu    $sp, $sp, 8
+        j       $24
+
+        .end    raise_caml_exception
+
+/* Callback from C to Caml */
+
+        .globl  callback
+        .ent    callback
+callback:
+#ifdef _PIC
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+#endif
+    /* Initial shuffling of arguments */
+        move    $9, $4          /* closure */
+        move    $8, $5          /* argument */
+        lw      $24, 0($4)      /* code pointer */
+        b       $103
         .end    callback
 
         .globl  callback2

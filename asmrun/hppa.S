@@ -61,7 +61,6 @@ young_limit                  .comm 8
 young_ptr                    .comm 8
 gc_entry_regs                .comm 32 * 4
 gc_entry_float_regs          .comm 32 * 8
-caml_top_of_stack            .comm 8
 caml_bottom_of_stack         .comm 8
 caml_last_return_address     .comm 8
 caml_exception_pointer       .comm 8
@@ -73,7 +72,6 @@ caml_required_size           .comm 8
 	.comm	G(young_ptr), 8
 	.comm	G(gc_entry_regs), 32 * 4
 	.comm	G(gc_entry_float_regs), 32 * 8
-	.comm	G(caml_top_of_stack), 8
 	.comm	G(caml_bottom_of_stack), 8
 	.comm	G(caml_last_return_address), 8
 	.comm	G(caml_exception_pointer), 8
@@ -297,156 +295,10 @@ G(caml_c_call):
 	EXPORT_CODE(G(caml_start_program))
 G(caml_start_program):
         STARTPROC
-	stw     %r2,-20(%r30)
-        ldo	256(%r30), %r30
-; Save the callee-save registers
-        ldo     -32(%r30), %r1
-        stws,ma %r3, -4(%r1)
-        stws,ma %r4, -4(%r1)
-        stws,ma %r5, -4(%r1)
-        stws,ma %r6, -4(%r1)
-        stws,ma %r7, -4(%r1)
-        stws,ma %r8, -4(%r1)
-        stws,ma %r9, -4(%r1)
-        stws,ma %r10, -4(%r1)
-        stws,ma %r11, -4(%r1)
-        stws,ma %r12, -4(%r1)
-        stws,ma %r13, -4(%r1)
-        stws,ma %r14, -4(%r1)
-        stws,ma %r15, -4(%r1)
-        stws,ma %r16, -4(%r1)
-        stws,ma %r17, -4(%r1)
-        stws,ma %r18, -4(%r1)
-	fstds,ma %fr12, -8(%r1)
-	fstds,ma %fr13, -8(%r1)
-	fstds,ma %fr14, -8(%r1)
-	fstds,ma %fr15, -8(%r1)
-	fstds,ma %fr16, -8(%r1)
-	fstds,ma %fr17, -8(%r1)
-	fstds,ma %fr18, -8(%r1)
-	fstds,ma %fr19, -8(%r1)
-	fstds,ma %fr20, -8(%r1)
-	fstds,ma %fr21, -8(%r1)
-	fstds,ma %fr22, -8(%r1)
-	fstds,ma %fr23, -8(%r1)
-	fstds,ma %fr24, -8(%r1)
-	fstds,ma %fr25, -8(%r1)
-	fstds,ma %fr26, -8(%r1)
-	fstds,ma %fr27, -8(%r1)
-	fstds,ma %fr28, -8(%r1)
-	fstds,ma %fr29, -8(%r1)
-	fstds,ma %fr30, -8(%r1)
-	fstds,ma %fr31, -8(%r1)
+        LOADHIGH(G(caml_program
+        ldo     LOW(G(caml_program))(%r1), %r22
 
-; Build an exception handler
-        bl      L100, %r1
-        nop
-        copy    %r26, %r28              ; return exception bucket as result
-        b       L101
-        nop
-L100:
-        ldo     8(%r30), %r30
-        stw     %r1, -4(%r30)
-        copy    %r30, %r5
-; Record highest stack address
-        LOADHIGH(G(caml_top_of_stack))
-        stw     %r30, LOW(G(caml_top_of_stack))(%r1)
-; Initialize allocation registers
-        LOADHIGH(G(young_ptr))
-        ldw     LOW(G(young_ptr))(%r1), %r3
-        LOADHIGH(G(young_limit))
-        ldo     LOW(G(young_limit))(%r1), %r4
-; Go for it
-#ifdef SYS_nextstep
-        ldil    L`G(caml_program), %r1
-        ble     R`G(caml_program)(4, %r1)
-        copy    %r31, %r2
-#else
-        bl      G(caml_program), %r2
-        nop
-#endif
-; Pop handler
-        ldo     -8(%r30), %r30
-; Return with zero result
-        ldi     0, %r28
-; Restore callee-save registers
-L101:
-        ldo     -32(%r30), %r1
-        ldws,ma -4(%r1), %r3
-        ldws,ma -4(%r1), %r4
-        ldws,ma -4(%r1), %r5
-        ldws,ma -4(%r1), %r6
-        ldws,ma -4(%r1), %r7
-        ldws,ma -4(%r1), %r8
-        ldws,ma -4(%r1), %r9
-        ldws,ma -4(%r1), %r10
-        ldws,ma -4(%r1), %r11
-        ldws,ma -4(%r1), %r12
-        ldws,ma -4(%r1), %r13
-        ldws,ma -4(%r1), %r14
-        ldws,ma -4(%r1), %r15
-        ldws,ma -4(%r1), %r16
-        ldws,ma -4(%r1), %r17
-        ldws,ma -4(%r1), %r18
-	fldds,ma -8(%r1), %fr12
-	fldds,ma -8(%r1), %fr13
-	fldds,ma -8(%r1), %fr14
-	fldds,ma -8(%r1), %fr15
-	fldds,ma -8(%r1), %fr16
-	fldds,ma -8(%r1), %fr17
-	fldds,ma -8(%r1), %fr18
-	fldds,ma -8(%r1), %fr19
-	fldds,ma -8(%r1), %fr20
-	fldds,ma -8(%r1), %fr21
-	fldds,ma -8(%r1), %fr22
-	fldds,ma -8(%r1), %fr23
-	fldds,ma -8(%r1), %fr24
-	fldds,ma -8(%r1), %fr25
-	fldds,ma -8(%r1), %fr26
-	fldds,ma -8(%r1), %fr27
-	fldds,ma -8(%r1), %fr28
-	fldds,ma -8(%r1), %fr29
-	fldds,ma -8(%r1), %fr30
-	fldds,ma -8(%r1), %fr31
-; Return to C
-        ldo	-256(%r30), %r30
-	ldw     -20(%r30), %r2
-        bv      0(%r2)
-        nop
-        ENDPROC
-
-; Raise an exception from C
-
-	.align	CODE_ALIGN
-	EXPORT_CODE(G(raise_caml_exception))
-G(raise_caml_exception):
-        STARTPROC
-; Cut the stack
-        LOADHIGH(G(caml_exception_pointer))
-        ldw     LOW(G(caml_exception_pointer))(%r1), %r30
-; Reload allocation registers
-        LOADHIGH(G(young_ptr))
-        ldw     LOW(G(young_ptr))(%r1), %r3
-        LOADHIGH(G(young_limit))
-        ldo     LOW(G(young_limit))(%r1), %r4
-; Raise the exception
-        ldw     -4(%r30), %r1
-        ldw     -8(%r30), %r5
-        bv      0(%r1)
-        ldo     -8(%r30), %r30  ; in delay slot
-        ENDPROC
-
-; Callbacks C -> ML
-
-        .align	CODE_ALIGN
-        EXPORT_CODE(G(callback))
-G(callback):
-        STARTPROC
-; Initial shuffling of arguments
-        copy    %r26, %r1       ; Closure
-        copy    %r25, %r26      ; Argument
-        copy    %r1, %r25
-        ldw     0(%r1), %r22    ; Code to call
+; Code shared with callback*
 L102:
 ; Save return address
 	stw     %r2,-20(%r30)
@@ -601,6 +453,41 @@ L103:
         bl      G(mlraise), %r2
         nop
 #endif
+        ENDPROC
+
+; Raise an exception from C
+
+	.align	CODE_ALIGN
+	EXPORT_CODE(G(raise_caml_exception))
+G(raise_caml_exception):
+        STARTPROC
+; Cut the stack
+        LOADHIGH(G(caml_exception_pointer))
+        ldw     LOW(G(caml_exception_pointer))(%r1), %r30
+; Reload allocation registers
+        LOADHIGH(G(young_ptr))
+        ldw     LOW(G(young_ptr))(%r1), %r3
+        LOADHIGH(G(young_limit))
+        ldo     LOW(G(young_limit))(%r1), %r4
+; Raise the exception
+        ldw     -4(%r30), %r1
+        ldw     -8(%r30), %r5
+        bv      0(%r1)
+        ldo     -8(%r30), %r30  ; in delay slot
+        ENDPROC
+
+; Callbacks C -> ML
+
+        .align	CODE_ALIGN
+        EXPORT_CODE(G(callback))
+G(callback):
+        STARTPROC
+; Initial shuffling of arguments
+        copy    %r26, %r1       ; Closure
+        copy    %r25, %r26      ; Argument
+        copy    %r1, %r25
+        b       L102
+        ldw     0(%r1), %r22    ; Code to call (in delay slot)
         ENDPROC
 
         .align	CODE_ALIGN

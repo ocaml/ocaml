@@ -125,9 +125,9 @@ static void init_frame_descriptors()
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
 extern value caml_globals[];
-extern char * caml_bottom_of_stack, * caml_top_of_stack;
-extern unsigned long caml_last_return_address;
 extern value gc_entry_regs[];
+char * caml_bottom_of_stack = NULL;
+unsigned long caml_last_return_address;
 
 /* Structure of markers stored in stack by [callback] to skip C portion
    of stack */
@@ -162,11 +162,7 @@ void oldify_local_roots ()
   if (frame_descriptors == NULL) init_frame_descriptors();
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
-#ifndef Stack_grows_upwards
-  while (sp < caml_top_of_stack) {
-#else
-  while (sp > caml_top_of_stack) {
-#endif
+  while (1) {
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(retaddr);
     while(1) {
@@ -203,6 +199,8 @@ void oldify_local_roots ()
          Skip C portion of stack and continue with next ML stack chunk. */
       retaddr = Callback_link(sp)->return_address;
       sp = Callback_link(sp)->bottom_of_stack;
+      /* sp null means no more ML stack chunks; stop here. */
+      if (sp == NULL) break;
     }
   }
   /* Local C roots */
@@ -244,11 +242,7 @@ void darken_all_roots ()
   if (frame_descriptors == NULL) init_frame_descriptors();
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
-#ifndef Stack_grows_upwards
-  while (sp < caml_top_of_stack) {
-#else
-  while (sp > caml_top_of_stack) {
-#endif
+  while (1) {
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(retaddr);
     while(1) {
@@ -281,10 +275,10 @@ void darken_all_roots ()
          Skip C portion of stack and continue with next ML stack chunk. */
       retaddr = Callback_link(sp)->return_address;
       sp = Callback_link(sp)->bottom_of_stack;
+      /* sp null means no more ML stack chunks; stop here. */
+      if (sp == NULL) break;
     }
   }
-  Assert(sp == caml_top_of_stack);
-
   /* Local C roots */
   for (block = local_roots; block != NULL; block = (value *) block [1]){
     for (root = block - (long) block [0]; root < block; root++){

@@ -18,21 +18,14 @@
 
 #ifndef SYS_solaris
 
-        .common _young_limit, 4, "bss"
-        .common _young_ptr, 4, "bss"
         .common _gc_entry_regs, 22 * 4, "bss"
         .common _gc_entry_float_regs, 30 * 4, "bss"
-        .common _caml_top_of_stack, 4, "bss"
-        .common _caml_bottom_of_stack, 4, "bss"
-        .common _caml_last_return_address, 4, "bss"
-        .common _caml_exception_pointer, 4, "bss"
         .common _caml_required_size, 4, "bss"
 
 #define Young_limit _young_limit
 #define Young_ptr _young_ptr
 #define Gc_entry_regs _gc_entry_regs
 #define Gc_entry_float_regs _gc_entry_float_regs
-#define Caml_top_of_stack _caml_top_of_stack
 #define Caml_bottom_of_stack _caml_bottom_of_stack
 #define Caml_last_return_address _caml_last_return_address
 #define Caml_exception_pointer _caml_exception_pointer
@@ -54,22 +47,14 @@
 
 #else
 
-        .common young_limit, 4, 4
-        .common young_end, 4, 4
-        .common young_ptr, 4, 4
         .common gc_entry_regs, 22 * 4, 8
         .common gc_entry_float_regs, 30 * 4, 8
-        .common caml_top_of_stack, 4, 4
-        .common caml_bottom_of_stack, 4, 4
-        .common caml_last_return_address, 4, 4
-        .common caml_exception_pointer, 4, 4
         .common caml_required_size, 4, 4
 
 #define Young_limit young_limit
 #define Young_ptr young_ptr
 #define Gc_entry_regs gc_entry_regs
 #define Gc_entry_float_regs gc_entry_float_regs
-#define Caml_top_of_stack caml_top_of_stack
 #define Caml_bottom_of_stack caml_bottom_of_stack
 #define Caml_last_return_address caml_last_return_address
 #define Caml_exception_pointer caml_exception_pointer
@@ -229,65 +214,10 @@ Caml_c_call:
 Caml_start_program:
     /* Save all callee-save registers */
         save    %sp, -96, %sp
-    /* Build an exception handler */
-        call    L100
-        nop
-        b       L101
-        mov     %o0, %i0                /* return exn bucket */
-L100:   sub     %sp, 8, %sp
-        st      %o7, [%sp + 96]
-        mov     %sp, %g5
-    /* Record highest stack address */
-        Store(%sp, Caml_top_of_stack)
-    /* Initialize allocation registers */
-        Load(Young_ptr, %g6)
-        Address(Young_limit, %g7)
-    /* Go for it */
-        call    Caml_program
-        nop
-    /* Pop handler */
-        add     %sp, 8, %sp
-    /* Return with zero code */
-        mov     %g0, %i0
-L101:   ret
-        restore
+    /* Address of code to call */
+        Address(Caml_program, %l2)
 
-/* Raise an exception from C */
-
-        .global Raise_caml_exception
-Raise_caml_exception:
-    /* Reload %g5 - %g7 */
-        Load(Caml_exception_pointer, %g5)
-        Load(Young_ptr, %g6)
-        Address(Young_limit, %g7)
-    /* Save exception bucket in a register outside the reg windows */
-        mov     %o0, %g1
-    /* Pop some frames until the trap pointer is in the current frame. */
-	cmp     %g5, %fp
-        blt     L107                    /* if Trap_handler_reg < %fp, over */
-	nop
-L106:   restore
-        cmp     %fp, %g5                /* if %fp <= Trap_handler_reg, loop */
-        ble     L106
-        nop
-L107:   mov     %g5, %sp
-        ldd     [%sp+96], %g4
-        add     %sp, 8, %sp
-        jmp     %g4 + 8
-    /* Restore bucket, in delay slot */
-	mov     %g1, %o0
-
-/* Callbacks C -> ML */
-
-        .global Callback
-Callback:
-    /* Save callee-save registers and return address */
-        save    %sp, -96, %sp
-    /* Initial shuffling of arguments */
-        mov     %i0, %g1
-        mov     %i1, %i0        /* first arg */
-        mov     %g1, %i1        /* environment */
-        ld      [%g1], %l2      /* code pointer */
+    /* Code shared with callback* */
 L108:
     /* Set up a callback link on the stack. */
         sub     %sp, 8, %sp
@@ -336,6 +266,44 @@ L110:
        so that local C roots are cleaned up correctly. */
         call    Mlraise         /* never returns */
         nop
+
+/* Raise an exception from C */
+
+        .global Raise_caml_exception
+Raise_caml_exception:
+    /* Reload %g5 - %g7 */
+        Load(Caml_exception_pointer, %g5)
+        Load(Young_ptr, %g6)
+        Address(Young_limit, %g7)
+    /* Save exception bucket in a register outside the reg windows */
+        mov     %o0, %g1
+    /* Pop some frames until the trap pointer is in the current frame. */
+	cmp     %g5, %fp
+        blt     L107                    /* if Trap_handler_reg < %fp, over */
+	nop
+L106:   restore
+        cmp     %fp, %g5                /* if %fp <= Trap_handler_reg, loop */
+        ble     L106
+        nop
+L107:   mov     %g5, %sp
+        ldd     [%sp+96], %g4
+        add     %sp, 8, %sp
+        jmp     %g4 + 8
+    /* Restore bucket, in delay slot */
+	mov     %g1, %o0
+
+/* Callbacks C -> ML */
+
+        .global Callback
+Callback:
+    /* Save callee-save registers and return address */
+        save    %sp, -96, %sp
+    /* Initial shuffling of arguments */
+        mov     %i0, %g1
+        mov     %i1, %i0        /* first arg */
+        mov     %g1, %i1        /* environment */
+        b       L108
+        ld      [%g1], %l2      /* code pointer */
 
         .global Callback2
 Callback2:
