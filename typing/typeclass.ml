@@ -587,8 +587,10 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
     (* Copy known information to still empty self_type *)
     List.iter
       (fun (lab,kind,ty) ->
+        let k =
+          if Btype.field_kind_repr kind = Fpresent then Public else Private in
         try Ctype.unify val_env ty
-            (Ctype.filter_method val_env lab Public self_type)
+            (Ctype.filter_method val_env lab k self_type)
         with _ -> assert false)
       (get_methods public_self)
   end;
