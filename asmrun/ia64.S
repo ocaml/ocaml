@@ -503,13 +503,13 @@ caml_callback3_exn:
 
         .endp   caml_callback3_exn#
 
-/* Glue code to call array_bound_error */
+/* Glue code to call [caml_array_bound_error] */
 
         .global caml_ml_array_bound_error#
         .proc   caml_ml_array_bound_error#
         .align  16
 caml_ml_array_bound_error:
-        ADDRGLOBAL(r2, @fptr(array_bound_error#))
+        ADDRGLOBAL(r2, @fptr(caml_array_bound_error#))
         br.sptk caml_c_call             /* never returns */        
 
         .rodata

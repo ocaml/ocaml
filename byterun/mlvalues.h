@@ -197,7 +197,7 @@ typedef opcode_t * code_t;
 #define Lazy_tag 246
 
 /* Another special case: variants */
-CAMLextern value hash_variant(char * tag);
+CAMLextern value caml_hash_variant(char * tag);
 
 /* 2- If tag >= No_scan_tag : a sequence of bytes. */
 
@@ -225,8 +225,10 @@ CAMLextern mlsize_t caml_string_length (value);   /* size in bytes */
 #define Double_val(v) (* (double *)(v))
 #define Store_double_val(v,d) (* (double *)(v) = (d))
 #else
-CAMLextern double Double_val (value);
-CAMLextern void Store_double_val (value,double);
+CAMLextern double caml_Double_val (value);
+CAMLextern void caml_Store_double_val (value,double);
+#define Double_val(v) caml_Double_val(v)
+#define Store_double_val(v) caml_Store_double_val(v)
 #endif
 
 /* Arrays of floating-point numbers. */
@@ -272,10 +274,11 @@ CAMLextern header_t caml_atom_table[];
 #ifndef NATIVE_CODE
 #define Is_atom(v) ((v) >= Atom(0) && (v) <= Atom(255))
 #else
-CAMLextern char * static_data_start, * static_data_end;
+CAMLextern char * caml_static_data_start, * caml_static_data_end;
 #define Is_atom(v) \
-  ((((char *)(v) >= static_data_start && (char *)(v) < static_data_end) || \
-   ((v) >= Atom(0) && (v) <= Atom(255))))
+  ((((char *)(v) >= caml_static_data_start \
+     && (char *)(v) < caml_static_data_end) \
+    || ((v) >= Atom(0) && (v) <= Atom(255))))
 #endif
 
 /* Booleans are integers 0 or 1 */

@@ -231,8 +231,8 @@ _caml_callback3_exn:
 
         .globl  _caml_ml_array_bound_error
 _caml_ml_array_bound_error:
-    | Load address of array_bound_error in a0 and call it
-        lea     _array_bound_error, a0
+    | Load address of [caml_array_bound_error] in a0 and call it
+        lea     _caml_array_bound_error, a0
         bra     _caml_c_call
 
         .data

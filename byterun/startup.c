@@ -236,7 +236,7 @@ static int parse_command_line(char **argv)
     switch(argv[i][1]) {
 #ifdef DEBUG
     case 't':
-      trace_flag = 1;
+      caml_trace_flag = 1;
       break;
 #endif
     case 'v':
@@ -304,7 +304,7 @@ static void parse_camlrunparam(void)
   }
 }
 
-extern void init_ieee_floats (void);
+extern void caml_init_ieee_floats (void);
 
 #ifdef _WIN32
 extern void caml_signal_thread(void * lpParam);
@@ -326,7 +326,7 @@ CAMLexport void caml_main(char **argv)
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
-  init_ieee_floats();
+  caml_init_ieee_floats();
   caml_init_custom_operations();
   caml_ext_table_init(&caml_shared_libs_path, 8);
   caml_external_raise = NULL;
@@ -362,8 +362,8 @@ CAMLexport void caml_main(char **argv)
   /* Read the table of contents (section descriptors) */
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
-  init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-           percent_free_init, max_percent_free_init);
+  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+                percent_free_init, max_percent_free_init);
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */
@@ -371,8 +371,8 @@ CAMLexport void caml_main(char **argv)
   /* Initialize the debugger, if needed */
   caml_debugger_init();
   /* Load the code */
-  code_size = caml_seek_section(fd, &trail, "CODE");
-  load_code(fd, code_size);
+  caml_code_size = caml_seek_section(fd, &trail, "CODE");
+  caml_load_code(fd, caml_code_size);
   /* Build the table of primitives */
   shared_lib_path = read_section(fd, &trail, "DLPT");
   shared_libs = read_section(fd, &trail, "DLLS");
@@ -401,7 +401,7 @@ CAMLexport void caml_main(char **argv)
 #endif
   /* Execute the program */
   caml_debugger(PROGRAM_START);
-  res = caml_interprete(start_code, code_size);
+  res = caml_interprete(caml_start_code, caml_code_size);
   if (Is_exception_result(res)) {
     caml_exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
@@ -420,7 +420,7 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
 {
   value res;
 
-  init_ieee_floats();
+  caml_init_ieee_floats();
   caml_init_custom_operations();
 #ifdef DEBUG
   caml_verb_gc = 63;
@@ -428,16 +428,16 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   parse_camlrunparam();
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
-  init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-           percent_free_init, max_percent_free_init);
+  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+                percent_free_init, max_percent_free_init);
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Load the code */
-  start_code = code;
+  caml_start_code = code;
 #ifdef THREADED_CODE
-  thread_code(start_code, code_size);
+  caml_thread_code(caml_start_code, code_size);
 #endif
   /* Use the builtin table of primitives */
   caml_prim_table.size = caml_prim_table.capacity = -1;
@@ -450,7 +450,7 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   /* Run the code */
   caml_init_exceptions();
   caml_sys_init("", argv);
-  res = caml_interprete(start_code, code_size);
+  res = caml_interprete(caml_start_code, code_size);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }

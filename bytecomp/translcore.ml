@@ -116,7 +116,7 @@ let comparisons_table = create_hashtable 11 [
        Pccall{prim_name = "caml_int_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false},
-       Pccall{prim_name = "float_compare"; prim_arity = 2;
+       Pccall{prim_name = "caml_float_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false},
        Pccall{prim_name = "caml_string_compare"; prim_arity = 2;

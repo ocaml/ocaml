@@ -155,10 +155,12 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
 
 /* [lazy_is_forward] is obsolete.  Stays here to make bootstrapping
    easier for patched versions of 3.07.  To be removed before 3.08. FIXME */
-CAMLprim value lazy_is_forward (value v)
+/*
+CAMLxxprim value lazy_is_forward (value v)
 {
   return Val_bool (Is_block (v) && Tag_val (v) == Forward_tag);
 }
+*/
 
 CAMLprim value caml_lazy_follow_forward (value v)
 {

@@ -292,7 +292,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   if (Is_block(action)) {
     if (caml_signal_handlers == 0) {
       caml_signal_handlers = caml_alloc(NSIG, 0);
-      register_global_root(&caml_signal_handlers);
+      caml_register_global_root(&caml_signal_handlers);
     }
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }

@@ -33,8 +33,8 @@
 
 extern int caml_parser_trace;
 header_t caml_atom_table[256];
-char * static_data_start, * static_data_end;
-char * code_area_start, * code_area_end;
+char * caml_static_data_start, * caml_static_data_end;
+char * caml_code_area_start, * caml_code_area_end;
 
 /* Initialize the atom table and the static data and code area limits. */
 
@@ -57,8 +57,9 @@ static void init_atoms(void)
   extern struct segment caml_data_segments[], caml_code_segments[];
 
   for (i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
-  minmax_table(caml_data_segments, &static_data_start, &static_data_end);
-  minmax_table(caml_code_segments, &code_area_start, &code_area_end);
+  minmax_table(caml_data_segments,
+               &caml_static_data_start, &caml_static_data_end);
+  minmax_table(caml_code_segments, &caml_code_area_start, &caml_code_area_end);
 }
 
 /* Configuration parameters and flags */
@@ -116,7 +117,7 @@ struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (void);
-extern void init_ieee_floats (void);
+extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 
 void caml_main(char **argv)
@@ -127,14 +128,14 @@ void caml_main(char **argv)
 #endif
   value res;
 
-  init_ieee_floats();
+  caml_init_ieee_floats();
   caml_init_custom_operations();
 #ifdef DEBUG
   caml_verb_gc = 63;
 #endif
   parse_camlrunparam();
-  init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-           percent_free_init, max_percent_free_init);
+  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+                percent_free_init, max_percent_free_init);
   init_atoms();
   caml_init_signals();
   exe_name = argv[0];

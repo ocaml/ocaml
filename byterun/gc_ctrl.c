@@ -29,16 +29,16 @@
 extern unsigned long caml_max_stack_size;    /* defined in stacks.c */
 #endif
 
-double stat_minor_words = 0.0,
-       stat_promoted_words = 0.0,
-       stat_major_words = 0.0;
+double caml_stat_minor_words = 0.0,
+       caml_stat_promoted_words = 0.0,
+       caml_stat_major_words = 0.0;
 
-long stat_minor_collections = 0,
-     stat_major_collections = 0,
-     stat_heap_size = 0,              /* bytes */
-     stat_top_heap_size = 0,          /* bytes */
-     stat_compactions = 0,
-     stat_heap_chunks = 0;
+long caml_stat_minor_collections = 0,
+     caml_stat_major_collections = 0,
+     caml_stat_heap_size = 0,              /* bytes */
+     caml_stat_top_heap_size = 0,          /* bytes */
+     caml_stat_compactions = 0,
+     caml_stat_heap_chunks = 0;
 
 extern asize_t caml_major_heap_increment;  /* bytes; see major_gc.c */
 extern unsigned long caml_percent_free;    /*        see major_gc.c */
@@ -201,27 +201,28 @@ static value heap_stats (int returnstats)
     chunk = Chunk_next (chunk);
   }
 
-  Assert (heap_chunks == stat_heap_chunks);
-  Assert (live_words + free_words + fragments == Wsize_bsize (stat_heap_size));
+  Assert (heap_chunks == caml_stat_heap_chunks);
+  Assert (live_words + free_words + fragments
+          == Wsize_bsize (caml_stat_heap_size));
 
   if (returnstats){
     CAMLlocal1 (res);
 
     /* get a copy of these before allocating anything... */
-    double minwords = stat_minor_words
+    double minwords = caml_stat_minor_words
                       + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
-    double prowords = stat_promoted_words;
-    double majwords = stat_major_words + (double) caml_allocated_words;
-    long mincoll = stat_minor_collections;
-    long majcoll = stat_major_collections;
-    long heap_words = Wsize_bsize (stat_heap_size);
-    long cpct = stat_compactions;
-    long top_heap_words = Wsize_bsize (stat_top_heap_size);
+    double prowords = caml_stat_promoted_words;
+    double majwords = caml_stat_major_words + (double) caml_allocated_words;
+    long mincoll = caml_stat_minor_collections;
+    long majcoll = caml_stat_major_collections;
+    long heap_words = Wsize_bsize (caml_stat_heap_size);
+    long cpct = caml_stat_compactions;
+    long top_heap_words = Wsize_bsize (caml_stat_top_heap_size);
 
     res = caml_alloc_tuple (15);
-    Store_field (res, 0, copy_double (minwords));
-    Store_field (res, 1, copy_double (prowords));
-    Store_field (res, 2, copy_double (majwords));
+    Store_field (res, 0, caml_copy_double (minwords));
+    Store_field (res, 1, caml_copy_double (prowords));
+    Store_field (res, 2, caml_copy_double (majwords));
     Store_field (res, 3, Val_long (mincoll));
     Store_field (res, 4, Val_long (majcoll));
     Store_field (res, 5, Val_long (heap_words));
@@ -241,37 +242,37 @@ static value heap_stats (int returnstats)
 }
 
 #ifdef DEBUG
-void heap_check (void)
+void caml_heap_check (void)
 {
   heap_stats (0);
 }
 #endif
 
-CAMLprim value gc_stat(value v)
+CAMLprim value caml_gc_stat(value v)
 {
   Assert (v == Val_unit);
   return heap_stats (1);
 }
 
-CAMLprim value gc_counters(value v)
+CAMLprim value caml_gc_counters(value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  double minwords = stat_minor_words
+  double minwords = caml_stat_minor_words
                     + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
-  double prowords = stat_promoted_words;
-  double majwords = stat_major_words + (double) caml_allocated_words;
+  double prowords = caml_stat_promoted_words;
+  double majwords = caml_stat_major_words + (double) caml_allocated_words;
 
   res = caml_alloc_tuple (3);
-  Store_field (res, 0, copy_double (minwords));
-  Store_field (res, 1, copy_double (prowords));
-  Store_field (res, 2, copy_double (majwords));
+  Store_field (res, 0, caml_copy_double (minwords));
+  Store_field (res, 1, caml_copy_double (prowords));
+  Store_field (res, 2, caml_copy_double (majwords));
   CAMLreturn (res);
 }
 
-CAMLprim value gc_get(value v)
+CAMLprim value caml_gc_get(value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
@@ -317,7 +318,7 @@ static long norm_minsize (long int s)
   return s;
 }
 
-CAMLprim value gc_set(value v)
+CAMLprim value caml_gc_set(value v)
 {
   unsigned long newpf, newpm;
   asize_t newheapincr;
@@ -359,39 +360,39 @@ CAMLprim value gc_set(value v)
   return Val_unit;
 }
 
-CAMLprim value gc_minor(value v)
+CAMLprim value caml_gc_minor(value v)
 {                                                    Assert (v == Val_unit);
   caml_minor_collection ();
   return Val_unit;
 }
 
-CAMLprim value gc_major(value v)
+CAMLprim value caml_gc_major(value v)
 {                                                    Assert (v == Val_unit);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
-  final_do_calls ();
+  caml_final_do_calls ();
   return Val_unit;
 }
 
-CAMLprim value gc_full_major(value v)
+CAMLprim value caml_gc_full_major(value v)
 {                                                    Assert (v == Val_unit);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
-  final_do_calls ();
+  caml_final_do_calls ();
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
-  final_do_calls ();
+  caml_final_do_calls ();
   return Val_unit;
 }
 
-CAMLprim value gc_major_slice (value v)
+CAMLprim value caml_gc_major_slice (value v)
 {
   Assert (Is_long (v));
   caml_empty_minor_heap ();
   return Val_long (caml_major_collection_slice (Long_val (v)));
 }
 
-CAMLprim value gc_compaction(value v)
+CAMLprim value caml_gc_compaction(value v)
 {                                                    Assert (v == Val_unit);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
@@ -400,9 +401,9 @@ CAMLprim value gc_compaction(value v)
   return Val_unit;
 }
 
-void init_gc (unsigned long minor_size, unsigned long major_size,
-              unsigned long major_incr, unsigned long percent_fr,
-              unsigned long percent_m)
+void caml_init_gc (unsigned long minor_size, unsigned long major_size,
+                   unsigned long major_incr, unsigned long percent_fr,
+                   unsigned long percent_m)
 {
   unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 

@@ -129,38 +129,38 @@ type control =
 }
 (** The GC parameters are given as a [control] record. *)
 
-external stat : unit -> stat = "gc_stat"
+external stat : unit -> stat = "caml_gc_stat"
 (** Return the current values of the memory management counters in a
    [stat] record. *)
 
-external counters : unit -> float * float * float = "gc_counters"
+external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)].  Much faster
    than [stat]. *)
 
-external get : unit -> control = "gc_get"
+external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
 
-external set : control -> unit = "gc_set"
+external set : control -> unit = "caml_gc_set"
 (** [set r] changes the GC parameters according to the [control] record [r].
    The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
 
-external minor : unit -> unit = "gc_minor"
+external minor : unit -> unit = "caml_gc_minor"
 (** Trigger a minor collection. *)
 
-external major_slice : int -> int = "gc_major_slice";;
+external major_slice : int -> int = "caml_gc_major_slice";;
 (** Do a minor collection and a slice of major collection.  The argument
     is the size of the slice, 0 to use the automatically-computed
     slice size.  In all cases, the result is the computed slice size. *)
 
-external major : unit -> unit = "gc_major"
+external major : unit -> unit = "caml_gc_major"
 (** Do a minor collection and finish the current major collection cycle. *)
 
-external full_major : unit -> unit = "gc_full_major"
+external full_major : unit -> unit = "caml_gc_full_major"
 (** Do a minor collection, finish the current major collection cycle,
    and perform a complete new cycle.  This will collect all currently
    unreachable blocks. *)
 
-external compact : unit -> unit = "gc_compaction"
+external compact : unit -> unit = "caml_gc_compaction"
 (** Perform a full major collection and compact the heap.  Note that heap
    compaction is a lengthy operation. *)
 

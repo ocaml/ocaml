@@ -143,7 +143,7 @@ void caml_raise_sys_blocked_io(void)
 
 /* We allocate statically the bucket for the exception because we can't
    do a GC before the exception is raised (lack of stack descriptors
-   for the ccall to [array_bound_error].  */
+   for the ccall to [caml_array_bound_error].  */
 
 #define BOUND_MSG "index out of bounds"
 #define BOUND_MSG_LEN (sizeof(BOUND_MSG) - 1)
@@ -159,7 +159,7 @@ static struct {
   char data[BOUND_MSG_LEN + sizeof(value)];
 } array_bound_error_msg = { 0, BOUND_MSG };
 
-void array_bound_error(void)
+void caml_array_bound_error(void)
 {
   mlsize_t wosize = (BOUND_MSG_LEN + sizeof(value)) / sizeof(value);
   mlsize_t offset_index = Bsize_wsize(wosize) - 1;

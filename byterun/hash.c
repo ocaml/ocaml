@@ -26,7 +26,7 @@ static long hash_univ_limit, hash_univ_count;
 
 static void hash_aux(value obj);
 
-CAMLprim value hash_univ_param(value count, value limit, value obj)
+CAMLprim value caml_hash_univ_param(value count, value limit, value obj)
 {
   hash_univ_limit = Long_val(limit);
   hash_univ_count = Long_val(count);
@@ -142,7 +142,7 @@ static void hash_aux(value obj)
 
 /* Hashing variant tags */
 
-CAMLexport value hash_variant(char * tag)
+CAMLexport value caml_hash_variant(char * tag)
 {
   value accu;
   /* Same hashing algorithm as in ../typing/btype.ml, function hash_variant */
@@ -155,4 +155,3 @@ CAMLexport value hash_variant(char * tag)
      platforms */
   return (int32) accu;
 }
-

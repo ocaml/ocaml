@@ -81,28 +81,28 @@ external (+.) : float -> float -> float = "%addfloat"
 external (-.) : float -> float -> float = "%subfloat"
 external ( *. ) : float -> float -> float = "%mulfloat"
 external (/.) : float -> float -> float = "%divfloat"
-external ( ** ) : float -> float -> float = "power_float" "pow" "float"
-external exp : float -> float = "exp_float" "exp" "float"
-external acos : float -> float = "acos_float" "acos" "float"
-external asin : float -> float = "asin_float" "asin" "float"
-external atan : float -> float = "atan_float" "atan" "float"
-external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
-external cos : float -> float = "cos_float" "cos" "float"
-external cosh : float -> float = "cosh_float" "cosh" "float"
-external log : float -> float = "log_float" "log" "float"
-external log10 : float -> float = "log10_float" "log10" "float"
-external sin : float -> float = "sin_float" "sin" "float"
-external sinh : float -> float = "sinh_float" "sinh" "float"
-external sqrt : float -> float = "sqrt_float" "sqrt" "float"
-external tan : float -> float = "tan_float" "tan" "float"
-external tanh : float -> float = "tanh_float" "tanh" "float"
-external ceil : float -> float = "ceil_float" "ceil" "float"
-external floor : float -> float = "floor_float" "floor" "float"
+external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
+external exp : float -> float = "caml_exp_float" "exp" "float"
+external acos : float -> float = "caml_acos_float" "acos" "float"
+external asin : float -> float = "caml_asin_float" "asin" "float"
+external atan : float -> float = "caml_atan_float" "atan" "float"
+external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
+external cos : float -> float = "caml_cos_float" "cos" "float"
+external cosh : float -> float = "caml_cosh_float" "cosh" "float"
+external log : float -> float = "caml_log_float" "log" "float"
+external log10 : float -> float = "caml_log10_float" "log10" "float"
+external sin : float -> float = "caml_sin_float" "sin" "float"
+external sinh : float -> float = "caml_sinh_float" "sinh" "float"
+external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
+external tan : float -> float = "caml_tan_float" "tan" "float"
+external tanh : float -> float = "caml_tanh_float" "tanh" "float"
+external ceil : float -> float = "caml_ceil_float" "ceil" "float"
+external floor : float -> float = "caml_floor_float" "floor" "float"
 external abs_float : float -> float = "%absfloat"
-external mod_float : float -> float -> float = "fmod_float" "fmod" "float"
-external frexp : float -> float * int = "frexp_float"
-external ldexp : float -> int -> float = "ldexp_float"
-external modf : float -> float * float = "modf_float"
+external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
+external frexp : float -> float * int = "caml_frexp_float"
+external ldexp : float -> int -> float = "caml_ldexp_float"
+external modf : float -> float * float = "caml_modf_float"
 external float : int -> float = "%floatofint"
 external float_of_int : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
@@ -127,7 +127,7 @@ type fpclass =
   | FP_zero
   | FP_infinite
   | FP_nan
-external classify_float: float -> fpclass = "classify_float"
+external classify_float: float -> fpclass = "caml_classify_float"
 
 (* String operations -- more in module String *)
 
@@ -162,7 +162,7 @@ external snd : 'a * 'b -> 'b = "%field1"
 (* String conversion functions *)
 
 external format_int: string -> int -> string = "caml_format_int"
-external format_float: string -> float -> string = "format_float"
+external format_float: string -> float -> string = "caml_format_float"
 
 let string_of_bool b =
   if b then "true" else "false"
@@ -193,7 +193,7 @@ let valid_float_lexem s =
 
 let string_of_float f = valid_float_lexem (format_float "%.12g" f);;
 
-external float_of_string : string -> float = "float_of_string"
+external float_of_string : string -> float = "caml_float_of_string"
 
 (* List operations -- more in module List *)
 

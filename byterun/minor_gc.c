@@ -192,7 +192,7 @@ void caml_empty_minor_heap (void)
     }
     caml_oldify_mopup ();
     if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
-    stat_minor_words += Wsize_bsize (caml_young_end - caml_young_ptr);
+    caml_stat_minor_words += Wsize_bsize (caml_young_end - caml_young_ptr);
     caml_young_ptr = caml_young_end;
     caml_young_limit = caml_young_start;
     caml_ref_table_ptr = ref_table;
@@ -200,7 +200,7 @@ void caml_empty_minor_heap (void)
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
   }
-  final_empty_young ();
+  caml_final_empty_young ();
 #ifdef DEBUG
   {
     value *p;
@@ -221,12 +221,12 @@ void caml_minor_collection (void)
 
   caml_empty_minor_heap ();
 
-  stat_promoted_words += caml_allocated_words - prev_alloc_words;
-  ++ stat_minor_collections;
+  caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
+  ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
   caml_force_major_slice = 0;
 
-  final_do_calls ();
+  caml_final_do_calls ();
 
   caml_empty_minor_heap ();
 }

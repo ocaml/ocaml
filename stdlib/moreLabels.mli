@@ -60,7 +60,7 @@ module Hashtbl : sig
   module Make : functor (H : HashedType) -> S with type key = H.t
   val hash : 'a -> int
   external hash_param : int -> int -> 'a -> int
-      = "hash_univ_param" "noalloc"
+      = "caml_hash_univ_param" "noalloc"
 end
 
 module Map : sig

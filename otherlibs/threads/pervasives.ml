@@ -85,28 +85,28 @@ external (+.) : float -> float -> float = "%addfloat"
 external (-.) : float -> float -> float = "%subfloat"
 external ( *. ) : float -> float -> float = "%mulfloat"
 external (/.) : float -> float -> float = "%divfloat"
-external ( ** ) : float -> float -> float = "power_float" "pow" "float"
-external exp : float -> float = "exp_float" "exp" "float"
-external acos : float -> float = "acos_float" "acos" "float"
-external asin : float -> float = "asin_float" "asin" "float"
-external atan : float -> float = "atan_float" "atan" "float"
-external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
-external cos : float -> float = "cos_float" "cos" "float"
-external cosh : float -> float = "cosh_float" "cosh" "float"
-external log : float -> float = "log_float" "log" "float"
-external log10 : float -> float = "log10_float" "log10" "float"
-external sin : float -> float = "sin_float" "sin" "float"
-external sinh : float -> float = "sinh_float" "sinh" "float"
-external sqrt : float -> float = "sqrt_float" "sqrt" "float"
-external tan : float -> float = "tan_float" "tan" "float"
-external tanh : float -> float = "tanh_float" "tanh" "float"
-external ceil : float -> float = "ceil_float" "ceil" "float"
-external floor : float -> float = "floor_float" "floor" "float"
+external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
+external exp : float -> float = "caml_exp_float" "exp" "float"
+external acos : float -> float = "caml_acos_float" "acos" "float"
+external asin : float -> float = "caml_asin_float" "asin" "float"
+external atan : float -> float = "caml_atan_float" "atan" "float"
+external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
+external cos : float -> float = "caml_cos_float" "cos" "float"
+external cosh : float -> float = "caml_cosh_float" "cosh" "float"
+external log : float -> float = "caml_log_float" "log" "float"
+external log10 : float -> float = "caml_log10_float" "log10" "float"
+external sin : float -> float = "caml_sin_float" "sin" "float"
+external sinh : float -> float = "caml_sinh_float" "sinh" "float"
+external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
+external tan : float -> float = "caml_tan_float" "tan" "float"
+external tanh : float -> float = "caml_tanh_float" "tanh" "float"
+external ceil : float -> float = "caml_ceil_float" "ceil" "float"
+external floor : float -> float = "caml_floor_float" "floor" "float"
 external abs_float : float -> float = "%absfloat"
-external mod_float : float -> float -> float = "fmod_float" "fmod" "float"
-external frexp : float -> float * int = "frexp_float"
-external ldexp : float -> int -> float = "ldexp_float"
-external modf : float -> float * float = "modf_float"
+external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
+external frexp : float -> float * int = "caml_frexp_float"
+external ldexp : float -> int -> float = "caml_ldexp_float"
+external modf : float -> float * float = "caml_modf_float"
 external float : int -> float = "%floatofint"
 external float_of_int : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
@@ -136,14 +136,14 @@ type fpclass =
   | FP_zero
   | FP_infinite
   | FP_nan
-external classify_float: float -> fpclass = "classify_float"
+external classify_float: float -> fpclass = "caml_classify_float"
 
 (* String operations -- more in module String *)
 
 external string_length : string -> int = "%string_length"
-external string_create: int -> string = "create_string"
+external string_create: int -> string = "caml_create_string"
 external string_blit : string -> int -> string -> int -> int -> unit
-                     = "blit_string" "noalloc"
+                     = "caml_blit_string" "noalloc"
 
 let (^) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
@@ -179,8 +179,8 @@ external decr: int ref -> unit = "%decr"
 
 (* String conversion functions *)
 
-external format_int: string -> int -> string = "format_int"
-external format_float: string -> float -> string = "format_float"
+external format_int: string -> int -> string = "caml_format_int"
+external format_float: string -> float -> string = "caml_format_float"
 
 let string_of_bool b =
   if b then "true" else "false"
@@ -207,7 +207,7 @@ let valid_float_lexem s =
 
 let string_of_float f = valid_float_lexem (format_float "%.12g" f);;
 
-external float_of_string : string -> float = "float_of_string"
+external float_of_string : string -> float = "caml_float_of_string"
 
 (* List operations -- more in module List *)
 
@@ -256,7 +256,7 @@ type open_flag =
   | Open_creat | Open_trunc | Open_excl
   | Open_binary | Open_text | Open_nonblock
 
-external open_desc: string -> open_flag list -> int -> int = "sys_open"
+external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 
 let open_out_gen mode perm name =
   open_descriptor_out(open_desc name mode perm)
@@ -339,7 +339,7 @@ let output_binary_int oc n =
   output_byte oc n
 
 external marshal_to_string : 'a -> unit list -> string 
-                           = "output_value_to_string"
+                           = "caml_output_value_to_string"
 
 let output_value oc v = output_string oc (marshal_to_string v [])
 
@@ -441,8 +441,8 @@ let input_binary_int ic =
   let b4 = input_byte ic in
   (n1 lsl 24) + (b2 lsl 16) + (b3 lsl 8) + b4
 
-external unmarshal : string -> int -> 'a = "input_value_from_string"
-external marshal_data_size : string -> int -> int = "marshal_data_size"
+external unmarshal : string -> int -> 'a = "caml_input_value_from_string"
+external marshal_data_size : string -> int -> int = "caml_marshal_data_size"
 
 let input_value ic =
   let header = string_create 20 in
@@ -512,7 +512,7 @@ let (( ^^ ) : ('a, 'b, 'c, 'd) format4 -> ('d, 'b, 'c, 'e) format4 ->
 
 (* Miscellaneous *)
 
-external sys_exit : int -> 'a = "sys_exit"
+external sys_exit : int -> 'a = "caml_sys_exit"
 
 let exit_function = ref flush_all
 
@@ -526,6 +526,7 @@ let exit retcode =
   do_at_exit ();
   sys_exit retcode
 
-external register_named_value: string -> 'a -> unit = "register_named_value"
+external register_named_value : string -> 'a -> unit
+                              = "caml_register_named_value"
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit

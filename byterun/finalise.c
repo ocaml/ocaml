@@ -38,7 +38,7 @@ static unsigned long old = 0, young = 0, active = 0, size = 0;
    finalising set.
    The recent set is empty.
 */
-void final_update (void)
+void caml_final_update (void)
 {
   unsigned long i;
   unsigned long oldactive = active;
@@ -78,7 +78,7 @@ void final_update (void)
 /* Call the finalisation functions for the finalising set.
    Note that this function must be reentrant.
 */
-void final_do_calls (void)
+void caml_final_do_calls (void)
 {
   struct final f;
   
@@ -102,7 +102,7 @@ void final_do_calls (void)
    This is called by the major GC and the compactor
    through [caml_darken_all_roots].
 */
-void final_do_strong_roots (scanning_action f)
+void caml_final_do_strong_roots (scanning_action f)
 {
   unsigned long i;
 
@@ -120,7 +120,7 @@ void final_do_strong_roots (scanning_action f)
    The recent set is empty.
    This is called directly by the compactor.
 */
-void final_do_weak_roots (scanning_action f)
+void caml_final_do_weak_roots (scanning_action f)
 {
   unsigned long i;
 
@@ -131,7 +131,7 @@ void final_do_weak_roots (scanning_action f)
 /* Call [*f] on the closures and values of the recent set.
    This is called by the minor GC through [caml_oldify_local_roots].
 */
-void final_do_young_roots (scanning_action f)
+void caml_final_do_young_roots (scanning_action f)
 {
   unsigned long i;
   
@@ -146,13 +146,13 @@ void final_do_young_roots (scanning_action f)
    This is called at the end of each minor collection.
    The minor heap must be empty when this is called.
 */
-void final_empty_young (void)
+void caml_final_empty_young (void)
 {
   old = young;
 }
 
 /* Put (f,v) in the recent set. */
-CAMLprim value final_register (value f, value v)
+CAMLprim value caml_final_register (value f, value v)
 {
   if (!(Is_block (v) && (Is_in_heap (v) || Is_young (v)))){
     caml_invalid_argument ("Gc.finalise");

@@ -306,8 +306,8 @@ caml_callback3_exn:
 
         .global caml_ml_array_bound_error
 caml_ml_array_bound_error:
-    /* Load address of array_bound_error in r10 */
-        ldr     r10, .Larray_bound_error
+    /* Load address of [caml_array_bound_error] in r10 */
+        ldr     r10, .Lcaml_array_bound_error
     /* Call that function */
         b       caml_c_call
 
@@ -324,7 +324,7 @@ caml_ml_array_bound_error:
 .Lcaml_apply2:                  .word caml_apply2
 .Lcaml_apply3:                  .word caml_apply3
 .Lcaml_requested_size:          .word 0
-.Larray_bound_error:            .word array_bound_error
+.Lcaml_array_bound_error:       .word caml_array_bound_error
 
 /* GC roots for callback */
 

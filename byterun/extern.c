@@ -376,10 +376,10 @@ static void extern_rec(value v)
     }
     return;
   }
-  if ((char *) v >= code_area_start && (char *) v < code_area_end) {
+  if ((char *) v >= caml_code_area_start && (char *) v < caml_code_area_end) {
     if (!extern_closures)
       extern_invalid_argument("output_value: functional value");
-    writecode32(CODE_CODEPOINTER, (char *) v - code_area_start);
+    writecode32(CODE_CODEPOINTER, (char *) v - caml_code_area_start);
     writeblock((char *) caml_code_checksum(), 16);
     return;
   }

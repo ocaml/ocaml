@@ -33,10 +33,10 @@
 #include <sys/resource.h>
 #endif
 
-extern char * code_area_start, * code_area_end;
+extern char * caml_code_area_start, * caml_code_area_end;
 
 #define In_code_area(pc) \
-  ((char *)(pc) >= code_area_start && (char *)(pc) <= code_area_end)
+  ((char *)(pc) >= caml_code_area_start && (char *)(pc) <= caml_code_area_end)
 
 #ifdef _WIN32
 typedef void (*sighandler)(int sig);
@@ -463,7 +463,7 @@ value caml_install_signal_handler(value signal_number, value action) /* ML */
   if (Is_block(action)) {
     if (caml_signal_handlers == 0) {
       caml_signal_handlers = caml_alloc(NSIG, 0);
-      register_global_root(&caml_signal_handlers);
+      caml_register_global_root(&caml_signal_handlers);
     }
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
@@ -491,7 +491,7 @@ static void trap_handler(int sig, int code,
   sp = (int *) context->sc_sp;
   caml_exception_pointer = (char *) sp[5];
   caml_young_ptr = (char *) sp[6];
-  array_bound_error();
+  caml_array_bound_error();
 }
 #endif
 
@@ -510,14 +510,14 @@ static void trap_handler(int sig, siginfo_t * info, void * context)
   sp = (long *) (((ucontext_t *)context)->uc_mcontext.gregs[REG_SP]);
   caml_exception_pointer = (char *) sp[5];
   caml_young_ptr = (char *) sp[6];
-  array_bound_error();
+  caml_array_bound_error();
 }
 #endif
 
 #if defined(TARGET_sparc) && (defined(SYS_bsd) || defined(SYS_linux))
 static void trap_handler(int sig)
 {
-  /* TODO: recover registers from context and call array_bound_error */
+  /* TODO: recover registers from context and call [caml_array_bound_error] */
   caml_fatal_error("Fatal error: out-of-bound access in array or string\n");
 }
 #endif
@@ -534,7 +534,7 @@ static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
      from registers 31 and 29 */
   caml_exception_pointer = (char *) CONTEXT_GPR(context, 29);
   caml_young_ptr = (char *) CONTEXT_GPR(context, 31);
-  array_bound_error();
+  caml_array_bound_error();
 }
 #endif
 
@@ -545,7 +545,7 @@ static void trap_handler(int sig, struct sigcontext * context)
      from registers 31 and 29 */
   caml_exception_pointer = (char *) context->regs->gpr[29];
   caml_young_ptr = (char *) context->regs->gpr[31];
-  array_bound_error();
+  caml_array_bound_error();
 }
 #endif
 
@@ -561,7 +561,7 @@ static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
      from registers 31 and 29 */
   caml_exception_pointer = (char *) CONTEXT_GPR(context, 29);
   caml_young_ptr = (char *) CONTEXT_GPR(context, 31);
-  array_bound_error();
+  caml_array_bound_error();
 }
 #endif
 
@@ -572,7 +572,7 @@ static void trap_handler(int sig, int code, struct sigcontext * context)
      from registers 31 and 29 */
   caml_exception_pointer = (char *) context->sc_frame.fixreg[29];
   caml_young_ptr = (char *) context->sc_frame.fixreg[31];
-  array_bound_error();
+  caml_array_bound_error();
 }
 #endif
 

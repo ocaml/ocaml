@@ -150,15 +150,17 @@ int caml_add_to_heap (char *m)
     Chunk_next (m) = cur;
     *last = m;
 
-    ++ stat_heap_chunks;
+    ++ caml_stat_heap_chunks;
   }
 
   /* Update the heap bounds as needed. */
   /* already done:   if (m < caml_heap_start) heap_start = m; */
   if (m + Chunk_size (m) > caml_heap_end) caml_heap_end = m + Chunk_size (m);
 
-  stat_heap_size += Chunk_size (m);
-  if (stat_heap_size > stat_top_heap_size) stat_top_heap_size = stat_heap_size;
+  caml_stat_heap_size += Chunk_size (m);
+  if (caml_stat_heap_size > caml_stat_top_heap_size){
+    caml_stat_top_heap_size = caml_stat_heap_size;
+  }
   return 0;
 }
 
@@ -175,7 +177,7 @@ static char *expand_heap (mlsize_t request)
 
   malloc_request = caml_round_heap_chunk_size (Bhsize_wosize (request));
   caml_gc_message (0x04, "Growing heap to %luk bytes\n",
-                   (stat_heap_size + malloc_request) / 1024);
+                   (caml_stat_heap_size + malloc_request) / 1024);
   mem = caml_alloc_for_heap (malloc_request);
   if (mem == NULL){
     caml_gc_message (0x04, "No room for growing heap\n", 0);
@@ -207,8 +209,9 @@ void caml_shrink_heap (char *chunk)
   */
   if (chunk == caml_heap_start) return;
 
-  stat_heap_size -= Chunk_size (chunk);
-  caml_gc_message (0x04, "Shrinking heap to %luk bytes\n", stat_heap_size/1024);
+  caml_stat_heap_size -= Chunk_size (chunk);
+  caml_gc_message (0x04, "Shrinking heap to %luk bytes\n",
+                   caml_stat_heap_size / 1024);
 
 #ifdef DEBUG
   {
@@ -219,7 +222,7 @@ void caml_shrink_heap (char *chunk)
   }
 #endif
 
-  -- stat_heap_chunks;
+  -- caml_stat_heap_chunks;
 
   /* Remove [chunk] from the list of chunks. */
   cp = &caml_heap_start;
@@ -253,7 +256,7 @@ value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   char *hp, *new_block;
 
   if (wosize > Max_wosize) caml_raise_out_of_memory ();
-  hp = fl_allocate (wosize);
+  hp = caml_fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
     if (new_block == NULL) {
@@ -262,8 +265,8 @@ value caml_alloc_shr (mlsize_t wosize, tag_t tag)
       else
         caml_raise_out_of_memory ();
     }
-    fl_add_block (new_block);
-    hp = fl_allocate (wosize);
+    caml_fl_add_block (new_block);
+    hp = caml_fl_allocate (wosize);
   }
 
   Assert (Is_in_heap (Val_hp (hp)));
@@ -312,7 +315,8 @@ void caml_adjust_gc_speed (mlsize_t mem, mlsize_t max)
     caml_urge_major_slice ();
   }
   if (caml_extra_heap_memory > (double) Wsize_bsize (caml_minor_heap_size)
-                               / 2.0 / (double) Wsize_bsize (stat_heap_size)) {
+                               / 2.0
+                               / (double) Wsize_bsize (caml_stat_heap_size)) {
     caml_urge_major_slice ();
   }
 }

@@ -24,19 +24,19 @@
 #include "opnames.h"
 #include "prims.h"
 
-extern code_t start_code;
+extern code_t caml_start_code;
 
-long icount = 0;
+long caml_icount = 0;
 
-void stop_here () {}
+void caml_stop_here () {}
 
-int trace_flag = 0;
+int caml_trace_flag = 0;
 
-void disasm_instr(pc)
+void caml_disasm_instr(pc)
      code_t pc;
 {
   int instr = *pc;
-  printf("%6ld  %s", (long) (pc - start_code),
+  printf("%6ld  %s", (long) (pc - caml_start_code),
          instr < 0 || instr > STOP ? "???" : names_of_instructions[instr]);
   pc++;
   switch(instr) {

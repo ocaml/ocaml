@@ -26,6 +26,11 @@
    g       --> ident global C
 */
 
+/* FIXME a faire:
+   system__frametable dans <arch>.s
+   supprimer lazy_is_forward dans obj.c
+*/
+
 /* **** alloc.c */
 #define alloc caml_alloc
 #define alloc_small caml_alloc_small
@@ -144,7 +149,7 @@
 #define raise_with_string caml_raise_with_string
 #define failwith caml_failwith
 #define invalid_argument caml_invalid_argument
-/*#define array_bound_error caml_array_bound_error FIXME */
+#define array_bound_error caml_array_bound_error
 #define raise_out_of_memory caml_raise_out_of_memory
 #define raise_stack_overflow caml_raise_stack_overflow
 #define raise_sys_error caml_raise_sys_error
@@ -154,30 +159,122 @@
 #define raise_sys_blocked_io caml_raise_sys_blocked_io
 #define init_exceptions caml_init_exceptions
 /* **** asmrun/fail.c */
-/*    g Out_of_memory -> caml_Out_of_memory FIXME a faire */
-/*    g Sys_error -> caml_Sys_error FIXME a faire */
-/*    g Failure -> caml_Failure FIXME a faire */
-/*    g Invalid_argument -> caml_Invalid_argument FIXME a faire */
-/*    g End_of_file -> caml_End_of_file FIXME a faire */
-/*    g Division_by_zero -> caml_Division_by_zero FIXME a faire */
-/*    g Not_found -> caml_Not_found FIXME a faire */
-/*    g Match_failure -> caml_Match_failure FIXME a faire */
-/*    g Sys_blocked_io -> caml_Sys_blocked_io FIXME a faire */
-/*    g Stack_overflow -> caml_Stack_overflow FIXME a faire */
-/*    g bucket_Out_of_memory -> caml_bucket_Out_of_memory FIXME pkoi extern? */
-/*    g bucket_Stack_overflow -> caml_bucket_Stack_overflow FIXME idem */
 /*    g raise_caml_exception -> caml_raise_exception */
 /* **** asmrun/<arch>.s */
 /*    g caml_array_bound_error -> caml_ml_array_bound_error */
 
 /* **** finalise.c */
+/*    g final_update -> caml_final_update */
+/*    g final_do_calls -> caml_final_do_calls */
+/*    g final_do_strong_roots -> caml_final_do_strong_roots */
+/*    g final_do_weak_roots -> caml_final_do_weak_roots */
+/*    g final_do_young_roots -> caml_final_do_young_roots */
+/*    g final_empty_young -> caml_final_empty_young */
+/*      final_register -> caml_final_register */
+
 /* **** fix_code.c */
+/*    g start_code -> caml_start_code */
+/*    g code_size -> caml_code_size */
+/*    g saved_code -> caml_saved_code */
+/*    g code_md5 -> caml_code_md5 */
+/*    g load_code -> caml_load_code */
+/*    g fixup_endianness -> caml_fixup_endianness */
+/*    g instr_table -> caml_instr_table */
+/*    g instr_base -> caml_instr_base */
+/*    g thread_code -> caml_thread_code */
+/*    g set_instruction -> caml_set_instruction */
+/*    g is_instruction -> caml_is_instruction */
+
 /* **** floats.c */
+/*#define Double_val caml_Double_val             done as needed in mlvalues.h */
+/*#define Store_double_val caml_Store_double_val done as needed in mlvalues.h */
+#define copy_double caml_copy_double
+/*      format_float -> caml_format_float */
+/*      float_of_string -> caml_float_of_string */
+/*      int_of_float -> caml_int_of_float */
+/*      float_of_int -> caml_float_of_int */
+/*      neg_float -> caml_neg_float */
+/*      abs_float -> caml_abs_float */
+/*      add_float -> caml_add_float */
+/*      sub_float -> caml_sub_float */
+/*      mul_float -> caml_mul_float */
+/*      div_float -> caml_div_float */
+/*      exp_float -> caml_exp_float */
+/*      floor_float -> caml_floor_float */
+/*      fmod_float -> caml_fmod_float */
+/*      frexp_float -> caml_frexp_float */
+/*      ldexp_float -> caml_ldexp_float */
+/*      log_float -> caml_log_float */
+/*      log10_float -> caml_log10_float */
+/*      modf_float -> caml_modf_float */
+/*      sqrt_float -> caml_sqrt_float */
+/*      power_float -> caml_power_float */
+/*      sin_float -> caml_sin_float */
+/*      sinh_float -> caml_sinh_float */
+/*      cos_float -> caml_cos_float */
+/*      cosh_float -> caml_cosh_float */
+/*      tan_float -> caml_tan_float */
+/*      tanh_float -> caml_tanh_float */
+/*      asin_float -> caml_asin_float */
+/*      acos_float -> caml_acos_float */
+/*      atan_float -> caml_atan_float */
+/*      atan2_float -> caml_atan2_float */
+/*      ceil_float -> caml_ceil_float */
+/*      eq_float -> caml_eq_float */
+/*      neq_float -> caml_neq_float */
+/*      le_float -> caml_le_float */
+/*      lt_float -> caml_lt_float */
+/*      ge_float -> caml_ge_float */
+/*      gt_float -> caml_gt_float */
+/*      float_compare -> caml_float_compare */
+/*      classify_float -> caml_classify_float */
+/*      init_ieee_float -> caml_init_ieee_float */
+
 /* **** freelist.c */
+/*    g fl_merge -> caml_fl_merge */
+/*    g fl_cur_size -> caml_fl_cur_size */
+/*      fl_check *** devient static */
+/*    g fl_allocate -> caml_fl_allocate */
+/*    g fl_init_merge -> caml_fl_init_merge */
+/*    g fl_reset -> caml_fl_reset */
+/*    g fl_merge_block -> caml_fl_merge_block */
+/*    g fl_add_block -> caml_fl_add_block */
+/*    g make_free_blocks -> caml_make_free_blocks */
+
 /* **** gc_ctrl.c */
+/*    g stat_minor_words -> caml_stat_minor_words */
+/*    g stat_promoted_words -> caml_stat_promoted_words */
+/*    g stat_major-words -> caml_stat_major_words */
+/*    g stat_minor_collections -> caml_stat_minor_collections */
+/*    g stat_major_collections -> caml_stat_major_collections */
+/*    g stat_heap_size -> caml_stat_heap_size */
+/*    g stat_top_heap_size -> caml_stat_top_heap_size */
+/*    g stat_compactions -> caml_stat_compactions */
+/*    g stat_heap_chunks -> caml_stat_heap_chunks */
+/*    g heap_check -> caml_heap_check */
+/*      gc_stat -> caml_gc_stat */
+/*      gc_counters -> caml_gc_counters */
+/*      gc_get -> caml_gc_get */
+/*      gc_set -> caml_gc_set */
+/*      gc_minor -> caml_gc_minor */
+/*      gc_major -> caml_gc_major */
+/*      gc_full_major -> caml_gc_full_major */
+/*      gc_major_slice -> caml_gc_major_slice */
+/*      gc_compaction -> caml_gc_compaction */
+
 /* **** globroots.c */
+#define register_global_root caml_register_global_root /* FIXME extern/export */
+#define remove_global_root caml_remove_global_root /* FIXME extern sans export*/
+
 /* **** hash.c */
+/*      hash_univ_param -> caml_hash_univ_param */
+#define hash_variant caml_hash_variant */
+
 /* **** instrtrace.c */
+/*    g icount -> caml_icount */
+/*    g stop_here -> caml_stop_here */
+/*    g trace_flag -> caml_trace_flag */
+/*    g disasm_instr -> caml_disasm_instr */
 
 /* **** intern.c */
 /*    g input_val -> caml_input_val */
@@ -504,6 +601,11 @@
 /*    g read_section_descriptors -> caml_read_section_descriptors */
 /*    g seek_optional_section -> caml_seek_optional_section */
 /*    g seek_section -> caml_seek_section */
+/* **** asmrun/startup.c */
+/*    g static_data_start -> caml_static_data_start */
+/*    g static_data_end -> caml_static_data_end */
+/*    g code_area_start -> caml_code_area_start */
+/*    g code_area_end -> caml_code_area_end */
 
 /* **** str.c */
 #define string_length caml_string_length

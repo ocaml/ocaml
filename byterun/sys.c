@@ -299,10 +299,10 @@ CAMLprim value caml_sys_time(value unit)
 #endif
   struct tms t;
   times(&t);
-  return copy_double((double)(t.tms_utime + t.tms_stime) / CLK_TCK);
+  return caml_copy_double((double)(t.tms_utime + t.tms_stime) / CLK_TCK);
 #else
   /* clock() is standard ANSI C */
-  return copy_double((double)clock() / CLOCKS_PER_SEC);
+  return caml_copy_double((double)clock() / CLOCKS_PER_SEC);
 #endif
 }
 

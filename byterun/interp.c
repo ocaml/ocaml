@@ -100,10 +100,10 @@ sp is a local copy of the global variable caml_extern_sp. */
 
 #ifdef THREADED_CODE
 #define Restart_curr_instr \
-  goto *(jumptable[saved_code[pc - 1 - start_code]])
+  goto *(jumptable[caml_saved_code[pc - 1 - caml_start_code]])
 #else
 #define Restart_curr_instr \
-  curr_instr = saved_code[pc - 1 - start_code]; \
+  curr_instr = caml_saved_code[pc - 1 - caml_start_code]; \
   goto dispatch_instr
 #endif
 
@@ -225,8 +225,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
   if (prog == NULL) {           /* Interpreter is initializing */
 #ifdef THREADED_CODE
-    instr_table = (char **) jumptable;
-    instr_base = Jumptbl_base;
+    caml_instr_table = (char **) jumptable;
+    caml_instr_base = Jumptbl_base;
 #endif
     return Val_unit;
   }
@@ -258,7 +258,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef THREADED_CODE
 #ifdef DEBUG
  next_instr:
-  if (icount-- == 0) stop_here ();
+  if (caml_icount-- == 0) caml_stop_here ();
   Assert(sp >= caml_stack_low);
   Assert(sp <= caml_stack_high);
 #endif
@@ -266,8 +266,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #else
   while(1) {
 #ifdef DEBUG
-    if (icount-- == 0) stop_here ();
-    if (trace_flag) disasm_instr(pc);
+    if (caml_icount-- == 0) caml_stop_here ();
+    if (caml_trace_flag) caml_disasm_instr(pc);
     Assert(sp >= caml_stack_low);
     Assert(sp <= caml_stack_high);
 #endif

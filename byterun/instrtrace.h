@@ -22,10 +22,10 @@
 #include "mlvalues.h"
 #include "misc.h"
 
-extern int trace_flag;
-extern long icount;
-void stop_here (void);
-void disasm_instr (code_t pc);
+extern int caml_trace_flag;
+extern long caml_icount;
+void caml_stop_here (void);
+void caml_disasm_instr (code_t pc);
 
 
 #endif

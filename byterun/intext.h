@@ -165,10 +165,10 @@ unsigned char * caml_code_checksum (void);
 
 #ifndef NATIVE_CODE
 #include "fix_code.h"
-#define code_area_start ((char *) start_code)
-#define code_area_end ((char *) start_code + code_size)
+#define caml_code_area_start ((char *) caml_start_code)
+#define caml_code_area_end ((char *) caml_start_code + caml_code_size)
 #else
-extern char * code_area_start, * code_area_end;
+extern char * caml_code_area_start, * caml_code_area_end;
 #endif
 
 /* </private> */

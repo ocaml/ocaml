@@ -81,7 +81,7 @@ CAMLexport void caml_invalid_argument (char *msg)
   caml_raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
 }
 
-CAMLexport void array_bound_error(void)
+CAMLexport void caml_array_bound_error(void)
 {
   caml_invalid_argument("index out of bounds");
 }
@@ -139,5 +139,5 @@ void caml_init_exceptions(void)
 {
   out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
   out_of_memory_bucket.exn = Field(caml_global_data, OUT_OF_MEMORY_EXN);
-  register_global_root(&out_of_memory_bucket.exn);
+  caml_register_global_root(&out_of_memory_bucket.exn);
 }

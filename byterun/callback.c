@@ -40,7 +40,7 @@ static int callback_code_threaded = 0;
 
 static void thread_callback(void)
 {
-  thread_code(callback_code, sizeof(callback_code));
+  caml_thread_code(callback_code, sizeof(callback_code));
   callback_code_threaded = 1;
 }
 
@@ -196,7 +196,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   nv->val = val;
   nv->next = named_value_table[h];
   named_value_table[h] = nv;
-  register_global_root(&nv->val);
+  caml_register_global_root(&nv->val);
   return Val_unit;
 }
 

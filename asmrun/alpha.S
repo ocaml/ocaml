@@ -414,7 +414,7 @@ caml_callback3_exn:
         br      $107
         .end    caml_callback3_exn
 
-/* Glue code to call [array_bound_error] */
+/* Glue code to call [caml_array_bound_error] */
 
         .globl  caml_ml_array_bound_error
         .ent    caml_ml_array_bound_error
@@ -422,7 +422,7 @@ caml_callback3_exn:
 caml_ml_array_bound_error:
         br      $27, $111
 $111:   ldgp    $gp, 0($27)
-        lda     $25, array_bound_error
+        lda     $25, caml_array_bound_error
         br      caml_c_call             /* never returns */
         .end    caml_ml_array_bound_error
 

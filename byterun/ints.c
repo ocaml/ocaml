@@ -295,7 +295,7 @@ CAMLprim value caml_int32_of_float(value v)
 { return caml_copy_int32((int32)(Double_val(v))); }
 
 CAMLprim value caml_int32_to_float(value v)
-{ return copy_double((double)(Int32_val(v))); }
+{ return caml_copy_double((double)(Int32_val(v))); }
 
 CAMLprim value caml_int32_compare(value v1, value v2)
 {
@@ -336,7 +336,7 @@ CAMLprim value caml_int32_float_of_bits(value vi)
 {
   union { float d; int32 i; } u;
   u.i = Int32_val(vi);
-  return copy_double(u.d);
+  return caml_copy_double(u.d);
 }
 
 /* 64-bit integers */
@@ -470,7 +470,7 @@ CAMLprim value caml_int64_of_float(value v)
 CAMLprim value caml_int64_to_float(value v)
 { 
   int64 i = Int64_val(v);
-  return copy_double(I64_to_double(i));
+  return caml_copy_double(I64_to_double(i));
 }
 
 CAMLprim value caml_int64_of_int32(value v)
@@ -558,7 +558,7 @@ CAMLprim value caml_int64_float_of_bits(value vi)
 {
   union { double d; int64 i; } u;
   u.i = Int64_val(vi);
-  return copy_double(u.d);
+  return caml_copy_double(u.d);
 }
 
 /* Native integers */
@@ -692,7 +692,7 @@ CAMLprim value caml_nativeint_of_float(value v)
 { return caml_copy_nativeint((long)(Double_val(v))); }
 
 CAMLprim value caml_nativeint_to_float(value v)
-{ return copy_double((double)(Nativeint_val(v))); }
+{ return caml_copy_double((double)(Nativeint_val(v))); }
 
 CAMLprim value caml_nativeint_of_int32(value v)
 { return caml_copy_nativeint(Int32_val(v)); }

@@ -247,55 +247,55 @@ external ( *. ) : float -> float -> float = "%mulfloat"
 external ( /. ) : float -> float -> float = "%divfloat"
 (** Floating-point division. *)
 
-external ( ** ) : float -> float -> float = "power_float" "pow" "float"
+external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
 (** Exponentiation *)
 
-external sqrt : float -> float = "sqrt_float" "sqrt" "float"
+external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
 (** Square root *)
 
-external exp : float -> float = "exp_float" "exp" "float"
+external exp : float -> float = "caml_exp_float" "exp" "float"
 (** Exponential. *)
 
-external log : float -> float = "log_float" "log" "float"
+external log : float -> float = "caml_log_float" "log" "float"
 (** Natural logarithm. *)
 
-external log10 : float -> float = "log10_float" "log10" "float"
+external log10 : float -> float = "caml_log10_float" "log10" "float"
 (** Base 10 logarithm. *)
 
-external cos : float -> float = "cos_float" "cos" "float"
+external cos : float -> float = "caml_cos_float" "cos" "float"
 (** See {!Pervasives.atan2}. *)
 
-external sin : float -> float = "sin_float" "sin" "float"
+external sin : float -> float = "caml_sin_float" "sin" "float"
 (** See {!Pervasives.atan2}. *)
 
-external tan : float -> float = "tan_float" "tan" "float"
+external tan : float -> float = "caml_tan_float" "tan" "float"
 (** See {!Pervasives.atan2}. *)
 
-external acos : float -> float = "acos_float" "acos" "float"
+external acos : float -> float = "caml_acos_float" "acos" "float"
 (** See {!Pervasives.atan2}. *)
 
-external asin : float -> float = "asin_float" "asin" "float"
+external asin : float -> float = "caml_asin_float" "asin" "float"
 (** See {!Pervasives.atan2}. *)
 
-external atan : float -> float = "atan_float" "atan" "float"
+external atan : float -> float = "caml_atan_float" "atan" "float"
 (** See {!Pervasives.atan2}. *)
 
-external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
+external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
 (** The usual trigonometric functions. *)
 
-external cosh : float -> float = "cosh_float" "cosh" "float"
+external cosh : float -> float = "caml_cosh_float" "cosh" "float"
 (** See {!Pervasives.tanh}. *)
 
-external sinh : float -> float = "sinh_float" "sinh" "float"
+external sinh : float -> float = "caml_sinh_float" "sinh" "float"
 (** See {!Pervasives.tanh}. *)
 
-external tanh : float -> float = "tanh_float" "tanh" "float"
+external tanh : float -> float = "caml_tanh_float" "tanh" "float"
 (** The usual hyperbolic trigonometric functions. *)
 
-external ceil : float -> float = "ceil_float" "ceil" "float"
+external ceil : float -> float = "caml_ceil_float" "ceil" "float"
 (** See {!Pervasives.floor}. *)
 
-external floor : float -> float = "floor_float" "floor" "float"
+external floor : float -> float = "caml_floor_float" "floor" "float"
 (** Round the given float to an integer value.
    [floor f] returns the greatest integer value less than or
    equal to [f].
@@ -305,22 +305,22 @@ external floor : float -> float = "floor_float" "floor" "float"
 external abs_float : float -> float = "%absfloat"
 (** Return the absolute value of the argument. *)
 
-external mod_float : float -> float -> float = "fmod_float" "fmod" "float"
+external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
 (** [mod_float a b] returns the remainder of [a] with respect to
    [b].  The returned value is [a -. n *. b], where [n]
    is the quotient [a /. b] rounded towards zero to an integer. *)
 
-external frexp : float -> float * int = "frexp_float"
+external frexp : float -> float * int = "caml_frexp_float"
 (** [frexp f] returns the pair of the significant
    and the exponent of [f].  When [f] is zero, the
    significant [x] and the exponent [n] of [f] are equal to
    zero.  When [f] is non-zero, they are defined by
    [f = x *. 2 ** n] and [0.5 <= x < 1.0]. *)
 
-external ldexp : float -> int -> float = "ldexp_float"
+external ldexp : float -> int -> float = "caml_ldexp_float"
 (** [ldexp x n] returns [x *. 2 ** n]. *)
 
-external modf : float -> float * float = "modf_float"
+external modf : float -> float * float = "caml_modf_float"
 (** [modf f] returns the pair of the fractional and integral
    part of [f]. *)
 
@@ -370,7 +370,7 @@ type fpclass =
 (** The five classes of floating-point numbers, as determined by
    the {!Pervasives.classify_float} function. *)
 
-external classify_float : float -> fpclass = "classify_float"
+external classify_float : float -> fpclass = "caml_classify_float"
 (** Return the class of the given floating-point number:
    normal, subnormal, zero, infinite, or not a number. *)
 
@@ -434,7 +434,7 @@ external int_of_string : string -> int = "caml_int_of_string"
 val string_of_float : float -> string
 (** Return the string representation of a floating-point number. *)
 
-external float_of_string : string -> float = "float_of_string"
+external float_of_string : string -> float = "caml_float_of_string"
 (** Convert the given string to a float.  Raise [Failure "float_of_string"]
    if the given string is not a valid representation of a float. *)
 

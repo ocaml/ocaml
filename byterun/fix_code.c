@@ -30,38 +30,38 @@
 #include "mlvalues.h"
 #include "reverse.h"
 
-code_t start_code;
-asize_t code_size;
-unsigned char * saved_code;
-unsigned char code_md5[16];
+code_t caml_start_code;
+asize_t caml_code_size;
+unsigned char * caml_saved_code;
+unsigned char caml_code_md5[16];
 
 /* Read the main bytecode block from a file */
 
-void load_code(int fd, asize_t len)
+void caml_load_code(int fd, asize_t len)
 {
   int i;
   struct MD5Context ctx;
 
-  code_size = len;
-  start_code = (code_t) caml_stat_alloc(code_size);
-  if (read(fd, (char *) start_code, code_size) != code_size)
+  caml_code_size = len;
+  caml_start_code = (code_t) caml_stat_alloc(caml_code_size);
+  if (read(fd, (char *) caml_start_code, caml_code_size) != caml_code_size)
     caml_fatal_error("Fatal error: truncated bytecode file.\n");
   caml_MD5Init(&ctx);
-  caml_MD5Update(&ctx, (unsigned char *) start_code, code_size);
-  caml_MD5Final(code_md5, &ctx);
+  caml_MD5Update(&ctx, (unsigned char *) caml_start_code, caml_code_size);
+  caml_MD5Final(caml_code_md5, &ctx);
 #ifdef ARCH_BIG_ENDIAN
-  fixup_endianness(start_code, code_size);
+  caml_fixup_endianness(caml_start_code, caml_code_size);
 #endif
   if (caml_debugger_in_use) {
     len /= sizeof(opcode_t);
-    saved_code = (unsigned char *) caml_stat_alloc(len);
-    for (i = 0; i < len; i++) saved_code[i] = start_code[i];
+    caml_saved_code = (unsigned char *) caml_stat_alloc(len);
+    for (i = 0; i < len; i++) caml_saved_code[i] = caml_start_code[i];
   }
 #ifdef THREADED_CODE
   /* Better to thread now than at the beginning of [caml_interprete],
      since the debugger interface needs to perform SET_EVENT requests
      on the code. */
-  thread_code(start_code, code_size);
+  caml_thread_code(caml_start_code, caml_code_size);
 #endif
 }
 
@@ -69,7 +69,7 @@ void load_code(int fd, asize_t len)
 
 #ifdef ARCH_BIG_ENDIAN
 
-void fixup_endianness(code_t code, asize_t len)
+void caml_fixup_endianness(code_t code, asize_t len)
 {
   code_t p;
   len /= sizeof(opcode_t);
@@ -84,10 +84,10 @@ void fixup_endianness(code_t code, asize_t len)
 
 #ifdef THREADED_CODE
 
-char ** instr_table;
-char * instr_base;
+char ** caml_instr_table;
+char * caml_instr_base;
 
-void thread_code (code_t code, asize_t len)
+void caml_thread_code (code_t code, asize_t len)
 {
   code_t p;
   int l [STOP + 1];
@@ -124,7 +124,7 @@ void thread_code (code_t code, asize_t len)
       */
       instr = STOP;
     }
-    *p++ = (opcode_t)(instr_table[instr] - instr_base);
+    *p++ = (opcode_t)(caml_instr_table[instr] - caml_instr_base);
     if (instr == SWITCH) {
       uint32 sizes = *p++;
       uint32 const_size = sizes & 0xFFFF;
@@ -143,19 +143,19 @@ void thread_code (code_t code, asize_t len)
 
 #endif /* THREADED_CODE */
 
-void set_instruction(code_t pos, opcode_t instr)
+void caml_set_instruction(code_t pos, opcode_t instr)
 {
 #ifdef THREADED_CODE
-  *pos = (opcode_t)(instr_table[instr] - instr_base);
+  *pos = (opcode_t)(caml_instr_table[instr] - caml_instr_base);
 #else
   *pos = instr;
 #endif
 }
 
-int is_instruction(opcode_t instr1, opcode_t instr2)
+int caml_is_instruction(opcode_t instr1, opcode_t instr2)
 {
 #ifdef THREADED_CODE
-  return instr1 == (opcode_t)(instr_table[instr2] - instr_base);
+  return instr1 == (opcode_t)(caml_instr_table[instr2] - caml_instr_base);
 #else
   return instr1 == instr2;
 #endif

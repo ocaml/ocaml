@@ -363,16 +363,16 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define End_roots() caml_local_roots = caml__roots_block.next; }
 
 
-/* [register_global_root] registers a global C variable as a memory root
-   for the duration of the program, or until [remove_global_root] is
+/* [caml_register_global_root] registers a global C variable as a memory root
+   for the duration of the program, or until [caml_remove_global_root] is
    called. */
 
-CAMLextern void register_global_root (value *);
+CAMLextern void caml_register_global_root (value *);
 
-/* [remove_global_root] removes a memory root registered on a global C
-   variable with [register_global_root]. */
+/* [caml_remove_global_root] removes a memory root registered on a global C
+   variable with [caml_register_global_root]. */
 
-CAMLextern void remove_global_root (value *);
+CAMLextern void caml_remove_global_root (value *);
 
 
 #endif /* CAML_MEMORY_H */

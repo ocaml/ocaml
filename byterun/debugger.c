@@ -202,7 +202,7 @@ void caml_debugger(enum event_kind event)
   caml_putword(dbg_out, caml_event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
     caml_putword(dbg_out, caml_stack_high - frame);
-    caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+    caml_putword(dbg_out, (Pc(frame) - caml_start_code) * sizeof(opcode_t));
   } else {
     /* No PC and no stack frame associated with other events */
     caml_putword(dbg_out, 0);
@@ -218,21 +218,21 @@ void caml_debugger(enum event_kind event)
     case REQ_SET_EVENT:
       pos = caml_getword(dbg_in);
       Assert (pos >= 0);
-      Assert (pos < code_size);
-      set_instruction(start_code + pos / sizeof(opcode_t), EVENT);
+      Assert (pos < caml_code_size);
+      caml_set_instruction(caml_start_code + pos / sizeof(opcode_t), EVENT);
       break;
     case REQ_SET_BREAKPOINT:
       pos = caml_getword(dbg_in);
       Assert (pos >= 0);
-      Assert (pos < code_size);
-      set_instruction(start_code + pos / sizeof(opcode_t), BREAK);
+      Assert (pos < caml_code_size);
+      caml_set_instruction(caml_start_code + pos / sizeof(opcode_t), BREAK);
       break;
     case REQ_RESET_INSTR:
       pos = caml_getword(dbg_in);
       Assert (pos >= 0);
-      Assert (pos < code_size);
+      Assert (pos < caml_code_size);
       pos = pos / sizeof(opcode_t);
-      set_instruction(start_code + pos, saved_code[pos]);
+      caml_set_instruction(caml_start_code + pos, caml_saved_code[pos]);
       break;
     case REQ_CHECKPOINT:
       i = fork();
@@ -259,7 +259,7 @@ void caml_debugger(enum event_kind event)
     case REQ_GET_FRAME:
       caml_putword(dbg_out, caml_stack_high - frame);
       if (frame < caml_stack_high){
-        caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+        caml_putword(dbg_out, (Pc(frame) - caml_start_code) * sizeof(opcode_t));
       }else{
         caml_putword (dbg_out, 0);
       }
@@ -276,7 +276,7 @@ void caml_debugger(enum event_kind event)
       } else {
         frame += Extra_args(frame) + i + 3;
         caml_putword(dbg_out, caml_stack_high - frame);
-        caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+        caml_putword(dbg_out, (Pc(frame) - caml_start_code) * sizeof(opcode_t));
       }
       caml_flush(dbg_out);
       break;
@@ -328,7 +328,7 @@ void caml_debugger(enum event_kind event)
       break;
     case REQ_GET_CLOSURE_CODE:
       val = getval(dbg_in);
-      caml_putword(dbg_out, (Code_val(val) - start_code) * sizeof(opcode_t));
+      caml_putword(dbg_out, (Code_val(val)-caml_start_code) * sizeof(opcode_t));
       caml_flush(dbg_out);
       break;
     }

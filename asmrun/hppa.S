@@ -58,7 +58,7 @@
 	.import caml_raise, code
 	.import caml_apply2, code
 	.import caml_apply3, code
-	.import array_bound_error, code
+	.import caml_array_bound_error, code
 
 caml_young_limit             .comm 8
 caml_young_ptr               .comm 8
@@ -528,13 +528,13 @@ G(caml_callback3_exn):
         EXPORT_CODE(G(caml_ml_array_bound_error))
 G(caml_ml_array_bound_error):
         STARTPROC
-; Load address of array_bound_error in %r22
+; Load address of [caml_array_bound_error] in %r22
 #ifdef SYS_hpux
-        ldil    LR%array_bound_error, %r22
-        ldo     RR%array_bound_error(%r22), %r22
+        ldil    LR%caml_array_bound_error, %r22
+        ldo     RR%caml_array_bound_error(%r22), %r22
 #else
-        ldil    L`_array_bound_error, %r22
-        ldo     R`_array_bound_error(%r22), %r22
+        ldil    L`_caml_array_bound_error, %r22
+        ldo     R`_caml_array_bound_error(%r22), %r22
 #endif
 ; Reserve 48 bytes of stack space and jump to caml_c_call
         b       G(caml_c_call)

@@ -309,8 +309,8 @@ G(caml_ml_array_bound_error):
         ffree   %st(5)
         ffree   %st(6)
         ffree   %st(7)
-    /* Branch to array_bound_error */
-        jmp     G(array_bound_error)
+    /* Branch to [caml_array_bound_error] */
+        jmp     G(caml_array_bound_error)
 
         .data
         .globl  G(system__frametable)

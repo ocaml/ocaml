@@ -40,15 +40,15 @@ type control = {
   mutable stack_limit : int;
 };;
 
-external stat : unit -> stat = "gc_stat";;
-external counters : unit -> (float * float * float) = "gc_counters";;
-external get : unit -> control = "gc_get";;
-external set : control -> unit = "gc_set";;
-external minor : unit -> unit = "gc_minor";;
-external major_slice : int -> int = "gc_major_slice";;
-external major : unit -> unit = "gc_major";;
-external full_major : unit -> unit = "gc_full_major";;
-external compact : unit -> unit = "gc_compaction";;
+external stat : unit -> stat = "caml_gc_stat";;
+external counters : unit -> (float * float * float) = "caml_gc_counters";;
+external get : unit -> control = "caml_gc_get";;
+external set : control -> unit = "caml_gc_set";;
+external minor : unit -> unit = "caml_gc_minor";;
+external major_slice : int -> int = "caml_gc_major_slice";;
+external major : unit -> unit = "caml_gc_major";;
+external full_major : unit -> unit = "caml_gc_full_major";;
+external compact : unit -> unit = "caml_gc_compaction";;
 
 open Printf;;
 
@@ -76,7 +76,7 @@ let allocated_bytes () =
   (mi +. ma -. pro) *. float_of_int (Sys.word_size / 8)
 ;;
 
-external finalise : ('a -> unit) -> 'a -> unit = "final_register";;
+external finalise : ('a -> unit) -> 'a -> unit = "caml_final_register";;
 
 
 type alarm = bool ref;;

@@ -42,7 +42,7 @@ extern void caml_shrink_heap (char *);              /* memory.c */
   XXX Should be fixed:
   XXX The above assumes that all roots are aligned on a 4-byte boundary,
   XXX which is not always guaranteed by C.
-  XXX (see [register_global_roots] and [caml_init_exceptions])
+  XXX (see [caml_register_global_roots] and [caml_init_exceptions])
   XXX Should be able to fix it to only assume 2-byte alignment.
 */
 #define Make_ehd(s,t,c) (((s) << 10) | (t) << 2 | (c))
@@ -151,7 +151,7 @@ void caml_compact_heap (void)
   caml_gc_message (0x10, "Compacting heap...\n", 0);
 
 #ifdef DEBUG
-  heap_check ();
+  caml_heap_check ();
 #endif
 
   /* First pass: encode all noninfix headers. */
@@ -187,7 +187,7 @@ void caml_compact_heap (void)
        data structures to find its roots.  Fortunately, it doesn't need
        the headers (see above). */
     caml_do_roots (invert_root);
-    final_do_weak_roots (invert_root);
+    caml_final_do_weak_roots (invert_root);
 
     ch = caml_heap_start;
     while (ch != NULL){
@@ -380,16 +380,16 @@ void caml_compact_heap (void)
   /* Rebuild the free list. */
   {
     ch = caml_heap_start;
-    fl_reset ();
+    caml_fl_reset ();
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
-        make_free_blocks ((value *) (ch + Chunk_alloc (ch)),
-                          Wsize_bsize (Chunk_size (ch) - Chunk_alloc (ch)), 1);
+        caml_make_free_blocks ((value *) (ch + Chunk_alloc (ch)),
+                               Wsize_bsize (Chunk_size(ch)-Chunk_alloc(ch)), 1);
       }
       ch = Chunk_next (ch);
     }
   }
-  ++ stat_compactions;
+  ++ caml_stat_compactions;
   caml_gc_message (0x10, "done.\n", 0);
 }
 
@@ -398,24 +398,25 @@ unsigned long caml_percent_max;  /* used in gc_ctrl.c */
 void caml_compact_heap_maybe (void)
 {
   /* Estimated free words in the heap:
-         FW = fl_size_at_change + 3 * (fl_cur_size - fl_size_at_change)
-                                FW = 3 * fl_cur_size - 2 * fl_size_at_change
-     Estimated live words:      LW = stat_heap_size - FW
+         FW = fl_size_at_change + 3 * (caml_fl_cur_size
+                                       - caml_fl_size_at_phase_change)
+         FW = 3 * caml_fl_cur_size - 2 * caml_fl_size_at_phase_change
+     Estimated live words:      LW = caml_stat_heap_size - FW
      Estimated free percentage: FP = 100 * FW / LW
      We compact the heap if FP > caml_percent_max
   */
   float fw, fp;
                                           Assert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
-  if (stat_major_collections < 5 || stat_heap_chunks < 5) return;
+  if (caml_stat_major_collections < 5 || caml_stat_heap_chunks < 5) return;
 
-  fw = 3.0 * fl_cur_size - 2.0 * caml_fl_size_at_phase_change;
-  if (fw < 0) fw = fl_cur_size;
+  fw = 3.0 * caml_fl_cur_size - 2.0 * caml_fl_size_at_phase_change;
+  if (fw < 0) fw = caml_fl_cur_size;
 
-  if (fw >= Wsize_bsize (stat_heap_size)){
+  if (fw >= Wsize_bsize (caml_stat_heap_size)){
     fp = 1000000.0;
   }else{
-    fp = 100.0 * fw / (Wsize_bsize (stat_heap_size) - fw);
+    fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
     if (fp > 1000000.0) fp = 1000000.0;
   }
   caml_gc_message (0x200, "FL size at phase change = %lu\n",
@@ -426,8 +427,8 @@ void caml_compact_heap_maybe (void)
     caml_finish_major_cycle ();
 
     /* We just did a complete GC, so we can measure the overhead exactly. */
-    fw = fl_cur_size;
-    fp = 100.0 * fw / (Wsize_bsize (stat_heap_size) - fw);
+    fw = caml_fl_cur_size;
+    fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
     caml_gc_message (0x200, "Measured overhead: %lu%%\n", (unsigned long) fp);
 
     caml_compact_heap ();

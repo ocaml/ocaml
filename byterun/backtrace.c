@@ -59,7 +59,7 @@ enum {
 void caml_init_backtrace(void)
 {
   caml_backtrace_active = 1;
-  register_global_root(&caml_backtrace_last_exn);
+  caml_register_global_root(&caml_backtrace_last_exn);
   /* Note: lazy initialization of caml_backtrace_buffer in caml_stash_backtrace
      to simplify the interface with the thread libraries */
 }
@@ -69,7 +69,7 @@ void caml_init_backtrace(void)
 
 void caml_stash_backtrace(value exn, code_t pc, value * sp)
 {
-  code_t end_code = (code_t) ((char *) start_code + code_size);
+  code_t end_code = (code_t) ((char *) caml_start_code + caml_code_size);
   if (pc != NULL) pc = pc - 1;
   if (exn != caml_backtrace_last_exn) {
     caml_backtrace_pos = 0;
@@ -80,12 +80,12 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp)
     if (caml_backtrace_buffer == NULL) return;
   }
   if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-  if (pc >= start_code && pc < end_code){
+  if (pc >= caml_start_code && pc < end_code){
     caml_backtrace_buffer[caml_backtrace_pos++] = pc;
   }
   for (/*nothing*/; sp < caml_trapsp; sp++) {
     code_t p = (code_t) *sp;
-    if (p >= start_code && p < end_code) {
+    if (p >= caml_start_code && p < end_code) {
       if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
       caml_backtrace_buffer[caml_backtrace_pos++] = p;
     }
@@ -144,8 +144,8 @@ static value event_for_location(value events, code_t pc)
   mlsize_t i;
   value pos, l, ev, ev_pos;
 
-  Assert(pc >= start_code && pc < start_code + code_size);
-  pos = Val_long((char *) pc - (char *) start_code);
+  Assert(pc >= caml_start_code && pc < caml_start_code + caml_code_size);
+  pos = Val_long((char *) pc - (char *) caml_start_code);
   for (i = 0; i < Wosize_val(events); i++) {
     for (l = Field(events, i); l != Val_int(0); l = Field(l, 1)) {
       ev = Field(l, 0);
@@ -167,7 +167,7 @@ static void print_location(value events, int index)
   value ev;
 
   ev = event_for_location(events, pc);
-  if (is_instruction(*pc, RAISE)) {
+  if (caml_is_instruction(*pc, RAISE)) {
     /* Ignore compiler-inserted raise */
     if (ev == Val_false) return;
     /* Initial raise if index == 0, re-raise otherwise */

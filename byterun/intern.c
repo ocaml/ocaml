@@ -293,7 +293,7 @@ static void intern_rec(value *dest)
           intern_cleanup();
           caml_failwith("input_value: code mismatch");
         }
-        v = (value) (code_area_start + ofs);
+        v = (value) (caml_code_area_start + ofs);
         break;
       case CODE_INFIXPOINTER:
         ofs = read32u();
@@ -378,8 +378,8 @@ static void intern_add_to_heap(mlsize_t whsize)
       (header_t *) intern_extra_block + Wsize_bsize(request);
     Assert(intern_dest <= end_extra_block);
     if (intern_dest < end_extra_block){
-      make_free_blocks ((value *) intern_dest, end_extra_block - intern_dest,
-                        0);
+      caml_make_free_blocks ((value *) intern_dest,
+                             end_extra_block - intern_dest, 0);
     }
     caml_add_to_heap(intern_extra_block);
   }
@@ -564,8 +564,8 @@ unsigned char * caml_code_checksum(void)
     struct MD5Context ctx;
     caml_MD5Init(&ctx);
     caml_MD5Update(&ctx,
-                   (unsigned char *) code_area_start,
-                   code_area_end - code_area_start);
+                   (unsigned char *) caml_code_area_start,
+                   caml_code_area_end - caml_code_area_start);
     caml_MD5Final(checksum, &ctx);
     checksum_computed = 1;
   }
@@ -578,7 +578,7 @@ unsigned char * caml_code_checksum(void)
 
 unsigned char * caml_code_checksum(void)
 {
-  return code_md5;
+  return caml_code_md5;
 }
 
 #endif

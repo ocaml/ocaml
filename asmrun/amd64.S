@@ -310,7 +310,7 @@ FUNCTION(caml_ml_array_bound_error)
     /* Make the exception handler and alloc ptr available to the C code */
 	movq	%r15, caml_young_ptr(%rip)
 	movq	%r14, caml_exception_pointer(%rip)
-	jmp	array_bound_error	
+	jmp	caml_array_bound_error	
 
         .data
         .globl  system__frametable
