@@ -852,29 +852,33 @@ let rec filter_trace =
       []
 
 (* Hide variant name, to force printing the expanded type *)
-let hide_variant_name (t,t') =
-  if t == t' then (t,t') else
-  match repr t' with
-    {desc = Tvariant row} as t' when (row_repr row).row_name <> None ->
-      (t, newty2 t'.level (Tvariant {(row_repr row) with row_name = None}))
+let hide_variant_name t =
+  match repr t with
+    {desc = Tvariant row} as t when (row_repr row).row_name <> None ->
+      newty2 t.level (Tvariant {(row_repr row) with row_name = None})
   | _ ->
-      (t, t')
+      t
+
+let prepare_expansion (t, t') =
+  let t' = hide_variant_name t' in
+  mark_loops t; if t != t' then mark_loops t';
+  (t, t')
 
 let unification_error unif tr txt1 txt2 =
   reset ();
-  let tr = List.map hide_variant_name tr in
+  let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
   let (t3, t4) = mismatch tr in
   match tr with
     [] | _::[] ->
       assert false
-  | (t1, t1')::(t2, t2')::tr ->
+  | t1::t2::tr ->
     try
+      let t1, t1' = prepare_expansion t1
+      and t2, t2' = prepare_expansion t2 in
       print_labels := not !Clflags.classic;
       open_vbox 0;
       let tr = filter_trace tr in
-      let mark (t, t') = mark_loops t; if t != t' then mark_loops t' in
-      mark (t1, t1'); mark (t2, t2');
-      List.iter mark tr;
+      let tr = List.map prepare_expansion tr in
       open_box 0;
       txt1 (); print_break 1 2;
       type_expansion t1 t1'; print_space();
@@ -924,11 +928,6 @@ let unification_error unif tr txt1 txt2 =
     with exn ->
       print_labels := true;
       raise exn
-
-let prepare_expansion (t, t') =
-  let t' = hide_variant_name t' in
-  mark_loops t; if t != t' then mark_loops t';
-  (t, t')
 
 let trace fst txt tr =
   print_labels := not !Clflags.classic;
