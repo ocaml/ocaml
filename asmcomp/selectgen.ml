@@ -174,7 +174,7 @@ let join_array rs =
     res
   end
 
-(* Registers for catch contructs *)
+(* Registers for catch constructs *)
 let catch_regs = ref []
 
 (* Name of function being compiled *)
