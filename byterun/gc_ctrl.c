@@ -152,7 +152,13 @@ static value heap_stats (int returnstats)
                       && Wosize_hp (Next (cur_hp)) > 0)
                   || Next (cur_hp) == gc_sweep_hp);
         }else{
-          if (gc_phase == Phase_mark || gc_phase == Phase_idle){
+          if (gc_phase == Phase_sweep && cur_hp >= gc_sweep_hp){
+            ++ free_blocks;
+            free_words += Whsize_hd (cur_hd);
+            if (Whsize_hd (cur_hd) > largest_free){
+              largest_free = Whsize_hd (cur_hd);
+            }
+          }else{
             ++ live_blocks;
             live_words += Whsize_hd (cur_hd);
 #ifdef DEBUG
