@@ -60,6 +60,7 @@ let rec move_up frame_count event =
 (* Raise `Not_found' if no such frame. *)
 (* --- Assume the current events have already been updated. *)
 let select_frame frame_number =
+  if frame_number < 0 then raise Not_found;
   let (initial_sp, _) = get_frame() in
   try
     match !current_event with
