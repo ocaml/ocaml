@@ -630,6 +630,8 @@ package-macosx: FORCE
 	     LIBDIR="`pwd`"/package-macosx/root$(LIBDIR) \
 	     MANDIR="`pwd`"/package-macosx/root$(MANDIR) install
 	tools/make-package-macosx
+clean::
+	rm -rf package-macosx/root package-macosx/*.pkg package-macosx/*.dmg
 
 # Default rules
 
