@@ -8,8 +8,8 @@ char.cmo: string.cmi char.cmi
 char.cmx: string.cmx char.cmi 
 digest.cmo: string.cmi digest.cmi 
 digest.cmx: string.cmx digest.cmi 
-filename.cmo: string.cmi filename.cmi 
-filename.cmx: string.cmx filename.cmi 
+filename.cmo: string.cmi sys.cmi filename.cmi 
+filename.cmx: string.cmx sys.cmx filename.cmi 
 format.cmo: queue.cmi string.cmi format.cmi 
 format.cmx: queue.cmx string.cmx format.cmi 
 gc.cmo: printf.cmi gc.cmi 
@@ -34,8 +34,8 @@ printf.cmo: list.cmi obj.cmi string.cmi printf.cmi
 printf.cmx: list.cmx obj.cmx string.cmx printf.cmi 
 queue.cmo: queue.cmi 
 queue.cmx: queue.cmi 
-random.cmo: array.cmi random.cmi 
-random.cmx: array.cmx random.cmi 
+random.cmo: array.cmi char.cmi digest.cmi random.cmi 
+random.cmx: array.cmx char.cmx digest.cmx random.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
 sort.cmo: sort.cmi 

@@ -1,8 +1,10 @@
-scheduler.o : scheduler.c ../../byterun/config.h ../../byterun/../config/m.h \
-  ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/mlvalues.h ../../byterun/stacks.h \
-  ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h ../../byterun/fail.h ../../byterun/io.h ../../byterun/roots.h \
-  ../../byterun/alloc.h 
+scheduler.o: scheduler.c ../../byterun/config.h \
+ ../../byterun/../config/m.h ../../byterun/../config/s.h \
+ ../../byterun/misc.h ../../byterun/mlvalues.h ../../byterun/stacks.h \
+ ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
+ ../../byterun/freelist.h ../../byterun/minor_gc.h \
+ ../../byterun/fail.h ../../byterun/io.h ../../byterun/roots.h \
+ ../../byterun/alloc.h
 condition.cmi: mutex.cmi 
 condition.cmo: mutex.cmi thread.cmi condition.cmi 
 condition.cmx: mutex.cmx thread.cmx condition.cmi 

@@ -1,12 +1,12 @@
 lexer.cmi: parser.cmi 
 parser.cmi: syntax.cmo 
-lexer.cmo: lexer.cmi parser.cmi syntax.cmo 
-lexer.cmx: lexer.cmi parser.cmx syntax.cmx 
+lexer.cmo: parser.cmi syntax.cmo lexer.cmi 
+lexer.cmx: parser.cmx syntax.cmx lexer.cmi 
 lexgen.cmo: syntax.cmo 
 lexgen.cmx: syntax.cmx 
-main.cmo: lexgen.cmo parser.cmi output.cmo syntax.cmo lexer.cmi 
-main.cmx: lexgen.cmx parser.cmx output.cmx syntax.cmx lexer.cmx 
+main.cmo: lexer.cmi lexgen.cmo output.cmo parser.cmi syntax.cmo 
+main.cmx: lexer.cmx lexgen.cmx output.cmx parser.cmx syntax.cmx 
 output.cmo: syntax.cmo 
 output.cmx: syntax.cmx 
-parser.cmo: parser.cmi syntax.cmo 
-parser.cmx: parser.cmi syntax.cmx 
+parser.cmo: syntax.cmo parser.cmi 
+parser.cmx: syntax.cmx parser.cmi 
