@@ -1548,39 +1548,7 @@ value output_string_eval oc s =
 value maxl = ref 78;
 value sep = Pcaml.inter_phrases;
 value ncip = ref False;
-value comm_after = ref False;
 value type_comm = ref False;
-value delayed_comm = ref "";
-
-value copy_after oc s =
-  let s =
-    try
-      let i = String.index s '\n' in
-      do {
-        output_string oc (String.sub s 0 i);
-        String.sub s i (String.length s - i)
-      }
-    with
-    [ Not_found -> s ]
-  in
-  do {
-    output_string oc delayed_comm.val;
-    let len = String.length s in
-    let i =
-      if len > 4 && String.sub s (len - 3) 3 = "*)\n"
-      then
-        loop (len - 6) where rec loop i =
-          if i >= 0 then
-            if String.sub s i 5 = "\n(** " then i + 1 else loop (i - 1)
-          else len
-      else len
-    in
-    output_string oc (String.sub s 0 i);
-    delayed_comm.val :=
-      if i < len then "\n" ^ String.sub s i (len - i - 1)
-      else String.sub s i (len - i)
-  }
-;
 
 value input_source ic dont_skip_to_next_bol len =
   let buff = Buffer.create 20 in
@@ -1605,8 +1573,7 @@ value copy_source ic oc first bp ep =
       do {
         seek_in ic bp;
         let s = input_source ic (first || not type_comm.val) (ep - bp) in
-        if not comm_after.val then output_string oc s
-        else copy_after oc s
+        output_string oc s;
       } ]
 ;
 
@@ -1767,9 +1734,6 @@ Pcaml.add_option "-ncip" (Arg.Set ncip) "        No comments in phrases.";
 
 Pcaml.add_option "-old_seq" (Arg.Set old_sequences)
   "     Pretty print with old syntax for sequences.";
-
-Pcaml.add_option "-ca" (Arg.Set comm_after)
-  "          Put the ocamldoc comments after declarations.";
 
 Pcaml.add_option "-tc" (Arg.Set type_comm)
   "          Add the comments inside sum and record types.";
