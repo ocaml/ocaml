@@ -212,6 +212,9 @@
       (floataset d 35 (/f ( *f f 2.0) (load "g" float)))
       (floataset d 36 (/f (load "g" float) ( *f f 2.0)))
 
+      (floataset d 37 (-f f))
+      (floataset d 38 (absf f))
+
 )))))))
 
 

@@ -29,6 +29,7 @@ let comment_depth = ref 0
 
 let keyword_table =
   Misc.create_hashtable 149 [
+    "absf", ABSF;
     "addr", ADDR;
     "align", ALIGN;
     "alloc", ALLOC;

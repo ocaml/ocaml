@@ -44,6 +44,7 @@ let access_array base numelt size =
 
 %}
 
+%token ABSF
 %token ADDA
 %token ADDF
 %token ADDI
@@ -178,6 +179,8 @@ expr:
   | LPAREN APPLY expr expr machtype RPAREN { Cop(Capply $5, [$3; $4]) }
   | LPAREN EXTCALL STRING expr machtype RPAREN { Cop(Cextcall($3, $5, true), [$4]) }
   | LPAREN LOAD expr machtype RPAREN { Cop(Cload $4, [$3]) }
+  | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3]) }
+  | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4]) }
   | LPAREN unaryop expr RPAREN { Cop($2, [$3]) }
   | LPAREN binaryop expr expr RPAREN { Cop($2, [$3; $4]) }
   | LPAREN SEQ sequence RPAREN { $3 }
@@ -231,6 +234,7 @@ unaryop:
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
   | RAISE                       { Craise }
+  | ABSF                        { Cabsf }
 ;
 binaryop:
     STORE                       { Cstore }
@@ -261,7 +265,6 @@ binaryop:
   | GTA                         { Ccmpa Cgt }
   | GEA                         { Ccmpa Cge }
   | ADDF                        { Caddf }
-  | SUBF                        { Csubf }
   | MULF                        { Cmulf }
   | DIVF                        { Cdivf }
   | EQF                         { Ccmpf Ceq }

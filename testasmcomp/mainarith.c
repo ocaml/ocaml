@@ -12,6 +12,7 @@
 /* $Id$ */
 
 #include <stdio.h>
+#include <math.h>
 
 void array_bound_error()
 {
@@ -239,6 +240,9 @@ void do_test()
       FLOATTEST(d[34], g * (f + 2.0));
       FLOATTEST(d[35], (f * 2.0) / g);
       FLOATTEST(d[36], g / (f * 2.0));
+
+      FLOATTEST(d[37], - f);
+      FLOATTEST(d[38], fabs(f));
 }
 
 #ifdef __i386__
