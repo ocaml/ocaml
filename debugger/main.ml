@@ -27,7 +27,10 @@ open Show_information
 
 let line_buffer = Lexing.from_function read_user_input
 
-let loop () = line_loop line_buffer
+let rec loop () =
+  line_loop line_buffer;
+  if !loaded & (not (yes_or_no "The program is running. Quit anyway")) then
+    loop ()
 
 let rec protect cont =
   try
