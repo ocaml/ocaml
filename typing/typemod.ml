@@ -37,6 +37,7 @@ type error =
   | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
+  | Interface_not_compiled of string
 
 exception Error of Location.t * error
 
@@ -737,11 +738,11 @@ and simplify_signature sg =
 
 (* Typecheck an implementation file *)
 
-let type_implementation sourcefile prefixname modulename initial_env ast =
+let type_implementation sourcefile outputprefix modulename initial_env ast =
   Typecore.reset_delayed_checks ();
   let (str, sg, finalenv) =
     Misc.try_finally (fun () -> type_structure initial_env ast)
-                     (fun () -> Stypes.dump (prefixname ^ ".annot"))
+                     (fun () -> Stypes.dump (outputprefix ^ ".annot"))
   in
   Typecore.force_delayed_checks ();
   if !Clflags.print_types then begin
@@ -749,17 +750,21 @@ let type_implementation sourcefile prefixname modulename initial_env ast =
     (str, Tcoerce_none)
   end else begin
     let coercion =
-      if Sys.file_exists (prefixname ^ !Config.interface_suffix) then begin
+      let sourceintf =
+        Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
+      if Sys.file_exists sourceintf then begin
         let intf_file =
-          try find_in_path !Config.load_path (prefixname ^ ".cmi")
-          with Not_found -> prefixname ^ ".cmi" in
+          try
+            find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
+          with Not_found ->
+            raise(Error(Location.none, Interface_not_compiled sourceintf)) in
         let dclsig = Env.read_signature modulename intf_file in
         Includemod.compunit sourcefile sg intf_file dclsig
       end else begin
         check_nongen_schemes finalenv str;
         normalize_signature finalenv sg;
         if not !Clflags.dont_write_files then
-          Env.save_signature sg modulename (prefixname ^ ".cmi");
+          Env.save_signature sg modulename (outputprefix ^ ".cmi");
         Tcoerce_none
       end in
     (str, coercion)
@@ -866,3 +871,6 @@ let report_error ppf = function
       fprintf ppf
         "@[The interface %s@ declares values, not just types.@ \
            An implementation must be provided.@]" intf_name
+  | Interface_not_compiled intf_name ->
+      fprintf ppf
+        "@[Could not find the .cmi file for interface@ %s.@]" intf_name
