@@ -125,3 +125,15 @@ for i = 1 to 20 do
     test i eq (int_of_nat nat1, Int_misc.gcd_int n1 n2)
 done
 ;;
+
+testing_function "sqrt_nat";;
+
+test 1 equal_nat (sqrt_nat (nat_of_int 1) 0 1, nat_of_int 1);;
+test 2 equal_nat (sqrt_nat (nat_of_string "8589934592") 0 2,
+                  nat_of_string "92681");;
+test 3 equal_nat (sqrt_nat (nat_of_string "4294967295") 0 1,
+                  nat_of_string "65535");;
+test 4 equal_nat (sqrt_nat (nat_of_string "18446744065119617025") 0 2,
+                  nat_of_string "4294967295");;
+test 5 equal_nat (sqrt_nat (nat_of_int 15) 0 1,
+                  nat_of_int 3);;

@@ -166,37 +166,67 @@ let gcd_nat nat1 off1 len1 nat2 off2 len2 =
       !real_len1
   end
 
+(* Does subnat1 = subnat2 or subnat2+1? *)
+let almost_eq_nat nat1 off1 len1 nat2 off2 len2 =
+  match compare_nat nat1 off1 len1 nat2 off2 len2 with
+       0 -> true
+    |  1 -> let over = incr_nat nat2 off2 len2 1 in
+            let res = eq_nat nat1 off1 len1 nat2 off2 (len2 + over) in
+            decr_nat nat2 off2 (len2 + over) 0;
+            res
+    | _ -> false
+
 let sqrt_nat nat off len = 
- let size_copy = succ len in
- let size_sqrt = len / 2 + len mod 2 in
+ (* One more than intended because of addition in the initialization *)
+ (* I hope it is sufficient for the addition in the loop, too difficult 
+    to determine so I introduce a failure if it is not true *)
+ let size_sqrt = succ (len / 2 + len mod 2) in
+ let size_copy = 2 * size_sqrt in
  let candidate = make_nat (size_sqrt) 
- and beginning = make_nat (size_sqrt) in
-  set_digit_nat candidate (size_sqrt - 1) 1;
-  shift_left_nat candidate (size_sqrt - 1) 1 beginning 0
-    (((if len mod 2 = 0 then 31 else 15) -
-      num_leading_zero_bits_in_digit nat (off + len - 1)) / 2);
- let size_aux = size_copy - size_sqrt in
- let copy = create_nat size_copy in
- let aux = make_nat size_aux in
-  set_digit_nat copy len 0;
-  blit_nat copy 0 nat off len;
-  div_nat copy 0 size_copy candidate 0 size_sqrt;
-  blit_nat aux 0 copy size_sqrt size_aux;
-  add_nat aux 0 size_aux candidate 0 (num_digits_nat candidate 0 size_sqrt) 0;
-  shift_right_nat aux 0 size_aux beginning 0 1;
-  while not
-    (eq_nat aux 0 (num_digits_nat aux 0 size_aux)
-            candidate 0 (num_digits_nat candidate 0 size_sqrt))
-  do
-   blit_nat candidate 0 aux 0 size_aux;
-   set_digit_nat copy len 0;
-   blit_nat copy 0 nat off len;
-   div_nat copy 0 size_copy candidate 0 size_sqrt;
-   blit_nat aux 0 copy size_sqrt size_aux;
-   add_nat aux 0 size_aux candidate 0 (num_digits_nat candidate 0 size_sqrt) 0;
-   shift_right_nat aux 0 size_aux beginning 0 1
-   done;
- candidate
+ and trash = make_nat (size_sqrt) in
+   (* Initialization of the candidate to the nearest power of 2 *)
+   set_digit_nat candidate (size_sqrt - 2) 1;
+   let shift = 
+     let s1 = if len mod 2 = 0 then 31 else 15
+     and s2 = num_leading_zero_bits_in_digit nat (off + len - 1) / 2 in
+     s1 - s2 in
+   shift_left_nat candidate (size_sqrt - 2)  1 trash 0 shift;
+   (* Initialization of the loop *)
+   let size_aux = size_copy - size_sqrt (* = size_sqrt *) in
+   let copy = make_nat (size_copy) in
+   let aux = make_nat (size_aux) in
+     set_digit_nat copy len 0;
+     blit_nat copy 0 nat off len;
+     div_nat copy 0 size_copy candidate 0 (pred size_sqrt);
+     blit_nat aux 0 copy (pred size_sqrt) size_aux;
+     (* This addition is safe because good sizes at the beginning *)
+     add_nat aux 0 size_aux candidate 0 (pred size_sqrt) 0;
+     shift_right_nat aux 0 size_aux trash 0 1;
+     let real_size_aux = ref (num_digits_nat aux 0 size_aux)
+     and real_size_candidate = ref (num_digits_nat candidate 0 size_sqrt) in
+     while not
+       (almost_eq_nat
+          aux 0 (num_digits_nat aux 0 size_aux)
+          candidate 0 (num_digits_nat candidate 0 size_sqrt))
+     do
+        blit_nat candidate 0 aux 0 !real_size_aux;
+        let diff_sizes = !real_size_candidate - !real_size_aux in
+            if diff_sizes > 0
+               then blit_nat candidate !real_size_aux
+                             (make_nat diff_sizes) 0 diff_sizes;
+        real_size_candidate := !real_size_aux;
+        set_digit_nat copy len 0;
+        blit_nat copy 0 nat off len;
+        div_nat copy 0 size_copy candidate 0 !real_size_candidate;
+        blit_nat aux 0 copy !real_size_candidate size_aux;
+        (* Hope this addition is ok else fail *)
+        if add_nat aux 0 size_aux candidate 0 !real_size_candidate 0 = 1
+        then invalid_arg "sqrt_nat: addition problem, see source code";
+        shift_right_nat aux 0 size_aux trash 0 1;
+        real_size_aux := num_digits_nat aux 0 size_aux
+     done;
+  copy_nat candidate 0 (num_digits_nat candidate 0 size_sqrt)
+;;
 
 let power_base_max = make_nat 2;;
 
