@@ -833,7 +833,7 @@ let report_error = function
       List.iter
         (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
         tr2;
-      trace true (fun _ -> print_string "is not a subtype of") tr1;
+      trace true (fun _ -> print_string "is not a subtype of type") tr1;
       trace false (fun _ -> print_string "is not compatible with type") tr2
   | Outside_class ->
       print_string "Object duplication outside a class definition."

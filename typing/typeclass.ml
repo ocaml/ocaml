@@ -977,7 +977,7 @@ let report_error = function
   | Virtual_class (cl, met) ->
       print_string "The class"; print_space ();
       print_string cl; print_space ();
-      print_string "should be virtual: its methods"; print_space ();
+      print_string "should be virtual: its method"; print_space ();
       print_string met; print_space ();
       print_string "is undefined"
   | Closed_class cl ->
