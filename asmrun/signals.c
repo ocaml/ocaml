@@ -13,9 +13,6 @@
 
 #include <signal.h>
 #include <stdio.h>
-/* #if defined(TARGET_power) && defined(SYS_elf)
-   #include <asm/sigcontext.h>
-   #endif */
 #if defined(TARGET_sparc) && defined(SYS_solaris)
 #include <ucontext.h>
 #endif
