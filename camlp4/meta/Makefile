@@ -20,7 +20,7 @@ camlp4r$(EXE): ../camlp4/camlp4$(EXE) $(CAMLP4RM)
 
 camlp4r.opt: $(CAMLP4RMX)
 	rm -f camlp4r.opt
-	cd ../camlp4; $(MAKE) opt OTOP=$(OTOP) CAMLP4OPT=../meta/camlp4r.opt CAMLP4M="-I ../meta $(CAMLP4RMX)"
+	cd ../camlp4; $(MAKE) optp4 OTOP=$(OTOP) CAMLP4OPT=../meta/camlp4r.opt CAMLP4M="-I ../meta $(CAMLP4RMX)"
 
 clean::
 	rm -f *.cm* *.pp[io] *.o *.bak .*.bak $(COUT) $(COPT)

@@ -13,7 +13,7 @@ all: boot/camlp4$(EXE)
 opt:
 	cd lib; $(MAKE) opt
 
-bullshit:
+optp4:
 	set -e; for i in $(OPTDIRS); do cd $$i; $(MAKE) opt; cd ..; done
 
 boot/camlp4$(EXE):

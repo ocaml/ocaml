@@ -52,7 +52,7 @@ exception Error of string and string;
 
 value nolib = ref False;
 value initialized = ref False;
-value path = ref [];
+value path = ref ([] : list string);
 
 value loadfile file =
   ifdef OPT then

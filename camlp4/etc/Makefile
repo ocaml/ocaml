@@ -21,7 +21,7 @@ camlp4o$(EXE): ../camlp4/camlp4$(EXE) $(CAMLP4OM)
 
 camlp4o.opt: $(CAMLP4OMX)
 	rm -f camlp4o.opt
-	cd ../camlp4; $(MAKE) opt CAMLP4OPT=../etc/camlp4o.opt CAMLP4M="-I ../etc $(CAMLP4OMX)"
+	cd ../camlp4; $(MAKE) optp4 CAMLP4OPT=../etc/camlp4o.opt CAMLP4M="-I ../etc $(CAMLP4OMX)"
 
 mkcamlp4.sh: mkcamlp4.sh.tpl
 	sed -e "s'OLIBDIR'$(OLIBDIR)'g" -e "s'LIBDIR'$(LIBDIR)'g" mkcamlp4.sh.tpl > mkcamlp4.sh
