@@ -41,6 +41,18 @@ let print_info cu =
             l
   end
 
+let print_spaced_string s = print_char ' '; print_string s
+
+let print_library_info lib =
+  print_string "  Force custom: ";
+  print_string (if lib.lib_custom then "YES" else "no");
+  print_newline();
+  print_string "  Extra C object files:";
+  List.iter print_spaced_string lib.lib_ccobjs; print_newline();
+  print_string "  Extra C options:";
+  List.iter print_spaced_string lib.lib_ccopts; print_newline();
+  List.iter print_info lib.lib_units
+
 let print_intf_info name sign comps crcs =
   print_string "  Module name: "; print_string name; print_newline();
   print_string "  Interfaces imported:"; print_newline();
@@ -65,9 +77,9 @@ let dump_obj filename =
   if buffer = cma_magic_number then begin
     let toc_pos = input_binary_int ic in
     seek_in ic toc_pos;
-    let toc = (input_value ic : compilation_unit list) in
+    let toc = (input_value ic : library) in
     close_in ic;
-    List.iter print_info toc
+    print_library_info toc
   end else
   if buffer = cmi_magic_number then begin
     let (name, sign, comps) = input_value ic in

@@ -24,6 +24,7 @@ type error =
 
 exception Error of error
 
+(* Copy a compilation unit from a .cmo or .cma into the archive *)
 let copy_compunit ic oc compunit =
   seek_in ic compunit.cu_pos;
   compunit.cu_pos <- pos_out oc;
@@ -33,6 +34,22 @@ let copy_compunit ic oc compunit =
     seek_in ic compunit.cu_debug;
     compunit.cu_debug <- pos_out oc;
     copy_file_chunk ic oc compunit.cu_debugsize
+  end
+
+(* Add C objects and options and "custom" info from a library descriptor *)
+  
+let lib_ccobjs = ref []
+let lib_ccopts = ref []
+
+(* See Bytelink.add_ccobjs for explanations on how options are ordered.
+   Notice that here we scan .cma files given on the command line from
+   left to right, hence options must be added after. *)
+
+let add_ccobjs l =
+  if not !Clflags.no_auto_link then begin
+    if l.lib_custom then Clflags.custom_runtime := true;
+    lib_ccobjs := !lib_ccobjs @ l.lib_ccobjs;
+    lib_ccopts := !lib_ccopts @ l.lib_ccopts
   end
 
 let copy_object_file oc name =
@@ -56,10 +73,11 @@ let copy_object_file oc name =
     if buffer = cma_magic_number then begin
       let toc_pos = input_binary_int ic in
       seek_in ic toc_pos;
-      let toc = (input_value ic : compilation_unit list) in
-      List.iter (copy_compunit ic oc) toc;
+      let toc = (input_value ic : library) in
+      add_ccobjs toc;
+      List.iter (copy_compunit ic oc) toc.lib_units;
       close_in ic;
-      toc
+      toc.lib_units
     end else
       raise(Error(Not_an_object_file file_name))
   with
@@ -72,12 +90,12 @@ let create_archive file_list lib_name =
     output_string outchan cma_magic_number;
     let ofs_pos_toc = pos_out outchan in
     output_binary_int outchan 0;
+    let units = List.flatten(List.map (copy_object_file outchan) file_list) in
     let toc =
-      { lib_units =
-          List.flatten(List.map (copy_object_file outchan) file_list);
+      { lib_units = units;
         lib_custom = !Clflags.custom_runtime;
-        lib_ccobjs = !Clflags.ccobjs;
-        lib_ccopts = !Clflags.ccopts } in
+        lib_ccobjs = !Clflags.ccobjs @ !lib_ccobjs;
+        lib_ccopts = !Clflags.ccopts @ !lib_ccopts } in
     let pos_toc = pos_out outchan in
     output_value outchan toc;
     seek_out outchan ofs_pos_toc;

@@ -51,9 +51,9 @@ let scan_obj filename =
   if buffer = cma_magic_number then begin
     let toc_pos = input_binary_int ic in
     seek_in ic toc_pos;
-    let toc = (input_value ic : compilation_unit list) in
+    let toc = (input_value ic : library) in
     close_in ic;
-    List.iter scan_info toc
+    List.iter scan_info toc.lib_units
   end else begin
     prerr_endline "Not an object file"; exit 2
   end
