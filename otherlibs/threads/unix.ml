@@ -36,6 +36,7 @@ type resumption_status =
   | Resumed_select of file_descr list * file_descr list * file_descr list
   | Resumed_wait of int * process_status
 
+external thread_initialize : unit -> unit = "thread_initialize"
 external thread_wait_read : file_descr -> unit = "thread_wait_read"
 external thread_wait_write : file_descr -> unit = "thread_wait_write"
 external thread_select :
@@ -50,6 +51,10 @@ let wait_write fd = thread_wait_write fd
 let select_aux arg = thread_select arg
 let wait_pid_aux pid = thread_wait_pid pid
 let delay duration = thread_delay duration
+
+(* Make sure that threads are initialized (PR#1516). *)
+
+let _ = thread_initialize()
 
 (* Back to the Unix module *)
 
