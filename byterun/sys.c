@@ -190,6 +190,8 @@ value sys_system_command(command)   /* ML */
 
 /* Search path function */
 
+#ifndef _WIN32
+
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
@@ -197,7 +199,7 @@ value sys_system_command(command)   /* ML */
 char * searchpath(name)
      char * name;
 {
-  static char fullname[512];
+  char * fullname;
   char * path;
   char * p;
   char * q;
@@ -208,19 +210,49 @@ char * searchpath(name)
   }
   path = getenv("PATH");
   if (path == NULL) return 0;
+  fullname = stat_alloc(strlen(filename) + strlen(path) + 2);
   while(1) {
-    p = fullname;
-    while (*path != 0 && *path != ':') {
-      *p++ = *path++;
-    }
+    for (p = fullname; *path != 0 && *path != ':'; p++, path++) *p = *path;
     if (p != fullname) *p++ = '/';
-    q = name;
-    while (*q != 0) {
-      *p++ = *q++;
-    }
+    for (q = name; *q != 0; p++, q++) *p = *q;
     *p = 0;
-    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
+    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
     if (*path == 0) return 0;
     path++;
   }
+  return fullname;
 }
+
+#else
+
+char * searchpath(name)
+     char * name;
+{
+  char * fullname;
+  char * path;
+  char * p;
+  char * q;
+  struct stat st;
+
+  for (p = name; *p != 0; p++) {
+    if (*p == '/' || *p == '\\' || *p == ':') return name;
+  }
+  if (stat(name, &st) == 0) return name;
+  path = getenv("PATH");
+  if (path == NULL) return 0;
+  fullname = stat_alloc(strlen(name) + strlen(path) + 6);
+  while(1) {
+    for (p = fullname; *path != 0 && *path != ';'; p++, path++) *p = *path;
+    if (p != fullname) *p++ = '\\';
+    for (q = name; *q != 0; p++, q++) *p = *q;
+    *p = 0;
+    if (stat(fullname, &st) == 0) break;
+    strcpy(p, ".exe");
+    if (stat(fullname, &st) == 0) break;
+    if (*path == 0) return 0;
+    path++;
+  }
+  return fullname;
+}
+
+#endif
