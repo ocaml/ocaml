@@ -6,5 +6,5 @@ let print_message delay c =
 let _ =
   let th1 = Thread.create (print_message 0.6666666666) 'a' in
   let th2 = Thread.create (print_message 1.0) 'b' in
-  let s = Thread.wait_signal [Sys.sigint; Sys.sigusr1] in
+  let s = Thread.wait_signal [Sys.sigint; Sys.sigterm] in
   Printf.printf "Got signal %d, exiting...\n" s

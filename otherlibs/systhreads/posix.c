@@ -561,62 +561,60 @@ value caml_condition_broadcast(value wrapper)           /* ML */
   return Val_unit;
 }
 
-/* Semaphore operations.  Currently not exported to the user,
-   used only for implementing Thread.wait_signal */
+/* Synchronous signal wait */
 
-#define Semaphore_val(v) ((sem_t *) Field(v, 1))
-#define Max_semaphore_number 1000
+static sem_t * wait_signal_sem[NSIG];
+static int * wait_signal_received[NSIG];
 
-static void caml_semaphore_finalize(value wrapper)
+static void caml_wait_signal_handler(int signo)
 {
-  sem_t * sem = Semaphore_val(wrapper);
-  sem_destroy(sem);
-  stat_free(sem);
+  char buf[100];
+  sprintf(buf, "Got signal %d\n", signo);
+  write(2, buf, strlen(buf));
+  *(wait_signal_received[signo]) = signo;
+  sem_post(wait_signal_sem[signo]);
 }
 
-value caml_semaphore_new(value vinit)        /* ML */
-{
-  sem_t * sem;
-  value wrapper;
-  sem = stat_alloc(sizeof(sem_t));
-  if (sem_init(sem, 0, Int_val(vinit)) == -1)
-    caml_pthread_check(errno, "Semaphore.create");
-  wrapper = alloc_final(2, caml_semaphore_finalize, 1, Max_semaphore_number);
-  Semaphore_val(wrapper) = sem;
-  return wrapper;
-}
+extern int posix_signals[];     /* from byterun/sys.c */
 
-value caml_semaphore_wait(value wrapper)           /* ML */
+value caml_wait_signal(value sigs)
 {
-  int retcode;
-  sem_t * sem = Semaphore_val(wrapper);
-  Begin_root(wrapper)     /* prevent deallocation of semaphore */
-    enter_blocking_section();
-    retcode = 0;
-    while (sem_wait(sem) == -1) {
-      if (errno != EINTR) { retcode = errno; break; }
+  sem_t sem;
+  int res, s, retcode;
+  value l;
+  struct sigaction sa, oldsignals[NSIG];
+
+  Begin_root(sigs);
+  if (sem_init(&sem, 0, 0) == -1)
+    caml_pthread_check(errno, "Thread.wait_signal (sem_init)");
+  res = 0;
+  sa.sa_handler = caml_wait_signal_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
+    s = Int_val(Field(l, 0));
+    if (s < 0) s = posix_signals[-s-1];
+    if (sigaction(s, &sa, &oldsignals[s]) == -1) {
+      sem_destroy(&sem);
+      caml_pthread_check(errno, "Thread.wait_signal (sigaction)");
     }
-    leave_blocking_section();
+    wait_signal_sem[s] = &sem;
+    wait_signal_received[s] = &res;
+  }
+  enter_blocking_section();
+  retcode = 0;
+  while (sem_wait(&sem) == -1) {
+    if (errno != EINTR) { retcode = errno; break; }
+  }
+  leave_blocking_section();
+  caml_pthread_check(retcode, "Thread.wait_signal (sem_wait)");
+  for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
+    s = Int_val(Field(l, 0));
+    sigaction(s, &oldsignals[s], NULL);
+  }
+  sem_destroy(&sem);
   End_roots();
-  caml_pthread_check(retcode, "Semaphore.wait");
-  return Val_unit;
-}
-
-value caml_semaphore_post(value wrapper)           /* ML */
-{
-  sem_t * sem = Semaphore_val(wrapper);
-  if (sem_post(sem) == -1)
-    caml_pthread_check(errno, "Semaphore.post");
-  return Val_unit;
-}
-
-value caml_semaphore_getvalue(value wrapper) /* ML */
-{
-  sem_t * sem = Semaphore_val(wrapper);
-  int val;
-  if (sem_getvalue(sem, &val) == -1)
-    caml_pthread_check(errno, "Semaphore.getvalue");
-  return Val_int(val);
+  return Val_int(res);
 }
 
 /* Error report */
