@@ -275,6 +275,7 @@ let emit_instr = function
   | Kpushtrap lbl -> out opPUSHTRAP; out_label lbl
   | Kpoptrap -> out opPOPTRAP
   | Kraise -> out opRAISE
+  | Kreraise -> out opRERAISE
   | Kcheck_signals -> out opCHECK_SIGNALS
   | Kccall(name, n) ->
       if n <= 5
@@ -326,7 +327,6 @@ let rec emit = function
         out_const k ;
         out_label lbl ;
         emit rem
-
   | Kpush :: Kacc n :: c ->
       if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
       emit c

@@ -70,6 +70,7 @@ let instruction ppf = function
   | Kpushtrap lbl -> fprintf ppf "\tpushtrap L%i" lbl
   | Kpoptrap -> fprintf ppf "\tpoptrap"
   | Kraise -> fprintf ppf "\traise"
+  | Kreraise -> fprintf ppf "\treraise"
   | Kcheck_signals -> fprintf ppf "\tcheck_signals"
   | Kccall(s, n) ->
       fprintf ppf "\tccall %s, %i" s n

@@ -467,8 +467,14 @@ let rec transl_exp e =
     && List.for_all (fun (arg,_) -> arg <> None) args ->
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
       let prim = transl_prim p args in
-      let lam = Lprim(prim, transl_list args) in
-      begin match prim with Pccall _ -> event_after e lam | _ -> lam end
+      begin match (prim, args) with
+        (Praise, [arg1]) ->
+          Lprim(Praise, [event_after arg1 (transl_exp arg1)])
+      | (Pccall _, _) ->
+          event_after e (Lprim(prim, transl_list args))
+      | (_, _) ->
+          Lprim(prim, transl_list args)
+      end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs)
   | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
