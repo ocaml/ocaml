@@ -124,8 +124,5 @@ def_macro "\\fromoneto"
    Print_arg; Print "</i>"];
 def_macro "\\caml" [Print "<pre>"];
 def_macro "\\endcaml" [Print "</pre>"];
-def_macro "\\?" [];
-def_macro "\\:" [];
-def_macro "\\;" [];
 ();;
 

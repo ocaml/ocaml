@@ -18,6 +18,8 @@ let rindex c s =
     if i < 0 then raise Not_found else
     if s.[i] = c then i else find (i-1) in
   find (string_length s - 1);;
+
+let first_caml_line = ref true;;
 }
 
 rule main = parse
@@ -45,8 +47,8 @@ rule main = parse
                   print_string "</pre>"; main lexbuf }
 (* Caml programs *)
   | "\\caml"
-      	       	{ print_string "<pre>"; camlprog lexbuf;
-		  print_string "</pre>"; main lexbuf }
+      	       	{ print_string "<pre>"; first_caml_line := true;
+                  camlprog lexbuf; print_string "</pre>"; main lexbuf }
 (* Raw html, latex only *)
   | "\\begin{rawhtml}"
                 { rawhtml lexbuf; main lexbuf }
@@ -117,8 +119,14 @@ and camlprog = parse
     "<"         { print_string "&lt;"; camlprog lexbuf }
   | ">"         { print_string "&gt;"; camlprog lexbuf }
   | "&"         { print_string "&amp;"; camlprog lexbuf }
-  | "\\?"       { print_string "#"; camlprog lexbuf }
-  | "\\:" | "\\;"  { camlprog lexbuf }
+  | "\\?"       { if !first_caml_line then begin
+                    print_string "# ";
+                    first_caml_line := false
+                  end else
+                    print_string "  ";
+                  camlprog lexbuf }
+  | "\\:"       { camlprog lexbuf }
+  | "\\;"       { first_caml_line := true; camlprog lexbuf }
   | "\\\\"      { print_string "\\"; camlprog lexbuf }
   | "\\endcaml" { () }
   | _           { print_char(get_lexeme_char lexbuf 0); camlprog lexbuf }
