@@ -237,7 +237,7 @@ esac
 
 # Configure compiler to use in further tests
 
-cc="$bytecc $bytecclinkopts"
+cc="$bytecc -O $bytecclinkopts"
 export cc cclibs verbose
 
 # Check C compiler
