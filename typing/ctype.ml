@@ -352,22 +352,20 @@ let expand_abbrev env path args abbrev level =
       update_level level ty;
       ty
   | None ->
-      try
-        let decl = Env.find_type path env in
-        match decl.type_manifest with
-          Some body ->
-            let v = newvar () in
-            abbrev := (path, v)::!abbrev;
-            let old_level = !current_level in
-            current_level := level;
-            let ty = substitute !abbrev decl.type_params args body in
-            current_level := old_level;
-            v.desc <- Tlink ty;
-            ty
-        | _ ->
-            raise Cannot_expand
-      with Not_found ->
-        raise Cannot_expand
+      let decl =
+        try Env.find_type path env with Not_found -> raise Cannot_expand in
+      match decl.type_manifest with
+        Some body ->
+          let v = newvar () in
+          abbrev := (path, v)::!abbrev;
+          let old_level = !current_level in
+          current_level := level;
+          let ty = substitute !abbrev decl.type_params args body in
+          current_level := old_level;
+          v.desc <- Tlink ty;
+          ty
+      | _ ->
+          raise Cannot_expand
 
 let rec expand_root env ty =
   let ty = repr ty in
