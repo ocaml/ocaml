@@ -240,8 +240,10 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Tmty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | _ :: sg ->
-      rename_bound_idents s idents sg
+  | (Tsig_value(id, _) | Tsig_exception(id, _) | 
+     Tsig_class(id, _) | Tsig_cltype(id, _)) :: sg ->
+      let id' = Ident.rename id in
+      rename_bound_idents s (id' :: idents) sg
 
 let rec modtype s = function
     Tmty_ident p as mty ->
@@ -266,26 +268,24 @@ and signature s sg =
      substitution... *)
   let (new_idents, s') = rename_bound_idents s [] sg in
   (* ... then apply it to each signature component in turn *)
-  signature2 s' sg new_idents
+  List.map2 (signature_component s') sg new_idents
 
-and signature2 s sg idents =
-  match (sg, idents) with
-    ([], []) -> []
-  | (Tsig_value(id, d) :: sg, _) ->
-      Tsig_value(id, value_description s d) :: signature2 s sg idents
-  | (Tsig_type(id, d) :: sg, id' :: rem) ->
-      Tsig_type(id', type_declaration s d) :: signature2 s sg rem
-  | (Tsig_exception(id, d) :: sg, _) ->
-      Tsig_exception(id, exception_declaration s d) :: signature2 s sg idents
-  | (Tsig_module(id, mty) :: sg, id' :: rem) ->
-      Tsig_module(id', modtype s mty) :: signature2 s sg rem
-  | (Tsig_modtype(id, d) :: sg, id' :: rem) ->
-      Tsig_modtype(id', modtype_declaration s d) :: signature2 s sg rem
-  | (Tsig_class(id, d) :: sg, _) ->
-      Tsig_class(id, class_declaration s d) :: signature2 s sg idents
-  | (Tsig_cltype(id, d) :: sg, _) ->
-      Tsig_cltype(id, cltype_declaration s d) :: signature2 s sg idents
-  | (_, _) -> assert false
+and signature_component s comp newid =
+  match comp with
+    Tsig_value(id, d) ->
+      Tsig_value(newid, value_description s d)
+  | Tsig_type(id, d) ->
+      Tsig_type(newid, type_declaration s d)
+  | Tsig_exception(id, d) ->
+      Tsig_exception(newid, exception_declaration s d)
+  | Tsig_module(id, mty) ->
+      Tsig_module(newid, modtype s mty)
+  | Tsig_modtype(id, d) ->
+      Tsig_modtype(newid, modtype_declaration s d)
+  | Tsig_class(id, d) ->
+      Tsig_class(newid, class_declaration s d)
+  | Tsig_cltype(id, d) ->
+      Tsig_cltype(newid, cltype_declaration s d)
 
 and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract
