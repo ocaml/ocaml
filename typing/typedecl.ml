@@ -283,7 +283,7 @@ let check_recursive_abbrev env (name, sdecl) (id, decl) =
 
 (* Recursive expansion check *)
 
-let rec check_expansion_rec env id args loc id_loc_list visited ty =
+let rec check_expansion_rec env id args loc id_check_list visited ty =
   let ty = Ctype.repr ty in
   if List.memq ty visited then () else
   let visited = ty :: visited in
@@ -293,30 +293,37 @@ let rec check_expansion_rec env id args loc id_loc_list visited ty =
         if not (Ctype.equal env false args args') then
           raise (Error(loc, Parameters_differ(ty, Ctype.newconstr path args)))
       end else begin try
-        let loc = List.assoc id' id_loc_list
-        and id_loc_list = List.remove_assoc id' id_loc_list in
-        let (params, body) = Env.find_type_expansion path env in
-        let (params, body) = Ctype.instance_parameterized_type params body in
+        let (loc, checked) = List.assoc id' id_check_list in
+        if List.exists (Ctype.equal env false args') !checked then () else
         begin
-          try List.iter2 (Ctype.unify env) params args'
-          with Ctype.Unify _ -> assert false
-        end;
-        check_expansion_rec env id args loc id_loc_list visited body
+          checked := args' :: !checked;
+          let id_check_list = List.remove_assoc id' id_check_list in
+          let (params, body) = Env.find_type_expansion path env in
+          let (params, body) = Ctype.instance_parameterized_type params body in
+          begin
+            try List.iter2 (Ctype.unify env) params args'
+            with Ctype.Unify _ -> assert false
+          end;
+          check_expansion_rec env id args loc id_check_list visited body
+        end
       with Not_found -> ()
       end
   | _ -> ()
   end;
   Btype.iter_type_expr
-    (check_expansion_rec env id args loc id_loc_list visited) ty
+    (check_expansion_rec env id args loc id_check_list visited) ty
 
 let check_expansion env id_loc_list (id, decl) =
+  if decl.type_params = [] then () else
   match decl.type_manifest with
   | None -> ()
   | Some body ->
       let (args, body) =
         Ctype.instance_parameterized_type decl.type_params body in
+      let id_check_list =
+        List.map (fun (id, loc) -> (id, (loc, ref []))) id_loc_list in
       check_expansion_rec env id args
-        (List.assoc id id_loc_list) id_loc_list [] body
+        (List.assoc id id_loc_list) id_check_list [] body
 
 (* Compute variance *)
 let compute_variance env tvl nega posi ty =
