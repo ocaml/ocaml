@@ -828,6 +828,10 @@ expr:
       { mkexp(Pexp_construct(Lident "::",
                              Some(ghexp(Pexp_tuple[$1;$3])),
                              false)) }
+  | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN
+      { mkexp(Pexp_construct(Lident "::",
+                             Some(ghexp(Pexp_tuple[$5;$7])),
+                             false)) }
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
@@ -1056,6 +1060,9 @@ pattern:
       { mkpat(Ppat_variant($1, Some $2)) }
   | pattern COLONCOLON pattern
       { mkpat(Ppat_construct(Lident "::", Some(ghpat(Ppat_tuple[$1;$3])),
+                             false)) }
+  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
+      { mkpat(Ppat_construct(Lident "::", Some(ghpat(Ppat_tuple[$5;$7])),
                              false)) }
   | pattern BAR pattern
       { mkpat(Ppat_or($1, $3)) }
@@ -1410,6 +1417,7 @@ constr_ident:
 /*  | LBRACKET RBRACKET                           { "[]" } */
   | LPAREN RPAREN                               { "()" }
   | COLONCOLON                                  { "::" }
+/*  | LPAREN COLONCOLON RPAREN                    { "::" } */
   | FALSE                                       { "false" }
   | TRUE                                        { "true" }
 ;
