@@ -22,7 +22,9 @@ type lexbuf =
     mutable lex_abs_pos : int;
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;
-    mutable lex_last_pos : int }
+    mutable lex_last_pos : int;
+    mutable lex_saved_state : int;
+    mutable lex_last_action : int }
         (* The type of lexer buffers. A lexer buffer is the argument passed
            to the scanning functions defined by the generated scanners.
            The lexer buffer holds the current state of the scanner, plus

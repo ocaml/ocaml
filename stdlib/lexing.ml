@@ -20,7 +20,9 @@ type lexbuf =
     mutable lex_abs_pos : int;
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;
-    mutable lex_last_pos : int }
+    mutable lex_last_pos : int;
+    mutable lex_saved_state : int;
+    mutable lex_last_action : int }
 
 type lex_tables =
   { lex_base: string;
@@ -70,7 +72,9 @@ let from_function f =
     lex_abs_pos = - 2048;
     lex_start_pos = 2048;
     lex_curr_pos = 2048;
-    lex_last_pos = 2048 }
+    lex_last_pos = 2048;
+    lex_saved_state = -1;
+    lex_last_action = 0 }
 
 let from_channel ic =
   from_function (fun buf n -> input ic buf 0 n)
@@ -83,7 +87,9 @@ let from_string s =
     lex_abs_pos = 0;
     lex_start_pos = 0;
     lex_curr_pos = 0;
-    lex_last_pos = 0 }
+    lex_last_pos = 0;
+    lex_saved_state = -1;
+    lex_last_action = 0 }
 
 let lexeme lexbuf =
   let len = lexbuf.lex_curr_pos - lexbuf.lex_start_pos in
