@@ -115,10 +115,14 @@ let print ppf loc =
   end
 
 let print_warning loc ppf w =
- if Warnings.is_active w then begin
-  fprintf ppf "%aWarning: %a@." print loc Warnings.print w;
-  incr num_loc_lines;
- end
+  if Warnings.is_active w then begin
+    let printw ppf w =
+      let n = Warnings.print ppf w in
+      num_loc_lines := !num_loc_lines + n
+    in
+    fprintf ppf "%aWarning: %a@." print loc printw w;
+    incr num_loc_lines;
+  end
 ;;
 
 let prerr_warning loc w = print_warning loc err_formatter w;;

@@ -99,9 +99,15 @@ let message = function
 let nerrors = ref 0;;
 
 let print ppf w =
-  Format.fprintf ppf "%s" (message w);
+  let msg = message w in
+  let newlines = ref 0 in
+  for i = 0 to String.length msg - 1 do
+    if msg.[i] = '\n' then incr newlines;
+  done;
+  Format.fprintf ppf "%s" msg;
   let (n, _) = translate (letter w) in
   if error.(n) then incr nerrors;
+  !newlines
 ;;
 
 exception Errors of int;;
