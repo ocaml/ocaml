@@ -433,8 +433,6 @@ The function uses two overlays.
           (unwind-protect
               (caml-track-mouse
                (while event
-                 (message nil)
-                 (message "%S" event)
                  (cond
                   ;; In emacs eliminate 
                   ((caml-ignore-event-p event))
@@ -516,7 +514,7 @@ The function uses two overlays.
                                (caml-types-find-interval
                                 target-buf target-pos target-tree))
                          ))
-                       ;; (message (setq mes (format "type: %s" type)))
+                       (message (setq mes (format "type: %s" type)))
                        (insert type)
                        ))
                    )
