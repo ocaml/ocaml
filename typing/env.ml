@@ -91,7 +91,7 @@ let read_pers_struct modname filename =
     let crc = Digest.input ic in
     close_in ic;
     if ps.ps_name <> modname then
-      raise(Error(Illegal_renaming(modname, filename)));
+      raise(Error(Illegal_renaming(ps.ps_name, filename)));
     (ps, crc)
   with End_of_file | Failure _ ->
     close_in ic;
@@ -601,6 +601,7 @@ let report_error = function
       print_string "Corrupted compiled interface"; print_space();
       print_string filename
   | Illegal_renaming(modname, filename) ->
+      print_string "Wrong file naming:"; print_space();
       print_string filename; print_space();
       print_string "contains the compiled interface for"; print_space();
       print_string modname
